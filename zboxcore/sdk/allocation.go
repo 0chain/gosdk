@@ -450,13 +450,16 @@ func (a *Allocation) EncryptAndUploadFileWithThumbnail(
 	)
 }
 
-func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, thumbnailPaths []string, remotePath string) error {
+func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, thumbnailPaths []string, remotePath string, status StatusCallback) error {
 	totalOperations := len(localPaths)
 	if totalOperations == 0 {
 		return nil
 	}
 	operationRequests := make([]OperationRequest, totalOperations)
+	wg := &sync.WaitGroup{}
 	for idx, localPath := range localPaths {
+		statusBar := &StatusBar{wg: wg}
+		wg.Add(1)
 		fileReader, err := os.Open(localPath)
 		thumbnailPath := thumbnailPaths[idx]
 		if err != nil {
@@ -494,7 +497,9 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, thumb
 			RemoteName: fileName,
 			RemotePath: remotePath,
 		}
-		options := []ChunkedUploadOption{}
+		options := []ChunkedUploadOption{
+			WithStatusCallback(statusBar),
+		}
 		if thumbnailPath != "" {
 			buf, err := sys.Files.ReadFile(thumbnailPath)
 			if err != nil {
@@ -516,6 +521,7 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, thumb
 	if err != nil {
 		return err
 	}
+	wg.Wait()
 	return nil
 }
 
@@ -864,7 +870,7 @@ func (a *Allocation) generateDownloadRequest(localPath string, remotePath string
 	downloadReq.contentMode = contentMode
 	downloadReq.prepaidBlobbers = make(map[string]bool)
 	downloadReq.connectionID = zboxutil.NewConnectionId()
-  
+
 	return downloadReq, nil
 }
 
