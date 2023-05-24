@@ -870,7 +870,7 @@ func (a *Allocation) generateDownloadRequest(localPath string, remotePath string
 	downloadReq.contentMode = contentMode
 	downloadReq.prepaidBlobbers = make(map[string]bool)
 	downloadReq.connectionID = zboxutil.NewConnectionId()
-
+  
 	return downloadReq, nil
 }
 
