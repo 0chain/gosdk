@@ -60,7 +60,7 @@ func (a *Allocation) getRemoteFilesAndDirs(dirList []string, fMap map[string]Fil
 			if _, ok := exclMap[child.Path]; ok {
 				continue
 			}
-			relativePathFromRemotePath := strings.TrimPrefix(child.Path, remotePath) 
+			relativePathFromRemotePath := strings.TrimPrefix(child.Path, remotePath)
 			fMap[relativePathFromRemotePath] = FileInfo{
 				Size:         child.Size,
 				ActualSize:   child.ActualSize,
