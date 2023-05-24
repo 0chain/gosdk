@@ -168,59 +168,19 @@ func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
 		result.CreatedAt = ti.ref.CreatedAt
 		result.UpdatedAt = ti.ref.UpdatedAt
 		result.LookupHash = ti.ref.LookupHash
-		result.ActualSize = ti.ref.ActualSize
-		result.ActualNumBlocks = 0
 		if result.Type == fileref.DIRECTORY {
 			result.Size = -1
 		}
-		if ti.ref.ActualSize > 0 {
-			result.ActualNumBlocks = ti.ref.ActualSize / CHUNK_SIZE
-		}
 
-		for _, child := range lR[i].ref.Children {
-			actualHash := encryption.Hash(child.GetLookupHash())
-			if child.GetType() == fileref.FILE {
-				actualHash = encryption.Hash(child.GetLookupHash() + ":" + (child.(*fileref.FileRef)).ActualFileHash)
-			}
-			var childResult *ListResult
-			if _, ok := childResultMap[actualHash]; !ok {
-				childResult = &ListResult{
-					Name:      child.GetName(),
-					Path:      child.GetPath(),
-					Type:      child.GetType(),
-					CreatedAt: child.GetCreatedAt(),
-					UpdatedAt: child.GetUpdatedAt(),
-				}
-				childResult.LookupHash = child.GetLookupHash()
-				childResult.consensus = 0
-				childResult.consensusThresh = req.consensusThresh
-				childResult.fullconsensus = req.fullconsensus
-				childResultMap[actualHash] = childResult
-			}
-			childResult = childResultMap[actualHash]
-			childResult.consensus++
-			if child.GetType() == fileref.FILE {
-				childResult.Hash = (child.(*fileref.FileRef)).ActualFileHash
-				childResult.MimeType = (child.(*fileref.FileRef)).MimeType
-				childResult.EncryptionKey = (child.(*fileref.FileRef)).EncryptedKey
-				childResult.ActualSize = (child.(*fileref.FileRef)).ActualFileSize
-				if childResult.ActualSize > 0 {
-					childResult.ActualNumBlocks = childResult.ActualSize / CHUNK_SIZE
-				}
-			}
-			childResult.Size += child.GetSize()
-			childResult.NumBlocks += child.GetNumBlocks()
-			if childResult.isConsensusOk() {
-				if _, ok := selected[child.GetLookupHash()]; !ok {
-					result.Children = append(result.Children, childResult)
-					selected[child.GetLookupHash()] = childResult
-				}
-			}
-		}
+		if len(lR[i].ref.Children) > 0 {
+			result.populateChildren(lR[i].ref.Children, childResultMap, selected, req)
 
-		for _, child := range result.Children {
-			result.NumBlocks += child.NumBlocks
-			result.Size += child.Size
+			for _, child := range result.Children {
+				result.Size += child.Size
+				result.NumBlocks += child.NumBlocks
+				result.ActualSize += child.ActualSize
+				result.ActualNumBlocks += child.ActualNumBlocks
+			}
 		}
 	}
 
@@ -228,29 +188,51 @@ func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
 		return nil, err
 	}
 
-	if result.Type == fileref.DIRECTORY {
-		result.ActualSize = calculateDirSize(result.Children)
-		if result.ActualSize != 0 {
-			result.NumBlocks = result.ActualSize / CHUNK_SIZE
-		}
-	}
-
 	return result, nil
 }
 
-func calculateDirSize(list []*ListResult) int64 {
-	var size int64
-	for _, item := range list {
-		if item.Type == fileref.FILE {
-			size += item.ActualSize
+// populateChildren calculates the children of a directory
+func (lr *ListResult) populateChildren(children []fileref.RefEntity, childResultMap map[string]*ListResult, selected map[string]*ListResult, req *ListRequest) {
+
+	for _, child := range children {
+		actualHash := encryption.Hash(child.GetLookupHash())
+		if child.GetType() == fileref.FILE {
+			actualHash = encryption.Hash(child.GetLookupHash() + ":" + (child.(*fileref.FileRef)).ActualFileHash)
 		}
-		if item.Type == fileref.DIRECTORY {
-			item.ActualSize = calculateDirSize(item.Children)
-			if item.ActualSize != 0 {
-				item.NumBlocks = item.ActualSize / CHUNK_SIZE
+
+		var childResult *ListResult
+		if _, ok := childResultMap[actualHash]; !ok {
+			childResult = &ListResult{
+				Name:      child.GetName(),
+				Path:      child.GetPath(),
+				Type:      child.GetType(),
+				CreatedAt: child.GetCreatedAt(),
+				UpdatedAt: child.GetUpdatedAt(),
 			}
-			size += item.ActualSize
+			childResult.LookupHash = child.GetLookupHash()
+			childResult.consensus = 0
+			childResult.consensusThresh = req.consensusThresh
+			childResult.fullconsensus = req.fullconsensus
+			childResultMap[actualHash] = childResult
+		}
+		childResult = childResultMap[actualHash]
+		childResult.consensus++
+		if child.GetType() == fileref.FILE {
+			childResult.Hash = (child.(*fileref.FileRef)).ActualFileHash
+			childResult.MimeType = (child.(*fileref.FileRef)).MimeType
+			childResult.EncryptionKey = (child.(*fileref.FileRef)).EncryptedKey
+			childResult.ActualSize = (child.(*fileref.FileRef)).ActualFileSize
+			if childResult.ActualSize > 0 {
+				childResult.ActualNumBlocks = childResult.ActualSize / CHUNK_SIZE
+			}
+		}
+		childResult.Size += child.GetSize()
+		childResult.NumBlocks += child.GetNumBlocks()
+		if childResult.isConsensusOk() {
+			if _, ok := selected[child.GetLookupHash()]; !ok {
+				lr.Children = append(lr.Children, childResult)
+				selected[child.GetLookupHash()] = childResult
+			}
 		}
 	}
-	return size
 }

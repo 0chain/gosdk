@@ -69,14 +69,30 @@ func commitWrite(w http.ResponseWriter, req *http.Request) {
 	result.Success = true
 	result.WriteMarker = writeMarker
 
-	json.NewEncoder(w).Encode(result)
+	err = json.NewEncoder(w).Encode(result)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 }
 
-func mockRespone(w http.ResponseWriter, req *http.Request, statusCode int, respBody []byte) {
+func mockRespone(w http.ResponseWriter, statusCode int, respBody []byte) {
 	w.Header().Set("Content-Type", "application/json")
 	if respBody != nil {
-		w.Write(respBody)
+		_, err := w.Write(respBody)
+		if err != nil {
+			statusCode = http.StatusInternalServerError
+		}
 	}
 
 	w.WriteHeader(statusCode)
+}
+
+func rollback(w http.ResponseWriter, _ *http.Request) {
+	mockRespone(w, http.StatusOK, nil)
+}
+
+func latestWriteMarker(w http.ResponseWriter, _ *http.Request) {
+	latestByte := `{"latest_write_marker":null,"prev_write_marker":null}`
+	mockRespone(w, http.StatusOK, []byte(latestByte))
 }

@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
+	"path"
 	"strings"
 	"sync"
 	"time"
@@ -17,9 +18,11 @@ import (
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
+	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/google/uuid"
 )
 
 const (
@@ -27,23 +30,22 @@ const (
 )
 
 type DirRequest struct {
-	allocationID string
-	allocationTx string
-	remotePath   string
-	blobbers     []*blockchain.StorageNode
-	ctx          context.Context
-	ctxCncl      context.CancelFunc
-	wg           *sync.WaitGroup
-	dirMask      zboxutil.Uint128
-	mu           *sync.Mutex
-	connectionID string
+	allocationObj *Allocation
+	allocationID  string
+	allocationTx  string
+	remotePath    string
+	blobbers      []*blockchain.StorageNode
+	ctx           context.Context
+	ctxCncl       context.CancelFunc
+	wg            *sync.WaitGroup
+	dirMask       zboxutil.Uint128
+	mu            *sync.Mutex
+	connectionID  string
+	timestamp     int64
 	Consensus
 }
 
-func (req *DirRequest) ProcessDir(a *Allocation) error {
-	l.Logger.Info("Start creating dir for blobbers")
-
-	defer req.ctxCncl()
+func (req *DirRequest) ProcessWithBlobbers(a *Allocation) int {
 	var pos uint64
 	var existingDirCount int
 	countMu := &sync.Mutex{}
@@ -68,6 +70,14 @@ func (req *DirRequest) ProcessDir(a *Allocation) error {
 	}
 
 	req.wg.Wait()
+	return existingDirCount
+}
+
+func (req *DirRequest) ProcessDir(a *Allocation) error {
+	l.Logger.Info("Start creating dir for blobbers")
+
+	defer req.ctxCncl()
+	existingDirCount := req.ProcessWithBlobbers(a)
 
 	if !req.isConsensusOk() {
 		return errors.New("consensus_not_met", "directory creation failed due to consensus not met")
@@ -85,12 +95,32 @@ func (req *DirRequest) ProcessDir(a *Allocation) error {
 	}
 	defer writeMarkerMU.Unlock(req.ctx, req.dirMask,
 		a.Blobbers, time.Minute, req.connectionID) //nolint: errcheck
+	//Check if the allocation is to be repaired or rolled back
+	status, err := req.allocationObj.CheckAllocStatus()
+	l.Logger.Info("Allocation status: ", status)
+	if err != nil {
+		l.Logger.Error("Error checking allocation status: ", err)
+		return fmt.Errorf("directory creation failed: %s", err.Error())
+	}
+
+	if status == Repair {
+		l.Logger.Info("Repairing allocation")
+		//TODO: Need status callback to call repair allocation
+		// err = req.allocationObj.RepairAlloc()
+		// if err != nil {
+		// 	return err
+		// }
+	}
+	if status != Commit {
+		return ErrRetryOperation
+	}
 
 	return req.commitRequest(existingDirCount)
 }
 
 func (req *DirRequest) commitRequest(existingDirCount int) error {
 	req.Consensus.Reset()
+	req.timestamp = int64(common.Now())
 	req.consensus = existingDirCount
 	wg := &sync.WaitGroup{}
 	activeBlobbersNum := req.dirMask.CountOnes()
@@ -100,7 +130,6 @@ func (req *DirRequest) commitRequest(existingDirCount int) error {
 	var pos uint64
 	var c int
 
-	timestamp := common.Now()
 	uid := util.GetNewUUID()
 
 	for i := req.dirMask; !i.Equals(zboxutil.NewUint128(0)); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
@@ -113,18 +142,19 @@ func (req *DirRequest) commitRequest(existingDirCount int) error {
 		newChange := &allocationchange.DirCreateChange{
 			RemotePath: req.remotePath,
 			Uuid:       uid,
-			Timestamp:  timestamp,
+			Timestamp:  common.Timestamp(req.timestamp),
 		}
 
-		commitReq.change = newChange
+		commitReq.changes = append(commitReq.changes, newChange)
 		commitReq.connectionID = req.connectionID
 		commitReq.wg = wg
+		commitReq.timestamp = req.timestamp
 		commitReqs[c] = commitReq
 		c++
 		go AddCommitRequest(commitReq)
 	}
 	wg.Wait()
-	
+
 	for _, commitReq := range commitReqs {
 		if commitReq.result != nil {
 			if commitReq.result.Success {
@@ -155,9 +185,15 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode, pos u
 
 	body := new(bytes.Buffer)
 	formWriter := multipart.NewWriter(body)
-	formWriter.WriteField("connection_id", req.connectionID)
+	err = formWriter.WriteField("connection_id", req.connectionID)
+	if err != nil {
+		return err, false
+	}
 
-	formWriter.WriteField("dir_path", req.remotePath)
+	err = formWriter.WriteField("dir_path", req.remotePath)
+	if err != nil {
+		return err, false
+	}
 
 	formWriter.Close()
 	httpreq, err := zboxutil.NewCreateDirRequest(blobber.Baseurl, req.allocationID, body)
@@ -248,4 +284,86 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode, pos u
 	return errors.New("dir_creation_failed",
 		fmt.Sprintf("Directory creation failed with latest status: %d and "+
 			"latest message: %s", latestStatusCode, latestRespMsg)), false
+}
+
+type DirOperation struct {
+	remotePath string
+	ctx        context.Context
+	ctxCncl    context.CancelFunc
+	dirMask    zboxutil.Uint128
+	maskMU     *sync.Mutex
+
+	Consensus
+}
+
+func (dirOp *DirOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
+	refs := make([]fileref.RefEntity, len(allocObj.Blobbers))
+	dR := &DirRequest{
+		allocationID: allocObj.ID,
+		allocationTx: allocObj.Tx,
+		connectionID: connectionID,
+		blobbers:     allocObj.Blobbers,
+		remotePath:   dirOp.remotePath,
+		ctx:          dirOp.ctx,
+		ctxCncl:      dirOp.ctxCncl,
+		dirMask:      dirOp.dirMask,
+		mu:           dirOp.maskMU,
+		wg:           &sync.WaitGroup{},
+	}
+	dR.consensusThresh = dirOp.consensusThresh
+	dR.fullconsensus = dirOp.fullconsensus
+
+	_ = dR.ProcessWithBlobbers(allocObj)
+
+	if !dR.isConsensusOk() {
+		return nil, dR.dirMask, errors.New("consensus_not_met", "directory creation failed due to consensus not met")
+	}
+	return refs, dR.dirMask, nil
+
+}
+
+func (dirOp *DirOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange {
+
+	var pos uint64
+	changes := make([]allocationchange.AllocationChange, len(refs))
+	for i := dirOp.dirMask; !i.Equals(zboxutil.NewUint128(0)); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		pos = uint64(i.TrailingZeros())
+		newChange := &allocationchange.DirCreateChange{
+			RemotePath: dirOp.remotePath,
+			Uuid:       uid,
+			Timestamp:  common.Now(),
+		}
+		changes[pos] = newChange
+	}
+	return changes
+}
+
+func (dirOp *DirOperation) Verify(a *Allocation) error {
+	if dirOp.remotePath == "" {
+		return errors.New("invalid_name", "Invalid name for dir")
+	}
+
+	if !path.IsAbs(dirOp.remotePath) {
+		return errors.New("invalid_path", "Path is not absolute")
+	}
+	return nil
+}
+
+func (dirOp *DirOperation) Completed(allocObj *Allocation) {
+
+}
+
+func (dirOp *DirOperation) Error(allocObj *Allocation, consensus int, err error) {
+
+}
+
+func NewDirOperation(remotePath string, dirMask zboxutil.Uint128, maskMU *sync.Mutex, consensusTh int, fullConsensus int, ctx context.Context) *DirOperation {
+	dirOp := &DirOperation{}
+	dirOp.remotePath = zboxutil.RemoteClean(remotePath)
+	dirOp.dirMask = dirMask
+	dirOp.maskMU = maskMU
+	dirOp.consensusThresh = consensusTh
+	dirOp.fullconsensus = fullConsensus
+	dirOp.ctx, dirOp.ctxCncl = context.WithCancel(ctx)
+	return dirOp
 }

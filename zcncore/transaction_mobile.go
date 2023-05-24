@@ -1052,6 +1052,12 @@ func (t *Transaction) ZCNSCAddAuthorizer(ip AddAuthorizerPayload) (err error) {
 	return
 }
 
+// EstimateFee estimates transaction fee
+func (t *Transaction) EstimateFee(reqPercent float32) (int64, error) {
+	fee, err := transaction.EstimateFee(t.txn, _config.chain.Miners, reqPercent)
+	return int64(fee), err
+}
+
 // ConvertTokenToSAS converts ZCN tokens to SAS tokens
 // # Inputs
 //   - token: ZCN tokens
@@ -1564,4 +1570,20 @@ func GetMagicBlockByNumber(numSharders int, number int64, timeout RequestTimeout
 	}
 
 	return ret, nil
+}
+
+// GetFeesTable get fee tables
+func GetFeesTable(reqPercent float32) (string, error) {
+
+	fees, err := transaction.GetFeesTable(_config.chain.Miners, reqPercent)
+	if err != nil {
+		return "", err
+	}
+
+	js, err := json.Marshal(fees)
+	if err != nil {
+		return "", err
+	}
+
+	return string(js), nil
 }

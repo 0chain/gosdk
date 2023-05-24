@@ -271,10 +271,9 @@ type StakePoolDelegatePoolInfo struct {
 
 // StakePool full info.
 type StakePoolInfo struct {
-	ID           common.Key     `json:"pool_id"` // pool ID
-	Balance      common.Balance `json:"balance"` // total balance
-	StakeTotal   common.Balance `json:"stake_total"`
-	UnstakeTotal common.Balance `json:"unstake_total"`
+	ID         common.Key     `json:"pool_id"` // pool ID
+	Balance    common.Balance `json:"balance"` // total balance
+	StakeTotal common.Balance `json:"stake_total"`
 	// delegate pools
 	Delegate []StakePoolDelegatePoolInfo `json:"delegate"`
 	// rewards
@@ -594,7 +593,6 @@ type Validator struct {
 	NumDelegates             int              `json:"num_delegates"`
 	ServiceCharge            float64          `json:"service_charge"`
 	StakeTotal               int64            `json:"stake_total"`
-	UnstakeTotal             int64            `json:"unstake_total"`
 	TotalServiceCharge       int64            `json:"total_service_charge"`
 	UncollectedServiceCharge int64            `json:"uncollected_service_charge"`
 	LastHealthCheck          common.Timestamp `json:"last_health_check"`

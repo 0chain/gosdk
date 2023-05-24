@@ -41,6 +41,8 @@ func setupHttpResponses(
 		wmBlobberBase := t.Name() + "/" + mockBlobberUrl + strconv.Itoa(i) + zboxutil.WM_LOCK_ENDPOINT
 		commitBlobberBase := t.Name() + "/" + mockBlobberUrl + strconv.Itoa(i) + zboxutil.COMMIT_ENDPOINT
 		refPathBlobberBase := t.Name() + "/" + mockBlobberUrl + strconv.Itoa(i) + zboxutil.REFERENCE_ENDPOINT
+		latestMarkerBlobberBase := t.Name() + "/" + mockBlobberUrl + strconv.Itoa(i) + zboxutil.LATEST_WRITE_MARKER_ENDPOINT
+		rollbackBlobberBase := t.Name() + "/" + mockBlobberUrl + strconv.Itoa(i) + zboxutil.ROLLBACK_ENDPOINT
 
 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 			return req.Method == "POST" &&
@@ -124,8 +126,37 @@ func setupHttpResponses(
 		}, nil)
 
 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			return req.Method == "GET" &&
+				strings.Contains(req.URL.String(), latestMarkerBlobberBase)
+		})).Return(&http.Response{
+			StatusCode: func() int {
+				if i < numCorrect {
+					return http.StatusOK
+				}
+				return http.StatusBadRequest
+			}(),
+			Body: func() io.ReadCloser {
+				s := `{"latest_write_marker":null,"prev_write_marker":null}`
+				return ioutil.NopCloser(bytes.NewReader([]byte(s)))
+			}(),
+		}, nil)
+
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 			return req.Method == "POST" &&
 				strings.Contains(req.URL.String(), commitBlobberBase)
+		})).Return(&http.Response{
+			StatusCode: func() int {
+				if i < numCorrect {
+					return http.StatusOK
+				}
+				return http.StatusBadRequest
+			}(),
+			Body: ioutil.NopCloser(bytes.NewReader(nil)),
+		}, nil)
+
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			return req.Method == "POST" &&
+				strings.Contains(req.URL.String(), rollbackBlobberBase)
 		})).Return(&http.Response{
 			StatusCode: func() int {
 				if i < numCorrect {
@@ -684,6 +715,25 @@ func TestAllocation_RepairFile(t *testing.T) {
 					require.NoError(t, err)
 					return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
 				}(frName, hash),
+			}, nil)
+
+			urlLatestWritemarker := "http://TestAllocation_RepairFile" + testName + mockBlobberUrl + strconv.Itoa(i) + "/v1/file/latestwritemarker"
+			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+				return strings.HasPrefix(req.URL.String(), urlLatestWritemarker)
+			})).Return(&http.Response{
+				StatusCode: http.StatusOK,
+				Body: func() io.ReadCloser {
+					s := `{"latest_write_marker":null,"prev_write_marker":null}`
+					return ioutil.NopCloser(bytes.NewReader([]byte(s)))
+				}(),
+			}, nil)
+
+			urlRollback := "http://TestAllocation_RepairFile" + testName + mockBlobberUrl + strconv.Itoa(i) + "/v1/connection/rollback"
+			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+				return strings.HasPrefix(req.URL.String(), urlRollback)
+			})).Return(&http.Response{
+				StatusCode: http.StatusOK,
+				Body:       ioutil.NopCloser(bytes.NewReader(nil)),
 			}, nil)
 
 			urlFilePath := "http://TestAllocation_RepairFile" + testName + mockBlobberUrl + strconv.Itoa(i) + "/v1/file/referencepath"
