@@ -82,7 +82,7 @@ const (
 )
 
 // GetContainers the containers present on the given hostmachine
-func GetToken(username, password, domain string) (string, error) {
+func getToken(username, password, domain string) (string, error) {
 	// get AuthToken
 	authData := AuthRequest{
 		Password: password,
@@ -128,7 +128,7 @@ func GetToken(username, password, domain string) (string, error) {
 	return jwt, nil
 }
 
-func DoGetRequest(authToken, url string) ([]Container, error) {
+func doGetRequest(authToken, url string) ([]Container, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		sdkLogger.Error("Error creating HTTP request:", err)
@@ -162,16 +162,16 @@ func DoGetRequest(authToken, url string) ([]Container, error) {
 }
 
 func GetContainers(username, password, domain string) ([]Container, error) {
-	authToken, err := GetToken(username, password, domain)
+	authToken, err := getToken(username, password, domain)
 	if err != nil {
 		return nil, err
 	}
 	domain = strings.TrimRight(domain, "/")
 	url := domain + CONTAINERS + "json?all=1"
-	return DoGetRequest(authToken, url)
+	return doGetRequest(authToken, url)
 }
 
-func DoPostRequest(url, authToken string) error {
+func doPostRequest(url, authToken string) error {
 	fmt.Println("url is", url)
 	req, err := http.NewRequest("POST", url, nil)
 	if err != nil {
@@ -211,7 +211,7 @@ func DoPostRequest(url, authToken string) error {
 	return fmt.Errorf(respMsg.Message)
 }
 
-func DeleteContainer(authToken, domain, containerID string) error {
+func deleteContainer(authToken, domain, containerID string) error {
 	url := domain + CONTAINERS + containerID + "?force=true"
 
 	req, err := http.NewRequest("DELETE", url, nil)
@@ -250,9 +250,9 @@ func DeleteContainer(authToken, domain, containerID string) error {
 	return fmt.Errorf(respMsg.Message)
 }
 
-func SearchContainer(authToken, domain, containerID string) ([]Container, error) {
+func searchContainer(authToken, domain, containerID string) ([]Container, error) {
 	url := domain + CONTAINERS + fmt.Sprintf("json?all=1&filters={\"id\":[\"%s\"]}", containerID)
-	containers, err := DoGetRequest(authToken, url)
+	containers, err := doGetRequest(authToken, url)
 	if err != nil {
 		return nil, err
 	}
@@ -264,27 +264,27 @@ func SearchContainer(authToken, domain, containerID string) ([]Container, error)
 	return containers, err
 }
 
-func PullImage(authToken, domain, NewImageID string) error {
+func pullImage(authToken, domain, NewImageID string) error {
 	url := domain + PULLIMAGE + NewImageID
-	return DoPostRequest(url, authToken)
+	return doPostRequest(url, authToken)
 }
 
-func StopContainer(authToken, domain, containerId string) error {
+func stopContainer(authToken, domain, containerId string) error {
 	url := domain + CONTAINERS + containerId + "/stop"
-	return DoPostRequest(url, authToken)
+	return doPostRequest(url, authToken)
 }
 
-func RenameContainer(authToken, domain, containerId, containerName string) error {
+func renameContainer(authToken, domain, containerId, containerName string) error {
 	url := domain + CONTAINERS + containerId + "/rename?name=" + containerName + "-old"
-	return DoPostRequest(url, authToken)
+	return doPostRequest(url, authToken)
 }
 
-func StartContainer(authToken, domain, containerId string) error {
+func startContainer(authToken, domain, containerId string) error {
 	url := domain + CONTAINERS + containerId + "/start"
-	return DoPostRequest(url, authToken)
+	return doPostRequest(url, authToken)
 }
 
-func CreateContainer(authToken, domain, containerName string, container Container) (string, error) {
+func createContainer(authToken, domain, containerName string, container Container) (string, error) {
 
 	url := domain + CONTAINERS + "/create?name=" + containerName
 	reqBodyJSON, err := json.Marshal(container)
@@ -340,27 +340,27 @@ func CreateContainer(authToken, domain, containerName string, container Containe
 // UpdateContainer update the given container ID with a new image
 func UpdateContainer(username, password, domain, containerID, NewImageID string) error {
 	sdkLogger.Info("getting authtoken")
-	authToken, err := GetToken(username, password, domain)
+	authToken, err := getToken(username, password, domain)
 	if err != nil {
 		return err
 	}
 
 	// pull the new image
 	sdkLogger.Info("pull the new image")
-	err = PullImage(authToken, domain, NewImageID)
+	err = pullImage(authToken, domain, NewImageID)
 	if err != nil {
 		return err
 	}
 
 	// stopContainer
 	sdkLogger.Info("stopContainer")
-	err = StopContainer(authToken, domain, containerID)
+	err = stopContainer(authToken, domain, containerID)
 	if err != nil {
 		return err
 	}
 
 	sdkLogger.Info("SearchContainer")
-	containers, err := SearchContainer(authToken, domain, containerID)
+	containers, err := searchContainer(authToken, domain, containerID)
 	if err != nil {
 		return err
 	}
@@ -375,7 +375,7 @@ func UpdateContainer(username, password, domain, containerID, NewImageID string)
 
 	// renameContainer
 	sdkLogger.Info("renameContainer")
-	err = RenameContainer(authToken, domain, containerID, containerName+"-old")
+	err = renameContainer(authToken, domain, containerID, containerName+"-old")
 	if err != nil {
 		return err
 	}
@@ -383,21 +383,21 @@ func UpdateContainer(username, password, domain, containerID, NewImageID string)
 	// createContainer
 	sdkLogger.Info("CreateContainer")
 	container.Image = NewImageID
-	newContainerID, err := CreateContainer(authToken, domain, containerName, container)
+	newContainerID, err := createContainer(authToken, domain, containerName, container)
 	if err != nil {
 		return err
 	}
 
 	// startContainer //204 no content
 	sdkLogger.Info("StartContainer", newContainerID)
-	err = StartContainer(authToken, domain, newContainerID)
+	err = startContainer(authToken, domain, newContainerID)
 	if err != nil {
 		return err
 	}
 
 	// delete old old container
 	sdkLogger.Info("delete old container")
-	err = DeleteContainer(authToken, domain, containerID)
+	err = deleteContainer(authToken, domain, containerID)
 	if err != nil {
 		return err
 	}

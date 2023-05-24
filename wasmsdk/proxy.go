@@ -174,6 +174,8 @@ func main() {
 				"updateBlobberSettings": updateBlobberSettings,
 				"getRemoteFileMap":      getRemoteFileMap,
 				"getBlobbers":           getBlobbers,
+				"getcontainers":         GetContainers,
+				"updatecontainer":       UpdateContainer,
 
 				// player
 				"play":           play,
