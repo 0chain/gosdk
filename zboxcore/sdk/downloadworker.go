@@ -4,14 +4,20 @@ import (
 	"bytes"
 	"context"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"hash"
+	"io/ioutil"
 	"math"
+	"net/http"
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
+	"time"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
@@ -24,6 +30,7 @@ import (
 	"github.com/klauspost/reedsolomon"
 	"go.dedis.ch/kyber/v3/group/edwards25519"
 	"golang.org/x/crypto/sha3"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -62,6 +69,9 @@ type DownloadRequest struct {
 	maskMu             *sync.Mutex
 	encScheme          encryption.EncryptionScheme
 	shouldVerify       bool
+	blocksPerShard     int64
+	prepaidBlobbers    map[string]bool
+	connectionID       string
 }
 
 func (req *DownloadRequest) removeFromMask(pos uint64) {
@@ -159,8 +169,11 @@ func (req *DownloadRequest) downloadBlock(
 	}
 	rspCh := make(chan *downloadBlock, requiredDownloads)
 
-	var pos uint64
-	var c int
+	var (
+		pos          uint64
+		c            int
+		skipDownload bool
+	)
 
 	for i := req.downloadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
@@ -181,12 +194,36 @@ func (req *DownloadRequest) downloadBlock(
 			numBlocks:          totalBlock,
 			encryptedKey:       req.encryptedKey,
 			shouldVerify:       req.shouldVerify,
+			connectionID:       req.connectionID,
 		}
 
-		bf := req.validationRootMap[blockDownloadReq.blobber.ID]
-		blockDownloadReq.blobberFile = bf
+		if blockDownloadReq.blobber.IsSkip() {
+			rspCh <- &downloadBlock{
+				Success: false,
+				idx:     blockDownloadReq.blobberIdx,
+				err:     errors.New("", "skip blobber by previous errors")}
+			skipDownload = true
+		}
 
-		go AddBlockDownloadReq(blockDownloadReq)
+		if paid := req.prepaidBlobbers[blockDownloadReq.blobber.ID]; !paid {
+			err := req.submitReadMarker(blockDownloadReq.blobber, req.blocksPerShard)
+			if err != nil {
+				wrappedErr := errors.Wrap(err, "Submit readmarker failed")
+				rspCh <- &downloadBlock{
+					Success: false,
+					idx:     blockDownloadReq.blobberIdx,
+					err:     wrappedErr,
+				}
+				skipDownload = true
+			}
+		}
+
+		if !skipDownload {
+			bf := req.validationRootMap[blockDownloadReq.blobber.ID]
+			blockDownloadReq.blobberFile = bf
+			go AddBlockDownloadReq(blockDownloadReq)
+		}
+
 		c++
 		if c == requiredDownloads {
 			remainingMask = i
@@ -195,26 +232,23 @@ func (req *DownloadRequest) downloadBlock(
 
 	}
 
-	var failed int
+	var failed int32
 	downloadErrors := make([]string, requiredDownloads)
-	failedMu := &sync.Mutex{}
 	wg := &sync.WaitGroup{}
 	for i := 0; i < requiredDownloads; i++ {
 		result := <-rspCh
 		wg.Add(1)
 		go func(i int) {
-			defer wg.Done()
 			var err error
 			defer func() {
 				if err != nil {
-					failedMu.Lock()
-					failed++
-					failedMu.Unlock()
+					atomic.AddInt32(&failed, 1)
 					req.removeFromMask(uint64(result.idx))
 					downloadErrors[i] = fmt.Sprintf("Error %s from %s",
 						err.Error(), req.blobbers[result.idx].Baseurl)
 					logger.Logger.Error(err)
 				}
+				wg.Done()
 			}()
 			if !result.Success {
 				err = fmt.Errorf("Unsuccessful download. Error: %v", result.err)
@@ -225,7 +259,7 @@ func (req *DownloadRequest) downloadBlock(
 	}
 
 	wg.Wait()
-	return remainingMask, failed, downloadErrors, nil
+	return remainingMask, int(failed), downloadErrors, nil
 }
 
 // decodeEC will reconstruct shards and verify it
@@ -356,7 +390,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		return
 	}
 
-	size, chunkPerShard, actualPerShard, err := req.calculateShardsParams(fRef, remotePathCB)
+	size, chunksPerShard, actualPerShard, err := req.calculateShardsParams(fRef, remotePathCB)
 	if err != nil {
 		logger.Logger.Error(err.Error())
 		req.errorCB(
@@ -367,7 +401,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 
 	logger.Logger.Info(
 		fmt.Sprintf("Downloading file with size: %d from start block: %d and end block: %d. "+
-			"Actual size per blobber: %d", size, req.startBlock, req.endBlock, actualPerShard),
+			"Actual size per blobber: %d Chunks per blobber: %d", size, req.startBlock, req.endBlock, actualPerShard, chunksPerShard),
 	)
 
 	f, err := req.openFile()
@@ -403,6 +437,14 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	// remainingSize should be calculated based on startBlock number
 	// otherwise end data will have null bytes.
 	remainingSize := size - startBlock*int64(req.effectiveBlockSize)
+
+	var wantSize int64
+	if endBlock*int64(req.effectiveBlockSize) < size {
+		wantSize = endBlock*int64(req.effectiveBlockSize) - startBlock*int64(req.effectiveBlockSize)
+	} else {
+		wantSize = remainingSize
+	}
+
 	if remainingSize <= 0 {
 		logger.Logger.Error("Nothing to download")
 		req.errorCB(
@@ -411,10 +453,12 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		return
 	}
 
+	blocksPerShard := (wantSize + int64(req.effectiveBlockSize) - 1) / int64(req.effectiveBlockSize)
+	req.blocksPerShard = blocksPerShard
+
 	if req.statusCallback != nil {
 		// Started will also initialize progress bar. So without calling this function
 		// other callback's call will panic
-
 		req.statusCallback.Started(req.allocationID, remotePathCB, op, int(size))
 	}
 
@@ -425,27 +469,53 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	}
 	var actualFileHasher hash.Hash
 	var isPREAndWholeFile bool
-	if !req.shouldVerify && (startBlock == 0 && endBlock == chunkPerShard) {
+	if !req.shouldVerify && (startBlock == 0 && endBlock == chunksPerShard) {
 		actualFileHasher = sha3.New256()
 		isPREAndWholeFile = true
 	}
 
-	for startBlock < endBlock {
-		if startBlock+numBlocks > endBlock {
-			numBlocks = endBlock - startBlock
-		}
-		logger.Logger.Info("Downloading block ", startBlock, " - ", startBlock+numBlocks)
+	n := int((endBlock - startBlock + numBlocks - 1) / numBlocks)
+	res := make([][]byte, n)
 
-		data, err := req.getBlocksData(startBlock, numBlocks)
-		if err != nil {
-			req.errorCB(errors.Wrap(err, fmt.Sprintf("Download failed for block %d. ", startBlock+1)), remotePathCB)
-			return
-		}
-		if req.isDownloadCanceled {
-			req.errorCB(errors.New("download_abort", "Download aborted by user"), remotePathCB)
-			return
-		}
+	// Initiate download of first blocks sequentially to allow readmarkers to be properly submitted, then proceed to download in parallel
+	blocksToDownload := numBlocks
+	if startBlock+numBlocks > endBlock {
+		blocksToDownload = endBlock - startBlock
+	}
+	res[0], err = req.getBlocksData(startBlock, blocksToDownload)
+	if req.isDownloadCanceled {
+		req.errorCB(errors.New("download_abort", "Download aborted by user"), remotePathCB)
+		return
+	}
+	if err != nil {
+		req.errorCB(errors.Wrap(err, fmt.Sprintf("Download failed for block %d. ", startBlock)), remotePathCB)
+		return
+	}
 
+	eg, _ := errgroup.WithContext(ctx)
+	for i := 1; i < n; i++ {
+		j := i
+		eg.Go(func() error {
+			blocksToDownload := numBlocks
+			if startBlock+int64(j)*numBlocks+numBlocks > endBlock {
+				blocksToDownload = endBlock - (startBlock + int64(j)*numBlocks)
+			}
+			res[j], err = req.getBlocksData(startBlock+int64(j)*numBlocks, blocksToDownload)
+			if req.isDownloadCanceled {
+				return errors.New("download_abort", "Download aborted by user")
+			}
+			if err != nil {
+				return errors.Wrap(err, fmt.Sprintf("Download failed for block %d. ", startBlock+int64(j)*numBlocks))
+			}
+			return nil
+		})
+	}
+	if err := eg.Wait(); err != nil {
+		req.errorCB(err, remotePathCB)
+		return
+	}
+
+	for _, data := range res {
 		n := int64(math.Min(float64(remainingSize), float64(len(data))))
 		_, err = f.Write(data[:n])
 
@@ -462,11 +532,6 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 
 		if req.statusCallback != nil {
 			req.statusCallback.InProgress(req.allocationID, remotePathCB, op, downloaded, data)
-		}
-		if (startBlock + numBlocks) > endBlock {
-			startBlock += endBlock - startBlock
-		} else {
-			startBlock += numBlocks
 		}
 	}
 
@@ -492,6 +557,143 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		req.statusCallback.Completed(
 			req.allocationID, remotePathCB, fRef.Name, "", int(fRef.ActualFileSize), op)
 	}
+}
+
+func (req *DownloadRequest) submitReadMarker(blobber *blockchain.StorageNode, readCount int64) (err error) {
+	var retryCount = 3
+	for retryCount > 0 {
+		if err = req.attemptSubmitReadMarker(blobber, readCount); err != nil {
+			logger.Logger.Error(fmt.Sprintf("Error while attempting to submit readmarker %v, retry: %d", err, retryCount))
+			if IsErrCode(err, NotEnoughTokens) || IsErrCode(err, InvalidAuthTicket) || IsErrCode(err, InvalidShare) {
+				return err
+			}
+			retryCount--
+		} else {
+			return nil
+		}
+	}
+	return fmt.Errorf("submit read marker failed after retries: %w", err)
+}
+
+func (req *DownloadRequest) attemptSubmitReadMarker(blobber *blockchain.StorageNode, readCount int64) error {
+	rm := &marker.ReadMarker{
+		ClientID:        client.GetClientID(),
+		ClientPublicKey: client.GetClientPublicKey(),
+		BlobberID:       blobber.ID,
+		AllocationID:    req.allocationID,
+		OwnerID:         req.allocOwnerID,
+		Timestamp:       common.Now(),
+		ReadCounter:     getBlobberReadCtr(req.allocationID, blobber.ID) + readCount,
+		SessionRC:       readCount,
+	}
+	err := rm.Sign()
+	if err != nil {
+		return fmt.Errorf("error signing read marker: %w", err)
+	}
+	logger.Logger.Debug(fmt.Sprintf("Attempting to submit RM: ReadCounter: %d, SessionRC: %d, BlobberID: %v", rm.ReadCounter, rm.SessionRC, rm.BlobberID))
+	rmData, err := json.Marshal(rm)
+	if err != nil {
+		return fmt.Errorf("error marshaling read marker: %w", err)
+	}
+	httpreq, err := zboxutil.NewDownloadRequest(blobber.Baseurl, req.allocationTx)
+	if err != nil {
+		return fmt.Errorf("error creating download request: %w", err)
+	}
+
+	header := &DownloadRequestHeader{
+		Path:         req.remotefilepath,
+		PathHash:     req.remotefilepathhash,
+		ReadMarker:   rmData,
+		ConnectionID: req.connectionID,
+	}
+	if req.authTicket != nil {
+		header.AuthToken, _ = json.Marshal(req.authTicket) //nolint: errcheck
+	}
+	header.ToHeader(httpreq)
+
+	ctx, cancel := context.WithTimeout(req.ctx, 30*time.Second)
+	defer cancel()
+
+	err = zboxutil.HttpDo(ctx, cancel, httpreq, func(resp *http.Response, err error) error {
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return req.handleReadMarkerError(resp, blobber, rm)
+		}
+		setBlobberReadCtr(req.allocationID, blobber.ID, rm.ReadCounter)
+
+		logger.Logger.Debug("Submit readmarker 200 OK")
+
+		req.maskMu.Lock()
+		req.prepaidBlobbers[blobber.ID] = true
+		req.maskMu.Unlock()
+		return nil
+	})
+	return err
+}
+
+func (req *DownloadRequest) handleReadMarkerError(resp *http.Response, blobber *blockchain.StorageNode, rm *marker.ReadMarker) error {
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	logger.Logger.Error(string(respBody))
+
+	appErrorCode := resp.Header.Get("X-App-Error-Code")
+
+	if appErrorCode != "" {
+		if appErrorCode == NotEnoughTokens {
+			logger.Logger.Debug(fmt.Sprintf("NotEnoughTokens - blobberID: %v", blobber.ID))
+			blobber.SetSkip(true)
+			return errors.New(NotEnoughTokens, string(respBody))
+		}
+		if appErrorCode == InvalidAuthTicket {
+			logger.Logger.Debug(fmt.Sprintf("InvalidAuthTicket - blobberID: %v", blobber.ID))
+			blobber.SetSkip(true)
+			return errors.New(InvalidAuthTicket, string(respBody))
+		}
+		if appErrorCode == InvalidShare {
+			logger.Logger.Debug(fmt.Sprintf("InvalidShare - blobberID: %v", blobber.ID))
+			blobber.SetSkip(true)
+			return errors.New(InvalidShare, string(respBody))
+		}
+		if appErrorCode == LockExists {
+			logger.Logger.Debug(fmt.Sprintf("LockExists - blobberID: %v", blobber.ID))
+			blobber.SetSkip(true)
+			time.Sleep(time.Second * 1)
+			return errors.New(LockExists, string(respBody))
+		}
+	}
+
+	var rspData downloadBlock
+	if err = json.Unmarshal(respBody, &rspData); err == nil && rspData.LatestRM != nil {
+		if err := rm.ValidateWithOtherRM(rspData.LatestRM); err != nil {
+			return err
+		}
+
+		lastBlobberReadCounter := getBlobberReadCtr(req.allocationID, blobber.ID)
+		if rspData.LatestRM.ReadCounter != lastBlobberReadCounter {
+			setBlobberReadCtr(req.allocationID, blobber.ID, rspData.LatestRM.ReadCounter)
+			return fmt.Errorf("stale_read_marker: readmarker counter is not in sync with latest counter. Last blobber read counter: %d, but readmarker's counter was: %d", rspData.LatestRM.ReadCounter, lastBlobberReadCounter)
+		}
+		return fmt.Errorf("download_error: response status: %d, error: %v", resp.StatusCode, rspData.err)
+	}
+
+	return fmt.Errorf("response_error: %s", string(respBody))
+}
+
+func IsErrCode(err error, code string) bool {
+	if err == nil {
+		return false
+	}
+	if e, ok := err.(*errors.Error); ok && e.Code == code {
+		return true
+	}
+	return strings.Contains(err.Error(), code)
 }
 
 // initEC will initialize erasure encoder/decoder
@@ -656,7 +858,7 @@ func (req *DownloadRequest) getFileRef(remotePathCB string) (fRef *fileref.FileR
 	}
 
 	if fRef.Type == fileref.DIRECTORY {
-		err = errors.New("invalid_operation", "cannot downoad directory")
+		err = errors.New("invalid_operation", "cannot download directory")
 		return nil, err
 	}
 	return

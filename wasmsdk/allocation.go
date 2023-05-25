@@ -203,7 +203,7 @@ func getRemoteFileMap(allocationID string) ([]*fileResp, error) {
 		return nil, err
 	}
 
-	ref, err := allocationObj.GetRemoteFileMap(nil)
+	ref, err := allocationObj.GetRemoteFileMap(nil, "/")
 	if err != nil {
 		sdkLogger.Error(err)
 		return nil, err

@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/0chain/errors"
@@ -304,20 +305,22 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 				return
 			}
 
+			if strings.Contains(string(respBody), "pending_markers:") {
+				logger.Logger.Info("Commit pending for blobber ",
+					sb.blobber.Baseurl, "with connection id: ", su.progress.ConnectionID, " Retrying again")
+				time.Sleep(5 * time.Second)
+				shouldContinue = true
+				return
+			}
+
 			err = thrown.New("commit_error",
 				fmt.Sprintf("Got error response %s with status %d", respBody, resp.StatusCode))
 			return
 		}()
-
-		if err != nil {
-			logger.Logger.Error(err)
-			return
-		}
 		if shouldContinue {
 			continue
 		}
 		return
-
 	}
 	return thrown.New("commit_error", fmt.Sprintf("Commit failed with response status %d", resp.StatusCode))
 }
