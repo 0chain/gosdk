@@ -459,7 +459,7 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 			for i := 0; i < numBlobbers; i++ {
 				path := "/TestCopyRequest_ProcessCopy" + tt.name + mockBlobberUrl + strconv.Itoa(i)
 
-				m[http.MethodPost+":"+path+blobber.EndpointWriteMarkerLock+a.Tx] = devMock.Response{
+				m[http.MethodPost+":"+path+blobber.EndpointWriteMarkerLock+a.ID] = devMock.Response{
 					StatusCode: http.StatusOK,
 					Body:       respBuf,
 				}
