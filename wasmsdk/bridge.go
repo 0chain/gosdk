@@ -70,7 +70,7 @@ func initBridge(
 }
 
 // Burns ZCN tokens and returns a hash of the burn transaction
-func burnZCN(amount, txnfee uint64) string {
+func BurnZCN(amount, txnfee uint64) string {
 	if bridge == nil {
 		return errors.New("burnZCN", "bridge is not initialized").Error()
 	}
@@ -84,7 +84,7 @@ func burnZCN(amount, txnfee uint64) string {
 }
 
 // Mints ZCN tokens and returns a hash of the mint transaction
-func mintZCN(burnTrxHash string, timeout int, txnfee uint64) string {
+func MintZCN(burnTrxHash string, timeout int, txnfee uint64) string {
 	mintPayload, err := bridge.QueryZChainMintPayload(burnTrxHash)
 	if err != nil {
 		return errors.Wrap("mintZCN", "failed to QueryZChainMintPayload", err).Error()
