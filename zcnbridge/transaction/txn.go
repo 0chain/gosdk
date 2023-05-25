@@ -54,11 +54,11 @@ type (
 
 // NewTransactionEntity creates Transaction with initialized fields.
 // Sets version, client ID, creation date, public key and creates internal zcncore.TransactionScheme.
-func NewTransactionEntity() (*Transaction, error) {
+func NewTransactionEntity(txnFee uint64) (*Transaction, error) {
 	txn := &Transaction{
 		callBack: NewStatus().(*callback),
 	}
-	zcntxn, err := zcncore.NewTransaction(txn.callBack, 0, 0)
+	zcntxn, err := zcncore.NewTransaction(txn.callBack, txnFee, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +137,7 @@ func (t *Transaction) Verify(ctx context.Context) error {
 
 // Verify checks including of transaction in the blockchain.
 func Verify(ctx context.Context, hash string) (*Transaction, error) {
-	t, err := NewTransactionEntity()
+	t, err := NewTransactionEntity(0)
 	if err != nil {
 		return nil, err
 	}
