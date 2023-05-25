@@ -19,6 +19,7 @@ type ReadMarker struct {
 	Timestamp       common.Timestamp `json:"timestamp"`
 	ReadCounter     int64            `json:"counter"`
 	Signature       string           `json:"signature"`
+	SessionRC       int64            `json:"session_rc"`
 }
 
 func (rm *ReadMarker) GetHash() string {
