@@ -116,7 +116,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 		}
 
 		var httpreq *http.Request
-		httpreq, err = zboxutil.NewDownloadRequest(req.blobber.Baseurl, req.allocationTx)
+		httpreq, err = zboxutil.NewDownloadRequest(req.blobber.Baseurl, req.allocationID)
 		if err != nil {
 			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.Wrap(err, "Error creating download request")}
 			return

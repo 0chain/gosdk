@@ -99,7 +99,7 @@ func (commitreq *CommitRequest) processCommit() {
 	}
 	var req *http.Request
 	var lR ReferencePathResult
-	req, err := zboxutil.NewReferencePathRequest(commitreq.blobber.Baseurl, commitreq.allocationTx, paths)
+	req, err := zboxutil.NewReferencePathRequest(commitreq.blobber.Baseurl, commitreq.allocationID, paths)
 	if err != nil || len(paths) == 0 {
 		l.Logger.Error("Creating ref path req", err)
 		return
@@ -232,7 +232,7 @@ func (req *CommitRequest) commitBlobber(
 				l.Logger.Error("Creating form writer failed: ", err)
 				return
 			}
-			httpreq, err := zboxutil.NewCommitRequest(req.blobber.Baseurl, req.allocationTx, body)
+			httpreq, err := zboxutil.NewCommitRequest(req.blobber.Baseurl, req.allocationID, body)
 			if err != nil {
 				l.Logger.Error("Error creating commit req: ", err)
 				return
@@ -305,7 +305,7 @@ func AddCommitRequest(req *CommitRequest) {
 
 func (commitreq *CommitRequest) calculateHashRequest(ctx context.Context, paths []string) error { //nolint
 	var req *http.Request
-	req, err := zboxutil.NewCalculateHashRequest(commitreq.blobber.Baseurl, commitreq.allocationTx, paths)
+	req, err := zboxutil.NewCalculateHashRequest(commitreq.blobber.Baseurl, commitreq.allocationID, paths)
 	if err != nil || len(paths) == 0 {
 		l.Logger.Error("Creating calculate hash req", err)
 		return err

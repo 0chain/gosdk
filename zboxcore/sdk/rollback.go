@@ -134,7 +134,7 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 	formWriter.WriteField("connection_id", connID)
 	formWriter.Close()
 
-	req, err := zboxutil.NewRollbackRequest(rb.blobber.Baseurl, tx, body)
+	req, err := zboxutil.NewRollbackRequest(rb.blobber.Baseurl, wm.AllocationID, body)
 	if err != nil {
 		l.Logger.Error("Creating rollback request failed: ", err)
 		return err
