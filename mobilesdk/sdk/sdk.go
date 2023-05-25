@@ -325,6 +325,10 @@ func (s *StorageSDK) GetVersion() string {
 
 // UpdateAllocation with new expiry and size
 func (s *StorageSDK) UpdateAllocation(size, expiry int64, allocationID string, lock uint64) (hash string, err error) {
+	if lock < 0 {
+		return "", errors.New("invalid_lock", "lock cannot be negative")
+	}
+
 	hash, _, err = sdk.UpdateAllocation(size, expiry, allocationID, lock, true, "", "", false, &sdk.FileOptionsParameters{})
 	return hash, err
 }

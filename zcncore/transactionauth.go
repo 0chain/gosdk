@@ -57,6 +57,10 @@ func (ta *TransactionWithAuth) VestingAdd(ar *VestingAddRequest,
 }
 
 func (ta *TransactionWithAuth) MinerSCLock(providerId string, providerType Provider, lock uint64) error {
+	if lock < 0 {
+		return errors.New("invalid_lock", "lock cannot be negative")
+	}
+
 	pr := &stakePoolRequest{
 		ProviderID:   providerId,
 		ProviderType: providerType,
@@ -128,6 +132,10 @@ func (ta *TransactionWithAuth) CancelAllocation(allocID string) (
 func (ta *TransactionWithAuth) CreateAllocation(car *CreateAllocationRequest,
 	lock uint64) (err error) {
 
+	if lock < 0 {
+		return errors.New("invalid_lock", "lock cannot be negative")
+	}
+
 	err = ta.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_CREATE_ALLOCATION, car, lock)
 	if err != nil {
@@ -156,6 +164,10 @@ func (ta *TransactionWithAuth) CreateReadPool() (err error) {
 // allocation->blobber only.
 func (ta *TransactionWithAuth) ReadPoolLock(allocID, blobberID string,
 	duration int64, lock uint64) (err error) {
+
+	if lock < 0 {
+		return errors.New("invalid_lock", "lock cannot be negative")
+	}
 
 	type lockRequest struct {
 		Duration     time.Duration `json:"duration"`
@@ -194,6 +206,10 @@ func (ta *TransactionWithAuth) ReadPoolUnlock() (
 
 // StakePoolLock used to lock tokens in a stake pool of a blobber.
 func (ta *TransactionWithAuth) StakePoolLock(providerId string, providerType Provider, lock uint64) error {
+
+	if lock < 0 {
+		return errors.New("invalid_lock", "lock cannot be negative")
+	}
 
 	type stakePoolRequest struct {
 		ProviderType Provider `json:"provider_type,omitempty"`
@@ -270,6 +286,10 @@ func (ta *TransactionWithAuth) UpdateValidatorSettings(v *Validator) (
 func (ta *TransactionWithAuth) UpdateAllocation(allocID string, sizeDiff int64,
 	expirationDiff int64, lock uint64) (err error) {
 
+	if lock < 0 {
+		return errors.New("invalid_lock", "lock cannot be negative")
+	}
+
 	type updateAllocationRequest struct {
 		ID         string `json:"id"`              // allocation id
 		Size       int64  `json:"size"`            // difference
@@ -296,6 +316,10 @@ func (ta *TransactionWithAuth) UpdateAllocation(allocID string, sizeDiff int64,
 // allocation->blobber only.
 func (ta *TransactionWithAuth) WritePoolLock(allocID, blobberID string,
 	duration int64, lock uint64) (err error) {
+
+	if lock < 0 {
+		return errors.New("invalid_lock", "lock cannot be negative")
+	}
 
 	type lockRequest struct {
 		Duration     time.Duration `json:"duration"`

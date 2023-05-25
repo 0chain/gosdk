@@ -795,7 +795,7 @@ func (a *Allocation) generateDownloadRequest(localPath string, remotePath string
 	downloadReq.contentMode = contentMode
 	downloadReq.prepaidBlobbers = make(map[string]bool)
 	downloadReq.connectionID = zboxutil.NewConnectionId()
-  
+
 	return downloadReq, nil
 }
 
@@ -1941,7 +1941,11 @@ func (a *Allocation) UpdateWithRepair(
 	statusCB StatusCallback,
 ) (string, error) {
 
-	l.Logger.Info("Uploadating allocation")
+	if lock < 0 {
+		return "", errors.New("invalid_lock", "lock cannot be negative")
+	}
+
+	l.Logger.Info("Updating allocation")
 	hash, _, err := UpdateAllocation(size, expiry, a.ID, lock, updateTerms, addBlobberId, removeBlobberId, setThirdPartyExtendable, fileOptionsParams)
 	if err != nil {
 		return "", err
