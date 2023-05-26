@@ -580,15 +580,15 @@ func RevokeShare(allocationID, path, refereeClientID string) error {
 //
 //	## Inputs
 //	- allocationID
-func GetRemoteFileMap(allocationID string) ([]*fileResp, error) {
+func GetRemoteFileMap(allocationID string) (string, error) {
 	a, err := getAllocation(allocationID)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	ref, err := a.GetRemoteFileMap(nil, "/")
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	fileResps := make([]*fileResp, 0)
@@ -602,5 +602,10 @@ func GetRemoteFileMap(allocationID string) ([]*fileResp, error) {
 		fileResps = append(fileResps, &resp)
 	}
 
-	return fileResps, nil
+	retBytes, err := json.Marshal(fileResps)
+	if err != nil {
+		return "", err
+	}
+
+	return string(retBytes), nil
 }
