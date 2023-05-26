@@ -219,6 +219,7 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 		go func(blobber *blockchain.StorageNode) {
 
 			defer wg.Done()
+			l.Logger.Error("jayash", a.ID)
 			wr, err := GetWritemarker(a.ID, blobber.ID, blobber.Baseurl)
 			if err != nil {
 				atomic.AddInt32(&errCnt, 1)
