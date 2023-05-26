@@ -110,8 +110,8 @@ func (r *Ref) CalculateHash() string {
 		size += childRef.GetSize()
 	}
 
-	r.FileMetaHash = encryption.Hash(strings.Join(childFileMetaHashes, ":"))
-	r.Hash = encryption.Hash(strings.Join(childHashes, ":"))
+	r.FileMetaHash = encryption.Hash(r.GetHashData() + strings.Join(childFileMetaHashes, ":"))
+	r.Hash = encryption.Hash(r.GetHashData() + strings.Join(childHashes, ":"))
 
 	r.PathHash = encryption.Hash(strings.Join(childPaths, ":"))
 	r.NumBlocks = refNumBlocks
@@ -126,6 +126,10 @@ func (r *Ref) GetFileMetaHash() string {
 
 func (r *Ref) GetHash() string {
 	return r.Hash
+}
+
+func (r *Ref) GetHashData() string {
+	return fmt.Sprintf("%s:%s:%s", r.AllocationID, r.Path, r.FileID)
 }
 
 func (r *Ref) GetType() string {
