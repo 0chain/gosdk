@@ -47,11 +47,11 @@ type RollbackBlobber struct {
 	lpm          *LatestPrevWriteMarker
 }
 
-func GetWritemarker(allocID, id, baseUrl string) (*LatestPrevWriteMarker, error) {
+func GetWritemarker(allocID, allocTx, id, baseUrl string) (*LatestPrevWriteMarker, error) {
 
 	var lpm LatestPrevWriteMarker
 
-	req, err := zboxutil.NewWritemarkerRequest(baseUrl, allocID)
+	req, err := zboxutil.NewWritemarkerRequest(baseUrl, allocID, allocTx)
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +134,7 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 	formWriter.WriteField("connection_id", connID)
 	formWriter.Close()
 
-	req, err := zboxutil.NewRollbackRequest(rb.blobber.Baseurl, wm.AllocationID, body)
+	req, err := zboxutil.NewRollbackRequest(rb.blobber.Baseurl, wm.AllocationID, tx, body)
 	if err != nil {
 		l.Logger.Error("Creating rollback request failed: ", err)
 		return err
@@ -220,7 +220,7 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 
 			defer wg.Done()
 			l.Logger.Info("jayash", a)
-			wr, err := GetWritemarker(a.ID, blobber.ID, blobber.Baseurl)
+			wr, err := GetWritemarker(a.ID, a.Tx, blobber.ID, blobber.Baseurl)
 			if err != nil {
 				atomic.AddInt32(&errCnt, 1)
 				markerError = err
@@ -313,7 +313,7 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 		wg.Add(1)
 		go func(rb *RollbackBlobber) {
 			defer wg.Done()
-			err := rb.processRollback(context.TODO(), a.ID)
+			err := rb.processRollback(context.TODO(), a.Tx)
 			if err != nil {
 				atomic.AddInt32(&errCnt, 1)
 				rb.commitResult = ErrorCommitResult(err.Error())
