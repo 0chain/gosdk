@@ -1951,11 +1951,7 @@ func (a *Allocation) UpdateWithRepair(
 				if addBlobberId == blobber.ID {
 					l.Logger.Info("allocation updated successfully")
 					l.Logger.Info("starting repair")
-					dir, err := os.Getwd()
-					if err != nil {
-						return "", err
-					}
-					if err := alloc.StartRepair(dir, "/", statusCB); err != nil {
+					if err := alloc.StartRepair("/tmp", "/", statusCB); err != nil {
 						l.Logger.Error("error during repair", err)
 						return "", err
 					}
