@@ -48,8 +48,9 @@ type FileDiff struct {
 	Type string `json:"type"`
 }
 
-func (a *Allocation) getRemoteFilesAndDirs(dirList []string, fMap map[string]FileInfo, exclMap map[string]int) ([]string, error) {
+func (a *Allocation) getRemoteFilesAndDirs(dirList []string, fMap map[string]FileInfo, exclMap map[string]int, remotePath string) ([]string, error) {
 	childDirList := make([]string, 0)
+	remotePath = strings.TrimRight(remotePath, "/")
 	for _, dir := range dirList {
 		ref, err := a.ListDir(dir)
 		if err != nil {
@@ -59,7 +60,8 @@ func (a *Allocation) getRemoteFilesAndDirs(dirList []string, fMap map[string]Fil
 			if _, ok := exclMap[child.Path]; ok {
 				continue
 			}
-			fMap[child.Path] = FileInfo{
+			relativePathFromRemotePath := strings.TrimPrefix(child.Path, remotePath)
+			fMap[relativePathFromRemotePath] = FileInfo{
 				Size:         child.Size,
 				ActualSize:   child.ActualSize,
 				Hash:         child.Hash,
@@ -78,13 +80,13 @@ func (a *Allocation) getRemoteFilesAndDirs(dirList []string, fMap map[string]Fil
 	return childDirList, nil
 }
 
-func (a *Allocation) GetRemoteFileMap(exclMap map[string]int) (map[string]FileInfo, error) {
+func (a *Allocation) GetRemoteFileMap(exclMap map[string]int, remotepath string) (map[string]FileInfo, error) {
 	// 1. Iteratively get dir and files separately till no more dirs left
 	remoteList := make(map[string]FileInfo)
-	dirs := []string{"/"}
+	dirs := []string{remotepath}
 	var err error
 	for {
-		dirs, err = a.getRemoteFilesAndDirs(dirs, remoteList, exclMap)
+		dirs, err = a.getRemoteFilesAndDirs(dirs, remoteList, exclMap, remotepath)
 		if err != nil {
 			l.Logger.Error(err.Error())
 			break
@@ -283,7 +285,7 @@ func findDelta(rMap map[string]FileInfo, lMap map[string]FileInfo, prevMap map[s
 	return lFDiff
 }
 
-func (a *Allocation) GetAllocationDiff(lastSyncCachePath string, localRootPath string, localFileFilters []string, remoteExcludePath []string) ([]FileDiff, error) {
+func (a *Allocation) GetAllocationDiff(lastSyncCachePath string, localRootPath string, localFileFilters []string, remoteExcludePath []string, remotePath string) ([]FileDiff, error) {
 	var lFdiff []FileDiff
 	prevRemoteFileMap := make(map[string]FileInfo)
 	// 1. Validate localSycnCachePath
@@ -309,7 +311,7 @@ func (a *Allocation) GetAllocationDiff(lastSyncCachePath string, localRootPath s
 	exclMap := getRemoteExcludeMap(remoteExcludePath)
 
 	// 3. Get flat file list from remote
-	remoteFileMap, err := a.GetRemoteFileMap(exclMap)
+	remoteFileMap, err := a.GetRemoteFileMap(exclMap, remotePath)
 	if err != nil {
 		return lFdiff, errors.Wrap(err, "error getting list dir from remote.")
 	}
@@ -342,7 +344,7 @@ func (a *Allocation) SaveRemoteSnapshot(pathToSave string, remoteExcludePath []s
 
 	// Get flat file list from remote
 	exclMap := getRemoteExcludeMap(remoteExcludePath)
-	remoteFileList, err := a.GetRemoteFileMap(exclMap)
+	remoteFileList, err := a.GetRemoteFileMap(exclMap, "/")
 	if err != nil {
 		return errors.Wrap(err, "error getting list dir from remote.")
 	}
