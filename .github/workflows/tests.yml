@@ -52,9 +52,27 @@ jobs:
           only-new-issues: true
 
   go-test:
-    runs-on: [self-hosted, build]
+    runs-on: [ arc-runner ]
     steps:
       - uses: actions/checkout@v2
+
+      - name: Install Packages
+        run: |
+          sudo apt update -y
+          sudo apt -y install build-essential nghttp2 libnghttp2-dev libssl-dev wget
+
+      - name: "Setup Go"
+        shell: 'script --return --quiet --command "bash {0}"'
+        run: |
+          [ -f ./https://go.dev/dl/go1.20.3.linux-amd64.tar.gz ] || wget https://go.dev/dl/go1.20.3.linux-amd64.tar.gz
+          [ -d /usr/local/go ] &&  sudo rm -rf /usr/local/go
+          [ -f /usr/local/bin/go ] &&  sudo rm -rf /usr/local/bin/go
+          sudo tar -C /usr/local -xzf ./go1.20.3.linux-amd64.tar.gz
+
+          echo "PATH=$PATH:/usr/local/go/bin" >> $GITHUB_ENV
+          export PATH=$PATH:/usr/local/go/bin
+          which go
+          go env
 
       - name: Install deps
         run: |
