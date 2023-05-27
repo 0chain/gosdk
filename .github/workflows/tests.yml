@@ -9,6 +9,7 @@ on:
     branches: [ master, staging ]
   pull_request:
     branches: [ master, staging ]
+  workflow_dispatch:
 
 env:
   ACTIONS_ALLOW_UNSECURE_COMMANDS: true
@@ -16,16 +17,24 @@ env:
 jobs:
   golangci:
     name: "lint"
-    runs-on: [ arc-runner1 ]
+    runs-on: [ arc-runner ]
     steps:
       - name: Install Packages
         run: |
           sudo apt-get update
           sudo apt-get -y install build-essential nghttp2 libnghttp2-dev libssl-dev
           
-      - uses: actions/setup-go@v3
-        with:
-          go-version: '1.20'
+      # - uses: actions/setup-go@v3
+      #   with:
+      #     go-version: '1.20'
+
+      - name: "Setup Go"
+        shell: 'script --return --quiet --command "bash {0}"'
+        run: |
+          [ -f ./https://go.dev/dl/go1.20.3.linux-amd64.tar.gz ] || wget https://go.dev/dl/go1.20.3.linux-amd64.tar.gz
+          [ -d /usr/local/go ] &&  rm -rf /usr/local/go
+          [ -f /usr/local/bin/go ] &&  rm -rf /usr/local/bin/go
+          tar -C /usr/local -xzf ./go1.20.3.linux-amd64.tar.gz
 
       - uses: actions/checkout@v3
 
@@ -51,7 +60,7 @@ jobs:
 
   system-test:
     needs: go-test
-    runs-on: [ tests-suite ]
+    runs-on: [ arc-runner ]
     steps:
       - name: "Get current PR"
         uses: jwalton/gh-find-current-pr@v1
