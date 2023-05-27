@@ -452,6 +452,7 @@ func (a *Allocation) EncryptAndUploadFileWithThumbnail(
 
 func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, thumbnailPaths []string, remotePath string, status StatusCallback) error {
 	totalOperations := len(localPaths)
+	logger.Logger.Info("Total operations: ", totalOperations)
 	if totalOperations == 0 {
 		return nil
 	}
@@ -516,12 +517,13 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, thumb
 		}
 
 	}
-
+	logger.Logger.Info("Starting multi-upload...");
 	err := a.DoMultiOperation(operationRequests)
 	if err != nil {
 		return err
 	}
 	wg.Wait()
+	logger.Logger.Info("Multi-upload done")
 	return nil
 }
 
@@ -870,7 +872,7 @@ func (a *Allocation) generateDownloadRequest(localPath string, remotePath string
 	downloadReq.contentMode = contentMode
 	downloadReq.prepaidBlobbers = make(map[string]bool)
 	downloadReq.connectionID = zboxutil.NewConnectionId()
-  
+
 	return downloadReq, nil
 }
 

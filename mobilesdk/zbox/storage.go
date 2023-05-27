@@ -2,6 +2,7 @@ package zbox
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 	"time"
 
@@ -221,12 +222,14 @@ func RepairFile(allocationID, workdir, localPath, remotePath, thumbnailPath stri
 // ## Outputs
 //   - error
 func MultiUpload(allocationID string, workdir string, filePathString string, thumbnailPathString string, remotePath string, statusCb StatusCallbackMocked) error {
+	fmt.Println("Multiupload called", filePathString, " remotepath: ", remotePath, " thumbnail: ", thumbnailPathString)
 	filePaths := strings.Split(filePathString, SPACE)
 	thumbnailPaths := strings.Split(thumbnailPathString, SPACE)
 	a, err := getAllocation(allocationID)
 	if err != nil {
 		return err
 	}
+	fmt.Println("Calling multiupload")
 	return a.StartMultiUpload(workdir, filePaths, thumbnailPaths, remotePath, &StatusCallbackWrapped{Callback: statusCb})
 
 }
@@ -574,15 +577,14 @@ func CreateDir(allocationID, dirName string) error {
 
 // RevokeShare revoke authTicket
 //
-//  ## Inputs
-//  - allocationID
-//  - path
-//  - refereeClientID
+//	## Inputs
+//	- allocationID
+//	- path
+//	- refereeClientID
 func RevokeShare(allocationID, path, refereeClientID string) error {
-  a, err := getAllocation(allocationID)
-  if err != nil {
-    return err
-  }
-  return a.RevokeShare(path, refereeClientID)
+	a, err := getAllocation(allocationID)
+	if err != nil {
+		return err
+	}
+	return a.RevokeShare(path, refereeClientID)
 }
-
