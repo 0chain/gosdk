@@ -1049,7 +1049,16 @@ func (a *Allocation) DownloadFromBlobber(blobberID, localPath, remotePath string
 		downloadReq.startBlock,
 		downloadReq.numBlocks,
 	)
-	return err
+	if err != nil {
+		l.Logger.Error(err.Error())
+		return err
+	}
+
+	if downloadReq.statusCallback != nil {
+		downloadReq.statusCallback.Completed(
+			downloadReq.allocationID, remotePath, fRef.Name, "", int(fRef.ActualFileSize), OpDownload)
+	}
+	return nil
 }
 
 // GetRefsWithAuthTicket get refs that are children of shared remote path.
