@@ -795,7 +795,7 @@ func (a *Allocation) generateDownloadRequest(localPath string, remotePath string
 	downloadReq.contentMode = contentMode
 	downloadReq.prepaidBlobbers = make(map[string]bool)
 	downloadReq.connectionID = zboxutil.NewConnectionId()
-  
+
 	return downloadReq, nil
 }
 
@@ -1774,16 +1774,6 @@ func (a *Allocation) StartRepair(localRootPath, pathToRepair string, statusCB St
 	return nil
 }
 
-// RepairAlloc repairs all the files in allocation
-func (a *Allocation) RepairAlloc(statusCB StatusCallback) error {
-	// todo: will this work in wasm?
-	dir, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-	return a.StartRepair(dir, "/", statusCB)
-}
-
 func (a *Allocation) CancelUpload(localpath string) error {
 	return nil
 }
@@ -1940,8 +1930,7 @@ func (a *Allocation) UpdateWithRepair(
 	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
 	statusCB StatusCallback,
 ) (string, error) {
-
-	l.Logger.Info("Uploadating allocation")
+	l.Logger.Info("Updating allocation")
 	hash, _, err := UpdateAllocation(size, expiry, a.ID, lock, updateTerms, addBlobberId, removeBlobberId, setThirdPartyExtendable, fileOptionsParams)
 	if err != nil {
 		return "", err
@@ -1950,7 +1939,6 @@ func (a *Allocation) UpdateWithRepair(
 
 	if addBlobberId != "" {
 		l.Logger.Info("waiting for a minute for the blobber to be added to network")
-
 		deadline := time.Now().Add(1 * time.Minute)
 		for time.Now().Before(deadline) {
 			alloc, err := GetAllocation(a.ID)
@@ -1962,8 +1950,16 @@ func (a *Allocation) UpdateWithRepair(
 			for _, blobber := range alloc.Blobbers {
 				if addBlobberId == blobber.ID {
 					l.Logger.Info("allocation updated successfully")
-					a = alloc
-					goto repair
+					l.Logger.Info("starting repair")
+					dir, err := os.Getwd()
+					if err != nil {
+						return "", err
+					}
+					if err := alloc.StartRepair(dir, "/", statusCB); err != nil {
+						l.Logger.Error("error during repair", err)
+						return "", err
+					}
+					return hash, nil
 				}
 			}
 			time.Sleep(1 * time.Second)
@@ -1972,21 +1968,5 @@ func (a *Allocation) UpdateWithRepair(
 	} else {
 		statusCB.Completed(a.ID, "", "", "", 0, 0)
 	}
-
-repair:
-	l.Logger.Info("starting repair")
-
-	shouldRepair := false
-	if addBlobberId != "" {
-		shouldRepair = true
-	}
-
-	if shouldRepair {
-		err := a.RepairAlloc(statusCB)
-		if err != nil {
-			return "", err
-		}
-	}
-
 	return hash, nil
 }
