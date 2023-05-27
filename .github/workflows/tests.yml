@@ -65,7 +65,7 @@ jobs:
 
   system-test:
     needs: go-test
-    runs-on: [ arc-runner ]
+    runs-on: [ tests-suite ]
     steps:
       - name: "Get current PR"
         uses: jwalton/gh-find-current-pr@v1
