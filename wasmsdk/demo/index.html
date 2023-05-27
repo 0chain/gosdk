@@ -107,6 +107,9 @@
     <button id="btnGetFileStats">GetFileStats</button>
     <button id="btnDelete">Delete</button>
     <button id="btnShare">Share</button>
+    <button id="btnGetContainers">getcontainers</button>
+    <button id="btnUpdateContainer">updatecontainer</button>
+
     <br>
 
     <div id="listFiles">
@@ -185,12 +188,12 @@
     }
 
     const query = new URLSearchParams(window.location.search);
-    
-    let network = query.get('network') 
+
+    let network = query.get('network')
     if (!network || network == 'undefined') {
       network = "dev.zus.network"
     }
-  
+
     const blockWorker = 'https://'+network+'/dns';
     const config = [
       networkConfig.chainId,
@@ -638,6 +641,27 @@
       txtOutput.innerHTML = rate
     })
 
+    onClick('btnGetContainers', async () => {
+      const domain = "https://chimneysho8r.zus.network"
+      const username = "admin"
+      const password = "admin"
+
+      const stats = await goWasm.sdk.getcontainers(username, password, domain)
+      txtOutput.innerHTML = JSON.stringify(stats, null, 2)
+    })
+
+    onClick('btnUpdateContainer', async () => {
+      const containerid = "8650a89abd1ec231921bb11fcfb4827c6b18e72cd440f736db4bce939437de5d"
+      const domain = "https://chimneysho8r.zus.network"
+      const username = "admin"
+      const password = "manohar1"
+      const image = "0chaindev/blobber:staging"
+      try {
+        const stats = await goWasm.sdk.updatecontainer(username, password, domain, containerid, image)
+      }  catch (e) {
+        alert(e)
+      }
+  })
 
   </script>
 </body>

@@ -128,7 +128,7 @@ func getToken(username, password, domain string) (string, error) {
 	return jwt, nil
 }
 
-func doGetRequest(authToken, url string) ([]Container, error) {
+func doGetRequest(authToken, url string) ([]*Container, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		sdkLogger.Error("Error creating HTTP request:", err)
@@ -152,7 +152,7 @@ func doGetRequest(authToken, url string) ([]Container, error) {
 		return nil, err
 	}
 
-	var containers []Container
+	var containers []*Container
 	err = json.Unmarshal(body, &containers)
 	if err != nil {
 		sdkLogger.Error("Error decoding JSON:", err)
@@ -161,7 +161,7 @@ func doGetRequest(authToken, url string) ([]Container, error) {
 	return containers, nil
 }
 
-func GetContainers(username, password, domain string) ([]Container, error) {
+func GetContainers(username, password, domain string) ([]*Container, error) {
 	authToken, err := getToken(username, password, domain)
 	if err != nil {
 		return nil, err
@@ -250,7 +250,7 @@ func deleteContainer(authToken, domain, containerID string) error {
 	return fmt.Errorf(respMsg.Message)
 }
 
-func searchContainer(authToken, domain, containerID string) ([]Container, error) {
+func searchContainer(authToken, domain, containerID string) ([]*Container, error) {
 	url := domain + CONTAINERS + fmt.Sprintf("json?all=1&filters={\"id\":[\"%s\"]}", containerID)
 	containers, err := doGetRequest(authToken, url)
 	if err != nil {
@@ -284,7 +284,7 @@ func startContainer(authToken, domain, containerId string) error {
 	return doPostRequest(url, authToken)
 }
 
-func createContainer(authToken, domain, containerName string, container Container) (string, error) {
+func createContainer(authToken, domain, containerName string, container *Container) (string, error) {
 
 	url := domain + CONTAINERS + "/create?name=" + containerName
 	reqBodyJSON, err := json.Marshal(container)
