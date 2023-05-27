@@ -591,7 +591,7 @@ func GetRemoteFileMap(allocationID string) (string, error) {
 		return "", err
 	}
 
-	fileResps := make([]*fileResp, 0)
+	fileResps := make([]*fileResp, len(ref))
 	for path, data := range ref {
 		paths := strings.SplitAfter(path, "/")
 		var resp = fileResp{
