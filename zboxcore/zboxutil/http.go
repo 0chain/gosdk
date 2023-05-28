@@ -692,7 +692,7 @@ func NewCreateDirRequest(baseUrl, allocationID string, allocationTx string, body
 		return nil, err
 	}
 
-	req.Header.Set("allocation_id", allocationID)
+	req.Header.Set("ALLOCATION-ID", allocationID)
 
 	return req, nil
 }
