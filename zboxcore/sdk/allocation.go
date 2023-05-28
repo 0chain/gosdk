@@ -1941,8 +1941,8 @@ func (a *Allocation) UpdateWithRepair(
 	statusCB StatusCallback,
 ) (string, error) {
 
-	if lock < 0 {
-		return "", errors.New("invalid_lock", "lock cannot be negative")
+	if lock > math.MaxInt64 {
+		return "", errors.New("invalid_lock", "int64 overflow on lock value")
 	}
 
 	l.Logger.Info("Updating allocation")

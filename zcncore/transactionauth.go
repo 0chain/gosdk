@@ -6,6 +6,7 @@ package zcncore
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/0chain/errors"
@@ -57,8 +58,8 @@ func (ta *TransactionWithAuth) VestingAdd(ar *VestingAddRequest,
 }
 
 func (ta *TransactionWithAuth) MinerSCLock(providerId string, providerType Provider, lock uint64) error {
-	if lock < 0 {
-		return errors.New("invalid_lock", "lock cannot be negative")
+	if lock > math.MaxInt64 {
+		return errors.New("invalid_lock", "int64 overflow on lock value")
 	}
 
 	pr := &stakePoolRequest{
@@ -132,8 +133,8 @@ func (ta *TransactionWithAuth) CancelAllocation(allocID string) (
 func (ta *TransactionWithAuth) CreateAllocation(car *CreateAllocationRequest,
 	lock uint64) (err error) {
 
-	if lock < 0 {
-		return errors.New("invalid_lock", "lock cannot be negative")
+	if lock > math.MaxInt64 {
+		return errors.New("invalid_lock", "int64 overflow on lock value")
 	}
 
 	err = ta.createSmartContractTxn(StorageSmartContractAddress,
@@ -165,8 +166,8 @@ func (ta *TransactionWithAuth) CreateReadPool() (err error) {
 func (ta *TransactionWithAuth) ReadPoolLock(allocID, blobberID string,
 	duration int64, lock uint64) (err error) {
 
-	if lock < 0 {
-		return errors.New("invalid_lock", "lock cannot be negative")
+	if lock > math.MaxInt64 {
+		return errors.New("invalid_lock", "int64 overflow on lock value")
 	}
 
 	type lockRequest struct {
@@ -207,8 +208,8 @@ func (ta *TransactionWithAuth) ReadPoolUnlock() (
 // StakePoolLock used to lock tokens in a stake pool of a blobber.
 func (ta *TransactionWithAuth) StakePoolLock(providerId string, providerType Provider, lock uint64) error {
 
-	if lock < 0 {
-		return errors.New("invalid_lock", "lock cannot be negative")
+	if lock > math.MaxInt64 {
+		return errors.New("invalid_lock", "int64 overflow on lock value")
 	}
 
 	type stakePoolRequest struct {
@@ -286,8 +287,8 @@ func (ta *TransactionWithAuth) UpdateValidatorSettings(v *Validator) (
 func (ta *TransactionWithAuth) UpdateAllocation(allocID string, sizeDiff int64,
 	expirationDiff int64, lock uint64) (err error) {
 
-	if lock < 0 {
-		return errors.New("invalid_lock", "lock cannot be negative")
+	if lock > math.MaxInt64 {
+		return errors.New("invalid_lock", "int64 overflow on lock value")
 	}
 
 	type updateAllocationRequest struct {
@@ -317,8 +318,8 @@ func (ta *TransactionWithAuth) UpdateAllocation(allocID string, sizeDiff int64,
 func (ta *TransactionWithAuth) WritePoolLock(allocID, blobberID string,
 	duration int64, lock uint64) (err error) {
 
-	if lock < 0 {
-		return errors.New("invalid_lock", "lock cannot be negative")
+	if lock > math.MaxInt64 {
+		return errors.New("invalid_lock", "int64 overflow on lock value")
 	}
 
 	type lockRequest struct {
