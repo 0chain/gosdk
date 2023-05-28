@@ -22,60 +22,6 @@ type AuthResponse struct {
 	Jwt string `json:"jwt"`
 }
 
-type Container struct {
-	Command    string `json:"Command"`
-	Created    int64  `json:"Created"`
-	HostConfig struct {
-		NetworkMode string `json:"NetworkMode"`
-	} `json:"HostConfig"`
-	ID      string            `json:"Id"`
-	Image   string            `json:"Image"`
-	ImageID string            `json:"ImageID"`
-	Labels  map[string]string `json:"Labels"`
-	Mounts  []struct {
-		Destination string `json:"Destination"`
-		Mode        string `json:"Mode"`
-		Propagation string `json:"Propagation"`
-		RW          bool   `json:"RW"`
-		Source      string `json:"Source"`
-		Type        string `json:"Type"`
-	} `json:"Mounts"`
-	Names           []string `json:"Names"`
-	NetworkSettings struct {
-		Networks map[string]struct {
-			Aliases             interface{} `json:"Aliases"`
-			DriverOpts          interface{} `json:"DriverOpts"`
-			EndpointID          string      `json:"EndpointID"`
-			Gateway             string      `json:"Gateway"`
-			GlobalIPv6Address   string      `json:"GlobalIPv6Address"`
-			GlobalIPv6PrefixLen int         `json:"GlobalIPv6PrefixLen"`
-			IPAMConfig          interface{} `json:"IPAMConfig"`
-			IPAddress           string      `json:"IPAddress"`
-			IPPrefixLen         int         `json:"IPPrefixLen"`
-			IPv6Gateway         string      `json:"IPv6Gateway"`
-			Links               interface{} `json:"Links"`
-			MacAddress          string      `json:"MacAddress"`
-			NetworkID           string      `json:"NetworkID"`
-		} `json:"Networks"`
-	} `json:"NetworkSettings"`
-	Portainer struct {
-		ResourceControl struct {
-			ID                 int           `json:"Id"`
-			ResourceID         string        `json:"ResourceId"`
-			SubResourceIds     []string      `json:"SubResourceIds"`
-			Type               int           `json:"Type"`
-			UserAccesses       []interface{} `json:"UserAccesses"`
-			TeamAccesses       []interface{} `json:"TeamAccesses"`
-			Public             bool          `json:"Public"`
-			AdministratorsOnly bool          `json:"AdministratorsOnly"`
-			System             bool          `json:"System"`
-		} `json:"ResourceControl"`
-	} `json:"Portainer"`
-	Ports  []interface{} `json:"Ports"`
-	State  string        `json:"State"`
-	Status string        `json:"Status"`
-}
-
 type Endpoint struct {
 	Id int `json:"Id"`
 }
@@ -162,7 +108,7 @@ func UpdateContainer(username, password, domain, containerID, NewImageID string)
 }
 
 // GetContainers returns all the running containers
-func GetContainers(username, password, domain string) ([]*Container, error) {
+func GetContainers(username, password, domain string) ([]*map[string]interface{}, error) {
 	authToken, err := getToken(username, password, domain)
 	if err != nil {
 		return nil, err
@@ -182,7 +128,7 @@ func GetContainers(username, password, domain string) ([]*Container, error) {
 		return nil, err
 	}
 	if status == http.StatusOK {
-		var containers []*Container
+		var containers []*map[string]interface{}
 		err = json.Unmarshal(body, &containers)
 		if err != nil {
 			sdkLogger.Error("Error decoding JSON:", err)
@@ -194,7 +140,7 @@ func GetContainers(username, password, domain string) ([]*Container, error) {
 }
 
 // SearchContainer search a container with a given name
-func SearchContainer(username, password, domain, name string) ([]*Container, error) {
+func SearchContainer(username, password, domain, name string) ([]*map[string]interface{}, error) {
 	authToken, err := getToken(username, password, domain)
 	if err != nil {
 		return nil, err
@@ -256,13 +202,13 @@ func getContainer(authToken, domain, endpointID, containerID string) (map[string
 	return nil, fmt.Errorf("returned response %d. Body: %s", status, string(body))
 }
 
-func searchContainerInternal(authToken, url string) ([]*Container, error) {
+func searchContainerInternal(authToken, url string) ([]*map[string]interface{}, error) {
 	body, status, err := doGetRequest(authToken, url)
 	if err != nil {
 		return nil, err
 	}
 	if status == http.StatusOK {
-		var containers []*Container
+		var containers []*map[string]interface{}
 		err = json.Unmarshal(body, &containers)
 		if err != nil {
 			fmt.Println("Error decoding JSON:", err)
@@ -388,6 +334,16 @@ func startContainer(authToken, domain, containerID, endpointID string) error {
 	return doPostRequest(url, authToken)
 }
 
+func generateContainerObj(container map[string]interface{}) (Body, error) {
+	// var config = angular.copy($scope.config);
+
+	var config Body
+
+	config = container["Config"].(Body)
+	config.HostConfig = container["HostConfig"].(HostConfig)
+	return config, nil
+}
+
 func createContainer(authToken, url string, container map[string]interface{}) (string, error) {
 	reqBodyJSON, err := json.Marshal(container)
 	if err != nil {
@@ -420,4 +376,113 @@ func createContainer(authToken, url string, container map[string]interface{}) (s
 		return "", fmt.Errorf("got responsebody %s, with statuscode %d", string(body), status)
 	}
 	return "", fmt.Errorf(respMsg.Message)
+}
+
+type Body struct {
+	Hostname         string                 `json:"Hostname"`
+	Domainname       string                 `json:"Domainname"`
+	User             string                 `json:"User"`
+	AttachStdin      bool                   `json:"AttachStdin"`
+	AttachStdout     bool                   `json:"AttachStdout"`
+	AttachStderr     bool                   `json:"AttachStderr"`
+	Tty              bool                   `json:"Tty"`
+	OpenStdin        bool                   `json:"OpenStdin"`
+	StdinOnce        bool                   `json:"StdinOnce"`
+	Env              []string               `json:"Env"`
+	Cmd              []string               `json:"Cmd"`
+	Entrypoint       string                 `json:"Entrypoint"`
+	Image            string                 `json:"Image"`
+	Labels           map[string]string      `json:"Labels"`
+	Volumes          map[string]interface{} `json:"Volumes"`
+	WorkingDir       string                 `json:"WorkingDir"`
+	NetworkDisabled  bool                   `json:"NetworkDisabled"`
+	MacAddress       string                 `json:"MacAddress"`
+	ExposedPorts     map[string]interface{} `json:"ExposedPorts"`
+	StopSignal       string                 `json:"StopSignal"`
+	StopTimeout      int                    `json:"StopTimeout"`
+	HostConfig       HostConfig             `json:"HostConfig"`
+	NetworkingConfig NetworkingConfig       `json:"NetworkingConfig"`
+}
+
+type HostConfig struct {
+	Binds                []string                 `json:"Binds"`
+	Links                []string                 `json:"Links"`
+	Memory               int                      `json:"Memory"`
+	MemorySwap           int                      `json:"MemorySwap"`
+	MemoryReservation    int                      `json:"MemoryReservation"`
+	KernelMemory         int                      `json:"KernelMemory"`
+	NanoCpus             int                      `json:"NanoCpus"`
+	CpuPercent           int                      `json:"CpuPercent"`
+	CpuShares            int                      `json:"CpuShares"`
+	CpuPeriod            int                      `json:"CpuPeriod"`
+	CpuRealtimePeriod    int                      `json:"CpuRealtimePeriod"`
+	CpuRealtimeRuntime   int                      `json:"CpuRealtimeRuntime"`
+	CpuQuota             int                      `json:"CpuQuota"`
+	CpusetCpus           string                   `json:"CpusetCpus"`
+	CpusetMems           string                   `json:"CpusetMems"`
+	MaximumIOps          int                      `json:"MaximumIOps"`
+	MaximumIOBps         int                      `json:"MaximumIOBps"`
+	BlkioWeight          int                      `json:"BlkioWeight"`
+	BlkioWeightDevice    []interface{}            `json:"BlkioWeightDevice"`
+	BlkioDeviceReadBps   []interface{}            `json:"BlkioDeviceReadBps"`
+	BlkioDeviceReadIOps  []interface{}            `json:"BlkioDeviceReadIOps"`
+	BlkioDeviceWriteBps  []interface{}            `json:"BlkioDeviceWriteBps"`
+	BlkioDeviceWriteIOps []interface{}            `json:"BlkioDeviceWriteIOps"`
+	MemorySwappiness     int                      `json:"MemorySwappiness"`
+	OomKillDisable       bool                     `json:"OomKillDisable"`
+	OomScoreAdj          int                      `json:"OomScoreAdj"`
+	PidMode              string                   `json:"PidMode"`
+	PidsLimit            int                      `json:"PidsLimit"`
+	PortBindings         map[string][]PortBinding `json:"PortBindings"`
+	PublishAllPorts      bool                     `json:"PublishAllPorts"`
+	Privileged           bool                     `json:"Privileged"`
+	ReadonlyRootfs       bool                     `json:"ReadonlyRootfs"`
+	Dns                  []string                 `json:"Dns"`
+	DnsOptions           []string                 `json:"DnsOptions"`
+	DnsSearch            []string                 `json:"DnsSearch"`
+	VolumesFrom          []string                 `json:"VolumesFrom"`
+	CapAdd               []string                 `json:"CapAdd"`
+	CapDrop              []string                 `json:"CapDrop"`
+	GroupAdd             []string                 `json:"GroupAdd"`
+	RestartPolicy        RestartPolicy            `json:"RestartPolicy"`
+	AutoRemove           bool                     `json:"AutoRemove"`
+	NetworkMode          string                   `json:"NetworkMode"`
+	Devices              []interface{}            `json:"Devices"`
+	Ulimits              []interface{}            `json:"Ulimits"`
+	LogConfig            LogConfig                `json:"LogConfig"`
+	SecurityOpt          []interface{}            `json:"SecurityOpt"`
+	StorageOpt           map[string]interface{}   `json:"StorageOpt"`
+	CgroupParent         string                   `json:"CgroupParent"`
+	VolumeDriver         string                   `json:"VolumeDriver"`
+	ShmSize              int                      `json:"ShmSize"`
+}
+
+type PortBinding struct {
+	HostPort string `json:"HostPort"`
+}
+
+type RestartPolicy struct {
+	Name              string `json:"Name"`
+	MaximumRetryCount int    `json:"MaximumRetryCount"`
+}
+
+type LogConfig struct {
+	Type   string                 `json:"Type"`
+	Config map[string]interface{} `json:"Config"`
+}
+
+type NetworkingConfig struct {
+	EndpointsConfig map[string]EndpointConfig `json:"EndpointsConfig"`
+}
+
+type EndpointConfig struct {
+	IPAMConfig IPAMConfig `json:"IPAMConfig"`
+	Links      []string   `json:"Links"`
+	Aliases    []string   `json:"Aliases"`
+}
+
+type IPAMConfig struct {
+	IPv4Address  string   `json:"IPv4Address"`
+	IPv6Address  string   `json:"IPv6Address"`
+	LinkLocalIPs []string `json:"LinkLocalIPs"`
 }
