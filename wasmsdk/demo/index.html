@@ -109,6 +109,7 @@
     <button id="btnShare">Share</button>
     <button id="btnGetContainers">getcontainers</button>
     <button id="btnUpdateContainer">updatecontainer</button>
+    <button id="btnSearchContainer">searchcontainer</button>
 
     <br>
 
@@ -657,11 +658,24 @@
       const password = "manoharmanohar"
       const image = "0chaindev/blobber:staging"
       try {
-        const stats = await goWasm.sdk.updatecontainer(username, password, domain, containerid, image)
+        await goWasm.sdk.updatecontainer(username, password, domain, containerid, image)
       }  catch (e) {
         alert(e)
       }
-  })
+    })
+
+    onClick('btnSearchContainer', async () => {
+        const domain = "https://chimneysho8r.zus.network"
+        const username = "admin"
+        const password = "manoharmanohar"
+        const containername = "blobber_validator"
+        try {
+          const stats = await goWasm.sdk.searchcontainer(username, password, domain, containername)
+          txtOutput.innerHTML = JSON.stringify(stats, null, 2)
+        }  catch (e) {
+          alert(e)
+        }
+    })
 
   </script>
 </body>

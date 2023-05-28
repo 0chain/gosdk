@@ -60,15 +60,15 @@ type Container struct {
 	} `json:"NetworkSettings"`
 	Portainer struct {
 		ResourceControl struct {
-			ID                 int      `json:"Id"`
-			ResourceID         string   `json:"ResourceId"`
-			SubResourceIds     []string `json:"SubResourceIds"`
-			Type               int      `json:"Type"`
-			UserAccesses       []string `json:"UserAccesses"`
-			TeamAccesses       []string `json:"TeamAccesses"`
-			Public             bool     `json:"Public"`
-			AdministratorsOnly bool     `json:"AdministratorsOnly"`
-			System             bool     `json:"System"`
+			ID                 int           `json:"Id"`
+			ResourceID         string        `json:"ResourceId"`
+			SubResourceIds     []string      `json:"SubResourceIds"`
+			Type               int           `json:"Type"`
+			UserAccesses       []interface{} `json:"UserAccesses"`
+			TeamAccesses       []interface{} `json:"TeamAccesses"`
+			Public             bool          `json:"Public"`
+			AdministratorsOnly bool          `json:"AdministratorsOnly"`
+			System             bool          `json:"System"`
 		} `json:"ResourceControl"`
 	} `json:"Portainer"`
 	Ports  []interface{} `json:"Ports"`
@@ -108,6 +108,155 @@ func getEndpointId(authToken, domain string) (int, error) {
 
 	return 0, fmt.Errorf("empty endpoints returned")
 }
+
+// --- exposed functions ---
+// UpdateContainer update the given container ID with a new image
+func UpdateContainer(username, password, domain, containerID, NewImageID string) error {
+	sdkLogger.Info("getting authtoken")
+	authToken, err := getToken(username, password, domain)
+	if err != nil {
+		return err
+	}
+
+	// get endpoint ID
+	id, err := getEndpointId(authToken, domain)
+	if err != nil {
+		return err
+	}
+	endpointID := fmt.Sprintf("/%d", id)
+
+	sdkLogger.Info("pull the new image")
+	url := domain + ENDPOINTS + endpointID + PULLIMAGE + NewImageID
+	err = pullImage(authToken, domain, url)
+	if err != nil {
+		return err
+	}
+
+	// stopContainer
+	sdkLogger.Info("stopContainer")
+	url = domain + ENDPOINTS + endpointID + CONTAINERS + containerID + "/stop"
+	err = stopContainer(authToken, domain, url)
+	if err != nil {
+		return err
+	}
+
+	sdkLogger.Info("SearchContainer")
+	url = domain + ENDPOINTS + endpointID + CONTAINERS + fmt.Sprintf("json?all=1&filters={\"id\":[\"%s\"]}", containerID)
+	containers, err := searchContainerInternal(authToken, url)
+	if err != nil {
+		return err
+	}
+
+	var containerName string
+	var container *Container
+	if len(containers) > 0 {
+		container = containers[0]
+		if len(container.Names) > 0 {
+			containerName = container.Names[0]
+		} else {
+			return fmt.Errorf("could not find container name")
+		}
+	}
+
+	// renameContainer
+	sdkLogger.Info("renameContainer")
+	url = domain + ENDPOINTS + endpointID + CONTAINERS + containerID + "/rename?name=" + containerName + "-old"
+	err = renameContainer(authToken, url)
+	if err != nil {
+		return err
+	}
+
+	// createContainer
+	sdkLogger.Info("CreateContainer")
+	container.Image = NewImageID
+	url = domain + ENDPOINTS + endpointID + CONTAINERS + "/create?name=" + containerName
+	newContainerID, err := createContainer(authToken, url, container)
+	if err != nil {
+		return err
+	}
+
+	// startContainer //204 no content
+	sdkLogger.Info("StartContainer", newContainerID)
+	err = startContainer(authToken, domain, newContainerID, endpointID)
+	if err != nil {
+		return err
+	}
+
+	// delete old old container
+	sdkLogger.Info("delete old container")
+	err = deleteContainer(authToken, domain, containerID, endpointID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func GetContainers(username, password, domain string) ([]*Container, error) {
+	authToken, err := getToken(username, password, domain)
+	if err != nil {
+		return nil, err
+	}
+
+	id, err := getEndpointId(authToken, domain)
+	if err != nil {
+		return nil, err
+	}
+
+	endpointID := fmt.Sprintf("/%d", id)
+	domain = strings.TrimRight(domain, "/")
+	url := domain + ENDPOINTS + endpointID + CONTAINERS + "json?all=1"
+	body, _, err := doGetRequest(authToken, url)
+	if err != nil {
+		sdkLogger.Error("Error reading response body:", err)
+		return nil, err
+	}
+	var containers []*Container
+	err = json.Unmarshal(body, &containers)
+	if err != nil {
+		sdkLogger.Error("Error decoding JSON:", err)
+		return nil, err
+	}
+	return containers, nil
+}
+
+// SearchContainer search a container with a given name
+func SearchContainer(username, password, domain, name string) ([]*Container, error) {
+	authToken, err := getToken(username, password, domain)
+	if err != nil {
+		return nil, err
+	}
+
+	id, err := getEndpointId(authToken, domain)
+	if err != nil {
+		return nil, err
+	}
+	endpointID := fmt.Sprintf("/%d", id)
+	domain = strings.TrimRight(domain, "/")
+
+	url := domain + ENDPOINTS + endpointID + CONTAINERS + fmt.Sprintf("json?all=1&filters={\"name\":[\"^/%s*\"]}", name)
+	return searchContainerInternal(authToken, url)
+}
+
+func searchContainerInternal(authToken, url string) ([]*Container, error) {
+	body, _, err := doGetRequest(authToken, url)
+	if err != nil {
+		return nil, err
+	}
+	if err != nil {
+		fmt.Println("Error reading response body:", err)
+		return nil, err
+	}
+	var containers []*Container
+	err = json.Unmarshal(body, &containers)
+	if err != nil {
+		fmt.Println("Error decoding JSON:", err)
+		return nil, err
+	}
+	return containers, err
+}
+
+// --- helper functions ----
 
 // GetContainers the containers present on the given hostmachine
 func getToken(username, password, domain string) (string, error) {
@@ -164,34 +313,6 @@ func doHTTPRequest(method, url, authToken string, body io.Reader) ([]byte, int, 
 	return respBody, resp.StatusCode, err
 }
 
-func GetContainers(username, password, domain string) ([]*Container, error) {
-	authToken, err := getToken(username, password, domain)
-	if err != nil {
-		return nil, err
-	}
-
-	id, err := getEndpointId(authToken, domain)
-	if err != nil {
-		return nil, err
-	}
-
-	endpointID := fmt.Sprintf("/%d", id)
-	domain = strings.TrimRight(domain, "/")
-	url := domain + ENDPOINTS + endpointID + CONTAINERS + "json?all=1"
-	body, _, err := doGetRequest(authToken, url)
-	if err != nil {
-		sdkLogger.Error("Error reading response body:", err)
-		return nil, err
-	}
-	var containers []*Container
-	err = json.Unmarshal(body, &containers)
-	if err != nil {
-		sdkLogger.Error("Error decoding JSON:", err)
-		return nil, err
-	}
-	return containers, nil
-}
-
 func doPostRequest(url, authToken string) error {
 
 	body, statusCode, err := doHTTPRequest("POST", url, authToken, nil)
@@ -232,29 +353,6 @@ func deleteContainer(authToken, domain, containerID, endpointID string) error {
 	}
 
 	return fmt.Errorf(respMsg.Message)
-}
-
-func searchContainer(authToken, domain, containerID, url string) ([]*Container, error) {
-	body, _, err := doGetRequest(authToken, url)
-	if err != nil {
-		return nil, err
-	}
-	if err != nil {
-		fmt.Println("Error reading response body:", err)
-		return nil, err
-	}
-	var containers []*Container
-	err = json.Unmarshal(body, &containers)
-	if err != nil {
-		fmt.Println("Error decoding JSON:", err)
-		return nil, err
-	}
-
-	if len(containers) != 1 {
-		return nil, fmt.Errorf("expected containers with ID: %s are 1. Current containers: %d", containerID, len(containers))
-	}
-
-	return containers, err
 }
 
 func pullImage(authToken, domain, url string) error {
@@ -324,83 +422,4 @@ func createContainer(authToken, url string, container *Container) (string, error
 		return "", fmt.Errorf("got responsebody %s, with statuscode %d", string(responseBody), resp.StatusCode)
 	}
 	return "", fmt.Errorf(respMsg.Message)
-}
-
-// UpdateContainer update the given container ID with a new image
-func UpdateContainer(username, password, domain, containerID, NewImageID string) error {
-	sdkLogger.Info("getting authtoken")
-	authToken, err := getToken(username, password, domain)
-	if err != nil {
-		return err
-	}
-
-	// get endpoint ID
-	id, err := getEndpointId(authToken, domain)
-	if err != nil {
-		return err
-	}
-	endpointID := fmt.Sprintf("/%d", id)
-
-	sdkLogger.Info("pull the new image")
-	url := domain + ENDPOINTS + endpointID + PULLIMAGE + NewImageID
-	err = pullImage(authToken, domain, url)
-	if err != nil {
-		return err
-	}
-
-	// stopContainer
-	sdkLogger.Info("stopContainer")
-	url = domain + ENDPOINTS + endpointID + CONTAINERS + containerID + "/stop"
-	err = stopContainer(authToken, domain, url)
-	if err != nil {
-		return err
-	}
-
-	sdkLogger.Info("SearchContainer")
-	url = domain + ENDPOINTS + endpointID + CONTAINERS + fmt.Sprintf("json?all=1&filters={\"id\":[\"%s\"]}", containerID)
-	containers, err := searchContainer(authToken, domain, containerID, url)
-	if err != nil {
-		return err
-	}
-
-	var containerName string
-	container := containers[0]
-	if len(container.Names) > 0 {
-		containerName = container.Names[0]
-	} else {
-		return fmt.Errorf("could not find container name")
-	}
-
-	// renameContainer
-	sdkLogger.Info("renameContainer")
-	url = domain + ENDPOINTS + endpointID + CONTAINERS + containerID + "/rename?name=" + containerName + "-old"
-	err = renameContainer(authToken, url)
-	if err != nil {
-		return err
-	}
-
-	// createContainer
-	sdkLogger.Info("CreateContainer")
-	container.Image = NewImageID
-	url = domain + ENDPOINTS + endpointID + CONTAINERS + "/create?name=" + containerName
-	newContainerID, err := createContainer(authToken, url, container)
-	if err != nil {
-		return err
-	}
-
-	// startContainer //204 no content
-	sdkLogger.Info("StartContainer", newContainerID)
-	err = startContainer(authToken, domain, newContainerID, endpointID)
-	if err != nil {
-		return err
-	}
-
-	// delete old old container
-	sdkLogger.Info("delete old container")
-	err = deleteContainer(authToken, domain, containerID, endpointID)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }

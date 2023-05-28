@@ -176,6 +176,7 @@ func main() {
 				"getBlobbers":           getBlobbers,
 				"getcontainers":         GetContainers,
 				"updatecontainer":       UpdateContainer,
+				"searchcontainer":       SearchContainer,
 
 				// player
 				"play":           play,
