@@ -35,76 +35,79 @@ const (
 
 // --- exposed functions ---
 // UpdateContainer update the given container ID with a new image
-func UpdateContainer(username, password, domain, containerID, NewImageID string) error {
+func UpdateContainer(username, password, domain, containerID, NewImageID string) (map[string]interface{}, error) {
 	sdkLogger.Info("getting authtoken")
 	authToken, err := getToken(username, password, domain)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// get endpoint ID
 	id, err := getEndpointId(authToken, domain)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	endpointID := fmt.Sprintf("/%d", id)
 
 	sdkLogger.Info("pull the new image")
 	url := domain + ENDPOINTS + endpointID + PULLIMAGE + NewImageID
-	err = pullImage(authToken, domain, url)
+	_, err = pullImage(authToken, domain, url)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// stopContainer
 	sdkLogger.Info("stopContainer")
 	url = domain + ENDPOINTS + endpointID + CONTAINERS + containerID + "/stop"
-	err = stopContainer(authToken, domain, url)
+	_, err = stopContainer(authToken, domain, url)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	sdkLogger.Info("get Container by ID")
 	container, err := getContainer(authToken, domain, endpointID, containerID)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	containerName := container["Name"].(string)
-	container["Image"] = NewImageID
+	containerName := container.Name
+	containerReq, err := generateContainerObj(container)
+	if err != nil {
+		return nil, err
+	}
 
 	// renameContainer
 	sdkLogger.Info("renameContainer")
 	url = domain + ENDPOINTS + endpointID + CONTAINERS + containerID + "/rename?name=" + containerName + "-old"
-	err = renameContainer(authToken, url)
+	_, err = renameContainer(authToken, url)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// createContainer
 	sdkLogger.Info("CreateContainer")
-	container["Image"] = NewImageID
+	containerReq.Image = NewImageID
 
 	url = domain + ENDPOINTS + endpointID + CONTAINERS + "/create?name=" + containerName
-	newContainerID, err := createContainer(authToken, url, container)
+	newContainerID, err := createContainer(authToken, url, containerReq)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// startContainer //204 no content
 	sdkLogger.Info("StartContainer", newContainerID)
-	err = startContainer(authToken, domain, newContainerID, endpointID)
+	startContResp, err := startContainer(authToken, domain, newContainerID, endpointID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// delete old old container
 	sdkLogger.Info("delete old container")
 	err = deleteContainer(authToken, domain, containerID, endpointID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return startContResp, nil
 }
 
 // GetContainers returns all the running containers
@@ -183,7 +186,7 @@ func getEndpointId(authToken, domain string) (int, error) {
 }
 
 // getContainer gets a container object by ID
-func getContainer(authToken, domain, endpointID, containerID string) (map[string]interface{}, error) {
+func getContainer(authToken, domain, endpointID, containerID string) (*GetContainerResp, error) {
 	url := domain + ENDPOINTS + endpointID + CONTAINERS + containerID + "/json"
 	body, status, err := doGetRequest(authToken, url)
 	if err != nil {
@@ -191,13 +194,13 @@ func getContainer(authToken, domain, endpointID, containerID string) (map[string
 	}
 
 	if status == http.StatusOK {
-		var container map[string]interface{}
+		var container GetContainerResp
 		err = json.Unmarshal(body, &container)
 		if err != nil {
 			sdkLogger.Error("Error decoding JSON:", err)
 			return nil, err
 		}
-		return container, nil
+		return &container, nil
 	}
 	return nil, fmt.Errorf("returned response %d. Body: %s", status, string(body))
 }
@@ -264,6 +267,7 @@ func doHTTPRequest(method, url, authToken string, body io.Reader) ([]byte, int, 
 
 	req.Header.Set("Authorization", authToken)
 	req.Header.Set("Connection", "keep-alive")
+	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -276,13 +280,21 @@ func doHTTPRequest(method, url, authToken string, body io.Reader) ([]byte, int, 
 	return respBody, resp.StatusCode, err
 }
 
-func doPostRequest(url, authToken string) error {
+func doPostRequest(url, authToken string) (map[string]interface{}, error) {
 	body, statusCode, err := doHTTPRequest("POST", url, authToken, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
+
 	if statusCode == http.StatusOK || statusCode == http.StatusNoContent || statusCode == http.StatusNotModified {
-		return nil
+		var resp map[string]interface{}
+		err = json.Unmarshal(body, &resp)
+		if err != nil {
+			// ignore if unmarhalling fails
+			sdkLogger.Info("failed to unmarshall:", err)
+			return nil, nil
+		}
+		return resp, nil
 	}
 
 	var respMsg struct {
@@ -290,10 +302,10 @@ func doPostRequest(url, authToken string) error {
 	}
 	err = json.Unmarshal(body, &respMsg)
 	if err != nil {
-		return fmt.Errorf("got responsebody %s, with statuscode %d", string(body), statusCode)
+		return nil, fmt.Errorf("got responsebody %s, with statuscode %d", string(body), statusCode)
 	}
 
-	return fmt.Errorf(respMsg.Message)
+	return nil, fmt.Errorf(respMsg.Message)
 }
 
 func deleteContainer(authToken, domain, containerID, endpointID string) error {
@@ -317,34 +329,38 @@ func deleteContainer(authToken, domain, containerID, endpointID string) error {
 	return fmt.Errorf(respMsg.Message)
 }
 
-func pullImage(authToken, domain, url string) error {
+func pullImage(authToken, domain, url string) (map[string]interface{}, error) {
 	return doPostRequest(url, authToken)
 }
 
-func stopContainer(authToken, domain, url string) error {
+func stopContainer(authToken, domain, url string) (map[string]interface{}, error) {
 	return doPostRequest(url, authToken)
 }
 
-func renameContainer(authToken, url string) error {
+func renameContainer(authToken, url string) (map[string]interface{}, error) {
 	return doPostRequest(url, authToken)
 }
 
-func startContainer(authToken, domain, containerID, endpointID string) error {
+func startContainer(authToken, domain, containerID, endpointID string) (map[string]interface{}, error) {
 	url := domain + ENDPOINTS + endpointID + CONTAINERS + containerID + "/start"
 	return doPostRequest(url, authToken)
 }
 
-func generateContainerObj(container map[string]interface{}) (Body, error) {
-	// var config = angular.copy($scope.config);
-
-	var config Body
-
-	config = container["Config"].(Body)
-	config.HostConfig = container["HostConfig"].(HostConfig)
-	return config, nil
+type GetContainerResp struct {
+	Config     Body       `json:"Config"`
+	HostConfig HostConfig `json:"HostConfig"`
+	Name       string     `json:"Name"`
 }
 
-func createContainer(authToken, url string, container map[string]interface{}) (string, error) {
+func generateContainerObj(container *GetContainerResp) (*Body, error) {
+	// var config = angular.copy($scope.config);
+	var config Body
+	config = container.Config
+	config.HostConfig = container.HostConfig
+	return &config, nil
+}
+
+func createContainer(authToken, url string, container *Body) (string, error) {
 	reqBodyJSON, err := json.Marshal(container)
 	if err != nil {
 		sdkLogger.Error("Error marshaling request body:", err)

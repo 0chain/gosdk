@@ -652,13 +652,14 @@
     })
 
     onClick('btnUpdateContainer', async () => {
-      const containerid = "e9598977e6af4de476761e6cf831624c160445ee31835ef72d80dc6a160aab34"
+      const containerid = "38f6fc5260b25dbc867f05d44ef9536e3d1d59f5cb63efc59bde98011af51421"
       const domain = "https://chimneysho8r.zus.network"
       const username = "admin"
       const password = "manoharmanohar"
       const image = "0chaindev/blobber:staging"
       try {
-        await goWasm.sdk.updatecontainer(username, password, domain, containerid, image)
+        const stats = await goWasm.sdk.updatecontainer(username, password, domain, containerid, image)
+        txtOutput.innerHTML = JSON.stringify(stats, null, 2)
       }  catch (e) {
         alert(e)
       }
