@@ -87,29 +87,6 @@ const (
 	PULLIMAGE  = "/docker/images/create?fromImage="
 )
 
-func getEndpointId(authToken, domain string) (int, error) {
-	url := domain + ENDPOINTS
-	body, status, err := doGetRequest(authToken, url)
-	if err != nil {
-		sdkLogger.Error("Error reading response body:", err)
-		return 0, err
-	}
-
-	var endpoints []Endpoint
-	if status == http.StatusOK {
-		err = json.Unmarshal(body, &endpoints)
-		if err != nil {
-			sdkLogger.Error("Error decoding endpoints:", err)
-			return 0, err
-		}
-
-		if len(endpoints) > 0 {
-			return endpoints[0].Id, nil
-		}
-	}
-	return 0, fmt.Errorf("returned response %d. Body: %s", status, string(body))
-}
-
 // --- exposed functions ---
 // UpdateContainer update the given container ID with a new image
 func UpdateContainer(username, password, domain, containerID, NewImageID string) error {
@@ -236,6 +213,29 @@ func SearchContainer(username, password, domain, name string) ([]*Container, err
 
 // --- helper functions ----
 
+func getEndpointId(authToken, domain string) (int, error) {
+	url := domain + ENDPOINTS
+	body, status, err := doGetRequest(authToken, url)
+	if err != nil {
+		sdkLogger.Error("Error reading response body:", err)
+		return 0, err
+	}
+
+	var endpoints []Endpoint
+	if status == http.StatusOK {
+		err = json.Unmarshal(body, &endpoints)
+		if err != nil {
+			sdkLogger.Error("Error decoding endpoints:", err)
+			return 0, err
+		}
+
+		if len(endpoints) > 0 {
+			return endpoints[0].Id, nil
+		}
+	}
+	return 0, fmt.Errorf("returned response %d. Body: %s", status, string(body))
+}
+
 // getContainer gets a container object by ID
 func getContainer(authToken, domain, endpointID, containerID string) (map[string]interface{}, error) {
 	url := domain + ENDPOINTS + endpointID + CONTAINERS + containerID + "/json"
@@ -273,7 +273,6 @@ func searchContainerInternal(authToken, url string) ([]*Container, error) {
 	return nil, fmt.Errorf("returned response %d. Body: %s", status, string(body))
 }
 
-// GetContainers the containers present on the given hostmachine
 func getToken(username, password, domain string) (string, error) {
 	// get AuthToken
 	authData := AuthRequest{
@@ -396,46 +395,29 @@ func createContainer(authToken, url string, container map[string]interface{}) (s
 		return "", err
 	}
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(reqBodyJSON))
+	body, status, err := doHTTPRequest("POST", url, authToken, bytes.NewBuffer(reqBodyJSON))
 	if err != nil {
-		sdkLogger.Error("Error creating HTTP request:", err)
 		return "", err
 	}
 
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", authToken)
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		sdkLogger.Error("Error creating HTTP request:", err)
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	responseBody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		sdkLogger.Error("Error reading response body:", err)
-		return "", err
-	}
-
-	if resp.StatusCode == http.StatusOK {
+	if status == http.StatusOK {
 		var respMsg struct {
 			Id string `json:"Id"`
 		}
-		err = json.Unmarshal(responseBody, &respMsg)
+		err = json.Unmarshal(body, &respMsg)
 		if err != nil {
 			sdkLogger.Error("Error decoding JSON:", err)
 			return "", err
 		}
 		return respMsg.Id, nil
 	}
+
 	var respMsg struct {
 		Message string `json:"message"`
 	}
-	err = json.Unmarshal(responseBody, &respMsg)
+	err = json.Unmarshal(body, &respMsg)
 	if err != nil {
-		return "", fmt.Errorf("got responsebody %s, with statuscode %d", string(responseBody), resp.StatusCode)
+		return "", fmt.Errorf("got responsebody %s, with statuscode %d", string(body), status)
 	}
 	return "", fmt.Errorf(respMsg.Message)
 }
