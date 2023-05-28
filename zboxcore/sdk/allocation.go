@@ -539,6 +539,7 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, thumb
 	}
 	logger.Logger.Info("Multi-upload done")
 	wg.Wait()
+	status.Completed(a.ID, "", "", "", 0, OpUpload)
 	return nil
 }
 
