@@ -195,6 +195,8 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode, pos u
 		return err, false
 	}
 
+	l.Logger.Info("jayash Req : ", req)
+
 	formWriter.Close()
 	httpreq, err := zboxutil.NewCreateDirRequest(blobber.Baseurl, req.allocationID, req.allocationTx, body)
 	if err != nil {
