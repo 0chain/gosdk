@@ -184,26 +184,7 @@ func UpdateContainer(username, password, domain, containerID, NewImageID string)
 	return nil
 }
 
-// getContainer gets a container object by ID
-func getContainer(authToken, domain, endpointID, containerID string) (map[string]interface{}, error) {
-	url := domain + ENDPOINTS + endpointID + CONTAINERS + containerID + "/json"
-	body, status, err := doGetRequest(authToken, url)
-	if err != nil {
-		return nil, err
-	}
-
-	if status == http.StatusOK {
-		var container map[string]interface{}
-		err = json.Unmarshal(body, &container)
-		if err != nil {
-			sdkLogger.Error("Error decoding JSON:", err)
-			return nil, err
-		}
-		return container, nil
-	}
-	return nil, fmt.Errorf("returned response %d. Body: %s", status, string(body))
-}
-
+// GetContainers returns all the running containers
 func GetContainers(username, password, domain string) ([]*Container, error) {
 	authToken, err := getToken(username, password, domain)
 	if err != nil {
@@ -218,18 +199,21 @@ func GetContainers(username, password, domain string) ([]*Container, error) {
 	endpointID := fmt.Sprintf("/%d", id)
 	domain = strings.TrimRight(domain, "/")
 	url := domain + ENDPOINTS + endpointID + CONTAINERS + "json?all=1"
-	body, _, err := doGetRequest(authToken, url)
+	body, status, err := doGetRequest(authToken, url)
 	if err != nil {
 		sdkLogger.Error("Error reading response body:", err)
 		return nil, err
 	}
-	var containers []*Container
-	err = json.Unmarshal(body, &containers)
-	if err != nil {
-		sdkLogger.Error("Error decoding JSON:", err)
-		return nil, err
+	if status == http.StatusOK {
+		var containers []*Container
+		err = json.Unmarshal(body, &containers)
+		if err != nil {
+			sdkLogger.Error("Error decoding JSON:", err)
+			return nil, err
+		}
+		return containers, nil
 	}
-	return containers, nil
+	return nil, fmt.Errorf("returned response %d. Body: %s", status, string(body))
 }
 
 // SearchContainer search a container with a given name
@@ -250,25 +234,44 @@ func SearchContainer(username, password, domain, name string) ([]*Container, err
 	return searchContainerInternal(authToken, url)
 }
 
-func searchContainerInternal(authToken, url string) ([]*Container, error) {
-	body, _, err := doGetRequest(authToken, url)
+// --- helper functions ----
+
+// getContainer gets a container object by ID
+func getContainer(authToken, domain, endpointID, containerID string) (map[string]interface{}, error) {
+	url := domain + ENDPOINTS + endpointID + CONTAINERS + containerID + "/json"
+	body, status, err := doGetRequest(authToken, url)
 	if err != nil {
 		return nil, err
 	}
-	if err != nil {
-		fmt.Println("Error reading response body:", err)
-		return nil, err
+
+	if status == http.StatusOK {
+		var container map[string]interface{}
+		err = json.Unmarshal(body, &container)
+		if err != nil {
+			sdkLogger.Error("Error decoding JSON:", err)
+			return nil, err
+		}
+		return container, nil
 	}
-	var containers []*Container
-	err = json.Unmarshal(body, &containers)
-	if err != nil {
-		fmt.Println("Error decoding JSON:", err)
-		return nil, err
-	}
-	return containers, err
+	return nil, fmt.Errorf("returned response %d. Body: %s", status, string(body))
 }
 
-// --- helper functions ----
+func searchContainerInternal(authToken, url string) ([]*Container, error) {
+	body, status, err := doGetRequest(authToken, url)
+	if err != nil {
+		return nil, err
+	}
+	if status == http.StatusOK {
+		var containers []*Container
+		err = json.Unmarshal(body, &containers)
+		if err != nil {
+			fmt.Println("Error decoding JSON:", err)
+			return nil, err
+		}
+		return containers, err
+	}
+	return nil, fmt.Errorf("returned response %d. Body: %s", status, string(body))
+}
 
 // GetContainers the containers present on the given hostmachine
 func getToken(username, password, domain string) (string, error) {
