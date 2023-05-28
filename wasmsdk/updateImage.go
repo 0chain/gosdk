@@ -77,8 +77,8 @@ type Container struct {
 
 const (
 	AUTH       = "/portainer/api/auth"
-	CONTAINERS = "/portainer/api/endpoints/1/docker/containers/"
-	PULLIMAGE  = "/portainer/api/endpoints/1/docker/images/create?fromImage="
+	CONTAINERS = "/portainer/api/endpoints/2/docker/containers/"
+	PULLIMAGE  = "/portainer/api/endpoints/2/docker/images/create?fromImage="
 )
 
 // GetContainers the containers present on the given hostmachine
