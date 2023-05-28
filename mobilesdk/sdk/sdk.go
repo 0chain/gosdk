@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/pkg/errors"
 	"math"
 	"strconv"
 	"strings"
@@ -326,7 +327,7 @@ func (s *StorageSDK) GetVersion() string {
 // UpdateAllocation with new expiry and size
 func (s *StorageSDK) UpdateAllocation(size, expiry int64, allocationID string, lock uint64) (hash string, err error) {
 	if lock > math.MaxInt64 {
-		return "", errors.New("invalid_lock", "int64 overflow on lock value")
+		return "", errors.Errorf("int64 overflow in lock")
 	}
 
 	hash, _, err = sdk.UpdateAllocation(size, expiry, allocationID, lock, true, "", "", false, &sdk.FileOptionsParameters{})
