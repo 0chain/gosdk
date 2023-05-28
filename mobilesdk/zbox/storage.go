@@ -217,7 +217,7 @@ func RepairFile(allocationID, workdir, localPath, remotePath, thumbnailPath stri
 //   - filePathString: space seperated  local full path of files. eg "/usr/local/files/f1.txt /usr/local/files/f2.txt"
 //   - thumbnailPathString: space seperated path for thumbnails. eg "full_path1  full_path3", here there are two spaces
 //     between path1 and path3 because file2 doesn't have thumbnail.
-//   - remotePath:
+//   - remotePath: Path of the remote directory where files will upload
 //
 // ## Outputs
 //   - error

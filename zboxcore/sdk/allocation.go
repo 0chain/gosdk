@@ -451,8 +451,21 @@ func (a *Allocation) EncryptAndUploadFileWithThumbnail(
 }
 
 func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, thumbnailPaths []string, remotePath string, status StatusCallback) error {
+	if len(localPaths) != len(thumbnailPaths) {
+		return errors.New("invalid_value", "length of localpaths and thumbnailpaths must be equal")
+	}
+	if !strings.HasSuffix(remotePath, "/") {
+		return errors.New("invalid_value", "remotePath must be the path of directory")
+	}
+	if !a.isInitialized() {
+		return notInitialized
+	}
+
+	if !a.CanUpload() {
+		return constants.ErrFileOptionNotPermitted
+	}
+
 	totalOperations := len(localPaths)
-	logger.Logger.Info("Total operations: ", totalOperations)
 	if totalOperations == 0 {
 		return nil
 	}
@@ -462,11 +475,11 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, thumb
 		statusBar := &StatusBar{wg: wg}
 		wg.Add(1)
 		fileReader, err := os.Open(localPath)
-		thumbnailPath := thumbnailPaths[idx]
 		if err != nil {
 			return err
 		}
 		defer fileReader.Close()
+		thumbnailPath := thumbnailPaths[idx]
 
 		fileInfo, err := fileReader.Stat()
 		if err != nil {
@@ -484,19 +497,20 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, thumb
 			err = thrown.New("invalid_path", "Path should be valid and absolute")
 			return err
 		}
-		remotePath = zboxutil.GetFullRemotePath(localPath, remotePath)
-
-		_, fileName := pathutil.Split(remotePath)
+		if !strings.HasSuffix(remotePath, "/") {
+			remotePath = remotePath + "/"
+		}
+		fullRemotePath := zboxutil.GetFullRemotePath(localPath, remotePath)
+		_, fileName := pathutil.Split(fullRemotePath)
 		if err != nil {
 			return err
 		}
-
 		fileMeta := FileMeta{
 			Path:       localPath,
 			ActualSize: fileInfo.Size(),
 			MimeType:   mimeType,
 			RemoteName: fileName,
-			RemotePath: remotePath,
+			RemotePath: fullRemotePath,
 		}
 		options := []ChunkedUploadOption{
 			WithStatusCallback(statusBar),
@@ -517,13 +531,14 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, thumb
 		}
 
 	}
-	logger.Logger.Info("Starting multi-upload...");
+	logger.Logger.Info("Starting multi-upload...")
 	err := a.DoMultiOperation(operationRequests)
 	if err != nil {
+		logger.Logger.Error("Error in multi upload ", err.Error())
 		return err
 	}
-	wg.Wait()
 	logger.Logger.Info("Multi-upload done")
+	wg.Wait()
 	return nil
 }
 
@@ -560,14 +575,16 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 	if err != nil {
 		return err
 	}
-
+	fmt.Println("Remote path before clean", remotePath)
 	remotePath = zboxutil.RemoteClean(remotePath)
+	fmt.Println("Remote path after clean", remotePath)
 	isabs := zboxutil.IsRemoteAbs(remotePath)
 	if !isabs {
 		err = thrown.New("invalid_path", "Path should be valid and absolute")
 		return err
 	}
 	remotePath = zboxutil.GetFullRemotePath(localPath, remotePath)
+	fmt.Println("Full remtote path", remotePath)
 
 	_, fileName := pathutil.Split(remotePath)
 
