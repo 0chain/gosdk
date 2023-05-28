@@ -88,14 +88,16 @@ func UpdateContainer(username, password, domain, containerID, NewImageID string)
 	containerReq.Image = NewImageID
 
 	url = domain + ENDPOINTS + endpointID + CONTAINERS + "/create?name=" + containerName
-	newContainerID, err := createContainer(authToken, url, containerReq)
+	newContainer, err := createContainer(authToken, url, containerReq)
 	if err != nil {
 		return nil, err
 	}
 
+	newContainerID := newContainer["Id"].(string)
+
 	// startContainer //204 no content
 	sdkLogger.Info("StartContainer", newContainerID)
-	startContResp, err := startContainer(authToken, domain, newContainerID, endpointID)
+	_, err = startContainer(authToken, domain, newContainerID, endpointID)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +109,7 @@ func UpdateContainer(username, password, domain, containerID, NewImageID string)
 		return nil, err
 	}
 
-	return startContResp, nil
+	return newContainer, nil
 }
 
 // GetContainers returns all the running containers
@@ -280,8 +282,8 @@ func doHTTPRequest(method, url, authToken string, body io.Reader) ([]byte, int, 
 	return respBody, resp.StatusCode, err
 }
 
-func doPostRequest(url, authToken string) (map[string]interface{}, error) {
-	body, statusCode, err := doHTTPRequest("POST", url, authToken, nil)
+func doPostRequest(url, authToken string, reqBody io.Reader) (map[string]interface{}, error) {
+	body, statusCode, err := doHTTPRequest("POST", url, authToken, reqBody)
 	if err != nil {
 		return nil, err
 	}
@@ -330,20 +332,20 @@ func deleteContainer(authToken, domain, containerID, endpointID string) error {
 }
 
 func pullImage(authToken, domain, url string) (map[string]interface{}, error) {
-	return doPostRequest(url, authToken)
+	return doPostRequest(url, authToken, nil)
 }
 
 func stopContainer(authToken, domain, url string) (map[string]interface{}, error) {
-	return doPostRequest(url, authToken)
+	return doPostRequest(url, authToken, nil)
 }
 
 func renameContainer(authToken, url string) (map[string]interface{}, error) {
-	return doPostRequest(url, authToken)
+	return doPostRequest(url, authToken, nil)
 }
 
 func startContainer(authToken, domain, containerID, endpointID string) (map[string]interface{}, error) {
 	url := domain + ENDPOINTS + endpointID + CONTAINERS + containerID + "/start"
-	return doPostRequest(url, authToken)
+	return doPostRequest(url, authToken, nil)
 }
 
 type GetContainerResp struct {
@@ -360,38 +362,14 @@ func generateContainerObj(container *GetContainerResp) (*Body, error) {
 	return &config, nil
 }
 
-func createContainer(authToken, url string, container *Body) (string, error) {
+func createContainer(authToken, url string, container *Body) (map[string]interface{}, error) {
 	reqBodyJSON, err := json.Marshal(container)
 	if err != nil {
 		sdkLogger.Error("Error marshaling request body:", err)
-		return "", err
+		return nil, err
 	}
 
-	body, status, err := doHTTPRequest("POST", url, authToken, bytes.NewBuffer(reqBodyJSON))
-	if err != nil {
-		return "", err
-	}
-
-	if status == http.StatusOK {
-		var respMsg struct {
-			Id string `json:"Id"`
-		}
-		err = json.Unmarshal(body, &respMsg)
-		if err != nil {
-			sdkLogger.Error("Error decoding JSON:", err)
-			return "", err
-		}
-		return respMsg.Id, nil
-	}
-
-	var respMsg struct {
-		Message string `json:"message"`
-	}
-	err = json.Unmarshal(body, &respMsg)
-	if err != nil {
-		return "", fmt.Errorf("got responsebody %s, with statuscode %d", string(body), status)
-	}
-	return "", fmt.Errorf(respMsg.Message)
+	return doPostRequest(url, authToken, bytes.NewBuffer(reqBodyJSON))
 }
 
 type Body struct {
