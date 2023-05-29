@@ -348,10 +348,15 @@ func startContainer(authToken, domain, containerID, endpointID string) (map[stri
 	return doPostRequest(url, authToken, nil)
 }
 
+type NetworkSettings struct {
+	Networks map[string]EndpointConfig `json:"Networks"`
+}
+
 type GetContainerResp struct {
-	Config     Body       `json:"Config"`
-	HostConfig HostConfig `json:"HostConfig"`
-	Name       string     `json:"Name"`
+	Config          Body            `json:"Config"`
+	HostConfig      HostConfig      `json:"HostConfig"`
+	Name            string          `json:"Name"`
+	NetworkSettings NetworkSettings `json:"NetworkSettings"`
 }
 
 func generateContainerObj(container *GetContainerResp) (*Body, error) {
@@ -359,6 +364,7 @@ func generateContainerObj(container *GetContainerResp) (*Body, error) {
 	var config Body
 	config = container.Config
 	config.HostConfig = container.HostConfig
+	config.NetworkingConfig.EndpointsConfig = container.NetworkSettings.Networks
 	return &config, nil
 }
 
