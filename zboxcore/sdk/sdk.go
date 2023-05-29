@@ -943,6 +943,10 @@ func CreateAllocation(datashards, parityshards int, size, expiry int64,
 	readPrice, writePrice PriceRange, lock uint64, thirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters) (
 	string, int64, *transaction.Transaction, error) {
 
+	if lock > math.MaxInt64 {
+		return "", 0, nil, errors.New("invalid_lock", "int64 overflow on lock value")
+	}
+
 	preferredBlobberIds, err := GetBlobberIds(blockchain.GetPreferredBlobbers())
 	if err != nil {
 		return "", 0, nil, errors.New("failed_get_blobber_ids", "failed to get preferred blobber ids: "+err.Error())
@@ -959,6 +963,10 @@ func CreateAllocationForOwner(
 	readPrice, writePrice PriceRange,
 	lock uint64, preferredBlobberIds []string, thirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
 ) (hash string, nonce int64, txn *transaction.Transaction, err error) {
+
+	if lock > math.MaxInt64 {
+		return "", 0, nil, errors.New("invalid_lock", "int64 overflow on lock value")
+	}
 
 	allocationRequest, err := getNewAllocationBlobbers(
 		datashards, parityshards, size, expiry, readPrice, writePrice, preferredBlobberIds)
@@ -1156,6 +1164,10 @@ func UpdateAllocation(
 	addBlobberId, removeBlobberId string,
 	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
 ) (hash string, nonce int64, err error) {
+
+	if lock > math.MaxInt64 {
+		return "", 0, errors.New("invalid_lock", "int64 overflow on lock value")
+	}
 
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
