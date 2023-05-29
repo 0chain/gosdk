@@ -644,8 +644,8 @@
 
     onClick('btnGetContainers', async () => {
       const domain = "https://chimneysho8r.zus.network"
-      const username = "admin"
-      const password = "manoharmanohar"
+      const username = "username"
+      const password = "password"
 
       const stats = await goWasm.sdk.getcontainers(username, password, domain)
       txtOutput.innerHTML = JSON.stringify(stats, null, 2)
@@ -654,8 +654,8 @@
     onClick('btnUpdateContainer', async () => {
       const containerid = "1b0b74340c731dca07b73d51cfaa25a584db1374393ca0916dfd03641dd19884"
       const domain = "https://chimneysho8r.zus.network"
-      const username = "admin"
-      const password = "manoharmanohar"
+      const username = "username"
+      const password = "password"
       const image = "0chaindev/blobber:staging"
       try {
         const stats = await goWasm.sdk.updatecontainer(username, password, domain, containerid, image)
@@ -667,8 +667,8 @@
 
     onClick('btnSearchContainer', async () => {
         const domain = "https://chimneysho8r.zus.network"
-        const username = "admin"
-        const password = "manoharmanohar"
+        const username = "username"
+        const password = "password"
         const containername = "blobber_blobber"
         try {
           const stats = await goWasm.sdk.searchcontainer(username, password, domain, containername)
