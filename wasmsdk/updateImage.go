@@ -36,7 +36,7 @@ const (
 // --- exposed functions ---
 // UpdateContainer update the given container ID with a new image
 func UpdateContainer(username, password, domain, containerID, NewImageID string) (map[string]interface{}, error) {
-	sdkLogger.Info("getting authtoken")
+	sdkLogger.Info("generating authtoken")
 	authToken, err := getToken(username, password, domain)
 	if err != nil {
 		return nil, err
@@ -49,7 +49,7 @@ func UpdateContainer(username, password, domain, containerID, NewImageID string)
 	}
 	endpointID := fmt.Sprintf("/%d", id)
 
-	sdkLogger.Info("pull the new image")
+	sdkLogger.Info("pulling the new image...")
 	url := domain + ENDPOINTS + endpointID + PULLIMAGE + NewImageID
 	_, err = pullImage(authToken, domain, url)
 	if err != nil {
@@ -57,14 +57,14 @@ func UpdateContainer(username, password, domain, containerID, NewImageID string)
 	}
 
 	// stopContainer
-	sdkLogger.Info("stopContainer")
+	sdkLogger.Info("stopping the container..")
 	url = domain + ENDPOINTS + endpointID + CONTAINERS + containerID + "/stop"
 	_, err = stopContainer(authToken, domain, url)
 	if err != nil {
 		return nil, err
 	}
 
-	sdkLogger.Info("get Container by ID")
+	sdkLogger.Info("getting container Object")
 	container, err := getContainer(authToken, domain, endpointID, containerID)
 	if err != nil {
 		return nil, err
@@ -76,7 +76,7 @@ func UpdateContainer(username, password, domain, containerID, NewImageID string)
 	}
 
 	// renameContainer
-	sdkLogger.Info("renameContainer")
+	sdkLogger.Info("renaming container...")
 	url = domain + ENDPOINTS + endpointID + CONTAINERS + containerID + "/rename?name=" + containerName + "-old"
 	_, err = renameContainer(authToken, url)
 	if err != nil {
@@ -84,26 +84,24 @@ func UpdateContainer(username, password, domain, containerID, NewImageID string)
 	}
 
 	// createContainer
-	sdkLogger.Info("CreateContainer")
+	sdkLogger.Info("creating a new container with image: ", NewImageID)
 	containerReq.Image = NewImageID
-
 	url = domain + ENDPOINTS + endpointID + CONTAINERS + "/create?name=" + containerName
 	newContainer, err := createContainer(authToken, url, containerReq)
 	if err != nil {
 		return nil, err
 	}
-
 	newContainerID := newContainer["Id"].(string)
 
 	// startContainer //204 no content
-	sdkLogger.Info("StartContainer", newContainerID)
+	sdkLogger.Info("starting starting the new container", newContainerID)
 	_, err = startContainer(authToken, domain, newContainerID, endpointID)
 	if err != nil {
 		return nil, err
 	}
 
-	// delete old old container
-	sdkLogger.Info("delete old container")
+	// delete old container
+	sdkLogger.Info("deleting old container..")
 	err = deleteContainer(authToken, domain, containerID, endpointID)
 	if err != nil {
 		return nil, err
@@ -158,7 +156,9 @@ func SearchContainer(username, password, domain, name string) ([]*map[string]int
 	endpointID := fmt.Sprintf("/%d", id)
 	domain = strings.TrimRight(domain, "/")
 
-	url := domain + ENDPOINTS + endpointID + CONTAINERS + fmt.Sprintf("json?all=1&filters={\"name\":[\"^/%s*\"]}", name)
+	// the search regex start with ^/blobber_ because the blobber config files reside in blobber folder
+	// https://github.com/0chain/zcnwebappscripts/blob/main/chimney.sh#L18
+	url := domain + ENDPOINTS + endpointID + CONTAINERS + fmt.Sprintf("json?all=1&filters={\"name\":[\"^/blobber_%s*\"]}", name)
 	return searchContainerInternal(authToken, url)
 }
 
