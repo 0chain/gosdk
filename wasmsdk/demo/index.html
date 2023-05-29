@@ -110,6 +110,7 @@
     <button id="btnGetContainers">getcontainers</button>
     <button id="btnUpdateContainer">updatecontainer</button>
     <button id="btnSearchContainer">searchcontainer</button>
+    <button id="btnAllocationRepair">Repair</button>
 
     <br>
 
@@ -678,5 +679,10 @@
         }
     })
 
+    onClick('btnAllocationRepair', async () => {
+      const allocationId = getSelectedAllocation()
+      const output = await goWasm.sdk.allocationRepair(allocationId, "/")
+      txtOutput.innerHTML = output
+    })
   </script>
 </body>
