@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math"
 	"mime/multipart"
 	"net/http"
 	"net/url"
@@ -1939,6 +1940,10 @@ func (a *Allocation) UpdateWithRepair(
 	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
 	statusCB StatusCallback,
 ) (string, error) {
+	if lock > math.MaxInt64 {
+		return "", errors.New("invalid_lock", "int64 overflow on lock value")
+	}
+
 	l.Logger.Info("Updating allocation")
 	hash, _, err := UpdateAllocation(size, expiry, a.ID, lock, updateTerms, addBlobberId, removeBlobberId, setThirdPartyExtendable, fileOptionsParams)
 	if err != nil {
