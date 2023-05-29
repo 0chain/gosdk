@@ -84,7 +84,7 @@ jobs:
           teardown_condition: "TESTS_PASSED"
           miner_image:  staging
           sharder_image: staging
-          blobber_image: staging
+          blobber_image: fix/allocation
           validator_image: staging
           zbox_image: staging
           zblock_image: staging

@@ -21,7 +21,7 @@ on:
         required: true
       blobber_branch:
         description: 'blobber branch to deploy'
-        default: 'staging'
+        default: 'fix/allocation'
         required: true
       validator_branch:
         description: 'validator branch to deploy'
