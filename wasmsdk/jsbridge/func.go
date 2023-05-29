@@ -143,19 +143,15 @@ func promise(fn interface{}) (js.Func, error) {
 			if r := recover(); r != nil {
 				fmt.Println("[recover]", r)
 			}
-
 		}()
 
 		in, err := inputBuilder(args)
-		if err != nil {
-			return js.Error{Value: js.ValueOf(err.Error())}
-		}
 
 		handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 			resolve := args[0]
 			reject := args[1]
 
-			go awaiter(resolve, reject, invoker, in)
+			go awaiter(resolve, reject, invoker, in, err)
 
 			return nil
 		})
