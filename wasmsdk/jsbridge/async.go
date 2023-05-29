@@ -8,7 +8,7 @@ import (
 	"syscall/js"
 )
 
-type AsyncInvoker func(resolve, reject js.Value, fn reflect.Value, in []reflect.Value)
+type AsyncInvoker func(resolve, reject js.Value, fn reflect.Value, in []reflect.Value, err error)
 
 func Async(funcType reflect.Type) (AsyncInvoker, error) {
 
@@ -19,16 +19,29 @@ func Async(funcType reflect.Type) (AsyncInvoker, error) {
 
 	switch funcType.NumOut() {
 	case 0:
-		return func(resolve, reject js.Value, fn reflect.Value, in []reflect.Value) {
+		return func(resolve, reject js.Value, fn reflect.Value, in []reflect.Value, err error) {
+			if err != nil {
+				jsErr := NewJsError(err.Error())
+				resolve.Invoke(js.ValueOf(jsErr))
+				return
+			}
+
 			fn.Call(in)
 			resolve.Invoke()
 
 		}, nil
 	case 1:
+
 		outputType := funcType.Out(0)
 		//func(...)error
 		if outputType.String() == TypeError {
-			return func(resolve, reject js.Value, fn reflect.Value, in []reflect.Value) {
+			return func(resolve, reject js.Value, fn reflect.Value, in []reflect.Value, err error) {
+				if err != nil {
+					jsErr := NewJsError(err.Error())
+					resolve.Invoke(js.ValueOf(jsErr))
+					return
+				}
+
 				output := fn.Call(in)
 
 				if output[0].IsNil() {
@@ -39,7 +52,13 @@ func Async(funcType reflect.Type) (AsyncInvoker, error) {
 				}
 			}, nil
 		} else { //func(...) T
-			return func(resolve, reject js.Value, fn reflect.Value, in []reflect.Value) {
+			return func(resolve, reject js.Value, fn reflect.Value, in []reflect.Value, err error) {
+				if err != nil {
+					jsErr := NewJsError(err.Error())
+					resolve.Invoke(js.ValueOf(jsErr))
+					return
+				}
+
 				output := fn.Call(in)
 				args := outputBinder(output)
 				resolve.Invoke(args[0])
@@ -53,7 +72,13 @@ func Async(funcType reflect.Type) (AsyncInvoker, error) {
 			return nil, ErrFuncNotSupported
 		}
 		//func(...) (T,error)
-		return func(resolve, reject js.Value, fn reflect.Value, in []reflect.Value) {
+		return func(resolve, reject js.Value, fn reflect.Value, in []reflect.Value, err error) {
+			if err != nil {
+				jsErr := NewJsError(err.Error())
+				resolve.Invoke(js.ValueOf(jsErr))
+				return
+			}
+
 			output := fn.Call(in)
 
 			args := outputBinder(output)
@@ -62,6 +87,7 @@ func Async(funcType reflect.Type) (AsyncInvoker, error) {
 			} else {
 				resolve.Invoke(args[1])
 			}
+
 		}, nil
 
 	default:
