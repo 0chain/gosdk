@@ -209,7 +209,7 @@ func main() {
 				"swapToken":                     swapToken,
 				"initBridge":                    initBridge,
 				"burnZCN":                       burnZCN,
-				"mintZCN":                       bintZCN,
+				"mintZCN":                       mintZCN,
 				"getMintWZCNPayload":            getMintWZCNPayload,
 				"getNotProcessedWZCNBurnEvents": getNotProcessedWZCNBurnEvents,
 				"getNotProcessedZCNBurnTickets": getNotProcessedZCNBurnTickets,
