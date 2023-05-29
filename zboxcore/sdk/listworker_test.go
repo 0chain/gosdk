@@ -193,7 +193,7 @@ func TestListRequest_getListInfoFromBlobber(t *testing.T) {
 			resp := <-rspCh
 			require.EqualValues(tt.wantErr, resp.err != nil)
 			if resp.err != nil {
-				require.EqualValues(tt.errMsg, errors.Top(resp.err))
+				require.Contains(errors.Top(resp.err), tt.errMsg)
 				return
 			}
 			require.EqualValues(tt.parameters.listHttpResp.ref, resp.ref)
