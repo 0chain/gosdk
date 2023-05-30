@@ -2,11 +2,18 @@ package zbox
 
 import (
 	"encoding/json"
+	"strings"
 	"time"
 
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
+
+type fileResp struct {
+	sdk.FileInfo
+	Name string `json:"name"`
+	Path string `json:"path"`
+}
 
 // ListDir - listing files from path
 // ## Inputs
@@ -557,15 +564,48 @@ func CreateDir(allocationID, dirName string) error {
 
 // RevokeShare revoke authTicket
 //
-//  ## Inputs
-//  - allocationID
-//  - path
-//  - refereeClientID
+//	## Inputs
+//	- allocationID
+//	- path
+//	- refereeClientID
 func RevokeShare(allocationID, path, refereeClientID string) error {
-  a, err := getAllocation(allocationID)
-  if err != nil {
-    return err
-  }
-  return a.RevokeShare(path, refereeClientID)
+	a, err := getAllocation(allocationID)
+	if err != nil {
+		return err
+	}
+	return a.RevokeShare(path, refereeClientID)
 }
 
+// GetRemoteFileMap returns the remote
+//
+//	## Inputs
+//	- allocationID
+func GetRemoteFileMap(allocationID string) (string, error) {
+	a, err := getAllocation(allocationID)
+	if err != nil {
+		return "", err
+	}
+
+	ref, err := a.GetRemoteFileMap(nil, "/")
+	if err != nil {
+		return "", err
+	}
+
+	fileResps := make([]*fileResp, len(ref))
+	for path, data := range ref {
+		paths := strings.SplitAfter(path, "/")
+		var resp = fileResp{
+			Name:     paths[len(paths)-1],
+			Path:     path,
+			FileInfo: data,
+		}
+		fileResps = append(fileResps, &resp)
+	}
+
+	retBytes, err := json.Marshal(fileResps)
+	if err != nil {
+		return "", err
+	}
+
+	return string(retBytes), nil
+}
