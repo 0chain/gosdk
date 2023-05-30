@@ -642,8 +642,12 @@
 
     onClick('btnAllocationRepair', async () => {
       const allocationId = getSelectedAllocation()
-      const output = await goWasm.sdk.allocationRepair(allocationId, "/")
-      txtOutput.innerHTML = output
+      try {
+        const output = await goWasm.sdk.allocationRepair(allocationId, "/")
+        txtOutput.innerHTML = output
+      } catch(e) {
+        alert(e)
+      }
     })
   </script>
 </body>

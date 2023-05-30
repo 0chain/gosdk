@@ -12,6 +12,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
@@ -311,14 +312,22 @@ func allocationRepair(allocationID, remotePath string) error {
 	statusBar := &StatusBar{wg: wg}
 	wg.Add(1)
 
-	err = allocationObj.StartRepair("/tmp", remotePath, statusBar)
-	if err != nil {
-		PrintError("Upload failed.", err)
+	localPath := allocationID + "_"
+	defer sys.Files.Remove(localPath) //nolint
+
+	sdkLogger.Info("starting repair")
+	allocUnderRepair = true
+	err = allocationObj.StartRepair(localPath, remotePath, statusBar)
+	if err == nil {
+		wg.Wait()
+	} else {
+		allocUnderRepair = false
+		PrintError("repair failed.", err.Error())
 		return err
 	}
-	wg.Wait()
+
 	if !statusBar.success {
-		return errors.New("upload failed: unknown")
+		return errors.New("repair failed: unknown")
 	}
 	return nil
 }

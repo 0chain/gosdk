@@ -22,6 +22,7 @@ type StatusBar struct {
 }
 
 var jsCallbackMutex sync.Mutex
+var allocUnderRepair bool
 
 // Started for statusBar
 func (s *StatusBar) Started(allocationID, filePath string, op int, totalBytes int) {
@@ -66,7 +67,9 @@ func (s *StatusBar) Completed(allocationID, filePath string, filename string, mi
 		s.callback(s.totalBytes, s.completedBytes, "")
 	}
 
-	defer s.wg.Done()
+	if !allocUnderRepair {
+		defer s.wg.Done()
+	}
 	sdkLogger.Info("Status completed callback. Type = " + mimetype + ". Name = " + filename)
 }
 
@@ -88,10 +91,15 @@ func (s *StatusBar) Error(allocationID string, filePath string, op int, err erro
 		defer jsCallbackMutex.Unlock()
 		s.callback(s.totalBytes, s.completedBytes, err.Error())
 	}
-	s.wg.Done()
+	if !allocUnderRepair {
+		defer s.wg.Done()
+	}
 }
 
 // RepairCompleted when repair is completed
 func (s *StatusBar) RepairCompleted(filesRepaired int) {
-	s.wg.Done()
+	defer s.wg.Done()
+	allocUnderRepair = false
+	s.success = true
+	sdkLogger.Info("Repair completed. Files Repaired: ", filesRepaired)
 }
