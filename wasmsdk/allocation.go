@@ -6,6 +6,7 @@ package main
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -317,4 +318,29 @@ func decodeAuthTicket(ticket string) (*decodeAuthTokenResp, error) {
 
 func convertTokenToSAS(token float64) uint64 {
 	return uint64(token * float64(TOKEN_UNIT))
+}
+
+func allocationRepair(allocationID, remotePath string) error {
+	if len(allocationID) == 0 {
+		return RequiredArg("allocationID")
+	}
+	allocationObj, err := sdk.GetAllocation(allocationID)
+	if err != nil {
+		return err
+	}
+
+	wg := &sync.WaitGroup{}
+	statusBar := &StatusBar{wg: wg}
+	wg.Add(1)
+
+	err = allocationObj.StartRepair("/tmp", remotePath, statusBar)
+	if err != nil {
+		PrintError("Upload failed.", err)
+		return err
+	}
+	wg.Wait()
+	if !statusBar.success {
+		return errors.New("upload failed: unknown")
+	}
+	return nil
 }

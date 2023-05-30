@@ -200,6 +200,7 @@ func main() {
 				"getSkatePoolInfo":           getSkatePoolInfo,
 				"unlockStakePool":            unlockStakePool,
 				"decodeAuthTicket":           decodeAuthTicket,
+        "allocationRepair":           allocationRepair,
 
 				//smartcontract
 				"executeSmartContract": executeSmartContract,

@@ -108,6 +108,8 @@
     <button id="btnGetFileStats">GetFileStats</button>
     <button id="btnDelete">Delete</button>
     <button id="btnShare">Share</button>
+    <button id="btnAllocationRepair">Repair</button>
+
     <br>
 
     <div id="listFiles">
@@ -663,6 +665,10 @@
       txtOutput.innerHTML = rate
     })
 
-
+    onClick('btnAllocationRepair', async () => {
+      const allocationId = getSelectedAllocation()
+      const output = await goWasm.sdk.allocationRepair(allocationId, "/")
+      txtOutput.innerHTML = output
+    })
   </script>
 </body>

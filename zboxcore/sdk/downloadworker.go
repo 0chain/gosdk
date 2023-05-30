@@ -567,6 +567,9 @@ func (req *DownloadRequest) submitReadMarker(blobber *blockchain.StorageNode, re
 			if IsErrCode(err, NotEnoughTokens) || IsErrCode(err, InvalidAuthTicket) || IsErrCode(err, InvalidShare) {
 				return err
 			}
+			if IsErrCode(err, LockExists) {
+				continue
+			}
 			retryCount--
 		} else {
 			return nil
@@ -663,7 +666,6 @@ func (req *DownloadRequest) handleReadMarkerError(resp *http.Response, blobber *
 		}
 		if appErrorCode == LockExists {
 			logger.Logger.Debug(fmt.Sprintf("LockExists - blobberID: %v", blobber.ID))
-			blobber.SetSkip(true)
 			time.Sleep(time.Second * 1)
 			return errors.New(LockExists, string(respBody))
 		}
