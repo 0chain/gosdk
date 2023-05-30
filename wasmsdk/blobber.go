@@ -24,6 +24,8 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
+const FileOperationInsert = "insert"
+
 func listObjects(allocationID string, remotePath string) (*sdk.ListResult, error) {
 	alloc, err := getAllocation(allocationID)
 	if err != nil {
@@ -385,6 +387,10 @@ type BulkUploadResult struct {
 	Success    bool   `json:"success,omitempty"`
 	Error      string `json:"error,omitempty"`
 }
+type MultiUploadResult struct {
+	Success bool   `json:"success,omitempty"`
+	Error   string `json:"error,omitempty"`
+}
 
 func bulkUpload(jsonBulkUploadOptions string) ([]BulkUploadResult, error) {
 	var options []BulkUploadOption
@@ -430,6 +436,101 @@ func bulkUpload(jsonBulkUploadOptions string) ([]BulkUploadResult, error) {
 	}
 
 	return results, nil
+}
+func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
+	var options []BulkUploadOption
+	result := MultiUploadResult{}
+	err := json.Unmarshal([]byte(jsonBulkUploadOptions), &options)
+	if err != nil {
+		result.Error = "Error in unmarshaling json"
+		result.Success = false
+		return result, err
+	}
+	n := len(options)
+	if n == 0 {
+		result.Error = "No files to upload"
+		result.Success = false
+		return result, errors.New("There are nothing to upload")
+	}
+	allocationID := options[0].AllocationID
+	allocationObj, err := getAllocation(allocationID)
+	if err != nil {
+		result.Error = "Error fetching the allocation"
+		result.Success = false
+		return result, errors.New("Error fetching the allocation")
+	}
+	operationRequests := make([]sdk.OperationRequest, n)
+	for idx, option := range options {
+		wg := &sync.WaitGroup{}
+		statusBar := &StatusBar{wg: wg}
+		callbackFuncName := option.CallbackFuncName
+		if callbackFuncName != "" {
+			callback := js.Global().Get(callbackFuncName)
+			statusBar.callback = func(totalBytes, completedBytes int, err string) {
+				callback.Invoke(totalBytes, completedBytes, err)
+			}
+		}
+		wg.Add(1)
+		encrypt := option.Encrypt
+		remotePath := option.RemotePath
+		if strings.HasPrefix(remotePath, "/Encrypted") {
+			encrypt = true
+		}
+		fileReader := jsbridge.NewFileReader(option.ReadChunkFuncName, option.FileSize)
+		mimeType, err := zboxutil.GetFileContentType(fileReader)
+		if err != nil {
+			result.Error = "Error in file operation"
+			result.Success = false
+			return result, err
+		}
+		localPath := remotePath
+		remotePath = zboxutil.RemoteClean(remotePath)
+		isabs := zboxutil.IsRemoteAbs(remotePath)
+		if !isabs {
+			err = errors.New("invalid_path: Path should be valid and absolute")
+			result.Error = err.Error()
+			result.Success = false
+			return result, err
+		}
+		fullRemotePath := zboxutil.GetFullRemotePath(localPath, remotePath)
+
+		_, fileName := pathutil.Split(fullRemotePath)
+
+		fileMeta := sdk.FileMeta{
+			Path:       localPath,
+			ActualSize: option.FileSize,
+			MimeType:   mimeType,
+			RemoteName: fileName,
+			RemotePath: fullRemotePath,
+		}
+		numBlocks := option.NumBlocks
+		if numBlocks < 1 {
+			numBlocks = 100
+		}
+		options := []sdk.ChunkedUploadOption{
+			sdk.WithThumbnail(option.ThumbnailBytes.Buffer),
+			sdk.WithEncrypt(encrypt),
+			sdk.WithStatusCallback(statusBar),
+			sdk.WithProgressStorer(&chunkedUploadProgressStorer{list: make(map[string]*sdk.UploadProgress)}),
+			sdk.WithChunkNumber(numBlocks),
+		}
+		operationRequests[idx] = sdk.OperationRequest{
+			FileMeta:      fileMeta,
+			FileReader:    fileReader,
+			OperationType: FileOperationInsert,
+			Opts:          options,
+			Workdir:       "/",
+		}
+
+	}
+	err = allocationObj.DoMultiOperation(operationRequests)
+	if err != nil {
+		result.Error = err.Error()
+		result.Success = false
+		return result, err
+	}
+	result.Success = true
+	return result, nil
 }
 
 func uploadWithJsFuncs(allocationID, remotePath string, readChunkFuncName string, fileSize int64, thumbnailBytes []byte, webStreaming, encrypt, isUpdate, isRepair bool, numBlocks int, callbackFuncName string) (bool, error) {
