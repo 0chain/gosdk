@@ -101,7 +101,6 @@ type ConsolidatedFileMeta struct {
 	ActualFileSize  int64
 	ActualNumBlocks int64
 	EncryptedKey    string
-	CommitMetaTxns  []fileref.CommitMetaTxn
 	Collaborators   []fileref.Collaborator
 }
 
@@ -1075,7 +1074,6 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 		result.Path = ref.Path
 		result.Size = ref.ActualFileSize
 		result.EncryptedKey = ref.EncryptedKey
-		result.CommitMetaTxns = ref.CommitMetaTxns
 		result.Collaborators = ref.Collaborators
 		result.ActualFileSize = ref.ActualFileSize
 		result.ActualNumBlocks = ref.NumBlocks
@@ -1121,7 +1119,6 @@ func (a *Allocation) GetFileMetaFromAuthTicket(authTicket string, lookupHash str
 		result.MimeType = ref.MimeType
 		result.Path = ref.Path
 		result.Size = ref.ActualFileSize
-		result.CommitMetaTxns = ref.CommitMetaTxns
 		result.ActualFileSize = ref.Size
 		result.ActualNumBlocks = ref.NumBlocks
 		return result, nil
