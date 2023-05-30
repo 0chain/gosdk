@@ -117,7 +117,7 @@ func (uo *UploadOperation) Verify(allocationObj *Allocation) error {
 
 func (uo *UploadOperation) Completed(allocObj *Allocation) {
 	if uo.statusCallback != nil {
-		uo.statusCallback.Completed(allocObj.ID, uo.fileMeta.Path, uo.fileMeta.RemoteName, uo.fileMeta.MimeType, int(uo.fileMeta.ActualSize), uo.opCode)
+		uo.statusCallback.Completed(allocObj.ID, uo.fileMeta.RemotePath, uo.fileMeta.RemoteName, uo.fileMeta.MimeType, int(uo.fileMeta.ActualSize), uo.opCode)
 	}
 }
 
