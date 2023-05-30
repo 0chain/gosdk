@@ -450,7 +450,7 @@ func (a *Allocation) EncryptAndUploadFileWithThumbnail(
 	)
 }
 
-func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, thumbnailPaths []string, remotePath string, status StatusCallback) error {
+func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileNames []string, thumbnailPaths []string, remotePath string, status StatusCallback) error {
 	if len(localPaths) != len(thumbnailPaths) {
 		return errors.New("invalid_value", "length of localpaths and thumbnailpaths must be equal")
 	}
@@ -470,16 +470,14 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, thumb
 		return nil
 	}
 	operationRequests := make([]OperationRequest, totalOperations)
-	wg := &sync.WaitGroup{}
 	for idx, localPath := range localPaths {
-		statusBar := &StatusBar{wg: wg}
-		wg.Add(1)
 		fileReader, err := os.Open(localPath)
 		if err != nil {
 			return err
 		}
 		defer fileReader.Close()
 		thumbnailPath := thumbnailPaths[idx]
+		fileName := fileNames[idx]
 
 		fileInfo, err := fileReader.Stat()
 		if err != nil {
@@ -501,7 +499,8 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, thumb
 			remotePath = remotePath + "/"
 		}
 		fullRemotePath := zboxutil.GetFullRemotePath(localPath, remotePath)
-		_, fileName := pathutil.Split(fullRemotePath)
+		fullRemotePathWithoutName, _ := pathutil.Split(fullRemotePath)
+		fullRemotePath = fullRemotePathWithoutName + "/" + fileName
 		if err != nil {
 			return err
 		}
@@ -513,7 +512,7 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, thumb
 			RemotePath: fullRemotePath,
 		}
 		options := []ChunkedUploadOption{
-			WithStatusCallback(statusBar),
+			WithStatusCallback(status),
 		}
 		if thumbnailPath != "" {
 			buf, err := sys.Files.ReadFile(thumbnailPath)
@@ -538,8 +537,6 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, thumb
 		return err
 	}
 	logger.Logger.Info("Multi-upload done")
-	wg.Wait()
-	status.Completed(a.ID, "", "", "", 0, OpUpload)
 	return nil
 }
 
