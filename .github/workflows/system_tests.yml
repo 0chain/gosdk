@@ -31,10 +31,6 @@ on:
         description: '0box branch to deploy'
         default: 'staging'
         required: true
-      s3_migration_cli_branch:
-        required: false
-        description: 'S3 Migration CLI (branch or commit SHA) which the tests will use'
-        default: 'staging'
       test_file_filter:
         description: 'Comma separated list of test files to run (eg. zwalletcli_register_wallet_test.go, zwalletcli_send_and_balance_test.go). If supplied, the PR will NOT be notified of the test result'
         default: ''
