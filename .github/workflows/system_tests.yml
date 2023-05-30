@@ -9,7 +9,7 @@ on:
         required: true
       zbox_cli_branch:
         description: 'zbox CLI branch which the tests will use'
-        default: 'staging'
+        default: 'fix/allocation'
         required: true
       zwallet_cli_branch:
         description: 'zwallet CLI branch which the tests will use'
@@ -29,7 +29,7 @@ on:
           default: 'staging'
       zbox_branch:
         description: '0box branch to deploy'
-        default: 'staging'
+        default: 'fix/allocation'
         required: true
       test_file_filter:
         description: 'Comma separated list of test files to run (eg. zwalletcli_register_wallet_test.go, zwalletcli_send_and_balance_test.go). If supplied, the PR will NOT be notified of the test result'
