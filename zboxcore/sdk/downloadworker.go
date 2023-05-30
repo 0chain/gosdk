@@ -603,9 +603,10 @@ func (req *DownloadRequest) attemptSubmitReadMarker(blobber *blockchain.StorageN
 		return fmt.Errorf("error creating download request: %w", err)
 	}
 
+	pathHash := fileref.GetReferenceLookup(req.allocationID, req.remotefilepath)
 	header := &DownloadRequestHeader{
 		Path:         req.remotefilepath,
-		PathHash:     req.remotefilepathhash,
+		PathHash:     pathHash,
 		ReadMarker:   rmData,
 		ConnectionID: req.connectionID,
 	}
