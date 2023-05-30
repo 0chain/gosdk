@@ -56,7 +56,6 @@ const (
 	OBJECT_TREE_ENDPOINT         = "/v1/file/objecttree/"
 	REFS_ENDPOINT                = "/v1/file/refs/"
 	RECENT_REFS_ENDPOINT         = "/v1/file/refs/recent/"
-	COMMIT_META_TXN_ENDPOINT     = "/v1/file/commitmetatxn/"
 	COLLABORATOR_ENDPOINT        = "/v1/file/collaborator/"
 	CALCULATE_HASH_ENDPOINT      = "/v1/file/calculatehash/"
 	SHARE_ENDPOINT               = "/v1/marketplace/shareinfo/"
@@ -304,19 +303,6 @@ func NewAllocationRequest(baseUrl, allocation string) (*http.Request, error) {
 	params.Add("id", allocation)
 	nurl.RawQuery = params.Encode() // Escape Query Parameters
 	req, err := http.NewRequest(http.MethodGet, nurl.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-	setClientInfo(req)
-	return req, nil
-}
-
-func NewCommitMetaTxnRequest(baseUrl string, allocation string, body io.Reader) (*http.Request, error) {
-	u, err := joinUrl(baseUrl, COMMIT_META_TXN_ENDPOINT, allocation)
-	if err != nil {
-		return nil, err
-	}
-	req, err := http.NewRequest(http.MethodPost, u.String(), body)
 	if err != nil {
 		return nil, err
 	}
