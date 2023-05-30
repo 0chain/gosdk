@@ -1416,9 +1416,6 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 				zap.Any("txn", txn))
 			return
 		}
-		l.Logger.Info("estimate txn fee",
-			zap.Uint64("fee", fee),
-			zap.Any("txn", txn))
 		txn.TransactionFee = fee
 	}
 
@@ -1429,6 +1426,10 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 	if err = txn.ComputeHashAndSign(client.Sign); err != nil {
 		return
 	}
+
+	msg := fmt.Sprintf("executing transaction '%s' with hash %s ", sn.Name, txn.Hash)
+	l.Logger.Info(msg)
+	l.Logger.Info("estimated txn fee: ", txn.TransactionFee)
 
 	transaction.SendTransactionSync(txn, blockchain.GetMiners())
 
