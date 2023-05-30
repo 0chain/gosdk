@@ -84,7 +84,7 @@ func burnZCN(amount, txnfee uint64) string { //nolint
 }
 
 // Mints ZCN tokens and returns a hash of the mint transaction
-func mintZCN(burnTrxHash string, timeout int, txnfee uint64) string { //nolint
+func mintZCN(burnTrxHash string, timeout int) string { //nolint
 	mintPayload, err := bridge.QueryZChainMintPayload(burnTrxHash)
 	if err != nil {
 		return errors.Wrap("mintZCN", "failed to QueryZChainMintPayload", err).Error()
@@ -93,7 +93,7 @@ func mintZCN(burnTrxHash string, timeout int, txnfee uint64) string { //nolint
 	c, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
 	defer cancel()
 
-	hash, err := bridge.MintZCN(c, mintPayload, txnfee)
+	hash, err := bridge.MintZCN(c, mintPayload)
 	if err != nil {
 		return errors.Wrap("mintZCN", "failed to MintZCN for txn "+hash, err).Error()
 	}

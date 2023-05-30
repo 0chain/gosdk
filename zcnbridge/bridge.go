@@ -409,8 +409,8 @@ func (b *BridgeClient) BurnWZCN(ctx context.Context, amountTokens uint64) (*type
 }
 
 // MintZCN mints ZCN tokens after receiving proof-of-burn of WZCN tokens
-func (b *BridgeClient) MintZCN(ctx context.Context, payload *zcnsc.MintPayload, txnfee uint64) (string, error) {
-	trx, err := transaction.NewTransactionEntity(txnfee)
+func (b *BridgeClient) MintZCN(ctx context.Context, payload *zcnsc.MintPayload) (string, error) {
+	trx, err := transaction.NewTransactionEntity(0)
 	if err != nil {
 		log.Logger.Fatal("failed to create new transaction", zap.Error(err))
 	}
