@@ -535,13 +535,11 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 		}
 
 	}
-	logger.Logger.Info("Starting multi-upload...")
 	err := a.DoMultiOperation(operationRequests)
 	if err != nil {
 		logger.Logger.Error("Error in multi upload ", err.Error())
 		return err
 	}
-	logger.Logger.Info("Multi-upload done")
 	return nil
 }
 
@@ -578,16 +576,13 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 	if err != nil {
 		return err
 	}
-	fmt.Println("Remote path before clean", remotePath)
 	remotePath = zboxutil.RemoteClean(remotePath)
-	fmt.Println("Remote path after clean", remotePath)
 	isabs := zboxutil.IsRemoteAbs(remotePath)
 	if !isabs {
 		err = thrown.New("invalid_path", "Path should be valid and absolute")
 		return err
 	}
 	remotePath = zboxutil.GetFullRemotePath(localPath, remotePath)
-	fmt.Println("Full remtote path", remotePath)
 
 	_, fileName := pathutil.Split(remotePath)
 

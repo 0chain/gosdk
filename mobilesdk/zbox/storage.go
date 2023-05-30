@@ -2,7 +2,6 @@ package zbox
 
 import (
 	"encoding/json"
-	"fmt"
 	"strings"
 	"time"
 
@@ -225,7 +224,6 @@ func RepairFile(allocationID, workdir, localPath, remotePath, thumbnailPath stri
 // ## Outputs
 //   - error
 func MultiUpload(allocationID string, workdir string, filePathsString string, fileNamesString string, encrypt string, thumbnailPathsString string, remotePath string, statusCb StatusCallbackMocked) error {
-	fmt.Println("Multiupload called", filePathsString, " remotepath: ", remotePath, " thumbnail: ", thumbnailPathsString)
 	filePaths := strings.Split(filePathsString, SPACE)
 	fileNames := strings.Split(fileNamesString, SPACE)
 	thumbnailPaths := strings.Split(thumbnailPathsString, SPACE)
@@ -233,7 +231,6 @@ func MultiUpload(allocationID string, workdir string, filePathsString string, fi
 	if err != nil {
 		return err
 	}
-	fmt.Println("Calling multiupload")
 	return a.StartMultiUpload(workdir, filePaths, fileNames, thumbnailPaths, encrypt, remotePath, &StatusCallbackWrapped{Callback: statusCb})
 
 }
