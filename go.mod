@@ -140,4 +140,4 @@ require (
 )
 
 //replace github.com/ethereum/go-ethereum => github.com/certifaction/go-ethereum v1.10.3-wasm
-replace github.com/herumi/bls-go-binary => github.com/cnlangzi/bls-go-binary v1.30.5
+replace github.com/herumi/bls-go-binary => github.com/cnlangzi/bls-go-binary v1.30.6
