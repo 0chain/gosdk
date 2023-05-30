@@ -10,6 +10,11 @@ import (
 )
 
 const SPACE string = " "
+type fileResp struct {
+	sdk.FileInfo
+	Name string `json:"name"`
+	Path string `json:"path"`
+}
 
 // ListDir - listing files from path
 // ## Inputs
@@ -588,4 +593,38 @@ func RevokeShare(allocationID, path, refereeClientID string) error {
 		return err
 	}
 	return a.RevokeShare(path, refereeClientID)
+}
+
+// GetRemoteFileMap returns the remote
+//
+//	## Inputs
+//	- allocationID
+func GetRemoteFileMap(allocationID string) (string, error) {
+	a, err := getAllocation(allocationID)
+	if err != nil {
+		return "", err
+	}
+
+	ref, err := a.GetRemoteFileMap(nil, "/")
+	if err != nil {
+		return "", err
+	}
+
+	fileResps := make([]*fileResp, len(ref))
+	for path, data := range ref {
+		paths := strings.SplitAfter(path, "/")
+		var resp = fileResp{
+			Name:     paths[len(paths)-1],
+			Path:     path,
+			FileInfo: data,
+		}
+		fileResps = append(fileResps, &resp)
+	}
+
+	retBytes, err := json.Marshal(fileResps)
+	if err != nil {
+		return "", err
+	}
+
+	return string(retBytes), nil
 }

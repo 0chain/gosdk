@@ -17,7 +17,7 @@ type InputBuilder struct {
 	fn         reflect.Type
 	numIn      int
 	IsVariadic bool
-	binders    []func(jv js.Value) reflect.Value
+	binders    []func(jv js.Value) (reflect.Value, error)
 }
 
 // NewInputBuilder create InputBuilder
@@ -32,16 +32,16 @@ func NewInputBuilder(fn reflect.Type) *InputBuilder {
 // Build build InputBinder
 // js.ValueOf returns x as a JavaScript value:
 //
-//  | Go                     | JavaScript             |
-//  | ---------------------- | ---------------------- |
-//  | js.Value               | [its value]            |
-//  | js.Func                | function               |
-//  | nil                    | null                   |
-//  | bool                   | boolean                |
-//  | integers and floats    | number                 |
-//  | string                 | string                 |
-//  | []interface{}          | new array              |
-//  | map[string]interface{} | new object             |
+//	| Go                     | JavaScript             |
+//	| ---------------------- | ---------------------- |
+//	| js.Value               | [its value]            |
+//	| js.Func                | function               |
+//	| nil                    | null                   |
+//	| bool                   | boolean                |
+//	| integers and floats    | number                 |
+//	| string                 | string                 |
+//	| []interface{}          | new array              |
+//	| map[string]interface{} | new object             |
 //
 // Panics if x is not one of the expected types.
 func (b *InputBuilder) Build() (InputBinder, error) {
@@ -51,7 +51,7 @@ func (b *InputBuilder) Build() (InputBinder, error) {
 		}
 	}()
 
-	b.binders = make([]func(jv js.Value) reflect.Value, b.numIn)
+	b.binders = make([]func(jv js.Value) (reflect.Value, error), b.numIn)
 
 	if b.IsVariadic {
 		b.numIn--
@@ -64,26 +64,26 @@ func (b *InputBuilder) Build() (InputBinder, error) {
 
 		switch v.(type) {
 		case *string:
-			b.binders[i] = withRecover(i, jsValueToString)
+			b.binders[i] = jsValueToString
 
 		case *int:
-			b.binders[i] = withRecover(i, jsValueToInt)
+			b.binders[i] = jsValueToInt
 		case *int32:
-			b.binders[i] = withRecover(i, jsValueToInt32)
+			b.binders[i] = jsValueToInt32
 		case *int64:
-			b.binders[i] = withRecover(i, jsValueToInt64)
+			b.binders[i] = jsValueToInt64
 		case *uint64:
-			b.binders[i] = withRecover(i, jsValueToUInt64)
+			b.binders[i] = jsValueToUInt64
 		case *float32:
-			b.binders[i] = withRecover(i, jsValueToFloat32)
+			b.binders[i] = jsValueToFloat32
 		case *float64:
-			b.binders[i] = withRecover(i, jsValueToFloat64)
+			b.binders[i] = jsValueToFloat64
 		case *bool:
-			b.binders[i] = withRecover(i, jsValueToBool)
+			b.binders[i] = jsValueToBool
 		case *[]string:
-			b.binders[i] = withRecover(i, jsValueToStringSlice)
+			b.binders[i] = jsValueToStringSlice
 		case *[]byte:
-			b.binders[i] = withRecover(i, jsValueToBytes)
+			b.binders[i] = jsValueToBytes
 		default:
 			fmt.Printf("TYPE: %#v\n", reflect.TypeOf(v))
 			return nil, ErrBinderNotImplemented
@@ -102,99 +102,150 @@ func (b *InputBuilder) Bind(args []js.Value) ([]reflect.Value, error) {
 
 	values := make([]reflect.Value, b.numIn)
 	for i := 0; i < b.numIn; i++ {
-		values[i] = b.binders[i](args[i])
+		val, err := b.binders[i](args[i])
+		if err != nil {
+			return nil, err
+		}
+		values[i] = val
 	}
 
 	return values, nil
 }
 
-func withRecover(inputIndex int, inputBinder func(jv js.Value) reflect.Value) func(jv js.Value) reflect.Value {
+func jsValueToString(jv js.Value) (val reflect.Value, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("input: %s", r)
+		}
+	}()
 
-	return func(jv js.Value) reflect.Value {
-		defer func() {
-			if r := recover(); r != nil {
-				fmt.Println("[recover]", inputIndex, ":", r)
-			}
-		}()
-
-		return inputBinder(jv)
-	}
-
-}
-
-func jsValueToString(jv js.Value) reflect.Value {
 	i := ""
 	if jv.Truthy() {
 		i = jv.String()
 	}
 
-	return reflect.ValueOf(i)
+	val = reflect.ValueOf(i)
+	return
 }
 
-func jsValueToInt(jv js.Value) reflect.Value {
+func jsValueToInt(jv js.Value) (val reflect.Value, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("input: %s", r)
+		}
+	}()
 	i := 0
 	if jv.Truthy() {
 		i = jv.Int()
 	}
 
-	return reflect.ValueOf(i)
+	val = reflect.ValueOf(i)
+	return
 }
 
-func jsValueToInt32(jv js.Value) reflect.Value {
+func jsValueToInt32(jv js.Value) (val reflect.Value, err error) {
+
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("input: %s", r)
+		}
+	}()
 	i := 0
 	if jv.Truthy() {
 		i = jv.Int()
 	}
 
-	return reflect.ValueOf(int32(i))
+	val = reflect.ValueOf(int32(i))
+	return
 }
 
-func jsValueToInt64(jv js.Value) reflect.Value {
+func jsValueToInt64(jv js.Value) (val reflect.Value, err error) {
+
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("input: %s", r)
+		}
+	}()
 	i := 0
 	if jv.Truthy() {
 		i = jv.Int()
 	}
 
-	return reflect.ValueOf(int64(i))
+	val = reflect.ValueOf(int64(i))
+	return
 }
 
-func jsValueToUInt64(jv js.Value) reflect.Value {
+func jsValueToUInt64(jv js.Value) (val reflect.Value, err error) {
+
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("input: %s", r)
+		}
+	}()
 	i := 0
 	if jv.Truthy() {
 		i = jv.Int()
 	}
 
-	return reflect.ValueOf(uint64(i))
+	val = reflect.ValueOf(uint64(i))
+	return
 }
 
-func jsValueToBool(jv js.Value) reflect.Value {
+func jsValueToBool(jv js.Value) (val reflect.Value, err error) {
+
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("input: %s", r)
+		}
+	}()
 	i := false
 	if jv.Truthy() {
 		i = jv.Bool()
 	}
 
-	return reflect.ValueOf(i)
+	val = reflect.ValueOf(i)
+	return
 }
 
-func jsValueToFloat32(jv js.Value) reflect.Value {
+func jsValueToFloat32(jv js.Value) (val reflect.Value, err error) {
+
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("input: %s", r)
+		}
+	}()
 	var i float64
 	if jv.Truthy() {
 		i = jv.Float()
 	}
 
-	return reflect.ValueOf(float32(i))
+	val = reflect.ValueOf(float32(i))
+	return
 }
 
-func jsValueToFloat64(jv js.Value) reflect.Value {
+func jsValueToFloat64(jv js.Value) (val reflect.Value, err error) {
+
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("input: %s", r)
+		}
+	}()
 	var i float64
 	if jv.Truthy() {
 		i = jv.Float()
 	}
 
-	return reflect.ValueOf(i)
+	val = reflect.ValueOf(i)
+	return
 }
 
-func jsValueToStringSlice(jv js.Value) reflect.Value {
+func jsValueToStringSlice(jv js.Value) (val reflect.Value, err error) {
+
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("input: %s", r)
+		}
+	}()
 	var list []string
 
 	if jv.Truthy() {
@@ -209,10 +260,17 @@ func jsValueToStringSlice(jv js.Value) reflect.Value {
 		}
 	}
 
-	return reflect.ValueOf(list)
+	val = reflect.ValueOf(list)
+	return
 }
 
-func jsValueToBytes(jv js.Value) reflect.Value {
+func jsValueToBytes(jv js.Value) (val reflect.Value, err error) {
+
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("input: %s", r)
+		}
+	}()
 
 	var buf []byte
 
@@ -221,5 +279,6 @@ func jsValueToBytes(jv js.Value) reflect.Value {
 		js.CopyBytesToGo(buf, jv)
 	}
 
-	return reflect.ValueOf(buf)
+	val = reflect.ValueOf(buf)
+	return
 }
