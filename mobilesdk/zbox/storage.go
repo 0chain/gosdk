@@ -218,11 +218,13 @@ func RepairFile(allocationID, workdir, localPath, remotePath, thumbnailPath stri
 //   - fileNamesString: space seperated name of files. eg "f1.txt f2.jpeg"
 //   - thumbnailPathsString: space seperated path for thumbnails. eg "full_path1  full_path3", here there are two spaces
 //     between path1 and path3 because file2 doesn't have thumbnail.
+//   - encrypt: string of 0s and 1s denoting whether to encrypt or not. eg "00110": encrypt thrid and fourth file. Length of string
+//     should be equal to number of files.
 //   - remotePath: Path of the remote directory where files will upload. It should end with "/"
 //
 // ## Outputs
 //   - error
-func MultiUpload(allocationID string, workdir string, filePathsString string, fileNamesString string, thumbnailPathsString string, remotePath string, statusCb StatusCallbackMocked) error {
+func MultiUpload(allocationID string, workdir string, filePathsString string, fileNamesString string, encrypt string, thumbnailPathsString string, remotePath string, statusCb StatusCallbackMocked) error {
 	fmt.Println("Multiupload called", filePathsString, " remotepath: ", remotePath, " thumbnail: ", thumbnailPathsString)
 	filePaths := strings.Split(filePathsString, SPACE)
 	fileNames := strings.Split(fileNamesString, SPACE)
@@ -232,7 +234,7 @@ func MultiUpload(allocationID string, workdir string, filePathsString string, fi
 		return err
 	}
 	fmt.Println("Calling multiupload")
-	return a.StartMultiUpload(workdir, filePaths, fileNames, thumbnailPaths, remotePath, &StatusCallbackWrapped{Callback: statusCb})
+	return a.StartMultiUpload(workdir, filePaths, fileNames, thumbnailPaths, encrypt, remotePath, &StatusCallbackWrapped{Callback: statusCb})
 
 }
 

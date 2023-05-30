@@ -450,9 +450,12 @@ func (a *Allocation) EncryptAndUploadFileWithThumbnail(
 	)
 }
 
-func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileNames []string, thumbnailPaths []string, remotePath string, status StatusCallback) error {
+func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileNames []string, thumbnailPaths []string, encryptString string, remotePath string, status StatusCallback) error {
 	if len(localPaths) != len(thumbnailPaths) {
 		return errors.New("invalid_value", "length of localpaths and thumbnailpaths must be equal")
+	}
+	if len(localPaths) != len(encryptString) {
+		return errors.New("invalid_value", "length of encrypt not equal to number of files")
 	}
 	if !strings.HasSuffix(remotePath, "/") {
 		return errors.New("invalid_value", "remotePath must be the path of directory")
@@ -478,6 +481,7 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 		defer fileReader.Close()
 		thumbnailPath := thumbnailPaths[idx]
 		fileName := fileNames[idx]
+		encrypt := encryptString[idx] == '1'
 
 		fileInfo, err := fileReader.Stat()
 		if err != nil {
@@ -513,6 +517,7 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 		}
 		options := []ChunkedUploadOption{
 			WithStatusCallback(status),
+			WithEncrypt(encrypt),
 		}
 		if thumbnailPath != "" {
 			buf, err := sys.Files.ReadFile(thumbnailPath)
