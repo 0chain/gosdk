@@ -803,6 +803,42 @@ type blobberFile struct {
 	size           int64
 }
 
+// GetFileRefFromBlobber check if a file is present in the given blobber
+func GetFileRefFromBlobber(allocationID, blobberId, remotePath string) (fRef *fileref.FileRef, err error) {
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	blobber, err := GetBlobber(blobberId)
+	if err != nil {
+		return nil, err
+	}
+
+	a, err := GetAllocation(allocationID)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx := context.Background()
+	listReq := &ListRequest{}
+
+	listReq.allocationID = a.ID
+	listReq.allocationTx = a.Tx
+	listReq.blobbers = []*blockchain.StorageNode{
+		{ID: string(blobber.ID), Baseurl: blobber.BaseURL},
+	}
+	listReq.fullconsensus = 1
+	listReq.consensusThresh = 1
+	listReq.ctx = ctx
+	listReq.remotefilepath = remotePath
+
+	listReq.wg = &sync.WaitGroup{}
+	listReq.wg.Add(1)
+	rspCh := make(chan *fileMetaResponse, 1)
+	go listReq.getFileMetaInfoFromBlobber(listReq.blobbers[0], 0, rspCh)
+	listReq.wg.Wait()
+	resp := <-rspCh
+	return resp.fileref, nil
+}
+
 func (req *DownloadRequest) getFileRef(remotePathCB string) (fRef *fileref.FileRef, err error) {
 	listReq := &ListRequest{
 		remotefilepath:     req.remotefilepath,
