@@ -63,9 +63,9 @@ func getObjectTreeFromBlobber(ctx context.Context, allocationID, allocationTx st
 	return lR.GetRefFromObjectTree(allocationID)
 }
 
-func getAllocationDataFromBlobber(blobber *blockchain.StorageNode, allocationId string, respCh chan<- *BlobberAllocationStats, wg *sync.WaitGroup) {
+func getAllocationDataFromBlobber(blobber *blockchain.StorageNode, allocationId string, allocationTx string, respCh chan<- *BlobberAllocationStats, wg *sync.WaitGroup) {
 	defer wg.Done()
-	httpreq, err := zboxutil.NewAllocationRequest(blobber.Baseurl, allocationId)
+	httpreq, err := zboxutil.NewAllocationRequest(blobber.Baseurl, allocationId, allocationTx)
 	if err != nil {
 		l.Logger.Error(blobber.Baseurl, "Error creating allocation request", err)
 		return

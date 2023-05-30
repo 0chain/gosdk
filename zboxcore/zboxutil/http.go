@@ -306,19 +306,21 @@ func NewRecentlyAddedRefsRequest(bUrl, allocID string, fromDate, offset int64, p
 	return req, nil
 }
 
-func NewAllocationRequest(baseUrl, allocation string) (*http.Request, error) {
+func NewAllocationRequest(baseUrl, allocationID, allocationTx string) (*http.Request, error) {
 	nurl, err := joinUrl(baseUrl, ALLOCATION_ENDPOINT)
 	if err != nil {
 		return nil, err
 	}
 	params := url.Values{}
-	params.Add("id", allocation)
+	params.Add("id", allocationTx)
 	nurl.RawQuery = params.Encode() // Escape Query Parameters
 	req, err := http.NewRequest(http.MethodGet, nurl.String(), nil)
 	if err != nil {
 		return nil, err
 	}
 	setClientInfo(req)
+
+	req.Header.Set("ALLOCATION-ID", allocationID)
 	return req, nil
 }
 

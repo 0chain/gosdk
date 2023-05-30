@@ -255,7 +255,7 @@ func (a *Allocation) GetBlobberStats() map[string]*BlobberAllocationStats {
 	wg.Add(numList)
 	rspCh := make(chan *BlobberAllocationStats, numList)
 	for _, blobber := range a.Blobbers {
-		go getAllocationDataFromBlobber(blobber, a.Tx, rspCh, wg)
+		go getAllocationDataFromBlobber(blobber, a.ID, a.Tx, rspCh, wg)
 	}
 	wg.Wait()
 	result := make(map[string]*BlobberAllocationStats, len(a.Blobbers))
