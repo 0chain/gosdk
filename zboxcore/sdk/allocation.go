@@ -451,7 +451,7 @@ func (a *Allocation) EncryptAndUploadFileWithThumbnail(
 	)
 }
 
-func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileNames []string, thumbnailPaths []string, encryptString string, remotePath string, status StatusCallback) error {
+func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileNames []string, thumbnailPaths []string, encryptString string, remotePath string, isUpdate bool, status StatusCallback) error {
 	if len(localPaths) != len(thumbnailPaths) {
 		return errors.New("invalid_value", "length of localpaths and thumbnailpaths must be equal")
 	}
@@ -533,6 +533,9 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 			FileReader:    fileReader,
 			OperationType: constants.FileOperationInsert,
 			Opts:          options,
+		}
+		if isUpdate {
+			operationRequests[idx].OperationType = constants.FileOperationUpdate
 		}
 
 	}

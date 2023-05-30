@@ -10,6 +10,7 @@ import (
 )
 
 const SPACE string = " "
+
 type fileResp struct {
 	sdk.FileInfo
 	Name string `json:"name"`
@@ -222,7 +223,7 @@ func RepairFile(allocationID, workdir, localPath, remotePath, thumbnailPath stri
 //   - fileNamesString: space seperated name of files. eg "f1.txt f2.jpeg"
 //   - thumbnailPathsString: space seperated path for thumbnails. eg "full_path1  full_path3", here there are two spaces
 //     between path1 and path3 because file2 doesn't have thumbnail.
-//   - encrypt: string of 0s and 1s denoting whether to encrypt or not. eg "00110": encrypt thrid and fourth file. Length of string
+//   - encrypt: string of 0s and 1s denoting whether to encrypt or not. eg "00110": encrypt third and fourth file. Length of string
 //     should be equal to number of files.
 //   - remotePath: Path of the remote directory where files will upload. It should end with "/"
 //
@@ -236,7 +237,33 @@ func MultiUpload(allocationID string, workdir string, filePathsString string, fi
 	if err != nil {
 		return err
 	}
-	return a.StartMultiUpload(workdir, filePaths, fileNames, thumbnailPaths, encrypt, remotePath, &StatusCallbackWrapped{Callback: statusCb})
+	return a.StartMultiUpload(workdir, filePaths, fileNames, thumbnailPaths, encrypt, remotePath, false, &StatusCallbackWrapped{Callback: statusCb})
+
+}
+
+// MultiUpdateFile - update files from local path to remote path
+// ## Inputs
+//   - allocationID
+//   - workdir: set a workdir as ~/.zcn on mobile apps
+//   - filePathsString: space seperated local full path of files. eg "/usr/local/files/f1.txt /usr/local/files/f2.txt"
+//   - fileNamesString: space seperated name of files. eg "f1.txt f2.jpeg"
+//   - thumbnailPathsString: space seperated path for thumbnails. eg "full_path1  full_path3", here there are two spaces
+//     between path1 and path3 because file2 doesn't have thumbnail.
+//   - encrypt: string of 0s and 1s denoting whether to encrypt or not. eg "00110": encrypt third and fourth file. Length of string
+//     should be equal to number of files.
+//   - remotePath: directory path of updated file. It should end with "/"
+//
+// ## Outputs
+//   - error
+func MultiUpdate(allocationID string, workdir string, filePathsString string, fileNamesString string, encrypt string, thumbnailPathsString string, remotePath string, statusCb StatusCallbackMocked) error {
+	filePaths := strings.Split(filePathsString, SPACE)
+	fileNames := strings.Split(fileNamesString, SPACE)
+	thumbnailPaths := strings.Split(thumbnailPathsString, SPACE)
+	a, err := getAllocation(allocationID)
+	if err != nil {
+		return err
+	}
+	return a.StartMultiUpload(workdir, filePaths, fileNames, thumbnailPaths, encrypt, remotePath, true, &StatusCallbackWrapped{Callback: statusCb})
 
 }
 
