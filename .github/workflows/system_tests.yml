@@ -31,6 +31,10 @@ on:
         description: '0box branch to deploy'
         default: 'staging'
         required: true
+      s3_migration_cli_branch:
+        required: false
+        description: 'S3 Migration CLI (branch or commit SHA) which the tests will use'
+        default: 'staging'
       test_file_filter:
         description: 'Comma separated list of test files to run (eg. zwalletcli_register_wallet_test.go, zwalletcli_send_and_balance_test.go). If supplied, the PR will NOT be notified of the test result'
         default: ''
@@ -56,11 +60,13 @@ jobs:
       blobber_branch: ${{ github.event.inputs.blobber_branch }}
       validator_branch: ${{ github.event.inputs.validator_branch }}
       zbox_branch: ${{ github.event.inputs.zbox_branch }}
+      s3_migration_cli_branch: ${{ github.event.inputs.s3_migration_cli_branch }}
       zdns_branch: staging
       run_smoke_tests: ${{ github.event.inputs.run_smoke_tests }}
       test_file_filter: ${{ github.event.inputs.test_file_filter }}
       skip_tests: ${{ github.event.inputs.skip_tests }}
       run_frontend_tests: true
+      
     secrets:
       SVC_ACCOUNT_SECRET: ${{ secrets.SVC_ACCOUNT_SECRET }}
       DEV1KC: ${{ secrets.DEV1KC }}
