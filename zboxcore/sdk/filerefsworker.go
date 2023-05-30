@@ -51,8 +51,8 @@ type oTreeResponse struct {
 	err      error
 }
 
-//Paginated tree should not be collected as this will stall the client
-//It should rather be handled by application that uses gosdk
+// Paginated tree should not be collected as this will stall the client
+// It should rather be handled by application that uses gosdk
 func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 	totalBlobbersCount := len(o.blobbers)
 	oTreeResponses := make([]oTreeResponse, totalBlobbersCount)
@@ -271,7 +271,7 @@ func (r *RecentlyAddedRefRequest) GetRecentlyAddedRefs() (*RecentlyAddedRefResul
 
 func (r *RecentlyAddedRefRequest) getRecentlyAddedRefs(resp *RecentlyAddedRefResponse, bUrl string) {
 	defer r.wg.Done()
-	req, err := zboxutil.NewRecentlyAddedRefsRequest(bUrl, r.allocationID, r.fromDate, r.offset, r.pageLimit)
+	req, err := zboxutil.NewRecentlyAddedRefsRequest(bUrl, r.allocationID, r.allocationTx, r.fromDate, r.offset, r.pageLimit)
 	if err != nil {
 		resp.err = err
 		return

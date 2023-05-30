@@ -275,6 +275,8 @@ func NewRefsRequest(baseUrl, allocationID, path, pathHash, authToken, offsetPath
 		return nil, err
 	}
 
+	req.Header.Set("ALLOCATION-ID", allocationID)
+
 	if err := setClientInfoWithSign(req, allocationID); err != nil {
 		return nil, err
 	}
@@ -282,7 +284,7 @@ func NewRefsRequest(baseUrl, allocationID, path, pathHash, authToken, offsetPath
 	return req, nil
 }
 
-func NewRecentlyAddedRefsRequest(bUrl, allocID string, fromDate, offset int64, pageLimit int) (*http.Request, error) {
+func NewRecentlyAddedRefsRequest(bUrl, allocID, allocTx string, fromDate, offset int64, pageLimit int) (*http.Request, error) {
 	nUrl, err := joinUrl(bUrl, RECENT_REFS_ENDPOINT, allocID)
 	if err != nil {
 		return nil, err
@@ -298,6 +300,8 @@ func NewRecentlyAddedRefsRequest(bUrl, allocID string, fromDate, offset int64, p
 	if err != nil {
 		return nil, err
 	}
+
+	req.Header.Set("ALLOCATION-ID", allocID)
 
 	if err = setClientInfoWithSign(req, allocID); err != nil {
 		return nil, err
@@ -733,6 +737,8 @@ func NewRevokeShareRequest(baseUrl, allocationID string, allocationTx string, qu
 	if err := setClientInfoWithSign(req, allocationTx); err != nil {
 		return nil, err
 	}
+
+	req.Header.Set("ALLOCATION-ID", allocationID)
 
 	return req, nil
 }
