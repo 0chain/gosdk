@@ -45,8 +45,8 @@ type MultiOperation struct {
 	operationMask zboxutil.Uint128
 	maskMU        *sync.Mutex
 	Consensus
-
-	changes [][]allocationchange.AllocationChange
+	isRepair bool
+	changes  [][]allocationchange.AllocationChange
 }
 
 func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
@@ -233,6 +233,7 @@ func (mo *MultiOperation) Process() error {
 	if err != nil {
 		return fmt.Errorf("Operation failed: %s", err.Error())
 	}
+	l.Logger.Info("WriteMarker locked")
 
 	status, err := mo.allocationObj.CheckAllocStatus()
 	if err != nil {
@@ -240,11 +241,9 @@ func (mo *MultiOperation) Process() error {
 		writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
 		return fmt.Errorf("Check allocation status failed: %s", err.Error())
 	}
-	l.Logger.Info("WriteMarker locked")
 	if status == Repair {
-		writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
 		logger.Logger.Info("Repairing allocation")
-		// TODO: Need status callback
+		writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
 		statusBar := NewStatusBar()
 		if statusBar == nil {
 			return ErrRetryOperation
@@ -253,9 +252,10 @@ func (mo *MultiOperation) Process() error {
 		if err != nil {
 			return err
 		}
+		return ErrRetryOperation
 	}
 	defer writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
-	if status != Rollback {
+	if status != Commit {
 		return ErrRetryOperation
 	}
 

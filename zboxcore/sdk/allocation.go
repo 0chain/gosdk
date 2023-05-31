@@ -659,7 +659,7 @@ func (a *Allocation) DownloadFile(localPath string, remotePath string, verifyDow
 	return a.downloadFile(localPath, remotePath, DOWNLOAD_CONTENT_FULL, 1, 0, numBlockDownloads, verifyDownload, status)
 }
 
-func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
+func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...bool) error {
 	if len(operations) == 0 {
 		return nil
 	}
@@ -667,6 +667,9 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 		return notInitialized
 	}
 	var mo MultiOperation
+	if len(opts) > 0 {
+		mo.isRepair = opts[0]
+	}
 	mo.allocationObj = a
 	mo.operationMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 	mo.maskMU = &sync.Mutex{}

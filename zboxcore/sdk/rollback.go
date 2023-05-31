@@ -297,9 +297,9 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 		return Commit, nil
 	}
 
-	if len(versionMap[latestVersion]) >= req || len(versionMap[prevVersion]) >= req {
+	if len(versionMap[latestVersion]) >= req || len(versionMap[prevVersion]) >= req || len(versionMap) > 2 {
 		// TODO: Return Repair after refactoring the repair function
-		return Commit, nil
+		return Repair, nil
 	}
 
 	// rollback to previous version
