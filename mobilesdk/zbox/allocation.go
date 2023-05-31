@@ -322,7 +322,7 @@ func (a *Allocation) GetDiff(lastSyncCachePath string, localRootPath string, loc
 	if err != nil {
 		return "", fmt.Errorf("invalid remote exclude path JSON. %v", err)
 	}
-	lFdiff, err := a.sdkAllocation.GetAllocationDiff(lastSyncCachePath, localRootPath, filterArray, exclPathArray)
+	lFdiff, err := a.sdkAllocation.GetAllocationDiff(lastSyncCachePath, localRootPath, filterArray, exclPathArray, "/")
 	if err != nil {
 		return "", fmt.Errorf("get allocation diff in sdk failed. %v", err)
 	}

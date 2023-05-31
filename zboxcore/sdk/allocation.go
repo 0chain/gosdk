@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math"
 	"mime/multipart"
 	"net/http"
 	"net/url"
@@ -100,7 +101,6 @@ type ConsolidatedFileMeta struct {
 	ActualFileSize  int64
 	ActualNumBlocks int64
 	EncryptedKey    string
-	CommitMetaTxns  []fileref.CommitMetaTxn
 	Collaborators   []fileref.Collaborator
 }
 
@@ -795,7 +795,7 @@ func (a *Allocation) generateDownloadRequest(localPath string, remotePath string
 	downloadReq.contentMode = contentMode
 	downloadReq.prepaidBlobbers = make(map[string]bool)
 	downloadReq.connectionID = zboxutil.NewConnectionId()
-  
+
 	return downloadReq, nil
 }
 
@@ -972,7 +972,16 @@ func (a *Allocation) DownloadFromBlobber(blobberID, localPath, remotePath string
 		downloadReq.startBlock,
 		downloadReq.numBlocks,
 	)
-	return err
+	if err != nil {
+		l.Logger.Error(err.Error())
+		return err
+	}
+
+	if downloadReq.statusCallback != nil {
+		downloadReq.statusCallback.Completed(
+			downloadReq.allocationID, remotePath, fRef.Name, "", int(fRef.ActualFileSize), OpDownload)
+	}
+	return nil
 }
 
 // GetRefsWithAuthTicket get refs that are children of shared remote path.
@@ -1065,7 +1074,6 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 		result.Path = ref.Path
 		result.Size = ref.ActualFileSize
 		result.EncryptedKey = ref.EncryptedKey
-		result.CommitMetaTxns = ref.CommitMetaTxns
 		result.Collaborators = ref.Collaborators
 		result.ActualFileSize = ref.ActualFileSize
 		result.ActualNumBlocks = ref.NumBlocks
@@ -1111,7 +1119,6 @@ func (a *Allocation) GetFileMetaFromAuthTicket(authTicket string, lookupHash str
 		result.MimeType = ref.MimeType
 		result.Path = ref.Path
 		result.Size = ref.ActualFileSize
-		result.CommitMetaTxns = ref.CommitMetaTxns
 		result.ActualFileSize = ref.Size
 		result.ActualNumBlocks = ref.NumBlocks
 		return result, nil
@@ -1941,7 +1948,11 @@ func (a *Allocation) UpdateWithRepair(
 	statusCB StatusCallback,
 ) (string, error) {
 
-	l.Logger.Info("Uploadating allocation")
+	if lock > math.MaxInt64 {
+		return "", errors.New("invalid_lock", "int64 overflow on lock value")
+	}
+
+	l.Logger.Info("Updating allocation")
 	hash, _, err := UpdateAllocation(size, expiry, a.ID, lock, updateTerms, addBlobberId, removeBlobberId, setThirdPartyExtendable, fileOptionsParams)
 	if err != nil {
 		return "", err
