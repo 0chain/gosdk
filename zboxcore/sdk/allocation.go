@@ -731,9 +731,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 				return err
 			}
 
-			for path := range parentPaths {
-				previousPaths[path] = true
-			}
+			previousPaths[remotePath] = true
 
 			mo.operations = append(mo.operations, operation)
 		}
