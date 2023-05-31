@@ -118,7 +118,7 @@ jobs:
           sharder_image: staging
           blobber_image: pr-1100-a71fdc78
           validator_image: staging
-          zbox_image: fix-allocation-56cc9101
+          zbox_image:  fix-allocation-bd901afb
           zblock_image: staging
           zdns_image: staging
           explorer_image: latest
