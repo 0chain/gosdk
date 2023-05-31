@@ -437,13 +437,17 @@ func (su *ChunkedUpload) createEncscheme() encryption.EncryptionScheme {
 }
 
 func (su *ChunkedUpload) process() error {
+	startTime := time.Now()
+	logger.Logger.Info("[chunked_upload.go] Started Process in chunk upload", time.Since(startTime));
 	if su.statusCallback != nil {
 		su.statusCallback.Started(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, int(su.fileMeta.ActualSize)+int(su.fileMeta.ActualThumbnailSize))
 	}
 
 	for {
-
+		logger.Logger.Info("[chunked_upload.go] Started Reading chunks in chunk upload", time.Since(startTime));
 		chunks, err := su.readChunks(su.chunkNumber)
+		logger.Logger.Info("[chunked_upload.go] Ending Reading chunks in chunk upload", time.Since(startTime));
+
 
 		// chunk, err := su.chunkReader.Next()
 		if err != nil {
@@ -473,12 +477,15 @@ func (su *ChunkedUpload) process() error {
 
 		//chunk has not be uploaded yet
 		if chunks.chunkEndIndex > su.progress.ChunkIndex {
+			logger.Logger.Info("[chunked_upload.go] Started Process upload  in chunk upload", time.Since(startTime));
 
 			err = su.processUpload(
 				chunks.chunkStartIndex, chunks.chunkEndIndex,
 				chunks.fileShards, chunks.thumbnailShards,
 				chunks.isFinal, chunks.totalReadSize,
 			)
+			logger.Logger.Info("[chunked_upload.go] Ended Process upload  in chunk upload", time.Since(startTime));
+
 			if err != nil {
 				if su.statusCallback != nil {
 					su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
@@ -619,6 +626,8 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 	isFinal bool, uploadLength int64) error {
 
 	su.consensus.Reset()
+	startTime := time.Now()
+	logger.Logger.Info("[chunked_upload.go, ProcessUpload] Started Process upload  in chunk upload", time.Since(startTime));
 
 	ctx, cancel := context.WithCancel(context.TODO())
 	defer cancel()
@@ -659,7 +668,12 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		wg.Add(1)
 		go func(b *ChunkedUploadBlobber, body *bytes.Buffer, formData ChunkedUploadFormMetadata, pos uint64) {
 			defer wg.Done()
+			logger.Logger.Info("[chunked_upload.go, ProcessUpload] Started Sending upload upload  in chunk upload", pos, time.Since(startTime));
+
 			err = b.sendUploadRequest(ctx, su, chunkEndIndex, isFinal, encryptedKey, body, formData, pos)
+
+			logger.Logger.Info("[chunked_upload.go, ProcessUpload] Ended Sending upload upload  in chunk upload", pos, time.Since(startTime));
+
 			if err != nil {
 				logger.Logger.Error("error during sendUploadRequest", err)
 				errC := atomic.AddInt32(&errCount, 1)

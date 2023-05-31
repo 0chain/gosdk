@@ -3,11 +3,13 @@ package sdk
 import (
 	"fmt"
 	"io"
+	"time"
 
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/fileref"
+	"github.com/0chain/gosdk/zboxcore/logger"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/google/uuid"
@@ -25,13 +27,21 @@ type UploadOperation struct {
 }
 
 func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
+	startTime := time.Now()
+	logger.Logger.Info("[upload_workder.go] started created chunked upload", time.Since(startTime))
+
 	cu, err := CreateChunkedUpload(uo.workdir, allocObj, uo.fileMeta, uo.fileReader, uo.isUpdate, false, false, connectionID, uo.opts...)
+	logger.Logger.Info("[upload_workder.go] ended created chunked upload", time.Since(startTime))
+
 	uo.statusCallback = cu.statusCallback
 	uo.opCode = cu.opCode
 	if err != nil {
 		return nil, cu.uploadMask, err
 	}
+	logger.Logger.Info("[upload_workder.go] started cu process", time.Since(startTime))
 	err = cu.process()
+	logger.Logger.Info("[upload_workder.go] ended cu process", time.Since(startTime))
+
 	if err != nil {
 		cu.ctxCncl()
 		return nil, cu.uploadMask, err

@@ -660,6 +660,8 @@ func (a *Allocation) DownloadFile(localPath string, remotePath string, verifyDow
 }
 
 func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
+	startTime := time.Now()
+	logger.Logger.Info("[allocation.go] Started DoMultiOperation: ", startTime)
 	if len(operations) == 0 {
 		return nil
 	}
@@ -720,8 +722,8 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 		allFiles[remotePath] = true
 
 	}
-
-	return mo.Process()
+	logger.Logger.Info("[allocation.go] Started Process: ", time.Since(startTime))
+	return mo.Process(startTime)
 
 }
 

@@ -144,7 +144,8 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 	return
 }
 
-func (mo *MultiOperation) Process() error {
+func (mo *MultiOperation) Process(startTime time.Time) error {
+	logger.Logger.Info("[multi_operation_worker.go] Started Process: ", time.Since(startTime))
 	l.Logger.Info("MultiOperation Process start")
 	wg := &sync.WaitGroup{}
 	mo.changes = make([][]allocationchange.AllocationChange, len(mo.operations))
@@ -163,6 +164,8 @@ func (mo *MultiOperation) Process() error {
 		}(blobberIdx)
 	}
 	wg.Wait()
+	logger.Logger.Info("[multi_operation_worker.go] Connection Created: ", time.Since(startTime))
+
 	// Check consensus
 	if mo.operationMask.CountOnes() < mo.consensusThresh {
 		return errors.New("consensus_not_met",
@@ -177,6 +180,7 @@ func (mo *MultiOperation) Process() error {
 		wg.Add(1)
 		go func(op Operationer, idx int) {
 			defer wg.Done()
+			logger.Logger.Info("[multi_operation_worker.go] Operation started for idx: ", idx, time.Since(startTime))
 
 			// Check for other goroutines signal
 			select {
@@ -186,6 +190,8 @@ func (mo *MultiOperation) Process() error {
 			}
 
 			refs, mask, err := op.Process(mo.allocationObj, mo.connectionID) // Process with each blobber
+			logger.Logger.Info("[multi_operation_worker.go] Operation ended for idx: ", idx, time.Since(startTime))
+
 			if err != nil {
 				l.Logger.Error(err)
 
@@ -206,6 +212,8 @@ func (mo *MultiOperation) Process() error {
 		}(op, idx)
 	}
 	wg.Wait()
+	logger.Logger.Info("[multi_operation_worker.go] Done all process: ", time.Since(startTime))
+
 	if ctx.Err() != nil {
 		return <-errs
 	}
@@ -221,20 +229,27 @@ func (mo *MultiOperation) Process() error {
 	// But we want mo.changes[0] to have allocationChange for blobber 1 and mo.changes[1] to have allocationChange for
 	// blobber 2 and so on.
 	mo.changes = zboxutil.Transpose(mo.changes)
-
+	logger.Logger.Info("[multi_operation_worker.go] create write marker stared ", time.Since(startTime))
 	writeMarkerMutex, err := CreateWriteMarkerMutex(client.GetClient(), mo.allocationObj)
+	logger.Logger.Info("[multi_operation_worker.go] create write marker ended ", time.Since(startTime))
+
 	if err != nil {
 		return fmt.Errorf("Operation failed: %s", err.Error())
 	}
 
 	l.Logger.Info("Trying to lock write marker.....")
+	logger.Logger.Info("[multi_operation_worker.go] lock marker started ", time.Since(startTime))
 	err = writeMarkerMutex.Lock(mo.ctx, &mo.operationMask, mo.maskMU,
 		mo.allocationObj.Blobbers, &mo.Consensus, 0, time.Minute, mo.connectionID)
+	logger.Logger.Info("[multi_operation_worker.go] lock marker ended ", time.Since(startTime))
+
 	if err != nil {
 		return fmt.Errorf("Operation failed: %s", err.Error())
 	}
-
+	logger.Logger.Info("[multi_operation_worker.go] check alloc status started ", time.Since(startTime))
 	status, err := mo.allocationObj.CheckAllocStatus()
+	logger.Logger.Info("[multi_operation_worker.go] check alloc status ended ", time.Since(startTime))
+
 	if err != nil {
 		logger.Logger.Error("Error checking allocation status", err)
 		return fmt.Errorf("Check allocation status failed: %s", err.Error())
@@ -275,11 +290,13 @@ func (mo *MultiOperation) Process() error {
 
 		commitReq.changes = append(commitReq.changes, mo.changes[pos]...)
 		commitReqs[counter] = commitReq
-		l.Logger.Info("Commit request sending to blobber ", commitReq.blobber.Baseurl)
+		l.Logger.Info("Commit request sending to blobber ", commitReq.blobber.Baseurl, time.Since(startTime))
 		go AddCommitRequest(commitReq)
 		counter++
 	}
 	wg.Wait()
+	logger.Logger.Info("[multi_operation_worker.go] all commit done", time.Since(startTime))
+	
 
 	for _, commitReq := range commitReqs {
 		if commitReq.result != nil {
@@ -305,9 +322,12 @@ func (mo *MultiOperation) Process() error {
 		}
 		return err
 	}
+	logger.Logger.Info("[multi_operation_worker.go] started calling completed callback", time.Since(startTime))
 	for _, op := range mo.operations {
 		op.Completed(mo.allocationObj)
 	}
+	logger.Logger.Info("[multi_operation_worker.go] ended calling completed callback", time.Since(startTime))
+
 
 	return nil
 
