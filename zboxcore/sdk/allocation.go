@@ -859,7 +859,7 @@ func (a *Allocation) ListDirFromAuthTicket(authTicket string, lookupHash string)
 	return nil, errors.New("list_request_failed", "Failed to get list response from the blobbers")
 }
 
-func (a *Allocation) ListDir(path string) (*ListResult, error) {
+func (a *Allocation) ListDir(path string, opts ...bool) (*ListResult, error) {
 	if !a.isInitialized() {
 		return nil, notInitialized
 	}
@@ -879,6 +879,9 @@ func (a *Allocation) ListDir(path string) (*ListResult, error) {
 	listReq.consensusThresh = a.consensusThreshold
 	listReq.ctx = a.ctx
 	listReq.remotefilepath = path
+	if len(opts) > 0 {
+		listReq.forRepair = opts[0]
+	}
 	ref, err := listReq.GetListFromBlobbers()
 	if err != nil {
 		return nil, err
@@ -1758,7 +1761,7 @@ func (a *Allocation) StartRepair(localRootPath, pathToRepair string, statusCB St
 		return notInitialized
 	}
 
-	listDir, err := a.ListDir(pathToRepair)
+	listDir, err := a.ListDir(pathToRepair, true)
 	if err != nil {
 		return err
 	}

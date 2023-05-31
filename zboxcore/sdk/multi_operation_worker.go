@@ -237,20 +237,25 @@ func (mo *MultiOperation) Process() error {
 	status, err := mo.allocationObj.CheckAllocStatus()
 	if err != nil {
 		logger.Logger.Error("Error checking allocation status", err)
+		writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
 		return fmt.Errorf("Check allocation status failed: %s", err.Error())
 	}
 	l.Logger.Info("WriteMarker locked")
-	defer writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
-
 	if status == Repair {
+		writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
 		logger.Logger.Info("Repairing allocation")
 		// TODO: Need status callback
-		// err = su.allocationObj.RepairAlloc(su.statusCallback)
-		// if err != nil {
-		// 	return err
-		// }
+		statusBar := NewStatusBar()
+		if statusBar == nil {
+			return ErrRetryOperation
+		}
+		err = mo.allocationObj.RepairAlloc(statusBar)
+		if err != nil {
+			return err
+		}
 	}
-	if status != Commit {
+	defer writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
+	if status != Rollback {
 		return ErrRetryOperation
 	}
 

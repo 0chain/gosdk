@@ -227,7 +227,7 @@ func (req *CopyRequest) ProcessCopy() error {
 
 	if status == Repair {
 		logger.Logger.Info("Repairing allocation")
-		//TODO: Need status callback to call repair allocation
+		// // TODO: Need status callback to call repair allocation
 		// err = req.allocationObj.RepairAlloc()
 		// if err != nil {
 		// 	return err
