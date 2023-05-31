@@ -216,7 +216,7 @@ func searchContainerInternal(authToken, url string) ([]*map[string]interface{}, 
 		var containers []*map[string]interface{}
 		err = json.Unmarshal(body, &containers)
 		if err != nil {
-			fmt.Println("Error decoding JSON:", err)
+			sdkLogger.Error("Error decoding JSON:", err)
 			return nil, err
 		}
 		return containers, err
