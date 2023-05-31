@@ -659,73 +659,101 @@ func (a *Allocation) DownloadFile(localPath string, remotePath string, verifyDow
 	return a.downloadFile(localPath, remotePath, DOWNLOAD_CONTENT_FULL, 1, 0, numBlockDownloads, verifyDownload, status)
 }
 
-func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...bool) error {
+func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 	if len(operations) == 0 {
 		return nil
 	}
 	if !a.isInitialized() {
 		return notInitialized
 	}
-	var mo MultiOperation
-	if len(opts) > 0 {
-		mo.isRepair = opts[0]
-	}
-	mo.allocationObj = a
-	mo.operationMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
-	mo.maskMU = &sync.Mutex{}
-	mo.ctx, mo.ctxCncl = context.WithCancel(a.ctx)
-	mo.Consensus = Consensus{
-		consensusThresh: a.consensusThreshold,
-		fullconsensus:   a.fullconsensus,
-	}
-	mo.connectionID = zboxutil.NewConnectionId()
-	allFiles := make(map[string]bool)
-	for _, op := range operations {
-		remotePath := op.RemotePath
-		var operation Operationer
-		switch op.OperationType {
 
-		case constants.FileOperationRename:
-			operation = NewRenameOperation(op.RemotePath, op.DestName, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
-
-		case constants.FileOperationCopy:
-			operation = NewCopyOperation(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
-
-		case constants.FileOperationMove:
-			operation = NewMoveOperation(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
-
-		case constants.FileOperationInsert:
-			remotePath = op.FileMeta.RemotePath
-			operation = NewUploadOperation(op.Workdir, op.FileMeta, op.FileReader, false, op.Opts...)
-
-		case constants.FileOperationDelete:
-			operation = NewDeleteOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
-
-		case constants.FileOperationUpdate:
-			remotePath = op.FileMeta.RemotePath
-			operation = NewUploadOperation(op.Workdir, op.FileMeta, op.FileReader, true, op.Opts...)
-
-		case constants.FileOperationCreateDir:
-			operation = NewDirOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
-
-		default:
-			return errors.New("invalid_operation", "Operation is not valid")
-
+	for i := 0; i < len(operations); {
+		// resetting multi operation and previous paths for every batch
+		var mo MultiOperation
+		mo.allocationObj = a
+		mo.operationMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
+		mo.maskMU = &sync.Mutex{}
+		mo.ctx, mo.ctxCncl = context.WithCancel(a.ctx)
+		mo.Consensus = Consensus{
+			consensusThresh: a.consensusThreshold,
+			fullconsensus:   a.fullconsensus,
 		}
-		if _, ok := allFiles[remotePath]; ok {
-			return errors.New("conflicting_operation", "Conflicting operations are not allowed")
+		mo.connectionID = zboxutil.NewConnectionId()
+
+		previousPaths := make(map[string]bool)
+
+		for ; i < len(operations); i++ {
+			op := operations[i]
+			remotePath := op.RemotePath
+			parentPaths := GenerateParentPaths(remotePath)
+			conflict := false
+
+			for path := range parentPaths {
+				if _, ok := previousPaths[path]; ok {
+					conflict = true
+					break
+				}
+			}
+
+			if conflict {
+				break
+			}
+
+			var operation Operationer
+			switch op.OperationType {
+			case constants.FileOperationRename:
+				operation = NewRenameOperation(op.RemotePath, op.DestName, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
+
+			case constants.FileOperationCopy:
+				operation = NewCopyOperation(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
+
+			case constants.FileOperationMove:
+				operation = NewMoveOperation(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
+
+			case constants.FileOperationInsert:
+				operation = NewUploadOperation(op.Workdir, op.FileMeta, op.FileReader, false, op.Opts...)
+
+			case constants.FileOperationDelete:
+				operation = NewDeleteOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
+
+			case constants.FileOperationUpdate:
+				operation = NewUploadOperation(op.Workdir, op.FileMeta, op.FileReader, true, op.Opts...)
+
+			case constants.FileOperationCreateDir:
+				operation = NewDirOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
+
+			default:
+				return errors.New("invalid_operation", "Operation is not valid")
+			}
+
+			err := operation.Verify(a)
+			if err != nil {
+				return err
+			}
+
+			previousPaths[remotePath] = true
+
+			mo.operations = append(mo.operations, operation)
 		}
-		err := operation.Verify(a)
+
+		err := mo.Process()
 		if err != nil {
 			return err
 		}
-		mo.operations = append(mo.operations, operation)
-		allFiles[remotePath] = true
-
 	}
 
-	return mo.Process()
+	return nil
+}
 
+func GenerateParentPaths(path string) map[string]bool {
+	path = strings.Trim(path, "/")
+	parts := strings.Split(path, "/")
+	parentPaths := make(map[string]bool)
+
+	for i := range parts {
+		parentPaths["/"+strings.Join(parts[:i+1], "/")] = true
+	}
+	return parentPaths
 }
 
 func (a *Allocation) DownloadFileByBlock(
