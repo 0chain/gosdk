@@ -78,31 +78,6 @@ func CreateKeyStorage(homedir, password string) error {
 	return nil
 }
 
-// // UpdateClientEthereumAddress updates Ethereum address
-// func UpdateClientEthereumAddress(homedir, address string) (err error) {
-// 	configFile := path.Join(homedir, BridgeClientConfigName)
-// 	buf, err := os.ReadFile(configFile)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	cfg := &Bridge{}
-// 	err = yaml.Unmarshal(buf, cfg)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	cfg.Owner.EthereumAddress = address
-
-// 	text, err := yaml.Marshal(cfg)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	err = os.WriteFile(configFile, text, 0644)
-
-// 	return err
-// }
-
 // ImportAccount imports account using mnemonic
 func ImportAccount(homedir, mnemonic, password string) (string, error) {
 	// 1. Create storage and account if it doesn't exist and add account to it

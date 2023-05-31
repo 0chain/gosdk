@@ -3,8 +3,6 @@ package zcnbridge
 import (
 	"fmt"
 	"path"
-	"path/filepath"
-	"runtime"
 
 	"github.com/0chain/gosdk/zcnbridge/log"
 
@@ -38,7 +36,7 @@ type BridgeClient struct {
 	GasLimit           uint64
 }
 
-func CreateBridgeClient(cfg *viper.Viper, walletFile ...string) *BridgeClient {
+func CreateBridgeClient(cfg *viper.Viper) *BridgeClient {
 
 	homedir := path.Dir(cfg.ConfigFileUsed())
 	if homedir == "" {
@@ -60,9 +58,9 @@ func CreateBridgeClient(cfg *viper.Viper, walletFile ...string) *BridgeClient {
 
 // SetupBridgeClientSDK Use this from standalone application
 // 0Chain SDK initialization is required
-func SetupBridgeClientSDK(cfg *BridgeSDKConfig, walletFile ...string) *BridgeClient {
+func SetupBridgeClientSDK(cfg *BridgeSDKConfig) *BridgeClient {
 	log.InitLogging(*cfg.Development, *cfg.LogPath, *cfg.LogLevel)
-	bridgeClient := CreateBridgeClient(initChainConfig(cfg), walletFile...)
+	bridgeClient := CreateBridgeClient(initChainConfig(cfg))
 	return bridgeClient
 }
 
@@ -83,15 +81,7 @@ func readConfig(sdkConfig *BridgeSDKConfig, getConfigName func() string) *viper.
 	cfg.SetConfigType("yaml")
 	err := cfg.ReadInConfig()
 	if err != nil {
-		_, file, line, ok := runtime.Caller(2)
-		if !ok {
-			file = "???"
-			line = 0
-		}
-		f := filepath.Base(file)
-		header := fmt.Sprintf("[ERROR] %s:%d: ", f, line)
-
-		log.Logger.Fatal(fmt.Errorf("%w: %s: can't read config", err, header).Error())
+		log.Logger.Fatal(fmt.Errorf("%w: can't read config", err).Error())
 	}
 	return cfg
 }
