@@ -56,7 +56,6 @@ const (
 	OBJECT_TREE_ENDPOINT         = "/v1/file/objecttree/"
 	REFS_ENDPOINT                = "/v1/file/refs/"
 	RECENT_REFS_ENDPOINT         = "/v1/file/refs/recent/"
-	COMMIT_META_TXN_ENDPOINT     = "/v1/file/commitmetatxn/"
 	COLLABORATOR_ENDPOINT        = "/v1/file/collaborator/"
 	CALCULATE_HASH_ENDPOINT      = "/v1/file/calculatehash/"
 	SHARE_ENDPOINT               = "/v1/marketplace/shareinfo/"
@@ -325,22 +324,6 @@ func NewAllocationRequest(baseUrl, allocationID, allocationTx string) (*http.Req
 	setClientInfo(req)
 
 	req.Header.Set("ALLOCATION-ID", allocationID)
-	return req, nil
-}
-
-func NewCommitMetaTxnRequest(baseUrl string, allocationID string, allocationTx string, body io.Reader) (*http.Request, error) {
-	u, err := joinUrl(baseUrl, COMMIT_META_TXN_ENDPOINT, allocationTx)
-	if err != nil {
-		return nil, err
-	}
-	req, err := http.NewRequest(http.MethodPost, u.String(), body)
-	if err != nil {
-		return nil, err
-	}
-	setClientInfo(req)
-
-	req.Header.Set("ALLOCATION-ID", allocationID)
-
 	return req, nil
 }
 
