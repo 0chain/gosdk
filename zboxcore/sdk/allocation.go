@@ -667,21 +667,18 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 		return notInitialized
 	}
 
-	var mo MultiOperation
-
 	for i := 0; i < len(operations); {
 		// resetting multi operation and previous paths for every batch
-		mo = MultiOperation{
-			allocationObj: a,
-			operationMask: zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1),
-			maskMU:        &sync.Mutex{},
-			ctx:           a.ctx,
-			Consensus: Consensus{
-				consensusThresh: a.consensusThreshold,
-				fullconsensus:   a.fullconsensus,
-			},
-			connectionID: zboxutil.NewConnectionId(),
+		var mo MultiOperation
+		mo.allocationObj = a
+		mo.operationMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
+		mo.maskMU = &sync.Mutex{}
+		mo.ctx, mo.ctxCncl = context.WithCancel(a.ctx)
+		mo.Consensus = Consensus{
+			consensusThresh: a.consensusThreshold,
+			fullconsensus:   a.fullconsensus,
 		}
+		mo.connectionID = zboxutil.NewConnectionId()
 
 		previousPaths := make(map[string]bool)
 
