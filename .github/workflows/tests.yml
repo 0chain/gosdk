@@ -9,6 +9,7 @@ on:
     branches: [ master, staging ]
   pull_request:
     branches: [ master, staging ]
+  workflow_dispatch:
 
 env:
   ACTIONS_ALLOW_UNSECURE_COMMANDS: true
@@ -20,31 +21,65 @@ jobs:
     steps:
       - name: Install Packages
         run: |
-          sudo apt-get update
-          sudo apt-get -y install build-essential nghttp2 libnghttp2-dev libssl-dev
-      - uses: actions/setup-go@v3
-        with:
-          go-version: '1.18'
+          sudo apt update -y
+          sudo apt -y install build-essential nghttp2 libnghttp2-dev libssl-dev wget
+          
+      # - uses: actions/setup-go@v3
+      #   with:
+      #     go-version: '1.20'
+
+      - name: "Setup Go"
+        shell: 'script --return --quiet --command "bash {0}"'
+        run: |
+          [ -f ./https://go.dev/dl/go1.20.3.linux-amd64.tar.gz ] || wget https://go.dev/dl/go1.20.3.linux-amd64.tar.gz
+          [ -d /usr/local/go ] &&  sudo rm -rf /usr/local/go
+          [ -f /usr/local/bin/go ] &&  sudo rm -rf /usr/local/bin/go
+          sudo tar -C /usr/local -xzf ./go1.20.3.linux-amd64.tar.gz
+
+          echo "PATH=$PATH:/usr/local/go/bin" >> $GITHUB_ENV
+          export PATH=$PATH:/usr/local/go/bin
+          which go
+          go env
+
       - uses: actions/checkout@v3
+
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
-          version: v1.50
+          version: v1.51.1
           skip-build-cache: true
           skip-pkg-cache: true
           only-new-issues: true
 
   go-test:
-    runs-on: [self-hosted, build]
+    runs-on: [ arc-runner ]
     steps:
       - uses: actions/checkout@v2
+
+      - name: Install Packages
+        run: |
+          sudo apt update -y
+          sudo apt -y install build-essential nghttp2 libnghttp2-dev libssl-dev wget
+
+      - name: "Setup Go"
+        shell: 'script --return --quiet --command "bash {0}"'
+        run: |
+          [ -f ./https://go.dev/dl/go1.20.3.linux-amd64.tar.gz ] || wget https://go.dev/dl/go1.20.3.linux-amd64.tar.gz
+          [ -d /usr/local/go ] &&  sudo rm -rf /usr/local/go
+          [ -f /usr/local/bin/go ] &&  sudo rm -rf /usr/local/bin/go
+          sudo tar -C /usr/local -xzf ./go1.20.3.linux-amd64.tar.gz
+
+          echo "PATH=$PATH:/usr/local/go/bin" >> $GITHUB_ENV
+          export PATH=$PATH:/usr/local/go/bin
+          which go
+          go env
 
       - name: Install deps
         run: |
           sudo apt-get update -y && sudo apt-get install build-essential wget containerd docker.io -y
 
       - name: Run Unit Test
-        run: docker run --rm -v $PWD:/gosdk --workdir=/gosdk golang:1.18 make gosdk-test
+        run: make gosdk-test
 
   system-test:
     needs: go-test
@@ -136,10 +171,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Setup go 1.18
+      - name: Setup go 1.20
         uses: actions/setup-go@v2
         with:
-          go-version: '1.18' # The Go version to download (if necessary) and use.
+          go-version: '1.20' # The Go version to download (if necessary) and use.
+      
       - uses: actions/setup-node@v2
         with:
           node-version: '14'
