@@ -507,6 +507,13 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			if err != nil {
 				return errors.Wrap(err, fmt.Sprintf("Download failed for block %d. ", startBlock+int64(j)*numBlocks))
 			}
+
+			n := int64(math.Min(float64(remainingSize), float64(len(res[j]))))
+			downloaded = downloaded + int(n)
+
+			if req.statusCallback != nil {
+				req.statusCallback.InProgress(req.allocationID, remotePathCB, op, downloaded, res[j])
+			}
 			return nil
 		})
 	}
@@ -526,13 +533,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		if isPREAndWholeFile {
 			actualFileHasher.Write(data[:n])
 		}
-
-		downloaded = downloaded + int(n)
 		remainingSize -= n
-
-		if req.statusCallback != nil {
-			req.statusCallback.InProgress(req.allocationID, remotePathCB, op, downloaded, data)
-		}
 	}
 
 	f.Sync() //nolint
