@@ -835,7 +835,7 @@ func GetFileRefFromBlobber(allocationID, blobberId, remotePath string) (fRef *fi
 	go listReq.getFileMetaInfoFromBlobber(listReq.blobbers[0], 0, rspCh)
 	listReq.wg.Wait()
 	resp := <-rspCh
-	return resp.fileref, nil
+	return resp.fileref, resp.err
 }
 
 func (req *DownloadRequest) getFileRef(remotePathCB string) (fRef *fileref.FileRef, err error) {
