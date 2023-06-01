@@ -514,6 +514,13 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			if req.statusCallback != nil {
 				req.statusCallback.InProgress(req.allocationID, remotePathCB, op, downloaded, res[j])
 			}
+
+			_, err = f.Write(data[:n])
+
+			if err != nil {
+				return errors.Wrap(err, "Write file failed")
+			}
+
 			return nil
 		})
 	}
@@ -524,12 +531,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 
 	for _, data := range res {
 		n := int64(math.Min(float64(remainingSize), float64(len(data))))
-		_, err = f.Write(data[:n])
-
-		if err != nil {
-			req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
-			return
-		}
+		
 		if isPREAndWholeFile {
 			actualFileHasher.Write(data[:n])
 		}
