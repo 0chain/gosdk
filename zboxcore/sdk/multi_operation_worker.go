@@ -45,8 +45,7 @@ type MultiOperation struct {
 	operationMask zboxutil.Uint128
 	maskMU        *sync.Mutex
 	Consensus
-	isRepair bool
-	changes  [][]allocationchange.AllocationChange
+	changes [][]allocationchange.AllocationChange
 }
 
 func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
