@@ -2,6 +2,7 @@ package zbox
 
 import (
 	"encoding/json"
+	"errors"
 	"strings"
 	"time"
 
@@ -15,6 +16,46 @@ type fileResp struct {
 	sdk.FileInfo
 	Name string `json:"name"`
 	Path string `json:"path"`
+}
+
+type MultiOperationOption struct {
+	OperationType string `json:"operationType,omitempty"`
+	RemotePath    string `json:"remotePath,omitempty"`
+	DestName      string `json:"destName,omitempty"` // Required only for rename operation
+	DestPath      string `json:"destPath,omitempty"` // Required for copy and move operation`
+}
+
+// MultiOperation - do copy, move, delete and createdir operation together
+// ## Inputs
+//   - allocationID
+// 	 - jsonMultiUploadOpetions 
+//
+// ## Outputs
+//   - error
+func MultiOperation(allocationID string, jsonMultiUploadOptions string) error {
+	if allocationID == "" {
+		return errors.New("AllocationID is required")
+	}
+	var options []MultiOperationOption
+	err := json.Unmarshal([]byte(jsonMultiUploadOptions), &options)
+	if err != nil {
+		return err
+	}
+	totalOp := len(options)
+	operations := make([]sdk.OperationRequest, totalOp)
+	for idx, op := range options {
+		operations[idx] = sdk.OperationRequest{
+			OperationType: op.OperationType,
+			RemotePath:    op.RemotePath,
+			DestName:      op.DestName,
+			DestPath:      op.DestPath,
+		}
+	}
+	allocationObj, err := getAllocation(allocationID)
+	if err != nil {
+		return err
+	}
+	return allocationObj.DoMultiOperation(operations)
 }
 
 // ListDir - listing files from path
