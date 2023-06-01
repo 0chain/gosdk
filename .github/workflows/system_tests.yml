@@ -23,7 +23,7 @@ on:
         description: 'blobber/validator branch to deploy'
         default: 'staging'
         required: true
-      s3migration_cli_branch:
+      s3_migration_cli_branch:
           required: false
           description: 'S3 Migration CLI (branch or commit SHA) which the tests will use'
           default: 'staging'
