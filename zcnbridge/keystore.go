@@ -2,7 +2,6 @@ package zcnbridge
 
 import (
 	"fmt"
-	"os"
 	"path"
 
 	hdw "github.com/0chain/gosdk/zcncore/ethhdwallet"
@@ -10,7 +9,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
 )
 
 // ListStorageAccounts List available accounts
@@ -78,31 +76,6 @@ func CreateKeyStorage(homedir, password string) error {
 	fmt.Printf("Created account: %s", account.Address.Hex())
 
 	return nil
-}
-
-// UpdateClientEthereumAddress updates Ethereum address
-func UpdateClientEthereumAddress(homedir, address string) (err error) {
-	configFile := path.Join(homedir, BridgeClientConfigName)
-	buf, err := os.ReadFile(configFile)
-	if err != nil {
-		return err
-	}
-	cfg := &Bridge{}
-	err = yaml.Unmarshal(buf, cfg)
-	if err != nil {
-		return err
-	}
-
-	cfg.Owner.EthereumAddress = address
-
-	text, err := yaml.Marshal(cfg)
-	if err != nil {
-		return err
-	}
-
-	err = os.WriteFile(configFile, text, 0644)
-
-	return err
 }
 
 // ImportAccount imports account using mnemonic
