@@ -515,7 +515,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 				req.statusCallback.InProgress(req.allocationID, remotePathCB, op, downloaded, res[j])
 			}
 
-			_, err = f.Write(data[:n])
+			_, err = f.Write(res[j][:n])
 
 			if err != nil {
 				return errors.Wrap(err, "Write file failed")
