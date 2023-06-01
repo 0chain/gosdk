@@ -28,7 +28,7 @@ type MultiOperationOption struct {
 // MultiOperation - do copy, move, delete and createdir operation together
 // ## Inputs
 //   - allocationID
-// 	 - jsonMultiUploadOpetions 
+//   - jsonMultiUploadOpetions: Json Array of MultiOperationOption. eg: "[{"operationType":"move","remotePath":"/README.md","destPath":"/folder1/"},{"operationType":"delete","remotePath":"/t3.txt"}]"
 //
 // ## Outputs
 //   - error

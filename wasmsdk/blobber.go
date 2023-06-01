@@ -398,6 +398,13 @@ type MultiOperationOption struct {
 	DestPath      string `json:"destPath,omitempty"` // Required for copy and move operation`
 }
 
+// MultiOperation - do copy, move, delete and createdir operation together
+// ## Inputs
+//   - allocationID
+//   - jsonMultiUploadOpetions: Json Array of MultiOperationOption. eg: "[{"operationType":"move","remotePath":"/README.md","destPath":"/folder1/"},{"operationType":"delete","remotePath":"/t3.txt"}]"
+//
+// ## Outputs
+//   - error
 func MultiOperation(allocationID string, jsonMultiUploadOptions string) error {
 	if allocationID == "" {
 		return errors.New("AllocationID is required")
@@ -423,7 +430,6 @@ func MultiOperation(allocationID string, jsonMultiUploadOptions string) error {
 	}
 	return allocationObj.DoMultiOperation(operations)
 }
-
 
 func bulkUpload(jsonBulkUploadOptions string) ([]BulkUploadResult, error) {
 	var options []BulkUploadOption
