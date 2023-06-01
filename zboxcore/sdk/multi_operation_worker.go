@@ -82,7 +82,7 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 			var httpreq *http.Request
 			httpreq, err = zboxutil.NewConnectionRequest(blobber.Baseurl, mo.allocationObj.ID, mo.allocationObj.Tx, body)
 			if err != nil {
-				l.Logger.Error(blobber.Baseurl, "Error creating rename request", err)
+				l.Logger.Error(blobber.Baseurl, "Error creating new connection request", err)
 				return
 			}
 
