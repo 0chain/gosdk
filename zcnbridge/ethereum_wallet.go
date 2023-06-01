@@ -19,7 +19,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-func (b *EthereumConfig) CreateEthClient() (*ethclient.Client, error) {
+func (b *BridgeClient) CreateEthClient() (*ethclient.Client, error) {
 	client, err := ethclient.Dial(b.EthereumNodeURL)
 	if err != nil {
 		Logger.Error(err)
@@ -27,9 +27,8 @@ func (b *EthereumConfig) CreateEthClient() (*ethclient.Client, error) {
 	return client, err
 }
 
-//  _allowances[owner][spender] = amount;
+// _allowances[owner][spender] = amount;
 // as a spender, ERC20 WZCN token must increase allowance for the bridge to make burn on behalf of WZCN owner
-
 func CreateSignedTransaction(
 	chainID *big.Int,
 	client *ethclient.Client,
@@ -41,16 +40,6 @@ func CreateSignedTransaction(
 	if err != nil {
 		Logger.Fatal(err)
 	}
-
-	// eth_estimateGas
-	// EstimateGas tries to estimate the gas needed to execute a specific transaction based on
-	// the current pending state of the backend blockchain. There is no guarantee that this is
-	// the true gas limit requirement as other transactions may be added or removed by miners,
-	// but it should provide a basis for setting a reasonable default.
-
-	// eth_gasPrice
-	// retrieves the currently suggested gas price to allow a timely
-	// execution of a transaction
 
 	gasPriceWei, err := client.SuggestGasPrice(context.Background())
 	if err != nil {
@@ -72,11 +61,10 @@ func CreateSignedTransaction(
 	return opts
 }
 
-func (b *BridgeClientConfig) CreateSignedTransactionFromKeyStore(client *ethclient.Client, gasLimitUnits uint64) *bind.TransactOpts {
+func (b *BridgeClient) CreateSignedTransactionFromKeyStore(client *ethclient.Client, gasLimitUnits uint64) *bind.TransactOpts {
 	var (
 		signerAddress = common.HexToAddress(b.EthereumAddress)
 		password      = b.Password
-		value         = b.Value
 	)
 
 	keyDir := path.Join(b.Homedir, EthereumWalletStorageDir)
@@ -114,10 +102,7 @@ func (b *BridgeClientConfig) CreateSignedTransactionFromKeyStore(client *ethclie
 		Logger.Fatal(err)
 	}
 
-	valueWei := new(big.Int).Mul(big.NewInt(value), big.NewInt(params.Wei))
-
 	opts.Nonce = big.NewInt(int64(nonce))
-	opts.Value = valueWei         // in wei
 	opts.GasLimit = gasLimitUnits // in units
 	opts.GasPrice = gasPriceWei   // wei
 
