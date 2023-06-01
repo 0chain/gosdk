@@ -125,7 +125,7 @@ jobs:
           zsearch_image: staging
           zbox_cli_branch: staging
           zwallet_cli_branch: staging
-          custom_go_sdk_version: staging
+          custom_go_sdk_version: ${{ env.CURRENT_BRANCH_HEAD }}
           SUBGRAPH_API_URL: ${{ secrets.SUBGRAPH_API_URL }}
           TENDERLY_FORK_ID: ${{ secrets.TENDERLY_FORK_ID }}
           graphnode_sc: ${{ secrets.GRAPHNODE_SC }}
