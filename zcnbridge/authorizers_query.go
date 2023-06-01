@@ -16,6 +16,7 @@ import (
 	"github.com/0chain/gosdk/zcnbridge/log"
 	"github.com/0chain/gosdk/zcnbridge/wallet"
 	"github.com/0chain/gosdk/zcnbridge/zcnsc"
+	"github.com/0chain/gosdk/zcncore"
 	"go.uber.org/zap"
 )
 
@@ -119,7 +120,7 @@ func (b *BridgeClient) QueryEthereumBurnEvents(startNonce string) ([]*ethereum.B
 	var (
 		totalWorkers = len(authorizers)
 		values       = map[string]string{
-			"clientid":        b.ClientID(),
+			"clientid":        zcncore.GetClientWalletID(),
 			"ethereumaddress": b.EthereumAddress,
 			"startnonce":      startNonce,
 		}
@@ -177,7 +178,7 @@ func (b *BridgeClient) QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPa
 		totalWorkers = len(authorizers)
 		values       = map[string]string{
 			"hash":     ethBurnHash,
-			"clientid": b.ClientID(),
+			"clientid": zcncore.GetClientWalletID(),
 		}
 	)
 

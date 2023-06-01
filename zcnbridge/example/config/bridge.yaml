@@ -1,9 +1,0 @@
-bridge:
-    Password: password
-    EthereumAddress: 0x8A2b63E5F27aFEC56a3e5C011B9b97C97B9cdE00
-    BridgeAddress: 0x3dF5FeC3EE9f676B0fb958757e5D72E1150A9485
-    WzcnAddress: 0x8A2b63E5F27aFEC56a3e5C011B9b97C97B9cdE00
-    EthereumNodeURL: https://ropsten.infura.io/v3/22cb2849f5f74b8599f3dc2a23085bd4
-    GasLimit: 300000
-    Value: 0
-    ConsensusThreshold: 75
