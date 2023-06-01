@@ -150,7 +150,7 @@ func (b *chunkedUploadFormBuilder) Build(
 		if err != nil {
 			return nil, metadata, err
 		}
-
+		thumbnailWriters.Write([]byte(fileMeta.RemoteName))
 		formData.ActualThumbSize = fileMeta.ActualThumbnailSize
 		formData.ThumbnailContentHash = hex.EncodeToString(thumbnailHash.Sum(nil))
 
