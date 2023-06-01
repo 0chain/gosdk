@@ -5,11 +5,6 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
-
-	//. "github.com/0chain/gosdk/zcnbridge/log"
-
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zcncore"
 	"github.com/pkg/errors"
@@ -66,11 +61,4 @@ func addPercents(gasLimitUnits uint64, percents int) *big.Int {
 	gasLimitBig = origin.Add(origin, deltaBig)
 
 	return gasLimitBig
-}
-
-func CreateHash(message string) common.Hash {
-	data := []byte(message)
-	hash := crypto.Keccak256Hash(data)
-
-	return hash
 }
