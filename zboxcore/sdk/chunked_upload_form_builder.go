@@ -150,7 +150,7 @@ func (b *chunkedUploadFormBuilder) Build(
 		if err != nil {
 			return nil, metadata, err
 		}
-		_, err = thumbnailWriters.Write([]byte(fileMeta.RemoteName))
+		_, err = thumbnailWriters.Write([]byte(fileMeta.RemotePath))
 		if err != nil {
 			return nil, metadata, err
 		}
