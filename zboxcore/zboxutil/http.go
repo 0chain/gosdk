@@ -69,6 +69,7 @@ const (
 
 	// CLIENT_SIGNATURE_HEADER represents http request header contains signature.
 	CLIENT_SIGNATURE_HEADER = "X-App-Client-Signature"
+	ALLOCATION_ID_HEADER    = "ALLOCATION-ID"
 )
 
 func getEnvAny(names ...string) string {
@@ -172,7 +173,7 @@ func NewCommitRequest(baseUrl, allocationID string, allocationTx string, body io
 	}
 	setClientInfo(req)
 
-	req.Header.Set("ALLOCATION-ID", allocationID)
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 
 	return req, nil
 }
@@ -201,7 +202,7 @@ func NewReferencePathRequest(baseUrl, allocationID string, allocationTx string, 
 		return nil, err
 	}
 
-	req.Header.Set("ALLOCATION-ID", allocationID)
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 
 	return req, nil
 }
@@ -224,7 +225,7 @@ func NewCalculateHashRequest(baseUrl, allocationID string, allocationTx string, 
 	}
 	setClientInfo(req)
 
-	req.Header.Set("ALLOCATION-ID", allocationID)
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 
 	return req, nil
 }
@@ -247,7 +248,7 @@ func NewObjectTreeRequest(baseUrl, allocationID string, allocationTx string, pat
 		return nil, err
 	}
 
-	req.Header.Set("ALLOCATION-ID", allocationID)
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 
 	return req, nil
 }
@@ -274,7 +275,7 @@ func NewRefsRequest(baseUrl, allocationID, path, pathHash, authToken, offsetPath
 		return nil, err
 	}
 
-	req.Header.Set("ALLOCATION-ID", allocationID)
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 
 	if err := setClientInfoWithSign(req, allocationID); err != nil {
 		return nil, err
@@ -300,7 +301,7 @@ func NewRecentlyAddedRefsRequest(bUrl, allocID, allocTx string, fromDate, offset
 		return nil, err
 	}
 
-	req.Header.Set("ALLOCATION-ID", allocID)
+	req.Header.Set(ALLOCATION_ID_HEADER, allocID)
 
 	if err = setClientInfoWithSign(req, allocID); err != nil {
 		return nil, err
@@ -323,7 +324,7 @@ func NewAllocationRequest(baseUrl, allocationID, allocationTx string) (*http.Req
 	}
 	setClientInfo(req)
 
-	req.Header.Set("ALLOCATION-ID", allocationID)
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 	return req, nil
 }
 
@@ -341,7 +342,7 @@ func NewCollaboratorRequest(baseUrl string, allocationID string, allocationTx st
 		return nil, err
 	}
 
-	req.Header.Set("ALLOCATION-ID", allocationID)
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 
 	return req, nil
 }
@@ -361,7 +362,7 @@ func GetCollaboratorsRequest(baseUrl string, allocationID string, allocationTx s
 		return nil, err
 	}
 
-	req.Header.Set("ALLOCATION-ID", allocationID)
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 
 	return req, nil
 }
@@ -382,7 +383,7 @@ func DeleteCollaboratorRequest(baseUrl string, allocationID string, allocationTx
 		return nil, err
 	}
 
-	req.Header.Set("ALLOCATION-ID", allocationID)
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 
 	return req, nil
 }
@@ -402,7 +403,7 @@ func NewFileMetaRequest(baseUrl string, allocationID string, allocationTx string
 		return nil, err
 	}
 
-	req.Header.Set("ALLOCATION-ID", allocationID)
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 
 	return req, nil
 }
@@ -421,7 +422,7 @@ func NewFileStatsRequest(baseUrl string, allocationID string, allocationTx strin
 		return nil, err
 	}
 
-	req.Header.Set("ALLOCATION-ID", allocationID)
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 
 	return req, nil
 }
@@ -442,7 +443,7 @@ func NewListRequest(baseUrl, allocationID string, allocationTx string, path, pat
 	}
 	setClientInfo(req)
 
-	req.Header.Set("ALLOCATION-ID", allocationID)
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 
 	return req, nil
 }
@@ -467,7 +468,7 @@ func NewUploadRequestWithMethod(baseURL, allocationID string, allocationTx strin
 		return nil, err
 	}
 
-	req.Header.Set("ALLOCATION-ID", allocationID)
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 
 	return req, nil
 }
@@ -494,7 +495,7 @@ func NewWriteMarkerLockRequest(
 		return nil, err
 	}
 
-	req.Header.Set("ALLOCATION-ID", allocationID)
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 
 	return req, nil
 }
@@ -517,7 +518,7 @@ func NewWriteMarkerUnLockRequest(
 		return nil, err
 	}
 
-	req.Header.Set("ALLOCATION-ID", allocationID)
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 
 	return req, nil
 }
@@ -542,7 +543,7 @@ func NewUploadRequest(baseUrl, allocationID string, allocationTx string, body io
 		return nil, err
 	}
 
-	req.Header.Set("ALLOCATION-ID", allocationID)
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 
 	return req, nil
 }
@@ -561,7 +562,7 @@ func NewConnectionRequest(baseUrl, allocationID string, allocationTx string, bod
 		return nil, err
 	}
 
-	req.Header.Set("ALLOCATION-ID", allocationID)
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 
 	return req, nil
 }
@@ -582,7 +583,7 @@ func NewRenameRequest(baseUrl, allocationID string, allocationTx string, body io
 		return nil, err
 	}
 
-	req.Header.Set("ALLOCATION-ID", allocationID)
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 
 	return req, nil
 }
@@ -602,7 +603,7 @@ func NewCopyRequest(baseUrl, allocationID string, allocationTx string, body io.R
 		return nil, err
 	}
 
-	req.Header.Set("ALLOCATION-ID", allocationID)
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 
 	return req, nil
 }
@@ -622,7 +623,7 @@ func NewMoveRequest(baseUrl, allocationID string, allocationTx string, body io.R
 		return nil, err
 	}
 
-	req.Header.Set("ALLOCATION-ID", allocationID)
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 
 	return req, nil
 }
@@ -640,7 +641,7 @@ func NewDownloadRequest(baseUrl, allocationID, allocationTx string) (*http.Reque
 	}
 	setClientInfo(req)
 
-	req.Header.Set("ALLOCATION-ID", allocationID)
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 
 	return req, nil
 }
@@ -661,7 +662,7 @@ func NewDeleteRequest(baseUrl, allocationID string, allocationTx string, query *
 		return nil, err
 	}
 
-	req.Header.Set("ALLOCATION-ID", allocationID)
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 
 	return req, nil
 }
@@ -681,7 +682,7 @@ func NewCreateDirRequest(baseUrl, allocationID string, allocationTx string, body
 		return nil, err
 	}
 
-	req.Header.Set("ALLOCATION-ID", allocationID)
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 
 	return req, nil
 }
@@ -701,7 +702,7 @@ func NewShareRequest(baseUrl, allocationID string, allocationTx string, body io.
 		return nil, err
 	}
 
-	req.Header.Set("ALLOCATION-ID", allocationID)
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 
 	return req, nil
 }
@@ -721,7 +722,7 @@ func NewRevokeShareRequest(baseUrl, allocationID string, allocationTx string, qu
 		return nil, err
 	}
 
-	req.Header.Set("ALLOCATION-ID", allocationID)
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 
 	return req, nil
 }
@@ -742,7 +743,7 @@ func NewWritemarkerRequest(baseUrl, allocationID, allocationTx string) (*http.Re
 		return nil, err
 	}
 
-	req.Header.Set("ALLOCATION-ID", allocationID)
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 
 	return req, nil
 }
@@ -759,7 +760,7 @@ func NewRollbackRequest(baseUrl, allocationID string, allocationTx string, body 
 	}
 	setClientInfo(req)
 
-	req.Header.Set("ALLOCATION-ID", allocationID)
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 
 	return req, nil
 }
