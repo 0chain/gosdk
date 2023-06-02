@@ -16,7 +16,7 @@ require (
 	github.com/h2non/filetype v1.1.3
 	github.com/hashicorp/go-retryablehttp v0.7.2
 	github.com/hashicorp/golang-lru/v2 v2.0.1
-	github.com/herumi/bls-go-binary v1.30.4
+	github.com/herumi/bls-go-binary v1.28.2
 	github.com/influxdata/influxdb v1.8.3
 	github.com/klauspost/reedsolomon v1.11.7
 	github.com/labstack/echo v3.3.10+incompatible
