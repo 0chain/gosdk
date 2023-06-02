@@ -484,6 +484,9 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	// Buffered channel to hold the blocks as they are downloaded
 	blocks := make(chan blockData, n)
 
+	var wg sync.WaitGroup
+	wg.Add(1)
+
 	// Handle writing the blocks in order as soon as they are downloaded
 	go func() {
 		buffer := make(map[int][]byte)
@@ -542,6 +545,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			}
 		}
 		f.Sync() //nolint
+		wg.Done()
 	}()
 
 	// Initiate download of first blocks sequentially to allow readmarkers to be properly submitted, then proceed to download in parallel
@@ -586,6 +590,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		}
 	}
 	close(blocks)
+	wg.Wait()
 
 	if isPREAndWholeFile {
 		calculatedFileHash := hex.EncodeToString(actualFileHasher.Sum(nil))
