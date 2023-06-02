@@ -25,19 +25,27 @@ type MultiOperationOption struct {
 	DestPath      string `json:"destPath,omitempty"` // Required for copy and move operation`
 }
 
+type MultiUploadOption struct {
+	FilePath      string `json:"filePath,omitempty"`
+	FileName      string `json:"fileName,omitempty"`
+	RemotePath    string `json:"remotePath,omitempty"`
+	ThumbnailPath string `json:"thumbnailPath,omitempty"`
+	Encrypt       bool   `json:"encrypt,omitempty"`
+}
+
 // MultiOperation - do copy, move, delete and createdir operation together
 // ## Inputs
 //   - allocationID
-//   - jsonMultiUploadOpetions: Json Array of MultiOperationOption. eg: "[{"operationType":"move","remotePath":"/README.md","destPath":"/folder1/"},{"operationType":"delete","remotePath":"/t3.txt"}]"
+//   - jsonMultiOperationOptions: Json Array of MultiOperationOption. eg: "[{"operationType":"move","remotePath":"/README.md","destPath":"/folder1/"},{"operationType":"delete","remotePath":"/t3.txt"}]"
 //
 // ## Outputs
 //   - error
-func MultiOperation(allocationID string, jsonMultiUploadOptions string) error {
+func MultiOperation(allocationID string, jsonMultiOperationOptions string) error {
 	if allocationID == "" {
 		return errors.New("AllocationID is required")
 	}
 	var options []MultiOperationOption
-	err := json.Unmarshal([]byte(jsonMultiUploadOptions), &options)
+	err := json.Unmarshal([]byte(jsonMultiOperationOptions), &options)
 	if err != nil {
 		return err
 	}
@@ -260,25 +268,34 @@ func RepairFile(allocationID, workdir, localPath, remotePath, thumbnailPath stri
 // ## Inputs
 //   - allocationID
 //   - workdir: set a workdir as ~/.zcn on mobile apps
-//   - filePathsString: space seperated local full path of files. eg "/usr/local/files/f1.txt /usr/local/files/f2.txt"
-//   - fileNamesString: space seperated name of files. eg "f1.txt f2.jpeg"
-//   - thumbnailPathsString: space seperated path for thumbnails. eg "full_path1  full_path3", here there are two spaces
-//     between path1 and path3 because file2 doesn't have thumbnail.
-//   - encrypt: string of 0s and 1s denoting whether to encrypt or not. eg "00110": encrypt third and fourth file. Length of string
-//     should be equal to number of files.
-//   - remotePath: Path of the remote directory where files will upload. It should end with "/"
+//   - jsonMultiUploadOpetions: Json Array of MultiOperationOption. eg: "[{"remotePath":"/","filePath":"/t2.txt"},{"remotePath":"/","filePath":"/t3.txt"}]"
 //
 // ## Outputs
 //   - error
-func MultiUpload(allocationID string, workdir string, filePathsString string, fileNamesString string, encrypt string, thumbnailPathsString string, remotePath string, statusCb StatusCallbackMocked) error {
-	filePaths := strings.Split(filePathsString, SPACE)
-	fileNames := strings.Split(fileNamesString, SPACE)
-	thumbnailPaths := strings.Split(thumbnailPathsString, SPACE)
+func MultiUpload(allocationID string, workdir string, jsonMultiUploadOptions string, statusCb StatusCallbackMocked) error {
+	var options []MultiUploadOption
+	err := json.Unmarshal([]byte(jsonMultiUploadOptions), &options)
+	totalUploads := len(options)
+	filePaths := make([]string, totalUploads)
+	fileNames := make([]string, totalUploads)
+	remotePaths := make([]string, totalUploads)
+	thumbnailPaths := make([]string, totalUploads)
+	encrypts := make([]bool, totalUploads)
+	for idx, option := range options {
+		filePaths[idx] = option.FilePath
+		fileNames[idx] = option.FileName
+		thumbnailPaths[idx] = option.ThumbnailPath
+		remotePaths[idx] = option.RemotePath
+	}
+	if err != nil {
+		return err
+	}
+
 	a, err := getAllocation(allocationID)
 	if err != nil {
 		return err
 	}
-	return a.StartMultiUpload(workdir, filePaths, fileNames, thumbnailPaths, encrypt, remotePath, false, &StatusCallbackWrapped{Callback: statusCb})
+	return a.StartMultiUpload(workdir, filePaths, fileNames, thumbnailPaths, encrypts, remotePaths, false, &StatusCallbackWrapped{Callback: statusCb})
 
 }
 
@@ -286,25 +303,34 @@ func MultiUpload(allocationID string, workdir string, filePathsString string, fi
 // ## Inputs
 //   - allocationID
 //   - workdir: set a workdir as ~/.zcn on mobile apps
-//   - filePathsString: space seperated local full path of files. eg "/usr/local/files/f1.txt /usr/local/files/f2.txt"
-//   - fileNamesString: space seperated name of files. eg "f1.txt f2.jpeg"
-//   - thumbnailPathsString: space seperated path for thumbnails. eg "full_path1  full_path3", here there are two spaces
-//     between path1 and path3 because file2 doesn't have thumbnail.
-//   - encrypt: string of 0s and 1s denoting whether to encrypt or not. eg "00110": encrypt third and fourth file. Length of string
-//     should be equal to number of files.
-//   - remotePath: directory path of updated file. It should end with "/"
+//   - jsonMultiUploadOpetions: Json Array of MultiOperationOption. eg: "[{"remotePath":"/","filePath":"/t2.txt"},{"remotePath":"/","filePath":"/t3.txt"}]"
 //
 // ## Outputs
 //   - error
-func MultiUpdate(allocationID string, workdir string, filePathsString string, fileNamesString string, encrypt string, thumbnailPathsString string, remotePath string, statusCb StatusCallbackMocked) error {
-	filePaths := strings.Split(filePathsString, SPACE)
-	fileNames := strings.Split(fileNamesString, SPACE)
-	thumbnailPaths := strings.Split(thumbnailPathsString, SPACE)
+func MultiUpdate(allocationID string, workdir string, jsonMultiUploadOptions string, statusCb StatusCallbackMocked) error {
+	var options []MultiUploadOption
+	err := json.Unmarshal([]byte(jsonMultiUploadOptions), &options)
+	totalUploads := len(options)
+	filePaths := make([]string, totalUploads)
+	fileNames := make([]string, totalUploads)
+	remotePaths := make([]string, totalUploads)
+	thumbnailPaths := make([]string, totalUploads)
+	encrypts := make([]bool, totalUploads)
+	for idx, option := range options {
+		filePaths[idx] = option.FilePath
+		fileNames[idx] = option.FileName
+		thumbnailPaths[idx] = option.ThumbnailPath
+		remotePaths[idx] = option.RemotePath
+	}
+	if err != nil {
+		return err
+	}
+
 	a, err := getAllocation(allocationID)
 	if err != nil {
 		return err
 	}
-	return a.StartMultiUpload(workdir, filePaths, fileNames, thumbnailPaths, encrypt, remotePath, true, &StatusCallbackWrapped{Callback: statusCb})
+	return a.StartMultiUpload(workdir, filePaths, fileNames, thumbnailPaths, encrypts, remotePaths, true, &StatusCallbackWrapped{Callback: statusCb})
 
 }
 

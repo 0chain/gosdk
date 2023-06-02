@@ -450,15 +450,12 @@ func (a *Allocation) EncryptAndUploadFileWithThumbnail(
 	)
 }
 
-func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileNames []string, thumbnailPaths []string, encryptString string, remotePath string, isUpdate bool, status StatusCallback) error {
+func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileNames []string, thumbnailPaths []string, encrypts []bool, remotePaths []string, isUpdate bool, status StatusCallback) error {
 	if len(localPaths) != len(thumbnailPaths) {
 		return errors.New("invalid_value", "length of localpaths and thumbnailpaths must be equal")
 	}
-	if len(localPaths) != len(encryptString) {
+	if len(localPaths) != len(encrypts) {
 		return errors.New("invalid_value", "length of encrypt not equal to number of files")
-	}
-	if !strings.HasSuffix(remotePath, "/") {
-		return errors.New("invalid_value", "remotePath must be the path of directory")
 	}
 	if !a.isInitialized() {
 		return notInitialized
@@ -474,6 +471,15 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 	}
 	operationRequests := make([]OperationRequest, totalOperations)
 	for idx, localPath := range localPaths {
+		remotePath := zboxutil.RemoteClean(remotePaths[idx])
+		if !strings.HasSuffix(remotePath, "/") {
+			return errors.New("invalid_value", "remotePath must be the path of directory")
+		}
+		isabs := zboxutil.IsRemoteAbs(remotePath)
+		if !isabs {
+			err := thrown.New("invalid_path", "Path should be valid and absolute")
+			return err
+		}
 		fileReader, err := os.Open(localPath)
 		if err != nil {
 			return err
@@ -481,7 +487,10 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 		defer fileReader.Close()
 		thumbnailPath := thumbnailPaths[idx]
 		fileName := fileNames[idx]
-		encrypt := encryptString[idx] == '1'
+		if fileName == "" {
+			return thrown.New("invalid_param", "filename can't be empty")
+		}
+		encrypt := encrypts[idx]
 
 		fileInfo, err := fileReader.Stat()
 		if err != nil {
@@ -493,12 +502,6 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 			return err
 		}
 
-		remotePath = zboxutil.RemoteClean(remotePath)
-		isabs := zboxutil.IsRemoteAbs(remotePath)
-		if !isabs {
-			err = thrown.New("invalid_path", "Path should be valid and absolute")
-			return err
-		}
 		if !strings.HasSuffix(remotePath, "/") {
 			remotePath = remotePath + "/"
 		}
@@ -508,6 +511,7 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 		if err != nil {
 			return err
 		}
+		fmt.Println("fullRemotepath and localpath", fullRemotePath, localPath)
 		fileMeta := FileMeta{
 			Path:       localPath,
 			ActualSize: fileInfo.Size(),
