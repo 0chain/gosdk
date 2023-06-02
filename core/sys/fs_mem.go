@@ -173,3 +173,79 @@ func (i *MemFileInfo) Sys() interface{} {
 func (i *MemFileInfo) Info() (fs.FileInfo, error) {
 	return i, nil
 }
+
+type MemFileChan struct {
+	Name    string
+	Buffer  chan []byte // file content
+	Mode    fs.FileMode // FileInfo.Mode
+	ModTime time.Time   // FileInfo.ModTime
+	Sys     interface{} // FileInfo.Sys
+	reader  io.Reader
+}
+
+func (f *MemFileChan) Stat() (fs.FileInfo, error) {
+	return &MemFileChanInfo{name: f.Name, f: f}, nil
+}
+func (f *MemFileChan) Read(p []byte) (int, error) {
+	b := <-f.Buffer
+	if b == nil {
+		return 0, nil
+	}
+	n := copy(p, b)
+	return n, nil
+
+}
+func (f *MemFileChan) Write(p []byte) (n int, err error) {
+	f.Buffer <- p
+	return len(p), nil
+
+}
+
+func (f *MemFileChan) Sync() error {
+	return nil
+}
+func (f *MemFileChan) Seek(offset int64, whence int) (ret int64, err error) {
+	return 0, nil
+}
+
+func (f *MemFileChan) Close() error {
+	f.reader = nil
+	close(f.Buffer)
+	return nil
+}
+
+type MemFileChanInfo struct {
+	name string
+	f    *MemFileChan
+}
+
+func (i *MemFileChanInfo) Name() string {
+	return i.name
+}
+func (i *MemFileChanInfo) Size() int64 {
+	return 0
+}
+
+func (i *MemFileChanInfo) Mode() fs.FileMode {
+	return i.f.Mode
+}
+
+func (i *MemFileChanInfo) Type() fs.FileMode {
+	return i.f.Mode.Type()
+}
+
+func (i *MemFileChanInfo) ModTime() time.Time {
+	return i.f.ModTime
+}
+
+func (i *MemFileChanInfo) IsDir() bool {
+	return i.f.Mode&fs.ModeDir != 0
+}
+
+func (i *MemFileChanInfo) Sys() interface{} {
+	return i.f.Sys
+}
+
+func (i *MemFileChanInfo) Info() (fs.FileInfo, error) {
+	return i, nil
+}
