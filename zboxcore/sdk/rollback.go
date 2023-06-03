@@ -116,9 +116,6 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 		wm.AllocationRoot = rb.lpm.PrevWM.AllocationRoot
 		wm.PreviousAllocationRoot = rb.lpm.PrevWM.AllocationRoot
 		wm.FileMetaRoot = rb.lpm.PrevWM.FileMetaRoot
-	} else {
-		//TODO: Send delete request to blobber
-		return nil
 	}
 	err := wm.Sign()
 	if err != nil {
@@ -315,6 +312,10 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 		wg.Add(1)
 		go func(rb *RollbackBlobber) {
 			defer wg.Done()
+			if rb.lpm.PrevWM == nil {
+				// TODO: Send delete request to blobber
+				return
+			}
 			err := rb.processRollback(context.TODO(), a.Tx)
 			if err != nil {
 				atomic.AddInt32(&errCnt, 1)
