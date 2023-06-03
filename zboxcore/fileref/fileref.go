@@ -103,7 +103,7 @@ func (r *Ref) CalculateHash() string {
 		size += childRef.GetSize()
 	}
 
-	r.FileMetaHash = encryption.Hash(r.GetHashData() + strings.Join(childFileMetaHashes, ":"))
+	r.FileMetaHash = encryption.Hash(strings.Join(childFileMetaHashes, ":"))
 	r.Hash = encryption.Hash(r.GetHashData() + strings.Join(childHashes, ":"))
 
 	r.PathHash = encryption.Hash(strings.Join(childPaths, ":"))
@@ -200,8 +200,8 @@ func (fr *FileRef) GetFileMetaHash() string {
 }
 func (fr *FileRef) GetFileMetaHashData() string {
 	return fmt.Sprintf(
-		"%s:%d:%s:%d:%s",
-		fr.Path, fr.Size, fr.FileID,
+		"%s:%d:%d:%s",
+		fr.Path, fr.Size,
 		fr.ActualFileSize, fr.ActualFileHash)
 }
 
