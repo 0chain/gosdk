@@ -7,7 +7,10 @@ import (
 	"gopkg.in/cheggaaa/pb.v1"
 )
 
-var mut sync.Mutex
+var (
+	mutMap  = make(map[string]*sync.Mutex)
+	mapLock sync.Mutex
+)
 
 func (s *StatusBar) Started(allocationId, filePath string, op int, totalBytes int) {
 	s.b = pb.StartNew(totalBytes)
@@ -23,7 +26,7 @@ func (s *StatusBar) Completed(allocationId, filePath string, filename string, mi
 	}
 	s.success = true
 	s.wg.Done()
-	mut.Unlock()
+	mutUnlock(s.allocID)
 }
 
 func (s *StatusBar) Error(allocationID string, filePath string, op int, err error) {
@@ -32,7 +35,7 @@ func (s *StatusBar) Error(allocationID string, filePath string, op int, err erro
 	}
 	s.success = false
 	defer s.wg.Done()
-	defer mut.Unlock()
+	defer mutUnlock(s.allocID)
 
 	var errDetail interface{} = "Unknown Error"
 	if err != nil {
@@ -44,21 +47,34 @@ func (s *StatusBar) Error(allocationID string, filePath string, op int, err erro
 
 func (s *StatusBar) RepairCompleted(filesRepaired int) {
 	defer s.wg.Done()
-	mut.Unlock()
+	mutUnlock(s.allocID)
 	l.Logger.Info("Repair completed. Files repaired = ", filesRepaired)
 }
 
 type StatusBar struct {
 	b       *pb.ProgressBar
 	wg      *sync.WaitGroup
+	allocID string
 	success bool
 }
 
-func NewStatusBar() *StatusBar {
-	if !mut.TryLock() {
+func NewRepairBar(allocID string) *StatusBar {
+	if _, ok := mutMap[allocID]; !ok {
+		mapLock.Lock()
+		mutMap[allocID] = &sync.Mutex{}
+		mapLock.Unlock()
+	}
+	if !mutMap[allocID].TryLock() {
 		return nil
 	}
 	return &StatusBar{
-		wg: &sync.WaitGroup{},
+		wg:      &sync.WaitGroup{},
+		allocID: allocID,
 	}
+}
+
+func mutUnlock(allocID string) {
+	mapLock.Lock()
+	mutMap[allocID].Unlock()
+	mapLock.Unlock()
 }

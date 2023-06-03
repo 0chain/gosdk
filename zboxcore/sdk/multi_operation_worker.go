@@ -243,7 +243,7 @@ func (mo *MultiOperation) Process() error {
 	if status == Repair {
 		logger.Logger.Info("Repairing allocation")
 		writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
-		statusBar := NewStatusBar()
+		statusBar := NewRepairBar(mo.allocationObj.ID)
 		if statusBar == nil {
 			return ErrRetryOperation
 		}
