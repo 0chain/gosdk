@@ -536,6 +536,7 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 			FileReader:    fileReader,
 			OperationType: constants.FileOperationInsert,
 			Opts:          options,
+			Workdir:       workdir,
 		}
 		if isUpdate {
 			operationRequests[idx].OperationType = constants.FileOperationUpdate
