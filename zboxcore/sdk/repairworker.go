@@ -2,6 +2,7 @@ package sdk
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/0chain/gosdk/core/sys"
@@ -73,7 +74,7 @@ func (r *RepairRequest) iterateDir(a *Allocation, dir *ListResult) {
 	case fileref.DIRECTORY:
 		if len(dir.Children) == 0 {
 			var err error
-			dir, err = a.ListDir(dir.Path)
+			dir, err = a.ListDir(dir.Path, true)
 			if err != nil {
 				l.Logger.Error("Failed to get listDir for path ", zap.Any("path", dir.Path), zap.Error(err))
 				return
@@ -104,10 +105,10 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
 		l.Logger.Error("repair_required_failed", zap.Error(err))
 		return
 	}
-
 	if repairRequired {
 		l.Logger.Info("Repair required for the path :", zap.Any("path", file.Path))
 		if found.CountOnes() >= a.DataShards {
+			fmt.Println("start repair by upload:", file.Path)
 			l.Logger.Info("Repair by upload", zap.Any("path", file.Path))
 			var wg sync.WaitGroup
 			statusCB := &RepairStatusCB{

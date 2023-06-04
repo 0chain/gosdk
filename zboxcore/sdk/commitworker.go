@@ -203,6 +203,7 @@ func (req *CommitRequest) commitBlobber(
 	}
 
 	wm.FileMetaRoot = rootRef.FileMetaHash
+	fmt.Println("FileMetaRoot: ", wm.FileMetaRoot)
 	wm.AllocationID = req.allocationID
 	wm.Size = size
 	wm.BlobberID = req.blobber.ID

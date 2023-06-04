@@ -642,7 +642,7 @@ func (a *Allocation) RepairRequired(remotepath string) (zboxutil.Uint128, bool, 
 	listReq.allocationTx = a.Tx
 	listReq.blobbers = a.Blobbers
 	listReq.fullconsensus = a.fullconsensus
-	listReq.consensusThresh = a.consensusThreshold
+	listReq.consensusThresh = a.DataShards
 	listReq.ctx = a.ctx
 	listReq.remotefilepath = remotepath
 	found, fileRef, _ := listReq.getFileConsensusFromBlobbers()
@@ -675,8 +675,8 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 		mo.maskMU = &sync.Mutex{}
 		mo.ctx, mo.ctxCncl = context.WithCancel(a.ctx)
 		mo.Consensus = Consensus{
-			consensusThresh: a.consensusThreshold,
-			fullconsensus:   a.fullconsensus,
+			consensusThresh: 1,
+			fullconsensus:   3,
 		}
 		mo.connectionID = zboxutil.NewConnectionId()
 
@@ -817,7 +817,7 @@ func (a *Allocation) generateDownloadRequest(localPath string, remotePath string
 	downloadReq.numBlocks = int64(numBlocks)
 	downloadReq.shouldVerify = verifyDownload
 	downloadReq.fullconsensus = a.fullconsensus
-	downloadReq.consensusThresh = a.consensusThreshold
+	downloadReq.consensusThresh = a.DataShards
 	downloadReq.completedCallback = func(remotepath string, remotepathhash string) {
 		a.mutex.Lock()
 		defer a.mutex.Unlock()
