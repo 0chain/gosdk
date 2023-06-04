@@ -275,6 +275,9 @@ func RepairFile(allocationID, workdir, localPath, remotePath, thumbnailPath stri
 func MultiUpload(allocationID string, workdir string, jsonMultiUploadOptions string, statusCb StatusCallbackMocked) error {
 	var options []MultiUploadOption
 	err := json.Unmarshal([]byte(jsonMultiUploadOptions), &options)
+	if err != nil {
+		return err
+	}
 	totalUploads := len(options)
 	filePaths := make([]string, totalUploads)
 	fileNames := make([]string, totalUploads)
@@ -286,9 +289,6 @@ func MultiUpload(allocationID string, workdir string, jsonMultiUploadOptions str
 		fileNames[idx] = option.FileName
 		thumbnailPaths[idx] = option.ThumbnailPath
 		remotePaths[idx] = option.RemotePath
-	}
-	if err != nil {
-		return err
 	}
 
 	a, err := getAllocation(allocationID)
