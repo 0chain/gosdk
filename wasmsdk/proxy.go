@@ -51,8 +51,9 @@ func main() {
 					if ok {
 						return s, nil
 					}
-
-					result, err := jsbridge.Await(jsSign.Invoke(hash))
+					c := client.GetClient()
+					pk := c.Keys[0].PrivateKey
+					result, err := jsbridge.Await(jsSign.Invoke(hash, pk))
 
 					if len(err) > 0 && !err[0].IsNull() {
 						return "", errors.New("sign: " + err[0].String())
