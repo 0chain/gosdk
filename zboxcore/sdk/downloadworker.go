@@ -567,7 +567,7 @@ func (req *DownloadRequest) submitReadMarker(blobber *blockchain.StorageNode, re
 			if IsErrCode(err, NotEnoughTokens) || IsErrCode(err, InvalidAuthTicket) || IsErrCode(err, InvalidShare) {
 				return err
 			}
-			if IsErrCode(err, LockExists) {
+			if IsErrCode(err, LockExists) || IsErrCode(err, RateLimitError) {
 				continue
 			}
 			retryCount--
@@ -621,12 +621,27 @@ func (req *DownloadRequest) attemptSubmitReadMarker(blobber *blockchain.StorageN
 		if err != nil {
 			return err
 		}
-		defer resp.Body.Close()
+		if resp.Body != nil {
+			defer resp.Body.Close()
+		}
+
+		if resp.StatusCode == http.StatusTooManyRequests {
+			logger.Logger.Info(blobber.Baseurl,
+				" got too many request error. Retrying")
+			var r int
+			r, err = zboxutil.GetRateLimitValue(resp)
+			if err != nil {
+				logger.Logger.Error(err)
+				return errors.New("rate_limit_error", "Error while getting rate limit value")
+			}
+			time.Sleep(time.Duration(r) * time.Second)
+			return errors.New("rate_limit_error", "Too many requests")
+		}
 
 		if resp.StatusCode != http.StatusOK {
 			return req.handleReadMarkerError(resp, blobber, rm)
 		}
-		setBlobberReadCtr(req.allocationID, blobber.ID, rm.ReadCounter)
+		incBlobberReadCtr(req.allocationID, blobber.ID, readCount)
 
 		logger.Logger.Debug("Submit readmarker 200 OK")
 
