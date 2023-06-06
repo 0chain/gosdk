@@ -267,6 +267,7 @@ func (a *Allocation) GetBlobberStats() map[string]*BlobberAllocationStats {
 }
 
 const downloadWorkerCount = 10
+const processDownloadWorkerCount = 20
 
 func (a *Allocation) InitAllocation() {
 	a.downloadChan = make(chan *DownloadRequest, 100)
@@ -290,7 +291,7 @@ func (a *Allocation) startWorker(ctx context.Context) {
 }
 
 func (a *Allocation) dispatchWork(ctx context.Context) {
-	sem := semaphore.NewWeighted(10)
+	sem := semaphore.NewWeighted(processDownloadWorkerCount)
 	for {
 		select {
 		case <-ctx.Done():
