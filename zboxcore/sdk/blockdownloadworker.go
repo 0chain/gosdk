@@ -21,7 +21,8 @@ import (
 )
 
 const (
-	LockExists = "lock_exists"
+	LockExists     = "lock_exists"
+	RateLimitError = "rate_limit_error"
 )
 
 type BlockDownloadRequest struct {
