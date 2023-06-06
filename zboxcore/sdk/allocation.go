@@ -1978,7 +1978,6 @@ func (a *Allocation) UpdateWithRepair(
 	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
 	statusCB StatusCallback,
 ) (string, error) {
-
 	if lock > math.MaxInt64 {
 		return "", errors.New("invalid_lock", "int64 overflow on lock value")
 	}
@@ -1990,12 +1989,13 @@ func (a *Allocation) UpdateWithRepair(
 	}
 	l.Logger.Info(fmt.Sprintf("allocation updated with hash: %s", hash))
 
+	var alloc *Allocation
 	if addBlobberId != "" {
 		l.Logger.Info("waiting for a minute for the blobber to be added to network")
 
 		deadline := time.Now().Add(1 * time.Minute)
 		for time.Now().Before(deadline) {
-			alloc, err := GetAllocation(a.ID)
+			alloc, err = GetAllocation(a.ID)
 			if err != nil {
 				l.Logger.Error("failed to get allocation")
 				return hash, err
@@ -2022,7 +2022,7 @@ repair:
 	}
 
 	if shouldRepair {
-		err := a.RepairAlloc(statusCB)
+		err := alloc.RepairAlloc(statusCB)
 		if err != nil {
 			return "", err
 		}
