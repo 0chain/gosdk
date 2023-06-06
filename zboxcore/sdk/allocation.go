@@ -675,8 +675,8 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 		mo.maskMU = &sync.Mutex{}
 		mo.ctx, mo.ctxCncl = context.WithCancel(a.ctx)
 		mo.Consensus = Consensus{
-			consensusThresh: 1,
-			fullconsensus:   3,
+			consensusThresh: a.consensusThreshold,
+			fullconsensus:   a.fullconsensus,
 		}
 		mo.connectionID = zboxutil.NewConnectionId()
 

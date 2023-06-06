@@ -158,10 +158,11 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
 					zap.Any("localpath", localPath), zap.Any("remotepath", file.Path))
 				return
 			}
+			_ = sys.Files.Remove(localPath)
 		} else {
 			l.Logger.Info("Repair by delete", zap.Any("path", file.Path))
 			consensus := found.CountOnes()
-			err := a.deleteFile(file.Path, consensus, consensus)
+			err := a.deleteFile(file.Path, 1, consensus)
 			if err != nil {
 				l.Logger.Error("repair_file_failed", zap.Error(err))
 				return
