@@ -368,6 +368,14 @@ func (t *Transaction) submitTxn() {
 				return
 			}
 
+			if res.StatusCode != http.StatusOK {
+				logging.Error(minerurl, " submit transaction error. ", err.Error())
+				if int(atomic.AddInt32(&failedCount, 1)) == minersN {
+					close(failC)
+				}
+				return
+			}
+
 			resultC <- res
 		}(miner)
 	}
