@@ -143,6 +143,28 @@ func cancelAllocation(allocationID string) (string, error) {
 	return hash, err
 }
 
+func updateAllocationWithRepair(allocationID string,
+	size, expiry int64,
+	lock int64,
+	updateTerms bool,
+	addBlobberId, removeBlobberId string) (string, error) {
+
+	allocationObj, err := sdk.GetAllocation(allocationID)
+	if err != nil {
+		return "", err
+	}
+
+	wg := &sync.WaitGroup{}
+	statusBar := &StatusBar{wg: wg}
+
+	hash, err := allocationObj.UpdateWithRepair(size, expiry, uint64(lock), updateTerms, addBlobberId, removeBlobberId, false, &sdk.FileOptionsParameters{}, statusBar)
+	if err == nil {
+		clearAllocation(allocationID)
+	}
+
+	return hash, err
+}
+
 func updateAllocation(allocationID string,
 	size, expiry int64,
 	lock int64,
