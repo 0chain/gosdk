@@ -71,6 +71,7 @@
       <button id="btnGetAllocation">Get</button>
       <button id="btnGetAllocationMinLock">AllocationMinLock</button>
       <button id="btnRemoteFileMap">RemoteFileMap</button>
+      <button id="btnAddReplaceBlobber">AddReplaceBlobber</button>
     </span>
 
     <br>
@@ -479,6 +480,30 @@
         window.URL.revokeObjectURL(file.url)
         document.body.removeChild(a)
 
+      }
+    })
+
+    onClick('btnAddReplaceBlobber', async () => {
+
+      var addremoveBlobberIDs = prompt("Add Blobber ID and remove blobberID (separated by a comma): ");
+
+      var [addBlobberId, removeBlobberID] = addremoveBlobberIDs.split(",");
+      removeBlobberID = removeBlobberID !== undefined ? value : "";
+
+      console.log("addBlobberId", addBlobberId)
+      console.log("removeBlobberID", removeBlobberID)
+      // addBlobberId = addBlobberId.trim()
+      // removeBlobberID = removeBlobberID.trim()
+        const allocationId = getSelectedAllocation()
+        if (!allocationId) {
+          alert("please provide allocationId")
+        }
+
+        try {
+          const file = await goWasm.sdk.updateAllocationWithRepair(allocationId, 0, 0, 5000000000, false, addBlobberId, removeBlobberID)
+
+        } catch (e) {
+        alert(e)
       }
     })
 
