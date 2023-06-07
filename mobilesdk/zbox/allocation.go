@@ -128,11 +128,11 @@ func (a *Allocation) DownloadFileByBlock(remotePath, localPath string, startBloc
 }
 
 // DownloadThumbnail - start download file thumbnail from remote path to localpath
-func (a *Allocation) DownloadThumbnail(remotePath, localPath string, statusCb StatusCallbackMocked) error {
+func (a *Allocation) DownloadThumbnail(remotePath, localPath string, statusCb StatusCallbackMocked, isFinal bool) error {
 	if a == nil || a.sdkAllocation == nil {
 		return ErrInvalidAllocation
 	}
-	return a.sdkAllocation.DownloadThumbnail(localPath, remotePath, false, &StatusCallbackWrapped{Callback: statusCb})
+	return a.sdkAllocation.DownloadThumbnail(localPath, remotePath, false, &StatusCallbackWrapped{Callback: statusCb}, isFinal)
 }
 
 // RepairFile - repair file if it exists in remote path

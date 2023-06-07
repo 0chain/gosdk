@@ -184,13 +184,13 @@ func DownloadFileByBlock(allocationID, remotePath, localPath string, startBlock,
 //
 // ## Outputs
 //   - error
-func DownloadThumbnail(allocationID, remotePath, localPath string, statusCb StatusCallbackMocked) error {
+func DownloadThumbnail(allocationID, remotePath, localPath string, statusCb StatusCallbackMocked, isFinal bool) error {
 	a, err := getAllocation(allocationID)
 	if err != nil {
 		return err
 	}
 
-	return a.DownloadThumbnail(localPath, remotePath, false, &StatusCallbackWrapped{Callback: statusCb})
+	return a.DownloadThumbnail(localPath, remotePath, false, &StatusCallbackWrapped{Callback: statusCb}, isFinal)
 }
 
 // RepairFile - repair file if it exists in remote path
