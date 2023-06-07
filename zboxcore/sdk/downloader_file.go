@@ -10,5 +10,5 @@ func (d *fileDownloader) Start(status StatusCallback) error {
 			d.authTicket, d.lookupHash, d.fileName, d.verifyDownload, status)
 	}
 
-	return d.allocationObj.DownloadFile(d.localPath, d.remotePath, d.verifyDownload, status)
+	return d.allocationObj.DownloadFile(d.localPath, d.remotePath, d.verifyDownload, status, true)
 }

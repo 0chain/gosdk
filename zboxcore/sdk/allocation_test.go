@@ -708,7 +708,7 @@ func TestAllocation_DownloadFile(t *testing.T) {
 			Baseurl: mockBlobberUrl + strconv.Itoa(i),
 		})
 	}
-	err := a.DownloadFile(mockLocalPath, "/", true, nil)
+	err := a.DownloadFile(mockLocalPath, "/", true, nil, true)
 	require.NoErrorf(err, "Unexpected error %v", err)
 }
 
@@ -929,10 +929,10 @@ func TestAllocation_downloadFile(t *testing.T) {
 					defer teardown(t)
 				}
 			}
-			err := a.downloadFile(
+			err := a.addAndGenerateDownloadRequest(
 				tt.parameters.localPath, tt.parameters.remotePath, tt.parameters.contentMode,
 				tt.parameters.startBlock, tt.parameters.endBlock, tt.parameters.numBlocks,
-				true, tt.parameters.statusCallback)
+				true, tt.parameters.statusCallback, true)
 
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {

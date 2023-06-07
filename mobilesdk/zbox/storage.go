@@ -144,12 +144,12 @@ func GetFileMetaFromAuthTicket(allocationID, authTicket string, lookupHash strin
 //
 // ## Outputs
 //   - error
-func DownloadFile(allocationID, remotePath, localPath string, statusCb StatusCallbackMocked) error {
+func DownloadFile(allocationID, remotePath, localPath string, statusCb StatusCallbackMocked, isFinal bool) error {
 	a, err := getAllocation(allocationID)
 	if err != nil {
 		return err
 	}
-	return a.DownloadFile(localPath, remotePath, false, &StatusCallbackWrapped{Callback: statusCb})
+	return a.DownloadFile(localPath, remotePath, false, &StatusCallbackWrapped{Callback: statusCb}, isFinal)
 }
 
 // DownloadFileByBlock - start download file from remote path to localpath by blocks number

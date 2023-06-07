@@ -112,11 +112,11 @@ func (a *Allocation) GetFileMetaFromAuthTicket(authTicket string, lookupHash str
 }
 
 // DownloadFile - start download file from remote path to localpath
-func (a *Allocation) DownloadFile(remotePath, localPath string, statusCb StatusCallbackMocked) error {
+func (a *Allocation) DownloadFile(remotePath, localPath string, statusCb StatusCallbackMocked, isFinal bool) error {
 	if a == nil || a.sdkAllocation == nil {
 		return ErrInvalidAllocation
 	}
-	return a.sdkAllocation.DownloadFile(localPath, remotePath, false, &StatusCallbackWrapped{Callback: statusCb})
+	return a.sdkAllocation.DownloadFile(localPath, remotePath, false, &StatusCallbackWrapped{Callback: statusCb}, isFinal)
 }
 
 // DownloadFileByBlock - start download file from remote path to localpath by blocks number

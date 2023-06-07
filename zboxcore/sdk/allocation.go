@@ -670,8 +670,8 @@ func (a *Allocation) RepairRequired(remotepath string) (zboxutil.Uint128, bool, 
 	return found, !found.Equals(uploadMask), fileRef, nil
 }
 
-func (a *Allocation) DownloadFile(localPath string, remotePath string, verifyDownload bool, status StatusCallback) error {
-	return a.downloadFile(localPath, remotePath, DOWNLOAD_CONTENT_FULL, 1, 0, numBlockDownloads, verifyDownload, status)
+func (a *Allocation) DownloadFile(localPath string, remotePath string, verifyDownload bool, status StatusCallback, isFinal bool) error {
+	return a.addAndGenerateDownloadRequest(localPath, remotePath, DOWNLOAD_CONTENT_FULL, 1, 0, numBlockDownloads, verifyDownload, status, isFinal)
 }
 
 func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
@@ -876,13 +876,6 @@ func (a *Allocation) addAndGenerateDownloadRequest(localPath string, remotePath 
 	return nil
 }
 
-func (a *Allocation) downloadFile(localPath string, remotePath string, contentMode string,
-	startBlock int64, endBlock int64, numBlocks int, verifyDownload bool,
-	status StatusCallback) error {
-
-	return a.addAndGenerateDownloadRequest(localPath, remotePath, contentMode, startBlock, endBlock, numBlocks, verifyDownload, status, true)
-}
-
 func (a *Allocation) ListDirFromAuthTicket(authTicket string, lookupHash string) (*ListResult, error) {
 	if !a.isInitialized() {
 		return nil, notInitialized
@@ -1031,18 +1024,9 @@ func (a *Allocation) DownloadFromBlobber(blobberID, localPath, remotePath string
 	}
 
 	downloadReq.numBlocks = fRef.NumBlocks
-	_, err = downloadReq.getBlocksDataFromBlobbers(
-		downloadReq.startBlock,
-		downloadReq.numBlocks,
-	)
-	if err != nil {
-		l.Logger.Error(err.Error())
-		return err
-	}
-
-	if downloadReq.statusCallback != nil {
-		downloadReq.statusCallback.Completed(
-			downloadReq.allocationID, remotePath, fRef.Name, "", int(fRef.ActualFileSize), OpDownload)
+	processReadMarker([]*DownloadRequest{downloadReq})
+	if downloadReq.skip {
+		return errors.New("download_request_failed", "Failed to get download response from the blobbers")
 	}
 	return nil
 }
@@ -1805,10 +1789,10 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 		delete(a.downloadProgressMap, remotepathHash)
 	}
 	go func() {
-		a.downloadChan <- downloadReq
 		a.mutex.Lock()
-		defer a.mutex.Unlock()
 		a.downloadProgressMap[remoteLookupHash] = downloadReq
+		a.mutex.Unlock()
+		processReadMarker([]*DownloadRequest{downloadReq})
 	}()
 	return nil
 }
