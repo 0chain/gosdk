@@ -1013,13 +1013,14 @@ func processReadMarker(drs []*DownloadRequest) {
 		}(pos, totalBlocks)
 	}
 	wg.Wait()
-
 	sem := semaphore.NewWeighted(5)
 	for _, dr := range drs {
 		if dr.skip {
 			continue
 		}
-		_ = sem.Acquire(dr.ctx, 1)
+		if err := sem.Acquire(dr.ctx, 1); err != nil {
+			continue
+		}
 		go func(dr *DownloadRequest) {
 			dr.processDownload(dr.ctx)
 			sem.Release(1)
