@@ -190,6 +190,7 @@ type Allocation struct {
 	ctxCancelF              context.CancelFunc
 	mutex                   *sync.Mutex
 	downloadProgressMap     map[string]*DownloadRequest
+	downloadRequests        []*DownloadRequest
 	repairRequestInProgress *RepairRequest
 	initialized             bool
 
@@ -274,6 +275,7 @@ func (a *Allocation) InitAllocation() {
 	a.repairChan = make(chan *RepairRequest, 1)
 	a.ctx, a.ctxCancelF = context.WithCancel(context.Background())
 	a.downloadProgressMap = make(map[string]*DownloadRequest)
+	a.downloadRequests = make([]*DownloadRequest, 0, 50)
 	a.mutex = &sync.Mutex{}
 	a.fullconsensus, a.consensusThreshold = a.getConsensuses()
 	a.startWorker(a.ctx)
@@ -769,23 +771,20 @@ func GenerateParentPaths(path string) map[string]bool {
 	return parentPaths
 }
 
+// TODO: Use a map to store the download request and use flag isFinal to start the download, calculate readCount in parallel if possible
 func (a *Allocation) DownloadFileByBlock(
 	localPath string, remotePath string, startBlock int64, endBlock int64,
-	numBlocks int, verifyDownload bool, status StatusCallback) error {
-
-	return a.downloadFile(localPath, remotePath, DOWNLOAD_CONTENT_FULL, startBlock, endBlock,
-		numBlocks, verifyDownload, status)
+	numBlocks int, verifyDownload bool, status StatusCallback, isFinal bool) error {
+	return a.addAndGenerateDownloadRequest(localPath, remotePath, DOWNLOAD_CONTENT_FULL, startBlock, endBlock, numBlocks, verifyDownload, status, isFinal)
 }
 
-func (a *Allocation) DownloadThumbnail(localPath string, remotePath string, verifyDownload bool, status StatusCallback) error {
-
-	return a.downloadFile(localPath, remotePath, DOWNLOAD_CONTENT_THUMB, 1, 0,
-		numBlockDownloads, verifyDownload, status)
+func (a *Allocation) DownloadThumbnail(localPath string, remotePath string, verifyDownload bool, status StatusCallback, isFinal bool) error {
+	return a.addAndGenerateDownloadRequest(localPath, remotePath, DOWNLOAD_CONTENT_THUMB, 1, 0, numBlockDownloads, verifyDownload, status, isFinal)
 }
 
 func (a *Allocation) generateDownloadRequest(localPath string, remotePath string, contentMode string,
 	startBlock int64, endBlock int64, numBlocks int, verifyDownload bool,
-	status StatusCallback) (*DownloadRequest, error) {
+	status StatusCallback, connectionID string) (*DownloadRequest, error) {
 	if !a.isInitialized() {
 		return nil, notInitialized
 	}
@@ -830,7 +829,7 @@ func (a *Allocation) generateDownloadRequest(localPath string, remotePath string
 	downloadReq.numBlocks = int64(numBlocks)
 	downloadReq.shouldVerify = verifyDownload
 	downloadReq.fullconsensus = a.fullconsensus
-	downloadReq.consensusThresh = a.consensusThreshold
+	downloadReq.consensusThresh = a.DataShards
 	downloadReq.completedCallback = func(remotepath string, remotepathhash string) {
 		a.mutex.Lock()
 		defer a.mutex.Unlock()
@@ -838,30 +837,50 @@ func (a *Allocation) generateDownloadRequest(localPath string, remotePath string
 	}
 	downloadReq.contentMode = contentMode
 	downloadReq.prepaidBlobbers = make(map[string]bool)
-	downloadReq.connectionID = zboxutil.NewConnectionId()
+	downloadReq.connectionID = connectionID
 
 	return downloadReq, nil
+}
+
+func (a *Allocation) addAndGenerateDownloadRequest(localPath string, remotePath string, contentMode string,
+	startBlock int64, endBlock int64, numBlocks int, verifyDownload bool,
+	status StatusCallback, isFinal bool) error {
+	var connectionID string
+	blocksToDownload := int64(numBlocks)
+	if startBlock+int64(numBlocks) > endBlock {
+		blocksToDownload = endBlock - startBlock
+	}
+	if len(a.downloadRequests) > 0 {
+		connectionID = a.downloadRequests[0].connectionID
+		blocksToDownload += a.downloadRequests[len(a.downloadRequests)-1].totalBlocks
+	} else {
+		connectionID = zboxutil.NewConnectionId()
+	}
+
+	downloadReq, err := a.generateDownloadRequest(localPath, remotePath, DOWNLOAD_CONTENT_FULL, startBlock, endBlock, numBlocks, verifyDownload, status, connectionID)
+	if err != nil {
+		return err
+	}
+	a.mutex.Lock()
+	a.downloadProgressMap[remotePath] = downloadReq
+	a.mutex.Unlock()
+	downloadReq.totalBlocks = blocksToDownload
+	a.downloadRequests = append(a.downloadRequests, downloadReq)
+	if isFinal {
+		downloadOps := a.downloadRequests
+		a.downloadRequests = nil
+		go func() {
+			processReadMarker(downloadOps)
+		}()
+	}
+	return nil
 }
 
 func (a *Allocation) downloadFile(localPath string, remotePath string, contentMode string,
 	startBlock int64, endBlock int64, numBlocks int, verifyDownload bool,
 	status StatusCallback) error {
 
-	downloadReq, err := a.generateDownloadRequest(
-		localPath, remotePath, contentMode,
-		startBlock, endBlock, numBlocks, verifyDownload, status,
-	)
-
-	if err != nil {
-		return err
-	}
-	go func() {
-		a.downloadChan <- downloadReq
-		a.mutex.Lock()
-		defer a.mutex.Unlock()
-		a.downloadProgressMap[remotePath] = downloadReq
-	}()
-	return nil
+	return a.addAndGenerateDownloadRequest(localPath, remotePath, contentMode, startBlock, endBlock, numBlocks, verifyDownload, status, true)
 }
 
 func (a *Allocation) ListDirFromAuthTicket(authTicket string, lookupHash string) (*ListResult, error) {
@@ -989,8 +1008,8 @@ func (a *Allocation) DownloadFromBlobber(blobberID, localPath, remotePath string
 
 	verifyDownload := false // should be set to false
 	downloadReq, err := a.generateDownloadRequest(
-		localPath, remotePath, DOWNLOAD_CONTENT_FULL, 1, 0, numBlockDownloads, verifyDownload, status,
-	)
+		localPath, remotePath, DOWNLOAD_CONTENT_FULL, 1, 0, numBlockDownloads, verifyDownload, status, zboxutil.NewConnectionId())
+
 	if err != nil {
 		l.Logger.Error(err)
 		return err

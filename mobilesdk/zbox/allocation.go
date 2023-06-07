@@ -120,11 +120,11 @@ func (a *Allocation) DownloadFile(remotePath, localPath string, statusCb StatusC
 }
 
 // DownloadFileByBlock - start download file from remote path to localpath by blocks number
-func (a *Allocation) DownloadFileByBlock(remotePath, localPath string, startBlock, endBlock int64, numBlocks int, statusCb StatusCallbackMocked) error {
+func (a *Allocation) DownloadFileByBlock(remotePath, localPath string, startBlock, endBlock int64, numBlocks int, statusCb StatusCallbackMocked, isFinal bool) error {
 	if a == nil || a.sdkAllocation == nil {
 		return ErrInvalidAllocation
 	}
-	return a.sdkAllocation.DownloadFileByBlock(localPath, remotePath, startBlock, endBlock, numBlocks, false, &StatusCallbackWrapped{Callback: statusCb})
+	return a.sdkAllocation.DownloadFileByBlock(localPath, remotePath, startBlock, endBlock, numBlocks, false, &StatusCallbackWrapped{Callback: statusCb}, isFinal)
 }
 
 // DownloadThumbnail - start download file thumbnail from remote path to localpath

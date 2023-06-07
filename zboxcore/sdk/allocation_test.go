@@ -738,7 +738,7 @@ func TestAllocation_DownloadFileByBlock(t *testing.T) {
 			Baseurl: mockBlobberUrl + strconv.Itoa(i),
 		})
 	}
-	err := a.DownloadFileByBlock(mockLocalPath, "/", 1, 0, numBlockDownloads, true, nil)
+	err := a.DownloadFileByBlock(mockLocalPath, "/", 1, 0, numBlockDownloads, true, nil, true)
 	require.NoErrorf(err, "Unexpected error %v", err)
 }
 
@@ -756,7 +756,7 @@ func TestAllocation_DownloadThumbnail(t *testing.T) {
 			Baseurl: "TestAllocation_DownloadThumbnail" + mockBlobberUrl + strconv.Itoa(i),
 		})
 	}
-	err := a.DownloadThumbnail(mockLocalPath, "/", true, nil)
+	err := a.DownloadThumbnail(mockLocalPath, "/", true, nil, true)
 	require.NoErrorf(err, "Unexpected error %v", err)
 }
 

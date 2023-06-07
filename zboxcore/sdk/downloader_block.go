@@ -14,5 +14,5 @@ func (d *blockDownloader) Start(status StatusCallback) error {
 
 	return d.allocationObj.DownloadFileByBlock(d.localPath, d.remotePath,
 		d.startBlock, d.endBlock, d.blocksPerMarker, d.verifyDownload,
-		status)
+		status, true)
 }

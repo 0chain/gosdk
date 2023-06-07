@@ -162,16 +162,17 @@ func DownloadFile(allocationID, remotePath, localPath string, statusCb StatusCal
 //   - endBlock
 //   - numBlocks
 //   - statusCb: callback of status
+//   - isFinal: is final download request
 //
 // ## Outputs
 //
 //   - error
-func DownloadFileByBlock(allocationID, remotePath, localPath string, startBlock, endBlock int64, numBlocks int, statusCb StatusCallbackMocked) error {
+func DownloadFileByBlock(allocationID, remotePath, localPath string, startBlock, endBlock int64, numBlocks int, statusCb StatusCallbackMocked, isFinal bool) error {
 	a, err := getAllocation(allocationID)
 	if err != nil {
 		return err
 	}
-	return a.DownloadFileByBlock(localPath, remotePath, startBlock, endBlock, numBlocks, false, &StatusCallbackWrapped{Callback: statusCb})
+	return a.DownloadFileByBlock(localPath, remotePath, startBlock, endBlock, numBlocks, false, &StatusCallbackWrapped{Callback: statusCb}, isFinal)
 }
 
 // DownloadThumbnail - start download file thumbnail from remote path to localpath
