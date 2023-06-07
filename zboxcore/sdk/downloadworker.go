@@ -1019,7 +1019,7 @@ func processReadMarker(drs []*DownloadRequest) {
 		if dr.skip {
 			continue
 		}
-		sem.Acquire(dr.ctx, 1)
+		_ = sem.Acquire(dr.ctx, 1)
 		go func(dr *DownloadRequest) {
 			dr.processDownload(dr.ctx)
 			sem.Release(1)
