@@ -527,6 +527,7 @@ func (req *DownloadRequest) submitReadMarker(blobber *blockchain.StorageNode, re
 			return nil
 		}
 	}
+	blobber.SetSkip(true)
 	return fmt.Errorf("submit read marker failed after retries: %w", err)
 }
 
@@ -1010,7 +1011,7 @@ func processReadMarker(drs []*DownloadRequest) {
 		}(pos, totalBlocks)
 	}
 	wg.Wait()
-	sem := semaphore.NewWeighted(5)
+	sem := semaphore.NewWeighted(downloadWorkerCount)
 	for _, dr := range drs {
 		if dr.skip {
 			continue

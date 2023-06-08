@@ -304,7 +304,7 @@ func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expir
 // download download file
 func download(
 	allocationID, remotePath, authTicket, lookupHash string,
-	downloadThumbnailOnly bool, numBlocks int, callbackFuncName string,
+	downloadThumbnailOnly bool, numBlocks int, callbackFuncName string,isFinal bool
 ) (
 	*DownloadCommandResponse, error) {
 
@@ -337,7 +337,7 @@ func download(
 
 	defer sys.Files.Remove(localPath) //nolint
 
-	err = downloader.Start(statusBar)
+	err = downloader.Start(statusBar,isFinal)
 
 	if err == nil {
 		wg.Wait()
@@ -601,7 +601,7 @@ func upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, w
 }
 
 // download download file blocks
-func downloadBlocks(allocationID, remotePath, authTicket, lookupHash string, numBlocks int, startBlockNumber, endBlockNumber int64, callbackFuncName string) (*DownloadCommandResponse, error) {
+func downloadBlocks(allocationID, remotePath, authTicket, lookupHash string, numBlocks int, startBlockNumber, endBlockNumber int64, callbackFuncName string,isFinal bool) (*DownloadCommandResponse, error) {
 
 	if len(remotePath) == 0 && len(authTicket) == 0 {
 		return nil, RequiredArg("remotePath/authTicket")
@@ -631,7 +631,7 @@ func downloadBlocks(allocationID, remotePath, authTicket, lookupHash string, num
 
 	defer sys.Files.Remove(localPath) //nolint
 
-	err = downloader.Start(statusBar)
+	err = downloader.Start(statusBar,isFinal)
 
 	if err == nil {
 		wg.Wait()

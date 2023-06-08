@@ -4,7 +4,7 @@ type blockDownloader struct {
 	baseDownloader
 }
 
-func (d *blockDownloader) Start(status StatusCallback) error {
+func (d *blockDownloader) Start(status StatusCallback, isFinal bool) error {
 	if d.isViewer {
 		return d.allocationObj.DownloadFromAuthTicketByBlocks(
 			d.localPath, d.authTicket,
@@ -14,5 +14,5 @@ func (d *blockDownloader) Start(status StatusCallback) error {
 
 	return d.allocationObj.DownloadFileByBlock(d.localPath, d.remotePath,
 		d.startBlock, d.endBlock, d.blocksPerMarker, d.verifyDownload,
-		status, true)
+		status, isFinal)
 }
