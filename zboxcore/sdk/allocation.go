@@ -857,16 +857,14 @@ func (a *Allocation) addAndGenerateDownloadRequest(localPath string, remotePath 
 	a.mutex.Lock()
 	a.downloadProgressMap[remotePath] = downloadReq
 	a.downloadRequests = append(a.downloadRequests, downloadReq)
-	a.mutex.Unlock()
 	if isFinal {
 		downloadOps := a.downloadRequests
-		a.mutex.Lock()
 		a.downloadRequests = nil
-		a.mutex.Unlock()
 		go func() {
 			processReadMarker(downloadOps)
 		}()
 	}
+	a.mutex.Unlock()
 	return nil
 }
 
