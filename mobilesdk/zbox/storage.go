@@ -141,6 +141,8 @@ func GetFileMetaFromAuthTicket(allocationID, authTicket string, lookupHash strin
 //   - remotePath
 //   - localPath: the full local path of file
 //   - statusCb: callback of status
+//   - isFinal: is final download request(for example if u want to download 10 files in
+//     parallel, the last one should be true)
 //
 // ## Outputs
 //   - error
@@ -162,7 +164,8 @@ func DownloadFile(allocationID, remotePath, localPath string, statusCb StatusCal
 //   - endBlock
 //   - numBlocks
 //   - statusCb: callback of status
-//   - isFinal: is final download request
+//   - isFinal: is final download request(for example if u want to download 10 files in
+//     parallel, the last one should be true)
 //
 // ## Outputs
 //
@@ -181,6 +184,8 @@ func DownloadFileByBlock(allocationID, remotePath, localPath string, startBlock,
 //   - remotePath
 //   - localPath
 //   - statusCb: callback of status
+//   - isFinal: is final download request(for example if u want to download 10 files in
+//     parallel, the last one should be true)
 //
 // ## Outputs
 //   - error

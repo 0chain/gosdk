@@ -112,6 +112,8 @@ func (a *Allocation) GetFileMetaFromAuthTicket(authTicket string, lookupHash str
 }
 
 // DownloadFile - start download file from remote path to localpath
+// isFinal- set true if this is the last file to download otherwise false
+// when set to true it will start the download for all files in the queue
 func (a *Allocation) DownloadFile(remotePath, localPath string, statusCb StatusCallbackMocked, isFinal bool) error {
 	if a == nil || a.sdkAllocation == nil {
 		return ErrInvalidAllocation
@@ -120,6 +122,8 @@ func (a *Allocation) DownloadFile(remotePath, localPath string, statusCb StatusC
 }
 
 // DownloadFileByBlock - start download file from remote path to localpath by blocks number
+// isFinal- set true if this is the last file to download otherwise false
+// when set to true it will start the download for all files in the queue
 func (a *Allocation) DownloadFileByBlock(remotePath, localPath string, startBlock, endBlock int64, numBlocks int, statusCb StatusCallbackMocked, isFinal bool) error {
 	if a == nil || a.sdkAllocation == nil {
 		return ErrInvalidAllocation
@@ -128,6 +132,8 @@ func (a *Allocation) DownloadFileByBlock(remotePath, localPath string, startBloc
 }
 
 // DownloadThumbnail - start download file thumbnail from remote path to localpath
+// isFinal- set true if this is the last file to download otherwise false
+// when set to true it will start the download for all files in the queue
 func (a *Allocation) DownloadThumbnail(remotePath, localPath string, statusCb StatusCallbackMocked, isFinal bool) error {
 	if a == nil || a.sdkAllocation == nil {
 		return ErrInvalidAllocation

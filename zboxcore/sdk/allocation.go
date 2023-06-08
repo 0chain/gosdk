@@ -842,33 +842,27 @@ func (a *Allocation) generateDownloadRequest(localPath string, remotePath string
 	return downloadReq, nil
 }
 
-func (a *Allocation) addAndGenerateDownloadRequest(localPath string, remotePath string, contentMode string,
-	startBlock int64, endBlock int64, numBlocks int, verifyDownload bool,
+func (a *Allocation) addAndGenerateDownloadRequest(localPath string, remotePath string, contentMode string, startBlock int64, endBlock int64, numBlocks int, verifyDownload bool,
 	status StatusCallback, isFinal bool) error {
 	var connectionID string
-	blocksToDownload := int64(numBlocks)
-	if startBlock+int64(numBlocks) > endBlock {
-		blocksToDownload = endBlock - startBlock
-	}
 	if len(a.downloadRequests) > 0 {
 		connectionID = a.downloadRequests[0].connectionID
-		blocksToDownload += a.downloadRequests[len(a.downloadRequests)-1].totalBlocks
 	} else {
 		connectionID = zboxutil.NewConnectionId()
 	}
-
-	downloadReq, err := a.generateDownloadRequest(localPath, remotePath, DOWNLOAD_CONTENT_FULL, startBlock, endBlock, numBlocks, verifyDownload, status, connectionID)
+	downloadReq, err := a.generateDownloadRequest(localPath, remotePath, contentMode, startBlock, endBlock, numBlocks, verifyDownload, status, connectionID)
 	if err != nil {
 		return err
 	}
 	a.mutex.Lock()
 	a.downloadProgressMap[remotePath] = downloadReq
-	a.mutex.Unlock()
-	downloadReq.totalBlocks = blocksToDownload
 	a.downloadRequests = append(a.downloadRequests, downloadReq)
+	a.mutex.Unlock()
 	if isFinal {
 		downloadOps := a.downloadRequests
+		a.mutex.Lock()
 		a.downloadRequests = nil
+		a.mutex.Unlock()
 		go func() {
 			processReadMarker(downloadOps)
 		}()

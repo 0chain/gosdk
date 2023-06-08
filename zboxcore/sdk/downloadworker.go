@@ -611,7 +611,7 @@ func (req *DownloadRequest) handleReadMarkerError(resp *http.Response, blobber *
 	logger.Logger.Error(string(respBody))
 
 	appErrorCode := resp.Header.Get("X-App-Error-Code")
-
+	logger.Logger.Error("redeem error code: ", appErrorCode)
 	if appErrorCode != "" {
 		if appErrorCode == NotEnoughTokens {
 			logger.Logger.Debug(fmt.Sprintf("NotEnoughTokens - blobberID: %v", blobber.ID))
@@ -642,7 +642,7 @@ func (req *DownloadRequest) handleReadMarkerError(resp *http.Response, blobber *
 		}
 
 		lastBlobberReadCounter := getBlobberReadCtr(req.allocationID, blobber.ID)
-		if rspData.LatestRM.ReadCounter != lastBlobberReadCounter {
+		if rspData.LatestRM.ReadCounter >= lastBlobberReadCounter {
 			setBlobberReadCtr(req.allocationID, blobber.ID, rspData.LatestRM.ReadCounter)
 			return fmt.Errorf("stale_read_marker: readmarker counter is not in sync with latest counter. Last blobber read counter: %d, but readmarker's counter was: %d", rspData.LatestRM.ReadCounter, lastBlobberReadCounter)
 		}
