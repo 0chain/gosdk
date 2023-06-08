@@ -874,6 +874,11 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 	}
 
 	req.validationRootMap = make(map[string]*blobberFile)
+	blobberCount := 0
+	countThreshold := req.consensusThresh + 1
+	if countThreshold > req.fullconsensus {
+		countThreshold = req.consensusThresh
+	}
 	for i := 0; i < len(fMetaResp); i++ {
 		fmr := fMetaResp[i]
 		if fmr.err != nil || fmr.fileref == nil {
@@ -907,6 +912,10 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 		}
 		shift := zboxutil.NewUint128(1).Lsh(uint64(fmr.blobberIdx))
 		foundMask = foundMask.Or(shift)
+		blobberCount++
+		if blobberCount == countThreshold {
+			break
+		}
 	}
 	req.consensus = foundMask.CountOnes()
 	if !req.isConsensusOk() {
@@ -981,6 +990,7 @@ func processReadMarker(drs []*DownloadRequest) {
 	blobberMap := make(map[uint64]int64)
 	mpLock := sync.Mutex{}
 	wg := sync.WaitGroup{}
+
 	for _, dr := range drs {
 		wg.Add(1)
 		go func(dr *DownloadRequest) {
@@ -998,7 +1008,8 @@ func processReadMarker(drs []*DownloadRequest) {
 		}(dr)
 	}
 	wg.Wait()
-
+	successMask := zboxutil.NewUint128(0)
+	var redeemError error
 	for pos, totalBlocks := range blobberMap {
 		if totalBlocks == 0 {
 			continue
@@ -1006,7 +1017,12 @@ func processReadMarker(drs []*DownloadRequest) {
 		wg.Add(1)
 		go func(pos uint64, totalBlocks int64) {
 			blobber := drs[0].blobbers[pos]
-			_ = drs[0].submitReadMarker(blobber, totalBlocks)
+			err := drs[0].submitReadMarker(blobber, totalBlocks)
+			if err == nil {
+				successMask = successMask.Or(zboxutil.NewUint128(1).Lsh(pos))
+			} else {
+				redeemError = err
+			}
 			wg.Done()
 		}(pos, totalBlocks)
 	}
@@ -1014,6 +1030,11 @@ func processReadMarker(drs []*DownloadRequest) {
 	sem := semaphore.NewWeighted(downloadWorkerCount)
 	for _, dr := range drs {
 		if dr.skip {
+			continue
+		}
+		dr.downloadMask = successMask.And(dr.downloadMask)
+		if dr.consensusThresh > dr.downloadMask.CountOnes() {
+			dr.errorCB(redeemError, dr.remotefilepath)
 			continue
 		}
 		if err := sem.Acquire(dr.ctx, 1); err != nil {
