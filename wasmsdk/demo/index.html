@@ -421,13 +421,14 @@
         if (!playLiveVideo) {
           mediaRecorder.stop()
           stream.getTracks().forEach( track => track.stop() );
-          playLiveVideo = true
           return
         }
 
       }
       mediaRecorder.start()
-
+      if (!playLiveVideo) {
+        return
+      }
       setInterval(() => {
           mediaRecorder.requestData()
       }, 1000)
