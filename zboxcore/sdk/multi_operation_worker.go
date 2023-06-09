@@ -87,6 +87,7 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 			}
 
 			httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
+			httpreq.Header.Set("js.fetch:mode", "cors")
 			ctx, cncl := context.WithTimeout(mo.ctx, DefaultCreateConnectionTimeOut)
 			defer cncl()
 			resp, err = zboxutil.Client.Do(httpreq.WithContext(ctx))
