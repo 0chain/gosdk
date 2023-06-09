@@ -786,11 +786,14 @@ func (req *DownloadRequest) calculateShardsParams(
 	chunksPerShard = (effectivePerShardSize + effectiveBlockSize - 1) / effectiveBlockSize
 	actualPerShard = chunksPerShard * fRef.ChunkSize
 	if req.endBlock == 0 || req.endBlock > chunksPerShard {
-		req.endBlock = chunksPerShard
+		msg := fmt.Sprintf("endblock number %d exceeds chunksPerShard %d of this file", req.endBlock, chunksPerShard)
+		err = errors.New("invalid_block_num", msg)
+		return 0, 0, 0, err
 	}
 
+	msg := fmt.Sprintf("start %d; end %d", req.startBlock, req.endBlock)
 	if req.startBlock >= req.endBlock {
-		err = errors.New("invalid_block_num", "start block should be less than end block")
+		err = errors.New("invalid_block_num", "start block should be less than end block"+msg)
 		return 0, 0, 0, err
 	}
 
