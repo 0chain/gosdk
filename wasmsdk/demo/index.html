@@ -99,7 +99,11 @@
   <fieldset>
     <legend>Files</legend>
     <button id="btnListFiles">List</button>
-    <span><input id="inputSelectedFile" type="file" multiple /> <button id="btnUploadFile">Upload</button> </span>
+    <span><input id="inputSelectedFile" type="file" multiple /> 
+      <button id="btnUploadFile">Upload</button> 
+    </span>
+    <button id="btnLiveUpload"> Live Upload</button>
+    <button id="btnLiveUploadEnd"> Live Upload End</button>
     <button id="btnUploadEncryptFile">EncryptedUpload</button> </span>
     [ <button id="btnDownloadFile">Download</button> | <button id="btnDownloadShared">Download with AuthTicket</button>
     ]
@@ -124,7 +128,7 @@
   </fieldset>
 
 
-  <fieldset>
+  <!-- <fieldset>
     <legend>Media WebPlayer</legend>
 
     <div id="container">
@@ -135,14 +139,18 @@
       <button id="btnPause">Pause</button>
       <button id="btnStop">Stop</button>
     </div>
-  </fieldset>
+  </fieldset> -->
 
+  <fieldset>
+    <legend>live video play</legend>
+    <video autoplay></video>
+  </fieldset>
 
   <fieldset>
     <legend>Image Viewer</legend>
     <img id="viewer" src="image.png" width="600" />
   </fieldset>
-
+  
   <script>
 
     window.downloadCallback = function (totalBytes, completedBytes, error) {
@@ -367,6 +375,7 @@
       bindFiles()
     })
 
+    let playLiveVideo = true
     onClick('btnUploadFile', async () => {
       const { files } = get('inputSelectedFile')
       if (files && files.length > 0) {
@@ -378,7 +387,8 @@
             allocationId: allocationId,
             remotePath: `/${file.name}`,
             file: file,
-            thumbnailBytes: await readBytes(file),//only for demo, don't upload original file as thumbnail in production
+            // thumbnailBytes: await readBytes(file),
+            //only for demo, don't upload original file as thumbnail in production
             encrypt: false,
             webstreaming: false,
             isUpdate: false,
@@ -394,6 +404,50 @@
 
         console.log(JSON.stringify(results))
       }
+    })
+
+    function permittedGetUserMedia() {
+        return !!(navigator.mediaDevices &&
+            navigator.mediaDevices.getUserMedia);
+    }
+
+    function processStream(stream, mediaSource) {
+      const mediaRecorder = new MediaRecorder(stream, {mimeType: "video/webm"})
+      const videoBuffer = mediaSource.addSourceBuffer('video/webm;codecs=vp8');
+
+      mediaRecorder.ondataavailable = (data) => {
+        console.log(data.data)
+        // sendFile(data.data, countUploadChunk)
+        if (!playLiveVideo) {
+          mediaRecorder.stop()
+          stream.getTracks().forEach( track => track.stop() );
+          playLiveVideo = true
+          return
+        }
+
+      }
+      mediaRecorder.start()
+
+      setInterval(() => {
+          mediaRecorder.requestData()
+      }, 1000)
+    }
+
+    onClick('btnLiveUpload', async () => {
+      if (permittedGetUserMedia()) {
+        const video = document.querySelector('video');
+        const mediaSource = new MediaSource();
+        video.src = URL.createObjectURL(mediaSource);
+
+        navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: true
+        }).then((stream) => processStream(stream, mediaSource));
+      }
+    })
+
+    onClick('btnLiveUploadEnd', async () => {
+      playLiveVideo = false
     })
 
     onClick('btnShare', async () => {
