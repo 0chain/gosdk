@@ -36,6 +36,9 @@ func TestIssue172(t *testing.T) {
 
 	// Derive the old (wrong way)
 	account, err := getWallet().Derive(path, false)
+	if err != nil {
+		t.Error(err)
+	}
 
 	if account.Address.Hex() != "0x3943412CBEEEd4b68d73382b136F36b0CB82F481" {
 		t.Error("wrong address")
@@ -44,6 +47,9 @@ func TestIssue172(t *testing.T) {
 	// Set envar to non-zero length to derive correctly
 	os.Setenv(issue179FixEnvar, "1")
 	account, err = getWallet().Derive(path, false)
+	if err != nil {
+		t.Error(err)
+	}
 	if account.Address.Hex() != "0x98e440675eFF3041D20bECb7fE7e81746A431b6d" {
 		t.Error("wrong address")
 	}
@@ -53,7 +59,9 @@ func TestIssue172(t *testing.T) {
 	wallet := getWallet()
 	wallet.SetFixIssue172(true)
 	account, err = wallet.Derive(path, false)
-
+	if err != nil {
+		t.Error(err)
+	}
 	if account.Address.Hex() != "0x98e440675eFF3041D20bECb7fE7e81746A431b6d" {
 		t.Error("wrong address")
 	}
@@ -329,6 +337,7 @@ func TestWallet(t *testing.T) {
 		t.Error(err)
 	}
 
+	words = strings.Split(mnemonic, " ")
 	if len(words) != 12 {
 		t.Error("expected 12 words")
 	}

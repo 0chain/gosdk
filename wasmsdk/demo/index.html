@@ -71,6 +71,7 @@
       <button id="btnGetAllocation">Get</button>
       <button id="btnGetAllocationMinLock">AllocationMinLock</button>
       <button id="btnRemoteFileMap">RemoteFileMap</button>
+      <button id="btnAddReplaceBlobber">AddReplaceBlobber</button>
     </span>
 
     <br>
@@ -107,6 +108,8 @@
     <button id="btnGetFileStats">GetFileStats</button>
     <button id="btnDelete">Delete</button>
     <button id="btnShare">Share</button>
+    <button id="btnAllocationRepair">Repair</button>
+
     <br>
 
     <div id="listFiles">
@@ -185,12 +188,12 @@
     }
 
     const query = new URLSearchParams(window.location.search);
-    
-    let network = query.get('network') 
+
+    let network = query.get('network')
     if (!network || network == 'undefined') {
       network = "dev.zus.network"
     }
-  
+
     const blockWorker = 'https://'+network+'/dns';
     const config = [
       networkConfig.chainId,
@@ -477,6 +480,30 @@
       }
     })
 
+    onClick('btnAddReplaceBlobber', async () => {
+
+      var addremoveBlobberIDs = prompt("Add Blobber ID and remove blobberID (separated by a comma): ");
+
+      var [addBlobberId, removeBlobberID] = addremoveBlobberIDs.split(",");
+      removeBlobberID = removeBlobberID !== undefined ? value : "";
+
+      console.log("addBlobberId", addBlobberId)
+      console.log("removeBlobberID", removeBlobberID)
+      // addBlobberId = addBlobberId.trim()
+      // removeBlobberID = removeBlobberID.trim()
+        const allocationId = getSelectedAllocation()
+        if (!allocationId) {
+          alert("please provide allocationId")
+        }
+
+        try {
+          const file = await goWasm.sdk.updateAllocationWithRepair(allocationId, 0, 0, 5000000000, false, addBlobberId, removeBlobberID)
+
+        } catch (e) {
+        alert(e)
+      }
+    })
+
     onClick('btnDownloadShared', async () => {
 
       const authTicket = get('authTicket').value
@@ -638,6 +665,10 @@
       txtOutput.innerHTML = rate
     })
 
-
+    onClick('btnAllocationRepair', async () => {
+      const allocationId = getSelectedAllocation()
+      const output = await goWasm.sdk.allocationRepair(allocationId, "/")
+      txtOutput.innerHTML = output
+    })
   </script>
 </body>

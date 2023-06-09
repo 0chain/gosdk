@@ -16,7 +16,7 @@ require (
 	github.com/h2non/filetype v1.1.3
 	github.com/hashicorp/go-retryablehttp v0.7.2
 	github.com/hashicorp/golang-lru/v2 v2.0.1
-	github.com/herumi/bls-go-binary v1.28.2
+	github.com/herumi/bls-go-binary v1.30.4
 	github.com/influxdata/influxdb v1.8.3
 	github.com/klauspost/reedsolomon v1.11.7
 	github.com/labstack/echo v3.3.10+incompatible
@@ -34,7 +34,8 @@ require (
 	go.dedis.ch/kyber/v3 v3.1.0
 	go.uber.org/zap v1.24.0
 	golang.org/x/crypto v0.6.0
-	golang.org/x/image v0.0.0-20190802002840-cff245a6509b
+	golang.org/x/image v0.5.0
+	golang.org/x/sync v0.1.0
 	google.golang.org/grpc v1.53.0
 	gopkg.in/cheggaaa/pb.v1 v1.0.28
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
@@ -118,7 +119,6 @@ require (
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	go.dedis.ch/fixbuf v1.0.3 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/sys v0.5.0 // indirect
 	golang.org/x/text v0.7.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
@@ -140,4 +140,4 @@ require (
 )
 
 //replace github.com/ethereum/go-ethereum => github.com/certifaction/go-ethereum v1.10.3-wasm
-replace github.com/herumi/bls-go-binary => github.com/0chain/bls-go-library-zboxmobile v1.26.2
+replace github.com/herumi/bls-go-binary => github.com/cnlangzi/bls-go-binary v1.30.7

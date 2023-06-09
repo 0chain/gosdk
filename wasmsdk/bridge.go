@@ -12,70 +12,44 @@ import (
 	"github.com/0chain/gosdk/zcncore"
 )
 
-//type BridgeSDKConfig struct {
-//	LogLevel         *string
-//	LogPath          *string
-//	ConfigBridgeFile *string
-//	ConfigChainFile  *string
-//	ConfigDir        *string
-//	Development      *bool
-//}
-
 var bridge *zcnbridge.BridgeClient
 
 func initBridge(
 	ethereumAddress string,
 	bridgeAddress string,
 	authorizersAddress string,
-	wzcnAddress string,
+	tokenAddress string,
 	ethereumNodeURL string,
 	gasLimit uint64,
 	value int64,
 	consensusThreshold float64) error {
-	// Create bridge client configuration
-	//zcnbridge.CreateInitialClientConfig(
-	//	*cfg.ConfigBridgeFile,
-	//	*cfg.ConfigDir,
-	//	"0xC49926C4124cEe1cbA0Ea94Ea31a6c12318df947",
-	//	"0xF26B52df8c6D9b9C20bfD7819Bed75a75258c7dB",
-	//	"0x930E1BE76461587969Cb7eB9BFe61166b1E70244",
-	//	"https://ropsten.infura.io/v3/22cb2849f5f74b8599f3dc2a23085bd4",
-	//	"password",
-	//	300000,
-	//	0,
-	//	75.0,
-	//)
-	//
-
-	cfg := zcnbridge.BridgeClientYaml{
-		Password:           "",
-		EthereumAddress:    ethereumAddress,
-		BridgeAddress:      bridgeAddress,
-		AuthorizersAddress: authorizersAddress,
-		WzcnAddress:        wzcnAddress,
-		EthereumNodeURL:    ethereumNodeURL,
-		GasLimit:           gasLimit,
-		Value:              value,
-		ConsensusThreshold: consensusThreshold,
-	}
-
 	wallet := zcncore.GetWalletRaw()
 	if len(wallet.ClientID) == 0 {
 		return errors.New("wallet_error", "wallet is not set")
 	}
 
-	bridge = zcnbridge.CreateBridgeClientWithConfig(cfg, &wallet)
+	bridge = &zcnbridge.BridgeClient{
+		EthereumAddress:    ethereumAddress,
+		BridgeAddress:      bridgeAddress,
+		AuthorizersAddress: authorizersAddress,
+		TokenAddress:       tokenAddress,
+		Password:           "",
+		EthereumNodeURL:    ethereumNodeURL,
+		Homedir:            ".",
+		GasLimit:           gasLimit,
+		ConsensusThreshold: consensusThreshold,
+	}
 
 	return nil
 }
 
 // Burns ZCN tokens and returns a hash of the burn transaction
-func burnZCN(amount uint64) string {
+func burnZCN(amount, txnfee uint64) string { //nolint
 	if bridge == nil {
 		return errors.New("burnZCN", "bridge is not initialized").Error()
 	}
 
-	tx, err := bridge.BurnZCN(context.Background(), amount)
+	tx, err := bridge.BurnZCN(context.Background(), amount, txnfee)
 	if err != nil {
 		return errors.Wrap("burnZCN", "failed to burn ZCN tokens", err).Error()
 	}
@@ -84,8 +58,7 @@ func burnZCN(amount uint64) string {
 }
 
 // Mints ZCN tokens and returns a hash of the mint transaction
-func mintZCN(burnTrxHash string, timeout int) string {
-
+func mintZCN(burnTrxHash string, timeout int) string { //nolint
 	mintPayload, err := bridge.QueryZChainMintPayload(burnTrxHash)
 	if err != nil {
 		return errors.Wrap("mintZCN", "failed to QueryZChainMintPayload", err).Error()

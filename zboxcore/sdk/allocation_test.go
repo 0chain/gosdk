@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -45,6 +46,24 @@ const (
 	mockFileRefName    = "mock file ref name"
 	numBlobbers        = 4
 )
+
+func setupMockGetFileMetaResponse(
+	t *testing.T, mockClient *mocks.HttpClient, funcName string,
+	testCaseName string, a *Allocation, httpMethod string,
+	statusCode int, body []byte) {
+
+	for i := 0; i < numBlobbers; i++ {
+		url := funcName + testCaseName + mockBlobberUrl + strconv.Itoa(i) + zboxutil.FILE_META_ENDPOINT
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			log.Println(req.URL.String(), url)
+			return req.Method == httpMethod &&
+				strings.HasPrefix(req.URL.String(), url)
+		})).Return(&http.Response{
+			StatusCode: statusCode,
+			Body:       ioutil.NopCloser(bytes.NewReader(body)),
+		}, nil).Once()
+	}
+}
 
 func setupMockHttpResponse(
 	t *testing.T, mockClient *mocks.HttpClient, funcName string,
@@ -107,11 +126,40 @@ func setupMockWriteLockRequest(a *Allocation, mockClient *mocks.HttpClient) {
 }
 
 func setupMockFile(t *testing.T, path string) (teardown func(t *testing.T)) {
-	os.Create(path)
-	ioutil.WriteFile(path, []byte("mockActualHash"), os.ModePerm)
+	_, err := os.Create(path)
+	require.Nil(t, err)
+	err = ioutil.WriteFile(path, []byte("mockActualHash"), os.ModePerm)
+	require.Nil(t, err)
 	return func(t *testing.T) {
 		os.Remove(path)
 	}
+}
+
+func setupMockRollback(a *Allocation, mockClient *mocks.HttpClient) {
+
+	for _, blobber := range a.Blobbers {
+		url := blobber.Baseurl + zboxutil.LATEST_WRITE_MARKER_ENDPOINT
+		url = strings.TrimRight(url, "/")
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			return strings.Contains(req.URL.String(), url)
+		})).Return(&http.Response{
+			StatusCode: http.StatusOK,
+			Body: func() io.ReadCloser {
+				s := `{"latest_write_marker":null,"prev_write_marker":null}`
+				return ioutil.NopCloser(bytes.NewReader([]byte(s)))
+			}(),
+		}, nil)
+
+		newUrl := blobber.Baseurl + zboxutil.ROLLBACK_ENDPOINT
+		newUrl = strings.TrimRight(newUrl, "/")
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			return strings.Contains(req.URL.String(), newUrl)
+		})).Return(&http.Response{
+			StatusCode: http.StatusOK,
+			Body:       ioutil.NopCloser(bytes.NewReader(nil)),
+		}, nil)
+	}
+
 }
 
 func setupMockFileAndReferencePathResult(t *testing.T, allocationID, name string) (teardown func(t *testing.T)) {
@@ -243,15 +291,8 @@ func newBlobbersDetails() (blobbers []*BlobberAllocation) {
 	return blobberDetails
 }
 
-func setupMocks() {
-	GetFileInfo = func(localpath string) (os.FileInfo, error) {
-		return new(MockFile), nil
-	}
-}
-
 type MockFile struct {
 	os.FileInfo
-	size int64
 }
 
 func (m MockFile) Size() int64 { return 10 }
@@ -777,9 +818,11 @@ func TestAllocation_downloadFile(t *testing.T) {
 				statusCallback: nil,
 			},
 			setup: func(t *testing.T, testCaseName string, p parameters, a *Allocation) (teardown func(t *testing.T)) {
-				os.Create(p.localPath)
+				_, err := os.Create(p.localPath)
+				require.Nil(t, err)
 				return func(t *testing.T) {
-					os.Remove(p.localPath)
+					err = os.Remove(p.localPath)
+					require.Nil(t, err)
 				}
 			},
 			wantErr: true,
@@ -797,8 +840,10 @@ func TestAllocation_downloadFile(t *testing.T) {
 				statusCallback: nil,
 			},
 			setup: func(t *testing.T, testCaseName string, p parameters, a *Allocation) (teardown func(t *testing.T)) {
-				os.Mkdir(p.localPath, 0755)
-				os.Create(p.localPath + "/" + p.remotePath)
+				err := os.Mkdir(p.localPath, 0755)
+				require.Nil(t, err)
+				_, err = os.Create(p.localPath + "/" + p.remotePath)
+				require.Nil(t, err)
 				return func(t *testing.T) {
 					os.RemoveAll(p.localPath + "/" + p.remotePath)
 					os.RemoveAll(p.localPath)
@@ -900,10 +945,6 @@ func TestAllocation_downloadFile(t *testing.T) {
 }
 
 func TestAllocation_GetRefs(t *testing.T) {
-	const (
-		mockType       = "f"
-		mockActualHash = "mockActualHash"
-	)
 
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
@@ -1083,7 +1124,7 @@ func TestAllocation_GetAuthTicketForShare(t *testing.T) {
 		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{})
 	}
 	sdkInitialized = true
-	at, err := a.GetAuthTicketForShare("/1.txt", "1.txt", fileref.FILE, mockClientId)
+	at, err := a.GetAuthTicketForShare("/1.txt", "1.txt", fileref.FILE, "")
 	require.NotEmptyf(at, "unexpected empty auth ticket")
 	require.NoErrorf(err, "unexpected error: %v", err)
 }
@@ -1171,7 +1212,8 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 				refereeEncryptionPublicKey: func() string {
 					client_mnemonic := "travel twenty hen negative fresh sentence hen flat swift embody increase juice eternal satisfy want vessel matter honey video begin dutch trigger romance assault"
 					client_encscheme := encryption.NewEncryptionScheme()
-					client_encscheme.Initialize(client_mnemonic)
+					_, err := client_encscheme.Initialize(client_mnemonic)
+					require.Nil(t, err)
 					client_encscheme.InitForEncryption("filetype:audio")
 					client_enc_pub_key, err := client_encscheme.GetPublicKey()
 					require.NoError(t, err)
@@ -1179,6 +1221,13 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 				}(),
 			},
 			setup: func(t *testing.T, testCaseName string, a *Allocation, mockClient *mocks.HttpClient) (teardown func(t *testing.T)) {
+				// mock GetFileMeta for private sharing validation
+				fileMeta, err := json.Marshal(&fileref.FileRef{
+					EncryptedKey: "EncryptedKey",
+				})
+				require.NoError(t, err)
+				setupMockHttpResponse(t, mockClient, "TestAllocation_GetAuthTicket", testCaseName, a, http.MethodPost, http.StatusOK, fileMeta)
+
 				body, err := json.Marshal(&fileref.ReferencePath{
 					Meta: map[string]interface{}{
 						"type": "f",
@@ -1217,6 +1266,14 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 				refereeEncryptionPublicKey: "",
 			},
 			setup: func(t *testing.T, testCaseName string, a *Allocation, mockClient *mocks.HttpClient) (teardown func(t *testing.T)) {
+
+				// mock GetFileMeta for private sharing validation
+				fileMeta, err := json.Marshal(&fileref.FileRef{
+					EncryptedKey: "EncryptedKey",
+				})
+				require.NoError(t, err)
+				setupMockHttpResponse(t, mockClient, "TestAllocation_GetAuthTicket", testCaseName, a, http.MethodPost, http.StatusOK, fileMeta)
+
 				httpResponse := &http.Response{
 					StatusCode: http.StatusOK,
 					Body: func() io.ReadCloser {
@@ -1282,8 +1339,6 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 					Baseurl: "TestAllocation_GetAuthTicket" + tt.name + mockBlobberUrl + strconv.Itoa(i),
 				})
 			}
-			const mockValidationRoot = "mock validation root"
-			const numberBlobbers = 10
 
 			zboxutil.Client = &mockClient
 
@@ -1293,7 +1348,7 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 				}
 			}
 			at, err := a.GetAuthTicket(tt.parameters.path, tt.parameters.filename, tt.parameters.referenceType, tt.parameters.refereeClientID, tt.parameters.refereeEncryptionPublicKey, 0, nil)
-			require.EqualValues(tt.wantErr, err != nil)
+			require.EqualValues(tt.wantErr, err != nil, errors.Top(err))
 			if err != nil {
 				require.EqualValues(tt.errMsg, errors.Top(err))
 				return
@@ -1428,6 +1483,7 @@ func TestAllocation_ListDirFromAuthTicket(t *testing.T) {
 						Baseurl: "TestAllocation_ListDirFromAuthTicket" + testCaseName + mockBlobberUrl + strconv.Itoa(i),
 					})
 				}
+
 				setupMockHttpResponse(t, mockClient, "TestAllocation_ListDirFromAuthTicket", testCaseName, a, http.MethodGet, http.StatusBadRequest, []byte(""))
 				return func(t *testing.T) {
 					a.Blobbers = nil
@@ -1591,9 +1647,11 @@ func TestAllocation_downloadFromAuthTicket(t *testing.T) {
 				authTicket: authTicket,
 			},
 			setup: func(t *testing.T, testCaseName string, p parameters) (teardown func(t *testing.T)) {
-				os.Create(p.localPath)
+				_, err := os.Create(p.localPath)
+				require.Nil(t, err)
 				return func(t *testing.T) {
-					os.Remove(p.localPath)
+					err := os.Remove(p.localPath)
+					require.Nil(t, err)
 				}
 			},
 			wantErr: true,
@@ -1607,8 +1665,12 @@ func TestAllocation_downloadFromAuthTicket(t *testing.T) {
 				remoteFilename: mockRemoteFileName,
 			},
 			setup: func(t *testing.T, testCaseName string, p parameters) (teardown func(t *testing.T)) {
-				os.Mkdir(p.localPath, 0755)
-				os.Create(p.localPath + "/" + p.remoteFilename)
+				err := os.Mkdir(p.localPath, 0755)
+				require.Nil(t, err)
+
+				_, err = os.Create(p.localPath + "/" + p.remoteFilename)
+				require.Nil(t, err)
+
 				return func(t *testing.T) {
 					os.RemoveAll(p.localPath + "/" + p.remoteFilename)
 					os.RemoveAll(p.localPath)
@@ -2254,7 +2316,7 @@ func getMockAuthTicket(t *testing.T) string {
 		ParityShards: 1,
 		FileOptions:  63,
 	}
-	setupMockGetFileInfoResponse(t, &mockClient)
+
 	a.InitAllocation()
 	sdkInitialized = true
 	for i := 0; i < numBlobbers; i++ {
@@ -2264,19 +2326,24 @@ func getMockAuthTicket(t *testing.T) string {
 		})
 	}
 
+	jsonFR, err := json.Marshal(fileref.FileRef{
+		Ref: fileref.Ref{
+			Name: mockFileRefName,
+		},
+		ValidationRoot: "mock validation root",
+		EncryptedKey:   "encrypted key",
+	})
+	require.NoError(t, err)
+
 	httpResponse := &http.Response{
 		StatusCode: http.StatusOK,
 		Body: func() io.ReadCloser {
-			jsonFR, err := json.Marshal(fileref.FileRef{
-				Ref: fileref.Ref{
-					Name: mockFileRefName,
-				},
-				ValidationRoot: "mock validation root",
-			})
-			require.NoError(t, err)
-			return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+			return ioutil.NopCloser(bytes.NewReader(jsonFR))
 		}(),
 	}
+
+	setupMockGetFileMetaResponse(t, &mockClient, "TestAllocation_getMockAuthTicket", "", a, http.MethodPost, http.StatusOK, jsonFR)
+
 	for i := 0; i < numBlobbers; i++ {
 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 			return strings.HasPrefix(req.URL.Path, "TestAllocation_ListDirFromAuthTicket")
@@ -2286,7 +2353,8 @@ func getMockAuthTicket(t *testing.T) string {
 			return strings.HasPrefix(req.URL.Path, "TestAllocation_getMockAuthTicket")
 		})).Return(httpResponse, nil)
 	}
-	var authTicket, err = a.GetAuthTicket("/1.txt", "1.txt", fileref.FILE, mockClientId, "", 0, nil)
+
+	authTicket, err := a.GetAuthTicket("/1.txt", "1.txt", fileref.FILE, mockClientId, "", 0, nil)
 	require.NoErrorf(t, err, "unexpected get auth ticket error: %v", err)
 	require.NotEmptyf(t, authTicket, "unexpected empty auth ticket")
 	return authTicket

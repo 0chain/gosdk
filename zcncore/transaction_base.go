@@ -222,7 +222,10 @@ func Sign(hash string) (string, error) {
 
 var SignFn = func(hash string) (string, error) {
 	sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
-	sigScheme.SetPrivateKey(_config.wallet.Keys[0].PrivateKey)
+	err := sigScheme.SetPrivateKey(_config.wallet.Keys[0].PrivateKey)
+	if err != nil {
+		return "", err
+	}
 	return sigScheme.Sign(hash)
 }
 
@@ -234,7 +237,10 @@ func signWithWallet(hash string, wi interface{}) (string, error) {
 		return "", errors.New("", "error in casting to wallet")
 	}
 	sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
-	sigScheme.SetPrivateKey(w.Keys[0].PrivateKey)
+	err := sigScheme.SetPrivateKey(w.Keys[0].PrivateKey)
+	if err != nil {
+		return "", err
+	}
 	return sigScheme.Sign(hash)
 }
 
@@ -294,7 +300,7 @@ type getNonceCallBack struct {
 
 func (g getNonceCallBack) OnNonceAvailable(status int, nonce int64, info string) {
 	if status != StatusSuccess {
-		g.err = errors.New("get_nonce", "failed respond nonce")
+		g.err = errors.New("get_nonce", "failed respond nonce") //nolint
 	}
 
 	g.nonceCh <- nonce
@@ -362,6 +368,14 @@ func (t *Transaction) submitTxn() {
 				return
 			}
 
+			if res.StatusCode != http.StatusOK {
+				logging.Error(minerurl, " submit transaction failed with status code ", res.StatusCode)
+				if int(atomic.AddInt32(&failedCount, 1)) == minersN {
+					resultC <- res
+				}
+				return
+			}
+
 			resultC <- res
 		}(miner)
 	}
@@ -370,6 +384,7 @@ func (t *Transaction) submitTxn() {
 	case <-failC:
 		logging.Error("failed to submit transaction")
 		t.completeTxn(StatusError, "", fmt.Errorf("failed to submit transaction to all miners"))
+		transaction.Cache.Evict(t.txn.ClientID)
 		return
 	case ret := <-resultC:
 		logging.Debug("finish txn submitting, ", ret.Url, ", Status: ", ret.Status, ", output:", ret.Body)
@@ -500,7 +515,10 @@ func (t *Transaction) ExecuteFaucetSCWallet(walletStr string, methodName string,
 			transaction.Cache.Set(t.txn.ClientID, nonce)
 		}
 		t.txn.TransactionNonce = nonce
-		t.txn.ComputeHashAndSignWithWallet(signWithWallet, w)
+		err = t.txn.ComputeHashAndSignWithWallet(signWithWallet, w)
+		if err != nil {
+			return
+		}
 		fmt.Printf("submitted transaction\n")
 		t.submitTxn()
 	}()
@@ -629,58 +647,8 @@ func getBlockHeaderFromTransactionConfirmation(txnHash string, cfmBlock map[stri
 	return nil, errors.New("", "txn confirmation not found.")
 }
 
-func getTransactionConfirmation(numSharders int, txnHash string) (*blockHeader, map[string]json.RawMessage, *blockHeader, error) {
-	result := make(chan *util.GetResponse)
-	defer close(result)
-
-	numSharders = len(_config.chain.Sharders) // overwrite, use all
-	queryFromSharders(numSharders, fmt.Sprintf("%v%v&content=lfb", TXN_VERIFY_URL, txnHash), result)
-
-	maxConfirmation := int(0)
-	txnConfirmations := make(map[string]int)
-	var blockHdr *blockHeader
-	var lfb blockHeader
-	var confirmation map[string]json.RawMessage
-	for i := 0; i < numSharders; i++ {
-		rsp := <-result
-		logging.Debug(rsp.Url + " " + rsp.Status)
-		logging.Debug(rsp.Body)
-		if rsp.StatusCode == http.StatusOK {
-			var cfmLfb map[string]json.RawMessage
-			err := json.Unmarshal([]byte(rsp.Body), &cfmLfb)
-			if err != nil {
-				logging.Error("txn confirmation parse error", err)
-				continue
-			}
-			bH, err := getBlockHeaderFromTransactionConfirmation(txnHash, cfmLfb)
-			if err != nil {
-				logging.Error(err)
-			}
-			if err == nil {
-				txnConfirmations[bH.Hash]++
-				if txnConfirmations[bH.Hash] > maxConfirmation {
-					maxConfirmation = txnConfirmations[bH.Hash]
-					blockHdr = bH
-					confirmation = cfmLfb
-				}
-			} else if lfbRaw, ok := cfmLfb["latest_finalized_block"]; ok {
-				err := json.Unmarshal([]byte(lfbRaw), &lfb)
-				if err != nil {
-					logging.Error("round info parse error.", err)
-					continue
-				}
-			}
-		}
-
-	}
-	if maxConfirmation == 0 {
-		return nil, confirmation, &lfb, errors.New("", "transaction not found")
-	}
-	return blockHdr, confirmation, &lfb, nil
-}
-
-func getBlockInfoByRound(numSharders int, round int64, content string) (*blockHeader, error) {
-	numSharders = len(_config.chain.Sharders) // overwrite, use all
+func getBlockInfoByRound(round int64, content string) (*blockHeader, error) {
+	numSharders := len(_config.chain.Sharders) // overwrite, use all
 	resultC := make(chan *util.GetResponse, numSharders)
 	queryFromSharders(numSharders, fmt.Sprintf("%vround=%v&content=%v", GET_BLOCK_INFO, round, content), resultC)
 	var (
@@ -750,11 +718,11 @@ func validateChain(confirmBlock *blockHeader) bool {
 	currentBlockHash := confirmBlock.Hash
 	round := confirmRound + 1
 	for {
-		nextBlock, err := getBlockInfoByRound(1, round, "header")
+		nextBlock, err := getBlockInfoByRound(round, "header")
 		if err != nil {
 			logging.Info(err, " after a second falling thru to ", getMinShardersVerify(), "of ", len(_config.chain.Sharders), "Sharders")
 			sys.Sleep(1 * time.Second)
-			nextBlock, err = getBlockInfoByRound(getMinShardersVerify(), round, "header")
+			nextBlock, err = getBlockInfoByRound(round, "header")
 			if err != nil {
 				logging.Error(err, " block chain stalled. waiting", defaultWaitSeconds, "...")
 				sys.Sleep(defaultWaitSeconds)

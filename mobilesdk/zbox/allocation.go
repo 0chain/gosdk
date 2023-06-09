@@ -322,7 +322,7 @@ func (a *Allocation) GetDiff(lastSyncCachePath string, localRootPath string, loc
 	if err != nil {
 		return "", fmt.Errorf("invalid remote exclude path JSON. %v", err)
 	}
-	lFdiff, err := a.sdkAllocation.GetAllocationDiff(lastSyncCachePath, localRootPath, filterArray, exclPathArray)
+	lFdiff, err := a.sdkAllocation.GetAllocationDiff(lastSyncCachePath, localRootPath, filterArray, exclPathArray, "/")
 	if err != nil {
 		return "", fmt.Errorf("get allocation diff in sdk failed. %v", err)
 	}
@@ -399,7 +399,7 @@ func (a *Allocation) GetMinWriteRead() (string, error) {
 	minMaxCost.minR = minR
 	minMaxCost.minW = minW
 
-	retBytes, err := json.Marshal(minMaxCost)
+	retBytes, err := json.Marshal(minMaxCost) //nolint
 	if err != nil {
 		return "", fmt.Errorf("failed to convert JSON. %v", err)
 	}

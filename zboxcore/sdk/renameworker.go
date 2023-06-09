@@ -14,6 +14,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/0chain/gosdk/constants"
+	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
@@ -38,6 +39,7 @@ type RenameRequest struct {
 	maskMU         *sync.Mutex
 	connectionID   string
 	consensus      Consensus
+	timestamp      int64
 }
 
 func (req *RenameRequest) getObjectTreeFromBlobber(blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
@@ -72,9 +74,21 @@ func (req *RenameRequest) renameBlobberObject(
 			body := new(bytes.Buffer)
 			formWriter := multipart.NewWriter(body)
 
-			formWriter.WriteField("connection_id", req.connectionID)
-			formWriter.WriteField("path", req.remotefilepath)
-			formWriter.WriteField("new_name", req.newName)
+			err = formWriter.WriteField("connection_id", req.connectionID)
+			if err != nil {
+				return err, false
+			}
+
+			err = formWriter.WriteField("path", req.remotefilepath)
+			if err != nil {
+				return err, false
+			}
+
+			err = formWriter.WriteField("new_name", req.newName)
+			if err != nil {
+				return err, false
+			}
+
 			formWriter.Close()
 
 			var httpreq *http.Request
@@ -197,7 +211,27 @@ func (req *RenameRequest) ProcessRename() error {
 	}
 	defer writeMarkerMutex.Unlock(req.ctx, req.renameMask, req.blobbers, time.Minute, req.connectionID) //nolint: errcheck
 
+	//Check if the allocation is to be repaired or rolled back
+	status, err := req.allocationObj.CheckAllocStatus()
+	if err != nil {
+		logger.Logger.Error("Error checking allocation status: ", err)
+		return fmt.Errorf("rename failed: %s", err.Error())
+	}
+
+	if status == Repair {
+		logger.Logger.Info("Repairing allocation")
+		//TODO: Need status callback to call repair allocation
+		// err = req.allocationObj.RepairAlloc()
+		// if err != nil {
+		// 	return err
+		// }
+	}
+	if status != Commit {
+		return ErrRetryOperation
+	}
+
 	req.consensus.Reset()
+	req.timestamp = int64(common.Now())
 	activeBlobbers := req.renameMask.CountOnes()
 	wg := &sync.WaitGroup{}
 	wg.Add(activeBlobbers)
@@ -220,6 +254,7 @@ func (req *RenameRequest) ProcessRename() error {
 			blobber:      req.blobbers[pos],
 			connectionID: req.connectionID,
 			wg:           wg,
+			timestamp:    req.timestamp,
 		}
 		commitReq.changes = append(commitReq.changes, newChange)
 		commitReqs[counter] = commitReq
