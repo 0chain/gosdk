@@ -30,8 +30,8 @@ func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([
 		uploadMask := zboxutil.NewUint128(1).Lsh(uint64(len(allocObj.Blobbers))).Sub64(1)
 		return nil, uploadMask, err
 	}
-	uo.statusCallback = cu.statusCallback
 	uo.opCode = cu.opCode
+  
 	err = cu.process()
 	if err != nil {
 		cu.ctxCncl()
