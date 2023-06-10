@@ -439,7 +439,7 @@
         const video = document.querySelector('video');
         const mediaSource = new MediaSource();
         video.src = URL.createObjectURL(mediaSource);
-
+        playLiveVideo = true
         navigator.mediaDevices.getUserMedia({
             video: true,
             audio: true
