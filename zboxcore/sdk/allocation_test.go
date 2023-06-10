@@ -1499,7 +1499,7 @@ func TestAllocation_ListDirFromAuthTicket(t *testing.T) {
 				lookupHash: mockLookupHash,
 				expectedResult: &ListResult{
 					Type: mockType,
-					Size: -1,
+					Size: 0,
 				},
 			},
 			setup: func(t *testing.T, testCaseName string, a *Allocation, mockClient *mocks.HttpClient) (teardown func(t *testing.T)) {
@@ -1807,7 +1807,7 @@ func TestAllocation_listDir(t *testing.T) {
 				path: mockPath,
 				expectedResult: &ListResult{
 					Type: mockType,
-					Size: -1,
+					Size: 0,
 				},
 			},
 			setup: func(t *testing.T, testCaseName string, a *Allocation, mockClient *mocks.HttpClient) (teardown func(t *testing.T)) {
