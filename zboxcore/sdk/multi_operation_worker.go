@@ -4,15 +4,19 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
 	"mime/multipart"
 	"net/http"
+	"net/url"
+	"path"
+
 	"sync"
 	"time"
 
 	"github.com/0chain/errors"
 
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/encryption"
+	"github.com/0chain/gosdk/core/resty"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/client"
@@ -49,6 +53,16 @@ type MultiOperation struct {
 	changes [][]allocationchange.AllocationChange
 }
 
+func joinUrl(baseURl string, paths ...string) (*url.URL, error) {
+	u, err := url.Parse(baseURl)
+	if err != nil {
+		return nil, err
+	}
+	p := path.Join(paths...)
+	u.Path = path.Join(u.Path, p)
+	return u, nil
+}
+
 func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 
 	defer func() {
@@ -72,6 +86,7 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 		err, shouldContinue = func() (err error, shouldContinue bool) {
 			body := new(bytes.Buffer)
 			formWriter := multipart.NewWriter(body)
+			_ = formWriter
 
 			err = formWriter.WriteField("connection_id", mo.connectionID)
 			if err != nil {
@@ -90,45 +105,109 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 			httpreq.Header.Set("js.fetch:mode", "cors")
 			ctx, cncl := context.WithTimeout(mo.ctx, DefaultCreateConnectionTimeOut)
 			defer cncl()
-			resp, err = zboxutil.Client.Do(httpreq.WithContext(ctx))
-
+			headerMap := make(map[string]string)
+			// ("X-App-Client-ID", client.GetClientID())
+			headerMap["X-App-Client-ID"] = client.GetClientID()
+			headerMap["X-App-Client-Key"] = client.GetClientPublicKey()
+			headerMap["Content-Type"] = formWriter.FormDataContentType()
+			sign, err := client.Sign(encryption.Hash(mo.allocationObj.Tx))
 			if err != nil {
-				logger.Logger.Error("Create Connection: ", err)
-				return
+				logger.Logger.Error("error in signing")
+			}
+			headerMap["X-App-Client-Signature"] = sign
+
+			r := resty.New(resty.WithHeader(headerMap))
+			_ = r
+			u, err := joinUrl(blobber.Baseurl, "/v1/connection/create/", mo.allocationObj.Tx)
+			_ = u
+
+			r.Do(ctx, http.MethodPost, body, u.String()).
+				Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
+					if resp.Body != nil {
+						defer resp.Body.Close()
+					}
+					// respBody, err = ioutil.ReadAll(resp.Body)
+					// if err != nil {
+					// 	logger.Logger.Error("Error: Resp ", err)
+					// 	return err
+					// }
+
+					latestRespMsg = string(respBody)
+					latestStatusCode = resp.StatusCode
+					if resp.StatusCode == http.StatusOK {
+						l.Logger.Info(blobber.Baseurl, " connection obj created.")
+						return err
+					}
+
+					if resp.StatusCode == http.StatusTooManyRequests {
+						logger.Logger.Error("Got too many request error")
+						var r int
+						r, err = zboxutil.GetRateLimitValue(resp)
+						if err != nil {
+							logger.Logger.Error(err)
+							return err
+						}
+						time.Sleep(time.Duration(r) * time.Second)
+						shouldContinue = true
+						return nil
+					}
+					l.Logger.Error(blobber.Baseurl, "Response: ", string(respBody))
+					err = errors.New("response_error", string(respBody))
+					return err
+				})
+
+			errs := r.Wait()
+			if len(errs) != 0 {
+				return errs[0], shouldContinue
+			} else {
+				return nil, shouldContinue
 			}
 
-			if resp.Body != nil {
-				defer resp.Body.Close()
-			}
-			var respBody []byte
-			respBody, err = ioutil.ReadAll(resp.Body)
-			if err != nil {
-				logger.Logger.Error("Error: Resp ", err)
-				return
-			}
+			// if err != nil {
+			// 	logger.Logger.Error("Error in creating url", err)
 
-			latestRespMsg = string(respBody)
-			latestStatusCode = resp.StatusCode
-			if resp.StatusCode == http.StatusOK {
-				l.Logger.Info(blobber.Baseurl, " connection obj created.")
-				return
-			}
+			// }
 
-			if resp.StatusCode == http.StatusTooManyRequests {
-				logger.Logger.Error("Got too many request error")
-				var r int
-				r, err = zboxutil.GetRateLimitValue(resp)
-				if err != nil {
-					logger.Logger.Error(err)
-					return
-				}
-				time.Sleep(time.Duration(r) * time.Second)
-				shouldContinue = true
-				return
-			}
-			l.Logger.Error(blobber.Baseurl, "Response: ", string(respBody))
-			err = errors.New("response_error", string(respBody))
-			return
+			// resp, err = zboxutil.Client.Do(httpreq.WithContext(ctx))
+
+			// if err != nil {
+			// 	logger.Logger.Error("Create Connection: ", err)
+			// 	return
+			// }
+
+			// if resp.Body != nil {
+			// 	defer resp.Body.Close()
+			// }
+			// var respBody []byte
+			// respBody, err = ioutil.ReadAll(resp.Body)
+			// if err != nil {
+			// 	logger.Logger.Error("Error: Resp ", err)
+			// 	return
+			// }
+
+			// latestRespMsg = string(respBody)
+			// latestStatusCode = resp.StatusCode
+			// if resp.StatusCode == http.StatusOK {
+			// 	l.Logger.Info(blobber.Baseurl, " connection obj created.")
+			// 	return
+			// }
+
+			// if resp.StatusCode == http.StatusTooManyRequests {
+			// 	logger.Logger.Error("Got too many request error")
+			// 	var r int
+			// 	r, err = zboxutil.GetRateLimitValue(resp)
+			// 	if err != nil {
+			// 		logger.Logger.Error(err)
+			// 		return
+			// 	}
+			// 	time.Sleep(time.Duration(r) * time.Second)
+			// 	shouldContinue = true
+			// 	return
+			// }
+			// l.Logger.Error(blobber.Baseurl, "Response: ", string(respBody))
+			// err = errors.New("response_error", string(respBody))
+
+			// return
 		}()
 
 		if err != nil {
@@ -142,6 +221,7 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 
 	err = errors.New("unknown_issue",
 		fmt.Sprintf("last status code: %d, last response message: %s", latestStatusCode, latestRespMsg))
+	_ = resp
 	return
 }
 

@@ -137,7 +137,7 @@ const bridge = g.__zcn_wasm__
 //  - isRepair: bool
 //  - numBlocks: int
 //  - callback: function(totalBytes,completedBytes,error)
-async function bulkUpload(options) {
+async function multiUpload(options) {
   const start = bridge.glob.index
   const opts = options.map(obj=>{
     const i = bridge.glob.index;
@@ -170,7 +170,7 @@ async function bulkUpload(options) {
   })
 
   const end =  bridge.glob.index
-  const result = await bridge.__proxy__.sdk.bulkUpload(JSON.stringify(opts))
+  const result = await bridge.__proxy__.sdk.multiUpload(JSON.stringify(opts))
   for (let i=start; i<end;i++){
     g["__zcn_upload_reader_"+i.toString()] = null;
     g["__zcn_upload_callback_"+i.toString()] =null;
@@ -333,7 +333,7 @@ async function createWasm() {
   )
 
   const proxy = {
-    bulkUpload: bulkUpload,
+    multiUpload: multiUpload,
     setWallet: setWallet,
     sdk: sdkProxy, //expose sdk methods for js
     jsProxy, //expose js methods for go
