@@ -73,7 +73,6 @@ type DownloadRequest struct {
 	blocksPerShard     int64
 	prepaidBlobbers    map[string]bool
 	connectionID       string
-	totalBlocks        int64
 	skip               bool
 	fRef               *fileref.FileRef
 	chunksPerShard     int64
@@ -957,7 +956,7 @@ func (req *DownloadRequest) processDownloadRequest() {
 	req.size = size
 	req.chunksPerShard = chunksPerShard
 	req.actualPerShard = actualPerShard
-	startBlock, endBlock, numBlocks := req.startBlock, req.endBlock, req.numBlocks
+	startBlock, endBlock := req.startBlock, req.endBlock
 	// remainingSize should be calculated based on startBlock number
 	// otherwise end data will have null bytes.
 	remainingSize := size - startBlock*int64(req.effectiveBlockSize)
@@ -979,11 +978,6 @@ func (req *DownloadRequest) processDownloadRequest() {
 
 	blocksPerShard := (wantSize + int64(req.effectiveBlockSize) - 1) / int64(req.effectiveBlockSize)
 	req.blocksPerShard = blocksPerShard
-	blocksToDownload := numBlocks
-	if startBlock+numBlocks > endBlock {
-		blocksToDownload = endBlock - startBlock
-	}
-	req.totalBlocks = blocksToDownload
 }
 
 func processReadMarker(drs []*DownloadRequest) {
@@ -1001,7 +995,7 @@ func processReadMarker(drs []*DownloadRequest) {
 				for i := dr.downloadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 					pos = uint64(i.TrailingZeros())
 					mpLock.Lock()
-					blobberMap[pos] += dr.totalBlocks
+					blobberMap[pos] += dr.blocksPerShard
 					mpLock.Unlock()
 				}
 			}
