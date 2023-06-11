@@ -450,7 +450,7 @@ func (a *Allocation) EncryptAndUploadFileWithThumbnail(
 	)
 }
 
-func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileNames []string, thumbnailPaths []string, encrypts []bool, remotePaths []string, isUpdate bool, status StatusCallback) error {
+func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileNames []string, thumbnailPaths []string, encrypts []bool, chunkNumbers []int, remotePaths []string, isUpdate bool, status StatusCallback) error {
 	if len(localPaths) != len(thumbnailPaths) {
 		return errors.New("invalid_value", "length of localpaths and thumbnailpaths must be equal")
 	}
@@ -487,6 +487,7 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 		defer fileReader.Close()
 		thumbnailPath := thumbnailPaths[idx]
 		fileName := fileNames[idx]
+		chunkNumber := chunkNumbers[idx]
 		if fileName == "" {
 			return thrown.New("invalid_param", "filename can't be empty")
 		}
@@ -522,6 +523,9 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 		options := []ChunkedUploadOption{
 			WithStatusCallback(status),
 			WithEncrypt(encrypt),
+		}
+		if chunkNumber != 0 {
+			options = append(options, WithChunkNumber(chunkNumber))
 		}
 		if thumbnailPath != "" {
 			buf, err := sys.Files.ReadFile(thumbnailPath)
