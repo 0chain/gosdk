@@ -2124,7 +2124,7 @@ repair:
 	}
 
 	if shouldRepair {
-		err := alloc.RepairAlloc(statusCB)
+		err := a.RepairAlloc(statusCB)
 		if err != nil {
 			return "", err
 		}
