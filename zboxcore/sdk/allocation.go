@@ -465,6 +465,108 @@ func (a *Allocation) EncryptAndUploadFileWithThumbnail(
 	)
 }
 
+func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileNames []string, thumbnailPaths []string, encrypts []bool, remotePaths []string, isUpdate bool, status StatusCallback) error {
+	if len(localPaths) != len(thumbnailPaths) {
+		return errors.New("invalid_value", "length of localpaths and thumbnailpaths must be equal")
+	}
+	if len(localPaths) != len(encrypts) {
+		return errors.New("invalid_value", "length of encrypt not equal to number of files")
+	}
+	if !a.isInitialized() {
+		return notInitialized
+	}
+
+	if !a.CanUpload() {
+		return constants.ErrFileOptionNotPermitted
+	}
+
+	totalOperations := len(localPaths)
+	if totalOperations == 0 {
+		return nil
+	}
+	operationRequests := make([]OperationRequest, totalOperations)
+	for idx, localPath := range localPaths {
+		remotePath := zboxutil.RemoteClean(remotePaths[idx])
+		if !strings.HasSuffix(remotePath, "/") {
+			return errors.New("invalid_value", "remotePath must be the path of directory")
+		}
+		isabs := zboxutil.IsRemoteAbs(remotePath)
+		if !isabs {
+			err := thrown.New("invalid_path", "Path should be valid and absolute")
+			return err
+		}
+		fileReader, err := os.Open(localPath)
+		if err != nil {
+			return err
+		}
+		defer fileReader.Close()
+		thumbnailPath := thumbnailPaths[idx]
+		fileName := fileNames[idx]
+		if fileName == "" {
+			return thrown.New("invalid_param", "filename can't be empty")
+		}
+		encrypt := encrypts[idx]
+
+		fileInfo, err := fileReader.Stat()
+		if err != nil {
+			return err
+		}
+
+		mimeType, err := zboxutil.GetFileContentType(fileReader)
+		if err != nil {
+			return err
+		}
+
+		if !strings.HasSuffix(remotePath, "/") {
+			remotePath = remotePath + "/"
+		}
+		fullRemotePath := zboxutil.GetFullRemotePath(localPath, remotePath)
+		fullRemotePathWithoutName, _ := pathutil.Split(fullRemotePath)
+		fullRemotePath = fullRemotePathWithoutName + "/" + fileName
+		if err != nil {
+			return err
+		}
+		fmt.Println("fullRemotepath and localpath", fullRemotePath, localPath)
+		fileMeta := FileMeta{
+			Path:       localPath,
+			ActualSize: fileInfo.Size(),
+			MimeType:   mimeType,
+			RemoteName: fileName,
+			RemotePath: fullRemotePath,
+		}
+		options := []ChunkedUploadOption{
+			WithStatusCallback(status),
+			WithEncrypt(encrypt),
+		}
+		if thumbnailPath != "" {
+			buf, err := sys.Files.ReadFile(thumbnailPath)
+			if err != nil {
+				return err
+			}
+
+			options = append(options, WithThumbnail(buf))
+		}
+		operationRequests[idx] = OperationRequest{
+			FileMeta:      fileMeta,
+			FileReader:    fileReader,
+			OperationType: constants.FileOperationInsert,
+			Opts:          options,
+			Workdir:       workdir,
+			RemotePath:    fileMeta.RemotePath,
+		}
+		if isUpdate {
+			operationRequests[idx].OperationType = constants.FileOperationUpdate
+		}
+
+	}
+	err := a.DoMultiOperation(operationRequests)
+	if err != nil {
+		logger.Logger.Error("Error in multi upload ", err.Error())
+		return err
+	}
+	return nil
+}
+
 func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 	remotePath string,
 	status StatusCallback,
