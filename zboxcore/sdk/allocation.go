@@ -275,7 +275,7 @@ func (a *Allocation) InitAllocation() {
 	a.repairChan = make(chan *RepairRequest, 1)
 	a.ctx, a.ctxCancelF = context.WithCancel(context.Background())
 	a.downloadProgressMap = make(map[string]*DownloadRequest)
-	a.downloadRequests = make([]*DownloadRequest, 0, 50)
+	a.downloadRequests = make([]*DownloadRequest, 0, 100)
 	a.mutex = &sync.Mutex{}
 	a.fullconsensus, a.consensusThreshold = a.getConsensuses()
 	a.startWorker(a.ctx)
@@ -961,7 +961,7 @@ func (a *Allocation) addAndGenerateDownloadRequest(localPath string, remotePath 
 	a.downloadRequests = append(a.downloadRequests, downloadReq)
 	if isFinal {
 		downloadOps := a.downloadRequests
-		a.downloadRequests = nil
+		a.downloadRequests = a.downloadRequests[:0]
 		go func() {
 			processReadMarker(downloadOps)
 		}()
