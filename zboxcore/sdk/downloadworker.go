@@ -79,6 +79,11 @@ type DownloadRequest struct {
 	size               int64
 }
 
+type blockData struct {
+	blockNum int
+	data     []byte
+}
+
 func (req *DownloadRequest) removeFromMask(pos uint64) {
 	req.maskMu.Lock()
 	req.downloadMask = req.downloadMask.And(zboxutil.NewUint128(1).Lsh(pos).Not())
@@ -439,7 +444,73 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	}
 
 	n := int((endBlock - startBlock + numBlocks - 1) / numBlocks)
-	res := make([][]byte, n)
+
+	// Buffered channel to hold the blocks as they are downloaded
+	blocks := make(chan blockData, n)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	// Handle writing the blocks in order as soon as they are downloaded
+	go func() {
+		buffer := make(map[int][]byte)
+		for i := 0; i < n; i++ {
+			if data, ok := buffer[i]; ok {
+				// If the block we need to write next is already in the buffer, write it
+				numBytes := int64(math.Min(float64(remainingSize), float64(len(data))))
+				_, err = f.Write(data[:numBytes])
+
+				if err != nil {
+					req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
+					return
+				}
+				if isPREAndWholeFile {
+					actualFileHasher.Write(data[:numBytes])
+				}
+
+				downloaded = downloaded + int(numBytes)
+				remainingSize -= numBytes
+
+				if req.statusCallback != nil {
+					req.statusCallback.InProgress(req.allocationID, remotePathCB, op, downloaded, data)
+				}
+
+				// Remove the block from the buffer
+				delete(buffer, i)
+			} else {
+				// If the block we need to write next is not in the buffer, wait for it
+				for block := range blocks {
+					if block.blockNum == i {
+						// Write the data
+						numBytes := int64(math.Min(float64(remainingSize), float64(len(block.data))))
+						_, err = f.Write(block.data[:numBytes])
+
+						if err != nil {
+							req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
+							return
+						}
+						if isPREAndWholeFile {
+							actualFileHasher.Write(block.data[:numBytes])
+						}
+
+						downloaded = downloaded + int(numBytes)
+						remainingSize -= numBytes
+
+						if req.statusCallback != nil {
+							req.statusCallback.InProgress(req.allocationID, remotePathCB, op, downloaded, block.data)
+						}
+
+						break
+					} else {
+						// If this block is not the one we're waiting for, store it in the buffer
+						buffer[block.blockNum] = block.data
+					}
+				}
+			}
+		}
+		f.Sync() //nolint
+		wg.Done()
+	}()
 
 	// Initiate download of first blocks sequentially to allow readmarkers to be properly submitted, then proceed to download in parallel
 	eg, _ := errgroup.WithContext(ctx)
@@ -450,42 +521,25 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			if startBlock+int64(j)*numBlocks+numBlocks > endBlock {
 				blocksToDownload = endBlock - (startBlock + int64(j)*numBlocks)
 			}
-			res[j], err = req.getBlocksData(startBlock+int64(j)*numBlocks, blocksToDownload)
+      data, err := req.getBlocksData(startBlock+int64(j)*numBlocks, blocksToDownload)
 			if req.isDownloadCanceled {
 				return errors.New("download_abort", "Download aborted by user")
 			}
 			if err != nil {
 				return errors.Wrap(err, fmt.Sprintf("Download failed for block %d. ", startBlock+int64(j)*numBlocks))
 			}
+      blocks <- blockData{blockNum: j, data: data}
 			return nil
 		})
 	}
-	if err := eg.Wait(); err != nil {
-		req.errorCB(err, remotePathCB)
-		return
-	}
-
-	for _, data := range res {
-		n := int64(math.Min(float64(remainingSize), float64(len(data))))
-		_, err = f.Write(data[:n])
-
-		if err != nil {
-			req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
+  
+		if err := eg.Wait(); err != nil {
+			req.errorCB(err, remotePathCB)
 			return
 		}
-		if isPREAndWholeFile {
-			actualFileHasher.Write(data[:n])
-		}
-
-		downloaded = downloaded + int(n)
-		remainingSize -= n
-
-		if req.statusCallback != nil {
-			req.statusCallback.InProgress(req.allocationID, remotePathCB, op, downloaded, data)
-		}
 	}
-
-	f.Sync() //nolint
+	close(blocks)
+	wg.Wait()
 
 	if isPREAndWholeFile {
 		calculatedFileHash := hex.EncodeToString(actualFileHasher.Sum(nil))
