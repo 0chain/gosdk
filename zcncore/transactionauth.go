@@ -563,7 +563,7 @@ func (ta *TransactionWithAuth) ZCNSCAuthorizerHealthCheck(ip *AuthorizerHealthCh
 		logging.Error(err)
 		return
 	}
-	go ta.setNonceAndSubmit()
+	go ta.t.setNonceAndSubmit()
 	return
 }
 
