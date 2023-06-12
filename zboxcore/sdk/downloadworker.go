@@ -512,7 +512,6 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		wg.Done()
 	}()
 
-	// Initiate download of first blocks sequentially to allow readmarkers to be properly submitted, then proceed to download in parallel
 	eg, _ := errgroup.WithContext(ctx)
 	for i := 0; i < n; i++ {
 		j := i
@@ -521,23 +520,22 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			if startBlock+int64(j)*numBlocks+numBlocks > endBlock {
 				blocksToDownload = endBlock - (startBlock + int64(j)*numBlocks)
 			}
-      data, err := req.getBlocksData(startBlock+int64(j)*numBlocks, blocksToDownload)
+			data, err := req.getBlocksData(startBlock+int64(j)*numBlocks, blocksToDownload)
 			if req.isDownloadCanceled {
 				return errors.New("download_abort", "Download aborted by user")
 			}
 			if err != nil {
 				return errors.Wrap(err, fmt.Sprintf("Download failed for block %d. ", startBlock+int64(j)*numBlocks))
 			}
-      blocks <- blockData{blockNum: j, data: data}
+			blocks <- blockData{blockNum: j, data: data}
 			return nil
 		})
 	}
-  
-		if err := eg.Wait(); err != nil {
-			req.errorCB(err, remotePathCB)
-			return
-		}
+	if err := eg.Wait(); err != nil {
+		req.errorCB(err, remotePathCB)
+		return
 	}
+
 	close(blocks)
 	wg.Wait()
 
