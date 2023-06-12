@@ -114,8 +114,7 @@ type TransactionCommon interface {
 	ExecuteSmartContract(address, methodName string, input interface{}, val uint64, feeOpts ...FeeOption) (*transaction.Transaction, error)
 	// Send implements sending token to a given clientid
 	Send(toClientID string, val uint64, desc string) error
-	// SetTransactionFee implements method to set the transaction fee
-	SetTransactionFee(txnFee string) error
+
 	//RegisterMultiSig registers a group wallet and subwallets with MultisigSC
 	RegisterMultiSig(walletstr, mswallet string) error
 

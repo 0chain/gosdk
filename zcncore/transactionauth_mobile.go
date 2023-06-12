@@ -27,10 +27,6 @@ func (ta *TransactionWithAuth) ExecuteSmartContract(address, methodName string, 
 	return nil
 }
 
-func (ta *TransactionWithAuth) SetTransactionFee(txnFee string) error {
-	return ta.t.SetTransactionFee(txnFee)
-}
-
 func (ta *TransactionWithAuth) Send(toClientID string, val string, desc string) error {
 	v, err := parseCoinStr(val)
 	if err != nil {

@@ -25,10 +25,6 @@ func (ta *TransactionWithAuth) ExecuteSmartContract(address, methodName string,
 	return ta.t.txn, nil
 }
 
-func (ta *TransactionWithAuth) SetTransactionFee(txnFee string) error {
-	return ta.t.SetTransactionFee(txnFee)
-}
-
 func (ta *TransactionWithAuth) Send(toClientID string, val uint64, desc string) error {
 	txnData, err := json.Marshal(SendTxnData{Note: desc})
 	if err != nil {
