@@ -963,11 +963,72 @@ func (a *Allocation) addAndGenerateDownloadRequest(localPath string, remotePath 
 		downloadOps := a.downloadRequests
 		a.downloadRequests = a.downloadRequests[:0]
 		go func() {
-			processReadMarker(downloadOps)
+			a.processReadMarker(downloadOps)
 		}()
 	}
 	a.mutex.Unlock()
 	return nil
+}
+
+func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
+	blobberMap := make(map[uint64]int64)
+	mpLock := sync.Mutex{}
+	wg := sync.WaitGroup{}
+
+	for _, dr := range drs {
+		wg.Add(1)
+		go func(dr *DownloadRequest) {
+			defer wg.Done()
+			dr.processDownloadRequest()
+			var pos uint64
+			if !dr.skip {
+				for i := dr.downloadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+					pos = uint64(i.TrailingZeros())
+					mpLock.Lock()
+					blobberMap[pos] += dr.blocksPerShard
+					mpLock.Unlock()
+				}
+			}
+		}(dr)
+	}
+	wg.Wait()
+	successMask := zboxutil.NewUint128(0)
+	var redeemError error
+	for pos, totalBlocks := range blobberMap {
+		if totalBlocks == 0 {
+			continue
+		}
+		wg.Add(1)
+		go func(pos uint64, totalBlocks int64) {
+			blobber := drs[0].blobbers[pos]
+			err := drs[0].submitReadMarker(blobber, totalBlocks)
+			if err == nil {
+				successMask = successMask.Or(zboxutil.NewUint128(1).Lsh(pos))
+			} else {
+				redeemError = err
+			}
+			wg.Done()
+		}(pos, totalBlocks)
+	}
+	wg.Wait()
+	sem := semaphore.NewWeighted(downloadWorkerCount)
+	for _, dr := range drs {
+		if dr.skip {
+			continue
+		}
+		dr.downloadMask = successMask.And(dr.downloadMask)
+		if dr.consensusThresh > dr.downloadMask.CountOnes() {
+			dr.errorCB(redeemError, dr.remotefilepath)
+			continue
+		}
+		if err := sem.Acquire(dr.ctx, 1); err != nil {
+			continue
+		}
+		go func(dr *DownloadRequest) {
+			a.downloadChan <- dr
+			sem.Release(1)
+		}(dr)
+	}
 }
 
 func (a *Allocation) ListDirFromAuthTicket(authTicket string, lookupHash string) (*ListResult, error) {
@@ -1118,7 +1179,7 @@ func (a *Allocation) DownloadFromBlobber(blobberID, localPath, remotePath string
 	}
 
 	downloadReq.numBlocks = fRef.NumBlocks
-	processReadMarker([]*DownloadRequest{downloadReq})
+	a.processReadMarker([]*DownloadRequest{downloadReq})
 	if downloadReq.skip {
 		return errors.New("download_request_failed", "Failed to get download response from the blobbers")
 	}
@@ -1886,7 +1947,7 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 		a.mutex.Lock()
 		a.downloadProgressMap[remoteLookupHash] = downloadReq
 		a.mutex.Unlock()
-		processReadMarker([]*DownloadRequest{downloadReq})
+		a.processReadMarker([]*DownloadRequest{downloadReq})
 	}()
 	return nil
 }
