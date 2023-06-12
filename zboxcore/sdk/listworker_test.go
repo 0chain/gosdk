@@ -295,7 +295,7 @@ func TestListRequest_GetListFromBlobbers(t *testing.T) {
 			got, _ := req.GetListFromBlobbers()
 			expectedResult := &ListResult{
 				Type: mockType,
-				Size: 0,
+				Size: -1,
 			}
 			if !tt.wantErr {
 				require.EqualValues(expectedResult, got)

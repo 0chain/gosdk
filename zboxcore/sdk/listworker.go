@@ -108,7 +108,7 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 			return errors.Wrap(err, "Error: Resp")
 		}
 		s.WriteString(string(resp_body))
-		l.Logger.Debug("List result from Blobber:", string(resp_body))
+		l.Logger.Debug("List result:", string(resp_body))
 		if resp.StatusCode == http.StatusOK {
 			listResult := &fileref.ListResult{}
 			err = json.Unmarshal(resp_body, listResult)
@@ -168,15 +168,19 @@ func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
 		result.CreatedAt = ti.ref.CreatedAt
 		result.UpdatedAt = ti.ref.UpdatedAt
 		result.LookupHash = ti.ref.LookupHash
-		result.ActualSize = ti.ref.ActualSize
-		if ti.ref.ActualSize > 0 {
-			result.ActualNumBlocks = (ti.ref.ActualSize + CHUNK_SIZE - 1) / CHUNK_SIZE
+		if result.Type == fileref.DIRECTORY {
+			result.Size = -1
 		}
-		result.Size = ti.ref.Size
-		result.NumBlocks = ti.ref.NumBlocks
 
 		if len(lR[i].ref.Children) > 0 {
 			result.populateChildren(lR[i].ref.Children, childResultMap, selected, req)
+
+			for _, child := range result.Children {
+				result.Size += child.Size
+				result.NumBlocks += child.NumBlocks
+				result.ActualSize += child.ActualSize
+				result.ActualNumBlocks += child.ActualNumBlocks
+			}
 		}
 	}
 
@@ -218,14 +222,12 @@ func (lr *ListResult) populateChildren(children []fileref.RefEntity, childResult
 			childResult.MimeType = (child.(*fileref.FileRef)).MimeType
 			childResult.EncryptionKey = (child.(*fileref.FileRef)).EncryptedKey
 			childResult.ActualSize = (child.(*fileref.FileRef)).ActualFileSize
-		} else {
-			childResult.ActualSize = (child.(*fileref.Ref)).ActualSize
+			if childResult.ActualSize > 0 {
+				childResult.ActualNumBlocks = childResult.ActualSize / CHUNK_SIZE
+			}
 		}
-		if childResult.ActualSize > 0 {
-			childResult.ActualNumBlocks = (childResult.ActualSize + CHUNK_SIZE - 1) / CHUNK_SIZE
-		}
-		childResult.Size = child.GetSize()
-		childResult.NumBlocks = child.GetNumBlocks()
+		childResult.Size += child.GetSize()
+		childResult.NumBlocks += child.GetNumBlocks()
 		if childResult.isConsensusOk() {
 			if _, ok := selected[child.GetLookupHash()]; !ok {
 				lr.Children = append(lr.Children, childResult)
