@@ -239,10 +239,12 @@ func MultiUpload(_allocationID, _workdir, _jsonMultiUploadOptions *C.char) *C.ch
 		thumbnailPaths[idx] = option.ThumbnailPath
 		remotePaths[idx] = option.RemotePath
 	}
+
 	a, err := getAllocation(allocationID)
 	if err != nil {
 		return WithJSON(nil, err)
 	}
+
 	err = a.StartMultiUpload(workdir, filePaths, fileNames, thumbnailPaths, encrypts, remotePaths, false, &StatusCallbackWrapped{Callback: nil})
 	if err != nil {
 		return WithJSON(nil, err)
@@ -258,6 +260,7 @@ func MultiUpload(_allocationID, _workdir, _jsonMultiUploadOptions *C.char) *C.ch
 //
 // ## Outputs
 //   - error
+
 func MultiUpdate(_allocationID, _workdir, _jsonMultiUploadOptions *C.char) *C.char {
 	allocationID := C.GoString(_allocationID)
 	workdir := C.GoString(_workdir)
