@@ -522,10 +522,19 @@ func DownloadFromAuthTicket(allocationID, localPath string, authTicket string, r
 //   - remoteFilename
 //   - status: callback of status
 func DownloadFromAuthTicketByBlocks(allocationID, localPath string, authTicket string, startBlock, endBlock int64, numBlocks int, remoteLookupHash string, remoteFilename string, status StatusCallbackMocked) error {
-	a, err := getAllocation(allocationID)
+	a, err := sdk.GetAllocationFromAuthTicket(authTicket)
 	if err != nil {
 		return err
 	}
+
+	at := sdk.InitAuthTicket(authTicket)
+	if len(remoteLookupHash) == 0 {
+		remoteLookupHash, err = at.GetLookupHash()
+		if err != nil {
+			return err
+		}
+	}
+
 	return a.DownloadFromAuthTicketByBlocks(localPath, authTicket, startBlock, endBlock, numBlocks, remoteLookupHash, remoteFilename, false, &StatusCallbackWrapped{Callback: status})
 }
 
