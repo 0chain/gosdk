@@ -1006,7 +1006,6 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 		}(pos, totalBlocks)
 	}
 	wg.Wait()
-	sem := semaphore.NewWeighted(downloadWorkerCount)
 	for _, dr := range drs {
 		if dr.skip {
 			continue
@@ -1016,12 +1015,8 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 			dr.errorCB(redeemError, dr.remotefilepath)
 			continue
 		}
-		if err := sem.Acquire(dr.ctx, 1); err != nil {
-			continue
-		}
 		go func(dr *DownloadRequest) {
 			a.downloadChan <- dr
-			sem.Release(1)
 		}(dr)
 	}
 }
@@ -1851,35 +1846,35 @@ func (a *Allocation) GetAllocationFileReader(
 
 func (a *Allocation) DownloadThumbnailFromAuthTicket(localPath string,
 	authTicket string, remoteLookupHash string, remoteFilename string, verifyDownload bool,
-	status StatusCallback) error {
+	status StatusCallback, isFinal bool) error {
 
 	return a.downloadFromAuthTicket(localPath, authTicket, remoteLookupHash,
 		1, 0, numBlockDownloads, remoteFilename, DOWNLOAD_CONTENT_THUMB,
-		verifyDownload, status)
+		verifyDownload, status, isFinal)
 }
 
 func (a *Allocation) DownloadFromAuthTicket(localPath string, authTicket string,
-	remoteLookupHash string, remoteFilename string, verifyDownload bool, status StatusCallback) error {
+	remoteLookupHash string, remoteFilename string, verifyDownload bool, status StatusCallback, isFinal bool) error {
 
 	return a.downloadFromAuthTicket(localPath, authTicket, remoteLookupHash,
 		1, 0, numBlockDownloads, remoteFilename, DOWNLOAD_CONTENT_FULL,
-		verifyDownload, status)
+		verifyDownload, status, isFinal)
 }
 
 func (a *Allocation) DownloadFromAuthTicketByBlocks(localPath string,
 	authTicket string, startBlock int64, endBlock int64, numBlocks int,
 	remoteLookupHash string, remoteFilename string, verifyDownload bool,
-	status StatusCallback) error {
+	status StatusCallback, isFinal bool) error {
 
 	return a.downloadFromAuthTicket(localPath, authTicket, remoteLookupHash,
 		startBlock, endBlock, numBlocks, remoteFilename, DOWNLOAD_CONTENT_FULL,
-		verifyDownload, status)
+		verifyDownload, status, isFinal)
 }
 
 func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	remoteLookupHash string, startBlock int64, endBlock int64, numBlocks int,
 	remoteFilename string, contentMode string, verifyDownload bool,
-	status StatusCallback) error {
+	status StatusCallback, isFinal bool) error {
 
 	if !a.isInitialized() {
 		return notInitialized
@@ -1941,8 +1936,19 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	go func() {
 		a.mutex.Lock()
 		a.downloadProgressMap[remoteLookupHash] = downloadReq
+		if len(a.downloadRequests) > 0 {
+			downloadReq.connectionID = a.downloadRequests[0].connectionID
+		}
+		a.downloadRequests = append(a.downloadRequests, downloadReq)
+		if isFinal {
+			downloadOps := a.downloadRequests
+			a.downloadRequests = a.downloadRequests[:0]
+			go func() {
+				a.processReadMarker(downloadOps)
+			}()
+		}
 		a.mutex.Unlock()
-		a.processReadMarker([]*DownloadRequest{downloadReq})
+
 	}()
 	return nil
 }
