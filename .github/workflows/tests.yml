@@ -116,14 +116,14 @@ jobs:
           teardown_condition: "TESTS_PASSED"
           miner_image:  staging
           sharder_image: staging
-          blobber_image: pr-1100-a71fdc78
+          blobber_image: staging
           validator_image: staging
           zbox_image:  fix-allocation-bd901afb
           zblock_image: staging
           zdns_image: staging
           explorer_image: latest
           zsearch_image: staging
-          zbox_cli_branch: fix/allocation
+          zbox_cli_branch: staging
           zwallet_cli_branch: staging
           custom_go_sdk_version: ${{ env.CURRENT_BRANCH_HEAD }}
           SUBGRAPH_API_URL: ${{ secrets.SUBGRAPH_API_URL }}
@@ -138,7 +138,7 @@ jobs:
           custom_go_sdk_version: ${{ env.CURRENT_BRANCH_HEAD }}
           system_tests_branch: master
           network: ${{ env.NETWORK_URL }}
-          zbox_cli_branch: fix/allocation
+          zbox_cli_branch: staging
           zwallet_cli_branch: staging
           svc_account_secret: ${{ secrets.SVC_ACCOUNT_SECRET }}
           deploy_report_page: false
