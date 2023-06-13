@@ -1933,23 +1933,20 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 		defer a.mutex.Unlock()
 		delete(a.downloadProgressMap, remotepathHash)
 	}
-	go func() {
-		a.mutex.Lock()
-		a.downloadProgressMap[remoteLookupHash] = downloadReq
-		if len(a.downloadRequests) > 0 {
-			downloadReq.connectionID = a.downloadRequests[0].connectionID
-		}
-		a.downloadRequests = append(a.downloadRequests, downloadReq)
-		if isFinal {
-			downloadOps := a.downloadRequests
-			a.downloadRequests = a.downloadRequests[:0]
-			go func() {
-				a.processReadMarker(downloadOps)
-			}()
-		}
-		a.mutex.Unlock()
-
-	}()
+	a.mutex.Lock()
+	a.downloadProgressMap[remoteLookupHash] = downloadReq
+	if len(a.downloadRequests) > 0 {
+		downloadReq.connectionID = a.downloadRequests[0].connectionID
+	}
+	a.downloadRequests = append(a.downloadRequests, downloadReq)
+	if isFinal {
+		downloadOps := a.downloadRequests
+		a.downloadRequests = a.downloadRequests[:0]
+		go func() {
+			a.processReadMarker(downloadOps)
+		}()
+	}
+	a.mutex.Unlock()
 	return nil
 }
 
