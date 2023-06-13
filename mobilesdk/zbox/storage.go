@@ -372,7 +372,7 @@ func GetAuthToken(allocationID, path string, filename string, referenceType stri
 //	- remoteLookupHash
 //	- remoteFilename
 //	- status: callback of status
-func DownloadFromAuthTicket(allocationID, localPath string, authTicket string, remoteLookupHash string, remoteFilename string, status StatusCallbackMocked) error {
+func DownloadFromAuthTicket(allocationID, localPath string, authTicket string, remoteLookupHash string, remoteFilename string, status StatusCallbackMocked, isFinal bool) error {
 	at, err := sdk.InitAuthTicket(authTicket).Unmarshall()
 	if err != nil {
 		return err
@@ -394,7 +394,7 @@ func DownloadFromAuthTicket(allocationID, localPath string, authTicket string, r
 		remoteFilename = fileMeta.Name
 	}
 
-	return a.DownloadFromAuthTicket(localPath, authTicket, remoteLookupHash, remoteFilename, false, &StatusCallbackWrapped{Callback: status})
+	return a.DownloadFromAuthTicket(localPath, authTicket, remoteLookupHash, remoteFilename, false, &StatusCallbackWrapped{Callback: status}, isFinal)
 }
 
 // DownloadFromAuthTicketByBlocks - download file from Auth ticket by blocks number
@@ -408,7 +408,7 @@ func DownloadFromAuthTicket(allocationID, localPath string, authTicket string, r
 //   - remoteLookupHash
 //   - remoteFilename
 //   - status: callback of status
-func DownloadFromAuthTicketByBlocks(allocationID, localPath string, authTicket string, startBlock, endBlock int64, numBlocks int, remoteLookupHash string, remoteFilename string, status StatusCallbackMocked) error {
+func DownloadFromAuthTicketByBlocks(allocationID, localPath string, authTicket string, startBlock, endBlock int64, numBlocks int, remoteLookupHash string, remoteFilename string, status StatusCallbackMocked, isFinal bool) error {
 	a, err := sdk.GetAllocationFromAuthTicket(authTicket)
 	if err != nil {
 		return err
@@ -422,7 +422,7 @@ func DownloadFromAuthTicketByBlocks(allocationID, localPath string, authTicket s
 		}
 	}
 
-	return a.DownloadFromAuthTicketByBlocks(localPath, authTicket, startBlock, endBlock, numBlocks, remoteLookupHash, remoteFilename, false, &StatusCallbackWrapped{Callback: status})
+	return a.DownloadFromAuthTicketByBlocks(localPath, authTicket, startBlock, endBlock, numBlocks, remoteLookupHash, remoteFilename, false, &StatusCallbackWrapped{Callback: status}, isFinal)
 }
 
 // DownloadThumbnailFromAuthTicket - downloadThumbnail from Auth ticket
@@ -433,7 +433,7 @@ func DownloadFromAuthTicketByBlocks(allocationID, localPath string, authTicket s
 //   - remoteLookupHash
 //   - remoteFilename
 //   - status: callback of status
-func DownloadThumbnailFromAuthTicket(allocationID, localPath string, authTicket string, remoteLookupHash string, remoteFilename string, status StatusCallbackMocked) error {
+func DownloadThumbnailFromAuthTicket(allocationID, localPath string, authTicket string, remoteLookupHash string, remoteFilename string, status StatusCallbackMocked, isFinal bool) error {
 	at, err := sdk.InitAuthTicket(authTicket).Unmarshall()
 	if err != nil {
 		return err
@@ -455,7 +455,7 @@ func DownloadThumbnailFromAuthTicket(allocationID, localPath string, authTicket 
 		remoteFilename = fileMeta.Name
 	}
 
-	return a.DownloadThumbnailFromAuthTicket(localPath, authTicket, remoteLookupHash, remoteFilename, false, &StatusCallbackWrapped{Callback: status})
+	return a.DownloadThumbnailFromAuthTicket(localPath, authTicket, remoteLookupHash, remoteFilename, false, &StatusCallbackWrapped{Callback: status}, isFinal)
 }
 
 // GetFileStats - get file stats from path
