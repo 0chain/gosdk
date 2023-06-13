@@ -6,7 +6,9 @@
   <script src="https://cdn.jsdelivr.net/gh/golang/go@go1.18.5/misc/wasm/wasm_exec.js"></script>
   <script src="zcn.js"></script>
 
-
+  <!-- for ffmpeg.min.js -->
+  <script src="ffmpeg.min.js"></script>
+  
   <!-- for demo -->
   <script src="dom.js"></script>
 
@@ -128,7 +130,7 @@
   </fieldset>
 
 
-  <!-- <fieldset>
+  <fieldset>
     <legend>Media WebPlayer</legend>
 
     <div id="container">
@@ -139,11 +141,6 @@
       <button id="btnPause">Pause</button>
       <button id="btnStop">Stop</button>
     </div>
-  </fieldset> -->
-
-  <fieldset>
-    <legend>live video play</legend>
-    <video autoplay></video>
   </fieldset>
 
   <fieldset>
@@ -383,6 +380,23 @@
         const objects = []
         const allocationId = getSelectedAllocation()
         for (const file of files) {
+        //   const { createFFmpeg, fetchFile } = FFmpeg
+        //   const ffmpeg = createFFmpeg({ log: true })
+        //   await ffmpeg.load()
+        //   console.log(await file.arrayBuffer());
+        //   console.log("\n");
+        //   console.log(file.size);
+        //   let fileData = new Uint8Array(await file.arrayBuffer(), 0, file.size);
+        //   console.log(fileData)
+        //   ffmpeg.FS(
+        //     "writeFile",
+        //     "input.mp4",
+        //     fileData
+        //   );
+        // const input = ffmpeg.FS("readFile", "input.mp4");
+        // console.log(input)
+        // await ffmpeg.run("-i", "input.mp4", "output.webm");
+
           objects.push({
             allocationId: allocationId,
             remotePath: `/${file.name}`,
@@ -406,44 +420,142 @@
       }
     })
 
+    var streamData = []
+    let isstreamUploading = false;
+    var countVideoUploadChunk = 1
+    const { createFFmpeg, fetchFile } = FFmpeg
+    const ffmpeg = createFFmpeg({ log: true })
+    var firstUploadChunk
+
+    async function uploadStream(data, count) {
+      isstreamUploading = true;
+      console.log(`Uploading data "${count}"...`);
+      if (count == 0) {
+        firstUploadChunk = data
+      }
+      setTimeout(async () => {
+        await ffmpeg.load()
+
+        const inputFileName = `input${count}.webm`;
+        const outputFileName = `output${count}.ts`;
+        await ffmpeg.FS(
+        "writeFile",
+        inputFileName,
+        new Uint8Array(await data.data.arrayBuffer(), 0, data.data.size)
+        );
+        
+        await ffmpeg.FS(
+        "writeFile",
+        inputFileName, 
+        new Uint8Array(await data.data.arrayBuffer(), 0, data.data.size)
+        );
+
+        const input = await ffmpeg.FS("readFile", inputFileName);
+        console.log(input)
+
+        // var blob = new Blob([data.data.arrayBuffer()], { type: 'video/webm' });
+        // var url = URL.createObjectURL(blob);
+        // var link = document.createElement('a');
+        // link.href = url;
+        // link.download = inputFileName;
+        // link.style.display = 'none';
+        // document.body.appendChild(link);
+        // link.click();
+        // document.body.removeChild(link);
+        // URL.revokeObjectURL(url);
+
+        await ffmpeg.run("-i", inputFileName, outputFileName);
+        const output = await ffmpeg.FS("readFile", outputFileName);
+        
+
+        // blob = new Blob([output.buffer], { type: 'video/webm' });
+        // url = URL.createObjectURL(blob);
+        // link = document.createElement('a');
+        // link.href = url;
+        // link.download = outputFileName;
+        // link.style.display = 'none';
+        // document.body.appendChild(link);
+        // link.click();
+        // document.body.removeChild(link);
+        // URL.revokeObjectURL(url);
+
+
+        ffmpeg.exit();
+        // console.log(output)
+
+        console.log(`Data "${count}" uploaded successfully.`);
+
+        if (streamData.length > 0) {
+          const [nextData, nextcount] = streamData.shift();
+          uploadStream(nextData, nextcount);
+        } else {
+          isstreamUploading = false;
+        }
+      }, 100); 
+    }
+    async function initiateUploadStream() {
+      if (!isstreamUploading && streamData.length > 0) {
+        
+        const [data, count] = streamData.shift();
+        uploadStream(data, count);
+      }
+    }
+
     function permittedGetUserMedia() {
         return !!(navigator.mediaDevices &&
             navigator.mediaDevices.getUserMedia);
     }
+    
+    async function processStream(stream) {
+      const mediaRecorder = new MediaRecorder(stream, {mimeType: "video/webm;codecs=VP8,opus"})
 
-    function processStream(stream, mediaSource) {
-      const mediaRecorder = new MediaRecorder(stream, {mimeType: "video/webm"})
-      const videoBuffer = mediaSource.addSourceBuffer('video/webm;codecs=vp8');
-
-      mediaRecorder.ondataavailable = (data) => {
+      mediaRecorder.ondataavailable = async (data) => {
         console.log(data.data)
-        // sendFile(data.data, countUploadChunk)
+        streamData.push([data, countVideoUploadChunk]);
+        countVideoUploadChunk++;
+
+        if (!isstreamUploading) {
+          initiateUploadStream();
+        }
+
         if (!playLiveVideo) {
           mediaRecorder.stop()
-          stream.getTracks().forEach( track => track.stop() );
+          stream.getTracks().forEach( track => track.stop() )
           return
         }
 
+        if(playLiveVideo) {
+          processStream(stream)
+        }
       }
-      mediaRecorder.start()
-      if (!playLiveVideo) {
-        return
-      }
-      setInterval(() => {
-          mediaRecorder.requestData()
-      }, 1000)
+      
+      mediaRecorder.start() 
+      setTimeout(function() {
+            mediaRecorder.stop(); // stop recorder after every time-slice
+            if (!playLiveVideo) {
+              mediaRecorder.stop()
+              stream.getTracks().forEach( track => track.stop() );
+              return
+            }
+      }, 1000);
+      // setInterval(() => {
+      //   if (!playLiveVideo) {
+      //     mediaRecorder.stop()
+      //     stream.getTracks().forEach( track => track.stop() );
+      //     return
+      //   }
+      //   mediaRecorder.requestData()
+      // }, 1000)
     }
 
     onClick('btnLiveUpload', async () => {
       if (permittedGetUserMedia()) {
-        const video = document.querySelector('video');
-        const mediaSource = new MediaSource();
-        video.src = URL.createObjectURL(mediaSource);
+
         playLiveVideo = true
-        navigator.mediaDevices.getUserMedia({
+        await navigator.mediaDevices.getUserMedia({
             video: true,
             audio: true
-        }).then((stream) => processStream(stream, mediaSource));
+        }).then((stream) => processStream(stream));
       }
     })
 
