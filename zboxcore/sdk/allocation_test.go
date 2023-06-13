@@ -776,6 +776,22 @@ func TestAllocation_downloadFile(t *testing.T) {
 		ClientKey: mockClientKey,
 	}
 
+	for i := 0; i < numBlobbers; i++ {
+		url := "TestAllocation_downloadFile" + mockBlobberUrl + strconv.Itoa(i)
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			return strings.HasPrefix(req.URL.Path, url)
+		})).Return(&http.Response{
+			StatusCode: http.StatusOK,
+			Body: func() io.ReadCloser {
+				jsonFR, err := json.Marshal(&fileref.FileRef{
+					ActualFileHash: mockActualHash,
+				})
+				require.NoError(t, err)
+				return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+			}(),
+		}, nil)
+	}
+
 	type parameters struct {
 		localPath, remotePath string
 		contentMode           string
@@ -885,21 +901,6 @@ func TestAllocation_downloadFile(t *testing.T) {
 				statusCallback: nil,
 			},
 			setup: func(t *testing.T, testCaseName string, p parameters, a *Allocation) (teardown func(t *testing.T)) {
-				for i := 0; i < numBlobbers; i++ {
-					url := "TestAllocation_downloadFile" + mockBlobberUrl + strconv.Itoa(i)
-					mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-						return strings.HasPrefix(req.URL.Path, url)
-					})).Return(&http.Response{
-						StatusCode: http.StatusOK,
-						Body: func() io.ReadCloser {
-							jsonFR, err := json.Marshal(&fileref.FileRef{
-								ActualFileHash: mockActualHash,
-							})
-							require.NoError(t, err)
-							return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
-						}(),
-					}, nil)
-				}
 				return func(t *testing.T) {
 					os.Remove("alloc/1.txt")
 				}
