@@ -85,7 +85,7 @@ func CreateDownloader(allocationID, localPath, remotePath string, opts ...Downlo
 				}
 				do.fileName = fileMeta.Name
 			} else if len(remotePath) > 0 {
-				do.lookupHash = fileref.GetReferenceLookup(do.allocationObj.Tx, remotePath)
+				do.lookupHash = fileref.GetReferenceLookup(do.allocationObj.ID, remotePath)
 				do.fileName = path.Base(remotePath)
 			} else {
 				return nil, errors.New("Either remotepath or lookuphash is required when using authticket of directory type")
