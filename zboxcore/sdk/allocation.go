@@ -788,16 +788,9 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 			op := operations[i]
 			remotePath := op.RemotePath
 			parentPaths := GenerateParentPaths(remotePath)
-			conflict := false
 
-			for path := range parentPaths {
-				if _, ok := previousPaths[path]; ok {
-					conflict = true
-					break
-				}
-			}
-
-			if conflict {
+			if _, ok := previousPaths[remotePath]; ok {
+				// conflict found, commit
 				break
 			}
 
@@ -833,7 +826,9 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 				return err
 			}
 
-			previousPaths[remotePath] = true
+			for path := range parentPaths {
+				previousPaths[path] = true
+			}
 
 			mo.operations = append(mo.operations, operation)
 		}
