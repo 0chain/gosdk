@@ -174,9 +174,13 @@ type MultiUploadOption struct {
 // ## Inputs
 //   - allocationID
 //   - jsonMultiOperationOptions: Json Array of MultiOperationOption. eg: "[{"operationType":"move","remotePath":"/README.md","destPath":"/folder1/"},{"operationType":"delete","remotePath":"/t3.txt"}]"
+//     return
+//     {
+//     "error":"",
+//     "result":"true",
+//     }
 //
-// ## Outputs
-//   - error
+//export MultiOperation
 func MultiOperation(_allocationID, _jsonMultiOperationOptions *C.char) *C.char {
 	allocationID := C.GoString(_allocationID)
 	jsonMultiOperationOptions := C.GoString(_jsonMultiOperationOptions)
@@ -212,12 +216,20 @@ func MultiOperation(_allocationID, _jsonMultiOperationOptions *C.char) *C.char {
 
 // MultiUploadFile - upload files from local path to remote path
 // ## Inputs
+//
 //   - allocationID
+//
 //   - workdir: set a workdir as ~/.zcn on mobile apps
+//
 //   - jsonMultiUploadOpetions: Json Array of MultiOperationOption. eg: "[{"remotePath":"/","filePath":"/t2.txt"},{"remotePath":"/","filePath":"/t3.txt"}]"
 //
-// ## Outputs
-//   - error
+//     return
+//     {
+//     "error":"",
+//     "result":"true",
+//     }
+//
+//export MultiUpload
 func MultiUpload(_allocationID, _workdir, _jsonMultiUploadOptions *C.char) *C.char {
 	allocationID := C.GoString(_allocationID)
 	workdir := C.GoString(_workdir)
@@ -254,13 +266,20 @@ func MultiUpload(_allocationID, _workdir, _jsonMultiUploadOptions *C.char) *C.ch
 
 // MultiUpdateFile - update files from local path to remote path
 // ## Inputs
+//
 //   - allocationID
+//
 //   - workdir: set a workdir as ~/.zcn on mobile apps
+//
 //   - jsonMultiUploadOpetions: Json Array of MultiOperationOption. eg: "[{"remotePath":"/","filePath":"/t2.txt"},{"remotePath":"/","filePath":"/t3.txt"}]"
 //
-// ## Outputs
-//   - error
-
+//     return
+//     {
+//     "error":"",
+//     "result":"true",
+//     }
+//
+//export MultiUpdate
 func MultiUpdate(_allocationID, _workdir, _jsonMultiUploadOptions *C.char) *C.char {
 	allocationID := C.GoString(_allocationID)
 	workdir := C.GoString(_workdir)
