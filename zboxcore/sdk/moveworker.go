@@ -351,7 +351,7 @@ func (mo *MoveOperation) Verify(a *Allocation) error {
 	}
 
 	if mo.remotefilepath == "" || mo.destPath == "" {
-		return errors.New("invalid_path", "Invalid path for copy")
+		return errors.New("invalid_path", "Invalid path for move")
 	}
 	isabs := zboxutil.IsRemoteAbs(mo.remotefilepath)
 	if !isabs {

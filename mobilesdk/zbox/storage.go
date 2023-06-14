@@ -2,6 +2,7 @@ package zbox
 
 import (
 	"encoding/json"
+	"errors"
 	"strings"
 	"time"
 
@@ -9,10 +10,61 @@ import (
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
 
+const SPACE string = " "
+
 type fileResp struct {
 	sdk.FileInfo
 	Name string `json:"name"`
 	Path string `json:"path"`
+}
+
+type MultiOperationOption struct {
+	OperationType string `json:"operationType,omitempty"`
+	RemotePath    string `json:"remotePath,omitempty"`
+	DestName      string `json:"destName,omitempty"` // Required only for rename operation
+	DestPath      string `json:"destPath,omitempty"` // Required for copy and move operation`
+}
+
+type MultiUploadOption struct {
+	FilePath      string `json:"filePath,omitempty"`
+	FileName      string `json:"fileName,omitempty"`
+	RemotePath    string `json:"remotePath,omitempty"`
+	ThumbnailPath string `json:"thumbnailPath,omitempty"`
+	Encrypt       bool   `json:"encrypt,omitempty"`
+	ChunkNumber   int    `json:"chunkNumber,omitempty"`
+}
+
+// MultiOperation - do copy, move, delete and createdir operation together
+// ## Inputs
+//   - allocationID
+//   - jsonMultiOperationOptions: Json Array of MultiOperationOption. eg: "[{"operationType":"move","remotePath":"/README.md","destPath":"/folder1/"},{"operationType":"delete","remotePath":"/t3.txt"}]"
+//
+// ## Outputs
+//   - error
+func MultiOperation(allocationID string, jsonMultiOperationOptions string) error {
+	if allocationID == "" {
+		return errors.New("AllocationID is required")
+	}
+	var options []MultiOperationOption
+	err := json.Unmarshal([]byte(jsonMultiOperationOptions), &options)
+	if err != nil {
+		return err
+	}
+	totalOp := len(options)
+	operations := make([]sdk.OperationRequest, totalOp)
+	for idx, op := range options {
+		operations[idx] = sdk.OperationRequest{
+			OperationType: op.OperationType,
+			RemotePath:    op.RemotePath,
+			DestName:      op.DestName,
+			DestPath:      op.DestPath,
+		}
+	}
+	allocationObj, err := getAllocation(allocationID)
+	if err != nil {
+		return err
+	}
+	return allocationObj.DoMultiOperation(operations)
 }
 
 // ListDir - listing files from path
@@ -219,12 +271,79 @@ func RepairFile(allocationID, workdir, localPath, remotePath, thumbnailPath stri
 	return a.StartChunkedUpload(workdir, localPath, remotePath, &StatusCallbackWrapped{Callback: statusCb}, true, true, thumbnailPath, encrypt, webStreaming)
 }
 
-func MultiOperation(allocationID string, operations []sdk.OperationRequest) error {
+// MultiUploadFile - upload files from local path to remote path
+// ## Inputs
+//   - allocationID
+//   - workdir: set a workdir as ~/.zcn on mobile apps
+//   - jsonMultiUploadOpetions: Json Array of MultiOperationOption. eg: "[{"remotePath":"/","filePath":"/t2.txt"},{"remotePath":"/","filePath":"/t3.txt"}]"
+//
+// ## Outputs
+//   - error
+func MultiUpload(allocationID string, workdir string, jsonMultiUploadOptions string, statusCb StatusCallbackMocked) error {
+	var options []MultiUploadOption
+	err := json.Unmarshal([]byte(jsonMultiUploadOptions), &options)
+	if err != nil {
+		return err
+	}
+	totalUploads := len(options)
+	filePaths := make([]string, totalUploads)
+	fileNames := make([]string, totalUploads)
+	remotePaths := make([]string, totalUploads)
+	thumbnailPaths := make([]string, totalUploads)
+	encrypts := make([]bool, totalUploads)
+	chunkNumbers := make([]int, totalUploads)
+	for idx, option := range options {
+		filePaths[idx] = option.FilePath
+		fileNames[idx] = option.FileName
+		thumbnailPaths[idx] = option.ThumbnailPath
+		remotePaths[idx] = option.RemotePath
+		chunkNumbers[idx] = option.ChunkNumber
+	}
+
 	a, err := getAllocation(allocationID)
 	if err != nil {
 		return err
 	}
-	return a.DoMultiOperation(operations)
+	return a.StartMultiUpload(workdir, filePaths, fileNames, thumbnailPaths, encrypts, chunkNumbers, remotePaths, false, &StatusCallbackWrapped{Callback: statusCb})
+
+}
+
+// MultiUpdateFile - update files from local path to remote path
+// ## Inputs
+//   - allocationID
+//   - workdir: set a workdir as ~/.zcn on mobile apps
+//   - jsonMultiUploadOpetions: Json Array of MultiOperationOption. eg: "[{"remotePath":"/","filePath":"/t2.txt"},{"remotePath":"/","filePath":"/t3.txt"}]"
+//
+// ## Outputs
+//   - error
+func MultiUpdate(allocationID string, workdir string, jsonMultiUploadOptions string, statusCb StatusCallbackMocked) error {
+	var options []MultiUploadOption
+	err := json.Unmarshal([]byte(jsonMultiUploadOptions), &options)
+	totalUploads := len(options)
+	filePaths := make([]string, totalUploads)
+	fileNames := make([]string, totalUploads)
+	remotePaths := make([]string, totalUploads)
+	thumbnailPaths := make([]string, totalUploads)
+	encrypts := make([]bool, totalUploads)
+	chunkNumbers := make([]int, totalUploads)
+	for idx, option := range options {
+		filePaths[idx] = option.FilePath
+		fileNames[idx] = option.FileName
+		thumbnailPaths[idx] = option.ThumbnailPath
+		remotePaths[idx] = option.RemotePath
+		chunkNumbers[idx] = option.ChunkNumber
+
+	}
+	if err != nil {
+		return err
+	}
+
+	a, err := getAllocation(allocationID)
+	if err != nil {
+		return err
+	}
+	return a.StartMultiUpload(workdir, filePaths, fileNames, thumbnailPaths, encrypts, chunkNumbers, remotePaths, true, &StatusCallbackWrapped{Callback: statusCb})
+
 }
 
 // UploadFile - upload file/thumbnail from local path to remote path
