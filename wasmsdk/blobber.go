@@ -347,8 +347,7 @@ func download(
 			sdk.WithAuthticket(authTicket, lookupHash),
 			sdk.WithOnlyThumbnail(downloadThumbnailOnly),
 			sdk.WithBlocks(0, 0, numBlocks),
-			sdk.WithAllocation(allocObj)
-		)
+			sdk.WithAllocation(allocObj))
 	}
 
 	if err != nil {
@@ -787,8 +786,7 @@ func downloadBlocks(allocationID, remotePath, authTicket, lookupHash string, num
 		downloader, err := sdk.CreateDownloader(allocationID, localPath, remotePath,
 			sdk.WithAuthticket(authTicket, lookupHash),
 			sdk.WithBlocks(startBlockNumber, endBlockNumber, numBlocks),
-			sdk.WithAllocationObj(allocObj)
-		)
+			sdk.WithAllocationObj(allocObj))
 	}
 	
 
