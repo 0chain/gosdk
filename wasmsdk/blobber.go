@@ -26,6 +26,18 @@ import (
 
 const FileOperationInsert = "insert"
 
+var allocObj *sdk.Allocation
+
+func initAllocation(allocationID string) error {
+	allocObj, err := sdk.GetAllocation(allocationID)
+	return err
+}
+
+func initAllocationFromAuthTicket(authTicket string) error {
+	allocObj, err := sdk.GetAllocationFromAuthTicket(authTicket)
+	return err
+}
+
 func listObjects(allocationID string, remotePath string) (*sdk.ListResult, error) {
 	alloc, err := getAllocation(allocationID)
 	if err != nil {
@@ -325,10 +337,19 @@ func download(
 	fileName := strings.Replace(path.Base(remotePath), "/", "-", -1)
 	localPath := allocationID + "_" + fileName
 
+	if allocObj == nil{
 	downloader, err := sdk.CreateDownloader(allocationID, localPath, remotePath,
 		sdk.WithAuthticket(authTicket, lookupHash),
 		sdk.WithOnlyThumbnail(downloadThumbnailOnly),
-		sdk.WithBlocks(0, 0, numBlocks))
+		sdk.WithBlocks(0, 0, numBlocks))	
+	}else{
+		downloader, err := sdk.CreateDownloader(allocationID, localPath, remotePath,
+			sdk.WithAuthticket(authTicket, lookupHash),
+			sdk.WithOnlyThumbnail(downloadThumbnailOnly),
+			sdk.WithBlocks(0, 0, numBlocks),
+			sdk.WithAllocation(allocObj)
+		)
+	}
 
 	if err != nil {
 		PrintError(err.Error())
@@ -758,9 +779,18 @@ func downloadBlocks(allocationID, remotePath, authTicket, lookupHash string, num
 	fileName := strings.Replace(path.Base(remotePath), "/", "-", -1)
 	localPath := filepath.Join(allocationID, fileName)
 
-	downloader, err := sdk.CreateDownloader(allocationID, localPath, remotePath,
-		sdk.WithAuthticket(authTicket, lookupHash),
-		sdk.WithBlocks(startBlockNumber, endBlockNumber, numBlocks))
+	if allocObj == nil {
+		downloader, err := sdk.CreateDownloader(allocationID, localPath, remotePath,
+			sdk.WithAuthticket(authTicket, lookupHash),
+			sdk.WithBlocks(startBlockNumber, endBlockNumber, numBlocks))
+	}{
+		downloader, err := sdk.CreateDownloader(allocationID, localPath, remotePath,
+			sdk.WithAuthticket(authTicket, lookupHash),
+			sdk.WithBlocks(startBlockNumber, endBlockNumber, numBlocks),
+			sdk.WithAllocationObj(allocObj)
+		)
+	}
+	
 
 	if err != nil {
 		PrintError(err.Error())
