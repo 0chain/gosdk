@@ -254,7 +254,7 @@ func (a *Allocation) GetBlobberStats() map[string]*BlobberAllocationStats {
 	wg.Add(numList)
 	rspCh := make(chan *BlobberAllocationStats, numList)
 	for _, blobber := range a.Blobbers {
-		go getAllocationDataFromBlobber(blobber, a.Tx, rspCh, wg)
+		go getAllocationDataFromBlobber(blobber, a.ID, a.Tx, rspCh, wg)
 	}
 	wg.Wait()
 	result := make(map[string]*BlobberAllocationStats, len(a.Blobbers))
@@ -450,7 +450,7 @@ func (a *Allocation) EncryptAndUploadFileWithThumbnail(
 	)
 }
 
-func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileNames []string, thumbnailPaths []string, encrypts []bool, remotePaths []string, isUpdate bool, status StatusCallback) error {
+func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileNames []string, thumbnailPaths []string, encrypts []bool, chunkNumbers []int, remotePaths []string, isUpdate bool, status StatusCallback) error {
 	if len(localPaths) != len(thumbnailPaths) {
 		return errors.New("invalid_value", "length of localpaths and thumbnailpaths must be equal")
 	}
@@ -487,6 +487,7 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 		defer fileReader.Close()
 		thumbnailPath := thumbnailPaths[idx]
 		fileName := fileNames[idx]
+		chunkNumber := chunkNumbers[idx]
 		if fileName == "" {
 			return thrown.New("invalid_param", "filename can't be empty")
 		}
@@ -522,6 +523,9 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 		options := []ChunkedUploadOption{
 			WithStatusCallback(status),
 			WithEncrypt(encrypt),
+		}
+		if chunkNumber != 0 {
+			options = append(options, WithChunkNumber(chunkNumber))
 		}
 		if thumbnailPath != "" {
 			buf, err := sys.Files.ReadFile(thumbnailPath)
@@ -585,7 +589,6 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 	if err != nil {
 		return err
 	}
-
 	remotePath = zboxutil.RemoteClean(remotePath)
 	isabs := zboxutil.IsRemoteAbs(remotePath)
 	if !isabs {
@@ -642,7 +645,7 @@ func (a *Allocation) GetCurrentVersion() (bool, error) {
 		go func(blobber *blockchain.StorageNode) {
 
 			defer wg.Done()
-			wr, err := GetWritemarker(a.Tx, blobber.ID, blobber.Baseurl)
+			wr, err := GetWritemarker(a.ID, a.Tx, blobber.ID, blobber.Baseurl)
 			if err != nil {
 				atomic.AddInt32(&errCnt, 1)
 				logger.Logger.Error("error during getWritemarke", zap.Error(err))
@@ -718,7 +721,7 @@ func (a *Allocation) GetCurrentVersion() (bool, error) {
 		wg.Add(1)
 		go func(rb *RollbackBlobber) {
 			defer wg.Done()
-			err := rb.processRollback(context.TODO(), a.Tx)
+			err := rb.processRollback(context.TODO(), a.ID)
 			if err != nil {
 				success = false
 			}
@@ -1467,7 +1470,7 @@ func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
 		query.Add("path", path)
 		query.Add("refereeClientID", refereeClientID)
 
-		httpreq, err := zboxutil.NewRevokeShareRequest(baseUrl, a.Tx, query)
+		httpreq, err := zboxutil.NewRevokeShareRequest(baseUrl, a.ID, a.Tx, query)
 		if err != nil {
 			return err
 		}
@@ -1612,7 +1615,7 @@ func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKe
 		if err := formWriter.Close(); err != nil {
 			return err
 		}
-		httpreq, err := zboxutil.NewShareRequest(url, a.Tx, body)
+		httpreq, err := zboxutil.NewShareRequest(url, a.ID, a.Tx, body)
 		if err != nil {
 			return err
 		}
