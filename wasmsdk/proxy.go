@@ -167,6 +167,7 @@ func main() {
 				"download":              download,
 				"upload":                upload,
 				"bulkUpload":            bulkUpload,
+				"multiUpload":           multiUpload,
 				"listObjects":           listObjects,
 				"createDir":             createDir,
 				"downloadBlocks":        downloadBlocks,
@@ -174,6 +175,9 @@ func main() {
 				"updateBlobberSettings": updateBlobberSettings,
 				"getRemoteFileMap":      getRemoteFileMap,
 				"getBlobbers":           getBlobbers,
+				"getcontainers":         GetContainers,
+				"updatecontainer":       UpdateContainer,
+				"searchcontainer":       SearchContainer,
 
 				// player
 				"play":           play,
