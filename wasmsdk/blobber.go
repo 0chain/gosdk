@@ -802,7 +802,7 @@ func downloadBlocks(allocationID, remotePath, authTicket, lookupHash string, num
 		downloader, err = sdk.CreateDownloader(allocationID, localPath, remotePath,
 			sdk.WithAuthticket(authTicket, lookupHash),
 			sdk.WithBlocks(startBlockNumber, endBlockNumber, numBlocks),
-			sdk.WithAllocationObj(allocObj))
+			sdk.WithAllocation(allocObj))
 	}
 
 	if err != nil {
