@@ -123,6 +123,8 @@ func (ch *MoveFileChange) processChildren(curRef *fileref.Ref) {
 			ch.processChildren(childRef)
 		}
 	}
+	curRef.HashToBeComputed = true
+	curRef.ChildrenLoaded = true
 }
 
 func (n *MoveFileChange) GetAffectedPath() []string {

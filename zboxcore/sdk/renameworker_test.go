@@ -96,6 +96,18 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 				},
 			},
 			setup: func(t *testing.T, testName string, p parameters) {
+
+				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+					return strings.Contains(req.URL.Path, "latestwritemarker") &&
+						req.Method == "GET"
+				})).Return(&http.Response{
+					StatusCode: http.StatusOK,
+					Body: func() io.ReadCloser {
+						jsonFR := `{"latest_write_marker":null,"prev_write_marker":null}`
+						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+					}(),
+				}, nil)
+
 				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 					return strings.HasPrefix(req.URL.Path, testName) &&
 						req.Method == "GET" &&
@@ -143,6 +155,17 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 				},
 			},
 			setup: func(t *testing.T, testName string, p parameters) {
+				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+					return strings.Contains(req.URL.Path, "latestwritemarker") &&
+						req.Method == "GET"
+				})).Return(&http.Response{
+					StatusCode: http.StatusOK,
+					Body: func() io.ReadCloser {
+						jsonFR := `{"latest_write_marker":null,"prev_write_marker":null}`
+						return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
+					}(),
+				}, nil)
+
 				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 					return strings.HasPrefix(req.URL.Path, testName) &&
 						req.Method == "GET" &&
@@ -263,11 +286,12 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 	}
 
 	setupHttpResponses := func(t *testing.T, testName string, numBlobbers int, numCorrect int, req *RenameRequest) {
+
 		for i := 0; i < numBlobbers; i++ {
 			url := mockBlobberUrl + strconv.Itoa(i)
 			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 				return req.Method == "GET" &&
-					strings.Contains(req.URL.String(), testName+url)
+					strings.Contains(req.URL.String(), testName+url) && !strings.Contains(req.URL.String(), "latestwritemarker")
 			})).Return(&http.Response{
 				StatusCode: http.StatusOK,
 				Body: func() io.ReadCloser {
@@ -456,7 +480,7 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 			for i := 0; i < numBlobbers; i++ {
 				path := "/TestRenameRequest_ProcessRename" + tt.name + mockBlobberUrl + strconv.Itoa(i)
 
-				m[http.MethodPost+":"+path+blobber.EndpointWriteMarkerLock+a.Tx] = devMock.Response{
+				m[http.MethodPost+":"+path+blobber.EndpointWriteMarkerLock+a.ID] = devMock.Response{
 					StatusCode: http.StatusOK,
 					Body:       respBuf,
 				}
@@ -466,6 +490,8 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 					Baseurl: server.URL + path,
 				})
 			}
+
+			setupMockRollback(a, &mockClient)
 
 			req := &RenameRequest{
 				allocationObj:  a,

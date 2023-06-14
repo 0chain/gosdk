@@ -391,6 +391,7 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 			req.deleteMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 
 			setupMockAllocation(t, a)
+			setupMockRollback(a, &mockClient)
 			setupMockWriteLockRequest(a, &mockClient)
 
 			req.allocationObj = a

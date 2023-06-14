@@ -16,6 +16,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/0chain/gosdk/constants"
+	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
@@ -38,6 +39,7 @@ type MoveRequest struct {
 	moveMask       zboxutil.Uint128
 	maskMU         *sync.Mutex
 	connectionID   string
+	timestamp      int64
 	Consensus
 }
 
@@ -94,7 +96,7 @@ func (req *MoveRequest) moveBlobberObject(
 				cncl     context.CancelFunc
 			)
 
-			httpreq, err = zboxutil.NewMoveRequest(blobber.Baseurl, req.allocationTx, body)
+			httpreq, err = zboxutil.NewMoveRequest(blobber.Baseurl, req.allocationID, req.allocationTx, body)
 			if err != nil {
 				l.Logger.Error(blobber.Baseurl, "Error creating rename request", err)
 				return
@@ -210,9 +212,29 @@ func (req *MoveRequest) ProcessMove() error {
 	if err != nil {
 		return fmt.Errorf("Move failed: %s", err.Error())
 	}
+
+	//Check if the allocation is to be repaired or rolled back
+	status, err := req.allocationObj.CheckAllocStatus()
+	if err != nil {
+		logger.Logger.Error("Error checking allocation status: ", err)
+		return fmt.Errorf("Move failed: %s", err.Error())
+	}
 	defer writeMarkerMutex.Unlock(req.ctx, req.moveMask, req.blobbers, time.Minute, req.connectionID) //nolint: errcheck
 
+	if status == Repair {
+		logger.Logger.Info("Repairing allocation")
+		//TODO: Need status callback to call repair allocation
+		// err = req.allocationObj.RepairAlloc()
+		// if err != nil {
+		// 	return err
+		// }
+	}
+	if status != Commit {
+		return ErrRetryOperation
+	}
+
 	req.Consensus.Reset()
+	req.timestamp = int64(common.Now())
 	activeBlobbers := req.moveMask.CountOnes()
 	wg.Add(activeBlobbers)
 	commitReqs := make([]*CommitRequest, activeBlobbers)
@@ -233,6 +255,7 @@ func (req *MoveRequest) ProcessMove() error {
 			blobber:      req.blobbers[pos],
 			connectionID: req.connectionID,
 			wg:           wg,
+			timestamp:    req.timestamp,
 		}
 		// commitReq.change = moveChange
 		commitReq.changes = append(commitReq.changes, moveChange)
@@ -329,7 +352,7 @@ func (mo *MoveOperation) Verify(a *Allocation) error {
 	}
 
 	if mo.remotefilepath == "" || mo.destPath == "" {
-		return errors.New("invalid_path", "Invalid path for copy")
+		return errors.New("invalid_path", "Invalid path for move")
 	}
 	isabs := zboxutil.IsRemoteAbs(mo.remotefilepath)
 	if !isabs {

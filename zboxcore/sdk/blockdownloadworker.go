@@ -1,7 +1,6 @@
 package sdk
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -12,7 +11,6 @@ import (
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
-	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
@@ -44,6 +42,7 @@ type BlockDownloadRequest struct {
 	ctx                context.Context
 	result             chan *downloadBlock
 	shouldVerify       bool
+	connectionID       string
 }
 
 type downloadResponse struct {
@@ -63,7 +62,7 @@ type downloadBlock struct {
 var downloadBlockChan map[string]chan *BlockDownloadRequest
 var initDownloadMutex sync.Mutex
 
-func InitBlockDownloader(blobbers []*blockchain.StorageNode) {
+func InitBlockDownloader(blobbers []*blockchain.StorageNode, workerCount int) {
 	initDownloadMutex.Lock()
 	defer initDownloadMutex.Unlock()
 	if downloadBlockChan == nil {
@@ -72,9 +71,11 @@ func InitBlockDownloader(blobbers []*blockchain.StorageNode) {
 
 	for _, blobber := range blobbers {
 		if _, ok := downloadBlockChan[blobber.ID]; !ok {
-			downloadBlockChan[blobber.ID] = make(chan *BlockDownloadRequest, 1)
-			blobberChan := downloadBlockChan[blobber.ID]
-			go startBlockDownloadWorker(blobberChan)
+			downloadBlockChan[blobber.ID] = make(chan *BlockDownloadRequest, workerCount)
+			for i := 0; i < workerCount; i++ {
+				blobberChan := downloadBlockChan[blobber.ID]
+				go startBlockDownloadWorker(blobberChan)
+			}
 		}
 	}
 }
@@ -110,51 +111,24 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 	retry := 0
 	var err error
 	for retry < 3 {
-
-		if req.blobber.IsSkip() {
-			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx,
-				err: errors.New("", "skip blobber by previous errors")}
-			return
-		}
-
-		rm := &marker.ReadMarker{}
-		rm.ClientID = client.GetClientID()
-		rm.ClientPublicKey = client.GetClientPublicKey()
-		rm.BlobberID = req.blobber.ID
-		rm.AllocationID = req.allocationID
-		rm.OwnerID = req.allocOwnerID
-		rm.Timestamp = common.Now()
-		rm.ReadCounter = getBlobberReadCtr(req.allocationID, req.blobber.ID) + req.numBlocks
-		setBlobberReadCtr(req.allocationID, req.blobber.ID, rm.ReadCounter)
-		err = rm.Sign()
-		if err != nil {
-			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.Wrap(err, "Error: Signing readmarker failed")}
-			return
-		}
-		var rmData []byte
-		rmData, err = json.Marshal(rm)
-		if err != nil {
-			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.Wrap(err, "Error creating readmarker")}
-			return
-		}
 		if len(req.remotefilepath) > 0 {
 			req.remotefilepathhash = fileref.GetReferenceLookup(req.allocationID, req.remotefilepath)
 		}
 
 		var httpreq *http.Request
-		httpreq, err = zboxutil.NewDownloadRequest(req.blobber.Baseurl, req.allocationTx)
+		httpreq, err = zboxutil.NewDownloadRequest(req.blobber.Baseurl, req.allocationID, req.allocationTx)
 		if err != nil {
 			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.Wrap(err, "Error creating download request")}
 			return
 		}
 
 		header := &DownloadRequestHeader{}
+		header.Path = req.remotefilepath
 		header.PathHash = req.remotefilepathhash
-
 		header.BlockNum = req.blockNum
 		header.NumBlocks = req.numBlocks
-		header.ReadMarker = rmData
 		header.VerifyDownload = req.shouldVerify
+		header.ConnectionID = req.connectionID
 
 		if req.authTicket != nil {
 			header.AuthToken, _ = json.Marshal(req.authTicket) //nolint: errcheck
@@ -168,7 +142,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 
 		header.ToHeader(httpreq)
 
-		lastBlobberReadCounter := getBlobberReadCtr(req.allocationID, req.blobber.ID)
+		zlogger.Logger.Debug(fmt.Sprintf("downloadBlobberBlock - blobberID: %v, clientID: %v, blockNum: %d", req.blobber.ID, client.GetClientID(), header.BlockNum))
 
 		err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
 			if err != nil {
@@ -179,43 +153,15 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			}
 
 			var rspData downloadBlock
-
 			respBody, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
 				return err
 			}
 			if resp.StatusCode != http.StatusOK {
-				if err = json.Unmarshal(respBody, &rspData); err == nil && rspData.LatestRM != nil {
-					if err := rm.ValidateWithOtherRM(rspData.LatestRM); err != nil {
-						retry = 3
-						return err
-					}
-
-					if rspData.LatestRM.ReadCounter != lastBlobberReadCounter {
-						zlogger.Logger.Info("Will be retrying download")
-						setBlobberReadCtr(req.allocationID, req.blobber.ID, rspData.LatestRM.ReadCounter)
-						lastBlobberReadCounter = rspData.LatestRM.ReadCounter
-						shouldRetry = true
-						return errors.New("stale_read_marker",
-							fmt.Sprintf("readmarker counter is not in sync with latest counter. Last blobber read counter: %d", lastBlobberReadCounter))
-					}
-					return errors.New("download_error", fmt.Sprintf("Response status: %d", resp.StatusCode))
-
+				zlogger.Logger.Debug(fmt.Sprintf("downloadBlobberBlock FAIL - blobberID: %v, clientID: %v, blockNum: %d, retry: %d, response: %v", req.blobber.ID, client.GetClientID(), header.BlockNum, retry, string(respBody)))
+				if err = json.Unmarshal(respBody, &rspData); err == nil {
+					return errors.New("download_error", fmt.Sprintf("Response status: %d, Error: %v,", resp.StatusCode, rspData.err))
 				}
-
-				if bytes.Contains(respBody, []byte(NotEnoughTokens)) {
-					shouldRetry, retry = false, 3 // don't repeat
-					req.blobber.SetSkip(true)
-					return errors.New(NotEnoughTokens, "")
-				}
-
-				if bytes.Contains(respBody, []byte(LockExists)) {
-					zlogger.Logger.Debug("Lock exists error.")
-					shouldRetry = true
-					sys.Sleep(time.Second * 1)
-					return errors.New(LockExists, string(respBody))
-				}
-
 				return errors.New("response_error", string(respBody))
 			}
 
@@ -256,7 +202,8 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 				rspData.BlockChunks = req.splitData(dR.Data, req.chunkSize)
 			}
 
-			incBlobberReadCtr(req.allocationID, req.blobber.ID, req.numBlocks)
+			zlogger.Logger.Debug(fmt.Sprintf("downloadBlobberBlock 200 OK: blobberID: %v, clientID: %v, blockNum: %d", req.blobber.ID, client.GetClientID(), header.BlockNum))
+
 			req.result <- &rspData
 			return nil
 		})

@@ -41,6 +41,8 @@ func setupHttpResponses(
 		wmBlobberBase := t.Name() + "/" + mockBlobberUrl + strconv.Itoa(i) + zboxutil.WM_LOCK_ENDPOINT
 		commitBlobberBase := t.Name() + "/" + mockBlobberUrl + strconv.Itoa(i) + zboxutil.COMMIT_ENDPOINT
 		refPathBlobberBase := t.Name() + "/" + mockBlobberUrl + strconv.Itoa(i) + zboxutil.REFERENCE_ENDPOINT
+		latestMarkerBlobberBase := t.Name() + "/" + mockBlobberUrl + strconv.Itoa(i) + zboxutil.LATEST_WRITE_MARKER_ENDPOINT
+		rollbackBlobberBase := t.Name() + "/" + mockBlobberUrl + strconv.Itoa(i) + zboxutil.ROLLBACK_ENDPOINT
 
 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 			return req.Method == "POST" &&
@@ -118,7 +120,23 @@ func setupHttpResponses(
 				return http.StatusBadRequest
 			}(),
 			Body: func() io.ReadCloser {
-				s := `{"meta_data":{"chunk_size":0,"created_at":0,"hash":"","lookup_hash":"","name":"/","num_of_blocks":0,"path":"/","path_hash":"","size":0,"type":"d","updated_at":0},"Ref":{"ID":0,"Type":"d","AllocationID":"` + allocID + `","LookupHash":"","Name":"/","Path":"/","Hash":"","NumBlocks":0,"PathHash":"","ParentPath":"","PathLevel":1,"CustomMeta":"","ContentHash":"","Size":0,"MerkleRoot":"","ActualFileSize":0,"ActualFileHash":"","MimeType":"","WriteMarker":"","ThumbnailSize":0,"ThumbnailHash":"","ActualThumbnailSize":0,"ActualThumbnailHash":"","EncryptedKey":"","Children":null,"OnCloud":false,"CommitMetaTxns":null,"CreatedAt":0,"UpdatedAt":0,"ChunkSize":0},"list":[{"meta_data":{"chunk_size":0,"created_at":0,"hash":"","lookup_hash":"","name":"1.txt","num_of_blocks":0,"path":"/1.txt","path_hash":"","size":0,"type":"f","updated_at":0},"Ref":{"ID":0,"Type":"f","AllocationID":"` + allocID + `","LookupHash":"","Name":"1.txt","Path":"/1.txt","Hash":"","NumBlocks":0,"PathHash":"","ParentPath":"/","PathLevel":1,"CustomMeta":"","ContentHash":"","Size":0,"MerkleRoot":"","ActualFileSize":0,"ActualFileHash":"","MimeType":"","WriteMarker":"","ThumbnailSize":0,"ThumbnailHash":"","ActualThumbnailSize":0,"ActualThumbnailHash":"","EncryptedKey":"","Children":null,"OnCloud":false,"CommitMetaTxns":null,"CreatedAt":0,"UpdatedAt":0,"ChunkSize":0}}],"latest_write_marker":null}`
+				s := `{"meta_data":{"chunk_size":0,"created_at":0,"hash":"","lookup_hash":"","name":"/","num_of_blocks":0,"path":"/","path_hash":"","size":0,"type":"d","updated_at":0},"Ref":{"ID":0,"Type":"d","AllocationID":"` + allocID + `","LookupHash":"","Name":"/","Path":"/","Hash":"","NumBlocks":0,"PathHash":"","ParentPath":"","PathLevel":1,"CustomMeta":"","ContentHash":"","Size":0,"MerkleRoot":"","ActualFileSize":0,"ActualFileHash":"","MimeType":"","WriteMarker":"","ThumbnailSize":0,"ThumbnailHash":"","ActualThumbnailSize":0,"ActualThumbnailHash":"","EncryptedKey":"","Children":null,"OnCloud":false,"CreatedAt":0,"UpdatedAt":0,"ChunkSize":0},"list":[{"meta_data":{"chunk_size":0,"created_at":0,"hash":"","lookup_hash":"","name":"1.txt","num_of_blocks":0,"path":"/1.txt","path_hash":"","size":0,"type":"f","updated_at":0},"Ref":{"ID":0,"Type":"f","AllocationID":"` + allocID + `","LookupHash":"","Name":"1.txt","Path":"/1.txt","Hash":"","NumBlocks":0,"PathHash":"","ParentPath":"/","PathLevel":1,"CustomMeta":"","ContentHash":"","Size":0,"MerkleRoot":"","ActualFileSize":0,"ActualFileHash":"","MimeType":"","WriteMarker":"","ThumbnailSize":0,"ThumbnailHash":"","ActualThumbnailSize":0,"ActualThumbnailHash":"","EncryptedKey":"","Children":null,"OnCloud":false,"CreatedAt":0,"UpdatedAt":0,"ChunkSize":0}}],"latest_write_marker":null}`
+				return ioutil.NopCloser(bytes.NewReader([]byte(s)))
+			}(),
+		}, nil)
+
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			return req.Method == "GET" &&
+				strings.Contains(req.URL.String(), latestMarkerBlobberBase)
+		})).Return(&http.Response{
+			StatusCode: func() int {
+				if i < numCorrect {
+					return http.StatusOK
+				}
+				return http.StatusBadRequest
+			}(),
+			Body: func() io.ReadCloser {
+				s := `{"latest_write_marker":null,"prev_write_marker":null}`
 				return ioutil.NopCloser(bytes.NewReader([]byte(s)))
 			}(),
 		}, nil)
@@ -126,6 +144,19 @@ func setupHttpResponses(
 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 			return req.Method == "POST" &&
 				strings.Contains(req.URL.String(), commitBlobberBase)
+		})).Return(&http.Response{
+			StatusCode: func() int {
+				if i < numCorrect {
+					return http.StatusOK
+				}
+				return http.StatusBadRequest
+			}(),
+			Body: ioutil.NopCloser(bytes.NewReader(nil)),
+		}, nil)
+
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			return req.Method == "POST" &&
+				strings.Contains(req.URL.String(), rollbackBlobberBase)
 		})).Return(&http.Response{
 			StatusCode: func() int {
 				if i < numCorrect {
@@ -684,6 +715,25 @@ func TestAllocation_RepairFile(t *testing.T) {
 					require.NoError(t, err)
 					return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
 				}(frName, hash),
+			}, nil)
+
+			urlLatestWritemarker := "http://TestAllocation_RepairFile" + testName + mockBlobberUrl + strconv.Itoa(i) + "/v1/file/latestwritemarker"
+			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+				return strings.HasPrefix(req.URL.String(), urlLatestWritemarker)
+			})).Return(&http.Response{
+				StatusCode: http.StatusOK,
+				Body: func() io.ReadCloser {
+					s := `{"latest_write_marker":null,"prev_write_marker":null}`
+					return ioutil.NopCloser(bytes.NewReader([]byte(s)))
+				}(),
+			}, nil)
+
+			urlRollback := "http://TestAllocation_RepairFile" + testName + mockBlobberUrl + strconv.Itoa(i) + "/v1/connection/rollback"
+			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+				return strings.HasPrefix(req.URL.String(), urlRollback)
+			})).Return(&http.Response{
+				StatusCode: http.StatusOK,
+				Body:       ioutil.NopCloser(bytes.NewReader(nil)),
 			}, nil)
 
 			urlFilePath := "http://TestAllocation_RepairFile" + testName + mockBlobberUrl + strconv.Itoa(i) + "/v1/file/referencepath"

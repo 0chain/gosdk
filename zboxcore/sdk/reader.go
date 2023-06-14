@@ -27,18 +27,16 @@ const (
 // error codes
 const (
 	NotEnoughTokens              = "not_enough_tokens"
+	InvalidAuthTicket            = "invalid_authticket"
+	InvalidShare                 = "invalid_share"
 	InvalidRead                  = "invalid_read"
-	InvalidReadMarker            = "invalid_read_marker"
 	ExceededMaxOffsetValue       = "exceeded_max_offset_value"
 	NegativeOffsetResultantValue = "negative_offset_resultant_value"
 	InvalidWhenceValue           = "invalid_whence_value"
 )
 
-//errors
-var (
-	ErrInvalidRead       = errors.New(InvalidRead, "want_size is <= 0")
-	ErrInvalidReadMarker = errors.New(InvalidReadMarker, "")
-)
+// errors
+var ErrInvalidRead = errors.New(InvalidRead, "want_size is <= 0")
 
 const (
 	// BlocksFor10MB is number of blocks required for to make 10MB data.
@@ -134,6 +132,10 @@ func (sd *StreamDownload) Read(b []byte) (int, error) {
 		}
 	}
 
+	wantBlocksPerShard := (wantSize + int64(sd.effectiveBlockSize) - 1) / int64(sd.effectiveBlockSize)
+	sd.blocksPerShard = wantBlocksPerShard
+	sd.prepaidBlobbers = make(map[string]bool)
+
 	effectiveChunkSize := sd.effectiveBlockSize * sd.datashards
 	n := 0
 	for startInd < endInd {
@@ -157,9 +159,7 @@ func (sd *StreamDownload) Read(b []byte) (int, error) {
 
 		startInd += numBlocks
 	}
-
 	sd.offset += int64(n)
-
 	return n, nil
 }
 
@@ -189,6 +189,7 @@ func GetDStorageFileReader(alloc *Allocation, ref *ORef, sdo *StreamDownloadOpti
 			effectiveBlockSize: BlockSize,
 			chunkSize:          BlockSize,
 			maskMu:             &sync.Mutex{},
+			connectionID:       zboxutil.NewConnectionId(),
 		},
 		open: true,
 	}

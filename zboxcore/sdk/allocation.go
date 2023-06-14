@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math"
 	"mime/multipart"
 	"net/http"
 	"net/url"
@@ -17,6 +18,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/0chain/common/core/currency"
@@ -28,10 +30,12 @@ import (
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/fileref"
+	"github.com/0chain/gosdk/zboxcore/logger"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/mitchellh/go-homedir"
+	"go.uber.org/zap"
 )
 
 var (
@@ -97,7 +101,6 @@ type ConsolidatedFileMeta struct {
 	ActualFileSize  int64
 	ActualNumBlocks int64
 	EncryptedKey    string
-	CommitMetaTxns  []fileref.CommitMetaTxn
 	Collaborators   []fileref.Collaborator
 }
 
@@ -251,7 +254,7 @@ func (a *Allocation) GetBlobberStats() map[string]*BlobberAllocationStats {
 	wg.Add(numList)
 	rspCh := make(chan *BlobberAllocationStats, numList)
 	for _, blobber := range a.Blobbers {
-		go getAllocationDataFromBlobber(blobber, a.Tx, rspCh, wg)
+		go getAllocationDataFromBlobber(blobber, a.ID, a.Tx, rspCh, wg)
 	}
 	wg.Wait()
 	result := make(map[string]*BlobberAllocationStats, len(a.Blobbers))
@@ -262,6 +265,8 @@ func (a *Allocation) GetBlobberStats() map[string]*BlobberAllocationStats {
 	return result
 }
 
+const downloadWorkerCount = 10
+
 func (a *Allocation) InitAllocation() {
 	a.downloadChan = make(chan *DownloadRequest, 10)
 	a.repairChan = make(chan *RepairRequest, 1)
@@ -271,7 +276,7 @@ func (a *Allocation) InitAllocation() {
 	a.fullconsensus, a.consensusThreshold = a.getConsensuses()
 	a.startWorker(a.ctx)
 	InitCommitWorker(a.Blobbers)
-	InitBlockDownloader(a.Blobbers)
+	InitBlockDownloader(a.Blobbers, downloadWorkerCount)
 	a.initialized = true
 }
 
@@ -353,15 +358,18 @@ func (a *Allocation) CreateDir(remotePath string) error {
 	}
 
 	remotePath = zboxutil.RemoteClean(remotePath)
+	timestamp := int64(common.Now())
 	req := DirRequest{
-		allocationID: a.ID,
-		allocationTx: a.Tx,
-		blobbers:     a.Blobbers,
-		mu:           &sync.Mutex{},
-		dirMask:      zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1),
-		connectionID: zboxutil.NewConnectionId(),
-		remotePath:   remotePath,
-		wg:           &sync.WaitGroup{},
+		allocationObj: a,
+		allocationID:  a.ID,
+		allocationTx:  a.Tx,
+		blobbers:      a.Blobbers,
+		mu:            &sync.Mutex{},
+		dirMask:       zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1),
+		connectionID:  zboxutil.NewConnectionId(),
+		remotePath:    remotePath,
+		wg:            &sync.WaitGroup{},
+		timestamp:     timestamp,
 		Consensus: Consensus{
 			RWMutex:         &sync.RWMutex{},
 			consensusThresh: a.consensusThreshold,
@@ -443,6 +451,112 @@ func (a *Allocation) EncryptAndUploadFileWithThumbnail(
 	)
 }
 
+func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileNames []string, thumbnailPaths []string, encrypts []bool, chunkNumbers []int, remotePaths []string, isUpdate bool, status StatusCallback) error {
+	if len(localPaths) != len(thumbnailPaths) {
+		return errors.New("invalid_value", "length of localpaths and thumbnailpaths must be equal")
+	}
+	if len(localPaths) != len(encrypts) {
+		return errors.New("invalid_value", "length of encrypt not equal to number of files")
+	}
+	if !a.isInitialized() {
+		return notInitialized
+	}
+
+	if !a.CanUpload() {
+		return constants.ErrFileOptionNotPermitted
+	}
+
+	totalOperations := len(localPaths)
+	if totalOperations == 0 {
+		return nil
+	}
+	operationRequests := make([]OperationRequest, totalOperations)
+	for idx, localPath := range localPaths {
+		remotePath := zboxutil.RemoteClean(remotePaths[idx])
+		if !strings.HasSuffix(remotePath, "/") {
+			return errors.New("invalid_value", "remotePath must be the path of directory")
+		}
+		isabs := zboxutil.IsRemoteAbs(remotePath)
+		if !isabs {
+			err := thrown.New("invalid_path", "Path should be valid and absolute")
+			return err
+		}
+		fileReader, err := os.Open(localPath)
+		if err != nil {
+			return err
+		}
+		defer fileReader.Close()
+		thumbnailPath := thumbnailPaths[idx]
+		fileName := fileNames[idx]
+		chunkNumber := chunkNumbers[idx]
+		if fileName == "" {
+			return thrown.New("invalid_param", "filename can't be empty")
+		}
+		encrypt := encrypts[idx]
+
+		fileInfo, err := fileReader.Stat()
+		if err != nil {
+			return err
+		}
+
+		mimeType, err := zboxutil.GetFileContentType(fileReader)
+		if err != nil {
+			return err
+		}
+
+		if !strings.HasSuffix(remotePath, "/") {
+			remotePath = remotePath + "/"
+		}
+		fullRemotePath := zboxutil.GetFullRemotePath(localPath, remotePath)
+		fullRemotePathWithoutName, _ := pathutil.Split(fullRemotePath)
+		fullRemotePath = fullRemotePathWithoutName + "/" + fileName
+		if err != nil {
+			return err
+		}
+		fmt.Println("fullRemotepath and localpath", fullRemotePath, localPath)
+		fileMeta := FileMeta{
+			Path:       localPath,
+			ActualSize: fileInfo.Size(),
+			MimeType:   mimeType,
+			RemoteName: fileName,
+			RemotePath: fullRemotePath,
+		}
+		options := []ChunkedUploadOption{
+			WithStatusCallback(status),
+			WithEncrypt(encrypt),
+		}
+		if chunkNumber != 0 {
+			options = append(options, WithChunkNumber(chunkNumber))
+		}
+		if thumbnailPath != "" {
+			buf, err := sys.Files.ReadFile(thumbnailPath)
+			if err != nil {
+				return err
+			}
+
+			options = append(options, WithThumbnail(buf))
+		}
+		operationRequests[idx] = OperationRequest{
+			FileMeta:      fileMeta,
+			FileReader:    fileReader,
+			OperationType: constants.FileOperationInsert,
+			Opts:          options,
+			Workdir:       workdir,
+			RemotePath:    fileMeta.RemotePath,
+		}
+		if isUpdate {
+			operationRequests[idx].OperationType = constants.FileOperationUpdate
+		}
+
+	}
+	err := a.DoMultiOperation(operationRequests)
+	if err != nil {
+		logger.Logger.Error("Error in multi upload ", err.Error())
+		return err
+	}
+	return nil
+}
+
 func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 	remotePath string,
 	status StatusCallback,
@@ -476,7 +590,6 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 	if err != nil {
 		return err
 	}
-
 	remotePath = zboxutil.RemoteClean(remotePath)
 	isabs := zboxutil.IsRemoteAbs(remotePath)
 	if !isabs {
@@ -521,6 +634,110 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 	return ChunkedUpload.Start()
 }
 
+func (a *Allocation) GetCurrentVersion() (bool, error) {
+	//get versions from blobbers
+
+	wg := &sync.WaitGroup{}
+	markerChan := make(chan *RollbackBlobber, len(a.Blobbers))
+	var errCnt int32
+	for _, blobber := range a.Blobbers {
+
+		wg.Add(1)
+		go func(blobber *blockchain.StorageNode) {
+
+			defer wg.Done()
+			wr, err := GetWritemarker(a.ID, a.Tx, blobber.ID, blobber.Baseurl)
+			if err != nil {
+				atomic.AddInt32(&errCnt, 1)
+				logger.Logger.Error("error during getWritemarke", zap.Error(err))
+			}
+			if wr == nil {
+				markerChan <- nil
+			} else {
+				markerChan <- &RollbackBlobber{
+					blobber:      blobber,
+					lpm:          wr,
+					commitResult: &CommitResult{},
+				}
+			}
+		}(blobber)
+
+	}
+
+	wg.Wait()
+	close(markerChan)
+
+	versionMap := make(map[int64][]*RollbackBlobber)
+
+	for rb := range markerChan {
+
+		if rb == nil {
+			continue
+		}
+
+		if _, ok := versionMap[rb.lpm.LatestWM.Timestamp]; !ok {
+			versionMap[rb.lpm.LatestWM.Timestamp] = make([]*RollbackBlobber, 0)
+		}
+
+		versionMap[rb.lpm.LatestWM.Timestamp] = append(versionMap[rb.lpm.LatestWM.Timestamp], rb)
+
+		if len(versionMap) > 2 {
+			return false, fmt.Errorf("more than 2 versions found")
+		}
+
+	}
+	// TODO: check how many blobbers can be down
+	if errCnt > 0 {
+		return false, fmt.Errorf("error in getting writemarker from %v blobbers", errCnt)
+	}
+
+	if len(versionMap) == 0 {
+		return false, nil
+	}
+
+	// TODO:return if len(versionMap) == 1
+
+	var prevVersion int64
+	var latestVersion int64
+
+	for version := range versionMap {
+		if prevVersion == 0 {
+			prevVersion = version
+		} else {
+			latestVersion = version
+		}
+	}
+
+	if prevVersion > latestVersion {
+		prevVersion, latestVersion = latestVersion, prevVersion
+	}
+
+	// TODO: Check if allocation can be repaired
+
+	success := true
+
+	// rollback to prev version
+	for _, rb := range versionMap[latestVersion] {
+
+		wg.Add(1)
+		go func(rb *RollbackBlobber) {
+			defer wg.Done()
+			err := rb.processRollback(context.TODO(), a.ID)
+			if err != nil {
+				success = false
+			}
+		}(rb)
+	}
+
+	wg.Wait()
+
+	if !success {
+		return false, fmt.Errorf("error in rollback")
+	}
+
+	return success, nil
+}
+
 func (a *Allocation) RepairRequired(remotepath string) (zboxutil.Uint128, bool, *fileref.FileRef, error) {
 	if !a.isInitialized() {
 		return zboxutil.Uint128{}, false, nil, notInitialized
@@ -555,64 +772,89 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 	if !a.isInitialized() {
 		return notInitialized
 	}
-	var mo MultiOperation
-	mo.allocationObj = a
-	mo.operationMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
-	mo.maskMU = &sync.Mutex{}
-	mo.ctx, mo.ctxCncl = context.WithCancel(a.ctx)
-	mo.Consensus = Consensus{
-		RWMutex:         &sync.RWMutex{},
-		consensusThresh: a.consensusThreshold,
-		fullconsensus:   a.fullconsensus,
-	}
-	mo.connectionID = zboxutil.NewConnectionId()
-	allFiles := make(map[string]bool)
-	for _, op := range operations {
-		remotePath := op.RemotePath
-		var operation Operationer
-		switch op.OperationType {
 
-		case constants.FileOperationRename:
-			operation = NewRenameOperation(op.RemotePath, op.DestName, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
-
-		case constants.FileOperationCopy:
-			operation = NewCopyOperation(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
-
-		case constants.FileOperationMove:
-			operation = NewMoveOperation(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
-
-		case constants.FileOperationInsert:
-			remotePath = op.FileMeta.RemotePath
-			operation = NewUploadOperation(op.Workdir, op.FileMeta, op.FileReader, false, op.Opts...)
-
-		case constants.FileOperationDelete:
-			operation = NewDeleteOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
-
-		case constants.FileOperationUpdate:
-			remotePath = op.FileMeta.RemotePath
-			operation = NewUploadOperation(op.Workdir, op.FileMeta, op.FileReader, true, op.Opts...)
-
-		case constants.FileOperationCreateDir:
-			operation = NewDirOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
-
-		default:
-			return errors.New("invalid_operation", "Operation is not valid")
-
+	for i := 0; i < len(operations); {
+		// resetting multi operation and previous paths for every batch
+		var mo MultiOperation
+		mo.allocationObj = a
+		mo.operationMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
+		mo.maskMU = &sync.Mutex{}
+		mo.ctx, mo.ctxCncl = context.WithCancel(a.ctx)
+		mo.Consensus = Consensus{
+			consensusThresh: a.consensusThreshold,
+			fullconsensus:   a.fullconsensus,
 		}
-		if _, ok := allFiles[remotePath]; ok {
-			return errors.New("conflicting_operation", "Conflicting operations are not allowed")
+		mo.connectionID = zboxutil.NewConnectionId()
+
+		previousPaths := make(map[string]bool)
+
+		for ; i < len(operations); i++ {
+			op := operations[i]
+			remotePath := op.RemotePath
+			parentPaths := GenerateParentPaths(remotePath)
+
+			if _, ok := previousPaths[remotePath]; ok {
+				// conflict found, commit
+				break
+			}
+
+			var operation Operationer
+			switch op.OperationType {
+			case constants.FileOperationRename:
+				operation = NewRenameOperation(op.RemotePath, op.DestName, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
+
+			case constants.FileOperationCopy:
+				operation = NewCopyOperation(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
+
+			case constants.FileOperationMove:
+				operation = NewMoveOperation(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
+
+			case constants.FileOperationInsert:
+				operation = NewUploadOperation(op.Workdir, op.FileMeta, op.FileReader, false, op.Opts...)
+
+			case constants.FileOperationDelete:
+				operation = NewDeleteOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
+
+			case constants.FileOperationUpdate:
+				operation = NewUploadOperation(op.Workdir, op.FileMeta, op.FileReader, true, op.Opts...)
+
+			case constants.FileOperationCreateDir:
+				operation = NewDirOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
+
+			default:
+				return errors.New("invalid_operation", "Operation is not valid")
+			}
+
+			err := operation.Verify(a)
+			if err != nil {
+				return err
+			}
+
+			for path := range parentPaths {
+				previousPaths[path] = true
+			}
+
+			mo.operations = append(mo.operations, operation)
 		}
-		err := operation.Verify(a)
+
+		err := mo.Process()
 		if err != nil {
 			return err
 		}
-		mo.operations = append(mo.operations, operation)
-		allFiles[remotePath] = true
-
 	}
 
-	return mo.Process()
+	return nil
+}
 
+func GenerateParentPaths(path string) map[string]bool {
+	path = strings.Trim(path, "/")
+	parts := strings.Split(path, "/")
+	parentPaths := make(map[string]bool)
+
+	for i := range parts {
+		parentPaths["/"+strings.Join(parts[:i+1], "/")] = true
+	}
+	return parentPaths
 }
 
 func (a *Allocation) DownloadFileByBlock(
@@ -683,6 +925,9 @@ func (a *Allocation) generateDownloadRequest(localPath string, remotePath string
 		delete(a.downloadProgressMap, remotepath)
 	}
 	downloadReq.contentMode = contentMode
+	downloadReq.prepaidBlobbers = make(map[string]bool)
+	downloadReq.connectionID = zboxutil.NewConnectionId()
+
 	return downloadReq, nil
 }
 
@@ -859,7 +1104,16 @@ func (a *Allocation) DownloadFromBlobber(blobberID, localPath, remotePath string
 		downloadReq.startBlock,
 		downloadReq.numBlocks,
 	)
-	return err
+	if err != nil {
+		l.Logger.Error(err.Error())
+		return err
+	}
+
+	if downloadReq.statusCallback != nil {
+		downloadReq.statusCallback.Completed(
+			downloadReq.allocationID, remotePath, fRef.Name, "", int(fRef.ActualFileSize), OpDownload)
+	}
+	return nil
 }
 
 // GetRefsWithAuthTicket get refs that are children of shared remote path.
@@ -953,7 +1207,6 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 		result.Path = ref.Path
 		result.Size = ref.ActualFileSize
 		result.EncryptedKey = ref.EncryptedKey
-		result.CommitMetaTxns = ref.CommitMetaTxns
 		result.Collaborators = ref.Collaborators
 		result.ActualFileSize = ref.ActualFileSize
 		result.ActualNumBlocks = ref.NumBlocks
@@ -999,7 +1252,6 @@ func (a *Allocation) GetFileMetaFromAuthTicket(authTicket string, lookupHash str
 		result.MimeType = ref.MimeType
 		result.Path = ref.Path
 		result.Size = ref.ActualFileSize
-		result.CommitMetaTxns = ref.CommitMetaTxns
 		result.ActualFileSize = ref.Size
 		result.ActualNumBlocks = ref.NumBlocks
 		return result, nil
@@ -1067,6 +1319,7 @@ func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus int)
 	req.connectionID = zboxutil.NewConnectionId()
 	req.deleteMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 	req.maskMu = &sync.Mutex{}
+	req.timestamp = int64(common.Now())
 	err := req.ProcessDelete()
 	return err
 }
@@ -1112,6 +1365,7 @@ func (a *Allocation) RenameObject(path string, destName string) error {
 	req.renameMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 	req.maskMU = &sync.Mutex{}
 	req.connectionID = zboxutil.NewConnectionId()
+	req.timestamp = int64(common.Now())
 	return req.ProcessRename()
 }
 
@@ -1154,6 +1408,7 @@ func (a *Allocation) MoveObject(srcPath string, destPath string) error {
 	req.moveMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 	req.maskMU = &sync.Mutex{}
 	req.connectionID = zboxutil.NewConnectionId()
+	req.timestamp = int64(common.Now())
 	return req.ProcessMove()
 }
 
@@ -1196,6 +1451,7 @@ func (a *Allocation) CopyObject(path string, destPath string) error {
 	req.copyMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 	req.maskMU = &sync.Mutex{}
 	req.connectionID = zboxutil.NewConnectionId()
+	req.timestamp = int64(common.Now())
 	return req.ProcessCopy()
 }
 
@@ -1216,7 +1472,7 @@ func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
 		query.Add("path", path)
 		query.Add("refereeClientID", refereeClientID)
 
-		httpreq, err := zboxutil.NewRevokeShareRequest(baseUrl, a.Tx, query)
+		httpreq, err := zboxutil.NewRevokeShareRequest(baseUrl, a.ID, a.Tx, query)
 		if err != nil {
 			return err
 		}
@@ -1361,7 +1617,7 @@ func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKe
 		if err := formWriter.Close(); err != nil {
 			return err
 		}
-		httpreq, err := zboxutil.NewShareRequest(url, a.Tx, body)
+		httpreq, err := zboxutil.NewShareRequest(url, a.ID, a.Tx, body)
 		if err != nil {
 			return err
 		}
@@ -1612,6 +1868,8 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	downloadReq.shouldVerify = verifyDownload
 	downloadReq.fullconsensus = a.fullconsensus
 	downloadReq.consensusThresh = a.consensusThreshold
+	downloadReq.prepaidBlobbers = make(map[string]bool)
+	downloadReq.connectionID = zboxutil.NewConnectionId()
 	downloadReq.completedCallback = func(remotepath string, remotepathHash string) {
 		a.mutex.Lock()
 		defer a.mutex.Unlock()
@@ -1823,20 +2081,24 @@ func (a *Allocation) UpdateWithRepair(
 	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
 	statusCB StatusCallback,
 ) (string, error) {
+	if lock > math.MaxInt64 {
+		return "", errors.New("invalid_lock", "int64 overflow on lock value")
+	}
 
-	l.Logger.Info("Uploadating allocation")
+	l.Logger.Info("Updating allocation")
 	hash, _, err := UpdateAllocation(size, expiry, a.ID, lock, updateTerms, addBlobberId, removeBlobberId, setThirdPartyExtendable, fileOptionsParams)
 	if err != nil {
 		return "", err
 	}
 	l.Logger.Info(fmt.Sprintf("allocation updated with hash: %s", hash))
 
+	var alloc *Allocation
 	if addBlobberId != "" {
 		l.Logger.Info("waiting for a minute for the blobber to be added to network")
 
 		deadline := time.Now().Add(1 * time.Minute)
 		for time.Now().Before(deadline) {
-			alloc, err := GetAllocation(a.ID)
+			alloc, err = GetAllocation(a.ID)
 			if err != nil {
 				l.Logger.Error("failed to get allocation")
 				return hash, err
@@ -1863,7 +2125,7 @@ repair:
 	}
 
 	if shouldRepair {
-		err := a.RepairAlloc(statusCB)
+		err := alloc.RepairAlloc(statusCB)
 		if err != nil {
 			return "", err
 		}

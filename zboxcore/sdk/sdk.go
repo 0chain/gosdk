@@ -271,10 +271,9 @@ type StakePoolDelegatePoolInfo struct {
 
 // StakePool full info.
 type StakePoolInfo struct {
-	ID           common.Key     `json:"pool_id"` // pool ID
-	Balance      common.Balance `json:"balance"` // total balance
-	StakeTotal   common.Balance `json:"stake_total"`
-	UnstakeTotal common.Balance `json:"unstake_total"`
+	ID         common.Key     `json:"pool_id"` // pool ID
+	Balance    common.Balance `json:"balance"` // total balance
+	StakeTotal common.Balance `json:"stake_total"`
 	// delegate pools
 	Delegate []StakePoolDelegatePoolInfo `json:"delegate"`
 	// rewards
@@ -594,7 +593,6 @@ type Validator struct {
 	NumDelegates             int              `json:"num_delegates"`
 	ServiceCharge            float64          `json:"service_charge"`
 	StakeTotal               int64            `json:"stake_total"`
-	UnstakeTotal             int64            `json:"unstake_total"`
 	TotalServiceCharge       int64            `json:"total_service_charge"`
 	UncollectedServiceCharge int64            `json:"uncollected_service_charge"`
 	LastHealthCheck          common.Timestamp `json:"last_health_check"`
@@ -945,6 +943,10 @@ func CreateAllocation(datashards, parityshards int, size, expiry int64,
 	readPrice, writePrice PriceRange, lock uint64, thirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters) (
 	string, int64, *transaction.Transaction, error) {
 
+	if lock > math.MaxInt64 {
+		return "", 0, nil, errors.New("invalid_lock", "int64 overflow on lock value")
+	}
+
 	preferredBlobberIds, err := GetBlobberIds(blockchain.GetPreferredBlobbers())
 	if err != nil {
 		return "", 0, nil, errors.New("failed_get_blobber_ids", "failed to get preferred blobber ids: "+err.Error())
@@ -961,6 +963,10 @@ func CreateAllocationForOwner(
 	readPrice, writePrice PriceRange,
 	lock uint64, preferredBlobberIds []string, thirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
 ) (hash string, nonce int64, txn *transaction.Transaction, err error) {
+
+	if lock > math.MaxInt64 {
+		return "", 0, nil, errors.New("invalid_lock", "int64 overflow on lock value")
+	}
 
 	allocationRequest, err := getNewAllocationBlobbers(
 		datashards, parityshards, size, expiry, readPrice, writePrice, preferredBlobberIds)
@@ -1158,6 +1164,10 @@ func UpdateAllocation(
 	addBlobberId, removeBlobberId string,
 	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
 ) (hash string, nonce int64, err error) {
+
+	if lock > math.MaxInt64 {
+		return "", 0, errors.New("invalid_lock", "int64 overflow on lock value")
+	}
 
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
@@ -1406,9 +1416,6 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 				zap.Any("txn", txn))
 			return
 		}
-		l.Logger.Info("estimate txn fee",
-			zap.Uint64("fee", fee),
-			zap.Any("txn", txn))
 		txn.TransactionFee = fee
 	}
 
@@ -1419,6 +1426,10 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 	if err = txn.ComputeHashAndSign(client.Sign); err != nil {
 		return
 	}
+
+	msg := fmt.Sprintf("executing transaction '%s' with hash %s ", sn.Name, txn.Hash)
+	l.Logger.Info(msg)
+	l.Logger.Info("estimated txn fee: ", txn.TransactionFee)
 
 	transaction.SendTransactionSync(txn, blockchain.GetMiners())
 
