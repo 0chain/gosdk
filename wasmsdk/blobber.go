@@ -337,12 +337,12 @@ func download(
 	fileName := strings.Replace(path.Base(remotePath), "/", "-", -1)
 	localPath := allocationID + "_" + fileName
 
-	if allocObj == nil{
-	downloader, err := sdk.CreateDownloader(allocationID, localPath, remotePath,
-		sdk.WithAuthticket(authTicket, lookupHash),
-		sdk.WithOnlyThumbnail(downloadThumbnailOnly),
-		sdk.WithBlocks(0, 0, numBlocks))	
-	}else{
+	if allocObj == nil {
+		downloader, err := sdk.CreateDownloader(allocationID, localPath, remotePath,
+			sdk.WithAuthticket(authTicket, lookupHash),
+			sdk.WithOnlyThumbnail(downloadThumbnailOnly),
+			sdk.WithBlocks(0, 0, numBlocks))
+	} else {
 		downloader, err := sdk.CreateDownloader(allocationID, localPath, remotePath,
 			sdk.WithAuthticket(authTicket, lookupHash),
 			sdk.WithOnlyThumbnail(downloadThumbnailOnly),
@@ -782,13 +782,12 @@ func downloadBlocks(allocationID, remotePath, authTicket, lookupHash string, num
 		downloader, err := sdk.CreateDownloader(allocationID, localPath, remotePath,
 			sdk.WithAuthticket(authTicket, lookupHash),
 			sdk.WithBlocks(startBlockNumber, endBlockNumber, numBlocks))
-	}{
+	} else {
 		downloader, err := sdk.CreateDownloader(allocationID, localPath, remotePath,
 			sdk.WithAuthticket(authTicket, lookupHash),
 			sdk.WithBlocks(startBlockNumber, endBlockNumber, numBlocks),
 			sdk.WithAllocationObj(allocObj))
 	}
-	
 
 	if err != nil {
 		PrintError(err.Error())
