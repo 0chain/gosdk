@@ -29,13 +29,21 @@ const FileOperationInsert = "insert"
 var allocObj *sdk.Allocation
 
 func initAllocation(allocationID string) error {
-	allocObj, err := sdk.GetAllocation(allocationID)
-	return err
+	alloc, err := sdk.GetAllocation(allocationID)
+	if err != nil {
+		return err
+	}
+	allocObj = alloc
+	return nil
 }
 
 func initAllocationFromAuthTicket(authTicket string) error {
-	allocObj, err := sdk.GetAllocationFromAuthTicket(authTicket)
-	return err
+	alloc, err := sdk.GetAllocationFromAuthTicket(authTicket)
+	if err != nil {
+		return err
+	}
+	allocObj = alloc
+	return nil
 }
 
 func listObjects(allocationID string, remotePath string) (*sdk.ListResult, error) {
@@ -336,14 +344,17 @@ func download(
 
 	fileName := strings.Replace(path.Base(remotePath), "/", "-", -1)
 	localPath := allocationID + "_" + fileName
-
+	var (
+		err        error
+		downloader sdk.Downloader
+	)
 	if allocObj == nil {
-		downloader, err := sdk.CreateDownloader(allocationID, localPath, remotePath,
+		downloader, err = sdk.CreateDownloader(allocationID, localPath, remotePath,
 			sdk.WithAuthticket(authTicket, lookupHash),
 			sdk.WithOnlyThumbnail(downloadThumbnailOnly),
 			sdk.WithBlocks(0, 0, numBlocks))
 	} else {
-		downloader, err := sdk.CreateDownloader(allocationID, localPath, remotePath,
+		downloader, err = sdk.CreateDownloader(allocationID, localPath, remotePath,
 			sdk.WithAuthticket(authTicket, lookupHash),
 			sdk.WithOnlyThumbnail(downloadThumbnailOnly),
 			sdk.WithBlocks(0, 0, numBlocks),
@@ -778,12 +789,17 @@ func downloadBlocks(allocationID, remotePath, authTicket, lookupHash string, num
 	fileName := strings.Replace(path.Base(remotePath), "/", "-", -1)
 	localPath := filepath.Join(allocationID, fileName)
 
+	var (
+		err        error
+		downloader sdk.Downloader
+	)
+
 	if allocObj == nil {
-		downloader, err := sdk.CreateDownloader(allocationID, localPath, remotePath,
+		downloader, err = sdk.CreateDownloader(allocationID, localPath, remotePath,
 			sdk.WithAuthticket(authTicket, lookupHash),
 			sdk.WithBlocks(startBlockNumber, endBlockNumber, numBlocks))
 	} else {
-		downloader, err := sdk.CreateDownloader(allocationID, localPath, remotePath,
+		downloader, err = sdk.CreateDownloader(allocationID, localPath, remotePath,
 			sdk.WithAuthticket(authTicket, lookupHash),
 			sdk.WithBlocks(startBlockNumber, endBlockNumber, numBlocks),
 			sdk.WithAllocationObj(allocObj))
