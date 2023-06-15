@@ -26,6 +26,26 @@ import (
 
 const FileOperationInsert = "insert"
 
+var allocObj *sdk.Allocation
+
+func initAllocation(allocationID string) error {
+	alloc, err := sdk.GetAllocation(allocationID)
+	if err != nil {
+		return err
+	}
+	allocObj = alloc
+	return nil
+}
+
+func initAllocationFromAuthTicket(authTicket string) error {
+	alloc, err := sdk.GetAllocationFromAuthTicket(authTicket)
+	if err != nil {
+		return err
+	}
+	allocObj = alloc
+	return nil
+}
+
 func listObjects(allocationID string, remotePath string) (*sdk.ListResult, error) {
 	alloc, err := getAllocation(allocationID)
 	if err != nil {
@@ -306,9 +326,7 @@ func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expir
 // download download file
 func download(
 	allocationID, remotePath, authTicket, lookupHash string,
-	downloadThumbnailOnly bool, numBlocks int, callbackFuncName string,
-) (
-	*DownloadCommandResponse, error) {
+	downloadThumbnailOnly bool, numBlocks int, callbackFuncName string, isFinal bool) (*DownloadCommandResponse, error) {
 
 	wg := &sync.WaitGroup{}
 	statusBar := &StatusBar{wg: wg}
@@ -326,11 +344,22 @@ func download(
 
 	fileName := strings.Replace(path.Base(remotePath), "/", "-", -1)
 	localPath := allocationID + "_" + fileName
-
-	downloader, err := sdk.CreateDownloader(allocationID, localPath, remotePath,
-		sdk.WithAuthticket(authTicket, lookupHash),
-		sdk.WithOnlyThumbnail(downloadThumbnailOnly),
-		sdk.WithBlocks(0, 0, numBlocks))
+	var (
+		err        error
+		downloader sdk.Downloader
+	)
+	if allocObj == nil {
+		downloader, err = sdk.CreateDownloader(allocationID, localPath, remotePath,
+			sdk.WithAuthticket(authTicket, lookupHash),
+			sdk.WithOnlyThumbnail(downloadThumbnailOnly),
+			sdk.WithBlocks(0, 0, numBlocks))
+	} else {
+		downloader, err = sdk.CreateDownloader(allocationID, localPath, remotePath,
+			sdk.WithAuthticket(authTicket, lookupHash),
+			sdk.WithOnlyThumbnail(downloadThumbnailOnly),
+			sdk.WithBlocks(0, 0, numBlocks),
+			sdk.WithAllocation(allocObj))
+	}
 
 	if err != nil {
 		PrintError(err.Error())
@@ -339,7 +368,7 @@ func download(
 
 	defer sys.Files.Remove(localPath) //nolint
 
-	err = downloader.Start(statusBar)
+	err = downloader.Start(statusBar, isFinal)
 
 	if err == nil {
 		wg.Wait()
@@ -741,7 +770,7 @@ func upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, w
 }
 
 // download download file blocks
-func downloadBlocks(allocationID, remotePath, authTicket, lookupHash string, numBlocks int, startBlockNumber, endBlockNumber int64, callbackFuncName string) (*DownloadCommandResponse, error) {
+func downloadBlocks(allocationID, remotePath, authTicket, lookupHash string, numBlocks int, startBlockNumber, endBlockNumber int64, callbackFuncName string, isFinal bool) (*DownloadCommandResponse, error) {
 
 	if len(remotePath) == 0 && len(authTicket) == 0 {
 		return nil, RequiredArg("remotePath/authTicket")
@@ -760,9 +789,21 @@ func downloadBlocks(allocationID, remotePath, authTicket, lookupHash string, num
 	fileName := strings.Replace(path.Base(remotePath), "/", "-", -1)
 	localPath := filepath.Join(allocationID, fileName)
 
-	downloader, err := sdk.CreateDownloader(allocationID, localPath, remotePath,
-		sdk.WithAuthticket(authTicket, lookupHash),
-		sdk.WithBlocks(startBlockNumber, endBlockNumber, numBlocks))
+	var (
+		err        error
+		downloader sdk.Downloader
+	)
+
+	if allocObj == nil {
+		downloader, err = sdk.CreateDownloader(allocationID, localPath, remotePath,
+			sdk.WithAuthticket(authTicket, lookupHash),
+			sdk.WithBlocks(startBlockNumber, endBlockNumber, numBlocks))
+	} else {
+		downloader, err = sdk.CreateDownloader(allocationID, localPath, remotePath,
+			sdk.WithAuthticket(authTicket, lookupHash),
+			sdk.WithBlocks(startBlockNumber, endBlockNumber, numBlocks),
+			sdk.WithAllocation(allocObj))
+	}
 
 	if err != nil {
 		PrintError(err.Error())
@@ -771,7 +812,7 @@ func downloadBlocks(allocationID, remotePath, authTicket, lookupHash string, num
 
 	defer sys.Files.Remove(localPath) //nolint
 
-	err = downloader.Start(statusBar)
+	err = downloader.Start(statusBar, isFinal)
 
 	if err == nil {
 		wg.Wait()
