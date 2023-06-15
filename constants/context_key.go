@@ -13,6 +13,8 @@ const (
 	// ContextKeyClientKey
 	ContextKeyClientKey ContextKey = "client_key"
 
+	ContextKeyAllocationID ContextKey = "allocation_id"
+
 	// ContextKeyClientSignatureHeaderKey represents key for context value passed with common.ClientSignatureHeader request header.
 	ContextKeyClientSignatureHeaderKey ContextKey = "signature"
 )
