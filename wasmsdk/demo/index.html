@@ -261,7 +261,7 @@
         datashards: 2,
         parityshards: 2,
         size: 2 * 1073741824,
-        expiry: Math.floor(expiry.getTime() / 1000),
+        expiry: Math.floor(expiry.getTime() / 10000),
         minReadPrice: 0,
         maxReadPrice: 184467440737095516,
         minWritePrice: 0,
@@ -434,7 +434,6 @@
         firstUploadChunk = data
       }
       setTimeout(async () => {
-        await ffmpeg.load()
 
         const inputFileName = `input${count}.webm`;
         const outputFileName = `output${count}.ts`;
@@ -443,46 +442,29 @@
         inputFileName,
         new Uint8Array(await data.data.arrayBuffer(), 0, data.data.size)
         );
-        
-        await ffmpeg.FS(
-        "writeFile",
-        inputFileName, 
-        new Uint8Array(await data.data.arrayBuffer(), 0, data.data.size)
-        );
-
-        const input = await ffmpeg.FS("readFile", inputFileName);
-        console.log(input)
-
-        // var blob = new Blob([data.data.arrayBuffer()], { type: 'video/webm' });
-        // var url = URL.createObjectURL(blob);
-        // var link = document.createElement('a');
-        // link.href = url;
-        // link.download = inputFileName;
-        // link.style.display = 'none';
-        // document.body.appendChild(link);
-        // link.click();
-        // document.body.removeChild(link);
-        // URL.revokeObjectURL(url);
 
         await ffmpeg.run("-i", inputFileName, outputFileName);
         const output = await ffmpeg.FS("readFile", outputFileName);
+        // uploading to blobber
+        const objects = []
+        const allocationId = getSelectedAllocation()
         
+        if (!allocationId) {
+          alert("please provide allocationId")
+        }
+        console.log(output.buffer);
+        objects.push({
+          allocationId: allocationId,
+          remotePath: "/stream/"+outputFileName,
+          encrypt: false,
+          fileBytes: output.buffer,//only for demo, don't upload original file as thumbnail in production
+          callback: function (totalBytes, completedBytes, error) {
+            console.log(outputFileName + " " + completedBytes + "/" + totalBytes + " err:" + error)
+          }
+        })
 
-        // blob = new Blob([output.buffer], { type: 'video/webm' });
-        // url = URL.createObjectURL(blob);
-        // link = document.createElement('a');
-        // link.href = url;
-        // link.download = outputFileName;
-        // link.style.display = 'none';
-        // document.body.appendChild(link);
-        // link.click();
-        // document.body.removeChild(link);
-        // URL.revokeObjectURL(url);
-
-
-        ffmpeg.exit();
-        // console.log(output)
-
+        const results = await goWasm.liveUpload(objects)
+        console.log(JSON.stringify(results))
         console.log(`Data "${count}" uploaded successfully.`);
 
         if (streamData.length > 0) {
@@ -491,11 +473,10 @@
         } else {
           isstreamUploading = false;
         }
-      }, 100); 
+      }, 0); 
     }
     async function initiateUploadStream() {
       if (!isstreamUploading && streamData.length > 0) {
-        
         const [data, count] = streamData.shift();
         uploadStream(data, count);
       }
@@ -518,12 +499,6 @@
           initiateUploadStream();
         }
 
-        if (!playLiveVideo) {
-          mediaRecorder.stop()
-          stream.getTracks().forEach( track => track.stop() )
-          return
-        }
-
         if(playLiveVideo) {
           processStream(stream)
         }
@@ -533,25 +508,20 @@
       setTimeout(function() {
             mediaRecorder.stop(); // stop recorder after every time-slice
             if (!playLiveVideo) {
-              mediaRecorder.stop()
               stream.getTracks().forEach( track => track.stop() );
               return
             }
       }, 1000);
-      // setInterval(() => {
-      //   if (!playLiveVideo) {
-      //     mediaRecorder.stop()
-      //     stream.getTracks().forEach( track => track.stop() );
-      //     return
-      //   }
-      //   mediaRecorder.requestData()
-      // }, 1000)
+      
     }
 
     onClick('btnLiveUpload', async () => {
       if (permittedGetUserMedia()) {
-
         playLiveVideo = true
+        if (!ffmpeg.isLoaded())
+        {
+          await ffmpeg.load()
+        }
         await navigator.mediaDevices.getUserMedia({
             video: true,
             audio: true

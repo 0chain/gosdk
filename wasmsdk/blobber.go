@@ -385,11 +385,9 @@ type LiveUploadOption struct {
 	RemotePath   string `json:"remotePath,omitempty"`
 
 	Encrypt bool `json:"encrypt,omitempty"`
-	Delay   bool `json:"delay,omitempty"`
 
-	FileSize          int64  `json:"fileSize,omitempty"`
-	ReadChunkFuncName string `json:"readChunkFuncName,omitempty"`
-	CallbackFuncName  string `json:"callbackFuncName,omitempty"`
+	FileBytes        jsbridge.Bytes `json:"fileBytes,omitempty"`
+	CallbackFuncName string         `json:"callbackFuncName,omitempty"`
 }
 
 type BulkUploadResult struct {
@@ -536,137 +534,132 @@ func uploadWithJsFuncs(allocationID, remotePath string, readChunkFuncName string
 }
 
 // // Live Upload Function.
-// // converting js to golang and pass to the golang function
-// func liveUpload(jsonLiveUploadOptions string) (LiveUploadResult, error) {
-// 	var option LiveUploadOption
-// 	err := json.Unmarshal(byte(jsonLiveUploadOptions), &option)
-// 	if err != nil {
-// 		return nil, err
-// 	}
 
-// 	result := LiveUploadResult{
-// 		RemotePath: option.RemotePath,
-// 	}
-// 	ok, err := liveUploadJsFuncs(option.AllocationID, 
-// 		option.RemotePath,
-// 		option.ReadChunkFuncName,
-// 		option.FileSize,
-// 		option.Delay,
-// 		option.Encrypt,
-// 		option.CallbackFuncName)
-// 	result.Success = ok
-// 	if err != nil {
-// 		result.Error = err.Error()
-// 		result.Success = false
-// 	}
-// 	// if some constant issue with result success add channel for it.
-// 	return result, nil
-// }
+// converting js to golang and pass to the golang function
+func liveUpload(jsonLiveUploadOptions string) ([]LiveUploadResult, error) {
+	var options []LiveUploadOption
+	err := json.Unmarshal([]byte(jsonLiveUploadOptions), &options)
+	if err != nil {
+		return nil, err
+	}
+
+	n := len(options)
+	wait := make(chan LiveUploadResult, 1)
+
+	for _, option := range options {
+		go func(o LiveUploadOption) {
+			result := LiveUploadResult{
+				RemotePath: o.RemotePath,
+			}
+			defer func() { wait <- result }()
+			PrintError(o.FileBytes.Buffer)
+			ok, err := liveUploadWithJsFuncs(o.AllocationID,
+				o.RemotePath,
+				o.Encrypt,
+				o.FileBytes.Buffer,
+				o.CallbackFuncName)
+			result.Success = ok
+			if err != nil {
+				result.Error = err.Error()
+				result.Success = false
+			}
+
+		}(option)
+
+	}
+
+	results := make([]LiveUploadResult, 0, n)
+	for i := 0; i < n; i++ {
+		result := <-wait
+		results = append(results, result)
+	}
+
+	return results, nil
+}
 
 // // Upload using zboxcore.
-// func liveUploadJsFuncs(allocationID, remotePath string, readChunkFuncName string, fileSize int64, encrypt, delay int, callbackFuncName string) (bool, error) {
+func liveUploadWithJsFuncs(allocationID, remotePath string, encrypt bool, fileBytes []byte, callbackFuncName string) (bool, error) {
 
-// 	if len(allocationID) == 0 {
-// 		return false, RequiredArg("allocationID")
-// 	}
+	if len(allocationID) == 0 {
+		return false, RequiredArg("allocationID")
+	}
 
-// 	if len(remotePath) == 0 {
-// 		return false, RequiredArg("remotePath")
-// 	}
+	if len(remotePath) == 0 {
+		return false, RequiredArg("remotePath")
+	}
 
-// 	allocationObj, err := getAllocation(allocationID)
-// 	if err != nil {
-// 		PrintError("Error fetching the allocation", err)
-// 		return false, err
-// 	}
+	allocationObj, err := getAllocation(allocationID)
+	if err != nil {
+		PrintError("Error fetching the allocation", err)
+		return false, err
+	}
 
-// 	wg := &sync.WaitGroup{}
-// 	statusBar := &StatusBar{wg: wg}
-// 	if callbackFuncName != "" {
-// 		callback := js.Global().Get(callbackFuncName)
-// 		statusBar.callback = func(totalBytes, completedBytes int, err string) {
-// 			callback.Invoke(totalBytes, completedBytes, err)
-// 		}
-// 	}
-// 	wg.Add(1)
-// 	if strings.HasPrefix(remotePath, "/Encrypted") {
-// 		encrypt = true
-// 	}
-// 	// we don't need all the logic of file reader since we already has the buffer array.
-// 	// not regular file reader it's a ffmpeg file reader. need more time for it.
-// 	fileReader := jsbridge.NewFileReader(readChunkFuncName, fileSize)
+	wg := &sync.WaitGroup{}
+	statusBar := &StatusBar{wg: wg}
+	if callbackFuncName != "" {
+		callback := js.Global().Get(callbackFuncName)
+		statusBar.callback = func(totalBytes, completedBytes int, err string) {
+			callback.Invoke(totalBytes, completedBytes, err)
+		}
+	}
+	wg.Add(1)
+	if strings.HasPrefix(remotePath, "/Encrypted") {
+		encrypt = true
+	}
 
-// 	mimeType := "video/webm"
-// 	localPath := remotePath
+	fileReader := bytes.NewReader(fileBytes)
+	fileSize := int64(len(fileBytes))
 
-// 	remotePath = zboxutil.RemoteClean(remotePath)
-// 	isabs := zboxutil.IsRemoteAbs(remotePath)
-// 	if !isabs {
-// 		err = errors.New("invalid_path: Path should be valid and absolute")
-// 		return false, err
-// 	}
-// 	remotePath = zboxutil.GetFullRemotePath(localPath, remotePath)
+	mimeType, err := zboxutil.GetFileContentType(fileReader)
+	if err != nil {
+		return false, err
+	}
 
-// 	_, fileName := pathutil.Split(remotePath)
+	localPath := remotePath
 
-// 	// info - remotepath must be in the format of /'filename.webm'
-// 	// currently in webm. chromium does not support mp4 conversion needs to be done in browser.
-// 	// info - not possible with other option
-// 	// https://stackoverflow.com/a/57168358
-// 	liveMeta := sdk.LiveMeta{
-// 		MimeType:   mimeType,
-// 		RemoteName: fileName,
-// 		RemotePath: remotePath
-// 	}
+	remotePath = zboxutil.RemoteClean(remotePath)
+	isabs := zboxutil.IsRemoteAbs(remotePath)
+	if !isabs {
+		err = errors.New("invalid_path: Path should be valid and absolute")
+		return false, err
+	}
+	remotePath = zboxutil.GetFullRemotePath(localPath, remotePath)
 
-// 	// info - pass chunk number directly from where we are recording the video.
-// 	// right now not enabled it because we need to store in the browser if the
-// 	// user pass a bigger chunk number.
-// 	chunkNumber := 1
+	_, fileName := pathutil.Split(remotePath)
 
-// 	// if numBlocks < 1 {
-// 	// 	numBlocks = 100
-// 	// }
+	fileMeta := sdk.FileMeta{
+		Path:       localPath,
+		ActualSize: fileSize,
+		MimeType:   mimeType,
+		RemoteName: fileName,
+		RemotePath: remotePath,
+	}
 
-// 	// ChunkedUpload, err := sdk.CreateChunkedUpload("/", allocationObj, fileMeta, fileReader, isUpdate, isRepair, webStreaming, zboxutil.NewConnectionId(),
-// 	// 	sdk.WithThumbnail(thumbnailBytes),
-// 	// 	sdk.WithEncrypt(encrypt),
-// 	// 	sdk.WithStatusCallback(statusBar),
-// 	// 	sdk.WithProgressStorer(&chunkedUploadProgressStorer{list: make(map[string]*sdk.UploadProgress)}),
-// 	// 	sdk.WithChunkNumber(numBlocks))
-	
-// 	// not sending thumbnail cause not implemented in zboxcli
-// 	liveUpload, err := sdk.CreateLiveUpload(util.GetHomeDir(), allocationObj, liveMeta, reader,
-// 		sdk.WithLiveChunkNumber(chunkNumber),
-// 		sdk.WithLiveEncrypt(encrypt),
-// 		sdk.WithLiveStatusCallback(func() sdk.StatusCallback {
-// 			wg := &sync.WaitGroup{}
-// 			statusBar := &StatusBar{wg: wg}
-// 			wg.Add(1)
+	isUpdate := false
+	isRepair := false
+	webStreaming := false
+	ChunkedUpload, err := sdk.CreateChunkedUpload("/", allocationObj, fileMeta, fileReader, isUpdate, isRepair, webStreaming, zboxutil.NewConnectionId(),
+		sdk.WithEncrypt(encrypt),
+		sdk.WithStatusCallback(statusBar),
+		sdk.WithProgressStorer(&chunkedUploadProgressStorer{list: make(map[string]*sdk.UploadProgress)}))
+	if err != nil {
+		return false, err
+	}
 
-// 			return statusBar
-// 		}),
-// 		sdk.WithLiveDelay(delay))
+	err = ChunkedUpload.Start()
 
-// 	if err != nil {
-// 		return false, err
-// 	}
+	if err != nil {
+		PrintError("Upload failed.", err)
+		return false, err
+	}
 
-// 	err = liveUpload.Start()
+	wg.Wait()
+	if !statusBar.success {
+		return false, errors.New("upload failed: unknown")
+	}
 
-// 	if err != nil {
-// 		PrintError("Upload failed.", err)
-// 		return false, err
-// 	}
-
-// 	wg.Wait()
-
-// 	if !statusBar.success {
-// 		return false, errors.New("upload failed: unknown")
-// 	}
-
-// 	return true, nil
-// }
+	return true, nil
+}
 
 // upload upload file
 func upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, webStreaming, encrypt, isUpdate, isRepair bool, numBlocks int) (*FileCommandResponse, error) {
