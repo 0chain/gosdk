@@ -46,7 +46,7 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
-          version: v1.51.1
+          version: v1.52.2
           skip-build-cache: true
           skip-pkg-cache: true
           only-new-issues: true
@@ -118,7 +118,7 @@ jobs:
           sharder_image: staging
           blobber_image: staging
           validator_image: staging
-          zbox_image: staging
+          zbox_image:  staging
           zblock_image: staging
           zdns_image: staging
           explorer_image: latest

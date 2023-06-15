@@ -9,7 +9,7 @@ import (
 )
 
 func AddAuthorizer(ctx context.Context, input *zcncore.AddAuthorizerPayload) (*Transaction, error) {
-	t, err := NewTransactionEntity()
+	t, err := NewTransactionEntity(0)
 	if err != nil {
 		return nil, err
 	}
@@ -29,7 +29,7 @@ func AddAuthorizer(ctx context.Context, input *zcncore.AddAuthorizerPayload) (*T
 }
 
 func AuthorizerHealthCheck(ctx context.Context, input *zcncore.AuthorizerHealthCheckPayload) (*Transaction, error) {
-	t, err := NewTransactionEntity()
+	t, err := NewTransactionEntity(0)
 	if err != nil {
 		return nil, err
 	}

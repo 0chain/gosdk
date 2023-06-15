@@ -453,7 +453,7 @@ func (b *BridgeClient) BurnWZCN(ctx context.Context, amountTokens uint64) (*type
 
 // MintZCN mints ZCN tokens after receiving proof-of-burn of WZCN tokens
 func (b *BridgeClient) MintZCN(ctx context.Context, payload *zcnsc.MintPayload) (string, error) {
-	trx, err := transaction.NewTransactionEntity()
+	trx, err := transaction.NewTransactionEntity(0)
 	if err != nil {
 		log.Logger.Fatal("failed to create new transaction", zap.Error(err))
 	}
@@ -484,12 +484,12 @@ func (b *BridgeClient) MintZCN(ctx context.Context, payload *zcnsc.MintPayload) 
 }
 
 // BurnZCN burns ZCN tokens before conversion from ZCN to WZCN as a first step
-func (b *BridgeClient) BurnZCN(ctx context.Context, amount uint64) (*transaction.Transaction, error) {
+func (b *BridgeClient) BurnZCN(ctx context.Context, amount, txnfee uint64) (*transaction.Transaction, error) {
 	payload := zcnsc.BurnPayload{
 		EthereumAddress: b.EthereumAddress, // TODO: this should be receiver address not the bridge
 	}
 
-	trx, err := transaction.NewTransactionEntity()
+	trx, err := transaction.NewTransactionEntity(txnfee)
 	if err != nil {
 		log.Logger.Fatal("failed to create new transaction", zap.Error(err))
 	}
