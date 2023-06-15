@@ -471,10 +471,10 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 	}
 	operationRequests := make([]OperationRequest, totalOperations)
 	for idx, localPath := range localPaths {
-		remotePath := zboxutil.RemoteClean(remotePaths[idx])
-		if !strings.HasSuffix(remotePath, "/") {
+		if !strings.HasSuffix(remotePaths[idx], "/") {
 			return errors.New("invalid_value", "remotePath must be the path of directory")
 		}
+		remotePath := zboxutil.RemoteClean(remotePaths[idx])
 		isabs := zboxutil.IsRemoteAbs(remotePath)
 		if !isabs {
 			err := thrown.New("invalid_path", "Path should be valid and absolute")
