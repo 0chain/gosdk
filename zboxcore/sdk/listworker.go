@@ -128,7 +128,7 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 }
 
 func (req *ListRequest) getlistFromBlobbers() []*listResponse {
-	numList := len(req.blobbers)
+	numList := req.consensusThresh
 	req.wg = &sync.WaitGroup{}
 	req.wg.Add(numList)
 	rspCh := make(chan *listResponse, numList)
@@ -136,7 +136,7 @@ func (req *ListRequest) getlistFromBlobbers() []*listResponse {
 		go req.getListInfoFromBlobber(req.blobbers[i], i, rspCh)
 	}
 	req.wg.Wait()
-	listInfos := make([]*listResponse, len(req.blobbers))
+	listInfos := make([]*listResponse, numList)
 	for i := 0; i < numList; i++ {
 		listInfos[i] = <-rspCh
 	}
@@ -172,8 +172,8 @@ func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
 		if ti.ref.ActualSize > 0 {
 			result.ActualNumBlocks = (ti.ref.ActualSize + CHUNK_SIZE - 1) / CHUNK_SIZE
 		}
-		result.Size = ti.ref.Size
-		result.NumBlocks = ti.ref.NumBlocks
+		result.Size += ti.ref.Size
+		result.NumBlocks += ti.ref.NumBlocks
 
 		if len(lR[i].ref.Children) > 0 {
 			result.populateChildren(lR[i].ref.Children, childResultMap, selected, req)
@@ -224,8 +224,8 @@ func (lr *ListResult) populateChildren(children []fileref.RefEntity, childResult
 		if childResult.ActualSize > 0 {
 			childResult.ActualNumBlocks = (childResult.ActualSize + CHUNK_SIZE - 1) / CHUNK_SIZE
 		}
-		childResult.Size = child.GetSize()
-		childResult.NumBlocks = child.GetNumBlocks()
+		childResult.Size += child.GetSize()
+		childResult.NumBlocks += child.GetNumBlocks()
 		if childResult.isConsensusOk() {
 			if _, ok := selected[child.GetLookupHash()]; !ok {
 				lr.Children = append(lr.Children, childResult)
