@@ -87,7 +87,7 @@ func (p *FilePlayer) download(startBlock int64) {
 	defer sys.Files.Remove(localPath) //nolint
 
 	PrintInfo("playlist: downloading blocks[", p.playlistFile.Name, ":", startBlock, "-", endBlock, "]")
-	err = downloader.Start(statusBar)
+	err = downloader.Start(statusBar, true)
 
 	if err == nil {
 		wg.Wait()
