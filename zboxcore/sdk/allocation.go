@@ -1015,6 +1015,9 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 		}
 		dr.downloadMask = successMask.And(dr.downloadMask)
 		if dr.consensusThresh > dr.downloadMask.CountOnes() {
+			if redeemError == nil {
+				redeemError = errors.New("read_marker_failed", "Failed to submit read marker to the blobbers")
+			}
 			dr.errorCB(redeemError, dr.remotefilepath)
 			continue
 		}
@@ -1928,7 +1931,7 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	downloadReq.numBlocks = int64(numBlocks)
 	downloadReq.shouldVerify = verifyDownload
 	downloadReq.fullconsensus = a.fullconsensus
-	downloadReq.consensusThresh = a.consensusThreshold
+	downloadReq.consensusThresh = a.DataShards
 	downloadReq.prepaidBlobbers = make(map[string]bool)
 	downloadReq.connectionID = zboxutil.NewConnectionId()
 	downloadReq.completedCallback = func(remotepath string, remotepathHash string) {

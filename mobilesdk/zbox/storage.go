@@ -38,8 +38,8 @@ type MultiDownloadOption struct {
 	RemotePath       string `json:"remotePath"`
 	LocalPath        string `json:"localPath"`
 	DownloadOp       int    `json:"downloadOp"`
-	RemoteFileName   string `json:"remoteFileName,omitempty"`
-	RemoteLookupHash string `json:"remoteLookupHash,omitempty"`
+	RemoteFileName   string `json:"remoteFileName,omitempty"`   //Required only for file download with auth ticket
+	RemoteLookupHash string `json:"remoteLookupHash,omitempty"` //Required only for file download with auth ticket
 }
 
 // MultiOperation - do copy, move, delete and createdir operation together
