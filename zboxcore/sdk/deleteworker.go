@@ -60,7 +60,7 @@ func (req *DeleteRequest) deleteBlobberFile(
 	query.Add("connection_id", req.connectionID)
 	query.Add("path", req.remotefilepath)
 
-	httpreq, err := zboxutil.NewDeleteRequest(blobber.Baseurl, req.allocationTx, query)
+	httpreq, err := zboxutil.NewDeleteRequest(blobber.Baseurl, req.allocationID, req.allocationTx, query)
 	if err != nil {
 		l.Logger.Error(blobber.Baseurl, "Error creating delete request", err)
 		return err
@@ -239,6 +239,7 @@ func (req *DeleteRequest) ProcessDelete() (err error) {
 	if err != nil {
 		return fmt.Errorf("Delete failed: %s", err.Error())
 	}
+	defer writeMarkerMutex.Unlock(req.ctx, req.deleteMask, req.blobbers, time.Minute, req.connectionID) //nolint: errcheck
 	//Check if the allocation is to be repaired or rolled back
 	status, err := req.allocationObj.CheckAllocStatus()
 	if err != nil {
@@ -254,8 +255,9 @@ func (req *DeleteRequest) ProcessDelete() (err error) {
 		// 	return err
 		// }
 	}
-
-	defer writeMarkerMutex.Unlock(req.ctx, req.deleteMask, req.blobbers, time.Minute, req.connectionID) //nolint: errcheck
+	if status != Commit {
+		return ErrRetryOperation
+	}
 
 	req.consensus.consensus = removedNum
 	req.timestamp = int64(common.Now())

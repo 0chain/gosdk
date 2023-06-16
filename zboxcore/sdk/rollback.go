@@ -13,6 +13,8 @@ import (
 
 	"net/http"
 
+	"errors"
+
 	"github.com/0chain/common/core/common"
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -34,7 +36,10 @@ const (
 	Commit AllocStatus = iota
 	Repair
 	Broken
+	Rollback
 )
+
+var ErrRetryOperation = errors.New("retry_operation")
 
 type RollbackBlobber struct {
 	blobber      *blockchain.StorageNode
@@ -42,11 +47,11 @@ type RollbackBlobber struct {
 	lpm          *LatestPrevWriteMarker
 }
 
-func GetWritemarker(allocID, id, baseUrl string) (*LatestPrevWriteMarker, error) {
+func GetWritemarker(allocID, allocTx, id, baseUrl string) (*LatestPrevWriteMarker, error) {
 
 	var lpm LatestPrevWriteMarker
 
-	req, err := zboxutil.NewWritemarkerRequest(baseUrl, allocID)
+	req, err := zboxutil.NewWritemarkerRequest(baseUrl, allocID, allocTx)
 	if err != nil {
 		return nil, err
 	}
@@ -81,9 +86,21 @@ func GetWritemarker(allocID, id, baseUrl string) (*LatestPrevWriteMarker, error)
 		if err != nil {
 			return nil, err
 		}
-
+		if lpm.LatestWM != nil {
+			err = lpm.LatestWM.VerifySignature(client.GetClientPublicKey())
+			if err != nil {
+				return nil, fmt.Errorf("signature verification failed for latest writemarker: %s", err.Error())
+			}
+			if lpm.PrevWM != nil {
+				err = lpm.PrevWM.VerifySignature(client.GetClientPublicKey())
+				if err != nil {
+					return nil, fmt.Errorf("signature verification failed for latest writemarker: %s", err.Error())
+				}
+			}
+		}
 		return &lpm, nil
 	}
+
 	return nil, fmt.Errorf("writemarker error response %d", http.StatusTooManyRequests)
 }
 
@@ -117,7 +134,7 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 	formWriter.WriteField("connection_id", connID)
 	formWriter.Close()
 
-	req, err := zboxutil.NewRollbackRequest(rb.blobber.Baseurl, tx, body)
+	req, err := zboxutil.NewRollbackRequest(rb.blobber.Baseurl, wm.AllocationID, tx, body)
 	if err != nil {
 		l.Logger.Error("Creating rollback request failed: ", err)
 		return err
@@ -202,7 +219,7 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 		go func(blobber *blockchain.StorageNode) {
 
 			defer wg.Done()
-			wr, err := GetWritemarker(a.Tx, blobber.ID, blobber.Baseurl)
+			wr, err := GetWritemarker(a.ID, a.Tx, blobber.ID, blobber.Baseurl)
 			if err != nil {
 				atomic.AddInt32(&errCnt, 1)
 				markerError = err
@@ -222,18 +239,14 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 	}
 	wg.Wait()
 	close(markerChan)
-	onlyRepair := false
-	if errCnt > int32(a.ParityShards-1) {
-		return Commit, common.NewError("check_alloc_status_failed", markerError.Error())
-	}
-	if errCnt > 0 {
-		onlyRepair = true
+	if a.ParityShards > 0 && errCnt > int32(a.ParityShards) {
+		return Broken, common.NewError("check_alloc_status_failed", markerError.Error())
 	}
 
-	versionMap := make(map[int64][]*RollbackBlobber)
+	versionMap := make(map[string][]*RollbackBlobber)
 
-	var prevVersion int64
-	var latestVersion int64
+	var prevVersion string
+	var latestVersion string
 
 	for rb := range markerChan {
 
@@ -241,11 +254,11 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 			continue
 		}
 
-		version := rb.lpm.LatestWM.Timestamp
+		version := rb.lpm.LatestWM.FileMetaRoot
 
-		if prevVersion == 0 {
+		if prevVersion == "" {
 			prevVersion = version
-		} else {
+		} else if prevVersion != version && latestVersion == "" {
 			latestVersion = version
 		}
 
@@ -256,18 +269,37 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 		versionMap[version] = append(versionMap[version], rb)
 	}
 
-	if prevVersion > latestVersion {
-		prevVersion, latestVersion = latestVersion, prevVersion
-	}
-
+	l.Logger.Info("versionMap", zap.Any("versionMap", versionMap))
 	if len(versionMap) < 2 {
 		return Commit, nil
 	}
 
-	req := a.DataShards + 1
+	maxTimestamp := int64(0)
+	for _, rb := range versionMap[latestVersion] {
+		if rb.lpm.LatestWM.Timestamp > maxTimestamp {
+			maxTimestamp = rb.lpm.LatestWM.Timestamp
+		}
+	}
+	toFlip := false
+	for _, rb := range versionMap[prevVersion] {
+		if rb.lpm.LatestWM.Timestamp > maxTimestamp {
+			toFlip = true
+			break
+		}
+	}
+	if toFlip {
+		prevVersion, latestVersion = latestVersion, prevVersion
+	}
 
-	if len(versionMap[prevVersion]) > req || len(versionMap[latestVersion]) > req {
-		return Repair, nil
+	req := a.DataShards
+
+	if len(versionMap[latestVersion]) > req {
+		return Commit, nil
+	}
+
+	if len(versionMap[latestVersion]) >= req || len(versionMap[prevVersion]) >= req {
+		// TODO: Return Repair after refactoring the repair function
+		return Commit, nil
 	}
 
 	// rollback to previous version
@@ -291,13 +323,14 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 		}(rb)
 	}
 
+	wg.Wait()
 	if errCnt > int32(fullConsensus) {
 		return Broken, common.NewError("rollback_failed", "Rollback failed")
 	}
 
-	if errCnt > 0 || onlyRepair {
+	if errCnt == int32(fullConsensus) {
 		return Repair, nil
 	}
 
-	return Commit, nil
+	return Rollback, nil
 }

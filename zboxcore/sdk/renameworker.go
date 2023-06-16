@@ -92,7 +92,7 @@ func (req *RenameRequest) renameBlobberObject(
 			formWriter.Close()
 
 			var httpreq *http.Request
-			httpreq, err = zboxutil.NewRenameRequest(blobber.Baseurl, req.allocationTx, body)
+			httpreq, err = zboxutil.NewRenameRequest(blobber.Baseurl, req.allocationID, req.allocationTx, body)
 			if err != nil {
 				l.Logger.Error(blobber.Baseurl, "Error creating rename request", err)
 				return
@@ -209,6 +209,7 @@ func (req *RenameRequest) ProcessRename() error {
 	if err != nil {
 		return fmt.Errorf("rename failed: %s", err.Error())
 	}
+	defer writeMarkerMutex.Unlock(req.ctx, req.renameMask, req.blobbers, time.Minute, req.connectionID) //nolint: errcheck
 
 	//Check if the allocation is to be repaired or rolled back
 	status, err := req.allocationObj.CheckAllocStatus()
@@ -225,8 +226,9 @@ func (req *RenameRequest) ProcessRename() error {
 		// 	return err
 		// }
 	}
-
-	defer writeMarkerMutex.Unlock(req.ctx, req.renameMask, req.blobbers, time.Minute, req.connectionID) //nolint: errcheck
+	if status != Commit {
+		return ErrRetryOperation
+	}
 
 	req.consensus.Reset()
 	req.timestamp = int64(common.Now())

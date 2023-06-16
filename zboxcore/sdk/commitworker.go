@@ -9,14 +9,17 @@ import (
 	"mime/multipart"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/0chain/errors"
+	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
+	"github.com/0chain/gosdk/zboxcore/logger"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
@@ -96,7 +99,7 @@ func (commitreq *CommitRequest) processCommit() {
 	}
 	var req *http.Request
 	var lR ReferencePathResult
-	req, err := zboxutil.NewReferencePathRequest(commitreq.blobber.Baseurl, commitreq.allocationTx, paths)
+	req, err := zboxutil.NewReferencePathRequest(commitreq.blobber.Baseurl, commitreq.allocationID, commitreq.allocationTx, paths)
 	if err != nil || len(paths) == 0 {
 		l.Logger.Error("Creating ref path req", err)
 		return
@@ -183,7 +186,7 @@ func (commitreq *CommitRequest) processCommit() {
 
 func (req *CommitRequest) commitBlobber(
 	rootRef *fileref.Ref, latestWM *marker.WriteMarker, size int64,
-	fileIDMeta map[string]string) error {
+	fileIDMeta map[string]string) (err error) {
 
 	fileIDMetaData, err := json.Marshal(fileIDMeta)
 	if err != nil {
@@ -210,63 +213,90 @@ func (req *CommitRequest) commitBlobber(
 		l.Logger.Error("Signing writemarker failed: ", err)
 		return err
 	}
-	body := new(bytes.Buffer)
-	formWriter := multipart.NewWriter(body)
 	wmData, err := json.Marshal(wm)
 	if err != nil {
 		l.Logger.Error("Creating writemarker failed: ", err)
 		return err
 	}
-	err = formWriter.WriteField("connection_id", req.connectionID)
-	if err != nil {
-		return err
-	}
 
-	err = formWriter.WriteField("write_marker", string(wmData))
-	if err != nil {
-		return err
-	}
-
-	err = formWriter.WriteField("file_id_meta", string(fileIDMetaData))
-	if err != nil {
-		return err
-	}
-
-	formWriter.Close()
-
-	httpreq, err := zboxutil.NewCommitRequest(req.blobber.Baseurl, req.allocationTx, body)
-	if err != nil {
-		l.Logger.Error("Error creating commit req: ", err)
-		return err
-	}
-	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
-	ctx, cncl := context.WithTimeout(context.Background(), (time.Second * 60))
 	l.Logger.Info("Committing to blobber." + req.blobber.Baseurl)
-	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
-		if err != nil {
-			l.Logger.Error("Commit: ", err)
-			return err
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode == http.StatusOK {
-			l.Logger.Info(req.blobber.Baseurl, req.connectionID, " committed")
-		} else {
-			l.Logger.Error("Commit response: ", resp.StatusCode)
-		}
+	var (
+		resp           *http.Response
+		shouldContinue bool
+	)
+	for retries := 0; retries < 3; retries++ {
+		err, shouldContinue = func() (err error, shouldContinue bool) {
+			body := new(bytes.Buffer)
+			formWriter, err := getFormWritter(req.connectionID, wmData, fileIDMetaData, body)
+			if err != nil {
+				l.Logger.Error("Creating form writer failed: ", err)
+				return
+			}
+			httpreq, err := zboxutil.NewCommitRequest(req.blobber.Baseurl, req.allocationID, req.allocationTx, body)
+			if err != nil {
+				l.Logger.Error("Error creating commit req: ", err)
+				return
+			}
+			httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
+			reqCtx, ctxCncl := context.WithTimeout(context.Background(), time.Second*60)
+			resp, err = zboxutil.Client.Do(httpreq.WithContext(reqCtx))
+			defer ctxCncl()
 
-		resp_body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			l.Logger.Error("Response read: ", err)
-			return err
-		}
-		if resp.StatusCode != http.StatusOK {
+			if err != nil {
+				logger.Logger.Error("Commit: ", err)
+				return
+			}
 
-			l.Logger.Error(req.blobber.Baseurl, " Commit response:", string(resp_body))
-			return errors.New("commit_error", string(resp_body)+" "+string(wmData))
+			if resp.Body != nil {
+				defer resp.Body.Close()
+			}
+
+			var respBody []byte
+			if resp.StatusCode == http.StatusOK {
+				logger.Logger.Info(req.blobber.Baseurl, " committed")
+				return
+			}
+
+			if resp.StatusCode == http.StatusTooManyRequests {
+				logger.Logger.Info(req.blobber.Baseurl,
+					" got too many request error. Retrying")
+
+				var r int
+				r, err = zboxutil.GetRateLimitValue(resp)
+				if err != nil {
+					logger.Logger.Error(err)
+					return
+				}
+
+				time.Sleep(time.Duration(r) * time.Second)
+				shouldContinue = true
+				return
+			}
+
+			respBody, err = ioutil.ReadAll(resp.Body)
+			if err != nil {
+				logger.Logger.Error("Response read: ", err)
+				return
+			}
+
+			if strings.Contains(string(respBody), "pending_markers:") {
+				logger.Logger.Info("Commit pending for blobber ",
+					req.blobber.Baseurl, " Retrying")
+				time.Sleep(5 * time.Second)
+				shouldContinue = true
+				return
+			}
+
+			err = thrown.New("commit_error",
+				fmt.Sprintf("Got error response %s with status %d", respBody, resp.StatusCode))
+			return
+		}()
+		if shouldContinue {
+			continue
 		}
-		return nil
-	})
-	return err
+		return
+	}
+	return thrown.New("commit_error", fmt.Sprintf("Commit failed with response status %d", resp.StatusCode))
 }
 
 func AddCommitRequest(req *CommitRequest) {
@@ -275,7 +305,7 @@ func AddCommitRequest(req *CommitRequest) {
 
 func (commitreq *CommitRequest) calculateHashRequest(ctx context.Context, paths []string) error { //nolint
 	var req *http.Request
-	req, err := zboxutil.NewCalculateHashRequest(commitreq.blobber.Baseurl, commitreq.allocationTx, paths)
+	req, err := zboxutil.NewCalculateHashRequest(commitreq.blobber.Baseurl, commitreq.allocationID, commitreq.allocationTx, paths)
 	if err != nil || len(paths) == 0 {
 		l.Logger.Error("Creating calculate hash req", err)
 		return err
@@ -301,4 +331,24 @@ func (commitreq *CommitRequest) calculateHashRequest(ctx context.Context, paths 
 		return nil
 	})
 	return err
+}
+
+func getFormWritter(connectionID string, wmData, fileIDMetaData []byte, body *bytes.Buffer) (*multipart.Writer, error) {
+	formWriter := multipart.NewWriter(body)
+	err := formWriter.WriteField("connection_id", connectionID)
+	if err != nil {
+		return nil, err
+	}
+
+	err = formWriter.WriteField("write_marker", string(wmData))
+	if err != nil {
+		return nil, err
+	}
+
+	err = formWriter.WriteField("file_id_meta", string(fileIDMetaData))
+	if err != nil {
+		return nil, err
+	}
+	formWriter.Close()
+	return formWriter, nil
 }

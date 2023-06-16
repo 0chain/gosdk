@@ -80,9 +80,9 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 			formWriter.Close()
 
 			var httpreq *http.Request
-			httpreq, err = zboxutil.NewConnectionRequest(blobber.Baseurl, mo.allocationObj.Tx, body)
+			httpreq, err = zboxutil.NewConnectionRequest(blobber.Baseurl, mo.allocationObj.ID, mo.allocationObj.Tx, body)
 			if err != nil {
-				l.Logger.Error(blobber.Baseurl, "Error creating rename request", err)
+				l.Logger.Error(blobber.Baseurl, "Error creating new connection request", err)
 				return
 			}
 
@@ -239,6 +239,8 @@ func (mo *MultiOperation) Process() error {
 		logger.Logger.Error("Error checking allocation status", err)
 		return fmt.Errorf("Check allocation status failed: %s", err.Error())
 	}
+	l.Logger.Info("WriteMarker locked")
+	defer writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
 
 	if status == Repair {
 		logger.Logger.Info("Repairing allocation")
@@ -248,9 +250,9 @@ func (mo *MultiOperation) Process() error {
 		// 	return err
 		// }
 	}
-
-	l.Logger.Info("WriteMarker locked")
-	defer writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
+	if status != Commit {
+		return ErrRetryOperation
+	}
 
 	mo.Consensus.Reset()
 	activeBlobbers := mo.operationMask.CountOnes()

@@ -127,7 +127,7 @@ func (c *Client) CreateJwtSession(ctx context.Context, phoneNumber string) (int6
 	}
 
 	var sessionID int64
-
+	
 	r.DoPost(ctx, nil, c.baseUrl+"/v2/jwt/session").
 		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
 			if err != nil {
@@ -161,22 +161,21 @@ func (c *Client) CreateJwtToken(ctx context.Context, phoneNumber string, jwtSess
 		return "", err
 	}
 
-	var jwtToken string
-
+	result := &JwtTokenResponse{}
 	r.DoPost(ctx, nil, c.baseUrl+"/v2/jwt/token").
 		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
 			if err != nil {
 				return err
 			}
 
-			return c.parseResponse(resp, respBody, &jwtToken)
+			return c.parseResponse(resp, respBody, result)
 		})
 
 	if errs := r.Wait(); len(errs) > 0 {
 		return "", errs[0]
 	}
 
-	return jwtToken, nil
+	return result.Token, nil
 }
 
 // RefreshJwtToken refresh jwt token
@@ -195,20 +194,19 @@ func (c *Client) RefreshJwtToken(ctx context.Context, phoneNumber string, token 
 		return "", err
 	}
 
-	var jwtToken string
-
+	result := &JwtTokenResponse{}
 	r.DoPut(ctx, nil, c.baseUrl+"/v2/jwt/token").
 		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
 			if err != nil {
 				return err
 			}
 
-			return c.parseResponse(resp, respBody, &jwtToken)
+			return c.parseResponse(resp, respBody, result)
 		})
 
 	if errs := r.Wait(); len(errs) > 0 {
 		return "", errs[0]
 	}
 
-	return jwtToken, nil
+	return result.Token, nil
 }

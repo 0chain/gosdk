@@ -123,7 +123,7 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
 				}
 				l.Logger.Info("Downloading file for the path :", zap.Any("path", file.Path))
 				wg.Add(1)
-				err = a.DownloadFile(localPath, file.Path, true, statusCB)
+				err = a.DownloadFile(localPath, file.Path, true, statusCB, true)
 				if err != nil {
 					l.Logger.Error("download_file_failed", zap.Error(err))
 					return
