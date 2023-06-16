@@ -412,7 +412,7 @@ func multiDownload(allocationID, jsonMultiDownloadOptions, authTicket, callbackF
 			}
 		}
 		var downloader sdk.Downloader
-		fileName := strings.Replace(path.Base(option.remotePath), "/", "-", -1)
+		fileName := strings.Replace(path.Base(option.RemotePath), "/", "-", -1)
 		localPath := allocationID + "_" + fileName
 		option.LocalPath = localPath
 		if option.DownloadOp == 1 {
