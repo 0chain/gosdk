@@ -384,29 +384,11 @@
         const objects = []
         const allocationId = getSelectedAllocation()
         for (const file of files) {
-        //   const { createFFmpeg, fetchFile } = FFmpeg
-        //   const ffmpeg = createFFmpeg({ log: true })
-        //   await ffmpeg.load()
-        //   console.log(await file.arrayBuffer());
-        //   console.log("\n");
-        //   console.log(file.size);
-        //   let fileData = new Uint8Array(await file.arrayBuffer(), 0, file.size);
-        //   console.log(fileData)
-        //   ffmpeg.FS(
-        //     "writeFile",
-        //     "input.mp4",
-        //     fileData
-        //   );
-        // const input = ffmpeg.FS("readFile", "input.mp4");
-        // console.log(input)
-        // await ffmpeg.run("-i", "input.mp4", "output.webm");
-
           objects.push({
             allocationId: allocationId,
             remotePath: `/${file.name}`,
             file: file,
-            // thumbnailBytes: await readBytes(file),
-            //only for demo, don't upload original file as thumbnail in production
+            thumbnailBytes: await readBytes(file), //only for demo, don't upload original file as thumbnail in production
             encrypt: false,
             webstreaming: false,
             isUpdate: false,
@@ -430,18 +412,7 @@
     const { createFFmpeg, fetchFile } = FFmpeg
     const ffmpeg = createFFmpeg({ log: false })
     
-    // async function upload(file) {
-    //   return new Promise(async (resolve, reject) => {
-    //     const results = await goWasm.liveUpload(objects)
-    //     if (results[0].Success) {
-    //       resolve('Upload successful');
-    //     } else {
-    //       reject(results[0].Error);
-    //     }
-    //   });
-    // }
-
-    async function changeStream(data, count) {
+    async function uploadStream(data, count) {
       isstreamUploading = true;
       console.log(`Uploading data "${count}"...`);
 
@@ -471,7 +442,7 @@
           allocationId: allocationId,
           remotePath: "/stream/"+outputFileName,
           encrypt: false,
-          fileBytes: output.buffer,//only for demo, don't upload original file as thumbnail in production
+          fileBytes: output.buffer,
           callback: function (totalBytes, completedBytes, error) {
             console.log(outputFileName + " " + completedBytes + "/" + totalBytes + " err:" + error)
           }
@@ -483,7 +454,7 @@
 
         if (streamData.length > 0) {
           const [nextData, nextcount] = streamData.shift();
-          changeStream(nextData, nextcount);
+          uploadStream(nextData, nextcount);
         } else {
           isstreamUploading = false;
         }
@@ -493,7 +464,7 @@
     async function initiateUploadStream() {
       if (!isstreamUploading && streamData.length > 0) {
         const [data, count] = streamData.shift();
-        changeStream(data, count);
+        uploadStream(data, count);
       }
     }
 
@@ -516,7 +487,6 @@
 
         if(playLiveVideo) {
           processStream(stream)
-          // stream.getTracks().forEach( track => track.stop() );
         }
       }
       

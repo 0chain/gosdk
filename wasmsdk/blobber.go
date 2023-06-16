@@ -407,6 +407,11 @@ type MultiOperationOption struct {
 	DestName      string `json:"destName,omitempty"` // Required only for rename operation
 	DestPath      string `json:"destPath,omitempty"` // Required for copy and move operation`
 }
+type LiveUploadResult struct {
+	RemotePath string `json:"remotePath,omitempty"`
+	Success    bool   `json:"success,omitempty"`
+	Error      string `json:"error,omitempty"`
+}
 
 // MultiOperation - do copy, move, delete and createdir operation together
 // ## Inputs
@@ -667,9 +672,7 @@ func uploadWithJsFuncs(allocationID, remotePath string, readChunkFuncName string
 	return true, nil
 }
 
-// // Live Upload Function.
-
-// converting js to golang and pass to the golang function
+// Live Upload Function.
 func liveUpload(jsonLiveUploadOptions string) ([]LiveUploadResult, error) {
 	var options []LiveUploadOption
 	err := json.Unmarshal([]byte(jsonLiveUploadOptions), &options)
@@ -711,7 +714,7 @@ func liveUpload(jsonLiveUploadOptions string) ([]LiveUploadResult, error) {
 	return results, nil
 }
 
-// // Upload using zboxcore.
+// Upload using createChunkedUpload.
 func liveUploadWithJsFuncs(allocationID, remotePath string, encrypt bool, fileBytes []byte, callbackFuncName string) (bool, error) {
 
 	if len(allocationID) == 0 {
