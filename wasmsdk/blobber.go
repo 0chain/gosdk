@@ -394,7 +394,7 @@ func multiDownload(allocationID, jsonMultiDownloadOptions, authTicket, callbackF
 	if authTicket == "" {
 		alloc, err = getAllocation(allocationID)
 	} else {
-		alloc, err = getAllocationFromAuthTicket(authTicket)
+		alloc, err = sdk.GetAllocationFromAuthTicket(authTicket)
 	}
 	if err != nil {
 		return "", err
