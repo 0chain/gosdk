@@ -34,6 +34,14 @@ type MultiUploadOption struct {
 	ChunkNumber   int    `json:"chunkNumber,omitempty"`
 }
 
+type MultiDownloadOption struct {
+	RemotePath       string `json:"remotePath"`
+	LocalPath        string `json:"localPath"`
+	DownloadOp       int    `json:"downloadOp"`
+	RemoteFileName   string `json:"remoteFileName,omitempty"`
+	RemoteLookupHash string `json:"remoteLookupHash,omitempty"`
+}
+
 // MultiOperation - do copy, move, delete and createdir operation together
 // ## Inputs
 //   - allocationID
@@ -248,6 +256,45 @@ func DownloadThumbnail(allocationID, remotePath, localPath string, statusCb Stat
 	}
 
 	return a.DownloadThumbnail(localPath, remotePath, false, &StatusCallbackWrapped{Callback: statusCb}, isFinal)
+}
+
+// MultiDownloadFile - upload files from local path to remote path
+// ## Inputs
+//   - allocationID
+//   - jsonMultiDownloadOptions: Json Array of MultiDownloadOption eg: "[{"remotePath":"/","localPath":"/t2.txt","downloadOp":1}]"
+// ## Outputs
+//   - error
+
+func MultiDownload(allocationID, jsonMultiDownloadOptions string, statusCb StatusCallbackMocked) error {
+
+	var options []MultiDownloadOption
+	err := json.Unmarshal([]byte(jsonMultiDownloadOptions), &options)
+	if err != nil {
+		return err
+	}
+
+	a, err := getAllocation(allocationID)
+	if err != nil {
+		return err
+	}
+
+	for i := 0; i < len(options)-1; i++ {
+		if options[i].DownloadOp == 1 {
+			err = a.DownloadFile(options[i].LocalPath, options[i].RemotePath, false, &StatusCallbackWrapped{Callback: statusCb}, false)
+		} else {
+			err = a.DownloadThumbnail(options[i].LocalPath, options[i].RemotePath, false, &StatusCallbackWrapped{Callback: statusCb}, false)
+		}
+		if err != nil {
+			return err
+		}
+	}
+	if options[len(options)-1].DownloadOp == 1 {
+		err = a.DownloadFile(options[len(options)-1].LocalPath, options[len(options)-1].RemotePath, false, &StatusCallbackWrapped{Callback: statusCb}, true)
+	} else {
+		err = a.DownloadThumbnail(options[len(options)-1].LocalPath, options[len(options)-1].RemotePath, false, &StatusCallbackWrapped{Callback: statusCb}, true)
+	}
+
+	return err
 }
 
 // RepairFile - repair file if it exists in remote path
@@ -575,6 +622,39 @@ func DownloadThumbnailFromAuthTicket(allocationID, localPath string, authTicket 
 	}
 
 	return a.DownloadThumbnailFromAuthTicket(localPath, authTicket, remoteLookupHash, remoteFilename, false, &StatusCallbackWrapped{Callback: status}, isFinal)
+}
+
+func MultiDownloadFromAuthTicket(allocationID, authTicket, jsonMultiDownloadOptions string, status StatusCallbackMocked) error {
+
+	var options []MultiDownloadOption
+	err := json.Unmarshal([]byte(jsonMultiDownloadOptions), &options)
+	if err != nil {
+		return err
+	}
+
+	a, err := sdk.GetAllocationFromAuthTicket(authTicket)
+	if err != nil {
+		return err
+	}
+
+	for i := 0; i < len(options)-1; i++ {
+		if options[i].DownloadOp == 1 {
+			err = a.DownloadFromAuthTicket(options[i].LocalPath, authTicket, options[i].RemoteLookupHash, options[i].RemoteFileName, false, &StatusCallbackWrapped{Callback: status}, false)
+		} else {
+			err = a.DownloadThumbnailFromAuthTicket(options[i].LocalPath, authTicket, options[i].RemoteLookupHash, options[i].RemoteFileName, false, &StatusCallbackWrapped{Callback: status}, false)
+		}
+		if err != nil {
+			return err
+		}
+	}
+
+	if options[len(options)-1].DownloadOp == 1 {
+		err = a.DownloadFromAuthTicket(options[len(options)-1].LocalPath, authTicket, options[len(options)-1].RemoteLookupHash, options[len(options)-1].RemoteFileName, false, &StatusCallbackWrapped{Callback: status}, true)
+	} else {
+		err = a.DownloadThumbnailFromAuthTicket(options[len(options)-1].LocalPath, authTicket, options[len(options)-1].RemoteLookupHash, options[len(options)-1].RemoteFileName, false, &StatusCallbackWrapped{Callback: status}, true)
+	}
+
+	return err
 }
 
 // GetFileStats - get file stats from path
