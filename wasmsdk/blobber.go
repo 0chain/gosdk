@@ -441,12 +441,6 @@ func MultiOperation(allocationID string, jsonMultiUploadOptions string) error {
 	return allocationObj.DoMultiOperation(operations)
 }
 
-type LiveUploadResult struct {
-	RemotePath string `json:"remotePath,omitempty"`
-	Success    bool   `json:"success,omitempty"`
-	Error      string `json:"error,omitempty"`
-}
-
 func bulkUpload(jsonBulkUploadOptions string) ([]BulkUploadResult, error) {
 	var options []BulkUploadOption
 	err := json.Unmarshal([]byte(jsonBulkUploadOptions), &options)

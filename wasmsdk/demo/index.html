@@ -428,19 +428,27 @@
     let isstreamUploading = false;
     var countVideoUploadChunk = 1
     const { createFFmpeg, fetchFile } = FFmpeg
-    const ffmpeg = createFFmpeg({ log: true })
-    var firstUploadChunk
+    const ffmpeg = createFFmpeg({ log: false })
+    
+    // async function upload(file) {
+    //   return new Promise(async (resolve, reject) => {
+    //     const results = await goWasm.liveUpload(objects)
+    //     if (results[0].Success) {
+    //       resolve('Upload successful');
+    //     } else {
+    //       reject(results[0].Error);
+    //     }
+    //   });
+    // }
 
-    async function uploadStream(data, count) {
+    async function changeStream(data, count) {
       isstreamUploading = true;
       console.log(`Uploading data "${count}"...`);
-      if (count == 0) {
-        firstUploadChunk = data
-      }
+
       setTimeout(async () => {
 
         const inputFileName = `input${count}.webm`;
-        const outputFileName = `output${count}.ts`;
+        const outputFileName = `tvshow${count}.ts`;
         await ffmpeg.FS(
         "writeFile",
         inputFileName,
@@ -449,9 +457,11 @@
 
         await ffmpeg.run("-i", inputFileName, outputFileName);
         const output = await ffmpeg.FS("readFile", outputFileName);
+        console.log(`Transcoding "${outputFileName}" completed.`);
+
         // uploading to blobber
-        const objects = []
         const allocationId = getSelectedAllocation()
+        const objects = []
         
         if (!allocationId) {
           alert("please provide allocationId")
@@ -467,22 +477,23 @@
           }
         })
 
-        const results = await goWasm.liveUpload(objects)
-        console.log(JSON.stringify(results))
-        console.log(`Data "${count}" uploaded successfully.`);
+        goWasm.liveUpload(objects).then((result) => {
+          console.log(JSON.stringify(result));
+        });
 
         if (streamData.length > 0) {
           const [nextData, nextcount] = streamData.shift();
-          uploadStream(nextData, nextcount);
+          changeStream(nextData, nextcount);
         } else {
           isstreamUploading = false;
         }
-      }, 0); 
+      }, 0);
+      
     }
     async function initiateUploadStream() {
       if (!isstreamUploading && streamData.length > 0) {
         const [data, count] = streamData.shift();
-        uploadStream(data, count);
+        changeStream(data, count);
       }
     }
 
@@ -492,7 +503,7 @@
     }
     
     async function processStream(stream) {
-      const mediaRecorder = new MediaRecorder(stream, {mimeType: "video/webm;codecs=VP8,opus"})
+      const mediaRecorder = new MediaRecorder(stream, {mimeType: 'video/webm;codecs="vp8,opus"'})
 
       mediaRecorder.ondataavailable = async (data) => {
         console.log(data.data)
@@ -505,6 +516,7 @@
 
         if(playLiveVideo) {
           processStream(stream)
+          // stream.getTracks().forEach( track => track.stop() );
         }
       }
       
@@ -515,7 +527,7 @@
               stream.getTracks().forEach( track => track.stop() );
               return
             }
-      }, 1000);
+      }, 10000);
       
     }
 
