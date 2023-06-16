@@ -452,6 +452,7 @@ func multiDownload(allocationID, jsonMultiDownloadOptions, authTicket, callbackF
 			mf, _ := fs.(*sys.MemFile)
 			statusResponse.Url = CreateObjectURL(mf.Buffer.Bytes(), "application/octet-stream")
 		}
+		resp[i] = statusResponse
 	}
 
 	respBytes, err := json.Marshal(resp)
