@@ -262,6 +262,7 @@ func DownloadThumbnail(allocationID, remotePath, localPath string, statusCb Stat
 // ## Inputs
 //   - allocationID
 //   - jsonMultiDownloadOptions: Json Array of MultiDownloadOption eg: "[{"remotePath":"/","localPath":"/t2.txt","downloadOp":1}]"
+// downloadOp: 1 for file, 2 for thumbnail
 // ## Outputs
 //   - error
 
