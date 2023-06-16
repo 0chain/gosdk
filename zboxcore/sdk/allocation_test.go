@@ -707,7 +707,7 @@ func TestAllocation_DownloadFile(t *testing.T) {
 			Baseurl: mockBlobberUrl + strconv.Itoa(i),
 		})
 	}
-	err := a.DownloadFile(mockLocalPath, "/", true, nil)
+	err := a.DownloadFile(mockLocalPath, "/", true, nil, false)
 	require.NoErrorf(err, "Unexpected error %v", err)
 }
 
@@ -737,7 +737,7 @@ func TestAllocation_DownloadFileByBlock(t *testing.T) {
 			Baseurl: mockBlobberUrl + strconv.Itoa(i),
 		})
 	}
-	err := a.DownloadFileByBlock(mockLocalPath, "/", 1, 0, numBlockDownloads, true, nil)
+	err := a.DownloadFileByBlock(mockLocalPath, "/", 1, 0, numBlockDownloads, true, nil, false)
 	require.NoErrorf(err, "Unexpected error %v", err)
 }
 
@@ -755,7 +755,7 @@ func TestAllocation_DownloadThumbnail(t *testing.T) {
 			Baseurl: "TestAllocation_DownloadThumbnail" + mockBlobberUrl + strconv.Itoa(i),
 		})
 	}
-	err := a.DownloadThumbnail(mockLocalPath, "/", true, nil)
+	err := a.DownloadThumbnail(mockLocalPath, "/", true, nil, false)
 	require.NoErrorf(err, "Unexpected error %v", err)
 }
 
@@ -928,10 +928,10 @@ func TestAllocation_downloadFile(t *testing.T) {
 					defer teardown(t)
 				}
 			}
-			err := a.downloadFile(
+			err := a.addAndGenerateDownloadRequest(
 				tt.parameters.localPath, tt.parameters.remotePath, tt.parameters.contentMode,
 				tt.parameters.startBlock, tt.parameters.endBlock, tt.parameters.numBlocks,
-				true, tt.parameters.statusCallback)
+				true, tt.parameters.statusCallback, false)
 
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
@@ -1735,7 +1735,7 @@ func TestAllocation_downloadFromAuthTicket(t *testing.T) {
 			err := a.downloadFromAuthTicket(
 				tt.parameters.localPath, tt.parameters.authTicket, tt.parameters.lookupHash,
 				tt.parameters.startBlock, tt.parameters.endBlock, tt.parameters.numBlocks,
-				tt.parameters.remoteFilename, tt.parameters.contentMode, true, tt.parameters.statusCallback)
+				tt.parameters.remoteFilename, tt.parameters.contentMode, true, tt.parameters.statusCallback, false)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
 				require.EqualValues(tt.errMsg, errors.Top(err))
@@ -2033,7 +2033,7 @@ func TestAllocation_DownloadThumbnailFromAuthTicket(t *testing.T) {
 	require.NoError(err)
 	setupMockHttpResponse(t, &mockClient, "TestAllocation_DownloadThumbnailFromAuthTicket", "", a, http.MethodGet, http.StatusOK, body)
 
-	err = a.DownloadThumbnailFromAuthTicket(mockLocalPath, authTicket, mockLookupHash, mockRemoteFilePath, true, nil)
+	err = a.DownloadThumbnailFromAuthTicket(mockLocalPath, authTicket, mockLookupHash, mockRemoteFilePath, true, nil, false)
 	defer os.Remove("alloc/1.txt")
 	require.NoErrorf(err, "unexpected error: %v", err)
 }
@@ -2068,7 +2068,7 @@ func TestAllocation_DownloadFromAuthTicket(t *testing.T) {
 
 	var authTicket = getMockAuthTicket(t)
 
-	err := a.DownloadFromAuthTicket(mockLocalPath, authTicket, mockLookupHash, mockRemoteFilePath, true, nil)
+	err := a.DownloadFromAuthTicket(mockLocalPath, authTicket, mockLookupHash, mockRemoteFilePath, true, nil, false)
 	defer os.Remove("alloc/1.txt")
 	require.NoErrorf(err, "unexpected error: %v", err)
 }
@@ -2106,7 +2106,7 @@ func TestAllocation_DownloadFromAuthTicketByBlocks(t *testing.T) {
 	setupMockHttpResponse(t, &mockClient, "TestAllocation_DownloadFromAuthTicketByBlocks", "", a, http.MethodPost, http.StatusBadRequest, []byte(""))
 
 	err := a.DownloadFromAuthTicketByBlocks(
-		mockLocalPath, authTicket, 1, 0, numBlockDownloads, mockLookupHash, mockRemoteFilePath, true, nil)
+		mockLocalPath, authTicket, 1, 0, numBlockDownloads, mockLookupHash, mockRemoteFilePath, true, nil, false)
 	defer os.Remove("alloc/1.txt")
 	require.NoErrorf(err, "unexpected error: %v", err)
 }
