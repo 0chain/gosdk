@@ -28,24 +28,6 @@ const FileOperationInsert = "insert"
 
 var allocObj *sdk.Allocation
 
-func initAllocation(allocationID string) error {
-	alloc, err := sdk.GetAllocation(allocationID)
-	if err != nil {
-		return err
-	}
-	allocObj = alloc
-	return nil
-}
-
-func initAllocationFromAuthTicket(authTicket string) error {
-	alloc, err := sdk.GetAllocationFromAuthTicket(authTicket)
-	if err != nil {
-		return err
-	}
-	allocObj = alloc
-	return nil
-}
-
 func listObjects(allocationID string, remotePath string) (*sdk.ListResult, error) {
 	alloc, err := getAllocation(allocationID)
 	if err != nil {
@@ -348,18 +330,11 @@ func download(
 		err        error
 		downloader sdk.Downloader
 	)
-	if allocObj == nil {
-		downloader, err = sdk.CreateDownloader(allocationID, localPath, remotePath,
-			sdk.WithAuthticket(authTicket, lookupHash),
-			sdk.WithOnlyThumbnail(downloadThumbnailOnly),
-			sdk.WithBlocks(0, 0, numBlocks))
-	} else {
-		downloader, err = sdk.CreateDownloader(allocationID, localPath, remotePath,
-			sdk.WithAuthticket(authTicket, lookupHash),
-			sdk.WithOnlyThumbnail(downloadThumbnailOnly),
-			sdk.WithBlocks(0, 0, numBlocks),
-			sdk.WithAllocation(allocObj))
-	}
+
+	downloader, err = sdk.CreateDownloader(allocationID, localPath, remotePath,
+		sdk.WithAuthticket(authTicket, lookupHash),
+		sdk.WithOnlyThumbnail(downloadThumbnailOnly),
+		sdk.WithBlocks(0, 0, numBlocks))
 
 	if err != nil {
 		PrintError(err.Error())
@@ -395,6 +370,94 @@ func download(
 
 }
 
+// MultiOperation - do copy, move, delete and createdir operation together
+// ## Inputs
+//   - allocationID
+//   - jsonMultiDownloadOptions: Json Array of MultiDownloadOption.
+//
+// ## Outputs
+//   - json string of array of DownloadCommandResponse
+// 	 - error
+
+func multiDownload(allocationID, jsonMultiDownloadOptions, authTicket, callbackFuncName string) (string, error) {
+	wg := &sync.WaitGroup{}
+	useCallback := false
+	if callbackFuncName != "" {
+		useCallback = true
+	}
+	var options []MultiDownloadOption
+	err := json.Unmarshal([]byte(jsonMultiDownloadOptions), &options)
+	if err != nil {
+		return "", err
+	}
+	var alloc *sdk.Allocation
+	if authTicket == "" {
+		alloc, err = getAllocation(allocationID)
+	} else {
+		alloc, err = getAllocationFromAuthTicket(authTicket)
+	}
+	if err != nil {
+		return "", err
+	}
+	allStatusBar := make([]*StatusBar, len(options))
+
+	for ind, option := range options {
+		wg.Add(1)
+		statusBar := &StatusBar{wg: wg}
+		allStatusBar[ind] = statusBar
+		if useCallback {
+			callback := js.Global().Get(callbackFuncName)
+			statusBar.callback = func(totalBytes, completedBytes int, err string) {
+				callback.Invoke(totalBytes, completedBytes, err)
+			}
+		}
+		var downloader sdk.Downloader
+		if option.DownloadOp == 1 {
+			downloader, err = sdk.CreateDownloader(allocationID, option.LocalPath, option.RemotePath,
+				sdk.WithAllocation(alloc),
+				sdk.WithAuthticket(authTicket, option.RemoteLookupHash),
+				sdk.WithOnlyThumbnail(false),
+				sdk.WithBlocks(0, 0, option.NumBlocks),
+			)
+		} else {
+			downloader, err = sdk.CreateDownloader(allocationID, option.LocalPath, option.RemotePath,
+				sdk.WithAllocation(alloc),
+				sdk.WithAuthticket(authTicket, option.RemoteLookupHash),
+				sdk.WithOnlyThumbnail(true),
+				sdk.WithBlocks(0, 0, option.NumBlocks),
+			)
+		}
+		if err != nil {
+			PrintError(err.Error())
+			return "", err
+		}
+		defer sys.Files.Remove(option.LocalPath) //nolint
+		downloader.Start(statusBar, ind == len(options)-1)
+	}
+	wg.Wait()
+	resp := make([]DownloadCommandResponse, len(options))
+
+	for ind, statusBar := range allStatusBar {
+		statusResponse := DownloadCommandResponse{}
+		if !statusBar.success {
+			statusResponse.CommandSuccess = false
+			statusResponse.Error = "Download failed: unknown error"
+		} else {
+			statusResponse.CommandSuccess = true
+			statusResponse.FileName = options[ind].RemoteFileName
+			fs, _ := sys.Files.Open(options[ind].LocalPath)
+			mf, _ := fs.(*sys.MemFile)
+			statusResponse.Url = CreateObjectURL(mf.Buffer.Bytes(), "application/octet-stream")
+		}
+	}
+
+	respBytes, err := json.Marshal(resp)
+	if err != nil {
+		return "", err
+	}
+	return string(respBytes), nil
+}
+
 type BulkUploadOption struct {
 	AllocationID string `json:"allocationId,omitempty"`
 	RemotePath   string `json:"remotePath,omitempty"`
@@ -425,6 +488,15 @@ type MultiOperationOption struct {
 	RemotePath    string `json:"remotePath,omitempty"`
 	DestName      string `json:"destName,omitempty"` // Required only for rename operation
 	DestPath      string `json:"destPath,omitempty"` // Required for copy and move operation`
+}
+
+type MultiDownloadOption struct {
+	RemotePath       string `json:"remotePath"`
+	LocalPath        string `json:"localPath"`
+	DownloadOp       int    `json:"downloadOp"`
+	NumBlocks        int    `json:"numBlocks"`
+	RemoteFileName   string `json:"remoteFileName,omitempty"`   //Required only for file download with auth ticket
+	RemoteLookupHash string `json:"remoteLookupHash,omitempty"` //Required only for file download with auth ticket
 }
 
 // MultiOperation - do copy, move, delete and createdir operation together
