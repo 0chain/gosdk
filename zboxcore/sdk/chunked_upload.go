@@ -157,10 +157,8 @@ func CreateChunkedUpload(
 
 	su := &ChunkedUpload{
 		allocationObj: allocationObj,
-		client:        zboxutil.Client,
-
-		fileMeta:   fileMeta,
-		fileReader: fileReader,
+		fileMeta:      fileMeta,
+		fileReader:    fileReader,
 
 		uploadMask:      uploadMask,
 		chunkSize:       DefaultChunkSize,
@@ -306,7 +304,6 @@ type ChunkedUpload struct {
 	allocationObj  *Allocation
 	progress       UploadProgress
 	progressStorer ChunkedUploadProgressStorer
-	client         zboxutil.HttpClient
 
 	uploadMask zboxutil.Uint128
 
@@ -536,6 +533,9 @@ func (su *ChunkedUpload) Start() error {
 		return err
 	}
 
+	defer su.writeMarkerMutex.Unlock(
+		su.ctx, su.uploadMask, blobbers, su.uploadTimeOut, su.progress.ConnectionID) //nolint: errcheck
+
 	//Check if the allocation is to be repaired or rolled back
 	status, err := su.allocationObj.CheckAllocStatus()
 	if err != nil {
@@ -548,14 +548,14 @@ func (su *ChunkedUpload) Start() error {
 
 	if status == Repair {
 		logger.Logger.Info("Repairing allocation")
-		err = su.allocationObj.RepairAlloc(su.statusCallback)
-		if err != nil {
-			return err
-		}
+		// err = su.allocationObj.RepairAlloc(su.statusCallback)
+		// if err != nil {
+		// 	return err
+		// }
 	}
-
-	defer su.writeMarkerMutex.Unlock(
-		su.ctx, su.uploadMask, blobbers, su.uploadTimeOut, su.progress.ConnectionID) //nolint: errcheck
+	if status != Commit {
+		return ErrRetryOperation
+	}
 
 	return su.processCommit()
 }

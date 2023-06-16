@@ -16,3 +16,7 @@ type ErrorResponse struct {
 type CsrfTokenResponse struct {
 	Token string `json:"csrf_token"`
 }
+
+type JwtTokenResponse struct {
+	Token string `json:"jwt_token"`
+}

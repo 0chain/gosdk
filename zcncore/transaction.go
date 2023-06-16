@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"sync"
 	"time"
@@ -351,6 +352,10 @@ func (t *Transaction) VestingAdd(ar *VestingAddRequest, value uint64) (
 }
 
 func (t *Transaction) MinerSCLock(providerId string, providerType Provider, lock uint64) error {
+	if lock > math.MaxInt64 {
+		return errors.New("invalid_lock", "int64 overflow on lock value")
+	}
+
 	pr := &stakePoolRequest{
 		ProviderID:   providerId,
 		ProviderType: providerType,
@@ -502,6 +507,10 @@ func (t *Transaction) CreateReadPool() (err error) {
 // duration. If blobberID is not empty, then tokens will be locked for given
 // allocation->blobber only.
 func (t *Transaction) ReadPoolLock(allocID, blobberID string, duration int64, lock uint64) (err error) {
+	if lock > math.MaxInt64 {
+		return errors.New("invalid_lock", "int64 overflow on lock value")
+	}
+
 	type lockRequest struct {
 		Duration     time.Duration `json:"duration"`
 		AllocationID string        `json:"allocation_id"`
@@ -537,6 +546,10 @@ func (t *Transaction) ReadPoolUnlock() (err error) {
 
 // StakePoolLock used to lock tokens in a stake pool of a blobber.
 func (t *Transaction) StakePoolLock(providerId string, providerType Provider, lock uint64) error {
+
+	if lock > math.MaxInt64 {
+		return errors.New("invalid_lock", "int64 overflow on lock value")
+	}
 
 	type stakePoolRequest struct {
 		ProviderType Provider `json:"provider_type,omitempty"`
@@ -597,6 +610,10 @@ func (t *Transaction) UpdateBlobberSettings(b *Blobber) (err error) {
 func (t *Transaction) UpdateAllocation(allocID string, sizeDiff int64,
 	expirationDiff int64, lock uint64) (err error) {
 
+	if lock > math.MaxInt64 {
+		return errors.New("invalid_lock", "int64 overflow on lock value")
+	}
+
 	type updateAllocationRequest struct {
 		ID         string `json:"id"`              // allocation id
 		Size       int64  `json:"size"`            // difference
@@ -623,6 +640,10 @@ func (t *Transaction) UpdateAllocation(allocID string, sizeDiff int64,
 // allocation->blobber only.
 func (t *Transaction) WritePoolLock(allocID, blobberID string, duration int64,
 	lock uint64) (err error) {
+
+	if lock > math.MaxInt64 {
+		return errors.New("invalid_lock", "int64 overflow on lock value")
+	}
 
 	type lockRequest struct {
 		Duration     time.Duration `json:"duration"`

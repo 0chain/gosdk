@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/0chain/errors"
@@ -67,7 +68,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 	}
 
 	req, err := zboxutil.NewUploadRequestWithMethod(
-		sb.blobber.Baseurl, su.allocationObj.Tx, body, su.httpMethod)
+		sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, body, su.httpMethod)
 	if err != nil {
 		return err
 	}
@@ -75,7 +76,6 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 	req.Header.Add("Content-Type", formData.ContentType)
 
 	var (
-		resp             *http.Response
 		shouldContinue   bool
 		latestRespMsg    string
 		latestStatusCode int
@@ -84,7 +84,11 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 	for i := 0; i < 3; i++ {
 		err, shouldContinue = func() (err error, shouldContinue bool) {
 			reqCtx, ctxCncl := context.WithTimeout(ctx, su.uploadTimeOut)
-			resp, err = su.client.Do(req.WithContext(reqCtx))
+			var resp *http.Response
+			err = zboxutil.HttpDo(reqCtx, ctxCncl, req, func(r *http.Response, err error) error {
+				resp = r
+				return err
+			})
 			defer ctxCncl()
 
 			if err != nil {
@@ -246,7 +250,7 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 
 	formWriter.Close()
 
-	req, err := zboxutil.NewCommitRequest(sb.blobber.Baseurl, su.allocationObj.Tx, body)
+	req, err := zboxutil.NewCommitRequest(sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, body)
 	if err != nil {
 		logger.Logger.Error("Error creating commit req: ", err)
 		return err
@@ -263,7 +267,10 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 	for retries := 0; retries < 3; retries++ {
 		err, shouldContinue = func() (err error, shouldContinue bool) {
 			reqCtx, ctxCncl := context.WithTimeout(ctx, su.commitTimeOut)
-			resp, err = su.client.Do(req.WithContext(reqCtx))
+			err = zboxutil.HttpDo(reqCtx, ctxCncl, req, func(r *http.Response, err error) error {
+				resp = r
+				return err
+			})
 			defer ctxCncl()
 
 			if err != nil {
@@ -304,20 +311,22 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 				return
 			}
 
+			if strings.Contains(string(respBody), "pending_markers:") {
+				logger.Logger.Info("Commit pending for blobber ",
+					sb.blobber.Baseurl, "with connection id: ", su.progress.ConnectionID, " Retrying again")
+				time.Sleep(5 * time.Second)
+				shouldContinue = true
+				return
+			}
+
 			err = thrown.New("commit_error",
 				fmt.Sprintf("Got error response %s with status %d", respBody, resp.StatusCode))
 			return
 		}()
-
-		if err != nil {
-			logger.Logger.Error(err)
-			return
-		}
 		if shouldContinue {
 			continue
 		}
 		return
-
 	}
 	return thrown.New("commit_error", fmt.Sprintf("Commit failed with response status %d", resp.StatusCode))
 }
@@ -333,13 +342,13 @@ func (sb *ChunkedUploadBlobber) processWriteMarker(
 	}
 
 	var lR ReferencePathResult
-	req, err := zboxutil.NewReferencePathRequest(sb.blobber.Baseurl, su.allocationObj.Tx, paths)
+	req, err := zboxutil.NewReferencePathRequest(sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, paths)
 	if err != nil || len(paths) == 0 {
 		logger.Logger.Error("Creating ref path req", err)
 		return nil, nil, 0, nil, err
 	}
 
-	resp, err := su.client.Do(req)
+	resp, err := zboxutil.Client.Do(req)
 
 	if err != nil {
 		logger.Logger.Error("Ref path error:", err)

@@ -66,7 +66,7 @@ func TestCopyRequest_copyBlobberObject(t *testing.T) {
 			name:    "Test_Error_New_HTTP_Failed_By_Containing_" + string([]byte{0x7f, 0, 0}),
 			setup:   func(t *testing.T, testName string, p parameters) {},
 			wantErr: true,
-			errMsg:  `parse "Test_Error_New_HTTP_Failed_By_Containing_\u007f\x00\x00": net/url: invalid control character in URL`,
+			errMsg:  `net/url: invalid control character in URL`,
 		},
 		{
 			name: "Test_Error_Get_Object_Tree_From_Blobber_Failed",
@@ -459,7 +459,7 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 			for i := 0; i < numBlobbers; i++ {
 				path := "/TestCopyRequest_ProcessCopy" + tt.name + mockBlobberUrl + strconv.Itoa(i)
 
-				m[http.MethodPost+":"+path+blobber.EndpointWriteMarkerLock+a.Tx] = devMock.Response{
+				m[http.MethodPost+":"+path+blobber.EndpointWriteMarkerLock+a.ID] = devMock.Response{
 					StatusCode: http.StatusOK,
 					Body:       respBuf,
 				}
