@@ -15,14 +15,14 @@ var ErrInvalidAllocation = errors.New("zbox: invalid allocation")
 
 // Allocation - structure for allocation object
 type Allocation struct {
-	ID           string `json:"id"`
-	DataShards   int    `json:"data_shards"`
-	ParityShards int    `json:"parity_shards"`
-	Size         int64  `json:"size"`
-	Expiration   int64  `json:"expiration_date"`
-	Name         string `json:"name"`
-	Stats        string `json:"stats"`
-
+	ID            string                    `json:"id"`
+	DataShards    int                       `json:"data_shards"`
+	ParityShards  int                       `json:"parity_shards"`
+	Size          int64                     `json:"size"`
+	Expiration    int64                     `json:"expiration_date"`
+	Name          string                    `json:"name"`
+	Stats         string                    `json:"stats"`
+	MinLockDemand float64                   `json:"min_lock_demand"`
 	blobbers      []*blockchain.StorageNode `json:"-"`
 	sdkAllocation *sdk.Allocation           `json:"-"`
 }
