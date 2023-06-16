@@ -385,7 +385,7 @@ func multiDownload(allocationID, jsonMultiDownloadOptions, authTicket, callbackF
 	if callbackFuncName != "" {
 		useCallback = true
 	}
-	var options []MultiDownloadOption
+	var options []*MultiDownloadOption
 	err := json.Unmarshal([]byte(jsonMultiDownloadOptions), &options)
 	if err != nil {
 		return "", err
@@ -412,15 +412,18 @@ func multiDownload(allocationID, jsonMultiDownloadOptions, authTicket, callbackF
 			}
 		}
 		var downloader sdk.Downloader
+		fileName := strings.Replace(path.Base(option.remotePath), "/", "-", -1)
+		localPath := allocationID + "_" + fileName
+		option.LocalPath = localPath
 		if option.DownloadOp == 1 {
-			downloader, err = sdk.CreateDownloader(allocationID, option.LocalPath, option.RemotePath,
+			downloader, err = sdk.CreateDownloader(allocationID, localPath, option.RemotePath,
 				sdk.WithAllocation(alloc),
 				sdk.WithAuthticket(authTicket, option.RemoteLookupHash),
 				sdk.WithOnlyThumbnail(false),
 				sdk.WithBlocks(0, 0, option.NumBlocks),
 			)
 		} else {
-			downloader, err = sdk.CreateDownloader(allocationID, option.LocalPath, option.RemotePath,
+			downloader, err = sdk.CreateDownloader(allocationID, localPath, option.RemotePath,
 				sdk.WithAllocation(alloc),
 				sdk.WithAuthticket(authTicket, option.RemoteLookupHash),
 				sdk.WithOnlyThumbnail(true),
@@ -495,7 +498,7 @@ type MultiDownloadOption struct {
 	LocalPath        string `json:"localPath"`
 	DownloadOp       int    `json:"downloadOp"`
 	NumBlocks        int    `json:"numBlocks"`
-	RemoteFileName   string `json:"remoteFileName,omitempty"`   //Required only for file download with auth ticket
+	RemoteFileName   string `json:"remoteFileName"`             //Required only for file download with auth ticket
 	RemoteLookupHash string `json:"remoteLookupHash,omitempty"` //Required only for file download with auth ticket
 }
 
