@@ -141,7 +141,7 @@ func CreateChunkedUpload(
 	uploadMask := zboxutil.NewUint128(1).Lsh(uint64(len(allocationObj.Blobbers))).Sub64(1)
 	if isRepair {
 		opCode = OpUpdate
-		found, repairRequired, _, err := allocationObj.RepairRequired(fileMeta.RemotePath)
+		found, _, repairRequired, _, err := allocationObj.RepairRequired(fileMeta.RemotePath)
 		if err != nil {
 			return nil, err
 		}
@@ -735,7 +735,7 @@ func (su *ChunkedUpload) processCommit() error {
 
 		if consensus != 0 {
 			logger.Logger.Info("Commit consensus failed, Deleting remote file....")
-			su.allocationObj.deleteFile(su.fileMeta.RemotePath, consensus, consensus) //nolint
+			su.allocationObj.deleteFile(su.fileMeta.RemotePath, consensus, consensus, su.uploadMask) //nolint
 		}
 		if su.statusCallback != nil {
 			su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)

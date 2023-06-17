@@ -2,7 +2,6 @@ package sdk
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	"github.com/0chain/gosdk/core/sys"
@@ -100,7 +99,7 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
 		return
 	}
 	l.Logger.Info("Checking file for the path :", zap.Any("path", file.Path))
-	found, repairRequired, _, err := a.RepairRequired(file.Path)
+	found, deleteMask, repairRequired, _, err := a.RepairRequired(file.Path)
 	if err != nil {
 		l.Logger.Error("repair_required_failed", zap.Error(err))
 		return
@@ -108,12 +107,21 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
 	if repairRequired {
 		l.Logger.Info("Repair required for the path :", zap.Any("path", file.Path))
 		if found.CountOnes() >= a.DataShards {
-			fmt.Println("start repair by upload:", file.Path)
 			l.Logger.Info("Repair by upload", zap.Any("path", file.Path))
 			var wg sync.WaitGroup
 			statusCB := &RepairStatusCB{
 				wg:       &wg,
 				statusCB: r.statusCB,
+			}
+
+			if deleteMask.CountOnes() > 0 {
+				l.Logger.Info("Deleting minority shards for the path :", zap.Any("path", file.Path))
+				consensus := deleteMask.CountOnes()
+				err := a.deleteFile(file.Path, 0, consensus, deleteMask)
+				if err != nil {
+					l.Logger.Error("delete_file_failed", zap.Error(err))
+					return
+				}
 			}
 
 			localPath := r.getLocalPath(file)
@@ -162,7 +170,7 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
 		} else {
 			l.Logger.Info("Repair by delete", zap.Any("path", file.Path))
 			consensus := found.CountOnes()
-			err := a.deleteFile(file.Path, 1, consensus)
+			err := a.deleteFile(file.Path, 1, consensus, found)
 			if err != nil {
 				l.Logger.Error("repair_file_failed", zap.Error(err))
 				return

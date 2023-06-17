@@ -287,7 +287,7 @@ func TestListRequest_getFileConsensusFromBlobbers(t *testing.T) {
 				})
 			}
 
-			_, mask, fileRefs := req.getFileConsensusFromBlobbers()
+			_, _, mask, fileRefs := req.getFileConsensusFromBlobbers()
 
 			if mask == nil && fileRefs == nil {
 				require.True(t, tt.wantErr)

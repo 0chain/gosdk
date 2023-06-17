@@ -661,7 +661,7 @@ func TestAllocation_RepairRequired(t *testing.T) {
 					defer teardown(t)
 				}
 			}
-			found, matchesConsensus, fileRef, err := a.RepairRequired(tt.remotePath)
+			found, _, matchesConsensus, fileRef, err := a.RepairRequired(tt.remotePath)
 			require.Equal(zboxutil.NewUint128(tt.wantFound), found, "found value must be same")
 			if tt.wantMatchesConsensus {
 				require.True(tt.wantMatchesConsensus, matchesConsensus)

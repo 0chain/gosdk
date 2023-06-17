@@ -752,9 +752,9 @@ func (a *Allocation) GetCurrentVersion() (bool, error) {
 	return success, nil
 }
 
-func (a *Allocation) RepairRequired(remotepath string) (zboxutil.Uint128, bool, *fileref.FileRef, error) {
+func (a *Allocation) RepairRequired(remotepath string) (zboxutil.Uint128, zboxutil.Uint128, bool, *fileref.FileRef, error) {
 	if !a.isInitialized() {
-		return zboxutil.Uint128{}, false, nil, notInitialized
+		return zboxutil.Uint128{}, zboxutil.Uint128{}, false, nil, notInitialized
 	}
 
 	listReq := &ListRequest{}
@@ -765,14 +765,14 @@ func (a *Allocation) RepairRequired(remotepath string) (zboxutil.Uint128, bool, 
 	listReq.consensusThresh = a.DataShards
 	listReq.ctx = a.ctx
 	listReq.remotefilepath = remotepath
-	found, fileRef, _ := listReq.getFileConsensusFromBlobbers()
+	found, deleteMask, fileRef, _ := listReq.getFileConsensusFromBlobbers()
 	if fileRef == nil {
-		return found, false, fileRef, errors.New("", "File not found for the given remotepath")
+		return found, deleteMask, false, fileRef, errors.New("", "File not found for the given remotepath")
 	}
 
 	uploadMask := zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 
-	return found, !found.Equals(uploadMask), fileRef, nil
+	return found, deleteMask, !found.Equals(uploadMask), fileRef, nil
 }
 
 func (a *Allocation) DownloadFile(localPath string, remotePath string, verifyDownload bool, status StatusCallback, isFinal bool) error {
@@ -1262,7 +1262,7 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 	listReq.consensusThresh = a.consensusThreshold
 	listReq.ctx = a.ctx
 	listReq.remotefilepath = path
-	_, ref, _ := listReq.getFileConsensusFromBlobbers()
+	_, _, ref, _ := listReq.getFileConsensusFromBlobbers()
 	if ref != nil {
 		result.Type = ref.Type
 		result.Name = ref.Name
@@ -1308,7 +1308,7 @@ func (a *Allocation) GetFileMetaFromAuthTicket(authTicket string, lookupHash str
 	listReq.ctx = a.ctx
 	listReq.remotefilepathhash = lookupHash
 	listReq.authToken = at
-	_, ref, _ := listReq.getFileConsensusFromBlobbers()
+	_, _, ref, _ := listReq.getFileConsensusFromBlobbers()
 	if ref != nil {
 		result.Type = ref.Type
 		result.Name = ref.Name
@@ -1352,10 +1352,10 @@ func (a *Allocation) GetFileStats(path string) (map[string]*FileStats, error) {
 }
 
 func (a *Allocation) DeleteFile(path string) error {
-	return a.deleteFile(path, a.consensusThreshold, a.fullconsensus)
+	return a.deleteFile(path, a.consensusThreshold, a.fullconsensus, zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1))
 }
 
-func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus int) error {
+func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus int, mask zboxutil.Uint128) error {
 	if !a.isInitialized() {
 		return notInitialized
 	}
@@ -1382,7 +1382,7 @@ func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus int)
 	req.ctx, req.ctxCncl = context.WithCancel(a.ctx)
 	req.remotefilepath = path
 	req.connectionID = zboxutil.NewConnectionId()
-	req.deleteMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
+	req.deleteMask = mask
 	req.maskMu = &sync.Mutex{}
 	req.timestamp = int64(common.Now())
 	err := req.ProcessDelete()

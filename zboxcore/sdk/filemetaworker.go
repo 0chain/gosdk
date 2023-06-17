@@ -111,10 +111,11 @@ func (req *ListRequest) getFileMetaFromBlobbers() []*fileMetaResponse {
 	return fileInfos
 }
 
-func (req *ListRequest) getFileConsensusFromBlobbers() (zboxutil.Uint128, *fileref.FileRef, []*fileMetaResponse) {
+func (req *ListRequest) getFileConsensusFromBlobbers() (zboxutil.Uint128, zboxutil.Uint128, *fileref.FileRef, []*fileMetaResponse) {
 	lR := req.getFileMetaFromBlobbers()
 	var selected *fileMetaResponse
 	foundMask := zboxutil.NewUint128(0)
+	deleteMask := zboxutil.NewUint128(0)
 	req.consensus = 0
 	retMap := make(map[string]int)
 	fmt.Println("consensus: ", req.fullconsensus, req.consensusThresh)
@@ -139,14 +140,19 @@ func (req *ListRequest) getFileConsensusFromBlobbers() (zboxutil.Uint128, *filer
 	}
 	if selected == nil {
 		l.Logger.Error("File consensus not found for ", req.remotefilepath)
-		return foundMask, nil, nil
+		return foundMask, deleteMask, nil, nil
 	}
 
 	for i := 0; i < len(lR); i++ {
 		if lR[i].fileref != nil && selected.fileref.ActualFileHash == lR[i].fileref.ActualFileHash {
 			shift := zboxutil.NewUint128(1).Lsh(uint64(lR[i].blobberIdx))
 			foundMask = foundMask.Or(shift)
+		} else if lR[i].fileref != nil {
+			shift := zboxutil.NewUint128(1).Lsh(uint64(lR[i].blobberIdx))
+			deleteMask = deleteMask.Or(shift)
 		}
 	}
-	return foundMask, selected.fileref, lR
+	return foundMask, deleteMask, selected.fileref, lR
 }
+
+// return upload mask and delete mask
