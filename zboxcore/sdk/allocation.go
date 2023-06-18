@@ -796,6 +796,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 		mo.maskMU = &sync.Mutex{}
 		mo.ctx, mo.ctxCncl = context.WithCancel(a.ctx)
 		mo.Consensus = Consensus{
+			RWMutex:         &sync.RWMutex{},
 			consensusThresh: a.consensusThreshold,
 			fullconsensus:   a.fullconsensus,
 		}
