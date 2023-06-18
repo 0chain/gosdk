@@ -225,20 +225,25 @@ type AuthCallback interface {
 // Singleton
 var _config localConfig
 var miners []string
-var onceM sync.Once
+var mGuard sync.Mutex
 
 func init() {
 	logging.Init(defaultLogLevel, "0chain-core-sdk")
 }
 
 func GetStableMiners() []string {
+	mGuard.Lock()
+	defer mGuard.Unlock()
 	if len(miners) == 0 {
-		onceM.Do(func() {
-			miners = util.GetRandom(_config.chain.Miners, getMinMinersSubmit())
-		})
+		miners = util.GetRandom(_config.chain.Miners, getMinMinersSubmit())
 	}
 
 	return miners
+}
+func ResetStableMiners() {
+	mGuard.Lock()
+	defer mGuard.Unlock()
+	miners = util.GetRandom(_config.chain.Miners, getMinMinersSubmit())
 }
 
 func checkSdkInit() error {

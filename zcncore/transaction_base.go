@@ -385,6 +385,7 @@ func (t *Transaction) submitTxn() {
 		logging.Error("failed to submit transaction")
 		t.completeTxn(StatusError, "", fmt.Errorf("failed to submit transaction to all miners"))
 		transaction.Cache.Evict(t.txn.ClientID)
+		ResetStableMiners()
 		return
 	case ret := <-resultC:
 		logging.Debug("finish txn submitting, ", ret.Url, ", Status: ", ret.Status, ", output:", ret.Body)
