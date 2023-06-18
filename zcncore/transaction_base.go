@@ -338,7 +338,7 @@ func (t *Transaction) submitTxn() {
 	}
 
 	var (
-		randomMiners = util.GetRandom(_config.chain.Miners, getMinMinersSubmit())
+		randomMiners = GetStableMiners()
 		minersN      = len(randomMiners)
 		failedCount  int32
 		failC        = make(chan struct{})

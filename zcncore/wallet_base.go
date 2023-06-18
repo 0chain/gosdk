@@ -224,9 +224,21 @@ type AuthCallback interface {
 
 // Singleton
 var _config localConfig
+var miners []string
+var onceM sync.Once
 
 func init() {
 	logging.Init(defaultLogLevel, "0chain-core-sdk")
+}
+
+func GetStableMiners() []string {
+	if len(miners) == 0 {
+		onceM.Do(func() {
+			miners = util.GetRandom(_config.chain.Miners, getMinMinersSubmit())
+		})
+	}
+
+	return miners
 }
 
 func checkSdkInit() error {
