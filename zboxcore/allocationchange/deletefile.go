@@ -27,7 +27,7 @@ func (ch *DeleteFileChange) ProcessChange(rootRef *fileref.Ref, _ map[string]str
 	if err != nil {
 		return
 	}
-
+	rootRef.HashToBeComputed = true
 	dirRef := rootRef
 	for _, name := range fields {
 		found := false
@@ -43,6 +43,7 @@ func (ch *DeleteFileChange) ProcessChange(rootRef *fileref.Ref, _ map[string]str
 			err = errors.New("invalid_reference_path", "Invalid reference path from the blobber")
 			return
 		}
+		dirRef.HashToBeComputed = true
 	}
 
 	for i, child := range dirRef.Children {
