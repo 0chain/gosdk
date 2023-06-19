@@ -22,6 +22,7 @@ func (ch *RenameFileChange) ProcessChange(rootRef *fileref.Ref, _ map[string]str
 	if err != nil {
 		return
 	}
+	rootRef.HashToBeComputed = true
 	dirRef := rootRef
 	for i := 0; i < len(fields); i++ {
 		found := false
@@ -36,6 +37,7 @@ func (ch *RenameFileChange) ProcessChange(rootRef *fileref.Ref, _ map[string]str
 			err = errors.New("invalid_reference_path", "Invalid reference path from the blobber")
 			return
 		}
+		dirRef.HashToBeComputed = true
 	}
 
 	found := false
@@ -81,6 +83,7 @@ func (ch *RenameFileChange) processChildren(curRef *fileref.Ref) {
 			ch.processChildren(childRef)
 		}
 	}
+	curRef.HashToBeComputed = true
 }
 
 func (n *RenameFileChange) GetAffectedPath() []string {
