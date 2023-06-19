@@ -676,8 +676,8 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 	}
 
 	if !su.consensus.isConsensusOk() {
-		return thrown.New("consensus_not_met", fmt.Sprintf("Upload failed. Required consensus atleast %d, got %d",
-			su.consensus.consensusThresh, su.consensus.getConsensus()))
+		return thrown.New("consensus_not_met", fmt.Sprintf("Upload failed File not found for path %s. Required consensus atleast %d, got %d",
+			su.fileMeta.RemotePath, su.consensus.consensusThresh, su.consensus.getConsensus()))
 	}
 
 	return nil
