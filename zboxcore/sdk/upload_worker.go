@@ -55,12 +55,8 @@ func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([
 }
 
 func (uo *UploadOperation) buildChange(_ []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange {
-	activeBlobbers := uo.uploadMask.CountOnes()
-	changes := make([]allocationchange.AllocationChange, activeBlobbers)
-	var (
-		c   int
-		pos uint64
-	)
+	changes := make([]allocationchange.AllocationChange, len(uo.refs))
+	var pos uint64
 	for i := uo.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		ref := uo.refs[pos]
@@ -69,8 +65,7 @@ func (uo *UploadOperation) buildChange(_ []fileref.RefEntity, uid uuid.UUID) []a
 			change.NewFile = &ref
 			change.Operation = constants.FileOperationUpdate
 			change.Size = ref.Size
-			changes[c] = change
-			c++
+			changes[pos] = change
 			continue
 		}
 		newChange := &allocationchange.NewFileChange{}
@@ -79,8 +74,7 @@ func (uo *UploadOperation) buildChange(_ []fileref.RefEntity, uid uuid.UUID) []a
 		newChange.Operation = constants.FileOperationInsert
 		newChange.Size = ref.Size
 		newChange.Uuid = uid
-		changes[c] = newChange
-		c++
+		changes[pos] = newChange
 	}
 
 	return changes

@@ -380,12 +380,8 @@ func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string) (
 }
 
 func (do *DeleteOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange {
-	activeBlobbers := do.deleteMask.CountOnes()
-	changes := make([]allocationchange.AllocationChange, activeBlobbers)
-	var (
-		c   int
-		pos uint64
-	)
+	changes := make([]allocationchange.AllocationChange, len(refs))
+	var pos uint64
 	for i := do.deleteMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		newChange := &allocationchange.DeleteFileChange{}
@@ -393,8 +389,7 @@ func (do *DeleteOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) 
 		newChange.NumBlocks = newChange.ObjectTree.GetNumBlocks()
 		newChange.Operation = constants.FileOperationDelete
 		newChange.Size = newChange.ObjectTree.GetSize()
-		changes[c] = newChange
-		c++
+		changes[pos] = newChange
 	}
 
 	return changes
