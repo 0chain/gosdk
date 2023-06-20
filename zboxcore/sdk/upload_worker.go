@@ -22,6 +22,7 @@ type UploadOperation struct {
 	isUpdate       bool
 	statusCallback StatusCallback
 	opCode         int
+	uploadMask     zboxutil.Uint128
 }
 
 func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
@@ -49,19 +50,27 @@ func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([
 	}
 
 	l.Logger.Info("Completed the upload")
+	uo.uploadMask = cu.uploadMask
 	return nil, cu.uploadMask, nil
 }
 
 func (uo *UploadOperation) buildChange(_ []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange {
-	changes := make([]allocationchange.AllocationChange, len(uo.refs))
-	for idx, ref := range uo.refs {
-		ref := ref
+	activeBlobbers := uo.uploadMask.CountOnes()
+	changes := make([]allocationchange.AllocationChange, activeBlobbers)
+	var (
+		c   int
+		pos uint64
+	)
+	for i := uo.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		pos = uint64(i.TrailingZeros())
+		ref := uo.refs[pos]
 		if uo.isUpdate {
 			change := &allocationchange.UpdateFileChange{}
 			change.NewFile = &ref
 			change.Operation = constants.FileOperationUpdate
 			change.Size = ref.Size
-			changes[idx] = change
+			changes[c] = change
+			c++
 			continue
 		}
 		newChange := &allocationchange.NewFileChange{}
@@ -70,8 +79,10 @@ func (uo *UploadOperation) buildChange(_ []fileref.RefEntity, uid uuid.UUID) []a
 		newChange.Operation = constants.FileOperationInsert
 		newChange.Size = ref.Size
 		newChange.Uuid = uid
-		changes[idx] = newChange
+		changes[c] = newChange
+		c++
 	}
+
 	return changes
 
 }

@@ -338,17 +338,22 @@ func (ro *RenameOperation) Process(allocObj *Allocation, connectionID string) ([
 }
 
 func (ro *RenameOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange {
-	changes := make([]allocationchange.AllocationChange, len(refs))
-
-	for idx, ref := range refs {
+	activeBlobbers := ro.renameMask.CountOnes()
+	changes := make([]allocationchange.AllocationChange, activeBlobbers)
+	var (
+		c   int
+		pos uint64
+	)
+	for i := ro.renameMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		pos = uint64(i.TrailingZeros())
 		newChange := &allocationchange.RenameFileChange{
 			NewName:    ro.newName,
-			ObjectTree: ref,
+			ObjectTree: refs[pos],
 		}
-
 		newChange.Operation = constants.FileOperationRename
 		newChange.Size = 0
-		changes[idx] = newChange
+		changes[c] = newChange
+		c++
 	}
 	return changes
 }

@@ -329,17 +329,24 @@ func (mo *MoveOperation) Process(allocObj *Allocation, connectionID string) ([]f
 }
 
 func (mo *MoveOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange {
+	activeBlobbers := mo.moveMask.CountOnes()
+	changes := make([]allocationchange.AllocationChange, activeBlobbers)
 
-	changes := make([]allocationchange.AllocationChange, len(refs))
-	for idx, ref := range refs {
+	var (
+		c   int
+		pos uint64
+	)
+	for i := mo.moveMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		pos = uint64(i.TrailingZeros())
 		moveChange := &allocationchange.MoveFileChange{
 			DestPath:   mo.destPath,
-			ObjectTree: ref,
+			ObjectTree: refs[pos],
 		}
 		moveChange.NumBlocks = 0
 		moveChange.Operation = constants.FileOperationMove
 		moveChange.Size = 0
-		changes[idx] = moveChange
+		changes[c] = moveChange
+		c++
 	}
 	return changes
 }

@@ -337,17 +337,25 @@ func (co *CopyOperation) Process(allocObj *Allocation, connectionID string) ([]f
 }
 
 func (co *CopyOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange {
+	activeBlobbers := co.copyMask.CountOnes()
+	changes := make([]allocationchange.AllocationChange, activeBlobbers)
 
-	changes := make([]allocationchange.AllocationChange, len(refs))
-
-	for idx, ref := range refs {
+	var (
+		c   int
+		pos uint64
+	)
+	for i := co.copyMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		pos = uint64(i.TrailingZeros())
 		newChange := &allocationchange.CopyFileChange{
 			DestPath:   co.destPath,
 			Uuid:       uid,
-			ObjectTree: ref,
+			ObjectTree: refs[pos],
 		}
-		changes[idx] = newChange
+		newChange.Operation = constants.FileOperationCopy
+		changes[c] = newChange
+		c++
 	}
+
 	return changes
 }
 

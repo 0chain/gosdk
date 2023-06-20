@@ -380,16 +380,23 @@ func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string) (
 }
 
 func (do *DeleteOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange {
-
-	changes := make([]allocationchange.AllocationChange, len(refs))
-	for idx, ref := range refs {
+	activeBlobbers := do.deleteMask.CountOnes()
+	changes := make([]allocationchange.AllocationChange, activeBlobbers)
+	var (
+		c   int
+		pos uint64
+	)
+	for i := do.deleteMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		pos = uint64(i.TrailingZeros())
 		newChange := &allocationchange.DeleteFileChange{}
-		newChange.ObjectTree = ref
-		newChange.NumBlocks = ref.GetNumBlocks()
+		newChange.ObjectTree = refs[pos]
+		newChange.NumBlocks = newChange.ObjectTree.GetNumBlocks()
 		newChange.Operation = constants.FileOperationDelete
-		newChange.Size = ref.GetSize()
-		changes[idx] = newChange
+		newChange.Size = newChange.ObjectTree.GetSize()
+		changes[c] = newChange
+		c++
 	}
+
 	return changes
 }
 
