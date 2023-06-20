@@ -287,7 +287,7 @@ func (mo *MultiOperation) Process() error {
 				l.Logger.Info("Commit success", commitReq.blobber.Baseurl)
 				mo.consensus++
 			} else {
-				l.Logger.Info("Commit failed", commitReq.blobber.Baseurl, commitReq.result.ErrorMessage)
+				l.Logger.Info("Commit failed", commitReq.blobber.Baseurl, commitReq.result.ErrorMessage+" operation type: ")
 			}
 		} else {
 			l.Logger.Info("Commit result not set", commitReq.blobber.Baseurl)

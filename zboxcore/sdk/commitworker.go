@@ -23,6 +23,7 @@ import (
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"go.uber.org/zap"
 )
 
 type ReferencePathResult struct {
@@ -286,7 +287,7 @@ func (req *CommitRequest) commitBlobber(
 				shouldContinue = true
 				return
 			}
-
+			l.Logger.Error(req.blobber.Baseurl, zap.String("response", string(respBody)), zap.String("alloc_root", wm.AllocationRoot))
 			err = thrown.New("commit_error",
 				fmt.Sprintf("Got error response %s with status %d", respBody, resp.StatusCode))
 			return

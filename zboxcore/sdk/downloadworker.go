@@ -29,6 +29,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/klauspost/reedsolomon"
 	"go.dedis.ch/kyber/v3/group/edwards25519"
+	"go.uber.org/zap"
 	"golang.org/x/crypto/sha3"
 	"golang.org/x/sync/errgroup"
 )
@@ -887,7 +888,7 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 			actualHash,
 		)
 		if err != nil {
-			l.Logger.Error(err)
+			l.Logger.Error(err, zap.String("actual_hash", actualHash), zap.String("actual_hash_signature", actualFileHashSignature), zap.String("public_key", req.allocOwnerPubKey))
 			continue
 		}
 		if !isValid {
