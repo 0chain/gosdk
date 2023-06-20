@@ -6,11 +6,13 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/util"
+	lru "github.com/hashicorp/golang-lru"
 )
 
 const TXN_SUBMIT_URL = "v1/transaction/put"
@@ -269,14 +271,34 @@ func sendTransactionToURL(url string, txn *Transaction, wg *sync.WaitGroup) ([]b
 	return nil, errors.Wrap(err, errors.New("transaction_send_error", postResponse.Body))
 }
 
+type cachedObject struct {
+	Expiration time.Duration
+	Value      interface{}
+}
+
+var cache *lru.Cache
+
+func initLRUCache() {
+	var err error
+	cache, err = lru.New(100)
+	if err != nil {
+		fmt.Println("caching Initilization failed, err:", err)
+	} else {
+		fmt.Println("caching Initilization OK")
+	}
+}
+
 // EstimateFee estimates transaction fee
 func EstimateFee(txn *Transaction, miners []string, reqPercent ...float32) (uint64, error) {
+
 	const minReqNum = 3
 	var reqN int
 
 	if len(reqPercent) > 0 {
 		reqN = int(reqPercent[0] * float32(len(miners)))
 	}
+
+	initLRUCache()
 
 	reqN = util.MaxInt(minReqNum, reqN)
 	reqN = util.MinInt(reqN, len(miners))
@@ -293,6 +315,20 @@ func EstimateFee(txn *Transaction, miners []string, reqPercent ...float32) (uint
 	for _, miner := range randomMiners {
 		go func(minerUrl string) {
 			defer wg.Done()
+
+			// Retrieve the object from the cache
+			cached, ok := cache.Get("new_allocation_request")
+
+			if ok {
+				cachedObj := cached.(*cachedObject)
+				value := cachedObj.Value
+				val := cachedObj.Value.(map[string]interface{})["fee"].(int)
+				fmt.Println("Retrieved value:", value, val)
+				feeC <- uint64(val)
+				return
+			} else {
+				fmt.Println("Object not found in cache")
+			}
 
 			url := minerUrl + ESTIMATE_TRANSACTION_COST
 			req, err := util.NewHTTPPostRequest(url, txn)
@@ -342,6 +378,16 @@ func EstimateFee(txn *Transaction, miners []string, reqPercent ...float32) (uint
 				fee = f
 			}
 		}
+
+		// adding response to cache
+		obj := map[string]interface{}{
+			"fee": fee,
+		}
+
+		cache.Add("new_allocation_request", &cachedObject{
+			Expiration: 30 * time.Hour,
+			Value:      obj,
+		})
 
 		return fee, nil
 	}
@@ -440,4 +486,57 @@ func GetFeesTable(miners []string, reqPercent ...float32) (map[string]map[string
 	}
 
 	return nil, errors.New("failed to get fees table", strings.Join(errs, ","))
+}
+
+func GetFeesFromCache() {
+
+	data := `{
+		"6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d3": {
+			"pour": 0,
+			"refill": 1000000,
+			"update-settings": 1000000
+		},
+		"6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7": {
+			"add_blobber": 1000000,
+			"add_free_storage_assigner": 1000000,
+			"add_validator": 1000000,
+			"blobber_block_rewards"	:	0
+			"kill_blobber"	:	1000000
+			"kill_validator"	:	1000000
+			"new_allocation_request"	:	30000000
+			"new_read_pool"	:	1000000
+			"pay_blobber_block_rewards"	:	1000000
+			"read_pool_lock"	:	1000000
+		},
+		"6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d9": {
+			"add_miner": 1000000,
+			"add_sharder": 1000000,
+			"addtodelegatepool": 1000000,
+		},
+		"6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712e0": {
+			"add-authorizer": 1000000,
+			"authorizer-health-check": 1000000,
+			"burn": 1000000,
+		},
+		"transfer": {
+			"transfer": 100000
+		}
+	}`
+
+	var result map[string]interface{}
+	err := json.Unmarshal([]byte(data), &result)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+
+	// Printing the extracted values
+	for key, value := range result {
+		fmt.Println(key)
+		for k, v := range value.(map[string]interface{}) {
+			fmt.Printf("    %s: %v\n", k, v)
+		}
+		fmt.Println()
+	}
+
 }
