@@ -47,8 +47,6 @@ type TransactionCommon interface {
 
 	// Send implements sending token to a given clientid
 	Send(toClientID string, val string, desc string) error
-	// SetTransactionFee implements method to set the transaction fee
-	SetTransactionFee(txnFee string) error
 
 	VestingAdd(ar VestingAddRequest, value string) error
 
@@ -377,15 +375,6 @@ func (t *Transaction) ExecuteSmartContract(address, methodName string, input str
 		t.setNonceAndSubmit()
 	}()
 	return nil
-}
-
-func (t *Transaction) SetTransactionFee(txnFee string) error {
-	fee, err := parseCoinStr(txnFee)
-	if err != nil {
-		return err
-	}
-
-	return t.setTransactionFee(fee)
 }
 
 func (t *Transaction) setTransactionFee(fee uint64) error {
