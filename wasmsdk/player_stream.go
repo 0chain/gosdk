@@ -86,7 +86,7 @@ func (p *StreamPlayer) download(it sdk.PlaylistFile) {
 	defer sys.Files.Remove(localPath) //nolint
 
 	PrintInfo("playlist: downloading [", it.Path, "]")
-	err = downloader.Start(statusBar)
+	err = downloader.Start(statusBar, true)
 
 	if err == nil {
 		wg.Wait()

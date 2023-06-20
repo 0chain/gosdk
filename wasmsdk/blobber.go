@@ -24,6 +24,28 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
+const FileOperationInsert = "insert"
+
+var allocObj *sdk.Allocation
+
+func initAllocation(allocationID string) error {
+	alloc, err := sdk.GetAllocation(allocationID)
+	if err != nil {
+		return err
+	}
+	allocObj = alloc
+	return nil
+}
+
+func initAllocationFromAuthTicket(authTicket string) error {
+	alloc, err := sdk.GetAllocationFromAuthTicket(authTicket)
+	if err != nil {
+		return err
+	}
+	allocObj = alloc
+	return nil
+}
+
 func listObjects(allocationID string, remotePath string) (*sdk.ListResult, error) {
 	alloc, err := getAllocation(allocationID)
 	if err != nil {
@@ -304,9 +326,7 @@ func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expir
 // download download file
 func download(
 	allocationID, remotePath, authTicket, lookupHash string,
-	downloadThumbnailOnly bool, numBlocks int, callbackFuncName string,
-) (
-	*DownloadCommandResponse, error) {
+	downloadThumbnailOnly bool, numBlocks int, callbackFuncName string, isFinal bool) (*DownloadCommandResponse, error) {
 
 	wg := &sync.WaitGroup{}
 	statusBar := &StatusBar{wg: wg}
@@ -324,11 +344,22 @@ func download(
 
 	fileName := strings.Replace(path.Base(remotePath), "/", "-", -1)
 	localPath := allocationID + "_" + fileName
-
-	downloader, err := sdk.CreateDownloader(allocationID, localPath, remotePath,
-		sdk.WithAuthticket(authTicket, lookupHash),
-		sdk.WithOnlyThumbnail(downloadThumbnailOnly),
-		sdk.WithBlocks(0, 0, numBlocks))
+	var (
+		err        error
+		downloader sdk.Downloader
+	)
+	if allocObj == nil {
+		downloader, err = sdk.CreateDownloader(allocationID, localPath, remotePath,
+			sdk.WithAuthticket(authTicket, lookupHash),
+			sdk.WithOnlyThumbnail(downloadThumbnailOnly),
+			sdk.WithBlocks(0, 0, numBlocks))
+	} else {
+		downloader, err = sdk.CreateDownloader(allocationID, localPath, remotePath,
+			sdk.WithAuthticket(authTicket, lookupHash),
+			sdk.WithOnlyThumbnail(downloadThumbnailOnly),
+			sdk.WithBlocks(0, 0, numBlocks),
+			sdk.WithAllocation(allocObj))
+	}
 
 	if err != nil {
 		PrintError(err.Error())
@@ -337,7 +368,7 @@ func download(
 
 	defer sys.Files.Remove(localPath) //nolint
 
-	err = downloader.Start(statusBar)
+	err = downloader.Start(statusBar, isFinal)
 
 	if err == nil {
 		wg.Wait()
@@ -385,6 +416,49 @@ type BulkUploadResult struct {
 	Success    bool   `json:"success,omitempty"`
 	Error      string `json:"error,omitempty"`
 }
+type MultiUploadResult struct {
+	Success bool   `json:"success,omitempty"`
+	Error   string `json:"error,omitempty"`
+}
+type MultiOperationOption struct {
+	OperationType string `json:"operationType,omitempty"`
+	RemotePath    string `json:"remotePath,omitempty"`
+	DestName      string `json:"destName,omitempty"` // Required only for rename operation
+	DestPath      string `json:"destPath,omitempty"` // Required for copy and move operation`
+}
+
+// MultiOperation - do copy, move, delete and createdir operation together
+// ## Inputs
+//   - allocationID
+//   - jsonMultiUploadOpetions: Json Array of MultiOperationOption. eg: "[{"operationType":"move","remotePath":"/README.md","destPath":"/folder1/"},{"operationType":"delete","remotePath":"/t3.txt"}]"
+//
+// ## Outputs
+//   - error
+func MultiOperation(allocationID string, jsonMultiUploadOptions string) error {
+	if allocationID == "" {
+		return errors.New("AllocationID is required")
+	}
+	var options []MultiOperationOption
+	err := json.Unmarshal([]byte(jsonMultiUploadOptions), &options)
+	if err != nil {
+		return err
+	}
+	totalOp := len(options)
+	operations := make([]sdk.OperationRequest, totalOp)
+	for idx, op := range options {
+		operations[idx] = sdk.OperationRequest{
+			OperationType: op.OperationType,
+			RemotePath:    op.RemotePath,
+			DestName:      op.DestName,
+			DestPath:      op.DestPath,
+		}
+	}
+	allocationObj, err := getAllocation(allocationID)
+	if err != nil {
+		return err
+	}
+	return allocationObj.DoMultiOperation(operations)
+}
 
 func bulkUpload(jsonBulkUploadOptions string) ([]BulkUploadResult, error) {
 	var options []BulkUploadOption
@@ -430,6 +504,101 @@ func bulkUpload(jsonBulkUploadOptions string) ([]BulkUploadResult, error) {
 	}
 
 	return results, nil
+}
+func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
+	var options []BulkUploadOption
+	result := MultiUploadResult{}
+	err := json.Unmarshal([]byte(jsonBulkUploadOptions), &options)
+	if err != nil {
+		result.Error = "Error in unmarshaling json"
+		result.Success = false
+		return result, err
+	}
+	n := len(options)
+	if n == 0 {
+		result.Error = "No files to upload"
+		result.Success = false
+		return result, errors.New("There are nothing to upload")
+	}
+	allocationID := options[0].AllocationID
+	allocationObj, err := getAllocation(allocationID)
+	if err != nil {
+		result.Error = "Error fetching the allocation"
+		result.Success = false
+		return result, errors.New("Error fetching the allocation")
+	}
+	operationRequests := make([]sdk.OperationRequest, n)
+	for idx, option := range options {
+		wg := &sync.WaitGroup{}
+		statusBar := &StatusBar{wg: wg}
+		callbackFuncName := option.CallbackFuncName
+		if callbackFuncName != "" {
+			callback := js.Global().Get(callbackFuncName)
+			statusBar.callback = func(totalBytes, completedBytes int, err string) {
+				callback.Invoke(totalBytes, completedBytes, err)
+			}
+		}
+		wg.Add(1)
+		encrypt := option.Encrypt
+		remotePath := option.RemotePath
+		if strings.HasPrefix(remotePath, "/Encrypted") {
+			encrypt = true
+		}
+		fileReader := jsbridge.NewFileReader(option.ReadChunkFuncName, option.FileSize)
+		mimeType, err := zboxutil.GetFileContentType(fileReader)
+		if err != nil {
+			result.Error = "Error in file operation"
+			result.Success = false
+			return result, err
+		}
+		localPath := remotePath
+		remotePath = zboxutil.RemoteClean(remotePath)
+		isabs := zboxutil.IsRemoteAbs(remotePath)
+		if !isabs {
+			err = errors.New("invalid_path: Path should be valid and absolute")
+			result.Error = err.Error()
+			result.Success = false
+			return result, err
+		}
+		fullRemotePath := zboxutil.GetFullRemotePath(localPath, remotePath)
+
+		_, fileName := pathutil.Split(fullRemotePath)
+
+		fileMeta := sdk.FileMeta{
+			Path:       localPath,
+			ActualSize: option.FileSize,
+			MimeType:   mimeType,
+			RemoteName: fileName,
+			RemotePath: fullRemotePath,
+		}
+		numBlocks := option.NumBlocks
+		if numBlocks < 1 {
+			numBlocks = 100
+		}
+		options := []sdk.ChunkedUploadOption{
+			sdk.WithThumbnail(option.ThumbnailBytes.Buffer),
+			sdk.WithEncrypt(encrypt),
+			sdk.WithStatusCallback(statusBar),
+			sdk.WithProgressStorer(&chunkedUploadProgressStorer{list: make(map[string]*sdk.UploadProgress)}),
+			sdk.WithChunkNumber(numBlocks),
+		}
+		operationRequests[idx] = sdk.OperationRequest{
+			FileMeta:      fileMeta,
+			FileReader:    fileReader,
+			OperationType: FileOperationInsert,
+			Opts:          options,
+			Workdir:       "/",
+		}
+
+	}
+	err = allocationObj.DoMultiOperation(operationRequests)
+	if err != nil {
+		result.Error = err.Error()
+		result.Success = false
+		return result, err
+	}
+	result.Success = true
+	return result, nil
 }
 
 func uploadWithJsFuncs(allocationID, remotePath string, readChunkFuncName string, fileSize int64, thumbnailBytes []byte, webStreaming, encrypt, isUpdate, isRepair bool, numBlocks int, callbackFuncName string) (bool, error) {
@@ -601,7 +770,7 @@ func upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, w
 }
 
 // download download file blocks
-func downloadBlocks(allocationID, remotePath, authTicket, lookupHash string, numBlocks int, startBlockNumber, endBlockNumber int64, callbackFuncName string) (*DownloadCommandResponse, error) {
+func downloadBlocks(allocationID, remotePath, authTicket, lookupHash string, numBlocks int, startBlockNumber, endBlockNumber int64, callbackFuncName string, isFinal bool) (*DownloadCommandResponse, error) {
 
 	if len(remotePath) == 0 && len(authTicket) == 0 {
 		return nil, RequiredArg("remotePath/authTicket")
@@ -620,9 +789,21 @@ func downloadBlocks(allocationID, remotePath, authTicket, lookupHash string, num
 	fileName := strings.Replace(path.Base(remotePath), "/", "-", -1)
 	localPath := filepath.Join(allocationID, fileName)
 
-	downloader, err := sdk.CreateDownloader(allocationID, localPath, remotePath,
-		sdk.WithAuthticket(authTicket, lookupHash),
-		sdk.WithBlocks(startBlockNumber, endBlockNumber, numBlocks))
+	var (
+		err        error
+		downloader sdk.Downloader
+	)
+
+	if allocObj == nil {
+		downloader, err = sdk.CreateDownloader(allocationID, localPath, remotePath,
+			sdk.WithAuthticket(authTicket, lookupHash),
+			sdk.WithBlocks(startBlockNumber, endBlockNumber, numBlocks))
+	} else {
+		downloader, err = sdk.CreateDownloader(allocationID, localPath, remotePath,
+			sdk.WithAuthticket(authTicket, lookupHash),
+			sdk.WithBlocks(startBlockNumber, endBlockNumber, numBlocks),
+			sdk.WithAllocation(allocObj))
+	}
 
 	if err != nil {
 		PrintError(err.Error())
@@ -631,7 +812,7 @@ func downloadBlocks(allocationID, remotePath, authTicket, lookupHash string, num
 
 	defer sys.Files.Remove(localPath) //nolint
 
-	err = downloader.Start(statusBar)
+	err = downloader.Start(statusBar, isFinal)
 
 	if err == nil {
 		wg.Wait()

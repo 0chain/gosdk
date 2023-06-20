@@ -21,7 +21,8 @@ import (
 )
 
 const (
-	LockExists = "lock_exists"
+	LockExists     = "lock_exists"
+	RateLimitError = "rate_limit_error"
 )
 
 type BlockDownloadRequest struct {
@@ -116,7 +117,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 		}
 
 		var httpreq *http.Request
-		httpreq, err = zboxutil.NewDownloadRequest(req.blobber.Baseurl, req.allocationTx)
+		httpreq, err = zboxutil.NewDownloadRequest(req.blobber.Baseurl, req.allocationID, req.allocationTx)
 		if err != nil {
 			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.Wrap(err, "Error creating download request")}
 			return
