@@ -125,7 +125,7 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
 			}
 
 			localPath := r.getLocalPath(file)
-
+			toDelete := false
 			if !checkFileExists(localPath) {
 				if r.checkForCancel(a) {
 					return
@@ -145,6 +145,7 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
 				}
 				l.Logger.Info("Download file success for repair", zap.Any("localpath", localPath), zap.Any("remotepath", file.Path))
 				statusCB.success = false
+				toDelete = true
 			} else {
 				l.Logger.Info("FILE EXISTS", zap.Any("bool", true))
 			}
@@ -155,7 +156,7 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
 
 			l.Logger.Info("Repairing file for the path :", zap.Any("path", file.Path))
 			wg.Add(1)
-			err = a.RepairFile(localPath, file.Path, statusCB)
+			err = a.RepairFile(localPath, file.Path, statusCB, found)
 			if err != nil {
 				l.Logger.Error("repair_file_failed", zap.Error(err))
 				return
@@ -166,7 +167,9 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
 					zap.Any("localpath", localPath), zap.Any("remotepath", file.Path))
 				return
 			}
-			_ = sys.Files.Remove(localPath)
+			if toDelete {
+				_ = sys.Files.Remove(localPath)
+			}
 		} else {
 			l.Logger.Info("Repair by delete", zap.Any("path", file.Path))
 			consensus := found.CountOnes()

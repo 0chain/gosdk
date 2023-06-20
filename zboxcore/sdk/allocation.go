@@ -397,11 +397,12 @@ func (a *Allocation) CreateDir(remotePath string) error {
 }
 
 func (a *Allocation) RepairFile(localpath string, remotepath string,
-	status StatusCallback) error {
+	status StatusCallback, mask zboxutil.Uint128) error {
 
 	idr, _ := homedir.Dir()
+	mask = mask.Not().And(zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1))
 	return a.StartChunkedUpload(idr, localpath, remotepath, status, false, true,
-		"", false, false)
+		"", false, false, WithMask(mask))
 }
 
 // UpdateFileWithThumbnail [Deprecated]please use CreateChunkedUpload
@@ -579,6 +580,7 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 	thumbnailPath string,
 	encryption bool,
 	webStreaming bool,
+	uploadOpts ...ChunkedUploadOption,
 ) error {
 
 	if !a.isInitialized() {
@@ -626,6 +628,7 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 		WithEncrypt(encryption),
 		WithStatusCallback(status),
 	}
+	options = append(options, uploadOpts...)
 
 	if thumbnailPath != "" {
 		buf, err := sys.Files.ReadFile(thumbnailPath)
@@ -1079,7 +1082,7 @@ func (a *Allocation) ListDir(path string, opts ...bool) (*ListResult, error) {
 	listReq.allocationTx = a.Tx
 	listReq.blobbers = a.Blobbers
 	listReq.fullconsensus = a.fullconsensus
-	listReq.consensusThresh = a.consensusThreshold
+	listReq.consensusThresh = a.DataShards
 	listReq.ctx = a.ctx
 	listReq.remotefilepath = path
 	if len(opts) > 0 {
@@ -2143,6 +2146,10 @@ func (a *Allocation) getConsensuses() (fullConsensus, consensusThreshold int) {
 	}
 
 	return a.DataShards + a.ParityShards, a.DataShards + 1
+}
+
+func (a *Allocation) SetConsensusThreshold() {
+	a.consensusThreshold = a.DataShards
 }
 
 func (a *Allocation) UpdateWithRepair(

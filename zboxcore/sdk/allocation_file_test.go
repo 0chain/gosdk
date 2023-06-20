@@ -849,7 +849,7 @@ func TestAllocation_RepairFile(t *testing.T) {
 				})
 			}
 			tt.setup(t, tt.name, tt.numBlobbers, tt.numCorrect)
-			err := a.RepairFile(tt.parameters.localPath, tt.parameters.remotePath, tt.parameters.status)
+			err := a.RepairFile(tt.parameters.localPath, tt.parameters.remotePath, tt.parameters.status, zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1))
 			if tt.wantErr {
 				require.NotNil(err)
 			} else {

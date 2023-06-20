@@ -251,6 +251,12 @@ func (mo *MultiOperation) Process() error {
 		if err != nil {
 			return err
 		}
+		statusBar.wg.Wait()
+		if statusBar.success {
+			l.Logger.Info("Repair success")
+		} else {
+			l.Logger.Error("Repair failed")
+		}
 		return ErrRetryOperation
 	}
 	defer writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
