@@ -8,6 +8,9 @@ import (
 	"github.com/0chain/gosdk/core/pathutil"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
+	l "github.com/0chain/gosdk/zboxcore/logger"
+
+	"go.uber.org/zap"
 )
 
 type UpdateFileChange struct {
@@ -79,6 +82,7 @@ func (ch *UpdateFileChange) ProcessChange(rootRef *fileref.Ref, _ map[string]str
 		}
 	}
 	if idx < 0 || ch.OldFile == nil {
+		l.Logger.Error("File to update not found in blobber", zap.String("path", ch.NewFile.Path), zap.Any("dirRef", dirRef))
 		err = errors.New("file_not_found", "File to update not found in blobber")
 		return
 	}

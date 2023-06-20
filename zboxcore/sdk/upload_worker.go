@@ -65,12 +65,13 @@ func (uo *UploadOperation) buildChange(_ []fileref.RefEntity, uid uuid.UUID) []a
 			change.NewFile = &ref
 			change.Operation = constants.FileOperationUpdate
 			change.Size = ref.Size
+			change.NumBlocks = ref.NumBlocks
 			changes[pos] = change
 			continue
 		}
 		newChange := &allocationchange.NewFileChange{}
 		newChange.File = &ref
-
+		newChange.NumBlocks = ref.NumBlocks
 		newChange.Operation = constants.FileOperationInsert
 		newChange.Size = ref.Size
 		newChange.Uuid = uid

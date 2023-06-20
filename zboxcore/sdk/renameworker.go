@@ -334,6 +334,7 @@ func (ro *RenameOperation) Process(allocObj *Allocation, connectionID string) ([
 				rR.consensus.consensusThresh, rR.consensus.consensus))
 	}
 	l.Logger.Info("Rename Processs Ended ")
+	ro.renameMask = rR.renameMask
 	return objectTreeRefs, rR.renameMask, nil
 }
 
