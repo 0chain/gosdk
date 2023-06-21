@@ -27,8 +27,8 @@ type Endpoint struct {
 }
 
 const (
-	AUTH       = "/portainer/api/auth"
-	ENDPOINTS  = "/portainer/api/endpoints"
+	AUTH       = "/api/auth"
+	ENDPOINTS  = "/api/endpoints"
 	CONTAINERS = "/docker/containers/"
 	PULLIMAGE  = "/docker/images/create?fromImage="
 )
@@ -158,7 +158,7 @@ func SearchContainer(username, password, domain, name string) ([]*map[string]int
 
 	// the search regex start with ^/blobber_ because the blobber config files reside in blobber folder
 	// https://github.com/0chain/zcnwebappscripts/blob/main/chimney.sh#L18
-	url := domain + ENDPOINTS + endpointID + CONTAINERS + fmt.Sprintf("json?all=1&filters={\"name\":[\"^/blobber_%s*\"]}", name)
+	url := domain + ENDPOINTS + endpointID + CONTAINERS + fmt.Sprintf("json?all=1&filters={\"name\":[\"^/%s*\"]}", name)
 	return searchContainerInternal(authToken, url)
 }
 
