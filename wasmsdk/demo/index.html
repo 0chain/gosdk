@@ -696,10 +696,11 @@
     })
 
     onClick('btnSearchContainer', async () => {
-        const domain = "https://chimneyhwayr.zus.network"
-        const username = "username1"
-        const password = "password1"
-        const containername = "validator"
+      const domain = "https://portainer.dev3.zus.network"
+        // const domain = "https://chimneyhwayr.zus.network"
+        const username = "admin"
+        const password = "zus-operator"
+        const containername = "sharder"
         try {
           const stats = await goWasm.sdk.searchcontainer(username, password, domain, containername)
           txtOutput.innerHTML = JSON.stringify(stats, null, 2)
