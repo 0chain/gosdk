@@ -888,7 +888,7 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 			actualHash,
 		)
 		if err != nil {
-			l.Logger.Error(err, zap.String("actual_hash", actualHash), zap.String("actual_hash_signature", actualFileHashSignature), zap.String("public_key", req.allocOwnerPubKey))
+			l.Logger.Error("download_verify_error", zap.String("actual_hash", actualHash), zap.String("actual_hash_signature", actualFileHashSignature), zap.String("public_key", req.allocOwnerPubKey), zap.Error(err))
 			continue
 		}
 		if !isValid {
