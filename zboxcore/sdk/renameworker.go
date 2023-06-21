@@ -335,14 +335,13 @@ func (ro *RenameOperation) Process(allocObj *Allocation, connectionID string) ([
 				rR.consensus.consensusThresh, rR.consensus.consensus))
 	}
 	l.Logger.Info("Rename Processs Ended ")
-	ro.renameMask = ro.renameMask.And(rR.renameMask)
 	return objectTreeRefs, rR.renameMask, nil
 }
 
-func (ro *RenameOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange {
+func (ro *RenameOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID, mask zboxutil.Uint128) []allocationchange.AllocationChange {
 	changes := make([]allocationchange.AllocationChange, len(refs))
 	var pos uint64
-	for i := ro.renameMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+	for i := mask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		newChange := &allocationchange.RenameFileChange{
 			NewName:    ro.newName,

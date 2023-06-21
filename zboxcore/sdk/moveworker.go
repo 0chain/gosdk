@@ -309,7 +309,7 @@ func (mo *MoveOperation) Process(allocObj *Allocation, connectionID string) ([]f
 		moveMask:       mo.moveMask,
 		maskMU:         mo.maskMU,
 		destPath:       mo.destPath,
-		Consensus: Consensus{RWMutex: &sync.RWMutex{}},
+		Consensus:      Consensus{RWMutex: &sync.RWMutex{}},
 	}
 	mR.Consensus.fullconsensus = mo.consensus.fullconsensus
 	mR.Consensus.consensusThresh = mo.consensus.consensusThresh
@@ -329,11 +329,11 @@ func (mo *MoveOperation) Process(allocObj *Allocation, connectionID string) ([]f
 	return objectTreeRefs, mR.moveMask, nil
 }
 
-func (mo *MoveOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange {
+func (mo *MoveOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID, mask zboxutil.Uint128) []allocationchange.AllocationChange {
 	changes := make([]allocationchange.AllocationChange, len(refs))
 
 	var pos uint64
-	for i := mo.moveMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+	for i := mask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		moveChange := &allocationchange.MoveFileChange{
 			DestPath:   mo.destPath,

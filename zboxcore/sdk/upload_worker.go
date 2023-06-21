@@ -50,14 +50,13 @@ func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([
 	}
 
 	l.Logger.Info("Completed the upload")
-	uo.uploadMask = cu.uploadMask
 	return nil, cu.uploadMask, nil
 }
 
-func (uo *UploadOperation) buildChange(_ []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange {
+func (uo *UploadOperation) buildChange(_ []fileref.RefEntity, uid uuid.UUID, mask zboxutil.Uint128) []allocationchange.AllocationChange {
 	changes := make([]allocationchange.AllocationChange, len(uo.refs))
 	var pos uint64
-	for i := uo.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+	for i := mask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		ref := uo.refs[pos]
 		if uo.isUpdate {

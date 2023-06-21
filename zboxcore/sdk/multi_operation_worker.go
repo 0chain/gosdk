@@ -30,7 +30,7 @@ const (
 
 type Operationer interface {
 	Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error)
-	buildChange(refs []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange
+	buildChange(refs []fileref.RefEntity, uid uuid.UUID, mask zboxutil.Uint128) []allocationchange.AllocationChange
 	Verify(allocObj *Allocation) error
 	Completed(allocObj *Allocation)
 	Error(allocObj *Allocation, consensus int, err error)
@@ -200,7 +200,7 @@ func (mo *MultiOperation) Process() error {
 			mo.maskMU.Lock()
 			mo.operationMask = mo.operationMask.And(mask)
 			mo.maskMU.Unlock()
-			changes := op.buildChange(refs, uid)
+			changes := op.buildChange(refs, uid, mask)
 
 			mo.changes[idx] = changes
 		}(op, idx)

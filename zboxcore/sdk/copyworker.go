@@ -337,11 +337,11 @@ func (co *CopyOperation) Process(allocObj *Allocation, connectionID string) ([]f
 
 }
 
-func (co *CopyOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange {
+func (co *CopyOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID, mask zboxutil.Uint128) []allocationchange.AllocationChange {
 	changes := make([]allocationchange.AllocationChange, len(refs))
 
 	var pos uint64
-	for i := co.copyMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+	for i := mask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		newChange := &allocationchange.CopyFileChange{
 			DestPath:   co.destPath,

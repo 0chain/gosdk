@@ -322,11 +322,11 @@ func (dirOp *DirOperation) Process(allocObj *Allocation, connectionID string) ([
 
 }
 
-func (dirOp *DirOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange {
+func (dirOp *DirOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID, mask zboxutil.Uint128) []allocationchange.AllocationChange {
 
 	var pos uint64
 	changes := make([]allocationchange.AllocationChange, len(refs))
-	for i := dirOp.dirMask; !i.Equals(zboxutil.NewUint128(0)); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+	for i := mask; !i.Equals(zboxutil.NewUint128(0)); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		newChange := &allocationchange.DirCreateChange{
 			RemotePath: dirOp.remotePath,
