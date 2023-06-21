@@ -195,7 +195,6 @@ func (b *blobber) SetTerms(readPrice int64, writePrice int64, minLockDemand floa
 	b.Terms = Terms{
 		ReadPrice:        readPrice,
 		WritePrice:       writePrice,
-		MinLockDemand:    minLockDemand,
 		MaxOfferDuration: maxOfferDuration,
 	}
 }
