@@ -386,6 +386,7 @@ func (a *Allocation) CreateDir(remotePath string) error {
 		wg:            &sync.WaitGroup{},
 		timestamp:     timestamp,
 		Consensus: Consensus{
+			RWMutex:         &sync.RWMutex{},
 			consensusThresh: a.consensusThreshold,
 			fullconsensus:   a.fullconsensus,
 		},
@@ -760,7 +761,7 @@ func (a *Allocation) RepairRequired(remotepath string) (zboxutil.Uint128, zboxut
 		return zboxutil.Uint128{}, zboxutil.Uint128{}, false, nil, notInitialized
 	}
 
-	listReq := &ListRequest{}
+	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.blobbers = a.Blobbers
@@ -798,6 +799,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 		mo.maskMU = &sync.Mutex{}
 		mo.ctx, mo.ctxCncl = context.WithCancel(a.ctx)
 		mo.Consensus = Consensus{
+			RWMutex:         &sync.RWMutex{},
 			consensusThresh: a.consensusThreshold,
 			fullconsensus:   a.fullconsensus,
 		}
@@ -913,7 +915,7 @@ func (a *Allocation) generateDownloadRequest(localPath string, remotePath string
 		return nil, noBLOBBERS
 	}
 
-	downloadReq := &DownloadRequest{}
+	downloadReq := &DownloadRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
 	downloadReq.maskMu = &sync.Mutex{}
 	downloadReq.allocationID = a.ID
 	downloadReq.allocationTx = a.Tx
@@ -1044,7 +1046,7 @@ func (a *Allocation) ListDirFromAuthTicket(authTicket string, lookupHash string)
 		return nil, errors.New("invalid_path", "Invalid path for the list")
 	}
 
-	listReq := &ListRequest{}
+	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.blobbers = a.Blobbers
@@ -1077,7 +1079,7 @@ func (a *Allocation) ListDir(path string, opts ...bool) (*ListResult, error) {
 	if !isabs {
 		return nil, errors.New("invalid_path", "Path should be valid and absolute")
 	}
-	listReq := &ListRequest{}
+	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.blobbers = a.Blobbers
@@ -1244,6 +1246,7 @@ func (a *Allocation) GetRecentlyAddedRefs(page int, fromDate int64, pageLimit in
 		wg:           &sync.WaitGroup{},
 		pageLimit:    pageLimit,
 		Consensus: Consensus{
+			RWMutex:         &sync.RWMutex{},
 			fullconsensus:   a.fullconsensus,
 			consensusThresh: a.consensusThreshold,
 		},
@@ -1257,7 +1260,7 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 	}
 
 	result := &ConsolidatedFileMeta{}
-	listReq := &ListRequest{}
+	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.blobbers = a.Blobbers
@@ -1302,7 +1305,7 @@ func (a *Allocation) GetFileMetaFromAuthTicket(authTicket string, lookupHash str
 		return nil, errors.New("invalid_path", "Invalid path for the list")
 	}
 
-	listReq := &ListRequest{}
+	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.blobbers = a.Blobbers
@@ -1339,7 +1342,7 @@ func (a *Allocation) GetFileStats(path string) (map[string]*FileStats, error) {
 	if !isabs {
 		return nil, errors.New("invalid_path", "Path should be valid and absolute")
 	}
-	listReq := &ListRequest{}
+	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.blobbers = a.Blobbers
@@ -1376,7 +1379,7 @@ func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus int,
 		return errors.New("invalid_path", "Path should be valid and absolute")
 	}
 
-	req := &DeleteRequest{}
+	req := &DeleteRequest{consensus: Consensus{RWMutex: &sync.RWMutex{}}}
 	req.allocationObj = a
 	req.blobbers = a.Blobbers
 	req.allocationID = a.ID
@@ -1420,7 +1423,7 @@ func (a *Allocation) RenameObject(path string, destName string) error {
 		return err
 	}
 
-	req := &RenameRequest{}
+	req := &RenameRequest{consensus: Consensus{RWMutex: &sync.RWMutex{}}}
 	req.allocationObj = a
 	req.blobbers = a.Blobbers
 	req.allocationID = a.ID
@@ -1460,7 +1463,7 @@ func (a *Allocation) MoveObject(srcPath string, destPath string) error {
 		return err
 	}
 
-	req := &MoveRequest{}
+	req := &MoveRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
 	req.allocationObj = a
 	req.blobbers = a.Blobbers
 	req.allocationID = a.ID
@@ -1503,7 +1506,7 @@ func (a *Allocation) CopyObject(path string, destPath string) error {
 		return err
 	}
 
-	req := &CopyRequest{}
+	req := &CopyRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
 	req.allocationObj = a
 	req.blobbers = a.Blobbers
 	req.allocationID = a.ID
@@ -1719,6 +1722,7 @@ func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKe
 	}
 	wg.Wait()
 	consensus := Consensus{
+		RWMutex:         &sync.RWMutex{},
 		consensus:       len(success),
 		consensusThresh: a.consensusThreshold,
 		fullconsensus:   a.fullconsensus,
@@ -1913,7 +1917,7 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 		return noBLOBBERS
 	}
 
-	downloadReq := &DownloadRequest{}
+	downloadReq := &DownloadRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
 	downloadReq.maskMu = &sync.Mutex{}
 	downloadReq.allocationID = a.ID
 	downloadReq.allocationTx = a.Tx

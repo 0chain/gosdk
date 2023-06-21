@@ -218,11 +218,14 @@ func (lr *ListResult) populateChildren(children []fileref.RefEntity, childResult
 				Type:      child.GetType(),
 				CreatedAt: child.GetCreatedAt(),
 				UpdatedAt: child.GetUpdatedAt(),
+				Consensus: Consensus{
+					RWMutex:         &sync.RWMutex{},
+					consensusThresh: req.consensusThresh,
+					consensus:       0,
+					fullconsensus:   req.fullconsensus,
+				},
+				LookupHash: child.GetLookupHash(),
 			}
-			childResult.LookupHash = child.GetLookupHash()
-			childResult.consensus = 0
-			childResult.consensusThresh = req.consensusThresh
-			childResult.fullconsensus = req.fullconsensus
 			childResultMap[actualHash] = childResult
 		}
 		childResult = childResultMap[actualHash]

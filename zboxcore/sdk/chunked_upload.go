@@ -134,8 +134,9 @@ func CreateChunkedUpload(
 	}
 
 	consensus := Consensus{
-		consensusThresh: 1,
-		fullconsensus:   3,
+		RWMutex:         &sync.RWMutex{},
+		consensusThresh: allocationObj.consensusThreshold,
+		fullconsensus:   allocationObj.fullconsensus,
 	}
 
 	uploadMask := zboxutil.NewUint128(1).Lsh(uint64(len(allocationObj.Blobbers))).Sub64(1)
