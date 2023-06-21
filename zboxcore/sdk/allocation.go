@@ -771,7 +771,11 @@ func (a *Allocation) RepairRequired(remotepath string) (zboxutil.Uint128, zboxut
 	listReq.remotefilepath = remotepath
 	found, deleteMask, fileRef, _ := listReq.getFileConsensusFromBlobbers()
 	if fileRef == nil {
-		return found, deleteMask, false, fileRef, errors.New("", "File not found for the given remotepath")
+		var repairErr error
+		if deleteMask.Equals(zboxutil.NewUint128(0)) {
+			repairErr = errors.New("", "File not found for the given remotepath")
+		}
+		return found, deleteMask, false, fileRef, repairErr
 	}
 
 	uploadMask := zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)

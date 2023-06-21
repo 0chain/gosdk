@@ -118,17 +118,15 @@ func (req *ListRequest) getFileConsensusFromBlobbers() (zboxutil.Uint128, zboxut
 	deleteMask := zboxutil.NewUint128(0)
 	req.consensus = 0
 	retMap := make(map[string]int)
-	fmt.Println("consensus: ", req.fullconsensus, req.consensusThresh)
-	fmt.Println("File meta info from blobbers: ", len(lR))
 	for i := 0; i < len(lR); i++ {
 		ti := lR[i]
 		if ti.err != nil || ti.fileref == nil {
 			continue
 		}
-		actualHash := ti.fileref.ActualFileHash
-		retMap[actualHash]++
-		if retMap[actualHash] > req.consensus {
-			req.consensus = retMap[actualHash]
+		fileMetaHash := ti.fileref.FileMetaHash
+		retMap[fileMetaHash]++
+		if retMap[fileMetaHash] > req.consensus {
+			req.consensus = retMap[fileMetaHash]
 			selected = ti
 		}
 		if req.isConsensusOk() {
@@ -140,11 +138,19 @@ func (req *ListRequest) getFileConsensusFromBlobbers() (zboxutil.Uint128, zboxut
 	}
 	if selected == nil {
 		l.Logger.Error("File consensus not found for ", req.remotefilepath)
+		for i := 0; i < len(lR); i++ {
+			ti := lR[i]
+			if ti.err != nil || ti.fileref == nil {
+				continue
+			}
+			shift := zboxutil.NewUint128(1).Lsh(uint64(ti.blobberIdx))
+			deleteMask = deleteMask.Or(shift)
+		}
 		return foundMask, deleteMask, nil, nil
 	}
 
 	for i := 0; i < len(lR); i++ {
-		if lR[i].fileref != nil && selected.fileref.ActualFileHash == lR[i].fileref.ActualFileHash {
+		if lR[i].fileref != nil && selected.fileref.FileMetaHash == lR[i].fileref.FileMetaHash {
 			shift := zboxutil.NewUint128(1).Lsh(uint64(lR[i].blobberIdx))
 			foundMask = foundMask.Or(shift)
 		} else if lR[i].fileref != nil {

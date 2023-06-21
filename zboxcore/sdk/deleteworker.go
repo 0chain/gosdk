@@ -156,8 +156,7 @@ func (req *DeleteRequest) getObjectTreeFromBlobber(pos uint64) (
 func (req *DeleteRequest) ProcessDelete() (err error) {
 	defer req.ctxCncl()
 
-	num := req.deleteMask.CountOnes()
-	objectTreeRefs := make([]fileref.RefEntity, num)
+	objectTreeRefs := make([]fileref.RefEntity, len(req.blobbers))
 	var deleteMutex sync.Mutex
 	removedNum := 0
 	req.wg = &sync.WaitGroup{}
