@@ -1037,17 +1037,17 @@ func getNewAllocationBlobbers(
 		return nil, err
 	}
 
-	//filter duplicates
-	ids := make(map[string]struct{})
-	for _, id := range preferredBlobberIds {
-		ids[id] = struct{}{}
-	}
-	for _, id := range allocBlobberIDs {
-		ids[id] = struct{}{}
-	}
-	blobbers := make([]string, 0, len(ids))
-	for id := range ids {
-		blobbers = append(blobbers, id)
+	blobbers := []string{}
+	blobbers = append(blobbers, allocBlobberIDs...)
+
+	// filter duplicates
+	ids := make(map[string]bool)
+	uniqueBlobbers := []string{}
+	for _, b := range blobbers {
+		if !ids[b] {
+			uniqueBlobbers = append(uniqueBlobbers, b)
+			ids[b] = true
+		}
 	}
 
 	return map[string]interface{}{
@@ -1055,7 +1055,7 @@ func getNewAllocationBlobbers(
 		"parity_shards":     parityshards,
 		"size":              size,
 		"expiration_date":   expiry,
-		"blobbers":          blobbers,
+		"blobbers":          uniqueBlobbers,
 		"read_price_range":  readPrice,
 		"write_price_range": writePrice,
 	}, nil
