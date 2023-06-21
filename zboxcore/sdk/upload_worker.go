@@ -22,7 +22,6 @@ type UploadOperation struct {
 	isUpdate       bool
 	statusCallback StatusCallback
 	opCode         int
-	uploadMask     zboxutil.Uint128
 }
 
 func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
