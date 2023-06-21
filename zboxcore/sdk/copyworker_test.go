@@ -204,6 +204,7 @@ func TestCopyRequest_copyBlobberObject(t *testing.T) {
 				remotefilepath: mockRemoteFilePath,
 				destPath:       mockDestPath,
 				Consensus: Consensus{
+					RWMutex:         &sync.RWMutex{},
 					consensusThresh: 2,
 					fullconsensus:   4,
 				},
@@ -480,6 +481,7 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 				remotefilepath: mockRemoteFilePath,
 				destPath:       mockDestPath,
 				Consensus: Consensus{
+					RWMutex:         &sync.RWMutex{},
 					consensusThresh: 3,
 					fullconsensus:   4,
 				},
