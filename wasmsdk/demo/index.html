@@ -392,7 +392,8 @@
           })
         }
 
-        const results = await goWasm.bulkUpload(objects)
+        // const results = await goWasm.bulkUpload(objects)
+        const results = await goWasm.multiUpload(objects)
 
         console.log(JSON.stringify(results))
       }
