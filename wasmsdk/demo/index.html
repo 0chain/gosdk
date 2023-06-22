@@ -111,6 +111,7 @@
     <button id="btnUpdateContainer">updatecontainer</button>
     <button id="btnSearchContainer">searchcontainer</button>
     <button id="btnAllocationRepair">Repair</button>
+    <button id="btnMultiOps">MultiOperation</button>
 
     <br>
 
@@ -714,5 +715,29 @@
       const output = await goWasm.sdk.allocationRepair(allocationId, "/")
       txtOutput.innerHTML = output
     })
+
+    onClick('btnMultiOps', async () => {
+      const allocationId = getSelectedAllocation()
+      if (!allocationId) {
+        alert("please provide allocationId")
+      }
+      const objects = []
+
+      objects.push({
+        operationType: `move`,
+        remotePath: `/zcn.wasm`,
+        destPath: `/folder1`,
+      })
+
+      let stringifiedArray = JSON.stringify(objects);
+
+      try {
+        console.log("execting", objects[0])
+        const output = await goWasm.sdk.multiOperation(allocationId, stringifiedArray)
+      } catch (e) {
+        alert(e)
+      }
+    })
+
   </script>
 </body>
