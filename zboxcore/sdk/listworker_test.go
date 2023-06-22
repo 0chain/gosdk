@@ -289,6 +289,7 @@ func TestListRequest_GetListFromBlobbers(t *testing.T) {
 				Consensus: Consensus{
 					consensusThresh: tt.consensusThresh,
 					fullconsensus:   tt.fullconsensus,
+					RWMutex:         &sync.RWMutex{},
 				},
 			}
 			for i := 0; i < tt.numBlobbers; i++ {
