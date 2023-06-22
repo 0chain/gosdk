@@ -521,8 +521,6 @@ func MultiOperation(allocationID string, jsonMultiUploadOptions string) error {
 		return errors.New("operations are empty")
 	}
 
-	msg := fmt.Sprintf("%s theoutput", jsonMultiUploadOptions)
-	sdkLogger.Info(msg)
 	var options []MultiOperationOption
 	err := json.Unmarshal([]byte(jsonMultiUploadOptions), &options)
 	if err != nil {
@@ -543,7 +541,6 @@ func MultiOperation(allocationID string, jsonMultiUploadOptions string) error {
 	if err != nil {
 		return err
 	}
-	sdkLogger.Info("staring multiop")
 	return allocationObj.DoMultiOperation(operations)
 }
 
