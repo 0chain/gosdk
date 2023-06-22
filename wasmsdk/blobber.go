@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"path"
 	"path/filepath"
 	"strings"
@@ -468,7 +469,7 @@ type BulkUploadOption struct {
 
 	ThumbnailBytes jsbridge.Bytes `json:"thumbnailBytes,omitempty"`
 	Encrypt        bool           `json:"encrypt,omitempty"`
-	webstreaming   bool           `json:"webstreaming,omitempty"`
+	Webstreaming   bool           `json:"webstreaming,omitempty"`
 	IsUpdate       bool           `json:"isUpdate,omitempty"`
 	IsRepair       bool           `json:"isRepair,omitempty"`
 
@@ -487,6 +488,7 @@ type MultiUploadResult struct {
 	Success bool   `json:"success,omitempty"`
 	Error   string `json:"error,omitempty"`
 }
+
 type MultiOperationOption struct {
 	OperationType string `json:"operationType,omitempty"`
 	RemotePath    string `json:"remotePath,omitempty"`
@@ -506,7 +508,7 @@ type MultiDownloadOption struct {
 // MultiOperation - do copy, move, delete and createdir operation together
 // ## Inputs
 //   - allocationID
-//   - jsonMultiUploadOpetions: Json Array of MultiOperationOption. eg: "[{"operationType":"move","remotePath":"/README.md","destPath":"/folder1/"},{"operationType":"delete","remotePath":"/t3.txt"}]"
+//   - jsonMultiUploadOptions: Json Array of MultiOperationOption. eg: "[{"operationType":"move","remotePath":"/README.md","destPath":"/folder1/"},{"operationType":"delete","remotePath":"/t3.txt"}]"
 //
 // ## Outputs
 //   - error
@@ -514,9 +516,15 @@ func MultiOperation(allocationID string, jsonMultiUploadOptions string) error {
 	if allocationID == "" {
 		return errors.New("AllocationID is required")
 	}
+
+	if jsonMultiUploadOptions == "" {
+		return errors.New("operations are empty")
+	}
+
 	var options []MultiOperationOption
 	err := json.Unmarshal([]byte(jsonMultiUploadOptions), &options)
 	if err != nil {
+		sdkLogger.Info("error unmarshalling")
 		return err
 	}
 	totalOp := len(options)
@@ -557,7 +565,7 @@ func bulkUpload(jsonBulkUploadOptions string) ([]BulkUploadResult, error) {
 				o.ReadChunkFuncName,
 				o.FileSize,
 				o.ThumbnailBytes.Buffer,
-				o.webstreaming,
+				o.Webstreaming,
 				o.Encrypt,
 				o.IsUpdate,
 				o.IsRepair,
@@ -581,6 +589,7 @@ func bulkUpload(jsonBulkUploadOptions string) ([]BulkUploadResult, error) {
 
 	return results, nil
 }
+
 func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 	var options []BulkUploadOption
 	result := MultiUploadResult{}
