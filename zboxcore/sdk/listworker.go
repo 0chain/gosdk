@@ -128,7 +128,7 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 }
 
 func (req *ListRequest) getlistFromBlobbers() []*listResponse {
-	numList := req.consensusThresh
+	numList := len(req.blobbers)
 	req.wg = &sync.WaitGroup{}
 	req.wg.Add(numList)
 	rspCh := make(chan *listResponse, numList)
@@ -150,8 +150,8 @@ func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
 	childResultMap := make(map[string]*ListResult)
 	var err error
 	var errNum int
+	req.consensus = 0
 	for i := 0; i < len(lR); i++ {
-		req.consensus = 0
 		ti := lR[i]
 		if ti.err != nil {
 			err = ti.err
@@ -177,6 +177,10 @@ func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
 
 		if len(lR[i].ref.Children) > 0 {
 			result.populateChildren(lR[i].ref.Children, childResultMap, selected, req)
+		}
+		req.consensus++
+		if req.isConsensusOk() {
+			break
 		}
 	}
 
