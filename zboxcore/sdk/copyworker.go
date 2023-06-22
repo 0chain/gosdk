@@ -316,6 +316,7 @@ func (co *CopyOperation) Process(allocObj *Allocation, connectionID string) ([]f
 		ctxCncl:        co.ctxCncl,
 		copyMask:       co.copyMask,
 		maskMU:         co.maskMU,
+		Consensus:      Consensus{RWMutex: &sync.RWMutex{}},
 	}
 	cR.consensusThresh = co.consensusThresh
 	cR.fullconsensus = co.fullconsensus
