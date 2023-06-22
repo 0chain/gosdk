@@ -283,6 +283,7 @@ func TestListRequest_GetListFromBlobbers(t *testing.T) {
 				blobbers:     []*blockchain.StorageNode{},
 				wg:           &sync.WaitGroup{},
 				Consensus: Consensus{
+					RWMutex:         &sync.RWMutex{},
 					consensusThresh: 2,
 					fullconsensus:   4,
 				},
