@@ -208,7 +208,6 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 	}
 
 	wm.FileMetaRoot = rootRef.FileMetaHash
-	fmt.Println("FileMetaHash: ", rootRef.FileMetaHash)
 	wm.AllocationID = su.allocationObj.ID
 	wm.Size = size
 	wm.BlobberID = sb.blobber.ID

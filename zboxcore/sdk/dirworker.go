@@ -78,7 +78,6 @@ func (req *DirRequest) ProcessDir(a *Allocation) error {
 
 	defer req.ctxCncl()
 	existingDirCount := req.ProcessWithBlobbers(a)
-
 	if !req.isConsensusOk() {
 		return errors.New("consensus_not_met", "directory creation failed due to consensus not met")
 	}
@@ -310,8 +309,11 @@ func (dirOp *DirOperation) Process(allocObj *Allocation, connectionID string) ([
 		mu:           dirOp.maskMU,
 		wg:           &sync.WaitGroup{},
 	}
-	dR.consensusThresh = dirOp.consensusThresh
-	dR.fullconsensus = dirOp.fullconsensus
+	dR.Consensus = Consensus{
+		RWMutex:         &sync.RWMutex{},
+		consensusThresh: dR.consensusThresh,
+		fullconsensus:   dR.fullconsensus,
+	}
 
 	_ = dR.ProcessWithBlobbers(allocObj)
 
