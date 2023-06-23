@@ -338,7 +338,7 @@ func (t *Transaction) submitTxn() {
 	}
 
 	var (
-		randomMiners = util.GetRandom(_config.chain.Miners, getMinMinersSubmit())
+		randomMiners = GetStableMiners()
 		minersN      = len(randomMiners)
 		failedCount  int32
 		failC        = make(chan struct{})
@@ -385,6 +385,7 @@ func (t *Transaction) submitTxn() {
 		logging.Error("failed to submit transaction")
 		t.completeTxn(StatusError, "", fmt.Errorf("failed to submit transaction to all miners"))
 		transaction.Cache.Evict(t.txn.ClientID)
+		ResetStableMiners()
 		return
 	case ret := <-resultC:
 		logging.Debug("finish txn submitting, ", ret.Url, ", Status: ", ret.Status, ", output:", ret.Body)
