@@ -18,7 +18,9 @@ type StatusBar struct {
 
 	totalBytes     int
 	completedBytes int
-	callback       func(totalBytes int, completedBytes int, err string)
+	objURL         string
+	isDownload     bool
+	callback       func(totalBytes int, completedBytes int, objURL, err string)
 }
 
 var jsCallbackMutex sync.Mutex
@@ -34,7 +36,11 @@ func (s *StatusBar) Started(allocationID, filePath string, op int, totalBytes in
 	if s.callback != nil {
 		jsCallbackMutex.Lock()
 		defer jsCallbackMutex.Unlock()
-		s.callback(s.totalBytes, s.completedBytes, "")
+		if s.isDownload {
+			s.callback(s.totalBytes, s.completedBytes, "", "")
+		} else {
+			s.callback(s.totalBytes, s.completedBytes, "")
+		}
 	}
 }
 
@@ -48,7 +54,11 @@ func (s *StatusBar) InProgress(allocationID, filePath string, op int, completedB
 	if s.callback != nil {
 		jsCallbackMutex.Lock()
 		defer jsCallbackMutex.Unlock()
-		s.callback(s.totalBytes, s.completedBytes, "")
+		if s.isDownload {
+			s.callback(s.totalBytes, s.completedBytes, "", "")
+		} else {
+			s.callback(s.totalBytes, s.completedBytes, "")
+		}
 	}
 }
 
@@ -60,14 +70,24 @@ func (s *StatusBar) Completed(allocationID, filePath string, filename string, mi
 	s.success = true
 
 	s.completedBytes = s.totalBytes
+
+	localFileName := strings.Replace(path.Base(option.RemotePath), "/", "-", -1)
+	localPath := allocationID + "_" + localFileName
+	fs, _ := sys.Files.Open(localPath)
+	mf, _ := fs.(*sys.MemFile)
+	s.objURL = CreateObjectURL(mf.Buffer.Bytes(), "application/octet-stream")
 	if s.callback != nil {
 		jsCallbackMutex.Lock()
 		defer jsCallbackMutex.Unlock()
-		s.callback(s.totalBytes, s.completedBytes, "")
+		if s.isDownload {
+			s.callback(s.totalBytes, s.completedBytes, s.objURL, "")
+		} else {
+			s.callback(s.totalBytes, s.completedBytes, "")
+		}
 	}
 
 	defer s.wg.Done()
-	sdkLogger.Info("Status completed callback. Type = " + mimetype + ". Name = " + filename)
+	sdkLogger.Info("Status completed callback. Type = " + mimetype + ". Name = " + filename + ". URL = " + s.objURL)
 }
 
 // Error for statusBar
@@ -86,7 +106,11 @@ func (s *StatusBar) Error(allocationID string, filePath string, op int, err erro
 	if s.callback != nil {
 		jsCallbackMutex.Lock()
 		defer jsCallbackMutex.Unlock()
-		s.callback(s.totalBytes, s.completedBytes, err.Error())
+		if s.isDownload {
+			s.callback(s.totalBytes, s.completedBytes, "", "")
+		} else {
+			s.callback(s.totalBytes, s.completedBytes, "")
+		}
 	}
 	s.wg.Done()
 }

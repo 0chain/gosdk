@@ -408,8 +408,8 @@ func multiDownload(allocationID, jsonMultiDownloadOptions, authTicket, callbackF
 		allStatusBar[ind] = statusBar
 		if useCallback {
 			callback := js.Global().Get(callbackFuncName)
-			statusBar.callback = func(totalBytes, completedBytes int, err string) {
-				callback.Invoke(totalBytes, completedBytes, err)
+			statusBar.callback = func(totalBytes, completedBytes int, objURL, err string) {
+				callback.Invoke(totalBytes, completedBytes, objURL, err)
 			}
 		}
 		var downloader sdk.Downloader
@@ -449,9 +449,7 @@ func multiDownload(allocationID, jsonMultiDownloadOptions, authTicket, callbackF
 		} else {
 			statusResponse.CommandSuccess = true
 			statusResponse.FileName = options[ind].RemoteFileName
-			fs, _ := sys.Files.Open(options[ind].LocalPath)
-			mf, _ := fs.(*sys.MemFile)
-			statusResponse.Url = CreateObjectURL(mf.Buffer.Bytes(), "application/octet-stream")
+			statusResponse.Url = statusBar.objURL
 		}
 		resp[ind] = statusResponse
 	}
