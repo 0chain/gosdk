@@ -374,7 +374,8 @@ func download(
 // ## Inputs
 //   - allocationID
 //   - jsonMultiDownloadOptions: Json Array of MultiDownloadOption.
-//
+//	 - authTicket
+//  - callbackFuncName: callback function name Invoke with totalBytes, completedBytes, objURL, err
 // ## Outputs
 //   - json string of array of DownloadCommandResponse
 // 	 - error
@@ -401,9 +402,8 @@ func multiDownload(allocationID, jsonMultiDownloadOptions, authTicket, callbackF
 		return "", err
 	}
 	allStatusBar := make([]*StatusBar, len(options))
-
+	wg.Add(len(options))
 	for ind, option := range options {
-		wg.Add(1)
 		statusBar := &StatusBar{wg: wg}
 		allStatusBar[ind] = statusBar
 		if useCallback {
