@@ -846,6 +846,7 @@ func (req *DownloadRequest) getFileRef(remotePathCB string) (fRef *fileref.FileR
 		blobbers:           req.blobbers,
 		authToken:          req.authTicket,
 		Consensus: Consensus{
+			RWMutex:         &sync.RWMutex{},
 			fullconsensus:   req.fullconsensus,
 			consensusThresh: req.consensusThresh,
 		},

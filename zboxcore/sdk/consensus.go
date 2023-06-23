@@ -3,7 +3,7 @@ package sdk
 import "sync"
 
 type Consensus struct {
-	sync.RWMutex
+	*sync.RWMutex
 	consensus       int // Total successful and valid response from blobbers
 	consensusThresh int // Consensus threshold percentage
 	fullconsensus   int // Total number of blobbers in allocation

@@ -102,7 +102,7 @@
     <button id="btnListFiles">List</button>
     <span><input id="inputSelectedFile" type="file" multiple /> <button id="btnUploadFile">Upload</button> </span>
     <button id="btnUploadEncryptFile">EncryptedUpload</button> </span>
-    [ <button id="btnDownloadFile">Download</button> | <button id="btnDownloadShared">Download with AuthTicket</button>
+    [ <button id="btnDownloadFile">Download</button> | <button id="btnDownloadShared">Download with AuthTicket</button> | <button id="btnMultiDownload">MultiDownload</button>
     ]
     <button id="btnViewFile">View</button>
     <button id="btnGetFileStats">GetFileStats</button>
@@ -112,6 +112,7 @@
     <button id="btnUpdateContainer">updatecontainer</button>
     <button id="btnSearchContainer">searchcontainer</button>
     <button id="btnAllocationRepair">Repair</button>
+    <button id="btnMultiOps">MultiOperation</button>
 
     <br>
 
@@ -394,7 +395,8 @@
           })
         }
 
-        const results = await goWasm.bulkUpload(objects)
+        // const results = await goWasm.bulkUpload(objects)
+        const results = await goWasm.multiUpload(objects)
 
         console.log(JSON.stringify(results))
       }
@@ -713,5 +715,55 @@
       const output = await goWasm.sdk.allocationRepair(allocationId, "/")
       txtOutput.innerHTML = output
     })
+
+    onClick('btnMultiDownload', async () => {
+      console.log('multidownload')
+      const path = getSelectedFile()
+
+      const objects = []
+      const allocationId = getSelectedAllocation()
+      if (!allocationId) {
+        alert("please provide allocationId")
+      }
+
+      objects.push({
+        remotePath: path,
+        downloadOp: 1,
+        numBlocks: 0,
+      })
+      let stringifiedArray = JSON.stringify(objects);
+
+      try {
+        const results = await goWasm.sdk.multiDownload(allocationId, stringifiedArray, '', '')
+        console.log(JSON.stringify(results))
+      } catch (e) {
+        alert(e)
+      }
+
+    })
+
+    onClick('btnMultiOps', async () => {
+      const allocationId = getSelectedAllocation()
+      if (!allocationId) {
+        alert("please provide allocationId")
+      }
+      const objects = []
+
+      objects.push({
+        operationType: `move`,
+        remotePath: `/zcn.wasm`,
+        destPath: `/folder1`,
+      })
+
+      let stringifiedArray = JSON.stringify(objects);
+
+      try {
+        console.log("execting", objects[0])
+        const output = await goWasm.sdk.multiOperation(allocationId, stringifiedArray)
+      } catch (e) {
+        alert(e)
+      }
+    })
+
   </script>
 </body>
