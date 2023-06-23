@@ -381,6 +381,7 @@ func download(
 // 	 - error
 
 func multiDownload(allocationID, jsonMultiDownloadOptions, authTicket, callbackFuncName string) (string, error) {
+	sdkLogger.Info("starting multidownload")
 	wg := &sync.WaitGroup{}
 	useCallback := false
 	if callbackFuncName != "" {
@@ -498,7 +499,7 @@ type MultiOperationOption struct {
 
 type MultiDownloadOption struct {
 	RemotePath       string `json:"remotePath"`
-	LocalPath        string `json:"localPath"`
+	LocalPath        string `json:"localPath,omitempty"`
 	DownloadOp       int    `json:"downloadOp"`
 	NumBlocks        int    `json:"numBlocks"`
 	RemoteFileName   string `json:"remoteFileName"`             //Required only for file download with auth ticket
