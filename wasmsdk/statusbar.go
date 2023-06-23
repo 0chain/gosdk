@@ -4,9 +4,11 @@
 package main
 
 import (
-	"sync"
-
+	"github.com/0chain/gosdk/core/sys"
 	"gopkg.in/cheggaaa/pb.v1"
+	"path"
+	"strings"
+	"sync"
 )
 
 // StatusBar is to check status of any operation
@@ -62,7 +64,7 @@ func (s *StatusBar) Completed(allocationID, filePath string, filename string, mi
 
 	s.completedBytes = s.totalBytes
 
-	localFileName := strings.Replace(path.Base(option.RemotePath), "/", "-", -1)
+	localFileName := strings.Replace(path.Base(filePath), "/", "-", -1)
 	localPath := allocationID + "_" + localFileName
 	fs, _ := sys.Files.Open(localPath)
 	mf, _ := fs.(*sys.MemFile)
