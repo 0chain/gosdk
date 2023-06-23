@@ -12,7 +12,7 @@ import (
 type Downloader interface {
 	GetAllocation() *Allocation
 	GetFileName() string
-	Start(status StatusCallback) error
+	Start(status StatusCallback, isFinal bool) error
 }
 
 // DownloadOptions download options

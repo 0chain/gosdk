@@ -13,27 +13,32 @@ import (
 )
 
 type TransactionWithAuth struct {
-	*Transaction
+	t *Transaction
 }
 
 func (ta *TransactionWithAuth) Hash() string {
-	return ta.txnHash
+	return ta.t.txnHash
+}
+
+func (ta *TransactionWithAuth) SetTransactionNonce(txnNonce int64) error {
+	return ta.t.SetTransactionNonce(txnNonce)
 }
 
 func newTransactionWithAuth(cb TransactionCallback, txnFee uint64, nonce int64) (*TransactionWithAuth, error) {
 	ta := &TransactionWithAuth{}
 	var err error
-	ta.Transaction, err = newTransaction(cb, txnFee, nonce)
+	ta.t, err = newTransaction(cb, txnFee, nonce)
 	return ta, err
 }
 
 func (ta *TransactionWithAuth) getAuthorize() (*transaction.Transaction, error) {
-	ta.txn.PublicKey = _config.wallet.ClientKey
-	err := ta.txn.ComputeHashAndSign(SignFn)
+	ta.t.txn.PublicKey = _config.wallet.ClientKey
+	err := ta.t.txn.ComputeHashAndSign(SignFn)
 	if err != nil {
 		return nil, errors.Wrap(err, "signing error.")
 	}
-	req, err := util.NewHTTPPostRequest(_config.authUrl+"/transaction", ta.txn)
+
+	req, err := util.NewHTTPPostRequest(_config.authUrl+"/transaction", ta.t.txn)
 	if err != nil {
 		return nil, errors.Wrap(err, "new post request failed for auth")
 	}
@@ -41,6 +46,7 @@ func (ta *TransactionWithAuth) getAuthorize() (*transaction.Transaction, error) 
 	if err != nil {
 		return nil, errNetwork
 	}
+
 	if res.StatusCode != http.StatusOK {
 		if res.StatusCode == http.StatusUnauthorized {
 			return nil, errUserRejected
@@ -80,7 +86,7 @@ func (ta *TransactionWithAuth) completeTxn(status int, out string, err error) {
 			status = StatusAuthTimeout
 		}
 	}
-	ta.completeTxn(status, out, err) //nolint
+	ta.t.completeTxn(status, out, err) //nolint
 }
 
 func verifyFn(signature, msgHash, publicKey string) (bool, error) {
@@ -98,7 +104,7 @@ func verifyFn(signature, msgHash, publicKey string) (bool, error) {
 }
 
 func (ta *TransactionWithAuth) sign(otherSig string) error {
-	ta.txn.ComputeHashData()
+	ta.t.txn.ComputeHashData()
 	sig := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
 
 	var err error
@@ -107,19 +113,18 @@ func (ta *TransactionWithAuth) sign(otherSig string) error {
 		return err
 	}
 
-	ta.txn.Signature, err = sig.Add(otherSig, ta.txn.Hash)
+	ta.t.txn.Signature, err = sig.Add(otherSig, ta.t.txn.Hash)
 	return err
 }
 
 func (ta *TransactionWithAuth) submitTxn() {
-	nonce := ta.txn.TransactionNonce
+	nonce := ta.t.txn.TransactionNonce
 	if nonce < 1 {
-		nonce = transaction.Cache.GetNextNonce(ta.txn.ClientID)
+		nonce = transaction.Cache.GetNextNonce(ta.t.txn.ClientID)
 	} else {
-		transaction.Cache.Set(ta.txn.ClientID, nonce)
+		transaction.Cache.Set(ta.t.txn.ClientID, nonce)
 	}
-	ta.txn.TransactionNonce = nonce
-
+	ta.t.txn.TransactionNonce = nonce
 	authTxn, err := ta.getAuthorize()
 	if err != nil {
 		logging.Error("get auth error for send.", err.Error())
@@ -127,22 +132,23 @@ func (ta *TransactionWithAuth) submitTxn() {
 		return
 	}
 	// Authorized by user. Give callback to app.
-	if ta.txnCb != nil {
-		ta.txnCb.OnAuthComplete(ta.Transaction, StatusSuccess)
+	if ta.t.txnCb != nil {
+		ta.t.txnCb.OnAuthComplete(ta.t, StatusSuccess)
 	}
 	// Use the timestamp from auth and sign
-	ta.txn.CreationDate = authTxn.CreationDate
+	ta.t.txn.CreationDate = authTxn.CreationDate
 	err = ta.sign(authTxn.Signature)
 	if err != nil {
 		ta.completeTxn(StatusError, "", errAddSignature)
 	}
-	ta.submitTxn()
+
+	ta.t.submitTxn()
 }
 
 func (ta *TransactionWithAuth) StoreData(data string) error {
 	go func() {
-		ta.txn.TransactionType = transaction.TxnTypeData
-		ta.txn.TransactionData = data
+		ta.t.txn.TransactionType = transaction.TxnTypeData
+		ta.t.txn.TransactionData = data
 		ta.submitTxn()
 	}()
 	return nil
@@ -150,19 +156,19 @@ func (ta *TransactionWithAuth) StoreData(data string) error {
 
 // ExecuteFaucetSCWallet impements the Faucet Smart contract for a given wallet
 func (ta *TransactionWithAuth) ExecuteFaucetSCWallet(walletStr string, methodName string, input []byte) error {
-	w, err := ta.createFaucetSCWallet(walletStr, methodName, input)
+	w, err := ta.t.createFaucetSCWallet(walletStr, methodName, input)
 	if err != nil {
 		return err
 	}
 	go func() {
-		nonce := ta.txn.TransactionNonce
+		nonce := ta.t.txn.TransactionNonce
 		if nonce < 1 {
-			nonce = transaction.Cache.GetNextNonce(ta.txn.ClientID)
+			nonce = transaction.Cache.GetNextNonce(ta.t.txn.ClientID)
 		} else {
-			transaction.Cache.Set(ta.txn.ClientID, nonce)
+			transaction.Cache.Set(ta.t.txn.ClientID, nonce)
 		}
-		ta.txn.TransactionNonce = nonce
-		err = ta.txn.ComputeHashAndSignWithWallet(signWithWallet, w)
+		ta.t.txn.TransactionNonce = nonce
+		err = ta.t.txn.ComputeHashAndSignWithWallet(signWithWallet, w)
 		if err != nil {
 			return
 		}
@@ -171,13 +177,41 @@ func (ta *TransactionWithAuth) ExecuteFaucetSCWallet(walletStr string, methodNam
 	return nil
 }
 
+func (ta *TransactionWithAuth) SetTransactionCallback(cb TransactionCallback) error {
+	return ta.t.SetTransactionCallback(cb)
+}
+
+func (ta *TransactionWithAuth) SetTransactionHash(hash string) error {
+	return ta.t.SetTransactionHash(hash)
+}
+
+func (ta *TransactionWithAuth) GetTransactionHash() string {
+	return ta.t.GetTransactionHash()
+}
+
+func (ta *TransactionWithAuth) Verify() error {
+	return ta.t.Verify()
+}
+
+func (ta *TransactionWithAuth) GetVerifyOutput() string {
+	return ta.t.GetVerifyOutput()
+}
+
+func (ta *TransactionWithAuth) GetTransactionError() string {
+	return ta.t.GetTransactionError()
+}
+
+func (ta *TransactionWithAuth) GetVerifyError() string {
+	return ta.t.GetVerifyError()
+}
+
 func (ta *TransactionWithAuth) Output() []byte {
-	return []byte(ta.txnOut)
+	return []byte(ta.t.txnOut)
 }
 
 // GetTransactionNonce returns nonce
 func (ta *TransactionWithAuth) GetTransactionNonce() int64 {
-	return ta.txn.TransactionNonce
+	return ta.t.txn.TransactionNonce
 }
 
 // ========================================================================== //
@@ -185,7 +219,7 @@ func (ta *TransactionWithAuth) GetTransactionNonce() int64 {
 // ========================================================================== //
 
 func (ta *TransactionWithAuth) VestingTrigger(poolID string) (err error) {
-	err = ta.vestingPoolTxn(transaction.VESTING_TRIGGER, poolID, 0)
+	err = ta.t.vestingPoolTxn(transaction.VESTING_TRIGGER, poolID, 0)
 	if err != nil {
 		logging.Error(err)
 		return
@@ -195,7 +229,7 @@ func (ta *TransactionWithAuth) VestingTrigger(poolID string) (err error) {
 }
 
 func (ta *TransactionWithAuth) VestingStop(sr *VestingStopRequest) (err error) {
-	err = ta.createSmartContractTxn(VestingSmartContractAddress,
+	err = ta.t.createSmartContractTxn(VestingSmartContractAddress,
 		transaction.VESTING_STOP, sr, 0)
 	if err != nil {
 		logging.Error(err)
@@ -207,7 +241,7 @@ func (ta *TransactionWithAuth) VestingStop(sr *VestingStopRequest) (err error) {
 
 func (ta *TransactionWithAuth) VestingUnlock(poolID string) (err error) {
 
-	err = ta.vestingPoolTxn(transaction.VESTING_UNLOCK, poolID, 0)
+	err = ta.t.vestingPoolTxn(transaction.VESTING_UNLOCK, poolID, 0)
 	if err != nil {
 		logging.Error(err)
 		return
@@ -217,7 +251,7 @@ func (ta *TransactionWithAuth) VestingUnlock(poolID string) (err error) {
 }
 
 func (ta *TransactionWithAuth) VestingDelete(poolID string) (err error) {
-	err = ta.vestingPoolTxn(transaction.VESTING_DELETE, poolID, 0)
+	err = ta.t.vestingPoolTxn(transaction.VESTING_DELETE, poolID, 0)
 	if err != nil {
 		logging.Error(err)
 		return

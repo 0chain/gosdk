@@ -66,6 +66,7 @@ const (
 	CREATE_CONNECTION_ENDPOINT   = "/v1/connection/create/"
 	LATEST_WRITE_MARKER_ENDPOINT = "/v1/file/latestwritemarker/"
 	ROLLBACK_ENDPOINT            = "/v1/connection/rollback/"
+	REDEEM_ENDPOINT              = "/v1/connection/redeem/"
 
 	// CLIENT_SIGNATURE_HEADER represents http request header contains signature.
 	CLIENT_SIGNATURE_HEADER = "X-App-Client-Signature"
@@ -643,6 +644,21 @@ func NewDownloadRequest(baseUrl, allocationID, allocationTx string) (*http.Reque
 
 	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 
+	return req, nil
+}
+
+func NewRedeemRequest(baseUrl, allocationID, allocationTx string) (*http.Request, error) {
+	u, err := joinUrl(baseUrl, REDEEM_ENDPOINT, allocationTx)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	setClientInfo(req)
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 	return req, nil
 }
 

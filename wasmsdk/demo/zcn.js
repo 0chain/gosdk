@@ -30,18 +30,18 @@ function hexStringToByte(str) {
   return new Uint8Array(a)
 }
 
-function blsSign(hash) {
+function blsSign(hash, secretKey) {
   const { jsProxy } = g.__zcn_wasm__
 
-  if (!jsProxy || !jsProxy.secretKey) {
+  if (!jsProxy || !secretKey) {
     const errMsg = 'err: bls.secretKey is not initialized'
     console.warn(errMsg)
     throw new Error(errMsg)
   }
 
   const bytes = hexStringToByte(hash)
-
-  const sig = jsProxy.secretKey.sign(bytes)
+  const sk = bls.deserializeHexStrToSecretKey(secretKey)
+  const sig = sk.sign(bytes)
 
   if (!sig) {
     const errMsg = 'err: wasm blsSign function failed to sign transaction'
@@ -214,16 +214,16 @@ async function liveUpload(options) {
   return result
 }
 
-async function blsSign(hash) {
-  if (!bridge.jsProxy && !bridge.jsProxy.secretKey) {
+async function blsSign(hash, secretKey) {
+  if (!bridge.jsProxy && !secretKey) {
     const errMsg = 'err: bls.secretKey is not initialized'
     console.warn(errMsg)
     throw new Error(errMsg)
   }
 
   const bytes = hexStringToByte(hash)
-
-  const sig = bridge.jsProxy.secretKey.sign(bytes)
+  const sk = bls.deserializeHexStrToSecretKey(secretKey)
+  const sig = sk.sign(bytes)
 
   if (!sig) {
     const errMsg = 'err: wasm blsSign function failed to sign transaction'
@@ -261,7 +261,6 @@ async function setWallet(bls, clientID, sk, pk,mnemonic) {
   if (bridge.walletId != clientID) {
     console.log('setWallet: ', clientID, sk, pk)
     bridge.jsProxy.bls = bls
-    bridge.jsProxy.secretKey = bls.deserializeHexStrToSecretKey(sk)
     bridge.jsProxy.publicKey = bls.deserializeHexStrToPublicKey(pk)
 
     // use proxy.sdk to detect if sdk is ready

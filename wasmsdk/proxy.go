@@ -13,6 +13,7 @@ import (
 	"github.com/0chain/gosdk/core/version"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/wasmsdk/jsbridge"
+	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk/zcncore"
 
@@ -51,8 +52,9 @@ func main() {
 					if ok {
 						return s, nil
 					}
-
-					result, err := jsbridge.Await(jsSign.Invoke(hash))
+					c := client.GetClient()
+					pk := c.Keys[0].PrivateKey
+					result, err := jsbridge.Await(jsSign.Invoke(hash, pk))
 
 					if len(err) > 0 && !err[0].IsNull() {
 						return "", errors.New("sign: " + err[0].String())
