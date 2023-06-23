@@ -314,8 +314,8 @@ func download(
 	statusBar := &StatusBar{wg: wg}
 	if callbackFuncName != "" {
 		callback := js.Global().Get(callbackFuncName)
-		statusBar.callback = func(totalBytes, completedBytes int, err string) {
-			callback.Invoke(totalBytes, completedBytes, err)
+		statusBar.callback = func(totalBytes, completedBytes int, objURL, err string) {
+			callback.Invoke(totalBytes, completedBytes, objURL, err)
 		}
 	}
 	wg.Add(1)
@@ -617,8 +617,8 @@ func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 		callbackFuncName := option.CallbackFuncName
 		if callbackFuncName != "" {
 			callback := js.Global().Get(callbackFuncName)
-			statusBar.callback = func(totalBytes, completedBytes int, err string) {
-				callback.Invoke(totalBytes, completedBytes, err)
+			statusBar.callback = func(totalBytes, completedBytes int, objURL, err string) {
+				callback.Invoke(totalBytes, completedBytes, objURL, err)
 			}
 		}
 		wg.Add(1)
@@ -704,8 +704,8 @@ func uploadWithJsFuncs(allocationID, remotePath string, readChunkFuncName string
 	statusBar := &StatusBar{wg: wg}
 	if callbackFuncName != "" {
 		callback := js.Global().Get(callbackFuncName)
-		statusBar.callback = func(totalBytes, completedBytes int, err string) {
-			callback.Invoke(totalBytes, completedBytes, err)
+		statusBar.callback = func(totalBytes, completedBytes int, objURL, err string) {
+			callback.Invoke(totalBytes, completedBytes, objURL, err)
 		}
 	}
 	wg.Add(1)
@@ -863,8 +863,8 @@ func downloadBlocks(allocationID, remotePath, authTicket, lookupHash string, num
 	statusBar := &StatusBar{wg: wg}
 	if callbackFuncName != "" {
 		callback := js.Global().Get(callbackFuncName)
-		statusBar.callback = func(totalBytes, completedBytes int, err string) {
-			callback.Invoke(totalBytes, completedBytes, err)
+		statusBar.callback = func(totalBytes, completedBytes int, objURL, err string) {
+			callback.Invoke(totalBytes, completedBytes, objURL, err)
 		}
 	}
 	wg.Add(1)

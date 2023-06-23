@@ -19,7 +19,6 @@ type StatusBar struct {
 	totalBytes     int
 	completedBytes int
 	objURL         string
-	isDownload     bool
 	callback       func(totalBytes int, completedBytes int, objURL, err string)
 }
 
@@ -36,11 +35,7 @@ func (s *StatusBar) Started(allocationID, filePath string, op int, totalBytes in
 	if s.callback != nil {
 		jsCallbackMutex.Lock()
 		defer jsCallbackMutex.Unlock()
-		if s.isDownload {
-			s.callback(s.totalBytes, s.completedBytes, "", "")
-		} else {
-			s.callback(s.totalBytes, s.completedBytes, "")
-		}
+		s.callback(s.totalBytes, s.completedBytes, "", "")
 	}
 }
 
@@ -54,11 +49,7 @@ func (s *StatusBar) InProgress(allocationID, filePath string, op int, completedB
 	if s.callback != nil {
 		jsCallbackMutex.Lock()
 		defer jsCallbackMutex.Unlock()
-		if s.isDownload {
-			s.callback(s.totalBytes, s.completedBytes, "", "")
-		} else {
-			s.callback(s.totalBytes, s.completedBytes, "")
-		}
+		s.callback(s.totalBytes, s.completedBytes, "", "")
 	}
 }
 
@@ -79,11 +70,7 @@ func (s *StatusBar) Completed(allocationID, filePath string, filename string, mi
 	if s.callback != nil {
 		jsCallbackMutex.Lock()
 		defer jsCallbackMutex.Unlock()
-		if s.isDownload {
-			s.callback(s.totalBytes, s.completedBytes, s.objURL, "")
-		} else {
-			s.callback(s.totalBytes, s.completedBytes, "")
-		}
+		s.callback(s.totalBytes, s.completedBytes, s.objURL, "")
 	}
 
 	defer s.wg.Done()
@@ -106,11 +93,7 @@ func (s *StatusBar) Error(allocationID string, filePath string, op int, err erro
 	if s.callback != nil {
 		jsCallbackMutex.Lock()
 		defer jsCallbackMutex.Unlock()
-		if s.isDownload {
-			s.callback(s.totalBytes, s.completedBytes, "", "")
-		} else {
-			s.callback(s.totalBytes, s.completedBytes, "")
-		}
+		s.callback(s.totalBytes, s.completedBytes, "", err.Error())
 	}
 	s.wg.Done()
 }
