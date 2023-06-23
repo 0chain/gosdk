@@ -36,7 +36,6 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/mitchellh/go-homedir"
 	"go.uber.org/zap"
-	"golang.org/x/sync/semaphore"
 )
 
 var (
@@ -293,25 +292,15 @@ func (a *Allocation) startWorker(ctx context.Context) {
 }
 
 func (a *Allocation) dispatchWork(ctx context.Context) {
-	sem := semaphore.NewWeighted(processDownloadWorkerCount)
 	for {
 		select {
 		case <-ctx.Done():
 			l.Logger.Info("Upload cancelled by the parent")
 			return
 		case downloadReq := <-a.downloadChan:
-			err := sem.Acquire(ctx, 1)
-			if err != nil {
-				l.Logger.Error("Failed to acquire semaphore", zap.Error(err))
-				go func() {
-					a.downloadChan <- downloadReq
-				}()
-				continue
-			}
 			l.Logger.Info(fmt.Sprintf("received a download request for %v\n", downloadReq.remotefilepath))
 			go func() {
 				downloadReq.processDownload(ctx)
-				sem.Release(1)
 			}()
 		case repairReq := <-a.repairChan:
 
