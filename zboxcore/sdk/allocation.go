@@ -950,7 +950,7 @@ func (a *Allocation) addAndGenerateDownloadRequest(localPath string, remotePath 
 	a.downloadRequests = append(a.downloadRequests, downloadReq)
 	if isFinal {
 		downloadOps := a.downloadRequests
-		a.downloadRequests = a.downloadRequests[:0]
+		a.downloadRequests = nil
 		go func() {
 			a.processReadMarker(downloadOps)
 		}()
