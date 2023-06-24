@@ -6,8 +6,6 @@ package main
 import (
 	"github.com/0chain/gosdk/core/sys"
 	"gopkg.in/cheggaaa/pb.v1"
-	"path"
-	"strings"
 	"sync"
 )
 
@@ -21,6 +19,7 @@ type StatusBar struct {
 	totalBytes     int
 	completedBytes int
 	objURL         string
+	localPath      string
 	callback       func(totalBytes int, completedBytes int, fileName, objURL, err string)
 }
 
@@ -63,12 +62,11 @@ func (s *StatusBar) Completed(allocationID, filePath string, filename string, mi
 	s.success = true
 
 	s.completedBytes = s.totalBytes
-
-	localFileName := strings.Replace(path.Base(filePath), "/", "-", -1)
-	localPath := allocationID + "_" + localFileName
-	fs, _ := sys.Files.Open(localPath)
-	mf, _ := fs.(*sys.MemFile)
-	s.objURL = CreateObjectURL(mf.Buffer.Bytes(), "application/octet-stream")
+	if s.localPath != "" {
+		fs, _ := sys.Files.Open(s.localPath)
+		mf, _ := fs.(*sys.MemFile)
+		s.objURL = CreateObjectURL(mf.Buffer.Bytes(), "application/octet-stream")
+	}
 	if s.callback != nil {
 		jsCallbackMutex.Lock()
 		defer jsCallbackMutex.Unlock()

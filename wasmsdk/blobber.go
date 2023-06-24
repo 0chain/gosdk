@@ -404,7 +404,10 @@ func multiDownload(allocationID, jsonMultiDownloadOptions, authTicket, callbackF
 	allStatusBar := make([]*StatusBar, len(options))
 	wg.Add(len(options))
 	for ind, option := range options {
-		statusBar := &StatusBar{wg: wg}
+		fileName := strings.Replace(path.Base(option.RemotePath), "/", "-", -1)
+		localPath := allocationID + "_" + fileName
+		option.LocalPath = localPath
+		statusBar := &StatusBar{wg: wg, localPath: localPath}
 		allStatusBar[ind] = statusBar
 		if useCallback {
 			callback := js.Global().Get(callbackFuncName)
@@ -413,9 +416,6 @@ func multiDownload(allocationID, jsonMultiDownloadOptions, authTicket, callbackF
 			}
 		}
 		var downloader sdk.Downloader
-		fileName := strings.Replace(path.Base(option.RemotePath), "/", "-", -1)
-		localPath := allocationID + "_" + fileName
-		option.LocalPath = localPath
 		if option.DownloadOp == 1 {
 			downloader, err = sdk.CreateDownloader(allocationID, localPath, option.RemotePath,
 				sdk.WithAllocation(alloc),
@@ -445,7 +445,7 @@ func multiDownload(allocationID, jsonMultiDownloadOptions, authTicket, callbackF
 		statusResponse := DownloadCommandResponse{}
 		if !statusBar.success {
 			statusResponse.CommandSuccess = false
-			statusResponse.Error = "Download failed: unknown error"
+			statusResponse.Error = "Download failed: " + statusBar.err.Error()
 		} else {
 			statusResponse.CommandSuccess = true
 			statusResponse.FileName = options[ind].RemoteFileName
