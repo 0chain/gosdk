@@ -169,6 +169,7 @@ func main() {
 				"download":              download,
 				"upload":                upload,
 				"bulkUpload":            bulkUpload,
+				"liveUpload":            liveUpload,
 				"multiUpload":           multiUpload,
 				"listObjects":           listObjects,
 				"createDir":             createDir,

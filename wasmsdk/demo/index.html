@@ -6,7 +6,9 @@
   <script src="https://cdn.jsdelivr.net/gh/golang/go@go1.18.5/misc/wasm/wasm_exec.js"></script>
   <script src="zcn.js"></script>
 
-
+  <!-- for ffmpeg.min.js -->
+  <script src="ffmpeg.min.js"></script>
+  
   <!-- for demo -->
   <script src="dom.js"></script>
 
@@ -100,7 +102,11 @@
   <fieldset>
     <legend>Files</legend>
     <button id="btnListFiles">List</button>
-    <span><input id="inputSelectedFile" type="file" multiple /> <button id="btnUploadFile">Upload</button> </span>
+    <span><input id="inputSelectedFile" type="file" multiple /> 
+      <button id="btnUploadFile">Upload</button> 
+    </span>
+    <button id="btnLiveUpload"> Live Upload</button>
+    <button id="btnLiveUploadEnd"> Live Upload End</button>
     <button id="btnUploadEncryptFile">EncryptedUpload</button> </span>
     [ <button id="btnDownloadFile">Download</button> | <button id="btnDownloadShared">Download with AuthTicket</button>
     ]
@@ -141,12 +147,11 @@
     </div>
   </fieldset>
 
-
   <fieldset>
     <legend>Image Viewer</legend>
     <img id="viewer" src="image.png" width="600" />
   </fieldset>
-
+  
   <script>
 
     window.downloadCallback = function (totalBytes, completedBytes, error) {
@@ -259,13 +264,13 @@
       const config = {
         datashards: 2,
         parityshards: 2,
-        size: 2 * 1073741824,
-        expiry: Math.floor(expiry.getTime() / 1000),
+        size: 1073741824,
+        expiry: Math.round(new Date().getTime() / 1000) + 2628000,
         minReadPrice: 0,
-        maxReadPrice: 184467440737095516,
+        maxReadPrice: 10000000000,
         minWritePrice: 0,
-        maxWritePrice: 184467440737095516,
-        lock: 5000000000
+        maxWritePrice: 10000000000,
+        lock: 10450000000
       }
       try {
         const allocation = await goWasm.sdk.createAllocation(config.datashards, config.parityshards, config.size, config.expiry,
@@ -371,6 +376,7 @@
       bindFiles()
     })
 
+    let playLiveVideo = true
     onClick('btnUploadFile', async () => {
       const { files } = get('inputSelectedFile')
       if (files && files.length > 0) {
@@ -382,7 +388,7 @@
             allocationId: allocationId,
             remotePath: `/${file.name}`,
             file: file,
-            thumbnailBytes: await readBytes(file),//only for demo, don't upload original file as thumbnail in production
+            thumbnailBytes: await readBytes(file), //only for demo, don't upload original file as thumbnail in production
             encrypt: false,
             webstreaming: false,
             isUpdate: false,
@@ -398,6 +404,119 @@
 
         console.log(JSON.stringify(results))
       }
+    })
+
+    var streamData = []
+    let isstreamUploading = false;
+    var countVideoUploadChunk = 1
+    const { createFFmpeg, fetchFile } = FFmpeg
+    const ffmpeg = createFFmpeg({ log: false })
+    
+    async function uploadStream(data, count) {
+      isstreamUploading = true;
+      console.log(`Uploading data "${count}"...`);
+
+      setTimeout(async () => {
+
+        const inputFileName = `input${count}.webm`;
+        const outputFileName = `tvshow${count}.ts`;
+        await ffmpeg.FS(
+        "writeFile",
+        inputFileName,
+        new Uint8Array(await data.data.arrayBuffer(), 0, data.data.size)
+        );
+
+        await ffmpeg.run("-i", inputFileName, outputFileName);
+        const output = await ffmpeg.FS("readFile", outputFileName);
+        console.log(`Transcoding "${outputFileName}" completed.`);
+
+        // uploading to blobber
+        const allocationId = getSelectedAllocation()
+        const objects = []
+        
+        if (!allocationId) {
+          alert("please provide allocationId")
+        }
+        console.log(output.buffer);
+        objects.push({
+          allocationId: allocationId,
+          remotePath: "/stream/"+outputFileName,
+          encrypt: false,
+          fileBytes: output.buffer,
+          callback: function (totalBytes, completedBytes, error) {
+            console.log(outputFileName + " " + completedBytes + "/" + totalBytes + " err:" + error)
+          }
+        })
+
+        goWasm.liveUpload(objects).then((result) => {
+          console.log(JSON.stringify(result));
+        });
+
+        if (streamData.length > 0) {
+          const [nextData, nextcount] = streamData.shift();
+          uploadStream(nextData, nextcount);
+        } else {
+          isstreamUploading = false;
+        }
+      }, 0);
+      
+    }
+    async function initiateUploadStream() {
+      if (!isstreamUploading && streamData.length > 0) {
+        const [data, count] = streamData.shift();
+        uploadStream(data, count);
+      }
+    }
+
+    function permittedGetUserMedia() {
+        return !!(navigator.mediaDevices &&
+            navigator.mediaDevices.getUserMedia);
+    }
+    
+    async function processStream(stream) {
+      const mediaRecorder = new MediaRecorder(stream, {mimeType: 'video/webm;codecs="vp8,opus"'})
+
+      mediaRecorder.ondataavailable = async (data) => {
+        console.log(data.data)
+        streamData.push([data, countVideoUploadChunk]);
+        countVideoUploadChunk++;
+
+        if (!isstreamUploading) {
+          initiateUploadStream();
+        }
+
+        if(playLiveVideo) {
+          processStream(stream)
+        }
+      }
+      
+      mediaRecorder.start() 
+      setTimeout(function() {
+            mediaRecorder.stop(); // stop recorder after every time-slice
+            if (!playLiveVideo) {
+              stream.getTracks().forEach( track => track.stop() );
+              return
+            }
+      }, 10000);
+      
+    }
+
+    onClick('btnLiveUpload', async () => {
+      if (permittedGetUserMedia()) {
+        playLiveVideo = true
+        if (!ffmpeg.isLoaded())
+        {
+          await ffmpeg.load()
+        }
+        await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: true
+        }).then((stream) => processStream(stream));
+      }
+    })
+
+    onClick('btnLiveUploadEnd', async () => {
+      playLiveVideo = false
     })
 
     onClick('btnShare', async () => {

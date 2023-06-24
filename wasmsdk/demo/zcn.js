@@ -175,9 +175,44 @@ async function bulkUpload(options) {
     g["__zcn_upload_reader_"+i.toString()] = null;
     g["__zcn_upload_callback_"+i.toString()] =null;
   }
+  console.log("It works!!")
   return result
 }
 
+// live upload file
+// objects: the list of upload object
+//  - allocationId: string
+//  - remotePath: string
+//  - fileBytes: []byte
+//  - encrypt: bool
+//  - callback: function(totalBytes,completedBytes,error)
+async function liveUpload(options) {
+  const start = bridge.glob.index
+  const opts = options.map(obj=>{
+    const i = bridge.glob.index;
+    bridge.glob.index++
+    const callbackFuncName = "__zcn_upload_callback_"+i.toString()
+
+    if(obj.callback) {
+      g[callbackFuncName] = async (totalBytes,completedBytes,error)=> obj.callback(totalBytes,completedBytes,error)
+    }
+    var fileArray = new Uint8Array(obj.fileBytes);
+    return {
+      allocationId:obj.allocationId,
+      remotePath:obj.remotePath,
+      encrypt:obj.encrypt,
+      fileBytes:fileArray.toString(),
+      callbackFuncName:callbackFuncName
+    }
+  })
+
+  const end =  bridge.glob.index
+  const result = await bridge.__proxy__.sdk.liveUpload(JSON.stringify(opts))
+  for (let i=start; i<end;i++){
+    g["__zcn_upload_callback_"+i.toString()] =null;
+  }
+  return result
+}
 
 async function blsSign(hash, secretKey) {
   if (!bridge.jsProxy && !secretKey) {
@@ -333,6 +368,7 @@ async function createWasm() {
 
   const proxy = {
     bulkUpload: bulkUpload,
+    liveUpload: liveUpload,
     setWallet: setWallet,
     sdk: sdkProxy, //expose sdk methods for js
     jsProxy, //expose js methods for go

@@ -411,6 +411,16 @@ type BulkUploadOption struct {
 	CallbackFuncName  string `json:"callbackFuncName,omitempty"`
 }
 
+type LiveUploadOption struct {
+	AllocationID string `json:"allocationId,omitempty"`
+	RemotePath   string `json:"remotePath,omitempty"`
+
+	Encrypt bool `json:"encrypt,omitempty"`
+
+	FileBytes        jsbridge.Bytes `json:"fileBytes,omitempty"`
+	CallbackFuncName string         `json:"callbackFuncName,omitempty"`
+}
+
 type BulkUploadResult struct {
 	RemotePath string `json:"remotePath,omitempty"`
 	Success    bool   `json:"success,omitempty"`
@@ -425,6 +435,11 @@ type MultiOperationOption struct {
 	RemotePath    string `json:"remotePath,omitempty"`
 	DestName      string `json:"destName,omitempty"` // Required only for rename operation
 	DestPath      string `json:"destPath,omitempty"` // Required for copy and move operation`
+}
+type LiveUploadResult struct {
+	RemotePath string `json:"remotePath,omitempty"`
+	Success    bool   `json:"success,omitempty"`
+	Error      string `json:"error,omitempty"`
 }
 
 // MultiOperation - do copy, move, delete and createdir operation together
@@ -667,6 +682,132 @@ func uploadWithJsFuncs(allocationID, remotePath string, readChunkFuncName string
 		sdk.WithStatusCallback(statusBar),
 		sdk.WithProgressStorer(&chunkedUploadProgressStorer{list: make(map[string]*sdk.UploadProgress)}),
 		sdk.WithChunkNumber(numBlocks))
+	if err != nil {
+		return false, err
+	}
+
+	err = ChunkedUpload.Start()
+
+	if err != nil {
+		PrintError("Upload failed.", err)
+		return false, err
+	}
+
+	wg.Wait()
+	if !statusBar.success {
+		return false, errors.New("upload failed: unknown")
+	}
+
+	return true, nil
+}
+
+// Live Upload Function.
+func liveUpload(jsonLiveUploadOptions string) ([]LiveUploadResult, error) {
+	var options []LiveUploadOption
+	err := json.Unmarshal([]byte(jsonLiveUploadOptions), &options)
+	if err != nil {
+		return nil, err
+	}
+
+	n := len(options)
+	wait := make(chan LiveUploadResult, 1)
+
+	for _, option := range options {
+		go func(o LiveUploadOption) {
+			result := LiveUploadResult{
+				RemotePath: o.RemotePath,
+			}
+			defer func() { wait <- result }()
+			PrintError(o.FileBytes.Buffer)
+			ok, err := liveUploadWithJsFuncs(o.AllocationID,
+				o.RemotePath,
+				o.Encrypt,
+				o.FileBytes.Buffer,
+				o.CallbackFuncName)
+			result.Success = ok
+			if err != nil {
+				result.Error = err.Error()
+				result.Success = false
+			}
+
+		}(option)
+
+	}
+
+	results := make([]LiveUploadResult, 0, n)
+	for i := 0; i < n; i++ {
+		result := <-wait
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+// Upload using createChunkedUpload.
+func liveUploadWithJsFuncs(allocationID, remotePath string, encrypt bool, fileBytes []byte, callbackFuncName string) (bool, error) {
+
+	if len(allocationID) == 0 {
+		return false, RequiredArg("allocationID")
+	}
+
+	if len(remotePath) == 0 {
+		return false, RequiredArg("remotePath")
+	}
+
+	allocationObj, err := getAllocation(allocationID)
+	if err != nil {
+		PrintError("Error fetching the allocation", err)
+		return false, err
+	}
+
+	wg := &sync.WaitGroup{}
+	statusBar := &StatusBar{wg: wg}
+	if callbackFuncName != "" {
+		callback := js.Global().Get(callbackFuncName)
+		statusBar.callback = func(totalBytes, completedBytes int, err string) {
+			callback.Invoke(totalBytes, completedBytes, err)
+		}
+	}
+	wg.Add(1)
+	if strings.HasPrefix(remotePath, "/Encrypted") {
+		encrypt = true
+	}
+
+	fileReader := bytes.NewReader(fileBytes)
+	fileSize := int64(len(fileBytes))
+
+	mimeType, err := zboxutil.GetFileContentType(fileReader)
+	if err != nil {
+		return false, err
+	}
+
+	localPath := remotePath
+
+	remotePath = zboxutil.RemoteClean(remotePath)
+	isabs := zboxutil.IsRemoteAbs(remotePath)
+	if !isabs {
+		err = errors.New("invalid_path: Path should be valid and absolute")
+		return false, err
+	}
+	remotePath = zboxutil.GetFullRemotePath(localPath, remotePath)
+
+	_, fileName := pathutil.Split(remotePath)
+
+	fileMeta := sdk.FileMeta{
+		Path:       localPath,
+		ActualSize: fileSize,
+		MimeType:   mimeType,
+		RemoteName: fileName,
+		RemotePath: remotePath,
+	}
+
+	isUpdate := false
+	isRepair := false
+	webStreaming := false
+	ChunkedUpload, err := sdk.CreateChunkedUpload("/", allocationObj, fileMeta, fileReader, isUpdate, isRepair, webStreaming, zboxutil.NewConnectionId(),
+		sdk.WithEncrypt(encrypt),
+		sdk.WithStatusCallback(statusBar),
+		sdk.WithProgressStorer(&chunkedUploadProgressStorer{list: make(map[string]*sdk.UploadProgress)}))
 	if err != nil {
 		return false, err
 	}

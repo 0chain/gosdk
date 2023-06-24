@@ -71,7 +71,7 @@ func (lu *LiveUpload) Start() error {
 
 func (lu *LiveUpload) createClipsUpload(clipsIndex int, reader LiveUploadReader) (*ChunkedUpload, error) {
 	fileMeta := FileMeta{
-		Path:       reader.GetClipsFile(clipsIndex),
+		Path:       reader.GetClipsFile(clipsIndex), // string of complete directory file clip
 		ActualSize: reader.Size(),
 
 		MimeType:   lu.liveMeta.MimeType,
