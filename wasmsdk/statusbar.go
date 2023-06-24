@@ -6,6 +6,7 @@ package main
 import (
 	"github.com/0chain/gosdk/core/sys"
 	"gopkg.in/cheggaaa/pb.v1"
+	"path"
 	"sync"
 )
 
@@ -31,12 +32,12 @@ func (s *StatusBar) Started(allocationID, filePath string, op int, totalBytes in
 		s.b = pb.StartNew(totalBytes)
 		s.b.Set(0)
 	}
-
+	fileName := path.Base(filePath)
 	s.totalBytes = totalBytes
 	if s.callback != nil {
 		jsCallbackMutex.Lock()
 		defer jsCallbackMutex.Unlock()
-		s.callback(s.totalBytes, s.completedBytes, "", "", "")
+		s.callback(s.totalBytes, s.completedBytes, fileName, "", "")
 	}
 }
 
@@ -45,12 +46,12 @@ func (s *StatusBar) InProgress(allocationID, filePath string, op int, completedB
 	if logEnabled && s.b != nil {
 		s.b.Set(completedBytes)
 	}
-
+	fileName := path.Base(filePath)
 	s.completedBytes = completedBytes
 	if s.callback != nil {
 		jsCallbackMutex.Lock()
 		defer jsCallbackMutex.Unlock()
-		s.callback(s.totalBytes, s.completedBytes, "", "", "")
+		s.callback(s.totalBytes, s.completedBytes, fileName, "", "")
 	}
 }
 
@@ -89,11 +90,12 @@ func (s *StatusBar) Error(allocationID string, filePath string, op int, err erro
 			PrintError("Recovered in statusBar Error", r)
 		}
 	}()
+	fileName := path.Base(filePath)
 	PrintError("Error in file operation." + err.Error())
 	if s.callback != nil {
 		jsCallbackMutex.Lock()
 		defer jsCallbackMutex.Unlock()
-		s.callback(s.totalBytes, s.completedBytes, "", "", err.Error())
+		s.callback(s.totalBytes, s.completedBytes, fileName, "", err.Error())
 	}
 	s.wg.Done()
 }
