@@ -202,13 +202,22 @@ func main() {
 				"updateAllocationWithRepair": updateAllocationWithRepair,
 				"getAllocationMinLock":       getAllocationMinLock,
 				"getAllocationWith":          getAllocationWith,
-				"getReadPoolInfo":            getReadPoolInfo,
-				"lockStakePool":              lockStakePool,
-				"lockWritePool":              lockWritePool,
-				"getSkatePoolInfo":           getSkatePoolInfo,
-				"unlockStakePool":            unlockStakePool,
-				"decodeAuthTicket":           decodeAuthTicket,
-				"allocationRepair":           allocationRepair,
+
+				// readpool
+				"getReadPoolInfo": getReadPoolInfo,
+				"lockReadPool":    lockReadPool,
+				"createReadPool":  createReadPool,
+
+				// stakepool
+				"getSkatePoolInfo": getSkatePoolInfo,
+				"lockStakePool":    lockStakePool,
+				"unlockStakePool":  unlockStakePool,
+
+				// writepool
+				"lockWritePool": lockWritePool,
+
+				"decodeAuthTicket": decodeAuthTicket,
+				"allocationRepair": allocationRepair,
 
 				//smartcontract
 				"executeSmartContract": executeSmartContract,
@@ -226,7 +235,6 @@ func main() {
 
 				//zcn
 				"getWalletBalance": getWalletBalance,
-				"createReadPool":   createReadPool,
 
 				//0box api
 				"getCsrfToken":     getCsrfToken,
