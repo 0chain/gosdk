@@ -1037,8 +1037,7 @@ func getNewAllocationBlobbers(
 		return nil, err
 	}
 
-	blobbers := []string{}
-	blobbers = append(blobbers, allocBlobberIDs...)
+	blobbers := append(preferredBlobberIds, allocBlobberIDs...)
 
 	// filter duplicates
 	ids := make(map[string]bool)
