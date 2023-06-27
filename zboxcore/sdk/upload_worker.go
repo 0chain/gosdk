@@ -30,7 +30,6 @@ func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([
 		uploadMask := zboxutil.NewUint128(1).Lsh(uint64(len(allocObj.Blobbers))).Sub64(1)
 		return nil, uploadMask, err
 	}
-
 	uo.statusCallback = cu.statusCallback
 	uo.opCode = cu.opCode
 
@@ -120,7 +119,7 @@ func (uo *UploadOperation) Verify(allocationObj *Allocation) error {
 
 func (uo *UploadOperation) Completed(allocObj *Allocation) {
 	if uo.statusCallback != nil {
-		uo.statusCallback.Completed(allocObj.ID, uo.fileMeta.Path, uo.fileMeta.RemoteName, uo.fileMeta.MimeType, int(uo.fileMeta.ActualSize), uo.opCode)
+		uo.statusCallback.Completed(allocObj.ID, uo.fileMeta.RemotePath, uo.fileMeta.RemoteName, uo.fileMeta.MimeType, int(uo.fileMeta.ActualSize), uo.opCode)
 	}
 }
 

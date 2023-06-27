@@ -13,6 +13,7 @@ import (
 	"github.com/0chain/gosdk/core/version"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/wasmsdk/jsbridge"
+	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk/zcncore"
 
@@ -51,8 +52,9 @@ func main() {
 					if ok {
 						return s, nil
 					}
-
-					result, err := jsbridge.Await(jsSign.Invoke(hash))
+					c := client.GetClient()
+					pk := c.Keys[0].PrivateKey
+					result, err := jsbridge.Await(jsSign.Invoke(hash, pk))
 
 					if len(err) > 0 && !err[0].IsNull() {
 						return "", errors.New("sign: " + err[0].String())
@@ -159,21 +161,27 @@ func main() {
 				"createThumbnail":        createThumbnail,
 
 				//blobber
-				"delete":                Delete,
-				"rename":                Rename,
-				"copy":                  Copy,
-				"move":                  Move,
-				"share":                 Share,
-				"download":              download,
-				"upload":                upload,
-				"bulkUpload":            bulkUpload,
-				"listObjects":           listObjects,
-				"createDir":             createDir,
-				"downloadBlocks":        downloadBlocks,
-				"getFileStats":          getFileStats,
-				"updateBlobberSettings": updateBlobberSettings,
-				"getRemoteFileMap":      getRemoteFileMap,
-				"getBlobbers":           getBlobbers,
+				"delete":                 Delete,
+				"rename":                 Rename,
+				"copy":                   Copy,
+				"move":                   Move,
+				"share":                  Share,
+				"download":               download,
+				"upload":                 upload,
+				"bulkUpload":             bulkUpload,
+				"multiUpload":            multiUpload,
+				"multiOperation":         MultiOperation,
+				"listObjects":            listObjects,
+				"createDir":              createDir,
+				"downloadBlocks":         downloadBlocks,
+				"getFileStats":           getFileStats,
+				"updateBlobberSettings":  updateBlobberSettings,
+				"getRemoteFileMap":       getRemoteFileMap,
+				"getBlobbers":            getBlobbers,
+				"getcontainers":          GetContainers,
+				"updatecontainer":        UpdateContainer,
+				"searchcontainer":        SearchContainer,
+				"updateForbidAllocation": UpdateForbidAllocation,
 
 				// player
 				"play":           play,
@@ -194,13 +202,22 @@ func main() {
 				"updateAllocationWithRepair": updateAllocationWithRepair,
 				"getAllocationMinLock":       getAllocationMinLock,
 				"getAllocationWith":          getAllocationWith,
-				"getReadPoolInfo":            getReadPoolInfo,
-				"lockStakePool":              lockStakePool,
-				"lockWritePool":              lockWritePool,
-				"getSkatePoolInfo":           getSkatePoolInfo,
-				"unlockStakePool":            unlockStakePool,
-				"decodeAuthTicket":           decodeAuthTicket,
-				"allocationRepair":           allocationRepair,
+
+				// readpool
+				"getReadPoolInfo": getReadPoolInfo,
+				"lockReadPool":    lockReadPool,
+				"createReadPool":  createReadPool,
+
+				// stakepool
+				"getSkatePoolInfo": getSkatePoolInfo,
+				"lockStakePool":    lockStakePool,
+				"unlockStakePool":  unlockStakePool,
+
+				// writepool
+				"lockWritePool": lockWritePool,
+
+				"decodeAuthTicket": decodeAuthTicket,
+				"allocationRepair": allocationRepair,
 
 				//smartcontract
 				"executeSmartContract": executeSmartContract,
@@ -218,7 +235,6 @@ func main() {
 
 				//zcn
 				"getWalletBalance": getWalletBalance,
-				"createReadPool":   createReadPool,
 
 				//0box api
 				"getCsrfToken":     getCsrfToken,

@@ -168,6 +168,7 @@ type MultiUploadOption struct {
 	RemotePath    string `json:"remotePath,omitempty"`
 	ThumbnailPath string `json:"thumbnailPath,omitempty"`
 	Encrypt       bool   `json:"encrypt,omitempty"`
+	ChunkNumber   int    `json:"chunkNumber,omitempty"`
 }
 
 // MultiOperation - do copy, move, delete and createdir operation together
@@ -244,20 +245,22 @@ func MultiUpload(_allocationID, _workdir, _jsonMultiUploadOptions *C.char) *C.ch
 	fileNames := make([]string, totalUploads)
 	remotePaths := make([]string, totalUploads)
 	thumbnailPaths := make([]string, totalUploads)
+	chunkNumbers := make([]int, totalUploads)
 	encrypts := make([]bool, totalUploads)
 	for idx, option := range options {
 		filePaths[idx] = option.FilePath
 		fileNames[idx] = option.FileName
 		thumbnailPaths[idx] = option.ThumbnailPath
 		remotePaths[idx] = option.RemotePath
+		chunkNumbers[idx] = option.ChunkNumber
+
 	}
 
 	a, err := getAllocation(allocationID)
 	if err != nil {
 		return WithJSON(nil, err)
 	}
-
-	err = a.StartMultiUpload(workdir, filePaths, fileNames, thumbnailPaths, encrypts, remotePaths, false, &StatusCallbackWrapped{Callback: nil})
+	err = a.StartMultiUpload(workdir, filePaths, fileNames, thumbnailPaths, encrypts, chunkNumbers, remotePaths, false, &StatusCallbackWrapped{Callback: nil})
 	if err != nil {
 		return WithJSON(nil, err)
 	}
@@ -292,11 +295,14 @@ func MultiUpdate(_allocationID, _workdir, _jsonMultiUploadOptions *C.char) *C.ch
 	remotePaths := make([]string, totalUploads)
 	thumbnailPaths := make([]string, totalUploads)
 	encrypts := make([]bool, totalUploads)
+	chunkNumbers := make([]int, totalUploads)
 	for idx, option := range options {
 		filePaths[idx] = option.FilePath
 		fileNames[idx] = option.FileName
 		thumbnailPaths[idx] = option.ThumbnailPath
 		remotePaths[idx] = option.RemotePath
+		chunkNumbers[idx] = option.ChunkNumber
+
 	}
 	if err != nil {
 		return WithJSON(nil, err)
@@ -306,7 +312,7 @@ func MultiUpdate(_allocationID, _workdir, _jsonMultiUploadOptions *C.char) *C.ch
 	if err != nil {
 		return WithJSON(nil, err)
 	}
-	err = a.StartMultiUpload(workdir, filePaths, fileNames, thumbnailPaths, encrypts, remotePaths, true, &StatusCallbackWrapped{Callback: nil})
+	err = a.StartMultiUpload(workdir, filePaths, fileNames, thumbnailPaths, encrypts, chunkNumbers, remotePaths, true, &StatusCallbackWrapped{Callback: nil})
 	if err != nil {
 		return WithJSON(nil, err)
 	}
