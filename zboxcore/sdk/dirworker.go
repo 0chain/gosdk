@@ -309,6 +309,7 @@ func (dirOp *DirOperation) Process(allocObj *Allocation, connectionID string) ([
 		dirMask:      dirOp.dirMask,
 		mu:           dirOp.maskMU,
 		wg:           &sync.WaitGroup{},
+		Consensus:    Consensus{RWMutex: &sync.RWMutex{}, consensusThresh: dirOp.consensusThresh, fullconsensus: dirOp.fullconsensus},
 	}
 	dR.consensusThresh = dirOp.consensusThresh
 	dR.fullconsensus = dirOp.fullconsensus

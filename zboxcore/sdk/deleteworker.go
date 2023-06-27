@@ -346,7 +346,7 @@ func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string) (
 	for i := deleteReq.deleteMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		deleteReq.wg.Add(1)
-		go func(blobberIdx int) {
+		go func(blobberIdx uint64) {
 			defer deleteReq.wg.Done()
 			refEntity, err := deleteReq.getObjectTreeFromBlobber(pos)
 			if errors.Is(err, constants.ErrNotFound) {
@@ -357,12 +357,12 @@ func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string) (
 				l.Logger.Error(err.Error())
 				return
 			}
-			err = deleteReq.deleteBlobberFile(deleteReq.blobbers[blobberIdx], blobberIdx)
+			err = deleteReq.deleteBlobberFile(deleteReq.blobbers[blobberIdx], int(blobberIdx))
 			if err != nil {
 				blobberErrors[blobberIdx] = err
 			}
 			objectTreeRefs[blobberIdx] = refEntity
-		}(int(pos))
+		}(pos)
 	}
 	deleteReq.wg.Wait()
 
@@ -387,6 +387,10 @@ func (do *DeleteOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID, 
 		pos = uint64(i.TrailingZeros())
 		newChange := &allocationchange.DeleteFileChange{}
 		newChange.ObjectTree = refs[pos]
+		if newChange.ObjectTree == nil {
+			l.Logger.Error("Object tree is nil for blobber ", pos)
+			continue
+		}
 		newChange.NumBlocks = newChange.ObjectTree.GetNumBlocks()
 		newChange.Operation = constants.FileOperationDelete
 		newChange.Size = newChange.ObjectTree.GetSize()
