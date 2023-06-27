@@ -178,7 +178,6 @@ type MultiUploadOption struct {
 //
 // ## Outputs
 //   - error
-//export MultiOperation
 func MultiOperation(_allocationID, _jsonMultiOperationOptions *C.char) *C.char {
 	allocationID := C.GoString(_allocationID)
 	jsonMultiOperationOptions := C.GoString(_jsonMultiOperationOptions)
@@ -220,7 +219,6 @@ func MultiOperation(_allocationID, _jsonMultiOperationOptions *C.char) *C.char {
 //
 // ## Outputs
 //   - error
-//export MultiUpload
 func MultiUpload(_allocationID, _workdir, _jsonMultiUploadOptions *C.char, statusCb StatusCallbackMocked) *C.char {
 	allocationID := C.GoString(_allocationID)
 	workdir := C.GoString(_workdir)
@@ -265,7 +263,6 @@ func MultiUpload(_allocationID, _workdir, _jsonMultiUploadOptions *C.char, statu
 //
 // ## Outputs
 //   - error
-//export MultiUpdate
 func MultiUpdate(_allocationID, _workdir, _jsonMultiUploadOptions *C.char, statusCb StatusCallbackMocked) *C.char {
 	allocationID := C.GoString(_allocationID)
 	workdir := C.GoString(_workdir)
