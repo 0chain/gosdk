@@ -344,7 +344,7 @@ type MultiDownloadOption struct {
 // ## Outputs
 //   - error
 //
-// expose MultiDownload
+// export MultiDownload
 func MultiDownload(_allocationID, _jsonMultiDownloadOptions *C.char) error {
 	allocationID := C.GoString(_allocationID)
 	jsonMultiUploadOptions := C.GoString(_jsonMultiDownloadOptions)
