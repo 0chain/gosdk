@@ -942,8 +942,17 @@ func (a *Allocation) generateDownloadRequest(localPath string, remotePath string
 	return downloadReq, nil
 }
 
-func (a *Allocation) addAndGenerateDownloadRequest(localPath string, remotePath string, contentMode string, startBlock int64, endBlock int64, numBlocks int, verifyDownload bool,
-	status StatusCallback, isFinal bool) error {
+func (a *Allocation) addAndGenerateDownloadRequest(
+	localPath string,
+	remotePath string,
+	contentMode string,
+	startBlock int64,
+	endBlock int64,
+	numBlocks int,
+	verifyDownload bool,
+	status StatusCallback,
+	isFinal bool,
+) error {
 	var connectionID string
 	if len(a.downloadRequests) > 0 {
 		connectionID = a.downloadRequests[0].connectionID
@@ -1733,7 +1742,7 @@ func (a *Allocation) CancelDownload(remotepath string) error {
 }
 
 func (a *Allocation) DownloadFromReader(
-	remotePath, localPath, pathHash, authToken, contentMode string,
+	remotePath, localPath, lookupHash, authTicket, contentMode string,
 	verifyDownload bool, blocksPerMarker uint) error {
 
 	finfo, err := os.Stat(localPath)
@@ -1745,7 +1754,7 @@ func (a *Allocation) DownloadFromReader(
 	}
 
 	r, err := a.GetAllocationFileReader(
-		remotePath, pathHash, authToken, contentMode, verifyDownload, blocksPerMarker)
+		remotePath, lookupHash, authTicket, contentMode, verifyDownload, blocksPerMarker)
 	if err != nil {
 		return err
 	}
@@ -1801,8 +1810,8 @@ func (a *Allocation) DownloadFromReader(
 // io.ReadSeekerCloser interface
 func (a *Allocation) GetAllocationFileReader(
 	remotePath,
-	pathHash,
-	authToken,
+	lookupHash,
+	authTicket,
 	contentMode string,
 	verifyDownload bool,
 	blocksPerMarker uint) (io.ReadSeekCloser, error) {
@@ -1815,12 +1824,12 @@ func (a *Allocation) GetAllocationFileReader(
 	var res *ObjectTreeResult
 	var err error
 	switch {
-	case authToken != "":
-		res, err = a.GetRefsWithAuthTicket(authToken, "", "", "", "", "regular", 0, 1)
+	case authTicket != "":
+		res, err = a.GetRefsWithAuthTicket(authTicket, "", "", "", "", "regular", 0, 1)
 	case remotePath != "":
 		res, err = a.GetRefs(remotePath, "", "", "", "", "regular", 0, 1)
-	case pathHash != "":
-		res, err = a.GetRefsFromLookupHash(pathHash, "", "", "", "", "regular", 0, 1) //
+	case lookupHash != "":
+		res, err = a.GetRefsFromLookupHash(lookupHash, "", "", "", "", "regular", 0, 1) //
 	default:
 		return nil, errors.New("invalid_path", "remote path or authticket is required")
 	}
@@ -1837,9 +1846,13 @@ func (a *Allocation) GetAllocationFileReader(
 		return nil, errors.New("operation_not_supported", "downloading other than file is not supported")
 	}
 
+	if blocksPerMarker == 0 {
+		blocksPerMarker = uint(numBlockDownloads)
+	}
+
 	sdo := &StreamDownloadOption{
 		ContentMode:     contentMode,
-		AuthTicket:      authToken,
+		AuthTicket:      authTicket,
 		VerifyDownload:  verifyDownload,
 		BlocksPerMarker: blocksPerMarker,
 	}
