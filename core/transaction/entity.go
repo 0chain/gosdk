@@ -183,8 +183,6 @@ func init() {
 	cache, err = lru.New(100)
 	if err != nil {
 		fmt.Println("caching Initilization failed, err:", err)
-	} else {
-		fmt.Println("caching Initilization OK")
 	}
 }
 
@@ -316,7 +314,7 @@ func EstimateFee(txn *Transaction, miners []string, reqPercent ...float32) (uint
 			defer wg.Done()
 
 			// Retrieve the object from the cache
-			cached, ok := cache.Get("new_allocation_request")
+			cached, ok := cache.Get(STORAGESC_CREATE_ALLOCATION)
 
 			if ok {
 				cachedObj, ok := cached.(*cachedObject)
@@ -327,8 +325,6 @@ func EstimateFee(txn *Transaction, miners []string, reqPercent ...float32) (uint
 				val := cachedObj.Value.(map[string]interface{})["fee"].(int)
 				feeC <- uint64(val)
 				return
-			} else {
-				logging.Logger.Error("Object not found in cache")
 			}
 
 			url := minerUrl + ESTIMATE_TRANSACTION_COST
@@ -385,7 +381,7 @@ func EstimateFee(txn *Transaction, miners []string, reqPercent ...float32) (uint
 			"fee": fee,
 		}
 
-		cache.Add("new_allocation_request", &cachedObject{
+		cache.Add(STORAGESC_CREATE_ALLOCATION, &cachedObject{
 			Expiration: 30 * time.Hour,
 			Value:      obj,
 		})
@@ -487,57 +483,4 @@ func GetFeesTable(miners []string, reqPercent ...float32) (map[string]map[string
 	}
 
 	return nil, errors.New("failed to get fees table", strings.Join(errs, ","))
-}
-
-func GetFeesFromCache() {
-
-	data := `{
-		"6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d3": {
-			"pour": 0,
-			"refill": 1000000,
-			"update-settings": 1000000
-		},
-		"6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7": {
-			"add_blobber": 1000000,
-			"add_free_storage_assigner": 1000000,
-			"add_validator": 1000000,
-			"blobber_block_rewards"	:	0
-			"kill_blobber"	:	1000000
-			"kill_validator"	:	1000000
-			"new_allocation_request"	:	30000000
-			"new_read_pool"	:	1000000
-			"pay_blobber_block_rewards"	:	1000000
-			"read_pool_lock"	:	1000000
-		},
-		"6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d9": {
-			"add_miner": 1000000,
-			"add_sharder": 1000000,
-			"addtodelegatepool": 1000000,
-		},
-		"6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712e0": {
-			"add-authorizer": 1000000,
-			"authorizer-health-check": 1000000,
-			"burn": 1000000,
-		},
-		"transfer": {
-			"transfer": 100000
-		}
-	}`
-
-	var result map[string]interface{}
-	err := json.Unmarshal([]byte(data), &result)
-	if err != nil {
-		fmt.Println("Error:", err)
-		return
-	}
-
-	// Printing the extracted values
-	for key, value := range result {
-		fmt.Println(key)
-		for k, v := range value.(map[string]interface{}) {
-			fmt.Printf("    %s: %v\n", k, v)
-		}
-		fmt.Println()
-	}
-
 }
