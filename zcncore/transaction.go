@@ -197,8 +197,7 @@ type StakePoolSettings struct {
 
 type Terms struct {
 	ReadPrice        common.Balance `json:"read_price"`  // tokens / GB
-	WritePrice       common.Balance `json:"write_price"` // tokens / GB
-	MinLockDemand    float64        `json:"min_lock_demand"`
+	WritePrice       common.Balance `json:"write_price"` // tokens / GB `
 	MaxOfferDuration time.Duration  `json:"max_offer_duration"`
 }
 
