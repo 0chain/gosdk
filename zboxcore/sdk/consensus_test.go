@@ -1,6 +1,7 @@
 package sdk
 
 import (
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -42,6 +43,7 @@ func TestConsensus_isConsensusOk(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			req := &Consensus{
+				RWMutex:         &sync.RWMutex{},
 				consensus:       tt.fields.consensus,
 				consensusThresh: tt.fields.consensusThresh,
 				fullconsensus:   tt.fields.fullconsensus,
