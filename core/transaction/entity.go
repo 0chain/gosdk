@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/0chain/common/core/logging"
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/encryption"
@@ -175,6 +176,18 @@ type SignFunc = func(msg string) (string, error)
 type VerifyFunc = func(signature, msgHash, publicKey string) (bool, error)
 type SignWithWallet = func(msg string, wallet interface{}) (string, error)
 
+var cache *lru.Cache
+
+func init() {
+	var err error
+	cache, err = lru.New(100)
+	if err != nil {
+		fmt.Println("caching Initilization failed, err:", err)
+	} else {
+		fmt.Println("caching Initilization OK")
+	}
+}
+
 func NewTransactionEntity(clientID string, chainID string, publicKey string, nonce int64) *Transaction {
 	txn := &Transaction{}
 	txn.Version = "1.0"
@@ -276,18 +289,6 @@ type cachedObject struct {
 	Value      interface{}
 }
 
-var cache *lru.Cache
-
-func initLRUCache() {
-	var err error
-	cache, err = lru.New(100)
-	if err != nil {
-		fmt.Println("caching Initilization failed, err:", err)
-	} else {
-		fmt.Println("caching Initilization OK")
-	}
-}
-
 // EstimateFee estimates transaction fee
 func EstimateFee(txn *Transaction, miners []string, reqPercent ...float32) (uint64, error) {
 
@@ -297,8 +298,6 @@ func EstimateFee(txn *Transaction, miners []string, reqPercent ...float32) (uint
 	if len(reqPercent) > 0 {
 		reqN = int(reqPercent[0] * float32(len(miners)))
 	}
-
-	initLRUCache()
 
 	reqN = util.MaxInt(minReqNum, reqN)
 	reqN = util.MinInt(reqN, len(miners))
@@ -320,14 +319,16 @@ func EstimateFee(txn *Transaction, miners []string, reqPercent ...float32) (uint
 			cached, ok := cache.Get("new_allocation_request")
 
 			if ok {
-				cachedObj := cached.(*cachedObject)
-				value := cachedObj.Value
+				cachedObj, ok := cached.(*cachedObject)
+				if !ok {
+					logging.Logger.Error("Object of bad type")
+					return
+				}
 				val := cachedObj.Value.(map[string]interface{})["fee"].(int)
-				fmt.Println("Retrieved value:", value, val)
 				feeC <- uint64(val)
 				return
 			} else {
-				fmt.Println("Object not found in cache")
+				logging.Logger.Error("Object not found in cache")
 			}
 
 			url := minerUrl + ESTIMATE_TRANSACTION_COST
