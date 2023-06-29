@@ -56,6 +56,9 @@ func (req *CopyRequest) copyBlobberObject(
 			// Removing blobber from mask
 			req.copyMask = req.copyMask.And(zboxutil.NewUint128(1).Lsh(uint64(blobberIdx)).Not())
 			req.maskMU.Unlock()
+			if strings.Contains(err.Error(), "Object Already exists") {
+				req.Consensus.Done()
+			}
 		}
 	}()
 	refEntity, err = req.getObjectTreeFromBlobber(req.blobbers[blobberIdx])

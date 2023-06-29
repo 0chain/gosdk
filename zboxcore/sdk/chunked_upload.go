@@ -177,14 +177,6 @@ func CreateChunkedUpload(
 	su.ctx, su.ctxCncl = context.WithCancel(allocationObj.ctx)
 
 	if isUpdate {
-		otr, err := allocationObj.GetRefs(fileMeta.RemotePath, "", "", "", fileref.FILE, "regular", 0, 1)
-		if err != nil {
-			logger.Logger.Error(err)
-			return nil, thrown.New("chunk_upload", err.Error())
-		}
-		if len(otr.Refs) != 1 {
-			return nil, thrown.New("chunk_upload", fmt.Sprintf("Expected refs 1, got %d", len(otr.Refs)))
-		}
 		su.httpMethod = http.MethodPut
 		su.buildChange = func(ref *fileref.FileRef, _ uuid.UUID, ts common.Timestamp) allocationchange.AllocationChange {
 			change := &allocationchange.UpdateFileChange{}
@@ -734,10 +726,6 @@ func (su *ChunkedUpload) processCommit() error {
 			fmt.Sprintf("Upload commit failed. Required consensus atleast %d, got %d",
 				su.consensus.consensusThresh, consensus))
 
-		if consensus != 0 {
-			logger.Logger.Info("Commit consensus failed, Deleting remote file....")
-			su.allocationObj.deleteFile(su.fileMeta.RemotePath, consensus, consensus) //nolint
-		}
 		if su.statusCallback != nil {
 			su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
 		}
