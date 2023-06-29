@@ -89,7 +89,7 @@ func (uo *UploadOperation) Verify(allocationObj *Allocation) error {
 	if err != nil {
 		return err
 	}
-	spaceLeft := allocationObj.Size
+	spaceLeft := allocationObj.Size * int64(float64(allocationObj.DataShards+allocationObj.ParityShards)/float64(allocationObj.DataShards))
 	if allocationObj.Stats != nil {
 		spaceLeft -= allocationObj.Stats.UsedSize
 	}
