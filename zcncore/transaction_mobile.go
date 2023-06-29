@@ -149,10 +149,9 @@ type StakePoolSettings struct {
 }
 
 type Terms struct {
-	ReadPrice        int64   `json:"read_price"`  // tokens / GB
-	WritePrice       int64   `json:"write_price"` // tokens / GB
-	MinLockDemand    float64 `json:"min_lock_demand"`
-	MaxOfferDuration int64   `json:"max_offer_duration"`
+	ReadPrice        int64 `json:"read_price"`  // tokens / GB
+	WritePrice       int64 `json:"write_price"` // tokens / GB
+	MaxOfferDuration int64 `json:"max_offer_duration"`
 }
 
 type Blobber interface {
@@ -196,7 +195,6 @@ func (b *blobber) SetTerms(readPrice int64, writePrice int64, minLockDemand floa
 	b.Terms = Terms{
 		ReadPrice:        readPrice,
 		WritePrice:       writePrice,
-		MinLockDemand:    minLockDemand,
 		MaxOfferDuration: maxOfferDuration,
 	}
 }
