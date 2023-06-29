@@ -377,27 +377,28 @@
 
         const objects = []
         const allocationId = getSelectedAllocation()
+        if (!allocationId) {
+          alert("please selection allocationID")
+          return
+        }
         for (const file of files) {
           objects.push({
-            allocationId: allocationId,
+            filePath: `/${file.name}`,
             remotePath: `/${file.name}`,
-            file: file,
-            thumbnailBytes: await readBytes(file),//only for demo, don't upload original file as thumbnail in production
             encrypt: false,
-            webstreaming: false,
-            isUpdate: false,
-            isRepair: false,
-            numBlocks: 100,
-            callback: function (totalBytes, completedBytes, error) {
-              console.log(file.name + " " + completedBytes + "/" + totalBytes + " err:" + error)
-            }
+            chunkNumber: 0,
           })
         }
 
-        // const results = await goWasm.bulkUpload(objects)
-        const results = await goWasm.multiUpload(objects)
+        let stringifiedArray = JSON.stringify(objects);
 
-        console.log(JSON.stringify(results))
+        try {
+          // const results = await goWasm.bulkUpload(objects)
+          const results = await goWasm.sdk.multiUpload(allocationId, stringifiedArray)
+          console.log(JSON.stringify(results))
+        } catch (e) {
+          alert(e)
+        }
       }
     })
 
