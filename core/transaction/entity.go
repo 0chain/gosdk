@@ -57,15 +57,16 @@ type SmartContractTxnData struct {
 }
 
 type StorageAllocation struct {
-	ID             string `json:"id"`
-	DataShards     int    `json:"data_shards"`
-	ParityShards   int    `json:"parity_shards"`
-	Size           int64  `json:"size"`
-	Expiration     int64  `json:"expiration_date"`
-	Owner          string `json:"owner_id"`
-	OwnerPublicKey string `json:"owner_public_key"`
-	ReadRatio      *Ratio `json:"read_ratio"`
-	WriteRatio     *Ratio `json:"write_ratio"`
+	ID             string  `json:"id"`
+	DataShards     int     `json:"data_shards"`
+	ParityShards   int     `json:"parity_shards"`
+	Size           int64   `json:"size"`
+	Expiration     int64   `json:"expiration_date"`
+	Owner          string  `json:"owner_id"`
+	OwnerPublicKey string  `json:"owner_public_key"`
+	ReadRatio      *Ratio  `json:"read_ratio"`
+	WriteRatio     *Ratio  `json:"write_ratio"`
+	MinLockDemand  float64 `json:"min_lock_demand"`
 }
 type Ratio struct {
 	ZCN  int64 `json:"zcn"`
