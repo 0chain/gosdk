@@ -198,7 +198,7 @@ func (mo *MultiOperation) Process() error {
 				return
 			}
 			mo.maskMU.Lock()
-			mo.operationMask.And(mask)
+			mo.operationMask = mo.operationMask.And(mask)
 			mo.maskMU.Unlock()
 			changes := op.buildChange(refs, uid)
 

@@ -40,6 +40,7 @@ type CopyRequest struct {
 	maskMU         *sync.Mutex
 	connectionID   string
 	timestamp      int64
+	copiedNum      int
 	Consensus
 }
 
@@ -56,9 +57,6 @@ func (req *CopyRequest) copyBlobberObject(
 			// Removing blobber from mask
 			req.copyMask = req.copyMask.And(zboxutil.NewUint128(1).Lsh(uint64(blobberIdx)).Not())
 			req.maskMU.Unlock()
-			if strings.Contains(err.Error(), "Object Already exists") {
-				req.Consensus.Done()
-			}
 		}
 	}()
 	refEntity, err = req.getObjectTreeFromBlobber(req.blobbers[blobberIdx])
@@ -70,6 +68,7 @@ func (req *CopyRequest) copyBlobberObject(
 	var shouldContinue bool
 	var latestRespMsg string
 	var latestStatusCode int
+	var copyMutex sync.Mutex
 	for i := 0; i < 3; i++ {
 		err, shouldContinue = func() (err error, shouldContinue bool) {
 			body := new(bytes.Buffer)
@@ -151,6 +150,12 @@ func (req *CopyRequest) copyBlobberObject(
 			}
 			l.Logger.Error(blobber.Baseurl, "Response: ", string(respBody))
 			err = errors.New("response_error", string(respBody))
+			if strings.Contains(string(respBody), "Object Already exists") {
+				req.Consensus.Done()
+				copyMutex.Lock()
+				req.copiedNum++
+				copyMutex.Unlock()
+			}
 			return
 		}()
 
@@ -198,7 +203,6 @@ func (req *CopyRequest) ProcessCopy() error {
 	var pos uint64
 
 	objectTreeRefs, blobberErrors := req.ProcessWithBlobbers()
-
 	if !req.isConsensusOk() {
 		err := zboxutil.MajorError(blobberErrors)
 		if err != nil {
@@ -215,7 +219,7 @@ func (req *CopyRequest) ProcessCopy() error {
 		return fmt.Errorf("Copy failed: %s", err.Error())
 	}
 	err = writeMarkerMutex.Lock(req.ctx, &req.copyMask, req.maskMU,
-		req.blobbers, &req.Consensus, 0, time.Minute, req.connectionID)
+		req.blobbers, &req.Consensus, req.copiedNum, time.Minute, req.connectionID)
 	if err != nil {
 		return fmt.Errorf("Copy failed: %s", err.Error())
 	}
@@ -244,6 +248,7 @@ func (req *CopyRequest) ProcessCopy() error {
 	activeBlobbers := req.copyMask.CountOnes()
 	wg.Add(activeBlobbers)
 	commitReqs := make([]*CommitRequest, activeBlobbers)
+	req.Consensus.consensus = req.copiedNum
 	req.timestamp = int64(common.Now())
 	uid := util.GetNewUUID()
 	var c int
@@ -325,6 +330,7 @@ func (co *CopyOperation) Process(allocObj *Allocation, connectionID string) ([]f
 	cR.fullconsensus = co.fullconsensus
 
 	objectTreeRefs, blobberErrors := cR.ProcessWithBlobbers()
+	co.consensus = cR.copiedNum
 
 	if !cR.isConsensusOk() {
 		err := zboxutil.MajorError(blobberErrors)
@@ -336,6 +342,8 @@ func (co *CopyOperation) Process(allocObj *Allocation, connectionID string) ([]f
 			fmt.Sprintf("Copy failed. Required consensus %d, got %d",
 				cR.Consensus.consensusThresh, cR.Consensus.consensus))
 	}
+	l.Logger.Info("Copy completed", cR.getConsensus(), cR.copyMask.CountOnes())
+	co.copyMask = co.copyMask.And(cR.copyMask)
 	return objectTreeRefs, cR.copyMask, nil
 
 }
@@ -343,15 +351,18 @@ func (co *CopyOperation) Process(allocObj *Allocation, connectionID string) ([]f
 func (co *CopyOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange {
 
 	changes := make([]allocationchange.AllocationChange, len(refs))
-
-	for idx, ref := range refs {
+	var pos uint64
+	l.Logger.Info("Copy changes", co.copyMask.CountOnes())
+	for i := co.copyMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		pos = uint64(i.TrailingZeros())
 		newChange := &allocationchange.CopyFileChange{
 			DestPath:   co.destPath,
 			Uuid:       uid,
-			ObjectTree: ref,
+			ObjectTree: refs[pos],
 		}
-		changes[idx] = newChange
+		changes[pos] = newChange
 	}
+
 	return changes
 }
 
