@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"math"
 	"mime/multipart"
 	"net/http"
@@ -775,10 +776,6 @@ func (a *Allocation) RepairRequired(remotepath string) (zboxutil.Uint128, bool, 
 	return found, !found.Equals(uploadMask), fileRef, nil
 }
 
-func (a *Allocation) DownloadFile(localPath string, remotePath string, verifyDownload bool, status StatusCallback, isFinal bool) error {
-	return a.addAndGenerateDownloadRequest(localPath, remotePath, DOWNLOAD_CONTENT_FULL, 1, 0, numBlockDownloads, verifyDownload, status, isFinal)
-}
-
 func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 	if len(operations) == 0 {
 		return nil
@@ -871,41 +868,112 @@ func GenerateParentPaths(path string) map[string]bool {
 	return parentPaths
 }
 
+func (a *Allocation) DownloadToFileHandler(
+	fileHandler sys.File,
+	remotePath, contentMode string,
+	startBlock, endBlock int64,
+	numBlocks int,
+	verifyDownload bool,
+	status StatusCallback,
+	isFinal bool,
+	doneChan chan struct{},
+	errChan chan error,
+) error {
+	return a.addAndGenerateDownloadRequest(fileHandler, remotePath, contentMode, startBlock, endBlock, numBlockDownloads, verifyDownload, status, isFinal, doneChan, errChan)
+}
+
+func (a *Allocation) DownloadFile(localPath string, remotePath string, verifyDownload bool, status StatusCallback, isFinal bool) error {
+	f, localFilePath, err := a.prepareAndOpenLocalFile(localPath, remotePath)
+	if err != nil {
+		return err
+	}
+	doneChan := make(chan struct{})
+	errChan := make(chan error, 1)
+
+	go func() {
+		err = a.DownloadToFileHandler(f, remotePath, DOWNLOAD_CONTENT_FULL, 1, 0, numBlockDownloads, verifyDownload, status, isFinal, doneChan, errChan)
+		if err != nil {
+			errChan <- err
+		}
+	}()
+
+	select {
+	case <-doneChan:
+		f.Close()
+		return nil
+	case err := <-errChan:
+		f.Close()
+		os.Remove(localFilePath) //nolint: errcheck
+		return err
+	}
+}
+
 // TODO: Use a map to store the download request and use flag isFinal to start the download, calculate readCount in parallel if possible
 func (a *Allocation) DownloadFileByBlock(
 	localPath string, remotePath string, startBlock int64, endBlock int64,
 	numBlocks int, verifyDownload bool, status StatusCallback, isFinal bool) error {
-	return a.addAndGenerateDownloadRequest(localPath, remotePath, DOWNLOAD_CONTENT_FULL, startBlock, endBlock, numBlocks, verifyDownload, status, isFinal)
+	f, localFilePath, err := a.prepareAndOpenLocalFile(localPath, remotePath)
+	if err != nil {
+		return err
+	}
+	doneChan := make(chan struct{})
+	errChan := make(chan error, 1)
+
+	go func() {
+		err = a.DownloadToFileHandler(f, remotePath, DOWNLOAD_CONTENT_FULL, startBlock, endBlock, numBlockDownloads, verifyDownload, status, isFinal, doneChan, errChan)
+		if err != nil {
+			errChan <- err
+		}
+	}()
+
+	select {
+	case <-doneChan:
+		f.Close()
+		return nil
+	case err := <-errChan:
+		f.Close()
+		os.Remove(localFilePath) //nolint: errcheck
+		return err
+	}
 }
 
 func (a *Allocation) DownloadThumbnail(localPath string, remotePath string, verifyDownload bool, status StatusCallback, isFinal bool) error {
-	return a.addAndGenerateDownloadRequest(localPath, remotePath, DOWNLOAD_CONTENT_THUMB, 1, 0, numBlockDownloads, verifyDownload, status, isFinal)
+	f, localFilePath, err := a.prepareAndOpenLocalFile(localPath, remotePath)
+	if err != nil {
+		return err
+	}
+	doneChan := make(chan struct{})
+	errChan := make(chan error, 1)
+
+	go func() {
+		err = a.DownloadToFileHandler(f, remotePath, DOWNLOAD_CONTENT_THUMB, 1, 0, numBlockDownloads, verifyDownload, status, isFinal, doneChan, errChan)
+		if err != nil {
+			errChan <- err
+		}
+	}()
+
+	select {
+	case <-doneChan:
+		f.Close()
+		return nil
+	case err := <-errChan:
+		f.Close()
+		os.Remove(localFilePath) //nolint: errcheck
+		return err
+	}
 }
 
-func (a *Allocation) generateDownloadRequest(localPath string, remotePath string, contentMode string,
-	startBlock int64, endBlock int64, numBlocks int, verifyDownload bool,
-	status StatusCallback, connectionID string) (*DownloadRequest, error) {
-	if !a.isInitialized() {
-		return nil, notInitialized
-	}
-	if stat, err := sys.Files.Stat(localPath); err == nil {
-		if !stat.IsDir() {
-			return nil, fmt.Errorf("Local path is not a directory '%s'", localPath)
-		}
-		localPath = strings.TrimRight(localPath, "/")
-		_, rFile := pathutil.Split(remotePath)
-		localPath = fmt.Sprintf("%s/%s", localPath, rFile)
-		if _, err := sys.Files.Stat(localPath); err == nil {
-			return nil, fmt.Errorf("Local file already exists '%s'", localPath)
-		}
-	}
-	dir, _ := filepath.Split(localPath)
-	if dir != "" {
-		if err := sys.Files.MkdirAll(dir, 0744); err != nil {
-			return nil, err
-		}
-	}
-
+func (a *Allocation) generateDownloadRequest(
+	fileHandler sys.File,
+	remotePath, contentMode string,
+	startBlock, endBlock int64,
+	numBlocks int,
+	verifyDownload bool,
+	status StatusCallback,
+	connectionID string,
+	doneChan chan struct{},
+	errChan chan error,
+) (*DownloadRequest, error) {
 	if len(a.Blobbers) == 0 {
 		return nil, noBLOBBERS
 	}
@@ -917,7 +985,9 @@ func (a *Allocation) generateDownloadRequest(localPath string, remotePath string
 	downloadReq.allocOwnerID = a.Owner
 	downloadReq.allocOwnerPubKey = a.OwnerPublicKey
 	downloadReq.ctx, downloadReq.ctxCncl = context.WithCancel(a.ctx)
-	downloadReq.localpath = localPath
+	downloadReq.fileHandler = fileHandler
+	downloadReq.doneChan = doneChan
+	downloadReq.errChan = errChan
 	downloadReq.remotefilepath = remotePath
 	downloadReq.statusCallback = status
 	downloadReq.downloadMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
@@ -936,22 +1006,21 @@ func (a *Allocation) generateDownloadRequest(localPath string, remotePath string
 		delete(a.downloadProgressMap, remotepath)
 	}
 	downloadReq.contentMode = contentMode
-	downloadReq.prepaidBlobbers = make(map[string]bool)
 	downloadReq.connectionID = connectionID
 
 	return downloadReq, nil
 }
 
 func (a *Allocation) addAndGenerateDownloadRequest(
-	localPath string,
-	remotePath string,
-	contentMode string,
-	startBlock int64,
-	endBlock int64,
+	fileHandler sys.File,
+	remotePath, contentMode string,
+	startBlock, endBlock int64,
 	numBlocks int,
 	verifyDownload bool,
 	status StatusCallback,
 	isFinal bool,
+	doneChan chan struct{},
+	errChan chan error,
 ) error {
 	var connectionID string
 	if len(a.downloadRequests) > 0 {
@@ -959,7 +1028,9 @@ func (a *Allocation) addAndGenerateDownloadRequest(
 	} else {
 		connectionID = zboxutil.NewConnectionId()
 	}
-	downloadReq, err := a.generateDownloadRequest(localPath, remotePath, contentMode, startBlock, endBlock, numBlocks, verifyDownload, status, connectionID)
+	downloadReq, err := a.generateDownloadRequest(
+		fileHandler, remotePath, contentMode, startBlock, endBlock,
+		numBlocks, verifyDownload, status, connectionID, doneChan, errChan)
 	if err != nil {
 		return err
 	}
@@ -1031,6 +1102,47 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 			a.downloadChan <- dr
 		}(dr)
 	}
+}
+
+func (a *Allocation) prepareAndOpenLocalFile(localPath string, remotePath string) (*os.File, string, error) {
+	log.Println("=====> prepareAndOpenLocalFile")
+	if !a.isInitialized() {
+		return nil, "", notInitialized
+	}
+	_, err := os.Stat(localPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			if err := os.MkdirAll(localPath, 0744); err != nil {
+				return nil, "", err
+			}
+		} else {
+			return nil, "", err
+		}
+	}
+
+	finfo, err := os.Stat(localPath)
+	if err != nil {
+		return nil, "", err
+	}
+
+	if !finfo.IsDir() {
+		return nil, "", fmt.Errorf("Local path is not a directory '%s'", localPath)
+	}
+
+	localFileName := filepath.Base(remotePath)
+	localFilePath := filepath.Join(localPath, localFileName)
+
+	if _, err = os.Stat(localFilePath); err == nil {
+		return nil, "", fmt.Errorf("Local file already exists '%s'", localFilePath)
+	}
+
+	f, err := os.OpenFile(localFilePath, os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return nil, "", errors.Wrap(err, "Can't create local file")
+	}
+	log.Println("RETURN =====> prepareAndOpenLocalFile")
+
+	return f, localFilePath, nil
 }
 
 func (a *Allocation) ListDirFromAuthTicket(authTicket string, lookupHash string) (*ListResult, error) {
@@ -1157,11 +1269,19 @@ func (a *Allocation) DownloadFromBlobber(blobberID, localPath, remotePath string
 	}
 
 	verifyDownload := false // should be set to false
-	downloadReq, err := a.generateDownloadRequest(
-		localPath, remotePath, DOWNLOAD_CONTENT_FULL, 1, 0, numBlockDownloads, verifyDownload, status, zboxutil.NewConnectionId())
 
+	f, localFilePath, err := a.prepareAndOpenLocalFile(localPath, remotePath)
+	if err != nil {
+		return err
+	}
+	doneChan := make(chan struct{})
+	errChan := make(chan error, 1)
+	downloadReq, err := a.generateDownloadRequest(f, remotePath, DOWNLOAD_CONTENT_FULL, 1, 0, numBlockDownloads, verifyDownload,
+		status, zboxutil.NewConnectionId(), doneChan, errChan)
 	if err != nil {
 		l.Logger.Error(err)
+		f.Close()
+		os.Remove(localFilePath) //nolint: errcheck
 		return err
 	}
 
@@ -1176,16 +1296,25 @@ func (a *Allocation) DownloadFromBlobber(blobberID, localPath, remotePath string
 		downloadReq.errorCB(
 			fmt.Errorf("Error while getting file ref. Error: %v",
 				err), remotePath)
-
+		f.Close()
+		os.Remove(localFilePath) //nolint: errcheck
 		return err
 	}
-
 	downloadReq.numBlocks = fRef.NumBlocks
-	a.processReadMarker([]*DownloadRequest{downloadReq})
-	if downloadReq.skip {
-		return errors.New("download_request_failed", "Failed to get download response from the blobbers")
+
+	go func() {
+		a.processReadMarker([]*DownloadRequest{downloadReq})
+	}()
+
+	select {
+	case <-doneChan:
+		f.Close()
+		return nil
+	case err := <-errChan:
+		f.Close()
+		os.Remove(localFilePath) //nolint: errcheck
+		return err
 	}
-	return nil
 }
 
 // GetRefsWithAuthTicket get refs that are children of shared remote path.
@@ -1743,7 +1872,9 @@ func (a *Allocation) CancelDownload(remotepath string) error {
 
 func (a *Allocation) DownloadFromReader(
 	remotePath, localPath, lookupHash, authTicket, contentMode string,
-	verifyDownload bool, blocksPerMarker uint) error {
+	verifyDownload bool,
+	blocksPerMarker uint,
+) error {
 
 	finfo, err := os.Stat(localPath)
 	if err != nil {
@@ -1753,8 +1884,7 @@ func (a *Allocation) DownloadFromReader(
 		return errors.New("invalid_path", "local path must be directory")
 	}
 
-	r, err := a.GetAllocationFileReader(
-		remotePath, lookupHash, authTicket, contentMode, verifyDownload, blocksPerMarker)
+	r, err := a.GetAllocationFileReader(remotePath, lookupHash, authTicket, contentMode, verifyDownload, blocksPerMarker)
 	if err != nil {
 		return err
 	}
@@ -1809,12 +1939,10 @@ func (a *Allocation) DownloadFromReader(
 // GetStreamDownloader will check file ref existence and returns an instance that provides
 // io.ReadSeekerCloser interface
 func (a *Allocation) GetAllocationFileReader(
-	remotePath,
-	lookupHash,
-	authTicket,
-	contentMode string,
+	remotePath, lookupHash, authTicket, contentMode string,
 	verifyDownload bool,
-	blocksPerMarker uint) (io.ReadSeekCloser, error) {
+	blocksPerMarker uint,
+) (io.ReadSeekCloser, error) {
 
 	if !a.isInitialized() {
 		return nil, notInitialized
@@ -1860,21 +1988,79 @@ func (a *Allocation) GetAllocationFileReader(
 	return GetDStorageFileReader(a, ref, sdo)
 }
 
-func (a *Allocation) DownloadThumbnailFromAuthTicket(localPath string,
-	authTicket string, remoteLookupHash string, remoteFilename string, verifyDownload bool,
-	status StatusCallback, isFinal bool) error {
+func (a *Allocation) DownloadToFileHandlerFromAuthTicket(
+	fileHandler sys.File,
+	authTicket, remoteLookupHash string,
+	startBlock, endBlock int64,
+	numBlocks int,
+	remoteFilename, contentMode string,
+	verifyDownload bool,
+	status StatusCallback,
+	isFinal bool,
+	doneChan chan struct{},
+	errChan chan error,
+) error {
+	return a.downloadFromAuthTicket(fileHandler, authTicket, remoteLookupHash, startBlock, endBlock, numBlocks, remoteFilename, contentMode, verifyDownload, status, isFinal, doneChan, errChan)
+}
 
-	return a.downloadFromAuthTicket(localPath, authTicket, remoteLookupHash,
-		1, 0, numBlockDownloads, remoteFilename, DOWNLOAD_CONTENT_THUMB,
-		verifyDownload, status, isFinal)
+func (a *Allocation) DownloadThumbnailFromAuthTicket(
+	localPath, authTicket, remoteLookupHash, remoteFilename string,
+	verifyDownload bool,
+	status StatusCallback,
+	isFinal bool,
+) error {
+	f, localFilePath, err := a.prepareAndOpenLocalFile(localPath, remoteFilename)
+	if err != nil {
+		return err
+	}
+	doneChan := make(chan struct{})
+	errChan := make(chan error, 1)
+
+	go func() {
+		err = a.DownloadToFileHandlerFromAuthTicket(f, authTicket, remoteLookupHash, 1, 0, numBlockDownloads, remoteFilename,
+			DOWNLOAD_CONTENT_THUMB, verifyDownload, status, isFinal, doneChan, errChan)
+		if err != nil {
+			errChan <- err
+		}
+	}()
+
+	select {
+	case <-doneChan:
+		f.Close()
+		return nil
+	case err := <-errChan:
+		f.Close()
+		os.Remove(localFilePath) //nolint: errcheck
+		return err
+	}
 }
 
 func (a *Allocation) DownloadFromAuthTicket(localPath string, authTicket string,
 	remoteLookupHash string, remoteFilename string, verifyDownload bool, status StatusCallback, isFinal bool) error {
+	f, localFilePath, err := a.prepareAndOpenLocalFile(localPath, remoteFilename)
+	if err != nil {
+		return err
+	}
+	doneChan := make(chan struct{})
+	errChan := make(chan error, 1)
 
-	return a.downloadFromAuthTicket(localPath, authTicket, remoteLookupHash,
-		1, 0, numBlockDownloads, remoteFilename, DOWNLOAD_CONTENT_FULL,
-		verifyDownload, status, isFinal)
+	go func() {
+		err = a.DownloadToFileHandlerFromAuthTicket(f, authTicket, remoteLookupHash, 1, 0, numBlockDownloads, remoteFilename,
+			DOWNLOAD_CONTENT_FULL, verifyDownload, status, isFinal, doneChan, errChan)
+		if err != nil {
+			errChan <- err
+		}
+	}()
+
+	select {
+	case <-doneChan:
+		f.Close()
+		return nil
+	case err := <-errChan:
+		f.Close()
+		os.Remove(localFilePath) //nolint: errcheck
+		return err
+	}
 }
 
 func (a *Allocation) DownloadFromAuthTicketByBlocks(localPath string,
@@ -1882,19 +2068,37 @@ func (a *Allocation) DownloadFromAuthTicketByBlocks(localPath string,
 	remoteLookupHash string, remoteFilename string, verifyDownload bool,
 	status StatusCallback, isFinal bool) error {
 
-	return a.downloadFromAuthTicket(localPath, authTicket, remoteLookupHash,
-		startBlock, endBlock, numBlocks, remoteFilename, DOWNLOAD_CONTENT_FULL,
-		verifyDownload, status, isFinal)
+	f, localFilePath, err := a.prepareAndOpenLocalFile(localPath, remoteFilename)
+	if err != nil {
+		return err
+	}
+	doneChan := make(chan struct{})
+	errChan := make(chan error, 1)
+
+	go func() {
+		err = a.DownloadToFileHandlerFromAuthTicket(f, authTicket, remoteLookupHash, startBlock, endBlock, numBlockDownloads, remoteFilename,
+			DOWNLOAD_CONTENT_FULL, verifyDownload, status, isFinal, doneChan, errChan)
+		if err != nil {
+			errChan <- err
+		}
+	}()
+
+	select {
+	case <-doneChan:
+		f.Close()
+		return nil
+	case err := <-errChan:
+		f.Close()
+		os.Remove(localFilePath) //nolint: errcheck
+		return err
+	}
 }
 
-func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
+func (a *Allocation) downloadFromAuthTicket(fileHandler sys.File, authTicket string,
 	remoteLookupHash string, startBlock int64, endBlock int64, numBlocks int,
 	remoteFilename string, contentMode string, verifyDownload bool,
-	status StatusCallback, isFinal bool) error {
+	status StatusCallback, isFinal bool, doneChan chan struct{}, errChan chan error) error {
 
-	if !a.isInitialized() {
-		return notInitialized
-	}
 	sEnc, err := base64.StdEncoding.DecodeString(authTicket)
 	if err != nil {
 		return errors.New("auth_ticket_decode_error", "Error decoding the auth ticket."+err.Error())
@@ -1905,17 +2109,6 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 		return errors.New("auth_ticket_decode_error", "Error unmarshaling the auth ticket."+err.Error())
 	}
 
-	if stat, err := sys.Files.Stat(localPath); err == nil {
-		if !stat.IsDir() {
-			return fmt.Errorf("Local path is not a directory '%s'", localPath)
-		}
-		localPath = strings.TrimRight(localPath, "/")
-		_, rFile := pathutil.Split(remoteFilename)
-		localPath = fmt.Sprintf("%s/%s", localPath, rFile)
-		if _, err := sys.Files.Stat(localPath); err == nil {
-			return fmt.Errorf("Local file already exists '%s'", localPath)
-		}
-	}
 	if len(a.Blobbers) == 0 {
 		return noBLOBBERS
 	}
@@ -1927,7 +2120,9 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	downloadReq.allocOwnerID = a.Owner
 	downloadReq.allocOwnerPubKey = a.OwnerPublicKey
 	downloadReq.ctx, downloadReq.ctxCncl = context.WithCancel(a.ctx)
-	downloadReq.localpath = localPath
+	downloadReq.fileHandler = fileHandler
+	downloadReq.doneChan = doneChan
+	downloadReq.errChan = errChan
 	downloadReq.remotefilepathhash = remoteLookupHash
 	downloadReq.authTicket = at
 	downloadReq.statusCallback = status
@@ -1942,7 +2137,6 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	downloadReq.shouldVerify = verifyDownload
 	downloadReq.fullconsensus = a.fullconsensus
 	downloadReq.consensusThresh = a.consensusThreshold
-	downloadReq.prepaidBlobbers = make(map[string]bool)
 	downloadReq.connectionID = zboxutil.NewConnectionId()
 	downloadReq.completedCallback = func(remotepath string, remotepathHash string) {
 		a.mutex.Lock()

@@ -708,13 +708,15 @@ func TestAllocation_DownloadFile(t *testing.T) {
 			Baseurl: mockBlobberUrl + strconv.Itoa(i),
 		})
 	}
-	err := a.DownloadFile(mockLocalPath, "/", true, nil, false)
+	err := a.DownloadFile(mockLocalPath, "/", false, nil, true)
+	defer os.RemoveAll(mockLocalPath)
 	require.NoErrorf(err, "Unexpected error %v", err)
 }
 
 func TestAllocation_DownloadFileByBlock(t *testing.T) {
 	const (
-		mockLocalPath = "DownloadFileByBlock"
+		mockLocalPath      = "DownloadFileByBlock"
+		mockRemoteFilePath = "1.txt"
 	)
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
@@ -738,13 +740,15 @@ func TestAllocation_DownloadFileByBlock(t *testing.T) {
 			Baseurl: mockBlobberUrl + strconv.Itoa(i),
 		})
 	}
-	err := a.DownloadFileByBlock(mockLocalPath, "/", 1, 0, numBlockDownloads, true, nil, false)
+	err := a.DownloadFileByBlock(mockLocalPath, mockRemoteFilePath, 1, 0, numBlockDownloads, true, nil, true)
+	defer os.RemoveAll(mockLocalPath)
 	require.NoErrorf(err, "Unexpected error %v", err)
 }
 
 func TestAllocation_DownloadThumbnail(t *testing.T) {
 	const (
-		mockLocalPath = "DownloadThumbnail"
+		mockLocalPath      = "DownloadThumbnail"
+		mockRemoteFilePath = "1.txt"
 	)
 	require := require.New(t)
 	a := &Allocation{}
@@ -756,7 +760,8 @@ func TestAllocation_DownloadThumbnail(t *testing.T) {
 			Baseurl: "TestAllocation_DownloadThumbnail" + mockBlobberUrl + strconv.Itoa(i),
 		})
 	}
-	err := a.DownloadThumbnail(mockLocalPath, "/", true, nil, false)
+	err := a.DownloadThumbnail(mockLocalPath, mockRemoteFilePath, true, nil, true)
+	defer os.RemoveAll(mockLocalPath)
 	require.NoErrorf(err, "Unexpected error %v", err)
 }
 
@@ -840,7 +845,7 @@ func TestAllocation_downloadFile(t *testing.T) {
 				statusCallback: nil,
 			},
 			setup: func(t *testing.T, testCaseName string, p parameters, a *Allocation) (teardown func(t *testing.T)) {
-				err := os.Mkdir(p.localPath, 0755)
+				err := os.MkdirAll(p.localPath, 0755)
 				require.Nil(t, err)
 				_, err = os.Create(p.localPath + "/" + p.remotePath)
 				require.Nil(t, err)
@@ -929,11 +934,19 @@ func TestAllocation_downloadFile(t *testing.T) {
 					defer teardown(t)
 				}
 			}
-			err := a.addAndGenerateDownloadRequest(
-				tt.parameters.localPath, tt.parameters.remotePath, tt.parameters.contentMode,
-				tt.parameters.startBlock, tt.parameters.endBlock, tt.parameters.numBlocks,
-				true, tt.parameters.statusCallback, false)
 
+			f, localFilePath, err := a.prepareAndOpenLocalFile(tt.parameters.localPath, tt.parameters.remotePath)
+			defer func() {
+				f.Close()
+				os.Remove(localFilePath) //nolint: errcheck
+			}()
+
+			if err == nil {
+				err = a.addAndGenerateDownloadRequest(
+					f, tt.parameters.remotePath, tt.parameters.contentMode,
+					tt.parameters.startBlock, tt.parameters.endBlock, tt.parameters.numBlocks,
+					true, tt.parameters.statusCallback, false, nil, nil)
+			}
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
 				require.EqualValues(tt.errMsg, errors.Top(err))
@@ -1627,7 +1640,9 @@ func TestAllocation_downloadFromAuthTicket(t *testing.T) {
 		{
 			name: "Test_Cannot_Decode_Auth_Ticket_Failed",
 			parameters: parameters{
-				authTicket: "some wrong auth ticket to decode",
+				localPath:      mockLocalPath,
+				authTicket:     "some wrong auth ticket to decode",
+				remoteFilename: mockRemoteFileName,
 			},
 			wantErr: true,
 			errMsg:  "auth_ticket_decode_error: Error decoding the auth ticket.illegal base64 data at input byte 4",
@@ -1635,7 +1650,9 @@ func TestAllocation_downloadFromAuthTicket(t *testing.T) {
 		{
 			name: "Test_Cannot_Unmarshal_Auth_Ticket_Failed",
 			parameters: parameters{
-				authTicket: "c29tZSB3cm9uZyBhdXRoIHRpY2tldCB0byBtYXJzaGFs",
+				localPath:      mockLocalPath,
+				authTicket:     "c29tZSB3cm9uZyBhdXRoIHRpY2tldCB0byBtYXJzaGFs",
+				remoteFilename: mockRemoteFileName,
 			},
 			wantErr: true,
 			errMsg:  "auth_ticket_decode_error: Error unmarshaling the auth ticket.invalid character 's' looking for beginning of value",
@@ -1643,8 +1660,9 @@ func TestAllocation_downloadFromAuthTicket(t *testing.T) {
 		{
 			name: "Test_Local_Path_Is_Not_Directory_Failed",
 			parameters: parameters{
-				localPath:  "Test_Local_Path_Is_Not_Directory_Failed",
-				authTicket: authTicket,
+				localPath:      "Test_Local_Path_Is_Not_Directory_Failed",
+				authTicket:     authTicket,
+				remoteFilename: mockRemoteFileName,
 			},
 			setup: func(t *testing.T, testCaseName string, p parameters) (teardown func(t *testing.T)) {
 				_, err := os.Create(p.localPath)
@@ -1665,7 +1683,7 @@ func TestAllocation_downloadFromAuthTicket(t *testing.T) {
 				remoteFilename: mockRemoteFileName,
 			},
 			setup: func(t *testing.T, testCaseName string, p parameters) (teardown func(t *testing.T)) {
-				err := os.Mkdir(p.localPath, 0755)
+				err := os.MkdirAll(p.localPath, 0755)
 				require.Nil(t, err)
 
 				_, err = os.Create(p.localPath + "/" + p.remoteFilename)
@@ -1733,10 +1751,20 @@ func TestAllocation_downloadFromAuthTicket(t *testing.T) {
 					defer teardown(t)
 				}
 			}
-			err := a.downloadFromAuthTicket(
-				tt.parameters.localPath, tt.parameters.authTicket, tt.parameters.lookupHash,
-				tt.parameters.startBlock, tt.parameters.endBlock, tt.parameters.numBlocks,
-				tt.parameters.remoteFilename, tt.parameters.contentMode, true, tt.parameters.statusCallback, false)
+
+			f, _, err := a.prepareAndOpenLocalFile(tt.parameters.localPath, tt.parameters.remoteFilename)
+			defer func() {
+				f.Close()
+				os.RemoveAll(mockLocalPath) //nolint: errcheck
+			}()
+
+			if err == nil {
+				err = a.downloadFromAuthTicket(
+					f, tt.parameters.authTicket, tt.parameters.lookupHash,
+					tt.parameters.startBlock, tt.parameters.endBlock, tt.parameters.numBlocks,
+					tt.parameters.remoteFilename, tt.parameters.contentMode, true, tt.parameters.statusCallback, false, nil, nil)
+			}
+
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
 				require.EqualValues(tt.errMsg, errors.Top(err))
@@ -2034,7 +2062,7 @@ func TestAllocation_DownloadThumbnailFromAuthTicket(t *testing.T) {
 	require.NoError(err)
 	setupMockHttpResponse(t, &mockClient, "TestAllocation_DownloadThumbnailFromAuthTicket", "", a, http.MethodGet, http.StatusOK, body)
 
-	err = a.DownloadThumbnailFromAuthTicket(mockLocalPath, authTicket, mockLookupHash, mockRemoteFilePath, true, nil, false)
+	err = a.DownloadThumbnailFromAuthTicket(mockLocalPath, authTicket, mockLookupHash, mockRemoteFilePath, true, nil, true)
 	defer os.Remove("alloc/1.txt")
 	require.NoErrorf(err, "unexpected error: %v", err)
 }
@@ -2261,11 +2289,15 @@ func setupMockAllocation(t *testing.T, a *Allocation) {
 				t.Log("Upload cancelled by the parent")
 				return
 			case downloadReq := <-a.downloadChan:
+				remotePathCB := downloadReq.remotefilepath
+				if remotePathCB == "" {
+					remotePathCB = downloadReq.remotefilepathhash
+				}
 				if downloadReq.completedCallback != nil {
 					downloadReq.completedCallback(downloadReq.remotefilepath, downloadReq.remotefilepathhash)
 				}
 				if downloadReq.statusCallback != nil {
-					downloadReq.statusCallback.Completed(a.ID, downloadReq.localpath, "1.txt", "application/octet-stream", 3, OpDownload)
+					downloadReq.statusCallback.Completed(a.ID, remotePathCB, "1.txt", "application/octet-stream", 3, OpDownload)
 				}
 				t.Logf("received a download request for %v\n", downloadReq.remotefilepath)
 			case repairReq := <-a.repairChan:
