@@ -52,9 +52,9 @@ type MultiOperation struct {
 func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 
 	defer func() {
-		if err != nil {
+		if err == nil {
 			mo.maskMU.Lock()
-			mo.operationMask = mo.operationMask.And(zboxutil.NewUint128(1).Lsh(uint64(blobberIdx)).Not())
+			mo.operationMask = mo.operationMask.And(zboxutil.NewUint128(1).Lsh(uint64(blobberIdx)))
 			mo.maskMU.Unlock()
 		}
 	}()
