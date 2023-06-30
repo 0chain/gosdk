@@ -179,6 +179,7 @@ func GetDStorageFileReader(alloc *Allocation, ref *ORef, sdo *StreamDownloadOpti
 			validationRootMap: make(map[string]*blobberFile),
 			shouldVerify:      sdo.VerifyDownload,
 			Consensus: Consensus{
+				RWMutex: &sync.RWMutex{},
 				fullconsensus:   alloc.fullconsensus,
 				consensusThresh: alloc.consensusThreshold,
 			},

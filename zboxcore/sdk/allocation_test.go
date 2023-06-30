@@ -367,7 +367,6 @@ func TestAllocation_dispatchWork(t *testing.T) {
 		go a.dispatchWork(ctx)
 		cancelFn()
 	})
-
 	t.Run("Test_Cover_Download_Request", func(t *testing.T) {
 		ctx, ctxCncl := context.WithCancel(context.Background())
 		go a.dispatchWork(context.Background())

@@ -252,6 +252,7 @@ func TestListRequest_getFileConsensusFromBlobbers(t *testing.T) {
 			name:        "Fail_Consensus",
 			numBlobbers: 10,
 			consensus: Consensus{
+				RWMutex:         &sync.RWMutex{},
 				consensusThresh: 2,
 				fullconsensus:   50,
 			},
@@ -263,6 +264,7 @@ func TestListRequest_getFileConsensusFromBlobbers(t *testing.T) {
 			name:        "Pass_Consensus",
 			numBlobbers: 10,
 			consensus: Consensus{
+				RWMutex:         &sync.RWMutex{},
 				consensusThresh: 2,
 				fullconsensus:   50,
 			},

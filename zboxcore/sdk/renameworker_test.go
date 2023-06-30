@@ -231,6 +231,7 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 				allocationTx:   mockAllocationTxId,
 				remotefilepath: mockRemoteFilePath,
 				consensus: Consensus{
+					RWMutex:         &sync.RWMutex{},
 					consensusThresh: 2,
 					fullconsensus:   4,
 				},
@@ -499,6 +500,7 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 				allocationTx:   mockAllocationTxId,
 				remotefilepath: mockRemoteFilePath,
 				consensus: Consensus{
+					RWMutex:         &sync.RWMutex{},
 					consensusThresh: 3,
 					fullconsensus:   4,
 				},
