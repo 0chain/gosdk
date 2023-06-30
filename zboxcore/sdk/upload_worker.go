@@ -18,7 +18,7 @@ type UploadOperation struct {
 	fileMeta       FileMeta
 	fileReader     io.Reader
 	opts           []ChunkedUploadOption
-	refs           []fileref.FileRef
+	refs           []*fileref.FileRef
 	isUpdate       bool
 	statusCallback StatusCallback
 	opCode         int
@@ -41,10 +41,10 @@ func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([
 
 	var pos uint64
 	numList := len(cu.blobbers)
-	uo.refs = make([]fileref.FileRef, numList)
+	uo.refs = make([]*fileref.FileRef, numList)
 	for i := cu.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
-		uo.refs[pos] = *cu.blobbers[pos].fileRef
+		uo.refs[pos] = cu.blobbers[pos].fileRef
 		uo.refs[pos].ChunkSize = cu.chunkSize
 	}
 
@@ -55,18 +55,23 @@ func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([
 func (uo *UploadOperation) buildChange(_ []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange {
 	changes := make([]allocationchange.AllocationChange, len(uo.refs))
 	for idx, ref := range uo.refs {
-		ref := ref
+		if ref == nil {
+			change := &allocationchange.EmptyFileChange{}
+			changes[idx] = change
+			continue
+		}
 		if uo.isUpdate {
 			change := &allocationchange.UpdateFileChange{}
-			change.NewFile = &ref
+			change.NewFile = ref
+			change.NumBlocks = ref.NumBlocks
 			change.Operation = constants.FileOperationUpdate
 			change.Size = ref.Size
 			changes[idx] = change
 			continue
 		}
 		newChange := &allocationchange.NewFileChange{}
-		newChange.File = &ref
-
+		newChange.File = ref
+		newChange.NumBlocks = ref.NumBlocks
 		newChange.Operation = constants.FileOperationInsert
 		newChange.Size = ref.Size
 		newChange.Uuid = uid

@@ -342,11 +342,17 @@ func (co *CopyOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) []
 	changes := make([]allocationchange.AllocationChange, len(refs))
 
 	for idx, ref := range refs {
+		if ref == nil {
+			change := &allocationchange.EmptyFileChange{}
+			changes[idx] = change
+			continue
+		}
 		newChange := &allocationchange.CopyFileChange{
 			DestPath:   co.destPath,
 			Uuid:       uid,
 			ObjectTree: ref,
 		}
+		newChange.Operation = constants.FileOperationCopy
 		changes[idx] = newChange
 	}
 	return changes

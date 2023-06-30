@@ -384,12 +384,17 @@ func (do *DeleteOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) 
 
 	changes := make([]allocationchange.AllocationChange, len(refs))
 	for idx, ref := range refs {
-		newChange := &allocationchange.DeleteFileChange{}
-		newChange.ObjectTree = ref
-		newChange.NumBlocks = ref.GetNumBlocks()
-		newChange.Operation = constants.FileOperationDelete
-		newChange.Size = ref.GetSize()
-		changes[idx] = newChange
+		if ref == nil {
+			newChange := &allocationchange.EmptyFileChange{}
+			changes[idx] = newChange
+		} else {
+			newChange := &allocationchange.DeleteFileChange{}
+			newChange.ObjectTree = ref
+			newChange.NumBlocks = newChange.ObjectTree.GetNumBlocks()
+			newChange.Operation = constants.FileOperationDelete
+			newChange.Size = newChange.ObjectTree.GetSize()
+			changes[idx] = newChange
+		}
 	}
 	return changes
 }

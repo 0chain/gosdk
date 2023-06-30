@@ -26,6 +26,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/encryption"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
+	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/google/uuid"
 	"github.com/klauspost/reedsolomon"
@@ -177,14 +178,6 @@ func CreateChunkedUpload(
 	su.ctx, su.ctxCncl = context.WithCancel(allocationObj.ctx)
 
 	if isUpdate {
-		otr, err := allocationObj.GetRefs(fileMeta.RemotePath, "", "", "", fileref.FILE, "regular", 0, 1)
-		if err != nil {
-			logger.Logger.Error(err)
-			return nil, thrown.New("chunk_upload", err.Error())
-		}
-		if len(otr.Refs) != 1 {
-			return nil, thrown.New("chunk_upload", fmt.Sprintf("Expected refs 1, got %d", len(otr.Refs)))
-		}
 		su.httpMethod = http.MethodPut
 		su.buildChange = func(ref *fileref.FileRef, _ uuid.UUID, ts common.Timestamp) allocationchange.AllocationChange {
 			change := &allocationchange.UpdateFileChange{}
@@ -470,6 +463,7 @@ func (su *ChunkedUpload) process() error {
 			if su.fileMeta.ActualSize == 0 {
 				su.fileMeta.ActualSize = su.progress.UploadLength
 			}
+			l.Logger.Info("File hash: ", su.fileMeta.ActualHash, " size: ", su.fileMeta.ActualSize)
 		}
 
 		//chunk has not be uploaded yet

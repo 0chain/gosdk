@@ -791,7 +791,8 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 		// resetting multi operation and previous paths for every batch
 		var mo MultiOperation
 		mo.allocationObj = a
-		mo.operationMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
+		mo.operationMask = zboxutil.NewUint128(0)
+		blobberMask := zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 		mo.maskMU = &sync.Mutex{}
 		mo.ctx, mo.ctxCncl = context.WithCancel(a.ctx)
 		mo.Consensus = Consensus{
@@ -816,25 +817,25 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 			var operation Operationer
 			switch op.OperationType {
 			case constants.FileOperationRename:
-				operation = NewRenameOperation(op.RemotePath, op.DestName, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
+				operation = NewRenameOperation(op.RemotePath, op.DestName, blobberMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 
 			case constants.FileOperationCopy:
-				operation = NewCopyOperation(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
+				operation = NewCopyOperation(op.RemotePath, op.DestPath, blobberMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 
 			case constants.FileOperationMove:
-				operation = NewMoveOperation(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
+				operation = NewMoveOperation(op.RemotePath, op.DestPath, blobberMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 
 			case constants.FileOperationInsert:
 				operation = NewUploadOperation(op.Workdir, op.FileMeta, op.FileReader, false, op.Opts...)
 
 			case constants.FileOperationDelete:
-				operation = NewDeleteOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
+				operation = NewDeleteOperation(op.RemotePath, blobberMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 
 			case constants.FileOperationUpdate:
 				operation = NewUploadOperation(op.Workdir, op.FileMeta, op.FileReader, true, op.Opts...)
 
 			case constants.FileOperationCreateDir:
-				operation = NewDirOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
+				operation = NewDirOperation(op.RemotePath, blobberMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 
 			default:
 				return errors.New("invalid_operation", "Operation is not valid")
