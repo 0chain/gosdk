@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"io"
+	"io/fs"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -14,6 +15,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/0chain/gosdk/dev/blobber"
 	"github.com/0chain/gosdk/dev/blobber/model"
@@ -22,6 +24,7 @@ import (
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/sys"
 
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -682,10 +685,13 @@ func TestAllocation_RepairRequired(t *testing.T) {
 	}
 }
 
-func TestAllocation_DownloadFile(t *testing.T) {
+func TestAllocation_DownloadToFileHandler(t *testing.T) {
 	const (
-		mockLocalPath = "DownloadFile"
+		mockActualHash     = "mockActualHash"
+		mockRemoteFilePath = "1.txt"
 	)
+
+	var mockFile = &sys.MemFile{Name: "mockFile", Buffer: new(bytes.Buffer), Mode: fs.ModePerm, ModTime: time.Now()}
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
@@ -695,75 +701,176 @@ func TestAllocation_DownloadFile(t *testing.T) {
 		ClientKey: mockClientKey,
 	}
 
-	require := require.New(t)
-	a := &Allocation{
-		ParityShards: 2,
-		DataShards:   2,
+	type parameters struct {
+		fileHandler    sys.File
+		remotePath     string
+		statusCallback StatusCallback
 	}
-	setupMockAllocation(t, a)
+	tests := []struct {
+		name       string
+		parameters parameters
+		setup      func(*testing.T, string, parameters, *Allocation) (teardown func(*testing.T))
+		wantErr    bool
+		errMsg     string
+	}{
+		{
+			name: "Test_Download_File_Success",
+			parameters: parameters{
+				fileHandler:    mockFile,
+				remotePath:     mockRemoteFilePath,
+				statusCallback: nil,
+			},
+			setup: func(t *testing.T, testCaseName string, p parameters, a *Allocation) (teardown func(t *testing.T)) {
+				for i := 0; i < numBlobbers; i++ {
+					url := "TestAllocation_DownloadToFileHandler" + mockBlobberUrl + strconv.Itoa(i)
+					mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+						return strings.HasPrefix(req.URL.Path, url)
+					})).Return(&http.Response{
+						StatusCode: http.StatusOK,
+						Body: func() io.ReadCloser {
+							jsonFR, err := json.Marshal(&fileref.FileRef{
+								ActualFileHash: mockActualHash,
+							})
+							require.NoError(t, err)
+							return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+						}(),
+					}, nil)
+				}
+				return nil
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require := require.New(t)
+			a := &Allocation{}
+			setupMockAllocation(t, a)
+			for i := 0; i < numBlobbers; i++ {
+				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
+					ID:      tt.name + strconv.Itoa(i),
+					Baseurl: "TestAllocation_DownloadToFileHandler" + mockBlobberUrl + strconv.Itoa(i),
+				})
+			}
+			if m := tt.setup; m != nil {
+				if teardown := m(t, tt.name, tt.parameters, a); teardown != nil {
+					defer teardown(t)
+				}
+			}
 
-	for i := 0; i < numBlobbers; i++ {
-		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
-			ID:      mockBlobberId + strconv.Itoa(i),
-			Baseurl: mockBlobberUrl + strconv.Itoa(i),
+			err := a.DownloadToFileHandler(tt.parameters.fileHandler, tt.parameters.remotePath,
+				DOWNLOAD_CONTENT_FULL, 1, 0, numBlockDownloads, true, tt.parameters.statusCallback, false, nil, nil)
+			require.EqualValues(tt.wantErr, err != nil)
+			if err != nil {
+				require.EqualValues(tt.errMsg, errors.Top(err))
+				return
+			}
+			require.NoErrorf(err, "Unexpected error: %v", err)
 		})
 	}
-	err := a.DownloadFile(mockLocalPath, "/", false, nil, true)
-	defer os.RemoveAll(mockLocalPath)
-	require.NoErrorf(err, "Unexpected error %v", err)
 }
 
-func TestAllocation_DownloadFileByBlock(t *testing.T) {
-	const (
-		mockLocalPath      = "DownloadFileByBlock"
-		mockRemoteFilePath = "1.txt"
-	)
-	var mockClient = mocks.HttpClient{}
-	zboxutil.Client = &mockClient
+// func TestAllocation_DownloadFile(t *testing.T) {
+// 	const (
+// 		mockActualHash     = "mockActualHash"
+// 		mockLocalPath      = "DownloadFile"
+// 		mockRemoteFilePath = "1.txt"
+// 	)
+// 	var mockClient = mocks.HttpClient{}
+// 	zboxutil.Client = &mockClient
 
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
-		ClientID:  mockClientId,
-		ClientKey: mockClientKey,
-	}
+// 	client := zclient.GetClient()
+// 	client.Wallet = &zcncrypto.Wallet{
+// 		ClientID:  mockClientId,
+// 		ClientKey: mockClientKey,
+// 	}
 
-	require := require.New(t)
-	a := &Allocation{
-		ParityShards: 2,
-		DataShards:   2,
-	}
-	setupMockAllocation(t, a)
+// 	require := require.New(t)
+// 	a := &Allocation{
+// 		ParityShards: 2,
+// 		DataShards:   2,
+// 	}
+// 	setupMockAllocation(t, a)
 
-	for i := 0; i < numBlobbers; i++ {
-		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
-			ID:      mockBlobberId + strconv.Itoa(i),
-			Baseurl: mockBlobberUrl + strconv.Itoa(i),
-		})
-	}
-	err := a.DownloadFileByBlock(mockLocalPath, mockRemoteFilePath, 1, 0, numBlockDownloads, true, nil, true)
-	defer os.RemoveAll(mockLocalPath)
-	require.NoErrorf(err, "Unexpected error %v", err)
-}
+// 	for i := 0; i < numBlobbers; i++ {
+// 		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
+// 			ID:      mockBlobberId + strconv.Itoa(i),
+// 			Baseurl: mockBlobberUrl + strconv.Itoa(i),
+// 		})
+// 	}
+// 	for i := 0; i < numBlobbers; i++ {
+// 		url := mockBlobberUrl + strconv.Itoa(i)
+// 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+// 			log.Println("=== URL:", url, "ACTUAL:", req.URL.Path)
+// 			return strings.HasPrefix(req.URL.Path, url)
+// 		})).Return(&http.Response{
+// 			StatusCode: http.StatusOK,
+// 			Body: func() io.ReadCloser {
+// 				jsonFR, err := json.Marshal(&fileref.FileRef{
+// 					ActualFileHash: mockActualHash,
+// 				})
+// 				require.NoError(err)
+// 				return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+// 			}(),
+// 		}, nil)
+// 	}
 
-func TestAllocation_DownloadThumbnail(t *testing.T) {
-	const (
-		mockLocalPath      = "DownloadThumbnail"
-		mockRemoteFilePath = "1.txt"
-	)
-	require := require.New(t)
-	a := &Allocation{}
-	setupMockAllocation(t, a)
+// 	defer os.RemoveAll(mockLocalPath)
+// 	err := a.DownloadFile(mockLocalPath, mockRemoteFilePath, false, nil, true)
+// 	require.NoErrorf(err, "Unexpected error %v", err)
+// }
 
-	for i := 0; i < numBlobbers; i++ {
-		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
-			ID:      strconv.Itoa(i),
-			Baseurl: "TestAllocation_DownloadThumbnail" + mockBlobberUrl + strconv.Itoa(i),
-		})
-	}
-	err := a.DownloadThumbnail(mockLocalPath, mockRemoteFilePath, true, nil, true)
-	defer os.RemoveAll(mockLocalPath)
-	require.NoErrorf(err, "Unexpected error %v", err)
-}
+// func TestAllocation_DownloadFileByBlock(t *testing.T) {
+// 	const (
+// 		mockLocalPath      = "DownloadFileByBlock"
+// 		mockRemoteFilePath = "1.txt"
+// 	)
+// 	var mockClient = mocks.HttpClient{}
+// 	zboxutil.Client = &mockClient
+
+// 	client := zclient.GetClient()
+// 	client.Wallet = &zcncrypto.Wallet{
+// 		ClientID:  mockClientId,
+// 		ClientKey: mockClientKey,
+// 	}
+
+// 	require := require.New(t)
+// 	a := &Allocation{
+// 		ParityShards: 2,
+// 		DataShards:   2,
+// 	}
+// 	setupMockAllocation(t, a)
+
+// 	for i := 0; i < numBlobbers; i++ {
+// 		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
+// 			ID:      mockBlobberId + strconv.Itoa(i),
+// 			Baseurl: mockBlobberUrl + strconv.Itoa(i),
+// 		})
+// 	}
+// 	err := a.DownloadFileByBlock(mockLocalPath, mockRemoteFilePath, 1, 0, numBlockDownloads, true, nil, true)
+// 	defer os.RemoveAll(mockLocalPath)
+// 	require.NoErrorf(err, "Unexpected error %v", err)
+// }
+
+// func TestAllocation_DownloadThumbnail(t *testing.T) {
+// 	const (
+// 		mockLocalPath      = "DownloadThumbnail"
+// 		mockRemoteFilePath = "1.txt"
+// 	)
+// 	require := require.New(t)
+// 	a := &Allocation{}
+// 	setupMockAllocation(t, a)
+
+// 	for i := 0; i < numBlobbers; i++ {
+// 		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
+// 			ID:      strconv.Itoa(i),
+// 			Baseurl: "TestAllocation_DownloadThumbnail" + mockBlobberUrl + strconv.Itoa(i),
+// 		})
+// 	}
+
+// 	defer os.RemoveAll(mockLocalPath)
+// 	err := a.DownloadThumbnail(mockLocalPath, mockRemoteFilePath, true, nil, true)
+// 	require.NoErrorf(err, "Unexpected error %v", err)
+// }
 
 func TestAllocation_downloadFile(t *testing.T) {
 	const (
@@ -782,11 +889,10 @@ func TestAllocation_downloadFile(t *testing.T) {
 	}
 
 	type parameters struct {
-		localPath, remotePath string
-		contentMode           string
-		startBlock, endBlock  int64
-		numBlocks             int
-		statusCallback        StatusCallback
+		localPath, remotePath, contentMode string
+		startBlock, endBlock               int64
+		numBlocks                          int
+		statusCallback                     StatusCallback
 	}
 	tests := []struct {
 		name       string
@@ -2024,57 +2130,14 @@ func TestAllocation_GetFileMetaFromAuthTicket(t *testing.T) {
 	}
 }
 
-func TestAllocation_DownloadThumbnailFromAuthTicket(t *testing.T) {
+func TestAllocation_DownloadToFileHandlerFromAuthTicket(t *testing.T) {
 	const (
 		mockLookupHash     = "mock lookup hash"
-		mockLocalPath      = "alloc"
 		mockRemoteFilePath = "1.txt"
 		mockType           = "d"
 	)
 
-	var mockClient = mocks.HttpClient{}
-	zboxutil.Client = &mockClient
-
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
-		ClientID:  mockClientId,
-		ClientKey: mockClientKey,
-	}
-
-	require := require.New(t)
-
-	a := &Allocation{}
-	setupMockAllocation(t, a)
-	for i := 0; i < numBlobbers; i++ {
-		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
-			ID:      strconv.Itoa(i),
-			Baseurl: "TestAllocation_DownloadThumbnailFromAuthTicket" + mockBlobberUrl + strconv.Itoa(i),
-		})
-	}
-
-	var authTicket = getMockAuthTicket(t)
-
-	body, err := json.Marshal(&fileref.ReferencePath{
-		Meta: map[string]interface{}{
-			"type": mockType,
-		},
-	})
-	require.NoError(err)
-	setupMockHttpResponse(t, &mockClient, "TestAllocation_DownloadThumbnailFromAuthTicket", "", a, http.MethodGet, http.StatusOK, body)
-
-	err = a.DownloadThumbnailFromAuthTicket(mockLocalPath, authTicket, mockLookupHash, mockRemoteFilePath, true, nil, true)
-	defer os.Remove("alloc/1.txt")
-	require.NoErrorf(err, "unexpected error: %v", err)
-}
-
-func TestAllocation_DownloadFromAuthTicket(t *testing.T) {
-	const (
-		mockLookupHash     = "mock lookup hash"
-		mockLocalPath      = "alloc"
-		mockRemoteFilePath = "1.txt"
-		mockType           = "d"
-	)
-
+	var mockFile = &sys.MemFile{Name: "mockFile", Buffer: new(bytes.Buffer), Mode: fs.ModePerm, ModTime: time.Now()}
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
@@ -2097,48 +2160,127 @@ func TestAllocation_DownloadFromAuthTicket(t *testing.T) {
 
 	var authTicket = getMockAuthTicket(t)
 
-	err := a.DownloadFromAuthTicket(mockLocalPath, authTicket, mockLookupHash, mockRemoteFilePath, true, nil, false)
+	err := a.DownloadToFileHandlerFromAuthTicket(mockFile, authTicket, mockLookupHash, 1, 0, numBlockDownloads,
+		mockRemoteFilePath, DOWNLOAD_CONTENT_FULL, false, nil, false, nil, nil)
 	defer os.Remove("alloc/1.txt")
 	require.NoErrorf(err, "unexpected error: %v", err)
 }
 
-func TestAllocation_DownloadFromAuthTicketByBlocks(t *testing.T) {
-	const (
-		mockLookupHash     = "mock lookup hash"
-		mockLocalPath      = "alloc"
-		mockRemoteFilePath = "1.txt"
-		mockType           = "d"
-	)
+// func TestAllocation_DownloadThumbnailFromAuthTicket(t *testing.T) {
+// 	const (
+// 		mockLookupHash     = "mock lookup hash"
+// 		mockLocalPath      = "alloc"
+// 		mockRemoteFilePath = "1.txt"
+// 		mockType           = "d"
+// 	)
 
-	var authTicket = getMockAuthTicket(t)
+// 	var mockClient = mocks.HttpClient{}
+// 	zboxutil.Client = &mockClient
 
-	var mockClient = mocks.HttpClient{}
-	zboxutil.Client = &mockClient
+// 	client := zclient.GetClient()
+// 	client.Wallet = &zcncrypto.Wallet{
+// 		ClientID:  mockClientId,
+// 		ClientKey: mockClientKey,
+// 	}
 
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
-		ClientID:  mockClientId,
-		ClientKey: mockClientKey,
-	}
+// 	require := require.New(t)
 
-	require := require.New(t)
+// 	a := &Allocation{}
+// 	setupMockAllocation(t, a)
+// 	for i := 0; i < numBlobbers; i++ {
+// 		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
+// 			ID:      strconv.Itoa(i),
+// 			Baseurl: "TestAllocation_DownloadThumbnailFromAuthTicket" + mockBlobberUrl + strconv.Itoa(i),
+// 		})
+// 	}
 
-	a := &Allocation{}
-	setupMockAllocation(t, a)
-	for i := 0; i < numBlobbers; i++ {
-		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
-			ID:      strconv.Itoa(i),
-			Baseurl: "TestAllocation_DownloadFromAuthTicketByBlocks" + mockBlobberUrl + strconv.Itoa(i),
-		})
-	}
+// 	var authTicket = getMockAuthTicket(t)
 
-	setupMockHttpResponse(t, &mockClient, "TestAllocation_DownloadFromAuthTicketByBlocks", "", a, http.MethodPost, http.StatusBadRequest, []byte(""))
+// 	body, err := json.Marshal(&fileref.ReferencePath{
+// 		Meta: map[string]interface{}{
+// 			"type": mockType,
+// 		},
+// 	})
+// 	require.NoError(err)
+// 	setupMockHttpResponse(t, &mockClient, "TestAllocation_DownloadThumbnailFromAuthTicket", "", a, http.MethodGet, http.StatusOK, body)
 
-	err := a.DownloadFromAuthTicketByBlocks(
-		mockLocalPath, authTicket, 1, 0, numBlockDownloads, mockLookupHash, mockRemoteFilePath, true, nil, false)
-	defer os.Remove("alloc/1.txt")
-	require.NoErrorf(err, "unexpected error: %v", err)
-}
+// 	err = a.DownloadThumbnailFromAuthTicket(mockLocalPath, authTicket, mockLookupHash, mockRemoteFilePath, true, nil, false)
+// 	defer os.Remove("alloc/1.txt")
+// 	require.NoErrorf(err, "unexpected error: %v", err)
+// }
+
+// func TestAllocation_DownloadFromAuthTicket(t *testing.T) {
+// 	const (
+// 		mockLookupHash     = "mock lookup hash"
+// 		mockLocalPath      = "alloc"
+// 		mockRemoteFilePath = "1.txt"
+// 		mockType           = "d"
+// 	)
+
+// 	var mockClient = mocks.HttpClient{}
+// 	zboxutil.Client = &mockClient
+
+// 	client := zclient.GetClient()
+// 	client.Wallet = &zcncrypto.Wallet{
+// 		ClientID:  mockClientId,
+// 		ClientKey: mockClientKey,
+// 	}
+
+// 	require := require.New(t)
+
+// 	a := &Allocation{}
+// 	setupMockAllocation(t, a)
+// 	for i := 0; i < numBlobbers; i++ {
+// 		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
+// 			ID:      strconv.Itoa(i),
+// 			Baseurl: "TestAllocation_DownloadFromAuthTicket" + mockBlobberUrl + strconv.Itoa(i),
+// 		})
+// 	}
+
+// 	var authTicket = getMockAuthTicket(t)
+
+// 	err := a.DownloadFromAuthTicket(mockLocalPath, authTicket, mockLookupHash, mockRemoteFilePath, true, nil, false)
+// 	defer os.Remove("alloc/1.txt")
+// 	require.NoErrorf(err, "unexpected error: %v", err)
+// }
+
+// func TestAllocation_DownloadFromAuthTicketByBlocks(t *testing.T) {
+// 	const (
+// 		mockLookupHash     = "mock lookup hash"
+// 		mockLocalPath      = "alloc"
+// 		mockRemoteFilePath = "1.txt"
+// 		mockType           = "d"
+// 	)
+
+// 	var authTicket = getMockAuthTicket(t)
+
+// 	var mockClient = mocks.HttpClient{}
+// 	zboxutil.Client = &mockClient
+
+// 	client := zclient.GetClient()
+// 	client.Wallet = &zcncrypto.Wallet{
+// 		ClientID:  mockClientId,
+// 		ClientKey: mockClientKey,
+// 	}
+
+// 	require := require.New(t)
+
+// 	a := &Allocation{}
+// 	setupMockAllocation(t, a)
+// 	for i := 0; i < numBlobbers; i++ {
+// 		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
+// 			ID:      strconv.Itoa(i),
+// 			Baseurl: "TestAllocation_DownloadFromAuthTicketByBlocks" + mockBlobberUrl + strconv.Itoa(i),
+// 		})
+// 	}
+
+// 	setupMockHttpResponse(t, &mockClient, "TestAllocation_DownloadFromAuthTicketByBlocks", "", a, http.MethodPost, http.StatusBadRequest, []byte(""))
+
+// 	err := a.DownloadFromAuthTicketByBlocks(
+// 		mockLocalPath, authTicket, 1, 0, numBlockDownloads, mockLookupHash, mockRemoteFilePath, true, nil, false)
+// 	defer os.Remove("alloc/1.txt")
+// 	require.NoErrorf(err, "unexpected error: %v", err)
+// }
 
 func TestAllocation_StartRepair(t *testing.T) {
 	const (

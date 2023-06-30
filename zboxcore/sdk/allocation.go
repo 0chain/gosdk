@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"math"
 	"mime/multipart"
 	"net/http"
@@ -1105,7 +1104,6 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 }
 
 func (a *Allocation) prepareAndOpenLocalFile(localPath string, remotePath string) (*os.File, string, error) {
-	log.Println("=====> prepareAndOpenLocalFile")
 	if !a.isInitialized() {
 		return nil, "", notInitialized
 	}
@@ -1140,7 +1138,6 @@ func (a *Allocation) prepareAndOpenLocalFile(localPath string, remotePath string
 	if err != nil {
 		return nil, "", errors.Wrap(err, "Can't create local file")
 	}
-	log.Println("RETURN =====> prepareAndOpenLocalFile")
 
 	return f, localFilePath, nil
 }
