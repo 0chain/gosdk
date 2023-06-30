@@ -151,27 +151,9 @@ func (mo *MultiOperation) Process() error {
 	ctx := mo.ctx
 	ctxCncl := mo.ctxCncl
 	defer ctxCncl()
-	// Create connection obj in each blobber
-	for blobberIdx := range mo.allocationObj.Blobbers {
-		wg.Add(1)
-		go func(pos int) {
-			defer wg.Done()
-			err := mo.createConnectionObj(pos)
-			if err != nil {
-				l.Logger.Error(err.Error())
-			}
-		}(blobberIdx)
-	}
-	wg.Wait()
-	// Check consensus
-	if mo.operationMask.CountOnes() < mo.consensusThresh {
-		return errors.New("consensus_not_met",
-			fmt.Sprintf("Multioperation failed. Required consensus %d got %d",
-				mo.consensusThresh, mo.operationMask.CountOnes()))
-	}
 
 	errs := make(chan error, 1)
-
+	mo.operationMask = zboxutil.NewUint128(0)
 	for idx, op := range mo.operations {
 		uid := util.GetNewUUID()
 		wg.Add(1)

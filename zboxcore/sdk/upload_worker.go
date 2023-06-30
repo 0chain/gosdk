@@ -129,10 +129,6 @@ func (uo *UploadOperation) Completed(allocObj *Allocation) {
 }
 
 func (uo *UploadOperation) Error(allocObj *Allocation, consensus int, err error) {
-	if consensus != 0 {
-		l.Logger.Info("Commit consensus failed, Deleting remote file....")
-		allocObj.deleteFile(uo.fileMeta.RemotePath, consensus, consensus) //nolint
-	}
 	if uo.statusCallback != nil {
 		uo.statusCallback.Error(allocObj.ID, uo.fileMeta.RemotePath, uo.opCode, err)
 	}
