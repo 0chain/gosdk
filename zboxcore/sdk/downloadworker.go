@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"math"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -48,8 +49,7 @@ type DownloadRequest struct {
 	remotefilepath     string
 	remotefilepathhash string
 	fileHandler        sys.File
-	doneChan           chan struct{}
-	errChan            chan error
+	localFilePath      string
 	startBlock         int64
 	endBlock           int64
 	chunkSize          int
@@ -63,6 +63,7 @@ type DownloadRequest struct {
 	encryptedKey       string
 	isDownloadCanceled bool
 	completedCallback  func(remotepath string, remotepathhash string)
+	fileCloseCallback  func()
 	contentMode        string
 	Consensus
 	effectiveBlockSize int // blocksize - encryptionOverHead
@@ -360,6 +361,9 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	if req.completedCallback != nil {
 		defer req.completedCallback(req.remotefilepath, req.remotefilepathhash)
 	}
+	if req.completedCallback != nil {
+		defer req.fileCloseCallback()
+	}
 
 	remotePathCB := req.remotefilepath
 	if remotePathCB == "" {
@@ -535,9 +539,6 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	if req.statusCallback != nil {
 		req.statusCallback.Completed(
 			req.allocationID, remotePathCB, fRef.Name, "", int(fRef.ActualFileSize), op)
-	}
-	if req.doneChan != nil {
-		req.doneChan <- struct{}{}
 	}
 }
 
@@ -734,8 +735,11 @@ func (req *DownloadRequest) errorCB(err error, remotePathCB string) {
 		op = opThumbnailDownload
 	}
 	req.skip = true
-	if req.errChan != nil {
-		req.errChan <- err
+	if req.localFilePath != "" {
+		os.Remove(req.localFilePath) //nolint: errcheck
+	}
+	if req.fileHandler != nil {
+		req.fileHandler.Close() //nolint: errcheck
 	}
 	if req.statusCallback != nil {
 		req.statusCallback.Error(
