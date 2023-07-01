@@ -63,7 +63,7 @@ type DownloadRequest struct {
 	encryptedKey       string
 	isDownloadCanceled bool
 	completedCallback  func(remotepath string, remotepathhash string)
-	fileCloseCallback  func()
+	fileCallback       func()
 	contentMode        string
 	Consensus
 	effectiveBlockSize int // blocksize - encryptionOverHead
@@ -362,7 +362,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		defer req.completedCallback(req.remotefilepath, req.remotefilepathhash)
 	}
 	if req.completedCallback != nil {
-		defer req.fileCloseCallback()
+		defer req.fileCallback()
 	}
 
 	remotePathCB := req.remotefilepath

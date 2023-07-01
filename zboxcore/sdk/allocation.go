@@ -995,7 +995,7 @@ func (a *Allocation) generateDownloadRequest(
 		defer a.mutex.Unlock()
 		delete(a.downloadProgressMap, remotepath)
 	}
-	downloadReq.fileCloseCallback = func() {
+	downloadReq.fileCallback = func() {
 		downloadReq.fileHandler.Close() //nolint: errcheck
 	}
 	downloadReq.contentMode = contentMode
@@ -2117,7 +2117,7 @@ func (a *Allocation) downloadFromAuthTicket(fileHandler sys.File, authTicket str
 		defer a.mutex.Unlock()
 		delete(a.downloadProgressMap, remotepathHash)
 	}
-	downloadReq.fileCloseCallback = func() {
+	downloadReq.fileCallback = func() {
 		if downloadReq.fileHandler != nil {
 			downloadReq.fileHandler.Close() //nolint: errcheck
 		}
