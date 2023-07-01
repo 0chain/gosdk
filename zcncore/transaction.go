@@ -188,11 +188,11 @@ type CreateAllocationRequest struct {
 }
 
 type StakePoolSettings struct {
-	DelegateWallet string         `json:"delegate_wallet"`
-	MinStake       common.Balance `json:"min_stake"`
-	MaxStake       common.Balance `json:"max_stake"`
-	NumDelegates   int            `json:"num_delegates"`
-	ServiceCharge  float64        `json:"service_charge"`
+	DelegateWallet *string         `json:"delegate_wallet,omitempty"`
+	MinStake       *common.Balance `json:"min_stake,omitempty"`
+	MaxStake       *common.Balance `json:"max_stake,omitempty"`
+	NumDelegates   *int            `json:"num_delegates,omitempty"`
+	ServiceCharge  *float64        `json:"service_charge,omitempty"`
 }
 
 type Terms struct {
@@ -876,7 +876,7 @@ func (t *Transaction) RegisterVote(signerwalletstr string, msvstr string) error 
 }
 
 type MinerSCDelegatePool struct {
-	Settings StakePoolSettings `json:"settings"`
+	Settings *StakePoolSettings `json:"settings,omitempty"`
 }
 
 type SimpleMiner struct {
