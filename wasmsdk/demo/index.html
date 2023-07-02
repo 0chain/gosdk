@@ -202,7 +202,7 @@
 
     let network = query.get('network')
     if (!network || network == 'undefined') {
-      network = "demo.zus.network"
+      network = "dev.zus.network"
     }
 
     const blockWorker = 'https://' + network + '/dns';
@@ -409,8 +409,7 @@
             allocationId: allocationId,
             remotePath: '/output.mp4',
             file: file,
-            // thumbnailBytes: await readBytes(file),
-            //only for demo, don't upload original file as thumbnail in production
+            // thumbnailBytes: await readBytes(file),//only for demo, don't upload original file as thumbnail in production
             encrypt: false,
             webstreaming: true,
             isUpdate: false,
@@ -422,10 +421,13 @@
           })
         }
 
-        // const results = await goWasm.bulkUpload(objects)
-        const results = await goWasm.multiUpload(objects)
-
-        console.log(JSON.stringify(results))
+        try {
+          let stringifiedArray = JSON.stringify(objects);
+          const results = await goWasm.sdk.multiUpload(stringifiedArray)
+          console.log(JSON.stringify(results))
+        } catch (e) {
+          alert(e)
+        }
       }
     })
 
