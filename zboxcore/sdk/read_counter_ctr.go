@@ -34,7 +34,9 @@ func unlockBlobberReadCtr(allocID, blobberID string) {
 	key := allocID + blobberID
 	mut := brc.blobberLockMap[key]
 	brc.muBlobberLock.Unlock()
-	mut.Unlock()
+	if mut != nil {
+		mut.Unlock()
+	}
 }
 
 func setBlobberReadCtr(allocID, blobberID string, ctr int64) {

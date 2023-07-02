@@ -278,24 +278,18 @@ func MultiDownload(allocationID, jsonMultiDownloadOptions string, statusCb Statu
 	if err != nil {
 		return err
 	}
-
-	for i := 0; i < len(options)-1; i++ {
-		if options[i].DownloadOp == 1 {
-			err = a.DownloadFile(options[i].LocalPath, options[i].RemotePath, false, &StatusCallbackWrapped{Callback: statusCb}, false)
+	lastOpInd := len(options) - 1
+	for ind, option := range options {
+		if option.DownloadOp == 1 {
+			err = a.DownloadFile(option.LocalPath, option.RemotePath, false, &StatusCallbackWrapped{Callback: statusCb}, ind == lastOpInd)
 		} else {
-			err = a.DownloadThumbnail(options[i].LocalPath, options[i].RemotePath, false, &StatusCallbackWrapped{Callback: statusCb}, false)
+			err = a.DownloadThumbnail(option.LocalPath, option.RemotePath, false, &StatusCallbackWrapped{Callback: statusCb}, ind == lastOpInd)
 		}
 		if err != nil {
 			return err
 		}
 	}
-	if options[len(options)-1].DownloadOp == 1 {
-		err = a.DownloadFile(options[len(options)-1].LocalPath, options[len(options)-1].RemotePath, false, &StatusCallbackWrapped{Callback: statusCb}, true)
-	} else {
-		err = a.DownloadThumbnail(options[len(options)-1].LocalPath, options[len(options)-1].RemotePath, false, &StatusCallbackWrapped{Callback: statusCb}, true)
-	}
-
-	return err
+	return nil
 }
 
 // RepairFile - repair file if it exists in remote path
@@ -637,25 +631,19 @@ func MultiDownloadFromAuthTicket(allocationID, authTicket, jsonMultiDownloadOpti
 	if err != nil {
 		return err
 	}
-
-	for i := 0; i < len(options)-1; i++ {
-		if options[i].DownloadOp == 1 {
-			err = a.DownloadFromAuthTicket(options[i].LocalPath, authTicket, options[i].RemoteLookupHash, options[i].RemoteFileName, false, &StatusCallbackWrapped{Callback: status}, false)
+	lastOpIndex := len(options) - 1
+	for ind, option := range options {
+		if option.DownloadOp == 1 {
+			err = a.DownloadFromAuthTicket(option.LocalPath, authTicket, option.RemoteLookupHash, option.RemoteFileName, false, &StatusCallbackWrapped{Callback: status}, ind == lastOpIndex)
 		} else {
-			err = a.DownloadThumbnailFromAuthTicket(options[i].LocalPath, authTicket, options[i].RemoteLookupHash, options[i].RemoteFileName, false, &StatusCallbackWrapped{Callback: status}, false)
+			err = a.DownloadThumbnailFromAuthTicket(option.LocalPath, authTicket, option.RemoteLookupHash, option.RemoteFileName, false, &StatusCallbackWrapped{Callback: status}, ind == lastOpIndex)
 		}
 		if err != nil {
 			return err
 		}
 	}
 
-	if options[len(options)-1].DownloadOp == 1 {
-		err = a.DownloadFromAuthTicket(options[len(options)-1].LocalPath, authTicket, options[len(options)-1].RemoteLookupHash, options[len(options)-1].RemoteFileName, false, &StatusCallbackWrapped{Callback: status}, true)
-	} else {
-		err = a.DownloadThumbnailFromAuthTicket(options[len(options)-1].LocalPath, authTicket, options[len(options)-1].RemoteLookupHash, options[len(options)-1].RemoteFileName, false, &StatusCallbackWrapped{Callback: status}, true)
-	}
-
-	return err
+	return nil
 }
 
 // GetFileStats - get file stats from path
