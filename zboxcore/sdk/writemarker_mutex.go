@@ -93,7 +93,7 @@ func (wmMu *WriteMarkerMutex) UnlockBlobber(
 
 	var req *http.Request
 	req, err = zboxutil.NewWriteMarkerUnLockRequest(
-		b.Baseurl, wmMu.allocationObj.Tx, connID, "")
+		b.Baseurl, wmMu.allocationObj.ID, wmMu.allocationObj.Tx, connID, "")
 
 	if err != nil {
 		return
@@ -218,7 +218,7 @@ func (wmMu *WriteMarkerMutex) Lock(
 			}
 
 			wg := &sync.WaitGroup{}
-			cons := &Consensus{}
+			cons := &Consensus{RWMutex: &sync.RWMutex{}}
 			for i := *mask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 				pos = uint64(i.TrailingZeros())
 
@@ -268,7 +268,7 @@ func (wmMu *WriteMarkerMutex) lockBlobber(
 	var req *http.Request
 
 	req, err = zboxutil.NewWriteMarkerLockRequest(
-		b.Baseurl, wmMu.allocationObj.Tx, connID)
+		b.Baseurl, wmMu.allocationObj.ID, wmMu.allocationObj.Tx, connID)
 
 	if err != nil {
 		return

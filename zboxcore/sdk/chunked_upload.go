@@ -136,6 +136,7 @@ func CreateChunkedUpload(
 	}
 
 	consensus := Consensus{
+		RWMutex:         &sync.RWMutex{},
 		consensusThresh: allocationObj.consensusThreshold,
 		fullconsensus:   allocationObj.fullconsensus,
 	}
@@ -159,10 +160,8 @@ func CreateChunkedUpload(
 
 	su := &ChunkedUpload{
 		allocationObj: allocationObj,
-		client:        zboxutil.Client,
-
-		fileMeta:   fileMeta,
-		fileReader: fileReader,
+		fileMeta:      fileMeta,
+		fileReader:    fileReader,
 
 		uploadMask:      uploadMask,
 		chunkSize:       DefaultChunkSize,
@@ -308,7 +307,6 @@ type ChunkedUpload struct {
 	allocationObj  *Allocation
 	progress       UploadProgress
 	progressStorer ChunkedUploadProgressStorer
-	client         zboxutil.HttpClient
 
 	uploadMask zboxutil.Uint128
 

@@ -6,9 +6,11 @@ package main
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/zboxcore/sdk"
@@ -102,6 +104,32 @@ func transferAllocation(allocationID, newOwnerId, newOwnerPublicKey string) erro
 	return err
 }
 
+// updateForbidAllocation updates the settings for forbid alocation
+func UpdateForbidAllocation(allocationID string, forbidupload, forbiddelete, forbidupdate, forbidmove, forbidcopy, forbidrename bool) (string, error) {
+
+	hash, _, err := sdk.UpdateAllocation(
+		0,            //size,
+		0,            //int64(expiry/time.Second),
+		allocationID, // allocID,
+		0,            //lock,
+		false,        //updateTerms,
+		"",           //addBlobberId,
+		"",           //removeBlobberId,
+		false,        //thirdPartyExtendable,
+		&sdk.FileOptionsParameters{
+			ForbidUpload: sdk.FileOptionParam{Changed: forbidupload, Value: forbidupload},
+			ForbidDelete: sdk.FileOptionParam{Changed: forbiddelete, Value: forbiddelete},
+			ForbidUpdate: sdk.FileOptionParam{Changed: forbidupdate, Value: forbidupdate},
+			ForbidMove:   sdk.FileOptionParam{Changed: forbidmove, Value: forbidmove},
+			ForbidCopy:   sdk.FileOptionParam{Changed: forbidcopy, Value: forbidcopy},
+			ForbidRename: sdk.FileOptionParam{Changed: forbidrename, Value: forbidrename},
+		},
+	)
+
+	return hash, err
+
+}
+
 func freezeAllocation(allocationID string) (string, error) {
 
 	hash, _, err := sdk.UpdateAllocation(
@@ -134,6 +162,28 @@ func freezeAllocation(allocationID string) (string, error) {
 func cancelAllocation(allocationID string) (string, error) {
 	hash, _, err := sdk.CancelAllocation(allocationID)
 
+	if err == nil {
+		clearAllocation(allocationID)
+	}
+
+	return hash, err
+}
+
+func updateAllocationWithRepair(allocationID string,
+	size, expiry int64,
+	lock int64,
+	updateTerms bool,
+	addBlobberId, removeBlobberId string) (string, error) {
+
+	allocationObj, err := sdk.GetAllocation(allocationID)
+	if err != nil {
+		return "", err
+	}
+
+	wg := &sync.WaitGroup{}
+	statusBar := &StatusBar{wg: wg}
+
+	hash, err := allocationObj.UpdateWithRepair(size, expiry, uint64(lock), updateTerms, addBlobberId, removeBlobberId, false, &sdk.FileOptionsParameters{}, statusBar)
 	if err == nil {
 		clearAllocation(allocationID)
 	}
@@ -180,7 +230,7 @@ func getRemoteFileMap(allocationID string) ([]*fileResp, error) {
 		return nil, err
 	}
 
-	ref, err := allocationObj.GetRemoteFileMap(nil)
+	ref, err := allocationObj.GetRemoteFileMap(nil, "/")
 	if err != nil {
 		sdkLogger.Error(err)
 		return nil, err
@@ -214,6 +264,11 @@ func lockStakePool(providerType, tokens, fee uint64, providerID string) (string,
 
 	hash, _, err := sdk.StakePoolLock(sdk.ProviderType(providerType), providerID,
 		tokens, fee)
+	return hash, err
+}
+
+func lockReadPool(tokens, fee uint64) (string, error) {
+	hash, _, err := sdk.ReadPoolLock(tokens, fee)
 	return hash, err
 }
 
@@ -294,4 +349,29 @@ func decodeAuthTicket(ticket string) (*decodeAuthTokenResp, error) {
 
 func convertTokenToSAS(token float64) uint64 {
 	return uint64(token * float64(TOKEN_UNIT))
+}
+
+func allocationRepair(allocationID, remotePath string) error {
+	if len(allocationID) == 0 {
+		return RequiredArg("allocationID")
+	}
+	allocationObj, err := sdk.GetAllocation(allocationID)
+	if err != nil {
+		return err
+	}
+
+	wg := &sync.WaitGroup{}
+	statusBar := &StatusBar{wg: wg}
+	wg.Add(1)
+
+	err = allocationObj.StartRepair("/tmp", remotePath, statusBar)
+	if err != nil {
+		PrintError("Upload failed.", err)
+		return err
+	}
+	wg.Wait()
+	if !statusBar.success {
+		return errors.New("upload failed: unknown")
+	}
+	return nil
 }

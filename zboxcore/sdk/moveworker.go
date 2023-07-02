@@ -96,7 +96,7 @@ func (req *MoveRequest) moveBlobberObject(
 				cncl     context.CancelFunc
 			)
 
-			httpreq, err = zboxutil.NewMoveRequest(blobber.Baseurl, req.allocationTx, body)
+			httpreq, err = zboxutil.NewMoveRequest(blobber.Baseurl, req.allocationID, req.allocationTx, body)
 			if err != nil {
 				l.Logger.Error(blobber.Baseurl, "Error creating rename request", err)
 				return
@@ -309,6 +309,7 @@ func (mo *MoveOperation) Process(allocObj *Allocation, connectionID string) ([]f
 		moveMask:       mo.moveMask,
 		maskMU:         mo.maskMU,
 		destPath:       mo.destPath,
+		Consensus: Consensus{RWMutex: &sync.RWMutex{}},
 	}
 	mR.Consensus.fullconsensus = mo.consensus.fullconsensus
 	mR.Consensus.consensusThresh = mo.consensus.consensusThresh
@@ -351,7 +352,7 @@ func (mo *MoveOperation) Verify(a *Allocation) error {
 	}
 
 	if mo.remotefilepath == "" || mo.destPath == "" {
-		return errors.New("invalid_path", "Invalid path for copy")
+		return errors.New("invalid_path", "Invalid path for move")
 	}
 	isabs := zboxutil.IsRemoteAbs(mo.remotefilepath)
 	if !isabs {

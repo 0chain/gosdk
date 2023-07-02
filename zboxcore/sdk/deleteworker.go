@@ -60,7 +60,7 @@ func (req *DeleteRequest) deleteBlobberFile(
 	query.Add("connection_id", req.connectionID)
 	query.Add("path", req.remotefilepath)
 
-	httpreq, err := zboxutil.NewDeleteRequest(blobber.Baseurl, req.allocationTx, query)
+	httpreq, err := zboxutil.NewDeleteRequest(blobber.Baseurl, req.allocationID, req.allocationTx, query)
 	if err != nil {
 		l.Logger.Error(blobber.Baseurl, "Error creating delete request", err)
 		return err
@@ -332,6 +332,7 @@ func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string) (
 		deleteMask:     dop.deleteMask,
 		maskMu:         dop.maskMu,
 		wg:             &sync.WaitGroup{},
+		consensus:      Consensus{RWMutex: &sync.RWMutex{}},
 	}
 	deleteReq.consensus.fullconsensus = dop.consensus.fullconsensus
 	deleteReq.consensus.consensusThresh = dop.consensus.consensusThresh

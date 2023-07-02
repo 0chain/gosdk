@@ -580,7 +580,7 @@ type Blobber struct {
 	UncollectedServiceCharge int64                        `json:"uncollected_service_charge"`
 	IsKilled                 bool                         `json:"is_killed"`
 	IsShutdown               bool                         `json:"is_shutdown"`
-	IsAvailable              bool                         `json:"is_available"`
+	NotAvailable             bool                         `json:"not_available"`
 }
 
 type Validator struct {
@@ -943,6 +943,10 @@ func CreateAllocation(datashards, parityshards int, size, expiry int64,
 	readPrice, writePrice PriceRange, lock uint64, thirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters) (
 	string, int64, *transaction.Transaction, error) {
 
+	if lock > math.MaxInt64 {
+		return "", 0, nil, errors.New("invalid_lock", "int64 overflow on lock value")
+	}
+
 	preferredBlobberIds, err := GetBlobberIds(blockchain.GetPreferredBlobbers())
 	if err != nil {
 		return "", 0, nil, errors.New("failed_get_blobber_ids", "failed to get preferred blobber ids: "+err.Error())
@@ -959,6 +963,10 @@ func CreateAllocationForOwner(
 	readPrice, writePrice PriceRange,
 	lock uint64, preferredBlobberIds []string, thirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
 ) (hash string, nonce int64, txn *transaction.Transaction, err error) {
+
+	if lock > math.MaxInt64 {
+		return "", 0, nil, errors.New("invalid_lock", "int64 overflow on lock value")
+	}
 
 	allocationRequest, err := getNewAllocationBlobbers(
 		datashards, parityshards, size, expiry, readPrice, writePrice, preferredBlobberIds)
@@ -1029,17 +1037,16 @@ func getNewAllocationBlobbers(
 		return nil, err
 	}
 
-	//filter duplicates
-	ids := make(map[string]struct{})
-	for _, id := range preferredBlobberIds {
-		ids[id] = struct{}{}
-	}
-	for _, id := range allocBlobberIDs {
-		ids[id] = struct{}{}
-	}
-	blobbers := make([]string, 0, len(ids))
-	for id := range ids {
-		blobbers = append(blobbers, id)
+	blobbers := append(preferredBlobberIds, allocBlobberIDs...)
+
+	// filter duplicates
+	ids := make(map[string]bool)
+	uniqueBlobbers := []string{}
+	for _, b := range blobbers {
+		if !ids[b] {
+			uniqueBlobbers = append(uniqueBlobbers, b)
+			ids[b] = true
+		}
 	}
 
 	return map[string]interface{}{
@@ -1047,7 +1054,7 @@ func getNewAllocationBlobbers(
 		"parity_shards":     parityshards,
 		"size":              size,
 		"expiration_date":   expiry,
-		"blobbers":          blobbers,
+		"blobbers":          uniqueBlobbers,
 		"read_price_range":  readPrice,
 		"write_price_range": writePrice,
 	}, nil
@@ -1156,6 +1163,10 @@ func UpdateAllocation(
 	addBlobberId, removeBlobberId string,
 	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
 ) (hash string, nonce int64, err error) {
+
+	if lock > math.MaxInt64 {
+		return "", 0, errors.New("invalid_lock", "int64 overflow on lock value")
+	}
 
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
@@ -1404,9 +1415,6 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 				zap.Any("txn", txn))
 			return
 		}
-		l.Logger.Info("estimate txn fee",
-			zap.Uint64("fee", fee),
-			zap.Any("txn", txn))
 		txn.TransactionFee = fee
 	}
 
@@ -1417,6 +1425,10 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 	if err = txn.ComputeHashAndSign(client.Sign); err != nil {
 		return
 	}
+
+	msg := fmt.Sprintf("executing transaction '%s' with hash %s ", sn.Name, txn.Hash)
+	l.Logger.Info(msg)
+	l.Logger.Info("estimated txn fee: ", txn.TransactionFee)
 
 	transaction.SendTransactionSync(txn, blockchain.GetMiners())
 

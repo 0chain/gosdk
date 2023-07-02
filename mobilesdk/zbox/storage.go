@@ -2,11 +2,70 @@ package zbox
 
 import (
 	"encoding/json"
+	"errors"
+	"strings"
 	"time"
 
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
+
+const SPACE string = " "
+
+type fileResp struct {
+	sdk.FileInfo
+	Name string `json:"name"`
+	Path string `json:"path"`
+}
+
+type MultiOperationOption struct {
+	OperationType string `json:"operationType,omitempty"`
+	RemotePath    string `json:"remotePath,omitempty"`
+	DestName      string `json:"destName,omitempty"` // Required only for rename operation
+	DestPath      string `json:"destPath,omitempty"` // Required for copy and move operation`
+}
+
+type MultiUploadOption struct {
+	FilePath      string `json:"filePath,omitempty"`
+	FileName      string `json:"fileName,omitempty"`
+	RemotePath    string `json:"remotePath,omitempty"`
+	ThumbnailPath string `json:"thumbnailPath,omitempty"`
+	Encrypt       bool   `json:"encrypt,omitempty"`
+	ChunkNumber   int    `json:"chunkNumber,omitempty"`
+}
+
+// MultiOperation - do copy, move, delete and createdir operation together
+// ## Inputs
+//   - allocationID
+//   - jsonMultiOperationOptions: Json Array of MultiOperationOption. eg: "[{"operationType":"move","remotePath":"/README.md","destPath":"/folder1/"},{"operationType":"delete","remotePath":"/t3.txt"}]"
+//
+// ## Outputs
+//   - error
+func MultiOperation(allocationID string, jsonMultiOperationOptions string) error {
+	if allocationID == "" {
+		return errors.New("AllocationID is required")
+	}
+	var options []MultiOperationOption
+	err := json.Unmarshal([]byte(jsonMultiOperationOptions), &options)
+	if err != nil {
+		return err
+	}
+	totalOp := len(options)
+	operations := make([]sdk.OperationRequest, totalOp)
+	for idx, op := range options {
+		operations[idx] = sdk.OperationRequest{
+			OperationType: op.OperationType,
+			RemotePath:    op.RemotePath,
+			DestName:      op.DestName,
+			DestPath:      op.DestPath,
+		}
+	}
+	allocationObj, err := getAllocation(allocationID)
+	if err != nil {
+		return err
+	}
+	return allocationObj.DoMultiOperation(operations)
+}
 
 // ListDir - listing files from path
 // ## Inputs
@@ -134,15 +193,17 @@ func GetFileMetaFromAuthTicket(allocationID, authTicket string, lookupHash strin
 //   - remotePath
 //   - localPath: the full local path of file
 //   - statusCb: callback of status
+//   - isFinal: is final download request(for example if u want to download 10 files in
+//     parallel, the last one should be true)
 //
 // ## Outputs
 //   - error
-func DownloadFile(allocationID, remotePath, localPath string, statusCb StatusCallbackMocked) error {
+func DownloadFile(allocationID, remotePath, localPath string, statusCb StatusCallbackMocked, isFinal bool) error {
 	a, err := getAllocation(allocationID)
 	if err != nil {
 		return err
 	}
-	return a.DownloadFile(localPath, remotePath, false, &StatusCallbackWrapped{Callback: statusCb})
+	return a.DownloadFile(localPath, remotePath, false, &StatusCallbackWrapped{Callback: statusCb}, isFinal)
 }
 
 // DownloadFileByBlock - start download file from remote path to localpath by blocks number
@@ -155,16 +216,18 @@ func DownloadFile(allocationID, remotePath, localPath string, statusCb StatusCal
 //   - endBlock
 //   - numBlocks
 //   - statusCb: callback of status
+//   - isFinal: is final download request(for example if u want to download 10 files in
+//     parallel, the last one should be true)
 //
 // ## Outputs
 //
 //   - error
-func DownloadFileByBlock(allocationID, remotePath, localPath string, startBlock, endBlock int64, numBlocks int, statusCb StatusCallbackMocked) error {
+func DownloadFileByBlock(allocationID, remotePath, localPath string, startBlock, endBlock int64, numBlocks int, statusCb StatusCallbackMocked, isFinal bool) error {
 	a, err := getAllocation(allocationID)
 	if err != nil {
 		return err
 	}
-	return a.DownloadFileByBlock(localPath, remotePath, startBlock, endBlock, numBlocks, false, &StatusCallbackWrapped{Callback: statusCb})
+	return a.DownloadFileByBlock(localPath, remotePath, startBlock, endBlock, numBlocks, false, &StatusCallbackWrapped{Callback: statusCb}, isFinal)
 }
 
 // DownloadThumbnail - start download file thumbnail from remote path to localpath
@@ -173,16 +236,18 @@ func DownloadFileByBlock(allocationID, remotePath, localPath string, startBlock,
 //   - remotePath
 //   - localPath
 //   - statusCb: callback of status
+//   - isFinal: is final download request(for example if u want to download 10 files in
+//     parallel, the last one should be true)
 //
 // ## Outputs
 //   - error
-func DownloadThumbnail(allocationID, remotePath, localPath string, statusCb StatusCallbackMocked) error {
+func DownloadThumbnail(allocationID, remotePath, localPath string, statusCb StatusCallbackMocked, isFinal bool) error {
 	a, err := getAllocation(allocationID)
 	if err != nil {
 		return err
 	}
 
-	return a.DownloadThumbnail(localPath, remotePath, false, &StatusCallbackWrapped{Callback: statusCb})
+	return a.DownloadThumbnail(localPath, remotePath, false, &StatusCallbackWrapped{Callback: statusCb}, isFinal)
 }
 
 // RepairFile - repair file if it exists in remote path
@@ -206,12 +271,79 @@ func RepairFile(allocationID, workdir, localPath, remotePath, thumbnailPath stri
 	return a.StartChunkedUpload(workdir, localPath, remotePath, &StatusCallbackWrapped{Callback: statusCb}, true, true, thumbnailPath, encrypt, webStreaming)
 }
 
-func MultiOperation(allocationID string, operations []sdk.OperationRequest) error {
+// MultiUploadFile - upload files from local path to remote path
+// ## Inputs
+//   - allocationID
+//   - workdir: set a workdir as ~/.zcn on mobile apps
+//   - jsonMultiUploadOpetions: Json Array of MultiOperationOption. eg: "[{"remotePath":"/","filePath":"/t2.txt"},{"remotePath":"/","filePath":"/t3.txt"}]"
+//
+// ## Outputs
+//   - error
+func MultiUpload(allocationID string, workdir string, jsonMultiUploadOptions string, statusCb StatusCallbackMocked) error {
+	var options []MultiUploadOption
+	err := json.Unmarshal([]byte(jsonMultiUploadOptions), &options)
+	if err != nil {
+		return err
+	}
+	totalUploads := len(options)
+	filePaths := make([]string, totalUploads)
+	fileNames := make([]string, totalUploads)
+	remotePaths := make([]string, totalUploads)
+	thumbnailPaths := make([]string, totalUploads)
+	encrypts := make([]bool, totalUploads)
+	chunkNumbers := make([]int, totalUploads)
+	for idx, option := range options {
+		filePaths[idx] = option.FilePath
+		fileNames[idx] = option.FileName
+		thumbnailPaths[idx] = option.ThumbnailPath
+		remotePaths[idx] = option.RemotePath
+		chunkNumbers[idx] = option.ChunkNumber
+	}
+
 	a, err := getAllocation(allocationID)
 	if err != nil {
 		return err
 	}
-	return a.DoMultiOperation(operations)
+	return a.StartMultiUpload(workdir, filePaths, fileNames, thumbnailPaths, encrypts, chunkNumbers, remotePaths, false, &StatusCallbackWrapped{Callback: statusCb})
+
+}
+
+// MultiUpdateFile - update files from local path to remote path
+// ## Inputs
+//   - allocationID
+//   - workdir: set a workdir as ~/.zcn on mobile apps
+//   - jsonMultiUploadOpetions: Json Array of MultiOperationOption. eg: "[{"remotePath":"/","filePath":"/t2.txt"},{"remotePath":"/","filePath":"/t3.txt"}]"
+//
+// ## Outputs
+//   - error
+func MultiUpdate(allocationID string, workdir string, jsonMultiUploadOptions string, statusCb StatusCallbackMocked) error {
+	var options []MultiUploadOption
+	err := json.Unmarshal([]byte(jsonMultiUploadOptions), &options)
+	totalUploads := len(options)
+	filePaths := make([]string, totalUploads)
+	fileNames := make([]string, totalUploads)
+	remotePaths := make([]string, totalUploads)
+	thumbnailPaths := make([]string, totalUploads)
+	encrypts := make([]bool, totalUploads)
+	chunkNumbers := make([]int, totalUploads)
+	for idx, option := range options {
+		filePaths[idx] = option.FilePath
+		fileNames[idx] = option.FileName
+		thumbnailPaths[idx] = option.ThumbnailPath
+		remotePaths[idx] = option.RemotePath
+		chunkNumbers[idx] = option.ChunkNumber
+
+	}
+	if err != nil {
+		return err
+	}
+
+	a, err := getAllocation(allocationID)
+	if err != nil {
+		return err
+	}
+	return a.StartMultiUpload(workdir, filePaths, fileNames, thumbnailPaths, encrypts, chunkNumbers, remotePaths, true, &StatusCallbackWrapped{Callback: statusCb})
+
 }
 
 // UploadFile - upload file/thumbnail from local path to remote path
@@ -359,7 +491,7 @@ func GetAuthToken(allocationID, path string, filename string, referenceType stri
 //	- remoteLookupHash
 //	- remoteFilename
 //	- status: callback of status
-func DownloadFromAuthTicket(allocationID, localPath string, authTicket string, remoteLookupHash string, remoteFilename string, status StatusCallbackMocked) error {
+func DownloadFromAuthTicket(allocationID, localPath string, authTicket string, remoteLookupHash string, remoteFilename string, status StatusCallbackMocked, isFinal bool) error {
 	at, err := sdk.InitAuthTicket(authTicket).Unmarshall()
 	if err != nil {
 		return err
@@ -381,7 +513,7 @@ func DownloadFromAuthTicket(allocationID, localPath string, authTicket string, r
 		remoteFilename = fileMeta.Name
 	}
 
-	return a.DownloadFromAuthTicket(localPath, authTicket, remoteLookupHash, remoteFilename, false, &StatusCallbackWrapped{Callback: status})
+	return a.DownloadFromAuthTicket(localPath, authTicket, remoteLookupHash, remoteFilename, false, &StatusCallbackWrapped{Callback: status}, isFinal)
 }
 
 // DownloadFromAuthTicketByBlocks - download file from Auth ticket by blocks number
@@ -395,12 +527,21 @@ func DownloadFromAuthTicket(allocationID, localPath string, authTicket string, r
 //   - remoteLookupHash
 //   - remoteFilename
 //   - status: callback of status
-func DownloadFromAuthTicketByBlocks(allocationID, localPath string, authTicket string, startBlock, endBlock int64, numBlocks int, remoteLookupHash string, remoteFilename string, status StatusCallbackMocked) error {
-	a, err := getAllocation(allocationID)
+func DownloadFromAuthTicketByBlocks(allocationID, localPath string, authTicket string, startBlock, endBlock int64, numBlocks int, remoteLookupHash string, remoteFilename string, status StatusCallbackMocked, isFinal bool) error {
+	a, err := sdk.GetAllocationFromAuthTicket(authTicket)
 	if err != nil {
 		return err
 	}
-	return a.DownloadFromAuthTicketByBlocks(localPath, authTicket, startBlock, endBlock, numBlocks, remoteLookupHash, remoteFilename, false, &StatusCallbackWrapped{Callback: status})
+
+	at := sdk.InitAuthTicket(authTicket)
+	if len(remoteLookupHash) == 0 {
+		remoteLookupHash, err = at.GetLookupHash()
+		if err != nil {
+			return err
+		}
+	}
+
+	return a.DownloadFromAuthTicketByBlocks(localPath, authTicket, startBlock, endBlock, numBlocks, remoteLookupHash, remoteFilename, false, &StatusCallbackWrapped{Callback: status}, isFinal)
 }
 
 // DownloadThumbnailFromAuthTicket - downloadThumbnail from Auth ticket
@@ -411,7 +552,7 @@ func DownloadFromAuthTicketByBlocks(allocationID, localPath string, authTicket s
 //   - remoteLookupHash
 //   - remoteFilename
 //   - status: callback of status
-func DownloadThumbnailFromAuthTicket(allocationID, localPath string, authTicket string, remoteLookupHash string, remoteFilename string, status StatusCallbackMocked) error {
+func DownloadThumbnailFromAuthTicket(allocationID, localPath string, authTicket string, remoteLookupHash string, remoteFilename string, status StatusCallbackMocked, isFinal bool) error {
 	at, err := sdk.InitAuthTicket(authTicket).Unmarshall()
 	if err != nil {
 		return err
@@ -433,7 +574,7 @@ func DownloadThumbnailFromAuthTicket(allocationID, localPath string, authTicket 
 		remoteFilename = fileMeta.Name
 	}
 
-	return a.DownloadThumbnailFromAuthTicket(localPath, authTicket, remoteLookupHash, remoteFilename, false, &StatusCallbackWrapped{Callback: status})
+	return a.DownloadThumbnailFromAuthTicket(localPath, authTicket, remoteLookupHash, remoteFilename, false, &StatusCallbackWrapped{Callback: status}, isFinal)
 }
 
 // GetFileStats - get file stats from path
@@ -557,15 +698,48 @@ func CreateDir(allocationID, dirName string) error {
 
 // RevokeShare revoke authTicket
 //
-//  ## Inputs
-//  - allocationID
-//  - path
-//  - refereeClientID
+//	## Inputs
+//	- allocationID
+//	- path
+//	- refereeClientID
 func RevokeShare(allocationID, path, refereeClientID string) error {
-  a, err := getAllocation(allocationID)
-  if err != nil {
-    return err
-  }
-  return a.RevokeShare(path, refereeClientID)
+	a, err := getAllocation(allocationID)
+	if err != nil {
+		return err
+	}
+	return a.RevokeShare(path, refereeClientID)
 }
 
+// GetRemoteFileMap returns the remote
+//
+//	## Inputs
+//	- allocationID
+func GetRemoteFileMap(allocationID string) (string, error) {
+	a, err := getAllocation(allocationID)
+	if err != nil {
+		return "", err
+	}
+
+	ref, err := a.GetRemoteFileMap(nil, "/")
+	if err != nil {
+		return "", err
+	}
+
+	fileResps := make([]*fileResp, len(ref))
+	for path, data := range ref {
+		paths := strings.SplitAfter(path, "/")
+		var resp = fileResp{
+			Name:     paths[len(paths)-1],
+			Path:     path,
+			FileInfo: data,
+		}
+		fileResps = append(fileResps, &resp)
+	}
+
+	retBytes, err := json.Marshal(fileResps)
+	if err != nil {
+		return "", err
+	}
+
+	return string(retBytes), nil
+}

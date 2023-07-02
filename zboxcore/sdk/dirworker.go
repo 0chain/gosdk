@@ -196,7 +196,7 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode, pos u
 	}
 
 	formWriter.Close()
-	httpreq, err := zboxutil.NewCreateDirRequest(blobber.Baseurl, req.allocationID, body)
+	httpreq, err := zboxutil.NewCreateDirRequest(blobber.Baseurl, req.allocationID, req.allocationTx, body)
 	if err != nil {
 		l.Logger.Error(blobber.Baseurl, "Error creating dir request", err)
 		return err, false
@@ -310,8 +310,11 @@ func (dirOp *DirOperation) Process(allocObj *Allocation, connectionID string) ([
 		mu:           dirOp.maskMU,
 		wg:           &sync.WaitGroup{},
 	}
-	dR.consensusThresh = dirOp.consensusThresh
-	dR.fullconsensus = dirOp.fullconsensus
+	dR.Consensus = Consensus{
+		RWMutex:         &sync.RWMutex{},
+		consensusThresh: dR.consensusThresh,
+		fullconsensus:   dR.fullconsensus,
+	}
 
 	_ = dR.ProcessWithBlobbers(allocObj)
 

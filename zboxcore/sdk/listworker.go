@@ -89,7 +89,7 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 	}
 
 	//formWriter.Close()
-	httpreq, err := zboxutil.NewListRequest(blobber.Baseurl, req.allocationTx, req.remotefilepath, req.remotefilepathhash, string(authTokenBytes))
+	httpreq, err := zboxutil.NewListRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.remotefilepath, req.remotefilepathhash, string(authTokenBytes))
 	if err != nil {
 		l.Logger.Error("List info request error: ", err.Error())
 		return
@@ -208,11 +208,14 @@ func (lr *ListResult) populateChildren(children []fileref.RefEntity, childResult
 				Type:      child.GetType(),
 				CreatedAt: child.GetCreatedAt(),
 				UpdatedAt: child.GetUpdatedAt(),
+				Consensus: Consensus{
+					RWMutex:         &sync.RWMutex{},
+					consensusThresh: req.consensusThresh,
+					consensus:       0,
+					fullconsensus:   req.fullconsensus,
+				},
+				LookupHash: child.GetLookupHash(),
 			}
-			childResult.LookupHash = child.GetLookupHash()
-			childResult.consensus = 0
-			childResult.consensusThresh = req.consensusThresh
-			childResult.fullconsensus = req.fullconsensus
 			childResultMap[actualHash] = childResult
 		}
 		childResult = childResultMap[actualHash]

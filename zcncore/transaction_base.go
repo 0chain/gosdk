@@ -338,7 +338,7 @@ func (t *Transaction) submitTxn() {
 	}
 
 	var (
-		randomMiners = util.GetRandom(_config.chain.Miners, getMinMinersSubmit())
+		randomMiners = GetStableMiners()
 		minersN      = len(randomMiners)
 		failedCount  int32
 		failC        = make(chan struct{})
@@ -368,6 +368,14 @@ func (t *Transaction) submitTxn() {
 				return
 			}
 
+			if res.StatusCode != http.StatusOK {
+				logging.Error(minerurl, " submit transaction failed with status code ", res.StatusCode)
+				if int(atomic.AddInt32(&failedCount, 1)) == minersN {
+					resultC <- res
+				}
+				return
+			}
+
 			resultC <- res
 		}(miner)
 	}
@@ -376,6 +384,8 @@ func (t *Transaction) submitTxn() {
 	case <-failC:
 		logging.Error("failed to submit transaction")
 		t.completeTxn(StatusError, "", fmt.Errorf("failed to submit transaction to all miners"))
+		transaction.Cache.Evict(t.txn.ClientID)
+		ResetStableMiners()
 		return
 	case ret := <-resultC:
 		logging.Debug("finish txn submitting, ", ret.Url, ", Status: ", ret.Status, ", output:", ret.Body)

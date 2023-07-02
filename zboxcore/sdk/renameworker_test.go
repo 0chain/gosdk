@@ -231,6 +231,7 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 				allocationTx:   mockAllocationTxId,
 				remotefilepath: mockRemoteFilePath,
 				consensus: Consensus{
+					RWMutex:         &sync.RWMutex{},
 					consensusThresh: 2,
 					fullconsensus:   4,
 				},
@@ -479,7 +480,7 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 			for i := 0; i < numBlobbers; i++ {
 				path := "/TestRenameRequest_ProcessRename" + tt.name + mockBlobberUrl + strconv.Itoa(i)
 
-				m[http.MethodPost+":"+path+blobber.EndpointWriteMarkerLock+a.Tx] = devMock.Response{
+				m[http.MethodPost+":"+path+blobber.EndpointWriteMarkerLock+a.ID] = devMock.Response{
 					StatusCode: http.StatusOK,
 					Body:       respBuf,
 				}
@@ -499,6 +500,7 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 				allocationTx:   mockAllocationTxId,
 				remotefilepath: mockRemoteFilePath,
 				consensus: Consensus{
+					RWMutex:         &sync.RWMutex{},
 					consensusThresh: 3,
 					fullconsensus:   4,
 				},

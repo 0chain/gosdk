@@ -66,7 +66,7 @@ func TestListRequest_getListInfoFromBlobber(t *testing.T) {
 			},
 			setup:   func(t *testing.T, name string, p parameters, errMsg string) {},
 			wantErr: true,
-			errMsg:  `parse "Test_Error_New_HTTP_Failed_By_Containing_\u007f\x00\x00": net/url: invalid control character in URL`,
+			errMsg:  `net/url: invalid control character in URL`,
 		},
 		{
 			name: "Test_HTTP_Error",
@@ -193,7 +193,7 @@ func TestListRequest_getListInfoFromBlobber(t *testing.T) {
 			resp := <-rspCh
 			require.EqualValues(tt.wantErr, resp.err != nil)
 			if resp.err != nil {
-				require.EqualValues(tt.errMsg, errors.Top(resp.err))
+				require.Contains(errors.Top(resp.err), tt.errMsg)
 				return
 			}
 			require.EqualValues(tt.parameters.listHttpResp.ref, resp.ref)
@@ -283,6 +283,7 @@ func TestListRequest_GetListFromBlobbers(t *testing.T) {
 				blobbers:     []*blockchain.StorageNode{},
 				wg:           &sync.WaitGroup{},
 				Consensus: Consensus{
+					RWMutex:         &sync.RWMutex{},
 					consensusThresh: 2,
 					fullconsensus:   4,
 				},

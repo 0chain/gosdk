@@ -47,8 +47,6 @@ type TransactionCommon interface {
 
 	// Send implements sending token to a given clientid
 	Send(toClientID string, val string, desc string) error
-	// SetTransactionFee implements method to set the transaction fee
-	SetTransactionFee(txnFee string) error
 
 	VestingAdd(ar VestingAddRequest, value string) error
 
@@ -151,10 +149,9 @@ type StakePoolSettings struct {
 }
 
 type Terms struct {
-	ReadPrice        int64   `json:"read_price"`  // tokens / GB
-	WritePrice       int64   `json:"write_price"` // tokens / GB
-	MinLockDemand    float64 `json:"min_lock_demand"`
-	MaxOfferDuration int64   `json:"max_offer_duration"`
+	ReadPrice        int64 `json:"read_price"`  // tokens / GB
+	WritePrice       int64 `json:"write_price"` // tokens / GB
+	MaxOfferDuration int64 `json:"max_offer_duration"`
 }
 
 type Blobber interface {
@@ -181,7 +178,7 @@ type blobber struct {
 	LastHealthCheck   int64             `json:"last_health_check"`
 	Terms             Terms             `json:"terms"`
 	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
-	IsAvailable       bool              `json:"is_available"`
+	NotAvailable      bool              `json:"not_available"`
 }
 
 func (b *blobber) SetStakePoolSettings(delegateWallet string, minStake int64, maxStake int64, numDelegates int, serviceCharge float64) {
@@ -198,13 +195,12 @@ func (b *blobber) SetTerms(readPrice int64, writePrice int64, minLockDemand floa
 	b.Terms = Terms{
 		ReadPrice:        readPrice,
 		WritePrice:       writePrice,
-		MinLockDemand:    minLockDemand,
 		MaxOfferDuration: maxOfferDuration,
 	}
 }
 
 func (b *blobber) SetAvailable(availability bool) {
-	b.IsAvailable = availability
+	b.NotAvailable = availability
 }
 
 type Validator interface {
@@ -377,15 +373,6 @@ func (t *Transaction) ExecuteSmartContract(address, methodName string, input str
 		t.setNonceAndSubmit()
 	}()
 	return nil
-}
-
-func (t *Transaction) SetTransactionFee(txnFee string) error {
-	fee, err := parseCoinStr(txnFee)
-	if err != nil {
-		return err
-	}
-
-	return t.setTransactionFee(fee)
 }
 
 func (t *Transaction) setTransactionFee(fee uint64) error {

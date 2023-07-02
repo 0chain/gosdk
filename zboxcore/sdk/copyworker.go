@@ -99,7 +99,7 @@ func (req *CopyRequest) copyBlobberObject(
 				cncl     context.CancelFunc
 			)
 
-			httpreq, err = zboxutil.NewCopyRequest(blobber.Baseurl, req.allocationTx, body)
+			httpreq, err = zboxutil.NewCopyRequest(blobber.Baseurl, req.allocationID, req.allocationTx, body)
 			if err != nil {
 				l.Logger.Error(blobber.Baseurl, "Error creating rename request", err)
 				return
@@ -316,6 +316,7 @@ func (co *CopyOperation) Process(allocObj *Allocation, connectionID string) ([]f
 		ctxCncl:        co.ctxCncl,
 		copyMask:       co.copyMask,
 		maskMU:         co.maskMU,
+		Consensus:      Consensus{RWMutex: &sync.RWMutex{}},
 	}
 	cR.consensusThresh = co.consensusThresh
 	cR.fullconsensus = co.fullconsensus

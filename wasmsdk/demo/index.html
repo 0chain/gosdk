@@ -43,7 +43,7 @@
       value="41729ed8d82f782646d2d30b9719acfd236842b9b6e47fee12b7bdbd05b35122" /><br>
     <label for="publicKey"> PublicKey</label> <input id="publicKey" name="publicKey" style="width: 600px;"
       value="1f495df9605a4479a7dd6e5c7a78caf9f9d54e3a40f62a3dd68ed377115fe614d8acf0c238025f67a85163b9fbf31d10fbbb4a551d1cf00119897edf18b1841c" /><br>
-  <label for="mnemonic"> Mnemonic</label> <input id="mnemonic" name="mnemonic" style="width: 600px;"
+    <label for="mnemonic"> Mnemonic</label> <input id="mnemonic" name="mnemonic" style="width: 600px;"
       value="glare mistake gun joke bid spare across diagram wrap cube swear cactus cave repeat you brave few best wild lion pitch pole original wasp" /><br>
 
 
@@ -59,9 +59,8 @@
   <fieldset>
     <legend>Sharing</legend>
     <label for="authTicket"> AuthTicket </label> <input id="authTicket" name="authTicket" style="width: 600px;"
-      value="eyJjbGllbnRfaWQiOiIiLCJvd25lcl9pZCI6IjdkMzVhNmMzYmE1MDY2ZTYyOTg5ZDM0Y2VlN2RkNDM0ZDA4MzNkNWVhOWZmMDA5MjhhYTg5OTk0ZDgwZTQ3MDAiLCJhbGxvY2F0aW9uX2lkIjoiOTBlY2E3ZjJiZjRiOWQyZjJjZTViYzViNjU5NjdiZmNiZDJmYmIxNmJmM2E5N2RjMDkzNGYyNDgxMjQxZGRlNyIsImZpbGVfcGF0aF9oYXNoIjoiMWRmZjRjZDRkNjUwYTE1YmQxNDhmNWMxNzZmYTBjNDI5MDI0NmRmNzM1ZTMyZTFmYzkwMGQ5NjI5NjVhZTE2MiIsImFjdHVhbF9maWxlX2hhc2giOiI4MDg2YzdkN2RiN2FmYjk3YjFmYzliNDBhZTAxMmEzNTczMDc4YmQ2MTQwNTczMWFiZTI2ZDYyNzQ2MDJmM2FhIiwiZmlsZV9uYW1lIjoiMS5wbmciLCJyZWZlcmVuY2VfdHlwZSI6ImYiLCJleHBpcmF0aW9uIjowLCJ0aW1lc3RhbXAiOjE2Nzg4OTg1MjUsImVuY3J5cHRlZCI6ZmFsc2UsInNpZ25hdHVyZSI6IjhlYjc2YTNhODllMjY0YWI0NTQ5ZTQwYmE1OGFmN2ZhMzU0Mjk5YWZhMWZkYjJhMTMxYzBhNmNiOGM0NDJjOWEifQ==
-      " /><br>
-      <button id="decodeAuthticket">DecodeAuthTicket</button>
+      value="eyJjbGllbnRfaWQiOiJhNGM1M2JmMjQ4YzYzNGVhNDgzYTk4Y2JhYTZiNzY3MjI2ZjUwNDUwNmIyOTkzODRiMzBmMmMwMGE1MmYwODUxIiwib3duZXJfaWQiOiIzMDc2NGJjYmE3MzIxNmI2N2MzNmIwNWExN2I0ZGQwNzZiZmRjNWJiMGVkODQ4NTZmMjc2MjIxODhjMzc3MjY5IiwiYWxsb2NhdGlvbl9pZCI6IjJmMjc3NDJlODYxN2YyY2U1MTk2OWFhNWQ1ZDAyY2MyZDg1NzQ1MzQ5MGVkZjBlODYzNmE0OTdjYjRmNTY3MWUiLCJmaWxlX3BhdGhfaGFzaCI6IjVhYTE2NzkyZDQ1YWMwMzI0ZTExZjc0Y2E5N2M0NDk3Zjc2ZmIxM2ZkN2ExMjIzMjc4NzQ4ZjY4OGIyNzU2OGUiLCJhY3R1YWxfZmlsZV9oYXNoIjoiYjQxZTFmZGI2YThlNzM0MmNkMzk5ZjY3MWFiYWRkM2MyN2QzZDQ0YjdmZGM0OGU3Mzc1ZTI4ZTM3MTI2NWY3YiIsImZpbGVfbmFtZSI6InJ0eDA5MDIwMDIxMnAucGRmIiwicmVmZXJlbmNlX3R5cGUiOiJmIiwiZXhwaXJhdGlvbiI6MTY4ODY4OTcyMTcxNCwidGltZXN0YW1wIjoxNjg3MDAyNzE2LCJlbmNyeXB0ZWQiOnRydWUsInNpZ25hdHVyZSI6IjIyOWUyY2FkNTU5YzEwMGU4MTVhNjk2ZTQ5YTU3ZTUyNGU5ZmQ1YmZmZTRjYjAyY2I0MDM1NGY0OTQ1YzY5MWYifQ==" /><br>
+    <button id="decodeAuthticket">DecodeAuthTicket</button>
   </fieldset>
 
   <fieldset>
@@ -73,6 +72,7 @@
       <button id="btnGetAllocation">Get</button>
       <button id="btnGetAllocationMinLock">AllocationMinLock</button>
       <button id="btnRemoteFileMap">RemoteFileMap</button>
+      <button id="btnAddReplaceBlobber">AddReplaceBlobber</button>
     </span>
 
     <br>
@@ -102,9 +102,9 @@
     <legend>Files</legend>
     <button id="btnListFiles">List</button>
     <span>
-      <input id="inputSelectedFile" type="file" multiple /> 
+      <input id="inputSelectedFile" type="file" multiple />
       <button id="btnUploadFile">Upload</button> </span>
-      <video id="playerrr" controls></video>
+    <video id="playerrr" controls></video>
     <button id="btnUploadEncryptFile">EncryptedUpload</button> </span>
     [ <button id="btnDownloadFile">Download</button> | <button id="btnDownloadShared">Download with AuthTicket</button>
     ]
@@ -112,6 +112,12 @@
     <button id="btnGetFileStats">GetFileStats</button>
     <button id="btnDelete">Delete</button>
     <button id="btnShare">Share</button>
+    <button id="btnGetContainers">getcontainers</button>
+    <button id="btnUpdateContainer">updatecontainer</button>
+    <button id="btnSearchContainer">searchcontainer</button>
+    <button id="btnAllocationRepair">Repair</button>
+    <button id="btnMultiOps">MultiOperation</button>
+
     <br>
 
     <div id="listFiles">
@@ -161,7 +167,7 @@
       const privateKey = get('privateKey').value
       const mnemonic = get('mnemonic').value
       return {
-        clientID, publicKey, privateKey,mnemonic
+        clientID, publicKey, privateKey, mnemonic
       }
     }
 
@@ -193,13 +199,13 @@
     }
 
     const query = new URLSearchParams(window.location.search);
-    
-    let network = query.get('network') 
+
+    let network = query.get('network')
     if (!network || network == 'undefined') {
       network = "demo.zus.network"
     }
-  
-    const blockWorker = 'https://'+network+'/dns';
+
+    const blockWorker = 'https://' + network + '/dns';
     const config = [
       networkConfig.chainId,
       blockWorker,
@@ -207,7 +213,7 @@
       networkConfig.minConfirmation,
       networkConfig.minSubmit,
       networkConfig.confirmationChainLength,
-      'https://0box.'+network, //zboxHost
+      'https://0box.' + network, //zboxHost
       'vult', //zboxAppType
     ]
 
@@ -255,7 +261,7 @@
     onClick('btnCreateAllocation', async () => {
 
       const expiry = new Date()
-      expiry.setDate(expiry.getDate() + 30)
+      expiry.setDate(expiry.getDate() + 300)
 
       //name string, datashards, parityshards int, size, expiry int64,minReadPrice, maxReadPrice, minWritePrice, maxWritePrice int64, lock int64,preferredBlobberIds []string
       const config = {
@@ -267,7 +273,7 @@
         maxReadPrice: 184467440737095516,
         minWritePrice: 0,
         maxWritePrice: 184467440737095516,
-        lock: 5000000000
+        lock: 18800000000
       }
       try {
         const allocation = await goWasm.sdk.createAllocation(config.datashards, config.parityshards, config.size, config.expiry,
@@ -298,7 +304,7 @@
         let resp = await goWasm.sdk.getRemoteFileMap(allocationID)
         console.log(resp)
         txtOutput.innerHTML = JSON.stringify(resp, null, 2)
-      }catch(e){
+      } catch (e) {
         alert(e)
       }
     })
@@ -327,10 +333,10 @@
       let expiry = 1680408725
       let maxReadPrice = 10000000000
       let maxWritePrice = 1000000000
-      try{
+      try {
         const price = await goWasm.sdk.getAllocationMinLock(dataShards, parityShards, size, expiry, maxReadPrice, maxWritePrice)
         txtOutput.innerHTML = price
-      }catch(e) {
+      } catch (e) {
         alert(e)
       }
     })
@@ -353,12 +359,12 @@
         return
       }
       let details = await getBlobberDetails(blobberID)
-      details.terms.read_price+=1
+      details.terms.read_price += 1
       try {
-      const txn = await goWasm.sdk.updateBlobberSettings(JSON.stringify(details))
-    } catch (e) {
-      alert(e)
-    }
+        const txn = await goWasm.sdk.updateBlobberSettings(JSON.stringify(details))
+      } catch (e) {
+        alert(e)
+      }
       // txtOutput.innerHTML = JSON.stringify(alloc, null, 2)
     })
 
@@ -387,7 +393,7 @@
       video.src = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
     }
     document.getElementById('inputSelectedFile').addEventListener('change', transcode);
-        
+
     onClick('btnUploadFile', async () => {
 
       const { files } = get('inputSelectedFile')
@@ -398,7 +404,7 @@
         const objects = []
         const allocationId = getSelectedAllocation()
         for (var file of files) {
-          
+
           objects.push({
             allocationId: allocationId,
             remotePath: '/output.mp4',
@@ -415,7 +421,9 @@
             }
           })
         }
-        const results = await goWasm.bulkUpload(objects)
+
+        // const results = await goWasm.bulkUpload(objects)
+        const results = await goWasm.multiUpload(objects)
 
         console.log(JSON.stringify(results))
       }
@@ -423,8 +431,8 @@
 
     onClick('btnShare', async () => {
       // change these values according to your wallet (obtained from zbox `zbox getwallet`)
-      let clientID = "7838eedbf2add6dc590a5ee95643e9a872ec7a9ae6c5efc452f2fa9c6971eb3a"
-      let encryptionPublicKey = "b0h8PCKsg3exMzR3SOHsXk0Uwx0BiY50deZVYuWq8VY="
+      let clientID = "a4c53bf248c634ea483a98cbaa6b767226f504506b299384b30f2c00a52f0851"
+      let encryptionPublicKey = "SCxZlinUp+Z29jt8hXT623osEjALXVel6HdHgq1lXEY="
 
       const file = files.find(it => it.path == getSelectedFile())
       if (file) {
@@ -439,7 +447,7 @@
         let expiration = time += 3600 // after 1 hour
         let availableAfter = 0
         try {
-          const result = await goWasm.sdk.share(allocationId, file?.path, clientID, encryptionPublicKey, expiration, false, availableAfter)
+          const result = await goWasm.sdk.share(allocationId, file?.path, "", "", expiration, false, availableAfter)
           console.log("output of share", result)
           txtOutput.innerHTML = JSON.stringify(result, null, 2)
         } catch (e) {
@@ -488,8 +496,7 @@
         const allocationId = getSelectedAllocation()
 
         //allocationID, remotePath, authTicket, lookupHash string, downloadThumbnailOnly bool, numBlocks int
-        const file = await goWasm.sdk.download(allocationId, path, '', '', false, 10, "downloadCallback")
-
+        const file = await goWasm.sdk.download(allocationId, path, '', '', false, 10, "downloadCallback", true)
 
         const a = document.createElement('a')
         document.body.appendChild(a)
@@ -501,6 +508,30 @@
         window.URL.revokeObjectURL(file.url)
         document.body.removeChild(a)
 
+      }
+    })
+
+    onClick('btnAddReplaceBlobber', async () => {
+
+      var addremoveBlobberIDs = prompt("Add Blobber ID and remove blobberID (separated by a comma): ");
+
+      var [addBlobberId, removeBlobberID] = addremoveBlobberIDs.split(",");
+      removeBlobberID = removeBlobberID !== undefined ? value : "";
+
+      console.log("addBlobberId", addBlobberId)
+      console.log("removeBlobberID", removeBlobberID)
+      // addBlobberId = addBlobberId.trim()
+      // removeBlobberID = removeBlobberID.trim()
+      const allocationId = getSelectedAllocation()
+      if (!allocationId) {
+        alert("please provide allocationId")
+      }
+
+      try {
+        const file = await goWasm.sdk.updateAllocationWithRepair(allocationId, 0, 0, 5000000000, false, addBlobberId, removeBlobberID)
+
+      } catch (e) {
+        alert(e)
       }
     })
 
@@ -508,29 +539,31 @@
 
       const authTicket = get('authTicket').value
       if (authTicket) {
+        try {
+          const file = await goWasm.sdk.download('', '', authTicket, '', false, 10, "downloadCallback", true)
 
-        //allocationID, remotePath, authTicket, lookupHash string, downloadThumbnailOnly bool, numBlocks int, callbackFuncName string
-        const file = await goWasm.sdk.download('', '', authTicket, '', false, 10, "downloadCallback")
-
-        const a = document.createElement('a')
-        document.body.appendChild(a)
-        a.style = 'display: none'
-        a.href = file.url
-        a.download = file.fileName
-        a.click()
-        window.URL.revokeObjectURL(file.url)
-        document.body.removeChild(a)
-
+          console.log("downloaded file", file)
+          const a = document.createElement('a')
+          document.body.appendChild(a)
+          a.style = 'display: none'
+          a.href = file.url
+          a.download = file.fileName
+          a.click()
+          window.URL.revokeObjectURL(file.url)
+          document.body.removeChild(a)
+        } catch (e) {
+          alert(e)
+        }
       }
     })
 
     onClick('decodeAuthticket', async () => {
       const authTicket = get('authTicket').value
       if (authTicket) {
-        try{
+        try {
           const output = await goWasm.sdk.decodeAuthTicket(authTicket);
-        console.log(output)
-        txtOutput.innerHTML = JSON.stringify(output, null, 2)
+          console.log(output)
+          txtOutput.innerHTML = JSON.stringify(output, null, 2)
         } catch (e) {
           alert(e)
         }
@@ -665,6 +698,74 @@
       txtOutput.innerHTML = rate
     })
 
+    onClick('btnGetContainers', async () => {
+      const domain = "https://chimneyhwayr.zus.network"
+      const username = "username1"
+      const password = "password1"
+
+      try {
+        const stats = await goWasm.sdk.getcontainers(username, password, domain)
+        txtOutput.innerHTML = JSON.stringify(stats, null, 2)
+      } catch (e) {
+        alert(e)
+      }
+    })
+
+    onClick('btnUpdateContainer', async () => {
+      const containerid = "3f9b21fcb9df9d6cc88b024357bf940284f749d4c30e13b7791d721def752498"
+      const domain = "https://chimneyhwayr.zus.network"
+      const username = "username1"
+      const password = "password1"
+      const image = "0chaindev/blobber:staging"
+      try {
+        const stats = await goWasm.sdk.updatecontainer(username, password, domain, containerid, image)
+        txtOutput.innerHTML = JSON.stringify(stats, null, 2)
+      } catch (e) {
+        alert(e)
+      }
+    })
+
+    onClick('btnSearchContainer', async () => {
+      const domain = "https://chimneyhwayr.zus.network"
+      const username = "username1"
+      const password = "password1"
+      const containername = "validator"
+      try {
+        const stats = await goWasm.sdk.searchcontainer(username, password, domain, containername)
+        txtOutput.innerHTML = JSON.stringify(stats, null, 2)
+      } catch (e) {
+        alert(e)
+      }
+    })
+
+    onClick('btnAllocationRepair', async () => {
+      const allocationId = getSelectedAllocation()
+      const output = await goWasm.sdk.allocationRepair(allocationId, "/")
+      txtOutput.innerHTML = output
+    })
+
+    onClick('btnMultiOps', async () => {
+      const allocationId = getSelectedAllocation()
+      if (!allocationId) {
+        alert("please provide allocationId")
+      }
+      const objects = []
+
+      objects.push({
+        operationType: `move`,
+        remotePath: `/zcn.wasm`,
+        destPath: `/folder1`,
+      })
+
+      let stringifiedArray = JSON.stringify(objects);
+
+      try {
+        console.log("execting", objects[0])
+        const output = await goWasm.sdk.multiOperation(allocationId, stringifiedArray)
+      } catch (e) {
+        alert(e)
+      }
+    })
 
   </script>
 </body>

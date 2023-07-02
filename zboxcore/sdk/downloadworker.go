@@ -72,6 +72,16 @@ type DownloadRequest struct {
 	blocksPerShard     int64
 	prepaidBlobbers    map[string]bool
 	connectionID       string
+	skip               bool
+	fRef               *fileref.FileRef
+	chunksPerShard     int64
+	actualPerShard     int64
+	size               int64
+}
+
+type blockData struct {
+	blockNum int
+	data     []byte
 }
 
 func (req *DownloadRequest) removeFromMask(pos uint64) {
@@ -203,19 +213,6 @@ func (req *DownloadRequest) downloadBlock(
 				idx:     blockDownloadReq.blobberIdx,
 				err:     errors.New("", "skip blobber by previous errors")}
 			skipDownload = true
-		}
-
-		if paid := req.prepaidBlobbers[blockDownloadReq.blobber.ID]; !paid {
-			err := req.submitReadMarker(blockDownloadReq.blobber, req.blocksPerShard)
-			if err != nil {
-				wrappedErr := errors.Wrap(err, "Submit readmarker failed")
-				rspCh <- &downloadBlock{
-					Success: false,
-					idx:     blockDownloadReq.blobberIdx,
-					err:     wrappedErr,
-				}
-				skipDownload = true
-			}
 		}
 
 		if !skipDownload {
@@ -369,35 +366,12 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		remotePathCB = req.remotefilepathhash
 	}
 
-	if req.startBlock < 0 || req.endBlock < 0 {
-		req.errorCB(
-			fmt.Errorf("start block or end block or both cannot be negative."), remotePathCB,
-		)
-		return
-	}
-
 	var op = OpDownload
 	if req.contentMode == DOWNLOAD_CONTENT_THUMB {
 		op = opThumbnailDownload
 	}
-	fRef, err := req.getFileRef(remotePathCB)
-	if err != nil {
-		logger.Logger.Error(err.Error())
-		req.errorCB(
-			fmt.Errorf("Error while getting file ref. Error: %v",
-				err), remotePathCB)
-
-		return
-	}
-
-	size, chunksPerShard, actualPerShard, err := req.calculateShardsParams(fRef, remotePathCB)
-	if err != nil {
-		logger.Logger.Error(err.Error())
-		req.errorCB(
-			fmt.Errorf("Error while calculating shard params. Error: %v",
-				err), remotePathCB)
-		return
-	}
+	fRef := req.fRef
+	size, chunksPerShard, actualPerShard := req.size, req.chunksPerShard, req.actualPerShard
 
 	logger.Logger.Info(
 		fmt.Sprintf("Downloading file with size: %d from start block: %d and end block: %d. "+
@@ -438,24 +412,6 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	// otherwise end data will have null bytes.
 	remainingSize := size - startBlock*int64(req.effectiveBlockSize)
 
-	var wantSize int64
-	if endBlock*int64(req.effectiveBlockSize) < size {
-		wantSize = endBlock*int64(req.effectiveBlockSize) - startBlock*int64(req.effectiveBlockSize)
-	} else {
-		wantSize = remainingSize
-	}
-
-	if remainingSize <= 0 {
-		logger.Logger.Error("Nothing to download")
-		req.errorCB(
-			fmt.Errorf("Size to download is %d. Nothing to download", remainingSize), remotePathCB,
-		)
-		return
-	}
-
-	blocksPerShard := (wantSize + int64(req.effectiveBlockSize) - 1) / int64(req.effectiveBlockSize)
-	req.blocksPerShard = blocksPerShard
-
 	if req.statusCallback != nil {
 		// Started will also initialize progress bar. So without calling this function
 		// other callback's call will panic
@@ -475,38 +431,90 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	}
 
 	n := int((endBlock - startBlock + numBlocks - 1) / numBlocks)
-	res := make([][]byte, n)
 
-	// Initiate download of first blocks sequentially to allow readmarkers to be properly submitted, then proceed to download in parallel
-	blocksToDownload := numBlocks
-	if startBlock+numBlocks > endBlock {
-		blocksToDownload = endBlock - startBlock
-	}
-	res[0], err = req.getBlocksData(startBlock, blocksToDownload)
-	if req.isDownloadCanceled {
-		req.errorCB(errors.New("download_abort", "Download aborted by user"), remotePathCB)
-		return
-	}
-	if err != nil {
-		req.errorCB(errors.Wrap(err, fmt.Sprintf("Download failed for block %d. ", startBlock)), remotePathCB)
-		return
-	}
+	// Buffered channel to hold the blocks as they are downloaded
+	blocks := make(chan blockData, n)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	// Handle writing the blocks in order as soon as they are downloaded
+	go func() {
+		buffer := make(map[int][]byte)
+		for i := 0; i < n; i++ {
+			if data, ok := buffer[i]; ok {
+				// If the block we need to write next is already in the buffer, write it
+				numBytes := int64(math.Min(float64(remainingSize), float64(len(data))))
+				_, err = f.Write(data[:numBytes])
+
+				if err != nil {
+					req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
+					return
+				}
+				if isPREAndWholeFile {
+					actualFileHasher.Write(data[:numBytes])
+				}
+
+				downloaded = downloaded + int(numBytes)
+				remainingSize -= numBytes
+
+				if req.statusCallback != nil {
+					req.statusCallback.InProgress(req.allocationID, remotePathCB, op, downloaded, data)
+				}
+
+				// Remove the block from the buffer
+				delete(buffer, i)
+			} else {
+				// If the block we need to write next is not in the buffer, wait for it
+				for block := range blocks {
+					if block.blockNum == i {
+						// Write the data
+						numBytes := int64(math.Min(float64(remainingSize), float64(len(block.data))))
+						_, err = f.Write(block.data[:numBytes])
+
+						if err != nil {
+							req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
+							return
+						}
+						if isPREAndWholeFile {
+							actualFileHasher.Write(block.data[:numBytes])
+						}
+
+						downloaded = downloaded + int(numBytes)
+						remainingSize -= numBytes
+
+						if req.statusCallback != nil {
+							req.statusCallback.InProgress(req.allocationID, remotePathCB, op, downloaded, block.data)
+						}
+
+						break
+					} else {
+						// If this block is not the one we're waiting for, store it in the buffer
+						buffer[block.blockNum] = block.data
+					}
+				}
+			}
+		}
+		f.Sync() //nolint
+		wg.Done()
+	}()
 
 	eg, _ := errgroup.WithContext(ctx)
-	for i := 1; i < n; i++ {
+	for i := 0; i < n; i++ {
 		j := i
 		eg.Go(func() error {
 			blocksToDownload := numBlocks
 			if startBlock+int64(j)*numBlocks+numBlocks > endBlock {
 				blocksToDownload = endBlock - (startBlock + int64(j)*numBlocks)
 			}
-			res[j], err = req.getBlocksData(startBlock+int64(j)*numBlocks, blocksToDownload)
+			data, err := req.getBlocksData(startBlock+int64(j)*numBlocks, blocksToDownload)
 			if req.isDownloadCanceled {
 				return errors.New("download_abort", "Download aborted by user")
 			}
 			if err != nil {
 				return errors.Wrap(err, fmt.Sprintf("Download failed for block %d. ", startBlock+int64(j)*numBlocks))
 			}
+			blocks <- blockData{blockNum: j, data: data}
 			return nil
 		})
 	}
@@ -515,27 +523,8 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		return
 	}
 
-	for _, data := range res {
-		n := int64(math.Min(float64(remainingSize), float64(len(data))))
-		_, err = f.Write(data[:n])
-
-		if err != nil {
-			req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
-			return
-		}
-		if isPREAndWholeFile {
-			actualFileHasher.Write(data[:n])
-		}
-
-		downloaded = downloaded + int(n)
-		remainingSize -= n
-
-		if req.statusCallback != nil {
-			req.statusCallback.InProgress(req.allocationID, remotePathCB, op, downloaded, data)
-		}
-	}
-
-	f.Sync() //nolint
+	close(blocks)
+	wg.Wait()
 
 	if isPREAndWholeFile {
 		calculatedFileHash := hex.EncodeToString(actualFileHasher.Sum(nil))
@@ -567,11 +556,15 @@ func (req *DownloadRequest) submitReadMarker(blobber *blockchain.StorageNode, re
 			if IsErrCode(err, NotEnoughTokens) || IsErrCode(err, InvalidAuthTicket) || IsErrCode(err, InvalidShare) {
 				return err
 			}
+			if IsErrCode(err, LockExists) || IsErrCode(err, RateLimitError) {
+				continue
+			}
 			retryCount--
 		} else {
 			return nil
 		}
 	}
+	blobber.SetSkip(true)
 	return fmt.Errorf("submit read marker failed after retries: %w", err)
 }
 
@@ -595,7 +588,7 @@ func (req *DownloadRequest) attemptSubmitReadMarker(blobber *blockchain.StorageN
 	if err != nil {
 		return fmt.Errorf("error marshaling read marker: %w", err)
 	}
-	httpreq, err := zboxutil.NewDownloadRequest(blobber.Baseurl, req.allocationTx)
+	httpreq, err := zboxutil.NewRedeemRequest(blobber.Baseurl, req.allocationID, req.allocationTx)
 	if err != nil {
 		return fmt.Errorf("error creating download request: %w", err)
 	}
@@ -606,9 +599,6 @@ func (req *DownloadRequest) attemptSubmitReadMarker(blobber *blockchain.StorageN
 		ReadMarker:   rmData,
 		ConnectionID: req.connectionID,
 	}
-	if req.authTicket != nil {
-		header.AuthToken, _ = json.Marshal(req.authTicket) //nolint: errcheck
-	}
 	header.ToHeader(httpreq)
 
 	ctx, cancel := context.WithTimeout(req.ctx, 30*time.Second)
@@ -618,12 +608,27 @@ func (req *DownloadRequest) attemptSubmitReadMarker(blobber *blockchain.StorageN
 		if err != nil {
 			return err
 		}
-		defer resp.Body.Close()
+		if resp.Body != nil {
+			defer resp.Body.Close()
+		}
+
+		if resp.StatusCode == http.StatusTooManyRequests {
+			logger.Logger.Info(blobber.Baseurl,
+				" got too many request error. Retrying")
+			var r int
+			r, err = zboxutil.GetRateLimitValue(resp)
+			if err != nil {
+				logger.Logger.Error(err)
+				return errors.New("rate_limit_error", "Error while getting rate limit value")
+			}
+			time.Sleep(time.Duration(r) * time.Second)
+			return errors.New("rate_limit_error", "Too many requests")
+		}
 
 		if resp.StatusCode != http.StatusOK {
 			return req.handleReadMarkerError(resp, blobber, rm)
 		}
-		setBlobberReadCtr(req.allocationID, blobber.ID, rm.ReadCounter)
+		incBlobberReadCtr(req.allocationID, blobber.ID, readCount)
 
 		logger.Logger.Debug("Submit readmarker 200 OK")
 
@@ -641,10 +646,7 @@ func (req *DownloadRequest) handleReadMarkerError(resp *http.Response, blobber *
 		return err
 	}
 
-	logger.Logger.Error(string(respBody))
-
 	appErrorCode := resp.Header.Get("X-App-Error-Code")
-
 	if appErrorCode != "" {
 		if appErrorCode == NotEnoughTokens {
 			logger.Logger.Debug(fmt.Sprintf("NotEnoughTokens - blobberID: %v", blobber.ID))
@@ -663,7 +665,6 @@ func (req *DownloadRequest) handleReadMarkerError(resp *http.Response, blobber *
 		}
 		if appErrorCode == LockExists {
 			logger.Logger.Debug(fmt.Sprintf("LockExists - blobberID: %v", blobber.ID))
-			blobber.SetSkip(true)
 			time.Sleep(time.Second * 1)
 			return errors.New(LockExists, string(respBody))
 		}
@@ -742,6 +743,7 @@ func (req *DownloadRequest) errorCB(err error, remotePathCB string) {
 	if req.contentMode == DOWNLOAD_CONTENT_THUMB {
 		op = opThumbnailDownload
 	}
+	req.skip = true
 	sys.Files.Remove(req.localpath) //nolint: errcheck
 	if req.statusCallback != nil {
 		req.statusCallback.Error(
@@ -800,6 +802,41 @@ type blobberFile struct {
 	size           int64
 }
 
+func GetFileRefFromBlobber(allocationID, blobberId, remotePath string) (fRef *fileref.FileRef, err error) {
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	blobber, err := GetBlobber(blobberId)
+	if err != nil {
+		return nil, err
+	}
+
+	a, err := GetAllocation(allocationID)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx := context.Background()
+	listReq := &ListRequest{}
+
+	listReq.allocationID = a.ID
+	listReq.allocationTx = a.Tx
+	listReq.blobbers = []*blockchain.StorageNode{
+		{ID: string(blobber.ID), Baseurl: blobber.BaseURL},
+	}
+	listReq.fullconsensus = 1
+	listReq.consensusThresh = 1
+	listReq.ctx = ctx
+	listReq.remotefilepath = remotePath
+
+	listReq.wg = &sync.WaitGroup{}
+	listReq.wg.Add(1)
+	rspCh := make(chan *fileMetaResponse, 1)
+	go listReq.getFileMetaInfoFromBlobber(listReq.blobbers[0], 0, rspCh)
+	listReq.wg.Wait()
+	resp := <-rspCh
+	return resp.fileref, resp.err
+}
+
 func (req *DownloadRequest) getFileRef(remotePathCB string) (fRef *fileref.FileRef, err error) {
 	listReq := &ListRequest{
 		remotefilepath:     req.remotefilepath,
@@ -809,6 +846,7 @@ func (req *DownloadRequest) getFileRef(remotePathCB string) (fRef *fileref.FileR
 		blobbers:           req.blobbers,
 		authToken:          req.authTicket,
 		Consensus: Consensus{
+			RWMutex:         &sync.RWMutex{},
 			fullconsensus:   req.fullconsensus,
 			consensusThresh: req.consensusThresh,
 		},
@@ -874,6 +912,11 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 	}
 
 	req.validationRootMap = make(map[string]*blobberFile)
+	blobberCount := 0
+	countThreshold := req.consensusThresh + 1
+	if countThreshold > req.fullconsensus {
+		countThreshold = req.consensusThresh
+	}
 	for i := 0; i < len(fMetaResp); i++ {
 		fmr := fMetaResp[i]
 		if fmr.err != nil || fmr.fileref == nil {
@@ -907,6 +950,10 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 		}
 		shift := zboxutil.NewUint128(1).Lsh(uint64(fmr.blobberIdx))
 		foundMask = foundMask.Or(shift)
+		blobberCount++
+		if blobberCount == countThreshold {
+			break
+		}
 	}
 	req.consensus = foundMask.CountOnes()
 	if !req.isConsensusOk() {
@@ -914,4 +961,60 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 	}
 	req.downloadMask = foundMask
 	return selected.fileref, nil
+}
+
+func (req *DownloadRequest) processDownloadRequest() {
+	remotePathCB := req.remotefilepath
+	if remotePathCB == "" {
+		remotePathCB = req.remotefilepathhash
+	}
+	if req.startBlock < 0 || req.endBlock < 0 {
+		req.errorCB(
+			fmt.Errorf("start block or end block or both cannot be negative."), remotePathCB,
+		)
+		return
+	}
+	fRef, err := req.getFileRef(remotePathCB)
+	if err != nil {
+		logger.Logger.Error(err.Error())
+		req.errorCB(
+			fmt.Errorf("Error while getting file ref. Error: %v",
+				err), remotePathCB)
+
+		return
+	}
+	req.fRef = fRef
+	size, chunksPerShard, actualPerShard, err := req.calculateShardsParams(fRef, remotePathCB)
+	if err != nil {
+		logger.Logger.Error(err.Error())
+		req.errorCB(
+			fmt.Errorf("Error while calculating shard params. Error: %v",
+				err), remotePathCB)
+		return
+	}
+	req.size = size
+	req.chunksPerShard = chunksPerShard
+	req.actualPerShard = actualPerShard
+	startBlock, endBlock := req.startBlock, req.endBlock
+	// remainingSize should be calculated based on startBlock number
+	// otherwise end data will have null bytes.
+	remainingSize := size - startBlock*int64(req.effectiveBlockSize)
+
+	var wantSize int64
+	if endBlock*int64(req.effectiveBlockSize) < size {
+		wantSize = endBlock*int64(req.effectiveBlockSize) - startBlock*int64(req.effectiveBlockSize)
+	} else {
+		wantSize = remainingSize
+	}
+
+	if remainingSize <= 0 {
+		logger.Logger.Error("Nothing to download")
+		req.errorCB(
+			fmt.Errorf("Size to download is %d. Nothing to download", remainingSize), remotePathCB,
+		)
+		return
+	}
+
+	blocksPerShard := (wantSize + int64(req.effectiveBlockSize) - 1) / int64(req.effectiveBlockSize)
+	req.blocksPerShard = blocksPerShard
 }

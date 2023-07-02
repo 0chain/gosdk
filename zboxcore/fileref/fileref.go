@@ -16,12 +16,6 @@ const (
 	DIRECTORY = "d"
 )
 
-type CommitMetaTxn struct {
-	RefID     int64  `json:"ref_id"`
-	TxnID     string `json:"txn_id"`
-	CreatedAt string `json:"created_at"`
-}
-
 type Collaborator struct {
 	RefID     int64  `json:"ref_id"`
 	ClientID  string `json:"client_id"`
@@ -40,13 +34,12 @@ type FileRef struct {
 	ActualFileSize          int64  `json:"actual_file_size" mapstructure:"actual_file_size"`
 	ActualFileHash          string `json:"actual_file_hash" mapstructure:"actual_file_hash"`
 	// ActualFileHashSignature is signature signed by client for ActualFileHash
-	ActualFileHashSignature string          `json:"actual_file_hash_signature" mapstructure:"actual_file_hash_signature"`
-	ActualThumbnailSize     int64           `json:"actual_thumbnail_size" mapstructure:"actual_thumbnail_size"`
-	ActualThumbnailHash     string          `json:"actual_thumbnail_hash" mapstructure:"actual_thumbnail_hash"`
-	MimeType                string          `json:"mimetype" mapstructure:"mimetype"`
-	EncryptedKey            string          `json:"encrypted_key" mapstructure:"encrypted_key"`
-	CommitMetaTxns          []CommitMetaTxn `json:"commit_meta_txns" mapstructure:"commit_meta_txns"`
-	Collaborators           []Collaborator  `json:"collaborators" mapstructure:"collaborators"`
+	ActualFileHashSignature string         `json:"actual_file_hash_signature" mapstructure:"actual_file_hash_signature"`
+	ActualThumbnailSize     int64          `json:"actual_thumbnail_size" mapstructure:"actual_thumbnail_size"`
+	ActualThumbnailHash     string         `json:"actual_thumbnail_hash" mapstructure:"actual_thumbnail_hash"`
+	MimeType                string         `json:"mimetype" mapstructure:"mimetype"`
+	EncryptedKey            string         `json:"encrypted_key" mapstructure:"encrypted_key"`
+	Collaborators           []Collaborator `json:"collaborators" mapstructure:"collaborators"`
 }
 
 type RefEntity interface {
@@ -110,8 +103,8 @@ func (r *Ref) CalculateHash() string {
 		size += childRef.GetSize()
 	}
 
-	r.FileMetaHash = encryption.Hash(strings.Join(childFileMetaHashes, ":"))
-	r.Hash = encryption.Hash(strings.Join(childHashes, ":"))
+	r.FileMetaHash = encryption.Hash(r.GetHashData() + strings.Join(childFileMetaHashes, ":"))
+	r.Hash = encryption.Hash(r.GetHashData() + strings.Join(childHashes, ":"))
 
 	r.PathHash = encryption.Hash(strings.Join(childPaths, ":"))
 	r.NumBlocks = refNumBlocks
@@ -126,6 +119,10 @@ func (r *Ref) GetFileMetaHash() string {
 
 func (r *Ref) GetHash() string {
 	return r.Hash
+}
+
+func (r *Ref) GetHashData() string {
+	return fmt.Sprintf("%s:%s:%s", r.AllocationID, r.Path, r.FileID)
 }
 
 func (r *Ref) GetType() string {
