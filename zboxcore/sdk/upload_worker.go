@@ -1,7 +1,6 @@
 package sdk
 
 import (
-	"fmt"
 	"io"
 
 	thrown "github.com/0chain/errors"
@@ -108,16 +107,6 @@ func (uo *UploadOperation) Verify(allocationObj *Allocation) error {
 	}
 	if uo.fileMeta.ActualSize > spaceLeft {
 		return ErrNoEnoughSpaceLeftInAllocation
-	}
-	if uo.isUpdate {
-		otr, err := allocationObj.GetRefs(uo.fileMeta.RemotePath, "", "", "", fileref.FILE, "regular", 0, 1)
-		if err != nil {
-			l.Logger.Error(err)
-			return thrown.New("chunk_upload", err.Error())
-		}
-		if len(otr.Refs) != 1 {
-			return thrown.New("chunk_upload", fmt.Sprintf("Expected refs 1, got %d", len(otr.Refs)))
-		}
 	}
 	return nil
 }

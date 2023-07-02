@@ -334,3 +334,54 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 
 	return Rollback, nil
 }
+
+func (a *Allocation) RollbackWithMask(mask zboxutil.Uint128) {
+
+	wg := &sync.WaitGroup{}
+	markerChan := make(chan *RollbackBlobber, mask.CountOnes())
+	var pos uint64
+	for i := mask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		pos = uint64(i.TrailingZeros())
+		blobber := a.Blobbers[pos]
+		wg.Add(1)
+		go func(blobber *blockchain.StorageNode) {
+
+			defer wg.Done()
+			wr, err := GetWritemarker(a.ID, a.Tx, blobber.ID, blobber.Baseurl)
+			if err != nil {
+				l.Logger.Error("error during getWritemarker", zap.Error(err))
+			}
+			if wr == nil {
+				markerChan <- nil
+			} else {
+				markerChan <- &RollbackBlobber{
+					blobber:      blobber,
+					lpm:          wr,
+					commitResult: &CommitResult{},
+				}
+			}
+		}(blobber)
+
+	}
+	wg.Wait()
+	close(markerChan)
+
+	for rb := range markerChan {
+		if rb == nil || rb.lpm.LatestWM == nil {
+			continue
+		}
+		wg.Add(1)
+		go func(rb *RollbackBlobber) {
+			defer wg.Done()
+			err := rb.processRollback(context.TODO(), a.Tx)
+			if err != nil {
+				rb.commitResult = ErrorCommitResult(err.Error())
+				l.Logger.Error("error during rollback", zap.Error(err))
+			} else {
+				rb.commitResult = SuccessCommitResult()
+			}
+		}(rb)
+	}
+
+	wg.Wait()
+}
