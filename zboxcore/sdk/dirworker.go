@@ -311,8 +311,11 @@ func (dirOp *DirOperation) Process(allocObj *Allocation, connectionID string) ([
 		wg:           &sync.WaitGroup{},
 		Consensus:    Consensus{RWMutex: &sync.RWMutex{}, consensusThresh: dirOp.consensusThresh, fullconsensus: dirOp.fullconsensus},
 	}
-	dR.consensusThresh = dirOp.consensusThresh
-	dR.fullconsensus = dirOp.fullconsensus
+	dR.Consensus = Consensus{
+		RWMutex:         &sync.RWMutex{},
+		consensusThresh: dR.consensusThresh,
+		fullconsensus:   dR.fullconsensus,
+	}
 
 	_ = dR.ProcessWithBlobbers(allocObj)
 
