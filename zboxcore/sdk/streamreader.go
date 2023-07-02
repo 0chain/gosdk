@@ -20,7 +20,6 @@ type StreamReader struct {
 
 // Client should always send bytes equal to less than chunkDataSizePerRead
 func (r *StreamReader) Read(p []byte) (int, error) {
-	recieveData := &DataChan{}
 	recieveData, ok := <-r.dataChan
 	if !ok && recieveData == nil {
 		return 0, io.EOF
