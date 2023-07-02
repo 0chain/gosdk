@@ -1280,6 +1280,14 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 	return nil, errors.New("file_meta_error", "Error getting the file meta data from blobbers")
 }
 
+func (a *Allocation) GetChunkReadSize(encrypt bool) int64 {
+	chunkDataSize := int64(DefaultChunkSize)
+	if encrypt {
+		chunkDataSize -= (EncryptedDataPaddingSize + EncryptionHeaderSize)
+	}
+	return chunkDataSize * int64(a.DataShards)
+}
+
 func (a *Allocation) GetFileMetaFromAuthTicket(authTicket string, lookupHash string) (*ConsolidatedFileMeta, error) {
 	if !a.isInitialized() {
 		return nil, notInitialized
