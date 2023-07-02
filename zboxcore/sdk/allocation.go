@@ -132,7 +132,6 @@ func (pr *PriceRange) IsValid() bool {
 type Terms struct {
 	ReadPrice        common.Balance `json:"read_price"`  // tokens / GB
 	WritePrice       common.Balance `json:"write_price"` // tokens / GB
-	MinLockDemand    float64        `json:"min_lock_demand"`
 	MaxOfferDuration time.Duration  `json:"max_offer_duration"`
 }
 
@@ -171,8 +170,8 @@ type Allocation struct {
 	// ReadPriceRange is requested reading prices range.
 	ReadPriceRange PriceRange `json:"read_price_range"`
 	// WritePriceRange is requested writing prices range.
-	WritePriceRange PriceRange `json:"write_price_range"`
-
+	WritePriceRange         PriceRange       `json:"write_price_range"`
+	MinLockDemand           float64          `json:"min_lock_demand"`
 	ChallengeCompletionTime time.Duration    `json:"challenge_completion_time"`
 	StartTime               common.Timestamp `json:"start_time"`
 	Finalized               bool             `json:"finalized,omitempty"`

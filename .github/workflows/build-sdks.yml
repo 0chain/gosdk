@@ -10,7 +10,6 @@ on:
     tags:
       - 'v*.*.*'
   pull_request:
-    branches: [ master, staging, qa ]
   workflow_dispatch:
 
 env:
