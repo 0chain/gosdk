@@ -56,6 +56,7 @@ type ListResult struct {
 	CreatedAt       common.Timestamp `json:"created_at"`
 	UpdatedAt       common.Timestamp `json:"updated_at"`
 	Children        []*ListResult    `json:"list"`
+	ChunkSize       int64            `json:"chunk_size"`
 	Consensus       `json:"-"`
 }
 
@@ -225,6 +226,7 @@ func (lr *ListResult) populateChildren(children []fileref.RefEntity, childResult
 			childResult.MimeType = (child.(*fileref.FileRef)).MimeType
 			childResult.EncryptionKey = (child.(*fileref.FileRef)).EncryptedKey
 			childResult.ActualSize = (child.(*fileref.FileRef)).ActualFileSize
+			childResult.ChunkSize = (child.(*fileref.FileRef)).ChunkSize
 			if childResult.ActualSize > 0 {
 				childResult.ActualNumBlocks = childResult.ActualSize / CHUNK_SIZE
 			}
