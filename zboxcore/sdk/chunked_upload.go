@@ -210,6 +210,14 @@ func CreateChunkedUpload(
 	for _, opt := range opts {
 		opt(su)
 	}
+	var streamReader *StreamReader
+	if !su.useFileReader {
+		chunkReadSize := allocationObj.GetChunkReadSize(su.encryptOnUpload)
+		fmt.Println("chunkReadSize", chunkReadSize)
+		dataChan := make(chan *DataChan, 2)
+		streamReader = NewStreamReader(dataChan)
+		go StartWriteWorker(context.TODO(), fileReader, dataChan, chunkReadSize)
+	}
 
 	if su.progressStorer == nil {
 		su.progressStorer = createFsChunkedUploadProgress(context.Background())
@@ -271,8 +279,12 @@ func CreateChunkedUpload(
 			},
 		}
 	}
-
-	cReader, err := createChunkReader(su.fileReader, fileMeta.ActualSize, int64(su.chunkSize), su.allocationObj.DataShards, su.encryptOnUpload, su.uploadMask, su.fileErasureEncoder, su.fileEncscheme, su.fileHasher)
+	var cReader ChunkedUploadChunkReader
+	if su.useFileReader {
+		cReader, err = createChunkReader(su.fileReader, fileMeta.ActualSize, int64(su.chunkSize), su.allocationObj.DataShards, su.encryptOnUpload, su.uploadMask, su.fileErasureEncoder, su.fileEncscheme, su.fileHasher)
+	} else {
+		cReader, err = createChunkReader(streamReader, fileMeta.ActualSize, int64(su.chunkSize), su.allocationObj.DataShards, su.encryptOnUpload, su.uploadMask, su.fileErasureEncoder, su.fileEncscheme, su.fileHasher)
+	}
 
 	if err != nil {
 		return nil, err
@@ -347,6 +359,7 @@ type ChunkedUpload struct {
 	maskMu        *sync.Mutex
 	ctx           context.Context
 	ctxCncl       context.CancelFunc
+	useFileReader bool
 }
 
 // progressID build local progress id with [allocationid]_[Hash(LocalPath+"_"+RemotePath)]_[RemoteName] format
