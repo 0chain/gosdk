@@ -361,7 +361,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	if req.completedCallback != nil {
 		defer req.completedCallback(req.remotefilepath, req.remotefilepathhash)
 	}
-	if req.completedCallback != nil {
+	if req.fileCallback != nil {
 		defer req.fileCallback()
 	}
 

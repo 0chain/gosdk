@@ -996,7 +996,9 @@ func (a *Allocation) generateDownloadRequest(
 		delete(a.downloadProgressMap, remotepath)
 	}
 	downloadReq.fileCallback = func() {
-		downloadReq.fileHandler.Close() //nolint: errcheck
+		if downloadReq.fileHandler != nil {
+			downloadReq.fileHandler.Close() //nolint: errcheck
+		}
 	}
 	downloadReq.contentMode = contentMode
 	downloadReq.connectionID = connectionID
