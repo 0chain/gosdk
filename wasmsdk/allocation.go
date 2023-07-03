@@ -272,6 +272,11 @@ func lockReadPool(tokens, fee uint64) (string, error) {
 	return hash, err
 }
 
+func unLockReadPool(fee uint64) (string, error) {
+	hash, _, err := sdk.ReadPoolUnlock(fee)
+	return hash, err
+}
+
 func unlockStakePool(providerType, fee uint64, providerID string) (int64, error) {
 	unstake, _, err := sdk.StakePoolUnlock(sdk.ProviderType(providerType), providerID, fee)
 	return unstake, err
