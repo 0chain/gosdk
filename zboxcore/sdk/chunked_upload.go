@@ -477,7 +477,9 @@ func (su *ChunkedUpload) process() error {
 
 		//chunk has not be uploaded yet
 		if chunks.chunkEndIndex > su.progress.ChunkIndex {
-
+			if len(chunks.fileShards) == 0 {
+				return thrown.New("upload_failed", "No shards found")
+			}
 			err = su.processUpload(
 				chunks.chunkStartIndex, chunks.chunkEndIndex,
 				chunks.fileShards, chunks.thumbnailShards,
@@ -612,10 +614,6 @@ func (su *ChunkedUpload) readChunks(num int) (*batchChunksData, error) {
 			data.isFinal = true
 			break
 		}
-	}
-
-	if len(data.fileShards) == 0 && num == 0 {
-		return nil, thrown.New("chunk_upload", "No chunk data")
 	}
 
 	return data, nil
