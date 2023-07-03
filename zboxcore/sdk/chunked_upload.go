@@ -477,9 +477,6 @@ func (su *ChunkedUpload) process() error {
 
 		//chunk has not be uploaded yet
 		if chunks.chunkEndIndex > su.progress.ChunkIndex {
-			if len(chunks.fileShards) == 0 {
-				return thrown.New("upload_failed", "No shards found")
-			}
 			err = su.processUpload(
 				chunks.chunkStartIndex, chunks.chunkEndIndex,
 				chunks.fileShards, chunks.thumbnailShards,
@@ -638,7 +635,9 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 
 	wgErrors := make(chan error)
 	wgDone := make(chan bool)
-
+	if len(fileShards) == 0 {
+		return thrown.New("upload_failed", "Upload failed. No data to upload")
+	}
 	wg := &sync.WaitGroup{}
 	var pos uint64
 	for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
