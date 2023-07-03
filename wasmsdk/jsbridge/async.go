@@ -4,6 +4,7 @@
 package jsbridge
 
 import (
+	"fmt"
 	"reflect"
 	"syscall/js"
 )
@@ -20,6 +21,11 @@ func Async(funcType reflect.Type) (AsyncInvoker, error) {
 	switch funcType.NumOut() {
 	case 0:
 		return func(resolve, reject js.Value, fn reflect.Value, in []reflect.Value, err error) {
+			defer func() {
+				if r := recover(); r != nil {
+					fmt.Println("[recover]", r)
+				}
+			}()
 			if err != nil {
 				jsErr := NewJsError(err.Error())
 				resolve.Invoke(js.ValueOf(jsErr))
@@ -36,6 +42,11 @@ func Async(funcType reflect.Type) (AsyncInvoker, error) {
 		//func(...)error
 		if outputType.String() == TypeError {
 			return func(resolve, reject js.Value, fn reflect.Value, in []reflect.Value, err error) {
+				defer func() {
+					if r := recover(); r != nil {
+						fmt.Println("[recover]", r)
+					}
+				}()
 				if err != nil {
 					jsErr := NewJsError(err.Error())
 					resolve.Invoke(js.ValueOf(jsErr))
@@ -73,6 +84,11 @@ func Async(funcType reflect.Type) (AsyncInvoker, error) {
 		}
 		//func(...) (T,error)
 		return func(resolve, reject js.Value, fn reflect.Value, in []reflect.Value, err error) {
+			defer func() {
+				if r := recover(); r != nil {
+					fmt.Println("[recover]", r)
+				}
+			}()
 			if err != nil {
 				jsErr := NewJsError(err.Error())
 				resolve.Invoke(js.ValueOf(jsErr))

@@ -206,6 +206,7 @@ func main() {
 				// readpool
 				"getReadPoolInfo": getReadPoolInfo,
 				"lockReadPool":    lockReadPool,
+				"unLockReadPool":  unLockReadPool,
 				"createReadPool":  createReadPool,
 
 				// stakepool
