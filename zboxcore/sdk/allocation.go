@@ -1923,7 +1923,7 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	downloadReq.numBlocks = int64(numBlocks)
 	downloadReq.shouldVerify = verifyDownload
 	downloadReq.fullconsensus = a.fullconsensus
-	downloadReq.consensusThresh = a.DataShards
+	downloadReq.consensusThresh = a.consensusThreshold
 	downloadReq.prepaidBlobbers = make(map[string]bool)
 	downloadReq.connectionID = zboxutil.NewConnectionId()
 	downloadReq.completedCallback = func(remotepath string, remotepathHash string) {
