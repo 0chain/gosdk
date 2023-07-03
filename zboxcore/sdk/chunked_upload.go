@@ -614,6 +614,10 @@ func (su *ChunkedUpload) readChunks(num int) (*batchChunksData, error) {
 		}
 	}
 
+	if len(data.fileShards) == 0 {
+		return nil, thrown.New("chunk_upload", "No chunk data")
+	}
+
 	return data, nil
 }
 
