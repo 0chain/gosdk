@@ -876,7 +876,7 @@ func (t *Transaction) RegisterVote(signerwalletstr string, msvstr string) error 
 }
 
 type MinerSCDelegatePool struct {
-	Settings StakePoolSettings `json:"settings,omitempty"`
+	Settings StakePoolSettings `json:"settings"`
 }
 
 type SimpleMiner struct {
