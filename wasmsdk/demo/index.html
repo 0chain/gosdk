@@ -8,6 +8,8 @@
 
   <!-- for ffmpeg.min.js -->
   <script src="ffmpeg.min.js"></script>
+  <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin" />
+  <meta http-equiv="Cross-Origin-Embedder-Policy" content="require-corp" />
 
   <!-- for demo -->
   <script src="dom.js"></script>
@@ -20,7 +22,8 @@
 </head>
 
 <body>
-
+  <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin" />
+  <meta http-equiv="Cross-Origin-Embedder-Policy" content="require-corp" />
   <h2>please download zcn.wasm from https://github.com/0chain/gosdk/releases/latest first</h2>
 
   <fieldset>
@@ -103,11 +106,11 @@
     <button id="btnListFiles">List</button>
     <span>
       <input id="inputSelectedFile" type="file" multiple />
-      <button id="btnUploadFile">Upload</button> </span>
-    <video id="playerrr" controls></video>
-    <button id="btnUploadEncryptFile">EncryptedUpload</button> </span>
-    [ <button id="btnDownloadFile">Download</button> | <button id="btnDownloadShared">Download with AuthTicket</button>
-    ]
+      <button id="btnUploadFile">Upload</button>
+    </span>
+    <button id="btnUploadEncryptFile">EncryptedUpload</button>
+    <button id="btnDownloadFile">Download</button>
+    <button id="btnDownloadShared">Download with AuthTicket</button>
     <button id="btnViewFile">View</button>
     <button id="btnGetFileStats">GetFileStats</button>
     <button id="btnDelete">Delete</button>
@@ -138,9 +141,10 @@
 
     <div id="container">
       <video id='player' preload="metadata" controls></video>
+      <video id="playerrr" controls></video>
     </div>
     <div className="controls">
-      [ <button id="btnPlay">Play</button> | <button id="btnPlayShared">Play with auth ticket</button> ]
+    [ <button id="btnPlay">Play</button> | <button id="btnPlayShared">Play with auth ticket</button>]
       <button id="btnPause">Pause</button>
       <button id="btnStop">Stop</button>
     </div>
@@ -383,7 +387,9 @@
       console.log(files)
       const { name } = files[0];
       const { createFFmpeg, fetchFile } = FFmpeg;
-      const ffmpeg = createFFmpeg({ log: true });
+      const ffmpeg = createFFmpeg({
+        log: true,
+      });
       await ffmpeg.load();
       ffmpeg.FS('writeFile', name, await fetchFile(files[0]));
       await ffmpeg.run('-i', name, '-g', '30', '-f', 'mp4', '-movflags', 'frag_keyframe+empty_moov', 'output.mp4');
@@ -395,22 +401,19 @@
     document.getElementById('inputSelectedFile').addEventListener('change', transcode);
 
     onClick('btnUploadFile', async () => {
-
       const { files } = get('inputSelectedFile')
       console.log("New")
       console.log(files)
       if (files && files.length > 0) {
-
         const objects = []
         const allocationId = getSelectedAllocation()
-        for (var file of files) {
-
+        for (const file of files) {
           objects.push({
             allocationId: allocationId,
-            remotePath: '/output.mp4',
+            remotePath: `/${file.name}`,
             file: file,
             // thumbnailBytes: await readBytes(file),//only for demo, don't upload original file as thumbnail in production
-            encrypt: false,
+            encrypt: true,
             webstreaming: true,
             isUpdate: false,
             isRepair: false,
@@ -423,7 +426,8 @@
 
         try {
           let stringifiedArray = JSON.stringify(objects);
-          const results = await goWasm.sdk.multiUpload(stringifiedArray)
+          const results = await goWasm.bulkUpload(objects)
+          // const results = await goWasm.sdk.bulkUpload(stringifiedArray)
           console.log(JSON.stringify(results))
         } catch (e) {
           alert(e)

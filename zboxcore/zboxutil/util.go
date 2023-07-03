@@ -67,6 +67,9 @@ func (b *lazybuf) string() string {
 func GetFileContentType(out io.ReadSeeker) (string, error) {
 	buffer := make([]byte, 261)
 	_, err := out.Read(buffer)
+	if err != nil {
+		return "", err
+	}
 	defer out.Seek(0, 0) //nolint
 
 	if err != nil {
