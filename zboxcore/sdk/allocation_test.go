@@ -565,11 +565,8 @@ func TestAllocation_RepairRequired(t *testing.T) {
 					})).Return(&http.Response{
 						StatusCode: http.StatusOK,
 						Body: func() io.ReadCloser {
-							jsonFR, err := json.Marshal(&fileref.FileRef{
-								ActualFileHash: mockActualHash,
-							})
-							require.NoError(t, err)
-							return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+							respString := `{"file_meta_hash":"` + mockActualHash + `"}`
+							return ioutil.NopCloser(bytes.NewReader([]byte(respString)))
 						}(),
 					}, nil)
 				}
@@ -609,11 +606,8 @@ func TestAllocation_RepairRequired(t *testing.T) {
 					})).Return(&http.Response{
 						StatusCode: http.StatusOK,
 						Body: func(hash string) io.ReadCloser {
-							jsonFR, err := json.Marshal(&fileref.FileRef{
-								ActualFileHash: hash,
-							})
-							require.NoError(t, err)
-							return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+							respString := `{"file_meta_hash":"` + hash + `"}`
+							return ioutil.NopCloser(bytes.NewReader([]byte(respString)))
 						}(hash),
 					}, nil)
 				}
@@ -663,7 +657,7 @@ func TestAllocation_RepairRequired(t *testing.T) {
 					defer teardown(t)
 				}
 			}
-			found, matchesConsensus, fileRef, err := a.RepairRequired(tt.remotePath)
+			found, _, matchesConsensus, fileRef, err := a.RepairRequired(tt.remotePath)
 			require.Equal(zboxutil.NewUint128(tt.wantFound), found, "found value must be same")
 			if tt.wantMatchesConsensus {
 				require.True(tt.wantMatchesConsensus, matchesConsensus)
@@ -675,10 +669,7 @@ func TestAllocation_RepairRequired(t *testing.T) {
 				require.EqualValues(tt.errMsg, errors.Top(err))
 				return
 			}
-			expected := &fileref.FileRef{
-				ActualFileHash: mockActualHash,
-			}
-			require.EqualValues(expected, fileRef)
+			require.EqualValues(mockActualHash, fileRef.FileMetaHash)
 			require.NoErrorf(err, "Unexpected error %v", err)
 		})
 	}

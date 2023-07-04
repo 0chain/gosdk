@@ -73,7 +73,7 @@ func (r *RepairRequest) iterateDir(a *Allocation, dir *ListResult) {
 	case fileref.DIRECTORY:
 		if len(dir.Children) == 0 {
 			var err error
-			dir, err = a.ListDir(dir.Path)
+			dir, err = a.ListDir(dir.Path, true)
 			if err != nil {
 				l.Logger.Error("Failed to get listDir for path ", zap.Any("path", dir.Path), zap.Error(err))
 				return
@@ -99,12 +99,11 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
 		return
 	}
 	l.Logger.Info("Checking file for the path :", zap.Any("path", file.Path))
-	found, repairRequired, _, err := a.RepairRequired(file.Path)
+	found, deleteMask, repairRequired, _, err := a.RepairRequired(file.Path)
 	if err != nil {
 		l.Logger.Error("repair_required_failed", zap.Error(err))
 		return
 	}
-
 	if repairRequired {
 		l.Logger.Info("Repair required for the path :", zap.Any("path", file.Path))
 		if found.CountOnes() >= a.DataShards {
@@ -115,8 +114,18 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
 				statusCB: r.statusCB,
 			}
 
-			localPath := r.getLocalPath(file)
+			if deleteMask.CountOnes() > 0 {
+				l.Logger.Info("Deleting minority shards for the path :", zap.Any("path", file.Path))
+				consensus := deleteMask.CountOnes()
+				err := a.deleteFile(file.Path, 0, consensus, deleteMask)
+				if err != nil {
+					l.Logger.Error("delete_file_failed", zap.Error(err))
+					return
+				}
+			}
 
+			localPath := r.getLocalPath(file)
+			toDelete := false
 			if !checkFileExists(localPath) {
 				if r.checkForCancel(a) {
 					return
@@ -136,6 +145,7 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
 				}
 				l.Logger.Info("Download file success for repair", zap.Any("localpath", localPath), zap.Any("remotepath", file.Path))
 				statusCB.success = false
+				toDelete = true
 			} else {
 				l.Logger.Info("FILE EXISTS", zap.Any("bool", true))
 			}
@@ -146,7 +156,7 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
 
 			l.Logger.Info("Repairing file for the path :", zap.Any("path", file.Path))
 			wg.Add(1)
-			err = a.RepairFile(localPath, file.Path, statusCB)
+			err = a.RepairFile(localPath, file.Path, statusCB, found)
 			if err != nil {
 				l.Logger.Error("repair_file_failed", zap.Error(err))
 				return
@@ -157,10 +167,13 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
 					zap.Any("localpath", localPath), zap.Any("remotepath", file.Path))
 				return
 			}
+			if toDelete {
+				_ = sys.Files.Remove(localPath)
+			}
 		} else {
 			l.Logger.Info("Repair by delete", zap.Any("path", file.Path))
 			consensus := found.CountOnes()
-			err := a.deleteFile(file.Path, consensus, consensus)
+			err := a.deleteFile(file.Path, 1, consensus, found)
 			if err != nil {
 				l.Logger.Error("repair_file_failed", zap.Error(err))
 				return
@@ -168,6 +181,14 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
 		}
 		l.Logger.Info("Repair file success", zap.Any("remotepath", file.Path))
 		r.filesRepaired++
+	} else if deleteMask.CountOnes() > 0 {
+		l.Logger.Info("Deleting minority shards for the path :", zap.Any("path", file.Path))
+		consensus := deleteMask.CountOnes()
+		err := a.deleteFile(file.Path, 0, consensus, deleteMask)
+		if err != nil {
+			l.Logger.Error("repair_file_failed", zap.Error(err))
+			return
+		}
 	}
 
 }
