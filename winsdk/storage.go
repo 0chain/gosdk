@@ -175,9 +175,13 @@ type MultiUploadOption struct {
 // ## Inputs
 //   - allocationID
 //   - jsonMultiOperationOptions: Json Array of MultiOperationOption. eg: "[{"operationType":"move","remotePath":"/README.md","destPath":"/folder1/"},{"operationType":"delete","remotePath":"/t3.txt"}]"
+//     return
+//     {
+//     "error":"",
+//     "result":"true",
+//     }
 //
-// ## Outputs
-//   - error
+//export MultiOperation
 func MultiOperation(_allocationID, _jsonMultiOperationOptions *C.char) *C.char {
 	allocationID := C.GoString(_allocationID)
 	jsonMultiOperationOptions := C.GoString(_jsonMultiOperationOptions)
@@ -217,9 +221,19 @@ func MultiOperation(_allocationID, _jsonMultiOperationOptions *C.char) *C.char {
 //   - workdir: set a workdir as ~/.zcn on mobile apps
 //   - jsonMultiUploadOptions: Json Array of MultiOperationOption. eg: "[{"remotePath":"/","filePath":"/t2.txt"},{"remotePath":"/","filePath":"/t3.txt"}]"
 //
-// ## Outputs
-//   - error
-func MultiUpload(_allocationID, _workdir, _jsonMultiUploadOptions *C.char, statusCb StatusCallbackMocked) *C.char {
+//   - allocationID
+//
+//   - workdir: set a workdir as ~/.zcn on mobile apps
+//   - jsonMultiUploadOptions: Json Array of MultiOperationOption. eg: "[{"remotePath":"/","filePath":"/t2.txt"},{"remotePath":"/","filePath":"/t3.txt"}]"
+//
+//     return
+//     {
+//     "error":"",
+//     "result":"true",
+//     }
+//
+//export MultiUpload
+func MultiUpload(_allocationID, _workdir, _jsonMultiUploadOptions *C.char) *C.char {
 	allocationID := C.GoString(_allocationID)
 	workdir := C.GoString(_workdir)
 	jsonMultiUploadOptions := C.GoString(_jsonMultiUploadOptions)
@@ -248,7 +262,8 @@ func MultiUpload(_allocationID, _workdir, _jsonMultiUploadOptions *C.char, statu
 	if err != nil {
 		return WithJSON(nil, err)
 	}
-	err = a.StartMultiUpload(workdir, filePaths, fileNames, thumbnailPaths, encrypts, chunkNumbers, remotePaths, false, &StatusCallbackWrapped{Callback: statusCb})
+	statusBar := &StatusCallbackWrapped{}
+	err = a.StartMultiUpload(workdir, filePaths, fileNames, thumbnailPaths, encrypts, chunkNumbers, remotePaths, false, &StatusCallbackWrapped{Callback: statusBar})
 	if err != nil {
 		return WithJSON(nil, err)
 	}
@@ -257,13 +272,21 @@ func MultiUpload(_allocationID, _workdir, _jsonMultiUploadOptions *C.char, statu
 
 // MultiUpdateFile - update files from local path to remote path
 // ## Inputs
+//
 //   - allocationID
+//
 //   - workdir: set a workdir as ~/.zcn on mobile apps
+//
 //   - jsonMultiUploadOpetions: Json Array of MultiOperationOption. eg: "[{"remotePath":"/","filePath":"/t2.txt"},{"remotePath":"/","filePath":"/t3.txt"}]"
 //
-// ## Outputs
-//   - error
-func MultiUpdate(_allocationID, _workdir, _jsonMultiUploadOptions *C.char, statusCb StatusCallbackMocked) *C.char {
+//     return
+//     {
+//     "error":"",
+//     "result":"true",
+//     }
+//
+//export MultiUpdate
+func MultiUpdate(_allocationID, _workdir, _jsonMultiUploadOptions *C.char) *C.char {
 	allocationID := C.GoString(_allocationID)
 	workdir := C.GoString(_workdir)
 	jsonMultiUploadOptions := C.GoString(_jsonMultiUploadOptions)
@@ -292,7 +315,8 @@ func MultiUpdate(_allocationID, _workdir, _jsonMultiUploadOptions *C.char, statu
 	if err != nil {
 		return WithJSON(nil, err)
 	}
-	err = a.StartMultiUpload(workdir, filePaths, fileNames, thumbnailPaths, encrypts, chunkNumbers, remotePaths, true, &StatusCallbackWrapped{Callback: statusCb})
+	statusBar := &StatusCallbackWrapped{}
+	err = a.StartMultiUpload(workdir, filePaths, fileNames, thumbnailPaths, encrypts, chunkNumbers, remotePaths, true, &StatusCallbackWrapped{Callback: statusBar})
 	if err != nil {
 		return WithJSON(nil, err)
 	}
