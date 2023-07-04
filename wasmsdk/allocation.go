@@ -104,6 +104,32 @@ func transferAllocation(allocationID, newOwnerId, newOwnerPublicKey string) erro
 	return err
 }
 
+// updateForbidAllocation updates the settings for forbid alocation
+func UpdateForbidAllocation(allocationID string, forbidupload, forbiddelete, forbidupdate, forbidmove, forbidcopy, forbidrename bool) (string, error) {
+
+	hash, _, err := sdk.UpdateAllocation(
+		0,            //size,
+		0,            //int64(expiry/time.Second),
+		allocationID, // allocID,
+		0,            //lock,
+		false,        //updateTerms,
+		"",           //addBlobberId,
+		"",           //removeBlobberId,
+		false,        //thirdPartyExtendable,
+		&sdk.FileOptionsParameters{
+			ForbidUpload: sdk.FileOptionParam{Changed: forbidupload, Value: forbidupload},
+			ForbidDelete: sdk.FileOptionParam{Changed: forbiddelete, Value: forbiddelete},
+			ForbidUpdate: sdk.FileOptionParam{Changed: forbidupdate, Value: forbidupdate},
+			ForbidMove:   sdk.FileOptionParam{Changed: forbidmove, Value: forbidmove},
+			ForbidCopy:   sdk.FileOptionParam{Changed: forbidcopy, Value: forbidcopy},
+			ForbidRename: sdk.FileOptionParam{Changed: forbidrename, Value: forbidrename},
+		},
+	)
+
+	return hash, err
+
+}
+
 func freezeAllocation(allocationID string) (string, error) {
 
 	hash, _, err := sdk.UpdateAllocation(
@@ -238,6 +264,11 @@ func lockStakePool(providerType, tokens, fee uint64, providerID string) (string,
 
 	hash, _, err := sdk.StakePoolLock(sdk.ProviderType(providerType), providerID,
 		tokens, fee)
+	return hash, err
+}
+
+func lockReadPool(tokens, fee uint64) (string, error) {
+	hash, _, err := sdk.ReadPoolLock(tokens, fee)
 	return hash, err
 }
 
