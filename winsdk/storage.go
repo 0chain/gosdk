@@ -217,6 +217,9 @@ func MultiOperation(_allocationID, _jsonMultiOperationOptions *C.char) *C.char {
 
 // MultiUploadFile - upload files from local path to remote path
 // ## Inputs
+//   - allocationID
+//   - workdir: set a workdir as ~/.zcn on mobile apps
+//   - jsonMultiUploadOptions: Json Array of MultiOperationOption. eg: "[{"remotePath":"/","filePath":"/t2.txt"},{"remotePath":"/","filePath":"/t3.txt"}]"
 //
 //   - allocationID
 //
