@@ -165,39 +165,47 @@ func (sd *StreamDownload) Read(b []byte) (int, error) {
 
 // GetDStorageFileReader will initialize erasure decoder, decrypter if file is encrypted and other
 // necessary fields and returns a reader that comply with io.ReadSeekCloser interface.
-func GetDStorageFileReader(alloc *Allocation, ref *ORef, sdo *StreamDownloadOption) (io.ReadSeekCloser, error) {
+func GetDStorageFileReader(
+	alloc *Allocation, remotePath string, sdo *StreamDownloadOption) (io.ReadSeekCloser, error) {
+
+	dReq := DownloadRequest{
+		allocationID:      alloc.ID,
+		allocationTx:      alloc.Tx,
+		allocOwnerID:      alloc.Owner,
+		allocOwnerPubKey:  alloc.OwnerPublicKey,
+		datashards:        alloc.DataShards,
+		parityshards:      alloc.ParityShards,
+		remotefilepath:    remotePath,
+		numBlocks:         int64(sdo.BlocksPerMarker),
+		validationRootMap: make(map[string]*blobberFile),
+		shouldVerify:      sdo.VerifyDownload,
+		Consensus: Consensus{
+			RWMutex:         &sync.RWMutex{},
+			fullconsensus:   alloc.fullconsensus,
+			consensusThresh: alloc.consensusThreshold,
+		},
+		blobbers:           alloc.Blobbers,
+		downloadMask:       zboxutil.NewUint128(1).Lsh(uint64(len(alloc.Blobbers))).Sub64(1),
+		effectiveBlockSize: BlockSize,
+		chunkSize:          BlockSize,
+		maskMu:             &sync.Mutex{},
+		connectionID:       zboxutil.NewConnectionId(),
+	}
+
+	fRef, err := dReq.getFileRef(remotePath)
+	if err != nil {
+		return nil, err
+	}
 
 	sd := &StreamDownload{
-		DownloadRequest: &DownloadRequest{
-			allocationID:      alloc.ID,
-			allocationTx:      alloc.Tx,
-			allocOwnerID:      alloc.Owner,
-			allocOwnerPubKey:  alloc.OwnerPublicKey,
-			datashards:        alloc.DataShards,
-			parityshards:      alloc.ParityShards,
-			remotefilepath:    ref.Path,
-			numBlocks:         int64(sdo.BlocksPerMarker),
-			validationRootMap: make(map[string]*blobberFile),
-			shouldVerify:      sdo.VerifyDownload,
-			Consensus: Consensus{
-				RWMutex: &sync.RWMutex{},
-				fullconsensus:   alloc.fullconsensus,
-				consensusThresh: alloc.consensusThreshold,
-			},
-			blobbers:           alloc.Blobbers,
-			downloadMask:       zboxutil.NewUint128(1).Lsh(uint64(len(alloc.Blobbers))).Sub64(1),
-			effectiveBlockSize: BlockSize,
-			chunkSize:          BlockSize,
-			maskMu:             &sync.Mutex{},
-			connectionID:       zboxutil.NewConnectionId(),
-		},
-		open: true,
+		DownloadRequest: &DownloadRequest{},
+		open:            true,
 	}
 
 	if sdo.ContentMode == DOWNLOAD_CONTENT_THUMB {
-		sd.fileSize = ref.ActualThumbnailSize
+		sd.fileSize = fRef.ActualThumbnailSize
 	} else {
-		sd.fileSize = ref.ActualFileSize
+		sd.fileSize = fRef.ActualFileSize
 	}
 
 	if sdo.AuthTicket != "" {
@@ -216,14 +224,14 @@ func GetDStorageFileReader(alloc *Allocation, ref *ORef, sdo *StreamDownloadOpti
 
 	sd.ctx, sd.ctxCncl = context.WithCancel(alloc.ctx)
 
-	err := sd.initEC()
+	err = sd.initEC()
 	if err != nil {
 		return nil, err
 	}
 
-	if ref.EncryptedKey != "" {
+	if fRef.EncryptedKey != "" {
 		sd.effectiveBlockSize = BlockSize - EncryptionOverHead
-		sd.encryptedKey = ref.EncryptedKey
+		sd.encryptedKey = fRef.EncryptedKey
 		err = sd.initEncryption()
 		if err != nil {
 			return nil, err

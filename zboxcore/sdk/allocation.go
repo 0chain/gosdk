@@ -1816,30 +1816,6 @@ func (a *Allocation) GetAllocationFileReader(
 	}
 	//Remove content mode option
 	remotePath = filepath.Clean(remotePath)
-	var res *ObjectTreeResult
-	var err error
-	switch {
-	case authToken != "":
-		res, err = a.GetRefsWithAuthTicket(authToken, "", "", "", "", "regular", 0, 1)
-	case remotePath != "":
-		res, err = a.GetRefs(remotePath, "", "", "", "", "regular", 0, 1)
-	case pathHash != "":
-		res, err = a.GetRefsFromLookupHash(pathHash, "", "", "", "", "regular", 0, 1) //
-	default:
-		return nil, errors.New("invalid_path", "remote path or authticket is required")
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	if len(res.Refs) == 0 {
-		return nil, errors.New("file_does_not_exist", "")
-	}
-	ref := &res.Refs[0]
-	if ref.Type != fileref.FILE {
-		return nil, errors.New("operation_not_supported", "downloading other than file is not supported")
-	}
 
 	sdo := &StreamDownloadOption{
 		ContentMode:     contentMode,
@@ -1848,7 +1824,7 @@ func (a *Allocation) GetAllocationFileReader(
 		BlocksPerMarker: blocksPerMarker,
 	}
 
-	return GetDStorageFileReader(a, ref, sdo)
+	return GetDStorageFileReader(a, remotePath, sdo)
 }
 
 func (a *Allocation) DownloadThumbnailFromAuthTicket(localPath string,
