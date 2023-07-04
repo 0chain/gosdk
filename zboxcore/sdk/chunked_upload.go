@@ -142,16 +142,6 @@ func CreateChunkedUpload(
 	uploadMask := zboxutil.NewUint128(1).Lsh(uint64(len(allocationObj.Blobbers))).Sub64(1)
 	if isRepair {
 		opCode = OpUpdate
-		found, repairRequired, _, err := allocationObj.RepairRequired(fileMeta.RemotePath)
-		if err != nil {
-			return nil, err
-		}
-
-		if !repairRequired {
-			return nil, thrown.New("chunk_upload", "Repair not required")
-		}
-
-		uploadMask = found.Not().And(uploadMask)
 		consensus.fullconsensus = uploadMask.CountOnes()
 		consensus.consensusThresh = 1
 	}
