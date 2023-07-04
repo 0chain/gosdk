@@ -48,7 +48,8 @@ type DownloadRequest struct {
 	parityshards       int
 	remotefilepath     string
 	remotefilepathhash string
-	localpath          string
+	fileHandler        sys.File
+	localFilePath      string
 	startBlock         int64
 	endBlock           int64
 	chunkSize          int
@@ -62,6 +63,7 @@ type DownloadRequest struct {
 	encryptedKey       string
 	isDownloadCanceled bool
 	completedCallback  func(remotepath string, remotepathhash string)
+	fileCallback       func()
 	contentMode        string
 	Consensus
 	effectiveBlockSize int // blocksize - encryptionOverHead
@@ -70,7 +72,6 @@ type DownloadRequest struct {
 	encScheme          encryption.EncryptionScheme
 	shouldVerify       bool
 	blocksPerShard     int64
-	prepaidBlobbers    map[string]bool
 	connectionID       string
 	skip               bool
 	fRef               *fileref.FileRef
@@ -355,10 +356,13 @@ func (req *DownloadRequest) getDecryptedDataForAuthTicket(result *downloadBlock,
 
 // processDownload will setup download parameters and downloads data with given
 // start block, end block and number of blocks to download in single request.
-// This will also write data to the file and will verify content by calculating content hash.
+// This will also write data to the file handler and will verify content by calculating content hash.
 func (req *DownloadRequest) processDownload(ctx context.Context) {
 	if req.completedCallback != nil {
 		defer req.completedCallback(req.remotefilepath, req.remotefilepathhash)
+	}
+	if req.fileCallback != nil {
+		defer req.fileCallback()
 	}
 
 	remotePathCB := req.remotefilepath
@@ -378,17 +382,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			"Actual size per blobber: %d Chunks per blobber: %d", size, req.startBlock, req.endBlock, actualPerShard, chunksPerShard),
 	)
 
-	f, err := req.openFile()
-	if err != nil {
-		logger.Logger.Error(err)
-		req.errorCB(
-			fmt.Errorf("Error while getting file handler. Error: %v",
-				err), remotePathCB)
-		return
-	}
-	defer f.Close()
-
-	err = req.initEC()
+	err := req.initEC()
 	if err != nil {
 		logger.Logger.Error(err)
 		req.errorCB(
@@ -445,7 +439,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			if data, ok := buffer[i]; ok {
 				// If the block we need to write next is already in the buffer, write it
 				numBytes := int64(math.Min(float64(remainingSize), float64(len(data))))
-				_, err = f.Write(data[:numBytes])
+				_, err = req.fileHandler.Write(data[:numBytes])
 
 				if err != nil {
 					req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
@@ -470,7 +464,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 					if block.blockNum == i {
 						// Write the data
 						numBytes := int64(math.Min(float64(remainingSize), float64(len(block.data))))
-						_, err = f.Write(block.data[:numBytes])
+						_, err = req.fileHandler.Write(block.data[:numBytes])
 
 						if err != nil {
 							req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
@@ -495,7 +489,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 				}
 			}
 		}
-		f.Sync() //nolint
+		req.fileHandler.Sync() //nolint
 		wg.Done()
 	}()
 
@@ -634,9 +628,6 @@ func (req *DownloadRequest) attemptSubmitReadMarker(blobber *blockchain.StorageN
 
 		logger.Logger.Debug("Submit readmarker 200 OK")
 
-		req.maskMu.Lock()
-		req.prepaidBlobbers[blobber.ID] = true
-		req.maskMu.Unlock()
 		return nil
 	})
 	return err
@@ -746,19 +737,16 @@ func (req *DownloadRequest) errorCB(err error, remotePathCB string) {
 		op = opThumbnailDownload
 	}
 	req.skip = true
-	sys.Files.Remove(req.localpath) //nolint: errcheck
+	if req.localFilePath != "" {
+		os.Remove(req.localFilePath) //nolint: errcheck
+	}
+	if req.fileHandler != nil {
+		req.fileHandler.Close() //nolint: errcheck
+	}
 	if req.statusCallback != nil {
 		req.statusCallback.Error(
 			req.allocationID, remotePathCB, op, err)
 	}
-}
-
-func (req *DownloadRequest) openFile() (sys.File, error) {
-	f, err := sys.Files.OpenFile(req.localpath, os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return nil, errors.Wrap(err, "Can't create local file")
-	}
-	return f, nil
 }
 
 func (req *DownloadRequest) calculateShardsParams(

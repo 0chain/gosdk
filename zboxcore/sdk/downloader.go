@@ -5,6 +5,7 @@ import (
 
 	"errors"
 
+	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 )
 
@@ -34,6 +35,9 @@ type DownloadOptions struct {
 
 	isThumbnailDownload bool
 	verifyDownload      bool
+
+	isFileHandlerDownload bool
+	fileHandler           sys.File
 }
 
 // CreateDownloader create a downloander
@@ -93,6 +97,14 @@ func CreateDownloader(allocationID, localPath, remotePath string, opts ...Downlo
 		} else {
 			return nil, errors.New("remotepath is required")
 		}
+	}
+
+	if do.isFileHandlerDownload {
+		return &fileHandlerDownloader{
+			baseDownloader: baseDownloader{
+				DownloadOptions: do,
+			},
+		}, nil
 	}
 
 	if do.isThumbnailDownload {
