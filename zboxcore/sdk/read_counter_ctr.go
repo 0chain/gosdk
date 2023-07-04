@@ -5,13 +5,38 @@ import (
 )
 
 type blobberReadCounter struct {
-	m  map[string]int64
-	mu *sync.RWMutex
+	m              map[string]int64
+	mu             *sync.RWMutex
+	blobberLockMap map[string]*sync.Mutex
+	muBlobberLock  *sync.Mutex
 }
 
 var brc = &blobberReadCounter{
-	m:  make(map[string]int64),
-	mu: &sync.RWMutex{},
+	m:              make(map[string]int64),
+	mu:             &sync.RWMutex{},
+	blobberLockMap: make(map[string]*sync.Mutex),
+	muBlobberLock:  &sync.Mutex{},
+}
+
+func lockBlobberReadCtr(allocID, blobberID string) {
+	brc.muBlobberLock.Lock()
+	key := allocID + blobberID
+	if _, ok := brc.blobberLockMap[key]; !ok {
+		brc.blobberLockMap[key] = &sync.Mutex{}
+	}
+	mut := brc.blobberLockMap[key]
+	brc.muBlobberLock.Unlock()
+	mut.Lock()
+}
+
+func unlockBlobberReadCtr(allocID, blobberID string) {
+	brc.muBlobberLock.Lock()
+	key := allocID + blobberID
+	mut := brc.blobberLockMap[key]
+	brc.muBlobberLock.Unlock()
+	if mut != nil {
+		mut.Unlock()
+	}
 }
 
 func setBlobberReadCtr(allocID, blobberID string, ctr int64) {

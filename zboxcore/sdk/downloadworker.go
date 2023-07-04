@@ -563,6 +563,8 @@ func (req *DownloadRequest) submitReadMarker(blobber *blockchain.StorageNode, re
 }
 
 func (req *DownloadRequest) attemptSubmitReadMarker(blobber *blockchain.StorageNode, readCount int64) error {
+	lockBlobberReadCtr(req.allocationID, blobber.ID)
+	defer unlockBlobberReadCtr(req.allocationID, blobber.ID)
 	rm := &marker.ReadMarker{
 		ClientID:        client.GetClientID(),
 		ClientPublicKey: client.GetClientPublicKey(),
