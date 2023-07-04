@@ -45,7 +45,6 @@ type MultiOperation struct {
 	operationMask zboxutil.Uint128
 	maskMU        *sync.Mutex
 	Consensus
-
 	changes [][]allocationchange.AllocationChange
 }
 
@@ -233,23 +232,34 @@ func (mo *MultiOperation) Process() error {
 	if err != nil {
 		return fmt.Errorf("Operation failed: %s", err.Error())
 	}
+	l.Logger.Info("WriteMarker locked")
 
 	status, err := mo.allocationObj.CheckAllocStatus()
 	if err != nil {
 		logger.Logger.Error("Error checking allocation status", err)
+		writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
 		return fmt.Errorf("Check allocation status failed: %s", err.Error())
 	}
-	l.Logger.Info("WriteMarker locked")
-	defer writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
-
 	if status == Repair {
 		logger.Logger.Info("Repairing allocation")
-		// TODO: Need status callback
-		// err = su.allocationObj.RepairAlloc(su.statusCallback)
-		// if err != nil {
-		// 	return err
-		// }
+		writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
+		statusBar := NewRepairBar(mo.allocationObj.ID)
+		if statusBar == nil {
+			return ErrRetryOperation
+		}
+		err = mo.allocationObj.RepairAlloc(statusBar)
+		if err != nil {
+			return err
+		}
+		statusBar.wg.Wait()
+		if statusBar.success {
+			l.Logger.Info("Repair success")
+		} else {
+			l.Logger.Error("Repair failed")
+		}
+		return ErrRetryOperation
 	}
+	defer writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
 	if status != Commit {
 		return ErrRetryOperation
 	}

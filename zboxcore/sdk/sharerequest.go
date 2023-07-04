@@ -37,7 +37,7 @@ func (req *ShareRequest) GetFileRef() (*fileref.FileRef, error) {
 		ctx:                req.ctx,
 		Consensus:          Consensus{RWMutex: &sync.RWMutex{}},
 	}
-	_, fileRef, _ = listReq.getFileConsensusFromBlobbers()
+	_, _, fileRef, _ = listReq.getFileConsensusFromBlobbers()
 	if fileRef == nil {
 		return nil, errors.New("file_meta_error", "Error getting object meta data from blobbers")
 	}
