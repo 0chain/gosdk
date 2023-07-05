@@ -51,13 +51,20 @@ type FileDiff struct {
 func (a *Allocation) getRemoteFilesAndDirs(dirList []string, fMap map[string]FileInfo, exclMap map[string]int, remotePath string) ([]string, error) {
 	childDirList := make([]string, 0)
 	remotePath = strings.TrimRight(remotePath, "/")
+
+	l.Logger.Debug("exclude map : getRemoteFilesAndDirs", exclMap)
+
 	for _, dir := range dirList {
 		ref, err := a.ListDir(dir)
 		if err != nil {
 			return []string{}, err
 		}
 		for _, child := range ref.Children {
+
+			l.Logger.Debug("child path : ", child.Path)
+
 			if _, ok := exclMap[child.Path]; ok {
+				l.Logger.Debug("excluded path : ", child.Path)
 				continue
 			}
 			relativePathFromRemotePath := strings.TrimPrefix(child.Path, remotePath)
@@ -81,6 +88,9 @@ func (a *Allocation) getRemoteFilesAndDirs(dirList []string, fMap map[string]Fil
 }
 
 func (a *Allocation) GetRemoteFileMap(exclMap map[string]int, remotepath string) (map[string]FileInfo, error) {
+
+	l.Logger.Debug("exclMap : ", exclMap)
+
 	// 1. Iteratively get dir and files separately till no more dirs left
 	remoteList := make(map[string]FileInfo)
 	dirs := []string{remotepath}
@@ -309,6 +319,9 @@ func (a *Allocation) GetAllocationDiff(lastSyncCachePath string, localRootPath s
 
 	// 2. Build a map for exclude path
 	exclMap := getRemoteExcludeMap(remoteExcludePath)
+
+	l.Logger.Debug("Exclude map: ", exclMap)
+	l.Logger.Debug("Exclude : ", remoteExcludePath)
 
 	// 3. Get flat file list from remote
 	remoteFileMap, err := a.GetRemoteFileMap(exclMap, remotePath)
