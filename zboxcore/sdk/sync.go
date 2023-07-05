@@ -143,6 +143,8 @@ func addLocalFileList(root string, fMap map[string]FileInfo, dirList *[]string, 
 			return nil
 		}
 
+		l.Logger.Debug("INFO : ", info)
+
 		l.Logger.Debug("DIRLIST : ", dirList)
 		l.Logger.Debug("LOCAL fMap : ", fMap)
 		l.Logger.Debug("LOCAL filter : ", filter)
