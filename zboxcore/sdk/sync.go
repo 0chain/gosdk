@@ -138,7 +138,7 @@ func addLocalFileList(root string, fMap map[string]FileInfo, dirList *[]string, 
 		lPath = "/" + lPath
 		// Exclude
 		if _, ok := exclMap[lPath]; ok {
-			return nil
+			return filepath.SkipDir
 		}
 		// Add to list
 		if info.IsDir() {
