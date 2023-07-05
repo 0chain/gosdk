@@ -53,9 +53,12 @@ func (a *Allocation) getRemoteFilesAndDirs(dirList []string, fMap map[string]Fil
 	remotePath = strings.TrimRight(remotePath, "/")
 
 	l.Logger.Debug("exclude map : getRemoteFilesAndDirs", exclMap)
+	l.Logger.Debug("remote path : getRemoteFilesAndDirs", remotePath)
+	l.Logger.Debug("dir list : getRemoteFilesAndDirs", dirList)
 
 	for _, dir := range dirList {
 		ref, err := a.ListDir(dir)
+		l.Logger.Debug("dir : ", dir)
 		if err != nil {
 			return []string{}, err
 		}
@@ -84,6 +87,8 @@ func (a *Allocation) getRemoteFilesAndDirs(dirList []string, fMap map[string]Fil
 			}
 		}
 	}
+
+	l.Logger.Debug("childDirList : ", childDirList)
 	return childDirList, nil
 }
 
