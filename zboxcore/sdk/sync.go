@@ -165,7 +165,7 @@ func addLocalFileList(root string, fMap map[string]FileInfo, dirList *[]string, 
 		if _, ok := exclMap[lPath]; ok {
 
 			l.Logger.Debug("excluded lpath : ", lPath)
-			return nil
+			return filepath.SkipDir
 		}
 		// Add to list
 		if info.IsDir() {
