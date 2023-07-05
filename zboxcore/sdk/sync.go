@@ -143,6 +143,10 @@ func addLocalFileList(root string, fMap map[string]FileInfo, dirList *[]string, 
 			return nil
 		}
 
+		l.Logger.Debug("DIRLIST : ", dirList)
+		l.Logger.Debug("LOCAL fMap : ", fMap)
+		l.Logger.Debug("LOCAL filter : ", filter)
+
 		l.Logger.Debug("LOCAL exclMap : ", exclMap)
 		// Filter out
 		if _, ok := filter[info.Name()]; ok {
@@ -179,10 +183,14 @@ func getLocalFileMap(rootPath string, filters []string, exclMap map[string]int) 
 		filterMap[f] = true
 	}
 	err := filepath.Walk(rootPath, addLocalFileList(rootPath, localMap, &dirList, filterMap, exclMap))
+
+	l.Logger.Debug("LOCAL dirList : ", dirList)
+
 	// Add the dirs at the end of the list for dir deletiion after all file deletion
 	for _, d := range dirList {
 		localMap[d] = FileInfo{Type: fileref.DIRECTORY}
 	}
+
 	l.Logger.Debug("Local List: ", localMap)
 	return localMap, err
 }
@@ -262,6 +270,10 @@ func findDelta(rMap map[string]FileInfo, lMap map[string]FileInfo, prevMap map[s
 		lFDiff = append(lFDiff, FileDiff{Path: rPath, Op: op, Type: rMap[rPath].Type})
 	}
 
+	l.Logger.Debug("lMap : ", lMap)
+	l.Logger.Debug("lMod : ", lMod)
+	l.Logger.Debug("lFDiff", lFDiff)
+
 	// Upload all local files
 	for lPath := range lMap {
 		op := Upload
@@ -283,6 +295,8 @@ func findDelta(rMap map[string]FileInfo, lMap map[string]FileInfo, prevMap map[s
 		}
 		lFDiff = append(lFDiff, FileDiff{Path: lPath, Op: op, Type: lMap[lPath].Type})
 	}
+
+	l.Logger.Debug("lFDiff 2 ", lFDiff)
 
 	// If there are differences, remove childs if the parent folder is deleted
 	if len(lFDiff) > 0 {
@@ -339,6 +353,8 @@ func (a *Allocation) GetAllocationDiff(lastSyncCachePath string, localRootPath s
 	if err != nil {
 		return lFdiff, errors.Wrap(err, "error getting list dir from remote.")
 	}
+
+	l.Logger.Debug("Remote file map: ", remoteFileMap)
 
 	// 4. Get flat file list on the local filesystem
 	localRootPath = strings.TrimRight(localRootPath, "/")
