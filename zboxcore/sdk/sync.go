@@ -142,6 +142,8 @@ func addLocalFileList(root string, fMap map[string]FileInfo, dirList *[]string, 
 			l.Logger.Error("Local file list error for path", path, err.Error())
 			return nil
 		}
+
+		l.Logger.Debug("LOCAL exclMap : ", exclMap)
 		// Filter out
 		if _, ok := filter[info.Name()]; ok {
 			return nil
@@ -151,8 +153,12 @@ func addLocalFileList(root string, fMap map[string]FileInfo, dirList *[]string, 
 			l.Logger.Error("getting relative path failed", err)
 		}
 		lPath = "/" + lPath
+
+		l.Logger.Debug("lPath : ", lPath)
 		// Exclude
 		if _, ok := exclMap[lPath]; ok {
+
+			l.Logger.Debug("excluded lpath : ", lPath)
 			return nil
 		}
 		// Add to list
