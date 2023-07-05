@@ -78,7 +78,6 @@ func (req *DirRequest) ProcessDir(a *Allocation) error {
 
 	defer req.ctxCncl()
 	existingDirCount := req.ProcessWithBlobbers(a)
-
 	if !req.isConsensusOk() {
 		return errors.New("consensus_not_met", "directory creation failed due to consensus not met")
 	}

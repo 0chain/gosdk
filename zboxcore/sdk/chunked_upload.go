@@ -142,16 +142,6 @@ func CreateChunkedUpload(
 	uploadMask := zboxutil.NewUint128(1).Lsh(uint64(len(allocationObj.Blobbers))).Sub64(1)
 	if isRepair {
 		opCode = OpUpdate
-		found, repairRequired, _, err := allocationObj.RepairRequired(fileMeta.RemotePath)
-		if err != nil {
-			return nil, err
-		}
-
-		if !repairRequired {
-			return nil, thrown.New("chunk_upload", "Repair not required")
-		}
-
-		uploadMask = found.Not().And(uploadMask)
 		consensus.fullconsensus = uploadMask.CountOnes()
 		consensus.consensusThresh = 1
 	}
@@ -537,27 +527,6 @@ func (su *ChunkedUpload) Start() error {
 	defer su.writeMarkerMutex.Unlock(
 		su.ctx, su.uploadMask, blobbers, su.uploadTimeOut, su.progress.ConnectionID) //nolint: errcheck
 
-	//Check if the allocation is to be repaired or rolled back
-	status, err := su.allocationObj.CheckAllocStatus()
-	if err != nil {
-		logger.Logger.Error("Error checking allocation status", err)
-		if su.statusCallback != nil {
-			su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
-		}
-		return err
-	}
-
-	if status == Repair {
-		logger.Logger.Info("Repairing allocation")
-		// err = su.allocationObj.RepairAlloc(su.statusCallback)
-		// if err != nil {
-		// 	return err
-		// }
-	}
-	if status != Commit {
-		return ErrRetryOperation
-	}
-
 	return su.processCommit()
 }
 
@@ -736,7 +705,7 @@ func (su *ChunkedUpload) processCommit() error {
 
 		if consensus != 0 {
 			logger.Logger.Info("Commit consensus failed, Deleting remote file....")
-			su.allocationObj.deleteFile(su.fileMeta.RemotePath, consensus, consensus) //nolint
+			su.allocationObj.deleteFile(su.fileMeta.RemotePath, consensus, consensus, su.uploadMask) //nolint
 		}
 		if su.statusCallback != nil {
 			su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
