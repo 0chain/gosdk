@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash"
+	"io"
 	"io/ioutil"
 	"math"
 	"net/http"
@@ -78,6 +79,7 @@ type DownloadRequest struct {
 	chunksPerShard     int64
 	actualPerShard     int64
 	size               int64
+	offset             int64
 }
 
 type blockData struct {
@@ -738,7 +740,9 @@ func (req *DownloadRequest) errorCB(err error, remotePathCB string) {
 	}
 	req.skip = true
 	if req.localFilePath != "" {
-		os.Remove(req.localFilePath) //nolint: errcheck
+		if info, err := req.fileHandler.Stat(); err == nil && info.Size() == 0 {
+			os.Remove(req.localFilePath) //nolint: errcheck
+		}
 	}
 	if req.fileHandler != nil {
 		req.fileHandler.Close() //nolint: errcheck
@@ -750,21 +754,19 @@ func (req *DownloadRequest) errorCB(err error, remotePathCB string) {
 }
 
 func (req *DownloadRequest) calculateShardsParams(
-	fRef *fileref.FileRef, remotePathCB string) (
-	size, chunksPerShard, actualPerShard int64, err error) {
+	fRef *fileref.FileRef, remotePathCB string) (chunksPerShard int64, err error) {
 
-	size = fRef.ActualFileSize
+	size := fRef.ActualFileSize
 	if req.contentMode == DOWNLOAD_CONTENT_THUMB {
 		if fRef.ActualThumbnailSize == 0 {
-			return 0, 0, 0, errors.New("invalid_request", "Thumbnail does not exist")
+			return 0, errors.New("invalid_request", "Thumbnail does not exist")
 		}
 		size = fRef.ActualThumbnailSize
 	}
+	req.size = size
 	req.encryptedKey = fRef.EncryptedKey
 	req.chunkSize = int(fRef.ChunkSize)
 
-	// fRef.ActualFileSize is size of file that does not include encryption bytes.
-	// that is why, actualPerShard will have different value for encrypted file.
 	effectivePerShardSize := (size + int64(req.datashards) - 1) / int64(req.datashards)
 	effectiveBlockSize := fRef.ChunkSize
 	if fRef.EncryptedKey != "" {
@@ -773,15 +775,32 @@ func (req *DownloadRequest) calculateShardsParams(
 
 	req.effectiveBlockSize = int(effectiveBlockSize)
 
+	// fRef.ActualFileSize is size of file that does not include encryption bytes.
+	// that is why, actualPerShard will have different value for encrypted file.
 	chunksPerShard = (effectivePerShardSize + effectiveBlockSize - 1) / effectiveBlockSize
-	actualPerShard = chunksPerShard * fRef.ChunkSize
+	// actualPerShard = chunksPerShard * fRef.ChunkSize
+
+	info, err := req.fileHandler.Stat()
+	if err != nil {
+		return 0, err
+	}
+	_, err = req.Seek(info.Size(), io.SeekStart)
+	if err != nil {
+		return 0, err
+	}
+
+	effectiveChunkSize := effectiveBlockSize * int64(req.datashards)
+	if req.offset > 0 {
+		req.startBlock += req.offset / effectiveChunkSize
+	}
+
 	if req.endBlock == 0 || req.endBlock > chunksPerShard {
 		req.endBlock = chunksPerShard
 	}
 
 	if req.startBlock >= req.endBlock {
 		err = errors.New("invalid_block_num", "start block should be less than end block")
-		return 0, 0, 0, err
+		return 0, err
 	}
 
 	return
@@ -974,7 +993,7 @@ func (req *DownloadRequest) processDownloadRequest() {
 		return
 	}
 	req.fRef = fRef
-	size, chunksPerShard, actualPerShard, err := req.calculateShardsParams(fRef, remotePathCB)
+	chunksPerShard, err := req.calculateShardsParams(fRef, remotePathCB)
 	if err != nil {
 		logger.Logger.Error(err.Error())
 		req.errorCB(
@@ -982,16 +1001,14 @@ func (req *DownloadRequest) processDownloadRequest() {
 				err), remotePathCB)
 		return
 	}
-	req.size = size
 	req.chunksPerShard = chunksPerShard
-	req.actualPerShard = actualPerShard
 	startBlock, endBlock := req.startBlock, req.endBlock
 	// remainingSize should be calculated based on startBlock number
 	// otherwise end data will have null bytes.
-	remainingSize := size - startBlock*int64(req.effectiveBlockSize)
+	remainingSize := req.size - startBlock*int64(req.effectiveBlockSize)
 
 	var wantSize int64
-	if endBlock*int64(req.effectiveBlockSize) < size {
+	if endBlock*int64(req.effectiveBlockSize) < req.size {
 		wantSize = endBlock*int64(req.effectiveBlockSize) - startBlock*int64(req.effectiveBlockSize)
 	} else {
 		wantSize = remainingSize
@@ -1007,4 +1024,29 @@ func (req *DownloadRequest) processDownloadRequest() {
 
 	blocksPerShard := (wantSize + int64(req.effectiveBlockSize) - 1) / int64(req.effectiveBlockSize)
 	req.blocksPerShard = blocksPerShard
+}
+
+func (req *DownloadRequest) Seek(offset int64, whence int) (int64, error) {
+	switch whence {
+	case io.SeekStart:
+		if offset > req.size {
+			return 0, errors.New(ExceededMaxOffsetValue, "")
+		}
+		req.offset = offset
+	case io.SeekCurrent:
+		if req.offset+offset >= req.size {
+			return 0, errors.New(ExceededMaxOffsetValue, "")
+		}
+		req.offset += offset
+	case io.SeekEnd:
+		newOffset := req.size - offset
+		if newOffset < 0 {
+			return 0, errors.New(NegativeOffsetResultantValue, "")
+		}
+		req.offset = offset
+	default:
+		return 0, errors.New(InvalidWhenceValue,
+			fmt.Sprintf("expected 0, 1 or 2, provided %d", whence))
+	}
+	return req.offset, nil
 }
