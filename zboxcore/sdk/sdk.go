@@ -587,21 +587,21 @@ type Blobber struct {
 // Note the types are of pointer types with omitempty json property.
 // This is done to correctly identify which properties are actually changing.
 type UpdateBlobber struct {
-	ID                       common.Key                    `json:"id"`
-	BaseURL                  *string                       `json:"url,omitempty"`
-	Terms                    *UpdateTerms                  `json:"terms,omitempty"`
-	Capacity                 *common.Size                  `json:"capacity,omitempty"`
-	Allocated                *common.Size                  `json:"allocated,omitempty"`
-	LastHealthCheck          *common.Timestamp             `json:"last_health_check,omitempty"`
-	StakePoolSettings        *blockchain.StakePoolSettings `json:"stake_pool_settings,omitempty"`
-	TotalStake               *int64                        `json:"total_stake,omitempty"`
-	UsedAllocation           *int64                        `json:"used_allocation,omitempty"`
-	TotalOffers              *int64                        `json:"total_offers,omitempty"`
-	TotalServiceCharge       *int64                        `json:"total_service_charge,omitempty"`
-	UncollectedServiceCharge *int64                        `json:"uncollected_service_charge,omitempty"`
-	IsKilled                 *bool                         `json:"is_killed,omitempty"`
-	IsShutdown               *bool                         `json:"is_shutdown,omitempty"`
-	NotAvailable             *bool                         `json:"not_available,omitempty"`
+	ID                       common.Key                          `json:"id"`
+	BaseURL                  *string                             `json:"url,omitempty"`
+	Terms                    *UpdateTerms                        `json:"terms,omitempty"`
+	Capacity                 *common.Size                        `json:"capacity,omitempty"`
+	Allocated                *common.Size                        `json:"allocated,omitempty"`
+	LastHealthCheck          *common.Timestamp                   `json:"last_health_check,omitempty"`
+	StakePoolSettings        *blockchain.UpdateStakePoolSettings `json:"stake_pool_settings,omitempty"`
+	TotalStake               *int64                              `json:"total_stake,omitempty"`
+	UsedAllocation           *int64                              `json:"used_allocation,omitempty"`
+	TotalOffers              *int64                              `json:"total_offers,omitempty"`
+	TotalServiceCharge       *int64                              `json:"total_service_charge,omitempty"`
+	UncollectedServiceCharge *int64                              `json:"uncollected_service_charge,omitempty"`
+	IsKilled                 *bool                               `json:"is_killed,omitempty"`
+	IsShutdown               *bool                               `json:"is_shutdown,omitempty"`
+	NotAvailable             *bool                               `json:"not_available,omitempty"`
 }
 
 type Validator struct {
