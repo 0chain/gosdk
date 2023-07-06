@@ -142,16 +142,6 @@ func CreateChunkedUpload(
 	uploadMask := zboxutil.NewUint128(1).Lsh(uint64(len(allocationObj.Blobbers))).Sub64(1)
 	if isRepair {
 		opCode = OpUpdate
-		found, repairRequired, _, err := allocationObj.RepairRequired(fileMeta.RemotePath)
-		if err != nil {
-			return nil, err
-		}
-
-		if !repairRequired {
-			return nil, thrown.New("chunk_upload", "Repair not required")
-		}
-
-		uploadMask = found.Not().And(uploadMask)
 		consensus.fullconsensus = uploadMask.CountOnes()
 		consensus.consensusThresh = 1
 	}
@@ -177,14 +167,6 @@ func CreateChunkedUpload(
 	su.ctx, su.ctxCncl = context.WithCancel(allocationObj.ctx)
 
 	if isUpdate {
-		otr, err := allocationObj.GetRefs(fileMeta.RemotePath, "", "", "", fileref.FILE, "regular", 0, 1)
-		if err != nil {
-			logger.Logger.Error(err)
-			return nil, thrown.New("chunk_upload", err.Error())
-		}
-		if len(otr.Refs) != 1 {
-			return nil, thrown.New("chunk_upload", fmt.Sprintf("Expected refs 1, got %d", len(otr.Refs)))
-		}
 		su.httpMethod = http.MethodPut
 		su.buildChange = func(ref *fileref.FileRef, _ uuid.UUID, ts common.Timestamp) allocationchange.AllocationChange {
 			change := &allocationchange.UpdateFileChange{}
@@ -217,6 +199,13 @@ func CreateChunkedUpload(
 
 	for _, opt := range opts {
 		opt(su)
+	}
+	var streamReader *StreamReader
+	if !su.useFileReader {
+		chunkReadSize := allocationObj.GetChunkReadSize(su.encryptOnUpload)
+		dataChan := make(chan *DataChan, 2)
+		streamReader = NewStreamReader(dataChan)
+		go StartWriteWorker(context.TODO(), fileReader, dataChan, chunkReadSize)
 	}
 
 	if su.progressStorer == nil {
@@ -279,7 +268,10 @@ func CreateChunkedUpload(
 			},
 		}
 	}
-
+	if !su.useFileReader {
+		su.fileReader = streamReader
+	}
+	// var cReader ChunkedUploadChunkReader
 	cReader, err := createChunkReader(su.fileReader, fileMeta.ActualSize, int64(su.chunkSize), su.allocationObj.DataShards, su.encryptOnUpload, su.uploadMask, su.fileErasureEncoder, su.fileEncscheme, su.fileHasher)
 
 	if err != nil {
@@ -355,6 +347,7 @@ type ChunkedUpload struct {
 	maskMu        *sync.Mutex
 	ctx           context.Context
 	ctxCncl       context.CancelFunc
+	useFileReader bool
 }
 
 // progressID build local progress id with [allocationid]_[Hash(LocalPath+"_"+RemotePath)]_[RemoteName] format
@@ -474,7 +467,6 @@ func (su *ChunkedUpload) process() error {
 
 		//chunk has not be uploaded yet
 		if chunks.chunkEndIndex > su.progress.ChunkIndex {
-
 			err = su.processUpload(
 				chunks.chunkStartIndex, chunks.chunkEndIndex,
 				chunks.fileShards, chunks.thumbnailShards,
@@ -538,25 +530,25 @@ func (su *ChunkedUpload) Start() error {
 		su.ctx, su.uploadMask, blobbers, su.uploadTimeOut, su.progress.ConnectionID) //nolint: errcheck
 
 	//Check if the allocation is to be repaired or rolled back
-	status, err := su.allocationObj.CheckAllocStatus()
-	if err != nil {
-		logger.Logger.Error("Error checking allocation status", err)
-		if su.statusCallback != nil {
-			su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
-		}
-		return err
-	}
+	// status, err := su.allocationObj.CheckAllocStatus()
+	// if err != nil {
+	// 	logger.Logger.Error("Error checking allocation status", err)
+	// 	if su.statusCallback != nil {
+	// 		su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
+	// 	}
+	// 	return err
+	// }
 
-	if status == Repair {
-		logger.Logger.Info("Repairing allocation")
-		// err = su.allocationObj.RepairAlloc(su.statusCallback)
-		// if err != nil {
-		// 	return err
-		// }
-	}
-	if status != Commit {
-		return ErrRetryOperation
-	}
+	// if status == Repair {
+	// 	logger.Logger.Info("Repairing allocation")
+	// 	// err = su.allocationObj.RepairAlloc(su.statusCallback)
+	// 	// if err != nil {
+	// 	// 	return err
+	// 	// }
+	// }
+	// if status != Commit {
+	// 	return ErrRetryOperation
+	// }
 
 	return su.processCommit()
 }
@@ -633,7 +625,9 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 
 	wgErrors := make(chan error)
 	wgDone := make(chan bool)
-
+	if len(fileShards) == 0 {
+		return thrown.New("upload_failed", "Upload failed. No data to upload")
+	}
 	wg := &sync.WaitGroup{}
 	var pos uint64
 	for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
@@ -685,8 +679,8 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 	}
 
 	if !su.consensus.isConsensusOk() {
-		return thrown.New("consensus_not_met", fmt.Sprintf("Upload failed. Required consensus atleast %d, got %d",
-			su.consensus.consensusThresh, su.consensus.getConsensus()))
+		return thrown.New("consensus_not_met", fmt.Sprintf("Upload failed File not found for path %s. Required consensus atleast %d, got %d",
+			su.fileMeta.RemotePath, su.consensus.consensusThresh, su.consensus.getConsensus()))
 	}
 
 	return nil
@@ -734,10 +728,6 @@ func (su *ChunkedUpload) processCommit() error {
 			fmt.Sprintf("Upload commit failed. Required consensus atleast %d, got %d",
 				su.consensus.consensusThresh, consensus))
 
-		if consensus != 0 {
-			logger.Logger.Info("Commit consensus failed, Deleting remote file....")
-			su.allocationObj.deleteFile(su.fileMeta.RemotePath, consensus, consensus) //nolint
-		}
 		if su.statusCallback != nil {
 			su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
 		}
