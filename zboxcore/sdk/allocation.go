@@ -36,7 +36,6 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/mitchellh/go-homedir"
 	"go.uber.org/zap"
-	"golang.org/x/sync/semaphore"
 )
 
 var (
@@ -292,25 +291,15 @@ func (a *Allocation) startWorker(ctx context.Context) {
 }
 
 func (a *Allocation) dispatchWork(ctx context.Context) {
-	sem := semaphore.NewWeighted(processDownloadWorkerCount)
 	for {
 		select {
 		case <-ctx.Done():
 			l.Logger.Info("Upload cancelled by the parent")
 			return
 		case downloadReq := <-a.downloadChan:
-			err := sem.Acquire(ctx, 1)
-			if err != nil {
-				l.Logger.Error("Failed to acquire semaphore", zap.Error(err))
-				go func() {
-					a.downloadChan <- downloadReq
-				}()
-				continue
-			}
 			l.Logger.Info(fmt.Sprintf("received a download request for %v\n", downloadReq.remotefilepath))
 			go func() {
 				downloadReq.processDownload(ctx)
-				sem.Release(1)
 			}()
 		case repairReq := <-a.repairChan:
 
@@ -397,11 +386,12 @@ func (a *Allocation) CreateDir(remotePath string) error {
 }
 
 func (a *Allocation) RepairFile(localpath string, remotepath string,
-	status StatusCallback) error {
+	status StatusCallback, mask zboxutil.Uint128) error {
 
 	idr, _ := homedir.Dir()
+	mask = mask.Not().And(zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1))
 	return a.StartChunkedUpload(idr, localpath, remotepath, status, false, true,
-		"", false, false)
+		"", false, false, WithMask(mask))
 }
 
 // UpdateFileWithThumbnail [Deprecated]please use CreateChunkedUpload
@@ -486,9 +476,6 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 	}
 	operationRequests := make([]OperationRequest, totalOperations)
 	for idx, localPath := range localPaths {
-		if !strings.HasSuffix(remotePaths[idx], "/") {
-			return errors.New("invalid_value", "remotePath must be the path of directory")
-		}
 		remotePath := zboxutil.RemoteClean(remotePaths[idx])
 		isabs := zboxutil.IsRemoteAbs(remotePath)
 		if !isabs {
@@ -579,6 +566,7 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 	thumbnailPath string,
 	encryption bool,
 	webStreaming bool,
+	uploadOpts ...ChunkedUploadOption,
 ) error {
 
 	if !a.isInitialized() {
@@ -626,6 +614,7 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 		WithEncrypt(encryption),
 		WithStatusCallback(status),
 	}
+	options = append(options, uploadOpts...)
 
 	if thumbnailPath != "" {
 		buf, err := sys.Files.ReadFile(thumbnailPath)
@@ -752,9 +741,9 @@ func (a *Allocation) GetCurrentVersion() (bool, error) {
 	return success, nil
 }
 
-func (a *Allocation) RepairRequired(remotepath string) (zboxutil.Uint128, bool, *fileref.FileRef, error) {
+func (a *Allocation) RepairRequired(remotepath string) (zboxutil.Uint128, zboxutil.Uint128, bool, *fileref.FileRef, error) {
 	if !a.isInitialized() {
-		return zboxutil.Uint128{}, false, nil, notInitialized
+		return zboxutil.Uint128{}, zboxutil.Uint128{}, false, nil, notInitialized
 	}
 
 	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
@@ -762,21 +751,21 @@ func (a *Allocation) RepairRequired(remotepath string) (zboxutil.Uint128, bool, 
 	listReq.allocationTx = a.Tx
 	listReq.blobbers = a.Blobbers
 	listReq.fullconsensus = a.fullconsensus
-	listReq.consensusThresh = a.consensusThreshold
+	listReq.consensusThresh = a.DataShards
 	listReq.ctx = a.ctx
 	listReq.remotefilepath = remotepath
-	found, fileRef, _ := listReq.getFileConsensusFromBlobbers()
+	found, deleteMask, fileRef, _ := listReq.getFileConsensusFromBlobbers()
 	if fileRef == nil {
-		return found, false, fileRef, errors.New("", "File not found for the given remotepath")
+		var repairErr error
+		if deleteMask.Equals(zboxutil.NewUint128(0)) {
+			repairErr = errors.New("", "File not found for the given remotepath")
+		}
+		return found, deleteMask, false, fileRef, repairErr
 	}
 
 	uploadMask := zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 
-	return found, !found.Equals(uploadMask), fileRef, nil
-}
-
-func (a *Allocation) DownloadFile(localPath string, remotePath string, verifyDownload bool, status StatusCallback, isFinal bool) error {
-	return a.addAndGenerateDownloadRequest(localPath, remotePath, DOWNLOAD_CONTENT_FULL, 1, 0, numBlockDownloads, verifyDownload, status, isFinal)
+	return found, deleteMask, !found.Equals(uploadMask), fileRef, nil
 }
 
 func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
@@ -891,41 +880,103 @@ func GenerateParentPaths(path string) map[string]bool {
 	return parentPaths
 }
 
+func (a *Allocation) DownloadFileToFileHandler(
+	fileHandler sys.File,
+	remotePath string,
+	verifyDownload bool,
+	status StatusCallback,
+	isFinal bool,
+) error {
+	return a.addAndGenerateDownloadRequest(fileHandler, remotePath, DOWNLOAD_CONTENT_FULL, 1, 0,
+		numBlockDownloads, verifyDownload, status, isFinal, "")
+}
+
+func (a *Allocation) DownloadByBlocksToFileHandler(
+	fileHandler sys.File,
+	remotePath string,
+	startBlock, endBlock int64,
+	numBlocks int,
+	verifyDownload bool,
+	status StatusCallback,
+	isFinal bool,
+) error {
+	return a.addAndGenerateDownloadRequest(fileHandler, remotePath, DOWNLOAD_CONTENT_FULL, startBlock, endBlock,
+		numBlocks, verifyDownload, status, isFinal, "")
+}
+
+func (a *Allocation) DownloadThumbnailToFileHandler(
+	fileHandler sys.File,
+	remotePath string,
+	verifyDownload bool,
+	status StatusCallback,
+	isFinal bool,
+) error {
+	return a.addAndGenerateDownloadRequest(fileHandler, remotePath, DOWNLOAD_CONTENT_THUMB, 1, 0,
+		numBlockDownloads, verifyDownload, status, isFinal, "")
+}
+
+func (a *Allocation) DownloadFile(localPath string, remotePath string, verifyDownload bool, status StatusCallback, isFinal bool) error {
+	f, localFilePath, err := a.prepareAndOpenLocalFile(localPath, remotePath)
+	if err != nil {
+		return err
+	}
+
+	err = a.addAndGenerateDownloadRequest(f, remotePath, DOWNLOAD_CONTENT_FULL, 1, 0,
+		numBlockDownloads, verifyDownload, status, isFinal, localFilePath)
+	if err != nil {
+		os.Remove(localFilePath) //nolint: errcheck
+		f.Close()                //nolint: errcheck
+		return err
+	}
+	return nil
+}
+
 // TODO: Use a map to store the download request and use flag isFinal to start the download, calculate readCount in parallel if possible
 func (a *Allocation) DownloadFileByBlock(
 	localPath string, remotePath string, startBlock int64, endBlock int64,
 	numBlocks int, verifyDownload bool, status StatusCallback, isFinal bool) error {
-	return a.addAndGenerateDownloadRequest(localPath, remotePath, DOWNLOAD_CONTENT_FULL, startBlock, endBlock, numBlocks, verifyDownload, status, isFinal)
+	f, localFilePath, err := a.prepareAndOpenLocalFile(localPath, remotePath)
+	if err != nil {
+		return err
+	}
+
+	err = a.addAndGenerateDownloadRequest(f, remotePath, DOWNLOAD_CONTENT_FULL, startBlock, endBlock,
+		numBlockDownloads, verifyDownload, status, isFinal, localFilePath)
+	if err != nil {
+		os.Remove(localFilePath) //nolint: errcheck
+		f.Close()                //nolint: errcheck
+		return err
+	}
+	return nil
 }
 
 func (a *Allocation) DownloadThumbnail(localPath string, remotePath string, verifyDownload bool, status StatusCallback, isFinal bool) error {
-	return a.addAndGenerateDownloadRequest(localPath, remotePath, DOWNLOAD_CONTENT_THUMB, 1, 0, numBlockDownloads, verifyDownload, status, isFinal)
+	f, localFilePath, err := a.prepareAndOpenLocalFile(localPath, remotePath)
+	if err != nil {
+		return err
+	}
+
+	err = a.addAndGenerateDownloadRequest(f, remotePath, DOWNLOAD_CONTENT_THUMB, 1, 0,
+		numBlockDownloads, verifyDownload, status, isFinal, localFilePath)
+	if err != nil {
+		os.Remove(localFilePath) //nolint: errcheck
+		f.Close()                //nolint: errcheck
+		return err
+	}
+	return nil
 }
 
-func (a *Allocation) generateDownloadRequest(localPath string, remotePath string, contentMode string,
-	startBlock int64, endBlock int64, numBlocks int, verifyDownload bool,
-	status StatusCallback, connectionID string) (*DownloadRequest, error) {
-	if !a.isInitialized() {
-		return nil, notInitialized
-	}
-	if stat, err := sys.Files.Stat(localPath); err == nil {
-		if !stat.IsDir() {
-			return nil, fmt.Errorf("Local path is not a directory '%s'", localPath)
-		}
-		localPath = strings.TrimRight(localPath, "/")
-		_, rFile := pathutil.Split(remotePath)
-		localPath = fmt.Sprintf("%s/%s", localPath, rFile)
-		if _, err := sys.Files.Stat(localPath); err == nil {
-			return nil, fmt.Errorf("Local file already exists '%s'", localPath)
-		}
-	}
-	dir, _ := filepath.Split(localPath)
-	if dir != "" {
-		if err := sys.Files.MkdirAll(dir, 0744); err != nil {
-			return nil, err
-		}
-	}
-
+func (a *Allocation) generateDownloadRequest(
+	fileHandler sys.File,
+	remotePath string,
+	contentMode string,
+	startBlock, endBlock int64,
+	numBlocks int,
+	verifyDownload bool,
+	status StatusCallback,
+	connectionID string,
+	localFilePath string,
+) (*DownloadRequest, error) {
 	if len(a.Blobbers) == 0 {
 		return nil, noBLOBBERS
 	}
@@ -937,7 +988,8 @@ func (a *Allocation) generateDownloadRequest(localPath string, remotePath string
 	downloadReq.allocOwnerID = a.Owner
 	downloadReq.allocOwnerPubKey = a.OwnerPublicKey
 	downloadReq.ctx, downloadReq.ctxCncl = context.WithCancel(a.ctx)
-	downloadReq.localpath = localPath
+	downloadReq.fileHandler = fileHandler
+	downloadReq.localFilePath = localFilePath
 	downloadReq.remotefilepath = remotePath
 	downloadReq.statusCallback = status
 	downloadReq.downloadMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
@@ -955,22 +1007,36 @@ func (a *Allocation) generateDownloadRequest(localPath string, remotePath string
 		defer a.mutex.Unlock()
 		delete(a.downloadProgressMap, remotepath)
 	}
+	downloadReq.fileCallback = func() {
+		if downloadReq.fileHandler != nil {
+			downloadReq.fileHandler.Close() //nolint: errcheck
+		}
+	}
 	downloadReq.contentMode = contentMode
-	downloadReq.prepaidBlobbers = make(map[string]bool)
 	downloadReq.connectionID = connectionID
 
 	return downloadReq, nil
 }
 
-func (a *Allocation) addAndGenerateDownloadRequest(localPath string, remotePath string, contentMode string, startBlock int64, endBlock int64, numBlocks int, verifyDownload bool,
-	status StatusCallback, isFinal bool) error {
+func (a *Allocation) addAndGenerateDownloadRequest(
+	fileHandler sys.File,
+	remotePath, contentMode string,
+	startBlock, endBlock int64,
+	numBlocks int,
+	verifyDownload bool,
+	status StatusCallback,
+	isFinal bool,
+	localFilePath string,
+) error {
 	var connectionID string
 	if len(a.downloadRequests) > 0 {
 		connectionID = a.downloadRequests[0].connectionID
 	} else {
 		connectionID = zboxutil.NewConnectionId()
 	}
-	downloadReq, err := a.generateDownloadRequest(localPath, remotePath, contentMode, startBlock, endBlock, numBlocks, verifyDownload, status, connectionID)
+	downloadReq, err := a.generateDownloadRequest(
+		fileHandler, remotePath, contentMode, startBlock, endBlock,
+		numBlocks, verifyDownload, status, connectionID, localFilePath)
 	if err != nil {
 		return err
 	}
@@ -979,7 +1045,7 @@ func (a *Allocation) addAndGenerateDownloadRequest(localPath string, remotePath 
 	a.downloadRequests = append(a.downloadRequests, downloadReq)
 	if isFinal {
 		downloadOps := a.downloadRequests
-		a.downloadRequests = a.downloadRequests[:0]
+		a.downloadRequests = nil
 		go func() {
 			a.processReadMarker(downloadOps)
 		}()
@@ -1035,6 +1101,9 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 		}
 		dr.downloadMask = successMask.And(dr.downloadMask)
 		if dr.consensusThresh > dr.downloadMask.CountOnes() {
+			if redeemError == nil {
+				redeemError = errors.New("read_marker_failed", "Failed to submit read marker to the blobbers")
+			}
 			dr.errorCB(redeemError, dr.remotefilepath)
 			continue
 		}
@@ -1042,6 +1111,45 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 			a.downloadChan <- dr
 		}(dr)
 	}
+}
+
+func (a *Allocation) prepareAndOpenLocalFile(localPath string, remotePath string) (*os.File, string, error) {
+	if !a.isInitialized() {
+		return nil, "", notInitialized
+	}
+	_, err := os.Stat(localPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			if err := os.MkdirAll(localPath, 0744); err != nil {
+				return nil, "", err
+			}
+		} else {
+			return nil, "", err
+		}
+	}
+
+	finfo, err := os.Stat(localPath)
+	if err != nil {
+		return nil, "", err
+	}
+
+	if !finfo.IsDir() {
+		return nil, "", fmt.Errorf("Local path is not a directory '%s'", localPath)
+	}
+
+	localFileName := filepath.Base(remotePath)
+	localFilePath := filepath.Join(localPath, localFileName)
+
+	if _, err = os.Stat(localFilePath); err == nil {
+		return nil, "", fmt.Errorf("Local file already exists '%s'", localFilePath)
+	}
+
+	f, err := os.OpenFile(localFilePath, os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return nil, "", errors.Wrap(err, "Can't create local file")
+	}
+
+	return f, localFilePath, nil
 }
 
 func (a *Allocation) ListDirFromAuthTicket(authTicket string, lookupHash string) (*ListResult, error) {
@@ -1082,7 +1190,7 @@ func (a *Allocation) ListDirFromAuthTicket(authTicket string, lookupHash string)
 	return nil, errors.New("list_request_failed", "Failed to get list response from the blobbers")
 }
 
-func (a *Allocation) ListDir(path string) (*ListResult, error) {
+func (a *Allocation) ListDir(path string, opts ...bool) (*ListResult, error) {
 	if !a.isInitialized() {
 		return nil, notInitialized
 	}
@@ -1099,9 +1207,12 @@ func (a *Allocation) ListDir(path string) (*ListResult, error) {
 	listReq.allocationTx = a.Tx
 	listReq.blobbers = a.Blobbers
 	listReq.fullconsensus = a.fullconsensus
-	listReq.consensusThresh = a.consensusThreshold
+	listReq.consensusThresh = a.DataShards
 	listReq.ctx = a.ctx
 	listReq.remotefilepath = path
+	if len(opts) > 0 {
+		listReq.forRepair = opts[0]
+	}
 	ref, err := listReq.GetListFromBlobbers()
 	if err != nil {
 		return nil, err
@@ -1168,11 +1279,17 @@ func (a *Allocation) DownloadFromBlobber(blobberID, localPath, remotePath string
 	}
 
 	verifyDownload := false // should be set to false
-	downloadReq, err := a.generateDownloadRequest(
-		localPath, remotePath, DOWNLOAD_CONTENT_FULL, 1, 0, numBlockDownloads, verifyDownload, status, zboxutil.NewConnectionId())
 
+	f, localFilePath, err := a.prepareAndOpenLocalFile(localPath, remotePath)
+	if err != nil {
+		return err
+	}
+	downloadReq, err := a.generateDownloadRequest(f, remotePath, DOWNLOAD_CONTENT_FULL, 1, 0, numBlockDownloads, verifyDownload,
+		status, zboxutil.NewConnectionId(), localFilePath)
 	if err != nil {
 		l.Logger.Error(err)
+		f.Close()                //nolint: errcheck
+		os.Remove(localFilePath) //nolint: errcheck
 		return err
 	}
 
@@ -1184,14 +1301,11 @@ func (a *Allocation) DownloadFromBlobber(blobberID, localPath, remotePath string
 	fRef, err := downloadReq.getFileRef(remotePath)
 	if err != nil {
 		l.Logger.Error(err.Error())
-		downloadReq.errorCB(
-			fmt.Errorf("Error while getting file ref. Error: %v",
-				err), remotePath)
-
+		downloadReq.errorCB(fmt.Errorf("Error while getting file ref. Error: %v", err), remotePath)
 		return err
 	}
-
 	downloadReq.numBlocks = fRef.NumBlocks
+
 	a.processReadMarker([]*DownloadRequest{downloadReq})
 	if downloadReq.skip {
 		return errors.New("download_request_failed", "Failed to get download response from the blobbers")
@@ -1280,7 +1394,7 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 	listReq.consensusThresh = a.consensusThreshold
 	listReq.ctx = a.ctx
 	listReq.remotefilepath = path
-	_, ref, _ := listReq.getFileConsensusFromBlobbers()
+	_, _, ref, _ := listReq.getFileConsensusFromBlobbers()
 	if ref != nil {
 		result.Type = ref.Type
 		result.Name = ref.Name
@@ -1296,6 +1410,14 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 		return result, nil
 	}
 	return nil, errors.New("file_meta_error", "Error getting the file meta data from blobbers")
+}
+
+func (a *Allocation) GetChunkReadSize(encrypt bool) int64 {
+	chunkDataSize := int64(DefaultChunkSize)
+	if encrypt {
+		chunkDataSize -= (EncryptedDataPaddingSize + EncryptionHeaderSize)
+	}
+	return chunkDataSize * int64(a.DataShards)
 }
 
 func (a *Allocation) GetFileMetaFromAuthTicket(authTicket string, lookupHash string) (*ConsolidatedFileMeta, error) {
@@ -1326,7 +1448,7 @@ func (a *Allocation) GetFileMetaFromAuthTicket(authTicket string, lookupHash str
 	listReq.ctx = a.ctx
 	listReq.remotefilepathhash = lookupHash
 	listReq.authToken = at
-	_, ref, _ := listReq.getFileConsensusFromBlobbers()
+	_, _, ref, _ := listReq.getFileConsensusFromBlobbers()
 	if ref != nil {
 		result.Type = ref.Type
 		result.Name = ref.Name
@@ -1370,10 +1492,10 @@ func (a *Allocation) GetFileStats(path string) (map[string]*FileStats, error) {
 }
 
 func (a *Allocation) DeleteFile(path string) error {
-	return a.deleteFile(path, a.consensusThreshold, a.fullconsensus)
+	return a.deleteFile(path, a.consensusThreshold, a.fullconsensus, zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1))
 }
 
-func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus int) error {
+func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus int, mask zboxutil.Uint128) error {
 	if !a.isInitialized() {
 		return notInitialized
 	}
@@ -1400,7 +1522,7 @@ func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus int)
 	req.ctx, req.ctxCncl = context.WithCancel(a.ctx)
 	req.remotefilepath = path
 	req.connectionID = zboxutil.NewConnectionId()
-	req.deleteMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
+	req.deleteMask = mask
 	req.maskMu = &sync.Mutex{}
 	req.timestamp = int64(common.Now())
 	err := req.ProcessDelete()
@@ -1755,8 +1877,10 @@ func (a *Allocation) CancelDownload(remotepath string) error {
 }
 
 func (a *Allocation) DownloadFromReader(
-	remotePath, localPath, pathHash, authToken, contentMode string,
-	verifyDownload bool, blocksPerMarker uint) error {
+	remotePath, localPath, lookupHash, authTicket, contentMode string,
+	verifyDownload bool,
+	blocksPerMarker uint,
+) error {
 
 	finfo, err := os.Stat(localPath)
 	if err != nil {
@@ -1766,8 +1890,7 @@ func (a *Allocation) DownloadFromReader(
 		return errors.New("invalid_path", "local path must be directory")
 	}
 
-	r, err := a.GetAllocationFileReader(
-		remotePath, pathHash, authToken, contentMode, verifyDownload, blocksPerMarker)
+	r, err := a.GetAllocationFileReader(remotePath, lookupHash, authTicket, contentMode, verifyDownload, blocksPerMarker)
 	if err != nil {
 		return err
 	}
@@ -1822,12 +1945,10 @@ func (a *Allocation) DownloadFromReader(
 // GetStreamDownloader will check file ref existence and returns an instance that provides
 // io.ReadSeekerCloser interface
 func (a *Allocation) GetAllocationFileReader(
-	remotePath,
-	pathHash,
-	authToken,
-	contentMode string,
+	remotePath, lookupHash, authTicket, contentMode string,
 	verifyDownload bool,
-	blocksPerMarker uint) (io.ReadSeekCloser, error) {
+	blocksPerMarker uint,
+) (io.ReadSeekCloser, error) {
 
 	if !a.isInitialized() {
 		return nil, notInitialized
@@ -1837,12 +1958,12 @@ func (a *Allocation) GetAllocationFileReader(
 	var res *ObjectTreeResult
 	var err error
 	switch {
-	case authToken != "":
-		res, err = a.GetRefsWithAuthTicket(authToken, "", "", "", "", "regular", 0, 1)
+	case authTicket != "":
+		res, err = a.GetRefsWithAuthTicket(authTicket, "", "", "", "", "regular", 0, 1)
 	case remotePath != "":
 		res, err = a.GetRefs(remotePath, "", "", "", "", "regular", 0, 1)
-	case pathHash != "":
-		res, err = a.GetRefsFromLookupHash(pathHash, "", "", "", "", "regular", 0, 1) //
+	case lookupHash != "":
+		res, err = a.GetRefsFromLookupHash(lookupHash, "", "", "", "", "regular", 0, 1) //
 	default:
 		return nil, errors.New("invalid_path", "remote path or authticket is required")
 	}
@@ -1859,9 +1980,13 @@ func (a *Allocation) GetAllocationFileReader(
 		return nil, errors.New("operation_not_supported", "downloading other than file is not supported")
 	}
 
+	if blocksPerMarker == 0 {
+		blocksPerMarker = uint(numBlockDownloads)
+	}
+
 	sdo := &StreamDownloadOption{
 		ContentMode:     contentMode,
-		AuthTicket:      authToken,
+		AuthTicket:      authTicket,
 		VerifyDownload:  verifyDownload,
 		BlocksPerMarker: blocksPerMarker,
 	}
@@ -1869,21 +1994,86 @@ func (a *Allocation) GetAllocationFileReader(
 	return GetDStorageFileReader(a, ref, sdo)
 }
 
-func (a *Allocation) DownloadThumbnailFromAuthTicket(localPath string,
-	authTicket string, remoteLookupHash string, remoteFilename string, verifyDownload bool,
-	status StatusCallback, isFinal bool) error {
+func (a *Allocation) DownloadFileToFileHandlerFromAuthTicket(
+	fileHandler sys.File,
+	authTicket string,
+	remoteLookupHash string,
+	remoteFilename string,
+	verifyDownload bool,
+	status StatusCallback,
+	isFinal bool,
+) error {
+	return a.downloadFromAuthTicket(fileHandler, authTicket, remoteLookupHash, 1, 0, numBlockDownloads,
+		remoteFilename, DOWNLOAD_CONTENT_FULL, verifyDownload, status, isFinal, "")
+}
 
-	return a.downloadFromAuthTicket(localPath, authTicket, remoteLookupHash,
-		1, 0, numBlockDownloads, remoteFilename, DOWNLOAD_CONTENT_THUMB,
-		verifyDownload, status, isFinal)
+func (a *Allocation) DownloadByBlocksToFileHandlerFromAuthTicket(
+	fileHandler sys.File,
+	authTicket string,
+	remoteLookupHash string,
+	startBlock, endBlock int64,
+	numBlocks int,
+	remoteFilename string,
+	verifyDownload bool,
+	status StatusCallback,
+	isFinal bool,
+) error {
+	return a.downloadFromAuthTicket(fileHandler, authTicket, remoteLookupHash, startBlock, endBlock, numBlocks,
+		remoteFilename, DOWNLOAD_CONTENT_FULL, verifyDownload, status, isFinal, "")
+}
+
+func (a *Allocation) DownloadThumbnailToFileHandlerFromAuthTicket(
+	fileHandler sys.File,
+	authTicket string,
+	remoteLookupHash string,
+	remoteFilename string,
+	verifyDownload bool,
+	status StatusCallback,
+	isFinal bool,
+) error {
+	return a.downloadFromAuthTicket(fileHandler, authTicket, remoteLookupHash, 1, 0, numBlockDownloads,
+		remoteFilename, DOWNLOAD_CONTENT_THUMB, verifyDownload, status, isFinal, "")
+}
+
+func (a *Allocation) DownloadThumbnailFromAuthTicket(
+	localPath string,
+	authTicket string,
+	remoteLookupHash string,
+	remoteFilename string,
+	verifyDownload bool,
+	status StatusCallback,
+	isFinal bool,
+) error {
+	f, localFilePath, err := a.prepareAndOpenLocalFile(localPath, remoteFilename)
+	if err != nil {
+		return err
+	}
+
+	err = a.downloadFromAuthTicket(f, authTicket, remoteLookupHash, 1, 0, numBlockDownloads, remoteFilename,
+		DOWNLOAD_CONTENT_THUMB, verifyDownload, status, isFinal, localFilePath)
+	if err != nil {
+		os.Remove(localFilePath) //nolint: errcheck
+		f.Close()                //nolint: errcheck
+		return err
+	}
+	return nil
 }
 
 func (a *Allocation) DownloadFromAuthTicket(localPath string, authTicket string,
 	remoteLookupHash string, remoteFilename string, verifyDownload bool, status StatusCallback, isFinal bool) error {
+	f, localFilePath, err := a.prepareAndOpenLocalFile(localPath, remoteFilename)
+	if err != nil {
+		return err
+	}
 
-	return a.downloadFromAuthTicket(localPath, authTicket, remoteLookupHash,
-		1, 0, numBlockDownloads, remoteFilename, DOWNLOAD_CONTENT_FULL,
-		verifyDownload, status, isFinal)
+	err = a.downloadFromAuthTicket(f, authTicket, remoteLookupHash, 1, 0, numBlockDownloads, remoteFilename,
+		DOWNLOAD_CONTENT_FULL, verifyDownload, status, isFinal, localFilePath)
+	if err != nil {
+		os.Remove(localFilePath) //nolint: errcheck
+		f.Close()                //nolint: errcheck
+		return err
+	}
+	return nil
 }
 
 func (a *Allocation) DownloadFromAuthTicketByBlocks(localPath string,
@@ -1891,19 +2081,26 @@ func (a *Allocation) DownloadFromAuthTicketByBlocks(localPath string,
 	remoteLookupHash string, remoteFilename string, verifyDownload bool,
 	status StatusCallback, isFinal bool) error {
 
-	return a.downloadFromAuthTicket(localPath, authTicket, remoteLookupHash,
-		startBlock, endBlock, numBlocks, remoteFilename, DOWNLOAD_CONTENT_FULL,
-		verifyDownload, status, isFinal)
+	f, localFilePath, err := a.prepareAndOpenLocalFile(localPath, remoteFilename)
+	if err != nil {
+		return err
+	}
+
+	err = a.downloadFromAuthTicket(f, authTicket, remoteLookupHash, startBlock, endBlock, numBlockDownloads, remoteFilename,
+		DOWNLOAD_CONTENT_FULL, verifyDownload, status, isFinal, localFilePath)
+	if err != nil {
+		os.Remove(localFilePath) //nolint: errcheck
+		f.Close()                //nolint: errcheck
+		return err
+	}
+	return nil
 }
 
-func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
+func (a *Allocation) downloadFromAuthTicket(fileHandler sys.File, authTicket string,
 	remoteLookupHash string, startBlock int64, endBlock int64, numBlocks int,
 	remoteFilename string, contentMode string, verifyDownload bool,
-	status StatusCallback, isFinal bool) error {
+	status StatusCallback, isFinal bool, localFilePath string) error {
 
-	if !a.isInitialized() {
-		return notInitialized
-	}
 	sEnc, err := base64.StdEncoding.DecodeString(authTicket)
 	if err != nil {
 		return errors.New("auth_ticket_decode_error", "Error decoding the auth ticket."+err.Error())
@@ -1914,17 +2111,6 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 		return errors.New("auth_ticket_decode_error", "Error unmarshaling the auth ticket."+err.Error())
 	}
 
-	if stat, err := sys.Files.Stat(localPath); err == nil {
-		if !stat.IsDir() {
-			return fmt.Errorf("Local path is not a directory '%s'", localPath)
-		}
-		localPath = strings.TrimRight(localPath, "/")
-		_, rFile := pathutil.Split(remoteFilename)
-		localPath = fmt.Sprintf("%s/%s", localPath, rFile)
-		if _, err := sys.Files.Stat(localPath); err == nil {
-			return fmt.Errorf("Local file already exists '%s'", localPath)
-		}
-	}
 	if len(a.Blobbers) == 0 {
 		return noBLOBBERS
 	}
@@ -1936,7 +2122,8 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	downloadReq.allocOwnerID = a.Owner
 	downloadReq.allocOwnerPubKey = a.OwnerPublicKey
 	downloadReq.ctx, downloadReq.ctxCncl = context.WithCancel(a.ctx)
-	downloadReq.localpath = localPath
+	downloadReq.fileHandler = fileHandler
+	downloadReq.localFilePath = localFilePath
 	downloadReq.remotefilepathhash = remoteLookupHash
 	downloadReq.authTicket = at
 	downloadReq.statusCallback = status
@@ -1951,12 +2138,17 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	downloadReq.shouldVerify = verifyDownload
 	downloadReq.fullconsensus = a.fullconsensus
 	downloadReq.consensusThresh = a.consensusThreshold
-	downloadReq.prepaidBlobbers = make(map[string]bool)
 	downloadReq.connectionID = zboxutil.NewConnectionId()
 	downloadReq.completedCallback = func(remotepath string, remotepathHash string) {
+		downloadReq.fileHandler.Close()
 		a.mutex.Lock()
 		defer a.mutex.Unlock()
 		delete(a.downloadProgressMap, remotepathHash)
+	}
+	downloadReq.fileCallback = func() {
+		if downloadReq.fileHandler != nil {
+			downloadReq.fileHandler.Close() //nolint: errcheck
+		}
 	}
 	a.mutex.Lock()
 	a.downloadProgressMap[remoteLookupHash] = downloadReq
@@ -1980,7 +2172,7 @@ func (a *Allocation) StartRepair(localRootPath, pathToRepair string, statusCB St
 		return notInitialized
 	}
 
-	listDir, err := a.ListDir(pathToRepair)
+	listDir, err := a.ListDir(pathToRepair, true)
 	if err != nil {
 		return err
 	}
@@ -2162,6 +2354,10 @@ func (a *Allocation) getConsensuses() (fullConsensus, consensusThreshold int) {
 	}
 
 	return a.DataShards + a.ParityShards, a.DataShards + 1
+}
+
+func (a *Allocation) SetConsensusThreshold() {
+	a.consensusThreshold = a.DataShards
 }
 
 func (a *Allocation) UpdateWithRepair(

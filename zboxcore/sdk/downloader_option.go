@@ -1,5 +1,7 @@
 package sdk
 
+import "github.com/0chain/gosdk/core/sys"
+
 const DefaultBlocksPerMarker int = 10
 
 // DownloadOption set download option
@@ -48,5 +50,12 @@ func WithAuthticket(authTicket, lookupHash string) DownloadOption {
 			do.authTicket = authTicket
 			do.lookupHash = lookupHash
 		}
+	}
+}
+
+func WithFileHandler(fileHandler sys.File) DownloadOption {
+	return func(do *DownloadOptions) {
+		do.fileHandler = fileHandler
+		do.isFileHandlerDownload = true
 	}
 }
