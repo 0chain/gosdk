@@ -583,6 +583,24 @@ type Blobber struct {
 	NotAvailable             bool                         `json:"not_available"`
 }
 
+type UpdateBlobber struct {
+	ID                       common.Key                    `json:"id"`
+	BaseURL                  *string                       `json:"url,omitempty"`
+	Terms                    *Terms                        `json:"terms,omitempty"`
+	Capacity                 *common.Size                  `json:"capacity,omitempty"`
+	Allocated                *common.Size                  `json:"allocated,omitempty"`
+	LastHealthCheck          *common.Timestamp             `json:"last_health_check,omitempty"`
+	StakePoolSettings        *blockchain.StakePoolSettings `json:"stake_pool_settings,omitempty"`
+	TotalStake               *int64                        `json:"total_stake,omitempty"`
+	UsedAllocation           *int64                        `json:"used_allocation,omitempty"`
+	TotalOffers              *int64                        `json:"total_offers,omitempty"`
+	TotalServiceCharge       *int64                        `json:"total_service_charge,omitempty"`
+	UncollectedServiceCharge *int64                        `json:"uncollected_service_charge,omitempty"`
+	IsKilled                 *bool                         `json:"is_killed,omitempty"`
+	IsShutdown               *bool                         `json:"is_shutdown,omitempty"`
+	NotAvailable             *bool                         `json:"not_available,omitempty"`
+}
+
 type Validator struct {
 	ID                       common.Key       `json:"validator_id"`
 	BaseURL                  string           `json:"url"`
@@ -600,6 +618,22 @@ type Validator struct {
 	IsShutdown               bool             `json:"is_shutdown"`
 }
 
+type UpdateValidator struct {
+	ID                       common.Key        `json:"validator_id"`
+	BaseURL                  *string           `json:"url,omitempty"`
+	DelegateWallet           *string           `json:"delegate_wallet,omitempty"`
+	MinStake                 *common.Balance   `json:"min_stake,omitempty"`
+	MaxStake                 *common.Balance   `json:"max_stake,omitempty"`
+	NumDelegates             *int              `json:"num_delegates,omitempty"`
+	ServiceCharge            *float64          `json:"service_charge,omitempty"`
+	StakeTotal               *int64            `json:"stake_total,omitempty"`
+	TotalServiceCharge       *int64            `json:"total_service_charge,omitempty"`
+	UncollectedServiceCharge *int64            `json:"uncollected_service_charge,omitempty"`
+	LastHealthCheck          *common.Timestamp `json:"last_health_check,omitempty"`
+	IsKilled                 *bool             `json:"is_killed,omitempty"`
+	IsShutdown               *bool             `json:"is_shutdown,omitempty"`
+}
+
 func (v *Validator) ConvertToValidationNode() *blockchain.ValidationNode {
 	return &blockchain.ValidationNode{
 		ID:      string(v.ID),
@@ -612,6 +646,36 @@ func (v *Validator) ConvertToValidationNode() *blockchain.ValidationNode {
 			ServiceCharge:  v.ServiceCharge,
 		},
 	}
+}
+
+func (v *UpdateValidator) ConvertToValidationNode() *blockchain.ValidationNode {
+	validationNode := &blockchain.ValidationNode{ID: string(v.ID)}
+
+	if v.BaseURL != nil {
+		validationNode.BaseURL = *v.BaseURL
+	}
+
+	if v.DelegateWallet != nil {
+		validationNode.StakePoolSettings.DelegateWallet = *v.DelegateWallet
+	}
+
+	if v.MinStake != nil {
+		validationNode.StakePoolSettings.MinStake = *v.MinStake
+	}
+
+	if v.MaxStake != nil {
+		validationNode.StakePoolSettings.MaxStake = *v.MaxStake
+	}
+
+	if v.NumDelegates != nil {
+		validationNode.StakePoolSettings.NumDelegates = *v.NumDelegates
+	}
+
+	if v.ServiceCharge != nil {
+		validationNode.StakePoolSettings.ServiceCharge = *v.ServiceCharge
+	}
+
+	return validationNode
 }
 
 func getBlobbersInternal(active bool, limit, offset int) (bs []*Blobber, err error) {
@@ -1341,7 +1405,7 @@ func TransferAllocation(allocationId, newOwner, newOwnerPublicKey string) (strin
 	return hash, n, err
 }
 
-func UpdateBlobberSettings(blob *Blobber) (resp string, nonce int64, err error) {
+func UpdateBlobberSettings(blob *UpdateBlobber) (resp string, nonce int64, err error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
 	}
@@ -1353,7 +1417,7 @@ func UpdateBlobberSettings(blob *Blobber) (resp string, nonce int64, err error) 
 	return
 }
 
-func UpdateValidatorSettings(v *Validator) (resp string, nonce int64, err error) {
+func UpdateValidatorSettings(v *UpdateValidator) (resp string, nonce int64, err error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
 	}
