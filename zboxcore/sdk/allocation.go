@@ -135,6 +135,14 @@ type Terms struct {
 	MaxOfferDuration time.Duration  `json:"max_offer_duration"`
 }
 
+// UpdateTerms represents Blobber terms during update blobber calls.
+// A Blobber can update its terms, but any existing offer will use terms of offer signing time.
+type UpdateTerms struct {
+	ReadPrice        *common.Balance `json:"read_price,omitempty"`  // tokens / GB
+	WritePrice       *common.Balance `json:"write_price,omitempty"` // tokens / GB
+	MaxOfferDuration *time.Duration  `json:"max_offer_duration,omitempty"`
+}
+
 type BlobberAllocation struct {
 	BlobberID       string         `json:"blobber_id"`
 	Size            int64          `json:"size"`

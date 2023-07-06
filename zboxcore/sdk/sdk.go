@@ -583,10 +583,13 @@ type Blobber struct {
 	NotAvailable             bool                         `json:"not_available"`
 }
 
+// UpdateBlobber is used during update blobber settings calls.
+// Note the types are of pointer types with omitempty json property.
+// This is done to correctly identify which properties are actually changing.
 type UpdateBlobber struct {
 	ID                       common.Key                    `json:"id"`
 	BaseURL                  *string                       `json:"url,omitempty"`
-	Terms                    *Terms                        `json:"terms,omitempty"`
+	Terms                    *UpdateTerms                  `json:"terms,omitempty"`
 	Capacity                 *common.Size                  `json:"capacity,omitempty"`
 	Allocated                *common.Size                  `json:"allocated,omitempty"`
 	LastHealthCheck          *common.Timestamp             `json:"last_health_check,omitempty"`
