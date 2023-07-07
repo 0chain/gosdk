@@ -169,7 +169,7 @@ func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
 		result.CreatedAt = ti.ref.CreatedAt
 		result.UpdatedAt = ti.ref.UpdatedAt
 		result.LookupHash = ti.ref.LookupHash
-    result.FileMetaHash = ti.ref.FileMetaHash
+		result.FileMetaHash = ti.ref.FileMetaHash
 		result.ActualSize = ti.ref.ActualSize
 		if ti.ref.ActualSize > 0 {
 			result.ActualNumBlocks = (ti.ref.ActualSize + CHUNK_SIZE - 1) / CHUNK_SIZE
@@ -239,7 +239,7 @@ func (lr *ListResult) populateChildren(children []fileref.RefEntity, childResult
 				selected[child.GetLookupHash()] = childResult
 			}
 		}
-    if req.forRepair {
+		if req.forRepair {
 			if _, ok := selected[child.GetLookupHash()]; !ok {
 				lr.Children = append(lr.Children, childResult)
 				selected[child.GetLookupHash()] = childResult
