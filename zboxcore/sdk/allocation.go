@@ -2341,7 +2341,7 @@ func (a *Allocation) getConsensuses() (fullConsensus, consensusThreshold int) {
 		return a.DataShards, a.DataShards
 	}
 
-	return a.DataShards + a.ParityShards, a.DataShards
+	return a.DataShards + a.ParityShards, a.DataShards + 1
 }
 
 func (a *Allocation) SetConsensusThreshold() {
