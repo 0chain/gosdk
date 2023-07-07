@@ -158,7 +158,7 @@ func (s *StorageSDK) CreateAllocation(datashards, parityshards int, size, expira
 		Expiry:       expiration,
 		ReadPrice: readPrice,
 		WritePrice: writePrice,
-		Lock:       uint64(lock),
+		Lock:       uint64(l),
 		BlobberIds: []string{},
 	}
 
