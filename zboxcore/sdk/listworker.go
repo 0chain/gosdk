@@ -12,7 +12,6 @@ import (
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
-	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	l "github.com/0chain/gosdk/zboxcore/logger"
@@ -31,6 +30,7 @@ type ListRequest struct {
 	authToken          *marker.AuthTicket
 	ctx                context.Context
 	wg                 *sync.WaitGroup
+	forRepair          bool
 	Consensus
 }
 
@@ -47,6 +47,7 @@ type ListResult struct {
 	Type            string           `json:"type"`
 	Size            int64            `json:"size"`
 	Hash            string           `json:"hash,omitempty"`
+	FileMetaHash    string           `json:"file_meta_hash,omitempty"`
 	MimeType        string           `json:"mimetype,omitempty"`
 	NumBlocks       int64            `json:"num_blocks"`
 	LookupHash      string           `json:"lookup_hash"`
@@ -168,6 +169,7 @@ func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
 		result.CreatedAt = ti.ref.CreatedAt
 		result.UpdatedAt = ti.ref.UpdatedAt
 		result.LookupHash = ti.ref.LookupHash
+    result.FileMetaHash = ti.ref.FileMetaHash
 		result.ActualSize = ti.ref.ActualSize
 		if ti.ref.ActualSize > 0 {
 			result.ActualNumBlocks = (ti.ref.ActualSize + CHUNK_SIZE - 1) / CHUNK_SIZE
@@ -195,10 +197,7 @@ func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
 func (lr *ListResult) populateChildren(children []fileref.RefEntity, childResultMap map[string]*ListResult, selected map[string]*ListResult, req *ListRequest) {
 
 	for _, child := range children {
-		actualHash := encryption.Hash(child.GetLookupHash())
-		if child.GetType() == fileref.FILE {
-			actualHash = encryption.Hash(child.GetLookupHash() + ":" + (child.(*fileref.FileRef)).ActualFileHash)
-		}
+		actualHash := child.GetFileMetaHash()
 
 		var childResult *ListResult
 		if _, ok := childResultMap[actualHash]; !ok {
@@ -233,7 +232,14 @@ func (lr *ListResult) populateChildren(children []fileref.RefEntity, childResult
 		}
 		childResult.Size += child.GetSize()
 		childResult.NumBlocks += child.GetNumBlocks()
-		if childResult.isConsensusOk() {
+		childResult.FileMetaHash = child.GetFileMetaHash()
+		if childResult.isConsensusOk() && !req.forRepair {
+			if _, ok := selected[child.GetLookupHash()]; !ok {
+				lr.Children = append(lr.Children, childResult)
+				selected[child.GetLookupHash()] = childResult
+			}
+		}
+    if req.forRepair {
 			if _, ok := selected[child.GetLookupHash()]; !ok {
 				lr.Children = append(lr.Children, childResult)
 				selected[child.GetLookupHash()] = childResult

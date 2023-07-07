@@ -1,9 +1,5 @@
 package main
 
-import (
-	"github.com/0chain/gosdk/core/transaction"
-)
-
 type StatusCallbackMocked interface {
 	Started(allocationId, filePath string, op int, totalBytes int)
 	InProgress(allocationId, filePath string, op int, completedBytes int, data []byte)
@@ -33,7 +29,7 @@ func (c *StatusCallbackWrapped) Completed(allocationId, filePath string, filenam
 	c.Callback.Completed(allocationId, filePath, filename, mimetype, size, op)
 }
 
-func (c *StatusCallbackWrapped) CommitMetaCompleted(request, response string, txn *transaction.Transaction, err error) {
+func (c *StatusCallbackWrapped) CommitMetaCompleted(request, response string, err error) {
 	c.Callback.CommitMetaCompleted(request, response, err)
 }
 
