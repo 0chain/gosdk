@@ -77,7 +77,6 @@ type DownloadRequest struct {
 	skip               bool
 	fRef               *fileref.FileRef
 	chunksPerShard     int64
-	actualPerShard     int64
 	size               int64
 	offset             int64
 }
@@ -377,11 +376,11 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		op = opThumbnailDownload
 	}
 	fRef := req.fRef
-	size, chunksPerShard, actualPerShard := req.size, req.chunksPerShard, req.actualPerShard
+	size, chunksPerShard, blocksPerShard := req.size, req.chunksPerShard, req.blocksPerShard
 
 	logger.Logger.Info(
 		fmt.Sprintf("Downloading file with size: %d from start block: %d and end block: %d. "+
-			"Actual size per blobber: %d Chunks per blobber: %d", size, req.startBlock, req.endBlock, actualPerShard, chunksPerShard),
+			"Blocks per blobber: %d", size, req.startBlock, req.endBlock, blocksPerShard),
 	)
 
 	err := req.initEC()
@@ -511,6 +510,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 				return errors.Wrap(err, fmt.Sprintf("Download failed for block %d. ", startBlock+int64(j)*numBlocks))
 			}
 			blocks <- blockData{blockNum: j, data: data}
+
 			return nil
 		})
 	}
@@ -540,7 +540,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 
 	if req.statusCallback != nil {
 		req.statusCallback.Completed(
-			req.allocationID, remotePathCB, fRef.Name, "", int(fRef.ActualFileSize), op)
+			req.allocationID, remotePathCB, fRef.Name, "", int(size), op)
 	}
 }
 
@@ -775,10 +775,7 @@ func (req *DownloadRequest) calculateShardsParams(
 
 	req.effectiveBlockSize = int(effectiveBlockSize)
 
-	// fRef.ActualFileSize is size of file that does not include encryption bytes.
-	// that is why, actualPerShard will have different value for encrypted file.
 	chunksPerShard = (effectivePerShardSize + effectiveBlockSize - 1) / effectiveBlockSize
-	// actualPerShard = chunksPerShard * fRef.ChunkSize
 
 	info, err := req.fileHandler.Stat()
 	if err != nil {
@@ -1030,7 +1027,7 @@ func (req *DownloadRequest) Seek(offset int64, whence int) (int64, error) {
 	switch whence {
 	case io.SeekStart:
 		if offset > req.size {
-			return 0, errors.New(ExceededMaxOffsetValue, "")
+			return 0, errors.New(ExceededMaxOffsetValue, "file is already downloaded")
 		}
 		req.offset = offset
 	case io.SeekCurrent:
