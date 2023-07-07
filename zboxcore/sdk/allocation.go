@@ -2128,7 +2128,6 @@ func (a *Allocation) downloadFromAuthTicket(fileHandler sys.File, authTicket str
 	downloadReq.consensusThresh = a.consensusThreshold
 	downloadReq.connectionID = zboxutil.NewConnectionId()
 	downloadReq.completedCallback = func(remotepath string, remotepathHash string) {
-		downloadReq.fileHandler.Close()
 		a.mutex.Lock()
 		defer a.mutex.Unlock()
 		delete(a.downloadProgressMap, remotepathHash)
