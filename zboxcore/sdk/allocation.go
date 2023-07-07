@@ -833,12 +833,14 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 				operation = NewMoveOperation(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 
 			case constants.FileOperationInsert:
+				op.Opts = append(op.Opts, WithReaderContext(mo.ctx))
 				operation = NewUploadOperation(op.Workdir, op.FileMeta, op.FileReader, false, op.Opts...)
 
 			case constants.FileOperationDelete:
 				operation = NewDeleteOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 
 			case constants.FileOperationUpdate:
+				op.Opts = append(op.Opts, WithReaderContext(mo.ctx))
 				operation = NewUploadOperation(op.Workdir, op.FileMeta, op.FileReader, true, op.Opts...)
 
 			case constants.FileOperationCreateDir:

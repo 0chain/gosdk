@@ -206,7 +206,11 @@ func CreateChunkedUpload(
 		chunkReadSize := allocationObj.GetChunkReadSize(su.encryptOnUpload)
 		dataChan := make(chan *DataChan, 2)
 		streamReader = NewStreamReader(dataChan)
-		go StartWriteWorker(su.ctx, fileReader, dataChan, chunkReadSize)
+		cancelFunc := su.ctx
+		if su.readerCtx != nil {
+			cancelFunc = su.readerCtx
+		}
+		go StartWriteWorker(cancelFunc, fileReader, dataChan, chunkReadSize)
 	}
 
 	if su.progressStorer == nil {
@@ -348,6 +352,7 @@ type ChunkedUpload struct {
 	maskMu        *sync.Mutex
 	ctx           context.Context
 	ctxCncl       context.CancelFunc
+	readerCtx     context.Context
 	useFileReader bool
 }
 
