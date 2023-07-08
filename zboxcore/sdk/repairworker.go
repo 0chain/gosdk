@@ -189,6 +189,7 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
 			l.Logger.Error("repair_file_failed", zap.Error(err))
 			return
 		}
+		r.filesRepaired++
 	}
 
 }

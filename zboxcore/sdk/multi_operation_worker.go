@@ -229,6 +229,7 @@ func (mo *MultiOperation) Process() error {
 		if statusBar == nil {
 			return ErrRetryOperation
 		}
+		statusBar.wg.Add(1)
 		err = mo.allocationObj.RepairAlloc(statusBar)
 		if err != nil {
 			return err
