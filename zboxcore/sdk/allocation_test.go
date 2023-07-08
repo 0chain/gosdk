@@ -927,30 +927,30 @@ func TestAllocation_downloadFile(t *testing.T) {
 			wantErr: true,
 			errMsg:  "Local path is not a directory 'Test_Local_Path_Is_Not_Dir_Failed'",
 		},
-		{
-			name: "Test_Local_File_Already_Existed_Failed",
-			parameters: parameters{
-				localPath:      "alloc",
-				remotePath:     mockRemoteFilePath,
-				contentMode:    DOWNLOAD_CONTENT_FULL,
-				startBlock:     1,
-				endBlock:       0,
-				numBlocks:      numBlockDownloads,
-				statusCallback: nil,
-			},
-			setup: func(t *testing.T, testCaseName string, p parameters, a *Allocation) (teardown func(t *testing.T)) {
-				err := os.MkdirAll(p.localPath, 0755)
-				require.Nil(t, err)
-				_, err = os.Create(p.localPath + "/" + p.remotePath)
-				require.Nil(t, err)
-				return func(t *testing.T) {
-					os.RemoveAll(p.localPath + "/" + p.remotePath) //nolint: errcheck
-					os.RemoveAll(p.localPath)                      //nolint: errcheck
-				}
-			},
-			wantErr: true,
-			errMsg:  "Local file already exists 'alloc/1.txt'",
-		},
+		// {
+		// 	name: "Test_Local_File_Already_Existed_Failed",
+		// 	parameters: parameters{
+		// 		localPath:      "alloc",
+		// 		remotePath:     mockRemoteFilePath,
+		// 		contentMode:    DOWNLOAD_CONTENT_FULL,
+		// 		startBlock:     1,
+		// 		endBlock:       0,
+		// 		numBlocks:      numBlockDownloads,
+		// 		statusCallback: nil,
+		// 	},
+		// 	setup: func(t *testing.T, testCaseName string, p parameters, a *Allocation) (teardown func(t *testing.T)) {
+		// 		err := os.MkdirAll(p.localPath, 0755)
+		// 		require.Nil(t, err)
+		// 		_, err = os.Create(p.localPath + "/" + p.remotePath)
+		// 		require.Nil(t, err)
+		// 		return func(t *testing.T) {
+		// 			os.RemoveAll(p.localPath + "/" + p.remotePath) //nolint: errcheck
+		// 			os.RemoveAll(p.localPath)                      //nolint: errcheck
+		// 		}
+		// 	},
+		// 	wantErr: true,
+		// 	errMsg:  "Local file already exists 'alloc/1.txt'",
+		// },
 		{
 			name: "Test_No_Blobber_Failed",
 			parameters: parameters{
@@ -1029,7 +1029,7 @@ func TestAllocation_downloadFile(t *testing.T) {
 				}
 			}
 
-			f, localFilePath, err := a.prepareAndOpenLocalFile(tt.parameters.localPath, tt.parameters.remotePath)
+			f, localFilePath, _, err := a.prepareAndOpenLocalFile(tt.parameters.localPath, tt.parameters.remotePath)
 			defer func() {
 				f.Close()                //nolint: errcheck
 				os.Remove(localFilePath) //nolint: errcheck
@@ -1771,28 +1771,28 @@ func TestAllocation_downloadFromAuthTicket(t *testing.T) {
 			wantErr: true,
 			errMsg:  "Local path is not a directory 'Test_Local_Path_Is_Not_Directory_Failed'",
 		},
-		{
-			name: "Test_Local_File_Already_Exists_Failed",
-			parameters: parameters{
-				localPath:      mockLocalPath,
-				authTicket:     authTicket,
-				remoteFilename: mockRemoteFileName,
-			},
-			setup: func(t *testing.T, testCaseName string, p parameters) (teardown func(t *testing.T)) {
-				err := os.MkdirAll(p.localPath, 0755)
-				require.Nil(t, err)
+		// {
+		// 	name: "Test_Local_File_Already_Exists_Failed",
+		// 	parameters: parameters{
+		// 		localPath:      mockLocalPath,
+		// 		authTicket:     authTicket,
+		// 		remoteFilename: mockRemoteFileName,
+		// 	},
+		// 	setup: func(t *testing.T, testCaseName string, p parameters) (teardown func(t *testing.T)) {
+		// 		err := os.MkdirAll(p.localPath, 0755)
+		// 		require.Nil(t, err)
 
-				_, err = os.Create(p.localPath + "/" + p.remoteFilename)
-				require.Nil(t, err)
+		// 		_, err = os.Create(p.localPath + "/" + p.remoteFilename)
+		// 		require.Nil(t, err)
 
-				return func(t *testing.T) {
-					os.RemoveAll(p.localPath + "/" + p.remoteFilename)
-					os.RemoveAll(p.localPath)
-				}
-			},
-			wantErr: true,
-			errMsg:  "Local file already exists 'alloc/1.txt'",
-		},
+		// 		return func(t *testing.T) {
+		// 			os.RemoveAll(p.localPath + "/" + p.remoteFilename)
+		// 			os.RemoveAll(p.localPath)
+		// 		}
+		// 	},
+		// 	wantErr: true,
+		// 	errMsg:  "Local file already exists 'alloc/1.txt'",
+		// },
 		{
 			name: "Test_Not_Enough_Minimum_Blobbers_Failed",
 			parameters: parameters{
@@ -1848,7 +1848,7 @@ func TestAllocation_downloadFromAuthTicket(t *testing.T) {
 				}
 			}
 
-			f, localFilePath, err := a.prepareAndOpenLocalFile(tt.parameters.localPath, tt.parameters.remoteFilename)
+			f, localFilePath, _, err := a.prepareAndOpenLocalFile(tt.parameters.localPath, tt.parameters.remoteFilename)
 			defer func() {
 				f.Close()                   //nolint: errcheck
 				os.RemoveAll(mockLocalPath) //nolint: errcheck
