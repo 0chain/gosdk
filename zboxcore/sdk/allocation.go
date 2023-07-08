@@ -1459,9 +1459,9 @@ func (a *Allocation) GetFileMetaFromAuthTicket(authTicket string, lookupHash str
 		result.LookupHash = ref.LookupHash
 		result.MimeType = ref.MimeType
 		result.Path = ref.Path
-		result.Size = ref.ActualFileSize
+		result.Size = ref.Size
 		result.NumBlocks = ref.NumBlocks
-		result.ActualFileSize = ref.Size
+		result.ActualFileSize = ref.ActualFileSize
 		if result.ActualFileSize > 0 {
 			result.ActualNumBlocks = (result.ActualFileSize + CHUNK_SIZE - 1) / CHUNK_SIZE
 		}
