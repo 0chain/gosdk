@@ -897,7 +897,7 @@ func (a *Allocation) DownloadThumbnailToFileHandler(
 }
 
 func (a *Allocation) DownloadFile(localPath string, remotePath string, verifyDownload bool, status StatusCallback, isFinal bool) error {
-	f, localFilePath, err := a.prepareAndOpenLocalFile(localPath, remotePath)
+	f, localFilePath, toKeep, err := a.prepareAndOpenLocalFile(localPath, remotePath)
 	if err != nil {
 		return err
 	}
@@ -905,8 +905,10 @@ func (a *Allocation) DownloadFile(localPath string, remotePath string, verifyDow
 	err = a.addAndGenerateDownloadRequest(f, remotePath, DOWNLOAD_CONTENT_FULL, 1, 0,
 		numBlockDownloads, verifyDownload, status, isFinal, localFilePath)
 	if err != nil {
-		os.Remove(localFilePath) //nolint: errcheck
-		f.Close()                //nolint: errcheck
+		if !toKeep {
+			os.Remove(localFilePath) //nolint: errcheck
+		}
+		f.Close() //nolint: errcheck
 		return err
 	}
 	return nil
@@ -916,7 +918,7 @@ func (a *Allocation) DownloadFile(localPath string, remotePath string, verifyDow
 func (a *Allocation) DownloadFileByBlock(
 	localPath string, remotePath string, startBlock int64, endBlock int64,
 	numBlocks int, verifyDownload bool, status StatusCallback, isFinal bool) error {
-	f, localFilePath, err := a.prepareAndOpenLocalFile(localPath, remotePath)
+	f, localFilePath, toKeep, err := a.prepareAndOpenLocalFile(localPath, remotePath)
 	if err != nil {
 		return err
 	}
@@ -924,15 +926,17 @@ func (a *Allocation) DownloadFileByBlock(
 	err = a.addAndGenerateDownloadRequest(f, remotePath, DOWNLOAD_CONTENT_FULL, startBlock, endBlock,
 		numBlockDownloads, verifyDownload, status, isFinal, localFilePath)
 	if err != nil {
-		os.Remove(localFilePath) //nolint: errcheck
-		f.Close()                //nolint: errcheck
+		if !toKeep {
+			os.Remove(localFilePath) //nolint: errcheck
+		}
+		f.Close() //nolint: errcheck
 		return err
 	}
 	return nil
 }
 
 func (a *Allocation) DownloadThumbnail(localPath string, remotePath string, verifyDownload bool, status StatusCallback, isFinal bool) error {
-	f, localFilePath, err := a.prepareAndOpenLocalFile(localPath, remotePath)
+	f, localFilePath, toKeep, err := a.prepareAndOpenLocalFile(localPath, remotePath)
 	if err != nil {
 		return err
 	}
@@ -940,8 +944,10 @@ func (a *Allocation) DownloadThumbnail(localPath string, remotePath string, veri
 	err = a.addAndGenerateDownloadRequest(f, remotePath, DOWNLOAD_CONTENT_THUMB, 1, 0,
 		numBlockDownloads, verifyDownload, status, isFinal, localFilePath)
 	if err != nil {
-		os.Remove(localFilePath) //nolint: errcheck
-		f.Close()                //nolint: errcheck
+		if !toKeep {
+			os.Remove(localFilePath) //nolint: errcheck
+		}
+		f.Close() //nolint: errcheck
 		return err
 	}
 	return nil
@@ -1094,43 +1100,54 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 	}
 }
 
-func (a *Allocation) prepareAndOpenLocalFile(localPath string, remotePath string) (*os.File, string, error) {
+func (a *Allocation) prepareAndOpenLocalFile(localPath string, remotePath string) (*os.File, string, bool, error) {
+	var toKeep bool
+
 	if !a.isInitialized() {
-		return nil, "", notInitialized
+		return nil, "", toKeep, notInitialized
 	}
 	_, err := os.Stat(localPath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			if err := os.MkdirAll(localPath, 0744); err != nil {
-				return nil, "", err
+				return nil, "", toKeep, err
 			}
 		} else {
-			return nil, "", err
+			return nil, "", toKeep, err
 		}
 	}
 
-	finfo, err := os.Stat(localPath)
+	info, err := os.Stat(localPath)
 	if err != nil {
-		return nil, "", err
+		return nil, "", toKeep, err
 	}
 
-	if !finfo.IsDir() {
-		return nil, "", fmt.Errorf("Local path is not a directory '%s'", localPath)
+	if !info.IsDir() {
+		return nil, "", toKeep, fmt.Errorf("Local path is not a directory '%s'", localPath)
 	}
 
 	localFileName := filepath.Base(remotePath)
 	localFilePath := filepath.Join(localPath, localFileName)
 
-	if _, err = os.Stat(localFilePath); err == nil {
-		return nil, "", fmt.Errorf("Local file already exists '%s'", localFilePath)
+	info, err = os.Stat(localFilePath)
+
+	var f *os.File
+	if errors.Is(err, os.ErrNotExist) {
+		f, err = os.OpenFile(localFilePath, os.O_WRONLY|os.O_CREATE, 0644)
+		if err != nil {
+			return nil, "", toKeep, errors.Wrap(err, "Can't create local file")
+		}
+	} else {
+		f, err = os.OpenFile(localFilePath, os.O_WRONLY|os.O_APPEND, 0644)
+		if err != nil {
+			return nil, "", toKeep, errors.Wrap(err, "Can't open local file in append mode")
+		}
+		if info.Size() > 0 {
+			toKeep = true
+		}
 	}
 
-	f, err := os.OpenFile(localFilePath, os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return nil, "", errors.Wrap(err, "Can't create local file")
-	}
-
-	return f, localFilePath, nil
+	return f, localFilePath, toKeep, nil
 }
 
 func (a *Allocation) ListDirFromAuthTicket(authTicket string, lookupHash string) (*ListResult, error) {
@@ -1261,16 +1278,17 @@ func (a *Allocation) DownloadFromBlobber(blobberID, localPath, remotePath string
 
 	verifyDownload := false // should be set to false
 
-	f, localFilePath, err := a.prepareAndOpenLocalFile(localPath, remotePath)
+	f, localFilePath, toKeep, err := a.prepareAndOpenLocalFile(localPath, remotePath)
 	if err != nil {
 		return err
 	}
 	downloadReq, err := a.generateDownloadRequest(f, remotePath, DOWNLOAD_CONTENT_FULL, 1, 0, numBlockDownloads, verifyDownload,
 		status, zboxutil.NewConnectionId(), localFilePath)
 	if err != nil {
-		l.Logger.Error(err)
-		f.Close()                //nolint: errcheck
-		os.Remove(localFilePath) //nolint: errcheck
+		if !toKeep {
+			os.Remove(localFilePath) //nolint: errcheck
+		}
+		f.Close() //nolint: errcheck
 		return err
 	}
 
@@ -2025,7 +2043,7 @@ func (a *Allocation) DownloadThumbnailFromAuthTicket(
 	status StatusCallback,
 	isFinal bool,
 ) error {
-	f, localFilePath, err := a.prepareAndOpenLocalFile(localPath, remoteFilename)
+	f, localFilePath, toKeep, err := a.prepareAndOpenLocalFile(localPath, remoteFilename)
 	if err != nil {
 		return err
 	}
@@ -2033,8 +2051,10 @@ func (a *Allocation) DownloadThumbnailFromAuthTicket(
 	err = a.downloadFromAuthTicket(f, authTicket, remoteLookupHash, 1, 0, numBlockDownloads, remoteFilename,
 		DOWNLOAD_CONTENT_THUMB, verifyDownload, status, isFinal, localFilePath)
 	if err != nil {
-		os.Remove(localFilePath) //nolint: errcheck
-		f.Close()                //nolint: errcheck
+		if !toKeep {
+			os.Remove(localFilePath) //nolint: errcheck
+		}
+		f.Close() //nolint: errcheck
 		return err
 	}
 	return nil
@@ -2042,7 +2062,7 @@ func (a *Allocation) DownloadThumbnailFromAuthTicket(
 
 func (a *Allocation) DownloadFromAuthTicket(localPath string, authTicket string,
 	remoteLookupHash string, remoteFilename string, verifyDownload bool, status StatusCallback, isFinal bool) error {
-	f, localFilePath, err := a.prepareAndOpenLocalFile(localPath, remoteFilename)
+	f, localFilePath, toKeep, err := a.prepareAndOpenLocalFile(localPath, remoteFilename)
 	if err != nil {
 		return err
 	}
@@ -2050,8 +2070,10 @@ func (a *Allocation) DownloadFromAuthTicket(localPath string, authTicket string,
 	err = a.downloadFromAuthTicket(f, authTicket, remoteLookupHash, 1, 0, numBlockDownloads, remoteFilename,
 		DOWNLOAD_CONTENT_FULL, verifyDownload, status, isFinal, localFilePath)
 	if err != nil {
-		os.Remove(localFilePath) //nolint: errcheck
-		f.Close()                //nolint: errcheck
+		if !toKeep {
+			os.Remove(localFilePath) //nolint: errcheck
+		}
+		f.Close() //nolint: errcheck
 		return err
 	}
 	return nil
@@ -2062,7 +2084,7 @@ func (a *Allocation) DownloadFromAuthTicketByBlocks(localPath string,
 	remoteLookupHash string, remoteFilename string, verifyDownload bool,
 	status StatusCallback, isFinal bool) error {
 
-	f, localFilePath, err := a.prepareAndOpenLocalFile(localPath, remoteFilename)
+	f, localFilePath, toKeep, err := a.prepareAndOpenLocalFile(localPath, remoteFilename)
 	if err != nil {
 		return err
 	}
@@ -2070,8 +2092,10 @@ func (a *Allocation) DownloadFromAuthTicketByBlocks(localPath string,
 	err = a.downloadFromAuthTicket(f, authTicket, remoteLookupHash, startBlock, endBlock, numBlockDownloads, remoteFilename,
 		DOWNLOAD_CONTENT_FULL, verifyDownload, status, isFinal, localFilePath)
 	if err != nil {
-		os.Remove(localFilePath) //nolint: errcheck
-		f.Close()                //nolint: errcheck
+		if !toKeep {
+			os.Remove(localFilePath) //nolint: errcheck
+		}
+		f.Close() //nolint: errcheck
 		return err
 	}
 	return nil
@@ -2121,7 +2145,6 @@ func (a *Allocation) downloadFromAuthTicket(fileHandler sys.File, authTicket str
 	downloadReq.consensusThresh = a.consensusThreshold
 	downloadReq.connectionID = zboxutil.NewConnectionId()
 	downloadReq.completedCallback = func(remotepath string, remotepathHash string) {
-		downloadReq.fileHandler.Close()
 		a.mutex.Lock()
 		defer a.mutex.Unlock()
 		delete(a.downloadProgressMap, remotepathHash)

@@ -11,7 +11,6 @@ type ChainConfig struct {
 	BlockWorker       string
 	Sharders          []string
 	Miners            []string
-	PreferredBlobbers []string
 	MinSubmit         int
 	MinConfirmation   int
 	ChainID           string
@@ -107,10 +106,6 @@ func GetQuerySleepTime() int {
 	return chain.QuerySleepTime
 }
 
-func GetPreferredBlobbers() []string {
-	return chain.PreferredBlobbers
-}
-
 func GetMinSubmit() int {
 	return chain.MinSubmit
 }
@@ -129,10 +124,6 @@ func SetSharders(sharderArray []string) {
 
 func SetMiners(minerArray []string) {
 	chain.Miners = minerArray
-}
-
-func SetPreferredBlobbers(preferredBlobberArray []string) {
-	chain.PreferredBlobbers = preferredBlobberArray
 }
 
 func SetChainID(id string) {
