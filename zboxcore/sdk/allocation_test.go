@@ -1498,7 +1498,7 @@ func TestAllocation_ListDirFromAuthTicket(t *testing.T) {
 				lookupHash: mockLookupHash,
 				expectedResult: &ListResult{
 					Type: mockType,
-					Size: -1,
+					Size: 0,
 				},
 			},
 			setup: func(t *testing.T, testCaseName string, a *Allocation, mockClient *mocks.HttpClient) (teardown func(t *testing.T)) {
@@ -1533,9 +1533,11 @@ func TestAllocation_ListDirFromAuthTicket(t *testing.T) {
 				ClientKey: mockClientKey,
 			}
 			a := &Allocation{
-				ID:          mockAllocationId,
-				Tx:          mockAllocationTxId,
-				FileOptions: 63,
+				ID:           mockAllocationId,
+				Tx:           mockAllocationTxId,
+				FileOptions:  63,
+				DataShards:   2,
+				ParityShards: 2,
 			}
 
 			if tt.setup != nil {
@@ -1806,7 +1808,7 @@ func TestAllocation_listDir(t *testing.T) {
 				path: mockPath,
 				expectedResult: &ListResult{
 					Type: mockType,
-					Size: -1,
+					Size: 0,
 				},
 			},
 			setup: func(t *testing.T, testCaseName string, a *Allocation, mockClient *mocks.HttpClient) (teardown func(t *testing.T)) {
@@ -1836,9 +1838,11 @@ func TestAllocation_listDir(t *testing.T) {
 
 			require := require.New(t)
 			a := &Allocation{
-				ID:          mockAllocationId,
-				Tx:          mockAllocationTxId,
-				FileOptions: 63,
+				ID:           mockAllocationId,
+				Tx:           mockAllocationTxId,
+				FileOptions:  63,
+				DataShards:   2,
+				ParityShards: 2,
 			}
 			a.InitAllocation()
 			sdkInitialized = true
