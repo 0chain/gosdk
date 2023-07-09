@@ -943,9 +943,9 @@ type AuthorizerNode struct {
 }
 
 type AuthorizerNodeUpdate struct {
-	ID     *string           `json:"id"`
-	URL    *string           `json:"url"`
-	Config *AuthorizerConfig `json:"config"`
+	ID     *string                 `json:"id"`
+	URL    *string                 `json:"url"`
+	Config *AuthorizerConfigUpdate `json:"config"`
 }
 
 func (t *Transaction) ZCNSCUpdateAuthorizerConfig(ip *AuthorizerNodeUpdate) (err error) {
