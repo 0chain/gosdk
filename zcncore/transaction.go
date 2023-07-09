@@ -244,6 +244,10 @@ type AuthorizerConfig struct {
 	Fee common.Balance `json:"fee"`
 }
 
+type AuthorizerConfigUpdate struct {
+	Fee *common.Balance `json:"fee"`
+}
+
 type InputMap struct {
 	Fields map[string]string `json:"Fields"`
 }
@@ -938,7 +942,13 @@ type AuthorizerNode struct {
 	Config *AuthorizerConfig `json:"config"`
 }
 
-func (t *Transaction) ZCNSCUpdateAuthorizerConfig(ip *AuthorizerNode) (err error) {
+type AuthorizerNodeUpdate struct {
+	ID     *string           `json:"id"`
+	URL    *string           `json:"url"`
+	Config *AuthorizerConfig `json:"config"`
+}
+
+func (t *Transaction) ZCNSCUpdateAuthorizerConfig(ip *AuthorizerNodeUpdate) (err error) {
 	err = t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_UPDATE_AUTHORIZER_CONFIG, ip, 0)
 	if err != nil {
 		logging.Error(err)
