@@ -791,7 +791,13 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 	maxCount := 0
 	dominant := 200
 	wg := sync.WaitGroup{}
-	for _, sharder := range util.Shuffle(sharders) {
+
+	// request a maximum of 3 sharders
+	if numSharders > 3 {
+		sharders = util.Shuffle(sharders)[:3]
+	}
+
+	for _, sharder := range sharders {
 		wg.Add(1)
 		go func(sharder string) {
 			defer wg.Done()
@@ -828,7 +834,7 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 	wg.Wait()
 
 	var err error
-	rate := float32(maxCount*100) / float32(numSharders)
+	rate := float32(maxCount*100) / float32(len(sharders))
 	if rate < consensusThresh {
 		err = errors.New("consensus_failed", "consensus failed on sharders")
 	}
