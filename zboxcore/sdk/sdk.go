@@ -650,36 +650,6 @@ func (v *Validator) ConvertToValidationNode() *blockchain.ValidationNode {
 	}
 }
 
-func (v *UpdateValidator) ConvertToValidationNode() *blockchain.ValidationNode {
-	validationNode := &blockchain.ValidationNode{ID: string(v.ID)}
-
-	if v.BaseURL != nil {
-		validationNode.BaseURL = *v.BaseURL
-	}
-
-	if v.DelegateWallet != nil {
-		validationNode.StakePoolSettings.DelegateWallet = *v.DelegateWallet
-	}
-
-	if v.MinStake != nil {
-		validationNode.StakePoolSettings.MinStake = *v.MinStake
-	}
-
-	if v.MaxStake != nil {
-		validationNode.StakePoolSettings.MaxStake = *v.MaxStake
-	}
-
-	if v.NumDelegates != nil {
-		validationNode.StakePoolSettings.NumDelegates = *v.NumDelegates
-	}
-
-	if v.ServiceCharge != nil {
-		validationNode.StakePoolSettings.ServiceCharge = *v.ServiceCharge
-	}
-
-	return validationNode
-}
-
 func getBlobbersInternal(active bool, limit, offset int) (bs []*Blobber, err error) {
 	type nodes struct {
 		Nodes []*Blobber
@@ -1401,7 +1371,7 @@ func UpdateValidatorSettings(v *UpdateValidator) (resp string, nonce int64, err 
 
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_UPDATE_VALIDATOR_SETTINGS,
-		InputArgs: v.ConvertToValidationNode(),
+		InputArgs: v,
 	}
 	resp, _, nonce, _, err = smartContractTxn(sn)
 	return
@@ -1434,10 +1404,10 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 		return
 	}
 
-	//nonce = client.GetClient().Nonce
-	//if nonce != 0 {
+	// nonce = client.GetClient().Nonce
+	// if nonce != 0 {
 	//	nonce++
-	//}
+	// }
 	txn := transaction.NewTransactionEntity(client.GetClientID(),
 		blockchain.GetChainID(), client.GetClientPublicKey(), nonce)
 
