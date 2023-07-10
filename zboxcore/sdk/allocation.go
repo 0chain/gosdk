@@ -98,6 +98,7 @@ type ConsolidatedFileMeta struct {
 	Hash            string
 	MimeType        string
 	Size            int64
+	NumBlocks       int64
 	ActualFileSize  int64
 	ActualNumBlocks int64
 	EncryptedKey    string
@@ -1409,11 +1410,14 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 		result.LookupHash = ref.LookupHash
 		result.MimeType = ref.MimeType
 		result.Path = ref.Path
-		result.Size = ref.ActualFileSize
+		result.Size = ref.Size
+		result.NumBlocks = ref.NumBlocks
 		result.EncryptedKey = ref.EncryptedKey
 		result.Collaborators = ref.Collaborators
 		result.ActualFileSize = ref.ActualFileSize
-		result.ActualNumBlocks = ref.NumBlocks
+		if result.ActualFileSize > 0 {
+			result.ActualNumBlocks = (ref.ActualFileSize + CHUNK_SIZE - 1) / CHUNK_SIZE
+		}
 		return result, nil
 	}
 	return nil, errors.New("file_meta_error", "Error getting the file meta data from blobbers")
@@ -1463,9 +1467,12 @@ func (a *Allocation) GetFileMetaFromAuthTicket(authTicket string, lookupHash str
 		result.LookupHash = ref.LookupHash
 		result.MimeType = ref.MimeType
 		result.Path = ref.Path
-		result.Size = ref.ActualFileSize
-		result.ActualFileSize = ref.Size
-		result.ActualNumBlocks = ref.NumBlocks
+		result.Size = ref.Size
+		result.NumBlocks = ref.NumBlocks
+		result.ActualFileSize = ref.ActualFileSize
+		if result.ActualFileSize > 0 {
+			result.ActualNumBlocks = (result.ActualFileSize + CHUNK_SIZE - 1) / CHUNK_SIZE
+		}
 		return result, nil
 	}
 	return nil, errors.New("file_meta_error", "Error getting the file meta data from blobbers")

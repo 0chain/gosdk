@@ -109,7 +109,7 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 			return errors.Wrap(err, "Error: Resp")
 		}
 		s.WriteString(string(resp_body))
-		l.Logger.Debug("List result:", string(resp_body))
+		l.Logger.Debug("List result from Blobber:", string(resp_body))
 		if resp.StatusCode == http.StatusOK {
 			listResult := &fileref.ListResult{}
 			err = json.Unmarshal(resp_body, listResult)
@@ -137,7 +137,7 @@ func (req *ListRequest) getlistFromBlobbers() []*listResponse {
 		go req.getListInfoFromBlobber(req.blobbers[i], i, rspCh)
 	}
 	req.wg.Wait()
-	listInfos := make([]*listResponse, len(req.blobbers))
+	listInfos := make([]*listResponse, numList)
 	for i := 0; i < numList; i++ {
 		listInfos[i] = <-rspCh
 	}
@@ -151,8 +151,8 @@ func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
 	childResultMap := make(map[string]*ListResult)
 	var err error
 	var errNum int
+	req.consensus = 0
 	for i := 0; i < len(lR); i++ {
-		req.consensus = 0
 		ti := lR[i]
 		if ti.err != nil {
 			err = ti.err
@@ -170,30 +170,19 @@ func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
 		result.UpdatedAt = ti.ref.UpdatedAt
 		result.LookupHash = ti.ref.LookupHash
 		result.FileMetaHash = ti.ref.FileMetaHash
-		if result.Type == fileref.DIRECTORY {
-			result.Size = -1
+		result.ActualSize = ti.ref.ActualSize
+		if ti.ref.ActualSize > 0 {
+			result.ActualNumBlocks = (ti.ref.ActualSize + CHUNK_SIZE - 1) / CHUNK_SIZE
 		}
+		result.Size += ti.ref.Size
+		result.NumBlocks += ti.ref.NumBlocks
 
 		if len(lR[i].ref.Children) > 0 {
 			result.populateChildren(lR[i].ref.Children, childResultMap, selected, req)
-
-			if req.forRepair {
-				for _, child := range childResultMap {
-					if child.consensus < child.fullconsensus {
-						if _, ok := selected[child.LookupHash]; !ok {
-							result.Children = append(result.Children, child)
-							selected[child.LookupHash] = child
-						}
-					}
-				}
-			}
-
-			for _, child := range result.Children {
-				result.Size += child.Size
-				result.NumBlocks += child.NumBlocks
-				result.ActualSize += child.ActualSize
-				result.ActualNumBlocks += child.ActualNumBlocks
-			}
+		}
+		req.consensus++
+		if req.isConsensusOk() {
+			break
 		}
 	}
 
@@ -235,14 +224,22 @@ func (lr *ListResult) populateChildren(children []fileref.RefEntity, childResult
 			childResult.MimeType = (child.(*fileref.FileRef)).MimeType
 			childResult.EncryptionKey = (child.(*fileref.FileRef)).EncryptedKey
 			childResult.ActualSize = (child.(*fileref.FileRef)).ActualFileSize
-			if childResult.ActualSize > 0 {
-				childResult.ActualNumBlocks = childResult.ActualSize / CHUNK_SIZE
-			}
+		} else {
+			childResult.ActualSize = (child.(*fileref.Ref)).ActualSize
+		}
+		if childResult.ActualSize > 0 {
+			childResult.ActualNumBlocks = (childResult.ActualSize + CHUNK_SIZE - 1) / CHUNK_SIZE
 		}
 		childResult.Size += child.GetSize()
 		childResult.NumBlocks += child.GetNumBlocks()
 		childResult.FileMetaHash = child.GetFileMetaHash()
 		if childResult.isConsensusOk() && !req.forRepair {
+			if _, ok := selected[child.GetLookupHash()]; !ok {
+				lr.Children = append(lr.Children, childResult)
+				selected[child.GetLookupHash()] = childResult
+			}
+		}
+		if req.forRepair {
 			if _, ok := selected[child.GetLookupHash()]; !ok {
 				lr.Children = append(lr.Children, childResult)
 				selected[child.GetLookupHash()] = childResult
