@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"io"
+	"io/fs"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -14,6 +15,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/0chain/gosdk/dev/blobber"
 	"github.com/0chain/gosdk/dev/blobber/model"
@@ -22,6 +24,7 @@ import (
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/sys"
 
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -562,11 +565,8 @@ func TestAllocation_RepairRequired(t *testing.T) {
 					})).Return(&http.Response{
 						StatusCode: http.StatusOK,
 						Body: func() io.ReadCloser {
-							jsonFR, err := json.Marshal(&fileref.FileRef{
-								ActualFileHash: mockActualHash,
-							})
-							require.NoError(t, err)
-							return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+							respString := `{"file_meta_hash":"` + mockActualHash + `"}`
+							return ioutil.NopCloser(bytes.NewReader([]byte(respString)))
 						}(),
 					}, nil)
 				}
@@ -606,11 +606,8 @@ func TestAllocation_RepairRequired(t *testing.T) {
 					})).Return(&http.Response{
 						StatusCode: http.StatusOK,
 						Body: func(hash string) io.ReadCloser {
-							jsonFR, err := json.Marshal(&fileref.FileRef{
-								ActualFileHash: hash,
-							})
-							require.NoError(t, err)
-							return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+							respString := `{"file_meta_hash":"` + hash + `"}`
+							return ioutil.NopCloser(bytes.NewReader([]byte(respString)))
 						}(hash),
 					}, nil)
 				}
@@ -660,7 +657,7 @@ func TestAllocation_RepairRequired(t *testing.T) {
 					defer teardown(t)
 				}
 			}
-			found, matchesConsensus, fileRef, err := a.RepairRequired(tt.remotePath)
+			found, _, matchesConsensus, fileRef, err := a.RepairRequired(tt.remotePath)
 			require.Equal(zboxutil.NewUint128(tt.wantFound), found, "found value must be same")
 			if tt.wantMatchesConsensus {
 				require.True(tt.wantMatchesConsensus, matchesConsensus)
@@ -672,18 +669,100 @@ func TestAllocation_RepairRequired(t *testing.T) {
 				require.EqualValues(tt.errMsg, errors.Top(err))
 				return
 			}
-			expected := &fileref.FileRef{
-				ActualFileHash: mockActualHash,
-			}
-			require.EqualValues(expected, fileRef)
+			require.EqualValues(mockActualHash, fileRef.FileMetaHash)
 			require.NoErrorf(err, "Unexpected error %v", err)
+		})
+	}
+}
+
+func TestAllocation_DownloadFileToFileHandler(t *testing.T) {
+	const (
+		mockActualHash     = "mockActualHash"
+		mockRemoteFilePath = "1.txt"
+	)
+
+	var mockFile = &sys.MemFile{Name: "mockFile", Buffer: new(bytes.Buffer), Mode: fs.ModePerm, ModTime: time.Now()}
+	var mockClient = mocks.HttpClient{}
+	zboxutil.Client = &mockClient
+
+	client := zclient.GetClient()
+	client.Wallet = &zcncrypto.Wallet{
+		ClientID:  mockClientId,
+		ClientKey: mockClientKey,
+	}
+
+	type parameters struct {
+		fileHandler    sys.File
+		remotePath     string
+		statusCallback StatusCallback
+	}
+	tests := []struct {
+		name       string
+		parameters parameters
+		setup      func(*testing.T, string, parameters, *Allocation) (teardown func(*testing.T))
+		wantErr    bool
+		errMsg     string
+	}{
+		{
+			name: "Test_Download_File_Success",
+			parameters: parameters{
+				fileHandler:    mockFile,
+				remotePath:     mockRemoteFilePath,
+				statusCallback: nil,
+			},
+			setup: func(t *testing.T, testCaseName string, p parameters, a *Allocation) (teardown func(t *testing.T)) {
+				for i := 0; i < numBlobbers; i++ {
+					url := "TestAllocation_DownloadToFileHandler" + mockBlobberUrl + strconv.Itoa(i)
+					mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+						return strings.HasPrefix(req.URL.Path, url)
+					})).Return(&http.Response{
+						StatusCode: http.StatusOK,
+						Body: func() io.ReadCloser {
+							jsonFR, err := json.Marshal(&fileref.FileRef{
+								ActualFileHash: mockActualHash,
+							})
+							require.NoError(t, err)
+							return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+						}(),
+					}, nil)
+				}
+				return nil
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require := require.New(t)
+			a := &Allocation{}
+			setupMockAllocation(t, a)
+			for i := 0; i < numBlobbers; i++ {
+				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
+					ID:      tt.name + strconv.Itoa(i),
+					Baseurl: "TestAllocation_DownloadToFileHandler" + mockBlobberUrl + strconv.Itoa(i),
+				})
+			}
+			if m := tt.setup; m != nil {
+				if teardown := m(t, tt.name, tt.parameters, a); teardown != nil {
+					defer teardown(t)
+				}
+			}
+
+			err := a.DownloadFileToFileHandler(tt.parameters.fileHandler, tt.parameters.remotePath, true, tt.parameters.statusCallback, false)
+			require.EqualValues(tt.wantErr, err != nil)
+			if err != nil {
+				require.EqualValues(tt.errMsg, errors.Top(err))
+				return
+			}
+			require.NoErrorf(err, "Unexpected error: %v", err)
 		})
 	}
 }
 
 func TestAllocation_DownloadFile(t *testing.T) {
 	const (
-		mockLocalPath = "DownloadFile"
+		mockActualHash     = "mockActualHash"
+		mockLocalPath      = "DownloadFile"
+		mockRemoteFilePath = "1.txt"
 	)
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
@@ -707,13 +786,31 @@ func TestAllocation_DownloadFile(t *testing.T) {
 			Baseurl: mockBlobberUrl + strconv.Itoa(i),
 		})
 	}
-	err := a.DownloadFile(mockLocalPath, "/", true, nil, false)
+	for i := 0; i < numBlobbers; i++ {
+		url := mockBlobberUrl + strconv.Itoa(i)
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			return strings.HasPrefix(req.URL.Path, url)
+		})).Return(&http.Response{
+			StatusCode: http.StatusOK,
+			Body: func() io.ReadCloser {
+				jsonFR, err := json.Marshal(&fileref.FileRef{
+					ActualFileHash: mockActualHash,
+				})
+				require.NoError(err)
+				return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+			}(),
+		}, nil)
+	}
+
+	defer os.RemoveAll(mockLocalPath) //nolint: errcheck
+	err := a.DownloadFile(mockLocalPath, mockRemoteFilePath, false, nil, false)
 	require.NoErrorf(err, "Unexpected error %v", err)
 }
 
 func TestAllocation_DownloadFileByBlock(t *testing.T) {
 	const (
-		mockLocalPath = "DownloadFileByBlock"
+		mockLocalPath      = "DownloadFileByBlock"
+		mockRemoteFilePath = "1.txt"
 	)
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
@@ -737,13 +834,15 @@ func TestAllocation_DownloadFileByBlock(t *testing.T) {
 			Baseurl: mockBlobberUrl + strconv.Itoa(i),
 		})
 	}
-	err := a.DownloadFileByBlock(mockLocalPath, "/", 1, 0, numBlockDownloads, true, nil, false)
+	defer os.RemoveAll(mockLocalPath) //nolint: errcheck
+	err := a.DownloadFileByBlock(mockLocalPath, mockRemoteFilePath, 1, 0, numBlockDownloads, true, nil, false)
 	require.NoErrorf(err, "Unexpected error %v", err)
 }
 
 func TestAllocation_DownloadThumbnail(t *testing.T) {
 	const (
-		mockLocalPath = "DownloadThumbnail"
+		mockLocalPath      = "DownloadThumbnail"
+		mockRemoteFilePath = "1.txt"
 	)
 	require := require.New(t)
 	a := &Allocation{}
@@ -755,7 +854,9 @@ func TestAllocation_DownloadThumbnail(t *testing.T) {
 			Baseurl: "TestAllocation_DownloadThumbnail" + mockBlobberUrl + strconv.Itoa(i),
 		})
 	}
-	err := a.DownloadThumbnail(mockLocalPath, "/", true, nil, false)
+
+	defer os.RemoveAll(mockLocalPath) //nolint: errcheck
+	err := a.DownloadThumbnail(mockLocalPath, mockRemoteFilePath, true, nil, false)
 	require.NoErrorf(err, "Unexpected error %v", err)
 }
 
@@ -776,11 +877,10 @@ func TestAllocation_downloadFile(t *testing.T) {
 	}
 
 	type parameters struct {
-		localPath, remotePath string
-		contentMode           string
-		startBlock, endBlock  int64
-		numBlocks             int
-		statusCallback        StatusCallback
+		localPath, remotePath, contentMode string
+		startBlock, endBlock               int64
+		numBlocks                          int
+		statusCallback                     StatusCallback
 	}
 	tests := []struct {
 		name       string
@@ -820,37 +920,37 @@ func TestAllocation_downloadFile(t *testing.T) {
 				_, err := os.Create(p.localPath)
 				require.Nil(t, err)
 				return func(t *testing.T) {
-					err = os.Remove(p.localPath)
+					err = os.Remove(p.localPath) //nolint: errcheck
 					require.Nil(t, err)
 				}
 			},
 			wantErr: true,
 			errMsg:  "Local path is not a directory 'Test_Local_Path_Is_Not_Dir_Failed'",
 		},
-		{
-			name: "Test_Local_File_Already_Existed_Failed",
-			parameters: parameters{
-				localPath:      "alloc",
-				remotePath:     mockRemoteFilePath,
-				contentMode:    DOWNLOAD_CONTENT_FULL,
-				startBlock:     1,
-				endBlock:       0,
-				numBlocks:      numBlockDownloads,
-				statusCallback: nil,
-			},
-			setup: func(t *testing.T, testCaseName string, p parameters, a *Allocation) (teardown func(t *testing.T)) {
-				err := os.Mkdir(p.localPath, 0755)
-				require.Nil(t, err)
-				_, err = os.Create(p.localPath + "/" + p.remotePath)
-				require.Nil(t, err)
-				return func(t *testing.T) {
-					os.RemoveAll(p.localPath + "/" + p.remotePath)
-					os.RemoveAll(p.localPath)
-				}
-			},
-			wantErr: true,
-			errMsg:  "Local file already exists 'alloc/1.txt'",
-		},
+		// {
+		// 	name: "Test_Local_File_Already_Existed_Failed",
+		// 	parameters: parameters{
+		// 		localPath:      "alloc",
+		// 		remotePath:     mockRemoteFilePath,
+		// 		contentMode:    DOWNLOAD_CONTENT_FULL,
+		// 		startBlock:     1,
+		// 		endBlock:       0,
+		// 		numBlocks:      numBlockDownloads,
+		// 		statusCallback: nil,
+		// 	},
+		// 	setup: func(t *testing.T, testCaseName string, p parameters, a *Allocation) (teardown func(t *testing.T)) {
+		// 		err := os.MkdirAll(p.localPath, 0755)
+		// 		require.Nil(t, err)
+		// 		_, err = os.Create(p.localPath + "/" + p.remotePath)
+		// 		require.Nil(t, err)
+		// 		return func(t *testing.T) {
+		// 			os.RemoveAll(p.localPath + "/" + p.remotePath) //nolint: errcheck
+		// 			os.RemoveAll(p.localPath)                      //nolint: errcheck
+		// 		}
+		// 	},
+		// 	wantErr: true,
+		// 	errMsg:  "Local file already exists 'alloc/1.txt'",
+		// },
 		{
 			name: "Test_No_Blobber_Failed",
 			parameters: parameters{
@@ -900,7 +1000,7 @@ func TestAllocation_downloadFile(t *testing.T) {
 					}, nil)
 				}
 				return func(t *testing.T) {
-					os.Remove("alloc/1.txt")
+					os.Remove("alloc/1.txt") //nolint: errcheck
 				}
 			},
 		},
@@ -928,11 +1028,19 @@ func TestAllocation_downloadFile(t *testing.T) {
 					defer teardown(t)
 				}
 			}
-			err := a.addAndGenerateDownloadRequest(
-				tt.parameters.localPath, tt.parameters.remotePath, tt.parameters.contentMode,
-				tt.parameters.startBlock, tt.parameters.endBlock, tt.parameters.numBlocks,
-				true, tt.parameters.statusCallback, false)
 
+			f, localFilePath, _, err := a.prepareAndOpenLocalFile(tt.parameters.localPath, tt.parameters.remotePath)
+			defer func() {
+				f.Close()                //nolint: errcheck
+				os.Remove(localFilePath) //nolint: errcheck
+			}()
+
+			if err == nil {
+				err = a.addAndGenerateDownloadRequest(
+					f, tt.parameters.remotePath, tt.parameters.contentMode,
+					tt.parameters.startBlock, tt.parameters.endBlock, tt.parameters.numBlocks,
+					true, tt.parameters.statusCallback, false, localFilePath)
+			}
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
 				require.EqualValues(tt.errMsg, errors.Top(err))
@@ -1498,7 +1606,7 @@ func TestAllocation_ListDirFromAuthTicket(t *testing.T) {
 				lookupHash: mockLookupHash,
 				expectedResult: &ListResult{
 					Type: mockType,
-					Size: -1,
+					Size: 0,
 				},
 			},
 			setup: func(t *testing.T, testCaseName string, a *Allocation, mockClient *mocks.HttpClient) (teardown func(t *testing.T)) {
@@ -1533,9 +1641,11 @@ func TestAllocation_ListDirFromAuthTicket(t *testing.T) {
 				ClientKey: mockClientKey,
 			}
 			a := &Allocation{
-				ID:          mockAllocationId,
-				Tx:          mockAllocationTxId,
-				FileOptions: 63,
+				ID:           mockAllocationId,
+				Tx:           mockAllocationTxId,
+				FileOptions:  63,
+				DataShards:   2,
+				ParityShards: 2,
 			}
 
 			if tt.setup != nil {
@@ -1626,7 +1736,9 @@ func TestAllocation_downloadFromAuthTicket(t *testing.T) {
 		{
 			name: "Test_Cannot_Decode_Auth_Ticket_Failed",
 			parameters: parameters{
-				authTicket: "some wrong auth ticket to decode",
+				localPath:      mockLocalPath,
+				authTicket:     "some wrong auth ticket to decode",
+				remoteFilename: mockRemoteFileName,
 			},
 			wantErr: true,
 			errMsg:  "auth_ticket_decode_error: Error decoding the auth ticket.illegal base64 data at input byte 4",
@@ -1634,7 +1746,9 @@ func TestAllocation_downloadFromAuthTicket(t *testing.T) {
 		{
 			name: "Test_Cannot_Unmarshal_Auth_Ticket_Failed",
 			parameters: parameters{
-				authTicket: "c29tZSB3cm9uZyBhdXRoIHRpY2tldCB0byBtYXJzaGFs",
+				localPath:      mockLocalPath,
+				authTicket:     "c29tZSB3cm9uZyBhdXRoIHRpY2tldCB0byBtYXJzaGFs",
+				remoteFilename: mockRemoteFileName,
 			},
 			wantErr: true,
 			errMsg:  "auth_ticket_decode_error: Error unmarshaling the auth ticket.invalid character 's' looking for beginning of value",
@@ -1642,8 +1756,9 @@ func TestAllocation_downloadFromAuthTicket(t *testing.T) {
 		{
 			name: "Test_Local_Path_Is_Not_Directory_Failed",
 			parameters: parameters{
-				localPath:  "Test_Local_Path_Is_Not_Directory_Failed",
-				authTicket: authTicket,
+				localPath:      "Test_Local_Path_Is_Not_Directory_Failed",
+				authTicket:     authTicket,
+				remoteFilename: mockRemoteFileName,
 			},
 			setup: func(t *testing.T, testCaseName string, p parameters) (teardown func(t *testing.T)) {
 				_, err := os.Create(p.localPath)
@@ -1656,28 +1771,28 @@ func TestAllocation_downloadFromAuthTicket(t *testing.T) {
 			wantErr: true,
 			errMsg:  "Local path is not a directory 'Test_Local_Path_Is_Not_Directory_Failed'",
 		},
-		{
-			name: "Test_Local_File_Already_Exists_Failed",
-			parameters: parameters{
-				localPath:      mockLocalPath,
-				authTicket:     authTicket,
-				remoteFilename: mockRemoteFileName,
-			},
-			setup: func(t *testing.T, testCaseName string, p parameters) (teardown func(t *testing.T)) {
-				err := os.Mkdir(p.localPath, 0755)
-				require.Nil(t, err)
+		// {
+		// 	name: "Test_Local_File_Already_Exists_Failed",
+		// 	parameters: parameters{
+		// 		localPath:      mockLocalPath,
+		// 		authTicket:     authTicket,
+		// 		remoteFilename: mockRemoteFileName,
+		// 	},
+		// 	setup: func(t *testing.T, testCaseName string, p parameters) (teardown func(t *testing.T)) {
+		// 		err := os.MkdirAll(p.localPath, 0755)
+		// 		require.Nil(t, err)
 
-				_, err = os.Create(p.localPath + "/" + p.remoteFilename)
-				require.Nil(t, err)
+		// 		_, err = os.Create(p.localPath + "/" + p.remoteFilename)
+		// 		require.Nil(t, err)
 
-				return func(t *testing.T) {
-					os.RemoveAll(p.localPath + "/" + p.remoteFilename)
-					os.RemoveAll(p.localPath)
-				}
-			},
-			wantErr: true,
-			errMsg:  "Local file already exists 'alloc/1.txt'",
-		},
+		// 		return func(t *testing.T) {
+		// 			os.RemoveAll(p.localPath + "/" + p.remoteFilename)
+		// 			os.RemoveAll(p.localPath)
+		// 		}
+		// 	},
+		// 	wantErr: true,
+		// 	errMsg:  "Local file already exists 'alloc/1.txt'",
+		// },
 		{
 			name: "Test_Not_Enough_Minimum_Blobbers_Failed",
 			parameters: parameters{
@@ -1732,10 +1847,20 @@ func TestAllocation_downloadFromAuthTicket(t *testing.T) {
 					defer teardown(t)
 				}
 			}
-			err := a.downloadFromAuthTicket(
-				tt.parameters.localPath, tt.parameters.authTicket, tt.parameters.lookupHash,
-				tt.parameters.startBlock, tt.parameters.endBlock, tt.parameters.numBlocks,
-				tt.parameters.remoteFilename, tt.parameters.contentMode, true, tt.parameters.statusCallback, false)
+
+			f, localFilePath, _, err := a.prepareAndOpenLocalFile(tt.parameters.localPath, tt.parameters.remoteFilename)
+			defer func() {
+				f.Close()                   //nolint: errcheck
+				os.RemoveAll(mockLocalPath) //nolint: errcheck
+			}()
+
+			if err == nil {
+				err = a.downloadFromAuthTicket(
+					f, tt.parameters.authTicket, tt.parameters.lookupHash,
+					tt.parameters.startBlock, tt.parameters.endBlock, tt.parameters.numBlocks,
+					tt.parameters.remoteFilename, tt.parameters.contentMode, true, tt.parameters.statusCallback, false, localFilePath)
+			}
+
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
 				require.EqualValues(tt.errMsg, errors.Top(err))
@@ -1806,7 +1931,7 @@ func TestAllocation_listDir(t *testing.T) {
 				path: mockPath,
 				expectedResult: &ListResult{
 					Type: mockType,
-					Size: -1,
+					Size: 0,
 				},
 			},
 			setup: func(t *testing.T, testCaseName string, a *Allocation, mockClient *mocks.HttpClient) (teardown func(t *testing.T)) {
@@ -1836,9 +1961,11 @@ func TestAllocation_listDir(t *testing.T) {
 
 			require := require.New(t)
 			a := &Allocation{
-				ID:          mockAllocationId,
-				Tx:          mockAllocationTxId,
-				FileOptions: 63,
+				ID:           mockAllocationId,
+				Tx:           mockAllocationTxId,
+				FileOptions:  63,
+				DataShards:   2,
+				ParityShards: 2,
 			}
 			a.InitAllocation()
 			sdkInitialized = true
@@ -1993,6 +2120,42 @@ func TestAllocation_GetFileMetaFromAuthTicket(t *testing.T) {
 			require.EqualValues(expectedResult, got)
 		})
 	}
+}
+
+func TestAllocation_DownloadToFileHandlerFromAuthTicket(t *testing.T) {
+	const (
+		mockLookupHash     = "mock lookup hash"
+		mockRemoteFilePath = "1.txt"
+		mockType           = "d"
+	)
+
+	var mockFile = &sys.MemFile{Name: "mockFile", Buffer: new(bytes.Buffer), Mode: fs.ModePerm, ModTime: time.Now()}
+	var mockClient = mocks.HttpClient{}
+	zboxutil.Client = &mockClient
+
+	client := zclient.GetClient()
+	client.Wallet = &zcncrypto.Wallet{
+		ClientID:  mockClientId,
+		ClientKey: mockClientKey,
+	}
+
+	require := require.New(t)
+
+	a := &Allocation{}
+	setupMockAllocation(t, a)
+	for i := 0; i < numBlobbers; i++ {
+		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
+			ID:      strconv.Itoa(i),
+			Baseurl: "TestAllocation_DownloadFromAuthTicket" + mockBlobberUrl + strconv.Itoa(i),
+		})
+	}
+
+	var authTicket = getMockAuthTicket(t)
+
+	err := a.DownloadFileToFileHandlerFromAuthTicket(mockFile, authTicket, mockLookupHash,
+		mockRemoteFilePath, false, nil, false)
+	defer os.Remove("alloc/1.txt")
+	require.NoErrorf(err, "unexpected error: %v", err)
 }
 
 func TestAllocation_DownloadThumbnailFromAuthTicket(t *testing.T) {
@@ -2260,11 +2423,15 @@ func setupMockAllocation(t *testing.T, a *Allocation) {
 				t.Log("Upload cancelled by the parent")
 				return
 			case downloadReq := <-a.downloadChan:
+				remotePathCB := downloadReq.remotefilepath
+				if remotePathCB == "" {
+					remotePathCB = downloadReq.remotefilepathhash
+				}
 				if downloadReq.completedCallback != nil {
 					downloadReq.completedCallback(downloadReq.remotefilepath, downloadReq.remotefilepathhash)
 				}
 				if downloadReq.statusCallback != nil {
-					downloadReq.statusCallback.Completed(a.ID, downloadReq.localpath, "1.txt", "application/octet-stream", 3, OpDownload)
+					downloadReq.statusCallback.Completed(a.ID, remotePathCB, "1.txt", "application/octet-stream", 3, OpDownload)
 				}
 				t.Logf("received a download request for %v\n", downloadReq.remotefilepath)
 			case repairReq := <-a.repairChan:

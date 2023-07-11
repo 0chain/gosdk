@@ -156,8 +156,7 @@ func (req *DeleteRequest) getObjectTreeFromBlobber(pos uint64) (
 func (req *DeleteRequest) ProcessDelete() (err error) {
 	defer req.ctxCncl()
 
-	num := req.deleteMask.CountOnes()
-	objectTreeRefs := make([]fileref.RefEntity, num)
+	objectTreeRefs := make([]fileref.RefEntity, len(req.blobbers))
 	var deleteMutex sync.Mutex
 	removedNum := 0
 	req.wg = &sync.WaitGroup{}
@@ -240,24 +239,6 @@ func (req *DeleteRequest) ProcessDelete() (err error) {
 		return fmt.Errorf("Delete failed: %s", err.Error())
 	}
 	defer writeMarkerMutex.Unlock(req.ctx, req.deleteMask, req.blobbers, time.Minute, req.connectionID) //nolint: errcheck
-	//Check if the allocation is to be repaired or rolled back
-	status, err := req.allocationObj.CheckAllocStatus()
-	if err != nil {
-		logger.Logger.Error("Error checking allocation status: ", err)
-		return fmt.Errorf("Delete failed: %s", err.Error())
-	}
-
-	if status == Repair {
-		logger.Logger.Info("Repairing allocation")
-		//TODO: Need status callback to call repair allocation
-		// err = req.allocationObj.RepairAlloc()
-		// if err != nil {
-		// 	return err
-		// }
-	}
-	if status != Commit {
-		return ErrRetryOperation
-	}
 
 	req.consensus.consensus = removedNum
 	req.timestamp = int64(common.Now())
