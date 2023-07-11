@@ -28,6 +28,8 @@ const SC_REST_API_URL = "v1/screst/"
 const MAX_RETRIES = 5
 const SLEEP_BETWEEN_RETRIES = 5
 
+const DefaultSharderToQuery = 3
+
 // In percentage
 const consensusThresh = float32(25.0)
 
@@ -793,8 +795,8 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 	wg := sync.WaitGroup{}
 
 	// request a maximum of 3 sharders
-	if numSharders > 3 {
-		sharders = util.Shuffle(sharders)[:3]
+	if numSharders > DefaultSharderToQuery {
+		sharders = util.Shuffle(sharders)[:DefaultSharderToQuery]
 	}
 
 	for _, sharder := range sharders {
@@ -834,7 +836,7 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 	wg.Wait()
 
 	var err error
-	rate := float32(maxCount*100) / float32(len(sharders))
+	rate := float32(maxCount*100) / float32(DefaultSharderToQuery)
 	if rate < consensusThresh {
 		err = errors.New("consensus_failed", "consensus failed on sharders")
 	}
