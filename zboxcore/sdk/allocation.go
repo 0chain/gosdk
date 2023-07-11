@@ -385,13 +385,28 @@ func (a *Allocation) CreateDir(remotePath string) error {
 	return err
 }
 
-func (a *Allocation) RepairFile(localpath string, remotepath string,
-	status StatusCallback, mask zboxutil.Uint128) error {
+func (a *Allocation) RepairFile(file sys.File, remotepath string,
+	status StatusCallback, mask zboxutil.Uint128, ref *fileref.FileRef) error {
 
 	idr, _ := homedir.Dir()
 	mask = mask.Not().And(zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1))
-	return a.StartChunkedUpload(idr, localpath, remotepath, status, false, true,
-		"", false, false, WithMask(mask))
+	fileMeta := FileMeta{
+		ActualSize: ref.ActualSize,
+		MimeType:   ref.MimeType,
+		RemoteName: ref.Name,
+		RemotePath: remotepath,
+	}
+	opts := []ChunkedUploadOption{
+		WithMask(mask),
+		WithChunkNumber(5),
+		WithStatusCallback(status),
+	}
+	connectionID := zboxutil.NewConnectionId()
+	chunkedUpload, err := CreateChunkedUpload(idr, a, fileMeta, file, false, true, false, connectionID, opts...)
+	if err != nil {
+		return err
+	}
+	return chunkedUpload.Start()
 }
 
 // UpdateFileWithThumbnail [Deprecated]please use CreateChunkedUpload
