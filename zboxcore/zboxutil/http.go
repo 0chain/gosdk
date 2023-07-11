@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -27,8 +28,6 @@ const SC_REST_API_URL = "v1/screst/"
 
 const MAX_RETRIES = 5
 const SLEEP_BETWEEN_RETRIES = 5
-
-const DefaultSharderToQuery = 3
 
 // In percentage
 const consensusThresh = float32(25.0)
@@ -794,9 +793,15 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 	dominant := 200
 	wg := sync.WaitGroup{}
 
+	cfg, err := conf.GetClientConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	sharderConsensous := cfg.SharderConsensous
 	// request a maximum of 3 sharders
-	if numSharders > DefaultSharderToQuery {
-		sharders = util.Shuffle(sharders)[:DefaultSharderToQuery]
+	if numSharders > sharderConsensous {
+		sharders = util.Shuffle(sharders)[:sharderConsensous]
 	}
 
 	for _, sharder := range sharders {
@@ -835,8 +840,7 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 	}
 	wg.Wait()
 
-	var err error
-	rate := float32(maxCount*100) / float32(DefaultSharderToQuery)
+	rate := float32(maxCount*100) / float32(sharderConsensous)
 	if rate < consensusThresh {
 		err = errors.New("consensus_failed", "consensus failed on sharders")
 	}
