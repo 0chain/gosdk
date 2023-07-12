@@ -323,7 +323,7 @@ func EstimateFee(txn *Transaction, miners []string, reqPercent ...float32) (uint
 					logging.Logger.Error("Object of bad type")
 					return
 				}
-				val := cachedObj.Value.(map[string]interface{})["fee"].(int)
+				val := cachedObj.Value.(map[string]interface{})["fee"].(uint64)
 				feeC <- uint64(val)
 				return
 			}

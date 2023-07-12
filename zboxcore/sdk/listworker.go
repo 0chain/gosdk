@@ -12,7 +12,6 @@ import (
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
-	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	l "github.com/0chain/gosdk/zboxcore/logger"
@@ -31,6 +30,7 @@ type ListRequest struct {
 	authToken          *marker.AuthTicket
 	ctx                context.Context
 	wg                 *sync.WaitGroup
+	forRepair          bool
 	Consensus
 }
 
@@ -47,6 +47,7 @@ type ListResult struct {
 	Type            string           `json:"type"`
 	Size            int64            `json:"size"`
 	Hash            string           `json:"hash,omitempty"`
+	FileMetaHash    string           `json:"file_meta_hash,omitempty"`
 	MimeType        string           `json:"mimetype,omitempty"`
 	NumBlocks       int64            `json:"num_blocks"`
 	LookupHash      string           `json:"lookup_hash"`
@@ -108,7 +109,7 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 			return errors.Wrap(err, "Error: Resp")
 		}
 		s.WriteString(string(resp_body))
-		l.Logger.Debug("List result:", string(resp_body))
+		l.Logger.Debug("List result from Blobber:", string(resp_body))
 		if resp.StatusCode == http.StatusOK {
 			listResult := &fileref.ListResult{}
 			err = json.Unmarshal(resp_body, listResult)
@@ -136,7 +137,7 @@ func (req *ListRequest) getlistFromBlobbers() []*listResponse {
 		go req.getListInfoFromBlobber(req.blobbers[i], i, rspCh)
 	}
 	req.wg.Wait()
-	listInfos := make([]*listResponse, len(req.blobbers))
+	listInfos := make([]*listResponse, numList)
 	for i := 0; i < numList; i++ {
 		listInfos[i] = <-rspCh
 	}
@@ -150,8 +151,8 @@ func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
 	childResultMap := make(map[string]*ListResult)
 	var err error
 	var errNum int
+	req.consensus = 0
 	for i := 0; i < len(lR); i++ {
-		req.consensus = 0
 		ti := lR[i]
 		if ti.err != nil {
 			err = ti.err
@@ -168,19 +169,20 @@ func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
 		result.CreatedAt = ti.ref.CreatedAt
 		result.UpdatedAt = ti.ref.UpdatedAt
 		result.LookupHash = ti.ref.LookupHash
-		if result.Type == fileref.DIRECTORY {
-			result.Size = -1
+		result.FileMetaHash = ti.ref.FileMetaHash
+		result.ActualSize = ti.ref.ActualSize
+		if ti.ref.ActualSize > 0 {
+			result.ActualNumBlocks = (ti.ref.ActualSize + CHUNK_SIZE - 1) / CHUNK_SIZE
 		}
+		result.Size += ti.ref.Size
+		result.NumBlocks += ti.ref.NumBlocks
 
 		if len(lR[i].ref.Children) > 0 {
 			result.populateChildren(lR[i].ref.Children, childResultMap, selected, req)
-
-			for _, child := range result.Children {
-				result.Size += child.Size
-				result.NumBlocks += child.NumBlocks
-				result.ActualSize += child.ActualSize
-				result.ActualNumBlocks += child.ActualNumBlocks
-			}
+		}
+		req.consensus++
+		if req.isConsensusOk() {
+			break
 		}
 	}
 
@@ -195,10 +197,7 @@ func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
 func (lr *ListResult) populateChildren(children []fileref.RefEntity, childResultMap map[string]*ListResult, selected map[string]*ListResult, req *ListRequest) {
 
 	for _, child := range children {
-		actualHash := encryption.Hash(child.GetLookupHash())
-		if child.GetType() == fileref.FILE {
-			actualHash = encryption.Hash(child.GetLookupHash() + ":" + (child.(*fileref.FileRef)).ActualFileHash)
-		}
+		actualHash := child.GetFileMetaHash()
 
 		var childResult *ListResult
 		if _, ok := childResultMap[actualHash]; !ok {
@@ -225,13 +224,22 @@ func (lr *ListResult) populateChildren(children []fileref.RefEntity, childResult
 			childResult.MimeType = (child.(*fileref.FileRef)).MimeType
 			childResult.EncryptionKey = (child.(*fileref.FileRef)).EncryptedKey
 			childResult.ActualSize = (child.(*fileref.FileRef)).ActualFileSize
-			if childResult.ActualSize > 0 {
-				childResult.ActualNumBlocks = childResult.ActualSize / CHUNK_SIZE
-			}
+		} else {
+			childResult.ActualSize = (child.(*fileref.Ref)).ActualSize
+		}
+		if childResult.ActualSize > 0 {
+			childResult.ActualNumBlocks = (childResult.ActualSize + CHUNK_SIZE - 1) / CHUNK_SIZE
 		}
 		childResult.Size += child.GetSize()
 		childResult.NumBlocks += child.GetNumBlocks()
-		if childResult.isConsensusOk() {
+		childResult.FileMetaHash = child.GetFileMetaHash()
+		if childResult.isConsensusOk() && !req.forRepair {
+			if _, ok := selected[child.GetLookupHash()]; !ok {
+				lr.Children = append(lr.Children, childResult)
+				selected[child.GetLookupHash()] = childResult
+			}
+		}
+		if req.forRepair {
 			if _, ok := selected[child.GetLookupHash()]; !ok {
 				lr.Children = append(lr.Children, childResult)
 				selected[child.GetLookupHash()] = childResult

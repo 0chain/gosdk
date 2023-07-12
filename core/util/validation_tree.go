@@ -189,7 +189,6 @@ There can be at most 2 hashes in the input for each depth i.e. of the format bel
 h1, data1, data2, data3, data4, h2
 Note that data1, data2, data3,... should be continuous data
 
-
 i#3                h14
 i#2       h12             h13
 i#1    h7      h8      h9    h10
@@ -255,6 +254,10 @@ func (m *MerklePathForMultiLeafVerification) VerifyMultipleBlocks(data []byte) e
 
 		hashes = m.calculateIntermediateHashes(hashes)
 
+	}
+
+	if len(hashes) == 0 {
+		return fmt.Errorf("no hashes to verify, data is empty")
 	}
 
 	if !bytes.Equal(m.RootHash, hashes[0]) {

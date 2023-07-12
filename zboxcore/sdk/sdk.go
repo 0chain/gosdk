@@ -98,7 +98,6 @@ func InitStorageSDK(walletJSON string,
 	}
 
 	blockchain.SetChainID(chainID)
-	blockchain.SetPreferredBlobbers(preferredBlobbers)
 	blockchain.SetBlockWorker(blockWorker)
 
 	err = UpdateNetworkDetails()
@@ -926,35 +925,10 @@ type CreateAllocationOptions struct {
 func CreateAllocationWith(options CreateAllocationOptions) (
 	string, int64, *transaction.Transaction, error) {
 
-	if len(options.BlobberIds) > 0 {
-		return CreateAllocationForOwner(client.GetClientID(),
-			client.GetClientPublicKey(), options.DataShards, options.ParityShards,
-			options.Size, options.Expiry, options.ReadPrice, options.WritePrice, options.Lock,
-			options.BlobberIds, options.ThirdPartyExtendable, options.FileOptionsParams)
-	}
-
-	return CreateAllocation(options.DataShards, options.ParityShards,
-		options.Size, options.Expiry, options.ReadPrice, options.WritePrice, options.Lock,
-		options.ThirdPartyExtendable, options.FileOptionsParams)
-
-}
-
-func CreateAllocation(datashards, parityshards int, size, expiry int64,
-	readPrice, writePrice PriceRange, lock uint64, thirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters) (
-	string, int64, *transaction.Transaction, error) {
-
-	if lock > math.MaxInt64 {
-		return "", 0, nil, errors.New("invalid_lock", "int64 overflow on lock value")
-	}
-
-	preferredBlobberIds, err := GetBlobberIds(blockchain.GetPreferredBlobbers())
-	if err != nil {
-		return "", 0, nil, errors.New("failed_get_blobber_ids", "failed to get preferred blobber ids: "+err.Error())
-	}
 	return CreateAllocationForOwner(client.GetClientID(),
-		client.GetClientPublicKey(), datashards, parityshards,
-		size, expiry, readPrice, writePrice, lock,
-		preferredBlobberIds, thirdPartyExtendable, fileOptionsParams)
+		client.GetClientPublicKey(), options.DataShards, options.ParityShards,
+		options.Size, options.Expiry, options.ReadPrice, options.WritePrice, options.Lock,
+		options.BlobberIds, options.ThirdPartyExtendable, options.FileOptionsParams)
 }
 
 func CreateAllocationForOwner(
