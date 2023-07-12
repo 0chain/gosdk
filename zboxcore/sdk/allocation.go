@@ -267,7 +267,6 @@ func (a *Allocation) GetBlobberStats() map[string]*BlobberAllocationStats {
 }
 
 const downloadWorkerCount = 10
-const processDownloadWorkerCount = 20
 
 func (a *Allocation) InitAllocation() {
 	a.downloadChan = make(chan *DownloadRequest, 100)
@@ -1046,6 +1045,10 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 	blobberMap := make(map[uint64]int64)
 	mpLock := sync.Mutex{}
 	wg := sync.WaitGroup{}
+	var isReadFree bool
+	if a.ReadPriceRange.Max == 0 && a.ReadPriceRange.Min == 0 {
+		isReadFree = true
+	}
 
 	for _, dr := range drs {
 		wg.Add(1)
@@ -1066,23 +1069,25 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 	wg.Wait()
 	successMask := zboxutil.NewUint128(0)
 	var redeemError error
-	for pos, totalBlocks := range blobberMap {
-		if totalBlocks == 0 {
-			continue
-		}
-		wg.Add(1)
-		go func(pos uint64, totalBlocks int64) {
-			blobber := drs[0].blobbers[pos]
-			err := drs[0].submitReadMarker(blobber, totalBlocks)
-			if err == nil {
-				successMask = successMask.Or(zboxutil.NewUint128(1).Lsh(pos))
-			} else {
-				redeemError = err
+	if !isReadFree {
+		for pos, totalBlocks := range blobberMap {
+			if totalBlocks == 0 {
+				continue
 			}
-			wg.Done()
-		}(pos, totalBlocks)
+			wg.Add(1)
+			go func(pos uint64, totalBlocks int64) {
+				blobber := drs[0].blobbers[pos]
+				err := drs[0].submitReadMarker(blobber, totalBlocks)
+				if err == nil {
+					successMask = successMask.Or(zboxutil.NewUint128(1).Lsh(pos))
+				} else {
+					redeemError = err
+				}
+				wg.Done()
+			}(pos, totalBlocks)
+		}
+		wg.Wait()
 	}
-	wg.Wait()
 	for _, dr := range drs {
 		if dr.skip {
 			continue
