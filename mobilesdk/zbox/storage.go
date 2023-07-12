@@ -374,7 +374,7 @@ func MultiUpdate(allocationID string, workdir string, jsonMultiUploadOptions str
 		thumbnailPaths[idx] = option.ThumbnailPath
 		remotePaths[idx] = option.RemotePath
 		chunkNumbers[idx] = option.ChunkNumber
-
+		encrypts[idx] = option.Encrypt
 	}
 	if err != nil {
 		return err

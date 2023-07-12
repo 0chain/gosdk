@@ -780,7 +780,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 		// resetting multi operation and previous paths for every batch
 		var mo MultiOperation
 		mo.allocationObj = a
-		mo.operationMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
+		mo.operationMask = zboxutil.NewUint128(0)
 		mo.maskMU = &sync.Mutex{}
 		mo.ctx, mo.ctxCncl = context.WithCancel(a.ctx)
 		mo.Consensus = Consensus{
@@ -791,6 +791,25 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 		mo.connectionID = zboxutil.NewConnectionId()
 
 		previousPaths := make(map[string]bool)
+
+		var wg sync.WaitGroup
+		for blobberIdx := range mo.allocationObj.Blobbers {
+			wg.Add(1)
+			go func(pos int) {
+				defer wg.Done()
+				err := mo.createConnectionObj(pos)
+				if err != nil {
+					l.Logger.Error(err.Error())
+				}
+			}(blobberIdx)
+		}
+		wg.Wait()
+		// Check consensus
+		if mo.operationMask.CountOnes() < mo.consensusThresh {
+			return errors.New("consensus_not_met",
+				fmt.Sprintf("Multioperation failed. Required consensus %d got %d",
+					mo.consensusThresh, mo.operationMask.CountOnes()))
+		}
 
 		for ; i < len(operations); i++ {
 			op := operations[i]
@@ -814,12 +833,14 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 				operation = NewMoveOperation(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 
 			case constants.FileOperationInsert:
+				op.Opts = append(op.Opts, WithReaderContext(mo.ctx))
 				operation = NewUploadOperation(op.Workdir, op.FileMeta, op.FileReader, false, op.Opts...)
 
 			case constants.FileOperationDelete:
 				operation = NewDeleteOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 
 			case constants.FileOperationUpdate:
+				op.Opts = append(op.Opts, WithReaderContext(mo.ctx))
 				operation = NewUploadOperation(op.Workdir, op.FileMeta, op.FileReader, true, op.Opts...)
 
 			case constants.FileOperationCreateDir:

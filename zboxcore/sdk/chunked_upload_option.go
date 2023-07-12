@@ -1,6 +1,7 @@
 package sdk
 
 import (
+	"context"
 	"encoding/hex"
 	"math"
 	"os"
@@ -89,5 +90,13 @@ func WithCommitTimeout(t time.Duration) ChunkedUploadOption {
 func WithMask(mask zboxutil.Uint128) ChunkedUploadOption {
 	return func(su *ChunkedUpload) {
 		su.uploadMask = mask
+	}
+}
+
+func WithReaderContext(cancel context.Context) ChunkedUploadOption {
+	return func(su *ChunkedUpload) {
+		if cancel != nil {
+			su.readerCtx = cancel
+		}
 	}
 }

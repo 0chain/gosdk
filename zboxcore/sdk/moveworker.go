@@ -309,7 +309,7 @@ func (mo *MoveOperation) Process(allocObj *Allocation, connectionID string) ([]f
 		moveMask:       mo.moveMask,
 		maskMU:         mo.maskMU,
 		destPath:       mo.destPath,
-		Consensus: Consensus{RWMutex: &sync.RWMutex{}},
+		Consensus:      Consensus{RWMutex: &sync.RWMutex{}},
 	}
 	mR.Consensus.fullconsensus = mo.consensus.fullconsensus
 	mR.Consensus.consensusThresh = mo.consensus.consensusThresh
@@ -333,6 +333,11 @@ func (mo *MoveOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) []
 
 	changes := make([]allocationchange.AllocationChange, len(refs))
 	for idx, ref := range refs {
+		if ref == nil {
+			change := &allocationchange.EmptyFileChange{}
+			changes[idx] = change
+			continue
+		}
 		moveChange := &allocationchange.MoveFileChange{
 			DestPath:   mo.destPath,
 			ObjectTree: ref,

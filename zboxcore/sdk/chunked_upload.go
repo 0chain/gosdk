@@ -26,6 +26,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/encryption"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
+	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/google/uuid"
 	"github.com/klauspost/reedsolomon"
@@ -205,7 +206,11 @@ func CreateChunkedUpload(
 		chunkReadSize := allocationObj.GetChunkReadSize(su.encryptOnUpload)
 		dataChan := make(chan *DataChan, 2)
 		streamReader = NewStreamReader(dataChan)
-		go StartWriteWorker(context.TODO(), fileReader, dataChan, chunkReadSize)
+		readCtx := su.ctx
+		if su.readerCtx != nil {
+			readCtx = su.readerCtx
+		}
+		go StartWriteWorker(readCtx, fileReader, dataChan, chunkReadSize)
 	}
 
 	if su.progressStorer == nil {
@@ -347,6 +352,7 @@ type ChunkedUpload struct {
 	maskMu        *sync.Mutex
 	ctx           context.Context
 	ctxCncl       context.CancelFunc
+	readerCtx     context.Context
 	useFileReader bool
 }
 
@@ -463,6 +469,7 @@ func (su *ChunkedUpload) process() error {
 			if su.fileMeta.ActualSize == 0 {
 				su.fileMeta.ActualSize = su.progress.UploadLength
 			}
+			l.Logger.Info("File hash: ", su.fileMeta.ActualHash, " size: ", su.fileMeta.ActualSize)
 		}
 
 		//chunk has not be uploaded yet
