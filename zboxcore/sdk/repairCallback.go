@@ -21,6 +21,7 @@ func (s *StatusBar) InProgress(allocationId, filePath string, op int, completedB
 func (s *StatusBar) Completed(allocationId, filePath string, filename string, mimetype string, size int, op int) {
 	s.success = true
 	l.Logger.Info("Repair for file completed. File = ", filePath)
+	l.Logger.Info("Repair for file completed. File = ", filePath)
 }
 
 func (s *StatusBar) Error(allocationID string, filePath string, op int, err error) {
