@@ -110,6 +110,7 @@ type ChainConfig struct {
 	MinConfirmation         int      `json:"min_confirmation"`
 	ConfirmationChainLength int      `json:"confirmation_chain_length"`
 	EthNode                 string   `json:"eth_node"`
+	SharderConsensous       int      `json:"sharder_consensous"`
 }
 
 // InitZCNSDK initializes the SDK with miner, sharder and signature scheme provided.
@@ -146,6 +147,7 @@ func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainCon
 		SignatureScheme:         _config.chain.SignatureScheme,
 		ChainID:                 _config.chain.ChainID,
 		EthereumNode:            _config.chain.EthNode,
+		SharderConsensous:       _config.chain.SharderConsensous,
 	}
 
 	conf.InitClientConfig(cfg)
