@@ -142,7 +142,7 @@ func InitStorageSDK(clientJson string, configJson string) (*StorageSDK, error) {
 //   - size: size of space reserved on blobbers
 //   - expiration: duration to allocation expiration
 //   - lock: lock write pool with given number of tokens
-func (s *StorageSDK) CreateAllocation(datashards, parityshards int, size, lock string) (*zbox.Allocation, error) {
+func (s *StorageSDK) CreateAllocation(datashards, parityshards int, size int64, lock string) (*zbox.Allocation, error) {
 	readPrice := sdk.PriceRange{Min: 0, Max: math.MaxInt64}
 	writePrice := sdk.PriceRange{Min: 0, Max: math.MaxInt64}
 
