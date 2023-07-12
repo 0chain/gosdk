@@ -691,6 +691,7 @@ func TestAllocation_RepairFile(t *testing.T) {
 						Ref: fileref.Ref{
 							Name:         fileRefName,
 							FileMetaHash: hash,
+							ActualSize:   14,
 						},
 					})
 					require.NoError(t, err)
@@ -859,6 +860,10 @@ func TestAllocation_RepairFile(t *testing.T) {
 			}
 			f, err := os.Open(tt.parameters.localPath)
 			require.Nil(err)
+			sz, err := f.Stat()
+			require.Nil(err)
+			require.NotNil(sz)
+			ref.ActualSize = sz.Size()
 			err = a.RepairFile(f, tt.parameters.remotePath, tt.parameters.status, found, ref)
 			if tt.wantErr {
 				require.NotNil(err)

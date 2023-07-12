@@ -454,9 +454,9 @@ func (su *ChunkedUpload) process() error {
 				su.fileMeta.ActualSize = su.progress.UploadLength
 			} else if su.fileMeta.ActualSize != su.progress.UploadLength {
 				if su.statusCallback != nil {
-					su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, thrown.New("upload_failed", "Upload failed. Uploaded size does not match with actual size"))
+					su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, thrown.New("upload_failed", "Upload failed. Uploaded size does not match with actual size: "+fmt.Sprintf("%d != %d", su.fileMeta.ActualSize, su.progress.UploadLength)))
 				}
-				return thrown.New("upload_failed", "Upload failed. Uploaded size does not match with actual size")
+				return thrown.New("upload_failed", "Upload failed. Uploaded size does not match with actual size: "+fmt.Sprintf("%d != %d", su.fileMeta.ActualSize, su.progress.UploadLength))
 			}
 		}
 

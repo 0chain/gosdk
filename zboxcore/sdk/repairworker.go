@@ -154,7 +154,7 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
 					err = a.RepairFile(memFile, file.Path, uploadStatusCB, found, ref)
 					if err != nil {
 						l.Logger.Error("repair_file_failed", zap.Error(err))
-						a.CancelDownload(file.Path)
+						_ = a.CancelDownload(file.Path)
 					}
 				}(memFile)
 				wg.Wait()
