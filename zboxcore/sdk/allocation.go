@@ -267,7 +267,6 @@ func (a *Allocation) GetBlobberStats() map[string]*BlobberAllocationStats {
 }
 
 const downloadWorkerCount = 10
-const processDownloadWorkerCount = 20
 
 func (a *Allocation) InitAllocation() {
 	a.downloadChan = make(chan *DownloadRequest, 100)
@@ -386,13 +385,28 @@ func (a *Allocation) CreateDir(remotePath string) error {
 	return err
 }
 
-func (a *Allocation) RepairFile(localpath string, remotepath string,
-	status StatusCallback, mask zboxutil.Uint128) error {
+func (a *Allocation) RepairFile(file sys.File, remotepath string,
+	status StatusCallback, mask zboxutil.Uint128, ref *fileref.FileRef) error {
 
 	idr, _ := homedir.Dir()
 	mask = mask.Not().And(zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1))
-	return a.StartChunkedUpload(idr, localpath, remotepath, status, false, true,
-		"", false, false, WithMask(mask))
+	fileMeta := FileMeta{
+		ActualSize: ref.ActualSize,
+		MimeType:   ref.MimeType,
+		RemoteName: ref.Name,
+		RemotePath: remotepath,
+	}
+	opts := []ChunkedUploadOption{
+		WithMask(mask),
+		WithChunkNumber(5),
+		WithStatusCallback(status),
+	}
+	connectionID := zboxutil.NewConnectionId()
+	chunkedUpload, err := CreateChunkedUpload(idr, a, fileMeta, file, false, true, false, connectionID, opts...)
+	if err != nil {
+		return err
+	}
+	return chunkedUpload.Start()
 }
 
 // UpdateFileWithThumbnail [Deprecated]please use CreateChunkedUpload
@@ -781,7 +795,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 		// resetting multi operation and previous paths for every batch
 		var mo MultiOperation
 		mo.allocationObj = a
-		mo.operationMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
+		mo.operationMask = zboxutil.NewUint128(0)
 		mo.maskMU = &sync.Mutex{}
 		mo.ctx, mo.ctxCncl = context.WithCancel(a.ctx)
 		mo.Consensus = Consensus{
@@ -792,6 +806,25 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 		mo.connectionID = zboxutil.NewConnectionId()
 
 		previousPaths := make(map[string]bool)
+
+		var wg sync.WaitGroup
+		for blobberIdx := range mo.allocationObj.Blobbers {
+			wg.Add(1)
+			go func(pos int) {
+				defer wg.Done()
+				err := mo.createConnectionObj(pos)
+				if err != nil {
+					l.Logger.Error(err.Error())
+				}
+			}(blobberIdx)
+		}
+		wg.Wait()
+		// Check consensus
+		if mo.operationMask.CountOnes() < mo.consensusThresh {
+			return errors.New("consensus_not_met",
+				fmt.Sprintf("Multioperation failed. Required consensus %d got %d",
+					mo.consensusThresh, mo.operationMask.CountOnes()))
+		}
 
 		for ; i < len(operations); i++ {
 			op := operations[i]
@@ -1046,6 +1079,10 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 	blobberMap := make(map[uint64]int64)
 	mpLock := sync.Mutex{}
 	wg := sync.WaitGroup{}
+	var isReadFree bool
+	if a.ReadPriceRange.Max == 0 && a.ReadPriceRange.Min == 0 {
+		isReadFree = true
+	}
 
 	for _, dr := range drs {
 		wg.Add(1)
@@ -1066,23 +1103,25 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 	wg.Wait()
 	successMask := zboxutil.NewUint128(0)
 	var redeemError error
-	for pos, totalBlocks := range blobberMap {
-		if totalBlocks == 0 {
-			continue
-		}
-		wg.Add(1)
-		go func(pos uint64, totalBlocks int64) {
-			blobber := drs[0].blobbers[pos]
-			err := drs[0].submitReadMarker(blobber, totalBlocks)
-			if err == nil {
-				successMask = successMask.Or(zboxutil.NewUint128(1).Lsh(pos))
-			} else {
-				redeemError = err
+	if !isReadFree {
+		for pos, totalBlocks := range blobberMap {
+			if totalBlocks == 0 {
+				continue
 			}
-			wg.Done()
-		}(pos, totalBlocks)
+			wg.Add(1)
+			go func(pos uint64, totalBlocks int64) {
+				blobber := drs[0].blobbers[pos]
+				err := drs[0].submitReadMarker(blobber, totalBlocks)
+				if err == nil {
+					successMask = successMask.Or(zboxutil.NewUint128(1).Lsh(pos))
+				} else {
+					redeemError = err
+				}
+				wg.Done()
+			}(pos, totalBlocks)
+		}
+		wg.Wait()
 	}
-	wg.Wait()
 	for _, dr := range drs {
 		if dr.skip {
 			continue
