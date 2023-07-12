@@ -913,7 +913,6 @@ type CreateAllocationOptions struct {
 	DataShards           int
 	ParityShards         int
 	Size                 int64
-	Expiry               int64
 	ReadPrice            PriceRange
 	WritePrice           PriceRange
 	Lock                 uint64
@@ -927,13 +926,13 @@ func CreateAllocationWith(options CreateAllocationOptions) (
 
 	return CreateAllocationForOwner(client.GetClientID(),
 		client.GetClientPublicKey(), options.DataShards, options.ParityShards,
-		options.Size, options.Expiry, options.ReadPrice, options.WritePrice, options.Lock,
+		options.Size, options.ReadPrice, options.WritePrice, options.Lock,
 		options.BlobberIds, options.ThirdPartyExtendable, options.FileOptionsParams)
 }
 
 func CreateAllocationForOwner(
 	owner, ownerpublickey string,
-	datashards, parityshards int, size, expiry int64,
+	datashards, parityshards int, size int64,
 	readPrice, writePrice PriceRange,
 	lock uint64, preferredBlobberIds []string, thirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
 ) (hash string, nonce int64, txn *transaction.Transaction, err error) {
@@ -943,7 +942,7 @@ func CreateAllocationForOwner(
 	}
 
 	allocationRequest, err := getNewAllocationBlobbers(
-		datashards, parityshards, size, expiry, readPrice, writePrice, preferredBlobberIds)
+		datashards, parityshards, size, readPrice, writePrice, preferredBlobberIds)
 	if err != nil {
 		return "", 0, nil, errors.New("failed_get_allocation_blobbers", "failed to get blobbers for allocation: "+err.Error())
 	}
@@ -967,14 +966,13 @@ func CreateAllocationForOwner(
 
 func GetAllocationBlobbers(
 	datashards, parityshards int,
-	size, expiry int64,
+	size int64,
 	readPrice, writePrice PriceRange,
 ) ([]string, error) {
 	var allocationRequest = map[string]interface{}{
 		"data_shards":       datashards,
 		"parity_shards":     parityshards,
 		"size":              size,
-		"expiration_date":   expiry,
 		"read_price_range":  readPrice,
 		"write_price_range": writePrice,
 	}
@@ -1000,12 +998,12 @@ func GetAllocationBlobbers(
 
 func getNewAllocationBlobbers(
 	datashards, parityshards int,
-	size, expiry int64,
+	size int64,
 	readPrice, writePrice PriceRange,
 	preferredBlobberIds []string,
 ) (map[string]interface{}, error) {
 	allocBlobberIDs, err := GetAllocationBlobbers(
-		datashards, parityshards, size, expiry, readPrice, writePrice,
+		datashards, parityshards, size, readPrice, writePrice,
 	)
 	if err != nil {
 		return nil, err
@@ -1027,7 +1025,6 @@ func getNewAllocationBlobbers(
 		"data_shards":       datashards,
 		"parity_shards":     parityshards,
 		"size":              size,
-		"expiration_date":   expiry,
 		"blobbers":          uniqueBlobbers,
 		"read_price_range":  readPrice,
 		"write_price_range": writePrice,

@@ -142,7 +142,7 @@ func InitStorageSDK(clientJson string, configJson string) (*StorageSDK, error) {
 //   - size: size of space reserved on blobbers
 //   - expiration: duration to allocation expiration
 //   - lock: lock write pool with given number of tokens
-func (s *StorageSDK) CreateAllocation(datashards, parityshards int, size, expiration int64, lock string) (*zbox.Allocation, error) {
+func (s *StorageSDK) CreateAllocation(datashards, parityshards int, size, lock string) (*zbox.Allocation, error) {
 	readPrice := sdk.PriceRange{Min: 0, Max: math.MaxInt64}
 	writePrice := sdk.PriceRange{Min: 0, Max: math.MaxInt64}
 
@@ -155,11 +155,10 @@ func (s *StorageSDK) CreateAllocation(datashards, parityshards int, size, expira
 		DataShards:   datashards,
 		ParityShards: parityshards,
 		Size:         size,
-		Expiry:       expiration,
-		ReadPrice: readPrice,
-		WritePrice: writePrice,
-		Lock:       uint64(l),
-		BlobberIds: []string{},
+		ReadPrice:    readPrice,
+		WritePrice:   writePrice,
+		Lock:         uint64(l),
+		BlobberIds:   []string{},
 	}
 
 	sdkAllocationID, _, _, err := sdk.CreateAllocationWith(options)
@@ -184,7 +183,7 @@ func (s *StorageSDK) CreateAllocation(datashards, parityshards int, size, expira
 //		- lock: lock write pool with given number of tokens
 //		- blobberUrls: concat blobber urls with comma. leave it as empty if you don't have any preferred blobbers
 //		- blobberIds: concat blobber ids with comma. leave it as empty if you don't have any preferred blobbers
-func (s *StorageSDK) CreateAllocationWithBlobbers(name string, datashards, parityshards int, size, expiration int64, lock string, blobberUrls, blobberIds string) (*zbox.Allocation, error) {
+func (s *StorageSDK) CreateAllocationWithBlobbers(name string, datashards, parityshards int, size, lock string, blobberUrls, blobberIds string) (*zbox.Allocation, error) {
 	readPrice := sdk.PriceRange{Min: 0, Max: math.MaxInt64}
 	writePrice := sdk.PriceRange{Min: 0, Max: math.MaxInt64}
 
@@ -197,7 +196,6 @@ func (s *StorageSDK) CreateAllocationWithBlobbers(name string, datashards, parit
 		DataShards:   datashards,
 		ParityShards: parityshards,
 		Size:         size,
-		Expiry:       expiration,
 		Lock:         l,
 		WritePrice:   writePrice,
 		ReadPrice:    readPrice,

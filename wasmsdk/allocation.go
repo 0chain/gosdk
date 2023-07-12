@@ -35,14 +35,14 @@ func getBlobberIds(blobberUrls []string) ([]string, error) {
 }
 
 func getAllocationBlobbers(preferredBlobberURLs []string,
-	dataShards, parityShards int, size, expiry int64,
+	dataShards, parityShards int, size int64,
 	minReadPrice, maxReadPrice, minWritePrice, maxWritePrice int64) ([]string, error) {
 
 	if len(preferredBlobberURLs) > 0 {
 		return sdk.GetBlobberIds(preferredBlobberURLs)
 	}
 
-	return sdk.GetAllocationBlobbers(dataShards, parityShards, size, expiry, sdk.PriceRange{
+	return sdk.GetAllocationBlobbers(dataShards, parityShards, size, sdk.PriceRange{
 		Min: uint64(minReadPrice),
 		Max: uint64(maxReadPrice),
 	}, sdk.PriceRange{
@@ -51,7 +51,7 @@ func getAllocationBlobbers(preferredBlobberURLs []string,
 	})
 }
 
-func createAllocation(datashards, parityshards int, size, expiry int64,
+func createAllocation(datashards, parityshards int, size,
 	minReadPrice, maxReadPrice, minWritePrice, maxWritePrice int64, lock int64, blobberIds []string) (
 	*transaction.Transaction, error) {
 
@@ -59,7 +59,6 @@ func createAllocation(datashards, parityshards int, size, expiry int64,
 		DataShards:   datashards,
 		ParityShards: parityshards,
 		Size:         size,
-		Expiry:       expiry,
 		ReadPrice: sdk.PriceRange{
 			Min: uint64(minReadPrice),
 			Max: uint64(maxReadPrice),
