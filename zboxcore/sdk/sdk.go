@@ -1128,6 +1128,7 @@ func CreateFreeAllocation(marker string, value uint64) (string, int64, error) {
 
 func UpdateAllocation(
 	size int64,
+	extend bool,
 	allocationID string,
 	lock uint64,
 	updateTerms bool,
@@ -1153,6 +1154,7 @@ func UpdateAllocation(
 	updateAllocationRequest["owner_public_key"] = ""
 	updateAllocationRequest["id"] = allocationID
 	updateAllocationRequest["size"] = size
+	updateAllocationRequest["extend"] = extend
 	updateAllocationRequest["update_terms"] = updateTerms
 	updateAllocationRequest["add_blobber_id"] = addBlobberId
 	updateAllocationRequest["remove_blobber_id"] = removeBlobberId

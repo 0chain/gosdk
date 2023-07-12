@@ -334,12 +334,12 @@ func (s *StorageSDK) GetVersion() string {
 }
 
 // UpdateAllocation with new expiry and size
-func (s *StorageSDK) UpdateAllocation(size, expiry int64, allocationID string, lock uint64) (hash string, err error) {
+func (s *StorageSDK) UpdateAllocation(size int64, extend bool, allocationID string, lock uint64) (hash string, err error) {
 	if lock > math.MaxInt64 {
 		return "", errors.Errorf("int64 overflow in lock")
 	}
 
-	hash, _, err = sdk.UpdateAllocation(size, allocationID, lock, true, "", "", false, &sdk.FileOptionsParameters{})
+	hash, _, err = sdk.UpdateAllocation(size, extend, allocationID, lock, true, "", "", false, &sdk.FileOptionsParameters{})
 	return hash, err
 }
 

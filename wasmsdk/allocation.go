@@ -108,6 +108,7 @@ func UpdateForbidAllocation(allocationID string, forbidupload, forbiddelete, for
 
 	hash, _, err := sdk.UpdateAllocation(
 		0,            //size,
+		false,        //extend,
 		allocationID, // allocID,
 		0,            //lock,
 		false,        //updateTerms,
@@ -132,6 +133,7 @@ func freezeAllocation(allocationID string) (string, error) {
 
 	hash, _, err := sdk.UpdateAllocation(
 		0,            //size,
+		false,        //extend,
 		allocationID, // allocID,
 		0,            //lock,
 		false,        //updateTerms,
@@ -168,6 +170,7 @@ func cancelAllocation(allocationID string) (string, error) {
 
 func updateAllocationWithRepair(allocationID string,
 	size int64,
+	extend bool,
 	lock int64,
 	updateTerms bool,
 	addBlobberId, removeBlobberId string) (string, error) {
@@ -180,7 +183,7 @@ func updateAllocationWithRepair(allocationID string,
 	wg := &sync.WaitGroup{}
 	statusBar := &StatusBar{wg: wg}
 
-	hash, err := allocationObj.UpdateWithRepair(size, uint64(lock), updateTerms, addBlobberId, removeBlobberId, false, &sdk.FileOptionsParameters{}, statusBar)
+	hash, err := allocationObj.UpdateWithRepair(size, extend, uint64(lock), updateTerms, addBlobberId, removeBlobberId, false, &sdk.FileOptionsParameters{}, statusBar)
 	if err == nil {
 		clearAllocation(allocationID)
 	}
@@ -193,7 +196,7 @@ func updateAllocation(allocationID string,
 	lock int64,
 	updateTerms bool,
 	addBlobberId, removeBlobberId string) (string, error) {
-	hash, _, err := sdk.UpdateAllocation(size, allocationID, uint64(lock), updateTerms, addBlobberId, removeBlobberId, false, &sdk.FileOptionsParameters{})
+	hash, _, err := sdk.UpdateAllocation(size, extend, allocationID, uint64(lock), updateTerms, addBlobberId, removeBlobberId, false, &sdk.FileOptionsParameters{})
 
 	if err == nil {
 		clearAllocation(allocationID)

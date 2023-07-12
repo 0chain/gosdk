@@ -235,7 +235,7 @@ updates allocation settings
 
 **Input**:
 
-> allocationId string, name string,size int64,lock int64,setImmutable, updateTerms bool,addBlobberId, removeBlobberId string
+> allocationId string, name string,size int64, extend bool,lock int64,setImmutable, updateTerms bool,addBlobberId, removeBlobberId string
 
 **Output**:
 

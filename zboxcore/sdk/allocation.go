@@ -2412,6 +2412,7 @@ func (a *Allocation) SetConsensusThreshold() {
 
 func (a *Allocation) UpdateWithRepair(
 	size int64,
+	extend bool,
 	lock uint64,
 	updateTerms bool,
 	addBlobberId, removeBlobberId string,
@@ -2423,7 +2424,7 @@ func (a *Allocation) UpdateWithRepair(
 	}
 
 	l.Logger.Info("Updating allocation")
-	hash, _, err := UpdateAllocation(size, a.ID, lock, updateTerms, addBlobberId, removeBlobberId, setThirdPartyExtendable, fileOptionsParams)
+	hash, _, err := UpdateAllocation(size, extend, a.ID, lock, updateTerms, addBlobberId, removeBlobberId, setThirdPartyExtendable, fileOptionsParams)
 	if err != nil {
 		return "", err
 	}
