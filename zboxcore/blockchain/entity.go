@@ -27,6 +27,15 @@ type StakePoolSettings struct {
 	ServiceCharge  float64        `json:"service_charge"`
 }
 
+// UpdateStakePoolSettings information.
+type UpdateStakePoolSettings struct {
+	DelegateWallet *string         `json:"delegate_wallet,omitempty"`
+	MinStake       *common.Balance `json:"min_stake,omitempty"`
+	MaxStake       *common.Balance `json:"max_stake,omitempty"`
+	NumDelegates   *int            `json:"num_delegates,omitempty"`
+	ServiceCharge  *float64        `json:"service_charge,omitempty"`
+}
+
 type ValidationNode struct {
 	ID                string            `json:"id"`
 	BaseURL           string            `json:"url"`

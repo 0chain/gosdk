@@ -582,6 +582,27 @@ type Blobber struct {
 	NotAvailable             bool                         `json:"not_available"`
 }
 
+// UpdateBlobber is used during update blobber settings calls.
+// Note the types are of pointer types with omitempty json property.
+// This is done to correctly identify which properties are actually changing.
+type UpdateBlobber struct {
+	ID                       common.Key                          `json:"id"`
+	BaseURL                  *string                             `json:"url,omitempty"`
+	Terms                    *UpdateTerms                        `json:"terms,omitempty"`
+	Capacity                 *common.Size                        `json:"capacity,omitempty"`
+	Allocated                *common.Size                        `json:"allocated,omitempty"`
+	LastHealthCheck          *common.Timestamp                   `json:"last_health_check,omitempty"`
+	StakePoolSettings        *blockchain.UpdateStakePoolSettings `json:"stake_pool_settings,omitempty"`
+	TotalStake               *int64                              `json:"total_stake,omitempty"`
+	UsedAllocation           *int64                              `json:"used_allocation,omitempty"`
+	TotalOffers              *int64                              `json:"total_offers,omitempty"`
+	TotalServiceCharge       *int64                              `json:"total_service_charge,omitempty"`
+	UncollectedServiceCharge *int64                              `json:"uncollected_service_charge,omitempty"`
+	IsKilled                 *bool                               `json:"is_killed,omitempty"`
+	IsShutdown               *bool                               `json:"is_shutdown,omitempty"`
+	NotAvailable             *bool                               `json:"not_available,omitempty"`
+}
+
 type Validator struct {
 	ID                       common.Key       `json:"validator_id"`
 	BaseURL                  string           `json:"url"`
@@ -597,6 +618,22 @@ type Validator struct {
 	LastHealthCheck          common.Timestamp `json:"last_health_check"`
 	IsKilled                 bool             `json:"is_killed"`
 	IsShutdown               bool             `json:"is_shutdown"`
+}
+
+type UpdateValidator struct {
+	ID                       common.Key        `json:"validator_id"`
+	BaseURL                  *string           `json:"url,omitempty"`
+	DelegateWallet           *string           `json:"delegate_wallet,omitempty"`
+	MinStake                 *common.Balance   `json:"min_stake,omitempty"`
+	MaxStake                 *common.Balance   `json:"max_stake,omitempty"`
+	NumDelegates             *int              `json:"num_delegates,omitempty"`
+	ServiceCharge            *float64          `json:"service_charge,omitempty"`
+	StakeTotal               *int64            `json:"stake_total,omitempty"`
+	TotalServiceCharge       *int64            `json:"total_service_charge,omitempty"`
+	UncollectedServiceCharge *int64            `json:"uncollected_service_charge,omitempty"`
+	LastHealthCheck          *common.Timestamp `json:"last_health_check,omitempty"`
+	IsKilled                 *bool             `json:"is_killed,omitempty"`
+	IsShutdown               *bool             `json:"is_shutdown,omitempty"`
 }
 
 func (v *Validator) ConvertToValidationNode() *blockchain.ValidationNode {
@@ -1315,7 +1352,7 @@ func TransferAllocation(allocationId, newOwner, newOwnerPublicKey string) (strin
 	return hash, n, err
 }
 
-func UpdateBlobberSettings(blob *Blobber) (resp string, nonce int64, err error) {
+func UpdateBlobberSettings(blob *UpdateBlobber) (resp string, nonce int64, err error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
 	}
@@ -1327,14 +1364,14 @@ func UpdateBlobberSettings(blob *Blobber) (resp string, nonce int64, err error) 
 	return
 }
 
-func UpdateValidatorSettings(v *Validator) (resp string, nonce int64, err error) {
+func UpdateValidatorSettings(v *UpdateValidator) (resp string, nonce int64, err error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
 	}
 
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_UPDATE_VALIDATOR_SETTINGS,
-		InputArgs: v.ConvertToValidationNode(),
+		InputArgs: v,
 	}
 	resp, _, nonce, _, err = smartContractTxn(sn)
 	return
@@ -1367,10 +1404,10 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 		return
 	}
 
-	//nonce = client.GetClient().Nonce
-	//if nonce != 0 {
+	// nonce = client.GetClient().Nonce
+	// if nonce != 0 {
 	//	nonce++
-	//}
+	// }
 	txn := transaction.NewTransactionEntity(client.GetClientID(),
 		blockchain.GetChainID(), client.GetClientPublicKey(), nonce)
 
