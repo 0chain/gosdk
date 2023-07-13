@@ -1026,7 +1026,7 @@ func (req *DownloadRequest) processDownloadRequest() {
 func (req *DownloadRequest) Seek(offset int64, whence int) (int64, error) {
 	switch whence {
 	case io.SeekStart:
-		if offset > req.size {
+		if offset >= req.size {
 			return 0, errors.New(ExceededMaxOffsetValue, "file is already downloaded")
 		}
 		req.offset = offset
