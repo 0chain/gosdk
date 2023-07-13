@@ -152,14 +152,15 @@ func (s *StorageSDK) CreateAllocation(datashards, parityshards int, size, expira
 	}
 
 	options := sdk.CreateAllocationOptions{
-		DataShards:   datashards,
-		ParityShards: parityshards,
-		Size:         size,
-		Expiry:       expiration,
-		ReadPrice: readPrice,
-		WritePrice: writePrice,
-		Lock:       uint64(l),
-		BlobberIds: []string{},
+		DataShards:        datashards,
+		ParityShards:      parityshards,
+		Size:              size,
+		Expiry:            expiration,
+		ReadPrice:         readPrice,
+		WritePrice:        writePrice,
+		Lock:              uint64(l),
+		BlobberIds:        []string{},
+		FileOptionsParams: &sdk.FileOptionsParameters{},
 	}
 
 	sdkAllocationID, _, _, err := sdk.CreateAllocationWith(options)

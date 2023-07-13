@@ -51,9 +51,9 @@ type MultiOperation struct {
 func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 
 	defer func() {
-		if err != nil {
+		if err == nil {
 			mo.maskMU.Lock()
-			mo.operationMask = mo.operationMask.And(zboxutil.NewUint128(1).Lsh(uint64(blobberIdx)).Not())
+			mo.operationMask = mo.operationMask.Or(zboxutil.NewUint128(1).Lsh(uint64(blobberIdx)))
 			mo.maskMU.Unlock()
 		}
 	}()
@@ -150,27 +150,9 @@ func (mo *MultiOperation) Process() error {
 	ctx := mo.ctx
 	ctxCncl := mo.ctxCncl
 	defer ctxCncl()
-	// Create connection obj in each blobber
-	for blobberIdx := range mo.allocationObj.Blobbers {
-		wg.Add(1)
-		go func(pos int) {
-			defer wg.Done()
-			err := mo.createConnectionObj(pos)
-			if err != nil {
-				l.Logger.Error(err.Error())
-			}
-		}(blobberIdx)
-	}
-	wg.Wait()
-	// Check consensus
-	if mo.operationMask.CountOnes() < mo.consensusThresh {
-		return errors.New("consensus_not_met",
-			fmt.Sprintf("Multioperation failed. Required consensus %d got %d",
-				mo.consensusThresh, mo.operationMask.CountOnes()))
-	}
 
 	errs := make(chan error, 1)
-
+	mo.operationMask = zboxutil.NewUint128(0)
 	for idx, op := range mo.operations {
 		uid := util.GetNewUUID()
 		wg.Add(1)
@@ -197,7 +179,7 @@ func (mo *MultiOperation) Process() error {
 				return
 			}
 			mo.maskMU.Lock()
-			mo.operationMask.And(mask)
+			mo.operationMask = mo.operationMask.Or(mask)
 			mo.maskMU.Unlock()
 			changes := op.buildChange(refs, uid)
 
@@ -247,6 +229,7 @@ func (mo *MultiOperation) Process() error {
 		if statusBar == nil {
 			return ErrRetryOperation
 		}
+		statusBar.wg.Add(1)
 		err = mo.allocationObj.RepairAlloc(statusBar)
 		if err != nil {
 			return err
@@ -281,6 +264,7 @@ func (mo *MultiOperation) Process() error {
 			connectionID: mo.connectionID,
 			wg:           wg,
 			timestamp:    timestamp,
+			blobberInd:   pos,
 		}
 
 		commitReq.changes = append(commitReq.changes, mo.changes[pos]...)
@@ -290,13 +274,14 @@ func (mo *MultiOperation) Process() error {
 		counter++
 	}
 	wg.Wait()
-
+	rollbackMask := zboxutil.NewUint128(0)
 	for _, commitReq := range commitReqs {
 		if commitReq.result != nil {
 			if commitReq.result.Success {
 				l.Logger.Info("Commit success", commitReq.blobber.Baseurl)
 				mo.consensus++
 			} else {
+				rollbackMask = rollbackMask.Or(zboxutil.NewUint128(1).Lsh(commitReq.blobberInd))
 				l.Logger.Info("Commit failed", commitReq.blobber.Baseurl, commitReq.result.ErrorMessage)
 			}
 		} else {
@@ -312,6 +297,7 @@ func (mo *MultiOperation) Process() error {
 			for _, op := range mo.operations {
 				op.Error(mo.allocationObj, mo.getConsensus(), err)
 			}
+			mo.allocationObj.RollbackWithMask(rollbackMask)
 		}
 		return err
 	}

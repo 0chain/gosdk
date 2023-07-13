@@ -342,6 +342,11 @@ func (ro *RenameOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) 
 	changes := make([]allocationchange.AllocationChange, len(refs))
 
 	for idx, ref := range refs {
+		if ref == nil {
+			change := &allocationchange.EmptyFileChange{}
+			changes[idx] = change
+			continue
+		}
 		newChange := &allocationchange.RenameFileChange{
 			NewName:    ro.newName,
 			ObjectTree: ref,
