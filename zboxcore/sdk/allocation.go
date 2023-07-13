@@ -1146,32 +1146,35 @@ func (a *Allocation) prepareAndOpenLocalFile(localPath string, remotePath string
 	if !a.isInitialized() {
 		return nil, "", toKeep, notInitialized
 	}
-	_, err := os.Stat(localPath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			if err := os.MkdirAll(localPath, 0744); err != nil {
-				return nil, "", toKeep, err
-			}
-		} else {
+
+	info, err := os.Stat(localPath)
+	if err != nil && !os.IsNotExist(err) {
+		return nil, "", toKeep, err
+	}
+
+	var localFilePath string
+
+	// If local path is a directory or local path does not exist
+	if err == nil && info.IsDir() || os.IsNotExist(err) {
+		localFileName := filepath.Base(remotePath)
+		localFilePath = filepath.Join(localPath, localFileName)
+	} else {
+		// If local path is a file
+		localFilePath = localPath
+		toKeep = true
+	}
+
+	// Create necessary directories if they do not exist
+	dir := filepath.Dir(localFilePath)
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		if err := os.MkdirAll(dir, 0744); err != nil {
 			return nil, "", toKeep, err
 		}
 	}
 
-	info, err := os.Stat(localPath)
-	if err != nil {
-		return nil, "", toKeep, err
-	}
-
-	if !info.IsDir() {
-		return nil, "", toKeep, fmt.Errorf("Local path is not a directory '%s'", localPath)
-	}
-
-	localFileName := filepath.Base(remotePath)
-	localFilePath := filepath.Join(localPath, localFileName)
+	var f *os.File
 
 	info, err = os.Stat(localFilePath)
-
-	var f *os.File
 	if errors.Is(err, os.ErrNotExist) {
 		f, err = os.OpenFile(localFilePath, os.O_WRONLY|os.O_CREATE, 0644)
 		if err != nil {
