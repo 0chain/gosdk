@@ -290,7 +290,6 @@ type cachedObject struct {
 
 // EstimateFee estimates transaction fee
 func EstimateFee(txn *Transaction, miners []string, reqPercent ...float32) (uint64, error) {
-
 	const minReqNum = 3
 	var reqN int
 
@@ -298,104 +297,48 @@ func EstimateFee(txn *Transaction, miners []string, reqPercent ...float32) (uint
 		reqN = int(reqPercent[0] * float32(len(miners)))
 	}
 
+	txData := txn.TransactionData
+
+	var sn SmartContractTxnData
+	json.Unmarshal([]byte(txData), &sn)
+
+	txnName := sn.Name
+
 	reqN = util.MaxInt(minReqNum, reqN)
 	reqN = util.MinInt(reqN, len(miners))
 	randomMiners := util.Shuffle(miners)[:reqN]
 
-	var (
-		feeC = make(chan uint64, reqN)
-		errC = make(chan error, reqN)
-	)
+	// Retrieve the object from the cache
+	cached, ok := cache.Get(FEES_TABLE)
 
-	wg := &sync.WaitGroup{}
-	wg.Add(len(randomMiners))
-
-	for _, miner := range randomMiners {
-		go func(minerUrl string) {
-			defer wg.Done()
-
-			// Retrieve the object from the cache
-			cached, ok := cache.Get(STORAGESC_CREATE_ALLOCATION)
-
-			if ok {
-				cachedObj, ok := cached.(*cachedObject)
-				if !ok {
-					logging.Logger.Error("Object of bad type")
-					return
-				}
-				val := cachedObj.Value.(map[string]interface{})["fee"].(uint64)
-				feeC <- uint64(val)
-				return
-			}
-
-			url := minerUrl + ESTIMATE_TRANSACTION_COST
-			req, err := util.NewHTTPPostRequest(url, txn)
-			if err != nil {
-				errC <- fmt.Errorf("create request failed, url: %s, err: %v", url, err)
-				return
-			}
-
-			res, err := req.Post()
-			if err != nil {
-				errC <- fmt.Errorf("request failed, url: %s, err: %v", url, err)
-				return
-			}
-
-			rspFee := struct {
-				Fee uint64 `json:"fee"`
-			}{}
-
-			if err := json.Unmarshal([]byte(res.Body), &rspFee); err != nil {
-				errC <- fmt.Errorf("decode response failed, url: %s, err: %v", url, err)
-				return
-			}
-
-			feeC <- rspFee.Fee
-		}(miner)
-	}
-
-	// wait for requests to complete
-	wg.Wait()
-	close(feeC)
-	close(errC)
-
-	feesCount := make(map[uint64]int, reqN)
-	for fee := range feeC {
-		feesCount[fee]++
-	}
-
-	if len(feesCount) > 0 {
-		var (
-			max int
-			fee uint64
-		)
-
-		for f, count := range feesCount {
-			if count > max {
-				max = count
-				fee = f
-			}
+	if ok {
+		cachedObj, ok := cached.(*cachedObject)
+		if !ok {
+			logging.Logger.Error("Object of bad type")
 		}
+		table := cachedObj.Value.(map[string]uint64)
+		return table[txnName], nil
+	}
 
-		// adding response to cache
-		obj := map[string]interface{}{
-			"fee": fee,
+	table, err := GetFeesTable(randomMiners, reqPercent...)
+	if err != nil {
+		return 0, err
+	}
+
+	feesTable := make(map[string]uint64)
+
+	for _, values := range table {
+		for txnName, value := range values {
+			feesTable[txnName] = uint64(value)
 		}
-
-		cache.Add(STORAGESC_CREATE_ALLOCATION, &cachedObject{
-			Expiration: 30 * time.Hour,
-			Value:      obj,
-		})
-
-		return fee, nil
 	}
 
-	errs := make([]string, 0, reqN)
-	for err := range errC {
-		errs = append(errs, err.Error())
-	}
+	cache.Add(FEES_TABLE, &cachedObject{
+		Expiration: 30 * time.Hour,
+		Value:      feesTable,
+	})
 
-	return 0, errors.New("failed to estimate transaction fee", strings.Join(errs, ","))
+	return feesTable[txnName], nil
 }
 
 // GetFeesTable get fee tables

@@ -102,7 +102,8 @@
     <button id="btnListFiles">List</button>
     <span><input id="inputSelectedFile" type="file" multiple /> <button id="btnUploadFile">Upload</button> </span>
     <button id="btnUploadEncryptFile">EncryptedUpload</button> </span>
-    [ <button id="btnDownloadFile">Download</button> | <button id="btnDownloadShared">Download with AuthTicket</button> | <button id="btnMultiDownload">MultiDownload</button>
+    [ <button id="btnDownloadFile">Download</button> | <button id="btnDownloadShared">Download with AuthTicket</button>
+    | <button id="btnMultiDownload">MultiDownload</button>
     ]
     <button id="btnViewFile">View</button>
     <button id="btnGetFileStats">GetFileStats</button>
@@ -113,6 +114,7 @@
     <button id="btnSearchContainer">searchcontainer</button>
     <button id="btnAllocationRepair">Repair</button>
     <button id="btnMultiOps">MultiOperation</button>
+    <button id="createDir">createDir</button>
 
     <br>
 
@@ -301,6 +303,11 @@
       } catch (e) {
         alert(e)
       }
+    })
+
+    onClick('createDir', async () => {
+      const allocationId = getSelectedAllocation()
+      goWasm.sdk.createDir(allocationId, "/dir2")
     })
 
     onClick('btnListBlobbers', async () => {
