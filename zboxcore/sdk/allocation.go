@@ -1147,21 +1147,14 @@ func (a *Allocation) prepareAndOpenLocalFile(localPath string, remotePath string
 		return nil, "", toKeep, notInitialized
 	}
 
-	info, err := os.Stat(localPath)
-	if err != nil && !os.IsNotExist(err) {
-		return nil, "", toKeep, err
-	}
-
 	var localFilePath string
 
-	// If local path is a directory or local path does not exist
-	if err == nil && info.IsDir() || os.IsNotExist(err) {
+	// If the localPath has a file extension, treat it as a file. Otherwise, treat it as a directory.
+	if filepath.Ext(localPath) != "" {
+		localFilePath = localPath
+	} else {
 		localFileName := filepath.Base(remotePath)
 		localFilePath = filepath.Join(localPath, localFileName)
-	} else {
-		// If local path is a file
-		localFilePath = localPath
-		toKeep = true
 	}
 
 	// Create necessary directories if they do not exist
@@ -1173,8 +1166,7 @@ func (a *Allocation) prepareAndOpenLocalFile(localPath string, remotePath string
 	}
 
 	var f *os.File
-
-	info, err = os.Stat(localFilePath)
+	info, err := os.Stat(localFilePath)
 	if errors.Is(err, os.ErrNotExist) {
 		f, err = os.OpenFile(localFilePath, os.O_WRONLY|os.O_CREATE, 0644)
 		if err != nil {
