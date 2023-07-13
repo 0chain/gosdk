@@ -341,9 +341,11 @@
 		if (!allocationId) {
 			alert("please selection allocationID")
 			return
+		} else {
+			console.log("allocation:", allocationId)
 		}
 		try {
-			const price = await goWasm.sdk.getUpdateAllocationMinLock(allocationID, size, expiry, false, "", "")
+			const price = await goWasm.sdk.getUpdateAllocationMinLock(allocationId, size, expiry, false, "", "")
 			txtOutput.innerHTML = price
 		} catch (e) {
 			alert(e)
