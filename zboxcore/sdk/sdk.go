@@ -1572,7 +1572,7 @@ func GetUpdateAllocationMinLock(
 	params["data"] = string(data)
 
 	responseBytes, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation-update-min-lock", params, nil)
-	if err  != nil {
+	if err != nil {
 		return 0, errors.Wrap(err, "failed to request allocation update min lock")
 	}
 
@@ -1586,24 +1586,6 @@ func GetUpdateAllocationMinLock(
 		return 0, errors.New("", "min_lock_demand not found in response")
 	}
 	return v, nil
-}
-
-func getAllocationCancelCosts(cost currency.Coin, config *InputMap) (currency.Coin, error) {
-	cc, ok := config.Fields["cancellation_charge"]
-	if !ok {
-		return 0, errors.New("", "could not get cancellation_charge from the config")
-	}
-	cancelChargeRate, err := strconv.ParseFloat(cc.(string), 64)
-	if err != nil {
-		return 0, errors.Wrap(err, "could not parse cancellation_charge")
-	}
-
-	cancelCost, err := currency.MultFloat64(currency.Coin(cost), cancelChargeRate)
-	if err != nil {
-		return 0, errors.Wrap(err, "could not calculate cancellation cost")
-	}
-
-	return cancelCost, nil
 }
 
 // calculateAllocationFileOptions calculates the FileOptions 16-bit mask given the user input
