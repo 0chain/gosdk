@@ -1547,6 +1547,47 @@ func GetAllocationMinLock(
 	return i, nil
 }
 
+func GetUpdateAllocationMinLock(
+	allocationID string,
+	size, expiry int64,
+	updateTerms bool,
+	addBlobberId,
+	removeBlobberId string) (int64, error) {
+	updateAllocationRequest := make(map[string]interface{})
+	updateAllocationRequest["owner_id"] = client.GetClientID()
+	updateAllocationRequest["owner_public_key"] = ""
+	updateAllocationRequest["id"] = allocationID
+	updateAllocationRequest["size"] = size
+	updateAllocationRequest["expiration_date"] = expiry
+	updateAllocationRequest["update_terms"] = updateTerms
+	updateAllocationRequest["add_blobber_id"] = addBlobberId
+	updateAllocationRequest["remove_blobber_id"] = removeBlobberId
+
+	data, err := json.Marshal(updateAllocationRequest)
+	if err != nil {
+		return 0, errors.Wrap(err, "failed to encode request into json")
+	}
+
+	params := make(map[string]string)
+	params["data"] = string(data)
+
+	responseBytes, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation-update-min-lock", params, nil)
+	if err != nil {
+		return 0, errors.Wrap(err, "failed to request allocation update min lock")
+	}
+
+	var response = make(map[string]int64)
+	if err = json.Unmarshal(responseBytes, &response); err != nil {
+		return 0, errors.Wrap(err, "failed to decode response")
+	}
+
+	v, ok := response["min_lock_demand"]
+	if !ok {
+		return 0, errors.New("", "min_lock_demand not found in response")
+	}
+	return v, nil
+}
+
 // calculateAllocationFileOptions calculates the FileOptions 16-bit mask given the user input
 func calculateAllocationFileOptions(initial uint16, fop *FileOptionsParameters) (bool, uint16) {
 	if fop == nil {
