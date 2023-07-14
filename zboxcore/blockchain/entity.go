@@ -8,14 +8,14 @@ import (
 )
 
 type ChainConfig struct {
-	BlockWorker       string
-	Sharders          []string
-	Miners            []string
-	MinSubmit         int
-	MinConfirmation   int
-	ChainID           string
-	MaxTxnQuery       int
-	QuerySleepTime    int
+	BlockWorker     string
+	Sharders        []string
+	Miners          []string
+	MinSubmit       int
+	MinConfirmation int
+	ChainID         string
+	MaxTxnQuery     int
+	QuerySleepTime  int
 }
 
 // StakePoolSettings information.
@@ -40,6 +40,12 @@ type ValidationNode struct {
 	ID                string            `json:"id"`
 	BaseURL           string            `json:"url"`
 	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
+}
+
+type UpdateValidationNode struct {
+	ID                string                   `json:"id"`
+	BaseURL           *string                  `json:"url"`
+	StakePoolSettings *UpdateStakePoolSettings `json:"stake_pool_settings"`
 }
 
 type StorageNode struct {

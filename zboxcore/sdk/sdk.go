@@ -621,7 +621,7 @@ type Validator struct {
 }
 
 type UpdateValidator struct {
-	ID                       common.Key        `json:"id"`
+	ID                       common.Key        `json:"validator_id"`
 	BaseURL                  *string           `json:"url,omitempty"`
 	DelegateWallet           *string           `json:"delegate_wallet,omitempty"`
 	MinStake                 *common.Balance   `json:"min_stake,omitempty"`
@@ -636,18 +636,29 @@ type UpdateValidator struct {
 	IsShutdown               *bool             `json:"is_shutdown,omitempty"`
 }
 
-func (v *Validator) ConvertToValidationNode() *blockchain.ValidationNode {
-	return &blockchain.ValidationNode{
+func (v *UpdateValidator) ConvertToValidationNode() *blockchain.UpdateValidationNode {
+	blockValidator := &blockchain.UpdateValidationNode{
 		ID:      string(v.ID),
 		BaseURL: v.BaseURL,
-		StakePoolSettings: blockchain.StakePoolSettings{
-			DelegateWallet: v.DelegateWallet,
-			MinStake:       v.MinStake,
-			MaxStake:       v.MaxStake,
-			NumDelegates:   v.NumDelegates,
-			ServiceCharge:  v.ServiceCharge,
-		},
 	}
+
+	sp := &blockchain.UpdateStakePoolSettings{
+		DelegateWallet: v.DelegateWallet,
+		MinStake:       v.MinStake,
+		MaxStake:       v.MaxStake,
+		NumDelegates:   v.NumDelegates,
+		ServiceCharge:  v.ServiceCharge,
+	}
+
+	if v.DelegateWallet != nil ||
+		v.MinStake != nil ||
+		v.MaxStake != nil ||
+		v.NumDelegates != nil ||
+		v.ServiceCharge != nil {
+		blockValidator.StakePoolSettings = sp
+	}
+
+	return blockValidator
 }
 
 func getBlobbersInternal(active bool, limit, offset int) (bs []*Blobber, err error) {
@@ -1371,7 +1382,7 @@ func UpdateValidatorSettings(v *UpdateValidator) (resp string, nonce int64, err 
 
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_UPDATE_VALIDATOR_SETTINGS,
-		InputArgs: v,
+		InputArgs: v.ConvertToValidationNode(),
 	}
 	resp, _, nonce, _, err = smartContractTxn(sn)
 	return
