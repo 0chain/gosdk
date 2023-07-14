@@ -604,7 +604,7 @@ type UpdateBlobber struct {
 }
 
 type Validator struct {
-	ID                       common.Key       `json:"id"`
+	ID                       common.Key       `json:"validator_id"`
 	BaseURL                  string           `json:"url"`
 	PublicKey                string           `json:"-"`
 	DelegateWallet           string           `json:"delegate_wallet"`
