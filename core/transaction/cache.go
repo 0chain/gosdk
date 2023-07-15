@@ -71,10 +71,10 @@ func queryFromSharders(sharders []string, query string,
 }
 
 func (nc *NonceCache) getNonceFromSharders(clientID string) (int64, string, error) {
-	return getBalanceFieldFromSharders(clientID, "nonce", nc.sharders)
+	return GetBalanceFieldFromSharders(clientID, "nonce", nc.sharders)
 }
 
-func getBalanceFieldFromSharders(clientID, name string, sharders []string) (int64, string, error) {
+func GetBalanceFieldFromSharders(clientID, name string, sharders []string) (int64, string, error) {
 	result := make(chan *util.GetResponse, len(sharders))
 	// getMinShardersVerify
 	var numSharders = len(sharders) // overwrite, use all

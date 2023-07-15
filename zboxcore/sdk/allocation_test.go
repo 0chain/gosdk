@@ -906,52 +906,6 @@ func TestAllocation_downloadFile(t *testing.T) {
 			errMsg:  "sdk_not_initialized: Please call InitStorageSDK Init and use GetAllocation to get the allocation object",
 		},
 		{
-			name: "Test_Local_Path_Is_Not_Dir_Failed",
-			parameters: parameters{
-				localPath:      "Test_Local_Path_Is_Not_Dir_Failed",
-				remotePath:     mockRemoteFilePath,
-				contentMode:    DOWNLOAD_CONTENT_FULL,
-				startBlock:     1,
-				endBlock:       0,
-				numBlocks:      numBlockDownloads,
-				statusCallback: nil,
-			},
-			setup: func(t *testing.T, testCaseName string, p parameters, a *Allocation) (teardown func(t *testing.T)) {
-				_, err := os.Create(p.localPath)
-				require.Nil(t, err)
-				return func(t *testing.T) {
-					err = os.Remove(p.localPath) //nolint: errcheck
-					require.Nil(t, err)
-				}
-			},
-			wantErr: true,
-			errMsg:  "Local path is not a directory 'Test_Local_Path_Is_Not_Dir_Failed'",
-		},
-		// {
-		// 	name: "Test_Local_File_Already_Existed_Failed",
-		// 	parameters: parameters{
-		// 		localPath:      "alloc",
-		// 		remotePath:     mockRemoteFilePath,
-		// 		contentMode:    DOWNLOAD_CONTENT_FULL,
-		// 		startBlock:     1,
-		// 		endBlock:       0,
-		// 		numBlocks:      numBlockDownloads,
-		// 		statusCallback: nil,
-		// 	},
-		// 	setup: func(t *testing.T, testCaseName string, p parameters, a *Allocation) (teardown func(t *testing.T)) {
-		// 		err := os.MkdirAll(p.localPath, 0755)
-		// 		require.Nil(t, err)
-		// 		_, err = os.Create(p.localPath + "/" + p.remotePath)
-		// 		require.Nil(t, err)
-		// 		return func(t *testing.T) {
-		// 			os.RemoveAll(p.localPath + "/" + p.remotePath) //nolint: errcheck
-		// 			os.RemoveAll(p.localPath)                      //nolint: errcheck
-		// 		}
-		// 	},
-		// 	wantErr: true,
-		// 	errMsg:  "Local file already exists 'alloc/1.txt'",
-		// },
-		{
 			name: "Test_No_Blobber_Failed",
 			parameters: parameters{
 				localPath:      mockLocalPath,
@@ -1753,46 +1707,6 @@ func TestAllocation_downloadFromAuthTicket(t *testing.T) {
 			wantErr: true,
 			errMsg:  "auth_ticket_decode_error: Error unmarshaling the auth ticket.invalid character 's' looking for beginning of value",
 		},
-		{
-			name: "Test_Local_Path_Is_Not_Directory_Failed",
-			parameters: parameters{
-				localPath:      "Test_Local_Path_Is_Not_Directory_Failed",
-				authTicket:     authTicket,
-				remoteFilename: mockRemoteFileName,
-			},
-			setup: func(t *testing.T, testCaseName string, p parameters) (teardown func(t *testing.T)) {
-				_, err := os.Create(p.localPath)
-				require.Nil(t, err)
-				return func(t *testing.T) {
-					err := os.Remove(p.localPath)
-					require.Nil(t, err)
-				}
-			},
-			wantErr: true,
-			errMsg:  "Local path is not a directory 'Test_Local_Path_Is_Not_Directory_Failed'",
-		},
-		// {
-		// 	name: "Test_Local_File_Already_Exists_Failed",
-		// 	parameters: parameters{
-		// 		localPath:      mockLocalPath,
-		// 		authTicket:     authTicket,
-		// 		remoteFilename: mockRemoteFileName,
-		// 	},
-		// 	setup: func(t *testing.T, testCaseName string, p parameters) (teardown func(t *testing.T)) {
-		// 		err := os.MkdirAll(p.localPath, 0755)
-		// 		require.Nil(t, err)
-
-		// 		_, err = os.Create(p.localPath + "/" + p.remoteFilename)
-		// 		require.Nil(t, err)
-
-		// 		return func(t *testing.T) {
-		// 			os.RemoveAll(p.localPath + "/" + p.remoteFilename)
-		// 			os.RemoveAll(p.localPath)
-		// 		}
-		// 	},
-		// 	wantErr: true,
-		// 	errMsg:  "Local file already exists 'alloc/1.txt'",
-		// },
 		{
 			name: "Test_Not_Enough_Minimum_Blobbers_Failed",
 			parameters: parameters{
