@@ -300,7 +300,10 @@ func EstimateFee(txn *Transaction, miners []string, reqPercent ...float32) (uint
 	txData := txn.TransactionData
 
 	var sn SmartContractTxnData
-	json.Unmarshal([]byte(txData), &sn)
+	err := json.Unmarshal([]byte(txData), &sn)
+	if err != nil {
+		return 0, err
+	}
 
 	txnName := sn.Name
 
