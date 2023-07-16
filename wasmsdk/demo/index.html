@@ -69,6 +69,7 @@
       <button id="btnCreateAllocation">Create</button>
       <button id="btnGetAllocation">Get</button>
       <button id="btnGetAllocationMinLock">AllocationMinLock</button>
+      <button id="btnGetUpdateAllocationMinLock">UpdateAllocationMinLock</button>
       <button id="btnRemoteFileMap">RemoteFileMap</button>
       <button id="btnAddReplaceBlobber">AddReplaceBlobber</button>
     </span>
@@ -101,7 +102,7 @@
     <button id="btnListFiles">List</button>
     <span><input id="inputSelectedFile" type="file" multiple /> <button id="btnUploadFile">Upload</button> </span>
     <button id="btnUploadEncryptFile">EncryptedUpload</button> </span>
-    [ <button id="btnDownloadFile">Download</button> | <button id="btnDownloadShared">Download with AuthTicket</button>
+    [ <button id="btnDownloadFile">Download</button> | <button id="btnDownloadShared">Download with AuthTicket</button> | <button id="btnMultiDownload">MultiDownload</button>
     ]
     <button id="btnViewFile">View</button>
     <button id="btnGetFileStats">GetFileStats</button>
@@ -207,6 +208,7 @@
       networkConfig.confirmationChainLength,
       'https://0box.' + network, //zboxHost
       'vult', //zboxAppType
+      3,
     ]
 
     const bls = window.bls
@@ -333,6 +335,24 @@
       }
     })
 
+	onClick('btnGetUpdateAllocationMinLock', async () => {
+		let size = 100000
+		let expiry = 1680408725
+		const allocationId = getSelectedAllocation()
+		if (!allocationId) {
+			alert("please selection allocationID")
+			return
+		} else {
+			console.log("allocation:", allocationId)
+		}
+		try {
+			const price = await goWasm.sdk.getUpdateAllocationMinLock(allocationId, size, expiry, false, "", "")
+			txtOutput.innerHTML = price
+		} catch (e) {
+			alert(e)
+		}
+	})
+
     onClick('btnListBlobberSettings', async () => {
       const blobberID = getSelectedBlobbers()
       if (!blobberID) {
@@ -393,10 +413,7 @@
             }
           })
         }
-
-        // const results = await goWasm.bulkUpload(objects)
-        const results = await goWasm.multiUpload(objects)
-
+        const results = await goWasm.bulkUpload(objects)
         console.log(JSON.stringify(results))
       }
     })
@@ -714,6 +731,32 @@
       const allocationId = getSelectedAllocation()
       const output = await goWasm.sdk.allocationRepair(allocationId, "/")
       txtOutput.innerHTML = output
+    })
+
+    onClick('btnMultiDownload', async () => {
+      console.log('multidownload')
+      const path = getSelectedFile()
+
+      const objects = []
+      const allocationId = getSelectedAllocation()
+      if (!allocationId) {
+        alert("please provide allocationId")
+      }
+
+      objects.push({
+        remotePath: path,
+        downloadOp: 1,
+        numBlocks: 0,
+      })
+      let stringifiedArray = JSON.stringify(objects);
+
+      try {
+        const results = await goWasm.sdk.multiDownload(allocationId, stringifiedArray, '', '')
+        console.log(JSON.stringify(results))
+      } catch (e) {
+        alert(e)
+      }
+
     })
 
     onClick('btnMultiOps', async () => {

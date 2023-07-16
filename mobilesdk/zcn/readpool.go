@@ -19,7 +19,23 @@ func ReadPoolLock(tokens, fee string) (string, error) {
 	}
 
 	f, err := util.ParseCoinStr(fee)
+	if err != nil {
+		return "", err
+	}
 
 	hash, _, err := sdk.ReadPoolLock(t, f)
+	return hash, err
+}
+
+// ReadPoolUnLock unlocks all the tokens in the readpool associated with the current wallet.
+// ## Inputs
+//   - fee: sas tokens
+func ReadPoolUnLock(fee string) (string, error) {
+	f, err := util.ParseCoinStr(fee)
+	if err != nil {
+		return "", err
+	}
+
+	hash, _, err := sdk.ReadPoolUnlock(f)
 	return hash, err
 }

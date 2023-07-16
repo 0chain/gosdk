@@ -221,6 +221,14 @@ func getAllocationMinLock(datashards, parityshards int,
 	return value, nil
 }
 
+func getUpdateAllocationMinLock(
+	allocationID string,
+	size, expiry int64,
+	updateTerms bool,
+	addBlobberId, removeBlobberId string) (int64, error) {
+	return sdk.GetUpdateAllocationMinLock(allocationID, size, expiry, updateTerms, addBlobberId, removeBlobberId)
+}
+
 func getRemoteFileMap(allocationID string) ([]*fileResp, error) {
 	if len(allocationID) == 0 {
 		return nil, RequiredArg("allocationID")
@@ -269,6 +277,11 @@ func lockStakePool(providerType, tokens, fee uint64, providerID string) (string,
 
 func lockReadPool(tokens, fee uint64) (string, error) {
 	hash, _, err := sdk.ReadPoolLock(tokens, fee)
+	return hash, err
+}
+
+func unLockReadPool(fee uint64) (string, error) {
+	hash, _, err := sdk.ReadPoolUnlock(fee)
 	return hash, err
 }
 

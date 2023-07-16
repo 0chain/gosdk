@@ -28,24 +28,6 @@ const FileOperationInsert = "insert"
 
 var allocObj *sdk.Allocation
 
-func initAllocation(allocationID string) error {
-	alloc, err := sdk.GetAllocation(allocationID)
-	if err != nil {
-		return err
-	}
-	allocObj = alloc
-	return nil
-}
-
-func initAllocationFromAuthTicket(authTicket string) error {
-	alloc, err := sdk.GetAllocationFromAuthTicket(authTicket)
-	if err != nil {
-		return err
-	}
-	allocObj = alloc
-	return nil
-}
-
 func listObjects(allocationID string, remotePath string) (*sdk.ListResult, error) {
 	alloc, err := getAllocation(allocationID)
 	if err != nil {
@@ -332,8 +314,8 @@ func download(
 	statusBar := &StatusBar{wg: wg}
 	if callbackFuncName != "" {
 		callback := js.Global().Get(callbackFuncName)
-		statusBar.callback = func(totalBytes, completedBytes int, err string) {
-			callback.Invoke(totalBytes, completedBytes, err)
+		statusBar.callback = func(totalBytes, completedBytes int, filename, objURL, err string) {
+			callback.Invoke(totalBytes, completedBytes, filename, objURL, err)
 		}
 	}
 	wg.Add(1)
@@ -348,18 +330,11 @@ func download(
 		err        error
 		downloader sdk.Downloader
 	)
-	if allocObj == nil {
-		downloader, err = sdk.CreateDownloader(allocationID, localPath, remotePath,
-			sdk.WithAuthticket(authTicket, lookupHash),
-			sdk.WithOnlyThumbnail(downloadThumbnailOnly),
-			sdk.WithBlocks(0, 0, numBlocks))
-	} else {
-		downloader, err = sdk.CreateDownloader(allocationID, localPath, remotePath,
-			sdk.WithAuthticket(authTicket, lookupHash),
-			sdk.WithOnlyThumbnail(downloadThumbnailOnly),
-			sdk.WithBlocks(0, 0, numBlocks),
-			sdk.WithAllocation(allocObj))
-	}
+
+	downloader, err = sdk.CreateDownloader(allocationID, localPath, remotePath,
+		sdk.WithAuthticket(authTicket, lookupHash),
+		sdk.WithOnlyThumbnail(downloadThumbnailOnly),
+		sdk.WithBlocks(0, 0, numBlocks))
 
 	if err != nil {
 		PrintError(err.Error())
@@ -395,6 +370,97 @@ func download(
 
 }
 
+// MultiOperation - do copy, move, delete and createdir operation together
+// ## Inputs
+//   - allocationID
+//   - jsonMultiDownloadOptions: Json Array of MultiDownloadOption.
+//	 - authTicket
+//  - callbackFuncName: callback function name Invoke with totalBytes, completedBytes, objURL, err
+// ## Outputs
+//   - json string of array of DownloadCommandResponse
+// 	 - error
+
+func multiDownload(allocationID, jsonMultiDownloadOptions, authTicket, callbackFuncName string) (string, error) {
+	sdkLogger.Info("starting multidownload")
+	wg := &sync.WaitGroup{}
+	useCallback := false
+	if callbackFuncName != "" {
+		useCallback = true
+	}
+	var options []*MultiDownloadOption
+	err := json.Unmarshal([]byte(jsonMultiDownloadOptions), &options)
+	if err != nil {
+		return "", err
+	}
+	var alloc *sdk.Allocation
+	if authTicket == "" {
+		alloc, err = getAllocation(allocationID)
+	} else {
+		alloc, err = sdk.GetAllocationFromAuthTicket(authTicket)
+	}
+	if err != nil {
+		return "", err
+	}
+	allStatusBar := make([]*StatusBar, len(options))
+	wg.Add(len(options))
+	for ind, option := range options {
+		fileName := strings.Replace(path.Base(option.RemotePath), "/", "-", -1)
+		localPath := allocationID + "_" + fileName
+		option.LocalPath = localPath
+		statusBar := &StatusBar{wg: wg, localPath: localPath}
+		allStatusBar[ind] = statusBar
+		if useCallback {
+			callback := js.Global().Get(callbackFuncName)
+			statusBar.callback = func(totalBytes, completedBytes int, filename, objURL, err string) {
+				callback.Invoke(totalBytes, completedBytes, filename, objURL, err)
+			}
+		}
+		var downloader sdk.Downloader
+		if option.DownloadOp == 1 {
+			downloader, err = sdk.CreateDownloader(allocationID, localPath, option.RemotePath,
+				sdk.WithAllocation(alloc),
+				sdk.WithAuthticket(authTicket, option.RemoteLookupHash),
+				sdk.WithOnlyThumbnail(false),
+				sdk.WithBlocks(0, 0, option.NumBlocks),
+			)
+		} else {
+			downloader, err = sdk.CreateDownloader(allocationID, localPath, option.RemotePath,
+				sdk.WithAllocation(alloc),
+				sdk.WithAuthticket(authTicket, option.RemoteLookupHash),
+				sdk.WithOnlyThumbnail(true),
+				sdk.WithBlocks(0, 0, option.NumBlocks),
+			)
+		}
+		if err != nil {
+			PrintError(err.Error())
+			return "", err
+		}
+		defer sys.Files.Remove(option.LocalPath) //nolint
+		downloader.Start(statusBar, ind == len(options)-1)
+	}
+	wg.Wait()
+	resp := make([]DownloadCommandResponse, len(options))
+
+	for ind, statusBar := range allStatusBar {
+		statusResponse := DownloadCommandResponse{}
+		if !statusBar.success {
+			statusResponse.CommandSuccess = false
+			statusResponse.Error = "Download failed: " + statusBar.err.Error()
+		} else {
+			statusResponse.CommandSuccess = true
+			statusResponse.FileName = options[ind].RemoteFileName
+			statusResponse.Url = statusBar.objURL
+		}
+		resp[ind] = statusResponse
+	}
+
+	respBytes, err := json.Marshal(resp)
+	if err != nil {
+		return "", err
+	}
+	return string(respBytes), nil
+}
+
 type BulkUploadOption struct {
 	AllocationID string `json:"allocationId,omitempty"`
 	RemotePath   string `json:"remotePath,omitempty"`
@@ -426,6 +492,15 @@ type MultiOperationOption struct {
 	RemotePath    string `json:"remotePath,omitempty"`
 	DestName      string `json:"destName,omitempty"` // Required only for rename operation
 	DestPath      string `json:"destPath,omitempty"` // Required for copy and move operation`
+}
+
+type MultiDownloadOption struct {
+	RemotePath       string `json:"remotePath"`
+	LocalPath        string `json:"localPath,omitempty"`
+	DownloadOp       int    `json:"downloadOp"`
+	NumBlocks        int    `json:"numBlocks"`
+	RemoteFileName   string `json:"remoteFileName"`             //Required only for file download with auth ticket
+	RemoteLookupHash string `json:"remoteLookupHash,omitempty"` //Required only for file download with auth ticket
 }
 
 // MultiOperation - do copy, move, delete and createdir operation together
@@ -542,8 +617,8 @@ func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 		callbackFuncName := option.CallbackFuncName
 		if callbackFuncName != "" {
 			callback := js.Global().Get(callbackFuncName)
-			statusBar.callback = func(totalBytes, completedBytes int, err string) {
-				callback.Invoke(totalBytes, completedBytes, err)
+			statusBar.callback = func(totalBytes, completedBytes int, filename, objURL, err string) {
+				callback.Invoke(totalBytes, completedBytes, filename, objURL, err)
 			}
 		}
 		wg.Add(1)
@@ -629,8 +704,8 @@ func uploadWithJsFuncs(allocationID, remotePath string, readChunkFuncName string
 	statusBar := &StatusBar{wg: wg}
 	if callbackFuncName != "" {
 		callback := js.Global().Get(callbackFuncName)
-		statusBar.callback = func(totalBytes, completedBytes int, err string) {
-			callback.Invoke(totalBytes, completedBytes, err)
+		statusBar.callback = func(totalBytes, completedBytes int, filename, objURL, err string) {
+			callback.Invoke(totalBytes, completedBytes, filename, objURL, err)
 		}
 	}
 	wg.Add(1)
@@ -788,8 +863,8 @@ func downloadBlocks(allocationID, remotePath, authTicket, lookupHash string, num
 	statusBar := &StatusBar{wg: wg}
 	if callbackFuncName != "" {
 		callback := js.Global().Get(callbackFuncName)
-		statusBar.callback = func(totalBytes, completedBytes int, err string) {
-			callback.Invoke(totalBytes, completedBytes, err)
+		statusBar.callback = func(totalBytes, completedBytes int, filename, objURL, err string) {
+			callback.Invoke(totalBytes, completedBytes, filename, objURL, err)
 		}
 	}
 	wg.Add(1)
