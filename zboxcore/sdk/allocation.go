@@ -393,28 +393,13 @@ func (a *Allocation) CreateDir(remotePath string) error {
 	return err
 }
 
-func (a *Allocation) RepairFile(file sys.File, remotepath string,
-	status StatusCallback, mask zboxutil.Uint128, ref *fileref.FileRef) error {
+func (a *Allocation) RepairFile(localpath string, remotepath string,
+	status StatusCallback, mask zboxutil.Uint128) error {
 
 	idr, _ := homedir.Dir()
 	mask = mask.Not().And(zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1))
-	fileMeta := FileMeta{
-		ActualSize: ref.ActualSize,
-		MimeType:   ref.MimeType,
-		RemoteName: ref.Name,
-		RemotePath: remotepath,
-	}
-	opts := []ChunkedUploadOption{
-		WithMask(mask),
-		WithChunkNumber(5),
-		WithStatusCallback(status),
-	}
-	connectionID := zboxutil.NewConnectionId()
-	chunkedUpload, err := CreateChunkedUpload(idr, a, fileMeta, file, false, true, false, connectionID, opts...)
-	if err != nil {
-		return err
-	}
-	return chunkedUpload.Start()
+	return a.StartChunkedUpload(idr, localpath, remotepath, status, false, true,
+		"", false, false, WithMask(mask))
 }
 
 // UpdateFileWithThumbnail [Deprecated]please use CreateChunkedUpload
@@ -856,12 +841,14 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 				operation = NewMoveOperation(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 
 			case constants.FileOperationInsert:
+				op.Opts = append(op.Opts, WithReaderContext(mo.ctx))
 				operation = NewUploadOperation(op.Workdir, op.FileMeta, op.FileReader, false, op.Opts...)
 
 			case constants.FileOperationDelete:
 				operation = NewDeleteOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 
 			case constants.FileOperationUpdate:
+				op.Opts = append(op.Opts, WithReaderContext(mo.ctx))
 				operation = NewUploadOperation(op.Workdir, op.FileMeta, op.FileReader, true, op.Opts...)
 
 			case constants.FileOperationCreateDir:

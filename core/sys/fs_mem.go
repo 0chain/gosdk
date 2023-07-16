@@ -82,7 +82,7 @@ func (mfs *MemFS) Remove(name string) error {
 	return nil
 }
 
-// MkdirAll creates a directory named path
+//MkdirAll creates a directory named path
 func (mfs *MemFS) MkdirAll(path string, perm os.FileMode) error {
 	return nil
 }
@@ -171,7 +171,7 @@ func (mfs *MemChanFS) Remove(name string) error {
 	return nil
 }
 
-// MkdirAll creates a directory named path
+//MkdirAll creates a directory named path
 func (mfs *MemChanFS) MkdirAll(path string, perm os.FileMode) error {
 	return nil
 }
@@ -276,15 +276,13 @@ func (f *MemChanFile) Stat() (fs.FileInfo, error) {
 	return &MemFileChanInfo{name: f.Name, f: f}, nil
 }
 func (f *MemChanFile) Read(p []byte) (int, error) {
-	recieveData, ok := <-f.Buffer
-	if !ok {
-		return 0, io.EOF
+	b := <-f.Buffer
+	if b == nil {
+		return 0, nil
 	}
-	if len(recieveData) > len(p) {
-		return 0, io.ErrShortBuffer
-	}
-	n := copy(p, recieveData)
+	n := copy(p, b)
 	return n, nil
+
 }
 func (f *MemChanFile) Write(p []byte) (n int, err error) {
 	f.Buffer <- p
