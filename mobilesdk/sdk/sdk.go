@@ -152,13 +152,13 @@ func (s *StorageSDK) CreateAllocation(datashards, parityshards int, size, expira
 	}
 
 	options := sdk.CreateAllocationOptions{
-		DataShards:   datashards,
-		ParityShards: parityshards,
-		Size:         size,
-		ReadPrice:    readPrice,
-		WritePrice:   writePrice,
-		Lock:         uint64(l),
-		BlobberIds:   []string{},
+		DataShards:        datashards,
+		ParityShards:      parityshards,
+		Size:              size,
+		ReadPrice:         readPrice,
+		WritePrice:        writePrice,
+		Lock:              uint64(l),
+		BlobberIds:        []string{},
 		FileOptionsParams: &sdk.FileOptionsParameters{},
 	}
 
@@ -184,7 +184,7 @@ func (s *StorageSDK) CreateAllocation(datashards, parityshards int, size, expira
 //		- lock: lock write pool with given number of tokens
 //		- blobberUrls: concat blobber urls with comma. leave it as empty if you don't have any preferred blobbers
 //		- blobberIds: concat blobber ids with comma. leave it as empty if you don't have any preferred blobbers
-func (s *StorageSDK) CreateAllocationWithBlobbers(name string, datashards, parityshards int, size, lock string, blobberUrls, blobberIds string) (*zbox.Allocation, error) {
+func (s *StorageSDK) CreateAllocationWithBlobbers(name string, datashards, parityshards int, size int64, lock string, blobberUrls, blobberIds string) (*zbox.Allocation, error) {
 	readPrice := sdk.PriceRange{Min: 0, Max: math.MaxInt64}
 	writePrice := sdk.PriceRange{Min: 0, Max: math.MaxInt64}
 

@@ -192,7 +192,7 @@ func updateAllocationWithRepair(allocationID string,
 }
 
 func updateAllocation(allocationID string,
-	size, expiry int64,
+	size int64, extend bool,
 	lock int64,
 	updateTerms bool,
 	addBlobberId, removeBlobberId string) (string, error) {
