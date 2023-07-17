@@ -425,7 +425,7 @@ func multiDownload(allocationID, jsonMultiDownloadOptions, authTicket, callbackF
 				sdk.WithAuthticket(authTicket, option.RemoteLookupHash),
 				sdk.WithOnlyThumbnail(false),
 				sdk.WithBlocks(0, 0, option.NumBlocks),
-				sdk.WithFileHandler(mf)
+				sdk.WithFileHandler(mf),
 			)
 		} else {
 			downloader, err = sdk.CreateDownloader(allocationID, localPath, option.RemotePath,
@@ -433,7 +433,7 @@ func multiDownload(allocationID, jsonMultiDownloadOptions, authTicket, callbackF
 				sdk.WithAuthticket(authTicket, option.RemoteLookupHash),
 				sdk.WithOnlyThumbnail(true),
 				sdk.WithBlocks(0, 0, option.NumBlocks),
-				sdk.WithFileHandler(mf)
+				sdk.WithFileHandler(mf),
 			)
 		}
 		if err != nil {
