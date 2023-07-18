@@ -26,8 +26,12 @@ func (s *StatusBar) Completed(allocationId, filePath string, filename string, mi
 func (s *StatusBar) Error(allocationID string, filePath string, op int, err error) {
 	s.success = false
 	defer s.wg.Done()
+	if s.unlocked {
+		return
+	}
 	defer mutUnlock(s.allocID)
 
+	s.unlocked = true
 	var errDetail interface{} = "Unknown Error"
 	if err != nil {
 		errDetail = err.Error()
@@ -44,9 +48,10 @@ func (s *StatusBar) RepairCompleted(filesRepaired int) {
 }
 
 type StatusBar struct {
-	wg      *sync.WaitGroup
-	allocID string
-	success bool
+	wg       *sync.WaitGroup
+	allocID  string
+	success  bool
+	unlocked bool
 }
 
 func NewRepairBar(allocID string) *StatusBar {
