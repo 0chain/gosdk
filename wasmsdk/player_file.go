@@ -74,10 +74,14 @@ func (p *FilePlayer) download(startBlock int64) {
 	fileName := strconv.FormatInt(startBlock, 10) + "-" + strconv.FormatInt(endBlock, 10) + "-" + p.playlistFile.Name
 	localPath := filepath.Join(p.allocationID, fileName)
 
+	fs, _ := sys.Files.Open(localPath)
+	mf, _ := fs.(*sys.MemFile)
+
 	downloader, err := sdk.CreateDownloader(p.allocationID, localPath, p.remotePath,
 		sdk.WithAllocation(p.allocationObj),
 		sdk.WithAuthticket(p.authTicket, p.lookupHash),
-		sdk.WithBlocks(startBlock, endBlock, p.numBlocks))
+		sdk.WithBlocks(startBlock, endBlock, p.numBlocks),
+		sdk.WithFileHandler(mf))
 
 	if err != nil {
 		PrintError(err.Error())
@@ -101,9 +105,6 @@ func (p *FilePlayer) download(startBlock int64) {
 	}
 
 	PrintInfo("playlist: downloaded blocks[", p.playlistFile.Name, ":", startBlock, "-", endBlock, "]")
-	fs, _ := sys.Files.Open(localPath)
-
-	mf, _ := fs.(*sys.MemFile)
 
 	withRecover(func() {
 		if p.downloadedChunks != nil {
