@@ -46,7 +46,11 @@ func (r *FileReader) Read(p []byte) (int, error) {
 	r.offset += int64(n)
 
 	if n < size {
-		return n, io.EOF
+		return n, nil
+	}
+
+	if r.offset >= r.size {
+		return 0, io.EOF
 	}
 
 	return n, nil
