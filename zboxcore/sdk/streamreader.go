@@ -3,6 +3,8 @@ package sdk
 import (
 	"context"
 	"io"
+
+	"github.com/0chain/errors"
 )
 
 type DataChan struct {
@@ -48,7 +50,7 @@ func StartWriteWorker(ctx context.Context, source io.Reader, dataChan chan *Data
 		if n < int(chunkDataSizePerRead) {
 			data = data[:n]
 		}
-		if err != nil {
+		if err != nil && !errors.Is(err, io.EOF) {
 			dataToSend.err = err
 			dataChan <- dataToSend
 			return

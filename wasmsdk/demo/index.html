@@ -650,7 +650,7 @@
       await goWasm.sdk.showLogs()
       console.log = s => {
         log(s)
-        logs.value += s
+        logs.value += s + "\n"
         logs.scrollLeft = 0;
         logs.scrollTop = logs.scrollHeight;
       }
