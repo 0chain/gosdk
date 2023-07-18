@@ -149,7 +149,7 @@ create an allocation
 
 **Input**:
 
-> datashards, parityshards int, size, expiry int64,
+> datashards, parityshards int, size, 
 
     minReadPrice, maxReadPrice, minWritePrice, maxWritePrice int64, lock int64,preferredBlobberIds []string
 
@@ -235,7 +235,7 @@ updates allocation settings
 
 **Input**:
 
-> allocationId string, name string,size, expiry int64,lock int64,setImmutable, updateTerms bool,addBlobberId, removeBlobberId string
+> allocationId string, name string,size int64, extend bool,lock int64,setImmutable, updateTerms bool,addBlobberId, removeBlobberId string
 
 **Output**:
 
