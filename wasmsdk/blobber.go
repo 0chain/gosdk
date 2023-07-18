@@ -331,10 +331,14 @@ func download(
 		downloader sdk.Downloader
 	)
 
+	fs, _ := sys.Files.Open(localPath)
+	mf, _ := fs.(*sys.MemFile)
+
 	downloader, err = sdk.CreateDownloader(allocationID, localPath, remotePath,
 		sdk.WithAuthticket(authTicket, lookupHash),
 		sdk.WithOnlyThumbnail(downloadThumbnailOnly),
-		sdk.WithBlocks(0, 0, numBlocks))
+		sdk.WithBlocks(0, 0, numBlocks),
+		sdk.WithFileHandler(mf))
 
 	if err != nil {
 		PrintError(err.Error())
@@ -359,10 +363,6 @@ func download(
 		CommandSuccess: true,
 		FileName:       downloader.GetFileName(),
 	}
-
-	fs, _ := sys.Files.Open(localPath)
-
-	mf, _ := fs.(*sys.MemFile)
 
 	resp.Url = CreateObjectURL(mf.Buffer.Bytes(), "application/octet-stream")
 
@@ -415,6 +415,9 @@ func multiDownload(allocationID, jsonMultiDownloadOptions, authTicket, callbackF
 				callback.Invoke(totalBytes, completedBytes, filename, objURL, err)
 			}
 		}
+		fs, _ := sys.Files.Open(localPath)
+		mf, _ := fs.(*sys.MemFile)
+
 		var downloader sdk.Downloader
 		if option.DownloadOp == 1 {
 			downloader, err = sdk.CreateDownloader(allocationID, localPath, option.RemotePath,
@@ -422,6 +425,7 @@ func multiDownload(allocationID, jsonMultiDownloadOptions, authTicket, callbackF
 				sdk.WithAuthticket(authTicket, option.RemoteLookupHash),
 				sdk.WithOnlyThumbnail(false),
 				sdk.WithBlocks(0, 0, option.NumBlocks),
+				sdk.WithFileHandler(mf),
 			)
 		} else {
 			downloader, err = sdk.CreateDownloader(allocationID, localPath, option.RemotePath,
@@ -429,6 +433,7 @@ func multiDownload(allocationID, jsonMultiDownloadOptions, authTicket, callbackF
 				sdk.WithAuthticket(authTicket, option.RemoteLookupHash),
 				sdk.WithOnlyThumbnail(true),
 				sdk.WithBlocks(0, 0, option.NumBlocks),
+				sdk.WithFileHandler(mf),
 			)
 		}
 		if err != nil {
@@ -872,6 +877,9 @@ func downloadBlocks(allocationID, remotePath, authTicket, lookupHash string, num
 	fileName := strings.Replace(path.Base(remotePath), "/", "-", -1)
 	localPath := filepath.Join(allocationID, fileName)
 
+	fs, _ := sys.Files.Open(localPath)
+	mf, _ := fs.(*sys.MemFile)
+
 	var (
 		err        error
 		downloader sdk.Downloader
@@ -880,12 +888,15 @@ func downloadBlocks(allocationID, remotePath, authTicket, lookupHash string, num
 	if allocObj == nil {
 		downloader, err = sdk.CreateDownloader(allocationID, localPath, remotePath,
 			sdk.WithAuthticket(authTicket, lookupHash),
-			sdk.WithBlocks(startBlockNumber, endBlockNumber, numBlocks))
+			sdk.WithBlocks(startBlockNumber, endBlockNumber, numBlocks),
+			sdk.WithFileHandler(mf))
+
 	} else {
 		downloader, err = sdk.CreateDownloader(allocationID, localPath, remotePath,
 			sdk.WithAuthticket(authTicket, lookupHash),
 			sdk.WithBlocks(startBlockNumber, endBlockNumber, numBlocks),
-			sdk.WithAllocation(allocObj))
+			sdk.WithAllocation(allocObj),
+			sdk.WithFileHandler(mf))
 	}
 
 	if err != nil {
@@ -911,10 +922,6 @@ func downloadBlocks(allocationID, remotePath, authTicket, lookupHash string, num
 		CommandSuccess: true,
 		FileName:       fileName,
 	}
-
-	fs, _ := sys.Files.Open(localPath)
-
-	mf, _ := fs.(*sys.MemFile)
 
 	resp.Url = CreateObjectURL(mf.Buffer.Bytes(), "application/octet-stream")
 
