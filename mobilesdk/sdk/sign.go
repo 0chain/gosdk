@@ -6,7 +6,6 @@ import (
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/core/zcncrypto"
-	"github.com/0chain/gosdk/zboxcore/client"
 )
 
 var ErrInvalidSignatureScheme = errors.New("invalid_signature_scheme")
@@ -14,7 +13,7 @@ var ErrInvalidSignatureScheme = errors.New("invalid_signature_scheme")
 // SignRequest sign data with private key and scheme
 func SignRequest(privateKey, signatureScheme string, data string) (string, error) {
 	hash := encryption.Hash(data)
-	return client.SignHash(hash, signatureScheme, []sys.KeyPair{{
+	return sys.Sign(hash, signatureScheme, []sys.KeyPair{{
 		PrivateKey: privateKey,
 	}})
 }
