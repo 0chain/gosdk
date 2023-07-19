@@ -26,19 +26,17 @@ func (s *StatusBar) Completed(allocationId, filePath string, filename string, mi
 func (s *StatusBar) Error(allocationID string, filePath string, op int, err error) {
 	s.success = false
 	s.err = err
-	defer s.wg.Done()
-	defer mutUnlock(s.allocID)
-
 	l.Logger.Error("Error in status callback. Error = ", err.Error())
 }
 
 func (s *StatusBar) RepairCompleted(filesRepaired int) {
 	if s.err == nil {
 		s.success = true
-		defer s.wg.Done()
-		mutUnlock(s.allocID)
-		l.Logger.Info("Repair completed. Files repaired = ", filesRepaired)
 	}
+	defer s.wg.Done()
+	mutUnlock(s.allocID)
+	l.Logger.Info("Repair completed. Files repaired = ", filesRepaired)
+
 }
 
 type StatusBar struct {

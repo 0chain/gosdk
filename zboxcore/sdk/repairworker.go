@@ -36,9 +36,7 @@ func (cb *RepairStatusCB) InProgress(allocationId, filePath string, op int, comp
 }
 
 func (cb *RepairStatusCB) RepairCompleted(filesRepaired int) {
-	if cb.err == nil {
-		cb.statusCB.RepairCompleted(filesRepaired)
-	}
+	cb.statusCB.RepairCompleted(filesRepaired)
 }
 
 func (cb *RepairStatusCB) Completed(allocationId, filePath string, filename string, mimetype string, size int, op int) {
@@ -48,9 +46,7 @@ func (cb *RepairStatusCB) Completed(allocationId, filePath string, filename stri
 }
 
 func (cb *RepairStatusCB) Error(allocationID string, filePath string, op int, err error) {
-	if cb.err == nil {
-		cb.statusCB.Error(allocationID, filePath, op, err)
-	}
+	cb.statusCB.Error(allocationID, filePath, op, err)
 	cb.success = false
 	cb.err = err
 	cb.wg.Done()

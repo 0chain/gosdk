@@ -399,7 +399,7 @@ func (a *Allocation) RepairFile(file sys.File, remotepath string,
 	idr, _ := homedir.Dir()
 	mask = mask.Not().And(zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1))
 	fileMeta := FileMeta{
-		ActualSize: ref.ActualSize,
+		ActualSize: ref.ActualFileSize,
 		MimeType:   ref.MimeType,
 		RemoteName: ref.Name,
 		RemotePath: remotepath,
@@ -1036,6 +1036,7 @@ func (a *Allocation) generateDownloadRequest(
 		defer a.mutex.Unlock()
 		delete(a.downloadProgressMap, remotepath)
 	}
+	fmt.Println("downloadReq.shouldVerify", verifyDownload)
 	downloadReq.fileCallback = func() {
 		if downloadReq.fileHandler != nil {
 			downloadReq.fileHandler.Close() //nolint: errcheck
