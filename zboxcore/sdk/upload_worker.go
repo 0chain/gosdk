@@ -1,7 +1,6 @@
 package sdk
 
 import (
-	"fmt"
 	"io"
 
 	thrown "github.com/0chain/errors"
@@ -18,7 +17,7 @@ type UploadOperation struct {
 	fileMeta       FileMeta
 	fileReader     io.Reader
 	opts           []ChunkedUploadOption
-	refs           []fileref.FileRef
+	refs           []*fileref.FileRef
 	isUpdate       bool
 	statusCallback StatusCallback
 	opCode         int
@@ -41,10 +40,10 @@ func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([
 
 	var pos uint64
 	numList := len(cu.blobbers)
-	uo.refs = make([]fileref.FileRef, numList)
+	uo.refs = make([]*fileref.FileRef, numList)
 	for i := cu.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
-		uo.refs[pos] = *cu.blobbers[pos].fileRef
+		uo.refs[pos] = cu.blobbers[pos].fileRef
 		uo.refs[pos].ChunkSize = cu.chunkSize
 	}
 
@@ -55,18 +54,23 @@ func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([
 func (uo *UploadOperation) buildChange(_ []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange {
 	changes := make([]allocationchange.AllocationChange, len(uo.refs))
 	for idx, ref := range uo.refs {
-		ref := ref
+		if ref == nil {
+			change := &allocationchange.EmptyFileChange{}
+			changes[idx] = change
+			continue
+		}
 		if uo.isUpdate {
 			change := &allocationchange.UpdateFileChange{}
-			change.NewFile = &ref
+			change.NewFile = ref
+			change.NumBlocks = ref.NumBlocks
 			change.Operation = constants.FileOperationUpdate
 			change.Size = ref.Size
 			changes[idx] = change
 			continue
 		}
 		newChange := &allocationchange.NewFileChange{}
-		newChange.File = &ref
-
+		newChange.File = ref
+		newChange.NumBlocks = ref.NumBlocks
 		newChange.Operation = constants.FileOperationInsert
 		newChange.Size = ref.Size
 		newChange.Uuid = uid
@@ -104,16 +108,6 @@ func (uo *UploadOperation) Verify(allocationObj *Allocation) error {
 	if uo.fileMeta.ActualSize > spaceLeft {
 		return ErrNoEnoughSpaceLeftInAllocation
 	}
-	if uo.isUpdate {
-		otr, err := allocationObj.GetRefs(uo.fileMeta.RemotePath, "", "", "", fileref.FILE, "regular", 0, 1)
-		if err != nil {
-			l.Logger.Error(err)
-			return thrown.New("chunk_upload", err.Error())
-		}
-		if len(otr.Refs) != 1 {
-			return thrown.New("chunk_upload", fmt.Sprintf("Expected refs 1, got %d", len(otr.Refs)))
-		}
-	}
 	return nil
 }
 
@@ -124,10 +118,6 @@ func (uo *UploadOperation) Completed(allocObj *Allocation) {
 }
 
 func (uo *UploadOperation) Error(allocObj *Allocation, consensus int, err error) {
-	if consensus != 0 {
-		l.Logger.Info("Commit consensus failed, Deleting remote file....")
-		allocObj.deleteFile(uo.fileMeta.RemotePath, consensus, consensus) //nolint
-	}
 	if uo.statusCallback != nil {
 		uo.statusCallback.Error(allocObj.ID, uo.fileMeta.RemotePath, uo.opCode, err)
 	}

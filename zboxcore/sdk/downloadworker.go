@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash"
+	"io"
 	"io/ioutil"
 	"math"
 	"net/http"
@@ -48,7 +49,8 @@ type DownloadRequest struct {
 	parityshards       int
 	remotefilepath     string
 	remotefilepathhash string
-	localpath          string
+	fileHandler        sys.File
+	localFilePath      string
 	startBlock         int64
 	endBlock           int64
 	chunkSize          int
@@ -62,6 +64,7 @@ type DownloadRequest struct {
 	encryptedKey       string
 	isDownloadCanceled bool
 	completedCallback  func(remotepath string, remotepathhash string)
+	fileCallback       func()
 	contentMode        string
 	Consensus
 	effectiveBlockSize int // blocksize - encryptionOverHead
@@ -70,13 +73,12 @@ type DownloadRequest struct {
 	encScheme          encryption.EncryptionScheme
 	shouldVerify       bool
 	blocksPerShard     int64
-	prepaidBlobbers    map[string]bool
 	connectionID       string
 	skip               bool
 	fRef               *fileref.FileRef
 	chunksPerShard     int64
-	actualPerShard     int64
 	size               int64
+	offset             int64
 }
 
 type blockData struct {
@@ -355,10 +357,13 @@ func (req *DownloadRequest) getDecryptedDataForAuthTicket(result *downloadBlock,
 
 // processDownload will setup download parameters and downloads data with given
 // start block, end block and number of blocks to download in single request.
-// This will also write data to the file and will verify content by calculating content hash.
+// This will also write data to the file handler and will verify content by calculating content hash.
 func (req *DownloadRequest) processDownload(ctx context.Context) {
 	if req.completedCallback != nil {
 		defer req.completedCallback(req.remotefilepath, req.remotefilepathhash)
+	}
+	if req.fileCallback != nil {
+		defer req.fileCallback()
 	}
 
 	remotePathCB := req.remotefilepath
@@ -371,24 +376,14 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		op = opThumbnailDownload
 	}
 	fRef := req.fRef
-	size, chunksPerShard, actualPerShard := req.size, req.chunksPerShard, req.actualPerShard
+	size, chunksPerShard, blocksPerShard := req.size, req.chunksPerShard, req.blocksPerShard
 
 	logger.Logger.Info(
 		fmt.Sprintf("Downloading file with size: %d from start block: %d and end block: %d. "+
-			"Actual size per blobber: %d Chunks per blobber: %d", size, req.startBlock, req.endBlock, actualPerShard, chunksPerShard),
+			"Blocks per blobber: %d", size, req.startBlock, req.endBlock, blocksPerShard),
 	)
 
-	f, err := req.openFile()
-	if err != nil {
-		logger.Logger.Error(err)
-		req.errorCB(
-			fmt.Errorf("Error while getting file handler. Error: %v",
-				err), remotePathCB)
-		return
-	}
-	defer f.Close()
-
-	err = req.initEC()
+	err := req.initEC()
 	if err != nil {
 		logger.Logger.Error(err)
 		req.errorCB(
@@ -445,7 +440,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			if data, ok := buffer[i]; ok {
 				// If the block we need to write next is already in the buffer, write it
 				numBytes := int64(math.Min(float64(remainingSize), float64(len(data))))
-				_, err = f.Write(data[:numBytes])
+				_, err = req.fileHandler.Write(data[:numBytes])
 
 				if err != nil {
 					req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
@@ -470,7 +465,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 					if block.blockNum == i {
 						// Write the data
 						numBytes := int64(math.Min(float64(remainingSize), float64(len(block.data))))
-						_, err = f.Write(block.data[:numBytes])
+						_, err = req.fileHandler.Write(block.data[:numBytes])
 
 						if err != nil {
 							req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
@@ -495,7 +490,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 				}
 			}
 		}
-		f.Sync() //nolint
+		req.fileHandler.Sync() //nolint
 		wg.Done()
 	}()
 
@@ -515,6 +510,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 				return errors.Wrap(err, fmt.Sprintf("Download failed for block %d. ", startBlock+int64(j)*numBlocks))
 			}
 			blocks <- blockData{blockNum: j, data: data}
+
 			return nil
 		})
 	}
@@ -544,7 +540,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 
 	if req.statusCallback != nil {
 		req.statusCallback.Completed(
-			req.allocationID, remotePathCB, fRef.Name, "", int(fRef.ActualFileSize), op)
+			req.allocationID, remotePathCB, fRef.Name, "", int(size), op)
 	}
 }
 
@@ -569,6 +565,8 @@ func (req *DownloadRequest) submitReadMarker(blobber *blockchain.StorageNode, re
 }
 
 func (req *DownloadRequest) attemptSubmitReadMarker(blobber *blockchain.StorageNode, readCount int64) error {
+	lockBlobberReadCtr(req.allocationID, blobber.ID)
+	defer unlockBlobberReadCtr(req.allocationID, blobber.ID)
 	rm := &marker.ReadMarker{
 		ClientID:        client.GetClientID(),
 		ClientPublicKey: client.GetClientPublicKey(),
@@ -632,9 +630,6 @@ func (req *DownloadRequest) attemptSubmitReadMarker(blobber *blockchain.StorageN
 
 		logger.Logger.Debug("Submit readmarker 200 OK")
 
-		req.maskMu.Lock()
-		req.prepaidBlobbers[blobber.ID] = true
-		req.maskMu.Unlock()
 		return nil
 	})
 	return err
@@ -744,37 +739,34 @@ func (req *DownloadRequest) errorCB(err error, remotePathCB string) {
 		op = opThumbnailDownload
 	}
 	req.skip = true
-	sys.Files.Remove(req.localpath) //nolint: errcheck
+	if req.localFilePath != "" {
+		if info, err := req.fileHandler.Stat(); err == nil && info.Size() == 0 {
+			os.Remove(req.localFilePath) //nolint: errcheck
+		}
+	}
+	if req.fileHandler != nil {
+		req.fileHandler.Close() //nolint: errcheck
+	}
 	if req.statusCallback != nil {
 		req.statusCallback.Error(
 			req.allocationID, remotePathCB, op, err)
 	}
 }
 
-func (req *DownloadRequest) openFile() (sys.File, error) {
-	f, err := sys.Files.OpenFile(req.localpath, os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return nil, errors.Wrap(err, "Can't create local file")
-	}
-	return f, nil
-}
-
 func (req *DownloadRequest) calculateShardsParams(
-	fRef *fileref.FileRef, remotePathCB string) (
-	size, chunksPerShard, actualPerShard int64, err error) {
+	fRef *fileref.FileRef, remotePathCB string) (chunksPerShard int64, err error) {
 
-	size = fRef.ActualFileSize
+	size := fRef.ActualFileSize
 	if req.contentMode == DOWNLOAD_CONTENT_THUMB {
 		if fRef.ActualThumbnailSize == 0 {
-			return 0, 0, 0, errors.New("invalid_request", "Thumbnail does not exist")
+			return 0, errors.New("invalid_request", "Thumbnail does not exist")
 		}
 		size = fRef.ActualThumbnailSize
 	}
+	req.size = size
 	req.encryptedKey = fRef.EncryptedKey
 	req.chunkSize = int(fRef.ChunkSize)
 
-	// fRef.ActualFileSize is size of file that does not include encryption bytes.
-	// that is why, actualPerShard will have different value for encrypted file.
 	effectivePerShardSize := (size + int64(req.datashards) - 1) / int64(req.datashards)
 	effectiveBlockSize := fRef.ChunkSize
 	if fRef.EncryptedKey != "" {
@@ -784,14 +776,28 @@ func (req *DownloadRequest) calculateShardsParams(
 	req.effectiveBlockSize = int(effectiveBlockSize)
 
 	chunksPerShard = (effectivePerShardSize + effectiveBlockSize - 1) / effectiveBlockSize
-	actualPerShard = chunksPerShard * fRef.ChunkSize
+
+	info, err := req.fileHandler.Stat()
+	if err != nil {
+		return 0, err
+	}
+	_, err = req.Seek(info.Size(), io.SeekStart)
+	if err != nil {
+		return 0, err
+	}
+
+	effectiveChunkSize := effectiveBlockSize * int64(req.datashards)
+	if req.offset > 0 {
+		req.startBlock += req.offset / effectiveChunkSize
+	}
+
 	if req.endBlock == 0 || req.endBlock > chunksPerShard {
 		req.endBlock = chunksPerShard
 	}
 
 	if req.startBlock >= req.endBlock {
 		err = errors.New("invalid_block_num", "start block should be less than end block")
-		return 0, 0, 0, err
+		return 0, err
 	}
 
 	return
@@ -984,7 +990,7 @@ func (req *DownloadRequest) processDownloadRequest() {
 		return
 	}
 	req.fRef = fRef
-	size, chunksPerShard, actualPerShard, err := req.calculateShardsParams(fRef, remotePathCB)
+	chunksPerShard, err := req.calculateShardsParams(fRef, remotePathCB)
 	if err != nil {
 		logger.Logger.Error(err.Error())
 		req.errorCB(
@@ -992,16 +998,14 @@ func (req *DownloadRequest) processDownloadRequest() {
 				err), remotePathCB)
 		return
 	}
-	req.size = size
 	req.chunksPerShard = chunksPerShard
-	req.actualPerShard = actualPerShard
 	startBlock, endBlock := req.startBlock, req.endBlock
 	// remainingSize should be calculated based on startBlock number
 	// otherwise end data will have null bytes.
-	remainingSize := size - startBlock*int64(req.effectiveBlockSize)
+	remainingSize := req.size - startBlock*int64(req.effectiveBlockSize)
 
 	var wantSize int64
-	if endBlock*int64(req.effectiveBlockSize) < size {
+	if endBlock*int64(req.effectiveBlockSize) < req.size {
 		wantSize = endBlock*int64(req.effectiveBlockSize) - startBlock*int64(req.effectiveBlockSize)
 	} else {
 		wantSize = remainingSize
@@ -1017,4 +1021,29 @@ func (req *DownloadRequest) processDownloadRequest() {
 
 	blocksPerShard := (wantSize + int64(req.effectiveBlockSize) - 1) / int64(req.effectiveBlockSize)
 	req.blocksPerShard = blocksPerShard
+}
+
+func (req *DownloadRequest) Seek(offset int64, whence int) (int64, error) {
+	switch whence {
+	case io.SeekStart:
+		if offset >= req.size {
+			return 0, errors.New(ExceededMaxOffsetValue, "file is already downloaded")
+		}
+		req.offset = offset
+	case io.SeekCurrent:
+		if req.offset+offset >= req.size {
+			return 0, errors.New(ExceededMaxOffsetValue, "")
+		}
+		req.offset += offset
+	case io.SeekEnd:
+		newOffset := req.size - offset
+		if newOffset < 0 {
+			return 0, errors.New(NegativeOffsetResultantValue, "")
+		}
+		req.offset = offset
+	default:
+		return 0, errors.New(InvalidWhenceValue,
+			fmt.Sprintf("expected 0, 1 or 2, provided %d", whence))
+	}
+	return req.offset, nil
 }

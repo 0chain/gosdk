@@ -227,7 +227,7 @@ func (req *CopyRequest) ProcessCopy() error {
 
 	if status == Repair {
 		logger.Logger.Info("Repairing allocation")
-		//TODO: Need status callback to call repair allocation
+		// // TODO: Need status callback to call repair allocation
 		// err = req.allocationObj.RepairAlloc()
 		// if err != nil {
 		// 	return err
@@ -342,11 +342,17 @@ func (co *CopyOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) []
 	changes := make([]allocationchange.AllocationChange, len(refs))
 
 	for idx, ref := range refs {
+		if ref == nil {
+			change := &allocationchange.EmptyFileChange{}
+			changes[idx] = change
+			continue
+		}
 		newChange := &allocationchange.CopyFileChange{
 			DestPath:   co.destPath,
 			Uuid:       uid,
 			ObjectTree: ref,
 		}
+		newChange.Operation = constants.FileOperationCopy
 		changes[idx] = newChange
 	}
 	return changes

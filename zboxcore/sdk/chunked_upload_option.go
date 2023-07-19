@@ -1,11 +1,13 @@
 package sdk
 
 import (
+	"context"
 	"encoding/hex"
 	"math"
 	"os"
 	"time"
 
+	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/klauspost/reedsolomon"
 	"golang.org/x/crypto/sha3"
 )
@@ -82,5 +84,19 @@ func WithUploadTimeout(t time.Duration) ChunkedUploadOption {
 func WithCommitTimeout(t time.Duration) ChunkedUploadOption {
 	return func(su *ChunkedUpload) {
 		su.commitTimeOut = t
+	}
+}
+
+func WithMask(mask zboxutil.Uint128) ChunkedUploadOption {
+	return func(su *ChunkedUpload) {
+		su.uploadMask = mask
+	}
+}
+
+func WithReaderContext(cancel context.Context) ChunkedUploadOption {
+	return func(su *ChunkedUpload) {
+		if cancel != nil {
+			su.readerCtx = cancel
+		}
 	}
 }

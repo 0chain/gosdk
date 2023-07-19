@@ -98,7 +98,6 @@ func InitStorageSDK(walletJSON string,
 	}
 
 	blockchain.SetChainID(chainID)
-	blockchain.SetPreferredBlobbers(preferredBlobbers)
 	blockchain.SetBlockWorker(blockWorker)
 
 	err = UpdateNetworkDetails()
@@ -583,6 +582,27 @@ type Blobber struct {
 	NotAvailable             bool                         `json:"not_available"`
 }
 
+// UpdateBlobber is used during update blobber settings calls.
+// Note the types are of pointer types with omitempty json property.
+// This is done to correctly identify which properties are actually changing.
+type UpdateBlobber struct {
+	ID                       common.Key                          `json:"id"`
+	BaseURL                  *string                             `json:"url,omitempty"`
+	Terms                    *UpdateTerms                        `json:"terms,omitempty"`
+	Capacity                 *common.Size                        `json:"capacity,omitempty"`
+	Allocated                *common.Size                        `json:"allocated,omitempty"`
+	LastHealthCheck          *common.Timestamp                   `json:"last_health_check,omitempty"`
+	StakePoolSettings        *blockchain.UpdateStakePoolSettings `json:"stake_pool_settings,omitempty"`
+	TotalStake               *int64                              `json:"total_stake,omitempty"`
+	UsedAllocation           *int64                              `json:"used_allocation,omitempty"`
+	TotalOffers              *int64                              `json:"total_offers,omitempty"`
+	TotalServiceCharge       *int64                              `json:"total_service_charge,omitempty"`
+	UncollectedServiceCharge *int64                              `json:"uncollected_service_charge,omitempty"`
+	IsKilled                 *bool                               `json:"is_killed,omitempty"`
+	IsShutdown               *bool                               `json:"is_shutdown,omitempty"`
+	NotAvailable             *bool                               `json:"not_available,omitempty"`
+}
+
 type Validator struct {
 	ID                       common.Key       `json:"validator_id"`
 	BaseURL                  string           `json:"url"`
@@ -600,18 +620,45 @@ type Validator struct {
 	IsShutdown               bool             `json:"is_shutdown"`
 }
 
-func (v *Validator) ConvertToValidationNode() *blockchain.ValidationNode {
-	return &blockchain.ValidationNode{
+type UpdateValidator struct {
+	ID                       common.Key        `json:"validator_id"`
+	BaseURL                  *string           `json:"url,omitempty"`
+	DelegateWallet           *string           `json:"delegate_wallet,omitempty"`
+	MinStake                 *common.Balance   `json:"min_stake,omitempty"`
+	MaxStake                 *common.Balance   `json:"max_stake,omitempty"`
+	NumDelegates             *int              `json:"num_delegates,omitempty"`
+	ServiceCharge            *float64          `json:"service_charge,omitempty"`
+	StakeTotal               *int64            `json:"stake_total,omitempty"`
+	TotalServiceCharge       *int64            `json:"total_service_charge,omitempty"`
+	UncollectedServiceCharge *int64            `json:"uncollected_service_charge,omitempty"`
+	LastHealthCheck          *common.Timestamp `json:"last_health_check,omitempty"`
+	IsKilled                 *bool             `json:"is_killed,omitempty"`
+	IsShutdown               *bool             `json:"is_shutdown,omitempty"`
+}
+
+func (v *UpdateValidator) ConvertToValidationNode() *blockchain.UpdateValidationNode {
+	blockValidator := &blockchain.UpdateValidationNode{
 		ID:      string(v.ID),
 		BaseURL: v.BaseURL,
-		StakePoolSettings: blockchain.StakePoolSettings{
-			DelegateWallet: v.DelegateWallet,
-			MinStake:       v.MinStake,
-			MaxStake:       v.MaxStake,
-			NumDelegates:   v.NumDelegates,
-			ServiceCharge:  v.ServiceCharge,
-		},
 	}
+
+	sp := &blockchain.UpdateStakePoolSettings{
+		DelegateWallet: v.DelegateWallet,
+		MinStake:       v.MinStake,
+		MaxStake:       v.MaxStake,
+		NumDelegates:   v.NumDelegates,
+		ServiceCharge:  v.ServiceCharge,
+	}
+
+	if v.DelegateWallet != nil ||
+		v.MinStake != nil ||
+		v.MaxStake != nil ||
+		v.NumDelegates != nil ||
+		v.ServiceCharge != nil {
+		blockValidator.StakePoolSettings = sp
+	}
+
+	return blockValidator
 }
 
 func getBlobbersInternal(active bool, limit, offset int) (bs []*Blobber, err error) {
@@ -914,7 +961,6 @@ type CreateAllocationOptions struct {
 	DataShards           int
 	ParityShards         int
 	Size                 int64
-	Expiry               int64
 	ReadPrice            PriceRange
 	WritePrice           PriceRange
 	Lock                 uint64
@@ -926,40 +972,15 @@ type CreateAllocationOptions struct {
 func CreateAllocationWith(options CreateAllocationOptions) (
 	string, int64, *transaction.Transaction, error) {
 
-	if len(options.BlobberIds) > 0 {
-		return CreateAllocationForOwner(client.GetClientID(),
-			client.GetClientPublicKey(), options.DataShards, options.ParityShards,
-			options.Size, options.Expiry, options.ReadPrice, options.WritePrice, options.Lock,
-			options.BlobberIds, options.ThirdPartyExtendable, options.FileOptionsParams)
-	}
-
-	return CreateAllocation(options.DataShards, options.ParityShards,
-		options.Size, options.Expiry, options.ReadPrice, options.WritePrice, options.Lock,
-		options.ThirdPartyExtendable, options.FileOptionsParams)
-
-}
-
-func CreateAllocation(datashards, parityshards int, size, expiry int64,
-	readPrice, writePrice PriceRange, lock uint64, thirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters) (
-	string, int64, *transaction.Transaction, error) {
-
-	if lock > math.MaxInt64 {
-		return "", 0, nil, errors.New("invalid_lock", "int64 overflow on lock value")
-	}
-
-	preferredBlobberIds, err := GetBlobberIds(blockchain.GetPreferredBlobbers())
-	if err != nil {
-		return "", 0, nil, errors.New("failed_get_blobber_ids", "failed to get preferred blobber ids: "+err.Error())
-	}
 	return CreateAllocationForOwner(client.GetClientID(),
-		client.GetClientPublicKey(), datashards, parityshards,
-		size, expiry, readPrice, writePrice, lock,
-		preferredBlobberIds, thirdPartyExtendable, fileOptionsParams)
+		client.GetClientPublicKey(), options.DataShards, options.ParityShards,
+		options.Size, options.ReadPrice, options.WritePrice, options.Lock,
+		options.BlobberIds, options.ThirdPartyExtendable, options.FileOptionsParams)
 }
 
 func CreateAllocationForOwner(
 	owner, ownerpublickey string,
-	datashards, parityshards int, size, expiry int64,
+	datashards, parityshards int, size int64,
 	readPrice, writePrice PriceRange,
 	lock uint64, preferredBlobberIds []string, thirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
 ) (hash string, nonce int64, txn *transaction.Transaction, err error) {
@@ -969,7 +990,7 @@ func CreateAllocationForOwner(
 	}
 
 	allocationRequest, err := getNewAllocationBlobbers(
-		datashards, parityshards, size, expiry, readPrice, writePrice, preferredBlobberIds)
+		datashards, parityshards, size, readPrice, writePrice, preferredBlobberIds)
 	if err != nil {
 		return "", 0, nil, errors.New("failed_get_allocation_blobbers", "failed to get blobbers for allocation: "+err.Error())
 	}
@@ -993,14 +1014,13 @@ func CreateAllocationForOwner(
 
 func GetAllocationBlobbers(
 	datashards, parityshards int,
-	size, expiry int64,
+	size int64,
 	readPrice, writePrice PriceRange,
 ) ([]string, error) {
 	var allocationRequest = map[string]interface{}{
 		"data_shards":       datashards,
 		"parity_shards":     parityshards,
 		"size":              size,
-		"expiration_date":   expiry,
 		"read_price_range":  readPrice,
 		"write_price_range": writePrice,
 	}
@@ -1026,12 +1046,12 @@ func GetAllocationBlobbers(
 
 func getNewAllocationBlobbers(
 	datashards, parityshards int,
-	size, expiry int64,
+	size int64,
 	readPrice, writePrice PriceRange,
 	preferredBlobberIds []string,
 ) (map[string]interface{}, error) {
 	allocBlobberIDs, err := GetAllocationBlobbers(
-		datashards, parityshards, size, expiry, readPrice, writePrice,
+		datashards, parityshards, size, readPrice, writePrice,
 	)
 	if err != nil {
 		return nil, err
@@ -1053,7 +1073,6 @@ func getNewAllocationBlobbers(
 		"data_shards":       datashards,
 		"parity_shards":     parityshards,
 		"size":              size,
-		"expiration_date":   expiry,
 		"blobbers":          uniqueBlobbers,
 		"read_price_range":  readPrice,
 		"write_price_range": writePrice,
@@ -1156,7 +1175,8 @@ func CreateFreeAllocation(marker string, value uint64) (string, int64, error) {
 }
 
 func UpdateAllocation(
-	size, expiry int64,
+	size int64,
+	extend bool,
 	allocationID string,
 	lock uint64,
 	updateTerms bool,
@@ -1182,7 +1202,7 @@ func UpdateAllocation(
 	updateAllocationRequest["owner_public_key"] = ""
 	updateAllocationRequest["id"] = allocationID
 	updateAllocationRequest["size"] = size
-	updateAllocationRequest["expiration_date"] = expiry
+	updateAllocationRequest["extend"] = extend
 	updateAllocationRequest["update_terms"] = updateTerms
 	updateAllocationRequest["add_blobber_id"] = addBlobberId
 	updateAllocationRequest["remove_blobber_id"] = removeBlobberId
@@ -1341,7 +1361,7 @@ func TransferAllocation(allocationId, newOwner, newOwnerPublicKey string) (strin
 	return hash, n, err
 }
 
-func UpdateBlobberSettings(blob *Blobber) (resp string, nonce int64, err error) {
+func UpdateBlobberSettings(blob *UpdateBlobber) (resp string, nonce int64, err error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
 	}
@@ -1353,7 +1373,7 @@ func UpdateBlobberSettings(blob *Blobber) (resp string, nonce int64, err error) 
 	return
 }
 
-func UpdateValidatorSettings(v *Validator) (resp string, nonce int64, err error) {
+func UpdateValidatorSettings(v *UpdateValidator) (resp string, nonce int64, err error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
 	}
@@ -1393,10 +1413,7 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 		return
 	}
 
-	//nonce = client.GetClient().Nonce
-	//if nonce != 0 {
-	//	nonce++
-	//}
+
 	txn := transaction.NewTransactionEntity(client.GetClientID(),
 		blockchain.GetChainID(), client.GetClientPublicKey(), nonce)
 
@@ -1536,7 +1553,7 @@ func CommitToFabric(metaTxnData, fabricConfigJSON string) (string, error) {
 // expire in milliseconds
 func GetAllocationMinLock(
 	datashards, parityshards int,
-	size, expiry int64,
+	size int64,
 	readPrice, writePrice PriceRange,
 ) (int64, error) {
 	baSize := int64(math.Ceil(float64(size) / float64(datashards)))
@@ -1555,8 +1572,9 @@ func GetAllocationMinLock(
 		return 0, fmt.Errorf("bad time_unit format")
 	}
 
-	duration := expiry / timeunit.Milliseconds()
-	if expiry%timeunit.Milliseconds() != 0 {
+	expiry := common.Timestamp(time.Now().Add(timeunit).Unix())
+	duration := expiry / common.Timestamp(timeunit.Milliseconds())
+	if expiry%common.Timestamp(timeunit.Milliseconds()) != 0 {
 		duration++
 	}
 
@@ -1571,6 +1589,48 @@ func GetAllocationMinLock(
 		return 0, err
 	}
 	return i, nil
+}
+
+func GetUpdateAllocationMinLock(
+	allocationID string,
+	size int64,
+	extend bool,
+	updateTerms bool,
+	addBlobberId,
+	removeBlobberId string) (int64, error) {
+	updateAllocationRequest := make(map[string]interface{})
+	updateAllocationRequest["owner_id"] = client.GetClientID()
+	updateAllocationRequest["owner_public_key"] = ""
+	updateAllocationRequest["id"] = allocationID
+	updateAllocationRequest["size"] = size
+	updateAllocationRequest["extend"] = extend
+	updateAllocationRequest["update_terms"] = updateTerms
+	updateAllocationRequest["add_blobber_id"] = addBlobberId
+	updateAllocationRequest["remove_blobber_id"] = removeBlobberId
+
+	data, err := json.Marshal(updateAllocationRequest)
+	if err != nil {
+		return 0, errors.Wrap(err, "failed to encode request into json")
+	}
+
+	params := make(map[string]string)
+	params["data"] = string(data)
+
+	responseBytes, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation-update-min-lock", params, nil)
+	if err != nil {
+		return 0, errors.Wrap(err, "failed to request allocation update min lock")
+	}
+
+	var response = make(map[string]int64)
+	if err = json.Unmarshal(responseBytes, &response); err != nil {
+		return 0, errors.Wrap(err, fmt.Sprintf("failed to decode response: %s", string(responseBytes)))
+	}
+
+	v, ok := response["min_lock_demand"]
+	if !ok {
+		return 0, errors.New("", "min_lock_demand not found in response")
+	}
+	return v, nil
 }
 
 // calculateAllocationFileOptions calculates the FileOptions 16-bit mask given the user input
