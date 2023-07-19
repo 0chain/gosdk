@@ -200,7 +200,6 @@ func CreateChunkedUpload(
 	for _, opt := range opts {
 		opt(su)
 	}
-
 	if su.progressStorer == nil {
 		su.progressStorer = createFsChunkedUploadProgress(context.Background())
 	}
@@ -261,7 +260,6 @@ func CreateChunkedUpload(
 			},
 		}
 	}
-	// var cReader ChunkedUploadChunkReader
 	cReader, err := createChunkReader(su.fileReader, fileMeta.ActualSize, int64(su.chunkSize), su.allocationObj.DataShards, su.encryptOnUpload, su.uploadMask, su.fileErasureEncoder, su.fileEncscheme, su.fileHasher)
 
 	if err != nil {

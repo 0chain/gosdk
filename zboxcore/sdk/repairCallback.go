@@ -21,7 +21,6 @@ func (s *StatusBar) InProgress(allocationId, filePath string, op int, completedB
 func (s *StatusBar) Completed(allocationId, filePath string, filename string, mimetype string, size int, op int) {
 	s.success = true
 	l.Logger.Info("Repair for file completed. File = ", filePath)
-	l.Logger.Info("Repair for file completed. File = ", filePath)
 }
 
 func (s *StatusBar) Error(allocationID string, filePath string, op int, err error) {
@@ -30,12 +29,7 @@ func (s *StatusBar) Error(allocationID string, filePath string, op int, err erro
 	defer s.wg.Done()
 	defer mutUnlock(s.allocID)
 
-	var errDetail interface{} = "Unknown Error"
-	if err != nil {
-		errDetail = err.Error()
-	}
-
-	l.Logger.Error("Error in status callback. Error = ", errDetail)
+	l.Logger.Error("Error in status callback. Error = ", err.Error())
 }
 
 func (s *StatusBar) RepairCompleted(filesRepaired int) {

@@ -202,6 +202,7 @@ func main() {
 				"updateAllocation":           updateAllocation,
 				"updateAllocationWithRepair": updateAllocationWithRepair,
 				"getAllocationMinLock":       getAllocationMinLock,
+				"getUpdateAllocationMinLock": getUpdateAllocationMinLock,
 				"getAllocationWith":          getAllocationWith,
 
 				// readpool

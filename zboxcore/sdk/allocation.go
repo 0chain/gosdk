@@ -135,6 +135,14 @@ type Terms struct {
 	MaxOfferDuration time.Duration  `json:"max_offer_duration"`
 }
 
+// UpdateTerms represents Blobber terms during update blobber calls.
+// A Blobber can update its terms, but any existing offer will use terms of offer signing time.
+type UpdateTerms struct {
+	ReadPrice        *common.Balance `json:"read_price,omitempty"`  // tokens / GB
+	WritePrice       *common.Balance `json:"write_price,omitempty"` // tokens / GB
+	MaxOfferDuration *time.Duration  `json:"max_offer_duration,omitempty"`
+}
+
 type BlobberAllocation struct {
 	BlobberID       string         `json:"blobber_id"`
 	Size            int64          `json:"size"`
@@ -1146,32 +1154,27 @@ func (a *Allocation) prepareAndOpenLocalFile(localPath string, remotePath string
 	if !a.isInitialized() {
 		return nil, "", toKeep, notInitialized
 	}
-	_, err := os.Stat(localPath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			if err := os.MkdirAll(localPath, 0744); err != nil {
-				return nil, "", toKeep, err
-			}
-		} else {
+
+	var localFilePath string
+
+	// If the localPath has a file extension, treat it as a file. Otherwise, treat it as a directory.
+	if filepath.Ext(localPath) != "" {
+		localFilePath = localPath
+	} else {
+		localFileName := filepath.Base(remotePath)
+		localFilePath = filepath.Join(localPath, localFileName)
+	}
+
+	// Create necessary directories if they do not exist
+	dir := filepath.Dir(localFilePath)
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		if err := os.MkdirAll(dir, 0744); err != nil {
 			return nil, "", toKeep, err
 		}
 	}
 
-	info, err := os.Stat(localPath)
-	if err != nil {
-		return nil, "", toKeep, err
-	}
-
-	if !info.IsDir() {
-		return nil, "", toKeep, fmt.Errorf("Local path is not a directory '%s'", localPath)
-	}
-
-	localFileName := filepath.Base(remotePath)
-	localFilePath := filepath.Join(localPath, localFileName)
-
-	info, err = os.Stat(localFilePath)
-
 	var f *os.File
+	info, err := os.Stat(localFilePath)
 	if errors.Is(err, os.ErrNotExist) {
 		f, err = os.OpenFile(localFilePath, os.O_WRONLY|os.O_CREATE, 0644)
 		if err != nil {
@@ -2411,7 +2414,8 @@ func (a *Allocation) SetConsensusThreshold() {
 }
 
 func (a *Allocation) UpdateWithRepair(
-	size, expiry int64,
+	size int64,
+	extend bool,
 	lock uint64,
 	updateTerms bool,
 	addBlobberId, removeBlobberId string,
@@ -2423,7 +2427,7 @@ func (a *Allocation) UpdateWithRepair(
 	}
 
 	l.Logger.Info("Updating allocation")
-	hash, _, err := UpdateAllocation(size, expiry, a.ID, lock, updateTerms, addBlobberId, removeBlobberId, setThirdPartyExtendable, fileOptionsParams)
+	hash, _, err := UpdateAllocation(size, extend, a.ID, lock, updateTerms, addBlobberId, removeBlobberId, setThirdPartyExtendable, fileOptionsParams)
 	if err != nil {
 		return "", err
 	}

@@ -3,8 +3,11 @@ package sdk
 import (
 	"context"
 	"io"
+
+	"github.com/0chain/errors"
 )
 
+// Example implementation of a reader
 type DataChan struct {
 	data []byte
 	err  error
@@ -48,7 +51,7 @@ func StartWriteWorker(ctx context.Context, source io.Reader, dataChan chan *Data
 		if n < int(chunkDataSizePerRead) {
 			data = data[:n]
 		}
-		if err != nil {
+		if err != nil && !errors.Is(err, io.EOF) {
 			dataToSend.err = err
 			dataChan <- dataToSend
 			return

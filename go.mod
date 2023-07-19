@@ -46,7 +46,7 @@ require (
 require (
 	github.com/deckarep/golang-set v1.8.0 // indirect
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
-	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d // indirect
+	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d
 	github.com/rjeczalik/notify v0.9.1 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 )
