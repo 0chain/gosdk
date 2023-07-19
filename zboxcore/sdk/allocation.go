@@ -212,6 +212,7 @@ type OperationRequest struct {
 	RemotePath    string
 	DestName      string // Required only for rename operation
 	DestPath      string // Required for copy and move operation
+	IsUpdate      bool
 
 	// Required for uploads
 	Workdir    string
@@ -463,7 +464,7 @@ func (a *Allocation) EncryptAndUploadFileWithThumbnail(
 	)
 }
 
-func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileNames []string, thumbnailPaths []string, encrypts []bool, chunkNumbers []int, remotePaths []string, isUpdate bool, status StatusCallback) error {
+func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileNames []string, thumbnailPaths []string, encrypts []bool, chunkNumbers []int, remotePaths []string, isUpdate []bool, status StatusCallback) error {
 	if len(localPaths) != len(thumbnailPaths) {
 		return errors.New("invalid_value", "length of localpaths and thumbnailpaths must be equal")
 	}
@@ -553,7 +554,7 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 			Workdir:       workdir,
 			RemotePath:    fileMeta.RemotePath,
 		}
-		if isUpdate {
+		if isUpdate[idx] {
 			operationRequests[idx].OperationType = constants.FileOperationUpdate
 		}
 
