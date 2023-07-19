@@ -305,7 +305,7 @@ func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expir
 
 }
 
-// download download file
+// download file
 func download(
 	allocationID, remotePath, authTicket, lookupHash string,
 	downloadThumbnailOnly bool, numBlocks int, callbackFuncName string, isFinal bool) (*DownloadCommandResponse, error) {
@@ -331,10 +331,14 @@ func download(
 		downloader sdk.Downloader
 	)
 
+	fs, _ := sys.Files.Open(localPath)
+	mf, _ := fs.(*sys.MemFile)
+
 	downloader, err = sdk.CreateDownloader(allocationID, localPath, remotePath,
 		sdk.WithAuthticket(authTicket, lookupHash),
 		sdk.WithOnlyThumbnail(downloadThumbnailOnly),
-		sdk.WithBlocks(0, 0, numBlocks))
+		sdk.WithBlocks(0, 0, numBlocks),
+		sdk.WithFileHandler(mf))
 
 	if err != nil {
 		PrintError(err.Error())
@@ -454,12 +458,12 @@ func multiDownload(allocationID, jsonMultiDownloadOptions, authTicket, callbackF
 		}
 		resp[ind] = statusResponse
 	}
+
 	respBytes, err := json.Marshal(resp)
 	if err != nil {
 		return "", err
 	}
 	return string(respBytes), nil
-
 }
 
 // MultiOperation - do copy, move, delete and createdir operation together
