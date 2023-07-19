@@ -688,10 +688,10 @@ func TestAllocation_RepairFile(t *testing.T) {
 				Body: func(fileRefName, hash string) io.ReadCloser {
 					jsonFR, err := json.Marshal(&fileref.FileRef{
 						ActualFileHash: hash,
+						ActualFileSize: 14,
 						Ref: fileref.Ref{
 							Name:         fileRefName,
 							FileMetaHash: hash,
-							ActualSize:   14,
 						},
 					})
 					require.NoError(t, err)
