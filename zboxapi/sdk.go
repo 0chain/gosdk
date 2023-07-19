@@ -13,7 +13,6 @@ import (
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/resty"
 	"github.com/0chain/gosdk/core/sys"
-	"github.com/0chain/gosdk/zboxcore/client"
 )
 
 type Client struct {
@@ -91,7 +90,7 @@ func (c *Client) createResty(ctx context.Context, csrfToken, phoneNumber string,
 	if c.clientPrivateKey != "" {
 		data := fmt.Sprintf("%v:%v:%v", c.clientID, phoneNumber, c.clientPublicKey)
 		hash := encryption.Hash(data)
-		sign, err := client.SignHash(hash, "bls0chain", []sys.KeyPair{{
+		sign, err := sys.Sign(hash, "bls0chain", []sys.KeyPair{{
 			PrivateKey: c.clientPrivateKey,
 		}})
 		if err != nil {
@@ -127,7 +126,7 @@ func (c *Client) CreateJwtSession(ctx context.Context, phoneNumber string) (int6
 	}
 
 	var sessionID int64
-	
+
 	r.DoPost(ctx, nil, c.baseUrl+"/v2/jwt/session").
 		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
 			if err != nil {

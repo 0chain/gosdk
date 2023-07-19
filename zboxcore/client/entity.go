@@ -26,7 +26,7 @@ func init() {
 		Wallet: &zcncrypto.Wallet{},
 	}
 
-	sys.Sign = SignHash
+	sys.Sign = signHash
 	// initialize SignFunc as default implementation
 	Sign = func(hash string) (string, error) {
 		return sys.Sign(hash, client.SignatureScheme, GetClientSysKeys())
@@ -109,7 +109,7 @@ func GetClientSysKeys() []sys.KeyPair {
 	return keys
 }
 
-func SignHash(hash string, signatureScheme string, keys []sys.KeyPair) (string, error) {
+func signHash(hash string, signatureScheme string, keys []sys.KeyPair) (string, error) {
 	retSignature := ""
 	for _, kv := range keys {
 		ss := zcncrypto.NewSignatureScheme(signatureScheme)
