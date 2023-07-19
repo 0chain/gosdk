@@ -129,16 +129,6 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
 				}
 			}
 
-			if deleteMask.CountOnes() > 0 {
-				l.Logger.Info("Deleting minority shards for the path :", zap.Any("path", file.Path))
-				consensus := deleteMask.CountOnes()
-				err := a.deleteFile(file.Path, 0, consensus, deleteMask)
-				if err != nil {
-					l.Logger.Error("delete_file_failed", zap.Error(err))
-					return
-				}
-			}
-
 			localPath := r.getLocalPath(file)
 			if !checkFileExists(localPath) {
 				if r.checkForCancel(a) {
