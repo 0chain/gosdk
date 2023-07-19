@@ -1096,27 +1096,39 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 		}(dr)
 	}
 	wg.Wait()
-	successMask := zboxutil.NewUint128(0)
-	var redeemError error
-	if !isReadFree {
-		for pos, totalBlocks := range blobberMap {
-			if totalBlocks == 0 {
+
+	// Do not send readmarkers for free reads
+	if isReadFree {
+		for _, dr := range drs {
+			if dr.skip {
 				continue
 			}
-			wg.Add(1)
-			go func(pos uint64, totalBlocks int64) {
-				blobber := drs[0].blobbers[pos]
-				err := drs[0].submitReadMarker(blobber, totalBlocks)
-				if err == nil {
-					successMask = successMask.Or(zboxutil.NewUint128(1).Lsh(pos))
-				} else {
-					redeemError = err
-				}
-				wg.Done()
-			}(pos, totalBlocks)
+			go func(dr *DownloadRequest) {
+				a.downloadChan <- dr
+			}(dr)
 		}
-		wg.Wait()
+		return
 	}
+
+	successMask := zboxutil.NewUint128(0)
+	var redeemError error
+	for pos, totalBlocks := range blobberMap {
+		if totalBlocks == 0 {
+			continue
+		}
+		wg.Add(1)
+		go func(pos uint64, totalBlocks int64) {
+			blobber := drs[0].blobbers[pos]
+			err := drs[0].submitReadMarker(blobber, totalBlocks)
+			if err == nil {
+				successMask = successMask.Or(zboxutil.NewUint128(1).Lsh(pos))
+			} else {
+				redeemError = err
+			}
+			wg.Done()
+		}(pos, totalBlocks)
+	}
+	wg.Wait()
 	for _, dr := range drs {
 		if dr.skip {
 			continue
