@@ -1553,7 +1553,7 @@ func CommitToFabric(metaTxnData, fabricConfigJSON string) (string, error) {
 // expire in milliseconds
 func GetAllocationMinLock(
 	datashards, parityshards int,
-	size, expiry int64,
+	size int64,
 	readPrice, writePrice PriceRange,
 ) (int64, error) {
 	baSize := int64(math.Ceil(float64(size) / float64(datashards)))
@@ -1572,8 +1572,9 @@ func GetAllocationMinLock(
 		return 0, fmt.Errorf("bad time_unit format")
 	}
 
-	duration := expiry / timeunit.Milliseconds()
-	if expiry%timeunit.Milliseconds() != 0 {
+	expiry := common.Timestamp(time.Now().Add(timeunit).Unix())
+	duration := expiry / common.Timestamp(timeunit.Milliseconds())
+	if expiry%common.Timestamp(timeunit.Milliseconds()) != 0 {
 		duration++
 	}
 
@@ -1592,7 +1593,8 @@ func GetAllocationMinLock(
 
 func GetUpdateAllocationMinLock(
 	allocationID string,
-	size, expiry int64,
+	size int64,
+	extend bool,
 	updateTerms bool,
 	addBlobberId,
 	removeBlobberId string) (int64, error) {
@@ -1601,7 +1603,7 @@ func GetUpdateAllocationMinLock(
 	updateAllocationRequest["owner_public_key"] = ""
 	updateAllocationRequest["id"] = allocationID
 	updateAllocationRequest["size"] = size
-	updateAllocationRequest["expiration_date"] = expiry
+	updateAllocationRequest["extend"] = extend
 	updateAllocationRequest["update_terms"] = updateTerms
 	updateAllocationRequest["add_blobber_id"] = addBlobberId
 	updateAllocationRequest["remove_blobber_id"] = removeBlobberId
@@ -1621,7 +1623,7 @@ func GetUpdateAllocationMinLock(
 
 	var response = make(map[string]int64)
 	if err = json.Unmarshal(responseBytes, &response); err != nil {
-		return 0, errors.Wrap(err, "failed to decode response")
+		return 0, errors.Wrap(err, fmt.Sprintf("failed to decode response: %s", string(responseBytes)))
 	}
 
 	v, ok := response["min_lock_demand"]
