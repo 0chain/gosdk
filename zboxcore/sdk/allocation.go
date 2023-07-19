@@ -1036,7 +1036,6 @@ func (a *Allocation) generateDownloadRequest(
 		defer a.mutex.Unlock()
 		delete(a.downloadProgressMap, remotepath)
 	}
-	fmt.Println("downloadReq.shouldVerify", verifyDownload)
 	downloadReq.fileCallback = func() {
 		if downloadReq.fileHandler != nil {
 			downloadReq.fileHandler.Close() //nolint: errcheck
