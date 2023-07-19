@@ -218,6 +218,9 @@ func (r *RepairRequest) getLocalPath(file *ListResult) string {
 }
 
 func checkFileExists(localPath string) bool {
+	if IsWasm {
+		return false
+	}
 	info, err := sys.Files.Stat(localPath)
 	if err != nil {
 		return false
