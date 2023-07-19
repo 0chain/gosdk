@@ -206,13 +206,13 @@ func updateAllocation(allocationID string,
 }
 
 func getAllocationMinLock(datashards, parityshards int,
-	size, expiry int64,
+	size int64,
 	maxreadPrice, maxwritePrice uint64,
 ) (int64, error) {
 	readPrice := sdk.PriceRange{Min: 0, Max: maxreadPrice}
 	writePrice := sdk.PriceRange{Min: 0, Max: maxwritePrice}
 
-	value, err := sdk.GetAllocationMinLock(datashards, parityshards, size, expiry, readPrice, writePrice)
+	value, err := sdk.GetAllocationMinLock(datashards, parityshards, size, readPrice, writePrice)
 	if err != nil {
 		sdkLogger.Error(err)
 		return 0, err
@@ -223,10 +223,11 @@ func getAllocationMinLock(datashards, parityshards int,
 
 func getUpdateAllocationMinLock(
 	allocationID string,
-	size, expiry int64,
+	size int64,
+	extend bool,
 	updateTerms bool,
 	addBlobberId, removeBlobberId string) (int64, error) {
-	return sdk.GetUpdateAllocationMinLock(allocationID, size, expiry, updateTerms, addBlobberId, removeBlobberId)
+	return sdk.GetUpdateAllocationMinLock(allocationID, size, extend, updateTerms, addBlobberId, removeBlobberId)
 }
 
 func getRemoteFileMap(allocationID string) ([]*fileResp, error) {
