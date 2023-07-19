@@ -129,7 +129,7 @@ func SignRequest(privateKey, signatureScheme, data *C.char) *C.char {
 
 	hash := encryption.Hash(d)
 
-	return WithJSON(client.SignHash(hash, scheme, []sys.KeyPair{{
+	return WithJSON(sys.Sign(hash, scheme, []sys.KeyPair{{
 		PrivateKey: key,
 	}}))
 }
