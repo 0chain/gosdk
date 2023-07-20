@@ -810,7 +810,7 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 	if numSharders > sharderConsensous {
 		sharders = util.Shuffle(sharders)[:sharderConsensous]
 	}
-
+	log.Info("http: ", relativePath, len(sharders))
 	for _, sharder := range sharders {
 		wg.Add(1)
 		go func(sharder string) {
