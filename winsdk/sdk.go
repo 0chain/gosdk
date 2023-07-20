@@ -16,6 +16,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/client"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/sdk"
+	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/0chain/gosdk/zcncore"
 
 	"github.com/0chain/gosdk/core/conf"
@@ -40,13 +41,14 @@ func SetLogFile(file *C.char) *C.char {
 
 	f, err := os.OpenFile(C.GoString(file), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		return WithJSON(nil, err)
+		return WithJSON(false, err)
 	}
 
 	sdk.GetLogger().SetLogFile(f, true)
 	zcncore.GetLogger().SetLogFile(f, true)
+	zboxutil.GetLogger().SetLogFile(f, true)
 
-	return WithJSON(nil, nil)
+	return WithJSON(true, nil)
 }
 
 // InitSDK - init zbox/zcn sdk from config
