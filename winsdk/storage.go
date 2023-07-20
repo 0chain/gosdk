@@ -12,6 +12,7 @@ import (
 	"errors"
 	"os"
 
+	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
 
@@ -307,7 +308,6 @@ func MultiDownload(_allocationID, _jsonMultiDownloadOptions *C.char) error {
 //
 //export BulkUpload
 func BulkUpload(allocationID, files *C.char) *C.char {
-
 	allocID := C.GoString(allocationID)
 	workdir, _ := os.UserHomeDir()
 	jsFiles := C.GoString(files)
@@ -331,17 +331,49 @@ func BulkUpload(allocationID, files *C.char) *C.char {
 		remotePaths[idx] = option.RemotePath
 		chunkNumbers[idx] = option.ChunkNumber
 		isUpdates[idx] = option.IsUpdate
-
 	}
 
 	a, err := getAllocation(allocID)
 	if err != nil {
 		return WithJSON(nil, err)
 	}
-	statusBar := &StatusCallback{}
+	statusBar := &StatusCallback{
+		status: make(map[string]*Status),
+	}
+	id := util.GetNewUUID().String()
+	statusCaches.Add(id, statusBar)
+
 	err = a.StartMultiUpload(workdir, filePaths, fileNames, thumbnailPaths, encrypts, chunkNumbers, remotePaths, isUpdates, statusBar)
 	if err != nil {
-		return WithJSON(nil, err)
+		return WithJSON(id, err)
 	}
-	return WithJSON(nil, nil)
+	return WithJSON(id, nil)
+}
+
+// GetBulkUploadStatus - get upload status
+// ## Inputs
+//   - uploadID
+//   - remotePath
+//     return
+//     {
+//     "error":"",
+//     "result":"{'Started':false,'CompletedBytes': 0,Error:”,'Completed':false}",
+//     }
+//
+//export GetBulkUploadStatus
+func GetBulkUploadStatus(uploadID, remotePath *C.char) *C.char {
+	id := C.GoString(uploadID)
+	scb, ok := statusCaches.Get(id)
+
+	if !ok {
+		return WithJSON(nil, ErrInvalidUploadID)
+	}
+
+	s := scb.getStatus(C.GoString(remotePath))
+
+	if s == nil {
+		return WithJSON(nil, ErrInvalidRemotePath)
+	}
+
+	return WithJSON(s, nil)
 }
