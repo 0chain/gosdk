@@ -12,7 +12,6 @@ import (
 	"errors"
 	"os"
 
-	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
 
@@ -307,7 +306,7 @@ func MultiDownload(_allocationID, _jsonMultiDownloadOptions *C.char) error {
 //     }
 //
 //export BulkUpload
-func BulkUpload(allocationID, files *C.char) *C.char {
+func BulkUpload(uploadID, allocationID, files *C.char) *C.char {
 	allocID := C.GoString(allocationID)
 	workdir, _ := os.UserHomeDir()
 	jsFiles := C.GoString(files)
@@ -340,14 +339,14 @@ func BulkUpload(allocationID, files *C.char) *C.char {
 	statusBar := &StatusCallback{
 		status: make(map[string]*Status),
 	}
-	id := util.GetNewUUID().String()
-	statusCaches.Add(id, statusBar)
+
+	statusCaches.Add(C.GoString(uploadID), statusBar)
 
 	err = a.StartMultiUpload(workdir, filePaths, fileNames, thumbnailPaths, encrypts, chunkNumbers, remotePaths, isUpdates, statusBar)
 	if err != nil {
-		return WithJSON(id, err)
+		return WithJSON(nil, err)
 	}
-	return WithJSON(id, nil)
+	return WithJSON(nil, nil)
 }
 
 // GetUploadStatus - get upload status
