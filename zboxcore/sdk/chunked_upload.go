@@ -469,11 +469,11 @@ func (su *ChunkedUpload) process() error {
 			if su.fileMeta.ActualSize == 0 {
 				su.fileMeta.ActualSize = su.progress.UploadLength
 			}
-			l.Logger.Info("File hash: ", su.fileMeta.ActualHash, " size: ", su.fileMeta.ActualSize)
 		}
 
 		//chunk has not be uploaded yet
 		if chunks.chunkEndIndex > su.progress.ChunkIndex {
+			l.Logger.Info("Uploading chunk #", chunks.chunkEndIndex)
 			err = su.processUpload(
 				chunks.chunkStartIndex, chunks.chunkEndIndex,
 				chunks.fileShards, chunks.thumbnailShards,
@@ -485,6 +485,8 @@ func (su *ChunkedUpload) process() error {
 				}
 				return err
 			}
+		} else {
+			l.Logger.Info("Chunk already uploaded. Skipping upload for chunk #", chunks.chunkEndIndex)
 		}
 
 		// last chunk might 0 with io.EOF
