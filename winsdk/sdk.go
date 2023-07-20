@@ -100,9 +100,18 @@ func InitSDK(configJson *C.char, clientJson *C.char) *C.char {
 		return WithJSON(false, err)
 	}
 
-	conf.InitClientConfig(configObj)
+	err = zcncore.InitZCNSDK(configObj.BlockWorker, configObj.SignatureScheme, func(cc *zcncore.ChainConfig) error {
+		cc.BlockWorker = configObj.BlockWorker
+		cc.ChainID = configObj.ChainID
+		cc.ConfirmationChainLength = configObj.ConfirmationChainLength
+		cc.MinConfirmation = configObj.MinConfirmation
+		cc.EthNode = configObj.EthereumNode
+		cc.MinSubmit = configObj.MinSubmit
+		cc.SharderConsensous = configObj.SharderConsensous
+		cc.SignatureScheme = configObj.SignatureScheme
 
-	err = zcncore.InitZCNSDK(configObj.BlockWorker, configObj.SignatureScheme)
+		return nil
+	})
 	if err != nil {
 		l.Logger.Error(err, configJs, clientJs)
 		return WithJSON(false, err)

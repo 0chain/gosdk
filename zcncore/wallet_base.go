@@ -343,6 +343,7 @@ func SetLogFile(logFile string, verbose bool) {
 //     "ethereum_node":"https://ropsten.infura.io/v3/xxxxxxxxxxxxxxx",
 //     "zbox_host":"https://0box.dev.0chain.net",
 //     "zbox_app_type":"vult",
+//     "sharder_consensous": 2,
 //     }
 func Init(chainConfigJSON string) error {
 	err := json.Unmarshal([]byte(chainConfigJSON), &_config.chain)
