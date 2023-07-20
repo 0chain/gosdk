@@ -80,6 +80,7 @@ func SetLogFile(file *C.char) *C.char {
 //     "ethereum_node":"https://ropsten.infura.io/v3/xxxxxxxxxxxxxxx",
 //     "zbox_host":"https://0box.dev.0chain.net",
 //     "zbox_app_type":"vult",
+//     "sharder_consensous": 2,
 //     }
 //
 //export InitSDK
@@ -92,6 +93,7 @@ func InitSDK(configJson *C.char, clientJson *C.char) *C.char {
 
 	configObj := &conf.Config{}
 
+	l.Logger.Info("cfg: ", configJs)
 	err := json.Unmarshal([]byte(configJs), configObj)
 	if err != nil {
 		l.Logger.Error(err)
