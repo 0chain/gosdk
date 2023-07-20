@@ -306,6 +306,7 @@ func EstimateFee(txn *Transaction, miners []string, reqPercent ...float32) (uint
 	}
 
 	txnName := sn.Name
+	txnName = strings.ToLower(txnName)
 
 	reqN = util.MaxInt(minReqNum, reqN)
 	reqN = util.MinInt(reqN, len(miners))
