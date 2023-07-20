@@ -97,6 +97,9 @@ func InitSDK(configJson *C.char, clientJson *C.char) *C.char {
 		l.Logger.Error(err)
 		return WithJSON(false, err)
 	}
+
+	conf.InitClientConfig(configObj)
+
 	err = zcncore.InitZCNSDK(configObj.BlockWorker, configObj.SignatureScheme)
 	if err != nil {
 		l.Logger.Error(err, configJs, clientJs)
