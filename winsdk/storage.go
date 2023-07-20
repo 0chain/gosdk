@@ -350,7 +350,7 @@ func BulkUpload(allocationID, files *C.char) *C.char {
 	return WithJSON(id, nil)
 }
 
-// GetBulkUploadStatus - get upload status
+// GetUploadStatus - get upload status
 // ## Inputs
 //   - uploadID
 //   - remotePath
@@ -360,8 +360,8 @@ func BulkUpload(allocationID, files *C.char) *C.char {
 //     "result":"{'Started':false,'CompletedBytes': 0,Error:”,'Completed':false}",
 //     }
 //
-//export GetBulkUploadStatus
-func GetBulkUploadStatus(uploadID, remotePath *C.char) *C.char {
+//export GetUploadStatus
+func GetUploadStatus(uploadID, remotePath *C.char) *C.char {
 	id := C.GoString(uploadID)
 	scb, ok := statusCaches.Get(id)
 
