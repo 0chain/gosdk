@@ -10,6 +10,7 @@ import (
 import (
 	"encoding/json"
 	"errors"
+	"os"
 
 	"github.com/0chain/gosdk/zboxapi"
 	"github.com/0chain/gosdk/zboxcore/client"
@@ -35,10 +36,17 @@ func main() {
 //   - file: the full path of log file
 //
 //export SetLogFile
-func SetLogFile(file *C.char) {
-	f := C.GoString(file)
-	sdk.SetLogFile(f, true)
-	zcncore.SetLogFile(f, true)
+func SetLogFile(file *C.char) *C.char {
+
+	f, err := os.OpenFile(C.GoString(file), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return WithJSON(nil, err)
+	}
+
+	sdk.GetLogger().SetLogFile(f, true)
+	zcncore.GetLogger().SetLogFile(f, true)
+
+	return WithJSON(nil, nil)
 }
 
 // InitSDK - init zbox/zcn sdk from config
