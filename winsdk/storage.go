@@ -368,7 +368,7 @@ func GetUploadStatus(uploadID, remotePath *C.char) *C.char {
 		return WithJSON(nil, ErrInvalidUploadID)
 	}
 
-	s := scb.getStatus(C.GoString(remotePath))
+	s := scb.GetStatus(C.GoString(remotePath))
 
 	if s == nil {
 		return WithJSON(nil, ErrInvalidRemotePath)
