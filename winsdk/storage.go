@@ -323,6 +323,11 @@ func BulkUpload(uploadID, allocationID, files *C.char) *C.char {
 	chunkNumbers := make([]int, totalUploads)
 	encrypts := make([]bool, totalUploads)
 	isUpdates := make([]bool, totalUploads)
+
+	statusBar := &StatusCallback{
+		status: make(map[string]*Status),
+	}
+
 	for idx, option := range options {
 		filePaths[idx] = option.Path
 		fileNames[idx] = option.Name
@@ -330,14 +335,13 @@ func BulkUpload(uploadID, allocationID, files *C.char) *C.char {
 		remotePaths[idx] = option.RemotePath
 		chunkNumbers[idx] = option.ChunkNumber
 		isUpdates[idx] = option.IsUpdate
+
+		statusBar.status[option.RemotePath+option.Name] = &Status{}
 	}
 
 	a, err := getAllocation(allocID)
 	if err != nil {
 		return WithJSON(nil, err)
-	}
-	statusBar := &StatusCallback{
-		status: make(map[string]*Status),
 	}
 
 	statusCaches.Add(C.GoString(uploadID), statusBar)
@@ -368,7 +372,7 @@ func GetUploadStatus(uploadID, remotePath *C.char) *C.char {
 		return WithJSON(nil, ErrInvalidUploadID)
 	}
 
-	s := scb.GetStatus(C.GoString(remotePath))
+	s := scb.getStatus(C.GoString(remotePath))
 
 	if s == nil {
 		return WithJSON(nil, ErrInvalidRemotePath)

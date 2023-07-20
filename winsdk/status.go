@@ -27,7 +27,7 @@ type StatusCallback struct {
 	status map[string]*Status
 }
 
-func (c *StatusCallback) GetStatus(remotePath string) *Status {
+func (c *StatusCallback) Get(remotePath string) *Status {
 	c.Lock()
 	defer c.Unlock()
 	s, ok := c.status[remotePath]
@@ -35,7 +35,7 @@ func (c *StatusCallback) GetStatus(remotePath string) *Status {
 		return s
 	}
 
-	return nil
+	return s
 }
 
 func (c *StatusCallback) getStatus(remotePath string) *Status {
