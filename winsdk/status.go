@@ -28,9 +28,6 @@ type StatusCallback struct {
 }
 
 func (c *StatusCallback) getStatus(remotePath string) *Status {
-	c.Lock()
-	defer c.Unlock()
-
 	s, ok := c.status[remotePath]
 	if !ok {
 		s = &Status{}
@@ -41,6 +38,8 @@ func (c *StatusCallback) getStatus(remotePath string) *Status {
 }
 
 func (c *StatusCallback) Started(allocationId, remotePath string, op int, totalBytes int) {
+	c.Lock()
+	defer c.Unlock()
 	log.Info("status: Started ", remotePath, " ", totalBytes)
 	s := c.getStatus(remotePath)
 	s.Started = true
@@ -48,18 +47,24 @@ func (c *StatusCallback) Started(allocationId, remotePath string, op int, totalB
 }
 
 func (c *StatusCallback) InProgress(allocationId, remotePath string, op int, completedBytes int, data []byte) {
+	c.Lock()
+	defer c.Unlock()
 	log.Info("status: InProgress ", remotePath, " ", completedBytes)
 	s := c.getStatus(remotePath)
 	s.CompletedBytes = completedBytes
 }
 
 func (c *StatusCallback) Error(allocationID string, remotePath string, op int, err error) {
+	c.Lock()
+	defer c.Unlock()
 	log.Info("status: Error ", remotePath, " ", err)
 	s := c.getStatus(remotePath)
 	s.Error = err.Error()
 }
 
 func (c *StatusCallback) Completed(allocationId, remotePath string, filename string, mimetype string, size int, op int) {
+	c.Lock()
+	defer c.Unlock()
 	log.Info("status: Completed ", remotePath)
 	s := c.getStatus(remotePath)
 	s.Completed = true
