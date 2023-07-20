@@ -75,7 +75,7 @@ func (fs *fsChunkedUploadProgressStorer) Save(up UploadProgress) {
 			return
 		}
 		l.Logger.Info("Saving progress ", fs.up.ID)
-		err = sys.Files.WriteFile(fs.up.ID, buf, 0644)
+		err = sys.Files.WriteFile(fs.up.ID, buf, 0666)
 		if err != nil {
 			logger.Logger.Error("[progress] save ", fs.up, err)
 			return
