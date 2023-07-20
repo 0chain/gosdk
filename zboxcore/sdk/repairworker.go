@@ -74,7 +74,6 @@ func (r *RepairRequest) iterateDir(a *Allocation, dir *ListResult) {
 		if len(dir.Children) == 0 {
 			var err error
 			dir, err = a.ListDir(dir.Path, true)
-			dir, err = a.ListDir(dir.Path, true)
 			if err != nil {
 				l.Logger.Error("Failed to get listDir for path ", zap.Any("path", dir.Path), zap.Error(err))
 				return

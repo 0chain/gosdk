@@ -47,14 +47,14 @@ type StatusBar struct {
 }
 
 func NewRepairBar(allocID string) *StatusBar {
+	mapLock.Lock()
 	if _, ok := mutMap[allocID]; !ok {
-		mapLock.Lock()
 		mutMap[allocID] = &sync.Mutex{}
-		mapLock.Unlock()
 	}
 	if !mutMap[allocID].TryLock() {
 		return nil
 	}
+	mapLock.Unlock()
 	return &StatusBar{
 		wg:      &sync.WaitGroup{},
 		allocID: allocID,
