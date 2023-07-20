@@ -3,7 +3,6 @@ package main
 /*
 #include <stdlib.h>
 */
-
 import (
 	"C"
 )
@@ -11,7 +10,6 @@ import (
 import (
 	"encoding/json"
 	"errors"
-	"path/filepath"
 
 	"github.com/0chain/gosdk/zboxapi"
 	"github.com/0chain/gosdk/zboxcore/client"
@@ -26,10 +24,21 @@ import (
 )
 
 func main() {
-	sdk.SetLogFile(filepath.Join(getHomeDir(), ".zcn", "zbox.log"), true)
-	zcncore.SetLogFile(filepath.Join(getHomeDir(), ".zcn", "zcn.log"), true)
+	// sdk.SetLogFile(filepath.Join(getHomeDir(), ".zcn", "zbox.log"), true)
+	// zcncore.SetLogFile(filepath.Join(getHomeDir(), ".zcn", "zcn.log"), true)
 
 	sdk.GetLogger().Info("0Chain Windows SDK is ready")
+}
+
+// SetLogFile - set log file
+// ## Inputs
+//   - file: the full path of log file
+//
+//export InitSDK
+func SetLogFile(file *C.char) {
+	f := C.GoString(file)
+	sdk.SetLogFile(f, true)
+	zcncore.SetLogFile(f, true)
 }
 
 // InitSDK - init zbox/zcn sdk from config
