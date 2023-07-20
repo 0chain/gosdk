@@ -34,7 +34,7 @@ func main() {
 // ## Inputs
 //   - file: the full path of log file
 //
-//export InitSDK
+//export SetLogFile
 func SetLogFile(file *C.char) {
 	f := C.GoString(file)
 	sdk.SetLogFile(f, true)
