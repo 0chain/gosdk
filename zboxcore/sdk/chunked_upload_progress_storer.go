@@ -10,6 +10,7 @@ import (
 
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/logger"
+	l "github.com/0chain/gosdk/zboxcore/logger"
 )
 
 // ChunkedUploadProgressStorer load and save upload progress
@@ -42,7 +43,7 @@ func createFsChunkedUploadProgress(ctx context.Context) *fsChunkedUploadProgress
 func (fs *fsChunkedUploadProgressStorer) Load(progressID string) *UploadProgress {
 
 	progress := UploadProgress{}
-
+	l.Logger.Info("Loading progress ", progressID)
 	buf, err := sys.Files.ReadFile(progressID)
 
 	if errors.Is(err, os.ErrNotExist) {
@@ -72,7 +73,7 @@ func (fs *fsChunkedUploadProgressStorer) Save(up UploadProgress) {
 			logger.Logger.Error("[progress] save ", fs.up, err)
 			return
 		}
-
+		l.Logger.Info("Saving progress ", fs.up.ID)
 		err = sys.Files.WriteFile(fs.up.ID, buf, 0644)
 		if err != nil {
 			logger.Logger.Error("[progress] save ", fs.up, err)

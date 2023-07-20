@@ -30,6 +30,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/google/uuid"
 	"github.com/klauspost/reedsolomon"
+	"go.uber.org/zap"
 )
 
 const (
@@ -377,7 +378,10 @@ func (su *ChunkedUpload) loadProgress() {
 
 	if progress != nil {
 		su.progress = *progress
+		l.Logger.Info("Loaded progress", zap.Int("chunk index", progress.ChunkIndex), zap.Any("upload length", progress.UploadLength))
 		su.progress.ID = progressID
+	} else {
+		l.Logger.Info("No progress found")
 	}
 
 }
