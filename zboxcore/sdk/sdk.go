@@ -838,7 +838,7 @@ func GetAllocation(allocationID string) (*Allocation, error) {
 	allocationObj := &Allocation{}
 	err = json.Unmarshal(allocationBytes, allocationObj)
 	if err != nil {
-		return nil, errors.New("allocation_decode_error", "Error decoding the allocation."+err.Error())
+		return nil, errors.New("allocation_decode_error", "Error decoding the allocation: "+err.Error()+" "+string(allocationBytes))
 	}
 	allocationObj.numBlockDownloads = numBlockDownloads
 	allocationObj.InitAllocation()
