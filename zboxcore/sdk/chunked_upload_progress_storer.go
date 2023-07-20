@@ -43,14 +43,15 @@ func createFsChunkedUploadProgress(ctx context.Context) *fsChunkedUploadProgress
 func (fs *fsChunkedUploadProgressStorer) Load(progressID string) *UploadProgress {
 
 	progress := UploadProgress{}
-	l.Logger.Info("Loading progress ", progressID)
 	buf, err := sys.Files.ReadFile(progressID)
 
 	if errors.Is(err, os.ErrNotExist) {
+		l.Logger.Info("Progress file not found ", progressID)
 		return nil
 	}
 
 	if err := json.Unmarshal(buf, &progress); err != nil {
+		l.Logger.Error("[progress] load ", err)
 		return nil
 	}
 
