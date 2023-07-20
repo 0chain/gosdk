@@ -1112,7 +1112,6 @@ func getFreeAllocationBlobbers(request map[string]interface{}) ([]string, error)
 	params := make(map[string]string)
 	params["free_allocation_data"] = string(data)
 
-	l.Logger.Info("Passing params: ", params)
 	allocBlobber, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/free_alloc_blobbers", params, nil)
 	if err != nil {
 		return nil, err
@@ -1120,7 +1119,6 @@ func getFreeAllocationBlobbers(request map[string]interface{}) ([]string, error)
 	var allocBlobberIDs []string
 
 	err = json.Unmarshal(allocBlobber, &allocBlobberIDs)
-	l.Logger.Info("allocBlobber response: ", string(allocBlobber))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to unmarshal blobber IDs")
 	}
