@@ -21,9 +21,12 @@ import (
 
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/encryption"
+	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/core/zcncrypto"
 )
+
+var log logger.Logger
 
 func main() {
 	// sdk.SetLogFile(filepath.Join(getHomeDir(), ".zcn", "zbox.log"), true)
@@ -44,9 +47,17 @@ func SetLogFile(file *C.char) *C.char {
 		return WithJSON(false, err)
 	}
 
+	sdk.GetLogger().SetLevel(logger.DEBUG)
 	sdk.GetLogger().SetLogFile(f, true)
+
+	zcncore.GetLogger().SetLevel(logger.DEBUG)
 	zcncore.GetLogger().SetLogFile(f, true)
+
+	zboxutil.GetLogger().SetLevel(logger.DEBUG)
 	zboxutil.GetLogger().SetLogFile(f, true)
+
+	log.SetLogFile(f, true)
+	log.SetLevel(logger.DEBUG)
 
 	return WithJSON(true, nil)
 }
