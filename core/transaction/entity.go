@@ -8,7 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/0chain/common/core/logging"
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/encryption"
@@ -308,21 +307,19 @@ func EstimateFee(txn *Transaction, miners []string, reqPercent ...float32) (uint
 	txnName := sn.Name
 	txnName = strings.ToLower(txnName)
 
-	logging.Logger.Info("estimating fees for txn: " + txnName)
+	fmt.Println("estimating fees for txn: " + txnName)
 	reqN = util.MaxInt(minReqNum, reqN)
 	reqN = util.MinInt(reqN, len(miners))
 	randomMiners := util.Shuffle(miners)[:reqN]
 
 	// Retrieve the object from the cache
 	cached, ok := cache.Get(FEES_TABLE)
-
 	if ok {
 		cachedObj, ok := cached.(*cachedObject)
-		if !ok {
-			logging.Logger.Error("Object of bad type")
+		if ok {
+			table := cachedObj.Value.(map[string]uint64)
+			return table[txnName], nil
 		}
-		table := cachedObj.Value.(map[string]uint64)
-		return table[txnName], nil
 	}
 
 	table, err := GetFeesTable(randomMiners, reqPercent...)
@@ -334,7 +331,7 @@ func EstimateFee(txn *Transaction, miners []string, reqPercent ...float32) (uint
 
 	for _, values := range table {
 		for name, value := range values {
-			logging.Logger.Info("txnname: " + txnName + "txnValue: " + fmt.Sprint(value))
+			fmt.Println("txnname: " + txnName + "txnValue: " + fmt.Sprint(value))
 			feesTable[name] = uint64(value)
 		}
 	}
@@ -344,7 +341,7 @@ func EstimateFee(txn *Transaction, miners []string, reqPercent ...float32) (uint
 		Value:      feesTable,
 	})
 
-	logging.Logger.Info("returning feesTable[txnName]: " + fmt.Sprint(feesTable[txnName]))
+	fmt.Println("returning feesTable[txnName]: " + fmt.Sprint(feesTable[txnName]))
 	return feesTable[txnName], nil
 }
 
