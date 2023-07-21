@@ -29,10 +29,7 @@ import (
 var log logger.Logger
 
 func main() {
-	// sdk.SetLogFile(filepath.Join(getHomeDir(), ".zcn", "zbox.log"), true)
-	// zcncore.SetLogFile(filepath.Join(getHomeDir(), ".zcn", "zcn.log"), true)
 
-	sdk.GetLogger().Info("0Chain Windows SDK is ready")
 }
 
 // SetLogFile - set log file

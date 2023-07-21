@@ -2,12 +2,6 @@ package main
 
 /*
 #include <stdlib.h>
-#include <stdbool.h>
-
-typedef void (*callback)(char*, char*);
-extern void do_callback(char* eventName, char* eventData, callback cb){
-    cb(eventName, eventData);
-}
 */
 import (
 	"C"
