@@ -308,6 +308,7 @@ func EstimateFee(txn *Transaction, miners []string, reqPercent ...float32) (uint
 	txnName := sn.Name
 	txnName = strings.ToLower(txnName)
 
+	logging.Logger.Info("estimating fees for txn: " + txnName)
 	reqN = util.MaxInt(minReqNum, reqN)
 	reqN = util.MinInt(reqN, len(miners))
 	randomMiners := util.Shuffle(miners)[:reqN]
@@ -332,8 +333,9 @@ func EstimateFee(txn *Transaction, miners []string, reqPercent ...float32) (uint
 	feesTable := make(map[string]uint64)
 
 	for _, values := range table {
-		for txnName, value := range values {
-			feesTable[txnName] = uint64(value)
+		for name, value := range values {
+			logging.Logger.Info("txnname: " + txnName + "txnValue: " + fmt.Sprint(value))
+			feesTable[name] = uint64(value)
 		}
 	}
 
@@ -342,6 +344,7 @@ func EstimateFee(txn *Transaction, miners []string, reqPercent ...float32) (uint
 		Value:      feesTable,
 	})
 
+	logging.Logger.Info("returning feesTable[txnName]: " + fmt.Sprint(feesTable[txnName]))
 	return feesTable[txnName], nil
 }
 
