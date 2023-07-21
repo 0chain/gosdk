@@ -288,6 +288,20 @@ type cachedObject struct {
 	Value      interface{}
 }
 
+func retriveFromTable(table map[string]map[string]int64, txnName, toAddress string) (uint64, error) {
+	var fees uint64
+	if val, ok := table[toAddress]; ok {
+		fees = uint64(val[txnName])
+	} else {
+		if txnName == "transfer" {
+			fees = uint64(table["transfer"]["transfer"])
+		} else {
+			return 0, fmt.Errorf("invalid transaction")
+		}
+	}
+	return fees, nil
+}
+
 // EstimateFee estimates transaction fee
 func EstimateFee(txn *Transaction, miners []string, reqPercent ...float32) (uint64, error) {
 	const minReqNum = 3
@@ -307,6 +321,7 @@ func EstimateFee(txn *Transaction, miners []string, reqPercent ...float32) (uint
 
 	txnName := sn.Name
 	txnName = strings.ToLower(txnName)
+	toAddress := txn.ToClientID
 
 	l.Logger.Info("estimating fees for txn: " + txnName)
 	reqN = util.MaxInt(minReqNum, reqN)
@@ -318,8 +333,12 @@ func EstimateFee(txn *Transaction, miners []string, reqPercent ...float32) (uint
 	if ok {
 		cachedObj, ok := cached.(*cachedObject)
 		if ok {
-			table := cachedObj.Value.(map[string]uint64)
-			return table[txnName], nil
+			table := cachedObj.Value.(map[string]map[string]int64)
+			fees, err := retriveFromTable(table, txnName, toAddress)
+			if err != nil {
+				return 0, err
+			}
+			return fees, nil
 		}
 	}
 
@@ -328,22 +347,18 @@ func EstimateFee(txn *Transaction, miners []string, reqPercent ...float32) (uint
 		return 0, err
 	}
 
-	feesTable := make(map[string]uint64)
-
-	for _, values := range table {
-		for name, value := range values {
-			l.Logger.Info("txnname: " + name + " txnValue: " + fmt.Sprint(value))
-			feesTable[name] = uint64(value)
-		}
+	fees, err := retriveFromTable(table, txnName, toAddress)
+	if err != nil {
+		return 0, err
 	}
 
 	cache.Add(FEES_TABLE, &cachedObject{
 		Expiration: 30 * time.Hour,
-		Value:      feesTable,
+		Value:      table,
 	})
 
-	l.Logger.Info("returning feesTable[txnName]: " + fmt.Sprint(feesTable[txnName]))
-	return feesTable[txnName], nil
+	l.Logger.Info("returning feesTable[txnName]: " + fmt.Sprint(fees))
+	return fees, nil
 }
 
 // GetFeesTable get fee tables
