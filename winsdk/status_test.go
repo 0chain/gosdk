@@ -18,7 +18,7 @@ func TestStatusCallback(t *testing.T) {
 	status.Completed("allocationId", "/remotePath", "", "", 100, 0)
 	status.Error("allocationId", "/remotePath", 0, errors.New("err"))
 
-	s := status.GetStatus("/remotePath")
+	s := status.Get("/remotePath")
 
 	require.True(t, s.Started)
 	require.True(t, s.Completed)
