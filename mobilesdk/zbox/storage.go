@@ -343,6 +343,7 @@ func MultiUpload(allocationID string, workdir string, jsonMultiUploadOptions str
 		remotePaths[idx] = option.RemotePath
 		chunkNumbers[idx] = option.ChunkNumber
 		isUpdates[idx] = false
+		encrypts[idx] = option.Encrypt
 	}
 
 	a, err := getAllocation(allocationID)

@@ -807,6 +807,9 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 	}
 
 	sharderConsensous := cfg.SharderConsensous
+	if sharderConsensous < 1 {
+		sharderConsensous = conf.DefaultSharderConsensous
+	}
 	if numSharders > sharderConsensous {
 		sharders = util.Shuffle(sharders)[:sharderConsensous]
 	}
