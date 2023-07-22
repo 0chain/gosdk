@@ -174,7 +174,7 @@ func updateAllocationWithRepair(allocationID string,
 	lock int64,
 	updateTerms bool,
 	addBlobberId, removeBlobberId string) (string, error) {
-
+	sdk.IsWasm = true
 	allocationObj, err := sdk.GetAllocation(allocationID)
 	if err != nil {
 		return "", err
