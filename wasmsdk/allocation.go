@@ -174,14 +174,14 @@ func updateAllocationWithRepair(allocationID string,
 	lock int64,
 	updateTerms bool,
 	addBlobberId, removeBlobberId string) (string, error) {
-	sdk.IsWasm = true
+	sdk.SetWasm()
 	allocationObj, err := sdk.GetAllocation(allocationID)
 	if err != nil {
 		return "", err
 	}
 
 	wg := &sync.WaitGroup{}
-	statusBar := &StatusBar{wg: wg}
+	statusBar := &StatusBar{wg: wg, isRepair: true}
 
 	hash, err := allocationObj.UpdateWithRepair(size, extend, uint64(lock), updateTerms, addBlobberId, removeBlobberId, false, &sdk.FileOptionsParameters{}, statusBar)
 	if err == nil {
@@ -313,7 +313,7 @@ func getReadPoolInfo(clientID string) (*sdk.ReadPool, error) {
 
 // GetAllocationFromAuthTicket - get allocation from Auth ticket
 func getAllocationWith(authTicket string) (*sdk.Allocation, error) {
-	sdk.IsWasm = true
+	sdk.SetWasm()
 	sdkAllocation, err := sdk.GetAllocationFromAuthTicket(authTicket)
 	if err != nil {
 		return nil, err
@@ -374,9 +374,9 @@ func allocationRepair(allocationID, remotePath string) error {
 	if err != nil {
 		return err
 	}
-
+	sdk.SetWasm()
 	wg := &sync.WaitGroup{}
-	statusBar := &StatusBar{wg: wg}
+	statusBar := &StatusBar{wg: wg, isRepair: true}
 	wg.Add(1)
 
 	err = allocationObj.StartRepair("/tmp", remotePath, statusBar)

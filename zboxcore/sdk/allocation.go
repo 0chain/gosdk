@@ -228,6 +228,10 @@ func GetWritePriceRange() (PriceRange, error) {
 	return getPriceRange("max_write_price")
 }
 
+func SetWasm() {
+	IsWasm = true
+}
+
 func getPriceRange(name string) (PriceRange, error) {
 	conf, err := GetStorageSCConfig()
 	if err != nil {

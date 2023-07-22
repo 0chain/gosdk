@@ -22,6 +22,7 @@ type StatusBar struct {
 	objURL         string
 	localPath      string
 	callback       func(totalBytes int, completedBytes int, fileName, objURL, err string)
+	isRepair       bool
 }
 
 var jsCallbackMutex sync.Mutex
@@ -73,8 +74,9 @@ func (s *StatusBar) Completed(allocationID, filePath string, filename string, mi
 		defer jsCallbackMutex.Unlock()
 		s.callback(s.totalBytes, s.completedBytes, filename, s.objURL, "")
 	}
-
-	defer s.wg.Done()
+	if !s.isRepair {
+		defer s.wg.Done()
+	}
 	sdkLogger.Info("Status completed callback. Type = " + mimetype + ". Name = " + filename + ". URL = " + s.objURL)
 }
 
@@ -97,7 +99,9 @@ func (s *StatusBar) Error(allocationID string, filePath string, op int, err erro
 		defer jsCallbackMutex.Unlock()
 		s.callback(s.totalBytes, s.completedBytes, fileName, "", err.Error())
 	}
-	s.wg.Done()
+	if !s.isRepair {
+		s.wg.Done()
+	}
 }
 
 // RepairCompleted when repair is completed
