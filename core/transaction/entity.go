@@ -12,7 +12,6 @@ import (
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/util"
-	l "github.com/0chain/gosdk/zboxcore/logger"
 	lru "github.com/hashicorp/golang-lru"
 )
 
@@ -323,7 +322,6 @@ func EstimateFee(txn *Transaction, miners []string, reqPercent ...float32) (uint
 	txnName = strings.ToLower(txnName)
 	toAddress := txn.ToClientID
 
-	l.Logger.Info("estimating fees for txn: " + txnName)
 	reqN = util.MaxInt(minReqNum, reqN)
 	reqN = util.MinInt(reqN, len(miners))
 	randomMiners := util.Shuffle(miners)[:reqN]
@@ -357,7 +355,6 @@ func EstimateFee(txn *Transaction, miners []string, reqPercent ...float32) (uint
 		Value:      table,
 	})
 
-	l.Logger.Info("returning feesTable[txnName]: " + fmt.Sprint(fees))
 	return fees, nil
 }
 
