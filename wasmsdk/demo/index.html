@@ -69,6 +69,7 @@
       <button id="btnCreateAllocation">Create</button>
       <button id="btnGetAllocation">Get</button>
       <button id="btnGetAllocationMinLock">AllocationMinLock</button>
+      <button id="btnGetUpdateAllocationMinLock">UpdateAllocationMinLock</button>
       <button id="btnRemoteFileMap">RemoteFileMap</button>
       <button id="btnAddReplaceBlobber">AddReplaceBlobber</button>
     </span>
@@ -207,6 +208,7 @@
       networkConfig.confirmationChainLength,
       'https://0box.' + network, //zboxHost
       'vult', //zboxAppType
+      3,
     ]
 
     const bls = window.bls
@@ -332,6 +334,24 @@
         alert(e)
       }
     })
+
+	onClick('btnGetUpdateAllocationMinLock', async () => {
+		let size = 100000
+		let expiry = 1680408725
+		const allocationId = getSelectedAllocation()
+		if (!allocationId) {
+			alert("please selection allocationID")
+			return
+		} else {
+			console.log("allocation:", allocationId)
+		}
+		try {
+			const price = await goWasm.sdk.getUpdateAllocationMinLock(allocationId, size, expiry, false, "", "")
+			txtOutput.innerHTML = price
+		} catch (e) {
+			alert(e)
+		}
+	})
 
     onClick('btnListBlobberSettings', async () => {
       const blobberID = getSelectedBlobbers()

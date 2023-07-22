@@ -135,6 +135,14 @@ type Terms struct {
 	MaxOfferDuration time.Duration  `json:"max_offer_duration"`
 }
 
+// UpdateTerms represents Blobber terms during update blobber calls.
+// A Blobber can update its terms, but any existing offer will use terms of offer signing time.
+type UpdateTerms struct {
+	ReadPrice        *common.Balance `json:"read_price,omitempty"`  // tokens / GB
+	WritePrice       *common.Balance `json:"write_price,omitempty"` // tokens / GB
+	MaxOfferDuration *time.Duration  `json:"max_offer_duration,omitempty"`
+}
+
 type BlobberAllocation struct {
 	BlobberID       string         `json:"blobber_id"`
 	Size            int64          `json:"size"`
@@ -267,7 +275,6 @@ func (a *Allocation) GetBlobberStats() map[string]*BlobberAllocationStats {
 }
 
 const downloadWorkerCount = 10
-const processDownloadWorkerCount = 20
 
 func (a *Allocation) InitAllocation() {
 	a.downloadChan = make(chan *DownloadRequest, 100)
@@ -781,7 +788,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 		// resetting multi operation and previous paths for every batch
 		var mo MultiOperation
 		mo.allocationObj = a
-		mo.operationMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
+		mo.operationMask = zboxutil.NewUint128(0)
 		mo.maskMU = &sync.Mutex{}
 		mo.ctx, mo.ctxCncl = context.WithCancel(a.ctx)
 		mo.Consensus = Consensus{
@@ -792,6 +799,25 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 		mo.connectionID = zboxutil.NewConnectionId()
 
 		previousPaths := make(map[string]bool)
+
+		var wg sync.WaitGroup
+		for blobberIdx := range mo.allocationObj.Blobbers {
+			wg.Add(1)
+			go func(pos int) {
+				defer wg.Done()
+				err := mo.createConnectionObj(pos)
+				if err != nil {
+					l.Logger.Error(err.Error())
+				}
+			}(blobberIdx)
+		}
+		wg.Wait()
+		// Check consensus
+		if mo.operationMask.CountOnes() < mo.consensusThresh {
+			return errors.New("consensus_not_met",
+				fmt.Sprintf("Multioperation failed. Required consensus %d got %d",
+					mo.consensusThresh, mo.operationMask.CountOnes()))
+		}
 
 		for ; i < len(operations); i++ {
 			op := operations[i]
@@ -815,12 +841,14 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 				operation = NewMoveOperation(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 
 			case constants.FileOperationInsert:
+				op.Opts = append(op.Opts, WithReaderContext(mo.ctx))
 				operation = NewUploadOperation(op.Workdir, op.FileMeta, op.FileReader, false, op.Opts...)
 
 			case constants.FileOperationDelete:
 				operation = NewDeleteOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 
 			case constants.FileOperationUpdate:
+				op.Opts = append(op.Opts, WithReaderContext(mo.ctx))
 				operation = NewUploadOperation(op.Workdir, op.FileMeta, op.FileReader, true, op.Opts...)
 
 			case constants.FileOperationCreateDir:
@@ -1046,6 +1074,10 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 	blobberMap := make(map[uint64]int64)
 	mpLock := sync.Mutex{}
 	wg := sync.WaitGroup{}
+	var isReadFree bool
+	if a.ReadPriceRange.Max == 0 && a.ReadPriceRange.Min == 0 {
+		isReadFree = true
+	}
 
 	for _, dr := range drs {
 		wg.Add(1)
@@ -1066,23 +1098,25 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 	wg.Wait()
 	successMask := zboxutil.NewUint128(0)
 	var redeemError error
-	for pos, totalBlocks := range blobberMap {
-		if totalBlocks == 0 {
-			continue
-		}
-		wg.Add(1)
-		go func(pos uint64, totalBlocks int64) {
-			blobber := drs[0].blobbers[pos]
-			err := drs[0].submitReadMarker(blobber, totalBlocks)
-			if err == nil {
-				successMask = successMask.Or(zboxutil.NewUint128(1).Lsh(pos))
-			} else {
-				redeemError = err
+	if !isReadFree {
+		for pos, totalBlocks := range blobberMap {
+			if totalBlocks == 0 {
+				continue
 			}
-			wg.Done()
-		}(pos, totalBlocks)
+			wg.Add(1)
+			go func(pos uint64, totalBlocks int64) {
+				blobber := drs[0].blobbers[pos]
+				err := drs[0].submitReadMarker(blobber, totalBlocks)
+				if err == nil {
+					successMask = successMask.Or(zboxutil.NewUint128(1).Lsh(pos))
+				} else {
+					redeemError = err
+				}
+				wg.Done()
+			}(pos, totalBlocks)
+		}
+		wg.Wait()
 	}
-	wg.Wait()
 	for _, dr := range drs {
 		if dr.skip {
 			continue
@@ -1107,32 +1141,27 @@ func (a *Allocation) prepareAndOpenLocalFile(localPath string, remotePath string
 	if !a.isInitialized() {
 		return nil, "", toKeep, notInitialized
 	}
-	_, err := os.Stat(localPath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			if err := os.MkdirAll(localPath, 0744); err != nil {
-				return nil, "", toKeep, err
-			}
-		} else {
+
+	var localFilePath string
+
+	// If the localPath has a file extension, treat it as a file. Otherwise, treat it as a directory.
+	if filepath.Ext(localPath) != "" {
+		localFilePath = localPath
+	} else {
+		localFileName := filepath.Base(remotePath)
+		localFilePath = filepath.Join(localPath, localFileName)
+	}
+
+	// Create necessary directories if they do not exist
+	dir := filepath.Dir(localFilePath)
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		if err := os.MkdirAll(dir, 0744); err != nil {
 			return nil, "", toKeep, err
 		}
 	}
 
-	info, err := os.Stat(localPath)
-	if err != nil {
-		return nil, "", toKeep, err
-	}
-
-	if !info.IsDir() {
-		return nil, "", toKeep, fmt.Errorf("Local path is not a directory '%s'", localPath)
-	}
-
-	localFileName := filepath.Base(remotePath)
-	localFilePath := filepath.Join(localPath, localFileName)
-
-	info, err = os.Stat(localFilePath)
-
 	var f *os.File
+	info, err := os.Stat(localFilePath)
 	if errors.Is(err, os.ErrNotExist) {
 		f, err = os.OpenFile(localFilePath, os.O_WRONLY|os.O_CREATE, 0644)
 		if err != nil {

@@ -1418,6 +1418,13 @@ func WithConfirmationChainLength(m int) func(c *ChainConfig) error {
 	}
 }
 
+func WithSharderConsensous(m int) func(c *ChainConfig) error {
+	return func(c *ChainConfig) error {
+		c.SharderConsensous = m
+		return nil
+	}
+}
+
 // UpdateValidatorSettings update settings of a validator.
 func (t *Transaction) UpdateValidatorSettings(v *Validator) (err error) {
 
