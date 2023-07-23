@@ -188,17 +188,16 @@ type CreateAllocationRequest struct {
 }
 
 type StakePoolSettings struct {
-	DelegateWallet string         `json:"delegate_wallet"`
-	MinStake       common.Balance `json:"min_stake"`
-	MaxStake       common.Balance `json:"max_stake"`
-	NumDelegates   int            `json:"num_delegates"`
-	ServiceCharge  float64        `json:"service_charge"`
+	DelegateWallet *string         `json:"delegate_wallet,omitempty"`
+	MinStake       *common.Balance `json:"min_stake,omitempty"`
+	MaxStake       *common.Balance `json:"max_stake,omitempty"`
+	NumDelegates   *int            `json:"num_delegates,omitempty"`
+	ServiceCharge  *float64        `json:"service_charge,omitempty"`
 }
 
 type Terms struct {
 	ReadPrice        common.Balance `json:"read_price"`  // tokens / GB
-	WritePrice       common.Balance `json:"write_price"` // tokens / GB
-	MinLockDemand    float64        `json:"min_lock_demand"`
+	WritePrice       common.Balance `json:"write_price"` // tokens / GB `
 	MaxOfferDuration time.Duration  `json:"max_offer_duration"`
 }
 
@@ -210,7 +209,7 @@ type Blobber struct {
 	Allocated         common.Size       `json:"allocated"`
 	LastHealthCheck   common.Timestamp  `json:"last_health_check"`
 	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
-	IsAvailable       bool              `json:"is_available"`
+	NotAvailable      bool              `json:"not_available"`
 }
 
 type Validator struct {
@@ -1405,6 +1404,13 @@ func WithMinConfirmation(m int) func(c *ChainConfig) error {
 func WithConfirmationChainLength(m int) func(c *ChainConfig) error {
 	return func(c *ChainConfig) error {
 		c.ConfirmationChainLength = m
+		return nil
+	}
+}
+
+func WithSharderConsensous(m int) func(c *ChainConfig) error {
+	return func(c *ChainConfig) error {
+		c.SharderConsensous = m
 		return nil
 	}
 }

@@ -6,11 +6,14 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
+	"github.com/0chain/common/core/logging"
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/util"
+	lru "github.com/hashicorp/golang-lru"
 )
 
 const TXN_SUBMIT_URL = "v1/transaction/put"
@@ -54,15 +57,16 @@ type SmartContractTxnData struct {
 }
 
 type StorageAllocation struct {
-	ID             string `json:"id"`
-	DataShards     int    `json:"data_shards"`
-	ParityShards   int    `json:"parity_shards"`
-	Size           int64  `json:"size"`
-	Expiration     int64  `json:"expiration_date"`
-	Owner          string `json:"owner_id"`
-	OwnerPublicKey string `json:"owner_public_key"`
-	ReadRatio      *Ratio `json:"read_ratio"`
-	WriteRatio     *Ratio `json:"write_ratio"`
+	ID             string  `json:"id"`
+	DataShards     int     `json:"data_shards"`
+	ParityShards   int     `json:"parity_shards"`
+	Size           int64   `json:"size"`
+	Expiration     int64   `json:"expiration_date"`
+	Owner          string  `json:"owner_id"`
+	OwnerPublicKey string  `json:"owner_public_key"`
+	ReadRatio      *Ratio  `json:"read_ratio"`
+	WriteRatio     *Ratio  `json:"write_ratio"`
+	MinLockDemand  float64 `json:"min_lock_demand"`
 }
 type Ratio struct {
 	ZCN  int64 `json:"zcn"`
@@ -173,6 +177,16 @@ type SignFunc = func(msg string) (string, error)
 type VerifyFunc = func(signature, msgHash, publicKey string) (bool, error)
 type SignWithWallet = func(msg string, wallet interface{}) (string, error)
 
+var cache *lru.Cache
+
+func init() {
+	var err error
+	cache, err = lru.New(100)
+	if err != nil {
+		fmt.Println("caching Initilization failed, err:", err)
+	}
+}
+
 func NewTransactionEntity(clientID string, chainID string, publicKey string, nonce int64) *Transaction {
 	txn := &Transaction{}
 	txn.Version = "1.0"
@@ -269,8 +283,14 @@ func sendTransactionToURL(url string, txn *Transaction, wg *sync.WaitGroup) ([]b
 	return nil, errors.Wrap(err, errors.New("transaction_send_error", postResponse.Body))
 }
 
+type cachedObject struct {
+	Expiration time.Duration
+	Value      interface{}
+}
+
 // EstimateFee estimates transaction fee
 func EstimateFee(txn *Transaction, miners []string, reqPercent ...float32) (uint64, error) {
+
 	const minReqNum = 3
 	var reqN int
 
@@ -293,6 +313,20 @@ func EstimateFee(txn *Transaction, miners []string, reqPercent ...float32) (uint
 	for _, miner := range randomMiners {
 		go func(minerUrl string) {
 			defer wg.Done()
+
+			// Retrieve the object from the cache
+			cached, ok := cache.Get(STORAGESC_CREATE_ALLOCATION)
+
+			if ok {
+				cachedObj, ok := cached.(*cachedObject)
+				if !ok {
+					logging.Logger.Error("Object of bad type")
+					return
+				}
+				val := cachedObj.Value.(map[string]interface{})["fee"].(uint64)
+				feeC <- uint64(val)
+				return
+			}
 
 			url := minerUrl + ESTIMATE_TRANSACTION_COST
 			req, err := util.NewHTTPPostRequest(url, txn)
@@ -342,6 +376,16 @@ func EstimateFee(txn *Transaction, miners []string, reqPercent ...float32) (uint
 				fee = f
 			}
 		}
+
+		// adding response to cache
+		obj := map[string]interface{}{
+			"fee": fee,
+		}
+
+		cache.Add(STORAGESC_CREATE_ALLOCATION, &cachedObject{
+			Expiration: 30 * time.Hour,
+			Value:      obj,
+		})
 
 		return fee, nil
 	}

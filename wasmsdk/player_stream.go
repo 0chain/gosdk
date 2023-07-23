@@ -74,9 +74,13 @@ func (p *StreamPlayer) download(it sdk.PlaylistFile) {
 	fileName := it.Name
 	localPath := filepath.Join(p.allocationID, fileName)
 
+	fs, _ := sys.Files.Open(localPath)
+	mf, _ := fs.(*sys.MemFile)
+
 	downloader, err := sdk.CreateDownloader(p.allocationID, localPath, it.Path,
 		sdk.WithAllocation(p.allocationObj),
-		sdk.WithAuthticket(p.authTicket, p.lookupHash))
+		sdk.WithAuthticket(p.authTicket, p.lookupHash),
+		sdk.WithFileHandler(mf))
 
 	if err != nil {
 		PrintError(err.Error())
@@ -100,9 +104,6 @@ func (p *StreamPlayer) download(it sdk.PlaylistFile) {
 	}
 
 	PrintInfo("playlist: downloaded [", it.Path, "]")
-	fs, _ := sys.Files.Open(localPath)
-
-	mf, _ := fs.(*sys.MemFile)
 
 	withRecover(func() {
 		if p.downloadedFiles != nil {

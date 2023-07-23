@@ -28,24 +28,6 @@ const FileOperationInsert = "insert"
 
 var allocObj *sdk.Allocation
 
-func initAllocation(allocationID string) error {
-	alloc, err := sdk.GetAllocation(allocationID)
-	if err != nil {
-		return err
-	}
-	allocObj = alloc
-	return nil
-}
-
-func initAllocationFromAuthTicket(authTicket string) error {
-	alloc, err := sdk.GetAllocationFromAuthTicket(authTicket)
-	if err != nil {
-		return err
-	}
-	allocObj = alloc
-	return nil
-}
-
 func listObjects(allocationID string, remotePath string) (*sdk.ListResult, error) {
 	alloc, err := getAllocation(allocationID)
 	if err != nil {
@@ -332,8 +314,8 @@ func download(
 	statusBar := &StatusBar{wg: wg}
 	if callbackFuncName != "" {
 		callback := js.Global().Get(callbackFuncName)
-		statusBar.callback = func(totalBytes, completedBytes int, err string) {
-			callback.Invoke(totalBytes, completedBytes, err)
+		statusBar.callback = func(totalBytes, completedBytes int, filename, objURL, err string) {
+			callback.Invoke(totalBytes, completedBytes, filename, objURL, err)
 		}
 	}
 	wg.Add(1)
@@ -348,18 +330,15 @@ func download(
 		err        error
 		downloader sdk.Downloader
 	)
-	if allocObj == nil {
-		downloader, err = sdk.CreateDownloader(allocationID, localPath, remotePath,
-			sdk.WithAuthticket(authTicket, lookupHash),
-			sdk.WithOnlyThumbnail(downloadThumbnailOnly),
-			sdk.WithBlocks(0, 0, numBlocks))
-	} else {
-		downloader, err = sdk.CreateDownloader(allocationID, localPath, remotePath,
-			sdk.WithAuthticket(authTicket, lookupHash),
-			sdk.WithOnlyThumbnail(downloadThumbnailOnly),
-			sdk.WithBlocks(0, 0, numBlocks),
-			sdk.WithAllocation(allocObj))
-	}
+
+	fs, _ := sys.Files.Open(localPath)
+	mf, _ := fs.(*sys.MemFile)
+
+	downloader, err = sdk.CreateDownloader(allocationID, localPath, remotePath,
+		sdk.WithAuthticket(authTicket, lookupHash),
+		sdk.WithOnlyThumbnail(downloadThumbnailOnly),
+		sdk.WithBlocks(0, 0, numBlocks),
+		sdk.WithFileHandler(mf))
 
 	if err != nil {
 		PrintError(err.Error())
@@ -385,14 +364,106 @@ func download(
 		FileName:       downloader.GetFileName(),
 	}
 
-	fs, _ := sys.Files.Open(localPath)
-
-	mf, _ := fs.(*sys.MemFile)
-
 	resp.Url = CreateObjectURL(mf.Buffer.Bytes(), "application/octet-stream")
 
 	return resp, nil
 
+}
+
+// MultiOperation - do copy, move, delete and createdir operation together
+// ## Inputs
+//   - allocationID
+//   - jsonMultiDownloadOptions: Json Array of MultiDownloadOption.
+//	 - authTicket
+//  - callbackFuncName: callback function name Invoke with totalBytes, completedBytes, objURL, err
+// ## Outputs
+//   - json string of array of DownloadCommandResponse
+// 	 - error
+
+func multiDownload(allocationID, jsonMultiDownloadOptions, authTicket, callbackFuncName string) (string, error) {
+	sdkLogger.Info("starting multidownload")
+	wg := &sync.WaitGroup{}
+	useCallback := false
+	if callbackFuncName != "" {
+		useCallback = true
+	}
+	var options []*MultiDownloadOption
+	err := json.Unmarshal([]byte(jsonMultiDownloadOptions), &options)
+	if err != nil {
+		return "", err
+	}
+	var alloc *sdk.Allocation
+	if authTicket == "" {
+		alloc, err = getAllocation(allocationID)
+	} else {
+		alloc, err = sdk.GetAllocationFromAuthTicket(authTicket)
+	}
+	if err != nil {
+		return "", err
+	}
+	allStatusBar := make([]*StatusBar, len(options))
+	wg.Add(len(options))
+	for ind, option := range options {
+		fileName := strings.Replace(path.Base(option.RemotePath), "/", "-", -1)
+		localPath := allocationID + "_" + fileName
+		option.LocalPath = localPath
+		statusBar := &StatusBar{wg: wg, localPath: localPath}
+		allStatusBar[ind] = statusBar
+		if useCallback {
+			callback := js.Global().Get(callbackFuncName)
+			statusBar.callback = func(totalBytes, completedBytes int, filename, objURL, err string) {
+				callback.Invoke(totalBytes, completedBytes, filename, objURL, err)
+			}
+		}
+		fs, _ := sys.Files.Open(localPath)
+		mf, _ := fs.(*sys.MemFile)
+
+		var downloader sdk.Downloader
+		if option.DownloadOp == 1 {
+			downloader, err = sdk.CreateDownloader(allocationID, localPath, option.RemotePath,
+				sdk.WithAllocation(alloc),
+				sdk.WithAuthticket(authTicket, option.RemoteLookupHash),
+				sdk.WithOnlyThumbnail(false),
+				sdk.WithBlocks(0, 0, option.NumBlocks),
+				sdk.WithFileHandler(mf),
+			)
+		} else {
+			downloader, err = sdk.CreateDownloader(allocationID, localPath, option.RemotePath,
+				sdk.WithAllocation(alloc),
+				sdk.WithAuthticket(authTicket, option.RemoteLookupHash),
+				sdk.WithOnlyThumbnail(true),
+				sdk.WithBlocks(0, 0, option.NumBlocks),
+				sdk.WithFileHandler(mf),
+			)
+		}
+		if err != nil {
+			PrintError(err.Error())
+			return "", err
+		}
+		defer sys.Files.Remove(option.LocalPath) //nolint
+		downloader.Start(statusBar, ind == len(options)-1)
+	}
+	wg.Wait()
+	resp := make([]DownloadCommandResponse, len(options))
+
+	for ind, statusBar := range allStatusBar {
+		statusResponse := DownloadCommandResponse{}
+		if !statusBar.success {
+			statusResponse.CommandSuccess = false
+			statusResponse.Error = "Download failed: " + statusBar.err.Error()
+		} else {
+			statusResponse.CommandSuccess = true
+			statusResponse.FileName = options[ind].RemoteFileName
+			statusResponse.Url = statusBar.objURL
+		}
+		resp[ind] = statusResponse
+	}
+
+	respBytes, err := json.Marshal(resp)
+	if err != nil {
+		return "", err
+	}
+	return string(respBytes), nil
 }
 
 type BulkUploadOption struct {
@@ -401,7 +472,7 @@ type BulkUploadOption struct {
 
 	ThumbnailBytes jsbridge.Bytes `json:"thumbnailBytes,omitempty"`
 	Encrypt        bool           `json:"encrypt,omitempty"`
-	webstreaming   bool           `json:"webstreaming,omitempty"`
+	Webstreaming   bool           `json:"webstreaming,omitempty"`
 	IsUpdate       bool           `json:"isUpdate,omitempty"`
 	IsRepair       bool           `json:"isRepair,omitempty"`
 
@@ -420,6 +491,7 @@ type MultiUploadResult struct {
 	Success bool   `json:"success,omitempty"`
 	Error   string `json:"error,omitempty"`
 }
+
 type MultiOperationOption struct {
 	OperationType string `json:"operationType,omitempty"`
 	RemotePath    string `json:"remotePath,omitempty"`
@@ -427,10 +499,19 @@ type MultiOperationOption struct {
 	DestPath      string `json:"destPath,omitempty"` // Required for copy and move operation`
 }
 
+type MultiDownloadOption struct {
+	RemotePath       string `json:"remotePath"`
+	LocalPath        string `json:"localPath,omitempty"`
+	DownloadOp       int    `json:"downloadOp"`
+	NumBlocks        int    `json:"numBlocks"`
+	RemoteFileName   string `json:"remoteFileName"`             //Required only for file download with auth ticket
+	RemoteLookupHash string `json:"remoteLookupHash,omitempty"` //Required only for file download with auth ticket
+}
+
 // MultiOperation - do copy, move, delete and createdir operation together
 // ## Inputs
 //   - allocationID
-//   - jsonMultiUploadOpetions: Json Array of MultiOperationOption. eg: "[{"operationType":"move","remotePath":"/README.md","destPath":"/folder1/"},{"operationType":"delete","remotePath":"/t3.txt"}]"
+//   - jsonMultiUploadOptions: Json Array of MultiOperationOption. eg: "[{"operationType":"move","remotePath":"/README.md","destPath":"/folder1/"},{"operationType":"delete","remotePath":"/t3.txt"}]"
 //
 // ## Outputs
 //   - error
@@ -438,9 +519,15 @@ func MultiOperation(allocationID string, jsonMultiUploadOptions string) error {
 	if allocationID == "" {
 		return errors.New("AllocationID is required")
 	}
+
+	if jsonMultiUploadOptions == "" {
+		return errors.New("operations are empty")
+	}
+
 	var options []MultiOperationOption
 	err := json.Unmarshal([]byte(jsonMultiUploadOptions), &options)
 	if err != nil {
+		sdkLogger.Info("error unmarshalling")
 		return err
 	}
 	totalOp := len(options)
@@ -481,7 +568,7 @@ func bulkUpload(jsonBulkUploadOptions string) ([]BulkUploadResult, error) {
 				o.ReadChunkFuncName,
 				o.FileSize,
 				o.ThumbnailBytes.Buffer,
-				o.webstreaming,
+				o.Webstreaming,
 				o.Encrypt,
 				o.IsUpdate,
 				o.IsRepair,
@@ -505,6 +592,7 @@ func bulkUpload(jsonBulkUploadOptions string) ([]BulkUploadResult, error) {
 
 	return results, nil
 }
+
 func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 	var options []BulkUploadOption
 	result := MultiUploadResult{}
@@ -534,8 +622,8 @@ func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 		callbackFuncName := option.CallbackFuncName
 		if callbackFuncName != "" {
 			callback := js.Global().Get(callbackFuncName)
-			statusBar.callback = func(totalBytes, completedBytes int, err string) {
-				callback.Invoke(totalBytes, completedBytes, err)
+			statusBar.callback = func(totalBytes, completedBytes int, filename, objURL, err string) {
+				callback.Invoke(totalBytes, completedBytes, filename, objURL, err)
 			}
 		}
 		wg.Add(1)
@@ -621,8 +709,8 @@ func uploadWithJsFuncs(allocationID, remotePath string, readChunkFuncName string
 	statusBar := &StatusBar{wg: wg}
 	if callbackFuncName != "" {
 		callback := js.Global().Get(callbackFuncName)
-		statusBar.callback = func(totalBytes, completedBytes int, err string) {
-			callback.Invoke(totalBytes, completedBytes, err)
+		statusBar.callback = func(totalBytes, completedBytes int, filename, objURL, err string) {
+			callback.Invoke(totalBytes, completedBytes, filename, objURL, err)
 		}
 	}
 	wg.Add(1)
@@ -780,14 +868,17 @@ func downloadBlocks(allocationID, remotePath, authTicket, lookupHash string, num
 	statusBar := &StatusBar{wg: wg}
 	if callbackFuncName != "" {
 		callback := js.Global().Get(callbackFuncName)
-		statusBar.callback = func(totalBytes, completedBytes int, err string) {
-			callback.Invoke(totalBytes, completedBytes, err)
+		statusBar.callback = func(totalBytes, completedBytes int, filename, objURL, err string) {
+			callback.Invoke(totalBytes, completedBytes, filename, objURL, err)
 		}
 	}
 	wg.Add(1)
 
 	fileName := strings.Replace(path.Base(remotePath), "/", "-", -1)
 	localPath := filepath.Join(allocationID, fileName)
+
+	fs, _ := sys.Files.Open(localPath)
+	mf, _ := fs.(*sys.MemFile)
 
 	var (
 		err        error
@@ -797,12 +888,15 @@ func downloadBlocks(allocationID, remotePath, authTicket, lookupHash string, num
 	if allocObj == nil {
 		downloader, err = sdk.CreateDownloader(allocationID, localPath, remotePath,
 			sdk.WithAuthticket(authTicket, lookupHash),
-			sdk.WithBlocks(startBlockNumber, endBlockNumber, numBlocks))
+			sdk.WithBlocks(startBlockNumber, endBlockNumber, numBlocks),
+			sdk.WithFileHandler(mf))
+
 	} else {
 		downloader, err = sdk.CreateDownloader(allocationID, localPath, remotePath,
 			sdk.WithAuthticket(authTicket, lookupHash),
 			sdk.WithBlocks(startBlockNumber, endBlockNumber, numBlocks),
-			sdk.WithAllocation(allocObj))
+			sdk.WithAllocation(allocObj),
+			sdk.WithFileHandler(mf))
 	}
 
 	if err != nil {
@@ -828,10 +922,6 @@ func downloadBlocks(allocationID, remotePath, authTicket, lookupHash string, num
 		CommandSuccess: true,
 		FileName:       fileName,
 	}
-
-	fs, _ := sys.Files.Open(localPath)
-
-	mf, _ := fs.(*sys.MemFile)
 
 	resp.Url = CreateObjectURL(mf.Buffer.Bytes(), "application/octet-stream")
 

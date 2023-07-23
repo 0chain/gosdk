@@ -161,25 +161,28 @@ func main() {
 				"createThumbnail":        createThumbnail,
 
 				//blobber
-				"delete":                Delete,
-				"rename":                Rename,
-				"copy":                  Copy,
-				"move":                  Move,
-				"share":                 Share,
-				"download":              download,
-				"upload":                upload,
-				"bulkUpload":            bulkUpload,
-				"multiUpload":           multiUpload,
-				"listObjects":           listObjects,
-				"createDir":             createDir,
-				"downloadBlocks":        downloadBlocks,
-				"getFileStats":          getFileStats,
-				"updateBlobberSettings": updateBlobberSettings,
-				"getRemoteFileMap":      getRemoteFileMap,
-				"getBlobbers":           getBlobbers,
-				"getcontainers":         GetContainers,
-				"updatecontainer":       UpdateContainer,
-				"searchcontainer":       SearchContainer,
+				"delete":                 Delete,
+				"rename":                 Rename,
+				"copy":                   Copy,
+				"move":                   Move,
+				"share":                  Share,
+				"download":               download,
+				"multiDownload":          multiDownload,
+				"upload":                 upload,
+				"bulkUpload":             bulkUpload,
+				"multiUpload":            multiUpload,
+				"multiOperation":         MultiOperation,
+				"listObjects":            listObjects,
+				"createDir":              createDir,
+				"downloadBlocks":         downloadBlocks,
+				"getFileStats":           getFileStats,
+				"updateBlobberSettings":  updateBlobberSettings,
+				"getRemoteFileMap":       getRemoteFileMap,
+				"getBlobbers":            getBlobbers,
+				"getcontainers":          GetContainers,
+				"updatecontainer":        UpdateContainer,
+				"searchcontainer":        SearchContainer,
+				"updateForbidAllocation": UpdateForbidAllocation,
 
 				// player
 				"play":           play,
@@ -199,14 +202,25 @@ func main() {
 				"updateAllocation":           updateAllocation,
 				"updateAllocationWithRepair": updateAllocationWithRepair,
 				"getAllocationMinLock":       getAllocationMinLock,
+				"getUpdateAllocationMinLock": getUpdateAllocationMinLock,
 				"getAllocationWith":          getAllocationWith,
-				"getReadPoolInfo":            getReadPoolInfo,
-				"lockStakePool":              lockStakePool,
-				"lockWritePool":              lockWritePool,
-				"getSkatePoolInfo":           getSkatePoolInfo,
-				"unlockStakePool":            unlockStakePool,
-				"decodeAuthTicket":           decodeAuthTicket,
-				"allocationRepair":           allocationRepair,
+
+				// readpool
+				"getReadPoolInfo": getReadPoolInfo,
+				"lockReadPool":    lockReadPool,
+				"unLockReadPool":  unLockReadPool,
+				"createReadPool":  createReadPool,
+
+				// stakepool
+				"getSkatePoolInfo": getSkatePoolInfo,
+				"lockStakePool":    lockStakePool,
+				"unlockStakePool":  unlockStakePool,
+
+				// writepool
+				"lockWritePool": lockWritePool,
+
+				"decodeAuthTicket": decodeAuthTicket,
+				"allocationRepair": allocationRepair,
 
 				//smartcontract
 				"executeSmartContract": executeSmartContract,
@@ -224,7 +238,6 @@ func main() {
 
 				//zcn
 				"getWalletBalance": getWalletBalance,
-				"createReadPool":   createReadPool,
 
 				//0box api
 				"getCsrfToken":     getCsrfToken,
