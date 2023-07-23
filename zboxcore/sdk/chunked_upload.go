@@ -592,14 +592,16 @@ func (su *ChunkedUpload) readChunks(num int) (*batchChunksData, error) {
 		}
 
 		// concact blobber's fragments
-		for i, v := range chunk.Fragments {
-			//blobber i
-			data.fileShards[i] = append(data.fileShards[i], v)
-			err = su.progress.Blobbers[i].Hasher.WriteToFixedMT(v)
+
+		var pos uint64
+		for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+			pos = uint64(i.TrailingZeros())
+			data.fileShards[pos] = append(data.fileShards[pos], chunk.Fragments[pos])
+			err = su.progress.Blobbers[pos].Hasher.WriteToFixedMT(chunk.Fragments[pos])
 			if err != nil {
 				return nil, err
 			}
-			err = su.progress.Blobbers[i].Hasher.WriteToValidationMT(v)
+			err = su.progress.Blobbers[pos].Hasher.WriteToValidationMT(chunk.Fragments[pos])
 			if err != nil {
 				return nil, err
 			}
