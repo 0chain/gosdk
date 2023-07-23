@@ -2269,11 +2269,15 @@ func (a *Allocation) StartRepair(localRootPath, pathToRepair string, statusCB St
 }
 
 // RepairAlloc repairs all the files in allocation
-func (a *Allocation) RepairAlloc(statusCB StatusCallback) error {
-	// todo: will this work in wasm?
-	dir, err := os.Getwd()
-	if err != nil {
-		return err
+func (a *Allocation) RepairAlloc(statusCB StatusCallback) (err error) {
+	var dir string
+	if IsWasm {
+		dir = "/tmp"
+	} else {
+		dir, err = os.Getwd()
+		if err != nil {
+			return err
+		}
 	}
 	return a.StartRepair(dir, "/", statusCB)
 }

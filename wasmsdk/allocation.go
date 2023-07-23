@@ -182,6 +182,7 @@ func updateAllocationWithRepair(allocationID string,
 
 	wg := &sync.WaitGroup{}
 	statusBar := &StatusBar{wg: wg, isRepair: true}
+	wg.Add(1)
 
 	hash, err := allocationObj.UpdateWithRepair(size, extend, uint64(lock), updateTerms, addBlobberId, removeBlobberId, false, &sdk.FileOptionsParameters{}, statusBar)
 	if err == nil {
