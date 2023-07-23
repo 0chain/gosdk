@@ -26,11 +26,9 @@ import (
 	"github.com/0chain/gosdk/zboxcore/encryption"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
-	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/google/uuid"
 	"github.com/klauspost/reedsolomon"
-	"go.uber.org/zap"
 )
 
 const (
@@ -359,12 +357,8 @@ func (su *ChunkedUpload) loadProgress() {
 
 	if progress != nil {
 		su.progress = *progress
-		l.Logger.Info("Loaded progress", zap.Int("chunk index", progress.ChunkIndex), zap.Any("upload length", progress.UploadLength))
 		su.progress.ID = progressID
-	} else {
-		l.Logger.Info("No progress found")
 	}
-
 }
 
 // saveProgress save progress to ~/.zcn/upload/[progressID]
@@ -464,7 +458,6 @@ func (su *ChunkedUpload) process() error {
 
 		//chunk has not be uploaded yet
 		if chunks.chunkEndIndex > su.progress.ChunkIndex {
-			l.Logger.Info("Uploading chunk #", chunks.chunkEndIndex)
 			err = su.processUpload(
 				chunks.chunkStartIndex, chunks.chunkEndIndex,
 				chunks.fileShards, chunks.thumbnailShards,
@@ -476,8 +469,6 @@ func (su *ChunkedUpload) process() error {
 				}
 				return err
 			}
-		} else {
-			l.Logger.Info("Chunk already uploaded. Skipping upload for chunk #", chunks.chunkEndIndex)
 		}
 
 		// last chunk might 0 with io.EOF
