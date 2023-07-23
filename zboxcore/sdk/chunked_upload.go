@@ -26,7 +26,6 @@ import (
 	"github.com/0chain/gosdk/zboxcore/encryption"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
-	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/google/uuid"
 	"github.com/klauspost/reedsolomon"
@@ -202,18 +201,6 @@ func CreateChunkedUpload(
 	for _, opt := range opts {
 		opt(su)
 	}
-	var streamReader *StreamReader
-	if !su.useFileReader {
-		chunkReadSize := allocationObj.GetChunkReadSize(su.encryptOnUpload)
-		dataChan := make(chan *DataChan, 2)
-		streamReader = NewStreamReader(dataChan)
-		readCtx := su.ctx
-		if su.readerCtx != nil {
-			readCtx = su.readerCtx
-		}
-		go StartWriteWorker(readCtx, fileReader, dataChan, chunkReadSize)
-	}
-
 	if su.progressStorer == nil {
 		su.progressStorer = createFsChunkedUploadProgress(context.Background())
 	}
@@ -274,10 +261,6 @@ func CreateChunkedUpload(
 			},
 		}
 	}
-	if !su.useFileReader {
-		su.fileReader = streamReader
-	}
-	// var cReader ChunkedUploadChunkReader
 	cReader, err := createChunkReader(su.fileReader, fileMeta.ActualSize, int64(su.chunkSize), su.allocationObj.DataShards, su.encryptOnUpload, su.uploadMask, su.fileErasureEncoder, su.fileEncscheme, su.fileHasher)
 
 	if err != nil {
@@ -353,8 +336,6 @@ type ChunkedUpload struct {
 	maskMu        *sync.Mutex
 	ctx           context.Context
 	ctxCncl       context.CancelFunc
-	readerCtx     context.Context
-	useFileReader bool
 }
 
 // progressID build local progress id with [allocationid]_[Hash(LocalPath+"_"+RemotePath)]_[RemoteName] format
@@ -472,6 +453,11 @@ func (su *ChunkedUpload) process() error {
 
 			if su.fileMeta.ActualSize == 0 {
 				su.fileMeta.ActualSize = su.progress.UploadLength
+			} else if su.fileMeta.ActualSize != su.progress.UploadLength && su.thumbnailBytes == nil {
+				if su.statusCallback != nil {
+					su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, thrown.New("upload_failed", "Upload failed. Uploaded size does not match with actual size: "+fmt.Sprintf("%d != %d", su.fileMeta.ActualSize, su.progress.UploadLength)))
+				}
+				return thrown.New("upload_failed", "Upload failed. Uploaded size does not match with actual size: "+fmt.Sprintf("%d != %d", su.fileMeta.ActualSize, su.progress.UploadLength))
 			}
 		}
 
@@ -772,6 +758,5 @@ func getShardSize(dataSize int64, dataShards int, isEncrypted bool) int64 {
 	} else {
 		remainderShards = (r + int64(dataShards) - 1) / int64(dataShards)
 	}
-
 	return n*DefaultChunkSize + remainderShards
 }

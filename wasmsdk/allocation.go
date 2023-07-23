@@ -174,7 +174,7 @@ func updateAllocationWithRepair(allocationID string,
 	lock int64,
 	updateTerms bool,
 	addBlobberId, removeBlobberId string) (string, error) {
-
+	sdk.IsWasm = true
 	allocationObj, err := sdk.GetAllocation(allocationID)
 	if err != nil {
 		return "", err
@@ -313,6 +313,7 @@ func getReadPoolInfo(clientID string) (*sdk.ReadPool, error) {
 
 // GetAllocationFromAuthTicket - get allocation from Auth ticket
 func getAllocationWith(authTicket string) (*sdk.Allocation, error) {
+	sdk.IsWasm = true
 	sdkAllocation, err := sdk.GetAllocationFromAuthTicket(authTicket)
 	if err != nil {
 		return nil, err
