@@ -26,6 +26,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/encryption"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
+	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/google/uuid"
 	"github.com/klauspost/reedsolomon"
@@ -211,9 +212,8 @@ func CreateChunkedUpload(
 
 	// encrypt option has been changed. upload it from scratch
 	// chunkSize has been changed. upload it from scratch
-	if su.progress.EncryptOnUpload != su.encryptOnUpload || su.progress.ChunkSize != su.chunkSize {
-		su.progress = su.createUploadProgress(connectionId)
-	}
+
+	su.createUploadProgress(connectionId)
 
 	su.fileErasureEncoder, err = reedsolomon.New(
 		su.allocationObj.DataShards,
@@ -378,22 +378,23 @@ func (su *ChunkedUpload) removeProgress() {
 }
 
 // createUploadProgress create a new UploadProgress
-func (su *ChunkedUpload) createUploadProgress(connectionId string) UploadProgress {
-	progress := UploadProgress{ConnectionID: connectionId,
-		ChunkIndex:   -1,
-		ChunkSize:    su.chunkSize,
-		UploadLength: 0,
-		Blobbers:     make([]*UploadBlobberStatus, common.MustAddInt(su.allocationObj.DataShards, su.allocationObj.ParityShards)),
+func (su *ChunkedUpload) createUploadProgress(connectionId string) {
+	if su.progress.ChunkSize == 0 {
+		su.progress = UploadProgress{ConnectionID: connectionId,
+			ChunkIndex:   -1,
+			ChunkSize:    su.chunkSize,
+			UploadLength: 0,
+		}
 	}
+	su.progress.Blobbers = make([]*UploadBlobberStatus, common.MustAddInt(su.allocationObj.DataShards, su.allocationObj.ParityShards))
 
-	for i := 0; i < len(progress.Blobbers); i++ {
-		progress.Blobbers[i] = &UploadBlobberStatus{
+	for i := 0; i < len(su.progress.Blobbers); i++ {
+		su.progress.Blobbers[i] = &UploadBlobberStatus{
 			Hasher: CreateHasher(getShardSize(su.fileMeta.ActualSize, su.allocationObj.DataShards, su.encryptOnUpload)),
 		}
 	}
 
-	progress.ID = su.progressID()
-	return progress
+	su.progress.ID = su.progressID()
 }
 
 func (su *ChunkedUpload) createEncscheme() encryption.EncryptionScheme {
@@ -594,6 +595,14 @@ func (su *ChunkedUpload) readChunks(num int) (*batchChunksData, error) {
 		for i, v := range chunk.Fragments {
 			//blobber i
 			data.fileShards[i] = append(data.fileShards[i], v)
+			err = su.progress.Blobbers[i].Hasher.WriteToFixedMT(v)
+			if err != nil {
+				return nil, err
+			}
+			err = su.progress.Blobbers[i].Hasher.WriteToValidationMT(v)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		if chunk.IsFinal {
