@@ -90,16 +90,6 @@ func (b *chunkedUploadFormBuilder) Build(
 			return nil, metadata, err
 		}
 
-		err = hasher.WriteToFixedMT(chunkBytes)
-		if err != nil {
-			return nil, metadata, err
-		}
-
-		err = hasher.WriteToValidationMT(chunkBytes)
-		if err != nil {
-			return nil, metadata, err
-		}
-
 		metadata.FileBytesLen += len(chunkBytes)
 	}
 
