@@ -255,7 +255,9 @@ func (mo *MultiOperation) Process() error {
 	var pos uint64
 	var counter = 0
 	timestamp := int64(common.Now())
-	timestamp -= 20
+	if int64(mo.allocationObj.StartTime) < timestamp-20 {
+		timestamp -= 20
+	}
 	for i := mo.operationMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		commitReq := &CommitRequest{
