@@ -19,7 +19,6 @@ func (s *StatusBar) InProgress(allocationId, filePath string, op int, completedB
 }
 
 func (s *StatusBar) Completed(allocationId, filePath string, filename string, mimetype string, size int, op int) {
-	s.success = true
 	l.Logger.Info("Repair for file completed. File = ", filePath)
 }
 
@@ -35,8 +34,11 @@ func (s *StatusBar) RepairCompleted(filesRepaired int) {
 	}
 	defer s.wg.Done()
 	mutUnlock(s.allocID)
-	l.Logger.Info("Repair completed. Files repaired = ", filesRepaired)
-
+	if s.success {
+		l.Logger.Info("Repair completed. Files repaired = ", filesRepaired)
+	} else {
+		l.Logger.Error("Repair failed. Error = ", s.err.Error(), " Files repaired = ", filesRepaired)
+	}
 }
 
 type StatusBar struct {
