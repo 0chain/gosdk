@@ -156,7 +156,7 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
 				wg.Wait()
 				if !uploadStatusCB.success {
 					l.Logger.Error("Failed to upload file, Status call back failed",
-						zap.Any("localpath", localPath), zap.Any("remotepath", file.Path))
+						zap.Any("remotepath", file.Path), zap.Error(uploadStatusCB.err))
 					return
 				}
 				l.Logger.Info("Download file and upload success for repair", zap.Any("localpath", localPath), zap.Any("remotepath", file.Path))
