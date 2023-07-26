@@ -20,6 +20,7 @@ type Status struct {
 	CompletedBytes int
 	Error          string
 	Completed      bool
+	LookupHash     string
 }
 
 type StatusCallback struct {
@@ -48,21 +49,23 @@ func (c *StatusCallback) getStatus(remotePath string) *Status {
 	return s
 }
 
-func (c *StatusCallback) Started(allocationId, remotePath string, op int, totalBytes int) {
+func (c *StatusCallback) Started(allocationID, remotePath string, op int, totalBytes int) {
 	c.Lock()
 	defer c.Unlock()
 	log.Info("status: Started ", remotePath, " ", totalBytes)
 	s := c.getStatus(remotePath)
 	s.Started = true
 	s.TotalBytes = totalBytes
+	s.LookupHash = GetLookupHash(allocationID, remotePath)
 }
 
-func (c *StatusCallback) InProgress(allocationId, remotePath string, op int, completedBytes int, data []byte) {
+func (c *StatusCallback) InProgress(allocationID, remotePath string, op int, completedBytes int, data []byte) {
 	c.Lock()
 	defer c.Unlock()
 	log.Info("status: InProgress ", remotePath, " ", completedBytes)
 	s := c.getStatus(remotePath)
 	s.CompletedBytes = completedBytes
+	s.LookupHash = GetLookupHash(allocationID, remotePath)
 }
 
 func (c *StatusCallback) Error(allocationID string, remotePath string, op int, err error) {
@@ -71,14 +74,16 @@ func (c *StatusCallback) Error(allocationID string, remotePath string, op int, e
 	log.Info("status: Error ", remotePath, " ", err)
 	s := c.getStatus(remotePath)
 	s.Error = err.Error()
+	s.LookupHash = GetLookupHash(allocationID, remotePath)
 }
 
-func (c *StatusCallback) Completed(allocationId, remotePath string, filename string, mimetype string, size int, op int) {
+func (c *StatusCallback) Completed(allocationID, remotePath string, filename string, mimetype string, size int, op int) {
 	c.Lock()
 	defer c.Unlock()
 	log.Info("status: Completed ", remotePath)
 	s := c.getStatus(remotePath)
 	s.Completed = true
+	s.LookupHash = GetLookupHash(allocationID, remotePath)
 }
 
 func (c *StatusCallback) CommitMetaCompleted(request, response string, err error) {

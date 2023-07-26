@@ -244,3 +244,18 @@ func GetPublicEncryptionKey(mnemonics *C.char) *C.char {
 	m := C.GoString(mnemonics)
 	return WithJSON(zcncore.GetPublicEncryptionKey(m))
 }
+
+// GetLookupHash get lookup hash with allocation id and path
+// ## Inputs:
+//   - allocationID
+//   - path
+//     return
+//     {
+//     "error":"",
+//     "result":"xxxx",
+//     }
+//
+//export GetLookupHash
+func GetLookupHash(allocationID string, path string) string {
+	return encryption.Hash(allocationID + ":" + path)
+}
