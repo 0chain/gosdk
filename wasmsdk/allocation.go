@@ -35,14 +35,14 @@ func getBlobberIds(blobberUrls []string) ([]string, error) {
 }
 
 func getAllocationBlobbers(preferredBlobberURLs []string,
-	dataShards, parityShards int, size, expiry int64,
+	dataShards, parityShards int, size int64,
 	minReadPrice, maxReadPrice, minWritePrice, maxWritePrice int64) ([]string, error) {
 
 	if len(preferredBlobberURLs) > 0 {
 		return sdk.GetBlobberIds(preferredBlobberURLs)
 	}
 
-	return sdk.GetAllocationBlobbers(dataShards, parityShards, size, expiry, sdk.PriceRange{
+	return sdk.GetAllocationBlobbers(dataShards, parityShards, size, sdk.PriceRange{
 		Min: uint64(minReadPrice),
 		Max: uint64(maxReadPrice),
 	}, sdk.PriceRange{
@@ -51,7 +51,7 @@ func getAllocationBlobbers(preferredBlobberURLs []string,
 	})
 }
 
-func createAllocation(datashards, parityshards int, size, expiry int64,
+func createAllocation(datashards, parityshards int, size int64,
 	minReadPrice, maxReadPrice, minWritePrice, maxWritePrice int64, lock int64, blobberIds []string) (
 	*transaction.Transaction, error) {
 
@@ -59,7 +59,6 @@ func createAllocation(datashards, parityshards int, size, expiry int64,
 		DataShards:   datashards,
 		ParityShards: parityshards,
 		Size:         size,
-		Expiry:       expiry,
 		ReadPrice: sdk.PriceRange{
 			Min: uint64(minReadPrice),
 			Max: uint64(maxReadPrice),
@@ -109,7 +108,7 @@ func UpdateForbidAllocation(allocationID string, forbidupload, forbiddelete, for
 
 	hash, _, err := sdk.UpdateAllocation(
 		0,            //size,
-		0,            //int64(expiry/time.Second),
+		false,        //extend,
 		allocationID, // allocID,
 		0,            //lock,
 		false,        //updateTerms,
@@ -134,7 +133,7 @@ func freezeAllocation(allocationID string) (string, error) {
 
 	hash, _, err := sdk.UpdateAllocation(
 		0,            //size,
-		0,            //int64(expiry/time.Second),
+		false,        //extend,
 		allocationID, // allocID,
 		0,            //lock,
 		false,        //updateTerms,
@@ -170,20 +169,22 @@ func cancelAllocation(allocationID string) (string, error) {
 }
 
 func updateAllocationWithRepair(allocationID string,
-	size, expiry int64,
+	size int64,
+	extend bool,
 	lock int64,
 	updateTerms bool,
 	addBlobberId, removeBlobberId string) (string, error) {
-
+	sdk.SetWasm()
 	allocationObj, err := sdk.GetAllocation(allocationID)
 	if err != nil {
 		return "", err
 	}
 
 	wg := &sync.WaitGroup{}
-	statusBar := &StatusBar{wg: wg}
+	statusBar := &StatusBar{wg: wg, isRepair: true}
+	wg.Add(1)
 
-	hash, err := allocationObj.UpdateWithRepair(size, expiry, uint64(lock), updateTerms, addBlobberId, removeBlobberId, false, &sdk.FileOptionsParameters{}, statusBar)
+	hash, err := allocationObj.UpdateWithRepair(size, extend, uint64(lock), updateTerms, addBlobberId, removeBlobberId, false, &sdk.FileOptionsParameters{}, statusBar)
 	if err == nil {
 		clearAllocation(allocationID)
 	}
@@ -192,11 +193,11 @@ func updateAllocationWithRepair(allocationID string,
 }
 
 func updateAllocation(allocationID string,
-	size, expiry int64,
+	size int64, extend bool,
 	lock int64,
 	updateTerms bool,
 	addBlobberId, removeBlobberId string) (string, error) {
-	hash, _, err := sdk.UpdateAllocation(size, expiry, allocationID, uint64(lock), updateTerms, addBlobberId, removeBlobberId, false, &sdk.FileOptionsParameters{})
+	hash, _, err := sdk.UpdateAllocation(size, extend, allocationID, uint64(lock), updateTerms, addBlobberId, removeBlobberId, false, &sdk.FileOptionsParameters{})
 
 	if err == nil {
 		clearAllocation(allocationID)
@@ -206,13 +207,13 @@ func updateAllocation(allocationID string,
 }
 
 func getAllocationMinLock(datashards, parityshards int,
-	size, expiry int64,
+	size int64,
 	maxreadPrice, maxwritePrice uint64,
 ) (int64, error) {
 	readPrice := sdk.PriceRange{Min: 0, Max: maxreadPrice}
 	writePrice := sdk.PriceRange{Min: 0, Max: maxwritePrice}
 
-	value, err := sdk.GetAllocationMinLock(datashards, parityshards, size, expiry, readPrice, writePrice)
+	value, err := sdk.GetAllocationMinLock(datashards, parityshards, size, readPrice, writePrice)
 	if err != nil {
 		sdkLogger.Error(err)
 		return 0, err
@@ -223,10 +224,11 @@ func getAllocationMinLock(datashards, parityshards int,
 
 func getUpdateAllocationMinLock(
 	allocationID string,
-	size, expiry int64,
+	size int64,
+	extend bool,
 	updateTerms bool,
 	addBlobberId, removeBlobberId string) (int64, error) {
-	return sdk.GetUpdateAllocationMinLock(allocationID, size, expiry, updateTerms, addBlobberId, removeBlobberId)
+	return sdk.GetUpdateAllocationMinLock(allocationID, size, extend, updateTerms, addBlobberId, removeBlobberId)
 }
 
 func getRemoteFileMap(allocationID string) ([]*fileResp, error) {
@@ -312,6 +314,7 @@ func getReadPoolInfo(clientID string) (*sdk.ReadPool, error) {
 
 // GetAllocationFromAuthTicket - get allocation from Auth ticket
 func getAllocationWith(authTicket string) (*sdk.Allocation, error) {
+	sdk.SetWasm()
 	sdkAllocation, err := sdk.GetAllocationFromAuthTicket(authTicket)
 	if err != nil {
 		return nil, err
@@ -372,9 +375,9 @@ func allocationRepair(allocationID, remotePath string) error {
 	if err != nil {
 		return err
 	}
-
+	sdk.SetWasm()
 	wg := &sync.WaitGroup{}
-	statusBar := &StatusBar{wg: wg}
+	statusBar := &StatusBar{wg: wg, isRepair: true}
 	wg.Add(1)
 
 	err = allocationObj.StartRepair("/tmp", remotePath, statusBar)

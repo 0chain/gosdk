@@ -7,6 +7,7 @@ import (
 	"github.com/0chain/errors"
 )
 
+// Example implementation of a reader
 type DataChan struct {
 	data []byte
 	err  error
