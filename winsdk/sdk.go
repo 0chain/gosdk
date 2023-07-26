@@ -257,6 +257,6 @@ func GetPublicEncryptionKey(mnemonics *C.char) *C.char {
 //
 //export GetLookupHash
 func GetLookupHash(allocationID *C.char, path *C.char) *C.char {
-	hash := encryption.Hash(C.GoString(allocationID) + ":" + C.GoString(path))
+	hash := getLookupHash(C.GoString(allocationID), C.GoString(path))
 	return WithJSON(hash, nil)
 }
