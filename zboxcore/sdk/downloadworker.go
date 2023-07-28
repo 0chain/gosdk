@@ -30,6 +30,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/klauspost/reedsolomon"
 	"go.dedis.ch/kyber/v3/group/edwards25519"
+	"go.uber.org/zap"
 	"golang.org/x/crypto/sha3"
 	"golang.org/x/sync/errgroup"
 )
@@ -387,6 +388,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			"Blocks per blobber: %d", size, req.startBlock, req.endBlock, blocksPerShard),
 	)
 
+	now := time.Now()
 	err := req.initEC()
 	if err != nil {
 		logger.Logger.Error(err)
@@ -395,6 +397,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 				err), remotePathCB)
 		return
 	}
+	elapsedInitEC := time.Since(now)
 	if req.encryptedKey != "" {
 		err = req.initEncryption()
 		if err != nil {
@@ -404,6 +407,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			return
 		}
 	}
+	elapsedInitEncryption := time.Since(now) - elapsedInitEC
 
 	var downloaded int
 	startBlock, endBlock, numBlocks := req.startBlock, req.endBlock, req.numBlocks
@@ -525,6 +529,13 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 
 	close(blocks)
 	wg.Wait()
+	elapsedGetBlocksAndWrite := time.Since(now) - elapsedInitEC - elapsedInitEncryption
+	l.Logger.Info("[processDownload]", zap.String("allocation_id", req.allocationID),
+		zap.String("remotefilepath", req.remotefilepath),
+		zap.Duration("initEC", elapsedInitEC),
+		zap.Duration("initEncryption", elapsedInitEncryption),
+		zap.Duration("getBlocks and writes", elapsedGetBlocksAndWrite),
+	)
 
 	if isPREAndWholeFile {
 		calculatedFileHash := hex.EncodeToString(actualFileHasher.Sum(nil))
