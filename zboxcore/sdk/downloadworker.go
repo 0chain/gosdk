@@ -444,14 +444,21 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			if data, ok := buffer[i]; ok {
 				// If the block we need to write next is already in the buffer, write it
 				numBytes := int64(math.Min(float64(remainingSize), float64(len(data))))
+				if isPREAndWholeFile {
+					actualFileHasher.Write(data[:numBytes])
+					if i == n-1 {
+						if calculatedFileHash, ok := checkHash(actualFileHasher, fRef, req.contentMode); !ok {
+							req.errorCB(fmt.Errorf("Expected actual file hash %s, calculated file hash %s",
+								fRef.ActualFileHash, calculatedFileHash), remotePathCB)
+							return
+						}
+					}
+				}
 				_, err = req.fileHandler.Write(data[:numBytes])
 
 				if err != nil {
 					req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
 					return
-				}
-				if isPREAndWholeFile {
-					actualFileHasher.Write(data[:numBytes])
 				}
 
 				downloaded = downloaded + int(numBytes)
@@ -469,14 +476,21 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 					if block.blockNum == i {
 						// Write the data
 						numBytes := int64(math.Min(float64(remainingSize), float64(len(block.data))))
+						if isPREAndWholeFile {
+							actualFileHasher.Write(block.data[:numBytes])
+							if i == n-1 {
+								if calculatedFileHash, ok := checkHash(actualFileHasher, fRef, req.contentMode); !ok {
+									req.errorCB(fmt.Errorf("Expected actual file hash %s, calculated file hash %s",
+										fRef.ActualFileHash, calculatedFileHash), remotePathCB)
+									return
+								}
+							}
+						}
 						_, err = req.fileHandler.Write(block.data[:numBytes])
 
 						if err != nil {
 							req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
 							return
-						}
-						if isPREAndWholeFile {
-							actualFileHasher.Write(block.data[:numBytes])
 						}
 
 						downloaded = downloaded + int(numBytes)
@@ -545,6 +559,15 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	if req.statusCallback != nil {
 		req.statusCallback.Completed(
 			req.allocationID, remotePathCB, fRef.Name, "", int(size), op)
+	}
+}
+
+func checkHash(actualFileHasher hash.Hash, fref *fileref.FileRef, contentMode string) (string, bool) {
+	calculatedFileHash := hex.EncodeToString(actualFileHasher.Sum(nil))
+	if contentMode == DOWNLOAD_CONTENT_THUMB {
+		return calculatedFileHash, calculatedFileHash == fref.ActualThumbnailHash
+	} else {
+		return calculatedFileHash, calculatedFileHash == fref.ActualFileHash
 	}
 }
 
