@@ -263,16 +263,10 @@ func (req *DownloadRequest) downloadBlock(
 
 // decodeEC will reconstruct shards and verify it
 func (req *DownloadRequest) decodeEC(shards [][]byte) (data []byte, isValid bool, err error) {
-	err = req.ecEncoder.Reconstruct(shards)
+	err = req.ecEncoder.ReconstructData(shards)
 	if err != nil {
 		return
 	}
-
-	isValid, err = req.ecEncoder.Verify(shards)
-	if err != nil || !isValid {
-		return
-	}
-
 	c := len(shards[0])
 	data = make([]byte, req.datashards*c)
 	for i := 0; i < req.datashards; i++ {
