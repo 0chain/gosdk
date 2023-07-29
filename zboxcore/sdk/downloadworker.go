@@ -144,17 +144,12 @@ func (req *DownloadRequest) getBlocksData(startBlock, totalBlock int64) ([]byte,
 	// Can we benefit from goroutine for erasure decoding??
 	c := req.datashards * req.effectiveBlockSize
 	data := make([]byte, req.datashards*req.effectiveBlockSize*int(totalBlock))
-	var isValid bool
 	for i := range shards {
 		var d []byte
 		var err error
-		d, isValid, err = req.decodeEC(shards[i])
+		d, err = req.decodeEC(shards[i])
 		if err != nil {
 			return nil, err
-		}
-
-		if !isValid {
-			return nil, errors.New("invalid_data", "some blobber responded with wrong data")
 		}
 		index := i * c
 		copy(data[index:index+c], d)
@@ -262,7 +257,7 @@ func (req *DownloadRequest) downloadBlock(
 }
 
 // decodeEC will reconstruct shards and verify it
-func (req *DownloadRequest) decodeEC(shards [][]byte) (data []byte, isValid bool, err error) {
+func (req *DownloadRequest) decodeEC(shards [][]byte) (data []byte, err error) {
 	err = req.ecEncoder.ReconstructData(shards)
 	if err != nil {
 		return
@@ -273,7 +268,7 @@ func (req *DownloadRequest) decodeEC(shards [][]byte) (data []byte, isValid bool
 		index := i * c
 		copy(data[index:index+c], shards[i])
 	}
-	return data, true, nil
+	return data, nil
 }
 
 // fillShards will fill `shards` with data from blobbers that belongs to specific
