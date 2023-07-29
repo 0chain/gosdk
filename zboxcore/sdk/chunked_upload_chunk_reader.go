@@ -143,7 +143,7 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 	readLen, err := r.fileReader.Read(chunkBytes)
 	if err != nil {
 
-		if !errors.Is(err, io.EOF) && readLen > 0 {
+		if !errors.Is(err, io.EOF) {
 			return nil, err
 		}
 
