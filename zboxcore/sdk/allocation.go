@@ -654,6 +654,7 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 	}
 
 	connectionId := zboxutil.NewConnectionId()
+	now := time.Now()
 	ChunkedUpload, err := CreateChunkedUpload(workdir,
 		a, fileMeta, fileReader,
 		isUpdate, isRepair, webStreaming, connectionId,
@@ -661,6 +662,9 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 	if err != nil {
 		return err
 	}
+	elapsedCreateChunkedUpload := time.Since(now)
+	logger.Logger.Info("[StartChunkedUpload]", zap.String("allocation_id", a.ID),
+		zap.Duration("CreateChunkedUpload", elapsedCreateChunkedUpload))
 
 	return ChunkedUpload.Start()
 }

@@ -29,6 +29,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/google/uuid"
 	"github.com/klauspost/reedsolomon"
+	"go.uber.org/zap"
 )
 
 const (
@@ -491,13 +492,14 @@ func (su *ChunkedUpload) process() error {
 
 // Start start/resume upload
 func (su *ChunkedUpload) Start() error {
-
+	now := time.Now()
 	defer su.ctxCncl()
 
 	err := su.process()
 	if err != nil {
 		return err
 	}
+	elapsedProcess := time.Since(now)
 	logger.Logger.Info("Completed the upload. Submitting for commit")
 
 	blobbers := make([]*blockchain.StorageNode, len(su.blobbers))
@@ -516,6 +518,7 @@ func (su *ChunkedUpload) Start() error {
 		}
 		return err
 	}
+	elapsedLock := time.Since(now) - elapsedProcess
 
 	defer su.writeMarkerMutex.Unlock(
 		su.ctx, su.uploadMask, blobbers, su.uploadTimeOut, su.progress.ConnectionID) //nolint: errcheck
@@ -540,6 +543,14 @@ func (su *ChunkedUpload) Start() error {
 	// if status != Commit {
 	// 	return ErrRetryOperation
 	// }
+
+	defer func() {
+		elapsedProcessCommit := time.Since(now) - elapsedProcess - elapsedLock
+		logger.Logger.Info("[ChunkedUpload - start]", zap.String("allocation_id", su.allocationObj.ID),
+			zap.Duration("ChunkedUpload - process", elapsedProcess),
+			zap.Duration("ChunkedUpload - Lock", elapsedLock),
+			zap.Duration("ChunkedUpload - processCommit", elapsedProcessCommit))
+	}()
 
 	return su.processCommit()
 }
