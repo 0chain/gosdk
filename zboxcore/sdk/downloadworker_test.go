@@ -30,79 +30,19 @@ func TestRemoveFromMask(t *testing.T) {
 
 func TestDecodeEC(t *testing.T) {
 	type input struct {
-		name             string
-		req              *DownloadRequest
-		shards           [][]byte
-		wantErr          bool
-		contentHash      string
-		errMsg           string
-		checkOnlyIsValid bool
-		wantValid        bool
-		setup            func(in *input)
+		name        string
+		req         *DownloadRequest
+		shards      [][]byte
+		wantErr     bool
+		contentHash string
+		errMsg      string
+		setup       func(in *input)
 	}
 
 	tests := []*input{
 		{
-			name:             "should return invalid",
-			wantErr:          true,
-			wantValid:        false,
-			checkOnlyIsValid: true,
-			setup: func(in *input) {
-				req := DownloadRequest{}
-				req.datashards = 4
-				req.parityshards = 2
-				req.effectiveBlockSize = 64 * 1024
-
-				err := req.initEC()
-				require.NoError(t, err)
-
-				d, err := getDummyData(64 * 1024 * 4)
-				require.NoError(t, err)
-
-				shards, err := req.ecEncoder.Split(d)
-				require.NoError(t, err)
-
-				invalidShardsData, err := getDummyData(len(shards[0]))
-				require.NoError(t, err)
-
-				shards[4] = invalidShardsData
-
-				in.shards = shards
-				in.req = &req
-			},
-		},
-		{
-			name:    "should return error",
-			wantErr: true,
-			errMsg:  "shard sizes do not match",
-			setup: func(in *input) {
-				req := DownloadRequest{}
-				req.datashards = 4
-				req.parityshards = 2
-				req.effectiveBlockSize = 64 * 1024
-
-				err := req.initEC()
-				require.NoError(t, err)
-
-				d, err := getDummyData(64 * 1024 * 4)
-				require.NoError(t, err)
-
-				shards, err := req.ecEncoder.Split(d)
-				require.NoError(t, err)
-
-				invalidShardsData, err := getDummyData(len(shards[0]) + 1)
-				require.NoError(t, err)
-
-				shards[4] = invalidShardsData
-
-				in.shards = shards
-				in.req = &req
-			},
-		},
-		{
-			name:      "should be ok",
-			wantErr:   false,
-			wantValid: true,
+			name:    "should be ok",
+			wantErr: false,
 			setup: func(in *input) {
 				req := DownloadRequest{}
 				req.datashards = 4
@@ -143,11 +83,7 @@ func TestDecodeEC(t *testing.T) {
 				test.setup(test)
 			}
 
-			data, isValid, err := test.req.decodeEC(test.shards)
-			require.Equal(t, test.wantValid, isValid, err)
-			if test.checkOnlyIsValid {
-				return
-			}
+			data, err := test.req.decodeEC(test.shards)
 
 			if test.wantErr {
 				require.Error(t, err)
