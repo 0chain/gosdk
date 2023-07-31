@@ -132,9 +132,9 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
 				l.Logger.Info("Downloading file for the path :", zap.Any("path", file.Path))
 				wg.Add(1)
 				memFile := &sys.MemChanFile{
-					Buffer: make(chan []byte, 5),
+					Buffer:         make(chan []byte, 10),
+					ChunkWriteSize: int(a.GetChunkReadSize(ref.EncryptedKey != "")),
 				}
-				SetNumBlockDownloads(1)
 				err = a.DownloadFileToFileHandler(memFile, ref.Path, false, statusCB, true)
 				if err != nil {
 					l.Logger.Error("download_file_failed", zap.Error(err))
@@ -200,7 +200,6 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
 		}
 		r.filesRepaired++
 	}
-
 }
 
 func (r *RepairRequest) getLocalPath(file *ListResult) string {
