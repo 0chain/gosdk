@@ -103,6 +103,7 @@ jobs:
 
       - name: Install deps
         run: |
+          sudo apt update -y
           codename=$(lsb_release -c | awk '{print $2}')
           echo "deb http://mirror.genesisadaptive.com/ubuntu/ $codename main" > ./gitaction.list
           echo "deb http://mirror.math.princeton.edu/pub/ubuntu/ $codename main" ./gitaction.list
@@ -281,6 +282,7 @@ jobs:
 
       - name: Install deps
         run: |
+          sudo apt update -y
           codename=$(lsb_release -c | awk '{print $2}')
           echo "deb http://mirror.genesisadaptive.com/ubuntu/ $codename main" > ./gitaction.list
           echo "deb http://mirror.math.princeton.edu/pub/ubuntu/ $codename main" ./gitaction.list
