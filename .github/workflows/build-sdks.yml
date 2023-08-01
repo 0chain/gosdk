@@ -90,7 +90,7 @@ jobs:
 
   build-android:
     name: Build-android
-    runs-on: [self-hosted, arc-runner4]
+    runs-on: [self-hosted, arc-runner2]
 
     steps:
       - name: Checkout code
@@ -266,7 +266,7 @@ jobs:
 
   build-windows:
     name: Build-windows
-    runs-on:  [self-hosted, arc-runner4]
+    runs-on:  [self-hosted, arc-runner2]
 
     steps:
       - name: Checkout code
