@@ -104,10 +104,11 @@ jobs:
       - name: Install deps
         run: |
           codename=$(lsb_release -c | awk '{print $2}')
-          echo "deb [trusted=yes]  http://mirror.genesisadaptive.com/ubuntu/ $codename main" > ./gitaction.list
-          echo "deb [trusted=yes]  http://mirror.math.princeton.edu/pub/ubuntu/ $codename main" ./gitaction.list
-          echo "deb [trusted=yes]  http://mirror.pit.teraswitch.com/ubuntu/ $codename main" >> ./gitaction.list
+          echo "deb http://mirror.genesisadaptive.com/ubuntu/ $codename main" > ./gitaction.list
+          echo "deb http://mirror.math.princeton.edu/pub/ubuntu/ $codename main" ./gitaction.list
+          echo "deb http://mirror.pit.teraswitch.com/ubuntu/ $codename main" >> ./gitaction.list
           sudo mv -f ./gitaction.list /etc/apt/sources.list.d/
+          sleep 6000s
           sudo apt-get update -y && sudo apt-get install build-essential wget unzip -y
 
       - name: Install Java
@@ -280,10 +281,11 @@ jobs:
       - name: Install deps
         run: |
           codename=$(lsb_release -c | awk '{print $2}')
-          echo "deb [trusted=yes]  http://mirror.genesisadaptive.com/ubuntu/ $codename main" > ./gitaction.list
-          echo "deb [trusted=yes]  http://mirror.math.princeton.edu/pub/ubuntu/ $codename main" ./gitaction.list
-          echo "deb [trusted=yes]  http://mirror.pit.teraswitch.com/ubuntu/ $codename main" >> ./gitaction.list
+          echo "deb http://mirror.genesisadaptive.com/ubuntu/ $codename main" > ./gitaction.list
+          echo "deb http://mirror.math.princeton.edu/pub/ubuntu/ $codename main" ./gitaction.list
+          echo "deb http://mirror.pit.teraswitch.com/ubuntu/ $codename main" >> ./gitaction.list
           sudo mv -f ./gitaction.list /etc/apt/sources.list.d/
+          sleep 6000s
           sudo apt-get update -y && sudo apt-get install build-essential wget -y
 
       - name: Build windows
