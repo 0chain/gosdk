@@ -9,6 +9,7 @@ import (
 	"io"
 	"io/ioutil"
 	"math"
+	"math/rand"
 	"mime/multipart"
 	"net/http"
 	"net/url"
@@ -811,7 +812,10 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 		mo.allocationObj = a
 		mo.operationMask = zboxutil.NewUint128(0)
 		mo.maskMU = &sync.Mutex{}
-		mo.ctx, mo.ctxCncl = context.WithCancel(a.ctx)
+		rand.Seed(time.Now().UnixNano())
+		t := rand.Intn(31)
+		t += 30
+		mo.ctx, mo.ctxCncl = context.WithTimeout(a.ctx, time.Duration(t)*time.Second)
 		mo.Consensus = Consensus{
 			RWMutex:         &sync.RWMutex{},
 			consensusThresh: a.consensusThreshold,
