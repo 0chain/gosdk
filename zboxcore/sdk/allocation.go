@@ -412,8 +412,9 @@ func (a *Allocation) RepairFile(file sys.File, remotepath string,
 	}
 	opts := []ChunkedUploadOption{
 		WithMask(mask),
-		WithChunkNumber(5),
+		WithChunkNumber(10),
 		WithStatusCallback(status),
+		WithEncrypt(ref.EncryptedKey != ""),
 	}
 	connectionID := zboxutil.NewConnectionId()
 	chunkedUpload, err := CreateChunkedUpload(idr, a, fileMeta, file, false, true, false, connectionID, opts...)
