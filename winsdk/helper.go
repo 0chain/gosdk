@@ -9,6 +9,8 @@ import (
 import (
 	"encoding/json"
 	"os"
+
+	"github.com/0chain/gosdk/core/encryption"
 )
 
 func getHomeDir() string {
@@ -38,4 +40,8 @@ func WithJSON(obj interface{}, err error) *C.char {
 	js, _ := json.Marshal(r)
 
 	return C.CString(string(js))
+}
+
+func getLookupHash(allocationID, path string) string {
+	return encryption.Hash(allocationID + ":" + path)
 }

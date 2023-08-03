@@ -144,17 +144,12 @@ func (req *DownloadRequest) getBlocksData(startBlock, totalBlock int64) ([]byte,
 	// Can we benefit from goroutine for erasure decoding??
 	c := req.datashards * req.effectiveBlockSize
 	data := make([]byte, req.datashards*req.effectiveBlockSize*int(totalBlock))
-	var isValid bool
 	for i := range shards {
 		var d []byte
 		var err error
-		d, isValid, err = req.decodeEC(shards[i])
+		d, err = req.decodeEC(shards[i])
 		if err != nil {
 			return nil, err
-		}
-
-		if !isValid {
-			return nil, errors.New("invalid_data", "some blobber responded with wrong data")
 		}
 		index := i * c
 		copy(data[index:index+c], d)
@@ -262,24 +257,18 @@ func (req *DownloadRequest) downloadBlock(
 }
 
 // decodeEC will reconstruct shards and verify it
-func (req *DownloadRequest) decodeEC(shards [][]byte) (data []byte, isValid bool, err error) {
-	err = req.ecEncoder.Reconstruct(shards)
+func (req *DownloadRequest) decodeEC(shards [][]byte) (data []byte, err error) {
+	err = req.ecEncoder.ReconstructData(shards)
 	if err != nil {
 		return
 	}
-
-	isValid, err = req.ecEncoder.Verify(shards)
-	if err != nil || !isValid {
-		return
-	}
-
 	c := len(shards[0])
 	data = make([]byte, req.datashards*c)
 	for i := 0; i < req.datashards; i++ {
 		index := i * c
 		copy(data[index:index+c], shards[i])
 	}
-	return data, true, nil
+	return data, nil
 }
 
 // fillShards will fill `shards` with data from blobbers that belongs to specific
@@ -363,7 +352,11 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		defer req.completedCallback(req.remotefilepath, req.remotefilepathhash)
 	}
 	if req.fileCallback != nil {
-		defer req.fileCallback()
+		defer func() {
+			if !req.skip {
+				req.fileCallback()
+			}
+		}()
 	}
 
 	remotePathCB := req.remotefilepath
@@ -440,14 +433,21 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			if data, ok := buffer[i]; ok {
 				// If the block we need to write next is already in the buffer, write it
 				numBytes := int64(math.Min(float64(remainingSize), float64(len(data))))
+				if isPREAndWholeFile {
+					actualFileHasher.Write(data[:numBytes])
+					if i == n-1 {
+						if calculatedFileHash, ok := checkHash(actualFileHasher, fRef, req.contentMode); !ok {
+							req.errorCB(fmt.Errorf("Expected actual file hash %s, calculated file hash %s",
+								fRef.ActualFileHash, calculatedFileHash), remotePathCB)
+							return
+						}
+					}
+				}
 				_, err = req.fileHandler.Write(data[:numBytes])
 
 				if err != nil {
 					req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
 					return
-				}
-				if isPREAndWholeFile {
-					actualFileHasher.Write(data[:numBytes])
 				}
 
 				downloaded = downloaded + int(numBytes)
@@ -465,14 +465,21 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 					if block.blockNum == i {
 						// Write the data
 						numBytes := int64(math.Min(float64(remainingSize), float64(len(block.data))))
+						if isPREAndWholeFile {
+							actualFileHasher.Write(block.data[:numBytes])
+							if i == n-1 {
+								if calculatedFileHash, ok := checkHash(actualFileHasher, fRef, req.contentMode); !ok {
+									req.errorCB(fmt.Errorf("Expected actual file hash %s, calculated file hash %s",
+										fRef.ActualFileHash, calculatedFileHash), remotePathCB)
+									return
+								}
+							}
+						}
 						_, err = req.fileHandler.Write(block.data[:numBytes])
 
 						if err != nil {
 							req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
 							return
-						}
-						if isPREAndWholeFile {
-							actualFileHasher.Write(block.data[:numBytes])
 						}
 
 						downloaded = downloaded + int(numBytes)
@@ -541,6 +548,15 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	if req.statusCallback != nil {
 		req.statusCallback.Completed(
 			req.allocationID, remotePathCB, fRef.Name, "", int(size), op)
+	}
+}
+
+func checkHash(actualFileHasher hash.Hash, fref *fileref.FileRef, contentMode string) (string, bool) {
+	calculatedFileHash := hex.EncodeToString(actualFileHasher.Sum(nil))
+	if contentMode == DOWNLOAD_CONTENT_THUMB {
+		return calculatedFileHash, calculatedFileHash == fref.ActualThumbnailHash
+	} else {
+		return calculatedFileHash, calculatedFileHash == fref.ActualFileHash
 	}
 }
 

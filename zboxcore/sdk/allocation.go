@@ -229,6 +229,10 @@ func GetWritePriceRange() (PriceRange, error) {
 	return getPriceRange("max_write_price")
 }
 
+func SetWasm() {
+	IsWasm = true
+}
+
 func getPriceRange(name string) (PriceRange, error) {
 	conf, err := GetStorageSCConfig()
 	if err != nil {
@@ -408,8 +412,9 @@ func (a *Allocation) RepairFile(file sys.File, remotepath string,
 	}
 	opts := []ChunkedUploadOption{
 		WithMask(mask),
-		WithChunkNumber(5),
+		WithChunkNumber(10),
 		WithStatusCallback(status),
+		WithEncrypt(ref.EncryptedKey != ""),
 	}
 	connectionID := zboxutil.NewConnectionId()
 	chunkedUpload, err := CreateChunkedUpload(idr, a, fileMeta, file, false, true, false, connectionID, opts...)
@@ -2266,11 +2271,15 @@ func (a *Allocation) StartRepair(localRootPath, pathToRepair string, statusCB St
 }
 
 // RepairAlloc repairs all the files in allocation
-func (a *Allocation) RepairAlloc(statusCB StatusCallback) error {
-	// todo: will this work in wasm?
-	dir, err := os.Getwd()
-	if err != nil {
-		return err
+func (a *Allocation) RepairAlloc(statusCB StatusCallback) (err error) {
+	var dir string
+	if IsWasm {
+		dir = "/tmp"
+	} else {
+		dir, err = os.Getwd()
+		if err != nil {
+			return err
+		}
 	}
 	return a.StartRepair(dir, "/", statusCB)
 }

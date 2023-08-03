@@ -813,7 +813,6 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 	if numSharders > sharderConsensous {
 		sharders = util.Shuffle(sharders)[:sharderConsensous]
 	}
-	log.Info("http: ", relativePath, " ", cfg.SharderConsensous, "/", numSharders)
 	for _, sharder := range sharders {
 		wg.Add(1)
 		go func(sharder string) {
@@ -831,8 +830,6 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 			if err == nil {
 				defer response.Body.Close()
 				entityBytes, _ := ioutil.ReadAll(response.Body)
-
-				log.Info("http: ", urlObj.String(), response.Status, string(entityBytes))
 				mu.Lock()
 				responses[response.StatusCode]++
 				if responses[response.StatusCode] > maxCount {

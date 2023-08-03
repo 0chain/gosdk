@@ -58,6 +58,16 @@ jobs:
             # upload zcn.wasm on release
             echo "::set-output name=RELEASE::true"
             echo "::set-output name=TAG::${tag}"
+          elif [[ ${tag} = "refs/heads/staging" ]] ; then
+            echo "> 0Chain: trigger from git event"
+            echo "::set-output name=PR::true"
+
+            gosdk="{\"gosdk\":\"staging\"}"
+            echo "::set-output name=SDK::${gosdk}"
+
+            # upload zcn.wasm on release
+            echo "::set-output name=RELEASE::true"
+            echo "::set-output name=TAG::${tag}"
           fi
 
       - name: Build
