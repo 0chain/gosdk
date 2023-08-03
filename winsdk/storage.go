@@ -335,7 +335,7 @@ func BulkUpload(uploadID, allocationID, files *C.char) *C.char {
 		remotePaths[idx] = option.RemotePath
 		chunkNumbers[idx] = option.ChunkNumber
 		isUpdates[idx] = option.IsUpdate
-
+		encrypts[idx] = option.Encrypt
 		statusBar.status[option.RemotePath+option.Name] = &Status{}
 	}
 
