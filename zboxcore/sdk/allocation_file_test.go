@@ -688,8 +688,10 @@ func TestAllocation_RepairFile(t *testing.T) {
 				Body: func(fileRefName, hash string) io.ReadCloser {
 					jsonFR, err := json.Marshal(&fileref.FileRef{
 						ActualFileHash: hash,
+						ActualFileSize: 14,
 						Ref: fileref.Ref{
-							Name: fileRefName,
+							Name:         fileRefName,
+							FileMetaHash: hash,
 						},
 					})
 					require.NoError(t, err)
@@ -796,6 +798,7 @@ func TestAllocation_RepairFile(t *testing.T) {
 		numCorrect  int
 		setup       func(*testing.T, string, int, int)
 		wantErr     bool
+		wantRepair  bool
 		errMsg      string
 	}{
 		{
@@ -807,8 +810,7 @@ func TestAllocation_RepairFile(t *testing.T) {
 			numBlobbers: 4,
 			numCorrect:  4,
 			setup:       setupHttpResponses,
-			wantErr:     true,
-			errMsg:      "chunk_upload: Repair not required",
+			wantRepair:  false,
 		},
 		{
 			name: "Test_Repair_Required_Success",
@@ -819,6 +821,7 @@ func TestAllocation_RepairFile(t *testing.T) {
 			numBlobbers: 6,
 			numCorrect:  5,
 			setup:       setupHttpResponsesWithUpload,
+			wantRepair:  true,
 		},
 	}
 
@@ -849,7 +852,19 @@ func TestAllocation_RepairFile(t *testing.T) {
 				})
 			}
 			tt.setup(t, tt.name, tt.numBlobbers, tt.numCorrect)
-			err := a.RepairFile(tt.parameters.localPath, tt.parameters.remotePath, tt.parameters.status)
+			found, _, isRequired, ref, err := a.RepairRequired(tt.parameters.remotePath)
+			require.Nil(err)
+			require.Equal(tt.wantRepair, isRequired)
+			if !tt.wantRepair {
+				return
+			}
+			f, err := os.Open(tt.parameters.localPath)
+			require.Nil(err)
+			sz, err := f.Stat()
+			require.Nil(err)
+			require.NotNil(sz)
+			ref.ActualSize = sz.Size()
+			err = a.RepairFile(f, tt.parameters.remotePath, tt.parameters.status, found, ref)
 			if tt.wantErr {
 				require.NotNil(err)
 			} else {

@@ -54,6 +54,7 @@ type CommitRequest struct {
 	wg           *sync.WaitGroup
 	result       *CommitResult
 	timestamp    int64
+	blobberInd   uint64
 }
 
 var commitChan map[string]chan *CommitRequest

@@ -151,7 +151,18 @@ func (s *StorageSDK) CreateAllocation(datashards, parityshards int, size, expira
 		return nil, err
 	}
 
-	sdkAllocationID, _, _, err := sdk.CreateAllocation(datashards, parityshards, size, expiration, readPrice, writePrice, l, false, &sdk.FileOptionsParameters{})
+	options := sdk.CreateAllocationOptions{
+		DataShards:        datashards,
+		ParityShards:      parityshards,
+		Size:              size,
+		ReadPrice:         readPrice,
+		WritePrice:        writePrice,
+		Lock:              uint64(l),
+		BlobberIds:        []string{},
+		FileOptionsParams: &sdk.FileOptionsParameters{},
+	}
+
+	sdkAllocationID, _, _, err := sdk.CreateAllocationWith(options)
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +184,7 @@ func (s *StorageSDK) CreateAllocation(datashards, parityshards int, size, expira
 //		- lock: lock write pool with given number of tokens
 //		- blobberUrls: concat blobber urls with comma. leave it as empty if you don't have any preferred blobbers
 //		- blobberIds: concat blobber ids with comma. leave it as empty if you don't have any preferred blobbers
-func (s *StorageSDK) CreateAllocationWithBlobbers(name string, datashards, parityshards int, size, expiration int64, lock string, blobberUrls, blobberIds string) (*zbox.Allocation, error) {
+func (s *StorageSDK) CreateAllocationWithBlobbers(name string, datashards, parityshards int, size int64, lock string, blobberUrls, blobberIds string) (*zbox.Allocation, error) {
 	readPrice := sdk.PriceRange{Min: 0, Max: math.MaxInt64}
 	writePrice := sdk.PriceRange{Min: 0, Max: math.MaxInt64}
 
@@ -186,7 +197,6 @@ func (s *StorageSDK) CreateAllocationWithBlobbers(name string, datashards, parit
 		DataShards:   datashards,
 		ParityShards: parityshards,
 		Size:         size,
-		Expiry:       expiration,
 		Lock:         l,
 		WritePrice:   writePrice,
 		ReadPrice:    readPrice,
@@ -325,12 +335,12 @@ func (s *StorageSDK) GetVersion() string {
 }
 
 // UpdateAllocation with new expiry and size
-func (s *StorageSDK) UpdateAllocation(size, expiry int64, allocationID string, lock uint64) (hash string, err error) {
+func (s *StorageSDK) UpdateAllocation(size int64, extend bool, allocationID string, lock uint64) (hash string, err error) {
 	if lock > math.MaxInt64 {
 		return "", errors.Errorf("int64 overflow in lock")
 	}
 
-	hash, _, err = sdk.UpdateAllocation(size, expiry, allocationID, lock, true, "", "", false, &sdk.FileOptionsParameters{})
+	hash, _, err = sdk.UpdateAllocation(size, extend, allocationID, lock, true, "", "", false, &sdk.FileOptionsParameters{})
 	return hash, err
 }
 

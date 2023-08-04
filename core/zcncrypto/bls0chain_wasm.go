@@ -13,7 +13,7 @@ var (
 	Sign func(hash string) (string, error)
 )
 
-//WasmScheme - a signature scheme for BLS0Chain Signature
+// WasmScheme - a signature scheme for BLS0Chain Signature
 type WasmScheme struct {
 	PublicKey  string `json:"public_key"`
 	PrivateKey string `json:"private_key"`
@@ -23,7 +23,7 @@ type WasmScheme struct {
 	Ids string `json:"threshold_scheme_id"`
 }
 
-//NewWasmScheme - create a BLS0ChainScheme object
+// NewWasmScheme - create a BLS0ChainScheme object
 func NewWasmScheme() *WasmScheme {
 	return &WasmScheme{}
 }
@@ -32,7 +32,7 @@ func (b0 *WasmScheme) GenerateKeysWithEth(mnemonic, password string) (*Wallet, e
 	return nil, errors.New("wasm_not_support", "please generate keys by bls_wasm in js")
 }
 
-//GenerateKeys - implement interface
+// GenerateKeys - implement interface
 func (b0 *WasmScheme) GenerateKeys() (*Wallet, error) {
 	return nil, errors.New("wasm_not_support", "please generate keys by bls_wasm in js")
 }
@@ -45,17 +45,17 @@ func (b0 *WasmScheme) GetMnemonic() string {
 	return ""
 }
 
-//SetPrivateKey - implement interface
+// SetPrivateKey - implement interface
 func (b0 *WasmScheme) SetPrivateKey(privateKey string) error {
 	return errors.New("wasm_not_support", "please set keys by bls_wasm in js")
 }
 
-//SetPublicKey - implement interface
+// SetPublicKey - implement interface
 func (b0 *WasmScheme) SetPublicKey(publicKey string) error {
 	return errors.New("wasm_not_support", "please set keys by bls_wasm in js")
 }
 
-//GetPublicKey - implement interface
+// GetPublicKey - implement interface
 func (b0 *WasmScheme) GetPublicKey() string {
 	return "please get key in js"
 }
@@ -64,7 +64,7 @@ func (b0 *WasmScheme) GetPrivateKey() string {
 	return "please get key in js"
 }
 
-//Sign - implement interface
+// Sign - implement interface
 func (b0 *WasmScheme) Sign(hash string) (string, error) {
 	rawHash, err := hex.DecodeString(hash)
 	if err != nil {
@@ -78,7 +78,7 @@ func (b0 *WasmScheme) Sign(hash string) (string, error) {
 	return "", errors.New("wasm_not_initialized", "please init wasm sdk first")
 }
 
-//Verify - implement interface
+// Verify - implement interface
 func (b0 *WasmScheme) Verify(signature, msg string) (bool, error) {
 	return false, errors.New("wasm_not_support", "please verify signature by bls_wasm in js")
 }
@@ -88,12 +88,12 @@ func (b0 *WasmScheme) Add(signature, msg string) (string, error) {
 	return "", errors.New("wasm_not_support", "aggregate signature is not supported on wasm sdk")
 }
 
-//SetID sets ID in HexString format
+// SetID sets ID in HexString format
 func (b0 *WasmScheme) SetID(id string) error {
 	return errors.New("wasm_not_support", "setid is not supported on wasm sdk")
 }
 
-//GetID gets ID in hex string format
+// GetID gets ID in hex string format
 func (b0 *WasmScheme) GetID() string {
 	return ""
 }

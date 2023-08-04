@@ -284,7 +284,6 @@ func validateBlockHash(b *RoundBlockHeader) error {
 func VerifyTransaction(txnHash string, sharders []string) (*Transaction, error) {
 	cfg, err := conf.GetClientConfig()
 	if err != nil {
-
 		return nil, err
 	}
 
