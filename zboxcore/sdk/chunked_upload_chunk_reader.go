@@ -141,7 +141,6 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 
 	chunkBytes := make([]byte, r.chunkDataSizePerRead)
 	readLen, err := r.fileReader.Read(chunkBytes)
-
 	if err != nil {
 
 		if !errors.Is(err, io.EOF) {

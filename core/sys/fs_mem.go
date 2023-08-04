@@ -264,12 +264,13 @@ func (i *MemFileInfo) Info() (fs.FileInfo, error) {
 }
 
 type MemChanFile struct {
-	Name    string
-	Buffer  chan []byte // file content
-	Mode    fs.FileMode // FileInfo.Mode
-	ModTime time.Time   // FileInfo.ModTime
-	Sys     interface{} // FileInfo.Sys
-	reader  io.Reader
+	Name           string
+	Buffer         chan []byte // file content
+	Mode           fs.FileMode // FileInfo.Mode
+	ModTime        time.Time   // FileInfo.ModTime
+	ChunkWriteSize int         //  0 value means no limit
+	Sys            interface{} // FileInfo.Sys
+	reader         io.Reader
 }
 
 func (f *MemChanFile) Stat() (fs.FileInfo, error) {
@@ -287,7 +288,18 @@ func (f *MemChanFile) Read(p []byte) (int, error) {
 	return n, nil
 }
 func (f *MemChanFile) Write(p []byte) (n int, err error) {
-	f.Buffer <- p
+	if f.ChunkWriteSize == 0 {
+		f.Buffer <- p
+	} else {
+		current := 0
+		for ; current < len(p); current += f.ChunkWriteSize {
+			end := current + f.ChunkWriteSize
+			if end > len(p) {
+				end = len(p)
+			}
+			f.Buffer <- p[current:end]
+		}
+	}
 	return len(p), nil
 
 }
