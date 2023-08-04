@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"sync"
 	"time"
@@ -62,15 +63,13 @@ func (wmMu *WriteMarkerMutex) Unlock(
 ) {
 	wg := &sync.WaitGroup{}
 	var pos uint64
+
 	for i := mask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
-
 		blobber := blobbers[pos]
-
 		wg.Add(1)
 		go wmMu.UnlockBlobber(ctx, blobber, connID, timeOut, wg)
 	}
-
 	wg.Wait()
 }
 
@@ -79,12 +78,9 @@ func (wmMu *WriteMarkerMutex) UnlockBlobber(
 	ctx context.Context, b *blockchain.StorageNode,
 	connID string, timeOut time.Duration, wg *sync.WaitGroup,
 ) {
-
 	defer wg.Done()
-
 	wmMu.lockedBlobbers[b.ID] <- struct{}{}
 	var err error
-
 	defer func() {
 		if err != nil {
 			logger.Logger.Error(err)
@@ -94,7 +90,6 @@ func (wmMu *WriteMarkerMutex) UnlockBlobber(
 	var req *http.Request
 	req, err = zboxutil.NewWriteMarkerUnLockRequest(
 		b.Baseurl, wmMu.allocationObj.ID, wmMu.allocationObj.Tx, connID, "")
-
 	if err != nil {
 		return
 	}
@@ -102,7 +97,6 @@ func (wmMu *WriteMarkerMutex) UnlockBlobber(
 	var resp *http.Response
 	var shouldContinue bool
 	for retry := 0; retry < 3; retry++ {
-
 		err, shouldContinue = func() (err error, shouldContinue bool) {
 			reqCtx, ctxCncl := context.WithTimeout(ctx, timeOut)
 			resp, err = zboxutil.Client.Do(req.WithContext(reqCtx))
@@ -122,12 +116,8 @@ func (wmMu *WriteMarkerMutex) UnlockBlobber(
 				logger.Logger.Info(b.Baseurl, connID, " unlocked")
 				return
 			}
-
 			if resp.StatusCode == http.StatusTooManyRequests {
-				logger.Logger.Info(
-					b.Baseurl, connID,
-					" got too many request error. Retrying")
-
+				logger.Logger.Info(b.Baseurl, connID, " got too many request error. Retrying")
 				var r int
 				r, err = zboxutil.GetRateLimitValue(resp)
 				if err != nil {
@@ -163,11 +153,9 @@ func (wmMu *WriteMarkerMutex) UnlockBlobber(
 		if err != nil {
 			return
 		}
-
 		if shouldContinue {
 			continue
 		}
-
 		return
 	}
 }
@@ -183,22 +171,39 @@ func (wmMu *WriteMarkerMutex) Lock(
 	consensus.Reset()
 	consensus.consensus = addConsensus
 	wg := &sync.WaitGroup{}
-	var pos uint64
 
+	// Lock the lead blobber first
+	leadBlobber := blobbers[0]
+	var retryCount int
+	var maxRetries = 5
+	for retryCount < maxRetries {
+		wg.Add(1)
+		go wmMu.lockBlobber(ctx, mask, maskMu, consensus, leadBlobber, 0, connID, timeOut, wg)
+		wg.Wait()
+		if consensus.getConsensus()-addConsensus == 1 {
+			break
+		}
+		time.Sleep(time.Millisecond * time.Duration(math.Pow(10, float64(retryCount))))
+		retryCount++
+	}
+	if consensus.getConsensus()-addConsensus != 1 {
+		return errors.New("lock_consensus_not_met", "Failed to lock the lead blobber after retries")
+	}
+
+	// Once the lead blobber is locked successfully, lock the other blobbers
+	var pos uint64
 	for i := *mask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
-
+		if pos == 0 {
+			continue
+		}
 		blobber := blobbers[pos]
-
 		wg.Add(1)
 		go wmMu.lockBlobber(ctx, mask, maskMu, consensus, blobber, pos, connID, timeOut, wg)
 	}
-
 	wg.Wait()
-
 	if !consensus.isConsensusOk() {
 		wmMu.Unlock(ctx, *mask, blobbers, timeOut, connID)
-
 		return errors.New("lock_consensus_not_met",
 			fmt.Sprintf("Required consensus %d got %d",
 				consensus.consensusThresh, consensus.getConsensus()))
@@ -219,15 +224,13 @@ func (wmMu *WriteMarkerMutex) Lock(
 
 			wg := &sync.WaitGroup{}
 			cons := &Consensus{RWMutex: &sync.RWMutex{}}
+			var pos uint64
 			for i := *mask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 				pos = uint64(i.TrailingZeros())
-
 				blobber := blobbers[pos]
-
 				wg.Add(1)
 				go wmMu.lockBlobber(ctx, mask, maskMu, cons, blobber, pos, connID, timeOut, wg)
 			}
-
 			wg.Wait()
 		}
 	}()
@@ -239,7 +242,6 @@ func (wmMu *WriteMarkerMutex) lockBlobber(
 	ctx context.Context, mask *zboxutil.Uint128, maskMu *sync.Mutex,
 	consensus *Consensus, b *blockchain.StorageNode, pos uint64, connID string,
 	timeOut time.Duration, wg *sync.WaitGroup) {
-
 	defer wg.Done()
 
 	select {
@@ -249,13 +251,11 @@ func (wmMu *WriteMarkerMutex) lockBlobber(
 	}
 
 	wmMu.lockedBlobbers[b.ID] <- struct{}{}
-
 	defer func() {
 		<-wmMu.lockedBlobbers[b.ID]
 	}()
 
 	var err error
-
 	defer func() {
 		if err != nil {
 			logger.Logger.Error(err)
@@ -266,10 +266,8 @@ func (wmMu *WriteMarkerMutex) lockBlobber(
 	}()
 
 	var req *http.Request
-
 	req, err = zboxutil.NewWriteMarkerLockRequest(
 		b.Baseurl, wmMu.allocationObj.ID, wmMu.allocationObj.Tx, connID)
-
 	if err != nil {
 		return
 	}
@@ -279,9 +277,8 @@ func (wmMu *WriteMarkerMutex) lockBlobber(
 	for retry := 0; retry < 3; retry++ {
 		err, shouldContinue = func() (err error, shouldContinue bool) {
 			reqCtx, ctxCncl := context.WithTimeout(ctx, timeOut)
-			resp, err = zboxutil.Client.Do(req.WithContext(reqCtx))
 			defer ctxCncl()
-
+			resp, err = zboxutil.Client.Do(req.WithContext(reqCtx))
 			if err != nil {
 				return
 			}
@@ -353,5 +350,4 @@ func (wmMu *WriteMarkerMutex) lockBlobber(
 			break
 		}
 	}
-
 }
