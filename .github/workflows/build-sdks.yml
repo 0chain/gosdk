@@ -109,7 +109,7 @@ jobs:
           echo "deb http://mirror.pit.teraswitch.com/ubuntu/ $codename main" >> ./gitaction.list
           sudo mv -f ./gitaction.list /etc/apt/sources.list.d/
       
-          sudo apt-get update -y && sudo apt-get install build-essential wget unzip -y
+          sudo apt update -y && sudo apt install build-essential wget unzip -y
 
       - name: Install Java
         uses: actions/setup-java@v3
