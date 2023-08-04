@@ -105,7 +105,7 @@ jobs:
         run: |
           codename=$(lsb_release -c | awk '{print $2}')
           echo "deb http://mirror.genesisadaptive.com/ubuntu/ $codename main" > ./gitaction.list
-          echo "deb http://mirror.math.princeton.edu/pub/ubuntu/ $codename main" ./gitaction.list
+          echo "deb http://mirror.math.princeton.edu/pub/ubuntu/ $codename main" >> ./gitaction.list
           echo "deb http://mirror.pit.teraswitch.com/ubuntu/ $codename main" >> ./gitaction.list
           sudo mv -f ./gitaction.list /etc/apt/sources.list.d/
       
