@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sort"
 	"sync"
 	"time"
 
@@ -177,24 +178,38 @@ func (wmMu *WriteMarkerMutex) Lock(
 	maskMu *sync.Mutex, blobbers []*blockchain.StorageNode,
 	consensus *Consensus, addConsensus int, timeOut time.Duration, connID string) error {
 
-	wmMu.mutex.Lock()
-	defer wmMu.mutex.Unlock()
+	// wmMu.mutex.Lock()
+	// defer wmMu.mutex.Unlock()
 
 	consensus.Reset()
 	consensus.consensus = addConsensus
-	wg := &sync.WaitGroup{}
 	var pos uint64
 
+	var orderedBlob []*blockchain.StorageNode
+	blobbersPosition := make(map[string]uint64)
 	for i := *mask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 
-		blobber := blobbers[pos]
-
-		wg.Add(1)
-		go wmMu.lockBlobber(ctx, mask, maskMu, consensus, blobber, pos, connID, timeOut, wg)
+		// blobber := blobbers[pos]
+		orderedBlob = append(orderedBlob, blobbers[pos])
+		blobbersPosition[blobbers[pos].ID] = pos
+		// wg.Add(1)
+		// go wmMu.lockBlobber(ctx, mask, maskMu, consensus, blobber, pos, connID, timeOut, wg)
 	}
 
-	wg.Wait()
+	lockBlobbers := func(orderedBlob []*blockchain.StorageNode, blobersPosition map[string]uint64, cons *Consensus) {
+		// sort the blobbers to lock in a fixed ordering to avoid deadlocks.
+		sort.Slice(orderedBlob, func(i, j int) bool {
+			return orderedBlob[i].ID < orderedBlob[j].ID
+		})
+
+		for _, blobber := range orderedBlob {
+			wmMu.lockBlobber(ctx, mask, maskMu, cons, blobber, blobbersPosition[blobber.ID], connID, timeOut)
+		}
+
+	}
+
+	lockBlobbers(orderedBlob, blobbersPosition, consensus)
 
 	if !consensus.isConsensusOk() {
 		wmMu.Unlock(ctx, *mask, blobbers, timeOut, connID)
@@ -204,10 +219,8 @@ func (wmMu *WriteMarkerMutex) Lock(
 				consensus.consensusThresh, consensus.getConsensus()))
 	}
 
-	/*
-		This goroutine will refresh lock after 30 seconds have passed. It will only complete if context is
-		completed, that is why, the caller should make proper use of context and cancel it when work is done.
-	*/
+	// This goroutine will refresh lock after 30 seconds have passed. It will only complete if context is
+	// completed, that is why, the caller should make proper use of context and cancel it when work is done.
 	go func() {
 		for {
 			<-time.NewTimer(30 * time.Second).C
@@ -217,18 +230,19 @@ func (wmMu *WriteMarkerMutex) Lock(
 			default:
 			}
 
-			wg := &sync.WaitGroup{}
 			cons := &Consensus{RWMutex: &sync.RWMutex{}}
-			for i := *mask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
-				pos = uint64(i.TrailingZeros())
+			lockBlobbers(orderedBlob, blobbersPosition, cons)
 
-				blobber := blobbers[pos]
-
-				wg.Add(1)
-				go wmMu.lockBlobber(ctx, mask, maskMu, cons, blobber, pos, connID, timeOut, wg)
-			}
-
-			wg.Wait()
+			// for i := *mask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+			// 	pos = uint64(i.TrailingZeros())
+			//
+			// 	blobber := blobbers[pos]
+			//
+			// 	wg.Add(1)
+			// 	go wmMu.lockBlobber(ctx, mask, maskMu, cons, blobber, pos, connID, timeOut, wg)
+			// }
+			//
+			// wg.Wait()
 		}
 	}()
 
@@ -238,9 +252,9 @@ func (wmMu *WriteMarkerMutex) Lock(
 func (wmMu *WriteMarkerMutex) lockBlobber(
 	ctx context.Context, mask *zboxutil.Uint128, maskMu *sync.Mutex,
 	consensus *Consensus, b *blockchain.StorageNode, pos uint64, connID string,
-	timeOut time.Duration, wg *sync.WaitGroup) {
+	timeOut time.Duration) {
 
-	defer wg.Done()
+	// defer wg.Done()
 
 	select {
 	case <-ctx.Done():
@@ -353,5 +367,4 @@ func (wmMu *WriteMarkerMutex) lockBlobber(
 			break
 		}
 	}
-
 }
