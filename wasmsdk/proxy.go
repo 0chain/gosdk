@@ -159,6 +159,7 @@ func main() {
 				"isWalletID":             isWalletID,
 				"getLookupHash":          getLookupHash,
 				"createThumbnail":        createThumbnail,
+				"makeSCRestAPICall": makeSCRestAPICall,
 
 				//blobber
 				"delete":                 Delete,
@@ -215,6 +216,7 @@ func main() {
 				"getSkatePoolInfo": getSkatePoolInfo,
 				"lockStakePool":    lockStakePool,
 				"unlockStakePool":  unlockStakePool,
+
 
 				// writepool
 				"lockWritePool": lockWritePool,
