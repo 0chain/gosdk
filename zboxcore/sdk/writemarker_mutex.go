@@ -61,28 +61,24 @@ func (wmMu *WriteMarkerMutex) Unlock(
 	blobbers []*blockchain.StorageNode,
 	timeOut time.Duration, connID string,
 ) {
-	wg := &sync.WaitGroup{}
-	var pos uint64
-	for i := mask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
-		pos = uint64(i.TrailingZeros())
+	orderedBlob, _ := getBlobbers(mask, blobbers)
 
-		blobber := blobbers[pos]
+	// To ensure proper unlocking and avoid deadlocks, the blobbers are sorted in descending order. This allows
+	// unlocking to be performed in reverse order of locking, maintaining the hierarchical locking mechanism.
+	sort.Slice(orderedBlob, func(i, j int) bool {
+		return orderedBlob[i].ID > orderedBlob[j].ID
+	})
 
-		wg.Add(1)
-		go wmMu.UnlockBlobber(ctx, blobber, connID, timeOut, wg)
+	for _, blobber := range orderedBlob {
+		wmMu.UnlockBlobber(ctx, blobber, connID, timeOut)
 	}
-
-	wg.Wait()
 }
 
-// Change status code to 204
+// UnlockBlobber Change status code to 204
 func (wmMu *WriteMarkerMutex) UnlockBlobber(
 	ctx context.Context, b *blockchain.StorageNode,
-	connID string, timeOut time.Duration, wg *sync.WaitGroup,
+	connID string, timeOut time.Duration,
 ) {
-
-	defer wg.Done()
-
 	wmMu.lockedBlobbers[b.ID] <- struct{}{}
 	var err error
 
@@ -174,31 +170,21 @@ func (wmMu *WriteMarkerMutex) UnlockBlobber(
 }
 
 func (wmMu *WriteMarkerMutex) Lock(
-	ctx context.Context, mask *zboxutil.Uint128,
-	maskMu *sync.Mutex, blobbers []*blockchain.StorageNode,
-	consensus *Consensus, addConsensus int, timeOut time.Duration, connID string) error {
-
-	// wmMu.mutex.Lock()
-	// defer wmMu.mutex.Unlock()
-
+	ctx context.Context,
+	mask *zboxutil.Uint128,
+	maskMu *sync.Mutex,
+	blobbers []*blockchain.StorageNode,
+	consensus *Consensus,
+	addConsensus int,
+	timeOut time.Duration,
+	connID string,
+) error {
 	consensus.Reset()
 	consensus.consensus = addConsensus
-	var pos uint64
-
-	var orderedBlob []*blockchain.StorageNode
-	blobbersPosition := make(map[string]uint64)
-	for i := *mask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
-		pos = uint64(i.TrailingZeros())
-
-		// blobber := blobbers[pos]
-		orderedBlob = append(orderedBlob, blobbers[pos])
-		blobbersPosition[blobbers[pos].ID] = pos
-		// wg.Add(1)
-		// go wmMu.lockBlobber(ctx, mask, maskMu, consensus, blobber, pos, connID, timeOut, wg)
-	}
-
-	lockBlobbers := func(orderedBlob []*blockchain.StorageNode, blobersPosition map[string]uint64, cons *Consensus) {
-		// sort the blobbers to lock in a fixed ordering to avoid deadlocks.
+	orderedBlob, blobPositions := getBlobbers(*mask, blobbers)
+	lockBlobbers := func(orderedBlob []*blockchain.StorageNode, blobbersPosition map[string]uint64, cons *Consensus) {
+		// To prevent deadlocks, the blobbers are sorted in a fixed ordering before locking. This
+		// ensures that all threads attempt to acquire locks in the same predetermined sequence.
 		sort.Slice(orderedBlob, func(i, j int) bool {
 			return orderedBlob[i].ID < orderedBlob[j].ID
 		})
@@ -206,10 +192,9 @@ func (wmMu *WriteMarkerMutex) Lock(
 		for _, blobber := range orderedBlob {
 			wmMu.lockBlobber(ctx, mask, maskMu, cons, blobber, blobbersPosition[blobber.ID], connID, timeOut)
 		}
-
 	}
 
-	lockBlobbers(orderedBlob, blobbersPosition, consensus)
+	lockBlobbers(orderedBlob, blobPositions, consensus)
 
 	if !consensus.isConsensusOk() {
 		wmMu.Unlock(ctx, *mask, blobbers, timeOut, connID)
@@ -231,30 +216,33 @@ func (wmMu *WriteMarkerMutex) Lock(
 			}
 
 			cons := &Consensus{RWMutex: &sync.RWMutex{}}
-			lockBlobbers(orderedBlob, blobbersPosition, cons)
-
-			// for i := *mask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
-			// 	pos = uint64(i.TrailingZeros())
-			//
-			// 	blobber := blobbers[pos]
-			//
-			// 	wg.Add(1)
-			// 	go wmMu.lockBlobber(ctx, mask, maskMu, cons, blobber, pos, connID, timeOut, wg)
-			// }
-			//
-			// wg.Wait()
+			lockBlobbers(orderedBlob, blobPositions, cons)
 		}
 	}()
 
 	return nil
 }
 
+func getBlobbers(mask zboxutil.Uint128, blobbers []*blockchain.StorageNode) (
+	[]*blockchain.StorageNode,
+	map[string]uint64,
+) {
+	var pos uint64
+	var orderedBlob []*blockchain.StorageNode
+	blobbersPosition := make(map[string]uint64)
+	for i := mask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		pos = uint64(i.TrailingZeros())
+		orderedBlob = append(orderedBlob, blobbers[pos])
+		blobbersPosition[blobbers[pos].ID] = pos
+	}
+
+	return orderedBlob, blobbersPosition
+}
+
 func (wmMu *WriteMarkerMutex) lockBlobber(
 	ctx context.Context, mask *zboxutil.Uint128, maskMu *sync.Mutex,
 	consensus *Consensus, b *blockchain.StorageNode, pos uint64, connID string,
 	timeOut time.Duration) {
-
-	// defer wg.Done()
 
 	select {
 	case <-ctx.Done():
