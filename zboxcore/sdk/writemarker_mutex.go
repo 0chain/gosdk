@@ -34,12 +34,12 @@ type WMLockResult struct {
 
 // WriteMarkerMutex blobber WriteMarkerMutex client
 type WriteMarkerMutex struct {
-	mutex             sync.Mutex
-	allocationObj     *Allocation
-	lockedBlobbers    map[string]chan struct{}
-	leadBlobberIdx    uint64
-	blobberTimestamps []int64
-	LeaderTimestamp   int64
+	mutex           sync.Mutex
+	allocationObj   *Allocation
+	lockedBlobbers  map[string]chan struct{}
+	leadBlobberIdx  uint64
+	LeaderTimestamp int64
+	timestampLock   sync.Mutex
 }
 
 // CreateWriteMarkerMutex create WriteMarkerMutex for allocation
@@ -54,10 +54,10 @@ func CreateWriteMarkerMutex(client *client.Client, allocationObj *Allocation) (*
 	}
 
 	return &WriteMarkerMutex{
-		allocationObj:     allocationObj,
-		lockedBlobbers:    lockedBlobbers,
-		leadBlobberIdx:    0,
-		blobberTimestamps: make([]int64, len(allocationObj.Blobbers)),
+		allocationObj:   allocationObj,
+		lockedBlobbers:  lockedBlobbers,
+		leadBlobberIdx:  0,
+		LeaderTimestamp: 999999999999999999,
 	}, nil
 }
 
@@ -194,18 +194,19 @@ func (wmMu *WriteMarkerMutex) Lock(
 	wg := &sync.WaitGroup{}
 	var pos uint64
 
-	wg.Add(1)
-	err := wmMu.lockBlobber(ctx, mask, maskMu, consensus, blobbers[wmMu.leadBlobberIdx], wmMu.leadBlobberIdx, connID, timeOut, wg)
-	if err != nil {
-		wmMu.leadBlobberIdx += 1
-		if wmMu.leadBlobberIdx >= uint64(len(blobbers)) {
-			return errors.New("lock_consensus_not_met",
-				fmt.Sprintf("Required consensus %d got %d",
-					consensus.consensusThresh, consensus.getConsensus()))
+	for ; wmMu.leadBlobberIdx < uint64(len(blobbers)); wmMu.leadBlobberIdx++ {
+		wg.Add(1)
+		err := wmMu.lockBlobber(ctx, mask, maskMu, consensus, blobbers[wmMu.leadBlobberIdx], wmMu.leadBlobberIdx, connID, timeOut, wg)
+		if err == nil {
+			l.Logger.Info(blobbers[wmMu.leadBlobberIdx].Baseurl, connID, "leader blobber locked")
+			break
 		}
-	} else {
-		wmMu.LeaderTimestamp = wmMu.blobberTimestamps[wmMu.leadBlobberIdx]
-		l.Logger.Info(blobbers[wmMu.leadBlobberIdx].Baseurl, connID, "leader blobber locked")
+	}
+
+	if consensus.getConsensus()-addConsensus != 1 {
+		return errors.New("lock_consensus_not_met",
+			fmt.Sprintf("Required consensus %d got %d",
+				consensus.consensusThresh, consensus.getConsensus()))
 	}
 
 	for i := *mask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
@@ -309,9 +310,12 @@ func (wmMu *WriteMarkerMutex) lockBlobber(
 				}
 				if wmLockRes.Status == WMLockStatusOK {
 					consensus.Done()
-					wmMu.blobberTimestamps[pos] = wmLockRes.CreatedAt
-					diff := wmMu.blobberTimestamps[pos] - wmMu.LeaderTimestamp
-					logger.Logger.Info(b.Baseurl, connID, " timestamp diff: ", diff)
+					wmMu.timestampLock.Lock()
+					if wmMu.LeaderTimestamp > wmLockRes.CreatedAt {
+						wmMu.LeaderTimestamp = wmLockRes.CreatedAt
+					}
+					wmMu.timestampLock.Unlock()
+					logger.Logger.Info(b.Baseurl, connID, " timestamp: ", wmLockRes.CreatedAt)
 					logger.Logger.Info(b.Baseurl, connID, " locked")
 					return
 				}

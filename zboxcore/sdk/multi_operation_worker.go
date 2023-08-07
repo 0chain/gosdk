@@ -12,6 +12,7 @@ import (
 
 	"github.com/0chain/errors"
 
+	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/client"
@@ -208,7 +209,7 @@ func (mo *MultiOperation) Process() error {
 	}
 
 	l.Logger.Info("Trying to lock write marker.....")
-	wmCtx, cancelWMCtx := context.WithTimeout(ctx, 90*time.Second)
+	wmCtx, cancelWMCtx := context.WithTimeout(ctx, 120*time.Second)
 	defer cancelWMCtx()
 	err = writeMarkerMutex.Lock(wmCtx, &mo.operationMask, mo.maskMU,
 		mo.allocationObj.Blobbers, &mo.Consensus, 0, time.Minute, mo.connectionID)
@@ -255,6 +256,9 @@ func (mo *MultiOperation) Process() error {
 	wg.Add(activeBlobbers)
 	var pos uint64
 	var counter = 0
+	tm := common.Now()
+	diff := int64(tm) - writeMarkerMutex.LeaderTimestamp
+	l.Logger.Info("diff between timestamp:", diff)
 	timestamp := writeMarkerMutex.LeaderTimestamp
 	for i := mo.operationMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
