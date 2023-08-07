@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"math"
 	"net/http"
 	"sync"
 	"time"
@@ -34,9 +33,10 @@ type WMLockResult struct {
 
 // WriteMarkerMutex blobber WriteMarkerMutex client
 type WriteMarkerMutex struct {
-	mutex          sync.Mutex
-	allocationObj  *Allocation
-	lockedBlobbers map[string]chan struct{}
+	mutex            sync.Mutex
+	allocationObj    *Allocation
+	lockedBlobbers   map[string]chan struct{}
+	leadBlobberIndex int
 }
 
 // CreateWriteMarkerMutex create WriteMarkerMutex for allocation
@@ -47,12 +47,17 @@ func CreateWriteMarkerMutex(client *client.Client, allocationObj *Allocation) (*
 
 	lockedBlobbers := make(map[string]chan struct{})
 	for _, b := range allocationObj.Blobbers {
+		if b.ID == "" {
+			logger.Logger.Error(b.Baseurl, "blobber ID is empty string")
+			return nil, errors.Throw(constants.ErrInvalidParameter, "blobber ID cannot be an empty string")
+		}
 		lockedBlobbers[b.ID] = make(chan struct{}, 1)
 	}
 
 	return &WriteMarkerMutex{
-		allocationObj:  allocationObj,
-		lockedBlobbers: lockedBlobbers,
+		allocationObj:    allocationObj,
+		lockedBlobbers:   lockedBlobbers,
+		leadBlobberIndex: 0,
 	}, nil
 }
 
@@ -66,10 +71,18 @@ func (wmMu *WriteMarkerMutex) Unlock(
 
 	for i := mask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
+		if pos == uint64(wmMu.leadBlobberIndex) { // Skip lead blobber
+			continue
+		}
 		blobber := blobbers[pos]
 		wg.Add(1)
 		go wmMu.UnlockBlobber(ctx, blobber, connID, timeOut, wg)
 	}
+	wg.Wait()
+
+	// Now unlock lead blobber
+	wg.Add(1)
+	go wmMu.UnlockBlobber(ctx, blobbers[uint64(wmMu.leadBlobberIndex)], connID, timeOut, wg)
 	wg.Wait()
 }
 
@@ -172,20 +185,18 @@ func (wmMu *WriteMarkerMutex) Lock(
 	consensus.consensus = addConsensus
 	wg := &sync.WaitGroup{}
 
-	// Lock the lead blobber first
-	leadBlobber := blobbers[0]
-	var retryCount int
-	var maxRetries = 5
-	for retryCount < maxRetries {
+	// Lock first responsive blobber as lead blobber
+	for ; wmMu.leadBlobberIndex < len(blobbers); wmMu.leadBlobberIndex++ {
+		leadBlobber := blobbers[uint64(wmMu.leadBlobberIndex)]
 		wg.Add(1)
-		go wmMu.lockBlobber(ctx, mask, maskMu, consensus, leadBlobber, 0, connID, timeOut, wg)
+		go wmMu.lockBlobber(ctx, mask, maskMu, consensus, leadBlobber, uint64(wmMu.leadBlobberIndex), connID, timeOut, wg)
 		wg.Wait()
+
 		if consensus.getConsensus()-addConsensus == 1 {
 			break
 		}
-		time.Sleep(time.Millisecond * time.Duration(math.Pow(10, float64(retryCount))))
-		retryCount++
 	}
+
 	if consensus.getConsensus()-addConsensus != 1 {
 		return errors.New("lock_consensus_not_met", "Failed to lock the lead blobber after retries")
 	}
@@ -194,7 +205,7 @@ func (wmMu *WriteMarkerMutex) Lock(
 	var pos uint64
 	for i := *mask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
-		if pos == 0 {
+		if pos == uint64(wmMu.leadBlobberIndex) {
 			continue
 		}
 		blobber := blobbers[pos]
@@ -209,10 +220,8 @@ func (wmMu *WriteMarkerMutex) Lock(
 				consensus.consensusThresh, consensus.getConsensus()))
 	}
 
-	/*
-		This goroutine will refresh lock after 30 seconds have passed. It will only complete if context is
-		completed, that is why, the caller should make proper use of context and cancel it when work is done.
-	*/
+	/* This goroutine will refresh lock after 30 seconds have passed. It will only complete if context is
+	   completed, that is why, the caller should make proper use of context and cancel it when work is done. */
 	go func() {
 		for {
 			<-time.NewTimer(30 * time.Second).C
