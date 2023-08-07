@@ -179,9 +179,18 @@ func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
 
 		if len(lR[i].ref.Children) > 0 {
 			result.populateChildren(lR[i].ref.Children, childResultMap, selected, req)
+			if req.forRepair {
+				for _, child := range childResultMap {
+					if child.consensus < child.fullconsensus {
+						if _, ok := selected[child.LookupHash]; !ok {
+							result.Children = append(result.Children, child)
+							selected[child.LookupHash] = child
+						}
+					}
+				}
 		}
 		req.consensus++
-		if req.isConsensusOk() {
+		if req.isConsensusOk() && !req.forRepair {
 			break
 		}
 	}
@@ -234,12 +243,6 @@ func (lr *ListResult) populateChildren(children []fileref.RefEntity, childResult
 		childResult.NumBlocks += child.GetNumBlocks()
 		childResult.FileMetaHash = child.GetFileMetaHash()
 		if childResult.isConsensusOk() && !req.forRepair {
-			if _, ok := selected[child.GetLookupHash()]; !ok {
-				lr.Children = append(lr.Children, childResult)
-				selected[child.GetLookupHash()] = childResult
-			}
-		}
-		if req.forRepair {
 			if _, ok := selected[child.GetLookupHash()]; !ok {
 				lr.Children = append(lr.Children, childResult)
 				selected[child.GetLookupHash()] = childResult
