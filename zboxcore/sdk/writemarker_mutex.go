@@ -68,7 +68,6 @@ func (wmMu *WriteMarkerMutex) Unlock(
 ) {
 	wg := &sync.WaitGroup{}
 	var pos uint64
-
 	for i := mask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		if pos == uint64(wmMu.leadBlobberIndex) { // Skip lead blobber
@@ -233,7 +232,6 @@ func (wmMu *WriteMarkerMutex) Lock(
 
 			wg := &sync.WaitGroup{}
 			cons := &Consensus{RWMutex: &sync.RWMutex{}}
-			var pos uint64
 			for i := *mask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 				pos = uint64(i.TrailingZeros())
 				blobber := blobbers[pos]
