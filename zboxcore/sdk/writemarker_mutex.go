@@ -25,7 +25,7 @@ const (
 	WMLockStatusPending
 	WMLockStatusOK
 )
-const WMLockWaitTime = 2 * time.Second
+const WMLockWaitTime = 4 * time.Second
 
 type WMLockResult struct {
 	Status    WMLockStatus `json:"status,omitempty"`
@@ -34,10 +34,12 @@ type WMLockResult struct {
 
 // WriteMarkerMutex blobber WriteMarkerMutex client
 type WriteMarkerMutex struct {
-	mutex          sync.Mutex
-	allocationObj  *Allocation
-	lockedBlobbers map[string]chan struct{}
-	leadBlobberIdx uint64
+	mutex             sync.Mutex
+	allocationObj     *Allocation
+	lockedBlobbers    map[string]chan struct{}
+	leadBlobberIdx    uint64
+	blobberTimestamps []int64
+	LeaderTimestamp   int64
 }
 
 // CreateWriteMarkerMutex create WriteMarkerMutex for allocation
@@ -52,9 +54,10 @@ func CreateWriteMarkerMutex(client *client.Client, allocationObj *Allocation) (*
 	}
 
 	return &WriteMarkerMutex{
-		allocationObj:  allocationObj,
-		lockedBlobbers: lockedBlobbers,
-		leadBlobberIdx: 0,
+		allocationObj:     allocationObj,
+		lockedBlobbers:    lockedBlobbers,
+		leadBlobberIdx:    0,
+		blobberTimestamps: make([]int64, len(allocationObj.Blobbers)),
 	}, nil
 }
 
@@ -201,6 +204,7 @@ func (wmMu *WriteMarkerMutex) Lock(
 					consensus.consensusThresh, consensus.getConsensus()))
 		}
 	} else {
+		wmMu.LeaderTimestamp = wmMu.blobberTimestamps[wmMu.leadBlobberIdx]
 		l.Logger.Info(blobbers[wmMu.leadBlobberIdx].Baseurl, connID, "leader blobber locked")
 	}
 
@@ -305,6 +309,9 @@ func (wmMu *WriteMarkerMutex) lockBlobber(
 				}
 				if wmLockRes.Status == WMLockStatusOK {
 					consensus.Done()
+					wmMu.blobberTimestamps[pos] = wmLockRes.CreatedAt
+					diff := wmMu.blobberTimestamps[pos] - wmMu.LeaderTimestamp
+					logger.Logger.Info(b.Baseurl, connID, " timestamp diff: ", diff)
 					logger.Logger.Info(b.Baseurl, connID, " locked")
 					return
 				}

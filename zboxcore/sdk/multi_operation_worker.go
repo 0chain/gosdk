@@ -12,7 +12,6 @@ import (
 
 	"github.com/0chain/errors"
 
-	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/client"
@@ -256,7 +255,7 @@ func (mo *MultiOperation) Process() error {
 	wg.Add(activeBlobbers)
 	var pos uint64
 	var counter = 0
-	timestamp := int64(common.Now())
+	timestamp := writeMarkerMutex.LeaderTimestamp
 	for i := mo.operationMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		commitReq := &CommitRequest{
