@@ -14,6 +14,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/logger"
+	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
@@ -36,6 +37,7 @@ type WriteMarkerMutex struct {
 	mutex          sync.Mutex
 	allocationObj  *Allocation
 	lockedBlobbers map[string]chan struct{}
+	leadBlobberIdx uint64
 }
 
 // CreateWriteMarkerMutex create WriteMarkerMutex for allocation
@@ -52,6 +54,7 @@ func CreateWriteMarkerMutex(client *client.Client, allocationObj *Allocation) (*
 	return &WriteMarkerMutex{
 		allocationObj:  allocationObj,
 		lockedBlobbers: lockedBlobbers,
+		leadBlobberIdx: 0,
 	}, nil
 }
 
@@ -66,12 +69,15 @@ func (wmMu *WriteMarkerMutex) Unlock(
 		pos = uint64(i.TrailingZeros())
 
 		blobber := blobbers[pos]
-
+		if pos <= wmMu.leadBlobberIdx {
+			continue
+		}
 		wg.Add(1)
 		go wmMu.UnlockBlobber(ctx, blobber, connID, timeOut, wg)
 	}
-
 	wg.Wait()
+	wg.Add(1)
+	wmMu.UnlockBlobber(ctx, blobbers[wmMu.leadBlobberIdx], connID, timeOut, wg)
 }
 
 // Change status code to 204
@@ -185,11 +191,26 @@ func (wmMu *WriteMarkerMutex) Lock(
 	wg := &sync.WaitGroup{}
 	var pos uint64
 
+	wg.Add(1)
+	err := wmMu.lockBlobber(ctx, mask, maskMu, consensus, blobbers[wmMu.leadBlobberIdx], wmMu.leadBlobberIdx, connID, timeOut, wg)
+	if err != nil {
+		wmMu.leadBlobberIdx += 1
+		if wmMu.leadBlobberIdx >= uint64(len(blobbers)) {
+			return errors.New("lock_consensus_not_met",
+				fmt.Sprintf("Required consensus %d got %d",
+					consensus.consensusThresh, consensus.getConsensus()))
+		}
+	} else {
+		l.Logger.Info(blobbers[wmMu.leadBlobberIdx].Baseurl, connID, "leader blobber locked")
+	}
+
 	for i := *mask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 
 		blobber := blobbers[pos]
-
+		if pos <= wmMu.leadBlobberIdx {
+			continue
+		}
 		wg.Add(1)
 		go wmMu.lockBlobber(ctx, mask, maskMu, consensus, blobber, pos, connID, timeOut, wg)
 	}
@@ -208,29 +229,6 @@ func (wmMu *WriteMarkerMutex) Lock(
 		This goroutine will refresh lock after 30 seconds have passed. It will only complete if context is
 		completed, that is why, the caller should make proper use of context and cancel it when work is done.
 	*/
-	go func() {
-		for {
-			<-time.NewTimer(30 * time.Second).C
-			select {
-			case <-ctx.Done():
-				return
-			default:
-			}
-
-			wg := &sync.WaitGroup{}
-			cons := &Consensus{RWMutex: &sync.RWMutex{}}
-			for i := *mask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
-				pos = uint64(i.TrailingZeros())
-
-				blobber := blobbers[pos]
-
-				wg.Add(1)
-				go wmMu.lockBlobber(ctx, mask, maskMu, cons, blobber, pos, connID, timeOut, wg)
-			}
-
-			wg.Wait()
-		}
-	}()
 
 	return nil
 }
@@ -238,13 +236,13 @@ func (wmMu *WriteMarkerMutex) Lock(
 func (wmMu *WriteMarkerMutex) lockBlobber(
 	ctx context.Context, mask *zboxutil.Uint128, maskMu *sync.Mutex,
 	consensus *Consensus, b *blockchain.StorageNode, pos uint64, connID string,
-	timeOut time.Duration, wg *sync.WaitGroup) {
+	timeOut time.Duration, wg *sync.WaitGroup) error {
 
 	defer wg.Done()
 
 	select {
 	case <-ctx.Done():
-		return
+		return errors.New("lock_consensus_not_met", "context cancelled")
 	default:
 	}
 
@@ -271,13 +269,18 @@ func (wmMu *WriteMarkerMutex) lockBlobber(
 		b.Baseurl, wmMu.allocationObj.ID, wmMu.allocationObj.Tx, connID)
 
 	if err != nil {
-		return
+		return err
 	}
 
 	var resp *http.Response
 	var shouldContinue bool
 	for retry := 0; retry < 3; retry++ {
 		err, shouldContinue = func() (err error, shouldContinue bool) {
+			select {
+			case <-ctx.Done():
+				return errors.New("lock_consensus_not_met", "context cancelled"), false
+			default:
+			}
 			reqCtx, ctxCncl := context.WithTimeout(ctx, timeOut)
 			resp, err = zboxutil.Client.Do(req.WithContext(reqCtx))
 			defer ctxCncl()
@@ -347,11 +350,11 @@ func (wmMu *WriteMarkerMutex) lockBlobber(
 			return
 		}()
 		if err != nil {
-			return
+			return err
 		}
 		if !shouldContinue {
 			break
 		}
 	}
-
+	return nil
 }

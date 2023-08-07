@@ -209,7 +209,9 @@ func (mo *MultiOperation) Process() error {
 	}
 
 	l.Logger.Info("Trying to lock write marker.....")
-	err = writeMarkerMutex.Lock(mo.ctx, &mo.operationMask, mo.maskMU,
+	wmCtx, cancelWMCtx := context.WithTimeout(ctx, 90*time.Second)
+	defer cancelWMCtx()
+	err = writeMarkerMutex.Lock(wmCtx, &mo.operationMask, mo.maskMU,
 		mo.allocationObj.Blobbers, &mo.Consensus, 0, time.Minute, mo.connectionID)
 	if err != nil {
 		return fmt.Errorf("Operation failed: %s", err.Error())
