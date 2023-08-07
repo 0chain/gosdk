@@ -179,19 +179,17 @@ func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
 
 		if len(lR[i].ref.Children) > 0 {
 			result.populateChildren(lR[i].ref.Children, childResultMap, selected, req)
-			if req.forRepair {
-				for _, child := range childResultMap {
-					if child.consensus < child.fullconsensus {
-						if _, ok := selected[child.LookupHash]; !ok {
-							result.Children = append(result.Children, child)
-							selected[child.LookupHash] = child
-						}
-					}
-				}
 		}
 		req.consensus++
 		if req.isConsensusOk() && !req.forRepair {
 			break
+		}
+	}
+	if req.forRepair {
+		for _, child := range childResultMap {
+			if child.consensus < child.fullconsensus {
+				result.Children = append(result.Children, child)
+			}
 		}
 	}
 
