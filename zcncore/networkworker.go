@@ -6,6 +6,7 @@ package zcncore
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"reflect"
 	"time"
@@ -52,6 +53,7 @@ func UpdateNetworkDetails() error {
 		logging.Error("Failed to update network details ", zap.Error(err))
 		return err
 	}
+	fmt.Printf("Updating network details: { block_worker: %v, network_details: %v }\n", _config.chain.BlockWorker, networkDetails)
 
 	shouldUpdate := UpdateRequired(networkDetails)
 	if shouldUpdate {
