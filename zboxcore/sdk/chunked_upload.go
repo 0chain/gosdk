@@ -546,10 +546,11 @@ func (su *ChunkedUpload) Start() error {
 
 	defer func() {
 		elapsedProcessCommit := time.Since(now) - elapsedProcess - elapsedLock
-		logger.Logger.Info("[ChunkedUpload - start]", zap.String("allocation_id", su.allocationObj.ID),
-			zap.Duration("ChunkedUpload - process", elapsedProcess),
-			zap.Duration("ChunkedUpload - Lock", elapsedLock),
-			zap.Duration("ChunkedUpload - processCommit", elapsedProcessCommit))
+		logger.Logger.Info("[ChunkedUpload - start]",
+			zap.String("allocation_id", su.allocationObj.ID),
+			zap.Float64("ChunkedUpload - process", elapsedProcess.Seconds()),
+			zap.Float64("ChunkedUpload - Lock", elapsedLock.Seconds()),
+			zap.Float64("ChunkedUpload - processCommit", elapsedProcessCommit.Seconds()))
 	}()
 
 	return su.processCommit()

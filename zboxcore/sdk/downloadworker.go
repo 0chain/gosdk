@@ -530,11 +530,12 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	close(blocks)
 	wg.Wait()
 	elapsedGetBlocksAndWrite := time.Since(now) - elapsedInitEC - elapsedInitEncryption
-	l.Logger.Info("[processDownload]", zap.String("allocation_id", req.allocationID),
+	l.Logger.Info("[processDownload]",
+		zap.String("allocation_id", req.allocationID),
 		zap.String("remotefilepath", req.remotefilepath),
-		zap.Duration("initEC", elapsedInitEC),
-		zap.Duration("initEncryption", elapsedInitEncryption),
-		zap.Duration("getBlocks and writes", elapsedGetBlocksAndWrite),
+		zap.Float64("initEC", elapsedInitEC.Seconds()),
+		zap.Float64("initEncryption", elapsedInitEncryption.Seconds()),
+		zap.Float64("getBlocks and writes", elapsedGetBlocksAndWrite.Seconds()),
 	)
 
 	if isPREAndWholeFile {
