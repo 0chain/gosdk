@@ -260,6 +260,9 @@ func (mo *MultiOperation) Process() error {
 	diff := int64(tm) - writeMarkerMutex.LeaderTimestamp
 	l.Logger.Info("diff between timestamp:", diff)
 	timestamp := writeMarkerMutex.LeaderTimestamp
+	if timestamp <= int64(mo.allocationObj.StartTime) {
+		timestamp = int64(mo.allocationObj.StartTime) + 1
+	}
 	for i := mo.operationMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		commitReq := &CommitRequest{
