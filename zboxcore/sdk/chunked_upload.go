@@ -424,7 +424,9 @@ func (su *ChunkedUpload) process() error {
 
 	for {
 
+		startReadChunks := time.Now()
 		chunks, err := su.readChunks(su.chunkNumber)
+		elapsedReadChunks := time.Since(startReadChunks)
 
 		// chunk, err := su.chunkReader.Next()
 		if err != nil {
@@ -459,17 +461,23 @@ func (su *ChunkedUpload) process() error {
 
 		//chunk has not be uploaded yet
 		if chunks.chunkEndIndex > su.progress.ChunkIndex {
+			startProcessUpload := time.Now()
 			err = su.processUpload(
 				chunks.chunkStartIndex, chunks.chunkEndIndex,
 				chunks.fileShards, chunks.thumbnailShards,
 				chunks.isFinal, chunks.totalReadSize,
 			)
+			elapsedProcessUpload := time.Since(startProcessUpload)
 			if err != nil {
 				if su.statusCallback != nil {
 					su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
 				}
 				return err
 			}
+			logger.Logger.Info(" >>>> [process] Timings",
+				zap.Float64("readChunks (seconds)", elapsedReadChunks.Seconds()),
+				zap.Float64("processUpload (seconds)", elapsedProcessUpload.Seconds()),
+			)
 		}
 
 		// last chunk might 0 with io.EOF
@@ -667,15 +675,24 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		wg.Add(1)
 		go func(b *ChunkedUploadBlobber, body *bytes.Buffer, formData ChunkedUploadFormMetadata, pos uint64) {
 			defer wg.Done()
+
+			startSendUploadRequest := time.Now()
+
 			err = b.sendUploadRequest(ctx, su, chunkEndIndex, isFinal, encryptedKey, body, formData, pos)
+
+			elapsedSendUploadRequest := time.Since(startSendUploadRequest)
+
 			if err != nil {
-				logger.Logger.Error("error during sendUploadRequest", err)
+				logger.Logger.Error("error during sendUploadRequest", err, zap.Float64("elapsed time (seconds)", elapsedSendUploadRequest.Seconds()))
 				errC := atomic.AddInt32(&errCount, 1)
 				if errC > int32(su.allocationObj.ParityShards-1) { // If atleast data shards + 1 number of blobbers can process the upload, it can be repaired later
 					wgErrors <- err
 				}
 
+			} else {
+				logger.Logger.Info("success during sendUploadRequest", zap.Float64("elapsed time (seconds)", elapsedSendUploadRequest.Seconds()))
 			}
+
 		}(blobber, body, formData, pos)
 	}
 
