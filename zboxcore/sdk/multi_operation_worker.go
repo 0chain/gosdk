@@ -259,7 +259,7 @@ func (mo *MultiOperation) Process() error {
 	tm := common.Now()
 	diff := int64(tm) - writeMarkerMutex.LeaderTimestamp
 	l.Logger.Info("diff between timestamp:", diff)
-	timestamp := writeMarkerMutex.LeaderTimestamp
+	timestamp := int64(tm)
 	if timestamp <= int64(mo.allocationObj.StartTime) {
 		timestamp = int64(mo.allocationObj.StartTime) + 1
 	}
