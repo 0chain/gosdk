@@ -251,8 +251,11 @@ func (wmMu *WriteMarkerMutex) lockBlobber(
 	timeOut time.Duration, wg *sync.WaitGroup) {
 	defer wg.Done()
 
+	methodCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	defer cancel()
+
 	select {
-	case <-ctx.Done():
+	case <-methodCtx.Done():
 		return
 	default:
 	}
@@ -283,8 +286,16 @@ func (wmMu *WriteMarkerMutex) lockBlobber(
 	var shouldContinue bool
 	for retry := 0; retry < 3; retry++ {
 		err, shouldContinue = func() (err error, shouldContinue bool) {
-			reqCtx, ctxCncl := context.WithTimeout(ctx, timeOut)
+			reqCtx, ctxCncl := context.WithTimeout(methodCtx, timeOut)
 			defer ctxCncl()
+
+			select {
+			case <-reqCtx.Done():
+				logger.Logger.Error("Locking blobber: ", b.Baseurl, " context timeout exceeded")
+				return
+			default:
+			}
+
 			resp, err = zboxutil.Client.Do(req.WithContext(reqCtx))
 			if err != nil {
 				return
