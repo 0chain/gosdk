@@ -84,13 +84,14 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 	for i := 0; i < 3; i++ {
 		err, shouldContinue = func() (err error, shouldContinue bool) {
 			reqCtx, ctxCncl := context.WithTimeout(ctx, su.uploadTimeOut)
+			start := time.Now()
 			resp, err := zboxutil.Client.Do(req.WithContext(reqCtx))
 			defer ctxCncl()
 			if err != nil {
 				logger.Logger.Error("Upload : ", err)
 				return fmt.Errorf("Error while doing reqeust. Error %s", err), false
 			}
-
+			logger.Logger.Info(fmt.Sprintf("[blobberUploadRequest] Timings: elapsed time: %d ms ", time.Since(start).Milliseconds()))
 			if resp.Body != nil {
 				defer resp.Body.Close()
 			}
