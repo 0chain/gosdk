@@ -27,7 +27,7 @@ jobs:
       - name: Set up Go 1.x
         uses: actions/setup-go@v3
         with:
-          go-version: 1.19.4
+          go-version: 1.20.4
 
       - name: Clean build
         run: make clean-mobilesdk
@@ -99,7 +99,7 @@ jobs:
       - name: Set up Go 1.x
         uses: actions/setup-go@v3
         with:
-          go-version: 1.19.4
+          go-version: 1.20.4
 
       - name: Install deps
         run: |
@@ -202,7 +202,7 @@ jobs:
       - name: Set up Go 1.x
         uses: actions/setup-go@v3
         with:
-          go-version: 1.19.4
+          go-version: 1.20.4
 
       - name: Clean build
         run: make clean-mobilesdk
@@ -275,7 +275,7 @@ jobs:
       - name: Set up Go 1.x
         uses: actions/setup-go@v3
         with:
-          go-version: 1.19.4
+          go-version: 1.20.4
 
       - name: Install deps
         run: |
