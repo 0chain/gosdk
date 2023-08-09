@@ -84,13 +84,8 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 	for i := 0; i < 3; i++ {
 		err, shouldContinue = func() (err error, shouldContinue bool) {
 			reqCtx, ctxCncl := context.WithTimeout(ctx, su.uploadTimeOut)
-			var resp *http.Response
-			err = zboxutil.HttpDo(reqCtx, ctxCncl, req, func(r *http.Response, err error) error {
-				resp = r
-				return err
-			})
+			resp, err := zboxutil.Client.Do(req.WithContext(reqCtx))
 			defer ctxCncl()
-
 			if err != nil {
 				logger.Logger.Error("Upload : ", err)
 				return fmt.Errorf("Error while doing reqeust. Error %s", err), false
@@ -98,6 +93,9 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 
 			if resp.Body != nil {
 				defer resp.Body.Close()
+			}
+			if resp.StatusCode == http.StatusOK {
+				return
 			}
 			var r UploadResult
 			var respbody []byte
