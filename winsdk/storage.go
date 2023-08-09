@@ -217,13 +217,17 @@ func MultiOperation(_allocationID, _jsonMultiOperationOptions *C.char) *C.char {
 
 // MultiUploadFile - upload files from local path to remote path
 // ## Inputs
+//
 //   - allocationID
+//
 //   - workdir: set a workdir as ~/.zcn on mobile apps
+//
 //   - jsonMultiUploadOptions: Json Array of MultiOperationOption. eg: "[{"remotePath":"/","filePath":"/t2.txt"},{"remotePath":"/","filePath":"/t3.txt"}]"
 //
 //   - allocationID
 //
 //   - workdir: set a workdir as ~/.zcn on mobile apps
+//
 //   - jsonMultiUploadOptions: Json Array of MultiOperationOption. eg: "[{"remotePath":"/","filePath":"/t2.txt"},{"remotePath":"/","filePath":"/t3.txt"}]"
 //
 //     return
@@ -255,7 +259,7 @@ func MultiUpload(_allocationID, _workdir, _jsonMultiUploadOptions *C.char) *C.ch
 		thumbnailPaths[idx] = option.ThumbnailPath
 		remotePaths[idx] = option.RemotePath
 		chunkNumbers[idx] = option.ChunkNumber
-
+		encrypts[idx] = option.Encrypt
 	}
 
 	a, err := getAllocation(allocationID)
@@ -305,7 +309,7 @@ func MultiUpdate(_allocationID, _workdir, _jsonMultiUploadOptions *C.char) *C.ch
 		thumbnailPaths[idx] = option.ThumbnailPath
 		remotePaths[idx] = option.RemotePath
 		chunkNumbers[idx] = option.ChunkNumber
-
+		encrypts[idx] = option.Encrypt
 	}
 	if err != nil {
 		return WithJSON(nil, err)
