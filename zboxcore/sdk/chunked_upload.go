@@ -474,10 +474,11 @@ func (su *ChunkedUpload) process() error {
 				}
 				return err
 			}
-			logger.Logger.Info(" >>>> [process] Timings",
-				zap.Float64("readChunks (seconds)", elapsedReadChunks.Seconds()),
-				zap.Float64("processUpload (seconds)", elapsedProcessUpload.Seconds()),
-			)
+
+			logger.Logger.Info(fmt.Sprintf(" >>>> [process] Timings: readChunks = %d ms, processUpload = %d ms",
+				elapsedReadChunks.Milliseconds(),
+				elapsedProcessUpload.Milliseconds(),
+			))
 		}
 
 		// last chunk might 0 with io.EOF
@@ -554,11 +555,12 @@ func (su *ChunkedUpload) Start() error {
 
 	defer func() {
 		elapsedProcessCommit := time.Since(now) - elapsedProcess - elapsedLock
-		logger.Logger.Info("[ChunkedUpload - start]",
+		logger.Logger.Info("[ChunkedUpload - start] Timings",
 			zap.String("allocation_id", su.allocationObj.ID),
-			zap.Float64("ChunkedUpload - process", elapsedProcess.Seconds()),
-			zap.Float64("ChunkedUpload - Lock", elapsedLock.Seconds()),
-			zap.Float64("ChunkedUpload - processCommit", elapsedProcessCommit.Seconds()))
+			zap.String("ChunkedUpload - process", fmt.Sprintf("%d ms", elapsedProcess.Milliseconds())),
+			zap.String("ChunkedUpload - Lock", fmt.Sprintf("%d ms", elapsedLock.Milliseconds())),
+			zap.String("ChunkedUpload - processCommit", fmt.Sprintf("%d ms", elapsedProcessCommit.Milliseconds())),
+		)
 	}()
 
 	return su.processCommit()
@@ -683,14 +685,14 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 			elapsedSendUploadRequest := time.Since(startSendUploadRequest)
 
 			if err != nil {
-				logger.Logger.Error("error during sendUploadRequest", err, zap.Float64("elapsed time (seconds)", elapsedSendUploadRequest.Seconds()))
+				logger.Logger.Error("error - [sendUploadRequest] Timing", err, zap.String("elapsed time ", fmt.Sprintf("%d ms", elapsedSendUploadRequest.Milliseconds())))
 				errC := atomic.AddInt32(&errCount, 1)
 				if errC > int32(su.allocationObj.ParityShards-1) { // If atleast data shards + 1 number of blobbers can process the upload, it can be repaired later
 					wgErrors <- err
 				}
 
 			} else {
-				logger.Logger.Info("success during sendUploadRequest", zap.Float64("elapsed time (seconds)", elapsedSendUploadRequest.Seconds()))
+				logger.Logger.Info("success - [sendUploadRequest] Timing", zap.String("elapsed time ", fmt.Sprintf("%d ms", elapsedSendUploadRequest.Milliseconds())))
 			}
 
 		}(blobber, body, formData, pos)
