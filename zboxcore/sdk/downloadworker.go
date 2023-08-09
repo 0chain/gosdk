@@ -30,7 +30,6 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/klauspost/reedsolomon"
 	"go.dedis.ch/kyber/v3/group/edwards25519"
-	"go.uber.org/zap"
 	"golang.org/x/crypto/sha3"
 	"golang.org/x/sync/errgroup"
 )
@@ -530,13 +529,13 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	close(blocks)
 	wg.Wait()
 	elapsedGetBlocksAndWrite := time.Since(now) - elapsedInitEC - elapsedInitEncryption
-	l.Logger.Info("[processDownload]",
-		zap.String("allocation_id", req.allocationID),
-		zap.String("remotefilepath", req.remotefilepath),
-		zap.Float64("initEC", elapsedInitEC.Seconds()),
-		zap.Float64("initEncryption", elapsedInitEncryption.Seconds()),
-		zap.Float64("getBlocks and writes", elapsedGetBlocksAndWrite.Seconds()),
-	)
+	l.Logger.Info(fmt.Sprintf("[processDownload] Timings:\n allocation_id: %s,\n remotefilepath: %s,\n initEC: %d ms,\n initEncryption: %d ms,\n getBlocks and writes: %d ms",
+		req.allocationID,
+		req.remotefilepath,
+		elapsedInitEC.Milliseconds(),
+		elapsedInitEncryption.Milliseconds(),
+		elapsedGetBlocksAndWrite.Milliseconds(),
+	))
 
 	if isPREAndWholeFile {
 		calculatedFileHash := hex.EncodeToString(actualFileHasher.Sum(nil))

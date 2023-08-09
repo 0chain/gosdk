@@ -29,7 +29,6 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/google/uuid"
 	"github.com/klauspost/reedsolomon"
-	"go.uber.org/zap"
 )
 
 const (
@@ -555,12 +554,11 @@ func (su *ChunkedUpload) Start() error {
 
 	defer func() {
 		elapsedProcessCommit := time.Since(now) - elapsedProcess - elapsedLock
-		logger.Logger.Info("[ChunkedUpload - start] Timings",
-			zap.String("allocation_id", su.allocationObj.ID),
-			zap.String("ChunkedUpload - process", fmt.Sprintf("%d ms", elapsedProcess.Milliseconds())),
-			zap.String("ChunkedUpload - Lock", fmt.Sprintf("%d ms", elapsedLock.Milliseconds())),
-			zap.String("ChunkedUpload - processCommit", fmt.Sprintf("%d ms", elapsedProcessCommit.Milliseconds())),
-		)
+		logger.Logger.Info("[ChunkedUpload - start] Timings:\n",
+			fmt.Sprintf("allocation_id: %s", su.allocationObj.ID),
+			fmt.Sprintf("process: %d ms", elapsedProcess.Milliseconds()),
+			fmt.Sprintf("Lock: %d ms", elapsedLock.Milliseconds()),
+			fmt.Sprintf("processCommit: %d ms", elapsedProcessCommit.Milliseconds()))
 	}()
 
 	return su.processCommit()
@@ -685,14 +683,14 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 			elapsedSendUploadRequest := time.Since(startSendUploadRequest)
 
 			if err != nil {
-				logger.Logger.Error("error - [sendUploadRequest] Timing", err, zap.String("elapsed time ", fmt.Sprintf("%d ms", elapsedSendUploadRequest.Milliseconds())))
+				logger.Logger.Error(fmt.Sprintf("error %v - [sendUploadRequest] Timings: elapsed time: %d ms", err, elapsedSendUploadRequest.Milliseconds()))
 				errC := atomic.AddInt32(&errCount, 1)
 				if errC > int32(su.allocationObj.ParityShards-1) { // If atleast data shards + 1 number of blobbers can process the upload, it can be repaired later
 					wgErrors <- err
 				}
 
 			} else {
-				logger.Logger.Info("success - [sendUploadRequest] Timing", zap.String("elapsed time ", fmt.Sprintf("%d ms", elapsedSendUploadRequest.Milliseconds())))
+				logger.Logger.Info(fmt.Sprintf("success - [sendUploadRequest] Timings: elapsed time: %d ms", elapsedSendUploadRequest.Milliseconds()))
 			}
 
 		}(blobber, body, formData, pos)
