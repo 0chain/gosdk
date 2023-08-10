@@ -34,6 +34,15 @@ func getBlobberIds(blobberUrls []string) ([]string, error) {
 	return sdk.GetBlobberIds(blobberUrls)
 }
 
+func createfreeallocation(freeStorageMarker string, lock uint64) (string, error) {
+	allocationID, _, err := sdk.CreateFreeAllocation(freeStorageMarker, lock)
+	if err != nil {
+		sdkLogger.Error("Error creating free allocation: ", err)
+		return "", err
+	}
+	return allocationID, err
+}
+
 func getAllocationBlobbers(preferredBlobberURLs []string,
 	dataShards, parityShards int, size int64,
 	minReadPrice, maxReadPrice, minWritePrice, maxWritePrice int64) ([]string, error) {
