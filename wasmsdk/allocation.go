@@ -61,7 +61,7 @@ func getAllocationBlobbers(preferredBlobberURLs []string,
 }
 
 func createAllocation(datashards, parityshards int, size int64,
-	minReadPrice, maxReadPrice, minWritePrice, maxWritePrice int64, lock int64, blobberIds []string) (
+	minReadPrice, maxReadPrice, minWritePrice, maxWritePrice int64, lock int64, blobberIds []string, setThirdPartyExtendable bool) (
 	*transaction.Transaction, error) {
 
 	options := sdk.CreateAllocationOptions{
@@ -78,6 +78,7 @@ func createAllocation(datashards, parityshards int, size int64,
 		},
 		Lock:       uint64(lock),
 		BlobberIds: blobberIds,
+		ThirdPartyExtendable: setThirdPartyExtendable,
 	}
 
 	sdkLogger.Info(options)
@@ -205,8 +206,8 @@ func updateAllocation(allocationID string,
 	size int64, extend bool,
 	lock int64,
 	updateTerms bool,
-	addBlobberId, removeBlobberId string) (string, error) {
-	hash, _, err := sdk.UpdateAllocation(size, extend, allocationID, uint64(lock), updateTerms, addBlobberId, removeBlobberId, false, &sdk.FileOptionsParameters{})
+	addBlobberId, removeBlobberId string, setThirdPartyExtendable bool) (string, error) {
+	hash, _, err := sdk.UpdateAllocation(size, extend, allocationID, uint64(lock), updateTerms, addBlobberId, removeBlobberId, setThirdPartyExtendable, &sdk.FileOptionsParameters{})
 
 	if err == nil {
 		clearAllocation(allocationID)
