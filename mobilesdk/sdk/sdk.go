@@ -7,10 +7,12 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
 	"math"
 	"strconv"
 	"strings"
+
+	"github.com/0chain/gosdk/core/sys"
+	"github.com/pkg/errors"
 
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/version"
@@ -24,6 +26,10 @@ import (
 )
 
 var nonce = int64(0)
+
+type Autorizer interface {
+	Auth(msg string) (string, error)
+}
 
 // ChainConfig - blockchain config
 type ChainConfig struct {
@@ -413,4 +419,14 @@ func decodeTicket(ticket string) (string, string, uint64, error) {
 
 	s, _ := strconv.ParseFloat(string(fmt.Sprintf("%v", lock)), 64)
 	return string(recipientPublicKey), string(markerStr), zcncore.ConvertTokenToSAS(s), nil
+}
+
+// Client can extend interface and fass implementation to this register like this
+// public class Autorizer extends Pkg.Autorizer {
+// public void Auth() {
+// // do something here
+// }
+// }
+func RegisterAuthorizer(auth Autorizer) {
+	sys.AuthorizeFunc = auth.Auth
 }
