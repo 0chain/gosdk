@@ -34,8 +34,8 @@ func getBlobberIds(blobberUrls []string) ([]string, error) {
 	return sdk.GetBlobberIds(blobberUrls)
 }
 
-func createfreeallocation(freeStorageMarker string, lock uint64) (string, error) {
-	allocationID, _, err := sdk.CreateFreeAllocation(freeStorageMarker, lock)
+func createfreeallocation(freeStorageMarker string) (string, error) {
+	allocationID, _, err := sdk.CreateFreeAllocation(freeStorageMarker, 0)
 	if err != nil {
 		sdkLogger.Error("Error creating free allocation: ", err)
 		return "", err
