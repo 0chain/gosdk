@@ -159,6 +159,7 @@ func main() {
 				"isWalletID":             isWalletID,
 				"getLookupHash":          getLookupHash,
 				"createThumbnail":        createThumbnail,
+				"makeSCRestAPICall":      makeSCRestAPICall,
 
 				//blobber
 				"delete":                 Delete,
@@ -204,7 +205,7 @@ func main() {
 				"getAllocationMinLock":       getAllocationMinLock,
 				"getUpdateAllocationMinLock": getUpdateAllocationMinLock,
 				"getAllocationWith":          getAllocationWith,
-				"createfreeallocation": createfreeallocation,
+				"createfreeallocation":       createfreeallocation,
 
 				// readpool
 				"getReadPoolInfo": getReadPoolInfo,
