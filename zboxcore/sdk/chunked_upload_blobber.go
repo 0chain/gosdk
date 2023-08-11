@@ -184,14 +184,15 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUpload, pos uint64, timestamp int64) (err error) {
 	defer func() {
 		if err != nil {
-
 			su.maskMu.Lock()
 			su.uploadMask = su.uploadMask.And(zboxutil.NewUint128(1).Lsh(pos).Not())
 			su.maskMu.Unlock()
 		}
 	}()
 
+	start := time.Now()
 	rootRef, latestWM, size, fileIDMeta, err := sb.processWriteMarker(ctx, su)
+	logger.Logger.Info(fmt.Sprintf("[sb.processWriteMarker] Timings: elapsed time: %d ms ", time.Since(start).Milliseconds()))
 
 	if err != nil {
 		logger.Logger.Error(err)
@@ -266,13 +267,14 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 	for retries := 0; retries < 3; retries++ {
 		err, shouldContinue = func() (err error, shouldContinue bool) {
 			reqCtx, ctxCncl := context.WithTimeout(ctx, su.commitTimeOut)
-			resp, err = zboxutil.Client.Do(req.WithContext(reqCtx))
 			defer ctxCncl()
-
+			st := time.Now()
+			resp, err = zboxutil.Client.Do(req.WithContext(reqCtx))
 			if err != nil {
 				logger.Logger.Error("Commit: ", err)
 				return
 			}
+			logger.Logger.Info(fmt.Sprintf("[blobberCommitRequest] Timings: elapsed time: %d ms ", time.Since(st).Milliseconds()))
 
 			if resp.Body != nil {
 				defer resp.Body.Close()

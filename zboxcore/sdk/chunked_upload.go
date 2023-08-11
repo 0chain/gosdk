@@ -743,7 +743,9 @@ func (su *ChunkedUpload) processCommit() error {
 		wg.Add(1)
 		go func(b *ChunkedUploadBlobber, pos uint64) {
 			defer wg.Done()
+			start := time.Now()
 			err := b.processCommit(context.TODO(), su, pos, int64(timestamp))
+			logger.Logger.Info(fmt.Sprintf("single blobber [su.processCommit] Timings: elapsed time: %d ms ", time.Since(start).Milliseconds()))
 			if err != nil {
 				b.commitResult = ErrorCommitResult(err.Error())
 			}
