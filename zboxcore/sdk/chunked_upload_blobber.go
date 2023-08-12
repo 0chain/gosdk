@@ -76,6 +76,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 	req.Header.Add("Content-Type", formData.ContentType)
 
 	var (
+		resp             *http.Response
 		shouldContinue   bool
 		latestRespMsg    string
 		latestStatusCode int
@@ -84,19 +85,16 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 	for i := 0; i < 3; i++ {
 		err, shouldContinue = func() (err error, shouldContinue bool) {
 			reqCtx, ctxCncl := context.WithTimeout(ctx, su.uploadTimeOut)
-			start := time.Now()
-			resp, err := zboxutil.Client.Do(req.WithContext(reqCtx))
+			resp, err = su.client.Do(req.WithContext(reqCtx))
 			defer ctxCncl()
+
 			if err != nil {
 				logger.Logger.Error("Upload : ", err)
 				return fmt.Errorf("Error while doing reqeust. Error %s", err), false
 			}
-			logger.Logger.Info(fmt.Sprintf("[blobberUploadRequest] Timings: elapsed time: %d ms ", time.Since(start).Milliseconds()))
+
 			if resp.Body != nil {
 				defer resp.Body.Close()
-			}
-			if resp.StatusCode == http.StatusOK {
-				return
 			}
 			var r UploadResult
 			var respbody []byte
@@ -184,15 +182,14 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUpload, pos uint64, timestamp int64) (err error) {
 	defer func() {
 		if err != nil {
+
 			su.maskMu.Lock()
 			su.uploadMask = su.uploadMask.And(zboxutil.NewUint128(1).Lsh(pos).Not())
 			su.maskMu.Unlock()
 		}
 	}()
 
-	start := time.Now()
 	rootRef, latestWM, size, fileIDMeta, err := sb.processWriteMarker(ctx, su)
-	logger.Logger.Info(fmt.Sprintf("[sb.processWriteMarker] Timings: elapsed time: %d ms ", time.Since(start).Milliseconds()))
 
 	if err != nil {
 		logger.Logger.Error(err)
@@ -267,14 +264,13 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 	for retries := 0; retries < 3; retries++ {
 		err, shouldContinue = func() (err error, shouldContinue bool) {
 			reqCtx, ctxCncl := context.WithTimeout(ctx, su.commitTimeOut)
+			resp, err = su.client.Do(req.WithContext(reqCtx))
 			defer ctxCncl()
-			st := time.Now()
-			resp, err = zboxutil.Client.Do(req.WithContext(reqCtx))
+
 			if err != nil {
 				logger.Logger.Error("Commit: ", err)
 				return
 			}
-			logger.Logger.Info(fmt.Sprintf("[blobberCommitRequest] Timings: elapsed time: %d ms ", time.Since(st).Milliseconds()))
 
 			if resp.Body != nil {
 				defer resp.Body.Close()
@@ -309,22 +305,23 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 				return
 			}
 
-			if strings.Contains(string(respBody), "pending_markers:") {
-				logger.Logger.Info("Commit pending for blobber ",
-					sb.blobber.Baseurl, "with connection id: ", su.progress.ConnectionID, " Retrying again")
-				time.Sleep(5 * time.Second)
-				shouldContinue = true
-				return
-			}
-
 			err = thrown.New("commit_error",
 				fmt.Sprintf("Got error response %s with status %d", respBody, resp.StatusCode))
 			return
 		}()
+
+		if err != nil {
+			logger.Logger.Error(err)
+			if strings.Contains(err.Error(), "pending_markers") {
+				time.Sleep(time.Second * 5)
+				continue
+			}
+		}
 		if shouldContinue {
 			continue
 		}
 		return
+
 	}
 	return thrown.New("commit_error", fmt.Sprintf("Commit failed with response status %d", resp.StatusCode))
 }
@@ -346,7 +343,7 @@ func (sb *ChunkedUploadBlobber) processWriteMarker(
 		return nil, nil, 0, nil, err
 	}
 
-	resp, err := zboxutil.Client.Do(req)
+	resp, err := su.client.Do(req)
 
 	if err != nil {
 		logger.Logger.Error("Ref path error:", err)

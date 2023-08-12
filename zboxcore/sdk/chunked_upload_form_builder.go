@@ -83,29 +83,24 @@ func (b *chunkedUploadFormBuilder) Build(
 	if err != nil {
 		return nil, metadata, err
 	}
-	var buffer bytes.Buffer
-	buffer.Grow(4 * MB)
+
 	for _, chunkBytes := range fileChunksData {
-
-		if metadata.FileBytesLen != 0 && metadata.FileBytesLen%4*MB == 0 {
-			_, err = uploadFile.Write(buffer.Bytes())
-			if err != nil {
-				return nil, metadata, err
-			}
-			buffer.Reset()
-		}
-		_, err = buffer.Write(chunkBytes)
+		_, err = uploadFile.Write(chunkBytes)
 		if err != nil {
 			return nil, metadata, err
 		}
+
+		err = hasher.WriteToFixedMT(chunkBytes)
+		if err != nil {
+			return nil, metadata, err
+		}
+
+		err = hasher.WriteToValidationMT(chunkBytes)
+		if err != nil {
+			return nil, metadata, err
+		}
+
 		metadata.FileBytesLen += len(chunkBytes)
-	}
-
-	if buffer.Len() > 0 {
-		_, err = uploadFile.Write(buffer.Bytes())
-		if err != nil {
-			return nil, metadata, err
-		}
 	}
 
 	if isFinal {
@@ -155,10 +150,7 @@ func (b *chunkedUploadFormBuilder) Build(
 		if err != nil {
 			return nil, metadata, err
 		}
-		_, err = thumbnailHash.Write([]byte(fileMeta.RemotePath))
-		if err != nil {
-			return nil, metadata, err
-		}
+
 		formData.ActualThumbSize = fileMeta.ActualThumbnailSize
 		formData.ThumbnailContentHash = hex.EncodeToString(thumbnailHash.Sum(nil))
 
