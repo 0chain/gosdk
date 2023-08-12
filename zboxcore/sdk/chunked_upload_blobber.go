@@ -97,6 +97,9 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 			if resp.Body != nil {
 				defer resp.Body.Close()
 			}
+			if resp.StatusCode == http.StatusOK {
+				return
+			}
 			var r UploadResult
 			var respbody []byte
 
