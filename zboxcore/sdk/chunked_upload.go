@@ -148,6 +148,7 @@ func CreateChunkedUpload(
 
 	su := &ChunkedUpload{
 		allocationObj: allocationObj,
+		client:        zboxutil.Client,
 		fileMeta:      fileMeta,
 		fileReader:    fileReader,
 
@@ -284,6 +285,7 @@ type ChunkedUpload struct {
 	allocationObj  *Allocation
 	progress       UploadProgress
 	progressStorer ChunkedUploadProgressStorer
+	client         zboxutil.HttpClient
 
 	uploadMask zboxutil.Uint128
 
@@ -522,27 +524,6 @@ func (su *ChunkedUpload) Start() error {
 	defer su.writeMarkerMutex.Unlock(
 		su.ctx, su.uploadMask, blobbers, su.uploadTimeOut, su.progress.ConnectionID) //nolint: errcheck
 
-	//Check if the allocation is to be repaired or rolled back
-	// status, err := su.allocationObj.CheckAllocStatus()
-	// if err != nil {
-	// 	logger.Logger.Error("Error checking allocation status", err)
-	// 	if su.statusCallback != nil {
-	// 		su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
-	// 	}
-	// 	return err
-	// }
-
-	// if status == Repair {
-	// 	logger.Logger.Info("Repairing allocation")
-	// 	// err = su.allocationObj.RepairAlloc(su.statusCallback)
-	// 	// if err != nil {
-	// 	// 	return err
-	// 	// }
-	// }
-	// if status != Commit {
-	// 	return ErrRetryOperation
-	// }
-
 	return su.processCommit()
 }
 
@@ -586,19 +567,34 @@ func (su *ChunkedUpload) readChunks(num int) (*batchChunksData, error) {
 
 		// concact blobber's fragments
 		if chunk.ReadSize > 0 {
-			var pos uint64
-			for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
-				pos = uint64(i.TrailingZeros())
-				data.fileShards[pos] = append(data.fileShards[pos], chunk.Fragments[pos])
-				err = su.progress.Blobbers[pos].Hasher.WriteToFixedMT(chunk.Fragments[pos])
-				if err != nil {
-					return nil, err
-				}
-				err = su.progress.Blobbers[pos].Hasher.WriteToValidationMT(chunk.Fragments[pos])
-				if err != nil {
-					return nil, err
+			var (
+				wg         sync.WaitGroup
+				writeError = make(chan error, 2)
+			)
+
+			for i := 0; i < len(chunk.Fragments); i++ {
+				data.fileShards[i] = append(data.fileShards[i], chunk.Fragments[i])
+				wg.Add(2)
+				go func(i int) {
+					err = su.progress.Blobbers[i].Hasher.WriteToFixedMT(chunk.Fragments[i])
+					if err != nil {
+						writeError <- err
+					}
+					wg.Done()
+				}(i)
+				go func(i int) {
+					err = su.progress.Blobbers[i].Hasher.WriteToValidationMT(chunk.Fragments[i])
+					if err != nil {
+						writeError <- err
+					}
+					wg.Done()
+				}(i)
+				wg.Wait()
+				if len(writeError) > 0 {
+					return nil, <-writeError
 				}
 			}
+			close(writeError)
 		}
 
 		if chunk.IsFinal {

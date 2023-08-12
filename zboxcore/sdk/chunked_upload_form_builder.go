@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io"
 	"mime/multipart"
+	"sync"
 
 	"github.com/0chain/gosdk/zboxcore/client"
 	"golang.org/x/crypto/sha3"
@@ -98,15 +99,26 @@ func (b *chunkedUploadFormBuilder) Build(
 		if err != nil {
 			return nil, metadata, err
 		}
-
-		formData.FixedMerkleRoot, err = hasher.GetFixedMerkleRoot()
-		if err != nil {
-			return nil, metadata, err
-		}
-		formData.ValidationRoot, err = hasher.GetValidationRoot()
-		if err != nil {
-			return nil, metadata, err
-		}
+		var (
+			wg      sync.WaitGroup
+			errChan = make(chan error, 2)
+		)
+		wg.Add(2)
+		go func() {
+			formData.FixedMerkleRoot, err = hasher.GetFixedMerkleRoot()
+			if err != nil {
+				errChan <- err
+			}
+			wg.Done()
+		}()
+		go func() {
+			formData.ValidationRoot, err = hasher.GetValidationRoot()
+			if err != nil {
+				errChan <- err
+			}
+			wg.Done()
+		}()
+		wg.Wait()
 
 		actualHashSignature, err := client.Sign(fileMeta.ActualHash)
 		if err != nil {

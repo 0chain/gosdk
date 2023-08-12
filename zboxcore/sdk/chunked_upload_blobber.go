@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"mime/multipart"
 	"net/http"
 	"strings"
@@ -79,16 +79,13 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 		shouldContinue   bool
 		latestRespMsg    string
 		latestStatusCode int
+		resp             *http.Response
 	)
 
 	for i := 0; i < 3; i++ {
 		err, shouldContinue = func() (err error, shouldContinue bool) {
 			reqCtx, ctxCncl := context.WithTimeout(ctx, su.uploadTimeOut)
-			var resp *http.Response
-			err = zboxutil.HttpDo(reqCtx, ctxCncl, req, func(r *http.Response, err error) error {
-				resp = r
-				return err
-			})
+			resp, err = su.client.Do(req.WithContext(reqCtx))
 			defer ctxCncl()
 
 			if err != nil {
@@ -99,10 +96,13 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 			if resp.Body != nil {
 				defer resp.Body.Close()
 			}
+			if resp.StatusCode == http.StatusOK {
+				return
+			}
 			var r UploadResult
 			var respbody []byte
 
-			respbody, err = ioutil.ReadAll(resp.Body)
+			respbody, err = io.ReadAll(resp.Body)
 			if err != nil {
 				logger.Logger.Error("Error: Resp ", err)
 				return fmt.Errorf("Error while reading body. Error %s", err), false
@@ -267,10 +267,7 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 	for retries := 0; retries < 3; retries++ {
 		err, shouldContinue = func() (err error, shouldContinue bool) {
 			reqCtx, ctxCncl := context.WithTimeout(ctx, su.commitTimeOut)
-			err = zboxutil.HttpDo(reqCtx, ctxCncl, req, func(r *http.Response, err error) error {
-				resp = r
-				return err
-			})
+			resp, err = su.client.Do(req.WithContext(reqCtx))
 			defer ctxCncl()
 
 			if err != nil {
@@ -305,7 +302,7 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 				return
 			}
 
-			respBody, err = ioutil.ReadAll(resp.Body)
+			respBody, err = io.ReadAll(resp.Body)
 			if err != nil {
 				logger.Logger.Error("Response read: ", err)
 				return
@@ -348,7 +345,7 @@ func (sb *ChunkedUploadBlobber) processWriteMarker(
 		return nil, nil, 0, nil, err
 	}
 
-	resp, err := zboxutil.Client.Do(req)
+	resp, err := su.client.Do(req)
 
 	if err != nil {
 		logger.Logger.Error("Ref path error:", err)
@@ -358,7 +355,7 @@ func (sb *ChunkedUploadBlobber) processWriteMarker(
 	if resp.StatusCode != http.StatusOK {
 		logger.Logger.Error("Ref path response : ", resp.StatusCode)
 	}
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		logger.Logger.Error("Ref path: Resp", err)
 		return nil, nil, 0, nil, err
