@@ -422,7 +422,7 @@ func (su *ChunkedUpload) process() error {
 	if su.statusCallback != nil {
 		su.statusCallback.Started(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, int(su.fileMeta.ActualSize)+int(su.fileMeta.ActualThumbnailSize))
 	}
-
+	alreadyUploadedData := 0
 	for {
 
 		chunks, err := su.readChunks(su.chunkNumber)
@@ -467,6 +467,8 @@ func (su *ChunkedUpload) process() error {
 				}
 				return err
 			}
+		} else {
+			alreadyUploadedData += int(chunks.totalReadSize)
 		}
 
 		// last chunk might 0 with io.EOF
@@ -476,7 +478,7 @@ func (su *ChunkedUpload) process() error {
 			su.saveProgress()
 
 			if su.statusCallback != nil {
-				su.statusCallback.InProgress(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, int(su.progress.UploadLength), nil)
+				su.statusCallback.InProgress(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, int(su.progress.UploadLength)-alreadyUploadedData, nil)
 			}
 		}
 
