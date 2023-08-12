@@ -119,6 +119,7 @@ func (b *chunkedUploadFormBuilder) Build(
 			wg.Done()
 		}()
 		wg.Wait()
+		close(errChan)
 
 		actualHashSignature, err := client.Sign(fileMeta.ActualHash)
 		if err != nil {
