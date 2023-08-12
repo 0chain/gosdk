@@ -84,10 +84,11 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 
 	for i := 0; i < 3; i++ {
 		err, shouldContinue = func() (err error, shouldContinue bool) {
+			start := time.Now()
 			reqCtx, ctxCncl := context.WithTimeout(ctx, su.uploadTimeOut)
 			resp, err = su.client.Do(req.WithContext(reqCtx))
 			defer ctxCncl()
-
+			logger.Logger.Info("[sendUploadRequestBlobber]", time.Since(start).Microseconds())
 			if err != nil {
 				logger.Logger.Error("Upload : ", err)
 				return fmt.Errorf("Error while doing reqeust. Error %s", err), false

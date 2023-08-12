@@ -455,12 +455,13 @@ func (su *ChunkedUpload) process() error {
 
 		//chunk has not be uploaded yet
 		if chunks.chunkEndIndex > su.progress.ChunkIndex {
-
+			start := time.Now()
 			err = su.processUpload(
 				chunks.chunkStartIndex, chunks.chunkEndIndex,
 				chunks.fileShards, chunks.thumbnailShards,
 				chunks.isFinal, chunks.totalReadSize,
 			)
+			logger.Logger.Info("[processUploadTime]", time.Since(start).Milliseconds())
 			if err != nil {
 				if su.statusCallback != nil {
 					su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
