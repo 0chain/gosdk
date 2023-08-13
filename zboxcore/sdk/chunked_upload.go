@@ -1,7 +1,6 @@
 package sdk
 
 import (
-	"bytes"
 	"context"
 	"encoding/hex"
 	"fmt"
@@ -619,19 +618,21 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 			thumbnailChunkData = thumbnailShards[pos]
 		}
 
-		body, formData, err := su.formBuilder.Build(
-			&su.fileMeta, blobber.progress.Hasher, su.progress.ConnectionID,
-			su.chunkSize, chunkStartIndex, chunkEndIndex, isFinal, encryptedKey,
-			fileShards[pos], thumbnailChunkData,
-		)
-
-		if err != nil {
-			return err
-		}
-
 		wg.Add(1)
-		go func(b *ChunkedUploadBlobber, body *bytes.Buffer, formData ChunkedUploadFormMetadata, pos uint64) {
+		go func(b *ChunkedUploadBlobber, thumbnailChunkData []byte, pos uint64) {
 			defer wg.Done()
+			body, formData, err := su.formBuilder.Build(
+				&su.fileMeta, blobber.progress.Hasher, su.progress.ConnectionID,
+				su.chunkSize, chunkStartIndex, chunkEndIndex, isFinal, encryptedKey,
+				fileShards[pos], thumbnailChunkData,
+			)
+			if err != nil {
+				errC := atomic.AddInt32(&errCount, 1)
+				if errC > int32(su.allocationObj.ParityShards-1) { // If atleast data shards + 1 number of blobbers can process the upload, it can be repaired later
+					wgErrors <- err
+				}
+			}
+
 			err = b.sendUploadRequest(ctx, su, chunkEndIndex, isFinal, encryptedKey, body, formData, pos)
 			if err != nil {
 				logger.Logger.Error("error during sendUploadRequest", err)
@@ -641,7 +642,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 				}
 
 			}
-		}(blobber, body, formData, pos)
+		}(blobber, thumbnailChunkData, pos)
 	}
 
 	go func() {
