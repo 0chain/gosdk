@@ -79,14 +79,17 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 		shouldContinue   bool
 		latestRespMsg    string
 		latestStatusCode int
-		resp             *http.Response
 	)
 
 	for i := 0; i < 3; i++ {
 		err, shouldContinue = func() (err error, shouldContinue bool) {
 			reqCtx, ctxCncl := context.WithTimeout(ctx, su.uploadTimeOut)
 			start := time.Now()
-			resp, err = su.client.Do(req.WithContext(reqCtx))
+			var resp *http.Response
+			err = zboxutil.HttpDo(reqCtx, ctxCncl, req, func(r *http.Response, err error) error {
+				resp = r
+				return err
+			})
 			defer ctxCncl()
 			logger.Logger.Info("[sendUploadRequestBlobber] ", time.Since(start).Milliseconds())
 
