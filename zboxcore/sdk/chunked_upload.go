@@ -573,34 +573,6 @@ func (su *ChunkedUpload) readChunks(num int) (*batchChunksData, error) {
 				//blobber i
 				data.fileShards[i] = append(data.fileShards[i], v)
 			}
-			// var (
-			// 	wg         sync.WaitGroup
-			// 	writeError = make(chan error, 2)
-			// )
-
-			// for i := 0; i < len(chunk.Fragments); i++ {
-			// 	data.fileShards[i] = append(data.fileShards[i], chunk.Fragments[i])
-			// 	wg.Add(2)
-			// 	go func(i int) {
-			// 		err = su.progress.Blobbers[i].Hasher.WriteToFixedMT(chunk.Fragments[i])
-			// 		if err != nil {
-			// 			writeError <- err
-			// 		}
-			// 		wg.Done()
-			// 	}(i)
-			// 	go func(i int) {
-			// 		err = su.progress.Blobbers[i].Hasher.WriteToValidationMT(chunk.Fragments[i])
-			// 		if err != nil {
-			// 			writeError <- err
-			// 		}
-			// 		wg.Done()
-			// 	}(i)
-			// 	wg.Wait()
-			// 	if len(writeError) > 0 {
-			// 		return nil, <-writeError
-			// 	}
-			// }
-			// close(writeError)
 		}
 
 		if chunk.IsFinal {
