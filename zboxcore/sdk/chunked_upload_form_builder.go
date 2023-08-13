@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"io"
 	"mime/multipart"
-	"sync"
 
 	"github.com/0chain/gosdk/zboxcore/client"
 	"golang.org/x/crypto/sha3"
@@ -91,6 +90,16 @@ func (b *chunkedUploadFormBuilder) Build(
 			return nil, metadata, err
 		}
 
+		err = hasher.WriteToFixedMT(chunkBytes)
+		if err != nil {
+			return nil, metadata, err
+		}
+
+		err = hasher.WriteToValidationMT(chunkBytes)
+		if err != nil {
+			return nil, metadata, err
+		}
+
 		metadata.FileBytesLen += len(chunkBytes)
 	}
 
@@ -99,27 +108,15 @@ func (b *chunkedUploadFormBuilder) Build(
 		if err != nil {
 			return nil, metadata, err
 		}
-		var (
-			wg      sync.WaitGroup
-			errChan = make(chan error, 2)
-		)
-		wg.Add(2)
-		go func() {
-			formData.FixedMerkleRoot, err = hasher.GetFixedMerkleRoot()
-			if err != nil {
-				errChan <- err
-			}
-			wg.Done()
-		}()
-		go func() {
-			formData.ValidationRoot, err = hasher.GetValidationRoot()
-			if err != nil {
-				errChan <- err
-			}
-			wg.Done()
-		}()
-		wg.Wait()
-		close(errChan)
+
+		formData.FixedMerkleRoot, err = hasher.GetFixedMerkleRoot()
+		if err != nil {
+			return nil, metadata, err
+		}
+		formData.ValidationRoot, err = hasher.GetValidationRoot()
+		if err != nil {
+			return nil, metadata, err
+		}
 
 		actualHashSignature, err := client.Sign(fileMeta.ActualHash)
 		if err != nil {
@@ -153,10 +150,7 @@ func (b *chunkedUploadFormBuilder) Build(
 		if err != nil {
 			return nil, metadata, err
 		}
-		_, err = thumbnailHash.Write([]byte(fileMeta.RemotePath))
-		if err != nil {
-			return nil, metadata, err
-		}
+
 		formData.ActualThumbSize = fileMeta.ActualThumbnailSize
 		formData.ThumbnailContentHash = hex.EncodeToString(thumbnailHash.Sum(nil))
 

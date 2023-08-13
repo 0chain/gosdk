@@ -3,7 +3,6 @@ package sdk
 import (
 	"encoding/hex"
 	"hash"
-	"sync"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
@@ -118,27 +117,8 @@ func (h *hasher) WriteToValidationMT(buf []byte) error {
 }
 
 func (h *hasher) Finalize() error {
-	var (
-		wg      sync.WaitGroup
-		errChan = make(chan error, 2)
-	)
-	wg.Add(2)
-	go func() {
-		if err := h.FixedMT.Finalize(); err != nil {
-			errChan <- err
-		}
-		wg.Done()
-	}()
-	go func() {
-		if err := h.ValidationMT.Finalize(); err != nil {
-			errChan <- err
-		}
-		wg.Done()
-	}()
-	wg.Wait()
-	close(errChan)
-	for err := range errChan {
+	if err := h.FixedMT.Finalize(); err != nil {
 		return err
 	}
-	return nil
+	return h.ValidationMT.Finalize()
 }

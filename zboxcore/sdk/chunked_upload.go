@@ -567,34 +567,38 @@ func (su *ChunkedUpload) readChunks(num int) (*batchChunksData, error) {
 
 		// concact blobber's fragments
 		if chunk.ReadSize > 0 {
-			var (
-				wg         sync.WaitGroup
-				writeError = make(chan error, 2)
-			)
-
-			for i := 0; i < len(chunk.Fragments); i++ {
-				data.fileShards[i] = append(data.fileShards[i], chunk.Fragments[i])
-				wg.Add(2)
-				go func(i int) {
-					err = su.progress.Blobbers[i].Hasher.WriteToFixedMT(chunk.Fragments[i])
-					if err != nil {
-						writeError <- err
-					}
-					wg.Done()
-				}(i)
-				go func(i int) {
-					err = su.progress.Blobbers[i].Hasher.WriteToValidationMT(chunk.Fragments[i])
-					if err != nil {
-						writeError <- err
-					}
-					wg.Done()
-				}(i)
-				wg.Wait()
-				if len(writeError) > 0 {
-					return nil, <-writeError
-				}
+			for i, v := range chunk.Fragments {
+				//blobber i
+				data.fileShards[i] = append(data.fileShards[i], v)
 			}
-			close(writeError)
+			// var (
+			// 	wg         sync.WaitGroup
+			// 	writeError = make(chan error, 2)
+			// )
+
+			// for i := 0; i < len(chunk.Fragments); i++ {
+			// 	data.fileShards[i] = append(data.fileShards[i], chunk.Fragments[i])
+			// 	wg.Add(2)
+			// 	go func(i int) {
+			// 		err = su.progress.Blobbers[i].Hasher.WriteToFixedMT(chunk.Fragments[i])
+			// 		if err != nil {
+			// 			writeError <- err
+			// 		}
+			// 		wg.Done()
+			// 	}(i)
+			// 	go func(i int) {
+			// 		err = su.progress.Blobbers[i].Hasher.WriteToValidationMT(chunk.Fragments[i])
+			// 		if err != nil {
+			// 			writeError <- err
+			// 		}
+			// 		wg.Done()
+			// 	}(i)
+			// 	wg.Wait()
+			// 	if len(writeError) > 0 {
+			// 		return nil, <-writeError
+			// 	}
+			// }
+			// close(writeError)
 		}
 
 		if chunk.IsFinal {
