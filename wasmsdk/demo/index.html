@@ -68,6 +68,7 @@
       <button id="btnListAllocations">List</button>
       <button id="btnCreateAllocation">Create</button>
       <button id="btnGetAllocation">Get</button>
+      <button id="btnCreateFreeAlloc">CreateFreeallocation</button>
       <button id="btnGetAllocationMinLock">AllocationMinLock</button>
       <button id="btnGetUpdateAllocationMinLock">UpdateAllocationMinLock</button>
       <button id="btnRemoteFileMap">RemoteFileMap</button>
@@ -240,6 +241,15 @@
       txtOutput.innerHTML = JSON.stringify(wallet, null, 2)
     })
 
+    onClick('btnCreateFreeAlloc', async () => {
+      var token = prompt("freeallocation token: ");
+      try {
+        const alloc = await goWasm.sdk.createfreeallocation(token)
+        console.log("create freeallocation with ID: ", alloc)
+      } catch(e) {
+        alert(e)
+      }
+    })
 
     let allocations = []
     let blobbers = []
