@@ -543,7 +543,7 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 		if err != nil {
 			return err
 		}
-		fmt.Println("fullRemotepath and localpath", fullRemotePath, localPath)
+
 		fileMeta := FileMeta{
 			Path:       localPath,
 			ActualSize: fileInfo.Size(),
