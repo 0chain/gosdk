@@ -16,8 +16,6 @@ import (
 	"github.com/0chain/gosdk/zcnbridge/ethereum/erc20"
 	"github.com/0chain/gosdk/zcnbridge/log"
 	"github.com/0chain/gosdk/zcncore"
-	hdw "github.com/0chain/gosdk/zcncore/ethhdwallet"
-	"github.com/spf13/viper"
 
 	"github.com/0chain/gosdk/zcnbridge/transaction"
 	"github.com/0chain/gosdk/zcnbridge/wallet"
@@ -61,12 +59,55 @@ var (
 	}
 )
 
-func (b *BridgeClient) prepareAuthorizers(ctx context.Context, method string, params ...interface{}) (*authorizers.Authorizers, *bind.TransactOpts, error) {
-	etherClient, err := b.CreateEthClient()
+func (b *BridgeClient) CreateSignedTransactionFromKeyStore(client EthereumClient, gasLimitUnits uint64) *bind.TransactOpts {
+	var (
+		signerAddress = common.HexToAddress(b.EthereumAddress)
+		password      = b.Password
+	)
+
+	keyDir := path.Join(b.Homedir, EthereumWalletStorageDir)
+	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
+	signer := accounts.Account{
+		Address: signerAddress,
+	}
+	signerAcc, err := ks.Find(signer)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to create etherClient")
+		Logger.Fatal(errors.Wrapf(err, "signer: %s", signerAddress.Hex()))
 	}
 
+	chainID, err := client.ChainID(context.Background())
+	if err != nil {
+		Logger.Fatal(errors.Wrap(err, "failed to get chain ID"))
+	}
+
+	nonce, err := client.PendingNonceAt(context.Background(), signerAddress)
+	if err != nil {
+		Logger.Fatal(err)
+	}
+
+	gasPriceWei, err := client.SuggestGasPrice(context.Background())
+	if err != nil {
+		Logger.Fatal(err)
+	}
+
+	err = ks.TimedUnlock(signer, password, time.Second*2)
+	if err != nil {
+		Logger.Fatal(err)
+	}
+
+	opts, err := bind.NewKeyStoreTransactorWithChainID(ks, signerAcc, chainID)
+	if err != nil {
+		Logger.Fatal(err)
+	}
+
+	opts.Nonce = big.NewInt(int64(nonce))
+	opts.GasLimit = gasLimitUnits // in units
+	opts.GasPrice = gasPriceWei   // wei
+
+	return opts
+}
+
+func (b *BridgeClient) prepareAuthorizers(ctx context.Context, method string, params ...interface{}) (*authorizers.Authorizers, *bind.TransactOpts, error) {
 	// To (contract)
 	contractAddress := common.HexToAddress(b.AuthorizersAddress)
 
@@ -85,7 +126,7 @@ func (b *BridgeClient) prepareAuthorizers(ctx context.Context, method string, pa
 	from := common.HexToAddress(b.EthereumAddress)
 
 	// Gas limits in units
-	gasLimitUnits, err := etherClient.EstimateGas(ctx, eth.CallMsg{
+	gasLimitUnits, err := b.EthereumClient.EstimateGas(ctx, eth.CallMsg{
 		To:   &contractAddress,
 		From: from,
 		Data: pack,
@@ -97,10 +138,10 @@ func (b *BridgeClient) prepareAuthorizers(ctx context.Context, method string, pa
 	// Update gas limits + 10%
 	gasLimitUnits = addPercents(gasLimitUnits, 10).Uint64()
 
-	transactOpts := b.CreateSignedTransactionFromKeyStore(etherClient, gasLimitUnits)
+	transactOpts := b.CreateSignedTransactionFromKeyStore(b.EthereumClient, gasLimitUnits)
 
 	// Authorizers instance
-	authorizersInstance, err := authorizers.NewAuthorizers(contractAddress, etherClient)
+	authorizersInstance, err := authorizers.NewAuthorizers(contractAddress, b.EthereumClient)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to create authorizers instance")
 	}
@@ -140,50 +181,6 @@ func (b *BridgeClient) RemoveEthereumAuthorizer(ctx context.Context, address com
 	return tran, err
 }
 
-func (b *BridgeClient) AddEthereumAuthorizers(configDir string) {
-	cfg := viper.New()
-	cfg.AddConfigPath(configDir)
-	cfg.SetConfigName("authorizers")
-	if err := cfg.ReadInConfig(); err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	mnemonics := cfg.GetStringSlice("authorizers")
-
-	for _, mnemonic := range mnemonics {
-		wallet, err := hdw.NewFromMnemonic(mnemonic)
-		if err != nil {
-			fmt.Printf("failed to read mnemonic: %v", err)
-			continue
-		}
-
-		pathD := hdw.MustParseDerivationPath("m/44'/60'/0'/0/0")
-		account, err := wallet.Derive(pathD, true)
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
-
-		transaction, err := b.AddEthereumAuthorizer(context.TODO(), account.Address)
-		if err != nil || transaction == nil {
-			fmt.Printf("AddAuthorizer error: %v, Address: %s", err, account.Address.Hex())
-			continue
-		}
-
-		status, err := ConfirmEthereumTransaction(transaction.Hash().String(), 100, time.Second*10)
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		if status == 1 {
-			fmt.Printf("Authorizer has been added: %s\n", mnemonic)
-		} else {
-			fmt.Printf("Authorizer has failed to be added: %s\n", mnemonic)
-		}
-	}
-}
-
 // IncreaseBurnerAllowance Increases allowance for bridge contract address to transfer
 // WZCN tokens on behalf of the token owner to the Burn TokenPool
 // During the burn the script transfers amount from token owner to the bridge burn token pool
@@ -197,11 +194,6 @@ func (b *BridgeClient) AddEthereumAuthorizers(configDir string) {
 func (b *BridgeClient) IncreaseBurnerAllowance(ctx context.Context, amountWei Wei) (*types.Transaction, error) {
 	if amountWei <= 0 {
 		return nil, errors.New("amount must be greater than zero")
-	}
-
-	etherClient, err := b.CreateEthClient()
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create etherClient")
 	}
 
 	// 1. Data Parameter (spender)
@@ -223,7 +215,7 @@ func (b *BridgeClient) IncreaseBurnerAllowance(ctx context.Context, amountWei We
 		return nil, errors.Wrap(err, "failed to pack arguments")
 	}
 
-	gasLimitUnits, err := etherClient.EstimateGas(ctx, eth.CallMsg{
+	gasLimitUnits, err := b.EthereumClient.EstimateGas(ctx, eth.CallMsg{
 		To:   &tokenAddress,
 		From: fromAddress,
 		Data: pack,
@@ -234,9 +226,9 @@ func (b *BridgeClient) IncreaseBurnerAllowance(ctx context.Context, amountWei We
 
 	gasLimitUnits = addPercents(gasLimitUnits, 10).Uint64()
 
-	transactOpts := b.CreateSignedTransactionFromKeyStore(etherClient, gasLimitUnits)
+	transactOpts := b.CreateSignedTransactionFromKeyStore(b.EthereumClient, gasLimitUnits)
 
-	wzcnTokenInstance, err := erc20.NewERC20(tokenAddress, etherClient)
+	wzcnTokenInstance, err := erc20.NewERC20(tokenAddress, b.EthereumClient)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to initialize WZCN-ERC20 instance")
 	}
@@ -273,15 +265,10 @@ func (b *BridgeClient) IncreaseBurnerAllowance(ctx context.Context, amountWei We
 
 // GetBalance returns balance of the current client
 func (b *BridgeClient) GetBalance() (*big.Int, error) {
-	etherClient, err := b.CreateEthClient()
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create etherClient")
-	}
-
 	tokenAddress := common.HexToAddress(b.TokenAddress)
 	fromAddress := common.HexToAddress(b.EthereumAddress)
 
-	wzcnTokenInstance, err := erc20.NewERC20(tokenAddress, etherClient)
+	wzcnTokenInstance, err := erc20.NewERC20(tokenAddress, b.EthereumClient)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to initialize WZCN-ERC20 instance")
 	}
@@ -328,15 +315,11 @@ func (b *BridgeClient) SignWithEthereumChain(message string) ([]byte, error) {
 // GetUserNonceMinted Returns nonce for a specified Ethereum address
 func (b *BridgeClient) GetUserNonceMinted(ctx context.Context, rawEthereumAddress string) (*big.Int, error) {
 	ethereumAddress := common.HexToAddress(rawEthereumAddress)
-	etherClient, err := b.CreateEthClient()
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create etherClient")
-	}
 
 	contractAddress := common.HexToAddress(b.BridgeAddress)
 
 	var bridgeInstance *binding.Bridge
-	bridgeInstance, err = binding.NewBridge(contractAddress, etherClient)
+	bridgeInstance, err := binding.NewBridge(contractAddress, b.EthereumClient)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create bridge instance")
 	}
@@ -531,11 +514,6 @@ func (b *BridgeClient) BurnZCN(ctx context.Context, amount, txnfee uint64) (*tra
 }
 
 func (b *BridgeClient) prepareBridge(ctx context.Context, ethereumAddress, method string, params ...interface{}) (*binding.Bridge, *bind.TransactOpts, error) {
-	etherClient, err := b.CreateEthClient()
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to create etherClient")
-	}
-
 	// To (contract)
 	contractAddress := common.HexToAddress(b.BridgeAddress)
 
@@ -554,7 +532,7 @@ func (b *BridgeClient) prepareBridge(ctx context.Context, ethereumAddress, metho
 	//Gas limits in units
 	fromAddress := common.HexToAddress(ethereumAddress)
 
-	gasLimitUnits, err := etherClient.EstimateGas(ctx, eth.CallMsg{
+	gasLimitUnits, err := b.EthereumClient.EstimateGas(ctx, eth.CallMsg{
 		To:   &contractAddress,
 		From: fromAddress,
 		Data: pack,
@@ -566,10 +544,10 @@ func (b *BridgeClient) prepareBridge(ctx context.Context, ethereumAddress, metho
 	//Update gas limits + 10%
 	gasLimitUnits = addPercents(gasLimitUnits, 10).Uint64()
 
-	transactOpts := b.CreateSignedTransactionFromKeyStore(etherClient, gasLimitUnits)
+	transactOpts := b.CreateSignedTransactionFromKeyStore(b.EthereumClient, gasLimitUnits)
 
 	// BridgeClient instance
-	bridgeInstance, err := binding.NewBridge(contractAddress, etherClient)
+	bridgeInstance, err := binding.NewBridge(contractAddress, b.EthereumClient)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to create bridge instance")
 	}

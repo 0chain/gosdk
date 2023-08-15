@@ -10,6 +10,7 @@ import (
 	"github.com/0chain/gosdk/zcnbridge/errors"
 	"github.com/0chain/gosdk/zcnbridge/wallet"
 	"github.com/0chain/gosdk/zcncore"
+	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 var bridge *zcnbridge.BridgeClient
@@ -28,16 +29,21 @@ func initBridge(
 		return errors.New("wallet_error", "wallet is not set")
 	}
 
+	ethereumClient, err := ethclient.Dial(ethereumNodeURL)
+	if err != nil {
+		return errors.New("wallet_error", err.Error())
+	}
+
 	bridge = &zcnbridge.BridgeClient{
 		EthereumAddress:    ethereumAddress,
 		BridgeAddress:      bridgeAddress,
 		AuthorizersAddress: authorizersAddress,
 		TokenAddress:       tokenAddress,
 		Password:           "",
-		EthereumNodeURL:    ethereumNodeURL,
 		Homedir:            ".",
 		GasLimit:           gasLimit,
 		ConsensusThreshold: consensusThreshold,
+		EthereumClient:     ethereumClient,
 	}
 
 	return nil

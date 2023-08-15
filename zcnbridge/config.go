@@ -1,10 +1,14 @@
 package zcnbridge
 
 import (
+	"context"
 	"fmt"
+	"math/big"
 	"path"
 
 	"github.com/0chain/gosdk/zcnbridge/log"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/ethclient"
 
 	"github.com/spf13/viper"
 )
@@ -24,20 +28,29 @@ type BridgeSDKConfig struct {
 }
 
 type BridgeClient struct {
+	EthereumClient
+
 	BridgeAddress,
 	TokenAddress,
 	AuthorizersAddress,
 	EthereumAddress,
 	Password,
-	EthereumNodeURL,
 	Homedir string
 
 	ConsensusThreshold float64
 	GasLimit           uint64
 }
 
-func CreateBridgeClient(cfg *viper.Viper) *BridgeClient {
+// EthereumClient describes Ethereum JSON-RPC client generealized interface
+type EthereumClient interface {
+	bind.ContractBackend
 
+	ChainID(ctx context.Context) (*big.Int, error)
+}
+
+// CreateBridgeClient initializes new bridge client with the help of the given
+// Ethereum JSON-RPC client and locally-defined confiruration.
+func CreateBridgeClient(cfg *viper.Viper, ethereumClient EthereumClient) *BridgeClient {
 	homedir := path.Dir(cfg.ConfigFileUsed())
 	if homedir == "" {
 		log.Logger.Fatal("homedir is required")
@@ -49,10 +62,10 @@ func CreateBridgeClient(cfg *viper.Viper) *BridgeClient {
 		AuthorizersAddress: cfg.GetString("bridge.authorizers_address"),
 		EthereumAddress:    cfg.GetString("bridge.ethereum_address"),
 		Password:           cfg.GetString("bridge.password"),
-		EthereumNodeURL:    cfg.GetString("ethereum_node_url"),
 		GasLimit:           cfg.GetUint64("bridge.gas_limit"),
 		ConsensusThreshold: cfg.GetFloat64("bridge.consensus_threshold"),
 		Homedir:            homedir,
+		EthereumClient:     ethereumClient,
 	}
 }
 
@@ -60,7 +73,15 @@ func CreateBridgeClient(cfg *viper.Viper) *BridgeClient {
 // 0Chain SDK initialization is required
 func SetupBridgeClientSDK(cfg *BridgeSDKConfig) *BridgeClient {
 	log.InitLogging(*cfg.Development, *cfg.LogPath, *cfg.LogLevel)
-	bridgeClient := CreateBridgeClient(initChainConfig(cfg))
+
+	chainCfg := initChainConfig(cfg)
+
+	ethereumClient, err := ethclient.Dial(chainCfg.GetString("ethereum_node_url"))
+	if err != nil {
+		Logger.Error(err)
+	}
+
+	bridgeClient := CreateBridgeClient(chainCfg, ethereumClient)
 	return bridgeClient
 }
 
