@@ -145,7 +145,7 @@ async function bulkUpload(options) {
     const readChunkFuncName = "__zcn_upload_reader_"+i.toString()
     const callbackFuncName = "__zcn_upload_callback_"+i.toString()
     g[readChunkFuncName] =  async (offset,chunkSize) => {
-      console.log("bulk_upload: read chunk remotePath:"+ obj.remotePath + " offset:"+offset+" chunkSize:"+chunkSize)
+      console.log("multi_upload: read chunk remotePath:"+ obj.remotePath + " offset:"+offset+" chunkSize:"+chunkSize)
       const chunk = await readChunk(offset,chunkSize,obj.file)
       return chunk.buffer
     }
@@ -170,7 +170,7 @@ async function bulkUpload(options) {
   })
 
   const end =  bridge.glob.index
-  const result = await bridge.__proxy__.sdk.bulkUpload(JSON.stringify(opts))
+  const result = await bridge.__proxy__.sdk.multiUpload(JSON.stringify(opts))
   for (let i=start; i<end;i++){
     g["__zcn_upload_reader_"+i.toString()] = null;
     g["__zcn_upload_callback_"+i.toString()] =null;

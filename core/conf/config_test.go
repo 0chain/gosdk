@@ -21,6 +21,7 @@ func TestLoadConfig(t *testing.T) {
 		reader.On("GetString", "signature_scheme").Return("")
 		reader.On("GetString", "chain_id").Return("")
 		reader.On("GetString", "verify_optimistic").Return("true")
+		reader.On("GetInt", "sharder_consensous").Return(0)
 
 		return reader
 
@@ -49,6 +50,7 @@ func TestLoadConfig(t *testing.T) {
 				reader.On("GetString", "signature_scheme").Return("")
 				reader.On("GetString", "chain_id").Return("")
 				reader.On("GetString", "verify_optimistic").Return("true")
+				reader.On("GetInt", "sharder_consensous").Return(0)
 
 				return reader
 			},
@@ -92,6 +94,7 @@ func TestLoadConfig(t *testing.T) {
 				reader.On("GetString", "signature_scheme").Return("")
 				reader.On("GetString", "chain_id").Return("")
 				reader.On("GetString", "verify_optimistic").Return("true")
+				reader.On("GetInt", "sharder_consensous").Return(0)
 
 				return reader
 			},
@@ -125,6 +128,7 @@ func TestLoadConfig(t *testing.T) {
 				reader.On("GetString", "signature_scheme").Return("")
 				reader.On("GetString", "chain_id").Return("")
 				reader.On("GetString", "verify_optimistic").Return("false")
+				reader.On("GetInt", "sharder_consensous").Return(0)
 
 				return reader
 			},

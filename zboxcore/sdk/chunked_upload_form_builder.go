@@ -90,16 +90,6 @@ func (b *chunkedUploadFormBuilder) Build(
 			return nil, metadata, err
 		}
 
-		err = hasher.WriteToFixedMT(chunkBytes)
-		if err != nil {
-			return nil, metadata, err
-		}
-
-		err = hasher.WriteToValidationMT(chunkBytes)
-		if err != nil {
-			return nil, metadata, err
-		}
-
 		metadata.FileBytesLen += len(chunkBytes)
 	}
 
@@ -150,7 +140,10 @@ func (b *chunkedUploadFormBuilder) Build(
 		if err != nil {
 			return nil, metadata, err
 		}
-
+		_, err = thumbnailHash.Write([]byte(fileMeta.RemotePath))
+		if err != nil {
+			return nil, metadata, err
+		}
 		formData.ActualThumbSize = fileMeta.ActualThumbnailSize
 		formData.ThumbnailContentHash = hex.EncodeToString(thumbnailHash.Sum(nil))
 

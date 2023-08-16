@@ -8,15 +8,14 @@ import (
 )
 
 type ChainConfig struct {
-	BlockWorker       string
-	Sharders          []string
-	Miners            []string
-	PreferredBlobbers []string
-	MinSubmit         int
-	MinConfirmation   int
-	ChainID           string
-	MaxTxnQuery       int
-	QuerySleepTime    int
+	BlockWorker     string
+	Sharders        []string
+	Miners          []string
+	MinSubmit       int
+	MinConfirmation int
+	ChainID         string
+	MaxTxnQuery     int
+	QuerySleepTime  int
 }
 
 // StakePoolSettings information.
@@ -28,10 +27,25 @@ type StakePoolSettings struct {
 	ServiceCharge  float64        `json:"service_charge"`
 }
 
+// UpdateStakePoolSettings information.
+type UpdateStakePoolSettings struct {
+	DelegateWallet *string         `json:"delegate_wallet,omitempty"`
+	MinStake       *common.Balance `json:"min_stake,omitempty"`
+	MaxStake       *common.Balance `json:"max_stake,omitempty"`
+	NumDelegates   *int            `json:"num_delegates,omitempty"`
+	ServiceCharge  *float64        `json:"service_charge,omitempty"`
+}
+
 type ValidationNode struct {
 	ID                string            `json:"id"`
 	BaseURL           string            `json:"url"`
 	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
+}
+
+type UpdateValidationNode struct {
+	ID                string                   `json:"id"`
+	BaseURL           *string                  `json:"url"`
+	StakePoolSettings *UpdateStakePoolSettings `json:"stake_pool_settings"`
 }
 
 type StorageNode struct {
@@ -107,10 +121,6 @@ func GetQuerySleepTime() int {
 	return chain.QuerySleepTime
 }
 
-func GetPreferredBlobbers() []string {
-	return chain.PreferredBlobbers
-}
-
 func GetMinSubmit() int {
 	return chain.MinSubmit
 }
@@ -129,10 +139,6 @@ func SetSharders(sharderArray []string) {
 
 func SetMiners(minerArray []string) {
 	chain.Miners = minerArray
-}
-
-func SetPreferredBlobbers(preferredBlobberArray []string) {
-	chain.PreferredBlobbers = preferredBlobberArray
 }
 
 func SetChainID(id string) {

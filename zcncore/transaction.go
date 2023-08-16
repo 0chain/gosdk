@@ -188,11 +188,11 @@ type CreateAllocationRequest struct {
 }
 
 type StakePoolSettings struct {
-	DelegateWallet string         `json:"delegate_wallet"`
-	MinStake       common.Balance `json:"min_stake"`
-	MaxStake       common.Balance `json:"max_stake"`
-	NumDelegates   int            `json:"num_delegates"`
-	ServiceCharge  float64        `json:"service_charge"`
+	DelegateWallet *string         `json:"delegate_wallet,omitempty"`
+	MinStake       *common.Balance `json:"min_stake,omitempty"`
+	MaxStake       *common.Balance `json:"max_stake,omitempty"`
+	NumDelegates   *int            `json:"num_delegates,omitempty"`
+	ServiceCharge  *float64        `json:"service_charge,omitempty"`
 }
 
 type Terms struct {
@@ -277,7 +277,7 @@ func (t *Transaction) ExecuteSmartContract(address, methodName string, input int
 }
 
 func (t *Transaction) Send(toClientID string, val uint64, desc string) error {
-	txnData, err := json.Marshal(SendTxnData{Note: desc})
+	txnData, err := json.Marshal(transaction.SmartContractTxnData{Name: "transfer", InputArgs: SendTxnData{Note: desc}})
 	if err != nil {
 		return errors.New("", "Could not serialize description to transaction_data")
 	}
@@ -1404,6 +1404,13 @@ func WithMinConfirmation(m int) func(c *ChainConfig) error {
 func WithConfirmationChainLength(m int) func(c *ChainConfig) error {
 	return func(c *ChainConfig) error {
 		c.ConfirmationChainLength = m
+		return nil
+	}
+}
+
+func WithSharderConsensous(m int) func(c *ChainConfig) error {
+	return func(c *ChainConfig) error {
+		c.SharderConsensous = m
 		return nil
 	}
 }

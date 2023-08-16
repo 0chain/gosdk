@@ -244,8 +244,10 @@ func TestListRequest_GetListFromBlobbers(t *testing.T) {
 	}
 
 	tests := []struct {
-		name        string
-		numBlobbers int
+		name            string
+		numBlobbers     int
+		consensusThresh int
+		fullconsensus   int
 
 		setup    func(*testing.T, string, int)
 		wantFunc func(require *require.Assertions, req *ListRequest)
@@ -261,12 +263,14 @@ func TestListRequest_GetListFromBlobbers(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:        "Test_Success",
-			numBlobbers: 4,
-			setup:       setupHttpResponses,
+			name:            "Test_Success",
+			numBlobbers:     4,
+			consensusThresh: 2,
+			fullconsensus:   4,
+			setup:           setupHttpResponses,
 			wantFunc: func(require *require.Assertions, req *ListRequest) {
 				require.NotNil(req)
-				require.Equal(float32(4), req.consensus)
+				require.Equal(float32(2), req.consensus)
 			},
 		},
 	}
@@ -283,9 +287,9 @@ func TestListRequest_GetListFromBlobbers(t *testing.T) {
 				blobbers:     []*blockchain.StorageNode{},
 				wg:           &sync.WaitGroup{},
 				Consensus: Consensus{
+					consensusThresh: tt.consensusThresh,
+					fullconsensus:   tt.fullconsensus,
 					RWMutex:         &sync.RWMutex{},
-					consensusThresh: 2,
-					fullconsensus:   4,
 				},
 			}
 			for i := 0; i < tt.numBlobbers; i++ {
@@ -296,7 +300,7 @@ func TestListRequest_GetListFromBlobbers(t *testing.T) {
 			got, _ := req.GetListFromBlobbers()
 			expectedResult := &ListResult{
 				Type: mockType,
-				Size: -1,
+				Size: 0,
 			}
 			if !tt.wantErr {
 				require.EqualValues(expectedResult, got)

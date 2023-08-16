@@ -167,6 +167,7 @@ func main() {
 				"move":                   Move,
 				"share":                  Share,
 				"download":               download,
+				"multiDownload":          multiDownload,
 				"upload":                 upload,
 				"bulkUpload":             bulkUpload,
 				"multiUpload":            multiUpload,
@@ -201,11 +202,13 @@ func main() {
 				"updateAllocation":           updateAllocation,
 				"updateAllocationWithRepair": updateAllocationWithRepair,
 				"getAllocationMinLock":       getAllocationMinLock,
+				"getUpdateAllocationMinLock": getUpdateAllocationMinLock,
 				"getAllocationWith":          getAllocationWith,
 
 				// readpool
 				"getReadPoolInfo": getReadPoolInfo,
 				"lockReadPool":    lockReadPool,
+				"unLockReadPool":  unLockReadPool,
 				"createReadPool":  createReadPool,
 
 				// stakepool

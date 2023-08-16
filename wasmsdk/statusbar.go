@@ -4,9 +4,10 @@
 package main
 
 import (
-	"sync"
-
+	"github.com/0chain/gosdk/core/sys"
 	"gopkg.in/cheggaaa/pb.v1"
+	"path"
+	"sync"
 )
 
 // StatusBar is to check status of any operation
@@ -18,7 +19,10 @@ type StatusBar struct {
 
 	totalBytes     int
 	completedBytes int
-	callback       func(totalBytes int, completedBytes int, err string)
+	objURL         string
+	localPath      string
+	callback       func(totalBytes int, completedBytes int, fileName, objURL, err string)
+	isRepair       bool
 }
 
 var jsCallbackMutex sync.Mutex
@@ -29,12 +33,12 @@ func (s *StatusBar) Started(allocationID, filePath string, op int, totalBytes in
 		s.b = pb.StartNew(totalBytes)
 		s.b.Set(0)
 	}
-
+	fileName := path.Base(filePath)
 	s.totalBytes = totalBytes
 	if s.callback != nil {
 		jsCallbackMutex.Lock()
 		defer jsCallbackMutex.Unlock()
-		s.callback(s.totalBytes, s.completedBytes, "")
+		s.callback(s.totalBytes, s.completedBytes, fileName, "", "")
 	}
 }
 
@@ -43,12 +47,12 @@ func (s *StatusBar) InProgress(allocationID, filePath string, op int, completedB
 	if logEnabled && s.b != nil {
 		s.b.Set(completedBytes)
 	}
-
+	fileName := path.Base(filePath)
 	s.completedBytes = completedBytes
 	if s.callback != nil {
 		jsCallbackMutex.Lock()
 		defer jsCallbackMutex.Unlock()
-		s.callback(s.totalBytes, s.completedBytes, "")
+		s.callback(s.totalBytes, s.completedBytes, fileName, "", "")
 	}
 }
 
@@ -60,14 +64,20 @@ func (s *StatusBar) Completed(allocationID, filePath string, filename string, mi
 	s.success = true
 
 	s.completedBytes = s.totalBytes
+	if s.localPath != "" {
+		fs, _ := sys.Files.Open(s.localPath)
+		mf, _ := fs.(*sys.MemFile)
+		s.objURL = CreateObjectURL(mf.Buffer.Bytes(), "application/octet-stream")
+	}
 	if s.callback != nil {
 		jsCallbackMutex.Lock()
 		defer jsCallbackMutex.Unlock()
-		s.callback(s.totalBytes, s.completedBytes, "")
+		s.callback(s.totalBytes, s.completedBytes, filename, s.objURL, "")
 	}
-
-	defer s.wg.Done()
-	sdkLogger.Info("Status completed callback. Type = " + mimetype + ". Name = " + filename)
+	if !s.isRepair {
+		defer s.wg.Done()
+	}
+	sdkLogger.Info("Status completed callback. Type = " + mimetype + ". Name = " + filename + ". URL = " + s.objURL)
 }
 
 // Error for statusBar
@@ -82,13 +92,16 @@ func (s *StatusBar) Error(allocationID string, filePath string, op int, err erro
 			PrintError("Recovered in statusBar Error", r)
 		}
 	}()
+	fileName := path.Base(filePath)
 	PrintError("Error in file operation." + err.Error())
 	if s.callback != nil {
 		jsCallbackMutex.Lock()
 		defer jsCallbackMutex.Unlock()
-		s.callback(s.totalBytes, s.completedBytes, err.Error())
+		s.callback(s.totalBytes, s.completedBytes, fileName, "", err.Error())
 	}
-	s.wg.Done()
+	if !s.isRepair {
+		s.wg.Done()
+	}
 }
 
 // RepairCompleted when repair is completed
