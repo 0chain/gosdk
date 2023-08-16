@@ -386,6 +386,7 @@ func (a *Allocation) CreateDir(remotePath string) error {
 		remotePath:    remotePath,
 		wg:            &sync.WaitGroup{},
 		timestamp:     timestamp,
+		alreadyExists: map[uint64]bool{},
 		Consensus: Consensus{
 			RWMutex:         &sync.RWMutex{},
 			consensusThresh: a.consensusThreshold,
