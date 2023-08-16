@@ -25,7 +25,7 @@ jobs:
       - name: Create backup
         if: steps.get_info.outputs.GIT_COMMIT_DATE == steps.get_info.outputs.YESTERDAY_DATE
         run: |
-          sudo apt update && sudo apt install python3-pip -y
+          sudo apt update && sudo apt install python3-pip zip unzip -y
           sudo pip3 install github-backup
           sudo github-backup -O 0chain -P -t ${{ secrets.ACCESS_TOKEN }} --output-directory=/github-backup/gosdk --all -O -R gosdk
           
