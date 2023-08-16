@@ -69,7 +69,7 @@ func GetFileContentType(out io.ReadSeeker) (string, error) {
 	_, err := out.Read(buffer)
 	defer out.Seek(0, 0) //nolint
 
-	if err != nil {
+	if err != nil && err != io.EOF {
 		return "", err
 	}
 
