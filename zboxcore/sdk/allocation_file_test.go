@@ -848,6 +848,7 @@ func TestAllocation_RepairFile(t *testing.T) {
 			setupMockAllocation(t, a)
 			for i := 0; i < tt.numBlobbers; i++ {
 				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
+					ID:      mockBlobberId + strconv.Itoa(i),
 					Baseurl: "http://TestAllocation_RepairFile" + tt.name + mockBlobberUrl + strconv.Itoa(i),
 				})
 			}

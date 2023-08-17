@@ -27,7 +27,7 @@ jobs:
       - name: Set up Go 1.x
         uses: actions/setup-go@v3
         with:
-          go-version: 1.19.4
+          go-version: 1.20.4
 
       - name: Clean build
         run: make clean-mobilesdk
@@ -90,7 +90,7 @@ jobs:
 
   build-android:
     name: Build-android
-    runs-on: [self-hosted, build]
+    runs-on: [self-hosted, arc-runner]
 
     steps:
       - name: Checkout code
@@ -99,16 +99,15 @@ jobs:
       - name: Set up Go 1.x
         uses: actions/setup-go@v3
         with:
-          go-version: 1.19.4
+          go-version: 1.20.4
 
       - name: Install deps
         run: |
-          codename=$(lsb_release -c | awk '{print $2}')
-          echo "deb http://mirror.genesisadaptive.com/ubuntu/ $codename main" > ./gitaction.list
-          echo "deb http://mirror.math.princeton.edu/pub/ubuntu/ $codename main" ./gitaction.list
-          echo "deb http://mirror.pit.teraswitch.com/ubuntu/ $codename main" >> ./gitaction.list
-          sudo mv -f ./gitaction.list /etc/apt/sources.list.d/
-      
+          #codename=$(lsb_release -c | awk '{print $2}')
+          #echo "deb http://mirror.genesisadaptive.com/ubuntu/ $codename main" > ./gitaction.list
+          #echo "deb http://mirror.math.princeton.edu/pub/ubuntu/ $codename main" ./gitaction.list
+          #echo "deb http://mirror.pit.teraswitch.com/ubuntu/ $codename main" >> ./gitaction.list
+          #sudo mv -f ./gitaction.list /etc/apt/sources.list.d/
           sudo apt-get update -y && sudo apt-get install build-essential wget unzip -y
 
       - name: Install Java
@@ -124,12 +123,11 @@ jobs:
           sdkmanager "platform-tools"
           sdkmanager "platforms;android-29"
           sdkmanager "build-tools;29.0.2"
+
       - uses: nttld/setup-ndk@v1
         id: setup-ndk
         with:
           ndk-version: r21d
-      
-
 
       - name: Clean build
         run: make clean-mobilesdk
@@ -204,7 +202,7 @@ jobs:
       - name: Set up Go 1.x
         uses: actions/setup-go@v3
         with:
-          go-version: 1.19.4
+          go-version: 1.20.4
 
       - name: Clean build
         run: make clean-mobilesdk
@@ -268,7 +266,7 @@ jobs:
 
   build-windows:
     name: Build-windows
-    runs-on:  [self-hosted, build]
+    runs-on:  [self-hosted, arc-runner]
 
     steps:
       - name: Checkout code
@@ -277,16 +275,15 @@ jobs:
       - name: Set up Go 1.x
         uses: actions/setup-go@v3
         with:
-          go-version: 1.19.4
+          go-version: 1.20.4
 
       - name: Install deps
         run: |
-          codename=$(lsb_release -c | awk '{print $2}')
-          echo "deb http://mirror.genesisadaptive.com/ubuntu/ $codename main" > ./gitaction.list
-          echo "deb http://mirror.math.princeton.edu/pub/ubuntu/ $codename main" ./gitaction.list
-          echo "deb http://mirror.pit.teraswitch.com/ubuntu/ $codename main" >> ./gitaction.list
-          sudo mv -f ./gitaction.list /etc/apt/sources.list.d/
-      
+          #codename=$(lsb_release -c | awk '{print $2}')
+          #echo "deb http://mirror.genesisadaptive.com/ubuntu/ $codename main" > ./gitaction.list
+          #echo "deb http://mirror.math.princeton.edu/pub/ubuntu/ $codename main" ./gitaction.list
+          #echo "deb http://mirror.pit.teraswitch.com/ubuntu/ $codename main" >> ./gitaction.list
+          #sudo mv -f ./gitaction.list /etc/apt/sources.list.d/
           sudo apt-get update -y && sudo apt-get install build-essential wget -y
 
       - name: Build windows
