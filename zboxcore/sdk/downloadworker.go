@@ -94,6 +94,7 @@ func (req *DownloadRequest) removeFromMask(pos uint64) {
 
 func (req *DownloadRequest) getBlocksDataFromBlobbers(startBlock, totalBlock int64) ([][][]byte, error) {
 	shards := make([][][]byte, totalBlock)
+	l.Logger.Info("[downloadReq]", "shards", totalBlock, "blobbers", len(req.blobbers))
 	for i := range shards {
 		shards[i] = make([][]byte, len(req.blobbers))
 	}
