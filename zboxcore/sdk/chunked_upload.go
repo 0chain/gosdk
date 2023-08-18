@@ -205,8 +205,8 @@ func CreateChunkedUpload(
 	}
 
 	su.loadProgress()
-
-	su.fileHasher = CreateHasher(getShardSize(su.fileMeta.ActualSize, su.allocationObj.DataShards, su.encryptOnUpload))
+	su.shardSize = getShardSize(su.fileMeta.ActualSize, su.allocationObj.DataShards, su.encryptOnUpload)
+	su.fileHasher = CreateHasher(su.shardSize)
 
 	// encrypt option has been changed. upload it from scratch
 	// chunkSize has been changed. upload it from scratch
@@ -318,6 +318,8 @@ type ChunkedUpload struct {
 	shardUploadedSize int64
 	// shardUploadedThumbnailSize how much thumbnail bytes a shard has. it is original size
 	shardUploadedThumbnailSize int64
+	// size of shard
+	shardSize int64
 
 	// statusCallback trigger progress on StatusCallback
 	statusCallback StatusCallback
@@ -385,7 +387,7 @@ func (su *ChunkedUpload) createUploadProgress(connectionId string) {
 
 	for i := 0; i < len(su.progress.Blobbers); i++ {
 		su.progress.Blobbers[i] = &UploadBlobberStatus{
-			Hasher: CreateHasher(getShardSize(su.fileMeta.ActualSize, su.allocationObj.DataShards, su.encryptOnUpload)),
+			Hasher: CreateHasher(su.shardSize),
 		}
 	}
 
@@ -618,7 +620,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 				body, formData, err := su.formBuilder.Build(
 					&su.fileMeta, blobber.progress.Hasher, su.progress.ConnectionID,
 					su.chunkSize, chunkStartIndex, chunkEndIndex, isFinal, encryptedKey,
-					fileShards[pos], thumbnailChunkData,
+					fileShards[pos], thumbnailChunkData, su.shardSize,
 				)
 
 				if err != nil {

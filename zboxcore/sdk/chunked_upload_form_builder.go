@@ -22,7 +22,7 @@ type ChunkedUploadFormBuilder interface {
 		fileMeta *FileMeta, hasher Hasher, connectionID string,
 		chunkSize int64, chunkStartIndex, chunkEndIndex int,
 		isFinal bool, encryptedKey string, fileChunksData [][]byte,
-		thumbnailChunkData []byte,
+		thumbnailChunkData []byte, shardSize int64,
 	) (*bytes.Buffer, ChunkedUploadFormMetadata, error)
 }
 
@@ -48,7 +48,7 @@ func (b *chunkedUploadFormBuilder) Build(
 	fileMeta *FileMeta, hasher Hasher, connectionID string,
 	chunkSize int64, chunkStartIndex, chunkEndIndex int,
 	isFinal bool, encryptedKey string, fileChunksData [][]byte,
-	thumbnailChunkData []byte,
+	thumbnailChunkData []byte, shardSize int64,
 ) (*bytes.Buffer, ChunkedUploadFormMetadata, error) {
 
 	metadata := ChunkedUploadFormMetadata{
@@ -78,6 +78,7 @@ func (b *chunkedUploadFormBuilder) Build(
 		ChunkStartIndex: chunkStartIndex,
 		ChunkEndIndex:   chunkEndIndex,
 		UploadOffset:    chunkSize * int64(chunkStartIndex),
+		Size:            shardSize,
 	}
 
 	formWriter := multipart.NewWriter(body)

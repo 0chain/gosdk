@@ -1064,6 +1064,8 @@ func (a *Allocation) addAndGenerateDownloadRequest(
 	localFilePath string,
 ) error {
 	var connectionID string
+	a.mutex.Lock()
+	defer a.mutex.Unlock()
 	if len(a.downloadRequests) > 0 {
 		connectionID = a.downloadRequests[0].connectionID
 	} else {
@@ -1075,7 +1077,6 @@ func (a *Allocation) addAndGenerateDownloadRequest(
 	if err != nil {
 		return err
 	}
-	a.mutex.Lock()
 	a.downloadProgressMap[remotePath] = downloadReq
 	a.downloadRequests = append(a.downloadRequests, downloadReq)
 	if isFinal {
@@ -1085,7 +1086,6 @@ func (a *Allocation) addAndGenerateDownloadRequest(
 			a.processReadMarker(downloadOps)
 		}()
 	}
-	a.mutex.Unlock()
 	return nil
 }
 
