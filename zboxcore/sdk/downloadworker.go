@@ -512,8 +512,8 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		if blocksToDownload <= 0 {
 			continue
 		}
-		eg.Go(func() error {
-			return func(j int, blocksToDownload int64) error {
+		func(j int, blocksToDownload int64) {
+			eg.Go(func() error {
 				data, err := req.getBlocksData(startBlock+int64(j)*numBlocks, blocksToDownload)
 				if req.isDownloadCanceled {
 					return errors.New("download_abort", "Download aborted by user")
@@ -524,8 +524,8 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 				blocks <- blockData{blockNum: j, data: data}
 
 				return nil
-			}(j, blocksToDownload)
-		})
+			})
+		}(j, blocksToDownload)
 	}
 	if err := eg.Wait(); err != nil {
 		req.errorCB(err, remotePathCB)
