@@ -1063,19 +1063,19 @@ func (a *Allocation) addAndGenerateDownloadRequest(
 	isFinal bool,
 	localFilePath string,
 ) error {
-	var connectionID string
-	if len(a.downloadRequests) > 0 {
-		connectionID = a.downloadRequests[0].connectionID
-	} else {
-		connectionID = zboxutil.NewConnectionId()
-	}
 	downloadReq, err := a.generateDownloadRequest(
 		fileHandler, remotePath, contentMode, startBlock, endBlock,
-		numBlocks, verifyDownload, status, connectionID, localFilePath)
+		numBlocks, verifyDownload, status, "", localFilePath)
 	if err != nil {
 		return err
 	}
 	a.mutex.Lock()
+	defer a.mutex.Unlock()
+	if len(a.downloadRequests) > 0 {
+		downloadReq.connectionID = a.downloadRequests[0].connectionID
+	} else {
+		downloadReq.connectionID = zboxutil.NewConnectionId()
+	}
 	a.downloadProgressMap[remotePath] = downloadReq
 	a.downloadRequests = append(a.downloadRequests, downloadReq)
 	if isFinal {
@@ -1085,7 +1085,6 @@ func (a *Allocation) addAndGenerateDownloadRequest(
 			a.processReadMarker(downloadOps)
 		}()
 	}
-	a.mutex.Unlock()
 	return nil
 }
 
@@ -2229,7 +2228,7 @@ func (a *Allocation) downloadFromAuthTicket(fileHandler sys.File, authTicket str
 	a.downloadRequests = append(a.downloadRequests, downloadReq)
 	if isFinal {
 		downloadOps := a.downloadRequests
-		a.downloadRequests = a.downloadRequests[:0]
+		a.downloadRequests = nil
 		go func() {
 			a.processReadMarker(downloadOps)
 		}()
