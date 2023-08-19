@@ -284,7 +284,6 @@ func (req *DownloadRequest) fillShards(shards [][][]byte, result *downloadBlock)
 		if req.encryptedKey != "" {
 			data, err = req.getDecryptedData(result, i)
 			if err != nil {
-				shards[i] = nil
 				return err
 			}
 		} else {
@@ -508,26 +507,23 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 
 	eg, _ := errgroup.WithContext(ctx)
 	for i := 0; i < n; i++ {
-		blocksToDownload := numBlocks
-		if startBlock+int64(i)*numBlocks+numBlocks > endBlock {
-			blocksToDownload = endBlock - (startBlock + int64(i)*numBlocks)
-		}
-		if blocksToDownload <= 0 {
-			continue
-		}
-		func(i int, blocksToDownload int64) {
-			eg.Go(func() error {
-				data, err := req.getBlocksData(startBlock+int64(i)*numBlocks, blocksToDownload)
-				if req.isDownloadCanceled {
-					return errors.New("download_abort", "Download aborted by user")
-				}
-				if err != nil {
-					return errors.Wrap(err, fmt.Sprintf("Download failed for block %d. ", startBlock+int64(i)*numBlocks))
-				}
-				blocks <- blockData{blockNum: i, data: data}
-				return nil
-			})
-		}(i, blocksToDownload)
+		j := i
+		eg.Go(func() error {
+			blocksToDownload := numBlocks
+			if startBlock+int64(j)*numBlocks+numBlocks > endBlock {
+				blocksToDownload = endBlock - (startBlock + int64(j)*numBlocks)
+			}
+			data, err := req.getBlocksData(startBlock+int64(j)*numBlocks, blocksToDownload)
+			if req.isDownloadCanceled {
+				return errors.New("download_abort", "Download aborted by user")
+			}
+			if err != nil {
+				return errors.Wrap(err, fmt.Sprintf("Download failed for block %d. ", startBlock+int64(j)*numBlocks))
+			}
+			blocks <- blockData{blockNum: j, data: data}
+
+			return nil
+		})
 	}
 	if err := eg.Wait(); err != nil {
 		req.errorCB(err, remotePathCB)

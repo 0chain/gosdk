@@ -211,6 +211,9 @@ func CreateChunkedUpload(
 
 	// encrypt option has been changed. upload it from scratch
 	// chunkSize has been changed. upload it from scratch
+	if su.progress.ChunkSize != su.chunkSize || su.progress.EncryptOnUpload != su.encryptOnUpload {
+		su.progress.ChunkSize = 0 // reset chunk size so new upload progress will be created
+	}
 
 	su.createUploadProgress(connectionId)
 
