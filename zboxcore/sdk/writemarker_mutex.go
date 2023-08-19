@@ -186,7 +186,7 @@ func (wmMu *WriteMarkerMutex) Lock(
 
 	// Lock first responsive blobber as lead blobber
 	for ; wmMu.leadBlobberIndex < len(blobbers); wmMu.leadBlobberIndex++ {
-		methodCtx, cancel := context.WithTimeout(ctx, 3*time.Minute)
+		methodCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 		defer cancel()
 		leadBlobber := blobbers[uint64(wmMu.leadBlobberIndex)]
 		wg.Add(1)
