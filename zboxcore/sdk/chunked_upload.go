@@ -381,7 +381,7 @@ func (su *ChunkedUpload) createUploadProgress(connectionId string) {
 			UploadLength: 0,
 		}
 	}
-	su.progress.Blobbers = make([]*UploadBlobberStatus, common.MustAddInt(su.allocationObj.DataShards, su.allocationObj.ParityShards))
+	su.progress.Blobbers = make([]*UploadBlobberStatus, su.allocationObj.DataShards+su.allocationObj.ParityShards)
 
 	for i := 0; i < len(su.progress.Blobbers); i++ {
 		su.progress.Blobbers[i] = &UploadBlobberStatus{
@@ -630,6 +630,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 				if errC > int32(su.allocationObj.ParityShards-1) { // If atleast data shards + 1 number of blobbers can process the upload, it can be repaired later
 					wgErrors <- err
 				}
+				return
 			}
 
 			err = b.sendUploadRequest(ctx, su, chunkEndIndex, isFinal, encryptedKey, body, formData, pos)
