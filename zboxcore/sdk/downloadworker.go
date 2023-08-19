@@ -504,21 +504,27 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	eg, _ := errgroup.WithContext(ctx)
 	for i := 0; i < n; i++ {
 		j := i
-		eg.Go(func() error {
-			blocksToDownload := numBlocks
-			if startBlock+int64(j)*numBlocks+numBlocks > endBlock {
-				blocksToDownload = endBlock - (startBlock + int64(j)*numBlocks)
-			}
-			data, err := req.getBlocksData(startBlock+int64(j)*numBlocks, blocksToDownload)
-			if req.isDownloadCanceled {
-				return errors.New("download_abort", "Download aborted by user")
-			}
-			if err != nil {
-				return errors.Wrap(err, fmt.Sprintf("Download failed for block %d. ", startBlock+int64(j)*numBlocks))
-			}
-			blocks <- blockData{blockNum: j, data: data}
 
-			return nil
+		blocksToDownload := numBlocks
+		if startBlock+int64(j)*numBlocks+numBlocks > endBlock {
+			blocksToDownload = endBlock - (startBlock + int64(j)*numBlocks)
+		}
+		if blocksToDownload <= 0 {
+			continue
+		}
+		eg.Go(func() error {
+			return func(j int, blocksToDownload int64) error {
+				data, err := req.getBlocksData(startBlock+int64(j)*numBlocks, blocksToDownload)
+				if req.isDownloadCanceled {
+					return errors.New("download_abort", "Download aborted by user")
+				}
+				if err != nil {
+					return errors.Wrap(err, fmt.Sprintf("Download failed for block %d. ", startBlock+int64(j)*numBlocks))
+				}
+				blocks <- blockData{blockNum: j, data: data}
+
+				return nil
+			}(j, blocksToDownload)
 		})
 	}
 	if err := eg.Wait(); err != nil {
