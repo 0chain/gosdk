@@ -600,7 +600,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 
 	var errCount int32
 
-	wgErrors := make(chan error)
+	wgErrors := make(chan error, len(su.blobbers))
 	wgDone := make(chan bool)
 	if len(fileShards) == 0 {
 		return thrown.New("upload_failed", "Upload failed. No data to upload")
@@ -647,6 +647,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 
 	go func() {
 		wg.Wait()
+		close(wgErrors)
 		close(wgDone)
 	}()
 
