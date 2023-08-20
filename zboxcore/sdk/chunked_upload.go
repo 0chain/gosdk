@@ -647,8 +647,8 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 
 	go func() {
 		wg.Wait()
-		close(wgErrors)
 		close(wgDone)
+		close(wgErrors)
 	}()
 
 	select {
