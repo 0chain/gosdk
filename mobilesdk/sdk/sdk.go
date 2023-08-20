@@ -428,5 +428,5 @@ func decodeTicket(ticket string) (string, string, uint64, error) {
 // }
 // }
 func RegisterAuthorizer(auth Autorizer) {
-	sys.AuthorizeFunc = auth.Auth
+	sys.Authorize = auth.Auth
 }
