@@ -279,7 +279,6 @@ func (req *DownloadRequest) fillShards(shards [][][]byte, result *downloadBlock)
 		if req.encryptedKey != "" {
 			data, err = req.getDecryptedData(result, i)
 			if err != nil {
-				shards[i] = nil
 				return err
 			}
 		} else {
@@ -742,7 +741,7 @@ func (req *DownloadRequest) initEncryption() (err error) {
 		}
 	}
 
-	err = req.encScheme.InitForDecryption("filetype:audio", req.encryptedKey)
+	err = req.encScheme.InitForDecryptionWithPoint("filetype:audio", req.encryptedKey)
 	if err != nil {
 		return err
 	}

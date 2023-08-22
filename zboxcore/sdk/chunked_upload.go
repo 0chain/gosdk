@@ -211,6 +211,9 @@ func CreateChunkedUpload(
 
 	// encrypt option has been changed. upload it from scratch
 	// chunkSize has been changed. upload it from scratch
+	if su.progress.ChunkSize != su.chunkSize || su.progress.EncryptOnUpload != su.encryptOnUpload {
+		su.progress.ChunkSize = 0 // reset chunk size
+	}
 
 	su.createUploadProgress(connectionId)
 
@@ -225,7 +228,9 @@ func CreateChunkedUpload(
 
 	if su.encryptOnUpload {
 		su.fileEncscheme = su.createEncscheme()
-
+		if su.fileEncscheme == nil {
+			return nil, thrown.New("upload_failed", "Failed to create encryption scheme")
+		}
 		if su.chunkSize <= EncryptionHeaderSize+EncryptedDataPaddingSize {
 			return nil, ErrInvalidChunkSize
 		}
@@ -332,13 +337,14 @@ type ChunkedUpload struct {
 	// isRepair identifies if upload is repair operation
 	isRepair bool
 
-	opCode        int
-	uploadTimeOut time.Duration
-	commitTimeOut time.Duration
-	maskMu        *sync.Mutex
-	ctx           context.Context
-	ctxCncl       context.CancelFunc
-	addConsensus  int32
+	opCode            int
+	uploadTimeOut     time.Duration
+	commitTimeOut     time.Duration
+	maskMu            *sync.Mutex
+	ctx               context.Context
+	ctxCncl           context.CancelFunc
+	addConsensus      int32
+	encryptedKeyPoint string
 }
 
 // progressID build local progress id with [allocationid]_[Hash(LocalPath+"_"+RemotePath)]_[RemoteName] format
@@ -380,9 +386,11 @@ func (su *ChunkedUpload) removeProgress() {
 func (su *ChunkedUpload) createUploadProgress(connectionId string) {
 	if su.progress.ChunkSize == 0 {
 		su.progress = UploadProgress{ConnectionID: connectionId,
-			ChunkIndex:   -1,
-			ChunkSize:    su.chunkSize,
-			UploadLength: 0,
+			ChunkIndex:        -1,
+			ChunkSize:         su.chunkSize,
+			UploadLength:      0,
+			EncryptOnUpload:   su.encryptOnUpload,
+			EncryptedKeyPoint: su.encryptedKeyPoint,
 		}
 	}
 	su.progress.Blobbers = make([]*UploadBlobberStatus, su.allocationObj.DataShards+su.allocationObj.ParityShards)
@@ -415,8 +423,15 @@ func (su *ChunkedUpload) createEncscheme() encryption.EncryptionScheme {
 
 		su.progress.EncryptPrivateKey = hex.EncodeToString(privateKey)
 	}
-
-	encscheme.InitForEncryption("filetype:audio")
+	if len(su.progress.EncryptedKeyPoint) > 0 {
+		err := encscheme.InitForEncryptionWithPoint("filetype:audio", su.progress.EncryptedKeyPoint)
+		if err != nil {
+			return nil
+		}
+	} else {
+		encscheme.InitForEncryption("filetype:audio")
+		su.progress.EncryptedKeyPoint = encscheme.GetEncryptedKeyPoint()
+	}
 
 	return encscheme
 }
@@ -620,7 +635,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 
 	encryptedKey := ""
 	if su.fileEncscheme != nil {
-		encryptedKey = su.fileEncscheme.GetEncryptedKey()
+		encryptedKey = su.encryptedKeyPoint
 	}
 
 	var errCount int32
