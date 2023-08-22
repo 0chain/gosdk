@@ -7,7 +7,9 @@ import (
 	"io"
 	"net/http"
 	"path/filepath"
+	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"errors"
@@ -27,7 +29,6 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/google/uuid"
 	"github.com/klauspost/reedsolomon"
-	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -335,6 +336,7 @@ type ChunkedUpload struct {
 	maskMu        *sync.Mutex
 	ctx           context.Context
 	ctxCncl       context.CancelFunc
+	addConsensus  int32
 }
 
 // progressID build local progress id with [allocationid]_[Hash(LocalPath+"_"+RemotePath)]_[RemoteName] format
@@ -381,7 +383,7 @@ func (su *ChunkedUpload) createUploadProgress(connectionId string) {
 			UploadLength: 0,
 		}
 	}
-	su.progress.Blobbers = make([]*UploadBlobberStatus, common.MustAddInt(su.allocationObj.DataShards, su.allocationObj.ParityShards))
+	su.progress.Blobbers = make([]*UploadBlobberStatus, su.allocationObj.DataShards+su.allocationObj.ParityShards)
 
 	for i := 0; i < len(su.progress.Blobbers); i++ {
 		su.progress.Blobbers[i] = &UploadBlobberStatus{
@@ -473,6 +475,25 @@ func (su *ChunkedUpload) process() error {
 			}
 			logger.Logger.Info("[processUpload]", time.Since(start).Milliseconds())
 		} else {
+			// Write data to hashers
+			for i, blobberShard := range chunks.fileShards {
+				for _, chunkBytes := range blobberShard {
+					err = su.blobbers[i].progress.Hasher.WriteToFixedMT(chunkBytes)
+					if err != nil {
+						if su.statusCallback != nil {
+							su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
+						}
+						return err
+					}
+					err = su.blobbers[i].progress.Hasher.WriteToValidationMT(chunkBytes)
+					if err != nil {
+						if su.statusCallback != nil {
+							su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
+						}
+						return err
+					}
+				}
+			}
 			alreadyUploadedData += int(chunks.totalReadSize)
 		}
 
@@ -509,10 +530,13 @@ func (su *ChunkedUpload) Start() error {
 	for i, b := range su.blobbers {
 		blobbers[i] = b.blobber
 	}
+	if su.addConsensus == int32(su.consensus.fullconsensus) {
+		return thrown.New("upload_failed", "Duplicate upload detected")
+	}
 
 	err = su.writeMarkerMutex.Lock(
 		su.ctx, &su.uploadMask, su.maskMu,
-		blobbers, &su.consensus, 0, su.uploadTimeOut,
+		blobbers, &su.consensus, int(su.addConsensus), su.uploadTimeOut,
 		su.progress.ConnectionID)
 
 	if err != nil {
@@ -598,50 +622,73 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		encryptedKey = su.fileEncscheme.GetEncryptedKey()
 	}
 
+	var errCount int32
+
+	wgErrors := make(chan error, len(su.blobbers))
+	wgDone := make(chan bool)
 	if len(fileShards) == 0 {
 		return thrown.New("upload_failed", "Upload failed. No data to upload")
 	}
-
-	eg, _ := errgroup.WithContext(ctx)
-	for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(uint64(i.TrailingZeros())).Not()) {
-		pos := uint64(i.TrailingZeros())
+	wg := &sync.WaitGroup{}
+	var pos uint64
+	for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		pos = uint64(i.TrailingZeros())
 		blobber := su.blobbers[pos]
 		blobber.progress.UploadLength += uploadLength
 
 		var thumbnailChunkData []byte
+
 		if len(thumbnailShards) > 0 {
 			thumbnailChunkData = thumbnailShards[pos]
 		}
 
-		eg.Go(func() error {
-			return func(blobber *ChunkedUploadBlobber, pos uint64, thumbnailChunkData []byte) error {
-				body, formData, err := su.formBuilder.Build(
-					&su.fileMeta, blobber.progress.Hasher, su.progress.ConnectionID,
-					su.chunkSize, chunkStartIndex, chunkEndIndex, isFinal, encryptedKey,
-					fileShards[pos], thumbnailChunkData,
-				)
+		wg.Add(1)
+		go func(b *ChunkedUploadBlobber, thumbnailChunkData []byte, pos uint64) {
+			defer wg.Done()
+			body, formData, err := su.formBuilder.Build(
+				&su.fileMeta, blobber.progress.Hasher, su.progress.ConnectionID,
+				su.chunkSize, chunkStartIndex, chunkEndIndex, isFinal, encryptedKey,
+				fileShards[pos], thumbnailChunkData)
+			if err != nil {
+				errC := atomic.AddInt32(&errCount, 1)
+				if errC > int32(su.allocationObj.ParityShards-1) { // If atleast data shards + 1 number of blobbers can process the upload, it can be repaired later
+					wgErrors <- err
+				}
+				return
+			}
 
-				if err != nil {
-					return err
+			err = b.sendUploadRequest(ctx, su, chunkEndIndex, isFinal, encryptedKey, body, formData, pos)
+			if err != nil {
+				if strings.Contains(err.Error(), "duplicate") {
+					atomic.AddInt32(&su.addConsensus, 1)
+					su.consensus.Done()
+					return
+				}
+				logger.Logger.Error("error during sendUploadRequest", err)
+				errC := atomic.AddInt32(&errCount, 1)
+				if errC > int32(su.allocationObj.ParityShards-1) { // If atleast data shards + 1 number of blobbers can process the upload, it can be repaired later
+					wgErrors <- err
 				}
 
-				err = blobber.sendUploadRequest(ctx, su, chunkEndIndex, isFinal, encryptedKey, body, formData, pos)
-				if err != nil {
-					logger.Logger.Error("error during sendUploadRequest", err)
-					return thrown.New("upload_failed", fmt.Sprintf("Upload failed. %s", err))
-				}
-
-				return nil
-			}(blobber, pos, thumbnailChunkData)
-		})
+			}
+		}(blobber, thumbnailChunkData, pos)
 	}
 
-	if err := eg.Wait(); err != nil {
-		return err
+	go func() {
+		wg.Wait()
+		close(wgDone)
+		close(wgErrors)
+	}()
+
+	select {
+	case <-wgDone:
+		break
+	case err := <-wgErrors:
+		return thrown.New("upload_failed", fmt.Sprintf("Upload failed. %s", err))
 	}
 
 	if !su.consensus.isConsensusOk() {
-		return thrown.New("consensus_not_met", fmt.Sprintf("Upload failed File not found for path %s. Required consensus at least %d, got %d",
+		return thrown.New("consensus_not_met", fmt.Sprintf("Upload failed File not found for path %s. Required consensus atleast %d, got %d",
 			su.fileMeta.RemotePath, su.consensus.consensusThresh, su.consensus.getConsensus()))
 	}
 
@@ -654,7 +701,7 @@ func (su *ChunkedUpload) processCommit() error {
 
 	logger.Logger.Info("Submitting for commit")
 	su.consensus.Reset()
-
+	su.consensus.consensus = int(su.addConsensus)
 	wg := &sync.WaitGroup{}
 	var pos uint64
 	uid := util.GetNewUUID()

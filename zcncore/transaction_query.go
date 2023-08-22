@@ -158,6 +158,17 @@ func (tq *TransactionQuery) checkSharderHealth(ctx context.Context, host string)
 
 // getRandomSharder returns a random healthy sharder
 func (tq *TransactionQuery) getRandomSharder(ctx context.Context) (string, error) {
+	if tq.sharders == nil || len(tq.sharders) == 0 {
+		return "", ErrNoAvailableMiners
+	}
+
+	shuffledSharders := util.Shuffle(tq.sharders)
+
+	return shuffledSharders[0], nil
+}
+
+//nolint:unused
+func (tq *TransactionQuery) getRandomSharderWithHealthcheck(ctx context.Context) (string, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	shuffledSharders := util.Shuffle(tq.sharders)
