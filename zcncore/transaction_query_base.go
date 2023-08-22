@@ -20,7 +20,7 @@ func GetUserLockedTotal(clientID string) (int64, error) {
 	var url = withParams(STORAGESC_GET_USER_LOCKED_TOTAL, Params{
 		"client_id": clientID,
 	})
-	cb := createGetInfoCallback()
+	cb := CreateGetInfoCallback()
 	go GetInfoFromSharders(url, OpStorageSCGetStakePoolInfo, cb)
 	info, err := cb.Wait()
 	if err != nil {
@@ -43,7 +43,7 @@ func GetUserLockedTotal(clientID string) (int64, error) {
 
 }
 
-func createGetInfoCallback() *getInfoCallback {
+func CreateGetInfoCallback() *getInfoCallback {
 	return &getInfoCallback{
 		callback: make(chan bool),
 	}
