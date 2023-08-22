@@ -43,20 +43,20 @@ func GetUserLockedTotal(clientID string) (int64, error) {
 
 }
 
-func CreateGetInfoCallback() *getInfoCallback {
-	return &getInfoCallback{
+func CreateGetInfoCallback() *GetInfoCallbackZCN {
+	return &GetInfoCallbackZCN{
 		callback: make(chan bool),
 	}
 }
 
-type getInfoCallback struct {
+type GetInfoCallbackZCN struct {
 	callback chan bool
 	status   int
 	info     string
 	err      string
 }
 
-func (cb *getInfoCallback) OnInfoAvailable(op int, status int, info string, err string) {
+func (cb *GetInfoCallbackZCN) OnInfoAvailable(op int, status int, info string, err string) {
 
 	// if status == StatusSuccess then info is valid
 	// is status != StatusSuccess then err will give the reason
@@ -71,7 +71,7 @@ func (cb *getInfoCallback) OnInfoAvailable(op int, status int, info string, err 
 	cb.callback <- true
 }
 
-func (cb *getInfoCallback) Wait() (string, error) {
+func (cb *GetInfoCallbackZCN) Wait() (string, error) {
 	<-cb.callback
 	if cb.err == "" {
 		return cb.info, nil
