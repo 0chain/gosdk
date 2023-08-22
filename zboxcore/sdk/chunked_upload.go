@@ -336,6 +336,7 @@ type ChunkedUpload struct {
 	maskMu        *sync.Mutex
 	ctx           context.Context
 	ctxCncl       context.CancelFunc
+	addConsensus  int32
 }
 
 // progressID build local progress id with [allocationid]_[Hash(LocalPath+"_"+RemotePath)]_[RemoteName] format
@@ -532,7 +533,7 @@ func (su *ChunkedUpload) Start() error {
 
 	err = su.writeMarkerMutex.Lock(
 		su.ctx, &su.uploadMask, su.maskMu,
-		blobbers, &su.consensus, 0, su.uploadTimeOut,
+		blobbers, &su.consensus, int(su.addConsensus), su.uploadTimeOut,
 		su.progress.ConnectionID)
 
 	if err != nil {
@@ -656,6 +657,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 			err = b.sendUploadRequest(ctx, su, chunkEndIndex, isFinal, encryptedKey, body, formData, pos)
 			if err != nil {
 				if strings.Contains(err.Error(), "duplicate") {
+					atomic.AddInt32(&su.addConsensus, 1)
 					su.consensus.Done()
 					return
 				}
@@ -696,7 +698,7 @@ func (su *ChunkedUpload) processCommit() error {
 
 	logger.Logger.Info("Submitting for commit")
 	su.consensus.Reset()
-
+	su.consensus.consensus = int(su.addConsensus)
 	wg := &sync.WaitGroup{}
 	var pos uint64
 	uid := util.GetNewUUID()

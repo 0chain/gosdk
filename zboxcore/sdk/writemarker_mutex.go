@@ -182,7 +182,7 @@ func (wmMu *WriteMarkerMutex) Lock(
 
 	consensus.Reset()
 	consensus.consensus = addConsensus
-	consensus.consensusThresh = mask.CountOnes()
+
 	wg := &sync.WaitGroup{}
 
 	// Lock first responsive blobber as lead blobber
