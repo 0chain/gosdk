@@ -533,11 +533,17 @@ func GetInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback) {
 
 func GetInfoFromAnySharder(urlSuffix string, op int, cb GetInfoCallback) {
 
+	logging.Info("sharder url suffix", urlSuffix)
+	
+
 	tq, err := NewTransactionQuery(util.Shuffle(_config.chain.Sharders), []string{})
 	if err != nil {
 		cb.OnInfoAvailable(op, StatusError, "", err.Error())
 		return
 	}
+
+	logging.Info("transaction query", tq)
+	logging.Info("sharders", _config.chain.Sharders)
 
 	qr, err := tq.FromAny(context.TODO(), urlSuffix, ProviderSharder)
 	if err != nil {
