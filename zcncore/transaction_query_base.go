@@ -20,7 +20,7 @@ func GetUserLockedTotal(clientID string) (int64, error) {
 	var url = withParams(STORAGESC_GET_USER_LOCKED_TOTAL, Params{
 		"client_id": clientID,
 	})
-	cb := CreateGetInfoCallback()
+	cb := createGetInfoCallback()
 	go GetInfoFromSharders(url, OpStorageSCGetStakePoolInfo, cb)
 	info, err := cb.Wait()
 	if err != nil {
@@ -43,20 +43,20 @@ func GetUserLockedTotal(clientID string) (int64, error) {
 
 }
 
-func CreateGetInfoCallback() *GetInfoCallbackZCN {
-	return &GetInfoCallbackZCN{
+func createGetInfoCallback() *getInfoCallback {
+	return &getInfoCallback{
 		callback: make(chan bool),
 	}
 }
 
-type GetInfoCallbackZCN struct {
+type getInfoCallback struct {
 	callback chan bool
 	status   int
 	info     string
 	err      string
 }
 
-func (cb *GetInfoCallbackZCN) OnInfoAvailable(op int, status int, info string, err string) {
+func (cb *getInfoCallback) OnInfoAvailable(op int, status int, info string, err string) {
 
 	// if status == StatusSuccess then info is valid
 	// is status != StatusSuccess then err will give the reason
@@ -71,7 +71,7 @@ func (cb *GetInfoCallbackZCN) OnInfoAvailable(op int, status int, info string, e
 	cb.callback <- true
 }
 
-func (cb *GetInfoCallbackZCN) Wait() (string, error) {
+func (cb *getInfoCallback) Wait() (string, error) {
 	<-cb.callback
 	if cb.err == "" {
 		return cb.info, nil
