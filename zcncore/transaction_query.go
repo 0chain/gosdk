@@ -559,7 +559,7 @@ func GetInfoFromAnySharder(urlSuffix string, op int, cb GetInfoCallback) {
 	cb.OnInfoAvailable(op, StatusSuccess, string(qr.Content), "")
 }
 
-func GetInfoFromAnyMiner(urlSuffix string, op int, cb GetInfoCallback) {
+func GetInfoFromAnyMiner(urlSuffix string, op int, cb getInfoCallback) {
 
 	tq, err := NewTransactionQuery([]string{}, util.Shuffle(_config.chain.Miners))
 
