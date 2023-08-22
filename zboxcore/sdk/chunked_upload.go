@@ -530,6 +530,9 @@ func (su *ChunkedUpload) Start() error {
 	for i, b := range su.blobbers {
 		blobbers[i] = b.blobber
 	}
+	if su.addConsensus == int32(su.consensus.fullconsensus) {
+		return thrown.New("upload_failed", "Duplicate upload detected")
+	}
 
 	err = su.writeMarkerMutex.Lock(
 		su.ctx, &su.uploadMask, su.maskMu,
