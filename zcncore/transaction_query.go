@@ -593,18 +593,18 @@ func WithParams(uri string, params Params) string {
 	return withParams(uri, params)
 }
 
-func GetHealthyRandomSharder(op int, cb GetInfoCallback) {
+func GetHealthyRandomSharder(cb GetInfoCallback) {
 	tq, err := NewTransactionQuery(util.Shuffle(_config.chain.Sharders), []string{})
 	if err != nil {
-		cb.OnInfoAvailable(op, StatusError, "", err.Error())
+		cb.OnInfoAvailable(0, StatusError, "", err.Error())
 		return
 	}
 
 	qr, err := tq.getRandomSharder(context.TODO())
 	if err != nil {
-		cb.OnInfoAvailable(op, StatusError, "", err.Error())
+		cb.OnInfoAvailable(0, StatusError, "", err.Error())
 		return
 	}
 
-	cb.OnInfoAvailable(op, StatusSuccess, string(qr), "")
+	cb.OnInfoAvailable(0, StatusSuccess, string(qr), "")
 }
