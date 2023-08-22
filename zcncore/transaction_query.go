@@ -167,6 +167,7 @@ func (tq *TransactionQuery) getRandomSharder(ctx context.Context) (string, error
 	return shuffledSharders[0], nil
 }
 
+//nolint:unused
 func (tq *TransactionQuery) getRandomSharderWithHealthcheck(ctx context.Context) (string, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
