@@ -3,7 +3,6 @@ package main
 /*
 #include <stdlib.h>
 */
-
 import (
 	"C"
 )
@@ -11,25 +10,53 @@ import (
 import (
 	"encoding/json"
 	"errors"
-	"path/filepath"
+	"os"
 
 	"github.com/0chain/gosdk/zboxapi"
 	"github.com/0chain/gosdk/zboxcore/client"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/sdk"
+	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/0chain/gosdk/zcncore"
 
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/encryption"
+	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/core/zcncrypto"
 )
 
-func main() {
-	sdk.SetLogFile(filepath.Join(getHomeDir(), ".zcn", "zbox.log"), true)
-	zcncore.SetLogFile(filepath.Join(getHomeDir(), ".zcn", "zcn.log"), true)
+var log logger.Logger
 
-	sdk.GetLogger().Info("0Chain Windows SDK is ready")
+func main() {
+
+}
+
+// SetLogFile - set log file
+// ## Inputs
+//   - file: the full path of log file
+//
+//export SetLogFile
+func SetLogFile(file *C.char) *C.char {
+
+	f, err := os.OpenFile(C.GoString(file), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return WithJSON(false, err)
+	}
+
+	sdk.GetLogger().SetLevel(logger.DEBUG)
+	sdk.GetLogger().SetLogFile(f, true)
+
+	zcncore.GetLogger().SetLevel(logger.DEBUG)
+	zcncore.GetLogger().SetLogFile(f, true)
+
+	zboxutil.GetLogger().SetLevel(logger.DEBUG)
+	zboxutil.GetLogger().SetLogFile(f, true)
+
+	log.SetLogFile(f, true)
+	log.SetLevel(logger.DEBUG)
+
+	return WithJSON(true, nil)
 }
 
 // InitSDK - init zbox/zcn sdk from config
@@ -61,6 +88,7 @@ func main() {
 //     "ethereum_node":"https://ropsten.infura.io/v3/xxxxxxxxxxxxxxx",
 //     "zbox_host":"https://0box.dev.0chain.net",
 //     "zbox_app_type":"vult",
+//     "sharder_consensous": 2,
 //     }
 //
 //export InitSDK
@@ -73,12 +101,25 @@ func InitSDK(configJson *C.char, clientJson *C.char) *C.char {
 
 	configObj := &conf.Config{}
 
+	l.Logger.Info("cfg: ", configJs)
 	err := json.Unmarshal([]byte(configJs), configObj)
 	if err != nil {
 		l.Logger.Error(err)
 		return WithJSON(false, err)
 	}
-	err = zcncore.InitZCNSDK(configObj.BlockWorker, configObj.SignatureScheme)
+
+	err = zcncore.InitZCNSDK(configObj.BlockWorker, configObj.SignatureScheme, func(cc *zcncore.ChainConfig) error {
+		cc.BlockWorker = configObj.BlockWorker
+		cc.ChainID = configObj.ChainID
+		cc.ConfirmationChainLength = configObj.ConfirmationChainLength
+		cc.MinConfirmation = configObj.MinConfirmation
+		cc.EthNode = configObj.EthereumNode
+		cc.MinSubmit = configObj.MinSubmit
+		cc.SharderConsensous = configObj.SharderConsensous
+		cc.SignatureScheme = configObj.SignatureScheme
+
+		return nil
+	})
 	if err != nil {
 		l.Logger.Error(err, configJs, clientJs)
 		return WithJSON(false, err)
@@ -202,4 +243,20 @@ func CryptoJsDecrypt(passphrase, encryptedMessage *C.char) *C.char {
 func GetPublicEncryptionKey(mnemonics *C.char) *C.char {
 	m := C.GoString(mnemonics)
 	return WithJSON(zcncore.GetPublicEncryptionKey(m))
+}
+
+// GetLookupHash get lookup hash with allocation id and path
+// ## Inputs:
+//   - allocationID
+//   - path
+//     return
+//     {
+//     "error":"",
+//     "result":"xxxx",
+//     }
+//
+//export GetLookupHash
+func GetLookupHash(allocationID *C.char, path *C.char) *C.char {
+	hash := getLookupHash(C.GoString(allocationID), C.GoString(path))
+	return WithJSON(hash, nil)
 }
