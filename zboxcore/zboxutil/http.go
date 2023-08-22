@@ -19,6 +19,7 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/encryption"
+	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
@@ -39,6 +40,12 @@ type HttpClient interface {
 }
 
 var Client HttpClient
+
+var log logger.Logger
+
+func GetLogger() *logger.Logger {
+	return &log
+}
 
 const (
 	ALLOCATION_ENDPOINT          = "/allocation"
@@ -136,6 +143,7 @@ func init() {
 		Transport: DefaultTransport,
 	}
 	envProxy.initialize()
+	log.Init(logger.DEBUG, "0box-sdk")
 }
 
 func NewHTTPRequest(method string, url string, data []byte) (*http.Request, context.Context, context.CancelFunc, error) {
@@ -799,10 +807,12 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 	}
 
 	sharderConsensous := cfg.SharderConsensous
+	if sharderConsensous < 1 {
+		sharderConsensous = conf.DefaultSharderConsensous
+	}
 	if numSharders > sharderConsensous {
 		sharders = util.Shuffle(sharders)[:sharderConsensous]
 	}
-
 	for _, sharder := range sharders {
 		wg.Add(1)
 		go func(sharder string) {
@@ -815,12 +825,11 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 			}
 			urlObj.RawQuery = q.Encode()
 			client := &http.Client{Transport: DefaultTransport}
-
 			response, err := client.Get(urlObj.String())
+
 			if err == nil {
 				defer response.Body.Close()
 				entityBytes, _ := ioutil.ReadAll(response.Body)
-
 				mu.Lock()
 				responses[response.StatusCode]++
 				if responses[response.StatusCode] > maxCount {

@@ -99,7 +99,7 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
 		return
 	}
 	l.Logger.Info("Checking file for the path :", zap.Any("path", file.Path))
-	found, deleteMask, repairRequired, _, err := a.RepairRequired(file.Path)
+	found, deleteMask, repairRequired, ref, err := a.RepairRequired(file.Path)
 	if err != nil {
 		l.Logger.Error("repair_required_failed", zap.Error(err))
 		return
@@ -125,50 +125,59 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
 			}
 
 			localPath := r.getLocalPath(file)
-			toDelete := false
 			if !checkFileExists(localPath) {
 				if r.checkForCancel(a) {
 					return
 				}
 				l.Logger.Info("Downloading file for the path :", zap.Any("path", file.Path))
 				wg.Add(1)
-				err = a.DownloadFile(localPath, file.Path, true, statusCB, true)
+				memFile := &sys.MemChanFile{
+					Buffer:         make(chan []byte, 10),
+					ChunkWriteSize: int(a.GetChunkReadSize(ref.EncryptedKey != "")),
+				}
+				err = a.DownloadFileToFileHandler(memFile, ref.Path, false, statusCB, true)
 				if err != nil {
 					l.Logger.Error("download_file_failed", zap.Error(err))
 					return
 				}
+				wg.Add(1)
+				uploadStatusCB := &RepairStatusCB{
+					wg:       &wg,
+					statusCB: r.statusCB,
+				}
+				l.Logger.Info("Repairing file for the path :", zap.Any("path", file.Path))
+				go func(memFile *sys.MemChanFile) {
+					err = a.RepairFile(memFile, file.Path, uploadStatusCB, found, ref)
+					if err != nil {
+						l.Logger.Error("repair_file_failed", zap.Error(err))
+						_ = a.CancelDownload(file.Path)
+					}
+				}(memFile)
 				wg.Wait()
-				if !statusCB.success {
-					l.Logger.Error("Failed to download file for repair, Status call back success failed",
+				if !uploadStatusCB.success {
+					l.Logger.Error("Failed to upload file, Status call back failed",
 						zap.Any("localpath", localPath), zap.Any("remotepath", file.Path))
 					return
 				}
-				l.Logger.Info("Download file success for repair", zap.Any("localpath", localPath), zap.Any("remotepath", file.Path))
-				statusCB.success = false
-				toDelete = true
+				l.Logger.Info("Download file and upload success for repair", zap.Any("localpath", localPath), zap.Any("remotepath", file.Path))
 			} else {
 				l.Logger.Info("FILE EXISTS", zap.Any("bool", true))
+				f, err := sys.Files.Open(localPath)
+				if err != nil {
+					l.Logger.Error("open_file_failed", zap.Error(err))
+					return
+				}
+				wg.Add(1)
+				err = a.RepairFile(f, file.Path, statusCB, found, ref)
+				if err != nil {
+					l.Logger.Error("repair_file_failed", zap.Error(err))
+					return
+				}
+				defer f.Close()
 			}
 
 			if r.checkForCancel(a) {
 				return
-			}
-
-			l.Logger.Info("Repairing file for the path :", zap.Any("path", file.Path))
-			wg.Add(1)
-			err = a.RepairFile(localPath, file.Path, statusCB, found)
-			if err != nil {
-				l.Logger.Error("repair_file_failed", zap.Error(err))
-				return
-			}
-			wg.Wait()
-			if !statusCB.success {
-				l.Logger.Error("Failed to repair file, Status call back success failed",
-					zap.Any("localpath", localPath), zap.Any("remotepath", file.Path))
-				return
-			}
-			if toDelete {
-				_ = sys.Files.Remove(localPath)
 			}
 		} else {
 			l.Logger.Info("Repair by delete", zap.Any("path", file.Path))
@@ -191,7 +200,6 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
 		}
 		r.filesRepaired++
 	}
-
 }
 
 func (r *RepairRequest) getLocalPath(file *ListResult) string {
@@ -199,6 +207,9 @@ func (r *RepairRequest) getLocalPath(file *ListResult) string {
 }
 
 func checkFileExists(localPath string) bool {
+	if IsWasm {
+		return false
+	}
 	info, err := sys.Files.Stat(localPath)
 	if err != nil {
 		return false

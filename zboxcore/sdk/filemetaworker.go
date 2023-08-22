@@ -5,10 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"mime/multipart"
 	"net/http"
-	"strings"
 	"sync"
 	"time"
 
@@ -20,10 +19,9 @@ import (
 )
 
 type fileMetaResponse struct {
-	fileref     *fileref.FileRef
-	responseStr string
-	blobberIdx  int
-	err         error
+	fileref    *fileref.FileRef
+	blobberIdx int
+	err        error
 }
 
 func (req *ListRequest) getFileMetaInfoFromBlobber(blobber *blockchain.StorageNode, blobberIdx int, rspCh chan<- *fileMetaResponse) {
@@ -32,10 +30,9 @@ func (req *ListRequest) getFileMetaInfoFromBlobber(blobber *blockchain.StorageNo
 	formWriter := multipart.NewWriter(body)
 
 	var fileRef *fileref.FileRef
-	var s strings.Builder
 	var err error
 	fileMetaRetFn := func() {
-		rspCh <- &fileMetaResponse{fileref: fileRef, responseStr: s.String(), blobberIdx: blobberIdx, err: err}
+		rspCh <- &fileMetaResponse{fileref: fileRef, blobberIdx: blobberIdx, err: err}
 	}
 	defer fileMetaRetFn()
 	if len(req.remotefilepath) > 0 {
@@ -75,13 +72,12 @@ func (req *ListRequest) getFileMetaInfoFromBlobber(blobber *blockchain.StorageNo
 			return err
 		}
 		defer resp.Body.Close()
-		resp_body, err := ioutil.ReadAll(resp.Body)
+		resp_body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return errors.Wrap(err, "Error: Resp")
 		}
-		l.Logger.Info("File Meta result:", string(resp_body))
+		// l.Logger.Info("File Meta result:", string(resp_body))
 		l.Logger.Debug("File meta response status: ", resp.Status)
-		s.WriteString(string(resp_body))
 		if resp.StatusCode == http.StatusOK {
 			err = json.Unmarshal(resp_body, &fileRef)
 			if err != nil {
@@ -90,7 +86,7 @@ func (req *ListRequest) getFileMetaInfoFromBlobber(blobber *blockchain.StorageNo
 			return nil
 		}
 		return fmt.Errorf("unexpected response. status code: %d, response: %s",
-			resp.StatusCode, s.String())
+			resp.StatusCode, string(resp_body))
 	})
 }
 

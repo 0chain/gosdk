@@ -7,10 +7,12 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
 	"math"
 	"strconv"
 	"strings"
+
+	"github.com/0chain/gosdk/core/sys"
+	"github.com/pkg/errors"
 
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/version"
@@ -24,6 +26,10 @@ import (
 )
 
 var nonce = int64(0)
+
+type Autorizer interface {
+	Auth(msg string) (string, error)
+}
 
 // ChainConfig - blockchain config
 type ChainConfig struct {
@@ -155,7 +161,6 @@ func (s *StorageSDK) CreateAllocation(datashards, parityshards int, size, expira
 		DataShards:        datashards,
 		ParityShards:      parityshards,
 		Size:              size,
-		Expiry:            expiration,
 		ReadPrice:         readPrice,
 		WritePrice:        writePrice,
 		Lock:              uint64(l),
@@ -185,7 +190,7 @@ func (s *StorageSDK) CreateAllocation(datashards, parityshards int, size, expira
 //		- lock: lock write pool with given number of tokens
 //		- blobberUrls: concat blobber urls with comma. leave it as empty if you don't have any preferred blobbers
 //		- blobberIds: concat blobber ids with comma. leave it as empty if you don't have any preferred blobbers
-func (s *StorageSDK) CreateAllocationWithBlobbers(name string, datashards, parityshards int, size, expiration int64, lock string, blobberUrls, blobberIds string) (*zbox.Allocation, error) {
+func (s *StorageSDK) CreateAllocationWithBlobbers(name string, datashards, parityshards int, size int64, lock string, blobberUrls, blobberIds string) (*zbox.Allocation, error) {
 	readPrice := sdk.PriceRange{Min: 0, Max: math.MaxInt64}
 	writePrice := sdk.PriceRange{Min: 0, Max: math.MaxInt64}
 
@@ -198,7 +203,6 @@ func (s *StorageSDK) CreateAllocationWithBlobbers(name string, datashards, parit
 		DataShards:   datashards,
 		ParityShards: parityshards,
 		Size:         size,
-		Expiry:       expiration,
 		Lock:         l,
 		WritePrice:   writePrice,
 		ReadPrice:    readPrice,
@@ -337,12 +341,12 @@ func (s *StorageSDK) GetVersion() string {
 }
 
 // UpdateAllocation with new expiry and size
-func (s *StorageSDK) UpdateAllocation(size, expiry int64, allocationID string, lock uint64) (hash string, err error) {
+func (s *StorageSDK) UpdateAllocation(size int64, extend bool, allocationID string, lock uint64) (hash string, err error) {
 	if lock > math.MaxInt64 {
 		return "", errors.Errorf("int64 overflow in lock")
 	}
 
-	hash, _, err = sdk.UpdateAllocation(size, expiry, allocationID, lock, true, "", "", false, &sdk.FileOptionsParameters{})
+	hash, _, err = sdk.UpdateAllocation(size, extend, allocationID, lock, true, "", "", false, &sdk.FileOptionsParameters{})
 	return hash, err
 }
 
@@ -415,4 +419,14 @@ func decodeTicket(ticket string) (string, string, uint64, error) {
 
 	s, _ := strconv.ParseFloat(string(fmt.Sprintf("%v", lock)), 64)
 	return string(recipientPublicKey), string(markerStr), zcncore.ConvertTokenToSAS(s), nil
+}
+
+// Client can extend interface and fass implementation to this register like this
+// public class Autorizer extends Pkg.Autorizer {
+// public void Auth() {
+// // do something here
+// }
+// }
+func RegisterAuthorizer(auth Autorizer) {
+	sys.Authorize = auth.Auth
 }

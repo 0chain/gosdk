@@ -82,7 +82,7 @@ func (mfs *MemFS) Remove(name string) error {
 	return nil
 }
 
-//MkdirAll creates a directory named path
+// MkdirAll creates a directory named path
 func (mfs *MemFS) MkdirAll(path string, perm os.FileMode) error {
 	return nil
 }
@@ -171,7 +171,7 @@ func (mfs *MemChanFS) Remove(name string) error {
 	return nil
 }
 
-//MkdirAll creates a directory named path
+// MkdirAll creates a directory named path
 func (mfs *MemChanFS) MkdirAll(path string, perm os.FileMode) error {
 	return nil
 }
@@ -264,28 +264,42 @@ func (i *MemFileInfo) Info() (fs.FileInfo, error) {
 }
 
 type MemChanFile struct {
-	Name    string
-	Buffer  chan []byte // file content
-	Mode    fs.FileMode // FileInfo.Mode
-	ModTime time.Time   // FileInfo.ModTime
-	Sys     interface{} // FileInfo.Sys
-	reader  io.Reader
+	Name           string
+	Buffer         chan []byte // file content
+	Mode           fs.FileMode // FileInfo.Mode
+	ModTime        time.Time   // FileInfo.ModTime
+	ChunkWriteSize int         //  0 value means no limit
+	Sys            interface{} // FileInfo.Sys
+	reader         io.Reader
 }
 
 func (f *MemChanFile) Stat() (fs.FileInfo, error) {
 	return &MemFileChanInfo{name: f.Name, f: f}, nil
 }
 func (f *MemChanFile) Read(p []byte) (int, error) {
-	b := <-f.Buffer
-	if b == nil {
-		return 0, nil
+	recieveData, ok := <-f.Buffer
+	if !ok {
+		return 0, io.EOF
 	}
-	n := copy(p, b)
+	if len(recieveData) > len(p) {
+		return 0, io.ErrShortBuffer
+	}
+	n := copy(p, recieveData)
 	return n, nil
-
 }
 func (f *MemChanFile) Write(p []byte) (n int, err error) {
-	f.Buffer <- p
+	if f.ChunkWriteSize == 0 {
+		f.Buffer <- p
+	} else {
+		current := 0
+		for ; current < len(p); current += f.ChunkWriteSize {
+			end := current + f.ChunkWriteSize
+			if end > len(p) {
+				end = len(p)
+			}
+			f.Buffer <- p[current:end]
+		}
+	}
 	return len(p), nil
 
 }

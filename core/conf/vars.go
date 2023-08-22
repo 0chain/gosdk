@@ -3,11 +3,13 @@ package conf
 import (
 	"errors"
 	"strings"
+	"sync"
 )
 
 var (
 	//  global client config
-	cfg *Config
+	cfg     *Config
+	onceCfg sync.Once
 	//  global sharders and miners
 	network *Network
 )
@@ -38,7 +40,9 @@ func GetClientConfig() (*Config, error) {
 
 // InitClientConfig set global client config
 func InitClientConfig(c *Config) {
-	cfg = c
+	onceCfg.Do(func() {
+		cfg = c
+	})
 }
 
 // InitChainNetwork set global chain network

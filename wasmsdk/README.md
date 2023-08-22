@@ -149,9 +149,9 @@ create an allocation
 
 **Input**:
 
-> datashards, parityshards int, size, expiry int64,
+> datashards, parityshards int, size,
 
-    minReadPrice, maxReadPrice, minWritePrice, maxWritePrice int64, lock int64,preferredBlobberIds []string
+    minReadPrice, maxReadPrice, minWritePrice, maxWritePrice int64, lock int64,preferredBlobberIds []string, setThirdPartyExtendable  bool
 
 **Output**:
 
@@ -235,7 +235,7 @@ updates allocation settings
 
 **Input**:
 
-> allocationId string, name string,size, expiry int64,lock int64,setImmutable, updateTerms bool,addBlobberId, removeBlobberId string
+> allocationId string, name string,size int64, extend bool,lock int64,setImmutable, updateTerms bool,addBlobberId, removeBlobberId string, setThirdPartyExtendable  bool
 
 **Output**:
 
@@ -605,7 +605,18 @@ create folder from blobbers
 
 **Input**:
 
-> datashards int, parityshards int, size int, expiry int, maxreadPrice int, maxwritePrice int
+> datashards int, parityshards int, size int, maxreadPrice int, maxwritePrice int
+
+**Output**:
+
+> int: min_lock_demand
+
+
+### zcn.sdk.getUpdateAllocationMinLock
+
+**Input**:
+
+> allocationID string, size int, extend bool, updateTerms bool, addBlobberId string, removeBlobberId string
 
 **Output**:
 

@@ -41,6 +41,7 @@ import (
 var (
 	noBLOBBERS     = errors.New("", "No Blobbers set in this allocation")
 	notInitialized = errors.New("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
+	IsWasm         = false
 )
 
 const (
@@ -212,6 +213,7 @@ type OperationRequest struct {
 	RemotePath    string
 	DestName      string // Required only for rename operation
 	DestPath      string // Required for copy and move operation
+	IsUpdate      bool
 
 	// Required for uploads
 	Workdir    string
@@ -225,6 +227,10 @@ func GetReadPriceRange() (PriceRange, error) {
 }
 func GetWritePriceRange() (PriceRange, error) {
 	return getPriceRange("max_write_price")
+}
+
+func SetWasm() {
+	IsWasm = true
 }
 
 func getPriceRange(name string) (PriceRange, error) {
@@ -393,13 +399,29 @@ func (a *Allocation) CreateDir(remotePath string) error {
 	return err
 }
 
-func (a *Allocation) RepairFile(localpath string, remotepath string,
-	status StatusCallback, mask zboxutil.Uint128) error {
+func (a *Allocation) RepairFile(file sys.File, remotepath string,
+	status StatusCallback, mask zboxutil.Uint128, ref *fileref.FileRef) error {
 
 	idr, _ := homedir.Dir()
 	mask = mask.Not().And(zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1))
-	return a.StartChunkedUpload(idr, localpath, remotepath, status, false, true,
-		"", false, false, WithMask(mask))
+	fileMeta := FileMeta{
+		ActualSize: ref.ActualFileSize,
+		MimeType:   ref.MimeType,
+		RemoteName: ref.Name,
+		RemotePath: remotepath,
+	}
+	opts := []ChunkedUploadOption{
+		WithMask(mask),
+		WithChunkNumber(10),
+		WithStatusCallback(status),
+		WithEncrypt(ref.EncryptedKey != ""),
+	}
+	connectionID := zboxutil.NewConnectionId()
+	chunkedUpload, err := CreateChunkedUpload(idr, a, fileMeta, file, false, true, false, connectionID, opts...)
+	if err != nil {
+		return err
+	}
+	return chunkedUpload.Start()
 }
 
 // UpdateFileWithThumbnail [Deprecated]please use CreateChunkedUpload
@@ -463,7 +485,7 @@ func (a *Allocation) EncryptAndUploadFileWithThumbnail(
 	)
 }
 
-func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileNames []string, thumbnailPaths []string, encrypts []bool, chunkNumbers []int, remotePaths []string, isUpdate bool, status StatusCallback) error {
+func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileNames []string, thumbnailPaths []string, encrypts []bool, chunkNumbers []int, remotePaths []string, isUpdate []bool, status StatusCallback) error {
 	if len(localPaths) != len(thumbnailPaths) {
 		return errors.New("invalid_value", "length of localpaths and thumbnailpaths must be equal")
 	}
@@ -553,7 +575,7 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 			Workdir:       workdir,
 			RemotePath:    fileMeta.RemotePath,
 		}
-		if isUpdate {
+		if isUpdate[idx] {
 			operationRequests[idx].OperationType = constants.FileOperationUpdate
 		}
 
@@ -841,14 +863,12 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 				operation = NewMoveOperation(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 
 			case constants.FileOperationInsert:
-				op.Opts = append(op.Opts, WithReaderContext(mo.ctx))
 				operation = NewUploadOperation(op.Workdir, op.FileMeta, op.FileReader, false, op.Opts...)
 
 			case constants.FileOperationDelete:
 				operation = NewDeleteOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 
 			case constants.FileOperationUpdate:
-				op.Opts = append(op.Opts, WithReaderContext(mo.ctx))
 				operation = NewUploadOperation(op.Workdir, op.FileMeta, op.FileReader, true, op.Opts...)
 
 			case constants.FileOperationCreateDir:
@@ -1096,27 +1116,39 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 		}(dr)
 	}
 	wg.Wait()
-	successMask := zboxutil.NewUint128(0)
-	var redeemError error
-	if !isReadFree {
-		for pos, totalBlocks := range blobberMap {
-			if totalBlocks == 0 {
+
+	// Do not send readmarkers for free reads
+	if isReadFree {
+		for _, dr := range drs {
+			if dr.skip {
 				continue
 			}
-			wg.Add(1)
-			go func(pos uint64, totalBlocks int64) {
-				blobber := drs[0].blobbers[pos]
-				err := drs[0].submitReadMarker(blobber, totalBlocks)
-				if err == nil {
-					successMask = successMask.Or(zboxutil.NewUint128(1).Lsh(pos))
-				} else {
-					redeemError = err
-				}
-				wg.Done()
-			}(pos, totalBlocks)
+			go func(dr *DownloadRequest) {
+				a.downloadChan <- dr
+			}(dr)
 		}
-		wg.Wait()
+		return
 	}
+
+	successMask := zboxutil.NewUint128(0)
+	var redeemError error
+	for pos, totalBlocks := range blobberMap {
+		if totalBlocks == 0 {
+			continue
+		}
+		wg.Add(1)
+		go func(pos uint64, totalBlocks int64) {
+			blobber := drs[0].blobbers[pos]
+			err := drs[0].submitReadMarker(blobber, totalBlocks)
+			if err == nil {
+				successMask = successMask.Or(zboxutil.NewUint128(1).Lsh(pos))
+			} else {
+				redeemError = err
+			}
+			wg.Done()
+		}(pos, totalBlocks)
+	}
+	wg.Wait()
 	for _, dr := range drs {
 		if dr.skip {
 			continue
@@ -2239,11 +2271,15 @@ func (a *Allocation) StartRepair(localRootPath, pathToRepair string, statusCB St
 }
 
 // RepairAlloc repairs all the files in allocation
-func (a *Allocation) RepairAlloc(statusCB StatusCallback) error {
-	// todo: will this work in wasm?
-	dir, err := os.Getwd()
-	if err != nil {
-		return err
+func (a *Allocation) RepairAlloc(statusCB StatusCallback) (err error) {
+	var dir string
+	if IsWasm {
+		dir = "/tmp"
+	} else {
+		dir, err = os.Getwd()
+		if err != nil {
+			return err
+		}
 	}
 	return a.StartRepair(dir, "/", statusCB)
 }
@@ -2401,7 +2437,8 @@ func (a *Allocation) SetConsensusThreshold() {
 }
 
 func (a *Allocation) UpdateWithRepair(
-	size, expiry int64,
+	size int64,
+	extend bool,
 	lock uint64,
 	updateTerms bool,
 	addBlobberId, removeBlobberId string,
@@ -2413,7 +2450,7 @@ func (a *Allocation) UpdateWithRepair(
 	}
 
 	l.Logger.Info("Updating allocation")
-	hash, _, err := UpdateAllocation(size, expiry, a.ID, lock, updateTerms, addBlobberId, removeBlobberId, setThirdPartyExtendable, fileOptionsParams)
+	hash, _, err := UpdateAllocation(size, extend, a.ID, lock, updateTerms, addBlobberId, removeBlobberId, setThirdPartyExtendable, fileOptionsParams)
 	if err != nil {
 		return "", err
 	}

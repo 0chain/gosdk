@@ -98,7 +98,7 @@ type UploadProgress struct {
 	// UploadLength total bytes that has been uploaded to blobbers
 	UploadLength int64 `json:"-"`
 
-	Blobbers []*UploadBlobberStatus `json:"merkle_hashers,omitempty"`
+	Blobbers []*UploadBlobberStatus `json:"-"`
 }
 
 // UploadBlobberStatus the status of blobber's upload progress

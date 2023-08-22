@@ -205,7 +205,7 @@ func (b *BridgeClient) IncreaseBurnerAllowance(ctx context.Context, amountWei We
 	}
 
 	// 1. Data Parameter (spender)
-	spenderAddress := common.HexToAddress(b.EthereumAddress)
+	spenderAddress := common.HexToAddress(b.BridgeAddress)
 
 	// 2. Data Parameter (amount)
 	amount := big.NewInt(int64(amountWei))

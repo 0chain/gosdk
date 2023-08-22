@@ -28,7 +28,7 @@ func getAllocation(allocationId string) (*sdk.Allocation, error) {
 			return it.Allocation, nil
 		}
 	}
-
+	sdk.SetWasm()
 	a, err := sdk.GetAllocation(allocationId)
 	if err != nil {
 		return nil, err

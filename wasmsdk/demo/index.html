@@ -68,6 +68,7 @@
       <button id="btnListAllocations">List</button>
       <button id="btnCreateAllocation">Create</button>
       <button id="btnGetAllocation">Get</button>
+      <button id="btnCreateFreeAlloc">CreateFreeallocation</button>
       <button id="btnGetAllocationMinLock">AllocationMinLock</button>
       <button id="btnGetUpdateAllocationMinLock">UpdateAllocationMinLock</button>
       <button id="btnRemoteFileMap">RemoteFileMap</button>
@@ -102,7 +103,8 @@
     <button id="btnListFiles">List</button>
     <span><input id="inputSelectedFile" type="file" multiple /> <button id="btnUploadFile">Upload</button> </span>
     <button id="btnUploadEncryptFile">EncryptedUpload</button> </span>
-    [ <button id="btnDownloadFile">Download</button> | <button id="btnDownloadShared">Download with AuthTicket</button> | <button id="btnMultiDownload">MultiDownload</button>
+    [ <button id="btnDownloadFile">Download</button> | <button id="btnDownloadShared">Download with AuthTicket</button>
+    | <button id="btnMultiDownload">MultiDownload</button>
     ]
     <button id="btnViewFile">View</button>
     <button id="btnGetFileStats">GetFileStats</button>
@@ -113,6 +115,7 @@
     <button id="btnSearchContainer">searchcontainer</button>
     <button id="btnAllocationRepair">Repair</button>
     <button id="btnMultiOps">MultiOperation</button>
+    <button id="createDir">createDir</button>
 
     <br>
 
@@ -238,6 +241,15 @@
       txtOutput.innerHTML = JSON.stringify(wallet, null, 2)
     })
 
+    onClick('btnCreateFreeAlloc', async () => {
+      var token = prompt("freeallocation token: ");
+      try {
+        const alloc = await goWasm.sdk.createfreeallocation(token)
+        console.log("create freeallocation with ID: ", alloc)
+      } catch(e) {
+        alert(e)
+      }
+    })
 
     let allocations = []
     let blobbers = []
@@ -262,7 +274,6 @@
         datashards: 2,
         parityshards: 2,
         size: 2 * 1073741824,
-        expiry: Math.floor(expiry.getTime() / 1000),
         minReadPrice: 0,
         maxReadPrice: 184467440737095516,
         minWritePrice: 0,
@@ -270,8 +281,7 @@
         lock: 18800000000
       }
       try {
-        const allocation = await goWasm.sdk.createAllocation(config.datashards, config.parityshards, config.size, config.expiry,
-          config.minReadPrice, config.maxReadPrice, config.minWritePrice, config.maxWritePrice,
+        const allocation = await goWasm.sdk.createAllocation(config.datashards, config.parityshards, config.size, config.minReadPrice, config.maxReadPrice, config.minWritePrice, config.maxWritePrice,
           config.lock, [])
 
         console.log(allocation)
@@ -303,6 +313,11 @@
       }
     })
 
+    onClick('createDir', async () => {
+      const allocationId = getSelectedAllocation()
+      goWasm.sdk.createDir(allocationId, "/dir2")
+    })
+
     onClick('btnListBlobbers', async () => {
       // list active blobbers
       let blobbersResp = await getBlobbersFromNetwork()
@@ -324,11 +339,10 @@
       let dataShards = 2
       let parityShards = 2
       let size = 100000
-      let expiry = 1680408725
       let maxReadPrice = 10000000000
       let maxWritePrice = 1000000000
       try {
-        const price = await goWasm.sdk.getAllocationMinLock(dataShards, parityShards, size, expiry, maxReadPrice, maxWritePrice)
+        const price = await goWasm.sdk.getAllocationMinLock(dataShards, parityShards, size, maxReadPrice, maxWritePrice)
         txtOutput.innerHTML = price
       } catch (e) {
         alert(e)
@@ -337,7 +351,6 @@
 
 	onClick('btnGetUpdateAllocationMinLock', async () => {
 		let size = 100000
-		let expiry = 1680408725
 		const allocationId = getSelectedAllocation()
 		if (!allocationId) {
 			alert("please selection allocationID")
@@ -346,7 +359,7 @@
 			console.log("allocation:", allocationId)
 		}
 		try {
-			const price = await goWasm.sdk.getUpdateAllocationMinLock(allocationId, size, expiry, false, "", "")
+			const price = await goWasm.sdk.getUpdateAllocationMinLock(allocationId, size, true, false, "", "")
 			txtOutput.innerHTML = price
 		} catch (e) {
 			alert(e)
@@ -505,7 +518,7 @@
       var addremoveBlobberIDs = prompt("Add Blobber ID and remove blobberID (separated by a comma): ");
 
       var [addBlobberId, removeBlobberID] = addremoveBlobberIDs.split(",");
-      removeBlobberID = removeBlobberID !== undefined ? value : "";
+      // removeBlobberID = removeBlobberID !== undefined ? value : "";
 
       console.log("addBlobberId", addBlobberId)
       console.log("removeBlobberID", removeBlobberID)
