@@ -208,13 +208,13 @@ func (g *GetNonceCallbackStub) OnNonceAvailable(status int, nonce int64, info st
 	g.info = info
 }
 
-// GetInfoCallback needs to be implemented by the caller of GetLockTokenConfig() and GetLockedTokens()
-type GetInfoCallback interface {
-	// OnInfoAvailable will be called when GetLockTokenConfig is complete
-	// if status == StatusSuccess then info is valid
-	// is status != StatusSuccess then err will give the reason
-	OnInfoAvailable(op int, status int, info string, err string)
-}
+// // GetInfoCallback needs to be implemented by the caller of GetLockTokenConfig() and GetLockedTokens()
+// type GetInfoCallback interface {
+// 	// OnInfoAvailable will be called when GetLockTokenConfig is complete
+// 	// if status == StatusSuccess then info is valid
+// 	// is status != StatusSuccess then err will give the reason
+// 	OnInfoAvailable(op int, status int, info string, err string)
+// }
 
 // AuthCallback needs to be implemented by the caller SetupAuth()
 type AuthCallback interface {
