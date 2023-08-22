@@ -94,7 +94,6 @@ func (req *DownloadRequest) removeFromMask(pos uint64) {
 
 func (req *DownloadRequest) getBlocksDataFromBlobbers(startBlock, totalBlock int64) ([][][]byte, error) {
 	shards := make([][][]byte, totalBlock)
-	l.Logger.Info("[downloadReq]", "shards", totalBlock, "blobbers", len(req.blobbers), "encryption", req.encryptedKey != "")
 	for i := range shards {
 		shards[i] = make([][]byte, len(req.blobbers))
 	}
@@ -275,10 +274,6 @@ func (req *DownloadRequest) decodeEC(shards [][]byte) (data []byte, err error) {
 // fillShards will fill `shards` with data from blobbers that belongs to specific
 // blockNumber and blobber's position index in an allocation
 func (req *DownloadRequest) fillShards(shards [][][]byte, result *downloadBlock) (err error) {
-	if len(result.BlockChunks) > len(shards) {
-		l.Logger.Error("Invalid data received from blobber", result.idx)
-		return errors.New("invalid_data", "Invalid data received from blobber")
-	}
 	for i := 0; i < len(result.BlockChunks); i++ {
 		var data []byte
 		if req.encryptedKey != "" {
