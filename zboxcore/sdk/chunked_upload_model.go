@@ -90,6 +90,7 @@ type UploadProgress struct {
 	// EncryptOnUpload encrypt data on upload or not
 	EncryptOnUpload   bool   `json:"is_encrypted,omitempty"`
 	EncryptPrivateKey string `json:"-"`
+	EncryptedKeyPoint string `json:"encrypted_key_point,omitempty"`
 
 	// ConnectionID chunked upload connection_id
 	ConnectionID string `json:"connection_id,omitempty"`

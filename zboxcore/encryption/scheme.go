@@ -4,7 +4,9 @@ type EncryptionScheme interface {
 	Initialize(mnemonic string) ([]byte, error)
 	InitializeWithPrivateKey(privateKey []byte) error
 	InitForEncryption(tag string)
+	InitForEncryptionWithPoint(tag, point string) error
 	InitForDecryption(tag string, encryptedKey string) error
+	InitForDecryptionWithPoint(tag, point string) error
 	Encrypt(data []byte) (*EncryptedMessage, error)
 	Decrypt(*EncryptedMessage) ([]byte, error)
 	ReDecrypt(D *ReEncryptedMessage) ([]byte, error)
@@ -13,6 +15,7 @@ type EncryptionScheme interface {
 	ReEncrypt(encMsg *EncryptedMessage, reGenKey string, clientPublicKey string) (*ReEncryptedMessage, error)
 	GetPublicKey() (string, error)
 	GetPrivateKey() (string, error)
+	GetEncryptedKeyPoint() string
 }
 
 func NewEncryptionScheme() EncryptionScheme {
