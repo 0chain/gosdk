@@ -635,7 +635,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 
 	encryptedKey := ""
 	if su.fileEncscheme != nil {
-		encryptedKey = su.encryptedKeyPoint
+		encryptedKey = su.progress.EncryptedKeyPoint
 	}
 
 	var errCount int32
