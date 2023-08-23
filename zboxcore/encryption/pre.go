@@ -240,6 +240,30 @@ func (pre *PREEncryptionScheme) InitForEncryption(tag string) {
 	pre.EncryptedKey = g.Point().Add(pre.Ht, pre.T) // C1  = T + Ht
 }
 
+func (pre *PREEncryptionScheme) InitForEncryptionWithPoint(tag, point string) error {
+	pre.Tag = []byte(tag)
+
+	keyBytes, err := base64.StdEncoding.DecodeString(point)
+	if err != nil {
+		return err
+	}
+	var g kyber.Group = pre.SuiteObj
+	t := g.Point()
+	err = t.UnmarshalBinary(keyBytes)
+	if err != nil {
+		return err
+	}
+	pre.T = t
+	pre.Ht = pre.hash1(pre.SuiteObj, pre.Tag, pre.PrivateKey) // Ht  = H1(tagA,skA)
+
+	pre.EncryptedKey = g.Point().Add(pre.Ht, pre.T) // C1  = T + Ht
+	return nil
+}
+
+func (pre *PREEncryptionScheme) InitForDecryptionWithPoint(tag, point string) error {
+	return pre.InitForEncryptionWithPoint(tag, point)
+}
+
 func (pre *PREEncryptionScheme) InitForDecryption(tag string, encryptedKey string) error {
 	pre.Tag = []byte(tag)
 
@@ -581,6 +605,12 @@ func (pre *PREEncryptionScheme) Decrypt(encMsg *EncryptedMessage) ([]byte, error
 
 func (pre *PREEncryptionScheme) GetEncryptedKey() string {
 	keyBytes, _ := pre.EncryptedKey.MarshalBinary()
+	keyString := base64.StdEncoding.EncodeToString(keyBytes)
+	return keyString
+}
+
+func (pre *PREEncryptionScheme) GetEncryptedKeyPoint() string {
+	keyBytes, _ := pre.T.MarshalBinary()
 	keyString := base64.StdEncoding.EncodeToString(keyBytes)
 	return keyString
 }

@@ -78,6 +78,7 @@ type UploadFormData struct {
 	ChunkEndIndex   int   `json:"chunk_end_index,omitempty"`   // end index of chunks. all chunks MUST be uploaded one by one because of streaming merkle hash
 	ChunkSize       int64 `json:"chunk_size,omitempty"`        // the size of a chunk. 64*1024 is default
 	UploadOffset    int64 `json:"upload_offset,omitempty"`     // It is next position that new incoming chunk should be append to
+	Size            int64 `json:"size"`                        // total size of shard
 
 }
 
@@ -90,6 +91,7 @@ type UploadProgress struct {
 	// EncryptOnUpload encrypt data on upload or not
 	EncryptOnUpload   bool   `json:"is_encrypted,omitempty"`
 	EncryptPrivateKey string `json:"-"`
+	EncryptedKeyPoint string `json:"encrypted_key_point,omitempty"`
 
 	// ConnectionID chunked upload connection_id
 	ConnectionID string `json:"connection_id,omitempty"`
