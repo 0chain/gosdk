@@ -78,6 +78,7 @@ type UploadFormData struct {
 	ChunkEndIndex   int   `json:"chunk_end_index,omitempty"`   // end index of chunks. all chunks MUST be uploaded one by one because of streaming merkle hash
 	ChunkSize       int64 `json:"chunk_size,omitempty"`        // the size of a chunk. 64*1024 is default
 	UploadOffset    int64 `json:"upload_offset,omitempty"`     // It is next position that new incoming chunk should be append to
+	Size            int64 `json:"size"`                        // total size of shard
 
 }
 
