@@ -741,7 +741,7 @@ func (req *DownloadRequest) initEncryption() (err error) {
 		}
 	}
 
-	err = req.encScheme.InitForDecryptionWithPoint("filetype:audio", req.encryptedKey)
+	err = req.encScheme.InitForDecryption("filetype:audio", req.encryptedKey)
 	if err != nil {
 		return err
 	}
