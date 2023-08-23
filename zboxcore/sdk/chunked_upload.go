@@ -443,9 +443,7 @@ func (su *ChunkedUpload) process() error {
 	alreadyUploadedData := 0
 	for {
 
-		startReadChunks := time.Now()
 		chunks, err := su.readChunks(su.chunkNumber)
-		elapsedReadChunks := time.Since(startReadChunks)
 
 		// chunk, err := su.chunkReader.Next()
 		if err != nil {
@@ -486,7 +484,6 @@ func (su *ChunkedUpload) process() error {
 				chunks.fileShards, chunks.thumbnailShards,
 				chunks.isFinal, chunks.totalReadSize,
 			)
-			elapsedProcessUpload := time.Since(startProcessUpload)
 			if err != nil {
 				if su.statusCallback != nil {
 					su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
@@ -686,7 +683,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 				return
 			}
 
-      startSendUploadRequest := time.Now()
+			startSendUploadRequest := time.Now()
 			err = b.sendUploadRequest(ctx, su, chunkEndIndex, isFinal, encryptedKey, body, formData, pos)
 			elapsedSendUploadRequest := time.Since(startSendUploadRequest)
 
