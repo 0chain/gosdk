@@ -815,6 +815,12 @@ func (req *DownloadRequest) calculateShardsParams(
 		return 0, err
 	}
 
+	toSeek := req.startBlock * effectiveChunkSize
+	_, err = req.fileHandler.Seek(toSeek, io.SeekStart)
+	if err != nil {
+		return 0, err
+	}
+
 	return
 }
 

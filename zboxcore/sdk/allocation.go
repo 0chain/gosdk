@@ -1209,7 +1209,7 @@ func (a *Allocation) prepareAndOpenLocalFile(localPath string, remotePath string
 			return nil, "", toKeep, errors.Wrap(err, "Can't create local file")
 		}
 	} else {
-		f, err = os.OpenFile(localFilePath, os.O_WRONLY|os.O_APPEND, 0644)
+		f, err = os.OpenFile(localFilePath, os.O_WRONLY, 0644)
 		if err != nil {
 			return nil, "", toKeep, errors.Wrap(err, "Can't open local file in append mode")
 		}
