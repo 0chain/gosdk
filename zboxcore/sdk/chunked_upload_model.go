@@ -69,9 +69,10 @@ type UploadFormData struct {
 	// ActualThumbnailHash hash of original thumbnail (un-encoded, un-encrypted)
 	ActualThumbHash string `json:"actual_thumb_hash,omitempty"`
 
-	MimeType     string `json:"mimetype,omitempty"`
-	CustomMeta   string `json:"custom_meta,omitempty"`
-	EncryptedKey string `json:"encrypted_key,omitempty"`
+	MimeType          string `json:"mimetype,omitempty"`
+	CustomMeta        string `json:"custom_meta,omitempty"`
+	EncryptedKey      string `json:"encrypted_key,omitempty"`
+	EncryptedKeyPoint string `json:"encrypted_key_point,omitempty"`
 
 	IsFinal         bool  `json:"is_final,omitempty"`          // all of chunks are uploaded
 	ChunkStartIndex int   `json:"chunk_start_index,omitempty"` // start index of chunks.

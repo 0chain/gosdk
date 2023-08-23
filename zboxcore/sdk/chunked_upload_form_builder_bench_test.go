@@ -68,7 +68,7 @@ func BenchmarkChunkedUploadFormBuilder(b *testing.B) {
 
 					fileBytes := buf[begin:end]
 
-					_, _, err := builder.Build(fileMeta, hasher, "connectionID", int64(bm.ChunkSize), chunkIndex, chunkIndex, isFinal, "", [][]byte{fileBytes}, nil, getShardSize(fileMeta.ActualSize, 1, false))
+					_, _, err := builder.Build(fileMeta, hasher, "connectionID", int64(bm.ChunkSize), chunkIndex, chunkIndex, isFinal, "", "", [][]byte{fileBytes}, nil, getShardSize(fileMeta.ActualSize, 1, false))
 					if err != nil {
 						b.Fatal(err)
 						return
