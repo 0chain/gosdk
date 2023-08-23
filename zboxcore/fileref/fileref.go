@@ -39,6 +39,7 @@ type FileRef struct {
 	ActualThumbnailHash     string         `json:"actual_thumbnail_hash" mapstructure:"actual_thumbnail_hash"`
 	MimeType                string         `json:"mimetype" mapstructure:"mimetype"`
 	EncryptedKey            string         `json:"encrypted_key" mapstructure:"encrypted_key"`
+	EncryptedKeyPoint       string         `json:"encrypted_key_point" mapstructure:"encrypted_key_point"`
 	Collaborators           []Collaborator `json:"collaborators" mapstructure:"collaborators"`
 }
 
@@ -207,7 +208,7 @@ func (fr *FileRef) GetFileMetaHashData() string {
 
 func (fr *FileRef) GetHashData() string {
 	return fmt.Sprintf(
-		"%s:%s:%s:%s:%d:%s:%s:%d:%s:%d:%s",
+		"%s:%s:%s:%s:%d:%s:%s:%d:%s:%d:%s:%s",
 		fr.AllocationID,
 		fr.Type, // don't need to add it as well
 		fr.Name, // don't see any utility as fr.Path below has name in it
@@ -219,6 +220,7 @@ func (fr *FileRef) GetHashData() string {
 		fr.ActualFileHash,
 		fr.ChunkSize,
 		fr.FileID,
+		fr.EncryptedKey,
 	)
 }
 
