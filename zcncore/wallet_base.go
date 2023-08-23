@@ -343,6 +343,7 @@ func SetLogFile(logFile string, verbose bool) {
 //     "ethereum_node":"https://ropsten.infura.io/v3/xxxxxxxxxxxxxxx",
 //     "zbox_host":"https://0box.dev.0chain.net",
 //     "zbox_app_type":"vult",
+//     "sharder_consensous": 2,
 //     }
 func Init(chainConfigJSON string) error {
 	err := json.Unmarshal([]byte(chainConfigJSON), &_config.chain)
@@ -370,6 +371,7 @@ func Init(chainConfigJSON string) error {
 			SignatureScheme:         _config.chain.SignatureScheme,
 			ChainID:                 _config.chain.ChainID,
 			EthereumNode:            _config.chain.EthNode,
+			SharderConsensous:       _config.chain.SharderConsensous,
 		}
 
 		conf.InitClientConfig(cfg)

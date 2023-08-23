@@ -213,6 +213,7 @@ type OperationRequest struct {
 	RemotePath    string
 	DestName      string // Required only for rename operation
 	DestPath      string // Required for copy and move operation
+	IsUpdate      bool
 
 	// Required for uploads
 	Workdir    string
@@ -409,11 +410,21 @@ func (a *Allocation) RepairFile(file sys.File, remotepath string,
 		RemoteName: ref.Name,
 		RemotePath: remotepath,
 	}
-	opts := []ChunkedUploadOption{
-		WithMask(mask),
-		WithChunkNumber(10),
-		WithStatusCallback(status),
-		WithEncrypt(ref.EncryptedKey != ""),
+	var opts []ChunkedUploadOption
+	if ref.EncryptedKey != "" {
+		opts = []ChunkedUploadOption{
+			WithMask(mask),
+			WithChunkNumber(10),
+			WithStatusCallback(status),
+			WithEncrypt(true),
+			WithEncryptedPoint(ref.EncryptedKey),
+		}
+	} else {
+		opts = []ChunkedUploadOption{
+			WithMask(mask),
+			WithChunkNumber(10),
+			WithStatusCallback(status),
+		}
 	}
 	connectionID := zboxutil.NewConnectionId()
 	chunkedUpload, err := CreateChunkedUpload(idr, a, fileMeta, file, false, true, false, connectionID, opts...)
@@ -484,7 +495,7 @@ func (a *Allocation) EncryptAndUploadFileWithThumbnail(
 	)
 }
 
-func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileNames []string, thumbnailPaths []string, encrypts []bool, chunkNumbers []int, remotePaths []string, isUpdate bool, status StatusCallback) error {
+func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileNames []string, thumbnailPaths []string, encrypts []bool, chunkNumbers []int, remotePaths []string, isUpdate []bool, status StatusCallback) error {
 	if len(localPaths) != len(thumbnailPaths) {
 		return errors.New("invalid_value", "length of localpaths and thumbnailpaths must be equal")
 	}
@@ -574,7 +585,7 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 			Workdir:       workdir,
 			RemotePath:    fileMeta.RemotePath,
 		}
-		if isUpdate {
+		if isUpdate[idx] {
 			operationRequests[idx].OperationType = constants.FileOperationUpdate
 		}
 
@@ -1067,19 +1078,19 @@ func (a *Allocation) addAndGenerateDownloadRequest(
 	isFinal bool,
 	localFilePath string,
 ) error {
-	var connectionID string
-	if len(a.downloadRequests) > 0 {
-		connectionID = a.downloadRequests[0].connectionID
-	} else {
-		connectionID = zboxutil.NewConnectionId()
-	}
 	downloadReq, err := a.generateDownloadRequest(
 		fileHandler, remotePath, contentMode, startBlock, endBlock,
-		numBlocks, verifyDownload, status, connectionID, localFilePath)
+		numBlocks, verifyDownload, status, "", localFilePath)
 	if err != nil {
 		return err
 	}
 	a.mutex.Lock()
+	defer a.mutex.Unlock()
+	if len(a.downloadRequests) > 0 {
+		downloadReq.connectionID = a.downloadRequests[0].connectionID
+	} else {
+		downloadReq.connectionID = zboxutil.NewConnectionId()
+	}
 	a.downloadProgressMap[remotePath] = downloadReq
 	a.downloadRequests = append(a.downloadRequests, downloadReq)
 	if isFinal {
@@ -1089,7 +1100,6 @@ func (a *Allocation) addAndGenerateDownloadRequest(
 			a.processReadMarker(downloadOps)
 		}()
 	}
-	a.mutex.Unlock()
 	return nil
 }
 
@@ -2245,7 +2255,7 @@ func (a *Allocation) downloadFromAuthTicket(fileHandler sys.File, authTicket str
 	a.downloadRequests = append(a.downloadRequests, downloadReq)
 	if isFinal {
 		downloadOps := a.downloadRequests
-		a.downloadRequests = a.downloadRequests[:0]
+		a.downloadRequests = nil
 		go func() {
 			a.processReadMarker(downloadOps)
 		}()

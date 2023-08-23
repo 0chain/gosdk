@@ -107,7 +107,7 @@ func TestGetRandomSharder(t *testing.T) {
 			if tc.setupContext != nil {
 				ctx = tc.setupContext(ctx)
 			}
-			sharder, err := tq.getRandomSharder(ctx)
+			sharder, err := tq.getRandomSharderWithHealthcheck(ctx)
 			if tc.expectedErr == nil {
 				require.NoError(t, err)
 				require.Subset(t, tc.onlineSharders, []string{sharder})
@@ -216,7 +216,7 @@ func fetchRandomSharderAndBenchmark(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 		ctx := context.Background()
 		start := time.Now()
-		_, err := tq.getRandomSharder(ctx)
+		_, err := tq.getRandomSharderWithHealthcheck(ctx)
 		if err != nil {
 			t.Fatalf("Failed to get a random sharder err: %v", err)
 		}

@@ -6,8 +6,12 @@ import (
 	"encoding/json"
 	"io"
 	"mime/multipart"
+	"sync"
+	"time"
 
 	"github.com/0chain/gosdk/zboxcore/client"
+	"github.com/0chain/gosdk/zboxcore/logger"
+
 	"golang.org/x/crypto/sha3"
 )
 
@@ -18,7 +22,7 @@ type ChunkedUploadFormBuilder interface {
 		fileMeta *FileMeta, hasher Hasher, connectionID string,
 		chunkSize int64, chunkStartIndex, chunkEndIndex int,
 		isFinal bool, encryptedKey string, fileChunksData [][]byte,
-		thumbnailChunkData []byte,
+		thumbnailChunkData []byte, shardSize int64,
 	) (*bytes.Buffer, ChunkedUploadFormMetadata, error)
 }
 
@@ -44,7 +48,7 @@ func (b *chunkedUploadFormBuilder) Build(
 	fileMeta *FileMeta, hasher Hasher, connectionID string,
 	chunkSize int64, chunkStartIndex, chunkEndIndex int,
 	isFinal bool, encryptedKey string, fileChunksData [][]byte,
-	thumbnailChunkData []byte,
+	thumbnailChunkData []byte, shardSize int64,
 ) (*bytes.Buffer, ChunkedUploadFormMetadata, error) {
 
 	metadata := ChunkedUploadFormMetadata{
@@ -74,6 +78,7 @@ func (b *chunkedUploadFormBuilder) Build(
 		ChunkStartIndex: chunkStartIndex,
 		ChunkEndIndex:   chunkEndIndex,
 		UploadOffset:    chunkSize * int64(chunkStartIndex),
+		Size:            shardSize,
 	}
 
 	formWriter := multipart.NewWriter(body)
@@ -90,24 +95,50 @@ func (b *chunkedUploadFormBuilder) Build(
 			return nil, metadata, err
 		}
 
+		err = hasher.WriteToFixedMT(chunkBytes)
+		if err != nil {
+			return nil, metadata, err
+		}
+
+		err = hasher.WriteToValidationMT(chunkBytes)
+		if err != nil {
+			return nil, metadata, err
+		}
+
 		metadata.FileBytesLen += len(chunkBytes)
 	}
-
+	start := time.Now()
 	if isFinal {
 		err = hasher.Finalize()
 		if err != nil {
 			return nil, metadata, err
 		}
 
-		formData.FixedMerkleRoot, err = hasher.GetFixedMerkleRoot()
-		if err != nil {
+		var (
+			wg      sync.WaitGroup
+			errChan = make(chan error, 2)
+		)
+		wg.Add(2)
+		go func() {
+			formData.FixedMerkleRoot, err = hasher.GetFixedMerkleRoot()
+			if err != nil {
+				errChan <- err
+			}
+			wg.Done()
+		}()
+		go func() {
+			formData.ValidationRoot, err = hasher.GetValidationRoot()
+			if err != nil {
+				errChan <- err
+			}
+			wg.Done()
+		}()
+		wg.Wait()
+		close(errChan)
+		for err := range errChan {
 			return nil, metadata, err
 		}
-		formData.ValidationRoot, err = hasher.GetValidationRoot()
-		if err != nil {
-			return nil, metadata, err
-		}
-
+		logger.Logger.Info("[hasherTime]", time.Since(start).Milliseconds())
 		actualHashSignature, err := client.Sign(fileMeta.ActualHash)
 		if err != nil {
 			return nil, metadata, err
