@@ -59,14 +59,23 @@ var (
 	}
 )
 
+// createTransactionEntity HOC for 0chain transaction entity creation.
+func (b *BridgeClient) createTransactionEntity(txnfee uint64) (transaction.Transaction, error) {
+	return transaction.NewTransactionEntity(txnfee)
+}
+
+// getKeyStore reutrns key storage located in the given path.
+func (b *BridgeClient) getKeyStore(path string) *keystore.KeyStore {
+	return keystore.NewKeyStore(path, keystore.StandardScryptN, keystore.StandardScryptP)
+}
+
 func (b *BridgeClient) CreateSignedTransactionFromKeyStore(client EthereumClient, gasLimitUnits uint64) *bind.TransactOpts {
 	var (
 		signerAddress = common.HexToAddress(b.EthereumAddress)
 		password      = b.Password
 	)
 
-	keyDir := path.Join(b.Homedir, EthereumWalletStorageDir)
-	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
+	ks := b.getKeyStore(path.Join(b.Homedir, EthereumWalletStorageDir))
 	signer := accounts.Account{
 		Address: signerAddress,
 	}
@@ -282,7 +291,7 @@ func (b *BridgeClient) GetBalance() (*big.Int, error) {
 }
 
 // VerifyZCNTransaction verifies 0CHain transaction
-func (b *BridgeClient) VerifyZCNTransaction(ctx context.Context, hash string) (*transaction.Transaction, error) {
+func (b *BridgeClient) VerifyZCNTransaction(ctx context.Context, hash string) (transaction.Transaction, error) {
 	return transaction.Verify(ctx, hash)
 }
 
@@ -362,6 +371,8 @@ func (b *BridgeClient) MintWZCN(ctx context.Context, payload *ethereum.MintPaylo
 	// 5. To Ethereum address
 
 	toAddress := common.HexToAddress(payload.To)
+
+	fmt.Println(ctx, payload.To, "mint", toAddress, amount, zcnTxd, nonce, sigs)
 
 	bridgeInstance, transactOpts, err := b.prepareBridge(ctx, payload.To, "mint", toAddress, amount, zcnTxd, nonce, sigs)
 	if err != nil {
@@ -467,12 +478,12 @@ func (b *BridgeClient) MintZCN(ctx context.Context, payload *zcnsc.MintPayload) 
 }
 
 // BurnZCN burns ZCN tokens before conversion from ZCN to WZCN as a first step
-func (b *BridgeClient) BurnZCN(ctx context.Context, amount, txnfee uint64) (*transaction.Transaction, error) {
+func (b *BridgeClient) BurnZCN(ctx context.Context, amount, txnfee uint64) (transaction.Transaction, error) {
 	payload := zcnsc.BurnPayload{
-		EthereumAddress: b.EthereumAddress, // TODO: this should be receiver address not the bridge
+		EthereumAddress: b.EthereumAddress,
 	}
 
-	trx, err := transaction.NewTransactionEntity(txnfee)
+	trx, err := b.createTransactionEntity(txnfee)
 	if err != nil {
 		log.Logger.Fatal("failed to create new transaction", zap.Error(err))
 	}
