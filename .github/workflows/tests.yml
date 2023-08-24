@@ -109,7 +109,7 @@ jobs:
           echo "RUNNER_NUMBER=${RUNNER_NAME:(-1)}" >> $GITHUB_ENV
 
       - name: "Deploy 0Chain"
-        uses: 0chain/actions/deploy-0chain@master
+        uses: 0chain/actions/deploy-0chain@feature/upgrade-gosdk-in-system-tests
         with:
           repo_snapshots_branch: "<CURRENT BRANCH WITH FALLBACK TO CURRENT_SPRINT>"
           kube_config: ${{ secrets[format('DEV{0}KC', env.RUNNER_NUMBER)] }}
@@ -123,7 +123,7 @@ jobs:
           svc_account_secret: ${{ secrets.SVC_ACCOUNT_SECRET }}
 
       - name: "Run System tests"
-        uses: 0chain/actions/run-system-tests@master
+        uses: 0chain/actions/run-system-tests@feature/upgrade-gosdk-in-system-tests
         with:
           repo_snapshots_branch: "<CURRENT BRANCH WITH FALLBACK TO CURRENT_SPRINT>"
           custom_go_sdk_version: ${{ env.CURRENT_BRANCH_HEAD }}
