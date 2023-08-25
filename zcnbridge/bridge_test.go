@@ -8,6 +8,7 @@ import (
 	"os"
 	"strconv"
 	"testing"
+	"time"
 
 	sdkcommon "github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zcnbridge/ethereum"
@@ -20,6 +21,8 @@ import (
 	"github.com/0chain/gosdk/zcnbridge/zcnsc"
 	"github.com/0chain/gosdk/zcncore"
 	eth "github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/mock"
@@ -83,6 +86,14 @@ type transactionProviderMock struct {
 }
 
 func (tem *transactionProviderMock) Cleanup(callback func()) {
+	callback()
+}
+
+type keyStoreMock struct {
+	mock.TestingT
+}
+
+func (ksm *keyStoreMock) Cleanup(callback func()) {
 	callback()
 }
 
@@ -191,7 +202,7 @@ func getEthereumClient(t mock.TestingT) *bridgemocks.EthereumClient {
 	return bridgemocks.NewEthereumClient(&ethereumClientMock{t})
 }
 
-func getBridgeClient(ethereumClient EthereumClient, transactionProvider transaction.TransactionProvider) *BridgeClient {
+func getBridgeClient(ethereumClient EthereumClient, transactionProvider transaction.TransactionProvider, keyStore KeyStore) *BridgeClient {
 	cfg := viper.New()
 
 	tempConfigFile, err := os.CreateTemp(".", "config.yaml")
@@ -211,7 +222,7 @@ func getBridgeClient(ethereumClient EthereumClient, transactionProvider transact
 	cfg.SetDefault("bridge.gas_limit", 0)
 	cfg.SetDefault("bridge.consensus_threshold", 0)
 
-	return createBridgeClient(cfg, ethereumClient, transactionProvider)
+	return createBridgeClient(cfg, ethereumClient, transactionProvider, keyStore)
 }
 
 func prepareEthereumClientGeneralMockCalls(ethereumClient *mock.Mock) {
@@ -227,16 +238,37 @@ func getTransaction(t mock.TestingT) *transactionmocks.Transaction {
 }
 
 func prepareTransactionGeneralMockCalls(transaction *mock.Mock) {
-	transaction.On("ExecuteSmartContract", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(zcnTxnID, nil)
-	transaction.On("Verify").Return(nil)
+	transaction.On("ExecuteSmartContract", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(zcnTxnID, nil)
+	transaction.On("Verify", mock.Anything).Return(nil)
 }
 
 func getTransactionProvider(t mock.TestingT) *transactionmocks.TransactionProvider {
 	return transactionmocks.NewTransactionProvider(&transactionProviderMock{t})
 }
 
-func prepareTransactionProviderGeneralMockCalls(transactionProvider, transaction *mock.Mock) {
-	transactionProvider.On("NewTransactionEntity", mock.Anything).Return(transaction)
+func prepareTransactionProviderGeneralMockCalls(transactionProvider *mock.Mock, transaction *transactionmocks.Transaction) {
+	transactionProvider.On("NewTransactionEntity", mock.Anything).Return(transaction, nil)
+}
+
+func getKeyStore(t mock.TestingT) *bridgemocks.KeyStore {
+	return bridgemocks.NewKeyStore(&keyStoreMock{t})
+}
+
+func prepareKeyStoreGeneralMockCalls(keyStore *bridgemocks.KeyStore) {
+	keyStore.On("Find", mock.Anything).Return(accounts.Account{
+		Address: common.HexToAddress(ethereumAddress),
+	}, nil)
+	keyStore.On("TimedUnlock", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	keyStore.On("SignHash", mock.Anything, mock.Anything).Return([]byte(ethereumAddress), nil)
+
+	keyStoreDir, err := os.MkdirTemp(".", "keyStore")
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	defer os.Remove(keyStoreDir)
+
+	keyStore.On("GetEthereumKeyStore").Return(keystore.NewKeyStore(keyStoreDir, keystore.StandardScryptN, keystore.StandardScryptP))
 }
 
 func Test_ZCNBridge(t *testing.T) {
@@ -247,9 +279,12 @@ func Test_ZCNBridge(t *testing.T) {
 	prepareTransactionGeneralMockCalls(&transaction.Mock)
 
 	transactionProvider := getTransactionProvider(t)
-	prepareTransactionProviderGeneralMockCalls(&transactionProvider.Mock, &transaction.Mock)
+	prepareTransactionProviderGeneralMockCalls(&transactionProvider.Mock, transaction)
 
-	bridgeClient := getBridgeClient(ethereumClient, transactionProvider)
+	keyStore := getKeyStore(t)
+	prepareKeyStoreGeneralMockCalls(keyStore)
+
+	bridgeClient := getBridgeClient(ethereumClient, transactionProvider, keyStore)
 
 	t.Run("should update authorizer config.", func(t *testing.T) {
 		source := &authorizerNodeSource{
@@ -310,7 +345,6 @@ func Test_ZCNBridge(t *testing.T) {
 				Data: pack,
 			},
 		))
-
 	})
 
 	t.Run("should check configuration formating in BurnWZCN", func(t *testing.T) {
@@ -350,14 +384,14 @@ func Test_ZCNBridge(t *testing.T) {
 		_, err := bridgeClient.MintZCN(context.Background(), payload)
 		require.NoError(t, err)
 
-		require.True(t, transactionProvider.AssertCalled(
+		require.True(t, transaction.AssertCalled(
 			t,
 			"ExecuteSmartContract",
 			context.Background(),
 			wallet.ZCNSCSmartContractAddress,
 			wallet.MintFunc,
 			payload,
-			0,
+			uint64(0),
 		))
 	})
 
@@ -365,7 +399,7 @@ func Test_ZCNBridge(t *testing.T) {
 		_, err := bridgeClient.BurnZCN(context.Background(), amount, txnFee)
 		require.NoError(t, err)
 
-		require.True(t, transactionProvider.AssertCalled(
+		require.True(t, transaction.AssertCalled(
 			t,
 			"ExecuteSmartContract",
 			context.Background(),
@@ -374,7 +408,7 @@ func Test_ZCNBridge(t *testing.T) {
 			zcnsc.BurnPayload{
 				EthereumAddress: ethereumAddress,
 			},
-			amount,
+			uint64(amount),
 		))
 	})
 
@@ -414,6 +448,14 @@ func Test_ZCNBridge(t *testing.T) {
 			context.Background(),
 			common.HexToAddress(ethereumAddress)))
 
-		// TODO: check somehow used Password
+		require.True(t, keyStore.AssertCalled(
+			t,
+			"TimedUnlock",
+			accounts.Account{
+				Address: common.HexToAddress(ethereumAddress),
+			},
+			password,
+			time.Second*2,
+		))
 	})
 }

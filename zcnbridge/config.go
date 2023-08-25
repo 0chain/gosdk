@@ -29,6 +29,7 @@ type BridgeSDKConfig struct {
 }
 
 type BridgeClient struct {
+	KeyStore
 	transaction.TransactionProvider
 	EthereumClient
 
@@ -36,8 +37,7 @@ type BridgeClient struct {
 	TokenAddress,
 	AuthorizersAddress,
 	EthereumAddress,
-	Password,
-	Homedir string
+	Password string
 
 	ConsensusThreshold float64
 	GasLimit           uint64
@@ -52,12 +52,7 @@ type EthereumClient interface {
 
 // createBridgeClient initializes new bridge client with the help of the given
 // Ethereum JSON-RPC client and locally-defined confiruration.
-func createBridgeClient(cfg *viper.Viper, ethereumClient EthereumClient, transactionProvider transaction.TransactionProvider) *BridgeClient {
-	homedir := path.Dir(cfg.ConfigFileUsed())
-	if homedir == "" {
-		log.Logger.Fatal("homedir is required")
-	}
-
+func createBridgeClient(cfg *viper.Viper, ethereumClient EthereumClient, transactionProvider transaction.TransactionProvider, keyStore KeyStore) *BridgeClient {
 	return &BridgeClient{
 		BridgeAddress:       cfg.GetString("bridge.bridge_address"),
 		TokenAddress:        cfg.GetString("bridge.token_address"),
@@ -66,9 +61,9 @@ func createBridgeClient(cfg *viper.Viper, ethereumClient EthereumClient, transac
 		Password:            cfg.GetString("bridge.password"),
 		GasLimit:            cfg.GetUint64("bridge.gas_limit"),
 		ConsensusThreshold:  cfg.GetFloat64("bridge.consensus_threshold"),
-		Homedir:             homedir,
 		EthereumClient:      ethereumClient,
 		TransactionProvider: transactionProvider,
+		KeyStore:            keyStore,
 	}
 }
 
@@ -86,7 +81,14 @@ func SetupBridgeClientSDK(cfg *BridgeSDKConfig) *BridgeClient {
 
 	transactionProvider := transaction.NewTransactionProvider()
 
-	bridgeClient := createBridgeClient(chainCfg, ethereumClient, transactionProvider)
+	homedir := path.Dir(chainCfg.ConfigFileUsed())
+	if homedir == "" {
+		log.Logger.Fatal("err happened during home directory retrieval")
+	}
+
+	ks := NewKeyStore(path.Join(homedir, EthereumWalletStorageDir))
+
+	bridgeClient := createBridgeClient(chainCfg, ethereumClient, transactionProvider, ks)
 	return bridgeClient
 }
 

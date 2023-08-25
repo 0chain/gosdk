@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math/big"
 	"os"
-	"path"
 	"time"
 
 	"github.com/0chain/gosdk/core/logger"
@@ -23,7 +22,6 @@ import (
 	eth "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -59,22 +57,17 @@ var (
 	}
 )
 
-// getKeyStore reutrns key storage located in the given path.
-func (b *BridgeClient) getKeyStore(path string) *keystore.KeyStore {
-	return keystore.NewKeyStore(path, keystore.StandardScryptN, keystore.StandardScryptP)
-}
-
 func (b *BridgeClient) CreateSignedTransactionFromKeyStore(client EthereumClient, gasLimitUnits uint64) *bind.TransactOpts {
 	var (
 		signerAddress = common.HexToAddress(b.EthereumAddress)
 		password      = b.Password
 	)
 
-	ks := b.getKeyStore(path.Join(b.Homedir, EthereumWalletStorageDir))
+	// ks := b.getKeyStore(path.Join(b.Homedir, EthereumWalletStorageDir))
 	signer := accounts.Account{
 		Address: signerAddress,
 	}
-	signerAcc, err := ks.Find(signer)
+	signerAcc, err := b.KeyStore.Find(signer)
 	if err != nil {
 		Logger.Fatal(errors.Wrapf(err, "signer: %s", signerAddress.Hex()))
 	}
@@ -94,12 +87,12 @@ func (b *BridgeClient) CreateSignedTransactionFromKeyStore(client EthereumClient
 		Logger.Fatal(err)
 	}
 
-	err = ks.TimedUnlock(signer, password, time.Second*2)
+	err = b.KeyStore.TimedUnlock(signer, password, time.Second*2)
 	if err != nil {
 		Logger.Fatal(err)
 	}
 
-	opts, err := bind.NewKeyStoreTransactorWithChainID(ks, signerAcc, chainID)
+	opts, err := bind.NewKeyStoreTransactorWithChainID(b.KeyStore.GetEthereumKeyStore(), signerAcc, chainID)
 	if err != nil {
 		Logger.Fatal(err)
 	}
@@ -294,18 +287,16 @@ func (b *BridgeClient) VerifyZCNTransaction(ctx context.Context, hash string) (t
 func (b *BridgeClient) SignWithEthereumChain(message string) ([]byte, error) {
 	hash := crypto.Keccak256Hash([]byte(message))
 
-	keyDir := path.Join(b.Homedir, EthereumWalletStorageDir)
-	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
 	signer := accounts.Account{
 		Address: common.HexToAddress(b.EthereumAddress),
 	}
 
-	signerAcc, err := ks.Find(signer)
+	signerAcc, err := b.KeyStore.Find(signer)
 	if err != nil {
 		Logger.Fatal(err)
 	}
 
-	signature, err := ks.SignHash(signerAcc, hash.Bytes())
+	signature, err := b.KeyStore.SignHash(signerAcc, hash.Bytes())
 	if err != nil {
 		return nil, err
 	}
