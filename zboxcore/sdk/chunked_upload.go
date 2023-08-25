@@ -679,7 +679,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 			}
 
 			startSendUploadRequest := time.Now()
-			err = b.sendUploadRequest(ctx, su, chunkEndIndex, isFinal, encryptedKey, body, formData, pos)
+			err = b.sendUploadRequest(ctx, su, chunkEndIndex, isFinal, su.encryptedKey, body, formData, pos)
 			elapsedSendUploadRequest := time.Since(startSendUploadRequest)
 
 			if err != nil {
