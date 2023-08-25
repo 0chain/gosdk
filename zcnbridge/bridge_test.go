@@ -16,6 +16,7 @@ import (
 	bridgemocks "github.com/0chain/gosdk/zcnbridge/mocks"
 	"github.com/0chain/gosdk/zcnbridge/transaction"
 	transactionmocks "github.com/0chain/gosdk/zcnbridge/transaction/mocks"
+	"github.com/0chain/gosdk/zcnbridge/wallet"
 	"github.com/0chain/gosdk/zcnbridge/zcnsc"
 	"github.com/0chain/gosdk/zcncore"
 	eth "github.com/ethereum/go-ethereum"
@@ -26,26 +27,37 @@ import (
 )
 
 const (
-	ETHEREUM_MNEMONIC = "symbol alley celery diesel donate moral almost opinion achieve since diamond page"
+	ethereumMnemonic = "symbol alley celery diesel donate moral almost opinion achieve since diamond page"
 
-	ETHEREUM_ADDRESS = "0xD8c9156e782C68EE671C09b6b92de76C97948432"
-	PASSWORD         = "\"02289b9\""
+	ethereumAddress = "0xD8c9156e782C68EE671C09b6b92de76C97948432"
+	password        = "\"02289b9\""
 
-	BRIDGE_ADDRESS     = "0x7bbbEa24ac1751317D7669f05558632c4A9113D7"
-	TOKEN_ADDRESS      = "0x2ec8F26ccC678c9faF0Df20208aEE3AF776160CD"
-	AUTHORIZER_ADDRESS = "0xEAe8229c0E457efBA1A1769e7F8c20110fF68E61"
+	bridgeAddress     = "0x7bbbEa24ac1751317D7669f05558632c4A9113D7"
+	tokenAddress      = "0x2ec8F26ccC678c9faF0Df20208aEE3AF776160CD"
+	authorizerAddress = "0xEAe8229c0E457efBA1A1769e7F8c20110fF68E61"
 
-	ZCNTxnID = "b26abeb31fcee5d2e75b26717722938a06fa5ce4a5b5e68ddad68357432caace"
-	Amount   = 1e10
-	TxnFee   = 1
-	Nonce    = 1
+	zcnTxnID = "b26abeb31fcee5d2e75b26717722938a06fa5ce4a5b5e68ddad68357432caace"
+	amount   = 1e10
+	txnFee   = 1
+	nonce    = 1
+
+	ethereumTxnID = "0x3b59971c2aa294739cd73912f0c5a7996aafb796238cf44408b0eb4af0fbac82"
+
+	clientId = "d6e9b3222434faa043c683d1a939d6a0fa2818c4d56e794974d64a32005330d3"
 )
 
 var (
-	Signatures = []*ethereum.AuthorizerSignature{
+	ethereumSignatures = []*ethereum.AuthorizerSignature{
 		{
 			ID:        "0x2ec8F26ccC678c9faF0Df20208aEE3AF776160CD",
 			Signature: []byte("0xEAe8229c0E457efBA1A1769e7F8c20110fF68E61"),
+		},
+	}
+
+	zcnScSignatures = []*zcnsc.AuthorizerSignature{
+		{
+			ID:        "0x2ec8F26ccC678c9faF0Df20208aEE3AF776160CD",
+			Signature: "0xEAe8229c0E457efBA1A1769e7F8c20110fF68E61",
 		},
 	}
 )
@@ -55,6 +67,14 @@ type ethereumClientMock struct {
 }
 
 func (ecm *ethereumClientMock) Cleanup(callback func()) {
+	callback()
+}
+
+type transactionMock struct {
+	mock.TestingT
+}
+
+func (tem *transactionMock) Cleanup(callback func()) {
 	callback()
 }
 
@@ -183,11 +203,11 @@ func getBridgeClient(ethereumClient EthereumClient, transactionProvider transact
 
 	cfg.SetConfigFile(tempConfigFile.Name())
 
-	cfg.SetDefault("bridge.bridge_address", BRIDGE_ADDRESS)
-	cfg.SetDefault("bridge.token_address", TOKEN_ADDRESS)
-	cfg.SetDefault("bridge.authorizers_address", AUTHORIZER_ADDRESS)
-	cfg.SetDefault("bridge.ethereum_address", ETHEREUM_ADDRESS)
-	cfg.SetDefault("bridge.password", PASSWORD)
+	cfg.SetDefault("bridge.bridge_address", bridgeAddress)
+	cfg.SetDefault("bridge.token_address", tokenAddress)
+	cfg.SetDefault("bridge.authorizers_address", authorizerAddress)
+	cfg.SetDefault("bridge.ethereum_address", ethereumAddress)
+	cfg.SetDefault("bridge.password", password)
 	cfg.SetDefault("bridge.gas_limit", 0)
 	cfg.SetDefault("bridge.consensus_threshold", 0)
 
@@ -197,26 +217,37 @@ func getBridgeClient(ethereumClient EthereumClient, transactionProvider transact
 func prepareEthereumClientGeneralMockCalls(ethereumClient *mock.Mock) {
 	ethereumClient.On("EstimateGas", mock.Anything, mock.Anything).Return(uint64(400000), nil)
 	ethereumClient.On("ChainID", mock.Anything).Return(big.NewInt(400000), nil)
-	ethereumClient.On("PendingNonceAt", mock.Anything, mock.Anything).Return(uint64(Nonce), nil)
+	ethereumClient.On("PendingNonceAt", mock.Anything, mock.Anything).Return(uint64(nonce), nil)
 	ethereumClient.On("SuggestGasPrice", mock.Anything).Return(big.NewInt(400000), nil)
 	ethereumClient.On("SendTransaction", mock.Anything, mock.Anything).Return(nil)
+}
+
+func getTransaction(t mock.TestingT) *transactionmocks.Transaction {
+	return transactionmocks.NewTransaction(&transactionMock{t})
+}
+
+func prepareTransactionGeneralMockCalls(transaction *mock.Mock) {
+	transaction.On("ExecuteSmartContract", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(zcnTxnID, nil)
+	transaction.On("Verify").Return(nil)
 }
 
 func getTransactionProvider(t mock.TestingT) *transactionmocks.TransactionProvider {
 	return transactionmocks.NewTransactionProvider(&transactionProviderMock{t})
 }
 
-func prepareTransactionEntityGeneralMockCalls(transactionProvider *mock.Mock) {
-	transactionProvider.On("ExecuteSmartContract", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(ZCNTxnID, nil)
-	transactionProvider.On("Verify").Return(nil)
+func prepareTransactionProviderGeneralMockCalls(transactionProvider, transaction *mock.Mock) {
+	transactionProvider.On("NewTransactionEntity", mock.Anything).Return(transaction)
 }
 
 func Test_ZCNBridge(t *testing.T) {
 	ethereumClient := getEthereumClient(t)
 	prepareEthereumClientGeneralMockCalls(&ethereumClient.Mock)
 
+	transaction := getTransaction(t)
+	prepareTransactionGeneralMockCalls(&transaction.Mock)
+
 	transactionProvider := getTransactionProvider(t)
-	prepareTransactionEntityGeneralMockCalls(&transactionProvider.Mock)
+	prepareTransactionProviderGeneralMockCalls(&transactionProvider.Mock, &transaction.Mock)
 
 	bridgeClient := getBridgeClient(ethereumClient, transactionProvider)
 
@@ -243,29 +274,29 @@ func Test_ZCNBridge(t *testing.T) {
 
 	t.Run("should check configuration formating in MintWZCN", func(t *testing.T) {
 		_, err := bridgeClient.MintWZCN(context.Background(), &ethereum.MintPayload{
-			ZCNTxnID:   ZCNTxnID,
-			Amount:     Amount,
-			To:         ETHEREUM_ADDRESS,
-			Nonce:      Nonce,
-			Signatures: Signatures,
+			ZCNTxnID:   zcnTxnID,
+			Amount:     amount,
+			To:         ethereumAddress,
+			Nonce:      nonce,
+			Signatures: ethereumSignatures,
 		})
 		require.NoError(t, err)
 
 		var sigs [][]byte
-		for _, signature := range Signatures {
+		for _, signature := range ethereumSignatures {
 			sigs = append(sigs, signature.Signature)
 		}
 
-		to := common.HexToAddress(BRIDGE_ADDRESS)
-		fromAddress := common.HexToAddress(ETHEREUM_ADDRESS)
+		to := common.HexToAddress(bridgeAddress)
+		fromAddress := common.HexToAddress(ethereumAddress)
 
 		abi, err := binding.BridgeMetaData.GetAbi()
 		require.NoError(t, err)
 
-		pack, err := abi.Pack("mint", common.HexToAddress(ETHEREUM_ADDRESS),
-			big.NewInt(Amount),
-			DefaultClientIDEncoder(ZCNTxnID),
-			big.NewInt(Nonce),
+		pack, err := abi.Pack("mint", common.HexToAddress(ethereumAddress),
+			big.NewInt(amount),
+			DefaultClientIDEncoder(zcnTxnID),
+			big.NewInt(nonce),
 			sigs)
 		require.NoError(t, err)
 
@@ -283,16 +314,16 @@ func Test_ZCNBridge(t *testing.T) {
 	})
 
 	t.Run("should check configuration formating in BurnWZCN", func(t *testing.T) {
-		_, err := bridgeClient.BurnWZCN(context.Background(), Amount)
+		_, err := bridgeClient.BurnWZCN(context.Background(), amount)
 		require.NoError(t, err)
 
-		to := common.HexToAddress(BRIDGE_ADDRESS)
-		fromAddress := common.HexToAddress(ETHEREUM_ADDRESS)
+		to := common.HexToAddress(bridgeAddress)
+		fromAddress := common.HexToAddress(ethereumAddress)
 
 		abi, err := binding.BridgeMetaData.GetAbi()
 		require.NoError(t, err)
 
-		pack, err := abi.Pack("burn", big.NewInt(Amount), DefaultClientIDEncoder(zcncore.GetClientWalletID()))
+		pack, err := abi.Pack("burn", big.NewInt(amount), DefaultClientIDEncoder(zcncore.GetClientWalletID()))
 		require.NoError(t, err)
 
 		require.True(t, ethereumClient.AssertCalled(
@@ -308,70 +339,58 @@ func Test_ZCNBridge(t *testing.T) {
 	})
 
 	t.Run("should check configuration used by MintZCN", func(t *testing.T) {
-		// ethereumClient.Mock.On("createTransactionEntity")
+		payload := &zcnsc.MintPayload{
+			EthereumTxnID:     ethereumTxnID,
+			Amount:            sdkcommon.Balance(amount),
+			Nonce:             nonce,
+			Signatures:        zcnScSignatures,
+			ReceivingClientID: clientId,
+		}
 
-		_, err := bridgeClient.MintZCN(context.Background(), &zcnsc.MintPayload{})
+		_, err := bridgeClient.MintZCN(context.Background(), payload)
 		require.NoError(t, err)
 
-		// to := common.HexToAddress(BRIDGE_ADDRESS)
-		// fromAddress := common.HexToAddress(ETHEREUM_ADDRESS)
-
-		// abi, err := binding.BridgeMetaData.GetAbi()
-		// require.NoError(t, err)
-
-		// pack, err := abi.Pack("burn", big.NewInt(Amount), DefaultClientIDEncoder(zcncore.GetClientWalletID()))
-		// require.NoError(t, err)
-
-		// require.True(t, ethereumClient.AssertCalled(
-		// 	t,
-		// 	"EstimateGas",
-		// 	context.Background(),
-		// 	eth.CallMsg{
-		// 		To:   &to,
-		// 		From: fromAddress,
-		// 		Data: pack,
-		// 	},
-		// ))
+		require.True(t, transactionProvider.AssertCalled(
+			t,
+			"ExecuteSmartContract",
+			context.Background(),
+			wallet.ZCNSCSmartContractAddress,
+			wallet.MintFunc,
+			payload,
+			0,
+		))
 	})
 
 	t.Run("should check configuration used by BurnZCN", func(t *testing.T) {
-		_, err := bridgeClient.BurnZCN(context.Background(), Amount, TxnFee)
+		_, err := bridgeClient.BurnZCN(context.Background(), amount, txnFee)
 		require.NoError(t, err)
 
-		// to := common.HexToAddress(BRIDGE_ADDRESS)
-		// fromAddress := common.HexToAddress(ETHEREUM_ADDRESS)
-
-		// abi, err := binding.BridgeMetaData.GetAbi()
-		// require.NoError(t, err)
-
-		// pack, err := abi.Pack("burn", big.NewInt(Amount), DefaultClientIDEncoder(zcncore.GetClientWalletID()))
-		// require.NoError(t, err)
-
-		// require.True(t, ethereumClient.AssertCalled(
-		// 	t,
-		// 	"EstimateGas",
-		// 	context.Background(),
-		// 	eth.CallMsg{
-		// 		To:   &to,
-		// 		From: fromAddress,
-		// 		Data: pack,
-		// 	},
-		// ))
+		require.True(t, transactionProvider.AssertCalled(
+			t,
+			"ExecuteSmartContract",
+			context.Background(),
+			wallet.ZCNSCSmartContractAddress,
+			wallet.BurnFunc,
+			zcnsc.BurnPayload{
+				EthereumAddress: ethereumAddress,
+			},
+			amount,
+		))
 	})
 
 	t.Run("should check configuration used by IncreaseBurnerAllowance", func(t *testing.T) {
-		_, err := bridgeClient.IncreaseBurnerAllowance(context.Background(), Amount)
+		_, err := bridgeClient.IncreaseBurnerAllowance(context.Background(), amount)
 		require.NoError(t, err)
 
-		spenderAddress := common.HexToAddress(BRIDGE_ADDRESS)
+		spenderAddress := common.HexToAddress(bridgeAddress)
 
-		to := common.HexToAddress(TOKEN_ADDRESS)
-		fromAddress := common.HexToAddress(ETHEREUM_ADDRESS)
+		to := common.HexToAddress(tokenAddress)
+		fromAddress := common.HexToAddress(ethereumAddress)
 
 		abi, err := erc20.ERC20MetaData.GetAbi()
 		require.NoError(t, err)
 
-		pack, err := abi.Pack("increaseAllowance", spenderAddress, big.NewInt(Amount))
+		pack, err := abi.Pack("increaseAllowance", spenderAddress, big.NewInt(amount))
 		require.NoError(t, err)
 
 		require.True(t, ethereumClient.AssertCalled(
@@ -393,7 +412,7 @@ func Test_ZCNBridge(t *testing.T) {
 			t,
 			"PendingNonceAt",
 			context.Background(),
-			common.HexToAddress(ETHEREUM_ADDRESS)))
+			common.HexToAddress(ethereumAddress)))
 
 		// TODO: check somehow used Password
 	})
