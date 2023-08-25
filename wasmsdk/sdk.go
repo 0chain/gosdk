@@ -111,7 +111,11 @@ func createThumbnail(buf []byte, width, height int) ([]byte, error) {
 	return imageutil.CreateThumbnail(buf, width, height)
 }
 
-func makeSCRestAPICall(scAddress, relativePath string, params map[string]string) (string, error) {
+func makeSCRestAPICall(scAddress, relativePath string, keys []string, values []string) (string, error) {
+	params := make(map[string]string)
+	for i, k := range keys {
+		params[k] = values[i]
+	}
 	b, err := zboxutil.MakeSCRestAPICall(scAddress, relativePath, params, nil)
 	return string(b), err
 }
