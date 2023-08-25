@@ -7,6 +7,7 @@ import (
 	"path"
 
 	"github.com/0chain/gosdk/zcnbridge/log"
+	"github.com/0chain/gosdk/zcnbridge/transaction"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/ethclient"
 
@@ -28,6 +29,7 @@ type BridgeSDKConfig struct {
 }
 
 type BridgeClient struct {
+	transaction.TransactionProvider
 	EthereumClient
 
 	BridgeAddress,
@@ -48,24 +50,25 @@ type EthereumClient interface {
 	ChainID(ctx context.Context) (*big.Int, error)
 }
 
-// CreateBridgeClient initializes new bridge client with the help of the given
+// createBridgeClient initializes new bridge client with the help of the given
 // Ethereum JSON-RPC client and locally-defined confiruration.
-func CreateBridgeClient(cfg *viper.Viper, ethereumClient EthereumClient) *BridgeClient {
+func createBridgeClient(cfg *viper.Viper, ethereumClient EthereumClient, transactionProvider transaction.TransactionProvider) *BridgeClient {
 	homedir := path.Dir(cfg.ConfigFileUsed())
 	if homedir == "" {
 		log.Logger.Fatal("homedir is required")
 	}
 
 	return &BridgeClient{
-		BridgeAddress:      cfg.GetString("bridge.bridge_address"),
-		TokenAddress:       cfg.GetString("bridge.token_address"),
-		AuthorizersAddress: cfg.GetString("bridge.authorizers_address"),
-		EthereumAddress:    cfg.GetString("bridge.ethereum_address"),
-		Password:           cfg.GetString("bridge.password"),
-		GasLimit:           cfg.GetUint64("bridge.gas_limit"),
-		ConsensusThreshold: cfg.GetFloat64("bridge.consensus_threshold"),
-		Homedir:            homedir,
-		EthereumClient:     ethereumClient,
+		BridgeAddress:       cfg.GetString("bridge.bridge_address"),
+		TokenAddress:        cfg.GetString("bridge.token_address"),
+		AuthorizersAddress:  cfg.GetString("bridge.authorizers_address"),
+		EthereumAddress:     cfg.GetString("bridge.ethereum_address"),
+		Password:            cfg.GetString("bridge.password"),
+		GasLimit:            cfg.GetUint64("bridge.gas_limit"),
+		ConsensusThreshold:  cfg.GetFloat64("bridge.consensus_threshold"),
+		Homedir:             homedir,
+		EthereumClient:      ethereumClient,
+		TransactionProvider: transactionProvider,
 	}
 }
 
@@ -81,7 +84,9 @@ func SetupBridgeClientSDK(cfg *BridgeSDKConfig) *BridgeClient {
 		Logger.Error(err)
 	}
 
-	bridgeClient := CreateBridgeClient(chainCfg, ethereumClient)
+	transactionProvider := transaction.NewTransactionProvider()
+
+	bridgeClient := createBridgeClient(chainCfg, ethereumClient, transactionProvider)
 	return bridgeClient
 }
 

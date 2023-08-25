@@ -23,7 +23,7 @@ func AddAuthorizer(ctx context.Context, input *zcncore.AddAuthorizerPayload) (Tr
 
 	callBack := t.GetCallback()
 
-	err = callBack.waitCompleteCall(ctx)
+	err = callBack.WaitCompleteCall(ctx)
 	t.SetHash(scheme.Hash())
 	if err != nil {
 		return t, err
@@ -47,7 +47,7 @@ func AuthorizerHealthCheck(ctx context.Context, input *zcncore.AuthorizerHealthC
 
 	callBack := t.GetCallback()
 
-	err = callBack.waitCompleteCall(ctx)
+	err = callBack.WaitCompleteCall(ctx)
 	t.SetHash(scheme.Hash())
 	if err != nil {
 		return t, err

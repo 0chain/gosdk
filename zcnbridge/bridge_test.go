@@ -12,8 +12,11 @@ import (
 	sdkcommon "github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zcnbridge/ethereum"
 	binding "github.com/0chain/gosdk/zcnbridge/ethereum/bridge"
+	"github.com/0chain/gosdk/zcnbridge/ethereum/erc20"
 	bridgemocks "github.com/0chain/gosdk/zcnbridge/mocks"
+	"github.com/0chain/gosdk/zcnbridge/transaction"
 	transactionmocks "github.com/0chain/gosdk/zcnbridge/transaction/mocks"
+	"github.com/0chain/gosdk/zcnbridge/zcnsc"
 	"github.com/0chain/gosdk/zcncore"
 	eth "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -55,11 +58,11 @@ func (ecm *ethereumClientMock) Cleanup(callback func()) {
 	callback()
 }
 
-type transactionEntityMock struct {
+type transactionProviderMock struct {
 	mock.TestingT
 }
 
-func (tem *transactionEntityMock) Cleanup(callback func()) {
+func (tem *transactionProviderMock) Cleanup(callback func()) {
 	callback()
 }
 
@@ -168,7 +171,7 @@ func getEthereumClient(t mock.TestingT) *bridgemocks.EthereumClient {
 	return bridgemocks.NewEthereumClient(&ethereumClientMock{t})
 }
 
-func getBridgeClient(ethereumClient EthereumClient) *BridgeClient {
+func getBridgeClient(ethereumClient EthereumClient, transactionProvider transaction.TransactionProvider) *BridgeClient {
 	cfg := viper.New()
 
 	tempConfigFile, err := os.CreateTemp(".", "config.yaml")
@@ -188,34 +191,34 @@ func getBridgeClient(ethereumClient EthereumClient) *BridgeClient {
 	cfg.SetDefault("bridge.gas_limit", 0)
 	cfg.SetDefault("bridge.consensus_threshold", 0)
 
-	return CreateBridgeClient(cfg, ethereumClient)
+	return createBridgeClient(cfg, ethereumClient, transactionProvider)
 }
 
-func prepareEthereumClientGeneralMockCalls(m *mock.Mock) {
-	m.On("EstimateGas", mock.Anything, mock.Anything).Return(uint64(400000), nil)
-	m.On("ChainID", mock.Anything).Return(big.NewInt(400000), nil)
-	m.On("PendingNonceAt", mock.Anything, mock.Anything).Return(uint64(Nonce), nil)
-	m.On("SuggestGasPrice", mock.Anything).Return(big.NewInt(400000), nil)
-	m.On("SendTransaction", mock.Anything, mock.Anything).Return(nil)
+func prepareEthereumClientGeneralMockCalls(ethereumClient *mock.Mock) {
+	ethereumClient.On("EstimateGas", mock.Anything, mock.Anything).Return(uint64(400000), nil)
+	ethereumClient.On("ChainID", mock.Anything).Return(big.NewInt(400000), nil)
+	ethereumClient.On("PendingNonceAt", mock.Anything, mock.Anything).Return(uint64(Nonce), nil)
+	ethereumClient.On("SuggestGasPrice", mock.Anything).Return(big.NewInt(400000), nil)
+	ethereumClient.On("SendTransaction", mock.Anything, mock.Anything).Return(nil)
 }
 
-func getTransactionEntity(t mock.TestingT) *transactionmocks.Transaction {
-	return transactionmocks.NewTransaction(&transactionEntityMock{t})
+func getTransactionProvider(t mock.TestingT) *transactionmocks.TransactionProvider {
+	return transactionmocks.NewTransactionProvider(&transactionProviderMock{t})
 }
 
-func prepareTransactionEntityGeneralMockCalls(m *mock.Mock) {
-	m.On("ExecuteSmartContract", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(ZCNTxnID, nil)
-	m.On("Verify").Return(nil)
+func prepareTransactionEntityGeneralMockCalls(transactionProvider *mock.Mock) {
+	transactionProvider.On("ExecuteSmartContract", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(ZCNTxnID, nil)
+	transactionProvider.On("Verify").Return(nil)
 }
 
 func Test_ZCNBridge(t *testing.T) {
 	ethereumClient := getEthereumClient(t)
-
 	prepareEthereumClientGeneralMockCalls(&ethereumClient.Mock)
 
-	bridgeClient := getBridgeClient(ethereumClient)
+	transactionProvider := getTransactionProvider(t)
+	prepareTransactionEntityGeneralMockCalls(&transactionProvider.Mock)
 
-	// Create transaction entity mock
+	bridgeClient := getBridgeClient(ethereumClient, transactionProvider)
 
 	t.Run("should update authorizer config.", func(t *testing.T) {
 		source := &authorizerNodeSource{
@@ -238,7 +241,7 @@ func Test_ZCNBridge(t *testing.T) {
 		require.Equal(t, sdkcommon.Balance(999), target.Config.Fee)
 	})
 
-	t.Run("should check signature and other data formating in MintWZCN", func(t *testing.T) {
+	t.Run("should check configuration formating in MintWZCN", func(t *testing.T) {
 		_, err := bridgeClient.MintWZCN(context.Background(), &ethereum.MintPayload{
 			ZCNTxnID:   ZCNTxnID,
 			Amount:     Amount,
@@ -276,9 +279,10 @@ func Test_ZCNBridge(t *testing.T) {
 				Data: pack,
 			},
 		))
+
 	})
 
-	t.Run("should check data formating in BurnWZCN", func(t *testing.T) {
+	t.Run("should check configuration formating in BurnWZCN", func(t *testing.T) {
 		_, err := bridgeClient.BurnWZCN(context.Background(), Amount)
 		require.NoError(t, err)
 
@@ -303,9 +307,34 @@ func Test_ZCNBridge(t *testing.T) {
 		))
 	})
 
-	t.Run("should check data used by BurnZCN", func(t *testing.T) {
-		ethereumClient.Mock.On("createTransactionEntity")
+	t.Run("should check configuration used by MintZCN", func(t *testing.T) {
+		// ethereumClient.Mock.On("createTransactionEntity")
 
+		_, err := bridgeClient.MintZCN(context.Background(), &zcnsc.MintPayload{})
+		require.NoError(t, err)
+
+		// to := common.HexToAddress(BRIDGE_ADDRESS)
+		// fromAddress := common.HexToAddress(ETHEREUM_ADDRESS)
+
+		// abi, err := binding.BridgeMetaData.GetAbi()
+		// require.NoError(t, err)
+
+		// pack, err := abi.Pack("burn", big.NewInt(Amount), DefaultClientIDEncoder(zcncore.GetClientWalletID()))
+		// require.NoError(t, err)
+
+		// require.True(t, ethereumClient.AssertCalled(
+		// 	t,
+		// 	"EstimateGas",
+		// 	context.Background(),
+		// 	eth.CallMsg{
+		// 		To:   &to,
+		// 		From: fromAddress,
+		// 		Data: pack,
+		// 	},
+		// ))
+	})
+
+	t.Run("should check configuration used by BurnZCN", func(t *testing.T) {
 		_, err := bridgeClient.BurnZCN(context.Background(), Amount, TxnFee)
 		require.NoError(t, err)
 
@@ -330,11 +359,34 @@ func Test_ZCNBridge(t *testing.T) {
 		// ))
 	})
 
-	t.Run("should check data used by IncreaseBurnerAllowance", func(t *testing.T) {
+	t.Run("should check configuration used by IncreaseBurnerAllowance", func(t *testing.T) {
+		_, err := bridgeClient.IncreaseBurnerAllowance(context.Background(), Amount)
+		require.NoError(t, err)
 
+		spenderAddress := common.HexToAddress(BRIDGE_ADDRESS)
+
+		to := common.HexToAddress(TOKEN_ADDRESS)
+		fromAddress := common.HexToAddress(ETHEREUM_ADDRESS)
+
+		abi, err := erc20.ERC20MetaData.GetAbi()
+		require.NoError(t, err)
+
+		pack, err := abi.Pack("increaseAllowance", spenderAddress, big.NewInt(Amount))
+		require.NoError(t, err)
+
+		require.True(t, ethereumClient.AssertCalled(
+			t,
+			"EstimateGas",
+			context.Background(),
+			eth.CallMsg{
+				To:   &to,
+				From: fromAddress,
+				Data: pack,
+			},
+		))
 	})
 
-	t.Run("should check data used by CreateSignedTransactionFromKeyStore", func(t *testing.T) {
+	t.Run("should check configuration used by CreateSignedTransactionFromKeyStore", func(t *testing.T) {
 		bridgeClient.CreateSignedTransactionFromKeyStore(ethereumClient, 400000)
 
 		require.True(t, ethereumClient.AssertCalled(

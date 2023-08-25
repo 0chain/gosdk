@@ -59,11 +59,6 @@ var (
 	}
 )
 
-// createTransactionEntity HOC for 0chain transaction entity creation.
-func (b *BridgeClient) createTransactionEntity(txnfee uint64) (transaction.Transaction, error) {
-	return transaction.NewTransactionEntity(txnfee)
-}
-
 // getKeyStore reutrns key storage located in the given path.
 func (b *BridgeClient) getKeyStore(path string) *keystore.KeyStore {
 	return keystore.NewKeyStore(path, keystore.StandardScryptN, keystore.StandardScryptP)
@@ -372,8 +367,6 @@ func (b *BridgeClient) MintWZCN(ctx context.Context, payload *ethereum.MintPaylo
 
 	toAddress := common.HexToAddress(payload.To)
 
-	fmt.Println(ctx, payload.To, "mint", toAddress, amount, zcnTxd, nonce, sigs)
-
 	bridgeInstance, transactOpts, err := b.prepareBridge(ctx, payload.To, "mint", toAddress, amount, zcnTxd, nonce, sigs)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to prepare bridge")
@@ -447,7 +440,7 @@ func (b *BridgeClient) BurnWZCN(ctx context.Context, amountTokens uint64) (*type
 
 // MintZCN mints ZCN tokens after receiving proof-of-burn of WZCN tokens
 func (b *BridgeClient) MintZCN(ctx context.Context, payload *zcnsc.MintPayload) (string, error) {
-	trx, err := transaction.NewTransactionEntity(0)
+	trx, err := b.TransactionProvider.NewTransactionEntity(0)
 	if err != nil {
 		log.Logger.Fatal("failed to create new transaction", zap.Error(err))
 	}
@@ -483,7 +476,7 @@ func (b *BridgeClient) BurnZCN(ctx context.Context, amount, txnfee uint64) (tran
 		EthereumAddress: b.EthereumAddress,
 	}
 
-	trx, err := b.createTransactionEntity(txnfee)
+	trx, err := b.TransactionProvider.NewTransactionEntity(txnfee)
 	if err != nil {
 		log.Logger.Fatal("failed to create new transaction", zap.Error(err))
 	}

@@ -18,24 +18,32 @@ var (
 )
 
 type (
+	// TransactionProvider ...
+	TransactionProvider interface {
+		NewTransactionEntity(txnFee uint64) (Transaction, error)
+	}
+
+	// transactionProvider ...
+	transactionProvider struct{}
+
 	// Transaction interface describes transaction entity.
 	Transaction interface {
 		ExecuteSmartContract(ctx context.Context, address, funcName string, input interface{}, val uint64) (string, error)
 		Verify(ctx context.Context) error
 		GetScheme() zcncore.TransactionScheme
-		GetCallback() *callback
+		GetCallback() TransactionCallbackAwaitable
 		GetTransactionOutput() string
 		GetHash() string
 		SetHash(string)
 	}
 
 	// TransactionEntity entity that encapsulates the transaction related data and metadata.
-	TransactionEntity struct {
-		hash              string `json:"hash,omitempty"`
-		version           string `json:"version,omitempty"`
-		transactionOutput string `json:"transaction_output,omitempty"`
+	transactionEntity struct {
+		Hash              string `json:"hash,omitempty"`
+		Version           string `json:"version,omitempty"`
+		TransactionOutput string `json:"transaction_output,omitempty"`
 		scheme            zcncore.TransactionScheme
-		callBack          *callback
+		callBack          TransactionCallbackAwaitable
 	}
 )
 
@@ -63,10 +71,18 @@ type (
 	}
 )
 
+func NewTransactionProvider() TransactionProvider {
+	return &transactionProvider{}
+}
+
+func (t *transactionProvider) NewTransactionEntity(txnFee uint64) (Transaction, error) {
+	return NewTransactionEntity(txnFee)
+}
+
 // NewTransactionEntity creates Transaction with initialized fields.
 // Sets version, client ID, creation date, public key and creates internal zcncore.TransactionScheme.
 func NewTransactionEntity(txnFee uint64) (Transaction, error) {
-	txn := &TransactionEntity{
+	txn := &transactionEntity{
 		callBack: NewStatus().(*callback),
 	}
 	zcntxn, err := zcncore.NewTransaction(txn.callBack, txnFee, 0)
@@ -82,19 +98,19 @@ func NewTransactionEntity(txnFee uint64) (Transaction, error) {
 // ExecuteSmartContract executes function of smart contract with provided address.
 //
 // Returns hash of executed transaction.
-func (t *TransactionEntity) ExecuteSmartContract(ctx context.Context, address, funcName string, input interface{},
+func (t *transactionEntity) ExecuteSmartContract(ctx context.Context, address, funcName string, input interface{},
 	val uint64) (string, error) {
 	const errCode = "transaction_send"
 
 	tran, err := t.scheme.ExecuteSmartContract(address, funcName, input, val)
-	t.hash = tran.Hash
+	t.Hash = tran.Hash
 
 	if err != nil {
 		msg := fmt.Sprintf("error while sending txn: %v", err)
 		return "", errors.New(errCode, msg)
 	}
 
-	if err := t.callBack.waitCompleteCall(ctx); err != nil {
+	if err := t.callBack.WaitCompleteCall(ctx); err != nil {
 		msg := fmt.Sprintf("error while sending txn: %v", err)
 		return "", errors.New(errCode, msg)
 	}
@@ -106,7 +122,7 @@ func (t *TransactionEntity) ExecuteSmartContract(ctx context.Context, address, f
 	return t.scheme.Hash(), nil
 }
 
-func (t *TransactionEntity) Verify(ctx context.Context) error {
+func (t *transactionEntity) Verify(ctx context.Context) error {
 	const errCode = "transaction_verify"
 
 	err := t.scheme.Verify()
@@ -115,7 +131,7 @@ func (t *TransactionEntity) Verify(ctx context.Context) error {
 		return errors.New(errCode, msg)
 	}
 
-	if err := t.callBack.waitVerifyCall(ctx); err != nil {
+	if err := t.callBack.WaitVerifyCall(ctx); err != nil {
 		msg := fmt.Sprintf("error while verifying txn: %v; txn hash: %s", err, t.scheme.GetTransactionHash())
 		return errors.New(errCode, msg)
 	}
@@ -137,8 +153,8 @@ func (t *TransactionEntity) Verify(ctx context.Context) error {
 	}
 
 	if vo.Confirmation.Transaction != nil {
-		t.hash = vo.Confirmation.Transaction.GetHash()
-		t.transactionOutput = vo.Confirmation.Transaction.GetTransactionOutput()
+		t.Hash = vo.Confirmation.Transaction.GetHash()
+		t.TransactionOutput = vo.Confirmation.Transaction.GetTransactionOutput()
 	} else {
 		return errors.New(errCode, "got invalid confirmation (missing transaction)")
 	}
@@ -147,32 +163,32 @@ func (t *TransactionEntity) Verify(ctx context.Context) error {
 }
 
 // GetSheme returns transaction scheme
-func (t *TransactionEntity) GetScheme() zcncore.TransactionScheme {
+func (t *transactionEntity) GetScheme() zcncore.TransactionScheme {
 	return t.scheme
 }
 
 // GetHash returns transaction hash
-func (t *TransactionEntity) GetHash() string {
-	return t.hash
+func (t *transactionEntity) GetHash() string {
+	return t.Hash
 }
 
 // SetHash sets transaction hash
-func (t *TransactionEntity) SetHash(hash string) {
-	t.hash = hash
+func (t *transactionEntity) SetHash(hash string) {
+	t.Hash = hash
 }
 
 // GetTransactionOutput returns transaction output
-func (t *TransactionEntity) GetTransactionOutput() string {
-	return t.transactionOutput
+func (t *transactionEntity) GetTransactionOutput() string {
+	return t.TransactionOutput
 }
 
-func (t *TransactionEntity) GetCallback() *callback {
+func (t *transactionEntity) GetCallback() TransactionCallbackAwaitable {
 	return t.callBack
 }
 
 // GetVersion returns transaction version
-func (t *TransactionEntity) GetVersion() string {
-	return t.version
+func (t *transactionEntity) GetVersion() string {
+	return t.Version
 }
 
 // Verify checks including of transaction in the blockchain.
