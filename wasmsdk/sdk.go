@@ -5,6 +5,7 @@ package main
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -111,7 +112,12 @@ func createThumbnail(buf []byte, width, height int) ([]byte, error) {
 	return imageutil.CreateThumbnail(buf, width, height)
 }
 
-func makeSCRestAPICall(scAddress, relativePath string, params map[string]string) (string, error) {
+func makeSCRestAPICall(scAddress, relativePath string, paramsJson string) (string, error) {
+	var params map[string]string
+	err := json.Unmarshal([]byte(paramsJson), &params)
+	if err != nil {
+		sdkLogger.Error(fmt.Sprintf("Error parsing JSON: %v", err))
+	}
 	b, err := zboxutil.MakeSCRestAPICall(scAddress, relativePath, params, nil)
 	return string(b), err
 }
