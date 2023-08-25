@@ -60,7 +60,7 @@ func burnZCN(amount, txnfee uint64) string { //nolint
 		return errors.Wrap("burnZCN", "failed to burn ZCN tokens", err).Error()
 	}
 
-	return tx.Hash
+	return tx.GetHash()
 }
 
 // Mints ZCN tokens and returns a hash of the mint transaction
