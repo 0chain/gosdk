@@ -345,6 +345,7 @@ type ChunkedUpload struct {
 	ctxCncl           context.CancelFunc
 	addConsensus      int32
 	encryptedKeyPoint string
+	encryptedKey      string
 }
 
 // progressID build local progress id with [allocationid]_[Hash(LocalPath+"_"+RemotePath)]_[RemoteName] format
@@ -432,7 +433,7 @@ func (su *ChunkedUpload) createEncscheme() encryption.EncryptionScheme {
 		encscheme.InitForEncryption("filetype:audio")
 		su.progress.EncryptedKeyPoint = encscheme.GetEncryptedKeyPoint()
 	}
-
+	su.encryptedKey = encscheme.GetEncryptedKey()
 	return encscheme
 }
 
@@ -642,12 +643,6 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 
 	ctx, cancel := context.WithCancel(context.TODO())
 	defer cancel()
-
-	encryptedKey := ""
-	if su.fileEncscheme != nil {
-		encryptedKey = su.encryptedKeyPoint
-	}
-
 	var errCount int32
 
 	wgErrors := make(chan error, len(su.blobbers))
@@ -673,7 +668,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 			defer wg.Done()
 			body, formData, err := su.formBuilder.Build(
 				&su.fileMeta, blobber.progress.Hasher, su.progress.ConnectionID,
-				su.chunkSize, chunkStartIndex, chunkEndIndex, isFinal, encryptedKey,
+				su.chunkSize, chunkStartIndex, chunkEndIndex, isFinal, su.encryptedKey, su.progress.EncryptedKeyPoint,
 				fileShards[pos], thumbnailChunkData, su.shardSize)
 			if err != nil {
 				errC := atomic.AddInt32(&errCount, 1)
