@@ -11,8 +11,11 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"strings"
 
+	"github.com/0chain/gosdk/core/pathutil"
 	"github.com/0chain/gosdk/zboxcore/sdk"
+	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
 // GetFileStats get file stats of blobbers
@@ -153,6 +156,105 @@ func Delete(allocationID, path *C.char) *C.char {
 	}
 
 	return WithJSON(true, nil)
+}
+
+// Upload upload file
+//
+//	return
+//		{
+//			"error":"",
+//			"result":"true",
+//		}
+//
+//export Upload
+func Upload(uploadID, allocationID, localPath, remotePath, thumbnailPath *C.char, isUpdate, encrypt, webStreaming bool, chunkNumber int) *C.char {
+	allocID := C.GoString(allocationID)
+
+	alloc, err := getAllocation(allocID)
+	if err != nil {
+		return WithJSON(false, err)
+	}
+
+	local := C.GoString(localPath)
+
+	fileReader, err := os.Open(local)
+	if err != nil {
+		return WithJSON(false, err)
+	}
+	defer fileReader.Close()
+
+	fileInfo, err := fileReader.Stat()
+	if err != nil {
+		return WithJSON(false, err)
+	}
+
+	mimeType, err := zboxutil.GetFileContentType(fileReader)
+	if err != nil {
+		return WithJSON(false, err)
+	}
+
+	remote, fileName, err := fullPathAndFileNameForUpload(local, C.GoString(remotePath))
+	if err != nil {
+		return WithJSON(false, err)
+	}
+
+	workdir, _ := os.UserHomeDir()
+
+	fileMeta := sdk.FileMeta{
+		Path:       local,
+		ActualSize: fileInfo.Size(),
+		MimeType:   mimeType,
+		RemoteName: fileName,
+		RemotePath: remote,
+	}
+
+	statusBar := &StatusCallback{
+		status: make(map[string]*Status),
+	}
+
+	statusCaches.Add(C.GoString(uploadID), statusBar)
+
+	options := []sdk.ChunkedUploadOption{
+		sdk.WithThumbnailFile(C.GoString(thumbnailPath)),
+		sdk.WithEncrypt(encrypt),
+		sdk.WithStatusCallback(statusBar),
+		sdk.WithChunkNumber(chunkNumber),
+	}
+
+	connectionId := zboxutil.NewConnectionId()
+
+	task, err := sdk.CreateChunkedUpload(workdir, alloc, fileMeta, fileReader, isUpdate, false, webStreaming, connectionId, options...)
+
+	if err != nil {
+		return WithJSON(false, err)
+	}
+
+	err = task.Start()
+
+	if err != nil {
+		return WithJSON(false, err)
+	}
+
+	return WithJSON(true, nil)
+
+}
+
+func fullPathAndFileNameForUpload(localPath, remotePath string) (string, string, error) {
+	isUploadToDir := strings.HasSuffix(remotePath, "/")
+	remotePath = zboxutil.RemoteClean(remotePath)
+	if !zboxutil.IsRemoteAbs(remotePath) {
+		return "", "", errors.New("invalid_path: Path should be valid and absolute")
+	}
+
+	// re-add trailing slash to indicate intending to upload to directory
+	if isUploadToDir && !strings.HasSuffix(remotePath, "/") {
+		remotePath += "/"
+	}
+
+	fullRemotePath := zboxutil.GetFullRemotePath(localPath, remotePath)
+	_, fileName := pathutil.Split(fullRemotePath)
+
+	return fullRemotePath, fileName, nil
 }
 
 type MultiOperationOption struct {
