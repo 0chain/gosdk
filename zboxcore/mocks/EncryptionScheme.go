@@ -78,6 +78,20 @@ func (_m *EncryptionScheme) GetEncryptedKey() string {
 	return r0
 }
 
+// GetEncryptedKeyPoint provides a mock function with given fields:
+func (_m *EncryptionScheme) GetEncryptedKeyPoint() string {
+	ret := _m.Called()
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func() string); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	return r0
+}
+
 // GetPrivateKey provides a mock function with given fields:
 func (_m *EncryptionScheme) GetPrivateKey() (string, error) {
 	ret := _m.Called()
@@ -164,9 +178,37 @@ func (_m *EncryptionScheme) InitForDecryption(tag string, encryptedKey string) e
 	return r0
 }
 
+// InitForDecryptionWithPoint provides a mock function with given fields: tag, point
+func (_m *EncryptionScheme) InitForDecryptionWithPoint(tag string, point string) error {
+	ret := _m.Called(tag, point)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, string) error); ok {
+		r0 = rf(tag, point)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // InitForEncryption provides a mock function with given fields: tag
 func (_m *EncryptionScheme) InitForEncryption(tag string) {
 	_m.Called(tag)
+}
+
+// InitForEncryptionWithPoint provides a mock function with given fields: tag, point
+func (_m *EncryptionScheme) InitForEncryptionWithPoint(tag string, point string) error {
+	ret := _m.Called(tag, point)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, string) error); ok {
+		r0 = rf(tag, point)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
 }
 
 // Initialize provides a mock function with given fields: mnemonic

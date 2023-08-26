@@ -14,32 +14,32 @@ type ChunkedUploadFormBuilder struct {
 	mock.Mock
 }
 
-// Build provides a mock function with given fields: fileMeta, hasher, connectionID, chunkSize, chunkStartIndex, chunkEndIndex, isFinal, encryptedKey, fileChunksData, thumbnailChunkData
-func (_m *ChunkedUploadFormBuilder) Build(fileMeta *sdk.FileMeta, hasher sdk.Hasher, connectionID string, chunkSize int64, chunkStartIndex int, chunkEndIndex int, isFinal bool, encryptedKey string, fileChunksData [][]byte, thumbnailChunkData []byte) (*bytes.Buffer, sdk.ChunkedUploadFormMetadata, error) {
-	ret := _m.Called(fileMeta, hasher, connectionID, chunkSize, chunkStartIndex, chunkEndIndex, isFinal, encryptedKey, fileChunksData, thumbnailChunkData)
+// Build provides a mock function with given fields: fileMeta, hasher, connectionID, chunkSize, chunkStartIndex, chunkEndIndex, isFinal, encryptedKey, encryptedKeyPoint, fileChunksData, thumbnailChunkData, shardSize
+func (_m *ChunkedUploadFormBuilder) Build(fileMeta *sdk.FileMeta, hasher sdk.Hasher, connectionID string, chunkSize int64, chunkStartIndex int, chunkEndIndex int, isFinal bool, encryptedKey string, encryptedKeyPoint string, fileChunksData [][]byte, thumbnailChunkData []byte, shardSize int64) (*bytes.Buffer, sdk.ChunkedUploadFormMetadata, error) {
+	ret := _m.Called(fileMeta, hasher, connectionID, chunkSize, chunkStartIndex, chunkEndIndex, isFinal, encryptedKey, encryptedKeyPoint, fileChunksData, thumbnailChunkData, shardSize)
 
 	var r0 *bytes.Buffer
 	var r1 sdk.ChunkedUploadFormMetadata
 	var r2 error
-	if rf, ok := ret.Get(0).(func(*sdk.FileMeta, sdk.Hasher, string, int64, int, int, bool, string, [][]byte, []byte) (*bytes.Buffer, sdk.ChunkedUploadFormMetadata, error)); ok {
-		return rf(fileMeta, hasher, connectionID, chunkSize, chunkStartIndex, chunkEndIndex, isFinal, encryptedKey, fileChunksData, thumbnailChunkData)
+	if rf, ok := ret.Get(0).(func(*sdk.FileMeta, sdk.Hasher, string, int64, int, int, bool, string, string, [][]byte, []byte, int64) (*bytes.Buffer, sdk.ChunkedUploadFormMetadata, error)); ok {
+		return rf(fileMeta, hasher, connectionID, chunkSize, chunkStartIndex, chunkEndIndex, isFinal, encryptedKey, encryptedKeyPoint, fileChunksData, thumbnailChunkData, shardSize)
 	}
-	if rf, ok := ret.Get(0).(func(*sdk.FileMeta, sdk.Hasher, string, int64, int, int, bool, string, [][]byte, []byte) *bytes.Buffer); ok {
-		r0 = rf(fileMeta, hasher, connectionID, chunkSize, chunkStartIndex, chunkEndIndex, isFinal, encryptedKey, fileChunksData, thumbnailChunkData)
+	if rf, ok := ret.Get(0).(func(*sdk.FileMeta, sdk.Hasher, string, int64, int, int, bool, string, string, [][]byte, []byte, int64) *bytes.Buffer); ok {
+		r0 = rf(fileMeta, hasher, connectionID, chunkSize, chunkStartIndex, chunkEndIndex, isFinal, encryptedKey, encryptedKeyPoint, fileChunksData, thumbnailChunkData, shardSize)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*bytes.Buffer)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(*sdk.FileMeta, sdk.Hasher, string, int64, int, int, bool, string, [][]byte, []byte) sdk.ChunkedUploadFormMetadata); ok {
-		r1 = rf(fileMeta, hasher, connectionID, chunkSize, chunkStartIndex, chunkEndIndex, isFinal, encryptedKey, fileChunksData, thumbnailChunkData)
+	if rf, ok := ret.Get(1).(func(*sdk.FileMeta, sdk.Hasher, string, int64, int, int, bool, string, string, [][]byte, []byte, int64) sdk.ChunkedUploadFormMetadata); ok {
+		r1 = rf(fileMeta, hasher, connectionID, chunkSize, chunkStartIndex, chunkEndIndex, isFinal, encryptedKey, encryptedKeyPoint, fileChunksData, thumbnailChunkData, shardSize)
 	} else {
 		r1 = ret.Get(1).(sdk.ChunkedUploadFormMetadata)
 	}
 
-	if rf, ok := ret.Get(2).(func(*sdk.FileMeta, sdk.Hasher, string, int64, int, int, bool, string, [][]byte, []byte) error); ok {
-		r2 = rf(fileMeta, hasher, connectionID, chunkSize, chunkStartIndex, chunkEndIndex, isFinal, encryptedKey, fileChunksData, thumbnailChunkData)
+	if rf, ok := ret.Get(2).(func(*sdk.FileMeta, sdk.Hasher, string, int64, int, int, bool, string, string, [][]byte, []byte, int64) error); ok {
+		r2 = rf(fileMeta, hasher, connectionID, chunkSize, chunkStartIndex, chunkEndIndex, isFinal, encryptedKey, encryptedKeyPoint, fileChunksData, thumbnailChunkData, shardSize)
 	} else {
 		r2 = ret.Error(2)
 	}
