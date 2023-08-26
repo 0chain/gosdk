@@ -73,6 +73,7 @@
       <button id="btnGetUpdateAllocationMinLock">UpdateAllocationMinLock</button>
       <button id="btnRemoteFileMap">RemoteFileMap</button>
       <button id="btnAddReplaceBlobber">AddReplaceBlobber</button>
+      <button id="makeSCRestAPICall">makeSCRestAPICall</button>
     </span>
 
     <br>
@@ -282,7 +283,7 @@
       }
       try {
         const allocation = await goWasm.sdk.createAllocation(config.datashards, config.parityshards, config.size, config.minReadPrice, config.maxReadPrice, config.minWritePrice, config.maxWritePrice,
-          config.lock, [])
+          config.lock, [], false)
 
         console.log(allocation)
         allocations = await goWasm.sdk.listAllocations()
@@ -309,6 +310,22 @@
         console.log(resp)
         txtOutput.innerHTML = JSON.stringify(resp, null, 2)
       } catch (e) {
+        alert(e)
+      }
+    })
+
+    onClick('makeSCRestAPICall', async () => {
+      const allocationID = getSelectedAllocation()
+
+      try {
+        params = {
+          "allocation": allocationID
+        }
+        paramsJSON = JSON.stringify(params, null, 2)
+        storagesc = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7"
+        const resp = await goWasm.sdk.makeSCRestAPICall(storagesc, "/allocation", paramsJSON)
+        txtOutput.innerHTML = resp
+      } catch(e) {
         alert(e)
       }
     })

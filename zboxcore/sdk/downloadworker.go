@@ -539,22 +539,6 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		elapsedGetBlocksAndWrite.Milliseconds(),
 	))
 
-	if isPREAndWholeFile {
-		calculatedFileHash := hex.EncodeToString(actualFileHasher.Sum(nil))
-		var actualHash string
-		if req.contentMode == DOWNLOAD_CONTENT_THUMB {
-			actualHash = fRef.ActualThumbnailHash
-		} else {
-			actualHash = fRef.ActualFileHash
-		}
-
-		if calculatedFileHash != actualHash {
-			req.errorCB(fmt.Errorf("Expected actual file hash %s, calculated file hash %s",
-				fRef.ActualFileHash, calculatedFileHash), remotePathCB)
-			return
-		}
-	}
-
 	if req.statusCallback != nil {
 		req.statusCallback.Completed(
 			req.allocationID, remotePathCB, fRef.Name, "", int(size), op)
@@ -823,6 +807,12 @@ func (req *DownloadRequest) calculateShardsParams(
 
 	if req.startBlock >= req.endBlock {
 		err = errors.New("invalid_block_num", "start block should be less than end block")
+		return 0, err
+	}
+
+	toSeek := req.startBlock * effectiveChunkSize
+	_, err = req.fileHandler.Seek(toSeek, io.SeekStart)
+	if err != nil {
 		return 0, err
 	}
 
