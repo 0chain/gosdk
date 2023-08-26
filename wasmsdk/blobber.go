@@ -475,6 +475,7 @@ type BulkUploadOption struct {
 	Webstreaming   bool           `json:"webstreaming,omitempty"`
 	IsUpdate       bool           `json:"isUpdate,omitempty"`
 	IsRepair       bool           `json:"isRepair,omitempty"`
+	IsWebstreaming bool           `json:"isWebstreaming,omitempty"`
 
 	NumBlocks         int    `json:"numBlocks,omitempty"`
 	FileSize          int64  `json:"fileSize,omitempty"`
@@ -671,11 +672,12 @@ func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 			sdk.WithChunkNumber(numBlocks),
 		}
 		operationRequests[idx] = sdk.OperationRequest{
-			FileMeta:      fileMeta,
-			FileReader:    fileReader,
-			OperationType: FileOperationInsert,
-			Opts:          options,
-			Workdir:       "/",
+			FileMeta:       fileMeta,
+			FileReader:     fileReader,
+			OperationType:  FileOperationInsert,
+			Opts:           options,
+			Workdir:        "/",
+			isWebstreaming: option.IsWebstreaming,
 		}
 
 	}
