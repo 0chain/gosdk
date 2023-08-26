@@ -677,7 +677,7 @@ func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 			OperationType:  FileOperationInsert,
 			Opts:           options,
 			Workdir:        "/",
-			isWebstreaming: option.IsWebstreaming,
+			IsWebstreaming: option.IsWebstreaming,
 		}
 
 	}
