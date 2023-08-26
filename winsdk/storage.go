@@ -408,7 +408,7 @@ func MultiDownload(_allocationID, _jsonMultiDownloadOptions *C.char) error {
 //     }
 //
 //export BulkUpload
-func BulkUpload(uploadID, allocationID, files *C.char) *C.char {
+func BulkUpload(allocationID, files *C.char) *C.char {
 	allocID := C.GoString(allocationID)
 	workdir, _ := os.UserHomeDir()
 	jsFiles := C.GoString(files)
@@ -426,9 +426,7 @@ func BulkUpload(uploadID, allocationID, files *C.char) *C.char {
 	encrypts := make([]bool, totalUploads)
 	isUpdates := make([]bool, totalUploads)
 
-	statusBar := &StatusCallback{
-		status: make(map[string]*Status),
-	}
+	statusBar := &StatusCallback{}
 
 	for idx, option := range options {
 		filePaths[idx] = option.Path
@@ -438,15 +436,13 @@ func BulkUpload(uploadID, allocationID, files *C.char) *C.char {
 		chunkNumbers[idx] = option.ChunkNumber
 		isUpdates[idx] = option.IsUpdate
 		encrypts[idx] = option.Encrypt
-		statusBar.status[option.RemotePath+option.Name] = &Status{}
+		statusCaches.Add(getLookupHash(allocID, option.RemotePath+option.Name), &Status{})
 	}
 
 	a, err := getAllocation(allocID)
 	if err != nil {
 		return WithJSON(nil, err)
 	}
-
-	statusCaches.Add(C.GoString(uploadID), statusBar)
 
 	err = a.StartMultiUpload(workdir, filePaths, fileNames, thumbnailPaths, encrypts, chunkNumbers, remotePaths, isUpdates, statusBar)
 	if err != nil {
@@ -457,27 +453,22 @@ func BulkUpload(uploadID, allocationID, files *C.char) *C.char {
 
 // GetUploadStatus - get upload status
 // ## Inputs
-//   - uploadID
-//   - remotePath
-//     return
-//     {
-//     "error":"",
-//     "result":"{'Started':false,'CompletedBytes': 0,Error:”,'Completed':false}",
-//     }
+//   - lookupHash
+//
+// ## Outputs
+//
+//	{
+//	"error":"",
+//	"result":"{'Started':false,'CompletedBytes': 0,Error:”,'Completed':false}",
+//	}
 //
 //export GetUploadStatus
-func GetUploadStatus(uploadID, remotePath *C.char) *C.char {
-	id := C.GoString(uploadID)
-	scb, ok := statusCaches.Get(id)
+func GetUploadStatus(lookupHash *C.char) *C.char {
+
+	s, ok := statusCaches.Get(C.GoString(lookupHash))
 
 	if !ok {
-		return WithJSON(nil, ErrInvalidUploadID)
-	}
-
-	s := scb.getStatus(C.GoString(remotePath))
-
-	if s == nil {
-		return WithJSON(nil, ErrInvalidRemotePath)
+		s = &Status{}
 	}
 
 	return WithJSON(s, nil)
