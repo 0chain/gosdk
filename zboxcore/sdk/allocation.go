@@ -208,12 +208,13 @@ type Allocation struct {
 }
 
 type OperationRequest struct {
-	OperationType string
-	LocalPath     string
-	RemotePath    string
-	DestName      string // Required only for rename operation
-	DestPath      string // Required for copy and move operation
-	IsUpdate      bool
+	OperationType  string
+	LocalPath      string
+	RemotePath     string
+	DestName       string // Required only for rename operation
+	DestPath       string // Required for copy and move operation
+	IsUpdate       bool
+	IsWebstreaming bool
 
 	// Required for uploads
 	Workdir    string
@@ -496,7 +497,7 @@ func (a *Allocation) EncryptAndUploadFileWithThumbnail(
 	)
 }
 
-func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileNames []string, thumbnailPaths []string, encrypts []bool, chunkNumbers []int, remotePaths []string, isUpdate []bool, status StatusCallback) error {
+func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileNames []string, thumbnailPaths []string, encrypts []bool, chunkNumbers []int, remotePaths []string, isUpdate []bool, isWebstreaming []bool, status StatusCallback) error {
 	if len(localPaths) != len(thumbnailPaths) {
 		return errors.New("invalid_value", "length of localpaths and thumbnailpaths must be equal")
 	}
@@ -588,6 +589,9 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 		}
 		if isUpdate[idx] {
 			operationRequests[idx].OperationType = constants.FileOperationUpdate
+		}
+		if isWebstreaming[idx] {
+			operationRequests[idx].IsWebstreaming = true
 		}
 
 	}
@@ -882,13 +886,13 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 				operation = NewMoveOperation(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 
 			case constants.FileOperationInsert:
-				operation = NewUploadOperation(op.Workdir, op.FileMeta, op.FileReader, false, op.Opts...)
+				operation = NewUploadOperation(op.Workdir, op.FileMeta, op.FileReader, false, op.IsWebstreaming, op.Opts...)
 
 			case constants.FileOperationDelete:
 				operation = NewDeleteOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 
 			case constants.FileOperationUpdate:
-				operation = NewUploadOperation(op.Workdir, op.FileMeta, op.FileReader, true, op.Opts...)
+				operation = NewUploadOperation(op.Workdir, op.FileMeta, op.FileReader, true, op.IsWebstreaming, op.Opts...)
 
 			case constants.FileOperationCreateDir:
 				operation = NewDirOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
