@@ -786,9 +786,10 @@ func (req *DownloadRequest) calculateShardsParams(
 	}
 
 	effectiveChunkSize := effectiveBlockSize * int64(req.datashards)
-	if req.offset > 0 {
-		req.startBlock += req.offset / effectiveChunkSize
-	}
+	blocks := req.offset / effectiveChunkSize
+	req.startBlock += blocks
+
+	req.offset = blocks * effectiveChunkSize
 
 	if req.endBlock == 0 || req.endBlock > chunksPerShard {
 		req.endBlock = chunksPerShard
@@ -799,8 +800,7 @@ func (req *DownloadRequest) calculateShardsParams(
 		return 0, err
 	}
 
-	toSeek := req.startBlock * effectiveChunkSize
-	_, err = req.fileHandler.Seek(toSeek, io.SeekStart)
+	_, err = req.fileHandler.Seek(req.offset, io.SeekStart)
 	if err != nil {
 		return 0, err
 	}
