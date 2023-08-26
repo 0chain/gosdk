@@ -167,7 +167,7 @@ func Delete(allocationID, path *C.char) *C.char {
 //		}
 //
 //export Upload
-func Upload(uploadID, allocationID, localPath, remotePath, thumbnailPath *C.char, isUpdate, encrypt, webStreaming bool, chunkNumber int) *C.char {
+func Upload(allocationID, localPath, remotePath, thumbnailPath *C.char, isUpdate, encrypt, webStreaming bool, chunkNumber int) *C.char {
 	allocID := C.GoString(allocationID)
 
 	alloc, err := getAllocation(allocID)
@@ -208,11 +208,9 @@ func Upload(uploadID, allocationID, localPath, remotePath, thumbnailPath *C.char
 		RemotePath: remote,
 	}
 
-	statusBar := &StatusCallback{
-		status: make(map[string]*Status),
-	}
+	statusBar := &StatusCallback{}
 
-	statusCaches.Add(C.GoString(uploadID), statusBar)
+	statusCaches.Add(getLookupHash(allocID, remote), &Status{})
 
 	options := []sdk.ChunkedUploadOption{
 		sdk.WithThumbnailFile(C.GoString(thumbnailPath)),
@@ -223,13 +221,13 @@ func Upload(uploadID, allocationID, localPath, remotePath, thumbnailPath *C.char
 
 	connectionId := zboxutil.NewConnectionId()
 
-	task, err := sdk.CreateChunkedUpload(workdir, alloc, fileMeta, fileReader, isUpdate, false, webStreaming, connectionId, options...)
+	upload, err := sdk.CreateChunkedUpload(workdir, alloc, fileMeta, fileReader, isUpdate, false, webStreaming, connectionId, options...)
 
 	if err != nil {
 		return WithJSON(false, err)
 	}
 
-	err = task.Start()
+	err = upload.Start()
 
 	if err != nil {
 		return WithJSON(false, err)

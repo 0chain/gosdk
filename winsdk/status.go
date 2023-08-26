@@ -1,17 +1,11 @@
 package main
 
 import (
-	"errors"
-	"sync"
-
 	lru "github.com/hashicorp/golang-lru/v2"
 )
 
 var (
 	statusCaches, _ = lru.New[string, *Status](1000)
-	statusSync      sync.RWMutex
-
-	ErrInvalidRemotePath = errors.New("bulkupload: invalid remotePath")
 )
 
 type Status struct {
