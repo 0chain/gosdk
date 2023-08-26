@@ -856,11 +856,11 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 			majorErr := zboxutil.MajorError(connectionErrors)
 			if majorErr != nil {
 				return errors.New("consensus_not_met",
-					fmt.Sprintf("Multioperation (create_connection) failed. Required consensus %d got %d. Major error: %s",
+					fmt.Sprintf("Multioperation: create connection failed. Required consensus %d got %d. Major error: %s",
 						mo.consensusThresh, mo.operationMask.CountOnes(), majorErr.Error()))
 			}
 			return errors.New("consensus_not_met",
-				fmt.Sprintf("Multioperation (create_connection) failed. Required consensus %d got %d",
+				fmt.Sprintf("Multioperation: create connection failed. Required consensus %d got %d",
 					mo.consensusThresh, mo.operationMask.CountOnes()))
 		}
 
