@@ -300,7 +300,7 @@ func Test_ZCNBridge(t *testing.T) {
 	bridgeClient := getBridgeClient(ethereumClient, transactionProvider, keyStore)
 
 	t.Cleanup(func() {
-		if err := os.Remove(testKeyStoreLocation); err != nil {
+		if err := os.RemoveAll(testKeyStoreLocation); err != nil {
 			log.Fatalln(err)
 		}
 	})
