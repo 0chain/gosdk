@@ -40,7 +40,6 @@ func initBridge(
 		AuthorizersAddress: authorizersAddress,
 		TokenAddress:       tokenAddress,
 		Password:           "",
-		Homedir:            ".",
 		GasLimit:           gasLimit,
 		ConsensusThreshold: consensusThreshold,
 		EthereumClient:     ethereumClient,
