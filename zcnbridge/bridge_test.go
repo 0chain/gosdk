@@ -12,6 +12,7 @@ import (
 
 	sdkcommon "github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zcnbridge/ethereum"
+	"github.com/0chain/gosdk/zcnbridge/ethereum/authorizers"
 	binding "github.com/0chain/gosdk/zcnbridge/ethereum/bridge"
 	"github.com/0chain/gosdk/zcnbridge/ethereum/erc20"
 	bridgemocks "github.com/0chain/gosdk/zcnbridge/mocks"
@@ -34,6 +35,8 @@ const (
 
 	ethereumAddress = "0xD8c9156e782C68EE671C09b6b92de76C97948432"
 	password        = "\"02289b9\""
+
+	authorizerDelegatedAddress = "0xa149B58b7e1390D152383BB03dBc79B390F648e2"
 
 	bridgeAddress     = "0x7bbbEa24ac1751317D7669f05558632c4A9113D7"
 	tokenAddress      = "0x2ec8F26ccC678c9faF0Df20208aEE3AF776160CD"
@@ -268,7 +271,14 @@ func prepareKeyStoreGeneralMockCalls(keyStore *bridgemocks.KeyStore) {
 
 	defer os.Remove(keyStoreDir)
 
-	keyStore.On("GetEthereumKeyStore").Return(keystore.NewKeyStore(keyStoreDir, keystore.StandardScryptN, keystore.StandardScryptP))
+	ks := keystore.NewKeyStore(keyStoreDir, keystore.StandardScryptN, keystore.StandardScryptP)
+
+	// _, err = ImportAccount(keyStoreDir, ethereumMnemonic, password)
+	// if err != nil {
+	// 	log.Fatalln(err)
+	// }
+
+	keyStore.On("GetEthereumKeyStore").Return(ks)
 }
 
 func Test_ZCNBridge(t *testing.T) {
@@ -409,6 +419,56 @@ func Test_ZCNBridge(t *testing.T) {
 				EthereumAddress: ethereumAddress,
 			},
 			uint64(amount),
+		))
+	})
+
+	t.Run("should check configuration used by AddEthereumAuthorizer", func(t *testing.T) {
+		_, err := bridgeClient.AddEthereumAuthorizer(context.Background(), common.HexToAddress(authorizerDelegatedAddress))
+		require.NoError(t, err)
+
+		to := common.HexToAddress(bridgeAddress)
+		fromAddress := common.HexToAddress(ethereumAddress)
+
+		abi, err := authorizers.AuthorizersMetaData.GetAbi()
+		require.NoError(t, err)
+
+		pack, err := abi.Pack("addAuthorizers", common.HexToAddress(authorizerDelegatedAddress))
+		require.NoError(t, err)
+
+		require.True(t, ethereumClient.AssertCalled(
+			t,
+			"EstimateGas",
+			context.Background(),
+			eth.CallMsg{
+				To:   &to,
+				From: fromAddress,
+				Data: pack,
+			},
+		))
+	})
+
+	t.Run("should check configuration used by RemoveAuthorizer", func(t *testing.T) {
+		_, err := bridgeClient.RemoveEthereumAuthorizer(context.Background(), common.HexToAddress(authorizerDelegatedAddress))
+		require.NoError(t, err)
+
+		to := common.HexToAddress(bridgeAddress)
+		fromAddress := common.HexToAddress(ethereumAddress)
+
+		abi, err := authorizers.AuthorizersMetaData.GetAbi()
+		require.NoError(t, err)
+
+		pack, err := abi.Pack("removeAuthorizers", common.HexToAddress(authorizerDelegatedAddress))
+		require.NoError(t, err)
+
+		require.True(t, ethereumClient.AssertCalled(
+			t,
+			"EstimateGas",
+			context.Background(),
+			eth.CallMsg{
+				To:   &to,
+				From: fromAddress,
+				Data: pack,
+			},
 		))
 	})
 
