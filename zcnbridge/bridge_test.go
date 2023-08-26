@@ -299,12 +299,6 @@ func Test_ZCNBridge(t *testing.T) {
 
 	bridgeClient := getBridgeClient(ethereumClient, transactionProvider, keyStore)
 
-	t.Cleanup(func() {
-		if err := os.RemoveAll(testKeyStoreLocation); err != nil {
-			log.Fatalln(err)
-		}
-	})
-
 	t.Run("should update authorizer config.", func(t *testing.T) {
 		source := &authorizerNodeSource{
 			ID: "12345678",
