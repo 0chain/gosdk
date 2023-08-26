@@ -376,7 +376,7 @@ func MultiUpdate(allocationID string, workdir string, jsonMultiUploadOptions str
 	encrypts := make([]bool, totalUploads)
 	chunkNumbers := make([]int, totalUploads)
 	isUpdates := make([]bool, totalUploads)
-	isWebstreming := make([]bool, totalUploads)
+	isWebstreaming := make([]bool, totalUploads)
 	for idx, option := range options {
 		filePaths[idx] = option.FilePath
 		fileNames[idx] = option.FileName
@@ -385,7 +385,7 @@ func MultiUpdate(allocationID string, workdir string, jsonMultiUploadOptions str
 		chunkNumbers[idx] = option.ChunkNumber
 		encrypts[idx] = option.Encrypt
 		isUpdates[idx] = true
-		isWebstreming[idx] = option.IsWebstreaming
+		isWebstreaming[idx] = option.IsWebstreaming
 	}
 	if err != nil {
 		return err
@@ -395,7 +395,7 @@ func MultiUpdate(allocationID string, workdir string, jsonMultiUploadOptions str
 	if err != nil {
 		return err
 	}
-	return a.StartMultiUpload(workdir, filePaths, fileNames, thumbnailPaths, encrypts, chunkNumbers, remotePaths, isUpdates, isWebstreming, &StatusCallbackWrapped{Callback: statusCb})
+	return a.StartMultiUpload(workdir, filePaths, fileNames, thumbnailPaths, encrypts, chunkNumbers, remotePaths, isUpdates, isWebstreaming, &StatusCallbackWrapped{Callback: statusCb})
 
 }
 
