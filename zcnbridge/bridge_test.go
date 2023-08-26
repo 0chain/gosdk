@@ -6,6 +6,7 @@ import (
 	"log"
 	"math/big"
 	"os"
+	"path"
 	"strconv"
 	"testing"
 	"time"
@@ -34,13 +35,13 @@ const (
 	ethereumMnemonic = "symbol alley celery diesel donate moral almost opinion achieve since diamond page"
 
 	ethereumAddress = "0xD8c9156e782C68EE671C09b6b92de76C97948432"
-	password        = "\"02289b9\""
+	password        = "02289b9"
 
 	authorizerDelegatedAddress = "0xa149B58b7e1390D152383BB03dBc79B390F648e2"
 
-	bridgeAddress     = "0x7bbbEa24ac1751317D7669f05558632c4A9113D7"
-	tokenAddress      = "0x2ec8F26ccC678c9faF0Df20208aEE3AF776160CD"
-	authorizerAddress = "0xEAe8229c0E457efBA1A1769e7F8c20110fF68E61"
+	bridgeAddress      = "0x7bbbEa24ac1751317D7669f05558632c4A9113D7"
+	tokenAddress       = "0x2ec8F26ccC678c9faF0Df20208aEE3AF776160CD"
+	authorizersAddress = "0xEAe8229c0E457efBA1A1769e7F8c20110fF68E61"
 
 	zcnTxnID = "b26abeb31fcee5d2e75b26717722938a06fa5ce4a5b5e68ddad68357432caace"
 	amount   = 1e10
@@ -50,6 +51,10 @@ const (
 	ethereumTxnID = "0x3b59971c2aa294739cd73912f0c5a7996aafb796238cf44408b0eb4af0fbac82"
 
 	clientId = "d6e9b3222434faa043c683d1a939d6a0fa2818c4d56e794974d64a32005330d3"
+)
+
+var (
+	testKeyStoreLocation = path.Join(".", EthereumWalletStorageDir)
 )
 
 var (
@@ -219,7 +224,7 @@ func getBridgeClient(ethereumClient EthereumClient, transactionProvider transact
 
 	cfg.SetDefault("bridge.bridge_address", bridgeAddress)
 	cfg.SetDefault("bridge.token_address", tokenAddress)
-	cfg.SetDefault("bridge.authorizers_address", authorizerAddress)
+	cfg.SetDefault("bridge.authorizers_address", authorizersAddress)
 	cfg.SetDefault("bridge.ethereum_address", ethereumAddress)
 	cfg.SetDefault("bridge.password", password)
 	cfg.SetDefault("bridge.gas_limit", 0)
@@ -258,25 +263,23 @@ func getKeyStore(t mock.TestingT) *bridgemocks.KeyStore {
 }
 
 func prepareKeyStoreGeneralMockCalls(keyStore *bridgemocks.KeyStore) {
-	keyStore.On("Find", mock.Anything).Return(accounts.Account{
-		Address: common.HexToAddress(ethereumAddress),
-	}, nil)
-	keyStore.On("TimedUnlock", mock.Anything, mock.Anything, mock.Anything).Return(nil)
-	keyStore.On("SignHash", mock.Anything, mock.Anything).Return([]byte(ethereumAddress), nil)
+	ks := keystore.NewKeyStore(testKeyStoreLocation, keystore.StandardScryptN, keystore.StandardScryptP)
 
-	keyStoreDir, err := os.MkdirTemp(".", "keyStore")
+	_, err := ImportAccount(".", ethereumMnemonic, password)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	defer os.Remove(keyStoreDir)
-
-	ks := keystore.NewKeyStore(keyStoreDir, keystore.StandardScryptN, keystore.StandardScryptP)
-
-	// _, err = ImportAccount(keyStoreDir, ethereumMnemonic, password)
-	// if err != nil {
-	// 	log.Fatalln(err)
-	// }
+	keyStore.On("Find", mock.Anything).Return(accounts.Account{Address: common.HexToAddress(ethereumAddress)}, nil)
+	keyStore.On("TimedUnlock", mock.Anything, mock.Anything, mock.Anything).Run(
+		func(args mock.Arguments) {
+			err = ks.TimedUnlock(args.Get(0).(accounts.Account), args.Get(1).(string), args.Get(2).(time.Duration))
+			if err != nil {
+				log.Fatalln(err)
+			}
+		},
+	).Return(nil)
+	keyStore.On("SignHash", mock.Anything, mock.Anything).Return([]byte(ethereumAddress), nil)
 
 	keyStore.On("GetEthereumKeyStore").Return(ks)
 }
@@ -295,6 +298,12 @@ func Test_ZCNBridge(t *testing.T) {
 	prepareKeyStoreGeneralMockCalls(keyStore)
 
 	bridgeClient := getBridgeClient(ethereumClient, transactionProvider, keyStore)
+
+	t.Cleanup(func() {
+		if err := os.Remove(testKeyStoreLocation); err != nil {
+			log.Fatalln(err)
+		}
+	})
 
 	t.Run("should update authorizer config.", func(t *testing.T) {
 		source := &authorizerNodeSource{
@@ -426,7 +435,7 @@ func Test_ZCNBridge(t *testing.T) {
 		_, err := bridgeClient.AddEthereumAuthorizer(context.Background(), common.HexToAddress(authorizerDelegatedAddress))
 		require.NoError(t, err)
 
-		to := common.HexToAddress(bridgeAddress)
+		to := common.HexToAddress(authorizersAddress)
 		fromAddress := common.HexToAddress(ethereumAddress)
 
 		abi, err := authorizers.AuthorizersMetaData.GetAbi()
@@ -451,7 +460,7 @@ func Test_ZCNBridge(t *testing.T) {
 		_, err := bridgeClient.RemoveEthereumAuthorizer(context.Background(), common.HexToAddress(authorizerDelegatedAddress))
 		require.NoError(t, err)
 
-		to := common.HexToAddress(bridgeAddress)
+		to := common.HexToAddress(authorizersAddress)
 		fromAddress := common.HexToAddress(ethereumAddress)
 
 		abi, err := authorizers.AuthorizersMetaData.GetAbi()

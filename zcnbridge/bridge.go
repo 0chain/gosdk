@@ -298,11 +298,12 @@ func (b *BridgeClient) SignWithEthereumChain(message string) ([]byte, error) {
 
 	signature, err := b.KeyStore.SignHash(signerAcc, hash.Bytes())
 	if err != nil {
-		// return nil, err
+		return nil, err
 	}
-	// if err != nil {
-	// 	return []byte{}, errors.Wrap(err, "failed to sign the message")
-	// }
+
+	if err != nil {
+		return []byte{}, errors.Wrap(err, "failed to sign the message")
+	}
 
 	return signature, nil
 }
