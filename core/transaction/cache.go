@@ -5,11 +5,8 @@ import (
 	"encoding/json"
 	stdErrors "errors"
 	"fmt"
-	"github.com/0chain/common/core/logging"
 	"net/http"
-	"sort"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -17,8 +14,7 @@ import (
 )
 
 const (
-	GET_BALANCE  = `/v1/client/get/balance?client_id=`
-	_CHAIN_STATS = "/_chain_stats"
+	GET_BALANCE = `/v1/client/get/balance?client_id=`
 )
 
 const consensusThresh = float32(25.0)
@@ -126,89 +122,6 @@ func GetBalanceFieldFromSharders(clientID, name string, sharders []string) (int6
 	}
 
 	return 0, "", stdErrors.New("get balance failed, consensus not reached")
-}
-
-func GetRoundFromSharders(clientID, name string, sharders []string) (int64, error) {
-	result := make(chan *util.GetResponse, len(sharders))
-	// getMinShardersVerify
-	var numSharders = len(sharders) // overwrite, use all
-	queryFromSharders(sharders, fmt.Sprintf("%v", _CHAIN_STATS), result)
-
-	var rounds []int64
-
-	consensus := int64(0)
-	roundMap := make(map[int64]int64)
-
-	round := int64(0)
-
-	waitTimeC := time.After(10 * time.Second)
-	for i := 0; i < numSharders; i++ {
-		select {
-		case <-waitTimeC:
-			return 0, stdErrors.New("get balance failed. consensus not reached")
-		case rsp := <-result:
-			if rsp.StatusCode != http.StatusOK {
-				continue
-			}
-
-			var objmap map[string]json.RawMessage
-			err := json.Unmarshal([]byte(rsp.Body), &objmap)
-			if err != nil {
-				continue
-			}
-
-			// Step 2: Parse the HTML content using goquery
-			doc, err := goquery.NewDocumentFromReader(rsp.Body)
-			if err != nil {
-				logging.Logger.Fatal(err)
-			}
-
-			// Find the element with the round number
-			doc.Find("h1").Each(func(index int, item *goquery.Selection) {
-				text := strings.TrimSpace(item.Text())
-				if strings.HasPrefix(text, "Round: ") {
-					// Extract the round number from the text
-					roundStr := strings.TrimPrefix(text, "Round: ")
-
-					// Convert the extracted string round number to int64
-					roundNumber, err := strconv.ParseInt(roundStr, 10, 64)
-					if err != nil {
-						log.Fatal(err)
-					}
-
-					// Use the extracted round number (int64)
-					fmt.Println("Extracted Round Number:", roundNumber)
-				}
-			})
-
-			if v, ok := objmap[name]; ok {
-				bal, err := strconv.ParseInt(string(v), 10, 64)
-				if err != nil {
-					continue
-				}
-
-				rounds = append(rounds, bal)
-				sort.Slice(rounds, func(i, j int) bool {
-					return false
-				})
-
-				medianRound := rounds[len(rounds)/2]
-				roundMap[medianRound]++
-
-				if roundMap[medianRound] > consensus {
-					consensus = roundMap[medianRound]
-					round = medianRound
-
-					rate := consensus * 100 / int64(len(sharders))
-					if rate >= int64(consensusThresh) {
-						return round, nil
-					}
-				}
-			}
-		}
-	}
-
-	return 0, stdErrors.New("get balance failed, consensus not reached")
 }
 
 func queryFromShardersContext(ctx context.Context, sharders []string,
