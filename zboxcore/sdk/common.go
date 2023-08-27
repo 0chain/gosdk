@@ -129,7 +129,9 @@ func ValidateRemoteFileName(remotePath string) error {
 	return nil
 }
 
-func GetRoundFromSharders(clientID, name string, sharders []string) (int64, error) {
+func GetRoundFromSharders() (int64, error) {
+	sharders := blockchain.GetSharders()
+
 	result := make(chan *util.GetResponse, len(sharders))
 	// getMinShardersVerify
 	var numSharders = len(sharders) // overwrite, use all
