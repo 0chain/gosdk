@@ -45,6 +45,9 @@ func (c *StatusCallback) InProgress(allocationID, remotePath string, op int, com
 	s := c.getOrCreate(lookupHash)
 	s.CompletedBytes = completedBytes
 	s.LookupHash = lookupHash
+	if completedBytes >= s.TotalBytes {
+		s.Completed = true
+	}
 }
 
 func (c *StatusCallback) Error(allocationID string, remotePath string, op int, err error) {
@@ -61,6 +64,7 @@ func (c *StatusCallback) Completed(allocationID, remotePath string, filename str
 	s := c.getOrCreate(lookupHash)
 	s.Completed = true
 	s.LookupHash = lookupHash
+	s.CompletedBytes = s.TotalBytes
 }
 
 func (c *StatusCallback) CommitMetaCompleted(request, response string, err error) {
