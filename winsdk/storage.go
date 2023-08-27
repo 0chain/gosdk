@@ -97,6 +97,8 @@ func CreateDir(allocationID, path *C.char) *C.char {
 		return WithJSON(false, err)
 	}
 
+	log.Info("winsdk: create dir ", s)
+
 	return WithJSON(true, nil)
 
 }
@@ -126,6 +128,8 @@ func Rename(allocationID, path, destName *C.char) *C.char {
 		return WithJSON(false, err)
 	}
 
+	log.Info("winsdk: rename ", s, " -> ", d)
+
 	return WithJSON(true, nil)
 
 }
@@ -154,6 +158,8 @@ func Delete(allocationID, path *C.char) *C.char {
 	if err != nil {
 		return WithJSON(false, err)
 	}
+
+	log.Info("winsdk: deleted ", s)
 
 	return WithJSON(true, nil)
 }
