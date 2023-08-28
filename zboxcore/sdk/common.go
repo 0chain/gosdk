@@ -139,6 +139,7 @@ func GetRoundFromSharders() (int64, error) {
 	var numSharders = len(sharders) // overwrite, use all
 	queryFromSharders(sharders, fmt.Sprintf("%v", CURRENT_ROUND), result)
 
+	logging.Logger.Info("GetRoundFromSharders", zap.Any("sharders", sharders), zap.Any("numSharders", numSharders), zap.Any("result", result))
 	const consensusThresh = float32(25.0)
 
 	var rounds []int64
@@ -152,7 +153,7 @@ func GetRoundFromSharders() (int64, error) {
 	for i := 0; i < numSharders; i++ {
 		select {
 		case <-waitTimeC:
-			return 0, stdErrors.New("get balance failed. consensus not reached")
+			return 0, stdErrors.New("get round failed. consensus not reached")
 		case rsp := <-result:
 			if rsp.StatusCode != http.StatusOK {
 				continue
