@@ -163,13 +163,14 @@ type MultiOperationOption struct {
 }
 
 type MultiUploadOption struct {
-	FilePath      string `json:"filePath,omitempty"`
-	FileName      string `json:"fileName,omitempty"`
-	RemotePath    string `json:"remotePath,omitempty"`
-	ThumbnailPath string `json:"thumbnailPath,omitempty"`
-	Encrypt       bool   `json:"encrypt,omitempty"`
-	ChunkNumber   int    `json:"chunkNumber,omitempty"`
-	IsUpdate      bool   `json:"isUpdate,omitempty"`
+	FilePath       string `json:"filePath,omitempty"`
+	FileName       string `json:"fileName,omitempty"`
+	RemotePath     string `json:"remotePath,omitempty"`
+	ThumbnailPath  string `json:"thumbnailPath,omitempty"`
+	Encrypt        bool   `json:"encrypt,omitempty"`
+	ChunkNumber    int    `json:"chunkNumber,omitempty"`
+	IsUpdate       bool   `json:"isUpdate,omitempty"`
+	IsWebstreaming bool   `json:"isWebstreaming,omitempty"`
 }
 
 // MultiOperation - do copy, move, delete and createdir operation together
@@ -323,6 +324,7 @@ func BulkUpload(uploadID, allocationID, files *C.char) *C.char {
 	chunkNumbers := make([]int, totalUploads)
 	encrypts := make([]bool, totalUploads)
 	isUpdates := make([]bool, totalUploads)
+	isWebstreaming := make([]bool, totalUploads)
 
 	statusBar := &StatusCallback{
 		status: make(map[string]*Status),
@@ -335,6 +337,7 @@ func BulkUpload(uploadID, allocationID, files *C.char) *C.char {
 		remotePaths[idx] = option.RemotePath
 		chunkNumbers[idx] = option.ChunkNumber
 		isUpdates[idx] = option.IsUpdate
+		isWebstreaming[idx] = option.IsWebstreaming
 		encrypts[idx] = option.Encrypt
 		statusBar.status[option.RemotePath+option.Name] = &Status{}
 	}
@@ -346,7 +349,7 @@ func BulkUpload(uploadID, allocationID, files *C.char) *C.char {
 
 	statusCaches.Add(C.GoString(uploadID), statusBar)
 
-	err = a.StartMultiUpload(workdir, filePaths, fileNames, thumbnailPaths, encrypts, chunkNumbers, remotePaths, isUpdates, statusBar)
+	err = a.StartMultiUpload(workdir, filePaths, fileNames, thumbnailPaths, encrypts, chunkNumbers, remotePaths, isUpdates, isWebstreaming, statusBar)
 	if err != nil {
 		return WithJSON(nil, err)
 	}
