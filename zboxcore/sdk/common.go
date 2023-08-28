@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	stdErrors "errors"
 	"fmt"
+	"github.com/0chain/common/core/logging"
 	"github.com/0chain/gosdk/core/util"
+	"go.uber.org/zap"
 	"io/ioutil"
 	"net/http"
 	"path"
@@ -200,14 +202,16 @@ func queryFromShardersContext(ctx context.Context, sharders []string,
 			url := fmt.Sprintf("%v%v", sharderurl, query)
 			req, err := util.NewHTTPGetRequestContext(ctx, url)
 			if err != nil {
-				//Logger.Error(sharderurl, " new get request failed. ", err.Error())
+				logging.Logger.Info("new get request failed. ", zap.Any("url", url), zap.Error(err))
 				return
 			}
 			res, err := req.Get()
 			if err != nil {
-				//Logger.Error(sharderurl, " get error. ", err.Error())
+				logging.Logger.Info("2 new get request failed. ", zap.Any("url", url), zap.Error(err))
 				return
 			}
+
+			logging.Logger.Info("3 new get request failed. ", zap.Any("url", url), zap.Error(err), zap.Any("res", res))
 			result <- res
 		}(sharder)
 	}
