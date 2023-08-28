@@ -5,9 +5,10 @@ type UploadFile struct {
 	Path          string
 	ThumbnailPath string
 
-	RemotePath string
-	Encrypt    bool
-	IsUpdate   bool
+	RemotePath     string
+	Encrypt        bool
+	IsUpdate       bool
+	IsWebstreaming bool
 
 	ChunkNumber int
 }

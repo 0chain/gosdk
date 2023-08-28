@@ -19,12 +19,13 @@ type UploadOperation struct {
 	opts           []ChunkedUploadOption
 	refs           []*fileref.FileRef
 	isUpdate       bool
+	isWebstreaming bool
 	statusCallback StatusCallback
 	opCode         int
 }
 
 func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
-	cu, err := CreateChunkedUpload(uo.workdir, allocObj, uo.fileMeta, uo.fileReader, uo.isUpdate, false, false, connectionID, uo.opts...)
+	cu, err := CreateChunkedUpload(uo.workdir, allocObj, uo.fileMeta, uo.fileReader, uo.isUpdate, false, uo.isWebstreaming, connectionID, uo.opts...)
 	if err != nil {
 		uploadMask := zboxutil.NewUint128(1).Lsh(uint64(len(allocObj.Blobbers))).Sub64(1)
 		return nil, uploadMask, err
@@ -123,12 +124,13 @@ func (uo *UploadOperation) Error(allocObj *Allocation, consensus int, err error)
 	}
 }
 
-func NewUploadOperation(workdir string, fileMeta FileMeta, fileReader io.Reader, isUpdate bool, opts ...ChunkedUploadOption) *UploadOperation {
+func NewUploadOperation(workdir string, fileMeta FileMeta, fileReader io.Reader, isUpdate, isWebstreaming bool, opts ...ChunkedUploadOption) *UploadOperation {
 	uo := &UploadOperation{}
 	uo.workdir = workdir
 	uo.fileMeta = fileMeta
 	uo.fileReader = fileReader
 	uo.opts = opts
 	uo.isUpdate = isUpdate
+	uo.isWebstreaming = isWebstreaming
 	return uo
 }
