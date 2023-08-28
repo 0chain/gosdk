@@ -76,8 +76,8 @@ func createAllocation(datashards, parityshards int, size int64,
 			Min: uint64(minWritePrice),
 			Max: uint64(maxWritePrice),
 		},
-		Lock:       uint64(lock),
-		BlobberIds: blobberIds,
+		Lock:                 uint64(lock),
+		BlobberIds:           blobberIds,
 		ThirdPartyExtendable: setThirdPartyExtendable,
 	}
 
@@ -117,14 +117,14 @@ func transferAllocation(allocationID, newOwnerId, newOwnerPublicKey string) erro
 func UpdateForbidAllocation(allocationID string, forbidupload, forbiddelete, forbidupdate, forbidmove, forbidcopy, forbidrename bool) (string, error) {
 
 	hash, _, err := sdk.UpdateAllocation(
-		0,            //size,
-		false,        //extend,
+		0,            // size,
+		false,        // extend,
 		allocationID, // allocID,
-		0,            //lock,
-		false,        //updateTerms,
-		"",           //addBlobberId,
-		"",           //removeBlobberId,
-		false,        //thirdPartyExtendable,
+		0,            // lock,
+		false,        // updateTerms,
+		"",           // addBlobberId,
+		"",           // removeBlobberId,
+		false,        // thirdPartyExtendable,
 		&sdk.FileOptionsParameters{
 			ForbidUpload: sdk.FileOptionParam{Changed: forbidupload, Value: forbidupload},
 			ForbidDelete: sdk.FileOptionParam{Changed: forbiddelete, Value: forbiddelete},
@@ -142,14 +142,14 @@ func UpdateForbidAllocation(allocationID string, forbidupload, forbiddelete, for
 func freezeAllocation(allocationID string) (string, error) {
 
 	hash, _, err := sdk.UpdateAllocation(
-		0,            //size,
-		false,        //extend,
+		0,            // size,
+		false,        // extend,
 		allocationID, // allocID,
-		0,            //lock,
-		false,        //updateTerms,
-		"",           //addBlobberId,
-		"",           //removeBlobberId,
-		false,        //thirdPartyExtendable,
+		0,            // lock,
+		false,        // updateTerms,
+		"",           // addBlobberId,
+		"",           // removeBlobberId,
+		false,        // thirdPartyExtendable,
 		&sdk.FileOptionsParameters{
 			ForbidUpload: sdk.FileOptionParam{Changed: true, Value: true},
 			ForbidDelete: sdk.FileOptionParam{Changed: true, Value: true},
@@ -400,4 +400,29 @@ func allocationRepair(allocationID, remotePath string) error {
 		return errors.New("upload failed: unknown")
 	}
 	return nil
+}
+
+type AllocationDiffRequest struct {
+	AllocationId       string   `json:"allocationId"`
+	LastSyncCachePath  string   `json:"lastSyncCachePath"`
+	LocalRootPath      string   `json:"localRootPath"`
+	RemotePath         string   `json:"remotePath"`
+	LocalFileFilters   []string `json:"localFileFilters,omitempty"`
+	RemoteExcludePaths []string `json:"remoteExcludePaths,omitempty"`
+}
+
+func getAllocationDiff(request AllocationDiffRequest) ([]sdk.FileDiff, error) {
+	if len(request.AllocationId) == 0 {
+		return nil, RequiredArg("allocationId")
+	}
+
+	allocationObj, err := sdk.GetAllocation(request.AllocationId)
+	if err != nil {
+		return nil, err
+	}
+	sdk.SetWasm()
+
+	return allocationObj.GetAllocationDiff(request.LastSyncCachePath,
+		request.LocalRootPath, request.LocalFileFilters, request.RemoteExcludePaths, request.RemotePath)
+	// return allocationObj.GetAllocationDiff(lastSyncCachePath, localRootPath, localFileFilters, remoteExcludePath, remotePath)
 }

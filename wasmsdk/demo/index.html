@@ -36,13 +36,13 @@
   <fieldset>
     <legend>Wallet</legend>
     <label for="clientId"> ClientID </label> <input id="clientId" name="clientId" style="width: 600px;"
-      value="30764bcba73216b67c36b05a17b4dd076bfdc5bb0ed84856f27622188c377269" /><br>
+      value="8e91766de0c988487bf4596fd86642b1b0325ef086d5af6327d7d9de69f2f1db" /><br>
     <label for="privateKey">PrivateKey</label> <input id="privateKey" name="privateKey" style="width: 600px;"
-      value="41729ed8d82f782646d2d30b9719acfd236842b9b6e47fee12b7bdbd05b35122" /><br>
+      value="2009c7de6d9154c5253b21ad04b04e3cc4fe9f133de6936409f6abd95f82520c" /><br>
     <label for="publicKey"> PublicKey</label> <input id="publicKey" name="publicKey" style="width: 600px;"
-      value="1f495df9605a4479a7dd6e5c7a78caf9f9d54e3a40f62a3dd68ed377115fe614d8acf0c238025f67a85163b9fbf31d10fbbb4a551d1cf00119897edf18b1841c" /><br>
+      value="9759c52aca48ef15f88d606fecfacb45d7d1c95a49286ba6ffa859dd010ef116892a0c2f7c40ff48543fc2082f82838b1f86cf8b7be6f5d81f81730a51e775a2" /><br>
     <label for="mnemonic"> Mnemonic</label> <input id="mnemonic" name="mnemonic" style="width: 600px;"
-      value="glare mistake gun joke bid spare across diagram wrap cube swear cactus cave repeat you brave few best wild lion pitch pole original wasp" /><br>
+      value="gauge rigid typical memory buzz rule reunion field imitate bubble cushion gun brain script drum program sudden update interest poet crouch neutral smart very" /><br>
 
 
 
@@ -116,6 +116,7 @@
     <button id="btnAllocationRepair">Repair</button>
     <button id="btnMultiOps">MultiOperation</button>
     <button id="createDir">createDir</button>
+    <button id="btnGetAllocationDiff">getAllocationDiff</button>
 
     <br>
 
@@ -788,11 +789,35 @@
       let stringifiedArray = JSON.stringify(objects);
 
       try {
-        console.log("execting", objects[0])
+        console.log("executing", objects[0])
         const output = await goWasm.sdk.multiOperation(allocationId, stringifiedArray)
       } catch (e) {
         alert(e)
       }
+    })
+
+    onClick('btnGetAllocationDiff', async() => {
+      const allocationId = getSelectedAllocation()
+      if (!allocationId) {
+        alert("please provide allocationId")
+      }
+
+      const objects = []
+      objects.push({
+        allocationId: allocationId,
+        localRootPath: `/tmp`,
+      })
+
+      let stringifiedArray = JSON.stringify(objects);
+
+      try {
+        console.log("executing getAllocationDiff")
+        const output = await goWasm.sdk.getAllocationDiff(allocationId, stringifiedArray)
+        console.log(output)
+      } catch (e) {
+        alert(e)
+      }
+
     })
 
   </script>

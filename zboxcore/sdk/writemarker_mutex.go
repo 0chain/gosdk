@@ -182,17 +182,25 @@ func (wmMu *WriteMarkerMutex) Lock(
 
 	consensus.Reset()
 	consensus.consensus = addConsensus
+
 	wg := &sync.WaitGroup{}
 
 	// Lock first responsive blobber as lead blobber
 	for ; wmMu.leadBlobberIndex < len(blobbers); wmMu.leadBlobberIndex++ {
+		methodCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+		defer cancel()
 		leadBlobber := blobbers[uint64(wmMu.leadBlobberIndex)]
 		wg.Add(1)
-		go wmMu.lockBlobber(ctx, mask, maskMu, consensus, leadBlobber, uint64(wmMu.leadBlobberIndex), connID, timeOut, wg)
+		go wmMu.lockBlobber(methodCtx, mask, maskMu, consensus, leadBlobber, uint64(wmMu.leadBlobberIndex), connID, timeOut, wg)
 		wg.Wait()
-
 		if consensus.getConsensus()-addConsensus == 1 {
 			break
+		}
+		select {
+		case <-methodCtx.Done():
+			logger.Logger.Error("Locking blobber: ", leadBlobber.Baseurl, " context timeout exceeded")
+			return errors.New("lock_timeout", "Locking blobber: "+leadBlobber.Baseurl+" context timeout exceeded")
+		default:
 		}
 	}
 
@@ -251,11 +259,8 @@ func (wmMu *WriteMarkerMutex) lockBlobber(
 	timeOut time.Duration, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	methodCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
-	defer cancel()
-
 	select {
-	case <-methodCtx.Done():
+	case <-ctx.Done():
 		return
 	default:
 	}
@@ -286,16 +291,8 @@ func (wmMu *WriteMarkerMutex) lockBlobber(
 	var shouldContinue bool
 	for retry := 0; retry < 3; retry++ {
 		err, shouldContinue = func() (err error, shouldContinue bool) {
-			reqCtx, ctxCncl := context.WithTimeout(methodCtx, timeOut)
+			reqCtx, ctxCncl := context.WithTimeout(ctx, timeOut)
 			defer ctxCncl()
-
-			select {
-			case <-reqCtx.Done():
-				logger.Logger.Error("Locking blobber: ", b.Baseurl, " context timeout exceeded")
-				return
-			default:
-			}
-
 			resp, err = zboxutil.Client.Do(req.WithContext(reqCtx))
 			if err != nil {
 				return

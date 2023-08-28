@@ -20,7 +20,7 @@ import (
 	"syscall/js"
 )
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 var (
 	signMutex sync.Mutex
@@ -66,7 +66,7 @@ func main() {
 					return s, nil
 				}
 
-				//update sign with js sign
+				// update sign with js sign
 				zcncrypto.Sign = signFunc
 				zcncore.SignFn = signFunc
 				sys.Sign = func(hash, signatureScheme string, keys []sys.KeyPair) (string, error) {
@@ -89,7 +89,7 @@ func main() {
 					return result[0].Bool(), nil
 				}
 
-				//update Verify with js sign
+				// update Verify with js sign
 				sys.Verify = verifyFunc
 			} else {
 				PrintError("__zcn_wasm__.jsProxy.verify is not installed yet")
@@ -107,7 +107,7 @@ func main() {
 					return result[0].Bool(), nil
 				}
 
-				//update Verify with js sign
+				// update Verify with js sign
 				sys.VerifyWith = verifyFuncWith
 			} else {
 				PrintError("__zcn_wasm__.jsProxy.verifyWith is not installed yet")
@@ -149,7 +149,7 @@ func main() {
 		// register go functions on wasm.sdk
 		if !(sdk.IsNull() || sdk.IsUndefined()) {
 			jsbridge.BindAsyncFuncs(sdk, map[string]interface{}{
-				//sdk
+				// sdk
 				"init":                   initSDKs,
 				"setWallet":              setWallet,
 				"getPublicEncryptionKey": zcncore.GetPublicEncryptionKey,
@@ -161,7 +161,7 @@ func main() {
 				"createThumbnail":        createThumbnail,
 				"makeSCRestAPICall":      makeSCRestAPICall,
 
-				//blobber
+				// blobber
 				"delete":                 Delete,
 				"rename":                 Rename,
 				"copy":                   Copy,
@@ -190,7 +190,7 @@ func main() {
 				"stop":           stop,
 				"getNextSegment": getNextSegment,
 
-				//allocation
+				// allocation
 				"createAllocation":           createAllocation,
 				"getAllocationBlobbers":      getAllocationBlobbers,
 				"getBlobberIds":              getBlobberIds,
@@ -206,6 +206,7 @@ func main() {
 				"getUpdateAllocationMinLock": getUpdateAllocationMinLock,
 				"getAllocationWith":          getAllocationWith,
 				"createfreeallocation":       createfreeallocation,
+				"getAllocationDiff":          getAllocationDiff,
 
 				// readpool
 				"getReadPoolInfo": getReadPoolInfo,
@@ -224,11 +225,11 @@ func main() {
 				"decodeAuthTicket": decodeAuthTicket,
 				"allocationRepair": allocationRepair,
 
-				//smartcontract
+				// smartcontract
 				"executeSmartContract": executeSmartContract,
 				"faucet":               faucet,
 
-				//swap
+				// swap
 				"setSwapWallets":                setSwapWallets,
 				"swapToken":                     swapToken,
 				"initBridge":                    initBridge,
@@ -238,10 +239,10 @@ func main() {
 				"getNotProcessedWZCNBurnEvents": getNotProcessedWZCNBurnEvents,
 				"getNotProcessedZCNBurnTickets": getNotProcessedZCNBurnTickets,
 
-				//zcn
+				// zcn
 				"getWalletBalance": getWalletBalance,
 
-				//0box api
+				// 0box api
 				"getCsrfToken":     getCsrfToken,
 				"createJwtSession": createJwtSession,
 				"createJwtToken":   createJwtToken,

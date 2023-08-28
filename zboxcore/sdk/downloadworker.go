@@ -279,7 +279,6 @@ func (req *DownloadRequest) fillShards(shards [][][]byte, result *downloadBlock)
 		if req.encryptedKey != "" {
 			data, err = req.getDecryptedData(result, i)
 			if err != nil {
-				shards[i] = nil
 				return err
 			}
 		} else {

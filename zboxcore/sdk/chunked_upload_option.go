@@ -91,3 +91,9 @@ func WithMask(mask zboxutil.Uint128) ChunkedUploadOption {
 		su.uploadMask = mask
 	}
 }
+
+func WithEncryptedPoint(point string) ChunkedUploadOption {
+	return func(su *ChunkedUpload) {
+		su.encryptedKeyPoint = point
+	}
+}
