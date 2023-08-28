@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"mime/multipart"
 	"sync"
 	"sync/atomic"
@@ -73,7 +73,7 @@ func GetWritemarker(allocID, allocTx, id, baseUrl string) (*LatestPrevWriteMarke
 			time.Sleep(time.Duration(r) * time.Second)
 			continue
 		}
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		defer resp.Body.Close()
 		if resp.StatusCode != http.StatusOK {
 			return nil, fmt.Errorf("writemarker error response %s with status %d", body, resp.StatusCode)
@@ -182,7 +182,7 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 				return
 			}
 
-			respBody, err = ioutil.ReadAll(resp.Body)
+			respBody, err = io.ReadAll(resp.Body)
 			if err != nil {
 				l.Logger.Error("Response read: ", err)
 				return
