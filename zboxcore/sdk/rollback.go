@@ -245,8 +245,11 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 
 	versionMap := make(map[string][]*RollbackBlobber)
 
-	var prevVersion string
-	var latestVersion string
+	var (
+		prevVersion   string
+		latestVersion string
+		highestTS     int64
+	)
 
 	for rb := range markerChan {
 
@@ -256,10 +259,14 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 
 		version := rb.lpm.LatestWM.FileMetaRoot
 
+		if highestTS < rb.lpm.LatestWM.Timestamp {
+			prevVersion = latestVersion
+			highestTS = rb.lpm.LatestWM.Timestamp
+			latestVersion = version
+		}
+
 		if prevVersion == "" {
 			prevVersion = version
-		} else if prevVersion != version && latestVersion == "" {
-			latestVersion = version
 		}
 
 		if _, ok := versionMap[version]; !ok {
@@ -272,23 +279,6 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 	l.Logger.Info("versionMap", zap.Any("versionMap", versionMap))
 	if len(versionMap) < 2 {
 		return Commit, nil
-	}
-
-	maxTimestamp := int64(0)
-	for _, rb := range versionMap[latestVersion] {
-		if rb.lpm.LatestWM.Timestamp > maxTimestamp {
-			maxTimestamp = rb.lpm.LatestWM.Timestamp
-		}
-	}
-	toFlip := false
-	for _, rb := range versionMap[prevVersion] {
-		if rb.lpm.LatestWM.Timestamp > maxTimestamp {
-			toFlip = true
-			break
-		}
-	}
-	if toFlip {
-		prevVersion, latestVersion = latestVersion, prevVersion
 	}
 
 	req := a.DataShards

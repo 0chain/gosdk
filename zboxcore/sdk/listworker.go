@@ -58,6 +58,7 @@ type ListResult struct {
 	UpdatedAt       common.Timestamp `json:"updated_at"`
 	Children        []*ListResult    `json:"list"`
 	Consensus       `json:"-"`
+	deleteMask      zboxutil.Uint128 `json:"-"`
 }
 
 func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, blobberIdx int, rspCh chan<- *listResponse) {
@@ -146,7 +147,9 @@ func (req *ListRequest) getlistFromBlobbers() []*listResponse {
 
 func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
 	lR := req.getlistFromBlobbers()
-	result := &ListResult{}
+	result := &ListResult{
+		deleteMask: zboxutil.NewUint128(1).Lsh(uint64(len(req.blobbers))).Sub64(1),
+	}
 	selected := make(map[string]*ListResult)
 	childResultMap := make(map[string]*ListResult)
 	var err error
@@ -157,6 +160,7 @@ func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
 		if ti.err != nil {
 			err = ti.err
 			errNum++
+			result.deleteMask = result.deleteMask.And(zboxutil.NewUint128(1).Lsh(uint64(ti.blobberIdx)).Not())
 			continue
 		}
 		if ti.ref == nil {
@@ -193,7 +197,7 @@ func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
 		}
 	}
 
-	if errNum == len(lR) {
+	if errNum >= req.consensusThresh && !req.forRepair {
 		return nil, err
 	}
 
