@@ -218,8 +218,10 @@ func Upload(allocationID, localPath, remotePath, thumbnailPath *C.char, isUpdate
 
 	statusCaches.Add(getLookupHash(allocID, remote), &Status{})
 
+	thumbnail := C.GoString(thumbnailPath)
+
 	options := []sdk.ChunkedUploadOption{
-		sdk.WithThumbnailFile(C.GoString(thumbnailPath)),
+		sdk.WithThumbnailFile(thumbnail),
 		sdk.WithEncrypt(encrypt),
 		sdk.WithStatusCallback(statusBar),
 		sdk.WithChunkNumber(chunkNumber),
@@ -233,11 +235,15 @@ func Upload(allocationID, localPath, remotePath, thumbnailPath *C.char, isUpdate
 		return WithJSON(false, err)
 	}
 
+	log.Info("upload: start ", local, remote, thumbnail, isUpdate, encrypt, webStreaming, chunkNumber)
+
 	err = upload.Start()
 
 	if err != nil {
 		return WithJSON(false, err)
 	}
+
+	log.Info("upload: end ", remote)
 
 	return WithJSON(true, nil)
 
