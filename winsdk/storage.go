@@ -107,17 +107,6 @@ type MultiOperationOption struct {
 	DestPath      string `json:"DestPath,omitempty"` // Required for copy and move operation`
 }
 
-type MultiUploadOption struct {
-	FilePath       string `json:"filePath,omitempty"`
-	FileName       string `json:"fileName,omitempty"`
-	RemotePath     string `json:"remotePath,omitempty"`
-	ThumbnailPath  string `json:"thumbnailPath,omitempty"`
-	Encrypt        bool   `json:"encrypt,omitempty"`
-	ChunkNumber    int    `json:"chunkNumber,omitempty"`
-	IsUpdate       bool   `json:"isUpdate,omitempty"`
-	IsWebstreaming bool   `json:"isWebstreaming,omitempty"`
-}
-
 // MultiOperation - do copy, move, delete and createdir operation together
 // ## Inputs
 //   - allocationID
