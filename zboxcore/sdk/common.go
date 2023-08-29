@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	stdErrors "errors"
 	"fmt"
+	"github.com/0chain/common/core/logging"
 	"github.com/0chain/gosdk/core/util"
 	"go.uber.org/zap"
 	"io/ioutil"
@@ -138,7 +139,6 @@ func GetRoundFromSharders() (int64, error) {
 	var numSharders = len(sharders) // overwrite, use all
 	queryFromSharders(sharders, fmt.Sprintf("%v", CURRENT_ROUND), result)
 
-	fmt.Println("GetRoundFromSharders", zap.Any("sharders", sharders), zap.Any("numSharders", numSharders), zap.Any("result", result))
 	const consensusThresh = float32(25.0)
 
 	var rounds []int64
@@ -164,7 +164,7 @@ func GetRoundFromSharders() (int64, error) {
 				continue
 			}
 
-			fmt.Println("GetRoundFromSharders", zap.Any("sharders", sharders), zap.Any("numSharders", numSharders), zap.Any("result", result), zap.Any("respRound", respRound))
+			logging.Logger.Info("GetRoundFromSharders", zap.Any("sharders", sharders), zap.Any("numSharders", numSharders), zap.Any("result", result), zap.Any("respRound", respRound))
 
 			rounds = append(rounds, respRound)
 			sort.Slice(rounds, func(i, j int) bool {
@@ -192,37 +192,24 @@ func GetRoundFromSharders() (int64, error) {
 func queryFromSharders(sharders []string, query string,
 	result chan *util.GetResponse) {
 
-	fmt.Println("queryFromSharders", zap.Any("sharders", sharders), zap.Any("query", query), zap.Any("result", result))
-
 	queryFromShardersContext(context.Background(), sharders, query, result)
 }
 
 func queryFromShardersContext(ctx context.Context, sharders []string,
 	query string, result chan *util.GetResponse) {
 
-	fmt.Println("queryFromShardersContext", zap.Any("sharders", sharders), zap.Any("query", query), zap.Any("result", result))
-
 	for _, sharder := range util.Shuffle(sharders) {
 		go func(sharderurl string) {
-
-			fmt.Println("2 queryFromShardersContext", zap.Any("sharderurl", sharderurl), zap.Any("query", query), zap.Any("result", result))
-
-			//Logger.Info("Query from ", sharderurl+query)
 			url := fmt.Sprintf("%v%v", sharderurl, query)
 			req, err := util.NewHTTPGetRequestContext(ctx, url)
 			if err != nil {
-				fmt.Println("new get request failed. ", zap.Any("url", url), zap.Error(err))
 				return
 			}
 			res, err := req.Get()
 			if err != nil {
-				fmt.Println("2 new get request failed. ", zap.Any("url", url), zap.Error(err))
 				return
 			}
 
-			l.Logger.Error("round info parse error.", res)
-
-			fmt.Println("3 new get request failed. ", zap.Any("url", url), zap.Error(err), zap.Any("res", res.Body))
 			result <- res
 		}(sharder)
 	}
