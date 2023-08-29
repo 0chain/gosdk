@@ -83,12 +83,15 @@ func (r *RepairRequest) iterateDir(a *Allocation, dir *ListResult) {
 			if dir.deleteMask.CountOnes() > 0 {
 				l.Logger.Info("Deleting minority shards for the path :", zap.Any("path", dir.Path))
 				consensus := dir.deleteMask.CountOnes()
-				err := a.deleteFile(dir.Path, 0, consensus, dir.deleteMask)
-				if err != nil {
-					l.Logger.Error("repair_file_failed", zap.Error(err))
-					return
+				if consensus < a.DataShards {
+
+					err := a.deleteFile(dir.Path, 0, consensus, dir.deleteMask)
+					if err != nil {
+						l.Logger.Error("repair_file_failed", zap.Error(err))
+						return
+					}
+					r.filesRepaired++
 				}
-				r.filesRepaired++
 			}
 		}
 		for _, childDir := range dir.Children {
