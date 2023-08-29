@@ -268,10 +268,10 @@ func fullPathAndFileNameForUpload(localPath, remotePath string) (string, string,
 }
 
 type MultiOperationOption struct {
-	OperationType string `json:"operationType,omitempty"`
-	RemotePath    string `json:"remotePath,omitempty"`
-	DestName      string `json:"destName,omitempty"` // Required only for rename operation
-	DestPath      string `json:"destPath,omitempty"` // Required for copy and move operation`
+	OperationType string `json:"OperationType,omitempty"`
+	RemotePath    string `json:"RemotePath,omitempty"`
+	DestName      string `json:"DestName,omitempty"` // Required only for rename operation
+	DestPath      string `json:"DestPath,omitempty"` // Required for copy and move operation`
 }
 
 type MultiUploadOption struct {
@@ -299,12 +299,13 @@ func MultiOperation(_allocationID, _jsonMultiOperationOptions *C.char) *C.char {
 	allocationID := C.GoString(_allocationID)
 	jsonMultiOperationOptions := C.GoString(_jsonMultiOperationOptions)
 	if allocationID == "" {
-		return WithJSON(nil, errors.New("AllocationID is required"))
+		return WithJSON(false, errors.New("AllocationID is required"))
 	}
+
 	var options []MultiOperationOption
 	err := json.Unmarshal([]byte(jsonMultiOperationOptions), &options)
 	if err != nil {
-		return WithJSON(nil, err)
+		return WithJSON(false, err)
 	}
 	totalOp := len(options)
 	operations := make([]sdk.OperationRequest, totalOp)
@@ -315,14 +316,16 @@ func MultiOperation(_allocationID, _jsonMultiOperationOptions *C.char) *C.char {
 			DestName:      op.DestName,
 			DestPath:      op.DestPath,
 		}
+
+		log.Info("multi-operation: index=", idx, " op=", op.OperationType, " remotePath=", op.RemotePath, " destName=", op.DestName, " destPath=", op.DestPath)
 	}
 	allocationObj, err := getAllocation(allocationID)
 	if err != nil {
-		return WithJSON(nil, err)
+		return WithJSON(false, err)
 	}
 	err = allocationObj.DoMultiOperation(operations)
 	if err != nil {
-		return WithJSON(nil, err)
+		return WithJSON(false, err)
 	}
 	return WithJSON(true, nil)
 
