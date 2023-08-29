@@ -265,15 +265,10 @@ func getKeyStore(t mock.TestingT) *bridgemocks.KeyStore {
 func prepareKeyStoreGeneralMockCalls(keyStore *bridgemocks.KeyStore) {
 	ks := keystore.NewKeyStore(testKeyStoreLocation, keystore.StandardScryptN, keystore.StandardScryptP)
 
-	_, err := ImportAccount(".", ethereumMnemonic, password)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
 	keyStore.On("Find", mock.Anything).Return(accounts.Account{Address: common.HexToAddress(ethereumAddress)}, nil)
 	keyStore.On("TimedUnlock", mock.Anything, mock.Anything, mock.Anything).Run(
 		func(args mock.Arguments) {
-			err = ks.TimedUnlock(args.Get(0).(accounts.Account), args.Get(1).(string), args.Get(2).(time.Duration))
+			err := ks.TimedUnlock(args.Get(0).(accounts.Account), args.Get(1).(string), args.Get(2).(time.Duration))
 			if err != nil {
 				log.Fatalln(err)
 			}
