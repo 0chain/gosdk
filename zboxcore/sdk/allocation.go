@@ -208,12 +208,13 @@ type Allocation struct {
 }
 
 type OperationRequest struct {
-	OperationType string
-	LocalPath     string
-	RemotePath    string
-	DestName      string // Required only for rename operation
-	DestPath      string // Required for copy and move operation
-	IsUpdate      bool
+	OperationType  string
+	LocalPath      string
+	RemotePath     string
+	DestName       string // Required only for rename operation
+	DestPath       string // Required for copy and move operation
+	IsUpdate       bool
+	IsWebstreaming bool
 
 	// Required for uploads
 	Workdir    string
@@ -387,6 +388,7 @@ func (a *Allocation) CreateDir(remotePath string) error {
 		remotePath:    remotePath,
 		wg:            &sync.WaitGroup{},
 		timestamp:     timestamp,
+		alreadyExists: map[uint64]bool{},
 		Consensus: Consensus{
 			RWMutex:         &sync.RWMutex{},
 			consensusThresh: a.consensusThreshold,
@@ -495,7 +497,7 @@ func (a *Allocation) EncryptAndUploadFileWithThumbnail(
 	)
 }
 
-func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileNames []string, thumbnailPaths []string, encrypts []bool, chunkNumbers []int, remotePaths []string, isUpdate []bool, status StatusCallback) error {
+func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileNames []string, thumbnailPaths []string, encrypts []bool, chunkNumbers []int, remotePaths []string, isUpdate []bool, isWebstreaming []bool, status StatusCallback) error {
 	if len(localPaths) != len(thumbnailPaths) {
 		return errors.New("invalid_value", "length of localpaths and thumbnailpaths must be equal")
 	}
@@ -554,7 +556,7 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 		if err != nil {
 			return err
 		}
-		fmt.Println("fullRemotepath and localpath", fullRemotePath, localPath)
+
 		fileMeta := FileMeta{
 			Path:       localPath,
 			ActualSize: fileInfo.Size(),
@@ -587,6 +589,9 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 		}
 		if isUpdate[idx] {
 			operationRequests[idx].OperationType = constants.FileOperationUpdate
+		}
+		if isWebstreaming[idx] {
+			operationRequests[idx].IsWebstreaming = true
 		}
 
 	}
@@ -831,6 +836,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 		mo.connectionID = zboxutil.NewConnectionId()
 
 		previousPaths := make(map[string]bool)
+		connectionErrors := make([]error, len(mo.allocationObj.Blobbers))
 
 		var wg sync.WaitGroup
 		for blobberIdx := range mo.allocationObj.Blobbers {
@@ -840,14 +846,21 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 				err := mo.createConnectionObj(pos)
 				if err != nil {
 					l.Logger.Error(err.Error())
+					connectionErrors[pos] = err
 				}
 			}(blobberIdx)
 		}
 		wg.Wait()
 		// Check consensus
 		if mo.operationMask.CountOnes() < mo.consensusThresh {
+			majorErr := zboxutil.MajorError(connectionErrors)
+			if majorErr != nil {
+				return errors.New("consensus_not_met",
+					fmt.Sprintf("Multioperation: create connection failed. Required consensus %d got %d. Major error: %s",
+						mo.consensusThresh, mo.operationMask.CountOnes(), majorErr.Error()))
+			}
 			return errors.New("consensus_not_met",
-				fmt.Sprintf("Multioperation failed. Required consensus %d got %d",
+				fmt.Sprintf("Multioperation: create connection failed. Required consensus %d got %d",
 					mo.consensusThresh, mo.operationMask.CountOnes()))
 		}
 
@@ -873,13 +886,13 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 				operation = NewMoveOperation(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 
 			case constants.FileOperationInsert:
-				operation = NewUploadOperation(op.Workdir, op.FileMeta, op.FileReader, false, op.Opts...)
+				operation = NewUploadOperation(op.Workdir, op.FileMeta, op.FileReader, false, op.IsWebstreaming, op.Opts...)
 
 			case constants.FileOperationDelete:
 				operation = NewDeleteOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 
 			case constants.FileOperationUpdate:
-				operation = NewUploadOperation(op.Workdir, op.FileMeta, op.FileReader, true, op.Opts...)
+				operation = NewUploadOperation(op.Workdir, op.FileMeta, op.FileReader, true, op.IsWebstreaming, op.Opts...)
 
 			case constants.FileOperationCreateDir:
 				operation = NewDirOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)

@@ -42,6 +42,7 @@ type DirRequest struct {
 	mu            *sync.Mutex
 	connectionID  string
 	timestamp     int64
+	alreadyExists map[uint64]bool
 	Consensus
 }
 
@@ -63,6 +64,7 @@ func (req *DirRequest) ProcessWithBlobbers(a *Allocation) int {
 			}
 			if alreadyExists {
 				countMu.Lock()
+				req.alreadyExists[pos] = true
 				existingDirCount++
 				countMu.Unlock()
 			}
@@ -258,9 +260,6 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode, pos u
 			l.Logger.Error(blobber.Baseurl, " Response: ", msg)
 			if strings.Contains(msg, DirectoryExists) {
 				req.Consensus.Done()
-				req.mu.Lock()
-				req.dirMask = req.dirMask.And(zboxutil.NewUint128(1).Lsh(pos).Not())
-				req.mu.Unlock()
 				alreadyExists = true
 				return
 			}
@@ -286,11 +285,12 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode, pos u
 }
 
 type DirOperation struct {
-	remotePath string
-	ctx        context.Context
-	ctxCncl    context.CancelFunc
-	dirMask    zboxutil.Uint128
-	maskMU     *sync.Mutex
+	remotePath    string
+	ctx           context.Context
+	ctxCncl       context.CancelFunc
+	dirMask       zboxutil.Uint128
+	maskMU        *sync.Mutex
+	alreadyExists map[uint64]bool
 
 	Consensus
 }
@@ -298,16 +298,17 @@ type DirOperation struct {
 func (dirOp *DirOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
 	refs := make([]fileref.RefEntity, len(allocObj.Blobbers))
 	dR := &DirRequest{
-		allocationID: allocObj.ID,
-		allocationTx: allocObj.Tx,
-		connectionID: connectionID,
-		blobbers:     allocObj.Blobbers,
-		remotePath:   dirOp.remotePath,
-		ctx:          dirOp.ctx,
-		ctxCncl:      dirOp.ctxCncl,
-		dirMask:      dirOp.dirMask,
-		mu:           dirOp.maskMU,
-		wg:           &sync.WaitGroup{},
+		allocationID:  allocObj.ID,
+		allocationTx:  allocObj.Tx,
+		connectionID:  connectionID,
+		blobbers:      allocObj.Blobbers,
+		remotePath:    dirOp.remotePath,
+		ctx:           dirOp.ctx,
+		ctxCncl:       dirOp.ctxCncl,
+		dirMask:       dirOp.dirMask,
+		mu:            dirOp.maskMU,
+		wg:            &sync.WaitGroup{},
+		alreadyExists: make(map[uint64]bool),
 	}
 	dR.Consensus = Consensus{
 		RWMutex:         &sync.RWMutex{},
@@ -316,6 +317,7 @@ func (dirOp *DirOperation) Process(allocObj *Allocation, connectionID string) ([
 	}
 
 	_ = dR.ProcessWithBlobbers(allocObj)
+	dirOp.alreadyExists = dR.alreadyExists
 
 	if !dR.isConsensusOk() {
 		return nil, dR.dirMask, errors.New("consensus_not_met", "directory creation failed due to consensus not met")
@@ -330,12 +332,17 @@ func (dirOp *DirOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) 
 	changes := make([]allocationchange.AllocationChange, len(refs))
 	for i := dirOp.dirMask; !i.Equals(zboxutil.NewUint128(0)); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
-		newChange := &allocationchange.DirCreateChange{
-			RemotePath: dirOp.remotePath,
-			Uuid:       uid,
-			Timestamp:  common.Now(),
+		if dirOp.alreadyExists[pos] {
+			newChange := &allocationchange.EmptyFileChange{}
+			changes[pos] = newChange
+		} else {
+			newChange := &allocationchange.DirCreateChange{
+				RemotePath: dirOp.remotePath,
+				Uuid:       uid,
+				Timestamp:  common.Now(),
+			}
+			changes[pos] = newChange
 		}
-		changes[pos] = newChange
 	}
 	return changes
 }
@@ -367,5 +374,6 @@ func NewDirOperation(remotePath string, dirMask zboxutil.Uint128, maskMU *sync.M
 	dirOp.consensusThresh = consensusTh
 	dirOp.fullconsensus = fullConsensus
 	dirOp.ctx, dirOp.ctxCncl = context.WithCancel(ctx)
+	dirOp.alreadyExists = make(map[uint64]bool)
 	return dirOp
 }
