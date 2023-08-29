@@ -218,7 +218,9 @@ func queryFromShardersContext(ctx context.Context, sharders []string,
 				return
 			}
 
-			fmt.Println("3 new get request failed. ", zap.Any("url", url), zap.Error(err), zap.Any("res", res))
+			l.Logger.Error("round info parse error.", res)
+
+			fmt.Println("3 new get request failed. ", zap.Any("url", url), zap.Error(err), zap.Any("res", res.Body))
 			result <- res
 		}(sharder)
 	}
