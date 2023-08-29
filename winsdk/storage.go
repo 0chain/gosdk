@@ -11,11 +11,8 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
-	"strings"
 
-	"github.com/0chain/gosdk/core/pathutil"
 	"github.com/0chain/gosdk/zboxcore/sdk"
-	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
 // GetFileStats get file stats of blobbers
@@ -101,24 +98,6 @@ func Delete(allocationID, path *C.char) *C.char {
 	log.Info("winsdk: deleted ", s)
 
 	return WithJSON(true, nil)
-}
-
-func fullPathAndFileNameForUpload(localPath, remotePath string) (string, string, error) {
-	isUploadToDir := strings.HasSuffix(remotePath, "/")
-	remotePath = zboxutil.RemoteClean(remotePath)
-	if !zboxutil.IsRemoteAbs(remotePath) {
-		return "", "", errors.New("invalid_path: Path should be valid and absolute")
-	}
-
-	// re-add trailing slash to indicate intending to upload to directory
-	if isUploadToDir && !strings.HasSuffix(remotePath, "/") {
-		remotePath += "/"
-	}
-
-	fullRemotePath := zboxutil.GetFullRemotePath(localPath, remotePath)
-	_, fileName := pathutil.Split(fullRemotePath)
-
-	return fullRemotePath, fileName, nil
 }
 
 type MultiOperationOption struct {
