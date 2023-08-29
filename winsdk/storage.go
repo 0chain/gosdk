@@ -460,8 +460,6 @@ func BulkUpload(allocationID, files *C.char) *C.char {
 		return WithJSON(nil, err)
 	}
 
-	statusCaches.Add(C.GoString(uploadID), statusBar)
-
 	err = a.StartMultiUpload(workdir, filePaths, fileNames, thumbnailPaths, encrypts, chunkNumbers, remotePaths, isUpdates, isWebstreaming, statusBar)
 	if err != nil {
 		return WithJSON(nil, err)
