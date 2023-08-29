@@ -435,19 +435,19 @@ func (t *Transaction) StoreData(data string) error {
 	return nil
 }
 
-type txnFeeOption struct {
+type TxnFeeOption struct {
 	// stop estimate txn fee, usually if txn fee was 0, the createSmartContractTxn method would
 	// estimate the txn fee by calling API from 0chain network. With this option, we could force
 	// the txn to have zero fee for those exempt transactions.
 	noEstimateFee bool
 }
 
-// FeeOption represents txn fee related option type
-type FeeOption func(*txnFeeOption)
+// feeOption represents txn fee related option type
+type FeeOption func(*TxnFeeOption)
 
 // WithNoEstimateFee would prevent txn fee estimation from remote
 func WithNoEstimateFee() FeeOption {
-	return func(o *txnFeeOption) {
+	return func(o *TxnFeeOption) {
 		o.noEstimateFee = true
 	}
 }
@@ -468,7 +468,7 @@ func (t *Transaction) createSmartContractTxn(address, methodName string, input i
 		return nil
 	}
 
-	tf := &txnFeeOption{}
+	tf := &TxnFeeOption{}
 	for _, opt := range opts {
 		opt(tf)
 	}
