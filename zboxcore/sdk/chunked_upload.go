@@ -669,6 +669,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 			}
 
 			err = b.sendUploadRequest(ctx, su, chunkEndIndex, isFinal, su.encryptedKey, body, formData, pos)
+			logger.Logger.Info("chunkEndIndex: ", chunkEndIndex)
 			if err != nil {
 				if strings.Contains(err.Error(), "duplicate") {
 					errC := atomic.AddInt32(&su.addConsensus, 1)
