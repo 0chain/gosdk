@@ -32,6 +32,8 @@ func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([
 	}
 	uo.statusCallback = cu.statusCallback
 	uo.opCode = cu.opCode
+	uo.fileMeta = cu.fileMeta
+	uo.fileReader = cu.fileReader
 
 	err = cu.process()
 	if err != nil {

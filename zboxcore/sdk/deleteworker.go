@@ -357,7 +357,7 @@ func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string) (
 			fmt.Sprintf("Delete failed. Required consensus %d, got %d",
 				deleteReq.consensus.consensusThresh, deleteReq.consensus.consensus))
 	}
-	l.Logger.Info("Delete Processs Ended ")
+	l.Logger.Info("Delete Process Ended ")
 	return objectTreeRefs, deleteReq.deleteMask, nil
 }
 
