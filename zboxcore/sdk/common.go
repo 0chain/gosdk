@@ -164,6 +164,8 @@ func GetRoundFromSharders() (int64, error) {
 				continue
 			}
 
+			fmt.Println("GetRoundFromSharders", zap.Any("sharders", sharders), zap.Any("numSharders", numSharders), zap.Any("result", result), zap.Any("respRound", respRound))
+
 			rounds = append(rounds, respRound)
 			sort.Slice(rounds, func(i, j int) bool {
 				return false
