@@ -32,8 +32,6 @@ import (
 )
 
 const (
-	ethereumMnemonic = "symbol alley celery diesel donate moral almost opinion achieve since diamond page"
-
 	ethereumAddress = "0xD8c9156e782C68EE671C09b6b92de76C97948432"
 	password        = "02289b9"
 
