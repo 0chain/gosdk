@@ -684,8 +684,12 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 
 			if err != nil {
 				if strings.Contains(err.Error(), "duplicate") {
-					atomic.AddInt32(&su.addConsensus, 1)
-					su.consensus.Done()
+					errC := atomic.AddInt32(&su.addConsensus, 1)
+					if errC >= int32(su.consensus.consensusThresh) {
+						wgErrors <- err
+					} else {
+						su.consensus.Done()
+					}
 					return
 				}
 				logger.Logger.Error("error during sendUploadRequest", err)
