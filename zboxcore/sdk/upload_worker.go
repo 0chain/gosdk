@@ -22,6 +22,12 @@ type UploadOperation struct {
 	isWebstreaming bool
 	statusCallback StatusCallback
 	opCode         int
+	progressInfo   ProgressInfo
+}
+
+type ProgressInfo struct {
+	ID             string
+	ProgressStorer ChunkedUploadProgressStorer
 }
 
 func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
@@ -30,6 +36,10 @@ func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([
 	if err != nil {
 		uploadMask := zboxutil.NewUint128(1).Lsh(uint64(len(allocObj.Blobbers))).Sub64(1)
 		return nil, uploadMask, err
+	}
+	uo.progressInfo = ProgressInfo{
+		ID:             cu.progress.ID,
+		ProgressStorer: cu.progressStorer,
 	}
 	uo.statusCallback = cu.statusCallback
 	uo.opCode = cu.opCode

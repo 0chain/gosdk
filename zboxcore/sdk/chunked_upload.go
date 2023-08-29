@@ -492,7 +492,6 @@ func (su *ChunkedUpload) process() error {
 				return err
 			}
 			logger.Logger.Info("[processUpload]", time.Since(start).Milliseconds())
-			logger.Logger.Info("chunkEndIndex after processUpload: ", chunks.chunkEndIndex)
 		} else {
 			// Write data to hashers
 			for i, blobberShard := range chunks.fileShards {
@@ -521,7 +520,6 @@ func (su *ChunkedUpload) process() error {
 		if chunks.totalReadSize > 0 && chunks.chunkEndIndex > su.progress.ChunkIndex {
 			su.progress.ChunkIndex = chunks.chunkEndIndex
 			su.saveProgress()
-			logger.Logger.Info("chunkEndIndex after saveProgress: ", chunks.chunkEndIndex)
 
 			if su.statusCallback != nil {
 				su.statusCallback.InProgress(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, int(su.progress.UploadLength)-alreadyUploadedData, nil)

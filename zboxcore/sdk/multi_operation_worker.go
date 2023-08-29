@@ -45,7 +45,8 @@ type MultiOperation struct {
 	operationMask zboxutil.Uint128
 	maskMU        *sync.Mutex
 	Consensus
-	changes [][]allocationchange.AllocationChange
+	changes       [][]allocationchange.AllocationChange
+	progressInfos []ProgressInfo
 }
 
 func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
@@ -173,6 +174,9 @@ func (mo *MultiOperation) Process() error {
 				ctxCncl()
 				return
 			}
+			if uploadOp, ok := op.(*UploadOperation); ok {
+				mo.progressInfos = append(mo.progressInfos, uploadOp.progressInfo)
+			}
 			mo.maskMU.Lock()
 			mo.operationMask = mo.operationMask.Or(mask)
 			mo.maskMU.Unlock()
@@ -299,6 +303,9 @@ func (mo *MultiOperation) Process() error {
 			mo.allocationObj.RollbackWithMask(rollbackMask)
 		}
 		return err
+	}
+	for _, info := range mo.progressInfos {
+		info.ProgressStorer.Remove(info.ID)
 	}
 	for _, op := range mo.operations {
 		op.Completed(mo.allocationObj)
