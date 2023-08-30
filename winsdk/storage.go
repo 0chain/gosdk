@@ -216,18 +216,18 @@ func MultiDownload(_allocationID, _jsonMultiDownloadOptions *C.char) error {
 
 	for i := 0; i < len(options)-1; i++ {
 		if options[i].DownloadOp == 1 {
-			err = a.DownloadFile(options[i].LocalPath, options[i].RemotePath, false, NewStatusBar(statusDownload), false)
+			err = a.DownloadFile(options[i].LocalPath, options[i].RemotePath, false, NewStatusBar(statusDownload, ""), false)
 		} else {
-			err = a.DownloadThumbnail(options[i].LocalPath, options[i].RemotePath, false, NewStatusBar(statusDownload), false)
+			err = a.DownloadThumbnail(options[i].LocalPath, options[i].RemotePath, false, NewStatusBar(statusDownload, ""), false)
 		}
 		if err != nil {
 			return err
 		}
 	}
 	if options[len(options)-1].DownloadOp == 1 {
-		err = a.DownloadFile(options[len(options)-1].LocalPath, options[len(options)-1].RemotePath, false, NewStatusBar(statusDownload), true)
+		err = a.DownloadFile(options[len(options)-1].LocalPath, options[len(options)-1].RemotePath, false, NewStatusBar(statusDownload, ""), true)
 	} else {
-		err = a.DownloadThumbnail(options[len(options)-1].LocalPath, options[len(options)-1].RemotePath, false, NewStatusBar(statusDownload), true)
+		err = a.DownloadThumbnail(options[len(options)-1].LocalPath, options[len(options)-1].RemotePath, false, NewStatusBar(statusDownload, ""), true)
 	}
 
 	return err
