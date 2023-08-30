@@ -52,8 +52,8 @@ func (c *StatusCallback) getStatus(lookupHash string) *Status {
 }
 
 func (c *StatusCallback) Started(allocationID, remotePath string, op int, totalBytes int) {
-	log.Info("status: Started ", remotePath, " ", totalBytes)
 	lookupHash := getLookupHash(allocationID, remotePath)
+	log.Info("status: Started ", remotePath, " ", totalBytes, " ", lookupHash)
 	s := c.getStatus(lookupHash)
 	s.Started = true
 	s.TotalBytes = totalBytes
@@ -61,8 +61,8 @@ func (c *StatusCallback) Started(allocationID, remotePath string, op int, totalB
 }
 
 func (c *StatusCallback) InProgress(allocationID, remotePath string, op int, completedBytes int, data []byte) {
-	log.Info("status: InProgress ", remotePath, " ", completedBytes)
 	lookupHash := getLookupHash(allocationID, remotePath)
+	log.Info("status: InProgress ", remotePath, " ", completedBytes, " ", lookupHash)
 	s := c.getStatus(lookupHash)
 	s.CompletedBytes = completedBytes
 	s.LookupHash = lookupHash
@@ -72,16 +72,16 @@ func (c *StatusCallback) InProgress(allocationID, remotePath string, op int, com
 }
 
 func (c *StatusCallback) Error(allocationID string, remotePath string, op int, err error) {
-	log.Info("status: Error ", remotePath, " ", err)
 	lookupHash := getLookupHash(allocationID, remotePath)
+	log.Info("status: Error ", remotePath, " ", err, " ", lookupHash)
 	s := c.getStatus(lookupHash)
 	s.Error = err.Error()
 	s.LookupHash = lookupHash
 }
 
 func (c *StatusCallback) Completed(allocationID, remotePath string, filename string, mimetype string, size int, op int) {
-	log.Info("status: Completed ", remotePath)
 	lookupHash := getLookupHash(allocationID, remotePath)
+	log.Info("status: Completed ", remotePath, " ", lookupHash)
 	s := c.getStatus(lookupHash)
 	s.Completed = true
 	s.LookupHash = lookupHash
