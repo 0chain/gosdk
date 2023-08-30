@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"mime/multipart"
 	"sync"
 	"sync/atomic"
@@ -73,7 +73,7 @@ func GetWritemarker(allocID, allocTx, id, baseUrl string) (*LatestPrevWriteMarke
 			time.Sleep(time.Duration(r) * time.Second)
 			continue
 		}
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		defer resp.Body.Close()
 		if resp.StatusCode != http.StatusOK {
 			return nil, fmt.Errorf("writemarker error response %s with status %d", body, resp.StatusCode)
@@ -182,7 +182,7 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 				return
 			}
 
-			respBody, err = ioutil.ReadAll(resp.Body)
+			respBody, err = io.ReadAll(resp.Body)
 			if err != nil {
 				l.Logger.Error("Response read: ", err)
 				return
@@ -245,8 +245,11 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 
 	versionMap := make(map[string][]*RollbackBlobber)
 
-	var prevVersion string
-	var latestVersion string
+	var (
+		prevVersion   string
+		latestVersion string
+		highestTS     int64
+	)
 
 	for rb := range markerChan {
 
@@ -256,10 +259,14 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 
 		version := rb.lpm.LatestWM.FileMetaRoot
 
+		if highestTS < rb.lpm.LatestWM.Timestamp {
+			prevVersion = latestVersion
+			highestTS = rb.lpm.LatestWM.Timestamp
+			latestVersion = version
+		}
+
 		if prevVersion == "" {
 			prevVersion = version
-		} else if prevVersion != version && latestVersion == "" {
-			latestVersion = version
 		}
 
 		if _, ok := versionMap[version]; !ok {
@@ -272,23 +279,6 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 	l.Logger.Info("versionMap", zap.Any("versionMap", versionMap))
 	if len(versionMap) < 2 {
 		return Commit, nil
-	}
-
-	maxTimestamp := int64(0)
-	for _, rb := range versionMap[latestVersion] {
-		if rb.lpm.LatestWM.Timestamp > maxTimestamp {
-			maxTimestamp = rb.lpm.LatestWM.Timestamp
-		}
-	}
-	toFlip := false
-	for _, rb := range versionMap[prevVersion] {
-		if rb.lpm.LatestWM.Timestamp > maxTimestamp {
-			toFlip = true
-			break
-		}
-	}
-	if toFlip {
-		prevVersion, latestVersion = latestVersion, prevVersion
 	}
 
 	req := a.DataShards
