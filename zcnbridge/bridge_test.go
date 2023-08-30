@@ -228,7 +228,18 @@ func getBridgeClient(ethereumClient EthereumClient, transactionProvider transact
 	cfg.SetDefault("bridge.gas_limit", 0)
 	cfg.SetDefault("bridge.consensus_threshold", 0)
 
-	return createBridgeClient(cfg, ethereumClient, transactionProvider, keyStore)
+	return NewBridgeClient(
+		cfg.GetString("bridge.bridge_address"),
+		cfg.GetString("bridge.token_address"),
+		cfg.GetString("bridge.authorizers_address"),
+		cfg.GetString("bridge.ethereum_address"),
+		cfg.GetString("bridge.password"),
+		cfg.GetUint64("bridge.gas_limit"),
+		cfg.GetFloat64("bridge.consensus_threshold"),
+		ethereumClient,
+		transactionProvider,
+		keyStore,
+	)
 }
 
 func prepareEthereumClientGeneralMockCalls(ethereumClient *mock.Mock) {

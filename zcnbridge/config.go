@@ -28,6 +28,13 @@ type BridgeSDKConfig struct {
 	Development     *bool
 }
 
+// EthereumClient describes Ethereum JSON-RPC client generealized interface
+type EthereumClient interface {
+	bind.ContractBackend
+
+	ChainID(ctx context.Context) (*big.Int, error)
+}
+
 type BridgeClient struct {
 	KeyStore
 	transaction.TransactionProvider
@@ -43,53 +50,20 @@ type BridgeClient struct {
 	GasLimit           uint64
 }
 
-// EthereumClient describes Ethereum JSON-RPC client generealized interface
-type EthereumClient interface {
-	bind.ContractBackend
-
-	ChainID(ctx context.Context) (*big.Int, error)
-}
-
-// createBridgeClient initializes new bridge client with the help of the given
-// Ethereum JSON-RPC client and locally-defined confiruration.
-func createBridgeClient(cfg *viper.Viper, ethereumClient EthereumClient, transactionProvider transaction.TransactionProvider, keyStore KeyStore) *BridgeClient {
+// NewBridgeClient creates BridgeClient with the given parameters.
+func NewBridgeClient(bridgeAddress, tokenAddress, authorizersAddress, ethereumAddress, password string, gasLimit uint64, consensusThreshold float64, ethereumClient EthereumClient, transactionProvider transaction.TransactionProvider, keyStore KeyStore) *BridgeClient {
 	return &BridgeClient{
-		BridgeAddress:       cfg.GetString("bridge.bridge_address"),
-		TokenAddress:        cfg.GetString("bridge.token_address"),
-		AuthorizersAddress:  cfg.GetString("bridge.authorizers_address"),
-		EthereumAddress:     cfg.GetString("bridge.ethereum_address"),
-		Password:            cfg.GetString("bridge.password"),
-		GasLimit:            cfg.GetUint64("bridge.gas_limit"),
-		ConsensusThreshold:  cfg.GetFloat64("bridge.consensus_threshold"),
+		BridgeAddress:       bridgeAddress,
+		TokenAddress:        tokenAddress,
+		AuthorizersAddress:  authorizersAddress,
+		EthereumAddress:     ethereumAddress,
+		Password:            password,
+		GasLimit:            gasLimit,
+		ConsensusThreshold:  consensusThreshold,
 		EthereumClient:      ethereumClient,
 		TransactionProvider: transactionProvider,
 		KeyStore:            keyStore,
 	}
-}
-
-// SetupBridgeClientSDK Use this from standalone application
-// 0Chain SDK initialization is required
-func SetupBridgeClientSDK(cfg *BridgeSDKConfig) *BridgeClient {
-	log.InitLogging(*cfg.Development, *cfg.LogPath, *cfg.LogLevel)
-
-	chainCfg := initChainConfig(cfg)
-
-	ethereumClient, err := ethclient.Dial(chainCfg.GetString("ethereum_node_url"))
-	if err != nil {
-		Logger.Error(err)
-	}
-
-	transactionProvider := transaction.NewTransactionProvider()
-
-	homedir := path.Dir(chainCfg.ConfigFileUsed())
-	if homedir == "" {
-		log.Logger.Fatal("err happened during home directory retrieval")
-	}
-
-	ks := NewKeyStore(path.Join(homedir, EthereumWalletStorageDir))
-
-	bridgeClient := createBridgeClient(chainCfg, ethereumClient, transactionProvider, ks)
-	return bridgeClient
 }
 
 func initChainConfig(sdkConfig *BridgeSDKConfig) *viper.Viper {
@@ -112,4 +86,39 @@ func readConfig(sdkConfig *BridgeSDKConfig, getConfigName func() string) *viper.
 		log.Logger.Fatal(fmt.Errorf("%w: can't read config", err).Error())
 	}
 	return cfg
+}
+
+// SetupBridgeClientSDK initializes new bridge client.
+// Meant to be used from standalone application with 0chain SDK initialized.
+func SetupBridgeClientSDK(cfg *BridgeSDKConfig) *BridgeClient {
+	log.InitLogging(*cfg.Development, *cfg.LogPath, *cfg.LogLevel)
+
+	chainCfg := initChainConfig(cfg)
+
+	ethereumClient, err := ethclient.Dial(chainCfg.GetString("ethereum_node_url"))
+	if err != nil {
+		Logger.Error(err)
+	}
+
+	transactionProvider := transaction.NewTransactionProvider()
+
+	homedir := path.Dir(chainCfg.ConfigFileUsed())
+	if homedir == "" {
+		log.Logger.Fatal("err happened during home directory retrieval")
+	}
+
+	keyStore := NewKeyStore(path.Join(homedir, EthereumWalletStorageDir))
+
+	return NewBridgeClient(
+		chainCfg.GetString("bridge.bridge_address"),
+		chainCfg.GetString("bridge.token_address"),
+		chainCfg.GetString("bridge.authorizers_address"),
+		chainCfg.GetString("bridge.ethereum_address"),
+		chainCfg.GetString("bridge.password"),
+		chainCfg.GetUint64("bridge.gas_limit"),
+		chainCfg.GetFloat64("bridge.consensus_threshold"),
+		ethereumClient,
+		transactionProvider,
+		keyStore,
+	)
 }

@@ -41,18 +41,18 @@ func initBridge(
 	keyStore := zcnbridge.NewKeyStore(
 		path.Join(".", zcnbridge.EthereumWalletStorageDir))
 
-	bridge = &zcnbridge.BridgeClient{
-		EthereumAddress:     ethereumAddress,
-		BridgeAddress:       bridgeAddress,
-		AuthorizersAddress:  authorizersAddress,
-		TokenAddress:        tokenAddress,
-		Password:            "",
-		GasLimit:            gasLimit,
-		ConsensusThreshold:  consensusThreshold,
-		EthereumClient:      ethereumClient,
-		TransactionProvider: transactionProvider,
-		KeyStore:            keyStore,
-	}
+	bridge = zcnbridge.NewBridgeClient(
+		bridgeAddress,
+		tokenAddress,
+		authorizersAddress,
+		ethereumAddress,
+		"",
+		gasLimit,
+		consensusThreshold,
+		ethereumClient,
+		transactionProvider,
+		keyStore,
+	)
 
 	return nil
 }
