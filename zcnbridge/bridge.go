@@ -63,11 +63,10 @@ func (b *BridgeClient) CreateSignedTransactionFromKeyStore(client EthereumClient
 		password      = b.Password
 	)
 
-	// ks := b.getKeyStore(path.Join(b.Homedir, EthereumWalletStorageDir))
 	signer := accounts.Account{
 		Address: signerAddress,
 	}
-	signerAcc, err := b.keyStore.Find(signer)
+	signerAcc, err := b.KeyStore.Find(signer)
 	if err != nil {
 		Logger.Fatal(errors.Wrapf(err, "signer: %s", signerAddress.Hex()))
 	}
@@ -87,12 +86,12 @@ func (b *BridgeClient) CreateSignedTransactionFromKeyStore(client EthereumClient
 		Logger.Fatal(err)
 	}
 
-	err = b.keyStore.TimedUnlock(signer, password, time.Second*2)
+	err = b.KeyStore.TimedUnlock(signer, password, time.Second*2)
 	if err != nil {
 		Logger.Fatal(err)
 	}
 
-	opts, err := bind.NewKeyStoreTransactorWithChainID(b.keyStore.GetEthereumKeyStore(), signerAcc, chainID)
+	opts, err := bind.NewKeyStoreTransactorWithChainID(b.KeyStore.GetEthereumKeyStore(), signerAcc, chainID)
 	if err != nil {
 		Logger.Fatal(err)
 	}
@@ -123,7 +122,7 @@ func (b *BridgeClient) prepareAuthorizers(ctx context.Context, method string, pa
 	from := common.HexToAddress(b.EthereumAddress)
 
 	// Gas limits in units
-	gasLimitUnits, err := b.ethereumClient.EstimateGas(ctx, eth.CallMsg{
+	gasLimitUnits, err := b.EthereumClient.EstimateGas(ctx, eth.CallMsg{
 		To:   &contractAddress,
 		From: from,
 		Data: pack,
@@ -135,10 +134,10 @@ func (b *BridgeClient) prepareAuthorizers(ctx context.Context, method string, pa
 	// Update gas limits + 10%
 	gasLimitUnits = addPercents(gasLimitUnits, 10).Uint64()
 
-	transactOpts := b.CreateSignedTransactionFromKeyStore(b.ethereumClient, gasLimitUnits)
+	transactOpts := b.CreateSignedTransactionFromKeyStore(b.EthereumClient, gasLimitUnits)
 
 	// Authorizers instance
-	authorizersInstance, err := authorizers.NewAuthorizers(contractAddress, b.ethereumClient)
+	authorizersInstance, err := authorizers.NewAuthorizers(contractAddress, b.EthereumClient)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to create authorizers instance")
 	}
@@ -212,7 +211,7 @@ func (b *BridgeClient) IncreaseBurnerAllowance(ctx context.Context, amountWei We
 		return nil, errors.Wrap(err, "failed to pack arguments")
 	}
 
-	gasLimitUnits, err := b.ethereumClient.EstimateGas(ctx, eth.CallMsg{
+	gasLimitUnits, err := b.EthereumClient.EstimateGas(ctx, eth.CallMsg{
 		To:   &tokenAddress,
 		From: fromAddress,
 		Data: pack,
@@ -223,9 +222,9 @@ func (b *BridgeClient) IncreaseBurnerAllowance(ctx context.Context, amountWei We
 
 	gasLimitUnits = addPercents(gasLimitUnits, 10).Uint64()
 
-	transactOpts := b.CreateSignedTransactionFromKeyStore(b.ethereumClient, gasLimitUnits)
+	transactOpts := b.CreateSignedTransactionFromKeyStore(b.EthereumClient, gasLimitUnits)
 
-	wzcnTokenInstance, err := erc20.NewERC20(tokenAddress, b.ethereumClient)
+	wzcnTokenInstance, err := erc20.NewERC20(tokenAddress, b.EthereumClient)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to initialize WZCN-ERC20 instance")
 	}
@@ -265,7 +264,7 @@ func (b *BridgeClient) GetBalance() (*big.Int, error) {
 	tokenAddress := common.HexToAddress(b.TokenAddress)
 	fromAddress := common.HexToAddress(b.EthereumAddress)
 
-	wzcnTokenInstance, err := erc20.NewERC20(tokenAddress, b.ethereumClient)
+	wzcnTokenInstance, err := erc20.NewERC20(tokenAddress, b.EthereumClient)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to initialize WZCN-ERC20 instance")
 	}
@@ -291,12 +290,12 @@ func (b *BridgeClient) SignWithEthereumChain(message string) ([]byte, error) {
 		Address: common.HexToAddress(b.EthereumAddress),
 	}
 
-	signerAcc, err := b.keyStore.Find(signer)
+	signerAcc, err := b.KeyStore.Find(signer)
 	if err != nil {
 		Logger.Fatal(err)
 	}
 
-	signature, err := b.keyStore.SignHash(signerAcc, hash.Bytes())
+	signature, err := b.KeyStore.SignHash(signerAcc, hash.Bytes())
 	if err != nil {
 		return nil, err
 	}
@@ -315,7 +314,7 @@ func (b *BridgeClient) GetUserNonceMinted(ctx context.Context, rawEthereumAddres
 	contractAddress := common.HexToAddress(b.BridgeAddress)
 
 	var bridgeInstance *binding.Bridge
-	bridgeInstance, err := binding.NewBridge(contractAddress, b.ethereumClient)
+	bridgeInstance, err := binding.NewBridge(contractAddress, b.EthereumClient)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create bridge instance")
 	}
@@ -432,7 +431,7 @@ func (b *BridgeClient) BurnWZCN(ctx context.Context, amountTokens uint64) (*type
 
 // MintZCN mints ZCN tokens after receiving proof-of-burn of WZCN tokens
 func (b *BridgeClient) MintZCN(ctx context.Context, payload *zcnsc.MintPayload) (string, error) {
-	trx, err := b.transactionProvider.NewTransactionEntity(0)
+	trx, err := b.TransactionProvider.NewTransactionEntity(0)
 	if err != nil {
 		log.Logger.Fatal("failed to create new transaction", zap.Error(err))
 	}
@@ -468,7 +467,7 @@ func (b *BridgeClient) BurnZCN(ctx context.Context, amount, txnfee uint64) (tran
 		EthereumAddress: b.EthereumAddress,
 	}
 
-	trx, err := b.transactionProvider.NewTransactionEntity(txnfee)
+	trx, err := b.TransactionProvider.NewTransactionEntity(txnfee)
 	if err != nil {
 		log.Logger.Fatal("failed to create new transaction", zap.Error(err))
 	}
@@ -528,7 +527,7 @@ func (b *BridgeClient) prepareBridge(ctx context.Context, ethereumAddress, metho
 	//Gas limits in units
 	fromAddress := common.HexToAddress(ethereumAddress)
 
-	gasLimitUnits, err := b.ethereumClient.EstimateGas(ctx, eth.CallMsg{
+	gasLimitUnits, err := b.EthereumClient.EstimateGas(ctx, eth.CallMsg{
 		To:   &contractAddress,
 		From: fromAddress,
 		Data: pack,
@@ -540,10 +539,10 @@ func (b *BridgeClient) prepareBridge(ctx context.Context, ethereumAddress, metho
 	//Update gas limits + 10%
 	gasLimitUnits = addPercents(gasLimitUnits, 10).Uint64()
 
-	transactOpts := b.CreateSignedTransactionFromKeyStore(b.ethereumClient, gasLimitUnits)
+	transactOpts := b.CreateSignedTransactionFromKeyStore(b.EthereumClient, gasLimitUnits)
 
 	// BridgeClient instance
-	bridgeInstance, err := binding.NewBridge(contractAddress, b.ethereumClient)
+	bridgeInstance, err := binding.NewBridge(contractAddress, b.EthereumClient)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to create bridge instance")
 	}

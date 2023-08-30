@@ -3,11 +3,13 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"path"
 	"strconv"
 	"time"
 
 	"github.com/0chain/gosdk/zcnbridge"
 	"github.com/0chain/gosdk/zcnbridge/errors"
+	"github.com/0chain/gosdk/zcnbridge/transaction"
 	"github.com/0chain/gosdk/zcnbridge/wallet"
 	"github.com/0chain/gosdk/zcncore"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -34,15 +36,22 @@ func initBridge(
 		return errors.New("wallet_error", err.Error())
 	}
 
+	transactionProvider := transaction.NewTransactionProvider()
+
+	keyStore := zcnbridge.NewKeyStore(
+		path.Join(".", zcnbridge.EthereumWalletStorageDir))
+
 	bridge = &zcnbridge.BridgeClient{
-		EthereumAddress:    ethereumAddress,
-		BridgeAddress:      bridgeAddress,
-		AuthorizersAddress: authorizersAddress,
-		TokenAddress:       tokenAddress,
-		Password:           "",
-		GasLimit:           gasLimit,
-		ConsensusThreshold: consensusThreshold,
-		EthereumClient:     ethereumClient,
+		EthereumAddress:     ethereumAddress,
+		BridgeAddress:       bridgeAddress,
+		AuthorizersAddress:  authorizersAddress,
+		TokenAddress:        tokenAddress,
+		Password:            "",
+		GasLimit:            gasLimit,
+		ConsensusThreshold:  consensusThreshold,
+		EthereumClient:      ethereumClient,
+		TransactionProvider: transactionProvider,
+		KeyStore:            keyStore,
 	}
 
 	return nil
