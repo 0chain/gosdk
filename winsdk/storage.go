@@ -216,18 +216,18 @@ func MultiDownload(_allocationID, _jsonMultiDownloadOptions *C.char) error {
 
 	for i := 0; i < len(options)-1; i++ {
 		if options[i].DownloadOp == 1 {
-			err = a.DownloadFile(options[i].LocalPath, options[i].RemotePath, false, &StatusCallback{}, false)
+			err = a.DownloadFile(options[i].LocalPath, options[i].RemotePath, false, NewStatusBar(statusDownload), false)
 		} else {
-			err = a.DownloadThumbnail(options[i].LocalPath, options[i].RemotePath, false, &StatusCallback{}, false)
+			err = a.DownloadThumbnail(options[i].LocalPath, options[i].RemotePath, false, NewStatusBar(statusDownload), false)
 		}
 		if err != nil {
 			return err
 		}
 	}
 	if options[len(options)-1].DownloadOp == 1 {
-		err = a.DownloadFile(options[len(options)-1].LocalPath, options[len(options)-1].RemotePath, false, &StatusCallback{}, true)
+		err = a.DownloadFile(options[len(options)-1].LocalPath, options[len(options)-1].RemotePath, false, NewStatusBar(statusDownload), true)
 	} else {
-		err = a.DownloadThumbnail(options[len(options)-1].LocalPath, options[len(options)-1].RemotePath, false, &StatusCallback{}, true)
+		err = a.DownloadThumbnail(options[len(options)-1].LocalPath, options[len(options)-1].RemotePath, false, NewStatusBar(statusDownload), true)
 	}
 
 	return err
@@ -263,7 +263,7 @@ func BulkUpload(allocationID, files *C.char) *C.char {
 	isUpdates := make([]bool, totalUploads)
 	isWebstreaming := make([]bool, totalUploads)
 
-	statusBar := &StatusCallback{}
+	statusBar := NewStatusBar(statusUpload, "")
 
 	for idx, option := range options {
 		filePaths[idx] = option.Path
@@ -274,7 +274,7 @@ func BulkUpload(allocationID, files *C.char) *C.char {
 		isUpdates[idx] = option.IsUpdate
 		isWebstreaming[idx] = option.IsWebstreaming
 		encrypts[idx] = option.Encrypt
-		statusCaches.Add(getLookupHash(allocID, option.RemotePath+option.Name), &Status{})
+		statusUpload.Add(getLookupHash(allocID, option.RemotePath+option.Name), &Status{})
 	}
 
 	a, err := getAllocation(allocID)
@@ -303,7 +303,106 @@ func BulkUpload(allocationID, files *C.char) *C.char {
 //export GetUploadStatus
 func GetUploadStatus(lookupHash *C.char) *C.char {
 
-	s, ok := statusCaches.Get(C.GoString(lookupHash))
+	s, ok := statusUpload.Get(C.GoString(lookupHash))
+
+	if !ok {
+		s = &Status{}
+	}
+
+	return WithJSON(s, nil)
+}
+
+// DownloadFile - downalod file
+// ## Inputs
+//   - allocationID
+//   - localPath
+//   - remotePath
+//   - verifyDownload
+//   - isFinal
+//
+// ## Outputs
+//
+//	{
+//	"error":"",
+//	"result":"true",
+//	}
+//
+//export DownloadFile
+func DownloadFile(allocationID, localPath, remotePath *C.char, verifyDownload, isFinal bool) *C.char {
+	allocID := C.GoString(allocationID)
+
+	alloc, err := getAllocation(allocID)
+	if err != nil {
+		return WithJSON(false, err)
+	}
+
+	statusBar := NewStatusBar(statusDownload, "")
+
+	err = alloc.DownloadFile(C.GoString(localPath), C.GoString(remotePath), verifyDownload, statusBar, isFinal)
+	if err != nil {
+		return WithJSON(false, err)
+	}
+
+	return WithJSON(true, nil)
+}
+
+// DownloadThumbnail - downalod thumbnial
+// ## Inputs
+//   - allocationID
+//   - localPath
+//   - remotePath
+//   - verifyDownload
+//   - isFinal
+//
+// ## Outputs
+//
+//	{
+//	"error":"",
+//	"result":"true",
+//	}
+//
+//export DownloadThumbnail
+func DownloadThumbnail(allocationID, localPath, remotePath *C.char, verifyDownload bool, isFinal bool) *C.char {
+	allocID := C.GoString(allocationID)
+
+	alloc, err := getAllocation(allocID)
+	if err != nil {
+		return WithJSON(false, err)
+	}
+
+	r := C.GoString(remotePath)
+
+	lookupHash := getLookupHash(allocID, r)
+	statusBar := NewStatusBar(statusDownload, lookupHash+":thumbnail")
+
+	err = alloc.DownloadThumbnail(C.GoString(localPath), r, verifyDownload, statusBar, isFinal)
+	if err != nil {
+		return WithJSON(false, err)
+	}
+
+	return WithJSON(true, nil)
+}
+
+// GetDownloadStatus - get download status
+// ## Inputs
+//   - lookupHash
+//
+// ## Outputs
+//
+//	{
+//	"error":"",
+//	"result":"{'Started':false,'CompletedBytes': 0,Error:”,'Completed':false}",
+//	}
+//
+//export GetDownloadStatus
+func GetDownloadStatus(lookupHash *C.char, isThumbnail bool) *C.char {
+
+	key := C.GoString(lookupHash)
+	if isThumbnail {
+		key += ":thumbnail"
+	}
+
+	s, ok := statusDownload.Get(key)
 
 	if !ok {
 		s = &Status{}
