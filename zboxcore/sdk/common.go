@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	stdErrors "errors"
 	"fmt"
-	"github.com/0chain/common/core/logging"
 	"github.com/0chain/gosdk/core/util"
 	"go.uber.org/zap"
 	"io/ioutil"
@@ -154,37 +153,74 @@ func GetRoundFromSharders() (int64, error) {
 		case <-waitTimeC:
 			return 0, stdErrors.New("get round failed. consensus not reached")
 		case rsp := <-result:
+
+			l.Logger.Info("1 GetRoundFromSharders", zap.Any("sharders", sharders), zap.Any("numSharders", numSharders), zap.Any("result", result), zap.Any("rsp", rsp))
 			if rsp.StatusCode != http.StatusOK {
+				l.Logger.Info("2 GetRoundFromSharders", zap.Any("sharders", sharders), zap.Any("numSharders", numSharders), zap.Any("result", result), zap.Any("rsp", rsp))
 				continue
 			}
+
+			l.Logger.Info("3 GetRoundFromSharders", zap.Any("sharders", sharders), zap.Any("numSharders", numSharders), zap.Any("result", result), zap.Any("rsp", rsp))
 
 			var respRound int64
 			err := json.Unmarshal([]byte(rsp.Body), &respRound)
+
+			l.Logger.Info("4 GetRoundFromSharders", zap.Any("sharders", sharders), zap.Any("numSharders", numSharders), zap.Any("result", result), zap.Any("rsp", rsp), zap.Any("respRound", respRound))
+
 			if err != nil {
+				l.Logger.Info("5 GetRoundFromSharders", zap.Any("sharders", sharders), zap.Any("numSharders", numSharders), zap.Any("result", result), zap.Any("rsp", rsp), zap.Any("respRound", respRound))
 				continue
 			}
 
-			logging.Logger.Info("GetRoundFromSharders", zap.Any("sharders", sharders), zap.Any("numSharders", numSharders), zap.Any("result", result), zap.Any("respRound", respRound))
+			l.Logger.Info("6 GetRoundFromSharders", zap.Any("sharders", sharders), zap.Any("numSharders", numSharders), zap.Any("result", result), zap.Any("respRound", respRound))
 
 			rounds = append(rounds, respRound)
+
+			l.Logger.Info("7 GetRoundFromSharders", zap.Any("sharders", sharders), zap.Any("numSharders", numSharders), zap.Any("result", result), zap.Any("respRound", respRound))
+
 			sort.Slice(rounds, func(i, j int) bool {
 				return false
 			})
 
+			l.Logger.Info("8 GetRoundFromSharders", zap.Any("sharders", sharders), zap.Any("numSharders", numSharders), zap.Any("result", result), zap.Any("respRound", respRound))
+
 			medianRound := rounds[len(rounds)/2]
+
+			l.Logger.Info("9 GetRoundFromSharders", zap.Any("sharders", sharders), zap.Any("numSharders", numSharders), zap.Any("result", result), zap.Any("respRound", respRound), zap.Any("medianRound", medianRound))
+
 			roundMap[medianRound]++
 
+			l.Logger.Info("10 GetRoundFromSharders", zap.Any("sharders", sharders), zap.Any("numSharders", numSharders), zap.Any("result", result), zap.Any("respRound", respRound), zap.Any("medianRound", medianRound), zap.Any("roundMap", roundMap))
+
 			if roundMap[medianRound] > consensus {
+
+				l.Logger.Info("11 GetRoundFromSharders", zap.Any("sharders", sharders), zap.Any("numSharders", numSharders), zap.Any("result", result), zap.Any("respRound", respRound), zap.Any("medianRound", medianRound), zap.Any("roundMap", roundMap), zap.Any("consensus", consensus))
+
 				consensus = roundMap[medianRound]
+
+				l.Logger.Info("12 GetRoundFromSharders", zap.Any("sharders", sharders), zap.Any("numSharders", numSharders), zap.Any("result", result), zap.Any("respRound", respRound), zap.Any("medianRound", medianRound), zap.Any("roundMap", roundMap), zap.Any("consensus", consensus))
+
 				round = medianRound
 
+				l.Logger.Info("13 GetRoundFromSharders", zap.Any("sharders", sharders), zap.Any("numSharders", numSharders), zap.Any("result", result), zap.Any("respRound", respRound), zap.Any("medianRound", medianRound), zap.Any("roundMap", roundMap), zap.Any("consensus", consensus), zap.Any("round", round))
+
 				rate := consensus * 100 / int64(len(sharders))
+
+				l.Logger.Info("14 GetRoundFromSharders", zap.Any("sharders", sharders), zap.Any("numSharders", numSharders), zap.Any("result", result), zap.Any("respRound", respRound), zap.Any("medianRound", medianRound), zap.Any("roundMap", roundMap), zap.Any("consensus", consensus), zap.Any("round", round), zap.Any("rate", rate))
+
 				if rate >= int64(consensusThresh) {
+
+					l.Logger.Info("15 GetRoundFromSharders", zap.Any("sharders", sharders), zap.Any("numSharders", numSharders), zap.Any("result", result), zap.Any("respRound", respRound), zap.Any("medianRound", medianRound), zap.Any("roundMap", roundMap), zap.Any("consensus", consensus), zap.Any("round", round), zap.Any("rate", rate))
+
 					return round, nil
 				}
+
+				l.Logger.Info("16 GetRoundFromSharders", zap.Any("sharders", sharders), zap.Any("numSharders", numSharders), zap.Any("result", result), zap.Any("respRound", respRound), zap.Any("medianRound", medianRound), zap.Any("roundMap", roundMap), zap.Any("consensus", consensus), zap.Any("round", round), zap.Any("rate", rate))
 			}
 		}
 	}
+
+	l.Logger.Info("17 GetRoundFromSharders", zap.Any("sharders", sharders), zap.Any("numSharders", numSharders), zap.Any("round", round))
 
 	return 0, stdErrors.New("get round failed, consensus not reached")
 }
@@ -192,25 +228,44 @@ func GetRoundFromSharders() (int64, error) {
 func queryFromSharders(sharders []string, query string,
 	result chan *util.GetResponse) {
 
+	l.Logger.Info("queryFromSharders", zap.Any("sharders", sharders), zap.Any("query", query), zap.Any("result", result))
+
 	queryFromShardersContext(context.Background(), sharders, query, result)
 }
 
 func queryFromShardersContext(ctx context.Context, sharders []string,
 	query string, result chan *util.GetResponse) {
 
+	l.Logger.Info("queryFromShardersContext", zap.Any("sharders", sharders), zap.Any("query", query), zap.Any("result", result))
+
 	for _, sharder := range util.Shuffle(sharders) {
 		go func(sharderurl string) {
+			l.Logger.Info("2 queryFromShardersContext", zap.Any("sharderurl", sharderurl), zap.Any("query", query), zap.Any("result", result))
+
 			url := fmt.Sprintf("%v%v", sharderurl, query)
 			req, err := util.NewHTTPGetRequestContext(ctx, url)
-			if err != nil {
-				return
-			}
-			res, err := req.Get()
+
+			l.Logger.Info("3 queryFromShardersContext", zap.Any("sharderurl", sharderurl), zap.Any("query", query), zap.Any("result", result), zap.Any("req", req), zap.Any("err", err))
+
 			if err != nil {
 				return
 			}
 
+			l.Logger.Info("4 queryFromShardersContext", zap.Any("sharderurl", sharderurl), zap.Any("query", query), zap.Any("result", result), zap.Any("req", req), zap.Any("err", err))
+
+			res, err := req.Get()
+
+			l.Logger.Info("5 queryFromShardersContext", zap.Any("sharderurl", sharderurl), zap.Any("query", query), zap.Any("result", result), zap.Any("req", req), zap.Any("err", err), zap.Any("res", res))
+
+			if err != nil {
+				return
+			}
+
+			l.Logger.Info("6 queryFromShardersContext", zap.Any("sharderurl", sharderurl), zap.Any("query", query), zap.Any("result", result), zap.Any("req", req), zap.Any("err", err), zap.Any("res", res))
+
 			result <- res
+
+			l.Logger.Info("7 queryFromShardersContext", zap.Any("sharderurl", sharderurl), zap.Any("query", query), zap.Any("result", result), zap.Any("req", req), zap.Any("err", err), zap.Any("res", res))
 		}(sharder)
 	}
 }
