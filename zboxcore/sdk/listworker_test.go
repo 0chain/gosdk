@@ -299,8 +299,9 @@ func TestListRequest_GetListFromBlobbers(t *testing.T) {
 			}
 			got, _ := req.GetListFromBlobbers()
 			expectedResult := &ListResult{
-				Type: mockType,
-				Size: 0,
+				Type:       mockType,
+				Size:       0,
+				deleteMask: zboxutil.NewUint128(1).Lsh(uint64(len(req.blobbers))).Sub64(1),
 			}
 			if !tt.wantErr {
 				require.EqualValues(expectedResult, got)
