@@ -36,9 +36,9 @@ type EthereumClient interface {
 }
 
 type BridgeClient struct {
-	KeyStore
-	transaction.TransactionProvider
-	EthereumClient
+	keyStore            KeyStore
+	transactionProvider transaction.TransactionProvider
+	ethereumClient      EthereumClient
 
 	BridgeAddress,
 	TokenAddress,
@@ -60,9 +60,9 @@ func NewBridgeClient(bridgeAddress, tokenAddress, authorizersAddress, ethereumAd
 		Password:            password,
 		GasLimit:            gasLimit,
 		ConsensusThreshold:  consensusThreshold,
-		EthereumClient:      ethereumClient,
-		TransactionProvider: transactionProvider,
-		KeyStore:            keyStore,
+		ethereumClient:      ethereumClient,
+		transactionProvider: transactionProvider,
+		keyStore:            keyStore,
 	}
 }
 
