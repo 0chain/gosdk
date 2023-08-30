@@ -70,63 +70,6 @@ func GetAllocation(allocationID *C.char) *C.char {
 	return WithJSON(getAllocation(allocID))
 }
 
-// CreateDir create directory
-//
-//	return
-//		{
-//			"error":"",
-//			"result":"true",
-//		}
-//
-//export CreateDir
-func CreateDir(allocationID, path *C.char) *C.char {
-	allocID := C.GoString(allocationID)
-
-	alloc, err := getAllocation(allocID)
-	if err != nil {
-		return WithJSON(false, err)
-	}
-
-	s := C.GoString(path)
-	err = alloc.CreateDir(s)
-
-	if err != nil {
-		return WithJSON(false, err)
-	}
-
-	return WithJSON(true, nil)
-
-}
-
-// Rename rename path
-//
-//	return
-//		{
-//			"error":"",
-//			"result":"true",
-//		}
-//
-//export Rename
-func Rename(allocationID, path, destName *C.char) *C.char {
-	allocID := C.GoString(allocationID)
-
-	alloc, err := getAllocation(allocID)
-	if err != nil {
-		return WithJSON(false, err)
-	}
-
-	s := C.GoString(path)
-	d := C.GoString(destName)
-	err = alloc.RenameObject(s, d)
-
-	if err != nil {
-		return WithJSON(false, err)
-	}
-
-	return WithJSON(true, nil)
-
-}
-
 // Delete delete path
 //
 //	return
@@ -152,24 +95,16 @@ func Delete(allocationID, path *C.char) *C.char {
 		return WithJSON(false, err)
 	}
 
+	log.Info("winsdk: deleted ", s)
+
 	return WithJSON(true, nil)
 }
 
 type MultiOperationOption struct {
-	OperationType string `json:"operationType,omitempty"`
-	RemotePath    string `json:"remotePath,omitempty"`
-	DestName      string `json:"destName,omitempty"` // Required only for rename operation
-	DestPath      string `json:"destPath,omitempty"` // Required for copy and move operation`
-}
-
-type MultiUploadOption struct {
-	FilePath      string `json:"filePath,omitempty"`
-	FileName      string `json:"fileName,omitempty"`
-	RemotePath    string `json:"remotePath,omitempty"`
-	ThumbnailPath string `json:"thumbnailPath,omitempty"`
-	Encrypt       bool   `json:"encrypt,omitempty"`
-	ChunkNumber   int    `json:"chunkNumber,omitempty"`
-	IsUpdate      bool   `json:"isUpdate,omitempty"`
+	OperationType string `json:"OperationType,omitempty"`
+	RemotePath    string `json:"RemotePath,omitempty"`
+	DestName      string `json:"DestName,omitempty"` // Required only for rename operation
+	DestPath      string `json:"DestPath,omitempty"` // Required for copy and move operation`
 }
 
 // MultiOperation - do copy, move, delete and createdir operation together
@@ -187,12 +122,13 @@ func MultiOperation(_allocationID, _jsonMultiOperationOptions *C.char) *C.char {
 	allocationID := C.GoString(_allocationID)
 	jsonMultiOperationOptions := C.GoString(_jsonMultiOperationOptions)
 	if allocationID == "" {
-		return WithJSON(nil, errors.New("AllocationID is required"))
+		return WithJSON(false, errors.New("AllocationID is required"))
 	}
+
 	var options []MultiOperationOption
 	err := json.Unmarshal([]byte(jsonMultiOperationOptions), &options)
 	if err != nil {
-		return WithJSON(nil, err)
+		return WithJSON(false, err)
 	}
 	totalOp := len(options)
 	operations := make([]sdk.OperationRequest, totalOp)
@@ -203,14 +139,16 @@ func MultiOperation(_allocationID, _jsonMultiOperationOptions *C.char) *C.char {
 			DestName:      op.DestName,
 			DestPath:      op.DestPath,
 		}
+
+		log.Info("multi-operation: index=", idx, " op=", op.OperationType, " remotePath=", op.RemotePath, " destName=", op.DestName, " destPath=", op.DestPath)
 	}
 	allocationObj, err := getAllocation(allocationID)
 	if err != nil {
-		return WithJSON(nil, err)
+		return WithJSON(false, err)
 	}
 	err = allocationObj.DoMultiOperation(operations)
 	if err != nil {
-		return WithJSON(nil, err)
+		return WithJSON(false, err)
 	}
 	return WithJSON(true, nil)
 
@@ -306,7 +244,7 @@ func MultiDownload(_allocationID, _jsonMultiDownloadOptions *C.char) error {
 //     }
 //
 //export BulkUpload
-func BulkUpload(uploadID, allocationID, files *C.char) *C.char {
+func BulkUpload(allocationID, files *C.char) *C.char {
 	allocID := C.GoString(allocationID)
 	workdir, _ := os.UserHomeDir()
 	jsFiles := C.GoString(files)
@@ -323,10 +261,9 @@ func BulkUpload(uploadID, allocationID, files *C.char) *C.char {
 	chunkNumbers := make([]int, totalUploads)
 	encrypts := make([]bool, totalUploads)
 	isUpdates := make([]bool, totalUploads)
+	isWebstreaming := make([]bool, totalUploads)
 
-	statusBar := &StatusCallback{
-		status: make(map[string]*Status),
-	}
+	statusBar := &StatusCallback{}
 
 	for idx, option := range options {
 		filePaths[idx] = option.Path
@@ -335,8 +272,9 @@ func BulkUpload(uploadID, allocationID, files *C.char) *C.char {
 		remotePaths[idx] = option.RemotePath
 		chunkNumbers[idx] = option.ChunkNumber
 		isUpdates[idx] = option.IsUpdate
+		isWebstreaming[idx] = option.IsWebstreaming
 		encrypts[idx] = option.Encrypt
-		statusBar.status[option.RemotePath+option.Name] = &Status{}
+		statusCaches.Add(getLookupHash(allocID, option.RemotePath+option.Name), &Status{})
 	}
 
 	a, err := getAllocation(allocID)
@@ -344,9 +282,7 @@ func BulkUpload(uploadID, allocationID, files *C.char) *C.char {
 		return WithJSON(nil, err)
 	}
 
-	statusCaches.Add(C.GoString(uploadID), statusBar)
-
-	err = a.StartMultiUpload(workdir, filePaths, fileNames, thumbnailPaths, encrypts, chunkNumbers, remotePaths, isUpdates, statusBar)
+	err = a.StartMultiUpload(workdir, filePaths, fileNames, thumbnailPaths, encrypts, chunkNumbers, remotePaths, isUpdates, isWebstreaming, statusBar)
 	if err != nil {
 		return WithJSON(nil, err)
 	}
@@ -355,27 +291,22 @@ func BulkUpload(uploadID, allocationID, files *C.char) *C.char {
 
 // GetUploadStatus - get upload status
 // ## Inputs
-//   - uploadID
-//   - remotePath
-//     return
-//     {
-//     "error":"",
-//     "result":"{'Started':false,'CompletedBytes': 0,Error:”,'Completed':false}",
-//     }
+//   - lookupHash
+//
+// ## Outputs
+//
+//	{
+//	"error":"",
+//	"result":"{'Started':false,'CompletedBytes': 0,Error:”,'Completed':false}",
+//	}
 //
 //export GetUploadStatus
-func GetUploadStatus(uploadID, remotePath *C.char) *C.char {
-	id := C.GoString(uploadID)
-	scb, ok := statusCaches.Get(id)
+func GetUploadStatus(lookupHash *C.char) *C.char {
+
+	s, ok := statusCaches.Get(C.GoString(lookupHash))
 
 	if !ok {
-		return WithJSON(nil, ErrInvalidUploadID)
-	}
-
-	s := scb.getStatus(C.GoString(remotePath))
-
-	if s == nil {
-		return WithJSON(nil, ErrInvalidRemotePath)
+		s = &Status{}
 	}
 
 	return WithJSON(s, nil)
