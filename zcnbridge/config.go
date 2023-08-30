@@ -29,9 +29,9 @@ type BridgeSDKConfig struct {
 }
 
 type BridgeClient struct {
-	KeyStore
-	transaction.TransactionProvider
-	EthereumClient
+	keyStore            KeyStore
+	transactionProvider transaction.TransactionProvider
+	ethereumClient      EthereumClient
 
 	BridgeAddress,
 	TokenAddress,
@@ -61,9 +61,9 @@ func createBridgeClient(cfg *viper.Viper, ethereumClient EthereumClient, transac
 		Password:            cfg.GetString("bridge.password"),
 		GasLimit:            cfg.GetUint64("bridge.gas_limit"),
 		ConsensusThreshold:  cfg.GetFloat64("bridge.consensus_threshold"),
-		EthereumClient:      ethereumClient,
-		TransactionProvider: transactionProvider,
-		KeyStore:            keyStore,
+		ethereumClient:      ethereumClient,
+		transactionProvider: transactionProvider,
+		keyStore:            keyStore,
 	}
 }
 
