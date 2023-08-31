@@ -11,6 +11,8 @@ import (
 	"os"
 
 	"github.com/0chain/gosdk/core/encryption"
+	"github.com/0chain/gosdk/zboxcore/marker"
+	"github.com/0chain/gosdk/zboxcore/sdk"
 )
 
 func getHomeDir() string {
@@ -44,4 +46,11 @@ func WithJSON(obj interface{}, err error) *C.char {
 
 func getLookupHash(allocationID, path string) string {
 	return encryption.Hash(allocationID + ":" + path)
+}
+
+func getAuthTicket(authTicket *C.char) (*marker.AuthTicket, string, error) {
+	at := C.GoString(authTicket)
+	t, err := sdk.InitAuthTicket(at).Unmarshall()
+
+	return t, at, err
 }
