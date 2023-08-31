@@ -305,7 +305,7 @@ func (mo *MultiOperation) Process() error {
 		return err
 	}
 	for _, info := range mo.progressInfos {
-		info.ProgressStorer.Remove(info.ID)
+		info.ProgressStorer.Remove(info.ID) //nolint
 	}
 	for _, op := range mo.operations {
 		op.Completed(mo.allocationObj)
