@@ -182,57 +182,6 @@ func GetFileMeta(allocationID, path *C.char) *C.char {
 	return WithJSON(f, nil)
 }
 
-type MultiDownloadOption struct {
-	RemotePath       string `json:"remotePath"`
-	LocalPath        string `json:"localPath"`
-	DownloadOp       int    `json:"downloadOp"`
-	RemoteFileName   string `json:"remoteFileName,omitempty"`   //Required only for file download with auth ticket
-	RemoteLookupHash string `json:"remoteLookupHash,omitempty"` //Required only for file download with auth ticket
-}
-
-// MultiDownloadFile - upload files from local path to remote path
-// ## Inputs
-//   - allocationID
-//   - jsonMultiDownloadOptions: Json Array of MultiDownloadOption eg: "[{"remotePath":"/","localPath":"/t2.txt","downloadOp":1}]"
-//
-// downloadOp: 1 for file, 2 for thumbnail
-// ## Outputs
-//   - error
-//
-// export MultiDownload
-func MultiDownload(_allocationID, _jsonMultiDownloadOptions *C.char) error {
-	allocationID := C.GoString(_allocationID)
-	jsonMultiUploadOptions := C.GoString(_jsonMultiDownloadOptions)
-	var options []MultiDownloadOption
-	err := json.Unmarshal([]byte(jsonMultiUploadOptions), &options)
-	if err != nil {
-		return err
-	}
-
-	a, err := getAllocation(allocationID)
-	if err != nil {
-		return err
-	}
-
-	for i := 0; i < len(options)-1; i++ {
-		if options[i].DownloadOp == 1 {
-			err = a.DownloadFile(options[i].LocalPath, options[i].RemotePath, false, NewStatusBar(statusDownload, ""), false)
-		} else {
-			err = a.DownloadThumbnail(options[i].LocalPath, options[i].RemotePath, false, NewStatusBar(statusDownload, ""), false)
-		}
-		if err != nil {
-			return err
-		}
-	}
-	if options[len(options)-1].DownloadOp == 1 {
-		err = a.DownloadFile(options[len(options)-1].LocalPath, options[len(options)-1].RemotePath, false, NewStatusBar(statusDownload, ""), true)
-	} else {
-		err = a.DownloadThumbnail(options[len(options)-1].LocalPath, options[len(options)-1].RemotePath, false, NewStatusBar(statusDownload, ""), true)
-	}
-
-	return err
-}
-
 // BulkUpload - upload files from local path to remote path
 // ## Inputs
 //   - allocationID
@@ -312,6 +261,22 @@ func GetUploadStatus(lookupHash *C.char) *C.char {
 	return WithJSON(s, nil)
 }
 
+// SetNumBlockDownloads - set global the number of blocks on downloading
+// ## Inputs
+//   - num
+//
+// ## Outputs
+//
+//	{
+//	"error":"",
+//	"result":"",
+//	}
+//
+//export SetNumBlockDownloads
+func SetNumBlockDownloads(num int) {
+	sdk.SetNumBlockDownloads(num)
+}
+
 // DownloadFile - downalod file
 // ## Inputs
 //   - allocationID
@@ -381,6 +346,85 @@ func DownloadThumbnail(allocationID, localPath, remotePath *C.char, verifyDownlo
 	}
 
 	return WithJSON(true, nil)
+}
+
+// DownloadSharedFile - downalod shared file by authTicket
+// ## Inputs
+//   - localPath
+//   - authTicket
+//   - verifyDownload
+//   - isFinal
+//
+// ## Outputs
+//
+//	{
+//	"error":"",
+//	"result":"{"AllocationID":"xxx","LookupHash":"xxxxxx" }",
+//	}
+//
+//export DownloadSharedFile
+func DownloadSharedFile(localPath, authTicket *C.char, verifyDownload bool, isFinal bool) *C.char {
+	info := &SharedInfo{}
+	t, at, err := getAuthTicket(authTicket)
+	if err != nil {
+		return WithJSON(info, err)
+	}
+
+	info.AllocationID = t.AllocationID
+	info.LookupHash = t.FilePathHash
+
+	alloc, err := getAllocation(t.AllocationID)
+	if err != nil {
+		return WithJSON(info, err)
+	}
+
+	statusBar := NewStatusBar(statusDownload, t.FilePathHash)
+
+	err = alloc.DownloadFromAuthTicket(C.GoString(localPath), at, t.FilePathHash, t.FileName, verifyDownload, statusBar, isFinal)
+	if err != nil {
+		return WithJSON(info, err)
+	}
+
+	return WithJSON(info, nil)
+}
+
+// DownloadSharedThumbnail - downalod shared thumbnial by authTicket
+// ## Inputs
+//   - localPath
+//   - authTicket
+//   - verifyDownload
+//   - isFinal
+//
+// ## Outputs
+//
+//	{
+//	"error":"",
+//	"result":"{"AllocationID":"xxx","LookupHash":"xxx" }",
+//	}
+//
+//export DownloadSharedThumbnail
+func DownloadSharedThumbnail(localPath, authTicket *C.char, verifyDownload bool, isFinal bool) *C.char {
+	info := &SharedInfo{}
+	t, at, err := getAuthTicket(authTicket)
+	if err != nil {
+		return WithJSON(info, err)
+	}
+	info.AllocationID = t.AllocationID
+	info.LookupHash = t.FilePathHash
+
+	alloc, err := getAllocation(t.AllocationID)
+	if err != nil {
+		return WithJSON(info, err)
+	}
+
+	statusBar := NewStatusBar(statusDownload, t.FilePathHash)
+
+	err = alloc.DownloadThumbnailFromAuthTicket(C.GoString(localPath), at, t.FilePathHash, t.FileName, verifyDownload, statusBar, isFinal)
+	if err != nil {
+		return WithJSON(info, err)
+	}
+
+	return WithJSON(info, nil)
 }
 
 // GetDownloadStatus - get download status

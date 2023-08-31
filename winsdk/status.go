@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/0chain/gosdk/zboxcore/sdk"
 	lru "github.com/hashicorp/golang-lru/v2"
 )
 
@@ -23,7 +24,7 @@ type StatusCallback struct {
 	items *lru.Cache[string, *Status]
 }
 
-func NewStatusBar(items *lru.Cache[string, *Status], key string) *StatusCallback {
+func NewStatusBar(items *lru.Cache[string, *Status], key string) sdk.StatusCallback {
 	return &StatusCallback{
 		key:   key,
 		items: items,
