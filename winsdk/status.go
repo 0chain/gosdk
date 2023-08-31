@@ -1,17 +1,13 @@
 package main
 
 import (
-	"errors"
-	"sync"
-
+	"github.com/0chain/gosdk/zboxcore/sdk"
 	lru "github.com/hashicorp/golang-lru/v2"
 )
 
 var (
-	statusCaches, _ = lru.New[string, *StatusCallback](100)
-
-	ErrInvalidUploadID   = errors.New("bulkupload: invalid upload id")
-	ErrInvalidRemotePath = errors.New("bulkupload: invalid remotePath")
+	statusUpload, _   = lru.New[string, *Status](1000)
+	statusDownload, _ = lru.New[string, *Status](1000)
 )
 
 type Status struct {
@@ -24,66 +20,73 @@ type Status struct {
 }
 
 type StatusCallback struct {
-	sync.Mutex
-	status map[string]*Status
+	key   string
+	items *lru.Cache[string, *Status]
 }
 
-func (c *StatusCallback) Get(remotePath string) *Status {
-	c.Lock()
-	defer c.Unlock()
-	s, ok := c.status[remotePath]
-	if ok {
+func NewStatusBar(items *lru.Cache[string, *Status], key string) sdk.StatusCallback {
+	return &StatusCallback{
+		key:   key,
+		items: items,
+	}
+}
+
+func (c *StatusCallback) getStatus(lookupHash string) *Status {
+
+	if len(c.key) == 0 {
+		s, ok := c.items.Get(lookupHash)
+
+		if !ok {
+			s = &Status{}
+			c.items.Add(lookupHash, s)
+		}
 		return s
 	}
 
-	return s
-}
+	s, ok := c.items.Get(c.key)
 
-func (c *StatusCallback) getStatus(remotePath string) *Status {
-	s, ok := c.status[remotePath]
 	if !ok {
 		s = &Status{}
-		c.status[remotePath] = s
+		c.items.Add(c.key, s)
 	}
-
 	return s
 }
 
 func (c *StatusCallback) Started(allocationID, remotePath string, op int, totalBytes int) {
-	c.Lock()
-	defer c.Unlock()
-	log.Info("status: Started ", remotePath, " ", totalBytes)
-	s := c.getStatus(remotePath)
+	lookupHash := getLookupHash(allocationID, remotePath)
+	log.Info("status: Started ", remotePath, " ", totalBytes, " ", lookupHash)
+	s := c.getStatus(lookupHash)
 	s.Started = true
 	s.TotalBytes = totalBytes
-	s.LookupHash = getLookupHash(allocationID, remotePath)
+	s.LookupHash = lookupHash
 }
 
 func (c *StatusCallback) InProgress(allocationID, remotePath string, op int, completedBytes int, data []byte) {
-	c.Lock()
-	defer c.Unlock()
-	log.Info("status: InProgress ", remotePath, " ", completedBytes)
-	s := c.getStatus(remotePath)
+	lookupHash := getLookupHash(allocationID, remotePath)
+	log.Info("status: InProgress ", remotePath, " ", completedBytes, " ", lookupHash)
+	s := c.getStatus(lookupHash)
 	s.CompletedBytes = completedBytes
-	s.LookupHash = getLookupHash(allocationID, remotePath)
+	s.LookupHash = lookupHash
+	if completedBytes >= s.TotalBytes {
+		s.Completed = true
+	}
 }
 
 func (c *StatusCallback) Error(allocationID string, remotePath string, op int, err error) {
-	c.Lock()
-	defer c.Unlock()
-	log.Info("status: Error ", remotePath, " ", err)
-	s := c.getStatus(remotePath)
+	lookupHash := getLookupHash(allocationID, remotePath)
+	log.Info("status: Error ", remotePath, " ", err, " ", lookupHash)
+	s := c.getStatus(lookupHash)
 	s.Error = err.Error()
-	s.LookupHash = getLookupHash(allocationID, remotePath)
+	s.LookupHash = lookupHash
 }
 
 func (c *StatusCallback) Completed(allocationID, remotePath string, filename string, mimetype string, size int, op int) {
-	c.Lock()
-	defer c.Unlock()
-	log.Info("status: Completed ", remotePath)
-	s := c.getStatus(remotePath)
+	lookupHash := getLookupHash(allocationID, remotePath)
+	log.Info("status: Completed ", remotePath, " ", lookupHash)
+	s := c.getStatus(lookupHash)
 	s.Completed = true
-	s.LookupHash = getLookupHash(allocationID, remotePath)
+	s.LookupHash = lookupHash
+	s.CompletedBytes = s.TotalBytes
 }
 
 func (c *StatusCallback) CommitMetaCompleted(request, response string, err error) {

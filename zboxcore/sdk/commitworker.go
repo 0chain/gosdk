@@ -101,8 +101,13 @@ func (commitreq *CommitRequest) processCommit() {
 	var req *http.Request
 	var lR ReferencePathResult
 	req, err := zboxutil.NewReferencePathRequest(commitreq.blobber.Baseurl, commitreq.allocationID, commitreq.allocationTx, paths)
-	if err != nil || len(paths) == 0 {
+	if err != nil {
 		l.Logger.Error("Creating ref path req", err)
+		return
+	}
+	if len(paths) == 0 {
+		l.Logger.Info("Nothing to commit")
+		commitreq.result = SuccessCommitResult()
 		return
 	}
 

@@ -22,34 +22,34 @@ type UploadOperation struct {
 	isWebstreaming bool
 	statusCallback StatusCallback
 	opCode         int
+	progressInfo   ProgressInfo
+	chunkedUpload  *ChunkedUpload
+}
+
+type ProgressInfo struct {
+	ID             string
+	ProgressStorer ChunkedUploadProgressStorer
 }
 
 func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
-	cu, err := CreateChunkedUpload(uo.workdir, allocObj, uo.fileMeta, uo.fileReader, uo.isUpdate, false, uo.isWebstreaming, connectionID, uo.opts...)
+	l.Logger.Info("Connection ID: ", connectionID)
+	err := uo.chunkedUpload.process()
 	if err != nil {
-		uploadMask := zboxutil.NewUint128(1).Lsh(uint64(len(allocObj.Blobbers))).Sub64(1)
-		return nil, uploadMask, err
-	}
-	uo.statusCallback = cu.statusCallback
-	uo.opCode = cu.opCode
-
-	err = cu.process()
-	if err != nil {
-		cu.ctxCncl()
-		return nil, cu.uploadMask, err
+		uo.chunkedUpload.ctxCncl()
+		return nil, uo.chunkedUpload.uploadMask, err
 	}
 
 	var pos uint64
-	numList := len(cu.blobbers)
+	numList := len(uo.chunkedUpload.blobbers)
 	uo.refs = make([]*fileref.FileRef, numList)
-	for i := cu.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+	for i := uo.chunkedUpload.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
-		uo.refs[pos] = cu.blobbers[pos].fileRef
-		uo.refs[pos].ChunkSize = cu.chunkSize
+		uo.refs[pos] = uo.chunkedUpload.blobbers[pos].fileRef
+		uo.refs[pos].ChunkSize = uo.chunkedUpload.chunkSize
 	}
 
 	l.Logger.Info("Completed the upload")
-	return nil, cu.uploadMask, nil
+	return nil, uo.chunkedUpload.uploadMask, nil
 }
 
 func (uo *UploadOperation) buildChange(_ []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange {
@@ -124,13 +124,30 @@ func (uo *UploadOperation) Error(allocObj *Allocation, consensus int, err error)
 	}
 }
 
-func NewUploadOperation(workdir string, fileMeta FileMeta, fileReader io.Reader, isUpdate, isWebstreaming bool, opts ...ChunkedUploadOption) *UploadOperation {
-	uo := &UploadOperation{}
-	uo.workdir = workdir
-	uo.fileMeta = fileMeta
-	uo.fileReader = fileReader
-	uo.opts = opts
-	uo.isUpdate = isUpdate
-	uo.isWebstreaming = isWebstreaming
-	return uo
+func NewUploadOperation(workdir string, allocObj *Allocation, connectionID string, fileMeta FileMeta, fileReader io.Reader, isUpdate, isWebstreaming bool, opts ...ChunkedUploadOption) (*UploadOperation, string, error) {
+	uo := &UploadOperation{
+		workdir:        workdir,
+		fileMeta:       fileMeta,
+		fileReader:     fileReader,
+		opts:           opts,
+		isUpdate:       isUpdate,
+		isWebstreaming: isWebstreaming,
+	}
+
+	cu, err := CreateChunkedUpload(uo.workdir, allocObj, uo.fileMeta, uo.fileReader, uo.isUpdate, false, uo.isWebstreaming, connectionID, uo.opts...)
+	if err != nil {
+		return nil, "", err
+	}
+
+	uo.chunkedUpload = cu
+	uo.progressInfo = ProgressInfo{
+		ID:             cu.progress.ID,
+		ProgressStorer: cu.progressStorer,
+	}
+	uo.statusCallback = cu.statusCallback
+	uo.opCode = cu.opCode
+	uo.fileMeta = cu.fileMeta
+	uo.fileReader = cu.fileReader
+
+	return uo, cu.progress.ConnectionID, nil
 }

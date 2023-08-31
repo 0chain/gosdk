@@ -388,6 +388,7 @@ func (a *Allocation) CreateDir(remotePath string) error {
 		remotePath:    remotePath,
 		wg:            &sync.WaitGroup{},
 		timestamp:     timestamp,
+		alreadyExists: map[uint64]bool{},
 		Consensus: Consensus{
 			RWMutex:         &sync.RWMutex{},
 			consensusThresh: a.consensusThreshold,
@@ -555,7 +556,7 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 		if err != nil {
 			return err
 		}
-		fmt.Println("fullRemotepath and localpath", fullRemotePath, localPath)
+
 		fileMeta := FileMeta{
 			Path:       localPath,
 			ActualSize: fileInfo.Size(),
@@ -819,6 +820,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 	if !a.isInitialized() {
 		return notInitialized
 	}
+	connectionID := zboxutil.NewConnectionId()
 
 	for i := 0; i < len(operations); {
 		// resetting multi operation and previous paths for every batch
@@ -826,15 +828,16 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 		mo.allocationObj = a
 		mo.operationMask = zboxutil.NewUint128(0)
 		mo.maskMU = &sync.Mutex{}
+		mo.connectionID = connectionID
 		mo.ctx, mo.ctxCncl = context.WithCancel(a.ctx)
 		mo.Consensus = Consensus{
 			RWMutex:         &sync.RWMutex{},
 			consensusThresh: a.consensusThreshold,
 			fullconsensus:   a.fullconsensus,
 		}
-		mo.connectionID = zboxutil.NewConnectionId()
 
 		previousPaths := make(map[string]bool)
+		connectionErrors := make([]error, len(mo.allocationObj.Blobbers))
 
 		var wg sync.WaitGroup
 		for blobberIdx := range mo.allocationObj.Blobbers {
@@ -844,14 +847,21 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 				err := mo.createConnectionObj(pos)
 				if err != nil {
 					l.Logger.Error(err.Error())
+					connectionErrors[pos] = err
 				}
 			}(blobberIdx)
 		}
 		wg.Wait()
 		// Check consensus
 		if mo.operationMask.CountOnes() < mo.consensusThresh {
+			majorErr := zboxutil.MajorError(connectionErrors)
+			if majorErr != nil {
+				return errors.New("consensus_not_met",
+					fmt.Sprintf("Multioperation: create connection failed. Required consensus %d got %d. Major error: %s",
+						mo.consensusThresh, mo.operationMask.CountOnes(), majorErr.Error()))
+			}
 			return errors.New("consensus_not_met",
-				fmt.Sprintf("Multioperation failed. Required consensus %d got %d",
+				fmt.Sprintf("Multioperation: create connection failed. Required consensus %d got %d",
 					mo.consensusThresh, mo.operationMask.CountOnes()))
 		}
 
@@ -865,7 +875,12 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 				break
 			}
 
-			var operation Operationer
+			var (
+				operation       Operationer
+				err             error
+				newConnectionID string
+			)
+
 			switch op.OperationType {
 			case constants.FileOperationRename:
 				operation = NewRenameOperation(op.RemotePath, op.DestName, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
@@ -877,13 +892,13 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 				operation = NewMoveOperation(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 
 			case constants.FileOperationInsert:
-				operation = NewUploadOperation(op.Workdir, op.FileMeta, op.FileReader, false, op.IsWebstreaming, op.Opts...)
+				operation, newConnectionID, err = NewUploadOperation(op.Workdir, mo.allocationObj, mo.connectionID, op.FileMeta, op.FileReader, false, op.IsWebstreaming, op.Opts...)
 
 			case constants.FileOperationDelete:
 				operation = NewDeleteOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 
 			case constants.FileOperationUpdate:
-				operation = NewUploadOperation(op.Workdir, op.FileMeta, op.FileReader, true, op.IsWebstreaming, op.Opts...)
+				operation, newConnectionID, err = NewUploadOperation(op.Workdir, mo.allocationObj, mo.connectionID, op.FileMeta, op.FileReader, true, op.IsWebstreaming, op.Opts...)
 
 			case constants.FileOperationCreateDir:
 				operation = NewDirOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
@@ -891,8 +906,16 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 			default:
 				return errors.New("invalid_operation", "Operation is not valid")
 			}
+			if err != nil {
+				return err
+			}
 
-			err := operation.Verify(a)
+			if newConnectionID != "" && newConnectionID != connectionID {
+				connectionID = newConnectionID
+				break
+			}
+
+			err = operation.Verify(a)
 			if err != nil {
 				return err
 			}
@@ -904,9 +927,11 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 			mo.operations = append(mo.operations, operation)
 		}
 
-		err := mo.Process()
-		if err != nil {
-			return err
+		if len(mo.operations) > 0 {
+			err := mo.Process()
+			if err != nil {
+				return err
+			}
 		}
 	}
 
