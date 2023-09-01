@@ -133,10 +133,16 @@ func ValidateRemoteFileName(remotePath string) error {
 func GetRoundFromSharders() (int64, error) {
 	sharders := blockchain.GetSharders()
 
+	l.Logger.Info("ENTRY GetRoundFromSharders", zap.Any("sharders", sharders))
 	result := make(chan *util.GetResponse, len(sharders))
+
+	l.Logger.Info("ENTRY 2 GetRoundFromSharders", zap.Any("sharders", sharders), zap.Any("result", result))
+
 	// getMinShardersVerify
 	var numSharders = len(sharders) // overwrite, use all
 	queryFromSharders(sharders, fmt.Sprintf("%v", CURRENT_ROUND), result)
+
+	l.Logger.Info("ENTRY 3 GetRoundFromSharders", zap.Any("sharders", sharders), zap.Any("result", result))
 
 	const consensusThresh = float32(25.0)
 
