@@ -130,7 +130,8 @@ func ValidateRemoteFileName(remotePath string) error {
 }
 
 func GetRoundFromSharders() (int64, error) {
-	sharders := blockchain.GetSharders()
+
+	sharders := GetNetwork().Sharders
 
 	if len(sharders) == 0 {
 		return 0, stdErrors.New("get round failed. no sharders")
