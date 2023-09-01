@@ -513,13 +513,12 @@ func DownloadSharedFileBlocks(allocationID,
 		return WithJSON(info, err)
 	}
 
-
 	return WithJSON(info, nil)
 }
 
 // GetDownloadStatus - get download status
 // ## Inputs
-//   - lookupHash
+//   - key: lookuphash/lookuphash:thumbnail/lookuphash:startBlock-endBlock-numBlocks/lookuphash:startBlock-endBlock-numBlocks:thumbnail
 //
 // ## Outputs
 //
@@ -529,14 +528,14 @@ func DownloadSharedFileBlocks(allocationID,
 //	}
 //
 //export GetDownloadStatus
-func GetDownloadStatus(lookupHash *C.char, isThumbnail bool) *C.char {
+func GetDownloadStatus(key *C.char, isThumbnail bool) *C.char {
 
-	key := C.GoString(lookupHash)
+	k := C.GoString(key)
 	if isThumbnail {
-		key += ":thumbnail"
+		k += ":thumbnail"
 	}
 
-	s, ok := statusDownload.Get(key)
+	s, ok := statusDownload.Get(k)
 
 	if !ok {
 		s = &Status{}
