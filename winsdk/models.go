@@ -12,3 +12,8 @@ type UploadFile struct {
 
 	ChunkNumber int
 }
+
+type SharedInfo struct {
+	AllocationID string
+	LookupHash   string
+}
