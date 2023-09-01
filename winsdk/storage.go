@@ -425,7 +425,7 @@ func DownloadSharedThumbnail(localPath, authTicket *C.char, verifyDownload bool,
 		return WithJSON(info, err)
 	}
 
-	return WithJSON(true, nil)
+	return WithJSON(info, nil)
 }
 
 // DownloadFileBlocks - downalod file blocks
@@ -512,6 +512,7 @@ func DownloadSharedFileBlocks(allocationID,
 	if err != nil {
 		return WithJSON(info, err)
 	}
+
 
 	return WithJSON(info, nil)
 }
