@@ -131,6 +131,11 @@ func ValidateRemoteFileName(remotePath string) error {
 
 func GetRoundFromSharders() (int64, error) {
 	sharders := blockchain.GetSharders()
+
+	if len(sharders) == 0 {
+		return 0, stdErrors.New("get round failed. no sharders")
+	}
+
 	result := make(chan *util.GetResponse, len(sharders))
 
 	// getMinShardersVerify
