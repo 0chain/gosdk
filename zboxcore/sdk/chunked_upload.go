@@ -211,7 +211,8 @@ func CreateChunkedUpload(
 
 	// encrypt option has been changed. upload it from scratch
 	// chunkSize has been changed. upload it from scratch
-	if su.progress.ChunkSize != su.chunkSize || su.progress.EncryptOnUpload != su.encryptOnUpload {
+	// actual size has been changed. upload it from scratch
+	if su.progress.ChunkSize != su.chunkSize || su.progress.EncryptOnUpload != su.encryptOnUpload || su.progress.ActualSize != su.fileMeta.ActualSize {
 		su.progress.ChunkSize = 0 // reset chunk size
 	}
 
@@ -386,12 +387,14 @@ func (su *ChunkedUpload) removeProgress() {
 // createUploadProgress create a new UploadProgress
 func (su *ChunkedUpload) createUploadProgress(connectionId string) {
 	if su.progress.ChunkSize == 0 {
-		su.progress = UploadProgress{ConnectionID: connectionId,
+		su.progress = UploadProgress{
+			ConnectionID:      connectionId,
 			ChunkIndex:        -1,
 			ChunkSize:         su.chunkSize,
 			UploadLength:      0,
 			EncryptOnUpload:   su.encryptOnUpload,
 			EncryptedKeyPoint: su.encryptedKeyPoint,
+			ActualSize:        su.fileMeta.ActualSize,
 		}
 	}
 	su.progress.Blobbers = make([]*UploadBlobberStatus, su.allocationObj.DataShards+su.allocationObj.ParityShards)
@@ -700,6 +703,11 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		break
 	case err := <-wgErrors:
 		return thrown.New("upload_failed", fmt.Sprintf("Upload failed. %s", err))
+	}
+
+	if su.addConsensus >= int32(su.consensus.consensusThresh) {
+		su.progressStorer.Remove(su.progress.ID) //nolint: errcheck
+		return thrown.New("upload_failed", "Duplicate upload for path "+su.fileMeta.RemotePath)
 	}
 
 	if !su.consensus.isConsensusOk() {

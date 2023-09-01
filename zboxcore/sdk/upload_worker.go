@@ -13,26 +13,13 @@ import (
 )
 
 type UploadOperation struct {
-	workdir        string
-	fileMeta       FileMeta
-	fileReader     io.Reader
-	opts           []ChunkedUploadOption
-	refs           []*fileref.FileRef
-	isUpdate       bool
-	isWebstreaming bool
-	statusCallback StatusCallback
-	opCode         int
-	progressInfo   ProgressInfo
-	chunkedUpload  *ChunkedUpload
-}
-
-type ProgressInfo struct {
-	ID             string
-	ProgressStorer ChunkedUploadProgressStorer
+	refs          []*fileref.FileRef
+	opCode        int
+	chunkedUpload *ChunkedUpload
+	isUpdate      bool
 }
 
 func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
-	l.Logger.Info("Connection ID: ", connectionID)
 	err := uo.chunkedUpload.process()
 	if err != nil {
 		uo.chunkedUpload.ctxCncl()
@@ -90,7 +77,7 @@ func (uo *UploadOperation) Verify(allocationObj *Allocation) error {
 		return thrown.Throw(constants.ErrFileOptionNotPermitted, "file_option_not_permitted ")
 	}
 
-	err := ValidateRemoteFileName(uo.fileMeta.RemoteName)
+	err := ValidateRemoteFileName(uo.chunkedUpload.fileMeta.RemoteName)
 	if err != nil {
 		return err
 	}
@@ -100,54 +87,47 @@ func (uo *UploadOperation) Verify(allocationObj *Allocation) error {
 	}
 
 	if uo.isUpdate {
-		f, err := allocationObj.GetFileMeta(uo.fileMeta.RemotePath)
+		f, err := allocationObj.GetFileMeta(uo.chunkedUpload.fileMeta.RemotePath)
 		if err != nil {
 			return err
 		}
 		spaceLeft += f.ActualFileSize
 	}
-	if uo.fileMeta.ActualSize > spaceLeft {
+	if uo.chunkedUpload.fileMeta.ActualSize > spaceLeft {
 		return ErrNoEnoughSpaceLeftInAllocation
 	}
 	return nil
 }
 
 func (uo *UploadOperation) Completed(allocObj *Allocation) {
-	if uo.statusCallback != nil {
-		uo.statusCallback.Completed(allocObj.ID, uo.fileMeta.RemotePath, uo.fileMeta.RemoteName, uo.fileMeta.MimeType, int(uo.fileMeta.ActualSize), uo.opCode)
+	if uo.chunkedUpload.progressStorer != nil {
+		uo.chunkedUpload.progressStorer.Remove(uo.chunkedUpload.progress.ID) // nolint: errcheck
+	}
+	if uo.chunkedUpload.statusCallback != nil {
+		uo.chunkedUpload.statusCallback.Completed(allocObj.ID, uo.chunkedUpload.fileMeta.RemotePath, uo.chunkedUpload.fileMeta.RemoteName, uo.chunkedUpload.fileMeta.MimeType, int(uo.chunkedUpload.fileMeta.ActualSize), uo.opCode)
 	}
 }
 
 func (uo *UploadOperation) Error(allocObj *Allocation, consensus int, err error) {
-	if uo.statusCallback != nil {
-		uo.statusCallback.Error(allocObj.ID, uo.fileMeta.RemotePath, uo.opCode, err)
+	if uo.chunkedUpload.progressStorer != nil {
+		uo.chunkedUpload.progressStorer.Remove(uo.chunkedUpload.progress.ID) // nolint: errcheck
+	}
+	if uo.chunkedUpload.statusCallback != nil {
+		uo.chunkedUpload.statusCallback.Error(allocObj.ID, uo.chunkedUpload.fileMeta.RemotePath, uo.opCode, err)
 	}
 }
 
 func NewUploadOperation(workdir string, allocObj *Allocation, connectionID string, fileMeta FileMeta, fileReader io.Reader, isUpdate, isWebstreaming bool, opts ...ChunkedUploadOption) (*UploadOperation, string, error) {
-	uo := &UploadOperation{
-		workdir:        workdir,
-		fileMeta:       fileMeta,
-		fileReader:     fileReader,
-		opts:           opts,
-		isUpdate:       isUpdate,
-		isWebstreaming: isWebstreaming,
-	}
+	uo := &UploadOperation{}
 
-	cu, err := CreateChunkedUpload(uo.workdir, allocObj, uo.fileMeta, uo.fileReader, uo.isUpdate, false, uo.isWebstreaming, connectionID, uo.opts...)
+	cu, err := CreateChunkedUpload(workdir, allocObj, fileMeta, fileReader, isUpdate, false, isWebstreaming, connectionID, opts...)
 	if err != nil {
 		return nil, "", err
 	}
 
 	uo.chunkedUpload = cu
-	uo.progressInfo = ProgressInfo{
-		ID:             cu.progress.ID,
-		ProgressStorer: cu.progressStorer,
-	}
-	uo.statusCallback = cu.statusCallback
 	uo.opCode = cu.opCode
-	uo.fileMeta = cu.fileMeta
-	uo.fileReader = cu.fileReader
+	uo.isUpdate = isUpdate
 
 	return uo, cu.progress.ConnectionID, nil
 }
