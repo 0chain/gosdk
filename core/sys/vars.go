@@ -21,4 +21,6 @@ var (
 
 	// Verify verify method. it should be initialized on different platform.
 	VerifyWith VerifyWithFunc
+
+	Authorize AuthorizeFunc
 )

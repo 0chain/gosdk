@@ -2,13 +2,10 @@ package zcncore
 
 import (
 	"encoding/json"
-	"fmt"
-	"net/http"
-	"strconv"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/core/transaction"
-	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/zcncrypto"
 )
 
@@ -38,23 +35,21 @@ func (ta *TransactionWithAuth) getAuthorize() (*transaction.Transaction, error) 
 		return nil, errors.Wrap(err, "signing error.")
 	}
 
-	req, err := util.NewHTTPPostRequest(_config.authUrl+"/transaction", ta.t.txn)
+	jsonByte, err := json.Marshal(ta.t.txn)
 	if err != nil {
-		return nil, errors.Wrap(err, "new post request failed for auth")
-	}
-	res, err := req.Post()
-	if err != nil {
-		return nil, errNetwork
+		return nil, err
 	}
 
-	if res.StatusCode != http.StatusOK {
-		if res.StatusCode == http.StatusUnauthorized {
-			return nil, errUserRejected
-		}
-		return nil, errors.New(strconv.Itoa(res.StatusCode), fmt.Sprintf("auth error: %v. %v", res.Status, res.Body))
+	if sys.Authorize == nil {
+		return nil, errors.New("not_initialized", "no authorize func is set, define it in native code and set in sys")
 	}
+	authorize, err := sys.Authorize(string(jsonByte))
+	if err != nil {
+		return nil, err
+	}
+
 	var txnResp transaction.Transaction
-	err = json.Unmarshal([]byte(res.Body), &txnResp)
+	err = json.Unmarshal([]byte(authorize), &txnResp)
 	if err != nil {
 		return nil, errors.Wrap(err, "invalid json on auth response.")
 	}

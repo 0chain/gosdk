@@ -208,11 +208,13 @@ type Allocation struct {
 }
 
 type OperationRequest struct {
-	OperationType string
-	LocalPath     string
-	RemotePath    string
-	DestName      string // Required only for rename operation
-	DestPath      string // Required for copy and move operation
+	OperationType  string
+	LocalPath      string
+	RemotePath     string
+	DestName       string // Required only for rename operation
+	DestPath       string // Required for copy and move operation
+	IsUpdate       bool
+	IsWebstreaming bool
 
 	// Required for uploads
 	Workdir    string
@@ -386,6 +388,7 @@ func (a *Allocation) CreateDir(remotePath string) error {
 		remotePath:    remotePath,
 		wg:            &sync.WaitGroup{},
 		timestamp:     timestamp,
+		alreadyExists: map[uint64]bool{},
 		Consensus: Consensus{
 			RWMutex:         &sync.RWMutex{},
 			consensusThresh: a.consensusThreshold,
@@ -409,11 +412,21 @@ func (a *Allocation) RepairFile(file sys.File, remotepath string,
 		RemoteName: ref.Name,
 		RemotePath: remotepath,
 	}
-	opts := []ChunkedUploadOption{
-		WithMask(mask),
-		WithChunkNumber(10),
-		WithStatusCallback(status),
-		WithEncrypt(ref.EncryptedKey != ""),
+	var opts []ChunkedUploadOption
+	if ref.EncryptedKey != "" {
+		opts = []ChunkedUploadOption{
+			WithMask(mask),
+			WithChunkNumber(10),
+			WithStatusCallback(status),
+			WithEncrypt(true),
+			WithEncryptedPoint(ref.EncryptedKeyPoint),
+		}
+	} else {
+		opts = []ChunkedUploadOption{
+			WithMask(mask),
+			WithChunkNumber(10),
+			WithStatusCallback(status),
+		}
 	}
 	connectionID := zboxutil.NewConnectionId()
 	chunkedUpload, err := CreateChunkedUpload(idr, a, fileMeta, file, false, true, false, connectionID, opts...)
@@ -484,7 +497,7 @@ func (a *Allocation) EncryptAndUploadFileWithThumbnail(
 	)
 }
 
-func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileNames []string, thumbnailPaths []string, encrypts []bool, chunkNumbers []int, remotePaths []string, isUpdate bool, status StatusCallback) error {
+func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileNames []string, thumbnailPaths []string, encrypts []bool, chunkNumbers []int, remotePaths []string, isUpdate []bool, isWebstreaming []bool, status StatusCallback) error {
 	if len(localPaths) != len(thumbnailPaths) {
 		return errors.New("invalid_value", "length of localpaths and thumbnailpaths must be equal")
 	}
@@ -543,7 +556,7 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 		if err != nil {
 			return err
 		}
-		fmt.Println("fullRemotepath and localpath", fullRemotePath, localPath)
+
 		fileMeta := FileMeta{
 			Path:       localPath,
 			ActualSize: fileInfo.Size(),
@@ -574,8 +587,11 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 			Workdir:       workdir,
 			RemotePath:    fileMeta.RemotePath,
 		}
-		if isUpdate {
+		if isUpdate[idx] {
 			operationRequests[idx].OperationType = constants.FileOperationUpdate
+		}
+		if isWebstreaming[idx] {
+			operationRequests[idx].IsWebstreaming = true
 		}
 
 	}
@@ -804,6 +820,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 	if !a.isInitialized() {
 		return notInitialized
 	}
+	connectionID := zboxutil.NewConnectionId()
 
 	for i := 0; i < len(operations); {
 		// resetting multi operation and previous paths for every batch
@@ -811,15 +828,16 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 		mo.allocationObj = a
 		mo.operationMask = zboxutil.NewUint128(0)
 		mo.maskMU = &sync.Mutex{}
+		mo.connectionID = connectionID
 		mo.ctx, mo.ctxCncl = context.WithCancel(a.ctx)
 		mo.Consensus = Consensus{
 			RWMutex:         &sync.RWMutex{},
 			consensusThresh: a.consensusThreshold,
 			fullconsensus:   a.fullconsensus,
 		}
-		mo.connectionID = zboxutil.NewConnectionId()
 
 		previousPaths := make(map[string]bool)
+		connectionErrors := make([]error, len(mo.allocationObj.Blobbers))
 
 		var wg sync.WaitGroup
 		for blobberIdx := range mo.allocationObj.Blobbers {
@@ -829,14 +847,21 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 				err := mo.createConnectionObj(pos)
 				if err != nil {
 					l.Logger.Error(err.Error())
+					connectionErrors[pos] = err
 				}
 			}(blobberIdx)
 		}
 		wg.Wait()
 		// Check consensus
 		if mo.operationMask.CountOnes() < mo.consensusThresh {
+			majorErr := zboxutil.MajorError(connectionErrors)
+			if majorErr != nil {
+				return errors.New("consensus_not_met",
+					fmt.Sprintf("Multioperation: create connection failed. Required consensus %d got %d. Major error: %s",
+						mo.consensusThresh, mo.operationMask.CountOnes(), majorErr.Error()))
+			}
 			return errors.New("consensus_not_met",
-				fmt.Sprintf("Multioperation failed. Required consensus %d got %d",
+				fmt.Sprintf("Multioperation: create connection failed. Required consensus %d got %d",
 					mo.consensusThresh, mo.operationMask.CountOnes()))
 		}
 
@@ -850,7 +875,12 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 				break
 			}
 
-			var operation Operationer
+			var (
+				operation       Operationer
+				err             error
+				newConnectionID string
+			)
+
 			switch op.OperationType {
 			case constants.FileOperationRename:
 				operation = NewRenameOperation(op.RemotePath, op.DestName, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
@@ -862,13 +892,13 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 				operation = NewMoveOperation(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 
 			case constants.FileOperationInsert:
-				operation = NewUploadOperation(op.Workdir, op.FileMeta, op.FileReader, false, op.Opts...)
+				operation, newConnectionID, err = NewUploadOperation(op.Workdir, mo.allocationObj, mo.connectionID, op.FileMeta, op.FileReader, false, op.IsWebstreaming, op.Opts...)
 
 			case constants.FileOperationDelete:
 				operation = NewDeleteOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 
 			case constants.FileOperationUpdate:
-				operation = NewUploadOperation(op.Workdir, op.FileMeta, op.FileReader, true, op.Opts...)
+				operation, newConnectionID, err = NewUploadOperation(op.Workdir, mo.allocationObj, mo.connectionID, op.FileMeta, op.FileReader, true, op.IsWebstreaming, op.Opts...)
 
 			case constants.FileOperationCreateDir:
 				operation = NewDirOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
@@ -876,8 +906,16 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 			default:
 				return errors.New("invalid_operation", "Operation is not valid")
 			}
+			if err != nil {
+				return err
+			}
 
-			err := operation.Verify(a)
+			if newConnectionID != "" && newConnectionID != connectionID {
+				connectionID = newConnectionID
+				break
+			}
+
+			err = operation.Verify(a)
 			if err != nil {
 				return err
 			}
@@ -889,9 +927,11 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 			mo.operations = append(mo.operations, operation)
 		}
 
-		err := mo.Process()
-		if err != nil {
-			return err
+		if len(mo.operations) > 0 {
+			err := mo.Process()
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -1063,19 +1103,19 @@ func (a *Allocation) addAndGenerateDownloadRequest(
 	isFinal bool,
 	localFilePath string,
 ) error {
-	var connectionID string
-	if len(a.downloadRequests) > 0 {
-		connectionID = a.downloadRequests[0].connectionID
-	} else {
-		connectionID = zboxutil.NewConnectionId()
-	}
 	downloadReq, err := a.generateDownloadRequest(
 		fileHandler, remotePath, contentMode, startBlock, endBlock,
-		numBlocks, verifyDownload, status, connectionID, localFilePath)
+		numBlocks, verifyDownload, status, "", localFilePath)
 	if err != nil {
 		return err
 	}
 	a.mutex.Lock()
+	defer a.mutex.Unlock()
+	if len(a.downloadRequests) > 0 {
+		downloadReq.connectionID = a.downloadRequests[0].connectionID
+	} else {
+		downloadReq.connectionID = zboxutil.NewConnectionId()
+	}
 	a.downloadProgressMap[remotePath] = downloadReq
 	a.downloadRequests = append(a.downloadRequests, downloadReq)
 	if isFinal {
@@ -1085,7 +1125,6 @@ func (a *Allocation) addAndGenerateDownloadRequest(
 			a.processReadMarker(downloadOps)
 		}()
 	}
-	a.mutex.Unlock()
 	return nil
 }
 
@@ -1199,7 +1238,7 @@ func (a *Allocation) prepareAndOpenLocalFile(localPath string, remotePath string
 			return nil, "", toKeep, errors.Wrap(err, "Can't create local file")
 		}
 	} else {
-		f, err = os.OpenFile(localFilePath, os.O_WRONLY|os.O_APPEND, 0644)
+		f, err = os.OpenFile(localFilePath, os.O_WRONLY, 0644)
 		if err != nil {
 			return nil, "", toKeep, errors.Wrap(err, "Can't open local file in append mode")
 		}
@@ -2229,7 +2268,7 @@ func (a *Allocation) downloadFromAuthTicket(fileHandler sys.File, authTicket str
 	a.downloadRequests = append(a.downloadRequests, downloadReq)
 	if isFinal {
 		downloadOps := a.downloadRequests
-		a.downloadRequests = a.downloadRequests[:0]
+		a.downloadRequests = nil
 		go func() {
 			a.processReadMarker(downloadOps)
 		}()

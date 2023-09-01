@@ -279,7 +279,6 @@ func (req *DownloadRequest) fillShards(shards [][][]byte, result *downloadBlock)
 		if req.encryptedKey != "" {
 			data, err = req.getDecryptedData(result, i)
 			if err != nil {
-				shards[i] = nil
 				return err
 			}
 		} else {
@@ -528,22 +527,6 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 
 	close(blocks)
 	wg.Wait()
-
-	if isPREAndWholeFile {
-		calculatedFileHash := hex.EncodeToString(actualFileHasher.Sum(nil))
-		var actualHash string
-		if req.contentMode == DOWNLOAD_CONTENT_THUMB {
-			actualHash = fRef.ActualThumbnailHash
-		} else {
-			actualHash = fRef.ActualFileHash
-		}
-
-		if calculatedFileHash != actualHash {
-			req.errorCB(fmt.Errorf("Expected actual file hash %s, calculated file hash %s",
-				fRef.ActualFileHash, calculatedFileHash), remotePathCB)
-			return
-		}
-	}
 
 	if req.statusCallback != nil {
 		req.statusCallback.Completed(
@@ -803,9 +786,10 @@ func (req *DownloadRequest) calculateShardsParams(
 	}
 
 	effectiveChunkSize := effectiveBlockSize * int64(req.datashards)
-	if req.offset > 0 {
-		req.startBlock += req.offset / effectiveChunkSize
-	}
+	blocks := req.offset / effectiveChunkSize
+	req.startBlock += blocks
+
+	req.offset = blocks * effectiveChunkSize
 
 	if req.endBlock == 0 || req.endBlock > chunksPerShard {
 		req.endBlock = chunksPerShard
@@ -813,6 +797,11 @@ func (req *DownloadRequest) calculateShardsParams(
 
 	if req.startBlock >= req.endBlock {
 		err = errors.New("invalid_block_num", "start block should be less than end block")
+		return 0, err
+	}
+
+	_, err = req.fileHandler.Seek(req.offset, io.SeekStart)
+	if err != nil {
 		return 0, err
 	}
 
