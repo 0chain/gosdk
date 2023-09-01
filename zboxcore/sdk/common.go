@@ -222,7 +222,7 @@ func GetRoundFromSharders() (int64, error) {
 
 	l.Logger.Info("17 GetRoundFromSharders", zap.Any("sharders", sharders), zap.Any("numSharders", numSharders), zap.Any("round", round))
 
-	return 0, stdErrors.New("get round failed, consensus not reached")
+	return round, nil
 }
 
 func queryFromSharders(sharders []string, query string,
