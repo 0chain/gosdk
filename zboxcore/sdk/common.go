@@ -129,9 +129,7 @@ func ValidateRemoteFileName(remotePath string) error {
 	return nil
 }
 
-func GetRoundFromSharders() (int64, error) {
-
-	sharders := GetNetwork().Sharders
+func GetRoundFromSharders(sharders []string) (int64, error) {
 
 	if len(sharders) == 0 {
 		return 0, stdErrors.New("get round failed. no sharders")
