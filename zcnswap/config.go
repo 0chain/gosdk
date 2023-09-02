@@ -2,29 +2,43 @@ package zcnswap
 
 import (
 	"errors"
-	"os"
-
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/spf13/viper"
+	"os"
 )
 
-var Configuration SwapConfig
+//var Configuration SwapConfig
 
-type SwapConfig struct {
+type SwapClient struct {
 	BancorAddress    string
 	UsdcTokenAddress string
 	ZcnTokenAddress  string
 	WalletMnemonic   string
 }
 
-func Init(file string) error {
-	var err error
-	Configuration, err = loadConfigFile(file)
-
-	return err
+func CreateSwapClient(cfg *viper.Viper) *SwapClient {
+	return &BridgeClient{
+		BridgeAddress:      cfg.GetString("bridge.bridge_address"),
+		TokenAddress:       cfg.GetString("bridge.token_address"),
+		AuthorizersAddress: cfg.GetString("bridge.authorizers_address"),
+		EthereumAddress:    cfg.GetString("bridge.ethereum_address"),
+		Password:           cfg.GetString("bridge.password"),
+		EthereumNodeURL:    cfg.GetString("ethereum_node_url"),
+		GasLimit:           cfg.GetUint64("bridge.gas_limit"),
+		ConsensusThreshold: cfg.GetFloat64("bridge.consensus_threshold"),
+		Homedir:            homedir,
+	}
 }
+
+//
+//func Init(file string) error {
+//	var err error
+//	Configuration, err = loadConfigFile(file)
+//
+//	return err
+//}
 
 func SetWalletMnemonic(mnemonic string) {
 	Configuration.WalletMnemonic = mnemonic
