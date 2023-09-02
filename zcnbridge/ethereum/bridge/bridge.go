@@ -651,7 +651,8 @@ func (_Bridge *BridgeFilterer) FilterBurnedFullIndex(opts *bind.FilterOpts, from
 		nonceRule = append(nonceRule, nonceItem)
 	}
 
-	logs, sub, err := _Bridge.contract.FilterLogs(opts, "BurnedFullIndex", fromRule, clientIdRule, nonceRule)
+	// logs, sub, err := _Bridge.contract.FilterLogs(opts, "BurnedFullIndex", fromRule, clientIdRule, nonceRule)
+	logs, sub, err := _Bridge.contract.FilterLogs(opts, "BurnedFullIndex")
 	if err != nil {
 		return nil, err
 	}
