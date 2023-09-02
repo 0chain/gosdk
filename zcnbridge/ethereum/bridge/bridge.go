@@ -4,6 +4,7 @@
 package bridge
 
 import (
+	"fmt"
 	"errors"
 	"math/big"
 	"strings"
@@ -654,6 +655,7 @@ func (_Bridge *BridgeFilterer) FilterBurnedFullIndex(opts *bind.FilterOpts, from
 	// logs, sub, err := _Bridge.contract.FilterLogs(opts, "BurnedFullIndex", fromRule, clientIdRule, nonceRule)
 	logs, sub, err := _Bridge.contract.FilterLogs(opts, "BurnedFullIndex")
 	if err != nil {
+		fmt.Println("burned full index filter error:", err)
 		return nil, err
 	}
 	return &BridgeBurnedFullIndexIterator{contract: _Bridge.contract, event: "BurnedFullIndex", logs: logs, sub: sub}, nil
