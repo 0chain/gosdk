@@ -101,7 +101,7 @@ func (uo *UploadOperation) Verify(allocationObj *Allocation) error {
 
 func (uo *UploadOperation) Completed(allocObj *Allocation) {
 	if uo.chunkedUpload.progressStorer != nil {
-		uo.chunkedUpload.progressStorer.Remove(uo.chunkedUpload.progress.ID) // nolint: errcheck
+		uo.chunkedUpload.removeProgress()
 	}
 	if uo.chunkedUpload.statusCallback != nil {
 		uo.chunkedUpload.statusCallback.Completed(allocObj.ID, uo.chunkedUpload.fileMeta.RemotePath, uo.chunkedUpload.fileMeta.RemoteName, uo.chunkedUpload.fileMeta.MimeType, int(uo.chunkedUpload.fileMeta.ActualSize), uo.opCode)
@@ -110,7 +110,7 @@ func (uo *UploadOperation) Completed(allocObj *Allocation) {
 
 func (uo *UploadOperation) Error(allocObj *Allocation, consensus int, err error) {
 	if uo.chunkedUpload.progressStorer != nil {
-		uo.chunkedUpload.progressStorer.Remove(uo.chunkedUpload.progress.ID) // nolint: errcheck
+		uo.chunkedUpload.removeProgress()
 	}
 	if uo.chunkedUpload.statusCallback != nil {
 		uo.chunkedUpload.statusCallback.Error(allocObj.ID, uo.chunkedUpload.fileMeta.RemotePath, uo.opCode, err)

@@ -674,11 +674,10 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 			err = b.sendUploadRequest(ctx, su, chunkEndIndex, isFinal, su.encryptedKey, body, formData, pos)
 			if err != nil {
 				if strings.Contains(err.Error(), "duplicate") {
+					su.consensus.Done()
 					errC := atomic.AddInt32(&su.addConsensus, 1)
 					if errC >= int32(su.consensus.consensusThresh) {
 						wgErrors <- err
-					} else {
-						su.consensus.Done()
 					}
 					return
 				}
@@ -698,16 +697,16 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		close(wgErrors)
 	}()
 
+	if su.addConsensus >= int32(su.consensus.consensusThresh) {
+		su.removeProgress()
+		return thrown.New("upload_failed", "Duplicate upload for path "+su.fileMeta.RemotePath)
+	}
+
 	select {
 	case <-wgDone:
 		break
 	case err := <-wgErrors:
 		return thrown.New("upload_failed", fmt.Sprintf("Upload failed. %s", err))
-	}
-
-	if su.addConsensus >= int32(su.consensus.consensusThresh) {
-		su.progressStorer.Remove(su.progress.ID) //nolint: errcheck
-		return thrown.New("upload_failed", "Duplicate upload for path "+su.fileMeta.RemotePath)
 	}
 
 	if !su.consensus.isConsensusOk() {
