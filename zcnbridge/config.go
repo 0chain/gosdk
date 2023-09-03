@@ -3,12 +3,12 @@ package zcnbridge
 import (
 	"context"
 	"fmt"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"math/big"
 	"path"
 
 	"github.com/0chain/gosdk/zcnbridge/log"
 	"github.com/0chain/gosdk/zcnbridge/transaction"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/ethclient"
 
 	"github.com/spf13/viper"
@@ -18,6 +18,8 @@ const (
 	ZChainsClientConfigName  = "config.yaml"
 	ZChainWalletConfigName   = "wallet.json"
 	EthereumWalletStorageDir = "wallets"
+
+	AffiliateAccount = "0x0000000000000000000000000000000000000000"
 )
 
 type BridgeSDKConfig struct {
@@ -46,12 +48,28 @@ type BridgeClient struct {
 	EthereumAddress,
 	Password string
 
+	BancorAddress,
+	UsdcTokenAddress,
+	ZcnTokenAddress string
+
 	ConsensusThreshold float64
 	GasLimit           uint64
 }
 
 // NewBridgeClient creates BridgeClient with the given parameters.
-func NewBridgeClient(bridgeAddress, tokenAddress, authorizersAddress, ethereumAddress, password string, gasLimit uint64, consensusThreshold float64, ethereumClient EthereumClient, transactionProvider transaction.TransactionProvider, keyStore KeyStore) *BridgeClient {
+func NewBridgeClient(
+	bridgeAddress,
+	tokenAddress,
+	authorizersAddress,
+	ethereumAddress,
+	password,
+	bancorAddress,
+	usdcTokenAddress string,
+	gasLimit uint64,
+	consensusThreshold float64,
+	ethereumClient EthereumClient,
+	transactionProvider transaction.TransactionProvider,
+	keyStore KeyStore) *BridgeClient {
 	return &BridgeClient{
 		BridgeAddress:       bridgeAddress,
 		TokenAddress:        tokenAddress,
@@ -115,6 +133,8 @@ func SetupBridgeClientSDK(cfg *BridgeSDKConfig) *BridgeClient {
 		chainCfg.GetString("bridge.authorizers_address"),
 		chainCfg.GetString("bridge.ethereum_address"),
 		chainCfg.GetString("bridge.password"),
+		chainCfg.GetString("bridge.swap.bancor_address"),
+		chainCfg.GetString("bridge.swap.usdc_token_address"),
 		chainCfg.GetUint64("bridge.gas_limit"),
 		chainCfg.GetFloat64("bridge.consensus_threshold"),
 		ethereumClient,

@@ -9,7 +9,6 @@ import (
 	"github.com/0chain/errors"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	hdwallet "github.com/0chain/gosdk/zcncore/ethhdwallet"
-	eth "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -90,47 +89,47 @@ func CheckEthHashStatus(hash string, client *ethclient.Client) int {
 	return int(tx.Status)
 }
 
-func NewSignedTransaction(pack []byte, from, to string, value *big.Int, privateKey *ecdsa.PrivateKey, client *ethclient.Client) (*bind.TransactOpts, error) {
-	fromAddress := cmn.HexToAddress(from)
-	toAddress := cmn.HexToAddress(to)
-	gasLimitUnits, err := client.EstimateGas(context.Background(), eth.CallMsg{
-		From: fromAddress,
-		To:   &toAddress,
-		Data: pack,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	nonce, err := client.PendingNonceAt(context.Background(), fromAddress)
-	if err != nil {
-		return nil, err
-	}
-
-	gasPriceWei, err := client.SuggestGasPrice(context.Background())
-	if err != nil {
-		return nil, err
-	}
-
-	chainID, err := client.ChainID(context.Background())
-	if err != nil {
-		return nil, err
-	}
-
-	opts, err := createSignedTransaction(chainID, client, fromAddress, privateKey, gasLimitUnits)
-	if err != nil {
-		return nil, err
-	}
-
-	valueWei := new(big.Int).Mul(value, big.NewInt(params.Wei))
-
-	opts.Nonce = big.NewInt(int64(nonce))
-	opts.Value = valueWei         // in wei
-	opts.GasLimit = gasLimitUnits // in units
-	opts.GasPrice = gasPriceWei   // wei
-
-	return opts, nil
-}
+//func NewSignedTransaction(pack []byte, from, to string, value *big.Int, privateKey *ecdsa.PrivateKey, client *ethclient.Client) (*bind.TransactOpts, error) {
+//	fromAddress := cmn.HexToAddress(from)
+//	toAddress := cmn.HexToAddress(to)
+//	gasLimitUnits, err := client.EstimateGas(context.Background(), eth.CallMsg{
+//		From: fromAddress,
+//		To:   &toAddress,
+//		Data: pack,
+//	})
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	nonce, err := client.PendingNonceAt(context.Background(), fromAddress)
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	gasPriceWei, err := client.SuggestGasPrice(context.Background())
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	chainID, err := client.ChainID(context.Background())
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	opts, err := createSignedTransaction(chainID, client, fromAddress, privateKey, gasLimitUnits)
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	valueWei := new(big.Int).Mul(value, big.NewInt(params.Wei))
+//
+//	opts.Nonce = big.NewInt(int64(nonce))
+//	opts.Value = valueWei         // in wei
+//	opts.GasLimit = gasLimitUnits // in units
+//	opts.GasPrice = gasPriceWei   // wei
+//
+//	return opts, nil
+//}
 
 func AddPercents(gasLimitUnits uint64, percents int) *big.Int {
 	gasLimitBig := big.NewInt(int64(gasLimitUnits))
