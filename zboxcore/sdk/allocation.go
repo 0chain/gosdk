@@ -498,6 +498,7 @@ func (a *Allocation) EncryptAndUploadFileWithThumbnail(
 }
 
 func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileNames []string, thumbnailPaths []string, encrypts []bool, chunkNumbers []int, remotePaths []string, isUpdate []bool, isWebstreaming []bool, status StatusCallback) error {
+	start := time.Now()
 	if len(localPaths) != len(thumbnailPaths) {
 		return errors.New("invalid_value", "length of localpaths and thumbnailpaths must be equal")
 	}
@@ -600,6 +601,7 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 		logger.Logger.Error("Error in multi upload ", err.Error())
 		return err
 	}
+	l.Logger.Info("[multiUpload]", time.Since(start).Milliseconds())
 	return nil
 }
 
@@ -818,6 +820,7 @@ func (a *Allocation) RepairRequired(remotepath string) (zboxutil.Uint128, zboxut
 }
 
 func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
+	start := time.Now()
 	if len(operations) == 0 {
 		return nil
 	}
@@ -938,7 +941,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 			}
 		}
 	}
-
+	l.Logger.Info("[doMultiOperation]", zap.Duration("time", time.Since(start)))
 	return nil
 }
 

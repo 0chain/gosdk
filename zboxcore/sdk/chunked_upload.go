@@ -584,7 +584,7 @@ func (su *ChunkedUpload) Start() error {
 }
 
 func (su *ChunkedUpload) readChunks(num int) (*batchChunksData, error) {
-
+	now := time.Now()
 	data := &batchChunksData{
 		chunkStartIndex: -1,
 		chunkEndIndex:   -1,
@@ -634,7 +634,7 @@ func (su *ChunkedUpload) readChunks(num int) (*batchChunksData, error) {
 			break
 		}
 	}
-
+	logger.Logger.Info("[readChunks]", time.Since(now).Milliseconds())
 	return data, nil
 }
 
