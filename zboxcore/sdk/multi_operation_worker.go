@@ -45,8 +45,7 @@ type MultiOperation struct {
 	operationMask zboxutil.Uint128
 	maskMU        *sync.Mutex
 	Consensus
-	changes       [][]allocationchange.AllocationChange
-	progressInfos []ProgressInfo
+	changes [][]allocationchange.AllocationChange
 }
 
 func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
@@ -174,9 +173,6 @@ func (mo *MultiOperation) Process() error {
 				ctxCncl()
 				return
 			}
-			if uploadOp, ok := op.(*UploadOperation); ok {
-				mo.progressInfos = append(mo.progressInfos, uploadOp.progressInfo)
-			}
 			mo.maskMU.Lock()
 			mo.operationMask = mo.operationMask.Or(mask)
 			mo.maskMU.Unlock()
@@ -188,7 +184,7 @@ func (mo *MultiOperation) Process() error {
 	wg.Wait()
 
 	// Check consensus
-	if mo.operationMask.CountOnes() < mo.consensusThresh {
+	if mo.operationMask.CountOnes() < mo.consensusThresh || ctx.Err() != nil {
 		majorErr := zboxutil.MajorError(errsSlice)
 		if majorErr != nil {
 			return errors.New("consensus_not_met",
@@ -297,16 +293,14 @@ func (mo *MultiOperation) Process() error {
 			fmt.Sprintf("Commit failed. Required consensus %d, got %d",
 				mo.Consensus.consensusThresh, mo.Consensus.consensus))
 		if mo.getConsensus() != 0 {
-			for _, op := range mo.operations {
-				op.Error(mo.allocationObj, mo.getConsensus(), err)
-			}
 			mo.allocationObj.RollbackWithMask(rollbackMask)
+		}
+		for _, op := range mo.operations {
+			op.Error(mo.allocationObj, mo.getConsensus(), err)
 		}
 		return err
 	}
-	for _, info := range mo.progressInfos {
-		info.ProgressStorer.Remove(info.ID) //nolint
-	}
+
 	for _, op := range mo.operations {
 		op.Completed(mo.allocationObj)
 	}
