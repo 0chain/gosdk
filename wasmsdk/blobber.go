@@ -472,10 +472,9 @@ type BulkUploadOption struct {
 
 	ThumbnailBytes jsbridge.Bytes `json:"thumbnailBytes,omitempty"`
 	Encrypt        bool           `json:"encrypt,omitempty"`
-	Webstreaming   bool           `json:"webstreaming,omitempty"`
+	IsWebstreaming bool           `json:"webstreaming,omitempty"`
 	IsUpdate       bool           `json:"isUpdate,omitempty"`
 	IsRepair       bool           `json:"isRepair,omitempty"`
-	IsWebstreaming bool           `json:"isWebstreaming,omitempty"`
 
 	NumBlocks         int    `json:"numBlocks,omitempty"`
 	FileSize          int64  `json:"fileSize,omitempty"`
@@ -569,7 +568,7 @@ func bulkUpload(jsonBulkUploadOptions string) ([]BulkUploadResult, error) {
 				o.ReadChunkFuncName,
 				o.FileSize,
 				o.ThumbnailBytes.Buffer,
-				o.Webstreaming,
+				o.IsWebstreaming,
 				o.Encrypt,
 				o.IsUpdate,
 				o.IsRepair,
