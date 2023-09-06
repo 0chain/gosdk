@@ -941,7 +941,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 			}
 		}
 	}
-	l.Logger.Info("[doMultiOperation]", zap.Duration("time", time.Since(start)))
+	l.Logger.Info("[doMultiOperation] ", time.Since(start).Milliseconds())
 	return nil
 }
 
