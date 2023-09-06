@@ -36,7 +36,7 @@ func NewRetryableClient() *retryablehttp.Client {
 	}
 	//client.RetryWaitMax = RetryWaitMax
 	//client.RetryMax = RetryMax
-	//client.Logger = nil
+	client.Logger = nil
 
 	return client
 }
