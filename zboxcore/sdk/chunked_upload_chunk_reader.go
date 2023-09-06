@@ -4,10 +4,12 @@ import (
 	"io"
 	"math"
 	"strconv"
+	"time"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/zboxcore/encryption"
+	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/klauspost/reedsolomon"
 )
@@ -130,7 +132,7 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 	if r == nil {
 		return nil, errors.Throw(constants.ErrInvalidParameter, "r")
 	}
-
+	now := time.Now()
 	chunk := &ChunkData{
 		Index:   r.nextChunkIndex,
 		IsFinal: false,
@@ -155,9 +157,9 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 		chunk.IsFinal = true
 		return chunk, nil
 	}
-
+	l.Logger.Info("[readFromFile]", time.Since(now).Milliseconds())
 	chunk.FragmentSize = int64(math.Ceil(float64(readLen)/float64(r.dataShards))) + r.chunkHeaderSize
-
+	now = time.Now()
 	if readLen < int(r.chunkDataSizePerRead) {
 		chunkBytes = chunkBytes[:readLen]
 		chunk.IsFinal = true
@@ -175,17 +177,17 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 	if err != nil {
 		return chunk, err
 	}
-
+	l.Logger.Info("[fileHashTime]", time.Since(now).Milliseconds())
 	fragments, err := r.erasureEncoder.Split(chunkBytes)
 	if err != nil {
 		return nil, err
 	}
-
+	now = time.Now()
 	err = r.erasureEncoder.Encode(fragments)
 	if err != nil {
 		return nil, err
 	}
-
+	l.Logger.Info("[erasureEncodeTime]", time.Since(now).Milliseconds())
 	var pos uint64
 	if r.encryptOnUpload {
 		for i := r.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {

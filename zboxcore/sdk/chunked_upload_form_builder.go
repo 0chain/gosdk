@@ -90,7 +90,7 @@ func (b *chunkedUploadFormBuilder) Build(
 	if err != nil {
 		return nil, metadata, err
 	}
-
+	now := time.Now()
 	for _, chunkBytes := range fileChunksData {
 		_, err = uploadFile.Write(chunkBytes)
 		if err != nil {
@@ -109,6 +109,7 @@ func (b *chunkedUploadFormBuilder) Build(
 
 		metadata.FileBytesLen += len(chunkBytes)
 	}
+	logger.Logger.Info("[writeChunkBody]", time.Since(now).Milliseconds())
 	start := time.Now()
 	if isFinal {
 		err = hasher.Finalize()
@@ -157,7 +158,7 @@ func (b *chunkedUploadFormBuilder) Build(
 		formData.ActualSize = fileMeta.ActualSize
 
 	}
-
+	now = time.Now()
 	thumbnailSize := len(thumbnailChunkData)
 	if thumbnailSize > 0 {
 
@@ -200,6 +201,6 @@ func (b *chunkedUploadFormBuilder) Build(
 	metadata.FixedMerkleRoot = formData.FixedMerkleRoot
 	metadata.ValidationRoot = formData.ValidationRoot
 	metadata.ThumbnailContentHash = formData.ThumbnailContentHash
-
+	logger.Logger.Info("[writeChunkMeta]", time.Since(now).Milliseconds())
 	return body, metadata, nil
 }
