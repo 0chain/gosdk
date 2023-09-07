@@ -477,12 +477,13 @@ func (su *ChunkedUpload) process() error {
 // Start start/resume upload
 func (su *ChunkedUpload) Start() error {
 	now := time.Now()
-	defer su.ctxCncl(nil)
 
 	err := su.process()
 	if err != nil {
 		return err
 	}
+	su.ctx, su.ctxCncl = context.WithCancelCause(su.allocationObj.ctx)
+	defer su.ctxCncl(nil)
 	elapsedProcess := time.Since(now)
 	logger.Logger.Info("Completed the upload. Submitting for commit")
 
