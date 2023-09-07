@@ -165,7 +165,8 @@ func CreateChunkedUpload(
 		opCode:        opCode,
 	}
 
-	su.ctx, su.ctxCncl = context.WithCancel(allocationObj.ctx)
+	// su.ctx, su.ctxCncl = context.WithCancel(allocationObj.ctx)
+	su.ctx, su.ctxCncl = context.WithCancelCause(allocationObj.ctx)
 
 	if isUpdate {
 		su.httpMethod = http.MethodPut
@@ -277,76 +278,11 @@ func CreateChunkedUpload(
 	su.formBuilder = CreateChunkedUploadFormBuilder()
 
 	su.isRepair = isRepair
+	su.uploadChan = make(chan UploadData, 1)
+
+	go su.uploadProcessor()
 
 	return su, nil
-
-}
-
-// ChunkedUpload upload manager with chunked upload feature
-type ChunkedUpload struct {
-	consensus Consensus
-
-	workdir string
-
-	allocationObj  *Allocation
-	progress       UploadProgress
-	progressStorer ChunkedUploadProgressStorer
-	client         zboxutil.HttpClient
-
-	uploadMask zboxutil.Uint128
-
-	// httpMethod POST = Upload File / PUT = Update file
-	httpMethod  string
-	buildChange func(ref *fileref.FileRef,
-		uid uuid.UUID, timestamp common.Timestamp) allocationchange.AllocationChange
-
-	fileMeta           FileMeta
-	fileReader         io.Reader
-	fileErasureEncoder reedsolomon.Encoder
-	fileEncscheme      encryption.EncryptionScheme
-	fileHasher         Hasher
-
-	thumbnailBytes         []byte
-	thumbailErasureEncoder reedsolomon.Encoder
-
-	chunkReader ChunkedUploadChunkReader
-	formBuilder ChunkedUploadFormBuilder
-
-	// encryptOnUpload encrypt data on upload or not.
-	encryptOnUpload bool
-	// webStreaming whether data has to be encoded.
-	webStreaming bool
-	// chunkSize how much bytes a chunk has. 64KB is default value.
-	chunkSize int64
-	// chunkNumber the number of chunks in a http upload request. 1 is default value
-	chunkNumber int
-
-	// shardUploadedSize how much bytes a shard has. it is original size
-	shardUploadedSize int64
-	// shardUploadedThumbnailSize how much thumbnail bytes a shard has. it is original size
-	shardUploadedThumbnailSize int64
-	// size of shard
-	shardSize int64
-
-	// statusCallback trigger progress on StatusCallback
-	statusCallback StatusCallback
-
-	blobbers []*ChunkedUploadBlobber
-
-	writeMarkerMutex *WriteMarkerMutex
-
-	// isRepair identifies if upload is repair operation
-	isRepair bool
-
-	opCode            int
-	uploadTimeOut     time.Duration
-	commitTimeOut     time.Duration
-	maskMu            *sync.Mutex
-	ctx               context.Context
-	ctxCncl           context.CancelFunc
-	addConsensus      int32
-	encryptedKeyPoint string
-	encryptedKey      string
 }
 
 // progressID build local progress id with [allocationid]_[Hash(LocalPath+"_"+RemotePath)]_[RemoteName] format
@@ -445,6 +381,8 @@ func (su *ChunkedUpload) process() error {
 		su.statusCallback.Started(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, int(su.fileMeta.ActualSize)+int(su.fileMeta.ActualThumbnailSize))
 	}
 	alreadyUploadedData := 0
+	defer close(su.uploadChan)
+	defer su.ctxCncl(nil)
 	for {
 
 		chunks, err := su.readChunks(su.chunkNumber)
@@ -539,7 +477,7 @@ func (su *ChunkedUpload) process() error {
 // Start start/resume upload
 func (su *ChunkedUpload) Start() error {
 	now := time.Now()
-	defer su.ctxCncl()
+	defer su.ctxCncl(nil)
 
 	err := su.process()
 	if err != nil {
@@ -642,14 +580,17 @@ func (su *ChunkedUpload) readChunks(num int) (*batchChunksData, error) {
 func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 	fileShards []blobberShards, thumbnailShards blobberShards,
 	isFinal bool, uploadLength int64) error {
-	su.consensus.Reset()
-
-	ctx, cancel := context.WithCancel(context.TODO())
-	defer cancel()
 	var errCount int32
 
+	blobberUpload := UploadData{
+		chunkStartIndex: chunkStartIndex,
+		chunkEndIndex:   chunkEndIndex,
+		isFinal:         isFinal,
+		encryptedKey:    su.encryptedKey,
+		uploadBody:      make([]blobberData, len(su.blobbers)),
+	}
+
 	wgErrors := make(chan error, len(su.blobbers))
-	wgDone := make(chan bool)
 	if len(fileShards) == 0 {
 		return thrown.New("upload_failed", "Upload failed. No data to upload")
 	}
@@ -680,56 +621,25 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 				}
 				return
 			}
-
-			startSendUploadRequest := time.Now()
-			err = b.sendUploadRequest(ctx, su, chunkEndIndex, isFinal, su.encryptedKey, body, formData, pos)
-			elapsedSendUploadRequest := time.Since(startSendUploadRequest)
-
-			if err != nil {
-				if strings.Contains(err.Error(), "duplicate") {
-					su.consensus.Done()
-					errC := atomic.AddInt32(&su.addConsensus, 1)
-					if errC >= int32(su.consensus.consensusThresh) {
-						wgErrors <- err
-					}
-					return
-				}
-				logger.Logger.Error("error during sendUploadRequest", err)
-				errC := atomic.AddInt32(&errCount, 1)
-				if errC > int32(su.allocationObj.ParityShards-1) { // If atleast data shards + 1 number of blobbers can process the upload, it can be repaired later
-					wgErrors <- err
-				}
-
-			} else {
-				logger.Logger.Info(fmt.Sprintf("success - [sendUploadRequest] Timings: elapsed time: %d ms", elapsedSendUploadRequest.Milliseconds()))
+			blobberUpload.uploadBody[pos] = blobberData{
+				body:     body,
+				formData: formData,
 			}
 		}(blobber, thumbnailChunkData, pos)
 	}
 
-	go func() {
-		wg.Wait()
-		close(wgDone)
-		close(wgErrors)
-	}()
-
-	if su.addConsensus >= int32(su.consensus.consensusThresh) {
-		su.removeProgress()
-		return thrown.New("upload_failed", "Duplicate upload for path "+su.fileMeta.RemotePath)
-	}
+	wg.Wait()
+	close(wgErrors)
 
 	select {
-	case <-wgDone:
-		break
 	case err := <-wgErrors:
 		su.removeProgress()
 		return thrown.New("upload_failed", fmt.Sprintf("Upload failed. %s", err))
+	case <-su.ctx.Done():
+		return context.Cause(su.ctx)
+	default:
 	}
-
-	if !su.consensus.isConsensusOk() {
-		return thrown.New("consensus_not_met", fmt.Sprintf("Upload failed File not found for path %s. Required consensus atleast %d, got %d",
-			su.fileMeta.RemotePath, su.consensus.consensusThresh, su.consensus.getConsensus()))
-	}
-
+	su.uploadChan <- blobberUpload
 	return nil
 }
 
@@ -807,4 +717,68 @@ func getShardSize(dataSize int64, dataShards int, isEncrypted bool) int64 {
 		remainderShards = (r + int64(dataShards) - 1) / int64(dataShards)
 	}
 	return n*DefaultChunkSize + remainderShards
+}
+
+func (su *ChunkedUpload) uploadProcessor() {
+	wgErrors := make(chan error, len(su.blobbers))
+	wg := &sync.WaitGroup{}
+	ctx, cancel := context.WithCancel(context.TODO())
+	defer cancel()
+	select {
+	case <-su.ctx.Done():
+		return
+	case uploadData, ok := <-su.uploadChan:
+		if !ok {
+			return
+		}
+		su.consensus.Reset()
+		var pos uint64
+		var errCount int32
+		for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+			pos = uint64(i.TrailingZeros())
+			wg.Add(1)
+			go func(pos uint64) {
+				defer wg.Done()
+				startSendUploadRequest := time.Now()
+				err := su.blobbers[pos].sendUploadRequest(ctx, su, uploadData.chunkEndIndex, uploadData.isFinal, su.encryptedKey, uploadData.uploadBody[pos].body, uploadData.uploadBody[pos].formData, pos)
+				elapsedSendUploadRequest := time.Since(startSendUploadRequest)
+
+				if err != nil {
+					if strings.Contains(err.Error(), "duplicate") {
+						su.consensus.Done()
+						errC := atomic.AddInt32(&su.addConsensus, 1)
+						if errC >= int32(su.consensus.consensusThresh) {
+							wgErrors <- err
+						}
+						return
+					}
+					logger.Logger.Error("error during sendUploadRequest", err)
+					errC := atomic.AddInt32(&errCount, 1)
+					if errC > int32(su.allocationObj.ParityShards-1) { // If atleast data shards + 1 number of blobbers can process the upload, it can be repaired later
+						wgErrors <- err
+					}
+
+				} else {
+					logger.Logger.Info(fmt.Sprintf("success - [sendUploadRequest] Timings: elapsed time: %d ms", elapsedSendUploadRequest.Milliseconds()))
+				}
+			}(pos)
+		}
+		wg.Wait()
+		close(wgErrors)
+		select {
+		case err := <-wgErrors:
+			su.removeProgress()
+			su.ctxCncl(thrown.New("upload_failed", fmt.Sprintf("Upload failed. %s", err)))
+			return
+		default:
+		}
+		if !su.consensus.isConsensusOk() {
+			su.ctxCncl(thrown.New("consensus_not_met", fmt.Sprintf("Upload failed File not found for path %s. Required consensus atleast %d, got %d",
+				su.fileMeta.RemotePath, su.consensus.consensusThresh, su.consensus.getConsensus())))
+			return
+		}
+		if uploadData.isFinal {
+			return
+		}
+	}
 }
