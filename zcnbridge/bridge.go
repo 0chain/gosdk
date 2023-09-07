@@ -14,6 +14,7 @@ import (
 	"github.com/0chain/gosdk/zcnbridge/ethereum/authorizers"
 	binding "github.com/0chain/gosdk/zcnbridge/ethereum/bridge"
 	"github.com/0chain/gosdk/zcnbridge/ethereum/erc20"
+	"github.com/0chain/gosdk/zcnbridge/ethereum/nftconfig"
 	"github.com/0chain/gosdk/zcnbridge/log"
 	"github.com/0chain/gosdk/zcncore"
 	hdw "github.com/0chain/gosdk/zcncore/ethhdwallet"
@@ -182,6 +183,161 @@ func (b *BridgeClient) AddEthereumAuthorizers(configDir string) {
 			fmt.Printf("Authorizer has failed to be added: %s\n", mnemonic)
 		}
 	}
+}
+
+func (b *BridgeClient) prepareNFTConfig(ctx context.Context, method string, params ...interface{}) (*nftconfig.NFTConfig, *bind.TransactOpts, error) {
+	etherClient, err := b.CreateEthClient()
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to create etherClient")
+	}
+
+	// To (contract)
+	contractAddress := common.HexToAddress(b.NFTConfigAddress)
+
+	// Get ABI of the contract
+	abi, err := nftconfig.NFTConfigMetaData.GetAbi()
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to get nftconfig ABI")
+	}
+
+	// Pack the method argument
+	pack, err := abi.Pack(method, params...)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to pack arguments")
+	}
+
+	from := common.HexToAddress(b.EthereumAddress)
+
+	// Gas limits in units
+	gasLimitUnits, err := etherClient.EstimateGas(ctx, eth.CallMsg{
+		To:   &contractAddress,
+		From: from,
+		Data: pack,
+	})
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to estimate gas")
+	}
+
+	// Update gas limits + 10%
+	gasLimitUnits = addPercents(gasLimitUnits, 10).Uint64()
+
+	transactOpts := b.CreateSignedTransactionFromKeyStore(etherClient, gasLimitUnits)
+
+	// NFTConfig instance
+	cfg, err := nftconfig.NewNFTConfig(contractAddress, etherClient)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to create nftconfig instance")
+	}
+
+	return cfg, transactOpts, nil
+}
+
+// EncodePackInt do abi.encodedPack(string, int), it is used for setting plan id for royalty
+func EncodePackInt64(key string, param int64) common.Hash {
+	return crypto.Keccak256Hash(
+		[]byte(key),
+		common.LeftPadBytes(big.NewInt(param).Bytes(), 32),
+	)
+}
+
+// NFTConfigSetUint256 call setUint256 method of NFTConfig contract
+func (b *BridgeClient) NFTConfigSetUint256(ctx context.Context, key string, value int64) (*types.Transaction, error) {
+	kkey := crypto.Keccak256Hash([]byte(key))
+	return b.NFTConfigSetUint256Raw(ctx, kkey, value)
+}
+
+func (b *BridgeClient) NFTConfigSetUint256Raw(ctx context.Context, key common.Hash, value int64) (*types.Transaction, error) {
+	if value < 0 {
+		return nil, errors.New("value must be greater than zero")
+	}
+
+	v := big.NewInt(value)
+	Logger.Debug("NFT config setUint256", zap.String("key", key.String()), zap.Any("value", v))
+	instance, transactOpts, err := b.prepareNFTConfig(ctx, "setUint256", key, v)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to prepare bridge")
+	}
+
+	tran, err := instance.SetUint256(transactOpts, key, v)
+	if err != nil {
+		msg := "failed to execute setUint256 transaction to ClientID = %s with key = %s, value = %v"
+		return nil, errors.Wrapf(err, msg, zcncore.GetClientWalletID(), key, v)
+	}
+
+	return tran, err
+}
+
+func (b *BridgeClient) NFTConfigGetUint256(ctx context.Context, key string, keyParam ...int64) (string, int64, error) {
+	kkey := crypto.Keccak256Hash([]byte(key))
+	if len(keyParam) > 0 {
+		kkey = EncodePackInt64(key, keyParam[0])
+	}
+
+	etherClient, err := b.CreateEthClient()
+	if err != nil {
+		return "", 0, errors.Wrap(err, "failed to create etherClient")
+	}
+
+	contractAddress := common.HexToAddress(b.NFTConfigAddress)
+
+	cfg, err := nftconfig.NewNFTConfig(contractAddress, etherClient)
+	if err != nil {
+		return "", 0, errors.Wrap(err, "failed to create NFT config instance")
+	}
+
+	v, err := cfg.GetUint256(nil, kkey)
+	if err != nil {
+		Logger.Error("NFTConfig GetUint256 FAILED", zap.Error(err))
+		msg := "failed to execute getUint256 call, key = %s"
+		return "", 0, errors.Wrapf(err, msg, kkey)
+	}
+	return kkey.String(), v.Int64(), err
+}
+
+func (b *BridgeClient) NFTConfigSetAddress(ctx context.Context, key, address string) (*types.Transaction, error) {
+	kkey := crypto.Keccak256Hash([]byte(key))
+	// return b.NFTConfigSetAddress(ctx, kkey, address)
+
+	Logger.Debug("NFT config setAddress",
+		zap.String("key", kkey.String()),
+		zap.String("address", address))
+
+	addr := common.HexToAddress(address)
+	instance, transactOpts, err := b.prepareNFTConfig(ctx, "setAddress", kkey, addr)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to prepare bridge")
+	}
+
+	tran, err := instance.SetAddress(transactOpts, kkey, addr)
+	if err != nil {
+		msg := "failed to execute setAddress transaction to ClientID = %s with key = %s, value = %v"
+		return nil, errors.Wrapf(err, msg, zcncore.GetClientWalletID(), key, address)
+	}
+
+	return tran, err
+}
+
+func (b *BridgeClient) NFTConfigGetAddress(ctx context.Context, key string) (string, string, error) {
+	kkey := crypto.Keccak256Hash([]byte(key))
+	etherClient, err := b.CreateEthClient()
+	if err != nil {
+		return "", "", errors.Wrap(err, "failed to create etherClient")
+	}
+
+	contractAddress := common.HexToAddress(b.NFTConfigAddress)
+
+	cfg, err := nftconfig.NewNFTConfig(contractAddress, etherClient)
+	if err != nil {
+		return "", "", errors.Wrap(err, "failed to create NFT config instance")
+	}
+
+	v, err := cfg.GetAddress(nil, kkey)
+	if err != nil {
+		Logger.Error("NFTConfig GetAddress FAILED", zap.Error(err))
+		msg := "failed to execute getAddress call, key = %s"
+		return "", "", errors.Wrapf(err, msg, kkey)
+	}
+	return kkey.String(), v.String(), err
 }
 
 // IncreaseBurnerAllowance Increases allowance for bridge contract address to transfer
