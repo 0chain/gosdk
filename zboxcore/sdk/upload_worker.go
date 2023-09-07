@@ -24,7 +24,6 @@ func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([
 	start := time.Now()
 	err := uo.chunkedUpload.process()
 	if err != nil {
-		uo.chunkedUpload.ctxCncl(nil)
 		return nil, uo.chunkedUpload.uploadMask, err
 	}
 
