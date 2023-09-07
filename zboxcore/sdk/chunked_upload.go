@@ -631,10 +631,12 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 	wg.Wait()
 	close(wgErrors)
 
-	select {
-	case err := <-wgErrors:
+	for err := range wgErrors {
 		su.removeProgress()
 		return thrown.New("upload_failed", fmt.Sprintf("Upload failed. %s", err))
+	}
+
+	select {
 	case <-su.ctx.Done():
 		return context.Cause(su.ctx)
 	default:
@@ -765,12 +767,10 @@ func (su *ChunkedUpload) uploadProcessor() {
 		}
 		wg.Wait()
 		close(wgErrors)
-		select {
-		case err := <-wgErrors:
+		for err := range wgErrors {
 			su.removeProgress()
 			su.ctxCncl(thrown.New("upload_failed", fmt.Sprintf("Upload failed. %s", err)))
 			return
-		default:
 		}
 		if !su.consensus.isConsensusOk() {
 			su.ctxCncl(thrown.New("consensus_not_met", fmt.Sprintf("Upload failed File not found for path %s. Required consensus atleast %d, got %d",
