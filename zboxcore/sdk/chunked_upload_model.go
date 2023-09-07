@@ -86,6 +86,7 @@ type ChunkedUpload struct {
 	encryptedKeyPoint string
 	encryptedKey      string
 	uploadChan        chan UploadData
+	uploadWG          sync.WaitGroup
 }
 
 // FileMeta metadata of stream input/local

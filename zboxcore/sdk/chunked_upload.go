@@ -279,7 +279,7 @@ func CreateChunkedUpload(
 
 	su.isRepair = isRepair
 	su.uploadChan = make(chan UploadData, 1)
-
+	su.uploadWG.Add(1)
 	go su.uploadProcessor()
 
 	return su, nil
@@ -643,6 +643,14 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 	default:
 	}
 	su.uploadChan <- blobberUpload
+	if isFinal {
+		su.uploadWG.Wait()
+		select {
+		case <-su.ctx.Done():
+			return context.Cause(su.ctx)
+		default:
+		}
+	}
 	return nil
 }
 
@@ -723,6 +731,7 @@ func getShardSize(dataSize int64, dataShards int, isEncrypted bool) int64 {
 }
 
 func (su *ChunkedUpload) uploadProcessor() {
+	defer su.uploadWG.Done()
 	wgErrors := make(chan error, len(su.blobbers))
 	wg := &sync.WaitGroup{}
 	ctx, cancel := context.WithCancel(context.TODO())
