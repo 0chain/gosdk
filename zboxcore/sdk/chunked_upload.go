@@ -732,63 +732,65 @@ func getShardSize(dataSize int64, dataShards int, isEncrypted bool) int64 {
 
 func (su *ChunkedUpload) uploadProcessor() {
 	defer su.uploadWG.Done()
-	wgErrors := make(chan error, len(su.blobbers))
-	wg := &sync.WaitGroup{}
-	ctx, cancel := context.WithCancel(context.TODO())
-	defer cancel()
-	select {
-	case <-su.ctx.Done():
-		return
-	case uploadData, ok := <-su.uploadChan:
-		if !ok {
+	for {
+		select {
+		case <-su.ctx.Done():
 			return
-		}
-		su.consensus.Reset()
-		var pos uint64
-		var errCount int32
-		for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
-			pos = uint64(i.TrailingZeros())
-			wg.Add(1)
-			go func(pos uint64) {
-				defer wg.Done()
-				startSendUploadRequest := time.Now()
-				err := su.blobbers[pos].sendUploadRequest(ctx, su, uploadData.chunkEndIndex, uploadData.isFinal, su.encryptedKey, uploadData.uploadBody[pos].body, uploadData.uploadBody[pos].formData, pos)
-				elapsedSendUploadRequest := time.Since(startSendUploadRequest)
+		case uploadData, ok := <-su.uploadChan:
+			if !ok {
+				return
+			}
+			wgErrors := make(chan error, len(su.blobbers))
+			wg := &sync.WaitGroup{}
+			ctx, cancel := context.WithCancel(context.TODO())
+			defer cancel()
+			su.consensus.Reset()
+			var pos uint64
+			var errCount int32
+			for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+				pos = uint64(i.TrailingZeros())
+				wg.Add(1)
+				go func(pos uint64) {
+					defer wg.Done()
+					startSendUploadRequest := time.Now()
+					err := su.blobbers[pos].sendUploadRequest(ctx, su, uploadData.chunkEndIndex, uploadData.isFinal, su.encryptedKey, uploadData.uploadBody[pos].body, uploadData.uploadBody[pos].formData, pos)
+					elapsedSendUploadRequest := time.Since(startSendUploadRequest)
 
-				if err != nil {
-					if strings.Contains(err.Error(), "duplicate") {
-						su.consensus.Done()
-						errC := atomic.AddInt32(&su.addConsensus, 1)
-						if errC >= int32(su.consensus.consensusThresh) {
+					if err != nil {
+						if strings.Contains(err.Error(), "duplicate") {
+							su.consensus.Done()
+							errC := atomic.AddInt32(&su.addConsensus, 1)
+							if errC >= int32(su.consensus.consensusThresh) {
+								wgErrors <- err
+							}
+							return
+						}
+						logger.Logger.Error("error during sendUploadRequest", err)
+						errC := atomic.AddInt32(&errCount, 1)
+						if errC > int32(su.allocationObj.ParityShards-1) { // If atleast data shards + 1 number of blobbers can process the upload, it can be repaired later
 							wgErrors <- err
 						}
-						return
-					}
-					logger.Logger.Error("error during sendUploadRequest", err)
-					errC := atomic.AddInt32(&errCount, 1)
-					if errC > int32(su.allocationObj.ParityShards-1) { // If atleast data shards + 1 number of blobbers can process the upload, it can be repaired later
-						wgErrors <- err
-					}
 
-				} else {
-					logger.Logger.Info(fmt.Sprintf("success - [sendUploadRequest] Timings: elapsed time: %d ms", elapsedSendUploadRequest.Milliseconds()))
-				}
-			}(pos)
-		}
-		wg.Wait()
-		close(wgErrors)
-		for err := range wgErrors {
-			su.removeProgress()
-			su.ctxCncl(thrown.New("upload_failed", fmt.Sprintf("Upload failed. %s", err)))
-			return
-		}
-		if !su.consensus.isConsensusOk() {
-			su.ctxCncl(thrown.New("consensus_not_met", fmt.Sprintf("Upload failed File not found for path %s. Required consensus atleast %d, got %d",
-				su.fileMeta.RemotePath, su.consensus.consensusThresh, su.consensus.getConsensus())))
-			return
-		}
-		if uploadData.isFinal {
-			return
+					} else {
+						logger.Logger.Info(fmt.Sprintf("success - [sendUploadRequest] Timings: elapsed time: %d ms", elapsedSendUploadRequest.Milliseconds()))
+					}
+				}(pos)
+			}
+			wg.Wait()
+			close(wgErrors)
+			for err := range wgErrors {
+				su.removeProgress()
+				su.ctxCncl(thrown.New("upload_failed", fmt.Sprintf("Upload failed. %s", err)))
+				return
+			}
+			if !su.consensus.isConsensusOk() {
+				su.ctxCncl(thrown.New("consensus_not_met", fmt.Sprintf("Upload failed File not found for path %s. Required consensus atleast %d, got %d",
+					su.fileMeta.RemotePath, su.consensus.consensusThresh, su.consensus.getConsensus())))
+				return
+			}
+			if uploadData.isFinal {
+				return
+			}
 		}
 	}
 }
