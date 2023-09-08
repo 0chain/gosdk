@@ -18,9 +18,10 @@ const (
 	ZChainsClientConfigName  = "config.yaml"
 	ZChainWalletConfigName   = "wallet.json"
 	EthereumWalletStorageDir = "wallets"
-
-	AffiliateAccount = "0x0000000000000000000000000000000000000000"
 )
+
+// Wallet used by Bancor to share revenu for each swap with.
+const BancorAffiliateAccount = "0x0000000000000000000000000000000000000000"
 
 type BridgeSDKConfig struct {
 	LogLevel        *string
@@ -64,7 +65,8 @@ func NewBridgeClient(
 	ethereumAddress,
 	password,
 	bancorAddress,
-	usdcTokenAddress string,
+	usdcTokenAddress,
+	zcnTokenAddress string,
 	gasLimit uint64,
 	consensusThreshold float64,
 	ethereumClient EthereumClient,
@@ -76,6 +78,9 @@ func NewBridgeClient(
 		AuthorizersAddress:  authorizersAddress,
 		EthereumAddress:     ethereumAddress,
 		Password:            password,
+		BancorAddress:       bancorAddress,
+		UsdcTokenAddress:    usdcTokenAddress,
+		ZcnTokenAddress:     zcnTokenAddress,
 		GasLimit:            gasLimit,
 		ConsensusThreshold:  consensusThreshold,
 		ethereumClient:      ethereumClient,
@@ -135,6 +140,7 @@ func SetupBridgeClientSDK(cfg *BridgeSDKConfig) *BridgeClient {
 		chainCfg.GetString("bridge.password"),
 		chainCfg.GetString("bridge.swap.bancor_address"),
 		chainCfg.GetString("bridge.swap.usdc_token_address"),
+		chainCfg.GetString("bridge.swap.zcn_token_address"),
 		chainCfg.GetUint64("bridge.gas_limit"),
 		chainCfg.GetFloat64("bridge.consensus_threshold"),
 		ethereumClient,

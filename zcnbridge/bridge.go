@@ -4,9 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zcnbridge/ethereum/bancor"
-	ethutils "github.com/0chain/gosdk/zcnswap/utils"
 	"math/big"
 	"os"
 	"time"
@@ -449,8 +447,8 @@ func (b *BridgeClient) BurnZCN(ctx context.Context, amount, txnfee uint64) (tran
 	return trx, nil
 }
 
-// EstimateSwapRate is used to calculate swap rate for WZCN bidirectional swap with ETH.
-func (b *BridgeClient) EstimateSwapRate(sourceTokenAddress, targetSourceAddress string, amount *big.Int) (*big.Int, []common.Address, error) {
+// estimateSwapRate is used to calculate swap rate for WZCN bidirectional swap with ETH.
+func (b *BridgeClient) estimateSwapRate(sourceTokenAddress, targetSourceAddress string, amount *big.Int) (*big.Int, []common.Address, error) {
 	// 1. Source token address parameter
 	from := common.HexToAddress(sourceTokenAddress)
 
@@ -478,156 +476,91 @@ func (b *BridgeClient) EstimateSwapRate(sourceTokenAddress, targetSourceAddress 
 	return result, conversionPath, nil
 }
 
-// SwapETH  is an alias for ETH to WZCN swap operation.
-func (b *BridgeClient) SwapETH(ctx context.Context, amountSwap int64) (string, error) {
-	return b.Swap(ctx, amountSwap)
-}
+// isSwapAllowed check if the current swap token balance state allows transaction to be processed.
+func (b *BridgeClient) isSwapAllowed(amount *big.Int) (bool, error) {
+	// 1. ERC20 token address parameter
+	of := common.HexToAddress(b.TokenAddress)
 
-// SwapWZCN  is an alias for WZCN to ETH swap operation.
-func (b *BridgeClient) SwapWZCN(ctx context.Context, amountSwap int64) (string, error) {
-	return b.Swap(ctx, amountSwap)
-}
+	// 2. Bancor BNT swap pool address parameter
+	spender := common.HexToAddress(b.BancorAddress)
 
-// Swap is used for bidirectional token swap.
-func (b *BridgeClient) Swap(ctx context.Context, amountSwap int64, sourceTokenAddress, targetTokenAddress string) (string, error) {
-	// 1. User's Ethereum wallet address parameter
+	// 3. User's Ethereum wallet
 	from := common.HexToAddress(b.EthereumAddress)
 
-	// 2. Target token address parameter
-	to := common.HexToAddress(targetTokenAddress)
-
-	// 3. Swap amount parameter
-	amount := big.NewInt(amountSwap)
-
-	// check the current balance of the target token address.
-
-	balance, err := b.GetBalance(targetTokenAddress)
+	tokenInstance, err := erc20.NewERC20(of, b.ethereumClient)
 	if err != nil {
-		return "", err
+		return false, err
 	}
 
-	if balance.Cmp(amount) == -1 {
-		return "", errors.New("500", "Not enough balance")
-	}
-
-	//bancorService := bancor.NewSwapService(client, zcncore.GetClientWalletKey())
-
-	// get current swap rate
-
-	rate, conversionPath, err := b.EstimateSwapRate(sourceTokenAddress, targetTokenAddress, amount)
+	allowance, err := tokenInstance.Allowance(&bind.CallOpts{}, from, spender)
 	if err != nil {
-		return "", err
-	}
-
-	//spender := common.HexToAddress(b.BancorAddress)
-
-	fromToken := common.HexToAddress(b.UsdcTokenAddress)
-
-	bancorInstance, err := bancor.NewIBancorNetwork(spender, b.ethereumClient)
-	if err != nil {
-		return "", err
-	}
-
-	// check the current balance of the usdc token address.
-
-	balance, err := erc20.TokenBalance(from, fromToken, b.ethereumClient)
-	if err != nil {
-		return "", err
-	}
-	if balance.Cmp(pair.AmountIn) != 1 {
-		return "", errors.New("500", "Not enough balance")
-	}
-
-	tokenInfo, err := erc20.TokenInfo(fromToken, s.ethereumClient)
-	if err != nil {
-		return "", err
-	}
-
-	// allowance
-	aCheckAllowanceResult, err := erc20.CheckAllowance(fromToken,
-		spender,
-		fromAddress,
-		amount,
-		tokenInfo.TokenSymbol == "ETH",
-		b.ethereumClient)
-	if err != nil {
-		l.Logger.Error("Allowance error", zap.Error(err))
-		return "", err
-	}
-
-	affiliateAccount := common.HexToAddress(AffiliateAccount)
-
-	bancorInstance, transactOpts, err := b.prepareBancor(ctx, b.EthereumAddress, "burn", amount, clientID)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to prepare bridge")
+		return false, err
 	}
 
 	Logger.Info(
-		"Staring Burn WZCN",
+		"Allowance check transaction",
+		zap.Uint64("amount", amount.Uint64()),
+	)
+
+	return allowance.Cmp(amount) >= 0, nil
+}
+
+// Swap is used for bidirectional token swap.
+func (b *BridgeClient) Swap(ctx context.Context, amountSwap int64) (*types.Transaction, error) {
+	// 1. Swap amount parameter
+	amount := big.NewInt(amountSwap)
+
+	// 2. Bancor affiliated account used during conversion operation.
+	affiliateAccount := common.HexToAddress(BancorAffiliateAccount)
+
+	targetBalance, err := b.GetBalance(b.TokenAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	if targetBalance.Cmp(amount) == -1 {
+		return nil, errors.New("Target token does not have enough balance")
+	}
+
+	usdcBalance, err := b.GetBalance(b.UsdcTokenAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	if usdcBalance.Cmp(amount) == -1 {
+		return nil, errors.New("Usdc token does not have enough balance")
+	}
+
+	rate, conversionPath, err := b.estimateSwapRate(b.TokenAddress, b.ZcnTokenAddress, amount)
+	if err != nil {
+		return nil, err
+	}
+
+	swapAllowed, err := b.isSwapAllowed(amount)
+	if err != nil {
+		return nil, err
+	}
+
+	if !swapAllowed {
+		return nil, errors.Wrap(err, "swap operation is not allowed")
+	}
+
+	bancorInstance, transactOpts, err := b.prepareBancor(ctx, "convertByPath", conversionPath, amount, rate, affiliateAccount, affiliateAccount, big.NewInt(0))
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to prepare bancor")
+	}
+
+	Logger.Info(
+		"Starting Swap",
 		zap.Int64("amount", amount.Int64()),
 	)
 
-	//////////////////////////
-	//
-	//abi, err := contracts.IBancorNetworkMetaData.GetAbi()
-	//if err != nil {
-	//	return nil, errors.New("500", "No ABI")
-	//}
-	//
-	//// ropsten test network deployed old contract, hence using old method
-	////pack, err := abi.Pack("convertByPath2", path, amount, minReturn, affiliate)
-	//pack, err := abi.Pack("convertByPath", path, amount, minReturn, affiliate, affiliate, big.NewInt(0))
-	//if err != nil {
-	//	return nil, errors.New("500", "Unable to pack")
-	//}
-	//
-	//return pack, nil
-
-	///////////////////////////
-
-	//
-	//abi, err := erc20.ERC20MetaData.GetAbi()
-	//if err != nil {
-	//	return nil, cmn.New("500", "No ABI")
-	//}
-	//
-	//pack, err := abi.Pack("approve", spender, amount)
-	//if err != nil {
-	//	return nil, cmn.New("500", "Unable to pack")
-	//}
-	//
-	//return pack, nil
-	//
-
-	convertPayload, err := s.PackConvert(conversionPath, amount, rate, affiliateAccount)
+	tran, err := bancorInstance.ConvertByPath(transactOpts, conversionPath, amount, rate, affiliateAccount, affiliateAccount, big.NewInt(0))
 	if err != nil {
-		l.Logger.Error("error in PackConvert", zap.Error(err))
-		return "", err
+		return nil, errors.Wrap(err, "failed to execute ConvertByPath transaction")
 	}
 
-	if !aCheckAllowanceResult.IsSatisfied {
-		err := b.Approve(spender, fromToken, fromAddress, pair.AmountIn)
-		if err != nil {
-			l.Logger.Error("Approve error", zap.Error(err))
-			return "", err
-		}
-	}
-
-	//
-
-	value := big.NewInt(0)
-	opts, err := ethutils.NewSignedTransaction(convertPayload, from, spender.Hex(), value, s.PrivateKey, b.ethereumClient)
-	if err != nil {
-		l.Logger.Error("Signed transaction errorr", zap.Error(err))
-		return "", err
-	}
-
-	signedTx, err := bancorModule.ConvertByPath(opts, conversionPath, amount, rate, affiliateAccount, affiliateAccount, big.NewInt(0))
-	if err != nil {
-		return "", err
-	}
-
-	return signedTx.Hash().String(), nil
+	return tran, nil
 }
 
 func (b *BridgeClient) prepareBancor(ctx context.Context, method string, params ...interface{}) (*bancor.IBancorNetwork, *bind.TransactOpts, error) {

@@ -216,7 +216,12 @@ func getBridgeClient(ethereumClient EthereumClient, transactionProvider transact
 		log.Fatalln(err)
 	}
 
-	defer os.Remove(tempConfigFile.Name())
+	defer func(name string) {
+		err := os.Remove(name)
+		if err != nil {
+			log.Fatalln(err)
+		}
+	}(tempConfigFile.Name())
 
 	cfg.SetConfigFile(tempConfigFile.Name())
 
@@ -234,6 +239,9 @@ func getBridgeClient(ethereumClient EthereumClient, transactionProvider transact
 		cfg.GetString("bridge.authorizers_address"),
 		cfg.GetString("bridge.ethereum_address"),
 		cfg.GetString("bridge.password"),
+		cfg.GetString("bridge.swap.bancor_address"),
+		cfg.GetString("bridge.swap.usdc_token_address"),
+		cfg.GetString("bridge.swap.zcn_token_address"),
 		cfg.GetUint64("bridge.gas_limit"),
 		cfg.GetFloat64("bridge.consensus_threshold"),
 		ethereumClient,
@@ -481,6 +489,33 @@ func Test_ZCNBridge(t *testing.T) {
 
 	t.Run("should check configuration used by IncreaseBurnerAllowance", func(t *testing.T) {
 		_, err := bridgeClient.IncreaseBurnerAllowance(context.Background(), amount)
+		require.NoError(t, err)
+
+		spenderAddress := common.HexToAddress(bridgeAddress)
+
+		to := common.HexToAddress(tokenAddress)
+		fromAddress := common.HexToAddress(ethereumAddress)
+
+		abi, err := erc20.ERC20MetaData.GetAbi()
+		require.NoError(t, err)
+
+		pack, err := abi.Pack("increaseAllowance", spenderAddress, big.NewInt(amount))
+		require.NoError(t, err)
+
+		require.True(t, ethereumClient.AssertCalled(
+			t,
+			"EstimateGas",
+			context.Background(),
+			eth.CallMsg{
+				To:   &to,
+				From: fromAddress,
+				Data: pack,
+			},
+		))
+	})
+
+	t.Run("should check configuration used by Swap", func(t *testing.T) {
+		_, err := bridgeClient.Swap(context.Background(), amount)
 		require.NoError(t, err)
 
 		spenderAddress := common.HexToAddress(bridgeAddress)
