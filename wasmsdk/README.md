@@ -497,16 +497,7 @@ download blocks of a file
 
 **Output**:
 
-> {commandSuccess:bool, fileName:string,url:string, error:string}
-
-**Example**
-
-```json
-{
-  "commandSuccess": true,
-  "fileName": "scan3.png",
-  "url": "blob:http://localhost:3000/42157751-1d33-4448-88c8-7d7e2ad887a5"
-}
+> {[]byte, error:string}
 ```
 
 ### zcn.sdk.upload

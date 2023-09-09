@@ -860,7 +860,7 @@ func upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, w
 }
 
 // download download file blocks
-func downloadBlocks(allocationID, remotePath, authTicket, lookupHash string, numBlocks int, startBlockNumber, endBlockNumber int64, callbackFuncName string, isFinal bool) (*DownloadCommandResponse, error) {
+func downloadBlocks(allocationID, remotePath, authTicket, lookupHash string, numBlocks int, startBlockNumber, endBlockNumber int64, callbackFuncName string, isFinal bool) ([]byte, error) {
 
 	if len(remotePath) == 0 && len(authTicket) == 0 {
 		return nil, RequiredArg("remotePath/authTicket")
@@ -920,15 +920,7 @@ func downloadBlocks(allocationID, remotePath, authTicket, lookupHash string, num
 		return nil, errors.New("Download failed: unknown error")
 	}
 
-	resp := &DownloadCommandResponse{
-		CommandSuccess: true,
-		FileName:       fileName,
-	}
-
-	resp.Url = CreateObjectURL(mf.Buffer.Bytes(), "application/octet-stream")
-
-	return resp, nil
-
+	return mf.Buffer.Bytes(), nil
 }
 
 // GetBlobbersList get list of active blobbers, and format them as array json string
