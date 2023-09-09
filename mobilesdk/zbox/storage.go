@@ -6,11 +6,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
-
-const SPACE string = " "
 
 type fileResp struct {
 	sdk.FileInfo
@@ -468,7 +467,13 @@ func RenameObject(allocationID, remotePath string, destName string) error {
 	if err != nil {
 		return err
 	}
-	return a.RenameObject(remotePath, destName)
+	return a.DoMultiOperation([]sdk.OperationRequest{
+		{
+			OperationType: constants.FileOperationRename,
+			RemotePath:    remotePath,
+			DestName:      destName,
+		},
+	})
 }
 
 // GetStatistics - get allocation stats
@@ -747,7 +752,13 @@ func CopyObject(allocationID, path string, destPath string) error {
 	if err != nil {
 		return err
 	}
-	return a.CopyObject(path, destPath)
+	return a.DoMultiOperation([]sdk.OperationRequest{
+		{
+			OperationType: constants.FileOperationCopy,
+			RemotePath:    path,
+			DestPath:      destPath,
+		},
+	})
 }
 
 // MoveObject - move object from path to dest
@@ -760,7 +771,14 @@ func MoveObject(allocationID, path string, destPath string) error {
 	if err != nil {
 		return err
 	}
-	return a.MoveObject(path, destPath)
+	return a.DoMultiOperation([]sdk.OperationRequest{
+		{
+			OperationType: constants.FileOperationMove,
+			RemotePath:    path,
+			DestPath:      destPath,
+		},
+	})
+
 }
 
 // CreateDir create empty directoy on remote blobbers
@@ -773,7 +791,12 @@ func CreateDir(allocationID, dirName string) error {
 	if err != nil {
 		return err
 	}
-	return a.CreateDir(dirName)
+	return a.DoMultiOperation([]sdk.OperationRequest{
+		{
+			OperationType: constants.FileOperationCreateDir,
+			RemotePath:    dirName,
+		},
+	})
 }
 
 // RevokeShare revoke authTicket

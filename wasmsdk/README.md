@@ -18,18 +18,6 @@ set bls.SecretKey on runtime env(browser,nodejs...etc), and call `zcn.sdk.setWal
 
 > N/A
 
-### zcn.bulkUpload
-
-bulk upload files. it will wrap options, and call `zcn.sdk.bulkUpload` to process upload
-
-**Input**:
-
-> bulkOptions: [ { allocationId:string,remotePath:string,file:FileReader, thumbnailBytes:[]byte, encrypt:bool,isUpdate:bool,isRepair:bool,numBlocks:int,callback:function(totalBytes, completedBytes, error) } ]
-
-**Output**:
-
-> [ {remotePath:"/d.png", success:true,error:""} ]
-
 ## ZCN methods
 
 ### zcn.sdk.init
@@ -521,7 +509,7 @@ upload file
 
 > {commandSuccess:bool, error:string}
 
-### zcn.sdk.bulkUpload
+### zcn.sdk.multiUpload
 
 bulk upload files with json options
 
