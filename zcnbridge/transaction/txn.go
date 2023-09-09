@@ -54,20 +54,20 @@ type (
 
 	// confirmation represents the acceptance that a transaction is included into the blockchain.
 	confirmation struct {
-		Version               string          `json:"version"`
-		Hash                  string          `json:"hash"`
-		BlockHash             string          `json:"block_hash"`
-		PreviousBlockHash     string          `json:"previous_block_hash"`
-		Transaction           Transaction     `json:"txn,omitempty"`
-		CreationDate          ctime.Timestamp `json:"creation_date"`
-		MinerID               string          `json:"miner_id"`
-		Round                 int64           `json:"round"`
-		Status                int             `json:"transaction_status"`
-		RoundRandomSeed       int64           `json:"round_random_seed"`
-		MerkleTreeRoot        string          `json:"merkle_tree_root"`
-		MerkleTreePath        *util.MTPath    `json:"merkle_tree_path"`
-		ReceiptMerkleTreeRoot string          `json:"receipt_merkle_tree_root"`
-		ReceiptMerkleTreePath *util.MTPath    `json:"receipt_merkle_tree_path"`
+		Version               string             `json:"version"`
+		Hash                  string             `json:"hash"`
+		BlockHash             string             `json:"block_hash"`
+		PreviousBlockHash     string             `json:"previous_block_hash"`
+		Transaction           *transactionEntity `json:"txn,omitempty"`
+		CreationDate          ctime.Timestamp    `json:"creation_date"`
+		MinerID               string             `json:"miner_id"`
+		Round                 int64              `json:"round"`
+		Status                int                `json:"transaction_status"`
+		RoundRandomSeed       int64              `json:"round_random_seed"`
+		MerkleTreeRoot        string             `json:"merkle_tree_root"`
+		MerkleTreePath        *util.MTPath       `json:"merkle_tree_path"`
+		ReceiptMerkleTreeRoot string             `json:"receipt_merkle_tree_root"`
+		ReceiptMerkleTreePath *util.MTPath       `json:"receipt_merkle_tree_path"`
 	}
 )
 
