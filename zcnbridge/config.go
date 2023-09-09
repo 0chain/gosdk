@@ -20,8 +20,7 @@ const (
 	EthereumWalletStorageDir = "wallets"
 )
 
-// Wallet used by Bancor to share revenu for each swap with.
-const BancorAffiliateAccount = "0x0000000000000000000000000000000000000000"
+const BancorNetworkAddress = "0xeEF417e1D5CC832e619ae18D2F140De2999dD4fB"
 
 type BridgeSDKConfig struct {
 	LogLevel        *string
@@ -49,9 +48,8 @@ type BridgeClient struct {
 	EthereumAddress,
 	Password string
 
-	BancorAddress,
-	UsdcTokenAddress,
-	ZcnTokenAddress string
+	// Source token address for swap operation.
+	SourceTokenAddress string
 
 	ConsensusThreshold float64
 	GasLimit           uint64
@@ -64,9 +62,7 @@ func NewBridgeClient(
 	authorizersAddress,
 	ethereumAddress,
 	password,
-	bancorAddress,
-	usdcTokenAddress,
-	zcnTokenAddress string,
+	sourceTokenAddress string,
 	gasLimit uint64,
 	consensusThreshold float64,
 	ethereumClient EthereumClient,
@@ -78,9 +74,7 @@ func NewBridgeClient(
 		AuthorizersAddress:  authorizersAddress,
 		EthereumAddress:     ethereumAddress,
 		Password:            password,
-		BancorAddress:       bancorAddress,
-		UsdcTokenAddress:    usdcTokenAddress,
-		ZcnTokenAddress:     zcnTokenAddress,
+		SourceTokenAddress:  sourceTokenAddress,
 		GasLimit:            gasLimit,
 		ConsensusThreshold:  consensusThreshold,
 		ethereumClient:      ethereumClient,
@@ -138,9 +132,7 @@ func SetupBridgeClientSDK(cfg *BridgeSDKConfig) *BridgeClient {
 		chainCfg.GetString("bridge.authorizers_address"),
 		chainCfg.GetString("bridge.ethereum_address"),
 		chainCfg.GetString("bridge.password"),
-		chainCfg.GetString("bridge.swap.bancor_address"),
-		chainCfg.GetString("bridge.swap.usdc_token_address"),
-		chainCfg.GetString("bridge.swap.zcn_token_address"),
+		chainCfg.GetString("bridge.swap.source_token_address"),
 		chainCfg.GetUint64("bridge.gas_limit"),
 		chainCfg.GetFloat64("bridge.consensus_threshold"),
 		ethereumClient,

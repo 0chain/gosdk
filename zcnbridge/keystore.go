@@ -1,11 +1,7 @@
 package zcnbridge
 
 import (
-	"encoding/hex"
 	"fmt"
-	"github.com/0chain/gosdk/zboxcore/logger"
-	"github.com/ethereum/go-ethereum/crypto"
-	"os"
 	"path"
 	"time"
 
@@ -19,14 +15,12 @@ import (
 // DetailedAccount describes detailed account
 type DetailedAccount struct {
 	EthereumAddress,
+	PublicKey,
 	PrivateKey accounts.Account
 }
 
 // KeyStore is a wrapper, which exposes Ethereum KeyStore methods used by DEX bridge.
 type KeyStore interface {
-	// FindDetailed expends default Ethereum KeyStore Find method with private key
-	FindDetailed(account accounts.Account, passPhrase string) (accounts.Account, error)
-
 	Find(accounts.Account) (accounts.Account, error)
 	TimedUnlock(accounts.Account, string, time.Duration) error
 	SignHash(account accounts.Account, hash []byte) ([]byte, error)
@@ -35,41 +29,13 @@ type KeyStore interface {
 
 type keyStore struct {
 	ks *keystore.KeyStore
-
-	// JSON representation of the specified Ethereum KeyStore file.
-	keyJSON []byte
 }
 
 // NewKeyStore creates new KeyStore wrapper instance
 func NewKeyStore(path string) KeyStore {
-	keyJSON, err := os.ReadFile(path)
-	if err != nil {
-		logger.Logger.Fatal(err)
-	}
-
 	return &keyStore{
-		ks:      keystore.NewKeyStore(path, keystore.StandardScryptN, keystore.StandardScryptP),
-		keyJSON: keyJSON,
+		ks: keystore.NewKeyStore(path, keystore.StandardScryptN, keystore.StandardScryptP),
 	}
-}
-
-// FindDetailed finds both Ethereum address and private key of the given wallet.
-func (k *keyStore) FindDetailed(account accounts.Account, passPhrase string) (accounts.Account, error) {
-	key, err := keystore.DecryptKey(k.keyJSON, passPhrase)
-	if err != nil {
-		return accounts.Account{}, err
-	}
-
-	// Output all relevant information we can retrieve.
-	showPrivate := ctx.Bool(privateFlag.Name)
-	out := outputInspect{
-		Address: key.Address.Hex(),
-		PublicKey: hex.EncodeToString(
-			crypto.FromECDSAPub(&key.PrivateKey.PublicKey)),
-	}
-	hex.EncodeToString(crypto.FromECDSA(key.PrivateKey))
-
-	return accounts.Account{}, nil
 }
 
 // Find forwards request to Ethereum KeyStore Find method

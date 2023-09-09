@@ -3,6 +3,7 @@ package zcnbridge
 import (
 	"context"
 	"encoding/json"
+	"github.com/0chain/gosdk/zcnbridge/ethereum/bancor"
 	"log"
 	"math/big"
 	"os"
@@ -518,15 +519,21 @@ func Test_ZCNBridge(t *testing.T) {
 		_, err := bridgeClient.Swap(context.Background(), amount)
 		require.NoError(t, err)
 
-		spenderAddress := common.HexToAddress(bridgeAddress)
+		// 1. Swap amount parameter
+		amount := big.NewInt(amount)
+
+		// 2. Bancor affiliated account used during conversion operation.
+		affiliateAccount := common.HexToAddress(BancorAffiliateAccount)
 
 		to := common.HexToAddress(tokenAddress)
 		fromAddress := common.HexToAddress(ethereumAddress)
 
-		abi, err := erc20.ERC20MetaData.GetAbi()
+		abi, err := bancor.IBancorNetworkMetaData.GetAbi()
 		require.NoError(t, err)
 
-		pack, err := abi.Pack("increaseAllowance", spenderAddress, big.NewInt(amount))
+		//"convertByPath", conversionPath, amount, rate, affiliateAccount, affiliateAccount, big.NewInt(0)
+
+		pack, err := abi.Pack("convertByPath", amount, 0, affiliateAccount, affiliateAccount, big.NewInt(0))
 		require.NoError(t, err)
 
 		require.True(t, ethereumClient.AssertCalled(
