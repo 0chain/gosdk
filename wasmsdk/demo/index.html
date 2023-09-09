@@ -245,7 +245,7 @@
     onClick('btnCreateFreeAlloc', async () => {
       var token = prompt("freeallocation token: ");
       try {
-        const alloc = await goWasm.sdk.createfreeallocation(token)
+        const alloc = await goWasm.sdk.createFreeAllocation(token)
         console.log("create freeallocation with ID: ", alloc)
       } catch(e) {
         alert(e)
