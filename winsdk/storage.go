@@ -3,7 +3,6 @@ package main
 /*
 #include <stdlib.h>
 */
-
 import (
 	"C"
 )
@@ -11,6 +10,8 @@ import (
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"os"
 
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
@@ -70,63 +71,6 @@ func GetAllocation(allocationID *C.char) *C.char {
 	return WithJSON(getAllocation(allocID))
 }
 
-// CreateDir create directory
-//
-//	return
-//		{
-//			"error":"",
-//			"result":"true",
-//		}
-//
-//export CreateDir
-func CreateDir(allocationID, path *C.char) *C.char {
-	allocID := C.GoString(allocationID)
-
-	alloc, err := getAllocation(allocID)
-	if err != nil {
-		return WithJSON(false, err)
-	}
-
-	s := C.GoString(path)
-	err = alloc.CreateDir(s)
-
-	if err != nil {
-		return WithJSON(false, err)
-	}
-
-	return WithJSON(true, nil)
-
-}
-
-// Rename rename path
-//
-//	return
-//		{
-//			"error":"",
-//			"result":"true",
-//		}
-//
-//export Rename
-func Rename(allocationID, path, destName *C.char) *C.char {
-	allocID := C.GoString(allocationID)
-
-	alloc, err := getAllocation(allocID)
-	if err != nil {
-		return WithJSON(false, err)
-	}
-
-	s := C.GoString(path)
-	d := C.GoString(destName)
-	err = alloc.RenameObject(s, d)
-
-	if err != nil {
-		return WithJSON(false, err)
-	}
-
-	return WithJSON(true, nil)
-
-}
-
 // Delete delete path
 //
 //	return
@@ -152,23 +96,16 @@ func Delete(allocationID, path *C.char) *C.char {
 		return WithJSON(false, err)
 	}
 
+	log.Info("winsdk: deleted ", s)
+
 	return WithJSON(true, nil)
 }
 
 type MultiOperationOption struct {
-	OperationType string `json:"operationType,omitempty"`
-	RemotePath    string `json:"remotePath,omitempty"`
-	DestName      string `json:"destName,omitempty"` // Required only for rename operation
-	DestPath      string `json:"destPath,omitempty"` // Required for copy and move operation`
-}
-
-type MultiUploadOption struct {
-	FilePath      string `json:"filePath,omitempty"`
-	FileName      string `json:"fileName,omitempty"`
-	RemotePath    string `json:"remotePath,omitempty"`
-	ThumbnailPath string `json:"thumbnailPath,omitempty"`
-	Encrypt       bool   `json:"encrypt,omitempty"`
-	ChunkNumber   int    `json:"chunkNumber,omitempty"`
+	OperationType string `json:"OperationType,omitempty"`
+	RemotePath    string `json:"RemotePath,omitempty"`
+	DestName      string `json:"DestName,omitempty"` // Required only for rename operation
+	DestPath      string `json:"DestPath,omitempty"` // Required for copy and move operation`
 }
 
 // MultiOperation - do copy, move, delete and createdir operation together
@@ -186,12 +123,13 @@ func MultiOperation(_allocationID, _jsonMultiOperationOptions *C.char) *C.char {
 	allocationID := C.GoString(_allocationID)
 	jsonMultiOperationOptions := C.GoString(_jsonMultiOperationOptions)
 	if allocationID == "" {
-		return WithJSON(nil, errors.New("AllocationID is required"))
+		return WithJSON(false, errors.New("AllocationID is required"))
 	}
+
 	var options []MultiOperationOption
 	err := json.Unmarshal([]byte(jsonMultiOperationOptions), &options)
 	if err != nil {
-		return WithJSON(nil, err)
+		return WithJSON(false, err)
 	}
 	totalOp := len(options)
 	operations := make([]sdk.OperationRequest, totalOp)
@@ -202,125 +140,19 @@ func MultiOperation(_allocationID, _jsonMultiOperationOptions *C.char) *C.char {
 			DestName:      op.DestName,
 			DestPath:      op.DestPath,
 		}
+
+		log.Info("multi-operation: index=", idx, " op=", op.OperationType, " remotePath=", op.RemotePath, " destName=", op.DestName, " destPath=", op.DestPath)
 	}
 	allocationObj, err := getAllocation(allocationID)
 	if err != nil {
-		return WithJSON(nil, err)
+		return WithJSON(false, err)
 	}
 	err = allocationObj.DoMultiOperation(operations)
 	if err != nil {
-		return WithJSON(nil, err)
+		return WithJSON(false, err)
 	}
 	return WithJSON(true, nil)
 
-}
-
-// MultiUploadFile - upload files from local path to remote path
-// ## Inputs
-//   - allocationID
-//   - workdir: set a workdir as ~/.zcn on mobile apps
-//   - jsonMultiUploadOptions: Json Array of MultiOperationOption. eg: "[{"remotePath":"/","filePath":"/t2.txt"},{"remotePath":"/","filePath":"/t3.txt"}]"
-//
-//   - allocationID
-//
-//   - workdir: set a workdir as ~/.zcn on mobile apps
-//   - jsonMultiUploadOptions: Json Array of MultiOperationOption. eg: "[{"remotePath":"/","filePath":"/t2.txt"},{"remotePath":"/","filePath":"/t3.txt"}]"
-//
-//     return
-//     {
-//     "error":"",
-//     "result":"true",
-//     }
-//
-//export MultiUpload
-func MultiUpload(_allocationID, _workdir, _jsonMultiUploadOptions *C.char) *C.char {
-	allocationID := C.GoString(_allocationID)
-	workdir := C.GoString(_workdir)
-	jsonMultiUploadOptions := C.GoString(_jsonMultiUploadOptions)
-	var options []MultiUploadOption
-	err := json.Unmarshal([]byte(jsonMultiUploadOptions), &options)
-	if err != nil {
-		return WithJSON(nil, err)
-	}
-	totalUploads := len(options)
-	filePaths := make([]string, totalUploads)
-	fileNames := make([]string, totalUploads)
-	remotePaths := make([]string, totalUploads)
-	thumbnailPaths := make([]string, totalUploads)
-	chunkNumbers := make([]int, totalUploads)
-	encrypts := make([]bool, totalUploads)
-	for idx, option := range options {
-		filePaths[idx] = option.FilePath
-		fileNames[idx] = option.FileName
-		thumbnailPaths[idx] = option.ThumbnailPath
-		remotePaths[idx] = option.RemotePath
-		chunkNumbers[idx] = option.ChunkNumber
-
-	}
-
-	a, err := getAllocation(allocationID)
-	if err != nil {
-		return WithJSON(nil, err)
-	}
-	statusBar := &StatusCallbackWrapped{}
-	err = a.StartMultiUpload(workdir, filePaths, fileNames, thumbnailPaths, encrypts, chunkNumbers, remotePaths, false, &StatusCallbackWrapped{Callback: statusBar})
-	if err != nil {
-		return WithJSON(nil, err)
-	}
-	return WithJSON(true, nil)
-}
-
-// MultiUpdateFile - update files from local path to remote path
-// ## Inputs
-//
-//   - allocationID
-//
-//   - workdir: set a workdir as ~/.zcn on mobile apps
-//
-//   - jsonMultiUploadOpetions: Json Array of MultiOperationOption. eg: "[{"remotePath":"/","filePath":"/t2.txt"},{"remotePath":"/","filePath":"/t3.txt"}]"
-//
-//     return
-//     {
-//     "error":"",
-//     "result":"true",
-//     }
-//
-//export MultiUpdate
-func MultiUpdate(_allocationID, _workdir, _jsonMultiUploadOptions *C.char) *C.char {
-	allocationID := C.GoString(_allocationID)
-	workdir := C.GoString(_workdir)
-	jsonMultiUploadOptions := C.GoString(_jsonMultiUploadOptions)
-	var options []MultiUploadOption
-	err := json.Unmarshal([]byte(jsonMultiUploadOptions), &options)
-	totalUploads := len(options)
-	filePaths := make([]string, totalUploads)
-	fileNames := make([]string, totalUploads)
-	remotePaths := make([]string, totalUploads)
-	thumbnailPaths := make([]string, totalUploads)
-	encrypts := make([]bool, totalUploads)
-	chunkNumbers := make([]int, totalUploads)
-	for idx, option := range options {
-		filePaths[idx] = option.FilePath
-		fileNames[idx] = option.FileName
-		thumbnailPaths[idx] = option.ThumbnailPath
-		remotePaths[idx] = option.RemotePath
-		chunkNumbers[idx] = option.ChunkNumber
-
-	}
-	if err != nil {
-		return WithJSON(nil, err)
-	}
-
-	a, err := getAllocation(allocationID)
-	if err != nil {
-		return WithJSON(nil, err)
-	}
-	statusBar := &StatusCallbackWrapped{}
-	err = a.StartMultiUpload(workdir, filePaths, fileNames, thumbnailPaths, encrypts, chunkNumbers, remotePaths, true, &StatusCallbackWrapped{Callback: statusBar})
-	if err != nil {
-		return WithJSON(nil, err)
-	}
-	return WithJSON(true, nil)
 }
 
 // GetFileMeta get metadata by path
@@ -351,53 +183,363 @@ func GetFileMeta(allocationID, path *C.char) *C.char {
 	return WithJSON(f, nil)
 }
 
-type MultiDownloadOption struct {
-	RemotePath       string `json:"remotePath"`
-	LocalPath        string `json:"localPath"`
-	DownloadOp       int    `json:"downloadOp"`
-	RemoteFileName   string `json:"remoteFileName,omitempty"`   //Required only for file download with auth ticket
-	RemoteLookupHash string `json:"remoteLookupHash,omitempty"` //Required only for file download with auth ticket
-}
-
-// MultiDownloadFile - upload files from local path to remote path
+// BulkUpload - upload files from local path to remote path
 // ## Inputs
 //   - allocationID
-//   - jsonMultiDownloadOptions: Json Array of MultiDownloadOption eg: "[{"remotePath":"/","localPath":"/t2.txt","downloadOp":1}]"
+//   - files: Json Array of UploadFile
+//     return
+//     {
+//     "error":"",
+//     "result":"true",
+//     }
 //
-// downloadOp: 1 for file, 2 for thumbnail
+//export BulkUpload
+func BulkUpload(allocationID, files *C.char) *C.char {
+	allocID := C.GoString(allocationID)
+	workdir, _ := os.UserHomeDir()
+	jsFiles := C.GoString(files)
+	var options []UploadFile
+	err := json.Unmarshal([]byte(jsFiles), &options)
+	if err != nil {
+		return WithJSON(nil, err)
+	}
+	totalUploads := len(options)
+	filePaths := make([]string, totalUploads)
+	fileNames := make([]string, totalUploads)
+	remotePaths := make([]string, totalUploads)
+	thumbnailPaths := make([]string, totalUploads)
+	chunkNumbers := make([]int, totalUploads)
+	encrypts := make([]bool, totalUploads)
+	isUpdates := make([]bool, totalUploads)
+	isWebstreaming := make([]bool, totalUploads)
+
+	statusBar := NewStatusBar(statusUpload, "")
+
+	for idx, option := range options {
+		filePaths[idx] = option.Path
+		fileNames[idx] = option.Name
+		thumbnailPaths[idx] = option.ThumbnailPath
+		remotePaths[idx] = option.RemotePath
+		chunkNumbers[idx] = option.ChunkNumber
+		isUpdates[idx] = option.IsUpdate
+		isWebstreaming[idx] = option.IsWebstreaming
+		encrypts[idx] = option.Encrypt
+		statusUpload.Add(getLookupHash(allocID, option.RemotePath+option.Name), &Status{})
+	}
+
+	a, err := getAllocation(allocID)
+	if err != nil {
+		return WithJSON(nil, err)
+	}
+
+	err = a.StartMultiUpload(workdir, filePaths, fileNames, thumbnailPaths, encrypts, chunkNumbers, remotePaths, isUpdates, isWebstreaming, statusBar)
+	if err != nil {
+		return WithJSON(nil, err)
+	}
+	return WithJSON(nil, nil)
+}
+
+// GetUploadStatus - get upload status
+// ## Inputs
+//   - lookupHash
+//
 // ## Outputs
-//   - error
 //
-// export MultiDownload
-func MultiDownload(_allocationID, _jsonMultiDownloadOptions *C.char) error {
-	allocationID := C.GoString(_allocationID)
-	jsonMultiUploadOptions := C.GoString(_jsonMultiDownloadOptions)
-	var options []MultiDownloadOption
-	err := json.Unmarshal([]byte(jsonMultiUploadOptions), &options)
+//	{
+//	"error":"",
+//	"result":"{'Started':false,'CompletedBytes': 0,Error:”,'Completed':false}",
+//	}
+//
+//export GetUploadStatus
+func GetUploadStatus(lookupHash *C.char) *C.char {
+
+	s, ok := statusUpload.Get(C.GoString(lookupHash))
+
+	if !ok {
+		s = &Status{}
+	}
+
+	return WithJSON(s, nil)
+}
+
+// SetNumBlockDownloads - set global the number of blocks on downloading
+// ## Inputs
+//   - num
+//
+// ## Outputs
+//
+//	{
+//	"error":"",
+//	"result":"",
+//	}
+//
+//export SetNumBlockDownloads
+func SetNumBlockDownloads(num int) {
+	sdk.SetNumBlockDownloads(num)
+}
+
+// DownloadFile - downalod file
+// ## Inputs
+//   - allocationID
+//   - localPath
+//   - remotePath
+//   - verifyDownload
+//   - isFinal
+//
+// ## Outputs
+//
+//	{
+//	"error":"",
+//	"result":"true",
+//	}
+//
+//export DownloadFile
+func DownloadFile(allocationID, localPath, remotePath *C.char, verifyDownload, isFinal bool) *C.char {
+	allocID := C.GoString(allocationID)
+
+	alloc, err := getAllocation(allocID)
 	if err != nil {
-		return err
+		return WithJSON(false, err)
 	}
 
-	a, err := getAllocation(allocationID)
+	statusBar := NewStatusBar(statusDownload, "")
+
+	err = alloc.DownloadFile(C.GoString(localPath), C.GoString(remotePath), verifyDownload, statusBar, isFinal)
 	if err != nil {
-		return err
+		return WithJSON(false, err)
 	}
 
-	for i := 0; i < len(options)-1; i++ {
-		if options[i].DownloadOp == 1 {
-			err = a.DownloadFile(options[i].LocalPath, options[i].RemotePath, false, &StatusCallbackWrapped{Callback: nil}, false)
-		} else {
-			err = a.DownloadThumbnail(options[i].LocalPath, options[i].RemotePath, false, &StatusCallbackWrapped{Callback: nil}, false)
-		}
-		if err != nil {
-			return err
-		}
-	}
-	if options[len(options)-1].DownloadOp == 1 {
-		err = a.DownloadFile(options[len(options)-1].LocalPath, options[len(options)-1].RemotePath, false, &StatusCallbackWrapped{Callback: nil}, true)
-	} else {
-		err = a.DownloadThumbnail(options[len(options)-1].LocalPath, options[len(options)-1].RemotePath, false, &StatusCallbackWrapped{Callback: nil}, true)
+	return WithJSON(true, nil)
+}
+
+// DownloadThumbnail - downalod thumbnial
+// ## Inputs
+//   - allocationID
+//   - localPath
+//   - remotePath
+//   - verifyDownload
+//   - isFinal
+//
+// ## Outputs
+//
+//	{
+//	"error":"",
+//	"result":"true",
+//	}
+//
+//export DownloadThumbnail
+func DownloadThumbnail(allocationID, localPath, remotePath *C.char, verifyDownload bool, isFinal bool) *C.char {
+	allocID := C.GoString(allocationID)
+
+	alloc, err := getAllocation(allocID)
+	if err != nil {
+		return WithJSON(false, err)
 	}
 
-	return err
+	r := C.GoString(remotePath)
+
+	lookupHash := getLookupHash(allocID, r)
+	statusBar := NewStatusBar(statusDownload, lookupHash+":thumbnail")
+
+	err = alloc.DownloadThumbnail(C.GoString(localPath), r, verifyDownload, statusBar, isFinal)
+	if err != nil {
+		return WithJSON(false, err)
+	}
+
+	return WithJSON(true, nil)
+}
+
+// DownloadSharedFile - downalod shared file by authTicket
+// ## Inputs
+//   - localPath
+//   - authTicket
+//   - verifyDownload
+//   - isFinal
+//
+// ## Outputs
+//
+//	{
+//	"error":"",
+//	"result":"{"AllocationID":"xxx","LookupHash":"xxxxxx" }",
+//	}
+//
+//export DownloadSharedFile
+func DownloadSharedFile(localPath, authTicket *C.char, verifyDownload bool, isFinal bool) *C.char {
+	info := &SharedInfo{}
+	t, at, err := getAuthTicket(authTicket)
+	if err != nil {
+		return WithJSON(info, err)
+	}
+
+	info.AllocationID = t.AllocationID
+	info.LookupHash = t.FilePathHash
+
+	alloc, err := getAllocation(t.AllocationID)
+	if err != nil {
+		return WithJSON(info, err)
+	}
+
+	statusBar := NewStatusBar(statusDownload, t.FilePathHash)
+
+	err = alloc.DownloadFromAuthTicket(C.GoString(localPath), at, t.FilePathHash, t.FileName, verifyDownload, statusBar, isFinal)
+	if err != nil {
+		return WithJSON(info, err)
+	}
+
+	return WithJSON(info, nil)
+}
+
+// DownloadSharedThumbnail - downalod shared thumbnial by authTicket
+// ## Inputs
+//   - localPath
+//   - authTicket
+//   - verifyDownload
+//   - isFinal
+//
+// ## Outputs
+//
+//	{
+//	"error":"",
+//	"result":"{"AllocationID":"xxx","LookupHash":"xxx" }",
+//	}
+//
+//export DownloadSharedThumbnail
+func DownloadSharedThumbnail(localPath, authTicket *C.char, verifyDownload bool, isFinal bool) *C.char {
+	info := &SharedInfo{}
+	t, at, err := getAuthTicket(authTicket)
+	if err != nil {
+		return WithJSON(info, err)
+	}
+	info.AllocationID = t.AllocationID
+	info.LookupHash = t.FilePathHash
+
+	alloc, err := getAllocation(t.AllocationID)
+	if err != nil {
+		return WithJSON(info, err)
+	}
+
+	statusBar := NewStatusBar(statusDownload, t.FilePathHash)
+
+	err = alloc.DownloadThumbnailFromAuthTicket(C.GoString(localPath), at, t.FilePathHash, t.FileName, verifyDownload, statusBar, isFinal)
+	if err != nil {
+		return WithJSON(info, err)
+	}
+
+	return WithJSON(info, nil)
+}
+
+// DownloadFileBlocks - downalod file blocks
+// ## Inputs
+//   - allocationID
+//   - localPath
+//   - remotePath
+//   - startBlock
+//   - endBlock
+//   - numBlocks
+//   - verifyDownload
+//   - isFinal
+//
+// ## Outputs
+//
+//	{
+//	"error":"",
+//	"result":"true",
+//	}
+//
+//export DownloadFileBlocks
+func DownloadFileBlocks(allocationID,
+	localPath, remotePath *C.char, startBlock int64, endBlock int64,
+	numBlocks int, verifyDownload bool, isFinal bool) *C.char {
+	allocID := C.GoString(allocationID)
+
+	alloc, err := getAllocation(allocID)
+	if err != nil {
+		return WithJSON(false, err)
+	}
+
+	r := C.GoString(remotePath)
+
+	lookupHash := getLookupHash(allocID, r)
+	statusBar := NewStatusBar(statusDownload, lookupHash+fmt.Sprintf(":%v-%v-%v", startBlock, endBlock, numBlocks))
+
+	err = alloc.DownloadFileByBlock(C.GoString(localPath), r, startBlock, endBlock, numBlocks, verifyDownload, statusBar, isFinal)
+	if err != nil {
+		return WithJSON(false, err)
+	}
+
+	return WithJSON(true, nil)
+}
+
+// DownloadSharedFileBlocks - downalod shared file blocks
+// ## Inputs
+//   - allocationID
+//   - localPath
+//   - remotePath
+//   - startBlock
+//   - endBlock
+//   - numBlocks
+//   - verifyDownload
+//   - isFinal
+//
+// ## Outputs
+//
+//	{
+//	"error":"",
+//	"result":"true",
+//	}
+//
+//export DownloadSharedFileBlocks
+func DownloadSharedFileBlocks(allocationID,
+	localPath, authTicket *C.char, startBlock int64, endBlock int64,
+	numBlocks int, verifyDownload bool, isFinal bool) *C.char {
+
+	info := &SharedInfo{}
+	t, at, err := getAuthTicket(authTicket)
+	if err != nil {
+		return WithJSON(info, err)
+	}
+	info.AllocationID = t.AllocationID
+	info.LookupHash = t.FilePathHash
+
+	alloc, err := getAllocation(t.AllocationID)
+	if err != nil {
+		return WithJSON(info, err)
+	}
+
+	statusBar := NewStatusBar(statusDownload, t.FilePathHash+fmt.Sprintf(":%v-%v-%v", startBlock, endBlock, numBlocks))
+
+	err = alloc.DownloadFromAuthTicketByBlocks(C.GoString(localPath), at, startBlock, endBlock, numBlocks, t.FilePathHash, t.FileName, verifyDownload, statusBar, isFinal)
+	if err != nil {
+		return WithJSON(info, err)
+	}
+
+	return WithJSON(info, nil)
+}
+
+// GetDownloadStatus - get download status
+// ## Inputs
+//   - key: lookuphash/lookuphash:thumbnail/lookuphash:startBlock-endBlock-numBlocks/lookuphash:startBlock-endBlock-numBlocks:thumbnail
+//
+// ## Outputs
+//
+//	{
+//	"error":"",
+//	"result":"{'Started':false,'CompletedBytes': 0,Error:”,'Completed':false}",
+//	}
+//
+//export GetDownloadStatus
+func GetDownloadStatus(key *C.char, isThumbnail bool) *C.char {
+
+	k := C.GoString(key)
+	if isThumbnail {
+		k += ":thumbnail"
+	}
+
+	s, ok := statusDownload.Get(k)
+
+	if !ok {
+		s = &Status{}
+	}
+
+	return WithJSON(s, nil)
 }

@@ -5,6 +5,7 @@ package main
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -13,6 +14,7 @@ import (
 	"github.com/0chain/gosdk/core/imageutil"
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/zboxcore/sdk"
+	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/0chain/gosdk/zcncore"
 )
 
@@ -108,4 +110,14 @@ func getLookupHash(allocationID string, path string) string {
 //   - webp
 func createThumbnail(buf []byte, width, height int) ([]byte, error) {
 	return imageutil.CreateThumbnail(buf, width, height)
+}
+
+func makeSCRestAPICall(scAddress, relativePath, paramsJson string) (string, error) {
+	var params map[string]string
+	err := json.Unmarshal([]byte(paramsJson), &params)
+	if err != nil {
+		sdkLogger.Error(fmt.Sprintf("Error parsing JSON: %v", err))
+	}
+	b, err := zboxutil.MakeSCRestAPICall(scAddress, relativePath, params, nil)
+	return string(b), err
 }

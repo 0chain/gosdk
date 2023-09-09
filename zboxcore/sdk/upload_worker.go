@@ -13,42 +13,30 @@ import (
 )
 
 type UploadOperation struct {
-	workdir        string
-	fileMeta       FileMeta
-	fileReader     io.Reader
-	opts           []ChunkedUploadOption
-	refs           []*fileref.FileRef
-	isUpdate       bool
-	statusCallback StatusCallback
-	opCode         int
+	refs          []*fileref.FileRef
+	opCode        int
+	chunkedUpload *ChunkedUpload
+	isUpdate      bool
 }
 
 func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
-	cu, err := CreateChunkedUpload(uo.workdir, allocObj, uo.fileMeta, uo.fileReader, uo.isUpdate, false, false, connectionID, uo.opts...)
+	err := uo.chunkedUpload.process()
 	if err != nil {
-		uploadMask := zboxutil.NewUint128(1).Lsh(uint64(len(allocObj.Blobbers))).Sub64(1)
-		return nil, uploadMask, err
-	}
-	uo.statusCallback = cu.statusCallback
-	uo.opCode = cu.opCode
-
-	err = cu.process()
-	if err != nil {
-		cu.ctxCncl()
-		return nil, cu.uploadMask, err
+		uo.chunkedUpload.ctxCncl()
+		return nil, uo.chunkedUpload.uploadMask, err
 	}
 
 	var pos uint64
-	numList := len(cu.blobbers)
+	numList := len(uo.chunkedUpload.blobbers)
 	uo.refs = make([]*fileref.FileRef, numList)
-	for i := cu.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+	for i := uo.chunkedUpload.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
-		uo.refs[pos] = cu.blobbers[pos].fileRef
-		uo.refs[pos].ChunkSize = cu.chunkSize
+		uo.refs[pos] = uo.chunkedUpload.blobbers[pos].fileRef
+		uo.refs[pos].ChunkSize = uo.chunkedUpload.chunkSize
 	}
 
 	l.Logger.Info("Completed the upload")
-	return nil, cu.uploadMask, nil
+	return nil, uo.chunkedUpload.uploadMask, nil
 }
 
 func (uo *UploadOperation) buildChange(_ []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange {
@@ -89,7 +77,7 @@ func (uo *UploadOperation) Verify(allocationObj *Allocation) error {
 		return thrown.Throw(constants.ErrFileOptionNotPermitted, "file_option_not_permitted ")
 	}
 
-	err := ValidateRemoteFileName(uo.fileMeta.RemoteName)
+	err := ValidateRemoteFileName(uo.chunkedUpload.fileMeta.RemoteName)
 	if err != nil {
 		return err
 	}
@@ -99,36 +87,47 @@ func (uo *UploadOperation) Verify(allocationObj *Allocation) error {
 	}
 
 	if uo.isUpdate {
-		f, err := allocationObj.GetFileMeta(uo.fileMeta.RemotePath)
+		f, err := allocationObj.GetFileMeta(uo.chunkedUpload.fileMeta.RemotePath)
 		if err != nil {
 			return err
 		}
 		spaceLeft += f.ActualFileSize
 	}
-	if uo.fileMeta.ActualSize > spaceLeft {
+	if uo.chunkedUpload.fileMeta.ActualSize > spaceLeft {
 		return ErrNoEnoughSpaceLeftInAllocation
 	}
 	return nil
 }
 
 func (uo *UploadOperation) Completed(allocObj *Allocation) {
-	if uo.statusCallback != nil {
-		uo.statusCallback.Completed(allocObj.ID, uo.fileMeta.RemotePath, uo.fileMeta.RemoteName, uo.fileMeta.MimeType, int(uo.fileMeta.ActualSize), uo.opCode)
+	if uo.chunkedUpload.progressStorer != nil {
+		uo.chunkedUpload.removeProgress()
+	}
+	if uo.chunkedUpload.statusCallback != nil {
+		uo.chunkedUpload.statusCallback.Completed(allocObj.ID, uo.chunkedUpload.fileMeta.RemotePath, uo.chunkedUpload.fileMeta.RemoteName, uo.chunkedUpload.fileMeta.MimeType, int(uo.chunkedUpload.fileMeta.ActualSize), uo.opCode)
 	}
 }
 
 func (uo *UploadOperation) Error(allocObj *Allocation, consensus int, err error) {
-	if uo.statusCallback != nil {
-		uo.statusCallback.Error(allocObj.ID, uo.fileMeta.RemotePath, uo.opCode, err)
+	if uo.chunkedUpload.progressStorer != nil {
+		uo.chunkedUpload.removeProgress()
+	}
+	if uo.chunkedUpload.statusCallback != nil {
+		uo.chunkedUpload.statusCallback.Error(allocObj.ID, uo.chunkedUpload.fileMeta.RemotePath, uo.opCode, err)
 	}
 }
 
-func NewUploadOperation(workdir string, fileMeta FileMeta, fileReader io.Reader, isUpdate bool, opts ...ChunkedUploadOption) *UploadOperation {
+func NewUploadOperation(workdir string, allocObj *Allocation, connectionID string, fileMeta FileMeta, fileReader io.Reader, isUpdate, isWebstreaming bool, opts ...ChunkedUploadOption) (*UploadOperation, string, error) {
 	uo := &UploadOperation{}
-	uo.workdir = workdir
-	uo.fileMeta = fileMeta
-	uo.fileReader = fileReader
-	uo.opts = opts
+
+	cu, err := CreateChunkedUpload(workdir, allocObj, fileMeta, fileReader, isUpdate, false, isWebstreaming, connectionID, opts...)
+	if err != nil {
+		return nil, "", err
+	}
+
+	uo.chunkedUpload = cu
+	uo.opCode = cu.opCode
 	uo.isUpdate = isUpdate
-	return uo
+
+	return uo, cu.progress.ConnectionID, nil
 }

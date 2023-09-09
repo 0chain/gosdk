@@ -58,6 +58,7 @@ const (
 	ZCNSC_PFX                      = `/v1/screst/` + ZCNSCSmartContractAddress
 	GET_MINT_NONCE                 = ZCNSC_PFX + `/v1/mint_nonce`
 	GET_NOT_PROCESSED_BURN_TICKETS = ZCNSC_PFX + `/v1/not_processed_burn_tickets`
+	GET_AUTHORIZER                 = ZCNSC_PFX + `/getAuthorizer`
 
 	// miner SC
 
@@ -85,6 +86,7 @@ const (
 	STORAGESC_GET_USER_LOCKED_TOTAL    = STORAGESC_PFX + "/getUserLockedTotal"
 	STORAGESC_GET_BLOBBERS             = STORAGESC_PFX + "/getblobbers"
 	STORAGESC_GET_BLOBBER              = STORAGESC_PFX + "/getBlobber"
+	STORAGESC_GET_VALIDATOR            = STORAGESC_PFX + "/get_validator"
 	STORAGESC_GET_TRANSACTIONS         = STORAGESC_PFX + "/transactions"
 
 	STORAGE_GET_SNAPSHOT            = STORAGESC_PFX + "/replicate-snapshots"
@@ -343,6 +345,7 @@ func SetLogFile(logFile string, verbose bool) {
 //     "ethereum_node":"https://ropsten.infura.io/v3/xxxxxxxxxxxxxxx",
 //     "zbox_host":"https://0box.dev.0chain.net",
 //     "zbox_app_type":"vult",
+//     "sharder_consensous": 2,
 //     }
 func Init(chainConfigJSON string) error {
 	err := json.Unmarshal([]byte(chainConfigJSON), &_config.chain)
@@ -370,6 +373,7 @@ func Init(chainConfigJSON string) error {
 			SignatureScheme:         _config.chain.SignatureScheme,
 			ChainID:                 _config.chain.ChainID,
 			EthereumNode:            _config.chain.EthNode,
+			SharderConsensous:       _config.chain.SharderConsensous,
 		}
 
 		conf.InitClientConfig(cfg)
@@ -1220,6 +1224,39 @@ func GetBlobber(blobberID string, cb GetInfoCallback) (err error) {
 	}
 	var url = withParams(STORAGESC_GET_BLOBBER, Params{
 		"blobber_id": blobberID,
+	})
+	go GetInfoFromSharders(url, OpStorageSCGetBlobber, cb)
+	return
+}
+
+func GetValidator(validatorID string, cb GetInfoCallback) (err error) {
+	if err = CheckConfig(); err != nil {
+		return
+	}
+	var url = withParams(STORAGESC_GET_VALIDATOR, Params{
+		"validator_id": validatorID,
+	})
+	go GetInfoFromSharders(url, OpStorageSCGetBlobber, cb)
+	return
+}
+
+func GetAuthorizer(authorizerID string, cb GetInfoCallback) (err error) {
+	if err = CheckConfig(); err != nil {
+		return
+	}
+	var url = withParams(GET_AUTHORIZER, Params{
+		"id": authorizerID,
+	})
+	go GetInfoFromSharders(url, OpStorageSCGetBlobber, cb)
+	return
+}
+
+func GetMinerSharder(id string, cb GetInfoCallback) (err error) {
+	if err = CheckConfig(); err != nil {
+		return
+	}
+	var url = withParams(GET_MINERSC_NODE, Params{
+		"id": id,
 	})
 	go GetInfoFromSharders(url, OpStorageSCGetBlobber, cb)
 	return

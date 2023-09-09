@@ -79,6 +79,21 @@ func (r *RepairRequest) iterateDir(a *Allocation, dir *ListResult) {
 				return
 			}
 		}
+		if len(dir.Children) == 0 {
+			if dir.deleteMask.CountOnes() > 0 {
+				l.Logger.Info("Deleting minority shards for the path :", zap.Any("path", dir.Path))
+				consensus := dir.deleteMask.CountOnes()
+				if consensus < a.DataShards {
+
+					err := a.deleteFile(dir.Path, 0, consensus, dir.deleteMask)
+					if err != nil {
+						l.Logger.Error("repair_file_failed", zap.Error(err))
+						return
+					}
+					r.filesRepaired++
+				}
+			}
+		}
 		for _, childDir := range dir.Children {
 			if r.checkForCancel(a) {
 				return
@@ -132,9 +147,9 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
 				l.Logger.Info("Downloading file for the path :", zap.Any("path", file.Path))
 				wg.Add(1)
 				memFile := &sys.MemChanFile{
-					Buffer: make(chan []byte, 5),
+					Buffer:         make(chan []byte, 10),
+					ChunkWriteSize: int(a.GetChunkReadSize(ref.EncryptedKey != "")),
 				}
-				SetNumBlockDownloads(1)
 				err = a.DownloadFileToFileHandler(memFile, ref.Path, false, statusCB, true)
 				if err != nil {
 					l.Logger.Error("download_file_failed", zap.Error(err))
@@ -199,17 +214,7 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
 			return
 		}
 		r.filesRepaired++
-	} else if deleteMask.CountOnes() > 0 {
-		l.Logger.Info("Deleting minority shards for the path :", zap.Any("path", file.Path))
-		consensus := deleteMask.CountOnes()
-		err := a.deleteFile(file.Path, 0, consensus, deleteMask)
-		if err != nil {
-			l.Logger.Error("repair_file_failed", zap.Error(err))
-			return
-		}
-		r.filesRepaired++
 	}
-
 }
 
 func (r *RepairRequest) getLocalPath(file *ListResult) string {

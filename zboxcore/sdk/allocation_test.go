@@ -1601,7 +1601,9 @@ func TestAllocation_ListDirFromAuthTicket(t *testing.T) {
 				DataShards:   2,
 				ParityShards: 2,
 			}
-
+			if tt.parameters.expectedResult != nil {
+				tt.parameters.expectedResult.deleteMask = zboxutil.NewUint128(1).Lsh(uint64(a.DataShards + a.ParityShards)).Sub64(1)
+			}
 			if tt.setup != nil {
 				if teardown := tt.setup(t, tt.name, a, &mockClient); teardown != nil {
 					defer teardown(t)
@@ -1880,6 +1882,9 @@ func TestAllocation_listDir(t *testing.T) {
 				FileOptions:  63,
 				DataShards:   2,
 				ParityShards: 2,
+			}
+			if tt.parameters.expectedResult != nil {
+				tt.parameters.expectedResult.deleteMask = zboxutil.NewUint128(1).Lsh(uint64(a.DataShards + a.ParityShards)).Sub64(1)
 			}
 			a.InitAllocation()
 			sdkInitialized = true

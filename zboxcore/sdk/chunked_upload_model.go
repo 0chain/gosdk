@@ -69,15 +69,17 @@ type UploadFormData struct {
 	// ActualThumbnailHash hash of original thumbnail (un-encoded, un-encrypted)
 	ActualThumbHash string `json:"actual_thumb_hash,omitempty"`
 
-	MimeType     string `json:"mimetype,omitempty"`
-	CustomMeta   string `json:"custom_meta,omitempty"`
-	EncryptedKey string `json:"encrypted_key,omitempty"`
+	MimeType          string `json:"mimetype,omitempty"`
+	CustomMeta        string `json:"custom_meta,omitempty"`
+	EncryptedKey      string `json:"encrypted_key,omitempty"`
+	EncryptedKeyPoint string `json:"encrypted_key_point,omitempty"`
 
 	IsFinal         bool  `json:"is_final,omitempty"`          // all of chunks are uploaded
 	ChunkStartIndex int   `json:"chunk_start_index,omitempty"` // start index of chunks.
 	ChunkEndIndex   int   `json:"chunk_end_index,omitempty"`   // end index of chunks. all chunks MUST be uploaded one by one because of streaming merkle hash
 	ChunkSize       int64 `json:"chunk_size,omitempty"`        // the size of a chunk. 64*1024 is default
 	UploadOffset    int64 `json:"upload_offset,omitempty"`     // It is next position that new incoming chunk should be append to
+	Size            int64 `json:"size"`                        // total size of shard
 
 }
 
@@ -86,10 +88,12 @@ type UploadProgress struct {
 	ID string `json:"id"`
 
 	// ChunkSize size of chunk
-	ChunkSize int64 `json:"chunk_size,omitempty"`
+	ChunkSize  int64 `json:"chunk_size,omitempty"`
+	ActualSize int64 `json:"actual_size,omitempty"`
 	// EncryptOnUpload encrypt data on upload or not
 	EncryptOnUpload   bool   `json:"is_encrypted,omitempty"`
 	EncryptPrivateKey string `json:"-"`
+	EncryptedKeyPoint string `json:"encrypted_key_point,omitempty"`
 
 	// ConnectionID chunked upload connection_id
 	ConnectionID string `json:"connection_id,omitempty"`

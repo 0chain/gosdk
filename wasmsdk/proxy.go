@@ -159,6 +159,7 @@ func main() {
 				"isWalletID":             isWalletID,
 				"getLookupHash":          getLookupHash,
 				"createThumbnail":        createThumbnail,
+				"makeSCRestAPICall":      makeSCRestAPICall,
 
 				//blobber
 				"delete":                 Delete,

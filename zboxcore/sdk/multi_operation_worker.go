@@ -151,7 +151,7 @@ func (mo *MultiOperation) Process() error {
 	ctxCncl := mo.ctxCncl
 	defer ctxCncl()
 
-	errs := make(chan error, 1)
+	errsSlice := make([]error, len(mo.operations))
 	mo.operationMask = zboxutil.NewUint128(0)
 	for idx, op := range mo.operations {
 		uid := util.GetNewUUID()
@@ -169,13 +169,8 @@ func (mo *MultiOperation) Process() error {
 			refs, mask, err := op.Process(mo.allocationObj, mo.connectionID) // Process with each blobber
 			if err != nil {
 				l.Logger.Error(err)
-
-				select {
-				case errs <- errors.New("", err.Error()):
-				default:
-				}
+				errsSlice[idx] = errors.New("", err.Error())
 				ctxCncl()
-
 				return
 			}
 			mo.maskMU.Lock()
@@ -187,11 +182,15 @@ func (mo *MultiOperation) Process() error {
 		}(op, idx)
 	}
 	wg.Wait()
-	if ctx.Err() != nil {
-		return <-errs
-	}
+
 	// Check consensus
-	if mo.operationMask.CountOnes() < mo.consensusThresh {
+	if mo.operationMask.CountOnes() < mo.consensusThresh || ctx.Err() != nil {
+		majorErr := zboxutil.MajorError(errsSlice)
+		if majorErr != nil {
+			return errors.New("consensus_not_met",
+				fmt.Sprintf("Multioperation failed. Required consensus %d got %d. Major error: %s",
+					mo.consensusThresh, mo.operationMask.CountOnes(), majorErr.Error()))
+		}
 		return errors.New("consensus_not_met",
 			fmt.Sprintf("Multioperation failed. Required consensus %d got %d",
 				mo.consensusThresh, mo.operationMask.CountOnes()))
@@ -294,13 +293,14 @@ func (mo *MultiOperation) Process() error {
 			fmt.Sprintf("Commit failed. Required consensus %d, got %d",
 				mo.Consensus.consensusThresh, mo.Consensus.consensus))
 		if mo.getConsensus() != 0 {
-			for _, op := range mo.operations {
-				op.Error(mo.allocationObj, mo.getConsensus(), err)
-			}
 			mo.allocationObj.RollbackWithMask(rollbackMask)
+		}
+		for _, op := range mo.operations {
+			op.Error(mo.allocationObj, mo.getConsensus(), err)
 		}
 		return err
 	}
+
 	for _, op := range mo.operations {
 		op.Completed(mo.allocationObj)
 	}

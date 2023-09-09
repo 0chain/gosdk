@@ -39,6 +39,7 @@ type FileRef struct {
 	ActualThumbnailHash     string         `json:"actual_thumbnail_hash" mapstructure:"actual_thumbnail_hash"`
 	MimeType                string         `json:"mimetype" mapstructure:"mimetype"`
 	EncryptedKey            string         `json:"encrypted_key" mapstructure:"encrypted_key"`
+	EncryptedKeyPoint       string         `json:"encrypted_key_point" mapstructure:"encrypted_key_point"`
 	Collaborators           []Collaborator `json:"collaborators" mapstructure:"collaborators"`
 }
 
