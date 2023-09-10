@@ -45,6 +45,7 @@ type BridgeClient struct {
 	BridgeAddress,
 	TokenAddress,
 	AuthorizersAddress,
+	NFTConfigAddress,
 	EthereumAddress,
 	Password string
 

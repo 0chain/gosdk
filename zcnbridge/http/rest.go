@@ -32,6 +32,7 @@ type Params map[string]string
 
 var Logger logger.Logger
 var defaultLogLevel = logger.DEBUG
+var logVerbose = true
 
 func init() {
 	Logger.Init(defaultLogLevel, "zcnbridge-http-sdk")
@@ -42,6 +43,18 @@ func init() {
 		return
 	}
 	Logger.SetLogFile(f, true)
+}
+
+func SetLogFile(logFile string, verbose bool) {
+	Logger.Init(defaultLogLevel, "zcnbridge-sdk")
+	Logger.SetLevel(logger.DEBUG)
+
+	f, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return
+	}
+	logVerbose = verbose
+	Logger.SetLogFile(f, logVerbose)
 }
 
 // MakeSCRestAPICall calls smart contract with provided address
@@ -63,7 +76,7 @@ func MakeSCRestAPICall(opCode int, relativePath string, params Params, cb zcncor
 	results := make(chan *queryResult, len(sharders))
 	defer close(results)
 
-	var client = NewRetryableClient()
+	var client = NewRetryableClient(logVerbose)
 
 	wg := &sync.WaitGroup{}
 	for _, sharder := range sharders {
@@ -73,7 +86,6 @@ func MakeSCRestAPICall(opCode int, relativePath string, params Params, cb zcncor
 
 			var u = makeURL(params, sharderUrl, relativePath)
 			Logger.Info("Query ", u.String())
-
 			resp, err := client.Get(u.String())
 			if err != nil {
 				Logger.Error("MakeSCRestAPICall - failed to get response from", zap.String("URL", sharderUrl), zap.Any("error", err))
