@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"sync"
 	"time"
@@ -109,6 +109,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 		req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.New("invalid_request", "Invalid number of blocks for download")}
 		return
 	}
+	now := time.Now()
 	retry := 0
 	var err error
 	for retry < 3 {
@@ -154,7 +155,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			}
 
 			var rspData downloadBlock
-			respBody, err := ioutil.ReadAll(resp.Body)
+			respBody, err := io.ReadAll(resp.Body)
 			if err != nil {
 				return err
 			}
@@ -165,7 +166,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 				}
 				return errors.New("response_error", string(respBody))
 			}
-
+			zlogger.Logger.Info("[downloadReqBlobber] ", time.Since(now).Milliseconds())
 			dR := downloadResponse{}
 			err = json.Unmarshal(respBody, &dR)
 			if err != nil {
@@ -179,11 +180,13 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 					RootHash: req.blobberFile.validationRoot,
 					DataSize: req.blobberFile.size,
 				}
+				now := time.Now()
 				zlogger.Logger.Info("verifying multiple blocks")
 				err = vmp.VerifyMultipleBlocks(dR.Data)
 				if err != nil {
 					return errors.New("merkle_path_verification_error", err.Error())
 				}
+				zlogger.Logger.Info("[verifyMultiBlock] ", time.Since(now).Milliseconds())
 			}
 
 			rspData.idx = req.blobberIdx

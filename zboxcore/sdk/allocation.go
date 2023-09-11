@@ -992,6 +992,7 @@ func (a *Allocation) DownloadThumbnailToFileHandler(
 }
 
 func (a *Allocation) DownloadFile(localPath string, remotePath string, verifyDownload bool, status StatusCallback, isFinal bool) error {
+	now := time.Now()
 	f, localFilePath, toKeep, err := a.prepareAndOpenLocalFile(localPath, remotePath)
 	if err != nil {
 		return err
@@ -1006,6 +1007,7 @@ func (a *Allocation) DownloadFile(localPath string, remotePath string, verifyDow
 		f.Close() //nolint: errcheck
 		return err
 	}
+	l.Logger.Info("[generateRequest]", zap.Duration("time", time.Duration(time.Since(now).Milliseconds())))
 	return nil
 }
 
