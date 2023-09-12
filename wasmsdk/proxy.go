@@ -163,14 +163,9 @@ func main() {
 
 				//blobber
 				"delete":                 Delete,
-				"rename":                 Rename,
-				"copy":                   Copy,
-				"move":                   Move,
 				"share":                  Share,
-				"download":               download,
 				"multiDownload":          multiDownload,
 				"upload":                 upload,
-				"bulkUpload":             bulkUpload,
 				"multiUpload":            multiUpload,
 				"multiOperation":         MultiOperation,
 				"listObjects":            listObjects,

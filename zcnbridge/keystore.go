@@ -3,6 +3,7 @@ package zcnbridge
 import (
 	"fmt"
 	"path"
+	"time"
 
 	hdw "github.com/0chain/gosdk/zcncore/ethhdwallet"
 	"github.com/ethereum/go-ethereum/accounts"
@@ -10,6 +11,45 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 )
+
+// KeyStore is a wrapper, which exposes Ethereum KeyStore methods used by DEX bridge.
+type KeyStore interface {
+	Find(accounts.Account) (accounts.Account, error)
+	TimedUnlock(accounts.Account, string, time.Duration) error
+	SignHash(account accounts.Account, hash []byte) ([]byte, error)
+	GetEthereumKeyStore() *keystore.KeyStore
+}
+
+type keyStore struct {
+	ks *keystore.KeyStore
+}
+
+// Creates new KeyStore wrapper instance
+func NewKeyStore(path string) KeyStore {
+	return &keyStore{
+		ks: keystore.NewKeyStore(path, keystore.StandardScryptN, keystore.StandardScryptP),
+	}
+}
+
+// TimedUnlock forwards request to Ethereum KeyStore TimedUnlock method
+func (k *keyStore) TimedUnlock(account accounts.Account, passPhrase string, timeout time.Duration) error {
+	return k.ks.TimedUnlock(account, passPhrase, timeout)
+}
+
+// Find forwards request to Ethereum KeyStore Find method
+func (k *keyStore) Find(account accounts.Account) (accounts.Account, error) {
+	return k.ks.Find(account)
+}
+
+// SignHash forwards request to Ethereum KeyStore SignHash method
+func (k *keyStore) SignHash(account accounts.Account, hash []byte) ([]byte, error) {
+	return k.ks.SignHash(account, hash)
+}
+
+// GetEthereumKeyStore returns Ethereum KeyStore instance
+func (k *keyStore) GetEthereumKeyStore() *keystore.KeyStore {
+	return k.ks
+}
 
 // ListStorageAccounts List available accounts
 func ListStorageAccounts(homedir string) []common.Address {
