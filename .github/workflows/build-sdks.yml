@@ -18,7 +18,7 @@ env:
 jobs:
   build-ios:
     name: Build-ios
-    runs-on: macos-latest
+    runs-on: macos-runnner
 
     steps:
       - name: Checkout code
@@ -193,7 +193,7 @@ jobs:
 
   build-macos:
     name: Build-macos
-    runs-on:  macos-latest
+    runs-on:  macos-runnner
 
     steps:
       - name: Checkout code
