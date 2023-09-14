@@ -8,11 +8,11 @@ import (
 
 	"github.com/0chain/errors"
 	l "github.com/0chain/gosdk/zboxcore/logger"
+	"github.com/0chain/gosdk/zcnbridge"
 	hdwallet "github.com/0chain/gosdk/zcncore/ethhdwallet"
 	eth "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
 	cmn "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/params"
@@ -24,39 +24,6 @@ const (
 	STATUS_FAIL    = 1
 	STATUS_SUCCESS = 0
 )
-
-// createSignedTransaction creates basic Ethereum transaction.
-func createSignedTransaction(
-	chainID *big.Int,
-	client *ethclient.Client,
-	fromAddress common.Address,
-	privateKey *ecdsa.PrivateKey,
-	gasLimitUnits uint64,
-) (*bind.TransactOpts, error) {
-	nonce, err := client.PendingNonceAt(context.Background(), fromAddress)
-	if err != nil {
-		return nil, err
-	}
-
-	gasPriceWei, err := client.SuggestGasPrice(context.Background())
-	if err != nil {
-		return nil, err
-	}
-
-	opts, err := bind.NewKeyedTransactorWithChainID(privateKey, chainID)
-	if err != nil {
-		return nil, err
-	}
-
-	valueWei := new(big.Int).Mul(big.NewInt(0), big.NewInt(params.Wei))
-
-	opts.Nonce = big.NewInt(int64(nonce))
-	opts.Value = valueWei         // in wei
-	opts.GasLimit = gasLimitUnits // in units
-	opts.GasPrice = gasPriceWei   // wei
-
-	return opts, nil
-}
 
 func ConfirmEthereumTransaction(hash string, times int, duration time.Duration, client *ethclient.Client) (int, error) {
 	var (
@@ -117,11 +84,7 @@ func NewSignedTransaction(pack []byte, from, to string, value *big.Int, privateK
 		return nil, err
 	}
 
-	opts, err := createSignedTransaction(chainID, client, fromAddress, privateKey, gasLimitUnits)
-	if err != nil {
-		return nil, err
-	}
-
+	opts := zcnbridge.CreateSignedTransaction(chainID, client, fromAddress, privateKey, gasLimitUnits)
 	valueWei := new(big.Int).Mul(value, big.NewInt(params.Wei))
 
 	opts.Nonce = big.NewInt(int64(nonce))

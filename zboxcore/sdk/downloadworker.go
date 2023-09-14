@@ -591,6 +591,7 @@ func (req *DownloadRequest) attemptSubmitReadMarker(blobber *blockchain.StorageN
 	}
 
 	header := &DownloadRequestHeader{
+		Path:         req.remotefilepath,
 		PathHash:     req.remotefilepathhash,
 		ReadMarker:   rmData,
 		ConnectionID: req.connectionID,

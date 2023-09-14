@@ -12,9 +12,9 @@ func init() {
 
 	//priority: uniswap > bancor > coingecko > coinmarketcap
 	quotes = []quoteQuery{
-		&coingeckoQuoteQuery{},
-		&bancorQuoteQuery{},
 		&uniswapQuoteQuery{},
+		&bancorQuoteQuery{},
+		&coingeckoQuoteQuery{},
 		createCoinmarketcapQuoteQuery(),
 		//more query services
 	}

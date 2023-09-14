@@ -10,6 +10,7 @@ import (
 type DownloadRequestHeader struct {
 	ClientID       string
 	PathHash       string
+	Path           string
 	BlockNum       int64
 	NumBlocks      int64
 	ReadMarker     []byte
@@ -21,6 +22,10 @@ type DownloadRequestHeader struct {
 
 // ToHeader update header
 func (h *DownloadRequestHeader) ToHeader(req *http.Request) {
+	if h.Path != "" {
+		req.Header.Set("X-Path", h.Path)
+	}
+
 	if h.PathHash != "" {
 		req.Header.Set("X-Path-Hash", h.PathHash)
 	}

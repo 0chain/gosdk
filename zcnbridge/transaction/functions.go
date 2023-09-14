@@ -8,23 +8,19 @@ import (
 	"github.com/0chain/gosdk/zcncore"
 )
 
-func AddAuthorizer(ctx context.Context, input *zcncore.AddAuthorizerPayload) (Transaction, error) {
+func AddAuthorizer(ctx context.Context, input *zcncore.AddAuthorizerPayload) (*Transaction, error) {
 	t, err := NewTransactionEntity(0)
 	if err != nil {
 		return nil, err
 	}
 
-	scheme := t.GetScheme()
-
-	err = scheme.ZCNSCAddAuthorizer(input)
+	err = t.scheme.ZCNSCAddAuthorizer(input)
 	if err != nil {
 		return t, err
 	}
 
-	callBack := t.GetCallback()
-
-	err = callBack.WaitCompleteCall(ctx)
-	t.SetHash(scheme.Hash())
+	err = t.callBack.waitCompleteCall(ctx)
+	t.Hash = t.scheme.Hash()
 	if err != nil {
 		return t, err
 	}
@@ -32,23 +28,19 @@ func AddAuthorizer(ctx context.Context, input *zcncore.AddAuthorizerPayload) (Tr
 	return t, nil
 }
 
-func AuthorizerHealthCheck(ctx context.Context, input *zcncore.AuthorizerHealthCheckPayload) (Transaction, error) {
+func AuthorizerHealthCheck(ctx context.Context, input *zcncore.AuthorizerHealthCheckPayload) (*Transaction, error) {
 	t, err := NewTransactionEntity(0)
 	if err != nil {
 		return nil, err
 	}
 
-	scheme := t.GetScheme()
-
-	err = scheme.ZCNSCAuthorizerHealthCheck(input)
+	err = t.scheme.ZCNSCAuthorizerHealthCheck(input)
 	if err != nil {
 		return t, err
 	}
 
-	callBack := t.GetCallback()
-
-	err = callBack.WaitCompleteCall(ctx)
-	t.SetHash(scheme.Hash())
+	err = t.callBack.waitCompleteCall(ctx)
+	t.Hash = t.scheme.Hash()
 	if err != nil {
 		return t, err
 	}

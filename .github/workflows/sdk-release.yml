@@ -71,7 +71,7 @@ jobs:
           fi
 
       - name: Build
-        run:  docker run --rm -v $PWD:/gosdk -w /gosdk golang:1.18 make wasm-build
+        run: make wasm-build
 
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
