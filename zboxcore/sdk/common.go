@@ -137,8 +137,15 @@ func GetRoundFromSharders(sharders []string) (int64, error) {
 
 	result := make(chan *util.GetResponse, len(sharders))
 
-	// getMinShardersVerify
-	var numSharders = len(sharders) // overwrite, use all
+	var numSharders = len(sharders)
+	util.Shuffle(sharders)
+
+	// use 5 sharders to get round
+	if numSharders > 5 {
+		numSharders = 5
+		sharders = sharders[:numSharders]
+	}
+
 	queryFromSharders(sharders, fmt.Sprintf("%v", CURRENT_ROUND), result)
 
 	const consensusThresh = float32(25.0)
@@ -156,7 +163,6 @@ func GetRoundFromSharders(sharders []string) (int64, error) {
 		case <-waitTimeC:
 			return 0, stdErrors.New("get round failed. consensus not reached")
 		case rsp := <-result:
-
 			if rsp.StatusCode != http.StatusOK {
 				continue
 			}
@@ -182,7 +188,7 @@ func GetRoundFromSharders(sharders []string) (int64, error) {
 
 				consensus = roundMap[medianRound]
 				round = medianRound
-				rate := consensus * 100 / int64(len(sharders))
+				rate := consensus * 100 / int64(numSharders)
 
 				if rate >= int64(consensusThresh) {
 					return round, nil
@@ -202,7 +208,7 @@ func queryFromSharders(sharders []string, query string,
 func queryFromShardersContext(ctx context.Context, sharders []string,
 	query string, result chan *util.GetResponse) {
 
-	for _, sharder := range util.Shuffle(sharders) {
+	for _, sharder := range sharders {
 		go func(sharderurl string) {
 			url := fmt.Sprintf("%v%v", sharderurl, query)
 			req, err := util.NewHTTPGetRequestContext(ctx, url)
