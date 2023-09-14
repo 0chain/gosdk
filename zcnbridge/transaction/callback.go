@@ -13,6 +13,14 @@ var (
 )
 
 type (
+	// TransactionCallbackAwaitable extends zcncore.TransactionCallback with synchronization methods
+	TransactionCallbackAwaitable interface {
+		zcncore.TransactionCallback
+
+		WaitCompleteCall(ctx context.Context) error
+		WaitVerifyCall(ctx context.Context) error
+	}
+
 	// callback implements zcncore.TransactionCallback interface.
 	callback struct {
 		// waitCh represents channel for making callback.OnTransactionComplete,
@@ -22,7 +30,7 @@ type (
 	}
 )
 
-func NewStatus() zcncore.TransactionCallback {
+func NewStatus() TransactionCallbackAwaitable {
 	return &callback{
 		waitCh: make(chan interface{}),
 	}
@@ -58,7 +66,7 @@ func (cb *callback) OnAuthComplete(_ *zcncore.Transaction, status int) {
 	cb.sendCall()
 }
 
-func (cb *callback) waitCompleteCall(ctx context.Context) error {
+func (cb *callback) WaitCompleteCall(ctx context.Context) error {
 	select {
 	case <-ctx.Done():
 		return errors.New("completing_transaction", "completing transaction context deadline exceeded")
@@ -67,7 +75,7 @@ func (cb *callback) waitCompleteCall(ctx context.Context) error {
 	}
 }
 
-func (cb *callback) waitVerifyCall(ctx context.Context) error {
+func (cb *callback) WaitVerifyCall(ctx context.Context) error {
 	select {
 	case <-ctx.Done():
 		return errors.New("verifying_transaction", "verifying transaction context deadline exceeded")
