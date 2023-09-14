@@ -29,15 +29,14 @@ func CleanClient() *http.Client {
 }
 
 // NewRetryableClient creates default retryablehttp.Client with timeouts and embedded NewClient result.
-func NewRetryableClient(verbose bool) *retryablehttp.Client {
+func NewRetryableClient() *retryablehttp.Client {
 	client := retryablehttp.NewClient()
 	client.HTTPClient = &http.Client{
 		Transport: zboxutil.DefaultTransport,
 	}
-
-	if !verbose {
-		client.Logger = nil
-	}
+	//client.RetryWaitMax = RetryWaitMax
+	//client.RetryMax = RetryMax
+	//client.Logger = nil
 
 	return client
 }
