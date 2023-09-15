@@ -1,5 +1,12 @@
 package main
 
+/*
+#include <stdlib.h>
+*/
+import (
+	"C"
+)
+
 import (
 	"fmt"
 	"math"
@@ -32,15 +39,17 @@ var (
 //	}
 //
 //export StartStreamServer
-func StartStreamServer(allocationID string) (string, error) {
+func StartStreamServer(allocationID *C.char) *C.char {
+	allocID := C.GoString(allocationID)
+
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		streamingMedia(w, r)
 	})
 
 	server = httptest.NewServer(handler)
-	streamAllocationID = allocationID
+	streamAllocationID = allocID
 
-	return server.URL, nil
+	return WithJSON(server.URL, nil)
 }
 
 func streamingMedia(w http.ResponseWriter, req *http.Request) {
