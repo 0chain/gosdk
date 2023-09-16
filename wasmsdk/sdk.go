@@ -150,7 +150,7 @@ func send(to_client_id string, tokens uint64, fee uint64) (string, error) {
 			return "", err
 		}
 		if cb.success {
-			return txn.Hash(), nil
+			return txn.GetVerifyOutput(), nil
 		}
 	}
 
