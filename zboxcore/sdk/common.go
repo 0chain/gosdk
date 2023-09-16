@@ -3,10 +3,13 @@ package sdk
 import (
 	"context"
 	"encoding/json"
+	stdErrors "errors"
 	"fmt"
+	"github.com/0chain/gosdk/core/util"
 	"io/ioutil"
 	"net/http"
 	"path"
+	"sort"
 	"strconv"
 	"sync"
 	"time"
@@ -17,6 +20,10 @@ import (
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+)
+
+const (
+	CURRENT_ROUND = "/v1/current-round"
 )
 
 func getObjectTreeFromBlobber(ctx context.Context, allocationID, allocationTx string, remoteFilePath string, blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
@@ -120,4 +127,103 @@ func ValidateRemoteFileName(remotePath string) error {
 	}
 
 	return nil
+}
+
+func GetRoundFromSharders(sharders []string) (int64, error) {
+
+	if len(sharders) == 0 {
+		return 0, stdErrors.New("get round failed. no sharders")
+	}
+
+	result := make(chan *util.GetResponse, len(sharders))
+
+	var numSharders = len(sharders)
+	util.Shuffle(sharders)
+
+	// use 5 sharders to get round
+	if numSharders > 5 {
+		numSharders = 5
+		sharders = sharders[:numSharders]
+	}
+
+	queryFromSharders(sharders, fmt.Sprintf("%v", CURRENT_ROUND), result)
+
+	const consensusThresh = float32(25.0)
+
+	var rounds []int64
+
+	consensus := int64(0)
+	roundMap := make(map[int64]int64)
+
+	round := int64(0)
+
+	waitTimeC := time.After(10 * time.Second)
+	for i := 0; i < numSharders; i++ {
+		select {
+		case <-waitTimeC:
+			return 0, stdErrors.New("get round failed. consensus not reached")
+		case rsp := <-result:
+			if rsp.StatusCode != http.StatusOK {
+				continue
+			}
+
+			var respRound int64
+			err := json.Unmarshal([]byte(rsp.Body), &respRound)
+
+			if err != nil {
+				continue
+			}
+
+			rounds = append(rounds, respRound)
+
+			sort.Slice(rounds, func(i, j int) bool {
+				return false
+			})
+
+			medianRound := rounds[len(rounds)/2]
+
+			roundMap[medianRound]++
+
+			if roundMap[medianRound] > consensus {
+
+				consensus = roundMap[medianRound]
+				round = medianRound
+				rate := consensus * 100 / int64(numSharders)
+
+				if rate >= int64(consensusThresh) {
+					return round, nil
+				}
+			}
+		}
+	}
+
+	return round, nil
+}
+
+func queryFromSharders(sharders []string, query string,
+	result chan *util.GetResponse) {
+	queryFromShardersContext(context.Background(), sharders, query, result)
+}
+
+func queryFromShardersContext(ctx context.Context, sharders []string,
+	query string, result chan *util.GetResponse) {
+
+	for _, sharder := range sharders {
+		go func(sharderurl string) {
+			url := fmt.Sprintf("%v%v", sharderurl, query)
+			req, err := util.NewHTTPGetRequestContext(ctx, url)
+
+			if err != nil {
+				return
+			}
+
+			res, err := req.Get()
+
+			if err != nil {
+				return
+			}
+
+			result <- res
+		}(sharder)
+	}
 }

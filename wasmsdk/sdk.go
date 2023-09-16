@@ -6,9 +6,11 @@ package main
 import (
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
+	"sync"
 
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/imageutil"
@@ -120,4 +122,38 @@ func makeSCRestAPICall(scAddress, relativePath, paramsJson string) (string, erro
 	}
 	b, err := zboxutil.MakeSCRestAPICall(scAddress, relativePath, params, nil)
 	return string(b), err
+}
+
+func send(to_client_id string, tokens uint64) (string, error) {
+
+	wg := &sync.WaitGroup{}
+	cb := &transactionCallback{wg: wg}
+	txn, err := zcncore.NewTransaction(cb, 0, 0)
+	if err != nil {
+		return "", err
+	}
+
+	wg.Add(1)
+	err = txn.Send(to_client_id, tokens, "")
+	if err == nil {
+		wg.Wait()
+	} else {
+		return "", err
+	}
+
+	if cb.success {
+		cb.success = false
+		wg.Add(1)
+		err := txn.Verify()
+		if err == nil {
+			wg.Wait()
+		} else {
+			return "", err
+		}
+		if cb.success {
+			return txn.Hash(), nil
+		}
+	}
+
+	return "", errors.New(cb.errMsg)
 }
