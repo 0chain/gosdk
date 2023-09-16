@@ -278,7 +278,7 @@ func CreateChunkedUpload(
 	su.formBuilder = CreateChunkedUploadFormBuilder()
 
 	su.isRepair = isRepair
-	su.uploadChan = make(chan UploadData, 2)
+	su.uploadChan = make(chan UploadData, 1)
 	su.uploadWG.Add(1)
 	go su.uploadProcessor()
 
@@ -523,7 +523,6 @@ func (su *ChunkedUpload) Start() error {
 }
 
 func (su *ChunkedUpload) readChunks(num int) (*batchChunksData, error) {
-	now := time.Now()
 	data := &batchChunksData{
 		chunkStartIndex: -1,
 		chunkEndIndex:   -1,
@@ -573,7 +572,6 @@ func (su *ChunkedUpload) readChunks(num int) (*batchChunksData, error) {
 			break
 		}
 	}
-	logger.Logger.Info("[readChunks]", time.Since(now).Milliseconds())
 	return data, nil
 }
 
