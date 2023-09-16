@@ -278,7 +278,7 @@ func CreateChunkedUpload(
 	su.formBuilder = CreateChunkedUploadFormBuilder()
 
 	su.isRepair = isRepair
-	su.uploadChan = make(chan UploadData, 1)
+	su.uploadChan = make(chan UploadData, 2)
 	su.uploadWG.Add(1)
 	go su.uploadProcessor()
 
