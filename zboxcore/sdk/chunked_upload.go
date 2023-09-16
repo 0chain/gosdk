@@ -750,9 +750,7 @@ func (su *ChunkedUpload) uploadProcessor() {
 				wg.Add(1)
 				go func(pos uint64) {
 					defer wg.Done()
-					startSendUploadRequest := time.Now()
 					err := su.blobbers[pos].sendUploadRequest(ctx, su, uploadData.chunkEndIndex, uploadData.isFinal, su.encryptedKey, uploadData.uploadBody[pos].body, uploadData.uploadBody[pos].formData, pos)
-					elapsedSendUploadRequest := time.Since(startSendUploadRequest)
 
 					if err != nil {
 						if strings.Contains(err.Error(), "duplicate") {
@@ -768,9 +766,6 @@ func (su *ChunkedUpload) uploadProcessor() {
 						if errC > int32(su.allocationObj.ParityShards-1) { // If atleast data shards + 1 number of blobbers can process the upload, it can be repaired later
 							wgErrors <- err
 						}
-
-					} else {
-						logger.Logger.Info(fmt.Sprintf("success - [sendUploadRequest] Timings: elapsed time: %d ms", elapsedSendUploadRequest.Milliseconds()))
 					}
 				}(pos)
 			}
