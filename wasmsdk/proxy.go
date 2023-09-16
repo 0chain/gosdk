@@ -179,6 +179,7 @@ func main() {
 				"updatecontainer":        UpdateContainer,
 				"searchcontainer":        SearchContainer,
 				"updateForbidAllocation": UpdateForbidAllocation,
+				"send":                   send,
 
 				// player
 				"play":           play,
