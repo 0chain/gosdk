@@ -125,7 +125,6 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 		}
 
 		header := &DownloadRequestHeader{}
-		header.Path = req.remotefilepath
 		header.PathHash = req.remotefilepathhash
 		header.BlockNum = req.blockNum
 		header.NumBlocks = req.numBlocks
