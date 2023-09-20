@@ -975,6 +975,7 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 }
 
 func (req *DownloadRequest) processDownloadRequest() {
+	logger.Logger.Info("download: start ", req.remotefilepath)
 	remotePathCB := req.remotefilepath
 	if remotePathCB == "" {
 		remotePathCB = req.remotefilepathhash

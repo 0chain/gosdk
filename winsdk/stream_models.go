@@ -89,6 +89,7 @@ func parseRange(s string, total int64) ([]httpRange, error) {
 				r.length = i - r.start + 1
 			}
 		}
+		r.total = total
 		ranges = append(ranges, r)
 	}
 	if noOverlap && len(ranges) == 0 {

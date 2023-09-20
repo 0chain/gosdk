@@ -12,9 +12,11 @@ import (
 	"math"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 
-	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	lru "github.com/hashicorp/golang-lru/v2"
 )
@@ -46,15 +48,21 @@ func StartStreamServer(allocationID *C.char) *C.char {
 		streamingMedia(w, r)
 	})
 
+	if server != nil {
+		server.Close()
+	}
+
 	server = httptest.NewServer(handler)
 	streamAllocationID = allocID
-
+	log.Info("win: ", server.URL)
 	return WithJSON(server.URL, nil)
 }
 
 func streamingMedia(w http.ResponseWriter, req *http.Request) {
 
 	remotePath := req.URL.Path
+	log.Info("win: start streaming media: ", streamAllocationID, remotePath)
+
 	f, err := getFileMeta(streamAllocationID, remotePath)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
@@ -64,6 +72,8 @@ func streamingMedia(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", f.MimeType)
 
 	rangeHeader := req.Header.Get("Range")
+
+	log.Info("win: range: ", rangeHeader, " mimetype: ", f.MimeType, " numBlocks:", f.NumBlocks, " ActualNumBlocks:", f.ActualNumBlocks, " ActualFileSize:", f.ActualFileSize)
 	// we can simply hint Chrome to send serial range requests for media file by
 	//
 	// if rangeHeader == "" {
@@ -88,7 +98,7 @@ func streamingMedia(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusPartialContent)
 
 		if req.Method != "HEAD" {
-			buf, err := downloadBlocks(remotePath, ra)
+			buf, err := downloadBlocks(remotePath, f, ra)
 			if err != nil {
 				http.Error(w, err.Error(), 500)
 			}
@@ -100,6 +110,10 @@ func streamingMedia(w http.ResponseWriter, req *http.Request) {
 			}
 
 			w.Header().Set("Content-Length", strconv.Itoa(written))
+
+			for k, v := range w.Header() {
+				log.Info("win: response ", k, " = ", v[0])
+			}
 
 		}
 		return
@@ -126,7 +140,7 @@ func streamingMedia(w http.ResponseWriter, req *http.Request) {
 
 	if req.Method != "HEAD" {
 
-		buf, err := downloadBlocks(remotePath, ra)
+		buf, err := downloadBlocks(remotePath, f, ra)
 
 		if err != nil {
 			http.Error(w, err.Error(), 500)
@@ -137,41 +151,94 @@ func streamingMedia(w http.ResponseWriter, req *http.Request) {
 			http.Error(w, err.Error(), 500)
 		}
 		w.Header().Set("Content-Length", strconv.Itoa(written))
+
+		for k, v := range w.Header() {
+			log.Info("win: response ", k, " = ", v[0])
+		}
 	}
 }
 
-func downloadBlocks(remotePath string, ra httpRange) ([]byte, error) {
-
+func downloadBlocks(remotePath string, f *sdk.ConsolidatedFileMeta, ra httpRange) ([]byte, error) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: ", r)
+		}
+	}()
 	alloc, err := getAllocation(streamAllocationID)
 
 	if err != nil {
 		return nil, err
 	}
+	var startBlock int64
 
-	startBlock := int64(math.Ceil(float64(ra.start)/float64(sdk.CHUNK_SIZE)/float64(alloc.DataShards))) + 1
+	if ra.start == 0 {
+		startBlock = 1
+	} else {
+		startBlock = int64(math.Floor(float64(ra.start)/float64(sdk.CHUNK_SIZE)/float64(alloc.DataShards))) + 1
+	}
 
-	endBlock := int64(math.Ceil(float64(ra.start+ra.length)/float64(sdk.CHUNK_SIZE)/float64(alloc.DataShards))) + 1
+	blocks := int(math.Ceil(float64(ra.length) / float64(sdk.CHUNK_SIZE) / float64(alloc.DataShards)))
+
+	endBlock := startBlock + int64(blocks)
+
+	if endBlock > f.NumBlocks {
+		endBlock = f.NumBlocks
+	}
+
+	if startBlock == endBlock {
+		endBlock = 0
+	}
+
+	offset := 0
+	blockStart := (startBlock - 1) * sdk.CHUNK_SIZE * int64(alloc.DataShards)
+	if ra.start > blockStart {
+		offset = int(ra.start) - int(blockStart)
+	}
 
 	lookupHash := getLookupHash(streamAllocationID, remotePath)
-	key := lookupHash + fmt.Sprintf(":%v-%v-%v", startBlock, endBlock, numBlocks)
-
+	key := lookupHash + fmt.Sprintf(":%v-%v", startBlock, endBlock)
+	log.Info("win: start download blocks ", startBlock, " - ", endBlock, "/", f.NumBlocks, "(", f.ActualNumBlocks, ") for ", remotePath)
 	buf, ok := cachedDownloadedBlocks.Get(key)
 	if ok {
 		return buf, nil
 	}
 
-	statusBar := NewStatusBar(statusDownload, lookupHash+fmt.Sprintf(":%v-%v-%v", startBlock, endBlock, numBlocks))
+	statusBar := NewStatusBar(statusDownload, key)
 
-	f := &sys.MemFile{}
-	err = alloc.DownloadByBlocksToFileHandler(f, remotePath, startBlock, endBlock, numBlocks, true, statusBar, true)
+	status := statusBar.getStatus(key)
+	status.wg.Add(1)
 
+	//mf := &sys.MemFile{}
+	//err = alloc.DownloadByBlocksToFileHandler(mf, remotePath, startBlock, endBlock, numBlocks, true, statusBar, true)
+	mf := filepath.Join(os.TempDir(), strings.ReplaceAll(remotePath, "/", "_")+fmt.Sprintf("_%v_%v", startBlock, endBlock))
+	defer os.Remove(mf)
+
+	log.Info("win: download blocks to ", mf)
+	err = alloc.DownloadFileByBlock(mf, remotePath, startBlock, endBlock, numBlocks, false, statusBar, true)
+	//err = alloc.DownloadFile(mf, remotePath, true, statusBar, true)
 	if err != nil {
 		return nil, err
 	}
 
-	buf = f.Buffer.Bytes()
+	log.Info("win: waiting for download to done")
+	status.wg.Wait()
+	//buf = mf.Buffer.Bytes()
 
-	cachedDownloadedBlocks.Add(key, buf)
+	buf, err = os.ReadFile(mf)
+	if err != nil {
+		return nil, err
+	}
 
-	return buf, nil
+	log.Info("win: downloaded blocks ", len(buf), " start:", ra.start, " blockStart:", blockStart, " offset:", offset, " len:", ra.length)
+	if len(buf) > 0 {
+		if len(buf) > int(ra.length) {
+			b := buf[offset : offset+int(ra.length)]
+			cachedDownloadedBlocks.Add(key, b)
+			return b, nil
+		}
+		cachedDownloadedBlocks.Add(key, buf)
+		return buf[offset:], nil
+	}
+
+	return nil, nil
 }
