@@ -48,6 +48,7 @@ func (ch *RenameFileChange) ProcessChange(rootRef *fileref.Ref, _ map[string]str
 				affectedRef = &(ch.ObjectTree.(*fileref.FileRef)).Ref
 			} else {
 				err = errors.New("invalid_rename_op", "Object to rename is not a file use move instead")
+				return
 			}
 
 			affectedRef.Path = pathutil.Join(parentPath, ch.NewName)

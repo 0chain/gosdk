@@ -124,11 +124,10 @@ func makeSCRestAPICall(scAddress, relativePath, paramsJson string) (string, erro
 	return string(b), err
 }
 
-func send(to_client_id string, tokens uint64) (string, error) {
-
+func send(to_client_id string, tokens uint64, fee uint64) (string, error) {
 	wg := &sync.WaitGroup{}
 	cb := &transactionCallback{wg: wg}
-	txn, err := zcncore.NewTransaction(cb, 0, 0)
+	txn, err := zcncore.NewTransaction(cb, fee, 0)
 	if err != nil {
 		return "", err
 	}
@@ -151,7 +150,7 @@ func send(to_client_id string, tokens uint64) (string, error) {
 			return "", err
 		}
 		if cb.success {
-			return txn.Hash(), nil
+			return txn.GetVerifyOutput(), nil
 		}
 	}
 
