@@ -13,7 +13,10 @@ import (
 	"github.com/0chain/gosdk/core/util"
 )
 
-const GET_BALANCE = `/v1/client/get/balance?client_id=`
+const (
+	GET_BALANCE = `/v1/client/get/balance?client_id=`
+)
+
 const consensusThresh = float32(25.0)
 
 var Cache *NonceCache
