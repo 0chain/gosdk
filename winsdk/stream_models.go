@@ -70,6 +70,7 @@ func parseRange(s string, total int64) ([]httpRange, error) {
 				// If the range begins after the size of the content,
 				// then it does not overlap.
 				noOverlap = true
+				i = total - 1
 				//continue, since server may attempt to return a largeEnoughLen, errNoOverlap never happen
 			}
 			r.start = i

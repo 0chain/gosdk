@@ -115,6 +115,8 @@ func streamingMedia(w http.ResponseWriter, req *http.Request) {
 				log.Info("win: response ", k, " = ", v[0])
 			}
 
+		} else {
+			w.Header().Set("Content-Length", "0")
 		}
 		return
 	}
@@ -155,6 +157,8 @@ func streamingMedia(w http.ResponseWriter, req *http.Request) {
 		for k, v := range w.Header() {
 			log.Info("win: response ", k, " = ", v[0])
 		}
+	} else {
+		w.Header().Set("Content-Length", "0")
 	}
 }
 
@@ -175,6 +179,10 @@ func downloadBlocks(remotePath string, f *sdk.ConsolidatedFileMeta, ra httpRange
 		startBlock = 1
 	} else {
 		startBlock = int64(math.Floor(float64(ra.start)/float64(sdk.CHUNK_SIZE)/float64(alloc.DataShards))) + 1
+	}
+
+	if startBlock > f.NumBlocks {
+		startBlock = f.NumBlocks
 	}
 
 	blocks := int(math.Ceil(float64(ra.length) / float64(sdk.CHUNK_SIZE) / float64(alloc.DataShards)))
@@ -203,16 +211,15 @@ func downloadBlocks(remotePath string, f *sdk.ConsolidatedFileMeta, ra httpRange
 		return buf, nil
 	}
 
-	statusBar := NewStatusBar(statusDownload, key)
-
-	status := statusBar.getStatus(key)
-	status.wg.Add(1)
-
-	//mf := &sys.MemFile{}
-	//err = alloc.DownloadByBlocksToFileHandler(mf, remotePath, startBlock, endBlock, numBlocks, true, statusBar, true)
 	mf := filepath.Join(os.TempDir(), strings.ReplaceAll(remotePath, "/", "_")+fmt.Sprintf("_%v_%v", startBlock, endBlock))
 	defer os.Remove(mf)
 
+	// _, err = os.Stat(mf)
+
+	// if os.IsNotExist(err) {
+	statusBar := NewStatusBar(statusDownload, key)
+	status := statusBar.getStatus(key)
+	status.wg.Add(1)
 	log.Info("win: download blocks to ", mf)
 	err = alloc.DownloadFileByBlock(mf, remotePath, startBlock, endBlock, numBlocks, false, statusBar, true)
 	//err = alloc.DownloadFile(mf, remotePath, true, statusBar, true)
@@ -222,7 +229,7 @@ func downloadBlocks(remotePath string, f *sdk.ConsolidatedFileMeta, ra httpRange
 
 	log.Info("win: waiting for download to done")
 	status.wg.Wait()
-	//buf = mf.Buffer.Bytes()
+	// }
 
 	buf, err = os.ReadFile(mf)
 	if err != nil {
@@ -240,5 +247,6 @@ func downloadBlocks(remotePath string, f *sdk.ConsolidatedFileMeta, ra httpRange
 		return buf[offset:], nil
 	}
 
+	// os.Remove(mf)
 	return nil, nil
 }
