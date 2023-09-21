@@ -1063,7 +1063,6 @@ func (a *Allocation) addAndGenerateDownloadRequest(
 	isFinal bool,
 	localFilePath string,
 ) error {
-	logger.Logger.Info("win: generateDownloadRequest ", contentMode)
 	downloadReq, err := a.generateDownloadRequest(
 		fileHandler, remotePath, contentMode, startBlock, endBlock,
 		numBlocks, verifyDownload, status, "", localFilePath)
@@ -1083,7 +1082,6 @@ func (a *Allocation) addAndGenerateDownloadRequest(
 		downloadOps := a.downloadRequests
 		a.downloadRequests = nil
 		go func() {
-			logger.Logger.Info("win: processReadMarker ", contentMode)
 			a.processReadMarker(downloadOps)
 		}()
 	}
@@ -1103,7 +1101,6 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 		wg.Add(1)
 		go func(dr *DownloadRequest) {
 			defer wg.Done()
-			logger.Logger.Info("win: processDownloadRequest ", dr.contentMode)
 			dr.processDownloadRequest()
 			var pos uint64
 			if !dr.skip {
@@ -1163,7 +1160,6 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 			continue
 		}
 		go func(dr *DownloadRequest) {
-			logger.Logger.Info("download: push download task to downloadChan", dr.startBlock, dr.endBlock)
 			a.downloadChan <- dr
 		}(dr)
 	}
