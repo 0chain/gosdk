@@ -49,6 +49,7 @@
 
     <button id="btnSetWallet">Change Wallet</button>
     <button id="btnSendMeTokens">Send Me Tokens</button>
+    <button id="btnSendTokensToOtherWallet">Send Tokens to Other Wallet</button>
     <button id="btnGetBalance">Get Balance</button>
 
     <button id="btnGetUSDRate">Get USD Rate</button>
@@ -234,6 +235,19 @@
 
     onClick('btnSendMeTokens', async () => {
       await goWasm.sdk.faucet("pour", JSON.stringify("{Pay day}"), 10)
+    })
+
+    onClick('btnSendTokensToOtherWallet', async () => {
+      try {
+        const output = await goWasm.sdk.send(
+        "5ad6e4d206d853833e96ff5c833369e567d2ef41ae1d5093141e1f90f1e8dcb0",
+        10000000000,
+        0
+      )
+        console.log("successfully sent with txn hash: ", output)
+      } catch (e) {
+        alert(e)
+      }
     })
 
     onClick('btnGetBalance', async () => {
@@ -443,7 +457,7 @@
             }
           })
         }
-        const results = await goWasm.bulkUpload(objects)
+        const results = await goWasm.multiUpload(objects)
         console.log(JSON.stringify(results))
       }
     })

@@ -13,7 +13,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -360,45 +359,6 @@ func (a *Allocation) UploadFile(workdir, localpath string, remotepath string,
 	status StatusCallback) error {
 
 	return a.StartChunkedUpload(workdir, localpath, remotepath, status, false, false, "", false, false)
-}
-
-func (a *Allocation) CreateDir(remotePath string) error {
-	if !a.isInitialized() {
-		return notInitialized
-	}
-
-	if remotePath == "" {
-		return errors.New("invalid_name", "Invalid name for dir")
-	}
-
-	if !path.IsAbs(remotePath) {
-		return errors.New("invalid_path", "Path is not absolute")
-	}
-
-	remotePath = zboxutil.RemoteClean(remotePath)
-	timestamp := int64(common.Now())
-	req := DirRequest{
-		allocationObj: a,
-		allocationID:  a.ID,
-		allocationTx:  a.Tx,
-		blobbers:      a.Blobbers,
-		mu:            &sync.Mutex{},
-		dirMask:       zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1),
-		connectionID:  zboxutil.NewConnectionId(),
-		remotePath:    remotePath,
-		wg:            &sync.WaitGroup{},
-		timestamp:     timestamp,
-		alreadyExists: map[uint64]bool{},
-		Consensus: Consensus{
-			RWMutex:         &sync.RWMutex{},
-			consensusThresh: a.consensusThreshold,
-			fullconsensus:   a.fullconsensus,
-		},
-	}
-	req.ctx, req.ctxCncl = context.WithCancel(a.ctx)
-
-	err := req.ProcessDir(a)
-	return err
 }
 
 func (a *Allocation) RepairFile(file sys.File, remotepath string,
@@ -1636,137 +1596,6 @@ func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus int,
 	req.timestamp = int64(common.Now())
 	err := req.ProcessDelete()
 	return err
-}
-
-func (a *Allocation) RenameObject(path string, destName string) error {
-	if !a.isInitialized() {
-		return notInitialized
-	}
-
-	if !a.CanRename() {
-		return constants.ErrFileOptionNotPermitted
-	}
-
-	if path == "" {
-		return errors.New("invalid_path", "Invalid path for the list")
-	}
-
-	if path == "/" {
-		return errors.New("invalid_operation", "cannot rename root path")
-	}
-
-	path = zboxutil.RemoteClean(path)
-	isabs := zboxutil.IsRemoteAbs(path)
-	if !isabs {
-		return errors.New("invalid_path", "Path should be valid and absolute")
-	}
-
-	err := ValidateRemoteFileName(destName)
-	if err != nil {
-		return err
-	}
-
-	req := &RenameRequest{consensus: Consensus{RWMutex: &sync.RWMutex{}}}
-	req.allocationObj = a
-	req.blobbers = a.Blobbers
-	req.allocationID = a.ID
-	req.allocationTx = a.Tx
-	req.newName = destName
-	req.consensus.fullconsensus = a.fullconsensus
-	req.consensus.consensusThresh = a.consensusThreshold
-	req.ctx, req.ctxCncl = context.WithCancel(a.ctx)
-	req.remotefilepath = path
-	req.renameMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
-	req.maskMU = &sync.Mutex{}
-	req.connectionID = zboxutil.NewConnectionId()
-	req.timestamp = int64(common.Now())
-	return req.ProcessRename()
-}
-
-func (a *Allocation) MoveObject(srcPath string, destPath string) error {
-	if !a.isInitialized() {
-		return notInitialized
-	}
-
-	if !a.CanMove() {
-		return constants.ErrFileOptionNotPermitted
-	}
-
-	if len(srcPath) == 0 || len(destPath) == 0 {
-		return errors.New("invalid_path", "Invalid path for copy")
-	}
-	srcPath = zboxutil.RemoteClean(srcPath)
-	isabs := zboxutil.IsRemoteAbs(srcPath)
-	if !isabs {
-		return errors.New("invalid_path", "Path should be valid and absolute")
-	}
-
-	err := ValidateRemoteFileName(destPath)
-	if err != nil {
-		return err
-	}
-
-	req := &MoveRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
-	req.allocationObj = a
-	req.blobbers = a.Blobbers
-	req.allocationID = a.ID
-	req.allocationTx = a.Tx
-	if destPath != "/" {
-		destPath = strings.TrimSuffix(destPath, "/")
-	}
-	req.destPath = destPath
-	req.fullconsensus = a.fullconsensus
-	req.consensusThresh = a.consensusThreshold
-	req.ctx, req.ctxCncl = context.WithCancel(a.ctx)
-	req.remotefilepath = srcPath
-	req.moveMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
-	req.maskMU = &sync.Mutex{}
-	req.connectionID = zboxutil.NewConnectionId()
-	req.timestamp = int64(common.Now())
-	return req.ProcessMove()
-}
-
-func (a *Allocation) CopyObject(path string, destPath string) error {
-	if !a.isInitialized() {
-		return notInitialized
-	}
-
-	if !a.CanCopy() {
-		return constants.ErrFileOptionNotPermitted
-	}
-
-	if len(path) == 0 || len(destPath) == 0 {
-		return errors.New("invalid_path", "Invalid path for copy")
-	}
-	path = zboxutil.RemoteClean(path)
-	isabs := zboxutil.IsRemoteAbs(path)
-	if !isabs {
-		return errors.New("invalid_path", "Path should be valid and absolute")
-	}
-
-	err := ValidateRemoteFileName(destPath)
-	if err != nil {
-		return err
-	}
-
-	req := &CopyRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
-	req.allocationObj = a
-	req.blobbers = a.Blobbers
-	req.allocationID = a.ID
-	req.allocationTx = a.Tx
-	if destPath != "/" {
-		destPath = strings.TrimSuffix(destPath, "/")
-	}
-	req.destPath = destPath
-	req.fullconsensus = a.fullconsensus
-	req.consensusThresh = a.consensusThreshold
-	req.ctx, req.ctxCncl = context.WithCancel(a.ctx)
-	req.remotefilepath = path
-	req.copyMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
-	req.maskMU = &sync.Mutex{}
-	req.connectionID = zboxutil.NewConnectionId()
-	req.timestamp = int64(common.Now())
-	return req.ProcessCopy()
 }
 
 func (a *Allocation) GetAuthTicketForShare(
