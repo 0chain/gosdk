@@ -6,9 +6,11 @@ package zcncore
 import (
 	"context"
 	"encoding/json"
+	stdErrors "errors"
 	"fmt"
 	"math"
 	"net/http"
+	"sort"
 	"sync"
 	"time"
 
@@ -964,7 +966,7 @@ func (t *Transaction) Verify() error {
 		t.txn.CreationDate = int64(common.Now())
 	}
 
-	tq, err := NewTransactionQuery(_config.chain.Sharders, _config.chain.Miners)
+	tq, err := NewTransactionQuery(Sharders.Healthy(), _config.chain.Miners)
 	if err != nil {
 		logging.Error(err)
 		return err
@@ -1058,7 +1060,7 @@ func GetLatestFinalized(ctx context.Context, numSharders int) (b *block.Header, 
 	var result = make(chan *util.GetResponse, numSharders)
 	defer close(result)
 
-	numSharders = len(_config.chain.Sharders) // overwrite, use all
+	numSharders = len(Sharders.Healthy()) // overwrite, use all
 	queryFromShardersContext(ctx, numSharders, GET_LATEST_FINALIZED, result)
 
 	var (
@@ -1099,7 +1101,7 @@ func GetLatestFinalizedMagicBlock(ctx context.Context, numSharders int) (m *bloc
 	var result = make(chan *util.GetResponse, numSharders)
 	defer close(result)
 
-	numSharders = len(_config.chain.Sharders) // overwrite, use all
+	numSharders = len(Sharders.Healthy()) // overwrite, use all
 	queryFromShardersContext(ctx, numSharders, GET_LATEST_FINALIZED_MAGIC_BLOCK, result)
 
 	var (
@@ -1146,7 +1148,7 @@ func GetChainStats(ctx context.Context) (b *block.ChainStats, err error) {
 	var result = make(chan *util.GetResponse, 1)
 	defer close(result)
 
-	var numSharders = len(_config.chain.Sharders) // overwrite, use all
+	var numSharders = len(Sharders.Healthy()) // overwrite, use all
 	queryFromShardersContext(ctx, numSharders, GET_CHAIN_STATS, result)
 	var rsp *util.GetResponse
 	for i := 0; i < numSharders; i++ {
@@ -1210,7 +1212,7 @@ func GetBlockByRound(ctx context.Context, numSharders int, round int64) (b *bloc
 	var result = make(chan *util.GetResponse, numSharders)
 	defer close(result)
 
-	numSharders = len(_config.chain.Sharders) // overwrite, use all
+	numSharders = len(Sharders.Healthy()) // overwrite, use all
 	queryFromShardersContext(ctx, numSharders,
 		fmt.Sprintf("%sround=%d&content=full,header", GET_BLOCK_INFO, round),
 		result)
@@ -1273,12 +1275,84 @@ func GetBlockByRound(ctx context.Context, numSharders int, round int64) (b *bloc
 	return
 }
 
+func GetRoundFromSharders() (int64, error) {
+
+	sharders := Sharders.Healthy()
+	if len(sharders) == 0 {
+		return 0, stdErrors.New("get round failed. no sharders")
+	}
+
+	result := make(chan *util.GetResponse, len(sharders))
+
+	var numSharders = len(sharders)
+	util.Shuffle(sharders)
+
+	// use 5 sharders to get round
+	if numSharders > 5 {
+		numSharders = 5
+		sharders = sharders[:numSharders]
+	}
+
+	queryFromSharders(numSharders, fmt.Sprintf("%v", CURRENT_ROUND), result)
+
+	const consensusThresh = float32(25.0)
+
+	var rounds []int64
+
+	consensus := int64(0)
+	roundMap := make(map[int64]int64)
+
+	round := int64(0)
+
+	waitTimeC := time.After(10 * time.Second)
+	for i := 0; i < numSharders; i++ {
+		select {
+		case <-waitTimeC:
+			return 0, stdErrors.New("get round failed. consensus not reached")
+		case rsp := <-result:
+			if rsp.StatusCode != http.StatusOK {
+				continue
+			}
+
+			var respRound int64
+			err := json.Unmarshal([]byte(rsp.Body), &respRound)
+
+			if err != nil {
+				continue
+			}
+
+			rounds = append(rounds, respRound)
+
+			sort.Slice(rounds, func(i, j int) bool {
+				return false
+			})
+
+			medianRound := rounds[len(rounds)/2]
+
+			roundMap[medianRound]++
+
+			if roundMap[medianRound] > consensus {
+
+				consensus = roundMap[medianRound]
+				round = medianRound
+				rate := consensus * 100 / int64(numSharders)
+
+				if rate >= int64(consensusThresh) {
+					return round, nil
+				}
+			}
+		}
+	}
+
+	return round, nil
+}
+
 func GetMagicBlockByNumber(ctx context.Context, numSharders int, number int64) (m *block.MagicBlock, err error) {
 
 	var result = make(chan *util.GetResponse, numSharders)
 	defer close(result)
 
-	numSharders = len(_config.chain.Sharders) // overwrite, use all
+	numSharders = len(Sharders.Healthy()) // overwrite, use all
 	queryFromShardersContext(ctx, numSharders,
 		fmt.Sprintf("%smagic_block_number=%d", GET_MAGIC_BLOCK_INFO, number),
 		result)

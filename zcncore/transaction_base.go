@@ -113,6 +113,8 @@ type ChainConfig struct {
 	SharderConsensous       int      `json:"sharder_consensous"`
 }
 
+var Sharders *util.NodeHolder
+
 // InitZCNSDK initializes the SDK with miner, sharder and signature scheme provided.
 func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainConfig) error) error {
 	if signscheme != "ed25519" && signscheme != "bls0chain" {
@@ -569,19 +571,28 @@ func queryFromSharders(numSharders int, query string,
 func queryFromShardersContext(ctx context.Context, numSharders int,
 	query string, result chan *util.GetResponse) {
 
-	for _, sharder := range util.Shuffle(_config.chain.Sharders)[:numSharders] {
+	sharders := Sharders.Healthy()
+	for _, sharder := range util.Shuffle(sharders)[:numSharders] {
 		go func(sharderurl string) {
 			logging.Info("Query from ", sharderurl+query)
 			url := fmt.Sprintf("%v%v", sharderurl, query)
 			req, err := util.NewHTTPGetRequestContext(ctx, url)
 			if err != nil {
 				logging.Error(sharderurl, " new get request failed. ", err.Error())
+				Sharders.Fail(sharderurl)
 				return
 			}
 			res, err := req.Get()
 			if err != nil {
 				logging.Error(sharderurl, " get error. ", err.Error())
 			}
+
+			if res.StatusCode > http.StatusBadRequest {
+				Sharders.Fail(sharderurl)
+			} else {
+				Sharders.Success(sharderurl)
+			}
+
 			result <- res
 		}(sharder)
 	}
@@ -651,7 +662,7 @@ func getBlockHeaderFromTransactionConfirmation(txnHash string, cfmBlock map[stri
 }
 
 func getBlockInfoByRound(round int64, content string) (*blockHeader, error) {
-	numSharders := len(_config.chain.Sharders) // overwrite, use all
+	numSharders := len(Sharders.Healthy()) // overwrite, use all
 	resultC := make(chan *util.GetResponse, numSharders)
 	queryFromSharders(numSharders, fmt.Sprintf("%vround=%v&content=%v", GET_BLOCK_INFO, round, content), resultC)
 	var (
@@ -723,7 +734,7 @@ func validateChain(confirmBlock *blockHeader) bool {
 	for {
 		nextBlock, err := getBlockInfoByRound(round, "header")
 		if err != nil {
-			logging.Info(err, " after a second falling thru to ", getMinShardersVerify(), "of ", len(_config.chain.Sharders), "Sharders")
+			logging.Info(err, " after a second falling thru to ", getMinShardersVerify(), "of ", len(_config.chain.Sharders), "Sharders", len(Sharders.Healthy()), "Healthy sharders")
 			sys.Sleep(1 * time.Second)
 			nextBlock, err = getBlockInfoByRound(round, "header")
 			if err != nil {

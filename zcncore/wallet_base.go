@@ -40,7 +40,7 @@ const (
 	GET_LATEST_FINALIZED_MAGIC_BLOCK = `/v1/block/get/latest_finalized_magic_block`
 	GET_FEE_STATS                    = `/v1/block/get/fee_stats`
 	GET_CHAIN_STATS                  = `/v1/chain/get/stats`
-
+	CURRENT_ROUND                    = "/v1/current-round"
 	// vesting SC
 
 	VESTINGSC_PFX = `/v1/screst/` + VestingSmartContractAddress
@@ -295,7 +295,7 @@ func GetMinShardersVerify() int {
 }
 
 func getMinShardersVerify() int {
-	minSharders := util.MaxInt(calculateMinRequired(float64(_config.chain.MinConfirmation), float64(len(_config.chain.Sharders))/100), 1)
+	minSharders := util.MaxInt(calculateMinRequired(float64(_config.chain.MinConfirmation), float64(len(Sharders.Healthy()))/100), 1)
 	logging.Info("Minimum sharders used for verify :", minSharders)
 	return minSharders
 }
@@ -719,7 +719,7 @@ func getBalanceFieldFromSharders(clientID, name string) (int64, string, error) {
 	result := make(chan *util.GetResponse)
 	defer close(result)
 	// getMinShardersVerify
-	var numSharders = len(_config.chain.Sharders) // overwrite, use all
+	var numSharders = len(Sharders.Healthy()) // overwrite, use all
 	queryFromSharders(numSharders, fmt.Sprintf("%v%v", GET_BALANCE, clientID), result)
 
 	consensusMaps := NewHttpConsensusMaps(consensusThresh)

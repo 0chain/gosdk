@@ -59,6 +59,7 @@ func UpdateNetworkDetails() error {
 		_config.chain.Miners = networkDetails.Miners
 		_config.chain.Sharders = networkDetails.Sharders
 		transaction.InitCache(networkDetails.Sharders)
+		Sharders = util.NewHolder(networkDetails.Sharders, len(networkDetails.Sharders))
 		conf.InitChainNetwork(&conf.Network{
 			Sharders: networkDetails.Sharders,
 			Miners:   networkDetails.Miners,
@@ -118,7 +119,7 @@ func GetNetwork() *Network {
 func SetNetwork(miners []string, sharders []string) {
 	_config.chain.Miners = miners
 	_config.chain.Sharders = sharders
-
+	Sharders = util.NewHolder(sharders, len(sharders))
 	transaction.InitCache(sharders)
 
 	conf.InitChainNetwork(&conf.Network{
