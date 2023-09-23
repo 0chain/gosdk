@@ -31,6 +31,7 @@ type ListRequest struct {
 	ctx                context.Context
 	wg                 *sync.WaitGroup
 	forRepair          bool
+	listOnly           bool
 	Consensus
 }
 
@@ -141,6 +142,16 @@ func (req *ListRequest) getlistFromBlobbers() []*listResponse {
 	listInfos := make([]*listResponse, numList)
 	for i := 0; i < numList; i++ {
 		listInfos[i] = <-rspCh
+	}
+	consensusMap := make(map[string][]*blockchain.StorageNode)
+	for i := 0; i < numList; i++ {
+		if listInfos[i].err != nil || listInfos[i].ref == nil {
+			continue
+		}
+		consensusMap[listInfos[i].ref.FileMetaHash] = append(consensusMap[listInfos[i].ref.LookupHash], req.blobbers[i])
+		if len(consensusMap[listInfos[i].ref.FileMetaHash]) >= req.consensusThresh {
+			req.listOnly = true
+		}
 	}
 	return listInfos
 }
