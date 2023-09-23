@@ -5,11 +5,8 @@ package main
 
 import (
 	"context"
-	"path/filepath"
-	"strconv"
-	"sync"
+	"fmt"
 
-	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
@@ -61,54 +58,20 @@ func (p *FilePlayer) Stop() {
 }
 
 func (p *FilePlayer) download(startBlock int64) {
-	wg := &sync.WaitGroup{}
-	statusBar := &StatusBar{wg: wg}
-	wg.Add(1)
-
 	endBlock := startBlock + int64(p.numBlocks) - 1
 
 	if endBlock > p.playlistFile.NumBlocks {
 		endBlock = p.playlistFile.NumBlocks
 	}
 
-	fileName := strconv.FormatInt(startBlock, 10) + "-" + strconv.FormatInt(endBlock, 10) + "-" + p.playlistFile.Name
-	localPath := filepath.Join(p.allocationID, fileName)
-
-	fs, _ := sys.Files.Open(localPath)
-	mf, _ := fs.(*sys.MemFile)
-
-	downloader, err := sdk.CreateDownloader(p.allocationID, localPath, p.remotePath,
-		sdk.WithAllocation(p.allocationObj),
-		sdk.WithAuthticket(p.authTicket, p.lookupHash),
-		sdk.WithBlocks(startBlock, endBlock, p.numBlocks),
-		sdk.WithFileHandler(mf))
-
+	data, err := downloadBlocks(p.allocationID, p.remotePath, p.authTicket, p.lookupHash, p.numBlocks, startBlock, endBlock, "", int(endBlock) == p.numBlocks)
 	if err != nil {
 		PrintError(err.Error())
 		return
 	}
-
-	defer sys.Files.Remove(localPath) //nolint
-
-	PrintInfo("playlist: downloading blocks[", p.playlistFile.Name, ":", startBlock, "-", endBlock, "]")
-	err = downloader.Start(statusBar, true)
-
-	if err == nil {
-		wg.Wait()
-	} else {
-		PrintError("Download failed.", err.Error())
-		return
-	}
-	if !statusBar.success {
-		PrintError("Download failed: unknown error")
-		return
-	}
-
-	PrintInfo("playlist: downloaded blocks[", p.playlistFile.Name, ":", startBlock, "-", endBlock, "]")
-
 	withRecover(func() {
 		if p.downloadedChunks != nil {
-			p.downloadedChunks <- mf.Buffer.Bytes()
+			p.downloadedChunks <- data
 		}
 	})
 }
@@ -150,8 +113,25 @@ func (p *FilePlayer) loadPlaylistFile() (*sdk.PlaylistFile, error) {
 		return sdk.GetPlaylistFileByAuthTicket(p.ctx, p.allocationObj, p.authTicket, p.lookupHash)
 	}
 
+	d, err := p.allocationObj.ListDir(p.remotePath)
+	if err != nil {
+		fmt.Println("could not list dir:", p.remotePath)
+		return nil, err
+	}
+	f := d.Children[0]
+	fmt.Printf("dir: %+v\n", f)
+	return &sdk.PlaylistFile{
+		Name:       f.Name,
+		Path:       f.Path,
+		LookupHash: f.LookupHash,
+		NumBlocks:  f.NumBlocks,
+		Size:       f.Size,
+		MimeType:   f.MimeType,
+		Type:       f.Type,
+	}, nil
+
 	//get playlist file from remote allocations's path
-	return sdk.GetPlaylistFile(p.ctx, p.allocationObj, p.remotePath)
+	// return sdk.GetPlaylistFile(p.ctx, p.allocationObj, p.remotePath)
 }
 
 func (p *FilePlayer) GetNext() []byte {
@@ -172,6 +152,7 @@ func createFilePalyer(allocationID, remotePath, authTicket, lookupHash string) (
 	player.authTicket = authTicket
 	player.lookupHash = lookupHash
 	player.numBlocks = 10
+	player.allocationID = allocationID
 
 	//player is viewer
 	if len(authTicket) > 0 {
