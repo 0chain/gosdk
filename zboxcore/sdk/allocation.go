@@ -631,6 +631,7 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 	}
 
 	connectionId := zboxutil.NewConnectionId()
+	now := time.Now()
 	ChunkedUpload, err := CreateChunkedUpload(workdir,
 		a, fileMeta, fileReader,
 		isUpdate, isRepair, webStreaming, connectionId,
@@ -638,6 +639,9 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 	if err != nil {
 		return err
 	}
+	elapsedCreateChunkedUpload := time.Since(now)
+	logger.Logger.Info("[StartChunkedUpload]", zap.String("allocation_id", a.ID),
+		zap.Duration("CreateChunkedUpload", elapsedCreateChunkedUpload))
 
 	return ChunkedUpload.Start()
 }
@@ -894,7 +898,6 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 			}
 		}
 	}
-
 	return nil
 }
 
@@ -1096,6 +1099,7 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 	if a.ReadPriceRange.Max == 0 && a.ReadPriceRange.Min == 0 {
 		isReadFree = true
 	}
+	now := time.Now()
 
 	for _, dr := range drs {
 		wg.Add(1)
@@ -1114,6 +1118,7 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 		}(dr)
 	}
 	wg.Wait()
+	elapsedProcessDownloadRequest := time.Since(now)
 
 	// Do not send readmarkers for free reads
 	if isReadFree {
@@ -1125,11 +1130,15 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 				a.downloadChan <- dr
 			}(dr)
 		}
+		l.Logger.Info("[processReadMarker]", zap.String("allocation_id", a.ID),
+			zap.Int("num of download requests", len(drs)),
+			zap.Duration("processDownloadRequest", elapsedProcessDownloadRequest))
 		return
 	}
 
 	successMask := zboxutil.NewUint128(0)
 	var redeemError error
+
 	for pos, totalBlocks := range blobberMap {
 		if totalBlocks == 0 {
 			continue
@@ -1147,6 +1156,12 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 		}(pos, totalBlocks)
 	}
 	wg.Wait()
+	elapsedSubmitReadmarker := time.Since(now) - elapsedProcessDownloadRequest
+
+	l.Logger.Info("[processReadMarker]", zap.String("allocation_id", a.ID),
+		zap.Int("num of download requests", len(drs)),
+		zap.Duration("processDownloadRequest", elapsedProcessDownloadRequest),
+		zap.Duration("submitReadmarker", elapsedSubmitReadmarker))
 	for _, dr := range drs {
 		if dr.skip {
 			continue

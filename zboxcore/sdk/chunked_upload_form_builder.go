@@ -88,7 +88,6 @@ func (b *chunkedUploadFormBuilder) Build(
 	if err != nil {
 		return nil, metadata, err
 	}
-
 	for _, chunkBytes := range fileChunksData {
 		_, err = uploadFile.Write(chunkBytes)
 		if err != nil {
@@ -107,6 +106,7 @@ func (b *chunkedUploadFormBuilder) Build(
 
 		metadata.FileBytesLen += len(chunkBytes)
 	}
+  
 	if isFinal {
 		err = hasher.Finalize()
 		if err != nil {
@@ -196,6 +196,5 @@ func (b *chunkedUploadFormBuilder) Build(
 	metadata.FixedMerkleRoot = formData.FixedMerkleRoot
 	metadata.ValidationRoot = formData.ValidationRoot
 	metadata.ThumbnailContentHash = formData.ThumbnailContentHash
-
 	return body, metadata, nil
 }

@@ -157,7 +157,6 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 	}
 
 	chunk.FragmentSize = int64(math.Ceil(float64(readLen)/float64(r.dataShards))) + r.chunkHeaderSize
-
 	if readLen < int(r.chunkDataSizePerRead) {
 		chunkBytes = chunkBytes[:readLen]
 		chunk.IsFinal = true
@@ -175,7 +174,6 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 	if err != nil {
 		return chunk, err
 	}
-
 	fragments, err := r.erasureEncoder.Split(chunkBytes)
 	if err != nil {
 		return nil, err
@@ -185,7 +183,6 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	var pos uint64
 	if r.encryptOnUpload {
 		for i := r.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
