@@ -457,7 +457,7 @@
             }
           })
         }
-        const results = await goWasm.multiUpload(objects)
+        const results = await goWasm.bulkUpload(objects)
         console.log(JSON.stringify(results))
       }
     })
@@ -810,16 +810,33 @@
       }
       const objects = []
 
-      objects.push({
+      objects.push(
+      { // rename file
         operationType: `move`,
-        remotePath: `/zcn.wasm`,
-        destPath: `/folder1`,
-      })
+        remotePath: `/small2-182b.txt`,
+        destPath: `/folder/small-182b.txt`,
+      },
+      { // todo: rename folder
+        operationType: `move`,
+        remotePath: `/folder`,
+        destPath: `/folder2`,
+      },
+      { // move a file to an other folder
+        operationType: `move`,
+        remotePath: `/small-182b.txt`,
+        destPath: `/folder/`,
+      },
+      { // copy a file to an other folder
+        operationType: `copy`,
+        remotePath: `/small2-182b.txt`,
+        destPath: `/folder/`,
+      },
+      )
 
       let stringifiedArray = JSON.stringify(objects);
 
       try {
-        console.log("execting", objects[0])
+        console.log("executing MultiOps", objects[0])
         const output = await goWasm.sdk.multiOperation(allocationId, stringifiedArray)
       } catch (e) {
         alert(e)

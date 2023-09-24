@@ -420,7 +420,6 @@ func (su *ChunkedUpload) process() error {
 
 		//chunk has not be uploaded yet
 		if chunks.chunkEndIndex > su.progress.ChunkIndex {
-			start := time.Now()
 			err = su.processUpload(
 				chunks.chunkStartIndex, chunks.chunkEndIndex,
 				chunks.fileShards, chunks.thumbnailShards,
@@ -432,7 +431,6 @@ func (su *ChunkedUpload) process() error {
 				}
 				return err
 			}
-			logger.Logger.Info("[processUpload]", time.Since(start).Milliseconds())
 		} else {
 			// Write data to hashers
 			for i, blobberShard := range chunks.fileShards {

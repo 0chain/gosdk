@@ -106,7 +106,7 @@ func (b *chunkedUploadFormBuilder) Build(
 
 		metadata.FileBytesLen += len(chunkBytes)
 	}
-
+  
 	if isFinal {
 		err = hasher.Finalize()
 		if err != nil {
