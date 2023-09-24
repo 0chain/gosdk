@@ -2,6 +2,7 @@ package sdk
 
 import (
 	"io"
+	"time"
 
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
@@ -20,9 +21,9 @@ type UploadOperation struct {
 }
 
 func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
+	start := time.Now()
 	err := uo.chunkedUpload.process()
 	if err != nil {
-		uo.chunkedUpload.ctxCncl()
 		return nil, uo.chunkedUpload.uploadMask, err
 	}
 
@@ -35,7 +36,7 @@ func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([
 		uo.refs[pos].ChunkSize = uo.chunkedUpload.chunkSize
 	}
 
-	l.Logger.Info("Completed the upload")
+	l.Logger.Info("[uploadCompleted]", time.Since(start).Milliseconds())
 	return nil, uo.chunkedUpload.uploadMask, nil
 }
 
@@ -119,7 +120,7 @@ func (uo *UploadOperation) Error(allocObj *Allocation, consensus int, err error)
 
 func NewUploadOperation(workdir string, allocObj *Allocation, connectionID string, fileMeta FileMeta, fileReader io.Reader, isUpdate, isWebstreaming bool, opts ...ChunkedUploadOption) (*UploadOperation, string, error) {
 	uo := &UploadOperation{}
-
+	start := time.Now()
 	cu, err := CreateChunkedUpload(workdir, allocObj, fileMeta, fileReader, isUpdate, false, isWebstreaming, connectionID, opts...)
 	if err != nil {
 		return nil, "", err
@@ -128,6 +129,6 @@ func NewUploadOperation(workdir string, allocObj *Allocation, connectionID strin
 	uo.chunkedUpload = cu
 	uo.opCode = cu.opCode
 	uo.isUpdate = isUpdate
-
+	l.Logger.Info("[uploadNewOperation]", time.Since(start).Milliseconds())
 	return uo, cu.progress.ConnectionID, nil
 }

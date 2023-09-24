@@ -142,6 +142,7 @@ func (req *DownloadRequest) getBlocksData(startBlock, totalBlock int64) ([]byte,
 
 	// erasure decoding
 	// Can we benefit from goroutine for erasure decoding??
+	now := time.Now()
 	c := req.datashards * req.effectiveBlockSize
 	data := make([]byte, req.datashards*req.effectiveBlockSize*int(totalBlock))
 	for i := range shards {
@@ -155,6 +156,7 @@ func (req *DownloadRequest) getBlocksData(startBlock, totalBlock int64) ([]byte,
 		copy(data[index:index+c], d)
 
 	}
+	l.Logger.Info(fmt.Sprintf("[getBlocksData] Erasure decoding: %d ms", time.Since(now).Milliseconds()))
 	return data, nil
 }
 
@@ -375,6 +377,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			"Blocks per blobber: %d", size, req.startBlock, req.endBlock, blocksPerShard),
 	)
 
+	now := time.Now()
 	err := req.initEC()
 	if err != nil {
 		logger.Logger.Error(err)
@@ -383,6 +386,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 				err), remotePathCB)
 		return
 	}
+	elapsedInitEC := time.Since(now)
 	if req.encryptedKey != "" {
 		err = req.initEncryption()
 		if err != nil {
@@ -392,6 +396,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			return
 		}
 	}
+	elapsedInitEncryption := time.Since(now) - elapsedInitEC
 
 	var downloaded int
 	startBlock, endBlock, numBlocks := req.startBlock, req.endBlock, req.numBlocks
@@ -508,6 +513,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			if startBlock+int64(j)*numBlocks+numBlocks > endBlock {
 				blocksToDownload = endBlock - (startBlock + int64(j)*numBlocks)
 			}
+			start := time.Now()
 			data, err := req.getBlocksData(startBlock+int64(j)*numBlocks, blocksToDownload)
 			if req.isDownloadCanceled {
 				return errors.New("download_abort", "Download aborted by user")
@@ -516,7 +522,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 				return errors.Wrap(err, fmt.Sprintf("Download failed for block %d. ", startBlock+int64(j)*numBlocks))
 			}
 			blocks <- blockData{blockNum: j, data: data}
-
+			l.Logger.Info(fmt.Sprintf("[processDownload] Downloaded block %d", time.Since(start).Milliseconds()))
 			return nil
 		})
 	}
@@ -527,6 +533,14 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 
 	close(blocks)
 	wg.Wait()
+	elapsedGetBlocksAndWrite := time.Since(now) - elapsedInitEC - elapsedInitEncryption
+	l.Logger.Info(fmt.Sprintf("[processDownload] Timings:\n allocation_id: %s,\n remotefilepath: %s,\n initEC: %d ms,\n initEncryption: %d ms,\n getBlocks and writes: %d ms",
+		req.allocationID,
+		req.remotefilepath,
+		elapsedInitEC.Milliseconds(),
+		elapsedInitEncryption.Milliseconds(),
+		elapsedGetBlocksAndWrite.Milliseconds(),
+	))
 
 	if req.statusCallback != nil {
 		req.statusCallback.Completed(
