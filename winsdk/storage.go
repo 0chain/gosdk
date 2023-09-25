@@ -329,6 +329,11 @@ func DownloadFile(allocationID, localPath, remotePath *C.char, verifyDownload, i
 //
 //export DownloadThumbnail
 func DownloadThumbnail(allocationID, localPath, remotePath *C.char, verifyDownload bool, isFinal bool) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: DownloadThumbnail ", r)
+		}
+	}()
 	allocID := C.GoString(allocationID)
 
 	alloc, err := getAllocation(allocID)
