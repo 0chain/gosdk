@@ -92,3 +92,10 @@ func (h *NodeHolder) Healthy() (res []string) {
 
 	return h.nodes[:h.consensus]
 }
+
+func (h *NodeHolder) All() (res []string) {
+	h.guard.Lock()
+	defer h.guard.Unlock()
+
+	return h.nodes
+}

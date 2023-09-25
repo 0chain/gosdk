@@ -41,6 +41,10 @@ func GetClientConfig() (*Config, error) {
 // InitClientConfig set global client config
 func InitClientConfig(c *Config) {
 	onceCfg.Do(func() {
+		sharderConsensous := c.SharderConsensous
+		if sharderConsensous < 1 {
+			sharderConsensous = DefaultSharderConsensous
+		}
 		cfg = c
 	})
 }

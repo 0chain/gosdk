@@ -113,7 +113,7 @@ func InitStorageSDK(walletJSON string,
 func GetNetwork() *Network {
 	return &Network{
 		Miners:   blockchain.GetMiners(),
-		Sharders: blockchain.GetSharders(),
+		Sharders: blockchain.GetAllSharders(),
 	}
 }
 

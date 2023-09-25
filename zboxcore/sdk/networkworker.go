@@ -70,7 +70,7 @@ func UpdateNetworkDetails() error {
 
 func UpdateRequired(networkDetails *Network) bool {
 	miners := blockchain.GetMiners()
-	sharders := blockchain.GetSharders()
+	sharders := blockchain.GetAllSharders()
 	if len(miners) == 0 || len(sharders) == 0 {
 		return true
 	}
