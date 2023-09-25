@@ -63,8 +63,9 @@ func (p *FilePlayer) download(startBlock int64) {
 	if endBlock > p.playlistFile.NumBlocks {
 		endBlock = p.playlistFile.NumBlocks
 	}
+	fmt.Println("start:", startBlock, "end:", endBlock, "numBlocks:", p.numBlocks, "total:", p.playlistFile.NumBlocks)
 
-	data, err := downloadBlocks(p.allocationID, p.remotePath, p.authTicket, p.lookupHash, p.numBlocks, startBlock, endBlock, "", int(endBlock) == p.numBlocks)
+	data, err := downloadBlocks(p.allocationID, p.remotePath, p.authTicket, p.lookupHash, p.numBlocks, startBlock, endBlock, "", true)
 	if err != nil {
 		PrintError(err.Error())
 		return
@@ -77,6 +78,7 @@ func (p *FilePlayer) download(startBlock int64) {
 }
 
 func (p *FilePlayer) startDownload() {
+	fmt.Println("start download")
 	if p.playlistFile.NumBlocks < 1 {
 		PrintError("playlist: numBlocks is invalid")
 		return
@@ -88,9 +90,11 @@ func (p *FilePlayer) startDownload() {
 			PrintInfo("playlist: download is cancelled")
 			return
 		default:
+			fmt.Println("download start:", startBlock)
 			p.download(startBlock)
 
 			startBlock += int64(p.numBlocks)
+			fmt.Println("download end, new start:", startBlock)
 
 			if startBlock > p.playlistFile.NumBlocks {
 
@@ -151,7 +155,7 @@ func createFilePalyer(allocationID, remotePath, authTicket, lookupHash string) (
 	player.remotePath = remotePath
 	player.authTicket = authTicket
 	player.lookupHash = lookupHash
-	player.numBlocks = 10
+	player.numBlocks = 100
 	player.allocationID = allocationID
 
 	//player is viewer
