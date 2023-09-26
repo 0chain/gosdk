@@ -9,14 +9,9 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-	"syscall"
 
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/zboxcore/logger"
-)
-
-var (
-	SysProcAttr = &syscall.SysProcAttr{}
 )
 
 // Converting the video file to fmp4 format for web streaming
