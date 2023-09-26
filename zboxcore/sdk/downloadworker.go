@@ -799,6 +799,9 @@ func (req *DownloadRequest) calculateShardsParams(
 		return 0, err
 	}
 
+	if req.numBlocks > req.endBlock-req.startBlock+1 {
+		req.numBlocks = req.endBlock - req.startBlock + 1
+	}
 	_, err = req.fileHandler.Seek(req.offset, io.SeekStart)
 	if err != nil {
 		return 0, err
