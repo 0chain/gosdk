@@ -104,12 +104,14 @@ func CreateChunkedUpload(
 
 	if webStreaming {
 		newFileReader, newFileMeta, f, err := TranscodeWebStreaming(workdir, fileReader, fileMeta)
+		defer os.Remove(f)
+
 		if err != nil {
 			return nil, thrown.New("upload_failed", err.Error())
 		}
 		fileMeta = *newFileMeta
 		fileReader = newFileReader
-		defer os.Remove(f)
+
 	}
 
 	err := ValidateRemoteFileName(fileMeta.RemoteName)
