@@ -29,7 +29,7 @@ func TranscodeWebStreaming(workdir string, fileReader io.Reader, fileMeta FileMe
 	args := []string{"-i", fileMeta.Path, "-f", "mp4", "-movflags", "frag_keyframe+empty_moov+default_base_moof", fileName, "-y"}
 	cmd := exec.Command(CmdFFmpeg, args...)
 	cmd.Stderr = bufio.NewWriter(&stdErr)
-	cmd.SysProcAttr = &syscall.SysProcAttr{CreationFlags: 0x08000000, HideWindow: true} // CREATE_NO_WINDOW
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true} // CREATE_NO_WINDOW
 	err := cmd.Run()
 	defer cmd.Process.Kill()
 
