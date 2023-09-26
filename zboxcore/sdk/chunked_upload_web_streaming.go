@@ -15,6 +15,10 @@ import (
 	"github.com/0chain/gosdk/zboxcore/logger"
 )
 
+var (
+	SysProcAttr = &syscall.SysProcAttr{}
+)
+
 // Converting the video file to fmp4 format for web streaming
 func TranscodeWebStreaming(workdir string, fileReader io.Reader, fileMeta FileMeta) (io.Reader, *FileMeta, string, error) {
 	var stdErr bytes.Buffer
@@ -29,7 +33,7 @@ func TranscodeWebStreaming(workdir string, fileReader io.Reader, fileMeta FileMe
 	args := []string{"-i", fileMeta.Path, "-f", "mp4", "-movflags", "frag_keyframe+empty_moov+default_base_moof", fileName, "-y"}
 	cmd := exec.Command(CmdFFmpeg, args...)
 	cmd.Stderr = bufio.NewWriter(&stdErr)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true} // CREATE_NO_WINDOW
+	cmd.SysProcAttr = SysProcAttr
 	err := cmd.Run()
 	defer cmd.Process.Kill()
 
