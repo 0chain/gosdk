@@ -6,5 +6,5 @@ package sdk
 import "syscall"
 
 var (
-	SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	sysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 )

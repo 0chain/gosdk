@@ -6,5 +6,5 @@ package sdk
 import "syscall"
 
 var (
-	SysProcAttr = &syscall.SysProcAttr{}
+	sysProcAttr = &syscall.SysProcAttr{}
 )
