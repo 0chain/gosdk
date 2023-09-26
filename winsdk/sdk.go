@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"syscall"
 
 	"github.com/0chain/gosdk/zboxapi"
 	"github.com/0chain/gosdk/zboxcore/client"
@@ -29,7 +30,7 @@ import (
 var log logger.Logger
 
 func main() {
-
+	sdk.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 }
 
 // SetLogFile - set log file
