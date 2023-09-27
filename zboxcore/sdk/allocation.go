@@ -983,6 +983,12 @@ func (a *Allocation) DownloadFileByBlock(
 	return nil
 }
 
+// DownloadBlocks download blocks for wasm, use sys.File that has opened in wasm
+func (a *Allocation) DownloadBlocks(fs sys.File, localPath, remotePath, authTicket, lookupHash string, startBlockNumber, endBlockNumber int64, statusBar StatusCallback) error {
+	return a.addAndGenerateDownloadRequest(fs, remotePath, DOWNLOAD_CONTENT_FULL, startBlockNumber, endBlockNumber,
+		numBlockDownloads, false, statusBar, true, localPath)
+}
+
 func (a *Allocation) DownloadThumbnail(localPath string, remotePath string, verifyDownload bool, status StatusCallback, isFinal bool) error {
 	f, localFilePath, toKeep, err := a.prepareAndOpenLocalFile(localPath, remotePath)
 	if err != nil {

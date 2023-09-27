@@ -7,8 +7,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"path"
-	"path/filepath"
 	"strings"
 	"sync"
 	"syscall/js"
@@ -776,66 +776,44 @@ func upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, w
 }
 
 // download download file blocks
-func downloadBlocks(allocationID, remotePath, authTicket, lookupHash string, numBlocks int, startBlockNumber, endBlockNumber int64, callbackFuncName string, isFinal bool) ([]byte, error) {
-
+func downloadBlocks(alloc *sdk.Allocation, remotePath, authTicket, lookupHash string, startBlock, endBlock int64) ([]byte, error) {
 	if len(remotePath) == 0 && len(authTicket) == 0 {
 		return nil, RequiredArg("remotePath/authTicket")
 	}
 
-	wg := &sync.WaitGroup{}
-	statusBar := &StatusBar{wg: wg}
-	if callbackFuncName != "" {
-		callback := js.Global().Get(callbackFuncName)
-		statusBar.callback = func(totalBytes, completedBytes int, filename, objURL, err string) {
-			callback.Invoke(totalBytes, completedBytes, filename, objURL, err)
-		}
-	}
-	wg.Add(1)
-
-	fileName := strings.Replace(path.Base(remotePath), "/", "-", -1)
-	localPath := filepath.Join(allocationID, fileName)
-
-	fs, _ := sys.Files.Open(localPath)
-	mf, _ := fs.(*sys.MemFile)
-
 	var (
-		err        error
-		downloader sdk.Downloader
+		wg        = &sync.WaitGroup{}
+		statusBar = &StatusBar{wg: wg}
 	)
 
-	if allocObj == nil {
-		downloader, err = sdk.CreateDownloader(allocationID, localPath, remotePath,
-			sdk.WithAuthticket(authTicket, lookupHash),
-			sdk.WithBlocks(startBlockNumber, endBlockNumber, numBlocks),
-			sdk.WithFileHandler(mf))
+	fileName := strings.Replace(path.Base(remotePath), "/", "-", -1)
+	localPath := alloc.ID + "-" + fmt.Sprintf("%v-%s", startBlock, fileName)
 
-	} else {
-		downloader, err = sdk.CreateDownloader(allocationID, localPath, remotePath,
-			sdk.WithAuthticket(authTicket, lookupHash),
-			sdk.WithBlocks(startBlockNumber, endBlockNumber, numBlocks),
-			sdk.WithAllocation(allocObj),
-			sdk.WithFileHandler(mf))
+	fs, err := sys.Files.Open(localPath)
+	if err != nil {
+		return nil, fmt.Errorf("could not open local file: %v", err)
 	}
 
-	if err != nil {
-		PrintError(err.Error())
-		return nil, err
+	mf, _ := fs.(*sys.MemFile)
+	if mf == nil {
+		return nil, fmt.Errorf("invalid memfile")
 	}
 
 	defer sys.Files.Remove(localPath) //nolint
 
-	err = downloader.Start(statusBar, isFinal)
-
-	if err == nil {
-		wg.Wait()
-	} else {
-		PrintError("Download failed.", err.Error())
+	wg.Add(1)
+	if err := alloc.DownloadBlocks(mf,
+		localPath,
+		remotePath,
+		authTicket,
+		lookupHash,
+		startBlock,
+		endBlock,
+		statusBar); err != nil {
 		return nil, err
 	}
-	if !statusBar.success {
-		return nil, errors.New("Download failed: unknown error")
-	}
 
+	wg.Wait()
 	return mf.Buffer.Bytes(), nil
 }
 
