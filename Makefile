@@ -80,7 +80,7 @@ lint: lint-wasm
 
 build-windows: getrev
 	@echo "Building 0Chain Windows SDK. Please wait..."
-	@go build --buildmode=c-shared -ldflags="-s -w -H=windowsgui" -o ./winsdk/zcn.windows.dll ./winsdk
+	@go build --buildmode=c-shared -ldflags="-s -w" -o ./winsdk/zcn.windows.dll ./winsdk
 	@echo "  ./winsdk/zcn.windows.dll - [OK]"
 
 help:
