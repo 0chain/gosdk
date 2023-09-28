@@ -568,7 +568,7 @@ func bulkUpload(jsonBulkUploadOptions string) ([]BulkUploadResult, error) {
 				o.ReadChunkFuncName,
 				o.FileSize,
 				o.ThumbnailBytes.Buffer,
-				o.Webstreaming,
+				o.IsWebstreaming,
 				o.Encrypt,
 				o.IsUpdate,
 				o.IsRepair,
