@@ -20,16 +20,24 @@ func TranscodeWebStreaming(workdir string, fileReader io.Reader, fileMeta FileMe
 
 	outDir := filepath.Join(workdir, ".zcn", "transcode")
 	// create ./zcn/transcode folder if it doesn't exists
-	os.MkdirAll(outDir, 0644) //nolint: errcheck
+	os.MkdirAll(outDir, 0766) //nolint: errcheck
 	fileName := filepath.Join(outDir, fileMeta.RemoteName)
 
-	logger.Logger.Info("transcode: ", fileName)
+	// w, err := os.Create(fileName)
+	// if err != nil {
+	// 	return nil, nil, "", err
+	// }
+
+	logger.Logger.Info("transcode: start ", fileName)
 
 	args := []string{"-i", fileMeta.Path, "-f", "mp4", "-movflags", "frag_keyframe+empty_moov+default_base_moof", fileName, "-y"}
 	cmd := exec.Command(CmdFFmpeg, args...)
 	cmd.Stderr = bufio.NewWriter(&stdErr)
+	// cmd.Stdout = w
 	cmd.SysProcAttr = sysProcAttr
 	err := cmd.Run()
+
+	// w.Close()
 	defer cmd.Process.Kill()
 
 	if err != nil {
@@ -43,6 +51,8 @@ func TranscodeWebStreaming(workdir string, fileReader io.Reader, fileMeta FileMe
 	if err != nil {
 		return nil, nil, fileName, err
 	}
+
+	logger.Logger.Info("transcode: done ", fileName)
 
 	fi, err := r.Stat()
 	if err != nil {

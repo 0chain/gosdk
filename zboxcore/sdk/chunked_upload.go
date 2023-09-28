@@ -199,7 +199,7 @@ func CreateChunkedUpload(
 	su.workdir = filepath.Join(workdir, ".zcn")
 
 	//create upload folder to save progress
-	err = sys.Files.MkdirAll(filepath.Join(su.workdir, "upload"), 0744)
+	err = sys.Files.MkdirAll(filepath.Join(su.workdir, "upload"), 0766)
 	if err != nil {
 		return nil, err
 	}
