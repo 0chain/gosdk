@@ -46,6 +46,7 @@ func InitClientConfig(c *Config) {
 			sharderConsensous = DefaultSharderConsensous
 		}
 		cfg = c
+		cfg.SharderConsensous = sharderConsensous
 	})
 }
 

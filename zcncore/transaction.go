@@ -1285,12 +1285,9 @@ func GetRoundFromSharders() (int64, error) {
 	result := make(chan *util.GetResponse, len(sharders))
 
 	var numSharders = len(sharders)
-	util.Shuffle(sharders)
-
 	// use 5 sharders to get round
 	if numSharders > 5 {
 		numSharders = 5
-		sharders = sharders[:numSharders]
 	}
 
 	queryFromSharders(numSharders, fmt.Sprintf("%v", CURRENT_ROUND), result)

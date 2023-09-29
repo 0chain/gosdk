@@ -6,8 +6,6 @@ import (
 	"github.com/0chain/gosdk/core/util"
 )
 
-const consensusThresh = float32(25.0)
-
 var Cache *NonceCache
 var once sync.Once
 

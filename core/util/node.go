@@ -91,7 +91,7 @@ func (h *NodeHolder) adjustNode(id string, res int) {
 	i := sort.Search(len(h.nodes), func(i int) bool {
 		return h.stats[h.nodes[i]].weight < n.weight
 	})
-	h.nodes = append(h.nodes[:i], append([]string{n.id}, h.nodes[i:]...)...)
+	h.nodes = append(nodes[:i], append([]string{n.id}, nodes[i:]...)...)
 }
 
 func (h *NodeHolder) Healthy() (res []string) {
