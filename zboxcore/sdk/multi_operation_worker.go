@@ -200,6 +200,7 @@ func (mo *MultiOperation) Process() error {
 	// in row instead of column. Currently mo.change[0] contains allocationChange for operation 1 and so on.
 	// But we want mo.changes[0] to have allocationChange for blobber 1 and mo.changes[1] to have allocationChange for
 	// blobber 2 and so on.
+	start := time.Now()
 	mo.changes = zboxutil.Transpose(mo.changes)
 
 	writeMarkerMutex, err := CreateWriteMarkerMutex(client.GetClient(), mo.allocationObj)
@@ -213,8 +214,8 @@ func (mo *MultiOperation) Process() error {
 	if err != nil {
 		return fmt.Errorf("Operation failed: %s", err.Error())
 	}
-	l.Logger.Info("WriteMarker locked")
-
+	logger.Logger.Info("[writemarkerLocked]", time.Since(start).Milliseconds())
+	start = time.Now()
 	status, err := mo.allocationObj.CheckAllocStatus()
 	if err != nil {
 		logger.Logger.Error("Error checking allocation status", err)
@@ -245,11 +246,11 @@ func (mo *MultiOperation) Process() error {
 	if status != Commit {
 		return ErrRetryOperation
 	}
-
+	logger.Logger.Info("[checkAllocStatus]", time.Since(start).Milliseconds())
 	mo.Consensus.Reset()
 	activeBlobbers := mo.operationMask.CountOnes()
 	commitReqs := make([]*CommitRequest, activeBlobbers)
-
+	start = time.Now()
 	wg.Add(activeBlobbers)
 	var pos uint64
 	var counter = 0
@@ -273,6 +274,7 @@ func (mo *MultiOperation) Process() error {
 		counter++
 	}
 	wg.Wait()
+	logger.Logger.Info("[commitRequests]", time.Since(start).Milliseconds())
 	rollbackMask := zboxutil.NewUint128(0)
 	for _, commitReq := range commitReqs {
 		if commitReq.result != nil {

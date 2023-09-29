@@ -1,12 +1,93 @@
 package sdk
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
 	"hash/fnv"
+	"io"
 	"strconv"
+	"sync"
+	"time"
 
+	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/zboxcore/allocationchange"
+	"github.com/0chain/gosdk/zboxcore/encryption"
+	"github.com/0chain/gosdk/zboxcore/fileref"
+	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/google/uuid"
+	"github.com/klauspost/reedsolomon"
 	"golang.org/x/crypto/sha3"
 )
+
+// ChunkedUpload upload manager with chunked upload feature
+type ChunkedUpload struct {
+	consensus Consensus
+
+	workdir string
+
+	allocationObj  *Allocation
+	progress       UploadProgress
+	progressStorer ChunkedUploadProgressStorer
+	client         zboxutil.HttpClient
+
+	uploadMask zboxutil.Uint128
+
+	// httpMethod POST = Upload File / PUT = Update file
+	httpMethod  string
+	buildChange func(ref *fileref.FileRef,
+		uid uuid.UUID, timestamp common.Timestamp) allocationchange.AllocationChange
+
+	fileMeta           FileMeta
+	fileReader         io.Reader
+	fileErasureEncoder reedsolomon.Encoder
+	fileEncscheme      encryption.EncryptionScheme
+	fileHasher         Hasher
+
+	thumbnailBytes         []byte
+	thumbailErasureEncoder reedsolomon.Encoder
+
+	chunkReader ChunkedUploadChunkReader
+	formBuilder ChunkedUploadFormBuilder
+
+	// encryptOnUpload encrypt data on upload or not.
+	encryptOnUpload bool
+	// webStreaming whether data has to be encoded.
+	webStreaming bool
+	// chunkSize how much bytes a chunk has. 64KB is default value.
+	chunkSize int64
+	// chunkNumber the number of chunks in a http upload request. 1 is default value
+	chunkNumber int
+
+	// shardUploadedSize how much bytes a shard has. it is original size
+	shardUploadedSize int64
+	// shardUploadedThumbnailSize how much thumbnail bytes a shard has. it is original size
+	shardUploadedThumbnailSize int64
+	// size of shard
+	shardSize int64
+
+	// statusCallback trigger progress on StatusCallback
+	statusCallback StatusCallback
+
+	blobbers []*ChunkedUploadBlobber
+
+	writeMarkerMutex *WriteMarkerMutex
+
+	// isRepair identifies if upload is repair operation
+	isRepair bool
+
+	opCode            int
+	uploadTimeOut     time.Duration
+	commitTimeOut     time.Duration
+	maskMu            *sync.Mutex
+	ctx               context.Context
+	ctxCncl           context.CancelCauseFunc
+	addConsensus      int32
+	encryptedKeyPoint string
+	encryptedKey      string
+	uploadChan        chan UploadData
+	uploadWG          sync.WaitGroup
+}
 
 // FileMeta metadata of stream input/local
 type FileMeta struct {
@@ -111,6 +192,21 @@ type UploadBlobberStatus struct {
 
 	// UploadLength total bytes that has been uploaded to blobbers
 	UploadLength int64 `json:"upload_length,omitempty"`
+}
+
+//			err = b.sendUploadRequest(ctx, su, chunkEndIndex, isFinal, su.encryptedKey, body, formData, pos)
+
+type UploadData struct {
+	chunkStartIndex int
+	chunkEndIndex   int
+	isFinal         bool
+	encryptedKey    string
+	uploadBody      []blobberData
+}
+
+type blobberData struct {
+	body     *bytes.Buffer
+	formData ChunkedUploadFormMetadata
 }
 
 type status struct {
