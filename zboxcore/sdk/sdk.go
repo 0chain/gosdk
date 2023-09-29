@@ -92,17 +92,17 @@ func InitStorageSDK(walletJSON string,
 		return err
 	}
 
-	client.SetClientNonce(nonce)
-	if len(fee) > 0 {
-		client.SetTxnFee(fee[0])
-	}
-
 	blockchain.SetChainID(chainID)
 	blockchain.SetBlockWorker(blockWorker)
 
 	err = UpdateNetworkDetails()
 	if err != nil {
 		return err
+	}
+
+	client.SetClientNonce(nonce)
+	if len(fee) > 0 {
+		client.SetTxnFee(fee[0])
 	}
 
 	go UpdateNetworkDetailsWorker(context.Background())
