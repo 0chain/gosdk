@@ -708,57 +708,11 @@ func GetBalanceWallet(walletStr string, cb GetBalanceCallback) error {
 }
 
 func getBalanceFromSharders(clientID string) (int64, string, error) {
-	return getBalanceFieldFromSharders(clientID, "balance")
+	return Sharders.GetBalanceFieldFromSharders(clientID, "balance")
 }
 
 func getNonceFromSharders(clientID string) (int64, string, error) {
-	return getBalanceFieldFromSharders(clientID, "nonce")
-}
-
-func getBalanceFieldFromSharders(clientID, name string) (int64, string, error) {
-	result := make(chan *util.GetResponse)
-	defer close(result)
-	// getMinShardersVerify
-	var numSharders = len(Sharders.Healthy()) // overwrite, use all
-	queryFromSharders(numSharders, fmt.Sprintf("%v%v", GET_BALANCE, clientID), result)
-
-	consensusMaps := NewHttpConsensusMaps(consensusThresh)
-
-	for i := 0; i < numSharders; i++ {
-		rsp := <-result
-
-		logging.Debug(rsp.Url, rsp.Status)
-		if rsp.StatusCode != http.StatusOK {
-			logging.Error(rsp.Body)
-
-		} else {
-			logging.Debug(rsp.Body)
-		}
-
-		if err := consensusMaps.Add(rsp.StatusCode, rsp.Body); err != nil {
-			logging.Error(rsp.Body)
-		}
-	}
-
-	rate := consensusMaps.MaxConsensus * 100 / len(_config.chain.Sharders)
-	if rate < consensusThresh {
-		if strings.TrimSpace(consensusMaps.WinError) == `{"error":"value not present"}` {
-			return 0, consensusMaps.WinError, nil
-		}
-		return 0, consensusMaps.WinError, errors.New("", "get balance failed. consensus not reached")
-	}
-
-	winValue, ok := consensusMaps.GetValue(name)
-	if ok {
-		winBalance, err := strconv.ParseInt(string(winValue), 10, 64)
-		if err != nil {
-			return 0, "", fmt.Errorf("get balance failed. %w", err)
-		}
-
-		return winBalance, consensusMaps.WinInfo, nil
-	}
-
-	return 0, consensusMaps.WinInfo, errors.New("", "get balance failed. balance field is missed")
+	return Sharders.GetBalanceFieldFromSharders(clientID, "nonce")
 }
 
 // ConvertToToken converts the SAS tokens to ZCN tokens

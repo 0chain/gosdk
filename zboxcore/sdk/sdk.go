@@ -147,7 +147,7 @@ func SetMinConfirmation(num int) {
 func SetNetwork(miners []string, sharders []string) {
 	blockchain.SetMiners(miners)
 	blockchain.SetSharders(sharders)
-	transaction.InitCache(sharders)
+	transaction.InitCache(blockchain.Sharders)
 }
 
 //

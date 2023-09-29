@@ -1,8 +1,16 @@
 package util
 
 import (
+	"context"
+	"fmt"
+	"net/http"
 	"sort"
+	"strconv"
+	"strings"
 	"sync"
+
+	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/zboxcore/logger"
 )
 
 const statSize = 20
@@ -98,4 +106,95 @@ func (h *NodeHolder) All() (res []string) {
 	defer h.guard.Unlock()
 
 	return h.nodes
+}
+
+const consensusThresh = 25
+const (
+	GET_BALANCE = `/v1/client/get/balance?client_id=`
+)
+
+func (h *NodeHolder) GetNonceFromSharders(clientID string) (int64, string, error) {
+	return h.GetBalanceFieldFromSharders(clientID, "nonce")
+}
+
+func (h *NodeHolder) GetBalanceFieldFromSharders(clientID, name string) (int64, string, error) {
+	result := make(chan *GetResponse)
+	defer close(result)
+	// getMinShardersVerify
+	numSharders := len(h.Healthy())
+	h.queryFromSharders(numSharders, fmt.Sprintf("%v%v", GET_BALANCE, clientID), result)
+
+	consensusMaps := NewHttpConsensusMaps(consensusThresh)
+
+	for i := 0; i < numSharders; i++ {
+		rsp := <-result
+
+		logger.Logger.Debug(rsp.Url, rsp.Status)
+		if rsp.StatusCode != http.StatusOK {
+			logger.Logger.Error(rsp.Body)
+
+		} else {
+			logger.Logger.Debug(rsp.Body)
+		}
+
+		if err := consensusMaps.Add(rsp.StatusCode, rsp.Body); err != nil {
+			logger.Logger.Error(rsp.Body)
+		}
+	}
+
+	rate := consensusMaps.MaxConsensus * 100 / numSharders
+	if rate < consensusThresh {
+		if strings.TrimSpace(consensusMaps.WinError) == `{"error":"value not present"}` {
+			return 0, consensusMaps.WinError, nil
+		}
+		return 0, consensusMaps.WinError, errors.New("", "get balance failed. consensus not reached")
+	}
+
+	winValue, ok := consensusMaps.GetValue(name)
+	if ok {
+		winBalance, err := strconv.ParseInt(string(winValue), 10, 64)
+		if err != nil {
+			return 0, "", fmt.Errorf("get balance failed. %w", err)
+		}
+
+		return winBalance, consensusMaps.WinInfo, nil
+	}
+
+	return 0, consensusMaps.WinInfo, errors.New("", "get balance failed. balance field is missed")
+}
+
+func (h *NodeHolder) queryFromSharders(numSharders int, query string,
+	result chan *GetResponse) {
+
+	h.queryFromShardersContext(context.Background(), numSharders, query, result)
+}
+
+func (h *NodeHolder) queryFromShardersContext(ctx context.Context, numSharders int,
+	query string, result chan *GetResponse) {
+
+	sharders := h.Healthy()
+	for _, sharder := range Shuffle(sharders)[:numSharders] {
+		go func(sharderurl string) {
+			logger.Logger.Info("Query from ", sharderurl+query)
+			url := fmt.Sprintf("%v%v", sharderurl, query)
+			req, err := NewHTTPGetRequestContext(ctx, url)
+			if err != nil {
+				logger.Logger.Error(sharderurl, " new get request failed. ", err.Error())
+				h.Fail(sharderurl)
+				return
+			}
+			res, err := req.Get()
+			if err != nil {
+				logger.Logger.Error(sharderurl, " get error. ", err.Error())
+			}
+
+			if res.StatusCode > http.StatusBadRequest {
+				h.Fail(sharderurl)
+			} else {
+				h.Success(sharderurl)
+			}
+
+			result <- res
+		}(sharder)
+	}
 }

@@ -58,7 +58,7 @@ func UpdateNetworkDetails() error {
 		sdkInitialized = false
 		blockchain.SetMiners(networkDetails.Miners)
 		blockchain.SetSharders(networkDetails.Sharders)
-		transaction.InitCache(networkDetails.Sharders)
+		transaction.InitCache(blockchain.Sharders)
 		conf.InitChainNetwork(&conf.Network{
 			Sharders: networkDetails.Sharders,
 			Miners:   networkDetails.Miners,
