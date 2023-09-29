@@ -95,7 +95,7 @@ func InitStorageSDK(walletJSON string,
 	blockchain.SetChainID(chainID)
 	blockchain.SetBlockWorker(blockWorker)
 
-	err = UpdateNetworkDetails()
+	err = InitNetworkDetails()
 	if err != nil {
 		return err
 	}
