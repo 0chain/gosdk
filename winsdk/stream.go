@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	lru "github.com/hashicorp/golang-lru/v2"
@@ -219,6 +220,7 @@ func downloadBlocks(remotePath string, f *sdk.ConsolidatedFileMeta, ra httpRange
 	// if os.IsNotExist(err) {
 	statusBar := NewStatusBar(statusDownload, key)
 	status := statusBar.getStatus(key)
+	status.wg = &sync.WaitGroup{}
 	status.wg.Add(1)
 	log.Info("win: download blocks to ", mf)
 	err = alloc.DownloadFileByBlock(mf, remotePath, startBlock, endBlock, numBlocks, false, statusBar, true)

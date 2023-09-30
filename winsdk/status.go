@@ -18,7 +18,7 @@ type Status struct {
 	Error          string
 	Completed      bool
 	LookupHash     string
-	wg             sync.WaitGroup
+	wg             *sync.WaitGroup
 }
 
 type StatusCallback struct {
@@ -73,7 +73,11 @@ func (c *StatusCallback) InProgress(allocationID, remotePath string, op int, com
 	s.LookupHash = lookupHash
 	if completedBytes >= s.TotalBytes {
 		s.Completed = true
-		s.wg.Done()
+		if s.wg != nil {
+			s.wg.Done()
+			s.wg = nil
+		}
+
 	}
 }
 
@@ -83,7 +87,10 @@ func (c *StatusCallback) Error(allocationID string, remotePath string, op int, e
 	s := c.getStatus(lookupHash)
 	s.Error = err.Error()
 	s.LookupHash = lookupHash
-	s.wg.Done()
+	if s.wg != nil {
+		s.wg.Done()
+		s.wg = nil
+	}
 }
 
 func (c *StatusCallback) Completed(allocationID, remotePath string, filename string, mimetype string, size int, op int) {
@@ -93,7 +100,10 @@ func (c *StatusCallback) Completed(allocationID, remotePath string, filename str
 	s.Completed = true
 	s.LookupHash = lookupHash
 	s.CompletedBytes = s.TotalBytes
-	s.wg.Done()
+	if s.wg != nil {
+		s.wg.Done()
+		s.wg = nil
+	}
 }
 
 func (c *StatusCallback) CommitMetaCompleted(request, response string, err error) {
