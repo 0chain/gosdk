@@ -146,6 +146,9 @@ func SetSharders(sharderArray []string) {
 	if err == nil && config != nil {
 		consensus = config.SharderConsensous
 	}
+	if len(sharderArray) < consensus {
+		consensus = len(sharderArray)
+	}
 	Sharders = util.NewHolder(sharderArray, consensus)
 }
 
