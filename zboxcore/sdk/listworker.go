@@ -156,9 +156,10 @@ func (req *ListRequest) getlistFromBlobbers() ([]*listResponse, error) {
 		if listInfos[i].err != nil || listInfos[i].ref == nil {
 			continue
 		}
-		consensusMap[listInfos[i].ref.FileMetaHash] = append(consensusMap[listInfos[i].ref.LookupHash], req.blobbers[listInfos[i].blobberIdx])
-		if len(consensusMap[listInfos[i].ref.FileMetaHash]) >= req.consensusThresh {
-			consensusHash = listInfos[i].ref.FileMetaHash
+		hash := listInfos[i].ref.FileMetaHash
+		consensusMap[hash] = append(consensusMap[hash], req.blobbers[listInfos[i].blobberIdx])
+		if len(consensusMap[hash]) >= req.consensusThresh {
+			consensusHash = hash
 		}
 	}
 	var err error
