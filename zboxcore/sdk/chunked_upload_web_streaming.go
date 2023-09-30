@@ -37,8 +37,13 @@ func TranscodeWebStreaming(workdir string, fileReader io.Reader, fileMeta FileMe
 	cmd.SysProcAttr = sysProcAttr
 	err := cmd.Run()
 
-	// w.Close()
-	defer cmd.Process.Kill()
+	defer func() {
+		// w.Close()
+		err = cmd.Process.Kill()
+		if err != nil {
+			logger.Logger.Error(err)
+		}
+	}()
 
 	if err != nil {
 		logger.Logger.Error(err, stdErr.String())
