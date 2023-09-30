@@ -169,7 +169,9 @@ func (req *ListRequest) getlistFromBlobbers() ([]*listResponse, error) {
 		var rnd = rand.New(rand.NewSource(time.Now().UnixNano()))
 		num := rnd.Intn(listLen)
 		randomBlobber := consensusMap[consensusHash][num]
+		req.wg.Add(1)
 		go req.getListInfoFromBlobber(randomBlobber, 0, rspCh)
+		req.wg.Wait()
 		listInfos[0] = <-rspCh
 		if listInfos[0].err == nil {
 			return listInfos, nil
