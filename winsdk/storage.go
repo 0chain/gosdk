@@ -195,6 +195,11 @@ func GetFileMeta(allocationID, path *C.char) *C.char {
 //
 //export BulkUpload
 func BulkUpload(allocationID, files *C.char) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: ", r)
+		}
+	}()
 	allocID := C.GoString(allocationID)
 	workdir, _ := os.UserHomeDir()
 	jsFiles := C.GoString(files)
@@ -329,6 +334,11 @@ func DownloadFile(allocationID, localPath, remotePath *C.char, verifyDownload, i
 //
 //export DownloadThumbnail
 func DownloadThumbnail(allocationID, localPath, remotePath *C.char, verifyDownload bool, isFinal bool) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: DownloadThumbnail ", r)
+		}
+	}()
 	allocID := C.GoString(allocationID)
 
 	alloc, err := getAllocation(allocID)

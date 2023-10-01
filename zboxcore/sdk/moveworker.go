@@ -345,6 +345,7 @@ func (mo *MoveOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) []
 		moveChange.NumBlocks = 0
 		moveChange.Operation = constants.FileOperationMove
 		moveChange.Size = 0
+		moveChange.Uuid = uid
 		changes[idx] = moveChange
 	}
 	return changes
