@@ -92,7 +92,7 @@ func startCommitWorker(blobberChan chan *CommitRequest, blobberID string) {
 
 func (commitreq *CommitRequest) processCommit() {
 	defer commitreq.wg.Done()
-
+	start := time.Now()
 	l.Logger.Info("received a commit request")
 	paths := make([]string, 0)
 	for _, change := range commitreq.changes {
@@ -187,6 +187,7 @@ func (commitreq *CommitRequest) processCommit() {
 		commitreq.result = ErrorCommitResult(err.Error())
 		return
 	}
+	l.Logger.Info("[commitBlobber]", time.Since(start).Milliseconds())
 	commitreq.result = SuccessCommitResult()
 }
 

@@ -375,6 +375,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			"Blocks per blobber: %d", size, req.startBlock, req.endBlock, blocksPerShard),
 	)
 
+	now := time.Now()
 	err := req.initEC()
 	if err != nil {
 		logger.Logger.Error(err)
@@ -383,6 +384,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 				err), remotePathCB)
 		return
 	}
+	elapsedInitEC := time.Since(now)
 	if req.encryptedKey != "" {
 		err = req.initEncryption()
 		if err != nil {
@@ -392,6 +394,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			return
 		}
 	}
+	elapsedInitEncryption := time.Since(now) - elapsedInitEC
 
 	var downloaded int
 	startBlock, endBlock, numBlocks := req.startBlock, req.endBlock, req.numBlocks
@@ -527,6 +530,14 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 
 	close(blocks)
 	wg.Wait()
+	elapsedGetBlocksAndWrite := time.Since(now) - elapsedInitEC - elapsedInitEncryption
+	l.Logger.Info(fmt.Sprintf("[processDownload] Timings:\n allocation_id: %s,\n remotefilepath: %s,\n initEC: %d ms,\n initEncryption: %d ms,\n getBlocks and writes: %d ms",
+		req.allocationID,
+		req.remotefilepath,
+		elapsedInitEC.Milliseconds(),
+		elapsedInitEncryption.Milliseconds(),
+		elapsedGetBlocksAndWrite.Milliseconds(),
+	))
 
 	if req.statusCallback != nil {
 		req.statusCallback.Completed(
@@ -591,7 +602,6 @@ func (req *DownloadRequest) attemptSubmitReadMarker(blobber *blockchain.StorageN
 	}
 
 	header := &DownloadRequestHeader{
-		Path:         req.remotefilepath,
 		PathHash:     req.remotefilepathhash,
 		ReadMarker:   rmData,
 		ConnectionID: req.connectionID,
