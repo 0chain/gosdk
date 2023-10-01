@@ -674,31 +674,31 @@ func (b *BridgeClient) Swap(ctx context.Context, amountSwap uint64) (*types.Tran
 func (b *BridgeClient) prepareBancor(ctx context.Context, method string, params ...interface{}) (*bancor.IBancorNetwork, *bind.TransactOpts, error) {
 	// To (contract)
 	contractAddress := common.HexToAddress(BancorNetworkAddress)
-	//
-	//abi, err := bancor.BancorNetworkMetaData.GetAbi()
-	//if err != nil {
-	//	return nil, nil, errors.Wrap(err, "failed to get bancor abi")
-	//}
 
-	//pack, err := abi.Pack(method, params...)
-	//if err != nil {
-	//	return nil, nil, errors.Wrap(err, "failed to pack arguments")
-	//}
-	//
-	//from := common.HexToAddress(b.EthereumAddress)
+	abi, err := bancor.IBancorNetworkMetaData.GetAbi()
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to get bancor abi")
+	}
 
-	//gasLimitUnits, err := b.ethereumClient.EstimateGas(ctx, eth.CallMsg{
-	//	To:   &contractAddress,
-	//	From: from,
-	//	Data: pack,
-	//})
-	//if err != nil {
-	//	return nil, nil, errors.Wrap(err, "failed to estimate gas limit")
-	//}
-	//
-	//gasLimitUnits = addPercents(gasLimitUnits, 10).Uint64()
+	pack, err := abi.Pack(method, params...)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to pack arguments")
+	}
 
-	transactOpts := b.CreateSignedTransactionFromKeyStore(b.ethereumClient, 400000)
+	from := common.HexToAddress(b.EthereumAddress)
+
+	gasLimitUnits, err := b.ethereumClient.EstimateGas(ctx, eth.CallMsg{
+		To:   &contractAddress,
+		From: from,
+		Data: pack,
+	})
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to estimate gas limit")
+	}
+
+	gasLimitUnits = addPercents(gasLimitUnits, 10).Uint64()
+
+	transactOpts := b.CreateSignedTransactionFromKeyStore(b.ethereumClient, gasLimitUnits)
 
 	bancorInstance, err := bancor.NewIBancorNetwork(contractAddress, b.ethereumClient)
 	if err != nil {

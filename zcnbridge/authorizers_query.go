@@ -269,6 +269,8 @@ func queryAuthorizer(au *AuthorizerNode, request *requestHandler, responseChanne
 	Logger.Info("Query from authorizer", zap.String("ID", au.ID), zap.String("URL", au.URL))
 	ticketURL := strings.TrimSuffix(au.URL, "/") + request.path
 
+	fmt.Println(ticketURL)
+
 	req, err := http.NewRequest("GET", ticketURL, nil)
 	if err != nil {
 		log.Logger.Error("failed to create request", zap.Error(err))
@@ -283,6 +285,8 @@ func queryAuthorizer(au *AuthorizerNode, request *requestHandler, responseChanne
 	Logger.Info(req.URL.String())
 	resp, body := readResponse(client.Do(req))
 	resp.AuthorizerID = au.ID
+
+	fmt.Println(string(body))
 
 	if resp.error != nil {
 		Logger.Error(
