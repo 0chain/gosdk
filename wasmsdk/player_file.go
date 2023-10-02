@@ -5,11 +5,8 @@ package main
 
 import (
 	"context"
-	"path/filepath"
-	"strconv"
-	"sync"
+	"fmt"
 
-	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
@@ -27,6 +24,7 @@ type FilePlayer struct {
 	playlistFile  *sdk.PlaylistFile
 
 	downloadedChunks chan []byte
+	downloadedLen    int
 	ctx              context.Context
 	cancel           context.CancelFunc
 	prefetchQty      int
@@ -61,59 +59,28 @@ func (p *FilePlayer) Stop() {
 }
 
 func (p *FilePlayer) download(startBlock int64) {
-	wg := &sync.WaitGroup{}
-	statusBar := &StatusBar{wg: wg}
-	wg.Add(1)
-
 	endBlock := startBlock + int64(p.numBlocks) - 1
 
 	if endBlock > p.playlistFile.NumBlocks {
 		endBlock = p.playlistFile.NumBlocks
 	}
+	fmt.Println("start:", startBlock, "end:", endBlock, "numBlocks:", p.numBlocks, "total:", p.playlistFile.NumBlocks)
 
-	fileName := strconv.FormatInt(startBlock, 10) + "-" + strconv.FormatInt(endBlock, 10) + "-" + p.playlistFile.Name
-	localPath := filepath.Join(p.allocationID, fileName)
-
-	fs, _ := sys.Files.Open(localPath)
-	mf, _ := fs.(*sys.MemFile)
-
-	downloader, err := sdk.CreateDownloader(p.allocationID, localPath, p.remotePath,
-		sdk.WithAllocation(p.allocationObj),
-		sdk.WithAuthticket(p.authTicket, p.lookupHash),
-		sdk.WithBlocks(startBlock, endBlock, p.numBlocks),
-		sdk.WithFileHandler(mf))
-
+	data, err := downloadBlocks(p.allocationObj, p.remotePath, p.authTicket, p.lookupHash, startBlock, endBlock)
+	// data, err := downloadBlocks2(int(startBlock), int(endBlock), p.allocationObj, p.remotePath)
 	if err != nil {
 		PrintError(err.Error())
 		return
 	}
-
-	defer sys.Files.Remove(localPath) //nolint
-
-	PrintInfo("playlist: downloading blocks[", p.playlistFile.Name, ":", startBlock, "-", endBlock, "]")
-	err = downloader.Start(statusBar, true)
-
-	if err == nil {
-		wg.Wait()
-	} else {
-		PrintError("Download failed.", err.Error())
-		return
-	}
-	if !statusBar.success {
-		PrintError("Download failed: unknown error")
-		return
-	}
-
-	PrintInfo("playlist: downloaded blocks[", p.playlistFile.Name, ":", startBlock, "-", endBlock, "]")
-
 	withRecover(func() {
 		if p.downloadedChunks != nil {
-			p.downloadedChunks <- mf.Buffer.Bytes()
+			p.downloadedChunks <- data
 		}
 	})
 }
 
 func (p *FilePlayer) startDownload() {
+	fmt.Println("start download")
 	if p.playlistFile.NumBlocks < 1 {
 		PrintError("playlist: numBlocks is invalid")
 		return
@@ -125,9 +92,11 @@ func (p *FilePlayer) startDownload() {
 			PrintInfo("playlist: download is cancelled")
 			return
 		default:
+			fmt.Println("download start:", startBlock)
 			p.download(startBlock)
 
 			startBlock += int64(p.numBlocks)
+			fmt.Println("download end, new start:", startBlock)
 
 			if startBlock > p.playlistFile.NumBlocks {
 
@@ -144,19 +113,45 @@ func (p *FilePlayer) startDownload() {
 }
 
 func (p *FilePlayer) loadPlaylistFile() (*sdk.PlaylistFile, error) {
-
 	if p.isViewer {
 		//get playlist file from auth ticket
 		return sdk.GetPlaylistFileByAuthTicket(p.ctx, p.allocationObj, p.authTicket, p.lookupHash)
 	}
 
-	//get playlist file from remote allocations's path
-	return sdk.GetPlaylistFile(p.ctx, p.allocationObj, p.remotePath)
+	d, err := p.allocationObj.ListDir(p.remotePath)
+	if err != nil {
+		fmt.Println("could not list dir:", p.remotePath)
+		return nil, err
+	}
+	f := d.Children[0]
+	var (
+		dataShards            = p.allocationObj.DataShards
+		effectivePerShardSize = (int(f.ActualSize) + dataShards - 1) / dataShards
+		totalBlocks           = (effectivePerShardSize + sdk.DefaultChunkSize - 1) / sdk.DefaultChunkSize
+	)
+
+	fmt.Println("totalBlocks:", totalBlocks)
+	fmt.Println("file size:", f.Size)
+
+	return &sdk.PlaylistFile{
+		Name:           f.Name,
+		Path:           f.Path,
+		LookupHash:     f.LookupHash,
+		NumBlocks:      int64(totalBlocks),
+		Size:           f.Size,
+		ActualFileSize: f.ActualSize,
+		MimeType:       f.MimeType,
+		Type:           f.Type,
+	}, nil
 }
 
 func (p *FilePlayer) GetNext() []byte {
 	b, ok := <-p.downloadedChunks
 	if ok {
+		if p.downloadedLen+len(b) > int(p.playlistFile.ActualFileSize) {
+			b = b[:int(p.playlistFile.ActualFileSize)-p.downloadedLen]
+		}
+		p.downloadedLen += len(b)
 		return b
 	}
 
@@ -165,13 +160,13 @@ func (p *FilePlayer) GetNext() []byte {
 
 // createFilePalyer create player for remotePath
 func createFilePalyer(allocationID, remotePath, authTicket, lookupHash string) (*FilePlayer, error) {
-
 	player := &FilePlayer{}
 	player.prefetchQty = 3
 	player.remotePath = remotePath
 	player.authTicket = authTicket
 	player.lookupHash = lookupHash
 	player.numBlocks = 10
+	player.allocationID = allocationID
 
 	//player is viewer
 	if len(authTicket) > 0 {
