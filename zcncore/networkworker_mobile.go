@@ -141,9 +141,13 @@ func SetNetwork(net *Network) {
 	_config.chain.Sharders = net.net.Sharders
 
 	consensus := _config.chain.SharderConsensous
-	if len(sharders) < consensus {
-		consensus = len(sharders)
+	if consensus < conf.DefaultSharderConsensous {
+		consensus = conf.DefaultSharderConsensous
 	}
+	if len(net.net.Sharders) < consensus {
+		consensus = len(net.net.Sharders)
+	}
+
 	Sharders = util.NewHolder(_config.chain.Sharders, consensus)
 
 	transaction.InitCache(Sharders)

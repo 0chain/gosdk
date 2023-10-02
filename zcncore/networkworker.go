@@ -127,7 +127,11 @@ func GetNetwork() *Network {
 func SetNetwork(miners []string, sharders []string) {
 	_config.chain.Miners = miners
 	_config.chain.Sharders = sharders
+
 	consensus := _config.chain.SharderConsensous
+	if consensus < conf.DefaultSharderConsensous {
+		consensus = conf.DefaultSharderConsensous
+	}
 	if len(sharders) < consensus {
 		consensus = len(sharders)
 	}
