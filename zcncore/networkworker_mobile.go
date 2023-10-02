@@ -77,8 +77,8 @@ func UpdateNetworkDetails() error {
 		if consensus < conf.DefaultSharderConsensous {
 			consensus = conf.DefaultSharderConsensous
 		}
-		if len(sharders) < consensus {
-			consensus = len(sharders)
+		if len(networkDetails.net.Sharders) < consensus {
+			consensus = len(networkDetails.net.Sharders)
 		}
 
 		Sharders = util.NewHolder(networkDetails.net.Sharders, consensus)
