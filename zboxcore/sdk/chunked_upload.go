@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -36,6 +37,7 @@ const (
 )
 
 var (
+	CmdFFmpeg = "ffmpeg"
 	// DefaultHashFunc default hash method for stream merkle tree
 	DefaultHashFunc = func(left, right string) string {
 		return coreEncryption.Hash(left + right)
@@ -101,12 +103,15 @@ func CreateChunkedUpload(
 	}
 
 	if webStreaming {
-		newFileReader, newFileMeta, err := TranscodeWebStreaming(fileReader, fileMeta)
+		newFileReader, newFileMeta, f, err := TranscodeWebStreaming(workdir, fileReader, fileMeta)
+		defer os.Remove(f)
+
 		if err != nil {
 			return nil, thrown.New("upload_failed", err.Error())
 		}
 		fileMeta = *newFileMeta
 		fileReader = newFileReader
+
 	}
 
 	err := ValidateRemoteFileName(fileMeta.RemoteName)
@@ -194,7 +199,7 @@ func CreateChunkedUpload(
 	su.workdir = filepath.Join(workdir, ".zcn")
 
 	//create upload folder to save progress
-	err = sys.Files.MkdirAll(filepath.Join(su.workdir, "upload"), 0744)
+	err = sys.Files.MkdirAll(filepath.Join(su.workdir, "upload"), 0766)
 	if err != nil {
 		return nil, err
 	}

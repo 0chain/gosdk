@@ -29,7 +29,6 @@ import (
 var log logger.Logger
 
 func main() {
-
 }
 
 // SetLogFile - set log file
@@ -259,4 +258,25 @@ func GetPublicEncryptionKey(mnemonics *C.char) *C.char {
 func GetLookupHash(allocationID *C.char, path *C.char) *C.char {
 	hash := getLookupHash(C.GoString(allocationID), C.GoString(path))
 	return WithJSON(hash, nil)
+}
+
+// SetFFmpeg set the full file name of ffmpeg.exe
+// ## Inputs:
+//   - fullFileName
+//     return
+//     {
+//     "error":"",
+//     "result":true,
+//     }
+//
+//export SetFFmpeg
+func SetFFmpeg(fullFileName *C.char) *C.char {
+	f := C.GoString(fullFileName)
+
+	_, err := os.Stat(f)
+	if os.IsNotExist(err) {
+		return WithJSON(false, err)
+	}
+	sdk.CmdFFmpeg = C.GoString(fullFileName)
+	return WithJSON(true, nil)
 }
