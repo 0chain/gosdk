@@ -802,17 +802,17 @@ func downloadBlocks(alloc *sdk.Allocation, remotePath, authTicket, lookupHash st
 	defer sys.Files.Remove(localPath) //nolint
 
 	wg.Add(1)
-	if err := alloc.DownloadBlocks(mf,
-		localPath,
+	err = alloc.DownloadByBlocksToFileHandler(
+		mf,
 		remotePath,
-		authTicket,
-		lookupHash,
 		startBlock,
 		endBlock,
-		statusBar); err != nil {
+		10,
+		false,
+		statusBar, true)
+	if err != nil {
 		return nil, err
 	}
-
 	wg.Wait()
 	return mf.Buffer.Bytes(), nil
 }
