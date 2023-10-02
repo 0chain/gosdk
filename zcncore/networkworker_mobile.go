@@ -73,7 +73,15 @@ func UpdateNetworkDetails() error {
 		_config.isConfigured = false
 		_config.chain.Miners = networkDetails.net.Miners
 		_config.chain.Sharders = networkDetails.net.Sharders
-		Sharders = util.NewHolder(networkDetails.net.Sharders, len(networkDetails.net.Sharders))
+		consensus := _config.chain.SharderConsensous
+		if consensus < conf.DefaultSharderConsensous {
+			consensus = conf.DefaultSharderConsensous
+		}
+		if len(sharders) < consensus {
+			consensus = len(sharders)
+		}
+
+		Sharders = util.NewHolder(networkDetails.net.Sharders, consensus)
 		transaction.InitCache(Sharders)
 		conf.InitChainNetwork(&conf.Network{
 			Sharders: networkDetails.net.Sharders,
@@ -131,7 +139,12 @@ func GetNetwork() *Network {
 func SetNetwork(net *Network) {
 	_config.chain.Miners = net.net.Miners
 	_config.chain.Sharders = net.net.Sharders
-	Sharders = util.NewHolder(_config.chain.Sharders, len(_config.chain.Sharders))
+
+	consensus := _config.chain.SharderConsensous
+	if len(sharders) < consensus {
+		consensus = len(sharders)
+	}
+	Sharders = util.NewHolder(_config.chain.Sharders, consensus)
 
 	transaction.InitCache(Sharders)
 
