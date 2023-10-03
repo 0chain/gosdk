@@ -7,8 +7,10 @@ import (
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/fileref"
+	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 )
 
 type UploadOperation struct {
@@ -19,6 +21,7 @@ type UploadOperation struct {
 }
 
 func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
+	l.Logger.Info("UploadOperation.Process", zap.String("path", uo.chunkedUpload.fileMeta.RemotePath), zap.String("name", uo.chunkedUpload.fileMeta.RemoteName), zap.Int64("size", uo.chunkedUpload.fileMeta.ActualSize))
 	err := uo.chunkedUpload.process()
 	if err != nil {
 		return nil, uo.chunkedUpload.uploadMask, err
@@ -32,7 +35,7 @@ func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([
 		uo.refs[pos] = uo.chunkedUpload.blobbers[pos].fileRef
 		uo.refs[pos].ChunkSize = uo.chunkedUpload.chunkSize
 	}
-
+	l.Logger.Info("UploadOperation Success", zap.String("name", uo.chunkedUpload.fileMeta.RemoteName))
 	return nil, uo.chunkedUpload.uploadMask, nil
 }
 
