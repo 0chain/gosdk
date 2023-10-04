@@ -16,6 +16,7 @@ import (
 	"github.com/0chain/gosdk/core/block"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/encryption"
+	"github.com/0chain/gosdk/core/node"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/util"
 )
@@ -935,7 +936,7 @@ func (t *Transaction) Verify() error {
 	if t.txnHash == "" && t.txnStatus == StatusSuccess {
 		h := t.GetTransactionHash()
 		if h == "" {
-			transaction.Cache.Evict(t.txn.ClientID)
+			node.Cache.Evict(t.txn.ClientID)
 			return errors.New("", "invalid transaction. cannot be verified.")
 		}
 	}
@@ -1077,7 +1078,7 @@ func GetLatestFinalized(numSharders int, timeout RequestTimeout) (b *BlockHeader
 	defer cancel()
 
 	numSharders = len(Sharders.Healthy()) // overwrite, use all
-	queryFromShardersContext(ctx, numSharders, GET_LATEST_FINALIZED, result)
+	Sharders.QueryFromShardersContext(ctx, numSharders, GET_LATEST_FINALIZED, result)
 
 	var (
 		maxConsensus   int
@@ -1121,7 +1122,7 @@ func GetLatestFinalizedMagicBlock(numSharders int, timeout RequestTimeout) ([]by
 	defer cancel()
 
 	numSharders = len(Sharders.Healthy()) // overwrite, use all
-	queryFromShardersContext(ctx, numSharders, GET_LATEST_FINALIZED_MAGIC_BLOCK, result)
+	Sharders.QueryFromShardersContext(ctx, numSharders, GET_LATEST_FINALIZED_MAGIC_BLOCK, result)
 
 	var (
 		maxConsensus   int
@@ -1184,7 +1185,7 @@ func GetChainStats(timeout RequestTimeout) ([]byte, error) {
 	)
 
 	var numSharders = len(Sharders.Healthy()) // overwrite, use all
-	queryFromShardersContext(ctx, numSharders, GET_CHAIN_STATS, result)
+	Sharders.QueryFromShardersContext(ctx, numSharders, GET_CHAIN_STATS, result)
 	var rsp *util.GetResponse
 	for i := 0; i < numSharders; i++ {
 		var x = <-result
@@ -1427,7 +1428,7 @@ func GetBlockByRound(numSharders int, round int64, timeout RequestTimeout) (b *B
 	defer cancel()
 
 	numSharders = len(Sharders.Healthy()) // overwrite, use all
-	queryFromShardersContext(ctx, numSharders,
+	Sharders.QueryFromShardersContext(ctx, numSharders,
 		fmt.Sprintf("%sround=%d&content=full,header", GET_BLOCK_INFO, round),
 		result)
 
@@ -1509,7 +1510,7 @@ func GetMagicBlockByNumber(numSharders int, number int64, timeout RequestTimeout
 	defer cancel()
 
 	numSharders = len(Sharders.Healthy()) // overwrite, use all
-	queryFromShardersContext(ctx, numSharders,
+	Sharders.QueryFromShardersContext(ctx, numSharders,
 		fmt.Sprintf("%smagic_block_number=%d", GET_MAGIC_BLOCK_INFO, number),
 		result)
 

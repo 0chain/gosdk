@@ -6,11 +6,9 @@ package zcncore
 import (
 	"context"
 	"encoding/json"
-	stdErrors "errors"
 	"fmt"
 	"math"
 	"net/http"
-	"sort"
 	"sync"
 	"time"
 
@@ -18,6 +16,7 @@ import (
 	"github.com/0chain/gosdk/core/block"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/encryption"
+	"github.com/0chain/gosdk/core/node"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/util"
 )
@@ -790,9 +789,9 @@ func (t *Transaction) RegisterMultiSig(walletstr string, mswallet string) error 
 		t.txn.Value = 0
 		nonce := t.txn.TransactionNonce
 		if nonce < 1 {
-			nonce = transaction.Cache.GetNextNonce(t.txn.ClientID)
+			nonce = node.Cache.GetNextNonce(t.txn.ClientID)
 		} else {
-			transaction.Cache.Set(t.txn.ClientID, nonce)
+			node.Cache.Set(t.txn.ClientID, nonce)
 		}
 		t.txn.TransactionNonce = nonce
 
@@ -854,9 +853,9 @@ func (t *Transaction) RegisterVote(signerwalletstr string, msvstr string) error 
 		t.txn.Value = 0
 		nonce := t.txn.TransactionNonce
 		if nonce < 1 {
-			nonce = transaction.Cache.GetNextNonce(t.txn.ClientID)
+			nonce = node.Cache.GetNextNonce(t.txn.ClientID)
 		} else {
-			transaction.Cache.Set(t.txn.ClientID, nonce)
+			node.Cache.Set(t.txn.ClientID, nonce)
 		}
 		t.txn.TransactionNonce = nonce
 
@@ -957,7 +956,7 @@ func (t *Transaction) Verify() error {
 	if t.txnHash == "" && t.txnStatus == StatusSuccess {
 		h := t.GetTransactionHash()
 		if h == "" {
-			transaction.Cache.Evict(t.txn.ClientID)
+			node.Cache.Evict(t.txn.ClientID)
 			return errors.New("", "invalid transaction. cannot be verified.")
 		}
 	}
@@ -1061,7 +1060,7 @@ func GetLatestFinalized(ctx context.Context, numSharders int) (b *block.Header, 
 	defer close(result)
 
 	numSharders = len(Sharders.Healthy()) // overwrite, use all
-	queryFromShardersContext(ctx, numSharders, GET_LATEST_FINALIZED, result)
+	Sharders.QueryFromShardersContext(ctx, numSharders, GET_LATEST_FINALIZED, result)
 
 	var (
 		maxConsensus   int
@@ -1102,7 +1101,7 @@ func GetLatestFinalizedMagicBlock(ctx context.Context, numSharders int) (m *bloc
 	defer close(result)
 
 	numSharders = len(Sharders.Healthy()) // overwrite, use all
-	queryFromShardersContext(ctx, numSharders, GET_LATEST_FINALIZED_MAGIC_BLOCK, result)
+	Sharders.QueryFromShardersContext(ctx, numSharders, GET_LATEST_FINALIZED_MAGIC_BLOCK, result)
 
 	var (
 		maxConsensus   int
@@ -1149,7 +1148,7 @@ func GetChainStats(ctx context.Context) (b *block.ChainStats, err error) {
 	defer close(result)
 
 	var numSharders = len(Sharders.Healthy()) // overwrite, use all
-	queryFromShardersContext(ctx, numSharders, GET_CHAIN_STATS, result)
+	Sharders.QueryFromShardersContext(ctx, numSharders, GET_CHAIN_STATS, result)
 	var rsp *util.GetResponse
 	for i := 0; i < numSharders; i++ {
 		var x = <-result
@@ -1208,140 +1207,11 @@ loop:
 }
 
 func GetBlockByRound(ctx context.Context, numSharders int, round int64) (b *block.Block, err error) {
-
-	var result = make(chan *util.GetResponse, numSharders)
-	defer close(result)
-
-	numSharders = len(Sharders.Healthy()) // overwrite, use all
-	queryFromShardersContext(ctx, numSharders,
-		fmt.Sprintf("%sround=%d&content=full,header", GET_BLOCK_INFO, round),
-		result)
-
-	var (
-		maxConsensus   int
-		roundConsensus = make(map[string]int)
-	)
-
-	type respObj struct {
-		Block  *block.Block  `json:"block"`
-		Header *block.Header `json:"header"`
-	}
-
-	for i := 0; i < numSharders; i++ {
-		var rsp = <-result
-
-		logging.Debug(rsp.Url, rsp.Status)
-
-		if rsp.StatusCode != http.StatusOK {
-			logging.Error(rsp.Body)
-			continue
-		}
-
-		var respo respObj
-		if err = json.Unmarshal([]byte(rsp.Body), &respo); err != nil {
-			logging.Error("block parse error: ", err)
-			err = nil
-			continue
-		}
-
-		if respo.Block == nil {
-			logging.Debug(rsp.Url, "no block in response:", rsp.Body)
-			continue
-		}
-
-		if respo.Header == nil {
-			logging.Debug(rsp.Url, "no block header in response:", rsp.Body)
-			continue
-		}
-
-		if respo.Header.Hash != string(respo.Block.Hash) {
-			logging.Debug(rsp.Url, "header and block hash mismatch:", rsp.Body)
-			continue
-		}
-
-		b = respo.Block
-		b.Header = respo.Header
-
-		var h = encryption.FastHash([]byte(b.Hash))
-		if roundConsensus[h]++; roundConsensus[h] > maxConsensus {
-			maxConsensus = roundConsensus[h]
-		}
-	}
-
-	if maxConsensus == 0 {
-		return nil, errors.New("", "round info not found")
-	}
-
-	return
+	return Sharders.GetBlockByRound(ctx, numSharders, round)
 }
 
 func GetRoundFromSharders() (int64, error) {
-
-	sharders := Sharders.Healthy()
-	if len(sharders) == 0 {
-		return 0, stdErrors.New("get round failed. no sharders")
-	}
-
-	result := make(chan *util.GetResponse, len(sharders))
-
-	var numSharders = len(sharders)
-	// use 5 sharders to get round
-	if numSharders > 5 {
-		numSharders = 5
-	}
-
-	queryFromSharders(numSharders, fmt.Sprintf("%v", CURRENT_ROUND), result)
-
-	const consensusThresh = float32(25.0)
-
-	var rounds []int64
-
-	consensus := int64(0)
-	roundMap := make(map[int64]int64)
-
-	round := int64(0)
-
-	waitTimeC := time.After(10 * time.Second)
-	for i := 0; i < numSharders; i++ {
-		select {
-		case <-waitTimeC:
-			return 0, stdErrors.New("get round failed. consensus not reached")
-		case rsp := <-result:
-			if rsp.StatusCode != http.StatusOK {
-				continue
-			}
-
-			var respRound int64
-			err := json.Unmarshal([]byte(rsp.Body), &respRound)
-
-			if err != nil {
-				continue
-			}
-
-			rounds = append(rounds, respRound)
-
-			sort.Slice(rounds, func(i, j int) bool {
-				return false
-			})
-
-			medianRound := rounds[len(rounds)/2]
-
-			roundMap[medianRound]++
-
-			if roundMap[medianRound] > consensus {
-
-				consensus = roundMap[medianRound]
-				round = medianRound
-				rate := consensus * 100 / int64(numSharders)
-
-				if rate >= int64(consensusThresh) {
-					return round, nil
-				}
-			}
-		}
-	}
-
-	return round, nil
+	return Sharders.GetRoundFromSharders()
 }
 
 func GetMagicBlockByNumber(ctx context.Context, numSharders int, number int64) (m *block.MagicBlock, err error) {
@@ -1350,7 +1220,7 @@ func GetMagicBlockByNumber(ctx context.Context, numSharders int, number int64) (
 	defer close(result)
 
 	numSharders = len(Sharders.Healthy()) // overwrite, use all
-	queryFromShardersContext(ctx, numSharders,
+	Sharders.QueryFromShardersContext(ctx, numSharders,
 		fmt.Sprintf("%smagic_block_number=%d", GET_MAGIC_BLOCK_INFO, number),
 		result)
 

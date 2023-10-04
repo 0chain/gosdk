@@ -6,7 +6,7 @@ import (
 
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/conf"
-	"github.com/0chain/gosdk/core/util"
+	"github.com/0chain/gosdk/core/node"
 )
 
 type ChainConfig struct {
@@ -76,7 +76,7 @@ func PopulateNodes(nodesjson string) ([]string, error) {
 }
 
 var chain *ChainConfig
-var Sharders *util.NodeHolder
+var Sharders *node.NodeHolder
 
 func init() {
 	chain = &ChainConfig{
@@ -149,7 +149,7 @@ func SetSharders(sharderArray []string) {
 	if len(sharderArray) < consensus {
 		consensus = len(sharderArray)
 	}
-	Sharders = util.NewHolder(sharderArray, consensus)
+	Sharders = node.NewHolder(sharderArray, consensus)
 }
 
 func SetMiners(minerArray []string) {

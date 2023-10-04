@@ -16,6 +16,7 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/logger"
+	"github.com/0chain/gosdk/core/node"
 	"github.com/0chain/gosdk/core/sys"
 	"go.uber.org/zap"
 
@@ -147,7 +148,7 @@ func SetMinConfirmation(num int) {
 func SetNetwork(miners []string, sharders []string) {
 	blockchain.SetMiners(miners)
 	blockchain.SetSharders(sharders)
-	transaction.InitCache(blockchain.Sharders)
+	node.InitCache(blockchain.Sharders)
 }
 
 //
@@ -1435,7 +1436,7 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 	}
 
 	if txn.TransactionNonce == 0 {
-		txn.TransactionNonce = transaction.Cache.GetNextNonce(txn.ClientID)
+		txn.TransactionNonce = node.Cache.GetNextNonce(txn.ClientID)
 	}
 
 	if err = txn.ComputeHashAndSign(client.Sign); err != nil {
@@ -1466,7 +1467,7 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 
 	if err != nil {
 		l.Logger.Error("Error verifying the transaction", err.Error(), txn.Hash)
-		transaction.Cache.Evict(txn.ClientID)
+		node.Cache.Evict(txn.ClientID)
 		return
 	}
 

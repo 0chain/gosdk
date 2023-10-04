@@ -1,9 +1,7 @@
-package transaction
+package node
 
 import (
 	"sync"
-
-	"github.com/0chain/gosdk/core/util"
 )
 
 var Cache *NonceCache
@@ -12,10 +10,10 @@ var once sync.Once
 type NonceCache struct {
 	cache    map[string]int64
 	guard    sync.Mutex
-	sharders *util.NodeHolder
+	sharders *NodeHolder
 }
 
-func InitCache(sharders *util.NodeHolder) {
+func InitCache(sharders *NodeHolder) {
 	Cache.sharders = sharders
 }
 

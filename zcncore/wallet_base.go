@@ -33,14 +33,12 @@ const (
 	GET_CLIENT                       = `/v1/client/get`
 	PUT_TRANSACTION                  = `/v1/transaction/put`
 	TXN_VERIFY_URL                   = `/v1/transaction/get/confirmation?hash=`
-	GET_BALANCE                      = `/v1/client/get/balance?client_id=`
 	GET_BLOCK_INFO                   = `/v1/block/get?`
 	GET_MAGIC_BLOCK_INFO             = `/v1/block/magic/get?`
 	GET_LATEST_FINALIZED             = `/v1/block/get/latest_finalized`
 	GET_LATEST_FINALIZED_MAGIC_BLOCK = `/v1/block/get/latest_finalized_magic_block`
 	GET_FEE_STATS                    = `/v1/block/get/fee_stats`
 	GET_CHAIN_STATS                  = `/v1/chain/get/stats`
-	CURRENT_ROUND                    = "/v1/current-round"
 	// vesting SC
 
 	VESTINGSC_PFX = `/v1/screst/` + VestingSmartContractAddress

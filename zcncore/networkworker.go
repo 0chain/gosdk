@@ -10,10 +10,9 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/0chain/gosdk/core/transaction"
-
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/conf"
+	"github.com/0chain/gosdk/core/node"
 	"github.com/0chain/gosdk/core/util"
 	"go.uber.org/zap"
 )
@@ -66,8 +65,8 @@ func UpdateNetworkDetails() error {
 			consensus = len(networkDetails.Sharders)
 		}
 
-		Sharders = util.NewHolder(networkDetails.Sharders, consensus)
-		transaction.InitCache(Sharders)
+		Sharders = node.NewHolder(networkDetails.Sharders, consensus)
+		node.InitCache(Sharders)
 		conf.InitChainNetwork(&conf.Network{
 			Sharders: networkDetails.Sharders,
 			Miners:   networkDetails.Miners,
@@ -136,8 +135,8 @@ func SetNetwork(miners []string, sharders []string) {
 		consensus = len(sharders)
 	}
 
-	Sharders = util.NewHolder(sharders, consensus)
-	transaction.InitCache(Sharders)
+	Sharders = node.NewHolder(sharders, consensus)
+	node.InitCache(Sharders)
 
 	conf.InitChainNetwork(&conf.Network{
 		Miners:   miners,
