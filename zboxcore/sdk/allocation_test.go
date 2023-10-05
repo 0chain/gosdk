@@ -80,8 +80,8 @@ func setupMockHttpResponse(
 				strings.Contains(req.URL.String(), url)
 		})).Return(&http.Response{
 			StatusCode: statusCode,
-			Body:       ioutil.NopCloser(bytes.NewReader(body)),
-		}, nil).Once()
+			Body:       io.NopCloser(bytes.NewReader(body)),
+		}, nil)
 	}
 }
 
@@ -122,7 +122,7 @@ func setupMockWriteLockRequest(a *Allocation, mockClient *mocks.HttpClient) {
 					Status: WMLockStatusOK,
 				}
 				respBuf, _ := json.Marshal(resp)
-				return ioutil.NopCloser(bytes.NewReader(respBuf))
+				return io.NopCloser(bytes.NewReader(respBuf))
 			}(),
 		}, nil)
 	}

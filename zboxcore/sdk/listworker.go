@@ -165,6 +165,9 @@ func (req *ListRequest) getlistFromBlobbers() ([]*listResponse, error) {
 	var err error
 	req.listOnly = true
 	listLen := len(consensusMap[consensusHash])
+	if listLen < req.consensusThresh {
+		return listInfos, listInfos[0].err
+	}
 	for i := 0; i < listLen; i++ {
 		var rnd = rand.New(rand.NewSource(time.Now().UnixNano()))
 		num := rnd.Intn(listLen)
@@ -178,7 +181,7 @@ func (req *ListRequest) getlistFromBlobbers() ([]*listResponse, error) {
 		}
 		err = listInfos[0].err
 	}
-	return listInfos, fmt.Errorf("error getting the list from blobbers: %s", err)
+	return listInfos, err
 }
 
 func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
