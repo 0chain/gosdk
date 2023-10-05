@@ -23,6 +23,8 @@ import (
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
+
+	l "github.com/0chain/gosdk/zboxcore/logger"
 )
 
 const SC_REST_API_URL = "v1/screst/"
@@ -147,7 +149,16 @@ func init() {
 }
 
 func NewHTTPRequest(method string, url string, data []byte) (*http.Request, context.Context, context.CancelFunc, error) {
-	req, err := http.NewRequest(method, url, bytes.NewBuffer(data))
+	var (
+		req *http.Request
+		err error
+	)
+	if len(data) > 0 {
+		req, err = http.NewRequest(method, url, bytes.NewBuffer(data))
+	} else {
+		req, err = http.NewRequest(method, url, nil)
+	}
+
 	req.Header.Set("Content-Type", "application/json; charset=utf-8")
 	req.Header.Set("Access-Control-Allow-Origin", "*")
 	ctx, cncl := context.WithTimeout(context.Background(), time.Second*10)
@@ -566,6 +577,7 @@ func NewConnectionRequest(baseUrl, allocationID string, allocationTx string, bod
 	if err != nil {
 		return nil, err
 	}
+	l.Logger.Error("request url: ", u)
 	req, err := http.NewRequest(http.MethodPost, u.String(), body)
 	if err != nil {
 		return nil, err
