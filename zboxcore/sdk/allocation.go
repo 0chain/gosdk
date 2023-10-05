@@ -1807,7 +1807,7 @@ func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKe
 	consensus := Consensus{
 		RWMutex:         &sync.RWMutex{},
 		consensus:       len(success),
-		consensusThresh: a.consensusThreshold,
+		consensusThresh: a.DataShards,
 		fullconsensus:   a.fullconsensus,
 	}
 	if !consensus.isConsensusOk() {
