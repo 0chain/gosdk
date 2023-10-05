@@ -29,6 +29,8 @@ const (
 	DefaultCreateConnectionTimeOut = 2 * time.Minute
 )
 
+var BatchSize = 5
+
 type Operationer interface {
 	Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error)
 	buildChange(refs []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange
@@ -151,7 +153,7 @@ func (mo *MultiOperation) Process() error {
 	ctx := mo.ctx
 	ctxCncl := mo.ctxCncl
 	defer ctxCncl()
-	swg := sizedwaitgroup.New(5)
+	swg := sizedwaitgroup.New(BatchSize)
 	errsSlice := make([]error, len(mo.operations))
 	mo.operationMask = zboxutil.NewUint128(0)
 	for idx, op := range mo.operations {

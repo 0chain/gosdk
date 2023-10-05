@@ -21,12 +21,11 @@ type UploadOperation struct {
 }
 
 func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
-	l.Logger.Info("UploadOperation.Process", zap.String("path", uo.chunkedUpload.fileMeta.RemotePath), zap.String("name", uo.chunkedUpload.fileMeta.RemoteName), zap.Int64("size", uo.chunkedUpload.fileMeta.ActualSize))
 	err := uo.chunkedUpload.process()
 	if err != nil {
+		l.Logger.Error("UploadOperation Failed", zap.String("name", uo.chunkedUpload.fileMeta.RemoteName), zap.Error(err))
 		return nil, uo.chunkedUpload.uploadMask, err
 	}
-
 	var pos uint64
 	numList := len(uo.chunkedUpload.blobbers)
 	uo.refs = make([]*fileref.FileRef, numList)
