@@ -256,15 +256,15 @@ func TestListRequest_GetListFromBlobbers(t *testing.T) {
 		wantFunc func(require *require.Assertions, req *ListRequest)
 		wantErr  bool
 	}{
-		// {
-		// 	name:  "Test_Failed",
-		// 	setup: nil,
-		// 	wantFunc: func(require *require.Assertions, req *ListRequest) {
-		// 		require.NotNil(req)
-		// 		require.Equal(0, req.consensus)
-		// 	},
-		// 	wantErr: true,
-		// },
+		{
+			name:  "Test_Failed",
+			setup: nil,
+			wantFunc: func(require *require.Assertions, req *ListRequest) {
+				require.NotNil(req)
+				require.Equal(0, req.consensus)
+			},
+			wantErr: true,
+		},
 		{
 			name:            "Test_Success",
 			numBlobbers:     4,
@@ -294,6 +294,7 @@ func TestListRequest_GetListFromBlobbers(t *testing.T) {
 					fullconsensus:   tt.fullconsensus,
 					RWMutex:         &sync.RWMutex{},
 				},
+				listOnly: true,
 			}
 			for i := 0; i < tt.numBlobbers; i++ {
 				req.blobbers = append(req.blobbers, &blockchain.StorageNode{
