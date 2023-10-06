@@ -44,7 +44,7 @@ func CreateWallet() *C.char {
 	return WithJSON(w, nil)
 }
 
-// Recoverwallet - recover the wallet, and save it to ~/.zcn/wallet.json
+// RecoverWallet - recover the wallet, and save it to ~/.zcn/wallet.json
 // ## Outputs
 //
 //	{
@@ -52,8 +52,8 @@ func CreateWallet() *C.char {
 //	"result":\"{}\"",
 //	}
 //
-//export Recoverwallet
-func Recoverwallet(mnemonic *C.char) *C.char {
+//export RecoverWallet
+func RecoverWallet(mnemonic *C.char) *C.char {
 	w, err := zcncore.RecoverOfflineWallet(C.GoString(mnemonic))
 	if err != nil {
 		log.Error("win: ", err)
