@@ -21,7 +21,10 @@ func TranscodeWebStreaming(workdir string, fileReader io.Reader, fileMeta FileMe
 	outDir := filepath.Join(workdir, ".zcn", "transcode")
 	// create ./zcn/transcode folder if it doesn't exists
 	os.MkdirAll(outDir, 0766) //nolint: errcheck
-	fileName := filepath.Join(outDir, fileMeta.RemoteName)
+
+	remoteName, remotePath := getRemoteNameAndRemotePath(fileMeta.RemoteName, fileMeta.RemotePath)
+
+	fileName := filepath.Join(outDir, remoteName)
 
 	// w, err := os.Create(fileName)
 	// if err != nil {
@@ -72,8 +75,8 @@ func TranscodeWebStreaming(workdir string, fileReader io.Reader, fileMeta FileMe
 		ActualSize:          fi.Size(),
 		ActualThumbnailSize: fileMeta.ActualThumbnailSize,
 		ActualThumbnailHash: fileMeta.ActualThumbnailHash,
-		RemoteName:          fileMeta.RemoteName,
-		RemotePath:          fileMeta.RemotePath,
+		RemoteName:          remoteName,
+		RemotePath:          remotePath,
 	}
 
 	return r, fm, fileName, nil
@@ -86,7 +89,7 @@ func getRemoteNameAndRemotePath(remoteName string, remotePath string) (string, s
 		newRemoteNameSlice = newRemoteNameSlice[:len(newRemoteNameSlice)-1]
 	}
 	newRemoteNameWithoutType := strings.Join(newRemoteNameSlice, ".")
-	newRemoteName = "raw." + newRemoteNameWithoutType + ".mp4"
+	newRemoteName = newRemoteNameWithoutType + ".mp4"
 	newRemotePath = newRemotePath + newRemoteName
 	return newRemoteName, newRemotePath
 }
