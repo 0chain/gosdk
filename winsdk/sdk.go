@@ -58,7 +58,7 @@ func SetLogFile(file *C.char) *C.char {
 	return WithJSON(true, nil)
 }
 
-// InitZCNSDK - init zcncore from config
+// InitSDKs - init zcncore sdk and zboxapi client from config
 //   - configJson
 //     {
 //     "block_worker": "https://dev.0chain.net/dns",
@@ -76,10 +76,10 @@ func SetLogFile(file *C.char) *C.char {
 //     "sharder_consensous": 2,
 //     }
 //
-//export InitZCNSDK
-func InitZCNSDK(configJson *C.char) *C.char {
+//export InitSDKs
+func InitSDKs(configJson *C.char) *C.char {
 
-	l.Logger.Info("Start InitZCNSDK")
+	l.Logger.Info("Start InitSDKs")
 
 	configJs := C.GoString(configJson)
 
@@ -117,11 +117,12 @@ func InitZCNSDK(configJson *C.char) *C.char {
 
 	zboxApiClient = zboxapi.NewClient()
 	zboxApiClient.SetRequest(configObj.ZboxHost, configObj.ZboxAppType)
+	l.Logger.Info("Init ZBoxAPI Client success")
 
 	return WithJSON(true, nil)
 }
 
-// InitWallets - init wallet for storage and zboxapi sdk from config
+// InitWallet - init wallet for storage sdk and zboxapi client
 //   - clientJson
 //     {
 //     "client_id":"8f6ce6457fc04cfb4eb67b5ce3162fe2b85f66ef81db9d1a9eaa4ffe1d2359e0",
@@ -137,8 +138,8 @@ func InitZCNSDK(configJson *C.char) *C.char {
 //     "nonce":0
 //     }
 //
-//export InitWallets
-func InitWallets(clientJson *C.char) *C.char {
+//export InitWallet
+func InitWallet(clientJson *C.char) *C.char {
 
 	l.Logger.Info("Start InitStorageSDK")
 
