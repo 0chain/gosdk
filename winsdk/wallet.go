@@ -29,17 +29,39 @@ func CreateWallet() *C.char {
 		return WithJSON("", err)
 	}
 
-	d, err := os.UserHomeDir()
+	d, err := getZcnWorkDir()
 	if err != nil {
 		return WithJSON("", err)
 	}
 
-	z := filepath.Join(d, ".zcn")
+	if err = os.WriteFile(filepath.Join(d, "wallet.json"), []byte(w), 0644); err != nil {
+		return WithJSON("", err)
+	}
 
-	// create ~/.zcn folder if it doesn't exists
-	os.MkdirAll(z, 0766) //nolint: errcheck
+	return WithJSON(w, nil)
+}
 
-	if err = os.WriteFile(filepath.Join(z, "wallet.json"), []byte(w), 0644); err != nil {
+// Recoverwallet - recover the wallet, and save it to ~/.zcn/wallet.json
+// ## Outputs
+//
+//	{
+//	"error":"",
+//	"result":\"{}\"",
+//	}
+//
+//export Recoverwallet
+func Recoverwallet(mnemonic *C.char) *C.char {
+	w, err := zcncore.RecoverOfflineWallet(C.GoString(mnemonic))
+	if err != nil {
+		return WithJSON("", err)
+	}
+
+	d, err := getZcnWorkDir()
+	if err != nil {
+		return WithJSON("", err)
+	}
+
+	if err = os.WriteFile(filepath.Join(d, "wallet.json"), []byte(w), 0644); err != nil {
 		return WithJSON("", err)
 	}
 
