@@ -58,21 +58,7 @@ func SetLogFile(file *C.char) *C.char {
 	return WithJSON(true, nil)
 }
 
-// InitSDK - init zbox/zcn sdk from config
-//   - clientJson
-//     {
-//     "client_id":"8f6ce6457fc04cfb4eb67b5ce3162fe2b85f66ef81db9d1a9eaa4ffe1d2359e0",
-//     "client_key":"c8c88854822a1039c5a74bdb8c025081a64b17f52edd463fbecb9d4a42d15608f93b5434e926d67a828b88e63293b6aedbaf0042c7020d0a96d2e2f17d3779a4",
-//     "keys":[
-//     {
-//     "public_key":"c8c88854822a1039c5a74bdb8c025081a64b17f52edd463fbecb9d4a42d15608f93b5434e926d67a828b88e63293b6aedbaf0042c7020d0a96d2e2f17d3779a4",
-//     "private_key":"72f480d4b1e7fb76e04327b7c2348a99a64f0ff2c5ebc3334a002aa2e66e8506"
-//     }],
-//     "mnemonics":"abandon mercy into make powder fashion butter ignore blade vanish plastic shock learn nephew matrix indoor surge document motor group barely offer pottery antenna",
-//     "version":"1.0",
-//     "date_created":"1668667145",
-//     "nonce":0
-//     }
+// InitZCNSDK - init zcncore from config
 //   - configJson
 //     {
 //     "block_worker": "https://dev.0chain.net/dns",
@@ -90,13 +76,12 @@ func SetLogFile(file *C.char) *C.char {
 //     "sharder_consensous": 2,
 //     }
 //
-//export InitSDK
-func InitSDK(configJson *C.char, clientJson *C.char) *C.char {
+//export InitZCNSDK
+func InitZCNSDK(configJson *C.char) *C.char {
 
-	l.Logger.Info("Start InitStorageSDK")
+	l.Logger.Info("Start InitZCNSDK")
 
 	configJs := C.GoString(configJson)
-	clientJs := C.GoString(clientJson)
 
 	configObj := &conf.Config{}
 
@@ -120,7 +105,7 @@ func InitSDK(configJson *C.char, clientJson *C.char) *C.char {
 		return nil
 	})
 	if err != nil {
-		l.Logger.Error(err, configJs, clientJs)
+		l.Logger.Error(err, configJs)
 		return WithJSON(false, err)
 	}
 
@@ -130,9 +115,41 @@ func InitSDK(configJson *C.char, clientJson *C.char) *C.char {
 	l.Logger.Info(configObj.SignatureScheme)
 	l.Logger.Info(configObj.PreferredBlobbers)
 
+	return WithJSON(true, nil)
+}
+
+// InitWallets - init wallet for storage and zboxapi sdk from config
+//   - clientJson
+//     {
+//     "client_id":"8f6ce6457fc04cfb4eb67b5ce3162fe2b85f66ef81db9d1a9eaa4ffe1d2359e0",
+//     "client_key":"c8c88854822a1039c5a74bdb8c025081a64b17f52edd463fbecb9d4a42d15608f93b5434e926d67a828b88e63293b6aedbaf0042c7020d0a96d2e2f17d3779a4",
+//     "keys":[
+//     {
+//     "public_key":"c8c88854822a1039c5a74bdb8c025081a64b17f52edd463fbecb9d4a42d15608f93b5434e926d67a828b88e63293b6aedbaf0042c7020d0a96d2e2f17d3779a4",
+//     "private_key":"72f480d4b1e7fb76e04327b7c2348a99a64f0ff2c5ebc3334a002aa2e66e8506"
+//     }],
+//     "mnemonics":"abandon mercy into make powder fashion butter ignore blade vanish plastic shock learn nephew matrix indoor surge document motor group barely offer pottery antenna",
+//     "version":"1.0",
+//     "date_created":"1668667145",
+//     "nonce":0
+//     }
+//
+//export InitWallets
+func InitWallets(clientJson *C.char) *C.char {
+
+	l.Logger.Info("Start InitStorageSDK")
+
+	clientJs := C.GoString(clientJson)
+
+	configObj, err := conf.GetClientConfig()
+	if err != nil {
+		l.Logger.Error(err)
+		return WithJSON(false, err)
+	}
+
 	err = sdk.InitStorageSDK(clientJs, configObj.BlockWorker, configObj.ChainID, configObj.SignatureScheme, configObj.PreferredBlobbers, 0)
 	if err != nil {
-		l.Logger.Error(err, configJs, clientJs)
+		l.Logger.Error(err, clientJs)
 		return WithJSON(false, err)
 	}
 	l.Logger.Info("InitStorageSDK success")
@@ -147,7 +164,7 @@ func InitSDK(configJson *C.char, clientJson *C.char) *C.char {
 		l.Logger.Info("InitZboxApiClient skipped")
 	}
 
-	l.Logger.Info("Init successful")
+	l.Logger.Info("InitSDKs successful")
 	return WithJSON(true, nil)
 }
 
