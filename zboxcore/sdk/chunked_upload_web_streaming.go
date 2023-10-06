@@ -25,18 +25,12 @@ func TranscodeWebStreaming(workdir string, fileReader io.Reader, fileMeta FileMe
 	remoteName, remotePath := getRemoteNameAndRemotePath(fileMeta.RemoteName, fileMeta.RemotePath)
 
 	fileName := filepath.Join(outDir, remoteName)
-
-	// w, err := os.Create(fileName)
-	// if err != nil {
-	// 	return nil, nil, "", err
-	// }
-
+	
 	logger.Logger.Info("transcode: start ", fileName)
 
 	args := []string{"-i", fileMeta.Path, "-f", "mp4", "-movflags", "frag_keyframe+empty_moov+default_base_moof", fileName, "-y"}
 	cmd := exec.Command(CmdFFmpeg, args...)
 	cmd.Stderr = bufio.NewWriter(&stdErr)
-	// cmd.Stdout = w
 	cmd.SysProcAttr = sysProcAttr
 	err := cmd.Run()
 
