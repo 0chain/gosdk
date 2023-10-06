@@ -115,6 +115,9 @@ func InitZCNSDK(configJson *C.char) *C.char {
 	l.Logger.Info(configObj.SignatureScheme)
 	l.Logger.Info(configObj.PreferredBlobbers)
 
+	zboxApiClient = zboxapi.NewClient()
+	zboxApiClient.SetRequest(configObj.ZboxHost, configObj.ZboxAppType)
+
 	return WithJSON(true, nil)
 }
 
@@ -154,8 +157,6 @@ func InitWallets(clientJson *C.char) *C.char {
 	}
 	l.Logger.Info("InitStorageSDK success")
 
-	zboxApiClient = zboxapi.NewClient()
-	zboxApiClient.SetRequest(configObj.ZboxHost, configObj.ZboxAppType)
 	c := client.GetClient()
 	if c != nil {
 		zboxApiClient.SetWallet(client.GetClientID(), client.GetClientPrivateKey(), client.GetClientPublicKey())
