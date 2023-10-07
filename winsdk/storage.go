@@ -229,7 +229,17 @@ func BulkUpload(allocationID, files *C.char) *C.char {
 		isUpdates[idx] = option.IsUpdate
 		isWebstreaming[idx] = option.IsWebstreaming
 		encrypts[idx] = option.Encrypt
-		statusUpload.Add(getLookupHash(allocID, option.RemotePath+option.Name), &Status{})
+		if option.IsWebstreaming {
+			originalLookupHash := getLookupHash(allocID, option.RemotePath+option.Name)
+			_, transcodeRemotePath := sdk.GetTranscodeFile(option.RemotePath + option.Name)
+			transcodeLookupHash := getLookupHash(allocID, transcodeRemotePath)
+			transcodeFiles.Add(originalLookupHash, transcodeLookupHash)
+			statusUpload.Add(transcodeLookupHash, &Status{})
+
+		} else {
+			statusUpload.Add(getLookupHash(allocID, option.RemotePath+option.Name), &Status{})
+		}
+
 	}
 
 	a, err := getAllocation(allocID)
@@ -257,8 +267,15 @@ func BulkUpload(allocationID, files *C.char) *C.char {
 //
 //export GetUploadStatus
 func GetUploadStatus(lookupHash *C.char) *C.char {
+	h := C.GoString(lookupHash)
 
-	s, ok := statusUpload.Get(C.GoString(lookupHash))
+	h2, ok := transcodeFiles.Get(h)
+
+	if ok {
+		h = h2
+	}
+
+	s, ok := statusUpload.Get(h)
 
 	if !ok {
 		s = &Status{}
