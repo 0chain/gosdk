@@ -37,7 +37,7 @@ This repository currently supports the following platforms:
  ### Instructions
   - Go is required to build gosdk code. Instructions can be found [here](https://go.dev/doc/install)
 
- 1. Save below code as sdkversion.go
+ 1. Save below code as `sdkversion.go`
 
         package main
 
@@ -64,18 +64,18 @@ This repository currently supports the following platforms:
 
 
 ## Mobile Builds
-- gosdk can be build to use on Mobile platforms iOS and Android using gomobile.
-- Xcode Command Line Tools is required to build SDK for iOS.
-- Android studio with NDK is required to build SDK for Android.
+- gosdk can be built for iOS and Android using gomobile.
+- Xcode Command Line Tools is required to build the SDK for iOS.
+- Android studio with NDK is required to build the SDK for Android.
 - See [FAQ](#faq) for installing Go, gomobile Xcode or Android Studio.
 
 Steps: 
-1. Run below command for the first time to setup gomobile environment
+1. Run the command below for the first time to setup the gomobile environment:
 
         make setup-gomobile
-2. In case Go package not found in golang.org/x/mobile/bind, run the command
+2. In case the Go package is not found in `golang.org/x/mobile/bind`, run:
         `go get golang.org/x/mobile/bind`
-3. Use below commands in the root folder of the repo to build Mobile SDK
+3. Run below commands in the root folder of the repo to build the Mobile SDK:
 
         For iOS only:
                 make build-ios
@@ -84,14 +84,14 @@ Steps:
 
 ## Expose a gosdk function to mobilesdk 
 Examples:
-* `mobilesdk/sdk/common.go` which exports the functions in `core/encryption/hash.go`.
+* `mobilesdk/sdk/common.go`, which exports the functions in `core/encryption/hash.go`.
 
 Steps:
 
 1. If you are exposing:
 
-    - a new function from an existing file like `zboxcore/sdk/allocation.go`, you should add a function to `mobilesdksdk/zbox/allocation.go` which should call the gosdk function you intend to expose.
-    - a function from a new file, you should create a new `<filename>.go` file for it, in the same style as `mobilesdksdk/zbox/allocation.go` & in the file created, you should call the gosdk function you intend to expose.
+    - a new function from an existing file, such as `zboxcore/sdk/allocation.go`, you should add a function to `mobilesdksdk/zbox/allocation.go`. This new function should call the gosdk function you intend to expose.
+    - a function from a new file, you should create a new `<filename>.go` file for it. This should follow the same style as `mobilesdksdk/zbox/allocation.go`. In the new file, call the gosdk function you intend to expose.
 
 2. Build the Mobile SDK as mentioned in the 'Mobile Builds' section of this file to build the aar file used in the mobile application you are developing.
 
@@ -123,7 +123,7 @@ Steps:
 
 ### An important note regarding export of an async function
 
-If your golang function requires to be run asynchronously, you need to add more wrapper code where you are returning a Promise object.
+If your golang function needs to suport asynchronous execution, you need to add more wrapper code where you are returning a Promise object.
 
 See "InitZCNSDK" example:
 
@@ -157,18 +157,18 @@ func InitZCNSDK(this js.Value, p []js.Value) interface{} {
 
 ### BLS unit test
 
-It's advisable to put GOPATH as $TOP/../go, to avoid conflicts with this command: `go build ./...`
+It's advisable to put GOPATH as `$TOP/../go`, to avoid conflicts with this command: `go build ./...`
 
-To run all the unit tests in `gosdk`: go test github.com/0chain/gosdk/zboxcore/sdk -v`
+To run all the unit tests in `gosdk`: `go test github.com/0chain/gosdk/zboxcore/sdk -v`
 ```bash
 $ go test ./...
 ```
 
 To run all the unit tests in `bls0chain_test.go`, run this command from $TOP: `go test github.com/0chain/gosdk/core/zcncrypto -v`
 
-To run a specific unit test in `bls0chain_test.go` such as `TestSignatureScheme`, run this: `go test github.com/0chain/gosdk/core/zcncrypto -v -run TestSignatureScheme`
+To run a specific unit test in `bls0chain_test.go`, such as `TestSignatureScheme`, run: `go test github.com/0chain/gosdk/core/zcncrypto -v -run TestSignatureScheme`
 
-To run the coverage test in `gosdk:
+To run the coverage test in `gosdk`:
 ```bash
 $ go test <path_to_folder> -coverprofile=coverage.out
 $ go tool cover -html=coverage.out
@@ -180,32 +180,32 @@ $ go tool cover -html=coverage.out
 
 1. You need to install nodejs first, see [this page](https://nodejs.org/en/download/) for further instructions
 
-2. Add `/path/to/go/misc/wasm` to your `$PATH` environment variable (so that "go test" can find "go_js_wasm_exec"). For example in ubuntu, run `$export PATH=$PATH:/usr/local/go/misc/wasm/`.
+2. Add `/path/to/go/misc/wasm` to your `$PATH` environment variable (so that `go test` can find `go_js_wasm_exec`). For example in Ubuntu, run `$export PATH=$PATH:/usr/local/go/misc/wasm/`.
 
 3. You can then run the test by following the [BLS unit test](#bls-unit-test) above by adding the prefix environment `GOOS=js CGO_ENABLED=0 GOARCH=wasm`:
-    ```
+    ```bash
     go test -tags test -v github.com/0chain/gosdk/wasmsdk
     ```
 
 #### Test in the client 
 
-1. After you successfully [export the wasm package to proxy.wasm](#how-to-export-a-gosdk-function-to-webassembly), now you can test that `proxy.wasm`. 
+1. After you successfully [export the wasm package to proxy.wasm](#how-to-export-a-gosdk-function-to-webassembly), you can test the exported `proxy.wasm`. 
 
 2. We currently have a test page going at the js-client-sdk repo: `https://github.com/0chain/js-client-sdk/blob/gosdk/test/index.html`
 
 3. You can replace the proxy.wasm at `https://github.com/0chain/js-client-sdk/blob/gosdk/test/proxy.wasm`
 
-4. You need to startup a special test server in order to stream WASM files. Use this command from js-client-sdk $TOP: `sudo php -S localhost:82 test/server.php`
+4. You need to start a special test server in order to stream WASM files. Use the following command from js-client-sdk $TOP: `sudo php -S localhost:82 test/server.php`
 
-5. See "testethwallet" function in index.html for how the testing for ethwallet.go is done
+5. See "testethwallet" function in index.html for how the testing for ethwallet.go is done.
 
 6. To test the function you exported, it's probably as simple as calling "HelloWorld()". It should be a 1-liner.
 
 ### How to install `ffmpeg` 
 
-### On linux ubuntu
+#### On Ubuntu Linux
 
-```
+```bash
 sudo apt-get install ffmpeg
 sudo apt-get install v4l-utils
 ```
