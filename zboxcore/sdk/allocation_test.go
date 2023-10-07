@@ -79,7 +79,7 @@ func setupMockHttpResponse(
 		})).Return(&http.Response{
 			StatusCode: statusCode,
 			Body:       io.NopCloser(bytes.NewReader(body)),
-		}, nil)
+		}, nil).Once()
 	}
 
 	for i := 0; i < numBlobbers; i++ {
@@ -90,7 +90,7 @@ func setupMockHttpResponse(
 		})).Return(&http.Response{
 			StatusCode: statusCode,
 			Body:       io.NopCloser(bytes.NewReader(body)),
-		}, nil)
+		}, nil).Once()
 	}
 }
 
