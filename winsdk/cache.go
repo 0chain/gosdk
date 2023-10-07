@@ -40,7 +40,7 @@ func getAllocation(allocationID string) (*sdk.Allocation, error) {
 
 	it = &cachedAllocation{
 		Allocation:     a,
-		CacheExpiresAt: time.Now().Add(5 * time.Minute),
+		CacheExpiresAt: time.Now().Add(30 * time.Minute),
 	}
 
 	cachedAllocations.Add(allocationID, it)
@@ -71,7 +71,7 @@ func getFileMeta(allocationID, remotePath string) (*sdk.ConsolidatedFileMeta, er
 
 	it = &cachedFileMeta{
 		FileMeta:       f,
-		CacheExpiresAt: time.Now().Add(5 * time.Minute),
+		CacheExpiresAt: time.Now().Add(30 * time.Minute),
 	}
 
 	cachedFileMetas.Add(allocationID, it)

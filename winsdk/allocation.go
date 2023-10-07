@@ -46,13 +46,7 @@ func ListAllocations() *C.char {
 		return WithJSON("", err)
 	}
 
-	js, err := json.Marshal(items)
-	if err != nil {
-		log.Error("win: ", err)
-		return WithJSON("", err)
-	}
-
-	return WithJSON(string(js), nil)
+	return WithJSON(items, nil)
 }
 
 type FreeMarker struct {
