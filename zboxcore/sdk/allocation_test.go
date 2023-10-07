@@ -74,6 +74,15 @@ func setupMockHttpResponse(
 	statusCode int, body []byte) {
 
 	for i := 0; i < numBlobbers; i++ {
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			return req.Method == httpMethod && strings.Contains(req.URL.String(), "list=true")
+		})).Return(&http.Response{
+			StatusCode: statusCode,
+			Body:       io.NopCloser(bytes.NewReader(body)),
+		}, nil)
+	}
+
+	for i := 0; i < numBlobbers; i++ {
 		url := funcName + testCaseName + mockBlobberUrl + strconv.Itoa(i)
 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 			return req.Method == httpMethod &&
