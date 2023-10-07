@@ -10,15 +10,19 @@ import (
 	"encoding/json"
 
 	"github.com/0chain/gosdk/zboxcore/sdk"
+	"github.com/0chain/gosdk/zcncore"
 )
 
 // GetAllocation get allocation info
+// ## Inputs
+//   - allocationID
 //
-//	return
-//		{
-//			"error":"",
-//			"result":"{}",
-//		}
+// ## Output
+//
+//	{
+//	"error":"",
+//	"result":"{}",
+//	}
 //
 //export GetAllocation
 func GetAllocation(allocationID *C.char) *C.char {
@@ -27,12 +31,12 @@ func GetAllocation(allocationID *C.char) *C.char {
 }
 
 // ListAllocations get allocation list
+// ## Output
 //
-//	return
-//		{
-//			"error":"",
-//			"result":"[{},{}]",
-//		}
+//	{
+//		"error":"",
+//		"result":"[{},{}]",
+//	}
 //
 //export ListAllocations
 func ListAllocations() *C.char {
@@ -49,4 +53,38 @@ func ListAllocations() *C.char {
 	}
 
 	return WithJSON(string(js), nil)
+}
+
+type FreeMarker struct {
+	FreeTokens float64 `json:"free_tokens"`
+}
+
+// CreateFreeAllocation create a free allocation
+// ## Inputs
+//   - freeStorageMarker
+//     return
+//     {
+//     "error":"",
+//     "result":"id",
+//     }
+//
+//export CreateFreeAllocation
+func CreateFreeAllocation(freeStorageMarker *C.char) *C.char {
+
+	marker := &FreeMarker{}
+	fs := C.GoString(freeStorageMarker)
+	err := json.Unmarshal([]byte(fs), marker)
+	if err != nil {
+		log.Fatal("unmarshalling marker", err)
+	}
+	lock := zcncore.ConvertToValue(marker.FreeTokens)
+
+	allocationID, _, err := sdk.CreateFreeAllocation(fs, lock)
+
+	if err != nil {
+		log.Error("win: ", err)
+		return WithJSON("", err)
+	}
+
+	return WithJSON(allocationID, nil)
 }
