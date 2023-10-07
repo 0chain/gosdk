@@ -302,3 +302,29 @@ func SetFFmpeg(fullFileName *C.char) *C.char {
 	sdk.CmdFFmpeg = C.GoString(fullFileName)
 	return WithJSON(true, nil)
 }
+
+// GetFileContentType get content/MIME type of file
+// ## Inputs:
+//   - fullFileName
+//     return
+//     {
+//     "error":"",
+//     "result":true,
+//     }
+//
+//export GetFileContentType
+func GetFileContentType(file *C.char) *C.char {
+	f, err := os.Open(C.GoString(file))
+	if err != nil {
+		log.Error("win: ", err)
+		return WithJSON("", err)
+	}
+	defer f.Close()
+
+	mime, err := zboxutil.GetFileContentType(f)
+	if err != nil {
+		return WithJSON("", err)
+	}
+
+	return WithJSON(mime, nil)
+}
