@@ -646,6 +646,10 @@ func getBlockInfoByRound(round int64, content string) (*blockHeader, error) {
 		case <-waitTime.C:
 			return nil, stdErrors.New("failed to get block info by round with consensus, timeout")
 		case rsp := <-resultC:
+			if rsp == nil {
+				logging.Error("nil response")
+				continue
+			}
 			logging.Debug(rsp.Url, rsp.Status)
 			if failedCount*100/numSharders > 100-consensusThresh {
 				return nil, stdErrors.New("failed to get block info by round with consensus, too many failures")

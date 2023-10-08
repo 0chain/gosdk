@@ -20,6 +20,7 @@ import (
 )
 
 const statSize = 20
+const defaultTimeout = 5 * time.Second
 
 type NodeHolder struct {
 	consensus int
@@ -136,6 +137,10 @@ func (h *NodeHolder) GetBalanceFieldFromSharders(clientID, name string) (int64, 
 
 	for i := 0; i < numSharders; i++ {
 		rsp := <-result
+		if rsp == nil {
+			logger.Logger.Error("nil response")
+			continue
+		}
 
 		logger.Logger.Debug(rsp.Url, rsp.Status)
 		if rsp.StatusCode != http.StatusOK {
@@ -181,14 +186,18 @@ func (h *NodeHolder) QueryFromShardersContext(ctx context.Context, numSharders i
 	query string, result chan *util.GetResponse) {
 
 	sharders := h.Healthy()
+	timeout, cancelFunc := context.WithTimeout(ctx, defaultTimeout)
+	defer cancelFunc()
+
 	for _, sharder := range util.Shuffle(sharders)[:numSharders] {
 		go func(sharderurl string) {
 			logger.Logger.Info("Query from ", sharderurl+query)
 			url := fmt.Sprintf("%v%v", sharderurl, query)
-			req, err := util.NewHTTPGetRequestContext(ctx, url)
+			req, err := util.NewHTTPGetRequestContext(timeout, url)
 			if err != nil {
 				logger.Logger.Error(sharderurl, " new get request failed. ", err.Error())
 				h.Fail(sharderurl)
+				result <- nil
 				return
 			}
 			res, err := req.Get()
@@ -229,7 +238,10 @@ func (h *NodeHolder) GetBlockByRound(ctx context.Context, numSharders int, round
 
 	for i := 0; i < numSharders; i++ {
 		var rsp = <-result
-
+		if rsp == nil {
+			logger.Logger.Error("nil response")
+			continue
+		}
 		logger.Logger.Debug(rsp.Url, rsp.Status)
 
 		if rsp.StatusCode != http.StatusOK {
@@ -307,6 +319,10 @@ func (h *NodeHolder) GetRoundFromSharders() (int64, error) {
 		case <-waitTimeC:
 			return 0, stdErrors.New("get round failed. consensus not reached")
 		case rsp := <-result:
+			if rsp == nil {
+				logger.Logger.Error("nil response")
+				continue
+			}
 			if rsp.StatusCode != http.StatusOK {
 				continue
 			}
