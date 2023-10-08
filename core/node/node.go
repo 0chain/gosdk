@@ -186,13 +186,14 @@ func (h *NodeHolder) QueryFromShardersContext(ctx context.Context, numSharders i
 	query string, result chan *util.GetResponse) {
 
 	sharders := h.Healthy()
-	timeout, cancelFunc := context.WithTimeout(ctx, defaultTimeout)
-	defer cancelFunc()
 
 	for _, sharder := range util.Shuffle(sharders)[:numSharders] {
 		go func(sharderurl string) {
 			logger.Logger.Info("Query from ", sharderurl+query)
 			url := fmt.Sprintf("%v%v", sharderurl, query)
+			timeout, cancelFunc := context.WithTimeout(ctx, defaultTimeout)
+			defer cancelFunc()
+
 			req, err := util.NewHTTPGetRequestContext(timeout, url)
 			if err != nil {
 				logger.Logger.Error(sharderurl, " new get request failed. ", err.Error())

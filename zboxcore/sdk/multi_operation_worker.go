@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
+	"github.com/remeh/sizedwaitgroup"
 
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/util"
@@ -27,6 +28,8 @@ import (
 const (
 	DefaultCreateConnectionTimeOut = 2 * time.Minute
 )
+
+var BatchSize = 5
 
 type Operationer interface {
 	Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error)
@@ -150,14 +153,14 @@ func (mo *MultiOperation) Process() error {
 	ctx := mo.ctx
 	ctxCncl := mo.ctxCncl
 	defer ctxCncl()
-
+	swg := sizedwaitgroup.New(BatchSize)
 	errsSlice := make([]error, len(mo.operations))
 	mo.operationMask = zboxutil.NewUint128(0)
 	for idx, op := range mo.operations {
 		uid := util.GetNewUUID()
-		wg.Add(1)
+		swg.Add()
 		go func(op Operationer, idx int) {
-			defer wg.Done()
+			defer swg.Done()
 
 			// Check for other goroutines signal
 			select {
@@ -177,11 +180,10 @@ func (mo *MultiOperation) Process() error {
 			mo.operationMask = mo.operationMask.Or(mask)
 			mo.maskMU.Unlock()
 			changes := op.buildChange(refs, uid)
-
 			mo.changes[idx] = changes
 		}(op, idx)
 	}
-	wg.Wait()
+	swg.Wait()
 
 	// Check consensus
 	if mo.operationMask.CountOnes() < mo.consensusThresh || ctx.Err() != nil {
