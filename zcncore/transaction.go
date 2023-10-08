@@ -1069,6 +1069,10 @@ func GetLatestFinalized(ctx context.Context, numSharders int) (b *block.Header, 
 
 	for i := 0; i < numSharders; i++ {
 		var rsp = <-result
+		if rsp == nil {
+			logging.Error("nil response")
+			continue
+		}
 
 		logging.Debug(rsp.Url, rsp.Status)
 
@@ -1114,6 +1118,10 @@ func GetLatestFinalizedMagicBlock(ctx context.Context, numSharders int) (m *bloc
 
 	for i := 0; i < numSharders; i++ {
 		var rsp = <-result
+		if rsp == nil {
+			logging.Error("nil response")
+			continue
+		}
 
 		logging.Debug(rsp.Url, rsp.Status)
 
@@ -1152,6 +1160,10 @@ func GetChainStats(ctx context.Context) (b *block.ChainStats, err error) {
 	var rsp *util.GetResponse
 	for i := 0; i < numSharders; i++ {
 		var x = <-result
+		if x == nil {
+			logging.Error("nil response")
+			continue
+		}
 		if x.StatusCode != http.StatusOK {
 			continue
 		}
@@ -1235,7 +1247,10 @@ func GetMagicBlockByNumber(ctx context.Context, numSharders int, number int64) (
 
 	for i := 0; i < numSharders; i++ {
 		var rsp = <-result
-
+		if rsp == nil {
+			logging.Error("nil response")
+			continue
+		}
 		logging.Debug(rsp.Url, rsp.Status)
 
 		if rsp.StatusCode != http.StatusOK {

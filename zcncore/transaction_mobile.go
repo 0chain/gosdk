@@ -1087,6 +1087,10 @@ func GetLatestFinalized(numSharders int, timeout RequestTimeout) (b *BlockHeader
 
 	for i := 0; i < numSharders; i++ {
 		var rsp = <-result
+		if rsp == nil {
+			logging.Error("nil response")
+			continue
+		}
 
 		logging.Debug(rsp.Url, rsp.Status)
 
@@ -1137,6 +1141,10 @@ func GetLatestFinalizedMagicBlock(numSharders int, timeout RequestTimeout) ([]by
 
 	for i := 0; i < numSharders; i++ {
 		var rsp = <-result
+		if rsp == nil {
+			logging.Error("nil response")
+			continue
+		}
 
 		logging.Debug(rsp.Url, rsp.Status)
 
@@ -1189,6 +1197,10 @@ func GetChainStats(timeout RequestTimeout) ([]byte, error) {
 	var rsp *util.GetResponse
 	for i := 0; i < numSharders; i++ {
 		var x = <-result
+		if x == nil {
+			logging.Error("nil response")
+			continue
+		}
 		if x.StatusCode != http.StatusOK {
 			continue
 		}
@@ -1444,7 +1456,10 @@ func GetBlockByRound(numSharders int, round int64, timeout RequestTimeout) (b *B
 
 	for i := 0; i < numSharders; i++ {
 		var rsp = <-result
-
+		if rsp == nil {
+			logging.Error("nil response")
+			continue
+		}
 		logging.Debug(rsp.Url, rsp.Status)
 
 		if rsp.StatusCode != http.StatusOK {
@@ -1527,6 +1542,10 @@ func GetMagicBlockByNumber(numSharders int, number int64, timeout RequestTimeout
 
 	for i := 0; i < numSharders; i++ {
 		var rsp = <-result
+		if rsp == nil {
+			logging.Error("nil response")
+			continue
+		}
 
 		logging.Debug(rsp.Url, rsp.Status)
 
