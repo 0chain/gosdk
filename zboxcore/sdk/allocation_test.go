@@ -74,13 +74,22 @@ func setupMockHttpResponse(
 	statusCode int, body []byte) {
 
 	for i := 0; i < numBlobbers; i++ {
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			return req.Method == httpMethod && strings.Contains(req.URL.String(), "list=true")
+		})).Return(&http.Response{
+			StatusCode: statusCode,
+			Body:       io.NopCloser(bytes.NewReader(body)),
+		}, nil).Once()
+	}
+
+	for i := 0; i < numBlobbers; i++ {
 		url := funcName + testCaseName + mockBlobberUrl + strconv.Itoa(i)
 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 			return req.Method == httpMethod &&
 				strings.Contains(req.URL.String(), url)
 		})).Return(&http.Response{
 			StatusCode: statusCode,
-			Body:       ioutil.NopCloser(bytes.NewReader(body)),
+			Body:       io.NopCloser(bytes.NewReader(body)),
 		}, nil).Once()
 	}
 }
@@ -122,7 +131,7 @@ func setupMockWriteLockRequest(a *Allocation, mockClient *mocks.HttpClient) {
 					Status: WMLockStatusOK,
 				}
 				respBuf, _ := json.Marshal(resp)
-				return ioutil.NopCloser(bytes.NewReader(respBuf))
+				return io.NopCloser(bytes.NewReader(respBuf))
 			}(),
 		}, nil)
 	}
