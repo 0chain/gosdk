@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	hdw "github.com/0chain/gosdk/zcncore/ethhdwallet"
-	"github.com/spf13/viper"
 	"math/big"
 	"os"
 	"time"
+
+	hdw "github.com/0chain/gosdk/zcncore/ethhdwallet"
+	"github.com/spf13/viper"
 
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/zcnbridge/ethereum"

@@ -20,7 +20,6 @@ import (
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/logger"
-	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 
@@ -821,13 +820,6 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 		return nil, err
 	}
 
-	sharderConsensous := cfg.SharderConsensous
-	if sharderConsensous < 1 {
-		sharderConsensous = conf.DefaultSharderConsensous
-	}
-	if numSharders > sharderConsensous {
-		sharders = util.Shuffle(sharders)[:sharderConsensous]
-	}
 	for _, sharder := range sharders {
 		wg.Add(1)
 		go func(sharder string) {
@@ -841,29 +833,32 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 			urlObj.RawQuery = q.Encode()
 			client := &http.Client{Transport: DefaultTransport}
 			response, err := client.Get(urlObj.String())
-
-			if err == nil {
-				defer response.Body.Close()
-				entityBytes, _ := ioutil.ReadAll(response.Body)
-				mu.Lock()
-				responses[response.StatusCode]++
-				if responses[response.StatusCode] > maxCount {
-					maxCount = responses[response.StatusCode]
-				}
-
-				if isCurrentDominantStatus(response.StatusCode, responses, maxCount) {
-					dominant = response.StatusCode
-					retObj = entityBytes
-				}
-
-				entityResult[sharder] = entityBytes
-				mu.Unlock()
+			if err != nil {
+				blockchain.Sharders.Fail(sharder)
+				return
 			}
+
+			defer response.Body.Close()
+			entityBytes, _ := ioutil.ReadAll(response.Body)
+			mu.Lock()
+			responses[response.StatusCode]++
+			if responses[response.StatusCode] > maxCount {
+				maxCount = responses[response.StatusCode]
+			}
+
+			if isCurrentDominantStatus(response.StatusCode, responses, maxCount) {
+				dominant = response.StatusCode
+				retObj = entityBytes
+			}
+
+			entityResult[sharder] = entityBytes
+			blockchain.Sharders.Success(sharder)
+			mu.Unlock()
 		}(sharder)
 	}
 	wg.Wait()
 
-	rate := float32(maxCount*100) / float32(sharderConsensous)
+	rate := float32(maxCount*100) / float32(cfg.SharderConsensous)
 	if rate < consensusThresh {
 		err = errors.New("consensus_failed", "consensus failed on sharders")
 	}

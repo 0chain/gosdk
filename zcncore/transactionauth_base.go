@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/node"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/zcncrypto"
@@ -115,9 +116,9 @@ func (ta *TransactionWithAuth) sign(otherSig string) error {
 func (ta *TransactionWithAuth) submitTxn() {
 	nonce := ta.t.txn.TransactionNonce
 	if nonce < 1 {
-		nonce = transaction.Cache.GetNextNonce(ta.t.txn.ClientID)
+		nonce = node.Cache.GetNextNonce(ta.t.txn.ClientID)
 	} else {
-		transaction.Cache.Set(ta.t.txn.ClientID, nonce)
+		node.Cache.Set(ta.t.txn.ClientID, nonce)
 	}
 	ta.t.txn.TransactionNonce = nonce
 	authTxn, err := ta.getAuthorize()
@@ -158,9 +159,9 @@ func (ta *TransactionWithAuth) ExecuteFaucetSCWallet(walletStr string, methodNam
 	go func() {
 		nonce := ta.t.txn.TransactionNonce
 		if nonce < 1 {
-			nonce = transaction.Cache.GetNextNonce(ta.t.txn.ClientID)
+			nonce = node.Cache.GetNextNonce(ta.t.txn.ClientID)
 		} else {
-			transaction.Cache.Set(ta.t.txn.ClientID, nonce)
+			node.Cache.Set(ta.t.txn.ClientID, nonce)
 		}
 		ta.t.txn.TransactionNonce = nonce
 		err = ta.t.txn.ComputeHashAndSignWithWallet(signWithWallet, w)
