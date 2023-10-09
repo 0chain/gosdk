@@ -448,7 +448,7 @@ func NewFileStatsRequest(baseUrl string, allocationID string, allocationTx strin
 	return req, nil
 }
 
-func NewListRequest(baseUrl, allocationID string, allocationTx string, path, pathHash string, auth_token string) (*http.Request, error) {
+func NewListRequest(baseUrl, allocationID string, allocationTx string, path, pathHash string, auth_token string, list bool) (*http.Request, error) {
 	nurl, err := joinUrl(baseUrl, LIST_ENDPOINT, allocationTx)
 	if err != nil {
 		return nil, err
@@ -457,6 +457,9 @@ func NewListRequest(baseUrl, allocationID string, allocationTx string, path, pat
 	params.Add("path", path)
 	params.Add("path_hash", pathHash)
 	params.Add("auth_token", auth_token)
+	if list {
+		params.Add("list", "true")
+	}
 	nurl.RawQuery = params.Encode() // Escape Query Parameters
 	req, err := http.NewRequest(http.MethodGet, nurl.String(), nil)
 	if err != nil {
