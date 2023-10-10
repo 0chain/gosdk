@@ -52,7 +52,7 @@ func TestJwtToken(t *testing.T) {
 }
 
 func TestGetFreeStorage(t *testing.T) {
-	//t.Skip("Only for local debugging")
+	t.Skip("Only for local debugging")
 
 	c := NewClient()
 	c.SetRequest(BaseURL, AppType)
