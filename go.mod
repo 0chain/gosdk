@@ -46,6 +46,7 @@ require (
 require github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d
 
 require (
+	bou.ke/monkey v1.0.2 // indirect
 	github.com/VictoriaMetrics/fastcache v1.6.0 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.3.2 // indirect
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.0.2 // indirect

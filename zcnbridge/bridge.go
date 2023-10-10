@@ -636,23 +636,26 @@ func (b *BridgeClient) BurnZCN(ctx context.Context, amount, txnfee uint64) (tran
 }
 
 // Swap is used for token swap operation.
-func (b *BridgeClient) Swap(ctx context.Context, amountSwap uint64) (*types.Transaction, error) {
+func (b *BridgeClient) Swap(ctx context.Context, amountSwap uint64, deadlinePeriod time.Time) (*types.Transaction, error) {
 	// 1. Swap amount parameter.
 	amount := big.NewInt(int64(amountSwap))
 
 	// 2. User's Ethereum wallet address.
 	beneficiary := common.HexToAddress(b.EthereumAddress)
 
-	// 3. Trade transaction deadline.
-	deadline := big.NewInt(time.Now().Add(time.Minute).Unix())
+	// 3. Trade deadline
+	deadline := big.NewInt(deadlinePeriod.Unix())
 
-	// 4. Source token address parameter
+	// 4. Max trade token amount
+	maxAmount := big.NewInt(1e10)
+
+	// 5. Source token address parameter
 	from := common.HexToAddress(b.SourceTokenAddress)
 
-	// 5. Target token address parameter
+	// 6. Target token address parameter
 	to := common.HexToAddress(b.TokenAddress)
 
-	bancorInstance, transactOpts, err := b.prepareBancor(ctx, "tradeByTargetAmount", from, to, amount, big.NewInt(100), deadline, beneficiary)
+	bancorInstance, transactOpts, err := b.prepareBancor(ctx, "tradeByTargetAmount", from, to, amount, maxAmount, deadline, beneficiary)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to prepare bancor")
 	}
@@ -663,7 +666,7 @@ func (b *BridgeClient) Swap(ctx context.Context, amountSwap uint64) (*types.Tran
 		zap.String("sourceToken", b.SourceTokenAddress),
 	)
 
-	tran, err := bancorInstance.TradeByTargetAmount(transactOpts, from, to, amount, big.NewInt(100), deadline, beneficiary)
+	tran, err := bancorInstance.TradeByTargetAmount(transactOpts, from, to, amount, maxAmount, deadline, beneficiary)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to execute ConvertByPath transaction")
 	}

@@ -3,6 +3,7 @@ package zcnbridge
 import (
 	"context"
 	"encoding/json"
+	"github.com/0chain/gosdk/zcnbridge/ethereum/bancor"
 	"log"
 	"math/big"
 	"os"
@@ -41,10 +42,13 @@ const (
 	tokenAddress       = "0x2ec8F26ccC678c9faF0Df20208aEE3AF776160CD"
 	authorizersAddress = "0xEAe8229c0E457efBA1A1769e7F8c20110fF68E61"
 
-	zcnTxnID = "b26abeb31fcee5d2e75b26717722938a06fa5ce4a5b5e68ddad68357432caace"
-	amount   = 1e10
-	txnFee   = 1
-	nonce    = 1
+	sourceAddress = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
+
+	zcnTxnID  = "b26abeb31fcee5d2e75b26717722938a06fa5ce4a5b5e68ddad68357432caace"
+	amount    = 1e10
+	maxAmount = 1e10
+	txnFee    = 1
+	nonce     = 1
 
 	ethereumTxnID = "0x3b59971c2aa294739cd73912f0c5a7996aafb796238cf44408b0eb4af0fbac82"
 
@@ -229,6 +233,7 @@ func getBridgeClient(ethereumClient EthereumClient, transactionProvider transact
 	cfg.SetDefault("bridge.token_address", tokenAddress)
 	cfg.SetDefault("bridge.authorizers_address", authorizersAddress)
 	cfg.SetDefault("bridge.ethereum_address", ethereumAddress)
+	cfg.SetDefault("bridge.swap.source_token_address", sourceAddress)
 	cfg.SetDefault("bridge.password", password)
 	cfg.SetDefault("bridge.gas_limit", 0)
 	cfg.SetDefault("bridge.consensus_threshold", 0)
@@ -512,38 +517,51 @@ func Test_ZCNBridge(t *testing.T) {
 		))
 	})
 
-	//t.Run("should check configuration used by Swap", func(t *testing.T) {
-	//	_, err := bridgeClient.Swap(context.Background(), amount)
-	//	require.NoError(t, err)
-	//
-	//	// 1. Swap amount parameter
-	//	amount := big.NewInt(amount)
-	//
-	//	// 2. Bancor affiliated account used during conversion operation.
-	//	affiliateAccount := common.HexToAddress(BancorAffiliateAccount)
-	//
-	//	to := common.HexToAddress(tokenAddress)
-	//	fromAddress := common.HexToAddress(ethereumAddress)
-	//
-	//	abi, err := bancor.IBancorNetworkMetaData.GetAbi()
-	//	require.NoError(t, err)
-	//
-	//	//"convertByPath", conversionPath, amount, rate, affiliateAccount, affiliateAccount, big.NewInt(0)
-	//
-	//	pack, err := abi.Pack("convertByPath", amount, 0, affiliateAccount, affiliateAccount, big.NewInt(0))
-	//	require.NoError(t, err)
-	//
-	//	require.True(t, ethereumClient.AssertCalled(
-	//		t,
-	//		"EstimateGas",
-	//		context.Background(),
-	//		eth.CallMsg{
-	//			To:   &to,
-	//			From: fromAddress,
-	//			Data: pack,
-	//		},
-	//	))
-	//})
+	t.Run("should check configuration used by Swap", func(t *testing.T) {
+		// 1. Predefined deadline period
+		deadlinePeriod := time.Date(2009, 11, 17, 20, 34, 58, 651387237, time.UTC)
+
+		_, err := bridgeClient.Swap(context.Background(), amount, deadlinePeriod)
+		require.NoError(t, err)
+
+		// 1. Trade deadline
+		deadline := big.NewInt(deadlinePeriod.Unix())
+
+		// 2. Swap amount parameter
+		amount := big.NewInt(amount)
+
+		// 3. User's Ethereum wallet address.
+		beneficiary := common.HexToAddress(ethereumAddress)
+
+		// 4. Source token address parameter
+		from := common.HexToAddress(sourceAddress)
+
+		// 5. Target token address parameter
+		to := common.HexToAddress(tokenAddress)
+
+		// 6. Max trade token amount
+		maxAmount := big.NewInt(maxAmount)
+
+		// 7. Bancor network smart contract address
+		contractAddress := common.HexToAddress(BancorNetworkAddress)
+
+		abi, err := bancor.IBancorNetworkMetaData.GetAbi()
+		require.NoError(t, err)
+
+		pack, err := abi.Pack("tradeByTargetAmount", from, to, amount, maxAmount, deadline, beneficiary)
+		require.NoError(t, err)
+
+		require.True(t, ethereumClient.AssertCalled(
+			t,
+			"EstimateGas",
+			context.Background(),
+			eth.CallMsg{
+				To:   &contractAddress,
+				From: beneficiary,
+				Data: pack,
+			},
+		))
+	})
 
 	t.Run("should check configuration used by CreateSignedTransactionFromKeyStore", func(t *testing.T) {
 		bridgeClient.CreateSignedTransactionFromKeyStore(ethereumClient, 400000)
