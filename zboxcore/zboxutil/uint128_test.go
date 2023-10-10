@@ -1,10 +1,11 @@
 package zboxutil
 
 import (
-	"github.com/stretchr/testify/assert"
 	"math"
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewUint128(t *testing.T) {

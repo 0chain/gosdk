@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"strings"
 	"sync"
@@ -31,6 +32,7 @@ type ListRequest struct {
 	ctx                context.Context
 	wg                 *sync.WaitGroup
 	forRepair          bool
+	listOnly           bool
 	Consensus
 }
 
@@ -91,7 +93,10 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 	}
 
 	//formWriter.Close()
-	httpreq, err := zboxutil.NewListRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.remotefilepath, req.remotefilepathhash, string(authTokenBytes))
+	if req.forRepair {
+		req.listOnly = true
+	}
+	httpreq, err := zboxutil.NewListRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.remotefilepath, req.remotefilepathhash, string(authTokenBytes), req.listOnly)
 	if err != nil {
 		l.Logger.Error("List info request error: ", err.Error())
 		return
@@ -129,7 +134,7 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 	})
 }
 
-func (req *ListRequest) getlistFromBlobbers() []*listResponse {
+func (req *ListRequest) getlistFromBlobbers() ([]*listResponse, error) {
 	numList := len(req.blobbers)
 	req.wg = &sync.WaitGroup{}
 	req.wg.Add(numList)
@@ -142,24 +147,59 @@ func (req *ListRequest) getlistFromBlobbers() []*listResponse {
 	for i := 0; i < numList; i++ {
 		listInfos[i] = <-rspCh
 	}
-	return listInfos
+	if req.listOnly {
+		return listInfos, nil
+	}
+	consensusMap := make(map[string][]*blockchain.StorageNode)
+	var consensusHash string
+	for i := 0; i < numList; i++ {
+		if listInfos[i].err != nil || listInfos[i].ref == nil {
+			continue
+		}
+		hash := listInfos[i].ref.FileMetaHash
+		consensusMap[hash] = append(consensusMap[hash], req.blobbers[listInfos[i].blobberIdx])
+		if len(consensusMap[hash]) >= req.consensusThresh {
+			consensusHash = hash
+		}
+	}
+	var err error
+	req.listOnly = true
+	listLen := len(consensusMap[consensusHash])
+	if listLen < req.consensusThresh {
+		return listInfos, listInfos[0].err
+	}
+	for i := 0; i < listLen; i++ {
+		var rnd = rand.New(rand.NewSource(time.Now().UnixNano()))
+		num := rnd.Intn(listLen)
+		randomBlobber := consensusMap[consensusHash][num]
+		req.wg.Add(1)
+		go req.getListInfoFromBlobber(randomBlobber, 0, rspCh)
+		req.wg.Wait()
+		listInfos[0] = <-rspCh
+		if listInfos[0].err == nil {
+			return listInfos, nil
+		}
+		err = listInfos[0].err
+	}
+	return listInfos, err
 }
 
 func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
-	lR := req.getlistFromBlobbers()
+	lR, err := req.getlistFromBlobbers()
+	if err != nil {
+		return nil, err
+	}
 	result := &ListResult{
 		deleteMask: zboxutil.NewUint128(1).Lsh(uint64(len(req.blobbers))).Sub64(1),
 	}
 	selected := make(map[string]*ListResult)
 	childResultMap := make(map[string]*ListResult)
-	var err error
-	var errNum int
-	req.consensus = 0
+	if !req.forRepair {
+		req.consensusThresh = 1
+	}
 	for i := 0; i < len(lR); i++ {
 		ti := lR[i]
 		if ti.err != nil {
-			err = ti.err
-			errNum++
 			result.deleteMask = result.deleteMask.And(zboxutil.NewUint128(1).Lsh(uint64(ti.blobberIdx)).Not())
 			continue
 		}
@@ -195,10 +235,6 @@ func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
 				result.Children = append(result.Children, child)
 			}
 		}
-	}
-
-	if errNum >= req.consensusThresh && !req.forRepair {
-		return nil, err
 	}
 
 	return result, nil
