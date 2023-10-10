@@ -76,7 +76,7 @@ func CreateFreeAllocation(freeStorageMarker *C.char) *C.char {
 	allocationID, _, err := sdk.CreateFreeAllocation(fs, lock)
 
 	if err != nil {
-		log.Error("win: ", err)
+		log.Error("win: ", err, "lock: ", lock, " marker:", fs)
 		return WithJSON("", err)
 	}
 
