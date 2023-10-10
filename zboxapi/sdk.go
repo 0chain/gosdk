@@ -13,7 +13,33 @@ import (
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/resty"
 	"github.com/0chain/gosdk/core/sys"
+	"github.com/0chain/gosdk/core/zcncrypto"
 )
+
+func init() {
+	if sys.Sign == nil {
+		sys.Sign = func(hash string, signatureScheme string, keys []sys.KeyPair) (string, error) {
+			retSignature := ""
+			for _, kv := range keys {
+				ss := zcncrypto.NewSignatureScheme(signatureScheme)
+				err := ss.SetPrivateKey(kv.PrivateKey)
+				if err != nil {
+					return "", err
+				}
+
+				if len(retSignature) == 0 {
+					retSignature, err = ss.Sign(hash)
+				} else {
+					retSignature, err = ss.Add(retSignature, hash)
+				}
+				if err != nil {
+					return "", err
+				}
+			}
+			return retSignature, nil
+		}
+	}
+}
 
 type Client struct {
 	baseUrl          string
@@ -208,4 +234,37 @@ func (c *Client) RefreshJwtToken(ctx context.Context, phoneNumber string, token 
 	}
 
 	return result.Token, nil
+}
+
+func (c *Client) GetFreeStorage(ctx context.Context, phoneNumber, token string) (string, error) {
+	csrfToken, err := c.GetCsrfToken(ctx)
+	if err != nil {
+		return "", err
+	}
+	headers := map[string]string{
+		"X-JWT-Token":    token,
+		"X-App-ID-Token": token,
+	}
+
+	r, err := c.createResty(ctx, csrfToken, phoneNumber, headers)
+
+	if err != nil {
+		return "", err
+	}
+
+	var result string
+	r.DoGet(ctx, c.baseUrl+"/v2/freestorage").
+		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
+			if err != nil {
+				return err
+			}
+
+			return c.parseResponse(resp, respBody, result)
+		})
+
+	if errs := r.Wait(); len(errs) > 0 {
+		return "", errs[0]
+	}
+
+	return result, nil
 }

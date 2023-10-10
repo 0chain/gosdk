@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	BaseURL          = "https://0box.demo.zus.network"
+	BaseURL          = "https://0box.dev.zus.network"
 	AppType          = "vult"
 	ClientID         = "8f6ce6457fc04cfb4eb67b5ce3162fe2b85f66ef81db9d1a9eaa4ffe1d2359e0"
 	ClientPublicKey  = "c8c88854822a1039c5a74bdb8c025081a64b17f52edd463fbecb9d4a42d15608f93b5434e926d67a828b88e63293b6aedbaf0042c7020d0a96d2e2f17d3779a4"
@@ -49,5 +49,25 @@ func TestJwtToken(t *testing.T) {
 	require.Nil(t, err)
 	require.NotEmpty(t, refreshedToken)
 	require.NotEqual(t, token, refreshedToken)
+}
 
+func TestGetFreeStorage(t *testing.T) {
+	//t.Skip("Only for local debugging")
+
+	c := NewClient()
+	c.SetRequest(BaseURL, AppType)
+	c.SetWallet(ClientID, ClientPrivateKey, ClientPublicKey)
+	sessionID, err := c.CreateJwtSession(context.TODO(), PhoneNumber)
+
+	require.Nil(t, err)
+	require.GreaterOrEqual(t, sessionID, int64(0))
+
+	token, err := c.CreateJwtToken(context.TODO(), PhoneNumber, sessionID, "000000") //any otp works on test phone number
+
+	require.Nil(t, err)
+	require.NotEmpty(t, token)
+
+	marker, err := c.GetFreeStorage(context.TODO(), PhoneNumber, token)
+	require.Nil(t, err)
+	require.NotEmpty(t, marker)
 }
