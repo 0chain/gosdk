@@ -3,7 +3,7 @@
 <head>
   <!-- for zcn.wasm-->
   <script src="https://cdn.jsdelivr.net/gh/herumi/bls-wasm@v1.0.0/browser/bls.js"></script>
-  <script src="https://cdn.jsdelivr.net/gh/golang/go@go1.18.5/misc/wasm/wasm_exec.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/golang/go@go1.21.0/misc/wasm/wasm_exec.js"></script>
   <script src="zcn.js"></script>
 
 
@@ -36,13 +36,13 @@
   <fieldset>
     <legend>Wallet</legend>
     <label for="clientId"> ClientID </label> <input id="clientId" name="clientId" style="width: 600px;"
-      value="30764bcba73216b67c36b05a17b4dd076bfdc5bb0ed84856f27622188c377269" /><br>
+      value="632d7e04fb8ff9cebe36caa20050458811d5eb3d3bdeb6a3877116a6c9d3ad68" /><br>
     <label for="privateKey">PrivateKey</label> <input id="privateKey" name="privateKey" style="width: 600px;"
-      value="41729ed8d82f782646d2d30b9719acfd236842b9b6e47fee12b7bdbd05b35122" /><br>
+      value="1a82efcc1afa64468ba6d090da6ae4995e1c2c5fb3a107b01d5f67fe1f66bc08" /><br>
     <label for="publicKey"> PublicKey</label> <input id="publicKey" name="publicKey" style="width: 600px;"
-      value="1f495df9605a4479a7dd6e5c7a78caf9f9d54e3a40f62a3dd68ed377115fe614d8acf0c238025f67a85163b9fbf31d10fbbb4a551d1cf00119897edf18b1841c" /><br>
+      value="aeb6a6c2bd30a9cd9323a46d887bfc9cf7996d0d2158a55453d7b16a99ace7182e998dd30c0d34c3093796f7075aaa97f3e25589c278971634cba3f2303b3216" /><br>
     <label for="mnemonic"> Mnemonic</label> <input id="mnemonic" name="mnemonic" style="width: 600px;"
-      value="glare mistake gun joke bid spare across diagram wrap cube swear cactus cave repeat you brave few best wild lion pitch pole original wasp" /><br>
+      value="visit acquire month friend twice guide hard myself differ video style shaft situate general valve dice brick carbon replace powder indicate hello orient search" /><br>
 
 
 
@@ -154,7 +154,6 @@
   </fieldset>
 
   <script>
-
     window.downloadCallback = function (totalBytes, completedBytes, error) {
       console.log("download: " + completedBytes + "/" + totalBytes + " err:" + error)
     }

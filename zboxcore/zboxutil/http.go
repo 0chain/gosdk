@@ -20,9 +20,10 @@ import (
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/logger"
-	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
+
+	l "github.com/0chain/gosdk/zboxcore/logger"
 )
 
 const SC_REST_API_URL = "v1/screst/"
@@ -147,7 +148,16 @@ func init() {
 }
 
 func NewHTTPRequest(method string, url string, data []byte) (*http.Request, context.Context, context.CancelFunc, error) {
-	req, err := http.NewRequest(method, url, bytes.NewBuffer(data))
+	var (
+		req *http.Request
+		err error
+	)
+	if len(data) > 0 {
+		req, err = http.NewRequest(method, url, bytes.NewBuffer(data))
+	} else {
+		req, err = http.NewRequest(method, url, nil)
+	}
+
 	req.Header.Set("Content-Type", "application/json; charset=utf-8")
 	req.Header.Set("Access-Control-Allow-Origin", "*")
 	ctx, cncl := context.WithTimeout(context.Background(), time.Second*10)
@@ -437,7 +447,7 @@ func NewFileStatsRequest(baseUrl string, allocationID string, allocationTx strin
 	return req, nil
 }
 
-func NewListRequest(baseUrl, allocationID string, allocationTx string, path, pathHash string, auth_token string) (*http.Request, error) {
+func NewListRequest(baseUrl, allocationID string, allocationTx string, path, pathHash string, auth_token string, list bool) (*http.Request, error) {
 	nurl, err := joinUrl(baseUrl, LIST_ENDPOINT, allocationTx)
 	if err != nil {
 		return nil, err
@@ -446,6 +456,9 @@ func NewListRequest(baseUrl, allocationID string, allocationTx string, path, pat
 	params.Add("path", path)
 	params.Add("path_hash", pathHash)
 	params.Add("auth_token", auth_token)
+	if list {
+		params.Add("list", "true")
+	}
 	nurl.RawQuery = params.Encode() // Escape Query Parameters
 	req, err := http.NewRequest(http.MethodGet, nurl.String(), nil)
 	if err != nil {
@@ -563,6 +576,7 @@ func NewConnectionRequest(baseUrl, allocationID string, allocationTx string, bod
 	if err != nil {
 		return nil, err
 	}
+	l.Logger.Error("request url: ", u)
 	req, err := http.NewRequest(http.MethodPost, u.String(), body)
 	if err != nil {
 		return nil, err
@@ -806,13 +820,6 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 		return nil, err
 	}
 
-	sharderConsensous := cfg.SharderConsensous
-	if sharderConsensous < 1 {
-		sharderConsensous = conf.DefaultSharderConsensous
-	}
-	if numSharders > sharderConsensous {
-		sharders = util.Shuffle(sharders)[:sharderConsensous]
-	}
 	for _, sharder := range sharders {
 		wg.Add(1)
 		go func(sharder string) {
@@ -826,29 +833,32 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 			urlObj.RawQuery = q.Encode()
 			client := &http.Client{Transport: DefaultTransport}
 			response, err := client.Get(urlObj.String())
-
-			if err == nil {
-				defer response.Body.Close()
-				entityBytes, _ := ioutil.ReadAll(response.Body)
-				mu.Lock()
-				responses[response.StatusCode]++
-				if responses[response.StatusCode] > maxCount {
-					maxCount = responses[response.StatusCode]
-				}
-
-				if isCurrentDominantStatus(response.StatusCode, responses, maxCount) {
-					dominant = response.StatusCode
-					retObj = entityBytes
-				}
-
-				entityResult[sharder] = entityBytes
-				mu.Unlock()
+			if err != nil {
+				blockchain.Sharders.Fail(sharder)
+				return
 			}
+
+			defer response.Body.Close()
+			entityBytes, _ := ioutil.ReadAll(response.Body)
+			mu.Lock()
+			responses[response.StatusCode]++
+			if responses[response.StatusCode] > maxCount {
+				maxCount = responses[response.StatusCode]
+			}
+
+			if isCurrentDominantStatus(response.StatusCode, responses, maxCount) {
+				dominant = response.StatusCode
+				retObj = entityBytes
+			}
+
+			entityResult[sharder] = entityBytes
+			blockchain.Sharders.Success(sharder)
+			mu.Unlock()
 		}(sharder)
 	}
 	wg.Wait()
 
-	rate := float32(maxCount*100) / float32(sharderConsensous)
+	rate := float32(maxCount*100) / float32(cfg.SharderConsensous)
 	if rate < consensusThresh {
 		err = errors.New("consensus_failed", "consensus failed on sharders")
 	}
