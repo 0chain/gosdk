@@ -3,14 +3,12 @@ package main
 import (
 	"encoding/json"
 	"strings"
-
 	"github.com/0chain/errors"
-	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/zcncrypto"
 )
 
 var _config localConfig
-var logging logger.Logger
+// var logging logger.Logger
 
 const (
 	StatusSuccess      int = 0
@@ -24,15 +22,6 @@ const (
 	StatusAuthTimeout      int = 7
 	StatusUnknown          int = -1
 )
-
-func GetLogger() *logger.Logger {
-	return &logging
-}
-
-// CloseLog closes log file
-func CloseLog() {
-	logging.Close()
-}
 
 
 // Split keys from the primary master key
