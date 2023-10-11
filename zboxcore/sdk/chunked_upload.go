@@ -218,7 +218,7 @@ func CreateChunkedUpload(
 	// encrypt option has been changed. upload it from scratch
 	// chunkSize has been changed. upload it from scratch
 	// actual size has been changed. upload it from scratch
-	if su.progress.ChunkSize != su.chunkSize || su.progress.EncryptOnUpload != su.encryptOnUpload || su.progress.ActualSize != su.fileMeta.ActualSize {
+	if su.progress.ChunkSize != su.chunkSize || su.progress.EncryptOnUpload != su.encryptOnUpload || su.progress.ActualSize != su.fileMeta.ActualSize || su.progress.ChunkNumber != su.chunkNumber {
 		su.progress.ChunkSize = 0 // reset chunk size
 	}
 
@@ -336,6 +336,7 @@ func (su *ChunkedUpload) createUploadProgress(connectionId string) {
 			EncryptOnUpload:   su.encryptOnUpload,
 			EncryptedKeyPoint: su.encryptedKeyPoint,
 			ActualSize:        su.fileMeta.ActualSize,
+			ChunkNumber:       su.chunkNumber,
 		}
 	}
 	su.progress.Blobbers = make([]*UploadBlobberStatus, su.allocationObj.DataShards+su.allocationObj.ParityShards)
