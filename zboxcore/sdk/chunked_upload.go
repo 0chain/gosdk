@@ -432,6 +432,7 @@ func (su *ChunkedUpload) process() error {
 				chunks.isFinal, chunks.totalReadSize,
 			)
 			if err != nil {
+				logger.Logger.Error("[processUpload]err: ", err, "chunkTotalFragment", chunks.totalFragmentSize, "alreadyUploadedData", alreadyUploadedData)
 				if su.statusCallback != nil {
 					su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
 				}
@@ -440,15 +441,16 @@ func (su *ChunkedUpload) process() error {
 		} else {
 			// Write data to hashers
 			for i, blobberShard := range chunks.fileShards {
+				hasher := su.blobbers[i].progress.Hasher
 				for _, chunkBytes := range blobberShard {
-					err = su.blobbers[i].progress.Hasher.WriteToFixedMT(chunkBytes)
+					err = hasher.WriteToFixedMT(chunkBytes)
 					if err != nil {
 						if su.statusCallback != nil {
 							su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
 						}
 						return err
 					}
-					err = su.blobbers[i].progress.Hasher.WriteToValidationMT(chunkBytes)
+					err = hasher.WriteToValidationMT(chunkBytes)
 					if err != nil {
 						if su.statusCallback != nil {
 							su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
