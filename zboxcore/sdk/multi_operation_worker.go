@@ -297,6 +297,7 @@ func (mo *MultiOperation) Process() error {
 			fmt.Sprintf("Commit failed. Required consensus %d, got %d",
 				mo.Consensus.consensusThresh, mo.Consensus.consensus))
 		if mo.getConsensus() != 0 {
+			l.Logger.Info("Rolling back changes on minority blobbers")
 			mo.allocationObj.RollbackWithMask(rollbackMask)
 		}
 		for _, op := range mo.operations {
