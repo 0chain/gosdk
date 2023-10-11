@@ -233,7 +233,6 @@ func getBridgeClient(ethereumClient EthereumClient, transactionProvider transact
 	cfg.SetDefault("bridge.token_address", tokenAddress)
 	cfg.SetDefault("bridge.authorizers_address", authorizersAddress)
 	cfg.SetDefault("bridge.ethereum_address", ethereumAddress)
-	cfg.SetDefault("bridge.swap.source_token_address", sourceAddress)
 	cfg.SetDefault("bridge.password", password)
 	cfg.SetDefault("bridge.gas_limit", 0)
 	cfg.SetDefault("bridge.consensus_threshold", 0)
@@ -244,7 +243,6 @@ func getBridgeClient(ethereumClient EthereumClient, transactionProvider transact
 		cfg.GetString("bridge.authorizers_address"),
 		cfg.GetString("bridge.ethereum_address"),
 		cfg.GetString("bridge.password"),
-		cfg.GetString("bridge.swap.source_token_address"),
 		cfg.GetUint64("bridge.gas_limit"),
 		cfg.GetFloat64("bridge.consensus_threshold"),
 		ethereumClient,
