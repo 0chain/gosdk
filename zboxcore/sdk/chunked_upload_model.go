@@ -201,6 +201,7 @@ type UploadData struct {
 	chunkStartIndex int
 	chunkEndIndex   int
 	isFinal         bool
+	saveProgress    bool
 	encryptedKey    string
 	uploadBody      []blobberData
 }
