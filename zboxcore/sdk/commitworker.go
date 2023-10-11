@@ -208,7 +208,10 @@ func (req *CommitRequest) commitBlobber(
 	} else {
 		wm.PreviousAllocationRoot = ""
 	}
-
+	if wm.AllocationRoot == wm.PreviousAllocationRoot {
+		l.Logger.Error("Allocation root and previous allocation root are same")
+		return thrown.New("commit_error", "Allocation root and previous allocation root are same")
+	}
 	wm.FileMetaRoot = rootRef.FileMetaHash
 	wm.AllocationID = req.allocationID
 	wm.Size = size
