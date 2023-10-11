@@ -2,12 +2,10 @@ package main
 
 import (
 	"encoding/json"
-	"net/http"
 	"strings"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/logger"
-	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/zcncrypto"
 )
 
@@ -26,11 +24,6 @@ const (
 	StatusAuthTimeout      int = 7
 	StatusUnknown          int = -1
 )
-
-type AuthCallback interface {
-	// This call back gives the status of the Two factor authenticator(zauth) setup.
-	OnSetupComplete(status int, err string)
-}
 
 func GetLogger() *logger.Logger {
 	return &logging
@@ -63,29 +56,6 @@ func SplitKeys(privateKey string, numSplits int) (string, error) {
 	return wStr, nil
 }
 
-// SetupAuth prepare auth app with clientid, key and a set of public, private key and local publickey
-// which is running on PC/Mac.
-func SetupAuth(authHost, clientID, clientKey, publicKey, privateKey, localPublicKey string, cb AuthCallback) error {
-	go func() {
-		authHost = strings.TrimRight(authHost, "/")
-		data := map[string]string{"client_id": clientID, "client_key": clientKey, "public_key": publicKey, "private_key": privateKey, "peer_public_key": localPublicKey}
-		req, err := util.NewHTTPPostRequest(authHost+"/setup", data)
-		if err != nil {
-			logging.Error("new post request failed. ", err.Error())
-			return
-		}
-		res, err := req.Post()
-		if err != nil {
-			logging.Error(authHost+"send error. ", err.Error())
-		}
-		if res.StatusCode != http.StatusOK {
-			cb.OnSetupComplete(StatusError, res.Body)
-			return
-		}
-		cb.OnSetupComplete(StatusSuccess, "")
-	}()
-	return nil
-}
 
 // SetWalletInfo should be set before any transaction or client specific APIs
 // splitKeyWallet parameter is valid only if SignatureScheme is "BLS0Chain"
