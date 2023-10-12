@@ -38,10 +38,6 @@ import (
 	"go.uber.org/zap"
 )
 
-type (
-	Wei int64
-)
-
 var Logger logger.Logger
 var defaultLogLevel = logger.DEBUG
 
@@ -340,8 +336,8 @@ func (b *BridgeClient) NFTConfigGetAddress(ctx context.Context, key string) (str
 // ERC20 signature: "increaseAllowance(address,uint256)"
 //
 //nolint:funlen
-func (b *BridgeClient) IncreaseBurnerAllowance(ctx context.Context, amountWei Wei) (*types.Transaction, error) {
-	if amountWei <= 0 {
+func (b *BridgeClient) IncreaseBurnerAllowance(ctx context.Context, allowanceAmount uint64) (*types.Transaction, error) {
+	if allowanceAmount <= 0 {
 		return nil, errors.New("amount must be greater than zero")
 	}
 
@@ -349,7 +345,7 @@ func (b *BridgeClient) IncreaseBurnerAllowance(ctx context.Context, amountWei We
 	spenderAddress := common.HexToAddress(b.BridgeAddress)
 
 	// 2. Data Parameter (amount)
-	amount := big.NewInt(int64(amountWei))
+	amount := big.NewInt(int64(allowanceAmount))
 
 	tokenAddress := common.HexToAddress(b.TokenAddress)
 
