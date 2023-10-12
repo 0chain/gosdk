@@ -25,7 +25,7 @@ const (
 	SourceTokenAddress   = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
 )
 
-const BancorAPIURL = "https://api-v3.bancor.network/"
+const BancorAPIURL = "https://api-v3.bancor.network"
 
 type BridgeSDKConfig struct {
 	LogLevel        *string
