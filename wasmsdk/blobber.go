@@ -510,52 +510,6 @@ func MultiOperation(allocationID string, jsonMultiUploadOptions string) error {
 	return allocationObj.DoMultiOperation(operations)
 }
 
-func bulkUpload(jsonBulkUploadOptions string) ([]BulkUploadResult, error) {
-	var options []BulkUploadOption
-	err := json.Unmarshal([]byte(jsonBulkUploadOptions), &options)
-	if err != nil {
-		return nil, err
-	}
-
-	n := len(options)
-	wait := make(chan BulkUploadResult, 1)
-
-	for _, option := range options {
-		go func(o BulkUploadOption) {
-			result := BulkUploadResult{
-				RemotePath: o.RemotePath,
-			}
-			defer func() { wait <- result }()
-
-			ok, err := uploadWithJsFuncs(o.AllocationID, o.RemotePath,
-				o.ReadChunkFuncName,
-				o.FileSize,
-				o.ThumbnailBytes.Buffer,
-				o.IsWebstreaming,
-				o.Encrypt,
-				o.IsUpdate,
-				o.IsRepair,
-				o.NumBlocks,
-				o.CallbackFuncName)
-			result.Success = ok
-			if err != nil {
-				result.Error = err.Error()
-				result.Success = false
-			}
-
-		}(option)
-
-	}
-
-	results := make([]BulkUploadResult, 0, n)
-	for i := 0; i < n; i++ {
-		result := <-wait
-		results = append(results, result)
-	}
-
-	return results, nil
-}
-
 func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 	var options []BulkUploadOption
 	result := MultiUploadResult{}
