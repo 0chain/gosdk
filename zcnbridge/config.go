@@ -25,6 +25,8 @@ const (
 	SourceTokenAddress   = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
 )
 
+const BancorAPIURL = "https://api-v3.bancor.network/"
+
 type BridgeSDKConfig struct {
 	LogLevel        *string
 	LogPath         *string
@@ -52,6 +54,8 @@ type BridgeClient struct {
 	EthereumAddress,
 	Password string
 
+	BancorAPIURL string
+
 	ConsensusThreshold float64
 	GasLimit           uint64
 }
@@ -65,6 +69,7 @@ func NewBridgeClient(
 	password string,
 	gasLimit uint64,
 	consensusThreshold float64,
+	bancorAPIURL string,
 	ethereumClient EthereumClient,
 	transactionProvider transaction.TransactionProvider,
 	keyStore KeyStore) *BridgeClient {
@@ -76,6 +81,7 @@ func NewBridgeClient(
 		Password:            password,
 		GasLimit:            gasLimit,
 		ConsensusThreshold:  consensusThreshold,
+		BancorAPIURL:        bancorAPIURL,
 		ethereumClient:      ethereumClient,
 		transactionProvider: transactionProvider,
 		keyStore:            keyStore,
@@ -133,6 +139,7 @@ func SetupBridgeClientSDK(cfg *BridgeSDKConfig) *BridgeClient {
 		chainCfg.GetString("bridge.password"),
 		chainCfg.GetUint64("bridge.gas_limit"),
 		chainCfg.GetFloat64("bridge.consensus_threshold"),
+		BancorAPIURL,
 		ethereumClient,
 		transactionProvider,
 		keyStore,

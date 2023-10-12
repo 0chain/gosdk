@@ -3,12 +3,18 @@ package zcnbridge
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"github.com/0chain/common/core/currency"
 	"github.com/0chain/gosdk/zcnbridge/ethereum/bancor"
 	"log"
 	"math/big"
+	"net/http"
+	"net/http/httptest"
 	"os"
+	"os/signal"
 	"path"
 	"strconv"
+	"syscall"
 	"testing"
 	"time"
 
@@ -39,16 +45,15 @@ const (
 	authorizerDelegatedAddress = "0xa149B58b7e1390D152383BB03dBc79B390F648e2"
 
 	bridgeAddress      = "0x7bbbEa24ac1751317D7669f05558632c4A9113D7"
-	tokenAddress       = "0x2ec8F26ccC678c9faF0Df20208aEE3AF776160CD"
+	tokenAddress       = "0xb9EF770B6A5e12E45983C5D80545258aA38F3B78"
 	authorizersAddress = "0xEAe8229c0E457efBA1A1769e7F8c20110fF68E61"
 
 	sourceAddress = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
 
-	zcnTxnID  = "b26abeb31fcee5d2e75b26717722938a06fa5ce4a5b5e68ddad68357432caace"
-	amount    = 1e10
-	maxAmount = 1e10
-	txnFee    = 1
-	nonce     = 1
+	zcnTxnID = "b26abeb31fcee5d2e75b26717722938a06fa5ce4a5b5e68ddad68357432caace"
+	amount   = 1
+	txnFee   = 1
+	nonce    = 1
 
 	ethereumTxnID = "0x3b59971c2aa294739cd73912f0c5a7996aafb796238cf44408b0eb4af0fbac82"
 
@@ -212,7 +217,7 @@ func getEthereumClient(t mock.TestingT) *bridgemocks.EthereumClient {
 	return bridgemocks.NewEthereumClient(&ethereumClientMock{t})
 }
 
-func getBridgeClient(ethereumClient EthereumClient, transactionProvider transaction.TransactionProvider, keyStore KeyStore) *BridgeClient {
+func getBridgeClient(bancorAPIURL string, ethereumClient EthereumClient, transactionProvider transaction.TransactionProvider, keyStore KeyStore) *BridgeClient {
 	cfg := viper.New()
 
 	tempConfigFile, err := os.CreateTemp(".", "config.yaml")
@@ -245,6 +250,7 @@ func getBridgeClient(ethereumClient EthereumClient, transactionProvider transact
 		cfg.GetString("bridge.password"),
 		cfg.GetUint64("bridge.gas_limit"),
 		cfg.GetFloat64("bridge.consensus_threshold"),
+		bancorAPIURL,
 		ethereumClient,
 		transactionProvider,
 		keyStore,
@@ -297,20 +303,54 @@ func prepareKeyStoreGeneralMockCalls(keyStore *bridgemocks.KeyStore) {
 	keyStore.On("GetEthereumKeyStore").Return(ks)
 }
 
+func prepareBancorMockServer() string {
+	ts := httptest.NewServer(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			_, err := fmt.Fprintln(w, `{"data":{"dltId":"0xb9EF770B6A5e12E45983C5D80545258aA38F3B78","symbol":"ZCN","decimals":10,"rate":{"bnt":"0.175290404525335519","usd":"0.100266","eur":"0.094499","eth":"1"},"rate24hAgo":{"bnt":"0.175290404525335519","usd":"0.100266","eur":"0.094499","eth":"0.000064086171894462"}},"timestamp":{"ethereum":{"block":18333798,"timestamp":1697107211}}}`)
+			if err != nil {
+				log.Fatalln(err)
+			}
+		}))
+
+	sigs := make(chan os.Signal, 1)
+
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		load := time.NewTicker(time.Millisecond * 500)
+
+		for range load.C {
+			select {
+			case <-sigs:
+				load.Stop()
+
+				ts.Close()
+
+				close(sigs)
+			default:
+			}
+		}
+	}()
+
+	return ts.URL
+}
+
 func Test_ZCNBridge(t *testing.T) {
 	ethereumClient := getEthereumClient(t)
 	prepareEthereumClientGeneralMockCalls(&ethereumClient.Mock)
 
-	transaction := getTransaction(t)
-	prepareTransactionGeneralMockCalls(&transaction.Mock)
+	tx := getTransaction(t)
+	prepareTransactionGeneralMockCalls(&tx.Mock)
 
 	transactionProvider := getTransactionProvider(t)
-	prepareTransactionProviderGeneralMockCalls(&transactionProvider.Mock, transaction)
+	prepareTransactionProviderGeneralMockCalls(&transactionProvider.Mock, tx)
 
 	keyStore := getKeyStore(t)
 	prepareKeyStoreGeneralMockCalls(keyStore)
 
-	bridgeClient := getBridgeClient(ethereumClient, transactionProvider, keyStore)
+	bancorMockServerURL := prepareBancorMockServer()
+
+	bridgeClient := getBridgeClient(bancorMockServerURL, ethereumClient, transactionProvider, keyStore)
 
 	t.Run("should update authorizer config.", func(t *testing.T) {
 		source := &authorizerNodeSource{
@@ -410,7 +450,7 @@ func Test_ZCNBridge(t *testing.T) {
 		_, err := bridgeClient.MintZCN(context.Background(), payload)
 		require.NoError(t, err)
 
-		require.True(t, transaction.AssertCalled(
+		require.True(t, tx.AssertCalled(
 			t,
 			"ExecuteSmartContract",
 			context.Background(),
@@ -425,7 +465,7 @@ func Test_ZCNBridge(t *testing.T) {
 		_, err := bridgeClient.BurnZCN(context.Background(), amount, txnFee)
 		require.NoError(t, err)
 
-		require.True(t, transaction.AssertCalled(
+		require.True(t, tx.AssertCalled(
 			t,
 			"ExecuteSmartContract",
 			context.Background(),
@@ -537,13 +577,16 @@ func Test_ZCNBridge(t *testing.T) {
 		// 5. Target token address parameter
 		to := common.HexToAddress(tokenAddress)
 
+		amountZCN, err := currency.Coin(amount.Int64()).ToZCN()
+		require.NoError(t, err)
+
 		// 6. Max trade token amount
-		maxAmount := big.NewInt(maxAmount)
+		maxAmount := big.NewInt(int64(amountZCN * 1e18))
 
 		// 7. Bancor network smart contract address
 		contractAddress := common.HexToAddress(BancorNetworkAddress)
 
-		abi, err := bancor.IBancorNetworkMetaData.GetAbi()
+		abi, err := bancor.BancorMetaData.GetAbi()
 		require.NoError(t, err)
 
 		pack, err := abi.Pack("tradeByTargetAmount", from, to, amount, maxAmount, deadline, beneficiary)
