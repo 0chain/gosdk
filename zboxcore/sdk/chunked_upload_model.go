@@ -169,8 +169,9 @@ type UploadProgress struct {
 	ID string `json:"id"`
 
 	// ChunkSize size of chunk
-	ChunkSize  int64 `json:"chunk_size,omitempty"`
-	ActualSize int64 `json:"actual_size,omitempty"`
+	ChunkSize   int64 `json:"chunk_size,omitempty"`
+	ActualSize  int64 `json:"actual_size,omitempty"`
+	ChunkNumber int   `json:"chunk_number,omitempty"`
 	// EncryptOnUpload encrypt data on upload or not
 	EncryptOnUpload   bool   `json:"is_encrypted,omitempty"`
 	EncryptPrivateKey string `json:"-"`
@@ -200,6 +201,7 @@ type UploadData struct {
 	chunkStartIndex int
 	chunkEndIndex   int
 	isFinal         bool
+	saveProgress    bool
 	encryptedKey    string
 	uploadBody      []blobberData
 }
