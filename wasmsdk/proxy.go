@@ -246,6 +246,11 @@ func main() {
 				"createJwtSession": createJwtSession,
 				"createJwtToken":   createJwtToken,
 				"refreshJwtToken":  refreshJwtToken,
+
+				//split key
+				"SplitKeys":     SplitKeys,
+				"SetWalletInfo": SetWalletInfo,
+				"SetAuthUrl":    SetAuthUrl,
 			})
 
 			fmt.Println("__wasm_initialized__ = true;")
