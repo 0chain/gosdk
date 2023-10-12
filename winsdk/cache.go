@@ -1,8 +1,12 @@
 package main
 
 import (
+	"encoding/base64"
+	"encoding/json"
+	"errors"
 	"time"
 
+	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	lru "github.com/hashicorp/golang-lru/v2"
 )
@@ -46,6 +50,20 @@ func getAllocation(allocationID string) (*sdk.Allocation, error) {
 	cachedAllocations.Add(allocationID, it)
 
 	return it.Allocation, nil
+}
+
+func getAllocationWith(authTicket string) (*sdk.Allocation, error) {
+
+	sEnc, err := base64.StdEncoding.DecodeString(authTicket)
+	if err != nil {
+		return nil, errors.New("Error decoding the auth ticket." + err.Error())
+	}
+	at := &marker.AuthTicket{}
+	err = json.Unmarshal(sEnc, at)
+	if err != nil {
+		return nil, errors.New("Error unmarshaling the auth ticket." + err.Error())
+	}
+	return getAllocation(at.AllocationID)
 }
 
 func getFileMeta(allocationID, remotePath string) (*sdk.ConsolidatedFileMeta, error) {
