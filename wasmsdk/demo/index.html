@@ -829,8 +829,8 @@
     })
 
     onClick('btnSplitKeys', async () => {
-      const privateKey = ""
-      const numSplits = ""
+      const privateKey = "41729ed8d82f782646d2d30b9719acfd236842b9b6e47fee12b7bdbd05b35122"
+      const numSplits = 1
       try {
         const  wStr = await goWasm.sdk.SplitKeys(privateKey, numSplits)
         txtOutput.innerHTML = wStr;
