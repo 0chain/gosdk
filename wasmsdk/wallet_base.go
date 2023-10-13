@@ -50,20 +50,8 @@ func SplitKeys(privateKey string, numSplits int) (string, error) {
 // splitKeyWallet parameter is valid only if SignatureScheme is "BLS0Chain"
 //
 //	# Inputs
-//	- jsonWallet: json format of wallet
-//	{
-//	"client_id":"30764bcba73216b67c36b05a17b4dd076bfdc5bb0ed84856f27622188c377269",
-//	"client_key":"1f495df9605a4479a7dd6e5c7a78caf9f9d54e3a40f62a3dd68ed377115fe614d8acf0c238025f67a85163b9fbf31d10fbbb4a551d1cf00119897edf18b1841c",
-//	"keys":[
-//		{"public_key":"1f495df9605a4479a7dd6e5c7a78caf9f9d54e3a40f62a3dd68ed377115fe614d8acf0c238025f67a85163b9fbf31d10fbbb4a551d1cf00119897edf18b1841c","private_key":"41729ed8d82f782646d2d30b9719acfd236842b9b6e47fee12b7bdbd05b35122"}
-//	],
-//	"mnemonics":"glare mistake gun joke bid spare across diagram wrap cube swear cactus cave repeat you brave few best wild lion pitch pole original wasp",
-//	"version":"1.0",
-//	"date_created":"1662534022",
-//	"nonce":0
-//	}
-//
-// - splitKeyWallet: if wallet keys is split
+//  - jsonWallet: json format of wallet
+//  - splitKeyWallet: if wallet keys is split
 func SetWalletInfo(jsonWallet string, splitKeyWallet bool) error {
 	err := json.Unmarshal([]byte(jsonWallet), &_config.wallet)
 	if err == nil {
