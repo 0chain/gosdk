@@ -25,7 +25,7 @@ const (
 
 
 // Split keys from the primary master key
-func SplitKeys(privateKey string, numSplits int) (string, error) {
+func splitKeys(privateKey string, numSplits int) (string, error) {
 	if _config.chain.SignatureScheme != "bls0chain" {
 		return "", errors.New("", "signature key doesn't support split key")
 	}
@@ -52,7 +52,7 @@ func SplitKeys(privateKey string, numSplits int) (string, error) {
 //	# Inputs
 //  - jsonWallet: json format of wallet
 //  - splitKeyWallet: if wallet keys is split
-func SetWalletInfo(jsonWallet string, splitKeyWallet bool) error {
+func setWalletInfo(jsonWallet string, splitKeyWallet bool) error {
 	err := json.Unmarshal([]byte(jsonWallet), &_config.wallet)
 	if err == nil {
 		if _config.chain.SignatureScheme == "bls0chain" {
@@ -65,8 +65,8 @@ func SetWalletInfo(jsonWallet string, splitKeyWallet bool) error {
 
 // SetAuthUrl will be called by app to set zauth URL to SDK.
 // # Inputs
-//   - url: the url of zAuth server
-func SetAuthUrl(url string) error {
+// - url: the url of zAuth server
+func setAuthUrl(url string) error {
 	if !_config.isSplitWallet {
 		return errors.New("", "wallet type is not split key")
 	}

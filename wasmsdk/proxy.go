@@ -248,9 +248,9 @@ func main() {
 				"refreshJwtToken":  refreshJwtToken,
 
 				//split key
-				"SplitKeys":     SplitKeys,
-				"SetWalletInfo": SetWalletInfo,
-				"SetAuthUrl":    SetAuthUrl,
+				"splitKeys":     splitKeys,
+				"setWalletInfo": setWalletInfo,
+				"setAuthUrl":    setAuthUrl,
 			})
 
 			fmt.Println("__wasm_initialized__ = true;")
