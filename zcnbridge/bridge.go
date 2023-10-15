@@ -691,7 +691,7 @@ func (b *BridgeClient) Swap(ctx context.Context, amountSwap uint64, deadlinePeri
 	zcnEthRateFloat, _ := zcnEthRate.Float64()
 
 	// 4. Max trade token amount
-	maxAmount := big.NewInt(int64(amountSwapZCN * zcnEthRateFloat * 1e18))
+	maxAmount := big.NewInt(int64(amountSwapZCN * zcnEthRateFloat * 1.5 * 1e18))
 
 	// 5. Source token address parameter
 	from := common.HexToAddress(SourceTokenAddress)
@@ -699,7 +699,7 @@ func (b *BridgeClient) Swap(ctx context.Context, amountSwap uint64, deadlinePeri
 	// 6. Target token address parameter
 	to := common.HexToAddress(b.TokenAddress)
 
-	bancorInstance, transactOpts, err := b.prepareBancor(ctx, amount, "tradeByTargetAmount", from, to, amount, maxAmount, deadline, beneficiary)
+	bancorInstance, transactOpts, err := b.prepareBancor(ctx, maxAmount, "tradeByTargetAmount", from, to, amount, maxAmount, deadline, beneficiary)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to prepare bancor")
 	}
@@ -735,9 +735,10 @@ func (b *BridgeClient) prepareBancor(ctx context.Context, value *big.Int, method
 	from := common.HexToAddress(b.EthereumAddress)
 
 	gasLimitUnits, err := b.ethereumClient.EstimateGas(ctx, eth.CallMsg{
-		To:   &contractAddress,
-		From: from,
-		Data: pack,
+		To:    &contractAddress,
+		From:  from,
+		Data:  pack,
+		Value: value,
 	})
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to estimate gas limit")
