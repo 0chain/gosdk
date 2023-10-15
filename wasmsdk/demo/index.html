@@ -881,7 +881,7 @@
       try {
         const jsonWalletString = JSON.stringify(jsonWallet);
         const wallet = await goWasm.sdk.setWalletInfo(jsonWalletString, splitKeyWallet)
-        txtOutput.innerHTML = "Wallet Info is Set";
+        txtOutput.innerHTML = "wallet info is set";
       } catch (e) {
         alert(e)
       }
@@ -891,7 +891,7 @@
       const url = "Testing"
       try {
         const authURL = await goWasm.sdk.setAuthUrl(url)
-        txtOutput.innerHTML = "auth url set";
+        txtOutput.innerHTML = "auth url is set";
       } catch (e) {
         alert(e)
       }
