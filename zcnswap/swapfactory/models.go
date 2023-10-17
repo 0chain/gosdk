@@ -2,9 +2,10 @@ package swapfactory
 
 import (
 	"encoding/json"
-	cmn "github.com/ethereum/go-ethereum/common"
 	"math/big"
 	"strings"
+
+	cmn "github.com/ethereum/go-ethereum/common"
 
 	"github.com/labstack/echo"
 )

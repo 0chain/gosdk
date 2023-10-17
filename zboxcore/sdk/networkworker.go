@@ -9,8 +9,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/0chain/gosdk/core/transaction"
-
+	"github.com/0chain/gosdk/core/node"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"go.uber.org/zap"
 
@@ -55,22 +54,36 @@ func UpdateNetworkDetails() error {
 
 	shouldUpdate := UpdateRequired(networkDetails)
 	if shouldUpdate {
-		sdkInitialized = false
-		blockchain.SetMiners(networkDetails.Miners)
-		blockchain.SetSharders(networkDetails.Sharders)
-		transaction.InitCache(networkDetails.Sharders)
-		conf.InitChainNetwork(&conf.Network{
-			Sharders: networkDetails.Sharders,
-			Miners:   networkDetails.Miners,
-		})
-		sdkInitialized = true
+		forceUpdateNetworkDetails(networkDetails)
 	}
 	return nil
 }
 
+func InitNetworkDetails() error {
+	networkDetails, err := GetNetworkDetails()
+	if err != nil {
+		l.Logger.Error("Failed to update network details ", zap.Error(err))
+		return err
+	}
+	forceUpdateNetworkDetails(networkDetails)
+	return nil
+}
+
+func forceUpdateNetworkDetails(networkDetails *Network) {
+	sdkInitialized = false
+	blockchain.SetMiners(networkDetails.Miners)
+	blockchain.SetSharders(networkDetails.Sharders)
+	node.InitCache(blockchain.Sharders)
+	conf.InitChainNetwork(&conf.Network{
+		Sharders: networkDetails.Sharders,
+		Miners:   networkDetails.Miners,
+	})
+	sdkInitialized = true
+}
+
 func UpdateRequired(networkDetails *Network) bool {
 	miners := blockchain.GetMiners()
-	sharders := blockchain.GetSharders()
+	sharders := blockchain.GetAllSharders()
 	if len(miners) == 0 || len(sharders) == 0 {
 		return true
 	}
