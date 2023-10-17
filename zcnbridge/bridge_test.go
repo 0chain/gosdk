@@ -581,7 +581,7 @@ func Test_ZCNBridge(t *testing.T) {
 		require.NoError(t, err)
 
 		// 6. Max trade token amount
-		maxAmount := big.NewInt(int64(amountZCN * 1e18))
+		maxAmount := big.NewInt(int64(amountZCN * 1.5 * 1e18))
 
 		// 7. Bancor network smart contract address
 		contractAddress := common.HexToAddress(BancorNetworkAddress)
@@ -597,9 +597,10 @@ func Test_ZCNBridge(t *testing.T) {
 			"EstimateGas",
 			context.Background(),
 			eth.CallMsg{
-				To:   &contractAddress,
-				From: beneficiary,
-				Data: pack,
+				To:    &contractAddress,
+				From:  beneficiary,
+				Data:  pack,
+				Value: maxAmount,
 			},
 		))
 	})
