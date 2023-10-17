@@ -856,10 +856,11 @@
 
     onClick('btnSplitKeys', async () => {
       const privateKey = "41729ed8d82f782646d2d30b9719acfd236842b9b6e47fee12b7bdbd05b35122"
-      const numSplits = 2
+      const numSplits = 1
       try {
         const wStr = await goWasm.sdk.splitKeys(privateKey, numSplits)
         txtOutput.innerHTML = wStr;
+        console.log("splitKeys", wStr);
       } catch (e) {
         alert(e)
       }
@@ -891,7 +892,7 @@
       const url = "Testing"
       try {
         const authURL = await goWasm.sdk.setAuthUrl(url)
-        txtOutput.innerHTML = "auth url is set";
+        txtOutput.innerHTML = authURL;
       } catch (e) {
         alert(e)
       }
