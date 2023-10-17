@@ -833,6 +833,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 		for ; i < len(operations); i++ {
 			if ops > MultiOpBatchSize {
 				// max batch size reached, commit
+				connectionID = zboxutil.NewConnectionId()
 				break
 			}
 			op := operations[i]
@@ -841,6 +842,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 
 			if _, ok := previousPaths[remotePath]; ok {
 				// conflict found, commit
+				connectionID = zboxutil.NewConnectionId()
 				break
 			}
 
