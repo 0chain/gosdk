@@ -4,8 +4,10 @@ import (
 	"bufio"
 	"bytes"
 	"io"
+	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"strings"
 
 	thrown "github.com/0chain/errors"
@@ -13,41 +15,65 @@ import (
 )
 
 // Converting the video file to fmp4 format for web streaming
-func TranscodeWebStreaming(fileReader io.Reader, fileMeta FileMeta) (io.Reader, *FileMeta, error) {
-	var stdOut bytes.Buffer
+func TranscodeWebStreaming(workdir string, fileReader io.Reader, fileMeta FileMeta) (io.Reader, *FileMeta, string, error) {
 	var stdErr bytes.Buffer
 
-	args := []string{"-i", fileMeta.Path, "-g", "30", "-f", "mp4", "-movflags", "frag_keyframe+empty_moov", "pipe:1"}
-	cmdFfmpeg := exec.Command("ffmpeg", args...)
-
-	cmdFfmpeg.Stdout = bufio.NewWriter(&stdOut)
-	cmdFfmpeg.Stderr = bufio.NewWriter(&stdErr)
-
-	err := cmdFfmpeg.Run()
-
-	if err != nil {
-		logger.Logger.Error(err)
-		return nil, nil, thrown.New("Transcoding Failed: ", err.Error())
-	}
-
-	trascodedBufSlice := stdOut.Bytes()
-	transcodedFileReader := bytes.NewReader(trascodedBufSlice)
+	outDir := filepath.Join(workdir, ".zcn", "transcode")
+	// create ./zcn/transcode folder if it doesn't exists
+	os.MkdirAll(outDir, 0766) //nolint: errcheck
 
 	remoteName, remotePath := getRemoteNameAndRemotePath(fileMeta.RemoteName, fileMeta.RemotePath)
 
-	transcodedFileMeta := &FileMeta{
-		MimeType:            "video/fmp4",
+	fileName := filepath.Join(outDir, remoteName)
+	
+	logger.Logger.Info("transcode: start ", fileName)
+
+	args := []string{"-i", fileMeta.Path, "-f", "mp4", "-movflags", "frag_keyframe+empty_moov+default_base_moof", fileName, "-y"}
+	cmd := exec.Command(CmdFFmpeg, args...)
+	cmd.Stderr = bufio.NewWriter(&stdErr)
+	cmd.SysProcAttr = sysProcAttr
+	err := cmd.Run()
+
+	defer func() {
+		// w.Close()
+		err = cmd.Process.Kill()
+		if err != nil {
+			logger.Logger.Error(err)
+		}
+	}()
+
+	if err != nil {
+		logger.Logger.Error(err, stdErr.String())
+		return nil, nil, "", thrown.New("Transcoding Failed: ", err.Error())
+	}
+
+	// open file reader with readonly
+	r, err := os.Open(fileName)
+
+	if err != nil {
+		return nil, nil, fileName, err
+	}
+
+	logger.Logger.Info("transcode: done ", fileName)
+
+	fi, err := r.Stat()
+	if err != nil {
+		return nil, nil, fileName, err
+	}
+
+	fm := &FileMeta{
+		MimeType:            "video/mp4",
 		Path:                fileMeta.Path,
 		ThumbnailPath:       fileMeta.ThumbnailPath,
 		ActualHash:          fileMeta.ActualHash,
-		ActualSize:          int64(len(trascodedBufSlice)),
+		ActualSize:          fi.Size(),
 		ActualThumbnailSize: fileMeta.ActualThumbnailSize,
 		ActualThumbnailHash: fileMeta.ActualThumbnailHash,
 		RemoteName:          remoteName,
 		RemotePath:          remotePath,
 	}
 
-	return transcodedFileReader, transcodedFileMeta, nil
+	return r, fm, fileName, nil
 }
 
 func getRemoteNameAndRemotePath(remoteName string, remotePath string) (string, string) {
@@ -57,7 +83,7 @@ func getRemoteNameAndRemotePath(remoteName string, remotePath string) (string, s
 		newRemoteNameSlice = newRemoteNameSlice[:len(newRemoteNameSlice)-1]
 	}
 	newRemoteNameWithoutType := strings.Join(newRemoteNameSlice, ".")
-	newRemoteName = "raw." + newRemoteNameWithoutType + ".mp4"
+	newRemoteName = newRemoteNameWithoutType + ".mp4"
 	newRemotePath = newRemotePath + newRemoteName
 	return newRemoteName, newRemotePath
 }

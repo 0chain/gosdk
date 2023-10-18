@@ -17,14 +17,15 @@ import (
 )
 
 type PlaylistFile struct {
-	LookupHash string `gorm:"column:lookup_hash" json:"lookup_hash"`
-	Name       string `gorm:"column:name" json:"name"`
-	Path       string `gorm:"column:path" json:"path"`
-	NumBlocks  int64  `gorm:"column:num_of_blocks" json:"num_of_blocks"`
-	ParentPath string `gorm:"column:parent_path" json:"parent_path"`
-	Size       int64  `gorm:"column:size;" json:"size"`
-	MimeType   string `gorm:"column:mimetype" json:"mimetype"`
-	Type       string `gorm:"column:type" json:"type"`
+	LookupHash     string `gorm:"column:lookup_hash" json:"lookup_hash"`
+	Name           string `gorm:"column:name" json:"name"`
+	Path           string `gorm:"column:path" json:"path"`
+	NumBlocks      int64  `gorm:"column:num_of_blocks" json:"num_of_blocks"`
+	ParentPath     string `gorm:"column:parent_path" json:"parent_path"`
+	Size           int64  `gorm:"column:size;" json:"size"`
+	ActualFileSize int64
+	MimeType       string `gorm:"column:mimetype" json:"mimetype"`
+	Type           string `gorm:"column:type" json:"type"`
 }
 
 func GetPlaylist(ctx context.Context, alloc *Allocation, path, since string) ([]PlaylistFile, error) {

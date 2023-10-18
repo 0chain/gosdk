@@ -16,6 +16,7 @@ import (
 	"github.com/0chain/gosdk/core/block"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/encryption"
+	"github.com/0chain/gosdk/core/node"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/util"
 )
@@ -935,7 +936,7 @@ func (t *Transaction) Verify() error {
 	if t.txnHash == "" && t.txnStatus == StatusSuccess {
 		h := t.GetTransactionHash()
 		if h == "" {
-			transaction.Cache.Evict(t.txn.ClientID)
+			node.Cache.Evict(t.txn.ClientID)
 			return errors.New("", "invalid transaction. cannot be verified.")
 		}
 	}
@@ -944,7 +945,7 @@ func (t *Transaction) Verify() error {
 		t.txn.CreationDate = int64(common.Now())
 	}
 
-	tq, err := newTransactionQuery(_config.chain.Sharders)
+	tq, err := newTransactionQuery(Sharders.Healthy())
 	if err != nil {
 		logging.Error(err)
 		return err
@@ -970,7 +971,7 @@ func (t *Transaction) Verify() error {
 
 				// transaction is done or expired. it means random sharder might be outdated, try to query it from s/S sharders to confirm it
 				if util.MaxInt64(lfbBlockHeader.getCreationDate(now), now) >= (t.txn.CreationDate + int64(defaultTxnExpirationSeconds)) {
-					logging.Info("falling back to ", getMinShardersVerify(), " of ", len(_config.chain.Sharders), " Sharders")
+					logging.Info("falling back to ", getMinShardersVerify(), " of ", len(_config.chain.Sharders), " Sharders", len(Sharders.Healthy()), "Healthy sharders")
 					confirmBlockHeader, confirmationBlock, lfbBlockHeader, err = tq.getConsensusConfirmation(getMinShardersVerify(), t.txnHash, nil)
 				}
 
@@ -1076,8 +1077,8 @@ func GetLatestFinalized(numSharders int, timeout RequestTimeout) (b *BlockHeader
 	ctx, cancel := makeTimeoutContext(timeout)
 	defer cancel()
 
-	numSharders = len(_config.chain.Sharders) // overwrite, use all
-	queryFromShardersContext(ctx, numSharders, GET_LATEST_FINALIZED, result)
+	numSharders = len(Sharders.Healthy()) // overwrite, use all
+	Sharders.QueryFromShardersContext(ctx, numSharders, GET_LATEST_FINALIZED, result)
 
 	var (
 		maxConsensus   int
@@ -1086,6 +1087,10 @@ func GetLatestFinalized(numSharders int, timeout RequestTimeout) (b *BlockHeader
 
 	for i := 0; i < numSharders; i++ {
 		var rsp = <-result
+		if rsp == nil {
+			logging.Error("nil response")
+			continue
+		}
 
 		logging.Debug(rsp.Url, rsp.Status)
 
@@ -1120,8 +1125,8 @@ func GetLatestFinalizedMagicBlock(numSharders int, timeout RequestTimeout) ([]by
 	ctx, cancel := makeTimeoutContext(timeout)
 	defer cancel()
 
-	numSharders = len(_config.chain.Sharders) // overwrite, use all
-	queryFromShardersContext(ctx, numSharders, GET_LATEST_FINALIZED_MAGIC_BLOCK, result)
+	numSharders = len(Sharders.Healthy()) // overwrite, use all
+	Sharders.QueryFromShardersContext(ctx, numSharders, GET_LATEST_FINALIZED_MAGIC_BLOCK, result)
 
 	var (
 		maxConsensus   int
@@ -1136,6 +1141,10 @@ func GetLatestFinalizedMagicBlock(numSharders int, timeout RequestTimeout) ([]by
 
 	for i := 0; i < numSharders; i++ {
 		var rsp = <-result
+		if rsp == nil {
+			logging.Error("nil response")
+			continue
+		}
 
 		logging.Debug(rsp.Url, rsp.Status)
 
@@ -1183,11 +1192,15 @@ func GetChainStats(timeout RequestTimeout) ([]byte, error) {
 		err error
 	)
 
-	var numSharders = len(_config.chain.Sharders) // overwrite, use all
-	queryFromShardersContext(ctx, numSharders, GET_CHAIN_STATS, result)
+	var numSharders = len(Sharders.Healthy()) // overwrite, use all
+	Sharders.QueryFromShardersContext(ctx, numSharders, GET_CHAIN_STATS, result)
 	var rsp *util.GetResponse
 	for i := 0; i < numSharders; i++ {
 		var x = <-result
+		if x == nil {
+			logging.Error("nil response")
+			continue
+		}
 		if x.StatusCode != http.StatusOK {
 			continue
 		}
@@ -1426,8 +1439,8 @@ func GetBlockByRound(numSharders int, round int64, timeout RequestTimeout) (b *B
 	ctx, cancel := makeTimeoutContext(timeout)
 	defer cancel()
 
-	numSharders = len(_config.chain.Sharders) // overwrite, use all
-	queryFromShardersContext(ctx, numSharders,
+	numSharders = len(Sharders.Healthy()) // overwrite, use all
+	Sharders.QueryFromShardersContext(ctx, numSharders,
 		fmt.Sprintf("%sround=%d&content=full,header", GET_BLOCK_INFO, round),
 		result)
 
@@ -1443,7 +1456,10 @@ func GetBlockByRound(numSharders int, round int64, timeout RequestTimeout) (b *B
 
 	for i := 0; i < numSharders; i++ {
 		var rsp = <-result
-
+		if rsp == nil {
+			logging.Error("nil response")
+			continue
+		}
 		logging.Debug(rsp.Url, rsp.Status)
 
 		if rsp.StatusCode != http.StatusOK {
@@ -1508,8 +1524,8 @@ func GetMagicBlockByNumber(numSharders int, number int64, timeout RequestTimeout
 	ctx, cancel := makeTimeoutContext(timeout)
 	defer cancel()
 
-	numSharders = len(_config.chain.Sharders) // overwrite, use all
-	queryFromShardersContext(ctx, numSharders,
+	numSharders = len(Sharders.Healthy()) // overwrite, use all
+	Sharders.QueryFromShardersContext(ctx, numSharders,
 		fmt.Sprintf("%smagic_block_number=%d", GET_MAGIC_BLOCK_INFO, number),
 		result)
 
@@ -1526,6 +1542,10 @@ func GetMagicBlockByNumber(numSharders int, number int64, timeout RequestTimeout
 
 	for i := 0; i < numSharders; i++ {
 		var rsp = <-result
+		if rsp == nil {
+			logging.Error("nil response")
+			continue
+		}
 
 		logging.Debug(rsp.Url, rsp.Status)
 

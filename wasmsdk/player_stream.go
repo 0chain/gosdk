@@ -5,6 +5,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -176,8 +177,26 @@ func (p *StreamPlayer) loadList() ([]sdk.PlaylistFile, error) {
 		return sdk.GetPlaylistByAuthTicket(p.ctx, p.allocationObj, p.authTicket, p.lookupHash, lookupHash)
 	}
 
+	d, err := p.allocationObj.ListDir(p.remotePath)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Printf("dir: %+v\n", d)
+	return []sdk.PlaylistFile{
+		sdk.PlaylistFile{
+			Name:       d.Name,
+			Path:       d.Path,
+			LookupHash: d.LookupHash,
+			NumBlocks:  d.ActualNumBlocks,
+			Size:       d.Size,
+			MimeType:   d.MimeType,
+			Type:       d.Type,
+		},
+	}, nil
+
+	// return []sdk.PlaylistFile{}, nil
 	//get list from remote allocations's path
-	return sdk.GetPlaylist(p.ctx, p.allocationObj, p.remotePath, lookupHash)
+	// return sdk.GetPlaylist(p.ctx, p.allocationObj, p.remotePath, lookupHash)
 }
 
 func (p *StreamPlayer) GetNext() []byte {

@@ -10,10 +10,9 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/0chain/gosdk/core/transaction"
-
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/conf"
+	"github.com/0chain/gosdk/core/node"
 	"github.com/0chain/gosdk/core/util"
 	"go.uber.org/zap"
 )
@@ -58,7 +57,16 @@ func UpdateNetworkDetails() error {
 		_config.isConfigured = false
 		_config.chain.Miners = networkDetails.Miners
 		_config.chain.Sharders = networkDetails.Sharders
-		transaction.InitCache(networkDetails.Sharders)
+		consensus := _config.chain.SharderConsensous
+		if consensus < conf.DefaultSharderConsensous {
+			consensus = conf.DefaultSharderConsensous
+		}
+		if len(networkDetails.Sharders) < consensus {
+			consensus = len(networkDetails.Sharders)
+		}
+
+		Sharders = node.NewHolder(networkDetails.Sharders, consensus)
+		node.InitCache(Sharders)
 		conf.InitChainNetwork(&conf.Network{
 			Sharders: networkDetails.Sharders,
 			Miners:   networkDetails.Miners,
@@ -119,7 +127,16 @@ func SetNetwork(miners []string, sharders []string) {
 	_config.chain.Miners = miners
 	_config.chain.Sharders = sharders
 
-	transaction.InitCache(sharders)
+	consensus := _config.chain.SharderConsensous
+	if consensus < conf.DefaultSharderConsensous {
+		consensus = conf.DefaultSharderConsensous
+	}
+	if len(sharders) < consensus {
+		consensus = len(sharders)
+	}
+
+	Sharders = node.NewHolder(sharders, consensus)
+	node.InitCache(Sharders)
 
 	conf.InitChainNetwork(&conf.Network{
 		Miners:   miners,
