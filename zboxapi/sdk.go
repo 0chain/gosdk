@@ -238,8 +238,7 @@ func (c *Client) GetFreeStorage(ctx context.Context, phoneNumber, token string) 
 		return "", err
 	}
 	headers := map[string]string{
-		"X-JWT-Token":    token,
-		"X-App-ID-Token": "jwt-" + token,
+		"X-App-ID-Token": token,
 	}
 
 	r, err := c.createResty(ctx, csrfToken, phoneNumber, headers)
