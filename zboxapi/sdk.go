@@ -16,29 +16,25 @@ import (
 	"github.com/0chain/gosdk/core/zcncrypto"
 )
 
-func init() {
-	if sys.Sign == nil {
-		sys.Sign = func(hash string, signatureScheme string, keys []sys.KeyPair) (string, error) {
-			retSignature := ""
-			for _, kv := range keys {
-				ss := zcncrypto.NewSignatureScheme(signatureScheme)
-				err := ss.SetPrivateKey(kv.PrivateKey)
-				if err != nil {
-					return "", err
-				}
+func signHash(hash string, signatureScheme string, keys []sys.KeyPair) (string, error) {
+	retSignature := ""
+	for _, kv := range keys {
+		ss := zcncrypto.NewSignatureScheme(signatureScheme)
+		err := ss.SetPrivateKey(kv.PrivateKey)
+		if err != nil {
+			return "", err
+		}
 
-				if len(retSignature) == 0 {
-					retSignature, err = ss.Sign(hash)
-				} else {
-					retSignature, err = ss.Add(retSignature, hash)
-				}
-				if err != nil {
-					return "", err
-				}
-			}
-			return retSignature, nil
+		if len(retSignature) == 0 {
+			retSignature, err = ss.Sign(hash)
+		} else {
+			retSignature, err = ss.Add(retSignature, hash)
+		}
+		if err != nil {
+			return "", err
 		}
 	}
+	return retSignature, nil
 }
 
 type Client struct {
@@ -116,7 +112,7 @@ func (c *Client) createResty(ctx context.Context, csrfToken, phoneNumber string,
 	if c.clientPrivateKey != "" {
 		data := fmt.Sprintf("%v:%v:%v", c.clientID, phoneNumber, c.clientPublicKey)
 		hash := encryption.Hash(data)
-		sign, err := sys.Sign(hash, "bls0chain", []sys.KeyPair{{
+		sign, err := signHash(hash, "bls0chain", []sys.KeyPair{{
 			PrivateKey: c.clientPrivateKey,
 		}})
 		if err != nil {
