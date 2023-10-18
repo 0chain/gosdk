@@ -304,10 +304,10 @@ func (mo *MultiOperation) Process() error {
 			op.Error(mo.allocationObj, mo.getConsensus(), err)
 		}
 		return err
-	}
-
-	for _, op := range mo.operations {
-		op.Completed(mo.allocationObj)
+	} else {
+		for _, op := range mo.operations {
+			op.Completed(mo.allocationObj)
+		}
 	}
 
 	return nil
