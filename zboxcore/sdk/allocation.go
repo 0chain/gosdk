@@ -38,9 +38,10 @@ import (
 )
 
 var (
-	noBLOBBERS     = errors.New("", "No Blobbers set in this allocation")
-	notInitialized = errors.New("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
-	IsWasm         = false
+	noBLOBBERS       = errors.New("", "No Blobbers set in this allocation")
+	notInitialized   = errors.New("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
+	IsWasm           = false
+	MultiOpBatchSize = 10
 )
 
 const (
@@ -828,14 +829,20 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 				fmt.Sprintf("Multioperation: create connection failed. Required consensus %d got %d",
 					mo.consensusThresh, mo.operationMask.CountOnes()))
 		}
-
+		ops := 0
 		for ; i < len(operations); i++ {
+			if ops > MultiOpBatchSize {
+				// max batch size reached, commit
+				connectionID = zboxutil.NewConnectionId()
+				break
+			}
 			op := operations[i]
 			remotePath := op.RemotePath
 			parentPaths := GenerateParentPaths(remotePath)
 
 			if _, ok := previousPaths[remotePath]; ok {
 				// conflict found, commit
+				connectionID = zboxutil.NewConnectionId()
 				break
 			}
 
@@ -878,7 +885,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 				connectionID = newConnectionID
 				break
 			}
-
+			ops++
 			err = operation.Verify(a)
 			if err != nil {
 				return err
@@ -1807,7 +1814,7 @@ func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKe
 	consensus := Consensus{
 		RWMutex:         &sync.RWMutex{},
 		consensus:       len(success),
-		consensusThresh: a.consensusThreshold,
+		consensusThresh: a.DataShards,
 		fullconsensus:   a.fullconsensus,
 	}
 	if !consensus.isConsensusOk() {

@@ -160,8 +160,8 @@ func hashAndBytesOfReader(r io.Reader) (string, []byte, error) {
 
 // extractSharders returns string slice of randomly ordered sharders existing in the current network.
 func extractSharders() []string {
-	network := zcncore.GetNetwork()
-	return util.GetRandom(network.Sharders, len(network.Sharders))
+	sharders := zcncore.Sharders.Healthy()
+	return util.GetRandom(sharders, len(sharders))
 }
 
 // makeURL creates url.URL to make smart contract request to sharder.

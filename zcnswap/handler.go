@@ -2,6 +2,8 @@ package zcnswap
 
 import (
 	"crypto/ecdsa"
+	"math/big"
+
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/zcncore"
 	hdwallet "github.com/0chain/gosdk/zcncore/ethhdwallet"
@@ -10,7 +12,6 @@ import (
 	"github.com/0chain/gosdk/zcnswap/swapfactory/erc20"
 	"github.com/ethereum/go-ethereum/accounts"
 	cmn "github.com/ethereum/go-ethereum/common"
-	"math/big"
 )
 
 type ethAccount struct {

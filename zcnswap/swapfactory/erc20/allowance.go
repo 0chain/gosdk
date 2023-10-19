@@ -1,10 +1,11 @@
 package erc20
 
 import (
+	"math/big"
+
 	"github.com/0chain/gosdk/zcnswap/contracts"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 )

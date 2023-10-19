@@ -33,14 +33,12 @@ const (
 	GET_CLIENT                       = `/v1/client/get`
 	PUT_TRANSACTION                  = `/v1/transaction/put`
 	TXN_VERIFY_URL                   = `/v1/transaction/get/confirmation?hash=`
-	GET_BALANCE                      = `/v1/client/get/balance?client_id=`
 	GET_BLOCK_INFO                   = `/v1/block/get?`
 	GET_MAGIC_BLOCK_INFO             = `/v1/block/magic/get?`
 	GET_LATEST_FINALIZED             = `/v1/block/get/latest_finalized`
 	GET_LATEST_FINALIZED_MAGIC_BLOCK = `/v1/block/get/latest_finalized_magic_block`
 	GET_FEE_STATS                    = `/v1/block/get/fee_stats`
 	GET_CHAIN_STATS                  = `/v1/chain/get/stats`
-
 	// vesting SC
 
 	VESTINGSC_PFX = `/v1/screst/` + VestingSmartContractAddress
@@ -295,7 +293,7 @@ func GetMinShardersVerify() int {
 }
 
 func getMinShardersVerify() int {
-	minSharders := util.MaxInt(calculateMinRequired(float64(_config.chain.MinConfirmation), float64(len(_config.chain.Sharders))/100), 1)
+	minSharders := util.MaxInt(calculateMinRequired(float64(_config.chain.MinConfirmation), float64(len(Sharders.Healthy()))/100), 1)
 	logging.Info("Minimum sharders used for verify :", minSharders)
 	return minSharders
 }
@@ -708,57 +706,11 @@ func GetBalanceWallet(walletStr string, cb GetBalanceCallback) error {
 }
 
 func getBalanceFromSharders(clientID string) (int64, string, error) {
-	return getBalanceFieldFromSharders(clientID, "balance")
+	return Sharders.GetBalanceFieldFromSharders(clientID, "balance")
 }
 
 func getNonceFromSharders(clientID string) (int64, string, error) {
-	return getBalanceFieldFromSharders(clientID, "nonce")
-}
-
-func getBalanceFieldFromSharders(clientID, name string) (int64, string, error) {
-	result := make(chan *util.GetResponse)
-	defer close(result)
-	// getMinShardersVerify
-	var numSharders = len(_config.chain.Sharders) // overwrite, use all
-	queryFromSharders(numSharders, fmt.Sprintf("%v%v", GET_BALANCE, clientID), result)
-
-	consensusMaps := NewHttpConsensusMaps(consensusThresh)
-
-	for i := 0; i < numSharders; i++ {
-		rsp := <-result
-
-		logging.Debug(rsp.Url, rsp.Status)
-		if rsp.StatusCode != http.StatusOK {
-			logging.Error(rsp.Body)
-
-		} else {
-			logging.Debug(rsp.Body)
-		}
-
-		if err := consensusMaps.Add(rsp.StatusCode, rsp.Body); err != nil {
-			logging.Error(rsp.Body)
-		}
-	}
-
-	rate := consensusMaps.MaxConsensus * 100 / len(_config.chain.Sharders)
-	if rate < consensusThresh {
-		if strings.TrimSpace(consensusMaps.WinError) == `{"error":"value not present"}` {
-			return 0, consensusMaps.WinError, nil
-		}
-		return 0, consensusMaps.WinError, errors.New("", "get balance failed. consensus not reached")
-	}
-
-	winValue, ok := consensusMaps.GetValue(name)
-	if ok {
-		winBalance, err := strconv.ParseInt(string(winValue), 10, 64)
-		if err != nil {
-			return 0, "", fmt.Errorf("get balance failed. %w", err)
-		}
-
-		return winBalance, consensusMaps.WinInfo, nil
-	}
-
-	return 0, consensusMaps.WinInfo, errors.New("", "get balance failed. balance field is missed")
+	return Sharders.GetBalanceFieldFromSharders(clientID, "nonce")
 }
 
 // ConvertToToken converts the SAS tokens to ZCN tokens

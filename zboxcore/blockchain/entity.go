@@ -5,6 +5,8 @@ import (
 	"sync/atomic"
 
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/conf"
+	"github.com/0chain/gosdk/core/node"
 )
 
 type ChainConfig struct {
@@ -74,6 +76,7 @@ func PopulateNodes(nodesjson string) ([]string, error) {
 }
 
 var chain *ChainConfig
+var Sharders *node.NodeHolder
 
 func init() {
 	chain = &ChainConfig{
@@ -94,10 +97,11 @@ func PopulateChain(minerjson string, sharderjson string) error {
 	if err != nil {
 		return err
 	}
-	chain.Sharders, err = PopulateNodes(sharderjson)
+	sharders, err := PopulateNodes(sharderjson)
 	if err != nil {
 		return err
 	}
+	SetSharders(sharders)
 	return nil
 }
 
@@ -105,8 +109,11 @@ func GetBlockWorker() string {
 	return chain.BlockWorker
 }
 
+func GetAllSharders() []string {
+	return Sharders.All()
+}
 func GetSharders() []string {
-	return chain.Sharders
+	return Sharders.Healthy()
 }
 
 func GetMiners() []string {
@@ -134,7 +141,15 @@ func SetBlockWorker(blockWorker string) {
 }
 
 func SetSharders(sharderArray []string) {
-	chain.Sharders = sharderArray
+	consensus := conf.DefaultSharderConsensous
+	config, err := conf.GetClientConfig()
+	if err == nil && config != nil {
+		consensus = config.SharderConsensous
+	}
+	if len(sharderArray) < consensus {
+		consensus = len(sharderArray)
+	}
+	Sharders = node.NewHolder(sharderArray, consensus)
 }
 
 func SetMiners(minerArray []string) {

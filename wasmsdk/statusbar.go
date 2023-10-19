@@ -4,10 +4,11 @@
 package main
 
 import (
-	"github.com/0chain/gosdk/core/sys"
-	"gopkg.in/cheggaaa/pb.v1"
 	"path"
 	"sync"
+
+	"github.com/0chain/gosdk/core/sys"
+	"gopkg.in/cheggaaa/pb.v1"
 )
 
 // StatusBar is to check status of any operation
