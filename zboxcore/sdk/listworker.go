@@ -44,23 +44,26 @@ type listResponse struct {
 }
 
 type ListResult struct {
-	Name            string           `json:"name"`
-	Path            string           `json:"path,omitempty"`
-	Type            string           `json:"type"`
-	Size            int64            `json:"size"`
-	Hash            string           `json:"hash,omitempty"`
-	FileMetaHash    string           `json:"file_meta_hash,omitempty"`
-	MimeType        string           `json:"mimetype,omitempty"`
-	NumBlocks       int64            `json:"num_blocks"`
-	LookupHash      string           `json:"lookup_hash"`
-	EncryptionKey   string           `json:"encryption_key"`
-	ActualSize      int64            `json:"actual_size"`
-	ActualNumBlocks int64            `json:"actual_num_blocks"`
-	CreatedAt       common.Timestamp `json:"created_at"`
-	UpdatedAt       common.Timestamp `json:"updated_at"`
-	Children        []*ListResult    `json:"list"`
-	Consensus       `json:"-"`
-	deleteMask      zboxutil.Uint128 `json:"-"`
+	Name            string `json:"name"`
+	Path            string `json:"path,omitempty"`
+	Type            string `json:"type"`
+	Size            int64  `json:"size"`
+	Hash            string `json:"hash,omitempty"`
+	FileMetaHash    string `json:"file_meta_hash,omitempty"`
+	MimeType        string `json:"mimetype,omitempty"`
+	NumBlocks       int64  `json:"num_blocks"`
+	LookupHash      string `json:"lookup_hash"`
+	EncryptionKey   string `json:"encryption_key"`
+	ActualSize      int64  `json:"actual_size"`
+	ActualNumBlocks int64  `json:"actual_num_blocks"`
+	ThumbnailHash   string `json:"thumbnail_hash"`
+	ThumbnailSize   int64  `json:"thumbnail_size"`
+
+	CreatedAt  common.Timestamp `json:"created_at"`
+	UpdatedAt  common.Timestamp `json:"updated_at"`
+	Children   []*ListResult    `json:"list"`
+	Consensus  `json:"-"`
+	deleteMask zboxutil.Uint128 `json:"-"`
 }
 
 func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, blobberIdx int, rspCh chan<- *listResponse) {
@@ -215,6 +218,9 @@ func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
 		result.LookupHash = ti.ref.LookupHash
 		result.FileMetaHash = ti.ref.FileMetaHash
 		result.ActualSize = ti.ref.ActualSize
+		result.ThumbnailHash = ti.ref.ThumbnailHash
+		result.ThumbnailSize = ti.ref.ThumbnailSize
+
 		if ti.ref.ActualSize > 0 {
 			result.ActualNumBlocks = (ti.ref.ActualSize + CHUNK_SIZE - 1) / CHUNK_SIZE
 		}
@@ -271,6 +277,8 @@ func (lr *ListResult) populateChildren(children []fileref.RefEntity, childResult
 			childResult.MimeType = (child.(*fileref.FileRef)).MimeType
 			childResult.EncryptionKey = (child.(*fileref.FileRef)).EncryptedKey
 			childResult.ActualSize = (child.(*fileref.FileRef)).ActualFileSize
+			childResult.ThumbnailHash = (child.(*fileref.FileRef)).ThumbnailHash
+			childResult.ThumbnailSize = (child.(*fileref.FileRef)).ThumbnailSize
 		} else {
 			childResult.ActualSize = (child.(*fileref.Ref)).ActualSize
 		}
