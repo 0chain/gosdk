@@ -3,13 +3,17 @@
 
 package main
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 type Player interface {
 	Start() error
 	Stop()
 
 	GetNext() []byte
+	VideoSeek(pos int64) []byte
 }
 
 var currentPlayer Player
@@ -50,11 +54,21 @@ func stop() error {
 }
 
 func getNextSegment() ([]byte, error) {
+	fmt.Println("### cal get next segment")
 	if currentPlayer == nil {
 		return nil, errors.New("No player is available")
 	}
 
 	return currentPlayer.GetNext(), nil
+}
+
+func videoSeek(pos int64) ([]byte, error) {
+	fmt.Println("### cal video seek")
+	if currentPlayer == nil {
+		return nil, errors.New("No player is available")
+	}
+
+	return currentPlayer.VideoSeek(pos), nil
 }
 
 func withRecover(send func()) (success bool) {

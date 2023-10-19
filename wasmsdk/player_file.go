@@ -12,22 +12,28 @@ import (
 )
 
 type FilePlayer struct {
-	allocationID string
-	remotePath   string
-	authTicket   string
-	lookupHash   string
-	numBlocks    int
-
+	allocationID  string
+	remotePath    string
+	authTicket    string
+	lookupHash    string
+	startBlock    int64
+	reqC          chan int64
+	numBlocks     int
 	isViewer      bool
 	allocationObj *sdk.Allocation
 	authTicketObj *marker.AuthTicket
 	playlistFile  *sdk.PlaylistFile
 
-	downloadedChunks chan []byte
+	downloadedChunks chan *downloadChunks
 	downloadedLen    int
 	ctx              context.Context
 	cancel           context.CancelFunc
 	prefetchQty      int
+}
+
+type downloadChunks struct {
+	data       []byte
+	startBlock int64
 }
 
 func (p *FilePlayer) Start() error {
@@ -42,9 +48,12 @@ func (p *FilePlayer) Start() error {
 		return err
 	}
 
+	p.reqC = make(chan int64, p.prefetchQty)
+	p.reqC <- 1
+	// p.startBlock = 1
 	p.playlistFile = file
 
-	p.downloadedChunks = make(chan []byte, p.prefetchQty)
+	p.downloadedChunks = make(chan *downloadChunks, p.prefetchQty)
 
 	go p.startDownload()
 
@@ -64,52 +73,60 @@ func (p *FilePlayer) download(startBlock int64) {
 	if endBlock > p.playlistFile.NumBlocks {
 		endBlock = p.playlistFile.NumBlocks
 	}
-	fmt.Println("start:", startBlock, "end:", endBlock, "numBlocks:", p.numBlocks, "total:", p.playlistFile.NumBlocks)
+	fmt.Println("### start:", startBlock, "end:", endBlock, "numBlocks:", p.numBlocks, "total:", p.playlistFile.NumBlocks)
 
 	data, err := downloadBlocks(p.allocationObj, p.remotePath, p.authTicket, p.lookupHash, startBlock, endBlock)
-	// data, err := downloadBlocks2(int(startBlock), int(endBlock), p.allocationObj, p.remotePath)
 	if err != nil {
 		PrintError(err.Error())
 		return
 	}
 	withRecover(func() {
 		if p.downloadedChunks != nil {
-			p.downloadedChunks <- data
+			p.downloadedChunks <- &downloadChunks{
+				data:       data,
+				startBlock: startBlock,
+			}
 		}
 	})
 }
 
 func (p *FilePlayer) startDownload() {
-	fmt.Println("start download")
+	fmt.Println("### start download")
 	if p.playlistFile.NumBlocks < 1 {
-		PrintError("playlist: numBlocks is invalid")
+		PrintError("### playlist: numBlocks is invalid")
 		return
 	}
-	var startBlock int64 = 1
+
+	var prevBlockNum int64
+
 	for {
 		select {
 		case <-p.ctx.Done():
-			PrintInfo("playlist: download is cancelled")
+			PrintInfo("### playlist: download is cancelled")
 			return
 		default:
-			fmt.Println("download start:", startBlock)
+			startBlock := <-p.reqC
+			if startBlock < prevBlockNum {
+				continue
+			}
+			fmt.Println(">>> download start:", startBlock)
 			p.download(startBlock)
 
-			startBlock += int64(p.numBlocks)
-			fmt.Println("download end, new start:", startBlock)
-
-			if startBlock > p.playlistFile.NumBlocks {
-
+			prevBlockNum = startBlock
+			startBlock = startBlock + int64(p.numBlocks)
+			if startBlock+int64(p.numBlocks) > p.playlistFile.NumBlocks {
 				go func() {
 					// trigger js to close stream
-					p.downloadedChunks <- nil
+					fmt.Println("### end of file")
+					close(p.downloadedChunks)
 				}()
 				return
 			}
 
+			fmt.Println("<<< download end, new start:", startBlock)
+			p.reqC <- startBlock
 		}
 	}
-
 }
 
 func (p *FilePlayer) loadPlaylistFile() (*sdk.PlaylistFile, error) {
@@ -128,10 +145,12 @@ func (p *FilePlayer) loadPlaylistFile() (*sdk.PlaylistFile, error) {
 		dataShards            = p.allocationObj.DataShards
 		effectivePerShardSize = (int(f.ActualSize) + dataShards - 1) / dataShards
 		totalBlocks           = (effectivePerShardSize + sdk.DefaultChunkSize - 1) / sdk.DefaultChunkSize
+		// chunkDuration         = (p.numBlocks * sdk.DefaultChunkSize * p.allocationObj.DataShards * 100) / int(f.ActualSize)
 	)
 
 	fmt.Println("totalBlocks:", totalBlocks)
 	fmt.Println("file size:", f.Size)
+	// fmt.Println("chunk duration:", chunkDuration)
 
 	return &sdk.PlaylistFile{
 		Name:           f.Name,
@@ -146,15 +165,30 @@ func (p *FilePlayer) loadPlaylistFile() (*sdk.PlaylistFile, error) {
 }
 
 func (p *FilePlayer) GetNext() []byte {
-	b, ok := <-p.downloadedChunks
+	chunks, ok := <-p.downloadedChunks
 	if ok {
-		if p.downloadedLen+len(b) > int(p.playlistFile.ActualFileSize) {
-			b = b[:int(p.playlistFile.ActualFileSize)-p.downloadedLen]
+		b := chunks.data
+		fmt.Println("### get next block data:", chunks.startBlock)
+		if chunks.startBlock+int64(p.numBlocks) >= p.playlistFile.NumBlocks {
+			startIndex := int(chunks.startBlock-1) * sdk.DefaultChunkSize * p.allocationObj.DataShards
+
+			// already read data is startIndex
+			rest := p.playlistFile.ActualFileSize - int64(startIndex)
+			b = b[:rest]
 		}
-		p.downloadedLen += len(b)
+
 		return b
 	}
+	return nil
+}
 
+func (p *FilePlayer) VideoSeek(position int64) []byte {
+	seekStartBlock := p.playlistFile.NumBlocks * position / 46 // 46 is the duration of the video, this is for testing the sample video file
+	// set startBlock to new position
+	fmt.Println("### sdk seek to:", position, " new start:", seekStartBlock)
+	go func() {
+		p.reqC <- seekStartBlock
+	}()
 	return nil
 }
 
@@ -165,7 +199,7 @@ func createFilePalyer(allocationID, remotePath, authTicket, lookupHash string) (
 	player.remotePath = remotePath
 	player.authTicket = authTicket
 	player.lookupHash = lookupHash
-	player.numBlocks = 10
+	player.numBlocks = 5 // change back to 10 after debugging, 5 is for not downloading too fast to test the playback
 	player.allocationID = allocationID
 
 	//player is viewer

@@ -185,6 +185,7 @@ func main() {
 				"play":           play,
 				"stop":           stop,
 				"getNextSegment": getNextSegment,
+				"videoSeek":      videoSeek,
 
 				//allocation
 				"createAllocation":           createAllocation,

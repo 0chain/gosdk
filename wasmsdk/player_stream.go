@@ -208,6 +208,10 @@ func (p *StreamPlayer) GetNext() []byte {
 	return nil
 }
 
+func (p *StreamPlayer) VideoSeek(pos int64) []byte {
+	return nil
+}
+
 // createStreamPalyer create player for remotePath
 func createStreamPalyer(allocationID, remotePath, authTicket, lookupHash string) (*StreamPlayer, error) {
 
