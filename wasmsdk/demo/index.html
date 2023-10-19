@@ -153,6 +153,18 @@
     <img id="viewer" src="image.png" width="600" />
   </fieldset>
 
+  <fieldset>
+    <legend>Split Key</legend>
+    <span>
+      <button id="btnSplitKeys">SplitKeys</button>
+      <button id="btnSetWalletInfo">SetWalletInfo</button>
+      <button id="btnSetAuthUrl">SetAuthUrl</button>
+    </span>
+    <br>
+    <div id="splitKey">
+    </div>
+  </fieldset>
+
   <script>
     window.downloadCallback = function (totalBytes, completedBytes, error) {
       console.log("download: " + completedBytes + "/" + totalBytes + " err:" + error)
@@ -239,10 +251,10 @@
     onClick('btnSendTokensToOtherWallet', async () => {
       try {
         const output = await goWasm.sdk.send(
-        "5ad6e4d206d853833e96ff5c833369e567d2ef41ae1d5093141e1f90f1e8dcb0",
-        10000000000,
-        0
-      )
+          "5ad6e4d206d853833e96ff5c833369e567d2ef41ae1d5093141e1f90f1e8dcb0",
+          10000000000,
+          0
+        )
         console.log("successfully sent with txn hash: ", output)
       } catch (e) {
         alert(e)
@@ -260,7 +272,7 @@
       try {
         const alloc = await goWasm.sdk.createfreeallocation(token)
         console.log("create freeallocation with ID: ", alloc)
-      } catch(e) {
+      } catch (e) {
         alert(e)
       }
     })
@@ -338,7 +350,7 @@
         storagesc = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7"
         const resp = await goWasm.sdk.makeSCRestAPICall(storagesc, "/allocation", paramsJSON)
         txtOutput.innerHTML = resp
-      } catch(e) {
+      } catch (e) {
         alert(e)
       }
     })
@@ -379,22 +391,22 @@
       }
     })
 
-	onClick('btnGetUpdateAllocationMinLock', async () => {
-		let size = 100000
-		const allocationId = getSelectedAllocation()
-		if (!allocationId) {
-			alert("please selection allocationID")
-			return
-		} else {
-			console.log("allocation:", allocationId)
-		}
-		try {
-			const price = await goWasm.sdk.getUpdateAllocationMinLock(allocationId, size, true, false, "", "")
-			txtOutput.innerHTML = price
-		} catch (e) {
-			alert(e)
-		}
-	})
+    onClick('btnGetUpdateAllocationMinLock', async () => {
+      let size = 100000
+      const allocationId = getSelectedAllocation()
+      if (!allocationId) {
+        alert("please selection allocationID")
+        return
+      } else {
+        console.log("allocation:", allocationId)
+      }
+      try {
+        const price = await goWasm.sdk.getUpdateAllocationMinLock(allocationId, size, true, false, "", "")
+        txtOutput.innerHTML = price
+      } catch (e) {
+        alert(e)
+      }
+    })
 
     onClick('btnListBlobberSettings', async () => {
       const blobberID = getSelectedBlobbers()
@@ -810,26 +822,26 @@
       const objects = []
 
       objects.push(
-      { // rename file
-        operationType: `move`,
-        remotePath: `/small2-182b.txt`,
-        destPath: `/folder/small-182b.txt`,
-      },
-      { // todo: rename folder
-        operationType: `move`,
-        remotePath: `/folder`,
-        destPath: `/folder2`,
-      },
-      { // move a file to an other folder
-        operationType: `move`,
-        remotePath: `/small-182b.txt`,
-        destPath: `/folder/`,
-      },
-      { // copy a file to an other folder
-        operationType: `copy`,
-        remotePath: `/small2-182b.txt`,
-        destPath: `/folder/`,
-      },
+        { // rename file
+          operationType: `move`,
+          remotePath: `/small2-182b.txt`,
+          destPath: `/folder/small-182b.txt`,
+        },
+        { // todo: rename folder
+          operationType: `move`,
+          remotePath: `/folder`,
+          destPath: `/folder2`,
+        },
+        { // move a file to an other folder
+          operationType: `move`,
+          remotePath: `/small-182b.txt`,
+          destPath: `/folder/`,
+        },
+        { // copy a file to an other folder
+          operationType: `copy`,
+          remotePath: `/small2-182b.txt`,
+          destPath: `/folder/`,
+        },
       )
 
       let stringifiedArray = JSON.stringify(objects);
@@ -837,6 +849,50 @@
       try {
         console.log("executing MultiOps", objects[0])
         const output = await goWasm.sdk.multiOperation(allocationId, stringifiedArray)
+      } catch (e) {
+        alert(e)
+      }
+    })
+
+    onClick('btnSplitKeys', async () => {
+      const privateKey = "41729ed8d82f782646d2d30b9719acfd236842b9b6e47fee12b7bdbd05b35122"
+      const numSplits = 1
+      try {
+        const wStr = await goWasm.sdk.splitKeys(privateKey, numSplits)
+        txtOutput.innerHTML = wStr;
+        console.log("splitKeys", wStr);
+      } catch (e) {
+        alert(e)
+      }
+    })
+
+    onClick('btnSetWalletInfo', async () => {
+      const jsonWallet = {
+        "client_id": "30764bcba73216b67c36b05a17b4dd076bfdc5bb0ed84856f27622188c377269",
+        "client_key": "1f495df9605a4479a7dd6e5c7a78caf9f9d54e3a40f62a3dd68ed377115fe614d8acf0c238025f67a85163b9fbf31d10fbbb4a551d1cf00119897edf18b1841c",
+        "keys": [
+          { "public_key": "1f495df9605a4479a7dd6e5c7a78caf9f9d54e3a40f62a3dd68ed377115fe614d8acf0c238025f67a85163b9fbf31d10fbbb4a551d1cf00119897edf18b1841c", "private_key": "41729ed8d82f782646d2d30b9719acfd236842b9b6e47fee12b7bdbd05b35122" }
+        ],
+        "mnemonics": "glare mistake gun joke bid spare across diagram wrap cube swear cactus cave repeat you brave few best wild lion pitch pole original wasp",
+        "version": "1.0",
+        "date_created": "1662534022",
+        "nonce": 0
+      }
+      const splitKeyWallet = true
+      try {
+        const jsonWalletString = JSON.stringify(jsonWallet);
+        const wallet = await goWasm.sdk.setWalletInfo(jsonWalletString, splitKeyWallet)
+        txtOutput.innerHTML = "wallet info is set";
+      } catch (e) {
+        alert(e)
+      }
+    })
+
+    onClick('btnSetAuthUrl', async () => {
+      const url = "Testing"
+      try {
+        const authURL = await goWasm.sdk.setAuthUrl(url)
+        txtOutput.innerHTML = authURL;
       } catch (e) {
         alert(e)
       }
