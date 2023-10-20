@@ -91,8 +91,10 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 			httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
 			ctx, cncl := context.WithTimeout(mo.ctx, DefaultCreateConnectionTimeOut)
 			defer cncl()
-			resp, err = zboxutil.Client.Do(httpreq.WithContext(ctx))
-
+			err = zboxutil.HttpDo(ctx, cncl, httpreq, func(r *http.Response, err error) error {
+				resp = r
+				return err
+			})
 			if err != nil {
 				logger.Logger.Error("Create Connection: ", err)
 				return
