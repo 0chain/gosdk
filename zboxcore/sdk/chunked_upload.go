@@ -390,8 +390,10 @@ func (su *ChunkedUpload) process() error {
 	defer close(su.uploadChan)
 	defer su.ctxCncl(nil)
 	for {
-
+		numRequest++
+		start := time.Now()
 		chunks, err := su.readChunks(su.chunkNumber)
+		totalChunkRead += time.Since(start).Milliseconds()
 
 		// chunk, err := su.chunkReader.Next()
 		if err != nil {
@@ -598,6 +600,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 	}
 	wg := &sync.WaitGroup{}
 	var pos uint64
+	start := time.Now()
 	for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		blobber := su.blobbers[pos]
@@ -632,7 +635,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 
 	wg.Wait()
 	close(wgErrors)
-
+	totalChunkWrite += time.Since(start).Milliseconds()
 	for err := range wgErrors {
 		su.removeProgress()
 		return thrown.New("upload_failed", fmt.Sprintf("Upload failed. %s", err))
@@ -741,6 +744,7 @@ func (su *ChunkedUpload) uploadProcessor() {
 			if !ok {
 				return
 			}
+			start := time.Now()
 			wgErrors := make(chan error, len(su.blobbers))
 			wg := &sync.WaitGroup{}
 			ctx, cancel := context.WithCancel(context.TODO())
@@ -788,6 +792,7 @@ func (su *ChunkedUpload) uploadProcessor() {
 				su.progress.ChunkIndex = uploadData.chunkEndIndex
 				su.saveProgress()
 			}
+			totalChunkUpload += time.Since(start).Milliseconds()
 			if uploadData.isFinal {
 				return
 			}

@@ -218,8 +218,6 @@ func (mo *MultiOperation) Process() error {
 	if err != nil {
 		return fmt.Errorf("Operation failed: %s", err.Error())
 	}
-	logger.Logger.Info("[writemarkerLocked]", time.Since(start).Milliseconds())
-	start = time.Now()
 	status, err := mo.allocationObj.CheckAllocStatus()
 	if err != nil {
 		logger.Logger.Error("Error checking allocation status", err)
@@ -250,7 +248,7 @@ func (mo *MultiOperation) Process() error {
 	if status != Commit {
 		return ErrRetryOperation
 	}
-	logger.Logger.Info("[checkAllocStatus]", time.Since(start).Milliseconds())
+	totalStatusWM = time.Since(start).Milliseconds()
 	mo.Consensus.Reset()
 	activeBlobbers := mo.operationMask.CountOnes()
 	commitReqs := make([]*CommitRequest, activeBlobbers)
@@ -278,7 +276,7 @@ func (mo *MultiOperation) Process() error {
 		counter++
 	}
 	wg.Wait()
-	logger.Logger.Info("[commitRequests]", time.Since(start).Milliseconds())
+	totalCommitBlobber = time.Since(start).Milliseconds()
 	rollbackMask := zboxutil.NewUint128(0)
 	for _, commitReq := range commitReqs {
 		if commitReq.result != nil {
@@ -313,5 +311,4 @@ func (mo *MultiOperation) Process() error {
 	}
 
 	return nil
-
 }

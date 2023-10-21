@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"sync"
 	"time"
@@ -15,6 +15,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
+	l "github.com/0chain/gosdk/zboxcore/logger"
 	zlogger "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
@@ -115,7 +116,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 		if len(req.remotefilepath) > 0 {
 			req.remotefilepathhash = fileref.GetReferenceLookup(req.allocationID, req.remotefilepath)
 		}
-
+		start := time.Now()
 		var httpreq *http.Request
 		httpreq, err = zboxutil.NewDownloadRequest(req.blobber.Baseurl, req.allocationID, req.allocationTx)
 		if err != nil {
@@ -151,9 +152,9 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			if resp.Body != nil {
 				defer resp.Body.Close()
 			}
-
+			l.Logger.Info("[downloadReqBlobber]", time.Since(start).Milliseconds())
 			var rspData downloadBlock
-			respBody, err := ioutil.ReadAll(resp.Body)
+			respBody, err := io.ReadAll(resp.Body)
 			if err != nil {
 				return err
 			}
@@ -171,7 +172,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 				return err
 			}
 			if req.contentMode == DOWNLOAD_CONTENT_FULL && req.shouldVerify {
-
+				now := time.Now()
 				vmp := util.MerklePathForMultiLeafVerification{
 					Nodes:    dR.Nodes,
 					Index:    dR.Indexes,
@@ -183,6 +184,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 				if err != nil {
 					return errors.New("merkle_path_verification_error", err.Error())
 				}
+				l.Logger.Info("[verifyMultiBlock]", time.Since(now).Milliseconds())
 			}
 
 			rspData.idx = req.blobberIdx
@@ -199,7 +201,9 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 				if req.chunkSize == 0 {
 					req.chunkSize = CHUNK_SIZE
 				}
+				now := time.Now()
 				rspData.BlockChunks = req.splitData(dR.Data, req.chunkSize)
+				l.Logger.Info("[splitData]", time.Since(now).Milliseconds())
 			}
 
 			zlogger.Logger.Debug(fmt.Sprintf("downloadBlobberBlock 200 OK: blobberID: %v, clientID: %v, blockNum: %d", req.blobber.ID, client.GetClientID(), header.BlockNum))

@@ -55,6 +55,8 @@ type chunkedUploadChunkReader struct {
 	encscheme encryption.EncryptionScheme
 	// hasher to calculate actual file hash, validation root and fixed merkle root
 	hasher Hasher
+	// Chunke byte slice
+	chunkBytes []byte
 }
 
 // createChunkReader create ChunkReader instance
@@ -98,7 +100,7 @@ func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards i
 	}
 
 	r.chunkDataSizePerRead = r.chunkDataSize * int64(dataShards)
-
+	r.chunkBytes = make([]byte, r.chunkDataSizePerRead)
 	return r, nil
 }
 
@@ -139,8 +141,7 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 		FragmentSize: 0,
 	}
 
-	chunkBytes := make([]byte, r.chunkDataSizePerRead)
-	readLen, err := r.fileReader.Read(chunkBytes)
+	readLen, err := r.fileReader.Read(r.chunkBytes)
 	if err != nil {
 
 		if !errors.Is(err, io.EOF) {
@@ -158,7 +159,7 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 
 	chunk.FragmentSize = int64(math.Ceil(float64(readLen)/float64(r.dataShards))) + r.chunkHeaderSize
 	if readLen < int(r.chunkDataSizePerRead) {
-		chunkBytes = chunkBytes[:readLen]
+		r.chunkBytes = r.chunkBytes[:readLen]
 		chunk.IsFinal = true
 	}
 
@@ -170,11 +171,11 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 		}
 	}
 
-	err = r.hasher.WriteToFile(chunkBytes)
+	err = r.hasher.WriteToFile(r.chunkBytes)
 	if err != nil {
 		return chunk, err
 	}
-	fragments, err := r.erasureEncoder.Split(chunkBytes)
+	fragments, err := r.erasureEncoder.Split(r.chunkBytes)
 	if err != nil {
 		return nil, err
 	}

@@ -37,6 +37,16 @@ import (
 	"go.uber.org/zap"
 )
 
+// timing logs for upload
+var (
+	numRequest         int
+	totalChunkRead     int64
+	totalChunkWrite    int64
+	totalChunkUpload   int64
+	totalStatusWM      int64
+	totalCommitBlobber int64
+)
+
 var (
 	noBLOBBERS       = errors.New("", "No Blobbers set in this allocation")
 	notInitialized   = errors.New("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
@@ -314,7 +324,9 @@ func (a *Allocation) dispatchWork(ctx context.Context) {
 		case downloadReq := <-a.downloadChan:
 			l.Logger.Info(fmt.Sprintf("received a download request for %v\n", downloadReq.remotefilepath))
 			go func() {
+				start := time.Now()
 				downloadReq.processDownload(ctx)
+				l.Logger.Info("[processDownload]", time.Since(start).Seconds())
 			}()
 		case repairReq := <-a.repairChan:
 
@@ -459,6 +471,7 @@ func (a *Allocation) EncryptAndUploadFileWithThumbnail(
 }
 
 func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileNames []string, thumbnailPaths []string, encrypts []bool, chunkNumbers []int, remotePaths []string, isUpdate []bool, isWebstreaming []bool, status StatusCallback) error {
+	now := time.Now()
 	if len(localPaths) != len(thumbnailPaths) {
 		return errors.New("invalid_value", "length of localpaths and thumbnailpaths must be equal")
 	}
@@ -561,6 +574,7 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 		logger.Logger.Error("Error in multi upload ", err.Error())
 		return err
 	}
+	logger.Logger.Info("Multi upload completed", zap.Duration("time", time.Duration(time.Since(now).Seconds())))
 	return nil
 }
 
@@ -905,6 +919,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 			}
 		}
 	}
+	l.Logger.Info("-----------------MultiOperation completed-----------------", zap.Int("numRequests", numRequest), zap.Int64("avgReadChunk", totalChunkRead/int64(numRequest)), zap.Int64("avgWriteChunk", totalChunkWrite/int64(numRequest)), zap.Int64("avgUploadTime", totalChunkUpload/int64(numRequest)), zap.Int64("lockWMStatus", totalStatusWM), zap.Int64("commitBlobber", totalCommitBlobber))
 	return nil
 }
 
@@ -1137,7 +1152,7 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 				a.downloadChan <- dr
 			}(dr)
 		}
-		l.Logger.Info("[processReadMarker]", zap.String("allocation_id", a.ID),
+		l.Logger.Info("[processReadMarker]",
 			zap.Int("num of download requests", len(drs)),
 			zap.Duration("processDownloadRequest", elapsedProcessDownloadRequest))
 		return
@@ -1165,7 +1180,7 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 	wg.Wait()
 	elapsedSubmitReadmarker := time.Since(now) - elapsedProcessDownloadRequest
 
-	l.Logger.Info("[processReadMarker]", zap.String("allocation_id", a.ID),
+	l.Logger.Info("[processReadMarker]",
 		zap.Int("num of download requests", len(drs)),
 		zap.Duration("processDownloadRequest", elapsedProcessDownloadRequest),
 		zap.Duration("submitReadmarker", elapsedSubmitReadmarker))
