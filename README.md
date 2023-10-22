@@ -60,7 +60,7 @@ This repository currently supports the following platforms:
 4. Run the executable
 
         ./sdkversion
-5. If it prints the gosdk version installed then setup is complete.
+5. If the setup process completed successfully, the command will return the installed SDK version.
 
 
 ## Mobile Builds
