@@ -143,8 +143,6 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 
 		header.ToHeader(httpreq)
 
-		zlogger.Logger.Debug(fmt.Sprintf("downloadBlobberBlock - blobberID: %v, clientID: %v, blockNum: %d", req.blobber.ID, client.GetClientID(), header.BlockNum))
-
 		err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
 			if err != nil {
 				return err
@@ -179,7 +177,6 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 					RootHash: req.blobberFile.validationRoot,
 					DataSize: req.blobberFile.size,
 				}
-				zlogger.Logger.Info("verifying multiple blocks")
 				err = vmp.VerifyMultipleBlocks(dR.Data)
 				if err != nil {
 					return errors.New("merkle_path_verification_error", err.Error())
@@ -201,9 +198,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 				if req.chunkSize == 0 {
 					req.chunkSize = CHUNK_SIZE
 				}
-				now := time.Now()
 				rspData.BlockChunks = req.splitData(dR.Data, req.chunkSize)
-				l.Logger.Info("[splitData]", time.Since(now).Milliseconds())
 			}
 
 			zlogger.Logger.Debug(fmt.Sprintf("downloadBlobberBlock 200 OK: blobberID: %v, clientID: %v, blockNum: %d", req.blobber.ID, client.GetClientID(), header.BlockNum))

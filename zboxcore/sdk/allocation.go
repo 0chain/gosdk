@@ -574,7 +574,7 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 		logger.Logger.Error("Error in multi upload ", err.Error())
 		return err
 	}
-	logger.Logger.Info("Multi upload completed", zap.Duration("time", time.Duration(time.Since(now).Seconds())))
+	logger.Logger.Info("Multi upload completed", zap.Float64("time", time.Since(now).Seconds()))
 	return nil
 }
 
@@ -919,7 +919,9 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 			}
 		}
 	}
-	l.Logger.Info("-----------------MultiOperation completed-----------------", zap.Int("numRequests", numRequest), zap.Int64("avgReadChunk", totalChunkRead/int64(numRequest)), zap.Int64("avgWriteChunk", totalChunkWrite/int64(numRequest)), zap.Int64("avgUploadTime", totalChunkUpload/int64(numRequest)), zap.Int64("lockWMStatus", totalStatusWM), zap.Int64("commitBlobber", totalCommitBlobber))
+	l.Logger.Info("-----------------MultiOperation completed-----------------")
+	l.Logger.Info(fmt.Sprintf("avgReadChunk: %v avgWriteChunk: %v avgUploadTime: %v lockWMStatus: %v commitBlobber: %v", totalChunkRead/int64(numRequest), totalChunkWrite/int64(numRequest), totalChunkUpload/int64(numRequest), totalStatusWM, totalCommitBlobber))
+	// "numRequests", numRequest, "avgReadChunk", totalChunkRead/int64(numRequest), "avgWriteChunk", totalChunkWrite/int64(numRequest), "avgUploadTime", totalChunkUpload/int64(numRequest), "lockWMStatus", totalStatusWM), ("commitBlobber", totalCommitBlobber))
 	return nil
 }
 
