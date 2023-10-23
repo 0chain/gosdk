@@ -134,12 +134,12 @@ func (req *DownloadRequest) getBlocksDataFromBlobbers(startBlock, totalBlock int
 // getBlocksData will get data blocks for some interval from minimal blobers and aggregate them and
 // return to the caller
 func (req *DownloadRequest) getBlocksData(startBlock, totalBlock int64) ([]byte, error) {
-
+	now := time.Now()
 	shards, err := req.getBlocksDataFromBlobbers(startBlock, totalBlock)
 	if err != nil {
 		return nil, err
 	}
-
+	elapsedGetBlockData := time.Since(now).Milliseconds()
 	// erasure decoding
 	// Can we benefit from goroutine for erasure decoding??
 	c := req.datashards * req.effectiveBlockSize
@@ -155,6 +155,8 @@ func (req *DownloadRequest) getBlocksData(startBlock, totalBlock int64) ([]byte,
 		copy(data[index:index+c], d)
 
 	}
+	elapsedErasureDecoding := time.Since(now).Milliseconds() - elapsedGetBlockData
+	logger.Logger.Info(fmt.Sprintln("elapsedGetBlockData: ", elapsedGetBlockData, "elapsedErasureDecoding: ", elapsedErasureDecoding))
 	return data, nil
 }
 
@@ -417,7 +419,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	var isPREAndWholeFile bool
 	if !req.shouldVerify && (startBlock == 0 && endBlock == chunksPerShard) {
 		actualFileHasher = sha3.New256()
-		isPREAndWholeFile = true
+		// isPREAndWholeFile = true
 	}
 
 	n := int((endBlock - startBlock + numBlocks - 1) / numBlocks)
@@ -427,7 +429,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 
 	var wg sync.WaitGroup
 	wg.Add(1)
-
+	var totalWriteTime int64
 	// Handle writing the blocks in order as soon as they are downloaded
 	go func() {
 		buffer := make(map[int][]byte)
@@ -445,7 +447,9 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 						}
 					}
 				}
+				now := time.Now()
 				_, err = req.fileHandler.Write(data[:numBytes])
+				totalWriteTime += time.Since(now).Milliseconds()
 
 				if err != nil {
 					req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
@@ -477,8 +481,9 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 								}
 							}
 						}
+						now := time.Now()
 						_, err = req.fileHandler.Write(block.data[:numBytes])
-
+						totalWriteTime += time.Since(now).Milliseconds()
 						if err != nil {
 							req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
 							return
