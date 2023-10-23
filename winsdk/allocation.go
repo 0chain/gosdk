@@ -7,6 +7,7 @@ import (
 	"C"
 )
 import (
+	"context"
 	"encoding/json"
 
 	"github.com/0chain/gosdk/zboxcore/sdk"
@@ -49,10 +50,6 @@ func ListAllocations() *C.char {
 	return WithJSON(items, nil)
 }
 
-type FreeMarker struct {
-	FreeTokens float64 `json:"free_tokens"`
-}
-
 // CreateFreeAllocation create a free allocation
 // ## Inputs
 //   - freeStorageMarker
@@ -63,17 +60,23 @@ type FreeMarker struct {
 //     }
 //
 //export CreateFreeAllocation
-func CreateFreeAllocation(freeStorageMarker *C.char) *C.char {
+func CreateFreeAllocation(phoneNumber, jwtToken *C.char) *C.char {
 
-	marker := &FreeMarker{}
-	fs := C.GoString(freeStorageMarker)
-	err := json.Unmarshal([]byte(fs), marker)
+	marker, err := zboxApiClient.GetFreeStorage(context.TODO(), C.GoString(phoneNumber), C.GoString(jwtToken))
 	if err != nil {
-		log.Fatal("unmarshalling marker", err)
+		log.Error("win: ", err)
+		return WithJSON("", err)
 	}
+
+	fs, err := json.Marshal(marker)
+	if err != nil {
+		log.Error("win: ", err)
+		return WithJSON("", err)
+	}
+
 	lock := zcncore.ConvertToValue(marker.FreeTokens)
 
-	allocationID, _, err := sdk.CreateFreeAllocation(fs, lock)
+	allocationID, _, err := sdk.CreateFreeAllocation(string(fs), lock)
 
 	if err != nil {
 		log.Error("win: ", err, "lock: ", lock, " marker:", fs)

@@ -232,10 +232,10 @@ func (c *Client) RefreshJwtToken(ctx context.Context, phoneNumber string, token 
 	return result.Token, nil
 }
 
-func (c *Client) GetFreeStorage(ctx context.Context, phoneNumber, token string) (string, error) {
+func (c *Client) GetFreeStorage(ctx context.Context, phoneNumber, token string) (*FreeMarker, error) {
 	csrfToken, err := c.GetCsrfToken(ctx)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	headers := map[string]string{
 		"X-App-ID-Token": token,
@@ -244,22 +244,22 @@ func (c *Client) GetFreeStorage(ctx context.Context, phoneNumber, token string) 
 	r, err := c.createResty(ctx, csrfToken, phoneNumber, headers)
 
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	var result string
+	result := &FreeStorageResponse{}
 	r.DoGet(ctx, c.baseUrl+"/v2/freestorage").
 		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
 			if err != nil {
 				return err
 			}
-
 			return c.parseResponse(resp, respBody, result)
 		})
 
 	if errs := r.Wait(); len(errs) > 0 {
-		return "", errs[0]
+		return nil, errs[0]
 	}
 
-	return result, nil
+	return result.ToMarker()
+
 }

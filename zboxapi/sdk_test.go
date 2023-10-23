@@ -68,6 +68,8 @@ func TestGetFreeStorage(t *testing.T) {
 	require.NotEmpty(t, token)
 
 	marker, err := c.GetFreeStorage(context.TODO(), PhoneNumber, "jwt-"+token)
-	require.Nil(t, err)
-	require.NotEmpty(t, marker)
+
+	require.NoError(t, err)
+	require.NotEmpty(t, marker.Assigner)
+	require.Equal(t, ClientID, marker.Recipient)
 }
