@@ -88,6 +88,9 @@ func (r *RepairRequest) iterateDir(a *Allocation, dir *ListResult) {
 					err := a.deleteFile(dir.Path, 0, consensus, dir.deleteMask)
 					if err != nil {
 						l.Logger.Error("repair_file_failed", zap.Error(err))
+						if r.statusCB != nil {
+							r.statusCB.Error(a.ID, dir.Path, OpRepair, err)
+						}
 						return
 					}
 					r.filesRepaired++
