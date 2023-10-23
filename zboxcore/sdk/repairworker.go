@@ -7,6 +7,7 @@ import (
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	l "github.com/0chain/gosdk/zboxcore/logger"
+	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"go.uber.org/zap"
 )
 
@@ -86,6 +87,17 @@ func (r *RepairRequest) iterateDir(a *Allocation, dir *ListResult) {
 				if consensus < a.DataShards {
 
 					err := a.deleteFile(dir.Path, 0, consensus, dir.deleteMask)
+					if err != nil {
+						l.Logger.Error("repair_file_failed", zap.Error(err))
+						if r.statusCB != nil {
+							r.statusCB.Error(a.ID, dir.Path, OpRepair, err)
+						}
+						return
+					}
+					r.filesRepaired++
+				} else if consensus < len(a.Blobbers) {
+					createMask := dir.deleteMask.Not().And(zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1))
+					err := a.createDir(dir.Path, 0, createMask.CountOnes(), createMask)
 					if err != nil {
 						l.Logger.Error("repair_file_failed", zap.Error(err))
 						if r.statusCB != nil {
