@@ -11,10 +11,17 @@ import (
 
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/encryption"
+	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/resty"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/core/zcncrypto"
 )
+
+var log logger.Logger
+
+func GetLogger() *logger.Logger {
+	return &log
+}
 
 func signHash(hash string, signatureScheme string, keys []sys.KeyPair) (string, error) {
 	retSignature := ""
@@ -253,6 +260,8 @@ func (c *Client) GetFreeStorage(ctx context.Context, phoneNumber, token string) 
 			if err != nil {
 				return err
 			}
+
+			log.Info("zboxapi: ", string(respBody))
 			return c.parseResponse(resp, respBody, result)
 		})
 

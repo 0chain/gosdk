@@ -7,9 +7,9 @@ import (
 	"C"
 )
 import (
-	"context"
 	"encoding/json"
 
+	"github.com/0chain/gosdk/zboxapi"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk/zcncore"
 )
@@ -52,8 +52,7 @@ func ListAllocations() *C.char {
 
 // CreateFreeAllocation create a free allocation
 // ## Inputs
-//   - phonumber
-//   - token
+//   - freeMarker
 //     return
 //     {
 //     "error":"",
@@ -61,15 +60,11 @@ func ListAllocations() *C.char {
 //     }
 //
 //export CreateFreeAllocation
-func CreateFreeAllocation(phoneNumber, token *C.char) *C.char {
+func CreateFreeAllocation(freemarker *C.char) *C.char {
 
-	marker, err := zboxApiClient.GetFreeStorage(context.TODO(), C.GoString(phoneNumber), C.GoString(token))
-	if err != nil {
-		log.Error("win: ", err)
-		return WithJSON("", err)
-	}
-
-	fs, err := json.Marshal(marker)
+	marker := &zboxapi.FreeMarker{}
+	js := C.GoString(freemarker)
+	err := json.Unmarshal([]byte(js), marker)
 	if err != nil {
 		log.Error("win: ", err)
 		return WithJSON("", err)
@@ -77,10 +72,10 @@ func CreateFreeAllocation(phoneNumber, token *C.char) *C.char {
 
 	lock := zcncore.ConvertToValue(marker.FreeTokens)
 
-	allocationID, _, err := sdk.CreateFreeAllocation(string(fs), lock)
+	allocationID, _, err := sdk.CreateFreeAllocation(js, lock)
 
 	if err != nil {
-		log.Error("win: ", err, "lock: ", lock, " marker:", fs)
+		log.Error("win: ", err, "lock: ", lock, " marker:", js)
 		return WithJSON("", err)
 	}
 

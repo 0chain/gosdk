@@ -131,3 +131,24 @@ func RefreshJwtToken(phoneNumber, token *C.char) *C.char {
 	}
 	return WithJSON(zboxApiClient.RefreshJwtToken(context.TODO(), C.GoString(phoneNumber), C.GoString(token)))
 }
+
+// GetFreeMarker create a free storage marker
+// ## Inputs
+//   - phoneNumber
+//   - token
+//     return
+//     {
+//     "error":"",
+//     "result":"{}",
+//     }
+//
+//export GetFreeMarker
+func GetFreeMarker(phoneNumber, token *C.char) *C.char {
+	marker, err := zboxApiClient.GetFreeStorage(context.TODO(), C.GoString(phoneNumber), C.GoString(token))
+	if err != nil {
+		log.Error("win: ", err)
+		return WithJSON("", err)
+	}
+
+	return WithJSON(marker, nil)
+}

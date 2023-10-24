@@ -52,6 +52,9 @@ func SetLogFile(file *C.char) *C.char {
 	zboxutil.GetLogger().SetLevel(logger.DEBUG)
 	zboxutil.GetLogger().SetLogFile(f, true)
 
+	zboxapi.GetLogger().SetLevel(logger.DEBUG)
+	zboxapi.GetLogger().SetLogFile(f, true)
+
 	log.SetLogFile(f, true)
 	log.SetLevel(logger.DEBUG)
 
