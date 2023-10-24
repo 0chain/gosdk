@@ -52,7 +52,8 @@ func ListAllocations() *C.char {
 
 // CreateFreeAllocation create a free allocation
 // ## Inputs
-//   - freeStorageMarker
+//   - phonumber
+//   - token
 //     return
 //     {
 //     "error":"",
