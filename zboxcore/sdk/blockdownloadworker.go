@@ -150,7 +150,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			if resp.Body != nil {
 				defer resp.Body.Close()
 			}
-			l.Logger.Info("[downloadReqBlobber]", time.Since(start).Milliseconds())
+			elapsedDownloadReqBlobber := time.Since(start).Milliseconds()
 			var rspData downloadBlock
 			respBody, err := io.ReadAll(resp.Body)
 			if err != nil {
@@ -201,7 +201,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 				rspData.BlockChunks = req.splitData(dR.Data, req.chunkSize)
 			}
 
-			zlogger.Logger.Debug(fmt.Sprintf("downloadBlobberBlock 200 OK: blobberID: %v, clientID: %v, blockNum: %d", req.blobber.ID, client.GetClientID(), header.BlockNum))
+			zlogger.Logger.Debug(fmt.Sprintf("downloadBlobberBlock 200 OK: blobberID: %v, clientID: %v, blockNum: %d, downloadReqBlobber: %v, totalTime: %v", req.blobber.ID, client.GetClientID(), header.BlockNum, elapsedDownloadReqBlobber, time.Since(start).Milliseconds()))
 
 			req.result <- &rspData
 			return nil
