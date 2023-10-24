@@ -60,9 +60,9 @@ func ListAllocations() *C.char {
 //     }
 //
 //export CreateFreeAllocation
-func CreateFreeAllocation(phoneNumber, jwtToken *C.char) *C.char {
+func CreateFreeAllocation(phoneNumber, token *C.char) *C.char {
 
-	marker, err := zboxApiClient.GetFreeStorage(context.TODO(), C.GoString(phoneNumber), C.GoString(jwtToken))
+	marker, err := zboxApiClient.GetFreeStorage(context.TODO(), C.GoString(phoneNumber), C.GoString(token))
 	if err != nil {
 		log.Error("win: ", err)
 		return WithJSON("", err)
