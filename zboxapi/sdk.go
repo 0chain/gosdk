@@ -274,7 +274,7 @@ func (c *Client) GetFreeStorage(ctx context.Context, phoneNumber, token string) 
 
 }
 
-func (c *Client) AddSharedInfo(ctx context.Context, phoneNumber, token string, s ShareInfo) error {
+func (c *Client) SaveSharedInfo(ctx context.Context, phoneNumber, token string, s ShareInfo) error {
 	csrfToken, err := c.GetCsrfToken(ctx)
 	if err != nil {
 		return err

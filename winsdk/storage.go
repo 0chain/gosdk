@@ -12,7 +12,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
 
+	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
 
@@ -555,4 +557,91 @@ func GetDownloadStatus(key *C.char, isThumbnail bool) *C.char {
 	}
 
 	return WithJSON(s, nil)
+}
+
+// CreateAuthTicket - create AuthTicket for sharing
+// ## Inputs
+//   - allocationID
+//   - remotePath
+//   - refereeClientID
+//   - refereePublicEncryptionKey
+//   - availableAfter
+//   - expirationSeconds
+//
+// ## Outputs
+//
+//	{
+//	"error":"",
+//	"result":"{}",
+//	}
+//
+//export CreateAuthTicket
+func CreateAuthTicket(allocationID, remotePath, refereeClientID, refereePublicEncryptionKey, availableAfter *C.char, expirationSeconds int64) *C.char {
+	alloc, err := getAllocation(C.GoString(allocationID))
+	if err != nil {
+		log.Error("win: ", err)
+		return WithJSON(nil, err)
+	}
+
+	rPath := C.GoString(remotePath)
+
+	fileMeta, err := alloc.GetFileMeta(rPath)
+	if err != nil {
+		log.Error("win: ", err)
+		return WithJSON(nil, err)
+	}
+
+	af := time.Now()
+	availableAfterString := C.GoString(availableAfter)
+
+	if len(availableAfterString) > 0 {
+		aa, err := common.ParseTime(af, availableAfterString)
+		if err != nil {
+			log.Error("win: ", err)
+			return WithJSON(nil, err)
+		}
+		af = *aa
+	}
+
+	at, err := alloc.GetAuthTicket(rPath, fileMeta.Name, fileMeta.Type, C.GoString(refereeClientID), C.GoString(refereePublicEncryptionKey), expirationSeconds, &af)
+	if err != nil {
+		log.Error("win: ", err)
+		return WithJSON(nil, err)
+	}
+
+	return WithJSON(at, nil)
+
+}
+
+// DeleteAuthTicket - delete AuthTicket
+// ## Inputs
+//   - allocationID
+//   - remotePath
+//   - refereeClientID
+//
+// ## Outputs
+//
+//	{
+//	"error":"",
+//	"result":"true",
+//	}
+//
+//export DeleteAuthTicket
+func DeleteAuthTicket(allocationID, remotePath, refereeClientID *C.char) *C.char {
+	alloc, err := getAllocation(C.GoString(allocationID))
+	if err != nil {
+		log.Error("win: ", err)
+		return WithJSON(false, err)
+	}
+
+	rPath := C.GoString(remotePath)
+
+	err = alloc.RevokeShare(rPath, C.GoString(refereeClientID))
+	if err != nil {
+		log.Error("win: ", err)
+		return WithJSON(false, err)
+	}
+
+	return WithJSON(true, nil)
+
 }
