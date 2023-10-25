@@ -1,6 +1,7 @@
 package zboxapi
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -270,5 +271,158 @@ func (c *Client) GetFreeStorage(ctx context.Context, phoneNumber, token string) 
 	}
 
 	return result.ToMarker()
+
+}
+
+func (c *Client) AddSharedInfo(ctx context.Context, phoneNumber, token string, s ShareInfo) error {
+	csrfToken, err := c.GetCsrfToken(ctx)
+	if err != nil {
+		return err
+	}
+	headers := map[string]string{
+		"X-App-ID-Token": token,
+	}
+
+	r, err := c.createResty(ctx, csrfToken, phoneNumber, headers)
+
+	if err != nil {
+		return err
+	}
+
+	buf, err := json.Marshal(s)
+	if err != nil {
+		return err
+	}
+
+	var result JsonResult
+	r.DoPost(ctx, bytes.NewReader(buf), c.baseUrl+"/v2/shareinfo").
+		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
+			if err != nil {
+				return err
+			}
+
+			log.Info("zboxapi: ", string(respBody))
+			return c.parseResponse(resp, respBody, &result)
+		})
+
+	if errs := r.Wait(); len(errs) > 0 {
+		return errs[0]
+	}
+
+	return nil
+}
+
+func (c *Client) DeleteSharedInfo(ctx context.Context, phoneNumber, token, authTicket string, lookupHash string) error {
+	csrfToken, err := c.GetCsrfToken(ctx)
+	if err != nil {
+		return err
+	}
+	headers := map[string]string{
+		"X-App-ID-Token": token,
+	}
+
+	r, err := c.createResty(ctx, csrfToken, phoneNumber, headers)
+
+	if err != nil {
+		return err
+	}
+
+	var result JsonResult
+	r.DoDelete(ctx, c.baseUrl+"/v2/shareinfo?auth_ticket="+authTicket+"&lookup_hash="+lookupHash).
+		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
+			if err != nil {
+				return err
+			}
+
+			log.Info("zboxapi: ", string(respBody))
+			return c.parseResponse(resp, respBody, &result)
+		})
+
+	if errs := r.Wait(); len(errs) > 0 {
+		return errs[0]
+	}
+
+	return nil
+}
+
+func (c *Client) GetSharedByMe(ctx context.Context, phoneNumber, token string) ([]SharedInfoSent, error) {
+	csrfToken, err := c.GetCsrfToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+	headers := map[string]string{
+		"X-App-ID-Token": token,
+	}
+
+	r, err := c.createResty(ctx, csrfToken, phoneNumber, headers)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var result []SharedInfoSent
+	r.DoGet(ctx, c.baseUrl+"/v2/shareinfo/shared?share_info_type=private").
+		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
+			if err != nil {
+				return err
+			}
+
+			log.Info("zboxapi: ", string(respBody))
+
+			jm := &JsonResult{}
+			err = json.Unmarshal(respBody, jm)
+			if err != nil {
+				return err
+			}
+
+			return c.parseResponse(resp, []byte(jm.Data), &result)
+		})
+
+	if errs := r.Wait(); len(errs) > 0 {
+		return nil, errs[0]
+	}
+
+	return result, nil
+
+}
+
+func (c *Client) GetSharedToMe(ctx context.Context, phoneNumber, token string) ([]SharedInfoReceived, error) {
+	csrfToken, err := c.GetCsrfToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+	headers := map[string]string{
+		"X-App-ID-Token": token,
+	}
+
+	r, err := c.createResty(ctx, csrfToken, phoneNumber, headers)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var result []SharedInfoReceived
+	r.DoGet(ctx, c.baseUrl+"/v2/shareinfo/received?share_info_type=private").
+		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
+			if err != nil {
+				return err
+			}
+
+			log.Info("zboxapi: ", string(respBody))
+
+			jm := &JsonResult{}
+			err = json.Unmarshal(respBody, jm)
+			if err != nil {
+				return err
+			}
+
+			return c.parseResponse(resp, []byte(jm.Data), &result)
+		})
+
+	if errs := r.Wait(); len(errs) > 0 {
+		return nil, errs[0]
+	}
+
+	return result, nil
 
 }

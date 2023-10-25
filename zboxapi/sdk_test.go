@@ -10,10 +10,10 @@ import (
 var (
 	BaseURL          = "https://0box.dev.zus.network"
 	AppType          = "vult"
-	ClientID         = "8f6ce6457fc04cfb4eb67b5ce3162fe2b85f66ef81db9d1a9eaa4ffe1d2359e0"
-	ClientPublicKey  = "c8c88854822a1039c5a74bdb8c025081a64b17f52edd463fbecb9d4a42d15608f93b5434e926d67a828b88e63293b6aedbaf0042c7020d0a96d2e2f17d3779a4"
-	ClientPrivateKey = "72f480d4b1e7fb76e04327b7c2348a99a64f0ff2c5ebc3334a002aa2e66e8506"
-	PhoneNumber      = "+917777777777"
+	ClientID         = "175369aaf5bb11003fcbcc73bfa937ca2d1e255e58fe010b609670632617049d"
+	ClientPublicKey  = "0dbac1d606943969b94f4af417de516366b1e9540da9189b9b1d1c3098cda6019c59dad0e2b3ed02b858b5f09aeea0bb1aee1735218d6b3977b0d893da970d80"
+	ClientPrivateKey = "76ed3cb48bc76194ddcfd2c9785e855869b356b66e8dc67c968104d122469b13"
+	PhoneNumber      = "+16026666666"
 )
 
 func TestGetCsrfToken(t *testing.T) {
@@ -72,4 +72,52 @@ func TestGetFreeStorage(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, marker.Assigner)
 	require.Equal(t, ClientID, marker.Recipient)
+}
+
+func TestGetSharedToMe(t *testing.T) {
+	t.Skip("Only for local debugging")
+
+	c := NewClient()
+	c.SetRequest(BaseURL, AppType)
+	c.SetWallet(ClientID, ClientPrivateKey, ClientPublicKey)
+	sessionID, err := c.CreateJwtSession(context.TODO(), PhoneNumber)
+
+	require.Nil(t, err)
+	require.GreaterOrEqual(t, sessionID, int64(0))
+
+	token, err := c.CreateJwtToken(context.TODO(), PhoneNumber, sessionID, "000000") //any otp works on test phone number
+
+	require.Nil(t, err)
+	require.NotEmpty(t, token)
+
+	list, err := c.GetSharedToMe(context.TODO(), PhoneNumber, "jwt-"+token)
+
+	require.NoError(t, err)
+	require.Greater(t, len(list), 0)
+	// require.NotEmpty(t, marker.Assigner)
+	// require.Equal(t, ClientID, marker.Recipient)
+}
+
+func TestGetSharedByMe(t *testing.T) {
+	t.Skip("Only for local debugging")
+
+	c := NewClient()
+	c.SetRequest(BaseURL, AppType)
+	c.SetWallet(ClientID, ClientPrivateKey, ClientPublicKey)
+	sessionID, err := c.CreateJwtSession(context.TODO(), PhoneNumber)
+
+	require.Nil(t, err)
+	require.GreaterOrEqual(t, sessionID, int64(0))
+
+	token, err := c.CreateJwtToken(context.TODO(), PhoneNumber, sessionID, "000000") //any otp works on test phone number
+
+	require.Nil(t, err)
+	require.NotEmpty(t, token)
+
+	list, err := c.GetSharedByMe(context.TODO(), PhoneNumber, "jwt-"+token)
+
+	require.NoError(t, err)
+	require.Greater(t, len(list), 0)
+	// require.NotEmpty(t, marker.Assigner)
+	// require.Equal(t, ClientID, marker.Recipient)
 }

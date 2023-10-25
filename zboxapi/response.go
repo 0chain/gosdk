@@ -68,3 +68,38 @@ type FreeMarker struct {
 	Nonce      int64   `json:"nonce"`
 	Signature  string  `json:"signature"`
 }
+
+type JsonResult struct {
+	Message string `json:"message"`
+	Data    string `json:"data"`
+}
+
+type ShareInfo struct {
+	AuthTicket    string `json:"auth_ticket"`
+	Message       string `json:"message"`
+	ShareInfoType string `json:"share_info_type"`
+	Link          string `json:"link"`
+}
+
+type SharedInfoSent struct {
+	AuthTicket    string `json:"auth_ticket"`
+	Message       string `json:"message"`
+	ShareInfoType string `json:"share_info_type"`
+	Receiver      string `json:"receiver_client_id"`
+	Link          string `json:"link"`
+	ReceiverName  string `json:"receiver_name"`
+	CreatedAt     string `json:"created_at"`
+	UpdatedAt     string `json:"updated_at"`
+}
+
+type SharedInfoReceived struct {
+	AuthTicket    string `json:"auth_ticket"`
+	Message       string `json:"message"`
+	ShareInfoType string `json:"share_info_type"`
+	ClientID      string `json:"client_id"`
+	Receiver      string `json:"receiver_client_id"`
+	LookupHash    string `json:"lookup_hash"`
+	SenderName    string `json:"sender_name"`
+	CreatedAt     string `json:"created_at"`
+	UpdatedAt     string `json:"updated_at"`
+}
