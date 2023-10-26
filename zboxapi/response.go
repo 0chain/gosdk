@@ -75,7 +75,7 @@ type JsonResult[T any] struct {
 	Data    []T    `json:"data"`
 }
 
-type ShareInfo struct {
+type SharedInfo struct {
 	AuthTicket    string `json:"auth_ticket"`
 	Message       string `json:"message"`
 	ShareInfoType string `json:"share_info_type"`
