@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/0chain/common/core/currency"
 	"github.com/0chain/gosdk/zcnbridge/ethereum/bancor"
+	"github.com/0chain/gosdk/zcnbridge/ethereum/token"
 	"log"
 	"math/big"
 	"net/http"
@@ -22,7 +23,6 @@ import (
 	"github.com/0chain/gosdk/zcnbridge/ethereum"
 	"github.com/0chain/gosdk/zcnbridge/ethereum/authorizers"
 	binding "github.com/0chain/gosdk/zcnbridge/ethereum/bridge"
-	"github.com/0chain/gosdk/zcnbridge/ethereum/erc20"
 	bridgemocks "github.com/0chain/gosdk/zcnbridge/mocks"
 	"github.com/0chain/gosdk/zcnbridge/transaction"
 	transactionmocks "github.com/0chain/gosdk/zcnbridge/transaction/mocks"
@@ -537,10 +537,10 @@ func Test_ZCNBridge(t *testing.T) {
 		to := common.HexToAddress(tokenAddress)
 		fromAddress := common.HexToAddress(ethereumAddress)
 
-		abi, err := erc20.ERC20MetaData.GetAbi()
+		abi, err := token.TokenMetaData.GetAbi()
 		require.NoError(t, err)
 
-		pack, err := abi.Pack("increaseAllowance", spenderAddress, big.NewInt(amount))
+		pack, err := abi.Pack("increaseApproval", spenderAddress, big.NewInt(amount))
 		require.NoError(t, err)
 
 		require.True(t, ethereumClient.AssertCalled(
