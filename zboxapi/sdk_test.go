@@ -2,6 +2,8 @@ package zboxapi
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -74,6 +76,35 @@ func TestGetFreeStorage(t *testing.T) {
 	require.Equal(t, ClientID, marker.Recipient)
 }
 
+var testShareInfo = ShareInfo{
+	AuthTicket:    "eyJjbGllbnRfaWQiOiIiLCJvd25lcl9pZCI6IjcwZTEzMThhOTcwOTc4NmNmOTc1ZjE1Y2E5NDFiZWU3M2QwZjQyMjMwNWVjZDc4YjBmMzU4ODcwZWMxN2Y0MWQiLCJhbGxvY2F0aW9uX2lkIjoiZjQ0OTUxZDkwODRiMTExZGMxNDliMmNkN2E5Nzg5YmU5MDVlYjFiMWRhNzdjMjYxNDZiMWNkY2IxNzE3NTI0NiIsImZpbGVfcGF0aF9oYXNoIjoiM2RlOWQ1ZTMzYWJlNWI3ZjhhNzM2OGY0ZmE4N2QwMmY1MjI1YzIzMzhmM2Q3YWI0MGQxNDczM2NiYmI4ZTc1YiIsImFjdHVhbF9maWxlX2hhc2giOiJkYTJjMzIxZmFiN2RkNmYyZDVlZTAzZWQwNDk2OGJlMTA0YjdjNmY2MTYyYTVmY2ZjNDFmZTEyZTY3ZDBkNjUzIiwiZmlsZV9uYW1lIjoiUVHlm77niYcyMDIxMDkzMDEyMDM1Ny5qcGciLCJyZWZlcmVuY2VfdHlwZSI6ImYiLCJleHBpcmF0aW9uIjowLCJ0aW1lc3RhbXAiOjE2OTgyODY5MjcsImVuY3J5cHRlZCI6ZmFsc2UsInNpZ25hdHVyZSI6ImRkMzg4NzI2YTcwYzBjN2Y5NDZkMTQwMTRjMjhhZTg1MjM4ZTliNmJkMmExMzRjMWUxOGE3MTE5NDViYzg4MGYifQ==",
+	Message:       "shared by unit test",
+	ShareInfoType: "public",
+	Link:          "https://0box.page.link/cnfFExcvKKRaFzyE9",
+}
+
+func TestCreateSharedInfo(t *testing.T) {
+	t.Skip("Only for local debugging")
+
+	c := NewClient()
+	c.SetRequest(BaseURL, AppType)
+	c.SetWallet(ClientID, ClientPrivateKey, ClientPublicKey)
+	sessionID, err := c.CreateJwtSession(context.TODO(), PhoneNumber)
+
+	require.Nil(t, err)
+	require.GreaterOrEqual(t, sessionID, int64(0))
+
+	token, err := c.CreateJwtToken(context.TODO(), PhoneNumber, sessionID, "000000") //any otp works on test phone number
+
+	require.Nil(t, err)
+	require.NotEmpty(t, token)
+
+	err = c.CreateSharedInfo(context.TODO(), PhoneNumber, "jwt-"+token, testShareInfo)
+
+	require.NoError(t, err)
+
+}
+
 func TestGetSharedToMe(t *testing.T) {
 	t.Skip("Only for local debugging")
 
@@ -118,6 +149,58 @@ func TestGetSharedByMe(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Greater(t, len(list), 0)
-	// require.NotEmpty(t, marker.Assigner)
-	// require.Equal(t, ClientID, marker.Recipient)
+
+}
+
+func TestGetSharedByPublic(t *testing.T) {
+	t.Skip("Only for local debugging")
+
+	c := NewClient()
+	c.SetRequest(BaseURL, AppType)
+	c.SetWallet(ClientID, ClientPrivateKey, ClientPublicKey)
+	sessionID, err := c.CreateJwtSession(context.TODO(), PhoneNumber)
+
+	require.Nil(t, err)
+	require.GreaterOrEqual(t, sessionID, int64(0))
+
+	token, err := c.CreateJwtToken(context.TODO(), PhoneNumber, sessionID, "000000") //any otp works on test phone number
+
+	require.Nil(t, err)
+	require.NotEmpty(t, token)
+
+	list, err := c.GetSharedByPublic(context.TODO(), PhoneNumber, "jwt-"+token)
+
+	require.NoError(t, err)
+	require.Greater(t, len(list), 0)
+
+}
+
+func TestDeleteSharedInfo(t *testing.T) {
+	t.Skip("Only for local debugging")
+
+	c := NewClient()
+	c.SetRequest(BaseURL, AppType)
+	c.SetWallet(ClientID, ClientPrivateKey, ClientPublicKey)
+	sessionID, err := c.CreateJwtSession(context.TODO(), PhoneNumber)
+
+	require.Nil(t, err)
+	require.GreaterOrEqual(t, sessionID, int64(0))
+
+	token, err := c.CreateJwtToken(context.TODO(), PhoneNumber, sessionID, "000000") //any otp works on test phone number
+
+	require.Nil(t, err)
+	require.NotEmpty(t, token)
+
+	buf, _ := base64.StdEncoding.DecodeString(testShareInfo.AuthTicket)
+
+	items := make(map[string]any)
+
+	json.Unmarshal(buf, &items)
+
+	lookupHash := items["file_path_hash"].(string)
+
+	err = c.DeleteSharedInfo(context.TODO(), PhoneNumber, "jwt-"+token, testShareInfo.AuthTicket, lookupHash)
+
+	require.NoError(t, err)
+
 }

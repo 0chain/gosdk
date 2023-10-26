@@ -71,6 +71,7 @@ type FreeMarker struct {
 
 type JsonResult[T any] struct {
 	Message string `json:"message"`
+	Error   string `json:"error"`
 	Data    []T    `json:"data"`
 }
 

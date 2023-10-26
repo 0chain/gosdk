@@ -71,7 +71,7 @@ func (c *Client) SetWallet(clientID, clientPrivateKey, clientPublicKey string) {
 }
 
 func (c *Client) parseResponse(resp *http.Response, respBody []byte, result interface{}) error {
-	if resp.StatusCode == http.StatusOK {
+	if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusCreated {
 		if err := json.Unmarshal(respBody, result); err != nil {
 			return thrown.Throw(ErrInvalidJsonResponse, string(respBody))
 		}
@@ -274,13 +274,14 @@ func (c *Client) GetFreeStorage(ctx context.Context, phoneNumber, token string) 
 
 }
 
-func (c *Client) SaveSharedInfo(ctx context.Context, phoneNumber, token string, s ShareInfo) error {
+func (c *Client) CreateSharedInfo(ctx context.Context, phoneNumber, token string, s ShareInfo) error {
 	csrfToken, err := c.GetCsrfToken(ctx)
 	if err != nil {
 		return err
 	}
 	headers := map[string]string{
 		"X-App-ID-Token": token,
+		"Content-Type":   "application/json",
 	}
 
 	r, err := c.createResty(ctx, csrfToken, phoneNumber, headers)
@@ -345,7 +346,15 @@ func (c *Client) DeleteSharedInfo(ctx context.Context, phoneNumber, token, authT
 	return nil
 }
 
+func (c *Client) GetSharedByPublic(ctx context.Context, phoneNumber, token string) ([]SharedInfoSent, error) {
+	return c.getShared(ctx, phoneNumber, token, false)
+}
+
 func (c *Client) GetSharedByMe(ctx context.Context, phoneNumber, token string) ([]SharedInfoSent, error) {
+	return c.getShared(ctx, phoneNumber, token, true)
+}
+
+func (c *Client) getShared(ctx context.Context, phoneNumber, token string, isPrivate bool) ([]SharedInfoSent, error) {
 	csrfToken, err := c.GetCsrfToken(ctx)
 	if err != nil {
 		return nil, err
@@ -360,8 +369,13 @@ func (c *Client) GetSharedByMe(ctx context.Context, phoneNumber, token string) (
 		return nil, err
 	}
 
+	shareInfoType := "public"
+	if isPrivate {
+		shareInfoType = "private"
+	}
+
 	result := &JsonResult[SharedInfoSent]{}
-	r.DoGet(ctx, c.baseUrl+"/v2/shareinfo/shared?share_info_type=private").
+	r.DoGet(ctx, c.baseUrl+"/v2/shareinfo/shared?share_info_type="+shareInfoType).
 		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
 			if err != nil {
 				return err
