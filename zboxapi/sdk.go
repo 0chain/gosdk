@@ -294,7 +294,7 @@ func (c *Client) SaveSharedInfo(ctx context.Context, phoneNumber, token string, 
 		return err
 	}
 
-	var result JsonResult
+	result := &JsonResult[string]{}
 	r.DoPost(ctx, bytes.NewReader(buf), c.baseUrl+"/v2/shareinfo").
 		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
 			if err != nil {
@@ -327,7 +327,7 @@ func (c *Client) DeleteSharedInfo(ctx context.Context, phoneNumber, token, authT
 		return err
 	}
 
-	var result JsonResult
+	result := &JsonResult[string]{}
 	r.DoDelete(ctx, c.baseUrl+"/v2/shareinfo?auth_ticket="+authTicket+"&lookup_hash="+lookupHash).
 		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
 			if err != nil {
@@ -360,7 +360,7 @@ func (c *Client) GetSharedByMe(ctx context.Context, phoneNumber, token string) (
 		return nil, err
 	}
 
-	var result []SharedInfoSent
+	result := &JsonResult[SharedInfoSent]{}
 	r.DoGet(ctx, c.baseUrl+"/v2/shareinfo/shared?share_info_type=private").
 		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
 			if err != nil {
@@ -369,20 +369,14 @@ func (c *Client) GetSharedByMe(ctx context.Context, phoneNumber, token string) (
 
 			log.Info("zboxapi: ", string(respBody))
 
-			jm := &JsonResult{}
-			err = json.Unmarshal(respBody, jm)
-			if err != nil {
-				return err
-			}
-
-			return c.parseResponse(resp, []byte(jm.Data), &result)
+			return c.parseResponse(resp, respBody, &result)
 		})
 
 	if errs := r.Wait(); len(errs) > 0 {
 		return nil, errs[0]
 	}
 
-	return result, nil
+	return result.Data, nil
 
 }
 
@@ -401,7 +395,7 @@ func (c *Client) GetSharedToMe(ctx context.Context, phoneNumber, token string) (
 		return nil, err
 	}
 
-	var result []SharedInfoReceived
+	result := &JsonResult[SharedInfoReceived]{}
 	r.DoGet(ctx, c.baseUrl+"/v2/shareinfo/received?share_info_type=private").
 		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
 			if err != nil {
@@ -410,19 +404,13 @@ func (c *Client) GetSharedToMe(ctx context.Context, phoneNumber, token string) (
 
 			log.Info("zboxapi: ", string(respBody))
 
-			jm := &JsonResult{}
-			err = json.Unmarshal(respBody, jm)
-			if err != nil {
-				return err
-			}
-
-			return c.parseResponse(resp, []byte(jm.Data), &result)
+			return c.parseResponse(resp, respBody, &result)
 		})
 
 	if errs := r.Wait(); len(errs) > 0 {
 		return nil, errs[0]
 	}
 
-	return result, nil
+	return result.Data, nil
 
 }

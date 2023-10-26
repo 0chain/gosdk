@@ -69,9 +69,9 @@ type FreeMarker struct {
 	Signature  string  `json:"signature"`
 }
 
-type JsonResult struct {
+type JsonResult[T any] struct {
 	Message string `json:"message"`
-	Data    string `json:"data"`
+	Data    []T    `json:"data"`
 }
 
 type ShareInfo struct {
