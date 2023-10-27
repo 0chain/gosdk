@@ -153,6 +153,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			elapsedDownloadReqBlobber := time.Since(start).Milliseconds()
 			var rspData downloadBlock
 			respBody, err := io.ReadAll(resp.Body)
+			elapsedReadBody := time.Since(start).Milliseconds() - elapsedDownloadReqBlobber
 			if err != nil {
 				return err
 			}
@@ -169,6 +170,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			if err != nil {
 				return err
 			}
+			elapsedUnmarshal := time.Since(start).Milliseconds() - elapsedReadBody - elapsedDownloadReqBlobber
 			if req.contentMode == DOWNLOAD_CONTENT_FULL && req.shouldVerify {
 				now := time.Now()
 				vmp := util.MerklePathForMultiLeafVerification{
@@ -201,7 +203,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 				rspData.BlockChunks = req.splitData(dR.Data, req.chunkSize)
 			}
 
-			zlogger.Logger.Debug(fmt.Sprintf("downloadBlobberBlock 200 OK: blobberID: %v, clientID: %v, blockNum: %d, downloadReqBlobber: %v, totalTime: %v", req.blobber.ID, client.GetClientID(), header.BlockNum, elapsedDownloadReqBlobber, time.Since(start).Milliseconds()))
+			zlogger.Logger.Debug(fmt.Sprintf("downloadBlobberBlock 200 OK: blobberID: %v, clientID: %v, blockNum: %d, downloadReqBlobber: %v,readBody: %v,unmarshalJSON: %v, totalTime: %v", req.blobber.ID, client.GetClientID(), header.BlockNum, elapsedDownloadReqBlobber, elapsedReadBody, elapsedUnmarshal, time.Since(start).Milliseconds()))
 
 			req.result <- &rspData
 			return nil
