@@ -73,6 +73,8 @@ type Ref struct {
 	LookupHash       string `json:"lookup_hash" mapstructure:"lookup_hash"`
 	FileID           string `json:"file_id" mapstructure:"file_id"`
 	FileMetaHash     string `json:"file_meta_hash" mapstructure:"file_meta_hash"`
+	ThumbnailHash    string `json:"thumbnail_hash" mapstructure:"thumbnail_hash"`
+	ThumbnailSize    int64  `json:"thumbnail_size" mapstructure:"thumbnail_size"`
 	HashToBeComputed bool
 	ChildrenLoaded   bool
 	Children         []RefEntity      `json:"-" mapstructure:"-"`
