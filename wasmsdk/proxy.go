@@ -224,9 +224,7 @@ func main() {
 				"executeSmartContract": executeSmartContract,
 				"faucet":               faucet,
 
-				//swap
-				"setSwapWallets":                setSwapWallets,
-				"swapToken":                     swapToken,
+				// bridge
 				"initBridge":                    initBridge,
 				"burnZCN":                       burnZCN,
 				"mintZCN":                       mintZCN,
