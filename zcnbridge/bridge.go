@@ -5,17 +5,17 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
+	"math/big"
+	"strconv"
+	"time"
+
 	"github.com/0chain/common/core/currency"
 	"github.com/0chain/gosdk/zcnbridge/ethereum/bancor"
 	"github.com/0chain/gosdk/zcnbridge/ethereum/token"
 	h "github.com/0chain/gosdk/zcnbridge/http"
 	hdw "github.com/0chain/gosdk/zcncore/ethhdwallet"
 	"github.com/spf13/viper"
-	"io"
-	"math/big"
-	"os"
-	"strconv"
-	"time"
 
 	"gopkg.in/natefinch/lumberjack.v2"
 
