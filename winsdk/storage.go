@@ -146,9 +146,9 @@ func MultiOperation(_allocationID, _jsonMultiOperationOptions *C.char) *C.char {
 
 // GetFileMeta get metadata by path
 // ## Inputs
-// - allocationID
-// - path
-// - authTicket
+//   - allocationID
+//   - path
+//   - authTicket
 //
 // ## Outputs
 //
