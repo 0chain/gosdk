@@ -9,16 +9,25 @@ import (
 import (
 	"encoding/json"
 	"os"
+	"path/filepath"
 
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
 
-func getHomeDir() string {
-	dir, _ := os.UserHomeDir()
+func getZcnWorkDir() (string, error) {
+	d, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
 
-	return dir
+	z := filepath.Join(d, ".zcn")
+
+	// create ~/.zcn folder if it doesn't exists
+	os.MkdirAll(z, 0766) //nolint: errcheck
+
+	return z, nil
 }
 
 type JsonResult struct {

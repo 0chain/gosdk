@@ -91,8 +91,10 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 			httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
 			ctx, cncl := context.WithTimeout(mo.ctx, DefaultCreateConnectionTimeOut)
 			defer cncl()
-			resp, err = zboxutil.Client.Do(httpreq.WithContext(ctx))
-
+			err = zboxutil.HttpDo(ctx, cncl, httpreq, func(r *http.Response, err error) error {
+				resp = r
+				return err
+			})
 			if err != nil {
 				logger.Logger.Error("Create Connection: ", err)
 				return
@@ -297,16 +299,17 @@ func (mo *MultiOperation) Process() error {
 			fmt.Sprintf("Commit failed. Required consensus %d, got %d",
 				mo.Consensus.consensusThresh, mo.Consensus.consensus))
 		if mo.getConsensus() != 0 {
+			l.Logger.Info("Rolling back changes on minority blobbers")
 			mo.allocationObj.RollbackWithMask(rollbackMask)
 		}
 		for _, op := range mo.operations {
 			op.Error(mo.allocationObj, mo.getConsensus(), err)
 		}
 		return err
-	}
-
-	for _, op := range mo.operations {
-		op.Completed(mo.allocationObj)
+	} else {
+		for _, op := range mo.operations {
+			op.Completed(mo.allocationObj)
+		}
 	}
 
 	return nil

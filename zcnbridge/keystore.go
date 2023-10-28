@@ -12,6 +12,13 @@ import (
 	"github.com/pkg/errors"
 )
 
+// DetailedAccount describes detailed account
+type DetailedAccount struct {
+	EthereumAddress,
+	PublicKey,
+	PrivateKey accounts.Account
+}
+
 // KeyStore is a wrapper, which exposes Ethereum KeyStore methods used by DEX bridge.
 type KeyStore interface {
 	Find(accounts.Account) (accounts.Account, error)
@@ -24,21 +31,21 @@ type keyStore struct {
 	ks *keystore.KeyStore
 }
 
-// Creates new KeyStore wrapper instance
+// NewKeyStore creates new KeyStore wrapper instance
 func NewKeyStore(path string) KeyStore {
 	return &keyStore{
 		ks: keystore.NewKeyStore(path, keystore.StandardScryptN, keystore.StandardScryptP),
 	}
 }
 
-// TimedUnlock forwards request to Ethereum KeyStore TimedUnlock method
-func (k *keyStore) TimedUnlock(account accounts.Account, passPhrase string, timeout time.Duration) error {
-	return k.ks.TimedUnlock(account, passPhrase, timeout)
-}
-
 // Find forwards request to Ethereum KeyStore Find method
 func (k *keyStore) Find(account accounts.Account) (accounts.Account, error) {
 	return k.ks.Find(account)
+}
+
+// TimedUnlock forwards request to Ethereum KeyStore TimedUnlock method
+func (k *keyStore) TimedUnlock(account accounts.Account, passPhrase string, timeout time.Duration) error {
+	return k.ks.TimedUnlock(account, passPhrase, timeout)
 }
 
 // SignHash forwards request to Ethereum KeyStore SignHash method

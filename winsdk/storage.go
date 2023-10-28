@@ -12,7 +12,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
 
+	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
 
@@ -55,20 +57,6 @@ func GetFileStats(allocationID, remotePath *C.char) *C.char {
 	}
 
 	return WithJSON(result, nil)
-}
-
-// GetAllocation get allocation info
-//
-//	return
-//		{
-//			"error":"",
-//			"result":"{}",
-//		}
-//
-//export GetAllocation
-func GetAllocation(allocationID *C.char) *C.char {
-	allocID := C.GoString(allocationID)
-	return WithJSON(getAllocation(allocID))
 }
 
 // Delete delete path
@@ -229,7 +217,17 @@ func BulkUpload(allocationID, files *C.char) *C.char {
 		isUpdates[idx] = option.IsUpdate
 		isWebstreaming[idx] = option.IsWebstreaming
 		encrypts[idx] = option.Encrypt
-		statusUpload.Add(getLookupHash(allocID, option.RemotePath+option.Name), &Status{})
+		if option.IsWebstreaming {
+			originalLookupHash := getLookupHash(allocID, option.RemotePath+option.Name)
+			_, transcodeRemotePath := sdk.GetTranscodeFile(option.RemotePath + option.Name)
+			transcodeLookupHash := getLookupHash(allocID, transcodeRemotePath)
+			transcodeFiles.Add(originalLookupHash, transcodeLookupHash)
+			statusUpload.Add(transcodeLookupHash, &Status{})
+
+		} else {
+			statusUpload.Add(getLookupHash(allocID, option.RemotePath+option.Name), &Status{})
+		}
+
 	}
 
 	a, err := getAllocation(allocID)
@@ -257,8 +255,15 @@ func BulkUpload(allocationID, files *C.char) *C.char {
 //
 //export GetUploadStatus
 func GetUploadStatus(lookupHash *C.char) *C.char {
+	h := C.GoString(lookupHash)
 
-	s, ok := statusUpload.Get(C.GoString(lookupHash))
+	h2, ok := transcodeFiles.Get(h)
+
+	if ok {
+		h = h2
+	}
+
+	s, ok := statusUpload.Get(h)
 
 	if !ok {
 		s = &Status{}
@@ -552,4 +557,91 @@ func GetDownloadStatus(key *C.char, isThumbnail bool) *C.char {
 	}
 
 	return WithJSON(s, nil)
+}
+
+// CreateAuthTicket - create AuthTicket for sharing
+// ## Inputs
+//   - allocationID
+//   - remotePath
+//   - refereeClientID
+//   - refereePublicEncryptionKey
+//   - availableAfter
+//   - expirationSeconds
+//
+// ## Outputs
+//
+//	{
+//	"error":"",
+//	"result":"{}",
+//	}
+//
+//export CreateAuthTicket
+func CreateAuthTicket(allocationID, remotePath, refereeClientID, refereePublicEncryptionKey, availableAfter *C.char, expirationSeconds int64) *C.char {
+	alloc, err := getAllocation(C.GoString(allocationID))
+	if err != nil {
+		log.Error("win: ", err)
+		return WithJSON(nil, err)
+	}
+
+	rPath := C.GoString(remotePath)
+
+	fileMeta, err := alloc.GetFileMeta(rPath)
+	if err != nil {
+		log.Error("win: ", err)
+		return WithJSON(nil, err)
+	}
+
+	af := time.Now()
+	availableAfterString := C.GoString(availableAfter)
+
+	if len(availableAfterString) > 0 {
+		aa, err := common.ParseTime(af, availableAfterString)
+		if err != nil {
+			log.Error("win: ", err)
+			return WithJSON(nil, err)
+		}
+		af = *aa
+	}
+
+	at, err := alloc.GetAuthTicket(rPath, fileMeta.Name, fileMeta.Type, C.GoString(refereeClientID), C.GoString(refereePublicEncryptionKey), expirationSeconds, &af)
+	if err != nil {
+		log.Error("win: ", err)
+		return WithJSON(nil, err)
+	}
+
+	return WithJSON(at, nil)
+
+}
+
+// DeleteAuthTicket - delete AuthTicket
+// ## Inputs
+//   - allocationID
+//   - remotePath
+//   - refereeClientID
+//
+// ## Outputs
+//
+//	{
+//	"error":"",
+//	"result":"true",
+//	}
+//
+//export DeleteAuthTicket
+func DeleteAuthTicket(allocationID, remotePath, refereeClientID *C.char) *C.char {
+	alloc, err := getAllocation(C.GoString(allocationID))
+	if err != nil {
+		log.Error("win: ", err)
+		return WithJSON(false, err)
+	}
+
+	rPath := C.GoString(remotePath)
+
+	err = alloc.RevokeShare(rPath, C.GoString(refereeClientID))
+	if err != nil {
+		log.Error("win: ", err)
+		return WithJSON(false, err)
+	}
+
+	return WithJSON(true, nil)
+
 }

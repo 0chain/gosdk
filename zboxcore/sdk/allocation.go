@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -833,6 +834,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 		for ; i < len(operations); i++ {
 			if ops > MultiOpBatchSize {
 				// max batch size reached, commit
+				connectionID = zboxutil.NewConnectionId()
 				break
 			}
 			op := operations[i]
@@ -841,6 +843,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 
 			if _, ok := previousPaths[remotePath]; ok {
 				// conflict found, commit
+				connectionID = zboxutil.NewConnectionId()
 				break
 			}
 
@@ -1611,6 +1614,44 @@ func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus int,
 	req.maskMu = &sync.Mutex{}
 	req.timestamp = int64(common.Now())
 	err := req.ProcessDelete()
+	return err
+}
+
+func (a *Allocation) createDir(remotePath string, threshConsensus, fullConsensus int, mask zboxutil.Uint128) error {
+	if !a.isInitialized() {
+		return notInitialized
+	}
+
+	if remotePath == "" {
+		return errors.New("invalid_name", "Invalid name for dir")
+	}
+
+	if !path.IsAbs(remotePath) {
+		return errors.New("invalid_path", "Path is not absolute")
+	}
+
+	remotePath = zboxutil.RemoteClean(remotePath)
+	timestamp := int64(common.Now())
+	req := DirRequest{
+		allocationObj: a,
+		allocationID:  a.ID,
+		allocationTx:  a.Tx,
+		blobbers:      a.Blobbers,
+		mu:            &sync.Mutex{},
+		dirMask:       mask,
+		connectionID:  zboxutil.NewConnectionId(),
+		remotePath:    remotePath,
+		wg:            &sync.WaitGroup{},
+		timestamp:     timestamp,
+		Consensus: Consensus{
+			RWMutex:         &sync.RWMutex{},
+			consensusThresh: threshConsensus,
+			fullconsensus:   fullConsensus,
+		},
+	}
+	req.ctx, req.ctxCncl = context.WithCancel(a.ctx)
+
+	err := req.ProcessDir(a)
 	return err
 }
 
