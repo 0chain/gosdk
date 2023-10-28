@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
 
@@ -144,6 +145,12 @@ func MultiOperation(_allocationID, _jsonMultiOperationOptions *C.char) *C.char {
 }
 
 // GetFileMeta get metadata by path
+// ## Inputs
+// - allocationID
+// - path
+// - authTicket
+//
+// ## Outputs
 //
 //	return
 //		{
@@ -152,17 +159,34 @@ func MultiOperation(_allocationID, _jsonMultiOperationOptions *C.char) *C.char {
 //		}
 //
 //export GetFileMeta
-func GetFileMeta(allocationID, path *C.char) *C.char {
+func GetFileMeta(allocationID, path, authTicket *C.char) *C.char {
 	allocID := C.GoString(allocationID)
 
-	alloc, err := getAllocation(allocID)
+	t := C.GoString(authTicket)
+
+	var ticket *marker.AuthTicket
+
+	var alloc *sdk.Allocation
+	var err error
+	isShared := len(t) > 0
+	if isShared {
+		alloc, ticket, err = getAllocationWith(t)
+	} else {
+		alloc, err = getAllocation(allocID)
+	}
+
 	if err != nil {
 		return WithJSON(nil, err)
 	}
 
 	s := C.GoString(path)
 
-	f, err := alloc.GetFileMeta(s)
+	var f *sdk.ConsolidatedFileMeta
+	if isShared {
+		f, err = alloc.GetFileMetaFromAuthTicket(t, ticket.FilePathHash)
+	} else {
+		f, err = alloc.GetFileMeta(s)
+	}
 
 	if err != nil {
 		return WithJSON(nil, err)

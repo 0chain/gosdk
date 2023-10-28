@@ -113,7 +113,7 @@ func List(allocationID, remotePath, authTicket, lookupHash *C.char) *C.char {
 			return WithJSON("[]", errors.New("Error: lookuphash flag is missing"))
 		}
 
-		allocationObj, err := getAllocationWith(authticket)
+		allocationObj, _, err := getAllocationWith(authticket)
 		if err != nil {
 			log.Error("win: ", err)
 			return WithJSON("[]", err)
