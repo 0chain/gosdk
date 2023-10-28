@@ -176,6 +176,7 @@ func GetFileMeta(allocationID, path, authTicket *C.char) *C.char {
 	}
 
 	if err != nil {
+		log.Error("win: ", err)
 		return WithJSON(nil, err)
 	}
 
@@ -189,6 +190,7 @@ func GetFileMeta(allocationID, path, authTicket *C.char) *C.char {
 	}
 
 	if err != nil {
+		log.Error("win: ", err, " authTicket=", t, " path=", s)
 		return WithJSON(nil, err)
 	}
 
@@ -405,7 +407,7 @@ func DownloadThumbnail(allocationID, localPath, remotePath *C.char, verifyDownlo
 //export DownloadSharedFile
 func DownloadSharedFile(localPath, authTicket *C.char, verifyDownload bool, isFinal bool) *C.char {
 	info := &SharedInfo{}
-	t, at, err := getAuthTicket(authTicket)
+	t, at, err := decodeAuthTicket(authTicket)
 	if err != nil {
 		return WithJSON(info, err)
 	}
@@ -445,8 +447,9 @@ func DownloadSharedFile(localPath, authTicket *C.char, verifyDownload bool, isFi
 //export DownloadSharedThumbnail
 func DownloadSharedThumbnail(localPath, authTicket *C.char, verifyDownload bool, isFinal bool) *C.char {
 	info := &SharedInfo{}
-	t, at, err := getAuthTicket(authTicket)
+	t, at, err := decodeAuthTicket(authTicket)
 	if err != nil {
+		log.Error("win: ", err, " authTicket=", at)
 		return WithJSON(info, err)
 	}
 	info.AllocationID = t.AllocationID
@@ -454,6 +457,7 @@ func DownloadSharedThumbnail(localPath, authTicket *C.char, verifyDownload bool,
 
 	alloc, err := getAllocation(t.AllocationID)
 	if err != nil {
+		log.Error("win: ", err, " authTicket=", at)
 		return WithJSON(info, err)
 	}
 
@@ -461,6 +465,7 @@ func DownloadSharedThumbnail(localPath, authTicket *C.char, verifyDownload bool,
 
 	err = alloc.DownloadThumbnailFromAuthTicket(C.GoString(localPath), at, t.FilePathHash, t.FileName, verifyDownload, statusBar, isFinal)
 	if err != nil {
+		log.Error("win: ", err, " authTicket=", at, " lookuphash=", t.FilePathHash)
 		return WithJSON(info, err)
 	}
 
@@ -511,7 +516,6 @@ func DownloadFileBlocks(allocationID,
 
 // DownloadSharedFileBlocks - downalod shared file blocks
 // ## Inputs
-//   - allocationID
 //   - localPath
 //   - remotePath
 //   - startBlock
@@ -528,12 +532,11 @@ func DownloadFileBlocks(allocationID,
 //	}
 //
 //export DownloadSharedFileBlocks
-func DownloadSharedFileBlocks(allocationID,
-	localPath, authTicket *C.char, startBlock int64, endBlock int64,
+func DownloadSharedFileBlocks(localPath, authTicket *C.char, startBlock int64, endBlock int64,
 	numBlocks int, verifyDownload bool, isFinal bool) *C.char {
 
 	info := &SharedInfo{}
-	t, at, err := getAuthTicket(authTicket)
+	t, at, err := decodeAuthTicket(authTicket)
 	if err != nil {
 		return WithJSON(info, err)
 	}
