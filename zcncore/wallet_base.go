@@ -8,7 +8,6 @@ import (
 	"math"
 	"net/http"
 	"net/url"
-	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -27,6 +26,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/encryption"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	openssl "github.com/Luzifer/go-openssl/v3"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 const (
@@ -319,11 +319,15 @@ func SetLogLevel(lvl int) {
 // SetLogFile - sets file path to write log
 // verbose - true - console output; false - no console output
 func SetLogFile(logFile string, verbose bool) {
-	f, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return
+	ioWriter := &lumberjack.Logger{
+		Filename:   logFile,
+		MaxSize:    100, // MB
+		MaxBackups: 5,   // number of backups
+		MaxAge:     28,  //days
+		LocalTime:  false,
+		Compress:   false, // disabled by default
 	}
-	logging.SetLogFile(f, verbose)
+	logging.SetLogFile(ioWriter, verbose)
 	logging.Info("******* Wallet SDK Version:", version.VERSIONSTR, " ******* (SetLogFile)")
 }
 
@@ -1278,7 +1282,7 @@ func Decrypt(key, text string) (string, error) {
 func CryptoJsEncrypt(passphrase, message string) (string, error) {
 	o := openssl.New()
 
-	enc, err := o.EncryptBytes(passphrase, []byte(message), openssl.DigestMD5Sum)
+	enc, err := o.EncryptBytes(pad(passphrase, 32, ","), []byte(message), openssl.DigestMD5Sum)
 	if err != nil {
 		return "", err
 	}
@@ -1286,9 +1290,16 @@ func CryptoJsEncrypt(passphrase, message string) (string, error) {
 	return string(enc), nil
 }
 
+func pad(passphrase string, i int, symbol string) string {
+	if len(passphrase) < i {
+		return passphrase + strings.Repeat(symbol, i-len(passphrase))
+	}
+	return passphrase
+}
+
 func CryptoJsDecrypt(passphrase, encryptedMessage string) (string, error) {
 	o := openssl.New()
-	dec, err := o.DecryptBytes(passphrase, []byte(encryptedMessage), openssl.DigestMD5Sum)
+	dec, err := o.DecryptBytes(pad(passphrase, 32, ","), []byte(encryptedMessage), openssl.DigestMD5Sum)
 	if err != nil {
 		return "", err
 	}
