@@ -838,6 +838,11 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 			defer response.Body.Close()
 			entityBytes, _ := ioutil.ReadAll(response.Body)
 			mu.Lock()
+			if response.StatusCode > http.StatusBadRequest {
+				blockchain.Sharders.Fail(sharder)
+			} else {
+				blockchain.Sharders.Success(sharder)
+			}
 			responses[response.StatusCode]++
 			if responses[response.StatusCode] > maxCount {
 				maxCount = responses[response.StatusCode]
