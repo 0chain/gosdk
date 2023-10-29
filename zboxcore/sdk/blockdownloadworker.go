@@ -152,7 +152,12 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			}
 			elapsedDownloadReqBlobber := time.Since(start).Milliseconds()
 			var rspData downloadBlock
-			respBody, err := io.ReadAll(resp.Body)
+			respBody := make([]byte, int(req.numBlocks+10)*req.chunkSize)
+			n, err := resp.Body.Read(respBody)
+			if err != nil && !errors.Is(err, io.EOF) {
+				return err
+			}
+			respBody = respBody[:n]
 			elapsedReadBody := time.Since(start).Milliseconds() - elapsedDownloadReqBlobber
 			if err != nil {
 				return err
