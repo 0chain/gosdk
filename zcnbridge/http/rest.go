@@ -8,10 +8,10 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"os"
 	"sync"
 
 	"go.uber.org/zap"
+	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/util"
@@ -38,23 +38,31 @@ func init() {
 	Logger.Init(defaultLogLevel, "zcnbridge-http-sdk")
 
 	Logger.SetLevel(logger.DEBUG)
-	f, err := os.OpenFile("bridge.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return
+	ioWriter := &lumberjack.Logger{
+		Filename:   "bridge.log",
+		MaxSize:    100, // MB
+		MaxBackups: 5,   // number of backups
+		MaxAge:     28,  //days
+		LocalTime:  false,
+		Compress:   false, // disabled by default
 	}
-	Logger.SetLogFile(f, true)
+	Logger.SetLogFile(ioWriter, true)
 }
 
 func SetLogFile(logFile string, verbose bool) {
 	Logger.Init(defaultLogLevel, "zcnbridge-sdk")
 	Logger.SetLevel(logger.DEBUG)
 
-	f, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return
+	ioWriter := &lumberjack.Logger{
+		Filename:   logFile,
+		MaxSize:    100, // MB
+		MaxBackups: 5,   // number of backups
+		MaxAge:     28,  //days
+		LocalTime:  false,
+		Compress:   false, // disabled by default
 	}
 	logVerbose = verbose
-	Logger.SetLogFile(f, logVerbose)
+	Logger.SetLogFile(ioWriter, logVerbose)
 }
 
 // MakeSCRestAPICall calls smart contract with provided address
