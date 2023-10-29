@@ -29,6 +29,12 @@ import (
 //
 //export GetFileStats
 func GetFileStats(allocationID, remotePath *C.char) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
+
 	allocID := C.GoString(allocationID)
 	path := C.GoString(remotePath)
 
@@ -70,6 +76,12 @@ func GetFileStats(allocationID, remotePath *C.char) *C.char {
 //
 //export Delete
 func Delete(allocationID, path *C.char) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
+
 	allocID := C.GoString(allocationID)
 
 	alloc, err := getAllocation(allocID)
@@ -109,6 +121,11 @@ type MultiOperationOption struct {
 //
 //export MultiOperation
 func MultiOperation(_allocationID, _jsonMultiOperationOptions *C.char) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
 	allocationID := C.GoString(_allocationID)
 	jsonMultiOperationOptions := C.GoString(_jsonMultiOperationOptions)
 	if allocationID == "" {
@@ -160,6 +177,11 @@ func MultiOperation(_allocationID, _jsonMultiOperationOptions *C.char) *C.char {
 //
 //export GetFileMeta
 func GetFileMeta(allocationID, path, authTicket *C.char) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
 	allocID := C.GoString(allocationID)
 
 	t := C.GoString(authTicket)
@@ -211,7 +233,7 @@ func GetFileMeta(allocationID, path, authTicket *C.char) *C.char {
 func BulkUpload(allocationID, files *C.char) *C.char {
 	defer func() {
 		if r := recover(); r != nil {
-			log.Error("win: ", r)
+			log.Error("win: crash ", r)
 		}
 	}()
 	allocID := C.GoString(allocationID)
@@ -281,6 +303,11 @@ func BulkUpload(allocationID, files *C.char) *C.char {
 //
 //export GetUploadStatus
 func GetUploadStatus(lookupHash *C.char) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
 	h := C.GoString(lookupHash)
 
 	h2, ok := transcodeFiles.Get(h)
@@ -331,6 +358,11 @@ func SetNumBlockDownloads(num int) {
 //
 //export DownloadFile
 func DownloadFile(allocationID, localPath, remotePath *C.char, verifyDownload, isFinal bool) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
 	allocID := C.GoString(allocationID)
 
 	alloc, err := getAllocation(allocID)
@@ -367,7 +399,7 @@ func DownloadFile(allocationID, localPath, remotePath *C.char, verifyDownload, i
 func DownloadThumbnail(allocationID, localPath, remotePath *C.char, verifyDownload bool, isFinal bool) *C.char {
 	defer func() {
 		if r := recover(); r != nil {
-			log.Error("win: DownloadThumbnail ", r)
+			log.Error("win: crash ", r)
 		}
 	}()
 	allocID := C.GoString(allocationID)
@@ -406,6 +438,11 @@ func DownloadThumbnail(allocationID, localPath, remotePath *C.char, verifyDownlo
 //
 //export DownloadSharedFile
 func DownloadSharedFile(localPath, authTicket *C.char, verifyDownload bool, isFinal bool) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
 	info := &SharedInfo{}
 	t, at, err := decodeAuthTicket(authTicket)
 	if err != nil {
@@ -446,6 +483,11 @@ func DownloadSharedFile(localPath, authTicket *C.char, verifyDownload bool, isFi
 //
 //export DownloadSharedThumbnail
 func DownloadSharedThumbnail(localPath, authTicket *C.char, verifyDownload bool, isFinal bool) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
 	info := &SharedInfo{}
 	t, at, err := decodeAuthTicket(authTicket)
 	if err != nil {
@@ -494,6 +536,12 @@ func DownloadSharedThumbnail(localPath, authTicket *C.char, verifyDownload bool,
 func DownloadFileBlocks(allocationID,
 	localPath, remotePath *C.char, startBlock int64, endBlock int64,
 	numBlocks int, verifyDownload bool, isFinal bool) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
+
 	allocID := C.GoString(allocationID)
 
 	alloc, err := getAllocation(allocID)
@@ -534,6 +582,11 @@ func DownloadFileBlocks(allocationID,
 //export DownloadSharedFileBlocks
 func DownloadSharedFileBlocks(localPath, authTicket *C.char, startBlock int64, endBlock int64,
 	numBlocks int, verifyDownload bool, isFinal bool) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
 
 	info := &SharedInfo{}
 	t, at, err := decodeAuthTicket(authTicket)
@@ -571,7 +624,11 @@ func DownloadSharedFileBlocks(localPath, authTicket *C.char, startBlock int64, e
 //
 //export GetDownloadStatus
 func GetDownloadStatus(key *C.char, isThumbnail bool) *C.char {
-
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
 	k := C.GoString(key)
 	if isThumbnail {
 		k += ":thumbnail"
@@ -604,7 +661,13 @@ func GetDownloadStatus(key *C.char, isThumbnail bool) *C.char {
 //
 //export CreateAuthTicket
 func CreateAuthTicket(allocationID, remotePath, refereeClientID, refereePublicEncryptionKey, availableAfter *C.char, expirationSeconds int64) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
 	alloc, err := getAllocation(C.GoString(allocationID))
+
 	if err != nil {
 		log.Error("win: ", err)
 		return WithJSON(nil, err)
@@ -655,6 +718,11 @@ func CreateAuthTicket(allocationID, remotePath, refereeClientID, refereePublicEn
 //
 //export DeleteAuthTicket
 func DeleteAuthTicket(allocationID, remotePath, refereeClientID *C.char) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
 	alloc, err := getAllocation(C.GoString(allocationID))
 	if err != nil {
 		log.Error("win: ", err)

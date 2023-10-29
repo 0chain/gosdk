@@ -27,6 +27,11 @@ import (
 //
 //export GetAllocation
 func GetAllocation(allocationID *C.char) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
 	allocID := C.GoString(allocationID)
 	return WithJSON(getAllocation(allocID))
 }
@@ -41,6 +46,11 @@ func GetAllocation(allocationID *C.char) *C.char {
 //
 //export ListAllocations
 func ListAllocations() *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
 	items, err := sdk.GetAllocations()
 	if err != nil {
 		log.Error("win: ", err)
@@ -61,7 +71,11 @@ func ListAllocations() *C.char {
 //
 //export CreateFreeAllocation
 func CreateFreeAllocation(freemarker *C.char) *C.char {
-
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
 	marker := &zboxapi.FreeMarker{}
 	js := C.GoString(freemarker)
 	err := json.Unmarshal([]byte(js), marker)
