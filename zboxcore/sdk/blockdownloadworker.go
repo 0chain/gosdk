@@ -159,9 +159,6 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			}
 			respBody = respBody[:n]
 			elapsedReadBody := time.Since(start).Milliseconds() - elapsedDownloadReqBlobber
-			if err != nil {
-				return err
-			}
 			if resp.StatusCode != http.StatusOK {
 				zlogger.Logger.Debug(fmt.Sprintf("downloadBlobberBlock FAIL - blobberID: %v, clientID: %v, blockNum: %d, retry: %d, response: %v", req.blobber.ID, client.GetClientID(), header.BlockNum, retry, string(respBody)))
 				if err = json.Unmarshal(respBody, &rspData); err == nil {
