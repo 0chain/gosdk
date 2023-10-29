@@ -9,6 +9,7 @@ import (
 var (
 	statusUpload, _   = lru.New[string, *Status](1000)
 	statusDownload, _ = lru.New[string, *Status](1000)
+	transcodeFiles, _ = lru.New[string, string](1000)
 )
 
 type Status struct {

@@ -22,8 +22,6 @@ import (
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
-
-	l "github.com/0chain/gosdk/zboxcore/logger"
 )
 
 const SC_REST_API_URL = "v1/screst/"
@@ -576,7 +574,6 @@ func NewConnectionRequest(baseUrl, allocationID string, allocationTx string, bod
 	if err != nil {
 		return nil, err
 	}
-	l.Logger.Error("request url: ", u)
 	req, err := http.NewRequest(http.MethodPost, u.String(), body)
 	if err != nil {
 		return nil, err

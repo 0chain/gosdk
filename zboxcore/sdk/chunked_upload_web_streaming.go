@@ -22,10 +22,10 @@ func TranscodeWebStreaming(workdir string, fileReader io.Reader, fileMeta FileMe
 	// create ./zcn/transcode folder if it doesn't exists
 	os.MkdirAll(outDir, 0766) //nolint: errcheck
 
-	remoteName, remotePath := getRemoteNameAndRemotePath(fileMeta.RemoteName, fileMeta.RemotePath)
+	remoteName, remotePath := GetTranscodeFile(fileMeta.RemotePath)
 
 	fileName := filepath.Join(outDir, remoteName)
-	
+
 	logger.Logger.Info("transcode: start ", fileName)
 
 	args := []string{"-i", fileMeta.Path, "-f", "mp4", "-movflags", "frag_keyframe+empty_moov+default_base_moof", fileName, "-y"}
@@ -76,7 +76,7 @@ func TranscodeWebStreaming(workdir string, fileReader io.Reader, fileMeta FileMe
 	return r, fm, fileName, nil
 }
 
-func getRemoteNameAndRemotePath(remoteName string, remotePath string) (string, string) {
+func GetTranscodeFile(remotePath string) (string, string) {
 	newRemotePath, newRemoteName := path.Split(remotePath)
 	newRemoteNameSlice := strings.Split(newRemoteName, ".")
 	if len(newRemoteNameSlice) > 0 {

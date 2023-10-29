@@ -218,7 +218,7 @@ func CreateChunkedUpload(
 	// encrypt option has been changed. upload it from scratch
 	// chunkSize has been changed. upload it from scratch
 	// actual size has been changed. upload it from scratch
-	if su.progress.ChunkSize != su.chunkSize || su.progress.EncryptOnUpload != su.encryptOnUpload || su.progress.ActualSize != su.fileMeta.ActualSize {
+	if su.progress.ChunkSize != su.chunkSize || su.progress.EncryptOnUpload != su.encryptOnUpload || su.progress.ActualSize != su.fileMeta.ActualSize || su.progress.ChunkNumber != su.chunkNumber || su.progress.ConnectionID == "" {
 		su.progress.ChunkSize = 0 // reset chunk size
 	}
 
@@ -336,6 +336,7 @@ func (su *ChunkedUpload) createUploadProgress(connectionId string) {
 			EncryptOnUpload:   su.encryptOnUpload,
 			EncryptedKeyPoint: su.encryptedKeyPoint,
 			ActualSize:        su.fileMeta.ActualSize,
+			ChunkNumber:       su.chunkNumber,
 		}
 	}
 	su.progress.Blobbers = make([]*UploadBlobberStatus, su.allocationObj.DataShards+su.allocationObj.ParityShards)
@@ -439,15 +440,16 @@ func (su *ChunkedUpload) process() error {
 		} else {
 			// Write data to hashers
 			for i, blobberShard := range chunks.fileShards {
+				hasher := su.blobbers[i].progress.Hasher
 				for _, chunkBytes := range blobberShard {
-					err = su.blobbers[i].progress.Hasher.WriteToFixedMT(chunkBytes)
+					err = hasher.WriteToFixedMT(chunkBytes)
 					if err != nil {
 						if su.statusCallback != nil {
 							su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
 						}
 						return err
 					}
-					err = su.blobbers[i].progress.Hasher.WriteToValidationMT(chunkBytes)
+					err = hasher.WriteToValidationMT(chunkBytes)
 					if err != nil {
 						if su.statusCallback != nil {
 							su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
@@ -462,9 +464,6 @@ func (su *ChunkedUpload) process() error {
 		// last chunk might 0 with io.EOF
 		// https://stackoverflow.com/questions/41208359/how-to-test-eof-on-io-reader-in-go
 		if chunks.totalReadSize > 0 && chunks.chunkEndIndex > su.progress.ChunkIndex {
-			su.progress.ChunkIndex = chunks.chunkEndIndex
-			su.saveProgress()
-
 			if su.statusCallback != nil {
 				su.statusCallback.InProgress(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, int(su.progress.UploadLength)-alreadyUploadedData, nil)
 			}
@@ -590,6 +589,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		isFinal:         isFinal,
 		encryptedKey:    su.encryptedKey,
 		uploadBody:      make([]blobberData, len(su.blobbers)),
+		saveProgress:    uploadLength > 0,
 	}
 
 	wgErrors := make(chan error, len(su.blobbers))
@@ -783,6 +783,10 @@ func (su *ChunkedUpload) uploadProcessor() {
 				su.ctxCncl(thrown.New("consensus_not_met", fmt.Sprintf("Upload failed File not found for path %s. Required consensus atleast %d, got %d",
 					su.fileMeta.RemotePath, su.consensus.consensusThresh, su.consensus.getConsensus())))
 				return
+			}
+			if uploadData.saveProgress {
+				su.progress.ChunkIndex = uploadData.chunkEndIndex
+				su.saveProgress()
 			}
 			if uploadData.isFinal {
 				return

@@ -26,8 +26,7 @@ func initBridge(
 	gasLimit uint64,
 	value int64,
 	consensusThreshold float64) error {
-	wallet := zcncore.GetWalletRaw()
-	if len(wallet.ClientID) == 0 {
+	if len(zcncore.GetWalletRaw().ClientID) == 0 {
 		return errors.New("wallet_error", "wallet is not set")
 	}
 
@@ -49,6 +48,7 @@ func initBridge(
 		"",
 		gasLimit,
 		consensusThreshold,
+		zcnbridge.BancorAPIURL,
 		ethereumClient,
 		transactionProvider,
 		keyStore,
