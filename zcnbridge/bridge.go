@@ -5,17 +5,19 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
+	"math/big"
+	"strconv"
+	"time"
+
 	"github.com/0chain/common/core/currency"
 	"github.com/0chain/gosdk/zcnbridge/ethereum/bancor"
 	"github.com/0chain/gosdk/zcnbridge/ethereum/token"
 	h "github.com/0chain/gosdk/zcnbridge/http"
 	hdw "github.com/0chain/gosdk/zcncore/ethhdwallet"
 	"github.com/spf13/viper"
-	"io"
-	"math/big"
-	"os"
-	"strconv"
-	"time"
+
+	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/zcnbridge/ethereum"
@@ -45,11 +47,15 @@ func init() {
 	Logger.Init(defaultLogLevel, "zcnbridge-sdk")
 
 	Logger.SetLevel(logger.DEBUG)
-	f, err := os.OpenFile("bridge.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return
+	ioWriter := &lumberjack.Logger{
+		Filename:   "bridge.log",
+		MaxSize:    100, // MB
+		MaxBackups: 5,   // number of backups
+		MaxAge:     28,  //days
+		LocalTime:  false,
+		Compress:   false, // disabled by default
 	}
-	Logger.SetLogFile(f, true)
+	Logger.SetLogFile(ioWriter, true)
 }
 
 var (
