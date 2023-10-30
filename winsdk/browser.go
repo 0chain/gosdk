@@ -33,6 +33,11 @@ type RemoteFile struct {
 //
 //export ListAll
 func ListAll(allocationID *C.char) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
 	alloc, err := getAllocation(C.GoString(allocationID))
 	if err != nil {
 		log.Error("win: ", err)
@@ -76,7 +81,11 @@ func ListAll(allocationID *C.char) *C.char {
 //
 //export List
 func List(allocationID, remotePath, authTicket, lookupHash *C.char) *C.char {
-
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
 	allocID := C.GoString(allocationID)
 	remotepath := C.GoString(remotePath)
 	authticket := C.GoString(authTicket)
@@ -113,7 +122,7 @@ func List(allocationID, remotePath, authTicket, lookupHash *C.char) *C.char {
 			return WithJSON("[]", errors.New("Error: lookuphash flag is missing"))
 		}
 
-		allocationObj, err := getAllocationWith(authticket)
+		allocationObj, _, err := getAllocationWith(authticket)
 		if err != nil {
 			log.Error("win: ", err)
 			return WithJSON("[]", err)
