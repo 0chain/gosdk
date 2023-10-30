@@ -530,6 +530,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		})
 	}
 	if err := eg.Wait(); err != nil {
+		l.Logger.Error("[getBlocksData]", err)
 		req.errorCB(err, remotePathCB)
 		return
 	}
