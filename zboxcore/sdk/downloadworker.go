@@ -522,6 +522,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 				return errors.New("download_abort", "Download aborted by user")
 			}
 			if err != nil {
+				l.Logger.Error("blockDownloadFailed", err)
 				return errors.Wrap(err, fmt.Sprintf("Download failed for block %d. ", startBlock+int64(j)*numBlocks))
 			}
 			blocks <- blockData{blockNum: j, data: data}

@@ -152,14 +152,18 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			}
 			elapsedDownloadReqBlobber := time.Since(start).Milliseconds()
 			var rspData downloadBlock
+			if req.chunkSize == 0 {
+				req.chunkSize = CHUNK_SIZE
+			}
+			zlogger.Logger.Info("chunkBody", req.numBlocks+10, req.chunkSize)
 			respBody := make([]byte, int(req.numBlocks+10)*req.chunkSize)
 			n, err := resp.Body.Read(respBody)
 			if err != nil && !errors.Is(err, io.EOF) {
 				zlogger.Logger.Error("Error reading response body: ", err)
 				return err
 			}
-			respBody = respBody[:n]
 			zlogger.Logger.Info("respBody", len(respBody), n, errors.Is(err, io.EOF))
+			respBody = respBody[:n]
 			elapsedReadBody := time.Since(start).Milliseconds() - elapsedDownloadReqBlobber
 			if resp.StatusCode != http.StatusOK {
 				zlogger.Logger.Debug(fmt.Sprintf("downloadBlobberBlock FAIL - blobberID: %v, clientID: %v, blockNum: %d, retry: %d, response: %v", req.blobber.ID, client.GetClientID(), header.BlockNum, retry, string(respBody)))
@@ -205,9 +209,6 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 					rspData.BlockChunks = req.splitData(dR.Data, req.chunkSize)
 				}
 			} else {
-				if req.chunkSize == 0 {
-					req.chunkSize = CHUNK_SIZE
-				}
 				rspData.BlockChunks = req.splitData(dR.Data, req.chunkSize)
 			}
 
