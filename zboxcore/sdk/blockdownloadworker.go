@@ -168,9 +168,13 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			}
 
 			dR := downloadResponse{}
-			err = json.Unmarshal(respBody, &dR)
-			if err != nil {
-				return err
+			if req.shouldVerify {
+				err = json.Unmarshal(respBody, &dR)
+				if err != nil {
+					return err
+				}
+			} else {
+				dR.Data = respBody
 			}
 			elapsedUnmarshal := time.Since(start).Milliseconds() - elapsedReadBody - elapsedDownloadReqBlobber
 			if req.contentMode == DOWNLOAD_CONTENT_FULL && req.shouldVerify {
