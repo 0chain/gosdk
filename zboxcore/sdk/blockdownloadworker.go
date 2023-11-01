@@ -155,8 +155,8 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			if req.chunkSize == 0 {
 				req.chunkSize = CHUNK_SIZE
 			}
-			zlogger.Logger.Info("chunkBody", req.numBlocks+10, req.chunkSize)
-			respBody := make([]byte, int(req.numBlocks+10)*req.chunkSize)
+			zlogger.Logger.Info("chunkBody", req.numBlocks+100, req.chunkSize, req.shouldVerify)
+			respBody := make([]byte, int(req.numBlocks+100)*req.chunkSize)
 			n, err := io.ReadFull(resp.Body, respBody)
 			if err != nil && !errors.Is(err, io.EOF) {
 				zlogger.Logger.Error("Error reading response body: ", err)
