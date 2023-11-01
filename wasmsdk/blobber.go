@@ -14,11 +14,9 @@ import (
 	"syscall/js"
 	"time"
 
-	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/pathutil"
 	"github.com/0chain/gosdk/core/sys"
-
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/wasmsdk/jsbridge"
 	"github.com/0chain/gosdk/zboxcore/fileref"
@@ -54,12 +52,7 @@ func createDir(allocationID, remotePath string) error {
 		return err
 	}
 
-	return allocationObj.DoMultiOperation([]sdk.OperationRequest{
-		{
-			OperationType: constants.FileOperationCreateDir,
-			RemotePath:    remotePath,
-		},
-	})
+	return allocationObj.CreateDir(remotePath)
 }
 
 // getFileStats get file stats from blobbers
@@ -159,14 +152,7 @@ func Rename(allocationID, remotePath, destName string) (*FileCommandResponse, er
 		return nil, err
 	}
 
-	err = allocationObj.DoMultiOperation([]sdk.OperationRequest{
-		{
-			OperationType: constants.FileOperationRename,
-			RemotePath:    remotePath,
-			DestName:      destName,
-		},
-	})
-
+	err = allocationObj.RenameObject(remotePath, destName)
 	if err != nil {
 		PrintError(err.Error())
 		return nil, err
@@ -201,14 +187,7 @@ func Copy(allocationID, remotePath, destPath string) (*FileCommandResponse, erro
 		return nil, err
 	}
 
-	err = allocationObj.DoMultiOperation([]sdk.OperationRequest{
-		{
-			OperationType: constants.FileOperationCopy,
-			RemotePath:    remotePath,
-			DestPath:      destPath,
-		},
-	})
-
+	err = allocationObj.CopyObject(remotePath, destPath)
 	if err != nil {
 		PrintError(err.Error())
 		return nil, err
@@ -243,14 +222,7 @@ func Move(allocationID, remotePath, destPath string) (*FileCommandResponse, erro
 		return nil, err
 	}
 
-	err = allocationObj.DoMultiOperation([]sdk.OperationRequest{
-		{
-			OperationType: constants.FileOperationMove,
-			RemotePath:    remotePath,
-			DestPath:      destPath,
-		},
-	})
-
+	err = allocationObj.MoveObject(remotePath, destPath)
 	if err != nil {
 		PrintError(err.Error())
 		return nil, err
@@ -330,6 +302,71 @@ func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expir
 	sdkLogger.Info("Auth token :" + ref)
 
 	return ref, nil
+
+}
+
+// download file
+func download(
+	allocationID, remotePath, authTicket, lookupHash string,
+	downloadThumbnailOnly bool, numBlocks int, callbackFuncName string, isFinal bool) (*DownloadCommandResponse, error) {
+
+	wg := &sync.WaitGroup{}
+	statusBar := &StatusBar{wg: wg}
+	if callbackFuncName != "" {
+		callback := js.Global().Get(callbackFuncName)
+		statusBar.callback = func(totalBytes, completedBytes int, filename, objURL, err string) {
+			callback.Invoke(totalBytes, completedBytes, filename, objURL, err)
+		}
+	}
+	wg.Add(1)
+
+	if len(remotePath) == 0 && len(authTicket) == 0 {
+		return nil, RequiredArg("remotePath/authTicket")
+	}
+
+	fileName := strings.Replace(path.Base(remotePath), "/", "-", -1)
+	localPath := allocationID + "_" + fileName
+	var (
+		err        error
+		downloader sdk.Downloader
+	)
+
+	fs, _ := sys.Files.Open(localPath)
+	mf, _ := fs.(*sys.MemFile)
+
+	downloader, err = sdk.CreateDownloader(allocationID, localPath, remotePath,
+		sdk.WithAuthticket(authTicket, lookupHash),
+		sdk.WithOnlyThumbnail(downloadThumbnailOnly),
+		sdk.WithBlocks(0, 0, numBlocks),
+		sdk.WithFileHandler(mf))
+
+	if err != nil {
+		PrintError(err.Error())
+		return nil, err
+	}
+
+	defer sys.Files.Remove(localPath) //nolint
+
+	err = downloader.Start(statusBar, isFinal)
+
+	if err == nil {
+		wg.Wait()
+	} else {
+		PrintError("Download failed.", err.Error())
+		return nil, err
+	}
+	if !statusBar.success {
+		return nil, errors.New("Download failed: unknown error")
+	}
+
+	resp := &DownloadCommandResponse{
+		CommandSuccess: true,
+		FileName:       downloader.GetFileName(),
+	}
+
+	resp.Url = CreateObjectURL(mf.Buffer.Bytes(), "application/octet-stream")
+
+	return resp, nil
 
 }
 
@@ -508,6 +545,52 @@ func MultiOperation(allocationID string, jsonMultiUploadOptions string) error {
 		return err
 	}
 	return allocationObj.DoMultiOperation(operations)
+}
+
+func bulkUpload(jsonBulkUploadOptions string) ([]BulkUploadResult, error) {
+	var options []BulkUploadOption
+	err := json.Unmarshal([]byte(jsonBulkUploadOptions), &options)
+	if err != nil {
+		return nil, err
+	}
+
+	n := len(options)
+	wait := make(chan BulkUploadResult, 1)
+
+	for _, option := range options {
+		go func(o BulkUploadOption) {
+			result := BulkUploadResult{
+				RemotePath: o.RemotePath,
+			}
+			defer func() { wait <- result }()
+
+			ok, err := uploadWithJsFuncs(o.AllocationID, o.RemotePath,
+				o.ReadChunkFuncName,
+				o.FileSize,
+				o.ThumbnailBytes.Buffer,
+				o.IsWebstreaming,
+				o.Encrypt,
+				o.IsUpdate,
+				o.IsRepair,
+				o.NumBlocks,
+				o.CallbackFuncName)
+			result.Success = ok
+			if err != nil {
+				result.Error = err.Error()
+				result.Success = false
+			}
+
+		}(option)
+
+	}
+
+	results := make([]BulkUploadResult, 0, n)
+	for i := 0; i < n; i++ {
+		result := <-wait
+		results = append(results, result)
+	}
+
+	return results, nil
 }
 
 func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
@@ -776,7 +859,7 @@ func upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, w
 }
 
 // download download file blocks
-func downloadBlocks(allocationID, remotePath, authTicket, lookupHash string, numBlocks int, startBlockNumber, endBlockNumber int64, callbackFuncName string, isFinal bool) ([]byte, error) {
+func downloadBlocks(allocationID, remotePath, authTicket, lookupHash string, numBlocks int, startBlockNumber, endBlockNumber int64, callbackFuncName string, isFinal bool) (*DownloadCommandResponse, error) {
 
 	if len(remotePath) == 0 && len(authTicket) == 0 {
 		return nil, RequiredArg("remotePath/authTicket")
@@ -836,7 +919,15 @@ func downloadBlocks(allocationID, remotePath, authTicket, lookupHash string, num
 		return nil, errors.New("Download failed: unknown error")
 	}
 
-	return mf.Buffer.Bytes(), nil
+	resp := &DownloadCommandResponse{
+		CommandSuccess: true,
+		FileName:       fileName,
+	}
+
+	resp.Url = CreateObjectURL(mf.Buffer.Bytes(), "application/octet-stream")
+
+	return resp, nil
+
 }
 
 // GetBlobbersList get list of active blobbers, and format them as array json string
