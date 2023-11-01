@@ -174,7 +174,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			}
 
 			dR := downloadResponse{}
-			if req.shouldVerify {
+			if !req.shouldVerify {
 				err = json.Unmarshal(respBody, &dR)
 				if err != nil {
 					return err
