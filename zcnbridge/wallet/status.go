@@ -12,6 +12,7 @@ import (
 
 type ZCNStatus struct {
 	walletString string
+	RawValue     string
 	balance      int64
 	value        interface{}
 	Wg           *sync.WaitGroup
@@ -82,6 +83,9 @@ func (zcn *ZCNStatus) OnWalletCreateComplete(status int, wallet string, err stri
 
 func (zcn *ZCNStatus) OnInfoAvailable(_ int, status int, info string, err string) {
 	defer zcn.Wg.Done()
+
+	zcn.RawValue = info
+
 	if status != zcncore.StatusSuccess {
 		zcn.Err = errors.New(err)
 		zcn.Success = false
