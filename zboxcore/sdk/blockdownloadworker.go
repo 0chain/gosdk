@@ -157,7 +157,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			}
 			zlogger.Logger.Info("chunkBody", req.numBlocks+10, req.chunkSize)
 			respBody := make([]byte, int(req.numBlocks+10)*req.chunkSize)
-			n, err := resp.Body.Read(respBody)
+			n, err := io.ReadFull(resp.Body, respBody)
 			if err != nil && !errors.Is(err, io.EOF) {
 				zlogger.Logger.Error("Error reading response body: ", err)
 				return err
@@ -177,6 +177,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			if !req.shouldVerify {
 				err = json.Unmarshal(respBody, &dR)
 				if err != nil {
+					zlogger.Logger.Error("respBody unmarshal error: ", err)
 					return err
 				}
 			} else {
