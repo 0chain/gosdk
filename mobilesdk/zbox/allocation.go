@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/sdk"
@@ -200,7 +201,13 @@ func (a *Allocation) RenameObject(remotePath string, destName string) error {
 	if a == nil || a.sdkAllocation == nil {
 		return ErrInvalidAllocation
 	}
-	return a.sdkAllocation.RenameObject(remotePath, destName)
+	return a.sdkAllocation.DoMultiOperation([]sdk.OperationRequest{
+		{
+			OperationType: constants.FileOperationRename,
+			RemotePath:    remotePath,
+			DestName:      destName,
+		},
+	})
 }
 
 // GetStatistics - get allocation stats
@@ -374,7 +381,13 @@ func (a *Allocation) CopyObject(path string, destPath string) error {
 	if a == nil || a.sdkAllocation == nil {
 		return ErrInvalidAllocation
 	}
-	return a.sdkAllocation.CopyObject(path, destPath)
+	return a.sdkAllocation.DoMultiOperation([]sdk.OperationRequest{
+		{
+			OperationType: constants.FileOperationRename,
+			RemotePath:    path,
+			DestPath:      destPath,
+		},
+	})
 }
 
 // MoveObject - move object from path to dest
@@ -382,7 +395,13 @@ func (a *Allocation) MoveObject(path string, destPath string) error {
 	if a == nil || a.sdkAllocation == nil {
 		return ErrInvalidAllocation
 	}
-	return a.sdkAllocation.MoveObject(path, destPath)
+	return a.sdkAllocation.DoMultiOperation([]sdk.OperationRequest{
+		{
+			OperationType: constants.FileOperationRename,
+			RemotePath:    path,
+			DestPath:      destPath,
+		},
+	})
 }
 
 // GetMinWriteRead - getting back cost for allocation
@@ -455,7 +474,12 @@ func (a *Allocation) GetFirstSegment(localPath, remotePath, tmpPath string, dela
 }
 
 func (a *Allocation) CreateDir(dirName string) error {
-	return a.sdkAllocation.CreateDir(dirName)
+	return a.sdkAllocation.DoMultiOperation([]sdk.OperationRequest{
+		{
+			OperationType: constants.FileOperationCreateDir,
+			RemotePath:    dirName,
+		},
+	})
 }
 
 var currentPlayback StreamingImpl

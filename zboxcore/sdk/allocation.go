@@ -39,9 +39,10 @@ import (
 )
 
 var (
-	noBLOBBERS     = errors.New("", "No Blobbers set in this allocation")
-	notInitialized = errors.New("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
-	IsWasm         = false
+	noBLOBBERS       = errors.New("", "No Blobbers set in this allocation")
+	notInitialized   = errors.New("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
+	IsWasm           = false
+	MultiOpBatchSize = 10
 )
 
 const (
@@ -103,7 +104,11 @@ type ConsolidatedFileMeta struct {
 	ActualFileSize  int64
 	ActualNumBlocks int64
 	EncryptedKey    string
-	Collaborators   []fileref.Collaborator
+
+	ActualThumbnailSize int64
+	ActualThumbnailHash string
+
+	Collaborators []fileref.Collaborator
 }
 
 type AllocationStats struct {
@@ -360,45 +365,6 @@ func (a *Allocation) UploadFile(workdir, localpath string, remotepath string,
 	status StatusCallback) error {
 
 	return a.StartChunkedUpload(workdir, localpath, remotepath, status, false, false, "", false, false)
-}
-
-func (a *Allocation) CreateDir(remotePath string) error {
-	if !a.isInitialized() {
-		return notInitialized
-	}
-
-	if remotePath == "" {
-		return errors.New("invalid_name", "Invalid name for dir")
-	}
-
-	if !path.IsAbs(remotePath) {
-		return errors.New("invalid_path", "Path is not absolute")
-	}
-
-	remotePath = zboxutil.RemoteClean(remotePath)
-	timestamp := int64(common.Now())
-	req := DirRequest{
-		allocationObj: a,
-		allocationID:  a.ID,
-		allocationTx:  a.Tx,
-		blobbers:      a.Blobbers,
-		mu:            &sync.Mutex{},
-		dirMask:       zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1),
-		connectionID:  zboxutil.NewConnectionId(),
-		remotePath:    remotePath,
-		wg:            &sync.WaitGroup{},
-		timestamp:     timestamp,
-		alreadyExists: map[uint64]bool{},
-		Consensus: Consensus{
-			RWMutex:         &sync.RWMutex{},
-			consensusThresh: a.consensusThreshold,
-			fullconsensus:   a.fullconsensus,
-		},
-	}
-	req.ctx, req.ctxCncl = context.WithCancel(a.ctx)
-
-	err := req.ProcessDir(a)
-	return err
 }
 
 func (a *Allocation) RepairFile(file sys.File, remotepath string,
@@ -671,6 +637,7 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 	}
 
 	connectionId := zboxutil.NewConnectionId()
+	now := time.Now()
 	ChunkedUpload, err := CreateChunkedUpload(workdir,
 		a, fileMeta, fileReader,
 		isUpdate, isRepair, webStreaming, connectionId,
@@ -678,6 +645,9 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 	if err != nil {
 		return err
 	}
+	elapsedCreateChunkedUpload := time.Since(now)
+	logger.Logger.Info("[StartChunkedUpload]", zap.String("allocation_id", a.ID),
+		zap.Duration("CreateChunkedUpload", elapsedCreateChunkedUpload))
 
 	return ChunkedUpload.Start()
 }
@@ -864,14 +834,20 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 				fmt.Sprintf("Multioperation: create connection failed. Required consensus %d got %d",
 					mo.consensusThresh, mo.operationMask.CountOnes()))
 		}
-
+		ops := 0
 		for ; i < len(operations); i++ {
+			if ops > MultiOpBatchSize {
+				// max batch size reached, commit
+				connectionID = zboxutil.NewConnectionId()
+				break
+			}
 			op := operations[i]
 			remotePath := op.RemotePath
 			parentPaths := GenerateParentPaths(remotePath)
 
 			if _, ok := previousPaths[remotePath]; ok {
 				// conflict found, commit
+				connectionID = zboxutil.NewConnectionId()
 				break
 			}
 
@@ -914,7 +890,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 				connectionID = newConnectionID
 				break
 			}
-
+			ops++
 			err = operation.Verify(a)
 			if err != nil {
 				return err
@@ -934,7 +910,6 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 			}
 		}
 	}
-
 	return nil
 }
 
@@ -1136,6 +1111,7 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 	if a.ReadPriceRange.Max == 0 && a.ReadPriceRange.Min == 0 {
 		isReadFree = true
 	}
+	now := time.Now()
 
 	for _, dr := range drs {
 		wg.Add(1)
@@ -1154,6 +1130,7 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 		}(dr)
 	}
 	wg.Wait()
+	elapsedProcessDownloadRequest := time.Since(now)
 
 	// Do not send readmarkers for free reads
 	if isReadFree {
@@ -1165,11 +1142,15 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 				a.downloadChan <- dr
 			}(dr)
 		}
+		l.Logger.Info("[processReadMarker]", zap.String("allocation_id", a.ID),
+			zap.Int("num of download requests", len(drs)),
+			zap.Duration("processDownloadRequest", elapsedProcessDownloadRequest))
 		return
 	}
 
 	successMask := zboxutil.NewUint128(0)
 	var redeemError error
+
 	for pos, totalBlocks := range blobberMap {
 		if totalBlocks == 0 {
 			continue
@@ -1187,6 +1168,12 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 		}(pos, totalBlocks)
 	}
 	wg.Wait()
+	elapsedSubmitReadmarker := time.Since(now) - elapsedProcessDownloadRequest
+
+	l.Logger.Info("[processReadMarker]", zap.String("allocation_id", a.ID),
+		zap.Int("num of download requests", len(drs)),
+		zap.Duration("processDownloadRequest", elapsedProcessDownloadRequest),
+		zap.Duration("submitReadmarker", elapsedSubmitReadmarker))
 	for _, dr := range drs {
 		if dr.skip {
 			continue
@@ -1506,6 +1493,8 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 		result.EncryptedKey = ref.EncryptedKey
 		result.Collaborators = ref.Collaborators
 		result.ActualFileSize = ref.ActualFileSize
+		result.ActualThumbnailHash = ref.ActualThumbnailHash
+		result.ActualThumbnailSize = ref.ActualThumbnailSize
 		if result.ActualFileSize > 0 {
 			result.ActualNumBlocks = (ref.ActualFileSize + CHUNK_SIZE - 1) / CHUNK_SIZE
 		}
@@ -1561,6 +1550,8 @@ func (a *Allocation) GetFileMetaFromAuthTicket(authTicket string, lookupHash str
 		result.Size = ref.Size
 		result.NumBlocks = ref.NumBlocks
 		result.ActualFileSize = ref.ActualFileSize
+		result.ActualThumbnailHash = ref.ActualThumbnailHash
+		result.ActualThumbnailSize = ref.ActualThumbnailSize
 		if result.ActualFileSize > 0 {
 			result.ActualNumBlocks = (result.ActualFileSize + CHUNK_SIZE - 1) / CHUNK_SIZE
 		}
@@ -1634,135 +1625,42 @@ func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus int,
 	return err
 }
 
-func (a *Allocation) RenameObject(path string, destName string) error {
+func (a *Allocation) createDir(remotePath string, threshConsensus, fullConsensus int, mask zboxutil.Uint128) error {
 	if !a.isInitialized() {
 		return notInitialized
 	}
 
-	if !a.CanRename() {
-		return constants.ErrFileOptionNotPermitted
+	if remotePath == "" {
+		return errors.New("invalid_name", "Invalid name for dir")
 	}
 
-	if path == "" {
-		return errors.New("invalid_path", "Invalid path for the list")
+	if !path.IsAbs(remotePath) {
+		return errors.New("invalid_path", "Path is not absolute")
 	}
 
-	if path == "/" {
-		return errors.New("invalid_operation", "cannot rename root path")
+	remotePath = zboxutil.RemoteClean(remotePath)
+	timestamp := int64(common.Now())
+	req := DirRequest{
+		allocationObj: a,
+		allocationID:  a.ID,
+		allocationTx:  a.Tx,
+		blobbers:      a.Blobbers,
+		mu:            &sync.Mutex{},
+		dirMask:       mask,
+		connectionID:  zboxutil.NewConnectionId(),
+		remotePath:    remotePath,
+		wg:            &sync.WaitGroup{},
+		timestamp:     timestamp,
+		Consensus: Consensus{
+			RWMutex:         &sync.RWMutex{},
+			consensusThresh: threshConsensus,
+			fullconsensus:   fullConsensus,
+		},
 	}
-
-	path = zboxutil.RemoteClean(path)
-	isabs := zboxutil.IsRemoteAbs(path)
-	if !isabs {
-		return errors.New("invalid_path", "Path should be valid and absolute")
-	}
-
-	err := ValidateRemoteFileName(destName)
-	if err != nil {
-		return err
-	}
-
-	req := &RenameRequest{consensus: Consensus{RWMutex: &sync.RWMutex{}}}
-	req.allocationObj = a
-	req.blobbers = a.Blobbers
-	req.allocationID = a.ID
-	req.allocationTx = a.Tx
-	req.newName = destName
-	req.consensus.fullconsensus = a.fullconsensus
-	req.consensus.consensusThresh = a.consensusThreshold
 	req.ctx, req.ctxCncl = context.WithCancel(a.ctx)
-	req.remotefilepath = path
-	req.renameMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
-	req.maskMU = &sync.Mutex{}
-	req.connectionID = zboxutil.NewConnectionId()
-	req.timestamp = int64(common.Now())
-	return req.ProcessRename()
-}
 
-func (a *Allocation) MoveObject(srcPath string, destPath string) error {
-	if !a.isInitialized() {
-		return notInitialized
-	}
-
-	if !a.CanMove() {
-		return constants.ErrFileOptionNotPermitted
-	}
-
-	if len(srcPath) == 0 || len(destPath) == 0 {
-		return errors.New("invalid_path", "Invalid path for copy")
-	}
-	srcPath = zboxutil.RemoteClean(srcPath)
-	isabs := zboxutil.IsRemoteAbs(srcPath)
-	if !isabs {
-		return errors.New("invalid_path", "Path should be valid and absolute")
-	}
-
-	err := ValidateRemoteFileName(destPath)
-	if err != nil {
-		return err
-	}
-
-	req := &MoveRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
-	req.allocationObj = a
-	req.blobbers = a.Blobbers
-	req.allocationID = a.ID
-	req.allocationTx = a.Tx
-	if destPath != "/" {
-		destPath = strings.TrimSuffix(destPath, "/")
-	}
-	req.destPath = destPath
-	req.fullconsensus = a.fullconsensus
-	req.consensusThresh = a.consensusThreshold
-	req.ctx, req.ctxCncl = context.WithCancel(a.ctx)
-	req.remotefilepath = srcPath
-	req.moveMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
-	req.maskMU = &sync.Mutex{}
-	req.connectionID = zboxutil.NewConnectionId()
-	req.timestamp = int64(common.Now())
-	return req.ProcessMove()
-}
-
-func (a *Allocation) CopyObject(path string, destPath string) error {
-	if !a.isInitialized() {
-		return notInitialized
-	}
-
-	if !a.CanCopy() {
-		return constants.ErrFileOptionNotPermitted
-	}
-
-	if len(path) == 0 || len(destPath) == 0 {
-		return errors.New("invalid_path", "Invalid path for copy")
-	}
-	path = zboxutil.RemoteClean(path)
-	isabs := zboxutil.IsRemoteAbs(path)
-	if !isabs {
-		return errors.New("invalid_path", "Path should be valid and absolute")
-	}
-
-	err := ValidateRemoteFileName(destPath)
-	if err != nil {
-		return err
-	}
-
-	req := &CopyRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
-	req.allocationObj = a
-	req.blobbers = a.Blobbers
-	req.allocationID = a.ID
-	req.allocationTx = a.Tx
-	if destPath != "/" {
-		destPath = strings.TrimSuffix(destPath, "/")
-	}
-	req.destPath = destPath
-	req.fullconsensus = a.fullconsensus
-	req.consensusThresh = a.consensusThreshold
-	req.ctx, req.ctxCncl = context.WithCancel(a.ctx)
-	req.remotefilepath = path
-	req.copyMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
-	req.maskMU = &sync.Mutex{}
-	req.connectionID = zboxutil.NewConnectionId()
-	req.timestamp = int64(common.Now())
-	return req.ProcessCopy()
+	err := req.ProcessDir(a)
+	return err
 }
 
 func (a *Allocation) GetAuthTicketForShare(
@@ -1963,7 +1861,7 @@ func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKe
 	consensus := Consensus{
 		RWMutex:         &sync.RWMutex{},
 		consensus:       len(success),
-		consensusThresh: a.consensusThreshold,
+		consensusThresh: a.DataShards,
 		fullconsensus:   a.fullconsensus,
 	}
 	if !consensus.isConsensusOk() {

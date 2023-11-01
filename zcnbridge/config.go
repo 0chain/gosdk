@@ -1,10 +1,15 @@
 package zcnbridge
 
 import (
+	"context"
 	"fmt"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"math/big"
 	"path"
 
 	"github.com/0chain/gosdk/zcnbridge/log"
+	"github.com/0chain/gosdk/zcnbridge/transaction"
+	"github.com/ethereum/go-ethereum/ethclient"
 
 	"github.com/spf13/viper"
 )
@@ -15,6 +20,13 @@ const (
 	EthereumWalletStorageDir = "wallets"
 )
 
+const (
+	BancorNetworkAddress = "0xeEF417e1D5CC832e619ae18D2F140De2999dD4fB"
+	SourceTokenAddress   = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
+)
+
+const BancorAPIURL = "https://api-v3.bancor.network"
+
 type BridgeSDKConfig struct {
 	LogLevel        *string
 	LogPath         *string
@@ -23,45 +35,57 @@ type BridgeSDKConfig struct {
 	Development     *bool
 }
 
+// EthereumClient describes Ethereum JSON-RPC client generealized interface
+type EthereumClient interface {
+	bind.ContractBackend
+
+	ChainID(ctx context.Context) (*big.Int, error)
+}
+
 type BridgeClient struct {
+	keyStore            KeyStore
+	transactionProvider transaction.TransactionProvider
+	ethereumClient      EthereumClient
+
 	BridgeAddress,
 	TokenAddress,
 	AuthorizersAddress,
+	NFTConfigAddress,
 	EthereumAddress,
-	Password,
-	EthereumNodeURL,
-	Homedir string
+	Password string
+
+	BancorAPIURL string
 
 	ConsensusThreshold float64
 	GasLimit           uint64
 }
 
-func CreateBridgeClient(cfg *viper.Viper) *BridgeClient {
-
-	homedir := path.Dir(cfg.ConfigFileUsed())
-	if homedir == "" {
-		log.Logger.Fatal("homedir is required")
-	}
-
+// NewBridgeClient creates BridgeClient with the given parameters.
+func NewBridgeClient(
+	bridgeAddress,
+	tokenAddress,
+	authorizersAddress,
+	ethereumAddress,
+	password string,
+	gasLimit uint64,
+	consensusThreshold float64,
+	bancorAPIURL string,
+	ethereumClient EthereumClient,
+	transactionProvider transaction.TransactionProvider,
+	keyStore KeyStore) *BridgeClient {
 	return &BridgeClient{
-		BridgeAddress:      cfg.GetString("bridge.bridge_address"),
-		TokenAddress:       cfg.GetString("bridge.token_address"),
-		AuthorizersAddress: cfg.GetString("bridge.authorizers_address"),
-		EthereumAddress:    cfg.GetString("bridge.ethereum_address"),
-		Password:           cfg.GetString("bridge.password"),
-		EthereumNodeURL:    cfg.GetString("ethereum_node_url"),
-		GasLimit:           cfg.GetUint64("bridge.gas_limit"),
-		ConsensusThreshold: cfg.GetFloat64("bridge.consensus_threshold"),
-		Homedir:            homedir,
+		BridgeAddress:       bridgeAddress,
+		TokenAddress:        tokenAddress,
+		AuthorizersAddress:  authorizersAddress,
+		EthereumAddress:     ethereumAddress,
+		Password:            password,
+		GasLimit:            gasLimit,
+		ConsensusThreshold:  consensusThreshold,
+		BancorAPIURL:        bancorAPIURL,
+		ethereumClient:      ethereumClient,
+		transactionProvider: transactionProvider,
+		keyStore:            keyStore,
 	}
-}
-
-// SetupBridgeClientSDK Use this from standalone application
-// 0Chain SDK initialization is required
-func SetupBridgeClientSDK(cfg *BridgeSDKConfig) *BridgeClient {
-	log.InitLogging(*cfg.Development, *cfg.LogPath, *cfg.LogLevel)
-	bridgeClient := CreateBridgeClient(initChainConfig(cfg))
-	return bridgeClient
 }
 
 func initChainConfig(sdkConfig *BridgeSDKConfig) *viper.Viper {
@@ -84,4 +108,40 @@ func readConfig(sdkConfig *BridgeSDKConfig, getConfigName func() string) *viper.
 		log.Logger.Fatal(fmt.Errorf("%w: can't read config", err).Error())
 	}
 	return cfg
+}
+
+// SetupBridgeClientSDK initializes new bridge client.
+// Meant to be used from standalone application with 0chain SDK initialized.
+func SetupBridgeClientSDK(cfg *BridgeSDKConfig) *BridgeClient {
+	log.InitLogging(*cfg.Development, *cfg.LogPath, *cfg.LogLevel)
+
+	chainCfg := initChainConfig(cfg)
+
+	ethereumClient, err := ethclient.Dial(chainCfg.GetString("ethereum_node_url"))
+	if err != nil {
+		Logger.Error(err)
+	}
+
+	transactionProvider := transaction.NewTransactionProvider()
+
+	homedir := path.Dir(chainCfg.ConfigFileUsed())
+	if homedir == "" {
+		log.Logger.Fatal("err happened during home directory retrieval")
+	}
+
+	keyStore := NewKeyStore(path.Join(homedir, EthereumWalletStorageDir))
+
+	return NewBridgeClient(
+		chainCfg.GetString("bridge.bridge_address"),
+		chainCfg.GetString("bridge.token_address"),
+		chainCfg.GetString("bridge.authorizers_address"),
+		chainCfg.GetString("bridge.ethereum_address"),
+		chainCfg.GetString("bridge.password"),
+		chainCfg.GetUint64("bridge.gas_limit"),
+		chainCfg.GetFloat64("bridge.consensus_threshold"),
+		BancorAPIURL,
+		ethereumClient,
+		transactionProvider,
+		keyStore,
+	)
 }

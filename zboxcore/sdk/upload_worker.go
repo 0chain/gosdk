@@ -10,6 +10,7 @@ import (
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 )
 
 type UploadOperation struct {
@@ -22,10 +23,9 @@ type UploadOperation struct {
 func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
 	err := uo.chunkedUpload.process()
 	if err != nil {
-		uo.chunkedUpload.ctxCncl()
+		l.Logger.Error("UploadOperation Failed", zap.String("name", uo.chunkedUpload.fileMeta.RemoteName), zap.Error(err))
 		return nil, uo.chunkedUpload.uploadMask, err
 	}
-
 	var pos uint64
 	numList := len(uo.chunkedUpload.blobbers)
 	uo.refs = make([]*fileref.FileRef, numList)
@@ -34,8 +34,7 @@ func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([
 		uo.refs[pos] = uo.chunkedUpload.blobbers[pos].fileRef
 		uo.refs[pos].ChunkSize = uo.chunkedUpload.chunkSize
 	}
-
-	l.Logger.Info("Completed the upload")
+	l.Logger.Info("UploadOperation Success", zap.String("name", uo.chunkedUpload.fileMeta.RemoteName))
 	return nil, uo.chunkedUpload.uploadMask, nil
 }
 
@@ -119,7 +118,6 @@ func (uo *UploadOperation) Error(allocObj *Allocation, consensus int, err error)
 
 func NewUploadOperation(workdir string, allocObj *Allocation, connectionID string, fileMeta FileMeta, fileReader io.Reader, isUpdate, isWebstreaming bool, opts ...ChunkedUploadOption) (*UploadOperation, string, error) {
 	uo := &UploadOperation{}
-
 	cu, err := CreateChunkedUpload(workdir, allocObj, fileMeta, fileReader, isUpdate, false, isWebstreaming, connectionID, opts...)
 	if err != nil {
 		return nil, "", err
@@ -128,6 +126,5 @@ func NewUploadOperation(workdir string, allocObj *Allocation, connectionID strin
 	uo.chunkedUpload = cu
 	uo.opCode = cu.opCode
 	uo.isUpdate = isUpdate
-
 	return uo, cu.progress.ConnectionID, nil
 }

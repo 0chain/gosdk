@@ -163,14 +163,9 @@ func main() {
 
 				//blobber
 				"delete":                 Delete,
-				"rename":                 Rename,
-				"copy":                   Copy,
-				"move":                   Move,
 				"share":                  Share,
-				"download":               download,
 				"multiDownload":          multiDownload,
 				"upload":                 upload,
-				"bulkUpload":             bulkUpload,
 				"multiUpload":            multiUpload,
 				"multiOperation":         MultiOperation,
 				"listObjects":            listObjects,
@@ -184,6 +179,7 @@ func main() {
 				"updatecontainer":        UpdateContainer,
 				"searchcontainer":        SearchContainer,
 				"updateForbidAllocation": UpdateForbidAllocation,
+				"send":                   send,
 
 				// player
 				"play":           play,
@@ -228,9 +224,7 @@ func main() {
 				"executeSmartContract": executeSmartContract,
 				"faucet":               faucet,
 
-				//swap
-				"setSwapWallets":                setSwapWallets,
-				"swapToken":                     swapToken,
+				// bridge
 				"initBridge":                    initBridge,
 				"burnZCN":                       burnZCN,
 				"mintZCN":                       mintZCN,
@@ -246,6 +240,11 @@ func main() {
 				"createJwtSession": createJwtSession,
 				"createJwtToken":   createJwtToken,
 				"refreshJwtToken":  refreshJwtToken,
+
+				//split key
+				"splitKeys":     splitKeys,
+				"setWalletInfo": setWalletInfo,
+				"setAuthUrl":    setAuthUrl,
 			})
 
 			fmt.Println("__wasm_initialized__ = true;")

@@ -7,16 +7,18 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"path"
-	"path/filepath"
 	"strings"
 	"sync"
 	"syscall/js"
 	"time"
 
+	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/pathutil"
 	"github.com/0chain/gosdk/core/sys"
+
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/wasmsdk/jsbridge"
 	"github.com/0chain/gosdk/zboxcore/fileref"
@@ -52,7 +54,12 @@ func createDir(allocationID, remotePath string) error {
 		return err
 	}
 
-	return allocationObj.CreateDir(remotePath)
+	return allocationObj.DoMultiOperation([]sdk.OperationRequest{
+		{
+			OperationType: constants.FileOperationCreateDir,
+			RemotePath:    remotePath,
+		},
+	})
 }
 
 // getFileStats get file stats from blobbers
@@ -152,7 +159,14 @@ func Rename(allocationID, remotePath, destName string) (*FileCommandResponse, er
 		return nil, err
 	}
 
-	err = allocationObj.RenameObject(remotePath, destName)
+	err = allocationObj.DoMultiOperation([]sdk.OperationRequest{
+		{
+			OperationType: constants.FileOperationRename,
+			RemotePath:    remotePath,
+			DestName:      destName,
+		},
+	})
+
 	if err != nil {
 		PrintError(err.Error())
 		return nil, err
@@ -187,7 +201,14 @@ func Copy(allocationID, remotePath, destPath string) (*FileCommandResponse, erro
 		return nil, err
 	}
 
-	err = allocationObj.CopyObject(remotePath, destPath)
+	err = allocationObj.DoMultiOperation([]sdk.OperationRequest{
+		{
+			OperationType: constants.FileOperationCopy,
+			RemotePath:    remotePath,
+			DestPath:      destPath,
+		},
+	})
+
 	if err != nil {
 		PrintError(err.Error())
 		return nil, err
@@ -222,7 +243,14 @@ func Move(allocationID, remotePath, destPath string) (*FileCommandResponse, erro
 		return nil, err
 	}
 
-	err = allocationObj.MoveObject(remotePath, destPath)
+	err = allocationObj.DoMultiOperation([]sdk.OperationRequest{
+		{
+			OperationType: constants.FileOperationMove,
+			RemotePath:    remotePath,
+			DestPath:      destPath,
+		},
+	})
+
 	if err != nil {
 		PrintError(err.Error())
 		return nil, err
@@ -302,71 +330,6 @@ func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expir
 	sdkLogger.Info("Auth token :" + ref)
 
 	return ref, nil
-
-}
-
-// download file
-func download(
-	allocationID, remotePath, authTicket, lookupHash string,
-	downloadThumbnailOnly bool, numBlocks int, callbackFuncName string, isFinal bool) (*DownloadCommandResponse, error) {
-
-	wg := &sync.WaitGroup{}
-	statusBar := &StatusBar{wg: wg}
-	if callbackFuncName != "" {
-		callback := js.Global().Get(callbackFuncName)
-		statusBar.callback = func(totalBytes, completedBytes int, filename, objURL, err string) {
-			callback.Invoke(totalBytes, completedBytes, filename, objURL, err)
-		}
-	}
-	wg.Add(1)
-
-	if len(remotePath) == 0 && len(authTicket) == 0 {
-		return nil, RequiredArg("remotePath/authTicket")
-	}
-
-	fileName := strings.Replace(path.Base(remotePath), "/", "-", -1)
-	localPath := allocationID + "_" + fileName
-	var (
-		err        error
-		downloader sdk.Downloader
-	)
-
-	fs, _ := sys.Files.Open(localPath)
-	mf, _ := fs.(*sys.MemFile)
-
-	downloader, err = sdk.CreateDownloader(allocationID, localPath, remotePath,
-		sdk.WithAuthticket(authTicket, lookupHash),
-		sdk.WithOnlyThumbnail(downloadThumbnailOnly),
-		sdk.WithBlocks(0, 0, numBlocks),
-		sdk.WithFileHandler(mf))
-
-	if err != nil {
-		PrintError(err.Error())
-		return nil, err
-	}
-
-	defer sys.Files.Remove(localPath) //nolint
-
-	err = downloader.Start(statusBar, isFinal)
-
-	if err == nil {
-		wg.Wait()
-	} else {
-		PrintError("Download failed.", err.Error())
-		return nil, err
-	}
-	if !statusBar.success {
-		return nil, errors.New("Download failed: unknown error")
-	}
-
-	resp := &DownloadCommandResponse{
-		CommandSuccess: true,
-		FileName:       downloader.GetFileName(),
-	}
-
-	resp.Url = CreateObjectURL(mf.Buffer.Bytes(), "application/octet-stream")
-
-	return resp, nil
 
 }
 
@@ -859,75 +822,45 @@ func upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, w
 }
 
 // download download file blocks
-func downloadBlocks(allocationID, remotePath, authTicket, lookupHash string, numBlocks int, startBlockNumber, endBlockNumber int64, callbackFuncName string, isFinal bool) (*DownloadCommandResponse, error) {
-
+func downloadBlocks(alloc *sdk.Allocation, remotePath, authTicket, lookupHash string, startBlock, endBlock int64) ([]byte, error) {
 	if len(remotePath) == 0 && len(authTicket) == 0 {
 		return nil, RequiredArg("remotePath/authTicket")
 	}
 
-	wg := &sync.WaitGroup{}
-	statusBar := &StatusBar{wg: wg}
-	if callbackFuncName != "" {
-		callback := js.Global().Get(callbackFuncName)
-		statusBar.callback = func(totalBytes, completedBytes int, filename, objURL, err string) {
-			callback.Invoke(totalBytes, completedBytes, filename, objURL, err)
-		}
-	}
-	wg.Add(1)
-
-	fileName := strings.Replace(path.Base(remotePath), "/", "-", -1)
-	localPath := filepath.Join(allocationID, fileName)
-
-	fs, _ := sys.Files.Open(localPath)
-	mf, _ := fs.(*sys.MemFile)
-
 	var (
-		err        error
-		downloader sdk.Downloader
+		wg        = &sync.WaitGroup{}
+		statusBar = &StatusBar{wg: wg}
 	)
 
-	if allocObj == nil {
-		downloader, err = sdk.CreateDownloader(allocationID, localPath, remotePath,
-			sdk.WithAuthticket(authTicket, lookupHash),
-			sdk.WithBlocks(startBlockNumber, endBlockNumber, numBlocks),
-			sdk.WithFileHandler(mf))
+	fileName := strings.Replace(path.Base(remotePath), "/", "-", -1)
+	localPath := alloc.ID + "-" + fmt.Sprintf("%v-%s", startBlock, fileName)
 
-	} else {
-		downloader, err = sdk.CreateDownloader(allocationID, localPath, remotePath,
-			sdk.WithAuthticket(authTicket, lookupHash),
-			sdk.WithBlocks(startBlockNumber, endBlockNumber, numBlocks),
-			sdk.WithAllocation(allocObj),
-			sdk.WithFileHandler(mf))
+	fs, err := sys.Files.Open(localPath)
+	if err != nil {
+		return nil, fmt.Errorf("could not open local file: %v", err)
 	}
 
-	if err != nil {
-		PrintError(err.Error())
-		return nil, err
+	mf, _ := fs.(*sys.MemFile)
+	if mf == nil {
+		return nil, fmt.Errorf("invalid memfile")
 	}
 
 	defer sys.Files.Remove(localPath) //nolint
 
-	err = downloader.Start(statusBar, isFinal)
-
-	if err == nil {
-		wg.Wait()
-	} else {
-		PrintError("Download failed.", err.Error())
+	wg.Add(1)
+	err = alloc.DownloadByBlocksToFileHandler(
+		mf,
+		remotePath,
+		startBlock,
+		endBlock,
+		10,
+		false,
+		statusBar, true)
+	if err != nil {
 		return nil, err
 	}
-	if !statusBar.success {
-		return nil, errors.New("Download failed: unknown error")
-	}
-
-	resp := &DownloadCommandResponse{
-		CommandSuccess: true,
-		FileName:       fileName,
-	}
-
-	resp.Url = CreateObjectURL(mf.Buffer.Bytes(), "application/octet-stream")
-
-	return resp, nil
-
+	wg.Wait()
+	return mf.Buffer.Bytes(), nil
 }
 
 // GetBlobbersList get list of active blobbers, and format them as array json string

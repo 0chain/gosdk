@@ -29,7 +29,6 @@ import (
 var log logger.Logger
 
 func main() {
-
 }
 
 // SetLogFile - set log file
@@ -38,6 +37,11 @@ func main() {
 //
 //export SetLogFile
 func SetLogFile(file *C.char) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
 
 	f, err := os.OpenFile(C.GoString(file), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
@@ -53,27 +57,16 @@ func SetLogFile(file *C.char) *C.char {
 	zboxutil.GetLogger().SetLevel(logger.DEBUG)
 	zboxutil.GetLogger().SetLogFile(f, true)
 
+	zboxapi.GetLogger().SetLevel(logger.DEBUG)
+	zboxapi.GetLogger().SetLogFile(f, true)
+
 	log.SetLogFile(f, true)
 	log.SetLevel(logger.DEBUG)
 
 	return WithJSON(true, nil)
 }
 
-// InitSDK - init zbox/zcn sdk from config
-//   - clientJson
-//     {
-//     "client_id":"8f6ce6457fc04cfb4eb67b5ce3162fe2b85f66ef81db9d1a9eaa4ffe1d2359e0",
-//     "client_key":"c8c88854822a1039c5a74bdb8c025081a64b17f52edd463fbecb9d4a42d15608f93b5434e926d67a828b88e63293b6aedbaf0042c7020d0a96d2e2f17d3779a4",
-//     "keys":[
-//     {
-//     "public_key":"c8c88854822a1039c5a74bdb8c025081a64b17f52edd463fbecb9d4a42d15608f93b5434e926d67a828b88e63293b6aedbaf0042c7020d0a96d2e2f17d3779a4",
-//     "private_key":"72f480d4b1e7fb76e04327b7c2348a99a64f0ff2c5ebc3334a002aa2e66e8506"
-//     }],
-//     "mnemonics":"abandon mercy into make powder fashion butter ignore blade vanish plastic shock learn nephew matrix indoor surge document motor group barely offer pottery antenna",
-//     "version":"1.0",
-//     "date_created":"1668667145",
-//     "nonce":0
-//     }
+// InitSDKs - init zcncore sdk and zboxapi client from config
 //   - configJson
 //     {
 //     "block_worker": "https://dev.0chain.net/dns",
@@ -91,13 +84,17 @@ func SetLogFile(file *C.char) *C.char {
 //     "sharder_consensous": 2,
 //     }
 //
-//export InitSDK
-func InitSDK(configJson *C.char, clientJson *C.char) *C.char {
+//export InitSDKs
+func InitSDKs(configJson *C.char) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
 
-	l.Logger.Info("Start InitStorageSDK")
+	l.Logger.Info("Start InitSDKs")
 
 	configJs := C.GoString(configJson)
-	clientJs := C.GoString(clientJson)
 
 	configObj := &conf.Config{}
 
@@ -121,7 +118,7 @@ func InitSDK(configJson *C.char, clientJson *C.char) *C.char {
 		return nil
 	})
 	if err != nil {
-		l.Logger.Error(err, configJs, clientJs)
+		l.Logger.Error(err, configJs)
 		return WithJSON(false, err)
 	}
 
@@ -131,15 +128,56 @@ func InitSDK(configJson *C.char, clientJson *C.char) *C.char {
 	l.Logger.Info(configObj.SignatureScheme)
 	l.Logger.Info(configObj.PreferredBlobbers)
 
+	if zboxApiClient == nil {
+		zboxApiClient = zboxapi.NewClient()
+	}
+
+	zboxApiClient.SetRequest(configObj.ZboxHost, configObj.ZboxAppType)
+	l.Logger.Info("Init ZBoxAPI Client success")
+
+	return WithJSON(true, nil)
+}
+
+// InitWallet - init wallet for storage sdk and zboxapi client
+//   - clientJson
+//     {
+//     "client_id":"8f6ce6457fc04cfb4eb67b5ce3162fe2b85f66ef81db9d1a9eaa4ffe1d2359e0",
+//     "client_key":"c8c88854822a1039c5a74bdb8c025081a64b17f52edd463fbecb9d4a42d15608f93b5434e926d67a828b88e63293b6aedbaf0042c7020d0a96d2e2f17d3779a4",
+//     "keys":[
+//     {
+//     "public_key":"c8c88854822a1039c5a74bdb8c025081a64b17f52edd463fbecb9d4a42d15608f93b5434e926d67a828b88e63293b6aedbaf0042c7020d0a96d2e2f17d3779a4",
+//     "private_key":"72f480d4b1e7fb76e04327b7c2348a99a64f0ff2c5ebc3334a002aa2e66e8506"
+//     }],
+//     "mnemonics":"abandon mercy into make powder fashion butter ignore blade vanish plastic shock learn nephew matrix indoor surge document motor group barely offer pottery antenna",
+//     "version":"1.0",
+//     "date_created":"1668667145",
+//     "nonce":0
+//     }
+//
+//export InitWallet
+func InitWallet(clientJson *C.char) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
+	l.Logger.Info("Start InitStorageSDK")
+
+	clientJs := C.GoString(clientJson)
+
+	configObj, err := conf.GetClientConfig()
+	if err != nil {
+		l.Logger.Error(err)
+		return WithJSON(false, err)
+	}
+
 	err = sdk.InitStorageSDK(clientJs, configObj.BlockWorker, configObj.ChainID, configObj.SignatureScheme, configObj.PreferredBlobbers, 0)
 	if err != nil {
-		l.Logger.Error(err, configJs, clientJs)
+		l.Logger.Error(err, clientJs)
 		return WithJSON(false, err)
 	}
 	l.Logger.Info("InitStorageSDK success")
 
-	zboxApiClient = zboxapi.NewClient()
-	zboxApiClient.SetRequest(configObj.ZboxHost, configObj.ZboxAppType)
 	c := client.GetClient()
 	if c != nil {
 		zboxApiClient.SetWallet(client.GetClientID(), client.GetClientPrivateKey(), client.GetClientPublicKey())
@@ -148,7 +186,7 @@ func InitSDK(configJson *C.char, clientJson *C.char) *C.char {
 		l.Logger.Info("InitZboxApiClient skipped")
 	}
 
-	l.Logger.Info("Init successful")
+	l.Logger.Info("InitSDKs successful")
 	return WithJSON(true, nil)
 }
 
@@ -164,6 +202,11 @@ var ErrInvalidSignatureScheme = errors.New("invalid_signature_scheme")
 //
 //export SignRequest
 func SignRequest(privateKey, signatureScheme, data *C.char) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
 	key := C.GoString(privateKey)
 	scheme := C.GoString(signatureScheme)
 	d := C.GoString(data)
@@ -185,7 +228,11 @@ func SignRequest(privateKey, signatureScheme, data *C.char) *C.char {
 //
 //export VerifySignature
 func VerifySignature(publicKey, signatureScheme string, data string, signature string) *C.char {
-
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
 	hash := encryption.Hash(data)
 
 	signScheme := zcncrypto.NewSignatureScheme(signatureScheme)
@@ -209,6 +256,11 @@ func VerifySignature(publicKey, signatureScheme string, data string, signature s
 //
 //export CryptoJsEncrypt
 func CryptoJsEncrypt(passphrase, message *C.char) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
 	pass := C.GoString(passphrase)
 	msg := C.GoString(message)
 
@@ -225,6 +277,11 @@ func CryptoJsEncrypt(passphrase, message *C.char) *C.char {
 //
 //export CryptoJsDecrypt
 func CryptoJsDecrypt(passphrase, encryptedMessage *C.char) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
 	pass := C.GoString(passphrase)
 	msg := C.GoString(encryptedMessage)
 
@@ -241,6 +298,11 @@ func CryptoJsDecrypt(passphrase, encryptedMessage *C.char) *C.char {
 //
 //export GetPublicEncryptionKey
 func GetPublicEncryptionKey(mnemonics *C.char) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
 	m := C.GoString(mnemonics)
 	return WithJSON(zcncore.GetPublicEncryptionKey(m))
 }
@@ -257,6 +319,68 @@ func GetPublicEncryptionKey(mnemonics *C.char) *C.char {
 //
 //export GetLookupHash
 func GetLookupHash(allocationID *C.char, path *C.char) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
 	hash := getLookupHash(C.GoString(allocationID), C.GoString(path))
 	return WithJSON(hash, nil)
+}
+
+// SetFFmpeg set the full file name of ffmpeg.exe
+// ## Inputs:
+//   - fullFileName
+//     return
+//     {
+//     "error":"",
+//     "result":true,
+//     }
+//
+//export SetFFmpeg
+func SetFFmpeg(fullFileName *C.char) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
+	f := C.GoString(fullFileName)
+
+	_, err := os.Stat(f)
+	if os.IsNotExist(err) {
+		return WithJSON(false, err)
+	}
+	sdk.CmdFFmpeg = C.GoString(fullFileName)
+	return WithJSON(true, nil)
+}
+
+// GetFileContentType get content/MIME type of file
+// ## Inputs:
+//   - fullFileName
+//     return
+//     {
+//     "error":"",
+//     "result":true,
+//     }
+//
+//export GetFileContentType
+func GetFileContentType(file *C.char) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
+	f, err := os.Open(C.GoString(file))
+	if err != nil {
+		log.Error("win: ", err)
+		return WithJSON("", err)
+	}
+	defer f.Close()
+
+	mime, err := zboxutil.GetFileContentType(f)
+	if err != nil {
+		return WithJSON("", err)
+	}
+
+	return WithJSON(mime, nil)
 }
