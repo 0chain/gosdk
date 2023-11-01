@@ -6,7 +6,7 @@ concurrency:
 
 on:
   push:
-    branches: [ master, staging, qa ]
+    branches: [ master, staging, sprint-* ]
     tags:
       - 'v*.*.*'
   pull_request:
