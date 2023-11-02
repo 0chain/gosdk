@@ -156,7 +156,6 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			if req.chunkSize == 0 {
 				req.chunkSize = CHUNK_SIZE
 			}
-			zlogger.Logger.Info("chunkBody", req.numBlocks+10, req.chunkSize, req.shouldVerify)
 			respLen := resp.Header.Get("Content-Length")
 			var respBody []byte
 			if respLen != "" {
@@ -190,7 +189,9 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			}
 
 			dR := downloadResponse{}
-			if !req.shouldVerify {
+			contentType := resp.Header.Get("Content-Type")
+			zlogger.Logger.Info("contentType", contentType)
+			if contentType == "application/json" {
 				err = json.Unmarshal(respBody, &dR)
 				if err != nil {
 					zlogger.Logger.Error("respBody unmarshal error: ", err)
