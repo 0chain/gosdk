@@ -175,6 +175,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 				startPoint := 0
 				for {
 					n, err := resp.Body.Read(respBody[startPoint:])
+					zlogger.Logger.Info("readBody", n, startPoint, err)
 					if err != nil {
 						if err == io.EOF {
 							break
