@@ -559,6 +559,9 @@ func checkHash(actualFileHasher hash.Hash, fref *fileref.FileRef, contentMode st
 	if contentMode == DOWNLOAD_CONTENT_THUMB {
 		return calculatedFileHash, calculatedFileHash == fref.ActualThumbnailHash
 	} else {
+		if calculatedFileHash == fref.ActualFileHash {
+			l.Logger.Info("calculatedFileHash is same as fileref hash")
+		}
 		return calculatedFileHash, calculatedFileHash == fref.ActualFileHash
 	}
 }
