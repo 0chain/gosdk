@@ -157,10 +157,12 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 				req.chunkSize = CHUNK_SIZE
 			}
 			respLen := resp.Header.Get("Content-Length")
-			encodingHeader := resp.Header.Get("Transfer-Encoding")
-			if encodingHeader != "" {
-				zlogger.Logger.Info("encodingHeader", encodingHeader)
+			for name, values := range resp.Header {
+				for _, value := range values {
+					zlogger.Logger.Info(name, value)
+				}
 			}
+
 			var respBody []byte
 			if respLen != "" {
 				len, err := strconv.Atoi(respLen)
