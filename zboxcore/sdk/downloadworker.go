@@ -72,6 +72,7 @@ type DownloadRequest struct {
 	maskMu             *sync.Mutex
 	encScheme          encryption.EncryptionScheme
 	shouldVerify       bool
+	checkHash          bool
 	blocksPerShard     int64
 	connectionID       string
 	skip               bool
@@ -415,7 +416,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	}
 	var actualFileHasher hash.Hash
 	var isPREAndWholeFile bool
-	if !req.shouldVerify && (startBlock == 0 && endBlock == chunksPerShard) {
+	if !req.shouldVerify && (startBlock == 0 && endBlock == chunksPerShard) && req.checkHash {
 		actualFileHasher = sha3.New256()
 		isPREAndWholeFile = true
 	}

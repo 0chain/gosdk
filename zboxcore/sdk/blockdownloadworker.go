@@ -4,8 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
@@ -153,9 +154,27 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			}
 
 			var rspData downloadBlock
-			respBody, err := ioutil.ReadAll(resp.Body)
-			if err != nil {
-				return err
+			respLen := resp.Header.Get("Content-Length")
+			var respBody []byte
+			if respLen != "" {
+				len, err := strconv.Atoi(respLen)
+				zlogger.Logger.Info("respLen", len)
+				if err != nil {
+					zlogger.Logger.Error("respLen convert error: ", err)
+					return err
+				}
+				respBody = make([]byte, len)
+				_, err = resp.Body.Read(respBody)
+				if err != nil {
+					zlogger.Logger.Error("respBody read error: ", err)
+					return err
+				}
+			} else {
+				respBody, err = io.ReadAll(resp.Body)
+				if err != nil {
+					zlogger.Logger.Error("respBody read error: ", err)
+					return err
+				}
 			}
 			if resp.StatusCode != http.StatusOK {
 				zlogger.Logger.Debug(fmt.Sprintf("downloadBlobberBlock FAIL - blobberID: %v, clientID: %v, blockNum: %d, retry: %d, response: %v", req.blobber.ID, client.GetClientID(), header.BlockNum, retry, string(respBody)))
@@ -166,9 +185,14 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			}
 
 			dR := downloadResponse{}
-			err = json.Unmarshal(respBody, &dR)
-			if err != nil {
-				return err
+			contentType := resp.Header.Get("Content-Type")
+			if contentType == "application/json" {
+				err = json.Unmarshal(respBody, &dR)
+				if err != nil {
+					return err
+				}
+			} else {
+				dR.Data = respBody
 			}
 			if req.contentMode == DOWNLOAD_CONTENT_FULL && req.shouldVerify {
 
