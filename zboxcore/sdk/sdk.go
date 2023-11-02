@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"math"
 	"net/http"
-	"os"
 	"strconv"
 	"time"
 
@@ -16,8 +15,10 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/logger"
+	"github.com/0chain/gosdk/core/node"
 	"github.com/0chain/gosdk/core/sys"
 	"go.uber.org/zap"
+	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/transaction"
@@ -70,11 +71,16 @@ func SetLogLevel(lvl int) {
 // logFile - Log file
 // verbose - true - console output; false - no console output
 func SetLogFile(logFile string, verbose bool) {
-	f, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return
+	var ioWriter = &lumberjack.Logger{
+		Filename:   logFile,
+		MaxSize:    100, // MB
+		MaxBackups: 5,   // number of backups
+		MaxAge:     28,  //days
+		LocalTime:  false,
+		Compress:   false, // disabled by default
 	}
-	l.Logger.SetLogFile(f, verbose)
+
+	l.Logger.SetLogFile(ioWriter, verbose)
 	l.Logger.Info("******* Storage SDK Version: ", version.VERSIONSTR, " *******")
 }
 
@@ -92,17 +98,17 @@ func InitStorageSDK(walletJSON string,
 		return err
 	}
 
-	client.SetClientNonce(nonce)
-	if len(fee) > 0 {
-		client.SetTxnFee(fee[0])
-	}
-
 	blockchain.SetChainID(chainID)
 	blockchain.SetBlockWorker(blockWorker)
 
-	err = UpdateNetworkDetails()
+	err = InitNetworkDetails()
 	if err != nil {
 		return err
+	}
+
+	client.SetClientNonce(nonce)
+	if len(fee) > 0 {
+		client.SetTxnFee(fee[0])
 	}
 
 	go UpdateNetworkDetailsWorker(context.Background())
@@ -113,7 +119,7 @@ func InitStorageSDK(walletJSON string,
 func GetNetwork() *Network {
 	return &Network{
 		Miners:   blockchain.GetMiners(),
-		Sharders: blockchain.GetSharders(),
+		Sharders: blockchain.GetAllSharders(),
 	}
 }
 
@@ -147,7 +153,7 @@ func SetMinConfirmation(num int) {
 func SetNetwork(miners []string, sharders []string) {
 	blockchain.SetMiners(miners)
 	blockchain.SetSharders(sharders)
-	transaction.InitCache(sharders)
+	node.InitCache(blockchain.Sharders)
 }
 
 //
@@ -1435,7 +1441,7 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 	}
 
 	if txn.TransactionNonce == 0 {
-		txn.TransactionNonce = transaction.Cache.GetNextNonce(txn.ClientID)
+		txn.TransactionNonce = node.Cache.GetNextNonce(txn.ClientID)
 	}
 
 	if err = txn.ComputeHashAndSign(client.Sign); err != nil {
@@ -1466,7 +1472,7 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 
 	if err != nil {
 		l.Logger.Error("Error verifying the transaction", err.Error(), txn.Hash)
-		transaction.Cache.Evict(txn.ClientID)
+		node.Cache.Evict(txn.ClientID)
 		return
 	}
 

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -233,9 +234,11 @@ func TestListRequest_GetListFromBlobbers(t *testing.T) {
 					jsonFR, err := json.Marshal(&fileref.ListResult{
 						AllocationRoot: mockAllocationRoot,
 						Meta: map[string]interface{}{
-							"type": mockType,
+							"type":           mockType,
+							"file_meta_hash": "mock file meta hash",
 						},
 					})
+					fmt.Println("returned", string(jsonFR))
 					require.NoError(t, err)
 					return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
 				}(),
@@ -291,6 +294,7 @@ func TestListRequest_GetListFromBlobbers(t *testing.T) {
 					fullconsensus:   tt.fullconsensus,
 					RWMutex:         &sync.RWMutex{},
 				},
+				listOnly: true,
 			}
 			for i := 0; i < tt.numBlobbers; i++ {
 				req.blobbers = append(req.blobbers, &blockchain.StorageNode{
@@ -299,9 +303,10 @@ func TestListRequest_GetListFromBlobbers(t *testing.T) {
 			}
 			got, _ := req.GetListFromBlobbers()
 			expectedResult := &ListResult{
-				Type:       mockType,
-				Size:       0,
-				deleteMask: zboxutil.NewUint128(1).Lsh(uint64(len(req.blobbers))).Sub64(1),
+				Type:         mockType,
+				Size:         0,
+				deleteMask:   zboxutil.NewUint128(1).Lsh(uint64(len(req.blobbers))).Sub64(1),
+				FileMetaHash: "mock file meta hash",
 			}
 			if !tt.wantErr {
 				require.EqualValues(expectedResult, got)

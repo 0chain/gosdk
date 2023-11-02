@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
+	"github.com/remeh/sizedwaitgroup"
 
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/util"
@@ -27,6 +28,8 @@ import (
 const (
 	DefaultCreateConnectionTimeOut = 2 * time.Minute
 )
+
+var BatchSize = 5
 
 type Operationer interface {
 	Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error)
@@ -88,8 +91,10 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 			httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
 			ctx, cncl := context.WithTimeout(mo.ctx, DefaultCreateConnectionTimeOut)
 			defer cncl()
-			resp, err = zboxutil.Client.Do(httpreq.WithContext(ctx))
-
+			err = zboxutil.HttpDo(ctx, cncl, httpreq, func(r *http.Response, err error) error {
+				resp = r
+				return err
+			})
 			if err != nil {
 				logger.Logger.Error("Create Connection: ", err)
 				return
@@ -150,14 +155,14 @@ func (mo *MultiOperation) Process() error {
 	ctx := mo.ctx
 	ctxCncl := mo.ctxCncl
 	defer ctxCncl()
-
+	swg := sizedwaitgroup.New(BatchSize)
 	errsSlice := make([]error, len(mo.operations))
 	mo.operationMask = zboxutil.NewUint128(0)
 	for idx, op := range mo.operations {
 		uid := util.GetNewUUID()
-		wg.Add(1)
+		swg.Add()
 		go func(op Operationer, idx int) {
-			defer wg.Done()
+			defer swg.Done()
 
 			// Check for other goroutines signal
 			select {
@@ -177,11 +182,10 @@ func (mo *MultiOperation) Process() error {
 			mo.operationMask = mo.operationMask.Or(mask)
 			mo.maskMU.Unlock()
 			changes := op.buildChange(refs, uid)
-
 			mo.changes[idx] = changes
 		}(op, idx)
 	}
-	wg.Wait()
+	swg.Wait()
 
 	// Check consensus
 	if mo.operationMask.CountOnes() < mo.consensusThresh || ctx.Err() != nil {
@@ -295,16 +299,17 @@ func (mo *MultiOperation) Process() error {
 			fmt.Sprintf("Commit failed. Required consensus %d, got %d",
 				mo.Consensus.consensusThresh, mo.Consensus.consensus))
 		if mo.getConsensus() != 0 {
+			l.Logger.Info("Rolling back changes on minority blobbers")
 			mo.allocationObj.RollbackWithMask(rollbackMask)
 		}
 		for _, op := range mo.operations {
 			op.Error(mo.allocationObj, mo.getConsensus(), err)
 		}
 		return err
-	}
-
-	for _, op := range mo.operations {
-		op.Completed(mo.allocationObj)
+	} else {
+		for _, op := range mo.operations {
+			op.Completed(mo.allocationObj)
+		}
 	}
 
 	return nil

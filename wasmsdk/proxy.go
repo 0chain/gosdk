@@ -224,9 +224,7 @@ func main() {
 				"executeSmartContract": executeSmartContract,
 				"faucet":               faucet,
 
-				//swap
-				"setSwapWallets":                setSwapWallets,
-				"swapToken":                     swapToken,
+				// bridge
 				"initBridge":                    initBridge,
 				"burnZCN":                       burnZCN,
 				"mintZCN":                       mintZCN,
@@ -242,6 +240,11 @@ func main() {
 				"createJwtSession": createJwtSession,
 				"createJwtToken":   createJwtToken,
 				"refreshJwtToken":  refreshJwtToken,
+
+				//split key
+				"splitKeys":     splitKeys,
+				"setWalletInfo": setWalletInfo,
+				"setAuthUrl":    setAuthUrl,
 			})
 
 			fmt.Println("__wasm_initialized__ = true;")

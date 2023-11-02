@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -38,9 +39,10 @@ import (
 )
 
 var (
-	noBLOBBERS     = errors.New("", "No Blobbers set in this allocation")
-	notInitialized = errors.New("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
-	IsWasm         = false
+	noBLOBBERS       = errors.New("", "No Blobbers set in this allocation")
+	notInitialized   = errors.New("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
+	IsWasm           = false
+	MultiOpBatchSize = 10
 )
 
 const (
@@ -102,7 +104,11 @@ type ConsolidatedFileMeta struct {
 	ActualFileSize  int64
 	ActualNumBlocks int64
 	EncryptedKey    string
-	Collaborators   []fileref.Collaborator
+
+	ActualThumbnailSize int64
+	ActualThumbnailHash string
+
+	Collaborators []fileref.Collaborator
 }
 
 type AllocationStats struct {
@@ -828,14 +834,20 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 				fmt.Sprintf("Multioperation: create connection failed. Required consensus %d got %d",
 					mo.consensusThresh, mo.operationMask.CountOnes()))
 		}
-
+		ops := 0
 		for ; i < len(operations); i++ {
+			if ops > MultiOpBatchSize {
+				// max batch size reached, commit
+				connectionID = zboxutil.NewConnectionId()
+				break
+			}
 			op := operations[i]
 			remotePath := op.RemotePath
 			parentPaths := GenerateParentPaths(remotePath)
 
 			if _, ok := previousPaths[remotePath]; ok {
 				// conflict found, commit
+				connectionID = zboxutil.NewConnectionId()
 				break
 			}
 
@@ -878,7 +890,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 				connectionID = newConnectionID
 				break
 			}
-
+			ops++
 			err = operation.Verify(a)
 			if err != nil {
 				return err
@@ -1481,6 +1493,8 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 		result.EncryptedKey = ref.EncryptedKey
 		result.Collaborators = ref.Collaborators
 		result.ActualFileSize = ref.ActualFileSize
+		result.ActualThumbnailHash = ref.ActualThumbnailHash
+		result.ActualThumbnailSize = ref.ActualThumbnailSize
 		if result.ActualFileSize > 0 {
 			result.ActualNumBlocks = (ref.ActualFileSize + CHUNK_SIZE - 1) / CHUNK_SIZE
 		}
@@ -1536,6 +1550,8 @@ func (a *Allocation) GetFileMetaFromAuthTicket(authTicket string, lookupHash str
 		result.Size = ref.Size
 		result.NumBlocks = ref.NumBlocks
 		result.ActualFileSize = ref.ActualFileSize
+		result.ActualThumbnailHash = ref.ActualThumbnailHash
+		result.ActualThumbnailSize = ref.ActualThumbnailSize
 		if result.ActualFileSize > 0 {
 			result.ActualNumBlocks = (result.ActualFileSize + CHUNK_SIZE - 1) / CHUNK_SIZE
 		}
@@ -1606,6 +1622,44 @@ func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus int,
 	req.maskMu = &sync.Mutex{}
 	req.timestamp = int64(common.Now())
 	err := req.ProcessDelete()
+	return err
+}
+
+func (a *Allocation) createDir(remotePath string, threshConsensus, fullConsensus int, mask zboxutil.Uint128) error {
+	if !a.isInitialized() {
+		return notInitialized
+	}
+
+	if remotePath == "" {
+		return errors.New("invalid_name", "Invalid name for dir")
+	}
+
+	if !path.IsAbs(remotePath) {
+		return errors.New("invalid_path", "Path is not absolute")
+	}
+
+	remotePath = zboxutil.RemoteClean(remotePath)
+	timestamp := int64(common.Now())
+	req := DirRequest{
+		allocationObj: a,
+		allocationID:  a.ID,
+		allocationTx:  a.Tx,
+		blobbers:      a.Blobbers,
+		mu:            &sync.Mutex{},
+		dirMask:       mask,
+		connectionID:  zboxutil.NewConnectionId(),
+		remotePath:    remotePath,
+		wg:            &sync.WaitGroup{},
+		timestamp:     timestamp,
+		Consensus: Consensus{
+			RWMutex:         &sync.RWMutex{},
+			consensusThresh: threshConsensus,
+			fullconsensus:   fullConsensus,
+		},
+	}
+	req.ctx, req.ctxCncl = context.WithCancel(a.ctx)
+
+	err := req.ProcessDir(a)
 	return err
 }
 
@@ -1807,7 +1861,7 @@ func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKe
 	consensus := Consensus{
 		RWMutex:         &sync.RWMutex{},
 		consensus:       len(success),
-		consensusThresh: a.consensusThreshold,
+		consensusThresh: a.DataShards,
 		fullconsensus:   a.fullconsensus,
 	}
 	if !consensus.isConsensusOk() {
