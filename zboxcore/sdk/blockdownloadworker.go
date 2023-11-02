@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
@@ -156,10 +157,27 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 				req.chunkSize = CHUNK_SIZE
 			}
 			zlogger.Logger.Info("chunkBody", req.numBlocks+10, req.chunkSize, req.shouldVerify)
-			respBody, err := readBody(resp.Body)
-			if err != nil {
-				zlogger.Logger.Error("respBody read error: ", err)
-				return err
+			respLen := resp.Header.Get("Content-Length")
+			var respBody []byte
+			if respLen != "" {
+				len, err := strconv.Atoi(respLen)
+				zlogger.Logger.Info("respLen", len)
+				if err != nil {
+					zlogger.Logger.Error("respLen convert error: ", err)
+					return err
+				}
+				respBody = make([]byte, len)
+				_, err = resp.Body.Read(respBody)
+				if err != nil {
+					zlogger.Logger.Error("respBody read error: ", err)
+					return err
+				}
+			} else {
+				respBody, err = readBody(resp.Body)
+				if err != nil {
+					zlogger.Logger.Error("respBody read error: ", err)
+					return err
+				}
 			}
 			zlogger.Logger.Info("respBody", len(respBody))
 			elapsedReadBody := time.Since(start).Milliseconds() - elapsedDownloadReqBlobber
