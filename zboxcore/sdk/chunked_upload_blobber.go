@@ -72,7 +72,8 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 	if err != nil {
 		return err
 	}
-
+	logger.Logger.Info("Uploading to blobber. ", body.Len())
+	req.Header.Set("Content-Length", fmt.Sprintf("%d", body.Len()))
 	req.Header.Add("Content-Type", formData.ContentType)
 
 	var (
