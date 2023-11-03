@@ -171,20 +171,10 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 					zlogger.Logger.Error("respLen convert error: ", err)
 					return err
 				}
-				respBody = make([]byte, len)
-				startPoint := 0
-				for {
-					n, err := resp.Body.Read(respBody[startPoint:])
-					zlogger.Logger.Info("readBody", n, startPoint, err)
-					if err != nil {
-						if err == io.EOF {
-							break
-						}
-						zlogger.Logger.Error("respBody read error: ", err)
-						return err
-					}
-					respBody = respBody[:startPoint+n]
-					startPoint += n
+				respBody, err = readBody(resp.Body)
+				if err != nil {
+					zlogger.Logger.Error("respBody read error: ", err)
+					return err
 				}
 			} else {
 				respBody, err = readBody(resp.Body)
