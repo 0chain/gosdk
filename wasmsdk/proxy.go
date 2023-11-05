@@ -245,6 +245,9 @@ func main() {
 				"splitKeys":     splitKeys,
 				"setWalletInfo": setWalletInfo,
 				"setAuthUrl":    setAuthUrl,
+
+				//Authorizer
+				"RegisterAuthorizer": RegisterAuthorizer
 			})
 
 			fmt.Println("__wasm_initialized__ = true;")
