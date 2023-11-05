@@ -247,7 +247,7 @@ func main() {
 				"setAuthUrl":    setAuthUrl,
 
 				//Authorizer
-				"RegisterAuthorizer": RegisterAuthorizer
+				"RegisterAuthorizer": RegisterAuthorizer,
 			})
 
 			fmt.Println("__wasm_initialized__ = true;")
