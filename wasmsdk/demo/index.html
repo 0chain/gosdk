@@ -165,6 +165,16 @@
     </div>
   </fieldset>
 
+  <fieldset>
+    <legend>Authorizer</legend>
+    <span>
+      <button id="btnRegisterAuthorizer">RegisterAuthorizer</button>
+    </span>
+    <br>
+    <div id="Authorizer">
+    </div>
+  </fieldset>
+
   <script>
     window.downloadCallback = function (totalBytes, completedBytes, error) {
       console.log("download: " + completedBytes + "/" + totalBytes + " err:" + error)
@@ -898,5 +908,16 @@
       }
     })
 
+    onClick('btnRegisterAuthorizer', async () => {
+      function authorise(msg) {
+        return "authorizer method of type AuthorizeFun"
+      }
+      try {
+        await goWasm.sdk.RegisterAuthorizer(authorise)
+        txtOutput.innerHTML = "Authorizer Registered";
+      } catch (e) {
+        alert(e)
+      }
+    })
   </script>
 </body>
