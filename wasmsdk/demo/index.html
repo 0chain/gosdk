@@ -909,11 +909,11 @@
     })
 
     onClick('btnRegisterAuthorizer', async () => {
-      function authorise(msg) {
-        return "authorizer method of type AuthorizeFun"
+      function auth(msg) {
+        return { result: "Authorizer Registered", error: null };
       }
       try {
-        await goWasm.sdk.RegisterAuthorizer(authorise)
+        await goWasm.sdk.registerAuthorizeFunc(auth)
         txtOutput.innerHTML = "Authorizer Registered";
       } catch (e) {
         alert(e)
