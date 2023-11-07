@@ -44,20 +44,22 @@ type listResponse struct {
 }
 
 type ListResult struct {
-	Name            string `json:"name"`
-	Path            string `json:"path,omitempty"`
-	Type            string `json:"type"`
-	Size            int64  `json:"size"`
-	Hash            string `json:"hash,omitempty"`
-	FileMetaHash    string `json:"file_meta_hash,omitempty"`
-	MimeType        string `json:"mimetype,omitempty"`
-	NumBlocks       int64  `json:"num_blocks"`
-	LookupHash      string `json:"lookup_hash"`
-	EncryptionKey   string `json:"encryption_key"`
-	ActualSize      int64  `json:"actual_size"`
-	ActualNumBlocks int64  `json:"actual_num_blocks"`
-	ThumbnailHash   string `json:"thumbnail_hash"`
-	ThumbnailSize   int64  `json:"thumbnail_size"`
+	Name                string `json:"name"`
+	Path                string `json:"path,omitempty"`
+	Type                string `json:"type"`
+	Size                int64  `json:"size"`
+	Hash                string `json:"hash,omitempty"`
+	FileMetaHash        string `json:"file_meta_hash,omitempty"`
+	MimeType            string `json:"mimetype,omitempty"`
+	NumBlocks           int64  `json:"num_blocks"`
+	LookupHash          string `json:"lookup_hash"`
+	EncryptionKey       string `json:"encryption_key"`
+	ActualSize          int64  `json:"actual_size"`
+	ActualNumBlocks     int64  `json:"actual_num_blocks"`
+	ThumbnailHash       string `json:"thumbnail_hash"`
+	ThumbnailSize       int64  `json:"thumbnail_size"`
+	ActualThumbnailHash string `json:"actual_thumbnail_hash"`
+	ActualThumbnailSize int64  `json:"actual_thumbnail_size"`
 
 	CreatedAt  common.Timestamp `json:"created_at"`
 	UpdatedAt  common.Timestamp `json:"updated_at"`
@@ -220,6 +222,8 @@ func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
 		result.ActualSize = ti.ref.ActualSize
 		result.ThumbnailHash = ti.ref.ThumbnailHash
 		result.ThumbnailSize = ti.ref.ThumbnailSize
+		result.ActualThumbnailHash = ti.ref.ActualThumbnailHash
+		result.ActualThumbnailSize = ti.ref.ActualThumbnailSize
 
 		if ti.ref.ActualSize > 0 {
 			result.ActualNumBlocks = (ti.ref.ActualSize + CHUNK_SIZE - 1) / CHUNK_SIZE
@@ -279,6 +283,8 @@ func (lr *ListResult) populateChildren(children []fileref.RefEntity, childResult
 			childResult.ActualSize = (child.(*fileref.FileRef)).ActualFileSize
 			childResult.ThumbnailHash = (child.(*fileref.FileRef)).ThumbnailHash
 			childResult.ThumbnailSize = (child.(*fileref.FileRef)).ThumbnailSize
+			childResult.ActualThumbnailHash = (child.(*fileref.FileRef)).ActualThumbnailHash
+			childResult.ActualThumbnailSize = (child.(*fileref.FileRef)).ActualThumbnailSize
 		} else {
 			childResult.ActualSize = (child.(*fileref.Ref)).ActualSize
 		}

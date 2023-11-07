@@ -73,3 +73,24 @@ func RecoverWallet(mnemonic *C.char) *C.char {
 
 	return WithJSON(w, nil)
 }
+
+// GetWalletBalance - get wallet balance
+// ## Inputs
+// - clientID
+// ## Outputs
+//
+//	{
+//	"error":"",
+//	"result":\"0.00\"",
+//	}
+//
+//export GetWalletBalance
+func GetWalletBalance(clientID *C.char) *C.char {
+	b, err := zcncore.GetWalletBalance(C.GoString(clientID))
+	if err != nil {
+		log.Error("win: ", err)
+		return WithJSON(0, err)
+	}
+
+	return WithJSON(b.ToToken())
+}

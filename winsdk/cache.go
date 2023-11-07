@@ -52,18 +52,19 @@ func getAllocation(allocationID string) (*sdk.Allocation, error) {
 	return it.Allocation, nil
 }
 
-func getAllocationWith(authTicket string) (*sdk.Allocation, error) {
+func getAllocationWith(authTicket string) (*sdk.Allocation, *marker.AuthTicket, error) {
 
 	sEnc, err := base64.StdEncoding.DecodeString(authTicket)
 	if err != nil {
-		return nil, errors.New("Error decoding the auth ticket." + err.Error())
+		return nil, nil, errors.New("Error decoding the auth ticket." + err.Error())
 	}
 	at := &marker.AuthTicket{}
 	err = json.Unmarshal(sEnc, at)
 	if err != nil {
-		return nil, errors.New("Error unmarshaling the auth ticket." + err.Error())
+		return nil, nil, errors.New("Error unmarshaling the auth ticket." + err.Error())
 	}
-	return getAllocation(at.AllocationID)
+	alloc, err := getAllocation(at.AllocationID)
+	return alloc, at, err
 }
 
 func getFileMeta(allocationID, remotePath string) (*sdk.ConsolidatedFileMeta, error) {

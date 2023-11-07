@@ -7,13 +7,13 @@ import (
 	"C"
 )
 import (
+	"encoding/base64"
 	"encoding/json"
 	"os"
 	"path/filepath"
 
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/marker"
-	"github.com/0chain/gosdk/zboxcore/sdk"
 )
 
 func getZcnWorkDir() (string, error) {
@@ -57,9 +57,17 @@ func getLookupHash(allocationID, path string) string {
 	return encryption.Hash(allocationID + ":" + path)
 }
 
-func getAuthTicket(authTicket *C.char) (*marker.AuthTicket, string, error) {
+func decodeAuthTicket(authTicket *C.char) (*marker.AuthTicket, string, error) {
 	at := C.GoString(authTicket)
-	t, err := sdk.InitAuthTicket(at).Unmarshall()
+	buf, err := base64.StdEncoding.DecodeString(at)
+	if err != nil {
+		return nil, at, err
+	}
+	t := &marker.AuthTicket{}
+	err = json.Unmarshal(buf, t)
+	if err != nil {
+		return nil, at, err
+	}
 
 	return t, at, err
 }

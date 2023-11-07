@@ -71,6 +71,8 @@ func (c *Client) SetWallet(clientID, clientPrivateKey, clientPublicKey string) {
 }
 
 func (c *Client) parseResponse(resp *http.Response, respBody []byte, result interface{}) error {
+
+	log.Info("zboxapi: ", resp.StatusCode, " ", string(respBody))
 	if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusCreated {
 		if err := json.Unmarshal(respBody, result); err != nil {
 			return thrown.Throw(ErrInvalidJsonResponse, string(respBody))
@@ -262,7 +264,6 @@ func (c *Client) GetFreeStorage(ctx context.Context, phoneNumber, token string) 
 				return err
 			}
 
-			log.Info("zboxapi: ", string(respBody))
 			return c.parseResponse(resp, respBody, result)
 		})
 
@@ -302,7 +303,6 @@ func (c *Client) CreateSharedInfo(ctx context.Context, phoneNumber, token string
 				return err
 			}
 
-			log.Info("zboxapi: ", string(respBody))
 			return c.parseResponse(resp, respBody, &result)
 		})
 
@@ -335,7 +335,6 @@ func (c *Client) DeleteSharedInfo(ctx context.Context, phoneNumber, token, authT
 				return err
 			}
 
-			log.Info("zboxapi: ", string(respBody))
 			return c.parseResponse(resp, respBody, &result)
 		})
 
@@ -381,8 +380,6 @@ func (c *Client) getShared(ctx context.Context, phoneNumber, token string, isPri
 				return err
 			}
 
-			log.Info("zboxapi: ", string(respBody))
-
 			return c.parseResponse(resp, respBody, &result)
 		})
 
@@ -415,8 +412,6 @@ func (c *Client) GetSharedToMe(ctx context.Context, phoneNumber, token string) (
 			if err != nil {
 				return err
 			}
-
-			log.Info("zboxapi: ", string(respBody))
 
 			return c.parseResponse(resp, respBody, &result)
 		})

@@ -37,6 +37,11 @@ func main() {
 //
 //export SetLogFile
 func SetLogFile(file *C.char) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
 
 	f, err := os.OpenFile(C.GoString(file), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
@@ -81,6 +86,11 @@ func SetLogFile(file *C.char) *C.char {
 //
 //export InitSDKs
 func InitSDKs(configJson *C.char) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
 
 	l.Logger.Info("Start InitSDKs")
 
@@ -146,7 +156,11 @@ func InitSDKs(configJson *C.char) *C.char {
 //
 //export InitWallet
 func InitWallet(clientJson *C.char) *C.char {
-
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
 	l.Logger.Info("Start InitStorageSDK")
 
 	clientJs := C.GoString(clientJson)
@@ -188,6 +202,11 @@ var ErrInvalidSignatureScheme = errors.New("invalid_signature_scheme")
 //
 //export SignRequest
 func SignRequest(privateKey, signatureScheme, data *C.char) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
 	key := C.GoString(privateKey)
 	scheme := C.GoString(signatureScheme)
 	d := C.GoString(data)
@@ -209,7 +228,11 @@ func SignRequest(privateKey, signatureScheme, data *C.char) *C.char {
 //
 //export VerifySignature
 func VerifySignature(publicKey, signatureScheme string, data string, signature string) *C.char {
-
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
 	hash := encryption.Hash(data)
 
 	signScheme := zcncrypto.NewSignatureScheme(signatureScheme)
@@ -233,6 +256,11 @@ func VerifySignature(publicKey, signatureScheme string, data string, signature s
 //
 //export CryptoJsEncrypt
 func CryptoJsEncrypt(passphrase, message *C.char) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
 	pass := C.GoString(passphrase)
 	msg := C.GoString(message)
 
@@ -249,6 +277,11 @@ func CryptoJsEncrypt(passphrase, message *C.char) *C.char {
 //
 //export CryptoJsDecrypt
 func CryptoJsDecrypt(passphrase, encryptedMessage *C.char) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
 	pass := C.GoString(passphrase)
 	msg := C.GoString(encryptedMessage)
 
@@ -265,6 +298,11 @@ func CryptoJsDecrypt(passphrase, encryptedMessage *C.char) *C.char {
 //
 //export GetPublicEncryptionKey
 func GetPublicEncryptionKey(mnemonics *C.char) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
 	m := C.GoString(mnemonics)
 	return WithJSON(zcncore.GetPublicEncryptionKey(m))
 }
@@ -281,6 +319,11 @@ func GetPublicEncryptionKey(mnemonics *C.char) *C.char {
 //
 //export GetLookupHash
 func GetLookupHash(allocationID *C.char, path *C.char) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
 	hash := getLookupHash(C.GoString(allocationID), C.GoString(path))
 	return WithJSON(hash, nil)
 }
@@ -296,6 +339,11 @@ func GetLookupHash(allocationID *C.char, path *C.char) *C.char {
 //
 //export SetFFmpeg
 func SetFFmpeg(fullFileName *C.char) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
 	f := C.GoString(fullFileName)
 
 	_, err := os.Stat(f)
@@ -317,6 +365,11 @@ func SetFFmpeg(fullFileName *C.char) *C.char {
 //
 //export GetFileContentType
 func GetFileContentType(file *C.char) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
 	f, err := os.Open(C.GoString(file))
 	if err != nil {
 		log.Error("win: ", err)

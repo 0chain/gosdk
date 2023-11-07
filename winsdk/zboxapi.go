@@ -29,6 +29,11 @@ var (
 //
 //export InitZBox
 func InitZBox(zboxHost, zboxAppType *C.char) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
 	if zboxApiClient == nil {
 		zboxApiClient = zboxapi.NewClient()
 	}
@@ -53,6 +58,11 @@ func InitZBox(zboxHost, zboxAppType *C.char) {
 //
 //export SetZBoxWallet
 func SetZBoxWallet(clientID, clientPrivateKey, clientPublicKey *C.char) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
 	if zboxApiClient == nil {
 		return WithJSON(false, ErrZboxApiNotInitialized)
 	}
@@ -78,6 +88,11 @@ func SetZBoxWallet(clientID, clientPrivateKey, clientPublicKey *C.char) *C.char 
 //
 //export GetCsrfToken
 func GetCsrfToken() *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
 	if zboxApiClient == nil {
 		return WithJSON(0, ErrZboxApiNotInitialized)
 	}
@@ -95,6 +110,11 @@ func GetCsrfToken() *C.char {
 //
 //export CreateJwtSession
 func CreateJwtSession(phoneNumber *C.char) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
 	if zboxApiClient == nil {
 		return WithJSON(0, ErrZboxApiNotInitialized)
 	}
@@ -111,6 +131,11 @@ func CreateJwtSession(phoneNumber *C.char) *C.char {
 //
 //export CreateJwtToken
 func CreateJwtToken(phoneNumber *C.char, jwtSessionID int64, otp *C.char) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
 	if zboxApiClient == nil {
 		return WithJSON("", ErrZboxApiNotInitialized)
 	}
@@ -127,6 +152,11 @@ func CreateJwtToken(phoneNumber *C.char, jwtSessionID int64, otp *C.char) *C.cha
 //
 //export RefreshJwtToken
 func RefreshJwtToken(phoneNumber, token *C.char) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
 	if zboxApiClient == nil {
 		return WithJSON("", ErrZboxApiNotInitialized)
 	}
@@ -145,6 +175,11 @@ func RefreshJwtToken(phoneNumber, token *C.char) *C.char {
 //
 //export GetFreeMarker
 func GetFreeMarker(phoneNumber, token *C.char) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
 	marker, err := zboxApiClient.GetFreeStorage(context.TODO(), C.GoString(phoneNumber), C.GoString(token))
 	if err != nil {
 		log.Error("win: ", err)
@@ -169,6 +204,11 @@ func GetFreeMarker(phoneNumber, token *C.char) *C.char {
 //
 //export CreateSharedInfo
 func CreateSharedInfo(phoneNumber, token, sharedInfo *C.char) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
 	js := C.GoString(sharedInfo)
 
 	s := zboxapi.SharedInfo{}
@@ -203,6 +243,11 @@ func CreateSharedInfo(phoneNumber, token, sharedInfo *C.char) *C.char {
 //
 //export DeleteSharedInfo
 func DeleteSharedInfo(phoneNumber, token, authTicket, lookupHash *C.char) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
 	err := zboxApiClient.DeleteSharedInfo(context.TODO(), C.GoString(phoneNumber), C.GoString(token), C.GoString(authTicket), C.GoString(lookupHash))
 	if err != nil {
 		log.Error("win: ", err)
@@ -226,6 +271,11 @@ func DeleteSharedInfo(phoneNumber, token, authTicket, lookupHash *C.char) *C.cha
 //
 //export GetSharedByMe
 func GetSharedByMe(phoneNumber, token *C.char) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
 	list, err := zboxApiClient.GetSharedByMe(context.TODO(), C.GoString(phoneNumber), C.GoString(token))
 	if err != nil {
 		log.Error("win: ", err)
@@ -249,6 +299,11 @@ func GetSharedByMe(phoneNumber, token *C.char) *C.char {
 //
 //export GetSharedByPublic
 func GetSharedByPublic(phoneNumber, token *C.char) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
 	list, err := zboxApiClient.GetSharedByPublic(context.TODO(), C.GoString(phoneNumber), C.GoString(token))
 	if err != nil {
 		log.Error("win: ", err)
@@ -272,6 +327,11 @@ func GetSharedByPublic(phoneNumber, token *C.char) *C.char {
 //
 //export GetSharedToMe
 func GetSharedToMe(phoneNumber, token *C.char) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
 	list, err := zboxApiClient.GetSharedToMe(context.TODO(), C.GoString(phoneNumber), C.GoString(token))
 	if err != nil {
 		log.Error("win: ", err)

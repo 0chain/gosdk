@@ -114,7 +114,11 @@ type ConsolidatedFileMeta struct {
 	ActualFileSize  int64
 	ActualNumBlocks int64
 	EncryptedKey    string
-	Collaborators   []fileref.Collaborator
+
+	ActualThumbnailSize int64
+	ActualThumbnailHash string
+
+	Collaborators []fileref.Collaborator
 }
 
 type AllocationStats struct {
@@ -1506,6 +1510,8 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 		result.EncryptedKey = ref.EncryptedKey
 		result.Collaborators = ref.Collaborators
 		result.ActualFileSize = ref.ActualFileSize
+		result.ActualThumbnailHash = ref.ActualThumbnailHash
+		result.ActualThumbnailSize = ref.ActualThumbnailSize
 		if result.ActualFileSize > 0 {
 			result.ActualNumBlocks = (ref.ActualFileSize + CHUNK_SIZE - 1) / CHUNK_SIZE
 		}
@@ -1561,6 +1567,8 @@ func (a *Allocation) GetFileMetaFromAuthTicket(authTicket string, lookupHash str
 		result.Size = ref.Size
 		result.NumBlocks = ref.NumBlocks
 		result.ActualFileSize = ref.ActualFileSize
+		result.ActualThumbnailHash = ref.ActualThumbnailHash
+		result.ActualThumbnailSize = ref.ActualThumbnailSize
 		if result.ActualFileSize > 0 {
 			result.ActualNumBlocks = (result.ActualFileSize + CHUNK_SIZE - 1) / CHUNK_SIZE
 		}
