@@ -13,7 +13,6 @@ import (
 	"os"
 	"path"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -651,7 +650,7 @@ func NewMoveRequest(baseUrl, allocationID string, allocationTx string, body io.R
 }
 
 func NewDownloadRequest(baseUrl, allocationID, allocationTx string) (*http.Request, error) {
-	baseUrl = strings.Replace(baseUrl, "https", "http", 1)
+
 	u, err := joinUrl(baseUrl, DOWNLOAD_ENDPOINT, allocationTx)
 	if err != nil {
 		return nil, err
