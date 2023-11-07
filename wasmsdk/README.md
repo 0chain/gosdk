@@ -223,7 +223,7 @@ updates allocation settings
 
 **Input**:
 
-> allocationId string, name string,size int64, extend bool,lock int64,setImmutable, updateTerms bool,addBlobberId, removeBlobberId string, setThirdPartyExtendable  bool
+> allocationId string, name string,size int64, extend bool,lock int64,setImmutable,addBlobberId, removeBlobberId string, setThirdPartyExtendable  bool
 
 **Output**:
 
@@ -595,7 +595,7 @@ create folder from blobbers
 
 **Input**:
 
-> allocationID string, size int, extend bool, updateTerms bool, addBlobberId string, removeBlobberId string
+> allocationID string, size int, extend bool, addBlobberId string, removeBlobberId string
 
 **Output**:
 
