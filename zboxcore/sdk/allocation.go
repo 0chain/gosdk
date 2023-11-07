@@ -292,7 +292,7 @@ func (a *Allocation) GetBlobberStats() map[string]*BlobberAllocationStats {
 	return result
 }
 
-const downloadWorkerCount = 1
+const downloadWorkerCount = 5
 
 func (a *Allocation) InitAllocation() {
 	a.downloadChan = make(chan *DownloadRequest, 100)

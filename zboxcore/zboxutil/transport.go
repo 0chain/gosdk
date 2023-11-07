@@ -22,4 +22,5 @@ var DefaultTransport = &http.Transport{
 	ExpectContinueTimeout: 1 * time.Second,
 	MaxIdleConnsPerHost:   100,
 	ReadBufferSize:        36 * 1024 * 1024,
+	WriteBufferSize:       36 * 1024 * 1024,
 }
