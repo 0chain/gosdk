@@ -157,12 +157,6 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 				req.chunkSize = CHUNK_SIZE
 			}
 			respLen := resp.Header.Get("Content-Length")
-			for name, values := range resp.Header {
-				for _, value := range values {
-					zlogger.Logger.Info(name, value)
-				}
-			}
-
 			var respBody []byte
 			if respLen != "" {
 				len, err := strconv.Atoi(respLen)
@@ -183,7 +177,6 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 					return err
 				}
 			}
-			zlogger.Logger.Info("respBody", len(respBody))
 			elapsedReadBody := time.Since(start).Milliseconds() - elapsedDownloadReqBlobber
 			if resp.StatusCode != http.StatusOK {
 				zlogger.Logger.Debug(fmt.Sprintf("downloadBlobberBlock FAIL - blobberID: %v, clientID: %v, blockNum: %d, retry: %d, response: %v", req.blobber.ID, client.GetClientID(), header.BlockNum, retry, string(respBody)))
@@ -268,7 +261,9 @@ func AddBlockDownloadReq(req *BlockDownloadRequest) {
 
 func readBody(r io.Reader, size int) ([]byte, error) {
 	b := make([]byte, 0, size)
+	x := 0
 	for {
+		x++
 		if len(b) == cap(b) {
 			// Add more capacity (let append pick how much).
 			b = append(b, 0)[:len(b)]
@@ -276,6 +271,7 @@ func readBody(r io.Reader, size int) ([]byte, error) {
 		n, err := r.Read(b[len(b):cap(b)])
 		b = b[:len(b)+n]
 		if err != nil {
+			zlogger.Logger.Info("readBodyTimes", x)
 			if err == io.EOF {
 				err = nil
 			}
