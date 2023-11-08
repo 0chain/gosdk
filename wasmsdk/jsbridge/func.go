@@ -31,15 +31,18 @@ func BindFunc(global js.Value, jsFuncName string, fn interface{}) error {
 func BindAsyncFuncs(global js.Value, fnList map[string]interface{}) {
 
 	for jsFuncName, fn := range fnList {
-		jsFunc, err := promise(fn)
+		if jsFuncName == "registerAuthorizer" || jsFuncName == "callAuth" {
+			global.Set(jsFuncName, fn)
+		} else {
+			jsFunc, err := promise(fn)
 
-		if err != nil {
-			log.Println(jsFuncName, err)
+			if err != nil {
+				log.Println("bridge promise failed:", jsFuncName, err)
+			}
+
+			global.Set(jsFuncName, jsFunc)
 		}
-
-		global.Set(jsFuncName, jsFunc)
 	}
-
 }
 
 func BindFuncs(global js.Value, fnList map[string]interface{}) {
