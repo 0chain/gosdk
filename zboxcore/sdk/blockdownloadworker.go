@@ -260,9 +260,7 @@ func AddBlockDownloadReq(req *BlockDownloadRequest) {
 
 func readBody(r io.Reader, size int) ([]byte, error) {
 	b := make([]byte, 0, size)
-	x := 0
 	for {
-		x++
 		if len(b) == cap(b) {
 			// Add more capacity (let append pick how much).
 			b = append(b, 0)[:len(b)]
@@ -270,7 +268,6 @@ func readBody(r io.Reader, size int) ([]byte, error) {
 		n, err := r.Read(b[len(b):cap(b)])
 		b = b[:len(b)+n]
 		if err != nil {
-			zlogger.Logger.Info("readBodyTimes", x)
 			if err == io.EOF {
 				err = nil
 			}
