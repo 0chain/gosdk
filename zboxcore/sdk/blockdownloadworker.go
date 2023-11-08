@@ -171,7 +171,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 					return err
 				}
 			} else {
-				respBody, err = readBody(resp.Body, 32*1024)
+				respBody, err = readBody(resp.Body, 32*1024*1024)
 				if err != nil {
 					zlogger.Logger.Error("respBody read error: ", err)
 					return err
