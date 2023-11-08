@@ -55,7 +55,7 @@ type StatusCallback interface {
 var numBlockDownloads = 10
 var sdkInitialized = false
 var networkWorkerTimerInHours = 1
-var shouldVerifyHash = false
+var shouldVerifyHash = true
 
 // GetVersion - returns version string
 func GetVersion() string {
