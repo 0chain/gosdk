@@ -891,7 +891,7 @@ func GetAllocationUpdates(allocation *Allocation) error {
 }
 
 func SetNumBlockDownloads(num int) {
-	if num > 0 && num <= 100 {
+	if num > 0 && num <= 500 {
 		numBlockDownloads = num
 	}
 }

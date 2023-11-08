@@ -164,13 +164,14 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 					return err
 				}
 				respBody = make([]byte, len)
-				_, err = resp.Body.Read(respBody)
+				_, err = readBody(resp.Body, len)
 				if err != nil {
 					zlogger.Logger.Error("respBody read error: ", err)
 					return err
 				}
 			} else {
-				respBody, err = io.ReadAll(resp.Body)
+				len := int(req.numBlocks+10) * req.chunkSize
+				respBody, err = readBody(resp.Body, len)
 				if err != nil {
 					zlogger.Logger.Error("respBody read error: ", err)
 					return err
@@ -255,4 +256,25 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 
 func AddBlockDownloadReq(req *BlockDownloadRequest) {
 	downloadBlockChan[req.blobber.ID] <- req
+}
+
+func readBody(r io.Reader, size int) ([]byte, error) {
+	b := make([]byte, 0, size)
+	x := 0
+	for {
+		x++
+		if len(b) == cap(b) {
+			// Add more capacity (let append pick how much).
+			b = append(b, 0)[:len(b)]
+		}
+		n, err := r.Read(b[len(b):cap(b)])
+		b = b[:len(b)+n]
+		if err != nil {
+			zlogger.Logger.Info("readBodyTimes", x)
+			if err == io.EOF {
+				err = nil
+			}
+			return b, err
+		}
+	}
 }
