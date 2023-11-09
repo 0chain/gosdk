@@ -159,22 +159,12 @@
       <button id="btnSplitKeys">SplitKeys</button>
       <button id="btnSetWalletInfo">SetWalletInfo</button>
       <button id="btnSetAuthUrl">SetAuthUrl</button>
+      <button id="btnRegAuth">regAuth</button>
     </span>
     <br>
     <div id="splitKey">
     </div>
   </fieldset>
-
-  <fieldset>
-    <legend>Authorizer</legend>
-    <span>
-      <button id="btnRegisterAuthorizer">RegisterAuthorizer</button>
-    </span>
-    <br>
-    <div id="Authorizer">
-    </div>
-  </fieldset>
-
   <script>
     window.downloadCallback = function (totalBytes, completedBytes, error) {
       console.log("download: " + completedBytes + "/" + totalBytes + " err:" + error)
@@ -908,16 +898,19 @@
       }
     })
 
-    onClick('btnRegisterAuthorizer', async () => {
-      function auth(msg) {
-        return { result: "Authorizer Registered", error: null };
-      }
-      try {
-        await goWasm.sdk.registerAuthorizeFunc(auth)
-        txtOutput.innerHTML = "Authorizer Registered";
-      } catch (e) {
-        alert(e)
-      }
+    onClick('btnRegAuth', async () => {
+      const authCallback = function (msg) {
+          return `Authorized: ${msg}`;
+      };
+
+      const registerAuthorizer = goWasm.sdk.registerAuthorizer;
+      registerAuthorizer(authCallback);
+
+      // call the callAuth to see if the auth is set properly
+      // Use the stored callback function from Go
+	    const message = "Hello, World!";
+	    const result = goWasm.sdk.callAuth(message);
+	    console.log(result); // Output: "Authorized: Hello, World!"
     })
   </script>
 </body>
