@@ -40,6 +40,8 @@ type chunkedUploadChunkReader struct {
 	// chunkDataSizePerRead total size should be read from original io.Reader. It is DataSize * DataShards.
 	chunkDataSizePerRead int64
 
+	chunkByte []byte
+
 	// nextChunkIndex next index for reading
 	nextChunkIndex int
 
@@ -98,7 +100,7 @@ func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards i
 	}
 
 	r.chunkDataSizePerRead = r.chunkDataSize * int64(dataShards)
-
+	r.chunkByte = make([]byte, 0, r.chunkDataSizePerRead)
 	return r, nil
 }
 
@@ -139,7 +141,7 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 		FragmentSize: 0,
 	}
 
-	chunkBytes := make([]byte, r.chunkDataSizePerRead)
+	chunkBytes := r.chunkByte
 	readLen, err := r.fileReader.Read(chunkBytes)
 	if err != nil {
 
