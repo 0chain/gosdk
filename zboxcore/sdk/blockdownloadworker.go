@@ -152,7 +152,9 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			if resp.Body != nil {
 				defer resp.Body.Close()
 			}
-
+			if req.chunkSize == 0 {
+				req.chunkSize = CHUNK_SIZE
+			}
 			var rspData downloadBlock
 			respLen := resp.Header.Get("Content-Length")
 			var respBody []byte
@@ -170,8 +172,8 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 					return err
 				}
 			} else {
-				len := int(req.numBlocks+10) * req.chunkSize
-				respBody, err = readBody(resp.Body, len)
+				// len := int(req.numBlocks+10) * req.chunkSize
+				respBody, err = readBody(resp.Body, int(req.numBlocks+10)*req.chunkSize)
 				if err != nil {
 					zlogger.Logger.Error("respBody read error: ", err)
 					return err
@@ -187,6 +189,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 
 			dR := downloadResponse{}
 			contentType := resp.Header.Get("Content-Type")
+			zlogger.Logger.Info("drDataString: ", respBody[:20])
 			if contentType == "application/json" {
 				err = json.Unmarshal(respBody, &dR)
 				if err != nil {
@@ -194,6 +197,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 				}
 			} else {
 				dR.Data = respBody
+				zlogger.Logger.Info("drData", len(dR.Data), int(req.numBlocks)*req.chunkSize)
 			}
 			if req.contentMode == DOWNLOAD_CONTENT_FULL && req.shouldVerify {
 
