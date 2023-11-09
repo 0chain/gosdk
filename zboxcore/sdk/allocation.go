@@ -925,7 +925,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 		}
 	}
 	l.Logger.Info("-----------------MultiOperation completed-----------------")
-	l.Logger.Info(fmt.Sprintf("avgReadChunk: %v avgWriteChunk: %v avgUploadTime: %v lockWMStatus: %v commitBlobber: %v", totalChunkRead/int64(numRequest), totalChunkWrite/int64(numRequest), totalChunkUpload/int64(numRequest), totalStatusWM, totalCommitBlobber))
+	l.Logger.Info(fmt.Sprintf("numRequests: %v avgReadChunk: %v avgWriteChunk: %v avgUploadTime: %v lockWMStatus: %v commitBlobber: %v", numRequest, totalChunkRead/int64(numRequest), totalChunkWrite/int64(numRequest), totalChunkUpload/int64(numRequest), totalStatusWM, totalCommitBlobber))
 	// "numRequests", numRequest, "avgReadChunk", totalChunkRead/int64(numRequest), "avgWriteChunk", totalChunkWrite/int64(numRequest), "avgUploadTime", totalChunkUpload/int64(numRequest), "lockWMStatus", totalStatusWM), ("commitBlobber", totalCommitBlobber))
 	return nil
 }

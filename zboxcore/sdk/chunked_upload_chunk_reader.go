@@ -100,7 +100,7 @@ func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards i
 	}
 
 	r.chunkDataSizePerRead = r.chunkDataSize * int64(dataShards)
-	r.chunkByte = make([]byte, 0, r.chunkDataSizePerRead)
+	r.chunkByte = make([]byte, r.chunkDataSizePerRead)
 	return r, nil
 }
 
