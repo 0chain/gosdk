@@ -410,6 +410,7 @@ func (su *ChunkedUpload) process() error {
 
 		if chunks.isFinal {
 			su.fileMeta.ActualHash, err = su.chunkReader.GetFileHash()
+			logger.Logger.Info("File hash", su.fileMeta.ActualHash)
 			if err != nil {
 				if su.statusCallback != nil {
 					su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)

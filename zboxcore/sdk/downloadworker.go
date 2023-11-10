@@ -419,7 +419,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	var isPREAndWholeFile bool
 	if !req.shouldVerify && (startBlock == 0 && endBlock == chunksPerShard) {
 		actualFileHasher = sha256.New()
-		// isPREAndWholeFile = true
+		isPREAndWholeFile = true
 	}
 
 	n := int((endBlock - startBlock + numBlocks - 1) / numBlocks)
