@@ -69,7 +69,7 @@ type chunkedUploadChunkReader struct {
 }
 
 // createChunkReader create ChunkReader instance
-func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards int, encryptOnUpload bool, uploadMask zboxutil.Uint128, erasureEncoder reedsolomon.Encoder, encscheme encryption.EncryptionScheme, hasher Hasher) (ChunkedUploadChunkReader, error) {
+func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards int, encryptOnUpload bool, uploadMask zboxutil.Uint128, erasureEncoder reedsolomon.Encoder, encscheme encryption.EncryptionScheme, hasher Hasher, chunkNumber int) (ChunkedUploadChunkReader, error) {
 
 	if chunkSize <= 0 {
 		return nil, errors.Throw(constants.ErrInvalidParameter, "chunkSize: "+strconv.FormatInt(chunkSize, 10))
@@ -86,7 +86,9 @@ func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards i
 	if hasher == nil {
 		return nil, errors.Throw(constants.ErrInvalidParameter, "hasher")
 	}
-
+	if chunkNumber <= 0 {
+		chunkNumber = 10
+	}
 	r := &chunkedUploadChunkReader{
 		fileReader:      fileReader,
 		size:            size,
@@ -98,7 +100,7 @@ func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards i
 		erasureEncoder:  erasureEncoder,
 		encscheme:       encscheme,
 		hasher:          hasher,
-		hasherDataChan:  make(chan []byte, 20),
+		hasherDataChan:  make(chan []byte, chunkNumber),
 		hasherWG:        sync.WaitGroup{},
 	}
 

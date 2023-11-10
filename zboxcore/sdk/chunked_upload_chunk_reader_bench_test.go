@@ -69,6 +69,7 @@ func BenchmarkChunkedUploadChunkReader(b *testing.B) {
 					bm.EncryptOnUpload, uploadMask,
 					erasureEncoder, encscheme,
 					CreateHasher(getShardSize(bm.Size, bm.DataShards, bm.EncryptOnUpload)),
+					1,
 				)
 				if err != nil {
 					b.Fatal(err)
