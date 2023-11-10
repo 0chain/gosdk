@@ -387,6 +387,7 @@ func (su *ChunkedUpload) process() error {
 		su.statusCallback.Started(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, int(su.fileMeta.ActualSize)+int(su.fileMeta.ActualThumbnailSize))
 	}
 	alreadyUploadedData := 0
+	defer su.chunkReader.Close()
 	defer close(su.uploadChan)
 	defer su.ctxCncl(nil)
 	for {
@@ -408,13 +409,13 @@ func (su *ChunkedUpload) process() error {
 		su.progress.UploadLength += chunks.totalReadSize
 
 		if chunks.isFinal {
-			su.fileMeta.ActualHash = "ed46a44a4467530a23969501e1ed97e90d204056260d57b888b57e44fc203488"
-			// if err != nil {
-			// 	if su.statusCallback != nil {
-			// 		su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
-			// 	}
-			// 	return err
-			// }
+			su.fileMeta.ActualHash, err = su.chunkReader.GetFileHash()
+			if err != nil {
+				if su.statusCallback != nil {
+					su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
+				}
+				return err
+			}
 
 			if su.fileMeta.ActualSize == 0 {
 				su.fileMeta.ActualSize = su.progress.UploadLength
