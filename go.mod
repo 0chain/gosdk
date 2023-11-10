@@ -124,6 +124,7 @@ require (
 	github.com/btcsuite/btcd/btcutil v1.1.3
 	github.com/klauspost/compress v1.16.0 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.4 // indirect
+	github.com/minio/sha256-simd v1.0.1
 	github.com/remeh/sizedwaitgroup v1.0.0
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.uber.org/atomic v1.10.0 // indirect

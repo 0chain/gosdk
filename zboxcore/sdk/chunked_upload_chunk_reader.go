@@ -101,7 +101,7 @@ func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards i
 		erasureEncoder:  erasureEncoder,
 		encscheme:       encscheme,
 		hasher:          hasher,
-		hasherDataChan:  make(chan []byte, chunkNumber),
+		hasherDataChan:  make(chan []byte, 2*chunkNumber),
 		hasherWG:        sync.WaitGroup{},
 	}
 

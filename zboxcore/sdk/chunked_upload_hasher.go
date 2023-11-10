@@ -8,7 +8,7 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/util"
-	"golang.org/x/crypto/sha3"
+	"github.com/minio/sha256-simd"
 )
 
 type Hasher interface {
@@ -38,7 +38,7 @@ type hasher struct {
 // CreateHasher creat Hasher instance
 func CreateHasher(dataSize int64) Hasher {
 	return &hasher{
-		File:         sha3.New256(),
+		File:         sha256.New(),
 		FixedMT:      util.NewFixedMerkleTree(),
 		ValidationMT: util.NewValidationTree(dataSize),
 	}
