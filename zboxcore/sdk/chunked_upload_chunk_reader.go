@@ -66,6 +66,7 @@ type chunkedUploadChunkReader struct {
 	hasherDataChan chan []byte
 	hasherError    error
 	hasherWG       sync.WaitGroup
+	chanClosed     bool
 }
 
 // createChunkReader create ChunkReader instance
@@ -262,11 +263,15 @@ func (r *chunkedUploadChunkReader) Read(buf []byte) ([][]byte, error) {
 }
 
 func (r *chunkedUploadChunkReader) Close() {
-	close(r.hasherDataChan)
-	r.hasherWG.Wait()
+	if !r.chanClosed {
+		close(r.hasherDataChan)
+		r.hasherWG.Wait()
+	}
 }
 
 func (r *chunkedUploadChunkReader) GetFileHash() (string, error) {
+	close(r.hasherDataChan)
+	r.chanClosed = true
 	r.hasherWG.Wait()
 	if r.hasherError != nil {
 		return "", r.hasherError
