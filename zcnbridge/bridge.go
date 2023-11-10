@@ -643,7 +643,7 @@ func (b *BridgeClient) BurnZCN(ctx context.Context, amount, txnfee uint64) (tran
 }
 
 // FetchZCNToETHRate retrieves latest ZCN to ETH rate using Bancor API
-func (b *BridgeClient) FetchZCNToETHRate() (*big.Float, error) {
+func (b *BridgeClient) FetchZCNToSourceTokenRate(sourceTokenAddress string) (*big.Float, error) {
 	client = h.CleanClient()
 
 	resp, err := client.Get(fmt.Sprintf("%s/tokens?dlt_id=%s", b.BancorAPIURL, b.TokenAddress))
@@ -663,13 +663,22 @@ func (b *BridgeClient) FetchZCNToETHRate() (*big.Float, error) {
 		return nil, err
 	}
 
-	var zcnEthRateFloat float64
-	zcnEthRateFloat, err = strconv.ParseFloat(bancorTokenDetails.Data.Rate.ETH, 64)
+	var zcnSourceTokenRateFloat float64
+
+	switch sourceTokenAddress {
+	case SourceTokenETHAddress:
+		zcnSourceTokenRateFloat, err = strconv.ParseFloat(bancorTokenDetails.Data.Rate.ETH, 64)
+	case SourceTokenBNTAddress:
+		zcnSourceTokenRateFloat, err = strconv.ParseFloat(bancorTokenDetails.Data.Rate.BNT, 64)
+	case SourceTokenUSDCAddress:
+		zcnSourceTokenRateFloat, err = strconv.ParseFloat(bancorTokenDetails.Data.Rate.USDC, 64)
+	}
+
 	if err != nil {
 		return nil, err
 	}
 
-	return big.NewFloat(zcnEthRateFloat), nil
+	return big.NewFloat(zcnSourceTokenRateFloat), nil
 }
 
 // Swap provides opportunity to perform token swap operation.
@@ -689,7 +698,7 @@ func (b *BridgeClient) Swap(ctx context.Context, sourceTokenAddress string, amou
 	}
 
 	var zcnEthRate *big.Float
-	zcnEthRate, err = b.FetchZCNToETHRate()
+	zcnEthRate, err = b.FetchZCNToSourceTokenRate(sourceTokenAddress)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to retrieve ZCN to ETH rate using Bancor API")
 	}

@@ -14,7 +14,9 @@ import (
 type BancorTokenDetails struct {
 	Data struct {
 		Rate struct {
-			ETH string `json:"eth"`
+			ETH  string `json:"eth"`
+			BNT  string `json:"bnt"`
+			USDC string `json:"usdc"`
 		}
 	} `json:"data"`
 }
