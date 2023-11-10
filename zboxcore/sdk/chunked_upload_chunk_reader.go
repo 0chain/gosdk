@@ -188,14 +188,14 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 		}
 	}
 
-	// err = r.hasher.WriteToFile(chunkBytes)
-	// if err != nil {
-	// 	return chunk, err
-	// }
-	if r.hasherError != nil {
-		return chunk, r.hasherError
+	err = r.hasher.WriteToFile(chunkBytes)
+	if err != nil {
+		return chunk, err
 	}
-	r.hasherDataChan <- chunkBytes
+	// if r.hasherError != nil {
+	// 	return chunk, r.hasherError
+	// }
+	// r.hasherDataChan <- chunkBytes
 	fragments, err := r.erasureEncoder.Split(chunkBytes)
 	if err != nil {
 		return nil, err
@@ -270,12 +270,12 @@ func (r *chunkedUploadChunkReader) Close() {
 }
 
 func (r *chunkedUploadChunkReader) GetFileHash() (string, error) {
-	close(r.hasherDataChan)
-	r.chanClosed = true
-	r.hasherWG.Wait()
-	if r.hasherError != nil {
-		return "", r.hasherError
-	}
+	// close(r.hasherDataChan)
+	// r.chanClosed = true
+	// r.hasherWG.Wait()
+	// if r.hasherError != nil {
+	// 	return "", r.hasherError
+	// }
 	return r.hasher.GetFileHash()
 }
 
