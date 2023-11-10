@@ -673,7 +673,7 @@ func (b *BridgeClient) FetchZCNToETHRate() (*big.Float, error) {
 }
 
 // Swap provides opportunity to perform token swap operation.
-func (b *BridgeClient) Swap(ctx context.Context, amountSwap uint64, deadlinePeriod time.Time) (*types.Transaction, error) {
+func (b *BridgeClient) Swap(ctx context.Context, sourceTokenAddress string, amountSwap uint64, deadlinePeriod time.Time) (*types.Transaction, error) {
 	// 1. Swap amount parameter.
 	amount := big.NewInt(int64(amountSwap))
 
@@ -700,7 +700,7 @@ func (b *BridgeClient) Swap(ctx context.Context, amountSwap uint64, deadlinePeri
 	maxAmount := big.NewInt(int64(amountSwapZCN * zcnEthRateFloat * 1.5 * 1e18))
 
 	// 5. Source token address parameter
-	from := common.HexToAddress(SourceTokenAddress)
+	from := common.HexToAddress(sourceTokenAddress)
 
 	// 6. Target token address parameter
 	to := common.HexToAddress(b.TokenAddress)
@@ -713,7 +713,7 @@ func (b *BridgeClient) Swap(ctx context.Context, amountSwap uint64, deadlinePeri
 	Logger.Info(
 		"Starting Swap",
 		zap.Int64("amount", amount.Int64()),
-		zap.String("sourceToken", SourceTokenAddress),
+		zap.String("sourceToken", sourceTokenAddress),
 	)
 
 	tran, err := bancorInstance.TradeByTargetAmount(transactOpts, from, to, amount, maxAmount, deadline, beneficiary)
