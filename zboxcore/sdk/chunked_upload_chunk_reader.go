@@ -46,8 +46,6 @@ type chunkedUploadChunkReader struct {
 	// chunkDataSizePerRead total size should be read from original io.Reader. It is DataSize * DataShards.
 	chunkDataSizePerRead int64
 
-	chunkByte []byte
-
 	// nextChunkIndex next index for reading
 	nextChunkIndex int
 
@@ -114,7 +112,6 @@ func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards i
 	}
 
 	r.chunkDataSizePerRead = r.chunkDataSize * int64(dataShards)
-	r.chunkByte = make([]byte, r.chunkDataSizePerRead)
 	r.hasherWG.Add(1)
 	go r.hashData()
 	return r, nil
@@ -157,7 +154,7 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 		FragmentSize: 0,
 	}
 
-	chunkBytes := r.chunkByte
+	chunkBytes := make([]byte, r.chunkDataSizePerRead)
 	readLen, err := r.fileReader.Read(chunkBytes)
 	if err != nil {
 
@@ -188,14 +185,14 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 		}
 	}
 
-	err = r.hasher.WriteToFile(chunkBytes)
-	if err != nil {
-		return chunk, err
-	}
-	// if r.hasherError != nil {
-	// 	return chunk, r.hasherError
+	// err = r.hasher.WriteToFile(chunkBytes)
+	// if err != nil {
+	// 	return chunk, err
 	// }
-	// r.hasherDataChan <- chunkBytes
+	if r.hasherError != nil {
+		return chunk, r.hasherError
+	}
+	r.hasherDataChan <- chunkBytes
 	fragments, err := r.erasureEncoder.Split(chunkBytes)
 	if err != nil {
 		return nil, err
@@ -270,12 +267,12 @@ func (r *chunkedUploadChunkReader) Close() {
 }
 
 func (r *chunkedUploadChunkReader) GetFileHash() (string, error) {
-	// close(r.hasherDataChan)
-	// r.chanClosed = true
-	// r.hasherWG.Wait()
-	// if r.hasherError != nil {
-	// 	return "", r.hasherError
-	// }
+	close(r.hasherDataChan)
+	r.chanClosed = true
+	r.hasherWG.Wait()
+	if r.hasherError != nil {
+		return "", r.hasherError
+	}
 	return r.hasher.GetFileHash()
 }
 
