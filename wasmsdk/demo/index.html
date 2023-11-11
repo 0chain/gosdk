@@ -276,7 +276,7 @@
         alert(e)
       }
     })
-    
+
     let allocations = []
     let blobbers = []
     let files = []
@@ -882,7 +882,7 @@
       try {
         const jsonWalletString = JSON.stringify(jsonWallet);
         const isWalletInfoSet = await goWasm.sdk.setWalletInfo(jsonWalletString, splitKeyWallet)
-        console.log("Set Wallet Info:",isWalletInfoSet)
+        console.log("Set Wallet Info:", isWalletInfoSet)
       } catch (e) {
         alert(e)
       }
@@ -905,7 +905,7 @@
       try {
         const jsonWalletString = JSON.stringify(jsonWallet);
         const isWalletInfoSet = await goWasm.sdk.setWalletInfo(jsonWalletString, splitKeyWallet)
-        console.log("Set Wallet Info:",isWalletInfoSet)
+        console.log("Set Wallet Info:", isWalletInfoSet)
       } catch (e) {
         alert(e)
       }
@@ -913,7 +913,7 @@
       const url = "Testing"
       try {
         const isAuthURLSet = await goWasm.sdk.setAuthUrl(url)
-        console.log("Set Auth URL",isAuthURLSet);
+        console.log("Set Auth URL", isAuthURLSet);
       } catch (e) {
         alert(e)
       }
@@ -921,7 +921,7 @@
 
     onClick('btnRegAuth', async () => {
       const authCallback = function (msg) {
-          return `Authorized: ${msg}`;
+        return `Authorized: ${msg}`;
       };
 
       const registerAuthorizer = goWasm.sdk.registerAuthorizer;
@@ -929,10 +929,10 @@
 
       // call the callAuth to see if the auth is set properly
       // Use the stored callback function from Go
-	    const message = "Hello, World!";
-	    const result = goWasm.sdk.callAuth(message);
-	    console.log(result); // Output: "Authorized: Hello, World!"
+      const message = "Hello, World!";
+      const result = goWasm.sdk.callAuth(message);
+      console.log(result); // Output: "Authorized: Hello, World!"
     })
-    
+
   </script>
 </body>
