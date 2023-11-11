@@ -10,7 +10,7 @@ import (
 	goError "errors"
 
 	"github.com/0chain/errors"
-	"github.com/minio/sha256-simd"
+	"github.com/zeebo/blake3"
 )
 
 const (
@@ -38,7 +38,7 @@ func (l *leaf) Write(b []byte) (int, error) {
 
 func getNewLeaf() *leaf {
 	return &leaf{
-		h: sha256.New(),
+		h: blake3.New(),
 	}
 }
 
