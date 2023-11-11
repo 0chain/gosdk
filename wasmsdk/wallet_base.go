@@ -19,12 +19,12 @@ func splitKeys(privateKey string, numSplits int) (string, error) {
 // - splitKeyWallet: if wallet keys is split
 
 // nolint: unused
-func setWalletInfo(jsonWallet string, splitKeyWallet bool) string {
+func setWalletInfo(jsonWallet string, splitKeyWallet bool) bool {
 	err := zcncore.SetWalletInfo(jsonWallet, splitKeyWallet)
 	if err == nil {
-		return "Success"
+		return true
 	} else {
-		return "Failure"
+		return false
 	}
 }
 
@@ -33,11 +33,11 @@ func setWalletInfo(jsonWallet string, splitKeyWallet bool) string {
 // - url: the url of zAuth server
 
 // nolint: unused
-func setAuthUrl(url string) string {
+func setAuthUrl(url string) bool {
 	err := zcncore.SetAuthUrl(url)
 	if err == nil {
-		return "Success"
+		return true
 	} else {
-		return "Failure"
+		return false
 	}
 }
