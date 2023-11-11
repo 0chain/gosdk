@@ -431,6 +431,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		actualFileHasher = sha256.New()
 		hashDataChan = make(chan []byte, n)
 		hashWg = &sync.WaitGroup{}
+		hashWg.Add(1)
 		go processHashData(hashDataChan, hashWg, actualFileHasher)
 		isPREAndWholeFile = true
 	}
