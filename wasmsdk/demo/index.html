@@ -889,6 +889,26 @@
     })
 
     onClick('btnSetAuthUrl', async () => {
+      // need to call setSplitKeyWallet to set wallet type to split key initially.
+      const jsonWallet = {
+        "client_id": "30764bcba73216b67c36b05a17b4dd076bfdc5bb0ed84856f27622188c377269",
+        "client_key": "1f495df9605a4479a7dd6e5c7a78caf9f9d54e3a40f62a3dd68ed377115fe614d8acf0c238025f67a85163b9fbf31d10fbbb4a551d1cf00119897edf18b1841c",
+        "keys": [
+          { "public_key": "1f495df9605a4479a7dd6e5c7a78caf9f9d54e3a40f62a3dd68ed377115fe614d8acf0c238025f67a85163b9fbf31d10fbbb4a551d1cf00119897edf18b1841c", "private_key": "41729ed8d82f782646d2d30b9719acfd236842b9b6e47fee12b7bdbd05b35122" }
+        ],
+        "mnemonics": "glare mistake gun joke bid spare across diagram wrap cube swear cactus cave repeat you brave few best wild lion pitch pole original wasp",
+        "version": "1.0",
+        "date_created": "1662534022",
+        "nonce": 0
+      }
+      const splitKeyWallet = true
+      try {
+        const jsonWalletString = JSON.stringify(jsonWallet);
+        const isWalletInfoSet = await goWasm.sdk.setWalletInfo(jsonWalletString, splitKeyWallet)
+        console.log("Set Wallet Info:",isWalletInfoSet)
+      } catch (e) {
+        alert(e)
+      }
       // can add any string ,because just had string check while checking url
       const url = "Testing"
       try {
