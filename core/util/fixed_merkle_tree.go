@@ -10,7 +10,7 @@ import (
 	goError "errors"
 
 	"github.com/0chain/errors"
-	"golang.org/x/crypto/sha3"
+	"github.com/minio/sha256-simd"
 )
 
 const (
@@ -38,7 +38,7 @@ func (l *leaf) Write(b []byte) (int, error) {
 
 func getNewLeaf() *leaf {
 	return &leaf{
-		h: sha3.New256(),
+		h: sha256.New(),
 	}
 }
 
