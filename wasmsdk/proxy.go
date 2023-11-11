@@ -245,6 +245,7 @@ func main() {
 				"splitKeys":     splitKeys,
 				"setWalletInfo": setWalletInfo,
 				"setAuthUrl":    setAuthUrl,
+
 				"registerAuthorizer": js.FuncOf(registerAuthorizer),
 				"callAuth":           js.FuncOf(callAuth),
 			})

@@ -346,7 +346,7 @@ func (s *StorageSDK) UpdateAllocation(size int64, extend bool, allocationID stri
 		return "", errors.Errorf("int64 overflow in lock")
 	}
 
-	hash, _, err = sdk.UpdateAllocation(size, extend, allocationID, lock, true, "", "", false, &sdk.FileOptionsParameters{})
+	hash, _, err = sdk.UpdateAllocation(size, extend, allocationID, lock, "", "", false, &sdk.FileOptionsParameters{})
 	return hash, err
 }
 

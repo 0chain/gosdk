@@ -55,6 +55,7 @@ type StatusCallback interface {
 var numBlockDownloads = 10
 var sdkInitialized = false
 var networkWorkerTimerInHours = 1
+var shouldVerifyHash = true
 
 // GetVersion - returns version string
 func GetVersion() string {
@@ -891,9 +892,13 @@ func GetAllocationUpdates(allocation *Allocation) error {
 }
 
 func SetNumBlockDownloads(num int) {
-	if num > 0 && num <= 100 {
+	if num > 0 && num <= 500 {
 		numBlockDownloads = num
 	}
+}
+
+func SetVerifyHash(verify bool) {
+	shouldVerifyHash = verify
 }
 
 func GetAllocations() ([]*Allocation, error) {
@@ -1185,7 +1190,6 @@ func UpdateAllocation(
 	extend bool,
 	allocationID string,
 	lock uint64,
-	updateTerms bool,
 	addBlobberId, removeBlobberId string,
 	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
 ) (hash string, nonce int64, err error) {
@@ -1209,7 +1213,6 @@ func UpdateAllocation(
 	updateAllocationRequest["id"] = allocationID
 	updateAllocationRequest["size"] = size
 	updateAllocationRequest["extend"] = extend
-	updateAllocationRequest["update_terms"] = updateTerms
 	updateAllocationRequest["add_blobber_id"] = addBlobberId
 	updateAllocationRequest["remove_blobber_id"] = removeBlobberId
 	updateAllocationRequest["set_third_party_extendable"] = setThirdPartyExtendable
@@ -1600,7 +1603,6 @@ func GetUpdateAllocationMinLock(
 	allocationID string,
 	size int64,
 	extend bool,
-	updateTerms bool,
 	addBlobberId,
 	removeBlobberId string) (int64, error) {
 	updateAllocationRequest := make(map[string]interface{})
@@ -1609,7 +1611,6 @@ func GetUpdateAllocationMinLock(
 	updateAllocationRequest["id"] = allocationID
 	updateAllocationRequest["size"] = size
 	updateAllocationRequest["extend"] = extend
-	updateAllocationRequest["update_terms"] = updateTerms
 	updateAllocationRequest["add_blobber_id"] = addBlobberId
 	updateAllocationRequest["remove_blobber_id"] = removeBlobberId
 

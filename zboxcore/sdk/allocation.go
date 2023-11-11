@@ -2376,7 +2376,6 @@ func (a *Allocation) UpdateWithRepair(
 	size int64,
 	extend bool,
 	lock uint64,
-	updateTerms bool,
 	addBlobberId, removeBlobberId string,
 	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
 	statusCB StatusCallback,
@@ -2386,7 +2385,7 @@ func (a *Allocation) UpdateWithRepair(
 	}
 
 	l.Logger.Info("Updating allocation")
-	hash, _, err := UpdateAllocation(size, extend, a.ID, lock, updateTerms, addBlobberId, removeBlobberId, setThirdPartyExtendable, fileOptionsParams)
+	hash, _, err := UpdateAllocation(size, extend, a.ID, lock, addBlobberId, removeBlobberId, setThirdPartyExtendable, fileOptionsParams)
 	if err != nil {
 		return "", err
 	}
