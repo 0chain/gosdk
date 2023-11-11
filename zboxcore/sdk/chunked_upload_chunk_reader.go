@@ -185,10 +185,6 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 		}
 	}
 
-	// err = r.hasher.WriteToFile(chunkBytes)
-	// if err != nil {
-	// 	return chunk, err
-	// }
 	if r.hasherError != nil {
 		return chunk, r.hasherError
 	}
