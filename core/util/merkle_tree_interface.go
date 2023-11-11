@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 
 	"github.com/0chain/gosdk/core/encryption"
+	"github.com/minio/sha256-simd"
 )
 
 /*MerkleTreeI - a merkle tree interface required for constructing and providing verification */
@@ -40,7 +41,9 @@ func MHashBytes(h1, h2 []byte) []byte {
 	buf := make([]byte, len(h1)+len(h2))
 	copy(buf, h1)
 	copy(buf[len(h1):], h2)
-	return encryption.RawHash(buf)
+	hash := sha256.New()
+	hash.Write(buf)
+	return hash.Sum(nil)
 }
 
 /*MHash - merkle hashing of a pair of child hashes */
