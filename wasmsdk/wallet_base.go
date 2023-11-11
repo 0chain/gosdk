@@ -6,7 +6,7 @@ import (
 
 // Split keys from the primary master key
 
-//nolint: unused
+// nolint: unused
 func splitKeys(privateKey string, numSplits int) (string, error) {
 	wStr, err := zcncore.SplitKeys(privateKey, numSplits)
 	return wStr, err
@@ -18,18 +18,26 @@ func splitKeys(privateKey string, numSplits int) (string, error) {
 // - jsonWallet: json format of wallet
 // - splitKeyWallet: if wallet keys is split
 
-//nolint: unused
-func setWalletInfo(jsonWallet string, splitKeyWallet bool) error {
+// nolint: unused
+func setWalletInfo(jsonWallet string, splitKeyWallet bool) string {
 	err := zcncore.SetWalletInfo(jsonWallet, splitKeyWallet)
-	return err
+	if err == nil {
+		return "Success"
+	} else {
+		return "Failure"
+	}
 }
 
 // SetAuthUrl will be called by app to set zauth URL to SDK.
 // # Inputs
 // - url: the url of zAuth server
 
-//nolint: unused
-func setAuthUrl(url string) error {
+// nolint: unused
+func setAuthUrl(url string) string {
 	err := zcncore.SetAuthUrl(url)
-	return err
+	if err == nil {
+		return "Success"
+	} else {
+		return "Failure"
+	}
 }

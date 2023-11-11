@@ -881,18 +881,19 @@
       const splitKeyWallet = true
       try {
         const jsonWalletString = JSON.stringify(jsonWallet);
-        const wallet = await goWasm.sdk.setWalletInfo(jsonWalletString, splitKeyWallet)
-        txtOutput.innerHTML = "wallet info is set";
+        const isWalletInfoSet = await goWasm.sdk.setWalletInfo(jsonWalletString, splitKeyWallet)
+        console.log("Set Wallet Info:",isWalletInfoSet)
       } catch (e) {
         alert(e)
       }
     })
 
     onClick('btnSetAuthUrl', async () => {
+      // can add any string ,because just had string check while checking url
       const url = "Testing"
       try {
-        const authURL = await goWasm.sdk.setAuthUrl(url)
-        txtOutput.innerHTML = authURL;
+        const isAuthURLSet = await goWasm.sdk.setAuthUrl(url)
+        console.log("Set Auth URL",isAuthURLSet);
       } catch (e) {
         alert(e)
       }
