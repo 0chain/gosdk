@@ -242,9 +242,10 @@ func main() {
 				"refreshJwtToken":  refreshJwtToken,
 
 				//split key
-				"splitKeys":          splitKeys,
-				"setWalletInfo":      setWalletInfo,
-				"setAuthUrl":         setAuthUrl,
+				"splitKeys":     splitKeys,
+				"setWalletInfo": setWalletInfo,
+				"setAuthUrl":    setAuthUrl,
+
 				"registerAuthorizer": js.FuncOf(registerAuthorizer),
 				"callAuth":           js.FuncOf(callAuth),
 			})

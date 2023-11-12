@@ -45,6 +45,7 @@ func BindAsyncFuncs(global js.Value, fnList map[string]interface{}) {
 	}
 }
 
+
 func BindFuncs(global js.Value, fnList map[string]interface{}) {
 
 	for jsFuncName, fn := range fnList {

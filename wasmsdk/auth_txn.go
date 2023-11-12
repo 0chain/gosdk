@@ -10,10 +10,8 @@ import (
 	"github.com/0chain/gosdk/core/sys"
 )
 
-// Declare a type for the callback function
 type AuthCallbackFunc func(msg string) string
 
-// Variable to store the callback function
 var authCallback AuthCallbackFunc
 
 // Register the callback function
