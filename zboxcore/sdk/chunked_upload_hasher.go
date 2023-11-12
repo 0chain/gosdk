@@ -1,7 +1,6 @@
 package sdk
 
 import (
-	"crypto/md5"
 	"encoding/hex"
 	"hash"
 	"sync"
@@ -9,6 +8,7 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/util"
+	"github.com/minio/sha256-simd"
 )
 
 type Hasher interface {
@@ -38,7 +38,7 @@ type hasher struct {
 // CreateHasher creat Hasher instance
 func CreateHasher(dataSize int64) Hasher {
 	return &hasher{
-		File:         md5.New(),
+		File:         sha256.New(),
 		FixedMT:      util.NewFixedMerkleTree(),
 		ValidationMT: util.NewValidationTree(dataSize),
 	}
