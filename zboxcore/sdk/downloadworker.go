@@ -31,6 +31,7 @@ import (
 	"github.com/klauspost/reedsolomon"
 	"github.com/minio/sha256-simd"
 	"go.dedis.ch/kyber/v3/group/edwards25519"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -432,7 +433,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		hashWg = &sync.WaitGroup{}
 		hashWg.Add(1)
 		go processHashData(hashDataChan, hashWg, actualFileHasher)
-		isPREAndWholeFile = true
+		// isPREAndWholeFile = true
 	}
 
 	var wg sync.WaitGroup
@@ -521,12 +522,13 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		req.fileHandler.Sync() //nolint
 		wg.Done()
 	}()
-
-	// eg, _ := errgroup.WithContext(ctx)
-	for i := 0; i < n; i++ {
+	l.Logger.Info("TotalRequest", n, "startBlock", startBlock, "endBlock", endBlock, "numBlocks", numBlocks)
+	eg, _ := errgroup.WithContext(ctx)
+	eg.SetLimit(2)
+	for i := 0; i < n; {
 		j := i
-		// eg.Go(func() error {
-		err = func() error {
+		eg.Go(func() error {
+			// err = func() error {
 			start := time.Now()
 			blocksToDownload := numBlocks
 			if startBlock+int64(j)*numBlocks+numBlocks > endBlock {
@@ -543,22 +545,22 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			blocks <- blockData{blockNum: j, data: data}
 			l.Logger.Info("[getBlocksData]", time.Since(start).Milliseconds())
 			return nil
-		}()
-		if err != nil {
-			l.Logger.Error("[getBlocksData]", err)
-			req.errorCB(err, remotePathCB)
-			return
-		}
-		// })
+			// }()
+			// if err != nil {
+			// 	l.Logger.Error("[getBlocksData]", err)
+			// 	req.errorCB(err, remotePathCB)
+			// 	return
+			// }
+		})
 	}
-	// if err := eg.Wait(); err != nil {
-	// 	l.Logger.Error("[getBlocksData]", err)
-	// 	if !chanClosed {
-	// 		close(hashDataChan)
-	// 	}
-	// 	req.errorCB(err, remotePathCB)
-	// 	return
-	// }
+	if err := eg.Wait(); err != nil {
+		l.Logger.Error("[getBlocksData]", err)
+		if !chanClosed {
+			close(hashDataChan)
+		}
+		req.errorCB(err, remotePathCB)
+		return
+	}
 
 	close(blocks)
 	wg.Wait()

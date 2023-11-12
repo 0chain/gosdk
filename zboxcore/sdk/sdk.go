@@ -52,7 +52,7 @@ type StatusCallback interface {
 	RepairCompleted(filesRepaired int)
 }
 
-var numBlockDownloads = 10
+var numBlockDownloads = 500
 var sdkInitialized = false
 var networkWorkerTimerInHours = 1
 
@@ -892,7 +892,7 @@ func GetAllocationUpdates(allocation *Allocation) error {
 
 func SetNumBlockDownloads(num int) {
 	if num > 0 && num <= 500 {
-		numBlockDownloads = num
+		numBlockDownloads = 500
 	}
 }
 
