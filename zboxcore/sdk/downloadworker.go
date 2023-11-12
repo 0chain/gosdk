@@ -524,7 +524,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	}()
 	l.Logger.Info("TotalRequest", n, "startBlock", startBlock, "endBlock", endBlock, "numBlocks", numBlocks)
 	eg, _ := errgroup.WithContext(ctx)
-	eg.SetLimit(2)
+	eg.SetLimit(1)
 	for i := 0; i < n; i++ {
 		j := i
 		eg.Go(func() error {
