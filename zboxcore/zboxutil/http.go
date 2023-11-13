@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"sync"
 	"time"
+	"unicode"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/conf"
@@ -451,7 +452,9 @@ func NewListRequest(baseUrl, allocationID string, allocationTx string, path, pat
 		return nil, err
 	}
 	params := url.Values{}
-	params.Add("path", path)
+	if checkAscii(path) {
+		params.Add("path", path)
+	}
 	params.Add("path_hash", pathHash)
 	params.Add("auth_token", auth_token)
 	if list {
@@ -650,6 +653,7 @@ func NewMoveRequest(baseUrl, allocationID string, allocationTx string, body io.R
 }
 
 func NewDownloadRequest(baseUrl, allocationID, allocationTx string) (*http.Request, error) {
+
 	u, err := joinUrl(baseUrl, DOWNLOAD_ENDPOINT, allocationTx)
 	if err != nil {
 		return nil, err
@@ -822,11 +826,7 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 		go func(sharder string) {
 			defer wg.Done()
 			urlString := fmt.Sprintf("%v/%v%v%v", sharder, SC_REST_API_URL, scAddress, relativePath)
-			urlObj, err := url.Parse(urlString)
-			if err != nil {
-				log.Error(err)
-				return
-			}
+			urlObj, _ := url.Parse(urlString)
 			q := urlObj.Query()
 			for k, v := range params {
 				q.Add(k, v)
@@ -949,4 +949,13 @@ func joinUrl(baseURl string, paths ...string) (*url.URL, error) {
 	p := path.Join(paths...)
 	u.Path = path.Join(u.Path, p)
 	return u, nil
+}
+
+func checkAscii(s string) bool {
+	for i := 0; i < len(s); i++ {
+		if s[i] > unicode.MaxASCII {
+			return false
+		}
+	}
+	return true
 }
