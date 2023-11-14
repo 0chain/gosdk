@@ -413,21 +413,32 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			req.shouldVerify = false
 		}
 	}
-	var actualFileHasher hash.Hash
-	var isPREAndWholeFile bool
-	if !req.shouldVerify && (startBlock == 0 && endBlock == chunksPerShard) && shouldVerifyHash {
-		actualFileHasher = sha256.New()
-		isPREAndWholeFile = true
-	}
-
 	n := int((endBlock - startBlock + numBlocks - 1) / numBlocks)
 
 	// Buffered channel to hold the blocks as they are downloaded
 	blocks := make(chan blockData, n)
 
+	var (
+		actualFileHasher  hash.Hash
+		isPREAndWholeFile bool
+		closeOnce         *sync.Once
+		hashDataChan      chan []byte
+		hashWg            *sync.WaitGroup
+	)
+
+	if !req.shouldVerify && (startBlock == 0 && endBlock == chunksPerShard) {
+		actualFileHasher = sha256.New()
+		hashDataChan = make(chan []byte, n)
+		hashWg = &sync.WaitGroup{}
+		hashWg.Add(1)
+		closeOnce = &sync.Once{}
+		go processHashData(hashDataChan, hashWg, actualFileHasher)
+		isPREAndWholeFile = true
+	}
+
 	var wg sync.WaitGroup
 	wg.Add(1)
-
+	var totalWriteTime int64
 	// Handle writing the blocks in order as soon as they are downloaded
 	go func() {
 		buffer := make(map[int][]byte)
@@ -436,8 +447,12 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 				// If the block we need to write next is already in the buffer, write it
 				numBytes := int64(math.Min(float64(remainingSize), float64(len(data))))
 				if isPREAndWholeFile {
-					actualFileHasher.Write(data[:numBytes])
+					hashDataChan <- data[:numBytes]
 					if i == n-1 {
+						closeOnce.Do(func() {
+							close(hashDataChan)
+						})
+						hashWg.Wait()
 						if calculatedFileHash, ok := checkHash(actualFileHasher, fRef, req.contentMode); !ok {
 							req.errorCB(fmt.Errorf("Expected actual file hash %s, calculated file hash %s",
 								fRef.ActualFileHash, calculatedFileHash), remotePathCB)
@@ -445,7 +460,9 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 						}
 					}
 				}
+				now := time.Now()
 				_, err = req.fileHandler.Write(data[:numBytes])
+				totalWriteTime += time.Since(now).Milliseconds()
 
 				if err != nil {
 					req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
@@ -468,8 +485,12 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 						// Write the data
 						numBytes := int64(math.Min(float64(remainingSize), float64(len(block.data))))
 						if isPREAndWholeFile {
-							actualFileHasher.Write(block.data[:numBytes])
+							hashDataChan <- block.data[:numBytes]
 							if i == n-1 {
+								closeOnce.Do(func() {
+									close(hashDataChan)
+								})
+								hashWg.Wait()
 								if calculatedFileHash, ok := checkHash(actualFileHasher, fRef, req.contentMode); !ok {
 									req.errorCB(fmt.Errorf("Expected actual file hash %s, calculated file hash %s",
 										fRef.ActualFileHash, calculatedFileHash), remotePathCB)
@@ -477,8 +498,9 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 								}
 							}
 						}
+						now := time.Now()
 						_, err = req.fileHandler.Write(block.data[:numBytes])
-
+						totalWriteTime += time.Since(now).Milliseconds()
 						if err != nil {
 							req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
 							return
@@ -524,6 +546,11 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		})
 	}
 	if err := eg.Wait(); err != nil {
+		if isPREAndWholeFile {
+			closeOnce.Do(func() {
+				close(hashDataChan)
+			})
+		}
 		req.errorCB(err, remotePathCB)
 		return
 	}
@@ -551,6 +578,13 @@ func checkHash(actualFileHasher hash.Hash, fref *fileref.FileRef, contentMode st
 		return calculatedFileHash, calculatedFileHash == fref.ActualThumbnailHash
 	} else {
 		return calculatedFileHash, calculatedFileHash == fref.ActualFileHash
+	}
+}
+
+func processHashData(hashDataChan chan []byte, hashWg *sync.WaitGroup, actualFileHasher hash.Hash) {
+	defer hashWg.Done()
+	for data := range hashDataChan {
+		actualFileHasher.Write(data)
 	}
 }
 
