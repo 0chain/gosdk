@@ -29,8 +29,8 @@ import (
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/klauspost/reedsolomon"
+	"github.com/minio/sha256-simd"
 	"go.dedis.ch/kyber/v3/group/edwards25519"
-	"golang.org/x/crypto/sha3"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -416,7 +416,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	var actualFileHasher hash.Hash
 	var isPREAndWholeFile bool
 	if !req.shouldVerify && (startBlock == 0 && endBlock == chunksPerShard) && shouldVerifyHash {
-		actualFileHasher = sha3.New256()
+		actualFileHasher = sha256.New()
 		isPREAndWholeFile = true
 	}
 

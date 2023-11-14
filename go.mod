@@ -85,6 +85,7 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/mattn/go-runewidth v0.0.14 // indirect
+	github.com/minio/sha256-simd v1.0.1 // indirect
 	github.com/mitchellh/pointerstructure v1.2.0 // indirect
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
@@ -110,6 +111,7 @@ require (
 	github.com/tklauser/numcpus v0.6.0 // indirect
 	github.com/urfave/cli/v2 v2.17.2-0.20221006022127-8f469abc00aa // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
+	github.com/zeebo/blake3 v0.2.3 // indirect
 	go.dedis.ch/fixbuf v1.0.3 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	golang.org/x/sys v0.7.0 // indirect
