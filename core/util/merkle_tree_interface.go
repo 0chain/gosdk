@@ -48,9 +48,7 @@ func MHashBytes(h1, h2 []byte) []byte {
 
 /*MHash - merkle hashing of a pair of child hashes */
 func MHash(h1 string, h2 string) string {
-	hash := blake3.New()
-	_, _ = hash.WriteString(h1 + h2)
-	return hex.EncodeToString(hash.Sum(nil))
+	return Hash(h1 + h2)
 }
 
 // DecodeAndMHash will decode hex-encoded string to []byte format.
