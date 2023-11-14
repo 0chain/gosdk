@@ -10,7 +10,7 @@ import (
 	goError "errors"
 
 	"github.com/0chain/errors"
-	"golang.org/x/crypto/sha3"
+	"github.com/zeebo/blake3"
 )
 
 const (
@@ -38,14 +38,14 @@ func (l *leaf) Write(b []byte) (int, error) {
 
 func getNewLeaf() *leaf {
 	return &leaf{
-		h: sha3.New256(),
+		h: blake3.New(),
 	}
 }
 
 // FixedMerkleTree A trusted mekerle tree for outsourcing attack protection. see section 1.8 on whitepager
 // see detail on https://github.com/0chain/blobber/wiki/Protocols#what-is-fixedmerkletree
 type FixedMerkleTree struct {
-	// Leaves will store hash digester that calculates sha256 hash of the leaf content
+	// Leaves will store hash digester that calculates blake3 hash of the leaf content
 	Leaves []Hashable `json:"leaves,omitempty"`
 
 	writeLock sync.Mutex
