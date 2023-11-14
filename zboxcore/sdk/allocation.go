@@ -805,7 +805,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 		return notInitialized
 	}
 	connectionID := zboxutil.NewConnectionId()
-
+	printLog := true
 	for i := 0; i < len(operations); {
 		// resetting multi operation and previous paths for every batch
 		var mo MultiOperation
@@ -885,6 +885,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 				operation, newConnectionID, err = NewUploadOperation(op.Workdir, mo.allocationObj, mo.connectionID, op.FileMeta, op.FileReader, false, op.IsWebstreaming, op.Opts...)
 
 			case constants.FileOperationDelete:
+				printLog = false
 				operation = NewDeleteOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 
 			case constants.FileOperationUpdate:
@@ -925,7 +926,9 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 		}
 	}
 	l.Logger.Info("-----------------MultiOperation completed-----------------")
-	l.Logger.Info(fmt.Sprintf("numRequests: %v avgReadChunk: %v avgWriteChunk: %v avgUploadTime: %v lockWMStatus: %v commitBlobber: %v", numRequest, totalChunkRead/int64(numRequest), totalChunkWrite/int64(numRequest), totalChunkUpload/int64(numRequest), totalStatusWM, totalCommitBlobber))
+	if printLog {
+		l.Logger.Info(fmt.Sprintf("numRequests: %v avgReadChunk: %v avgWriteChunk: %v avgUploadTime: %v lockWMStatus: %v commitBlobber: %v", numRequest, totalChunkRead/int64(numRequest), totalChunkWrite/int64(numRequest), totalChunkUpload/int64(numRequest), totalStatusWM, totalCommitBlobber))
+	}
 	// "numRequests", numRequest, "avgReadChunk", totalChunkRead/int64(numRequest), "avgWriteChunk", totalChunkWrite/int64(numRequest), "avgUploadTime", totalChunkUpload/int64(numRequest), "lockWMStatus", totalStatusWM), ("commitBlobber", totalCommitBlobber))
 	return nil
 }
