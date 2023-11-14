@@ -438,7 +438,6 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 
 	var wg sync.WaitGroup
 	wg.Add(1)
-	var totalWriteTime int64
 	// Handle writing the blocks in order as soon as they are downloaded
 	go func() {
 		buffer := make(map[int][]byte)
@@ -460,9 +459,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 						}
 					}
 				}
-				now := time.Now()
 				_, err = req.fileHandler.Write(data[:numBytes])
-				totalWriteTime += time.Since(now).Milliseconds()
 
 				if err != nil {
 					req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
@@ -498,9 +495,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 								}
 							}
 						}
-						now := time.Now()
 						_, err = req.fileHandler.Write(block.data[:numBytes])
-						totalWriteTime += time.Since(now).Milliseconds()
 						if err != nil {
 							req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
 							return
