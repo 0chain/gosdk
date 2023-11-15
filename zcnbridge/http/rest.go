@@ -7,7 +7,6 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"sync"
 
 	"go.uber.org/zap"
@@ -173,9 +172,9 @@ func extractSharders() []string {
 }
 
 // makeURL creates url.URL to make smart contract request to sharder.
-func makeURL(params Params, baseURL, relativePath string) *url.URL {
+func makeURL(params Params, baseURL, relativePath string) *util.URL {
 	uString := fmt.Sprintf("%v/%v%v", baseURL, RestPrefix, relativePath)
-	u, _ := url.Parse(uString)
+	u, _ := util.Parse(uString)
 	q := u.Query()
 	for k, v := range params {
 		q.Add(k, v)

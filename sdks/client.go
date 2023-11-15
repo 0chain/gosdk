@@ -2,12 +2,12 @@ package sdks
 
 import (
 	"net/http"
-	"net/url"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/sys"
+	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/client"
 )
 
@@ -20,7 +20,7 @@ type Client struct {
 
 // create client instance
 func NewClient(clientID, clientPublicKey, baseURL string) (Client, error) {
-	u, err := url.Parse(baseURL)
+	u, err := util.Parse(baseURL)
 
 	c := Client{
 		ClientID:        clientID,

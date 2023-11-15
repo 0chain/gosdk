@@ -2,12 +2,12 @@ package conf
 
 import (
 	"errors"
-	"net/url"
 	"os"
 	"strings"
 
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/sys"
+	"github.com/0chain/gosdk/core/util"
 	"github.com/spf13/viper"
 )
 
@@ -171,6 +171,6 @@ func LoadConfig(v Reader) (Config, error) {
 }
 
 func isURL(s string) bool {
-	u, err := url.Parse(s)
+	u, err := util.Parse(s)
 	return err == nil && u.Scheme != "" && u.Host != ""
 }
