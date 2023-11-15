@@ -824,7 +824,7 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 		lock.Lock()
 
 		urlString := fmt.Sprintf("%v/%v%v%v", sharder, SC_REST_API_URL, scAddress, relativePath)
-		urlObj, err := url.ParseRequestURI(urlString)
+		urlObj, err := Parse(urlString)
 		if err != nil {
 			log.Error(err)
 			continue
@@ -954,11 +954,11 @@ func isCurrentDominantStatus(respStatus int, currentTotalPerStatus map[int]int, 
 	return currentTotalPerStatus[respStatus] == currentMax && (respStatus == 200 || currentTotalPerStatus[200] < currentMax)
 }
 
-func joinUrl(baseURl string, paths ...string) (*url.URL, error) {
+func joinUrl(baseURl string, paths ...string) (*URL, error) {
 	lock.Lock()
 	defer lock.Unlock()
 
-	u, err := url.ParseRequestURI(baseURl)
+	u, err := Parse(baseURl)
 	if err != nil {
 		log.Error(err)
 		return nil, err
