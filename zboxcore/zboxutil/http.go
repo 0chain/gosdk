@@ -824,7 +824,7 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 		lock.Lock()
 
 		urlString := fmt.Sprintf("%v/%v%v%v", sharder, SC_REST_API_URL, scAddress, relativePath)
-		urlObj, err := url.Parse(urlString)
+		urlObj, err := url.ParseRequestURI(urlString)
 		if err != nil {
 			log.Error(err)
 			continue
@@ -958,7 +958,7 @@ func joinUrl(baseURl string, paths ...string) (*url.URL, error) {
 	lock.Lock()
 	defer lock.Unlock()
 
-	u, err := url.Parse(baseURl)
+	u, err := url.ParseRequestURI(baseURl)
 	if err != nil {
 		log.Error(err)
 		return nil, err
