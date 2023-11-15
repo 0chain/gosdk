@@ -673,6 +673,8 @@ func (b *BridgeClient) FetchZCNToSourceTokenRate(sourceTokenAddress string) (*bi
 		zcnSourceTokenRateFloat, err = strconv.ParseFloat(bancorTokenDetails.Data.Rate.BNT, 64)
 	case SourceTokenUSDCAddress:
 		zcnSourceTokenRateFloat, err = strconv.ParseFloat(bancorTokenDetails.Data.Rate.USDC, 64)
+	case SourceTokenEURCAddress:
+		zcnSourceTokenRateFloat, err = strconv.ParseFloat(bancorTokenDetails.Data.Rate.EURC, 64)
 	}
 
 	if err != nil {
@@ -777,29 +779,34 @@ func (b *BridgeClient) prepareBancor(ctx context.Context, value *big.Int, method
 	// 1. Bancor network smart contract address
 	contractAddress := common.HexToAddress(BancorNetworkAddress)
 
-	//abi, err := bancornetwork.BancorMetaData.GetAbi()
-	//if err != nil {
-	//	return nil, nil, errors.Wrap(err, "failed to get bancornetwork abi")
-	//}
-	//
-	//pack, err := abi.Pack(method, params...)
-	//if err != nil {
-	//	return nil, nil, errors.Wrap(err, "failed to pack arguments")
-	//}
-	//
-	//from := common.HexToAddress(b.EthereumAddress)
-	//
-	//gasLimitUnits, err := b.ethereumClient.EstimateGas(ctx, eth.CallMsg{
-	//	To:    &contractAddress,
-	//	From:  from,
-	//	Data:  pack,
-	//	Value: value,
-	//})
-	//if err != nil {
-	//	return nil, nil, errors.Wrap(err, "failed to estimate gas limit")
-	//}
+	abi, err := bancornetwork.BancorMetaData.GetAbi()
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to get bancornetwork abi")
+	}
 
-	gasLimitUnits := addPercents(400000, 10).Uint64()
+	pack, err := abi.Pack(method, params...)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to pack arguments")
+	}
+
+	from := common.HexToAddress(b.EthereumAddress)
+
+	opts := eth.CallMsg{
+		To:   &contractAddress,
+		From: from,
+		Data: pack,
+	}
+
+	if value.Int64() != 0 {
+		opts.Value = value
+	}
+
+	gasLimitUnits, err := b.ethereumClient.EstimateGas(ctx, opts)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to estimate gas limit")
+	}
+
+	gasLimitUnits = addPercents(gasLimitUnits, 10).Uint64()
 
 	transactOpts := b.CreateSignedTransactionFromKeyStore(b.ethereumClient, gasLimitUnits)
 	if value.Int64() != 0 {

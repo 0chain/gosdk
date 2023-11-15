@@ -17,6 +17,7 @@ type BancorTokenDetails struct {
 			ETH  string `json:"eth"`
 			BNT  string `json:"bnt"`
 			USDC string `json:"usd"`
+			EURC string `json:"eur"`
 		}
 	} `json:"data"`
 }
