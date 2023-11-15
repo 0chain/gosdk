@@ -118,7 +118,7 @@ jobs:
         with:
           owner: 0chain
           repo: ${{ matrix.repo }}
-          ref: staging
+          ref: ${{ github.head_ref || github.ref_name }} 
           github_token: ${{ secrets.GOSDK }}
           workflow_file_name: gosdk.yml
           inputs: ${{ needs.build.outputs.SDK }}
