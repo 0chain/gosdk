@@ -559,7 +559,7 @@ func Test_ZCNBridge(t *testing.T) {
 		// 1. Predefined deadline period
 		deadlinePeriod := time.Date(2009, 11, 17, 20, 34, 58, 651387237, time.UTC)
 
-		_, err := bridgeClient.Swap(context.Background(), SourceTokenETHAddress, amount, deadlinePeriod)
+		_, err := bridgeClient.Swap(context.Background(), SourceTokenETHAddress, amount, big.NewInt(amount), deadlinePeriod)
 		require.NoError(t, err)
 
 		// 1. Trade deadline
