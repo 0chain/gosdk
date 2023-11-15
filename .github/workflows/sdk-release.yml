@@ -1,4 +1,4 @@
-name: GoSDK & WasmSDK
+name: GoSDK Release
 
 concurrency:
   group: "sdk-${{ github.ref }}"
@@ -19,58 +19,15 @@ env:
   ACTIONS_ALLOW_UNSECURE_COMMANDS: true
 
 jobs:
-  build:
-    name: sdk-build
-    runs-on: [self-hosted, arc-runner]
-    steps:
-
-      - name: Setup Build
-        id: setup_build
-        run: |
-          tag=$(echo ${GITHUB_REF#refs/tags/})
-          echo ${tag}
-          if [[ -n "${{github.event.inputs.version}}" ]]; then
-            echo "> 0Chain: trigger from workflow_dispatch"
-            echo "::set-output name=PR::true"
-
-            gosdk="{\"gosdk\":\"${{github.event.inputs.version}}\"}"
-            echo "::set-output name=SDK::${gosdk}"
-          elif [[ ${tag} = v*\.*\.* ]] ; then
-            echo "> 0Chain: trigger from git event"
-            echo "::set-output name=PR::true"
-
-            gosdk="{\"gosdk\":\"${tag}\"}"
-            echo "::set-output name=SDK::${gosdk}"
-
-            # upload zcn.wasm on release
-            echo "::set-output name=RELEASE::true"
-            echo "::set-output name=TAG::${tag}"
-          elif [[ ${tag} = "refs/heads/staging" ]] ; then
-            echo "> 0Chain: trigger from git event"
-            echo "::set-output name=PR::true"
-
-            gosdk="{\"gosdk\":\"staging\"}"
-            echo "::set-output name=SDK::${gosdk}"
-
-            # upload zcn.wasm on release
-            echo "::set-output name=RELEASE::true"
-            echo "::set-output name=TAG::${tag}"
-          fi
-
-    outputs:
-      PR: ${{ steps.setup_build.outputs.PR }}
-      SDK: ${{ steps.setup_build.outputs.SDK }}
-      TAG: ${{ steps.setup_build.outputs.TAG }}
 
   release:
     name: sdk-release
-    needs: build
-    if: needs.build.outputs.PR == 'true'
     runs-on: [self-hosted, build]
     steps:
       - name: start to create pr
         run: |
           echo "GoSDK & WebAssembly SDK should be upgraded"
+
   create-pr:
     name: create-pr
     strategy:
@@ -78,12 +35,11 @@ jobs:
       max-parallel: 1
       matrix:
         repo: [0nft, 0box, 0dns, zwalletcli, zboxcli, blobber, zs3server, s3-migration, token_bridge_authserver ]
-    needs: [ build, release ]
+    needs: [ release ]
     runs-on: [self-hosted, build]
     steps:
       - name: Create PR on ${{ matrix.repo }}
         uses: convictional/trigger-workflow-and-wait@v1.3.0
-        if:  needs.build.outputs.PR == 'true'
         with:
           owner: 0chain
           repo: ${{ matrix.repo }}
