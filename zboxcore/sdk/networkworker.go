@@ -51,7 +51,6 @@ func UpdateNetworkDetails() error {
 		l.Logger.Error("Failed to update network details ", zap.Error(err))
 		return err
 	}
-
 	shouldUpdate := UpdateRequired(networkDetails)
 	if shouldUpdate {
 		forceUpdateNetworkDetails(networkDetails)
@@ -87,7 +86,9 @@ func UpdateRequired(networkDetails *Network) bool {
 	if len(miners) == 0 || len(sharders) == 0 {
 		return true
 	}
-
+	if len(networkDetails.Miners) == 0 || len(networkDetails.Sharders) == 0 {
+		return false
+	}
 	minerSame := reflect.DeepEqual(miners, networkDetails.Miners)
 	sharderSame := reflect.DeepEqual(sharders, networkDetails.Sharders)
 
