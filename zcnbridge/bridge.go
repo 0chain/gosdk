@@ -464,6 +464,28 @@ func (b *BridgeClient) GetUserNonceMinted(ctx context.Context, rawEthereumAddres
 	return nonce, err
 }
 
+// ResetUserNonceMinted Resets nonce for a specified Ethereum address
+func (b *BridgeClient) ResetUserNonceMinted(ctx context.Context) (*types.Transaction, error) {
+	bridgeInstance, transactOpts, err := b.prepareBridge(ctx, b.EthereumAddress, "resetUserNonceMinted")
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to prepare bridge")
+	}
+
+	tran, err := bridgeInstance.ResetUserNonceMinted(transactOpts)
+	if err != nil {
+		Logger.Error("ResetUserNonceMinted FAILED", zap.Error(err))
+		msg := "failed to execute ResetUserNonceMinted call, ethereumAddress = %s"
+		return nil, errors.Wrapf(err, msg, b.EthereumAddress)
+	}
+
+	Logger.Info(
+		"Posted ResetUserMintedNonce",
+		zap.String("ethereumWallet", b.EthereumAddress),
+	)
+
+	return tran, err
+}
+
 // MintWZCN Mint ZCN tokens on behalf of the 0ZCN client
 // payload: received from authorizers
 func (b *BridgeClient) MintWZCN(ctx context.Context, payload *ethereum.MintPayload) (*types.Transaction, error) {

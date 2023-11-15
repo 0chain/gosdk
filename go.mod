@@ -18,7 +18,7 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.1
 	github.com/herumi/bls-go-binary v1.31.0
 	github.com/influxdata/influxdb v1.8.3
-	github.com/klauspost/reedsolomon v1.11.7
+	github.com/klauspost/reedsolomon v1.11.8
 	github.com/lithammer/shortuuid/v3 v3.0.7
 	github.com/machinebox/graphql v0.2.2
 	github.com/magma/augmented-networks/accounting/protos v0.1.1
@@ -42,7 +42,11 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 )
 
-require github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d
+require (
+	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d
+	github.com/minio/sha256-simd v1.0.1
+	github.com/zeebo/blake3 v0.2.3
+)
 
 require (
 	github.com/VictoriaMetrics/fastcache v1.6.0 // indirect
