@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/0chain/common/core/currency"
-	"github.com/0chain/gosdk/zcnbridge/ethereum/bancor"
-	"github.com/0chain/gosdk/zcnbridge/ethereum/token"
+	"github.com/0chain/gosdk/zcnbridge/ethereum/bancornetwork"
+	"github.com/0chain/gosdk/zcnbridge/ethereum/zcntoken"
 	"log"
 	"math/big"
 	"net/http"
@@ -537,7 +537,7 @@ func Test_ZCNBridge(t *testing.T) {
 		to := common.HexToAddress(tokenAddress)
 		fromAddress := common.HexToAddress(ethereumAddress)
 
-		abi, err := token.TokenMetaData.GetAbi()
+		abi, err := zcntoken.TokenMetaData.GetAbi()
 		require.NoError(t, err)
 
 		pack, err := abi.Pack("increaseApproval", spenderAddress, big.NewInt(amount))
@@ -571,22 +571,22 @@ func Test_ZCNBridge(t *testing.T) {
 		// 3. User's Ethereum wallet address.
 		beneficiary := common.HexToAddress(ethereumAddress)
 
-		// 4. Source token address parameter
+		// 4. Source zcntoken address parameter
 		from := common.HexToAddress(sourceAddress)
 
-		// 5. Target token address parameter
+		// 5. Target zcntoken address parameter
 		to := common.HexToAddress(tokenAddress)
 
 		amountZCN, err := currency.Coin(amount.Int64()).ToZCN()
 		require.NoError(t, err)
 
-		// 6. Max trade token amount
+		// 6. Max trade zcntoken amount
 		maxAmount := big.NewInt(int64(amountZCN * 1.5 * 1e18))
 
 		// 7. Bancor network smart contract address
 		contractAddress := common.HexToAddress(BancorNetworkAddress)
 
-		abi, err := bancor.BancorMetaData.GetAbi()
+		abi, err := bancornetwork.BancorMetaData.GetAbi()
 		require.NoError(t, err)
 
 		pack, err := abi.Pack("tradeByTargetAmount", from, to, amount, maxAmount, deadline, beneficiary)

@@ -24,6 +24,7 @@ const (
 	BancorNetworkAddress   = "0xeEF417e1D5CC832e619ae18D2F140De2999dD4fB"
 	SourceTokenETHAddress  = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
 	SourceTokenUSDCAddress = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+	SourceTokenEURCAddress = "0x1aBaEA1f7C830bD89Acc67eC4af516284b1bC33c"
 	SourceTokenBNTAddress  = "0x1f573d6fb3f13d689ff844b4ce37794d79a7ff1c"
 )
 

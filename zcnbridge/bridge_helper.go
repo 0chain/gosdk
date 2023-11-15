@@ -10,13 +10,13 @@ import (
 	"github.com/pkg/errors"
 )
 
-// BancorTokenDetails describes Bancor ZCN token pool details
+// BancorTokenDetails describes Bancor ZCN zcntoken pool details
 type BancorTokenDetails struct {
 	Data struct {
 		Rate struct {
 			ETH  string `json:"eth"`
 			BNT  string `json:"bnt"`
-			USDC string `json:"usdc"`
+			USDC string `json:"usd"`
 		}
 	} `json:"data"`
 }
