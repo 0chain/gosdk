@@ -835,6 +835,7 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 		}
 		urlObj.RawQuery = q.Encode()
 		urls[sharder] = urlObj.String()
+
 		lock.Unlock()
 	}
 
@@ -954,8 +955,12 @@ func isCurrentDominantStatus(respStatus int, currentTotalPerStatus map[int]int, 
 }
 
 func joinUrl(baseURl string, paths ...string) (*url.URL, error) {
+	lock.Lock()
+	defer lock.Unlock()
+
 	u, err := url.Parse(baseURl)
 	if err != nil {
+		log.Error(err)
 		return nil, err
 	}
 	p := path.Join(paths...)
