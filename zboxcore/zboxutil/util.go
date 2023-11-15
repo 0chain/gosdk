@@ -22,9 +22,9 @@ import (
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/h2non/filetype"
 	"github.com/lithammer/shortuuid/v3"
-	"github.com/minio/sha256-simd"
 	"golang.org/x/crypto/chacha20poly1305"
 	"golang.org/x/crypto/scrypt"
+	"golang.org/x/crypto/sha3"
 )
 
 const EncryptedFolderName = "encrypted"
@@ -205,7 +205,7 @@ func Decrypt(key, text []byte) ([]byte, error) {
 }
 
 func GetRefsHash(r []byte) string {
-	hash := sha256.New()
+	hash := sha3.New256()
 	hash.Write(r)
 	var buf []byte
 	buf = hash.Sum(buf)

@@ -8,7 +8,7 @@ import (
 
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/klauspost/reedsolomon"
-	"github.com/minio/sha256-simd"
+	"golang.org/x/crypto/sha3"
 )
 
 // ChunkedUploadOption set stream option
@@ -26,7 +26,7 @@ func WithThumbnail(buf []byte) ChunkedUploadOption {
 			su.thumbnailBytes = buf
 			su.fileMeta.ActualThumbnailSize = int64(len(buf))
 
-			thumbnailHasher := sha256.New()
+			thumbnailHasher := sha3.New256()
 			thumbnailHasher.Write(buf)
 
 			su.fileMeta.ActualThumbnailHash = hex.EncodeToString(thumbnailHasher.Sum(nil))

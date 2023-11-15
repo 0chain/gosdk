@@ -4,7 +4,6 @@ import (
 	"io"
 	"math"
 	"strconv"
-	"sync"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
@@ -19,11 +18,6 @@ type ChunkedUploadChunkReader interface {
 
 	// Read read, encode and encrypt all bytes
 	Read(buf []byte) ([][]byte, error)
-
-	//Close Hash Channel
-	Close()
-	//GetFileHash get file hash
-	GetFileHash() (string, error)
 }
 
 // chunkedUploadChunkReader read chunk bytes from io.Reader. see detail on https://github.com/0chain/blobber/wiki/Protocols#what-is-fixedmerkletree
@@ -60,15 +54,11 @@ type chunkedUploadChunkReader struct {
 	// encscheme encryption scheme
 	encscheme encryption.EncryptionScheme
 	// hasher to calculate actual file hash, validation root and fixed merkle root
-	hasher         Hasher
-	hasherDataChan chan []byte
-	hasherError    error
-	hasherWG       sync.WaitGroup
-	closeOnce      sync.Once
+	hasher Hasher
 }
 
 // createChunkReader create ChunkReader instance
-func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards int, encryptOnUpload bool, uploadMask zboxutil.Uint128, erasureEncoder reedsolomon.Encoder, encscheme encryption.EncryptionScheme, hasher Hasher, chunkNumber int) (ChunkedUploadChunkReader, error) {
+func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards int, encryptOnUpload bool, uploadMask zboxutil.Uint128, erasureEncoder reedsolomon.Encoder, encscheme encryption.EncryptionScheme, hasher Hasher) (ChunkedUploadChunkReader, error) {
 
 	if chunkSize <= 0 {
 		return nil, errors.Throw(constants.ErrInvalidParameter, "chunkSize: "+strconv.FormatInt(chunkSize, 10))
@@ -97,8 +87,6 @@ func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards i
 		erasureEncoder:  erasureEncoder,
 		encscheme:       encscheme,
 		hasher:          hasher,
-		hasherDataChan:  make(chan []byte, 2*chunkNumber),
-		hasherWG:        sync.WaitGroup{},
 	}
 
 	if r.encryptOnUpload {
@@ -110,8 +98,7 @@ func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards i
 	}
 
 	r.chunkDataSizePerRead = r.chunkDataSize * int64(dataShards)
-	r.hasherWG.Add(1)
-	go r.hashData()
+
 	return r, nil
 }
 
@@ -183,10 +170,10 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 		}
 	}
 
-	if r.hasherError != nil {
-		return chunk, r.hasherError
+	err = r.hasher.WriteToFile(chunkBytes)
+	if err != nil {
+		return chunk, err
 	}
-	r.hasherDataChan <- chunkBytes
 	fragments, err := r.erasureEncoder.Split(chunkBytes)
 	if err != nil {
 		return nil, err
@@ -251,30 +238,4 @@ func (r *chunkedUploadChunkReader) Read(buf []byte) ([][]byte, error) {
 	}
 
 	return fragments, nil
-}
-
-func (r *chunkedUploadChunkReader) Close() {
-	r.closeOnce.Do(func() {
-		close(r.hasherDataChan)
-		r.hasherWG.Wait()
-	})
-}
-
-func (r *chunkedUploadChunkReader) GetFileHash() (string, error) {
-	r.Close()
-	if r.hasherError != nil {
-		return "", r.hasherError
-	}
-	return r.hasher.GetFileHash()
-}
-
-func (r *chunkedUploadChunkReader) hashData() {
-	defer r.hasherWG.Done()
-	for data := range r.hasherDataChan {
-		err := r.hasher.WriteToFile(data)
-		if err != nil {
-			r.hasherError = err
-			return
-		}
-	}
 }

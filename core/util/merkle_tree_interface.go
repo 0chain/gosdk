@@ -4,7 +4,6 @@ import (
 	"encoding/hex"
 
 	"github.com/0chain/gosdk/core/encryption"
-	"github.com/zeebo/blake3"
 )
 
 /*MerkleTreeI - a merkle tree interface required for constructing and providing verification */
@@ -41,9 +40,7 @@ func MHashBytes(h1, h2 []byte) []byte {
 	buf := make([]byte, len(h1)+len(h2))
 	copy(buf, h1)
 	copy(buf[len(h1):], h2)
-	hash := blake3.New()
-	_, _ = hash.Write(buf)
-	return hash.Sum(nil)
+	return encryption.RawHash(buf)
 }
 
 /*MHash - merkle hashing of a pair of child hashes */
