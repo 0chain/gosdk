@@ -706,47 +706,8 @@ func (b *BridgeClient) FetchZCNToSourceTokenRate(sourceTokenAddress string) (*bi
 	return big.NewFloat(zcnSourceTokenRateFloat), nil
 }
 
-// ApproveSwap provides opportunity to approve swap operation for ERC20 tokens
-func (b *BridgeClient) ApproveSwap(ctx context.Context, sourceTokenAddress string, amountSwap uint64) (*types.Transaction, error) {
-	// 1. Token source token address parameter
-	tokenAddress := common.HexToAddress(sourceTokenAddress)
-
-	// 2. Spender source token address parameter
-	spender := common.HexToAddress(BancorNetworkAddress)
-
-	// 3. Swap amount parameter
-	amount := big.NewInt(int64(amountSwap))
-
-	bancorTokenInstance, transactOpts, err := b.prepareBancorToken(ctx, "approve", tokenAddress, spender, amount)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to prepare bancor token")
-	}
-
-	Logger.Info(
-		"Starting ApproveSwap",
-		zap.Int64("amount", amount.Int64()),
-		zap.String("spender", spender.String()),
-	)
-
-	tran, err := bancorTokenInstance.Approve(transactOpts, spender, amount)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to execute Approve transaction")
-	}
-
-	return tran, nil
-}
-
-// Swap provides opportunity to perform zcntoken swap operation.
-func (b *BridgeClient) Swap(ctx context.Context, sourceTokenAddress string, amountSwap uint64, deadlinePeriod time.Time) (*types.Transaction, error) {
-	// 1. Swap amount parameter.
-	amount := big.NewInt(int64(amountSwap))
-
-	// 2. User's Ethereum wallet address.
-	beneficiary := common.HexToAddress(b.EthereumAddress)
-
-	// 3. Trade deadline
-	deadline := big.NewInt(deadlinePeriod.Unix())
-
+// GetMaxBancorTargetAmount retrieves max amount of a given source token for Bancor swap
+func (b *BridgeClient) GetMaxBancorTargetAmount(sourceTokenAddress string, amountSwap uint64) (*big.Int, error) {
 	amountSwapZCN, err := currency.Coin(amountSwap).ToZCN()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to convert current zcntoken balance to ZCN")
@@ -760,14 +721,52 @@ func (b *BridgeClient) Swap(ctx context.Context, sourceTokenAddress string, amou
 
 	zcnEthRateFloat, _ := zcnEthRate.Float64()
 
-	// 4. Max trade zcntoken amount
-	maxAmount := big.NewInt(int64(amountSwapZCN * zcnEthRateFloat * 1.5 * 1e18))
+	return big.NewInt(int64(amountSwapZCN * zcnEthRateFloat * 1.5 * 1e18)), nil
+}
 
-	// 5. Value of the Ethereum transaction
+// ApproveSwap provides opportunity to approve swap operation for ERC20 tokens
+func (b *BridgeClient) ApproveSwap(ctx context.Context, sourceTokenAddress string, maxAmountSwap *big.Int) (*types.Transaction, error) {
+	// 1. Token source token address parameter
+	tokenAddress := common.HexToAddress(sourceTokenAddress)
+
+	// 2. Spender source token address parameter
+	spender := common.HexToAddress(BancorNetworkAddress)
+
+	bancorTokenInstance, transactOpts, err := b.prepareBancorToken(ctx, "approve", tokenAddress, spender, maxAmountSwap)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to prepare bancor token")
+	}
+
+	Logger.Info(
+		"Starting ApproveSwap",
+		zap.Int64("amount", maxAmountSwap.Int64()),
+		zap.String("spender", spender.String()),
+	)
+
+	tran, err := bancorTokenInstance.Approve(transactOpts, spender, maxAmountSwap)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to execute Approve transaction")
+	}
+
+	return tran, nil
+}
+
+// Swap provides opportunity to perform zcntoken swap operation.
+func (b *BridgeClient) Swap(ctx context.Context, sourceTokenAddress string, amountSwap uint64, maxAmountSwap *big.Int, deadlinePeriod time.Time) (*types.Transaction, error) {
+	// 1. Swap amount parameter.
+	amount := big.NewInt(int64(amountSwap))
+
+	// 2. User's Ethereum wallet address.
+	beneficiary := common.HexToAddress(b.EthereumAddress)
+
+	// 3. Trade deadline
+	deadline := big.NewInt(deadlinePeriod.Unix())
+
+	// 4. Value of the Ethereum transaction
 	var value *big.Int
 
 	if sourceTokenAddress == SourceTokenETHAddress {
-		value = big.NewInt(int64(amountSwapZCN * zcnEthRateFloat * 1.5 * 1e18))
+		value = maxAmountSwap
 	} else {
 		value = big.NewInt(0)
 	}
@@ -778,7 +777,7 @@ func (b *BridgeClient) Swap(ctx context.Context, sourceTokenAddress string, amou
 	// 7. Target zcntoken address parameter
 	to := common.HexToAddress(b.TokenAddress)
 
-	bancorInstance, transactOpts, err := b.prepareBancor(ctx, value, "tradeByTargetAmount", from, to, amount, maxAmount, deadline, beneficiary)
+	bancorInstance, transactOpts, err := b.prepareBancor(ctx, value, "tradeByTargetAmount", from, to, amount, maxAmountSwap, deadline, beneficiary)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to prepare bancornetwork")
 	}
@@ -789,7 +788,7 @@ func (b *BridgeClient) Swap(ctx context.Context, sourceTokenAddress string, amou
 		zap.String("sourceToken", sourceTokenAddress),
 	)
 
-	tran, err := bancorInstance.TradeByTargetAmount(transactOpts, from, to, amount, maxAmount, deadline, beneficiary)
+	tran, err := bancorInstance.TradeByTargetAmount(transactOpts, from, to, amount, maxAmountSwap, deadline, beneficiary)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to execute ConvertByPath transaction")
 	}
