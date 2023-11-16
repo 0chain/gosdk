@@ -241,7 +241,7 @@ func unescape(s string, mode encoding) (string, error) {
 		default:
 			if (mode == encodeHost || mode == encodeZone) && s[i] < 0x80 && shouldEscape(s[i], mode) {
 				log.Error(s)
-				return "", InvalidHostError(s)
+				return "", InvalidHostError(s[i : i+1])
 			}
 			i++
 		}
