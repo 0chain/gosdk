@@ -1423,9 +1423,10 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 	}
 
 	clientID := blockchain.GetChainID()
+	clientPublicKey := client.GetClientPublicKey()
 
 	txn := transaction.NewTransactionEntity(client.GetClientID(),
-		clientID, client.GetClientPublicKey(), node.Cache.GetNextNonce(clientID))
+		clientID, clientPublicKey, node.Cache.GetNextNonce(clientID))
 
 	txn.TransactionData = string(requestBytes)
 	txn.ToClientID = STORAGE_SCADDRESS
