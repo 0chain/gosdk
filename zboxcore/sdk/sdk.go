@@ -1431,6 +1431,8 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 	txn.TransactionFee = fee
 	txn.TransactionType = transaction.TxnTypeSmartContract
 
+	l.Logger.Info("txn", zap.Any("txn", txn))
+
 	// adjust fees if not set
 	if fee == 0 {
 		fee, err = transaction.EstimateFee(txn, blockchain.GetMiners(), 0.2)
