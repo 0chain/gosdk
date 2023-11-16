@@ -22,6 +22,7 @@ import (
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
+	"golang.org/x/sync/semaphore"
 )
 
 const SC_REST_API_URL = "v1/screst/"
@@ -138,18 +139,26 @@ func (pfe *proxyFromEnv) Proxy(req *http.Request) (proxy *url.URL, err error) {
 var envProxy proxyFromEnv
 
 type HttpClientImpl struct {
+	sem *semaphore.Weighted
 }
 
-func (h HttpClientImpl) Do(req *http.Request) (*http.Response, error) {
+func (h *HttpClientImpl) Do(req *http.Request) (*http.Response, error) {
+	err := h.sem.Acquire(context.Background(), 1)
+	if err != nil {
+		return nil, err
+	}
 	c := &http.Client{
 		Transport: DefaultTransport,
 	}
+	defer h.sem.Release(1)
 
 	return c.Do(req)
 }
 
 func init() {
-	Client = &HttpClientImpl{}
+	Client = &HttpClientImpl{
+		sem: semaphore.NewWeighted(8),
+	}
 	envProxy.initialize()
 	log.Init(logger.DEBUG, "0box-sdk")
 }
