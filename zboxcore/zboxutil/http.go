@@ -20,7 +20,6 @@ import (
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/logger"
-	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 )
@@ -802,8 +801,6 @@ func NewRollbackRequest(baseUrl, allocationID string, allocationTx string, body 
 	return req, nil
 }
 
-var lock sync.Mutex
-
 func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]string, handler SCRestAPIHandler) ([]byte, error) {
 	numSharders := len(blockchain.GetSharders())
 	sharders := blockchain.GetSharders()
@@ -820,34 +817,23 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 		return nil, err
 	}
 
-	urls := make(map[string]string)
 	for _, sharder := range sharders {
-		lock.Lock()
-
-		urlString := fmt.Sprintf("%v/%v%v%v", sharder, SC_REST_API_URL, scAddress, relativePath)
-		urlObj, err := util.Parse(urlString)
-		if err != nil {
-			log.Error(err)
-			continue
-		}
-		q := urlObj.Query()
-		for k, v := range params {
-			q.Add(k, v)
-		}
-		urlObj.RawQuery = q.Encode()
-		urls[sharder] = urlObj.String()
-
-		lock.Unlock()
-	}
-
-	for sharder, u := range urls {
 		wg.Add(1)
-		go func(sharder, url string) {
+		go func(sharder string) {
 			defer wg.Done()
-
+			urlString := fmt.Sprintf("%v/%v%v%v", sharder, SC_REST_API_URL, scAddress, relativePath)
+			urlObj, err := url.Parse(urlString)
+			if err != nil {
+				log.Error(err)
+				return
+			}
+			q := urlObj.Query()
+			for k, v := range params {
+				q.Add(k, v)
+			}
+			urlObj.RawQuery = q.Encode()
 			client := &http.Client{Transport: DefaultTransport}
-
-			response, err := client.Get(url)
+			response, err := client.Get(urlObj.String())
 			if err != nil {
 				blockchain.Sharders.Fail(sharder)
 				return
@@ -874,7 +860,7 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 			entityResult[sharder] = entityBytes
 			blockchain.Sharders.Success(sharder)
 			mu.Unlock()
-		}(sharder, u)
+		}(sharder)
 	}
 	wg.Wait()
 
@@ -955,13 +941,9 @@ func isCurrentDominantStatus(respStatus int, currentTotalPerStatus map[int]int, 
 	return currentTotalPerStatus[respStatus] == currentMax && (respStatus == 200 || currentTotalPerStatus[200] < currentMax)
 }
 
-func joinUrl(baseURl string, paths ...string) (*util.URL, error) {
-	lock.Lock()
-	defer lock.Unlock()
-
-	u, err := util.Parse(baseURl)
+func joinUrl(baseURl string, paths ...string) (*url.URL, error) {
+	u, err := url.Parse(baseURl)
 	if err != nil {
-		log.Error(err)
 		return nil, err
 	}
 	p := path.Join(paths...)
