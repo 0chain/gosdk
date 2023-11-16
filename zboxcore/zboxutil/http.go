@@ -824,7 +824,7 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 			urlString := fmt.Sprintf("%v/%v%v%v", sharder, SC_REST_API_URL, scAddress, relativePath)
 			urlObj, err := url.Parse(urlString)
 			if err != nil {
-				log.Error(urlString)
+				log.Info(urlString)
 				log.Error(err)
 				return
 			}
