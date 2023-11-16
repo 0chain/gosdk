@@ -137,10 +137,19 @@ func (pfe *proxyFromEnv) Proxy(req *http.Request) (proxy *url.URL, err error) {
 
 var envProxy proxyFromEnv
 
-func init() {
-	Client = &http.Client{
+type HttpClientImpl struct {
+}
+
+func (h HttpClientImpl) Do(req *http.Request) (*http.Response, error) {
+	c := &http.Client{
 		Transport: DefaultTransport,
 	}
+
+	return c.Do(req)
+}
+
+func init() {
+	Client = &HttpClientImpl{}
 	envProxy.initialize()
 	log.Init(logger.DEBUG, "0box-sdk")
 }
