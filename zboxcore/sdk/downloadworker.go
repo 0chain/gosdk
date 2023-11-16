@@ -144,16 +144,24 @@ func (req *DownloadRequest) getBlocksData(startBlock, totalBlock int64) ([]byte,
 	// Can we benefit from goroutine for erasure decoding??
 	c := req.datashards * req.effectiveBlockSize
 	data := make([]byte, req.datashards*req.effectiveBlockSize*int(totalBlock))
+	eg, _ := errgroup.WithContext(req.ctx)
+	eg.SetLimit(10)
 	for i := range shards {
-		var d []byte
-		var err error
-		d, err = req.decodeEC(shards[i])
-		if err != nil {
-			return nil, err
-		}
-		index := i * c
-		copy(data[index:index+c], d)
-
+		x := i
+		eg.Go(func() error {
+			var d []byte
+			var err error
+			d, err = req.decodeEC(shards[x])
+			if err != nil {
+				return err
+			}
+			index := x * c
+			copy(data[index:index+c], d)
+			return nil
+		})
+	}
+	if err := eg.Wait(); err != nil {
+		return nil, err
 	}
 	elapsedErasureDecoding := time.Since(now).Milliseconds() - elapsedGetBlockData
 	logger.Logger.Info(fmt.Sprintln("elapsedGetBlockData: ", elapsedGetBlockData, "elapsedErasureDecoding: ", elapsedErasureDecoding))
@@ -524,11 +532,10 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	}()
 	l.Logger.Info("TotalRequest", n, "startBlock", startBlock, "endBlock", endBlock, "numBlocks", numBlocks)
 	eg, _ := errgroup.WithContext(ctx)
-	eg.SetLimit(1)
+	eg.SetLimit(5)
 	for i := 0; i < n; i++ {
 		j := i
 		eg.Go(func() error {
-			// err = func() error {
 			start := time.Now()
 			blocksToDownload := numBlocks
 			if startBlock+int64(j)*numBlocks+numBlocks > endBlock {
@@ -545,12 +552,6 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			blocks <- blockData{blockNum: j, data: data}
 			l.Logger.Info("[getBlocksData]", time.Since(start).Milliseconds())
 			return nil
-			// }()
-			// if err != nil {
-			// 	l.Logger.Error("[getBlocksData]", err)
-			// 	req.errorCB(err, remotePathCB)
-			// 	return
-			// }
 		})
 	}
 	if err := eg.Wait(); err != nil {
