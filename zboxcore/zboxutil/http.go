@@ -817,30 +817,26 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 		return nil, err
 	}
 
-	var urls []string
 	for _, sharder := range sharders {
-		urlString := fmt.Sprintf("%v/%v%v%v", sharder, SC_REST_API_URL, scAddress, relativePath)
-		urlObj, err := url.Parse(urlString)
-		if err != nil {
-			log.Error(err)
-			continue
-		}
-		q := urlObj.Query()
-		for k, v := range params {
-			q.Add(k, v)
-		}
-		urlObj.RawQuery = q.Encode()
-		urls = append(urls, urlObj.String())
-	}
-
-	for _, sharder := range urls {
 		wg.Add(1)
 		go func(sharder string) {
 			defer wg.Done()
 
+			urlString := fmt.Sprintf("%v/%v%v%v", sharder, SC_REST_API_URL, scAddress, relativePath)
+			urlObj, err := url.ParseRequestURI(urlString)
+			if err != nil {
+				log.Error(err)
+				return
+			}
+			q := urlObj.Query()
+			for k, v := range params {
+				q.Add(k, v)
+			}
+			urlObj.RawQuery = q.Encode()
 			client := &http.Client{Transport: DefaultTransport}
+			s := urlObj.String()
 
-			response, err := client.Get(sharder)
+			response, err := client.Get(s)
 			if err != nil {
 				blockchain.Sharders.Fail(sharder)
 				return
