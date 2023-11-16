@@ -157,7 +157,7 @@ func (h *HttpClientImpl) Do(req *http.Request) (*http.Response, error) {
 
 func init() {
 	Client = &HttpClientImpl{
-		sem: semaphore.NewWeighted(8),
+		sem: semaphore.NewWeighted(1),
 	}
 	envProxy.initialize()
 	log.Init(logger.DEBUG, "0box-sdk")
