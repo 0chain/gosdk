@@ -801,8 +801,6 @@ func NewRollbackRequest(baseUrl, allocationID string, allocationTx string, body 
 	return req, nil
 }
 
-var lock sync.Mutex
-
 func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]string, handler SCRestAPIHandler) ([]byte, error) {
 	numSharders := len(blockchain.GetSharders())
 	sharders := blockchain.GetSharders()
@@ -823,11 +821,10 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 		wg.Add(1)
 		go func(sharder string) {
 			defer wg.Done()
-
-			lock.Lock()
 			urlString := fmt.Sprintf("%v/%v%v%v", sharder, SC_REST_API_URL, scAddress, relativePath)
-			urlObj, err := url.ParseRequestURI(urlString)
+			urlObj, err := url.Parse(urlString)
 			if err != nil {
+				log.Error(urlString)
 				log.Error(err)
 				return
 			}
@@ -837,10 +834,7 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 			}
 			urlObj.RawQuery = q.Encode()
 			client := &http.Client{Transport: DefaultTransport}
-			s := urlObj.String()
-			lock.Unlock()
-
-			response, err := client.Get(s)
+			response, err := client.Get(urlObj.String())
 			if err != nil {
 				blockchain.Sharders.Fail(sharder)
 				return
