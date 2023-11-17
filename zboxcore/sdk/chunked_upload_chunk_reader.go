@@ -110,8 +110,8 @@ func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards i
 	}
 
 	r.chunkDataSizePerRead = r.chunkDataSize * int64(dataShards)
-	r.hasherWG.Add(1)
-	go r.hashData()
+	// r.hasherWG.Add(1)
+	// go r.hashData()
 	return r, nil
 }
 
@@ -186,7 +186,7 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 	if r.hasherError != nil {
 		return chunk, r.hasherError
 	}
-	r.hasherDataChan <- chunkBytes
+	_ = r.hasher.WriteToFile(chunkBytes)
 	fragments, err := r.erasureEncoder.Split(chunkBytes)
 	if err != nil {
 		return nil, err
