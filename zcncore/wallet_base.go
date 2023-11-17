@@ -86,7 +86,7 @@ const (
 	STORAGESC_GET_BLOBBER              = STORAGESC_PFX + "/getBlobber"
 	STORAGESC_GET_VALIDATOR            = STORAGESC_PFX + "/get_validator"
 	STORAGESC_GET_TRANSACTIONS         = STORAGESC_PFX + "/transactions"
-	STORAGESC_GET_PROVIDERS_HEALTH_CHECK = STORAGESC_PFX + "/get-provider-health-check"
+	STORAGESC_GET_PROVIDERS_HEALTH_CHECK = STORAGESC_PFX + "/get-providers-health-check"
 
 	STORAGE_GET_SNAPSHOT            = STORAGESC_PFX + "/replicate-snapshots"
 	STORAGE_GET_BLOBBER_SNAPSHOT    = STORAGESC_PFX + "/replicate-blobber-aggregates"
