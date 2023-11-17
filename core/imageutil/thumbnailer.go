@@ -9,6 +9,7 @@ import (
 	"image/png"
 	_ "image/png"
 
+	"github.com/h2non/bimg"
 	_ "golang.org/x/image/bmp"
 	_ "golang.org/x/image/ccitt"
 	_ "golang.org/x/image/riff"
@@ -71,4 +72,11 @@ func cropImage(img image.Image, crop image.Rectangle) (image.Image, error) {
 	}
 
 	return simg.SubImage(crop), nil
+}
+
+func GenerateThumbnail(imageBuf []byte, width, height int) ([]byte, error) {
+	return bimg.Resize(imageBuf, bimg.Options{
+		Width:  width,
+		Height: height,
+	})
 }

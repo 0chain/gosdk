@@ -13,7 +13,6 @@ import (
 	"sync"
 
 	"github.com/0chain/gosdk/core/encryption"
-	"github.com/0chain/gosdk/core/imageutil"
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
@@ -96,22 +95,6 @@ func isHash(str string) bool {
 // getLookupHash get lookup hash with allocation id and path
 func getLookupHash(allocationID string, path string) string {
 	return encryption.Hash(allocationID + ":" + path)
-}
-
-// createThumbnail create thumbnail of an image buffer. It supports
-//   - png
-//   - jpeg
-//   - gif
-//   - bmp
-//   - ccitt
-//   - riff
-//   - tiff
-//   - vector
-//   - vp8
-//   - vp8l
-//   - webp
-func createThumbnail(buf []byte, width, height int) ([]byte, error) {
-	return imageutil.CreateThumbnail(buf, width, height)
 }
 
 func makeSCRestAPICall(scAddress, relativePath, paramsJson string) (string, error) {

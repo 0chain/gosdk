@@ -158,7 +158,6 @@ func main() {
 				"getUSDRate":             getUSDRate,
 				"isWalletID":             isWalletID,
 				"getLookupHash":          getLookupHash,
-				"createThumbnail":        createThumbnail,
 				"makeSCRestAPICall":      makeSCRestAPICall,
 
 				//blobber
