@@ -17,7 +17,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"crypto/sha256"
+	"github.com/minio/sha256-simd"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
