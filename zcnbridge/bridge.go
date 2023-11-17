@@ -790,7 +790,7 @@ func (b *BridgeClient) Swap(ctx context.Context, sourceTokenAddress string, amou
 
 	tran, err := bancorInstance.TradeByTargetAmount(transactOpts, from, to, amount, maxAmountSwap, deadline, beneficiary)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to execute ConvertByPath transaction")
+		return nil, errors.Wrap(err, "failed to execute TradeByTargetAmount transaction")
 	}
 
 	return tran, nil
