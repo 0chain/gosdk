@@ -29,7 +29,7 @@ const (
 	DefaultCreateConnectionTimeOut = 2 * time.Minute
 )
 
-var BatchSize = 2
+var BatchSize = 5
 
 type Operationer interface {
 	Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error)
