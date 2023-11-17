@@ -42,7 +42,7 @@ var (
 	noBLOBBERS       = errors.New("", "No Blobbers set in this allocation")
 	notInitialized   = errors.New("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
 	IsWasm           = false
-	MultiOpBatchSize = 10
+	MultiOpBatchSize = 4
 )
 
 const (
