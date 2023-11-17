@@ -237,7 +237,7 @@ func GetWritePriceRange() (PriceRange, error) {
 
 func SetWasm() {
 	IsWasm = true
-	BatchSize = 4
+	BatchSize = 2
 }
 
 func getPriceRange(name string) (PriceRange, error) {
