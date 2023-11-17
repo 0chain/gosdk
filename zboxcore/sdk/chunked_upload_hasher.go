@@ -5,7 +5,7 @@ import (
 	"hash"
 	"sync"
 
-	"github.com/minio/sha256-simd"
+	"crypto/sha256"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"

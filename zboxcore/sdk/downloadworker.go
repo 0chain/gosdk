@@ -17,6 +17,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"crypto/sha256"
+
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/sys"
@@ -29,7 +31,6 @@ import (
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/klauspost/reedsolomon"
-	"github.com/minio/sha256-simd"
 	"go.dedis.ch/kyber/v3/group/edwards25519"
 	"golang.org/x/sync/errgroup"
 )
