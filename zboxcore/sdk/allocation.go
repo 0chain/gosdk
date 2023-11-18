@@ -15,6 +15,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -909,6 +910,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 			if err != nil {
 				return err
 			}
+			runtime.GC()
 		}
 	}
 	return nil
