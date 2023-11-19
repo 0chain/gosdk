@@ -15,7 +15,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -43,7 +42,7 @@ var (
 	noBLOBBERS       = errors.New("", "No Blobbers set in this allocation")
 	notInitialized   = errors.New("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
 	IsWasm           = false
-	MultiOpBatchSize = 10
+	MultiOpBatchSize = 5
 )
 
 const (
@@ -910,7 +909,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 			if err != nil {
 				return err
 			}
-			runtime.GC()
+			time.Sleep(2 * time.Second)
 		}
 	}
 	return nil
