@@ -516,7 +516,6 @@ func bulkUpload(jsonBulkUploadOptions string) ([]BulkUploadResult, error) {
 	if err != nil {
 		return nil, err
 	}
-	sdk.SetWasm()
 	n := len(options)
 	wait := make(chan BulkUploadResult, 1)
 
@@ -559,7 +558,6 @@ func bulkUpload(jsonBulkUploadOptions string) ([]BulkUploadResult, error) {
 func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 	var options []BulkUploadOption
 	result := MultiUploadResult{}
-	sdk.SetWasm()
 	err := json.Unmarshal([]byte(jsonBulkUploadOptions), &options)
 	if err != nil {
 		result.Error = "Error in unmarshaling json"

@@ -10,7 +10,7 @@ import (
 	goError "errors"
 
 	"github.com/0chain/errors"
-	"lukechampine.com/blake3"
+	"github.com/zeebo/blake3"
 )
 
 const (
@@ -18,6 +18,16 @@ const (
 	MaxMerkleLeavesSize = 64 * 1024
 	FixedMerkleLeaves   = 1024
 	FixedMTDepth        = 11
+)
+
+var (
+	leafPool = sync.Pool{
+		New: func() interface{} {
+			return &leaf{
+				h: blake3.New(),
+			}
+		},
+	}
 )
 
 type leaf struct {
@@ -37,9 +47,9 @@ func (l *leaf) Write(b []byte) (int, error) {
 }
 
 func getNewLeaf() *leaf {
-	return &leaf{
-		h: blake3.New(32, nil),
-	}
+	leaf := leafPool.Get().(*leaf)
+	leaf.h.Reset()
+	return leaf
 }
 
 // FixedMerkleTree A trusted mekerle tree for outsourcing attack protection. see section 1.8 on whitepager
@@ -165,6 +175,7 @@ func (fmt *FixedMerkleTree) CalculateMerkleRoot() {
 	nodes := make([][]byte, len(fmt.Leaves))
 	for i := 0; i < len(nodes); i++ {
 		nodes[i] = fmt.Leaves[i].GetHashBytes()
+		leafPool.Put(fmt.Leaves[i])
 	}
 
 	for i := 0; i < FixedMTDepth; i++ {

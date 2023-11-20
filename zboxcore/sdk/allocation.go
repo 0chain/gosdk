@@ -42,7 +42,7 @@ var (
 	noBLOBBERS       = errors.New("", "No Blobbers set in this allocation")
 	notInitialized   = errors.New("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
 	IsWasm           = false
-	MultiOpBatchSize = 5
+	MultiOpBatchSize = 10
 )
 
 const (
@@ -238,6 +238,7 @@ func GetWritePriceRange() (PriceRange, error) {
 func SetWasm() {
 	IsWasm = true
 	BatchSize = 2
+	MultiOpBatchSize = 5
 }
 
 func getPriceRange(name string) (PriceRange, error) {
@@ -909,7 +910,9 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 				return err
 			}
 			mo.operations = nil
-			time.Sleep(2 * time.Second)
+			if IsWasm {
+				time.Sleep(2 * time.Second)
+			}
 		}
 	}
 	return nil
