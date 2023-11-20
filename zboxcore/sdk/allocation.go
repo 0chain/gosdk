@@ -42,7 +42,7 @@ var (
 	noBLOBBERS       = errors.New("", "No Blobbers set in this allocation")
 	notInitialized   = errors.New("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
 	IsWasm           = false
-	MultiOpBatchSize = 5
+	MultiOpBatchSize = 10
 )
 
 const (
@@ -835,9 +835,9 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 				fmt.Sprintf("Multioperation: create connection failed. Required consensus %d got %d",
 					mo.consensusThresh, mo.operationMask.CountOnes()))
 		}
-		ops := 0
+
 		for ; i < len(operations); i++ {
-			if ops > MultiOpBatchSize {
+			if len(mo.operations) > MultiOpBatchSize {
 				// max batch size reached, commit
 				connectionID = zboxutil.NewConnectionId()
 				break
@@ -891,7 +891,6 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 				connectionID = newConnectionID
 				break
 			}
-			ops++
 			err = operation.Verify(a)
 			if err != nil {
 				return err
@@ -909,7 +908,8 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 			if err != nil {
 				return err
 			}
-			time.Sleep(2 * time.Second)
+			mo.operations = nil
+			time.Sleep(1 * time.Second)
 		}
 	}
 	return nil
