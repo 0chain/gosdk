@@ -42,7 +42,7 @@ var (
 	noBLOBBERS       = errors.New("", "No Blobbers set in this allocation")
 	notInitialized   = errors.New("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
 	IsWasm           = false
-	MultiOpBatchSize = 10
+	MultiOpBatchSize = 5
 )
 
 const (
@@ -837,7 +837,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 		}
 
 		for ; i < len(operations); i++ {
-			if len(mo.operations) > MultiOpBatchSize {
+			if len(mo.operations) >= MultiOpBatchSize {
 				// max batch size reached, commit
 				connectionID = zboxutil.NewConnectionId()
 				break
