@@ -46,7 +46,6 @@ require (
 	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d
 	github.com/minio/sha256-simd v1.0.1
 	github.com/zeebo/blake3 v0.2.3
-	lukechampine.com/blake3 v1.2.1
 )
 
 require (

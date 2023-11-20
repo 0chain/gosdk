@@ -37,7 +37,9 @@ func (l *leaf) Write(b []byte) (int, error) {
 }
 
 func getNewLeaf() *leaf {
-	return &leaf{h: blake3.New()}
+	return &leaf{
+		h: blake3.New(),
+	}
 }
 
 // FixedMerkleTree A trusted mekerle tree for outsourcing attack protection. see section 1.8 on whitepager
