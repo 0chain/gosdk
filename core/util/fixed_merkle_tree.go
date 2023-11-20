@@ -10,7 +10,7 @@ import (
 	goError "errors"
 
 	"github.com/0chain/errors"
-	"github.com/zeebo/blake3"
+	"lukechampine.com/blake3"
 )
 
 const (
@@ -38,7 +38,7 @@ func (l *leaf) Write(b []byte) (int, error) {
 
 func getNewLeaf() *leaf {
 	return &leaf{
-		h: blake3.New(),
+		h: blake3.New(32, nil),
 	}
 }
 
