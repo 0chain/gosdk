@@ -43,8 +43,6 @@ type chunkedUploadChunkReader struct {
 	// chunkDataSize data size without encryption header in a chunk. It is same as ChunkSize if EncryptOnUpload is false
 	chunkDataSize int64
 
-	chunkBytes []byte
-
 	// chunkDataSizePerRead total size should be read from original io.Reader. It is DataSize * DataShards.
 	chunkDataSizePerRead int64
 
@@ -112,7 +110,6 @@ func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards i
 	}
 
 	r.chunkDataSizePerRead = r.chunkDataSize * int64(dataShards)
-	r.chunkBytes = make([]byte, r.chunkDataSizePerRead)
 	// TODO: enable this for concurrent hashing
 	// r.hasherWG.Add(1)
 	// go r.hashData()
@@ -155,7 +152,7 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 		ReadSize:     0,
 		FragmentSize: 0,
 	}
-	chunkBytes := r.chunkBytes
+	chunkBytes := make([]byte, r.chunkDataSizePerRead)
 	readLen, err := r.fileReader.Read(chunkBytes)
 	if err != nil {
 
