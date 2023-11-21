@@ -35,7 +35,7 @@ gosdk-build: gomod-download
 	go build -x -v -tags bn256 ./...
 
 wasm-build: getrev
-	CGO_ENABLED=0 GOOS=js GOARCH=wasm GOMAXPROCS=1 go build -buildvcs=false -o ./zcn.wasm  ./wasmsdk
+	CGO_ENABLED=0 GOOS=js GOARCH=wasm go build -buildvcs=false -o ./zcn.wasm  ./wasmsdk
 
 wasm-test: wasm-build
 	env -i $(shell go env) PATH="$(shell go env GOROOT)/misc/wasm:$(PATH)" CGO_ENABLED=0 GOOS=js GOARCH=wasm go test -v github.com/0chain/gosdk/wasmsdk/jsbridge/...

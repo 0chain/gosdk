@@ -910,9 +910,6 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 				return err
 			}
 			mo.operations = nil
-			if IsWasm {
-				time.Sleep(2 * time.Second)
-			}
 		}
 	}
 	return nil
