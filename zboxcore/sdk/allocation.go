@@ -237,6 +237,8 @@ func GetWritePriceRange() (PriceRange, error) {
 
 func SetWasm() {
 	IsWasm = true
+	BatchSize = 5
+	MultiOpBatchSize = 7
 }
 
 func getPriceRange(name string) (PriceRange, error) {
@@ -834,9 +836,9 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 				fmt.Sprintf("Multioperation: create connection failed. Required consensus %d got %d",
 					mo.consensusThresh, mo.operationMask.CountOnes()))
 		}
-		ops := 0
+
 		for ; i < len(operations); i++ {
-			if ops > MultiOpBatchSize {
+			if len(mo.operations) >= MultiOpBatchSize {
 				// max batch size reached, commit
 				connectionID = zboxutil.NewConnectionId()
 				break
@@ -890,7 +892,6 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 				connectionID = newConnectionID
 				break
 			}
-			ops++
 			err = operation.Verify(a)
 			if err != nil {
 				return err
@@ -908,6 +909,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 			if err != nil {
 				return err
 			}
+			mo.operations = nil
 		}
 	}
 	return nil
