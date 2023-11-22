@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math"
 	"net"
 	"net/http"
 	"net/url"
@@ -20,6 +21,7 @@ import (
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/logger"
+	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 )
@@ -804,6 +806,16 @@ func NewRollbackRequest(baseUrl, allocationID string, allocationTx string, body 
 func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]string, handler SCRestAPIHandler) ([]byte, error) {
 	numSharders := len(blockchain.GetSharders())
 	sharders := blockchain.GetSharders()
+
+	const (
+		reqPercent = 10 // TODO: make it configuarable
+		minReqNum  = 3  // TODO: make it configurable
+	)
+
+	reqNum := int(math.Max(minReqNum, float64(len(sharders)*reqPercent/100)))
+
+	sharders = util.Shuffle(sharders)[:reqNum]
+
 	responses := make(map[int]int)
 	mu := &sync.Mutex{}
 	entityResult := make(map[string][]byte)
