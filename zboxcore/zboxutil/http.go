@@ -813,6 +813,9 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 	)
 
 	reqNum := int(math.Max(minReqNum, float64(len(sharders)*reqPercent/100)))
+	if reqNum > len(sharders) {
+		reqNum = len(sharders)
+	}
 
 	sharders = util.Shuffle(sharders)[:reqNum]
 
