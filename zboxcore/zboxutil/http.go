@@ -20,6 +20,7 @@ import (
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/logger"
+	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 )
@@ -815,6 +816,10 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 	cfg, err := conf.GetClientConfig()
 	if err != nil {
 		return nil, err
+	}
+
+	if numSharders > cfg.SharderConsensous {
+		sharders = util.Shuffle(sharders)[:cfg.SharderConsensous]
 	}
 
 	for _, sharder := range sharders {
