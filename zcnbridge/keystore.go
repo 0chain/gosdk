@@ -126,7 +126,7 @@ func CreateKeyStorage(homedir, password string) error {
 }
 
 // ImportAccount imports account using mnemonic
-func ImportAccount(homedir, mnemonic, password string) (string, error) {
+func ImportAccount(homedir, mnemonic, password string, addrIndex int) (string, error) {
 	// 1. Create storage and account if it doesn't exist and add account to it
 
 	keyDir := path.Join(homedir, EthereumWalletStorageDir)
@@ -139,7 +139,7 @@ func ImportAccount(homedir, mnemonic, password string) (string, error) {
 		return "", errors.Wrap(err, "failed to import from mnemonic")
 	}
 
-	pathD := hdw.MustParseDerivationPath("m/44'/60'/0'/0/0")
+	pathD := hdw.MustParseDerivationPath(fmt.Sprintf("m/44'/60'/0'/0/%d", addrIndex))
 	account, err := wallet.Derive(pathD, true)
 	if err != nil {
 		return "", errors.Wrap(err, "failed parse derivation path")
