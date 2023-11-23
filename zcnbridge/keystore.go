@@ -128,6 +128,7 @@ func CreateKeyStorage(homedir, password string) error {
 type AccountAddressIndex struct {
 	AccountIndex int
 	AddressIndex int
+	Bip32        bool
 }
 
 // ImportAccount imports account using mnemonic
@@ -149,7 +150,13 @@ func ImportAccount(homedir, mnemonic, password string, accountAddrIndex ...Accou
 		aai = accountAddrIndex[0]
 	}
 
-	pathD := hdw.MustParseDerivationPath(fmt.Sprintf("m/44'/60'/0'/%d/%d", aai.AccountIndex, aai.AddressIndex))
+	var pathD accounts.DerivationPath
+	if aai.Bip32 {
+		pathD = hdw.MustParseDerivationPath(fmt.Sprintf("m/44'/60'/0'/%d", aai.AddressIndex))
+	} else {
+		pathD = hdw.MustParseDerivationPath(fmt.Sprintf("m/44'/60'/%d'/0/%d", aai.AccountIndex, aai.AddressIndex))
+	}
+
 	account, err := wallet.Derive(pathD, true)
 	if err != nil {
 		return "", errors.Wrap(err, "failed parse derivation path")
