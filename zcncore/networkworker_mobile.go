@@ -98,10 +98,6 @@ func UpdateRequired(networkDetails *Network) bool {
 		return true
 	}
 
-	if len(networkDetails.net.Miners) == 0 || len(networkDetails.net.Sharders) == 0 {
-		return false
-	}
-
 	minerSame := reflect.DeepEqual(miners, networkDetails.net.Miners)
 	sharderSame := reflect.DeepEqual(sharders, networkDetails.net.Sharders)
 
