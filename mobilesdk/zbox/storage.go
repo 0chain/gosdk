@@ -356,7 +356,7 @@ func MultiUpload(allocationID string, workdir string, jsonMultiUploadOptions str
 		logger.Logger.Error("multiupload: ", err)
 		return err
 	}
-	return a.StartMultiUpload(workdir, filePaths, fileNames, thumbnailPaths, encrypts, chunkNumbers, remotePaths, isUpdates, isWebstreaming, &StatusCallbackWrapped{Callback: statusCb})
+	return a.StartMultiUpload(workdir, filePaths, fileNames, thumbnailPaths, encrypts, chunkNumbers, remotePaths, isUpdates, isWebstreaming, &StatusCallbackWrapped{Callback: statusCb}, true)
 
 }
 

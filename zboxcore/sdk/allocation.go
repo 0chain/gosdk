@@ -465,7 +465,7 @@ func (a *Allocation) EncryptAndUploadFileWithThumbnail(
 	)
 }
 
-func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileNames []string, thumbnailPaths []string, encrypts []bool, chunkNumbers []int, remotePaths []string, isUpdate []bool, isWebstreaming []bool, status StatusCallback) error {
+func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileNames []string, thumbnailPaths []string, encrypts []bool, chunkNumbers []int, remotePaths []string, isUpdate []bool, isWebstreaming []bool, status StatusCallback, chunkedStore ...bool) error {
 	if len(localPaths) != len(thumbnailPaths) {
 		return errors.New("invalid_value", "length of localpaths and thumbnailpaths must be equal")
 	}
@@ -546,6 +546,9 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 			}
 
 			options = append(options, WithThumbnail(buf))
+		}
+		if len(chunkedStore) > 0 {
+			options = append(options, WithProgressStorer(&chunkedUploadProgressStorer{list: make(map[string]*UploadProgress)}))
 		}
 		operationRequests[idx] = OperationRequest{
 			FileMeta:      fileMeta,
