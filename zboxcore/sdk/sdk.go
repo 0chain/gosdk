@@ -1455,7 +1455,12 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 	l.Logger.Info(msg)
 	l.Logger.Info("estimated txn fee: ", txn.TransactionFee)
 
-	transaction.SendTransactionSync(txn, blockchain.GetMiners())
+	err = transaction.SendTransactionSync(txn, blockchain.GetMiners())
+	if err != nil {
+		l.Logger.Info("transaction submission failed", zap.Error(err))
+		node.Cache.Evict(txn.ClientID)
+		return
+	}
 
 	var (
 		querySleepTime = time.Duration(blockchain.GetQuerySleepTime()) * time.Second
@@ -1566,28 +1571,10 @@ func GetAllocationMinLock(
 ) (int64, error) {
 	baSize := int64(math.Ceil(float64(size) / float64(datashards)))
 	totalSize := baSize * int64(datashards+parityshards)
-	config, err := GetStorageSCConfig()
-	if err != nil {
-		return 0, err
-	}
-	t := config.Fields["time_unit"]
-	timeunitStr, ok := t.(string)
-	if !ok {
-		return 0, fmt.Errorf("bad time_unit type")
-	}
-	timeunit, err := time.ParseDuration(timeunitStr)
-	if err != nil {
-		return 0, fmt.Errorf("bad time_unit format")
-	}
-
-	expiry := common.Timestamp(time.Now().Add(timeunit).Unix())
-	duration := expiry / common.Timestamp(timeunit.Milliseconds())
-	if expiry%common.Timestamp(timeunit.Milliseconds()) != 0 {
-		duration++
-	}
 
 	sizeInGB := float64(totalSize) / GB
-	cost := float64(duration) * (sizeInGB*float64(writePrice.Max) + sizeInGB*float64(readPrice.Max))
+
+	cost := sizeInGB * float64(writePrice.Max)
 	coin, err := currency.Float64ToCoin(cost)
 	if err != nil {
 		return 0, err
