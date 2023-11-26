@@ -1567,7 +1567,7 @@ func CommitToFabric(metaTxnData, fabricConfigJSON string) (string, error) {
 func GetAllocationMinLock(
 	datashards, parityshards int,
 	size int64,
-	readPrice, writePrice PriceRange,
+	writePrice PriceRange,
 ) (int64, error) {
 	baSize := int64(math.Ceil(float64(size) / float64(datashards)))
 	totalSize := baSize * int64(datashards+parityshards)
