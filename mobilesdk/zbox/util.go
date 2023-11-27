@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strconv"
 
+	"github.com/0chain/gosdk/core/imageutil"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/sdk"
@@ -106,4 +107,8 @@ func GetNumber(value string) int {
 		return res
 	}
 	return -1
+}
+
+func GenerateThumbnail(imageBuf []byte, width, height int) ([]byte, error) {
+	return imageutil.GenerateThumbnail(imageBuf, width, height)
 }

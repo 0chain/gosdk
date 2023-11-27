@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 
 	"github.com/0chain/gosdk/core/encryption"
+	"github.com/0chain/gosdk/core/imageutil"
 	"github.com/0chain/gosdk/zboxcore/marker"
 )
 
@@ -70,4 +71,8 @@ func decodeAuthTicket(authTicket *C.char) (*marker.AuthTicket, string, error) {
 	}
 
 	return t, at, err
+}
+
+func GenerateThumbnail(imageBuf []byte, width, height int) ([]byte, error) {
+	return imageutil.GenerateThumbnail(imageBuf, width, height)
 }

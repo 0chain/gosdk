@@ -68,18 +68,6 @@ get USD rate by token symbol(eg zcn, eth)
 
 > float64
 
-### zcn.sdk.createThumbnail
-
-create thumbnail of an image buffer
-
-**Input**:
-
-> buf []byte, width,height int
-
-**Output**:
-
-> []byte
-
 ### zcn.sdk.isWalletID
 
 valid wallet id
