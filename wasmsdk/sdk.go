@@ -44,7 +44,7 @@ func initSDKs(chainID, blockWorker, signatureScheme string,
 		fmt.Println("wasm: InitZCNSDK ", err)
 		return err
 	}
-
+	sdk.SetWasm()
 	return nil
 }
 

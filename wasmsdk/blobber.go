@@ -516,7 +516,6 @@ func bulkUpload(jsonBulkUploadOptions string) ([]BulkUploadResult, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	n := len(options)
 	wait := make(chan BulkUploadResult, 1)
 

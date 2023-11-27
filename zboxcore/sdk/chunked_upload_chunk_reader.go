@@ -110,6 +110,7 @@ func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards i
 	}
 
 	r.chunkDataSizePerRead = r.chunkDataSize * int64(dataShards)
+	// TODO: enable this for concurrent hashing
 	// r.hasherWG.Add(1)
 	// go r.hashData()
 	return r, nil
@@ -151,7 +152,6 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 		ReadSize:     0,
 		FragmentSize: 0,
 	}
-
 	chunkBytes := make([]byte, r.chunkDataSizePerRead)
 	readLen, err := r.fileReader.Read(chunkBytes)
 	if err != nil {

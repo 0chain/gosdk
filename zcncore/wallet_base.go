@@ -1282,7 +1282,7 @@ func Decrypt(key, text string) (string, error) {
 func CryptoJsEncrypt(passphrase, message string) (string, error) {
 	o := openssl.New()
 
-	enc, err := o.EncryptBytes(pad(passphrase, 32, ","), []byte(message), openssl.DigestMD5Sum)
+	enc, err := o.EncryptBytes(passphrase, []byte(message), openssl.DigestMD5Sum)
 	if err != nil {
 		return "", err
 	}
@@ -1290,16 +1290,9 @@ func CryptoJsEncrypt(passphrase, message string) (string, error) {
 	return string(enc), nil
 }
 
-func pad(passphrase string, i int, symbol string) string {
-	if len(passphrase) < i {
-		return passphrase + strings.Repeat(symbol, i-len(passphrase))
-	}
-	return passphrase
-}
-
 func CryptoJsDecrypt(passphrase, encryptedMessage string) (string, error) {
 	o := openssl.New()
-	dec, err := o.DecryptBytes(pad(passphrase, 32, ","), []byte(encryptedMessage), openssl.DigestMD5Sum)
+	dec, err := o.DecryptBytes(passphrase, []byte(encryptedMessage), openssl.DigestMD5Sum)
 	if err != nil {
 		return "", err
 	}
