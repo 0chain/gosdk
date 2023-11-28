@@ -208,12 +208,6 @@ func CreateChunkedUpload(
 		opt(su)
 	}
 
-	if IsWasm {
-		if su.allocationObj.DataShards > 7 {
-			su.chunkNumber = 60
-		}
-	}
-
 	if su.progressStorer == nil {
 		su.progressStorer = createFsChunkedUploadProgress(context.Background())
 	}
