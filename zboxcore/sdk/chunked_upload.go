@@ -207,6 +207,7 @@ func CreateChunkedUpload(
 	for _, opt := range opts {
 		opt(su)
 	}
+
 	if su.progressStorer == nil {
 		su.progressStorer = createFsChunkedUploadProgress(context.Background())
 	}
