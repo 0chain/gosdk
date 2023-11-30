@@ -239,7 +239,6 @@ func SetWasm() {
 	IsWasm = true
 	BatchSize = 3
 	MultiOpBatchSize = 7
-	l.Logger.Debug("Initialize batch: ", BatchSize, MultiOpBatchSize)
 }
 
 func getPriceRange(name string) (PriceRange, error) {
@@ -467,6 +466,7 @@ func (a *Allocation) EncryptAndUploadFileWithThumbnail(
 }
 
 func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileNames []string, thumbnailPaths []string, encrypts []bool, chunkNumbers []int, remotePaths []string, isUpdate []bool, isWebstreaming []bool, status StatusCallback) error {
+	l.Logger.Debug("Initialize batch: ", BatchSize, MultiOpBatchSize)
 	if len(localPaths) != len(thumbnailPaths) {
 		return errors.New("invalid_value", "length of localpaths and thumbnailpaths must be equal")
 	}
