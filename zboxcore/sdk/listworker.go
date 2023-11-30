@@ -120,7 +120,6 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 			return errors.Wrap(err, "Error: Resp")
 		}
 		s.WriteString(string(resp_body))
-		l.Logger.Debug("List result from Blobber:", string(resp_body))
 		if resp.StatusCode == http.StatusOK {
 			listResult := &fileref.ListResult{}
 			err = json.Unmarshal(resp_body, listResult)
@@ -190,6 +189,7 @@ func (req *ListRequest) getlistFromBlobbers() ([]*listResponse, error) {
 }
 
 func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
+	l.Logger.Debug("Getting list info from blobbers")
 	lR, err := req.getlistFromBlobbers()
 	if err != nil {
 		return nil, err
