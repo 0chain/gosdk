@@ -239,6 +239,7 @@ func SetWasm() {
 	IsWasm = true
 	BatchSize = 3
 	MultiOpBatchSize = 7
+	l.Logger.Debug("Initialize batch: ", BatchSize, MultiOpBatchSize)
 }
 
 func getPriceRange(name string) (PriceRange, error) {
