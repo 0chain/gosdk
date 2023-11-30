@@ -6,6 +6,7 @@ The Züs client SDK written in Go programming language.
   - [Züs Overview ](#overview)
   - [Installation](#installation)
   - [Mobile Builds(iOS and Android)](#mobile-builds)
+  - [SDK Reference](#sdk-reference)
   - [Exposing a gosdk function to mobilesdk](#expose-a-gosdk-function-to-mobilesdk)
   - [Export a gosdk function to WebAssembly](#export-a-gosdk-function-to-webassembly)
   - [Running Unit Tests](#running-unit-tests)
@@ -30,14 +31,20 @@ Other apps are [Bolt](https://bolt.holdings/), a wallet that is very secure with
 
 ### Supported Platforms
 This repository currently supports the following platforms:
- - Mac OSX Mojave 10.14.5 or Above
- - Linux (Ubuntu/bionic): This includes all Ubuntu 18+ platforms, so Ubuntu 19, Linux Mint 19 etc. (apt based package installer)
+ - Linux (Ubuntu Preferred) Version: 20.04 and Above
+ - Mac(Apple Silicon or Intel) Version: Big Sur and Above
  - Linux (RHEL/CENTOS 7+): All Releases based on RHEL 7+, Centos 7+, Fedora 30 etc. (yum based package installer)
 
- ### Instructions
-  - Go is required to build gosdk code. Instructions can be found [here](https://go.dev/doc/install)
+ ### Required Software Dependencies
+  - Go is required to build gosdk code. Instructions can be found [here](https://github.com/0chain/0chain/blob/hm90121-patch-1/standalone_guides.md#install-go).
 
- 1. Save below code as `sdkversion.go`
+ ### Instructions
+ 1. Open terminal and clone the gosdk repo.
+  ```
+  git clone https://github.com/0chain/gosdk.git
+  ```
+
+ 2. Move to gosdk directory using `cd gosdk` command and save the code below as a file named `sdkversion.go`.
 
         package main
 
@@ -51,36 +58,142 @@ This repository currently supports the following platforms:
             fmt.Println("gosdk version: ", zcncore.GetVersion())
         }
 
-2. Run below command: (if you don't have gosdk already in your GOPATH)
+3. Run the command below to retrieve the gosdk package (if you don't have gosdk already in your GOPATH)
 
         go get github.com/0chain/gosdk
-3. Build the sample application sdkversion
+4. Build the sample application `sdkversion.go` with gosdk using the command below: 
 
         go build -o sdkversion sdkversion.go
-4. Run the executable
+5. Run the executable using the command below:
 
         ./sdkversion
-5. If it prints the gosdk version installed then setup is complete.
+6. If the executable prints the installed version of the Go SDK, then the setup is complete.
 
-
+      Sample Output:
+      ```
+     gosdk version:  v1.8.17-78-g80b63345
+      ```
+ 
 ## Mobile Builds
-- gosdk can be built for iOS and Android using gomobile.
-- Xcode Command Line Tools is required to build the SDK for iOS.
-- Android studio with NDK is required to build the SDK for Android.
-- See [FAQ](#faq) for installing Go, gomobile Xcode or Android Studio.
 
-Steps: 
-1. Run the command below for the first time to setup the gomobile environment:
+GoSDK can be built to use on mobile platforms iOS and Android using gomobile. To setup gomobile environment :
+ 
+1. Make sure $HOME/go/bin/ is in your $PATH. 
 
-        make setup-gomobile
-2. In case the Go package is not found in `golang.org/x/mobile/bind`, run:
-        `go get golang.org/x/mobile/bind`
-3. Run below commands in the root folder of the repo to build the Mobile SDK:
+```
+export PATH=${PATH}:$HOME/go/bin/
+```
+Note:Edit your bash profile. Your profile is a file in your home directory named either `.profile` or `.bash_profile`. Add the line above to the file for setting `$GOPATH` system wide.
 
-        For iOS only:
-                make build-ios
-        For Android only:
-                make build-android
+2. Now to install and intialize gomobile package run the commands below:
+
+```
+go install golang.org/x/mobile/cmd/gomobile@latest
+gomobile init
+```
+
+3. Run `gomobile` command to check whether its installed.
+
+    Sample Output:
+
+```
+Gomobile is a tool for building and running mobile apps written in Go.
+For detailed instructions, see https://golang.org/wiki/Mobile.
+
+Usage:
+
+        gomobile command [arguments]
+
+Commands:
+
+        bind        build a library for Android and iOS
+        build       compile android APK and iOS app
+        clean       remove object files and cached gomobile files
+        init        build OpenAL for Android
+        install     compile android APK and install on device
+        version     print version
+
+Use 'gomobile help [command]' for more information about that command.
+```
+
+4. After successfully installing Go Mobile, proceed to compile the Mobile SDK.
+
+     For Linux : Download and Install [Android studio](https://developer.android.com/studio) with [NDK](https://developer.android.com/ndk/guides#download-ndk) and [JDK](https://www.oracle.com/java/technologies/downloads/) to build SDK for 
+                 Android.
+
+     For Mac: Download and Install [Xcode Command Line Tools](https://developer.apple.com/download/all/) to build SDK for iOS. Requires Apple ID to download.
+
+     Commands for building mobilesdk are below :
+     ```
+     For iOS only:       make build-ios  
+     For Android only:     make build-android  
+     ```
+
+     Sample Response for android :
+     ```
+     jar: zcncore/Zcncore.java
+     C:/Users/0chain/Desktop/gosdk/out/androidsdk/zcncore.aar. - [OK]
+     ```
+
+     Sample Response for iOS:
+    ```
+    xcframework successfully written out to: 
+    /Users//gosdk/out/iossdk/ios/zcncore.xcframework   
+    /Users/0chain/gosdk/out/iossdk/ios/zcncore.xcframework. - [OK]
+    ```
+
+   The response will successfully build a library file which includes everything needed to build a Züs mobile app, including source code and resource files. Now you can use the library into your own iOS or Android project.
+
+## SDK Reference
+
+This section includes links to all packages in gosdk. Refer to the [gosdk package](https://pkg.go.dev/github.com/0chain/gosdk) for a comprehensive list of all packages in the Go SDK.
+
+Here is an overview of all modules mentioned in the [gosdk package](https://pkg.go.dev/github.com/0chain/gosdk#section-directories) . 
+
+**Constants:**
+The Constants package serves as a repository for constants. The naming convention adheres to the use of MixedCaps or mixedCaps, favoring them over underscores when creating multiword names.
+
+**Core:**
+The Core module forms the essential foundation, providing fundamental functionalities and serving as the backbone for various components.
+
+**Dev:**
+The Dev package equips developers with tools tailored for local development, fostering a seamless environment for building and testing applications.
+
+**Errors Module:**
+The Errors Module encompasses a comprehensive set of tools and utilities dedicated to handling errors efficiently, ensuring robust error management within the system.
+
+**Mobile SDK:**
+The Mobile SDK facilitates the development of mobile applications, offering a set of software development tools specifically designed for mobile platforms.
+
+**SDKs:**
+The SDKs module encompasses various software development kits, each tailored to specific purposes, contributing to a versatile and comprehensive development ecosystem.
+
+**Wasm SDK:**
+The Wasm SDK focuses on providing tools and resources for the WebAssembly (Wasm) development environment, empowering developers to harness the potential of this emerging technology.
+
+**Win SDK:**
+The Win SDK caters to Windows application development, delivering a suite of tools and resources optimized for creating software on the Windows operating system.
+
+**zbox API:**
+The zbox API module serves as the interface for the zbox system, offering a set of functions and protocols for seamless communication and integration.
+
+**zbox Core:**
+The zbox core constitutes the foundational core of the zbox architecture, providing the essential framework for its various components.
+
+**ZCN Bridge:**
+The ZCN bridge module facilitates the connection and interaction between the Züs (ZCN) network and external systems, ensuring smooth interoperability.
+
+**ZCN Core:**
+ZCN Core represents the heart of the Züs (ZCN) network, encapsulating the essential components and functionalities that drive its operations.
+
+**ZCN Swap:**
+The ZCN Swap module focuses on enabling secure and efficient swapping of assets within the ZeroChain (ZCN) ecosystem.
+
+**zmagma core:**
+The zmagma Core encompasses the core functionalities and components of the Magma system, contributing to the overall stability and performance of the system.
+
+**znft:**
+The ZNFT module is dedicated to Non-Fungible Tokens (NFTs), providing tools and resources for the creation, management, and interaction with NFTs within the system.
 
 ## Expose a gosdk function to mobilesdk 
 Examples:
