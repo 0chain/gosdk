@@ -28,8 +28,6 @@ import (
 
 const FileOperationInsert = "insert"
 
-var allocObj *sdk.Allocation
-
 func listObjects(allocationID string, remotePath string) (*sdk.ListResult, error) {
 	alloc, err := getAllocation(allocationID)
 	if err != nil {
