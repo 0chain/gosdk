@@ -625,9 +625,7 @@ func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 		if numBlocks < 1 {
 			numBlocks = 100
 		}
-		if allocationObj.DataShards > 7 {
-			numBlocks = 60
-		}
+
 		options := []sdk.ChunkedUploadOption{
 			sdk.WithThumbnail(option.ThumbnailBytes.Buffer),
 			sdk.WithEncrypt(encrypt),
@@ -713,9 +711,6 @@ func uploadWithJsFuncs(allocationID, remotePath string, readChunkFuncName string
 
 	if numBlocks < 1 {
 		numBlocks = 100
-	}
-	if allocationObj.DataShards > 7 {
-		numBlocks = 60
 	}
 
 	ChunkedUpload, err := sdk.CreateChunkedUpload("/", allocationObj, fileMeta, fileReader, isUpdate, isRepair, webStreaming, zboxutil.NewConnectionId(),
