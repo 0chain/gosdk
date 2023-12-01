@@ -353,10 +353,7 @@ func (t *Transaction) submitTxn() {
 	for _, miner := range randomMiners {
 		go func(minerurl string) {
 			url := minerurl + PUT_TRANSACTION
-			t.txn.ToClientID = "d3a6dbf0ab371bf3c783bc36e6a15ed708c4ce2c5acc351ba6114507645129c7"
-
-			logging.Info("Jayash Submitting ", txnTypeString(t.txn.TransactionType), " transaction to ", minerurl, " with JSON ", string(t.txn.DebugJSON()))
-
+			logging.Info("Submitting ", txnTypeString(t.txn.TransactionType), " transaction to ", minerurl, " with JSON ", string(t.txn.DebugJSON()))
 			req, err := util.NewHTTPPostRequest(url, t.txn)
 			if err != nil {
 				logging.Error(minerurl, " new post request failed. ", err.Error())
@@ -466,16 +463,9 @@ func (t *Transaction) createSmartContractTxn(address, methodName string, input i
 	}
 
 	t.txn.TransactionType = transaction.TxnTypeSmartContract
-	t.txn.ToClientID = "d3a6dbf0ab371bf3c783bc36e6a15ed708c4ce2c5acc351ba6114507645129c7"
+	t.txn.ToClientID = address
 	t.txn.TransactionData = string(snBytes)
 	t.txn.Value = value
-
-	logger.Logger.Info("Jayash create smart contract txn",
-		zap.Any("txn", t.txn.Hash),
-		zap.Any("address", t.txn.ToClientID),
-		zap.Any("method", methodName),
-		zap.Any("input", t.txn.TransactionData),
-		zap.Any("value", value))
 
 	if t.txn.TransactionFee > 0 {
 		return nil

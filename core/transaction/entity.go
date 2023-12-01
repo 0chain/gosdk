@@ -317,7 +317,6 @@ func retriveFromTable(table map[string]map[string]int64, txnName, toAddress stri
 
 // EstimateFee estimates transaction fee
 func EstimateFee(txn *Transaction, miners []string, reqPercent ...float32) (uint64, error) {
-	return 2000000000, nil
 	const minReqNum = 3
 	var reqN int
 
