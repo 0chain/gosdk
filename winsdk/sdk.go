@@ -112,7 +112,6 @@ func InitSDKs(configJson *C.char) *C.char {
 		cc.MinConfirmation = configObj.MinConfirmation
 		cc.EthNode = configObj.EthereumNode
 		cc.MinSubmit = configObj.MinSubmit
-		cc.SharderConsensous = configObj.SharderConsensous
 		cc.SignatureScheme = configObj.SignatureScheme
 
 		return nil

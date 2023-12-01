@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"encoding/json"
+	"math"
 	"sync/atomic"
 
 	"github.com/0chain/gosdk/core/common"
@@ -140,14 +141,19 @@ func SetBlockWorker(blockWorker string) {
 	chain.BlockWorker = blockWorker
 }
 
+func GetReqConsensus(n, minReqNum, reqPercent int) int {
+	reqNum := int(math.Max(float64(minReqNum), float64(n*reqPercent/100)))
+	if reqNum > n {
+		reqNum = n
+	}
+	return reqNum
+}
+
 func SetSharders(sharderArray []string) {
 	consensus := conf.DefaultSharderConsensous
 	config, err := conf.GetClientConfig()
 	if err == nil && config != nil {
-		consensus = config.SharderConsensous
-	}
-	if len(sharderArray) < consensus {
-		consensus = len(sharderArray)
+		consensus = GetReqConsensus(len(sharderArray), consensus, config.MinConfirmation)
 	}
 	Sharders = node.NewHolder(sharderArray, consensus)
 }

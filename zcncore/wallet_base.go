@@ -375,7 +375,6 @@ func Init(chainConfigJSON string) error {
 			SignatureScheme:         _config.chain.SignatureScheme,
 			ChainID:                 _config.chain.ChainID,
 			EthereumNode:            _config.chain.EthNode,
-			SharderConsensous:       _config.chain.SharderConsensous,
 		}
 
 		conf.InitClientConfig(cfg)
