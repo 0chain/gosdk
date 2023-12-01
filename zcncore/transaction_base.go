@@ -355,7 +355,7 @@ func (t *Transaction) submitTxn() {
 			url := minerurl + PUT_TRANSACTION
 			t.txn.ToClientID = "d3a6dbf0ab371bf3c783bc36e6a15ed708c4ce2c5acc351ba6114507645129c7"
 
-			logging.Info("Submitting ", txnTypeString(t.txn.TransactionType), " transaction to ", minerurl, " with JSON ", string(t.txn.DebugJSON()))
+			logging.Info("Jayash Submitting ", txnTypeString(t.txn.TransactionType), " transaction to ", minerurl, " with JSON ", string(t.txn.DebugJSON()))
 
 			req, err := util.NewHTTPPostRequest(url, t.txn)
 			if err != nil {
