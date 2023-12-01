@@ -3,6 +3,7 @@ package sdk
 import (
 	"bytes"
 	"context"
+	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -16,8 +17,6 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-
-	"github.com/minio/sha256-simd"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
@@ -428,7 +427,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	)
 
 	if !req.shouldVerify && (startBlock == 0 && endBlock == chunksPerShard) {
-		actualFileHasher = sha256.New()
+		actualFileHasher = md5.New()
 		hashDataChan = make(chan []byte, n)
 		hashWg = &sync.WaitGroup{}
 		hashWg.Add(1)

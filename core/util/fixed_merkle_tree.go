@@ -10,7 +10,7 @@ import (
 	goError "errors"
 
 	"github.com/0chain/errors"
-	"github.com/zeebo/blake3"
+	"github.com/minio/sha256-simd"
 )
 
 const (
@@ -24,7 +24,7 @@ var (
 	leafPool = sync.Pool{
 		New: func() interface{} {
 			return &leaf{
-				h: blake3.New(),
+				h: sha256.New(),
 			}
 		},
 	}

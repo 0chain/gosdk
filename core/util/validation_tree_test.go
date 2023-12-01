@@ -8,8 +8,8 @@ import (
 	"math"
 	"testing"
 
+	"github.com/minio/sha256-simd"
 	"github.com/stretchr/testify/require"
-	"github.com/zeebo/blake3"
 )
 
 const (
@@ -144,7 +144,7 @@ func calculateValidationMerkleRoot(data []byte) []byte {
 		if j > len(data) {
 			j = len(data)
 		}
-		h := blake3.New()
+		h := sha256.New()
 		_, _ = h.Write(data[i:j])
 		hashes = append(hashes, h.Sum(nil))
 	}
@@ -156,19 +156,19 @@ func calculateValidationMerkleRoot(data []byte) []byte {
 		newHashes := make([][]byte, 0)
 		if len(hashes)%2 == 0 {
 			for i := 0; i < len(hashes); i += 2 {
-				h := blake3.New()
+				h := sha256.New()
 				_, _ = h.Write(hashes[i])
 				_, _ = h.Write(hashes[i+1])
 				newHashes = append(newHashes, h.Sum(nil))
 			}
 		} else {
 			for i := 0; i < len(hashes)-1; i += 2 {
-				h := blake3.New()
+				h := sha256.New()
 				_, _ = h.Write(hashes[i])
 				_, _ = h.Write(hashes[i+1])
 				newHashes = append(newHashes, h.Sum(nil))
 			}
-			h := blake3.New()
+			h := sha256.New()
 			_, _ = h.Write(hashes[len(hashes)-1])
 			newHashes = append(newHashes, h.Sum(nil))
 		}
@@ -191,7 +191,7 @@ func calculateValidationRootAndNodes(b []byte, startInd, endInd int) (
 
 	hashes := make([][]byte, 0)
 	nodesData := make([]byte, 0)
-	h := blake3.New()
+	h := sha256.New()
 	for i := 0; i < len(b); i += MaxMerkleLeavesSize {
 		j := i + MaxMerkleLeavesSize
 		if j > len(b) {
@@ -212,7 +212,7 @@ func calculateValidationRootAndNodes(b []byte, startInd, endInd int) (
 		newHashes := make([][]byte, 0)
 		if len(hashes)%2 == 0 {
 			for i := 0; i < len(hashes); i += 2 {
-				h := blake3.New()
+				h := sha256.New()
 				_, _ = h.Write(hashes[i])
 				_, _ = h.Write(hashes[i+1])
 				nodesData = append(nodesData, hashes[i]...)
@@ -221,14 +221,14 @@ func calculateValidationRootAndNodes(b []byte, startInd, endInd int) (
 			}
 		} else {
 			for i := 0; i < len(hashes)-1; i += 2 {
-				h := blake3.New()
+				h := sha256.New()
 				_, _ = h.Write(hashes[i])
 				_, _ = h.Write(hashes[i+1])
 				nodesData = append(nodesData, hashes[i]...)
 				nodesData = append(nodesData, hashes[i+1]...)
 				newHashes = append(newHashes, h.Sum(nil))
 			}
-			h := blake3.New()
+			h := sha256.New()
 			_, _ = h.Write(hashes[len(hashes)-1])
 			nodesData = append(nodesData, hashes[len(hashes)-1]...)
 			newHashes = append(newHashes, h.Sum(nil))
