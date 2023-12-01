@@ -97,12 +97,12 @@ const (
 )
 
 const (
-	StorageSmartContractAddress  = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7`
+	StorageSmartContractAddress  = `7751e91d8bf5e9c8cc2991ad80fc326b83a1bf02afed2d4ea7c030d1c5932ff0`
 	VestingSmartContractAddress  = `2bba5b05949ea59c80aed3ac3474d7379d3be737e8eb5a968c52295e48333ead`
 	FaucetSmartContractAddress   = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d3`
 	MultiSigSmartContractAddress = `27b5ef7120252b79f9dd9c05505dd28f328c80f6863ee446daede08a84d651a7`
-	MinerSmartContractAddress    = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d9`
-	ZCNSCSmartContractAddress    = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712e0`
+	MinerSmartContractAddress    = `7751e91d8bf5e9c8cc2991ad80fc326b83a1bf02afed2d4ea7c030d1c5932ff0`
+	ZCNSCSmartContractAddress    = `7751e91d8bf5e9c8cc2991ad80fc326b83a1bf02afed2d4ea7c030d1c5932ff0`
 	MultiSigRegisterFuncName     = "register"
 	MultiSigVoteFuncName         = "vote"
 )
