@@ -463,9 +463,16 @@ func (t *Transaction) createSmartContractTxn(address, methodName string, input i
 	}
 
 	t.txn.TransactionType = transaction.TxnTypeSmartContract
-	t.txn.ToClientID = address
+	t.txn.ToClientID = "d3a6dbf0ab371bf3c783bc36e6a15ed708c4ce2c5acc351ba6114507645129c7"
 	t.txn.TransactionData = string(snBytes)
 	t.txn.Value = value
+
+	logger.Logger.Info("Jayash create smart contract txn",
+		zap.Any("txn", t.txn.Hash),
+		zap.Any("address", t.txn.ToClientID),
+		zap.Any("method", methodName),
+		zap.Any("input", t.txn.TransactionData),
+		zap.Any("value", value))
 
 	if t.txn.TransactionFee > 0 {
 		return nil
