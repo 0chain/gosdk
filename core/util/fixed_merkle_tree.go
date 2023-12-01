@@ -47,9 +47,14 @@ func (l *leaf) Write(b []byte) (int, error) {
 }
 
 func getNewLeaf() *leaf {
-	leaf := leafPool.Get().(*leaf)
-	leaf.h.Reset()
-	return leaf
+	l, ok := leafPool.Get().(*leaf)
+	if !ok {
+		return &leaf{
+			h: sha256.New(),
+		}
+	}
+	l.h.Reset()
+	return l
 }
 
 // FixedMerkleTree A trusted mekerle tree for outsourcing attack protection. see section 1.8 on whitepager
