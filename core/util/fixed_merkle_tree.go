@@ -20,6 +20,16 @@ const (
 	FixedMTDepth        = 11
 )
 
+var (
+	leafPool = sync.Pool{
+		New: func() interface{} {
+			return &leaf{
+				h: blake3.New(),
+			}
+		},
+	}
+)
+
 type leaf struct {
 	h hash.Hash
 }
@@ -37,9 +47,9 @@ func (l *leaf) Write(b []byte) (int, error) {
 }
 
 func getNewLeaf() *leaf {
-	return &leaf{
-		h: blake3.New(),
-	}
+	leaf := leafPool.Get().(*leaf)
+	leaf.h.Reset()
+	return leaf
 }
 
 // FixedMerkleTree A trusted mekerle tree for outsourcing attack protection. see section 1.8 on whitepager
@@ -165,6 +175,7 @@ func (fmt *FixedMerkleTree) CalculateMerkleRoot() {
 	nodes := make([][]byte, len(fmt.Leaves))
 	for i := 0; i < len(nodes); i++ {
 		nodes[i] = fmt.Leaves[i].GetHashBytes()
+		leafPool.Put(fmt.Leaves[i])
 	}
 
 	for i := 0; i < FixedMTDepth; i++ {
