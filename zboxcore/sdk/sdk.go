@@ -55,6 +55,7 @@ type StatusCallback interface {
 var numBlockDownloads = 500
 var sdkInitialized = false
 var networkWorkerTimerInHours = 1
+var shouldVerifyHash = true
 
 // GetVersion - returns version string
 func GetVersion() string {
@@ -892,8 +893,12 @@ func GetAllocationUpdates(allocation *Allocation) error {
 
 func SetNumBlockDownloads(num int) {
 	if num > 0 && num <= 500 {
-		numBlockDownloads = 500
+		numBlockDownloads = num
 	}
+}
+
+func SetVerifyHash(verify bool) {
+	shouldVerifyHash = verify
 }
 
 func GetAllocations() ([]*Allocation, error) {
@@ -1185,7 +1190,6 @@ func UpdateAllocation(
 	extend bool,
 	allocationID string,
 	lock uint64,
-	updateTerms bool,
 	addBlobberId, removeBlobberId string,
 	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
 ) (hash string, nonce int64, err error) {
@@ -1209,7 +1213,6 @@ func UpdateAllocation(
 	updateAllocationRequest["id"] = allocationID
 	updateAllocationRequest["size"] = size
 	updateAllocationRequest["extend"] = extend
-	updateAllocationRequest["update_terms"] = updateTerms
 	updateAllocationRequest["add_blobber_id"] = addBlobberId
 	updateAllocationRequest["remove_blobber_id"] = removeBlobberId
 	updateAllocationRequest["set_third_party_extendable"] = setThirdPartyExtendable
@@ -1452,7 +1455,12 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 	l.Logger.Info(msg)
 	l.Logger.Info("estimated txn fee: ", txn.TransactionFee)
 
-	transaction.SendTransactionSync(txn, blockchain.GetMiners())
+	err = transaction.SendTransactionSync(txn, blockchain.GetMiners())
+	if err != nil {
+		l.Logger.Info("transaction submission failed", zap.Error(err))
+		node.Cache.Evict(txn.ClientID)
+		return
+	}
 
 	var (
 		querySleepTime = time.Duration(blockchain.GetQuerySleepTime()) * time.Second
@@ -1559,32 +1567,14 @@ func CommitToFabric(metaTxnData, fabricConfigJSON string) (string, error) {
 func GetAllocationMinLock(
 	datashards, parityshards int,
 	size int64,
-	readPrice, writePrice PriceRange,
+	writePrice PriceRange,
 ) (int64, error) {
 	baSize := int64(math.Ceil(float64(size) / float64(datashards)))
 	totalSize := baSize * int64(datashards+parityshards)
-	config, err := GetStorageSCConfig()
-	if err != nil {
-		return 0, err
-	}
-	t := config.Fields["time_unit"]
-	timeunitStr, ok := t.(string)
-	if !ok {
-		return 0, fmt.Errorf("bad time_unit type")
-	}
-	timeunit, err := time.ParseDuration(timeunitStr)
-	if err != nil {
-		return 0, fmt.Errorf("bad time_unit format")
-	}
-
-	expiry := common.Timestamp(time.Now().Add(timeunit).Unix())
-	duration := expiry / common.Timestamp(timeunit.Milliseconds())
-	if expiry%common.Timestamp(timeunit.Milliseconds()) != 0 {
-		duration++
-	}
 
 	sizeInGB := float64(totalSize) / GB
-	cost := float64(duration) * (sizeInGB*float64(writePrice.Max) + sizeInGB*float64(readPrice.Max))
+
+	cost := sizeInGB * float64(writePrice.Max)
 	coin, err := currency.Float64ToCoin(cost)
 	if err != nil {
 		return 0, err
@@ -1600,7 +1590,6 @@ func GetUpdateAllocationMinLock(
 	allocationID string,
 	size int64,
 	extend bool,
-	updateTerms bool,
 	addBlobberId,
 	removeBlobberId string) (int64, error) {
 	updateAllocationRequest := make(map[string]interface{})
@@ -1609,7 +1598,6 @@ func GetUpdateAllocationMinLock(
 	updateAllocationRequest["id"] = allocationID
 	updateAllocationRequest["size"] = size
 	updateAllocationRequest["extend"] = extend
-	updateAllocationRequest["update_terms"] = updateTerms
 	updateAllocationRequest["add_blobber_id"] = addBlobberId
 	updateAllocationRequest["remove_blobber_id"] = removeBlobberId
 

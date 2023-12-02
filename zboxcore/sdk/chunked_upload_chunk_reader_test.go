@@ -83,8 +83,7 @@ func TestReadChunks(t *testing.T) {
 				int64(test.ChunkSize), test.DataShards,
 				test.EncryptOnUpload, uploadMask,
 				erasureEncoder, encscheme,
-				CreateHasher(getShardSize(test.Size, test.DataShards, test.EncryptOnUpload)),
-				1,
+				CreateHasher(getShardSize(test.Size, test.DataShards, test.EncryptOnUpload)), 100,
 			)
 			require.Nil(err)
 

@@ -247,6 +247,8 @@ func GetWritePriceRange() (PriceRange, error) {
 
 func SetWasm() {
 	IsWasm = true
+	BatchSize = 5
+	MultiOpBatchSize = 7
 }
 
 func getPriceRange(name string) (PriceRange, error) {
@@ -476,6 +478,7 @@ func (a *Allocation) EncryptAndUploadFileWithThumbnail(
 }
 
 func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileNames []string, thumbnailPaths []string, encrypts []bool, chunkNumbers []int, remotePaths []string, isUpdate []bool, isWebstreaming []bool, status StatusCallback) error {
+	l.Logger.Debug("Initialize batch: ", BatchSize, MultiOpBatchSize)
 	now := time.Now()
 	if len(localPaths) != len(thumbnailPaths) {
 		return errors.New("invalid_value", "length of localpaths and thumbnailpaths must be equal")
@@ -806,9 +809,9 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 	}
 	connectionID := zboxutil.NewConnectionId()
 	printLog := true
+	var mo MultiOperation
 	for i := 0; i < len(operations); {
 		// resetting multi operation and previous paths for every batch
-		var mo MultiOperation
 		mo.allocationObj = a
 		mo.operationMask = zboxutil.NewUint128(0)
 		mo.maskMU = &sync.Mutex{}
@@ -819,7 +822,6 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 			consensusThresh: a.consensusThreshold,
 			fullconsensus:   a.fullconsensus,
 		}
-
 		previousPaths := make(map[string]bool)
 		connectionErrors := make([]error, len(mo.allocationObj.Blobbers))
 
@@ -848,9 +850,9 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 				fmt.Sprintf("Multioperation: create connection failed. Required consensus %d got %d",
 					mo.consensusThresh, mo.operationMask.CountOnes()))
 		}
-		ops := 0
+
 		for ; i < len(operations); i++ {
-			if ops > MultiOpBatchSize {
+			if len(mo.operations) >= MultiOpBatchSize {
 				// max batch size reached, commit
 				connectionID = zboxutil.NewConnectionId()
 				break
@@ -905,7 +907,6 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 				connectionID = newConnectionID
 				break
 			}
-			ops++
 			err = operation.Verify(a)
 			if err != nil {
 				return err
@@ -923,6 +924,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 			if err != nil {
 				return err
 			}
+			mo.operations = nil
 		}
 	}
 	l.Logger.Info("-----------------MultiOperation completed-----------------")
@@ -2396,7 +2398,6 @@ func (a *Allocation) UpdateWithRepair(
 	size int64,
 	extend bool,
 	lock uint64,
-	updateTerms bool,
 	addBlobberId, removeBlobberId string,
 	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
 	statusCB StatusCallback,
@@ -2406,7 +2407,7 @@ func (a *Allocation) UpdateWithRepair(
 	}
 
 	l.Logger.Info("Updating allocation")
-	hash, _, err := UpdateAllocation(size, extend, a.ID, lock, updateTerms, addBlobberId, removeBlobberId, setThirdPartyExtendable, fileOptionsParams)
+	hash, _, err := UpdateAllocation(size, extend, a.ID, lock, addBlobberId, removeBlobberId, setThirdPartyExtendable, fileOptionsParams)
 	if err != nil {
 		return "", err
 	}

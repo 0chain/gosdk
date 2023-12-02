@@ -256,14 +256,28 @@ func (t *Transaction) VerifyTransaction(verifyHandler VerifyFunc) (bool, error) 
 	return verifyHandler(t.Signature, t.Hash, t.PublicKey)
 }
 
-func SendTransactionSync(txn *Transaction, miners []string) {
+func SendTransactionSync(txn *Transaction, miners []string) error {
 	wg := sync.WaitGroup{}
 	wg.Add(len(miners))
+
+	failureCount := 0
+
 	for _, miner := range miners {
 		url := fmt.Sprintf("%v/%v", miner, TXN_SUBMIT_URL)
-		go sendTransactionToURL(url, txn, &wg) //nolint
+		go func() {
+			_, err := sendTransactionToURL(url, txn, &wg)
+			if err != nil {
+				failureCount++
+			}
+		}() //nolint
 	}
 	wg.Wait()
+
+	if failureCount == len(miners) {
+		return errors.New("transaction_send_error", "failed to send transaction to all miners")
+	}
+
+	return nil
 }
 
 func sendTransactionToURL(url string, txn *Transaction, wg *sync.WaitGroup) ([]byte, error) {

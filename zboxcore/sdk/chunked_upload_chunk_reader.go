@@ -64,7 +64,7 @@ type chunkedUploadChunkReader struct {
 	hasherDataChan chan []byte
 	hasherError    error
 	hasherWG       sync.WaitGroup
-	chanClosed     bool
+	closeOnce      sync.Once
 }
 
 // createChunkReader create ChunkReader instance
@@ -112,8 +112,9 @@ func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards i
 	}
 
 	r.chunkDataSizePerRead = r.chunkDataSize * int64(dataShards)
-	r.hasherWG.Add(1)
-	go r.hashData()
+	// TODO: enable this for concurrent hashing
+	// r.hasherWG.Add(1)
+	// go r.hashData()
 	return r, nil
 }
 
@@ -153,7 +154,6 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 		ReadSize:     0,
 		FragmentSize: 0,
 	}
-
 	chunkBytes := make([]byte, r.chunkDataSizePerRead)
 	readLen, err := r.fileReader.Read(chunkBytes)
 	if err != nil {
@@ -188,7 +188,7 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 	if r.hasherError != nil {
 		return chunk, r.hasherError
 	}
-	r.hasherDataChan <- chunkBytes
+	_ = r.hasher.WriteToFile(chunkBytes)
 	fragments, err := r.erasureEncoder.Split(chunkBytes)
 	if err != nil {
 		return nil, err
@@ -256,16 +256,14 @@ func (r *chunkedUploadChunkReader) Read(buf []byte) ([][]byte, error) {
 }
 
 func (r *chunkedUploadChunkReader) Close() {
-	if !r.chanClosed {
+	r.closeOnce.Do(func() {
 		close(r.hasherDataChan)
 		r.hasherWG.Wait()
-	}
+	})
 }
 
 func (r *chunkedUploadChunkReader) GetFileHash() (string, error) {
-	close(r.hasherDataChan)
-	r.chanClosed = true
-	r.hasherWG.Wait()
+	r.Close()
 	if r.hasherError != nil {
 		return "", r.hasherError
 	}

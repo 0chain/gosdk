@@ -3,6 +3,7 @@ package sdk
 import (
 	"bytes"
 	"context"
+	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -29,7 +30,6 @@ import (
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/klauspost/reedsolomon"
-	"github.com/minio/sha256-simd"
 	"go.dedis.ch/kyber/v3/group/edwards25519"
 	"golang.org/x/sync/errgroup"
 )
@@ -431,15 +431,17 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	var (
 		actualFileHasher  hash.Hash
 		isPREAndWholeFile bool
-		chanClosed        bool
+		closeOnce         *sync.Once
 		hashDataChan      chan []byte
 		hashWg            *sync.WaitGroup
 	)
+
 	if !req.shouldVerify && (startBlock == 0 && endBlock == chunksPerShard) {
-		actualFileHasher = sha256.New()
+		actualFileHasher = md5.New()
 		hashDataChan = make(chan []byte, n)
 		hashWg = &sync.WaitGroup{}
 		hashWg.Add(1)
+		closeOnce = &sync.Once{}
 		go processHashData(hashDataChan, hashWg, actualFileHasher)
 		// isPREAndWholeFile = true
 	}
@@ -457,8 +459,9 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 				if isPREAndWholeFile {
 					hashDataChan <- data[:numBytes]
 					if i == n-1 {
-						close(hashDataChan)
-						chanClosed = true
+						closeOnce.Do(func() {
+							close(hashDataChan)
+						})
 						hashWg.Wait()
 						if calculatedFileHash, ok := checkHash(actualFileHasher, fRef, req.contentMode); !ok {
 							req.errorCB(fmt.Errorf("Expected actual file hash %s, calculated file hash %s",
@@ -494,8 +497,9 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 						if isPREAndWholeFile {
 							hashDataChan <- block.data[:numBytes]
 							if i == n-1 {
-								close(hashDataChan)
-								chanClosed = true
+								closeOnce.Do(func() {
+									close(hashDataChan)
+								})
 								hashWg.Wait()
 								if calculatedFileHash, ok := checkHash(actualFileHasher, fRef, req.contentMode); !ok {
 									req.errorCB(fmt.Errorf("Expected actual file hash %s, calculated file hash %s",
@@ -555,19 +559,18 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		})
 	}
 	if err := eg.Wait(); err != nil {
-		l.Logger.Error("[getBlocksData]", err)
-		if !chanClosed {
-			close(hashDataChan)
+		if isPREAndWholeFile {
+			closeOnce.Do(func() {
+				close(hashDataChan)
+			})
 		}
+		l.Logger.Error("[getBlocksData]", err)
 		req.errorCB(err, remotePathCB)
 		return
 	}
 
 	close(blocks)
 	wg.Wait()
-	if !chanClosed {
-		close(hashDataChan)
-	}
 	l.Logger.Info("[totalWriteTime]", totalWriteTime)
 	elapsedGetBlocksAndWrite := time.Since(now) - elapsedInitEC - elapsedInitEncryption
 	l.Logger.Info(fmt.Sprintf("[processDownload] Timings:\n allocation_id: %s,\n remotefilepath: %s,\n initEC: %d ms,\n initEncryption: %d ms,\n getBlocks and writes: %d ms",

@@ -30,6 +30,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/google/uuid"
 	"github.com/klauspost/reedsolomon"
+	"github.com/remeh/sizedwaitgroup"
 )
 
 const (
@@ -159,7 +160,7 @@ func CreateChunkedUpload(
 
 		uploadMask:      uploadMask,
 		chunkSize:       DefaultChunkSize,
-		chunkNumber:     1,
+		chunkNumber:     100,
 		encryptOnUpload: false,
 		webStreaming:    false,
 
@@ -207,6 +208,7 @@ func CreateChunkedUpload(
 	for _, opt := range opts {
 		opt(su)
 	}
+
 	if su.progressStorer == nil {
 		su.progressStorer = createFsChunkedUploadProgress(context.Background())
 	}
@@ -749,17 +751,17 @@ func (su *ChunkedUpload) uploadProcessor() {
 			}
 			start := time.Now()
 			wgErrors := make(chan error, len(su.blobbers))
-			wg := &sync.WaitGroup{}
 			ctx, cancel := context.WithCancel(context.TODO())
 			defer cancel()
 			su.consensus.Reset()
 			var pos uint64
 			var errCount int32
+			swg := sizedwaitgroup.New(BatchSize)
 			for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 				pos = uint64(i.TrailingZeros())
-				wg.Add(1)
+				swg.Add()
 				go func(pos uint64) {
-					defer wg.Done()
+					defer swg.Done()
 					err := su.blobbers[pos].sendUploadRequest(ctx, su, uploadData.chunkEndIndex, uploadData.isFinal, su.encryptedKey, uploadData.uploadBody[pos].body, uploadData.uploadBody[pos].formData, pos)
 
 					if err != nil {
@@ -779,7 +781,7 @@ func (su *ChunkedUpload) uploadProcessor() {
 					}
 				}(pos)
 			}
-			wg.Wait()
+			swg.Wait()
 			close(wgErrors)
 			for err := range wgErrors {
 				su.removeProgress()

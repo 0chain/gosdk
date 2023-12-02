@@ -42,7 +42,10 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 )
 
-require github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d
+require (
+	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d
+	github.com/minio/sha256-simd v1.0.1
+)
 
 require (
 	github.com/VictoriaMetrics/fastcache v1.6.0 // indirect
