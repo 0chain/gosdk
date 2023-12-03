@@ -53,8 +53,8 @@ jobs:
       - name: print vars
         shell: bash
         run: |
-          echo ${{ steps.extract_branch.outputs.branch }}
-          echo ${{ steps.extract_branch.outputs.base }}
+          echo ${{ env.branch }}
+          echo ${{ env.base }}
 
       # - name: Create PR on ${{ matrix.repo }}
       #   uses: convictional/trigger-workflow-and-wait@v1.6.1
