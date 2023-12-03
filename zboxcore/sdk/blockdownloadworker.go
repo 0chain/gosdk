@@ -153,7 +153,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			header.AuthToken, _ = json.Marshal(req.authTicket) //nolint: errcheck
 			isISO = checkISO8859_1(header.AuthToken)
 			if !isISO {
-				req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: fmt.Errorf("Non ISO8859_1 characters in auth token %s", header.AuthToken)}
+				req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: fmt.Errorf("Non ISO8859_1 characters in auth token: %s", string(header.AuthToken))}
 				return
 			}
 		}
