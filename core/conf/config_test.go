@@ -75,7 +75,7 @@ func TestLoadConfig(t *testing.T) {
 				return mockDefaultReader()
 			},
 			run: func(r *require.Assertions, cfg Config) {
-				r.Equal(50, cfg.MinSubmit)
+				r.Equal(10, cfg.MinSubmit)
 			},
 		},
 		{
