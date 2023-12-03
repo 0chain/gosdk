@@ -50,21 +50,15 @@ jobs:
           echo "base=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.base || '$GITHUB_REF' }}" >> $GITHUB_ENV
         id: extract_branch
 
-      - name: print vars
-        shell: bash
-        run: |
-          echo ${{ env.branch }}
-          echo ${{ env.base }}
-
-      # - name: Create PR on ${{ matrix.repo }}
-      #   uses: convictional/trigger-workflow-and-wait@v1.6.1
-      #   with:
-      #     owner: 0chain
-      #     repo: ${{ matrix.repo }}
-      #     ref: staging
-      #     github_token: ${{ secrets.GOSDK }}
-      #     workflow_file_name: gosdk.yml
-      #     client_payload: '{"gosdk": "${{ steps.extract_branch.outputs.branch }}", "base": "${{ steps.extract_branch.outputs.base }}"}'
-      #     propagate_failure: true
-      #     trigger_workflow: true
-      #     wait_workflow: true
+      - name: Create PR on ${{ matrix.repo }}
+        uses: convictional/trigger-workflow-and-wait@v1.6.1
+        with:
+          owner: 0chain
+          repo: ${{ matrix.repo }}
+          ref: staging
+          github_token: ${{ secrets.GOSDK }}
+          workflow_file_name: gosdk.yml
+          client_payload: '{"gosdk": "${{ env.branch }}", "base": "${{ env.base }}"}'
+          propagate_failure: true
+          trigger_workflow: true
+          wait_workflow: true
