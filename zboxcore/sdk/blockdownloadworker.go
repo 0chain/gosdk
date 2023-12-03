@@ -125,46 +125,19 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 		}
 
 		header := &DownloadRequestHeader{}
-		isISO := checkISO8859_1([]byte(req.remotefilepathhash))
-		if !isISO {
-			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: fmt.Errorf("Non ISO8859_1 characters in path hash %s", req.remotefilepathhash)}
-			return
-		}
+		header.PathHash = req.remotefilepathhash
 		header.BlockNum = req.blockNum
-		isISO = checkISO8859_1([]byte(strconv.FormatInt(req.blockNum, 10)))
-		if !isISO {
-			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: fmt.Errorf("Non ISO8859_1 characters in block number %d", req.blockNum)}
-			return
-		}
 		header.NumBlocks = req.numBlocks
-		isISO = checkISO8859_1([]byte(strconv.FormatInt(req.numBlocks, 10)))
-		if !isISO {
-			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: fmt.Errorf("Non ISO8859_1 characters in number of blocks")}
-			return
-		}
 		header.VerifyDownload = req.shouldVerify
 		header.ConnectionID = req.connectionID
-		isISO = checkISO8859_1([]byte(req.connectionID))
-		if !isISO {
-			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: fmt.Errorf("Non ISO8859_1 characters in connection id %s", req.connectionID)}
-			return
-		}
+
 		if req.authTicket != nil {
 			header.AuthToken, _ = json.Marshal(req.authTicket) //nolint: errcheck
-			isISO = checkISO8859_1(header.AuthToken)
-			if !isISO {
-				req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: fmt.Errorf("Non ISO8859_1 characters in auth token: %s", string(header.AuthToken))}
-				return
-			}
 		}
 		if len(req.contentMode) > 0 {
 			header.DownloadMode = req.contentMode
-			isISO = checkISO8859_1([]byte(req.contentMode))
-			if !isISO {
-				req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: fmt.Errorf("Non ISO8859_1 characters in download mode %s", req.contentMode)}
-			}
-			return
 		}
+
 		ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
 		shouldRetry := false
 
@@ -301,13 +274,4 @@ func readBody(r io.Reader, size int) ([]byte, error) {
 			return b, err
 		}
 	}
-}
-
-func checkISO8859_1(data []byte) bool {
-	for _, b := range data {
-		if b > 0x7F {
-			return false
-		}
-	}
-	return true
 }

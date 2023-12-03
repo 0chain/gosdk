@@ -424,18 +424,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		closeOnce         *sync.Once
 		hashDataChan      chan []byte
 		hashWg            *sync.WaitGroup
-		filename          string
 	)
-
-	if req.authTicket != nil {
-		filename = req.authTicket.FileName
-		req.authTicket.FileName = ""
-	}
-	defer func() {
-		if req.authTicket != nil {
-			req.authTicket.FileName = filename
-		}
-	}()
 
 	if !req.shouldVerify && (startBlock == 0 && endBlock == chunksPerShard) {
 		actualFileHasher = md5.New()
