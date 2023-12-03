@@ -112,8 +112,8 @@ func init() {
 	chain = &ChainConfig{
 		MaxTxnQuery:     5,
 		QuerySleepTime:  5,
-		MinSubmit:       50,
-		MinConfirmation: 50,
+		MinSubmit:       10,
+		MinConfirmation: 10,
 	}
 }
 
