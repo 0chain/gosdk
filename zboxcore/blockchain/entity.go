@@ -2,12 +2,42 @@ package blockchain
 
 import (
 	"encoding/json"
+	"github.com/0chain/gosdk/core/util"
+	"math"
+	"sync"
 	"sync/atomic"
 
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/node"
 )
+
+var miners []string
+var mGuard sync.Mutex
+
+func getMinMinersSubmit() int {
+	minMiners := util.MaxInt(calculateMinRequired(float64(chain.MinSubmit), float64(len(chain.Miners))/100), 1)
+	return minMiners
+}
+
+func calculateMinRequired(minRequired, percent float64) int {
+	return int(math.Ceil(minRequired * percent))
+}
+
+func GetStableMiners() []string {
+	mGuard.Lock()
+	defer mGuard.Unlock()
+	if len(miners) == 0 {
+		miners = util.GetRandom(chain.Miners, getMinMinersSubmit())
+	}
+
+	return miners
+}
+func ResetStableMiners() {
+	mGuard.Lock()
+	defer mGuard.Unlock()
+	miners = util.GetRandom(chain.Miners, getMinMinersSubmit())
+}
 
 type ChainConfig struct {
 	BlockWorker     string
