@@ -6,7 +6,7 @@ concurrency:
 
 on:
   push:
-    branches: [ master, staging, qa, sprint-*]
+    branches: [ master, staging, qa, sprint-*, test-gosdk-update]
   workflow_dispatch:
     inputs:
       version:
