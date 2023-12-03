@@ -43,8 +43,9 @@ jobs:
       - name: Extract branch or version name
         shell: bash
         run: |
-          echo "branch=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version || ${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}} }}" >> $GITHUB_ENV
-          echo "base=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.base || ${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}} }}" >> $GITHUB_ENV
+          echo ${{ github.ref }}
+          echo "branch=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version || github.ref }}" >> $GITHUB_ENV
+          echo "base=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.base || github.ref }}" >> $GITHUB_ENV
         id: extract_branch
 
       - name: Create PR on ${{ matrix.repo }}
