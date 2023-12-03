@@ -6,9 +6,9 @@ concurrency:
 
 on:
   push:
-    branches: [ master, staging, qa, sprint-* ]
-    tags:
-      - 'v*.*.*'
+    branches: [ master, staging, qa, sprint-*, test-gosdk-update ]
+    # tags:
+    #   - 'v*.*.*'
   workflow_dispatch:
     inputs:
       version:
@@ -38,15 +38,20 @@ jobs:
     needs: [ release ]
     runs-on: [self-hosted, build]
     steps:
+      - name: Extract branch name
+        shell: bash
+        run: echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
+        id: extract_branch
+
       - name: Create PR on ${{ matrix.repo }}
-        uses: convictional/trigger-workflow-and-wait@v1.3.0
+        uses: convictional/trigger-workflow-and-wait@v1.6.1
         with:
           owner: 0chain
           repo: ${{ matrix.repo }}
-          ref: ${{ github.head_ref || github.ref_name }}
+          ref: staging
           github_token: ${{ secrets.GOSDK }}
           workflow_file_name: gosdk.yml
-          inputs: ${{ needs.build.outputs.SDK }}
+          client_payload: '{"gosdk": "${{ steps.extract_branch.outputs.branch }}", "base": "${{ steps.extract_branch.outputs.branch }}"}'
           propagate_failure: true
           trigger_workflow: true
           wait_workflow: true
