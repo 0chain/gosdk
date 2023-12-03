@@ -45,8 +45,8 @@ jobs:
         run: |
           GITHUB_REF=$(echo $GITHUB_REF | sed -e "s#refs/heads/##g")
           echo $GITHUB_REF
-          echo "branch=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version || $GITHUB_REF }}" >> $GITHUB_ENV
-          echo "base=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.base || $GITHUB_REF }}" >> $GITHUB_ENV
+          echo "branch=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version || '$GITHUB_REF' }}" >> $GITHUB_ENV
+          echo "base=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.base || '$GITHUB_REF' }}" >> $GITHUB_ENV
         id: extract_branch
 
       - name: Create PR on ${{ matrix.repo }}
