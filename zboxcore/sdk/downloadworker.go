@@ -429,6 +429,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 
 	if req.authTicket != nil {
 		filename = req.authTicket.FileName
+		req.authTicket.FileName = ""
 	}
 	defer func() {
 		if req.authTicket != nil {
