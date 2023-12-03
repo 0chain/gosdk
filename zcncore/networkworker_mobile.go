@@ -13,6 +13,7 @@ import (
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/node"
 	"github.com/0chain/gosdk/core/util"
+	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"go.uber.org/zap"
 )
 
@@ -72,13 +73,10 @@ func UpdateNetworkDetails() error {
 		_config.isConfigured = false
 		_config.chain.Miners = networkDetails.net.Miners
 		_config.chain.Sharders = networkDetails.net.Sharders
-		consensus := _config.chain.SharderConsensous
-		if consensus < conf.DefaultSharderConsensous {
-			consensus = conf.DefaultSharderConsensous
-		}
-		if len(networkDetails.net.Sharders) < consensus {
-			consensus = len(networkDetails.net.Sharders)
-		}
+		consensus := blockchain.GetReqConsensus(
+			len(networkDetails.net.Sharders),
+			config.DefaultSharderConsensous,
+			_config.chain.MinConfirmation)
 
 		Sharders = node.NewHolder(networkDetails.net.Sharders, consensus)
 		node.InitCache(Sharders)
@@ -139,13 +137,10 @@ func SetNetwork(net *Network) {
 	_config.chain.Miners = net.net.Miners
 	_config.chain.Sharders = net.net.Sharders
 
-	consensus := _config.chain.SharderConsensous
-	if consensus < conf.DefaultSharderConsensous {
-		consensus = conf.DefaultSharderConsensous
-	}
-	if len(net.net.Sharders) < consensus {
-		consensus = len(net.net.Sharders)
-	}
+	consensus := blockchain.GetReqConsensus(
+		len(_config.chain.Sharders),
+		conf.DefaultSharderConsensous,
+		_config.chain.MinConfirmation)
 
 	Sharders = node.NewHolder(_config.chain.Sharders, consensus)
 

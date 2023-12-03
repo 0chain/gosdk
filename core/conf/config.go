@@ -72,8 +72,6 @@ type Config struct {
 	ZboxHost string `json:"zbox_host"`
 	// ZboxAppType app type name
 	ZboxAppType string `json:"zbox_app_type"`
-	// SharderConsensous is consensous for when quering for SCRestAPI calls
-	SharderConsensous int `json:"sharder_consensous"`
 }
 
 // LoadConfigFile load and parse Config from file
@@ -149,11 +147,6 @@ func LoadConfig(v Reader) (Config, error) {
 		cfg.VerifyOptimistic = true
 	}
 
-	sharderConsensous := v.GetInt("sharder_consensous")
-	if sharderConsensous < 1 {
-		sharderConsensous = DefaultSharderConsensous
-	}
-
 	cfg.BlockWorker = blockWorker
 	cfg.PreferredBlobbers = v.GetStringSlice("preferred_blobbers")
 	cfg.MinSubmit = minSubmit
@@ -161,7 +154,6 @@ func LoadConfig(v Reader) (Config, error) {
 	cfg.ConfirmationChainLength = CfmChainLength
 	cfg.MaxTxnQuery = maxTxnQuery
 	cfg.QuerySleepTime = querySleepTime
-	cfg.SharderConsensous = sharderConsensous
 
 	cfg.SignatureScheme = v.GetString("signature_scheme")
 	cfg.ChainID = v.GetString("chain_id")
