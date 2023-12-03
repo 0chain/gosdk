@@ -7,12 +7,14 @@ concurrency:
 on:
   push:
     branches: [ master, staging, qa, sprint-*, test-gosdk-update ]
-    # tags:
-    #   - 'v*.*.*'
   workflow_dispatch:
     inputs:
       version:
         description: '0Chain SDK version'
+        required: true
+      base:
+        description: the target branch to which PRs should be raised
+        default: sprint-1.11
         required: true
 
 env:
@@ -38,9 +40,11 @@ jobs:
     needs: [ release ]
     runs-on: [self-hosted, build]
     steps:
-      - name: Extract branch name
+      - name: Extract branch or version name
         shell: bash
-        run: echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
+        run: |
+          echo "branch=${{ github.event_name == 'workflow_dispatch' ? github.event.inputs.version : ${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}} }}" >> $GITHUB_ENV
+          echo "base=${{ github.event_name == 'workflow_dispatch' ? github.event.inputs.base : ${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}} }}" >> $GITHUB_ENV
         id: extract_branch
 
       - name: Create PR on ${{ matrix.repo }}
@@ -51,7 +55,7 @@ jobs:
           ref: staging
           github_token: ${{ secrets.GOSDK }}
           workflow_file_name: gosdk.yml
-          client_payload: '{"gosdk": "${{ steps.extract_branch.outputs.branch }}", "base": "${{ steps.extract_branch.outputs.branch }}"}'
+          client_payload: '{"gosdk": "${{ steps.extract_branch.outputs.branch }}", "base": "${{ steps.extract_branch.outputs.base }}"}'
           propagate_failure: true
           trigger_workflow: true
           wait_workflow: true
