@@ -9,7 +9,7 @@ import (
 	"math"
 	"sync"
 
-	"github.com/zeebo/blake3"
+	"github.com/minio/sha256-simd"
 )
 
 const (
@@ -99,7 +99,7 @@ func (v *ValidationTree) calculateRoot() {
 	depth := v.CalculateDepth()
 	nodes := make([][]byte, totalLeaves)
 	copy(nodes, v.leaves)
-	h := blake3.New()
+	h := sha256.New()
 
 	for i := 0; i < depth; i++ {
 		if len(nodes) == 1 {
@@ -154,7 +154,7 @@ func NewValidationTree(dataSize int64) *ValidationTree {
 
 	return &ValidationTree{
 		dataSize: dataSize,
-		h:        blake3.New(),
+		h:        sha256.New(),
 		leaves:   make([][]byte, totalLeaves),
 	}
 }
@@ -223,7 +223,7 @@ If client had required data from 2-9 then blobber would have to provide:
 func (m *MerklePathForMultiLeafVerification) VerifyMultipleBlocks(data []byte) error {
 
 	hashes := make([][]byte, 0)
-	h := blake3.New()
+	h := sha256.New()
 	// Calculate hashes from the data responded from the blobber.
 	for i := 0; i < len(data); i += MaxMerkleLeavesSize {
 		endIndex := i + MaxMerkleLeavesSize
@@ -270,7 +270,7 @@ func (m *MerklePathForMultiLeafVerification) VerifyMultipleBlocks(data []byte) e
 
 func (m *MerklePathForMultiLeafVerification) calculateIntermediateHashes(hashes [][]byte) [][]byte {
 	newHashes := make([][]byte, 0)
-	h := blake3.New()
+	h := sha256.New()
 	if len(hashes)%2 == 0 {
 		for i := 0; i < len(hashes); i += 2 {
 			h.Reset()

@@ -466,6 +466,7 @@ func (a *Allocation) EncryptAndUploadFileWithThumbnail(
 }
 
 func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileNames []string, thumbnailPaths []string, encrypts []bool, chunkNumbers []int, remotePaths []string, isUpdate []bool, isWebstreaming []bool, status StatusCallback) error {
+	l.Logger.Debug("Initialize batch: ", BatchSize, MultiOpBatchSize)
 	if len(localPaths) != len(thumbnailPaths) {
 		return errors.New("invalid_value", "length of localpaths and thumbnailpaths must be equal")
 	}
@@ -793,10 +794,9 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 		return notInitialized
 	}
 	connectionID := zboxutil.NewConnectionId()
-
+	var mo MultiOperation
 	for i := 0; i < len(operations); {
 		// resetting multi operation and previous paths for every batch
-		var mo MultiOperation
 		mo.allocationObj = a
 		mo.operationMask = zboxutil.NewUint128(0)
 		mo.maskMU = &sync.Mutex{}
@@ -807,7 +807,6 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 			consensusThresh: a.consensusThreshold,
 			fullconsensus:   a.fullconsensus,
 		}
-
 		previousPaths := make(map[string]bool)
 		connectionErrors := make([]error, len(mo.allocationObj.Blobbers))
 

@@ -1,6 +1,7 @@
 package sdk
 
 import (
+	"crypto/md5"
 	"encoding/hex"
 	"math"
 	"os"
@@ -8,7 +9,6 @@ import (
 
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/klauspost/reedsolomon"
-	"github.com/minio/sha256-simd"
 )
 
 // ChunkedUploadOption set stream option
@@ -26,7 +26,7 @@ func WithThumbnail(buf []byte) ChunkedUploadOption {
 			su.thumbnailBytes = buf
 			su.fileMeta.ActualThumbnailSize = int64(len(buf))
 
-			thumbnailHasher := sha256.New()
+			thumbnailHasher := md5.New()
 			thumbnailHasher.Write(buf)
 
 			su.fileMeta.ActualThumbnailHash = hex.EncodeToString(thumbnailHasher.Sum(nil))
