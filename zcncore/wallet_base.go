@@ -111,8 +111,8 @@ const (
 const consensusThresh = 25
 
 const (
-	defaultMinSubmit               = int(50)
-	defaultMinConfirmation         = int(50)
+	defaultMinSubmit               = int(10)
+	defaultMinConfirmation         = int(10)
 	defaultConfirmationChainLength = int(3)
 	defaultTxnExpirationSeconds    = 60
 	defaultWaitSeconds             = 3 * time.Second
