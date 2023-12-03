@@ -45,20 +45,26 @@ jobs:
         run: |
           GITHUB_REF=$(echo $GITHUB_REF | sed -e "s#refs/heads/##g")
           echo $GITHUB_REF
-          echo ${{ github.event_name  }}
+          echo ${{ github.event_name }}
           echo "branch=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version || '$GITHUB_REF' }}" >> $GITHUB_ENV
           echo "base=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.base || '$GITHUB_REF' }}" >> $GITHUB_ENV
         id: extract_branch
 
-      - name: Create PR on ${{ matrix.repo }}
-        uses: convictional/trigger-workflow-and-wait@v1.6.1
-        with:
-          owner: 0chain
-          repo: ${{ matrix.repo }}
-          ref: staging
-          github_token: ${{ secrets.GOSDK }}
-          workflow_file_name: gosdk.yml
-          client_payload: '{"gosdk": "${{ steps.extract_branch.outputs.branch }}", "base": "${{ steps.extract_branch.outputs.base }}"}'
-          propagate_failure: true
-          trigger_workflow: true
-          wait_workflow: true
+      - name: print vars
+        shell: bash
+        run: |
+          echo ${{ steps.extract_branch.outputs.branch }}
+          echo ${{ steps.extract_branch.outputs.base }}
+
+      # - name: Create PR on ${{ matrix.repo }}
+      #   uses: convictional/trigger-workflow-and-wait@v1.6.1
+      #   with:
+      #     owner: 0chain
+      #     repo: ${{ matrix.repo }}
+      #     ref: staging
+      #     github_token: ${{ secrets.GOSDK }}
+      #     workflow_file_name: gosdk.yml
+      #     client_payload: '{"gosdk": "${{ steps.extract_branch.outputs.branch }}", "base": "${{ steps.extract_branch.outputs.base }}"}'
+      #     propagate_failure: true
+      #     trigger_workflow: true
+      #     wait_workflow: true
