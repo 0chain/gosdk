@@ -368,7 +368,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		op = opThumbnailDownload
 	}
 	fRef := req.fRef
-	if fRef.ActualFileHash == emptyFileDataHash {
+	if fRef != nil && fRef.ActualFileHash == emptyFileDataHash {
 		if req.statusCallback != nil {
 			req.statusCallback.Completed(
 				req.allocationID, remotePathCB, fRef.Name, "", len(emptyFileDataHash), op)
