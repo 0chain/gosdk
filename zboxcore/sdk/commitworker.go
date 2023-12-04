@@ -111,7 +111,7 @@ func (commitreq *CommitRequest) processCommit() {
 		return
 	}
 
-	ctx, cncl := context.WithTimeout(context.Background(), (time.Second * 30))
+	ctx, cncl := context.WithTimeout(context.Background(), (time.Second * 60))
 	err = zboxutil.HttpDo(ctx, cncl, req, func(resp *http.Response, err error) error {
 		if err != nil {
 			l.Logger.Error("Ref path error:", err)
@@ -141,12 +141,16 @@ func (commitreq *CommitRequest) processCommit() {
 	})
 
 	if err != nil {
+		l.Logger.Error(fmt.Sprintf("New Path Reference request failed. Error is: %s, blobber: %s", err.Error(), commitreq.blobber.Baseurl))
 		commitreq.result = ErrorCommitResult(err.Error())
 		return
 	}
+	l.Logger.Debug("Got Reference Path Result in: ", time.Since(start).Milliseconds())
+
 	rootRef, err := lR.GetDirTree(commitreq.allocationID)
 
 	if err != nil {
+		l.Logger.Error("Error while getting dir tree for blobber", commitreq.blobber.Baseurl)
 		commitreq.result = ErrorCommitResult(err.Error())
 		return
 	}
