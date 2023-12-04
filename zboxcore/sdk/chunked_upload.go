@@ -409,7 +409,7 @@ func (su *ChunkedUpload) process() error {
 		su.progress.UploadLength += chunks.totalReadSize
 
 		if chunks.isFinal {
-			if su.fileMeta.ActualHash != "" {
+			if su.fileMeta.ActualHash == "" {
 				su.fileMeta.ActualHash, err = su.chunkReader.GetFileHash()
 			}
 			if err != nil {
