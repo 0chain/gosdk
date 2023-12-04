@@ -150,7 +150,7 @@ func (commitreq *CommitRequest) processCommit() {
 	rootRef, err := lR.GetDirTree(commitreq.allocationID)
 
 	if err != nil {
-		l.Logger.Error("Error while getting dir tree for blobber", commitreq.blobber.Baseurl)
+		l.Logger.Error("Error while getting dir tree for blobber: ", commitreq.blobber.Baseurl)
 		commitreq.result = ErrorCommitResult(err.Error())
 		return
 	}
