@@ -1012,6 +1012,7 @@ func GetSnapshots(round int64, limit int64, cb GetInfoCallback) (err error) {
 		"round": strconv.FormatInt(round, 10),
 		"limit": strconv.FormatInt(limit, 10),
 	})
+	fmt.Printf("get snapshots: url: %s, round: %d\n", url, round)
 	go GetInfoFromAnySharder(url, OpStorageSCGetSnapshots, cb)
 	return
 }
