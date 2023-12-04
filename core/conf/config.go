@@ -13,9 +13,9 @@ import (
 
 const (
 	// DefaultMinSubmit default value for min_submit
-	DefaultMinSubmit = 50
+	DefaultMinSubmit = 10
 	// DefaultMinConfirmation default value for min_confirmation
-	DefaultMinConfirmation = 50
+	DefaultMinConfirmation = 10
 	// DefaultMaxTxnQuery default value for max_txn_query
 	DefaultMaxTxnQuery = 5
 	// DefaultConfirmationChainLength default value for confirmation_chain_length

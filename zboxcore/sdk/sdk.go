@@ -1455,10 +1455,11 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 	l.Logger.Info(msg)
 	l.Logger.Info("estimated txn fee: ", txn.TransactionFee)
 
-	err = transaction.SendTransactionSync(txn, blockchain.GetMiners())
+	err = transaction.SendTransactionSync(txn, blockchain.GetStableMiners())
 	if err != nil {
 		l.Logger.Info("transaction submission failed", zap.Error(err))
 		node.Cache.Evict(txn.ClientID)
+		blockchain.ResetStableMiners()
 		return
 	}
 
