@@ -97,3 +97,9 @@ func WithEncryptedPoint(point string) ChunkedUploadOption {
 		su.encryptedKeyPoint = point
 	}
 }
+
+func WithActualHash(hash string) ChunkedUploadOption {
+	return func(su *ChunkedUpload) {
+		su.fileMeta.ActualHash = hash
+	}
+}
