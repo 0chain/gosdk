@@ -564,6 +564,7 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 				emptyFileDataHash))
 			operationRequests[idx].FileReader = byteReader
 			operationRequests[idx].Opts = append(operationRequests[idx].Opts, WithActualHash(emptyFileDataHash))
+			operationRequests[idx].FileMeta.ActualSize = int64(len(emptyFileDataHash))
 		}
 		if isUpdate[idx] {
 			operationRequests[idx].OperationType = constants.FileOperationUpdate
