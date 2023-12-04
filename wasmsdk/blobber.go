@@ -624,7 +624,7 @@ func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 			numBlocks = 100
 		}
 		if allocationObj.DataShards > 7 {
-			numBlocks = 50
+			numBlocks = 75
 		}
 		options := []sdk.ChunkedUploadOption{
 			sdk.WithThumbnail(option.ThumbnailBytes.Buffer),
