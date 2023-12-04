@@ -2133,7 +2133,7 @@ func (a *Allocation) downloadFromAuthTicket(fileHandler sys.File, authTicket str
 	if len(a.Blobbers) == 0 {
 		return noBLOBBERS
 	}
-	at.FileName = ""
+
 	downloadReq := &DownloadRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
 	downloadReq.maskMu = &sync.Mutex{}
 	downloadReq.allocationID = a.ID
