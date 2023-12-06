@@ -1000,6 +1000,10 @@ func CreateAllocationForOwner(
 		return "", 0, nil, errors.New("invalid_lock", "int64 overflow on lock value")
 	}
 
+	if datashards < 1 || parityshards < 1 {
+		return "", 0, nil, errors.New("allocation_validation_failed", "atleast 1 data and 1 parity shards are required")
+	}
+
 	allocationRequest, err := getNewAllocationBlobbers(
 		datashards, parityshards, size, readPrice, writePrice, preferredBlobberIds)
 	if err != nil {
