@@ -1000,6 +1000,10 @@ func CreateAllocationForOwner(
 		return "", 0, nil, errors.New("invalid_lock", "int64 overflow on lock value")
 	}
 
+	if datashards < 1 || parityshards < 1 {
+		return "", 0, nil, errors.New("allocation_validation_failed", "atleast 1 data and 1 parity shards are required")
+	}
+
 	allocationRequest, err := getNewAllocationBlobbers(
 		datashards, parityshards, size, readPrice, writePrice, preferredBlobberIds)
 	if err != nil {
@@ -1455,7 +1459,13 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 	l.Logger.Info(msg)
 	l.Logger.Info("estimated txn fee: ", txn.TransactionFee)
 
-	transaction.SendTransactionSync(txn, blockchain.GetMiners())
+	err = transaction.SendTransactionSync(txn, blockchain.GetStableMiners())
+	if err != nil {
+		l.Logger.Info("transaction submission failed", zap.Error(err))
+		node.Cache.Evict(txn.ClientID)
+		blockchain.ResetStableMiners()
+		return
+	}
 
 	var (
 		querySleepTime = time.Duration(blockchain.GetQuerySleepTime()) * time.Second
@@ -1562,32 +1572,14 @@ func CommitToFabric(metaTxnData, fabricConfigJSON string) (string, error) {
 func GetAllocationMinLock(
 	datashards, parityshards int,
 	size int64,
-	readPrice, writePrice PriceRange,
+	writePrice PriceRange,
 ) (int64, error) {
 	baSize := int64(math.Ceil(float64(size) / float64(datashards)))
 	totalSize := baSize * int64(datashards+parityshards)
-	config, err := GetStorageSCConfig()
-	if err != nil {
-		return 0, err
-	}
-	t := config.Fields["time_unit"]
-	timeunitStr, ok := t.(string)
-	if !ok {
-		return 0, fmt.Errorf("bad time_unit type")
-	}
-	timeunit, err := time.ParseDuration(timeunitStr)
-	if err != nil {
-		return 0, fmt.Errorf("bad time_unit format")
-	}
-
-	expiry := common.Timestamp(time.Now().Add(timeunit).Unix())
-	duration := expiry / common.Timestamp(timeunit.Milliseconds())
-	if expiry%common.Timestamp(timeunit.Milliseconds()) != 0 {
-		duration++
-	}
 
 	sizeInGB := float64(totalSize) / GB
-	cost := float64(duration) * (sizeInGB*float64(writePrice.Max) + sizeInGB*float64(readPrice.Max))
+
+	cost := sizeInGB * float64(writePrice.Max)
 	coin, err := currency.Float64ToCoin(cost)
 	if err != nil {
 		return 0, err

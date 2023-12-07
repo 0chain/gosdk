@@ -3,6 +3,7 @@ package sdk
 import (
 	"bytes"
 	"context"
+	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -29,7 +30,6 @@ import (
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/klauspost/reedsolomon"
-	"github.com/minio/sha256-simd"
 	"go.dedis.ch/kyber/v3/group/edwards25519"
 	"golang.org/x/sync/errgroup"
 )
@@ -368,6 +368,13 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		op = opThumbnailDownload
 	}
 	fRef := req.fRef
+	if fRef != nil && fRef.ActualFileHash == emptyFileDataHash {
+		if req.statusCallback != nil {
+			req.statusCallback.Completed(
+				req.allocationID, remotePathCB, fRef.Name, "", len(emptyFileDataHash), op)
+		}
+		return
+	}
 	size, chunksPerShard, blocksPerShard := req.size, req.chunksPerShard, req.blocksPerShard
 
 	logger.Logger.Info(
@@ -427,7 +434,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	)
 
 	if !req.shouldVerify && (startBlock == 0 && endBlock == chunksPerShard) {
-		actualFileHasher = sha256.New()
+		actualFileHasher = md5.New()
 		hashDataChan = make(chan []byte, n)
 		hashWg = &sync.WaitGroup{}
 		hashWg.Add(1)

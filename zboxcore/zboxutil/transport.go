@@ -21,6 +21,5 @@ var DefaultTransport = &http.Transport{
 	TLSHandshakeTimeout:   10 * time.Second,
 	ExpectContinueTimeout: 1 * time.Second,
 	MaxIdleConnsPerHost:   100,
-	ReadBufferSize:        34 * 1024 * 1024,
-	WriteBufferSize:       34 * 1024 * 1024,
+	WriteBufferSize:       256 * 1024,
 }

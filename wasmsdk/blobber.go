@@ -28,8 +28,6 @@ import (
 
 const FileOperationInsert = "insert"
 
-var allocObj *sdk.Allocation
-
 func listObjects(allocationID string, remotePath string) (*sdk.ListResult, error) {
 	alloc, err := getAllocation(allocationID)
 	if err != nil {
@@ -516,7 +514,6 @@ func bulkUpload(jsonBulkUploadOptions string) ([]BulkUploadResult, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	n := len(options)
 	wait := make(chan BulkUploadResult, 1)
 
@@ -626,6 +623,9 @@ func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 		if numBlocks < 1 {
 			numBlocks = 100
 		}
+		if allocationObj.DataShards > 7 {
+			numBlocks = 75
+		}
 		options := []sdk.ChunkedUploadOption{
 			sdk.WithThumbnail(option.ThumbnailBytes.Buffer),
 			sdk.WithEncrypt(encrypt),
@@ -711,6 +711,9 @@ func uploadWithJsFuncs(allocationID, remotePath string, readChunkFuncName string
 
 	if numBlocks < 1 {
 		numBlocks = 100
+	}
+	if allocationObj.DataShards > 7 {
+		numBlocks = 50
 	}
 
 	ChunkedUpload, err := sdk.CreateChunkedUpload("/", allocationObj, fileMeta, fileReader, isUpdate, isRepair, webStreaming, zboxutil.NewConnectionId(),
