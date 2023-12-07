@@ -1,6 +1,7 @@
 package sdk
 
 import (
+	"bytes"
 	"io"
 
 	thrown "github.com/0chain/errors"
@@ -118,6 +119,13 @@ func (uo *UploadOperation) Error(allocObj *Allocation, consensus int, err error)
 
 func NewUploadOperation(workdir string, allocObj *Allocation, connectionID string, fileMeta FileMeta, fileReader io.Reader, isUpdate, isWebstreaming bool, opts ...ChunkedUploadOption) (*UploadOperation, string, error) {
 	uo := &UploadOperation{}
+	if fileMeta.ActualSize == 0 {
+		byteReader := bytes.NewReader([]byte(
+			emptyFileDataHash))
+		fileReader = byteReader
+		opts = append(opts, WithActualHash(emptyFileDataHash))
+		fileMeta.ActualSize = int64(len(emptyFileDataHash))
+	}
 	cu, err := CreateChunkedUpload(workdir, allocObj, fileMeta, fileReader, isUpdate, false, isWebstreaming, connectionID, opts...)
 	if err != nil {
 		return nil, "", err
