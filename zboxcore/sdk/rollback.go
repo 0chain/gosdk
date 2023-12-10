@@ -116,7 +116,11 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 		wm.AllocationRoot = rb.lpm.PrevWM.AllocationRoot
 		wm.PreviousAllocationRoot = rb.lpm.PrevWM.AllocationRoot
 		wm.FileMetaRoot = rb.lpm.PrevWM.FileMetaRoot
+		if wm.AllocationRoot == wm.PreviousAllocationRoot {
+			return nil
+		}
 	}
+
 	err := wm.Sign()
 	if err != nil {
 		l.Logger.Error("Signing writemarker failed: ", err)
@@ -296,7 +300,16 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 	l.Logger.Info("Rolling back to previous version")
 	fullConsensus := len(versionMap[latestVersion]) - (req - len(versionMap[prevVersion]))
 	errCnt = 0
-
+	l.Logger.Info("fullConsensus", zap.Int32("fullConsensus", int32(fullConsensus)), zap.Any("versionMap", versionMap))
+	latestRoot := []RollbackBlobber{}
+	for _, rb := range versionMap[latestVersion] {
+		latestRoot = append(latestRoot, *rb)
+	}
+	prevRoot := []RollbackBlobber{}
+	for _, rb := range versionMap[prevVersion] {
+		prevRoot = append(prevRoot, *rb)
+	}
+	l.Logger.Info("allocRoot", zap.Any("latestRoot", latestRoot), zap.Any("prevRoot", prevRoot))
 	for _, rb := range versionMap[latestVersion] {
 
 		wg.Add(1)
