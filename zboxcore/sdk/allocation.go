@@ -60,6 +60,10 @@ const (
 	CanRenameMask = uint16(32) // 0010 0000
 )
 
+const (
+	emptyFileDataHash = "d41d8cd98f00b204e9800998ecf8427e"
+)
+
 // Expected success rate is calculated (NumDataShards)*100/(NumDataShards+NumParityShards)
 
 var GetFileInfo = func(localpath string) (os.FileInfo, error) {
@@ -466,7 +470,6 @@ func (a *Allocation) EncryptAndUploadFileWithThumbnail(
 }
 
 func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileNames []string, thumbnailPaths []string, encrypts []bool, chunkNumbers []int, remotePaths []string, isUpdate []bool, isWebstreaming []bool, status StatusCallback) error {
-	l.Logger.Debug("Initialize batch: ", BatchSize, MultiOpBatchSize)
 	if len(localPaths) != len(thumbnailPaths) {
 		return errors.New("invalid_value", "length of localpaths and thumbnailpaths must be equal")
 	}
@@ -556,6 +559,7 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 			Workdir:       workdir,
 			RemotePath:    fileMeta.RemotePath,
 		}
+
 		if isUpdate[idx] {
 			operationRequests[idx].OperationType = constants.FileOperationUpdate
 		}
