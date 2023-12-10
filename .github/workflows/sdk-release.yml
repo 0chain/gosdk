@@ -6,13 +6,15 @@ concurrency:
 
 on:
   push:
-    branches: [ master, staging, qa, sprint-* ]
-    tags:
-      - 'v*.*.*'
+    branches: [ master, staging, qa, sprint-*]
   workflow_dispatch:
     inputs:
       version:
         description: '0Chain SDK version'
+        required: true
+      base:
+        description: the target branch to which PRs should be raised
+        default: sprint-1.11
         required: true
 
 env:
@@ -34,19 +36,29 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        repo: [0nft, 0box, 0dns, zwalletcli, zboxcli, blobber, zs3server, s3-migration, token_bridge_authserver ]
+        repo: [0box, 0dns, zwalletcli, zboxcli, blobber, zs3server, s3-migration, token_bridge_authserver ]
     needs: [ release ]
     runs-on: [self-hosted, build]
     steps:
+      - name: Extract branch or version name
+        shell: bash
+        run: |
+          GITHUB_REF=$(echo $GITHUB_REF | sed -e "s#refs/heads/##g")
+          echo $GITHUB_REF
+          echo ${{ github.event_name }}
+          echo "branch=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version || '$GITHUB_REF' }}" >> $GITHUB_ENV
+          echo "base=${{ github.event_name == 'workflow_dispatch' && github.event.inputs.base || '$GITHUB_REF' }}" >> $GITHUB_ENV
+        id: extract_branch
+
       - name: Create PR on ${{ matrix.repo }}
-        uses: convictional/trigger-workflow-and-wait@v1.3.0
+        uses: convictional/trigger-workflow-and-wait@v1.6.1
         with:
           owner: 0chain
           repo: ${{ matrix.repo }}
-          ref: ${{ github.head_ref || github.ref_name }}
+          ref: staging
           github_token: ${{ secrets.GOSDK }}
           workflow_file_name: gosdk.yml
-          inputs: ${{ needs.build.outputs.SDK }}
+          client_payload: '{"gosdk": "${{ env.branch }}", "base": "${{ env.base }}"}'
           propagate_failure: true
           trigger_workflow: true
           wait_workflow: true
