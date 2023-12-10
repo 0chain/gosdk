@@ -116,7 +116,7 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 		wm.AllocationRoot = rb.lpm.PrevWM.AllocationRoot
 		wm.PreviousAllocationRoot = rb.lpm.PrevWM.AllocationRoot
 		wm.FileMetaRoot = rb.lpm.PrevWM.FileMetaRoot
-		if wm.AllocationRoot == wm.PreviousAllocationRoot {
+		if wm.AllocationRoot == rb.lpm.LatestWM.AllocationRoot {
 			return nil
 		}
 	}
