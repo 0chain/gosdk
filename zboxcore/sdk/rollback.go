@@ -280,7 +280,6 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 		versionMap[version] = append(versionMap[version], rb)
 	}
 
-	l.Logger.Info("versionMap", zap.Any("versionMap", versionMap))
 	if len(versionMap) < 2 {
 		return Commit, nil
 	}
@@ -294,20 +293,22 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 	if len(versionMap[latestVersion]) >= req || len(versionMap[prevVersion]) >= req || len(versionMap) > 2 {
 		// TODO: Return Repair after refactoring the repair function
 		return Repair, nil
+	} else {
+		l.Logger.Info("versionMapLen", zap.Int("versionMapLen", len(versionMap)), zap.Int("latestLen", len(versionMap[latestVersion])), zap.Int("prevLen", len(versionMap[prevVersion])))
 	}
 
 	// rollback to previous version
 	l.Logger.Info("Rolling back to previous version")
 	fullConsensus := len(versionMap[latestVersion]) - (req - len(versionMap[prevVersion]))
 	errCnt = 0
-	l.Logger.Info("fullConsensus", zap.Int32("fullConsensus", int32(fullConsensus)), zap.Any("versionMap", versionMap))
-	latestRoot := []RollbackBlobber{}
+	l.Logger.Info("fullConsensus", zap.Int32("fullConsensus", int32(fullConsensus)), zap.Any("versionMap", versionMap), zap.Any("latestVersion", latestVersion), zap.Any("prevVersion", prevVersion), zap.Any("versionMap[latestVersion]", versionMap[latestVersion]), zap.Any("versionMap[prevVersion]", versionMap[prevVersion]))
+	latestRoot := []LatestPrevWriteMarker{}
 	for _, rb := range versionMap[latestVersion] {
-		latestRoot = append(latestRoot, *rb)
+		latestRoot = append(latestRoot, *rb.lpm)
 	}
-	prevRoot := []RollbackBlobber{}
+	prevRoot := []LatestPrevWriteMarker{}
 	for _, rb := range versionMap[prevVersion] {
-		prevRoot = append(prevRoot, *rb)
+		prevRoot = append(prevRoot, *rb.lpm)
 	}
 	l.Logger.Info("allocRoot", zap.Any("latestRoot", latestRoot), zap.Any("prevRoot", prevRoot))
 	for _, rb := range versionMap[latestVersion] {
