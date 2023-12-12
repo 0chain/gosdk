@@ -259,22 +259,39 @@ func (t *Transaction) VerifyTransaction(verifyHandler VerifyFunc) (bool, error) 
 func SendTransactionSync(txn *Transaction, miners []string) error {
 	wg := sync.WaitGroup{}
 	wg.Add(len(miners))
-
-	failureCount := 0
+	fails := make(chan error, len(miners))
 
 	for _, miner := range miners {
 		url := fmt.Sprintf("%v/%v", miner, TXN_SUBMIT_URL)
 		go func() {
 			_, err := sendTransactionToURL(url, txn, &wg)
 			if err != nil {
-				failureCount++
+				fails <- err
 			}
 		}() //nolint
 	}
 	wg.Wait()
+	close(fails)
+
+	failureCount := 0
+	messages := make(map[string]int)
+	for e := range fails {
+		if e != nil {
+			failureCount++
+			messages[e.Error()] += 1
+		}
+	}
+
+	max := 0
+	dominant := ""
+	for m, s := range messages {
+		if s > max {
+			dominant = m
+		}
+	}
 
 	if failureCount == len(miners) {
-		return errors.New("transaction_send_error", "failed to send transaction to all miners")
+		return errors.New("transaction_send_error", dominant)
 	}
 
 	return nil

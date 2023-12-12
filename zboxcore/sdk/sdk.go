@@ -9,6 +9,7 @@ import (
 	"math"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/0chain/common/core/currency"
@@ -223,7 +224,7 @@ func ReadPoolLock(tokens, fee uint64) (hash string, nonce int64, err error) {
 		Name:      transaction.STORAGESC_READ_POOL_LOCK,
 		InputArgs: nil,
 	}
-	hash, _, nonce, _, err = smartContractTxnValueFee(sn, tokens, fee)
+	hash, _, nonce, _, err = smartContractTxnValueFeeWithRetry(sn, tokens, fee)
 	return
 }
 
@@ -237,7 +238,7 @@ func ReadPoolUnlock(fee uint64) (hash string, nonce int64, err error) {
 		Name:      transaction.STORAGESC_READ_POOL_UNLOCK,
 		InputArgs: nil,
 	}
-	hash, _, nonce, _, err = smartContractTxnValueFee(sn, 0, fee)
+	hash, _, nonce, _, err = smartContractTxnValueFeeWithRetry(sn, 0, fee)
 	return
 }
 
@@ -379,7 +380,7 @@ func StakePoolLock(providerType ProviderType, providerID string, value, fee uint
 		Name:      transaction.STORAGESC_STAKE_POOL_LOCK,
 		InputArgs: &spr,
 	}
-	hash, _, nonce, _, err = smartContractTxnValueFee(sn, value, fee)
+	hash, _, nonce, _, err = smartContractTxnValueFeeWithRetry(sn, value, fee)
 	return
 }
 
@@ -422,7 +423,7 @@ func StakePoolUnlock(providerType ProviderType, providerID string, fee uint64) (
 	}
 
 	var out string
-	if _, out, nonce, _, err = smartContractTxnValueFee(sn, 0, fee); err != nil {
+	if _, out, nonce, _, err = smartContractTxnValueFeeWithRetry(sn, 0, fee); err != nil {
 		return // an error
 	}
 
@@ -455,7 +456,7 @@ func WritePoolLock(allocID string, tokens, fee uint64) (hash string, nonce int64
 		Name:      transaction.STORAGESC_WRITE_POOL_LOCK,
 		InputArgs: &req,
 	}
-	hash, _, nonce, _, err = smartContractTxnValueFee(sn, tokens, fee)
+	hash, _, nonce, _, err = smartContractTxnValueFeeWithRetry(sn, tokens, fee)
 	return
 }
 
@@ -476,7 +477,7 @@ func WritePoolUnlock(allocID string, fee uint64) (hash string, nonce int64, err 
 		Name:      transaction.STORAGESC_WRITE_POOL_UNLOCK,
 		InputArgs: &req,
 	}
-	hash, _, nonce, _, err = smartContractTxnValueFee(sn, 0, fee)
+	hash, _, nonce, _, err = smartContractTxnValueFeeWithRetry(sn, 0, fee)
 	return
 }
 
@@ -1415,7 +1416,17 @@ func smartContractTxnValue(sn transaction.SmartContractTxnData, value uint64) (
 	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 
 	// Fee is set during sdk initialization.
-	return smartContractTxnValueFee(sn, value, client.TxnFee())
+	return smartContractTxnValueFeeWithRetry(sn, value, client.TxnFee())
+}
+
+func smartContractTxnValueFeeWithRetry(sn transaction.SmartContractTxnData,
+	value, fee uint64) (hash, out string, nonce int64, t *transaction.Transaction, err error) {
+	hash, out, nonce, t, err = smartContractTxnValueFee(sn, value, fee)
+
+	if err != nil && strings.Contains(err.Error(), "invalid transaction nonce") {
+		return smartContractTxnValueFee(sn, value, fee)
+	}
+	return
 }
 
 func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
