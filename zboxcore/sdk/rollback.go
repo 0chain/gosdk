@@ -301,16 +301,7 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 	l.Logger.Info("Rolling back to previous version")
 	fullConsensus := len(versionMap[latestVersion]) - (req - len(versionMap[prevVersion]))
 	errCnt = 0
-	l.Logger.Info("fullConsensus", zap.Int32("fullConsensus", int32(fullConsensus)), zap.Any("versionMap", versionMap), zap.Any("latestVersion", latestVersion), zap.Any("prevVersion", prevVersion), zap.Any("versionMap[latestVersion]", versionMap[latestVersion]), zap.Any("versionMap[prevVersion]", versionMap[prevVersion]))
-	latestRoot := []LatestPrevWriteMarker{}
-	for _, rb := range versionMap[latestVersion] {
-		latestRoot = append(latestRoot, *rb.lpm)
-	}
-	prevRoot := []LatestPrevWriteMarker{}
-	for _, rb := range versionMap[prevVersion] {
-		prevRoot = append(prevRoot, *rb.lpm)
-	}
-	l.Logger.Info("allocRoot", zap.Any("latestRoot", latestRoot), zap.Any("prevRoot", prevRoot))
+	l.Logger.Info("fullConsensus", zap.Int32("fullConsensus", int32(fullConsensus)), zap.Int("latestLen", len(versionMap[latestVersion])), zap.Int("prevLen", len(versionMap[prevVersion])))
 	for _, rb := range versionMap[latestVersion] {
 
 		wg.Add(1)
