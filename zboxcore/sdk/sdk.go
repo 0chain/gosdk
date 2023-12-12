@@ -1230,24 +1230,6 @@ func UpdateAllocation(
 	return
 }
 
-func CreateFreeUpdateAllocation(marker, allocationId string, value uint64) (string, int64, error) {
-	if !sdkInitialized {
-		return "", 0, sdkNotInitialized
-	}
-
-	var input = map[string]interface{}{
-		"allocation_id": allocationId,
-		"marker":        marker,
-	}
-
-	var sn = transaction.SmartContractTxnData{
-		Name:      transaction.FREE_UPDATE_ALLOCATION,
-		InputArgs: input,
-	}
-	hash, _, n, _, err := smartContractTxnValue(sn, value)
-	return hash, n, err
-}
-
 func FinalizeAllocation(allocID string) (hash string, nonce int64, err error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
