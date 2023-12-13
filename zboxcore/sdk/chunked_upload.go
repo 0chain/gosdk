@@ -411,6 +411,10 @@ func (su *ChunkedUpload) process() error {
 		if chunks.isFinal {
 			if su.fileMeta.ActualHash == "" {
 				su.fileMeta.ActualHash, err = su.chunkReader.GetFileHash()
+				if su.fileMeta.ActualHash != "" {
+					logger.Logger.Error("File hash is empty", su.fileMeta.Path)
+					return thrown.New("upload_failed", "Upload failed. File hash is empty")
+				}
 			}
 			if err != nil {
 				if su.statusCallback != nil {
