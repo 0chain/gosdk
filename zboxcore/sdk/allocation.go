@@ -49,10 +49,9 @@ var (
 )
 
 var (
-	noBLOBBERS       = errors.New("", "No Blobbers set in this allocation")
-	notInitialized   = errors.New("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
-	IsWasm           = false
-	MultiOpBatchSize = 10
+	noBLOBBERS     = errors.New("", "No Blobbers set in this allocation")
+	notInitialized = errors.New("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
+	IsWasm         = false
 )
 
 const (
@@ -252,7 +251,6 @@ func GetWritePriceRange() (PriceRange, error) {
 func SetWasm() {
 	IsWasm = true
 	BatchSize = 5
-	MultiOpBatchSize = 7
 }
 
 func getPriceRange(name string) (PriceRange, error) {
@@ -856,11 +854,6 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 		}
 
 		for ; i < len(operations); i++ {
-			if len(mo.operations) >= MultiOpBatchSize {
-				// max batch size reached, commit
-				connectionID = zboxutil.NewConnectionId()
-				break
-			}
 			op := operations[i]
 			remotePath := op.RemotePath
 			parentPaths := GenerateParentPaths(remotePath)
