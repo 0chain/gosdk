@@ -248,6 +248,9 @@ func (mo *MultiOperation) Process() error {
 	}
 	defer writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
 	if status != Commit {
+		for _, op := range mo.operations {
+			op.Error(mo.allocationObj, 0, ErrRetryOperation)
+		}
 		return ErrRetryOperation
 	}
 	logger.Logger.Info("[checkAllocStatus]", time.Since(start).Milliseconds())
