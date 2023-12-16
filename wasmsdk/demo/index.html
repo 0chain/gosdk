@@ -75,6 +75,7 @@
       <button id="btnRemoteFileMap">RemoteFileMap</button>
       <button id="btnAddReplaceBlobber">AddReplaceBlobber</button>
       <button id="makeSCRestAPICall">makeSCRestAPICall</button>
+      <button id="makeMinerAPICall">makeMinerAPICall</button>
     </span>
 
     <br>
@@ -349,6 +350,19 @@
         paramsJSON = JSON.stringify(params, null, 2)
         storagesc = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7"
         const resp = await goWasm.sdk.makeSCRestAPICall(storagesc, "/allocation", paramsJSON)
+        txtOutput.innerHTML = resp
+      } catch (e) {
+        alert(e)
+      }
+    })
+    onClick('makeMinerAPICall', async () => {
+      const allocationID = getSelectedAllocation()
+
+      try {
+        params = {
+        }
+        paramsJSON = JSON.stringify(params, null, 2)
+        const resp = await goWasm.sdk.makeMinerAPICall(storagesc, "/v1/fees_table", paramsJSON)
         txtOutput.innerHTML = resp
       } catch (e) {
         alert(e)

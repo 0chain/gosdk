@@ -160,6 +160,7 @@ func main() {
 				"getLookupHash":          getLookupHash,
 				"createThumbnail":        createThumbnail,
 				"makeSCRestAPICall":      makeSCRestAPICall,
+				"makeMinerAPICall":       makeMinerAPICall,
 
 				//blobber
 				"delete":                 Delete,

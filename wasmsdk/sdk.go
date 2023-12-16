@@ -124,6 +124,16 @@ func makeSCRestAPICall(scAddress, relativePath, paramsJson string) (string, erro
 	return string(b), err
 }
 
+func makeMinerAPICall(scAddress, relativePath, paramsJson string) (string, error) {
+	var params map[string]string
+	err := json.Unmarshal([]byte(paramsJson), &params)
+	if err != nil {
+		sdkLogger.Error(fmt.Sprintf("Error parsing JSON: %v", err))
+	}
+	b, err := zboxutil.MakeMinerAPICall(scAddress, relativePath, params, nil)
+	return string(b), err
+}
+
 func send(toClientID string, tokens uint64, fee uint64, desc string) (string, error) {
 	wg := &sync.WaitGroup{}
 	cb := &transactionCallback{wg: wg}

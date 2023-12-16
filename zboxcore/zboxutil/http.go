@@ -801,6 +801,96 @@ func NewRollbackRequest(baseUrl, allocationID string, allocationTx string, body 
 	return req, nil
 }
 
+func MakeMinerAPICall(relativePath string, params map[string]string, handler SCRestAPIHandler) ([]byte, error) {
+	cfg, err := conf.GetClientConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	miners := blockchain.GetStableMiners()
+
+	c := cfg.SharderConsensous
+	if len(blockchain.GetStableMiners()) > c {
+		miners = miners[:c]
+	}
+
+	responses := make(map[int]int)
+	mu := &sync.Mutex{}
+	entityResult := make(map[string][]byte)
+	var retObj []byte
+	maxCount := 0
+	dominant := 200
+	wg := sync.WaitGroup{}
+
+	for _, miner := range miners {
+		wg.Add(1)
+		go func(miner string) {
+			defer wg.Done()
+			urlString := fmt.Sprintf("%v/%v", miner, relativePath)
+			urlObj, err := url.Parse(urlString)
+			if err != nil {
+				log.Error(err)
+				return
+			}
+			q := urlObj.Query()
+			for k, v := range params {
+				q.Add(k, v)
+			}
+			urlObj.RawQuery = q.Encode()
+			client := &http.Client{Transport: DefaultTransport}
+			response, err := client.Get(urlObj.String())
+
+			defer response.Body.Close()
+			entityBytes, _ := io.ReadAll(response.Body)
+			mu.Lock()
+			responses[response.StatusCode]++
+			if responses[response.StatusCode] > maxCount {
+				maxCount = responses[response.StatusCode]
+			}
+
+			if isCurrentDominantStatus(response.StatusCode, responses, maxCount) {
+				dominant = response.StatusCode
+				retObj = entityBytes
+			}
+
+			entityResult[miner] = entityBytes
+			//blockchain.Sharders.Success(sharder)
+			mu.Unlock()
+		}(miner)
+	}
+	wg.Wait()
+
+	rate := float32(maxCount*100) / float32(len(miners))
+	if rate < consensusThresh {
+		err = errors.New("consensus_failed", "consensus failed on sharders")
+	}
+
+	if dominant != 200 {
+		var objmap map[string]json.RawMessage
+		err := json.Unmarshal(retObj, &objmap)
+		if err != nil {
+			return nil, errors.New("", string(retObj))
+		}
+
+		var parsed string
+		err = json.Unmarshal(objmap["error"], &parsed)
+		if err != nil || parsed == "" {
+			return nil, errors.New("", string(retObj))
+		}
+
+		return nil, errors.New("", parsed)
+	}
+
+	if handler != nil {
+		handler(entityResult, len(miners), err)
+	}
+
+	if rate > consensusThresh {
+		return retObj, nil
+	}
+	return nil, err
+}
+
 func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]string, handler SCRestAPIHandler) ([]byte, error) {
 	numSharders := len(blockchain.GetSharders())
 	sharders := blockchain.GetSharders()
