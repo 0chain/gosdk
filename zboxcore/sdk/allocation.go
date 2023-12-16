@@ -2225,7 +2225,13 @@ func (a *Allocation) RepairAlloc(statusCB StatusCallback) (err error) {
 	return a.StartRepair(dir, "/", statusCB)
 }
 
-func (a *Allocation) CancelUpload(localpath string) error {
+func (a *Allocation) CancelUpload(remotePath string) error {
+	cancelLock.Lock()
+	cancelFunc, ok := CancelOpCtx[remotePath]
+	cancelLock.Unlock()
+	if ok {
+		cancelFunc(fmt.Errorf("upload canceled by user"))
+	}
 	return nil
 }
 
