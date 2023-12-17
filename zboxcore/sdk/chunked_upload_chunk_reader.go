@@ -1,6 +1,7 @@
 package sdk
 
 import (
+	"fmt"
 	"io"
 	"math"
 	"strconv"
@@ -164,6 +165,7 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 
 		//all bytes are read
 		chunk.IsFinal = true
+		fmt.Println("EOF chunk isFinal")
 	}
 
 	if readLen == 0 {
@@ -175,6 +177,7 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 	if readLen < int(r.chunkDataSizePerRead) {
 		chunkBytes = chunkBytes[:readLen]
 		chunk.IsFinal = true
+		fmt.Printf("readLen < chunkDatSizePerRead, isFinal, readLen: %d, chunkDatSizePerRead: %d\n", readLen, r.chunkDataSizePerRead)
 	}
 
 	chunk.ReadSize = int64(readLen)
@@ -182,8 +185,10 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 	if r.size > 0 {
 		if r.readSize >= r.size {
 			chunk.IsFinal = true
+			fmt.Printf("readSize >= size, isFinal, r.readSize: %d, r.size: %d\n", r.readSize, r.size)
 		}
 	}
+	fmt.Println("readSize >= size, isFinal")
 
 	if r.hasherError != nil {
 		return chunk, r.hasherError
