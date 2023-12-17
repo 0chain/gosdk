@@ -421,12 +421,13 @@ func (su *ChunkedUpload) process(doneC ...chan struct{}) error {
 				return err
 			}
 
+			logger.Logger.Info("gosdk upload, actual file size:", su.fileMeta.ActualSize)
 			if su.fileMeta.ActualSize == 0 {
 				if len(doneC) > 0 {
 					select {
 					case <-doneC[0]:
 						su.fileMeta.ActualSize = su.progress.UploadLength
-						logger.Logger.Debug("upload_success done, size:", su.fileMeta.ActualSize)
+						logger.Logger.Info("upload_success done, size:", su.fileMeta.ActualSize)
 					default:
 					}
 				} else {
