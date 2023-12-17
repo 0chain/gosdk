@@ -384,7 +384,7 @@ func (su *ChunkedUpload) createEncscheme() encryption.EncryptionScheme {
 	return encscheme
 }
 
-func (su *ChunkedUpload) process() error {
+func (su *ChunkedUpload) process(doneC ...chan struct{}) error {
 	if su.statusCallback != nil {
 		su.statusCallback.Started(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, int(su.fileMeta.ActualSize)+int(su.fileMeta.ActualThumbnailSize))
 	}
@@ -422,7 +422,16 @@ func (su *ChunkedUpload) process() error {
 			}
 
 			if su.fileMeta.ActualSize == 0 {
-				su.fileMeta.ActualSize = su.progress.UploadLength
+				if len(doneC) > 0 {
+					select {
+					case <-doneC[0]:
+						su.fileMeta.ActualSize = su.progress.UploadLength
+						logger.Logger.Debug("upload_success done, size:", su.fileMeta.ActualSize)
+					default:
+					}
+				} else {
+					su.fileMeta.ActualSize = su.progress.UploadLength
+				}
 			} else if su.fileMeta.ActualSize != su.progress.UploadLength && su.thumbnailBytes == nil {
 				if su.statusCallback != nil {
 					su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, thrown.New("upload_failed", "Upload failed. Uploaded size does not match with actual size: "+fmt.Sprintf("%d != %d", su.fileMeta.ActualSize, su.progress.UploadLength)))
@@ -484,10 +493,10 @@ func (su *ChunkedUpload) process() error {
 }
 
 // Start start/resume upload
-func (su *ChunkedUpload) Start() error {
+func (su *ChunkedUpload) Start(doneC ...chan struct{}) error {
 	now := time.Now()
 
-	err := su.process()
+	err := su.process(doneC...)
 	if err != nil {
 		return err
 	}

@@ -21,8 +21,8 @@ type UploadOperation struct {
 	isUpdate      bool
 }
 
-func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
-	err := uo.chunkedUpload.process()
+func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string, doneC ...chan struct{}) ([]fileref.RefEntity, zboxutil.Uint128, error) {
+	err := uo.chunkedUpload.process(doneC...)
 	if err != nil {
 		l.Logger.Error("UploadOperation Failed", zap.String("name", uo.chunkedUpload.fileMeta.RemoteName), zap.Error(err))
 		return nil, uo.chunkedUpload.uploadMask, err

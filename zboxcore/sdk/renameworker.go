@@ -300,7 +300,7 @@ type RenameOperation struct {
 	consensus Consensus
 }
 
-func (ro *RenameOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
+func (ro *RenameOperation) Process(allocObj *Allocation, connectionID string, doneC ...chan struct{}) ([]fileref.RefEntity, zboxutil.Uint128, error) {
 
 	l.Logger.Info("Started Rename Process with Connection Id", connectionID)
 	// make renameRequest object

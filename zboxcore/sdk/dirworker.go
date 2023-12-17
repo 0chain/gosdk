@@ -276,7 +276,7 @@ type DirOperation struct {
 	Consensus
 }
 
-func (dirOp *DirOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
+func (dirOp *DirOperation) Process(allocObj *Allocation, connectionID string, doneC ...chan struct{}) ([]fileref.RefEntity, zboxutil.Uint128, error) {
 	refs := make([]fileref.RefEntity, len(allocObj.Blobbers))
 	dR := &DirRequest{
 		allocationID:  allocObj.ID,

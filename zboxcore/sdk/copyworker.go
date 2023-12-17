@@ -302,7 +302,7 @@ type CopyOperation struct {
 	Consensus
 }
 
-func (co *CopyOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
+func (co *CopyOperation) Process(allocObj *Allocation, connectionID string, doneC ...chan struct{}) ([]fileref.RefEntity, zboxutil.Uint128, error) {
 	// make copyRequest object
 	cR := &CopyRequest{
 		allocationObj:  allocObj,

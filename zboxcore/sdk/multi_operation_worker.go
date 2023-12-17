@@ -32,7 +32,7 @@ const (
 var BatchSize = 6
 
 type Operationer interface {
-	Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error)
+	Process(allocObj *Allocation, connectionID string, doneC ...chan struct{}) ([]fileref.RefEntity, zboxutil.Uint128, error)
 	buildChange(refs []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange
 	Verify(allocObj *Allocation) error
 	Completed(allocObj *Allocation)
@@ -148,7 +148,7 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 	return
 }
 
-func (mo *MultiOperation) Process() error {
+func (mo *MultiOperation) Process(doneC ...chan struct{}) error {
 	l.Logger.Info("MultiOperation Process start")
 	wg := &sync.WaitGroup{}
 	mo.changes = make([][]allocationchange.AllocationChange, len(mo.operations))
@@ -171,7 +171,7 @@ func (mo *MultiOperation) Process() error {
 			default:
 			}
 
-			refs, mask, err := op.Process(mo.allocationObj, mo.connectionID) // Process with each blobber
+			refs, mask, err := op.Process(mo.allocationObj, mo.connectionID, doneC...) // Process with each blobber
 			if err != nil {
 				l.Logger.Error(err)
 				errsSlice[idx] = errors.New("", err.Error())

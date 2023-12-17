@@ -802,7 +802,7 @@ func (a *Allocation) RepairRequired(remotepath string) (zboxutil.Uint128, zboxut
 	return found, deleteMask, !found.Equals(uploadMask), fileRef, nil
 }
 
-func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
+func (a *Allocation) DoMultiOperation(operations []OperationRequest, doneC ...chan struct{}) error {
 	if len(operations) == 0 {
 		return nil
 	}
@@ -917,7 +917,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 		}
 
 		if len(mo.operations) > 0 {
-			err := mo.Process()
+			err := mo.Process(doneC...)
 			if err != nil {
 				return err
 			}

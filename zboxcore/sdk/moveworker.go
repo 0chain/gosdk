@@ -296,7 +296,7 @@ type MoveOperation struct {
 	consensus      Consensus
 }
 
-func (mo *MoveOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
+func (mo *MoveOperation) Process(allocObj *Allocation, connectionID string, doneC ...chan struct{}) ([]fileref.RefEntity, zboxutil.Uint128, error) {
 	mR := &MoveRequest{
 		allocationObj:  allocObj,
 		allocationID:   allocObj.ID,

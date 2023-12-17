@@ -299,7 +299,7 @@ type DeleteOperation struct {
 	consensus      Consensus
 }
 
-func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
+func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string, doneC ...chan struct{}) ([]fileref.RefEntity, zboxutil.Uint128, error) {
 	l.Logger.Info("Started Delete Process with Connection Id", connectionID)
 	deleteReq := &DeleteRequest{
 		allocationObj:  allocObj,
