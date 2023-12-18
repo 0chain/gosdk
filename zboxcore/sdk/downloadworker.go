@@ -285,6 +285,7 @@ func (req *DownloadRequest) fillShards(shards [][][]byte, result *downloadBlock)
 			data = result.BlockChunks[i]
 		}
 		if i >= len(shards) || len(shards[i]) <= result.idx {
+			l.Logger.Error("Invalid shard index", result.idx, len(shards), len(shards[i]))
 			return errors.New("invalid_shard_index", fmt.Sprintf("Invalid shard index %d shard len: %d shard block len: %d", result.idx, len(shards), i))
 		}
 		shards[i][result.idx] = data
