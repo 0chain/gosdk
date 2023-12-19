@@ -92,7 +92,7 @@ func startCommitWorker(blobberChan chan *CommitRequest, blobberID string) {
 
 func (commitreq *CommitRequest) processCommit() {
 	defer commitreq.wg.Done()
-
+	start := time.Now()
 	l.Logger.Info("received a commit request")
 	paths := make([]string, 0)
 	for _, change := range commitreq.changes {
@@ -187,6 +187,7 @@ func (commitreq *CommitRequest) processCommit() {
 		commitreq.result = ErrorCommitResult(err.Error())
 		return
 	}
+	l.Logger.Info("[commitBlobber]", time.Since(start).Milliseconds())
 	commitreq.result = SuccessCommitResult()
 }
 
@@ -207,7 +208,10 @@ func (req *CommitRequest) commitBlobber(
 	} else {
 		wm.PreviousAllocationRoot = ""
 	}
-
+	if wm.AllocationRoot == wm.PreviousAllocationRoot {
+		l.Logger.Error("Allocation root and previous allocation root are same")
+		return thrown.New("commit_error", "Allocation root and previous allocation root are same")
+	}
 	wm.FileMetaRoot = rootRef.FileMetaHash
 	wm.AllocationID = req.allocationID
 	wm.Size = size

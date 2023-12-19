@@ -290,6 +290,11 @@ func (wmMu *WriteMarkerMutex) lockBlobber(
 	var resp *http.Response
 	var shouldContinue bool
 	for retry := 0; retry < 3; retry++ {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
 		err, shouldContinue = func() (err error, shouldContinue bool) {
 			reqCtx, ctxCncl := context.WithTimeout(ctx, timeOut)
 			defer ctxCncl()

@@ -62,10 +62,10 @@ jobs:
 
             echo "::set-output name=RELEASE::false"
             echo "::set-output name=TAG::none"
-         
+
           elif [[ ${tag} = v*\.*\.* ]] ; then
             echo "> 0Chain: trigger from git event"
-       
+
             # upload output on release
             echo "::set-output name=RELEASE::true"
             echo "::set-output name=TAG::${tag}"
@@ -159,17 +159,17 @@ jobs:
         run: |
           tag=$(echo ${GITHUB_REF#refs/tags/})
           echo ${tag}
-    
+
           if [[ "${{github.event_name}}" = "workflow_dispatch" ]]; then
             echo "> 0Chain: trigger from workflow_dispatch"
 
             echo "::set-output name=RELEASE::false"
             echo "::set-output name=TAG::none"
-         
-         
+
+
           elif [[ ${tag} = v*\.*\.* ]] ; then
             echo "> 0Chain: trigger from git event"
-       
+
             # upload output on release
             echo "::set-output name=RELEASE::true"
             echo "::set-output name=TAG::${tag}"
@@ -237,10 +237,10 @@ jobs:
 
             echo "::set-output name=RELEASE::false"
             echo "::set-output name=TAG::none"
-         
+
           elif [[ ${tag} = v*\.*\.* ]] ; then
             echo "> 0Chain: trigger from git event"
-       
+
             # upload output on release
             echo "::set-output name=RELEASE::true"
             echo "::set-output name=TAG::${tag}"
@@ -262,7 +262,6 @@ jobs:
           name: zcncore-macos
           path: |
             zcncore-macos.tar.gz
-
 
   build-windows:
     name: Build-windows
@@ -306,10 +305,10 @@ jobs:
 
             echo "::set-output name=RELEASE::false"
             echo "::set-output name=TAG::none"
-        
+
           elif [[ ${tag} = v*\.*\.* ]] ; then
             echo "> 0Chain: trigger from git event"
-      
+
             # upload output on release
             echo "::set-output name=RELEASE::true"
             echo "::set-output name=TAG::${tag}"
@@ -331,3 +330,29 @@ jobs:
           name: zcn-windows
           path: |
             zcn-windows.zip
+
+  build-wasm:
+    name: Build-wasm
+    runs-on: [self-hosted, arc-runner]
+    steps:
+      - name: Set up Go 1.20
+        uses: actions/setup-go@v2
+        with:
+          go-version: ^1.20
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install build-essential nghttp2 libnghttp2-dev libssl-dev wget
+
+      - name: Build
+        run:  docker run --rm -v $PWD:/gosdk -w /gosdk golang:1.20 make wasm-build
+
+      - name: 'Upload Artifact'
+        uses: actions/upload-artifact@v3
+        with:
+          name: zcn.wasm
+          path: zcn.wasm

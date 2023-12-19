@@ -8,10 +8,10 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"os"
 	"sync"
 
 	"go.uber.org/zap"
+	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/util"
@@ -32,16 +32,37 @@ type Params map[string]string
 
 var Logger logger.Logger
 var defaultLogLevel = logger.DEBUG
+var logVerbose = true
 
 func init() {
 	Logger.Init(defaultLogLevel, "zcnbridge-http-sdk")
 
 	Logger.SetLevel(logger.DEBUG)
-	f, err := os.OpenFile("bridge.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return
+	ioWriter := &lumberjack.Logger{
+		Filename:   "bridge.log",
+		MaxSize:    100, // MB
+		MaxBackups: 5,   // number of backups
+		MaxAge:     28,  //days
+		LocalTime:  false,
+		Compress:   false, // disabled by default
 	}
-	Logger.SetLogFile(f, true)
+	Logger.SetLogFile(ioWriter, true)
+}
+
+func SetLogFile(logFile string, verbose bool) {
+	Logger.Init(defaultLogLevel, "zcnbridge-sdk")
+	Logger.SetLevel(logger.DEBUG)
+
+	ioWriter := &lumberjack.Logger{
+		Filename:   logFile,
+		MaxSize:    100, // MB
+		MaxBackups: 5,   // number of backups
+		MaxAge:     28,  //days
+		LocalTime:  false,
+		Compress:   false, // disabled by default
+	}
+	logVerbose = verbose
+	Logger.SetLogFile(ioWriter, logVerbose)
 }
 
 // MakeSCRestAPICall calls smart contract with provided address
@@ -63,7 +84,7 @@ func MakeSCRestAPICall(opCode int, relativePath string, params Params, cb zcncor
 	results := make(chan *queryResult, len(sharders))
 	defer close(results)
 
-	var client = NewRetryableClient()
+	var client = NewRetryableClient(logVerbose)
 
 	wg := &sync.WaitGroup{}
 	for _, sharder := range sharders {
@@ -73,7 +94,6 @@ func MakeSCRestAPICall(opCode int, relativePath string, params Params, cb zcncor
 
 			var u = makeURL(params, sharderUrl, relativePath)
 			Logger.Info("Query ", u.String())
-
 			resp, err := client.Get(u.String())
 			if err != nil {
 				Logger.Error("MakeSCRestAPICall - failed to get response from", zap.String("URL", sharderUrl), zap.Any("error", err))
@@ -148,8 +168,8 @@ func hashAndBytesOfReader(r io.Reader) (string, []byte, error) {
 
 // extractSharders returns string slice of randomly ordered sharders existing in the current network.
 func extractSharders() []string {
-	network := zcncore.GetNetwork()
-	return util.GetRandom(network.Sharders, len(network.Sharders))
+	sharders := zcncore.Sharders.Healthy()
+	return util.GetRandom(sharders, len(sharders))
 }
 
 // makeURL creates url.URL to make smart contract request to sharder.

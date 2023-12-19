@@ -1,10 +1,8 @@
 package wallet
 
 import (
-	//"github.com/0chain/gosdk/zcnbridge/log"
-	"os"
-
 	"github.com/0chain/gosdk/core/logger"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 const (
@@ -23,9 +21,13 @@ func init() {
 	Logger.Init(defaultLogLevel, "zcnbridge-wallet-sdk")
 
 	Logger.SetLevel(logger.DEBUG)
-	f, err := os.OpenFile("bridge.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return
+	ioWriter := &lumberjack.Logger{
+		Filename:   "bridge.log",
+		MaxSize:    100, // MB
+		MaxBackups: 5,   // number of backups
+		MaxAge:     28,  //days
+		LocalTime:  false,
+		Compress:   false, // disabled by default
 	}
-	Logger.SetLogFile(f, true)
+	Logger.SetLogFile(ioWriter, true)
 }

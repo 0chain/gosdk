@@ -8,16 +8,18 @@ import (
 	"io/ioutil"
 	"math"
 	"net/http"
-	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/0chain/common/core/currency"
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/logger"
+	"github.com/0chain/gosdk/core/node"
 	"github.com/0chain/gosdk/core/sys"
 	"go.uber.org/zap"
+	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/transaction"
@@ -54,6 +56,7 @@ type StatusCallback interface {
 var numBlockDownloads = 10
 var sdkInitialized = false
 var networkWorkerTimerInHours = 1
+var shouldVerifyHash = true
 
 // GetVersion - returns version string
 func GetVersion() string {
@@ -70,11 +73,16 @@ func SetLogLevel(lvl int) {
 // logFile - Log file
 // verbose - true - console output; false - no console output
 func SetLogFile(logFile string, verbose bool) {
-	f, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return
+	var ioWriter = &lumberjack.Logger{
+		Filename:   logFile,
+		MaxSize:    100, // MB
+		MaxBackups: 5,   // number of backups
+		MaxAge:     28,  //days
+		LocalTime:  false,
+		Compress:   false, // disabled by default
 	}
-	l.Logger.SetLogFile(f, verbose)
+
+	l.Logger.SetLogFile(ioWriter, verbose)
 	l.Logger.Info("******* Storage SDK Version: ", version.VERSIONSTR, " *******")
 }
 
@@ -92,17 +100,17 @@ func InitStorageSDK(walletJSON string,
 		return err
 	}
 
-	client.SetClientNonce(nonce)
-	if len(fee) > 0 {
-		client.SetTxnFee(fee[0])
-	}
-
 	blockchain.SetChainID(chainID)
 	blockchain.SetBlockWorker(blockWorker)
 
-	err = UpdateNetworkDetails()
+	err = InitNetworkDetails()
 	if err != nil {
 		return err
+	}
+
+	client.SetClientNonce(nonce)
+	if len(fee) > 0 {
+		client.SetTxnFee(fee[0])
 	}
 
 	go UpdateNetworkDetailsWorker(context.Background())
@@ -113,7 +121,7 @@ func InitStorageSDK(walletJSON string,
 func GetNetwork() *Network {
 	return &Network{
 		Miners:   blockchain.GetMiners(),
-		Sharders: blockchain.GetSharders(),
+		Sharders: blockchain.GetAllSharders(),
 	}
 }
 
@@ -147,7 +155,7 @@ func SetMinConfirmation(num int) {
 func SetNetwork(miners []string, sharders []string) {
 	blockchain.SetMiners(miners)
 	blockchain.SetSharders(sharders)
-	transaction.InitCache(sharders)
+	node.InitCache(blockchain.Sharders)
 }
 
 //
@@ -216,7 +224,7 @@ func ReadPoolLock(tokens, fee uint64) (hash string, nonce int64, err error) {
 		Name:      transaction.STORAGESC_READ_POOL_LOCK,
 		InputArgs: nil,
 	}
-	hash, _, nonce, _, err = smartContractTxnValueFee(sn, tokens, fee)
+	hash, _, nonce, _, err = smartContractTxnValueFeeWithRetry(sn, tokens, fee)
 	return
 }
 
@@ -230,7 +238,7 @@ func ReadPoolUnlock(fee uint64) (hash string, nonce int64, err error) {
 		Name:      transaction.STORAGESC_READ_POOL_UNLOCK,
 		InputArgs: nil,
 	}
-	hash, _, nonce, _, err = smartContractTxnValueFee(sn, 0, fee)
+	hash, _, nonce, _, err = smartContractTxnValueFeeWithRetry(sn, 0, fee)
 	return
 }
 
@@ -372,7 +380,7 @@ func StakePoolLock(providerType ProviderType, providerID string, value, fee uint
 		Name:      transaction.STORAGESC_STAKE_POOL_LOCK,
 		InputArgs: &spr,
 	}
-	hash, _, nonce, _, err = smartContractTxnValueFee(sn, value, fee)
+	hash, _, nonce, _, err = smartContractTxnValueFeeWithRetry(sn, value, fee)
 	return
 }
 
@@ -415,7 +423,7 @@ func StakePoolUnlock(providerType ProviderType, providerID string, fee uint64) (
 	}
 
 	var out string
-	if _, out, nonce, _, err = smartContractTxnValueFee(sn, 0, fee); err != nil {
+	if _, out, nonce, _, err = smartContractTxnValueFeeWithRetry(sn, 0, fee); err != nil {
 		return // an error
 	}
 
@@ -448,7 +456,7 @@ func WritePoolLock(allocID string, tokens, fee uint64) (hash string, nonce int64
 		Name:      transaction.STORAGESC_WRITE_POOL_LOCK,
 		InputArgs: &req,
 	}
-	hash, _, nonce, _, err = smartContractTxnValueFee(sn, tokens, fee)
+	hash, _, nonce, _, err = smartContractTxnValueFeeWithRetry(sn, tokens, fee)
 	return
 }
 
@@ -469,7 +477,7 @@ func WritePoolUnlock(allocID string, fee uint64) (hash string, nonce int64, err 
 		Name:      transaction.STORAGESC_WRITE_POOL_UNLOCK,
 		InputArgs: &req,
 	}
-	hash, _, nonce, _, err = smartContractTxnValueFee(sn, 0, fee)
+	hash, _, nonce, _, err = smartContractTxnValueFeeWithRetry(sn, 0, fee)
 	return
 }
 
@@ -885,9 +893,13 @@ func GetAllocationUpdates(allocation *Allocation) error {
 }
 
 func SetNumBlockDownloads(num int) {
-	if num > 0 && num <= 100 {
+	if num > 0 && num <= 500 {
 		numBlockDownloads = num
 	}
+}
+
+func SetVerifyHash(verify bool) {
+	shouldVerifyHash = verify
 }
 
 func GetAllocations() ([]*Allocation, error) {
@@ -989,6 +1001,10 @@ func CreateAllocationForOwner(
 		return "", 0, nil, errors.New("invalid_lock", "int64 overflow on lock value")
 	}
 
+	if datashards < 1 || parityshards < 1 {
+		return "", 0, nil, errors.New("allocation_validation_failed", "atleast 1 data and 1 parity shards are required")
+	}
+
 	allocationRequest, err := getNewAllocationBlobbers(
 		datashards, parityshards, size, readPrice, writePrice, preferredBlobberIds)
 	if err != nil {
@@ -1016,6 +1032,7 @@ func GetAllocationBlobbers(
 	datashards, parityshards int,
 	size int64,
 	readPrice, writePrice PriceRange,
+	force ...bool,
 ) ([]string, error) {
 	var allocationRequest = map[string]interface{}{
 		"data_shards":       datashards,
@@ -1029,6 +1046,9 @@ func GetAllocationBlobbers(
 
 	params := make(map[string]string)
 	params["allocation_data"] = string(allocationData)
+	if len(force) > 0 && force[0] {
+		params["force"] = strconv.FormatBool(force[0])
+	}
 
 	allocBlobber, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/alloc_blobbers", params, nil)
 	if err != nil {
@@ -1179,7 +1199,6 @@ func UpdateAllocation(
 	extend bool,
 	allocationID string,
 	lock uint64,
-	updateTerms bool,
 	addBlobberId, removeBlobberId string,
 	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
 ) (hash string, nonce int64, err error) {
@@ -1203,7 +1222,6 @@ func UpdateAllocation(
 	updateAllocationRequest["id"] = allocationID
 	updateAllocationRequest["size"] = size
 	updateAllocationRequest["extend"] = extend
-	updateAllocationRequest["update_terms"] = updateTerms
 	updateAllocationRequest["add_blobber_id"] = addBlobberId
 	updateAllocationRequest["remove_blobber_id"] = removeBlobberId
 	updateAllocationRequest["set_third_party_extendable"] = setThirdPartyExtendable
@@ -1215,24 +1233,6 @@ func UpdateAllocation(
 	}
 	hash, _, nonce, _, err = smartContractTxnValue(sn, lock)
 	return
-}
-
-func CreateFreeUpdateAllocation(marker, allocationId string, value uint64) (string, int64, error) {
-	if !sdkInitialized {
-		return "", 0, sdkNotInitialized
-	}
-
-	var input = map[string]interface{}{
-		"allocation_id": allocationId,
-		"marker":        marker,
-	}
-
-	var sn = transaction.SmartContractTxnData{
-		Name:      transaction.FREE_UPDATE_ALLOCATION,
-		InputArgs: input,
-	}
-	hash, _, n, _, err := smartContractTxnValue(sn, value)
-	return hash, n, err
 }
 
 func FinalizeAllocation(allocID string) (hash string, nonce int64, err error) {
@@ -1402,7 +1402,17 @@ func smartContractTxnValue(sn transaction.SmartContractTxnData, value uint64) (
 	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 
 	// Fee is set during sdk initialization.
-	return smartContractTxnValueFee(sn, value, client.TxnFee())
+	return smartContractTxnValueFeeWithRetry(sn, value, client.TxnFee())
+}
+
+func smartContractTxnValueFeeWithRetry(sn transaction.SmartContractTxnData,
+	value, fee uint64) (hash, out string, nonce int64, t *transaction.Transaction, err error) {
+	hash, out, nonce, t, err = smartContractTxnValueFee(sn, value, fee)
+
+	if err != nil && strings.Contains(err.Error(), "invalid transaction nonce") {
+		return smartContractTxnValueFee(sn, value, fee)
+	}
+	return
 }
 
 func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
@@ -1435,7 +1445,7 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 	}
 
 	if txn.TransactionNonce == 0 {
-		txn.TransactionNonce = transaction.Cache.GetNextNonce(txn.ClientID)
+		txn.TransactionNonce = node.Cache.GetNextNonce(txn.ClientID)
 	}
 
 	if err = txn.ComputeHashAndSign(client.Sign); err != nil {
@@ -1446,7 +1456,13 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 	l.Logger.Info(msg)
 	l.Logger.Info("estimated txn fee: ", txn.TransactionFee)
 
-	transaction.SendTransactionSync(txn, blockchain.GetMiners())
+	err = transaction.SendTransactionSync(txn, blockchain.GetStableMiners())
+	if err != nil {
+		l.Logger.Info("transaction submission failed", zap.Error(err))
+		node.Cache.Evict(txn.ClientID)
+		blockchain.ResetStableMiners()
+		return
+	}
 
 	var (
 		querySleepTime = time.Duration(blockchain.GetQuerySleepTime()) * time.Second
@@ -1466,7 +1482,7 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 
 	if err != nil {
 		l.Logger.Error("Error verifying the transaction", err.Error(), txn.Hash)
-		transaction.Cache.Evict(txn.ClientID)
+		node.Cache.Evict(txn.ClientID)
 		return
 	}
 
@@ -1553,32 +1569,14 @@ func CommitToFabric(metaTxnData, fabricConfigJSON string) (string, error) {
 func GetAllocationMinLock(
 	datashards, parityshards int,
 	size int64,
-	readPrice, writePrice PriceRange,
+	writePrice PriceRange,
 ) (int64, error) {
 	baSize := int64(math.Ceil(float64(size) / float64(datashards)))
 	totalSize := baSize * int64(datashards+parityshards)
-	config, err := GetStorageSCConfig()
-	if err != nil {
-		return 0, err
-	}
-	t := config.Fields["time_unit"]
-	timeunitStr, ok := t.(string)
-	if !ok {
-		return 0, fmt.Errorf("bad time_unit type")
-	}
-	timeunit, err := time.ParseDuration(timeunitStr)
-	if err != nil {
-		return 0, fmt.Errorf("bad time_unit format")
-	}
-
-	expiry := common.Timestamp(time.Now().Add(timeunit).Unix())
-	duration := expiry / common.Timestamp(timeunit.Milliseconds())
-	if expiry%common.Timestamp(timeunit.Milliseconds()) != 0 {
-		duration++
-	}
 
 	sizeInGB := float64(totalSize) / GB
-	cost := float64(duration) * (sizeInGB*float64(writePrice.Max) + sizeInGB*float64(readPrice.Max))
+
+	cost := sizeInGB * float64(writePrice.Max)
 	coin, err := currency.Float64ToCoin(cost)
 	if err != nil {
 		return 0, err
@@ -1594,7 +1592,6 @@ func GetUpdateAllocationMinLock(
 	allocationID string,
 	size int64,
 	extend bool,
-	updateTerms bool,
 	addBlobberId,
 	removeBlobberId string) (int64, error) {
 	updateAllocationRequest := make(map[string]interface{})
@@ -1603,7 +1600,6 @@ func GetUpdateAllocationMinLock(
 	updateAllocationRequest["id"] = allocationID
 	updateAllocationRequest["size"] = size
 	updateAllocationRequest["extend"] = extend
-	updateAllocationRequest["update_terms"] = updateTerms
 	updateAllocationRequest["add_blobber_id"] = addBlobberId
 	updateAllocationRequest["remove_blobber_id"] = removeBlobberId
 

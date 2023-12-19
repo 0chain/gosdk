@@ -1,6 +1,7 @@
 package sdk
 
 import (
+	"encoding/base64"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -38,7 +39,8 @@ func (h *DownloadRequestHeader) ToHeader(req *http.Request) {
 	}
 
 	if h.AuthToken != nil {
-		req.Header.Set("X-Auth-Token", string(h.AuthToken))
+		token := base64.StdEncoding.EncodeToString(h.AuthToken)
+		req.Header.Set("X-Auth-Token", token)
 	}
 
 	if h.DownloadMode != "" {

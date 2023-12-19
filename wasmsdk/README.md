@@ -18,18 +18,6 @@ set bls.SecretKey on runtime env(browser,nodejs...etc), and call `zcn.sdk.setWal
 
 > N/A
 
-### zcn.bulkUpload
-
-bulk upload files. it will wrap options, and call `zcn.sdk.bulkUpload` to process upload
-
-**Input**:
-
-> bulkOptions: [ { allocationId:string,remotePath:string,file:FileReader, thumbnailBytes:[]byte, encrypt:bool,isUpdate:bool,isRepair:bool,numBlocks:int,callback:function(totalBytes, completedBytes, error) } ]
-
-**Output**:
-
-> [ {remotePath:"/d.png", success:true,error:""} ]
-
 ## ZCN methods
 
 ### zcn.sdk.init
@@ -235,7 +223,7 @@ updates allocation settings
 
 **Input**:
 
-> allocationId string, name string,size int64, extend bool,lock int64,setImmutable, updateTerms bool,addBlobberId, removeBlobberId string, setThirdPartyExtendable  bool
+> allocationId string, name string,size int64, extend bool,lock int64,setImmutable,addBlobberId, removeBlobberId string, setThirdPartyExtendable  bool
 
 **Output**:
 
@@ -497,16 +485,7 @@ download blocks of a file
 
 **Output**:
 
-> {commandSuccess:bool, fileName:string,url:string, error:string}
-
-**Example**
-
-```json
-{
-  "commandSuccess": true,
-  "fileName": "scan3.png",
-  "url": "blob:http://localhost:3000/42157751-1d33-4448-88c8-7d7e2ad887a5"
-}
+> {[]byte, error:string}
 ```
 
 ### zcn.sdk.upload
@@ -521,7 +500,7 @@ upload file
 
 > {commandSuccess:bool, error:string}
 
-### zcn.sdk.bulkUpload
+### zcn.sdk.multiUpload
 
 bulk upload files with json options
 
@@ -616,7 +595,7 @@ create folder from blobbers
 
 **Input**:
 
-> allocationID string, size int, extend bool, updateTerms bool, addBlobberId string, removeBlobberId string
+> allocationID string, size int, extend bool, addBlobberId string, removeBlobberId string
 
 **Output**:
 

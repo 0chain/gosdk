@@ -7,10 +7,8 @@ import (
 	"io"
 	"mime/multipart"
 	"sync"
-	"time"
 
 	"github.com/0chain/gosdk/zboxcore/client"
-	"github.com/0chain/gosdk/zboxcore/logger"
 
 	"golang.org/x/crypto/sha3"
 )
@@ -90,7 +88,6 @@ func (b *chunkedUploadFormBuilder) Build(
 	if err != nil {
 		return nil, metadata, err
 	}
-
 	for _, chunkBytes := range fileChunksData {
 		_, err = uploadFile.Write(chunkBytes)
 		if err != nil {
@@ -109,7 +106,7 @@ func (b *chunkedUploadFormBuilder) Build(
 
 		metadata.FileBytesLen += len(chunkBytes)
 	}
-	start := time.Now()
+  
 	if isFinal {
 		err = hasher.Finalize()
 		if err != nil {
@@ -140,7 +137,6 @@ func (b *chunkedUploadFormBuilder) Build(
 		for err := range errChan {
 			return nil, metadata, err
 		}
-		logger.Logger.Info("[hasherTime]", time.Since(start).Milliseconds())
 		actualHashSignature, err := client.Sign(fileMeta.ActualHash)
 		if err != nil {
 			return nil, metadata, err
@@ -200,6 +196,5 @@ func (b *chunkedUploadFormBuilder) Build(
 	metadata.FixedMerkleRoot = formData.FixedMerkleRoot
 	metadata.ValidationRoot = formData.ValidationRoot
 	metadata.ThumbnailContentHash = formData.ThumbnailContentHash
-
 	return body, metadata, nil
 }
