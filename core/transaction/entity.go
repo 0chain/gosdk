@@ -12,7 +12,9 @@ import (
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/util"
+	l "github.com/0chain/gosdk/zboxcore/logger"
 	lru "github.com/hashicorp/golang-lru"
+	"go.uber.org/zap"
 )
 
 const TXN_SUBMIT_URL = "v1/transaction/put"
@@ -265,6 +267,7 @@ func SendTransactionSync(txn *Transaction, miners []string) error {
 		go func() {
 			_, err := sendTransactionToURL(url, txn, &wg)
 			if err != nil {
+				l.Logger.Error("Transaction failed to miner", zap.String("url", url), zap.Error(err))
 				fails <- err
 			}
 		}() //nolint
