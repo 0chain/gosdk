@@ -2,10 +2,12 @@ package blockchain
 
 import (
 	"encoding/json"
-	"github.com/0chain/gosdk/core/util"
+	"fmt"
 	"math"
 	"sync"
 	"sync/atomic"
+
+	"github.com/0chain/gosdk/core/util"
 
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/conf"
@@ -16,6 +18,7 @@ var miners []string
 var mGuard sync.Mutex
 
 func getMinMinersSubmit() int {
+	fmt.Printf("MinSubmit: %v\n", chain.MinSubmit)
 	minMiners := util.MaxInt(calculateMinRequired(float64(chain.MinSubmit), float64(len(chain.Miners))/100), 1)
 	return minMiners
 }
@@ -29,6 +32,7 @@ func GetStableMiners() []string {
 	defer mGuard.Unlock()
 	if len(miners) == 0 {
 		miners = util.GetRandom(chain.Miners, getMinMinersSubmit())
+		fmt.Printf("Chosen miners: %v\n", miners)
 	}
 
 	return miners
