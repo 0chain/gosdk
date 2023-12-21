@@ -53,7 +53,7 @@ type StatusCallback interface {
 	RepairCompleted(filesRepaired int)
 }
 
-var numBlockDownloads = 10
+var numBlockDownloads = 100
 var sdkInitialized = false
 var networkWorkerTimerInHours = 1
 var shouldVerifyHash = true
