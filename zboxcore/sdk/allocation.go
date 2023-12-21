@@ -2229,7 +2229,10 @@ func (a *Allocation) CancelUpload(remotePath string) error {
 	cancelLock.Lock()
 	cancelFunc, ok := CancelOpCtx[remotePath]
 	cancelLock.Unlock()
-	if ok {
+	if !ok {
+		return errors.New("remote_path_not_found", "Invalid path. No upload in progress for the path "+remotePath)
+
+	} else {
 		cancelFunc(fmt.Errorf("upload canceled by user"))
 	}
 	return nil

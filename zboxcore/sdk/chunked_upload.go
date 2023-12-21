@@ -421,14 +421,13 @@ func (su *ChunkedUpload) process() error {
 		if chunks.isFinal {
 			if su.fileMeta.ActualHash == "" {
 				su.fileMeta.ActualHash, err = su.chunkReader.GetFileHash()
-			}
-			if err != nil {
-				if su.statusCallback != nil {
-					su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
+				if err != nil {
+					if su.statusCallback != nil {
+						su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
+					}
+					return err
 				}
-				return err
 			}
-
 			if su.fileMeta.ActualSize == 0 {
 				su.fileMeta.ActualSize = su.progress.UploadLength
 			} else if su.fileMeta.ActualSize != su.progress.UploadLength && su.thumbnailBytes == nil {
