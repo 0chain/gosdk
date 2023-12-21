@@ -38,6 +38,15 @@ func listObjects(allocationID string, remotePath string) (*sdk.ListResult, error
 
 }
 
+func cancelUpload(allocationID string, remotePath string) error {
+	allocationObj, err := getAllocation(allocationID)
+	if err != nil {
+		PrintError("Error fetching the allocation", err)
+		return err
+	}
+	return allocationObj.CancelUpload(remotePath)
+}
+
 func createDir(allocationID, remotePath string) error {
 	if len(allocationID) == 0 {
 		return RequiredArg("allocationID")
