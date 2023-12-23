@@ -42,7 +42,8 @@ var (
 	noBLOBBERS       = errors.New("", "No Blobbers set in this allocation")
 	notInitialized   = errors.New("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
 	IsWasm           = false
-	MultiOpBatchSize = 10
+	MultiOpBatchSize = 20
+	Workdir          string
 )
 
 const (
@@ -377,6 +378,9 @@ func (a *Allocation) RepairFile(file sys.File, remotepath string,
 	status StatusCallback, mask zboxutil.Uint128, ref *fileref.FileRef) error {
 
 	idr, _ := homedir.Dir()
+	if Workdir != "" {
+		idr = Workdir
+	}
 	mask = mask.Not().And(zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1))
 	fileMeta := FileMeta{
 		ActualSize: ref.ActualFileSize,

@@ -850,3 +850,11 @@ func GetRemoteFileMap(allocationID string) (string, error) {
 
 	return string(retBytes), nil
 }
+
+// SetWorkingDir set working dir
+//
+//	## Inputs
+//	- workDir
+func SetWorkingDir(workDir string) {
+	sdk.Workdir = workDir
+}
