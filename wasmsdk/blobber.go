@@ -678,9 +678,7 @@ func uploadWithJsFuncs(allocationID, remotePath string, readChunkFuncName string
 		}
 	}
 	wg.Add(1)
-	if strings.HasPrefix(remotePath, "/Encrypted") {
-		encrypt = true
-	}
+
 
 	fileReader := jsbridge.NewFileReader(readChunkFuncName, fileSize)
 
