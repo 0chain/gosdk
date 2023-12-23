@@ -845,6 +845,11 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 				break
 			}
 			op := operations[i]
+			op.RemotePath = strings.TrimSpace(op.RemotePath)
+			if op.FileMeta.RemotePath != "" {
+				op.FileMeta.RemotePath = strings.TrimSpace(op.FileMeta.RemotePath)
+				op.FileMeta.RemoteName = strings.TrimSpace(op.FileMeta.RemoteName)
+			}
 			remotePath := op.RemotePath
 			parentPaths := GenerateParentPaths(remotePath)
 
