@@ -1032,6 +1032,7 @@ func GetAllocationBlobbers(
 	datashards, parityshards int,
 	size int64,
 	readPrice, writePrice PriceRange,
+	force ...bool,
 ) ([]string, error) {
 	var allocationRequest = map[string]interface{}{
 		"data_shards":       datashards,
@@ -1045,6 +1046,9 @@ func GetAllocationBlobbers(
 
 	params := make(map[string]string)
 	params["allocation_data"] = string(allocationData)
+	if len(force) > 0 && force[0] {
+		params["force"] = strconv.FormatBool(force[0])
+	}
 
 	allocBlobber, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/alloc_blobbers", params, nil)
 	if err != nil {

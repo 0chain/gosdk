@@ -229,6 +229,9 @@ func (mo *MultiOperation) Process() error {
 		writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
 		statusBar := NewRepairBar(mo.allocationObj.ID)
 		if statusBar == nil {
+			for _, op := range mo.operations {
+				op.Error(mo.allocationObj, 0, ErrRetryOperation)
+			}
 			return ErrRetryOperation
 		}
 		statusBar.wg.Add(1)
@@ -242,10 +245,16 @@ func (mo *MultiOperation) Process() error {
 		} else {
 			l.Logger.Error("Repair failed")
 		}
+		for _, op := range mo.operations {
+			op.Error(mo.allocationObj, 0, ErrRetryOperation)
+		}
 		return ErrRetryOperation
 	}
 	defer writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
 	if status != Commit {
+		for _, op := range mo.operations {
+			op.Error(mo.allocationObj, 0, ErrRetryOperation)
+		}
 		return ErrRetryOperation
 	}
 	totalStatusWM = time.Since(start).Milliseconds()
