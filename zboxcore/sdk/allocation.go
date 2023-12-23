@@ -400,7 +400,6 @@ func (a *Allocation) RepairFile(file sys.File, remotepath string,
 	if ref.EncryptedKey != "" {
 		opts = []ChunkedUploadOption{
 			WithMask(mask),
-			WithChunkNumber(10),
 			WithStatusCallback(status),
 			WithEncrypt(true),
 			WithEncryptedPoint(ref.EncryptedKeyPoint),
@@ -408,7 +407,6 @@ func (a *Allocation) RepairFile(file sys.File, remotepath string,
 	} else {
 		opts = []ChunkedUploadOption{
 			WithMask(mask),
-			WithChunkNumber(10),
 			WithStatusCallback(status),
 		}
 	}
@@ -862,6 +860,11 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 				break
 			}
 			op := operations[i]
+			op.RemotePath = strings.TrimSpace(op.RemotePath)
+			if op.FileMeta.RemotePath != "" {
+				op.FileMeta.RemotePath = strings.TrimSpace(op.FileMeta.RemotePath)
+				op.FileMeta.RemoteName = strings.TrimSpace(op.FileMeta.RemoteName)
+			}
 			remotePath := op.RemotePath
 			parentPaths := GenerateParentPaths(remotePath)
 
@@ -928,6 +931,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 			if err != nil {
 				return err
 			}
+			mo.operations = nil
 			mo.operations = nil
 		}
 	}

@@ -218,6 +218,8 @@ func (mo *MultiOperation) Process() error {
 	if err != nil {
 		return fmt.Errorf("Operation failed: %s", err.Error())
 	}
+	logger.Logger.Info("[writemarkerLocked]", time.Since(start).Milliseconds())
+	start = time.Now()
 	status, err := mo.allocationObj.CheckAllocStatus()
 	if err != nil {
 		logger.Logger.Error("Error checking allocation status", err)
@@ -252,6 +254,9 @@ func (mo *MultiOperation) Process() error {
 	}
 	defer writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
 	if status != Commit {
+		for _, op := range mo.operations {
+			op.Error(mo.allocationObj, 0, ErrRetryOperation)
+		}
 		for _, op := range mo.operations {
 			op.Error(mo.allocationObj, 0, ErrRetryOperation)
 		}
