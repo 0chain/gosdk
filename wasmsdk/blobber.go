@@ -589,9 +589,7 @@ func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 		wg.Add(1)
 		encrypt := option.Encrypt
 		remotePath := option.RemotePath
-		if strings.HasPrefix(remotePath, "/Encrypted") {
-			encrypt = true
-		}
+
 		fileReader := jsbridge.NewFileReader(option.ReadChunkFuncName, option.FileSize)
 		mimeType, err := zboxutil.GetFileContentType(fileReader)
 		if err != nil {
@@ -758,9 +756,6 @@ func upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, w
 	wg := &sync.WaitGroup{}
 	statusBar := &StatusBar{wg: wg}
 	wg.Add(1)
-	if strings.HasPrefix(remotePath, "/Encrypted") {
-		encrypt = true
-	}
 
 	fileReader := bytes.NewReader(fileBytes)
 
