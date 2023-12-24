@@ -10,7 +10,7 @@ import (
 	goError "errors"
 
 	"github.com/0chain/errors"
-	"golang.org/x/crypto/sha3"
+	"github.com/minio/sha256-simd"
 )
 
 const (
@@ -18,6 +18,16 @@ const (
 	MaxMerkleLeavesSize = 64 * 1024
 	FixedMerkleLeaves   = 1024
 	FixedMTDepth        = 11
+)
+
+var (
+	leafPool = sync.Pool{
+		New: func() interface{} {
+			return &leaf{
+				h: sha256.New(),
+			}
+		},
+	}
 )
 
 type leaf struct {
@@ -37,15 +47,20 @@ func (l *leaf) Write(b []byte) (int, error) {
 }
 
 func getNewLeaf() *leaf {
-	return &leaf{
-		h: sha3.New256(),
+	l, ok := leafPool.Get().(*leaf)
+	if !ok {
+		return &leaf{
+			h: sha256.New(),
+		}
 	}
+	l.h.Reset()
+	return l
 }
 
 // FixedMerkleTree A trusted mekerle tree for outsourcing attack protection. see section 1.8 on whitepager
 // see detail on https://github.com/0chain/blobber/wiki/Protocols#what-is-fixedmerkletree
 type FixedMerkleTree struct {
-	// Leaves will store hash digester that calculates sha256 hash of the leaf content
+	// Leaves will store hash digester that calculates blake3 hash of the leaf content
 	Leaves []Hashable `json:"leaves,omitempty"`
 
 	writeLock sync.Mutex
@@ -165,6 +180,7 @@ func (fmt *FixedMerkleTree) CalculateMerkleRoot() {
 	nodes := make([][]byte, len(fmt.Leaves))
 	for i := 0; i < len(nodes); i++ {
 		nodes[i] = fmt.Leaves[i].GetHashBytes()
+		leafPool.Put(fmt.Leaves[i])
 	}
 
 	for i := 0; i < FixedMTDepth; i++ {

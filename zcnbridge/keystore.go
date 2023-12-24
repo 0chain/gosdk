@@ -3,6 +3,7 @@ package zcnbridge
 import (
 	"fmt"
 	"path"
+	"time"
 
 	hdw "github.com/0chain/gosdk/zcncore/ethhdwallet"
 	"github.com/ethereum/go-ethereum/accounts"
@@ -10,6 +11,52 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 )
+
+// DetailedAccount describes detailed account
+type DetailedAccount struct {
+	EthereumAddress,
+	PublicKey,
+	PrivateKey accounts.Account
+}
+
+// KeyStore is a wrapper, which exposes Ethereum KeyStore methods used by DEX bridge.
+type KeyStore interface {
+	Find(accounts.Account) (accounts.Account, error)
+	TimedUnlock(accounts.Account, string, time.Duration) error
+	SignHash(account accounts.Account, hash []byte) ([]byte, error)
+	GetEthereumKeyStore() *keystore.KeyStore
+}
+
+type keyStore struct {
+	ks *keystore.KeyStore
+}
+
+// NewKeyStore creates new KeyStore wrapper instance
+func NewKeyStore(path string) KeyStore {
+	return &keyStore{
+		ks: keystore.NewKeyStore(path, keystore.StandardScryptN, keystore.StandardScryptP),
+	}
+}
+
+// Find forwards request to Ethereum KeyStore Find method
+func (k *keyStore) Find(account accounts.Account) (accounts.Account, error) {
+	return k.ks.Find(account)
+}
+
+// TimedUnlock forwards request to Ethereum KeyStore TimedUnlock method
+func (k *keyStore) TimedUnlock(account accounts.Account, passPhrase string, timeout time.Duration) error {
+	return k.ks.TimedUnlock(account, passPhrase, timeout)
+}
+
+// SignHash forwards request to Ethereum KeyStore SignHash method
+func (k *keyStore) SignHash(account accounts.Account, hash []byte) ([]byte, error) {
+	return k.ks.SignHash(account, hash)
+}
+
+// GetEthereumKeyStore returns Ethereum KeyStore instance
+func (k *keyStore) GetEthereumKeyStore() *keystore.KeyStore {
+	return k.ks
+}
 
 // ListStorageAccounts List available accounts
 func ListStorageAccounts(homedir string) []common.Address {
@@ -78,8 +125,14 @@ func CreateKeyStorage(homedir, password string) error {
 	return nil
 }
 
+type AccountAddressIndex struct {
+	AccountIndex int
+	AddressIndex int
+	Bip32        bool
+}
+
 // ImportAccount imports account using mnemonic
-func ImportAccount(homedir, mnemonic, password string) (string, error) {
+func ImportAccount(homedir, mnemonic, password string, accountAddrIndex ...AccountAddressIndex) (string, error) {
 	// 1. Create storage and account if it doesn't exist and add account to it
 
 	keyDir := path.Join(homedir, EthereumWalletStorageDir)
@@ -92,7 +145,18 @@ func ImportAccount(homedir, mnemonic, password string) (string, error) {
 		return "", errors.Wrap(err, "failed to import from mnemonic")
 	}
 
-	pathD := hdw.MustParseDerivationPath("m/44'/60'/0'/0/0")
+	var aai AccountAddressIndex
+	if len(accountAddrIndex) > 0 {
+		aai = accountAddrIndex[0]
+	}
+
+	var pathD accounts.DerivationPath
+	if aai.Bip32 {
+		pathD = hdw.MustParseDerivationPath(fmt.Sprintf("m/44'/60'/0'/%d", aai.AddressIndex))
+	} else {
+		pathD = hdw.MustParseDerivationPath(fmt.Sprintf("m/44'/60'/%d'/0/%d", aai.AccountIndex, aai.AddressIndex))
+	}
+
 	account, err := wallet.Derive(pathD, true)
 	if err != nil {
 		return "", errors.Wrap(err, "failed parse derivation path")

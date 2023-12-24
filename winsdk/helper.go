@@ -7,18 +7,27 @@ import (
 	"C"
 )
 import (
+	"encoding/base64"
 	"encoding/json"
 	"os"
+	"path/filepath"
 
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/marker"
-	"github.com/0chain/gosdk/zboxcore/sdk"
 )
 
-func getHomeDir() string {
-	dir, _ := os.UserHomeDir()
+func getZcnWorkDir() (string, error) {
+	d, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
 
-	return dir
+	z := filepath.Join(d, ".zcn")
+
+	// create ~/.zcn folder if it doesn't exists
+	os.MkdirAll(z, 0766) //nolint: errcheck
+
+	return z, nil
 }
 
 type JsonResult struct {
@@ -48,9 +57,17 @@ func getLookupHash(allocationID, path string) string {
 	return encryption.Hash(allocationID + ":" + path)
 }
 
-func getAuthTicket(authTicket *C.char) (*marker.AuthTicket, string, error) {
+func decodeAuthTicket(authTicket *C.char) (*marker.AuthTicket, string, error) {
 	at := C.GoString(authTicket)
-	t, err := sdk.InitAuthTicket(at).Unmarshall()
+	buf, err := base64.StdEncoding.DecodeString(at)
+	if err != nil {
+		return nil, at, err
+	}
+	t := &marker.AuthTicket{}
+	err = json.Unmarshal(buf, t)
+	if err != nil {
+		return nil, at, err
+	}
 
 	return t, at, err
 }

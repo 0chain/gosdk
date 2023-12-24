@@ -110,7 +110,6 @@ const (
 	NEW_ALLOCATION_REQUEST    = "new_allocation_request"
 	NEW_FREE_ALLOCATION       = "free_allocation_request"
 	UPDATE_ALLOCATION_REQUEST = "update_allocation_request"
-	FREE_UPDATE_ALLOCATION    = "free_update_allocation"
 	LOCK_TOKEN                = "lock"
 	UNLOCK_TOKEN              = "unlock"
 
@@ -256,20 +255,49 @@ func (t *Transaction) VerifyTransaction(verifyHandler VerifyFunc) (bool, error) 
 	return verifyHandler(t.Signature, t.Hash, t.PublicKey)
 }
 
-func SendTransactionSync(txn *Transaction, miners []string) {
+func SendTransactionSync(txn *Transaction, miners []string) error {
 	wg := sync.WaitGroup{}
 	wg.Add(len(miners))
+	fails := make(chan error, len(miners))
+
 	for _, miner := range miners {
 		url := fmt.Sprintf("%v/%v", miner, TXN_SUBMIT_URL)
-		go sendTransactionToURL(url, txn, &wg) //nolint
+		go func() {
+			_, err := sendTransactionToURL(url, txn, &wg)
+			if err != nil {
+				fails <- err
+			}
+			wg.Done()
+		}() //nolint
 	}
 	wg.Wait()
+	close(fails)
+
+	failureCount := 0
+	messages := make(map[string]int)
+	for e := range fails {
+		if e != nil {
+			failureCount++
+			messages[e.Error()] += 1
+		}
+	}
+
+	max := 0
+	dominant := ""
+	for m, s := range messages {
+		if s > max {
+			dominant = m
+		}
+	}
+
+	if failureCount == len(miners) {
+		return errors.New("transaction_send_error", dominant)
+	}
+
+	return nil
 }
 
 func sendTransactionToURL(url string, txn *Transaction, wg *sync.WaitGroup) ([]byte, error) {
-	if wg != nil {
-		defer wg.Done()
-	}
 	postReq, err := util.NewHTTPPostRequest(url, txn)
 	if err != nil {
 		//Logger.Error("Error in serializing the transaction", txn, err.Error())

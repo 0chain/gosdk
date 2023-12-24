@@ -10,6 +10,18 @@ import (
 	"github.com/pkg/errors"
 )
 
+// BancorTokenDetails describes Bancor ZCN zcntoken pool details
+type BancorTokenDetails struct {
+	Data struct {
+		Rate struct {
+			ETH  string `json:"eth"`
+			BNT  string `json:"bnt"`
+			USDC string `json:"usd"`
+			EURC string `json:"eur"`
+		}
+	} `json:"data"`
+}
+
 func GetTransactionStatus(hash string) (int, error) {
 	_, err := zcncore.GetEthClient()
 	if err != nil {

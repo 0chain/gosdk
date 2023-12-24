@@ -3,7 +3,7 @@
 <head>
   <!-- for zcn.wasm-->
   <script src="https://cdn.jsdelivr.net/gh/herumi/bls-wasm@v1.0.0/browser/bls.js"></script>
-  <script src="https://cdn.jsdelivr.net/gh/golang/go@go1.18.5/misc/wasm/wasm_exec.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/golang/go@go1.21.0/misc/wasm/wasm_exec.js"></script>
   <script src="zcn.js"></script>
 
 
@@ -36,19 +36,20 @@
   <fieldset>
     <legend>Wallet</legend>
     <label for="clientId"> ClientID </label> <input id="clientId" name="clientId" style="width: 600px;"
-      value="30764bcba73216b67c36b05a17b4dd076bfdc5bb0ed84856f27622188c377269" /><br>
+      value="632d7e04fb8ff9cebe36caa20050458811d5eb3d3bdeb6a3877116a6c9d3ad68" /><br>
     <label for="privateKey">PrivateKey</label> <input id="privateKey" name="privateKey" style="width: 600px;"
-      value="41729ed8d82f782646d2d30b9719acfd236842b9b6e47fee12b7bdbd05b35122" /><br>
+      value="1a82efcc1afa64468ba6d090da6ae4995e1c2c5fb3a107b01d5f67fe1f66bc08" /><br>
     <label for="publicKey"> PublicKey</label> <input id="publicKey" name="publicKey" style="width: 600px;"
-      value="1f495df9605a4479a7dd6e5c7a78caf9f9d54e3a40f62a3dd68ed377115fe614d8acf0c238025f67a85163b9fbf31d10fbbb4a551d1cf00119897edf18b1841c" /><br>
+      value="aeb6a6c2bd30a9cd9323a46d887bfc9cf7996d0d2158a55453d7b16a99ace7182e998dd30c0d34c3093796f7075aaa97f3e25589c278971634cba3f2303b3216" /><br>
     <label for="mnemonic"> Mnemonic</label> <input id="mnemonic" name="mnemonic" style="width: 600px;"
-      value="glare mistake gun joke bid spare across diagram wrap cube swear cactus cave repeat you brave few best wild lion pitch pole original wasp" /><br>
+      value="visit acquire month friend twice guide hard myself differ video style shaft situate general valve dice brick carbon replace powder indicate hello orient search" /><br>
 
 
 
 
     <button id="btnSetWallet">Change Wallet</button>
     <button id="btnSendMeTokens">Send Me Tokens</button>
+    <button id="btnSendTokensToOtherWallet">Send Tokens to Other Wallet</button>
     <button id="btnGetBalance">Get Balance</button>
 
     <button id="btnGetUSDRate">Get USD Rate</button>
@@ -152,8 +153,19 @@
     <img id="viewer" src="image.png" width="600" />
   </fieldset>
 
+  <fieldset>
+    <legend>Split Key</legend>
+    <span>
+      <button id="btnSplitKeys">SplitKeys</button>
+      <button id="btnSetWalletInfo">SetWalletInfo</button>
+      <button id="btnSetAuthUrl">SetAuthUrl</button>
+      <button id="btnRegAuth">regAuth</button>
+    </span>
+    <br>
+    <div id="splitKey">
+    </div>
+  </fieldset>
   <script>
-
     window.downloadCallback = function (totalBytes, completedBytes, error) {
       console.log("download: " + completedBytes + "/" + totalBytes + " err:" + error)
     }
@@ -190,8 +202,8 @@
     const networkConfig = {
       chainId: '0afc093ffb509f059c55478bc1a60351cef7b4e9c008a53a6cc8241ca8617dfe',
       signatureScheme: 'bls0chain',
-      minConfirmation: 50,
-      minSubmit: 50,
+      minConfirmation: 10,
+      minSubmit: 10,
       confirmationChainLength: 3,
     }
 
@@ -236,6 +248,19 @@
       await goWasm.sdk.faucet("pour", JSON.stringify("{Pay day}"), 10)
     })
 
+    onClick('btnSendTokensToOtherWallet', async () => {
+      try {
+        const output = await goWasm.sdk.send(
+          "5ad6e4d206d853833e96ff5c833369e567d2ef41ae1d5093141e1f90f1e8dcb0",
+          10000000000,
+          0
+        )
+        console.log("successfully sent with txn hash: ", output)
+      } catch (e) {
+        alert(e)
+      }
+    })
+
     onClick('btnGetBalance', async () => {
       const { clientID } = getWallet()
       const wallet = await goWasm.sdk.getWalletBalance(clientID)
@@ -247,7 +272,7 @@
       try {
         const alloc = await goWasm.sdk.createfreeallocation(token)
         console.log("create freeallocation with ID: ", alloc)
-      } catch(e) {
+      } catch (e) {
         alert(e)
       }
     })
@@ -325,7 +350,7 @@
         storagesc = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7"
         const resp = await goWasm.sdk.makeSCRestAPICall(storagesc, "/allocation", paramsJSON)
         txtOutput.innerHTML = resp
-      } catch(e) {
+      } catch (e) {
         alert(e)
       }
     })
@@ -366,22 +391,22 @@
       }
     })
 
-	onClick('btnGetUpdateAllocationMinLock', async () => {
-		let size = 100000
-		const allocationId = getSelectedAllocation()
-		if (!allocationId) {
-			alert("please selection allocationID")
-			return
-		} else {
-			console.log("allocation:", allocationId)
-		}
-		try {
-			const price = await goWasm.sdk.getUpdateAllocationMinLock(allocationId, size, true, false, "", "")
-			txtOutput.innerHTML = price
-		} catch (e) {
-			alert(e)
-		}
-	})
+    onClick('btnGetUpdateAllocationMinLock', async () => {
+      let size = 100000
+      const allocationId = getSelectedAllocation()
+      if (!allocationId) {
+        alert("please selection allocationID")
+        return
+      } else {
+        console.log("allocation:", allocationId)
+      }
+      try {
+        const price = await goWasm.sdk.getUpdateAllocationMinLock(allocationId, size, true, false, "", "")
+        txtOutput.innerHTML = price
+      } catch (e) {
+        alert(e)
+      }
+    })
 
     onClick('btnListBlobberSettings', async () => {
       const blobberID = getSelectedBlobbers()
@@ -796,20 +821,117 @@
       }
       const objects = []
 
-      objects.push({
-        operationType: `move`,
-        remotePath: `/zcn.wasm`,
-        destPath: `/folder1`,
-      })
+      objects.push(
+        { // rename file
+          operationType: `move`,
+          remotePath: `/small2-182b.txt`,
+          destPath: `/folder/small-182b.txt`,
+        },
+        { // todo: rename folder
+          operationType: `move`,
+          remotePath: `/folder`,
+          destPath: `/folder2`,
+        },
+        { // move a file to an other folder
+          operationType: `move`,
+          remotePath: `/small-182b.txt`,
+          destPath: `/folder/`,
+        },
+        { // copy a file to an other folder
+          operationType: `copy`,
+          remotePath: `/small2-182b.txt`,
+          destPath: `/folder/`,
+        },
+      )
 
       let stringifiedArray = JSON.stringify(objects);
 
       try {
-        console.log("execting", objects[0])
+        console.log("executing MultiOps", objects[0])
         const output = await goWasm.sdk.multiOperation(allocationId, stringifiedArray)
       } catch (e) {
         alert(e)
       }
+    })
+
+    onClick('btnSplitKeys', async () => {
+      const privateKey = "41729ed8d82f782646d2d30b9719acfd236842b9b6e47fee12b7bdbd05b35122"
+      const numSplits = 1
+      try {
+        const wStr = await goWasm.sdk.splitKeys(privateKey, numSplits)
+        txtOutput.innerHTML = wStr;
+        console.log("splitKeys", wStr);
+      } catch (e) {
+        alert(e)
+      }
+    })
+
+    onClick('btnSetWalletInfo', async () => {
+      const jsonWallet = {
+        "client_id": "30764bcba73216b67c36b05a17b4dd076bfdc5bb0ed84856f27622188c377269",
+        "client_key": "1f495df9605a4479a7dd6e5c7a78caf9f9d54e3a40f62a3dd68ed377115fe614d8acf0c238025f67a85163b9fbf31d10fbbb4a551d1cf00119897edf18b1841c",
+        "keys": [
+          { "public_key": "1f495df9605a4479a7dd6e5c7a78caf9f9d54e3a40f62a3dd68ed377115fe614d8acf0c238025f67a85163b9fbf31d10fbbb4a551d1cf00119897edf18b1841c", "private_key": "41729ed8d82f782646d2d30b9719acfd236842b9b6e47fee12b7bdbd05b35122" }
+        ],
+        "mnemonics": "glare mistake gun joke bid spare across diagram wrap cube swear cactus cave repeat you brave few best wild lion pitch pole original wasp",
+        "version": "1.0",
+        "date_created": "1662534022",
+        "nonce": 0
+      }
+      const splitKeyWallet = true
+      try {
+        const jsonWalletString = JSON.stringify(jsonWallet);
+        const isWalletInfoSet = await goWasm.sdk.setWalletInfo(jsonWalletString, splitKeyWallet)
+        console.log("Set Wallet Info:", isWalletInfoSet)
+      } catch (e) {
+        alert(e)
+      }
+    })
+
+    onClick('btnSetAuthUrl', async () => {
+      // need to call setSplitKeyWallet to set wallet type to split key initially.
+      const jsonWallet = {
+        "client_id": "30764bcba73216b67c36b05a17b4dd076bfdc5bb0ed84856f27622188c377269",
+        "client_key": "1f495df9605a4479a7dd6e5c7a78caf9f9d54e3a40f62a3dd68ed377115fe614d8acf0c238025f67a85163b9fbf31d10fbbb4a551d1cf00119897edf18b1841c",
+        "keys": [
+          { "public_key": "1f495df9605a4479a7dd6e5c7a78caf9f9d54e3a40f62a3dd68ed377115fe614d8acf0c238025f67a85163b9fbf31d10fbbb4a551d1cf00119897edf18b1841c", "private_key": "41729ed8d82f782646d2d30b9719acfd236842b9b6e47fee12b7bdbd05b35122" }
+        ],
+        "mnemonics": "glare mistake gun joke bid spare across diagram wrap cube swear cactus cave repeat you brave few best wild lion pitch pole original wasp",
+        "version": "1.0",
+        "date_created": "1662534022",
+        "nonce": 0
+      }
+      const splitKeyWallet = true
+      try {
+        const jsonWalletString = JSON.stringify(jsonWallet);
+        const isWalletInfoSet = await goWasm.sdk.setWalletInfo(jsonWalletString, splitKeyWallet)
+        console.log("Set Wallet Info:", isWalletInfoSet)
+      } catch (e) {
+        alert(e)
+      }
+      // can add any string ,because just had string check while checking url
+      const url = "Testing"
+      try {
+        const isAuthURLSet = await goWasm.sdk.setAuthUrl(url)
+        console.log("Set Auth URL", isAuthURLSet);
+      } catch (e) {
+        alert(e)
+      }
+    })
+
+    onClick('btnRegAuth', async () => {
+      const authCallback = function (msg) {
+        return `Authorized: ${msg}`;
+      };
+
+      const registerAuthorizer = goWasm.sdk.registerAuthorizer;
+      registerAuthorizer(authCallback);
+
+      // call the callAuth to see if the auth is set properly
+      // Use the stored callback function from Go
+      const message = "Hello, World!";
+      const result = goWasm.sdk.callAuth(message);
+      console.log(result); // Output: "Authorized: Hello, World!"
     })
 
   </script>

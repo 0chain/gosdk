@@ -6,11 +6,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/zboxcore/fileref"
+	"github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
-
-const SPACE string = " "
 
 type fileResp struct {
 	sdk.FileInfo
@@ -325,8 +325,10 @@ func RepairFile(allocationID, workdir, localPath, remotePath, thumbnailPath stri
 //   - error
 func MultiUpload(allocationID string, workdir string, jsonMultiUploadOptions string, statusCb StatusCallbackMocked) error {
 	var options []MultiUploadOption
+	logger.Logger.Info("multiupload: ", jsonMultiUploadOptions)
 	err := json.Unmarshal([]byte(jsonMultiUploadOptions), &options)
 	if err != nil {
+		logger.Logger.Error("multiupload: ", err)
 		return err
 	}
 	totalUploads := len(options)
@@ -351,6 +353,7 @@ func MultiUpload(allocationID string, workdir string, jsonMultiUploadOptions str
 
 	a, err := getAllocation(allocationID)
 	if err != nil {
+		logger.Logger.Error("multiupload: ", err)
 		return err
 	}
 	return a.StartMultiUpload(workdir, filePaths, fileNames, thumbnailPaths, encrypts, chunkNumbers, remotePaths, isUpdates, isWebstreaming, &StatusCallbackWrapped{Callback: statusCb})
@@ -468,7 +471,13 @@ func RenameObject(allocationID, remotePath string, destName string) error {
 	if err != nil {
 		return err
 	}
-	return a.RenameObject(remotePath, destName)
+	return a.DoMultiOperation([]sdk.OperationRequest{
+		{
+			OperationType: constants.FileOperationRename,
+			RemotePath:    remotePath,
+			DestName:      destName,
+		},
+	})
 }
 
 // GetStatistics - get allocation stats
@@ -747,7 +756,13 @@ func CopyObject(allocationID, path string, destPath string) error {
 	if err != nil {
 		return err
 	}
-	return a.CopyObject(path, destPath)
+	return a.DoMultiOperation([]sdk.OperationRequest{
+		{
+			OperationType: constants.FileOperationCopy,
+			RemotePath:    path,
+			DestPath:      destPath,
+		},
+	})
 }
 
 // MoveObject - move object from path to dest
@@ -760,7 +775,14 @@ func MoveObject(allocationID, path string, destPath string) error {
 	if err != nil {
 		return err
 	}
-	return a.MoveObject(path, destPath)
+	return a.DoMultiOperation([]sdk.OperationRequest{
+		{
+			OperationType: constants.FileOperationMove,
+			RemotePath:    path,
+			DestPath:      destPath,
+		},
+	})
+
 }
 
 // CreateDir create empty directoy on remote blobbers
@@ -773,7 +795,12 @@ func CreateDir(allocationID, dirName string) error {
 	if err != nil {
 		return err
 	}
-	return a.CreateDir(dirName)
+	return a.DoMultiOperation([]sdk.OperationRequest{
+		{
+			OperationType: constants.FileOperationCreateDir,
+			RemotePath:    dirName,
+		},
+	})
 }
 
 // RevokeShare revoke authTicket

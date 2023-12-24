@@ -60,24 +60,28 @@ type RefEntity interface {
 }
 
 type Ref struct {
-	Type             string `json:"type" mapstructure:"type"`
-	AllocationID     string `json:"allocation_id" mapstructure:"allocation_id"`
-	Name             string `json:"name" mapstructure:"name"`
-	Path             string `json:"path" mapstructure:"path"`
-	Size             int64  `json:"size" mapstructure:"size"`
-	ActualSize       int64  `json:"actual_file_size" mapstructure:"actual_file_size"`
-	Hash             string `json:"hash" mapstructure:"hash"`
-	ChunkSize        int64  `json:"chunk_size" mapstructure:"chunk_size"`
-	NumBlocks        int64  `json:"num_of_blocks" mapstructure:"num_of_blocks"`
-	PathHash         string `json:"path_hash" mapstructure:"path_hash"`
-	LookupHash       string `json:"lookup_hash" mapstructure:"lookup_hash"`
-	FileID           string `json:"file_id" mapstructure:"file_id"`
-	FileMetaHash     string `json:"file_meta_hash" mapstructure:"file_meta_hash"`
-	HashToBeComputed bool
-	ChildrenLoaded   bool
-	Children         []RefEntity      `json:"-" mapstructure:"-"`
-	CreatedAt        common.Timestamp `json:"created_at" mapstructure:"created_at"`
-	UpdatedAt        common.Timestamp `json:"updated_at" mapstructure:"updated_at"`
+	Type                string `json:"type" mapstructure:"type"`
+	AllocationID        string `json:"allocation_id" mapstructure:"allocation_id"`
+	Name                string `json:"name" mapstructure:"name"`
+	Path                string `json:"path" mapstructure:"path"`
+	Size                int64  `json:"size" mapstructure:"size"`
+	ActualSize          int64  `json:"actual_file_size" mapstructure:"actual_file_size"`
+	Hash                string `json:"hash" mapstructure:"hash"`
+	ChunkSize           int64  `json:"chunk_size" mapstructure:"chunk_size"`
+	NumBlocks           int64  `json:"num_of_blocks" mapstructure:"num_of_blocks"`
+	PathHash            string `json:"path_hash" mapstructure:"path_hash"`
+	LookupHash          string `json:"lookup_hash" mapstructure:"lookup_hash"`
+	FileID              string `json:"file_id" mapstructure:"file_id"`
+	FileMetaHash        string `json:"file_meta_hash" mapstructure:"file_meta_hash"`
+	ThumbnailHash       string `json:"thumbnail_hash" mapstructure:"thumbnail_hash"`
+	ThumbnailSize       int64  `json:"thumbnail_size" mapstructure:"thumbnail_size"`
+	ActualThumbnailHash string `json:"actual_thumbnail_hash" mapstructure:"actual_thumbnail_hash"`
+	ActualThumbnailSize int64  `json:"actual_thumbnail_size" mapstructure:"actual_thumbnail_size"`
+	HashToBeComputed    bool
+	ChildrenLoaded      bool
+	Children            []RefEntity      `json:"-" mapstructure:"-"`
+	CreatedAt           common.Timestamp `json:"created_at" mapstructure:"created_at"`
+	UpdatedAt           common.Timestamp `json:"updated_at" mapstructure:"updated_at"`
 }
 
 func GetReferenceLookup(allocationID string, path string) string {

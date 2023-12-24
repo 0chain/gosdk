@@ -1,6 +1,7 @@
 package zboxapi
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -11,9 +12,38 @@ import (
 
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/encryption"
+	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/resty"
 	"github.com/0chain/gosdk/core/sys"
+	"github.com/0chain/gosdk/core/zcncrypto"
 )
+
+var log logger.Logger
+
+func GetLogger() *logger.Logger {
+	return &log
+}
+
+func signHash(hash string, signatureScheme string, keys []sys.KeyPair) (string, error) {
+	retSignature := ""
+	for _, kv := range keys {
+		ss := zcncrypto.NewSignatureScheme(signatureScheme)
+		err := ss.SetPrivateKey(kv.PrivateKey)
+		if err != nil {
+			return "", err
+		}
+
+		if len(retSignature) == 0 {
+			retSignature, err = ss.Sign(hash)
+		} else {
+			retSignature, err = ss.Add(retSignature, hash)
+		}
+		if err != nil {
+			return "", err
+		}
+	}
+	return retSignature, nil
+}
 
 type Client struct {
 	baseUrl          string
@@ -41,7 +71,9 @@ func (c *Client) SetWallet(clientID, clientPrivateKey, clientPublicKey string) {
 }
 
 func (c *Client) parseResponse(resp *http.Response, respBody []byte, result interface{}) error {
-	if resp.StatusCode == http.StatusOK {
+
+	log.Info("zboxapi: ", resp.StatusCode, " ", string(respBody))
+	if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusCreated {
 		if err := json.Unmarshal(respBody, result); err != nil {
 			return thrown.Throw(ErrInvalidJsonResponse, string(respBody))
 		}
@@ -90,7 +122,7 @@ func (c *Client) createResty(ctx context.Context, csrfToken, phoneNumber string,
 	if c.clientPrivateKey != "" {
 		data := fmt.Sprintf("%v:%v:%v", c.clientID, phoneNumber, c.clientPublicKey)
 		hash := encryption.Hash(data)
-		sign, err := sys.Sign(hash, "bls0chain", []sys.KeyPair{{
+		sign, err := signHash(hash, "bls0chain", []sys.KeyPair{{
 			PrivateKey: c.clientPrivateKey,
 		}})
 		if err != nil {
@@ -208,4 +240,186 @@ func (c *Client) RefreshJwtToken(ctx context.Context, phoneNumber string, token 
 	}
 
 	return result.Token, nil
+}
+
+func (c *Client) GetFreeStorage(ctx context.Context, phoneNumber, token string) (*FreeMarker, error) {
+	csrfToken, err := c.GetCsrfToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+	headers := map[string]string{
+		"X-App-ID-Token": token,
+	}
+
+	r, err := c.createResty(ctx, csrfToken, phoneNumber, headers)
+
+	if err != nil {
+		return nil, err
+	}
+
+	result := &FreeStorageResponse{}
+	r.DoGet(ctx, c.baseUrl+"/v2/freestorage").
+		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
+			if err != nil {
+				return err
+			}
+
+			return c.parseResponse(resp, respBody, result)
+		})
+
+	if errs := r.Wait(); len(errs) > 0 {
+		return nil, errs[0]
+	}
+
+	return result.ToMarker()
+
+}
+
+func (c *Client) CreateSharedInfo(ctx context.Context, phoneNumber, token string, s SharedInfo) error {
+	csrfToken, err := c.GetCsrfToken(ctx)
+	if err != nil {
+		return err
+	}
+	headers := map[string]string{
+		"X-App-ID-Token": token,
+		"Content-Type":   "application/json",
+	}
+
+	r, err := c.createResty(ctx, csrfToken, phoneNumber, headers)
+
+	if err != nil {
+		return err
+	}
+
+	buf, err := json.Marshal(s)
+	if err != nil {
+		return err
+	}
+
+	result := &JsonResult[string]{}
+	r.DoPost(ctx, bytes.NewReader(buf), c.baseUrl+"/v2/shareinfo").
+		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
+			if err != nil {
+				return err
+			}
+
+			return c.parseResponse(resp, respBody, &result)
+		})
+
+	if errs := r.Wait(); len(errs) > 0 {
+		return errs[0]
+	}
+
+	return nil
+}
+
+func (c *Client) DeleteSharedInfo(ctx context.Context, phoneNumber, token, authTicket string, lookupHash string) error {
+	csrfToken, err := c.GetCsrfToken(ctx)
+	if err != nil {
+		return err
+	}
+	headers := map[string]string{
+		"X-App-ID-Token": token,
+	}
+
+	r, err := c.createResty(ctx, csrfToken, phoneNumber, headers)
+
+	if err != nil {
+		return err
+	}
+
+	result := &JsonResult[string]{}
+	r.DoDelete(ctx, c.baseUrl+"/v2/shareinfo?auth_ticket="+authTicket+"&lookup_hash="+lookupHash).
+		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
+			if err != nil {
+				return err
+			}
+
+			return c.parseResponse(resp, respBody, &result)
+		})
+
+	if errs := r.Wait(); len(errs) > 0 {
+		return errs[0]
+	}
+
+	return nil
+}
+
+func (c *Client) GetSharedByPublic(ctx context.Context, phoneNumber, token string) ([]SharedInfoSent, error) {
+	return c.getShared(ctx, phoneNumber, token, false)
+}
+
+func (c *Client) GetSharedByMe(ctx context.Context, phoneNumber, token string) ([]SharedInfoSent, error) {
+	return c.getShared(ctx, phoneNumber, token, true)
+}
+
+func (c *Client) getShared(ctx context.Context, phoneNumber, token string, isPrivate bool) ([]SharedInfoSent, error) {
+	csrfToken, err := c.GetCsrfToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+	headers := map[string]string{
+		"X-App-ID-Token": token,
+	}
+
+	r, err := c.createResty(ctx, csrfToken, phoneNumber, headers)
+
+	if err != nil {
+		return nil, err
+	}
+
+	shareInfoType := "public"
+	if isPrivate {
+		shareInfoType = "private"
+	}
+
+	result := &JsonResult[SharedInfoSent]{}
+	r.DoGet(ctx, c.baseUrl+"/v2/shareinfo/shared?share_info_type="+shareInfoType).
+		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
+			if err != nil {
+				return err
+			}
+
+			return c.parseResponse(resp, respBody, &result)
+		})
+
+	if errs := r.Wait(); len(errs) > 0 {
+		return nil, errs[0]
+	}
+
+	return result.Data, nil
+
+}
+
+func (c *Client) GetSharedToMe(ctx context.Context, phoneNumber, token string) ([]SharedInfoReceived, error) {
+	csrfToken, err := c.GetCsrfToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+	headers := map[string]string{
+		"X-App-ID-Token": token,
+	}
+
+	r, err := c.createResty(ctx, csrfToken, phoneNumber, headers)
+
+	if err != nil {
+		return nil, err
+	}
+
+	result := &JsonResult[SharedInfoReceived]{}
+	r.DoGet(ctx, c.baseUrl+"/v2/shareinfo/received?share_info_type=private").
+		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
+			if err != nil {
+				return err
+			}
+
+			return c.parseResponse(resp, respBody, &result)
+		})
+
+	if errs := r.Wait(); len(errs) > 0 {
+		return nil, errs[0]
+	}
+
+	return result.Data, nil
+
 }

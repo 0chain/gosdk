@@ -3,6 +3,7 @@ package sdk
 import (
 	"bytes"
 	"context"
+	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -30,7 +31,6 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/klauspost/reedsolomon"
 	"go.dedis.ch/kyber/v3/group/edwards25519"
-	"golang.org/x/crypto/sha3"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -284,6 +284,10 @@ func (req *DownloadRequest) fillShards(shards [][][]byte, result *downloadBlock)
 		} else {
 			data = result.BlockChunks[i]
 		}
+		if i >= len(shards) || len(shards[i]) <= result.idx {
+			l.Logger.Error("Invalid shard index", result.idx, len(shards), len(shards[i]))
+			return errors.New("invalid_shard_index", fmt.Sprintf("Invalid shard index %d shard len: %d shard block len: %d", result.idx, len(shards), i))
+		}
 		shards[i][result.idx] = data
 	}
 	return
@@ -368,6 +372,13 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		op = opThumbnailDownload
 	}
 	fRef := req.fRef
+	if fRef != nil && fRef.ActualFileHash == emptyFileDataHash {
+		if req.statusCallback != nil {
+			req.statusCallback.Completed(
+				req.allocationID, remotePathCB, fRef.Name, "", len(emptyFileDataHash), op)
+		}
+		return
+	}
 	size, chunksPerShard, blocksPerShard := req.size, req.chunksPerShard, req.blocksPerShard
 
 	logger.Logger.Info(
@@ -375,6 +386,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			"Blocks per blobber: %d", size, req.startBlock, req.endBlock, blocksPerShard),
 	)
 
+	now := time.Now()
 	err := req.initEC()
 	if err != nil {
 		logger.Logger.Error(err)
@@ -383,6 +395,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 				err), remotePathCB)
 		return
 	}
+	elapsedInitEC := time.Since(now)
 	if req.encryptedKey != "" {
 		err = req.initEncryption()
 		if err != nil {
@@ -392,6 +405,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			return
 		}
 	}
+	elapsedInitEncryption := time.Since(now) - elapsedInitEC
 
 	var downloaded int
 	startBlock, endBlock, numBlocks := req.startBlock, req.endBlock, req.numBlocks
@@ -410,21 +424,31 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			req.shouldVerify = false
 		}
 	}
-	var actualFileHasher hash.Hash
-	var isPREAndWholeFile bool
-	if !req.shouldVerify && (startBlock == 0 && endBlock == chunksPerShard) {
-		actualFileHasher = sha3.New256()
-		isPREAndWholeFile = true
-	}
-
 	n := int((endBlock - startBlock + numBlocks - 1) / numBlocks)
 
 	// Buffered channel to hold the blocks as they are downloaded
 	blocks := make(chan blockData, n)
 
+	var (
+		actualFileHasher  hash.Hash
+		isPREAndWholeFile bool
+		closeOnce         *sync.Once
+		hashDataChan      chan []byte
+		hashWg            *sync.WaitGroup
+	)
+
+	if !req.shouldVerify && (startBlock == 0 && endBlock == chunksPerShard) {
+		actualFileHasher = md5.New()
+		hashDataChan = make(chan []byte, n)
+		hashWg = &sync.WaitGroup{}
+		hashWg.Add(1)
+		closeOnce = &sync.Once{}
+		go processHashData(hashDataChan, hashWg, actualFileHasher)
+		isPREAndWholeFile = true
+	}
+
 	var wg sync.WaitGroup
 	wg.Add(1)
-
 	// Handle writing the blocks in order as soon as they are downloaded
 	go func() {
 		buffer := make(map[int][]byte)
@@ -433,8 +457,12 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 				// If the block we need to write next is already in the buffer, write it
 				numBytes := int64(math.Min(float64(remainingSize), float64(len(data))))
 				if isPREAndWholeFile {
-					actualFileHasher.Write(data[:numBytes])
+					hashDataChan <- data[:numBytes]
 					if i == n-1 {
+						closeOnce.Do(func() {
+							close(hashDataChan)
+						})
+						hashWg.Wait()
 						if calculatedFileHash, ok := checkHash(actualFileHasher, fRef, req.contentMode); !ok {
 							req.errorCB(fmt.Errorf("Expected actual file hash %s, calculated file hash %s",
 								fRef.ActualFileHash, calculatedFileHash), remotePathCB)
@@ -465,8 +493,12 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 						// Write the data
 						numBytes := int64(math.Min(float64(remainingSize), float64(len(block.data))))
 						if isPREAndWholeFile {
-							actualFileHasher.Write(block.data[:numBytes])
+							hashDataChan <- block.data[:numBytes]
 							if i == n-1 {
+								closeOnce.Do(func() {
+									close(hashDataChan)
+								})
+								hashWg.Wait()
 								if calculatedFileHash, ok := checkHash(actualFileHasher, fRef, req.contentMode); !ok {
 									req.errorCB(fmt.Errorf("Expected actual file hash %s, calculated file hash %s",
 										fRef.ActualFileHash, calculatedFileHash), remotePathCB)
@@ -475,7 +507,6 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 							}
 						}
 						_, err = req.fileHandler.Write(block.data[:numBytes])
-
 						if err != nil {
 							req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
 							return
@@ -521,12 +552,25 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		})
 	}
 	if err := eg.Wait(); err != nil {
+		if isPREAndWholeFile {
+			closeOnce.Do(func() {
+				close(hashDataChan)
+			})
+		}
 		req.errorCB(err, remotePathCB)
 		return
 	}
 
 	close(blocks)
 	wg.Wait()
+	elapsedGetBlocksAndWrite := time.Since(now) - elapsedInitEC - elapsedInitEncryption
+	l.Logger.Info(fmt.Sprintf("[processDownload] Timings:\n allocation_id: %s,\n remotefilepath: %s,\n initEC: %d ms,\n initEncryption: %d ms,\n getBlocks and writes: %d ms",
+		req.allocationID,
+		req.remotefilepath,
+		elapsedInitEC.Milliseconds(),
+		elapsedInitEncryption.Milliseconds(),
+		elapsedGetBlocksAndWrite.Milliseconds(),
+	))
 
 	if req.statusCallback != nil {
 		req.statusCallback.Completed(
@@ -540,6 +584,13 @@ func checkHash(actualFileHasher hash.Hash, fref *fileref.FileRef, contentMode st
 		return calculatedFileHash, calculatedFileHash == fref.ActualThumbnailHash
 	} else {
 		return calculatedFileHash, calculatedFileHash == fref.ActualFileHash
+	}
+}
+
+func processHashData(hashDataChan chan []byte, hashWg *sync.WaitGroup, actualFileHasher hash.Hash) {
+	defer hashWg.Done()
+	for data := range hashDataChan {
+		actualFileHasher.Write(data)
 	}
 }
 

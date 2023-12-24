@@ -11,6 +11,7 @@ import (
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/node"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/logger"
 	"go.uber.org/zap"
@@ -112,6 +113,8 @@ type ChainConfig struct {
 	EthNode                 string   `json:"eth_node"`
 	SharderConsensous       int      `json:"sharder_consensous"`
 }
+
+var Sharders *node.NodeHolder
 
 // InitZCNSDK initializes the SDK with miner, sharder and signature scheme provided.
 func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainConfig) error) error {
@@ -288,7 +291,7 @@ func (t *Transaction) completeVerifyWithConStatus(status int, conStatus int, out
 	t.verifyOut = out
 	t.verifyError = err
 	if status == StatusError {
-		transaction.Cache.Evict(t.txn.ClientID)
+		node.Cache.Evict(t.txn.ClientID)
 	}
 	if t.txnCb != nil {
 		t.txnCb.OnVerifyComplete(t, t.verifyStatus)
@@ -316,9 +319,9 @@ func (t *Transaction) setNonceAndSubmit() {
 func (t *Transaction) setNonce() {
 	nonce := t.txn.TransactionNonce
 	if nonce < 1 {
-		nonce = transaction.Cache.GetNextNonce(t.txn.ClientID)
+		nonce = node.Cache.GetNextNonce(t.txn.ClientID)
 	} else {
-		transaction.Cache.Set(t.txn.ClientID, nonce)
+		node.Cache.Set(t.txn.ClientID, nonce)
 	}
 	t.txn.TransactionNonce = nonce
 }
@@ -334,7 +337,7 @@ func (t *Transaction) submitTxn() {
 		err := t.txn.ComputeHashAndSign(SignFn)
 		if err != nil {
 			t.completeTxn(StatusError, "", err)
-			transaction.Cache.Evict(t.txn.ClientID)
+			node.Cache.Evict(t.txn.ClientID)
 			return
 		}
 	}
@@ -386,7 +389,7 @@ func (t *Transaction) submitTxn() {
 	case <-failC:
 		logging.Error("failed to submit transaction")
 		t.completeTxn(StatusError, "", fmt.Errorf("failed to submit transaction to all miners"))
-		transaction.Cache.Evict(t.txn.ClientID)
+		node.Cache.Evict(t.txn.ClientID)
 		ResetStableMiners()
 		return
 	case ret := <-resultC:
@@ -395,7 +398,7 @@ func (t *Transaction) submitTxn() {
 			t.completeTxn(StatusSuccess, ret.Body, nil)
 		} else {
 			t.completeTxn(StatusError, "", fmt.Errorf("submit transaction failed. %s", ret.Body))
-			transaction.Cache.Evict(t.txn.ClientID)
+			node.Cache.Evict(t.txn.ClientID)
 		}
 	}
 }
@@ -435,7 +438,7 @@ func (t *Transaction) StoreData(data string) error {
 	return nil
 }
 
-type txnFeeOption struct {
+type TxnFeeOption struct {
 	// stop estimate txn fee, usually if txn fee was 0, the createSmartContractTxn method would
 	// estimate the txn fee by calling API from 0chain network. With this option, we could force
 	// the txn to have zero fee for those exempt transactions.
@@ -443,11 +446,11 @@ type txnFeeOption struct {
 }
 
 // FeeOption represents txn fee related option type
-type FeeOption func(*txnFeeOption)
+type FeeOption func(*TxnFeeOption)
 
 // WithNoEstimateFee would prevent txn fee estimation from remote
 func WithNoEstimateFee() FeeOption {
-	return func(o *txnFeeOption) {
+	return func(o *TxnFeeOption) {
 		o.noEstimateFee = true
 	}
 }
@@ -468,7 +471,7 @@ func (t *Transaction) createSmartContractTxn(address, methodName string, input i
 		return nil
 	}
 
-	tf := &txnFeeOption{}
+	tf := &TxnFeeOption{}
 	for _, opt := range opts {
 		opt(tf)
 	}
@@ -513,9 +516,9 @@ func (t *Transaction) ExecuteFaucetSCWallet(walletStr string, methodName string,
 	go func() {
 		nonce := t.txn.TransactionNonce
 		if nonce < 1 {
-			nonce = transaction.Cache.GetNextNonce(t.txn.ClientID)
+			nonce = node.Cache.GetNextNonce(t.txn.ClientID)
 		} else {
-			transaction.Cache.Set(t.txn.ClientID, nonce)
+			node.Cache.Set(t.txn.ClientID, nonce)
 		}
 		t.txn.TransactionNonce = nonce
 		err = t.txn.ComputeHashAndSignWithWallet(signWithWallet, w)
@@ -558,33 +561,6 @@ func (t *Transaction) GetTransactionHash() string {
 		t.txnHash = hash
 	}
 	return t.txnHash
-}
-
-func queryFromSharders(numSharders int, query string,
-	result chan *util.GetResponse) {
-
-	queryFromShardersContext(context.Background(), numSharders, query, result)
-}
-
-func queryFromShardersContext(ctx context.Context, numSharders int,
-	query string, result chan *util.GetResponse) {
-
-	for _, sharder := range util.Shuffle(_config.chain.Sharders)[:numSharders] {
-		go func(sharderurl string) {
-			logging.Info("Query from ", sharderurl+query)
-			url := fmt.Sprintf("%v%v", sharderurl, query)
-			req, err := util.NewHTTPGetRequestContext(ctx, url)
-			if err != nil {
-				logging.Error(sharderurl, " new get request failed. ", err.Error())
-				return
-			}
-			res, err := req.Get()
-			if err != nil {
-				logging.Error(sharderurl, " get error. ", err.Error())
-			}
-			result <- res
-		}(sharder)
-	}
 }
 
 func queryFromMinersContext(ctx context.Context, numMiners int, query string, result chan *util.GetResponse) {
@@ -651,9 +627,9 @@ func getBlockHeaderFromTransactionConfirmation(txnHash string, cfmBlock map[stri
 }
 
 func getBlockInfoByRound(round int64, content string) (*blockHeader, error) {
-	numSharders := len(_config.chain.Sharders) // overwrite, use all
+	numSharders := len(Sharders.Healthy()) // overwrite, use all
 	resultC := make(chan *util.GetResponse, numSharders)
-	queryFromSharders(numSharders, fmt.Sprintf("%vround=%v&content=%v", GET_BLOCK_INFO, round, content), resultC)
+	Sharders.QueryFromSharders(numSharders, fmt.Sprintf("%vround=%v&content=%v", GET_BLOCK_INFO, round, content), resultC)
 	var (
 		maxConsensus   int
 		roundConsensus = make(map[string]int)
@@ -670,6 +646,10 @@ func getBlockInfoByRound(round int64, content string) (*blockHeader, error) {
 		case <-waitTime.C:
 			return nil, stdErrors.New("failed to get block info by round with consensus, timeout")
 		case rsp := <-resultC:
+			if rsp == nil {
+				logging.Error("nil response")
+				continue
+			}
 			logging.Debug(rsp.Url, rsp.Status)
 			if failedCount*100/numSharders > 100-consensusThresh {
 				return nil, stdErrors.New("failed to get block info by round with consensus, too many failures")
@@ -723,7 +703,7 @@ func validateChain(confirmBlock *blockHeader) bool {
 	for {
 		nextBlock, err := getBlockInfoByRound(round, "header")
 		if err != nil {
-			logging.Info(err, " after a second falling thru to ", getMinShardersVerify(), "of ", len(_config.chain.Sharders), "Sharders")
+			logging.Info(err, " after a second falling thru to ", getMinShardersVerify(), "of ", len(_config.chain.Sharders), "Sharders", len(Sharders.Healthy()), "Healthy sharders")
 			sys.Sleep(1 * time.Second)
 			nextBlock, err = getBlockInfoByRound(round, "header")
 			if err != nil {
