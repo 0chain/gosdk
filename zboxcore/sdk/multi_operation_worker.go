@@ -257,9 +257,6 @@ func (mo *MultiOperation) Process() error {
 		for _, op := range mo.operations {
 			op.Error(mo.allocationObj, 0, ErrRetryOperation)
 		}
-		for _, op := range mo.operations {
-			op.Error(mo.allocationObj, 0, ErrRetryOperation)
-		}
 		return ErrRetryOperation
 	}
 	totalStatusWM = time.Since(start).Milliseconds()
