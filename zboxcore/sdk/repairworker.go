@@ -117,7 +117,7 @@ func (r *RepairRequest) iterateDir(a *Allocation, dir *ListResult) []OperationRe
 				return nil
 			}
 			ops = append(ops, r.iterateDir(a, childDir)...)
-			if len(ops) >= BatchSize/2 {
+			if len(ops) >= MultiOpBatchSize/2 {
 				r.repairOperation(a, ops)
 				ops = nil
 			}
