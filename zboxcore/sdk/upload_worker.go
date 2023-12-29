@@ -26,9 +26,11 @@ type UploadOperation struct {
 func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
 	if uo.isDownload {
 		if f, ok := uo.chunkedUpload.fileReader.(*sys.MemChanFile); ok {
-			go func() {
-				allocObj.DownloadFileToFileHandler(f, uo.chunkedUpload.fileMeta.RemotePath, false, nil, true)
-			}()
+			err := allocObj.DownloadFileToFileHandler(f, uo.chunkedUpload.fileMeta.RemotePath, false, nil, true)
+			if err != nil {
+				l.Logger.Error("DownloadFileToFileHandler Failed", zap.String("path", uo.chunkedUpload.fileMeta.RemotePath), zap.Error(err))
+				return nil, uo.chunkedUpload.uploadMask, err
+			}
 		}
 	}
 	err := uo.chunkedUpload.process()
