@@ -97,3 +97,36 @@ func (fs *fsChunkedUploadProgressStorer) Remove(progressID string) error {
 
 	return nil
 }
+
+type chunkedUploadProgressStorer struct {
+	list map[string]*UploadProgress
+}
+
+// Load load upload progress by id
+func (mem *chunkedUploadProgressStorer) Load(id string) *UploadProgress {
+	if mem.list == nil {
+		mem.list = make(map[string]*UploadProgress)
+		return nil
+	}
+	up, ok := mem.list[id]
+
+	if ok {
+		return up
+	}
+
+	return nil
+}
+
+// Save save upload progress
+func (mem *chunkedUploadProgressStorer) Save(up UploadProgress) {
+	if mem.list == nil {
+		mem.list = make(map[string]*UploadProgress)
+	}
+	mem.list[up.ID] = &up
+}
+
+// Remove remove upload progress by id
+func (mem *chunkedUploadProgressStorer) Remove(id string) error {
+	delete(mem.list, id)
+	return nil
+}
