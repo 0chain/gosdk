@@ -1423,8 +1423,11 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 		return
 	}
 
+	clientID := blockchain.GetChainID()
+	clientPublicKey := client.GetClientPublicKey()
+
 	txn := transaction.NewTransactionEntity(client.GetClientID(),
-		blockchain.GetChainID(), client.GetClientPublicKey(), nonce)
+		clientID, clientPublicKey, node.Cache.GetNextNonce(clientID))
 
 	txn.TransactionData = string(requestBytes)
 	txn.ToClientID = STORAGE_SCADDRESS
@@ -1442,10 +1445,6 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 			return
 		}
 		txn.TransactionFee = fee
-	}
-
-	if txn.TransactionNonce == 0 {
-		txn.TransactionNonce = node.Cache.GetNextNonce(txn.ClientID)
 	}
 
 	if err = txn.ComputeHashAndSign(client.Sign); err != nil {
