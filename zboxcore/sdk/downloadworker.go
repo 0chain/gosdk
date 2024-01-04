@@ -447,12 +447,25 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		isPREAndWholeFile = true
 	}
 
+	writeCtx, writeCancel := context.WithCancel(ctx)
+	defer writeCancel()
 	var wg sync.WaitGroup
 	wg.Add(1)
+
 	// Handle writing the blocks in order as soon as they are downloaded
 	go func() {
 		buffer := make(map[int][]byte)
 		for i := 0; i < n; i++ {
+			select {
+			case <-writeCtx.Done():
+				if isPREAndWholeFile {
+					closeOnce.Do(func() {
+						close(hashDataChan)
+					})
+				}
+				goto breakLoop
+			default:
+			}
 			if data, ok := buffer[i]; ok {
 				// If the block we need to write next is already in the buffer, write it
 				numBytes := int64(math.Min(float64(remainingSize), float64(len(data))))
@@ -527,6 +540,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 				}
 			}
 		}
+	breakLoop:
 		req.fileHandler.Sync() //nolint
 		wg.Done()
 	}()
@@ -552,11 +566,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		})
 	}
 	if err := eg.Wait(); err != nil {
-		if isPREAndWholeFile {
-			closeOnce.Do(func() {
-				close(hashDataChan)
-			})
-		}
+		writeCancel()
 		req.errorCB(err, remotePathCB)
 		return
 	}
