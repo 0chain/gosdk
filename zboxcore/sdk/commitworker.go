@@ -98,6 +98,11 @@ func (commitreq *CommitRequest) processCommit() {
 	for _, change := range commitreq.changes {
 		paths = append(paths, change.GetAffectedPath()...)
 	}
+	if len(paths) == 0 {
+		l.Logger.Info("Nothing to commit")
+		commitreq.result = SuccessCommitResult()
+		return
+	}
 	var req *http.Request
 	var lR ReferencePathResult
 	req, err := zboxutil.NewReferencePathRequest(commitreq.blobber.Baseurl, commitreq.allocationID, commitreq.allocationTx, paths)
@@ -105,12 +110,6 @@ func (commitreq *CommitRequest) processCommit() {
 		l.Logger.Error("Creating ref path req", err)
 		return
 	}
-	if len(paths) == 0 {
-		l.Logger.Info("Nothing to commit")
-		commitreq.result = SuccessCommitResult()
-		return
-	}
-
 	ctx, cncl := context.WithTimeout(context.Background(), (time.Second * 30))
 	err = zboxutil.HttpDo(ctx, cncl, req, func(resp *http.Response, err error) error {
 		if err != nil {
