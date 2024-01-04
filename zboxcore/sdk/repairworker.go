@@ -124,6 +124,7 @@ func (r *RepairRequest) iterateDir(a *Allocation, dir *ListResult) {
 	}
 }
 
+// TODO: repair in batch
 func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
 	if r.checkForCancel(a) {
 		return
@@ -180,6 +181,7 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
 					err = a.RepairFile(memFile, file.Path, uploadStatusCB, found, ref)
 					if err != nil {
 						l.Logger.Error("repair_file_failed", zap.Error(err))
+						uploadStatusCB.Error(a.ID, file.Path, OpRepair, err)
 						_ = a.CancelDownload(file.Path)
 					}
 				}(memFile)
