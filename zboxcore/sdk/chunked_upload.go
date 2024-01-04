@@ -752,7 +752,7 @@ func (su *ChunkedUpload) uploadProcessor() {
 			su.consensus.Reset()
 			var pos uint64
 			var errCount int32
-			swg := sizedwaitgroup.New(BatchSize)
+			swg := sizedwaitgroup.New(BatchSize * 2)
 			for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 				pos = uint64(i.TrailingZeros())
 				swg.Add()
