@@ -10,7 +10,6 @@ import (
 )
 
 var DefaultTransport = &http.Transport{
-	Proxy: envProxy.Proxy,
 	DialContext: (&net.Dialer{
 		Timeout:   45 * time.Second,
 		KeepAlive: 45 * time.Second,
@@ -21,5 +20,6 @@ var DefaultTransport = &http.Transport{
 	TLSHandshakeTimeout:   10 * time.Second,
 	ExpectContinueTimeout: 1 * time.Second,
 	MaxIdleConnsPerHost:   100,
-	WriteBufferSize:       256 * 1024,
+	ReadBufferSize:        8 * 1024 * 1024,
+	WriteBufferSize:       8 * 1024 * 1024,
 }

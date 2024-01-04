@@ -16,6 +16,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
+	l "github.com/0chain/gosdk/zboxcore/logger"
 	zlogger "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
@@ -116,7 +117,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 		if len(req.remotefilepath) > 0 {
 			req.remotefilepathhash = fileref.GetReferenceLookup(req.allocationID, req.remotefilepath)
 		}
-
+		start := time.Now()
 		var httpreq *http.Request
 		httpreq, err = zboxutil.NewDownloadRequest(req.blobber.Baseurl, req.allocationID, req.allocationTx)
 		if err != nil {
@@ -143,8 +144,6 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 
 		header.ToHeader(httpreq)
 
-		zlogger.Logger.Debug(fmt.Sprintf("downloadBlobberBlock - blobberID: %v, clientID: %v, blockNum: %d", req.blobber.ID, client.GetClientID(), header.BlockNum))
-
 		err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
 			if err != nil {
 				return err
@@ -152,10 +151,11 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			if resp.Body != nil {
 				defer resp.Body.Close()
 			}
+			elapsedDownloadReqBlobber := time.Since(start).Milliseconds()
+			var rspData downloadBlock
 			if req.chunkSize == 0 {
 				req.chunkSize = CHUNK_SIZE
 			}
-			var rspData downloadBlock
 			respLen := resp.Header.Get("Content-Length")
 			var respBody []byte
 			if respLen != "" {
@@ -171,12 +171,13 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 					return err
 				}
 			} else {
-				respBody, err = readBody(resp.Body, int(req.numBlocks)*req.chunkSize)
+				respBody, err = readBody(resp.Body, 32*1024*1024)
 				if err != nil {
 					zlogger.Logger.Error("respBody read error: ", err)
 					return err
 				}
 			}
+			elapsedReadBody := time.Since(start).Milliseconds() - elapsedDownloadReqBlobber
 			if resp.StatusCode != http.StatusOK {
 				zlogger.Logger.Debug(fmt.Sprintf("downloadBlobberBlock FAIL - blobberID: %v, clientID: %v, blockNum: %d, retry: %d, response: %v", req.blobber.ID, client.GetClientID(), header.BlockNum, retry, string(respBody)))
 				if err = json.Unmarshal(respBody, &rspData); err == nil {
@@ -187,27 +188,30 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 
 			dR := downloadResponse{}
 			contentType := resp.Header.Get("Content-Type")
+			zlogger.Logger.Info("contentType", contentType)
 			if contentType == "application/json" {
 				err = json.Unmarshal(respBody, &dR)
 				if err != nil {
+					zlogger.Logger.Error("respBody unmarshal error: ", err)
 					return err
 				}
 			} else {
 				dR.Data = respBody
 			}
+			elapsedUnmarshal := time.Since(start).Milliseconds() - elapsedReadBody - elapsedDownloadReqBlobber
 			if req.contentMode == DOWNLOAD_CONTENT_FULL && req.shouldVerify {
-
+				now := time.Now()
 				vmp := util.MerklePathForMultiLeafVerification{
 					Nodes:    dR.Nodes,
 					Index:    dR.Indexes,
 					RootHash: req.blobberFile.validationRoot,
 					DataSize: req.blobberFile.size,
 				}
-				zlogger.Logger.Info("verifying multiple blocks")
 				err = vmp.VerifyMultipleBlocks(dR.Data)
 				if err != nil {
 					return errors.New("merkle_path_verification_error", err.Error())
 				}
+				l.Logger.Info("[verifyMultiBlock]", time.Since(now).Milliseconds())
 			}
 
 			rspData.idx = req.blobberIdx
@@ -221,13 +225,10 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 					rspData.BlockChunks = req.splitData(dR.Data, req.chunkSize)
 				}
 			} else {
-				if req.chunkSize == 0 {
-					req.chunkSize = CHUNK_SIZE
-				}
 				rspData.BlockChunks = req.splitData(dR.Data, req.chunkSize)
 			}
 
-			zlogger.Logger.Debug(fmt.Sprintf("downloadBlobberBlock 200 OK: blobberID: %v, clientID: %v, blockNum: %d", req.blobber.ID, client.GetClientID(), header.BlockNum))
+			zlogger.Logger.Debug(fmt.Sprintf("downloadBlobberBlock 200 OK: blobberID: %v, clientID: %v, blockNum: %d, downloadReqBlobber: %v,readBody: %v,unmarshalJSON: %v, totalTime: %v", req.blobber.ID, client.GetClientID(), header.BlockNum, elapsedDownloadReqBlobber, elapsedReadBody, elapsedUnmarshal, time.Since(start).Milliseconds()))
 
 			req.result <- &rspData
 			return nil
@@ -260,7 +261,9 @@ func AddBlockDownloadReq(req *BlockDownloadRequest) {
 
 func readBody(r io.Reader, size int) ([]byte, error) {
 	b := make([]byte, 0, size)
+	x := 0
 	for {
+		x++
 		if len(b) == cap(b) {
 			// Add more capacity (let append pick how much).
 			b = append(b, 0)[:len(b)]
@@ -268,6 +271,7 @@ func readBody(r io.Reader, size int) ([]byte, error) {
 		n, err := r.Read(b[len(b):cap(b)])
 		b = b[:len(b)+n]
 		if err != nil {
+			zlogger.Logger.Info("readBodyTimes", x)
 			if err == io.EOF {
 				err = nil
 			}

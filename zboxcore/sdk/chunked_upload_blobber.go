@@ -72,7 +72,8 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 	if err != nil {
 		return err
 	}
-
+	logger.Logger.Info("Uploading to blobber. ", body.Len())
+	req.Header.Set("Content-Length", fmt.Sprintf("%d", body.Len()))
 	req.Header.Add("Content-Type", formData.ContentType)
 
 	var (
@@ -85,6 +86,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 		err, shouldContinue = func() (err error, shouldContinue bool) {
 			reqCtx, ctxCncl := context.WithTimeout(ctx, su.uploadTimeOut)
 			var resp *http.Response
+			start := time.Now()
 			err = zboxutil.HttpDo(reqCtx, ctxCncl, req, func(r *http.Response, err error) error {
 				resp = r
 				return err
@@ -95,7 +97,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 				logger.Logger.Error("Upload : ", err)
 				return fmt.Errorf("Error while doing reqeust. Error %s", err), false
 			}
-
+			logger.Logger.Info("[chunkedUploadBlobber]", time.Since(start).Milliseconds())
 			if resp.Body != nil {
 				defer resp.Body.Close()
 			}

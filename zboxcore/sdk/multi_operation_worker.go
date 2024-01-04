@@ -259,7 +259,7 @@ func (mo *MultiOperation) Process() error {
 		}
 		return ErrRetryOperation
 	}
-	logger.Logger.Info("[checkAllocStatus]", time.Since(start).Milliseconds())
+	totalStatusWM = time.Since(start).Milliseconds()
 	mo.Consensus.Reset()
 	activeBlobbers := mo.operationMask.CountOnes()
 	commitReqs := make([]*CommitRequest, activeBlobbers)
@@ -287,7 +287,7 @@ func (mo *MultiOperation) Process() error {
 		counter++
 	}
 	wg.Wait()
-	logger.Logger.Info("[commitRequests]", time.Since(start).Milliseconds())
+	totalCommitBlobber = time.Since(start).Milliseconds()
 	rollbackMask := zboxutil.NewUint128(0)
 	for _, commitReq := range commitReqs {
 		if commitReq.result != nil {
@@ -322,5 +322,4 @@ func (mo *MultiOperation) Process() error {
 	}
 
 	return nil
-
 }

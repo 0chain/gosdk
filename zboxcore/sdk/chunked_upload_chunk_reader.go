@@ -85,7 +85,9 @@ func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards i
 	if hasher == nil {
 		return nil, errors.Throw(constants.ErrInvalidParameter, "hasher")
 	}
-
+	if chunkNumber <= 0 {
+		chunkNumber = 10
+	}
 	r := &chunkedUploadChunkReader{
 		fileReader:      fileReader,
 		size:            size,

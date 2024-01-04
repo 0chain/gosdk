@@ -134,27 +134,37 @@ func (req *DownloadRequest) getBlocksDataFromBlobbers(startBlock, totalBlock int
 // getBlocksData will get data blocks for some interval from minimal blobers and aggregate them and
 // return to the caller
 func (req *DownloadRequest) getBlocksData(startBlock, totalBlock int64) ([]byte, error) {
-
+	now := time.Now()
 	shards, err := req.getBlocksDataFromBlobbers(startBlock, totalBlock)
 	if err != nil {
 		return nil, err
 	}
-
+	elapsedGetBlockData := time.Since(now).Milliseconds()
 	// erasure decoding
 	// Can we benefit from goroutine for erasure decoding??
 	c := req.datashards * req.effectiveBlockSize
 	data := make([]byte, req.datashards*req.effectiveBlockSize*int(totalBlock))
+	eg, _ := errgroup.WithContext(req.ctx)
+	eg.SetLimit(10)
 	for i := range shards {
-		var d []byte
-		var err error
-		d, err = req.decodeEC(shards[i])
-		if err != nil {
-			return nil, err
-		}
-		index := i * c
-		copy(data[index:index+c], d)
-
+		x := i
+		eg.Go(func() error {
+			var d []byte
+			var err error
+			d, err = req.decodeEC(shards[x])
+			if err != nil {
+				return err
+			}
+			index := x * c
+			copy(data[index:index+c], d)
+			return nil
+		})
 	}
+	if err := eg.Wait(); err != nil {
+		return nil, err
+	}
+	elapsedErasureDecoding := time.Since(now).Milliseconds() - elapsedGetBlockData
+	logger.Logger.Info(fmt.Sprintln("elapsedGetBlockData: ", elapsedGetBlockData, "elapsedErasureDecoding: ", elapsedErasureDecoding))
 	return data, nil
 }
 
@@ -444,11 +454,12 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		hashWg.Add(1)
 		closeOnce = &sync.Once{}
 		go processHashData(hashDataChan, hashWg, actualFileHasher)
-		isPREAndWholeFile = true
+		// isPREAndWholeFile = true
 	}
 
 	var wg sync.WaitGroup
 	wg.Add(1)
+	var totalWriteTime int64
 	// Handle writing the blocks in order as soon as they are downloaded
 	go func() {
 		buffer := make(map[int][]byte)
@@ -470,7 +481,9 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 						}
 					}
 				}
+				now := time.Now()
 				_, err = req.fileHandler.Write(data[:numBytes])
+				totalWriteTime += time.Since(now).Milliseconds()
 
 				if err != nil {
 					req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
@@ -506,7 +519,9 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 								}
 							}
 						}
+						now := time.Now()
 						_, err = req.fileHandler.Write(block.data[:numBytes])
+						totalWriteTime += time.Since(now).Milliseconds()
 						if err != nil {
 							req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
 							return
@@ -530,11 +545,13 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		req.fileHandler.Sync() //nolint
 		wg.Done()
 	}()
-
+	l.Logger.Info("TotalRequest", n, "startBlock", startBlock, "endBlock", endBlock, "numBlocks", numBlocks)
 	eg, _ := errgroup.WithContext(ctx)
+	eg.SetLimit(5)
 	for i := 0; i < n; i++ {
 		j := i
 		eg.Go(func() error {
+			start := time.Now()
 			blocksToDownload := numBlocks
 			if startBlock+int64(j)*numBlocks+numBlocks > endBlock {
 				blocksToDownload = endBlock - (startBlock + int64(j)*numBlocks)
@@ -544,10 +561,11 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 				return errors.New("download_abort", "Download aborted by user")
 			}
 			if err != nil {
+				l.Logger.Error("blockDownloadFailed", err)
 				return errors.Wrap(err, fmt.Sprintf("Download failed for block %d. ", startBlock+int64(j)*numBlocks))
 			}
 			blocks <- blockData{blockNum: j, data: data}
-
+			l.Logger.Info("[getBlocksData]", time.Since(start).Milliseconds())
 			return nil
 		})
 	}
@@ -557,12 +575,14 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 				close(hashDataChan)
 			})
 		}
+		l.Logger.Error("[getBlocksData]", err)
 		req.errorCB(err, remotePathCB)
 		return
 	}
 
 	close(blocks)
 	wg.Wait()
+	l.Logger.Info("[totalWriteTime]", totalWriteTime)
 	elapsedGetBlocksAndWrite := time.Since(now) - elapsedInitEC - elapsedInitEncryption
 	l.Logger.Info(fmt.Sprintf("[processDownload] Timings:\n allocation_id: %s,\n remotefilepath: %s,\n initEC: %d ms,\n initEncryption: %d ms,\n getBlocks and writes: %d ms",
 		req.allocationID,
@@ -583,6 +603,9 @@ func checkHash(actualFileHasher hash.Hash, fref *fileref.FileRef, contentMode st
 	if contentMode == DOWNLOAD_CONTENT_THUMB {
 		return calculatedFileHash, calculatedFileHash == fref.ActualThumbnailHash
 	} else {
+		if calculatedFileHash == fref.ActualFileHash {
+			l.Logger.Info("calculatedFileHash is same as fileref hash")
+		}
 		return calculatedFileHash, calculatedFileHash == fref.ActualFileHash
 	}
 }
