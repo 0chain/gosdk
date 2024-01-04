@@ -830,9 +830,12 @@ func (req *DownloadRequest) calculateShardsParams(
 	if err != nil {
 		return 0, err
 	}
-	_, err = req.Seek(info.Size(), io.SeekStart)
-	if err != nil {
-		return 0, err
+	// Can be nil when using file writer in wasm
+	if info != nil {
+		_, err = req.Seek(info.Size(), io.SeekStart)
+		if err != nil {
+			return 0, err
+		}
 	}
 
 	effectiveChunkSize := effectiveBlockSize * int64(req.datashards)

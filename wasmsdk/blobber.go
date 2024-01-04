@@ -368,7 +368,7 @@ func multiDownload(allocationID, jsonMultiDownloadOptions, authTicket, callbackF
 		fileName := strings.Replace(path.Base(option.RemotePath), "/", "-", -1)
 		localPath := allocationID + "_" + fileName
 		option.LocalPath = localPath
-		statusBar := &StatusBar{wg: wg, localPath: localPath}
+		statusBar := &StatusBar{wg: wg}
 		allStatusBar[ind] = statusBar
 		if useCallback {
 			callback := js.Global().Get(callbackFuncName)
@@ -376,8 +376,18 @@ func multiDownload(allocationID, jsonMultiDownloadOptions, authTicket, callbackF
 				callback.Invoke(totalBytes, completedBytes, filename, objURL, err)
 			}
 		}
-		fs, _ := sys.Files.Open(localPath)
-		mf, _ := fs.(*sys.MemFile)
+		var mf sys.File
+		if option.DownloadToDisk {
+			mf, err = jsbridge.NewFileWriter(fileName)
+			if err != nil {
+				PrintError(err.Error())
+				return "", err
+			}
+		} else {
+			statusBar.localPath = localPath
+			fs, _ := sys.Files.Open(localPath)
+			mf, _ = fs.(*sys.MemFile)
+		}
 
 		var downloader sdk.Downloader
 		if option.DownloadOp == 1 {
@@ -467,6 +477,7 @@ type MultiDownloadOption struct {
 	NumBlocks        int    `json:"numBlocks"`
 	RemoteFileName   string `json:"remoteFileName"`             //Required only for file download with auth ticket
 	RemoteLookupHash string `json:"remoteLookupHash,omitempty"` //Required only for file download with auth ticket
+	DownloadToDisk   bool   `json:"downloadToDisk"`
 }
 
 // MultiOperation - do copy, move, delete and createdir operation together
@@ -676,7 +687,6 @@ func uploadWithJsFuncs(allocationID, remotePath string, readChunkFuncName string
 		}
 	}
 	wg.Add(1)
-
 
 	fileReader := jsbridge.NewFileReader(readChunkFuncName, fileSize)
 
