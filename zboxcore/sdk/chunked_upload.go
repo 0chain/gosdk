@@ -34,7 +34,7 @@ import (
 )
 
 const (
-	DefaultUploadTimeOut = 2 * time.Minute
+	DefaultUploadTimeOut = 45 * time.Second
 )
 
 var (
@@ -646,9 +646,9 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 	select {
 	case <-su.ctx.Done():
 		return context.Cause(su.ctx)
-	default:
+	case su.uploadChan <- blobberUpload:
 	}
-	su.uploadChan <- blobberUpload
+
 	if isFinal {
 		su.uploadWG.Wait()
 		select {
