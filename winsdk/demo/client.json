@@ -1,0 +1,14 @@
+{
+    "client_id": "5ad6e4d206d853833e96ff5c833369e567d2ef41ae1d5093141e1f90f1e8dcb0",
+    "client_key": "06b7735844c07c6918b83bacbd2caa57b41888b5222621fa18ab916160f81a0d3cd574feb6930e7607fd454f4aa2f4dbbfa95532bb9d76cde492b50946eab5a1",
+    "keys": [
+        {
+            "public_key": "06b7735844c07c6918b83bacbd2caa57b41888b5222621fa18ab916160f81a0d3cd574feb6930e7607fd454f4aa2f4dbbfa95532bb9d76cde492b50946eab5a1",
+            "private_key": "0bb11cd6dcfa34acabfee25babe815bfcd6a4870bd7ebd3b205429b24dde2522"
+        }
+    ],
+    "mnemonics": "border laptop library theory pave brain decline jeans winner frame throw gadget amused mule farm labor torch slight pride lottery cash youth ocean route",
+    "version": "1.0",
+    "date_created": "2023-05-30T01:31:32+02:00",
+    "nonce": 0
+}

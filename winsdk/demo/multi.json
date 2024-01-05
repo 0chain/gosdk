@@ -1,0 +1,6 @@
+[
+    {
+        "operationType": "createdir",
+        "remotePath": "/testfolder"
+    }
+]
