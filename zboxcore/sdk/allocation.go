@@ -43,6 +43,7 @@ var (
 	notInitialized   = errors.New("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
 	IsWasm           = false
 	MultiOpBatchSize = 50
+	Workdir          string
 )
 
 const (
@@ -223,13 +224,16 @@ type OperationRequest struct {
 	DestName       string // Required only for rename operation
 	DestPath       string // Required for copy and move operation
 	IsUpdate       bool
+	IsRepair       bool // Required for repair operation
 	IsWebstreaming bool
 
 	// Required for uploads
-	Workdir    string
-	FileMeta   FileMeta
-	FileReader io.Reader
-	Opts       []ChunkedUploadOption
+	Workdir      string
+	FileMeta     FileMeta
+	FileReader   io.Reader
+	Mask         *zboxutil.Uint128 // Required for delete repair operation
+	DownloadFile bool              // Required for upload repair operation
+	Opts         []ChunkedUploadOption
 }
 
 func GetReadPriceRange() (PriceRange, error) {
@@ -237,6 +241,10 @@ func GetReadPriceRange() (PriceRange, error) {
 }
 func GetWritePriceRange() (PriceRange, error) {
 	return getPriceRange("max_write_price")
+}
+
+func SetMultiOpBatchSize(size int) {
+	MultiOpBatchSize = size
 }
 
 func SetWasm() {
@@ -372,10 +380,11 @@ func (a *Allocation) UploadFile(workdir, localpath string, remotepath string,
 	return a.StartChunkedUpload(workdir, localpath, remotepath, status, false, false, "", false, false)
 }
 
-func (a *Allocation) RepairFile(file sys.File, remotepath string,
-	status StatusCallback, mask zboxutil.Uint128, ref *fileref.FileRef) error {
-
+func (a *Allocation) RepairFile(file sys.File, remotepath string, statusCallback StatusCallback, mask zboxutil.Uint128, ref *fileref.FileRef) *OperationRequest {
 	idr, _ := homedir.Dir()
+	if Workdir != "" {
+		idr = Workdir
+	}
 	mask = mask.Not().And(zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1))
 	fileMeta := FileMeta{
 		ActualSize: ref.ActualFileSize,
@@ -387,22 +396,26 @@ func (a *Allocation) RepairFile(file sys.File, remotepath string,
 	if ref.EncryptedKey != "" {
 		opts = []ChunkedUploadOption{
 			WithMask(mask),
-			WithStatusCallback(status),
 			WithEncrypt(true),
+			WithStatusCallback(statusCallback),
 			WithEncryptedPoint(ref.EncryptedKeyPoint),
 		}
 	} else {
 		opts = []ChunkedUploadOption{
 			WithMask(mask),
-			WithStatusCallback(status),
+			WithStatusCallback(statusCallback),
 		}
 	}
-	connectionID := zboxutil.NewConnectionId()
-	chunkedUpload, err := CreateChunkedUpload(idr, a, fileMeta, file, false, true, false, connectionID, opts...)
-	if err != nil {
-		return err
+	op := &OperationRequest{
+		OperationType: constants.FileOperationInsert,
+		IsRepair:      true,
+		RemotePath:    remotepath,
+		Workdir:       idr,
+		FileMeta:      fileMeta,
+		Opts:          opts,
+		FileReader:    file,
 	}
-	return chunkedUpload.Start()
+	return op
 }
 
 // UpdateFileWithThumbnail [Deprecated]please use CreateChunkedUpload
@@ -787,7 +800,7 @@ func (a *Allocation) RepairRequired(remotepath string) (zboxutil.Uint128, zboxut
 	return found, deleteMask, !found.Equals(uploadMask), fileRef, nil
 }
 
-func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
+func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...MultiOperationOption) error {
 	if len(operations) == 0 {
 		return nil
 	}
@@ -807,6 +820,9 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 			RWMutex:         &sync.RWMutex{},
 			consensusThresh: a.consensusThreshold,
 			fullconsensus:   a.fullconsensus,
+		}
+		for _, opt := range opts {
+			opt(&mo)
 		}
 		previousPaths := make(map[string]bool)
 		connectionErrors := make([]error, len(mo.allocationObj.Blobbers))
@@ -844,6 +860,11 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 				break
 			}
 			op := operations[i]
+			op.RemotePath = strings.TrimSpace(op.RemotePath)
+			if op.FileMeta.RemotePath != "" {
+				op.FileMeta.RemotePath = strings.TrimSpace(op.FileMeta.RemotePath)
+				op.FileMeta.RemoteName = strings.TrimSpace(op.FileMeta.RemoteName)
+			}
 			remotePath := op.RemotePath
 			parentPaths := GenerateParentPaths(remotePath)
 
@@ -870,13 +891,16 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 				operation = NewMoveOperation(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 
 			case constants.FileOperationInsert:
-				operation, newConnectionID, err = NewUploadOperation(op.Workdir, mo.allocationObj, mo.connectionID, op.FileMeta, op.FileReader, false, op.IsWebstreaming, op.Opts...)
+				operation, newConnectionID, err = NewUploadOperation(op.Workdir, mo.allocationObj, mo.connectionID, op.FileMeta, op.FileReader, false, op.IsWebstreaming, op.IsRepair, op.DownloadFile, op.Opts...)
 
 			case constants.FileOperationDelete:
-				operation = NewDeleteOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
-
+				if op.Mask != nil {
+					operation = NewDeleteOperation(op.RemotePath, *op.Mask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
+				} else {
+					operation = NewDeleteOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
+				}
 			case constants.FileOperationUpdate:
-				operation, newConnectionID, err = NewUploadOperation(op.Workdir, mo.allocationObj, mo.connectionID, op.FileMeta, op.FileReader, true, op.IsWebstreaming, op.Opts...)
+				operation, newConnectionID, err = NewUploadOperation(op.Workdir, mo.allocationObj, mo.connectionID, op.FileMeta, op.FileReader, true, op.IsWebstreaming, op.IsRepair, op.DownloadFile, op.Opts...)
 
 			case constants.FileOperationCreateDir:
 				operation = NewDirOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
