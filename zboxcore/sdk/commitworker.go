@@ -181,6 +181,9 @@ func (commitreq *CommitRequest) processCommit() {
 		}
 		size += change.GetSize()
 	}
+	rootRef.CalculateHash()
+	l.Logger.Info("[commitChanges]", time.Since(start).Milliseconds())
+	start = time.Now()
 	err = commitreq.commitBlobber(rootRef, lR.LatestWM, size, fileIDMeta)
 	if err != nil {
 		commitreq.result = ErrorCommitResult(err.Error())
@@ -247,7 +250,7 @@ func (req *CommitRequest) commitBlobber(
 				return
 			}
 			httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
-			reqCtx, ctxCncl := context.WithTimeout(context.Background(), time.Second*60)
+			reqCtx, ctxCncl := context.WithTimeout(context.Background(), time.Second*120)
 			resp, err = zboxutil.Client.Do(httpreq.WithContext(reqCtx))
 			defer ctxCncl()
 
