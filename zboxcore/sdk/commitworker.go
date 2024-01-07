@@ -23,6 +23,7 @@ import (
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"go.uber.org/zap"
 )
 
 type ReferencePathResult struct {
@@ -110,7 +111,7 @@ func (commitreq *CommitRequest) processCommit() {
 		l.Logger.Error("Creating ref path req", err)
 		return
 	}
-	ctx, cncl := context.WithTimeout(context.Background(), (time.Second * 30))
+	ctx, cncl := context.WithTimeout(context.Background(), (time.Second * 60))
 	err = zboxutil.HttpDo(ctx, cncl, req, func(resp *http.Response, err error) error {
 		if err != nil {
 			l.Logger.Error("Ref path error:", err)
@@ -131,15 +132,20 @@ func (commitreq *CommitRequest) processCommit() {
 				fmt.Sprintf("Reference path error response: Status: %d - %s ",
 					resp.StatusCode, string(resp_body)))
 		}
+		l.Logger.Info("refPathResponse", zap.Duration("duration", time.Since(start)))
+		start = time.Now()
 		err = json.Unmarshal(resp_body, &lR)
 		if err != nil {
 			l.Logger.Error("Reference path json decode error: ", err)
 			return err
 		}
+		l.Logger.Info("refPathDecode", zap.Duration("duration", time.Since(start)))
+		start = time.Now()
 		return nil
 	})
 
 	if err != nil {
+		l.Logger.Error("Reference path error: ", err)
 		commitreq.result = ErrorCommitResult(err.Error())
 		return
 	}
