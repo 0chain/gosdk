@@ -248,6 +248,7 @@ func main() {
 
 				"registerAuthorizer": js.FuncOf(registerAuthorizer),
 				"callAuth":           js.FuncOf(callAuth),
+				"authResponse":       authResponse,
 			})
 
 			fmt.Println("__wasm_initialized__ = true;")
