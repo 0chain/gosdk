@@ -181,6 +181,7 @@ func (commitreq *CommitRequest) processCommit() {
 		}
 		size += change.GetSize()
 	}
+	rootRef.CalculateHash()
 	err = commitreq.commitBlobber(rootRef, lR.LatestWM, size, fileIDMeta)
 	if err != nil {
 		commitreq.result = ErrorCommitResult(err.Error())
