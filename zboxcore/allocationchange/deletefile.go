@@ -17,7 +17,6 @@ func (ch *DeleteFileChange) ProcessChange(rootRef *fileref.Ref, _ map[string]str
 
 	if ch.ObjectTree.GetPath() == "/" {
 		rootRef.Children = nil
-		rootRef.CalculateHash()
 		return
 	}
 
@@ -48,7 +47,6 @@ func (ch *DeleteFileChange) ProcessChange(rootRef *fileref.Ref, _ map[string]str
 	for i, child := range dirRef.Children {
 		if child.GetName() == ch.ObjectTree.GetName() {
 			dirRef.RemoveChild(i)
-			rootRef.CalculateHash()
 			return
 		}
 	}
