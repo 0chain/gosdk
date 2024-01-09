@@ -655,7 +655,7 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 
 	connectionId := zboxutil.NewConnectionId()
 	now := time.Now()
-	ChunkedUpload, err := CreateChunkedUpload(workdir,
+	ChunkedUpload, err := CreateChunkedUpload(a.ctx, workdir,
 		a, fileMeta, fileReader,
 		isUpdate, isRepair, webStreaming, connectionId,
 		options...)
@@ -815,7 +815,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 		mo.operationMask = zboxutil.NewUint128(0)
 		mo.maskMU = &sync.Mutex{}
 		mo.connectionID = connectionID
-		mo.ctx, mo.ctxCncl = context.WithCancel(a.ctx)
+		mo.ctx, mo.ctxCncl = context.WithCancelCause(a.ctx)
 		mo.Consensus = Consensus{
 			RWMutex:         &sync.RWMutex{},
 			consensusThresh: a.consensusThreshold,
@@ -891,7 +891,10 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 				operation = NewMoveOperation(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 
 			case constants.FileOperationInsert:
-				operation, newConnectionID, err = NewUploadOperation(op.Workdir, mo.allocationObj, mo.connectionID, op.FileMeta, op.FileReader, false, op.IsWebstreaming, op.IsRepair, op.DownloadFile, op.Opts...)
+				cancelLock.Lock()
+				CancelOpCtx[op.FileMeta.RemotePath] = mo.ctxCncl
+				cancelLock.Unlock()
+				operation, newConnectionID, err = NewUploadOperation(mo.ctx, op.Workdir, mo.allocationObj, mo.connectionID, op.FileMeta, op.FileReader, false, op.IsWebstreaming, op.IsRepair, op.DownloadFile, op.Opts...)
 
 			case constants.FileOperationDelete:
 				if op.Mask != nil {
@@ -900,7 +903,10 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 					operation = NewDeleteOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 				}
 			case constants.FileOperationUpdate:
-				operation, newConnectionID, err = NewUploadOperation(op.Workdir, mo.allocationObj, mo.connectionID, op.FileMeta, op.FileReader, true, op.IsWebstreaming, op.IsRepair, op.DownloadFile, op.Opts...)
+				cancelLock.Lock()
+				CancelOpCtx[op.FileMeta.RemotePath] = mo.ctxCncl
+				cancelLock.Unlock()
+				operation, newConnectionID, err = NewUploadOperation(mo.ctx, op.Workdir, mo.allocationObj, mo.connectionID, op.FileMeta, op.FileReader, true, op.IsWebstreaming, op.IsRepair, op.DownloadFile, op.Opts...)
 
 			case constants.FileOperationCreateDir:
 				operation = NewDirOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
@@ -933,6 +939,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 			if err != nil {
 				return err
 			}
+
 			mo.operations = nil
 		}
 	}
@@ -2252,7 +2259,6 @@ func (a *Allocation) CancelUpload(remotePath string) error {
 	cancelLock.Unlock()
 	if !ok {
 		return errors.New("remote_path_not_found", "Invalid path. No upload in progress for the path "+remotePath)
-
 	} else {
 		cancelFunc(fmt.Errorf("upload canceled by user"))
 	}

@@ -90,6 +90,7 @@ const (
 */
 
 func CreateChunkedUpload(
+	ctx context.Context,
 	workdir string, allocationObj *Allocation,
 	fileMeta FileMeta, fileReader io.Reader,
 	isUpdate, isRepair bool,
@@ -174,10 +175,7 @@ func CreateChunkedUpload(
 	}
 
 	// su.ctx, su.ctxCncl = context.WithCancel(allocationObj.ctx)
-	su.ctx, su.ctxCncl = context.WithCancelCause(allocationObj.ctx)
-	cancelLock.Lock()
-	CancelOpCtx[fileMeta.RemotePath] = su.ctxCncl
-	cancelLock.Unlock()
+	su.ctx, su.ctxCncl = context.WithCancelCause(ctx)
 
 	if isUpdate {
 		su.httpMethod = http.MethodPut
@@ -397,11 +395,6 @@ func (su *ChunkedUpload) process() error {
 	defer su.chunkReader.Close()
 	defer close(su.uploadChan)
 	defer su.ctxCncl(nil)
-	defer func() {
-		cancelLock.Lock()
-		delete(CancelOpCtx, su.fileMeta.RemotePath)
-		cancelLock.Unlock()
-	}()
 	for {
 
 		chunks, err := su.readChunks(su.chunkNumber)
