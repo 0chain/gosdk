@@ -638,12 +638,10 @@ func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 			RemotePath: fullRemotePath,
 		}
 		numBlocks := option.NumBlocks
-		if numBlocks < 1 {
+		if numBlocks <= 1 {
 			numBlocks = 100
 		}
-		if allocationObj.DataShards > 7 {
-			numBlocks = 75
-		}
+
 		options := []sdk.ChunkedUploadOption{
 			sdk.WithThumbnail(option.ThumbnailBytes.Buffer),
 			sdk.WithEncrypt(encrypt),
@@ -731,7 +729,7 @@ func uploadWithJsFuncs(allocationID, remotePath string, readChunkFuncName string
 		numBlocks = 50
 	}
 
-	ChunkedUpload, err := sdk.CreateChunkedUpload("/", allocationObj, fileMeta, fileReader, isUpdate, isRepair, webStreaming, zboxutil.NewConnectionId(),
+	ChunkedUpload, err := sdk.CreateChunkedUpload(allocationObj.ctx, "/", allocationObj, fileMeta, fileReader, isUpdate, isRepair, webStreaming, zboxutil.NewConnectionId(),
 		sdk.WithThumbnail(thumbnailBytes),
 		sdk.WithEncrypt(encrypt),
 		sdk.WithStatusCallback(statusBar),
@@ -807,7 +805,7 @@ func upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, w
 		numBlocks = 100
 	}
 
-	ChunkedUpload, err := sdk.CreateChunkedUpload("/", allocationObj, fileMeta, fileReader, isUpdate, isRepair, webStreaming,
+	ChunkedUpload, err := sdk.CreateChunkedUpload(allocationObj.ctx, "/", allocationObj, fileMeta, fileReader, isUpdate, isRepair, webStreaming,
 		zboxutil.NewConnectionId(),
 		sdk.WithThumbnail(thumbnailBytes),
 		sdk.WithEncrypt(encrypt),
