@@ -5,6 +5,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -729,7 +730,7 @@ func uploadWithJsFuncs(allocationID, remotePath string, readChunkFuncName string
 		numBlocks = 50
 	}
 
-	ChunkedUpload, err := sdk.CreateChunkedUpload(allocationObj.ctx, "/", allocationObj, fileMeta, fileReader, isUpdate, isRepair, webStreaming, zboxutil.NewConnectionId(),
+	ChunkedUpload, err := sdk.CreateChunkedUpload(context.TODO(), "/", allocationObj, fileMeta, fileReader, isUpdate, isRepair, webStreaming, zboxutil.NewConnectionId(),
 		sdk.WithThumbnail(thumbnailBytes),
 		sdk.WithEncrypt(encrypt),
 		sdk.WithStatusCallback(statusBar),
@@ -805,7 +806,7 @@ func upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, w
 		numBlocks = 100
 	}
 
-	ChunkedUpload, err := sdk.CreateChunkedUpload(allocationObj.ctx, "/", allocationObj, fileMeta, fileReader, isUpdate, isRepair, webStreaming,
+	ChunkedUpload, err := sdk.CreateChunkedUpload(context.TODO(), "/", allocationObj, fileMeta, fileReader, isUpdate, isRepair, webStreaming,
 		zboxutil.NewConnectionId(),
 		sdk.WithThumbnail(thumbnailBytes),
 		sdk.WithEncrypt(encrypt),
