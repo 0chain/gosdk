@@ -902,6 +902,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 				} else {
 					operation = NewDeleteOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 				}
+
 			case constants.FileOperationUpdate:
 				cancelLock.Lock()
 				CancelOpCtx[op.FileMeta.RemotePath] = mo.ctxCncl
