@@ -34,7 +34,7 @@ import (
 )
 
 const (
-	DefaultUploadTimeOut = 2 * time.Minute
+	DefaultUploadTimeOut = 45 * time.Second
 )
 
 var (
@@ -655,9 +655,9 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 	select {
 	case <-su.ctx.Done():
 		return context.Cause(su.ctx)
-	default:
+	case su.uploadChan <- blobberUpload:
 	}
-	su.uploadChan <- blobberUpload
+
 	if isFinal {
 		su.uploadWG.Wait()
 		select {
@@ -761,7 +761,7 @@ func (su *ChunkedUpload) uploadProcessor() {
 			su.consensus.Reset()
 			var pos uint64
 			var errCount int32
-			swg := sizedwaitgroup.New(BatchSize)
+			swg := sizedwaitgroup.New(BatchSize * 2)
 			for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 				pos = uint64(i.TrailingZeros())
 				swg.Add()

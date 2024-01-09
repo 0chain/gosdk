@@ -2338,6 +2338,7 @@ func setupMockAllocation(t *testing.T, a *Allocation) {
 	a.downloadProgressMap = make(map[string]*DownloadRequest)
 	a.mutex = &sync.Mutex{}
 	a.FileOptions = uint16(63) // 0011 1111 All allowed
+	InitCommitWorker(a.Blobbers)
 	a.initialized = true
 	if a.DataShards != 0 {
 		a.fullconsensus, a.consensusThreshold = a.getConsensuses()

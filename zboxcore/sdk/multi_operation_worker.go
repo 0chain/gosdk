@@ -31,6 +31,15 @@ const (
 
 var BatchSize = 6
 
+type MultiOperationOption func(mo *MultiOperation)
+
+func WithRepair() MultiOperationOption {
+	return func(mo *MultiOperation) {
+		mo.Consensus.consensusThresh = 0
+		mo.isRepair = true
+	}
+}
+
 type Operationer interface {
 	Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error)
 	buildChange(refs []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange
@@ -48,7 +57,8 @@ type MultiOperation struct {
 	operationMask zboxutil.Uint128
 	maskMU        *sync.Mutex
 	Consensus
-	changes [][]allocationchange.AllocationChange
+	changes  [][]allocationchange.AllocationChange
+	isRepair bool
 }
 
 func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
@@ -220,37 +230,40 @@ func (mo *MultiOperation) Process() error {
 	}
 	logger.Logger.Info("[writemarkerLocked]", time.Since(start).Milliseconds())
 	start = time.Now()
-	status, err := mo.allocationObj.CheckAllocStatus()
-	if err != nil {
-		logger.Logger.Error("Error checking allocation status", err)
-		writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
-		return fmt.Errorf("Check allocation status failed: %s", err.Error())
-	}
-	if status == Repair {
-		logger.Logger.Info("Repairing allocation")
-		writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
-		statusBar := NewRepairBar(mo.allocationObj.ID)
-		if statusBar == nil {
+	status := Commit
+	if !mo.isRepair {
+		status, err = mo.allocationObj.CheckAllocStatus()
+		if err != nil {
+			logger.Logger.Error("Error checking allocation status", err)
+			writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
+			return fmt.Errorf("Check allocation status failed: %s", err.Error())
+		}
+		if status == Repair {
+			logger.Logger.Info("Repairing allocation")
+			writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
+			statusBar := NewRepairBar(mo.allocationObj.ID)
+			if statusBar == nil {
+				for _, op := range mo.operations {
+					op.Error(mo.allocationObj, 0, ErrRetryOperation)
+				}
+				return ErrRetryOperation
+			}
+			statusBar.wg.Add(1)
+			err = mo.allocationObj.RepairAlloc(statusBar)
+			if err != nil {
+				return err
+			}
+			statusBar.wg.Wait()
+			if statusBar.success {
+				l.Logger.Info("Repair success")
+			} else {
+				l.Logger.Error("Repair failed")
+			}
 			for _, op := range mo.operations {
 				op.Error(mo.allocationObj, 0, ErrRetryOperation)
 			}
 			return ErrRetryOperation
 		}
-		statusBar.wg.Add(1)
-		err = mo.allocationObj.RepairAlloc(statusBar)
-		if err != nil {
-			return err
-		}
-		statusBar.wg.Wait()
-		if statusBar.success {
-			l.Logger.Info("Repair success")
-		} else {
-			l.Logger.Error("Repair failed")
-		}
-		for _, op := range mo.operations {
-			op.Error(mo.allocationObj, 0, ErrRetryOperation)
-		}
-		return ErrRetryOperation
 	}
 	defer writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
 	if status != Commit {
@@ -293,7 +306,9 @@ func (mo *MultiOperation) Process() error {
 		if commitReq.result != nil {
 			if commitReq.result.Success {
 				l.Logger.Info("Commit success", commitReq.blobber.Baseurl)
-				rollbackMask = rollbackMask.Or(zboxutil.NewUint128(1).Lsh(commitReq.blobberInd))
+				if !mo.isRepair {
+					rollbackMask = rollbackMask.Or(zboxutil.NewUint128(1).Lsh(commitReq.blobberInd))
+				}
 				mo.consensus++
 			} else {
 				l.Logger.Info("Commit failed", commitReq.blobber.Baseurl, commitReq.result.ErrorMessage)

@@ -267,6 +267,7 @@ func SendTransactionSync(txn *Transaction, miners []string) error {
 			if err != nil {
 				fails <- err
 			}
+			wg.Done()
 		}() //nolint
 	}
 	wg.Wait()
@@ -297,9 +298,6 @@ func SendTransactionSync(txn *Transaction, miners []string) error {
 }
 
 func sendTransactionToURL(url string, txn *Transaction, wg *sync.WaitGroup) ([]byte, error) {
-	if wg != nil {
-		defer wg.Done()
-	}
 	postReq, err := util.NewHTTPPostRequest(url, txn)
 	if err != nil {
 		//Logger.Error("Error in serializing the transaction", txn, err.Error())
