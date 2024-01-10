@@ -14,6 +14,11 @@ var jsFileWriterMutex sync.Mutex
 
 type FileWriter struct {
 	writableStream js.Value
+	uint8Array     js.Value
+	fileHandle     js.Value
+	bufLen         int
+	written        int
+	totalWritten   int
 }
 
 func (w *FileWriter) Write(p []byte) (int, error) {
@@ -21,20 +26,23 @@ func (w *FileWriter) Write(p []byte) (int, error) {
 	jsFileWriterMutex.Lock()
 	defer jsFileWriterMutex.Unlock()
 
-	uint8Array := js.Global().Get("Uint8Array").New(len(p))
-	js.CopyBytesToJS(uint8Array, p)
-	_, err := Await(w.writableStream.Call("write", uint8Array))
-	if len(err) > 0 && !err[0].IsNull() {
-		return 0, errors.New("file_writer: " + err[0].String())
+	if w.bufLen != len(p) {
+		w.bufLen = len(p)
+		w.uint8Array = js.Global().Get("Uint8Array").New(w.bufLen)
+	}
+	js.CopyBytesToJS(w.uint8Array, p)
+	w.writableStream.Call("write", w.uint8Array)
+	w.written++
+	w.totalWritten += len(p)
+	if w.written >= 3 {
+		w.written = 0
+		w.writableStream.Call("flush")
 	}
 	return len(p), nil
 }
 
 func (w *FileWriter) Close() error {
-	_, err := Await(w.writableStream.Call("close"))
-	if len(err) > 0 && !err[0].IsNull() {
-		return errors.New("file_writer: " + err[0].String())
-	}
+	w.writableStream.Call("close")
 	return nil
 }
 
@@ -55,14 +63,7 @@ func (w *FileWriter) Stat() (fs.FileInfo, error) {
 }
 
 func NewFileWriter(filename string) (*FileWriter, error) {
-	// writableStream := js.Global().Get("writableStream")
-	// stream, err := Await(writableStream.Call("create", filename))
-	// if len(err) > 0 && !err[0].IsNull() {
-	// 	return nil, errors.New("file_writer: " + err[0].String())
-	// }
-	// return &FileWriter{
-	// 	writableStream: stream[0],
-	// }, nil
+
 	if !js.Global().Get("window").Get("showSaveFilePicker").Truthy() || !js.Global().Get("window").Get("WritableStream").Truthy() {
 		return nil, errors.New("file_writer: not supported")
 	}
@@ -78,11 +79,25 @@ func NewFileWriter(filename string) (*FileWriter, error) {
 		return nil, errors.New("file_writer: " + err[0].String())
 	}
 	//create a writable stream
-	writableStream, err := Await(fileHandle[0].Call("createWritable"))
+	writableStream, err := Await(fileHandle[0].Call("createSyncAccessHandle"))
 	if len(err) > 0 && !err[0].IsNull() {
 		return nil, errors.New("file_writer: " + err[0].String())
 	}
 	return &FileWriter{
 		writableStream: writableStream[0],
+		fileHandle:     fileHandle[0],
 	}, nil
 }
+
+// func (w *FileWriter) SetNewWriter(offset int) error {
+// 	writableStream, err := Await(w.fileHandle.Call("createWritable"))
+// 	if len(err) > 0 && !err[0].IsNull() {
+// 		return errors.New("file_writer: " + err[0].String())
+// 	}
+// 	w.writableStream = writableStream[0]
+// 	_, err = Await(w.writableStream.Call("seek", offset))
+// 	if len(err) > 0 && !err[0].IsNull() {
+// 		return errors.New("file_writer: " + err[0].String())
+// 	}
+// 	return nil
+// }
