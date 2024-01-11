@@ -146,6 +146,7 @@ type TransactionCommon interface {
 	MinerScUpdateConfig(*InputMap) error
 	MinerScUpdateGlobals(*InputMap) error
 	StorageScUpdateConfig(*InputMap) error
+	AddHardfork(ip *InputMap) (err error)
 	FaucetUpdateConfig(*InputMap) error
 	ZCNSCUpdateGlobalConfig(*InputMap) error
 
