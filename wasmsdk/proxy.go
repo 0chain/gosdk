@@ -45,13 +45,6 @@ func main() {
 
 			if !(jsSign.IsNull() || jsSign.IsUndefined()) {
 				signFunc := func(hash string) (string, error) {
-					signMutex.Lock()
-					defer signMutex.Unlock()
-
-					s, ok := signCache[hash]
-					if ok {
-						return s, nil
-					}
 					c := client.GetClient()
 					pk := c.Keys[0].PrivateKey
 					result, err := jsbridge.Await(jsSign.Invoke(hash, pk))
@@ -59,11 +52,7 @@ func main() {
 					if len(err) > 0 && !err[0].IsNull() {
 						return "", errors.New("sign: " + err[0].String())
 					}
-					s = result[0].String()
-
-					signCache[hash] = s
-
-					return s, nil
+					return result[0].String(), nil
 				}
 
 				//update sign with js sign
@@ -111,6 +100,20 @@ func main() {
 				sys.VerifyWith = verifyFuncWith
 			} else {
 				PrintError("__zcn_wasm__.jsProxy.verifyWith is not installed yet")
+			}
+
+			jsAddSignature := jsProxy.Get("addSignature")
+			if !(jsAddSignature.IsNull() || jsAddSignature.IsUndefined()) {
+				zcncore.AddSignature = func(privateKey, signature, hash string) (string, error) {
+					result, err := jsbridge.Await(jsAddSignature.Invoke(privateKey, signature, hash))
+					if len(err) > 0 && !err[0].IsNull() {
+						return "", errors.New("add signature: " + err[0].String())
+					}
+
+					return result[0].String(), nil
+				}
+			} else {
+				PrintError("__zcn_wasm__.jsProxy.addSignature is not installed yet")
 			}
 
 			jsCreateObjectURL := jsProxy.Get("createObjectURL")

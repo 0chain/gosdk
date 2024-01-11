@@ -27,7 +27,7 @@ type Wallet struct {
 	Nonce       int64     `json:"nonce"`
 }
 
-//SignatureScheme - an encryption scheme for signing and verifying messages
+// SignatureScheme - an encryption scheme for signing and verifying messages
 type SignatureScheme interface {
 	// Generate fresh keys
 	GenerateKeys() (*Wallet, error)
