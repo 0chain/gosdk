@@ -749,6 +749,16 @@ func (t *Transaction) StorageScUpdateConfig(ip *InputMap) (err error) {
 	go func() { t.setNonceAndSubmit() }()
 	return
 }
+func (t *Transaction) AddHardfork(ip *InputMap) (err error) {
+	err = t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.ADD_HARDFORK, ip, 0)
+	if err != nil {
+		logging.Error(err)
+		return
+	}
+	go func() { t.setNonceAndSubmit() }()
+	return
+}
 
 func (t *Transaction) ZCNSCUpdateGlobalConfig(ip *InputMap) (err error) {
 	err = t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_UPDATE_GLOBAL_CONFIG, ip, 0)
