@@ -128,9 +128,9 @@ func (r *RepairRequest) iterateDir(a *Allocation, dir *ListResult) []OperationRe
 		}
 	case fileref.FILE:
 		// this returns op object and mask
-		op := r.repairFile(a, dir)
-		if op != nil {
-			ops = append(ops, *op)
+		repairOps := r.repairFile(a, dir)
+		if repairOps != nil {
+			ops = append(ops, repairOps...)
 		}
 
 	default:
@@ -139,8 +139,8 @@ func (r *RepairRequest) iterateDir(a *Allocation, dir *ListResult) []OperationRe
 	return ops
 }
 
-func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) *OperationRequest {
-	var op *OperationRequest
+func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) []OperationRequest {
+	ops := make([]OperationRequest, 0)
 	if r.checkForCancel(a) {
 		return nil
 	}
@@ -162,16 +162,16 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) *OperationRe
 
 			if deleteMask.CountOnes() > 0 {
 				l.Logger.Info("Deleting minority shards for the path :", zap.Any("path", file.Path))
-				// consensus := deleteMask.CountOnes()
-				// err := a.deleteFile(file.Path, 0, consensus, deleteMask)
-				op = &OperationRequest{
+				op := OperationRequest{
 					OperationType: constants.FileOperationDelete,
 					RemotePath:    file.Path,
 					Mask:          &deleteMask,
 				}
+				ops = append(ops, op)
 			}
 			wg.Add(1)
 			localPath := r.getLocalPath(file)
+			var op *OperationRequest
 			if !checkFileExists(localPath) {
 				if r.checkForCancel(a) {
 					return nil
@@ -190,27 +190,29 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) *OperationRe
 				}
 				op = a.RepairFile(f, file.Path, statusCB, found, ref)
 			}
-
+			ops = append(ops, *op)
 			if r.checkForCancel(a) {
 				return nil
 			}
 		} else {
 			l.Logger.Info("Repair by delete", zap.Any("path", file.Path))
-			op = &OperationRequest{
+			op := OperationRequest{
 				OperationType: constants.FileOperationDelete,
 				RemotePath:    file.Path,
 				Mask:          &found,
 			}
+			ops = append(ops, op)
 		}
 	} else if deleteMask.CountOnes() > 0 {
 		l.Logger.Info("Deleting minority shards for the path :", zap.Any("path", file.Path))
-		op = &OperationRequest{
+		op := OperationRequest{
 			OperationType: constants.FileOperationDelete,
 			RemotePath:    file.Path,
 			Mask:          &deleteMask,
 		}
+		ops = append(ops, op)
 	}
-	return op
+	return ops
 }
 
 func (r *RepairRequest) repairOperation(a *Allocation, ops []OperationRequest) {
