@@ -83,7 +83,7 @@ type DownloadRequest struct {
 
 type blockData struct {
 	blockNum int
-	data     []byte
+	data     [][][]byte
 }
 
 func (req *DownloadRequest) removeFromMask(pos uint64) {
@@ -133,7 +133,7 @@ func (req *DownloadRequest) getBlocksDataFromBlobbers(startBlock, totalBlock int
 
 // getBlocksData will get data blocks for some interval from minimal blobers and aggregate them and
 // return to the caller
-func (req *DownloadRequest) getBlocksData(startBlock, totalBlock int64) ([]byte, error) {
+func (req *DownloadRequest) getBlocksData(startBlock, totalBlock int64) ([][][]byte, error) {
 
 	shards, err := req.getBlocksDataFromBlobbers(startBlock, totalBlock)
 	if err != nil {
@@ -142,20 +142,16 @@ func (req *DownloadRequest) getBlocksData(startBlock, totalBlock int64) ([]byte,
 
 	// erasure decoding
 	// Can we benefit from goroutine for erasure decoding??
-	c := req.datashards * req.effectiveBlockSize
-	data := make([]byte, req.datashards*req.effectiveBlockSize*int(totalBlock))
+	// c := req.datashards * req.effectiveBlockSize
+	// data := make([]byte, req.datashards*req.effectiveBlockSize*int(totalBlock))
 	for i := range shards {
-		var d []byte
-		var err error
-		d, err = req.decodeEC(shards[i])
+		err = req.decodeEC(shards[i])
 		if err != nil {
 			return nil, err
 		}
-		index := i * c
-		copy(data[index:index+c], d)
 
 	}
-	return data, nil
+	return shards, nil
 }
 
 // downloadBlock This function will add download requests to the download channel which picks up
@@ -257,19 +253,21 @@ func (req *DownloadRequest) downloadBlock(
 }
 
 // decodeEC will reconstruct shards and verify it
-func (req *DownloadRequest) decodeEC(shards [][]byte) (data []byte, err error) {
+func (req *DownloadRequest) decodeEC(shards [][]byte) (err error) {
 	err = req.ecEncoder.ReconstructData(shards)
 	if err != nil {
 		return
 	}
-	c := len(shards[0])
-	data = make([]byte, req.datashards*c)
-	for i := 0; i < req.datashards; i++ {
-		index := i * c
-		copy(data[index:index+c], shards[i])
-	}
-	return data, nil
+	// c := len(shards[0])
+	// data = make([]byte, req.datashards*c)
+	// for i := 0; i < req.datashards; i++ {
+	// 	index := i * c
+	// 	copy(data[index:index+c], shards[i])
+	// }
+	return nil
 }
+
+//shards -> shards[i][data]
 
 // fillShards will fill `shards` with data from blobbers that belongs to specific
 // blockNumber and blobber's position index in an allocation
@@ -444,7 +442,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		hashWg.Add(1)
 		closeOnce = &sync.Once{}
 		go processHashData(hashDataChan, hashWg, actualFileHasher)
-		isPREAndWholeFile = true
+		// isPREAndWholeFile = true
 	}
 
 	writeCtx, writeCancel := context.WithCancel(ctx)
@@ -454,7 +452,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 
 	// Handle writing the blocks in order as soon as they are downloaded
 	go func() {
-		buffer := make(map[int][]byte)
+		buffer := make(map[int][][][]byte)
 		for i := 0; i < n; i++ {
 			select {
 			case <-writeCtx.Done():
@@ -470,7 +468,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 				// If the block we need to write next is already in the buffer, write it
 				numBytes := int64(math.Min(float64(remainingSize), float64(len(data))))
 				if isPREAndWholeFile {
-					hashDataChan <- data[:numBytes]
+					// hashDataChan <- data[:numBytes]
 					if i == n-1 {
 						closeOnce.Do(func() {
 							close(hashDataChan)
@@ -483,7 +481,15 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 						}
 					}
 				}
-				_, err = req.fileHandler.Write(data[:numBytes])
+				for bIndex := 0; bIndex < len(data); bIndex++ {
+					for inIndex := 0; inIndex < len(data[bIndex]); inIndex++ {
+						_, err = req.fileHandler.Write(data[bIndex][inIndex])
+						if err != nil {
+							req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
+							return
+						}
+					}
+				}
 
 				if err != nil {
 					req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
@@ -494,7 +500,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 				remainingSize -= numBytes
 
 				if req.statusCallback != nil {
-					req.statusCallback.InProgress(req.allocationID, remotePathCB, op, downloaded, data)
+					req.statusCallback.InProgress(req.allocationID, remotePathCB, op, downloaded, nil)
 				}
 
 				// Remove the block from the buffer
@@ -506,7 +512,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 						// Write the data
 						numBytes := int64(math.Min(float64(remainingSize), float64(len(block.data))))
 						if isPREAndWholeFile {
-							hashDataChan <- block.data[:numBytes]
+							// hashDataChan <- block.data[:numBytes]
 							if i == n-1 {
 								closeOnce.Do(func() {
 									close(hashDataChan)
@@ -519,17 +525,26 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 								}
 							}
 						}
-						_, err = req.fileHandler.Write(block.data[:numBytes])
-						if err != nil {
-							req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
-							return
+						for bIndex := 0; bIndex < len(block.data); bIndex++ {
+							for inIndex := 0; inIndex < len(block.data[bIndex]); inIndex++ {
+								_, err = req.fileHandler.Write(block.data[bIndex][inIndex])
+								if err != nil {
+									req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
+									return
+								}
+							}
 						}
+						// _, err = req.fileHandler.Write(block.data[:numBytes])
+						// if err != nil {
+						// 	req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
+						// 	return
+						// }
 
 						downloaded = downloaded + int(numBytes)
 						remainingSize -= numBytes
 
 						if req.statusCallback != nil {
-							req.statusCallback.InProgress(req.allocationID, remotePathCB, op, downloaded, block.data)
+							req.statusCallback.InProgress(req.allocationID, remotePathCB, op, downloaded, nil)
 						}
 
 						break

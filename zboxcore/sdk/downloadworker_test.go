@@ -83,8 +83,8 @@ func TestDecodeEC(t *testing.T) {
 				test.setup(test)
 			}
 
-			data, err := test.req.decodeEC(test.shards)
-
+			err := test.req.decodeEC(test.shards)
+			data := test.shards[0]
 			if test.wantErr {
 				require.Error(t, err)
 				require.Contains(t, err.Error(), test.errMsg)
