@@ -2,7 +2,6 @@ package zboxutil
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 )
@@ -28,7 +27,6 @@ func NewDownloadBuffer(size, numBlocks, effectiveBlockSize int) *DownloadBuffer 
 func (r *DownloadBuffer) RequestChunk(ctx context.Context, num int) []byte {
 	num = num % r.length
 	for {
-		fmt.Println("Requested chunk: ", num)
 		select {
 		case <-ctx.Done():
 			return nil
@@ -45,7 +43,6 @@ func (r *DownloadBuffer) RequestChunk(ctx context.Context, num int) []byte {
 		// assign the chunk by clearing the bit
 		r.mu.Lock()
 		r.mask &= ^(1 << num)
-		fmt.Println("Acquired chunk: ", num)
 		r.mu.Unlock()
 		return r.buf[num*r.reqSize : (num+1)*r.reqSize]
 	}
@@ -53,7 +50,6 @@ func (r *DownloadBuffer) RequestChunk(ctx context.Context, num int) []byte {
 
 func (r *DownloadBuffer) ReleaseChunk(num int) {
 	num = num % r.length
-	fmt.Println("ReleaseChunk: ", num)
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.mask |= 1 << num

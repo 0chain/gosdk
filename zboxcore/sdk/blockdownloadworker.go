@@ -111,25 +111,6 @@ func (req *BlockDownloadRequest) splitData(buf []byte, lim int) [][]byte {
 	return chunks
 }
 
-func splitShards(shards [][]byte, lim int) [][][]byte {
-	newShards := make([][][]byte, 0, common.MustAddInt(len(shards[0])/lim, 1))
-	for i := range newShards {
-		newShards[i] = make([][]byte, len(shards))
-	}
-	offset := 0
-	for i := range newShards {
-		for j := range newShards[i] {
-			if offset+lim <= len(shards[j]) {
-				newShards[i][j] = shards[j][offset : lim+offset]
-			} else if len(shards[j]) > 0 {
-				newShards[i][j] = shards[j][offset:]
-			}
-		}
-		offset += lim
-	}
-	return newShards
-}
-
 func (req *BlockDownloadRequest) downloadBlobberBlock() {
 	if req.numBlocks <= 0 {
 		req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.New("invalid_request", "Invalid number of blocks for download")}
