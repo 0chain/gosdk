@@ -10,7 +10,6 @@ import (
 	"hash"
 	"io"
 	"io/ioutil"
-	"math"
 	"net/http"
 	"os"
 	"strings"
@@ -37,6 +36,7 @@ import (
 const (
 	DOWNLOAD_CONTENT_FULL  = "full"
 	DOWNLOAD_CONTENT_THUMB = "thumbnail"
+	EXTRA_COUNT            = 2
 )
 
 type DownloadRequest struct {
@@ -79,6 +79,7 @@ type DownloadRequest struct {
 	chunksPerShard     int64
 	size               int64
 	offset             int64
+	bufferMap          map[int]*zboxutil.DownloadBuffer
 }
 
 type blockData struct {
@@ -211,7 +212,11 @@ func (req *DownloadRequest) downloadBlock(
 		if !skipDownload {
 			bf := req.validationRootMap[blockDownloadReq.blobber.ID]
 			blockDownloadReq.blobberFile = bf
-			go AddBlockDownloadReq(blockDownloadReq)
+			if req.shouldVerify {
+				go AddBlockDownloadReq(req.ctx, blockDownloadReq, nil, req.effectiveBlockSize)
+			} else {
+				go AddBlockDownloadReq(req.ctx, blockDownloadReq, req.bufferMap[int(pos)], req.effectiveBlockSize)
+			}
 		}
 
 		c++
@@ -219,7 +224,6 @@ func (req *DownloadRequest) downloadBlock(
 			remainingMask = i
 			break
 		}
-
 	}
 
 	var failed int32
@@ -237,6 +241,7 @@ func (req *DownloadRequest) downloadBlock(
 					downloadErrors[i] = fmt.Sprintf("Error %s from %s",
 						err.Error(), req.blobbers[result.idx].Baseurl)
 					logger.Logger.Error(err)
+					req.bufferMap[result.idx].ReleaseChunk(int(req.startBlock / req.numBlocks))
 				}
 				wg.Done()
 			}()
@@ -272,6 +277,7 @@ func (req *DownloadRequest) decodeEC(shards [][]byte) (err error) {
 // fillShards will fill `shards` with data from blobbers that belongs to specific
 // blockNumber and blobber's position index in an allocation
 func (req *DownloadRequest) fillShards(shards [][][]byte, result *downloadBlock) (err error) {
+	fmt.Println("fillShards: ", req.startBlock, req.numBlocks)
 	for i := 0; i < len(result.BlockChunks); i++ {
 		var data []byte
 		if req.encryptedKey != "" {
@@ -430,19 +436,24 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	var (
 		actualFileHasher  hash.Hash
 		isPREAndWholeFile bool
-		closeOnce         *sync.Once
-		hashDataChan      chan []byte
-		hashWg            *sync.WaitGroup
 	)
 
 	if !req.shouldVerify && (startBlock == 0 && endBlock == chunksPerShard) {
 		actualFileHasher = md5.New()
-		hashDataChan = make(chan []byte, n)
-		hashWg = &sync.WaitGroup{}
-		hashWg.Add(1)
-		closeOnce = &sync.Once{}
-		go processHashData(hashDataChan, hashWg, actualFileHasher)
-		// isPREAndWholeFile = true
+		isPREAndWholeFile = true
+	}
+
+	if !req.shouldVerify {
+		var pos uint64
+		req.bufferMap = make(map[int]*zboxutil.DownloadBuffer)
+		sz := downloadWorkerCount + EXTRA_COUNT
+		if sz > n {
+			sz = n
+		}
+		for i := req.downloadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+			pos = uint64(i.TrailingZeros())
+			req.bufferMap[int(pos)] = zboxutil.NewDownloadBuffer(sz, int(numBlocks), req.effectiveBlockSize)
+		}
 	}
 
 	writeCtx, writeCancel := context.WithCancel(ctx)
@@ -456,48 +467,44 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		for i := 0; i < n; i++ {
 			select {
 			case <-writeCtx.Done():
-				if isPREAndWholeFile {
-					closeOnce.Do(func() {
-						close(hashDataChan)
-					})
-				}
 				goto breakLoop
 			default:
 			}
 			if data, ok := buffer[i]; ok {
 				// If the block we need to write next is already in the buffer, write it
-				numBytes := int64(math.Min(float64(remainingSize), float64(len(data))))
+				hashWg := &sync.WaitGroup{}
 				if isPREAndWholeFile {
-					// hashDataChan <- data[:numBytes]
 					if i == n-1 {
-						closeOnce.Do(func() {
-							close(hashDataChan)
-						})
-						hashWg.Wait()
+						writeData(actualFileHasher, data, req.datashards) //nolint
 						if calculatedFileHash, ok := checkHash(actualFileHasher, fRef, req.contentMode); !ok {
 							req.errorCB(fmt.Errorf("Expected actual file hash %s, calculated file hash %s",
 								fRef.ActualFileHash, calculatedFileHash), remotePathCB)
 							return
 						}
-					}
-				}
-				for bIndex := 0; bIndex < len(data); bIndex++ {
-					for inIndex := 0; inIndex < len(data[bIndex]); inIndex++ {
-						_, err = req.fileHandler.Write(data[bIndex][inIndex])
-						if err != nil {
-							req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
-							return
-						}
+					} else {
+						hashWg.Add(1)
+						go func() {
+							writeData(actualFileHasher, data, req.datashards) //nolint
+							hashWg.Done()
+						}()
 					}
 				}
 
+				totalWritten, err := writeData(req.fileHandler, data, req.datashards)
 				if err != nil {
 					req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
 					return
 				}
 
-				downloaded = downloaded + int(numBytes)
-				remainingSize -= numBytes
+				if isPREAndWholeFile {
+					hashWg.Wait()
+				}
+				for _, rb := range req.bufferMap {
+					rb.ReleaseChunk(i)
+				}
+				fmt.Println("Written block: ", i, totalWritten/MB)
+				downloaded = downloaded + totalWritten
+				remainingSize -= int64(totalWritten)
 
 				if req.statusCallback != nil {
 					req.statusCallback.InProgress(req.allocationID, remotePathCB, op, downloaded, nil)
@@ -510,38 +517,40 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 				for block := range blocks {
 					if block.blockNum == i {
 						// Write the data
-						numBytes := int64(math.Min(float64(remainingSize), float64(len(block.data))))
+						hashWg := &sync.WaitGroup{}
 						if isPREAndWholeFile {
-							// hashDataChan <- block.data[:numBytes]
 							if i == n-1 {
-								closeOnce.Do(func() {
-									close(hashDataChan)
-								})
-								hashWg.Wait()
+								writeData(actualFileHasher, block.data, req.datashards) //nolint
 								if calculatedFileHash, ok := checkHash(actualFileHasher, fRef, req.contentMode); !ok {
 									req.errorCB(fmt.Errorf("Expected actual file hash %s, calculated file hash %s",
 										fRef.ActualFileHash, calculatedFileHash), remotePathCB)
 									return
 								}
+							} else {
+								hashWg.Add(1)
+								go func() {
+									writeData(actualFileHasher, block.data, req.datashards) //nolint
+									hashWg.Done()
+								}()
 							}
 						}
-						for bIndex := 0; bIndex < len(block.data); bIndex++ {
-							for inIndex := 0; inIndex < len(block.data[bIndex]); inIndex++ {
-								_, err = req.fileHandler.Write(block.data[bIndex][inIndex])
-								if err != nil {
-									req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
-									return
-								}
-							}
-						}
-						// _, err = req.fileHandler.Write(block.data[:numBytes])
-						// if err != nil {
-						// 	req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
-						// 	return
-						// }
 
-						downloaded = downloaded + int(numBytes)
-						remainingSize -= numBytes
+						totalWritten, err := writeData(req.fileHandler, block.data, req.datashards)
+						if err != nil {
+							req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
+							return
+						}
+						fmt.Println("Written block: ", i, totalWritten/MB)
+
+						if isPREAndWholeFile {
+							hashWg.Wait()
+						}
+						for _, rb := range req.bufferMap {
+							rb.ReleaseChunk(i)
+						}
+
+						downloaded = downloaded + totalWritten
+						remainingSize -= int64(totalWritten)
 
 						if req.statusCallback != nil {
 							req.statusCallback.InProgress(req.allocationID, remotePathCB, op, downloaded, nil)
@@ -561,6 +570,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	}()
 
 	eg, _ := errgroup.WithContext(ctx)
+	eg.SetLimit(downloadWorkerCount + EXTRA_COUNT)
 	for i := 0; i < n; i++ {
 		j := i
 		eg.Go(func() error {
@@ -575,6 +585,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			if err != nil {
 				return errors.Wrap(err, fmt.Sprintf("Download failed for block %d. ", startBlock+int64(j)*numBlocks))
 			}
+			fmt.Println("Downloaded block: ", j)
 			blocks <- blockData{blockNum: j, data: data}
 
 			return nil
@@ -587,6 +598,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	}
 
 	close(blocks)
+	fmt.Println("download complete waiting for write")
 	wg.Wait()
 	elapsedGetBlocksAndWrite := time.Since(now) - elapsedInitEC - elapsedInitEncryption
 	l.Logger.Info(fmt.Sprintf("[processDownload] Timings:\n allocation_id: %s,\n remotefilepath: %s,\n initEC: %d ms,\n initEncryption: %d ms,\n getBlocks and writes: %d ms",
@@ -1129,4 +1141,19 @@ func (req *DownloadRequest) Seek(offset int64, whence int) (int64, error) {
 			fmt.Sprintf("expected 0, 1 or 2, provided %d", whence))
 	}
 	return req.offset, nil
+}
+
+func writeData(dest io.Writer, data [][][]byte, dataShards int) (int, error) {
+	total := 0
+	fmt.Println("writeData: ", len(data))
+	for i := 0; i < len(data); i++ {
+		for j := 0; j < dataShards; j++ {
+			n, err := dest.Write(data[i][j])
+			total += n
+			if err != nil {
+				return total, err
+			}
+		}
+	}
+	return total, nil
 }
