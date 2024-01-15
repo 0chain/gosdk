@@ -291,8 +291,5 @@ func readBody(r io.Reader, b []byte) ([]byte, error) {
 			}
 			return b, err
 		}
-		if start == len(b) {
-			return nil, fmt.Errorf("readBody: buffer full (len=%d) and start %v", len(b), start)
-		}
 	}
 }
