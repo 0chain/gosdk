@@ -415,12 +415,12 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	startBlock, endBlock, numBlocks := req.startBlock, req.endBlock, req.numBlocks
 	// remainingSize should be calculated based on startBlock number
 	// otherwise end data will have null bytes.
-	remainingSize := size - startBlock*int64(req.effectiveBlockSize)
+	remainingSize := size - startBlock*int64(req.effectiveBlockSize)*int64(req.datashards)
 
 	if req.statusCallback != nil {
 		// Started will also initialize progress bar. So without calling this function
 		// other callback's call will panic
-		req.statusCallback.Started(req.allocationID, remotePathCB, op, int(size))
+		req.statusCallback.Started(req.allocationID, remotePathCB, op, int(remainingSize))
 	}
 
 	if req.shouldVerify {
