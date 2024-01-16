@@ -463,6 +463,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 
 	// Handle writing the blocks in order as soon as they are downloaded
 	go func() {
+		defer wg.Done()
 		buffer := make(map[int][][][]byte)
 		for i := 0; i < n; i++ {
 			select {
@@ -564,7 +565,6 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		}
 	breakLoop:
 		req.fileHandler.Sync() //nolint
-		wg.Done()
 	}()
 
 	eg, _ := errgroup.WithContext(ctx)
