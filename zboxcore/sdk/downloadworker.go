@@ -385,11 +385,6 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	}
 	size, chunksPerShard, blocksPerShard := req.size, req.chunksPerShard, req.blocksPerShard
 
-	logger.Logger.Info(
-		fmt.Sprintf("Downloading file with size: %d from start block: %d and end block: %d. "+
-			"Blocks per blobber: %d", size, req.startBlock, req.endBlock, blocksPerShard),
-	)
-
 	now := time.Now()
 	err := req.initEC()
 	if err != nil {
@@ -456,6 +451,16 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		}
 	}
 
+	toSync := false
+	if _, ok := req.fileHandler.(*sys.MemChanFile); ok {
+		toSync = true
+	}
+
+	logger.Logger.Info(
+		fmt.Sprintf("Downloading file with size: %d from start block: %d and end block: %d. "+
+			"Blocks per blobber: %d remainingSize: %d and total requests: %d", size, req.startBlock, req.endBlock, blocksPerShard, remainingSize, n),
+	)
+
 	writeCtx, writeCancel := context.WithCancel(ctx)
 	defer writeCancel()
 	var wg sync.WaitGroup
@@ -495,6 +500,9 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 				if err != nil {
 					req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
 					return
+				}
+				if toSync {
+					req.fileHandler.Sync() //nolint
 				}
 
 				if isPREAndWholeFile {
@@ -539,6 +547,10 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 						if err != nil {
 							req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
 							return
+						}
+
+						if toSync {
+							req.fileHandler.Sync() //nolint
 						}
 
 						if isPREAndWholeFile {
