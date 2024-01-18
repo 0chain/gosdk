@@ -242,7 +242,10 @@ func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
 	if req.forRepair {
 		for _, child := range childResultMap {
 			if child.consensus < child.fullconsensus {
-				result.Children = append(result.Children, child)
+				if _, ok := selected[child.LookupHash]; !ok {
+					result.Children = append(result.Children, child)
+					selected[child.LookupHash] = child
+				}
 			}
 		}
 	}
