@@ -28,13 +28,13 @@ import (
 
 const FileOperationInsert = "insert"
 
-func listObjects(allocationID string, remotePath string) (*sdk.ListResult, error) {
+func listObjects(allocationID string, remotePath string, offset, pageLimit int) (*sdk.ListResult, error) {
 	alloc, err := getAllocation(allocationID)
 	if err != nil {
 		return nil, err
 	}
 
-	return alloc.ListDir(remotePath)
+	return alloc.ListDir(remotePath, sdk.WithListRequestOffset(offset), sdk.WithListRequestPageLimit(pageLimit))
 
 }
 
