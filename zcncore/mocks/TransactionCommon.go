@@ -565,3 +565,17 @@ func NewTransactionCommon(t mockConstructorTestingTNewTransactionCommon) *Transa
 
 	return mock
 }
+
+// ZCNSCCollectReward provides a mock function with given fields: providerID, providerType
+func (_m *TransactionCommon) ZCNSCCollectReward(providerID string, providerType zcncore.Provider) error {
+	ret := _m.Called(providerID, providerType)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, zcncore.Provider) error); ok {
+		r0 = rf(providerID, providerType)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
