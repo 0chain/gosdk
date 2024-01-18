@@ -112,7 +112,6 @@ func (ch *MoveFileChange) ProcessChange(rootRef *fileref.Ref, fileIDMeta map[str
 
 	dirRef.AddChild(ch.ObjectTree)
 
-	rootRef.CalculateHash()
 	return
 }
 

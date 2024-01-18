@@ -146,6 +146,7 @@ type TransactionCommon interface {
 	MinerScUpdateConfig(*InputMap) error
 	MinerScUpdateGlobals(*InputMap) error
 	StorageScUpdateConfig(*InputMap) error
+	AddHardfork(ip *InputMap) (err error)
 	FaucetUpdateConfig(*InputMap) error
 	ZCNSCUpdateGlobalConfig(*InputMap) error
 
@@ -744,6 +745,16 @@ func (t *Transaction) MinerScUpdateGlobals(ip *InputMap) (err error) {
 func (t *Transaction) StorageScUpdateConfig(ip *InputMap) (err error) {
 	err = t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_UPDATE_SETTINGS, ip, 0)
+	if err != nil {
+		logging.Error(err)
+		return
+	}
+	go func() { t.setNonceAndSubmit() }()
+	return
+}
+func (t *Transaction) AddHardfork(ip *InputMap) (err error) {
+	err = t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.ADD_HARDFORK, ip, 0)
 	if err != nil {
 		logging.Error(err)
 		return

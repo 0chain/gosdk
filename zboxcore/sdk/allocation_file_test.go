@@ -783,6 +783,18 @@ func TestAllocation_RepairFile(t *testing.T) {
 					return ioutil.NopCloser(bytes.NewReader(respBuf))
 				}(),
 			}, nil)
+
+			urlCreateConnection := "http://TestAllocation_RepairFile" + testName + mockBlobberUrl + strconv.Itoa(i) + zboxutil.CREATE_CONNECTION_ENDPOINT
+			urlCreateConnection = strings.TrimRight(urlCreateConnection, "/")
+			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+				return strings.HasPrefix(req.URL.String(), urlCreateConnection)
+			})).Return(&http.Response{
+				StatusCode: http.StatusOK,
+				Body: func() io.ReadCloser {
+					respBuf, _ := json.Marshal("connection_id")
+					return ioutil.NopCloser(bytes.NewReader(respBuf))
+				}(),
+			}, nil)
 		}
 	}
 
@@ -845,13 +857,13 @@ func TestAllocation_RepairFile(t *testing.T) {
 			a.mutex = &sync.Mutex{}
 			a.initialized = true
 			sdkInitialized = true
-			setupMockAllocation(t, a)
 			for i := 0; i < tt.numBlobbers; i++ {
 				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
 					ID:      mockBlobberId + strconv.Itoa(i),
 					Baseurl: "http://TestAllocation_RepairFile" + tt.name + mockBlobberUrl + strconv.Itoa(i),
 				})
 			}
+			setupMockAllocation(t, a)
 			tt.setup(t, tt.name, tt.numBlobbers, tt.numCorrect)
 			found, _, isRequired, ref, err := a.RepairRequired(tt.parameters.remotePath)
 			require.Nil(err)
@@ -865,7 +877,8 @@ func TestAllocation_RepairFile(t *testing.T) {
 			require.Nil(err)
 			require.NotNil(sz)
 			ref.ActualSize = sz.Size()
-			err = a.RepairFile(f, tt.parameters.remotePath, tt.parameters.status, found, ref)
+			op := a.RepairFile(f, tt.parameters.remotePath, tt.parameters.status, found, ref)
+			err = a.DoMultiOperation([]OperationRequest{*op}, WithRepair())
 			if tt.wantErr {
 				require.NotNil(err)
 			} else {
