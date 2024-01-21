@@ -373,10 +373,13 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	}
 	fRef := req.fRef
 	if fRef != nil && fRef.ActualFileHash == emptyFileDataHash {
-		if req.statusCallback != nil {
-			req.statusCallback.Completed(
-				req.allocationID, remotePathCB, fRef.Name, "", len(emptyFileDataHash), op)
+		logger.Logger.Info("File is empty")
+		_, err := req.fileHandler.Write([]byte(emptyFileDataHash))
+		if err != nil {
+			req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
+			return
 		}
+		req.fileHandler.Sync() //nolint
 		return
 	}
 	size, chunksPerShard, blocksPerShard := req.size, req.chunksPerShard, req.blocksPerShard
