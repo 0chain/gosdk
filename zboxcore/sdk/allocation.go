@@ -1263,7 +1263,7 @@ func (a *Allocation) prepareAndOpenLocalFile(localPath string, remotePath string
 	return f, localFilePath, toKeep, nil
 }
 
-func (a *Allocation) ListDirFromAuthTicket(authTicket string, lookupHash string) (*ListResult, error) {
+func (a *Allocation) ListDirFromAuthTicket(authTicket string, lookupHash string, opts ...ListRequestOptions) (*ListResult, error) {
 	if !a.isInitialized() {
 		return nil, notInitialized
 	}
@@ -1289,6 +1289,9 @@ func (a *Allocation) ListDirFromAuthTicket(authTicket string, lookupHash string)
 	listReq.ctx = a.ctx
 	listReq.remotefilepathhash = lookupHash
 	listReq.authToken = at
+	for _, opt := range opts {
+		opt(listReq)
+	}
 	ref, err := listReq.GetListFromBlobbers()
 
 	if err != nil {
@@ -1301,7 +1304,7 @@ func (a *Allocation) ListDirFromAuthTicket(authTicket string, lookupHash string)
 	return nil, errors.New("list_request_failed", "Failed to get list response from the blobbers")
 }
 
-func (a *Allocation) ListDir(path string, opts ...bool) (*ListResult, error) {
+func (a *Allocation) ListDir(path string, opts ...ListRequestOptions) (*ListResult, error) {
 	if !a.isInitialized() {
 		return nil, notInitialized
 	}
@@ -1321,8 +1324,8 @@ func (a *Allocation) ListDir(path string, opts ...bool) (*ListResult, error) {
 	listReq.consensusThresh = a.DataShards
 	listReq.ctx = a.ctx
 	listReq.remotefilepath = path
-	if len(opts) > 0 {
-		listReq.forRepair = opts[0]
+	for _, opt := range opts {
+		opt(listReq)
 	}
 	ref, err := listReq.GetListFromBlobbers()
 	if err != nil {
@@ -2206,7 +2209,10 @@ func (a *Allocation) StartRepair(localRootPath, pathToRepair string, statusCB St
 		return notInitialized
 	}
 
-	listDir, err := a.ListDir(pathToRepair, true)
+	listDir, err := a.ListDir(pathToRepair,
+		WithListRequestForRepair(true),
+		WithListRequestPageLimit(-1),
+	)
 	if err != nil {
 		return err
 	}
