@@ -33,9 +33,8 @@ func listObjects(allocationID string, remotePath string, offset, pageLimit int) 
 	if err != nil {
 		return nil, err
 	}
-
+  
 	return alloc.ListDir(remotePath, sdk.WithListRequestOffset(offset), sdk.WithListRequestPageLimit(pageLimit))
-
 }
 
 func createDir(allocationID, remotePath string) error {
@@ -451,6 +450,7 @@ type BulkUploadOption struct {
 	FileSize          int64  `json:"fileSize,omitempty"`
 	ReadChunkFuncName string `json:"readChunkFuncName,omitempty"`
 	CallbackFuncName  string `json:"callbackFuncName,omitempty"`
+	MimeType          string `json:"mimeType,omitempty"`
 }
 
 type BulkUploadResult struct {
@@ -602,11 +602,14 @@ func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 		remotePath := option.RemotePath
 
 		fileReader := jsbridge.NewFileReader(option.ReadChunkFuncName, option.FileSize)
-		mimeType, err := zboxutil.GetFileContentType(fileReader)
-		if err != nil {
-			result.Error = "Error in file operation"
-			result.Success = false
-			return result, err
+		mimeType := option.MimeType
+		if mimeType == "" {
+			mimeType, err = zboxutil.GetFileContentType(fileReader)
+			if err != nil {
+				result.Error = "Error in file operation"
+				result.Success = false
+				return result, err
+			}
 		}
 		localPath := remotePath
 		remotePath = zboxutil.RemoteClean(remotePath)
