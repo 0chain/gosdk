@@ -285,7 +285,8 @@ type StakePoolInfo struct {
 	Delegate []StakePoolDelegatePoolInfo `json:"delegate"`
 	// rewards
 	Rewards common.Balance `json:"rewards"`
-
+	// total rewards
+	TotalRewards common.Balance `json:"total_rewards"`
 	// Settings of the stake pool
 	Settings blockchain.StakePoolSettings `json:"settings"`
 }
