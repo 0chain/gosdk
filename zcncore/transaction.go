@@ -168,6 +168,8 @@ type TransactionCommon interface {
 
 	// ZCNSCDeleteAuthorizer deletes authorizer
 	ZCNSCDeleteAuthorizer(*DeleteAuthorizerPayload) error
+
+	ZCNSCCollectReward(providerID string, providerType Provider) error
 }
 
 // PriceRange represents a price range allowed by user to filter blobbers.
@@ -1487,4 +1489,19 @@ func (t *Transaction) ZCNSCDeleteAuthorizer(ip *DeleteAuthorizerPayload) (err er
 	}
 	go t.setNonceAndSubmit()
 	return
+}
+
+func (t *Transaction) ZCNSCCollectReward(providerId string, providerType Provider) error {
+	pr := &scCollectReward{
+		ProviderId:   providerId,
+		ProviderType: int(providerType),
+	}
+	err := t.createSmartContractTxn(ZCNSCSmartContractAddress,
+		transaction.ZCNSC_COLLECT_REWARD, pr, 0)
+	if err != nil {
+		logging.Error(err)
+		return err
+	}
+	go func() { t.setNonceAndSubmit() }()
+	return err
 }

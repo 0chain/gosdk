@@ -583,3 +583,18 @@ func (ta *TransactionWithAuth) ZCNSCDeleteAuthorizer(ip *DeleteAuthorizerPayload
 	go ta.submitTxn()
 	return
 }
+
+func (ta *TransactionWithAuth) ZCNSCCollectReward(providerId string, providerType Provider) error {
+	pr := &scCollectReward{
+		ProviderId:   providerId,
+		ProviderType: int(providerType),
+	}
+	err := ta.t.createSmartContractTxn(ZCNSCSmartContractAddress,
+		transaction.ZCNSC_COLLECT_REWARD, pr, 0)
+	if err != nil {
+		logging.Error(err)
+		return err
+	}
+	go func() { ta.t.setNonceAndSubmit() }()
+	return err
+}
