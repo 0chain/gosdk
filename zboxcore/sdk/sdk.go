@@ -1293,12 +1293,15 @@ func KillProvider(providerId string, providerType ProviderType) (string, int64, 
 	return hash, n, err
 }
 
-func ShutdownProvider(providerType ProviderType) (string, int64, error) {
+func ShutdownProvider(providerType ProviderType, providerID string) (string, int64, error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
 	}
 
-	var input = map[string]interface{}{}
+	var input = map[string]interface{}{
+		"provider_id": providerID,
+	}
+
 	var sn = transaction.SmartContractTxnData{
 		InputArgs: input,
 	}
