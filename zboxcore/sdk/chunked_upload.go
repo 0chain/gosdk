@@ -289,7 +289,7 @@ func CreateChunkedUpload(
 
 	su.isRepair = isRepair
 	su.uploadChan = make(chan UploadData, 10)
-	su.uploadWG = sizedwaitgroup.New(5)
+	su.uploadWG.Add(1)
 	go su.uploadProcessor()
 
 	return su, nil
@@ -393,7 +393,6 @@ func (su *ChunkedUpload) process() error {
 	}
 	alreadyUploadedData := 0
 	defer su.chunkReader.Close()
-	defer close(su.uploadChan)
 	defer su.ctxCncl(nil)
 	for {
 
@@ -652,6 +651,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 	}
 
 	if isFinal {
+		close(su.uploadChan)
 		su.uploadWG.Wait()
 		select {
 		case <-su.ctx.Done():
@@ -739,18 +739,21 @@ func getShardSize(dataSize int64, dataShards int, isEncrypted bool) int64 {
 }
 
 func (su *ChunkedUpload) uploadProcessor() {
+	defer su.uploadWG.Done()
+	swg := sizedwaitgroup.New(5)
 	for {
 		select {
 		case <-su.ctx.Done():
 			return
 		case uploadData, ok := <-su.uploadChan:
 			if !ok {
+				swg.Wait()
 				return
 			}
-			su.uploadWG.Add()
+			swg.Add()
 			go func() {
 				su.uploadToBlobbers(uploadData)
-				su.uploadWG.Done()
+				swg.Done()
 			}()
 		}
 	}
@@ -780,7 +783,7 @@ func (su *ChunkedUpload) uploadToBlobbers(uploadData UploadData) {
 		wg.Add(1)
 		go func(pos uint64) {
 			defer wg.Done()
-			err := su.blobbers[pos].sendUploadRequest(ctx, su, uploadData.chunkEndIndex, uploadData.isFinal, su.encryptedKey, uploadData.uploadBody[pos].dataBuffers, uploadData.uploadBody[pos].formData, pos)
+			err := su.blobbers[pos].sendUploadRequest(ctx, su, uploadData.chunkEndIndex, uploadData.isFinal, su.encryptedKey, uploadData.uploadBody[pos].dataBuffers, uploadData.uploadBody[pos].formData, pos, &consensus)
 
 			if err != nil {
 				if strings.Contains(err.Error(), "duplicate") {

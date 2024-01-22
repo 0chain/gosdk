@@ -40,7 +40,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 	chunkIndex int, isFinal bool,
 	encryptedKey string, dataBuffers []*bytes.Buffer,
 	formData ChunkedUploadFormMetadata,
-	pos uint64) (err error) {
+	pos uint64, consensus *Consensus) (err error) {
 
 	defer func() {
 
@@ -62,7 +62,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 
 			sb.fileRef.EncryptedKey = encryptedKey
 			sb.fileRef.CalculateHash()
-			su.consensus.Done()
+			consensus.Done()
 		}
 
 		return nil
@@ -160,7 +160,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 	if err != nil {
 		return err
 	}
-	su.consensus.Done()
+	consensus.Done()
 
 	if formData.ThumbnailBytesLen > 0 {
 
