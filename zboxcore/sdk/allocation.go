@@ -655,7 +655,7 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 
 	connectionId := zboxutil.NewConnectionId()
 	now := time.Now()
-	ChunkedUpload, err := CreateChunkedUpload(workdir,
+	ChunkedUpload, err := CreateChunkedUpload(a.ctx, workdir,
 		a, fileMeta, fileReader,
 		isUpdate, isRepair, webStreaming, connectionId,
 		options...)
@@ -815,7 +815,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 		mo.operationMask = zboxutil.NewUint128(0)
 		mo.maskMU = &sync.Mutex{}
 		mo.connectionID = connectionID
-		mo.ctx, mo.ctxCncl = context.WithCancel(a.ctx)
+		mo.ctx, mo.ctxCncl = context.WithCancelCause(a.ctx)
 		mo.Consensus = Consensus{
 			RWMutex:         &sync.RWMutex{},
 			consensusThresh: a.consensusThreshold,
@@ -891,7 +891,10 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 				operation = NewMoveOperation(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 
 			case constants.FileOperationInsert:
-				operation, newConnectionID, err = NewUploadOperation(op.Workdir, mo.allocationObj, mo.connectionID, op.FileMeta, op.FileReader, false, op.IsWebstreaming, op.IsRepair, op.DownloadFile, op.Opts...)
+				cancelLock.Lock()
+				CancelOpCtx[op.FileMeta.RemotePath] = mo.ctxCncl
+				cancelLock.Unlock()
+				operation, newConnectionID, err = NewUploadOperation(mo.ctx, op.Workdir, mo.allocationObj, mo.connectionID, op.FileMeta, op.FileReader, false, op.IsWebstreaming, op.IsRepair, op.DownloadFile, op.Opts...)
 
 			case constants.FileOperationDelete:
 				if op.Mask != nil {
@@ -899,8 +902,12 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 				} else {
 					operation = NewDeleteOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 				}
+
 			case constants.FileOperationUpdate:
-				operation, newConnectionID, err = NewUploadOperation(op.Workdir, mo.allocationObj, mo.connectionID, op.FileMeta, op.FileReader, true, op.IsWebstreaming, op.IsRepair, op.DownloadFile, op.Opts...)
+				cancelLock.Lock()
+				CancelOpCtx[op.FileMeta.RemotePath] = mo.ctxCncl
+				cancelLock.Unlock()
+				operation, newConnectionID, err = NewUploadOperation(mo.ctx, op.Workdir, mo.allocationObj, mo.connectionID, op.FileMeta, op.FileReader, true, op.IsWebstreaming, op.IsRepair, op.DownloadFile, op.Opts...)
 
 			case constants.FileOperationCreateDir:
 				operation = NewDirOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
@@ -933,6 +940,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 			if err != nil {
 				return err
 			}
+
 			mo.operations = nil
 		}
 	}
@@ -1263,7 +1271,7 @@ func (a *Allocation) prepareAndOpenLocalFile(localPath string, remotePath string
 	return f, localFilePath, toKeep, nil
 }
 
-func (a *Allocation) ListDirFromAuthTicket(authTicket string, lookupHash string) (*ListResult, error) {
+func (a *Allocation) ListDirFromAuthTicket(authTicket string, lookupHash string, opts ...ListRequestOptions) (*ListResult, error) {
 	if !a.isInitialized() {
 		return nil, notInitialized
 	}
@@ -1289,6 +1297,9 @@ func (a *Allocation) ListDirFromAuthTicket(authTicket string, lookupHash string)
 	listReq.ctx = a.ctx
 	listReq.remotefilepathhash = lookupHash
 	listReq.authToken = at
+	for _, opt := range opts {
+		opt(listReq)
+	}
 	ref, err := listReq.GetListFromBlobbers()
 
 	if err != nil {
@@ -1301,7 +1312,7 @@ func (a *Allocation) ListDirFromAuthTicket(authTicket string, lookupHash string)
 	return nil, errors.New("list_request_failed", "Failed to get list response from the blobbers")
 }
 
-func (a *Allocation) ListDir(path string, opts ...bool) (*ListResult, error) {
+func (a *Allocation) ListDir(path string, opts ...ListRequestOptions) (*ListResult, error) {
 	if !a.isInitialized() {
 		return nil, notInitialized
 	}
@@ -1321,8 +1332,8 @@ func (a *Allocation) ListDir(path string, opts ...bool) (*ListResult, error) {
 	listReq.consensusThresh = a.DataShards
 	listReq.ctx = a.ctx
 	listReq.remotefilepath = path
-	if len(opts) > 0 {
-		listReq.forRepair = opts[0]
+	for _, opt := range opts {
+		opt(listReq)
 	}
 	ref, err := listReq.GetListFromBlobbers()
 	if err != nil {
@@ -2206,7 +2217,10 @@ func (a *Allocation) StartRepair(localRootPath, pathToRepair string, statusCB St
 		return notInitialized
 	}
 
-	listDir, err := a.ListDir(pathToRepair, true)
+	listDir, err := a.ListDir(pathToRepair,
+		WithListRequestForRepair(true),
+		WithListRequestPageLimit(-1),
+	)
 	if err != nil {
 		return err
 	}
@@ -2246,7 +2260,15 @@ func (a *Allocation) RepairAlloc(statusCB StatusCallback) (err error) {
 	return a.StartRepair(dir, "/", statusCB)
 }
 
-func (a *Allocation) CancelUpload(localpath string) error {
+func (a *Allocation) CancelUpload(remotePath string) error {
+	cancelLock.Lock()
+	cancelFunc, ok := CancelOpCtx[remotePath]
+	cancelLock.Unlock()
+	if !ok {
+		return errors.New("remote_path_not_found", "Invalid path. No upload in progress for the path "+remotePath)
+	} else {
+		cancelFunc(fmt.Errorf("upload canceled by user"))
+	}
 	return nil
 }
 

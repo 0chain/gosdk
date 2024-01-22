@@ -2,6 +2,7 @@ package sdk
 
 import (
 	"bytes"
+	"context"
 	"io"
 
 	thrown "github.com/0chain/errors"
@@ -114,6 +115,9 @@ func (uo *UploadOperation) Completed(allocObj *Allocation) {
 	if uo.chunkedUpload.progressStorer != nil {
 		uo.chunkedUpload.removeProgress()
 	}
+	cancelLock.Lock()
+	delete(CancelOpCtx, uo.chunkedUpload.fileMeta.RemotePath)
+	cancelLock.Unlock()
 	if uo.chunkedUpload.statusCallback != nil {
 		uo.chunkedUpload.statusCallback.Completed(allocObj.ID, uo.chunkedUpload.fileMeta.RemotePath, uo.chunkedUpload.fileMeta.RemoteName, uo.chunkedUpload.fileMeta.MimeType, int(uo.chunkedUpload.fileMeta.ActualSize), uo.opCode)
 	}
@@ -123,12 +127,15 @@ func (uo *UploadOperation) Error(allocObj *Allocation, consensus int, err error)
 	if uo.chunkedUpload.progressStorer != nil {
 		uo.chunkedUpload.removeProgress()
 	}
+	cancelLock.Lock()
+	delete(CancelOpCtx, uo.chunkedUpload.fileMeta.RemotePath)
+	cancelLock.Unlock()
 	if uo.chunkedUpload.statusCallback != nil {
 		uo.chunkedUpload.statusCallback.Error(allocObj.ID, uo.chunkedUpload.fileMeta.RemotePath, uo.opCode, err)
 	}
 }
 
-func NewUploadOperation(workdir string, allocObj *Allocation, connectionID string, fileMeta FileMeta, fileReader io.Reader, isUpdate, isWebstreaming, isRepair, isMemoryDownload bool, opts ...ChunkedUploadOption) (*UploadOperation, string, error) {
+func NewUploadOperation(ctx context.Context, workdir string, allocObj *Allocation, connectionID string, fileMeta FileMeta, fileReader io.Reader, isUpdate, isWebstreaming, isRepair, isMemoryDownload bool, opts ...ChunkedUploadOption) (*UploadOperation, string, error) {
 	uo := &UploadOperation{}
 	if fileMeta.ActualSize == 0 {
 		byteReader := bytes.NewReader([]byte(
@@ -138,7 +145,7 @@ func NewUploadOperation(workdir string, allocObj *Allocation, connectionID strin
 		fileMeta.ActualSize = int64(len(emptyFileDataHash))
 	}
 
-	cu, err := CreateChunkedUpload(workdir, allocObj, fileMeta, fileReader, isUpdate, isRepair, isWebstreaming, connectionID, opts...)
+	cu, err := CreateChunkedUpload(ctx, workdir, allocObj, fileMeta, fileReader, isUpdate, isRepair, isWebstreaming, connectionID, opts...)
 	if err != nil {
 		return nil, "", err
 	}

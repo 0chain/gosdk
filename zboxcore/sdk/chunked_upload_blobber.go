@@ -400,6 +400,6 @@ func (sb *ChunkedUploadBlobber) processWriteMarker(
 		}
 		size += change.GetSize()
 	}
-
+	rootRef.CalculateHash()
 	return rootRef, lR.LatestWM, size, fileIDMeta, nil
 }

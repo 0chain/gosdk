@@ -146,6 +146,7 @@ type TransactionCommon interface {
 	MinerScUpdateConfig(*InputMap) error
 	MinerScUpdateGlobals(*InputMap) error
 	StorageScUpdateConfig(*InputMap) error
+	AddHardfork(ip *InputMap) (err error)
 	FaucetUpdateConfig(*InputMap) error
 	ZCNSCUpdateGlobalConfig(*InputMap) error
 
@@ -167,6 +168,8 @@ type TransactionCommon interface {
 
 	// ZCNSCDeleteAuthorizer deletes authorizer
 	ZCNSCDeleteAuthorizer(*DeleteAuthorizerPayload) error
+
+	ZCNSCCollectReward(providerID string, providerType Provider) error
 }
 
 // PriceRange represents a price range allowed by user to filter blobbers.
@@ -742,6 +745,16 @@ func (t *Transaction) MinerScUpdateGlobals(ip *InputMap) (err error) {
 func (t *Transaction) StorageScUpdateConfig(ip *InputMap) (err error) {
 	err = t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_UPDATE_SETTINGS, ip, 0)
+	if err != nil {
+		logging.Error(err)
+		return
+	}
+	go func() { t.setNonceAndSubmit() }()
+	return
+}
+func (t *Transaction) AddHardfork(ip *InputMap) (err error) {
+	err = t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.ADD_HARDFORK, ip, 0)
 	if err != nil {
 		logging.Error(err)
 		return
@@ -1476,4 +1489,19 @@ func (t *Transaction) ZCNSCDeleteAuthorizer(ip *DeleteAuthorizerPayload) (err er
 	}
 	go t.setNonceAndSubmit()
 	return
+}
+
+func (t *Transaction) ZCNSCCollectReward(providerId string, providerType Provider) error {
+	pr := &scCollectReward{
+		ProviderId:   providerId,
+		ProviderType: int(providerType),
+	}
+	err := t.createSmartContractTxn(ZCNSCSmartContractAddress,
+		transaction.ZCNSC_COLLECT_REWARD, pr, 0)
+	if err != nil {
+		logging.Error(err)
+		return err
+	}
+	go func() { t.setNonceAndSubmit() }()
+	return err
 }
