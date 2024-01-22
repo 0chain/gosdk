@@ -711,12 +711,12 @@ func CancelDownload(allocationID, remotepath string) error {
 //	## Inputs
 //	- allocationID
 //	- localPath
-func CancelUpload(allocationID, localpath string) error {
+func CancelUpload(allocationID, remotePath string) error {
 	a, err := getAllocation(allocationID)
 	if err != nil {
 		return err
 	}
-	return a.CancelUpload(localpath)
+	return a.CancelUpload(remotePath)
 }
 
 // StartRepair - start repair files from path

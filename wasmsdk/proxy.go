@@ -183,6 +183,7 @@ func main() {
 				"searchcontainer":        SearchContainer,
 				"updateForbidAllocation": UpdateForbidAllocation,
 				"send":                   send,
+				"cancelUpload":           cancelUpload,
 
 				// player
 				"play":           play,

@@ -46,6 +46,8 @@ var (
 
 	ErrInvalidChunkSize              = errors.New("chunk: chunk size is too small. it must greater than 272 if file is uploaded with encryption")
 	ErrNoEnoughSpaceLeftInAllocation = errors.New("alloc: no enough space left in allocation")
+	CancelOpCtx                      = make(map[string]context.CancelCauseFunc)
+	cancelLock                       = &sync.Mutex{}
 )
 
 // DefaultChunkSize default chunk size for file and thumbnail
@@ -88,6 +90,7 @@ const (
 */
 
 func CreateChunkedUpload(
+	ctx context.Context,
 	workdir string, allocationObj *Allocation,
 	fileMeta FileMeta, fileReader io.Reader,
 	isUpdate, isRepair bool,
@@ -172,7 +175,7 @@ func CreateChunkedUpload(
 	}
 
 	// su.ctx, su.ctxCncl = context.WithCancel(allocationObj.ctx)
-	su.ctx, su.ctxCncl = context.WithCancelCause(allocationObj.ctx)
+	su.ctx, su.ctxCncl = context.WithCancelCause(ctx)
 
 	if isUpdate {
 		su.httpMethod = http.MethodPut
@@ -411,14 +414,13 @@ func (su *ChunkedUpload) process() error {
 		if chunks.isFinal {
 			if su.fileMeta.ActualHash == "" {
 				su.fileMeta.ActualHash, err = su.chunkReader.GetFileHash()
-			}
-			if err != nil {
-				if su.statusCallback != nil {
-					su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
+				if err != nil {
+					if su.statusCallback != nil {
+						su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
+					}
+					return err
 				}
-				return err
 			}
-
 			if su.fileMeta.ActualSize == 0 {
 				su.fileMeta.ActualSize = su.progress.UploadLength
 			} else if su.fileMeta.ActualSize != su.progress.UploadLength && su.thumbnailBytes == nil {

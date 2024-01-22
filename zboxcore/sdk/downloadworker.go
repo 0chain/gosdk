@@ -285,7 +285,7 @@ func (req *DownloadRequest) fillShards(shards [][][]byte, result *downloadBlock)
 			data = result.BlockChunks[i]
 		}
 		if i >= len(shards) || len(shards[i]) <= result.idx {
-			l.Logger.Error("Invalid shard index", result.idx, len(shards), len(shards[i]))
+			l.Logger.Error("Invalid shard index", result.idx, len(shards))
 			return errors.New("invalid_shard_index", fmt.Sprintf("Invalid shard index %d shard len: %d shard block len: %d", result.idx, len(shards), i))
 		}
 		shards[i][result.idx] = data
@@ -373,10 +373,13 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	}
 	fRef := req.fRef
 	if fRef != nil && fRef.ActualFileHash == emptyFileDataHash {
-		if req.statusCallback != nil {
-			req.statusCallback.Completed(
-				req.allocationID, remotePathCB, fRef.Name, "", len(emptyFileDataHash), op)
+		logger.Logger.Info("File is empty")
+		_, err := req.fileHandler.Write([]byte(emptyFileDataHash))
+		if err != nil {
+			req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
+			return
 		}
+		req.fileHandler.Sync() //nolint
 		return
 	}
 	size, chunksPerShard, blocksPerShard := req.size, req.chunksPerShard, req.blocksPerShard
