@@ -72,13 +72,17 @@ func TestVerify(t *testing.T) {
 	sk := "a931522f9949ff26b22db98b26e59cc92258457965f13ce6113cc2b5d2165513"
 	hash := "eb82aa875b3298ae7e625d8d8f13475004a4942bd8fcd7285e8ab9ad20651872"
 	sm := NewSignatureScheme("bls0chain")
-	sm.SetPrivateKey(sk)
+	if err2 := sm.SetPrivateKey(sk); err2 != nil {
+		t.Error(err2)
+	}
 	sig, _ := sm.Sign(hash)
 	fmt.Println("now sig:", sig)
 
 	pk := "47e94b6c5399f8c0005c6f3202dec43e37d171b0eff24d75cdcf14861f088106cf88df15b3335dcd0806365db4d1b3e70579a8bd82eb665c881ef2273d6bdd03"
 	verifyScheme := NewSignatureScheme("bls0chain")
-	verifyScheme.SetPublicKey(pk)
+	if err := verifyScheme.SetPublicKey(pk); err != nil {
+		t.Error(err)
+	}
 	ok, err := verifyScheme.Verify(sig, hash)
 	require.NoError(t, err)
 	fmt.Println("verify result:", ok)
