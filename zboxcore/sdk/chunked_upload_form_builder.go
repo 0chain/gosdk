@@ -221,7 +221,7 @@ func (b *chunkedUploadFormBuilder) Build(
 			return nil, metadata, err
 		}
 
-		if i == numBodies-1 && isFinal {
+		if isFinal && i == numBodies-1 {
 			formData.IsFinal = true
 		}
 
