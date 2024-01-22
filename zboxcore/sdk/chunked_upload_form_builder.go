@@ -21,7 +21,7 @@ type ChunkedUploadFormBuilder interface {
 		chunkSize int64, chunkStartIndex, chunkEndIndex int,
 		isFinal bool, encryptedKey, encryptedKeyPoint string, fileChunksData [][]byte,
 		thumbnailChunkData []byte, shardSize int64,
-	) (*bytes.Buffer, ChunkedUploadFormMetadata, error)
+	) ([]*bytes.Buffer, ChunkedUploadFormMetadata, error)
 }
 
 // ChunkedUploadFormMetadata upload form metadata
@@ -42,12 +42,14 @@ func CreateChunkedUploadFormBuilder() ChunkedUploadFormBuilder {
 type chunkedUploadFormBuilder struct {
 }
 
+const MAX_BLOCKS = 80 // 5MB(CHUNK_SIZE*80)
+
 func (b *chunkedUploadFormBuilder) Build(
 	fileMeta *FileMeta, hasher Hasher, connectionID string,
 	chunkSize int64, chunkStartIndex, chunkEndIndex int,
 	isFinal bool, encryptedKey, encryptedKeyPoint string, fileChunksData [][]byte,
 	thumbnailChunkData []byte, shardSize int64,
-) (*bytes.Buffer, ChunkedUploadFormMetadata, error) {
+) ([]*bytes.Buffer, ChunkedUploadFormMetadata, error) {
 
 	metadata := ChunkedUploadFormMetadata{
 		ThumbnailBytesLen: len(thumbnailChunkData),
@@ -57,7 +59,11 @@ func (b *chunkedUploadFormBuilder) Build(
 		return nil, metadata, nil
 	}
 
-	body := &bytes.Buffer{}
+	numBodies := len(fileChunksData) / MAX_BLOCKS
+	if numBodies == 0 {
+		numBodies = 1
+	}
+	dataBuffers := make([]*bytes.Buffer, 0, numBodies)
 
 	formData := UploadFormData{
 		ConnectionID: connectionID,
@@ -71,7 +77,7 @@ func (b *chunkedUploadFormBuilder) Build(
 
 		MimeType: fileMeta.MimeType,
 
-		IsFinal:           isFinal,
+		// IsFinal:           isFinal,
 		ChunkSize:         chunkSize,
 		ChunkStartIndex:   chunkStartIndex,
 		ChunkEndIndex:     chunkEndIndex,
@@ -81,120 +87,159 @@ func (b *chunkedUploadFormBuilder) Build(
 		EncryptedKey:      encryptedKey,
 	}
 
-	formWriter := multipart.NewWriter(body)
-	defer formWriter.Close()
+	for i := 0; i < numBodies; i++ {
 
-	uploadFile, err := formWriter.CreateFormFile("uploadFile", formData.Filename)
-	if err != nil {
-		return nil, metadata, err
-	}
-	for _, chunkBytes := range fileChunksData {
-		_, err = uploadFile.Write(chunkBytes)
+		body := &bytes.Buffer{}
+		dataBuffers = append(dataBuffers, body)
+
+		formWriter := multipart.NewWriter(body)
+		defer formWriter.Close()
+
+		uploadFile, err := formWriter.CreateFormFile("uploadFile", formData.Filename)
 		if err != nil {
 			return nil, metadata, err
 		}
+		// for _, chunkBytes := range fileChunksData {
+		// 	_, err = uploadFile.Write(chunkBytes)
+		// 	if err != nil {
+		// 		return nil, metadata, err
+		// 	}
 
-		err = hasher.WriteToFixedMT(chunkBytes)
-		if err != nil {
-			return nil, metadata, err
+		// 	err = hasher.WriteToFixedMT(chunkBytes)
+		// 	if err != nil {
+		// 		return nil, metadata, err
+		// 	}
+
+		// 	err = hasher.WriteToValidationMT(chunkBytes)
+		// 	if err != nil {
+		// 		return nil, metadata, err
+		// 	}
+
+		// 	metadata.FileBytesLen += len(chunkBytes)
+		// }
+
+		startRange := i * MAX_BLOCKS
+		endRange := startRange + MAX_BLOCKS
+		if endRange > len(fileChunksData) {
+			endRange = len(fileChunksData)
 		}
-
-		err = hasher.WriteToValidationMT(chunkBytes)
-		if err != nil {
-			return nil, metadata, err
-		}
-
-		metadata.FileBytesLen += len(chunkBytes)
-	}
-  
-	if isFinal {
-		err = hasher.Finalize()
-		if err != nil {
-			return nil, metadata, err
-		}
-
-		var (
-			wg      sync.WaitGroup
-			errChan = make(chan error, 2)
-		)
-		wg.Add(2)
-		go func() {
-			formData.FixedMerkleRoot, err = hasher.GetFixedMerkleRoot()
+		for _, chunkBytes := range fileChunksData[startRange:endRange] {
+			_, err = uploadFile.Write(chunkBytes)
 			if err != nil {
-				errChan <- err
+				return nil, metadata, err
 			}
-			wg.Done()
-		}()
-		go func() {
-			formData.ValidationRoot, err = hasher.GetValidationRoot()
+
+			err = hasher.WriteToFixedMT(chunkBytes)
 			if err != nil {
-				errChan <- err
+				return nil, metadata, err
 			}
-			wg.Done()
-		}()
-		wg.Wait()
-		close(errChan)
-		for err := range errChan {
-			return nil, metadata, err
+
+			err = hasher.WriteToValidationMT(chunkBytes)
+			if err != nil {
+				return nil, metadata, err
+			}
+
+			metadata.FileBytesLen += len(chunkBytes)
 		}
-		actualHashSignature, err := client.Sign(fileMeta.ActualHash)
+
+		if isFinal && i == numBodies-1 {
+			err = hasher.Finalize()
+			if err != nil {
+				return nil, metadata, err
+			}
+
+			var (
+				wg      sync.WaitGroup
+				errChan = make(chan error, 2)
+			)
+			wg.Add(2)
+			go func() {
+				formData.FixedMerkleRoot, err = hasher.GetFixedMerkleRoot()
+				if err != nil {
+					errChan <- err
+				}
+				wg.Done()
+			}()
+			go func() {
+				formData.ValidationRoot, err = hasher.GetValidationRoot()
+				if err != nil {
+					errChan <- err
+				}
+				wg.Done()
+			}()
+			wg.Wait()
+			close(errChan)
+			for err := range errChan {
+				return nil, metadata, err
+			}
+			actualHashSignature, err := client.Sign(fileMeta.ActualHash)
+			if err != nil {
+				return nil, metadata, err
+			}
+
+			validationRootSignature, err := client.Sign(actualHashSignature + formData.ValidationRoot)
+			if err != nil {
+				return nil, metadata, err
+			}
+
+			formData.ActualHash = fileMeta.ActualHash
+			formData.ActualFileHashSignature = actualHashSignature
+			formData.ValidationRootSignature = validationRootSignature
+			formData.ActualSize = fileMeta.ActualSize
+
+		}
+
+		thumbnailSize := len(thumbnailChunkData)
+		if thumbnailSize > 0 && i == 0 {
+
+			uploadThumbnailFile, err := formWriter.CreateFormFile("uploadThumbnailFile", fileMeta.RemoteName+".thumb")
+			if err != nil {
+
+				return nil, metadata, err
+			}
+
+			thumbnailHash := sha3.New256()
+			thumbnailWriters := io.MultiWriter(uploadThumbnailFile, thumbnailHash)
+			_, err = thumbnailWriters.Write(thumbnailChunkData)
+			if err != nil {
+				return nil, metadata, err
+			}
+			_, err = thumbnailHash.Write([]byte(fileMeta.RemotePath))
+			if err != nil {
+				return nil, metadata, err
+			}
+			formData.ActualThumbSize = fileMeta.ActualThumbnailSize
+			formData.ThumbnailContentHash = hex.EncodeToString(thumbnailHash.Sum(nil))
+
+		}
+		if i > 0 {
+			formData.UploadOffset = formData.UploadOffset + chunkSize*int64(MAX_BLOCKS)
+		}
+
+		err = formWriter.WriteField("connection_id", connectionID)
 		if err != nil {
 			return nil, metadata, err
 		}
 
-		validationRootSignature, err := client.Sign(actualHashSignature + formData.ValidationRoot)
+		if i == numBodies-1 && isFinal {
+			formData.IsFinal = true
+		}
+
+		uploadMeta, err := json.Marshal(formData)
 		if err != nil {
 			return nil, metadata, err
 		}
 
-		formData.ActualHash = fileMeta.ActualHash
-		formData.ActualFileHashSignature = actualHashSignature
-		formData.ValidationRootSignature = validationRootSignature
-		formData.ActualSize = fileMeta.ActualSize
-
-	}
-
-	thumbnailSize := len(thumbnailChunkData)
-	if thumbnailSize > 0 {
-
-		uploadThumbnailFile, err := formWriter.CreateFormFile("uploadThumbnailFile", fileMeta.RemoteName+".thumb")
-		if err != nil {
-
-			return nil, metadata, err
-		}
-
-		thumbnailHash := sha3.New256()
-		thumbnailWriters := io.MultiWriter(uploadThumbnailFile, thumbnailHash)
-		_, err = thumbnailWriters.Write(thumbnailChunkData)
+		err = formWriter.WriteField("uploadMeta", string(uploadMeta))
 		if err != nil {
 			return nil, metadata, err
 		}
-		_, err = thumbnailHash.Write([]byte(fileMeta.RemotePath))
-		if err != nil {
-			return nil, metadata, err
+		if i == 0 {
+			metadata.ContentType = formWriter.FormDataContentType()
 		}
-		formData.ActualThumbSize = fileMeta.ActualThumbnailSize
-		formData.ThumbnailContentHash = hex.EncodeToString(thumbnailHash.Sum(nil))
-
 	}
-
-	err = formWriter.WriteField("connection_id", connectionID)
-	if err != nil {
-		return nil, metadata, err
-	}
-
-	uploadMeta, err := json.Marshal(formData)
-	if err != nil {
-		return nil, metadata, err
-	}
-
-	err = formWriter.WriteField("uploadMeta", string(uploadMeta))
-	if err != nil {
-		return nil, metadata, err
-	}
-	metadata.ContentType = formWriter.FormDataContentType()
 	metadata.FixedMerkleRoot = formData.FixedMerkleRoot
 	metadata.ValidationRoot = formData.ValidationRoot
 	metadata.ThumbnailContentHash = formData.ThumbnailContentHash
-	return body, metadata, nil
+	return dataBuffers, metadata, nil
 }

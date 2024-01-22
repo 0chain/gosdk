@@ -21,6 +21,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"golang.org/x/sync/errgroup"
 )
 
 // ChunkedUploadBlobber client of blobber's upload
@@ -37,7 +38,7 @@ type ChunkedUploadBlobber struct {
 func (sb *ChunkedUploadBlobber) sendUploadRequest(
 	ctx context.Context, su *ChunkedUpload,
 	chunkIndex int, isFinal bool,
-	encryptedKey string, body *bytes.Buffer,
+	encryptedKey string, dataBuffers []*bytes.Buffer,
 	formData ChunkedUploadFormMetadata,
 	pos uint64) (err error) {
 
@@ -67,122 +68,125 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 		return nil
 	}
 
-	req, err := zboxutil.NewUploadRequestWithMethod(
-		sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, body, su.httpMethod)
+	eg, _ := errgroup.WithContext(ctx)
+
+	for dataInd := 0; dataInd < len(dataBuffers); dataInd++ {
+		ind := dataInd
+		eg.Go(func() error {
+			req, err := zboxutil.NewUploadRequestWithMethod(
+				sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, dataBuffers[ind], su.httpMethod)
+			if err != nil {
+				return err
+			}
+
+			req.Header.Add("Content-Type", formData.ContentType)
+
+			var (
+				shouldContinue bool
+			)
+
+			for i := 0; i < 3; i++ {
+				err, shouldContinue = func() (err error, shouldContinue bool) {
+					reqCtx, ctxCncl := context.WithTimeout(ctx, su.uploadTimeOut)
+					var resp *http.Response
+					err = zboxutil.HttpDo(reqCtx, ctxCncl, req, func(r *http.Response, err error) error {
+						resp = r
+						return err
+					})
+					defer ctxCncl()
+
+					if err != nil {
+						logger.Logger.Error("Upload : ", err)
+						return fmt.Errorf("Error while doing reqeust. Error %s", err), false
+					}
+
+					if resp.Body != nil {
+						defer resp.Body.Close()
+					}
+					if resp.StatusCode == http.StatusOK {
+						return
+					}
+					var r UploadResult
+					var respbody []byte
+
+					respbody, err = io.ReadAll(resp.Body)
+					if err != nil {
+						logger.Logger.Error("Error: Resp ", err)
+						return fmt.Errorf("Error while reading body. Error %s", err), false
+					}
+
+					if resp.StatusCode == http.StatusTooManyRequests {
+						logger.Logger.Error("Got too many request error")
+						var r int
+						r, err = zboxutil.GetRateLimitValue(resp)
+						if err != nil {
+							logger.Logger.Error(err)
+							return
+						}
+						time.Sleep(time.Duration(r) * time.Second)
+						shouldContinue = true
+						return
+					}
+
+					if resp.StatusCode != http.StatusOK {
+						msg := string(respbody)
+						logger.Logger.Error(sb.blobber.Baseurl,
+							" Upload error response: ", resp.StatusCode,
+							"err message: ", msg)
+						err = errors.Throw(constants.ErrBadRequest, msg)
+						return
+					}
+
+					err = json.Unmarshal(respbody, &r)
+					if err != nil {
+						logger.Logger.Error(sb.blobber.Baseurl, "Upload response parse error: ", err)
+						return
+					}
+					return
+				}()
+
+				if err != nil {
+					return err
+				}
+				if shouldContinue {
+					continue
+				}
+				break
+			}
+			return nil
+		})
+	}
+	err = eg.Wait()
 	if err != nil {
 		return err
 	}
+	su.consensus.Done()
 
-	req.Header.Add("Content-Type", formData.ContentType)
+	if formData.ThumbnailBytesLen > 0 {
 
-	var (
-		shouldContinue   bool
-		latestRespMsg    string
-		latestStatusCode int
-	)
+		sb.fileRef.ThumbnailSize = int64(formData.ThumbnailBytesLen)
+		sb.fileRef.ThumbnailHash = formData.ThumbnailContentHash
 
-	for i := 0; i < 3; i++ {
-		err, shouldContinue = func() (err error, shouldContinue bool) {
-			reqCtx, ctxCncl := context.WithTimeout(ctx, su.uploadTimeOut)
-			var resp *http.Response
-			err = zboxutil.HttpDo(reqCtx, ctxCncl, req, func(r *http.Response, err error) error {
-				resp = r
-				return err
-			})
-			defer ctxCncl()
-
-			if err != nil {
-				logger.Logger.Error("Upload : ", err)
-				return fmt.Errorf("Error while doing reqeust. Error %s", err), false
-			}
-
-			if resp.Body != nil {
-				defer resp.Body.Close()
-			}
-			if resp.StatusCode == http.StatusOK {
-				return
-			}
-			var r UploadResult
-			var respbody []byte
-
-			respbody, err = io.ReadAll(resp.Body)
-			if err != nil {
-				logger.Logger.Error("Error: Resp ", err)
-				return fmt.Errorf("Error while reading body. Error %s", err), false
-			}
-
-			latestRespMsg = string(respbody)
-			latestStatusCode = resp.StatusCode
-
-			if resp.StatusCode == http.StatusTooManyRequests {
-				logger.Logger.Error("Got too many request error")
-				var r int
-				r, err = zboxutil.GetRateLimitValue(resp)
-				if err != nil {
-					logger.Logger.Error(err)
-					return
-				}
-				time.Sleep(time.Duration(r) * time.Second)
-				shouldContinue = true
-				return
-			}
-
-			if resp.StatusCode != http.StatusOK {
-				msg := string(respbody)
-				logger.Logger.Error(sb.blobber.Baseurl,
-					" Upload error response: ", resp.StatusCode,
-					"err message: ", msg)
-				err = errors.Throw(constants.ErrBadRequest, msg)
-				return
-			}
-
-			err = json.Unmarshal(respbody, &r)
-			if err != nil {
-				logger.Logger.Error(sb.blobber.Baseurl, "Upload response parse error: ", err)
-				return
-			}
-			return
-		}()
-
-		if err != nil {
-			return
-		}
-		if shouldContinue {
-			continue
-		}
-
-		su.consensus.Done()
-
-		if formData.ThumbnailBytesLen > 0 {
-
-			sb.fileRef.ThumbnailSize = int64(formData.ThumbnailBytesLen)
-			sb.fileRef.ThumbnailHash = formData.ThumbnailContentHash
-
-			sb.fileRef.ActualThumbnailSize = su.fileMeta.ActualThumbnailSize
-			sb.fileRef.ActualThumbnailHash = su.fileMeta.ActualThumbnailHash
-		}
-
-		// fixed fileRef in last chunk on stream
-		if isFinal {
-			sb.fileRef.FixedMerkleRoot = formData.FixedMerkleRoot
-			sb.fileRef.ValidationRoot = formData.ValidationRoot
-
-			sb.fileRef.ChunkSize = su.chunkSize
-			sb.fileRef.Size = su.shardUploadedSize
-			sb.fileRef.Path = su.fileMeta.RemotePath
-			sb.fileRef.ActualFileHash = su.fileMeta.ActualHash
-			sb.fileRef.ActualFileSize = su.fileMeta.ActualSize
-
-			sb.fileRef.EncryptedKey = encryptedKey
-			sb.fileRef.CalculateHash()
-		}
-		return
+		sb.fileRef.ActualThumbnailSize = su.fileMeta.ActualThumbnailSize
+		sb.fileRef.ActualThumbnailHash = su.fileMeta.ActualThumbnailHash
 	}
 
-	return thrown.New("upload_error",
-		fmt.Sprintf("latest status code: %d, latest response message: %s",
-			latestStatusCode, latestRespMsg))
+	// fixed fileRef in last chunk on stream
+	if isFinal {
+		sb.fileRef.FixedMerkleRoot = formData.FixedMerkleRoot
+		sb.fileRef.ValidationRoot = formData.ValidationRoot
 
+		sb.fileRef.ChunkSize = su.chunkSize
+		sb.fileRef.Size = su.shardUploadedSize
+		sb.fileRef.Path = su.fileMeta.RemotePath
+		sb.fileRef.ActualFileHash = su.fileMeta.ActualHash
+		sb.fileRef.ActualFileSize = su.fileMeta.ActualSize
+
+		sb.fileRef.EncryptedKey = encryptedKey
+		sb.fileRef.CalculateHash()
+	}
+
+	return nil
 }
 
 func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUpload, pos uint64, timestamp int64) (err error) {

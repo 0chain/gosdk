@@ -17,6 +17,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/google/uuid"
 	"github.com/klauspost/reedsolomon"
+	"github.com/remeh/sizedwaitgroup"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -86,7 +87,7 @@ type ChunkedUpload struct {
 	encryptedKeyPoint string
 	encryptedKey      string
 	uploadChan        chan UploadData
-	uploadWG          sync.WaitGroup
+	uploadWG          sizedwaitgroup.SizedWaitGroup
 }
 
 // FileMeta metadata of stream input/local
@@ -207,8 +208,8 @@ type UploadData struct {
 }
 
 type blobberData struct {
-	body     *bytes.Buffer
-	formData ChunkedUploadFormMetadata
+	dataBuffers []*bytes.Buffer
+	formData    ChunkedUploadFormMetadata
 }
 
 type status struct {
