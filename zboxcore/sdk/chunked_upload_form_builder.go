@@ -21,7 +21,7 @@ type ChunkedUploadFormBuilder interface {
 		chunkSize int64, chunkStartIndex, chunkEndIndex int,
 		isFinal bool, encryptedKey, encryptedKeyPoint string, fileChunksData [][]byte,
 		thumbnailChunkData []byte, shardSize int64,
-	) ([]*bytes.Buffer, ChunkedUploadFormMetadata, error)
+	) (blobberData, error)
 }
 
 // ChunkedUploadFormMetadata upload form metadata
@@ -49,14 +49,16 @@ func (b *chunkedUploadFormBuilder) Build(
 	chunkSize int64, chunkStartIndex, chunkEndIndex int,
 	isFinal bool, encryptedKey, encryptedKeyPoint string, fileChunksData [][]byte,
 	thumbnailChunkData []byte, shardSize int64,
-) ([]*bytes.Buffer, ChunkedUploadFormMetadata, error) {
+) (blobberData, error) {
 
 	metadata := ChunkedUploadFormMetadata{
 		ThumbnailBytesLen: len(thumbnailChunkData),
 	}
 
+	var res blobberData
+
 	if len(fileChunksData) == 0 {
-		return nil, metadata, nil
+		return res, nil
 	}
 
 	numBodies := len(fileChunksData) / MAX_BLOCKS
@@ -64,6 +66,7 @@ func (b *chunkedUploadFormBuilder) Build(
 		numBodies++
 	}
 	dataBuffers := make([]*bytes.Buffer, 0, numBodies)
+	contentSlice := make([]string, 0, numBodies)
 
 	formData := UploadFormData{
 		ConnectionID: connectionID,
@@ -95,7 +98,7 @@ func (b *chunkedUploadFormBuilder) Build(
 
 		uploadFile, err := formWriter.CreateFormFile("uploadFile", formData.Filename)
 		if err != nil {
-			return nil, metadata, err
+			return res, err
 		}
 
 		startRange := i * MAX_BLOCKS
@@ -106,17 +109,17 @@ func (b *chunkedUploadFormBuilder) Build(
 		for _, chunkBytes := range fileChunksData[startRange:endRange] {
 			_, err = uploadFile.Write(chunkBytes)
 			if err != nil {
-				return nil, metadata, err
+				return res, err
 			}
 
 			err = hasher.WriteToFixedMT(chunkBytes)
 			if err != nil {
-				return nil, metadata, err
+				return res, err
 			}
 
 			err = hasher.WriteToValidationMT(chunkBytes)
 			if err != nil {
-				return nil, metadata, err
+				return res, err
 			}
 
 			metadata.FileBytesLen += len(chunkBytes)
@@ -125,7 +128,7 @@ func (b *chunkedUploadFormBuilder) Build(
 		if isFinal && i == numBodies-1 {
 			err = hasher.Finalize()
 			if err != nil {
-				return nil, metadata, err
+				return res, err
 			}
 
 			var (
@@ -150,16 +153,16 @@ func (b *chunkedUploadFormBuilder) Build(
 			wg.Wait()
 			close(errChan)
 			for err := range errChan {
-				return nil, metadata, err
+				return res, err
 			}
 			actualHashSignature, err := client.Sign(fileMeta.ActualHash)
 			if err != nil {
-				return nil, metadata, err
+				return res, err
 			}
 
 			validationRootSignature, err := client.Sign(actualHashSignature + formData.ValidationRoot)
 			if err != nil {
-				return nil, metadata, err
+				return res, err
 			}
 
 			formData.ActualHash = fileMeta.ActualHash
@@ -175,18 +178,18 @@ func (b *chunkedUploadFormBuilder) Build(
 			uploadThumbnailFile, err := formWriter.CreateFormFile("uploadThumbnailFile", fileMeta.RemoteName+".thumb")
 			if err != nil {
 
-				return nil, metadata, err
+				return res, err
 			}
 
 			thumbnailHash := sha3.New256()
 			thumbnailWriters := io.MultiWriter(uploadThumbnailFile, thumbnailHash)
 			_, err = thumbnailWriters.Write(thumbnailChunkData)
 			if err != nil {
-				return nil, metadata, err
+				return res, err
 			}
 			_, err = thumbnailHash.Write([]byte(fileMeta.RemotePath))
 			if err != nil {
-				return nil, metadata, err
+				return res, err
 			}
 			formData.ActualThumbSize = fileMeta.ActualThumbnailSize
 			formData.ThumbnailContentHash = hex.EncodeToString(thumbnailHash.Sum(nil))
@@ -198,7 +201,7 @@ func (b *chunkedUploadFormBuilder) Build(
 
 		err = formWriter.WriteField("connection_id", connectionID)
 		if err != nil {
-			return nil, metadata, err
+			return res, err
 		}
 
 		if isFinal && i == numBodies-1 {
@@ -207,20 +210,22 @@ func (b *chunkedUploadFormBuilder) Build(
 
 		uploadMeta, err := json.Marshal(formData)
 		if err != nil {
-			return nil, metadata, err
+			return res, err
 		}
 
 		err = formWriter.WriteField("uploadMeta", string(uploadMeta))
 		if err != nil {
-			return nil, metadata, err
+			return res, err
 		}
-		if i == 0 {
-			metadata.ContentType = formWriter.FormDataContentType()
-		}
+
+		contentSlice = append(contentSlice, formWriter.FormDataContentType())
 		dataBuffers = append(dataBuffers, body)
 	}
 	metadata.FixedMerkleRoot = formData.FixedMerkleRoot
 	metadata.ValidationRoot = formData.ValidationRoot
 	metadata.ThumbnailContentHash = formData.ThumbnailContentHash
-	return dataBuffers, metadata, nil
+	res.dataBuffers = dataBuffers
+	res.contentSlice = contentSlice
+	res.formData = metadata
+	return res, nil
 }
