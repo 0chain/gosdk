@@ -67,23 +67,22 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 	}
 
 	eg, _ := errgroup.WithContext(ctx)
-
+	now := time.Now()
 	for dataInd := 0; dataInd < len(dataBuffers); dataInd++ {
 		ind := dataInd
 		eg.Go(func() error {
 			var (
 				shouldContinue bool
 			)
+			dataBufferSize := dataBuffers[ind].Len()
+			req, err := zboxutil.NewUploadRequestWithMethod(
+				sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, dataBuffers[ind], su.httpMethod)
+			if err != nil {
+				return err
+			}
+			req.Header.Add("Content-Type", contentSlice[ind])
 
 			for i := 0; i < 3; i++ {
-				dataBufferSize := dataBuffers[ind].Len()
-				req, err := zboxutil.NewUploadRequestWithMethod(
-					sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, dataBuffers[ind], su.httpMethod)
-				if err != nil {
-					return err
-				}
-
-				req.Header.Add("Content-Type", contentSlice[ind])
 				err, shouldContinue = func() (err error, shouldContinue bool) {
 					reqCtx, ctxCncl := context.WithTimeout(ctx, su.uploadTimeOut)
 					var resp *http.Response
@@ -160,7 +159,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 		return err
 	}
 	consensus.Done()
-
+	logger.Logger.Info("Upload to blobber ", sb.blobber.Baseurl, " took ", time.Since(now).Milliseconds())
 	if formData.ThumbnailBytesLen > 0 {
 
 		sb.fileRef.ThumbnailSize = int64(formData.ThumbnailBytesLen)

@@ -801,6 +801,7 @@ func (a *Allocation) RepairRequired(remotepath string) (zboxutil.Uint128, zboxut
 }
 
 func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...MultiOperationOption) error {
+	now := time.Now()
 	if len(operations) == 0 {
 		return nil
 	}
@@ -944,6 +945,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 			mo.operations = nil
 		}
 	}
+	l.Logger.Info("[DoMultiOperation]", time.Since(now).Milliseconds())
 	return nil
 }
 
