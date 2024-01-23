@@ -76,7 +76,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 			)
 
 			for i := 0; i < 3; i++ {
-				logger.Logger.Info("Uploading to blobber with offset: ", chunkIndex, "dataIndex: ", ind)
+				dataBufferSize := dataBuffers[ind].Len()
 				req, err := zboxutil.NewUploadRequestWithMethod(
 					sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, dataBuffers[ind], su.httpMethod)
 				if err != nil {
@@ -102,6 +102,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 						defer resp.Body.Close()
 					}
 					if resp.StatusCode == http.StatusOK {
+						io.Copy(io.Discard, resp.Body)
 						return
 					}
 					var r UploadResult
@@ -130,7 +131,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 						msg := string(respbody)
 						logger.Logger.Error(sb.blobber.Baseurl,
 							" Upload error response: ", resp.StatusCode,
-							"err message: ", msg, "ind: ", ind, "retries: ", i)
+							"err message: ", msg, "ind: ", ind, "retries: ", i, "chunkIndex: ", chunkIndex, " dataBufferSize:", dataBufferSize, " currentDataBufferLen: ", dataBuffers[ind].Len(), " contentType: ", formData.ContentType)
 						err = errors.Throw(constants.ErrBadRequest, msg)
 						return
 					}
@@ -147,7 +148,6 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 					return err
 				}
 				if shouldContinue {
-					dataBuffers[ind] = bytes.NewBuffer(dataBuffers[ind].Bytes())
 					continue
 				}
 				break
