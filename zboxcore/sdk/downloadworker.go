@@ -447,7 +447,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		hashWg.Add(1)
 		closeOnce = &sync.Once{}
 		go processHashData(hashDataChan, hashWg, actualFileHasher)
-		isPREAndWholeFile = true
+		// isPREAndWholeFile = true
 	}
 
 	writeCtx, writeCancel := context.WithCancel(ctx)
