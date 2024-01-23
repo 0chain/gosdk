@@ -76,6 +76,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 			)
 
 			for i := 0; i < 3; i++ {
+				logger.Logger.Info("Uploading to blobber with offset: ", chunkIndex, "dataIndex: ", ind)
 				req, err := zboxutil.NewUploadRequestWithMethod(
 					sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, dataBuffers[ind], su.httpMethod)
 				if err != nil {
@@ -129,7 +130,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 						msg := string(respbody)
 						logger.Logger.Error(sb.blobber.Baseurl,
 							" Upload error response: ", resp.StatusCode,
-							"err message: ", msg)
+							"err message: ", msg, "ind: ", ind, "retries: ", i)
 						err = errors.Throw(constants.ErrBadRequest, msg)
 						return
 					}

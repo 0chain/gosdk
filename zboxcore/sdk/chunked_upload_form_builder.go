@@ -89,9 +89,7 @@ func (b *chunkedUploadFormBuilder) Build(
 
 	for i := 0; i < numBodies; i++ {
 
-		body := &bytes.Buffer{}
-		dataBuffers = append(dataBuffers, body)
-
+		body := new(bytes.Buffer)
 		formWriter := multipart.NewWriter(body)
 		defer formWriter.Close()
 
@@ -219,6 +217,7 @@ func (b *chunkedUploadFormBuilder) Build(
 		if i == 0 {
 			metadata.ContentType = formWriter.FormDataContentType()
 		}
+		dataBuffers = append(dataBuffers, body)
 	}
 	metadata.FixedMerkleRoot = formData.FixedMerkleRoot
 	metadata.ValidationRoot = formData.ValidationRoot
