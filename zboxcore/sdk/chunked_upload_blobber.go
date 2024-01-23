@@ -64,8 +64,6 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 			sb.fileRef.CalculateHash()
 			consensus.Done()
 		}
-
-		return nil
 	}
 
 	eg, _ := errgroup.WithContext(ctx)
@@ -73,19 +71,18 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 	for dataInd := 0; dataInd < len(dataBuffers); dataInd++ {
 		ind := dataInd
 		eg.Go(func() error {
-			req, err := zboxutil.NewUploadRequestWithMethod(
-				sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, dataBuffers[ind], su.httpMethod)
-			if err != nil {
-				return err
-			}
-
-			req.Header.Add("Content-Type", formData.ContentType)
-
 			var (
 				shouldContinue bool
 			)
 
 			for i := 0; i < 3; i++ {
+				req, err := zboxutil.NewUploadRequestWithMethod(
+					sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, dataBuffers[ind], su.httpMethod)
+				if err != nil {
+					return err
+				}
+
+				req.Header.Add("Content-Type", formData.ContentType)
 				err, shouldContinue = func() (err error, shouldContinue bool) {
 					reqCtx, ctxCncl := context.WithTimeout(ctx, su.uploadTimeOut)
 					var resp *http.Response
@@ -149,6 +146,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 					return err
 				}
 				if shouldContinue {
+					dataBuffers[ind] = bytes.NewBuffer(dataBuffers[ind].Bytes())
 					continue
 				}
 				break

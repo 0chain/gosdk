@@ -60,8 +60,8 @@ func (b *chunkedUploadFormBuilder) Build(
 	}
 
 	numBodies := len(fileChunksData) / MAX_BLOCKS
-	if numBodies == 0 {
-		numBodies = 1
+	if len(fileChunksData)%MAX_BLOCKS > 0 {
+		numBodies++
 	}
 	dataBuffers := make([]*bytes.Buffer, 0, numBodies)
 
@@ -99,24 +99,6 @@ func (b *chunkedUploadFormBuilder) Build(
 		if err != nil {
 			return nil, metadata, err
 		}
-		// for _, chunkBytes := range fileChunksData {
-		// 	_, err = uploadFile.Write(chunkBytes)
-		// 	if err != nil {
-		// 		return nil, metadata, err
-		// 	}
-
-		// 	err = hasher.WriteToFixedMT(chunkBytes)
-		// 	if err != nil {
-		// 		return nil, metadata, err
-		// 	}
-
-		// 	err = hasher.WriteToValidationMT(chunkBytes)
-		// 	if err != nil {
-		// 		return nil, metadata, err
-		// 	}
-
-		// 	metadata.FileBytesLen += len(chunkBytes)
-		// }
 
 		startRange := i * MAX_BLOCKS
 		endRange := startRange + MAX_BLOCKS
