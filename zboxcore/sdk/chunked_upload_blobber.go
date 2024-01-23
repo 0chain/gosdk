@@ -102,7 +102,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 						defer resp.Body.Close()
 					}
 					if resp.StatusCode == http.StatusOK {
-						io.Copy(io.Discard, resp.Body)
+						io.Copy(io.Discard, resp.Body) //nolint:errcheck
 						return
 					}
 					var r UploadResult
