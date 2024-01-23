@@ -49,7 +49,7 @@ var (
 	CancelOpCtx                      = make(map[string]context.CancelCauseFunc)
 	cancelLock                       sync.Mutex
 	UploadWorkers                    = 3
-	UploadRequests                   = 10
+	UploadRequests                   = 5
 )
 
 // DefaultChunkSize default chunk size for file and thumbnail

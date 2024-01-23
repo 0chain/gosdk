@@ -89,7 +89,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 					err = zboxutil.HttpDo(reqCtx, ctxCncl, req, func(r *http.Response, err error) error {
 						resp = r
 						return err
-					})
+					}, int(pos))
 					defer ctxCncl()
 
 					if err != nil {

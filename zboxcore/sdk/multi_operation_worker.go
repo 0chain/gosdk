@@ -68,6 +68,7 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 			mo.maskMU.Lock()
 			mo.operationMask = mo.operationMask.Or(zboxutil.NewUint128(1).Lsh(uint64(blobberIdx)))
 			mo.maskMU.Unlock()
+			zboxutil.NewClient(blobberIdx)
 		}
 	}()
 

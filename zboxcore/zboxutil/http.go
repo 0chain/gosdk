@@ -42,6 +42,9 @@ var Client HttpClient
 
 var log logger.Logger
 
+var ClientMap = make(map[int]HttpClient)
+var mpLock sync.Mutex
+
 func GetLogger() *logger.Logger {
 	return &log
 }
@@ -143,6 +146,14 @@ func init() {
 	}
 	envProxy.initialize()
 	log.Init(logger.DEBUG, "0box-sdk")
+}
+
+func NewClient(pos int) {
+	mpLock.Lock()
+	ClientMap[pos] = &http.Client{
+		Transport: DefaultTransport,
+	}
+	mpLock.Unlock()
 }
 
 func NewHTTPRequest(method string, url string, data []byte) (*http.Request, context.Context, context.CancelFunc, error) {
@@ -897,7 +908,7 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 	return nil, err
 }
 
-func HttpDo(ctx context.Context, cncl context.CancelFunc, req *http.Request, f func(*http.Response, error) error) error {
+func HttpDo(ctx context.Context, cncl context.CancelFunc, req *http.Request, f func(*http.Response, error) error, opt ...int) error {
 	// Run the HTTP request in a goroutine and pass the response to f.
 	c := make(chan error, 1)
 	go func() {
@@ -907,7 +918,12 @@ func HttpDo(ctx context.Context, cncl context.CancelFunc, req *http.Request, f f
 		// closed by the server
 		for {
 			var resp *http.Response
-			resp, err = Client.Do(req.WithContext(ctx))
+			if len(opt) > 0 {
+				resp, err = ClientMap[opt[0]].Do(req.WithContext(ctx))
+			} else {
+				resp, err = Client.Do(req.WithContext(ctx))
+			}
+			// resp, err = Client.Do(req.WithContext(ctx))
 			if errors.Is(err, io.EOF) {
 				continue
 			}
