@@ -10,7 +10,6 @@ import (
 	"hash"
 	"io"
 	"io/ioutil"
-	"math"
 	"net/http"
 	"os"
 	"strings"
@@ -37,6 +36,7 @@ import (
 const (
 	DOWNLOAD_CONTENT_FULL  = "full"
 	DOWNLOAD_CONTENT_THUMB = "thumbnail"
+	EXTRA_COUNT            = 2
 )
 
 type DownloadRequest struct {
@@ -79,11 +79,12 @@ type DownloadRequest struct {
 	chunksPerShard     int64
 	size               int64
 	offset             int64
+	bufferMap          map[int]*zboxutil.DownloadBuffer
 }
 
 type blockData struct {
 	blockNum int
-	data     []byte
+	data     [][][]byte
 }
 
 func (req *DownloadRequest) removeFromMask(pos uint64) {
@@ -133,7 +134,7 @@ func (req *DownloadRequest) getBlocksDataFromBlobbers(startBlock, totalBlock int
 
 // getBlocksData will get data blocks for some interval from minimal blobers and aggregate them and
 // return to the caller
-func (req *DownloadRequest) getBlocksData(startBlock, totalBlock int64) ([]byte, error) {
+func (req *DownloadRequest) getBlocksData(startBlock, totalBlock int64) ([][][]byte, error) {
 
 	shards, err := req.getBlocksDataFromBlobbers(startBlock, totalBlock)
 	if err != nil {
@@ -142,20 +143,16 @@ func (req *DownloadRequest) getBlocksData(startBlock, totalBlock int64) ([]byte,
 
 	// erasure decoding
 	// Can we benefit from goroutine for erasure decoding??
-	c := req.datashards * req.effectiveBlockSize
-	data := make([]byte, req.datashards*req.effectiveBlockSize*int(totalBlock))
+	// c := req.datashards * req.effectiveBlockSize
+	// data := make([]byte, req.datashards*req.effectiveBlockSize*int(totalBlock))
 	for i := range shards {
-		var d []byte
-		var err error
-		d, err = req.decodeEC(shards[i])
+		err = req.decodeEC(shards[i])
 		if err != nil {
 			return nil, err
 		}
-		index := i * c
-		copy(data[index:index+c], d)
 
 	}
-	return data, nil
+	return shards, nil
 }
 
 // downloadBlock This function will add download requests to the download channel which picks up
@@ -215,7 +212,11 @@ func (req *DownloadRequest) downloadBlock(
 		if !skipDownload {
 			bf := req.validationRootMap[blockDownloadReq.blobber.ID]
 			blockDownloadReq.blobberFile = bf
-			go AddBlockDownloadReq(blockDownloadReq)
+			if req.shouldVerify {
+				go AddBlockDownloadReq(req.ctx, blockDownloadReq, nil, req.effectiveBlockSize)
+			} else {
+				go AddBlockDownloadReq(req.ctx, blockDownloadReq, req.bufferMap[int(pos)], req.effectiveBlockSize)
+			}
 		}
 
 		c++
@@ -223,7 +224,6 @@ func (req *DownloadRequest) downloadBlock(
 			remainingMask = i
 			break
 		}
-
 	}
 
 	var failed int32
@@ -241,6 +241,7 @@ func (req *DownloadRequest) downloadBlock(
 					downloadErrors[i] = fmt.Sprintf("Error %s from %s",
 						err.Error(), req.blobbers[result.idx].Baseurl)
 					logger.Logger.Error(err)
+					req.bufferMap[result.idx].ReleaseChunk(int(req.startBlock / req.numBlocks))
 				}
 				wg.Done()
 			}()
@@ -257,23 +258,26 @@ func (req *DownloadRequest) downloadBlock(
 }
 
 // decodeEC will reconstruct shards and verify it
-func (req *DownloadRequest) decodeEC(shards [][]byte) (data []byte, err error) {
+func (req *DownloadRequest) decodeEC(shards [][]byte) (err error) {
 	err = req.ecEncoder.ReconstructData(shards)
 	if err != nil {
 		return
 	}
-	c := len(shards[0])
-	data = make([]byte, req.datashards*c)
-	for i := 0; i < req.datashards; i++ {
-		index := i * c
-		copy(data[index:index+c], shards[i])
-	}
-	return data, nil
+	// c := len(shards[0])
+	// data = make([]byte, req.datashards*c)
+	// for i := 0; i < req.datashards; i++ {
+	// 	index := i * c
+	// 	copy(data[index:index+c], shards[i])
+	// }
+	return nil
 }
+
+//shards -> shards[i][data]
 
 // fillShards will fill `shards` with data from blobbers that belongs to specific
 // blockNumber and blobber's position index in an allocation
 func (req *DownloadRequest) fillShards(shards [][][]byte, result *downloadBlock) (err error) {
+
 	for i := 0; i < len(result.BlockChunks); i++ {
 		var data []byte
 		if req.encryptedKey != "" {
@@ -384,11 +388,6 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	}
 	size, chunksPerShard, blocksPerShard := req.size, req.chunksPerShard, req.blocksPerShard
 
-	logger.Logger.Info(
-		fmt.Sprintf("Downloading file with size: %d from start block: %d and end block: %d. "+
-			"Blocks per blobber: %d", size, req.startBlock, req.endBlock, blocksPerShard),
-	)
-
 	now := time.Now()
 	err := req.initEC()
 	if err != nil {
@@ -414,12 +413,12 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	startBlock, endBlock, numBlocks := req.startBlock, req.endBlock, req.numBlocks
 	// remainingSize should be calculated based on startBlock number
 	// otherwise end data will have null bytes.
-	remainingSize := size - startBlock*int64(req.effectiveBlockSize)
+	remainingSize := size - startBlock*int64(req.effectiveBlockSize)*int64(req.datashards)
 
 	if req.statusCallback != nil {
 		// Started will also initialize progress bar. So without calling this function
 		// other callback's call will panic
-		req.statusCallback.Started(req.allocationID, remotePathCB, op, int(size))
+		req.statusCallback.Started(req.allocationID, remotePathCB, op, int(remainingSize))
 	}
 
 	if req.shouldVerify {
@@ -435,20 +434,35 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	var (
 		actualFileHasher  hash.Hash
 		isPREAndWholeFile bool
-		closeOnce         *sync.Once
-		hashDataChan      chan []byte
-		hashWg            *sync.WaitGroup
 	)
 
 	if !req.shouldVerify && (startBlock == 0 && endBlock == chunksPerShard) {
 		actualFileHasher = md5.New()
-		hashDataChan = make(chan []byte, n)
-		hashWg = &sync.WaitGroup{}
-		hashWg.Add(1)
-		closeOnce = &sync.Once{}
-		go processHashData(hashDataChan, hashWg, actualFileHasher)
 		isPREAndWholeFile = true
 	}
+
+	if !req.shouldVerify {
+		var pos uint64
+		req.bufferMap = make(map[int]*zboxutil.DownloadBuffer)
+		sz := downloadWorkerCount + EXTRA_COUNT
+		if sz > n {
+			sz = n
+		}
+		for i := req.downloadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+			pos = uint64(i.TrailingZeros())
+			req.bufferMap[int(pos)] = zboxutil.NewDownloadBuffer(sz, int(numBlocks), req.effectiveBlockSize)
+		}
+	}
+
+	toSync := false
+	if _, ok := req.fileHandler.(*sys.MemChanFile); ok {
+		toSync = true
+	}
+
+	logger.Logger.Info(
+		fmt.Sprintf("Downloading file with size: %d from start block: %d and end block: %d. "+
+			"Blocks per blobber: %d remainingSize: %d and total requests: %d", size, req.startBlock, req.endBlock, blocksPerShard, remainingSize, n),
+	)
 
 	writeCtx, writeCancel := context.WithCancel(ctx)
 	defer writeCancel()
@@ -457,47 +471,54 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 
 	// Handle writing the blocks in order as soon as they are downloaded
 	go func() {
-		buffer := make(map[int][]byte)
+		defer wg.Done()
+		buffer := make(map[int][][][]byte)
 		for i := 0; i < n; i++ {
 			select {
 			case <-writeCtx.Done():
-				if isPREAndWholeFile {
-					closeOnce.Do(func() {
-						close(hashDataChan)
-					})
-				}
 				goto breakLoop
 			default:
 			}
 			if data, ok := buffer[i]; ok {
 				// If the block we need to write next is already in the buffer, write it
-				numBytes := int64(math.Min(float64(remainingSize), float64(len(data))))
+				hashWg := &sync.WaitGroup{}
 				if isPREAndWholeFile {
-					hashDataChan <- data[:numBytes]
 					if i == n-1 {
-						closeOnce.Do(func() {
-							close(hashDataChan)
-						})
-						hashWg.Wait()
+						writeData(actualFileHasher, data, req.datashards, int(remainingSize)) //nolint
 						if calculatedFileHash, ok := checkHash(actualFileHasher, fRef, req.contentMode); !ok {
 							req.errorCB(fmt.Errorf("Expected actual file hash %s, calculated file hash %s",
 								fRef.ActualFileHash, calculatedFileHash), remotePathCB)
 							return
 						}
+					} else {
+						hashWg.Add(1)
+						go func() {
+							writeData(actualFileHasher, data, req.datashards, int(remainingSize)) //nolint
+							hashWg.Done()
+						}()
 					}
 				}
-				_, err = req.fileHandler.Write(data[:numBytes])
 
+				totalWritten, err := writeData(req.fileHandler, data, req.datashards, int(remainingSize))
 				if err != nil {
 					req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
 					return
 				}
+				if toSync {
+					req.fileHandler.Sync() //nolint
+				}
 
-				downloaded = downloaded + int(numBytes)
-				remainingSize -= numBytes
+				if isPREAndWholeFile {
+					hashWg.Wait()
+				}
+				for _, rb := range req.bufferMap {
+					rb.ReleaseChunk(i)
+				}
+				downloaded = downloaded + totalWritten
+				remainingSize -= int64(totalWritten)
 
 				if req.statusCallback != nil {
-					req.statusCallback.InProgress(req.allocationID, remotePathCB, op, downloaded, data)
+					req.statusCallback.InProgress(req.allocationID, remotePathCB, op, downloaded, nil)
 				}
 
 				// Remove the block from the buffer
@@ -507,32 +528,46 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 				for block := range blocks {
 					if block.blockNum == i {
 						// Write the data
-						numBytes := int64(math.Min(float64(remainingSize), float64(len(block.data))))
+						hashWg := &sync.WaitGroup{}
 						if isPREAndWholeFile {
-							hashDataChan <- block.data[:numBytes]
 							if i == n-1 {
-								closeOnce.Do(func() {
-									close(hashDataChan)
-								})
-								hashWg.Wait()
+								writeData(actualFileHasher, block.data, req.datashards, int(remainingSize)) //nolint
 								if calculatedFileHash, ok := checkHash(actualFileHasher, fRef, req.contentMode); !ok {
 									req.errorCB(fmt.Errorf("Expected actual file hash %s, calculated file hash %s",
 										fRef.ActualFileHash, calculatedFileHash), remotePathCB)
 									return
 								}
+							} else {
+								hashWg.Add(1)
+								go func() {
+									writeData(actualFileHasher, block.data, req.datashards, int(remainingSize)) //nolint
+									hashWg.Done()
+								}()
 							}
 						}
-						_, err = req.fileHandler.Write(block.data[:numBytes])
+
+						totalWritten, err := writeData(req.fileHandler, block.data, req.datashards, int(remainingSize))
 						if err != nil {
 							req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
 							return
 						}
 
-						downloaded = downloaded + int(numBytes)
-						remainingSize -= numBytes
+						if toSync {
+							req.fileHandler.Sync() //nolint
+						}
+
+						if isPREAndWholeFile {
+							hashWg.Wait()
+						}
+						for _, rb := range req.bufferMap {
+							rb.ReleaseChunk(i)
+						}
+
+						downloaded = downloaded + totalWritten
+						remainingSize -= int64(totalWritten)
 
 						if req.statusCallback != nil {
-							req.statusCallback.InProgress(req.allocationID, remotePathCB, op, downloaded, block.data)
+							req.statusCallback.InProgress(req.allocationID, remotePathCB, op, downloaded, nil)
 						}
 
 						break
@@ -545,10 +580,10 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		}
 	breakLoop:
 		req.fileHandler.Sync() //nolint
-		wg.Done()
 	}()
 
 	eg, _ := errgroup.WithContext(ctx)
+	eg.SetLimit(downloadWorkerCount + EXTRA_COUNT)
 	for i := 0; i < n; i++ {
 		j := i
 		eg.Go(func() error {
@@ -597,13 +632,6 @@ func checkHash(actualFileHasher hash.Hash, fref *fileref.FileRef, contentMode st
 		return calculatedFileHash, calculatedFileHash == fref.ActualThumbnailHash
 	} else {
 		return calculatedFileHash, calculatedFileHash == fref.ActualFileHash
-	}
-}
-
-func processHashData(hashDataChan chan []byte, hashWg *sync.WaitGroup, actualFileHasher hash.Hash) {
-	defer hashWg.Done()
-	for data := range hashDataChan {
-		actualFileHasher.Write(data)
 	}
 }
 
@@ -1117,4 +1145,30 @@ func (req *DownloadRequest) Seek(offset int64, whence int) (int64, error) {
 			fmt.Sprintf("expected 0, 1 or 2, provided %d", whence))
 	}
 	return req.offset, nil
+}
+
+func writeData(dest io.Writer, data [][][]byte, dataShards, remaining int) (int, error) {
+	total := 0
+	for i := 0; i < len(data); i++ {
+		for j := 0; j < dataShards; j++ {
+			if len(data[i][j]) <= remaining {
+				n, err := dest.Write(data[i][j])
+				total += n
+				if err != nil {
+					return total, err
+				}
+			} else {
+				n, err := dest.Write(data[i][j][:remaining])
+				total += n
+				if err != nil {
+					return total, err
+				}
+			}
+			remaining -= len(data[i][j])
+			if remaining <= 0 {
+				return total, nil
+			}
+		}
+	}
+	return total, nil
 }
