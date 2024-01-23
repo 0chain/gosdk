@@ -207,8 +207,9 @@ type UploadData struct {
 }
 
 type blobberData struct {
-	dataBuffers []*bytes.Buffer
-	formData    ChunkedUploadFormMetadata
+	dataBuffers  []*bytes.Buffer
+	formData     ChunkedUploadFormMetadata
+	contentSlice []string
 }
 
 type status struct {

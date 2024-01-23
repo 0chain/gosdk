@@ -627,7 +627,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		wg.Add(1)
 		go func(b *ChunkedUploadBlobber, thumbnailChunkData []byte, pos uint64) {
 			defer wg.Done()
-			dataBuffers, formData, err := su.formBuilder.Build(
+			uploadData, err := su.formBuilder.Build(
 				&su.fileMeta, blobber.progress.Hasher, su.progress.ConnectionID,
 				su.chunkSize, chunkStartIndex, chunkEndIndex, isFinal, su.encryptedKey, su.progress.EncryptedKeyPoint,
 				fileShards[pos], thumbnailChunkData, su.shardSize)
@@ -640,19 +640,17 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 			}
 			if isFinal {
 				finalBuffer[pos] = blobberData{
-					dataBuffers: dataBuffers[len(dataBuffers)-1:],
-					formData:    formData,
+					dataBuffers:  uploadData.dataBuffers[len(uploadData.dataBuffers)-1:],
+					formData:     uploadData.formData,
+					contentSlice: uploadData.contentSlice[len(uploadData.contentSlice)-1:],
 				}
-				if len(dataBuffers) == 1 {
+				if len(uploadData.dataBuffers) == 1 {
 					lastBufferOnly = true
 					return
 				}
-				dataBuffers = dataBuffers[:len(dataBuffers)-1]
+				uploadData.dataBuffers = uploadData.dataBuffers[:len(uploadData.dataBuffers)-1]
 			}
-			blobberUpload.uploadBody[pos] = blobberData{
-				dataBuffers: dataBuffers,
-				formData:    formData,
-			}
+			blobberUpload.uploadBody[pos] = uploadData
 		}(blobber, thumbnailChunkData, pos)
 	}
 
@@ -806,7 +804,7 @@ func (su *ChunkedUpload) uploadToBlobbers(uploadData UploadData) error {
 		wg.Add(1)
 		go func(pos uint64) {
 			defer wg.Done()
-			err := su.blobbers[pos].sendUploadRequest(ctx, su, uploadData.chunkEndIndex, uploadData.isFinal, su.encryptedKey, uploadData.uploadBody[pos].dataBuffers, uploadData.uploadBody[pos].formData, pos, &consensus)
+			err := su.blobbers[pos].sendUploadRequest(ctx, su, uploadData.chunkEndIndex, uploadData.isFinal, su.encryptedKey, uploadData.uploadBody[pos].dataBuffers, uploadData.uploadBody[pos].formData, uploadData.uploadBody[pos].contentSlice, pos, &consensus)
 
 			if err != nil {
 				if strings.Contains(err.Error(), "duplicate") {

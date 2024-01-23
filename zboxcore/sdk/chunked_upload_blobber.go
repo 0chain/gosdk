@@ -39,7 +39,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 	ctx context.Context, su *ChunkedUpload,
 	chunkIndex int, isFinal bool,
 	encryptedKey string, dataBuffers []*bytes.Buffer,
-	formData ChunkedUploadFormMetadata,
+	formData ChunkedUploadFormMetadata, contentSlice []string,
 	pos uint64, consensus *Consensus) (err error) {
 
 	defer func() {
@@ -83,7 +83,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 					return err
 				}
 
-				req.Header.Add("Content-Type", formData.ContentType)
+				req.Header.Add("Content-Type", contentSlice[ind])
 				err, shouldContinue = func() (err error, shouldContinue bool) {
 					reqCtx, ctxCncl := context.WithTimeout(ctx, su.uploadTimeOut)
 					var resp *http.Response
