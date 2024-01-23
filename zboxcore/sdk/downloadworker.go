@@ -1025,6 +1025,7 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 			size:           fmr.fileref.Size,
 			validationRoot: vr,
 		}
+		zboxutil.NewClient(fmr.blobberIdx)
 		shift := zboxutil.NewUint128(1).Lsh(uint64(fmr.blobberIdx))
 		foundMask = foundMask.Or(shift)
 		blobberCount++

@@ -231,7 +231,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 
 			req.result <- &rspData
 			return nil
-		})
+		}, req.blobberIdx)
 
 		if err != nil {
 			if shouldRetry {
