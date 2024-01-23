@@ -48,7 +48,7 @@ var (
 	ErrNoEnoughSpaceLeftInAllocation = errors.New("alloc: no enough space left in allocation")
 	CancelOpCtx                      = make(map[string]context.CancelCauseFunc)
 	cancelLock                       sync.Mutex
-	UploadWorkers                    = 3
+	UploadWorkers                    = 2
 	UploadRequests                   = 10
 )
 
@@ -658,7 +658,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 
 	wg.Wait()
 	close(wgErrors)
-
+	fileShards = nil
 	for err := range wgErrors {
 		su.removeProgress()
 		return thrown.New("upload_failed", fmt.Sprintf("Upload failed. %s", err))
