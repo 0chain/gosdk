@@ -48,7 +48,7 @@ var (
 	ErrNoEnoughSpaceLeftInAllocation = errors.New("alloc: no enough space left in allocation")
 	CancelOpCtx                      = make(map[string]context.CancelCauseFunc)
 	cancelLock                       sync.Mutex
-	UploadWorkers                    = 2
+	UploadWorkers                    = 3
 	UploadRequests                   = 10
 )
 
@@ -798,6 +798,7 @@ func (su *ChunkedUpload) uploadToBlobbers(uploadData UploadData) error {
 	var pos uint64
 	var errCount int32
 	var wg sync.WaitGroup
+	now := time.Now()
 	su.maskMu.Lock()
 	for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
@@ -841,5 +842,6 @@ func (su *ChunkedUpload) uploadToBlobbers(uploadData UploadData) error {
 		su.progress.ChunkIndex = uploadData.chunkEndIndex
 		su.saveProgress()
 	}
+	logger.Logger.Info("Upload Chunk: ", uploadData.chunkStartIndex, " took ", time.Since(now).Milliseconds())
 	return nil
 }
