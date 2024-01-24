@@ -81,8 +81,8 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 			if err != nil {
 				return err
 			}
+			defer fasthttp.ReleaseRequest(req)
 			req.Header.Add("Content-Type", contentSlice[ind])
-			fasthttp.ReleaseRequest(req)
 			resp := fasthttp.AcquireResponse()
 			defer fasthttp.ReleaseResponse(resp)
 			err = zboxutil.FastClient.Do(req, resp)
