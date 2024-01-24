@@ -22,6 +22,7 @@ import (
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
+	"github.com/valyala/fasthttp"
 )
 
 const SC_REST_API_URL = "v1/screst/"
@@ -41,6 +42,8 @@ type HttpClient interface {
 var Client HttpClient
 
 var log logger.Logger
+
+var FastClient *fasthttp.Client
 
 var ClientMap = make(map[int]HttpClient)
 var mpLock sync.Mutex
@@ -144,6 +147,18 @@ func init() {
 	Client = &http.Client{
 		Transport: DefaultTransport,
 	}
+	maxIdleConnDuration, _ := time.ParseDuration("1h")
+	FastClient = &fasthttp.Client{
+		MaxIdleConnDuration:           maxIdleConnDuration,
+		NoDefaultUserAgentHeader:      true, // Don't send: User-Agent: fasthttp
+		DisableHeaderNamesNormalizing: true, // If you set the case on your headers correctly you can enable this
+		DisablePathNormalizing:        true,
+		// increase DNS cache time to an hour instead of default minute
+		Dial: (&fasthttp.TCPDialer{
+			Concurrency:      4096,
+			DNSCacheDuration: time.Hour,
+		}).Dial,
+	}
 	envProxy.initialize()
 	log.Init(logger.DEBUG, "0box-sdk")
 }
@@ -180,6 +195,19 @@ func setClientInfo(req *http.Request) {
 
 func setClientInfoWithSign(req *http.Request, allocation string) error {
 	setClientInfo(req)
+
+	sign, err := client.Sign(encryption.Hash(allocation))
+	if err != nil {
+		return err
+	}
+	req.Header.Set(CLIENT_SIGNATURE_HEADER, sign)
+
+	return nil
+}
+
+func setFastClientInfoWithSign(req *fasthttp.Request, allocation string) error {
+	req.Header.Set("X-App-Client-ID", client.GetClientID())
+	req.Header.Set("X-App-Client-Key", client.GetClientPublicKey())
 
 	sign, err := client.Sign(encryption.Hash(allocation))
 	if err != nil {
@@ -504,6 +532,27 @@ func NewUploadRequestWithMethod(baseURL, allocationID string, allocationTx strin
 
 	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 
+	return req, nil
+}
+
+func NewFastUploadRequest(baseURL, allocationID string, allocationTx string, body []byte, method string) (*fasthttp.Request, error) {
+	u, err := joinUrl(baseURL, UPLOAD_ENDPOINT, allocationTx)
+	if err != nil {
+		return nil, err
+	}
+
+	req := fasthttp.AcquireRequest()
+
+	req.Header.SetMethod(method)
+	req.SetRequestURI(u.String())
+	req.SetBodyRaw(body)
+
+	// set header: X-App-Client-Signature
+	if err := setFastClientInfoWithSign(req, allocationTx); err != nil {
+		return nil, err
+	}
+
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 	return req, nil
 }
 
