@@ -945,7 +945,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 			mo.operations = nil
 		}
 	}
-	l.Logger.Info("[DoMultiOperation]", time.Since(now).Milliseconds())
+	l.Logger.Info("TotalUploadTime: ", time.Since(now).Milliseconds())
 	return nil
 }
 

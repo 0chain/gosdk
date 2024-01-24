@@ -800,7 +800,7 @@ func (su *ChunkedUpload) uploadToBlobbers(uploadData UploadData) error {
 	var errCount int32
 	var wg sync.WaitGroup
 	now := time.Now()
-	su.maskMu.Lock()
+	// su.maskMu.Lock()
 	for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		wg.Add(1)
@@ -825,8 +825,10 @@ func (su *ChunkedUpload) uploadToBlobbers(uploadData UploadData) error {
 			}
 		}(pos)
 	}
-	su.maskMu.Unlock()
+	// su.maskMu.Unlock()
+	generateRequests := time.Since(now)
 	wg.Wait()
+	completeRequests := time.Since(now) - generateRequests
 	close(wgErrors)
 	for err := range wgErrors {
 		su.removeProgress()
@@ -839,10 +841,10 @@ func (su *ChunkedUpload) uploadToBlobbers(uploadData UploadData) error {
 		su.ctxCncl(err)
 		return err
 	}
-	if uploadData.saveProgress {
-		su.progress.ChunkIndex = uploadData.chunkEndIndex
-		su.saveProgress()
-	}
-	logger.Logger.Info("Upload Chunk: ", uploadData.chunkStartIndex, " took ", time.Since(now).Milliseconds())
+	// if uploadData.saveProgress {
+	// 	su.progress.ChunkIndex = uploadData.chunkEndIndex
+	// 	su.saveProgress()
+	// }
+	logger.Logger.Info("Upload Chunk: ", uploadData.chunkStartIndex, "generateRequests: ", generateRequests.Milliseconds(), "completeRequests: ", completeRequests.Milliseconds(), " total: ", time.Since(now).Milliseconds())
 	return nil
 }

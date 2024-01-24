@@ -64,6 +64,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 			sb.fileRef.CalculateHash()
 			consensus.Done()
 		}
+		return nil
 	}
 
 	eg, _ := errgroup.WithContext(ctx)
@@ -159,7 +160,6 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 		return err
 	}
 	consensus.Done()
-	logger.Logger.Info("Upload to blobber ", sb.blobber.Baseurl, " took ", time.Since(now).Milliseconds())
 	if formData.ThumbnailBytesLen > 0 {
 
 		sb.fileRef.ThumbnailSize = int64(formData.ThumbnailBytesLen)
@@ -183,6 +183,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 		sb.fileRef.EncryptedKey = encryptedKey
 		sb.fileRef.CalculateHash()
 	}
+	logger.Logger.Info("Upload to blobber ", sb.blobber.Baseurl, "startIndex: ", chunkIndex, " total: ", time.Since(now).Milliseconds())
 
 	return nil
 }
