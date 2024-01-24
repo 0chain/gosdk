@@ -729,6 +729,24 @@ func NewDownloadRequest(baseUrl, allocationID, allocationTx string) (*http.Reque
 	return req, nil
 }
 
+func NewFastDownloadRequest(baseUrl, allocationID, allocationTx string) (*fasthttp.Request, error) {
+	u, err := joinUrl(baseUrl, DOWNLOAD_ENDPOINT, allocationTx)
+	if err != nil {
+		return nil, err
+	}
+
+	req := fasthttp.AcquireRequest()
+
+	req.Header.SetMethod(http.MethodGet)
+	req.SetRequestURI(u.String())
+
+	req.Header.Set("X-App-Client-ID", client.GetClientID())
+	req.Header.Set("X-App-Client-Key", client.GetClientPublicKey())
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
+
+	return req, nil
+}
+
 func NewRedeemRequest(baseUrl, allocationID, allocationTx string) (*http.Request, error) {
 	u, err := joinUrl(baseUrl, REDEEM_ENDPOINT, allocationTx)
 	if err != nil {
