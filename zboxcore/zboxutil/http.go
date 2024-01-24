@@ -660,7 +660,9 @@ func NewDownloadRequest(baseUrl, allocationID, allocationTx string) (*http.Reque
 	if err != nil {
 		return nil, err
 	}
-	setClientInfoWithSign(req, allocationTx)
+	if err = setClientInfoWithSign(req, allocationTx); err != nil {
+		return nil, err
+	}
 
 	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 
