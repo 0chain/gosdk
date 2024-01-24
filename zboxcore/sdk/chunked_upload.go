@@ -48,7 +48,7 @@ var (
 	ErrNoEnoughSpaceLeftInAllocation = errors.New("alloc: no enough space left in allocation")
 	CancelOpCtx                      = make(map[string]context.CancelCauseFunc)
 	cancelLock                       sync.Mutex
-	UploadWorkers                    = 2
+	UploadWorkers                    = 3
 	UploadRequests                   = 5
 )
 
@@ -414,14 +414,13 @@ func (su *ChunkedUpload) process() error {
 
 		if chunks.isFinal {
 			if su.fileMeta.ActualHash == "" {
-				// su.fileMeta.ActualHash, err = su.chunkReader.GetFileHash()
-				// if err != nil {
-				// 	if su.statusCallback != nil {
-				// 		su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
-				// 	}
-				// 	return err
-				// }
-				su.fileMeta.ActualHash = "d41d8cd98f00b204e9800998ecf8427c"
+				su.fileMeta.ActualHash, err = su.chunkReader.GetFileHash()
+				if err != nil {
+					if su.statusCallback != nil {
+						su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
+					}
+					return err
+				}
 			}
 			if su.fileMeta.ActualSize == 0 {
 				su.fileMeta.ActualSize = su.progress.UploadLength
@@ -845,6 +844,6 @@ func (su *ChunkedUpload) uploadToBlobbers(uploadData UploadData) error {
 	// 	su.progress.ChunkIndex = uploadData.chunkEndIndex
 	// 	su.saveProgress()
 	// }
-	logger.Logger.Info("Upload Chunk: ", uploadData.chunkStartIndex, "generateRequests: ", generateRequests.Milliseconds(), "completeRequests: ", completeRequests.Milliseconds(), " total: ", time.Since(now).Milliseconds())
+	logger.Logger.Info("Upload Chunk: ", uploadData.chunkStartIndex, " generateRequests: ", generateRequests.Milliseconds(), " completeRequests: ", completeRequests.Milliseconds(), " total: ", time.Since(now).Milliseconds())
 	return nil
 }

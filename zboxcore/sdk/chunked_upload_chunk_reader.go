@@ -186,7 +186,7 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 	// if r.hasherError != nil {
 	// 	return chunk, r.hasherError
 	// }
-	// _ = r.hasher.WriteToFile(chunkBytes)
+	_ = r.hasher.WriteToFile(chunkBytes)
 	fragments, err := r.erasureEncoder.Split(chunkBytes)
 	if err != nil {
 		return nil, err
