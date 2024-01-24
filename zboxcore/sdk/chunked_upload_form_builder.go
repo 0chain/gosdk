@@ -42,7 +42,7 @@ func CreateChunkedUploadFormBuilder() ChunkedUploadFormBuilder {
 type chunkedUploadFormBuilder struct {
 }
 
-const MAX_BLOCKS = 80 // 5MB(CHUNK_SIZE*80)
+const MAX_BLOCKS = 60 // 4MB(CHUNK_SIZE*60)
 
 func (b *chunkedUploadFormBuilder) Build(
 	fileMeta *FileMeta, hasher Hasher, connectionID string,
