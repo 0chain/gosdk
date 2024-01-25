@@ -64,7 +64,6 @@ func (ch *RenameFileChange) ProcessChange(rootRef *fileref.Ref, _ map[string]str
 		return
 	}
 	ch.processChildren(affectedRef)
-	rootRef.CalculateHash()
 	return
 }
 

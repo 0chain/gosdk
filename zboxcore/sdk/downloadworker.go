@@ -285,7 +285,7 @@ func (req *DownloadRequest) fillShards(shards [][][]byte, result *downloadBlock)
 			data = result.BlockChunks[i]
 		}
 		if i >= len(shards) || len(shards[i]) <= result.idx {
-			l.Logger.Error("Invalid shard index", result.idx, len(shards), len(shards[i]))
+			l.Logger.Error("Invalid shard index", result.idx, len(shards))
 			return errors.New("invalid_shard_index", fmt.Sprintf("Invalid shard index %d shard len: %d shard block len: %d", result.idx, len(shards), i))
 		}
 		shards[i][result.idx] = data
@@ -373,10 +373,13 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	}
 	fRef := req.fRef
 	if fRef != nil && fRef.ActualFileHash == emptyFileDataHash {
-		if req.statusCallback != nil {
-			req.statusCallback.Completed(
-				req.allocationID, remotePathCB, fRef.Name, "", len(emptyFileDataHash), op)
+		logger.Logger.Info("File is empty")
+		_, err := req.fileHandler.Write([]byte(emptyFileDataHash))
+		if err != nil {
+			req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
+			return
 		}
+		req.fileHandler.Sync() //nolint
 		return
 	}
 	size, chunksPerShard, blocksPerShard := req.size, req.chunksPerShard, req.blocksPerShard
@@ -447,12 +450,25 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		isPREAndWholeFile = true
 	}
 
+	writeCtx, writeCancel := context.WithCancel(ctx)
+	defer writeCancel()
 	var wg sync.WaitGroup
 	wg.Add(1)
+
 	// Handle writing the blocks in order as soon as they are downloaded
 	go func() {
 		buffer := make(map[int][]byte)
 		for i := 0; i < n; i++ {
+			select {
+			case <-writeCtx.Done():
+				if isPREAndWholeFile {
+					closeOnce.Do(func() {
+						close(hashDataChan)
+					})
+				}
+				goto breakLoop
+			default:
+			}
 			if data, ok := buffer[i]; ok {
 				// If the block we need to write next is already in the buffer, write it
 				numBytes := int64(math.Min(float64(remainingSize), float64(len(data))))
@@ -527,6 +543,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 				}
 			}
 		}
+	breakLoop:
 		req.fileHandler.Sync() //nolint
 		wg.Done()
 	}()
@@ -552,11 +569,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		})
 	}
 	if err := eg.Wait(); err != nil {
-		if isPREAndWholeFile {
-			closeOnce.Do(func() {
-				close(hashDataChan)
-			})
-		}
+		writeCancel()
 		req.errorCB(err, remotePathCB)
 		return
 	}
@@ -830,9 +843,12 @@ func (req *DownloadRequest) calculateShardsParams(
 	if err != nil {
 		return 0, err
 	}
-	_, err = req.Seek(info.Size(), io.SeekStart)
-	if err != nil {
-		return 0, err
+	// Can be nil when using file writer in wasm
+	if info != nil {
+		_, err = req.Seek(info.Size(), io.SeekStart)
+		if err != nil {
+			return 0, err
+		}
 	}
 
 	effectiveChunkSize := effectiveBlockSize * int64(req.datashards)

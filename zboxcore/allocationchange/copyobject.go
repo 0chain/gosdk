@@ -76,7 +76,6 @@ func (ch *CopyFileChange) ProcessChange(rootRef *fileref.Ref, fileIDMeta map[str
 	ch.processChildren(affectedRef, fileIDMeta)
 	dirRef.AddChild(ch.ObjectTree)
 
-	rootRef.CalculateHash()
 	return
 }
 

@@ -138,6 +138,7 @@ const (
 	STORAGESC_WRITE_POOL_LOCK           = "write_pool_lock"
 	STORAGESC_WRITE_POOL_UNLOCK         = "write_pool_unlock"
 	STORAGESC_UPDATE_SETTINGS           = "update_settings"
+	ADD_HARDFORK                        = "add_hardfork"
 	STORAGESC_COLLECT_REWARD            = "collect_reward"
 	STORAGESC_KILL_BLOBBER              = "kill_blobber"
 	STORAGESC_KILL_VALIDATOR            = "kill_validator"
@@ -166,6 +167,7 @@ const (
 	ZCNSC_ADD_AUTHORIZER           = "add-authorizer"
 	ZCNSC_AUTHORIZER_HEALTH_CHECK  = "authorizer-health-check"
 	ZCNSC_DELETE_AUTHORIZER        = "delete-authorizer"
+	ZCNSC_COLLECT_REWARD 	       = "collect-rewards"
 
 	ESTIMATE_TRANSACTION_COST = `/v1/estimate_txn_fee`
 	FEES_TABLE                = `/v1/fees_table`

@@ -3,7 +3,7 @@
 <head>
   <!-- for zcn.wasm-->
   <script src="https://cdn.jsdelivr.net/gh/herumi/bls-wasm@v1.0.0/browser/bls.js"></script>
-  <script src="https://cdn.jsdelivr.net/gh/golang/go@go1.21.0/misc/wasm/wasm_exec.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/golang/go@go1.21.5/misc/wasm/wasm_exec.js"></script>
   <script src="zcn.js"></script>
 
 
@@ -211,7 +211,7 @@
 
     let network = query.get('network')
     if (!network || network == 'undefined') {
-      network = "dev.zus.network"
+      network = "test.zus.network"
     }
 
     const blockWorker = 'https://' + network + '/dns';
@@ -802,6 +802,7 @@
         remotePath: path,
         downloadOp: 1,
         numBlocks: 0,
+        downloadToDisk: true,
       })
       let stringifiedArray = JSON.stringify(objects);
 
