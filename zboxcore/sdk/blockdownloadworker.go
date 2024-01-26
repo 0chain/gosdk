@@ -1,6 +1,7 @@
 package sdk
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -166,7 +167,8 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			// }
 			resp := fasthttp.AcquireResponse()
 			defer fasthttp.ReleaseResponse(resp)
-			resp.SetBodyRaw(req.respBuf)
+			buf := bytes.NewBuffer(req.respBuf)
+			resp.SetBodyStream(buf, -1)
 			err = fasthttp.DoTimeout(httpreq, resp, time.Second*30)
 			// if resp.Body != nil {
 			// 	defer resp.Body.Close()
@@ -210,13 +212,14 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 
 			dR := downloadResponse{}
 			contentType := resp.Header.Peek("Content-Type")
+			respLen := resp.Header.ContentLength()
 			if string(contentType) == "application/json" {
 				err = json.Unmarshal(req.respBuf, &dR)
 				if err != nil {
 					return err
 				}
 			} else {
-				dR.Data = req.respBuf
+				dR.Data = req.respBuf[:respLen]
 			}
 			if req.contentMode == DOWNLOAD_CONTENT_FULL && req.shouldVerify {
 
