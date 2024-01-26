@@ -170,8 +170,8 @@ func setClientInfo(req *http.Request) {
 func setClientInfoWithSign(req *http.Request, allocation, baseURL string) error {
 	setClientInfo(req)
 
-	hahsData := allocation + baseURL
-	sign, err := client.Sign(encryption.Hash(hahsData))
+	hashData := allocation + baseURL
+	sign, err := client.Sign(encryption.Hash(hashData))
 	if err != nil {
 		return err
 	}
