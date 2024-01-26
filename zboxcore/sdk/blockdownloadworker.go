@@ -18,6 +18,7 @@ import (
 	zlogger "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/valyala/fasthttp"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -123,12 +124,19 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			req.remotefilepathhash = fileref.GetReferenceLookup(req.allocationID, req.remotefilepath)
 		}
 
-		var httpreq *http.Request
-		httpreq, err = zboxutil.NewDownloadRequest(req.blobber.Baseurl, req.allocationID, req.allocationTx)
+		// var httpreq *http.Request
+		// httpreq, err = zboxutil.NewDownloadRequest(req.blobber.Baseurl, req.allocationID, req.allocationTx)
+		// if err != nil {
+		// 	req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.Wrap(err, "Error creating download request")}
+		// 	return
+		// }
+
+		httpreq, err := zboxutil.NewFastDownloadRequest(req.blobber.Baseurl, req.allocationID, req.allocationTx)
 		if err != nil {
 			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.Wrap(err, "Error creating download request")}
 			return
 		}
+		defer fasthttp.ReleaseRequest(httpreq)
 
 		header := &DownloadRequestHeader{}
 		header.PathHash = req.remotefilepathhash
@@ -144,50 +152,55 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			header.DownloadMode = req.contentMode
 		}
 
-		ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
+		// ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
 		shouldRetry := false
 
-		header.ToHeader(httpreq)
+		header.ToFastHeader(httpreq)
 
 		zlogger.Logger.Debug(fmt.Sprintf("downloadBlobberBlock - blobberID: %v, clientID: %v, blockNum: %d", req.blobber.ID, client.GetClientID(), header.BlockNum))
 
-		err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
-			if err != nil {
-				return err
-			}
-			if resp.Body != nil {
-				defer resp.Body.Close()
-			}
+		// err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
+		err = func() error {
+			// if err != nil {
+			// 	return err
+			// }
+			resp := fasthttp.AcquireResponse()
+			defer fasthttp.ReleaseResponse(resp)
+			resp.SetBodyRaw(req.respBuf)
+			err = fasthttp.DoTimeout(httpreq, resp, time.Second*30)
+			// if resp.Body != nil {
+			// 	defer resp.Body.Close()
+			// }
 			if req.chunkSize == 0 {
 				req.chunkSize = CHUNK_SIZE
 			}
 
-			if resp.StatusCode == http.StatusTooManyRequests {
+			if resp.StatusCode() == http.StatusTooManyRequests {
 				shouldRetry = true
 				time.Sleep(time.Second * 2)
 				return errors.New(RateLimitError, "Rate limit error")
 			}
 
-			if resp.StatusCode == http.StatusInternalServerError {
+			if resp.StatusCode() == http.StatusInternalServerError {
 				shouldRetry = true
 				return errors.New("internal_server_error", "Internal server error")
 			}
 
 			var rspData downloadBlock
-			if req.shouldVerify {
-				req.respBuf, err = io.ReadAll(resp.Body)
-				if err != nil {
-					zlogger.Logger.Error("respBody read error: ", err)
-					return err
-				}
-			} else {
-				req.respBuf, err = readBody(resp.Body, req.respBuf)
-				if err != nil {
-					zlogger.Logger.Error("respBody read error: ", err)
-					return err
-				}
-			}
-			if resp.StatusCode != http.StatusOK {
+			// if req.shouldVerify {
+			// 	req.respBuf, err = io.ReadAll(resp.Body)
+			// 	if err != nil {
+			// 		zlogger.Logger.Error("respBody read error: ", err)
+			// 		return err
+			// 	}
+			// } else {
+			// 	req.respBuf, err = readBody(resp.Body, req.respBuf)
+			// 	if err != nil {
+			// 		zlogger.Logger.Error("respBody read error: ", err)
+			// 		return err
+			// 	}
+			// }
+			if resp.StatusCode() != http.StatusOK {
 				zlogger.Logger.Debug(fmt.Sprintf("downloadBlobberBlock FAIL - blobberID: %v, clientID: %v, blockNum: %d, retry: %d, response: %v", req.blobber.ID, client.GetClientID(), header.BlockNum, retry, string(req.respBuf)))
 				if err = json.Unmarshal(req.respBuf, &rspData); err == nil {
 					return errors.New("download_error", fmt.Sprintf("Response status: %d, Error: %v,", resp.StatusCode, rspData.err))
@@ -196,8 +209,8 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			}
 
 			dR := downloadResponse{}
-			contentType := resp.Header.Get("Content-Type")
-			if contentType == "application/json" {
+			contentType := resp.Header.Peek("Content-Type")
+			if string(contentType) == "application/json" {
 				err = json.Unmarshal(req.respBuf, &dR)
 				if err != nil {
 					return err
@@ -241,7 +254,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 
 			req.result <- &rspData
 			return nil
-		})
+		}()
 
 		if err != nil {
 			if shouldRetry {
