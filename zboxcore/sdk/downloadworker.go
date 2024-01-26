@@ -611,6 +611,9 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 
 	close(blocks)
 	wg.Wait()
+	if req.skip {
+		return
+	}
 	elapsedGetBlocksAndWrite := time.Since(now) - elapsedInitEC - elapsedInitEncryption
 	l.Logger.Info(fmt.Sprintf("[processDownload] Timings:\n allocation_id: %s,\n remotefilepath: %s,\n initEC: %d ms,\n initEncryption: %d ms,\n getBlocks and writes: %d ms",
 		req.allocationID,
@@ -824,6 +827,7 @@ func (req *DownloadRequest) initEncryption() (err error) {
 }
 
 func (req *DownloadRequest) errorCB(err error, remotePathCB string) {
+	logger.Logger.Error("block err: ", err)
 	var op = OpDownload
 	if req.contentMode == DOWNLOAD_CONTENT_THUMB {
 		op = opThumbnailDownload

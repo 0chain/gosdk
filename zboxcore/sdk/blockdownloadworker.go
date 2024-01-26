@@ -169,7 +169,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			defer fasthttp.ReleaseResponse(resp)
 			buf := bytes.NewBuffer(req.respBuf)
 			resp.SetBodyStream(buf, -1)
-			err = fasthttp.DoTimeout(httpreq, resp, time.Second*30)
+			err = zboxutil.FastClient.DoTimeout(httpreq, resp, time.Second*30)
 			// if resp.Body != nil {
 			// 	defer resp.Body.Close()
 			// }
@@ -219,7 +219,8 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 					return err
 				}
 			} else {
-				dR.Data = req.respBuf[:respLen]
+				dR.Data = buf.Bytes()[:respLen]
+				zlogger.Logger.Info("downloadBlockLen: ", len(dR.Data))
 			}
 			if req.contentMode == DOWNLOAD_CONTENT_FULL && req.shouldVerify {
 
