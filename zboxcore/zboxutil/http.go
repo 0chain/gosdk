@@ -22,6 +22,7 @@ import (
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
+	"github.com/hitenjain14/fasthttp"
 )
 
 const SC_REST_API_URL = "v1/screst/"
@@ -39,6 +40,8 @@ type HttpClient interface {
 }
 
 var Client HttpClient
+
+var FastHttpClient *fasthttp.Client
 
 var log logger.Logger
 
@@ -140,6 +143,18 @@ var envProxy proxyFromEnv
 func init() {
 	Client = &http.Client{
 		Transport: DefaultTransport,
+	}
+	maxIdleConnDuration, _ := time.ParseDuration("1h")
+	FastHttpClient = &fasthttp.Client{
+		MaxIdleConnDuration:           maxIdleConnDuration,
+		NoDefaultUserAgentHeader:      true, // Don't send: User-Agent: fasthttp
+		DisableHeaderNamesNormalizing: true, // If you set the case on your headers correctly you can enable this
+		DisablePathNormalizing:        true,
+		// increase DNS cache time to an hour instead of default minute
+		Dial: (&fasthttp.TCPDialer{
+			Concurrency:      4096,
+			DNSCacheDuration: time.Hour,
+		}).Dial,
 	}
 	envProxy.initialize()
 	log.Init(logger.DEBUG, "0box-sdk")
@@ -663,6 +678,27 @@ func NewDownloadRequest(baseUrl, allocationID, allocationTx string) (*http.Reque
 		return nil, err
 	}
 	setClientInfo(req)
+
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
+
+	return req, nil
+}
+
+func NewFastDownloadRequest(baseUrl, allocationID, allocationTx string) (*fasthttp.Request, error) {
+	u, err := joinUrl(baseUrl, DOWNLOAD_ENDPOINT, allocationTx)
+	if err != nil {
+		return nil, err
+	}
+
+	// url := fmt.Sprintf("%s%s%s", baseUrl, DOWNLOAD_ENDPOINT, allocation)
+	// req, err := http.NewRequest(http.MethodGet, u.String(), nil)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	req := fasthttp.AcquireRequest()
+	req.SetRequestURI(u.String())
+	req.Header.Set("X-App-Client-ID", client.GetClientID())
+	req.Header.Set("X-App-Client-Key", client.GetClientPublicKey())
 
 	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 
