@@ -820,7 +820,6 @@ func (su *ChunkedUpload) uploadToBlobbers(uploadData UploadData) error {
 	wg.Wait()
 	close(wgErrors)
 	for err := range wgErrors {
-		su.removeProgress()
 		su.ctxCncl(thrown.New("upload_failed", fmt.Sprintf("Upload failed. %s", err)))
 		return err
 	}
