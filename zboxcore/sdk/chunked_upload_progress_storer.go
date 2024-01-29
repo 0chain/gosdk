@@ -55,6 +55,7 @@ func (fs *fsChunkedUploadProgressStorer) Load(progressID string) *UploadProgress
 
 	// if progress is not updated within 25 min, return nil
 	if !progress.LastUpdated.Within(25 * 60) {
+		sys.Files.Remove(progressID) //nolint:errcheck
 		return nil
 	}
 
