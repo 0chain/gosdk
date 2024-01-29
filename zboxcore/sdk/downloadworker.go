@@ -620,7 +620,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		elapsedGetBlocksAndWrite.Milliseconds(),
 	))
 
-	if req.statusCallback != nil {
+	if req.statusCallback != nil && !req.skip {
 		req.statusCallback.Completed(
 			req.allocationID, remotePathCB, fRef.Name, "", int(size), op)
 	}
@@ -827,6 +827,9 @@ func (req *DownloadRequest) errorCB(err error, remotePathCB string) {
 	var op = OpDownload
 	if req.contentMode == DOWNLOAD_CONTENT_THUMB {
 		op = opThumbnailDownload
+	}
+	if req.skip {
+		return
 	}
 	req.skip = true
 	if req.localFilePath != "" {
