@@ -61,7 +61,7 @@ func (fs *fsChunkedUploadProgressStorer) Save(up UploadProgress) {
 	defer fs.Unlock()
 	fs.up = up
 	now := time.Now()
-	if now.Sub(fs.since).Seconds() > 1 {
+	if now.Sub(fs.since).Seconds() > 2 {
 		if fs.isRemoved {
 			return
 		}

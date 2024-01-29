@@ -21,6 +21,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/valyala/fasthttp"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -76,48 +77,37 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 			)
 
 			for i := 0; i < 3; i++ {
-				dataBufferSize := dataBuffers[ind].Len()
-				req, err := zboxutil.NewUploadRequestWithMethod(
-					sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, dataBuffers[ind], su.httpMethod)
+				req, err := zboxutil.NewFastUploadRequest(
+					sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, dataBuffers[ind].Bytes(), su.httpMethod)
 				if err != nil {
 					return err
 				}
 
 				req.Header.Add("Content-Type", contentSlice[ind])
 				err, shouldContinue = func() (err error, shouldContinue bool) {
-					reqCtx, ctxCncl := context.WithTimeout(ctx, su.uploadTimeOut)
-					var resp *http.Response
-					err = zboxutil.HttpDo(reqCtx, ctxCncl, req, func(r *http.Response, err error) error {
-						resp = r
-						return err
-					})
-					defer ctxCncl()
-
+					resp := fasthttp.AcquireResponse()
+					defer fasthttp.ReleaseResponse(resp)
+					err = zboxutil.FastHttpClient.DoTimeout(req, resp, su.uploadTimeOut)
+					fasthttp.ReleaseRequest(req)
 					if err != nil {
 						logger.Logger.Error("Upload : ", err)
 						return fmt.Errorf("Error while doing reqeust. Error %s", err), false
 					}
 
-					if resp.Body != nil {
-						defer resp.Body.Close()
-					}
-					if resp.StatusCode == http.StatusOK {
-						io.Copy(io.Discard, resp.Body) //nolint:errcheck
+					if resp.StatusCode() == http.StatusOK {
 						return
 					}
-					var r UploadResult
-					var respbody []byte
 
-					respbody, err = io.ReadAll(resp.Body)
+					respbody := resp.Body()
 					if err != nil {
 						logger.Logger.Error("Error: Resp ", err)
 						return fmt.Errorf("Error while reading body. Error %s", err), false
 					}
 
-					if resp.StatusCode == http.StatusTooManyRequests {
+					if resp.StatusCode() == http.StatusTooManyRequests {
 						logger.Logger.Error("Got too many request error")
 						var r int
-						r, err = zboxutil.GetRateLimitValue(resp)
+						r, err = zboxutil.GetFastRateLimitValue(resp)
 						if err != nil {
 							logger.Logger.Error(err)
 							return
@@ -127,20 +117,11 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 						return
 					}
 
-					if resp.StatusCode != http.StatusOK {
-						msg := string(respbody)
-						logger.Logger.Error(sb.blobber.Baseurl,
-							" Upload error response: ", resp.StatusCode,
-							"err message: ", msg, "ind: ", ind, "retries: ", i, "chunkIndex: ", chunkIndex, " dataBufferSize:", dataBufferSize, " currentDataBufferLen: ", dataBuffers[ind].Len(), " contentType: ", formData.ContentType)
-						err = errors.Throw(constants.ErrBadRequest, msg)
-						return
-					}
-
-					err = json.Unmarshal(respbody, &r)
-					if err != nil {
-						logger.Logger.Error(sb.blobber.Baseurl, "Upload response parse error: ", err)
-						return
-					}
+					msg := string(respbody)
+					logger.Logger.Error(sb.blobber.Baseurl,
+						" Upload error response: ", resp.StatusCode,
+						"err message: ", msg)
+					err = errors.Throw(constants.ErrBadRequest, msg)
 					return
 				}()
 
