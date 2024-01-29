@@ -30,7 +30,6 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/google/uuid"
 	"github.com/klauspost/reedsolomon"
-	"github.com/remeh/sizedwaitgroup"
 )
 
 const (
@@ -48,8 +47,8 @@ var (
 	ErrNoEnoughSpaceLeftInAllocation = errors.New("alloc: no enough space left in allocation")
 	CancelOpCtx                      = make(map[string]context.CancelCauseFunc)
 	cancelLock                       sync.Mutex
-	UploadWorkers                    = 2
-	UploadRequests                   = 10
+	// UploadWorkers                    = 2
+	UploadRequests = 5
 )
 
 // DefaultChunkSize default chunk size for file and thumbnail
@@ -761,21 +760,15 @@ func getShardSize(dataSize int64, dataShards int, isEncrypted bool) int64 {
 
 func (su *ChunkedUpload) uploadProcessor() {
 	defer su.uploadWG.Done()
-	swg := sizedwaitgroup.New(UploadWorkers)
 	for {
 		select {
 		case <-su.ctx.Done():
 			return
 		case uploadData, ok := <-su.uploadChan:
 			if !ok {
-				swg.Wait()
 				return
 			}
-			swg.Add()
-			go func() {
-				su.uploadToBlobbers(uploadData) //nolint:errcheck
-				swg.Done()
-			}()
+			su.uploadToBlobbers(uploadData) //nolint:errcheck
 		}
 	}
 }
