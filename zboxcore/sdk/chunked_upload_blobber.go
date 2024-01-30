@@ -119,7 +119,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 
 					msg := string(respbody)
 					logger.Logger.Error(sb.blobber.Baseurl,
-						" Upload error response: ", resp.StatusCode,
+						" Upload error response: ", resp.StatusCode(),
 						"err message: ", msg)
 					err = errors.Throw(constants.ErrBadRequest, msg)
 					return
