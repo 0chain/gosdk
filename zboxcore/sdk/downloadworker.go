@@ -472,7 +472,6 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	writeCtx, writeCancel := context.WithCancel(ctx)
 	defer writeCancel()
 	var wg sync.WaitGroup
-	wg.Add(1)
 
 	writerAt := false
 
@@ -481,6 +480,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		writerAt = true
 	}
 	if !writerAt {
+		wg.Add(1)
 		// Handle writing the blocks in order as soon as they are downloaded
 		go func() {
 			defer wg.Done()
@@ -592,10 +592,8 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			}
 		breakLoop:
 		}()
-	} else {
-		wg.Done()
 	}
-	progressLock := sync.Mutex{}
+	var progressLock sync.Mutex
 	eg, _ := errgroup.WithContext(ctx)
 	eg.SetLimit(downloadWorkerCount + EXTRA_COUNT)
 	for i := 0; i < n; i++ {
@@ -634,6 +632,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 					req.statusCallback.InProgress(req.allocationID, remotePathCB, op, int(downloaded), nil)
 					progressLock.Unlock()
 				}
+				logger.Logger.Info("writeDataForBlock", "block", j, "total", total)
 			}
 			return nil
 		})
@@ -646,7 +645,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 
 	close(blocks)
 	wg.Wait()
-	req.fileHandler.Sync() //nolint
+	// req.fileHandler.Sync() //nolint
 	elapsedGetBlocksAndWrite := time.Since(now) - elapsedInitEC - elapsedInitEncryption
 	l.Logger.Info(fmt.Sprintf("[processDownload] Timings:\n allocation_id: %s,\n remotefilepath: %s,\n initEC: %d ms,\n initEncryption: %d ms,\n getBlocks and writes: %d ms",
 		req.allocationID,
