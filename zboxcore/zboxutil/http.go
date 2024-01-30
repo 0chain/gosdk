@@ -39,9 +39,13 @@ type HttpClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
+type FastClient interface {
+	DoTimeout(req *fasthttp.Request, resp *fasthttp.Response, timeout time.Duration) error
+}
+
 var Client HttpClient
 
-var FastHttpClient *fasthttp.Client
+var FastHttpClient FastClient
 
 var log logger.Logger
 
