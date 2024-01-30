@@ -421,11 +421,6 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		req.statusCallback.Started(req.allocationID, remotePathCB, op, int(remainingSize))
 	}
 
-	lastBlockSize := size - (endBlock-1)*int64(req.effectiveBlockSize)*int64(req.datashards)
-	if lastBlockSize < 0 {
-		lastBlockSize = size
-	}
-
 	if req.shouldVerify {
 		if req.authTicket != nil && req.encryptedKey != "" {
 			req.shouldVerify = false
@@ -435,6 +430,11 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 
 	// Buffered channel to hold the blocks as they are downloaded
 	blocks := make(chan blockData, n)
+
+	lastBlockSize := size - int64(n-1)*int64(req.effectiveBlockSize)*int64(req.datashards)*numBlocks
+	if lastBlockSize < 0 {
+		lastBlockSize = size
+	}
 
 	var (
 		actualFileHasher  hash.Hash
@@ -615,7 +615,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			if !writerAt {
 				blocks <- blockData{blockNum: j, data: data}
 			} else {
-				offset := int64(j) * numBlocks * int64(req.effectiveBlockSize)
+				offset := int64(j) * numBlocks * int64(req.effectiveBlockSize) * int64(req.datashards)
 				var total int
 				if j == n-1 {
 					total, err = writeAtData(writeAtHandler, data, req.datashards, offset, int(lastBlockSize))
@@ -1213,7 +1213,6 @@ func writeData(dest io.Writer, data [][][]byte, dataShards, remaining int) (int,
 }
 
 func writeAtData(dest io.WriterAt, data [][][]byte, dataShards int, offset int64, lastBlock int) (int, error) {
-	now := time.Now()
 	var total int
 	for i := 0; i < len(data); i++ {
 		for j := 0; j < dataShards; j++ {
@@ -1244,6 +1243,5 @@ func writeAtData(dest io.WriterAt, data [][][]byte, dataShards int, offset int64
 			}
 		}
 	}
-	logger.Logger.Info("writeAtData", time.Since(now).Milliseconds())
 	return total, nil
 }

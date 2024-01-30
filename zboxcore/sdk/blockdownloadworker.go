@@ -149,8 +149,6 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 
 		header.ToFastHeader(httpreq)
 
-		zlogger.Logger.Debug(fmt.Sprintf("downloadBlobberBlock - blobberID: %v, clientID: %v, blockNum: %d", req.blobber.ID, client.GetClientID(), header.BlockNum))
-
 		err = func() error {
 			statuscode, respBuf, err := zboxutil.FastHttpClient.GetWithRequestTimeout(httpreq, req.respBuf, 30*time.Second)
 			fasthttp.ReleaseRequest(httpreq)
