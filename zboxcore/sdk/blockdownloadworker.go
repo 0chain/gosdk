@@ -18,6 +18,7 @@ import (
 	zlogger "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/hitenjain14/fasthttp"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -153,7 +154,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 
 		err = func() error {
 			statuscode, respBuf, err := zboxutil.FastHttpClient.GetWithRequestTimeout(httpreq, req.respBuf, 30*time.Second)
-
+			fasthttp.ReleaseRequest(httpreq)
 			if err != nil {
 				zlogger.Logger.Error("Error downloading block: ", err)
 				return err
@@ -171,19 +172,6 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			}
 
 			var rspData downloadBlock
-			// if req.shouldVerify {
-			// 	req.respBuf, err = io.ReadAll(resp.Body)
-			// 	if err != nil {
-			// 		zlogger.Logger.Error("respBody read error: ", err)
-			// 		return err
-			// 	}
-			// } else {
-			// 	req.respBuf, err = readBody(resp.Body, req.respBuf)
-			// 	if err != nil {
-			// 		zlogger.Logger.Error("respBody read error: ", err)
-			// 		return err
-			// 	}
-			// }
 			if statuscode != http.StatusOK {
 				zlogger.Logger.Debug(fmt.Sprintf("downloadBlobberBlock FAIL - blobberID: %v, clientID: %v, blockNum: %d, retry: %d, response: %v", req.blobber.ID, client.GetClientID(), header.BlockNum, retry, string(req.respBuf)))
 				if err = json.Unmarshal(req.respBuf, &rspData); err == nil {
