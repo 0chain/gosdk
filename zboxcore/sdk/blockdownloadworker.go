@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"sync"
 	"time"
@@ -173,11 +172,11 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 
 			var rspData downloadBlock
 			if statuscode != http.StatusOK {
-				zlogger.Logger.Debug(fmt.Sprintf("downloadBlobberBlock FAIL - blobberID: %v, clientID: %v, blockNum: %d, retry: %d, response: %v", req.blobber.ID, client.GetClientID(), header.BlockNum, retry, string(req.respBuf)))
-				if err = json.Unmarshal(req.respBuf, &rspData); err == nil {
+				zlogger.Logger.Debug(fmt.Sprintf("downloadBlobberBlock FAIL - blobberID: %v, clientID: %v, blockNum: %d, retry: %d, response: %v", req.blobber.ID, client.GetClientID(), header.BlockNum, retry, string(respBuf)))
+				if err = json.Unmarshal(respBuf, &rspData); err == nil {
 					return errors.New("download_error", fmt.Sprintf("Response status: %d, Error: %v,", statuscode, rspData.err))
 				}
-				return errors.New("response_error", string(req.respBuf))
+				return errors.New("response_error", string(respBuf))
 			}
 
 			dR := downloadResponse{}
@@ -258,22 +257,4 @@ func AddBlockDownloadReq(ctx context.Context, req *BlockDownloadRequest, rb *zbo
 		}
 	}
 	downloadBlockChan[req.blobber.ID] <- req
-}
-
-func readBody(r io.Reader, b []byte) ([]byte, error) {
-	start := 0
-	if len(b) == 0 {
-		return nil, fmt.Errorf("readBody: empty buffer")
-	}
-	for {
-		n, err := r.Read(b[start:])
-		start += n
-		if err != nil {
-			if err == io.EOF {
-				err = nil
-				b = b[:start]
-			}
-			return b, err
-		}
-	}
 }
