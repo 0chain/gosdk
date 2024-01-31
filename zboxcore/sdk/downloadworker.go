@@ -415,6 +415,14 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	// otherwise end data will have null bytes.
 	remainingSize := size - startBlock*int64(req.effectiveBlockSize)*int64(req.datashards)
 
+	if endBlock*int64(req.effectiveBlockSize)*int64(req.datashards) < req.size {
+		remainingSize = endBlock*int64(req.effectiveBlockSize) - startBlock*int64(req.effectiveBlockSize)
+	}
+
+	if memFile, ok := req.fileHandler.(*sys.MemFile); ok {
+		memFile.InitBuffer(int(remainingSize))
+	}
+
 	if req.statusCallback != nil {
 		// Started will also initialize progress bar. So without calling this function
 		// other callback's call will panic
@@ -432,9 +440,6 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	blocks := make(chan blockData, n)
 
 	lastBlockSize := size - int64(n-1)*int64(req.effectiveBlockSize)*int64(req.datashards)*numBlocks
-	if lastBlockSize < 0 {
-		lastBlockSize = size
-	}
 
 	var (
 		actualFileHasher  hash.Hash
@@ -1139,10 +1144,10 @@ func (req *DownloadRequest) processDownloadRequest() {
 	startBlock, endBlock := req.startBlock, req.endBlock
 	// remainingSize should be calculated based on startBlock number
 	// otherwise end data will have null bytes.
-	remainingSize := req.size - startBlock*int64(req.effectiveBlockSize)
+	remainingSize := req.size - startBlock*int64(req.effectiveBlockSize)*int64(req.datashards)
 
 	var wantSize int64
-	if endBlock*int64(req.effectiveBlockSize) < req.size {
+	if endBlock*int64(req.effectiveBlockSize)*int64(req.datashards) < req.size {
 		wantSize = endBlock*int64(req.effectiveBlockSize) - startBlock*int64(req.effectiveBlockSize)
 	} else {
 		wantSize = remainingSize
