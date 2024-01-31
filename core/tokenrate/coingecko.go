@@ -6,9 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"strconv"
-	"strings"
 
 	"github.com/0chain/gosdk/core/resty"
 )
@@ -20,26 +18,8 @@ func (qq *coingeckoQuoteQuery) getUSD(ctx context.Context, symbol string) (float
 
 	var result coingeckoResponse
 
-	s := strings.ToLower(symbol)
-	var coinID string
-	//
-	switch s {
-	case "zcn":
-		coinID = "0chain"
-	case "eth":
-		coinID = "ethereum"
-	default:
-		envName := "COINGECKO_COINID_" + strings.ToUpper(symbol)
-		id, ok := os.LookupEnv(envName)
-		if !ok {
-			return 0, errors.New("coingecko: please configure coinid on environment variable [" + envName + "] first")
-		}
-		coinID = id
-
-	}
-
 	r := resty.New()
-	r.DoGet(ctx, "https://api.coingecko.com/api/v3/coins/"+coinID+"?localization=false").
+	r.DoGet(ctx, "https://zcnprices.zus.network/market").
 		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
 
 			if err != nil {
@@ -47,7 +27,7 @@ func (qq *coingeckoQuoteQuery) getUSD(ctx context.Context, symbol string) (float
 			}
 
 			if resp.StatusCode != http.StatusOK {
-				return errors.New("coingecko: " + strconv.Itoa(resp.StatusCode) + resp.Status)
+				return errors.New("market API: " + strconv.Itoa(resp.StatusCode) + resp.Status)
 			}
 
 			err = json.Unmarshal(respBody, &result)
@@ -85,10 +65,10 @@ func (qq *coingeckoQuoteQuery) getUSD(ctx context.Context, symbol string) (float
 			return rate, nil
 		}
 
-		return 0, fmt.Errorf("coingecko: invalid response %s", result.Raw)
+		return 0, fmt.Errorf("market API: invalid response %s", result.Raw)
 	}
 
-	return 0, fmt.Errorf("coingecko: %s price is not provided on coingecko apis", symbol)
+	return 0, fmt.Errorf("market API: %s price is not provided on internal https://zcnprices.zus.network/market api", symbol)
 }
 
 type coingeckoResponse struct {
