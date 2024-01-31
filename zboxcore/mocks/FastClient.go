@@ -3,8 +3,8 @@
 package mocks
 
 import (
+	fasthttp "github.com/hitenjain14/fasthttp"
 	mock "github.com/stretchr/testify/mock"
-	fasthttp "github.com/valyala/fasthttp"
 
 	time "time"
 )
@@ -30,6 +30,43 @@ func (_m *FastClient) DoTimeout(req *fasthttp.Request, resp *fasthttp.Response, 
 	}
 
 	return r0
+}
+
+// GetWithRequestTimeout provides a mock function with given fields: req, dest, timeout
+func (_m *FastClient) GetWithRequestTimeout(req *fasthttp.Request, dest []byte, timeout time.Duration) (int, []byte, error) {
+	ret := _m.Called(req, dest, timeout)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetWithRequestTimeout")
+	}
+
+	var r0 int
+	var r1 []byte
+	var r2 error
+	if rf, ok := ret.Get(0).(func(*fasthttp.Request, []byte, time.Duration) (int, []byte, error)); ok {
+		return rf(req, dest, timeout)
+	}
+	if rf, ok := ret.Get(0).(func(*fasthttp.Request, []byte, time.Duration) int); ok {
+		r0 = rf(req, dest, timeout)
+	} else {
+		r0 = ret.Get(0).(int)
+	}
+
+	if rf, ok := ret.Get(1).(func(*fasthttp.Request, []byte, time.Duration) []byte); ok {
+		r1 = rf(req, dest, timeout)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).([]byte)
+		}
+	}
+
+	if rf, ok := ret.Get(2).(func(*fasthttp.Request, []byte, time.Duration) error); ok {
+		r2 = rf(req, dest, timeout)
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
 }
 
 // NewFastClient creates a new instance of FastClient. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.

@@ -19,7 +19,7 @@ import (
 	"github.com/0chain/gosdk/core/pathutil"
 	"github.com/0chain/gosdk/core/resty"
 	"github.com/0chain/gosdk/core/zcncrypto"
-	"github.com/valyala/fasthttp"
+	"github.com/hitenjain14/fasthttp"
 
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	zclient "github.com/0chain/gosdk/zboxcore/client"

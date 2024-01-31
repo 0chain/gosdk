@@ -431,6 +431,11 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	// Buffered channel to hold the blocks as they are downloaded
 	blocks := make(chan blockData, n)
 
+	lastBlockSize := size - int64(n-1)*int64(req.effectiveBlockSize)*int64(req.datashards)*numBlocks
+	if lastBlockSize < 0 {
+		lastBlockSize = size
+	}
+
 	var (
 		actualFileHasher  hash.Hash
 		isPREAndWholeFile bool
@@ -467,121 +472,128 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	writeCtx, writeCancel := context.WithCancel(ctx)
 	defer writeCancel()
 	var wg sync.WaitGroup
-	wg.Add(1)
 
-	// Handle writing the blocks in order as soon as they are downloaded
-	go func() {
-		defer wg.Done()
-		buffer := make(map[int][][][]byte)
-		for i := 0; i < n; i++ {
-			select {
-			case <-writeCtx.Done():
-				goto breakLoop
-			default:
-			}
-			if data, ok := buffer[i]; ok {
-				// If the block we need to write next is already in the buffer, write it
-				hashWg := &sync.WaitGroup{}
-				if isPREAndWholeFile {
-					if i == n-1 {
-						writeData(actualFileHasher, data, req.datashards, int(remainingSize)) //nolint
-						if calculatedFileHash, ok := checkHash(actualFileHasher, fRef, req.contentMode); !ok {
-							req.errorCB(fmt.Errorf("Expected actual file hash %s, calculated file hash %s",
-								fRef.ActualFileHash, calculatedFileHash), remotePathCB)
-							return
-						}
-					} else {
-						hashWg.Add(1)
-						go func() {
+	writerAt := false
+
+	writeAtHandler, ok := req.fileHandler.(io.WriterAt)
+	if ok {
+		writerAt = true
+	}
+	if !writerAt {
+		wg.Add(1)
+		// Handle writing the blocks in order as soon as they are downloaded
+		go func() {
+			defer wg.Done()
+			buffer := make(map[int][][][]byte)
+			for i := 0; i < n; i++ {
+				select {
+				case <-writeCtx.Done():
+					goto breakLoop
+				default:
+				}
+				if data, ok := buffer[i]; ok {
+					// If the block we need to write next is already in the buffer, write it
+					hashWg := &sync.WaitGroup{}
+					if isPREAndWholeFile {
+						if i == n-1 {
 							writeData(actualFileHasher, data, req.datashards, int(remainingSize)) //nolint
-							hashWg.Done()
-						}()
-					}
-				}
-
-				totalWritten, err := writeData(req.fileHandler, data, req.datashards, int(remainingSize))
-				if err != nil {
-					req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
-					return
-				}
-				if toSync {
-					req.fileHandler.Sync() //nolint
-				}
-
-				if isPREAndWholeFile {
-					hashWg.Wait()
-				}
-				for _, rb := range req.bufferMap {
-					rb.ReleaseChunk(i)
-				}
-				downloaded = downloaded + totalWritten
-				remainingSize -= int64(totalWritten)
-
-				if req.statusCallback != nil {
-					req.statusCallback.InProgress(req.allocationID, remotePathCB, op, downloaded, nil)
-				}
-
-				// Remove the block from the buffer
-				delete(buffer, i)
-			} else {
-				// If the block we need to write next is not in the buffer, wait for it
-				for block := range blocks {
-					if block.blockNum == i {
-						// Write the data
-						hashWg := &sync.WaitGroup{}
-						if isPREAndWholeFile {
-							if i == n-1 {
-								writeData(actualFileHasher, block.data, req.datashards, int(remainingSize)) //nolint
-								if calculatedFileHash, ok := checkHash(actualFileHasher, fRef, req.contentMode); !ok {
-									req.errorCB(fmt.Errorf("Expected actual file hash %s, calculated file hash %s",
-										fRef.ActualFileHash, calculatedFileHash), remotePathCB)
-									return
-								}
-							} else {
-								hashWg.Add(1)
-								go func() {
-									writeData(actualFileHasher, block.data, req.datashards, int(remainingSize)) //nolint
-									hashWg.Done()
-								}()
+							if calculatedFileHash, ok := checkHash(actualFileHasher, fRef, req.contentMode); !ok {
+								req.errorCB(fmt.Errorf("Expected actual file hash %s, calculated file hash %s",
+									fRef.ActualFileHash, calculatedFileHash), remotePathCB)
+								return
 							}
+						} else {
+							hashWg.Add(1)
+							go func() {
+								writeData(actualFileHasher, data, req.datashards, int(remainingSize)) //nolint
+								hashWg.Done()
+							}()
 						}
+					}
 
-						totalWritten, err := writeData(req.fileHandler, block.data, req.datashards, int(remainingSize))
-						if err != nil {
-							req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
-							return
+					totalWritten, err := writeData(req.fileHandler, data, req.datashards, int(remainingSize))
+					if err != nil {
+						req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
+						return
+					}
+					if toSync {
+						req.fileHandler.Sync() //nolint
+					}
+
+					if isPREAndWholeFile {
+						hashWg.Wait()
+					}
+					for _, rb := range req.bufferMap {
+						rb.ReleaseChunk(i)
+					}
+					downloaded = downloaded + totalWritten
+					remainingSize -= int64(totalWritten)
+
+					if req.statusCallback != nil {
+						req.statusCallback.InProgress(req.allocationID, remotePathCB, op, downloaded, nil)
+					}
+
+					// Remove the block from the buffer
+					delete(buffer, i)
+				} else {
+					// If the block we need to write next is not in the buffer, wait for it
+					for block := range blocks {
+						if block.blockNum == i {
+							// Write the data
+							hashWg := &sync.WaitGroup{}
+							if isPREAndWholeFile {
+								if i == n-1 {
+									writeData(actualFileHasher, block.data, req.datashards, int(remainingSize)) //nolint
+									if calculatedFileHash, ok := checkHash(actualFileHasher, fRef, req.contentMode); !ok {
+										req.errorCB(fmt.Errorf("Expected actual file hash %s, calculated file hash %s",
+											fRef.ActualFileHash, calculatedFileHash), remotePathCB)
+										return
+									}
+								} else {
+									hashWg.Add(1)
+									go func() {
+										writeData(actualFileHasher, block.data, req.datashards, int(remainingSize)) //nolint
+										hashWg.Done()
+									}()
+								}
+							}
+
+							totalWritten, err := writeData(req.fileHandler, block.data, req.datashards, int(remainingSize))
+							if err != nil {
+								req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
+								return
+							}
+
+							if toSync {
+								req.fileHandler.Sync() //nolint
+							}
+
+							if isPREAndWholeFile {
+								hashWg.Wait()
+							}
+							for _, rb := range req.bufferMap {
+								rb.ReleaseChunk(i)
+							}
+
+							downloaded = downloaded + totalWritten
+							remainingSize -= int64(totalWritten)
+
+							if req.statusCallback != nil {
+								req.statusCallback.InProgress(req.allocationID, remotePathCB, op, downloaded, nil)
+							}
+
+							break
+						} else {
+							// If this block is not the one we're waiting for, store it in the buffer
+							buffer[block.blockNum] = block.data
 						}
-
-						if toSync {
-							req.fileHandler.Sync() //nolint
-						}
-
-						if isPREAndWholeFile {
-							hashWg.Wait()
-						}
-						for _, rb := range req.bufferMap {
-							rb.ReleaseChunk(i)
-						}
-
-						downloaded = downloaded + totalWritten
-						remainingSize -= int64(totalWritten)
-
-						if req.statusCallback != nil {
-							req.statusCallback.InProgress(req.allocationID, remotePathCB, op, downloaded, nil)
-						}
-
-						break
-					} else {
-						// If this block is not the one we're waiting for, store it in the buffer
-						buffer[block.blockNum] = block.data
 					}
 				}
 			}
-		}
-	breakLoop:
-		req.fileHandler.Sync() //nolint
-	}()
-
+		breakLoop:
+		}()
+	}
+	var progressLock sync.Mutex
 	eg, _ := errgroup.WithContext(ctx)
 	eg.SetLimit(downloadWorkerCount + EXTRA_COUNT)
 	for i := 0; i < n; i++ {
@@ -598,8 +610,30 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			if err != nil {
 				return errors.Wrap(err, fmt.Sprintf("Download failed for block %d. ", startBlock+int64(j)*numBlocks))
 			}
-			blocks <- blockData{blockNum: j, data: data}
-
+			if !writerAt {
+				blocks <- blockData{blockNum: j, data: data}
+			} else {
+				offset := int64(j) * numBlocks * int64(req.effectiveBlockSize) * int64(req.datashards)
+				var total int
+				if j == n-1 {
+					total, err = writeAtData(writeAtHandler, data, req.datashards, offset, int(lastBlockSize))
+				} else {
+					total, err = writeAtData(writeAtHandler, data, req.datashards, offset, -1)
+				}
+				if err != nil {
+					return errors.Wrap(err, fmt.Sprintf("WriteAt failed for block %d. ", startBlock+int64(j)*numBlocks))
+				}
+				for _, rb := range req.bufferMap {
+					rb.ReleaseChunk(j)
+				}
+				if req.statusCallback != nil {
+					progressLock.Lock()
+					downloaded += total
+					req.statusCallback.InProgress(req.allocationID, remotePathCB, op, int(downloaded), nil)
+					progressLock.Unlock()
+				}
+				logger.Logger.Info("writeDataForBlock", "block", j, "total", total)
+			}
 			return nil
 		})
 	}
@@ -611,6 +645,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 
 	close(blocks)
 	wg.Wait()
+	// req.fileHandler.Sync() //nolint
 	elapsedGetBlocksAndWrite := time.Since(now) - elapsedInitEC - elapsedInitEncryption
 	l.Logger.Info(fmt.Sprintf("[processDownload] Timings:\n allocation_id: %s,\n remotefilepath: %s,\n initEC: %d ms,\n initEncryption: %d ms,\n getBlocks and writes: %d ms",
 		req.allocationID,
@@ -1170,6 +1205,40 @@ func writeData(dest io.Writer, data [][][]byte, dataShards, remaining int) (int,
 			remaining -= len(data[i][j])
 			if remaining <= 0 {
 				return total, nil
+			}
+		}
+	}
+	return total, nil
+}
+
+func writeAtData(dest io.WriterAt, data [][][]byte, dataShards int, offset int64, lastBlock int) (int, error) {
+	var total int
+	for i := 0; i < len(data); i++ {
+		for j := 0; j < dataShards; j++ {
+			if lastBlock != -1 {
+				if len(data[i][j]) <= lastBlock {
+					n, err := dest.WriteAt(data[i][j], offset+int64(total))
+					total += n
+					if err != nil {
+						return total, err
+					}
+				} else {
+					n, err := dest.WriteAt(data[i][j][:lastBlock], offset+int64(total))
+					total += n
+					if err != nil {
+						return total, err
+					}
+				}
+				lastBlock -= len(data[i][j])
+				if lastBlock <= 0 {
+					return total, nil
+				}
+			} else {
+				n, err := dest.WriteAt(data[i][j], offset+int64(total))
+				total += n
+				if err != nil {
+					return total, err
+				}
 			}
 		}
 	}

@@ -22,7 +22,7 @@ import (
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
-	"github.com/valyala/fasthttp"
+	"github.com/hitenjain14/fasthttp"
 )
 
 const SC_REST_API_URL = "v1/screst/"
@@ -41,6 +41,7 @@ type HttpClient interface {
 
 type FastClient interface {
 	DoTimeout(req *fasthttp.Request, resp *fasthttp.Response, timeout time.Duration) error
+	GetWithRequestTimeout(req *fasthttp.Request, dest []byte, timeout time.Duration) (int, []byte, error)
 }
 
 var Client HttpClient
@@ -716,6 +717,27 @@ func NewDownloadRequest(baseUrl, allocationID, allocationTx string) (*http.Reque
 		return nil, err
 	}
 	setClientInfo(req)
+
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
+
+	return req, nil
+}
+
+func NewFastDownloadRequest(baseUrl, allocationID, allocationTx string) (*fasthttp.Request, error) {
+	u, err := joinUrl(baseUrl, DOWNLOAD_ENDPOINT, allocationTx)
+	if err != nil {
+		return nil, err
+	}
+
+	// url := fmt.Sprintf("%s%s%s", baseUrl, DOWNLOAD_ENDPOINT, allocation)
+	// req, err := http.NewRequest(http.MethodGet, u.String(), nil)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	req := fasthttp.AcquireRequest()
+	req.SetRequestURI(u.String())
+	req.Header.Set("X-App-Client-ID", client.GetClientID())
+	req.Header.Set("X-App-Client-Key", client.GetClientPublicKey())
 
 	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 
