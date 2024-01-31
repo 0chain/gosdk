@@ -44,7 +44,7 @@ func (w *FileWriter) WriteAt(p []byte, offset int64) (int, error) {
 	options.Set("position", offset)
 	options.Set("data", uint8Array)
 	options.Set("size", len(p))
-	_, err := Await(w.fileHandle.Call("write", options))
+	_, err := Await(w.writableStream.Call("write", options))
 	if len(err) > 0 && !err[0].IsNull() {
 		return 0, errors.New("file_writer: " + err[0].String())
 	}

@@ -637,7 +637,6 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 					req.statusCallback.InProgress(req.allocationID, remotePathCB, op, int(downloaded), nil)
 					progressLock.Unlock()
 				}
-				logger.Logger.Info("writeDataForBlock", "block", j, "total", total)
 			}
 			return nil
 		})
