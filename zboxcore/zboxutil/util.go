@@ -23,6 +23,7 @@ import (
 	"github.com/h2non/filetype"
 	"github.com/lithammer/shortuuid/v3"
 	"github.com/minio/sha256-simd"
+	"github.com/valyala/fasthttp"
 	"golang.org/x/crypto/chacha20poly1305"
 	"golang.org/x/crypto/scrypt"
 )
@@ -234,6 +235,23 @@ func GetRateLimitValue(r *http.Response) (int, error) {
 	}
 
 	dur, err := strconv.ParseFloat(durStr, 64)
+	if err != nil {
+		return 0, err
+	}
+
+	return int(math.Ceil(rl / dur)), nil
+}
+
+func GetFastRateLimitValue(r *fasthttp.Response) (int, error) {
+	rlStr := r.Header.Peek("X-Rate-Limit-Limit")
+	durStr := r.Header.Peek("X-Rate-Limit-Duration")
+
+	rl, err := strconv.ParseFloat(string(rlStr), 64)
+	if err != nil {
+		return 0, err
+	}
+
+	dur, err := strconv.ParseFloat(string(durStr), 64)
 	if err != nil {
 		return 0, err
 	}

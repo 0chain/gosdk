@@ -20,6 +20,6 @@ var DefaultTransport = &http.Transport{
 	IdleConnTimeout:       90 * time.Second,
 	TLSHandshakeTimeout:   10 * time.Second,
 	ExpectContinueTimeout: 1 * time.Second,
-	MaxIdleConnsPerHost:   100,
-	WriteBufferSize:       256 * 1024,
+	MaxIdleConnsPerHost:   25,
+	WriteBufferSize:       16 * 1024,
 }

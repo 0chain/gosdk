@@ -167,7 +167,8 @@ type UploadFormData struct {
 // UploadProgress progress of upload
 type UploadProgress struct {
 	ID string `json:"id"`
-
+	// Lat updated time
+	LastUpdated common.Timestamp `json:"last_updated,omitempty"`
 	// ChunkSize size of chunk
 	ChunkSize   int64 `json:"chunk_size,omitempty"`
 	ActualSize  int64 `json:"actual_size,omitempty"`
@@ -207,8 +208,9 @@ type UploadData struct {
 }
 
 type blobberData struct {
-	body     *bytes.Buffer
-	formData ChunkedUploadFormMetadata
+	dataBuffers  []*bytes.Buffer
+	formData     ChunkedUploadFormMetadata
+	contentSlice []string
 }
 
 type status struct {

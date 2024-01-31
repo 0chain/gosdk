@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/logger"
 )
@@ -52,6 +53,12 @@ func (fs *fsChunkedUploadProgressStorer) Load(progressID string) *UploadProgress
 		return nil
 	}
 
+	// if progress is not updated within 25 min, return nil
+	if !progress.LastUpdated.Within(25 * 60) {
+		sys.Files.Remove(progressID) //nolint:errcheck
+		return nil
+	}
+
 	return &progress
 }
 
@@ -60,8 +67,9 @@ func (fs *fsChunkedUploadProgressStorer) Save(up UploadProgress) {
 	fs.Lock()
 	defer fs.Unlock()
 	fs.up = up
+	fs.up.LastUpdated = common.Now()
 	now := time.Now()
-	if now.Sub(fs.since).Seconds() > 1 {
+	if now.Sub(fs.since).Seconds() > 2 {
 		if fs.isRemoved {
 			return
 		}
