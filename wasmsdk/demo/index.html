@@ -3,7 +3,7 @@
 <head>
   <!-- for zcn.wasm-->
   <script src="https://cdn.jsdelivr.net/gh/herumi/bls-wasm@v1.0.0/browser/bls.js"></script>
-  <script src="https://cdn.jsdelivr.net/gh/golang/go@go1.21.5/misc/wasm/wasm_exec.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/golang/go@go1.21.6/misc/wasm/wasm_exec.js"></script>
   <script src="zcn.js"></script>
 
 
@@ -171,10 +171,10 @@
     }
 
     const getWallet = () => {
-      const clientID = get('clientId').value
-      const publicKey = get('publicKey').value
-      const privateKey = get('privateKey').value
-      const mnemonic = get('mnemonic').value
+      const clientID = "2ba00d37a162b3fe7783fd65c0507bca67418e9b2cac2a25244339f00ac30026"
+      const publicKey = "174cb917c5e5e5a7906b244bc73d03dc8adaf85a61d7c31989959ad1b4ffaa01884556b5e739f01bea08a329c14552e85540300484b24037962b730cca3dbd0c"
+      const privateKey = "8564a063420e98ee6826f56342b81a4ab3e5acab0b5bd5d9598b8c7207656415"
+      const mnemonic = "grunt human dog license demise black similar level satoshi hockey guide wrap drive chase lazy engage cruel fly unable verb point else minor where"
       return {
         clientID, publicKey, privateKey, mnemonic
       }
@@ -211,7 +211,7 @@
 
     let network = query.get('network')
     if (!network || network == 'undefined') {
-      network = "test.zus.network"
+      network = "dev.zus.network"
     }
 
     const blockWorker = 'https://' + network + '/dns';
@@ -441,7 +441,7 @@
         alert("please selection allocationID")
         return
       }
-      const { list = [] } = await goWasm.sdk.listObjects(allocationId, '/')
+      const { list = [] } = await goWasm.sdk.listObjects(allocationId, '/',0,-1)
       files = list || []
       bindFiles()
     })
@@ -801,7 +801,7 @@
       objects.push({
         remotePath: path,
         downloadOp: 1,
-        numBlocks: 0,
+        numBlocks: 100,
         downloadToDisk: true,
       })
       let stringifiedArray = JSON.stringify(objects);

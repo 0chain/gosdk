@@ -30,7 +30,6 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/google/uuid"
 	"github.com/klauspost/reedsolomon"
-	"github.com/remeh/sizedwaitgroup"
 )
 
 const (
@@ -48,8 +47,6 @@ var (
 	ErrNoEnoughSpaceLeftInAllocation = errors.New("alloc: no enough space left in allocation")
 	CancelOpCtx                      = make(map[string]context.CancelCauseFunc)
 	cancelLock                       sync.Mutex
-	UploadWorkers                    = 5
-	UploadRequests                   = 5
 )
 
 // DefaultChunkSize default chunk size for file and thumbnail
@@ -290,11 +287,29 @@ func CreateChunkedUpload(
 	su.formBuilder = CreateChunkedUploadFormBuilder()
 
 	su.isRepair = isRepair
-	su.uploadChan = make(chan UploadData, UploadRequests)
-	su.uploadWG.Add(1)
-	go su.uploadProcessor()
-
+	uploadWorker, uploadRequest := calculateWorkersAndRequests(su.allocationObj.DataShards, su.allocationObj.DataShards+su.allocationObj.ParityShards, su.chunkNumber)
+	su.uploadChan = make(chan UploadData, uploadRequest)
+	for i := 0; i < uploadWorker; i++ {
+		go su.uploadProcessor()
+	}
 	return su, nil
+}
+
+func calculateWorkersAndRequests(dataShards, totalShards, chunkNumber int) (uploadWorkers int, uploadRequests int) {
+
+	if totalShards <= 4 {
+		uploadWorkers = 4
+	} else {
+		uploadWorkers = 2
+	}
+
+	if chunkNumber*dataShards <= 800 {
+		uploadRequests = 4
+	} else {
+		uploadRequests = 2
+	}
+
+	return
 }
 
 // progressID build local progress id with [allocationid]_[Hash(LocalPath+"_"+RemotePath)]_[RemoteName] format
@@ -661,6 +676,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		su.removeProgress()
 		return thrown.New("upload_failed", fmt.Sprintf("Upload failed. %s", err))
 	}
+	su.uploadWG.Add(1)
 	if !lastBufferOnly {
 		select {
 		case <-su.ctx.Done():
@@ -760,22 +776,16 @@ func getShardSize(dataSize int64, dataShards int, isEncrypted bool) int64 {
 }
 
 func (su *ChunkedUpload) uploadProcessor() {
-	defer su.uploadWG.Done()
-	swg := sizedwaitgroup.New(UploadWorkers)
 	for {
 		select {
 		case <-su.ctx.Done():
 			return
 		case uploadData, ok := <-su.uploadChan:
 			if !ok {
-				swg.Wait()
 				return
 			}
-			swg.Add()
-			go func() {
-				su.uploadToBlobbers(uploadData) //nolint:errcheck
-				swg.Done()
-			}()
+			su.uploadToBlobbers(uploadData) //nolint:errcheck
+			su.uploadWG.Done()
 		}
 	}
 }
