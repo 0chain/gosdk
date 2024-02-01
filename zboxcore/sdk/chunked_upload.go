@@ -48,7 +48,7 @@ var (
 	ErrNoEnoughSpaceLeftInAllocation = errors.New("alloc: no enough space left in allocation")
 	CancelOpCtx                      = make(map[string]context.CancelCauseFunc)
 	cancelLock                       sync.Mutex
-	UploadWorkers                    = 3
+	UploadWorkers                    = 5
 	UploadRequests                   = 5
 )
 

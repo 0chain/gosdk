@@ -162,6 +162,7 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 func (mo *MultiOperation) Process() error {
 	l.Logger.Info("MultiOperation Process start")
 	wg := &sync.WaitGroup{}
+	start := time.Now()
 	mo.changes = make([][]allocationchange.AllocationChange, len(mo.operations))
 	ctx := mo.ctx
 	ctxCncl := mo.ctxCncl
@@ -215,7 +216,8 @@ func (mo *MultiOperation) Process() error {
 	// in row instead of column. Currently mo.change[0] contains allocationChange for operation 1 and so on.
 	// But we want mo.changes[0] to have allocationChange for blobber 1 and mo.changes[1] to have allocationChange for
 	// blobber 2 and so on.
-	start := time.Now()
+	l.Logger.Info("MultiOperationTime", time.Since(start).Milliseconds())
+	start = time.Now()
 	mo.changes = zboxutil.Transpose(mo.changes)
 
 	writeMarkerMutex, err := CreateWriteMarkerMutex(client.GetClient(), mo.allocationObj)
