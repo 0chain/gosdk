@@ -4,7 +4,7 @@ package mocks
 
 import (
 	mock "github.com/stretchr/testify/mock"
-	fasthttp "github.com/valyala/fasthttp"
+	fasthttp "github.com/hitenjain14/fasthttp"
 
 	time "time"
 )

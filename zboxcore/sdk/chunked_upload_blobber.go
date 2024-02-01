@@ -21,7 +21,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
-	"github.com/valyala/fasthttp"
+	"github.com/hitenjain14/fasthttp"
 	"golang.org/x/sync/errgroup"
 )
 

@@ -21,9 +21,9 @@ import (
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/h2non/filetype"
+	"github.com/hitenjain14/fasthttp"
 	"github.com/lithammer/shortuuid/v3"
 	"github.com/minio/sha256-simd"
-	"github.com/valyala/fasthttp"
 	"golang.org/x/crypto/chacha20poly1305"
 	"golang.org/x/crypto/scrypt"
 )
