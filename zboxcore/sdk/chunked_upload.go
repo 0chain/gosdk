@@ -676,8 +676,9 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		su.removeProgress()
 		return thrown.New("upload_failed", fmt.Sprintf("Upload failed. %s", err))
 	}
-	su.uploadWG.Add(1)
+
 	if !lastBufferOnly {
+		su.uploadWG.Add(1)
 		select {
 		case <-su.ctx.Done():
 			return context.Cause(su.ctx)
