@@ -22,7 +22,7 @@ import (
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
-	"github.com/valyala/fasthttp"
+	"github.com/hitenjain14/fasthttp"
 )
 
 const SC_REST_API_URL = "v1/screst/"

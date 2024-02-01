@@ -76,17 +76,18 @@ type ChunkedUpload struct {
 	// isRepair identifies if upload is repair operation
 	isRepair bool
 
-	opCode            int
-	uploadTimeOut     time.Duration
-	commitTimeOut     time.Duration
-	maskMu            *sync.Mutex
-	ctx               context.Context
-	ctxCncl           context.CancelCauseFunc
-	addConsensus      int32
-	encryptedKeyPoint string
-	encryptedKey      string
-	uploadChan        chan UploadData
-	uploadWG          sync.WaitGroup
+	opCode              int
+	uploadTimeOut       time.Duration
+	commitTimeOut       time.Duration
+	maskMu              *sync.Mutex
+	ctx                 context.Context
+	ctxCncl             context.CancelCauseFunc
+	addConsensus        int32
+	encryptedKeyPoint   string
+	encryptedKey        string
+	uploadChan          chan UploadData
+	uploadWG            sync.WaitGroup
+	alreadyUploadedData int
 }
 
 // FileMeta metadata of stream input/local
@@ -184,6 +185,8 @@ type UploadProgress struct {
 	ChunkIndex int `json:"chunk_index,omitempty"`
 	// UploadLength total bytes that has been uploaded to blobbers
 	UploadLength int64 `json:"-"`
+	// ReadLength total bytes that has been read from original reader (un-encoded, un-encrypted)
+	ReadLength int64 `json:"-"`
 
 	Blobbers []*UploadBlobberStatus `json:"-"`
 }
@@ -202,7 +205,7 @@ type UploadData struct {
 	chunkStartIndex int
 	chunkEndIndex   int
 	isFinal         bool
-	saveProgress    bool
+	uploadLength    int64
 	encryptedKey    string
 	uploadBody      []blobberData
 }
