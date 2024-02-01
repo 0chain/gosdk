@@ -132,7 +132,6 @@ const (
 )
 
 var defaultLogLevel = logger.DEBUG
-var logging logger.Logger
 
 func GetLogger() *logger.Logger {
 	return &logging
@@ -222,11 +221,6 @@ type AuthCallback interface {
 	OnSetupComplete(status int, err string)
 }
 
-// Singleton
-var _config localConfig
-var miners []string
-var mGuard sync.Mutex
-
 func init() {
 	logging.Init(defaultLogLevel, "0chain-core-sdk")
 }
@@ -234,16 +228,16 @@ func init() {
 func GetStableMiners() []string {
 	mGuard.Lock()
 	defer mGuard.Unlock()
-	if len(miners) == 0 {
-		miners = util.GetRandom(_config.chain.Miners, getMinMinersSubmit())
+	if len(stableMiners) == 0 {
+		stableMiners = util.GetRandom(_config.chain.Miners, getMinMinersSubmit())
 	}
 
-	return miners
+	return stableMiners
 }
 func ResetStableMiners() {
 	mGuard.Lock()
 	defer mGuard.Unlock()
-	miners = util.GetRandom(_config.chain.Miners, getMinMinersSubmit())
+	stableMiners = util.GetRandom(_config.chain.Miners, getMinMinersSubmit())
 }
 
 func checkSdkInit() error {
