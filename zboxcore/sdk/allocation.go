@@ -309,6 +309,9 @@ func (a *Allocation) InitAllocation() {
 	a.downloadRequests = make([]*DownloadRequest, 0, 100)
 	a.mutex = &sync.Mutex{}
 	a.fullconsensus, a.consensusThreshold = a.getConsensuses()
+	for _, blobber := range a.Blobbers {
+		zboxutil.SetHostClient(blobber.ID, blobber.Baseurl)
+	}
 	a.startWorker(a.ctx)
 	InitCommitWorker(a.Blobbers)
 	InitBlockDownloader(a.Blobbers, downloadWorkerCount)

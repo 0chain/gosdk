@@ -75,13 +75,14 @@ func InitBlockDownloader(blobbers []*blockchain.StorageNode, workerCount int) {
 	for _, blobber := range blobbers {
 		if _, ok := downloadBlockChan[blobber.ID]; !ok {
 			downloadBlockChan[blobber.ID] = make(chan *BlockDownloadRequest, workerCount)
-			go startBlockDownloadWorker(downloadBlockChan[blobber.ID], workerCount)
+			go startBlockDownloadWorker(downloadBlockChan[blobber.ID], workerCount, blobber.ID)
 		}
 	}
 }
 
-func startBlockDownloadWorker(blobberChan chan *BlockDownloadRequest, workers int) {
+func startBlockDownloadWorker(blobberChan chan *BlockDownloadRequest, workers int, id string) {
 	sem := semaphore.NewWeighted(int64(workers))
+	hostClient := zboxutil.GetHostClient(id)
 	for {
 		blockDownloadReq, open := <-blobberChan
 		if !open {
@@ -92,7 +93,7 @@ func startBlockDownloadWorker(blobberChan chan *BlockDownloadRequest, workers in
 			continue
 		}
 		go func() {
-			blockDownloadReq.downloadBlobberBlock()
+			blockDownloadReq.downloadBlobberBlock(hostClient)
 			sem.Release(1)
 		}()
 	}
@@ -111,7 +112,7 @@ func (req *BlockDownloadRequest) splitData(buf []byte, lim int) [][]byte {
 	return chunks
 }
 
-func (req *BlockDownloadRequest) downloadBlobberBlock() {
+func (req *BlockDownloadRequest) downloadBlobberBlock(hostClient *fasthttp.HostClient) {
 	if req.numBlocks <= 0 {
 		req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.New("invalid_request", "Invalid number of blocks for download")}
 		return
@@ -150,7 +151,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 		header.ToFastHeader(httpreq)
 
 		err = func() error {
-			statuscode, respBuf, err := zboxutil.FastHttpClient.GetWithRequestTimeout(httpreq, req.respBuf, 30*time.Second)
+			statuscode, respBuf, err := hostClient.GetWithRequestTimeout(httpreq, req.respBuf, 30*time.Second)
 			fasthttp.ReleaseRequest(httpreq)
 			if err != nil {
 				zlogger.Logger.Error("Error downloading block: ", err)
