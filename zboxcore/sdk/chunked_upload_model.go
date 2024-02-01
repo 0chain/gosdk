@@ -76,18 +76,17 @@ type ChunkedUpload struct {
 	// isRepair identifies if upload is repair operation
 	isRepair bool
 
-	opCode              int
-	uploadTimeOut       time.Duration
-	commitTimeOut       time.Duration
-	maskMu              *sync.Mutex
-	ctx                 context.Context
-	ctxCncl             context.CancelCauseFunc
-	addConsensus        int32
-	encryptedKeyPoint   string
-	encryptedKey        string
-	uploadChan          chan UploadData
-	uploadWG            sync.WaitGroup
-	alreadyUploadedData int
+	opCode            int
+	uploadTimeOut     time.Duration
+	commitTimeOut     time.Duration
+	maskMu            *sync.Mutex
+	ctx               context.Context
+	ctxCncl           context.CancelCauseFunc
+	addConsensus      int32
+	encryptedKeyPoint string
+	encryptedKey      string
+	uploadChan        chan UploadData
+	uploadWG          sync.WaitGroup
 }
 
 // FileMeta metadata of stream input/local

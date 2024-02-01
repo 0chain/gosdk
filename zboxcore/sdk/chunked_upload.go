@@ -411,7 +411,7 @@ func (su *ChunkedUpload) process() error {
 	if su.statusCallback != nil {
 		su.statusCallback.Started(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, int(su.fileMeta.ActualSize)+int(su.fileMeta.ActualThumbnailSize))
 	}
-	alreadyUploadedData := 0
+
 	defer su.chunkReader.Close()
 	defer su.ctxCncl(nil)
 	for {
@@ -484,8 +484,6 @@ func (su *ChunkedUpload) process() error {
 					}
 				}
 			}
-			alreadyUploadedData += int(chunks.totalReadSize)
-			su.alreadyUploadedData = alreadyUploadedData
 		}
 
 		// last chunk might 0 with io.EOF
@@ -851,7 +849,7 @@ func (su *ChunkedUpload) uploadToBlobbers(uploadData UploadData) error {
 		uploadLength := uploadData.uploadLength
 		go su.updateProgress(index)
 		if su.statusCallback != nil {
-			su.statusCallback.InProgress(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, int(atomic.AddInt64(&su.progress.UploadLength, uploadLength))-su.alreadyUploadedData, nil)
+			su.statusCallback.InProgress(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, int(atomic.AddInt64(&su.progress.UploadLength, uploadLength)), nil)
 		}
 	}
 	uploadData = UploadData{} // release memory
