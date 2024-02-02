@@ -362,7 +362,7 @@ func (h *NodeHolder) GetRoundFromSharders() (int64, error) {
 	return round, nil
 }
 
-func (h *NodeHolder) GetHardforkRound(hardfork string) (int64, error) {
+func (h *NodeHolder) GetHardForkRound(hardFork string) (int64, error) {
 	sharders := h.Healthy()
 	if len(sharders) == 0 {
 		return 0, stdErrors.New("get round failed. no sharders")
@@ -376,7 +376,7 @@ func (h *NodeHolder) GetHardforkRound(hardfork string) (int64, error) {
 		numSharders = 5
 	}
 
-	h.QueryFromSharders(numSharders, fmt.Sprintf("%s%s", GET_HARDFORK_ROUND, hardfork), result)
+	h.QueryFromSharders(numSharders, fmt.Sprintf("%s%s", GET_HARDFORK_ROUND, hardFork), result)
 
 	const consensusThresh = float32(25.0)
 

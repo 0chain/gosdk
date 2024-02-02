@@ -1239,8 +1239,8 @@ func GetRoundFromSharders() (int64, error) {
 	return Sharders.GetRoundFromSharders()
 }
 
-func GetHardforkRound(hardfork string) (int64, error) {
-	return Sharders.GetHardforkRound(hardfork)
+func GetHardForkRound(hardFork string) (int64, error) {
+	return Sharders.GetHardForkRound(hardFork)
 }
 
 func GetMagicBlockByNumber(ctx context.Context, numSharders int, number int64) (m *block.MagicBlock, err error) {
