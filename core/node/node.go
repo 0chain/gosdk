@@ -17,6 +17,7 @@ import (
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/logger"
+	"github.com/ethereum/go-ethereum/common/math"
 )
 
 const statSize = 20
@@ -384,8 +385,8 @@ func (h *NodeHolder) GetHardForkRound(hardFork string) (int64, error) {
 
 	consensus := int64(0)
 	roundMap := make(map[int64]int64)
-
-	round := int64(0)
+	// If error then set it to max int64
+	round := int64(math.MaxInt64)
 
 	waitTimeC := time.After(10 * time.Second)
 	for i := 0; i < numSharders; i++ {
