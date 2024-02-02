@@ -3,6 +3,7 @@ package sdk
 import (
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -185,6 +186,7 @@ func isParentFolderExists(lFDiff []FileDiff, path string) bool {
 }
 
 func findDelta(rMap map[string]FileInfo, lMap map[string]FileInfo, prevMap map[string]FileInfo, localRootPath string) []FileDiff {
+	fmt.Println("===>>>rMap",rMap)
 	var lFDiff []FileDiff
 
 	// Create a remote hash map and find modifications
@@ -198,6 +200,7 @@ func findDelta(rMap map[string]FileInfo, lMap map[string]FileInfo, prevMap map[s
 			}
 		}
 	}
+	fmt.Println("===>>>rMod",rMod)
 
 	// Create a local hash map and find modification
 	lMod := make(map[string]FileInfo)
@@ -210,10 +213,12 @@ func findDelta(rMap map[string]FileInfo, lMap map[string]FileInfo, prevMap map[s
 			}
 		}
 	}
+	fmt.Println("===>>>lMod",lMod)
 
 	// Iterate remote list and get diff
 	rDelMap := make(map[string]string)
 	for rPath := range rMap {
+		fmt.Println("===>>>rPath",rPath)
 		op := Download
 		bRemoteModified := false
 		bLocalModified := false
