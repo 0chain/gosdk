@@ -117,9 +117,10 @@ func (h *NodeHolder) All() (res []string) {
 
 const consensusThresh = 25
 const (
-	GET_BALANCE    = `/v1/client/get/balance?client_id=`
-	CURRENT_ROUND  = "/v1/current-round"
-	GET_BLOCK_INFO = `/v1/block/get?`
+	GET_BALANCE        = `/v1/client/get/balance?client_id=`
+	CURRENT_ROUND      = "/v1/current-round"
+	GET_BLOCK_INFO     = `/v1/block/get?`
+	GET_HARDFORK_ROUND = `/hardfork?name=`
 )
 
 func (h *NodeHolder) GetNonceFromSharders(clientID string) (int64, string, error) {
@@ -304,6 +305,78 @@ func (h *NodeHolder) GetRoundFromSharders() (int64, error) {
 	}
 
 	h.QueryFromSharders(numSharders, fmt.Sprintf("%v", CURRENT_ROUND), result)
+
+	const consensusThresh = float32(25.0)
+
+	var rounds []int64
+
+	consensus := int64(0)
+	roundMap := make(map[int64]int64)
+
+	round := int64(0)
+
+	waitTimeC := time.After(10 * time.Second)
+	for i := 0; i < numSharders; i++ {
+		select {
+		case <-waitTimeC:
+			return 0, stdErrors.New("get round failed. consensus not reached")
+		case rsp := <-result:
+			if rsp == nil {
+				logger.Logger.Error("nil response")
+				continue
+			}
+			if rsp.StatusCode != http.StatusOK {
+				continue
+			}
+
+			var respRound int64
+			err := json.Unmarshal([]byte(rsp.Body), &respRound)
+
+			if err != nil {
+				continue
+			}
+
+			rounds = append(rounds, respRound)
+
+			sort.Slice(rounds, func(i, j int) bool {
+				return false
+			})
+
+			medianRound := rounds[len(rounds)/2]
+
+			roundMap[medianRound]++
+
+			if roundMap[medianRound] > consensus {
+
+				consensus = roundMap[medianRound]
+				round = medianRound
+				rate := consensus * 100 / int64(numSharders)
+
+				if rate >= int64(consensusThresh) {
+					return round, nil
+				}
+			}
+		}
+	}
+
+	return round, nil
+}
+
+func (h *NodeHolder) GetHardforkRound(hardfork string) (int64, error) {
+	sharders := h.Healthy()
+	if len(sharders) == 0 {
+		return 0, stdErrors.New("get round failed. no sharders")
+	}
+
+	result := make(chan *util.GetResponse, len(sharders))
+
+	var numSharders = len(sharders)
+	// use 5 sharders to get round
+	if numSharders > 5 {
+		numSharders = 5
+	}
+
+	h.QueryFromSharders(numSharders, fmt.Sprintf("%s%s", GET_HARDFORK_ROUND, hardfork), result)
 
 	const consensusThresh = float32(25.0)
 
