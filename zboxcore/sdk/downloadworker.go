@@ -79,7 +79,7 @@ type DownloadRequest struct {
 	chunksPerShard     int64
 	size               int64
 	offset             int64
-	bufferMap          map[int]*zboxutil.DownloadBuffer
+	bufferMap          map[int]zboxutil.DownloadBuffer
 }
 
 type blockData struct {
@@ -451,22 +451,31 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		isPREAndWholeFile = true
 	}
 
+	toSync := false
+	if _, ok := req.fileHandler.(*sys.MemChanFile); ok {
+		toSync = true
+	}
+	var writerAt bool
+	writeAtHandler, ok := req.fileHandler.(io.WriterAt)
+	if ok {
+		writerAt = true
+	}
+
 	if !req.shouldVerify {
 		var pos uint64
-		req.bufferMap = make(map[int]*zboxutil.DownloadBuffer)
+		req.bufferMap = make(map[int]zboxutil.DownloadBuffer)
 		sz := downloadWorkerCount + EXTRA_COUNT
 		if sz > n {
 			sz = n
 		}
 		for i := req.downloadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 			pos = uint64(i.TrailingZeros())
-			req.bufferMap[int(pos)] = zboxutil.NewDownloadBuffer(sz, int(numBlocks), req.effectiveBlockSize)
+			if writerAt {
+				req.bufferMap[int(pos)] = zboxutil.NewDownloadBufferWithChan(sz, int(numBlocks), req.effectiveBlockSize)
+			} else {
+				req.bufferMap[int(pos)] = zboxutil.NewDownloadBufferWithMask(sz, int(numBlocks), req.effectiveBlockSize)
+			}
 		}
-	}
-
-	toSync := false
-	if _, ok := req.fileHandler.(*sys.MemChanFile); ok {
-		toSync = true
 	}
 
 	logger.Logger.Info(
@@ -478,12 +487,6 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	defer writeCancel()
 	var wg sync.WaitGroup
 
-	writerAt := false
-
-	writeAtHandler, ok := req.fileHandler.(io.WriterAt)
-	if ok {
-		writerAt = true
-	}
 	if !writerAt {
 		wg.Add(1)
 		// Handle writing the blocks in order as soon as they are downloaded
