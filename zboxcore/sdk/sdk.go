@@ -34,6 +34,7 @@ import (
 
 const STORAGE_SCADDRESS = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7"
 const MINERSC_SCADDRESS = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d9"
+const ZCNSC_SCADDRESS = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712e0"
 
 var sdkNotInitialized = errors.New("sdk_not_initialized", "SDK is not initialised")
 var allocationNotFound = errors.New("couldnt_find_allocation", "Couldn't find the allocation required for update")
@@ -167,7 +168,7 @@ func CreateReadPool() (hash string, nonce int64, err error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
 	}
-	hash, _, nonce, _, err = smartContractTxn(transaction.SmartContractTxnData{
+	hash, _, nonce, _, err = storageSmartContractTxn(transaction.SmartContractTxnData{
 		Name: transaction.STORAGESC_CREATE_READ_POOL,
 	})
 	return
@@ -1050,7 +1051,7 @@ func CreateAllocationForOwner(
 		Name:      transaction.NEW_ALLOCATION_REQUEST,
 		InputArgs: allocationRequest,
 	}
-	hash, _, nonce, txn, err = smartContractTxnValue(sn, lock)
+	hash, _, nonce, txn, err = storageSmartContractTxnValue(sn, lock)
 	return
 }
 
@@ -1188,7 +1189,7 @@ func AddFreeStorageAssigner(name, publicKey string, individualLimit, totalLimit 
 		Name:      transaction.ADD_FREE_ALLOCATION_ASSIGNER,
 		InputArgs: input,
 	}
-	hash, _, n, _, err := smartContractTxn(sn)
+	hash, _, n, _, err := storageSmartContractTxn(sn)
 
 	return hash, n, err
 }
@@ -1216,7 +1217,7 @@ func CreateFreeAllocation(marker string, value uint64) (string, int64, error) {
 		Name:      transaction.NEW_FREE_ALLOCATION,
 		InputArgs: input,
 	}
-	hash, _, n, _, err := smartContractTxnValue(sn, value)
+	hash, _, n, _, err := storageSmartContractTxnValue(sn, value)
 	return hash, n, err
 }
 
@@ -1257,7 +1258,7 @@ func UpdateAllocation(
 		Name:      transaction.STORAGESC_UPDATE_ALLOCATION,
 		InputArgs: updateAllocationRequest,
 	}
-	hash, _, nonce, _, err = smartContractTxnValue(sn, lock)
+	hash, _, nonce, _, err = storageSmartContractTxnValue(sn, lock)
 	return
 }
 
@@ -1269,7 +1270,7 @@ func FinalizeAllocation(allocID string) (hash string, nonce int64, err error) {
 		Name:      transaction.STORAGESC_FINALIZE_ALLOCATION,
 		InputArgs: map[string]interface{}{"allocation_id": allocID},
 	}
-	hash, _, nonce, _, err = smartContractTxn(sn)
+	hash, _, nonce, _, err = storageSmartContractTxn(sn)
 	return
 }
 
@@ -1281,7 +1282,7 @@ func CancelAllocation(allocID string) (hash string, nonce int64, err error) {
 		Name:      transaction.STORAGESC_CANCEL_ALLOCATION,
 		InputArgs: map[string]interface{}{"allocation_id": allocID},
 	}
-	hash, _, nonce, _, err = smartContractTxn(sn)
+	hash, _, nonce, _, err = storageSmartContractTxn(sn)
 	return
 }
 
@@ -1314,7 +1315,7 @@ func KillProvider(providerId string, providerType ProviderType) (string, int64, 
 	default:
 		return "", 0, fmt.Errorf("kill provider type %v not implimented", providerType)
 	}
-	hash, _, n, _, err := smartContractTxn(sn)
+	hash, _, n, _, err := storageSmartContractTxn(sn)
 	return hash, n, err
 }
 
@@ -1338,7 +1339,7 @@ func ShutdownProvider(providerType ProviderType, providerID string) (string, int
 	default:
 		return "", 0, fmt.Errorf("shutdown provider type %v not implimented", providerType)
 	}
-	hash, _, n, _, err := smartContractTxn(sn)
+	hash, _, n, _, err := storageSmartContractTxn(sn)
 	return hash, n, err
 }
 
@@ -1351,11 +1352,27 @@ func CollectRewards(providerId string, providerType ProviderType) (string, int64
 		"provider_id":   providerId,
 		"provider_type": providerType,
 	}
+
 	var sn = transaction.SmartContractTxnData{
-		Name:      transaction.STORAGESC_COLLECT_REWARD,
 		InputArgs: input,
 	}
-	hash, _, n, _, err := smartContractTxn(sn)
+
+	var scAddress string
+	switch providerType {
+	case ProviderBlobber, ProviderValidator:
+		scAddress = STORAGE_SCADDRESS
+		sn.Name = transaction.STORAGESC_COLLECT_REWARD
+	case ProviderMiner, ProviderSharder:
+		scAddress = MINERSC_SCADDRESS
+		sn.Name = transaction.MINERSC_COLLECT_REWARD
+	// case ProviderAuthorizer:
+	// 	scAddress = ZCNSC_SCADDRESS
+	// 	sn.Name = transaction.ZCNSC_COLLECT_REWARD
+	default:
+		return "", 0, fmt.Errorf("collect rewards provider type %v not implimented", providerType)
+	}
+
+	hash, _, n, _, err := smartContractTxn(scAddress, sn)
 	return hash, n, err
 }
 
@@ -1386,7 +1403,7 @@ func TransferAllocation(allocationId, newOwner, newOwnerPublicKey string) (strin
 		Name:      transaction.STORAGESC_UPDATE_ALLOCATION,
 		InputArgs: allocationRequest,
 	}
-	hash, _, n, _, err := smartContractTxn(sn)
+	hash, _, n, _, err := storageSmartContractTxn(sn)
 	return hash, n, err
 }
 
@@ -1398,7 +1415,7 @@ func UpdateBlobberSettings(blob *UpdateBlobber) (resp string, nonce int64, err e
 		Name:      transaction.STORAGESC_UPDATE_BLOBBER_SETTINGS,
 		InputArgs: blob,
 	}
-	resp, _, nonce, _, err = smartContractTxn(sn)
+	resp, _, nonce, _, err = storageSmartContractTxn(sn)
 	return
 }
 
@@ -1411,23 +1428,34 @@ func UpdateValidatorSettings(v *UpdateValidator) (resp string, nonce int64, err 
 		Name:      transaction.STORAGESC_UPDATE_VALIDATOR_SETTINGS,
 		InputArgs: v.ConvertToValidationNode(),
 	}
-	resp, _, nonce, _, err = smartContractTxn(sn)
+	resp, _, nonce, _, err = storageSmartContractTxn(sn)
 	return
 }
 
-func SmartContractTxn(sn transaction.SmartContractTxnData) (
+func smartContractTxn(scAddress string, sn transaction.SmartContractTxnData) (
 	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
-
-	return smartContractTxnValue(sn, 0)
+	return smartContractTxnValue(scAddress, sn, 0)
 }
 
-func smartContractTxn(sn transaction.SmartContractTxnData) (
+func StorageSmartContractTxn(sn transaction.SmartContractTxnData) (
 	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 
-	return smartContractTxnValue(sn, 0)
+	return storageSmartContractTxnValue(sn, 0)
 }
 
-func smartContractTxnValue(sn transaction.SmartContractTxnData, value uint64) (
+func storageSmartContractTxn(sn transaction.SmartContractTxnData) (
+	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+
+	return storageSmartContractTxnValue(sn, 0)
+}
+
+func smartContractTxnValue(scAddress string, sn transaction.SmartContractTxnData, value uint64) (
+	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+
+	return smartContractTxnValueFeeWithRetry(scAddress, sn, value, client.TxnFee())
+}
+
+func storageSmartContractTxnValue(sn transaction.SmartContractTxnData, value uint64) (
 	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 
 	// Fee is set during sdk initialization.
