@@ -127,8 +127,12 @@ func (fs *fsChunkedUploadProgressStorer) Save(up UploadProgress) {
 	if fs.isRemoved {
 		return
 	}
-	if up.ChunkIndex == -1 {
-		fs.next = up.ChunkNumber - 1
+	if fs.next == 0 {
+		if up.ChunkNumber == -1 {
+			fs.next = up.ChunkNumber - 1
+		} else {
+			fs.next = up.ChunkIndex + up.ChunkNumber
+		}
 	}
 	buf, err := json.Marshal(fs.up)
 	if err != nil {
