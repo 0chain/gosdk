@@ -403,8 +403,14 @@ func (h *NodeHolder) GetHardForkRound(hardFork string) (int64, error) {
 			}
 
 			var respRound int64
-			err := json.Unmarshal([]byte(rsp.Body), &respRound)
+			var objmap map[string]json.RawMessage
+			err := json.Unmarshal([]byte(rsp.Body), &objmap)
+			if err != nil {
+				continue
+			}
 
+			var respRoundMessage int64
+			err = json.Unmarshal(objmap["round"], &respRoundMessage)
 			if err != nil {
 				continue
 			}
