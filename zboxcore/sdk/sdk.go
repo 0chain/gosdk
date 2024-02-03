@@ -33,6 +33,7 @@ import (
 )
 
 const STORAGE_SCADDRESS = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7"
+const MINERSC_SCADDRESS = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d9"
 
 var sdkNotInitialized = errors.New("sdk_not_initialized", "SDK is not initialised")
 var allocationNotFound = errors.New("couldnt_find_allocation", "Couldn't find the allocation required for update")
@@ -224,7 +225,7 @@ func ReadPoolLock(tokens, fee uint64) (hash string, nonce int64, err error) {
 		Name:      transaction.STORAGESC_READ_POOL_LOCK,
 		InputArgs: nil,
 	}
-	hash, _, nonce, _, err = smartContractTxnValueFeeWithRetry(sn, tokens, fee)
+	hash, _, nonce, _, err = smartContractTxnValueFeeWithRetry(STORAGE_SCADDRESS, sn, tokens, fee)
 	return
 }
 
@@ -238,7 +239,7 @@ func ReadPoolUnlock(fee uint64) (hash string, nonce int64, err error) {
 		Name:      transaction.STORAGESC_READ_POOL_UNLOCK,
 		InputArgs: nil,
 	}
-	hash, _, nonce, _, err = smartContractTxnValueFeeWithRetry(sn, 0, fee)
+	hash, _, nonce, _, err = smartContractTxnValueFeeWithRetry(STORAGE_SCADDRESS, sn, 0, fee)
 	return
 }
 
@@ -376,11 +377,24 @@ func StakePoolLock(providerType ProviderType, providerID string, value, fee uint
 		ProviderType: providerType,
 		ProviderID:   providerID,
 	}
+
 	var sn = transaction.SmartContractTxnData{
-		Name:      transaction.STORAGESC_STAKE_POOL_LOCK,
 		InputArgs: &spr,
 	}
-	hash, _, nonce, _, err = smartContractTxnValueFeeWithRetry(sn, value, fee)
+
+	var scAddress string
+	switch providerType {
+	case ProviderBlobber, ProviderValidator:
+		scAddress = STORAGE_SCADDRESS
+		sn.Name = transaction.STORAGESC_STAKE_POOL_LOCK
+	case ProviderMiner, ProviderSharder:
+		scAddress = MINERSC_SCADDRESS
+		sn.Name = transaction.MINERSC_LOCK
+	default:
+		return "", 0, errors.Newf("stake_pool_lock", "unsupported provider type: %v", providerType)
+	}
+
+	hash, _, nonce, _, err = smartContractTxnValueFeeWithRetry(scAddress, sn, value, fee)
 	return
 }
 
@@ -418,12 +432,23 @@ func StakePoolUnlock(providerType ProviderType, providerID string, fee uint64) (
 	}
 
 	var sn = transaction.SmartContractTxnData{
-		Name:      transaction.STORAGESC_STAKE_POOL_UNLOCK,
 		InputArgs: &spr,
 	}
 
+	var scAddress string
+	switch providerType {
+	case ProviderBlobber, ProviderValidator:
+		scAddress = STORAGE_SCADDRESS
+		sn.Name = transaction.STORAGESC_STAKE_POOL_UNLOCK
+	case ProviderMiner, ProviderSharder:
+		scAddress = MINERSC_SCADDRESS
+		sn.Name = transaction.MINERSC_UNLOCK
+	default:
+		return 0, 0, errors.Newf("stake_pool_unlock", "unsupported provider type: %v", providerType)
+	}
+
 	var out string
-	if _, out, nonce, _, err = smartContractTxnValueFeeWithRetry(sn, 0, fee); err != nil {
+	if _, out, nonce, _, err = smartContractTxnValueFeeWithRetry(scAddress, sn, 0, fee); err != nil {
 		return // an error
 	}
 
@@ -456,7 +481,8 @@ func WritePoolLock(allocID string, tokens, fee uint64) (hash string, nonce int64
 		Name:      transaction.STORAGESC_WRITE_POOL_LOCK,
 		InputArgs: &req,
 	}
-	hash, _, nonce, _, err = smartContractTxnValueFeeWithRetry(sn, tokens, fee)
+
+	hash, _, nonce, _, err = smartContractTxnValueFeeWithRetry(STORAGE_SCADDRESS, sn, tokens, fee)
 	return
 }
 
@@ -477,7 +503,7 @@ func WritePoolUnlock(allocID string, fee uint64) (hash string, nonce int64, err 
 		Name:      transaction.STORAGESC_WRITE_POOL_UNLOCK,
 		InputArgs: &req,
 	}
-	hash, _, nonce, _, err = smartContractTxnValueFeeWithRetry(sn, 0, fee)
+	hash, _, nonce, _, err = smartContractTxnValueFeeWithRetry(STORAGE_SCADDRESS, sn, 0, fee)
 	return
 }
 
@@ -1405,20 +1431,20 @@ func smartContractTxnValue(sn transaction.SmartContractTxnData, value uint64) (
 	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 
 	// Fee is set during sdk initialization.
-	return smartContractTxnValueFeeWithRetry(sn, value, client.TxnFee())
+	return smartContractTxnValueFeeWithRetry(STORAGE_SCADDRESS, sn, value, client.TxnFee())
 }
 
-func smartContractTxnValueFeeWithRetry(sn transaction.SmartContractTxnData,
+func smartContractTxnValueFeeWithRetry(scAddress string, sn transaction.SmartContractTxnData,
 	value, fee uint64) (hash, out string, nonce int64, t *transaction.Transaction, err error) {
-	hash, out, nonce, t, err = smartContractTxnValueFee(sn, value, fee)
+	hash, out, nonce, t, err = smartContractTxnValueFee(scAddress, sn, value, fee)
 
 	if err != nil && strings.Contains(err.Error(), "invalid transaction nonce") {
-		return smartContractTxnValueFee(sn, value, fee)
+		return smartContractTxnValueFee(scAddress, sn, value, fee)
 	}
 	return
 }
 
-func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
+func smartContractTxnValueFee(scAddress string, sn transaction.SmartContractTxnData,
 	value, fee uint64) (hash, out string, nonce int64, t *transaction.Transaction, err error) {
 
 	var requestBytes []byte
@@ -1430,7 +1456,7 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 		blockchain.GetChainID(), client.GetClientPublicKey(), nonce)
 
 	txn.TransactionData = string(requestBytes)
-	txn.ToClientID = STORAGE_SCADDRESS
+	txn.ToClientID = scAddress
 	txn.Value = value
 	txn.TransactionFee = fee
 	txn.TransactionType = transaction.TxnTypeSmartContract
