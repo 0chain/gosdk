@@ -71,7 +71,7 @@ func (ds *FsDownloadProgressStorer) Start(ctx context.Context) {
 	}
 }
 
-func (fs *FsDownloadProgressStorer) Load(progressID string) *DownloadProgress {
+func (ds *FsDownloadProgressStorer) Load(progressID string) *DownloadProgress {
 	dp := &DownloadProgress{}
 	buf, err := sys.Files.ReadFile(progressID)
 	if err != nil {
@@ -80,48 +80,48 @@ func (fs *FsDownloadProgressStorer) Load(progressID string) *DownloadProgress {
 	if err = json.Unmarshal(buf, dp); err != nil {
 		return nil
 	}
-	fs.dp = dp
-	return fs.dp
+	ds.dp = dp
+	return ds.dp
 }
 
-func (fs *FsDownloadProgressStorer) saveToDisk() {
-	fs.Lock()
-	defer fs.Unlock()
-	if fs.isRemoved {
+func (ds *FsDownloadProgressStorer) saveToDisk() {
+	ds.Lock()
+	defer ds.Unlock()
+	if ds.isRemoved {
 		return
 	}
-	buf, err := json.Marshal(fs.dp)
+	buf, err := json.Marshal(ds.dp)
 	if err != nil {
 		return
 	}
-	err = sys.Files.WriteFile(fs.dp.ID, buf, 0666)
+	err = sys.Files.WriteFile(ds.dp.ID, buf, 0666)
 	if err != nil {
 		return
 	}
 }
 
-func (fs *FsDownloadProgressStorer) Save(dp *DownloadProgress) {
-	fs.dp = dp
-	fs.saveToDisk()
+func (ds *FsDownloadProgressStorer) Save(dp *DownloadProgress) {
+	ds.dp = dp
+	ds.saveToDisk()
 }
 
-func (fs *FsDownloadProgressStorer) Update(writtenBlock int) {
-	fs.Lock()
-	defer fs.Unlock()
-	if fs.isRemoved {
+func (ds *FsDownloadProgressStorer) Update(writtenBlock int) {
+	ds.Lock()
+	defer ds.Unlock()
+	if ds.isRemoved {
 		return
 	}
-	heap.Push(&fs.queue, writtenBlock)
+	heap.Push(&ds.queue, writtenBlock)
 }
 
-func (fs *FsDownloadProgressStorer) Remove() error {
-	fs.Lock()
-	defer fs.Unlock()
-	if fs.isRemoved || fs.dp == nil {
+func (ds *FsDownloadProgressStorer) Remove() error {
+	ds.Lock()
+	defer ds.Unlock()
+	if ds.isRemoved || ds.dp == nil {
 		return nil
 	}
-	fs.isRemoved = true
-	err := sys.Files.Remove(fs.dp.ID)
+	ds.isRemoved = true
+	err := sys.Files.Remove(ds.dp.ID)
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return err
 	}
