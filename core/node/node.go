@@ -121,7 +121,7 @@ const (
 	GET_BALANCE        = `/v1/client/get/balance?client_id=`
 	CURRENT_ROUND      = "/v1/current-round"
 	GET_BLOCK_INFO     = `/v1/block/get?`
-	GET_HARDFORK_ROUND = `/hardfork?name=`
+	GET_HARDFORK_ROUND = `/v1/screst/6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d9/hardfork?name=`
 )
 
 func (h *NodeHolder) GetNonceFromSharders(clientID string) (int64, string, error) {
@@ -403,14 +403,14 @@ func (h *NodeHolder) GetHardForkRound(hardFork string) (int64, error) {
 			}
 
 			var respRound int64
-			var objmap map[string]json.RawMessage
+			var objmap map[string]string
 			err := json.Unmarshal([]byte(rsp.Body), &objmap)
 			if err != nil {
 				continue
 			}
 
-			var respRoundMessage int64
-			err = json.Unmarshal(objmap["round"], &respRoundMessage)
+			str := string(objmap["round"])
+			respRound, err = strconv.ParseInt(str, 10, 64)
 			if err != nil {
 				continue
 			}
