@@ -30,6 +30,30 @@ type fsChunkedUploadProgressStorer struct {
 	since     time.Time
 }
 
+type queue []int
+
+func (pq queue) Len() int { return len(pq) }
+
+func (pq queue) Less(i, j int) bool {
+	return pq[i] < pq[j]
+}
+
+func (pq queue) Swap(i, j int) {
+	pq[i], pq[j] = pq[j], pq[i]
+}
+
+func (pq *queue) Push(x interface{}) {
+	*pq = append(*pq, x.(int))
+}
+
+func (pq *queue) Pop() interface{} {
+	old := *pq
+	n := len(old)
+	item := old[n-1]
+	*pq = old[0 : n-1]
+	return item
+}
+
 func createFsChunkedUploadProgress(ctx context.Context) *fsChunkedUploadProgressStorer {
 	up := &fsChunkedUploadProgressStorer{
 		since: time.Now(),

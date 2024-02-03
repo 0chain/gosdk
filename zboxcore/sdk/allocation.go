@@ -967,6 +967,7 @@ func (a *Allocation) DownloadFileToFileHandler(
 	verifyDownload bool,
 	status StatusCallback,
 	isFinal bool,
+	downloadReqOpts ...DownloadRequestOption,
 ) error {
 	return a.addAndGenerateDownloadRequest(fileHandler, remotePath, DOWNLOAD_CONTENT_FULL, 1, 0,
 		numBlockDownloads, verifyDownload, status, isFinal, "")
@@ -996,14 +997,14 @@ func (a *Allocation) DownloadThumbnailToFileHandler(
 		numBlockDownloads, verifyDownload, status, isFinal, "")
 }
 
-func (a *Allocation) DownloadFile(localPath string, remotePath string, verifyDownload bool, status StatusCallback, isFinal bool) error {
+func (a *Allocation) DownloadFile(localPath string, remotePath string, verifyDownload bool, status StatusCallback, isFinal bool, downloadReqOpts ...DownloadRequestOption) error {
 	f, localFilePath, toKeep, err := a.prepareAndOpenLocalFile(localPath, remotePath)
 	if err != nil {
 		return err
 	}
 
 	err = a.addAndGenerateDownloadRequest(f, remotePath, DOWNLOAD_CONTENT_FULL, 1, 0,
-		numBlockDownloads, verifyDownload, status, isFinal, localFilePath)
+		numBlockDownloads, verifyDownload, status, isFinal, localFilePath, downloadReqOpts...)
 	if err != nil {
 		if !toKeep {
 			os.Remove(localFilePath) //nolint: errcheck
@@ -1114,6 +1115,7 @@ func (a *Allocation) addAndGenerateDownloadRequest(
 	status StatusCallback,
 	isFinal bool,
 	localFilePath string,
+	downloadReqOpts ...DownloadRequestOption,
 ) error {
 	downloadReq, err := a.generateDownloadRequest(
 		fileHandler, remotePath, contentMode, startBlock, endBlock,
@@ -1128,6 +1130,10 @@ func (a *Allocation) addAndGenerateDownloadRequest(
 	} else {
 		downloadReq.connectionID = zboxutil.NewConnectionId()
 	}
+	for _, opt := range downloadReqOpts {
+		opt(downloadReq)
+	}
+	downloadReq.workdir = filepath.Join(downloadReq.workdir, ".zcn")
 	a.downloadProgressMap[remotePath] = downloadReq
 	a.downloadRequests = append(a.downloadRequests, downloadReq)
 	if isFinal {
@@ -2045,6 +2051,7 @@ func (a *Allocation) DownloadFileToFileHandlerFromAuthTicket(
 	verifyDownload bool,
 	status StatusCallback,
 	isFinal bool,
+	downloadReqOpts ...DownloadRequestOption,
 ) error {
 	return a.downloadFromAuthTicket(fileHandler, authTicket, remoteLookupHash, 1, 0, numBlockDownloads,
 		remoteFilename, DOWNLOAD_CONTENT_FULL, verifyDownload, status, isFinal, "")

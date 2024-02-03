@@ -12,6 +12,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -38,6 +39,20 @@ const (
 	DOWNLOAD_CONTENT_THUMB = "thumbnail"
 	EXTRA_COUNT            = 2
 )
+
+type DownloadRequestOption func(dr *DownloadRequest)
+
+func WithDownloadProgressStorer(storer DownloadProgressStorer) DownloadRequestOption {
+	return func(dr *DownloadRequest) {
+		dr.downloadStorer = storer
+	}
+}
+
+func WithWorkDir(workdir string) DownloadRequestOption {
+	return func(dr *DownloadRequest) {
+		dr.workdir = workdir
+	}
+}
 
 type DownloadRequest struct {
 	allocationID       string
@@ -80,8 +95,15 @@ type DownloadRequest struct {
 	size               int64
 	offset             int64
 	bufferMap          map[int]zboxutil.DownloadBuffer
+	downloadStorer     DownloadProgressStorer
+	workdir            string
 }
 
+type DownloadProgress struct {
+	ID               string `json:"id"`
+	LastWrittenBlock int    `json:"last_block"`
+	numBlocks        int    `json:"-"`
+}
 type blockData struct {
 	blockNum int
 	data     [][][]byte
@@ -601,6 +623,12 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		breakLoop:
 		}()
 	}
+	if req.downloadStorer != nil {
+		storerCtx, storerCancel := context.WithCancel(ctx)
+		defer storerCancel()
+		req.downloadStorer.Start(storerCtx)
+	}
+
 	var progressLock sync.Mutex
 	eg, _ := errgroup.WithContext(ctx)
 	eg.SetLimit(downloadWorkerCount + EXTRA_COUNT)
@@ -634,6 +662,9 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 				for _, rb := range req.bufferMap {
 					rb.ReleaseChunk(j)
 				}
+				if req.downloadStorer != nil {
+					go req.downloadStorer.Update(int(startBlock + int64(j)*numBlocks + blocksToDownload))
+				}
 				if req.statusCallback != nil {
 					progressLock.Lock()
 					downloaded += total
@@ -665,6 +696,9 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	if req.statusCallback != nil && !req.skip {
 		req.statusCallback.Completed(
 			req.allocationID, remotePathCB, fRef.Name, "", int(size), op)
+	}
+	if req.downloadStorer != nil {
+		req.downloadStorer.Remove() //nolint:errcheck
 	}
 }
 
@@ -870,6 +904,9 @@ func (req *DownloadRequest) errorCB(err error, remotePathCB string) {
 	if req.contentMode == DOWNLOAD_CONTENT_THUMB {
 		op = opThumbnailDownload
 	}
+	if req.downloadStorer != nil && !strings.Contains(err.Error(), "context canceled") {
+		req.downloadStorer.Remove() //nolint: errcheck
+	}
 	if req.skip {
 		return
 	}
@@ -918,17 +955,23 @@ func (req *DownloadRequest) calculateShardsParams(
 	}
 	// Can be nil when using file writer in wasm
 	if info != nil {
-		_, err = req.Seek(info.Size(), io.SeekStart)
-		if err != nil {
-			return 0, err
+		if req.downloadStorer != nil {
+			progressID := req.progressID()
+			var dp *DownloadProgress
+			if info.Size() > 0 {
+				dp = req.downloadStorer.Load(progressID)
+			}
+			if dp != nil {
+				req.startBlock = int64(dp.LastWrittenBlock)
+			} else {
+				dp = &DownloadProgress{
+					ID: progressID,
+				}
+				req.downloadStorer.Save(dp)
+			}
+			dp.numBlocks = int(req.numBlocks)
 		}
 	}
-
-	effectiveChunkSize := effectiveBlockSize * int64(req.datashards)
-	blocks := req.offset / effectiveChunkSize
-	req.startBlock += blocks
-
-	req.offset = blocks * effectiveChunkSize
 
 	if req.endBlock == 0 || req.endBlock > chunksPerShard {
 		req.endBlock = chunksPerShard
@@ -936,11 +979,6 @@ func (req *DownloadRequest) calculateShardsParams(
 
 	if req.startBlock >= req.endBlock {
 		err = errors.New("invalid_block_num", "start block should be less than end block")
-		return 0, err
-	}
-
-	_, err = req.fileHandler.Seek(req.offset, io.SeekStart)
-	if err != nil {
 		return 0, err
 	}
 
@@ -1250,4 +1288,13 @@ func writeAtData(dest io.WriterAt, data [][][]byte, dataShards int, offset int64
 		}
 	}
 	return total, nil
+}
+
+func (dr *DownloadRequest) progressID() string {
+
+	if len(dr.allocationID) > 8 {
+		return filepath.Join(dr.workdir, "download", dr.allocationID[:8]+"_"+dr.fRef.MetaID())
+	}
+
+	return filepath.Join(dr.workdir, "download", dr.allocationID+"_"+dr.fRef.MetaID())
 }
