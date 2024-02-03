@@ -10,7 +10,6 @@ import (
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/sys"
-	"github.com/hitenjain14/fasthttp"
 )
 
 type DownloadProgressStorer interface {
@@ -43,32 +42,34 @@ func CreateFsDownloadProgress() *FsDownloadProgressStorer {
 }
 
 func (ds *FsDownloadProgressStorer) Start(ctx context.Context) {
+	tc := time.NewTicker(2 * time.Second)
 	ds.next += ds.dp.numBlocks
-	tc := fasthttp.AcquireTimer(2 * time.Second)
-	defer fasthttp.ReleaseTimer(tc)
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-tc.C:
-			ds.Lock()
-			if ds.isRemoved {
-				ds.Unlock()
+	go func() {
+		defer tc.Stop()
+		for {
+			select {
+			case <-ctx.Done():
 				return
-			}
-			if len(ds.queue) > 0 && ds.queue[0] == ds.next {
-				for len(ds.queue) > 0 && ds.queue[0] == ds.next {
-					ds.dp.LastWrittenBlock = ds.next
-					heap.Pop(&ds.queue)
-					ds.next += ds.dp.numBlocks
+			case <-tc.C:
+				ds.Lock()
+				if ds.isRemoved {
+					ds.Unlock()
+					return
 				}
-				ds.Unlock()
-				ds.saveToDisk()
-			} else {
-				ds.Unlock()
+				if len(ds.queue) > 0 && ds.queue[0] == ds.next {
+					for len(ds.queue) > 0 && ds.queue[0] == ds.next {
+						ds.dp.LastWrittenBlock = ds.next
+						heap.Pop(&ds.queue)
+						ds.next += ds.dp.numBlocks
+					}
+					ds.Unlock()
+					ds.saveToDisk()
+				} else {
+					ds.Unlock()
+				}
 			}
 		}
-	}
+	}()
 }
 
 func (ds *FsDownloadProgressStorer) Load(progressID string) *DownloadProgress {

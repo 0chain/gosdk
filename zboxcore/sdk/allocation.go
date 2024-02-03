@@ -1134,6 +1134,7 @@ func (a *Allocation) addAndGenerateDownloadRequest(
 		opt(downloadReq)
 	}
 	downloadReq.workdir = filepath.Join(downloadReq.workdir, ".zcn")
+	fmt.Println("downloadReq: ", downloadReq.downloadStorer != nil, " workDir:", downloadReq.workdir, "opts: ", len(downloadReqOpts))
 	a.downloadProgressMap[remotePath] = downloadReq
 	a.downloadRequests = append(a.downloadRequests, downloadReq)
 	if isFinal {

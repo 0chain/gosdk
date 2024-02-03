@@ -649,7 +649,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			if !writerAt {
 				blocks <- blockData{blockNum: j, data: data}
 			} else {
-				offset := int64(j) * numBlocks * int64(req.effectiveBlockSize) * int64(req.datashards)
+				offset := (startBlock + int64(j)*numBlocks) * int64(req.effectiveBlockSize) * int64(req.datashards)
 				var total int
 				if j == n-1 {
 					total, err = writeAtData(writeAtHandler, data, req.datashards, offset, int(lastBlockSize))
@@ -956,6 +956,10 @@ func (req *DownloadRequest) calculateShardsParams(
 	// Can be nil when using file writer in wasm
 	if info != nil {
 		if req.downloadStorer != nil {
+			err = sys.Files.MkdirAll(filepath.Join(req.workdir, "download"), 0766)
+			if err != nil {
+				return 0, err
+			}
 			progressID := req.progressID()
 			var dp *DownloadProgress
 			if info.Size() > 0 {
