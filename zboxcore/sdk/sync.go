@@ -153,7 +153,8 @@ func addLocalFileList(root string, fMap map[string]FileInfo, dirList *[]string, 
 			fmt.Println("==>>>>>>>>info", info)
 			fmt.Println("==>>>>>>>>info.ModTime", info.ModTime())
 			fmt.Println("==>>>>>>>>info.datetime", info.ModTime().Unix())
-			fMap[lPath] = FileInfo{Size: info.Size(), Hash: calcFileHash(path), Type: fileref.FILE}
+			fileUpdatedAt := common.Timestamp(info.ModTime().Unix())
+			fMap[lPath] = FileInfo{Size: info.Size(), Hash: calcFileHash(path), Type: fileref.FILE, UpdatedAt: fileUpdatedAt}
 		}
 		return nil
 	}
@@ -215,6 +216,7 @@ func findDelta(rMap map[string]FileInfo, lMap map[string]FileInfo, prevMap map[s
 			// Local file existed in previous sync also
 			fmt.Println("======PM", pm)
 			fmt.Println("======LINFO", lInfo)
+			fmt.Println("======LINFO updatedAT", lInfo.UpdatedAt)
 			if pm.Hash != lInfo.Hash {
 				// File modified in local
 				lMod[lFile] = lInfo
