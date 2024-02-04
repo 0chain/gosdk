@@ -148,7 +148,8 @@ func addLocalFileList(root string, fMap map[string]FileInfo, dirList *[]string, 
 		if info.IsDir() {
 			*dirList = append(*dirList, lPath)
 		} else {
-			fMap[lPath] = FileInfo{Size: info.Size(), Hash: calcFileHash(path), Type: fileref.FILE}
+			fileUpdatedAt := common.Timestamp(info.ModTime().Unix())
+			fMap[lPath] = FileInfo{Size: info.Size(), Hash: calcFileHash(path), Type: fileref.FILE, UpdatedAt: fileUpdatedAt}
 		}
 		return nil
 	}
@@ -204,7 +205,8 @@ func findDelta(rMap map[string]FileInfo, lMap map[string]FileInfo, prevMap map[s
 	for lFile, lInfo := range lMap {
 		if pm, ok := rMap[lFile]; ok {
 			// Local file existed in previous sync also
-			if pm.Hash != lInfo.Hash {
+			//somehow hash check is inaccurate hence adding updatedAt check also
+			if pm.Hash != lInfo.Hash && pm.UpdatedAt != lInfo.UpdatedAt{
 				// File modified in local
 				lMod[lFile] = lInfo
 			}
