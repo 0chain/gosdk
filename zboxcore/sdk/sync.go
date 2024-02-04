@@ -205,8 +205,12 @@ func findDelta(rMap map[string]FileInfo, lMap map[string]FileInfo, prevMap map[s
 	// Create a local hash map and find modification
 	lMod := make(map[string]FileInfo)
 	for lFile, lInfo := range lMap {
+		fmt.Println("looping===>>>", lFile, lInfo)
+		fmt.Println("rMap[lFile]===>>>", rMap[lFile])
 		if pm, ok := rMap[lFile]; ok {
 			// Local file existed in previous sync also
+			fmt.Println("======PM", pm)
+			fmt.Println("======LINFO", lInfo)
 			if pm.Hash != lInfo.Hash {
 				// File modified in local
 				lMod[lFile] = lInfo
