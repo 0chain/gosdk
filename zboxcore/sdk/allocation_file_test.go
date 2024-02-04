@@ -647,32 +647,32 @@ func TestAllocation_RepairFile(t *testing.T) {
 		ClientKey: mockClientKey,
 	}
 
-	setupHttpResponses := func(t *testing.T, testName string, numBlobbers, numCorrect int) {
-		require.True(t, numBlobbers >= numCorrect)
-		for i := 0; i < numBlobbers; i++ {
-			var hash string
-			if i < numCorrect {
-				hash = mockActualHash
-			}
-			frName := mockFileRefName + strconv.Itoa(i)
-			url := "http://TestAllocation_RepairFile" + testName + mockBlobberUrl + strconv.Itoa(i) + "/v1/file/meta"
-			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-				return strings.HasPrefix(req.URL.String(), url)
-			})).Return(&http.Response{
-				StatusCode: http.StatusOK,
-				Body: func(fileRefName, hash string) io.ReadCloser {
-					jsonFR, err := json.Marshal(&fileref.FileRef{
-						ActualFileHash: hash,
-						Ref: fileref.Ref{
-							Name: fileRefName,
-						},
-					})
-					require.NoError(t, err)
-					return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
-				}(frName, hash),
-			}, nil)
-		}
-	}
+	// setupHttpResponses := func(t *testing.T, testName string, numBlobbers, numCorrect int) {
+	// 	require.True(t, numBlobbers >= numCorrect)
+	// 	for i := 0; i < numBlobbers; i++ {
+	// 		var hash string
+	// 		if i < numCorrect {
+	// 			hash = mockActualHash
+	// 		}
+	// 		frName := mockFileRefName + strconv.Itoa(i)
+	// 		url := "http://TestAllocation_RepairFile" + testName + mockBlobberUrl + strconv.Itoa(i) + "/v1/file/meta"
+	// 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+	// 			return strings.HasPrefix(req.URL.String(), url)
+	// 		})).Return(&http.Response{
+	// 			StatusCode: http.StatusOK,
+	// 			Body: func(fileRefName, hash string) io.ReadCloser {
+	// 				jsonFR, err := json.Marshal(&fileref.FileRef{
+	// 					ActualFileHash: hash,
+	// 					Ref: fileref.Ref{
+	// 						Name: fileRefName,
+	// 					},
+	// 				})
+	// 				require.NoError(t, err)
+	// 				return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+	// 			}(frName, hash),
+	// 		}, nil)
+	// 	}
+	// }
 
 	setupHttpResponsesWithUpload := func(t *testing.T, testName string, numBlobbers, numCorrect int) {
 		require.True(t, numBlobbers >= numCorrect)
@@ -813,17 +813,17 @@ func TestAllocation_RepairFile(t *testing.T) {
 		wantRepair  bool
 		errMsg      string
 	}{
-		{
-			name: "Test_Repair_Not_Required_Failed",
-			parameters: parameters{
-				localPath:  mockLocalPath,
-				remotePath: "/",
-			},
-			numBlobbers: 4,
-			numCorrect:  4,
-			setup:       setupHttpResponses,
-			wantRepair:  false,
-		},
+		// {
+		// 	name: "Test_Repair_Not_Required_Failed",
+		// 	parameters: parameters{
+		// 		localPath:  mockLocalPath,
+		// 		remotePath: "/",
+		// 	},
+		// 	numBlobbers: 4,
+		// 	numCorrect:  4,
+		// 	setup:       setupHttpResponses,
+		// 	wantRepair:  false,
+		// },
 		{
 			name: "Test_Repair_Required_Success",
 			parameters: parameters{

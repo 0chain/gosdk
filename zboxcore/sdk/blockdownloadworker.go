@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strconv"
 	"sync"
 	"time"
 
@@ -19,6 +18,7 @@ import (
 	zlogger "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"golang.org/x/sync/semaphore"
 )
 
 const (
@@ -45,6 +45,7 @@ type BlockDownloadRequest struct {
 	result             chan *downloadBlock
 	shouldVerify       bool
 	connectionID       string
+	respBuf            []byte
 }
 
 type downloadResponse struct {
@@ -74,21 +75,26 @@ func InitBlockDownloader(blobbers []*blockchain.StorageNode, workerCount int) {
 	for _, blobber := range blobbers {
 		if _, ok := downloadBlockChan[blobber.ID]; !ok {
 			downloadBlockChan[blobber.ID] = make(chan *BlockDownloadRequest, workerCount)
-			for i := 0; i < workerCount; i++ {
-				blobberChan := downloadBlockChan[blobber.ID]
-				go startBlockDownloadWorker(blobberChan)
-			}
+			go startBlockDownloadWorker(downloadBlockChan[blobber.ID], workerCount)
 		}
 	}
 }
 
-func startBlockDownloadWorker(blobberChan chan *BlockDownloadRequest) {
+func startBlockDownloadWorker(blobberChan chan *BlockDownloadRequest, workers int) {
+	sem := semaphore.NewWeighted(int64(workers))
 	for {
 		blockDownloadReq, open := <-blobberChan
 		if !open {
 			break
 		}
-		blockDownloadReq.downloadBlobberBlock()
+		if err := sem.Acquire(blockDownloadReq.ctx, 1); err != nil {
+			blockDownloadReq.result <- &downloadBlock{Success: false, idx: blockDownloadReq.blobberIdx, err: err}
+			continue
+		}
+		go func() {
+			blockDownloadReq.downloadBlobberBlock()
+			sem.Release(1)
+		}()
 	}
 }
 
@@ -156,45 +162,49 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			if req.chunkSize == 0 {
 				req.chunkSize = CHUNK_SIZE
 			}
+
+			if resp.StatusCode == http.StatusTooManyRequests {
+				shouldRetry = true
+				time.Sleep(time.Second * 2)
+				return errors.New(RateLimitError, "Rate limit error")
+			}
+
+			if resp.StatusCode == http.StatusInternalServerError {
+				shouldRetry = true
+				return errors.New("internal_server_error", "Internal server error")
+			}
+
 			var rspData downloadBlock
-			respLen := resp.Header.Get("Content-Length")
-			var respBody []byte
-			if respLen != "" {
-				len, err := strconv.Atoi(respLen)
-				zlogger.Logger.Info("respLen", len)
-				if err != nil {
-					zlogger.Logger.Error("respLen convert error: ", err)
-					return err
-				}
-				respBody, err = readBody(resp.Body, len)
+			if req.shouldVerify {
+				req.respBuf, err = io.ReadAll(resp.Body)
 				if err != nil {
 					zlogger.Logger.Error("respBody read error: ", err)
 					return err
 				}
 			} else {
-				respBody, err = readBody(resp.Body, int(req.numBlocks)*req.chunkSize)
+				req.respBuf, err = readBody(resp.Body, req.respBuf)
 				if err != nil {
 					zlogger.Logger.Error("respBody read error: ", err)
 					return err
 				}
 			}
 			if resp.StatusCode != http.StatusOK {
-				zlogger.Logger.Debug(fmt.Sprintf("downloadBlobberBlock FAIL - blobberID: %v, clientID: %v, blockNum: %d, retry: %d, response: %v", req.blobber.ID, client.GetClientID(), header.BlockNum, retry, string(respBody)))
-				if err = json.Unmarshal(respBody, &rspData); err == nil {
+				zlogger.Logger.Debug(fmt.Sprintf("downloadBlobberBlock FAIL - blobberID: %v, clientID: %v, blockNum: %d, retry: %d, response: %v", req.blobber.ID, client.GetClientID(), header.BlockNum, retry, string(req.respBuf)))
+				if err = json.Unmarshal(req.respBuf, &rspData); err == nil {
 					return errors.New("download_error", fmt.Sprintf("Response status: %d, Error: %v,", resp.StatusCode, rspData.err))
 				}
-				return errors.New("response_error", string(respBody))
+				return errors.New("response_error", string(req.respBuf))
 			}
 
 			dR := downloadResponse{}
 			contentType := resp.Header.Get("Content-Type")
 			if contentType == "application/json" {
-				err = json.Unmarshal(respBody, &dR)
+				err = json.Unmarshal(req.respBuf, &dR)
 				if err != nil {
 					return err
 				}
 			} else {
-				dR.Data = respBody
+				dR.Data = req.respBuf
 			}
 			if req.contentMode == DOWNLOAD_CONTENT_FULL && req.shouldVerify {
 
@@ -236,17 +246,17 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 
 		if err != nil {
 			if shouldRetry {
-				retry = 0
+				if retry >= 3 {
+					req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: err}
+					return
+				}
 				shouldRetry = false
 				zlogger.Logger.Debug("Retrying for Error occurred: ", err)
+				retry++
 				continue
-			}
-			if retry >= 3 {
+			} else {
 				req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: err}
-				return
 			}
-			retry++
-			continue
 		}
 		return
 	}
@@ -255,22 +265,30 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 
 }
 
-func AddBlockDownloadReq(req *BlockDownloadRequest) {
+func AddBlockDownloadReq(ctx context.Context, req *BlockDownloadRequest, rb *zboxutil.DownloadBuffer, effectiveBlockSize int) {
+	if rb != nil {
+		reqCtx, cncl := context.WithTimeout(ctx, (time.Second * 10))
+		defer cncl()
+		req.respBuf = rb.RequestChunk(reqCtx, int(req.blockNum/req.numBlocks))
+		if len(req.respBuf) == 0 {
+			req.respBuf = make([]byte, int(req.numBlocks)*effectiveBlockSize)
+		}
+	}
 	downloadBlockChan[req.blobber.ID] <- req
 }
 
-func readBody(r io.Reader, size int) ([]byte, error) {
-	b := make([]byte, 0, size)
+func readBody(r io.Reader, b []byte) ([]byte, error) {
+	start := 0
+	if len(b) == 0 {
+		return nil, fmt.Errorf("readBody: empty buffer")
+	}
 	for {
-		if len(b) == cap(b) {
-			// Add more capacity (let append pick how much).
-			b = append(b, 0)[:len(b)]
-		}
-		n, err := r.Read(b[len(b):cap(b)])
-		b = b[:len(b)+n]
+		n, err := r.Read(b[start:])
+		start += n
 		if err != nil {
 			if err == io.EOF {
 				err = nil
+				b = b[:start]
 			}
 			return b, err
 		}

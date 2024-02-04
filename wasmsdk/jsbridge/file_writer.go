@@ -14,6 +14,9 @@ var jsFileWriterMutex sync.Mutex
 
 type FileWriter struct {
 	writableStream js.Value
+	uint8Array     js.Value
+	fileHandle     js.Value
+	bufLen         int
 }
 
 func (w *FileWriter) Write(p []byte) (int, error) {
@@ -21,9 +24,12 @@ func (w *FileWriter) Write(p []byte) (int, error) {
 	jsFileWriterMutex.Lock()
 	defer jsFileWriterMutex.Unlock()
 
-	uint8Array := js.Global().Get("Uint8Array").New(len(p))
-	js.CopyBytesToJS(uint8Array, p)
-	_, err := Await(w.writableStream.Call("write", uint8Array))
+	if w.bufLen != len(p) {
+		w.bufLen = len(p)
+		w.uint8Array = js.Global().Get("Uint8Array").New(w.bufLen)
+	}
+	js.CopyBytesToJS(w.uint8Array, p)
+	_, err := Await(w.writableStream.Call("write", w.uint8Array))
 	if len(err) > 0 && !err[0].IsNull() {
 		return 0, errors.New("file_writer: " + err[0].String())
 	}
@@ -55,14 +61,7 @@ func (w *FileWriter) Stat() (fs.FileInfo, error) {
 }
 
 func NewFileWriter(filename string) (*FileWriter, error) {
-	// writableStream := js.Global().Get("writableStream")
-	// stream, err := Await(writableStream.Call("create", filename))
-	// if len(err) > 0 && !err[0].IsNull() {
-	// 	return nil, errors.New("file_writer: " + err[0].String())
-	// }
-	// return &FileWriter{
-	// 	writableStream: stream[0],
-	// }, nil
+
 	if !js.Global().Get("window").Get("showSaveFilePicker").Truthy() || !js.Global().Get("window").Get("WritableStream").Truthy() {
 		return nil, errors.New("file_writer: not supported")
 	}
@@ -84,5 +83,6 @@ func NewFileWriter(filename string) (*FileWriter, error) {
 	}
 	return &FileWriter{
 		writableStream: writableStream[0],
+		fileHandle:     fileHandle[0],
 	}, nil
 }
