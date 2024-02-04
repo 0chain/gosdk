@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"log"
 	"sort"
-	"time"
 
 	"os"
 	"path/filepath"
