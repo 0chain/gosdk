@@ -125,7 +125,7 @@ func BenchmarkChunkedUpload(b *testing.B) {
 					RemotePath: "/test.txt",
 				}
 
-				chunkedUpload, err := CreateChunkedUpload("/tmp", a, fileMeta, reader, false, false, false, zboxutil.NewConnectionId())
+				chunkedUpload, err := CreateChunkedUpload(a.ctx, "/tmp", a, fileMeta, reader, false, false, false, zboxutil.NewConnectionId())
 				if err != nil {
 					b.Fatal(err)
 					return

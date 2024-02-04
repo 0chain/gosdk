@@ -13,17 +13,23 @@ import (
 type AuthCallbackFunc func(msg string) string
 
 var authCallback AuthCallbackFunc
+var authResponseC chan string
 
 // Register the callback function
 func registerAuthorizer(this js.Value, args []js.Value) interface{} {
 	// Store the callback function
 	authCallback = parseAuthorizerCallback(args[0])
+	authResponseC = make(chan string, 1)
 
 	sys.Authorize = func(msg string) (string, error) {
-		return authCallback(msg), nil
+		authCallback(msg)
+		return <-authResponseC, nil
 	}
-
 	return nil
+}
+
+func authResponse(response string) {
+	authResponseC <- response
 }
 
 // Use the stored callback function

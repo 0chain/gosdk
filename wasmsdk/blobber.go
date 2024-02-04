@@ -5,6 +5,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -28,14 +29,22 @@ import (
 
 const FileOperationInsert = "insert"
 
-func listObjects(allocationID string, remotePath string) (*sdk.ListResult, error) {
+func listObjects(allocationID string, remotePath string, offset, pageLimit int) (*sdk.ListResult, error) {
 	alloc, err := getAllocation(allocationID)
 	if err != nil {
 		return nil, err
 	}
+  
+	return alloc.ListDir(remotePath, sdk.WithListRequestOffset(offset), sdk.WithListRequestPageLimit(pageLimit))
+}
 
-	return alloc.ListDir(remotePath)
-
+func cancelUpload(allocationID string, remotePath string) error {
+	allocationObj, err := getAllocation(allocationID)
+	if err != nil {
+		PrintError("Error fetching the allocation", err)
+		return err
+	}
+	return allocationObj.CancelUpload(remotePath)
 }
 
 func createDir(allocationID, remotePath string) error {
@@ -451,6 +460,7 @@ type BulkUploadOption struct {
 	FileSize          int64  `json:"fileSize,omitempty"`
 	ReadChunkFuncName string `json:"readChunkFuncName,omitempty"`
 	CallbackFuncName  string `json:"callbackFuncName,omitempty"`
+	MimeType          string `json:"mimeType,omitempty"`
 }
 
 type BulkUploadResult struct {
@@ -602,11 +612,14 @@ func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 		remotePath := option.RemotePath
 
 		fileReader := jsbridge.NewFileReader(option.ReadChunkFuncName, option.FileSize)
-		mimeType, err := zboxutil.GetFileContentType(fileReader)
-		if err != nil {
-			result.Error = "Error in file operation"
-			result.Success = false
-			return result, err
+		mimeType := option.MimeType
+		if mimeType == "" {
+			mimeType, err = zboxutil.GetFileContentType(fileReader)
+			if err != nil {
+				result.Error = "Error in file operation"
+				result.Success = false
+				return result, err
+			}
 		}
 		localPath := remotePath
 		remotePath = zboxutil.RemoteClean(remotePath)
@@ -629,12 +642,10 @@ func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 			RemotePath: fullRemotePath,
 		}
 		numBlocks := option.NumBlocks
-		if numBlocks < 1 {
+		if numBlocks <= 1 {
 			numBlocks = 100
 		}
-		if allocationObj.DataShards > 7 {
-			numBlocks = 75
-		}
+
 		options := []sdk.ChunkedUploadOption{
 			sdk.WithThumbnail(option.ThumbnailBytes.Buffer),
 			sdk.WithEncrypt(encrypt),
@@ -722,7 +733,7 @@ func uploadWithJsFuncs(allocationID, remotePath string, readChunkFuncName string
 		numBlocks = 50
 	}
 
-	ChunkedUpload, err := sdk.CreateChunkedUpload("/", allocationObj, fileMeta, fileReader, isUpdate, isRepair, webStreaming, zboxutil.NewConnectionId(),
+	ChunkedUpload, err := sdk.CreateChunkedUpload(context.TODO(), "/", allocationObj, fileMeta, fileReader, isUpdate, isRepair, webStreaming, zboxutil.NewConnectionId(),
 		sdk.WithThumbnail(thumbnailBytes),
 		sdk.WithEncrypt(encrypt),
 		sdk.WithStatusCallback(statusBar),
@@ -798,7 +809,7 @@ func upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, w
 		numBlocks = 100
 	}
 
-	ChunkedUpload, err := sdk.CreateChunkedUpload("/", allocationObj, fileMeta, fileReader, isUpdate, isRepair, webStreaming,
+	ChunkedUpload, err := sdk.CreateChunkedUpload(context.TODO(), "/", allocationObj, fileMeta, fileReader, isUpdate, isRepair, webStreaming,
 		zboxutil.NewConnectionId(),
 		sdk.WithThumbnail(thumbnailBytes),
 		sdk.WithEncrypt(encrypt),

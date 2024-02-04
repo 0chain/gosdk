@@ -174,7 +174,7 @@ const (
 )
 
 type SignFunc = func(msg string) (string, error)
-type VerifyFunc = func(signature, msgHash, publicKey string) (bool, error)
+type VerifyFunc = func(publicKey, signature, msgHash string) (bool, error)
 type SignWithWallet = func(msg string, wallet interface{}) (string, error)
 
 var cache *lru.Cache
@@ -254,7 +254,7 @@ func (t *Transaction) VerifyTransaction(verifyHandler VerifyFunc) (bool, error) 
 	if t.Hash != hash {
 		return false, errors.New("verify_transaction", fmt.Sprintf(`{"error":"hash_mismatch", "expected":"%v", "actual":%v"}`, t.Hash, hash))
 	}
-	return verifyHandler(t.Signature, t.Hash, t.PublicKey)
+	return verifyHandler(t.PublicKey, t.Signature, t.Hash)
 }
 
 func SendTransactionSync(txn *Transaction, miners []string) error {
