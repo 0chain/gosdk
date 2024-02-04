@@ -217,7 +217,8 @@ func findDelta(rMap map[string]FileInfo, lMap map[string]FileInfo, prevMap map[s
 			fmt.Println("======PM", pm)
 			fmt.Println("======LINFO", lInfo)
 			fmt.Println("======LINFO updatedAT", lInfo.UpdatedAt)
-			if pm.Hash != lInfo.Hash {
+			//somehow hash check is inaccurate hence adding updatedAt check also
+			if pm.Hash != lInfo.Hash && pm.UpdatedAt != lInfo.UpdatedAt {
 				// File modified in local
 				lMod[lFile] = lInfo
 			}
