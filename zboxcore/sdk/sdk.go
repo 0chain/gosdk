@@ -1127,7 +1127,7 @@ func GetBlobberIds(blobberUrls []string) ([]string, error) {
 	return blobberIDs, nil
 }
 
-func getFreeAllocationBlobbers(request map[string]interface{}) ([]string, error) {
+func GetFreeAllocationBlobbers(request map[string]interface{}) ([]string, error) {
 	data, _ := json.Marshal(request)
 
 	params := make(map[string]string)
@@ -1180,7 +1180,7 @@ func CreateFreeAllocation(marker string, value uint64) (string, int64, error) {
 		"marker":               marker,
 	}
 
-	blobbers, err := getFreeAllocationBlobbers(input)
+	blobbers, err := GetFreeAllocationBlobbers(input)
 	if err != nil {
 		return "", 0, err
 	}
