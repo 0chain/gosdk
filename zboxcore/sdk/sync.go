@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"sort"
+	"time"
 
 	"os"
 	"path/filepath"
@@ -152,6 +153,7 @@ func addLocalFileList(root string, fMap map[string]FileInfo, dirList *[]string, 
 			fmt.Println("==>>>>>>>>lPath", lPath)
 			fmt.Println("==>>>>>>>>info", info)
 			fmt.Println("==>>>>>>>>info.ModTime", info.ModTime())
+			fmt.Println("==>>>>>>>>info.datetime", info.ModTime().Unix())
 			fMap[lPath] = FileInfo{Size: info.Size(), Hash: calcFileHash(path), Type: fileref.FILE}
 		}
 		return nil
