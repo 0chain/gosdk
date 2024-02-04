@@ -461,8 +461,6 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	// Buffered channel to hold the blocks as they are downloaded
 	blocks := make(chan blockData, n)
 
-	lastBlockSize := size - int64(n-1)*int64(req.effectiveBlockSize)*int64(req.datashards)*numBlocks
-
 	var (
 		actualFileHasher  hash.Hash
 		isPREAndWholeFile bool
@@ -652,7 +650,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 				offset := (startBlock + int64(j)*numBlocks) * int64(req.effectiveBlockSize) * int64(req.datashards)
 				var total int
 				if j == n-1 {
-					total, err = writeAtData(writeAtHandler, data, req.datashards, offset, int(lastBlockSize))
+					total, err = writeAtData(writeAtHandler, data, req.datashards, offset, int(size-offset))
 				} else {
 					total, err = writeAtData(writeAtHandler, data, req.datashards, offset, -1)
 				}
