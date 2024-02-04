@@ -149,6 +149,8 @@ func addLocalFileList(root string, fMap map[string]FileInfo, dirList *[]string, 
 		if info.IsDir() {
 			*dirList = append(*dirList, lPath)
 		} else {
+			fmt.Println("==>>>>>>>>lPath", lPath)
+			fmt.Println("==>>>>>>>>info", info)
 			fMap[lPath] = FileInfo{Size: info.Size(), Hash: calcFileHash(path), Type: fileref.FILE}
 		}
 		return nil
