@@ -45,7 +45,7 @@ func createfreeallocation(freeStorageMarker string) (string, error) {
 
 func getAllocationBlobbers(preferredBlobberURLs []string,
 	dataShards, parityShards int, size int64,
-	minReadPrice, maxReadPrice, minWritePrice, maxWritePrice int64) ([]string, error) {
+	minReadPrice, maxReadPrice, minWritePrice, maxWritePrice int64, force bool) ([]string, error) {
 
 	if len(preferredBlobberURLs) > 0 {
 		return sdk.GetBlobberIds(preferredBlobberURLs)
@@ -57,7 +57,7 @@ func getAllocationBlobbers(preferredBlobberURLs []string,
 	}, sdk.PriceRange{
 		Min: uint64(minWritePrice),
 		Max: uint64(maxWritePrice),
-	})
+	}, force)
 }
 
 func createAllocation(datashards, parityshards int, size int64,
@@ -76,8 +76,8 @@ func createAllocation(datashards, parityshards int, size int64,
 			Min: uint64(minWritePrice),
 			Max: uint64(maxWritePrice),
 		},
-		Lock:       uint64(lock),
-		BlobberIds: blobberIds,
+		Lock:                 uint64(lock),
+		BlobberIds:           blobberIds,
 		ThirdPartyExtendable: setThirdPartyExtendable,
 	}
 
@@ -121,7 +121,6 @@ func UpdateForbidAllocation(allocationID string, forbidupload, forbiddelete, for
 		false,        //extend,
 		allocationID, // allocID,
 		0,            //lock,
-		false,        //updateTerms,
 		"",           //addBlobberId,
 		"",           //removeBlobberId,
 		false,        //thirdPartyExtendable,
@@ -146,7 +145,6 @@ func freezeAllocation(allocationID string) (string, error) {
 		false,        //extend,
 		allocationID, // allocID,
 		0,            //lock,
-		false,        //updateTerms,
 		"",           //addBlobberId,
 		"",           //removeBlobberId,
 		false,        //thirdPartyExtendable,
@@ -182,7 +180,6 @@ func updateAllocationWithRepair(allocationID string,
 	size int64,
 	extend bool,
 	lock int64,
-	updateTerms bool,
 	addBlobberId, removeBlobberId string) (string, error) {
 	sdk.SetWasm()
 	allocationObj, err := sdk.GetAllocation(allocationID)
@@ -194,9 +191,13 @@ func updateAllocationWithRepair(allocationID string,
 	statusBar := &StatusBar{wg: wg, isRepair: true}
 	wg.Add(1)
 
-	hash, err := allocationObj.UpdateWithRepair(size, extend, uint64(lock), updateTerms, addBlobberId, removeBlobberId, false, &sdk.FileOptionsParameters{}, statusBar)
+	hash, err := allocationObj.UpdateWithRepair(size, extend, uint64(lock), addBlobberId, removeBlobberId, false, &sdk.FileOptionsParameters{}, statusBar)
 	if err == nil {
 		clearAllocation(allocationID)
+		wg.Wait()
+		if statusBar.err != nil {
+			return hash, statusBar.err
+		}
 	}
 
 	return hash, err
@@ -205,9 +206,8 @@ func updateAllocationWithRepair(allocationID string,
 func updateAllocation(allocationID string,
 	size int64, extend bool,
 	lock int64,
-	updateTerms bool,
 	addBlobberId, removeBlobberId string, setThirdPartyExtendable bool) (string, error) {
-	hash, _, err := sdk.UpdateAllocation(size, extend, allocationID, uint64(lock), updateTerms, addBlobberId, removeBlobberId, setThirdPartyExtendable, &sdk.FileOptionsParameters{})
+	hash, _, err := sdk.UpdateAllocation(size, extend, allocationID, uint64(lock), addBlobberId, removeBlobberId, setThirdPartyExtendable, &sdk.FileOptionsParameters{})
 
 	if err == nil {
 		clearAllocation(allocationID)
@@ -218,12 +218,11 @@ func updateAllocation(allocationID string,
 
 func getAllocationMinLock(datashards, parityshards int,
 	size int64,
-	maxreadPrice, maxwritePrice uint64,
+	maxwritePrice uint64,
 ) (int64, error) {
-	readPrice := sdk.PriceRange{Min: 0, Max: maxreadPrice}
 	writePrice := sdk.PriceRange{Min: 0, Max: maxwritePrice}
 
-	value, err := sdk.GetAllocationMinLock(datashards, parityshards, size, readPrice, writePrice)
+	value, err := sdk.GetAllocationMinLock(datashards, parityshards, size, writePrice)
 	if err != nil {
 		sdkLogger.Error(err)
 		return 0, err
@@ -236,9 +235,8 @@ func getUpdateAllocationMinLock(
 	allocationID string,
 	size int64,
 	extend bool,
-	updateTerms bool,
 	addBlobberId, removeBlobberId string) (int64, error) {
-	return sdk.GetUpdateAllocationMinLock(allocationID, size, extend, updateTerms, addBlobberId, removeBlobberId)
+	return sdk.GetUpdateAllocationMinLock(allocationID, size, extend, addBlobberId, removeBlobberId)
 }
 
 func getRemoteFileMap(allocationID string) ([]*fileResp, error) {

@@ -110,7 +110,6 @@ const (
 	NEW_ALLOCATION_REQUEST    = "new_allocation_request"
 	NEW_FREE_ALLOCATION       = "free_allocation_request"
 	UPDATE_ALLOCATION_REQUEST = "update_allocation_request"
-	FREE_UPDATE_ALLOCATION    = "free_update_allocation"
 	LOCK_TOKEN                = "lock"
 	UNLOCK_TOKEN              = "unlock"
 
@@ -139,6 +138,7 @@ const (
 	STORAGESC_WRITE_POOL_LOCK           = "write_pool_lock"
 	STORAGESC_WRITE_POOL_UNLOCK         = "write_pool_unlock"
 	STORAGESC_UPDATE_SETTINGS           = "update_settings"
+	ADD_HARDFORK                        = "add_hardfork"
 	STORAGESC_COLLECT_REWARD            = "collect_reward"
 	STORAGESC_KILL_BLOBBER              = "kill_blobber"
 	STORAGESC_KILL_VALIDATOR            = "kill_validator"
@@ -167,6 +167,7 @@ const (
 	ZCNSC_ADD_AUTHORIZER           = "add-authorizer"
 	ZCNSC_AUTHORIZER_HEALTH_CHECK  = "authorizer-health-check"
 	ZCNSC_DELETE_AUTHORIZER        = "delete-authorizer"
+	ZCNSC_COLLECT_REWARD 	       = "collect-rewards"
 
 	ESTIMATE_TRANSACTION_COST = `/v1/estimate_txn_fee`
 	FEES_TABLE                = `/v1/fees_table`
@@ -256,20 +257,49 @@ func (t *Transaction) VerifyTransaction(verifyHandler VerifyFunc) (bool, error) 
 	return verifyHandler(t.Signature, t.Hash, t.PublicKey)
 }
 
-func SendTransactionSync(txn *Transaction, miners []string) {
+func SendTransactionSync(txn *Transaction, miners []string) error {
 	wg := sync.WaitGroup{}
 	wg.Add(len(miners))
+	fails := make(chan error, len(miners))
+
 	for _, miner := range miners {
 		url := fmt.Sprintf("%v/%v", miner, TXN_SUBMIT_URL)
-		go sendTransactionToURL(url, txn, &wg) //nolint
+		go func() {
+			_, err := sendTransactionToURL(url, txn, &wg)
+			if err != nil {
+				fails <- err
+			}
+			wg.Done()
+		}() //nolint
 	}
 	wg.Wait()
+	close(fails)
+
+	failureCount := 0
+	messages := make(map[string]int)
+	for e := range fails {
+		if e != nil {
+			failureCount++
+			messages[e.Error()] += 1
+		}
+	}
+
+	max := 0
+	dominant := ""
+	for m, s := range messages {
+		if s > max {
+			dominant = m
+		}
+	}
+
+	if failureCount == len(miners) {
+		return errors.New("transaction_send_error", dominant)
+	}
+
+	return nil
 }
 
 func sendTransactionToURL(url string, txn *Transaction, wg *sync.WaitGroup) ([]byte, error) {
-	if wg != nil {
-		defer wg.Done()
-	}
 	postReq, err := util.NewHTTPPostRequest(url, txn)
 	if err != nil {
 		//Logger.Error("Error in serializing the transaction", txn, err.Error())

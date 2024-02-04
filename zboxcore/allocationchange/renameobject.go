@@ -16,7 +16,6 @@ type RenameFileChange struct {
 }
 
 func (ch *RenameFileChange) ProcessChange(rootRef *fileref.Ref, _ map[string]string) (err error) {
-
 	parentPath := path.Dir(ch.ObjectTree.GetPath())
 	fields, err := common.GetPathFields(parentPath)
 	if err != nil {
@@ -47,11 +46,12 @@ func (ch *RenameFileChange) ProcessChange(rootRef *fileref.Ref, _ map[string]str
 			if ch.ObjectTree.GetType() == fileref.FILE {
 				affectedRef = &(ch.ObjectTree.(*fileref.FileRef)).Ref
 			} else {
-				err = errors.New("invalid_rename_op", "Object to rename is not a file use move instead")
+				affectedRef = ch.ObjectTree.(*fileref.Ref)
 			}
 
 			affectedRef.Path = pathutil.Join(parentPath, ch.NewName)
 			affectedRef.Name = ch.NewName
+			affectedRef.HashToBeComputed = true
 
 			dirRef.AddChild(ch.ObjectTree)
 			found = true
@@ -64,7 +64,6 @@ func (ch *RenameFileChange) ProcessChange(rootRef *fileref.Ref, _ map[string]str
 		return
 	}
 	ch.processChildren(affectedRef)
-	rootRef.CalculateHash()
 	return
 }
 
@@ -76,6 +75,7 @@ func (ch *RenameFileChange) processChildren(curRef *fileref.Ref) {
 		} else {
 			childRef = childRefEntity.(*fileref.Ref)
 		}
+		childRef.HashToBeComputed = true
 		childRef.Path = pathutil.Join(curRef.Path, childRef.Name)
 		if childRefEntity.GetType() == fileref.DIRECTORY {
 			ch.processChildren(childRef)

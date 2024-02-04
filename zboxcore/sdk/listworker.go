@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"strings"
 	"sync"
@@ -31,6 +32,7 @@ type ListRequest struct {
 	ctx                context.Context
 	wg                 *sync.WaitGroup
 	forRepair          bool
+	listOnly           bool
 	Consensus
 }
 
@@ -42,23 +44,28 @@ type listResponse struct {
 }
 
 type ListResult struct {
-	Name            string           `json:"name"`
-	Path            string           `json:"path,omitempty"`
-	Type            string           `json:"type"`
-	Size            int64            `json:"size"`
-	Hash            string           `json:"hash,omitempty"`
-	FileMetaHash    string           `json:"file_meta_hash,omitempty"`
-	MimeType        string           `json:"mimetype,omitempty"`
-	NumBlocks       int64            `json:"num_blocks"`
-	LookupHash      string           `json:"lookup_hash"`
-	EncryptionKey   string           `json:"encryption_key"`
-	ActualSize      int64            `json:"actual_size"`
-	ActualNumBlocks int64            `json:"actual_num_blocks"`
-	CreatedAt       common.Timestamp `json:"created_at"`
-	UpdatedAt       common.Timestamp `json:"updated_at"`
-	Children        []*ListResult    `json:"list"`
-	Consensus       `json:"-"`
-	deleteMask      zboxutil.Uint128 `json:"-"`
+	Name                string `json:"name"`
+	Path                string `json:"path,omitempty"`
+	Type                string `json:"type"`
+	Size                int64  `json:"size"`
+	Hash                string `json:"hash,omitempty"`
+	FileMetaHash        string `json:"file_meta_hash,omitempty"`
+	MimeType            string `json:"mimetype,omitempty"`
+	NumBlocks           int64  `json:"num_blocks"`
+	LookupHash          string `json:"lookup_hash"`
+	EncryptionKey       string `json:"encryption_key"`
+	ActualSize          int64  `json:"actual_size"`
+	ActualNumBlocks     int64  `json:"actual_num_blocks"`
+	ThumbnailHash       string `json:"thumbnail_hash"`
+	ThumbnailSize       int64  `json:"thumbnail_size"`
+	ActualThumbnailHash string `json:"actual_thumbnail_hash"`
+	ActualThumbnailSize int64  `json:"actual_thumbnail_size"`
+
+	CreatedAt  common.Timestamp `json:"created_at"`
+	UpdatedAt  common.Timestamp `json:"updated_at"`
+	Children   []*ListResult    `json:"list"`
+	Consensus  `json:"-"`
+	deleteMask zboxutil.Uint128 `json:"-"`
 }
 
 func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, blobberIdx int, rspCh chan<- *listResponse) {
@@ -91,7 +98,10 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 	}
 
 	//formWriter.Close()
-	httpreq, err := zboxutil.NewListRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.remotefilepath, req.remotefilepathhash, string(authTokenBytes))
+	if req.forRepair {
+		req.listOnly = true
+	}
+	httpreq, err := zboxutil.NewListRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.remotefilepath, req.remotefilepathhash, string(authTokenBytes), req.listOnly)
 	if err != nil {
 		l.Logger.Error("List info request error: ", err.Error())
 		return
@@ -110,7 +120,6 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 			return errors.Wrap(err, "Error: Resp")
 		}
 		s.WriteString(string(resp_body))
-		l.Logger.Debug("List result from Blobber:", string(resp_body))
 		if resp.StatusCode == http.StatusOK {
 			listResult := &fileref.ListResult{}
 			err = json.Unmarshal(resp_body, listResult)
@@ -129,7 +138,7 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 	})
 }
 
-func (req *ListRequest) getlistFromBlobbers() []*listResponse {
+func (req *ListRequest) getlistFromBlobbers() ([]*listResponse, error) {
 	numList := len(req.blobbers)
 	req.wg = &sync.WaitGroup{}
 	req.wg.Add(numList)
@@ -142,24 +151,60 @@ func (req *ListRequest) getlistFromBlobbers() []*listResponse {
 	for i := 0; i < numList; i++ {
 		listInfos[i] = <-rspCh
 	}
-	return listInfos
+	if req.listOnly {
+		return listInfos, nil
+	}
+	consensusMap := make(map[string][]*blockchain.StorageNode)
+	var consensusHash string
+	for i := 0; i < numList; i++ {
+		if listInfos[i].err != nil || listInfos[i].ref == nil {
+			continue
+		}
+		hash := listInfos[i].ref.FileMetaHash
+		consensusMap[hash] = append(consensusMap[hash], req.blobbers[listInfos[i].blobberIdx])
+		if len(consensusMap[hash]) >= req.consensusThresh {
+			consensusHash = hash
+		}
+	}
+	var err error
+	req.listOnly = true
+	listLen := len(consensusMap[consensusHash])
+	if listLen < req.consensusThresh {
+		return listInfos, listInfos[0].err
+	}
+	for i := 0; i < listLen; i++ {
+		var rnd = rand.New(rand.NewSource(time.Now().UnixNano()))
+		num := rnd.Intn(listLen)
+		randomBlobber := consensusMap[consensusHash][num]
+		req.wg.Add(1)
+		go req.getListInfoFromBlobber(randomBlobber, 0, rspCh)
+		req.wg.Wait()
+		listInfos[0] = <-rspCh
+		if listInfos[0].err == nil {
+			return listInfos, nil
+		}
+		err = listInfos[0].err
+	}
+	return listInfos, err
 }
 
 func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
-	lR := req.getlistFromBlobbers()
+	l.Logger.Debug("Getting list info from blobbers")
+	lR, err := req.getlistFromBlobbers()
+	if err != nil {
+		return nil, err
+	}
 	result := &ListResult{
 		deleteMask: zboxutil.NewUint128(1).Lsh(uint64(len(req.blobbers))).Sub64(1),
 	}
 	selected := make(map[string]*ListResult)
 	childResultMap := make(map[string]*ListResult)
-	var err error
-	var errNum int
-	req.consensus = 0
+	if !req.forRepair {
+		req.consensusThresh = 1
+	}
 	for i := 0; i < len(lR); i++ {
 		ti := lR[i]
 		if ti.err != nil {
-			err = ti.err
-			errNum++
 			result.deleteMask = result.deleteMask.And(zboxutil.NewUint128(1).Lsh(uint64(ti.blobberIdx)).Not())
 			continue
 		}
@@ -175,6 +220,11 @@ func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
 		result.LookupHash = ti.ref.LookupHash
 		result.FileMetaHash = ti.ref.FileMetaHash
 		result.ActualSize = ti.ref.ActualSize
+		result.ThumbnailHash = ti.ref.ThumbnailHash
+		result.ThumbnailSize = ti.ref.ThumbnailSize
+		result.ActualThumbnailHash = ti.ref.ActualThumbnailHash
+		result.ActualThumbnailSize = ti.ref.ActualThumbnailSize
+
 		if ti.ref.ActualSize > 0 {
 			result.ActualNumBlocks = (ti.ref.ActualSize + CHUNK_SIZE - 1) / CHUNK_SIZE
 		}
@@ -192,13 +242,12 @@ func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
 	if req.forRepair {
 		for _, child := range childResultMap {
 			if child.consensus < child.fullconsensus {
-				result.Children = append(result.Children, child)
+				if _, ok := selected[child.LookupHash]; !ok {
+					result.Children = append(result.Children, child)
+					selected[child.LookupHash] = child
+				}
 			}
 		}
-	}
-
-	if errNum >= req.consensusThresh && !req.forRepair {
-		return nil, err
 	}
 
 	return result, nil
@@ -235,6 +284,10 @@ func (lr *ListResult) populateChildren(children []fileref.RefEntity, childResult
 			childResult.MimeType = (child.(*fileref.FileRef)).MimeType
 			childResult.EncryptionKey = (child.(*fileref.FileRef)).EncryptedKey
 			childResult.ActualSize = (child.(*fileref.FileRef)).ActualFileSize
+			childResult.ThumbnailHash = (child.(*fileref.FileRef)).ThumbnailHash
+			childResult.ThumbnailSize = (child.(*fileref.FileRef)).ThumbnailSize
+			childResult.ActualThumbnailHash = (child.(*fileref.FileRef)).ActualThumbnailHash
+			childResult.ActualThumbnailSize = (child.(*fileref.FileRef)).ActualThumbnailSize
 		} else {
 			childResult.ActualSize = (child.(*fileref.Ref)).ActualSize
 		}

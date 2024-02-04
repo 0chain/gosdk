@@ -25,6 +25,27 @@ async function startPlay({
     throw new Error('video element is required');
   }
 
+	videoElement.addEventListener('error', function () {
+    	switch (videoElement.error.code) {
+        	case videoElement.error.MEDIA_ERR_ABORTED:
+            	console.error("Fetch aborted by the user.");
+            	break;
+        	case videoElement.error.MEDIA_ERR_NETWORK:
+            	console.error("Network error occurred.");
+            	break;
+        	case videoElement.error.MEDIA_ERR_DECODE:
+            	console.error("Media decoding failed.");
+            	break;
+        	case videoElement.error.MEDIA_ERR_SRC_NOT_SUPPORTED:
+            	console.error("Media not supported.");
+            	break;
+        	default:
+            	console.error("An unknown error occurred.");
+            	break;
+    	}
+	});
+
+
   await goWasm.sdk.play(
       allocationId, remotePath, authTicket, lookupHash, isLive);
 
@@ -79,7 +100,7 @@ async function startPlay({
       }).then(() => {
           // Auto-play started
       });
-  } 
+  }
 }
 
 

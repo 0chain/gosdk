@@ -17,7 +17,7 @@ import (
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	l "github.com/0chain/gosdk/zboxcore/logger"
-	"golang.org/x/crypto/sha3"
+	"github.com/minio/sha256-simd"
 )
 
 // For sync app
@@ -106,7 +106,7 @@ func calcFileHash(filePath string) string {
 	}
 	defer fp.Close()
 
-	h := sha3.New256()
+	h := sha256.New()
 	if _, err := io.Copy(h, fp); err != nil {
 		log.Fatal(err)
 	}

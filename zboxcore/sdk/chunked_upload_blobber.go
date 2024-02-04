@@ -84,14 +84,12 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 	for i := 0; i < 3; i++ {
 		err, shouldContinue = func() (err error, shouldContinue bool) {
 			reqCtx, ctxCncl := context.WithTimeout(ctx, su.uploadTimeOut)
-			start := time.Now()
 			var resp *http.Response
 			err = zboxutil.HttpDo(reqCtx, ctxCncl, req, func(r *http.Response, err error) error {
 				resp = r
 				return err
 			})
 			defer ctxCncl()
-			logger.Logger.Info("[sendUploadRequestBlobber] ", time.Since(start).Milliseconds())
 
 			if err != nil {
 				logger.Logger.Error("Upload : ", err)
@@ -402,6 +400,6 @@ func (sb *ChunkedUploadBlobber) processWriteMarker(
 		}
 		size += change.GetSize()
 	}
-
+	rootRef.CalculateHash()
 	return rootRef, lR.LatestWM, size, fileIDMeta, nil
 }

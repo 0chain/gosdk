@@ -96,25 +96,6 @@ func (req *DirRequest) ProcessDir(a *Allocation) error {
 	}
 	defer writeMarkerMU.Unlock(req.ctx, req.dirMask,
 		a.Blobbers, time.Minute, req.connectionID) //nolint: errcheck
-	//Check if the allocation is to be repaired or rolled back
-	status, err := req.allocationObj.CheckAllocStatus()
-	l.Logger.Info("Allocation status: ", status)
-	if err != nil {
-		l.Logger.Error("Error checking allocation status: ", err)
-		return fmt.Errorf("directory creation failed: %s", err.Error())
-	}
-
-	if status == Repair {
-		l.Logger.Info("Repairing allocation")
-		//TODO: Need status callback to call repair allocation
-		// err = req.allocationObj.RepairAlloc()
-		// if err != nil {
-		// 	return err
-		// }
-	}
-	if status != Commit {
-		return ErrRetryOperation
-	}
 
 	return req.commitRequest(existingDirCount)
 }

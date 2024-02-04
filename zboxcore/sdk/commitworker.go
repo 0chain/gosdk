@@ -92,11 +92,16 @@ func startCommitWorker(blobberChan chan *CommitRequest, blobberID string) {
 
 func (commitreq *CommitRequest) processCommit() {
 	defer commitreq.wg.Done()
-
+	start := time.Now()
 	l.Logger.Info("received a commit request")
 	paths := make([]string, 0)
 	for _, change := range commitreq.changes {
 		paths = append(paths, change.GetAffectedPath()...)
+	}
+	if len(paths) == 0 {
+		l.Logger.Info("Nothing to commit")
+		commitreq.result = SuccessCommitResult()
+		return
 	}
 	var req *http.Request
 	var lR ReferencePathResult
@@ -105,12 +110,6 @@ func (commitreq *CommitRequest) processCommit() {
 		l.Logger.Error("Creating ref path req", err)
 		return
 	}
-	if len(paths) == 0 {
-		l.Logger.Info("Nothing to commit")
-		commitreq.result = SuccessCommitResult()
-		return
-	}
-
 	ctx, cncl := context.WithTimeout(context.Background(), (time.Second * 30))
 	err = zboxutil.HttpDo(ctx, cncl, req, func(resp *http.Response, err error) error {
 		if err != nil {
@@ -182,11 +181,13 @@ func (commitreq *CommitRequest) processCommit() {
 		}
 		size += change.GetSize()
 	}
+	rootRef.CalculateHash()
 	err = commitreq.commitBlobber(rootRef, lR.LatestWM, size, fileIDMeta)
 	if err != nil {
 		commitreq.result = ErrorCommitResult(err.Error())
 		return
 	}
+	l.Logger.Info("[commitBlobber]", time.Since(start).Milliseconds())
 	commitreq.result = SuccessCommitResult()
 }
 
@@ -207,7 +208,10 @@ func (req *CommitRequest) commitBlobber(
 	} else {
 		wm.PreviousAllocationRoot = ""
 	}
-
+	if wm.AllocationRoot == wm.PreviousAllocationRoot {
+		l.Logger.Error("Allocation root and previous allocation root are same")
+		return thrown.New("commit_error", "Allocation root and previous allocation root are same")
+	}
 	wm.FileMetaRoot = rootRef.FileMetaHash
 	wm.AllocationID = req.allocationID
 	wm.Size = size
