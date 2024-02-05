@@ -1,15 +1,18 @@
 package sdk
 
 import (
+	"bytes"
 	"io"
 
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
+	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 )
 
 type UploadOperation struct {
@@ -17,15 +20,24 @@ type UploadOperation struct {
 	opCode        int
 	chunkedUpload *ChunkedUpload
 	isUpdate      bool
+	isDownload    bool
 }
 
 func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
+	if uo.isDownload {
+		if f, ok := uo.chunkedUpload.fileReader.(*sys.MemChanFile); ok {
+			err := allocObj.DownloadFileToFileHandler(f, uo.chunkedUpload.fileMeta.RemotePath, false, nil, true)
+			if err != nil {
+				l.Logger.Error("DownloadFileToFileHandler Failed", zap.String("path", uo.chunkedUpload.fileMeta.RemotePath), zap.Error(err))
+				return nil, uo.chunkedUpload.uploadMask, err
+			}
+		}
+	}
 	err := uo.chunkedUpload.process()
 	if err != nil {
-		uo.chunkedUpload.ctxCncl()
+		l.Logger.Error("UploadOperation Failed", zap.String("name", uo.chunkedUpload.fileMeta.RemoteName), zap.Error(err))
 		return nil, uo.chunkedUpload.uploadMask, err
 	}
-
 	var pos uint64
 	numList := len(uo.chunkedUpload.blobbers)
 	uo.refs = make([]*fileref.FileRef, numList)
@@ -34,8 +46,7 @@ func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([
 		uo.refs[pos] = uo.chunkedUpload.blobbers[pos].fileRef
 		uo.refs[pos].ChunkSize = uo.chunkedUpload.chunkSize
 	}
-
-	l.Logger.Info("Completed the upload")
+	l.Logger.Info("UploadOperation Success", zap.String("name", uo.chunkedUpload.fileMeta.RemoteName))
 	return nil, uo.chunkedUpload.uploadMask, nil
 }
 
@@ -117,10 +128,17 @@ func (uo *UploadOperation) Error(allocObj *Allocation, consensus int, err error)
 	}
 }
 
-func NewUploadOperation(workdir string, allocObj *Allocation, connectionID string, fileMeta FileMeta, fileReader io.Reader, isUpdate, isWebstreaming bool, opts ...ChunkedUploadOption) (*UploadOperation, string, error) {
+func NewUploadOperation(workdir string, allocObj *Allocation, connectionID string, fileMeta FileMeta, fileReader io.Reader, isUpdate, isWebstreaming, isRepair, isMemoryDownload bool, opts ...ChunkedUploadOption) (*UploadOperation, string, error) {
 	uo := &UploadOperation{}
+	if fileMeta.ActualSize == 0 {
+		byteReader := bytes.NewReader([]byte(
+			emptyFileDataHash))
+		fileReader = byteReader
+		opts = append(opts, WithActualHash(emptyFileDataHash))
+		fileMeta.ActualSize = int64(len(emptyFileDataHash))
+	}
 
-	cu, err := CreateChunkedUpload(workdir, allocObj, fileMeta, fileReader, isUpdate, false, isWebstreaming, connectionID, opts...)
+	cu, err := CreateChunkedUpload(workdir, allocObj, fileMeta, fileReader, isUpdate, isRepair, isWebstreaming, connectionID, opts...)
 	if err != nil {
 		return nil, "", err
 	}
@@ -128,6 +146,6 @@ func NewUploadOperation(workdir string, allocObj *Allocation, connectionID strin
 	uo.chunkedUpload = cu
 	uo.opCode = cu.opCode
 	uo.isUpdate = isUpdate
-
+	uo.isDownload = isMemoryDownload
 	return uo, cu.progress.ConnectionID, nil
 }

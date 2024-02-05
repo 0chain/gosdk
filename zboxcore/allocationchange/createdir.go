@@ -60,7 +60,6 @@ func (d *DirCreateChange) ProcessChange(rootRef *fileref.Ref, FileIDMeta map[str
 		}
 	}
 
-	rootRef.CalculateHash()
 	return
 }
 

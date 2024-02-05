@@ -13,7 +13,7 @@ import (
 	"github.com/0chain/gosdk/core/zcncrypto"
 )
 
-//MSVoteCallback callback definition multisig Vote function
+// MSVoteCallback callback definition multisig Vote function
 type MSVoteCallback interface {
 	OnVoteComplete(status int, proposal string, err string)
 }
@@ -121,6 +121,10 @@ func GetClientID(pkey string) string {
 	}
 
 	return encryption.Hash(publicKeyBytes)
+}
+
+func GetClientWalletKey() string {
+	return _config.wallet.ClientKey
 }
 
 func GetClientWalletID() string {

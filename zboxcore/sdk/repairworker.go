@@ -2,11 +2,14 @@ package sdk
 
 import (
 	"context"
+	"io"
 	"sync"
 
+	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	l "github.com/0chain/gosdk/zboxcore/logger"
+	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"go.uber.org/zap"
 )
 
@@ -68,7 +71,8 @@ func (r *RepairRequest) processRepair(ctx context.Context, a *Allocation) {
 	}
 }
 
-func (r *RepairRequest) iterateDir(a *Allocation, dir *ListResult) {
+func (r *RepairRequest) iterateDir(a *Allocation, dir *ListResult) []OperationRequest {
+	ops := make([]OperationRequest, 0)
 	switch dir.Type {
 	case fileref.DIRECTORY:
 		if len(dir.Children) == 0 {
@@ -76,7 +80,7 @@ func (r *RepairRequest) iterateDir(a *Allocation, dir *ListResult) {
 			dir, err = a.ListDir(dir.Path, true)
 			if err != nil {
 				l.Logger.Error("Failed to get listDir for path ", zap.Any("path", dir.Path), zap.Error(err))
-				return
+				return nil
 			}
 		}
 		if len(dir.Children) == 0 {
@@ -88,7 +92,21 @@ func (r *RepairRequest) iterateDir(a *Allocation, dir *ListResult) {
 					err := a.deleteFile(dir.Path, 0, consensus, dir.deleteMask)
 					if err != nil {
 						l.Logger.Error("repair_file_failed", zap.Error(err))
-						return
+						if r.statusCB != nil {
+							r.statusCB.Error(a.ID, dir.Path, OpRepair, err)
+						}
+						return nil
+					}
+					r.filesRepaired++
+				} else if consensus < len(a.Blobbers) {
+					createMask := dir.deleteMask.Not().And(zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1))
+					err := a.createDir(dir.Path, 0, createMask.CountOnes(), createMask)
+					if err != nil {
+						l.Logger.Error("repair_file_failed", zap.Error(err))
+						if r.statusCB != nil {
+							r.statusCB.Error(a.ID, dir.Path, OpRepair, err)
+						}
+						return nil
 					}
 					r.filesRepaired++
 				}
@@ -96,28 +114,41 @@ func (r *RepairRequest) iterateDir(a *Allocation, dir *ListResult) {
 		}
 		for _, childDir := range dir.Children {
 			if r.checkForCancel(a) {
-				return
+				return nil
 			}
-			r.iterateDir(a, childDir)
+			ops = append(ops, r.iterateDir(a, childDir)...)
+			if len(ops) >= MultiOpBatchSize/2 {
+				r.repairOperation(a, ops)
+				ops = nil
+			}
 		}
-
+		if len(ops) > 0 {
+			r.repairOperation(a, ops)
+			ops = nil
+		}
 	case fileref.FILE:
-		r.repairFile(a, dir)
+		// this returns op object and mask
+		repairOps := r.repairFile(a, dir)
+		if repairOps != nil {
+			ops = append(ops, repairOps...)
+		}
 
 	default:
 		l.Logger.Info("Invalid directory type", zap.Any("type", dir.Type))
 	}
+	return ops
 }
 
-func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
+func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) []OperationRequest {
+	ops := make([]OperationRequest, 0)
 	if r.checkForCancel(a) {
-		return
+		return nil
 	}
 	l.Logger.Info("Checking file for the path :", zap.Any("path", file.Path))
 	found, deleteMask, repairRequired, ref, err := a.RepairRequired(file.Path)
 	if err != nil {
 		l.Logger.Error("repair_required_failed", zap.Error(err))
-		return
+		return nil
 	}
 	if repairRequired {
 		l.Logger.Info("Repair required for the path :", zap.Any("path", file.Path))
@@ -131,89 +162,81 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
 
 			if deleteMask.CountOnes() > 0 {
 				l.Logger.Info("Deleting minority shards for the path :", zap.Any("path", file.Path))
-				consensus := deleteMask.CountOnes()
-				err := a.deleteFile(file.Path, 0, consensus, deleteMask)
-				if err != nil {
-					l.Logger.Error("delete_file_failed", zap.Error(err))
-					return
+				op := OperationRequest{
+					OperationType: constants.FileOperationDelete,
+					RemotePath:    file.Path,
+					Mask:          &deleteMask,
 				}
+				ops = append(ops, op)
 			}
-
+			wg.Add(1)
 			localPath := r.getLocalPath(file)
+			var op *OperationRequest
 			if !checkFileExists(localPath) {
 				if r.checkForCancel(a) {
-					return
+					return nil
 				}
-				l.Logger.Info("Downloading file for the path :", zap.Any("path", file.Path))
-				wg.Add(1)
 				memFile := &sys.MemChanFile{
 					Buffer:         make(chan []byte, 10),
 					ChunkWriteSize: int(a.GetChunkReadSize(ref.EncryptedKey != "")),
 				}
-				err = a.DownloadFileToFileHandler(memFile, ref.Path, false, statusCB, true)
-				if err != nil {
-					l.Logger.Error("download_file_failed", zap.Error(err))
-					return
-				}
-				wg.Add(1)
-				uploadStatusCB := &RepairStatusCB{
-					wg:       &wg,
-					statusCB: r.statusCB,
-				}
-				l.Logger.Info("Repairing file for the path :", zap.Any("path", file.Path))
-				go func(memFile *sys.MemChanFile) {
-					err = a.RepairFile(memFile, file.Path, uploadStatusCB, found, ref)
-					if err != nil {
-						l.Logger.Error("repair_file_failed", zap.Error(err))
-						_ = a.CancelDownload(file.Path)
-					}
-				}(memFile)
-				wg.Wait()
-				if !uploadStatusCB.success {
-					l.Logger.Error("Failed to upload file, Status call back failed",
-						zap.Any("localpath", localPath), zap.Any("remotepath", file.Path))
-					return
-				}
-				l.Logger.Info("Download file and upload success for repair", zap.Any("localpath", localPath), zap.Any("remotepath", file.Path))
+				op = a.RepairFile(memFile, file.Path, statusCB, found, ref)
+				op.DownloadFile = true
 			} else {
-				l.Logger.Info("FILE EXISTS", zap.Any("bool", true))
 				f, err := sys.Files.Open(localPath)
 				if err != nil {
-					l.Logger.Error("open_file_failed", zap.Error(err))
-					return
-				}
-				wg.Add(1)
-				err = a.RepairFile(f, file.Path, statusCB, found, ref)
-				if err != nil {
 					l.Logger.Error("repair_file_failed", zap.Error(err))
-					return
+					return nil
 				}
-				defer f.Close()
+				op = a.RepairFile(f, file.Path, statusCB, found, ref)
 			}
-
+			ops = append(ops, *op)
 			if r.checkForCancel(a) {
-				return
+				return nil
 			}
 		} else {
 			l.Logger.Info("Repair by delete", zap.Any("path", file.Path))
-			consensus := found.CountOnes()
-			err := a.deleteFile(file.Path, 1, consensus, found)
-			if err != nil {
-				l.Logger.Error("repair_file_failed", zap.Error(err))
-				return
+			op := OperationRequest{
+				OperationType: constants.FileOperationDelete,
+				RemotePath:    file.Path,
+				Mask:          &found,
 			}
+			ops = append(ops, op)
 		}
-		l.Logger.Info("Repair file success", zap.Any("remotepath", file.Path))
-		r.filesRepaired++
 	} else if deleteMask.CountOnes() > 0 {
 		l.Logger.Info("Deleting minority shards for the path :", zap.Any("path", file.Path))
-		consensus := deleteMask.CountOnes()
-		err := a.deleteFile(file.Path, 0, consensus, deleteMask)
-		if err != nil {
-			l.Logger.Error("repair_file_failed", zap.Error(err))
-			return
+		op := OperationRequest{
+			OperationType: constants.FileOperationDelete,
+			RemotePath:    file.Path,
+			Mask:          &deleteMask,
 		}
-		r.filesRepaired++
+		ops = append(ops, op)
+	}
+	return ops
+}
+
+func (r *RepairRequest) repairOperation(a *Allocation, ops []OperationRequest) {
+	err := a.DoMultiOperation(ops, WithRepair())
+	if err != nil {
+		l.Logger.Error("repair_file_failed", zap.Error(err))
+		status := r.statusCB != nil
+		for _, op := range ops {
+			if op.DownloadFile {
+				_ = a.CancelDownload(op.RemotePath)
+			}
+			if status {
+				r.statusCB.Error(a.ID, op.RemotePath, OpRepair, err)
+			}
+		}
+	} else {
+		r.filesRepaired += len(ops)
+	}
+	for _, op := range ops {
+		if op.FileReader != nil && !op.DownloadFile {
+			if f, ok := op.FileReader.(io.Closer); ok {
+				f.Close()
+			}
+		}
 	}
 }
 

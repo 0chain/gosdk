@@ -116,7 +116,11 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 		wm.AllocationRoot = rb.lpm.PrevWM.AllocationRoot
 		wm.PreviousAllocationRoot = rb.lpm.PrevWM.AllocationRoot
 		wm.FileMetaRoot = rb.lpm.PrevWM.FileMetaRoot
+		if wm.AllocationRoot == rb.lpm.LatestWM.AllocationRoot {
+			return nil
+		}
 	}
+
 	err := wm.Sign()
 	if err != nil {
 		l.Logger.Error("Signing writemarker failed: ", err)
@@ -265,7 +269,7 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 			latestVersion = version
 		}
 
-		if prevVersion == "" {
+		if prevVersion == "" && version != latestVersion {
 			prevVersion = version
 		}
 
@@ -276,7 +280,6 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 		versionMap[version] = append(versionMap[version], rb)
 	}
 
-	l.Logger.Info("versionMap", zap.Any("versionMap", versionMap))
 	if len(versionMap) < 2 {
 		return Commit, nil
 	}
@@ -290,13 +293,15 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 	if len(versionMap[latestVersion]) >= req || len(versionMap[prevVersion]) >= req || len(versionMap) > 2 {
 		// TODO: Return Repair after refactoring the repair function
 		return Repair, nil
+	} else {
+		l.Logger.Info("versionMapLen", zap.Int("versionMapLen", len(versionMap)), zap.Int("latestLen", len(versionMap[latestVersion])), zap.Int("prevLen", len(versionMap[prevVersion])))
 	}
 
 	// rollback to previous version
 	l.Logger.Info("Rolling back to previous version")
 	fullConsensus := len(versionMap[latestVersion]) - (req - len(versionMap[prevVersion]))
 	errCnt = 0
-
+	l.Logger.Info("fullConsensus", zap.Int32("fullConsensus", int32(fullConsensus)), zap.Int("latestLen", len(versionMap[latestVersion])), zap.Int("prevLen", len(versionMap[prevVersion])))
 	for _, rb := range versionMap[latestVersion] {
 
 		wg.Add(1)

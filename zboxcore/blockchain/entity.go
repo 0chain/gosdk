@@ -2,10 +2,42 @@ package blockchain
 
 import (
 	"encoding/json"
+	"github.com/0chain/gosdk/core/util"
+	"math"
+	"sync"
 	"sync/atomic"
 
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/conf"
+	"github.com/0chain/gosdk/core/node"
 )
+
+var miners []string
+var mGuard sync.Mutex
+
+func getMinMinersSubmit() int {
+	minMiners := util.MaxInt(calculateMinRequired(float64(chain.MinSubmit), float64(len(chain.Miners))/100), 1)
+	return minMiners
+}
+
+func calculateMinRequired(minRequired, percent float64) int {
+	return int(math.Ceil(minRequired * percent))
+}
+
+func GetStableMiners() []string {
+	mGuard.Lock()
+	defer mGuard.Unlock()
+	if len(miners) == 0 {
+		miners = util.GetRandom(chain.Miners, getMinMinersSubmit())
+	}
+
+	return miners
+}
+func ResetStableMiners() {
+	mGuard.Lock()
+	defer mGuard.Unlock()
+	miners = util.GetRandom(chain.Miners, getMinMinersSubmit())
+}
 
 type ChainConfig struct {
 	BlockWorker     string
@@ -74,13 +106,14 @@ func PopulateNodes(nodesjson string) ([]string, error) {
 }
 
 var chain *ChainConfig
+var Sharders *node.NodeHolder
 
 func init() {
 	chain = &ChainConfig{
 		MaxTxnQuery:     5,
 		QuerySleepTime:  5,
-		MinSubmit:       50,
-		MinConfirmation: 50,
+		MinSubmit:       10,
+		MinConfirmation: 10,
 	}
 }
 
@@ -94,10 +127,11 @@ func PopulateChain(minerjson string, sharderjson string) error {
 	if err != nil {
 		return err
 	}
-	chain.Sharders, err = PopulateNodes(sharderjson)
+	sharders, err := PopulateNodes(sharderjson)
 	if err != nil {
 		return err
 	}
+	SetSharders(sharders)
 	return nil
 }
 
@@ -105,8 +139,11 @@ func GetBlockWorker() string {
 	return chain.BlockWorker
 }
 
+func GetAllSharders() []string {
+	return Sharders.All()
+}
 func GetSharders() []string {
-	return chain.Sharders
+	return Sharders.Healthy()
 }
 
 func GetMiners() []string {
@@ -134,7 +171,15 @@ func SetBlockWorker(blockWorker string) {
 }
 
 func SetSharders(sharderArray []string) {
-	chain.Sharders = sharderArray
+	consensus := conf.DefaultSharderConsensous
+	config, err := conf.GetClientConfig()
+	if err == nil && config != nil {
+		consensus = config.SharderConsensous
+	}
+	if len(sharderArray) < consensus {
+		consensus = len(sharderArray)
+	}
+	Sharders = node.NewHolder(sharderArray, consensus)
 }
 
 func SetMiners(minerArray []string) {

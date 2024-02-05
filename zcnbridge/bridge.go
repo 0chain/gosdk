@@ -3,18 +3,27 @@ package zcnbridge
 import (
 	"context"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
+	"github.com/0chain/gosdk/zcnbridge/ethereum/bancortoken"
+	"io"
+	"math/big"
+	"strconv"
+	"time"
+
+	"github.com/0chain/common/core/currency"
+	"github.com/0chain/gosdk/zcnbridge/ethereum/bancornetwork"
+	"github.com/0chain/gosdk/zcnbridge/ethereum/zcntoken"
+	h "github.com/0chain/gosdk/zcnbridge/http"
 	hdw "github.com/0chain/gosdk/zcncore/ethhdwallet"
 	"github.com/spf13/viper"
-	"math/big"
-	"os"
-	"time"
+
+	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/zcnbridge/ethereum"
 	"github.com/0chain/gosdk/zcnbridge/ethereum/authorizers"
-	binding "github.com/0chain/gosdk/zcnbridge/ethereum/bridge"
-	"github.com/0chain/gosdk/zcnbridge/ethereum/erc20"
+	"github.com/0chain/gosdk/zcnbridge/ethereum/bridge"
 	"github.com/0chain/gosdk/zcnbridge/ethereum/nftconfig"
 	"github.com/0chain/gosdk/zcnbridge/log"
 	"github.com/0chain/gosdk/zcncore"
@@ -32,10 +41,6 @@ import (
 	"go.uber.org/zap"
 )
 
-type (
-	Wei int64
-)
-
 var Logger logger.Logger
 var defaultLogLevel = logger.DEBUG
 
@@ -43,11 +48,15 @@ func init() {
 	Logger.Init(defaultLogLevel, "zcnbridge-sdk")
 
 	Logger.SetLevel(logger.DEBUG)
-	f, err := os.OpenFile("bridge.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return
+	ioWriter := &lumberjack.Logger{
+		Filename:   "bridge.log",
+		MaxSize:    100, // MB
+		MaxBackups: 5,   // number of backups
+		MaxAge:     28,  //days
+		LocalTime:  false,
+		Compress:   false, // disabled by default
 	}
-	Logger.SetLogFile(f, true)
+	Logger.SetLogFile(ioWriter, true)
 }
 
 var (
@@ -69,6 +78,7 @@ func (b *BridgeClient) CreateSignedTransactionFromKeyStore(client EthereumClient
 	signer := accounts.Account{
 		Address: signerAddress,
 	}
+
 	signerAcc, err := b.keyStore.Find(signer)
 	if err != nil {
 		Logger.Fatal(errors.Wrapf(err, "signer: %s", signerAddress.Hex()))
@@ -104,48 +114,6 @@ func (b *BridgeClient) CreateSignedTransactionFromKeyStore(client EthereumClient
 	opts.GasPrice = gasPriceWei   // wei
 
 	return opts
-}
-
-func (b *BridgeClient) prepareAuthorizers(ctx context.Context, method string, params ...interface{}) (*authorizers.Authorizers, *bind.TransactOpts, error) {
-	// To (contract)
-	contractAddress := common.HexToAddress(b.AuthorizersAddress)
-
-	// Get ABI of the contract
-	abi, err := authorizers.AuthorizersMetaData.GetAbi()
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to get ABI")
-	}
-
-	// Pack the method argument
-	pack, err := abi.Pack(method, params...)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to pack arguments")
-	}
-
-	from := common.HexToAddress(b.EthereumAddress)
-
-	// Gas limits in units
-	gasLimitUnits, err := b.ethereumClient.EstimateGas(ctx, eth.CallMsg{
-		To:   &contractAddress,
-		From: from,
-		Data: pack,
-	})
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to estimate gas")
-	}
-
-	// Update gas limits + 10%
-	gasLimitUnits = addPercents(gasLimitUnits, 10).Uint64()
-
-	transactOpts := b.CreateSignedTransactionFromKeyStore(b.ethereumClient, gasLimitUnits)
-
-	// Authorizers instance
-	authorizersInstance, err := authorizers.NewAuthorizers(contractAddress, b.ethereumClient)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to create authorizers instance")
-	}
-
-	return authorizersInstance, transactOpts, nil
 }
 
 // AddEthereumAuthorizer Adds authorizer to Ethereum bridge. Only contract deployer can call this method
@@ -366,17 +334,17 @@ func (b *BridgeClient) NFTConfigGetAddress(ctx context.Context, key string) (str
 }
 
 // IncreaseBurnerAllowance Increases allowance for bridge contract address to transfer
-// WZCN tokens on behalf of the token owner to the Burn TokenPool
-// During the burn the script transfers amount from token owner to the bridge burn token pool
+// ERC-20 tokens on behalf of the zcntoken owner to the Burn TokenPool
+// During the burn the script transfers amount from zcntoken owner to the bridge burn zcntoken pool
 // Example: owner wants to burn some amount.
 // The contract will transfer some amount from owner address to the pool.
-// So the owner must call IncreaseAllowance of the WZCN token with 2 parameters:
+// So the owner must call IncreaseAllowance of the WZCN zcntoken with 2 parameters:
 // spender address which is the bridge contract and amount to be burned (transferred)
-// ERC20 signature: "increaseAllowance(address,uint256)"
+// Token signature: "increaseApproval(address,uint256)"
 //
 //nolint:funlen
-func (b *BridgeClient) IncreaseBurnerAllowance(ctx context.Context, amountWei Wei) (*types.Transaction, error) {
-	if amountWei <= 0 {
+func (b *BridgeClient) IncreaseBurnerAllowance(ctx context.Context, allowanceAmount uint64) (*types.Transaction, error) {
+	if allowanceAmount <= 0 {
 		return nil, errors.New("amount must be greater than zero")
 	}
 
@@ -384,62 +352,38 @@ func (b *BridgeClient) IncreaseBurnerAllowance(ctx context.Context, amountWei We
 	spenderAddress := common.HexToAddress(b.BridgeAddress)
 
 	// 2. Data Parameter (amount)
-	amount := big.NewInt(int64(amountWei))
+	amount := big.NewInt(int64(allowanceAmount))
 
 	tokenAddress := common.HexToAddress(b.TokenAddress)
-	fromAddress := common.HexToAddress(b.EthereumAddress)
 
-	abi, err := erc20.ERC20MetaData.GetAbi()
+	tokenInstance, transactOpts, err := b.prepareToken(ctx, "increaseApproval", tokenAddress, spenderAddress, amount)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get erc20 abi")
-	}
-
-	pack, err := abi.Pack("increaseAllowance", spenderAddress, amount)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to pack arguments")
-	}
-
-	gasLimitUnits, err := b.ethereumClient.EstimateGas(ctx, eth.CallMsg{
-		To:   &tokenAddress,
-		From: fromAddress,
-		Data: pack,
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to estimate gas limit")
-	}
-
-	gasLimitUnits = addPercents(gasLimitUnits, 10).Uint64()
-
-	transactOpts := b.CreateSignedTransactionFromKeyStore(b.ethereumClient, gasLimitUnits)
-
-	wzcnTokenInstance, err := erc20.NewERC20(tokenAddress, b.ethereumClient)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to initialize WZCN-ERC20 instance")
+		return nil, errors.Wrap(err, "failed to prepare zcntoken")
 	}
 
 	Logger.Info(
-		"Starting IncreaseAllowance",
-		zap.String("token", tokenAddress.String()),
+		"Starting IncreaseApproval",
+		zap.String("zcntoken", tokenAddress.String()),
 		zap.String("spender", spenderAddress.String()),
 		zap.Int64("amount", amount.Int64()),
 	)
 
-	tran, err := wzcnTokenInstance.IncreaseAllowance(transactOpts, spenderAddress, amount)
+	tran, err := tokenInstance.IncreaseApproval(transactOpts, spenderAddress, amount)
 	if err != nil {
 		Logger.Error(
-			"IncreaseAllowance FAILED",
-			zap.String("token", tokenAddress.String()),
+			"IncreaseApproval FAILED",
+			zap.String("zcntoken", tokenAddress.String()),
 			zap.String("spender", spenderAddress.String()),
 			zap.Int64("amount", amount.Int64()),
 			zap.Error(err))
 
-		return nil, errors.Wrapf(err, "failed to send `IncreaseAllowance` transaction")
+		return nil, errors.Wrapf(err, "failed to send `IncreaseApproval` transaction")
 	}
 
 	Logger.Info(
-		"Posted IncreaseAllowance",
+		"Posted IncreaseApproval",
 		zap.String("hash", tran.Hash().String()),
-		zap.String("token", tokenAddress.String()),
+		zap.String("zcntoken", tokenAddress.String()),
 		zap.String("spender", spenderAddress.String()),
 		zap.Int64("amount", amount.Int64()),
 	)
@@ -447,17 +391,20 @@ func (b *BridgeClient) IncreaseBurnerAllowance(ctx context.Context, amountWei We
 	return tran, nil
 }
 
-// GetBalance returns balance of the current client
-func (b *BridgeClient) GetBalance() (*big.Int, error) {
-	tokenAddress := common.HexToAddress(b.TokenAddress)
-	fromAddress := common.HexToAddress(b.EthereumAddress)
+// GetTokenBalance returns balance of the current client for the zcntoken address
+func (b *BridgeClient) GetTokenBalance() (*big.Int, error) {
+	// 1. Token address parameter
+	of := common.HexToAddress(b.TokenAddress)
 
-	wzcnTokenInstance, err := erc20.NewERC20(tokenAddress, b.ethereumClient)
+	// 2. User's Ethereum wallet address parameter
+	from := common.HexToAddress(b.EthereumAddress)
+
+	tokenInstance, err := zcntoken.NewToken(of, b.ethereumClient)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to initialize WZCN-ERC20 instance")
+		return nil, errors.Wrap(err, "failed to initialize zcntoken instance")
 	}
 
-	wei, err := wzcnTokenInstance.BalanceOf(&bind.CallOpts{}, fromAddress)
+	wei, err := tokenInstance.BalanceOf(&bind.CallOpts{}, from)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to call `BalanceOf` for %s", b.EthereumAddress)
 	}
@@ -501,8 +448,8 @@ func (b *BridgeClient) GetUserNonceMinted(ctx context.Context, rawEthereumAddres
 
 	contractAddress := common.HexToAddress(b.BridgeAddress)
 
-	var bridgeInstance *binding.Bridge
-	bridgeInstance, err := binding.NewBridge(contractAddress, b.ethereumClient)
+	var bridgeInstance *bridge.Bridge
+	bridgeInstance, err := bridge.NewBridge(contractAddress, b.ethereumClient)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create bridge instance")
 	}
@@ -515,6 +462,28 @@ func (b *BridgeClient) GetUserNonceMinted(ctx context.Context, rawEthereumAddres
 		return nil, errors.Wrapf(err, msg, rawEthereumAddress)
 	}
 	return nonce, err
+}
+
+// ResetUserNonceMinted Resets nonce for a specified Ethereum address
+func (b *BridgeClient) ResetUserNonceMinted(ctx context.Context) (*types.Transaction, error) {
+	bridgeInstance, transactOpts, err := b.prepareBridge(ctx, b.EthereumAddress, "resetUserNonceMinted")
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to prepare bridge")
+	}
+
+	tran, err := bridgeInstance.ResetUserNonceMinted(transactOpts)
+	if err != nil {
+		Logger.Error("ResetUserNonceMinted FAILED", zap.Error(err))
+		msg := "failed to execute ResetUserNonceMinted call, ethereumAddress = %s"
+		return nil, errors.Wrapf(err, msg, b.EthereumAddress)
+	}
+
+	Logger.Info(
+		"Posted ResetUserMintedNonce",
+		zap.String("ethereumWallet", b.EthereumAddress),
+	)
+
+	return tran, err
 }
 
 // MintWZCN Mint ZCN tokens on behalf of the 0ZCN client
@@ -696,12 +665,299 @@ func (b *BridgeClient) BurnZCN(ctx context.Context, amount, txnfee uint64) (tran
 	return trx, nil
 }
 
-func (b *BridgeClient) prepareBridge(ctx context.Context, ethereumAddress, method string, params ...interface{}) (*binding.Bridge, *bind.TransactOpts, error) {
+// FetchZCNToETHRate retrieves latest ZCN to ETH rate using Bancor API
+func (b *BridgeClient) FetchZCNToSourceTokenRate(sourceTokenAddress string) (*big.Float, error) {
+	client = h.CleanClient()
+
+	resp, err := client.Get(fmt.Sprintf("%s/tokens?dlt_id=%s", b.BancorAPIURL, b.TokenAddress))
+	if err != nil {
+		return nil, err
+	}
+
+	var body []byte
+	body, err = io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var bancorTokenDetails *BancorTokenDetails
+	err = json.Unmarshal(body, &bancorTokenDetails)
+	if err != nil {
+		return nil, err
+	}
+
+	var zcnSourceTokenRateFloat float64
+
+	switch sourceTokenAddress {
+	case SourceTokenETHAddress:
+		zcnSourceTokenRateFloat, err = strconv.ParseFloat(bancorTokenDetails.Data.Rate.ETH, 64)
+	case SourceTokenBNTAddress:
+		zcnSourceTokenRateFloat, err = strconv.ParseFloat(bancorTokenDetails.Data.Rate.BNT, 64)
+	case SourceTokenUSDCAddress:
+		zcnSourceTokenRateFloat, err = strconv.ParseFloat(bancorTokenDetails.Data.Rate.USDC, 64)
+	case SourceTokenEURCAddress:
+		zcnSourceTokenRateFloat, err = strconv.ParseFloat(bancorTokenDetails.Data.Rate.EURC, 64)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return big.NewFloat(zcnSourceTokenRateFloat), nil
+}
+
+// GetMaxBancorTargetAmount retrieves max amount of a given source token for Bancor swap
+func (b *BridgeClient) GetMaxBancorTargetAmount(sourceTokenAddress string, amountSwap uint64) (*big.Int, error) {
+	amountSwapZCN, err := currency.Coin(amountSwap).ToZCN()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to convert current zcntoken balance to ZCN")
+	}
+
+	var zcnEthRate *big.Float
+	zcnEthRate, err = b.FetchZCNToSourceTokenRate(sourceTokenAddress)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to retrieve ZCN to source zcntoken rate using Bancor API")
+	}
+
+	zcnEthRateFloat, _ := zcnEthRate.Float64()
+
+	return big.NewInt(int64(amountSwapZCN * zcnEthRateFloat * 1.5 * 1e18)), nil
+}
+
+// ApproveSwap provides opportunity to approve swap operation for ERC20 tokens
+func (b *BridgeClient) ApproveSwap(ctx context.Context, sourceTokenAddress string, maxAmountSwap *big.Int) (*types.Transaction, error) {
+	// 1. Token source token address parameter
+	tokenAddress := common.HexToAddress(sourceTokenAddress)
+
+	// 2. Spender source token address parameter
+	spender := common.HexToAddress(BancorNetworkAddress)
+
+	bancorTokenInstance, transactOpts, err := b.prepareBancorToken(ctx, "approve", tokenAddress, spender, maxAmountSwap)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to prepare bancor token")
+	}
+
+	Logger.Info(
+		"Starting ApproveSwap",
+		zap.Int64("amount", maxAmountSwap.Int64()),
+		zap.String("spender", spender.String()),
+	)
+
+	tran, err := bancorTokenInstance.Approve(transactOpts, spender, maxAmountSwap)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to execute Approve transaction")
+	}
+
+	return tran, nil
+}
+
+// Swap provides opportunity to perform zcntoken swap operation.
+func (b *BridgeClient) Swap(ctx context.Context, sourceTokenAddress string, amountSwap uint64, maxAmountSwap *big.Int, deadlinePeriod time.Time) (*types.Transaction, error) {
+	// 1. Swap amount parameter.
+	amount := big.NewInt(int64(amountSwap))
+
+	// 2. User's Ethereum wallet address.
+	beneficiary := common.HexToAddress(b.EthereumAddress)
+
+	// 3. Trade deadline
+	deadline := big.NewInt(deadlinePeriod.Unix())
+
+	// 4. Value of the Ethereum transaction
+	var value *big.Int
+
+	if sourceTokenAddress == SourceTokenETHAddress {
+		value = maxAmountSwap
+	} else {
+		value = big.NewInt(0)
+	}
+
+	// 6. Source zcntoken address parameter
+	from := common.HexToAddress(sourceTokenAddress)
+
+	// 7. Target zcntoken address parameter
+	to := common.HexToAddress(b.TokenAddress)
+
+	bancorInstance, transactOpts, err := b.prepareBancor(ctx, value, "tradeByTargetAmount", from, to, amount, maxAmountSwap, deadline, beneficiary)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to prepare bancornetwork")
+	}
+
+	Logger.Info(
+		"Starting Swap",
+		zap.Int64("amount", amount.Int64()),
+		zap.String("sourceToken", sourceTokenAddress),
+	)
+
+	tran, err := bancorInstance.TradeByTargetAmount(transactOpts, from, to, amount, maxAmountSwap, deadline, beneficiary)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to execute TradeByTargetAmount transaction")
+	}
+
+	return tran, nil
+}
+
+func (b *BridgeClient) prepareBancor(ctx context.Context, value *big.Int, method string, params ...interface{}) (*bancornetwork.Bancor, *bind.TransactOpts, error) {
+	// 1. Bancor network smart contract address
+	contractAddress := common.HexToAddress(BancorNetworkAddress)
+
+	abi, err := bancornetwork.BancorMetaData.GetAbi()
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to get bancornetwork abi")
+	}
+
+	pack, err := abi.Pack(method, params...)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to pack arguments")
+	}
+
+	from := common.HexToAddress(b.EthereumAddress)
+
+	opts := eth.CallMsg{
+		To:   &contractAddress,
+		From: from,
+		Data: pack,
+	}
+
+	if value.Int64() != 0 {
+		opts.Value = value
+	}
+
+	gasLimitUnits, err := b.ethereumClient.EstimateGas(ctx, opts)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to estimate gas limit")
+	}
+
+	gasLimitUnits = addPercents(gasLimitUnits, 10).Uint64()
+
+	transactOpts := b.CreateSignedTransactionFromKeyStore(b.ethereumClient, gasLimitUnits)
+	if value.Int64() != 0 {
+		transactOpts.Value = value
+	}
+
+	bancorInstance, err := bancornetwork.NewBancor(contractAddress, b.ethereumClient)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to initialize bancornetwork instance")
+	}
+
+	return bancorInstance, transactOpts, nil
+}
+
+func (b *BridgeClient) prepareBancorToken(ctx context.Context, method string, tokenAddress common.Address, params ...interface{}) (*bancortoken.Bancortoken, *bind.TransactOpts, error) {
+	abi, err := zcntoken.TokenMetaData.GetAbi()
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to get zcntoken abi")
+	}
+
+	pack, err := abi.Pack(method, params...)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to pack arguments")
+	}
+
+	from := common.HexToAddress(b.EthereumAddress)
+
+	gasLimitUnits, err := b.ethereumClient.EstimateGas(ctx, eth.CallMsg{
+		To:   &tokenAddress,
+		From: from,
+		Data: pack,
+	})
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to estimate gas limit")
+	}
+
+	gasLimitUnits = addPercents(gasLimitUnits, 10).Uint64()
+
+	transactOpts := b.CreateSignedTransactionFromKeyStore(b.ethereumClient, gasLimitUnits)
+
+	bancorTokenInstance, err := bancortoken.NewBancortoken(tokenAddress, b.ethereumClient)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to initialize zcntoken instance")
+	}
+
+	return bancorTokenInstance, transactOpts, nil
+}
+
+func (b *BridgeClient) prepareToken(ctx context.Context, method string, tokenAddress common.Address, params ...interface{}) (*zcntoken.Token, *bind.TransactOpts, error) {
+	abi, err := zcntoken.TokenMetaData.GetAbi()
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to get zcntoken abi")
+	}
+
+	pack, err := abi.Pack(method, params...)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to pack arguments")
+	}
+
+	from := common.HexToAddress(b.EthereumAddress)
+
+	gasLimitUnits, err := b.ethereumClient.EstimateGas(ctx, eth.CallMsg{
+		To:   &tokenAddress,
+		From: from,
+		Data: pack,
+	})
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to estimate gas limit")
+	}
+
+	gasLimitUnits = addPercents(gasLimitUnits, 10).Uint64()
+
+	transactOpts := b.CreateSignedTransactionFromKeyStore(b.ethereumClient, gasLimitUnits)
+
+	tokenInstance, err := zcntoken.NewToken(tokenAddress, b.ethereumClient)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to initialize zcntoken instance")
+	}
+
+	return tokenInstance, transactOpts, nil
+}
+
+func (b *BridgeClient) prepareAuthorizers(ctx context.Context, method string, params ...interface{}) (*authorizers.Authorizers, *bind.TransactOpts, error) {
+	// To (contract)
+	contractAddress := common.HexToAddress(b.AuthorizersAddress)
+
+	// Get ABI of the contract
+	abi, err := authorizers.AuthorizersMetaData.GetAbi()
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to get ABI")
+	}
+
+	// Pack the method argument
+	pack, err := abi.Pack(method, params...)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to pack arguments")
+	}
+
+	from := common.HexToAddress(b.EthereumAddress)
+
+	// Gas limits in units
+	gasLimitUnits, err := b.ethereumClient.EstimateGas(ctx, eth.CallMsg{
+		To:   &contractAddress,
+		From: from,
+		Data: pack,
+	})
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to estimate gas")
+	}
+
+	// Update gas limits + 10%
+	gasLimitUnits = addPercents(gasLimitUnits, 10).Uint64()
+
+	transactOpts := b.CreateSignedTransactionFromKeyStore(b.ethereumClient, gasLimitUnits)
+
+	// Authorizers instance
+	authorizersInstance, err := authorizers.NewAuthorizers(contractAddress, b.ethereumClient)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to create authorizers instance")
+	}
+
+	return authorizersInstance, transactOpts, nil
+}
+
+func (b *BridgeClient) prepareBridge(ctx context.Context, ethereumAddress, method string, params ...interface{}) (*bridge.Bridge, *bind.TransactOpts, error) {
 	// To (contract)
 	contractAddress := common.HexToAddress(b.BridgeAddress)
 
 	//Get ABI of the contract
-	abi, err := binding.BridgeMetaData.GetAbi()
+	abi, err := bridge.BridgeMetaData.GetAbi()
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to get ABI")
 	}
@@ -730,7 +986,7 @@ func (b *BridgeClient) prepareBridge(ctx context.Context, ethereumAddress, metho
 	transactOpts := b.CreateSignedTransactionFromKeyStore(b.ethereumClient, gasLimitUnits)
 
 	// BridgeClient instance
-	bridgeInstance, err := binding.NewBridge(contractAddress, b.ethereumClient)
+	bridgeInstance, err := bridge.NewBridge(contractAddress, b.ethereumClient)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to create bridge instance")
 	}

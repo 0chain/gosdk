@@ -8,6 +8,7 @@ import (
 
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/zboxcore/fileref"
+	"github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
 
@@ -324,8 +325,10 @@ func RepairFile(allocationID, workdir, localPath, remotePath, thumbnailPath stri
 //   - error
 func MultiUpload(allocationID string, workdir string, jsonMultiUploadOptions string, statusCb StatusCallbackMocked) error {
 	var options []MultiUploadOption
+	logger.Logger.Info("multiupload: ", jsonMultiUploadOptions)
 	err := json.Unmarshal([]byte(jsonMultiUploadOptions), &options)
 	if err != nil {
+		logger.Logger.Error("multiupload: ", err)
 		return err
 	}
 	totalUploads := len(options)
@@ -350,6 +353,7 @@ func MultiUpload(allocationID string, workdir string, jsonMultiUploadOptions str
 
 	a, err := getAllocation(allocationID)
 	if err != nil {
+		logger.Logger.Error("multiupload: ", err)
 		return err
 	}
 	return a.StartMultiUpload(workdir, filePaths, fileNames, thumbnailPaths, encrypts, chunkNumbers, remotePaths, isUpdates, isWebstreaming, &StatusCallbackWrapped{Callback: statusCb})
@@ -845,4 +849,16 @@ func GetRemoteFileMap(allocationID string) (string, error) {
 	}
 
 	return string(retBytes), nil
+}
+
+// SetWorkingDir set working dir
+//
+//	## Inputs
+//	- workDir
+func SetWorkingDir(workDir string) {
+	sdk.Workdir = workDir
+}
+
+func SetMultiOpBatchSize(size int) {
+	sdk.SetMultiOpBatchSize(size)
 }
