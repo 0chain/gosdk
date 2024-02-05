@@ -1,6 +1,7 @@
 package sdk
 
 import (
+	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -107,7 +108,7 @@ func calcFileHash(filePath string) string {
 	}
 	defer fp.Close()
 
-	h := sha256.New()
+	h := md5.New()
 	if _, err := io.Copy(h, fp); err != nil {
 		log.Fatal(err)
 	}
