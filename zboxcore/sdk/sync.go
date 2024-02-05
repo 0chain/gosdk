@@ -203,7 +203,6 @@ func findDelta(rMap map[string]FileInfo, lMap map[string]FileInfo, prevMap map[s
 	for lFile, lInfo := range lMap {
 		if pm, ok := rMap[lFile]; ok {
 			// Local file existed in previous sync also
-			//somehow hash check is inaccurate hence adding updatedAt check also
 			if pm.Hash != lInfo.Hash {
 				// File modified in local
 				lMod[lFile] = lInfo
