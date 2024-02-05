@@ -10,15 +10,12 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/0chain/common/core/currency"
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/node"
-	"github.com/0chain/gosdk/core/sys"
-	"go.uber.org/zap"
 	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/0chain/gosdk/core/common"
@@ -395,6 +392,13 @@ func StakePoolLock(providerType ProviderType, providerID string, value, fee uint
 	default:
 		return "", 0, errors.Newf("stake_pool_lock", "unsupported provider type: %v", providerType)
 	}
+
+	txn, err := executeSmartContract(scAddress, sn, value, fee)
+	if err != nil {
+		return "", 0, err
+	}
+
+	return txn.Hash, txn.TransactionNonce, nil
 
 	hash, _, nonce, _, err = smartContractTxnValueFeeWithRetry(scAddress, sn, value, fee)
 	return
@@ -1475,86 +1479,9 @@ func smartContractTxnValueFeeWithRetry(scAddress string, sn transaction.SmartCon
 
 func smartContractTxnValueFee(scAddress string, sn transaction.SmartContractTxnData,
 	value, fee uint64) (hash, out string, nonce int64, t *transaction.Transaction, err error) {
-
-	var requestBytes []byte
-	if requestBytes, err = json.Marshal(sn); err != nil {
-		return
-	}
-
-	txn := transaction.NewTransactionEntity(client.GetClientID(),
-		blockchain.GetChainID(), client.GetClientPublicKey(), nonce)
-
-	txn.TransactionData = string(requestBytes)
-	txn.ToClientID = scAddress
-	txn.Value = value
-	txn.TransactionFee = fee
-	txn.TransactionType = transaction.TxnTypeSmartContract
-
-	// adjust fees if not set
-	if fee == 0 {
-		fee, err = transaction.EstimateFee(txn, blockchain.GetMiners(), 0.2)
-		if err != nil {
-			l.Logger.Error("failed to estimate txn fee",
-				zap.Error(err),
-				zap.Any("txn", txn))
-			return
-		}
-		txn.TransactionFee = fee
-	}
-
-	if txn.TransactionNonce == 0 {
-		txn.TransactionNonce = node.Cache.GetNextNonce(txn.ClientID)
-	}
-
-	if err = txn.ComputeHashAndSign(client.Sign); err != nil {
-		return
-	}
-
-	msg := fmt.Sprintf("executing transaction '%s' with hash %s ", sn.Name, txn.Hash)
-	l.Logger.Info(msg)
-	l.Logger.Info("estimated txn fee: ", txn.TransactionFee)
-
-	err = transaction.SendTransactionSync(txn, blockchain.GetStableMiners())
+	t, err = executeSmartContract(scAddress, sn, value, fee)
 	if err != nil {
-		l.Logger.Info("transaction submission failed", zap.Error(err))
-		node.Cache.Evict(txn.ClientID)
-		blockchain.ResetStableMiners()
-		return
-	}
-
-	var (
-		querySleepTime = time.Duration(blockchain.GetQuerySleepTime()) * time.Second
-		retries        = 0
-	)
-
-	sys.Sleep(querySleepTime)
-
-	for retries < blockchain.GetMaxTxnQuery() {
-		t, err = transaction.VerifyTransaction(txn.Hash, blockchain.GetSharders())
-		if err == nil {
-			break
-		}
-		retries++
-		sys.Sleep(querySleepTime)
-	}
-
-	if err != nil {
-		l.Logger.Error("Error verifying the transaction", err.Error(), txn.Hash)
-		node.Cache.Evict(txn.ClientID)
-		return
-	}
-
-	if t == nil {
-		return "", "", 0, txn, errors.New("transaction_validation_failed",
-			"Failed to get the transaction confirmation")
-	}
-
-	if t.Status == transaction.TxnFail {
-		return t.Hash, t.TransactionOutput, 0, t, errors.New("", t.TransactionOutput)
-	}
-
-	if t.Status == transaction.TxnChargeableError {
-		return t.Hash, t.TransactionOutput, t.TransactionNonce, t, errors.New("", t.TransactionOutput)
+		return "", "", 0, nil, err
 	}
 
 	return t.Hash, t.TransactionOutput, t.TransactionNonce, t, nil
