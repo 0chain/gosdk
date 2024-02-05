@@ -112,7 +112,7 @@ func updateBlobberSettings(blobberSettingsJson string) (*transaction.Transaction
 		InputArgs: blobberSettings,
 	}
 
-	_, _, _, txn, err := sdk.SmartContractTxn(sn)
+	_, _, _, txn, err := sdk.StorageSmartContractTxn(sn)
 	return txn, err
 }
 
