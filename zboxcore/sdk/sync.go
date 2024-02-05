@@ -105,7 +105,7 @@ func calcFileHash(filePath string) string {
 	}
 	defer fp.Close()
 
-	h := md5.New256()
+	h := md5.New()
 	if _, err := io.Copy(h, fp); err != nil {
 		log.Fatal(err)
 	}
