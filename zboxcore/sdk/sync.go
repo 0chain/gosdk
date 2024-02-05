@@ -1,15 +1,15 @@
 package sdk
 
 import (
+	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
 	"io"
 	"io/ioutil"
 	"log"
-	"sort"
-
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/0chain/errors"
@@ -17,7 +17,6 @@ import (
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	l "github.com/0chain/gosdk/zboxcore/logger"
-	"golang.org/x/crypto/sha3"
 )
 
 // For sync app
@@ -106,7 +105,7 @@ func calcFileHash(filePath string) string {
 	}
 	defer fp.Close()
 
-	h := sha3.New256()
+	h := md5.New256()
 	if _, err := io.Copy(h, fp); err != nil {
 		log.Fatal(err)
 	}
@@ -149,7 +148,7 @@ func addLocalFileList(root string, fMap map[string]FileInfo, dirList *[]string, 
 			*dirList = append(*dirList, lPath)
 		} else {
 			fileUpdatedAt := common.Timestamp(info.ModTime().Unix())
-			fMap[lPath] = FileInfo{Size: info.Size(), Hash: calcFileHash(path), Type: fileref.FILE, UpdatedAt: fileUpdatedAt}
+			fMap[lPath] = FileInfo{Size: info.Size(), Hash: calcFileHash(path), Type: fileref.FILE}
 		}
 		return nil
 	}
@@ -206,7 +205,7 @@ func findDelta(rMap map[string]FileInfo, lMap map[string]FileInfo, prevMap map[s
 		if pm, ok := rMap[lFile]; ok {
 			// Local file existed in previous sync also
 			//somehow hash check is inaccurate hence adding updatedAt check also
-			if pm.Hash != lInfo.Hash && pm.UpdatedAt != lInfo.UpdatedAt{
+			if pm.Hash != lInfo.Hash {
 				// File modified in local
 				lMod[lFile] = lInfo
 			}
