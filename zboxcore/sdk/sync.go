@@ -147,7 +147,6 @@ func addLocalFileList(root string, fMap map[string]FileInfo, dirList *[]string, 
 		if info.IsDir() {
 			*dirList = append(*dirList, lPath)
 		} else {
-			fileUpdatedAt := common.Timestamp(info.ModTime().Unix())
 			fMap[lPath] = FileInfo{Size: info.Size(), Hash: calcFileHash(path), Type: fileref.FILE}
 		}
 		return nil
