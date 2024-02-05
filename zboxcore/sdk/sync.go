@@ -19,7 +19,6 @@ import (
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	l "github.com/0chain/gosdk/zboxcore/logger"
-	"github.com/minio/sha256-simd"
 )
 
 // For sync app
@@ -219,7 +218,7 @@ func findDelta(rMap map[string]FileInfo, lMap map[string]FileInfo, prevMap map[s
 			fmt.Println("======LINFO", lInfo)
 			fmt.Println("======LINFO updatedAT", lInfo.UpdatedAt)
 			//somehow hash check is inaccurate hence adding updatedAt check also
-			if pm.Hash != lInfo.Hash && pm.UpdatedAt != lInfo.UpdatedAt {
+			if pm.Hash != lInfo.Hash {
 				// File modified in local
 				lMod[lFile] = lInfo
 			}
