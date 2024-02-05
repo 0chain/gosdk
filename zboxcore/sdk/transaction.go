@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"sync"
 
+	"errors"
+
 	"github.com/0chain/gosdk/core/transaction"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zcncore"
@@ -42,7 +44,8 @@ func (cb *transactionCallback) OnAuthComplete(t *zcncore.Transaction, status int
 	fmt.Println("Authorization complete on zauth.", status)
 }
 
-func executeSmartContract(address string, sn transaction.SmartContractTxnData, value, fee uint64) (*transaction.Transaction, error) {
+// ExecuteSmartContract executes the smart contract
+func ExecuteSmartContract(address string, sn transaction.SmartContractTxnData, value, fee uint64) (*transaction.Transaction, error) {
 	wg := &sync.WaitGroup{}
 	cb := &transactionCallback{wg: wg}
 	txn, err := zcncore.NewTransaction(cb, fee, 0)
@@ -87,4 +90,38 @@ func executeSmartContract(address string, sn transaction.SmartContractTxnData, v
 	}
 
 	return nil, fmt.Errorf("smartcontract: %v", txn.GetVerifyConfirmationStatus())
+}
+
+// ExecuteSmartContractSend create send transaction to transfer tokens from the caller to target address
+func ExecuteSmartContractSend(to string, tokens, fee uint64, desc string) (string, error) {
+	wg := &sync.WaitGroup{}
+	cb := &transactionCallback{wg: wg}
+	txn, err := zcncore.NewTransaction(cb, fee, 0)
+	if err != nil {
+		return "", err
+	}
+
+	wg.Add(1)
+	err = txn.Send(to, tokens, desc)
+	if err == nil {
+		wg.Wait()
+	} else {
+		return "", err
+	}
+
+	if cb.success {
+		cb.success = false
+		wg.Add(1)
+		err := txn.Verify()
+		if err == nil {
+			wg.Wait()
+		} else {
+			return "", err
+		}
+		if cb.success {
+			return txn.GetVerifyOutput(), nil
+		}
+	}
+
+	return "", errors.New(cb.errMsg)
 }

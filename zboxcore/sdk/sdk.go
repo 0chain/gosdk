@@ -393,13 +393,6 @@ func StakePoolLock(providerType ProviderType, providerID string, value, fee uint
 		return "", 0, errors.Newf("stake_pool_lock", "unsupported provider type: %v", providerType)
 	}
 
-	txn, err := executeSmartContract(scAddress, sn, value, fee)
-	if err != nil {
-		return "", 0, err
-	}
-
-	return txn.Hash, txn.TransactionNonce, nil
-
 	hash, _, nonce, _, err = smartContractTxnValueFeeWithRetry(scAddress, sn, value, fee)
 	return
 }
@@ -1479,7 +1472,7 @@ func smartContractTxnValueFeeWithRetry(scAddress string, sn transaction.SmartCon
 
 func smartContractTxnValueFee(scAddress string, sn transaction.SmartContractTxnData,
 	value, fee uint64) (hash, out string, nonce int64, t *transaction.Transaction, err error) {
-	t, err = executeSmartContract(scAddress, sn, value, fee)
+	t, err = ExecuteSmartContract(scAddress, sn, value, fee)
 	if err != nil {
 		return "", "", 0, nil, err
 	}
