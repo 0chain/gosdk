@@ -17,7 +17,7 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.7.2
 	github.com/hashicorp/golang-lru/v2 v2.0.1
 	github.com/herumi/bls-go-binary v1.31.0
-	github.com/hitenjain14/fasthttp v0.0.0-20240129191709-9e0a59b0bd2c
+	github.com/hitenjain14/fasthttp v0.0.0-20240201092245-8e4835c0e974
 	github.com/influxdata/influxdb v1.8.3
 	github.com/klauspost/reedsolomon v1.11.8
 	github.com/lithammer/shortuuid/v3 v3.0.7
@@ -46,7 +46,6 @@ require (
 require (
 	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d
 	github.com/minio/sha256-simd v1.0.1
-	github.com/valyala/fasthttp v1.51.0
 )
 
 require (
@@ -130,7 +129,6 @@ require (
 
 require (
 	github.com/btcsuite/btcd/btcutil v1.1.3
-	github.com/hitenjain14/fasthttp v0.0.0-20240201092245-8e4835c0e974
 	github.com/klauspost/compress v1.17.0 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.4 // indirect
 	github.com/remeh/sizedwaitgroup v1.0.0
