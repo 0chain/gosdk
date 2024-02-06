@@ -45,10 +45,11 @@ type FastClient interface {
 }
 
 var (
-	Client        HttpClient
-	HostClientMap = make(map[string]*fasthttp.HostClient)
-	hostLock      sync.RWMutex
-	log           logger.Logger
+	Client         HttpClient
+	HostClientMap  = make(map[string]*fasthttp.HostClient)
+	hostLock       sync.RWMutex
+	log            logger.Logger
+	FastHttpClient FastClient
 )
 
 func GetLogger() *logger.Logger {
