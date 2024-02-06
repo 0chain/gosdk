@@ -5,6 +5,7 @@ package mocks
 import (
 	fasthttp "github.com/hitenjain14/fasthttp"
 	mock "github.com/stretchr/testify/mock"
+	fasthttp "github.com/hitenjain14/fasthttp"
 
 	time "time"
 )

@@ -184,6 +184,8 @@ type UploadProgress struct {
 	ChunkIndex int `json:"chunk_index,omitempty"`
 	// UploadLength total bytes that has been uploaded to blobbers
 	UploadLength int64 `json:"-"`
+	// ReadLength total bytes that has been read from original reader (un-encoded, un-encrypted)
+	ReadLength int64 `json:"-"`
 
 	Blobbers []*UploadBlobberStatus `json:"-"`
 }
@@ -202,7 +204,7 @@ type UploadData struct {
 	chunkStartIndex int
 	chunkEndIndex   int
 	isFinal         bool
-	saveProgress    bool
+	uploadLength    int64
 	encryptedKey    string
 	uploadBody      []blobberData
 }

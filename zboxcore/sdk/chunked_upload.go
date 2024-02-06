@@ -47,7 +47,6 @@ var (
 	ErrNoEnoughSpaceLeftInAllocation = errors.New("alloc: no enough space left in allocation")
 	CancelOpCtx                      = make(map[string]context.CancelCauseFunc)
 	cancelLock                       sync.Mutex
-	UploadRequests                   = 2
 )
 
 // DefaultChunkSize default chunk size for file and thumbnail
@@ -288,11 +287,28 @@ func CreateChunkedUpload(
 	su.formBuilder = CreateChunkedUploadFormBuilder()
 
 	su.isRepair = isRepair
-	su.uploadChan = make(chan UploadData, UploadRequests)
-	su.uploadWG.Add(1)
-	go su.uploadProcessor()
+	uploadWorker, uploadRequest := calculateWorkersAndRequests(su.allocationObj.DataShards, len(su.blobbers), su.chunkNumber)
+	su.uploadChan = make(chan UploadData, uploadRequest)
+	for i := 0; i < uploadWorker; i++ {
+		go su.uploadProcessor()
+	}
 
 	return su, nil
+}
+
+func calculateWorkersAndRequests(dataShards, totalShards, chunknumber int) (uploadWorkers int, uploadRequests int) {
+	if totalShards < 4 {
+		uploadWorkers = 4
+	} else {
+		uploadWorkers = 2
+	}
+
+	if chunknumber*dataShards < 640 {
+		uploadRequests = 4
+	} else {
+		uploadRequests = 2
+	}
+	return
 }
 
 // progressID build local progress id with [allocationid]_[Hash(LocalPath+"_"+RemotePath)]_[RemoteName] format
@@ -330,14 +346,17 @@ func (su *ChunkedUpload) removeProgress() {
 	su.progressStorer.Remove(su.progress.ID) //nolint
 }
 
+func (su *ChunkedUpload) updateProgress(chunkIndex int) {
+	su.progressStorer.Update(su.progress.ID, chunkIndex)
+}
+
 // createUploadProgress create a new UploadProgress
 func (su *ChunkedUpload) createUploadProgress(connectionId string) {
-	if su.progress.ChunkSize == 0 {
+	if su.progress.ChunkSize <= 0 {
 		su.progress = UploadProgress{
 			ConnectionID:      connectionId,
 			ChunkIndex:        -1,
 			ChunkSize:         su.chunkSize,
-			UploadLength:      0,
 			EncryptOnUpload:   su.encryptOnUpload,
 			EncryptedKeyPoint: su.encryptedKeyPoint,
 			ActualSize:        su.fileMeta.ActualSize,
@@ -353,6 +372,7 @@ func (su *ChunkedUpload) createUploadProgress(connectionId string) {
 	}
 
 	su.progress.ID = su.progressID()
+	su.saveProgress()
 }
 
 func (su *ChunkedUpload) createEncscheme() encryption.EncryptionScheme {
@@ -391,7 +411,7 @@ func (su *ChunkedUpload) process() error {
 	if su.statusCallback != nil {
 		su.statusCallback.Started(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, int(su.fileMeta.ActualSize)+int(su.fileMeta.ActualThumbnailSize))
 	}
-	alreadyUploadedData := 0
+
 	defer su.chunkReader.Close()
 	defer su.ctxCncl(nil)
 	for {
@@ -408,7 +428,7 @@ func (su *ChunkedUpload) process() error {
 		//logger.Logger.Debug("Read chunk #", chunk.Index)
 
 		su.shardUploadedSize += chunks.totalFragmentSize
-		su.progress.UploadLength += chunks.totalReadSize
+		su.progress.ReadLength += chunks.totalReadSize
 
 		if chunks.isFinal {
 			if su.fileMeta.ActualHash == "" {
@@ -421,12 +441,12 @@ func (su *ChunkedUpload) process() error {
 				}
 			}
 			if su.fileMeta.ActualSize == 0 {
-				su.fileMeta.ActualSize = su.progress.UploadLength
-			} else if su.fileMeta.ActualSize != su.progress.UploadLength && su.thumbnailBytes == nil {
+				su.fileMeta.ActualSize = su.progress.ReadLength
+			} else if su.fileMeta.ActualSize != su.progress.ReadLength && su.thumbnailBytes == nil {
 				if su.statusCallback != nil {
-					su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, thrown.New("upload_failed", "Upload failed. Uploaded size does not match with actual size: "+fmt.Sprintf("%d != %d", su.fileMeta.ActualSize, su.progress.UploadLength)))
+					su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, thrown.New("upload_failed", "Upload failed. Uploaded size does not match with actual size: "+fmt.Sprintf("%d != %d", su.fileMeta.ActualSize, su.progress.ReadLength)))
 				}
-				return thrown.New("upload_failed", "Upload failed. Uploaded size does not match with actual size: "+fmt.Sprintf("%d != %d", su.fileMeta.ActualSize, su.progress.UploadLength))
+				return thrown.New("upload_failed", "Upload failed. Uploaded size does not match with actual size: "+fmt.Sprintf("%d != %d", su.fileMeta.ActualSize, su.progress.ReadLength))
 			}
 		}
 
@@ -464,15 +484,12 @@ func (su *ChunkedUpload) process() error {
 					}
 				}
 			}
-			alreadyUploadedData += int(chunks.totalReadSize)
 		}
 
 		// last chunk might 0 with io.EOF
 		// https://stackoverflow.com/questions/41208359/how-to-test-eof-on-io-reader-in-go
 		if chunks.totalReadSize > 0 && chunks.chunkEndIndex >= su.progress.ChunkIndex {
-			if su.statusCallback != nil {
-				su.statusCallback.InProgress(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, int(su.progress.UploadLength)-alreadyUploadedData, nil)
-			}
+
 		}
 
 		if chunks.isFinal {
@@ -603,7 +620,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		isFinal:         isFinal,
 		encryptedKey:    su.encryptedKey,
 		uploadBody:      make([]blobberData, len(su.blobbers)),
-		saveProgress:    uploadLength > 0,
+		uploadLength:    uploadLength,
 	}
 
 	wgErrors := make(chan error, len(su.blobbers))
@@ -660,6 +677,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		return thrown.New("upload_failed", fmt.Sprintf("Upload failed. %s", err))
 	}
 	if !lastBufferOnly {
+		su.uploadWG.Add(1)
 		select {
 		case <-su.ctx.Done():
 			return context.Cause(su.ctx)
@@ -758,7 +776,6 @@ func getShardSize(dataSize int64, dataShards int, isEncrypted bool) int64 {
 }
 
 func (su *ChunkedUpload) uploadProcessor() {
-	defer su.uploadWG.Done()
 	for {
 		select {
 		case <-su.ctx.Done():
@@ -768,6 +785,7 @@ func (su *ChunkedUpload) uploadProcessor() {
 				return
 			}
 			su.uploadToBlobbers(uploadData) //nolint:errcheck
+			su.uploadWG.Done()
 		}
 	}
 }
@@ -826,9 +844,14 @@ func (su *ChunkedUpload) uploadToBlobbers(uploadData UploadData) error {
 		su.ctxCncl(err)
 		return err
 	}
-	if uploadData.saveProgress {
-		su.progress.ChunkIndex = uploadData.chunkEndIndex
-		su.saveProgress()
+	if uploadData.uploadLength > 0 {
+		index := uploadData.chunkEndIndex
+		uploadLength := uploadData.uploadLength
+		go su.updateProgress(index)
+		if su.statusCallback != nil {
+			su.statusCallback.InProgress(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, int(atomic.AddInt64(&su.progress.UploadLength, uploadLength)), nil)
+		}
 	}
+	uploadData = UploadData{} // release memory
 	return nil
 }
