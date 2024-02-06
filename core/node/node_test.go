@@ -43,3 +43,14 @@ func TestNodeHolder_Success(t *testing.T) {
 		})
 	}
 }
+
+//func TestNodeHolder_GetHardForkRound(t *testing.T) {
+//	holder := NewHolder([]string{"https://dev2.zus.network/sharder01",
+//		"https://dev3.zus.network/sharder01", "https://dev1.zus.network/sharder01"}, 2)
+//	round, err := holder.GetHardForkRound("apollo")
+//	if err != nil {
+//		t.Error(err)
+//	}
+//
+//	assert.Equal(t, 206000, round)
+//}
