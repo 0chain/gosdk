@@ -300,9 +300,9 @@ func unlockStakePool(providerType, fee uint64, providerID string) (int64, error)
 	return unstake, err
 }
 
-func collectRewards(providerType int, providerID string) error {
-	_, _, err := sdk.CollectRewards(providerID, sdk.ProviderType(providerType))
-	return err
+func collectRewards(providerType int, providerID string) (string, error) {
+	hash, _, err := sdk.CollectRewards(providerID, sdk.ProviderType(providerType))
+	return hash, err
 }
 
 func getSkatePoolInfo(providerType int, providerID string) (*sdk.StakePoolInfo, error) {
