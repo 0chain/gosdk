@@ -213,6 +213,9 @@ func main() {
 				"unLockReadPool":  unLockReadPool,
 				"createReadPool":  createReadPool,
 
+				// claim rewards
+				"collectRewards": collectRewards,
+
 				// stakepool
 				"getSkatePoolInfo": getSkatePoolInfo,
 				"lockStakePool":    lockStakePool,
