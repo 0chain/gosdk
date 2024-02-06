@@ -2,7 +2,9 @@ package fileref
 
 import (
 	"fmt"
+	"hash/fnv"
 	"math"
+	"strconv"
 	"strings"
 
 	"github.com/0chain/gosdk/core/common"
@@ -41,6 +43,14 @@ type FileRef struct {
 	EncryptedKey            string         `json:"encrypted_key" mapstructure:"encrypted_key"`
 	EncryptedKeyPoint       string         `json:"encrypted_key_point" mapstructure:"encrypted_key_point"`
 	Collaborators           []Collaborator `json:"collaborators" mapstructure:"collaborators"`
+}
+
+func (fRef *FileRef) MetaID() string {
+
+	hash := fnv.New64a()
+	hash.Write([]byte(fRef.Path))
+
+	return strconv.FormatUint(hash.Sum64(), 36)
 }
 
 type RefEntity interface {

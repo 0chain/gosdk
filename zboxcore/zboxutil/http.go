@@ -44,11 +44,12 @@ type FastClient interface {
 	GetWithRequestTimeout(req *fasthttp.Request, dest []byte, timeout time.Duration) (int, []byte, error)
 }
 
-var Client HttpClient
-
-var FastHttpClient FastClient
-
-var log logger.Logger
+var (
+	Client        HttpClient
+	HostClientMap = make(map[string]*fasthttp.HostClient)
+	hostLock      sync.RWMutex
+	log           logger.Logger
+)
 
 func GetLogger() *logger.Logger {
 	return &log
@@ -130,6 +131,33 @@ func (pfe *proxyFromEnv) isLoopback(host string) (ok bool) {
 	return net.ParseIP(host).IsLoopback()
 }
 
+func SetHostClient(id, baseURL string) {
+	hostLock.Lock()
+	defer hostLock.Unlock()
+	if _, ok := HostClientMap[id]; !ok {
+		u, _ := url.Parse(baseURL)
+		host := fasthttp.AddMissingPort(u.Host, true)
+		HostClientMap[id] = &fasthttp.HostClient{
+			NoDefaultUserAgentHeader:      true,
+			Addr:                          host,
+			MaxIdleConnDuration:           1 * time.Hour,
+			DisableHeaderNamesNormalizing: true,
+			DisablePathNormalizing:        true,
+			Dial: (&fasthttp.TCPDialer{
+				Concurrency:      4096,
+				DNSCacheDuration: time.Hour,
+			}).Dial,
+			IsTLS: true,
+		}
+	}
+}
+
+func GetHostClient(id string) *fasthttp.HostClient {
+	hostLock.RLock()
+	defer hostLock.RUnlock()
+	return HostClientMap[id]
+}
+
 func (pfe *proxyFromEnv) Proxy(req *http.Request) (proxy *url.URL, err error) {
 	if pfe.isLoopback(req.URL.Host) {
 		switch req.URL.Scheme {
@@ -148,18 +176,6 @@ var envProxy proxyFromEnv
 func init() {
 	Client = &http.Client{
 		Transport: DefaultTransport,
-	}
-	maxIdleConnDuration, _ := time.ParseDuration("1h")
-	FastHttpClient = &fasthttp.Client{
-		MaxIdleConnDuration:           maxIdleConnDuration,
-		NoDefaultUserAgentHeader:      true, // Don't send: User-Agent: fasthttp
-		DisableHeaderNamesNormalizing: true, // If you set the case on your headers correctly you can enable this
-		DisablePathNormalizing:        true,
-		// increase DNS cache time to an hour instead of default minute
-		Dial: (&fasthttp.TCPDialer{
-			Concurrency:      4096,
-			DNSCacheDuration: time.Hour,
-		}).Dial,
 	}
 	envProxy.initialize()
 	log.Init(logger.DEBUG, "0box-sdk")

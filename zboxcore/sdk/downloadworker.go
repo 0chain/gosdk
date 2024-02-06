@@ -12,6 +12,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -38,6 +39,20 @@ const (
 	DOWNLOAD_CONTENT_THUMB = "thumbnail"
 	EXTRA_COUNT            = 2
 )
+
+type DownloadRequestOption func(dr *DownloadRequest)
+
+func WithDownloadProgressStorer(storer DownloadProgressStorer) DownloadRequestOption {
+	return func(dr *DownloadRequest) {
+		dr.downloadStorer = storer
+	}
+}
+
+func WithWorkDir(workdir string) DownloadRequestOption {
+	return func(dr *DownloadRequest) {
+		dr.workdir = workdir
+	}
+}
 
 type DownloadRequest struct {
 	allocationID       string
@@ -79,9 +94,16 @@ type DownloadRequest struct {
 	chunksPerShard     int64
 	size               int64
 	offset             int64
-	bufferMap          map[int]*zboxutil.DownloadBuffer
+	bufferMap          map[int]zboxutil.DownloadBuffer
+	downloadStorer     DownloadProgressStorer
+	workdir            string
 }
 
+type DownloadProgress struct {
+	ID               string `json:"id"`
+	LastWrittenBlock int    `json:"last_block"`
+	numBlocks        int    `json:"-"`
+}
 type blockData struct {
 	blockNum int
 	data     [][][]byte
@@ -415,6 +437,14 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	// otherwise end data will have null bytes.
 	remainingSize := size - startBlock*int64(req.effectiveBlockSize)*int64(req.datashards)
 
+	if endBlock*int64(req.effectiveBlockSize)*int64(req.datashards) < req.size {
+		remainingSize = endBlock*int64(req.effectiveBlockSize) - startBlock*int64(req.effectiveBlockSize)
+	}
+
+	if memFile, ok := req.fileHandler.(*sys.MemFile); ok {
+		memFile.InitBuffer(int(remainingSize))
+	}
+
 	if req.statusCallback != nil {
 		// Started will also initialize progress bar. So without calling this function
 		// other callback's call will panic
@@ -431,11 +461,6 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	// Buffered channel to hold the blocks as they are downloaded
 	blocks := make(chan blockData, n)
 
-	lastBlockSize := size - int64(n-1)*int64(req.effectiveBlockSize)*int64(req.datashards)*numBlocks
-	if lastBlockSize < 0 {
-		lastBlockSize = size
-	}
-
 	var (
 		actualFileHasher  hash.Hash
 		isPREAndWholeFile bool
@@ -446,22 +471,31 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		isPREAndWholeFile = true
 	}
 
+	toSync := false
+	if _, ok := req.fileHandler.(*sys.MemChanFile); ok {
+		toSync = true
+	}
+	var writerAt bool
+	writeAtHandler, ok := req.fileHandler.(io.WriterAt)
+	if ok {
+		writerAt = true
+	}
+
 	if !req.shouldVerify {
 		var pos uint64
-		req.bufferMap = make(map[int]*zboxutil.DownloadBuffer)
+		req.bufferMap = make(map[int]zboxutil.DownloadBuffer)
 		sz := downloadWorkerCount + EXTRA_COUNT
 		if sz > n {
 			sz = n
 		}
 		for i := req.downloadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 			pos = uint64(i.TrailingZeros())
-			req.bufferMap[int(pos)] = zboxutil.NewDownloadBuffer(sz, int(numBlocks), req.effectiveBlockSize)
+			if writerAt {
+				req.bufferMap[int(pos)] = zboxutil.NewDownloadBufferWithChan(sz, int(numBlocks), req.effectiveBlockSize)
+			} else {
+				req.bufferMap[int(pos)] = zboxutil.NewDownloadBufferWithMask(sz, int(numBlocks), req.effectiveBlockSize)
+			}
 		}
-	}
-
-	toSync := false
-	if _, ok := req.fileHandler.(*sys.MemChanFile); ok {
-		toSync = true
 	}
 
 	logger.Logger.Info(
@@ -473,12 +507,6 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	defer writeCancel()
 	var wg sync.WaitGroup
 
-	writerAt := false
-
-	writeAtHandler, ok := req.fileHandler.(io.WriterAt)
-	if ok {
-		writerAt = true
-	}
 	if !writerAt {
 		wg.Add(1)
 		// Handle writing the blocks in order as soon as they are downloaded
@@ -593,6 +621,12 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		breakLoop:
 		}()
 	}
+	if req.downloadStorer != nil {
+		storerCtx, storerCancel := context.WithCancel(ctx)
+		defer storerCancel()
+		req.downloadStorer.Start(storerCtx)
+	}
+
 	var progressLock sync.Mutex
 	eg, _ := errgroup.WithContext(ctx)
 	eg.SetLimit(downloadWorkerCount + EXTRA_COUNT)
@@ -613,10 +647,10 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			if !writerAt {
 				blocks <- blockData{blockNum: j, data: data}
 			} else {
-				offset := int64(j) * numBlocks * int64(req.effectiveBlockSize) * int64(req.datashards)
+				offset := (startBlock + int64(j)*numBlocks) * int64(req.effectiveBlockSize) * int64(req.datashards)
 				var total int
 				if j == n-1 {
-					total, err = writeAtData(writeAtHandler, data, req.datashards, offset, int(lastBlockSize))
+					total, err = writeAtData(writeAtHandler, data, req.datashards, offset, int(size-offset))
 				} else {
 					total, err = writeAtData(writeAtHandler, data, req.datashards, offset, -1)
 				}
@@ -626,13 +660,15 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 				for _, rb := range req.bufferMap {
 					rb.ReleaseChunk(j)
 				}
+				if req.downloadStorer != nil {
+					go req.downloadStorer.Update(int(startBlock + int64(j)*numBlocks + blocksToDownload))
+				}
 				if req.statusCallback != nil {
 					progressLock.Lock()
 					downloaded += total
 					req.statusCallback.InProgress(req.allocationID, remotePathCB, op, int(downloaded), nil)
 					progressLock.Unlock()
 				}
-				logger.Logger.Info("writeDataForBlock", "block", j, "total", total)
 			}
 			return nil
 		})
@@ -658,6 +694,9 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	if req.statusCallback != nil && !req.skip {
 		req.statusCallback.Completed(
 			req.allocationID, remotePathCB, fRef.Name, "", int(size), op)
+	}
+	if req.downloadStorer != nil {
+		req.downloadStorer.Remove() //nolint:errcheck
 	}
 }
 
@@ -863,6 +902,9 @@ func (req *DownloadRequest) errorCB(err error, remotePathCB string) {
 	if req.contentMode == DOWNLOAD_CONTENT_THUMB {
 		op = opThumbnailDownload
 	}
+	if req.downloadStorer != nil && !strings.Contains(err.Error(), "context canceled") {
+		req.downloadStorer.Remove() //nolint: errcheck
+	}
 	if req.skip {
 		return
 	}
@@ -911,17 +953,27 @@ func (req *DownloadRequest) calculateShardsParams(
 	}
 	// Can be nil when using file writer in wasm
 	if info != nil {
-		_, err = req.Seek(info.Size(), io.SeekStart)
-		if err != nil {
-			return 0, err
+		if req.downloadStorer != nil {
+			err = sys.Files.MkdirAll(filepath.Join(req.workdir, "download"), 0766)
+			if err != nil {
+				return 0, err
+			}
+			progressID := req.progressID()
+			var dp *DownloadProgress
+			if info.Size() > 0 {
+				dp = req.downloadStorer.Load(progressID)
+			}
+			if dp != nil {
+				req.startBlock = int64(dp.LastWrittenBlock)
+			} else {
+				dp = &DownloadProgress{
+					ID: progressID,
+				}
+				req.downloadStorer.Save(dp)
+			}
+			dp.numBlocks = int(req.numBlocks)
 		}
 	}
-
-	effectiveChunkSize := effectiveBlockSize * int64(req.datashards)
-	blocks := req.offset / effectiveChunkSize
-	req.startBlock += blocks
-
-	req.offset = blocks * effectiveChunkSize
 
 	if req.endBlock == 0 || req.endBlock > chunksPerShard {
 		req.endBlock = chunksPerShard
@@ -929,11 +981,6 @@ func (req *DownloadRequest) calculateShardsParams(
 
 	if req.startBlock >= req.endBlock {
 		err = errors.New("invalid_block_num", "start block should be less than end block")
-		return 0, err
-	}
-
-	_, err = req.fileHandler.Seek(req.offset, io.SeekStart)
-	if err != nil {
 		return 0, err
 	}
 
@@ -1139,10 +1186,10 @@ func (req *DownloadRequest) processDownloadRequest() {
 	startBlock, endBlock := req.startBlock, req.endBlock
 	// remainingSize should be calculated based on startBlock number
 	// otherwise end data will have null bytes.
-	remainingSize := req.size - startBlock*int64(req.effectiveBlockSize)
+	remainingSize := req.size - startBlock*int64(req.effectiveBlockSize)*int64(req.datashards)
 
 	var wantSize int64
-	if endBlock*int64(req.effectiveBlockSize) < req.size {
+	if endBlock*int64(req.effectiveBlockSize)*int64(req.datashards) < req.size {
 		wantSize = endBlock*int64(req.effectiveBlockSize) - startBlock*int64(req.effectiveBlockSize)
 	} else {
 		wantSize = remainingSize
@@ -1243,4 +1290,13 @@ func writeAtData(dest io.WriterAt, data [][][]byte, dataShards int, offset int64
 		}
 	}
 	return total, nil
+}
+
+func (dr *DownloadRequest) progressID() string {
+
+	if len(dr.allocationID) > 8 {
+		return filepath.Join(dr.workdir, "download", dr.allocationID[:8]+"_"+dr.fRef.MetaID())
+	}
+
+	return filepath.Join(dr.workdir, "download", dr.allocationID+"_"+dr.fRef.MetaID())
 }
