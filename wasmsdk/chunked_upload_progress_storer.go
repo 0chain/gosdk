@@ -39,6 +39,7 @@ func (mem *chunkedUploadProgressStorer) Save(up sdk.UploadProgress) {
 	mem.list[up.ID] = &up
 }
 
+//nolint:golint,unused
 func (mem *chunkedUploadProgressStorer) Update(id string, chunkIndex int) {
 	mem.lock.Lock()
 	defer mem.lock.Unlock()
