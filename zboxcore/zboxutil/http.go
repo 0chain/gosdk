@@ -76,8 +76,9 @@ const (
 	REDEEM_ENDPOINT              = "/v1/connection/redeem/"
 
 	// CLIENT_SIGNATURE_HEADER represents http request header contains signature.
-	CLIENT_SIGNATURE_HEADER = "X-App-Client-Signature"
-	ALLOCATION_ID_HEADER    = "ALLOCATION-ID"
+	CLIENT_SIGNATURE_HEADER    = "X-App-Client-Signature"
+	CLIENT_SIGNATURE_HEADER_V2 = "X-App-Client-Signature-V2"
+	ALLOCATION_ID_HEADER       = "ALLOCATION-ID"
 )
 
 func getEnvAny(names ...string) string {
@@ -170,13 +171,19 @@ func setClientInfo(req *http.Request) {
 func setClientInfoWithSign(req *http.Request, allocation, baseURL string) error {
 	setClientInfo(req)
 
-	hashData := allocation + baseURL
+	hashData := allocation
 	sign, err := client.Sign(encryption.Hash(hashData))
 	if err != nil {
 		return err
 	}
 	req.Header.Set(CLIENT_SIGNATURE_HEADER, sign)
 
+	hashData = allocation + baseURL
+	sign, err = client.Sign(encryption.Hash(hashData))
+	if err != nil {
+		return err
+	}
+	req.Header.Set(CLIENT_SIGNATURE_HEADER_V2, sign)
 	return nil
 }
 
