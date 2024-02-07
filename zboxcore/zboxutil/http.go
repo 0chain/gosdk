@@ -178,6 +178,18 @@ func init() {
 	Client = &http.Client{
 		Transport: DefaultTransport,
 	}
+	maxIdleConnDuration, _ := time.ParseDuration("1h")
+	FastHttpClient = &fasthttp.Client{
+		MaxIdleConnDuration:           maxIdleConnDuration,
+		NoDefaultUserAgentHeader:      true, // Don't send: User-Agent: fasthttp
+		DisableHeaderNamesNormalizing: true, // If you set the case on your headers correctly you can enable this
+		DisablePathNormalizing:        true,
+		// increase DNS cache time to an hour instead of default minute
+		Dial: (&fasthttp.TCPDialer{
+			Concurrency:      4096,
+			DNSCacheDuration: time.Hour,
+		}).Dial,
+	}
 	envProxy.initialize()
 	log.Init(logger.DEBUG, "0box-sdk")
 }
