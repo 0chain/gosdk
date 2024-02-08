@@ -2,7 +2,7 @@ package sdk
 
 import "github.com/0chain/gosdk/core/sys"
 
-const DefaultBlocksPerMarker int = 10
+const DefaultBlocksPerMarker int = 100
 
 // DownloadOption set download option
 type DownloadOption func(do *DownloadOptions)

@@ -53,7 +53,7 @@ type MultiOperation struct {
 	operations    []Operationer
 	allocationObj *Allocation
 	ctx           context.Context
-	ctxCncl       context.CancelFunc
+	ctxCncl       context.CancelCauseFunc
 	operationMask zboxutil.Uint128
 	maskMU        *sync.Mutex
 	Consensus
@@ -164,7 +164,7 @@ func (mo *MultiOperation) Process() error {
 	mo.changes = make([][]allocationchange.AllocationChange, len(mo.operations))
 	ctx := mo.ctx
 	ctxCncl := mo.ctxCncl
-	defer ctxCncl()
+	defer ctxCncl(nil)
 	swg := sizedwaitgroup.New(BatchSize)
 	errsSlice := make([]error, len(mo.operations))
 	mo.operationMask = zboxutil.NewUint128(0)
@@ -185,7 +185,7 @@ func (mo *MultiOperation) Process() error {
 			if err != nil {
 				l.Logger.Error(err)
 				errsSlice[idx] = errors.New("", err.Error())
-				ctxCncl()
+				ctxCncl(err)
 				return
 			}
 			mo.maskMU.Lock()

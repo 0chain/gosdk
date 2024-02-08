@@ -33,6 +33,8 @@ type ListRequest struct {
 	wg                 *sync.WaitGroup
 	forRepair          bool
 	listOnly           bool
+	offset             int
+	pageLimit          int
 	Consensus
 }
 
@@ -68,6 +70,26 @@ type ListResult struct {
 	deleteMask zboxutil.Uint128 `json:"-"`
 }
 
+type ListRequestOptions func(req *ListRequest)
+
+func WithListRequestOffset(offset int) ListRequestOptions {
+	return func(req *ListRequest) {
+		req.offset = offset
+	}
+}
+
+func WithListRequestPageLimit(pageLimit int) ListRequestOptions {
+	return func(req *ListRequest) {
+		req.pageLimit = pageLimit
+	}
+}
+
+func WithListRequestForRepair(forRepair bool) ListRequestOptions {
+	return func(req *ListRequest) {
+		req.forRepair = forRepair
+	}
+}
+
 func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, blobberIdx int, rspCh chan<- *listResponse) {
 	defer req.wg.Done()
 	//body := new(bytes.Buffer)
@@ -101,7 +123,7 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 	if req.forRepair {
 		req.listOnly = true
 	}
-	httpreq, err := zboxutil.NewListRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.remotefilepath, req.remotefilepathhash, string(authTokenBytes), req.listOnly)
+	httpreq, err := zboxutil.NewListRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.remotefilepath, req.remotefilepathhash, string(authTokenBytes), req.listOnly, req.offset, req.pageLimit)
 	if err != nil {
 		l.Logger.Error("List info request error: ", err.Error())
 		return

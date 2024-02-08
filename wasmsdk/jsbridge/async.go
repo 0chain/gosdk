@@ -126,6 +126,12 @@ func Await(awaitable js.Value) ([]js.Value, []js.Value) {
 	catch := make(chan []js.Value)
 	defer close(catch)
 	catchFunc := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		errObj := args[0]
+
+		// Print the error value
+		errValue := errObj.Get("message").String()
+		fmt.Println("catch error value:", errValue)
+
 		catch <- args
 		return nil
 	})

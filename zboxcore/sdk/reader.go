@@ -135,7 +135,7 @@ func (sd *StreamDownload) Read(b []byte) (int, error) {
 	wantBlocksPerShard := (wantSize + int64(sd.effectiveBlockSize) - 1) / int64(sd.effectiveBlockSize)
 	sd.blocksPerShard = wantBlocksPerShard
 
-	effectiveChunkSize := sd.effectiveBlockSize * sd.datashards
+	// effectiveChunkSize := sd.effectiveBlockSize * sd.datashards
 	n := 0
 	for startInd < endInd {
 		if startInd+numBlocks > endInd {
@@ -149,12 +149,12 @@ func (sd *StreamDownload) Read(b []byte) (int, error) {
 			return 0, err
 		}
 
-		offset := sd.offset % int64(effectiveChunkSize)
+		// offset := sd.offset % int64(effectiveChunkSize)
 		// size of buffer `b` can be any number but we don't want to copy more than want size
 		// offset is important parameter because without it data will be corrupted.
 		// If previously set offset was 65536 + 1(block number 0) and we get data block with block number 1
 		// then we should not copy whole data to the buffer rather after offset.
-		n += copy(b[n:wantSize], data[offset:])
+		n += copy(b[n:wantSize], data[0][0])
 
 		startInd += numBlocks
 	}
@@ -179,7 +179,7 @@ func GetDStorageFileReader(alloc *Allocation, ref *ORef, sdo *StreamDownloadOpti
 			validationRootMap: make(map[string]*blobberFile),
 			shouldVerify:      sdo.VerifyDownload,
 			Consensus: Consensus{
-				RWMutex: &sync.RWMutex{},
+				RWMutex:         &sync.RWMutex{},
 				fullconsensus:   alloc.fullconsensus,
 				consensusThresh: alloc.consensusThreshold,
 			},
