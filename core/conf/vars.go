@@ -2,7 +2,6 @@ package conf
 
 import (
 	"errors"
-	"strings"
 	"sync"
 )
 
@@ -11,7 +10,7 @@ var (
 	cfg     *Config
 	onceCfg sync.Once
 	//  global sharders and miners
-	network *Network
+	// network *Network
 )
 
 var (
@@ -41,42 +40,37 @@ func GetClientConfig() (*Config, error) {
 // InitClientConfig set global client config
 func InitClientConfig(c *Config) {
 	onceCfg.Do(func() {
-		sharderConsensous := c.SharderConsensous
-		if sharderConsensous < 1 {
-			sharderConsensous = DefaultSharderConsensous
-		}
 		cfg = c
-		cfg.SharderConsensous = sharderConsensous
 	})
 }
 
-// InitChainNetwork set global chain network
-func InitChainNetwork(n *Network) {
-	if n == nil {
-		return
-	}
+// // InitChainNetwork set global chain network
+// func InitChainNetwork(n *Network) {
+// 	if n == nil {
+// 		return
+// 	}
 
-	normalizeURLs(n)
+// 	normalizeURLs(n)
 
-	if network == nil {
-		network = n
-		return
-	}
+// 	if network == nil {
+// 		network = n
+// 		return
+// 	}
 
-	network.Sharders = n.Sharders
-	network.Miners = n.Miners
-}
+// 	network.Sharders = n.Sharders
+// 	network.Miners = n.Miners
+// }
 
-func normalizeURLs(network *Network) {
-	if network == nil {
-		return
-	}
+// func normalizeURLs(network *Network) {
+// 	if network == nil {
+// 		return
+// 	}
 
-	for i := 0; i < len(network.Miners); i++ {
-		network.Miners[i] = strings.TrimSuffix(network.Miners[i], "/")
-	}
+// 	for i := 0; i < len(network.Miners); i++ {
+// 		network.Miners[i] = strings.TrimSuffix(network.Miners[i], "/")
+// 	}
 
-	for i := 0; i < len(network.Sharders); i++ {
-		network.Sharders[i] = strings.TrimSuffix(network.Sharders[i], "/")
-	}
-}
+// 	for i := 0; i < len(network.Sharders); i++ {
+// 		network.Sharders[i] = strings.TrimSuffix(network.Sharders[i], "/")
+// 	}
+// }

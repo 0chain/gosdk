@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"sync"
 
+	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/tokenrate"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	hdwallet "github.com/0chain/gosdk/zcncore/ethhdwallet"
@@ -35,14 +36,18 @@ var ethClient *ethclient.Client
 var getEthClient = func() (*ethclient.Client, error) {
 	var err error
 
+	cfg, err := conf.GetClientConfig()
+	if err != nil {
+		return nil, err
+	}
 	once.Do(func() {
-		if len(_config.chain.EthNode) == 0 {
+		if len(cfg.EthereumNode) == 0 {
 			err = fmt.Errorf("eth node SDK not initialized")
 			return
 		}
 
-		logging.Info("requesting from ", _config.chain.EthNode)
-		ethClient, err = ethclient.Dial(_config.chain.EthNode)
+		logging.Info("requesting from ", cfg.EthereumNode)
+		ethClient, err = ethclient.Dial(cfg.EthereumNode)
 	})
 
 	return ethClient, err
@@ -158,11 +163,12 @@ func isValidEthAddress(ethAddr string, client *ethclient.Client) (bool, error) {
 
 // CreateWalletFromEthMnemonic - creating new wallet from Eth mnemonics
 func CreateWalletFromEthMnemonic(mnemonic, password string, statusCb WalletCallback) error {
-	if len(_config.chain.Miners) < 1 || len(_config.chain.Sharders) < 1 {
+	cfg, err := conf.GetClientConfig()
+	if err != nil {
 		return fmt.Errorf("SDK not initialized")
 	}
 	go func() {
-		sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
+		sigScheme := zcncrypto.NewSignatureScheme(cfg.SignatureScheme)
 		_, err := sigScheme.GenerateKeysWithEth(mnemonic, password)
 		if err != nil {
 			statusCb.OnWalletCreateComplete(StatusError, "", err.Error())

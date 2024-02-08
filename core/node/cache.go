@@ -25,6 +25,13 @@ func init() {
 	})
 }
 
+// func NewNonceCache(sharders *NodeHolder) *NonceCache {
+// 	return &NonceCache{
+// 		cache: make(map[string]int64),
+// 		sharders: sharders,
+// 	}
+// }
+
 func (nc *NonceCache) GetNextNonce(clientId string) int64 {
 	nc.guard.Lock()
 	defer nc.guard.Unlock()
