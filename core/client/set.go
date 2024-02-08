@@ -17,6 +17,10 @@ var (
 	fee 	uint64
 )
 
+func init() {
+	wallet = &zcncrypto.Wallet{}
+}
+
 func SetWallet(w zcncrypto.Wallet) error {
 	wallet = &w
 	return nil
