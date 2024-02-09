@@ -1039,18 +1039,18 @@ func (t *Transaction) Verify() error {
 				}
 				txnJson := conf["txn"]
 
-				var tr map[string]json.RawMessage
-				if err := json.Unmarshal(txnJson, &tr); err != nil {
+				tt := transaction.Transaction{}
+				if err := json.Unmarshal(txnJson, &tt); err != nil {
 					return
 				}
 
-				txStatus := tr["transaction_status"]
-				switch string(txStatus) {
-				case "1":
-					t.completeVerifyWithConStatus(StatusSuccess, int(Success), string(output), nil)
-				case "2":
-					txOutput := tr["transaction_output"]
-					t.completeVerifyWithConStatus(StatusSuccess, int(ChargeableError), string(txOutput), nil)
+				*t.txn = tt
+				txStatus := tt.Status
+				switch txStatus {
+				case 1:
+					t.completeVerifyWithConStatus(StatusSuccess, int(Success), tt.TransactionOutput, nil)
+				case 2:
+					t.completeVerifyWithConStatus(StatusSuccess, int(ChargeableError), tt.TransactionOutput, nil)
 				default:
 					t.completeVerify(StatusError, string(output), nil)
 				}
