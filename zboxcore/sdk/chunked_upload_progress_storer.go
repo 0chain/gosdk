@@ -69,11 +69,13 @@ func createFsChunkedUploadProgress(ctx context.Context) *fsChunkedUploadProgress
 }
 
 func saveProgress(ctx context.Context, fs *fsChunkedUploadProgressStorer) {
+	tc := time.NewTicker(2 * time.Second)
+	defer tc.Stop()
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case <-time.After(2 * time.Second):
+		case <-tc.C:
 			fs.Lock()
 			if fs.isRemoved {
 				fs.Unlock()
