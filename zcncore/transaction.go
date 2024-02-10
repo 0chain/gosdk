@@ -1291,6 +1291,14 @@ func GetRoundFromSharders() (int64, error) {
 	return clientNode.Sharders().GetRoundFromSharders()
 }
 
+func GetHardForkRound(hardFork string) (int64, error) {
+	nodeClient, err := client.GetNode()
+	if err != nil {
+		return 0, err
+	}
+	return nodeClient.Sharders().GetHardForkRound(hardFork)
+}
+
 func GetMagicBlockByNumber(ctx context.Context, numSharders int, number int64) (m *block.MagicBlock, err error) {
 	clientNode, err := client.GetNode()
 	if err != nil {

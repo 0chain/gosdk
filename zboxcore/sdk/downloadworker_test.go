@@ -83,8 +83,7 @@ func TestDecodeEC(t *testing.T) {
 				test.setup(test)
 			}
 
-			data, err := test.req.decodeEC(test.shards)
-
+			err := test.req.decodeEC(test.shards)
 			if test.wantErr {
 				require.Error(t, err)
 				require.Contains(t, err.Error(), test.errMsg)
@@ -94,10 +93,12 @@ func TestDecodeEC(t *testing.T) {
 			}
 
 			h := sha3.New256()
-			n, err := h.Write(data)
-			require.NoError(t, err)
-			require.Equal(t, len(data), n)
-
+			total := 0
+			for i := 0; i < test.req.datashards; i++ {
+				n, err := h.Write(test.shards[i])
+				require.NoError(t, err)
+				total += n
+			}
 			hash := hex.EncodeToString(h.Sum(nil))
 			require.Equal(t, test.contentHash, hash)
 

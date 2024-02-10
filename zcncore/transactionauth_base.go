@@ -58,7 +58,7 @@ func (ta *TransactionWithAuth) getAuthorize() (*transaction.Transaction, error) 
 	}
 	logging.Debug(txnResp)
 	// Verify the signature on the result
-	ok, err := txnResp.VerifyTransaction(verifyFn)
+	ok, err := txnResp.VerifyTransaction(sys.VerifyWith)
 	if err != nil {
 		logging.Error("verification failed for txn from auth", err.Error())
 		return nil, errAuthVerifyFailed
@@ -106,20 +106,14 @@ func verifyFn(signature, msgHash, publicKey string) (bool, error) {
 }
 
 func (ta *TransactionWithAuth) sign(otherSig string) error {
-	cfg, err := conf.GetClientConfig()
-	if err != nil {
-		return err
-	}
 	ta.t.txn.ComputeHashData()
-	sig := zcncrypto.NewSignatureScheme(cfg.SignatureScheme)
 
-	err = sig.SetPrivateKey(client.Wallet().Keys[0].PrivateKey)
+	sig, err := AddSignature(client.Wallet().Keys[0].PrivateKey, otherSig, ta.t.txn.Hash)
 	if err != nil {
 		return err
 	}
-
-	ta.t.txn.Signature, err = sig.Add(otherSig, ta.t.txn.Hash)
-	return err
+	ta.t.txn.Signature = sig
+	return nil
 }
 
 func (ta *TransactionWithAuth) submitTxn() {

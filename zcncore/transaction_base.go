@@ -213,6 +213,24 @@ func Sign(hash string) (string, error) {
 	return sigScheme.Sign(hash)
 }
 
+func SignWithKey(privateKey, hash string) (string, error) {
+	sigScheme := zcncrypto.NewSignatureScheme("bls0chain")
+	err := sigScheme.SetPrivateKey(privateKey)
+	if err != nil {
+		return "", err
+	}
+	return sigScheme.Sign(hash)
+}
+
+func VerifyWithKey(pubKey, signature, hash string) (bool, error) {
+	sigScheme := zcncrypto.NewSignatureScheme("bls0chain")
+	err := sigScheme.SetPublicKey(pubKey)
+	if err != nil {
+		return false, err
+	}
+	return sigScheme.Verify(signature, hash)
+}
+
 var SignFn = func(hash string) (string, error) {
 	cfg, err := conf.GetClientConfig()
 	if err != nil {
@@ -224,6 +242,23 @@ var SignFn = func(hash string) (string, error) {
 		return "", err
 	}
 	return sigScheme.Sign(hash)
+}
+
+var AddSignature = func(privateKey, signature string, hash string) (string, error) {
+	cfg, err := conf.GetClientConfig()
+	if err != nil {
+		return "", err
+	}
+	var (
+		ss  = zcncrypto.NewSignatureScheme(cfg.SignatureScheme)
+	)
+
+	err = ss.SetPrivateKey(privateKey)
+	if err != nil {
+		return "", err
+	}
+
+	return ss.Add(signature, hash)
 }
 
 func signWithWallet(hash string, wi interface{}) (string, error) {

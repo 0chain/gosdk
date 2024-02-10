@@ -271,6 +271,7 @@ type MemChanFile struct {
 	ChunkWriteSize int         //  0 value means no limit
 	Sys            interface{} // FileInfo.Sys
 	reader         io.Reader
+	data           []byte
 }
 
 func (f *MemChanFile) Stat() (fs.FileInfo, error) {
@@ -287,24 +288,29 @@ func (f *MemChanFile) Read(p []byte) (int, error) {
 	n := copy(p, recieveData)
 	return n, nil
 }
+
 func (f *MemChanFile) Write(p []byte) (n int, err error) {
 	if f.ChunkWriteSize == 0 {
 		f.Buffer <- p
 	} else {
-		current := 0
-		for ; current < len(p); current += f.ChunkWriteSize {
-			end := current + f.ChunkWriteSize
-			if end > len(p) {
-				end = len(p)
-			}
-			f.Buffer <- p[current:end]
+		if cap(f.data) == 0 {
+			f.data = make([]byte, 0, f.ChunkWriteSize)
 		}
+		f.data = append(f.data, p...)
 	}
 	return len(p), nil
-
 }
 
 func (f *MemChanFile) Sync() error {
+	current := 0
+	for ; current < len(f.data); current += f.ChunkWriteSize {
+		end := current + f.ChunkWriteSize
+		if end > len(f.data) {
+			end = len(f.data)
+		}
+		f.Buffer <- f.data[current:end]
+	}
+	f.data = make([]byte, 0, f.ChunkWriteSize)
 	return nil
 }
 func (f *MemChanFile) Seek(offset int64, whence int) (ret int64, err error) {
