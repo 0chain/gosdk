@@ -335,8 +335,7 @@ func Init(chainConfigJSON string) error {
 	if err != nil {
 		return err
 	}
-	client.Init(context.Background(), cfg)
-	return nil
+	return client.Init(context.Background(), cfg)
 }
 
 // InitSignatureScheme initializes signature scheme only.

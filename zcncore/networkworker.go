@@ -1,5 +1,5 @@
-//go:build mobile
-// +build mobile
+//go:build !mobile
+// +build !mobile
 
 package zcncore
 
@@ -13,47 +13,10 @@ import (
 
 const NETWORK_ENDPOINT = "/network"
 
-var networkWorkerTimerInHours = 1
-
 type Network struct {
-	net network
-}
-
-func NewNetwork() *Network {
-	return &Network{}
-}
-
-func (net *Network) AddMiner(miner string) {
-	net.net.Miners = append(net.net.Miners, miner)
-}
-
-func (net *Network) AddSharder(sharder string) {
-	net.net.Sharders = append(net.net.Sharders, sharder)
-}
-
-type network struct {
 	Miners   []string `json:"miners"`
 	Sharders []string `json:"sharders"`
 }
-
-// func updateNetworkDetailsWorker(ctx context.Context) {
-// 	ticker := time.NewTicker(time.Duration(networkWorkerTimerInHours) * time.Hour)
-// 	for {
-// 		select {
-// 		case <-ctx.Done():
-// 			logging.Info("Network stopped by user")
-// 			return
-// 		case <-ticker.C:
-// 			err := UpdateNetworkDetails()
-// 			if err != nil {
-// 				logging.Error("Update network detail worker fail", zap.Error(err))
-// 				return
-// 			}
-// 			logging.Info("Successfully updated network details")
-// 			return
-// 		}
-// 	}
-// }
 
 //Deprecated: Get client.Node instance to check whether network update is required and update network accordingly
 func UpdateNetworkDetails() error {
@@ -101,10 +64,10 @@ func GetNetworkDetails() (*Network, error) {
 	if err != nil {
 		return nil, err
 	}
-	n := NewNetwork()
-	n.net.Miners = network.Miners()
-	n.net.Sharders = network.Sharders()
-	return n, nil
+	return &Network{
+		Miners: network.Miners(),
+		Sharders: network.Sharders(),
+	}, nil
 }
 
 //Deprecated: Use client.Node instance to get its network details
@@ -113,10 +76,10 @@ func GetNetwork() *Network {
 	if err != nil {
 		panic(err)
 	}
-	n := NewNetwork()
-	n.net.Miners = nodeClient.Network().Miners()
-	n.net.Sharders = nodeClient.Network().Sharders()
-	return n
+	return &Network{
+		Miners:   nodeClient.Network().Miners(),
+		Sharders: nodeClient.Network().Sharders(),
+	}
 }
 
 //Deprecated: Use client.Node instance UpdateNetwork() method 
@@ -136,7 +99,6 @@ func SetNetwork(miners []string, sharders []string) {
 	}
 	logging.Info("network updated successfully")
 }
-
 
 //Deprecated: Use client.GetNetwork() function 
 func GetNetworkJSON() string {

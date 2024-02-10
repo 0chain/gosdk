@@ -83,7 +83,7 @@ func (n *Node) ShouldUpdateNetwork() (bool, *conf.Network, error) {
 	if err != nil {
 		return false, nil, err
 	}
-	network, err := getNetwork(n.clientCtx, cfg.BlockWorker)
+	network, err := GetNetwork(n.clientCtx, cfg.BlockWorker)
 	if err != nil {
 		logging.Error("Failed to get network details ", zap.Error(err))
 		return false, nil, err
@@ -125,7 +125,7 @@ func Init(ctx context.Context, cfg conf.Config) error {
 	// set default value for options if unset
 	setOptionsDefaultValue(&cfg)
 
-	network, err := getNetwork(ctx, cfg.BlockWorker)
+	network, err := GetNetwork(ctx, cfg.BlockWorker)
 	if err != nil {
 		logging.Error("Failed to get network details ", zap.Error(err))
 		return err
@@ -178,7 +178,7 @@ func GetNode() (*Node, error) {
 	return nil, errors.New("0chain-sdk is not initialized")
 }
 
-func getNetwork(ctx context.Context, blockWorker string) (*conf.Network, error) {
+func GetNetwork(ctx context.Context, blockWorker string) (*conf.Network, error) {
 	networkUrl := blockWorker + "/network"
 	networkGetCtx, networkGetCancelCtx := context.WithTimeout(ctx, 60*time.Second)
 	defer networkGetCancelCtx()
