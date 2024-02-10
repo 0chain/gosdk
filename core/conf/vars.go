@@ -57,8 +57,8 @@ func InitClientConfig(c *Config) {
 // 		return
 // 	}
 
-// 	network.Sharders = n.Sharders
-// 	network.Miners = n.Miners
+// 	network.sharders = n.Sharders
+// 	network.miners = n.Miners
 // }
 
 // func normalizeURLs(network *Network) {

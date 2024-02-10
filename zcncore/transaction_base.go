@@ -100,62 +100,47 @@ type TransactionCallback interface {
 // 	isSplitWallet bool
 // }
 
-// type ChainConfig struct {
-// 	ChainID                 string   `json:"chain_id,omitempty"`
-// 	BlockWorker             string   `json:"block_worker"`
-// 	Miners                  []string `json:"miners"`
-// 	Sharders                []string `json:"sharders"`
-// 	SignatureScheme         string   `json:"signature_scheme"`
-// 	MinSubmit               int      `json:"min_submit"`
-// 	MinConfirmation         int      `json:"min_confirmation"`
-// 	ConfirmationChainLength int      `json:"confirmation_chain_length"`
-// 	EthNode                 string   `json:"eth_node"`
-// 	SharderConsensous       int      `json:"sharder_consensous"`
-// }
+type ChainConfig struct {
+	ChainID                 string   `json:"chain_id,omitempty"`
+	BlockWorker             string   `json:"block_worker"`
+	Miners                  []string `json:"miners"`
+	Sharders                []string `json:"sharders"`
+	SignatureScheme         string   `json:"signature_scheme"`
+	MinSubmit               int      `json:"min_submit"`
+	MinConfirmation         int      `json:"min_confirmation"`
+	ConfirmationChainLength int      `json:"confirmation_chain_length"`
+	EthNode                 string   `json:"eth_node"`
+	SharderConsensous       int      `json:"sharder_consensous"`
+}
 
 // var Sharders *node.NodeHolder
 
+// Deprecated: Use client.Init() in core/client package
 // InitZCNSDK initializes the SDK with miner, sharder and signature scheme provided.
-// func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainConfig) error) error {
-// 	if signscheme != "ed25519" && signscheme != "bls0chain" {
-// 		return errors.New("", "invalid/unsupported signature scheme")
-// 	}
-// 	_config.chain.BlockWorker = blockWorker
-// 	_config.chain.SignatureScheme = signscheme
+func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainConfig) error) error {
+	if signscheme != "ed25519" && signscheme != "bls0chain" {
+		return errors.New("", "invalid/unsupported signature scheme")
+	}
 
-// 	err := UpdateNetworkDetails()
-// 	if err != nil {
-// 		fmt.Println("UpdateNetworkDetails:", err)
-// 		return err
-// 	}
-
-// 	go updateNetworkDetailsWorker(context.Background())
-
-// 	for _, conf := range configs {
-// 		err := conf(&_config.chain)
-// 		if err != nil {
-// 			return errors.Wrap(err, "invalid/unsupported options.")
-// 		}
-// 	}
-// 	assertConfig()
-// 	_config.isConfigured = true
-// 	logging.Info("******* Wallet SDK Version:", version.VERSIONSTR, " ******* (InitZCNSDK)")
-
-// 	cfg := &conf.Config{
-// 		BlockWorker:             _config.chain.BlockWorker,
-// 		MinSubmit:               _config.chain.MinSubmit,
-// 		MinConfirmation:         _config.chain.MinConfirmation,
-// 		ConfirmationChainLength: _config.chain.ConfirmationChainLength,
-// 		SignatureScheme:         _config.chain.SignatureScheme,
-// 		ChainID:                 _config.chain.ChainID,
-// 		EthereumNode:            _config.chain.EthNode,
-// 		SharderConsensous:       _config.chain.SharderConsensous,
-// 	}
-
-// 	conf.InitClientConfig(cfg)
-
-// 	return nil
-// }
+	chainCfg := &ChainConfig{}
+	for _, conf := range configs {
+		err := conf(chainCfg)
+		if err != nil {
+			return errors.Wrap(err, "invalid/unsupported options.")
+		}
+	}
+	cfg := conf.Config{
+		BlockWorker:     			blockWorker,
+		SignatureScheme: 			signscheme,
+		MinSubmit:               	chainCfg.MinSubmit,
+		MinConfirmation:         	chainCfg.MinConfirmation,
+		ConfirmationChainLength: 	chainCfg.ConfirmationChainLength,
+		ChainID:                 	chainCfg.ChainID,
+		EthereumNode:            	chainCfg.EthNode,
+		SharderConsensous:       	chainCfg.SharderConsensous,
+	}
+	return client.Init(context.Background(), cfg)
+}
 
 /*Confirmation - a data structure that provides the confirmation that a transaction is included into the block chain */
 type confirmation struct {
@@ -588,7 +573,7 @@ func queryFromMinersContext(ctx context.Context, numMiners int, query string, re
 	nodeClient, err := client.GetNode()
 	if err != nil {
 		panic(err)
-	}	
+	}
 	randomMiners := util.Shuffle(nodeClient.Network().Miners())[:numMiners]
 	for _, miner := range randomMiners {
 		go func(minerurl string) {
@@ -654,7 +639,7 @@ func getBlockInfoByRound(round int64, content string) (*blockHeader, error) {
 	nodeClient, err := client.GetNode()
 	if err != nil {
 		return nil, err
-	}	
+	}
 	numSharders := len(nodeClient.Sharders().Healthy()) // overwrite, use all
 	resultC := make(chan *util.GetResponse, numSharders)
 	nodeClient.Sharders().QueryFromSharders(numSharders, fmt.Sprintf("%vround=%v&content=%v", GET_BLOCK_INFO, round, content), resultC)

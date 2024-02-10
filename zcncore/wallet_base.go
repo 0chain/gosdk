@@ -310,6 +310,35 @@ func SetLogFile(logFile string, verbose bool) {
 	logging.Info("******* Wallet SDK Version:", version.VERSIONSTR, " ******* (SetLogFile)")
 }
 
+//Deprecated: Use client.Init() in core/client package
+// Init initialize the SDK with miner, sharder and signature scheme provided in configuration provided in JSON format
+// # Inputs
+//   - chainConfigJSON: json format of zcn config
+//     {
+//     "block_worker": "https://dev.0chain.net/dns",
+//     "signature_scheme": "bls0chain",
+//     "min_submit": 50,
+//     "min_confirmation": 50,
+//     "confirmation_chain_length": 3,
+//     "max_txn_query": 5,
+//     "query_sleep_time": 5,
+//     "preferred_blobbers": ["https://dev.0chain.net/blobber02","https://dev.0chain.net/blobber03"],
+//     "chain_id":"0afc093ffb509f059c55478bc1a60351cef7b4e9c008a53a6cc8241ca8617dfe",
+//     "ethereum_node":"https://ropsten.infura.io/v3/xxxxxxxxxxxxxxx",
+//     "zbox_host":"https://0box.dev.0chain.net",
+//     "zbox_app_type":"vult",
+//     "sharder_consensous": 2,
+//     }
+func Init(chainConfigJSON string) error {
+	cfg := conf.Config{}
+	err := json.Unmarshal([]byte(chainConfigJSON), &cfg)
+	if err != nil {
+		return err
+	}
+	client.Init(context.Background(), cfg)
+	return nil
+}
+
 // InitSignatureScheme initializes signature scheme only.
 func InitSignatureScheme(scheme string) {
 	cfg := conf.Config{

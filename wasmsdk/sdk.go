@@ -4,6 +4,7 @@
 package main
 
 import (
+	"context"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -12,6 +13,8 @@ import (
 	"os"
 	"sync"
 
+	"github.com/0chain/gosdk/core/client"
+	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/imageutil"
 	"github.com/0chain/gosdk/core/logger"
@@ -34,12 +37,15 @@ func initSDKs(chainID, blockWorker, signatureScheme string,
 		return err
 	}
 
-	err = zcncore.InitZCNSDK(blockWorker, signatureScheme,
-		zcncore.WithChainID(chainID),
-		zcncore.WithMinConfirmation(minConfirmation),
-		zcncore.WithMinSubmit(minSubmit),
-		zcncore.WithConfirmationChainLength(confirmationChainLength),
-		zcncore.WithSharderConsensous(sharderconsensous))
+	err = client.Init(context.Background(), conf.Config{
+		BlockWorker: blockWorker,
+		SignatureScheme: signatureScheme,
+		ChainID: chainID,
+		MinConfirmation: minConfirmation,
+		MinSubmit: minSubmit,
+		ConfirmationChainLength: confirmationChainLength,
+		SharderConsensous: sharderconsensous,
+	})
 
 	if err != nil {
 		fmt.Println("wasm: InitZCNSDK ", err)

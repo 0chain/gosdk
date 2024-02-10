@@ -4,6 +4,7 @@
 package zcncore
 
 import (
+	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/zcncrypto"
 )
 
@@ -16,8 +17,12 @@ type wallet struct {
 }
 
 func (w *wallet) Sign(hash string) (string, error) {
-	sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
-	err := sigScheme.SetPrivateKey(w.Keys[0].PrivateKey)
+	cfg, err := conf.GetClientConfig()
+	if err != nil {
+		return "", err
+	}
+	sigScheme := zcncrypto.NewSignatureScheme(cfg.SignatureScheme)
+	err = sigScheme.SetPrivateKey(w.Keys[0].PrivateKey)
 	if err != nil {
 		return "", err
 	}

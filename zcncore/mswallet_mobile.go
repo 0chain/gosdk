@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/zcncrypto"
 )
@@ -257,7 +258,12 @@ func CreateMSVote(proposal, grpClientID, signerWalletstr, toClientID string, tok
 	buff, _ := json.Marshal(transfer)
 	hash := encryption.Hash(buff)
 
-	sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
+	cfg, err := conf.GetClientConfig()
+	if err != nil {
+		return "", err
+	}
+
+	sigScheme := zcncrypto.NewSignatureScheme(cfg.SignatureScheme)
 	if err := sigScheme.SetPrivateKey(signerWallet.Keys[0].PrivateKey); err != nil {
 		return "", err
 	}

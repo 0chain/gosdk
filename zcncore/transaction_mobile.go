@@ -14,6 +14,7 @@ import (
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/block"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/node"
@@ -348,8 +349,8 @@ func NewTransaction(cb TransactionCallback, txnFee string, nonce int64) (Transac
 	if err != nil {
 		return nil, err
 	}
-	if _config.isSplitWallet {
-		if _config.authUrl == "" {
+	if client.SplitKeyWallet() {
+		if client.AuthUrl() == "" {
 			return nil, errors.New("", "auth url not set")
 		}
 		logging.Info("New transaction interface with auth")
@@ -945,7 +946,12 @@ func (t *Transaction) Verify() error {
 		t.txn.CreationDate = int64(common.Now())
 	}
 
-	tq, err := newTransactionQuery(Sharders.Healthy())
+	nodeClient, err := client.GetNode()
+	if err != nil {
+		return err
+	}
+
+	tq, err := newTransactionQuery(nodeClient.Sharders().Healthy())
 	if err != nil {
 		logging.Error(err)
 		return err
@@ -971,8 +977,8 @@ func (t *Transaction) Verify() error {
 
 				// transaction is done or expired. it means random sharder might be outdated, try to query it from s/S sharders to confirm it
 				if util.MaxInt64(lfbBlockHeader.getCreationDate(now), now) >= (t.txn.CreationDate + int64(defaultTxnExpirationSeconds)) {
-					logging.Info("falling back to ", getMinShardersVerify(), " of ", len(_config.chain.Sharders), " Sharders", len(Sharders.Healthy()), "Healthy sharders")
-					confirmBlockHeader, confirmationBlock, lfbBlockHeader, err = tq.getConsensusConfirmation(getMinShardersVerify(), t.txnHash, nil)
+					logging.Info("falling back to ", nodeClient.GetMinShardersVerify(), " of ", len(nodeClient.Network().Sharders()), " Sharders", len(nodeClient.Sharders().Healthy()), "Healthy sharders")
+					confirmBlockHeader, confirmationBlock, lfbBlockHeader, err = tq.getConsensusConfirmation(nodeClient.GetMinShardersVerify(), t.txnHash, nil)
 				}
 
 				// txn not found in fast confirmation/consensus confirmation
@@ -1042,7 +1048,11 @@ func (t *Transaction) ZCNSCAddAuthorizer(ip AddAuthorizerPayload) (err error) {
 
 // EstimateFee estimates transaction fee
 func (t *Transaction) EstimateFee(reqPercent float32) (int64, error) {
-	fee, err := transaction.EstimateFee(t.txn, _config.chain.Miners, reqPercent)
+	nodeClient, err := client.GetNode()
+	if err != nil {
+		return 0, err
+	}
+	fee, err := transaction.EstimateFee(t.txn, nodeClient.Network().Miners(), reqPercent)
 	return int64(fee), err
 }
 
@@ -1071,14 +1081,18 @@ func makeTimeoutContext(tm RequestTimeout) (context.Context, func()) {
 }
 
 func GetLatestFinalized(numSharders int, timeout RequestTimeout) (b *BlockHeader, err error) {
+	nodeClient, err := client.GetNode()
+	if err != nil {
+		return nil, err
+	}
 	var result = make(chan *util.GetResponse, numSharders)
 	defer close(result)
 
 	ctx, cancel := makeTimeoutContext(timeout)
 	defer cancel()
 
-	numSharders = len(Sharders.Healthy()) // overwrite, use all
-	Sharders.QueryFromShardersContext(ctx, numSharders, GET_LATEST_FINALIZED, result)
+	numSharders = len(nodeClient.Sharders().Healthy()) // overwrite, use all
+	nodeClient.Sharders().QueryFromShardersContext(ctx, numSharders, GET_LATEST_FINALIZED, result)
 
 	var (
 		maxConsensus   int
@@ -1119,20 +1133,23 @@ func GetLatestFinalized(numSharders int, timeout RequestTimeout) (b *BlockHeader
 }
 
 func GetLatestFinalizedMagicBlock(numSharders int, timeout RequestTimeout) ([]byte, error) {
+	nodeClient, err := client.GetNode()
+	if err != nil {
+		return nil, err
+	}
 	var result = make(chan *util.GetResponse, numSharders)
 	defer close(result)
 
 	ctx, cancel := makeTimeoutContext(timeout)
 	defer cancel()
 
-	numSharders = len(Sharders.Healthy()) // overwrite, use all
-	Sharders.QueryFromShardersContext(ctx, numSharders, GET_LATEST_FINALIZED_MAGIC_BLOCK, result)
+	numSharders = len(nodeClient.Sharders().Healthy()) // overwrite, use all
+	nodeClient.Sharders().QueryFromShardersContext(ctx, numSharders, GET_LATEST_FINALIZED_MAGIC_BLOCK, result)
 
 	var (
 		maxConsensus   int
 		roundConsensus = make(map[string]int)
 		m              *block.MagicBlock
-		err            error
 	)
 
 	type respObj struct {
@@ -1181,6 +1198,10 @@ func GetLatestFinalizedMagicBlock(numSharders int, timeout RequestTimeout) ([]by
 // GetChainStats gets chain stats with time out
 // timeout in milliseconds
 func GetChainStats(timeout RequestTimeout) ([]byte, error) {
+	nodeClient, err := client.GetNode()
+	if err != nil {
+		return nil, err
+	}
 	var result = make(chan *util.GetResponse, 1)
 	defer close(result)
 
@@ -1189,11 +1210,10 @@ func GetChainStats(timeout RequestTimeout) ([]byte, error) {
 
 	var (
 		b   *block.ChainStats
-		err error
 	)
 
-	var numSharders = len(Sharders.Healthy()) // overwrite, use all
-	Sharders.QueryFromShardersContext(ctx, numSharders, GET_CHAIN_STATS, result)
+	var numSharders = len(nodeClient.Sharders().Healthy()) // overwrite, use all
+	nodeClient.Sharders().QueryFromShardersContext(ctx, numSharders, GET_CHAIN_STATS, result)
 	var rsp *util.GetResponse
 	for i := 0; i < numSharders; i++ {
 		var x = <-result
@@ -1219,11 +1239,15 @@ func GetChainStats(timeout RequestTimeout) ([]byte, error) {
 }
 
 func GetFeeStats(timeout RequestTimeout) ([]byte, error) {
+	nodeClient, err := client.GetNode()
+	if err != nil {
+		return nil ,err
+	}
 
 	var numMiners = 4
 
-	if numMiners > len(_config.chain.Miners) {
-		numMiners = len(_config.chain.Miners)
+	if numMiners > len(nodeClient.Network().Miners()) {
+		numMiners = len(nodeClient.Network().Miners())
 	}
 
 	var result = make(chan *util.GetResponse, numMiners)
@@ -1233,7 +1257,6 @@ func GetFeeStats(timeout RequestTimeout) ([]byte, error) {
 
 	var (
 		b   *block.FeeStats
-		err error
 	)
 
 	queryFromMinersContext(ctx, numMiners, GET_FEE_STATS, result)
@@ -1433,14 +1456,18 @@ func (t *timeoutCtx) Get() int64 {
 }
 
 func GetBlockByRound(numSharders int, round int64, timeout RequestTimeout) (b *Block, err error) {
+	nodeClient, err := client.GetNode()
+	if err != nil {
+		return nil, err
+	}
 	var result = make(chan *util.GetResponse, numSharders)
 	defer close(result)
 
 	ctx, cancel := makeTimeoutContext(timeout)
 	defer cancel()
 
-	numSharders = len(Sharders.Healthy()) // overwrite, use all
-	Sharders.QueryFromShardersContext(ctx, numSharders,
+	numSharders = len(nodeClient.Sharders().Healthy()) // overwrite, use all
+	nodeClient.Sharders().QueryFromShardersContext(ctx, numSharders,
 		fmt.Sprintf("%sround=%d&content=full,header", GET_BLOCK_INFO, round),
 		result)
 
@@ -1518,14 +1545,18 @@ func GetBlockByRound(numSharders int, round int64, timeout RequestTimeout) (b *B
 }
 
 func GetMagicBlockByNumber(numSharders int, number int64, timeout RequestTimeout) ([]byte, error) {
+	nodeClient, err := client.GetNode()
+	if err != nil {
+		return nil, err
+	}
 	var result = make(chan *util.GetResponse, numSharders)
 	defer close(result)
 
 	ctx, cancel := makeTimeoutContext(timeout)
 	defer cancel()
 
-	numSharders = len(Sharders.Healthy()) // overwrite, use all
-	Sharders.QueryFromShardersContext(ctx, numSharders,
+	numSharders = len(nodeClient.Sharders().Healthy()) // overwrite, use all
+	nodeClient.Sharders().QueryFromShardersContext(ctx, numSharders,
 		fmt.Sprintf("%smagic_block_number=%d", GET_MAGIC_BLOCK_INFO, number),
 		result)
 
@@ -1533,7 +1564,6 @@ func GetMagicBlockByNumber(numSharders int, number int64, timeout RequestTimeout
 		maxConsensus   int
 		roundConsensus = make(map[string]int)
 		ret            []byte
-		err            error
 	)
 
 	type respObj struct {
@@ -1581,8 +1611,12 @@ func GetMagicBlockByNumber(numSharders int, number int64, timeout RequestTimeout
 
 // GetFeesTable get fee tables
 func GetFeesTable(reqPercent float32) (string, error) {
+	nodeClient, err := client.GetNode()
+	if err != nil {
+		return "", err
+	}
 
-	fees, err := transaction.GetFeesTable(_config.chain.Miners, reqPercent)
+	fees, err := transaction.GetFeesTable(nodeClient.Network().Miners(), reqPercent)
 	if err != nil {
 		return "", err
 	}

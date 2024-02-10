@@ -849,6 +849,9 @@ func NewMSTransaction(walletstr string, cb TransactionCallback) (*Transaction, e
 		return nil, err
 	}
 	cfg, err := conf.GetClientConfig()
+	if err != nil {
+		return nil, err
+	}
 	t := &Transaction{}
 	t.txn = transaction.NewTransactionEntity(w.ClientID, cfg.ChainID, w.ClientKey, w.Nonce)
 	t.txnStatus, t.verifyStatus = StatusUnknown, StatusUnknown
@@ -1394,47 +1397,53 @@ func (nc *NonceCache) Evict(clientId string) {
 	delete(nc.cache, clientId)
 }
 
-// func WithEthereumNode(uri string) func(c *ChainConfig) error {
-// 	return func(c *ChainConfig) error {
-// 		c.EthNode = uri
-// 		return nil
-// 	}
-// }
+//Deprecated: client.Init() in  core package
+func WithEthereumNode(uri string) func(c *ChainConfig) error {
+	return func(c *ChainConfig) error {
+		c.EthNode = uri
+		return nil
+	}
+}
 
-// func WithChainID(id string) func(c *ChainConfig) error {
-// 	return func(c *ChainConfig) error {
-// 		c.ChainID = id
-// 		return nil
-// 	}
-// }
+//Deprecated: client.Init() in  core package
+func WithChainID(id string) func(c *ChainConfig) error {
+	return func(c *ChainConfig) error {
+		c.ChainID = id
+		return nil
+	}
+}
 
-// func WithMinSubmit(m int) func(c *ChainConfig) error {
-// 	return func(c *ChainConfig) error {
-// 		c.MinSubmit = m
-// 		return nil
-// 	}
-// }
+//Deprecated: client.Init() in  core package
+func WithMinSubmit(m int) func(c *ChainConfig) error {
+	return func(c *ChainConfig) error {
+		c.MinSubmit = m
+		return nil
+	}
+}
 
-// func WithMinConfirmation(m int) func(c *ChainConfig) error {
-// 	return func(c *ChainConfig) error {
-// 		c.MinConfirmation = m
-// 		return nil
-// 	}
-// }
+//Deprecated: client.Init() in  core package
+func WithMinConfirmation(m int) func(c *ChainConfig) error {
+	return func(c *ChainConfig) error {
+		c.MinConfirmation = m
+		return nil
+	}
+}
 
-// func WithConfirmationChainLength(m int) func(c *ChainConfig) error {
-// 	return func(c *ChainConfig) error {
-// 		c.ConfirmationChainLength = m
-// 		return nil
-// 	}
-// }
+//Deprecated: client.Init() in  core package
+func WithConfirmationChainLength(m int) func(c *ChainConfig) error {
+	return func(c *ChainConfig) error {
+		c.ConfirmationChainLength = m
+		return nil
+	}
+}
 
-// func WithSharderConsensous(m int) func(c *ChainConfig) error {
-// 	return func(c *ChainConfig) error {
-// 		c.SharderConsensous = m
-// 		return nil
-// 	}
-// }
+//Deprecated: client.Init() in  core package
+func WithSharderConsensous(m int) func(c *ChainConfig) error {
+	return func(c *ChainConfig) error {
+		c.SharderConsensous = m
+		return nil
+	}
+}
 
 // UpdateValidatorSettings update settings of a validator.
 func (t *Transaction) UpdateValidatorSettings(v *Validator) (err error) {

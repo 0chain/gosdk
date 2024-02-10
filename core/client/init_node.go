@@ -79,7 +79,10 @@ func (n *Node) Network() *conf.Network {
 }
 
 func (n *Node) ShouldUpdateNetwork() (bool, *conf.Network, error) {
-	cfg, _ := conf.GetClientConfig()
+	cfg, err := conf.GetClientConfig()
+	if err != nil {
+		return false, nil, err
+	}
 	network, err := getNetwork(n.clientCtx, cfg.BlockWorker)
 	if err != nil {
 		logging.Error("Failed to get network details ", zap.Error(err))
@@ -96,7 +99,10 @@ func (n *Node) ShouldUpdateNetwork() (bool, *conf.Network, error) {
 func (n *Node) UpdateNetwork(network *conf.Network) error {
 	n.networkGuard.Lock()
 	defer n.networkGuard.Unlock()
-	cfg, _ := conf.GetClientConfig()
+	cfg, err := conf.GetClientConfig()
+	if err != nil {
+		return err
+	}
 	n.network = network
 	n.sharders = node.NewHolder(n.network.Sharders(), util.MinInt(len(n.network.Sharders()), util.MaxInt(cfg.SharderConsensous, conf.DefaultSharderConsensous)))
 	node.InitCache(n.sharders)
@@ -154,7 +160,9 @@ func Init(ctx context.Context, cfg conf.Config) error {
 					continue
 				}
 				if shouldUpdate {
-					nodeClient.UpdateNetwork(network)
+					if err = nodeClient.UpdateNetwork(network); err != nil {
+						logging.Error("error on updating network: ", err)
+					}
 				}
 			}
 		}
