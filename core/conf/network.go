@@ -13,15 +13,15 @@ import (
 // Network settings from ~/.zcn/network.yaml
 type Network struct {
 	// Sharders sharder list of blockchain
-	sharders []string
+	Sharders []string
 	// Miners miner list of blockchain
-	miners []string
+	Miners []string
 }
 
 func NewNetwork(miners, sharders []string) (*Network, error) {
 	n := &Network{
-		miners: miners,
-		sharders: sharders,
+		Miners: miners,
+		Sharders: sharders,
 	}
 	if !n.IsValid() {
 		return nil, errors.New("network has no miners/sharders")
@@ -32,24 +32,24 @@ func NewNetwork(miners, sharders []string) (*Network, error) {
 
 // IsValid check network if it has miners and sharders
 func (n *Network) IsValid() bool {
-	return n != nil && len(n.miners) > 0 && len(n.sharders) > 0
+	return n != nil && len(n.Miners) > 0 && len(n.Sharders) > 0
 }
 
-func (n *Network) Miners() []string {
-	return n.miners
-}
+// func (n *Network) Miners() []string {
+// 	return n.miners
+// }
 
-func (n *Network) Sharders() []string {
-	return n.sharders
-}
+// func (n *Network) Sharders() []string {
+// 	return n.sharders
+// }
 
 func (n *Network) NormalizeURLs() {
-	for i := 0; i < len(n.miners); i++ {
-		n.miners[i] = strings.TrimSuffix(n.miners[i], "/")
+	for i := 0; i < len(n.Miners); i++ {
+		n.Miners[i] = strings.TrimSuffix(n.Miners[i], "/")
 	}
 
-	for i := 0; i < len(n.sharders); i++ {
-		n.sharders[i] = strings.TrimSuffix(n.sharders[i], "/")
+	for i := 0; i < len(n.Sharders); i++ {
+		n.Sharders[i] = strings.TrimSuffix(n.Sharders[i], "/")
 	}
 }
 
@@ -82,7 +82,7 @@ func LoadNetworkFile(file string) (Network, error) {
 // LoadNetwork load and parse network
 func LoadNetwork(v Reader) Network {
 	return Network{
-		sharders: v.GetStringSlice("sharders"),
-		miners:   v.GetStringSlice("miners"),
+		Sharders: v.GetStringSlice("sharders"),
+		Miners:   v.GetStringSlice("miners"),
 	}
 }

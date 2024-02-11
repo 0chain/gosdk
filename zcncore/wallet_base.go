@@ -446,7 +446,7 @@ func GetClientDetails(clientID string) (*GetClientResponse, error) {
 	if err != nil {
 		panic(err)
 	}
-	minerurl := util.GetRandom(clientNode.Network().Miners(), 1)[0]
+	minerurl := util.GetRandom(clientNode.Network().Miners, 1)[0]
 	url := minerurl + GET_CLIENT
 	url = fmt.Sprintf("%v?id=%v", url, clientID)
 	req, err := util.NewHTTPGetRequest(url)

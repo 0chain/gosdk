@@ -576,7 +576,7 @@ func GetInfoFromAnyMiner(urlSuffix string, op int, cb getInfoCallback) {
 		return
 	}
 
-	tq, err := NewTransactionQuery([]string{}, util.Shuffle(clientNode.Network().Miners()))
+	tq, err := NewTransactionQuery([]string{}, util.Shuffle(clientNode.Network().Miners))
 
 	if err != nil {
 		cb.OnInfoAvailable(op, StatusError, "", err.Error())

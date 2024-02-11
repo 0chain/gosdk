@@ -65,8 +65,8 @@ func GetNetworkDetails() (*Network, error) {
 		return nil, err
 	}
 	return &Network{
-		Miners: network.Miners(),
-		Sharders: network.Sharders(),
+		Miners: network.Miners,
+		Sharders: network.Sharders,
 	}, nil
 }
 
@@ -77,8 +77,8 @@ func GetNetwork() *Network {
 		panic(err)
 	}
 	return &Network{
-		Miners:   nodeClient.Network().Miners(),
-		Sharders: nodeClient.Network().Sharders(),
+		Miners:   nodeClient.Network().Miners,
+		Sharders: nodeClient.Network().Sharders,
 	}
 }
 

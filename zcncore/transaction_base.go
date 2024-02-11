@@ -522,7 +522,7 @@ func (t *Transaction) createSmartContractTxn(address, methodName string, input i
 	}
 
 	// TODO: check if transaction is exempt to avoid unnecessary fee estimation
-	minFee, err := transaction.EstimateFee(t.txn, clientNode.Network().Miners(), 0.2)
+	minFee, err := transaction.EstimateFee(t.txn, clientNode.Network().Miners, 0.2)
 	if err != nil {
 		logger.Logger.Error("failed estimate txn fee",
 			zap.Any("txn", t.txn.Hash),
@@ -609,7 +609,7 @@ func queryFromMinersContext(ctx context.Context, numMiners int, query string, re
 	if err != nil {
 		panic(err)
 	}
-	randomMiners := util.Shuffle(nodeClient.Network().Miners())[:numMiners]
+	randomMiners := util.Shuffle(nodeClient.Network().Miners)[:numMiners]
 	for _, miner := range randomMiners {
 		go func(minerurl string) {
 			logging.Info("Query from ", minerurl+query)
@@ -753,7 +753,7 @@ func validateChain(confirmBlock *blockHeader) bool {
 	for {
 		nextBlock, err := getBlockInfoByRound(round, "header")
 		if err != nil {
-			logging.Info(err, " after a second falling thru to ", nodeClient.GetMinShardersVerify(), "of ", len(nodeClient.Network().Sharders()), "Sharders", len(nodeClient.Sharders().Healthy()), "Healthy sharders")
+			logging.Info(err, " after a second falling thru to ", nodeClient.GetMinShardersVerify(), "of ", len(nodeClient.Network().Sharders), "Sharders", len(nodeClient.Sharders().Healthy()), "Healthy sharders")
 			sys.Sleep(1 * time.Second)
 			nextBlock, err = getBlockInfoByRound(round, "header")
 			if err != nil {
@@ -904,7 +904,7 @@ func VerifyContentHash(metaTxnDataJSON string) (bool, error) {
 		return false, errors.New("metaTxnData_decode_error", "Unable to decode metaTxnData json")
 	}
 
-	t, err := transaction.VerifyTransaction(metaTxnData.TxnID, nodeClient.Network().Sharders())
+	t, err := transaction.VerifyTransaction(metaTxnData.TxnID, nodeClient.Network().Sharders)
 	if err != nil {
 		return false, errors.New("fetch_txm_details", "Unable to fetch txn details")
 	}

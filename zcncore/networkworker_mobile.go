@@ -102,8 +102,8 @@ func GetNetworkDetails() (*Network, error) {
 		return nil, err
 	}
 	n := NewNetwork()
-	n.net.Miners = network.Miners()
-	n.net.Sharders = network.Sharders()
+	n.net.Miners = network.Miners
+	n.net.Sharders = network.Sharders
 	return n, nil
 }
 
@@ -114,8 +114,8 @@ func GetNetwork() *Network {
 		panic(err)
 	}
 	n := NewNetwork()
-	n.net.Miners = nodeClient.Network().Miners()
-	n.net.Sharders = nodeClient.Network().Sharders()
+	n.net.Miners = nodeClient.Network().Miners
+	n.net.Sharders = nodeClient.Network().Sharders
 	return n
 }
 

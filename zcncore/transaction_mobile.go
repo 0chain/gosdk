@@ -977,7 +977,7 @@ func (t *Transaction) Verify() error {
 
 				// transaction is done or expired. it means random sharder might be outdated, try to query it from s/S sharders to confirm it
 				if util.MaxInt64(lfbBlockHeader.getCreationDate(now), now) >= (t.txn.CreationDate + int64(defaultTxnExpirationSeconds)) {
-					logging.Info("falling back to ", nodeClient.GetMinShardersVerify(), " of ", len(nodeClient.Network().Sharders()), " Sharders", len(nodeClient.Sharders().Healthy()), "Healthy sharders")
+					logging.Info("falling back to ", nodeClient.GetMinShardersVerify(), " of ", len(nodeClient.Network().Sharders), " Sharders", len(nodeClient.Sharders().Healthy()), "Healthy sharders")
 					confirmBlockHeader, confirmationBlock, lfbBlockHeader, err = tq.getConsensusConfirmation(nodeClient.GetMinShardersVerify(), t.txnHash, nil)
 				}
 
@@ -1052,7 +1052,7 @@ func (t *Transaction) EstimateFee(reqPercent float32) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	fee, err := transaction.EstimateFee(t.txn, nodeClient.Network().Miners(), reqPercent)
+	fee, err := transaction.EstimateFee(t.txn, nodeClient.Network().Miners, reqPercent)
 	return int64(fee), err
 }
 
@@ -1246,8 +1246,8 @@ func GetFeeStats(timeout RequestTimeout) ([]byte, error) {
 
 	var numMiners = 4
 
-	if numMiners > len(nodeClient.Network().Miners()) {
-		numMiners = len(nodeClient.Network().Miners())
+	if numMiners > len(nodeClient.Network().Miners) {
+		numMiners = len(nodeClient.Network().Miners)
 	}
 
 	var result = make(chan *util.GetResponse, numMiners)
@@ -1616,7 +1616,7 @@ func GetFeesTable(reqPercent float32) (string, error) {
 		return "", err
 	}
 
-	fees, err := transaction.GetFeesTable(nodeClient.Network().Miners(), reqPercent)
+	fees, err := transaction.GetFeesTable(nodeClient.Network().Miners, reqPercent)
 	if err != nil {
 		return "", err
 	}

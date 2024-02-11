@@ -297,7 +297,7 @@ func (t *Transaction) Send(toClientID string, val uint64, desc string) error {
 	t.txn.Value = val
 	t.txn.TransactionData = string(txnData)
 	if t.txn.TransactionFee == 0 {
-		fee, err := transaction.EstimateFee(t.txn, clientNode.Network().Miners(), 0.2)
+		fee, err := transaction.EstimateFee(t.txn, clientNode.Network().Miners, 0.2)
 		if err != nil {
 			return err
 		}
@@ -327,7 +327,7 @@ func (t *Transaction) SendWithSignatureHash(toClientID string, val uint64, desc 
 	t.txn.Signature = sig
 	t.txn.CreationDate = CreationDate
 	if t.txn.TransactionFee == 0 {
-		fee, err := transaction.EstimateFee(t.txn, clientNode.Network().Miners(), 0.2)
+		fee, err := transaction.EstimateFee(t.txn, clientNode.Network().Miners, 0.2)
 		if err != nil {
 			return err
 		}
@@ -825,7 +825,7 @@ func (t *Transaction) RegisterMultiSig(walletstr string, mswallet string) error 
 		t.txn.TransactionNonce = nonce
 
 		if t.txn.TransactionFee == 0 {
-			fee, err := transaction.EstimateFee(t.txn, clientNode.Network().Miners(), 0.2)
+			fee, err := transaction.EstimateFee(t.txn, clientNode.Network().Miners, 0.2)
 			if err != nil {
 				return
 			}
@@ -897,7 +897,7 @@ func (t *Transaction) RegisterVote(signerwalletstr string, msvstr string) error 
 		t.txn.TransactionNonce = nonce
 
 		if t.txn.TransactionFee == 0 {
-			fee, err := transaction.EstimateFee(t.txn, clientNode.Network().Miners(), 0.2)
+			fee, err := transaction.EstimateFee(t.txn, clientNode.Network().Miners, 0.2)
 			if err != nil {
 				return
 			}
@@ -1006,7 +1006,7 @@ func (t *Transaction) Verify() error {
 		t.txn.CreationDate = int64(common.Now())
 	}
 
-	tq, err := NewTransactionQuery(clientNode.Sharders().Healthy(), clientNode.Network().Miners())
+	tq, err := NewTransactionQuery(clientNode.Sharders().Healthy(), clientNode.Network().Miners)
 	if err != nil {
 		logging.Error(err)
 		return err
@@ -1031,7 +1031,7 @@ func (t *Transaction) Verify() error {
 
 				// transaction is done or expired. it means random sharder might be outdated, try to query it from s/S sharders to confirm it
 				if util.MaxInt64(lfbBlockHeader.getCreationDate(now), now) >= (t.txn.CreationDate + int64(defaultTxnExpirationSeconds)) {
-					logging.Info("falling back to ", clientNode.GetMinShardersVerify(), " of ", len(clientNode.Network().Sharders()), " Sharders")
+					logging.Info("falling back to ", clientNode.GetMinShardersVerify(), " of ", len(clientNode.Network().Sharders), " Sharders")
 					confirmBlockHeader, confirmationBlock, lfbBlockHeader, err = tq.getConsensusConfirmation(context.TODO(), clientNode.GetMinShardersVerify(), t.txnHash)
 				}
 
@@ -1241,8 +1241,8 @@ func GetFeeStats(ctx context.Context) (b *block.FeeStats, err error) {
 	}
 	var numMiners = 4
 
-	if numMiners > len(clientNode.Network().Miners()) {
-		numMiners = len(clientNode.Network().Miners())
+	if numMiners > len(clientNode.Network().Miners) {
+		numMiners = len(clientNode.Network().Miners)
 	}
 
 	var result = make(chan *util.GetResponse, numMiners)
