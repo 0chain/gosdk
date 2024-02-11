@@ -144,6 +144,7 @@ func Init(ctx context.Context, cfg conf.Config) error {
 
 	//init packages
 	conf.InitClientConfig(&cfg)
+	node.InitCache(nodeClient.sharders)
 
 	// update Network periodically
 	go func() {
