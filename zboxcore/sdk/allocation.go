@@ -1002,7 +1002,9 @@ func (a *Allocation) DownloadFile(localPath string, remotePath string, verifyDow
 	if err != nil {
 		return err
 	}
-
+	downloadReqOpts = append(downloadReqOpts, WithFileCallback(func() {
+		f.Close() //nolint: errcheck
+	}))
 	err = a.addAndGenerateDownloadRequest(f, remotePath, DOWNLOAD_CONTENT_FULL, 1, 0,
 		numBlockDownloads, verifyDownload, status, isFinal, localFilePath, downloadReqOpts...)
 	if err != nil {
@@ -1018,14 +1020,16 @@ func (a *Allocation) DownloadFile(localPath string, remotePath string, verifyDow
 // TODO: Use a map to store the download request and use flag isFinal to start the download, calculate readCount in parallel if possible
 func (a *Allocation) DownloadFileByBlock(
 	localPath string, remotePath string, startBlock int64, endBlock int64,
-	numBlocks int, verifyDownload bool, status StatusCallback, isFinal bool) error {
+	numBlocks int, verifyDownload bool, status StatusCallback, isFinal bool, downloadReqOpts ...DownloadRequestOption) error {
 	f, localFilePath, toKeep, err := a.prepareAndOpenLocalFile(localPath, remotePath)
 	if err != nil {
 		return err
 	}
-
+	downloadReqOpts = append(downloadReqOpts, WithFileCallback(func() {
+		f.Close() //nolint: errcheck
+	}))
 	err = a.addAndGenerateDownloadRequest(f, remotePath, DOWNLOAD_CONTENT_FULL, startBlock, endBlock,
-		numBlockDownloads, verifyDownload, status, isFinal, localFilePath)
+		numBlockDownloads, verifyDownload, status, isFinal, localFilePath, downloadReqOpts...)
 	if err != nil {
 		if !toKeep {
 			os.Remove(localFilePath) //nolint: errcheck
@@ -1095,11 +1099,11 @@ func (a *Allocation) generateDownloadRequest(
 		defer a.mutex.Unlock()
 		delete(a.downloadProgressMap, remotepath)
 	}
-	downloadReq.fileCallback = func() {
-		if downloadReq.fileHandler != nil {
-			downloadReq.fileHandler.Close() //nolint: errcheck
-		}
-	}
+	// downloadReq.fileCallback = func() {
+	// 	if downloadReq.fileHandler != nil {
+	// 		downloadReq.fileHandler.Close() //nolint: errcheck
+	// 	}
+	// }
 	downloadReq.contentMode = contentMode
 	downloadReq.connectionID = connectionID
 
@@ -1401,7 +1405,7 @@ func (a *Allocation) getDownloadMaskForBlobber(blobberID string) (zboxutil.Uint1
 	return x, a.Blobbers[blobberIdx : blobberIdx+1], nil
 }
 
-func (a *Allocation) DownloadFromBlobber(blobberID, localPath, remotePath string, status StatusCallback) error {
+func (a *Allocation) DownloadFromBlobber(blobberID, localPath, remotePath string, status StatusCallback, opts ...DownloadRequestOption) error {
 
 	mask, blobbers, err := a.getDownloadMaskForBlobber(blobberID)
 	if err != nil {
@@ -1429,6 +1433,12 @@ func (a *Allocation) DownloadFromBlobber(blobberID, localPath, remotePath string
 	downloadReq.blobbers = blobbers
 	downloadReq.fullconsensus = 1
 	downloadReq.consensusThresh = 1
+	opts = append(opts, WithFileCallback(func() {
+		f.Close() //nolint: errcheck
+	}))
+	for _, opt := range opts {
+		opt(downloadReq)
+	}
 
 	fRef, err := downloadReq.getFileRef(remotePath)
 	if err != nil {
@@ -2093,14 +2103,17 @@ func (a *Allocation) DownloadThumbnailFromAuthTicket(
 	verifyDownload bool,
 	status StatusCallback,
 	isFinal bool,
+	downloadReqOpts ...DownloadRequestOption,
 ) error {
 	f, localFilePath, toKeep, err := a.prepareAndOpenLocalFile(localPath, remoteFilename)
 	if err != nil {
 		return err
 	}
-
+	downloadReqOpts = append(downloadReqOpts, WithFileCallback(func() {
+		f.Close() //nolint: errcheck
+	}))
 	err = a.downloadFromAuthTicket(f, authTicket, remoteLookupHash, 1, 0, numBlockDownloads, remoteFilename,
-		DOWNLOAD_CONTENT_THUMB, verifyDownload, status, isFinal, localFilePath)
+		DOWNLOAD_CONTENT_THUMB, verifyDownload, status, isFinal, localFilePath, downloadReqOpts...)
 	if err != nil {
 		if !toKeep {
 			os.Remove(localFilePath) //nolint: errcheck
@@ -2112,14 +2125,16 @@ func (a *Allocation) DownloadThumbnailFromAuthTicket(
 }
 
 func (a *Allocation) DownloadFromAuthTicket(localPath string, authTicket string,
-	remoteLookupHash string, remoteFilename string, verifyDownload bool, status StatusCallback, isFinal bool) error {
+	remoteLookupHash string, remoteFilename string, verifyDownload bool, status StatusCallback, isFinal bool, downloadReqOpts ...DownloadRequestOption) error {
 	f, localFilePath, toKeep, err := a.prepareAndOpenLocalFile(localPath, remoteFilename)
 	if err != nil {
 		return err
 	}
-
+	downloadReqOpts = append(downloadReqOpts, WithFileCallback(func() {
+		f.Close() //nolint: errcheck
+	}))
 	err = a.downloadFromAuthTicket(f, authTicket, remoteLookupHash, 1, 0, numBlockDownloads, remoteFilename,
-		DOWNLOAD_CONTENT_FULL, verifyDownload, status, isFinal, localFilePath)
+		DOWNLOAD_CONTENT_FULL, verifyDownload, status, isFinal, localFilePath, downloadReqOpts...)
 	if err != nil {
 		if !toKeep {
 			os.Remove(localFilePath) //nolint: errcheck
@@ -2133,15 +2148,17 @@ func (a *Allocation) DownloadFromAuthTicket(localPath string, authTicket string,
 func (a *Allocation) DownloadFromAuthTicketByBlocks(localPath string,
 	authTicket string, startBlock int64, endBlock int64, numBlocks int,
 	remoteLookupHash string, remoteFilename string, verifyDownload bool,
-	status StatusCallback, isFinal bool) error {
+	status StatusCallback, isFinal bool, downloadReqOpts ...DownloadRequestOption) error {
 
 	f, localFilePath, toKeep, err := a.prepareAndOpenLocalFile(localPath, remoteFilename)
 	if err != nil {
 		return err
 	}
-
+	downloadReqOpts = append(downloadReqOpts, WithFileCallback(func() {
+		f.Close() //nolint: errcheck
+	}))
 	err = a.downloadFromAuthTicket(f, authTicket, remoteLookupHash, startBlock, endBlock, numBlockDownloads, remoteFilename,
-		DOWNLOAD_CONTENT_FULL, verifyDownload, status, isFinal, localFilePath)
+		DOWNLOAD_CONTENT_FULL, verifyDownload, status, isFinal, localFilePath, downloadReqOpts...)
 	if err != nil {
 		if !toKeep {
 			os.Remove(localFilePath) //nolint: errcheck
@@ -2155,7 +2172,7 @@ func (a *Allocation) DownloadFromAuthTicketByBlocks(localPath string,
 func (a *Allocation) downloadFromAuthTicket(fileHandler sys.File, authTicket string,
 	remoteLookupHash string, startBlock int64, endBlock int64, numBlocks int,
 	remoteFilename string, contentMode string, verifyDownload bool,
-	status StatusCallback, isFinal bool, localFilePath string) error {
+	status StatusCallback, isFinal bool, localFilePath string, downlaodReqOpts ...DownloadRequestOption) error {
 
 	sEnc, err := base64.StdEncoding.DecodeString(authTicket)
 	if err != nil {
@@ -2200,10 +2217,13 @@ func (a *Allocation) downloadFromAuthTicket(fileHandler sys.File, authTicket str
 		defer a.mutex.Unlock()
 		delete(a.downloadProgressMap, remotepathHash)
 	}
-	downloadReq.fileCallback = func() {
-		if downloadReq.fileHandler != nil {
-			downloadReq.fileHandler.Close() //nolint: errcheck
-		}
+	// downloadReq.fileCallback = func() {
+	// 	if downloadReq.fileHandler != nil {
+	// 		downloadReq.fileHandler.Close() //nolint: errcheck
+	// 	}
+	// }
+	for _, opt := range downlaodReqOpts {
+		opt(downloadReq)
 	}
 	a.mutex.Lock()
 	a.downloadProgressMap[remoteLookupHash] = downloadReq
