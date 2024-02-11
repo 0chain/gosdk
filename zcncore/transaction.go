@@ -1405,7 +1405,7 @@ func (nc *NonceCache) Evict(clientId string) {
 	delete(nc.cache, clientId)
 }
 
-//Deprecated: client.Init() in  core package
+//Deprecated: To initialize SDK, Use conf.Config and client.Init() in core package
 func WithEthereumNode(uri string) func(c *ChainConfig) error {
 	return func(c *ChainConfig) error {
 		c.EthNode = uri
@@ -1413,7 +1413,7 @@ func WithEthereumNode(uri string) func(c *ChainConfig) error {
 	}
 }
 
-//Deprecated: client.Init() in  core package
+//Deprecated: To initialize SDK, Use conf.Config and client.Init() in core package
 func WithChainID(id string) func(c *ChainConfig) error {
 	return func(c *ChainConfig) error {
 		c.ChainID = id
@@ -1421,7 +1421,7 @@ func WithChainID(id string) func(c *ChainConfig) error {
 	}
 }
 
-//Deprecated: client.Init() in  core package
+//Deprecated: To initialize SDK, Use conf.Config and client.Init() in core package
 func WithMinSubmit(m int) func(c *ChainConfig) error {
 	return func(c *ChainConfig) error {
 		c.MinSubmit = m
@@ -1429,7 +1429,7 @@ func WithMinSubmit(m int) func(c *ChainConfig) error {
 	}
 }
 
-//Deprecated: client.Init() in  core package
+//Deprecated: To initialize SDK, Use conf.Config and client.Init() in core package
 func WithMinConfirmation(m int) func(c *ChainConfig) error {
 	return func(c *ChainConfig) error {
 		c.MinConfirmation = m
@@ -1437,7 +1437,7 @@ func WithMinConfirmation(m int) func(c *ChainConfig) error {
 	}
 }
 
-//Deprecated: client.Init() in  core package
+//Deprecated: To initialize SDK, Use conf.Config and client.Init() in core package
 func WithConfirmationChainLength(m int) func(c *ChainConfig) error {
 	return func(c *ChainConfig) error {
 		c.ConfirmationChainLength = m
@@ -1445,7 +1445,7 @@ func WithConfirmationChainLength(m int) func(c *ChainConfig) error {
 	}
 }
 
-//Deprecated: client.Init() in  core package
+//Deprecated: To initialize SDK, Use conf.Config and client.Init() in core package
 func WithSharderConsensous(m int) func(c *ChainConfig) error {
 	return func(c *ChainConfig) error {
 		c.SharderConsensous = m

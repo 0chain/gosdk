@@ -2,6 +2,7 @@ package conf
 
 import (
 	"errors"
+	"strings"
 	"sync"
 )
 
@@ -10,7 +11,8 @@ var (
 	cfg     *Config
 	onceCfg sync.Once
 	//  global sharders and miners
-	// network *Network
+	//TODO: remove as it is not used
+	network *Network
 )
 
 var (
@@ -44,33 +46,34 @@ func InitClientConfig(c *Config) {
 	})
 }
 
+//Deprecated: Use client.Init() function. To normalize urls, use network.NormalizeURLs() method
 // // InitChainNetwork set global chain network
-// func InitChainNetwork(n *Network) {
-// 	if n == nil {
-// 		return
-// 	}
+func InitChainNetwork(n *Network) {
+	if n == nil {
+		return
+	}
 
-// 	normalizeURLs(n)
+	normalizeURLs(n)
 
-// 	if network == nil {
-// 		network = n
-// 		return
-// 	}
+	if network == nil {
+		network = n
+		return
+	}
 
-// 	network.sharders = n.Sharders
-// 	network.miners = n.Miners
-// }
+	network.Sharders = n.Sharders
+	network.Miners = n.Miners
+}
 
-// func normalizeURLs(network *Network) {
-// 	if network == nil {
-// 		return
-// 	}
+func normalizeURLs(network *Network) {
+	if network == nil {
+		return
+	}
 
-// 	for i := 0; i < len(network.Miners); i++ {
-// 		network.Miners[i] = strings.TrimSuffix(network.Miners[i], "/")
-// 	}
+	for i := 0; i < len(network.Miners); i++ {
+		network.Miners[i] = strings.TrimSuffix(network.Miners[i], "/")
+	}
 
-// 	for i := 0; i < len(network.Sharders); i++ {
-// 		network.Sharders[i] = strings.TrimSuffix(network.Sharders[i], "/")
-// 	}
-// }
+	for i := 0; i < len(network.Sharders); i++ {
+		network.Sharders[i] = strings.TrimSuffix(network.Sharders[i], "/")
+	}
+}

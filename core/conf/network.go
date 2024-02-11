@@ -35,14 +35,6 @@ func (n *Network) IsValid() bool {
 	return n != nil && len(n.Miners) > 0 && len(n.Sharders) > 0
 }
 
-// func (n *Network) Miners() []string {
-// 	return n.miners
-// }
-
-// func (n *Network) Sharders() []string {
-// 	return n.sharders
-// }
-
 func (n *Network) NormalizeURLs() {
 	for i := 0; i < len(n.Miners); i++ {
 		n.Miners[i] = strings.TrimSuffix(n.Miners[i], "/")

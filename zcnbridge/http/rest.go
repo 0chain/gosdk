@@ -173,7 +173,7 @@ func extractSharders() []string {
 	if err != nil {
 		panic(err)
 	}
-	sharders := nodeClient.Network().Sharders
+	sharders := nodeClient.Sharders().Healthy()
 	return util.GetRandom(sharders, len(sharders))
 }
 

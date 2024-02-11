@@ -74,12 +74,10 @@ func forceUpdateNetworkDetails(networkDetails *Network) {
 	blockchain.SetMiners(networkDetails.Miners)
 	blockchain.SetSharders(networkDetails.Sharders)
 	node.InitCache(blockchain.Sharders)
-	n, err := conf.NewNetwork(networkDetails.Miners, networkDetails.Sharders)
-	if err != nil {
-		panic(err)
-	}
-	networkDetails.Miners = n.Miners
-	networkDetails.Sharders = n.Sharders
+	conf.InitChainNetwork(&conf.Network{
+		Sharders: networkDetails.Sharders,
+		Miners:   networkDetails.Miners,
+	})
 	sdkInitialized = true
 }
 

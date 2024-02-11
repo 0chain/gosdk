@@ -60,7 +60,7 @@ func CreateMSWallet(t, n int) (string, string, []string, error) {
 
 	msw := MSWallet{
 		Id:              id,
-		SignatureScheme: string(signScheme),
+		SignatureScheme: signScheme,
 		GroupClientID:   groupClientID,
 		GroupKey:        groupKey,
 		SignerClientIDs: signerClientIDs,

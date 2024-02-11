@@ -74,11 +74,6 @@ type Config struct {
 	ZboxAppType string `json:"zbox_app_type"`
 	// SharderConsensous is consensous for when quering for SCRestAPI calls
 	SharderConsensous int `json:"sharder_consensous"`
-
-	// Wallet zcncrypto.Wallet	`json:"wallet"`
-	// SplitKeyWallet bool		`json:"split_key_wallet"`
-	// //the url of zAuth server
-	// AuthUrl	string	`json:"auth_url"`
 }
 
 // LoadConfigFile load and parse Config from file

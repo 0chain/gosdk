@@ -13,8 +13,6 @@ import (
 
 const NETWORK_ENDPOINT = "/network"
 
-var networkWorkerTimerInHours = 1
-
 type Network struct {
 	net network
 }
@@ -35,25 +33,6 @@ type network struct {
 	Miners   []string `json:"miners"`
 	Sharders []string `json:"sharders"`
 }
-
-// func updateNetworkDetailsWorker(ctx context.Context) {
-// 	ticker := time.NewTicker(time.Duration(networkWorkerTimerInHours) * time.Hour)
-// 	for {
-// 		select {
-// 		case <-ctx.Done():
-// 			logging.Info("Network stopped by user")
-// 			return
-// 		case <-ticker.C:
-// 			err := UpdateNetworkDetails()
-// 			if err != nil {
-// 				logging.Error("Update network detail worker fail", zap.Error(err))
-// 				return
-// 			}
-// 			logging.Info("Successfully updated network details")
-// 			return
-// 		}
-// 	}
-// }
 
 //Deprecated: Get client.Node instance to check whether network update is required and update network accordingly
 func UpdateNetworkDetails() error {

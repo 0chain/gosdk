@@ -231,7 +231,7 @@ func (tq *TransactionQuery) getRandomSharderWithHealthcheck(ctx context.Context)
 	return "", ErrNoOnlineSharders
 }
 
-// getRandomMiner returns a random miner
+//getRandomMiner returns a random miner
 func (tq *TransactionQuery) getRandomMiner(ctx context.Context) (string, error) {
 
 	if tq.miners == nil || len(tq.miners) == 0 {
@@ -527,12 +527,12 @@ func (tq *TransactionQuery) getFastConfirmation(ctx context.Context, txnHash str
 }
 
 func GetInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback) {
-	clientNode, err := client.GetNode()
+	nodeClient, err := client.GetNode()
 	if err != nil {
 		cb.OnInfoAvailable(op, StatusError, "", err.Error())
 		return
 	}
-	tq, err := NewTransactionQuery(util.Shuffle(clientNode.Sharders().Healthy()), []string{})
+	tq, err := NewTransactionQuery(util.Shuffle(nodeClient.Sharders().Healthy()), []string{})
 	if err != nil {
 		cb.OnInfoAvailable(op, StatusError, "", err.Error())
 		return
@@ -548,13 +548,13 @@ func GetInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback) {
 }
 
 func GetInfoFromAnySharder(urlSuffix string, op int, cb GetInfoCallback) {
-	clientNode, err := client.GetNode()
+	nodeClient, err := client.GetNode()
 	if err != nil {
 		cb.OnInfoAvailable(op, StatusError, "", err.Error())
 		return
 	}
 
-	tq, err := NewTransactionQuery(util.Shuffle(clientNode.Sharders().Healthy()), []string{})
+	tq, err := NewTransactionQuery(util.Shuffle(nodeClient.Sharders().Healthy()), []string{})
 	if err != nil {
 		cb.OnInfoAvailable(op, StatusError, "", err.Error())
 		return
@@ -570,13 +570,13 @@ func GetInfoFromAnySharder(urlSuffix string, op int, cb GetInfoCallback) {
 }
 
 func GetInfoFromAnyMiner(urlSuffix string, op int, cb getInfoCallback) {
-	clientNode, err := client.GetNode()
+	nodeClient, err := client.GetNode()
 	if err != nil {
 		cb.OnInfoAvailable(op, StatusError, "", err.Error())
 		return
 	}
 
-	tq, err := NewTransactionQuery([]string{}, util.Shuffle(clientNode.Network().Miners))
+	tq, err := NewTransactionQuery([]string{}, util.Shuffle(nodeClient.Network().Miners))
 
 	if err != nil {
 		cb.OnInfoAvailable(op, StatusError, "", err.Error())

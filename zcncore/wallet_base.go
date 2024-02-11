@@ -14,7 +14,6 @@ import (
 
 	"errors"
 
-	// "github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/common"
@@ -223,14 +222,14 @@ type AuthCallback interface {
 }
 
 var (
-	logging    logger.Logger
+	logging logger.Logger
 )
 
 func init() {
 	logging.Init(defaultLogLevel, "0chain-core-sdk")
 }
 
-// Deprecated: Use core.GetNode().GetStableMiners()
+//Deprecated: Use client.GetNode().GetStableMiners()
 func GetStableMiners() []string {
 	clientNode, err := client.GetNode()
 	if err != nil {
@@ -239,7 +238,7 @@ func GetStableMiners() []string {
 	return clientNode.GetStableMiners()
 }
 
-// Deprecated: Use core.GetNode().ResetStableMiners()
+//Deprecated: Use client.GetNode().ResetStableMiners()
 func ResetStableMiners() {
 	clientNode, err := client.GetNode()
 	if err != nil {
@@ -275,7 +274,7 @@ func CheckConfig() error {
 	return nil
 }
 
-// Deprecated: Use core.GetNode().GetMinShardersVerify() after core's Init call
+//Deprecated: Use client.GetNode().GetMinShardersVerify() after Init call
 func GetMinShardersVerify() int {
 	clientNode, err := client.GetNode()
 	if err != nil {
@@ -469,7 +468,7 @@ func GetClientDetails(clientID string) (*GetClientResponse, error) {
 	return &clientDetails, nil
 }
 
-// Deprecated: Use zcncrypto.IsMnemonicValid()
+//Deprecated: Use zcncrypto.IsMnemonicValid()
 // IsMnemonicValid is an utility function to check the mnemonic valid
 //
 //	# Inputs
@@ -478,7 +477,7 @@ func IsMnemonicValid(mnemonic string) bool {
 	return zcncrypto.IsMnemonicValid(mnemonic)
 }
 
-// Deprecated: Use client.SetWallet() and client.SetSplitKeyWallet() to set wallet and splitKeyWallet respectively
+//Deprecated: Use client.SetWallet() and client.SetSplitKeyWallet() to set wallet and splitKeyWallet respectively
 // SetWallet should be set before any transaction or client specific APIs
 // splitKeyWallet parameter is valid only if SignatureScheme is "BLS0Chain"
 func SetWallet(w zcncrypto.Wallet, splitKeyWallet bool) error {
@@ -493,7 +492,7 @@ func SetWallet(w zcncrypto.Wallet, splitKeyWallet bool) error {
 	return nil
 }
 
-// Deprecated: Use client.Wallet() in core package
+//Deprecated: Use client.Wallet() in core/client package
 func GetWalletRaw() zcncrypto.Wallet {
 	return *client.Wallet()
 }

@@ -8,7 +8,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/consensus/ethash"
-	ethCore "github.com/ethereum/go-ethereum/core"
+	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -50,7 +50,6 @@ func TestTokensConversion(t *testing.T) {
 
 func TestValidEthAddress(t *testing.T) {
 	t.Run("Valid Eth wallet, but no balance", func(t *testing.T) {
-		// _config.chain.EthNode = "test"
 		backend, _ := newTestBackend(t)
 		client, _ := backend.Attach()
 		defer backend.Close()
@@ -60,13 +59,6 @@ func TestValidEthAddress(t *testing.T) {
 		getEthClient = func() (*ethclient.Client, error) {
 			return realClient, nil
 		}
-		// getZcnNode = func() (*ZcnNode, error) {
-		// 	zcnnode := &ZcnNode{
-		// 		NodeClient: &core.NodeClient{},
-		// 	}
-		// 	zcnnode.Config().EthereumNode = "test"
-		// 	return zcnnode, nil
-		// }
 
 		res, err := IsValidEthAddress("0x531f9349ed2Fe5c526B47fa7841D35c90482e6cF")
 		require.Nil(t, err, "")
@@ -74,7 +66,6 @@ func TestValidEthAddress(t *testing.T) {
 	})
 
 	t.Run("Valid Eth wallet", func(t *testing.T) {
-		// _config.chain.EthNode = "test"
 		backend, _ := newTestBackend(t)
 		client, _ := backend.Attach()
 		defer backend.Close()
@@ -87,13 +78,6 @@ func TestValidEthAddress(t *testing.T) {
 		getEthClient = func() (*ethclient.Client, error) {
 			return realClient, nil
 		}
-		// getZcnNode = func() (*ZcnNode, error) {
-		// 	zcnnode := &ZcnNode{
-		// 		NodeClient: &core.NodeClient{},
-		// 	}
-		// 	zcnnode.Config().EthereumNode = "test"
-		// 	return zcnnode, nil
-		// }
 
 		res, err := IsValidEthAddress(testAddr.String())
 		require.Nil(t, err, "")
@@ -101,7 +85,6 @@ func TestValidEthAddress(t *testing.T) {
 	})
 
 	t.Run("Invalid Eth wallet", func(t *testing.T) {
-		// _config.chain.EthNode = "test"
 		backend, _ := newTestBackend(t)
 		client, _ := backend.Attach()
 		defer backend.Close()
@@ -111,13 +94,6 @@ func TestValidEthAddress(t *testing.T) {
 		getEthClient = func() (*ethclient.Client, error) {
 			return realClient, nil
 		}
-		// getZcnNode = func() (*ZcnNode, error) {
-		// 	zcnnode := &ZcnNode{
-		// 		NodeClient: &core.NodeClient{},
-		// 	}
-		// 	zcnnode.Config().EthereumNode = "test"
-		// 	return zcnnode, nil
-		// }
 
 		res, err := IsValidEthAddress("testAddr.String()")
 		require.NotNil(t, err, "")
@@ -127,14 +103,6 @@ func TestValidEthAddress(t *testing.T) {
 
 func TestGetWalletAddrFromEthMnemonic(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
-		// _config.chain.EthNode = "test"
-		// getZcnNode = func() (*ZcnNode, error) {
-		// 	zcnnode := &ZcnNode{
-		// 		NodeClient: &core.NodeClient{},
-		// 	}
-		// 	zcnnode.Config().EthereumNode = "test"
-		// 	return zcnnode, nil
-		// }
 		mnemonic := "expect domain water near beauty bag pond clap chronic chronic length leisure"
 		res, err := GetWalletAddrFromEthMnemonic(mnemonic)
 		require.Nil(t, err, "")
@@ -142,14 +110,6 @@ func TestGetWalletAddrFromEthMnemonic(t *testing.T) {
 	})
 
 	t.Run("Wrong", func(t *testing.T) {
-		// _config.chain.EthNode = "test"
-		// getZcnNode = func() (*ZcnNode, error) {
-		// 	zcnnode := &ZcnNode{
-		// 		NodeClient: &core.NodeClient{},
-		// 	}
-		// 	zcnnode.Config().EthereumNode = "test"
-		// 	return zcnnode, nil
-		// }
 		mnemonic := "this is wrong mnemonic"
 		_, err := GetWalletAddrFromEthMnemonic(mnemonic)
 		require.NotNil(t, err, "")
@@ -158,7 +118,6 @@ func TestGetWalletAddrFromEthMnemonic(t *testing.T) {
 
 func TestGetEthBalance(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
-		// _config.chain.EthNode = "test"
 		backend, _ := newTestBackend(t)
 		client, _ := backend.Attach()
 		defer backend.Close()
@@ -171,13 +130,6 @@ func TestGetEthBalance(t *testing.T) {
 		getEthClient = func() (*ethclient.Client, error) {
 			return realClient, nil
 		}
-		// getZcnNode = func() (*ZcnNode, error) {
-		// 	zcnnode := &ZcnNode{
-		// 		NodeClient: &core.NodeClient{},
-		// 	}
-		// 	zcnnode.Config().EthereumNode = "test"
-		// 	return zcnnode, nil
-		// }
 
 		tcb := &MockBalanceCallback{}
 		tcb.wg = &sync.WaitGroup{}
@@ -197,7 +149,6 @@ func TestGetEthBalance(t *testing.T) {
 
 func TestCheckEthHashStatus(t *testing.T) {
 	t.Run("Pending transaction", func(t *testing.T) {
-		// _config.chain.EthNode = "test"
 		backend, _ := newTestBackend(t)
 		client, _ := backend.Attach()
 		defer backend.Close()
@@ -210,13 +161,6 @@ func TestCheckEthHashStatus(t *testing.T) {
 		getEthClient = func() (*ethclient.Client, error) {
 			return realClient, nil
 		}
-		// getZcnNode = func() (*ZcnNode, error) {
-		// 	zcnnode := &ZcnNode{
-		// 		NodeClient: &core.NodeClient{},
-		// 	}
-		// 	zcnnode.Config().EthereumNode = "test"
-		// 	return zcnnode, nil
-		// }
 		result := CheckEthHashStatus("0x05aa8890d4778e292f837dd36b59a50931c175f4648c3d8157525f5454475cf7")
 		require.True(t, result < 0, "")
 	})
@@ -224,7 +168,6 @@ func TestCheckEthHashStatus(t *testing.T) {
 
 func TestSuggestEthGasPrice(t *testing.T) {
 	t.Run("suggest gas price success", func(t *testing.T) {
-		// _config.chain.EthNode = "test"
 		backend, _ := newTestBackend(t)
 		client, _ := backend.Attach()
 		defer backend.Close()
@@ -234,13 +177,6 @@ func TestSuggestEthGasPrice(t *testing.T) {
 		getEthClient = func() (*ethclient.Client, error) {
 			return realClient, nil
 		}
-		// getZcnNode = func() (*ZcnNode, error) {
-		// 	zcnnode := &ZcnNode{
-		// 		NodeClient: &core.NodeClient{},
-		// 	}
-		// 	zcnnode.Config().EthereumNode = "test"
-		// 	return zcnnode, nil
-		// }
 		gas, err := SuggestEthGasPrice()
 		require.Nil(t, err)
 		require.True(t, gas > 0)
@@ -249,7 +185,6 @@ func TestSuggestEthGasPrice(t *testing.T) {
 
 func TestTransferEthTokens(t *testing.T) {
 	t.Run("success transfer", func(t *testing.T) {
-		// _config.chain.EthNode = "test"
 		backend, _ := newTestBackend(t)
 		client, _ := backend.Attach()
 		defer backend.Close()
@@ -259,13 +194,6 @@ func TestTransferEthTokens(t *testing.T) {
 		getEthClient = func() (*ethclient.Client, error) {
 			return realClient, nil
 		}
-		// getZcnNode = func() (*ZcnNode, error) {
-		// 	zcnnode := &ZcnNode{
-		// 		NodeClient: &core.NodeClient{},
-		// 	}
-		// 	zcnnode.Config().EthereumNode = "test"
-		// 	return zcnnode, nil
-		// }
 
 		hash, err := TransferEthTokens("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291", 1000000000000, 10000)
 		require.Nil(t, err)
@@ -313,24 +241,24 @@ func newTestBackend(t *testing.T) (*node.Node, []*types.Block) {
 	return n, blocks
 }
 
-func generateTestChain() (*ethCore.Genesis, []*types.Block) {
+func generateTestChain() (*core.Genesis, []*types.Block) {
 	db := rawdb.NewMemoryDatabase()
 	config := params.AllEthashProtocolChanges
-	genesis := &ethCore.Genesis{
+	genesis := &core.Genesis{
 		Config:    config,
-		Alloc:     ethCore.GenesisAlloc{testAddr: {Balance: testBalance}},
+		Alloc:     core.GenesisAlloc{testAddr: {Balance: testBalance}},
 		ExtraData: []byte("test genesis"),
 		Timestamp: 9000,
 	}
 	// BaseFee:   big.NewInt(params.InitialBaseFee),
-	generate := func(i int, g *ethCore.BlockGen) {
+	generate := func(i int, g *core.BlockGen) {
 		g.OffsetTime(5)
 		g.SetExtra([]byte("test"))
 	}
 	gblock := genesis.ToBlock()
 	genesis.Commit(db) //nolint: errcheck
 	engine := ethash.NewFaker()
-	blocks, _ := ethCore.GenerateChain(config, gblock, engine, db, 1, generate)
+	blocks, _ := core.GenerateChain(config, gblock, engine, db, 1, generate)
 	blocks = append([]*types.Block{gblock}, blocks...)
 	return genesis, blocks
 }

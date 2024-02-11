@@ -14,7 +14,6 @@ import (
 	"os"
 
 	"github.com/0chain/gosdk/zboxapi"
-	// "github.com/0chain/gosdk/zboxcore/client"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"

@@ -15,6 +15,7 @@ import (
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/node"
 	"github.com/0chain/gosdk/core/sys"
+	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/logger"
 	"go.uber.org/zap"
 
@@ -91,15 +92,6 @@ type TransactionCallback interface {
 	OnAuthComplete(t *Transaction, status int)
 }
 
-// type localConfig struct {
-// 	chain         ChainConfig
-// 	wallet        zcncrypto.Wallet
-// 	authUrl       string
-// 	isConfigured  bool
-// 	isValidWallet bool
-// 	isSplitWallet bool
-// }
-
 type ChainConfig struct {
 	ChainID                 string   `json:"chain_id,omitempty"`
 	BlockWorker             string   `json:"block_worker"`
@@ -112,8 +104,6 @@ type ChainConfig struct {
 	EthNode                 string   `json:"eth_node"`
 	SharderConsensous       int      `json:"sharder_consensous"`
 }
-
-// var Sharders *node.NodeHolder
 
 // Deprecated: Use client.Init() in core/client package
 // InitZCNSDK initializes the SDK with miner, sharder and signature scheme provided.
@@ -894,17 +884,13 @@ type MinerSCUnlock struct {
 }
 
 func VerifyContentHash(metaTxnDataJSON string) (bool, error) {
-	nodeClient, err := client.GetNode()
-	if err != nil {
-		return false, err
-	}
 	var metaTxnData sdk.CommitMetaResponse
-	err = json.Unmarshal([]byte(metaTxnDataJSON), &metaTxnData)
+	err := json.Unmarshal([]byte(metaTxnDataJSON), &metaTxnData)
 	if err != nil {
 		return false, errors.New("metaTxnData_decode_error", "Unable to decode metaTxnData json")
 	}
 
-	t, err := transaction.VerifyTransaction(metaTxnData.TxnID, nodeClient.Network().Sharders)
+	t, err := transaction.VerifyTransaction(metaTxnData.TxnID, blockchain.GetSharders())
 	if err != nil {
 		return false, errors.New("fetch_txm_details", "Unable to fetch txn details")
 	}

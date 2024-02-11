@@ -9,6 +9,7 @@ import (
 	"github.com/0chain/gosdk/core/zcncrypto"
 )
 
+// maintains client's data 
 var (
 	wallet 	*zcncrypto.Wallet
 	splitKeyWallet	bool
@@ -21,11 +22,13 @@ func init() {
 	wallet = &zcncrypto.Wallet{}
 }
 
+// SetWallet should be set before any transaction or client specific APIs
 func SetWallet(w zcncrypto.Wallet) error {
 	wallet = &w
 	return nil
 }
 
+// splitKeyWallet parameter is valid only if SignatureScheme is "BLS0Chain"
 func SetSplitKeyWallet(isSplitKeyWallet bool) error {
 	cfg, err := conf.GetClientConfig()
 	if err != nil {
@@ -37,6 +40,7 @@ func SetSplitKeyWallet(isSplitKeyWallet bool) error {
 	return nil
 }
 
+// SetAuthUrl will be called by app to set zauth URL to SDK
 func SetAuthUrl(url string) error {
 	if !splitKeyWallet {
 		return errors.New("wallet type is not split key")
