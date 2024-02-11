@@ -292,13 +292,13 @@ func CreateChunkedUpload(
 	for i := 0; i < uploadWorker; i++ {
 		go su.uploadProcessor()
 	}
-
+	logger.Logger.Info("Upload worker started: ", uploadWorker, " upload request: ", uploadRequest)
 	return su, nil
 }
 
 func calculateWorkersAndRequests(dataShards, totalShards, chunknumber int) (uploadWorkers int, uploadRequests int) {
 	if totalShards < 4 {
-		uploadWorkers = 4
+		uploadWorkers = 6
 	} else {
 		uploadWorkers = 2
 	}
@@ -415,7 +415,7 @@ func (su *ChunkedUpload) process() error {
 	defer su.chunkReader.Close()
 	defer su.ctxCncl(nil)
 	for {
-
+		start := time.Now()
 		chunks, err := su.readChunks(su.chunkNumber)
 
 		// chunk, err := su.chunkReader.Next()
@@ -425,6 +425,7 @@ func (su *ChunkedUpload) process() error {
 			}
 			return err
 		}
+		elapsedRead := time.Since(start)
 		//logger.Logger.Debug("Read chunk #", chunk.Index)
 
 		su.shardUploadedSize += chunks.totalFragmentSize
@@ -485,12 +486,7 @@ func (su *ChunkedUpload) process() error {
 				}
 			}
 		}
-
-		// last chunk might 0 with io.EOF
-		// https://stackoverflow.com/questions/41208359/how-to-test-eof-on-io-reader-in-go
-		if chunks.totalReadSize > 0 && chunks.chunkEndIndex >= su.progress.ChunkIndex {
-
-		}
+		logger.Logger.Info("Chunk #", chunks.chunkEndIndex, " processed in ", elapsedRead.Milliseconds(), " ms", " totalProcessTime: ", (time.Since(start) - elapsedRead).Milliseconds(), " ms")
 
 		if chunks.isFinal {
 			break
@@ -796,6 +792,7 @@ func (su *ChunkedUpload) uploadToBlobbers(uploadData UploadData) error {
 		return context.Cause(su.ctx)
 	default:
 	}
+	start := time.Now()
 	consensus := Consensus{
 		RWMutex:         &sync.RWMutex{},
 		consensusThresh: su.consensus.consensusThresh,
@@ -852,6 +849,7 @@ func (su *ChunkedUpload) uploadToBlobbers(uploadData UploadData) error {
 			su.statusCallback.InProgress(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, int(atomic.AddInt64(&su.progress.UploadLength, uploadLength)), nil)
 		}
 	}
+	logger.Logger.Info("chunked_upload ", time.Since(start).Milliseconds(), "ms")
 	uploadData = UploadData{} // release memory
 	return nil
 }

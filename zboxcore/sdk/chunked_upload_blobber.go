@@ -68,7 +68,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 	}
 
 	eg, _ := errgroup.WithContext(ctx)
-
+	start := time.Now()
 	for dataInd := 0; dataInd < len(dataBuffers); dataInd++ {
 		ind := dataInd
 		eg.Go(func() error {
@@ -165,7 +165,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 		sb.fileRef.EncryptedKey = encryptedKey
 		sb.fileRef.CalculateHash()
 	}
-
+	logger.Logger.Info("chunked_upload_blobber ", sb.blobber.Baseurl, " completed in ", time.Since(start).Milliseconds(), "ms")
 	return nil
 }
 
