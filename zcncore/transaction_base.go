@@ -105,7 +105,7 @@ type ChainConfig struct {
 	SharderConsensous       int      `json:"sharder_consensous"`
 }
 
-// Deprecated: Use client.Init() in core/client package
+//Deprecated: Use client.Init() in core/client package
 // InitZCNSDK initializes the SDK with miner, sharder and signature scheme provided.
 func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainConfig) error) error {
 	if signscheme != "ed25519" && signscheme != "bls0chain" {
