@@ -337,13 +337,16 @@ func Init(chainConfigJSON string) error {
 	return client.Init(context.Background(), cfg)
 }
 
-//Deprecated: Use client.Init() in core/client package to initialize SDK.
+// Use client.Init() in core/client package to initialize SDK.
 // InitSignatureScheme initializes signature scheme only.
-// Panics if this function is called before Init() call
+// Either InitSignatureScheme() or client.Init() should be called to initialize SDK. Calling both produces unexpected behaviour.
 func InitSignatureScheme(scheme string) {
 	cfg, err := conf.GetClientConfig()
 	if err != nil {
-		panic(errors.New("InitSignatureScheme() is called before Init function call"))
+		conf.InitClientConfig(&conf.Config{
+			SignatureScheme: scheme,
+		})
+		return
 	}
 	cfg.SignatureScheme = scheme 
 }
