@@ -232,7 +232,7 @@ func setOptionsDefaultValue(cfg *conf.Config) {
 		cfg.MaxTxnQuery = conf.DefaultMaxTxnQuery
 	}
 	if cfg.QuerySleepTime <= 0 {
-		cfg.QuerySleepTime = conf.DefaultMaxTxnQuery
+		cfg.QuerySleepTime = conf.DefaultQuerySleepTime
 	}
 	if cfg.SharderConsensous <= 0 {
 		cfg.SharderConsensous = conf.DefaultSharderConsensous

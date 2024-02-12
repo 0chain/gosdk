@@ -339,10 +339,14 @@ func Init(chainConfigJSON string) error {
 
 // InitSignatureScheme initializes signature scheme only.
 func InitSignatureScheme(scheme string) {
-	cfg := conf.Config{
-		SignatureScheme: scheme,
+	cfg, err := conf.GetClientConfig()
+	if err != nil {
+		conf.InitClientConfig(&conf.Config{
+			SignatureScheme: scheme,
+		})
+		return
 	}
-	conf.InitClientConfig(&cfg)
+	cfg.SignatureScheme = scheme 
 }
 
 // CreateWalletOffline creates the wallet for the config signature scheme.
