@@ -337,27 +337,20 @@ func Init(chainConfigJSON string) error {
 	return client.Init(context.Background(), cfg)
 }
 
+var signatureScheme string
+
 // Use client.Init() in core/client package to initialize SDK.
 // InitSignatureScheme initializes signature scheme only.
-// Either InitSignatureScheme() or client.Init() should be called to initialize SDK. Calling both produces unexpected behaviour.
 func InitSignatureScheme(scheme string) {
-	cfg, err := conf.GetClientConfig()
-	if err != nil {
-		conf.InitClientConfig(&conf.Config{
-			SignatureScheme: scheme,
-		})
-		return
+	if scheme != constants.BLS0CHAIN.String() && scheme != constants.ED25519.String() {
+		panic("invalid/unsupported signature scheme")
 	}
-	cfg.SignatureScheme = scheme 
+	signatureScheme = scheme 
 }
 
 // CreateWalletOffline creates the wallet for the config signature scheme.
 func CreateWalletOffline() (string, error) {
-	cfg, err := conf.GetClientConfig()
-	if err != nil {
-		return "", err
-	}
-	sigScheme := zcncrypto.NewSignatureScheme(cfg.SignatureScheme)
+	sigScheme := zcncrypto.NewSignatureScheme(signatureScheme)
 	wallet, err := sigScheme.GenerateKeys()
 	if err != nil {
 		return "", errors.New("failed to generate keys: " + err.Error())
@@ -374,12 +367,7 @@ func RecoverOfflineWallet(mnemonic string) (string, error) {
 	if !zcncrypto.IsMnemonicValid(mnemonic) {
 		return "", errors.New("Invalid mnemonic")
 	}
-
-	cfg, err := conf.GetClientConfig()
-	if err != nil {
-		return "", err
-	}
-	sigScheme := zcncrypto.NewSignatureScheme(cfg.SignatureScheme)
+	sigScheme := zcncrypto.NewSignatureScheme(signatureScheme)
 	wallet, err := sigScheme.RecoverKeys(mnemonic)
 	if err != nil {
 		return "", err
@@ -399,13 +387,9 @@ func RecoverWallet(mnemonic string, statusCb WalletCallback) error {
 	if !zcncrypto.IsMnemonicValid(mnemonic) {
 		return errors.New("Invalid mnemonic")
 	}
-	cfg, err := conf.GetClientConfig()
-	if err != nil {
-		return err
-	}
 	go func() {
-		sigScheme := zcncrypto.NewSignatureScheme(cfg.SignatureScheme)
-		_, err = sigScheme.RecoverKeys(mnemonic)
+		sigScheme := zcncrypto.NewSignatureScheme(signatureScheme)
+		_, err := sigScheme.RecoverKeys(mnemonic)
 		if err != nil {
 			statusCb.OnWalletCreateComplete(StatusError, "", err.Error())
 			return
@@ -416,15 +400,11 @@ func RecoverWallet(mnemonic string, statusCb WalletCallback) error {
 
 // Split keys from the primary master key
 func SplitKeys(privateKey string, numSplits int) (string, error) {
-	cfg, err := conf.GetClientConfig()
-	if err != nil {
-		return "", err
-	}
-	if cfg.SignatureScheme != constants.BLS0CHAIN.String() {
+	if signatureScheme != constants.BLS0CHAIN.String() {
 		return "", errors.New("signature key doesn't support split key")
 	}
-	sigScheme := zcncrypto.NewSignatureScheme(cfg.SignatureScheme)
-	err = sigScheme.SetPrivateKey(privateKey)
+	sigScheme := zcncrypto.NewSignatureScheme(signatureScheme)
+	err := sigScheme.SetPrivateKey(privateKey)
 	if err != nil {
 		return "", errors.New("set private key failed." + err.Error())
 	}

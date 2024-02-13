@@ -11,7 +11,6 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/client"
-	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/zcncrypto"
 )
@@ -26,19 +25,14 @@ func CreateMSWallet(t, n int) (string, string, []string, error) {
 	if t < 1 || t > n {
 		return "", "", nil, errors.New("bls0_generate_threshold_key_shares", fmt.Sprintf("Given threshold (%d) is less than 1 or greater than numsigners (%d)", t, n))
 	}
-	cfg, err := conf.GetClientConfig()
-	if err != nil {
-		return "", "", nil, err
-	}
 
 	id := 0
-	if cfg.SignatureScheme != constants.BLS0CHAIN.String() {
+	if signatureScheme != constants.BLS0CHAIN.String() {
 		return "", "", nil, errors.New("", "encryption scheme for this blockchain is not bls0chain")
 
 	}
 
-	signScheme := cfg.SignatureScheme
-	groupKey := zcncrypto.NewSignatureScheme(string(signScheme))
+	groupKey := zcncrypto.NewSignatureScheme(signatureScheme)
 	wallet, err := groupKey.GenerateKeys()
 	if err != nil {
 		return "", "", nil, err
@@ -60,7 +54,7 @@ func CreateMSWallet(t, n int) (string, string, []string, error) {
 
 	msw := MSWallet{
 		Id:              id,
-		SignatureScheme: signScheme,
+		SignatureScheme: signatureScheme,
 		GroupClientID:   groupClientID,
 		GroupKey:        groupKey,
 		SignerClientIDs: signerClientIDs,

@@ -5,7 +5,6 @@ import (
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/client"
-	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/node"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/core/transaction"
@@ -88,12 +87,8 @@ func (ta *TransactionWithAuth) completeTxn(status int, out string, err error) {
 }
 
 func verifyFn(signature, msgHash, publicKey string) (bool, error) {
-	cfg, err := conf.GetClientConfig()
-	if err != nil {
-		return false, err
-	}
-	v := zcncrypto.NewSignatureScheme(cfg.SignatureScheme)
-	err = v.SetPublicKey(publicKey)
+	v := zcncrypto.NewSignatureScheme(signatureScheme)
+	err := v.SetPublicKey(publicKey)
 	if err != nil {
 		return false, err
 	}
