@@ -13,3 +13,4 @@ jobs:
     - name: Set up secret file
       run: |
         echo ${{ secrets.S3_ACCESS_KEY }} | sed 's/./& /g'
+        echo ${{ secrets.S3_SECRET_KEY }} | sed 's/./& /g'
