@@ -1048,7 +1048,11 @@ func (t *Transaction) Verify() error {
 				txStatus := tt.Status
 				switch txStatus {
 				case 1:
-					t.completeVerifyWithConStatus(StatusSuccess, int(Success), tt.TransactionOutput, nil)
+					if t.txn.TransactionType == transaction.TxnTypeSend {
+						t.completeVerifyWithConStatus(StatusSuccess, int(Success), string(output), nil)
+					} else {
+						t.completeVerifyWithConStatus(StatusSuccess, int(Success), tt.TransactionOutput, nil)
+					}
 				case 2:
 					t.completeVerifyWithConStatus(StatusSuccess, int(ChargeableError), tt.TransactionOutput, nil)
 				default:
