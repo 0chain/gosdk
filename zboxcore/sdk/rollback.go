@@ -3,6 +3,7 @@ package sdk
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -17,6 +18,7 @@ import (
 
 	"github.com/0chain/common/core/common"
 	thrown "github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 	l "github.com/0chain/gosdk/zboxcore/logger"
@@ -26,8 +28,9 @@ import (
 )
 
 type LatestPrevWriteMarker struct {
-	LatestWM *marker.WriteMarker `json:"latest_write_marker"`
-	PrevWM   *marker.WriteMarker `json:"prev_write_marker"`
+	LatestWM  *marker.WriteMarker `json:"latest_write_marker"`
+	PrevWM    *marker.WriteMarker `json:"prev_write_marker"`
+	ChainData []byte              `json:"chain_data"`
 }
 
 type AllocStatus byte
@@ -97,6 +100,17 @@ func GetWritemarker(allocID, allocTx, id, baseUrl string) (*LatestPrevWriteMarke
 					return nil, fmt.Errorf("signature verification failed for latest writemarker: %s", err.Error())
 				}
 			}
+			if len(lpm.ChainData) == 0 || len(lpm.ChainData)%32 != 0 {
+				return nil, fmt.Errorf("invalid chain data length")
+			}
+			decodeHash := lpm.ChainData[len(lpm.ChainData)-32:]
+			if hex.EncodeToString(decodeHash) != lpm.LatestWM.AllocationRoot {
+				return nil, fmt.Errorf("invalid chain data")
+			}
+			chainHash := encryption.Hash(lpm.ChainData)
+			if chainHash != lpm.LatestWM.ChainHash {
+				return nil, fmt.Errorf("invalid chain hash")
+			}
 		}
 		return &lpm, nil
 	}
@@ -111,7 +125,9 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 	wm.Timestamp = rb.lpm.LatestWM.Timestamp
 	wm.BlobberID = rb.lpm.LatestWM.BlobberID
 	wm.ClientID = client.GetClientID()
-	wm.Size = 0
+	wm.Size = -rb.lpm.LatestWM.Size
+	wm.ChainSize = wm.Size + rb.lpm.LatestWM.ChainSize
+
 	if rb.lpm.PrevWM != nil {
 		wm.AllocationRoot = rb.lpm.PrevWM.AllocationRoot
 		wm.PreviousAllocationRoot = rb.lpm.PrevWM.AllocationRoot
@@ -120,6 +136,9 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 			return nil
 		}
 	}
+	decodedHash, _ := hex.DecodeString(wm.AllocationRoot)
+	rb.lpm.ChainData = append(rb.lpm.ChainData, decodedHash...)
+	wm.ChainHash = encryption.Hash(rb.lpm.ChainData)
 
 	err := wm.Sign()
 	if err != nil {
