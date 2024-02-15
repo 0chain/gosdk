@@ -149,9 +149,9 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 			return nil
 		}
 	}
-	// decodedHash, _ := hex.DecodeString(wm.AllocationRoot)
-	// // rb.lpm.ChainData = append(rb.lpm.ChainData, decodedHash...)
-	// // wm.ChainHash = encryption.Hash(rb.lpm.ChainData)
+	decodedHash, _ := hex.DecodeString(wm.AllocationRoot)
+	rb.lpm.ChainData = append(rb.lpm.ChainData, decodedHash...)
+	wm.ChainHash = encryption.Hash(rb.lpm.ChainData)
 
 	err := wm.Sign()
 	if err != nil {
