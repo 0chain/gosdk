@@ -163,12 +163,11 @@ func isValidEthAddress(ethAddr string, client *ethclient.Client) (bool, error) {
 
 // CreateWalletFromEthMnemonic - creating new wallet from Eth mnemonics
 func CreateWalletFromEthMnemonic(mnemonic, password string, statusCb WalletCallback) error {
-	cfg, err := conf.GetClientConfig()
-	if err != nil {
+	if signatureScheme == "" {
 		return fmt.Errorf("SDK not initialized")
 	}
 	go func() {
-		sigScheme := zcncrypto.NewSignatureScheme(cfg.SignatureScheme)
+		sigScheme := zcncrypto.NewSignatureScheme(signatureScheme)
 		_, err := sigScheme.GenerateKeysWithEth(mnemonic, password)
 		if err != nil {
 			statusCb.OnWalletCreateComplete(StatusError, "", err.Error())

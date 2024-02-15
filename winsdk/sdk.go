@@ -14,12 +14,13 @@ import (
 	"os"
 
 	"github.com/0chain/gosdk/zboxapi"
+	"github.com/0chain/gosdk/zboxcore/client"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/0chain/gosdk/zcncore"
 
-	"github.com/0chain/gosdk/core/client"
+	coreClient "github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/logger"
@@ -106,14 +107,14 @@ func InitSDKs(configJson *C.char) *C.char {
 		return WithJSON(false, err)
 	}
 
-	err = client.Init(context.Background(), *configObj)
+	err = coreClient.Init(context.Background(), *configObj)
 
 	if err != nil {
 		l.Logger.Error(err, configJs)
 		return WithJSON(false, err)
 	}
 
-	l.Logger.Info("InitZCNSDK success")
+	l.Logger.Info("Init SDK success")
 	l.Logger.Info(configObj.BlockWorker)
 	l.Logger.Info(configObj.ChainID)
 	l.Logger.Info(configObj.SignatureScheme)
@@ -152,25 +153,31 @@ func InitWallet(clientJson *C.char) *C.char {
 			log.Error("win: crash ", r)
 		}
 	}()
-	l.Logger.Info("Start InitWallet")
+	l.Logger.Info("Start InitStorageSDK")
 
 	clientJs := C.GoString(clientJson)
 	
-	var w zcncrypto.Wallet
-	err := json.Unmarshal([]byte(clientJs), &w)
+	configObj, err := conf.GetClientConfig()
 	if err != nil {
 		l.Logger.Error(err)
 		return WithJSON(false, err)
 	}
-	err = client.SetWallet(w)
+	err = sdk.InitStorageSDK(clientJs, configObj.BlockWorker, configObj.ChainID, configObj.SignatureScheme, configObj.PreferredBlobbers, 0)
 	if err != nil {
-		l.Logger.Error(err)
+		l.Logger.Error(err, clientJs)
 		return WithJSON(false, err)
 	}
+	l.Logger.Info("InitStorageSDK success")
 
-	l.Logger.Info("InitWallet success")
-	zboxApiClient.SetWallet(client.Wallet().ClientID, client.Wallet().Keys[0].PrivateKey, client.Wallet().ClientKey)
-	l.Logger.Info("InitZboxApiClient success")
+	c := client.GetClient()
+	if c != nil {
+		zboxApiClient.SetWallet(client.GetClientID(), client.GetClientPrivateKey(), client.GetClientPublicKey())
+		l.Logger.Info("InitZboxApiClient success")
+	} else {
+		l.Logger.Info("InitZboxApiClient skipped")
+	}
+	l.Logger.Info("InitSDKs successful")
+
 	return WithJSON(true, nil)
 }
 

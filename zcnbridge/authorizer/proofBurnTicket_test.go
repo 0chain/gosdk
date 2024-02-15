@@ -4,10 +4,9 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/0chain/gosdk/constants"
-	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zcnbridge/authorizer"
+	"github.com/0chain/gosdk/zcncore"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
@@ -63,9 +62,7 @@ func (suite *TicketTestSuite) TestTicketSignature() {
 		Signature:       nil,
 	}
 
-	conf.InitClientConfig(&conf.Config{
-		SignatureScheme: constants.BLS0CHAIN.String(),
-	})
+	zcncore.InitSignatureScheme("bls0chain")
 	err := pb.SignWith0Chain(suite.w)
 	require.NoError(suite.T(), err)
 	require.NotEmpty(suite.T(), pb.Signature)

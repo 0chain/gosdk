@@ -429,7 +429,7 @@ type GetClientResponse struct {
 func GetClientDetails(clientID string) (*GetClientResponse, error) {
 	clientNode, err := client.GetNode()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	minerurl := util.GetRandom(clientNode.Network().Miners, 1)[0]
 	url := minerurl + GET_CLIENT

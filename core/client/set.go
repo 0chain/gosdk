@@ -83,5 +83,5 @@ func Fee() uint64 {
 }
 
 func IsWalletSet() bool {
-	return wallet == nil || wallet.ClientID != ""
+	return wallet.ClientID != ""
 }

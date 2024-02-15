@@ -111,6 +111,7 @@ func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainCon
 	if signscheme != "ed25519" && signscheme != "bls0chain" {
 		return errors.New("", "invalid/unsupported signature scheme")
 	}
+	signatureScheme = signscheme
 
 	chainCfg := &ChainConfig{}
 	for _, conf := range configs {
