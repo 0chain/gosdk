@@ -17,6 +17,7 @@ type WriteMarker struct {
 	Size                   int64  `json:"size"`
 	ChainSize              int64  `json:"chain_size"`
 	ChainHash              string `json:"chain_hash"`
+	ChainLength            int    `json:"chain_length"`
 	BlobberID              string `json:"blobber_id"`
 	Timestamp              int64  `json:"timestamp"`
 	ClientID               string `json:"client_id"`

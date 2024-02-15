@@ -135,7 +135,9 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 	wm.BlobberID = rb.lpm.LatestWM.BlobberID
 	wm.ClientID = client.GetClientID()
 	wm.Size = -rb.lpm.LatestWM.Size
-	wm.ChainSize = wm.Size + rb.lpm.LatestWM.ChainSize
+	if rb.lpm.LatestWM.ChainLength > 0 {
+		wm.ChainSize = wm.Size + rb.lpm.LatestWM.ChainSize
+	}
 
 	if rb.lpm.PrevWM != nil {
 		wm.AllocationRoot = rb.lpm.PrevWM.AllocationRoot
