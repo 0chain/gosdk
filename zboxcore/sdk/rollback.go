@@ -109,9 +109,11 @@ func GetWritemarker(allocID, allocTx, id, baseUrl string, chainData bool) (*Late
 				if hex.EncodeToString(decodeHash) != lpm.LatestWM.AllocationRoot {
 					return nil, fmt.Errorf("invalid chain data")
 				}
-				chainHash := encryption.Hash(lpm.ChainData)
-				if chainHash != lpm.LatestWM.ChainHash {
-					return nil, fmt.Errorf("invalid chain hash")
+				if lpm.LatestWM.ChainLength > 0 {
+					chainHash := encryption.Hash(lpm.ChainData)
+					if chainHash != lpm.LatestWM.ChainHash {
+						return nil, fmt.Errorf("invalid chain hash")
+					}
 				}
 			}
 		}

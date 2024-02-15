@@ -184,13 +184,15 @@ func (commitreq *CommitRequest) processCommit() {
 			commitreq.result = ErrorCommitResult(errMsg)
 			return
 		}
-		chainHash := encryption.Hash(lR.ChainData)
-		if chainHash != lR.LatestWM.ChainHash {
-			errMsg := fmt.Sprintf(
-				"calculated chain hash mismatch from blobber %s. Expected: %s, Got: %s",
-				commitreq.blobber.Baseurl, chainHash, lR.LatestWM.ChainHash)
-			commitreq.result = ErrorCommitResult(errMsg)
-			return
+		if lR.LatestWM.ChainLength > 0 {
+			chainHash := encryption.Hash(lR.ChainData)
+			if chainHash != lR.LatestWM.ChainHash {
+				errMsg := fmt.Sprintf(
+					"calculated chain hash mismatch from blobber %s. Expected: %s, Got: %s",
+					commitreq.blobber.Baseurl, chainHash, lR.LatestWM.ChainHash)
+				commitreq.result = ErrorCommitResult(errMsg)
+				return
+			}
 		}
 	}
 
