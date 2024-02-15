@@ -1,9 +1,7 @@
-//go:build !js && !wasm
-// +build !js,!wasm
-
 package zcncrypto
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/0chain/errors"
@@ -48,6 +46,46 @@ func TestSSSignAndVerify(t *testing.T) {
 	if ok, err := verifyScheme.Verify(signature, hash); err != nil || !ok {
 		t.Fatalf("Verification failed\n")
 	}
+}
+
+func TestSSA(t *testing.T) {
+	signScheme := NewSignatureScheme("bls0chain")
+	err := signScheme.SetPrivateKey("f482aa19d3a3f6cebcd4f8a99de292bcf4bf07e937be1350634086f4aa02e704")
+
+	require.NoError(t, err)
+
+	hash := Sha3Sum256("hello")
+	signature, err := signScheme.Sign(hash)
+	if err != nil {
+		t.Fatalf("BLS signing failed")
+	}
+	fmt.Println(signature)
+	// verifyScheme := NewSignatureScheme("bls0chain")
+	// err = verifyScheme.SetPublicKey(verifyPublickey)
+	// require.NoError(t, err)
+	// if ok, err := verifyScheme.Verify(signature, hash); err != nil || !ok {
+	// 	t.Fatalf("Verification failed\n")
+	// }
+}
+
+func TestVerify(t *testing.T) {
+	sk := "a931522f9949ff26b22db98b26e59cc92258457965f13ce6113cc2b5d2165513"
+	hash := "eb82aa875b3298ae7e625d8d8f13475004a4942bd8fcd7285e8ab9ad20651872"
+	sm := NewSignatureScheme("bls0chain")
+	if err2 := sm.SetPrivateKey(sk); err2 != nil {
+		t.Error(err2)
+	}
+	sig, _ := sm.Sign(hash)
+	fmt.Println("now sig:", sig)
+
+	pk := "47e94b6c5399f8c0005c6f3202dec43e37d171b0eff24d75cdcf14861f088106cf88df15b3335dcd0806365db4d1b3e70579a8bd82eb665c881ef2273d6bdd03"
+	verifyScheme := NewSignatureScheme("bls0chain")
+	if err := verifyScheme.SetPublicKey(pk); err != nil {
+		t.Error(err)
+	}
+	ok, err := verifyScheme.Verify(sig, hash)
+	require.NoError(t, err)
+	fmt.Println("verify result:", ok)
 }
 
 func BenchmarkBLSSign(b *testing.B) {

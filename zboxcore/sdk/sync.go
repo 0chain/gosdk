@@ -134,7 +134,9 @@ func addLocalFileList(root string, fMap map[string]FileInfo, dirList *[]string, 
 		if err != nil {
 			l.Logger.Error("getting relative path failed", err)
 		}
-		lPath = "/" + lPath
+		// Allocation paths are like unix, so we modify all the backslashes
+		// to forward slashes. File path in windows contain backslashes. 
+		lPath = "/" + strings.ReplaceAll(lPath, "\\", "/")
 		// Exclude
 		if _, ok := exclMap[lPath]; ok {
 			if info.IsDir() {
