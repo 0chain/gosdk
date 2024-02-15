@@ -18,6 +18,7 @@ type DownloadRequestHeader struct {
 	DownloadMode   string
 	VerifyDownload bool
 	ConnectionID   string
+	Version        string
 }
 
 // ToHeader update header
@@ -49,6 +50,10 @@ func (h *DownloadRequestHeader) ToHeader(req *http.Request) {
 
 	if h.ConnectionID != "" {
 		req.Header.Set("X-Connection-ID", h.ConnectionID)
+	}
+
+	if h.Version != "" {
+		req.Header.Set("X-Version", h.Version)
 	}
 
 	req.Header.Set("X-Verify-Download", fmt.Sprint(h.VerifyDownload))

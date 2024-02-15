@@ -116,6 +116,7 @@ func (o *ObjectTreeRequest) getFileRefs(oTR *oTreeResponse, bUrl string) {
 	oReq, err := zboxutil.NewRefsRequest(
 		bUrl,
 		o.allocationID,
+		o.allocationTx,
 		o.remotefilepath,
 		o.pathHash,
 		o.authToken,
