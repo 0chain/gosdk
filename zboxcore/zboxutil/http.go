@@ -208,6 +208,7 @@ func NewReferencePathRequest(baseUrl, allocationID string, allocationTx string, 
 	}
 	params := url.Values{}
 	params.Add("paths", string(pathBytes))
+	params.Add("chain_data", strconv.FormatBool(true))
 	//url := fmt.Sprintf("%s%s%s?path=%s", baseUrl, LIST_ENDPOINT, allocation, path)
 	nurl.RawQuery = params.Encode() // Escape Query Parameters
 
