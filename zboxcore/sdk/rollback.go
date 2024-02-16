@@ -3,7 +3,6 @@ package sdk
 import (
 	"bytes"
 	"context"
-	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -19,6 +18,7 @@ import (
 
 	"github.com/0chain/common/core/common"
 	thrown "github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 	l "github.com/0chain/gosdk/zboxcore/logger"
@@ -101,9 +101,19 @@ func GetWritemarker(allocID, allocTx, id, baseUrl string, chainData bool) (*Late
 				}
 			}
 			if chainData {
-				if len(lpm.ChainData)%32 != 0 {
+				if len(lpm.ChainData) == 0 || len(lpm.ChainData)%32 != 0 {
 					l.Logger.Error("invalid chain data length ", len(lpm.ChainData))
 					return nil, fmt.Errorf("invalid chain data length")
+				}
+				decodeHash := lpm.ChainData[len(lpm.ChainData)-32:]
+				if hex.EncodeToString(decodeHash) != lpm.LatestWM.AllocationRoot {
+					return nil, fmt.Errorf("invalid chain data")
+				}
+				if lpm.LatestWM.ChainLength > 0 {
+					chainHash := encryption.Hash(lpm.ChainData)
+					if chainHash != lpm.LatestWM.ChainHash {
+						return nil, fmt.Errorf("invalid chain hash")
+					}
 				}
 			}
 		}
@@ -127,7 +137,9 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 	wm.BlobberID = rb.lpm.LatestWM.BlobberID
 	wm.ClientID = client.GetClientID()
 	wm.Size = -rb.lpm.LatestWM.Size
-	wm.ChainSize = wm.Size + rb.lpm.LatestWM.ChainSize
+	if rb.lpm.LatestWM.ChainLength > 0 {
+		wm.ChainSize = wm.Size + rb.lpm.LatestWM.ChainSize
+	}
 
 	if rb.lpm.PrevWM != nil {
 		wm.AllocationRoot = rb.lpm.PrevWM.AllocationRoot
@@ -137,13 +149,9 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 			return nil
 		}
 	}
-	hasher := sha256.New()
-	prevChainHash, _ := hex.DecodeString(rb.lpm.LatestWM.ChainHash)
-	hasher.Write(prevChainHash) //nolint:errcheck
 	decodedHash, _ := hex.DecodeString(wm.AllocationRoot)
 	rb.lpm.ChainData = append(rb.lpm.ChainData, decodedHash...)
-	hasher.Write(decodedHash) //nolint:errcheck
-	wm.ChainHash = hex.EncodeToString(hasher.Sum(nil))
+	wm.ChainHash = encryption.Hash(rb.lpm.ChainData)
 
 	err := wm.Sign()
 	if err != nil {
