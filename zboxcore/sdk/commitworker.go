@@ -235,9 +235,7 @@ func (req *CommitRequest) commitBlobber(
 	wm.ChainSize = size
 	if latestWM != nil {
 		wm.PreviousAllocationRoot = latestWM.AllocationRoot
-		if latestWM.ChainLength > 0 {
-			wm.ChainSize += latestWM.ChainSize
-		}
+		wm.ChainSize += latestWM.ChainSize
 	} else {
 		wm.PreviousAllocationRoot = ""
 	}
