@@ -136,6 +136,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock(hostClient *fasthttp.HostC
 		header.NumBlocks = req.numBlocks
 		header.VerifyDownload = req.shouldVerify
 		header.ConnectionID = req.connectionID
+		header.Version = "v2"
 
 		if req.authTicket != nil {
 			header.AuthToken, _ = json.Marshal(req.authTicket) //nolint: errcheck
