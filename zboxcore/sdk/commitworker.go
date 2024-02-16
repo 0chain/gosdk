@@ -3,6 +3,7 @@ package sdk
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -16,7 +17,6 @@ import (
 
 	"github.com/0chain/errors"
 	thrown "github.com/0chain/errors"
-	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
@@ -153,6 +153,8 @@ func (commitreq *CommitRequest) processCommit() {
 		return
 	}
 
+	hasher := sha256.New()
+
 	if lR.LatestWM != nil {
 		err = lR.LatestWM.VerifySignature(client.GetClientPublicKey())
 		if err != nil {
@@ -171,29 +173,12 @@ func (commitreq *CommitRequest) processCommit() {
 			commitreq.result = ErrorCommitResult(errMsg)
 			return
 		}
-		if len(lR.ChainData) == 0 || len(lR.ChainData)%32 != 0 {
+		if len(lR.ChainData)%32 != 0 {
 			commitreq.result = ErrorCommitResult("Invalid chain data")
 			return
 		}
-		latestMarkerRoot := lR.ChainData[len(lR.ChainData)-32:]
-		if prevAllocationRoot != hex.EncodeToString(latestMarkerRoot) {
-			l.Logger.Error("Allocation root from latest writemarker mismatch. Expected: " + prevAllocationRoot + " got: " + hex.EncodeToString(latestMarkerRoot))
-			errMsg := fmt.Sprintf(
-				"calculated allocation root mismatch from blobber %s. Expected: %s, Got: %s",
-				commitreq.blobber.Baseurl, prevAllocationRoot, hex.EncodeToString(latestMarkerRoot))
-			commitreq.result = ErrorCommitResult(errMsg)
-			return
-		}
-		if lR.LatestWM.ChainLength > 0 {
-			chainHash := encryption.Hash(lR.ChainData)
-			if chainHash != lR.LatestWM.ChainHash {
-				errMsg := fmt.Sprintf(
-					"calculated chain hash mismatch from blobber %s. Expected: %s, Got: %s",
-					commitreq.blobber.Baseurl, chainHash, lR.LatestWM.ChainHash)
-				commitreq.result = ErrorCommitResult(errMsg)
-				return
-			}
-		}
+		prevChainHash, _ := hex.DecodeString(lR.LatestWM.ChainHash)
+		hasher.Write(prevChainHash) //nolint:errcheck
 	}
 
 	var size int64
@@ -210,7 +195,8 @@ func (commitreq *CommitRequest) processCommit() {
 	rootRef.CalculateHash()
 	decodedHash, _ := hex.DecodeString(rootRef.Hash)
 	lR.ChainData = append(lR.ChainData, decodedHash...)
-	chainHash := encryption.Hash(lR.ChainData)
+	hasher.Write(decodedHash) //nolint:errcheck
+	chainHash := hex.EncodeToString(hasher.Sum(nil))
 	err = commitreq.commitBlobber(rootRef, chainHash, lR.LatestWM, size, fileIDMeta)
 	if err != nil {
 		commitreq.result = ErrorCommitResult(err.Error())
@@ -235,12 +221,9 @@ func (req *CommitRequest) commitBlobber(
 	wm.ChainSize = size
 	if latestWM != nil {
 		wm.PreviousAllocationRoot = latestWM.AllocationRoot
-		if latestWM.ChainLength > 0 {
-			wm.ChainSize += latestWM.ChainSize
-		}
-	} else {
-		wm.PreviousAllocationRoot = ""
+		wm.ChainSize += latestWM.ChainSize
 	}
+
 	if wm.AllocationRoot == wm.PreviousAllocationRoot {
 		l.Logger.Error("Allocation root and previous allocation root are same")
 		return thrown.New("commit_error", "Allocation root and previous allocation root are same")
