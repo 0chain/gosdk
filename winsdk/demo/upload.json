@@ -1,0 +1,12 @@
+[
+    {
+        "Name": "a.txt",
+        "Path": "a.txt",
+        "ThumbnailPath": "a.txt",
+        "RemotePath": "/",
+        "Encrypt": false,
+        "IsUpdate": false,
+        "ChunkNumber": 0,
+        "IsWebstreaming": false
+    }
+]
