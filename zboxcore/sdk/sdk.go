@@ -1011,6 +1011,7 @@ type CreateAllocationOptions struct {
 	WritePrice           PriceRange
 	Lock                 uint64
 	BlobberIds           []string
+	BlobberAuthTickets   []string
 	ThirdPartyExtendable bool
 	FileOptionsParams    *FileOptionsParameters
 }
@@ -1021,14 +1022,14 @@ func CreateAllocationWith(options CreateAllocationOptions) (
 	return CreateAllocationForOwner(client.GetClientID(),
 		client.GetClientPublicKey(), options.DataShards, options.ParityShards,
 		options.Size, options.ReadPrice, options.WritePrice, options.Lock,
-		options.BlobberIds, options.ThirdPartyExtendable, options.FileOptionsParams)
+		options.BlobberIds, options.BlobberAuthTickets, options.ThirdPartyExtendable, options.FileOptionsParams)
 }
 
 func CreateAllocationForOwner(
 	owner, ownerpublickey string,
 	datashards, parityshards int, size int64,
 	readPrice, writePrice PriceRange,
-	lock uint64, preferredBlobberIds []string, thirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
+	lock uint64, preferredBlobberIds, blobberAuthTickets []string, thirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
 ) (hash string, nonce int64, txn *transaction.Transaction, err error) {
 
 	if lock > math.MaxInt64 {
@@ -1040,7 +1041,7 @@ func CreateAllocationForOwner(
 	}
 
 	allocationRequest, err := getNewAllocationBlobbers(
-		datashards, parityshards, size, readPrice, writePrice, preferredBlobberIds)
+		datashards, parityshards, size, readPrice, writePrice, preferredBlobberIds, blobberAuthTickets)
 	if err != nil {
 		return "", 0, nil, errors.New("failed_get_allocation_blobbers", "failed to get blobbers for allocation: "+err.Error())
 	}
@@ -1102,7 +1103,7 @@ func getNewAllocationBlobbers(
 	datashards, parityshards int,
 	size int64,
 	readPrice, writePrice PriceRange,
-	preferredBlobberIds []string,
+	preferredBlobberIds, blobberAuthTickets []string,
 ) (map[string]interface{}, error) {
 	allocBlobberIDs, err := GetAllocationBlobbers(
 		datashards, parityshards, size, readPrice, writePrice,
@@ -1116,20 +1117,28 @@ func getNewAllocationBlobbers(
 	// filter duplicates
 	ids := make(map[string]bool)
 	uniqueBlobbers := []string{}
-	for _, b := range blobbers {
+	uniqueBlobberAuthTickets := []string{}
+
+	for i, b := range blobbers {
 		if !ids[b] {
 			uniqueBlobbers = append(uniqueBlobbers, b)
+			if i < len(blobberAuthTickets) {
+				uniqueBlobberAuthTickets = append(uniqueBlobberAuthTickets, blobberAuthTickets[i])
+			} else {
+				uniqueBlobberAuthTickets = append(uniqueBlobberAuthTickets, "")
+			}
 			ids[b] = true
 		}
 	}
 
 	return map[string]interface{}{
-		"data_shards":       datashards,
-		"parity_shards":     parityshards,
-		"size":              size,
-		"blobbers":          uniqueBlobbers,
-		"read_price_range":  readPrice,
-		"write_price_range": writePrice,
+		"data_shards":          datashards,
+		"parity_shards":        parityshards,
+		"size":                 size,
+		"blobbers":             uniqueBlobbers,
+		"blobber_auth_tickets": blobberAuthTickets,
+		"read_price_range":     readPrice,
+		"write_price_range":    writePrice,
 	}, nil
 }
 
