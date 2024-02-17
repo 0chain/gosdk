@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"mime/multipart"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -18,19 +19,18 @@ import (
 
 	"github.com/0chain/common/core/common"
 	thrown "github.com/0chain/errors"
-	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/minio/sha256-simd"
 	"go.uber.org/zap"
 )
 
 type LatestPrevWriteMarker struct {
-	LatestWM  *marker.WriteMarker `json:"latest_write_marker"`
-	PrevWM    *marker.WriteMarker `json:"prev_write_marker"`
-	ChainData []byte              `json:"chain_data"`
+	LatestWM *marker.WriteMarker `json:"latest_write_marker"`
+	PrevWM   *marker.WriteMarker `json:"prev_write_marker"`
 }
 
 type AllocStatus byte
@@ -50,11 +50,11 @@ type RollbackBlobber struct {
 	lpm          *LatestPrevWriteMarker
 }
 
-func GetWritemarker(allocID, allocTx, id, baseUrl string, chainData bool) (*LatestPrevWriteMarker, error) {
+func GetWritemarker(allocID, allocTx, id, baseUrl string) (*LatestPrevWriteMarker, error) {
 
 	var lpm LatestPrevWriteMarker
 
-	req, err := zboxutil.NewWritemarkerRequest(baseUrl, allocID, allocTx, chainData)
+	req, err := zboxutil.NewWritemarkerRequest(baseUrl, allocID, allocTx)
 	if err != nil {
 		return nil, err
 	}
@@ -100,22 +100,6 @@ func GetWritemarker(allocID, allocTx, id, baseUrl string, chainData bool) (*Late
 					return nil, fmt.Errorf("signature verification failed for latest writemarker: %s", err.Error())
 				}
 			}
-			if chainData {
-				if len(lpm.ChainData) == 0 || len(lpm.ChainData)%32 != 0 {
-					l.Logger.Error("invalid chain data length ", len(lpm.ChainData))
-					return nil, fmt.Errorf("invalid chain data length")
-				}
-				decodeHash := lpm.ChainData[len(lpm.ChainData)-32:]
-				if hex.EncodeToString(decodeHash) != lpm.LatestWM.AllocationRoot {
-					return nil, fmt.Errorf("invalid chain data")
-				}
-				if lpm.LatestWM.ChainLength > 0 {
-					chainHash := encryption.Hash(lpm.ChainData)
-					if chainHash != lpm.LatestWM.ChainHash {
-						return nil, fmt.Errorf("invalid chain hash")
-					}
-				}
-			}
 		}
 		return &lpm, nil
 	}
@@ -124,13 +108,7 @@ func GetWritemarker(allocID, allocTx, id, baseUrl string, chainData bool) (*Late
 }
 
 func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error {
-	if len(rb.lpm.ChainData) == 0 {
-		lpm, err := GetWritemarker(rb.lpm.LatestWM.AllocationID, tx, rb.blobber.ID, rb.blobber.Baseurl, true)
-		if err != nil {
-			return err
-		}
-		rb.lpm.ChainData = lpm.ChainData
-	}
+
 	wm := &marker.WriteMarker{}
 	wm.AllocationID = rb.lpm.LatestWM.AllocationID
 	wm.Timestamp = rb.lpm.LatestWM.Timestamp
@@ -148,8 +126,11 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 		}
 	}
 	decodedHash, _ := hex.DecodeString(wm.AllocationRoot)
-	rb.lpm.ChainData = append(rb.lpm.ChainData, decodedHash...)
-	wm.ChainHash = encryption.Hash(rb.lpm.ChainData)
+	prevChainHash, _ := hex.DecodeString(rb.lpm.LatestWM.ChainHash)
+	hasher := sha256.New()
+	hasher.Write(prevChainHash) //nolint:errcheck
+	hasher.Write(decodedHash)   //nolint:errcheck
+	wm.ChainHash = hex.EncodeToString(hasher.Sum(nil))
 
 	err := wm.Sign()
 	if err != nil {
@@ -221,6 +202,13 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 				l.Logger.Error("Response read: ", err)
 				return
 			}
+			if strings.Contains(string(respBody), "pending_markers:") {
+				l.Logger.Info("Commit pending for blobber ",
+					rb.blobber.Baseurl, " Retrying")
+				time.Sleep(5 * time.Second)
+				shouldContinue = true
+				return
+			}
 
 			err = thrown.New("commit_error",
 				fmt.Sprintf("Got error response %s with status %d", respBody, resp.StatusCode))
@@ -253,7 +241,7 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 		go func(blobber *blockchain.StorageNode) {
 
 			defer wg.Done()
-			wr, err := GetWritemarker(a.ID, a.Tx, blobber.ID, blobber.Baseurl, false)
+			wr, err := GetWritemarker(a.ID, a.Tx, blobber.ID, blobber.Baseurl)
 			if err != nil {
 				atomic.AddInt32(&errCnt, 1)
 				markerError = err
@@ -372,7 +360,7 @@ func (a *Allocation) RollbackWithMask(mask zboxutil.Uint128) {
 		go func(blobber *blockchain.StorageNode) {
 
 			defer wg.Done()
-			wr, err := GetWritemarker(a.ID, a.Tx, blobber.ID, blobber.Baseurl, true)
+			wr, err := GetWritemarker(a.ID, a.Tx, blobber.ID, blobber.Baseurl)
 			if err != nil {
 				l.Logger.Error("error during getWritemarker", zap.Error(err))
 			}

@@ -16,7 +16,6 @@ import (
 
 	"github.com/0chain/errors"
 	thrown "github.com/0chain/errors"
-	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
@@ -25,12 +24,12 @@ import (
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/minio/sha256-simd"
 )
 
 type ReferencePathResult struct {
 	*fileref.ReferencePath
-	LatestWM  *marker.WriteMarker `json:"latest_write_marker"`
-	ChainData []byte              `json:"chain_data"`
+	LatestWM *marker.WriteMarker `json:"latest_write_marker"`
 }
 
 type CommitResult struct {
@@ -152,7 +151,7 @@ func (commitreq *CommitRequest) processCommit() {
 		commitreq.result = ErrorCommitResult(err.Error())
 		return
 	}
-
+	hasher := sha256.New()
 	if lR.LatestWM != nil {
 		err = lR.LatestWM.VerifySignature(client.GetClientPublicKey())
 		if err != nil {
@@ -171,29 +170,12 @@ func (commitreq *CommitRequest) processCommit() {
 			commitreq.result = ErrorCommitResult(errMsg)
 			return
 		}
-		if len(lR.ChainData) == 0 || len(lR.ChainData)%32 != 0 {
-			commitreq.result = ErrorCommitResult("Invalid chain data")
+		prevChainHash, err := hex.DecodeString(lR.LatestWM.ChainHash)
+		if err != nil {
+			commitreq.result = ErrorCommitResult(err.Error())
 			return
 		}
-		latestMarkerRoot := lR.ChainData[len(lR.ChainData)-32:]
-		if prevAllocationRoot != hex.EncodeToString(latestMarkerRoot) {
-			l.Logger.Error("Allocation root from latest writemarker mismatch. Expected: " + prevAllocationRoot + " got: " + hex.EncodeToString(latestMarkerRoot))
-			errMsg := fmt.Sprintf(
-				"calculated allocation root mismatch from blobber %s. Expected: %s, Got: %s",
-				commitreq.blobber.Baseurl, prevAllocationRoot, hex.EncodeToString(latestMarkerRoot))
-			commitreq.result = ErrorCommitResult(errMsg)
-			return
-		}
-		if lR.LatestWM.ChainLength > 0 {
-			chainHash := encryption.Hash(lR.ChainData)
-			if chainHash != lR.LatestWM.ChainHash {
-				errMsg := fmt.Sprintf(
-					"calculated chain hash mismatch from blobber %s. Expected: %s, Got: %s",
-					commitreq.blobber.Baseurl, chainHash, lR.LatestWM.ChainHash)
-				commitreq.result = ErrorCommitResult(errMsg)
-				return
-			}
-		}
+		hasher.Write(prevChainHash) //nolint:errcheck
 	}
 
 	var size int64
@@ -209,8 +191,8 @@ func (commitreq *CommitRequest) processCommit() {
 	}
 	rootRef.CalculateHash()
 	decodedHash, _ := hex.DecodeString(rootRef.Hash)
-	lR.ChainData = append(lR.ChainData, decodedHash...)
-	chainHash := encryption.Hash(lR.ChainData)
+	hasher.Write(decodedHash) //nolint:errcheck
+	chainHash := hex.EncodeToString(hasher.Sum(nil))
 	err = commitreq.commitBlobber(rootRef, chainHash, lR.LatestWM, size, fileIDMeta)
 	if err != nil {
 		commitreq.result = ErrorCommitResult(err.Error())

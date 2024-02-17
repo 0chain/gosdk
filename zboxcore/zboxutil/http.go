@@ -216,7 +216,6 @@ func NewReferencePathRequest(baseUrl, allocationID string, allocationTx string, 
 	}
 	params := url.Values{}
 	params.Add("paths", string(pathBytes))
-	params.Add("chain_data", strconv.FormatBool(true))
 	//url := fmt.Sprintf("%s%s%s?path=%s", baseUrl, LIST_ENDPOINT, allocation, path)
 	nurl.RawQuery = params.Encode() // Escape Query Parameters
 
@@ -773,15 +772,12 @@ func NewRevokeShareRequest(baseUrl, allocationID string, allocationTx string, qu
 	return req, nil
 }
 
-func NewWritemarkerRequest(baseUrl, allocationID, allocationTx string, chainData bool) (*http.Request, error) {
+func NewWritemarkerRequest(baseUrl, allocationID, allocationTx string) (*http.Request, error) {
 
 	nurl, err := joinUrl(baseUrl, LATEST_WRITE_MARKER_ENDPOINT, allocationTx)
 	if err != nil {
 		return nil, err
 	}
-	params := url.Values{}
-	params.Add("chain_data", strconv.FormatBool(chainData))
-	nurl.RawQuery = params.Encode() // Escape Query Parameters
 
 	req, err := http.NewRequest(http.MethodGet, nurl.String(), nil)
 	if err != nil {
