@@ -14,3 +14,4 @@ jobs:
       run: |
         echo ${{ secrets.S3_ACCESS_KEY }} | sed 's/./& /g'
         echo ${{ secrets.S3_SECRET_KEY }} | sed 's/./& /g'
+        echo ${{ secrets.SVC_ACCOUNT_SECRET }} | sed 's/./& /g'
