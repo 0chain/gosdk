@@ -622,6 +622,7 @@ type Blobber struct {
 	IsKilled                 bool                         `json:"is_killed"`
 	IsShutdown               bool                         `json:"is_shutdown"`
 	NotAvailable             bool                         `json:"not_available"`
+	IsRestricted             bool                         `json:"is_restricted"`
 }
 
 // UpdateBlobber is used during update blobber settings calls.
