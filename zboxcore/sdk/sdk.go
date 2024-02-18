@@ -644,6 +644,7 @@ type UpdateBlobber struct {
 	IsKilled                 *bool                               `json:"is_killed,omitempty"`
 	IsShutdown               *bool                               `json:"is_shutdown,omitempty"`
 	NotAvailable             *bool                               `json:"not_available,omitempty"`
+	IsRestricted             *bool                               `json:"is_restricted,omitempty"`
 }
 
 type Validator struct {
