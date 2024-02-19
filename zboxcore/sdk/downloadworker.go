@@ -90,6 +90,7 @@ type DownloadRequest struct {
 	blocksPerShard     int64
 	connectionID       string
 	skip               bool
+	selectAllBlobbers  bool
 	fRef               *fileref.FileRef
 	chunksPerShard     int64
 	size               int64
@@ -1106,6 +1107,9 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 	countThreshold := req.consensusThresh + 1
 	if countThreshold > req.fullconsensus {
 		countThreshold = req.consensusThresh
+	}
+	if req.selectAllBlobbers {
+		countThreshold = len(fMetaResp)
 	}
 	for i := 0; i < len(fMetaResp); i++ {
 		fmr := fMetaResp[i]

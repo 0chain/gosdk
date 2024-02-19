@@ -1159,6 +1159,9 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 	for _, dr := range drs {
 		wg.Add(1)
 		go func(dr *DownloadRequest) {
+			if isReadFree {
+				dr.selectAllBlobbers = true
+			}
 			defer wg.Done()
 			dr.processDownloadRequest()
 			var pos uint64
