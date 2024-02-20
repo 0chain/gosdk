@@ -985,6 +985,12 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 	retMap := make(map[string]int)
 	for _, fmr := range fMetaResp {
 		if fmr.err != nil || fmr.fileref == nil {
+			if fmr.err != nil {
+				fmt.Println("fmr err:", fmr.err)
+			}
+			if fmr.fileref == nil {
+				fmt.Println("fmr: fileref is nil")
+			}
 			continue
 		}
 		actualHash := fmr.fileref.ActualFileHash
@@ -996,10 +1002,12 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 			actualHash,
 		)
 		if err != nil {
+			fmt.Println("fmr verify err:", err)
 			l.Logger.Error(err)
 			continue
 		}
 		if !isValid {
+			fmt.Println("fmr verify invalid sig")
 			l.Logger.Error("invalid signature")
 			continue
 		}

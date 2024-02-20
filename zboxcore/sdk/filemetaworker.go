@@ -65,6 +65,13 @@ func (req *ListRequest) getFileMetaInfoFromBlobber(blobber *blockchain.StorageNo
 	}
 
 	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
+
+	l.Logger.Debug("File Meta request:",
+		"baseurl", blobber.Baseurl,
+		"allocation", req.allocationID,
+		"allocationTx", req.allocationTx,
+		"body", body)
+
 	ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
 	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
 		if err != nil {
@@ -76,7 +83,6 @@ func (req *ListRequest) getFileMetaInfoFromBlobber(blobber *blockchain.StorageNo
 		if err != nil {
 			return errors.Wrap(err, "Error: Resp")
 		}
-		// l.Logger.Info("File Meta result:", string(resp_body))
 		l.Logger.Debug("File meta response status: ", resp.Status)
 		if resp.StatusCode == http.StatusOK {
 			err = json.Unmarshal(resp_body, &fileRef)
@@ -85,6 +91,8 @@ func (req *ListRequest) getFileMetaInfoFromBlobber(blobber *blockchain.StorageNo
 			}
 			return nil
 		}
+
+		l.Logger.Error("File Meta err result:", string(resp_body))
 		return fmt.Errorf("unexpected response. status code: %d, response: %s",
 			resp.StatusCode, string(resp_body))
 	})
