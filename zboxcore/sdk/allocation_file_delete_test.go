@@ -11,7 +11,7 @@ import (
 	"github.com/0chain/gosdk/core/resty"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	zclient "github.com/0chain/gosdk/zboxcore/client"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/mocks"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
@@ -29,11 +29,10 @@ func TestAllocation_DeleteFile(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
-	}
+	})
 
 	zboxutil.Client = &mockClient
 	resty.CreateClient = func(t *http.Transport, timeout time.Duration) resty.Client {
@@ -89,11 +88,10 @@ func TestAllocation_deleteFile(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
-	}
+	})
 
 	zboxutil.Client = &mockClient
 	resty.CreateClient = func(t *http.Transport, timeout time.Duration) resty.Client {

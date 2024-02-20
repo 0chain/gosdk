@@ -15,7 +15,6 @@ import (
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/node"
 	"github.com/0chain/gosdk/core/sys"
-	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/logger"
 	"go.uber.org/zap"
 
@@ -875,7 +874,11 @@ func VerifyContentHash(metaTxnDataJSON string) (bool, error) {
 		return false, errors.New("metaTxnData_decode_error", "Unable to decode metaTxnData json")
 	}
 
-	t, err := transaction.VerifyTransaction(metaTxnData.TxnID, blockchain.GetSharders())
+	nodeClient, err := client.GetNode()
+	if err != nil {
+		return false, err
+	}
+	t, err := transaction.VerifyTransaction(metaTxnData.TxnID, nodeClient.Sharders().Healthy())
 	if err != nil {
 		return false, errors.New("fetch_txm_details", "Unable to fetch txn details")
 	}

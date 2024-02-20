@@ -8,7 +8,7 @@ import (
 	"strconv"
 
 	"github.com/0chain/gosdk/core/sys"
-	"github.com/0chain/gosdk/zboxcore/client"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/0chain/gosdk/zcncore"
@@ -63,7 +63,18 @@ func Decrypt(key, text string) (string, error) {
 
 // GetNetwork - get current network
 func GetNetwork() (string, error) {
-	networkDetails := sdk.GetNetwork()
+	type Network struct {
+		Miners   []string `json:"miners"`
+		Sharders []string `json:"sharders"`
+	}
+	nodeClient, err := client.GetNode()
+	if err != nil {
+		return "", err
+	}
+	networkDetails := &Network {
+		Miners:   nodeClient.Network().Miners,
+		Sharders: nodeClient.Network().Sharders,
+	}
 	networkDetailsBytes, err := json.Marshal(networkDetails)
 	if err != nil {
 		return "", err

@@ -21,7 +21,7 @@ import (
 	"github.com/0chain/gosdk/core/zcncrypto"
 
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	zclient "github.com/0chain/gosdk/zboxcore/client"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/mocks"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
@@ -641,11 +641,10 @@ func TestAllocation_RepairFile(t *testing.T) {
 		resty.CreateClient = createClient
 	}()
 
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
-	}
+	})
 
 	// setupHttpResponses := func(t *testing.T, testName string, numBlobbers, numCorrect int) {
 	// 	require.True(t, numBlobbers >= numCorrect)

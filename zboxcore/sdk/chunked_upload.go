@@ -23,7 +23,7 @@ import (
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/zboxcore/client"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/zboxcore/encryption"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
@@ -249,7 +249,7 @@ func CreateChunkedUpload(
 
 	}
 
-	su.writeMarkerMutex, err = CreateWriteMarkerMutex(client.GetClient(), su.allocationObj)
+	su.writeMarkerMutex, err = CreateWriteMarkerMutex(su.allocationObj)
 	if err != nil {
 		return nil, err
 	}
@@ -367,7 +367,7 @@ func (su *ChunkedUpload) createEncscheme() encryption.EncryptionScheme {
 			return nil
 		}
 	} else {
-		privateKey, err := encscheme.Initialize(client.GetClient().Mnemonic)
+		privateKey, err := encscheme.Initialize(client.Wallet().Mnemonic)
 		if err != nil {
 			return nil
 		}

@@ -16,7 +16,7 @@ import (
 
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/version"
-	"github.com/0chain/gosdk/zboxcore/client"
+	"github.com/0chain/gosdk/core/client"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 
@@ -45,8 +45,7 @@ type ChainConfig struct {
 
 // StorageSDK - storage SDK config
 type StorageSDK struct {
-	chainconfig *ChainConfig
-	client      *client.Client
+	// chainconfig *ChainConfig
 }
 
 // SetLogFile - setting up log level for core libraries
@@ -138,7 +137,7 @@ func InitStorageSDK(clientJson string, configJson string) (*StorageSDK, error) {
 
 	l.Logger.Info("Init successful")
 
-	return &StorageSDK{client: client.GetClient(), chainconfig: configObj}, nil
+	return &StorageSDK{}, nil
 }
 
 // CreateAllocation - creating new allocation
@@ -383,7 +382,7 @@ func (s *StorageSDK) RedeemFreeStorage(ticket string) (string, error) {
 		return "", err
 	}
 
-	if recipientPublicKey != client.GetClientPublicKey() {
+	if recipientPublicKey != client.PublicKey() {
 		return "", fmt.Errorf("invalid_free_marker: free marker is not assigned to your wallet")
 	}
 

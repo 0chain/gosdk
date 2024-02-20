@@ -8,7 +8,7 @@ import (
 
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/zboxcore/client"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/zboxcore/encryption"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/marker"
@@ -52,7 +52,7 @@ func (req *ShareRequest) getAuthTicket(clientID, encPublicKey string) (*marker.A
 
 	at := &marker.AuthTicket{
 		AllocationID:   req.allocationID,
-		OwnerID:        client.GetClientID(),
+		OwnerID:        client.ClientID(),
 		ClientID:       clientID,
 		FileName:       req.remotefilename,
 		FilePathHash:   fileref.GetReferenceLookup(req.allocationID, req.remotefilepath),
@@ -68,7 +68,7 @@ func (req *ShareRequest) getAuthTicket(clientID, encPublicKey string) (*marker.A
 
 	if encPublicKey != "" { // file is encrypted
 		encScheme := encryption.NewEncryptionScheme()
-		if _, err := encScheme.Initialize((client.GetClient().Mnemonic)); err != nil {
+		if _, err := encScheme.Initialize((client.Wallet().Mnemonic)); err != nil {
 			return nil, err
 		}
 

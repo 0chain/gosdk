@@ -21,7 +21,7 @@ import (
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/zboxcore/client"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/zboxcore/encryption"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
@@ -659,8 +659,8 @@ func (req *DownloadRequest) attemptSubmitReadMarker(blobber *blockchain.StorageN
 	lockBlobberReadCtr(req.allocationID, blobber.ID)
 	defer unlockBlobberReadCtr(req.allocationID, blobber.ID)
 	rm := &marker.ReadMarker{
-		ClientID:        client.GetClientID(),
-		ClientPublicKey: client.GetClientPublicKey(),
+		ClientID:        client.ClientID(),
+		ClientPublicKey: client.PublicKey(),
 		BlobberID:       blobber.ID,
 		AllocationID:    req.allocationID,
 		OwnerID:         req.allocOwnerID,
@@ -799,14 +799,14 @@ func (req *DownloadRequest) initEC() error {
 // initEncryption will initialize encScheme with client's keys
 func (req *DownloadRequest) initEncryption() (err error) {
 	req.encScheme = encryption.NewEncryptionScheme()
-	mnemonic := client.GetClient().Mnemonic
+	mnemonic := client.Wallet().Mnemonic
 	if mnemonic != "" {
-		_, err = req.encScheme.Initialize(client.GetClient().Mnemonic)
+		_, err = req.encScheme.Initialize(client.Wallet().Mnemonic)
 		if err != nil {
 			return err
 		}
 	} else {
-		key, err := hex.DecodeString(client.GetClientPrivateKey())
+		key, err := hex.DecodeString(client.PrivateKey())
 		if err != nil {
 			return err
 		}

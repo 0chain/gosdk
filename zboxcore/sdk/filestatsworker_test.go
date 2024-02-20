@@ -18,7 +18,7 @@ import (
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	zclient "github.com/0chain/gosdk/zboxcore/client"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/mocks"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
@@ -42,11 +42,10 @@ func TestListRequest_getFileStatsInfoFromBlobber(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	var client = zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
-	}
+	})
 
 	type parameters struct {
 		fileStatsHttpResp FileStats
@@ -127,7 +126,7 @@ func TestListRequest_getFileStatsInfoFromBlobber(t *testing.T) {
 					require.NoError(t, err)
 					require.EqualValues(t, expected, string(actual))
 
-					sign, _ := zclient.Sign(encryption.Hash(mockAllocationTxId))
+					sign, _ := client.Sign(encryption.Hash(mockAllocationTxId))
 					return req.URL.Path == "Test_Success"+zboxutil.FILE_STATS_ENDPOINT+mockAllocationTxId &&
 						req.Method == "POST" &&
 						req.Header.Get("X-App-Client-ID") == mockClientId &&
@@ -188,11 +187,10 @@ func TestListRequest_getFileStatsFromBlobbers(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
-	}
+	})
 
 	setupHttpResponses := func(t *testing.T, name string, numBlobbers, numCorrect int) {
 		for i := 0; i < numBlobbers; i++ {

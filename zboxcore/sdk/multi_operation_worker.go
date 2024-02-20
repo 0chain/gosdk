@@ -16,7 +16,6 @@ import (
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
-	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
 	l "github.com/0chain/gosdk/zboxcore/logger"
@@ -217,7 +216,7 @@ func (mo *MultiOperation) Process() error {
 	start := time.Now()
 	mo.changes = zboxutil.Transpose(mo.changes)
 
-	writeMarkerMutex, err := CreateWriteMarkerMutex(client.GetClient(), mo.allocationObj)
+	writeMarkerMutex, err := CreateWriteMarkerMutex(mo.allocationObj)
 	if err != nil {
 		return fmt.Errorf("Operation failed: %s", err.Error())
 	}

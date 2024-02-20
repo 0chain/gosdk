@@ -20,7 +20,7 @@ import (
 	devMock "github.com/0chain/gosdk/dev/mock"
 	"github.com/0chain/gosdk/sdks/blobber"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	zclient "github.com/0chain/gosdk/zboxcore/client"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/mocks"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
@@ -48,11 +48,10 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 		zboxutil.Client = rawClient
 	}()
 
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
-	}
+	})
 
 	type parameters struct {
 		referencePathToRetrieve fileref.ReferencePath
@@ -279,11 +278,10 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 		zboxutil.Client = rawClient
 	}()
 
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
-	}
+	})
 
 	setupHttpResponses := func(t *testing.T, testName string, numBlobbers int, numCorrect int, req *RenameRequest) {
 

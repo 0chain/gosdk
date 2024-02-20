@@ -13,7 +13,7 @@ import (
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/zboxcore/client"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	zlogger "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
@@ -149,7 +149,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 
 		header.ToHeader(httpreq)
 
-		zlogger.Logger.Debug(fmt.Sprintf("downloadBlobberBlock - blobberID: %v, clientID: %v, blockNum: %d", req.blobber.ID, client.GetClientID(), header.BlockNum))
+		zlogger.Logger.Debug(fmt.Sprintf("downloadBlobberBlock - blobberID: %v, clientID: %v, blockNum: %d", req.blobber.ID, client.ClientID(), header.BlockNum))
 
 		err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
 			if err != nil {
@@ -188,7 +188,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 				}
 			}
 			if resp.StatusCode != http.StatusOK {
-				zlogger.Logger.Debug(fmt.Sprintf("downloadBlobberBlock FAIL - blobberID: %v, clientID: %v, blockNum: %d, retry: %d, response: %v", req.blobber.ID, client.GetClientID(), header.BlockNum, retry, string(req.respBuf)))
+				zlogger.Logger.Debug(fmt.Sprintf("downloadBlobberBlock FAIL - blobberID: %v, clientID: %v, blockNum: %d, retry: %d, response: %v", req.blobber.ID, client.ClientID(), header.BlockNum, retry, string(req.respBuf)))
 				if err = json.Unmarshal(req.respBuf, &rspData); err == nil {
 					return errors.New("download_error", fmt.Sprintf("Response status: %d, Error: %v,", resp.StatusCode, rspData.err))
 				}
@@ -237,7 +237,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 				rspData.BlockChunks = req.splitData(dR.Data, req.chunkSize)
 			}
 
-			zlogger.Logger.Debug(fmt.Sprintf("downloadBlobberBlock 200 OK: blobberID: %v, clientID: %v, blockNum: %d", req.blobber.ID, client.GetClientID(), header.BlockNum))
+			zlogger.Logger.Debug(fmt.Sprintf("downloadBlobberBlock 200 OK: blobberID: %v, clientID: %v, blockNum: %d", req.blobber.ID, client.ClientID(), header.BlockNum))
 
 			req.result <- &rspData
 			return nil

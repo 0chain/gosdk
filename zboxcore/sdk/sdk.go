@@ -18,14 +18,15 @@ import (
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/node"
 	"github.com/0chain/gosdk/core/sys"
+	"github.com/0chain/gosdk/core/zcncrypto"
 	"go.uber.org/zap"
 	"gopkg.in/natefinch/lumberjack.v2"
 
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/version"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/encryption"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
@@ -97,68 +98,80 @@ func InitStorageSDK(walletJSON string,
 	preferredBlobbers []string,
 	nonce int64,
 	fee ...uint64) error {
-	err := client.PopulateClient(walletJSON, signatureScheme)
+	
+	wallet := zcncrypto.Wallet{}
+	err := json.Unmarshal([]byte(walletJSON), &wallet)
 	if err != nil {
 		return err
 	}
 
-	blockchain.SetChainID(chainID)
-	blockchain.SetBlockWorker(blockWorker)
-
-	err = InitNetworkDetails()
-	if err != nil {
-		return err
-	}
-
-	client.SetClientNonce(nonce)
+	client.SetWallet(wallet)
+	client.SetSignatureScheme(signatureScheme)
+	client.SetNonce(nonce)
 	if len(fee) > 0 {
 		client.SetTxnFee(fee[0])
 	}
 
-	go UpdateNetworkDetailsWorker(context.Background())
+	err = client.Init(context.Background(), conf.Config{
+		BlockWorker: blockWorker,
+		SignatureScheme: signatureScheme,
+		ChainID: chainID,
+		PreferredBlobbers: preferredBlobbers,
+		MaxTxnQuery:     5,
+		QuerySleepTime:  5,
+		MinSubmit:       10,
+		MinConfirmation: 10,
+	})
+	if err != nil {
+		return err
+	}
 	sdkInitialized = true
 	return nil
 }
 
-func GetNetwork() *Network {
-	return &Network{
-		Miners:   blockchain.GetMiners(),
-		Sharders: blockchain.GetAllSharders(),
-	}
-}
+// func GetNetwork() *Network {
+// 	nodeClient, err := client.GetNode()
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	return &Network{
+// 		Miners:   nodeClient.Network().Miners,
+// 		Sharders: nodeClient.Network().Sharders,
+// 	}
+// }
 
-func SetMaxTxnQuery(num int) {
-	blockchain.SetMaxTxnQuery(num)
+// func SetMaxTxnQuery(num int) {
+// 	blockchain.SetMaxTxnQuery(num)
 
-	cfg, _ := conf.GetClientConfig()
-	if cfg != nil {
-		cfg.MaxTxnQuery = num
-	}
+// 	cfg, _ := conf.GetClientConfig()
+// 	if cfg != nil {
+// 		cfg.MaxTxnQuery = num
+// 	}
 
-}
+// }
 
-func SetQuerySleepTime(time int) {
-	blockchain.SetQuerySleepTime(time)
+// func SetQuerySleepTime(time int) {
+// 	blockchain.SetQuerySleepTime(time)
 
-	cfg, _ := conf.GetClientConfig()
-	if cfg != nil {
-		cfg.QuerySleepTime = time
-	}
+// 	cfg, _ := conf.GetClientConfig()
+// 	if cfg != nil {
+// 		cfg.QuerySleepTime = time
+// 	}
 
-}
+// }
 
-func SetMinSubmit(num int) {
-	blockchain.SetMinSubmit(num)
-}
-func SetMinConfirmation(num int) {
-	blockchain.SetMinConfirmation(num)
-}
+// func SetMinSubmit(num int) {
+// 	blockchain.SetMinSubmit(num)
+// }
+// func SetMinConfirmation(num int) {
+// 	blockchain.SetMinConfirmation(num)
+// }
 
-func SetNetwork(miners []string, sharders []string) {
-	blockchain.SetMiners(miners)
-	blockchain.SetSharders(sharders)
-	node.InitCache(blockchain.Sharders)
-}
+// func SetNetwork(miners []string, sharders []string) {
+// 	blockchain.SetMiners(miners)
+// 	blockchain.SetSharders(sharders)
+// 	node.InitCache(blockchain.Sharders)
+// }
 
 //
 // read pool
@@ -195,7 +208,7 @@ func GetReadPoolInfo(clientID string) (info *ReadPool, err error) {
 	}
 
 	if clientID == "" {
-		clientID = client.GetClientID()
+		clientID = client.ClientID()
 	}
 
 	var b []byte
@@ -330,7 +343,7 @@ func GetStakePoolUserInfo(clientID string, offset, limit int) (info *StakePoolUs
 		return nil, sdkNotInitialized
 	}
 	if clientID == "" {
-		clientID = client.GetClientID()
+		clientID = client.ClientID()
 	}
 
 	var b []byte
@@ -838,7 +851,7 @@ func GetClientEncryptedPublicKey() (string, error) {
 		return "", sdkNotInitialized
 	}
 	encScheme := encryption.NewEncryptionScheme()
-	_, err := encScheme.Initialize(client.GetClient().Mnemonic)
+	_, err := encScheme.Initialize(client.Wallet().Mnemonic)
 	if err != nil {
 		return "", err
 	}
@@ -931,7 +944,7 @@ func SetVerifyHash(verify bool) {
 }
 
 func GetAllocations() ([]*Allocation, error) {
-	return GetAllocationsForClient(client.GetClientID())
+	return GetAllocationsForClient(client.ClientID())
 }
 
 func getAllocationsInternal(clientID string, limit, offset int) ([]*Allocation, error) {
@@ -1012,8 +1025,8 @@ type CreateAllocationOptions struct {
 func CreateAllocationWith(options CreateAllocationOptions) (
 	string, int64, *transaction.Transaction, error) {
 
-	return CreateAllocationForOwner(client.GetClientID(),
-		client.GetClientPublicKey(), options.DataShards, options.ParityShards,
+	return CreateAllocationForOwner(client.ClientID(),
+		client.PublicKey(), options.DataShards, options.ParityShards,
 		options.Size, options.ReadPrice, options.WritePrice, options.Lock,
 		options.BlobberIds, options.ThirdPartyExtendable, options.FileOptionsParams)
 }
@@ -1200,7 +1213,7 @@ func CreateFreeAllocation(marker string, value uint64) (string, int64, error) {
 		return "", 0, sdkNotInitialized
 	}
 
-	recipientPublicKey := client.GetClientPublicKey()
+	recipientPublicKey := client.PublicKey()
 
 	var input = map[string]interface{}{
 		"recipient_public_key": recipientPublicKey,
@@ -1245,7 +1258,7 @@ func UpdateAllocation(
 	}
 
 	updateAllocationRequest := make(map[string]interface{})
-	updateAllocationRequest["owner_id"] = client.GetClientID()
+	updateAllocationRequest["owner_id"] = client.ClientID()
 	updateAllocationRequest["owner_public_key"] = ""
 	updateAllocationRequest["id"] = allocationID
 	updateAllocationRequest["size"] = size
@@ -1481,8 +1494,18 @@ func smartContractTxnValueFee(scAddress string, sn transaction.SmartContractTxnD
 		return
 	}
 
-	txn := transaction.NewTransactionEntity(client.GetClientID(),
-		blockchain.GetChainID(), client.GetClientPublicKey(), nonce)
+	cfg, err := conf.GetClientConfig()
+	if err != nil {
+		return
+	}
+
+	nodeClient, err := client.GetNode()
+	if err != nil {
+		return
+	}
+
+	txn := transaction.NewTransactionEntity(client.ClientID(),
+		cfg.ChainID, client.PublicKey(), nonce)
 
 	txn.TransactionData = string(requestBytes)
 	txn.ToClientID = scAddress
@@ -1492,7 +1515,7 @@ func smartContractTxnValueFee(scAddress string, sn transaction.SmartContractTxnD
 
 	// adjust fees if not set
 	if fee == 0 {
-		fee, err = transaction.EstimateFee(txn, blockchain.GetMiners(), 0.2)
+		fee, err = transaction.EstimateFee(txn, nodeClient.Network().Miners, 0.2)
 		if err != nil {
 			l.Logger.Error("failed to estimate txn fee",
 				zap.Error(err),
@@ -1514,23 +1537,23 @@ func smartContractTxnValueFee(scAddress string, sn transaction.SmartContractTxnD
 	l.Logger.Info(msg)
 	l.Logger.Info("estimated txn fee: ", txn.TransactionFee)
 
-	err = transaction.SendTransactionSync(txn, blockchain.GetStableMiners())
+	err = transaction.SendTransactionSync(txn, nodeClient.GetStableMiners())
 	if err != nil {
 		l.Logger.Info("transaction submission failed", zap.Error(err))
 		node.Cache.Evict(txn.ClientID)
-		blockchain.ResetStableMiners()
+		nodeClient.ResetStableMiners()
 		return
 	}
 
 	var (
-		querySleepTime = time.Duration(blockchain.GetQuerySleepTime()) * time.Second
+		querySleepTime = time.Duration(cfg.QuerySleepTime) * time.Second
 		retries        = 0
 	)
 
 	sys.Sleep(querySleepTime)
 
-	for retries < blockchain.GetMaxTxnQuery() {
-		t, err = transaction.VerifyTransaction(txn.Hash, blockchain.GetSharders())
+	for retries < cfg.MaxTxnQuery {
+		t, err = transaction.VerifyTransaction(txn.Hash, nodeClient.Sharders().Healthy())
 		if err == nil {
 			break
 		}
@@ -1653,7 +1676,7 @@ func GetUpdateAllocationMinLock(
 	addBlobberId,
 	removeBlobberId string) (int64, error) {
 	updateAllocationRequest := make(map[string]interface{})
-	updateAllocationRequest["owner_id"] = client.GetClientID()
+	updateAllocationRequest["owner_id"] = client.ClientID()
 	updateAllocationRequest["owner_public_key"] = ""
 	updateAllocationRequest["id"] = allocationID
 	updateAllocationRequest["size"] = size

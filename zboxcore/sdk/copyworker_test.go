@@ -20,7 +20,7 @@ import (
 	devMock "github.com/0chain/gosdk/dev/mock"
 	"github.com/0chain/gosdk/sdks/blobber"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	zclient "github.com/0chain/gosdk/zboxcore/client"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/mocks"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
@@ -43,11 +43,10 @@ func TestCopyRequest_copyBlobberObject(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
-	}
+	})
 
 	type parameters struct {
 		referencePathToRetrieve fileref.ReferencePath
@@ -249,11 +248,10 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
-	}
+	})
 
 	zboxutil.Client = &mockClient
 

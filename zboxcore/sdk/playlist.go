@@ -10,7 +10,7 @@ import (
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/resty"
 	"github.com/0chain/gosdk/core/sys"
-	"github.com/0chain/gosdk/zboxcore/client"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
@@ -65,11 +65,11 @@ func getPlaylistFromBlobbers(ctx context.Context, alloc *Allocation, query strin
 
 	opts = append(opts, resty.WithRetry(resty.DefaultRetry))
 	opts = append(opts, resty.WithRequestInterceptor(func(req *http.Request) error {
-		req.Header.Set("X-App-Client-ID", client.GetClientID())
-		req.Header.Set("X-App-Client-Key", client.GetClientPublicKey())
+		req.Header.Set("X-App-Client-ID", client.ClientID())
+		req.Header.Set("X-App-Client-Key", client.PublicKey())
 
 		hash := encryption.Hash(alloc.ID)
-		sign, err := sys.Sign(hash, client.GetClient().SignatureScheme, client.GetClientSysKeys())
+		sign, err := sys.Sign(hash, client.SignatureScheme(), client.GetClientSysKeys())
 		if err != nil {
 			return err
 		}
@@ -146,11 +146,11 @@ func getPlaylistFileFromBlobbers(ctx context.Context, alloc *Allocation, query s
 
 	opts = append(opts, resty.WithRetry(resty.DefaultRetry))
 	opts = append(opts, resty.WithRequestInterceptor(func(req *http.Request) error {
-		req.Header.Set("X-App-Client-ID", client.GetClientID())
-		req.Header.Set("X-App-Client-Key", client.GetClientPublicKey())
+		req.Header.Set("X-App-Client-ID", client.ClientID())
+		req.Header.Set("X-App-Client-Key", client.PublicKey())
 
 		hash := encryption.Hash(alloc.ID)
-		sign, err := sys.Sign(hash, client.GetClient().SignatureScheme, client.GetClientSysKeys())
+		sign, err := sys.Sign(hash, client.SignatureScheme(), client.GetClientSysKeys())
 		if err != nil {
 			return err
 		}

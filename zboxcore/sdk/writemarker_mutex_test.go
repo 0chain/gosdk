@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/mocks"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/stretchr/testify/mock"
@@ -78,7 +77,7 @@ func TestWriteMarkerMutext_Should_Lock(t *testing.T) {
 
 	mask := zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 	mu := &sync.Mutex{}
-	mutex, _ := CreateWriteMarkerMutex(client.GetClient(), a)
+	mutex, _ := CreateWriteMarkerMutex(a)
 	consensus := &Consensus{RWMutex: &sync.RWMutex{}}
 	consensus.Init(a.consensusThreshold, a.fullconsensus)
 
@@ -146,7 +145,7 @@ func TestWriteMarkerMutext_Some_Blobbers_Down_Should_Lock(t *testing.T) {
 	}
 
 	setupHttpResponses(t, t.Name(), len(a.Blobbers), len(a.Blobbers)-1)
-	mutex, _ := CreateWriteMarkerMutex(client.GetClient(), a)
+	mutex, _ := CreateWriteMarkerMutex(a)
 	mask := zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 	mu := &sync.Mutex{}
 	consensus := &Consensus{RWMutex: &sync.RWMutex{}}
@@ -213,7 +212,7 @@ func TestWriteMarkerMutext_Too_Less_Blobbers_Response_Should_Not_Lock(t *testing
 	}
 
 	setupHttpResponses(t, t.Name(), len(a.Blobbers), a.consensusThreshold-1)
-	mutex, err := CreateWriteMarkerMutex(client.GetClient(), a)
+	mutex, err := CreateWriteMarkerMutex(a)
 	require.NoError(t, err)
 	mask := zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 	mu := &sync.Mutex{}

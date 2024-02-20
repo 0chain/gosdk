@@ -19,7 +19,7 @@ import (
 
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	zclient "github.com/0chain/gosdk/zboxcore/client"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/mocks"
@@ -41,11 +41,10 @@ func TestListRequest_getFileMetaInfoFromBlobber(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
-	}
+	})
 
 	type parameters struct {
 		fileRefToRetrieve fileref.FileRef
@@ -206,11 +205,10 @@ func TestListRequest_getFileConsensusFromBlobbers(t *testing.T) {
 
 	const mockClientId = "mock client id"
 	const mockClientKey = "mock client key"
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
-	}
+	})
 
 	setupHttpResponses := func(t *testing.T, name string, numBlobbers, numCorrect int) {
 		require.True(t, numBlobbers >= numCorrect)

@@ -17,11 +17,10 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/logger"
-	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/zboxcore/client"
 )
 
 const SC_REST_API_URL = "v1/screst/"
@@ -163,8 +162,8 @@ func NewHTTPRequest(method string, url string, data []byte) (*http.Request, cont
 }
 
 func setClientInfo(req *http.Request) {
-	req.Header.Set("X-App-Client-ID", client.GetClientID())
-	req.Header.Set("X-App-Client-Key", client.GetClientPublicKey())
+	req.Header.Set("X-App-Client-ID", client.ClientID())
+	req.Header.Set("X-App-Client-Key", client.PublicKey())
 }
 
 func setClientInfoWithSign(req *http.Request, allocation string) error {
@@ -804,8 +803,12 @@ func NewRollbackRequest(baseUrl, allocationID string, allocationTx string, body 
 }
 
 func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]string, handler SCRestAPIHandler) ([]byte, error) {
-	numSharders := len(blockchain.GetSharders())
-	sharders := blockchain.GetSharders()
+	nodeClient, err := client.GetNode()
+	if err != nil {
+		return nil, err
+	}
+	numSharders := len(nodeClient.Sharders().Healthy())
+	sharders := nodeClient.Sharders().Healthy()
 	responses := make(map[int]int)
 	mu := &sync.Mutex{}
 	entityResult := make(map[string][]byte)
@@ -837,7 +840,7 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 			client := &http.Client{Transport: DefaultTransport}
 			response, err := client.Get(urlObj.String())
 			if err != nil {
-				blockchain.Sharders.Fail(sharder)
+				nodeClient.Sharders().Fail(sharder)
 				return
 			}
 
@@ -845,9 +848,9 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 			entityBytes, _ := ioutil.ReadAll(response.Body)
 			mu.Lock()
 			if response.StatusCode > http.StatusBadRequest {
-				blockchain.Sharders.Fail(sharder)
+				nodeClient.Sharders().Fail(sharder)
 			} else {
-				blockchain.Sharders.Success(sharder)
+				nodeClient.Sharders().Success(sharder)
 			}
 			responses[response.StatusCode]++
 			if responses[response.StatusCode] > maxCount {
@@ -860,7 +863,7 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 			}
 
 			entityResult[sharder] = entityBytes
-			blockchain.Sharders.Success(sharder)
+			nodeClient.Sharders().Success(sharder)
 			mu.Unlock()
 		}(sharder)
 	}

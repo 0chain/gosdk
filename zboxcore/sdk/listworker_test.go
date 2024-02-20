@@ -16,7 +16,7 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	zclient "github.com/0chain/gosdk/zboxcore/client"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/mocks"
@@ -40,11 +40,10 @@ func TestListRequest_getListInfoFromBlobber(t *testing.T) {
 	)
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
-	}
+	})
 	type parameters struct {
 		listHttpResp   listResponse
 		ListResult     fileref.ListResult
@@ -217,11 +216,10 @@ func TestListRequest_GetListFromBlobbers(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
-	}
+	})
 
 	setupHttpResponses := func(t *testing.T, name string, numBlobbers int) {
 		for i := 0; i < numBlobbers; i++ {

@@ -17,7 +17,6 @@ import (
 
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/common"
-	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
 
@@ -203,7 +202,7 @@ func (req *MoveRequest) ProcessMove() error {
 				req.Consensus.consensusThresh, req.Consensus.consensus))
 	}
 
-	writeMarkerMutex, err := CreateWriteMarkerMutex(client.GetClient(), req.allocationObj)
+	writeMarkerMutex, err := CreateWriteMarkerMutex(req.allocationObj)
 	if err != nil {
 		return fmt.Errorf("Move failed: %s", err.Error())
 	}

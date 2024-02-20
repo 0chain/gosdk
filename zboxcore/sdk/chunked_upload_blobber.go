@@ -16,7 +16,7 @@ import (
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/zboxcore/client"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
@@ -216,7 +216,7 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 	wm.BlobberID = sb.blobber.ID
 
 	wm.Timestamp = timestamp
-	wm.ClientID = client.GetClientID()
+	wm.ClientID = client.ClientID()
 	err = wm.Sign()
 	if err != nil {
 		logger.Logger.Error("Signing writemarker failed: ", err)

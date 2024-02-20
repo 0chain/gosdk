@@ -14,7 +14,7 @@ import (
 
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/zboxapi"
-	"github.com/0chain/gosdk/zboxcore/client"
+	"github.com/0chain/gosdk/core/client"
 	"go.uber.org/zap"
 )
 
@@ -29,14 +29,9 @@ func Init(baseUrl, appType string) {
 	zboxApiClient = zboxapi.NewClient()
 	zboxApiClient.SetRequest(baseUrl, appType)
 
-	c := client.GetClient()
-	if c != nil {
-		err := SetWallet(client.GetClientID(), client.GetClientPrivateKey(), client.GetClientPublicKey()) //nolint: errcheck
-		if err != nil {
-			logging.Error("SetWallet", zap.Error(err))
-		}
-	} else {
-		logging.Info("SetWallet: skipped")
+	err := SetWallet(client.ClientID(), client.PrivateKey(), client.PublicKey()) //nolint: errcheck
+	if err != nil {
+		logging.Error("SetWallet", zap.Error(err))
 	}
 }
 

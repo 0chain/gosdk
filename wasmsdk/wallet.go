@@ -5,8 +5,7 @@ package main
 
 import (
 	"github.com/0chain/gosdk/core/zcncrypto"
-	"github.com/0chain/gosdk/zboxcore/client"
-	"github.com/0chain/gosdk/zcncore"
+	"github.com/0chain/gosdk/core/client"
 )
 
 func setWallet(clientID, publicKey, privateKey, mnemonic string) error {
@@ -17,19 +16,13 @@ func setWallet(clientID, publicKey, privateKey, mnemonic string) error {
 		},
 	}
 
-	c := client.GetClient()
-	c.Mnemonic = mnemonic
-	c.ClientID = clientID
-	c.ClientKey = publicKey
-	c.Keys = keys
-
 	w := &zcncrypto.Wallet{
 		ClientID:  clientID,
 		ClientKey: publicKey,
 		Mnemonic:  mnemonic,
 		Keys:      keys,
 	}
-	err := zcncore.SetWallet(*w, false)
+	err := client.SetWallet(*w)
 	if err != nil {
 		return err
 	}
