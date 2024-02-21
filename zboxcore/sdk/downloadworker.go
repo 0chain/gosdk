@@ -80,6 +80,7 @@ type DownloadRequest struct {
 	size               int64
 	offset             int64
 	bufferMap          map[int]*zboxutil.DownloadBuffer
+	freeRead           bool
 }
 
 type blockData struct {
@@ -179,7 +180,11 @@ func (req *DownloadRequest) downloadBlock(
 		skipDownload bool
 	)
 
-	for i := req.downloadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+	for i := mask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		if c == requiredDownloads {
+			remainingMask = i
+			break
+		}
 		pos = uint64(i.TrailingZeros())
 		blockDownloadReq := &BlockDownloadRequest{
 			allocationID:       req.allocationID,
@@ -220,10 +225,6 @@ func (req *DownloadRequest) downloadBlock(
 		}
 
 		c++
-		if c == requiredDownloads {
-			remainingMask = i
-			break
-		}
 	}
 
 	var failed int32
@@ -1024,6 +1025,9 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 	countThreshold := req.consensusThresh + 1
 	if countThreshold > req.fullconsensus {
 		countThreshold = req.consensusThresh
+	}
+	if req.freeRead {
+		countThreshold = req.fullconsensus
 	}
 	for i := 0; i < len(fMetaResp); i++ {
 		fmr := fMetaResp[i]
