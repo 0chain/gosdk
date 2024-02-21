@@ -180,7 +180,11 @@ func (req *DownloadRequest) downloadBlock(
 		skipDownload bool
 	)
 
-	for i := req.downloadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+	for i := mask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		if c == requiredDownloads {
+			remainingMask = i
+			break
+		}
 		pos = uint64(i.TrailingZeros())
 		blockDownloadReq := &BlockDownloadRequest{
 			allocationID:       req.allocationID,
@@ -221,10 +225,6 @@ func (req *DownloadRequest) downloadBlock(
 		}
 
 		c++
-		if c == requiredDownloads {
-			remainingMask = i
-			break
-		}
 	}
 
 	var failed int32
