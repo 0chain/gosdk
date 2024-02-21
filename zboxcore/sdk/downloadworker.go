@@ -80,6 +80,7 @@ type DownloadRequest struct {
 	size               int64
 	offset             int64
 	bufferMap          map[int]*zboxutil.DownloadBuffer
+	freeRead           bool
 }
 
 type blockData struct {
@@ -1024,6 +1025,9 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 	countThreshold := req.consensusThresh + 1
 	if countThreshold > req.fullconsensus {
 		countThreshold = req.consensusThresh
+	}
+	if req.freeRead {
+		countThreshold = req.fullconsensus
 	}
 	for i := 0; i < len(fMetaResp); i++ {
 		fmr := fMetaResp[i]
