@@ -1102,6 +1102,7 @@ func (a *Allocation) generateDownloadRequest(
 	}
 	downloadReq.contentMode = contentMode
 	downloadReq.connectionID = connectionID
+	downloadReq.downloadQueue = make(downloadQueue, len(a.Blobbers))
 
 	return downloadReq, nil
 }
@@ -1160,7 +1161,7 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 		wg.Add(1)
 		go func(dr *DownloadRequest) {
 			if isReadFree {
-				dr.selectAllBlobbers = true
+				dr.freeRead = true
 			}
 			defer wg.Done()
 			dr.processDownloadRequest()

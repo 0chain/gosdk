@@ -2,6 +2,7 @@ package sdk
 
 import (
 	"bytes"
+	"container/heap"
 	"context"
 	"crypto/md5"
 	"encoding/hex"
@@ -90,7 +91,7 @@ type DownloadRequest struct {
 	blocksPerShard     int64
 	connectionID       string
 	skip               bool
-	selectAllBlobbers  bool
+	freeRead           bool
 	fRef               *fileref.FileRef
 	chunksPerShard     int64
 	size               int64
@@ -98,6 +99,36 @@ type DownloadRequest struct {
 	bufferMap          map[int]zboxutil.DownloadBuffer
 	downloadStorer     DownloadProgressStorer
 	workdir            string
+	downloadQueue      downloadQueue
+}
+
+type downloadPriority struct {
+	timeTaken  int64
+	blobberIdx int
+}
+
+type downloadQueue []downloadPriority
+
+func (pq downloadQueue) Len() int { return len(pq) }
+
+func (pq downloadQueue) Less(i, j int) bool {
+	return pq[i].timeTaken < pq[j].timeTaken
+}
+
+func (pq downloadQueue) Swap(i, j int) {
+	pq[i], pq[j] = pq[j], pq[i]
+}
+
+func (pq *downloadQueue) Push(x interface{}) {
+	*pq = append(*pq, x.(downloadPriority))
+}
+
+func (pq *downloadQueue) Pop() interface{} {
+	old := *pq
+	n := len(old)
+	item := old[n-1]
+	*pq = old[0 : n-1]
+	return item
 }
 
 type DownloadProgress struct {
@@ -116,7 +147,7 @@ func (req *DownloadRequest) removeFromMask(pos uint64) {
 	req.maskMu.Unlock()
 }
 
-func (req *DownloadRequest) getBlocksDataFromBlobbers(startBlock, totalBlock int64) ([][][]byte, error) {
+func (req *DownloadRequest) getBlocksDataFromBlobbers(startBlock, totalBlock int64, timeRequest bool) ([][][]byte, error) {
 	shards := make([][][]byte, totalBlock)
 	for i := range shards {
 		shards[i] = make([][]byte, len(req.blobbers))
@@ -134,7 +165,7 @@ func (req *DownloadRequest) getBlocksDataFromBlobbers(startBlock, totalBlock int
 	curReqDownloads := requiredDownloads
 	for {
 		remainingMask, failed, downloadErrors, err = req.downloadBlock(
-			startBlock, totalBlock, mask, curReqDownloads, shards)
+			startBlock, totalBlock, mask, curReqDownloads, shards, timeRequest)
 		if err != nil {
 			return nil, err
 		}
@@ -157,9 +188,9 @@ func (req *DownloadRequest) getBlocksDataFromBlobbers(startBlock, totalBlock int
 
 // getBlocksData will get data blocks for some interval from minimal blobers and aggregate them and
 // return to the caller
-func (req *DownloadRequest) getBlocksData(startBlock, totalBlock int64) ([][][]byte, error) {
+func (req *DownloadRequest) getBlocksData(startBlock, totalBlock int64, timeRequest bool) ([][][]byte, error) {
 
-	shards, err := req.getBlocksDataFromBlobbers(startBlock, totalBlock)
+	shards, err := req.getBlocksDataFromBlobbers(startBlock, totalBlock, timeRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +216,7 @@ func (req *DownloadRequest) getBlocksData(startBlock, totalBlock int64) ([][][]b
 func (req *DownloadRequest) downloadBlock(
 	startBlock, totalBlock int64,
 	mask zboxutil.Uint128, requiredDownloads int,
-	shards [][][]byte) (zboxutil.Uint128, int, []string, error) {
+	shards [][][]byte, timeRequest bool) (zboxutil.Uint128, int, []string, error) {
 
 	var remainingMask zboxutil.Uint128
 	activeBlobbers := mask.CountOnes()
@@ -193,6 +224,9 @@ func (req *DownloadRequest) downloadBlock(
 		return zboxutil.NewUint128(0), 0, nil, errors.New("insufficient_blobbers",
 			fmt.Sprintf("Required downloads %d, remaining active blobber %d",
 				req.consensusThresh, activeBlobbers))
+	}
+	if timeRequest {
+		requiredDownloads = activeBlobbers
 	}
 	rspCh := make(chan *downloadBlock, requiredDownloads)
 
@@ -202,15 +236,22 @@ func (req *DownloadRequest) downloadBlock(
 		skipDownload bool
 	)
 
-	for i := req.downloadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+	for i := mask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		if c == requiredDownloads {
+			remainingMask = i
+			break
+		}
+
 		pos = uint64(i.TrailingZeros())
+		blobberIdx := req.downloadQueue[pos].blobberIdx
 		blockDownloadReq := &BlockDownloadRequest{
 			allocationID:       req.allocationID,
 			allocationTx:       req.allocationTx,
 			allocOwnerID:       req.allocOwnerID,
 			authTicket:         req.authTicket,
-			blobber:            req.blobbers[pos],
-			blobberIdx:         int(pos),
+			blobber:            req.blobbers[blobberIdx],
+			blobberIdx:         blobberIdx,
+			maskIdx:            int(pos),
 			chunkSize:          req.chunkSize,
 			blockNum:           startBlock,
 			contentMode:        req.contentMode,
@@ -222,6 +263,7 @@ func (req *DownloadRequest) downloadBlock(
 			encryptedKey:       req.encryptedKey,
 			shouldVerify:       req.shouldVerify,
 			connectionID:       req.connectionID,
+			timeRequest:        timeRequest,
 		}
 
 		if blockDownloadReq.blobber.IsSkip() {
@@ -243,10 +285,7 @@ func (req *DownloadRequest) downloadBlock(
 		}
 
 		c++
-		if c == requiredDownloads {
-			remainingMask = i
-			break
-		}
+
 	}
 
 	var failed int32
@@ -260,11 +299,13 @@ func (req *DownloadRequest) downloadBlock(
 			defer func() {
 				if err != nil {
 					atomic.AddInt32(&failed, 1)
-					req.removeFromMask(uint64(result.idx))
+					req.removeFromMask(uint64(result.maskIdx))
 					downloadErrors[i] = fmt.Sprintf("Error %s from %s",
 						err.Error(), req.blobbers[result.idx].Baseurl)
 					logger.Logger.Error(err)
 					req.bufferMap[result.idx].ReleaseChunk(int(req.startBlock / req.numBlocks))
+				} else {
+					req.downloadQueue[result.idx].timeTaken = result.timeTaken
 				}
 				wg.Done()
 			}()
@@ -629,16 +670,26 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	}
 
 	var progressLock sync.Mutex
+	firstReqWG := sync.WaitGroup{}
+	firstReqWG.Add(1)
 	eg, _ := errgroup.WithContext(ctx)
 	eg.SetLimit(downloadWorkerCount + EXTRA_COUNT)
 	for i := 0; i < n; i++ {
 		j := i
+		if i == 1 {
+			firstReqWG.Wait()
+			heap.Init(&req.downloadQueue)
+		}
 		eg.Go(func() error {
+
+			if j == 0 {
+				defer firstReqWG.Done()
+			}
 			blocksToDownload := numBlocks
 			if startBlock+int64(j)*numBlocks+numBlocks > endBlock {
 				blocksToDownload = endBlock - (startBlock + int64(j)*numBlocks)
 			}
-			data, err := req.getBlocksData(startBlock+int64(j)*numBlocks, blocksToDownload)
+			data, err := req.getBlocksData(startBlock+int64(j)*numBlocks, blocksToDownload, j == 0)
 			if req.isDownloadCanceled {
 				return errors.New("download_abort", "Download aborted by user")
 			}
@@ -1108,8 +1159,8 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 	if countThreshold > req.fullconsensus {
 		countThreshold = req.consensusThresh
 	}
-	if req.selectAllBlobbers {
-		countThreshold = len(fMetaResp)
+	if req.freeRead {
+		countThreshold = req.fullconsensus
 	}
 	for i := 0; i < len(fMetaResp); i++ {
 		fmr := fMetaResp[i]
@@ -1144,6 +1195,10 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 		}
 		shift := zboxutil.NewUint128(1).Lsh(uint64(fmr.blobberIdx))
 		foundMask = foundMask.Or(shift)
+		req.downloadQueue[fmr.blobberIdx] = downloadPriority{
+			blobberIdx: fmr.blobberIdx,
+			timeTaken:  60000,
+		}
 		blobberCount++
 		if blobberCount == countThreshold {
 			break

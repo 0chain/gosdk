@@ -33,6 +33,7 @@ type BlockDownloadRequest struct {
 	allocationTx       string
 	allocOwnerID       string
 	blobberIdx         int
+	maskIdx            int
 	remotefilepath     string
 	remotefilepathhash string
 	chunkSize          int
@@ -46,6 +47,7 @@ type BlockDownloadRequest struct {
 	shouldVerify       bool
 	connectionID       string
 	respBuf            []byte
+	timeRequest        bool
 }
 
 type downloadResponse struct {
@@ -59,7 +61,9 @@ type downloadBlock struct {
 	Success     bool               `json:"success"`
 	LatestRM    *marker.ReadMarker `json:"latest_rm"`
 	idx         int
+	maskIdx     int
 	err         error
+	timeTaken   int64
 }
 
 var downloadBlockChan map[string]chan *BlockDownloadRequest
@@ -152,8 +156,10 @@ func (req *BlockDownloadRequest) downloadBlobberBlock(hostClient *fasthttp.HostC
 		header.ToFastHeader(httpreq)
 
 		err = func() error {
+			now := time.Now()
 			statuscode, respBuf, err := hostClient.GetWithRequestTimeout(httpreq, req.respBuf, 30*time.Second)
 			fasthttp.ReleaseRequest(httpreq)
+			timeTaken := time.Since(now).Milliseconds()
 			if err != nil {
 				zlogger.Logger.Error("Error downloading block: ", err)
 				return err
@@ -204,6 +210,8 @@ func (req *BlockDownloadRequest) downloadBlobberBlock(hostClient *fasthttp.HostC
 			}
 
 			rspData.idx = req.blobberIdx
+			rspData.maskIdx = req.maskIdx
+			rspData.timeTaken = timeTaken
 			rspData.Success = true
 
 			if req.encryptedKey != "" {
@@ -237,13 +245,13 @@ func (req *BlockDownloadRequest) downloadBlobberBlock(hostClient *fasthttp.HostC
 				retry++
 				continue
 			} else {
-				req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: err}
+				req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: err, maskIdx: req.maskIdx}
 			}
 		}
 		return
 	}
 
-	req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: err}
+	req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: err, maskIdx: req.maskIdx}
 
 }
 
