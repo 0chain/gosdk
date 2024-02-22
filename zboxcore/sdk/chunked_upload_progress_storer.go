@@ -1,6 +1,7 @@
 package sdk
 
 import (
+	"container/heap"
 	"context"
 	"encoding/json"
 	"errors"
@@ -8,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/logger"
 )
@@ -20,6 +22,8 @@ type ChunkedUploadProgressStorer interface {
 	Save(up UploadProgress)
 	// Remove remove upload progress by id
 	Remove(id string) error
+	// Update update upload progress
+	Update(id string, chunkIndex int)
 }
 
 // fsChunkedUploadProgressStorer load and save upload progress in file system
@@ -27,7 +31,32 @@ type fsChunkedUploadProgressStorer struct {
 	sync.Mutex
 	isRemoved bool
 	up        UploadProgress
-	since     time.Time
+	queue     queue
+	next      int
+}
+
+type queue []int
+
+func (pq queue) Len() int { return len(pq) }
+
+func (pq queue) Less(i, j int) bool {
+	return pq[i] < pq[j]
+}
+
+func (pq queue) Swap(i, j int) {
+	pq[i], pq[j] = pq[j], pq[i]
+}
+
+func (pq *queue) Push(x interface{}) {
+	*pq = append(*pq, x.(int))
+}
+
+func (pq *queue) Pop() interface{} {
+	old := *pq
+	n := len(old)
+	item := old[n-1]
+	*pq = old[0 : n-1]
+	return item
 }
 
 type queue []int
@@ -56,10 +85,39 @@ func (pq *queue) Pop() interface{} {
 
 func createFsChunkedUploadProgress(ctx context.Context) *fsChunkedUploadProgressStorer {
 	up := &fsChunkedUploadProgressStorer{
-		since: time.Now(),
+		queue: make(queue, 0),
 	}
-
+	heap.Init(&up.queue)
+	go saveProgress(ctx, up)
 	return up
+}
+
+func saveProgress(ctx context.Context, fs *fsChunkedUploadProgressStorer) {
+	tc := time.NewTicker(2 * time.Second)
+	defer tc.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-tc.C:
+			fs.Lock()
+			if fs.isRemoved {
+				fs.Unlock()
+				return
+			}
+			if len(fs.queue) > 0 && fs.next == fs.queue[0] {
+				for len(fs.queue) > 0 && fs.next == fs.queue[0] {
+					fs.up.ChunkIndex = fs.queue[0]
+					heap.Pop(&fs.queue)
+					fs.next += fs.up.ChunkNumber
+				}
+				fs.Unlock()
+				fs.Save(fs.up)
+			} else {
+				fs.Unlock()
+			}
+		}
+	}
 }
 
 // Load load upload progress from file system
@@ -76,6 +134,12 @@ func (fs *fsChunkedUploadProgressStorer) Load(progressID string) *UploadProgress
 		return nil
 	}
 
+	// if progress is not updated within 25 min, return nil
+	if !progress.LastUpdated.Within(25 * 60) {
+		sys.Files.Remove(progressID) //nolint:errcheck
+		return nil
+	}
+
 	return &progress
 }
 
@@ -84,24 +148,35 @@ func (fs *fsChunkedUploadProgressStorer) Save(up UploadProgress) {
 	fs.Lock()
 	defer fs.Unlock()
 	fs.up = up
-	now := time.Now()
-	if now.Sub(fs.since).Seconds() > 1 {
-		if fs.isRemoved {
-			return
-		}
+	fs.up.LastUpdated = common.Now()
 
-		buf, err := json.Marshal(fs.up)
-		if err != nil {
-			logger.Logger.Error("[progress] save ", fs.up, err)
-			return
+	if fs.isRemoved {
+		return
+	}
+	if fs.next == 0 {
+		if up.ChunkNumber == -1 {
+			fs.next = up.ChunkNumber - 1
+		} else {
+			fs.next = up.ChunkIndex + up.ChunkNumber
 		}
-		err = sys.Files.WriteFile(fs.up.ID, buf, 0666)
-		if err != nil {
-			logger.Logger.Error("[progress] save ", fs.up, err)
-			return
-		}
+	}
+	buf, err := json.Marshal(fs.up)
+	if err != nil {
+		logger.Logger.Error("[progress] save ", fs.up, err)
+		return
+	}
+	err = sys.Files.WriteFile(fs.up.ID, buf, 0666)
+	if err != nil {
+		logger.Logger.Error("[progress] save ", fs.up, err)
+		return
+	}
+}
 
-		fs.since = now
+func (fs *fsChunkedUploadProgressStorer) Update(id string, chunkIndex int) {
+	fs.Lock()
+	defer fs.Unlock()
+	if !fs.isRemoved {
+		heap.Push(&fs.queue, chunkIndex)
 	}
 }
 

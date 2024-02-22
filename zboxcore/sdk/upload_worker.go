@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"strings"
 
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
@@ -124,7 +125,7 @@ func (uo *UploadOperation) Completed(allocObj *Allocation) {
 }
 
 func (uo *UploadOperation) Error(allocObj *Allocation, consensus int, err error) {
-	if uo.chunkedUpload.progressStorer != nil {
+	if uo.chunkedUpload.progressStorer != nil && !strings.Contains(err.Error(), "context") {
 		uo.chunkedUpload.removeProgress()
 	}
 	cancelLock.Lock()

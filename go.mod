@@ -46,6 +46,7 @@ require (
 require (
 	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d
 	github.com/minio/sha256-simd v1.0.1
+	github.com/valyala/fasthttp v1.51.0
 )
 
 require (
@@ -129,6 +130,7 @@ require (
 
 require (
 	github.com/btcsuite/btcd/btcutil v1.1.3
+	github.com/hitenjain14/fasthttp v0.0.0-20240201092245-8e4835c0e974
 	github.com/klauspost/compress v1.17.0 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.4 // indirect
 	github.com/remeh/sizedwaitgroup v1.0.0
