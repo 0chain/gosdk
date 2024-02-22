@@ -54,6 +54,12 @@ func WithWorkDir(workdir string) DownloadRequestOption {
 	}
 }
 
+func WithFileCallback(cb func()) DownloadRequestOption {
+	return func(dr *DownloadRequest) {
+		dr.fileCallback = cb
+	}
+}
+
 type DownloadRequest struct {
 	allocationID       string
 	allocationTx       string
