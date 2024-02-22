@@ -1106,6 +1106,7 @@ func (a *Allocation) generateDownloadRequest(
 	// }
 	downloadReq.contentMode = contentMode
 	downloadReq.connectionID = connectionID
+	downloadReq.downloadQueue = make(downloadQueue, len(a.Blobbers))
 
 	return downloadReq, nil
 }
@@ -1163,6 +1164,9 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 	for _, dr := range drs {
 		wg.Add(1)
 		go func(dr *DownloadRequest) {
+			if isReadFree {
+				dr.freeRead = true
+			}
 			defer wg.Done()
 			dr.processDownloadRequest()
 			var pos uint64
@@ -2211,6 +2215,7 @@ func (a *Allocation) downloadFromAuthTicket(fileHandler sys.File, authTicket str
 	downloadReq.shouldVerify = verifyDownload
 	downloadReq.fullconsensus = a.fullconsensus
 	downloadReq.consensusThresh = a.consensusThreshold
+	downloadReq.downloadQueue = make(downloadQueue, len(a.Blobbers))
 	downloadReq.connectionID = zboxutil.NewConnectionId()
 	downloadReq.completedCallback = func(remotepath string, remotepathHash string) {
 		a.mutex.Lock()
