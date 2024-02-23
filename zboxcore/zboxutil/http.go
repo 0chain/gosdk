@@ -43,11 +43,13 @@ type FastClient interface {
 	DoTimeout(req *fasthttp.Request, resp *fasthttp.Response, timeout time.Duration) error
 }
 
-var Client HttpClient
-
-var FastHttpClient FastClient
-
-var log logger.Logger
+var (
+	Client         HttpClient
+	HostClientMap  = make(map[string]*fasthttp.HostClient)
+	FastHttpClient FastClient
+	hostLock       sync.RWMutex
+	log            logger.Logger
+)
 
 func GetLogger() *logger.Logger {
 	return &log
@@ -128,6 +130,33 @@ func (pfe *proxyFromEnv) isLoopback(host string) (ok bool) {
 		return true
 	}
 	return net.ParseIP(host).IsLoopback()
+}
+
+func SetHostClient(id, baseURL string) {
+	hostLock.Lock()
+	defer hostLock.Unlock()
+	if _, ok := HostClientMap[id]; !ok {
+		u, _ := url.Parse(baseURL)
+		host := fasthttp.AddMissingPort(u.Host, true)
+		HostClientMap[id] = &fasthttp.HostClient{
+			NoDefaultUserAgentHeader:      true,
+			Addr:                          host,
+			MaxIdleConnDuration:           1 * time.Hour,
+			DisableHeaderNamesNormalizing: true,
+			DisablePathNormalizing:        true,
+			Dial: (&fasthttp.TCPDialer{
+				Concurrency:      4096,
+				DNSCacheDuration: time.Hour,
+			}).Dial,
+			IsTLS: true,
+		}
+	}
+}
+
+func GetHostClient(id string) *fasthttp.HostClient {
+	hostLock.RLock()
+	defer hostLock.RUnlock()
+	return HostClientMap[id]
 }
 
 func (pfe *proxyFromEnv) Proxy(req *http.Request) (proxy *url.URL, err error) {
@@ -723,6 +752,27 @@ func NewDownloadRequest(baseUrl, allocationID, allocationTx string) (*http.Reque
 	if err := setClientInfoWithSign(req, allocationTx, baseUrl); err != nil {
 		return nil, err
 	}
+
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
+
+	return req, nil
+}
+
+func NewFastDownloadRequest(baseUrl, allocationID, allocationTx string) (*fasthttp.Request, error) {
+	u, err := joinUrl(baseUrl, DOWNLOAD_ENDPOINT, allocationTx)
+	if err != nil {
+		return nil, err
+	}
+
+	// url := fmt.Sprintf("%s%s%s", baseUrl, DOWNLOAD_ENDPOINT, allocation)
+	// req, err := http.NewRequest(http.MethodGet, u.String(), nil)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	req := fasthttp.AcquireRequest()
+	req.SetRequestURI(u.String())
+	req.Header.Set("X-App-Client-ID", client.GetClientID())
+	req.Header.Set("X-App-Client-Key", client.GetClientPublicKey())
 
 	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 
