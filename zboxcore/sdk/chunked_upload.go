@@ -488,10 +488,6 @@ func (su *ChunkedUpload) process() error {
 
 		// last chunk might 0 with io.EOF
 		// https://stackoverflow.com/questions/41208359/how-to-test-eof-on-io-reader-in-go
-		if chunks.totalReadSize > 0 && chunks.chunkEndIndex >= su.progress.ChunkIndex {
-
-		}
-
 		if chunks.isFinal {
 			break
 		}
