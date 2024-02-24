@@ -269,7 +269,6 @@ func (req *DownloadRequest) downloadBlock(
 			encryptedKey:       req.encryptedKey,
 			shouldVerify:       req.shouldVerify,
 			connectionID:       req.connectionID,
-			timeRequest:        timeRequest,
 		}
 
 		if blockDownloadReq.blobber.IsSkip() {
@@ -310,7 +309,7 @@ func (req *DownloadRequest) downloadBlock(
 						err.Error(), req.blobbers[result.idx].Baseurl)
 					logger.Logger.Error(err)
 					req.bufferMap[result.idx].ReleaseChunk(int(req.startBlock / req.numBlocks))
-				} else {
+				} else if timeRequest {
 					req.downloadQueue[result.idx].timeTaken = result.timeTaken
 				}
 				wg.Done()
