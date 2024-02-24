@@ -704,7 +704,12 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			if !writerAt {
 				blocks <- blockData{blockNum: j, data: data}
 			} else {
-				offset := (startBlock + int64(j)*numBlocks) * int64(req.effectiveBlockSize) * int64(req.datashards)
+				var offset int64
+				if req.downloadStorer != nil {
+					offset = (startBlock + int64(j)*numBlocks) * int64(req.effectiveBlockSize) * int64(req.datashards)
+				} else {
+					offset = int64(j) * numBlocks * int64(req.effectiveBlockSize) * int64(req.datashards)
+				}
 				var total int
 				if j == n-1 {
 					total, err = writeAtData(writeAtHandler, data, req.datashards, offset, int(size-offset))
