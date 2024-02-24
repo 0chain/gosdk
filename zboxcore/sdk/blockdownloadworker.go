@@ -47,7 +47,6 @@ type BlockDownloadRequest struct {
 	shouldVerify       bool
 	connectionID       string
 	respBuf            []byte
-	timeRequest        bool
 }
 
 type downloadResponse struct {
