@@ -38,6 +38,7 @@ type DownloadOptions struct {
 
 	isFileHandlerDownload bool
 	fileHandler           sys.File
+	reqOpts               []DownloadRequestOption
 }
 
 // CreateDownloader create a downloander
@@ -100,6 +101,9 @@ func CreateDownloader(allocationID, localPath, remotePath string, opts ...Downlo
 	}
 
 	if do.isFileHandlerDownload {
+		do.reqOpts = append(do.reqOpts, WithFileCallback(func() {
+			do.fileHandler.Close() //nolint:errcheck
+		}))
 		return &fileHandlerDownloader{
 			baseDownloader: baseDownloader{
 				DownloadOptions: do,
