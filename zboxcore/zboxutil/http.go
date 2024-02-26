@@ -22,6 +22,7 @@ import (
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
+	"github.com/hitenjain14/fasthttp"
 )
 
 const SC_REST_API_URL = "v1/screst/"
@@ -38,9 +39,17 @@ type HttpClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
-var Client HttpClient
+type FastClient interface {
+	DoTimeout(req *fasthttp.Request, resp *fasthttp.Response, timeout time.Duration) error
+}
 
-var log logger.Logger
+var (
+	Client         HttpClient
+	HostClientMap  = make(map[string]*fasthttp.HostClient)
+	FastHttpClient FastClient
+	hostLock       sync.RWMutex
+	log            logger.Logger
+)
 
 func GetLogger() *logger.Logger {
 	return &log
@@ -123,6 +132,33 @@ func (pfe *proxyFromEnv) isLoopback(host string) (ok bool) {
 	return net.ParseIP(host).IsLoopback()
 }
 
+func SetHostClient(id, baseURL string) {
+	hostLock.Lock()
+	defer hostLock.Unlock()
+	if _, ok := HostClientMap[id]; !ok {
+		u, _ := url.Parse(baseURL)
+		host := fasthttp.AddMissingPort(u.Host, true)
+		HostClientMap[id] = &fasthttp.HostClient{
+			NoDefaultUserAgentHeader:      true,
+			Addr:                          host,
+			MaxIdleConnDuration:           1 * time.Hour,
+			DisableHeaderNamesNormalizing: true,
+			DisablePathNormalizing:        true,
+			Dial: (&fasthttp.TCPDialer{
+				Concurrency:      4096,
+				DNSCacheDuration: time.Hour,
+			}).Dial,
+			IsTLS: true,
+		}
+	}
+}
+
+func GetHostClient(id string) *fasthttp.HostClient {
+	hostLock.RLock()
+	defer hostLock.RUnlock()
+	return HostClientMap[id]
+}
+
 func (pfe *proxyFromEnv) Proxy(req *http.Request) (proxy *url.URL, err error) {
 	if pfe.isLoopback(req.URL.Host) {
 		switch req.URL.Scheme {
@@ -141,6 +177,18 @@ var envProxy proxyFromEnv
 func init() {
 	Client = &http.Client{
 		Transport: DefaultTransport,
+	}
+	maxIdleConnDuration, _ := time.ParseDuration("1h")
+	FastHttpClient = &fasthttp.Client{
+		MaxIdleConnDuration:           maxIdleConnDuration,
+		NoDefaultUserAgentHeader:      true, // Don't send: User-Agent: fasthttp
+		DisableHeaderNamesNormalizing: true, // If you set the case on your headers correctly you can enable this
+		DisablePathNormalizing:        true,
+		// increase DNS cache time to an hour instead of default minute
+		Dial: (&fasthttp.TCPDialer{
+			Concurrency:      4096,
+			DNSCacheDuration: time.Hour,
+		}).Dial,
 	}
 	envProxy.initialize()
 	log.Init(logger.DEBUG, "0box-sdk")
@@ -184,6 +232,19 @@ func setClientInfoWithSign(req *http.Request, allocation, baseURL string) error 
 		return err
 	}
 	req.Header.Set(CLIENT_SIGNATURE_HEADER_V2, sign)
+	return nil
+}
+
+func setFastClientInfoWithSign(req *fasthttp.Request, allocation string) error {
+	req.Header.Set("X-App-Client-ID", client.GetClientID())
+	req.Header.Set("X-App-Client-Key", client.GetClientPublicKey())
+
+	sign, err := client.Sign(encryption.Hash(allocation))
+	if err != nil {
+		return err
+	}
+	req.Header.Set(CLIENT_SIGNATURE_HEADER, sign)
+
 	return nil
 }
 
@@ -551,6 +612,27 @@ func NewWriteMarkerUnLockRequest(
 	return req, nil
 }
 
+func NewFastUploadRequest(baseURL, allocationID string, allocationTx string, body []byte, method string) (*fasthttp.Request, error) {
+	u, err := joinUrl(baseURL, UPLOAD_ENDPOINT, allocationTx)
+	if err != nil {
+		return nil, err
+	}
+
+	req := fasthttp.AcquireRequest()
+
+	req.Header.SetMethod(method)
+	req.SetRequestURI(u.String())
+	req.SetBodyRaw(body)
+
+	// set header: X-App-Client-Signature
+	if err := setFastClientInfoWithSign(req, allocationTx); err != nil {
+		return nil, err
+	}
+
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
+	return req, nil
+}
+
 func NewUploadRequest(baseUrl, allocationID string, allocationTx string, body io.Reader, update bool) (*http.Request, error) {
 	u, err := joinUrl(baseUrl, UPLOAD_ENDPOINT, allocationTx)
 	if err != nil {
@@ -670,6 +752,27 @@ func NewDownloadRequest(baseUrl, allocationID, allocationTx string) (*http.Reque
 	if err := setClientInfoWithSign(req, allocationTx, baseUrl); err != nil {
 		return nil, err
 	}
+
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
+
+	return req, nil
+}
+
+func NewFastDownloadRequest(baseUrl, allocationID, allocationTx string) (*fasthttp.Request, error) {
+	u, err := joinUrl(baseUrl, DOWNLOAD_ENDPOINT, allocationTx)
+	if err != nil {
+		return nil, err
+	}
+
+	// url := fmt.Sprintf("%s%s%s", baseUrl, DOWNLOAD_ENDPOINT, allocation)
+	// req, err := http.NewRequest(http.MethodGet, u.String(), nil)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	req := fasthttp.AcquireRequest()
+	req.SetRequestURI(u.String())
+	req.Header.Set("X-App-Client-ID", client.GetClientID())
+	req.Header.Set("X-App-Client-Key", client.GetClientPublicKey())
 
 	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 

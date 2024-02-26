@@ -34,7 +34,7 @@ func listObjects(allocationID string, remotePath string, offset, pageLimit int) 
 	if err != nil {
 		return nil, err
 	}
-  
+
 	return alloc.ListDir(remotePath, sdk.WithListRequestOffset(offset), sdk.WithListRequestPageLimit(pageLimit))
 }
 
@@ -885,7 +885,7 @@ func downloadBlocks(allocId string, remotePath, authTicket, lookupHash string, s
 		return nil, err
 	}
 	wg.Wait()
-	return mf.Buffer.Bytes(), nil
+	return mf.Buffer, nil
 }
 
 // GetBlobbersList get list of active blobbers, and format them as array json string

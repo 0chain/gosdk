@@ -309,6 +309,9 @@ func (a *Allocation) InitAllocation() {
 	a.downloadRequests = make([]*DownloadRequest, 0, 100)
 	a.mutex = &sync.Mutex{}
 	a.fullconsensus, a.consensusThreshold = a.getConsensuses()
+	for _, blobber := range a.Blobbers {
+		zboxutil.SetHostClient(blobber.ID, blobber.Baseurl)
+	}
 	a.startWorker(a.ctx)
 	InitCommitWorker(a.Blobbers)
 	InitBlockDownloader(a.Blobbers, downloadWorkerCount)
@@ -964,6 +967,7 @@ func (a *Allocation) DownloadFileToFileHandler(
 	verifyDownload bool,
 	status StatusCallback,
 	isFinal bool,
+	downloadReqOpts ...DownloadRequestOption,
 ) error {
 	return a.addAndGenerateDownloadRequest(fileHandler, remotePath, DOWNLOAD_CONTENT_FULL, 1, 0,
 		numBlockDownloads, verifyDownload, status, isFinal, "")
@@ -993,14 +997,16 @@ func (a *Allocation) DownloadThumbnailToFileHandler(
 		numBlockDownloads, verifyDownload, status, isFinal, "")
 }
 
-func (a *Allocation) DownloadFile(localPath string, remotePath string, verifyDownload bool, status StatusCallback, isFinal bool) error {
+func (a *Allocation) DownloadFile(localPath string, remotePath string, verifyDownload bool, status StatusCallback, isFinal bool, downloadReqOpts ...DownloadRequestOption) error {
 	f, localFilePath, toKeep, err := a.prepareAndOpenLocalFile(localPath, remotePath)
 	if err != nil {
 		return err
 	}
-
+	downloadReqOpts = append(downloadReqOpts, WithFileCallback(func() {
+		f.Close() //nolint: errcheck
+	}))
 	err = a.addAndGenerateDownloadRequest(f, remotePath, DOWNLOAD_CONTENT_FULL, 1, 0,
-		numBlockDownloads, verifyDownload, status, isFinal, localFilePath)
+		numBlockDownloads, verifyDownload, status, isFinal, localFilePath, downloadReqOpts...)
 	if err != nil {
 		if !toKeep {
 			os.Remove(localFilePath) //nolint: errcheck
@@ -1014,14 +1020,16 @@ func (a *Allocation) DownloadFile(localPath string, remotePath string, verifyDow
 // TODO: Use a map to store the download request and use flag isFinal to start the download, calculate readCount in parallel if possible
 func (a *Allocation) DownloadFileByBlock(
 	localPath string, remotePath string, startBlock int64, endBlock int64,
-	numBlocks int, verifyDownload bool, status StatusCallback, isFinal bool) error {
+	numBlocks int, verifyDownload bool, status StatusCallback, isFinal bool, downloadReqOpts ...DownloadRequestOption) error {
 	f, localFilePath, toKeep, err := a.prepareAndOpenLocalFile(localPath, remotePath)
 	if err != nil {
 		return err
 	}
-
+	downloadReqOpts = append(downloadReqOpts, WithFileCallback(func() {
+		f.Close() //nolint: errcheck
+	}))
 	err = a.addAndGenerateDownloadRequest(f, remotePath, DOWNLOAD_CONTENT_FULL, startBlock, endBlock,
-		numBlockDownloads, verifyDownload, status, isFinal, localFilePath)
+		numBlockDownloads, verifyDownload, status, isFinal, localFilePath, downloadReqOpts...)
 	if err != nil {
 		if !toKeep {
 			os.Remove(localFilePath) //nolint: errcheck
@@ -1091,13 +1099,14 @@ func (a *Allocation) generateDownloadRequest(
 		defer a.mutex.Unlock()
 		delete(a.downloadProgressMap, remotepath)
 	}
-	downloadReq.fileCallback = func() {
-		if downloadReq.fileHandler != nil {
-			downloadReq.fileHandler.Close() //nolint: errcheck
-		}
-	}
+	// downloadReq.fileCallback = func() {
+	// 	if downloadReq.fileHandler != nil {
+	// 		downloadReq.fileHandler.Close() //nolint: errcheck
+	// 	}
+	// }
 	downloadReq.contentMode = contentMode
 	downloadReq.connectionID = connectionID
+	downloadReq.downloadQueue = make(downloadQueue, len(a.Blobbers))
 
 	return downloadReq, nil
 }
@@ -1111,6 +1120,7 @@ func (a *Allocation) addAndGenerateDownloadRequest(
 	status StatusCallback,
 	isFinal bool,
 	localFilePath string,
+	downloadReqOpts ...DownloadRequestOption,
 ) error {
 	downloadReq, err := a.generateDownloadRequest(
 		fileHandler, remotePath, contentMode, startBlock, endBlock,
@@ -1125,6 +1135,10 @@ func (a *Allocation) addAndGenerateDownloadRequest(
 	} else {
 		downloadReq.connectionID = zboxutil.NewConnectionId()
 	}
+	for _, opt := range downloadReqOpts {
+		opt(downloadReq)
+	}
+	downloadReq.workdir = filepath.Join(downloadReq.workdir, ".zcn")
 	a.downloadProgressMap[remotePath] = downloadReq
 	a.downloadRequests = append(a.downloadRequests, downloadReq)
 	if isFinal {
@@ -1150,6 +1164,9 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 	for _, dr := range drs {
 		wg.Add(1)
 		go func(dr *DownloadRequest) {
+			if isReadFree {
+				dr.freeRead = true
+			}
 			defer wg.Done()
 			dr.processDownloadRequest()
 			var pos uint64
@@ -1392,7 +1409,7 @@ func (a *Allocation) getDownloadMaskForBlobber(blobberID string) (zboxutil.Uint1
 	return x, a.Blobbers[blobberIdx : blobberIdx+1], nil
 }
 
-func (a *Allocation) DownloadFromBlobber(blobberID, localPath, remotePath string, status StatusCallback) error {
+func (a *Allocation) DownloadFromBlobber(blobberID, localPath, remotePath string, status StatusCallback, opts ...DownloadRequestOption) error {
 
 	mask, blobbers, err := a.getDownloadMaskForBlobber(blobberID)
 	if err != nil {
@@ -1420,6 +1437,12 @@ func (a *Allocation) DownloadFromBlobber(blobberID, localPath, remotePath string
 	downloadReq.blobbers = blobbers
 	downloadReq.fullconsensus = 1
 	downloadReq.consensusThresh = 1
+	opts = append(opts, WithFileCallback(func() {
+		f.Close() //nolint: errcheck
+	}))
+	for _, opt := range opts {
+		opt(downloadReq)
+	}
 
 	fRef, err := downloadReq.getFileRef(remotePath)
 	if err != nil {
@@ -2042,6 +2065,7 @@ func (a *Allocation) DownloadFileToFileHandlerFromAuthTicket(
 	verifyDownload bool,
 	status StatusCallback,
 	isFinal bool,
+	downloadReqOpts ...DownloadRequestOption,
 ) error {
 	return a.downloadFromAuthTicket(fileHandler, authTicket, remoteLookupHash, 1, 0, numBlockDownloads,
 		remoteFilename, DOWNLOAD_CONTENT_FULL, verifyDownload, status, isFinal, "")
@@ -2083,14 +2107,17 @@ func (a *Allocation) DownloadThumbnailFromAuthTicket(
 	verifyDownload bool,
 	status StatusCallback,
 	isFinal bool,
+	downloadReqOpts ...DownloadRequestOption,
 ) error {
 	f, localFilePath, toKeep, err := a.prepareAndOpenLocalFile(localPath, remoteFilename)
 	if err != nil {
 		return err
 	}
-
+	downloadReqOpts = append(downloadReqOpts, WithFileCallback(func() {
+		f.Close() //nolint: errcheck
+	}))
 	err = a.downloadFromAuthTicket(f, authTicket, remoteLookupHash, 1, 0, numBlockDownloads, remoteFilename,
-		DOWNLOAD_CONTENT_THUMB, verifyDownload, status, isFinal, localFilePath)
+		DOWNLOAD_CONTENT_THUMB, verifyDownload, status, isFinal, localFilePath, downloadReqOpts...)
 	if err != nil {
 		if !toKeep {
 			os.Remove(localFilePath) //nolint: errcheck
@@ -2102,14 +2129,16 @@ func (a *Allocation) DownloadThumbnailFromAuthTicket(
 }
 
 func (a *Allocation) DownloadFromAuthTicket(localPath string, authTicket string,
-	remoteLookupHash string, remoteFilename string, verifyDownload bool, status StatusCallback, isFinal bool) error {
+	remoteLookupHash string, remoteFilename string, verifyDownload bool, status StatusCallback, isFinal bool, downloadReqOpts ...DownloadRequestOption) error {
 	f, localFilePath, toKeep, err := a.prepareAndOpenLocalFile(localPath, remoteFilename)
 	if err != nil {
 		return err
 	}
-
+	downloadReqOpts = append(downloadReqOpts, WithFileCallback(func() {
+		f.Close() //nolint: errcheck
+	}))
 	err = a.downloadFromAuthTicket(f, authTicket, remoteLookupHash, 1, 0, numBlockDownloads, remoteFilename,
-		DOWNLOAD_CONTENT_FULL, verifyDownload, status, isFinal, localFilePath)
+		DOWNLOAD_CONTENT_FULL, verifyDownload, status, isFinal, localFilePath, downloadReqOpts...)
 	if err != nil {
 		if !toKeep {
 			os.Remove(localFilePath) //nolint: errcheck
@@ -2123,15 +2152,17 @@ func (a *Allocation) DownloadFromAuthTicket(localPath string, authTicket string,
 func (a *Allocation) DownloadFromAuthTicketByBlocks(localPath string,
 	authTicket string, startBlock int64, endBlock int64, numBlocks int,
 	remoteLookupHash string, remoteFilename string, verifyDownload bool,
-	status StatusCallback, isFinal bool) error {
+	status StatusCallback, isFinal bool, downloadReqOpts ...DownloadRequestOption) error {
 
 	f, localFilePath, toKeep, err := a.prepareAndOpenLocalFile(localPath, remoteFilename)
 	if err != nil {
 		return err
 	}
-
+	downloadReqOpts = append(downloadReqOpts, WithFileCallback(func() {
+		f.Close() //nolint: errcheck
+	}))
 	err = a.downloadFromAuthTicket(f, authTicket, remoteLookupHash, startBlock, endBlock, numBlockDownloads, remoteFilename,
-		DOWNLOAD_CONTENT_FULL, verifyDownload, status, isFinal, localFilePath)
+		DOWNLOAD_CONTENT_FULL, verifyDownload, status, isFinal, localFilePath, downloadReqOpts...)
 	if err != nil {
 		if !toKeep {
 			os.Remove(localFilePath) //nolint: errcheck
@@ -2145,7 +2176,7 @@ func (a *Allocation) DownloadFromAuthTicketByBlocks(localPath string,
 func (a *Allocation) downloadFromAuthTicket(fileHandler sys.File, authTicket string,
 	remoteLookupHash string, startBlock int64, endBlock int64, numBlocks int,
 	remoteFilename string, contentMode string, verifyDownload bool,
-	status StatusCallback, isFinal bool, localFilePath string) error {
+	status StatusCallback, isFinal bool, localFilePath string, downlaodReqOpts ...DownloadRequestOption) error {
 
 	sEnc, err := base64.StdEncoding.DecodeString(authTicket)
 	if err != nil {
@@ -2184,16 +2215,20 @@ func (a *Allocation) downloadFromAuthTicket(fileHandler sys.File, authTicket str
 	downloadReq.shouldVerify = verifyDownload
 	downloadReq.fullconsensus = a.fullconsensus
 	downloadReq.consensusThresh = a.consensusThreshold
+	downloadReq.downloadQueue = make(downloadQueue, len(a.Blobbers))
 	downloadReq.connectionID = zboxutil.NewConnectionId()
 	downloadReq.completedCallback = func(remotepath string, remotepathHash string) {
 		a.mutex.Lock()
 		defer a.mutex.Unlock()
 		delete(a.downloadProgressMap, remotepathHash)
 	}
-	downloadReq.fileCallback = func() {
-		if downloadReq.fileHandler != nil {
-			downloadReq.fileHandler.Close() //nolint: errcheck
-		}
+	// downloadReq.fileCallback = func() {
+	// 	if downloadReq.fileHandler != nil {
+	// 		downloadReq.fileHandler.Close() //nolint: errcheck
+	// 	}
+	// }
+	for _, opt := range downlaodReqOpts {
+		opt(downloadReq)
 	}
 	a.mutex.Lock()
 	a.downloadProgressMap[remoteLookupHash] = downloadReq

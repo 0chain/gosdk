@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"strings"
 
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
@@ -27,7 +28,9 @@ type UploadOperation struct {
 func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
 	if uo.isDownload {
 		if f, ok := uo.chunkedUpload.fileReader.(*sys.MemChanFile); ok {
-			err := allocObj.DownloadFileToFileHandler(f, uo.chunkedUpload.fileMeta.RemotePath, false, nil, true)
+			err := allocObj.DownloadFileToFileHandler(f, uo.chunkedUpload.fileMeta.RemotePath, false, nil, true, WithFileCallback(func() {
+				f.Close() //nolint:errcheck
+			}))
 			if err != nil {
 				l.Logger.Error("DownloadFileToFileHandler Failed", zap.String("path", uo.chunkedUpload.fileMeta.RemotePath), zap.Error(err))
 				return nil, uo.chunkedUpload.uploadMask, err
@@ -124,7 +127,7 @@ func (uo *UploadOperation) Completed(allocObj *Allocation) {
 }
 
 func (uo *UploadOperation) Error(allocObj *Allocation, consensus int, err error) {
-	if uo.chunkedUpload.progressStorer != nil {
+	if uo.chunkedUpload.progressStorer != nil && !strings.Contains(err.Error(), "context") {
 		uo.chunkedUpload.removeProgress()
 	}
 	cancelLock.Lock()
