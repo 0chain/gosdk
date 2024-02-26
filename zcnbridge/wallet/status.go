@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"sync"
 
@@ -80,8 +81,16 @@ func (zcn *ZCNStatus) OnWalletCreateComplete(status int, wallet string, err stri
 	zcn.walletString = wallet
 }
 
-func (zcn *ZCNStatus) OnInfoAvailable(_ int, status int, info string, err string) {
+func (zcn *ZCNStatus) OnInfoAvailable(op int, status int, info string, err string) {
 	defer zcn.Wg.Done()
+
+	// If status is 400 for OpGetMintNonce, mintNonce is considered as 0
+	if op == zcncore.OpGetMintNonce && status == http.StatusBadRequest {
+		zcn.Err = nil
+		zcn.Success = true
+		return
+	}
+
 	if status != zcncore.StatusSuccess {
 		zcn.Err = errors.New(err)
 		zcn.Success = false
