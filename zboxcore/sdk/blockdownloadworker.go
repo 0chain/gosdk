@@ -157,15 +157,15 @@ func (req *BlockDownloadRequest) downloadBlobberBlock(hostClient *fasthttp.HostC
 
 		err = func() error {
 			now := time.Now()
-			statuscode, respBuf, err := hostClient.GetWithRequestTimeout(httpreq, req.respBuf, 30*time.Second)
+			statuscode, respBuf, err := hostClient.GetWithRequest(httpreq, req.respBuf)
 			fasthttp.ReleaseRequest(httpreq)
 			timeTaken := time.Since(now).Milliseconds()
 			if err != nil {
+				zlogger.Logger.Error("Error downloading block: ", err)
 				if errors.Is(err, fasthttp.ErrConnectionClosed) || err == syscall.EPIPE {
 					shouldRetry = true
 					return errors.New("connection_closed", "Connection closed")
 				}
-				zlogger.Logger.Error("Error downloading block: ", err)
 				return err
 			}
 

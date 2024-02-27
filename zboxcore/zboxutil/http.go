@@ -148,7 +148,9 @@ func SetHostClient(id, baseURL string) {
 				Concurrency:      4096,
 				DNSCacheDuration: time.Hour,
 			}).Dial,
-			IsTLS: true,
+			IsTLS:        true,
+			ReadTimeout:  30 * time.Second,
+			WriteTimeout: 30 * time.Second,
 		}
 	}
 }
