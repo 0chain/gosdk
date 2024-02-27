@@ -434,7 +434,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			}
 		}()
 	}
-
+	defer req.ctxCncl()
 	remotePathCB := req.remotefilepath
 	if remotePathCB == "" {
 		remotePathCB = req.remotefilepathhash
