@@ -157,7 +157,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock(hostClient *fasthttp.HostC
 
 		err = func() error {
 			now := time.Now()
-			statuscode, respBuf, err := hostClient.GetWithRequest(httpreq, req.respBuf)
+			statuscode, respBuf, err := zboxutil.FastGetClient.GetWithRequest(httpreq, req.respBuf)
 			fasthttp.ReleaseRequest(httpreq)
 			timeTaken := time.Since(now).Milliseconds()
 			if err != nil {

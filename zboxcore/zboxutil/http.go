@@ -47,6 +47,7 @@ var (
 	Client         HttpClient
 	HostClientMap  = make(map[string]*fasthttp.HostClient)
 	FastHttpClient FastClient
+	FastGetClient  *fasthttp.Client
 	hostLock       sync.RWMutex
 	log            logger.Logger
 )
@@ -182,6 +183,17 @@ func init() {
 	}
 
 	FastHttpClient = &fasthttp.Client{
+		MaxIdleConnDuration:           60 * time.Second,
+		NoDefaultUserAgentHeader:      true, // Don't send: User-Agent: fasthttp
+		DisableHeaderNamesNormalizing: true, // If you set the case on your headers correctly you can enable this
+		DisablePathNormalizing:        true,
+		// increase DNS cache time to an hour instead of default minute
+		Dial: (&fasthttp.TCPDialer{
+			Concurrency:      4096,
+			DNSCacheDuration: time.Hour,
+		}).Dial,
+	}
+	FastGetClient = &fasthttp.Client{
 		MaxIdleConnDuration:           60 * time.Second,
 		NoDefaultUserAgentHeader:      true, // Don't send: User-Agent: fasthttp
 		DisableHeaderNamesNormalizing: true, // If you set the case on your headers correctly you can enable this
