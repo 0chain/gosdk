@@ -738,6 +738,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	if err := eg.Wait(); err != nil {
 		writeCancel()
 		req.errorCB(err, remotePathCB)
+		close(blocks)
 		return
 	}
 
