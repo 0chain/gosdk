@@ -141,7 +141,7 @@ func SetHostClient(id, baseURL string) {
 		HostClientMap[id] = &fasthttp.HostClient{
 			NoDefaultUserAgentHeader:      true,
 			Addr:                          host,
-			MaxIdleConnDuration:           1 * time.Hour,
+			MaxIdleConnDuration:           60 * time.Second,
 			DisableHeaderNamesNormalizing: true,
 			DisablePathNormalizing:        true,
 			Dial: (&fasthttp.TCPDialer{
@@ -178,9 +178,9 @@ func init() {
 	Client = &http.Client{
 		Transport: DefaultTransport,
 	}
-	maxIdleConnDuration, _ := time.ParseDuration("1h")
+
 	FastHttpClient = &fasthttp.Client{
-		MaxIdleConnDuration:           maxIdleConnDuration,
+		MaxIdleConnDuration:           60 * time.Second,
 		NoDefaultUserAgentHeader:      true, // Don't send: User-Agent: fasthttp
 		DisableHeaderNamesNormalizing: true, // If you set the case on your headers correctly you can enable this
 		DisablePathNormalizing:        true,
