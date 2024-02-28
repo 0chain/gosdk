@@ -175,7 +175,7 @@ func (req *DownloadRequest) getBlocksDataFromBlobbers(startBlock, totalBlock int
 		if err != nil {
 			return nil, err
 		}
-		if failed == 0 {
+		if failed == 0 || (timeRequest && mask.CountOnes()-failed >= requiredDownloads) {
 			break
 		}
 
