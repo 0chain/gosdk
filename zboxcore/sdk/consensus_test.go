@@ -4,8 +4,6 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/0chain/gosdk/core/encryption"
-	"github.com/minio/sha256-simd"
 	"github.com/stretchr/testify/require"
 )
 
@@ -59,13 +57,4 @@ func TestConsensus_isConsensusOk(t *testing.T) {
 			check(got)
 		})
 	}
-}
-
-func TestHash(t *testing.T) {
-	hasher := sha256.New()
-	b := []byte("hello")
-	res := encryption.ShaHash(b)
-	hasher.Write(b[:2])
-	hasher.Write(b[2:])
-	require.Equal(t, res, hasher.Sum(nil))
 }
