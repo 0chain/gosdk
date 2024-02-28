@@ -9,6 +9,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/0chain/errors"
@@ -91,6 +92,9 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 					fasthttp.ReleaseRequest(req)
 					if err != nil {
 						logger.Logger.Error("Upload : ", err)
+						if errors.Is(err, fasthttp.ErrConnectionClosed) || err == syscall.EPIPE {
+							return err, true
+						}
 						return fmt.Errorf("Error while doing reqeust. Error %s", err), false
 					}
 
@@ -125,15 +129,15 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 					return
 				}()
 
-				if err != nil {
-					return err
+				if err == nil {
+					return nil
 				}
 				if shouldContinue {
 					continue
 				}
 				break
 			}
-			return nil
+			return err
 		})
 	}
 	err = eg.Wait()
