@@ -303,6 +303,10 @@ github.com/hitenjain14/fasthttp v0.0.0-20240201092245-8e4835c0e974 h1:oEjH9SSKBl
 github.com/hitenjain14/fasthttp v0.0.0-20240201092245-8e4835c0e974/go.mod h1:RZMcXy7u4S+E97IXYTe7WHZ3+mCYOh4vys8PkIGZeXk=
 github.com/hitenjain14/fasthttp v0.0.0-20240223160417-7458814cf3d0 h1:XCrNCir8+zDo+Ku7B+AXhzFnsJvSelx1YbQQTNpxtqI=
 github.com/hitenjain14/fasthttp v0.0.0-20240223160417-7458814cf3d0/go.mod h1:RZMcXy7u4S+E97IXYTe7WHZ3+mCYOh4vys8PkIGZeXk=
+github.com/hitenjain14/fasthttp v0.0.0-20240227144728-b2667fdb86a5 h1:ViLZ6taiay9jqtdnhsFytmx1e0MvYY9Yg4GIG4DtiBs=
+github.com/hitenjain14/fasthttp v0.0.0-20240227144728-b2667fdb86a5/go.mod h1:RZMcXy7u4S+E97IXYTe7WHZ3+mCYOh4vys8PkIGZeXk=
+github.com/hitenjain14/fasthttp v0.0.0-20240227151421-139719e36869 h1:KHIKUta8OTyHMdmlEsgv3bf1xX3bMw8LswBTfikjfVQ=
+github.com/hitenjain14/fasthttp v0.0.0-20240227151421-139719e36869/go.mod h1:RZMcXy7u4S+E97IXYTe7WHZ3+mCYOh4vys8PkIGZeXk=
 github.com/holiman/bloomfilter/v2 v2.0.3 h1:73e0e/V0tCydx14a0SCYS/EWCxgwLZ18CZcZKVu0fao=
 github.com/holiman/bloomfilter/v2 v2.0.3/go.mod h1:zpoh+gs7qcpqrHr3dB55AMiJwo0iURXE7ZOP9L9hSkA=
 github.com/holiman/uint256 v1.2.2-0.20230321075855-87b91420868c h1:DZfsyhDK1hnSS5lH8l+JggqzEleHteTYfutAiVlSUM8=
