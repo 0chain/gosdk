@@ -156,10 +156,17 @@ func SetHostClient(id, baseURL string) {
 	}
 }
 
-func GetHostClient(id string) *fasthttp.HostClient {
+func GetHostClient(id, baseURL string) *fasthttp.HostClient {
 	hostLock.RLock()
-	defer hostLock.RUnlock()
-	return HostClientMap[id]
+	hc := HostClientMap[id]
+	if hc == nil {
+		hostLock.RUnlock()
+		SetHostClient(id, baseURL)
+		hostLock.RLock()
+		hc = HostClientMap[id]
+	}
+	hostLock.RUnlock()
+	return hc
 }
 
 func (pfe *proxyFromEnv) Proxy(req *http.Request) (proxy *url.URL, err error) {
