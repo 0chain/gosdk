@@ -38,6 +38,14 @@ func listObjects(allocationID string, remotePath string, offset, pageLimit int) 
 	return alloc.ListDir(remotePath, sdk.WithListRequestOffset(offset), sdk.WithListRequestPageLimit(pageLimit))
 }
 
+func listObjectsFromAuthTicket(allocationID, authTicket, lookupHash string, offset, pageLimit int) (*sdk.ListResult, error) {
+	alloc, err := getAllocation(allocationID)
+	if err != nil {
+		return nil, err
+	}
+	return alloc.ListDirFromAuthTicket(authTicket, lookupHash, sdk.WithListRequestOffset(offset), sdk.WithListRequestPageLimit(pageLimit))
+}
+
 func cancelUpload(allocationID string, remotePath string) error {
 	allocationObj, err := getAllocation(allocationID)
 	if err != nil {
