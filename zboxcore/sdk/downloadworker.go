@@ -1090,7 +1090,7 @@ func GetFileRefFromBlobber(allocationID, blobberId, remotePath string) (fRef *fi
 	return resp.fileref, resp.err
 }
 
-func (req *DownloadRequest) getFileRef(remotePathCB string) (fRef *fileref.FileRef, err error) {
+func (req *DownloadRequest) getFileRef() (fRef *fileref.FileRef, err error) {
 	listReq := &ListRequest{
 		remotefilepath:     req.remotefilepath,
 		remotefilepathhash: req.remotefilepathhash,
@@ -1234,7 +1234,7 @@ func (req *DownloadRequest) processDownloadRequest() {
 		)
 		return
 	}
-	fRef, err := req.getFileRef(remotePathCB)
+	fRef, err := req.getFileRef()
 	if err != nil {
 		logger.Logger.Error(err.Error())
 		req.errorCB(
