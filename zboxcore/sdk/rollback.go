@@ -207,7 +207,7 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 
 	}
 
-	return thrown.New("rolback_error", fmt.Sprintf("Rollback failed"))
+	return thrown.New("rolback_error", fmt.Sprint("Rollback failed"))
 }
 
 func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
