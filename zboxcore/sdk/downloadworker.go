@@ -175,7 +175,7 @@ func (req *DownloadRequest) getBlocksDataFromBlobbers(startBlock, totalBlock int
 		if err != nil {
 			return nil, err
 		}
-		if failed == 0 {
+		if failed == 0 || (timeRequest && mask.CountOnes()-failed >= requiredDownloads) {
 			break
 		}
 
@@ -434,7 +434,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			}
 		}()
 	}
-
+	defer req.ctxCncl()
 	remotePathCB := req.remotefilepath
 	if remotePathCB == "" {
 		remotePathCB = req.remotefilepathhash
@@ -738,6 +738,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	if err := eg.Wait(); err != nil {
 		writeCancel()
 		req.errorCB(err, remotePathCB)
+		close(blocks)
 		return
 	}
 
