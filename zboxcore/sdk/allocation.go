@@ -970,7 +970,7 @@ func (a *Allocation) DownloadFileToFileHandler(
 	downloadReqOpts ...DownloadRequestOption,
 ) error {
 	return a.addAndGenerateDownloadRequest(fileHandler, remotePath, DOWNLOAD_CONTENT_FULL, 1, 0,
-		numBlockDownloads, verifyDownload, status, isFinal, "")
+		numBlockDownloads, verifyDownload, status, isFinal, "", downloadReqOpts...)
 }
 
 func (a *Allocation) DownloadByBlocksToFileHandler(
@@ -2070,7 +2070,7 @@ func (a *Allocation) DownloadFileToFileHandlerFromAuthTicket(
 	downloadReqOpts ...DownloadRequestOption,
 ) error {
 	return a.downloadFromAuthTicket(fileHandler, authTicket, remoteLookupHash, 1, 0, numBlockDownloads,
-		remoteFilename, DOWNLOAD_CONTENT_FULL, verifyDownload, status, isFinal, "")
+		remoteFilename, DOWNLOAD_CONTENT_FULL, verifyDownload, status, isFinal, "", downloadReqOpts...)
 }
 
 func (a *Allocation) DownloadByBlocksToFileHandlerFromAuthTicket(
