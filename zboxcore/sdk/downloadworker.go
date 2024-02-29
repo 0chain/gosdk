@@ -987,7 +987,7 @@ func (req *DownloadRequest) errorCB(err error, remotePathCB string) {
 }
 
 func (req *DownloadRequest) calculateShardsParams(
-	fRef *fileref.FileRef, remotePathCB string) (chunksPerShard int64, err error) {
+	fRef *fileref.FileRef) (chunksPerShard int64, err error) {
 
 	size := fRef.ActualFileSize
 	if req.contentMode == DOWNLOAD_CONTENT_THUMB {
@@ -1244,7 +1244,7 @@ func (req *DownloadRequest) processDownloadRequest() {
 		return
 	}
 	req.fRef = fRef
-	chunksPerShard, err := req.calculateShardsParams(fRef, remotePathCB)
+	chunksPerShard, err := req.calculateShardsParams(fRef)
 	if err != nil {
 		logger.Logger.Error(err.Error())
 		req.errorCB(
@@ -1256,7 +1256,7 @@ func (req *DownloadRequest) processDownloadRequest() {
 	startBlock, endBlock := req.startBlock, req.endBlock
 	// remainingSize should be calculated based on startBlock number
 	// otherwise end data will have null bytes.
-	remainingSize := req.size - startBlock*int64(req.effectiveBlockSize)*int64(req.datashards)
+	remainingSize := req.size - startBlock*int64(req.effectiveBlockSize)
 
 	var wantSize int64
 	if endBlock*int64(req.effectiveBlockSize)*int64(req.datashards) < req.size {
