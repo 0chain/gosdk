@@ -538,9 +538,6 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 		fullRemotePath := zboxutil.GetFullRemotePath(localPath, remotePath)
 		fullRemotePathWithoutName, _ := pathutil.Split(fullRemotePath)
 		fullRemotePath = fullRemotePathWithoutName + "/" + fileName
-		if err != nil {
-			return err
-		}
 
 		fileMeta := FileMeta{
 			Path:       localPath,
@@ -1446,7 +1443,7 @@ func (a *Allocation) DownloadFromBlobber(blobberID, localPath, remotePath string
 		opt(downloadReq)
 	}
 
-	fRef, err := downloadReq.getFileRef(remotePath)
+	fRef, err := downloadReq.getFileRef()
 	if err != nil {
 		l.Logger.Error(err.Error())
 		downloadReq.errorCB(fmt.Errorf("Error while getting file ref. Error: %v", err), remotePath)

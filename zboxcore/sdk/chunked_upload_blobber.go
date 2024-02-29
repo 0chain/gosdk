@@ -39,7 +39,7 @@ type ChunkedUploadBlobber struct {
 
 func (sb *ChunkedUploadBlobber) sendUploadRequest(
 	ctx context.Context, su *ChunkedUpload,
-	chunkIndex int, isFinal bool,
+	isFinal bool,
 	encryptedKey string, dataBuffers []*bytes.Buffer,
 	formData ChunkedUploadFormMetadata, contentSlice []string,
 	pos uint64, consensus *Consensus) (err error) {
