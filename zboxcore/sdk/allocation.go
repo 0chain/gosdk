@@ -335,7 +335,7 @@ func (a *Allocation) dispatchWork(ctx context.Context) {
 		case downloadReq := <-a.downloadChan:
 			l.Logger.Info(fmt.Sprintf("received a download request for %v\n", downloadReq.remotefilepath))
 			go func() {
-				downloadReq.processDownload(ctx)
+				downloadReq.processDownload()
 			}()
 		case repairReq := <-a.repairChan:
 
@@ -538,9 +538,6 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 		fullRemotePath := zboxutil.GetFullRemotePath(localPath, remotePath)
 		fullRemotePathWithoutName, _ := pathutil.Split(fullRemotePath)
 		fullRemotePath = fullRemotePathWithoutName + "/" + fileName
-		if err != nil {
-			return err
-		}
 
 		fileMeta := FileMeta{
 			Path:       localPath,
@@ -970,7 +967,7 @@ func (a *Allocation) DownloadFileToFileHandler(
 	downloadReqOpts ...DownloadRequestOption,
 ) error {
 	return a.addAndGenerateDownloadRequest(fileHandler, remotePath, DOWNLOAD_CONTENT_FULL, 1, 0,
-		numBlockDownloads, verifyDownload, status, isFinal, "")
+		numBlockDownloads, verifyDownload, status, isFinal, "", downloadReqOpts...)
 }
 
 func (a *Allocation) DownloadByBlocksToFileHandler(
@@ -1446,7 +1443,7 @@ func (a *Allocation) DownloadFromBlobber(blobberID, localPath, remotePath string
 		opt(downloadReq)
 	}
 
-	fRef, err := downloadReq.getFileRef(remotePath)
+	fRef, err := downloadReq.getFileRef()
 	if err != nil {
 		l.Logger.Error(err.Error())
 		downloadReq.errorCB(fmt.Errorf("Error while getting file ref. Error: %v", err), remotePath)
@@ -2070,7 +2067,7 @@ func (a *Allocation) DownloadFileToFileHandlerFromAuthTicket(
 	downloadReqOpts ...DownloadRequestOption,
 ) error {
 	return a.downloadFromAuthTicket(fileHandler, authTicket, remoteLookupHash, 1, 0, numBlockDownloads,
-		remoteFilename, DOWNLOAD_CONTENT_FULL, verifyDownload, status, isFinal, "")
+		remoteFilename, DOWNLOAD_CONTENT_FULL, verifyDownload, status, isFinal, "", downloadReqOpts...)
 }
 
 func (a *Allocation) DownloadByBlocksToFileHandlerFromAuthTicket(

@@ -159,7 +159,6 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 	l.Logger.Info("Sending Rollback request to blobber: ", rb.blobber.Baseurl)
 
 	var (
-		resp           *http.Response
 		shouldContinue bool
 	)
 
@@ -226,7 +225,7 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 
 	}
 
-	return thrown.New("rolback_error", fmt.Sprintf("Rollback failed with response status %d", resp.StatusCode))
+	return thrown.New("rolback_error", fmt.Sprint("Rollback failed"))
 }
 
 func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
