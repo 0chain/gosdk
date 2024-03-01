@@ -148,7 +148,7 @@ func SetHostClient(id, baseURL string) {
 				Concurrency:      4096,
 				DNSCacheDuration: time.Hour,
 			}).Dial,
-			IsTLS: true,
+			IsTLS: u.Scheme == "https",
 		}
 	}
 }
