@@ -886,7 +886,7 @@ func downloadBlocks(allocId string, remotePath, authTicket, lookupHash string, s
 		remotePath,
 		startBlock,
 		endBlock,
-		10,
+		100,
 		false,
 		statusBar, true)
 	if err != nil {
