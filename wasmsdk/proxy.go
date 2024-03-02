@@ -4,6 +4,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sync"
@@ -60,7 +61,54 @@ func main() {
 				zcncore.SignFn = signFunc
 				sys.Sign = func(hash, signatureScheme string, keys []sys.KeyPair) (string, error) {
 					// js already has signatureScheme and keys
+					fmt.Println("auth - wasm sign setting")
 					return signFunc(hash)
+				}
+
+				sys.SignWithAuth = func(hash, signatureScheme string, keys []sys.KeyPair) (string, error) {
+					fmt.Println("auth - sign with auth")
+					// jsAuthCommon := jsProxy.Get("authCommon")
+					// result, berr := jsbridge.Await(jsAuthCommon.Invoke(hash))
+					// if len(berr) > 0 && !berr[0].IsNull() {
+					// 	return "", errors.New("authCommon: " + berr[0].String())
+					// }
+					data, err := json.Marshal(struct {
+						Data     string `json:"data"`
+						ClientID string `json:"client_id"`
+					}{
+						Data:     hash,
+						ClientID: client.GetClient().ClientID,
+					})
+					if err != nil {
+						return "", err
+					}
+
+					fmt.Println("auth - sys.AuthCommon:", sys.AuthCommon)
+					if sys.AuthCommon == nil {
+						return "", errors.New("authCommon is not set")
+					}
+
+					rsp, err := sys.AuthCommon(string(data))
+					if err != nil {
+						return "", err
+					}
+
+					var sigpk struct {
+						Sig    string `json:"sig"`
+						Pubkey string `json:"public_key"`
+					}
+
+					err = json.Unmarshal([]byte(rsp), &sigpk)
+					if err != nil {
+						return "", err
+					}
+
+					// c := client.GetClient()
+					// client.GetClient().ClientKey = sigpk.Pubkey
+					fmt.Println("auth - sign response:", sigpk)
+					// return zcncore.AddSignature(keys[0].PrivateKey, sigpk.Sig, hash)
+					return zcncore.AddSignature(client.GetClientPrivateKey(), sigpk.Sig, hash)
+
 				}
 			} else {
 				PrintError("__zcn_wasm__.jsProxy.sign is not installed yet")
@@ -105,6 +153,7 @@ func main() {
 			jsAddSignature := jsProxy.Get("addSignature")
 			if !(jsAddSignature.IsNull() || jsAddSignature.IsUndefined()) {
 				zcncore.AddSignature = func(privateKey, signature, hash string) (string, error) {
+					fmt.Println("jsAddSignature")
 					result, err := jsbridge.Await(jsAddSignature.Invoke(privateKey, signature, hash))
 					if len(err) > 0 && !err[0].IsNull() {
 						return "", errors.New("add signature: " + err[0].String())
@@ -254,6 +303,7 @@ func main() {
 				"setAuthUrl":    setAuthUrl,
 
 				"registerAuthorizer": js.FuncOf(registerAuthorizer),
+				"registerAuthCommon": js.FuncOf(registerAuthCommon),
 				"callAuth":           js.FuncOf(callAuth),
 				"authResponse":       authResponse,
 			})

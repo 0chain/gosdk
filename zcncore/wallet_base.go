@@ -23,6 +23,7 @@ import (
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/version"
 	"github.com/0chain/gosdk/core/zcncrypto"
+	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/encryption"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	openssl "github.com/Luzifer/go-openssl/v3"
@@ -538,13 +539,23 @@ func GetWalletRaw() zcncrypto.Wallet {
 // - splitKeyWallet: if wallet keys is split
 func SetWalletInfo(jsonWallet string, splitKeyWallet bool) error {
 	err := json.Unmarshal([]byte(jsonWallet), &_config.wallet)
-	if err == nil {
-		if _config.chain.SignatureScheme == "bls0chain" {
-			_config.isSplitWallet = splitKeyWallet
-		}
-		_config.isValidWallet = true
+	if err != nil {
+		return err
 	}
-	return err
+
+	if _config.chain.SignatureScheme == "bls0chain" {
+		_config.isSplitWallet = splitKeyWallet
+	}
+	_config.isValidWallet = true
+
+	c := client.GetClient()
+	c.Wallet = &_config.wallet
+	// c.Mnemonic = mnemonic
+	// c.ClientID = clientID
+	// c.ClientKey = _config.wallet.ClientKey
+	// c.Keys = _config.wallet.Keys
+
+	return nil
 }
 
 // SetAuthUrl will be called by app to set zauth URL to SDK.

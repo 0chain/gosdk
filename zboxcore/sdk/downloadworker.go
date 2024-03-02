@@ -42,6 +42,7 @@ const (
 type DownloadRequest struct {
 	allocationID       string
 	allocationTx       string
+	sig                string
 	allocOwnerID       string
 	allocOwnerPubKey   string
 	blobbers           []*blockchain.StorageNode
@@ -928,6 +929,7 @@ func GetFileRefFromBlobber(allocationID, blobberId, remotePath string) (fRef *fi
 
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
+	listReq.sig = a.sig
 	listReq.blobbers = []*blockchain.StorageNode{
 		{ID: string(blobber.ID), Baseurl: blobber.BaseURL},
 	}
@@ -951,6 +953,7 @@ func (req *DownloadRequest) getFileRef(remotePathCB string) (fRef *fileref.FileR
 		remotefilepathhash: req.remotefilepathhash,
 		allocationID:       req.allocationID,
 		allocationTx:       req.allocationTx,
+		sig:                req.sig,
 		blobbers:           req.blobbers,
 		authToken:          req.authTicket,
 		Consensus: Consensus{

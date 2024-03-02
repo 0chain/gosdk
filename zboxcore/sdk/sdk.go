@@ -19,6 +19,7 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/0chain/gosdk/core/common"
+	enc "github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/version"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -873,6 +874,13 @@ func GetAllocation(allocationID string) (*Allocation, error) {
 	if err != nil {
 		return nil, errors.New("allocation_decode_error", "Error decoding the allocation: "+err.Error()+" "+string(allocationBytes))
 	}
+	sig, err := client.Sign(enc.Hash(allocationObj.Tx))
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("auth - alloc sig:", sig)
+
+	allocationObj.sig = sig
 	allocationObj.numBlockDownloads = numBlockDownloads
 	allocationObj.InitAllocation()
 	return allocationObj, nil

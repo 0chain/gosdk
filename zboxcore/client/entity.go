@@ -2,6 +2,8 @@ package client
 
 import (
 	"encoding/json"
+	"fmt"
+	"runtime/debug"
 
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/core/zcncrypto"
@@ -19,17 +21,27 @@ var (
 	client  *Client
 	clients []*Client
 	Sign    SignFunc
+	sigC    = make(chan struct{}, 1)
 )
 
 func init() {
 	client = &Client{
 		Wallet: &zcncrypto.Wallet{},
 	}
+	sigC <- struct{}{}
 
 	sys.Sign = signHash
 	// initialize SignFunc as default implementation
 	Sign = func(hash string) (string, error) {
-		return sys.Sign(hash, client.SignatureScheme, GetClientSysKeys())
+		fmt.Println("auth - sign with default impl")
+		fmt.Println("auth - stack:", string(debug.Stack()))
+		// return sys.Sign(hash, client.SignatureScheme, GetClientSysKeys())
+		<-sigC
+		fmt.Println("auth - got sign lock")
+		sig, err := sys.SignWithAuth(hash, client.SignatureScheme, GetClientSysKeys())
+		sigC <- struct{}{}
+		fmt.Println("auth - sign done with sig:", sig)
+		return sig, err
 	}
 
 	sys.Verify = VerifySignature

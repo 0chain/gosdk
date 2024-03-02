@@ -30,6 +30,7 @@ const INVALID_PATH = "invalid_path"
 type ObjectTreeRequest struct {
 	allocationID   string
 	allocationTx   string
+	sig            string
 	blobbers       []*blockchain.StorageNode
 	authToken      string
 	pathHash       string
@@ -116,6 +117,7 @@ func (o *ObjectTreeRequest) getFileRefs(oTR *oTreeResponse, bUrl string) {
 	oReq, err := zboxutil.NewRefsRequest(
 		bUrl,
 		o.allocationID,
+		o.sig,
 		o.remotefilepath,
 		o.pathHash,
 		o.authToken,
@@ -195,6 +197,7 @@ type RecentlyAddedRefRequest struct {
 	ctx          context.Context
 	allocationID string
 	allocationTx string
+	sig          string
 	blobbers     []*blockchain.StorageNode
 	fromDate     int64
 	offset       int64
@@ -271,7 +274,7 @@ func (r *RecentlyAddedRefRequest) GetRecentlyAddedRefs() (*RecentlyAddedRefResul
 
 func (r *RecentlyAddedRefRequest) getRecentlyAddedRefs(resp *RecentlyAddedRefResponse, bUrl string) {
 	defer r.wg.Done()
-	req, err := zboxutil.NewRecentlyAddedRefsRequest(bUrl, r.allocationID, r.allocationTx, r.fromDate, r.offset, r.pageLimit)
+	req, err := zboxutil.NewRecentlyAddedRefsRequest(bUrl, r.allocationID, r.allocationTx, r.sig, r.fromDate, r.offset, r.pageLimit)
 	if err != nil {
 		resp.err = err
 		return

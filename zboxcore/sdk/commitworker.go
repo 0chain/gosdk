@@ -51,6 +51,7 @@ type CommitRequest struct {
 	allocationID string
 	allocationTx string
 	connectionID string
+	sig          string
 	wg           *sync.WaitGroup
 	result       *CommitResult
 	timestamp    int64
@@ -105,7 +106,7 @@ func (commitreq *CommitRequest) processCommit() {
 	}
 	var req *http.Request
 	var lR ReferencePathResult
-	req, err := zboxutil.NewReferencePathRequest(commitreq.blobber.Baseurl, commitreq.allocationID, commitreq.allocationTx, paths)
+	req, err := zboxutil.NewReferencePathRequest(commitreq.blobber.Baseurl, commitreq.allocationID, commitreq.allocationTx, commitreq.sig, paths)
 	if err != nil {
 		l.Logger.Error("Creating ref path req", err)
 		return
