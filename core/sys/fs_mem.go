@@ -2,6 +2,7 @@ package sys
 
 import (
 	"bytes"
+	"github.com/pierrec/lz4/v4"
 	"io"
 	"io/fs"
 	"os"
@@ -30,29 +31,20 @@ func (mfs *MemFS) Open(name string) (File, error) {
 	if file != nil {
 		return file, nil
 	}
-
 	fileName := filepath.Base(name)
-
 	file = &MemFile{Name: fileName, Buffer: new(bytes.Buffer), Mode: fs.ModePerm, ModTime: time.Now()}
-
 	mfs.files[name] = file
-
 	return file, nil
 }
-
 func (mfs *MemFS) OpenFile(name string, flag int, perm os.FileMode) (File, error) {
 	file := mfs.files[name]
 	if file != nil {
 		return file, nil
 	}
-
 	fileName := filepath.Base(name)
 	file = &MemFile{Name: fileName, Buffer: new(bytes.Buffer), Mode: perm, ModTime: time.Now()}
-
 	mfs.files[name] = file
-
 	return file, nil
-
 }
 
 // ReadFile reads the file named by filename and returns the contents.
@@ -61,7 +53,6 @@ func (mfs *MemFS) ReadFile(name string) ([]byte, error) {
 	if ok {
 		return file.Buffer.Bytes(), nil
 	}
-
 	return nil, os.ErrNotExist
 }
 
@@ -69,9 +60,7 @@ func (mfs *MemFS) ReadFile(name string) ([]byte, error) {
 func (mfs *MemFS) WriteFile(name string, data []byte, perm os.FileMode) error {
 	fileName := filepath.Base(name)
 	file := &MemFile{Name: fileName, Buffer: new(bytes.Buffer), Mode: perm, ModTime: time.Now()}
-
 	mfs.files[name] = file
-
 	return nil
 }
 
@@ -94,7 +83,6 @@ func (mfs *MemFS) Stat(name string) (fs.FileInfo, error) {
 	if ok {
 		return file.Stat()
 	}
-
 	return nil, os.ErrNotExist
 }
 
@@ -119,29 +107,20 @@ func (mfs *MemChanFS) Open(name string) (File, error) {
 	if file != nil {
 		return file, nil
 	}
-
 	fileName := filepath.Base(name)
-
 	file = &MemChanFile{Name: fileName, Buffer: make(chan []byte), Mode: fs.ModePerm, ModTime: time.Now()}
-
 	mfs.files[name] = file
-
 	return file, nil
 }
-
 func (mfs *MemChanFS) OpenFile(name string, flag int, perm os.FileMode) (File, error) {
 	file := mfs.files[name]
 	if file != nil {
 		return file, nil
 	}
-
 	fileName := filepath.Base(name)
 	file = &MemChanFile{Name: fileName, Buffer: make(chan []byte), Mode: perm, ModTime: time.Now()}
-
 	mfs.files[name] = file
-
 	return file, nil
-
 }
 
 // ReadFile reads the file named by filename and returns the contents.
@@ -150,7 +129,6 @@ func (mfs *MemChanFS) ReadFile(name string) ([]byte, error) {
 	if ok {
 		return <-file.Buffer, nil
 	}
-
 	return nil, os.ErrNotExist
 }
 
@@ -158,9 +136,7 @@ func (mfs *MemChanFS) ReadFile(name string) ([]byte, error) {
 func (mfs *MemChanFS) WriteFile(name string, data []byte, perm os.FileMode) error {
 	fileName := filepath.Base(name)
 	file := &MemChanFile{Name: fileName, Buffer: make(chan []byte), Mode: perm, ModTime: time.Now()}
-
 	mfs.files[name] = file
-
 	return nil
 }
 
@@ -183,7 +159,6 @@ func (mfs *MemChanFS) Stat(name string) (fs.FileInfo, error) {
 	if ok {
 		return file.Stat()
 	}
-
 	return nil, os.ErrNotExist
 }
 
@@ -204,24 +179,18 @@ func (f *MemFile) Read(p []byte) (int, error) {
 		f.reader = bytes.NewReader(f.Buffer.Bytes())
 	}
 	return f.reader.Read(p)
-
 }
 func (f *MemFile) Write(p []byte) (n int, err error) {
 	return f.Buffer.Write(p)
-
 }
-
 func (f *MemFile) Sync() error {
 	return nil
 }
 func (f *MemFile) Seek(offset int64, whence int) (ret int64, err error) {
-
 	// always reset it from beginning, it only work for wasm download
 	f.reader = bytes.NewReader(f.Buffer.Bytes())
-
 	return 0, nil
 }
-
 func (f *MemFile) Close() error {
 	f.reader = nil
 	return nil
@@ -238,27 +207,21 @@ func (i *MemFileInfo) Name() string {
 func (i *MemFileInfo) Size() int64 {
 	return int64(i.f.Buffer.Len())
 }
-
 func (i *MemFileInfo) Mode() fs.FileMode {
 	return i.f.Mode
 }
-
 func (i *MemFileInfo) Type() fs.FileMode {
 	return i.f.Mode.Type()
 }
-
 func (i *MemFileInfo) ModTime() time.Time {
 	return i.f.ModTime
 }
-
 func (i *MemFileInfo) IsDir() bool {
 	return i.f.Mode&fs.ModeDir != 0
 }
-
 func (i *MemFileInfo) Sys() interface{} {
 	return i.f.Sys
 }
-
 func (i *MemFileInfo) Info() (fs.FileInfo, error) {
 	return i, nil
 }
@@ -285,22 +248,31 @@ func (f *MemChanFile) Read(p []byte) (int, error) {
 	if len(recieveData) > len(p) {
 		return 0, io.ErrShortBuffer
 	}
-	n := copy(p, recieveData)
+	var c lz4.Compressor
+	buf := make([]byte, lz4.CompressBlockBound(len(recieveData)))
+	en, err := c.CompressBlock(recieveData, buf)
+	if err != nil {
+		return 0, io.EOF
+	}
+	if en == 0 {
+		return 0, io.EOF
+	}
+	n := copy(p, buf)
 	return n, nil
 }
-
 func (f *MemChanFile) Write(p []byte) (n int, err error) {
+	out := make([]byte, 10*len(p))
+	n, err = lz4.UncompressBlock(p, out)
 	if f.ChunkWriteSize == 0 {
-		f.Buffer <- p
+		f.Buffer <- out
 	} else {
 		if cap(f.data) == 0 {
 			f.data = make([]byte, 0, f.ChunkWriteSize)
 		}
-		f.data = append(f.data, p...)
+		f.data = append(f.data, out...)
 	}
-	return len(p), nil
+	return len(out), nil
 }
-
 func (f *MemChanFile) Sync() error {
 	current := 0
 	for ; current < len(f.data); current += f.ChunkWriteSize {
@@ -316,7 +288,6 @@ func (f *MemChanFile) Sync() error {
 func (f *MemChanFile) Seek(offset int64, whence int) (ret int64, err error) {
 	return 0, nil
 }
-
 func (f *MemChanFile) Close() error {
 	f.reader = nil
 	close(f.Buffer)
@@ -334,27 +305,21 @@ func (i *MemFileChanInfo) Name() string {
 func (i *MemFileChanInfo) Size() int64 {
 	return 0
 }
-
 func (i *MemFileChanInfo) Mode() fs.FileMode {
 	return i.f.Mode
 }
-
 func (i *MemFileChanInfo) Type() fs.FileMode {
 	return i.f.Mode.Type()
 }
-
 func (i *MemFileChanInfo) ModTime() time.Time {
 	return i.f.ModTime
 }
-
 func (i *MemFileChanInfo) IsDir() bool {
 	return i.f.Mode&fs.ModeDir != 0
 }
-
 func (i *MemFileChanInfo) Sys() interface{} {
 	return i.f.Sys
 }
-
 func (i *MemFileChanInfo) Info() (fs.FileInfo, error) {
 	return i, nil
 }
