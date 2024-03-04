@@ -881,14 +881,18 @@ func downloadBlocks(allocId string, remotePath, authTicket, lookupHash string, s
 	defer sys.Files.Remove(localPath) //nolint
 
 	wg.Add(1)
-	err = alloc.DownloadByBlocksToFileHandler(
-		mf,
-		remotePath,
-		startBlock,
-		endBlock,
-		100,
-		false,
-		statusBar, true)
+	if authTicket != "" {
+		err = alloc.DownloadByBlocksToFileHandlerFromAuthTicket(mf, authTicket, lookupHash, startBlock, endBlock, 100, remotePath, false, statusBar, true)
+	} else {
+		err = alloc.DownloadByBlocksToFileHandler(
+			mf,
+			remotePath,
+			startBlock,
+			endBlock,
+			100,
+			false,
+			statusBar, true)
+	}
 	if err != nil {
 		return nil, err
 	}
