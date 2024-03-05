@@ -175,7 +175,7 @@ func (req *DownloadRequest) getBlocksDataFromBlobbers(startBlock, totalBlock int
 		if err != nil {
 			return nil, err
 		}
-		if failed == 0 {
+		if failed == 0 || (timeRequest && mask.CountOnes()-failed >= requiredDownloads) {
 			break
 		}
 
@@ -423,7 +423,8 @@ func (req *DownloadRequest) getDecryptedDataForAuthTicket(result *downloadBlock,
 // processDownload will setup download parameters and downloads data with given
 // start block, end block and number of blocks to download in single request.
 // This will also write data to the file handler and will verify content by calculating content hash.
-func (req *DownloadRequest) processDownload(ctx context.Context) {
+func (req *DownloadRequest) processDownload() {
+	ctx := req.ctx
 	if req.completedCallback != nil {
 		defer req.completedCallback(req.remotefilepath, req.remotefilepathhash)
 	}
@@ -987,7 +988,7 @@ func (req *DownloadRequest) errorCB(err error, remotePathCB string) {
 }
 
 func (req *DownloadRequest) calculateShardsParams(
-	fRef *fileref.FileRef, remotePathCB string) (chunksPerShard int64, err error) {
+	fRef *fileref.FileRef) (chunksPerShard int64, err error) {
 
 	size := fRef.ActualFileSize
 	if req.contentMode == DOWNLOAD_CONTENT_THUMB {
@@ -1090,7 +1091,7 @@ func GetFileRefFromBlobber(allocationID, blobberId, remotePath string) (fRef *fi
 	return resp.fileref, resp.err
 }
 
-func (req *DownloadRequest) getFileRef(remotePathCB string) (fRef *fileref.FileRef, err error) {
+func (req *DownloadRequest) getFileRef() (fRef *fileref.FileRef, err error) {
 	listReq := &ListRequest{
 		remotefilepath:     req.remotefilepath,
 		remotefilepathhash: req.remotefilepathhash,
@@ -1234,7 +1235,7 @@ func (req *DownloadRequest) processDownloadRequest() {
 		)
 		return
 	}
-	fRef, err := req.getFileRef(remotePathCB)
+	fRef, err := req.getFileRef()
 	if err != nil {
 		logger.Logger.Error(err.Error())
 		req.errorCB(
@@ -1244,7 +1245,7 @@ func (req *DownloadRequest) processDownloadRequest() {
 		return
 	}
 	req.fRef = fRef
-	chunksPerShard, err := req.calculateShardsParams(fRef, remotePathCB)
+	chunksPerShard, err := req.calculateShardsParams(fRef)
 	if err != nil {
 		logger.Logger.Error(err.Error())
 		req.errorCB(
@@ -1256,10 +1257,10 @@ func (req *DownloadRequest) processDownloadRequest() {
 	startBlock, endBlock := req.startBlock, req.endBlock
 	// remainingSize should be calculated based on startBlock number
 	// otherwise end data will have null bytes.
-	remainingSize := req.size - startBlock*int64(req.effectiveBlockSize)*int64(req.datashards)
+	remainingSize := req.size - startBlock*int64(req.effectiveBlockSize)
 
 	var wantSize int64
-	if endBlock*int64(req.effectiveBlockSize)*int64(req.datashards) < req.size {
+	if endBlock*int64(req.effectiveBlockSize) < req.size {
 		wantSize = endBlock*int64(req.effectiveBlockSize) - startBlock*int64(req.effectiveBlockSize)
 	} else {
 		wantSize = remainingSize

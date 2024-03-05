@@ -809,7 +809,7 @@ func (su *ChunkedUpload) uploadToBlobbers(uploadData UploadData) error {
 		wg.Add(1)
 		go func(pos uint64) {
 			defer wg.Done()
-			err := su.blobbers[pos].sendUploadRequest(ctx, su, uploadData.chunkEndIndex, uploadData.isFinal, su.encryptedKey, uploadData.uploadBody[pos].dataBuffers, uploadData.uploadBody[pos].formData, uploadData.uploadBody[pos].contentSlice, pos, &consensus)
+			err := su.blobbers[pos].sendUploadRequest(ctx, su, uploadData.isFinal, su.encryptedKey, uploadData.uploadBody[pos].dataBuffers, uploadData.uploadBody[pos].formData, uploadData.uploadBody[pos].contentSlice, pos, &consensus)
 
 			if err != nil {
 				if strings.Contains(err.Error(), "duplicate") {

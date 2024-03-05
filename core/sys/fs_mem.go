@@ -313,7 +313,9 @@ func (f *MemChanFile) Read(p []byte) (int, error) {
 
 func (f *MemChanFile) Write(p []byte) (n int, err error) {
 	if f.ChunkWriteSize == 0 {
-		f.Buffer <- p
+		data := make([]byte, len(p))
+		copy(data, p)
+		f.Buffer <- data
 	} else {
 		if cap(f.data) == 0 {
 			f.data = make([]byte, 0, f.ChunkWriteSize)
