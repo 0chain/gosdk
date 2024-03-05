@@ -247,12 +247,6 @@ func setFastClientInfoWithSign(req *fasthttp.Request, allocation string) error {
 	}
 	req.Header.Set(CLIENT_SIGNATURE_HEADER, sign)
 
-	hashData = allocation + baseURL
-	sign, err = client.Sign(encryption.Hash(hashData))
-	if err != nil {
-		return err
-	}
-	req.Header.Set(CLIENT_SIGNATURE_HEADER_V2, sign)
 	return nil
 }
 
