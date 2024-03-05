@@ -638,6 +638,14 @@ type UpdateBlobber struct {
 	NotAvailable             *bool                               `json:"not_available,omitempty"`
 }
 
+type ResetBlobberStatsDto struct {
+	BlobberID     string `json:"blobber_id"`
+	PrevAllocated int64  `json:"prev_allocated"`
+	PrevSavedData int64  `json:"prev_saved_data"`
+	NewAllocated  int64  `json:"new_allocated"`
+	NewSavedData  int64  `json:"new_saved_data"`
+}
+
 type Validator struct {
 	ID                       common.Key       `json:"validator_id"`
 	BaseURL                  string           `json:"url"`
@@ -1426,6 +1434,19 @@ func UpdateValidatorSettings(v *UpdateValidator) (resp string, nonce int64, err 
 	}
 	resp, _, nonce, _, err = storageSmartContractTxn(sn)
 	return
+}
+
+func ResetBlobberStats(rbs *ResetBlobberStatsDto) (string, int64, error) {
+	if !sdkInitialized {
+		return "", 0, sdkNotInitialized
+	}
+
+	var sn = transaction.SmartContractTxnData{
+		Name:      transaction.STORAGESC_RESET_BLOBBER_STATS,
+		InputArgs: rbs,
+	}
+	hash, _, n, _, err := storageSmartContractTxn(sn)
+	return hash, n, err
 }
 
 func smartContractTxn(scAddress string, sn transaction.SmartContractTxnData) (
