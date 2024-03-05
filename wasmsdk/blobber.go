@@ -34,8 +34,16 @@ func listObjects(allocationID string, remotePath string, offset, pageLimit int) 
 	if err != nil {
 		return nil, err
 	}
-  
+
 	return alloc.ListDir(remotePath, sdk.WithListRequestOffset(offset), sdk.WithListRequestPageLimit(pageLimit))
+}
+
+func listObjectsFromAuthTicket(allocationID, authTicket, lookupHash string, offset, pageLimit int) (*sdk.ListResult, error) {
+	alloc, err := getAllocation(allocationID)
+	if err != nil {
+		return nil, err
+	}
+	return alloc.ListDirFromAuthTicket(authTicket, lookupHash, sdk.WithListRequestOffset(offset), sdk.WithListRequestPageLimit(pageLimit))
 }
 
 func cancelUpload(allocationID string, remotePath string) error {
@@ -873,19 +881,23 @@ func downloadBlocks(allocId string, remotePath, authTicket, lookupHash string, s
 	defer sys.Files.Remove(localPath) //nolint
 
 	wg.Add(1)
-	err = alloc.DownloadByBlocksToFileHandler(
-		mf,
-		remotePath,
-		startBlock,
-		endBlock,
-		10,
-		false,
-		statusBar, true)
+	if authTicket != "" {
+		err = alloc.DownloadByBlocksToFileHandlerFromAuthTicket(mf, authTicket, lookupHash, startBlock, endBlock, 100, remotePath, false, statusBar, true)
+	} else {
+		err = alloc.DownloadByBlocksToFileHandler(
+			mf,
+			remotePath,
+			startBlock,
+			endBlock,
+			100,
+			false,
+			statusBar, true)
+	}
 	if err != nil {
 		return nil, err
 	}
 	wg.Wait()
-	return mf.Buffer.Bytes(), nil
+	return mf.Buffer, nil
 }
 
 // GetBlobbersList get list of active blobbers, and format them as array json string

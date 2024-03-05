@@ -12,7 +12,7 @@ func (d *fileHandlerDownloader) Start(status StatusCallback, isFinal bool) error
 		}
 
 		return d.allocationObj.DownloadThumbnailToFileHandler(d.fileHandler,
-			d.remotePath, d.verifyDownload, status, isFinal)
+			d.remotePath, d.verifyDownload, status, isFinal, d.reqOpts...)
 	} else if d.isBlockDownload {
 		if d.isViewer {
 			return d.allocationObj.DownloadByBlocksToFileHandlerFromAuthTicket(d.fileHandler,
@@ -22,7 +22,7 @@ func (d *fileHandlerDownloader) Start(status StatusCallback, isFinal bool) error
 
 		return d.allocationObj.DownloadByBlocksToFileHandler(d.fileHandler,
 			d.remotePath, d.startBlock, d.endBlock, d.blocksPerMarker,
-			d.verifyDownload, status, isFinal)
+			d.verifyDownload, status, isFinal, d.reqOpts...)
 	}
 	if d.isViewer {
 		return d.allocationObj.DownloadFileToFileHandlerFromAuthTicket(d.fileHandler,
@@ -30,5 +30,5 @@ func (d *fileHandlerDownloader) Start(status StatusCallback, isFinal bool) error
 	}
 
 	return d.allocationObj.DownloadFileToFileHandler(d.fileHandler,
-		d.remotePath, d.verifyDownload, status, isFinal)
+		d.remotePath, d.verifyDownload, status, isFinal, d.reqOpts...)
 }
