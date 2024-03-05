@@ -169,6 +169,8 @@ const (
 	ZCNSC_AUTHORIZER_HEALTH_CHECK  = "authorizer-health-check"
 	ZCNSC_DELETE_AUTHORIZER        = "delete-authorizer"
 	ZCNSC_COLLECT_REWARD 	       = "collect-rewards"
+	ZCNSC_LOCK					   = "add-to-delegate-pool"
+	ZCNSC_UNLOCK				   = "delete-from-delegate-pool"
 
 	ESTIMATE_TRANSACTION_COST = `/v1/estimate_txn_fee`
 	FEES_TABLE                = `/v1/fees_table`

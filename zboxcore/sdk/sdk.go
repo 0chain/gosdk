@@ -391,6 +391,9 @@ func StakePoolLock(providerType ProviderType, providerID string, value, fee uint
 	case ProviderMiner, ProviderSharder:
 		scAddress = MINERSC_SCADDRESS
 		sn.Name = transaction.MINERSC_LOCK
+	case ProviderAuthorizer:
+		scAddress = ZCNSC_SCADDRESS
+		sn.Name = transaction.ZCNSC_LOCK
 	default:
 		return "", 0, errors.Newf("stake_pool_lock", "unsupported provider type: %v", providerType)
 	}
@@ -444,6 +447,9 @@ func StakePoolUnlock(providerType ProviderType, providerID string, fee uint64) (
 	case ProviderMiner, ProviderSharder:
 		scAddress = MINERSC_SCADDRESS
 		sn.Name = transaction.MINERSC_UNLOCK
+	case ProviderAuthorizer:
+		scAddress = ZCNSC_SCADDRESS
+		sn.Name = transaction.ZCNSC_UNLOCK
 	default:
 		return 0, 0, errors.Newf("stake_pool_unlock", "unsupported provider type: %v", providerType)
 	}
