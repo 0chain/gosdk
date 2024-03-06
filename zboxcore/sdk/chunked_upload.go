@@ -569,7 +569,6 @@ func (su *ChunkedUpload) readChunks(num int) (*batchChunksData, error) {
 
 		// upload entire thumbnail in first chunk request only
 		if chunk.Index == 0 && len(su.thumbnailBytes) > 0 {
-			data.totalReadSize += int64(su.fileMeta.ActualThumbnailSize)
 
 			data.thumbnailShards, err = su.chunkReader.Read(su.thumbnailBytes)
 			if err != nil {
