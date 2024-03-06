@@ -39,7 +39,7 @@ type ChunkedUploadBlobber struct {
 
 func (sb *ChunkedUploadBlobber) sendUploadRequest(
 	ctx context.Context, su *ChunkedUpload,
-	chunkIndex int, isFinal bool,
+	isFinal bool,
 	encryptedKey string, dataBuffers []*bytes.Buffer,
 	formData ChunkedUploadFormMetadata, contentSlice []string,
 	pos uint64, consensus *Consensus) (err error) {
@@ -76,9 +76,9 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 			var (
 				shouldContinue bool
 			)
-
+			var req *fasthttp.Request
 			for i := 0; i < 3; i++ {
-				req, err := zboxutil.NewFastUploadRequest(
+				req, err = zboxutil.NewFastUploadRequest(
 					sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, dataBuffers[ind].Bytes(), su.httpMethod)
 				if err != nil {
 					return err
@@ -129,12 +129,14 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 					return
 				}()
 
-				if err == nil {
-					return nil
-				}
 				if shouldContinue {
 					continue
 				}
+
+				if err != nil {
+					return err
+				}
+
 				break
 			}
 			return err

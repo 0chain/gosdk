@@ -90,6 +90,5 @@ func (h *DownloadRequestHeader) ToFastHeader(req *fasthttp.Request) {
 	if h.ConnectionID != "" {
 		req.Header.Set("X-Connection-ID", h.ConnectionID)
 	}
-
 	req.Header.Set("X-Verify-Download", fmt.Sprint(h.VerifyDownload))
 }
