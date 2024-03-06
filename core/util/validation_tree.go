@@ -156,6 +156,8 @@ func (v *ValidationTree) Finalize() error {
 
 	if v.writeCount > 0 {
 		v.leaves[v.leafIndex] = v.h.Sum(nil)
+	} else {
+		v.leafIndex--
 	}
 	if v.leafIndex < len(v.leaves) {
 		v.leaves = v.leaves[:v.leafIndex+1]
