@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/0chain/errors"
@@ -47,7 +48,6 @@ type BlockDownloadRequest struct {
 	shouldVerify       bool
 	connectionID       string
 	respBuf            []byte
-	timeRequest        bool
 }
 
 type downloadResponse struct {
@@ -161,6 +161,10 @@ func (req *BlockDownloadRequest) downloadBlobberBlock(hostClient *fasthttp.HostC
 			fasthttp.ReleaseRequest(httpreq)
 			timeTaken := time.Since(now).Milliseconds()
 			if err != nil {
+				if errors.Is(err, fasthttp.ErrConnectionClosed) || err == syscall.EPIPE {
+					shouldRetry = true
+					return errors.New("connection_closed", "Connection closed")
+				}
 				zlogger.Logger.Error("Error downloading block: ", err)
 				return err
 			}

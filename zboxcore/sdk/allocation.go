@@ -982,9 +982,10 @@ func (a *Allocation) DownloadByBlocksToFileHandler(
 	verifyDownload bool,
 	status StatusCallback,
 	isFinal bool,
+	downloadReqOpts ...DownloadRequestOption,
 ) error {
 	return a.addAndGenerateDownloadRequest(fileHandler, remotePath, DOWNLOAD_CONTENT_FULL, startBlock, endBlock,
-		numBlocks, verifyDownload, status, isFinal, "")
+		numBlocks, verifyDownload, status, isFinal, "", downloadReqOpts...)
 }
 
 func (a *Allocation) DownloadThumbnailToFileHandler(
@@ -993,9 +994,10 @@ func (a *Allocation) DownloadThumbnailToFileHandler(
 	verifyDownload bool,
 	status StatusCallback,
 	isFinal bool,
+	downloadReqOpts ...DownloadRequestOption,
 ) error {
 	return a.addAndGenerateDownloadRequest(fileHandler, remotePath, DOWNLOAD_CONTENT_THUMB, 1, 0,
-		numBlockDownloads, verifyDownload, status, isFinal, "")
+		numBlockDownloads, verifyDownload, status, isFinal, "", downloadReqOpts...)
 }
 
 func (a *Allocation) DownloadFile(localPath string, remotePath string, verifyDownload bool, status StatusCallback, isFinal bool, downloadReqOpts ...DownloadRequestOption) error {
@@ -2082,9 +2084,10 @@ func (a *Allocation) DownloadByBlocksToFileHandlerFromAuthTicket(
 	verifyDownload bool,
 	status StatusCallback,
 	isFinal bool,
+	downloadReqOpts ...DownloadRequestOption,
 ) error {
 	return a.downloadFromAuthTicket(fileHandler, authTicket, remoteLookupHash, startBlock, endBlock, numBlocks,
-		remoteFilename, DOWNLOAD_CONTENT_FULL, verifyDownload, status, isFinal, "")
+		remoteFilename, DOWNLOAD_CONTENT_FULL, verifyDownload, status, isFinal, "", downloadReqOpts...)
 }
 
 func (a *Allocation) DownloadThumbnailToFileHandlerFromAuthTicket(
@@ -2223,11 +2226,11 @@ func (a *Allocation) downloadFromAuthTicket(fileHandler sys.File, authTicket str
 		defer a.mutex.Unlock()
 		delete(a.downloadProgressMap, remotepathHash)
 	}
-	// downloadReq.fileCallback = func() {
-	// 	if downloadReq.fileHandler != nil {
-	// 		downloadReq.fileHandler.Close() //nolint: errcheck
-	// 	}
-	// }
+	downloadReq.fileCallback = func() {
+		if downloadReq.fileHandler != nil {
+			downloadReq.fileHandler.Close() //nolint: errcheck
+		}
+	}
 	for _, opt := range downlaodReqOpts {
 		opt(downloadReq)
 	}
