@@ -931,6 +931,8 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 		return nil, err
 	}
 
+	ctx, cancelFunc := context.WithCancel(context.Background())
+	defer cancelFunc()
 	for _, sharder := range sharders {
 		wg.Add(1)
 		go func(sharder string) {
@@ -947,7 +949,12 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 			}
 			urlObj.RawQuery = q.Encode()
 			client := &http.Client{Transport: DefaultTransport}
-			response, err := client.Get(urlObj.String())
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, urlObj.String(), nil)
+			if req != nil {
+				log.Error(err)
+				return
+			}
+			response, err := client.Do(req)
 			if err != nil {
 				blockchain.Sharders.Fail(sharder)
 				return
@@ -973,6 +980,12 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 
 			entityResult[sharder] = entityBytes
 			blockchain.Sharders.Success(sharder)
+			
+			// if consensus is reached by enough sharders, cancel other requests
+			rate := float32(maxCount * 100) / float32(cfg.SharderConsensous)
+			if dominant == 200 && rate >= consensusThresh {
+				cancelFunc()
+			}
 			mu.Unlock()
 		}(sharder)
 	}
