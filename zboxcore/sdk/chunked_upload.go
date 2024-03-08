@@ -297,13 +297,13 @@ func CreateChunkedUpload(
 }
 
 func calculateWorkersAndRequests(dataShards, totalShards, chunknumber int) (uploadWorkers int, uploadRequests int) {
-	if totalShards < 4 {
+	if totalShards < 10 {
 		uploadWorkers = 4
 	} else {
 		uploadWorkers = 2
 	}
 
-	if chunknumber*dataShards < 640 {
+	if chunknumber*dataShards < 2000 {
 		uploadRequests = 4
 	} else {
 		uploadRequests = 2
