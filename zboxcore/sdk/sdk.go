@@ -391,6 +391,9 @@ func StakePoolLock(providerType ProviderType, providerID string, value, fee uint
 	case ProviderMiner, ProviderSharder:
 		scAddress = MINERSC_SCADDRESS
 		sn.Name = transaction.MINERSC_LOCK
+	case ProviderAuthorizer:
+		scAddress = ZCNSC_SCADDRESS
+		sn.Name = transaction.ZCNSC_LOCK
 	default:
 		return "", 0, errors.Newf("stake_pool_lock", "unsupported provider type: %v", providerType)
 	}
@@ -444,6 +447,9 @@ func StakePoolUnlock(providerType ProviderType, providerID string, fee uint64) (
 	case ProviderMiner, ProviderSharder:
 		scAddress = MINERSC_SCADDRESS
 		sn.Name = transaction.MINERSC_UNLOCK
+	case ProviderAuthorizer:
+		scAddress = ZCNSC_SCADDRESS
+		sn.Name = transaction.ZCNSC_UNLOCK
 	default:
 		return 0, 0, errors.Newf("stake_pool_unlock", "unsupported provider type: %v", providerType)
 	}
@@ -636,6 +642,14 @@ type UpdateBlobber struct {
 	IsKilled                 *bool                               `json:"is_killed,omitempty"`
 	IsShutdown               *bool                               `json:"is_shutdown,omitempty"`
 	NotAvailable             *bool                               `json:"not_available,omitempty"`
+}
+
+type ResetBlobberStatsDto struct {
+	BlobberID     string `json:"blobber_id"`
+	PrevAllocated int64  `json:"prev_allocated"`
+	PrevSavedData int64  `json:"prev_saved_data"`
+	NewAllocated  int64  `json:"new_allocated"`
+	NewSavedData  int64  `json:"new_saved_data"`
 }
 
 type Validator struct {
@@ -1426,6 +1440,19 @@ func UpdateValidatorSettings(v *UpdateValidator) (resp string, nonce int64, err 
 	}
 	resp, _, nonce, _, err = storageSmartContractTxn(sn)
 	return
+}
+
+func ResetBlobberStats(rbs *ResetBlobberStatsDto) (string, int64, error) {
+	if !sdkInitialized {
+		return "", 0, sdkNotInitialized
+	}
+
+	var sn = transaction.SmartContractTxnData{
+		Name:      transaction.STORAGESC_RESET_BLOBBER_STATS,
+		InputArgs: rbs,
+	}
+	hash, _, n, _, err := storageSmartContractTxn(sn)
+	return hash, n, err
 }
 
 func smartContractTxn(scAddress string, sn transaction.SmartContractTxnData) (
