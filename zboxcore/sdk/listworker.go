@@ -30,7 +30,6 @@ type ListRequest struct {
 	remotefilepath     string
 	authToken          *marker.AuthTicket
 	ctx                context.Context
-	wg                 *sync.WaitGroup
 	forRepair          bool
 	listOnly           bool
 	offset             int
@@ -91,7 +90,6 @@ func WithListRequestForRepair(forRepair bool) ListRequestOptions {
 }
 
 func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, blobberIdx int, rspCh chan<- *listResponse) {
-	defer req.wg.Done()
 	//body := new(bytes.Buffer)
 	//formWriter := multipart.NewWriter(body)
 
@@ -130,7 +128,7 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 	}
 
 	//httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
-	ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
+	ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 10))
 	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
 		if err != nil {
 			l.Logger.Error("List : ", err)
@@ -162,32 +160,31 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 
 func (req *ListRequest) getlistFromBlobbers() ([]*listResponse, error) {
 	numList := len(req.blobbers)
-	req.wg = &sync.WaitGroup{}
-	req.wg.Add(numList)
 	rspCh := make(chan *listResponse, numList)
 	for i := 0; i < numList; i++ {
 		go req.getListInfoFromBlobber(req.blobbers[i], i, rspCh)
 	}
-	req.wg.Wait()
+	consensusMap := make(map[string][]*blockchain.StorageNode)
+	var consensusHash string
 	listInfos := make([]*listResponse, numList)
 	for i := 0; i < numList; i++ {
 		listInfos[i] = <-rspCh
+		if !req.forRepair {
+			if listInfos[i].err != nil || listInfos[i].ref == nil {
+				continue
+			}
+			hash := listInfos[i].ref.FileMetaHash
+			consensusMap[hash] = append(consensusMap[hash], req.blobbers[listInfos[i].blobberIdx])
+			if len(consensusMap[hash]) >= req.consensusThresh {
+				consensusHash = hash
+				break
+			}
+		}
 	}
 	if req.listOnly {
 		return listInfos, nil
 	}
-	consensusMap := make(map[string][]*blockchain.StorageNode)
-	var consensusHash string
-	for i := 0; i < numList; i++ {
-		if listInfos[i].err != nil || listInfos[i].ref == nil {
-			continue
-		}
-		hash := listInfos[i].ref.FileMetaHash
-		consensusMap[hash] = append(consensusMap[hash], req.blobbers[listInfos[i].blobberIdx])
-		if len(consensusMap[hash]) >= req.consensusThresh {
-			consensusHash = hash
-		}
-	}
+
 	var err error
 	req.listOnly = true
 	listLen := len(consensusMap[consensusHash])
@@ -198,9 +195,7 @@ func (req *ListRequest) getlistFromBlobbers() ([]*listResponse, error) {
 		var rnd = rand.New(rand.NewSource(time.Now().UnixNano()))
 		num := rnd.Intn(listLen)
 		randomBlobber := consensusMap[consensusHash][num]
-		req.wg.Add(1)
 		go req.getListInfoFromBlobber(randomBlobber, 0, rspCh)
-		req.wg.Wait()
 		listInfos[0] = <-rspCh
 		if listInfos[0].err == nil {
 			return listInfos, nil
