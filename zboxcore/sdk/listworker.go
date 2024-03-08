@@ -164,9 +164,9 @@ func (req *ListRequest) getlistFromBlobbers() ([]*listResponse, error) {
 	for i := 0; i < numList; i++ {
 		go req.getListInfoFromBlobber(req.blobbers[i], i, rspCh)
 	}
+	listInfos := make([]*listResponse, numList)
 	consensusMap := make(map[string][]*blockchain.StorageNode)
 	var consensusHash string
-	listInfos := make([]*listResponse, numList)
 	for i := 0; i < numList; i++ {
 		listInfos[i] = <-rspCh
 		if !req.forRepair {
@@ -191,12 +191,14 @@ func (req *ListRequest) getlistFromBlobbers() ([]*listResponse, error) {
 	if listLen < req.consensusThresh {
 		return listInfos, listInfos[0].err
 	}
+	listInfos = listInfos[:1]
+	listOnlyRespCh := make(chan *listResponse, 1)
 	for i := 0; i < listLen; i++ {
 		var rnd = rand.New(rand.NewSource(time.Now().UnixNano()))
 		num := rnd.Intn(listLen)
 		randomBlobber := consensusMap[consensusHash][num]
-		go req.getListInfoFromBlobber(randomBlobber, 0, rspCh)
-		listInfos[0] = <-rspCh
+		go req.getListInfoFromBlobber(randomBlobber, 0, listOnlyRespCh)
+		listInfos[0] = <-listOnlyRespCh
 		if listInfos[0].err == nil {
 			return listInfos, nil
 		}
