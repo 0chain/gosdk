@@ -230,10 +230,18 @@ func (f *MemFile) Sync() error {
 }
 func (f *MemFile) Seek(offset int64, whence int) (ret int64, err error) {
 
-	// always reset it from beginning, it only work for wasm download
-	f.reader = bytes.NewReader(f.Buffer)
-
-	return 0, nil
+	if whence != io.SeekStart {
+		return 0, os.ErrInvalid
+	}
+	switch {
+	case offset < 0:
+		return 0, os.ErrInvalid
+	case offset > int64(len(f.Buffer)):
+		return 0, io.EOF
+	default:
+		f.reader = bytes.NewReader(f.Buffer[offset:])
+		return offset, nil
+	}
 }
 
 func (f *MemFile) Close() error {
