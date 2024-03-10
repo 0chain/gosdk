@@ -1082,11 +1082,8 @@ func GetFileRefFromBlobber(allocationID, blobberId, remotePath string) (fRef *fi
 	listReq.ctx = ctx
 	listReq.remotefilepath = remotePath
 
-	listReq.wg = &sync.WaitGroup{}
-	listReq.wg.Add(1)
 	rspCh := make(chan *fileMetaResponse, 1)
 	go listReq.getFileMetaInfoFromBlobber(listReq.blobbers[0], 0, rspCh)
-	listReq.wg.Wait()
 	resp := <-rspCh
 	return resp.fileref, resp.err
 }
