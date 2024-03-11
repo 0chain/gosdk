@@ -308,7 +308,9 @@ func (req *DownloadRequest) downloadBlock(
 					downloadErrors[i] = fmt.Sprintf("Error %s from %s",
 						err.Error(), req.blobbers[result.idx].Baseurl)
 					logger.Logger.Error(err)
-					req.bufferMap[result.idx].ReleaseChunk(int(req.startBlock / req.numBlocks))
+					if req.bufferMap != nil {
+						req.bufferMap[result.idx].ReleaseChunk(int(req.startBlock / req.numBlocks))
+					}
 				} else if timeRequest {
 					req.downloadQueue[result.idx].timeTaken = result.timeTaken
 				}
