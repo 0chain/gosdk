@@ -285,7 +285,7 @@ func (req *DownloadRequest) downloadBlock(
 			if req.shouldVerify {
 				go AddBlockDownloadReq(req.ctx, blockDownloadReq, nil, req.effectiveBlockSize)
 			} else {
-				go AddBlockDownloadReq(req.ctx, blockDownloadReq, req.bufferMap[int(pos)], req.effectiveBlockSize)
+				go AddBlockDownloadReq(req.ctx, blockDownloadReq, req.bufferMap[blobberIdx], req.effectiveBlockSize)
 			}
 		}
 
@@ -308,7 +308,9 @@ func (req *DownloadRequest) downloadBlock(
 					downloadErrors[i] = fmt.Sprintf("Error %s from %s",
 						err.Error(), req.blobbers[result.idx].Baseurl)
 					logger.Logger.Error(err)
-					req.bufferMap[result.idx].ReleaseChunk(int(req.startBlock / req.numBlocks))
+					if req.bufferMap != nil {
+						req.bufferMap[result.idx].ReleaseChunk(int(req.startBlock / req.numBlocks))
+					}
 				} else if timeRequest {
 					req.downloadQueue[result.idx].timeTaken = result.timeTaken
 				}
@@ -538,10 +540,11 @@ func (req *DownloadRequest) processDownload() {
 		}
 		for i := req.downloadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 			pos = uint64(i.TrailingZeros())
+			blobberIdx := req.downloadQueue[pos].blobberIdx
 			if writerAt {
-				req.bufferMap[int(pos)] = zboxutil.NewDownloadBufferWithChan(sz, int(numBlocks), req.effectiveBlockSize)
+				req.bufferMap[blobberIdx] = zboxutil.NewDownloadBufferWithChan(sz, int(numBlocks), req.effectiveBlockSize)
 			} else {
-				req.bufferMap[int(pos)] = zboxutil.NewDownloadBufferWithMask(sz, int(numBlocks), req.effectiveBlockSize)
+				req.bufferMap[blobberIdx] = zboxutil.NewDownloadBufferWithMask(sz, int(numBlocks), req.effectiveBlockSize)
 			}
 		}
 	}
