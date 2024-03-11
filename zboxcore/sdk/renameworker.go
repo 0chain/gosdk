@@ -44,7 +44,7 @@ type RenameRequest struct {
 }
 
 func (req *RenameRequest) getObjectTreeFromBlobber(blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
-	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.allocationTx, req.remotefilepath, req.sig, blobber)
+	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.allocationTx, req.sig, req.remotefilepath, blobber)
 }
 
 func (req *RenameRequest) renameBlobberObject(
