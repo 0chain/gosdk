@@ -1138,7 +1138,7 @@ func getNewAllocationBlobbers(
 		"parity_shards":        parityshards,
 		"size":                 size,
 		"blobbers":             uniqueBlobbers,
-		"blobber_auth_tickets": blobberAuthTickets,
+		"blobber_auth_tickets": uniqueBlobberAuthTickets,
 		"read_price_range":     readPrice,
 		"write_price_range":    writePrice,
 	}, nil
