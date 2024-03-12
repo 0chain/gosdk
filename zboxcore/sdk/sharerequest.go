@@ -17,6 +17,7 @@ import (
 type ShareRequest struct {
 	allocationID      string
 	allocationTx      string
+	sig               string
 	remotefilepath    string
 	remotefilename    string
 	refType           string
@@ -33,6 +34,7 @@ func (req *ShareRequest) GetFileRef() (*fileref.FileRef, error) {
 		remotefilepathhash: filePathHash,
 		allocationID:       req.allocationID,
 		allocationTx:       req.allocationTx,
+		sig:                req.sig,
 		blobbers:           req.blobbers,
 		ctx:                req.ctx,
 		Consensus:          Consensus{RWMutex: &sync.RWMutex{}},

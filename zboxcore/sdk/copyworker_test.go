@@ -489,10 +489,13 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 				maskMU:       &sync.Mutex{},
 				connectionID: mockConnectionId,
 			}
+			sig, err := zclient.Sign(mockAllocationTxId)
+			require.NoError(err)
+			req.sig = sig
 			req.ctx, req.ctxCncl = context.WithCancel(context.TODO())
 
 			tt.setup(t, tt.name, tt.numBlobbers, tt.numCorrect, req)
-			err := req.ProcessCopy()
+			err = req.ProcessCopy()
 			if tt.wantErr {
 				require.Contains(errors.Top(err), tt.errMsg)
 			} else {

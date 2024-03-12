@@ -18,7 +18,6 @@ import (
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/conf"
-	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
@@ -167,14 +166,9 @@ func setClientInfo(req *http.Request) {
 	req.Header.Set("X-App-Client-Key", client.GetClientPublicKey())
 }
 
-func setClientInfoWithSign(req *http.Request, allocation string) error {
+func setClientInfoWithSign(req *http.Request, sig string) error {
 	setClientInfo(req)
-
-	sign, err := client.Sign(encryption.Hash(allocation))
-	if err != nil {
-		return err
-	}
-	req.Header.Set(CLIENT_SIGNATURE_HEADER, sign)
+	req.Header.Set(CLIENT_SIGNATURE_HEADER, sig)
 
 	return nil
 }
@@ -196,7 +190,7 @@ func NewCommitRequest(baseUrl, allocationID string, allocationTx string, body io
 	return req, nil
 }
 
-func NewReferencePathRequest(baseUrl, allocationID string, allocationTx string, paths []string) (*http.Request, error) {
+func NewReferencePathRequest(baseUrl, allocationID string, allocationTx string, sig string, paths []string) (*http.Request, error) {
 	nurl, err := joinUrl(baseUrl, REFERENCE_ENDPOINT, allocationTx)
 	if err != nil {
 		return nil, err
@@ -216,7 +210,7 @@ func NewReferencePathRequest(baseUrl, allocationID string, allocationTx string, 
 		return nil, err
 	}
 
-	if err := setClientInfoWithSign(req, allocationTx); err != nil {
+	if err := setClientInfoWithSign(req, sig); err != nil {
 		return nil, err
 	}
 
@@ -248,7 +242,7 @@ func NewCalculateHashRequest(baseUrl, allocationID string, allocationTx string, 
 	return req, nil
 }
 
-func NewObjectTreeRequest(baseUrl, allocationID string, allocationTx string, path string) (*http.Request, error) {
+func NewObjectTreeRequest(baseUrl, allocationID string, allocationTx string, sig string, path string) (*http.Request, error) {
 	nurl, err := joinUrl(baseUrl, OBJECT_TREE_ENDPOINT, allocationTx)
 	if err != nil {
 		return nil, err
@@ -262,7 +256,7 @@ func NewObjectTreeRequest(baseUrl, allocationID string, allocationTx string, pat
 		return nil, err
 	}
 
-	if err := setClientInfoWithSign(req, allocationTx); err != nil {
+	if err := setClientInfoWithSign(req, sig); err != nil {
 		return nil, err
 	}
 
@@ -271,7 +265,7 @@ func NewObjectTreeRequest(baseUrl, allocationID string, allocationTx string, pat
 	return req, nil
 }
 
-func NewRefsRequest(baseUrl, allocationID, path, pathHash, authToken, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*http.Request, error) {
+func NewRefsRequest(baseUrl, allocationID, sig, path, pathHash, authToken, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*http.Request, error) {
 	nUrl, err := joinUrl(baseUrl, REFS_ENDPOINT, allocationID)
 	if err != nil {
 		return nil, err
@@ -295,14 +289,14 @@ func NewRefsRequest(baseUrl, allocationID, path, pathHash, authToken, offsetPath
 
 	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 
-	if err := setClientInfoWithSign(req, allocationID); err != nil {
+	if err := setClientInfoWithSign(req, sig); err != nil {
 		return nil, err
 	}
 
 	return req, nil
 }
 
-func NewRecentlyAddedRefsRequest(bUrl, allocID, allocTx string, fromDate, offset int64, pageLimit int) (*http.Request, error) {
+func NewRecentlyAddedRefsRequest(bUrl, allocID, allocTx, sig string, fromDate, offset int64, pageLimit int) (*http.Request, error) {
 	nUrl, err := joinUrl(bUrl, RECENT_REFS_ENDPOINT, allocID)
 	if err != nil {
 		return nil, err
@@ -321,7 +315,7 @@ func NewRecentlyAddedRefsRequest(bUrl, allocID, allocTx string, fromDate, offset
 
 	req.Header.Set(ALLOCATION_ID_HEADER, allocID)
 
-	if err = setClientInfoWithSign(req, allocID); err != nil {
+	if err = setClientInfoWithSign(req, sig); err != nil {
 		return nil, err
 	}
 
@@ -346,7 +340,7 @@ func NewAllocationRequest(baseUrl, allocationID, allocationTx string) (*http.Req
 	return req, nil
 }
 
-func NewCollaboratorRequest(baseUrl string, allocationID string, allocationTx string, body io.Reader) (*http.Request, error) {
+func NewCollaboratorRequest(baseUrl, allocationID, allocationTx, sig string, body io.Reader) (*http.Request, error) {
 	u, err := joinUrl(baseUrl, COLLABORATOR_ENDPOINT, allocationTx)
 	if err != nil {
 		return nil, err
@@ -356,7 +350,7 @@ func NewCollaboratorRequest(baseUrl string, allocationID string, allocationTx st
 		return nil, err
 	}
 
-	if err := setClientInfoWithSign(req, allocationTx); err != nil {
+	if err := setClientInfoWithSign(req, sig); err != nil {
 		return nil, err
 	}
 
@@ -365,7 +359,7 @@ func NewCollaboratorRequest(baseUrl string, allocationID string, allocationTx st
 	return req, nil
 }
 
-func GetCollaboratorsRequest(baseUrl string, allocationID string, allocationTx string, query *url.Values) (*http.Request, error) {
+func GetCollaboratorsRequest(baseUrl, allocationID, allocationTx, sig string, query *url.Values) (*http.Request, error) {
 	u, err := joinUrl(baseUrl, COLLABORATOR_ENDPOINT, allocationTx)
 	if err != nil {
 		return nil, err
@@ -376,7 +370,7 @@ func GetCollaboratorsRequest(baseUrl string, allocationID string, allocationTx s
 		return nil, err
 	}
 
-	if err := setClientInfoWithSign(req, allocationTx); err != nil {
+	if err := setClientInfoWithSign(req, sig); err != nil {
 		return nil, err
 	}
 
@@ -385,7 +379,7 @@ func GetCollaboratorsRequest(baseUrl string, allocationID string, allocationTx s
 	return req, nil
 }
 
-func DeleteCollaboratorRequest(baseUrl string, allocationID string, allocationTx string, query *url.Values) (*http.Request, error) {
+func DeleteCollaboratorRequest(baseUrl, allocationID, allocationTx, sig string, query *url.Values) (*http.Request, error) {
 	u, err := joinUrl(baseUrl, COLLABORATOR_ENDPOINT, allocationTx)
 	if err != nil {
 		return nil, err
@@ -397,7 +391,7 @@ func DeleteCollaboratorRequest(baseUrl string, allocationID string, allocationTx
 		return nil, err
 	}
 
-	if err := setClientInfoWithSign(req, allocationTx); err != nil {
+	if err := setClientInfoWithSign(req, sig); err != nil {
 		return nil, err
 	}
 
@@ -406,7 +400,7 @@ func DeleteCollaboratorRequest(baseUrl string, allocationID string, allocationTx
 	return req, nil
 }
 
-func NewFileMetaRequest(baseUrl string, allocationID string, allocationTx string, body io.Reader) (*http.Request, error) {
+func NewFileMetaRequest(baseUrl, allocationID, allocationTx, sig string, body io.Reader) (*http.Request, error) {
 	u, err := joinUrl(baseUrl, FILE_META_ENDPOINT, allocationTx)
 	if err != nil {
 		return nil, err
@@ -416,7 +410,7 @@ func NewFileMetaRequest(baseUrl string, allocationID string, allocationTx string
 		return nil, err
 	}
 
-	err = setClientInfoWithSign(req, allocationTx)
+	err = setClientInfoWithSign(req, sig)
 	if err != nil {
 		return nil, err
 	}
@@ -426,7 +420,7 @@ func NewFileMetaRequest(baseUrl string, allocationID string, allocationTx string
 	return req, nil
 }
 
-func NewFileStatsRequest(baseUrl string, allocationID string, allocationTx string, body io.Reader) (*http.Request, error) {
+func NewFileStatsRequest(baseUrl, allocationID, allocationTx, sig string, body io.Reader) (*http.Request, error) {
 	u, err := joinUrl(baseUrl, FILE_STATS_ENDPOINT, allocationTx)
 	if err != nil {
 		return nil, err
@@ -436,7 +430,7 @@ func NewFileStatsRequest(baseUrl string, allocationID string, allocationTx strin
 		return nil, err
 	}
 
-	if err := setClientInfoWithSign(req, allocationTx); err != nil {
+	if err := setClientInfoWithSign(req, sig); err != nil {
 		return nil, err
 	}
 
@@ -472,7 +466,7 @@ func NewListRequest(baseUrl, allocationID, allocationTx, path, pathHash, auth_to
 }
 
 // NewUploadRequestWithMethod create a http request of upload
-func NewUploadRequestWithMethod(baseURL, allocationID string, allocationTx string, body io.Reader, method string) (*http.Request, error) {
+func NewUploadRequestWithMethod(baseURL, allocationID, allocationTx, sig string, body io.Reader, method string) (*http.Request, error) {
 	u, err := joinUrl(baseURL, UPLOAD_ENDPOINT, allocationTx)
 	if err != nil {
 		return nil, err
@@ -487,7 +481,7 @@ func NewUploadRequestWithMethod(baseURL, allocationID string, allocationTx strin
 	}
 
 	// set header: X-App-Client-Signature
-	if err := setClientInfoWithSign(req, allocationTx); err != nil {
+	if err := setClientInfoWithSign(req, sig); err != nil {
 		return nil, err
 	}
 
@@ -497,7 +491,7 @@ func NewUploadRequestWithMethod(baseURL, allocationID string, allocationTx strin
 }
 
 func NewWriteMarkerLockRequest(
-	baseURL, allocationID, allocationTx, connID string) (*http.Request, error) {
+	baseURL, allocationID, allocationTx, sig, connID string) (*http.Request, error) {
 
 	u, err := joinUrl(baseURL, WM_LOCK_ENDPOINT, allocationTx)
 	if err != nil {
@@ -513,7 +507,7 @@ func NewWriteMarkerLockRequest(
 		return nil, err
 	}
 
-	err = setClientInfoWithSign(req, allocationTx)
+	err = setClientInfoWithSign(req, sig)
 	if err != nil {
 		return nil, err
 	}
@@ -524,7 +518,7 @@ func NewWriteMarkerLockRequest(
 }
 
 func NewWriteMarkerUnLockRequest(
-	baseURL, allocationID, allocationTx, connID, requestTime string) (*http.Request, error) {
+	baseURL, allocationID, allocationTx, sig, connID, requestTime string) (*http.Request, error) {
 
 	u, err := joinUrl(baseURL, WM_LOCK_ENDPOINT, allocationTx, connID)
 	if err != nil {
@@ -536,7 +530,7 @@ func NewWriteMarkerUnLockRequest(
 		return nil, err
 	}
 
-	err = setClientInfoWithSign(req, allocationTx)
+	err = setClientInfoWithSign(req, sig)
 	if err != nil {
 		return nil, err
 	}
@@ -546,7 +540,7 @@ func NewWriteMarkerUnLockRequest(
 	return req, nil
 }
 
-func NewUploadRequest(baseUrl, allocationID string, allocationTx string, body io.Reader, update bool) (*http.Request, error) {
+func NewUploadRequest(baseUrl, allocationID, allocationTx, sig string, body io.Reader, update bool) (*http.Request, error) {
 	u, err := joinUrl(baseUrl, UPLOAD_ENDPOINT, allocationTx)
 	if err != nil {
 		return nil, err
@@ -562,7 +556,7 @@ func NewUploadRequest(baseUrl, allocationID string, allocationTx string, body io
 		return nil, err
 	}
 
-	if err := setClientInfoWithSign(req, allocationTx); err != nil {
+	if err := setClientInfoWithSign(req, sig); err != nil {
 		return nil, err
 	}
 
@@ -571,7 +565,7 @@ func NewUploadRequest(baseUrl, allocationID string, allocationTx string, body io
 	return req, nil
 }
 
-func NewConnectionRequest(baseUrl, allocationID string, allocationTx string, body io.Reader) (*http.Request, error) {
+func NewConnectionRequest(baseUrl, allocationID, allocationTx, sig string, body io.Reader) (*http.Request, error) {
 	u, err := joinUrl(baseUrl, CREATE_CONNECTION_ENDPOINT, allocationTx)
 	if err != nil {
 		return nil, err
@@ -581,7 +575,7 @@ func NewConnectionRequest(baseUrl, allocationID string, allocationTx string, bod
 		return nil, err
 	}
 
-	if err := setClientInfoWithSign(req, allocationTx); err != nil {
+	if err := setClientInfoWithSign(req, sig); err != nil {
 		return nil, err
 	}
 
@@ -590,7 +584,7 @@ func NewConnectionRequest(baseUrl, allocationID string, allocationTx string, bod
 	return req, nil
 }
 
-func NewRenameRequest(baseUrl, allocationID string, allocationTx string, body io.Reader) (*http.Request, error) {
+func NewRenameRequest(baseUrl, allocationID, allocationTx, sig string, body io.Reader) (*http.Request, error) {
 	u, err := joinUrl(baseUrl, RENAME_ENDPOINT, allocationTx)
 	if err != nil {
 		return nil, err
@@ -602,7 +596,7 @@ func NewRenameRequest(baseUrl, allocationID string, allocationTx string, body io
 		return nil, err
 	}
 
-	if err := setClientInfoWithSign(req, allocationTx); err != nil {
+	if err := setClientInfoWithSign(req, sig); err != nil {
 		return nil, err
 	}
 
@@ -611,7 +605,7 @@ func NewRenameRequest(baseUrl, allocationID string, allocationTx string, body io
 	return req, nil
 }
 
-func NewCopyRequest(baseUrl, allocationID string, allocationTx string, body io.Reader) (*http.Request, error) {
+func NewCopyRequest(baseUrl, allocationID, allocationTx, sig string, body io.Reader) (*http.Request, error) {
 	u, err := joinUrl(baseUrl, COPY_ENDPOINT, allocationTx)
 	if err != nil {
 		return nil, err
@@ -622,7 +616,7 @@ func NewCopyRequest(baseUrl, allocationID string, allocationTx string, body io.R
 		return nil, err
 	}
 
-	if err := setClientInfoWithSign(req, allocationTx); err != nil {
+	if err := setClientInfoWithSign(req, sig); err != nil {
 		return nil, err
 	}
 
@@ -631,7 +625,7 @@ func NewCopyRequest(baseUrl, allocationID string, allocationTx string, body io.R
 	return req, nil
 }
 
-func NewMoveRequest(baseUrl, allocationID string, allocationTx string, body io.Reader) (*http.Request, error) {
+func NewMoveRequest(baseUrl, allocationID, allocationTx, sig string, body io.Reader) (*http.Request, error) {
 	u, err := joinUrl(baseUrl, MOVE_ENDPOINT, allocationTx)
 	if err != nil {
 		return nil, err
@@ -642,7 +636,7 @@ func NewMoveRequest(baseUrl, allocationID string, allocationTx string, body io.R
 		return nil, err
 	}
 
-	if err := setClientInfoWithSign(req, allocationTx); err != nil {
+	if err := setClientInfoWithSign(req, sig); err != nil {
 		return nil, err
 	}
 
@@ -684,7 +678,7 @@ func NewRedeemRequest(baseUrl, allocationID, allocationTx string) (*http.Request
 	return req, nil
 }
 
-func NewDeleteRequest(baseUrl, allocationID string, allocationTx string, query *url.Values) (*http.Request, error) {
+func NewDeleteRequest(baseUrl, allocationID, allocationTx, sig string, query *url.Values) (*http.Request, error) {
 	u, err := joinUrl(baseUrl, UPLOAD_ENDPOINT, allocationTx)
 	if err != nil {
 		return nil, err
@@ -696,7 +690,7 @@ func NewDeleteRequest(baseUrl, allocationID string, allocationTx string, query *
 		return nil, err
 	}
 
-	if err := setClientInfoWithSign(req, allocationTx); err != nil {
+	if err := setClientInfoWithSign(req, sig); err != nil {
 		return nil, err
 	}
 
@@ -705,7 +699,7 @@ func NewDeleteRequest(baseUrl, allocationID string, allocationTx string, query *
 	return req, nil
 }
 
-func NewCreateDirRequest(baseUrl, allocationID string, allocationTx string, body io.Reader) (*http.Request, error) {
+func NewCreateDirRequest(baseUrl, allocationID, allocationTx, sig string, body io.Reader) (*http.Request, error) {
 	u, err := joinUrl(baseUrl, DIR_ENDPOINT, allocationTx)
 	if err != nil {
 		return nil, err
@@ -716,7 +710,7 @@ func NewCreateDirRequest(baseUrl, allocationID string, allocationTx string, body
 		return nil, err
 	}
 
-	if err := setClientInfoWithSign(req, allocationTx); err != nil {
+	if err := setClientInfoWithSign(req, sig); err != nil {
 		return nil, err
 	}
 
@@ -725,7 +719,7 @@ func NewCreateDirRequest(baseUrl, allocationID string, allocationTx string, body
 	return req, nil
 }
 
-func NewShareRequest(baseUrl, allocationID string, allocationTx string, body io.Reader) (*http.Request, error) {
+func NewShareRequest(baseUrl, allocationID, allocationTx, sig string, body io.Reader) (*http.Request, error) {
 	u, err := joinUrl(baseUrl, SHARE_ENDPOINT, allocationTx)
 	if err != nil {
 		return nil, err
@@ -736,7 +730,7 @@ func NewShareRequest(baseUrl, allocationID string, allocationTx string, body io.
 		return nil, err
 	}
 
-	if err := setClientInfoWithSign(req, allocationTx); err != nil {
+	if err := setClientInfoWithSign(req, sig); err != nil {
 		return nil, err
 	}
 
@@ -745,7 +739,7 @@ func NewShareRequest(baseUrl, allocationID string, allocationTx string, body io.
 	return req, nil
 }
 
-func NewRevokeShareRequest(baseUrl, allocationID string, allocationTx string, query *url.Values) (*http.Request, error) {
+func NewRevokeShareRequest(baseUrl, allocationID, allocationTx, sig string, query *url.Values) (*http.Request, error) {
 	u, err := joinUrl(baseUrl, SHARE_ENDPOINT, allocationTx)
 	if err != nil {
 		return nil, err
@@ -756,7 +750,7 @@ func NewRevokeShareRequest(baseUrl, allocationID string, allocationTx string, qu
 		return nil, err
 	}
 
-	if err := setClientInfoWithSign(req, allocationTx); err != nil {
+	if err := setClientInfoWithSign(req, sig); err != nil {
 		return nil, err
 	}
 
@@ -765,7 +759,7 @@ func NewRevokeShareRequest(baseUrl, allocationID string, allocationTx string, qu
 	return req, nil
 }
 
-func NewWritemarkerRequest(baseUrl, allocationID, allocationTx string) (*http.Request, error) {
+func NewWritemarkerRequest(baseUrl, allocationID, allocationTx, sig string) (*http.Request, error) {
 
 	nurl, err := joinUrl(baseUrl, LATEST_WRITE_MARKER_ENDPOINT, allocationTx)
 	if err != nil {
@@ -777,7 +771,7 @@ func NewWritemarkerRequest(baseUrl, allocationID, allocationTx string) (*http.Re
 		return nil, err
 	}
 
-	if err := setClientInfoWithSign(req, allocationTx); err != nil {
+	if err := setClientInfoWithSign(req, sig); err != nil {
 		return nil, err
 	}
 

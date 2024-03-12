@@ -13,6 +13,7 @@ import (
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/node"
 	"github.com/0chain/gosdk/core/sys"
+	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
 	"go.uber.org/zap"
 
@@ -23,7 +24,6 @@ import (
 	"github.com/0chain/gosdk/core/version"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/zboxcore/sdk"
 )
 
 // compiler time check
@@ -875,8 +875,37 @@ type MinerSCUnlock struct {
 	ID string `json:"id"`
 }
 
+type CommitMetaData struct {
+	CrudType string
+	MetaData *ConsolidatedFileMeta
+}
+
+type CommitMetaResponse struct {
+	TxnID    string
+	MetaData *ConsolidatedFileMeta
+}
+
+type ConsolidatedFileMeta struct {
+	Name            string
+	Type            string
+	Path            string
+	LookupHash      string
+	Hash            string
+	MimeType        string
+	Size            int64
+	NumBlocks       int64
+	ActualFileSize  int64
+	ActualNumBlocks int64
+	EncryptedKey    string
+
+	ActualThumbnailSize int64
+	ActualThumbnailHash string
+
+	Collaborators []fileref.Collaborator
+}
+
 func VerifyContentHash(metaTxnDataJSON string) (bool, error) {
-	var metaTxnData sdk.CommitMetaResponse
+	var metaTxnData CommitMetaResponse
 	err := json.Unmarshal([]byte(metaTxnDataJSON), &metaTxnData)
 	if err != nil {
 		return false, errors.New("metaTxnData_decode_error", "Unable to decode metaTxnData json")
@@ -887,7 +916,7 @@ func VerifyContentHash(metaTxnDataJSON string) (bool, error) {
 		return false, errors.New("fetch_txm_details", "Unable to fetch txn details")
 	}
 
-	var metaOperation sdk.CommitMetaData
+	var metaOperation CommitMetaData
 	err = json.Unmarshal([]byte(t.TransactionData), &metaOperation)
 	if err != nil {
 		logging.Error("Unmarshal of transaction data to fileMeta failed, Maybe not a commit meta txn :", t.Hash)

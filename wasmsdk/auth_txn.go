@@ -28,6 +28,26 @@ func registerAuthorizer(this js.Value, args []js.Value) interface{} {
 	return nil
 }
 
+func registerAuthCommon(this js.Value, args []js.Value) interface{} {
+	authCallback = parseAuthorizerCallback(args[0])
+	authResponseC = make(chan string, 1)
+
+	sys.AuthCommon = func(msg string) (string, error) {
+		// fmt.Println("auth - authCallback:", authCallback)
+		// result := authCallback(msg)
+		// fmt.Println("auth - result:", result)
+		// if result != "" {
+		// 	// Handle the error returned by authCallback
+		// 	fmt.Println("auth - Error:", result)
+		// 	return "", fmt.Errorf(result)
+		// 	// Perform error handling logic here
+		// }
+		authCallback(msg)
+		return <-authResponseC, nil
+	}
+	return nil
+}
+
 func authResponse(response string) {
 	authResponseC <- response
 }
