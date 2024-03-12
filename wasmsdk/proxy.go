@@ -67,11 +67,6 @@ func main() {
 
 				sys.SignWithAuth = func(hash, signatureScheme string, keys []sys.KeyPair) (string, error) {
 					fmt.Println("auth - sign with auth")
-					// jsAuthCommon := jsProxy.Get("authCommon")
-					// result, berr := jsbridge.Await(jsAuthCommon.Invoke(hash))
-					// if len(berr) > 0 && !berr[0].IsNull() {
-					// 	return "", errors.New("authCommon: " + berr[0].String())
-					// }
 					data, err := json.Marshal(struct {
 						Data     string `json:"data"`
 						ClientID string `json:"client_id"`

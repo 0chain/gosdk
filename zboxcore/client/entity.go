@@ -33,11 +33,14 @@ func init() {
 	sys.Sign = signHash
 	// initialize SignFunc as default implementation
 	Sign = func(hash string) (string, error) {
+		if client.Mnemonic != "" {
+			return sys.Sign(hash, client.SignatureScheme, GetClientSysKeys())
+		}
+
 		fmt.Println("auth - sign with default impl")
 		fmt.Println("auth - stack:", string(debug.Stack()))
-		// return sys.Sign(hash, client.SignatureScheme, GetClientSysKeys())
+		// get sign lock
 		<-sigC
-		fmt.Println("auth - got sign lock")
 		sig, err := sys.SignWithAuth(hash, client.SignatureScheme, GetClientSysKeys())
 		sigC <- struct{}{}
 		fmt.Println("auth - sign done with sig:", sig)
