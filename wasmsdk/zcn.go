@@ -48,6 +48,7 @@ type ClientState struct {
 
 func getClientState(clientId string) (*ClientState, error) {
 	clientStateStr, err := zcncore.GetClientState(clientId)
+	sdkLogger.Debug("clientStateStr: ", clientStateStr, "err: ", err)
 	if err != nil {
 		return nil, err
 	}
@@ -56,6 +57,7 @@ func getClientState(clientId string) (*ClientState, error) {
 	if err != nil {
 		return nil, errors.New(`error unmarshaling client state: ` + err.Error())
 	}
+	sdkLogger.Debug(clientState)
 	return &clientState, nil
 }
 

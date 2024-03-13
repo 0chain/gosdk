@@ -596,9 +596,15 @@ func GetClientState(clientId string) (string, error) {
 
 	go func() {
 		value, info, err := getBalanceFromSharders(clientId)
+		logging.Debug("value: ", value, "info: ", info, "err: ", err)
 		if err != nil {
 			cb.OnBalanceAvailable(StatusError, value, info)
 			cb.err = err
+			return
+		}
+		if strings.TrimSpace(info) == `{"error":"value not present"}` {
+			cb.OnBalanceAvailable(StatusError, value, info)
+			cb.err = stdErrors.New("invalid_client_id")
 			return
 		}
 		cb.OnBalanceAvailable(StatusSuccess, value, info)

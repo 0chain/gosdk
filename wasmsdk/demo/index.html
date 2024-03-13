@@ -53,6 +53,7 @@
     <button id="btnGetBalance">Get Balance</button>
 
     <button id="btnGetUSDRate">Get USD Rate</button>
+    <button id="btnGetClientState">Get Client State</button>
   </fieldset>
 
   <fieldset>
@@ -265,6 +266,18 @@
       const { clientID } = getWallet()
       const wallet = await goWasm.sdk.getWalletBalance(clientID)
       txtOutput.innerHTML = JSON.stringify(wallet, null, 2)
+    })
+
+    onClick('btnGetClientState', async () => {
+      let clientId = document.getElementById("clientId").value
+      console.log(`getClientState; clientId = `, clientId)
+      try {
+        let clientState = await goWasm.sdk.getClientState(clientId)
+        console.log(clientState)
+        txtOutput.innerHTML = JSON.stringify(clientState, null, 2)
+      } catch (e) {
+        console.error(e)
+      }
     })
 
     onClick('btnCreateFreeAlloc', async () => {
