@@ -105,7 +105,7 @@ type DownloadRequest struct {
 	bufferMap          map[int]zboxutil.DownloadBuffer
 	downloadStorer     DownloadProgressStorer
 	workdir            string
-	downloadQueue      downloadQueue
+	downloadQueue      downloadQueue // Always initialize this queue with max time taken
 }
 
 type downloadPriority struct {
@@ -681,13 +681,18 @@ func (req *DownloadRequest) processDownload() {
 	var progressLock sync.Mutex
 	firstReqWG := sync.WaitGroup{}
 	firstReqWG.Add(1)
-	eg, _ := errgroup.WithContext(ctx)
+	eg, egCtx := errgroup.WithContext(ctx)
 	eg.SetLimit(downloadWorkerCount + EXTRA_COUNT)
 	for i := 0; i < n; i++ {
 		j := i
 		if i == 1 {
 			firstReqWG.Wait()
 			heap.Init(&req.downloadQueue)
+		}
+		select {
+		case <-egCtx.Done():
+			goto breakDownloadLoop
+		default:
 		}
 		eg.Go(func() error {
 
@@ -738,6 +743,7 @@ func (req *DownloadRequest) processDownload() {
 			}
 			return nil
 		})
+	breakDownloadLoop:
 	}
 	if err := eg.Wait(); err != nil {
 		writeCancel()

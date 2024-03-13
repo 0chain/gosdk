@@ -310,7 +310,7 @@ func (f *MemChanFile) Write(p []byte) (n int, err error) {
 		f.Buffer <- data
 	} else {
 		if cap(f.data) == 0 {
-			f.data = make([]byte, 0, f.ChunkWriteSize)
+			f.data = make([]byte, 0, len(p))
 		}
 		f.data = append(f.data, p...)
 	}
@@ -326,7 +326,7 @@ func (f *MemChanFile) Sync() error {
 		}
 		f.Buffer <- f.data[current:end]
 	}
-	f.data = make([]byte, 0, f.ChunkWriteSize)
+	f.data = nil
 	return nil
 }
 func (f *MemChanFile) Seek(offset int64, whence int) (ret int64, err error) {
