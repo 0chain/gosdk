@@ -585,6 +585,30 @@ func getWalletBalance(clientId string) (common.Balance, error) {
 	return cb.balance, cb.err
 }
 
+func GetClientState(clientId string) (string, error) {
+	err := checkSdkInit()
+	if err != nil {
+		return "", err
+	}
+
+	cb := &walletCallback{}
+	cb.Add(1)
+
+	go func() {
+		value, info, err := getBalanceFromSharders(clientId)
+		if err != nil {
+			cb.OnBalanceAvailable(StatusError, value, info)
+			cb.err = err
+			return
+		}
+		cb.OnBalanceAvailable(StatusSuccess, value, info)
+	}()
+
+	cb.Wait()
+
+	return cb.info, cb.err
+}
+
 // GetBalance retrieve wallet balance from sharders
 //
 //	# Inputs
