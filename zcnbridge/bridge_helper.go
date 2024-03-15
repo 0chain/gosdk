@@ -10,6 +10,18 @@ import (
 	"github.com/pkg/errors"
 )
 
+// GasEstimationRequest describes request used for Alchemy enhanced JSON-RPC API.
+type GasEstimationRequest struct {
+	From  string `json:"from"`
+	To    string `json:"to"`
+	Value string `json:"value"`
+}
+
+// GasPriceEstimationResult represents result of the gas price estimation operation execution.
+type GasPriceEstimationResult struct {
+	Value float64 `json:"value"`
+}
+
 // BancorTokenDetails describes Bancor ZCN zcntoken pool details
 type BancorTokenDetails struct {
 	Data struct {
@@ -73,4 +85,9 @@ func addPercents(gasLimitUnits uint64, percents int) *big.Int {
 	gasLimitBig = origin.Add(origin, deltaBig)
 
 	return gasLimitBig
+}
+
+// ConvertIntToHex converts given int value to hex string.
+func ConvertIntToHex(value uint64) string {
+	return fmt.Sprintf("%#x", value)
 }

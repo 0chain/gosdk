@@ -1,6 +1,8 @@
 module github.com/0chain/gosdk
 
-go 1.20
+go 1.21
+
+toolchain go1.21.0
 
 require (
 	github.com/0chain/common v0.0.6-0.20230127095721-8df4d1d72565
@@ -28,7 +30,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/shopspring/decimal v1.3.1
 	github.com/spf13/viper v1.15.0
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.4
 	github.com/tyler-smith/go-bip39 v1.1.0
 	github.com/uptrace/bunrouter v1.0.20
 	go.dedis.ch/kyber/v3 v3.1.0
@@ -117,6 +119,7 @@ require (
 	github.com/urfave/cli/v2 v2.17.2-0.20221006022127-8f469abc00aa // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
+	github.com/ybbus/jsonrpc/v3 v3.1.5 // indirect
 	go.dedis.ch/fixbuf v1.0.3 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	golang.org/x/sys v0.15.0 // indirect

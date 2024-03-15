@@ -5,11 +5,14 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/0chain/gosdk/zcnbridge/ethereum/bancortoken"
+	"github.com/ybbus/jsonrpc/v3"
 	"io"
 	"math/big"
 	"strconv"
+	"strings"
 	"time"
+
+	"github.com/0chain/gosdk/zcnbridge/ethereum/bancortoken"
 
 	"github.com/0chain/common/core/currency"
 	"github.com/0chain/gosdk/zcnbridge/ethereum/bancornetwork"
@@ -828,7 +831,7 @@ func (b *BridgeClient) prepareBancor(ctx context.Context, value *big.Int, method
 	}
 
 	gasLimitUnits = addPercents(gasLimitUnits, 10).Uint64()
-
+	b
 	transactOpts := b.CreateSignedTransactionFromKeyStore(b.ethereumClient, gasLimitUnits)
 	if value.Int64() != 0 {
 		transactOpts.Value = value
@@ -992,4 +995,64 @@ func (b *BridgeClient) prepareBridge(ctx context.Context, ethereumAddress, metho
 	}
 
 	return bridgeInstance, transactOpts, nil
+}
+
+// isEstimateGasPriceAvailable checks if currently selected ethereum node url can be used for gas estimation.
+func (b *BridgeClient) isEstimateGasPriceAvailable() bool {
+	return strings.Contains(b.EthereumNodeURL, "eth-mainnet.g.alchemy.com/v2/")
+}
+
+// EstimateGasPrice performs gas estimation for the given transaction using Alchemy enhanced API returning
+// approximate final gas fee.
+func (b *BridgeClient) EstimateGasPrice(ctx context.Context, from, to string, value uint64) (*GasPriceEstimationResult, error) {
+	if !b.isEstimateGasPriceAvailable() {
+		return nil, errors.New("used json-rpc does not allow to estimate gas price")
+	}
+
+	client := jsonrpc.NewClient(b.EthereumNodeURL)
+
+	valueHex := ConvertIntToHex(value)
+
+	resp, err := client.Call(ctx, "eth_estimateGas", &GasEstimationRequest{
+		From: from, To: to, Value: valueHex})
+	if err != nil {
+		return nil, errors.Wrap(err, "gas price estimation failed")
+	}
+
+	if resp.Error != nil {
+		return nil, errors.Wrap(errors.New(resp.Error.Error()), "gas price estimation failed")
+	}
+
+	gasAmountRaw, ok := resp.Result.(string)
+	if !ok {
+		return nil, errors.New("failed to parse gas amount")
+	}
+
+	gasAmountInt := new(big.Int)
+	gasAmountInt.SetString(gasAmountRaw, 16)
+
+	gasAmountFloat, _ := gasAmountInt.Float64()
+
+	resp, err = client.Call(ctx, "eth_gasPrice")
+	if err != nil {
+		return nil, errors.Wrap(err, "gas price estimation failed")
+	}
+
+	if resp.Error != nil {
+		return nil, errors.Wrap(errors.New(resp.Error.Error()), "gas price estimation failed")
+	}
+
+	var gasPriceRaw string
+	gasPriceRaw, ok = resp.Result.(string)
+	if !ok {
+		return nil, errors.New("failed to parse gas price")
+	}
+
+	gasPriceInt := new(big.Int)
+	gasPriceInt.SetString(gasPriceRaw, 16)
+
+	gasPriceFloat, _ := gasPriceInt.Float64()
+
+	return &GasPriceEstimationResult{
+		Value: gasPriceFloat * gasAmountFloat}, nil
 }
