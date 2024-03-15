@@ -88,6 +88,6 @@ func addPercents(gasLimitUnits uint64, percents int) *big.Int {
 }
 
 // ConvertIntToHex converts given int value to hex string.
-func ConvertIntToHex(value int64) string {
+func ConvertIntToHex(value uint64) string {
 	return fmt.Sprintf("%#x", value)
 }

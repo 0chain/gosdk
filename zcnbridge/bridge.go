@@ -832,7 +832,7 @@ func (b *BridgeClient) prepareBancor(ctx context.Context, value *big.Int, method
 	}
 
 	gasLimitUnits = addPercents(gasLimitUnits, 10).Uint64()
-
+	b
 	transactOpts := b.CreateSignedTransactionFromKeyStore(b.ethereumClient, gasLimitUnits)
 	if value.Int64() != 0 {
 		transactOpts.Value = value
@@ -1000,12 +1000,12 @@ func (b *BridgeClient) prepareBridge(ctx context.Context, ethereumAddress, metho
 
 // isEstimateGasPriceAvailable checks if currently selected ethereum node url can be used for gas estimation.
 func (b *BridgeClient) isEstimateGasPriceAvailable() bool {
-	return strings.Contains(b.EthereumNodeURL, "eth-mainnet.g.alchemy.com")
+	return strings.Contains(b.EthereumNodeURL, "eth-mainnet.g.alchemy.com/v2/")
 }
 
 // EstimateGasPrice performs gas estimation for the given transaction using Alchemy enhanced API returning
 // approximate final gas fee.
-func (b *BridgeClient) EstimateGasPrice(ctx context.Context, from, to string, value int64) (*GasPriceEstimationResult, error) {
+func (b *BridgeClient) EstimateGasPrice(ctx context.Context, from, to string, value uint64) (*GasPriceEstimationResult, error) {
 	if !b.isEstimateGasPriceAvailable() {
 		return nil, errors.New("used json-rpc does not allow to estimate gas price")
 	}
@@ -1029,12 +1029,10 @@ func (b *BridgeClient) EstimateGasPrice(ctx context.Context, from, to string, va
 		return nil, errors.New("failed to parse gas amount")
 	}
 
-	gasAmountInt := new(big.Float)
-	gasAmountInt.SetString(gasAmountRaw)
+	gasAmountInt := new(big.Int)
+	gasAmountInt.SetString(gasAmountRaw, 16)
 
 	gasAmountFloat, _ := gasAmountInt.Float64()
-
-	fmt.Println(gasAmountFloat)
 
 	resp, err = client.Call(ctx, "eth_gasPrice")
 	if err != nil {
@@ -1051,12 +1049,10 @@ func (b *BridgeClient) EstimateGasPrice(ctx context.Context, from, to string, va
 		return nil, errors.New("failed to parse gas price")
 	}
 
-	gasPriceInt := new(big.Float)
-	gasPriceInt.SetString(gasPriceRaw)
+	gasPriceInt := new(big.Int)
+	gasPriceInt.SetString(gasPriceRaw, 16)
 
 	gasPriceFloat, _ := gasPriceInt.Float64()
-
-	fmt.Println(gasPriceFloat)
 
 	return &GasPriceEstimationResult{
 		Value: gasPriceFloat * gasAmountFloat}, nil
