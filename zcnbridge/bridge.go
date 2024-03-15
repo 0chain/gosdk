@@ -5,11 +5,12 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/0chain/gosdk/zcnbridge/ethereum/bancortoken"
 	"io"
 	"math/big"
 	"strconv"
 	"time"
+
+	"github.com/0chain/gosdk/zcnbridge/ethereum/bancortoken"
 
 	"github.com/0chain/common/core/currency"
 	"github.com/0chain/gosdk/zcnbridge/ethereum/bancornetwork"
@@ -800,34 +801,34 @@ func (b *BridgeClient) prepareBancor(ctx context.Context, value *big.Int, method
 	// 1. Bancor network smart contract address
 	contractAddress := common.HexToAddress(BancorNetworkAddress)
 
-	abi, err := bancornetwork.BancorMetaData.GetAbi()
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to get bancornetwork abi")
-	}
+	// abi, err := bancornetwork.BancorMetaData.GetAbi()
+	// if err != nil {
+	// 	return nil, nil, errors.Wrap(err, "failed to get bancornetwork abi")
+	// }
 
-	pack, err := abi.Pack(method, params...)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to pack arguments")
-	}
+	// pack, err := abi.Pack(method, params...)
+	// if err != nil {
+	// 	return nil, nil, errors.Wrap(err, "failed to pack arguments")
+	// }
 
-	from := common.HexToAddress(b.EthereumAddress)
+	// from := common.HexToAddress(b.EthereumAddress)
 
-	opts := eth.CallMsg{
-		To:   &contractAddress,
-		From: from,
-		Data: pack,
-	}
+	// opts := eth.CallMsg{
+	// 	To:   &contractAddress,
+	// 	From: from,
+	// 	Data: pack,
+	// }
 
-	if value.Int64() != 0 {
-		opts.Value = value
-	}
+	// if value.Int64() != 0 {
+	// 	opts.Value = value
+	// }
 
-	gasLimitUnits, err := b.ethereumClient.EstimateGas(ctx, opts)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to estimate gas limit")
-	}
+	// gasLimitUnits, err := b.ethereumClient.EstimateGas(ctx, opts)
+	// if err != nil {
+	// 	return nil, nil, errors.Wrap(err, "failed to estimate gas limit")
+	// }
 
-	gasLimitUnits = addPercents(gasLimitUnits, 10).Uint64()
+	gasLimitUnits := addPercents(600000, 10).Uint64()
 
 	transactOpts := b.CreateSignedTransactionFromKeyStore(b.ethereumClient, gasLimitUnits)
 	if value.Int64() != 0 {
