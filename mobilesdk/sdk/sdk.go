@@ -352,7 +352,7 @@ func (s *StorageSDK) UpdateAllocation(size int64, extend bool, allocationID stri
 
 // GetBlobbersList get list of active blobbers, and format them as array json string
 func (s *StorageSDK) GetBlobbersList() (string, error) {
-	blobbs, err := sdk.GetBlobbers(true)
+	blobbs, err := sdk.GetBlobbers(true, false)
 	if err != nil {
 		return "", err
 	}
