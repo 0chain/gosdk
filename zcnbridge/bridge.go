@@ -1030,7 +1030,7 @@ func (b *BridgeClient) EstimateGasPrice(ctx context.Context, from, to string, va
 	}
 
 	gasAmountInt := new(big.Float)
-	gasAmountInt.SetString(gasAmountRaw, 16)
+	gasAmountInt.SetString(gasAmountRaw)
 
 	gasAmountFloat, _ := gasAmountInt.Float64()
 
@@ -1050,7 +1050,7 @@ func (b *BridgeClient) EstimateGasPrice(ctx context.Context, from, to string, va
 	}
 
 	gasPriceInt := new(big.Float)
-	gasPriceInt.SetString(gasPriceRaw, 16)
+	gasPriceInt.SetString(gasPriceRaw)
 
 	gasPriceFloat, _ := gasPriceInt.Float64()
 
