@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/0chain/gosdk/zcnbridge/ethereum/bancornetwork"
-	"github.com/0chain/gosdk/zcnbridge/ethereum/zcntoken"
 	"log"
 	"math/big"
 	"net/http"
@@ -17,6 +15,9 @@ import (
 	"syscall"
 	"testing"
 	"time"
+
+	"github.com/0chain/gosdk/zcnbridge/ethereum/bancornetwork"
+	"github.com/0chain/gosdk/zcnbridge/ethereum/zcntoken"
 
 	sdkcommon "github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zcnbridge/ethereum"
@@ -39,7 +40,10 @@ import (
 
 const (
 	ethereumAddress = "0xD8c9156e782C68EE671C09b6b92de76C97948432"
-	ethereumNodeURL = "https://eth-mainnet.g.alchemy.com/v2/9VanLUbRE0pLmDHwCHGJlhs9GHosrfD9"
+
+	alchemyEthereumNodeURL = "https://eth-mainnet.g.alchemy.com/v2/9VanLUbRE0pLmDHwCHGJlhs9GHosrfD9"
+	infuraEthereumNodeURL  = "https://mainnet.infura.io/v3/7238211010344719ad14a89db874158c"
+	value                  = 1e+20
 
 	password = "02289b9"
 
@@ -218,7 +222,7 @@ func getEthereumClient(t mock.TestingT) *bridgemocks.EthereumClient {
 	return bridgemocks.NewEthereumClient(&ethereumClientMock{t})
 }
 
-func getBridgeClient(bancorAPIURL string, ethereumClient EthereumClient, transactionProvider transaction.TransactionProvider, keyStore KeyStore) *BridgeClient {
+func getBridgeClient(bancorAPIURL, ethereumNodeURL string, ethereumClient EthereumClient, transactionProvider transaction.TransactionProvider, keyStore KeyStore) *BridgeClient {
 	cfg := viper.New()
 
 	tempConfigFile, err := os.CreateTemp(".", "config.yaml")
@@ -235,7 +239,6 @@ func getBridgeClient(bancorAPIURL string, ethereumClient EthereumClient, transac
 
 	cfg.SetConfigFile(tempConfigFile.Name())
 
-	cfg.SetDefault("ethereum_node_url", ethereumNodeURL)
 	cfg.SetDefault("bridge.bridge_address", bridgeAddress)
 	cfg.SetDefault("bridge.token_address", tokenAddress)
 	cfg.SetDefault("bridge.authorizers_address", authorizersAddress)
@@ -248,7 +251,7 @@ func getBridgeClient(bancorAPIURL string, ethereumClient EthereumClient, transac
 		cfg.GetString("bridge.bridge_address"),
 		cfg.GetString("bridge.token_address"),
 		cfg.GetString("bridge.authorizers_address"),
-		cfg.GetString("bridge.ethereum_address"),
+		ethereumNodeURL,
 		cfg.GetString("ethereum_node_url"),
 		cfg.GetString("bridge.password"),
 		cfg.GetUint64("bridge.gas_limit"),
@@ -353,7 +356,7 @@ func Test_ZCNBridge(t *testing.T) {
 
 	bancorMockServerURL := prepareBancorMockServer()
 
-	bridgeClient := getBridgeClient(bancorMockServerURL, ethereumClient, transactionProvider, keyStore)
+	bridgeClient := getBridgeClient(bancorMockServerURL, alchemyEthereumNodeURL, ethereumClient, transactionProvider, keyStore)
 
 	t.Run("should update authorizer config.", func(t *testing.T) {
 		source := &authorizerNodeSource{
@@ -623,5 +626,19 @@ func Test_ZCNBridge(t *testing.T) {
 			password,
 			time.Second*2,
 		))
+	})
+
+	t.Run("should check if gas price estimation works with correct ethereum node url", func(t *testing.T) {
+		bridgeClient := getBridgeClient(bancorMockServerURL, alchemyEthereumNodeURL, ethereumClient, transactionProvider, keyStore)
+
+		result, err := bridgeClient.EstimateGasPrice(context.Background(), tokenAddress, bridgeAddress, value)
+		require.NoError(t, err)
+	})
+
+	t.Run("should check if gas price estimation works with incorrect ethereum node url", func(t *testing.T) {
+		bridgeClient := getBridgeClient(bancorMockServerURL, infuraEthereumNodeURL, ethereumClient, transactionProvider, keyStore)
+
+		result, err := bridgeClient.EstimateGasPrice(context.Background(), tokenAddress, bridgeAddress, value)
+		require.Error(t, err)
 	})
 }
