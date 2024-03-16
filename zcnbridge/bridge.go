@@ -1005,7 +1005,7 @@ func (b *BridgeClient) isEstimateGasPriceAvailable() bool {
 
 // EstimateGasPrice performs gas estimation for the given transaction using Alchemy enhanced API returning
 // approximate final gas fee.
-func (b *BridgeClient) EstimateGasPrice(ctx context.Context, from, to string, value uint64) (*GasPriceEstimationResult, error) {
+func (b *BridgeClient) EstimateGasPrice(ctx context.Context, from, to string, value int64) (*GasPriceEstimationResult, error) {
 	if !b.isEstimateGasPriceAvailable() {
 		return nil, errors.New("used json-rpc does not allow to estimate gas price")
 	}
@@ -1034,6 +1034,8 @@ func (b *BridgeClient) EstimateGasPrice(ctx context.Context, from, to string, va
 
 	gasAmountFloat, _ := gasAmountInt.Float64()
 
+	fmt.Println(gasAmountFloat)
+
 	resp, err = client.Call(ctx, "eth_gasPrice")
 	if err != nil {
 		return nil, errors.Wrap(err, "gas price estimation failed")
@@ -1053,6 +1055,8 @@ func (b *BridgeClient) EstimateGasPrice(ctx context.Context, from, to string, va
 	gasPriceInt.SetString(gasPriceRaw)
 
 	gasPriceFloat, _ := gasPriceInt.Float64()
+
+	fmt.Println(gasPriceFloat)
 
 	return &GasPriceEstimationResult{
 		Value: gasPriceFloat * gasAmountFloat}, nil

@@ -43,7 +43,7 @@ const (
 
 	alchemyEthereumNodeURL = "https://eth-mainnet.g.alchemy.com/v2/9VanLUbRE0pLmDHwCHGJlhs9GHosrfD9"
 	infuraEthereumNodeURL  = "https://mainnet.infura.io/v3/7238211010344719ad14a89db874158c"
-	value                  = uint64(1e+5)
+	value                  = 1e+10
 
 	password = "02289b9"
 
