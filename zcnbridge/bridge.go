@@ -831,7 +831,7 @@ func (b *BridgeClient) prepareBancor(ctx context.Context, value *big.Int, method
 	}
 
 	gasLimitUnits = addPercents(gasLimitUnits, 10).Uint64()
-	b
+
 	transactOpts := b.CreateSignedTransactionFromKeyStore(b.ethereumClient, gasLimitUnits)
 	if value.Int64() != 0 {
 		transactOpts.Value = value

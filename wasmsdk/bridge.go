@@ -45,6 +45,7 @@ func initBridge(
 		tokenAddress,
 		authorizersAddress,
 		ethereumAddress,
+		ethereumNodeURL,
 		"",
 		gasLimit,
 		consensusThreshold,
