@@ -631,14 +631,14 @@ func Test_ZCNBridge(t *testing.T) {
 	t.Run("should check if gas price estimation works with correct ethereum node url", func(t *testing.T) {
 		bridgeClient := getBridgeClient(bancorMockServerURL, alchemyEthereumNodeURL, ethereumClient, transactionProvider, keyStore)
 
-		result, err := bridgeClient.EstimateGasPrice(context.Background(), tokenAddress, bridgeAddress, value)
+		_, err := bridgeClient.EstimateGasPrice(context.Background(), tokenAddress, bridgeAddress, value)
 		require.NoError(t, err)
 	})
 
 	t.Run("should check if gas price estimation works with incorrect ethereum node url", func(t *testing.T) {
 		bridgeClient := getBridgeClient(bancorMockServerURL, infuraEthereumNodeURL, ethereumClient, transactionProvider, keyStore)
 
-		result, err := bridgeClient.EstimateGasPrice(context.Background(), tokenAddress, bridgeAddress, value)
+		_, err := bridgeClient.EstimateGasPrice(context.Background(), tokenAddress, bridgeAddress, value)
 		require.Error(t, err)
 	})
 }
