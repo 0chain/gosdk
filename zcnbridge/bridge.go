@@ -5,12 +5,13 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/ybbus/jsonrpc/v3"
 	"io"
 	"math/big"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/ybbus/jsonrpc/v3"
 
 	"github.com/0chain/gosdk/zcnbridge/ethereum/bancortoken"
 
@@ -1028,7 +1029,7 @@ func (b *BridgeClient) EstimateGasPrice(ctx context.Context, from, to string, va
 		return nil, errors.New("failed to parse gas amount")
 	}
 
-	gasAmountInt := new(big.Int)
+	gasAmountInt := new(big.Float)
 	gasAmountInt.SetString(gasAmountRaw, 16)
 
 	gasAmountFloat, _ := gasAmountInt.Float64()
@@ -1048,7 +1049,7 @@ func (b *BridgeClient) EstimateGasPrice(ctx context.Context, from, to string, va
 		return nil, errors.New("failed to parse gas price")
 	}
 
-	gasPriceInt := new(big.Int)
+	gasPriceInt := new(big.Float)
 	gasPriceInt.SetString(gasPriceRaw, 16)
 
 	gasPriceFloat, _ := gasPriceInt.Float64()
