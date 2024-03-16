@@ -39,7 +39,9 @@ import (
 
 const (
 	ethereumAddress = "0xD8c9156e782C68EE671C09b6b92de76C97948432"
-	password        = "02289b9"
+	ethereumNodeURL = "https://eth-mainnet.g.alchemy.com/v2/9VanLUbRE0pLmDHwCHGJlhs9GHosrfD9"
+
+	password = "02289b9"
 
 	authorizerDelegatedAddress = "0xa149B58b7e1390D152383BB03dBc79B390F648e2"
 
@@ -233,6 +235,7 @@ func getBridgeClient(bancorAPIURL string, ethereumClient EthereumClient, transac
 
 	cfg.SetConfigFile(tempConfigFile.Name())
 
+	cfg.SetDefault("ethereum_node_url", ethereumNodeURL)
 	cfg.SetDefault("bridge.bridge_address", bridgeAddress)
 	cfg.SetDefault("bridge.token_address", tokenAddress)
 	cfg.SetDefault("bridge.authorizers_address", authorizersAddress)
@@ -246,6 +249,7 @@ func getBridgeClient(bancorAPIURL string, ethereumClient EthereumClient, transac
 		cfg.GetString("bridge.token_address"),
 		cfg.GetString("bridge.authorizers_address"),
 		cfg.GetString("bridge.ethereum_address"),
+		cfg.GetString("ethereum_node_url"),
 		cfg.GetString("bridge.password"),
 		cfg.GetUint64("bridge.gas_limit"),
 		cfg.GetFloat64("bridge.consensus_threshold"),
