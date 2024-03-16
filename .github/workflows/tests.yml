@@ -22,10 +22,6 @@ jobs:
         run: |
           sudo apt update -y
           sudo apt -y install build-essential nghttp2 libnghttp2-dev libssl-dev wget
-          
-      # - uses: actions/setup-go@v3
-      #   with:
-      #     go-version: '1.20'
 
       - name: "Setup Go"
         shell: 'script --return --quiet --command "bash {0}"'
@@ -252,10 +248,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Setup go 1.20
+      - name: Setup go 1.21
         uses: actions/setup-go@v2
         with:
-          go-version: '1.20' # The Go version to download (if necessary) and use.
+          go-version: '1.21' # The Go version to download (if necessary) and use.
       
       - uses: actions/setup-node@v2
         with:
