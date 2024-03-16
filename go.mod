@@ -2,6 +2,8 @@ module github.com/0chain/gosdk
 
 go 1.21
 
+toolchain go1.21.0
+
 require (
 	github.com/0chain/common v0.0.6-0.20230127095721-8df4d1d72565
 	github.com/0chain/errors v1.0.3
@@ -46,7 +48,7 @@ require (
 require (
 	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d
 	github.com/minio/sha256-simd v1.0.1
-	github.com/valyala/fasthttp v1.51.0
+	github.com/ybbus/jsonrpc/v3 v3.1.5
 )
 
 require (
@@ -116,8 +118,8 @@ require (
 	github.com/tklauser/numcpus v0.6.0 // indirect
 	github.com/urfave/cli/v2 v2.17.2-0.20221006022127-8f469abc00aa // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
+	github.com/valyala/fasthttp v1.51.0 // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
-	github.com/ybbus/jsonrpc/v3 v3.1.5 // indirect
 	go.dedis.ch/fixbuf v1.0.3 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	golang.org/x/sys v0.15.0 // indirect
