@@ -26,10 +26,10 @@ jobs:
       - name: "Setup Go"
         shell: 'script --return --quiet --command "bash {0}"'
         run: |
-          [ -f ./https://go.dev/dl/go1.21.0.linux-amd64.tar.gz ] || wget https://go.dev/dl/go1.21.0.linux-amd64.tar.gz
+          [ -f ./https://go.dev/dl/go1.20.3.linux-amd64.tar.gz ] || wget https://go.dev/dl/go1.20.3.linux-amd64.tar.gz
           [ -d /usr/local/go ] &&  sudo rm -rf /usr/local/go
           [ -f /usr/local/bin/go ] &&  sudo rm -rf /usr/local/bin/go
-          sudo tar -C /usr/local -xzf ./go1.21.0.linux-amd64.tar.gz
+          sudo tar -C /usr/local -xzf ./go1.20.3.linux-amd64.tar.gz
 
           echo "PATH=$PATH:/usr/local/go/bin" >> $GITHUB_ENV
           export PATH=$PATH:/usr/local/go/bin
@@ -59,10 +59,10 @@ jobs:
       - name: "Setup Go"
         shell: 'script --return --quiet --command "bash {0}"'
         run: |
-          [ -f ./https://go.dev/dl/go1.21.0.linux-amd64.tar.gz ] || wget https://go.dev/dl/go1.21.0.linux-amd64.tar.gz
+          [ -f ./https://go.dev/dl/go1.20.3.linux-amd64.tar.gz ] || wget https://go.dev/dl/go1.20.3.linux-amd64.tar.gz
           [ -d /usr/local/go ] &&  sudo rm -rf /usr/local/go
           [ -f /usr/local/bin/go ] &&  sudo rm -rf /usr/local/bin/go
-          sudo tar -C /usr/local -xzf ./go1.21.0.linux-amd64.tar.gz
+          sudo tar -C /usr/local -xzf ./go1.20.3.linux-amd64.tar.gz
 
           echo "PATH=$PATH:/usr/local/go/bin" >> $GITHUB_ENV
           export PATH=$PATH:/usr/local/go/bin
@@ -248,10 +248,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Setup go 1.21
+      - name: Setup go 1.20
         uses: actions/setup-go@v2
         with:
-          go-version: '1.21' # The Go version to download (if necessary) and use.
+          go-version: '1.20' # The Go version to download (if necessary) and use.
       
       - uses: actions/setup-node@v2
         with:
