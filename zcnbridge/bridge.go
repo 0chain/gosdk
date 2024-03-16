@@ -1000,7 +1000,7 @@ func (b *BridgeClient) prepareBridge(ctx context.Context, ethereumAddress, metho
 
 // isEstimateGasPriceAvailable checks if currently selected ethereum node url can be used for gas estimation.
 func (b *BridgeClient) isEstimateGasPriceAvailable() bool {
-	return strings.Contains(b.EthereumNodeURL, "eth-mainnet.g.alchemy.com/v2/")
+	return strings.Contains(b.EthereumNodeURL, "eth-mainnet.g.alchemy.com")
 }
 
 // EstimateGasPrice performs gas estimation for the given transaction using Alchemy enhanced API returning

@@ -251,8 +251,8 @@ func getBridgeClient(bancorAPIURL, ethereumNodeURL string, ethereumClient Ethere
 		cfg.GetString("bridge.bridge_address"),
 		cfg.GetString("bridge.token_address"),
 		cfg.GetString("bridge.authorizers_address"),
+		cfg.GetString("bridge.ethereum_address"),
 		ethereumNodeURL,
-		cfg.GetString("ethereum_node_url"),
 		cfg.GetString("bridge.password"),
 		cfg.GetUint64("bridge.gas_limit"),
 		cfg.GetFloat64("bridge.consensus_threshold"),
@@ -629,14 +629,14 @@ func Test_ZCNBridge(t *testing.T) {
 	})
 
 	t.Run("should check if gas price estimation works with correct ethereum node url", func(t *testing.T) {
-		bridgeClient := getBridgeClient(bancorMockServerURL, alchemyEthereumNodeURL, ethereumClient, transactionProvider, keyStore)
+		bridgeClient = getBridgeClient(bancorMockServerURL, alchemyEthereumNodeURL, ethereumClient, transactionProvider, keyStore)
 
 		_, err := bridgeClient.EstimateGasPrice(context.Background(), tokenAddress, bridgeAddress, value)
-		require.NoError(t, err)
+		require.Contains(t, err.Error(), "Must be authenticated!")
 	})
 
 	t.Run("should check if gas price estimation works with incorrect ethereum node url", func(t *testing.T) {
-		bridgeClient := getBridgeClient(bancorMockServerURL, infuraEthereumNodeURL, ethereumClient, transactionProvider, keyStore)
+		bridgeClient = getBridgeClient(bancorMockServerURL, infuraEthereumNodeURL, ethereumClient, transactionProvider, keyStore)
 
 		_, err := bridgeClient.EstimateGasPrice(context.Background(), tokenAddress, bridgeAddress, value)
 		require.Error(t, err)
