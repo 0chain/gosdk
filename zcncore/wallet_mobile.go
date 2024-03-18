@@ -16,7 +16,7 @@ type wallet struct {
 }
 
 func (w *wallet) Sign(hash string) (string, error) {
-	sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
+	sigScheme := zcncrypto.NewSignatureScheme(signatureScheme)
 	err := sigScheme.SetPrivateKey(w.Keys[0].PrivateKey)
 	if err != nil {
 		return "", err

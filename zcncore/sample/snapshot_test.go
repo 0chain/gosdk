@@ -1,10 +1,13 @@
 package sample
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"testing"
 
+	"github.com/0chain/gosdk/core/client"
+	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/zcnbridge/wallet"
 	"github.com/0chain/gosdk/zcncore"
 )
@@ -44,7 +47,8 @@ const ChainConfig = `
 
 func TestGetAggregates(t *testing.T) {
 	t.Skip("learning test")
-	err := zcncore.Init(ChainConfig)
+	cfg := conf.Config{}
+	err := client.Init(context.Background(), cfg)
 	if err != nil {
 		fmt.Println("Init failed")
 		return

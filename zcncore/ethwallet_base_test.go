@@ -50,7 +50,6 @@ func TestTokensConversion(t *testing.T) {
 
 func TestValidEthAddress(t *testing.T) {
 	t.Run("Valid Eth wallet, but no balance", func(t *testing.T) {
-		_config.chain.EthNode = "test"
 		backend, _ := newTestBackend(t)
 		client, _ := backend.Attach()
 		defer backend.Close()
@@ -67,7 +66,6 @@ func TestValidEthAddress(t *testing.T) {
 	})
 
 	t.Run("Valid Eth wallet", func(t *testing.T) {
-		_config.chain.EthNode = "test"
 		backend, _ := newTestBackend(t)
 		client, _ := backend.Attach()
 		defer backend.Close()
@@ -87,7 +85,6 @@ func TestValidEthAddress(t *testing.T) {
 	})
 
 	t.Run("Invalid Eth wallet", func(t *testing.T) {
-		_config.chain.EthNode = "test"
 		backend, _ := newTestBackend(t)
 		client, _ := backend.Attach()
 		defer backend.Close()
@@ -106,7 +103,6 @@ func TestValidEthAddress(t *testing.T) {
 
 func TestGetWalletAddrFromEthMnemonic(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
-		_config.chain.EthNode = "test"
 		mnemonic := "expect domain water near beauty bag pond clap chronic chronic length leisure"
 		res, err := GetWalletAddrFromEthMnemonic(mnemonic)
 		require.Nil(t, err, "")
@@ -114,7 +110,6 @@ func TestGetWalletAddrFromEthMnemonic(t *testing.T) {
 	})
 
 	t.Run("Wrong", func(t *testing.T) {
-		_config.chain.EthNode = "test"
 		mnemonic := "this is wrong mnemonic"
 		_, err := GetWalletAddrFromEthMnemonic(mnemonic)
 		require.NotNil(t, err, "")
@@ -123,7 +118,6 @@ func TestGetWalletAddrFromEthMnemonic(t *testing.T) {
 
 func TestGetEthBalance(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
-		_config.chain.EthNode = "test"
 		backend, _ := newTestBackend(t)
 		client, _ := backend.Attach()
 		defer backend.Close()
@@ -155,7 +149,6 @@ func TestGetEthBalance(t *testing.T) {
 
 func TestCheckEthHashStatus(t *testing.T) {
 	t.Run("Pending transaction", func(t *testing.T) {
-		_config.chain.EthNode = "test"
 		backend, _ := newTestBackend(t)
 		client, _ := backend.Attach()
 		defer backend.Close()
@@ -175,7 +168,6 @@ func TestCheckEthHashStatus(t *testing.T) {
 
 func TestSuggestEthGasPrice(t *testing.T) {
 	t.Run("suggest gas price success", func(t *testing.T) {
-		_config.chain.EthNode = "test"
 		backend, _ := newTestBackend(t)
 		client, _ := backend.Attach()
 		defer backend.Close()
@@ -193,7 +185,6 @@ func TestSuggestEthGasPrice(t *testing.T) {
 
 func TestTransferEthTokens(t *testing.T) {
 	t.Run("success transfer", func(t *testing.T) {
-		_config.chain.EthNode = "test"
 		backend, _ := newTestBackend(t)
 		client, _ := backend.Attach()
 		defer backend.Close()

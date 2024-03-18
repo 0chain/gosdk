@@ -3,6 +3,7 @@ package conf
 import (
 	"errors"
 	"os"
+	"strings"
 
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/sys"
@@ -17,9 +18,31 @@ type Network struct {
 	Miners []string
 }
 
+func NewNetwork(miners, sharders []string) (*Network, error) {
+	n := &Network{
+		Miners: miners,
+		Sharders: sharders,
+	}
+	if !n.IsValid() {
+		return nil, errors.New("network has no miners/sharders")
+	}
+	n.NormalizeURLs()
+	return n, nil
+}
+
 // IsValid check network if it has miners and sharders
 func (n *Network) IsValid() bool {
 	return n != nil && len(n.Miners) > 0 && len(n.Sharders) > 0
+}
+
+func (n *Network) NormalizeURLs() {
+	for i := 0; i < len(n.Miners); i++ {
+		n.Miners[i] = strings.TrimSuffix(n.Miners[i], "/")
+	}
+
+	for i := 0; i < len(n.Sharders); i++ {
+		n.Sharders[i] = strings.TrimSuffix(n.Sharders[i], "/")
+	}
 }
 
 // LoadNetworkFile load and parse Network from file

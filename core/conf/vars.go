@@ -11,6 +11,7 @@ var (
 	cfg     *Config
 	onceCfg sync.Once
 	//  global sharders and miners
+	//TODO: remove as it is not used
 	network *Network
 )
 
@@ -50,7 +51,8 @@ func InitClientConfig(c *Config) {
 	})
 }
 
-// InitChainNetwork set global chain network
+//Deprecated: Use client.Init() function. To normalize urls, use network.NormalizeURLs() method
+// // InitChainNetwork set global chain network
 func InitChainNetwork(n *Network) {
 	if n == nil {
 		return

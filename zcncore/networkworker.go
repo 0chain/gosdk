@@ -6,144 +6,101 @@ package zcncore
 import (
 	"context"
 	"encoding/json"
-	"net/http"
-	"reflect"
-	"time"
 
-	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/conf"
-	"github.com/0chain/gosdk/core/node"
-	"github.com/0chain/gosdk/core/util"
-	"go.uber.org/zap"
 )
 
 const NETWORK_ENDPOINT = "/network"
-
-var networkWorkerTimerInHours = 1
 
 type Network struct {
 	Miners   []string `json:"miners"`
 	Sharders []string `json:"sharders"`
 }
 
-func updateNetworkDetailsWorker(ctx context.Context) {
-	ticker := time.NewTicker(time.Duration(networkWorkerTimerInHours) * time.Hour)
-	for {
-		select {
-		case <-ctx.Done():
-			logging.Info("Network stopped by user")
-			return
-		case <-ticker.C:
-			err := UpdateNetworkDetails()
-			if err != nil {
-				logging.Error("Update network detail worker fail", zap.Error(err))
-				return
-			}
-			logging.Info("Successfully updated network details")
-			return
-		}
-	}
-}
-
+//Deprecated: Get client.Node instance to check whether network update is required and update network accordingly
 func UpdateNetworkDetails() error {
-	networkDetails, err := GetNetworkDetails()
+	nodeClient, err := client.GetNode()
 	if err != nil {
-		logging.Error("Failed to update network details ", zap.Error(err))
 		return err
 	}
-
-	shouldUpdate := UpdateRequired(networkDetails)
+	shouldUpdate, network, err := nodeClient.ShouldUpdateNetwork()
+	if err != nil {
+		logging.Error("error on ShouldUpdateNetwork check: ", err)
+		return err
+	}
 	if shouldUpdate {
-		_config.isConfigured = false
-		_config.chain.Miners = networkDetails.Miners
-		_config.chain.Sharders = networkDetails.Sharders
-		consensus := _config.chain.SharderConsensous
-		if consensus < conf.DefaultSharderConsensous {
-			consensus = conf.DefaultSharderConsensous
+		logging.Info("Updating network")
+		if err = nodeClient.UpdateNetwork(network); err != nil {
+			logging.Error("error on updating network: ", err)
+			return err
 		}
-		if len(networkDetails.Sharders) < consensus {
-			consensus = len(networkDetails.Sharders)
-		}
-
-		Sharders = node.NewHolder(networkDetails.Sharders, consensus)
-		node.InitCache(Sharders)
-		conf.InitChainNetwork(&conf.Network{
-			Sharders: networkDetails.Sharders,
-			Miners:   networkDetails.Miners,
-		})
-		_config.isConfigured = true
+		logging.Info("network updated successfully")
 	}
 	return nil
 }
 
+//Deprecated: Get client.Node instance to check whether network update is required 
 func UpdateRequired(networkDetails *Network) bool {
-	miners := _config.chain.Miners
-	sharders := _config.chain.Sharders
-	if len(miners) == 0 || len(sharders) == 0 {
-		return true
+	nodeClient, err := client.GetNode()
+	if err != nil {
+		panic(err)
 	}
-
-	minerSame := reflect.DeepEqual(miners, networkDetails.Miners)
-	sharderSame := reflect.DeepEqual(sharders, networkDetails.Sharders)
-
-	if minerSame && sharderSame {
-		return false
+	shouldUpdate, _, err := nodeClient.ShouldUpdateNetwork()
+	if err != nil {
+		logging.Error("error on ShouldUpdateNetwork check: ", err)
+		panic(err)
 	}
-	return true
+	return shouldUpdate
 }
 
+//Deprecated: Use client.GetNetwork() function
 func GetNetworkDetails() (*Network, error) {
-	req, err := util.NewHTTPGetRequest(_config.chain.BlockWorker + NETWORK_ENDPOINT)
+	cfg, err := conf.GetClientConfig()
 	if err != nil {
-		return nil, errors.New("get_network_details_error", "Unable to create new http request with error "+err.Error())
+		return nil, err
 	}
-
-	res, err := req.Get()
+	network, err := client.GetNetwork(context.Background(), cfg.BlockWorker)
 	if err != nil {
-		return nil, errors.New("get_network_details_error", "Unable to get http request with error "+err.Error())
+		return nil, err
 	}
-
-	if res.StatusCode != http.StatusOK {
-		return nil, errors.New("get_network_details_error", "Unable to get http request with "+res.Status)
-
-	}
-	var networkResponse Network
-	err = json.Unmarshal([]byte(res.Body), &networkResponse)
-	if err != nil {
-		return nil, errors.Wrap(err, "Error unmarshaling response :"+res.Body)
-	}
-	return &networkResponse, nil
-
-}
-
-func GetNetwork() *Network {
 	return &Network{
-		Miners:   _config.chain.Miners,
-		Sharders: _config.chain.Sharders,
+		Miners: network.Miners,
+		Sharders: network.Sharders,
+	}, nil
+}
+
+//Deprecated: Use client.Node instance to get its network details
+func GetNetwork() *Network {
+	nodeClient, err := client.GetNode()
+	if err != nil {
+		panic(err)
+	}
+	return &Network{
+		Miners:   nodeClient.Network().Miners,
+		Sharders: nodeClient.Network().Sharders,
 	}
 }
 
+//Deprecated: Use client.Node instance UpdateNetwork() method 
 func SetNetwork(miners []string, sharders []string) {
-	_config.chain.Miners = miners
-	_config.chain.Sharders = sharders
-
-	consensus := _config.chain.SharderConsensous
-	if consensus < conf.DefaultSharderConsensous {
-		consensus = conf.DefaultSharderConsensous
+	nodeClient, err := client.GetNode()
+	if err != nil {
+		panic(err)
 	}
-	if len(sharders) < consensus {
-		consensus = len(sharders)
+	network, err := conf.NewNetwork(miners, sharders)
+	if err != nil {
+		panic(err)
 	}
-
-	Sharders = node.NewHolder(sharders, consensus)
-	node.InitCache(Sharders)
-
-	conf.InitChainNetwork(&conf.Network{
-		Miners:   miners,
-		Sharders: sharders,
-	})
+	err = nodeClient.UpdateNetwork(network)
+	if err != nil {
+		logging.Error("error updating network: ", err)
+		panic(err)
+	}
+	logging.Info("network updated successfully")
 }
 
+//Deprecated: Use client.GetNetwork() function 
 func GetNetworkJSON() string {
 	network := GetNetwork()
 	networkBytes, _ := json.Marshal(network)

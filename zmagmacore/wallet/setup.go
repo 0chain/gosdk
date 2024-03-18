@@ -1,6 +1,10 @@
 package wallet
 
 import (
+	"context"
+
+	"github.com/0chain/gosdk/core/client"
+	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/zcncore"
 )
@@ -14,7 +18,10 @@ func SetupZCNSDK(cfg Config) error {
 	var logName = cfg.LogDir() + "/zsdk.log"
 	zcncore.SetLogFile(logName, false)
 	zcncore.SetLogLevel(logLevelFromStr(cfg.LogLvl()))
-	return zcncore.InitZCNSDK(cfg.BlockWorker(), cfg.SignatureScheme())
+	return client.Init(context.Background(), conf.Config{
+		BlockWorker:     cfg.BlockWorker(),
+		SignatureScheme: cfg.SignatureScheme(),
+	})
 }
 
 // logLevelFromStr converts string log level to gosdk logger level int value.

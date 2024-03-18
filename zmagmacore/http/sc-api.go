@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/util"
-	"github.com/0chain/gosdk/zcncore"
 	"github.com/0chain/gosdk/zmagmacore/errors"
 )
 
@@ -79,8 +79,12 @@ func hashAndBytesOfReader(r io.Reader) (hash string, reader []byte, err error) {
 
 // extractSharders returns string slice of randomly ordered sharders existing in the current network.
 func extractSharders() []string {
-	network := zcncore.GetNetwork()
-	return util.GetRandom(network.Sharders, len(network.Sharders))
+	nodeClient, err := client.GetNode()
+	if err != nil {
+		panic(err)
+	}
+	sharders := nodeClient.Network().Sharders
+	return util.GetRandom(sharders, len(sharders))
 }
 
 const (

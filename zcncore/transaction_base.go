@@ -10,19 +10,19 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/node"
 	"github.com/0chain/gosdk/core/sys"
+	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/logger"
 	"go.uber.org/zap"
 
-	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/util"
-	"github.com/0chain/gosdk/core/version"
 	"github.com/0chain/gosdk/core/zcncrypto"
-	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
 
@@ -92,15 +92,6 @@ type TransactionCallback interface {
 	OnAuthComplete(t *Transaction, status int)
 }
 
-type localConfig struct {
-	chain         ChainConfig
-	wallet        zcncrypto.Wallet
-	authUrl       string
-	isConfigured  bool
-	isValidWallet bool
-	isSplitWallet bool
-}
-
 type ChainConfig struct {
 	ChainID                 string   `json:"chain_id,omitempty"`
 	BlockWorker             string   `json:"block_worker"`
@@ -114,48 +105,32 @@ type ChainConfig struct {
 	SharderConsensous       int      `json:"sharder_consensous"`
 }
 
-var Sharders *node.NodeHolder
-
+//Deprecated: Use client.Init() in core/client package
 // InitZCNSDK initializes the SDK with miner, sharder and signature scheme provided.
 func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainConfig) error) error {
 	if signscheme != "ed25519" && signscheme != "bls0chain" {
 		return errors.New("", "invalid/unsupported signature scheme")
 	}
-	_config.chain.BlockWorker = blockWorker
-	_config.chain.SignatureScheme = signscheme
+	signatureScheme = signscheme
 
-	err := UpdateNetworkDetails()
-	if err != nil {
-		fmt.Println("UpdateNetworkDetails:", err)
-		return err
-	}
-
-	go updateNetworkDetailsWorker(context.Background())
-
+	chainCfg := &ChainConfig{}
 	for _, conf := range configs {
-		err := conf(&_config.chain)
+		err := conf(chainCfg)
 		if err != nil {
 			return errors.Wrap(err, "invalid/unsupported options.")
 		}
 	}
-	assertConfig()
-	_config.isConfigured = true
-	logging.Info("******* Wallet SDK Version:", version.VERSIONSTR, " ******* (InitZCNSDK)")
-
-	cfg := &conf.Config{
-		BlockWorker:             _config.chain.BlockWorker,
-		MinSubmit:               _config.chain.MinSubmit,
-		MinConfirmation:         _config.chain.MinConfirmation,
-		ConfirmationChainLength: _config.chain.ConfirmationChainLength,
-		SignatureScheme:         _config.chain.SignatureScheme,
-		ChainID:                 _config.chain.ChainID,
-		EthereumNode:            _config.chain.EthNode,
-		SharderConsensous:       _config.chain.SharderConsensous,
+	cfg := conf.Config{
+		BlockWorker:     			blockWorker,
+		SignatureScheme: 			signscheme,
+		MinSubmit:               	chainCfg.MinSubmit,
+		MinConfirmation:         	chainCfg.MinConfirmation,
+		ConfirmationChainLength: 	chainCfg.ConfirmationChainLength,
+		ChainID:                 	chainCfg.ChainID,
+		EthereumNode:            	chainCfg.EthNode,
+		SharderConsensous:       	chainCfg.SharderConsensous,
 	}
-
-	conf.InitClientConfig(cfg)
-
-	return nil
+	return client.Init(context.Background(), cfg)
 }
 
 /*Confirmation - a data structure that provides the confirmation that a transaction is included into the block chain */
@@ -217,8 +192,8 @@ type SendTxnData struct {
 }
 
 func Sign(hash string) (string, error) {
-	sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
-	err := sigScheme.SetPrivateKey(_config.wallet.Keys[0].PrivateKey)
+	sigScheme := zcncrypto.NewSignatureScheme(signatureScheme)
+	err := sigScheme.SetPrivateKey(client.Wallet().Keys[0].PrivateKey)
 	if err != nil {
 		return "", err
 	}
@@ -244,8 +219,8 @@ func VerifyWithKey(pubKey, signature, hash string) (bool, error) {
 }
 
 var SignFn = func(hash string) (string, error) {
-	sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
-	err := sigScheme.SetPrivateKey(_config.wallet.Keys[0].PrivateKey)
+	sigScheme := zcncrypto.NewSignatureScheme(signatureScheme)
+	err := sigScheme.SetPrivateKey(client.Wallet().Keys[0].PrivateKey)
 	if err != nil {
 		return "", err
 	}
@@ -254,7 +229,7 @@ var SignFn = func(hash string) (string, error) {
 
 var AddSignature = func(privateKey, signature string, hash string) (string, error) {
 	var (
-		ss  = zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
+		ss  = zcncrypto.NewSignatureScheme(signatureScheme)
 		err error
 	)
 
@@ -273,7 +248,7 @@ func signWithWallet(hash string, wi interface{}) (string, error) {
 		fmt.Printf("Error in casting to wallet")
 		return "", errors.New("", "error in casting to wallet")
 	}
-	sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
+	sigScheme := zcncrypto.NewSignatureScheme(signatureScheme)
 	err := sigScheme.SetPrivateKey(w.Keys[0].PrivateKey)
 	if err != nil {
 		return "", err
@@ -436,8 +411,13 @@ func (t *Transaction) submitTxn() {
 }
 
 func newTransaction(cb TransactionCallback, txnFee uint64, nonce int64) (*Transaction, error) {
+	cfg, err := conf.GetClientConfig()
+	if err != nil {
+		return nil, err
+	}
+
 	t := &Transaction{}
-	t.txn = transaction.NewTransactionEntity(_config.wallet.ClientID, _config.chain.ChainID, _config.wallet.ClientKey, nonce)
+	t.txn = transaction.NewTransactionEntity(client.Wallet().ClientID, cfg.ChainID, client.Wallet().ClientKey, nonce)
 	t.txnStatus, t.verifyStatus = StatusUnknown, StatusUnknown
 	t.txnCb = cb
 	t.txn.TransactionNonce = nonce
@@ -512,8 +492,13 @@ func (t *Transaction) createSmartContractTxn(address, methodName string, input i
 		return nil
 	}
 
+	clientNode, err := client.GetNode()
+	if err != nil {
+		return err
+	}
+
 	// TODO: check if transaction is exempt to avoid unnecessary fee estimation
-	minFee, err := transaction.EstimateFee(t.txn, _config.chain.Miners, 0.2)
+	minFee, err := transaction.EstimateFee(t.txn, clientNode.Network().Miners, 0.2)
 	if err != nil {
 		logger.Logger.Error("failed estimate txn fee",
 			zap.Any("txn", t.txn.Hash),
@@ -596,8 +581,11 @@ func (t *Transaction) GetTransactionHash() string {
 }
 
 func queryFromMinersContext(ctx context.Context, numMiners int, query string, result chan *util.GetResponse) {
-
-	randomMiners := util.Shuffle(_config.chain.Miners)[:numMiners]
+	nodeClient, err := client.GetNode()
+	if err != nil {
+		panic(err)
+	}
+	randomMiners := util.Shuffle(nodeClient.Network().Miners)[:numMiners]
 	for _, miner := range randomMiners {
 		go func(minerurl string) {
 			logging.Info("Query from ", minerurl+query)
@@ -659,9 +647,13 @@ func getBlockHeaderFromTransactionConfirmation(txnHash string, cfmBlock map[stri
 }
 
 func getBlockInfoByRound(round int64, content string) (*blockHeader, error) {
-	numSharders := len(Sharders.Healthy()) // overwrite, use all
+	nodeClient, err := client.GetNode()
+	if err != nil {
+		return nil, err
+	}
+	numSharders := len(nodeClient.Sharders().Healthy()) // overwrite, use all
 	resultC := make(chan *util.GetResponse, numSharders)
-	Sharders.QueryFromSharders(numSharders, fmt.Sprintf("%vround=%v&content=%v", GET_BLOCK_INFO, round, content), resultC)
+	nodeClient.Sharders().QueryFromSharders(numSharders, fmt.Sprintf("%vround=%v&content=%v", GET_BLOCK_INFO, round, content), resultC)
 	var (
 		maxConsensus   int
 		roundConsensus = make(map[string]int)
@@ -732,10 +724,12 @@ func validateChain(confirmBlock *blockHeader) bool {
 	logging.Debug("Confirmation round: ", confirmRound)
 	currentBlockHash := confirmBlock.Hash
 	round := confirmRound + 1
+	cfg, _ := conf.GetClientConfig()
+	nodeClient, _ := client.GetNode()
 	for {
 		nextBlock, err := getBlockInfoByRound(round, "header")
 		if err != nil {
-			logging.Info(err, " after a second falling thru to ", getMinShardersVerify(), "of ", len(_config.chain.Sharders), "Sharders", len(Sharders.Healthy()), "Healthy sharders")
+			logging.Info(err, " after a second falling thru to ", nodeClient.GetMinShardersVerify(), "of ", len(nodeClient.Network().Sharders), "Sharders", len(nodeClient.Sharders().Healthy()), "Healthy sharders")
 			sys.Sleep(1 * time.Second)
 			nextBlock, err = getBlockInfoByRound(round, "header")
 			if err != nil {
@@ -748,7 +742,7 @@ func validateChain(confirmBlock *blockHeader) bool {
 			currentBlockHash = nextBlock.Hash
 			round++
 		}
-		if (round > confirmRound) && (round-confirmRound < getMinRequiredChainLength()) {
+		if (round > confirmRound) && (round-confirmRound < int64(cfg.ConfirmationChainLength)) {
 			continue
 		}
 		if round < confirmRound {

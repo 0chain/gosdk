@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/node"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/core/transaction"
@@ -30,7 +31,7 @@ func newTransactionWithAuth(cb TransactionCallback, txnFee uint64, nonce int64) 
 }
 
 func (ta *TransactionWithAuth) getAuthorize() (*transaction.Transaction, error) {
-	ta.t.txn.PublicKey = _config.wallet.ClientKey
+	ta.t.txn.PublicKey = client.Wallet().ClientKey
 	err := ta.t.txn.ComputeHashAndSign(SignFn)
 	if err != nil {
 		return nil, errors.Wrap(err, "signing error.")
@@ -86,7 +87,7 @@ func (ta *TransactionWithAuth) completeTxn(status int, out string, err error) {
 }
 
 func verifyFn(signature, msgHash, publicKey string) (bool, error) {
-	v := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
+	v := zcncrypto.NewSignatureScheme(signatureScheme)
 	err := v.SetPublicKey(publicKey)
 	if err != nil {
 		return false, err
@@ -102,7 +103,7 @@ func verifyFn(signature, msgHash, publicKey string) (bool, error) {
 func (ta *TransactionWithAuth) sign(otherSig string) error {
 	ta.t.txn.ComputeHashData()
 
-	sig, err := AddSignature(_config.wallet.Keys[0].PrivateKey, otherSig, ta.t.txn.Hash)
+	sig, err := AddSignature(client.Wallet().Keys[0].PrivateKey, otherSig, ta.t.txn.Hash)
 	if err != nil {
 		return err
 	}

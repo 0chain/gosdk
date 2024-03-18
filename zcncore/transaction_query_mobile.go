@@ -15,6 +15,7 @@ import (
 	"time"
 
 	thrown "github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/resty"
 	"github.com/0chain/gosdk/core/util"
 )
@@ -457,8 +458,13 @@ func (tq *transactionQuery) getFastConfirmation(txnHash string, timeout RequestT
 }
 
 func GetInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback) {
+	nodeClient, err := client.GetNode()
+	if err != nil {
+		cb.OnInfoAvailable(op, StatusError, "", err.Error())
+		return
+	}
 
-	tq, err := newTransactionQuery(util.Shuffle(Sharders.Healthy()))
+	tq, err := newTransactionQuery(util.Shuffle(nodeClient.Sharders().Healthy()))
 	if err != nil {
 		cb.OnInfoAvailable(op, StatusError, "", err.Error())
 		return
@@ -474,8 +480,13 @@ func GetInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback) {
 }
 
 func GetInfoFromAnySharder(urlSuffix string, op int, cb GetInfoCallback) {
+	nodeClient, err := client.GetNode()
+	if err != nil {
+		cb.OnInfoAvailable(op, StatusError, "", err.Error())
+		return
+	}
 
-	tq, err := newTransactionQuery(util.Shuffle(Sharders.Healthy()))
+	tq, err := newTransactionQuery(util.Shuffle(nodeClient.Sharders().Healthy()))
 	if err != nil {
 		cb.OnInfoAvailable(op, StatusError, "", err.Error())
 		return

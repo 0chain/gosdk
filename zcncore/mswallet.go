@@ -182,7 +182,7 @@ func CreateMSVote(proposal, grpClientID, signerWalletstr, toClientID string, tok
 	buff, _ := json.Marshal(transfer)
 	hash := encryption.Hash(buff)
 
-	sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
+	sigScheme := zcncrypto.NewSignatureScheme(signatureScheme)
 	if err := sigScheme.SetPrivateKey(signerWallet.Keys[0].PrivateKey); err != nil {
 		return "", err
 	}

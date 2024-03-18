@@ -17,8 +17,9 @@ func GetWalletBalance(clientId string) (common.Balance, error) {
 	return getWalletBalance(clientId)
 }
 
+//Deprecated: use Sign() method in zcncrypto.Wallet
 func SignWith0Wallet(hash string, w *zcncrypto.Wallet) (string, error) {
-	sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
+	sigScheme := zcncrypto.NewSignatureScheme(signatureScheme)
 	err := sigScheme.SetPrivateKey(w.Keys[0].PrivateKey)
 	if err != nil {
 		return "", err

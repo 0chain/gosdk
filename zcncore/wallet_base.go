@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"math"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -13,9 +12,10 @@ import (
 	"sync"
 	"time"
 
-	stdErrors "errors"
+	"errors"
 
-	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/constants"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/logger"
@@ -132,7 +132,6 @@ const (
 )
 
 var defaultLogLevel = logger.DEBUG
-var logging logger.Logger
 
 func GetLogger() *logger.Logger {
 	return &logging
@@ -222,43 +221,47 @@ type AuthCallback interface {
 	OnSetupComplete(status int, err string)
 }
 
-// Singleton
-var _config localConfig
-var miners []string
-var mGuard sync.Mutex
+var (
+	logging logger.Logger
+)
 
 func init() {
 	logging.Init(defaultLogLevel, "0chain-core-sdk")
 }
 
+//Deprecated: Use client.GetNode().GetStableMiners()
 func GetStableMiners() []string {
-	mGuard.Lock()
-	defer mGuard.Unlock()
-	if len(miners) == 0 {
-		miners = util.GetRandom(_config.chain.Miners, getMinMinersSubmit())
+	clientNode, err := client.GetNode()
+	if err != nil {
+		panic(err)
 	}
-
-	return miners
+	return clientNode.GetStableMiners()
 }
+
+//Deprecated: Use client.GetNode().ResetStableMiners()
 func ResetStableMiners() {
-	mGuard.Lock()
-	defer mGuard.Unlock()
-	miners = util.GetRandom(_config.chain.Miners, getMinMinersSubmit())
+	clientNode, err := client.GetNode()
+	if err != nil {
+		panic(err)
+	}
+	clientNode.ResetStableMiners()
 }
 
 func checkSdkInit() error {
-	if !_config.isConfigured || len(_config.chain.Miners) < 1 || len(_config.chain.Sharders) < 1 {
-		return errors.New("", "SDK not initialized")
+	_, err := client.GetNode()
+	if err != nil {
+		return err
 	}
 	return nil
 }
+
 func checkWalletConfig() error {
-	if !_config.isValidWallet || _config.wallet.ClientID == "" {
-		logging.Error("wallet info not found. returning error.")
-		return errors.New("", "wallet info not found. set wallet info")
+	if !client.IsWalletSet() {
+		return errors.New("wallet info not found. set wallet info")
 	}
 	return nil
 }
+
 func CheckConfig() error {
 	err := checkSdkInit()
 	if err != nil {
@@ -271,38 +274,13 @@ func CheckConfig() error {
 	return nil
 }
 
-func assertConfig() {
-	if _config.chain.MinSubmit <= 0 {
-		_config.chain.MinSubmit = defaultMinSubmit
-	}
-	if _config.chain.MinConfirmation <= 0 {
-		_config.chain.MinConfirmation = defaultMinConfirmation
-	}
-	if _config.chain.ConfirmationChainLength <= 0 {
-		_config.chain.ConfirmationChainLength = defaultConfirmationChainLength
-	}
-}
-func getMinMinersSubmit() int {
-	minMiners := util.MaxInt(calculateMinRequired(float64(_config.chain.MinSubmit), float64(len(_config.chain.Miners))/100), 1)
-	logging.Info("Minimum miners used for submit :", minMiners)
-	return minMiners
-}
-
+//Deprecated: Use client.GetNode().GetMinShardersVerify() after Init call
 func GetMinShardersVerify() int {
-	return getMinShardersVerify()
-}
-
-func getMinShardersVerify() int {
-	minSharders := util.MaxInt(calculateMinRequired(float64(_config.chain.MinConfirmation), float64(len(Sharders.Healthy()))/100), 1)
-	logging.Info("Minimum sharders used for verify :", minSharders)
-	return minSharders
-}
-func getMinRequiredChainLength() int64 {
-	return int64(_config.chain.ConfirmationChainLength)
-}
-
-func calculateMinRequired(minRequired, percent float64) int {
-	return int(math.Ceil(minRequired * percent))
+	clientNode, err := client.GetNode()
+	if err != nil {
+		panic(err)
+	}
+	return clientNode.GetMinShardersVerify()
 }
 
 // GetVersion - returns version string
@@ -331,6 +309,7 @@ func SetLogFile(logFile string, verbose bool) {
 	logging.Info("******* Wallet SDK Version:", version.VERSIONSTR, " ******* (SetLogFile)")
 }
 
+//Deprecated: Use client.Init() in core/client package
 // Init initialize the SDK with miner, sharder and signature scheme provided in configuration provided in JSON format
 // # Inputs
 //   - chainConfigJSON: json format of zcn config
@@ -350,56 +329,35 @@ func SetLogFile(logFile string, verbose bool) {
 //     "sharder_consensous": 2,
 //     }
 func Init(chainConfigJSON string) error {
-	err := json.Unmarshal([]byte(chainConfigJSON), &_config.chain)
-	if err == nil {
-		// Check signature scheme is supported
-		if _config.chain.SignatureScheme != "ed25519" && _config.chain.SignatureScheme != "bls0chain" {
-			return errors.New("", "invalid/unsupported signature scheme")
-		}
-
-		err = UpdateNetworkDetails()
-		if err != nil {
-			return err
-		}
-
-		go updateNetworkDetailsWorker(context.Background())
-
-		assertConfig()
-		_config.isConfigured = true
-
-		cfg := &conf.Config{
-			BlockWorker:             _config.chain.BlockWorker,
-			MinSubmit:               _config.chain.MinSubmit,
-			MinConfirmation:         _config.chain.MinConfirmation,
-			ConfirmationChainLength: _config.chain.ConfirmationChainLength,
-			SignatureScheme:         _config.chain.SignatureScheme,
-			ChainID:                 _config.chain.ChainID,
-			EthereumNode:            _config.chain.EthNode,
-			SharderConsensous:       _config.chain.SharderConsensous,
-		}
-
-		conf.InitClientConfig(cfg)
+	cfg := conf.Config{}
+	err := json.Unmarshal([]byte(chainConfigJSON), &cfg)
+	if err != nil {
+		return err
 	}
-	logging.Info("0chain: test logging")
-	logging.Info("******* Wallet SDK Version:", version.VERSIONSTR, " ******* (Init) Test")
-	return err
+	return client.Init(context.Background(), cfg)
 }
 
+var signatureScheme string
+
+// Use client.Init() in core/client package to initialize SDK.
 // InitSignatureScheme initializes signature scheme only.
 func InitSignatureScheme(scheme string) {
-	_config.chain.SignatureScheme = scheme
+	if scheme != constants.BLS0CHAIN.String() && scheme != constants.ED25519.String() {
+		panic("invalid/unsupported signature scheme")
+	}
+	signatureScheme = scheme 
 }
 
 // CreateWalletOffline creates the wallet for the config signature scheme.
 func CreateWalletOffline() (string, error) {
-	sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
+	sigScheme := zcncrypto.NewSignatureScheme(signatureScheme)
 	wallet, err := sigScheme.GenerateKeys()
 	if err != nil {
-		return "", errors.Wrap(err, "failed to generate keys")
+		return "", errors.New("failed to generate keys: " + err.Error())
 	}
 	w, err := wallet.Marshal()
 	if err != nil {
-		return "", errors.Wrap(err, "wallet encoding failed")
+		return "", errors.New("wallet encoding failed: " + err.Error())
 	}
 	return w, nil
 }
@@ -407,10 +365,9 @@ func CreateWalletOffline() (string, error) {
 // RecoverOfflineWallet recovers the previously generated wallet using the mnemonic.
 func RecoverOfflineWallet(mnemonic string) (string, error) {
 	if !zcncrypto.IsMnemonicValid(mnemonic) {
-		return "", errors.New("", "Invalid mnemonic")
+		return "", errors.New("Invalid mnemonic")
 	}
-
-	sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
+	sigScheme := zcncrypto.NewSignatureScheme(signatureScheme)
 	wallet, err := sigScheme.RecoverKeys(mnemonic)
 	if err != nil {
 		return "", err
@@ -428,10 +385,10 @@ func RecoverOfflineWallet(mnemonic string) (string, error) {
 // It also registers the wallet again to block chain.
 func RecoverWallet(mnemonic string, statusCb WalletCallback) error {
 	if !zcncrypto.IsMnemonicValid(mnemonic) {
-		return errors.New("", "Invalid mnemonic")
+		return errors.New("Invalid mnemonic")
 	}
 	go func() {
-		sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
+		sigScheme := zcncrypto.NewSignatureScheme(signatureScheme)
 		_, err := sigScheme.RecoverKeys(mnemonic)
 		if err != nil {
 			statusCb.OnWalletCreateComplete(StatusError, "", err.Error())
@@ -443,21 +400,21 @@ func RecoverWallet(mnemonic string, statusCb WalletCallback) error {
 
 // Split keys from the primary master key
 func SplitKeys(privateKey string, numSplits int) (string, error) {
-	if _config.chain.SignatureScheme != "bls0chain" {
-		return "", errors.New("", "signature key doesn't support split key")
+	if signatureScheme != constants.BLS0CHAIN.String() {
+		return "", errors.New("signature key doesn't support split key")
 	}
-	sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
+	sigScheme := zcncrypto.NewSignatureScheme(signatureScheme)
 	err := sigScheme.SetPrivateKey(privateKey)
 	if err != nil {
-		return "", errors.Wrap(err, "set private key failed")
+		return "", errors.New("set private key failed." + err.Error())
 	}
 	w, err := sigScheme.SplitKeys(numSplits)
 	if err != nil {
-		return "", errors.Wrap(err, "split key failed.")
+		return "", errors.New("split key failed." + err.Error())
 	}
 	wStr, err := w.Marshal()
 	if err != nil {
-		return "", errors.Wrap(err, "wallet encoding failed.")
+		return "", errors.New("wallet encoding failed." + err.Error())
 	}
 	return wStr, nil
 }
@@ -470,7 +427,11 @@ type GetClientResponse struct {
 }
 
 func GetClientDetails(clientID string) (*GetClientResponse, error) {
-	minerurl := util.GetRandom(_config.chain.Miners, 1)[0]
+	clientNode, err := client.GetNode()
+	if err != nil {
+		return nil, err
+	}
+	minerurl := util.GetRandom(clientNode.Network().Miners, 1)[0]
 	url := minerurl + GET_CLIENT
 	url = fmt.Sprintf("%v?id=%v", url, clientID)
 	req, err := util.NewHTTPGetRequest(url)
@@ -493,6 +454,7 @@ func GetClientDetails(clientID string) (*GetClientResponse, error) {
 	return &clientDetails, nil
 }
 
+//Deprecated: Use zcncrypto.IsMnemonicValid()
 // IsMnemonicValid is an utility function to check the mnemonic valid
 //
 //	# Inputs
@@ -501,21 +463,24 @@ func IsMnemonicValid(mnemonic string) bool {
 	return zcncrypto.IsMnemonicValid(mnemonic)
 }
 
+//Deprecated: Use client.SetWallet() and client.SetSplitKeyWallet() to set wallet and splitKeyWallet respectively
 // SetWallet should be set before any transaction or client specific APIs
 // splitKeyWallet parameter is valid only if SignatureScheme is "BLS0Chain"
 func SetWallet(w zcncrypto.Wallet, splitKeyWallet bool) error {
-	_config.wallet = w
-
-	if _config.chain.SignatureScheme == "bls0chain" {
-		_config.isSplitWallet = splitKeyWallet
+	err := client.SetWallet(w)
+	if err != nil {
+		return err
 	}
-	_config.isValidWallet = true
-
+	err = client.SetSplitKeyWallet(splitKeyWallet)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
+//Deprecated: Use client.Wallet() in core/client package
 func GetWalletRaw() zcncrypto.Wallet {
-	return _config.wallet
+	return *client.Wallet()
 }
 
 // SetWalletInfo should be set before any transaction or client specific APIs
@@ -537,28 +502,19 @@ func GetWalletRaw() zcncrypto.Wallet {
 //
 // - splitKeyWallet: if wallet keys is split
 func SetWalletInfo(jsonWallet string, splitKeyWallet bool) error {
-	err := json.Unmarshal([]byte(jsonWallet), &_config.wallet)
-	if err == nil {
-		if _config.chain.SignatureScheme == "bls0chain" {
-			_config.isSplitWallet = splitKeyWallet
-		}
-		_config.isValidWallet = true
+	wallet := zcncrypto.Wallet{}
+	err := json.Unmarshal([]byte(jsonWallet), &wallet)
+	if err != nil {
+		return errors.New("invalid jsonWallet: " + err.Error())
 	}
-	return err
+	return SetWallet(wallet, splitKeyWallet)
 }
 
 // SetAuthUrl will be called by app to set zauth URL to SDK.
 // # Inputs
 //   - url: the url of zAuth server
 func SetAuthUrl(url string) error {
-	if !_config.isSplitWallet {
-		return errors.New("", "wallet type is not split key")
-	}
-	if url == "" {
-		return errors.New("", "invalid auth url")
-	}
-	_config.authUrl = strings.TrimRight(url, "/")
-	return nil
+	return client.SetAuthUrl(url)
 }
 
 func getWalletBalance(clientId string) (common.Balance, error) {
@@ -595,7 +551,7 @@ func GetBalance(cb GetBalanceCallback) error {
 		return err
 	}
 	go func() {
-		value, info, err := getBalanceFromSharders(_config.wallet.ClientID)
+		value, info, err := getBalanceFromSharders(client.Wallet().ClientID)
 		if err != nil {
 			logging.Error(err)
 			cb.OnBalanceAvailable(StatusError, 0, info)
@@ -614,7 +570,7 @@ func GetMintNonce(cb GetInfoCallback) error {
 	}
 
 	go GetInfoFromSharders(withParams(GET_MINT_NONCE, Params{
-		"client_id": _config.wallet.ClientID,
+		"client_id": client.Wallet().ClientID,
 	}), OpGetMintNonce, cb)
 	return nil
 }
@@ -646,7 +602,7 @@ func GetNonce(cb GetNonceCallback) error {
 	}
 
 	go func() {
-		value, info, err := getNonceFromSharders(_config.wallet.ClientID)
+		value, info, err := getNonceFromSharders(client.Wallet().ClientID)
 		if err != nil {
 			logging.Error(err)
 			cb.OnNonceAvailable(StatusError, 0, info)
@@ -686,7 +642,7 @@ func GetWalletNonce(clientID string) (int64, error) {
 		return cb.nonce, nil
 	}
 
-	return 0, stdErrors.New(cb.info)
+	return 0, errors.New(cb.info)
 }
 
 // GetBalanceWallet retreives wallet balance from sharders
@@ -710,11 +666,19 @@ func GetBalanceWallet(walletStr string, cb GetBalanceCallback) error {
 }
 
 func getBalanceFromSharders(clientID string) (int64, string, error) {
-	return Sharders.GetBalanceFieldFromSharders(clientID, "balance")
+	clientNode, err := client.GetNode()
+	if err != nil {
+		return 0, "", err
+	}
+	return clientNode.Sharders().GetBalanceFieldFromSharders(clientID, "balance")
 }
 
 func getNonceFromSharders(clientID string) (int64, string, error) {
-	return Sharders.GetBalanceFieldFromSharders(clientID, "nonce")
+	clientNode, err := client.GetNode()
+	if err != nil {
+		return 0, "", err
+	}
+	return clientNode.Sharders().GetBalanceFieldFromSharders(clientID, "nonce")
 }
 
 // ConvertToToken converts the SAS tokens to ZCN tokens
@@ -911,7 +875,7 @@ func GetMinerSCNodePool(id string, cb GetInfoCallback) (err error) {
 	}
 	go GetInfoFromSharders(withParams(GET_MINERSC_POOL, Params{
 		"id":      id,
-		"pool_id": _config.wallet.ClientID,
+		"pool_id": client.Wallet().ClientID,
 	}), 0, cb)
 
 	return
@@ -926,7 +890,7 @@ func GetMinerSCUserInfo(clientID string, cb GetInfoCallback) (err error) {
 		return
 	}
 	if clientID == "" {
-		clientID = _config.wallet.ClientID
+		clientID = client.Wallet().ClientID
 	}
 	go GetInfoFromSharders(withParams(GET_MINERSC_USER, Params{
 		"client_id": clientID,
@@ -994,7 +958,7 @@ func GetAllocations(clientID string, cb GetInfoCallback) (err error) {
 		return
 	}
 	if clientID == "" {
-		clientID = _config.wallet.ClientID
+		clientID = client.Wallet().ClientID
 	}
 	var url = withParams(STORAGESC_GET_ALLOCATIONS, Params{
 		"client": clientID,
@@ -1106,7 +1070,7 @@ func GetReadPoolInfo(clientID string, cb GetInfoCallback) (err error) {
 		return
 	}
 	if clientID == "" {
-		clientID = _config.wallet.ClientID
+		clientID = client.Wallet().ClientID
 	}
 	var url = withParams(STORAGESC_GET_READ_POOL_INFO, Params{
 		"client_id": clientID,
@@ -1137,7 +1101,7 @@ func GetStakePoolUserInfo(clientID string, offset, limit int, cb GetInfoCallback
 		return
 	}
 	if clientID == "" {
-		clientID = _config.wallet.ClientID
+		clientID = client.Wallet().ClientID
 	}
 
 	var url = withParams(STORAGESC_GET_STAKE_POOL_USER_INFO, Params{

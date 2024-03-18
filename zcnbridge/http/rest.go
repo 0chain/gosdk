@@ -13,6 +13,7 @@ import (
 	"go.uber.org/zap"
 	"gopkg.in/natefinch/lumberjack.v2"
 
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zcnbridge/errors"
@@ -168,7 +169,11 @@ func hashAndBytesOfReader(r io.Reader) (string, []byte, error) {
 
 // extractSharders returns string slice of randomly ordered sharders existing in the current network.
 func extractSharders() []string {
-	sharders := zcncore.Sharders.Healthy()
+	nodeClient, err := client.GetNode()
+	if err != nil {
+		panic(err)
+	}
+	sharders := nodeClient.Sharders().Healthy()
 	return util.GetRandom(sharders, len(sharders))
 }
 

@@ -14,7 +14,9 @@ import (
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/block"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/node"
 	"github.com/0chain/gosdk/core/transaction"
@@ -258,8 +260,8 @@ func NewTransaction(cb TransactionCallback, txnFee uint64, nonce int64) (Transac
 	if err != nil {
 		return nil, err
 	}
-	if _config.isSplitWallet {
-		if _config.authUrl == "" {
+	if client.SplitKeyWallet() {
+		if client.AuthUrl() == "" {
 			return nil, errors.New("", "auth url not set")
 		}
 		logging.Info("New transaction interface with auth")
@@ -285,13 +287,17 @@ func (t *Transaction) Send(toClientID string, val uint64, desc string) error {
 	if err != nil {
 		return errors.New("", "Could not serialize description to transaction_data")
 	}
+	clientNode, err := client.GetNode()
+	if err != nil {
+		return err
+	}
 
 	t.txn.TransactionType = transaction.TxnTypeSend
 	t.txn.ToClientID = toClientID
 	t.txn.Value = val
 	t.txn.TransactionData = string(txnData)
 	if t.txn.TransactionFee == 0 {
-		fee, err := transaction.EstimateFee(t.txn, _config.chain.Miners, 0.2)
+		fee, err := transaction.EstimateFee(t.txn, clientNode.Network().Miners, 0.2)
 		if err != nil {
 			return err
 		}
@@ -309,6 +315,10 @@ func (t *Transaction) SendWithSignatureHash(toClientID string, val uint64, desc 
 	if err != nil {
 		return errors.New("", "Could not serialize description to transaction_data")
 	}
+	clientNode, err := client.GetNode()
+	if err != nil {
+		return err
+	}
 	t.txn.TransactionType = transaction.TxnTypeSend
 	t.txn.ToClientID = toClientID
 	t.txn.Value = val
@@ -317,7 +327,7 @@ func (t *Transaction) SendWithSignatureHash(toClientID string, val uint64, desc 
 	t.txn.Signature = sig
 	t.txn.CreationDate = CreationDate
 	if t.txn.TransactionFee == 0 {
-		fee, err := transaction.EstimateFee(t.txn, _config.chain.Miners, 0.2)
+		fee, err := transaction.EstimateFee(t.txn, clientNode.Network().Miners, 0.2)
 		if err != nil {
 			return err
 		}
@@ -795,6 +805,12 @@ func (t *Transaction) RegisterMultiSig(walletstr string, mswallet string) error 
 	if err != nil {
 		return errors.Wrap(err, "execute multisig register failed due to invalid data.")
 	}
+
+	clientNode, err := client.GetNode()
+	if err != nil {
+		return err
+	}
+	
 	go func() {
 		t.txn.TransactionType = transaction.TxnTypeSmartContract
 		t.txn.ToClientID = MultiSigSmartContractAddress
@@ -809,7 +825,7 @@ func (t *Transaction) RegisterMultiSig(walletstr string, mswallet string) error 
 		t.txn.TransactionNonce = nonce
 
 		if t.txn.TransactionFee == 0 {
-			fee, err := transaction.EstimateFee(t.txn, _config.chain.Miners, 0.2)
+			fee, err := transaction.EstimateFee(t.txn, clientNode.Network().Miners, 0.2)
 			if err != nil {
 				return
 			}
@@ -832,8 +848,12 @@ func NewMSTransaction(walletstr string, cb TransactionCallback) (*Transaction, e
 		fmt.Printf("Error while parsing the wallet. %v", err)
 		return nil, err
 	}
+	cfg, err := conf.GetClientConfig()
+	if err != nil {
+		return nil, err
+	}
 	t := &Transaction{}
-	t.txn = transaction.NewTransactionEntity(w.ClientID, _config.chain.ChainID, w.ClientKey, w.Nonce)
+	t.txn = transaction.NewTransactionEntity(w.ClientID, cfg.ChainID, w.ClientKey, w.Nonce)
 	t.txnStatus, t.verifyStatus = StatusUnknown, StatusUnknown
 	t.txnCb = cb
 	return t, nil
@@ -859,6 +879,10 @@ func (t *Transaction) RegisterVote(signerwalletstr string, msvstr string) error 
 	if err != nil {
 		return errors.Wrap(err, "execute multisig vote failed due to invalid data.")
 	}
+	clientNode, err := client.GetNode()
+	if err != nil {
+		return err
+	}
 	go func() {
 		t.txn.TransactionType = transaction.TxnTypeSmartContract
 		t.txn.ToClientID = MultiSigSmartContractAddress
@@ -873,7 +897,7 @@ func (t *Transaction) RegisterVote(signerwalletstr string, msvstr string) error 
 		t.txn.TransactionNonce = nonce
 
 		if t.txn.TransactionFee == 0 {
-			fee, err := transaction.EstimateFee(t.txn, _config.chain.Miners, 0.2)
+			fee, err := transaction.EstimateFee(t.txn, clientNode.Network().Miners, 0.2)
 			if err != nil {
 				return
 			}
@@ -963,6 +987,10 @@ func (t *Transaction) ZCNSCUpdateAuthorizerConfig(ip *AuthorizerNode) (err error
 }
 
 func (t *Transaction) Verify() error {
+	clientNode, err := client.GetNode()
+	if err != nil {
+		return err
+	}
 	if t.txnHash == "" && t.txnStatus == StatusUnknown {
 		return errors.New("", "invalid transaction. cannot be verified.")
 	}
@@ -978,7 +1006,7 @@ func (t *Transaction) Verify() error {
 		t.txn.CreationDate = int64(common.Now())
 	}
 
-	tq, err := NewTransactionQuery(Sharders.Healthy(), _config.chain.Miners)
+	tq, err := NewTransactionQuery(clientNode.Sharders().Healthy(), clientNode.Network().Miners)
 	if err != nil {
 		logging.Error(err)
 		return err
@@ -1003,8 +1031,8 @@ func (t *Transaction) Verify() error {
 
 				// transaction is done or expired. it means random sharder might be outdated, try to query it from s/S sharders to confirm it
 				if util.MaxInt64(lfbBlockHeader.getCreationDate(now), now) >= (t.txn.CreationDate + int64(defaultTxnExpirationSeconds)) {
-					logging.Info("falling back to ", getMinShardersVerify(), " of ", len(_config.chain.Sharders), " Sharders")
-					confirmBlockHeader, confirmationBlock, lfbBlockHeader, err = tq.getConsensusConfirmation(context.TODO(), getMinShardersVerify(), t.txnHash)
+					logging.Info("falling back to ", clientNode.GetMinShardersVerify(), " of ", len(clientNode.Network().Sharders), " Sharders")
+					confirmBlockHeader, confirmationBlock, lfbBlockHeader, err = tq.getConsensusConfirmation(context.TODO(), clientNode.GetMinShardersVerify(), t.txnHash)
 				}
 
 				// txn not found in fast confirmation/consensus confirmation
@@ -1069,11 +1097,15 @@ func ConvertToValue(token float64) uint64 {
 }
 
 func GetLatestFinalized(ctx context.Context, numSharders int) (b *block.Header, err error) {
+	clientNode, err := client.GetNode()
+	if err != nil {
+		return nil, err
+	}
 	var result = make(chan *util.GetResponse, numSharders)
 	defer close(result)
 
-	numSharders = len(Sharders.Healthy()) // overwrite, use all
-	Sharders.QueryFromShardersContext(ctx, numSharders, GET_LATEST_FINALIZED, result)
+	numSharders = len(clientNode.Sharders().Healthy()) // overwrite, use all
+	clientNode.Sharders().QueryFromShardersContext(ctx, numSharders, GET_LATEST_FINALIZED, result)
 
 	var (
 		maxConsensus   int
@@ -1114,11 +1146,15 @@ func GetLatestFinalized(ctx context.Context, numSharders int) (b *block.Header, 
 }
 
 func GetLatestFinalizedMagicBlock(ctx context.Context, numSharders int) (m *block.MagicBlock, err error) {
+	clientNode, err := client.GetNode()
+	if err != nil {
+		return nil, err
+	}
 	var result = make(chan *util.GetResponse, numSharders)
 	defer close(result)
 
-	numSharders = len(Sharders.Healthy()) // overwrite, use all
-	Sharders.QueryFromShardersContext(ctx, numSharders, GET_LATEST_FINALIZED_MAGIC_BLOCK, result)
+	numSharders = len(clientNode.Sharders().Healthy()) // overwrite, use all
+	clientNode.Sharders().QueryFromShardersContext(ctx, numSharders, GET_LATEST_FINALIZED_MAGIC_BLOCK, result)
 
 	var (
 		maxConsensus   int
@@ -1165,11 +1201,16 @@ func GetLatestFinalizedMagicBlock(ctx context.Context, numSharders int) (m *bloc
 }
 
 func GetChainStats(ctx context.Context) (b *block.ChainStats, err error) {
+	clientNode, err := client.GetNode()
+	if err != nil {
+		return nil, err
+	}
+
 	var result = make(chan *util.GetResponse, 1)
 	defer close(result)
 
-	var numSharders = len(Sharders.Healthy()) // overwrite, use all
-	Sharders.QueryFromShardersContext(ctx, numSharders, GET_CHAIN_STATS, result)
+	var numSharders = len(clientNode.Sharders().Healthy()) // overwrite, use all
+	clientNode.Sharders().QueryFromShardersContext(ctx, numSharders, GET_CHAIN_STATS, result)
 	var rsp *util.GetResponse
 	for i := 0; i < numSharders; i++ {
 		var x = <-result
@@ -1194,11 +1235,14 @@ func GetChainStats(ctx context.Context) (b *block.ChainStats, err error) {
 }
 
 func GetFeeStats(ctx context.Context) (b *block.FeeStats, err error) {
-
+	clientNode, err := client.GetNode()
+	if err != nil {
+		return nil, err
+	}
 	var numMiners = 4
 
-	if numMiners > len(_config.chain.Miners) {
-		numMiners = len(_config.chain.Miners)
+	if numMiners > len(clientNode.Network().Miners) {
+		numMiners = len(clientNode.Network().Miners)
 	}
 
 	var result = make(chan *util.GetResponse, numMiners)
@@ -1232,24 +1276,39 @@ loop:
 }
 
 func GetBlockByRound(ctx context.Context, numSharders int, round int64) (b *block.Block, err error) {
-	return Sharders.GetBlockByRound(ctx, numSharders, round)
+	clientNode, err := client.GetNode()
+	if err != nil {
+		return nil, err
+	}
+	return clientNode.Sharders().GetBlockByRound(ctx, numSharders, round)
 }
 
 func GetRoundFromSharders() (int64, error) {
-	return Sharders.GetRoundFromSharders()
+	clientNode, err := client.GetNode()
+	if err != nil {
+		return 0, err
+	}
+	return clientNode.Sharders().GetRoundFromSharders()
 }
 
 func GetHardForkRound(hardFork string) (int64, error) {
-	return Sharders.GetHardForkRound(hardFork)
+	nodeClient, err := client.GetNode()
+	if err != nil {
+		return 0, err
+	}
+	return nodeClient.Sharders().GetHardForkRound(hardFork)
 }
 
 func GetMagicBlockByNumber(ctx context.Context, numSharders int, number int64) (m *block.MagicBlock, err error) {
-
+	clientNode, err := client.GetNode()
+	if err != nil {
+		return nil, err
+	}
 	var result = make(chan *util.GetResponse, numSharders)
 	defer close(result)
 
-	numSharders = len(Sharders.Healthy()) // overwrite, use all
-	Sharders.QueryFromShardersContext(ctx, numSharders,
+	numSharders = len(clientNode.Sharders().Healthy()) // overwrite, use all
+	clientNode.Sharders().QueryFromShardersContext(ctx, numSharders,
 		fmt.Sprintf("%smagic_block_number=%d", GET_MAGIC_BLOCK_INFO, number),
 		result)
 
@@ -1346,6 +1405,7 @@ func (nc *NonceCache) Evict(clientId string) {
 	delete(nc.cache, clientId)
 }
 
+//Deprecated: To initialize SDK, Use conf.Config and client.Init() in core package
 func WithEthereumNode(uri string) func(c *ChainConfig) error {
 	return func(c *ChainConfig) error {
 		c.EthNode = uri
@@ -1353,6 +1413,7 @@ func WithEthereumNode(uri string) func(c *ChainConfig) error {
 	}
 }
 
+//Deprecated: To initialize SDK, Use conf.Config and client.Init() in core package
 func WithChainID(id string) func(c *ChainConfig) error {
 	return func(c *ChainConfig) error {
 		c.ChainID = id
@@ -1360,6 +1421,7 @@ func WithChainID(id string) func(c *ChainConfig) error {
 	}
 }
 
+//Deprecated: To initialize SDK, Use conf.Config and client.Init() in core package
 func WithMinSubmit(m int) func(c *ChainConfig) error {
 	return func(c *ChainConfig) error {
 		c.MinSubmit = m
@@ -1367,6 +1429,7 @@ func WithMinSubmit(m int) func(c *ChainConfig) error {
 	}
 }
 
+//Deprecated: To initialize SDK, Use conf.Config and client.Init() in core package
 func WithMinConfirmation(m int) func(c *ChainConfig) error {
 	return func(c *ChainConfig) error {
 		c.MinConfirmation = m
@@ -1374,6 +1437,7 @@ func WithMinConfirmation(m int) func(c *ChainConfig) error {
 	}
 }
 
+//Deprecated: To initialize SDK, Use conf.Config and client.Init() in core package
 func WithConfirmationChainLength(m int) func(c *ChainConfig) error {
 	return func(c *ChainConfig) error {
 		c.ConfirmationChainLength = m
@@ -1381,6 +1445,7 @@ func WithConfirmationChainLength(m int) func(c *ChainConfig) error {
 	}
 }
 
+//Deprecated: To initialize SDK, Use conf.Config and client.Init() in core package
 func WithSharderConsensous(m int) func(c *ChainConfig) error {
 	return func(c *ChainConfig) error {
 		c.SharderConsensous = m
@@ -1410,7 +1475,7 @@ func GetVestingClientList(clientID string, cb GetInfoCallback) (err error) {
 		return
 	}
 	if clientID == "" {
-		clientID = _config.wallet.ClientID // if not blank
+		clientID = client.Wallet().ClientID // if not blank
 	}
 	go GetInfoFromSharders(WithParams(GET_VESTING_CLIENT_POOLS, Params{
 		"client_id": clientID,

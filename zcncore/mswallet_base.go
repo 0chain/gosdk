@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/constants"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/zcncrypto"
 )
@@ -25,12 +27,12 @@ func CreateMSWallet(t, n int) (string, string, []string, error) {
 	}
 
 	id := 0
-	if _config.chain.SignatureScheme != "bls0chain" {
+	if signatureScheme != constants.BLS0CHAIN.String() {
 		return "", "", nil, errors.New("", "encryption scheme for this blockchain is not bls0chain")
 
 	}
 
-	groupKey := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
+	groupKey := zcncrypto.NewSignatureScheme(signatureScheme)
 	wallet, err := groupKey.GenerateKeys()
 	if err != nil {
 		return "", "", nil, err
@@ -52,7 +54,7 @@ func CreateMSWallet(t, n int) (string, string, []string, error) {
 
 	msw := MSWallet{
 		Id:              id,
-		SignatureScheme: _config.chain.SignatureScheme,
+		SignatureScheme: signatureScheme,
 		GroupClientID:   groupClientID,
 		GroupKey:        groupKey,
 		SignerClientIDs: signerClientIDs,
@@ -124,9 +126,9 @@ func GetClientID(pkey string) string {
 }
 
 func GetClientWalletKey() string {
-	return _config.wallet.ClientKey
+	return client.Wallet().ClientKey
 }
 
 func GetClientWalletID() string {
-	return _config.wallet.ClientID
+	return client.Wallet().ClientID
 }
