@@ -40,6 +40,11 @@ func (w *Wallet) PublicKey() string {
 	return w.ZCNWallet.Keys[0].PublicKey
 }
 
+// PrivateKey returns the public key.
+func (w *Wallet) PrivateKey() string {
+	return w.ZCNWallet.Keys[0].PrivateKey
+}
+
 // ID returns the client id.
 //
 // NOTE: client id represents hex encoded SHA3-256 hash of the raw public key.

@@ -68,6 +68,11 @@ func PublicKey() string {
 	return self.wallet.PublicKey()
 }
 
+// PrivateKey returns id of Node.
+func PrivateKey() string {
+	return self.wallet.PrivateKey()
+}
+
 // StartTime returns time when Node is started.
 func StartTime() time.Time {
 	return self.startTime

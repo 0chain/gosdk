@@ -214,6 +214,7 @@ type Blobber struct {
 	LastHealthCheck   common.Timestamp  `json:"last_health_check"`
 	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
 	NotAvailable      bool              `json:"not_available"`
+	IsRestricted      bool              `json:"is_restricted"`
 }
 
 type Validator struct {
