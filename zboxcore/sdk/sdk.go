@@ -1071,7 +1071,7 @@ func CreateAllocationForOwner(
 func GetAllocationBlobbers(
 	datashards, parityshards int,
 	size int64,
-	readPrice, writePrice PriceRange,
+	readPrice, writePrice PriceRange, isRestricted bool,
 	force ...bool,
 ) ([]string, error) {
 	var allocationRequest = map[string]interface{}{
@@ -1080,6 +1080,7 @@ func GetAllocationBlobbers(
 		"size":              size,
 		"read_price_range":  readPrice,
 		"write_price_range": writePrice,
+		"is_restricted":     isRestricted,
 	}
 
 	allocationData, _ := json.Marshal(allocationRequest)
@@ -1111,7 +1112,7 @@ func getNewAllocationBlobbers(
 	preferredBlobberIds, blobberAuthTickets []string,
 ) (map[string]interface{}, error) {
 	allocBlobberIDs, err := GetAllocationBlobbers(
-		datashards, parityshards, size, readPrice, writePrice,
+		datashards, parityshards, size, readPrice, writePrice, false,
 	)
 	if err != nil {
 		return nil, err
@@ -1247,7 +1248,7 @@ func UpdateAllocation(
 	extend bool,
 	allocationID string,
 	lock uint64,
-	addBlobberId, removeBlobberId string,
+	addBlobberId, addBlobberAuthTicket, removeBlobberId string,
 	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
 ) (hash string, nonce int64, err error) {
 
@@ -1271,6 +1272,7 @@ func UpdateAllocation(
 	updateAllocationRequest["size"] = size
 	updateAllocationRequest["extend"] = extend
 	updateAllocationRequest["add_blobber_id"] = addBlobberId
+	updateAllocationRequest["add_blobber_auth_ticket"] = addBlobberAuthTicket
 	updateAllocationRequest["remove_blobber_id"] = removeBlobberId
 	updateAllocationRequest["set_third_party_extendable"] = setThirdPartyExtendable
 	updateAllocationRequest["file_options_changed"], updateAllocationRequest["file_options"] = calculateAllocationFileOptions(alloc.FileOptions, fileOptionsParams)

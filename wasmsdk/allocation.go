@@ -45,7 +45,7 @@ func createfreeallocation(freeStorageMarker string) (string, error) {
 
 func getAllocationBlobbers(preferredBlobberURLs []string,
 	dataShards, parityShards int, size int64,
-	minReadPrice, maxReadPrice, minWritePrice, maxWritePrice int64, force bool) ([]string, error) {
+	minReadPrice, maxReadPrice, minWritePrice, maxWritePrice int64, isRestricted, force bool) ([]string, error) {
 
 	if len(preferredBlobberURLs) > 0 {
 		return sdk.GetBlobberIds(preferredBlobberURLs)
@@ -57,7 +57,7 @@ func getAllocationBlobbers(preferredBlobberURLs []string,
 	}, sdk.PriceRange{
 		Min: uint64(minWritePrice),
 		Max: uint64(maxWritePrice),
-	}, force)
+	}, isRestricted, force)
 }
 
 func createAllocation(datashards, parityshards int, size int64,
@@ -122,6 +122,7 @@ func UpdateForbidAllocation(allocationID string, forbidupload, forbiddelete, for
 		allocationID, // allocID,
 		0,            //lock,
 		"",           //addBlobberId,
+		"",           //addBlobberAuthTicket
 		"",           //removeBlobberId,
 		false,        //thirdPartyExtendable,
 		&sdk.FileOptionsParameters{
@@ -146,6 +147,7 @@ func freezeAllocation(allocationID string) (string, error) {
 		allocationID, // allocID,
 		0,            //lock,
 		"",           //addBlobberId,
+		"",           //addBlobberAuthTicket
 		"",           //removeBlobberId,
 		false,        //thirdPartyExtendable,
 		&sdk.FileOptionsParameters{
@@ -206,8 +208,8 @@ func updateAllocationWithRepair(allocationID string,
 func updateAllocation(allocationID string,
 	size int64, extend bool,
 	lock int64,
-	addBlobberId, removeBlobberId string, setThirdPartyExtendable bool) (string, error) {
-	hash, _, err := sdk.UpdateAllocation(size, extend, allocationID, uint64(lock), addBlobberId, removeBlobberId, setThirdPartyExtendable, &sdk.FileOptionsParameters{})
+	addBlobberId, addBlobberAuthTicket, removeBlobberId string, setThirdPartyExtendable bool) (string, error) {
+	hash, _, err := sdk.UpdateAllocation(size, extend, allocationID, uint64(lock), addBlobberId, addBlobberAuthTicket, removeBlobberId, setThirdPartyExtendable, &sdk.FileOptionsParameters{})
 
 	if err == nil {
 		clearAllocation(allocationID)
