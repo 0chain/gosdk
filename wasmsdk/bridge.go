@@ -9,6 +9,7 @@ import (
 
 	"github.com/0chain/gosdk/zcnbridge"
 	"github.com/0chain/gosdk/zcnbridge/errors"
+	"github.com/0chain/gosdk/zcnbridge/log"
 	"github.com/0chain/gosdk/zcnbridge/transaction"
 	"github.com/0chain/gosdk/zcnbridge/wallet"
 	"github.com/0chain/gosdk/zcncore"
@@ -123,6 +124,7 @@ func getNotProcessedWZCNBurnEvents() string {
 		return errors.New("getNotProcessedWZCNBurnEvents", "failed to retreive last ZCN processed mint nonce").Error()
 	}
 
+	log.Logger.Debug("MintNonce = " + strconv.Itoa(int(mintNonce)))
 	burnEvents, err := bridge.QueryEthereumBurnEvents(strconv.Itoa(int(mintNonce)))
 	if err != nil {
 		return errors.Wrap("getNotProcessedWZCNBurnEvents", "failed to retreive WZCN burn events", err).Error()

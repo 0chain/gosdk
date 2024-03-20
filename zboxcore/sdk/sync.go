@@ -1,15 +1,15 @@
 package sdk
 
 import (
+	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
 	"io"
 	"io/ioutil"
 	"log"
-	"sort"
-
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/0chain/errors"
@@ -17,7 +17,6 @@ import (
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	l "github.com/0chain/gosdk/zboxcore/logger"
-	"github.com/minio/sha256-simd"
 )
 
 // For sync app
@@ -106,7 +105,7 @@ func calcFileHash(filePath string) string {
 	}
 	defer fp.Close()
 
-	h := sha256.New()
+	h := md5.New()
 	if _, err := io.Copy(h, fp); err != nil {
 		log.Fatal(err)
 	}
