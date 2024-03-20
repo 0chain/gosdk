@@ -182,7 +182,7 @@ func updateAllocationWithRepair(allocationID string,
 	size int64,
 	extend bool,
 	lock int64,
-	addBlobberId, removeBlobberId string) (string, error) {
+	addBlobberId, addBlobberAuthTicket, removeBlobberId string) (string, error) {
 	sdk.SetWasm()
 	allocationObj, err := sdk.GetAllocation(allocationID)
 	if err != nil {
@@ -193,7 +193,7 @@ func updateAllocationWithRepair(allocationID string,
 	statusBar := &StatusBar{wg: wg, isRepair: true}
 	wg.Add(1)
 
-	hash, err := allocationObj.UpdateWithRepair(size, extend, uint64(lock), addBlobberId, removeBlobberId, false, &sdk.FileOptionsParameters{}, statusBar)
+	hash, err := allocationObj.UpdateWithRepair(size, extend, uint64(lock), addBlobberId, addBlobberAuthTicket, removeBlobberId, false, &sdk.FileOptionsParameters{}, statusBar)
 	if err == nil {
 		clearAllocation(allocationID)
 		wg.Wait()
