@@ -61,7 +61,7 @@ func getAllocationBlobbers(preferredBlobberURLs []string,
 }
 
 func createAllocation(datashards, parityshards int, size int64,
-	minReadPrice, maxReadPrice, minWritePrice, maxWritePrice int64, lock int64, blobberIds []string, setThirdPartyExtendable bool) (
+	minReadPrice, maxReadPrice, minWritePrice, maxWritePrice int64, lock int64, blobberIds, blobberAuthTickets []string, setThirdPartyExtendable bool) (
 	*transaction.Transaction, error) {
 
 	options := sdk.CreateAllocationOptions{
@@ -79,6 +79,7 @@ func createAllocation(datashards, parityshards int, size int64,
 		Lock:                 uint64(lock),
 		BlobberIds:           blobberIds,
 		ThirdPartyExtendable: setThirdPartyExtendable,
+		BlobberAuthTickets:   blobberAuthTickets,
 	}
 
 	sdkLogger.Info(options)

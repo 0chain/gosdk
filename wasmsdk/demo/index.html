@@ -308,7 +308,7 @@
       }
       try {
         const allocation = await goWasm.sdk.createAllocation(config.datashards, config.parityshards, config.size, config.minReadPrice, config.maxReadPrice, config.minWritePrice, config.maxWritePrice,
-          config.lock, [], false)
+          config.lock, [], [], false)
 
         console.log(allocation)
         allocations = await goWasm.sdk.listAllocations()
