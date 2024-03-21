@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/0chain/gosdk/zboxcore/sdk"
 	"sync"
 
 	"github.com/0chain/gosdk/core/transaction"
@@ -11,6 +12,10 @@ import (
 
 func faucet(methodName, input string, token float64) (*transaction.Transaction, error) {
 	return executeSmartContract(zcncore.FaucetSmartContractAddress, methodName, input, zcncore.ConvertToValue(token))
+}
+
+func getVersion() string {
+	return sdk.GetVersion()
 }
 
 func executeSmartContract(address, methodName, input string, value uint64) (*transaction.Transaction, error) {
