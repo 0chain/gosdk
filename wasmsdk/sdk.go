@@ -49,9 +49,9 @@ func initSDKs(chainID, blockWorker, signatureScheme string,
 	return nil
 }
 
-func getVersion() string {
-	return sdk.GetVersion()
-}
+//func getVersion() string {
+//	return sdk.GetVersion()
+//}
 
 var sdkLogger *logger.Logger
 var zcnLogger *logger.Logger
