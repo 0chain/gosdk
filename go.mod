@@ -13,7 +13,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
-	github.com/h2non/filetype v1.1.3
+	github.com/h2non/filetype v1.1.4-0.20231228185113-6469358c2bcb
 	github.com/hashicorp/go-retryablehttp v0.7.2
 	github.com/hashicorp/golang-lru/v2 v2.0.1
 	github.com/herumi/bls-go-binary v1.31.0
