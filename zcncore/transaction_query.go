@@ -312,8 +312,9 @@ func (tq *TransactionQuery) GetInfo(ctx context.Context, query string) (*QueryRe
 				consensusesResp = qr
 			}
 
-			return false
-
+			// check whether consensus is reached by enough sharders, and return true to cancel other requests
+			rate := maxConsensus * 100 / tq.max
+			return rate >= consensusThresh 
 		})
 
 	if err != nil {
