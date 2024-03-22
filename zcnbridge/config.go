@@ -3,9 +3,10 @@ package zcnbridge
 import (
 	"context"
 	"fmt"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"math/big"
 	"path"
+
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
 	"github.com/0chain/gosdk/zcnbridge/log"
 	"github.com/0chain/gosdk/zcnbridge/transaction"
@@ -55,6 +56,7 @@ type BridgeClient struct {
 	AuthorizersAddress,
 	NFTConfigAddress,
 	EthereumAddress,
+	EthereumNodeURL,
 	Password string
 
 	BancorAPIURL string
@@ -69,6 +71,7 @@ func NewBridgeClient(
 	tokenAddress,
 	authorizersAddress,
 	ethereumAddress,
+	ethereumNodeURL,
 	password string,
 	gasLimit uint64,
 	consensusThreshold float64,
@@ -81,6 +84,7 @@ func NewBridgeClient(
 		TokenAddress:        tokenAddress,
 		AuthorizersAddress:  authorizersAddress,
 		EthereumAddress:     ethereumAddress,
+		EthereumNodeURL:     ethereumNodeURL,
 		Password:            password,
 		GasLimit:            gasLimit,
 		ConsensusThreshold:  consensusThreshold,
@@ -120,7 +124,9 @@ func SetupBridgeClientSDK(cfg *BridgeSDKConfig) *BridgeClient {
 
 	chainCfg := initChainConfig(cfg)
 
-	ethereumClient, err := ethclient.Dial(chainCfg.GetString("ethereum_node_url"))
+	ethereumNodeURL := chainCfg.GetString("ethereum_node_url")
+
+	ethereumClient, err := ethclient.Dial(ethereumNodeURL)
 	if err != nil {
 		Logger.Error(err)
 	}
@@ -139,6 +145,7 @@ func SetupBridgeClientSDK(cfg *BridgeSDKConfig) *BridgeClient {
 		chainCfg.GetString("bridge.token_address"),
 		chainCfg.GetString("bridge.authorizers_address"),
 		chainCfg.GetString("bridge.ethereum_address"),
+		ethereumNodeURL,
 		chainCfg.GetString("bridge.password"),
 		chainCfg.GetUint64("bridge.gas_limit"),
 		chainCfg.GetFloat64("bridge.consensus_threshold"),
