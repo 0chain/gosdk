@@ -103,11 +103,6 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 					}
 
 					respbody := resp.Body()
-					if err != nil {
-						logger.Logger.Error("Error: Resp ", err)
-						return fmt.Errorf("Error while reading body. Error %s", err), false
-					}
-
 					if resp.StatusCode() == http.StatusTooManyRequests {
 						logger.Logger.Error("Got too many request error")
 						var r int

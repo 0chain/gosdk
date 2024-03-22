@@ -169,12 +169,9 @@ func TestListRequest_getFileMetaInfoFromBlobber(t *testing.T) {
 				authToken: &marker.AuthTicket{
 					Signature: mockSignature,
 				},
-				wg: &sync.WaitGroup{},
 			}
 			rspCh := make(chan *fileMetaResponse, 1)
-			req.wg.Add(1)
 			go req.getFileMetaInfoFromBlobber(blobber, 73, rspCh)
-			req.wg.Wait()
 
 			var resp *fileMetaResponse
 			select {
@@ -280,7 +277,6 @@ func TestListRequest_getFileConsensusFromBlobbers(t *testing.T) {
 				allocationTx: mockAllocationTxId,
 				ctx:          context.TODO(),
 				blobbers:     []*blockchain.StorageNode{},
-				wg:           &sync.WaitGroup{},
 				Consensus:    tt.consensus, //nolint
 			}
 			for i := 0; i < tt.numBlobbers; i++ {
