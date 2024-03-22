@@ -710,15 +710,16 @@ func (v *UpdateValidator) ConvertToValidationNode() *blockchain.UpdateValidation
 	return blockValidator
 }
 
-func getBlobbersInternal(active bool, limit, offset int) (bs []*Blobber, err error) {
+func getBlobbersInternal(active, stakable bool, limit, offset int) (bs []*Blobber, err error) {
 	type nodes struct {
 		Nodes []*Blobber
 	}
 
-	url := fmt.Sprintf("/getblobbers?active=%s&limit=%d&offset=%d",
+	url := fmt.Sprintf("/getblobbers?active=%s&limit=%d&offset=%d&stakable=%s",
 		strconv.FormatBool(active),
 		limit,
 		offset,
+		strconv.FormatBool(stakable),
 	)
 	b, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, url, nil, nil)
 	var wrap nodes
@@ -736,14 +737,14 @@ func getBlobbersInternal(active bool, limit, offset int) (bs []*Blobber, err err
 	return wrap.Nodes, nil
 }
 
-func GetBlobbers(active bool) (bs []*Blobber, err error) {
+func GetBlobbers(active, stakable bool) (bs []*Blobber, err error) {
 	if !sdkInitialized {
 		return nil, sdkNotInitialized
 	}
 
 	limit, offset := 20, 0
 
-	blobbers, err := getBlobbersInternal(active, limit, offset)
+	blobbers, err := getBlobbersInternal(active, stakable, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -758,7 +759,7 @@ func GetBlobbers(active bool) (bs []*Blobber, err error) {
 
 		// get the next set of blobbers
 		offset += 20
-		blobbers, err = getBlobbersInternal(active, limit, offset)
+		blobbers, err = getBlobbersInternal(active, stakable, limit, offset)
 		if err != nil {
 			return blobbers, err
 		}
