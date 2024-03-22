@@ -33,7 +33,7 @@ import (
 )
 
 const (
-	DefaultUploadTimeOut = 45 * time.Second
+	DefaultUploadTimeOut = 90 * time.Second
 )
 
 var (

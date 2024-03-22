@@ -157,7 +157,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock(hostClient *fasthttp.HostC
 
 		err = func() error {
 			now := time.Now()
-			statuscode, respBuf, err := hostClient.GetWithRequestTimeout(httpreq, req.respBuf, 30*time.Second)
+			statuscode, respBuf, err := hostClient.GetWithRequestTimeout(httpreq, req.respBuf, 45*time.Second)
 			fasthttp.ReleaseRequest(httpreq)
 			timeTaken := time.Since(now).Milliseconds()
 			if err != nil {
