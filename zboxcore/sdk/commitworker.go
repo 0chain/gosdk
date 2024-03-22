@@ -3,6 +3,7 @@ package sdk
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -23,6 +24,7 @@ import (
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/minio/sha256-simd"
 )
 
 type ReferencePathResult struct {
@@ -149,7 +151,7 @@ func (commitreq *CommitRequest) processCommit() {
 		commitreq.result = ErrorCommitResult(err.Error())
 		return
 	}
-
+	hasher := sha256.New()
 	if lR.LatestWM != nil {
 		err = lR.LatestWM.VerifySignature(client.GetClientPublicKey())
 		if err != nil {
@@ -168,6 +170,12 @@ func (commitreq *CommitRequest) processCommit() {
 			commitreq.result = ErrorCommitResult(errMsg)
 			return
 		}
+		prevChainHash, err := hex.DecodeString(lR.LatestWM.ChainHash)
+		if err != nil {
+			commitreq.result = ErrorCommitResult(err.Error())
+			return
+		}
+		hasher.Write(prevChainHash) //nolint:errcheck
 	}
 
 	var size int64
@@ -182,7 +190,10 @@ func (commitreq *CommitRequest) processCommit() {
 		size += change.GetSize()
 	}
 	rootRef.CalculateHash()
-	err = commitreq.commitBlobber(rootRef, lR.LatestWM, size, fileIDMeta)
+	decodedHash, _ := hex.DecodeString(rootRef.Hash)
+	hasher.Write(decodedHash) //nolint:errcheck
+	chainHash := hex.EncodeToString(hasher.Sum(nil))
+	err = commitreq.commitBlobber(rootRef, chainHash, lR.LatestWM, size, fileIDMeta)
 	if err != nil {
 		commitreq.result = ErrorCommitResult(err.Error())
 		return
@@ -192,7 +203,7 @@ func (commitreq *CommitRequest) processCommit() {
 }
 
 func (req *CommitRequest) commitBlobber(
-	rootRef *fileref.Ref, latestWM *marker.WriteMarker, size int64,
+	rootRef *fileref.Ref, chainHash string, latestWM *marker.WriteMarker, size int64,
 	fileIDMeta map[string]string) (err error) {
 
 	fileIDMetaData, err := json.Marshal(fileIDMeta)
@@ -203,8 +214,10 @@ func (req *CommitRequest) commitBlobber(
 
 	wm := &marker.WriteMarker{}
 	wm.AllocationRoot = rootRef.Hash
+	wm.ChainSize = size
 	if latestWM != nil {
 		wm.PreviousAllocationRoot = latestWM.AllocationRoot
+		wm.ChainSize += latestWM.ChainSize
 	} else {
 		wm.PreviousAllocationRoot = ""
 	}
@@ -212,6 +225,7 @@ func (req *CommitRequest) commitBlobber(
 		l.Logger.Error("Allocation root and previous allocation root are same")
 		return thrown.New("commit_error", "Allocation root and previous allocation root are same")
 	}
+	wm.ChainHash = chainHash
 	wm.FileMetaRoot = rootRef.FileMetaHash
 	wm.AllocationID = req.allocationID
 	wm.Size = size
