@@ -1,6 +1,8 @@
 module github.com/0chain/gosdk
 
-go 1.20
+go 1.21
+
+toolchain go1.21.5
 
 require (
 	github.com/0chain/common v0.0.6-0.20230127095721-8df4d1d72565
@@ -28,7 +30,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/shopspring/decimal v1.3.1
 	github.com/spf13/viper v1.15.0
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.4
 	github.com/tyler-smith/go-bip39 v1.1.0
 	github.com/uptrace/bunrouter v1.0.20
 	go.dedis.ch/kyber/v3 v3.1.0
@@ -46,6 +48,7 @@ require (
 require (
 	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d
 	github.com/minio/sha256-simd v1.0.1
+	github.com/ybbus/jsonrpc/v3 v3.1.5
 )
 
 require (
