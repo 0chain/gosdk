@@ -843,17 +843,18 @@ func (p Params) Query() string {
 //	  - limit: how many miners should be fetched
 //	  - offset: how many miners should be skipped
 //	  - active: only fetch active miners
-func GetMiners(cb GetInfoCallback, limit, offset int, active bool) {
-	getMinersInternal(cb, active, limit, offset)
+func GetMiners(cb GetInfoCallback, limit, offset int, active bool, stakable bool) {
+	getMinersInternal(cb, active, stakable, limit, offset)
 }
 
-func getMinersInternal(cb GetInfoCallback, active bool, limit, offset int) {
+func getMinersInternal(cb GetInfoCallback, active, stakable bool, limit, offset int) {
 	if err := CheckConfig(); err != nil {
 		return
 	}
 
 	var url = withParams(GET_MINERSC_MINERS, Params{
 		"active": strconv.FormatBool(active),
+		"stakable": strconv.FormatBool(stakable),
 		"offset": strconv.FormatInt(int64(offset), 10),
 		"limit":  strconv.FormatInt(int64(limit), 10),
 	})
