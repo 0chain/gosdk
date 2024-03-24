@@ -63,7 +63,10 @@ func (r *DownloadBufferWithChan) RequestChunk(ctx context.Context, num int) []by
 func (r *DownloadBufferWithChan) ClearBuffer() {
 	r.buf = nil
 	close(r.ch)
-	clear(r.mp)
+	for k := range r.mp {
+		delete(r.mp, k)
+	}
+	r.mp = nil
 }
 
 type DownloadBufferWithMask struct {
