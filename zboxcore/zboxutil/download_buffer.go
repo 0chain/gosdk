@@ -74,7 +74,7 @@ type DownloadBufferWithMask struct {
 	length  int
 	reqSize int
 	mask    uint32
-	mu      sync.RWMutex
+	mu      sync.Mutex
 }
 
 func NewDownloadBufferWithMask(size, numBlocks, effectiveBlockSize int) *DownloadBufferWithMask {
@@ -95,16 +95,15 @@ func (r *DownloadBufferWithMask) RequestChunk(ctx context.Context, num int) []by
 			return nil
 		default:
 		}
-		r.mu.RLock()
+		r.mu.Lock()
 		isSet := r.mask & (1 << num)
-		r.mu.RUnlock()
 		// already assigned
 		if isSet == 0 {
+			r.mu.Unlock()
 			time.Sleep(500 * time.Millisecond)
 			continue
 		}
 		// assign the chunk by clearing the bit
-		r.mu.Lock()
 		r.mask &= ^(1 << num)
 		r.mu.Unlock()
 		return r.buf[num*r.reqSize : (num+1)*r.reqSize]
