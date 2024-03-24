@@ -239,7 +239,7 @@ jobs:
       
       - uses: actions/setup-node@v2
         with:
-          node-version: '14'
+          node-version: 20.11.1
 
       - name: Setup PATH for wasm
         run: echo "${{env.GOROOT}}/misc/wasm" >> $GITHUB_PATH
