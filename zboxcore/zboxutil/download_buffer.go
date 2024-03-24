@@ -9,6 +9,7 @@ import (
 type DownloadBuffer interface {
 	RequestChunk(ctx context.Context, num int) []byte
 	ReleaseChunk(num int)
+	ClearBuffer()
 }
 
 type DownloadBufferWithChan struct {
@@ -59,6 +60,12 @@ func (r *DownloadBufferWithChan) RequestChunk(ctx context.Context, num int) []by
 	}
 }
 
+func (r *DownloadBufferWithChan) ClearBuffer() {
+	r.buf = nil
+	close(r.ch)
+	clear(r.mp)
+}
+
 type DownloadBufferWithMask struct {
 	buf     []byte
 	length  int
@@ -106,4 +113,8 @@ func (r *DownloadBufferWithMask) ReleaseChunk(num int) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.mask |= 1 << num
+}
+
+func (r *DownloadBufferWithMask) ClearBuffer() {
+	r.buf = nil
 }
