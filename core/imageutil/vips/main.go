@@ -67,11 +67,7 @@ func main() {
 			continue
 		}
 		var resJpeg []byte
-		if input.crop == "" {
-			resJpeg, err = imageutil.ThumbnailVips(b, input.width, input.height, imageutil.All)
-		} else {
-			resJpeg, err = imageutil.ThumbnailVips(b, input.width, input.height, input.crop)
-		}
+		resJpeg, err = imageutil.ThumbnailVips(b, input.width, input.height, input.crop)
 		if err != nil {
 			log.Printf("err creating thumbnail: %v", err)
 			continue
@@ -79,9 +75,6 @@ func main() {
 		
 		log.Printf("decoding image format...")
 		vipsImgRef, err := vips.NewImageFromBuffer(b)
-		if err != nil {
-			log.Printf("err ")
-		}
 		if err != nil {
 			log.Printf("err decoding response body: %v", err)
 			continue
@@ -103,7 +96,7 @@ func main() {
 		}
 
 		log.Printf("creating input file...")
-		ipath := fmt.Sprintf("images/%d/input.%s", i, vipsImgRef.Format().FileExt())
+		ipath := fmt.Sprintf("images/%d/input%s", i, vipsImgRef.Format().FileExt())
 		ifile, err := os.Create(ipath)
 		if err != nil {
 			log.Printf("err creating input file: %v", err)
