@@ -77,23 +77,27 @@ func init() {
 	}
 
 	crop = map[Crop]vips.Interesting{
-		None: vips.InterestingNone,
-		Centre: vips.InterestingCentre,
-		Entropy: vips.InterestingEntropy,
+		None:      vips.InterestingNone,
+		Centre:    vips.InterestingCentre,
+		Entropy:   vips.InterestingEntropy,
 		Attention: vips.InterestingAttention,
-		Low: vips.InterestingLow,
-		High: vips.InterestingHigh,
-		All: vips.InterestingAll,
-		Last: vips.InterestingLast,
+		Low:       vips.InterestingLow,
+		High:      vips.InterestingHigh,
+		All:       vips.InterestingAll,
+		Last:      vips.InterestingLast,
 	}
 }
 
-func Thumbnail(buf []byte, width, height int, filter ResampleFilter) ([]byte, error) {
+func ThumbnailImaging(buf []byte, width, height int, filter ResampleFilter) ([]byte, error) {
 	img, _, err := image.Decode(bytes.NewReader(buf))
 	if err != nil {
 		return nil, err
 	}
-	nrgba := imaging.Thumbnail(img, width, height, resample[filter])
+	filterValue := imaging.Lanczos
+	if fv, has := resample[filter]; has {
+		filterValue = fv
+	}
+	nrgba := imaging.Thumbnail(img, width, height, filterValue)
 	fd := &bytes.Buffer{}
 	err = png.Encode(fd, nrgba)
 	if err != nil {
@@ -102,21 +106,17 @@ func Thumbnail(buf []byte, width, height int, filter ResampleFilter) ([]byte, er
 	return fd.Bytes(), nil
 }
 
-func ThumbnailLanczos(buf []byte, width, height int) ([]byte, error) {
-	return Thumbnail(buf, width, height, Lanczos)
-}
-
 type Crop string
 
 const (
-	None Crop = "None"
-	Centre = "Centre"
-	Entropy = "Entropy"
-	Attention = "Attention"
-	Low = "Low"
-	High = "High"
-	All = "All"
-	Last = "Last"
+	None      Crop = "None"
+	Centre    Crop = "Centre"
+	Entropy   Crop = "Entropy"
+	Attention Crop = "Attention"
+	Low       Crop = "Low"
+	High      Crop = "High"
+	All       Crop = "All"
+	Last      Crop = "Last"
 )
 
 func ThumbnailVips(buf []byte, width, height int, crp Crop) ([]byte, error) {
@@ -124,10 +124,14 @@ func ThumbnailVips(buf []byte, width, height int, crp Crop) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = vipsImgRef.Thumbnail(width, height, crop[crp])
+	cropValue := vips.InterestingAll
+	if vipsI, has := crop[crp]; has {
+		cropValue = vipsI
+	}
+	err = vipsImgRef.Thumbnail(width, height, cropValue)
 	if err != nil {
 		return nil, err
 	}
 	jpegBytes, _, err := vipsImgRef.ExportJpeg(vips.NewJpegExportParams())
-	return jpegBytes, nil
+	return jpegBytes, err
 }

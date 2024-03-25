@@ -114,11 +114,8 @@ func createThumbnail(buf []byte, width, height int) ([]byte, error) {
 	return imageutil.CreateThumbnail(buf, width, height)
 }
 
-func thumbnail(buf []byte, width, height int, resampleFilter string) ([]byte, error) {
-	if resampleFilter == "" {
-		return imageutil.ThumbnailLanczos(buf, width, height)
-	}
-	return imageutil.Thumbnail(buf, width, height, imageutil.ResampleFilter(resampleFilter))
+func thumbnail(buf []byte, width, height int, crop string) ([]byte, error) {
+	return imageutil.ThumbnailVips(buf, width, height, imageutil.Crop(crop))
 }
 
 func makeSCRestAPICall(scAddress, relativePath, paramsJson string) (string, error) {

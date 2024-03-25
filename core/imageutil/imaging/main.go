@@ -26,20 +26,20 @@ type img struct {
 
 var (
 	permissions = 0644
-	images = []img {
+	images      = []img{
 		{
-			url: "https://go.dev/blog/go-brand/Go-Logo/JPG/Go-Logo_Aqua.jpg",
-			width: 100,
+			url:    "https://go.dev/blog/go-brand/Go-Logo/JPG/Go-Logo_Aqua.jpg",
+			width:  100,
 			height: 100,
 		},
 		{
-			url: "https://go.dev/blog/go-brand/Go-Logo/PNG/Go-Logo_Yellow.png",
-			width: 200,
+			url:    "https://go.dev/blog/go-brand/Go-Logo/PNG/Go-Logo_Yellow.png",
+			width:  200,
 			height: 200,
 		},
 		{
-			url: "https://go.dev/blog/go-brand/Go-Logo/SVG/Go-Logo_Blue.svg",
-			width: 100,
+			url:    "https://go.dev/blog/go-brand/Go-Logo/SVG/Go-Logo_Blue.svg",
+			width:  100,
 			height: 200,
 		},
 	}
@@ -56,7 +56,7 @@ func main() {
 			continue
 		}
 		defer resp.Body.Close()
-		
+
 		log.Printf("creating Thumbnail...")
 		b, err := io.ReadAll(resp.Body)
 		if err != nil {
@@ -64,16 +64,12 @@ func main() {
 			continue
 		}
 		var resPng []byte
-		if input.resample == "" {
-			resPng, err = imageutil.ThumbnailLanczos(b, input.width, input.height)
-		} else {
-			resPng, err = imageutil.Thumbnail(b, input.width, input.height, input.resample)
-		}
+		resPng, err = imageutil.ThumbnailImaging(b, input.width, input.height, input.resample)
 		if err != nil {
 			log.Printf("err creating thumbnail: %v", err)
 			continue
 		}
-		
+
 		log.Printf("decoding image format...")
 		reader := bytes.NewReader(b)
 		_, format, err := image.Decode(reader)
@@ -81,7 +77,7 @@ func main() {
 			log.Printf("err decoding response body: %v", err)
 			continue
 		}
-		
+
 		folderPath := fmt.Sprintf("images/%d/", i)
 		if _, err := os.Stat(folderPath); err == nil {
 			// folderPath exists
@@ -90,7 +86,7 @@ func main() {
 				log.Printf("err deleting images folder: %v", err)
 				continue
 			}
-		} 
+		}
 		err = os.MkdirAll(folderPath, fs.FileMode(permissions))
 		if err != nil {
 			log.Printf("err creating images folder: %v", err)
@@ -117,7 +113,7 @@ func main() {
 		err = os.WriteFile(opath, resPng, fs.FileMode(permissions))
 		if err != nil {
 			log.Printf("err creating outfile file: %v", err)
-		}		
+		}
 	}
 	log.Println("completed")
 }
