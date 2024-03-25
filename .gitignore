@@ -35,4 +35,5 @@ gosdk.code-workspace
 sdkversion
 
 # generated images
-core/imageutil/demo/images
+core/imageutil/imaging/images
+core/imageutil/vips/images

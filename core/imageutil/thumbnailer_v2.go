@@ -7,6 +7,7 @@ import (
 	_ "image/jpeg"
 	"image/png"
 
+	"github.com/davidbyttow/govips/v2/vips"
 	"github.com/disintegration/imaging"
 	_ "golang.org/x/image/bmp"
 	_ "golang.org/x/image/ccitt"
@@ -34,7 +35,7 @@ const (
 	// CatmullRom is a Catmull-Rom - sharp cubic filter (BC-spline; B=0; C=0.5).
 	CatmullRom = "CatmullRom"
 	// BSpline is a smooth cubic filter (BC-spline; B=1; C=0).
-	BSpline = "BSpline" 
+	BSpline = "BSpline"
 	// Gaussian is a Gaussian blurring filter.
 	Gaussian = "Gaussian"
 	// Bartlett is a Bartlett-windowed sinc filter (3 lobes).
@@ -54,24 +55,36 @@ const (
 )
 
 var resample map[ResampleFilter]imaging.ResampleFilter
+var crop map[Crop]vips.Interesting
 
 func init() {
 	resample = map[ResampleFilter]imaging.ResampleFilter{
-		NearestNeighbor: imaging.NearestNeighbor,
-		Box: imaging.Box,
-		Linear: imaging.Linear,
-		Hermite: imaging.Hermite,
+		NearestNeighbor:   imaging.NearestNeighbor,
+		Box:               imaging.Box,
+		Linear:            imaging.Linear,
+		Hermite:           imaging.Hermite,
 		MitchellNetravali: imaging.MitchellNetravali,
-		CatmullRom: imaging.CatmullRom,
-		BSpline: imaging.BSpline,
-		Gaussian: imaging.Gaussian,
-		Bartlett: imaging.Bartlett,
-		Lanczos: imaging.Lanczos,
-		Hann: imaging.Hann,
-		Hamming: imaging.Hamming,
-		Blackman: imaging.Blackman,
-		Welch: imaging.Welch,
-		Cosine: imaging.Cosine,
+		CatmullRom:        imaging.CatmullRom,
+		BSpline:           imaging.BSpline,
+		Gaussian:          imaging.Gaussian,
+		Bartlett:          imaging.Bartlett,
+		Lanczos:           imaging.Lanczos,
+		Hann:              imaging.Hann,
+		Hamming:           imaging.Hamming,
+		Blackman:          imaging.Blackman,
+		Welch:             imaging.Welch,
+		Cosine:            imaging.Cosine,
+	}
+
+	crop = map[Crop]vips.Interesting{
+		None: vips.InterestingNone,
+		Centre: vips.InterestingCentre,
+		Entropy: vips.InterestingEntropy,
+		Attention: vips.InterestingAttention,
+		Low: vips.InterestingLow,
+		High: vips.InterestingHigh,
+		All: vips.InterestingAll,
+		Last: vips.InterestingLast,
 	}
 }
 
@@ -91,4 +104,30 @@ func Thumbnail(buf []byte, width, height int, filter ResampleFilter) ([]byte, er
 
 func ThumbnailLanczos(buf []byte, width, height int) ([]byte, error) {
 	return Thumbnail(buf, width, height, Lanczos)
+}
+
+type Crop string
+
+const (
+	None Crop = "None"
+	Centre = "Centre"
+	Entropy = "Entropy"
+	Attention = "Attention"
+	Low = "Low"
+	High = "High"
+	All = "All"
+	Last = "Last"
+)
+
+func ThumbnailVips(buf []byte, width, height int, crp Crop) ([]byte, error) {
+	vipsImgRef, err := vips.NewImageFromBuffer(buf)
+	if err != nil {
+		return nil, err
+	}
+	err = vipsImgRef.Thumbnail(width, height, crop[crp])
+	if err != nil {
+		return nil, err
+	}
+	jpegBytes, _, err := vipsImgRef.ExportJpeg(vips.NewJpegExportParams())
+	return jpegBytes, nil
 }
