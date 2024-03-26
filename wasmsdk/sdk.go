@@ -13,6 +13,7 @@ import (
 	"sync"
 
 	"github.com/0chain/gosdk/core/encryption"
+	"github.com/0chain/gosdk/core/imageutil"
 	"github.com/0chain/gosdk/core/imageutil/imaging"
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/zboxcore/sdk"
