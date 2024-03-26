@@ -36,3 +36,4 @@ sdkversion
 
 # generated images
 core/imageutil/imaging/demo/images
+core/imageutil/vips/demo/images
