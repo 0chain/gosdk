@@ -1,13 +1,12 @@
-package imageutil
+package imaging
 
 import (
 	"bytes"
 	"image"
 	_ "image/gif"
-	_ "image/jpeg"
-	"image/png"
+	"image/jpeg"
+	_ "image/png"
 
-	"github.com/davidbyttow/govips/v2/vips"
 	"github.com/disintegration/imaging"
 	_ "golang.org/x/image/bmp"
 	_ "golang.org/x/image/ccitt"
@@ -55,7 +54,6 @@ const (
 )
 
 var resample map[ResampleFilter]imaging.ResampleFilter
-var crop map[Crop]vips.Interesting
 
 func init() {
 	resample = map[ResampleFilter]imaging.ResampleFilter{
@@ -76,19 +74,9 @@ func init() {
 		Cosine:            imaging.Cosine,
 	}
 
-	crop = map[Crop]vips.Interesting{
-		None:      vips.InterestingNone,
-		Centre:    vips.InterestingCentre,
-		Entropy:   vips.InterestingEntropy,
-		Attention: vips.InterestingAttention,
-		Low:       vips.InterestingLow,
-		High:      vips.InterestingHigh,
-		All:       vips.InterestingAll,
-		Last:      vips.InterestingLast,
-	}
 }
 
-func ThumbnailImaging(buf []byte, width, height int, filter ResampleFilter) ([]byte, error) {
+func Thumbnail(buf []byte, width, height int, filter ResampleFilter) ([]byte, error) {
 	img, _, err := image.Decode(bytes.NewReader(buf))
 	if err != nil {
 		return nil, err
@@ -99,39 +87,9 @@ func ThumbnailImaging(buf []byte, width, height int, filter ResampleFilter) ([]b
 	}
 	nrgba := imaging.Thumbnail(img, width, height, filterValue)
 	fd := &bytes.Buffer{}
-	err = png.Encode(fd, nrgba)
+	err = jpeg.Encode(fd, nrgba, nil)
 	if err != nil {
 		return nil, err
 	}
 	return fd.Bytes(), nil
-}
-
-type Crop string
-
-const (
-	None      Crop = "None"
-	Centre    Crop = "Centre"
-	Entropy   Crop = "Entropy"
-	Attention Crop = "Attention"
-	Low       Crop = "Low"
-	High      Crop = "High"
-	All       Crop = "All"
-	Last      Crop = "Last"
-)
-
-func ThumbnailVips(buf []byte, width, height int, crp Crop) ([]byte, error) {
-	vipsImgRef, err := vips.NewImageFromBuffer(buf)
-	if err != nil {
-		return nil, err
-	}
-	cropValue := vips.InterestingAll
-	if vipsI, has := crop[crp]; has {
-		cropValue = vipsI
-	}
-	err = vipsImgRef.Thumbnail(width, height, cropValue)
-	if err != nil {
-		return nil, err
-	}
-	jpegBytes, _, err := vipsImgRef.ExportJpeg(vips.NewJpegExportParams())
-	return jpegBytes, err
 }

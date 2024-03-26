@@ -5,7 +5,7 @@ package sdk
 
 import (
 	"github.com/0chain/gosdk/core/encryption"
-	"github.com/0chain/gosdk/core/imageutil"
+	"github.com/0chain/gosdk/core/imageutil/imaging"
 )
 
 // GetLookupHash get lookup hash with allocation id and path
@@ -19,6 +19,6 @@ func GetLookupHash(allocationID string, remotePath string) string {
 	return encryption.Hash(allocationID + ":" + remotePath)
 }
 
-func Thumbnail(buf []byte, width, height int, crop string) ([]byte, error) {	
-	return imageutil.ThumbnailVips(buf, width, height, imageutil.Crop(crop))
+func Thumbnail(buf []byte, width, height int, resampleFilter string) ([]byte, error) {	
+	return imaging.Thumbnail(buf, width, height, imaging.ResampleFilter(resampleFilter))
 }
