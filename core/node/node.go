@@ -147,6 +147,7 @@ func (h *NodeHolder) GetBalanceFieldFromSharders(clientID, name string) (int64, 
 		logger.Logger.Debug(rsp.Url, rsp.Status)
 		if rsp.StatusCode != http.StatusOK {
 			logger.Logger.Error(rsp.Body)
+			time.Sleep(30 * time.Second)
 
 		} else {
 			logger.Logger.Debug(rsp.Body)
