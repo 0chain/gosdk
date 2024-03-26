@@ -23,25 +23,17 @@ jobs:
           sudo apt update -y
           sudo apt -y install build-essential nghttp2 libnghttp2-dev libssl-dev wget
 
-      - name: "Setup Go"
-        shell: 'script --return --quiet --command "bash {0}"'
-        run: |
-          [ -f ./https://go.dev/dl/go1.20.3.linux-amd64.tar.gz ] || wget https://go.dev/dl/go1.20.3.linux-amd64.tar.gz
-          [ -d /usr/local/go ] &&  sudo rm -rf /usr/local/go
-          [ -f /usr/local/bin/go ] &&  sudo rm -rf /usr/local/bin/go
-          sudo tar -C /usr/local -xzf ./go1.20.3.linux-amd64.tar.gz
-
-          echo "PATH=$PATH:/usr/local/go/bin" >> $GITHUB_ENV
-          export PATH=$PATH:/usr/local/go/bin
-          which go
-          go env
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.21.5
 
       - uses: actions/checkout@v3
 
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
-          version: v1.52.2
+          version: v1.57.1
           skip-build-cache: true
           skip-pkg-cache: true
           only-new-issues: true
@@ -56,18 +48,10 @@ jobs:
           sudo apt update -y
           sudo apt -y install build-essential nghttp2 libnghttp2-dev libssl-dev wget
 
-      - name: "Setup Go"
-        shell: 'script --return --quiet --command "bash {0}"'
-        run: |
-          [ -f ./https://go.dev/dl/go1.20.3.linux-amd64.tar.gz ] || wget https://go.dev/dl/go1.20.3.linux-amd64.tar.gz
-          [ -d /usr/local/go ] &&  sudo rm -rf /usr/local/go
-          [ -f /usr/local/bin/go ] &&  sudo rm -rf /usr/local/bin/go
-          sudo tar -C /usr/local -xzf ./go1.20.3.linux-amd64.tar.gz
-
-          echo "PATH=$PATH:/usr/local/go/bin" >> $GITHUB_ENV
-          export PATH=$PATH:/usr/local/go/bin
-          which go
-          go env
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.21.5
 
       - name: Install deps
         run: |
@@ -248,14 +232,14 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Setup go 1.20
-        uses: actions/setup-go@v2
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v3
         with:
-          go-version: '1.20' # The Go version to download (if necessary) and use.
+          go-version: 1.21.5
       
       - uses: actions/setup-node@v2
         with:
-          node-version: '14'
+          node-version: 20.11.1
 
       - name: Setup PATH for wasm
         run: echo "${{env.GOROOT}}/misc/wasm" >> $GITHUB_PATH
