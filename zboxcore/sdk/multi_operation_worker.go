@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	DefaultCreateConnectionTimeOut = 2 * time.Minute
+	DefaultCreateConnectionTimeOut = 10 * time.Second
 )
 
 var BatchSize = 6
