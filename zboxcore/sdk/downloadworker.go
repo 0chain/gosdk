@@ -309,7 +309,7 @@ func (req *DownloadRequest) downloadBlock(
 						err.Error(), req.blobbers[result.idx].Baseurl)
 					logger.Logger.Error(err)
 					if req.bufferMap != nil {
-						req.bufferMap[result.idx].ReleaseChunk(int(req.startBlock / req.numBlocks))
+						req.bufferMap[result.idx].ReleaseChunk(int(req.startBlock))
 					}
 				} else if timeRequest {
 					req.downloadQueue[result.idx].timeTaken = result.timeTaken
@@ -603,7 +603,7 @@ func (req *DownloadRequest) processDownload() {
 						hashWg.Wait()
 					}
 					for _, rb := range req.bufferMap {
-						rb.ReleaseChunk(i)
+						rb.ReleaseChunk(int(startBlock + int64(i)*numBlocks))
 					}
 					downloaded = downloaded + totalWritten
 					remainingSize -= int64(totalWritten)
@@ -651,7 +651,7 @@ func (req *DownloadRequest) processDownload() {
 								hashWg.Wait()
 							}
 							for _, rb := range req.bufferMap {
-								rb.ReleaseChunk(i)
+								rb.ReleaseChunk(int(startBlock + int64(i)*numBlocks))
 							}
 
 							downloaded = downloaded + totalWritten
@@ -729,7 +729,7 @@ func (req *DownloadRequest) processDownload() {
 					return errors.Wrap(err, fmt.Sprintf("WriteAt failed for block %d. ", startBlock+int64(j)*numBlocks))
 				}
 				for _, rb := range req.bufferMap {
-					rb.ReleaseChunk(j)
+					rb.ReleaseChunk(int(startBlock + int64(j)*numBlocks))
 				}
 				if req.downloadStorer != nil {
 					go req.downloadStorer.Update(int(startBlock + int64(j)*numBlocks + blocksToDownload))
@@ -1035,17 +1035,17 @@ func (req *DownloadRequest) calculateShardsParams(
 			progressID := req.progressID()
 			var dp *DownloadProgress
 			if info.Size() > 0 {
-				dp = req.downloadStorer.Load(progressID)
+				dp = req.downloadStorer.Load(progressID, int(req.numBlocks))
 			}
 			if dp != nil {
 				req.startBlock = int64(dp.LastWrittenBlock)
 			} else {
 				dp = &DownloadProgress{
-					ID: progressID,
+					ID:        progressID,
+					numBlocks: int(req.numBlocks),
 				}
 				req.downloadStorer.Save(dp)
 			}
-			dp.numBlocks = int(req.numBlocks)
 		}
 	}
 

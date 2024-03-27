@@ -263,7 +263,7 @@ func AddBlockDownloadReq(ctx context.Context, req *BlockDownloadRequest, rb zbox
 	if rb != nil {
 		reqCtx, cncl := context.WithTimeout(ctx, (time.Second * 10))
 		defer cncl()
-		req.respBuf = rb.RequestChunk(reqCtx, int(req.blockNum/req.numBlocks))
+		req.respBuf = rb.RequestChunk(reqCtx, int(req.blockNum))
 		if len(req.respBuf) == 0 {
 			req.respBuf = make([]byte, int(req.numBlocks)*effectiveBlockSize)
 		}
