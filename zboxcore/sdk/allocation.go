@@ -844,6 +844,11 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 		wg.Wait()
 		// Check consensus
 		if mo.operationMask.CountOnes() < mo.consensusThresh {
+			l.Logger.Error("Multioperation: create connection failed. Required consensus not met",
+				zap.Int("consensusThresh", mo.consensusThresh),
+				zap.Int("operationMask", mo.operationMask.CountOnes()),
+				zap.Any("connectionErrors", connectionErrors))
+
 			majorErr := zboxutil.MajorError(connectionErrors)
 			if majorErr != nil {
 				return errors.New("consensus_not_met",
