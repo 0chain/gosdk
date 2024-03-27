@@ -998,18 +998,19 @@ func (b *BridgeClient) prepareBridge(ctx context.Context, ethereumAddress, metho
 	return bridgeInstance, transactOpts, nil
 }
 
-// isEstimateGasPriceAvailable checks if currently selected ethereum node url can be used for gas estimation.
-func (b *BridgeClient) isEstimateGasPriceAvailable() bool {
-	return strings.Contains(b.EthereumNodeURL, "eth-mainnet.g.alchemy.com")
+// getProviderType validates the provider url and exposes pre-defined type definition.
+func (b *BridgeClient) getProviderType() int {
+	if strings.Contains(b.EthereumNodeURL, "g.alchemy.com") {
+		return AlchemyProvider
+	} else if strings.Contains(b.EthereumNodeURL, "rpc.tenderly.co") {
+		return TenderlyProvider
+	} else {
+		return UnknownProvider
+	}
 }
 
-// EstimateGasPrice performs gas estimation for the given transaction using Alchemy enhanced API returning
-// approximate final gas fee.
-func (b *BridgeClient) EstimateGasPrice(ctx context.Context, from, to string, value int64) (*GasPriceEstimationResult, error) {
-	if !b.isEstimateGasPriceAvailable() {
-		return nil, errors.New("used json-rpc does not allow to estimate gas price")
-	}
-
+// EstimateGasAmount performs gas amount estimation for the given transaction.
+func (b *BridgeClient) EstimateGasAmount(ctx context.Context, from, to string, value int64) (float64, error) {
 	client := jsonrpc.NewClient(b.EthereumNodeURL)
 
 	valueHex := ConvertIntToHex(value)
@@ -1017,16 +1018,16 @@ func (b *BridgeClient) EstimateGasPrice(ctx context.Context, from, to string, va
 	resp, err := client.Call(ctx, "eth_estimateGas", &GasEstimationRequest{
 		From: from, To: to, Value: valueHex})
 	if err != nil {
-		return nil, errors.Wrap(err, "gas price estimation failed")
+		return 0, errors.Wrap(err, "gas price estimation failed")
 	}
 
 	if resp.Error != nil {
-		return nil, errors.Wrap(errors.New(resp.Error.Error()), "gas price estimation failed")
+		return 0, errors.Wrap(errors.New(resp.Error.Error()), "gas price estimation failed")
 	}
 
 	gasAmountRaw, ok := resp.Result.(string)
 	if !ok {
-		return nil, errors.New("failed to parse gas amount")
+		return 0, errors.New("failed to parse gas amount")
 	}
 
 	gasAmountInt := new(big.Float)
@@ -1034,30 +1035,46 @@ func (b *BridgeClient) EstimateGasPrice(ctx context.Context, from, to string, va
 
 	gasAmountFloat, _ := gasAmountInt.Float64()
 
-	fmt.Println(gasAmountFloat)
+	return gasAmountFloat, nil
+}
 
-	resp, err = client.Call(ctx, "eth_gasPrice")
-	if err != nil {
-		return nil, errors.Wrap(err, "gas price estimation failed")
+// EstimateGasPrice performs gas estimation for the given transaction using Alchemy enhanced API returning
+// approximate final gas fee.
+func (b *BridgeClient) EstimateGasPrice(ctx context.Context, from, to string, value int64) (*GasPriceEstimationResult, error) {
+	switch b.getProviderType() {
+	case AlchemyProvider:
+		gasAmount, err := b.EstimateGasAmount(ctx, from, to, value)
+		if err != nil {
+			return nil, err
+		}
+
+		client := jsonrpc.NewClient(b.EthereumNodeURL)
+
+		var resp *jsonrpc.RPCResponse
+		resp, err = client.Call(ctx, "eth_gasPrice")
+		if err != nil {
+			return nil, errors.Wrap(err, "gas price estimation failed")
+		}
+
+		if resp.Error != nil {
+			return nil, errors.Wrap(errors.New(resp.Error.Error()), "gas price estimation failed")
+		}
+
+		gasPriceRaw, ok := resp.Result.(string)
+		if !ok {
+			return nil, errors.New("failed to parse gas price")
+		}
+
+		gasPriceInt := new(big.Float)
+		gasPriceInt.SetString(gasPriceRaw)
+
+		gasPriceFloat, _ := gasPriceInt.Float64()
+
+		return &GasPriceEstimationResult{
+			Value: gasAmount * gasPriceFloat}, nil
+	case TenderlyProvider:
+		return &GasPriceEstimationResult{0}, nil
 	}
 
-	if resp.Error != nil {
-		return nil, errors.Wrap(errors.New(resp.Error.Error()), "gas price estimation failed")
-	}
-
-	var gasPriceRaw string
-	gasPriceRaw, ok = resp.Result.(string)
-	if !ok {
-		return nil, errors.New("failed to parse gas price")
-	}
-
-	gasPriceInt := new(big.Float)
-	gasPriceInt.SetString(gasPriceRaw)
-
-	gasPriceFloat, _ := gasPriceInt.Float64()
-
-	fmt.Println(gasPriceFloat)
-
-	return &GasPriceEstimationResult{
-		Value: gasPriceFloat * gasAmountFloat}, nil
+	return nil, errors.New("used json-rpc does not allow to estimate gas price")
 }

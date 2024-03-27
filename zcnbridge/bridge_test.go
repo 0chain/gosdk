@@ -41,9 +41,10 @@ import (
 const (
 	ethereumAddress = "0xD8c9156e782C68EE671C09b6b92de76C97948432"
 
-	alchemyEthereumNodeURL = "https://eth-mainnet.g.alchemy.com/v2/9VanLUbRE0pLmDHwCHGJlhs9GHosrfD9"
-	infuraEthereumNodeURL  = "https://mainnet.infura.io/v3/7238211010344719ad14a89db874158c"
-	value                  = 1e+10
+	alchemyEthereumNodeURL  = "https://eth-mainnet.g.alchemy.com/v2/9VanLUbRE0pLmDHwCHGJlhs9GHosrfD9"
+	tenderlyEthereumNodeURL = "https://rpc.tenderly.co/fork/835ecb4e-1f60-4129-adc2-b0c741193839"
+	infuraEthereumNodeURL   = "https://mainnet.infura.io/v3/7238211010344719ad14a89db874158c"
+	value                   = 1e+10
 
 	password = "02289b9"
 
@@ -628,11 +629,18 @@ func Test_ZCNBridge(t *testing.T) {
 		))
 	})
 
-	t.Run("should check if gas price estimation works with correct ethereum node url", func(t *testing.T) {
+	t.Run("should check if gas price estimation works with correct alchemy ethereum node url", func(t *testing.T) {
 		bridgeClient = getBridgeClient(bancorMockServerURL, alchemyEthereumNodeURL, ethereumClient, transactionProvider, keyStore)
 
 		_, err := bridgeClient.EstimateGasPrice(context.Background(), tokenAddress, bridgeAddress, value)
 		require.Contains(t, err.Error(), "Must be authenticated!")
+	})
+
+	t.Run("should check if gas price estimation works with correct tenderly ethereum node url", func(t *testing.T) {
+		bridgeClient = getBridgeClient(bancorMockServerURL, tenderlyEthereumNodeURL, ethereumClient, transactionProvider, keyStore)
+
+		_, err := bridgeClient.EstimateGasPrice(context.Background(), tokenAddress, bridgeAddress, value)
+		require.NoError(t, err)
 	})
 
 	t.Run("should check if gas price estimation works with incorrect ethereum node url", func(t *testing.T) {

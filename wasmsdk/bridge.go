@@ -173,6 +173,22 @@ func getNotProcessedZCNBurnTickets() string {
 	return string(result)
 }
 
+// estimateGasAmount performs gas amount estimation for the given transaction.
+func estimateGasAmount(from, to string, value int64) string { // nolint:golint,unused
+	estimateGasAmountResponse, err := bridge.EstimateGasAmount(context.Background(), from, to, value)
+	if err != nil {
+		return errors.Wrap("estimateGasPrice", "failed to estimate gas price", err).Error()
+	}
+
+	var result []byte
+	result, err = json.Marshal(estimateGasAmountResponse)
+	if err != nil {
+		return errors.Wrap("estimateGasAmount", "failed to marshal gas amount estimation result", err).Error()
+	}
+
+	return string(result)
+}
+
 // estimateGasPrice performs gas estimation for the given transaction using Alchemy enhanced API returning
 // approximate final gas fee.
 func estimateGasPrice(from, to string, value int64) string { // nolint:golint,unused
