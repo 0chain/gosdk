@@ -16,6 +16,12 @@ import (
 )
 
 const (
+	TenderlyProvider = iota
+	AlchemyProvider
+	UnknownProvider
+)
+
+const (
 	ZChainsClientConfigName  = "config.yaml"
 	ZChainWalletConfigName   = "wallet.json"
 	EthereumWalletStorageDir = "wallets"
