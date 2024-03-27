@@ -297,6 +297,11 @@ func CreateChunkedUpload(
 }
 
 func calculateWorkersAndRequests(dataShards, totalShards, chunknumber int) (uploadWorkers int, uploadRequests int) {
+	if IsWasm {
+		uploadWorkers = 1
+		uploadRequests = 2
+		return
+	}
 	if totalShards < 4 {
 		uploadWorkers = 4
 	} else {
