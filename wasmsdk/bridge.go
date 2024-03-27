@@ -177,7 +177,7 @@ func getNotProcessedZCNBurnTickets() string {
 func estimateGasAmount(from, to string, value int64) string { // nolint:golint,unused
 	estimateGasAmountResponse, err := bridge.EstimateGasAmount(context.Background(), from, to, value)
 	if err != nil {
-		return errors.Wrap("estimateGasPrice", "failed to estimate gas price", err).Error()
+		return errors.Wrap("estimateGasAmount", "failed to estimate gas price", err).Error()
 	}
 
 	var result []byte
