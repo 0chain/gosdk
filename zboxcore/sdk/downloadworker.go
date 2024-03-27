@@ -534,6 +534,14 @@ func (req *DownloadRequest) processDownload() {
 	if !req.shouldVerify {
 		var pos uint64
 		req.bufferMap = make(map[int]zboxutil.DownloadBuffer)
+		defer func() {
+			l.Logger.Info("Clearing download buffers: ", len(req.bufferMap))
+			for ind, rb := range req.bufferMap {
+				rb.ClearBuffer()
+				delete(req.bufferMap, ind)
+			}
+			req.bufferMap = nil
+		}()
 		sz := downloadWorkerCount + EXTRA_COUNT
 		if sz > n {
 			sz = n
