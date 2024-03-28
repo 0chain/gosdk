@@ -241,6 +241,7 @@ func main() {
 
 				//zcn
 				"getWalletBalance": getWalletBalance,
+				"getClientState": getClientState,
 
 				//0box api
 				"getCsrfToken":     getCsrfToken,
