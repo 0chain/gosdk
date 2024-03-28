@@ -15,6 +15,7 @@ type AlchemyGasEstimationRequest struct {
 	From  string `json:"from"`
 	To    string `json:"to"`
 	Value string `json:"value"`
+	Data  string `json:"data"`
 }
 
 // BancorTokenDetails describes Bancor ZCN zcntoken pool details

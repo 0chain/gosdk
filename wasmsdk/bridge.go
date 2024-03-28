@@ -173,17 +173,35 @@ func getNotProcessedZCNBurnTickets() string {
 	return string(result)
 }
 
-// estimateGasAmount performs gas amount estimation for the given transaction.
-func estimateGasAmount(from, to string, value int64) string { // nolint:golint,unused
-	estimateGasAmountResponse, err := bridge.EstimateGasAmount(context.Background(), from, to, value)
+// estimateBurnWZCNGasAmount performs gas amount estimation for the given burn wzcn transaction.
+func estimateBurnWZCNGasAmount(from, to string, amountTokens int) string { // nolint:golint,unused
+	estimateBurnWZCNGasAmountResponse, err := bridge.EstimateBurnWZCNGasAmount(
+		context.Background(), from, to, amountTokens)
 	if err != nil {
-		return errors.Wrap("estimateGasAmount", "failed to estimate gas price", err).Error()
+		return errors.Wrap("estimateBurnWZCNGasAmount", "failed to estimate gas amount", err).Error()
 	}
 
 	var result []byte
-	result, err = json.Marshal(estimateGasAmountResponse)
+	result, err = json.Marshal(estimateBurnWZCNGasAmountResponse)
 	if err != nil {
-		return errors.Wrap("estimateGasAmount", "failed to marshal gas amount estimation result", err).Error()
+		return errors.Wrap("estimateBurnWZCNGasAmount", "failed to marshal gas amount estimation result", err).Error()
+	}
+
+	return string(result)
+}
+
+// estimateMintWZCNGasAmount performs gas amount estimation for the given mint wzcn transaction.
+func estimateMintWZCNGasAmount(from, to, zcnTransaction string, amountToken, nonce int64, signatures []string) string { // nolint:golint,unused
+	estimateMintWZCNGasAmountResponse, err := bridge.EstimateMintWZCNGasAmount(
+		context.Background(), from, to, zcnTransaction, amountToken, nonce, signatures)
+	if err != nil {
+		return errors.Wrap("estimateMintWZCNGasAmount", "failed to estimate gas amount", err).Error()
+	}
+
+	var result []byte
+	result, err = json.Marshal(estimateMintWZCNGasAmountResponse)
+	if err != nil {
+		return errors.Wrap("estimateMintWZCNGasAmount", "failed to marshal gas amount estimation result", err).Error()
 	}
 
 	return string(result)

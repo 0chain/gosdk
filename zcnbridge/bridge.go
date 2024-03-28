@@ -1015,13 +1015,16 @@ func (b *BridgeClient) estimateTenderlyGasAmount(ctx context.Context, from, to s
 }
 
 // estimateAlchemyGasAmount performs gas amount estimation for the given transaction using Alchemy provider
-func (b *BridgeClient) estimateAlchemyGasAmount(ctx context.Context, from, to string, value int64) (float64, error) {
+func (b *BridgeClient) estimateAlchemyGasAmount(ctx context.Context, from, to, data string, value int64) (float64, error) {
 	client := jsonrpc.NewClient(b.EthereumNodeURL)
 
 	valueHex := ConvertIntToHex(value)
 
 	resp, err := client.Call(ctx, "eth_estimateGas", &AlchemyGasEstimationRequest{
-		From: from, To: to, Value: valueHex})
+		From:  from,
+		To:    to,
+		Value: valueHex,
+		Data:  data})
 	if err != nil {
 		return 0, errors.Wrap(err, "gas price estimation failed")
 	}
@@ -1043,13 +1046,72 @@ func (b *BridgeClient) estimateAlchemyGasAmount(ctx context.Context, from, to st
 	return gasAmountFloat, nil
 }
 
-// EstimateGasAmount performs gas amount estimation for the given transaction.
-func (b *BridgeClient) EstimateGasAmount(ctx context.Context, from, to string, value int64) (float64, error) {
+// EstimateBurnWZCNGasAmount performs gas amount estimation for the given wzcn burn transaction.
+func (b *BridgeClient) EstimateBurnWZCNGasAmount(ctx context.Context, from, to string, amountTokens int) (float64, error) {
 	switch b.getProviderType() {
 	case AlchemyProvider:
-		return b.estimateAlchemyGasAmount(ctx, from, to, value)
+		abi, err := bridge.BridgeMetaData.GetAbi()
+		if err != nil {
+			return 0, errors.Wrap(err, "failed to get ABI")
+		}
+
+		clientID := DefaultClientIDEncoder(zcncore.GetClientWalletID())
+
+		amount := new(big.Int)
+		amount.SetInt64(int64(amountTokens))
+
+		var packRaw []byte
+		packRaw, err = abi.Pack("burn", amount, clientID)
+		if err != nil {
+			return 0, errors.Wrap(err, "failed to pack arguments")
+		}
+
+		pack := "0x" + hex.EncodeToString(packRaw)
+
+		return b.estimateAlchemyGasAmount(ctx, from, to, pack, 0)
 	case TenderlyProvider:
-		return b.estimateTenderlyGasAmount(ctx, from, to, value)
+		return b.estimateTenderlyGasAmount(ctx, from, to, 0)
+	}
+
+	return 0, errors.New("used json-rpc does not allow to estimate gas amount")
+}
+
+// EstimateMintWZCNGasAmount performs gas amount estimation for the given wzcn mint transaction.
+func (b *BridgeClient) EstimateMintWZCNGasAmount(
+	ctx context.Context, from, to, zcnTransactionRaw string, amountToken, nonceRaw int64, signaturesRaw []string) (float64, error) {
+	switch b.getProviderType() {
+	case AlchemyProvider:
+		amount := new(big.Int)
+		amount.SetInt64(amountToken)
+
+		zcnTransaction := DefaultClientIDEncoder(zcnTransactionRaw)
+
+		nonce := new(big.Int)
+		nonce.SetInt64(nonceRaw)
+
+		var signatures [][]byte
+		for _, signature := range signaturesRaw {
+			signatures = append(signatures, []byte(signature))
+		}
+
+		fromRaw := common.HexToAddress(from)
+
+		abi, err := bridge.BridgeMetaData.GetAbi()
+		if err != nil {
+			return 0, errors.Wrap(err, "failed to get ABI")
+		}
+
+		var packRaw []byte
+		packRaw, err = abi.Pack("mint", fromRaw, amount, zcnTransaction, nonce, signatures)
+		if err != nil {
+			return 0, errors.Wrap(err, "failed to pack arguments")
+		}
+
+		pack := "0x" + hex.EncodeToString(packRaw)
+
+		return b.estimateAlchemyGasAmount(ctx, from, to, pack, 0)
+	case TenderlyProvider:
+		return b.estimateTenderlyGasAmount(ctx, from, to, 0)
 	}
 
 	return 0, errors.New("used json-rpc does not allow to estimate gas amount")
