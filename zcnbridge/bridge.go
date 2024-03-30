@@ -1009,14 +1009,22 @@ func (b *BridgeClient) getProviderType() int {
 	}
 }
 
-// EstimateGasAmount performs gas amount estimation for the given transaction.
-func (b *BridgeClient) EstimateGasAmount(ctx context.Context, from, to string, value int64) (float64, error) {
+// estimateTenderlyGasAmount performs gas amount estimation for the given transaction using Tenderly provider.
+func (b *BridgeClient) estimateTenderlyGasAmount(ctx context.Context, from, to string, value int64) (float64, error) {
+	return 8000000, nil
+}
+
+// estimateAlchemyGasAmount performs gas amount estimation for the given transaction using Alchemy provider
+func (b *BridgeClient) estimateAlchemyGasAmount(ctx context.Context, from, to, data string, value int64) (float64, error) {
 	client := jsonrpc.NewClient(b.EthereumNodeURL)
 
 	valueHex := ConvertIntToHex(value)
 
-	resp, err := client.Call(ctx, "eth_estimateGas", &GasEstimationRequest{
-		From: from, To: to, Value: valueHex})
+	resp, err := client.Call(ctx, "eth_estimateGas", &AlchemyGasEstimationRequest{
+		From:  from,
+		To:    to,
+		Value: valueHex,
+		Data:  data})
 	if err != nil {
 		return 0, errors.Wrap(err, "gas price estimation failed")
 	}
@@ -1030,51 +1038,125 @@ func (b *BridgeClient) EstimateGasAmount(ctx context.Context, from, to string, v
 		return 0, errors.New("failed to parse gas amount")
 	}
 
-	gasAmountInt := new(big.Int)
-	gasAmountInt.SetString(gasAmountRaw, 16)
+	gasAmountInt := new(big.Float)
+	gasAmountInt.SetString(gasAmountRaw)
 
 	gasAmountFloat, _ := gasAmountInt.Float64()
 
 	return gasAmountFloat, nil
 }
 
-// EstimateGasPrice performs gas estimation for the given transaction using Alchemy enhanced API returning
-// approximate final gas fee.
-func (b *BridgeClient) EstimateGasPrice(ctx context.Context, from, to string, value int64) (*GasPriceEstimationResult, error) {
+// EstimateBurnWZCNGasAmount performs gas amount estimation for the given wzcn burn transaction.
+func (b *BridgeClient) EstimateBurnWZCNGasAmount(ctx context.Context, from, to string, amountTokens int) (float64, error) {
 	switch b.getProviderType() {
 	case AlchemyProvider:
-		gasAmount, err := b.EstimateGasAmount(ctx, from, to, value)
+		abi, err := bridge.BridgeMetaData.GetAbi()
 		if err != nil {
-			return nil, err
+			return 0, errors.Wrap(err, "failed to get ABI")
 		}
 
-		client := jsonrpc.NewClient(b.EthereumNodeURL)
+		clientID := DefaultClientIDEncoder(zcncore.GetClientWalletID())
 
-		var resp *jsonrpc.RPCResponse
-		resp, err = client.Call(ctx, "eth_gasPrice")
+		amount := new(big.Int)
+		amount.SetInt64(int64(amountTokens))
+
+		var packRaw []byte
+		packRaw, err = abi.Pack("burn", amount, clientID)
 		if err != nil {
-			return nil, errors.Wrap(err, "gas price estimation failed")
+			return 0, errors.Wrap(err, "failed to pack arguments")
 		}
 
-		if resp.Error != nil {
-			return nil, errors.Wrap(errors.New(resp.Error.Error()), "gas price estimation failed")
-		}
+		pack := "0x" + hex.EncodeToString(packRaw)
 
-		gasPriceRaw, ok := resp.Result.(string)
-		if !ok {
-			return nil, errors.New("failed to parse gas price")
-		}
-
-		gasPriceInt := new(big.Float)
-		gasPriceInt.SetString(gasPriceRaw)
-
-		gasPriceFloat, _ := gasPriceInt.Float64()
-
-		return &GasPriceEstimationResult{
-			Value: gasAmount * gasPriceFloat}, nil
+		return b.estimateAlchemyGasAmount(ctx, from, to, pack, 0)
 	case TenderlyProvider:
-		return &GasPriceEstimationResult{0}, nil
+		return b.estimateTenderlyGasAmount(ctx, from, to, 0)
 	}
 
-	return nil, errors.New("used json-rpc does not allow to estimate gas price")
+	return 0, errors.New("used json-rpc does not allow to estimate gas amount")
+}
+
+// EstimateMintWZCNGasAmount performs gas amount estimation for the given wzcn mint transaction.
+func (b *BridgeClient) EstimateMintWZCNGasAmount(
+	ctx context.Context, from, to, zcnTransactionRaw string, amountToken, nonceRaw int64, signaturesRaw []string) (float64, error) {
+	switch b.getProviderType() {
+	case AlchemyProvider:
+		amount := new(big.Int)
+		amount.SetInt64(amountToken)
+
+		zcnTransaction := DefaultClientIDEncoder(zcnTransactionRaw)
+
+		nonce := new(big.Int)
+		nonce.SetInt64(nonceRaw)
+
+		var signatures [][]byte
+		for _, signature := range signaturesRaw {
+			signatures = append(signatures, []byte(signature))
+		}
+
+		fromRaw := common.HexToAddress(from)
+
+		abi, err := bridge.BridgeMetaData.GetAbi()
+		if err != nil {
+			return 0, errors.Wrap(err, "failed to get ABI")
+		}
+
+		var packRaw []byte
+		packRaw, err = abi.Pack("mint", fromRaw, amount, zcnTransaction, nonce, signatures)
+		if err != nil {
+			return 0, errors.Wrap(err, "failed to pack arguments")
+		}
+
+		pack := "0x" + hex.EncodeToString(packRaw)
+
+		return b.estimateAlchemyGasAmount(ctx, from, to, pack, 0)
+	case TenderlyProvider:
+		return b.estimateTenderlyGasAmount(ctx, from, to, 0)
+	}
+
+	return 0, errors.New("used json-rpc does not allow to estimate gas amount")
+}
+
+// estimateTenderlyGasPrice performs gas estimation for the given transaction using Tenderly API.
+func (b *BridgeClient) estimateTenderlyGasPrice(ctx context.Context) (float64, error) {
+	return 1, nil
+}
+
+// estimateAlchemyGasPrice performs gas estimation for the given transaction using Alchemy enhanced API returning
+// approximate final gas fee.
+func (b *BridgeClient) estimateAlchemyGasPrice(ctx context.Context) (float64, error) {
+	client := jsonrpc.NewClient(b.EthereumNodeURL)
+
+	resp, err := client.Call(ctx, "eth_gasPrice")
+	if err != nil {
+		return 0, errors.Wrap(err, "gas price estimation failed")
+	}
+
+	if resp.Error != nil {
+		return 0, errors.Wrap(errors.New(resp.Error.Error()), "gas price estimation failed")
+	}
+
+	gasPriceRaw, ok := resp.Result.(string)
+	if !ok {
+		return 0, errors.New("failed to parse gas price")
+	}
+
+	gasPriceInt := new(big.Float)
+	gasPriceInt.SetString(gasPriceRaw)
+
+	gasPriceFloat, _ := gasPriceInt.Float64()
+
+	return gasPriceFloat, nil
+}
+
+// EstimateGasPrice performs gas estimation for the given transaction.
+func (b *BridgeClient) EstimateGasPrice(ctx context.Context) (float64, error) {
+	switch b.getProviderType() {
+	case AlchemyProvider:
+		return b.estimateAlchemyGasPrice(ctx)
+	case TenderlyProvider:
+		return b.estimateTenderlyGasPrice(ctx)
+	}
+
+	return 0, errors.New("used json-rpc does not allow to estimate gas price")
 }
