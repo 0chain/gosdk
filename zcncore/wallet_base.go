@@ -868,17 +868,19 @@ func getMinersInternal(cb GetInfoCallback, active, stakable bool, limit, offset 
 //   - limit: how many sharders should be fetched
 //   - offset: how many sharders should be skipped
 //   - active: only fetch active sharders
-func GetSharders(cb GetInfoCallback, limit, offset int, active bool) {
-	getShardersInternal(cb, active, limit, offset)
+//	 - stakable: only fetch sharders that can be staked 
+func GetSharders(cb GetInfoCallback, limit, offset int, active, stakable bool) {
+	getShardersInternal(cb, active, stakable, limit, offset)
 }
 
-func getShardersInternal(cb GetInfoCallback, active bool, limit, offset int) {
+func getShardersInternal(cb GetInfoCallback, active, stakable bool, limit, offset int) {
 	if err := CheckConfig(); err != nil {
 		return
 	}
 
 	var url = withParams(GET_MINERSC_SHARDERS, Params{
 		"active": strconv.FormatBool(active),
+		"stakable": strconv.FormatBool(stakable),
 		"offset": strconv.FormatInt(int64(offset), 10),
 		"limit":  strconv.FormatInt(int64(limit), 10),
 	})

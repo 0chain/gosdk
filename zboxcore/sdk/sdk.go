@@ -821,7 +821,7 @@ func GetValidator(validatorID string) (validator *Validator, err error) {
 }
 
 // List all validators
-func GetValidators() (validators []*Validator, err error) {
+func GetValidators(stakable bool) (validators []*Validator, err error) {
 	if !sdkInitialized {
 		return nil, sdkNotInitialized
 	}
@@ -829,7 +829,9 @@ func GetValidators() (validators []*Validator, err error) {
 	b, err = zboxutil.MakeSCRestAPICall(
 		STORAGE_SCADDRESS,
 		"/validators",
-		nil,
+		map[string]string{
+			"stakable" : strconv.FormatBool(stakable),
+		},
 		nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "requesting validator list")
