@@ -63,7 +63,7 @@ func (r *RepairRequest) processRepair(ctx context.Context, a *Allocation) {
 	if r.checkForCancel(a) {
 		return
 	}
-
+	SetNumBlockDownloads(100)
 	r.iterateDir(a, r.listDir)
 
 	if r.statusCB != nil {
@@ -177,7 +177,7 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) []OperationR
 					return nil
 				}
 				memFile := &sys.MemChanFile{
-					Buffer:         make(chan []byte, 10),
+					Buffer:         make(chan []byte, 100),
 					ChunkWriteSize: int(a.GetChunkReadSize(ref.EncryptedKey != "")),
 				}
 				op = a.RepairFile(memFile, file.Path, statusCB, found, ref)
