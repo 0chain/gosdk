@@ -284,7 +284,7 @@ type MemChanFile struct {
 	ModTime        time.Time   // FileInfo.ModTime
 	ChunkWriteSize int         //  0 value means no limit
 	Sys            interface{} // FileInfo.Sys
-	reader         io.Reader
+	ErrChan        chan error
 	data           []byte
 }
 
@@ -292,15 +292,19 @@ func (f *MemChanFile) Stat() (fs.FileInfo, error) {
 	return &MemFileChanInfo{name: f.Name, f: f}, nil
 }
 func (f *MemChanFile) Read(p []byte) (int, error) {
-	recieveData, ok := <-f.Buffer
-	if !ok {
-		return 0, io.EOF
+	select {
+	case err := <-f.ErrChan:
+		return 0, err
+	case recieveData, ok := <-f.Buffer:
+		if !ok {
+			return 0, io.EOF
+		}
+		if len(recieveData) > len(p) {
+			return 0, io.ErrShortBuffer
+		}
+		n := copy(p, recieveData)
+		return n, nil
 	}
-	if len(recieveData) > len(p) {
-		return 0, io.ErrShortBuffer
-	}
-	n := copy(p, recieveData)
-	return n, nil
 }
 
 func (f *MemChanFile) Write(p []byte) (n int, err error) {
@@ -310,7 +314,7 @@ func (f *MemChanFile) Write(p []byte) (n int, err error) {
 		f.Buffer <- data
 	} else {
 		if cap(f.data) == 0 {
-			f.data = make([]byte, 0, f.ChunkWriteSize)
+			f.data = make([]byte, 0, len(p))
 		}
 		f.data = append(f.data, p...)
 	}
@@ -326,7 +330,7 @@ func (f *MemChanFile) Sync() error {
 		}
 		f.Buffer <- f.data[current:end]
 	}
-	f.data = make([]byte, 0, f.ChunkWriteSize)
+	f.data = nil
 	return nil
 }
 func (f *MemChanFile) Seek(offset int64, whence int) (ret int64, err error) {
@@ -334,7 +338,6 @@ func (f *MemChanFile) Seek(offset int64, whence int) (ret int64, err error) {
 }
 
 func (f *MemChanFile) Close() error {
-	f.reader = nil
 	close(f.Buffer)
 	return nil
 }
