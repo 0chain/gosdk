@@ -1089,9 +1089,23 @@ func (b *BridgeClient) EstimateMintWZCNGasAmount(
 		nonce := new(big.Int)
 		nonce.SetInt64(nonceRaw)
 
+		var (
+			signatureRaw string
+
+			signatureHex []byte
+			err          error
+		)
+
 		var signatures [][]byte
 		for _, signature := range signaturesRaw {
-			signatures = append(signatures, []byte(signature))
+			signatureRaw, _ = strings.CutPrefix(signature, "0x")
+
+			signatureHex, err = hex.DecodeString(signatureRaw)
+			if err != nil {
+				return 0, err
+			}
+
+			signatures = append(signatures, signatureHex)
 		}
 
 		fromRaw := common.HexToAddress(from)
