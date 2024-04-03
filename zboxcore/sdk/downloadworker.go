@@ -303,16 +303,21 @@ func (req *DownloadRequest) downloadBlock(
 			var err error
 			defer func() {
 				if err != nil {
-					atomic.AddInt32(&failed, 1)
-					req.removeFromMask(uint64(result.maskIdx))
+					totalFail := atomic.AddInt32(&failed, 1)
+					// if first request remove from end as we will convert the slice into heap
+					if timeRequest {
+						req.removeFromMask(uint64(activeBlobbers - int(totalFail)))
+					} else {
+						req.removeFromMask(uint64(result.maskIdx))
+					}
 					downloadErrors[i] = fmt.Sprintf("Error %s from %s",
 						err.Error(), req.blobbers[result.idx].Baseurl)
 					logger.Logger.Error(err)
-					if req.bufferMap != nil {
+					if req.bufferMap != nil && req.bufferMap[result.idx] != nil {
 						req.bufferMap[result.idx].ReleaseChunk(int(req.startBlock))
 					}
 				} else if timeRequest {
-					req.downloadQueue[result.idx].timeTaken = result.timeTaken
+					req.downloadQueue[result.maskIdx].timeTaken = result.timeTaken
 				}
 				wg.Done()
 			}()
@@ -548,7 +553,7 @@ func (req *DownloadRequest) processDownload() {
 		}
 		for i := req.downloadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 			pos = uint64(i.TrailingZeros())
-			blobberIdx := req.downloadQueue[pos].blobberIdx
+			blobberIdx := int(pos)
 			if writerAt {
 				req.bufferMap[blobberIdx] = zboxutil.NewDownloadBufferWithChan(sz, int(numBlocks), req.effectiveBlockSize)
 			} else {
@@ -556,6 +561,9 @@ func (req *DownloadRequest) processDownload() {
 			}
 		}
 	}
+	// reset mask to number of active blobbers, not it denotes index of download queue and not blobber index
+	activeBlobbers := req.downloadMask.CountOnes()
+	req.downloadMask = zboxutil.NewUint128(1).Lsh(uint64(activeBlobbers)).Sub64(1)
 
 	logger.Logger.Info(
 		fmt.Sprintf("Downloading file with size: %d from start block: %d and end block: %d. "+
