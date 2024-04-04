@@ -233,6 +233,7 @@ type OperationRequest struct {
 	FileReader   io.Reader
 	Mask         *zboxutil.Uint128 // Required for delete repair operation
 	DownloadFile bool              // Required for upload repair operation
+	StreamUpload bool              // Required for streaming file when actualSize is not available
 	Opts         []ChunkedUploadOption
 }
 
@@ -335,7 +336,7 @@ func (a *Allocation) dispatchWork(ctx context.Context) {
 		case downloadReq := <-a.downloadChan:
 			l.Logger.Info(fmt.Sprintf("received a download request for %v\n", downloadReq.remotefilepath))
 			go func() {
-				downloadReq.processDownload(ctx)
+				downloadReq.processDownload()
 			}()
 		case repairReq := <-a.repairChan:
 
@@ -402,11 +403,13 @@ func (a *Allocation) RepairFile(file sys.File, remotepath string, statusCallback
 			WithEncrypt(true),
 			WithStatusCallback(statusCallback),
 			WithEncryptedPoint(ref.EncryptedKeyPoint),
+			WithChunkNumber(100),
 		}
 	} else {
 		opts = []ChunkedUploadOption{
 			WithMask(mask),
 			WithStatusCallback(statusCallback),
+			WithChunkNumber(100),
 		}
 	}
 	op := &OperationRequest{
@@ -538,9 +541,6 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 		fullRemotePath := zboxutil.GetFullRemotePath(localPath, remotePath)
 		fullRemotePathWithoutName, _ := pathutil.Split(fullRemotePath)
 		fullRemotePath = fullRemotePathWithoutName + "/" + fileName
-		if err != nil {
-			return err
-		}
 
 		fileMeta := FileMeta{
 			Path:       localPath,
@@ -897,7 +897,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 				cancelLock.Lock()
 				CancelOpCtx[op.FileMeta.RemotePath] = mo.ctxCncl
 				cancelLock.Unlock()
-				operation, newConnectionID, err = NewUploadOperation(mo.ctx, op.Workdir, mo.allocationObj, mo.connectionID, op.FileMeta, op.FileReader, false, op.IsWebstreaming, op.IsRepair, op.DownloadFile, op.Opts...)
+				operation, newConnectionID, err = NewUploadOperation(mo.ctx, op.Workdir, mo.allocationObj, mo.connectionID, op.FileMeta, op.FileReader, false, op.IsWebstreaming, op.IsRepair, op.DownloadFile, op.StreamUpload, op.Opts...)
 
 			case constants.FileOperationDelete:
 				if op.Mask != nil {
@@ -910,7 +910,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 				cancelLock.Lock()
 				CancelOpCtx[op.FileMeta.RemotePath] = mo.ctxCncl
 				cancelLock.Unlock()
-				operation, newConnectionID, err = NewUploadOperation(mo.ctx, op.Workdir, mo.allocationObj, mo.connectionID, op.FileMeta, op.FileReader, true, op.IsWebstreaming, op.IsRepair, op.DownloadFile, op.Opts...)
+				operation, newConnectionID, err = NewUploadOperation(mo.ctx, op.Workdir, mo.allocationObj, mo.connectionID, op.FileMeta, op.FileReader, true, op.IsWebstreaming, op.IsRepair, op.DownloadFile, op.StreamUpload, op.Opts...)
 
 			case constants.FileOperationCreateDir:
 				operation = NewDirOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
@@ -970,7 +970,7 @@ func (a *Allocation) DownloadFileToFileHandler(
 	downloadReqOpts ...DownloadRequestOption,
 ) error {
 	return a.addAndGenerateDownloadRequest(fileHandler, remotePath, DOWNLOAD_CONTENT_FULL, 1, 0,
-		numBlockDownloads, verifyDownload, status, isFinal, "")
+		numBlockDownloads, verifyDownload, status, isFinal, "", downloadReqOpts...)
 }
 
 func (a *Allocation) DownloadByBlocksToFileHandler(
@@ -1109,6 +1109,9 @@ func (a *Allocation) generateDownloadRequest(
 	downloadReq.contentMode = contentMode
 	downloadReq.connectionID = connectionID
 	downloadReq.downloadQueue = make(downloadQueue, len(a.Blobbers))
+	for i := 0; i < len(a.Blobbers); i++ {
+		downloadReq.downloadQueue[i].timeTaken = 1000000
+	}
 
 	return downloadReq, nil
 }
@@ -1170,6 +1173,9 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 				dr.freeRead = true
 			}
 			defer wg.Done()
+			if isReadFree {
+				dr.freeRead = true
+			}
 			dr.processDownloadRequest()
 			var pos uint64
 			if !dr.skip {
@@ -1446,7 +1452,7 @@ func (a *Allocation) DownloadFromBlobber(blobberID, localPath, remotePath string
 		opt(downloadReq)
 	}
 
-	fRef, err := downloadReq.getFileRef(remotePath)
+	fRef, err := downloadReq.getFileRef()
 	if err != nil {
 		l.Logger.Error(err.Error())
 		downloadReq.errorCB(fmt.Errorf("Error while getting file ref. Error: %v", err), remotePath)
@@ -2070,7 +2076,7 @@ func (a *Allocation) DownloadFileToFileHandlerFromAuthTicket(
 	downloadReqOpts ...DownloadRequestOption,
 ) error {
 	return a.downloadFromAuthTicket(fileHandler, authTicket, remoteLookupHash, 1, 0, numBlockDownloads,
-		remoteFilename, DOWNLOAD_CONTENT_FULL, verifyDownload, status, isFinal, "")
+		remoteFilename, DOWNLOAD_CONTENT_FULL, verifyDownload, status, isFinal, "", downloadReqOpts...)
 }
 
 func (a *Allocation) DownloadByBlocksToFileHandlerFromAuthTicket(
@@ -2219,6 +2225,9 @@ func (a *Allocation) downloadFromAuthTicket(fileHandler sys.File, authTicket str
 	downloadReq.fullconsensus = a.fullconsensus
 	downloadReq.consensusThresh = a.consensusThreshold
 	downloadReq.downloadQueue = make(downloadQueue, len(a.Blobbers))
+	for i := 0; i < len(a.Blobbers); i++ {
+		downloadReq.downloadQueue[i].timeTaken = 1000000
+	}
 	downloadReq.connectionID = zboxutil.NewConnectionId()
 	downloadReq.completedCallback = func(remotepath string, remotepathHash string) {
 		a.mutex.Lock()

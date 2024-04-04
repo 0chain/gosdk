@@ -138,9 +138,9 @@ func (uo *UploadOperation) Error(allocObj *Allocation, consensus int, err error)
 	}
 }
 
-func NewUploadOperation(ctx context.Context, workdir string, allocObj *Allocation, connectionID string, fileMeta FileMeta, fileReader io.Reader, isUpdate, isWebstreaming, isRepair, isMemoryDownload bool, opts ...ChunkedUploadOption) (*UploadOperation, string, error) {
+func NewUploadOperation(ctx context.Context, workdir string, allocObj *Allocation, connectionID string, fileMeta FileMeta, fileReader io.Reader, isUpdate, isWebstreaming, isRepair, isMemoryDownload, isStreamUpload bool, opts ...ChunkedUploadOption) (*UploadOperation, string, error) {
 	uo := &UploadOperation{}
-	if fileMeta.ActualSize == 0 {
+	if fileMeta.ActualSize == 0 && !isStreamUpload {
 		byteReader := bytes.NewReader([]byte(
 			emptyFileDataHash))
 		fileReader = byteReader

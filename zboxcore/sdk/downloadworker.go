@@ -105,7 +105,7 @@ type DownloadRequest struct {
 	bufferMap          map[int]zboxutil.DownloadBuffer
 	downloadStorer     DownloadProgressStorer
 	workdir            string
-	downloadQueue      downloadQueue
+	downloadQueue      downloadQueue // Always initialize this queue with max time taken
 }
 
 type downloadPriority struct {
@@ -175,7 +175,7 @@ func (req *DownloadRequest) getBlocksDataFromBlobbers(startBlock, totalBlock int
 		if err != nil {
 			return nil, err
 		}
-		if failed == 0 {
+		if failed == 0 || (timeRequest && mask.CountOnes()-failed >= requiredDownloads) {
 			break
 		}
 
@@ -285,7 +285,7 @@ func (req *DownloadRequest) downloadBlock(
 			if req.shouldVerify {
 				go AddBlockDownloadReq(req.ctx, blockDownloadReq, nil, req.effectiveBlockSize)
 			} else {
-				go AddBlockDownloadReq(req.ctx, blockDownloadReq, req.bufferMap[int(pos)], req.effectiveBlockSize)
+				go AddBlockDownloadReq(req.ctx, blockDownloadReq, req.bufferMap[blobberIdx], req.effectiveBlockSize)
 			}
 		}
 
@@ -308,7 +308,9 @@ func (req *DownloadRequest) downloadBlock(
 					downloadErrors[i] = fmt.Sprintf("Error %s from %s",
 						err.Error(), req.blobbers[result.idx].Baseurl)
 					logger.Logger.Error(err)
-					req.bufferMap[result.idx].ReleaseChunk(int(req.startBlock / req.numBlocks))
+					if req.bufferMap != nil {
+						req.bufferMap[result.idx].ReleaseChunk(int(req.startBlock / req.numBlocks))
+					}
 				} else if timeRequest {
 					req.downloadQueue[result.idx].timeTaken = result.timeTaken
 				}
@@ -423,7 +425,8 @@ func (req *DownloadRequest) getDecryptedDataForAuthTicket(result *downloadBlock,
 // processDownload will setup download parameters and downloads data with given
 // start block, end block and number of blocks to download in single request.
 // This will also write data to the file handler and will verify content by calculating content hash.
-func (req *DownloadRequest) processDownload(ctx context.Context) {
+func (req *DownloadRequest) processDownload() {
+	ctx := req.ctx
 	if req.completedCallback != nil {
 		defer req.completedCallback(req.remotefilepath, req.remotefilepathhash)
 	}
@@ -537,10 +540,11 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		}
 		for i := req.downloadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 			pos = uint64(i.TrailingZeros())
+			blobberIdx := req.downloadQueue[pos].blobberIdx
 			if writerAt {
-				req.bufferMap[int(pos)] = zboxutil.NewDownloadBufferWithChan(sz, int(numBlocks), req.effectiveBlockSize)
+				req.bufferMap[blobberIdx] = zboxutil.NewDownloadBufferWithChan(sz, int(numBlocks), req.effectiveBlockSize)
 			} else {
-				req.bufferMap[int(pos)] = zboxutil.NewDownloadBufferWithMask(sz, int(numBlocks), req.effectiveBlockSize)
+				req.bufferMap[blobberIdx] = zboxutil.NewDownloadBufferWithMask(sz, int(numBlocks), req.effectiveBlockSize)
 			}
 		}
 	}
@@ -677,13 +681,18 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	var progressLock sync.Mutex
 	firstReqWG := sync.WaitGroup{}
 	firstReqWG.Add(1)
-	eg, _ := errgroup.WithContext(ctx)
+	eg, egCtx := errgroup.WithContext(ctx)
 	eg.SetLimit(downloadWorkerCount + EXTRA_COUNT)
 	for i := 0; i < n; i++ {
 		j := i
 		if i == 1 {
 			firstReqWG.Wait()
 			heap.Init(&req.downloadQueue)
+		}
+		select {
+		case <-egCtx.Done():
+			goto breakDownloadLoop
+		default:
 		}
 		eg.Go(func() error {
 
@@ -734,6 +743,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			}
 			return nil
 		})
+	breakDownloadLoop:
 	}
 	if err := eg.Wait(); err != nil {
 		writeCancel()
@@ -987,7 +997,7 @@ func (req *DownloadRequest) errorCB(err error, remotePathCB string) {
 }
 
 func (req *DownloadRequest) calculateShardsParams(
-	fRef *fileref.FileRef, remotePathCB string) (chunksPerShard int64, err error) {
+	fRef *fileref.FileRef) (chunksPerShard int64, err error) {
 
 	size := fRef.ActualFileSize
 	if req.contentMode == DOWNLOAD_CONTENT_THUMB {
@@ -1081,16 +1091,13 @@ func GetFileRefFromBlobber(allocationID, blobberId, remotePath string) (fRef *fi
 	listReq.ctx = ctx
 	listReq.remotefilepath = remotePath
 
-	listReq.wg = &sync.WaitGroup{}
-	listReq.wg.Add(1)
 	rspCh := make(chan *fileMetaResponse, 1)
 	go listReq.getFileMetaInfoFromBlobber(listReq.blobbers[0], 0, rspCh)
-	listReq.wg.Wait()
 	resp := <-rspCh
 	return resp.fileref, resp.err
 }
 
-func (req *DownloadRequest) getFileRef(remotePathCB string) (fRef *fileref.FileRef, err error) {
+func (req *DownloadRequest) getFileRef() (fRef *fileref.FileRef, err error) {
 	listReq := &ListRequest{
 		remotefilepath:     req.remotefilepath,
 		remotefilepathhash: req.remotefilepathhash,
@@ -1234,7 +1241,7 @@ func (req *DownloadRequest) processDownloadRequest() {
 		)
 		return
 	}
-	fRef, err := req.getFileRef(remotePathCB)
+	fRef, err := req.getFileRef()
 	if err != nil {
 		logger.Logger.Error(err.Error())
 		req.errorCB(
@@ -1244,7 +1251,7 @@ func (req *DownloadRequest) processDownloadRequest() {
 		return
 	}
 	req.fRef = fRef
-	chunksPerShard, err := req.calculateShardsParams(fRef, remotePathCB)
+	chunksPerShard, err := req.calculateShardsParams(fRef)
 	if err != nil {
 		logger.Logger.Error(err.Error())
 		req.errorCB(
@@ -1256,10 +1263,10 @@ func (req *DownloadRequest) processDownloadRequest() {
 	startBlock, endBlock := req.startBlock, req.endBlock
 	// remainingSize should be calculated based on startBlock number
 	// otherwise end data will have null bytes.
-	remainingSize := req.size - startBlock*int64(req.effectiveBlockSize)*int64(req.datashards)
+	remainingSize := req.size - startBlock*int64(req.effectiveBlockSize)
 
 	var wantSize int64
-	if endBlock*int64(req.effectiveBlockSize)*int64(req.datashards) < req.size {
+	if endBlock*int64(req.effectiveBlockSize) < req.size {
 		wantSize = endBlock*int64(req.effectiveBlockSize) - startBlock*int64(req.effectiveBlockSize)
 	} else {
 		wantSize = remainingSize

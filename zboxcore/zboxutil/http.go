@@ -148,7 +148,7 @@ func SetHostClient(id, baseURL string) {
 				Concurrency:      4096,
 				DNSCacheDuration: time.Hour,
 			}).Dial,
-			IsTLS: true,
+			IsTLS: u.Scheme == "https",
 		}
 	}
 }
@@ -189,6 +189,8 @@ func init() {
 			Concurrency:      4096,
 			DNSCacheDuration: time.Hour,
 		}).Dial,
+		ReadTimeout:  60 * time.Second,
+		WriteTimeout: 60 * time.Second,
 	}
 	envProxy.initialize()
 	log.Init(logger.DEBUG, "0box-sdk")
