@@ -8,6 +8,7 @@ import (
 	_ "image/png"
 
 	"github.com/disintegration/imaging"
+	_ "github.com/gen2brain/heic"
 	_ "golang.org/x/image/bmp"
 	_ "golang.org/x/image/ccitt"
 	_ "golang.org/x/image/riff"

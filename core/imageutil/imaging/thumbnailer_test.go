@@ -16,6 +16,8 @@ var (
 	inpJpeg = filepath.Join("..", "resources", "input.jpeg")
 	inpPng  = filepath.Join("..", "resources", "input.png")
 	inpGif  = filepath.Join("..", "resources", "input.gif")
+	inpWebp = filepath.Join("..", "resources", "input.webp")
+	inpHeic = filepath.Join("..", "resources", "input.heic")
 )
 
 func TestThumbnail(t *testing.T) {
@@ -29,28 +31,42 @@ func TestThumbnail(t *testing.T) {
 
 	inpData := []inp{
 		{
-			//jpeg file
+			// jpeg file
 			filePath: inpJpeg,
 			width:    100,
 			height:   200,
 			resample: imaging.Lanczos,
 		},
 		{
-			//png file
+			// png file
 			filePath: inpPng,
 			width:    200,
 			height:   300,
 			resample: imaging.Lanczos,
 		},
 		{
-			//gif file
+			// gif file
 			filePath: inpGif,
 			width:    100,
 			height:   200,
 			resample: imaging.Lanczos,
 		},
 		{
-			//empty resample value
+			// webp file
+			filePath: inpWebp,
+			width:    200,
+			height:   200,
+			resample: imaging.Lanczos,
+		},
+		{
+			// heic file
+			filePath: inpHeic,
+			width:    200,
+			height:   200,
+			resample: imaging.Lanczos,
+		},
+		{
+			// empty resample value
 			filePath: inpJpeg,
 			width:    100,
 			height:   100,

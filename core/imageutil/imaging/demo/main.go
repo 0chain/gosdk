@@ -23,6 +23,7 @@ import (
 	_ "golang.org/x/image/vp8"
 	_ "golang.org/x/image/vp8l"
 	_ "golang.org/x/image/webp"
+	_ "github.com/gen2brain/heic"
 
 	"github.com/0chain/gosdk/core/imageutil/imaging"
 )
@@ -56,9 +57,15 @@ var (
 			height:       200,
 		},
 		{
-			location:     filepath.Join("..", "..", "resources", "input.gif"),
+			location:     filepath.Join("..", "..", "resources", "input.webp"),
 			locationType: "local",
 			width:        100,
+			height:       200,
+		},
+		{
+			location:     filepath.Join("..", "..", "resources", "input.heic"),
+			locationType: "local",
+			width:        200,
 			height:       200,
 		},
 	}
