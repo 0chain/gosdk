@@ -267,6 +267,8 @@ func AddBlockDownloadReq(ctx context.Context, req *BlockDownloadRequest, rb zbox
 		if len(req.respBuf) == 0 {
 			req.respBuf = make([]byte, int(req.numBlocks)*effectiveBlockSize)
 		}
+	} else {
+		req.respBuf = make([]byte, int(req.numBlocks)*effectiveBlockSize)
 	}
 	downloadBlockChan[req.blobber.ID] <- req
 }
