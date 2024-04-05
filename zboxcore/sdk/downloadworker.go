@@ -1244,6 +1244,7 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 		return nil, fmt.Errorf("consensus_not_met")
 	}
 	req.downloadMask = foundMask
+	heap.Init(&req.downloadQueue)
 	return selected.fileref, nil
 }
 
