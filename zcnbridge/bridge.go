@@ -1118,13 +1118,13 @@ func (b *BridgeClient) EstimateMintWZCNGasAmount(
 }
 
 // estimateTenderlyGasPrice performs gas estimation for the given transaction using Tenderly API.
-func (b *BridgeClient) estimateTenderlyGasPrice(ctx context.Context, from, to string, value int64) (float64, error) {
-	return 0, nil
+func (b *BridgeClient) estimateTenderlyGasPrice(ctx context.Context) (float64, error) {
+	return 1, nil
 }
 
 // estimateAlchemyGasPrice performs gas estimation for the given transaction using Alchemy enhanced API returning
 // approximate final gas fee.
-func (b *BridgeClient) estimateAlchemyGasPrice(ctx context.Context, from, to string, value int64) (float64, error) {
+func (b *BridgeClient) estimateAlchemyGasPrice(ctx context.Context) (float64, error) {
 	client := jsonrpc.NewClient(b.EthereumNodeURL)
 
 	resp, err := client.Call(ctx, "eth_gasPrice")
@@ -1151,12 +1151,12 @@ func (b *BridgeClient) estimateAlchemyGasPrice(ctx context.Context, from, to str
 
 // EstimateGasPrice performs gas estimation for the given transaction using Alchemy enhanced API returning
 // approximate final gas fee.
-func (b *BridgeClient) EstimateGasPrice(ctx context.Context, from, to string, value int64) (float64, error) {
+func (b *BridgeClient) EstimateGasPrice(ctx context.Context) (float64, error) {
 	switch b.getProviderType() {
 	case AlchemyProvider:
-		return b.estimateAlchemyGasPrice(ctx, from, to, value)
+		return b.estimateAlchemyGasPrice(ctx)
 	case TenderlyProvider:
-		return b.estimateTenderlyGasPrice(ctx, from, to, value)
+		return b.estimateTenderlyGasPrice(ctx)
 	}
 
 	return 0, errors.New("used json-rpc does not allow to estimate gas price")

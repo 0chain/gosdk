@@ -209,8 +209,8 @@ func estimateMintWZCNGasAmount(from, to, zcnTransaction string, amountToken, non
 
 // estimateGasPrice performs gas estimation for the given transaction using Alchemy enhanced API returning
 // approximate final gas fee.
-func estimateGasPrice(from, to string, value int64) string { // nolint:golint,unused
-	estimateGasPriceResponse, err := bridge.EstimateGasPrice(context.Background(), from, to, value)
+func estimateGasPrice() string { // nolint:golint,unused
+	estimateGasPriceResponse, err := bridge.EstimateGasPrice(context.Background())
 	if err != nil {
 		return errors.Wrap("estimateGasPrice", "failed to estimate gas price", err).Error()
 	}
