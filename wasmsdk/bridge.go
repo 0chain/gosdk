@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"path"
 	"strconv"
@@ -173,10 +174,60 @@ func getNotProcessedZCNBurnTickets() string {
 	return string(result)
 }
 
+// estimateBurnWZCNGasAmount performs gas amount estimation for the given burn wzcn transaction.
+func estimateBurnWZCNGasAmount(from, to string, amountTokens int) string { // nolint:golint,unused
+	estimateBurnWZCNGasAmountResponse, err := bridge.EstimateBurnWZCNGasAmount(
+		context.Background(), from, to, amountTokens)
+	if err != nil {
+		return errors.Wrap("estimateBurnWZCNGasAmount", "failed to estimate gas amount", err).Error()
+	}
+
+	var result []byte
+	result, err = json.Marshal(estimateBurnWZCNGasAmountResponse)
+	if err != nil {
+		return errors.Wrap("estimateBurnWZCNGasAmount", "failed to marshal gas amount estimation result", err).Error()
+	}
+
+	return string(result)
+}
+
+// estimateMintWZCNGasAmount performs gas amount estimation for the given mint wzcn transaction.
+func estimateMintWZCNGasAmount(from, to, zcnTransaction string, amountToken, nonce int64, signaturesRaw []string) string { // nolint:golint,unused
+	var signaturesBytes [][]byte
+
+	var (
+		signatureBytes []byte
+		err            error
+	)
+
+	for _, signature := range signaturesRaw {
+		signatureBytes, err = base64.StdEncoding.DecodeString(signature)
+		if err != nil {
+			return errors.Wrap("estimateMintWZCNGasAmount", "failed to convert raw signature into bytes", err).Error()
+		}
+
+		signaturesBytes = append(signaturesBytes, signatureBytes)
+	}
+
+	estimateMintWZCNGasAmountResponse, err := bridge.EstimateMintWZCNGasAmount(
+		context.Background(), from, to, zcnTransaction, amountToken, nonce, signaturesBytes)
+	if err != nil {
+		return errors.Wrap("estimateMintWZCNGasAmount", "failed to estimate gas amount", err).Error()
+	}
+
+	var result []byte
+	result, err = json.Marshal(estimateMintWZCNGasAmountResponse)
+	if err != nil {
+		return errors.Wrap("estimateMintWZCNGasAmount", "failed to marshal gas amount estimation result", err).Error()
+	}
+
+	return string(result)
+}
+
 // estimateGasPrice performs gas estimation for the given transaction using Alchemy enhanced API returning
 // approximate final gas fee.
-func estimateGasPrice(from, to string, value int64) string { // nolint:golint,unused
-	estimateGasPriceResponse, err := bridge.EstimateGasPrice(context.Background(), from, to, value)
+func estimateGasPrice() string { // nolint:golint,unused
+	estimateGasPriceResponse, err := bridge.EstimateGasPrice(context.Background())
 	if err != nil {
 		return errors.Wrap("estimateGasPrice", "failed to estimate gas price", err).Error()
 	}
