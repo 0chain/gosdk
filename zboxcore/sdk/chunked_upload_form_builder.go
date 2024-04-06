@@ -98,7 +98,7 @@ func (b *chunkedUploadFormBuilder) Build(
 			endRange = len(fileChunksData)
 		}
 
-		bodyBuf := make([]byte, 0, endRange-startRange+1024)
+		bodyBuf := make([]byte, 0, (CHUNK_SIZE*(endRange-startRange))+1024)
 
 		body := bytes.NewBuffer(bodyBuf)
 		formWriter := multipart.NewWriter(body)
