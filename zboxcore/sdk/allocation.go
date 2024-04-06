@@ -1048,7 +1048,9 @@ func (a *Allocation) DownloadThumbnail(localPath string, remotePath string, veri
 	}
 
 	err = a.addAndGenerateDownloadRequest(f, remotePath, DOWNLOAD_CONTENT_THUMB, 1, 0,
-		numBlockDownloads, verifyDownload, status, isFinal, localFilePath)
+		numBlockDownloads, verifyDownload, status, isFinal, localFilePath, WithFileCallback(func() {
+			f.Close() //nolint: errcheck
+		}))
 	if err != nil {
 		if !toKeep {
 			os.Remove(localFilePath) //nolint: errcheck
