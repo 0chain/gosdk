@@ -1808,19 +1808,13 @@ GetAuthTicket generates an authentication ticket for the specified file or direc
 The authentication ticket is used to grant access to the file or directory to another client.
 The function takes the following parameters:
 
-- path: The path of the file or directory.
-
-- filename: The name of the file.
-
-- referenceType: The type of reference (file or directory).
-
-- refereeClientID: The client ID of the referee.
-
-- refereeEncryptionPublicKey: The encryption public key of the referee.
-
-- expiration: The expiration time of the authentication ticket in Unix timestamp format.
-
-- availableAfter: The time after which the authentication ticket becomes available in Unix timestamp format.
+	- path: The path of the file or directory.
+	- filename: The name of the file.
+	- referenceType: The type of reference (file or directory).
+	- refereeClientID: The client ID of the referee.
+	- refereeEncryptionPublicKey: The encryption public key of the referee.
+	- expiration: The expiration time of the authentication ticket in Unix timestamp format.
+	- availableAfter: The time after which the authentication ticket becomes available in Unix timestamp format.
 
 The function returns the authentication ticket as a base64-encoded string and an error if any.
 */
