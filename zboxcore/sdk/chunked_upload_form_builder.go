@@ -92,7 +92,15 @@ func (b *chunkedUploadFormBuilder) Build(
 
 	for i := 0; i < numBodies; i++ {
 
-		body := new(bytes.Buffer)
+		startRange := i * MAX_BLOCKS
+		endRange := startRange + MAX_BLOCKS
+		if endRange > len(fileChunksData) {
+			endRange = len(fileChunksData)
+		}
+
+		bodyBuf := make([]byte, 0, endRange-startRange+1024)
+
+		body := bytes.NewBuffer(bodyBuf)
 		formWriter := multipart.NewWriter(body)
 		defer formWriter.Close()
 
@@ -101,11 +109,6 @@ func (b *chunkedUploadFormBuilder) Build(
 			return res, err
 		}
 
-		startRange := i * MAX_BLOCKS
-		endRange := startRange + MAX_BLOCKS
-		if endRange > len(fileChunksData) {
-			endRange = len(fileChunksData)
-		}
 		for _, chunkBytes := range fileChunksData[startRange:endRange] {
 			_, err = uploadFile.Write(chunkBytes)
 			if err != nil {
