@@ -1803,6 +1803,27 @@ func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
 
 var ErrInvalidPrivateShare = errors.New("invalid_private_share", "private sharing is only available for encrypted file")
 
+/*
+GetAuthTicket generates an authentication ticket for the specified file or directory in the allocation.
+The authentication ticket is used to grant access to the file or directory to another client.
+The function takes the following parameters:
+
+- path: The path of the file or directory.
+
+- filename: The name of the file.
+
+- referenceType: The type of reference (file or directory).
+
+- refereeClientID: The client ID of the referee.
+
+- refereeEncryptionPublicKey: The encryption public key of the referee.
+
+- expiration: The expiration time of the authentication ticket in Unix timestamp format.
+
+- availableAfter: The time after which the authentication ticket becomes available in Unix timestamp format.
+
+The function returns the authentication ticket as a base64-encoded string and an error if any.
+*/
 func (a *Allocation) GetAuthTicket(path, filename string,
 	referenceType, refereeClientID, refereeEncryptionPublicKey string, expiration int64, availableAfter *time.Time) (string, error) {
 
@@ -2069,6 +2090,21 @@ func (a *Allocation) GetAllocationFileReader(
 	return GetDStorageFileReader(a, ref, sdo)
 }
 
+// DownloadFileToFileHandlerFromAuthTicket downloads a file from the allocation to the specified file handler
+// using the provided authentication ticket.
+//
+// Parameters:
+// 		- fileHandler: The file handler to write the downloaded file to.
+// 		- authTicket: The authentication ticket for accessing the allocation.
+// 		- remoteLookupHash: The lookup hash of the remote file.
+// 		- remoteFilename: The name of the remote file.
+// 		- verifyDownload: A boolean indicating whether to verify the downloaded file.
+// 		- status: A callback function to receive status updates during the download.
+// 		- isFinal: A boolean indicating whether this is the final download request.
+// 		- downloadReqOpts: Optional download request options.
+//
+// Returns:
+// - An error if the download fails, nil otherwise.
 func (a *Allocation) DownloadFileToFileHandlerFromAuthTicket(
 	fileHandler sys.File,
 	authTicket string,
