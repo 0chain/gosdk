@@ -1735,6 +1735,20 @@ func (a *Allocation) createDir(remotePath string, threshConsensus, fullConsensus
 	return err
 }
 
+
+// GetAuthTicketForShare returns the authentication ticket for sharing a file or directory within the allocation.
+// It generates an authentication ticket using the provided parameters and the current time.
+// The authentication ticket can be used by the recipient to access the shared file or directory.
+//
+// Parameters:
+// - path: The path of the file or directory to be shared.
+// - filename: The name of the file to be shared.
+// - referenceType: The type of reference for the shared file or directory.
+// - refereeClientID: The client ID of the recipient who will be granted access to the shared file or directory.
+//
+// Returns:
+// - string: The authentication ticket for sharing the file or directory.
+// - error: An error if the authentication ticket generation fails.
 func (a *Allocation) GetAuthTicketForShare(
 	path, filename, referenceType, refereeClientID string) (string, error) {
 
