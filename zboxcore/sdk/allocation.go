@@ -233,6 +233,7 @@ type OperationRequest struct {
 	FileReader   io.Reader
 	Mask         *zboxutil.Uint128 // Required for delete repair operation
 	DownloadFile bool              // Required for upload repair operation
+	StreamUpload bool              // Required for streaming file when actualSize is not available
 	Opts         []ChunkedUploadOption
 }
 
@@ -896,7 +897,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 				cancelLock.Lock()
 				CancelOpCtx[op.FileMeta.RemotePath] = mo.ctxCncl
 				cancelLock.Unlock()
-				operation, newConnectionID, err = NewUploadOperation(mo.ctx, op.Workdir, mo.allocationObj, mo.connectionID, op.FileMeta, op.FileReader, false, op.IsWebstreaming, op.IsRepair, op.DownloadFile, op.Opts...)
+				operation, newConnectionID, err = NewUploadOperation(mo.ctx, op.Workdir, mo.allocationObj, mo.connectionID, op.FileMeta, op.FileReader, false, op.IsWebstreaming, op.IsRepair, op.DownloadFile, op.StreamUpload, op.Opts...)
 
 			case constants.FileOperationDelete:
 				if op.Mask != nil {
@@ -909,7 +910,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 				cancelLock.Lock()
 				CancelOpCtx[op.FileMeta.RemotePath] = mo.ctxCncl
 				cancelLock.Unlock()
-				operation, newConnectionID, err = NewUploadOperation(mo.ctx, op.Workdir, mo.allocationObj, mo.connectionID, op.FileMeta, op.FileReader, true, op.IsWebstreaming, op.IsRepair, op.DownloadFile, op.Opts...)
+				operation, newConnectionID, err = NewUploadOperation(mo.ctx, op.Workdir, mo.allocationObj, mo.connectionID, op.FileMeta, op.FileReader, true, op.IsWebstreaming, op.IsRepair, op.DownloadFile, op.StreamUpload, op.Opts...)
 
 			case constants.FileOperationCreateDir:
 				operation = NewDirOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)

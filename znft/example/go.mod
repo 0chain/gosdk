@@ -1,6 +1,8 @@
 module example
 
-go 1.18
+go 1.21
+
+toolchain go1.21.0
 
 require github.com/0chain/gosdk v1.8.9
 

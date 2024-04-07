@@ -13,7 +13,7 @@ func GetWallet(walletStr string) (*zcncrypto.Wallet, error) {
 	return getWallet(walletStr)
 }
 
-func GetWalletBalance(clientId string) (common.Balance, error) {
+func GetWalletBalance(clientId string) (common.Balance, int64, error) {
 	return getWalletBalance(clientId)
 }
 

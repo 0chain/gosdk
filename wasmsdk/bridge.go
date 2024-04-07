@@ -46,6 +46,7 @@ func initBridge(
 		tokenAddress,
 		authorizersAddress,
 		ethereumAddress,
+		ethereumNodeURL,
 		"",
 		gasLimit,
 		consensusThreshold,
@@ -167,6 +168,57 @@ func getNotProcessedZCNBurnTickets() string {
 	result, err = json.Marshal(burnTickets)
 	if err != nil {
 		return errors.Wrap("getNotProcessedZCNBurnTickets", "failed to marshal ZCN burn tickets", err).Error()
+	}
+
+	return string(result)
+}
+
+// estimateBurnWZCNGasAmount performs gas amount estimation for the given burn wzcn transaction.
+func estimateBurnWZCNGasAmount(from, to string, amountTokens int) string { // nolint:golint,unused
+	estimateBurnWZCNGasAmountResponse, err := bridge.EstimateBurnWZCNGasAmount(
+		context.Background(), from, to, amountTokens)
+	if err != nil {
+		return errors.Wrap("estimateBurnWZCNGasAmount", "failed to estimate gas amount", err).Error()
+	}
+
+	var result []byte
+	result, err = json.Marshal(estimateBurnWZCNGasAmountResponse)
+	if err != nil {
+		return errors.Wrap("estimateBurnWZCNGasAmount", "failed to marshal gas amount estimation result", err).Error()
+	}
+
+	return string(result)
+}
+
+// estimateMintWZCNGasAmount performs gas amount estimation for the given mint wzcn transaction.
+func estimateMintWZCNGasAmount(from, to, zcnTransaction string, amountToken, nonce int64, signatures []string) string { // nolint:golint,unused
+	estimateMintWZCNGasAmountResponse, err := bridge.EstimateMintWZCNGasAmount(
+		context.Background(), from, to, zcnTransaction, amountToken, nonce, signatures)
+	if err != nil {
+		return errors.Wrap("estimateMintWZCNGasAmount", "failed to estimate gas amount", err).Error()
+	}
+
+	var result []byte
+	result, err = json.Marshal(estimateMintWZCNGasAmountResponse)
+	if err != nil {
+		return errors.Wrap("estimateMintWZCNGasAmount", "failed to marshal gas amount estimation result", err).Error()
+	}
+
+	return string(result)
+}
+
+// estimateGasPrice performs gas estimation for the given transaction using Alchemy enhanced API returning
+// approximate final gas fee.
+func estimateGasPrice() string { // nolint:golint,unused
+	estimateGasPriceResponse, err := bridge.EstimateGasPrice(context.Background())
+	if err != nil {
+		return errors.Wrap("estimateGasPrice", "failed to estimate gas price", err).Error()
+	}
+
+	var result []byte
+	result, err = json.Marshal(estimateGasPriceResponse)
+	if err != nil {
+		return errors.Wrap("estimateGasPrice", "failed to marshal gas price estimation result", err).Error()
 	}
 
 	return string(result)
