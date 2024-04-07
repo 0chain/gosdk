@@ -747,8 +747,9 @@ func (req *DownloadRequest) processDownload() {
 	}
 	if err := eg.Wait(); err != nil {
 		writeCancel()
-		req.errorCB(err, remotePathCB)
 		close(blocks)
+		wg.Wait()
+		req.errorCB(err, remotePathCB)
 		return
 	}
 
