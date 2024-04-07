@@ -403,11 +403,13 @@ func (a *Allocation) RepairFile(file sys.File, remotepath string, statusCallback
 			WithEncrypt(true),
 			WithStatusCallback(statusCallback),
 			WithEncryptedPoint(ref.EncryptedKeyPoint),
+			WithChunkNumber(100),
 		}
 	} else {
 		opts = []ChunkedUploadOption{
 			WithMask(mask),
 			WithStatusCallback(statusCallback),
+			WithChunkNumber(100),
 		}
 	}
 	op := &OperationRequest{
@@ -1107,6 +1109,9 @@ func (a *Allocation) generateDownloadRequest(
 	downloadReq.contentMode = contentMode
 	downloadReq.connectionID = connectionID
 	downloadReq.downloadQueue = make(downloadQueue, len(a.Blobbers))
+	for i := 0; i < len(a.Blobbers); i++ {
+		downloadReq.downloadQueue[i].timeTaken = 1000000
+	}
 
 	return downloadReq, nil
 }
@@ -2220,6 +2225,9 @@ func (a *Allocation) downloadFromAuthTicket(fileHandler sys.File, authTicket str
 	downloadReq.fullconsensus = a.fullconsensus
 	downloadReq.consensusThresh = a.consensusThreshold
 	downloadReq.downloadQueue = make(downloadQueue, len(a.Blobbers))
+	for i := 0; i < len(a.Blobbers); i++ {
+		downloadReq.downloadQueue[i].timeTaken = 1000000
+	}
 	downloadReq.connectionID = zboxutil.NewConnectionId()
 	downloadReq.completedCallback = func(remotepath string, remotepathHash string) {
 		a.mutex.Lock()
