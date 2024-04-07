@@ -561,10 +561,10 @@ func SetAuthUrl(url string) error {
 	return nil
 }
 
-func getWalletBalance(clientId string) (common.Balance, error) {
+func getWalletBalance(clientId string) (common.Balance, int64, error) {
 	err := checkSdkInit()
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 
 	cb := &walletCallback{}
@@ -582,7 +582,15 @@ func getWalletBalance(clientId string) (common.Balance, error) {
 
 	cb.Wait()
 
-	return cb.balance, cb.err
+	var clientState struct {
+		Nonce   int64   `json:"nonce"`
+	}
+	err = json.Unmarshal([]byte(cb.info), &clientState)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	return cb.balance, clientState.Nonce, cb.err
 }
 
 // GetBalance retrieve wallet balance from sharders
