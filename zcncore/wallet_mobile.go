@@ -25,7 +25,7 @@ func (w *wallet) Sign(hash string) (string, error) {
 }
 
 func GetWalletBalance(id string) (int64, error) {
-	balance, err := getWalletBalance(id)
+	balance, _ , err := getWalletBalance(id)
 	if err != nil {
 		return 0, err
 	}
