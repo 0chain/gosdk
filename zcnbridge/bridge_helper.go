@@ -18,6 +18,11 @@ type AlchemyGasEstimationRequest struct {
 	Data  string `json:"data"`
 }
 
+// GasPriceEstimationResult represents result of the gas price estimation operation execution.
+type GasPriceEstimationResult struct {
+	Value float64 `json:"value"`
+}
+
 // BancorTokenDetails describes Bancor ZCN zcntoken pool details
 type BancorTokenDetails struct {
 	Data struct {

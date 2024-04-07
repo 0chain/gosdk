@@ -33,7 +33,7 @@ import (
 )
 
 const (
-	DefaultUploadTimeOut = 45 * time.Second
+	DefaultUploadTimeOut = 120 * time.Second
 )
 
 var (
@@ -297,7 +297,12 @@ func CreateChunkedUpload(
 }
 
 func calculateWorkersAndRequests(dataShards, totalShards, chunknumber int) (uploadWorkers int, uploadRequests int) {
-	if totalShards < 10 {
+	if IsWasm {
+		uploadWorkers = 1
+		uploadRequests = 2
+		return
+	}
+	if totalShards < 4 {
 		uploadWorkers = 4
 	} else {
 		uploadWorkers = 2

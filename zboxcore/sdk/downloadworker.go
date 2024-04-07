@@ -303,16 +303,21 @@ func (req *DownloadRequest) downloadBlock(
 			var err error
 			defer func() {
 				if err != nil {
-					atomic.AddInt32(&failed, 1)
-					req.removeFromMask(uint64(result.maskIdx))
+					totalFail := atomic.AddInt32(&failed, 1)
+					// if first request remove from end as we will convert the slice into heap
+					if timeRequest {
+						req.removeFromMask(uint64(activeBlobbers - int(totalFail)))
+					} else {
+						req.removeFromMask(uint64(result.maskIdx))
+					}
 					downloadErrors[i] = fmt.Sprintf("Error %s from %s",
 						err.Error(), req.blobbers[result.idx].Baseurl)
 					logger.Logger.Error(err)
-					if req.bufferMap != nil {
-						req.bufferMap[result.idx].ReleaseChunk(int(req.startBlock / req.numBlocks))
+					if req.bufferMap != nil && req.bufferMap[result.idx] != nil {
+						req.bufferMap[result.idx].ReleaseChunk(int(req.startBlock))
 					}
 				} else if timeRequest {
-					req.downloadQueue[result.idx].timeTaken = result.timeTaken
+					req.downloadQueue[result.maskIdx].timeTaken = result.timeTaken
 				}
 				wg.Done()
 			}()
@@ -534,13 +539,21 @@ func (req *DownloadRequest) processDownload() {
 	if !req.shouldVerify {
 		var pos uint64
 		req.bufferMap = make(map[int]zboxutil.DownloadBuffer)
+		defer func() {
+			l.Logger.Info("Clearing download buffers: ", len(req.bufferMap))
+			for ind, rb := range req.bufferMap {
+				rb.ClearBuffer()
+				delete(req.bufferMap, ind)
+			}
+			req.bufferMap = nil
+		}()
 		sz := downloadWorkerCount + EXTRA_COUNT
 		if sz > n {
 			sz = n
 		}
 		for i := req.downloadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 			pos = uint64(i.TrailingZeros())
-			blobberIdx := req.downloadQueue[pos].blobberIdx
+			blobberIdx := int(pos)
 			if writerAt {
 				req.bufferMap[blobberIdx] = zboxutil.NewDownloadBufferWithChan(sz, int(numBlocks), req.effectiveBlockSize)
 			} else {
@@ -548,6 +561,9 @@ func (req *DownloadRequest) processDownload() {
 			}
 		}
 	}
+	// reset mask to number of active blobbers, not it denotes index of download queue and not blobber index
+	activeBlobbers := req.downloadMask.CountOnes()
+	req.downloadMask = zboxutil.NewUint128(1).Lsh(uint64(activeBlobbers)).Sub64(1)
 
 	logger.Logger.Info(
 		fmt.Sprintf("Downloading file with size: %d from start block: %d and end block: %d. "+
@@ -603,7 +619,7 @@ func (req *DownloadRequest) processDownload() {
 						hashWg.Wait()
 					}
 					for _, rb := range req.bufferMap {
-						rb.ReleaseChunk(i)
+						rb.ReleaseChunk(int(startBlock + int64(i)*numBlocks))
 					}
 					downloaded = downloaded + totalWritten
 					remainingSize -= int64(totalWritten)
@@ -651,7 +667,7 @@ func (req *DownloadRequest) processDownload() {
 								hashWg.Wait()
 							}
 							for _, rb := range req.bufferMap {
-								rb.ReleaseChunk(i)
+								rb.ReleaseChunk(int(startBlock + int64(i)*numBlocks))
 							}
 
 							downloaded = downloaded + totalWritten
@@ -729,7 +745,7 @@ func (req *DownloadRequest) processDownload() {
 					return errors.Wrap(err, fmt.Sprintf("WriteAt failed for block %d. ", startBlock+int64(j)*numBlocks))
 				}
 				for _, rb := range req.bufferMap {
-					rb.ReleaseChunk(j)
+					rb.ReleaseChunk(int(startBlock + int64(j)*numBlocks))
 				}
 				if req.downloadStorer != nil {
 					go req.downloadStorer.Update(int(startBlock + int64(j)*numBlocks + blocksToDownload))
@@ -747,8 +763,9 @@ func (req *DownloadRequest) processDownload() {
 	}
 	if err := eg.Wait(); err != nil {
 		writeCancel()
-		req.errorCB(err, remotePathCB)
 		close(blocks)
+		wg.Wait()
+		req.errorCB(err, remotePathCB)
 		return
 	}
 
@@ -1034,17 +1051,17 @@ func (req *DownloadRequest) calculateShardsParams(
 			progressID := req.progressID()
 			var dp *DownloadProgress
 			if info.Size() > 0 {
-				dp = req.downloadStorer.Load(progressID)
+				dp = req.downloadStorer.Load(progressID, int(req.numBlocks))
 			}
 			if dp != nil {
 				req.startBlock = int64(dp.LastWrittenBlock)
 			} else {
 				dp = &DownloadProgress{
-					ID: progressID,
+					ID:        progressID,
+					numBlocks: int(req.numBlocks),
 				}
 				req.downloadStorer.Save(dp)
 			}
-			dp.numBlocks = int(req.numBlocks)
 		}
 	}
 
@@ -1227,6 +1244,7 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 		return nil, fmt.Errorf("consensus_not_met")
 	}
 	req.downloadMask = foundMask
+	heap.Init(&req.downloadQueue)
 	return selected.fileref, nil
 }
 
