@@ -497,6 +497,7 @@ func (req *DownloadRequest) processDownload() {
 	}
 
 	if memFile, ok := req.fileHandler.(*sys.MemFile); ok {
+		l.Logger.Info("InitBuffer: ", remainingSize)
 		memFile.InitBuffer(int(remainingSize))
 	}
 
@@ -742,6 +743,7 @@ func (req *DownloadRequest) processDownload() {
 					total, err = writeAtData(writeAtHandler, data, req.datashards, offset, -1)
 				}
 				if err != nil {
+					l.Logger.Error("writeAtFailed: ", offset, " ", remainingSize)
 					return errors.Wrap(err, fmt.Sprintf("WriteAt failed for block %d. ", startBlock+int64(j)*numBlocks))
 				}
 				for _, rb := range req.bufferMap {
