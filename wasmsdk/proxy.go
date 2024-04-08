@@ -169,6 +169,7 @@ func main() {
 				"share":                     Share,
 				"multiDownload":             multiDownload,
 				"upload":                    upload,
+				"setUploadMode":             setUploadMode,
 				"multiUpload":               multiUpload,
 				"multiOperation":            MultiOperation,
 				"listObjects":               listObjects,
