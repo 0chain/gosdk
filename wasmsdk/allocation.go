@@ -51,13 +51,13 @@ func getAllocationBlobbers(preferredBlobberURLs []string,
 		return sdk.GetBlobberIds(preferredBlobberURLs)
 	}
 
-	return sdk.GetAllocationBlobbers(dataShards, parityShards, size, sdk.PriceRange{
+	return sdk.GetAllocationBlobbers(dataShards, parityShards, size, isRestricted, sdk.PriceRange{
 		Min: uint64(minReadPrice),
 		Max: uint64(maxReadPrice),
 	}, sdk.PriceRange{
 		Min: uint64(minWritePrice),
 		Max: uint64(maxWritePrice),
-	}, isRestricted, force)
+	}, force)
 }
 
 func createAllocation(datashards, parityshards int, size int64,
