@@ -494,6 +494,7 @@ func (req *DownloadRequest) processDownload() {
 
 	if endBlock*int64(req.effectiveBlockSize)*int64(req.datashards) < req.size {
 		remainingSize = endBlock*int64(req.effectiveBlockSize) - (startBlock-1)*int64(req.effectiveBlockSize)
+		remainingSize = remainingSize * int64(req.datashards)
 	}
 
 	if memFile, ok := req.fileHandler.(*sys.MemFile); ok {
@@ -743,7 +744,6 @@ func (req *DownloadRequest) processDownload() {
 					total, err = writeAtData(writeAtHandler, data, req.datashards, offset, -1)
 				}
 				if err != nil {
-					l.Logger.Error("writeAtFailed: ", offset, " ", remainingSize)
 					return errors.Wrap(err, fmt.Sprintf("WriteAt failed for block %d. ", startBlock+int64(j)*numBlocks))
 				}
 				for _, rb := range req.bufferMap {
@@ -775,6 +775,7 @@ func (req *DownloadRequest) processDownload() {
 	wg.Wait()
 	// req.fileHandler.Sync() //nolint
 	elapsedGetBlocksAndWrite := time.Since(now) - elapsedInitEC - elapsedInitEncryption
+	l.Logger.Info("downloadBlocks: ", downloaded, remainingSize)
 	l.Logger.Info(fmt.Sprintf("[processDownload] Timings:\n allocation_id: %s,\n remotefilepath: %s,\n initEC: %d ms,\n initEncryption: %d ms,\n getBlocks and writes: %d ms",
 		req.allocationID,
 		req.remotefilepath,
