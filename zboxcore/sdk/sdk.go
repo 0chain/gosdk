@@ -1113,7 +1113,7 @@ func getNewAllocationBlobbers(
 	preferredBlobberIds, blobberAuthTickets []string,
 ) (map[string]interface{}, error) {
 	allocBlobberIDs, err := GetAllocationBlobbers(
-		datashards, parityshards, size, false, readPrice, writePrice, true,
+		datashards, parityshards, size, false, readPrice, writePrice, false,
 	)
 	if err != nil {
 		return nil, err
