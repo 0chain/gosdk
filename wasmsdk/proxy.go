@@ -236,6 +236,8 @@ func main() {
 				"getMintWZCNPayload":            getMintWZCNPayload,
 				"getNotProcessedWZCNBurnEvents": getNotProcessedWZCNBurnEvents,
 				"getNotProcessedZCNBurnTickets": getNotProcessedZCNBurnTickets,
+				"estimateBurnWZCNGasAmount":     estimateBurnWZCNGasAmount,
+				"estimateMintWZCNGasAmount":     estimateMintWZCNGasAmount,
 				"estimateGasPrice":              estimateGasPrice,
 
 				//zcn

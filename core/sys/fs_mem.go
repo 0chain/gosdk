@@ -230,10 +230,18 @@ func (f *MemFile) Sync() error {
 }
 func (f *MemFile) Seek(offset int64, whence int) (ret int64, err error) {
 
-	// always reset it from beginning, it only work for wasm download
-	f.reader = bytes.NewReader(f.Buffer)
-
-	return 0, nil
+	if whence != io.SeekStart {
+		return 0, os.ErrInvalid
+	}
+	switch {
+	case offset < 0:
+		return 0, os.ErrInvalid
+	case offset > int64(len(f.Buffer)):
+		return 0, io.EOF
+	default:
+		f.reader = bytes.NewReader(f.Buffer[offset:])
+		return offset, nil
+	}
 }
 
 func (f *MemFile) Close() error {
@@ -284,7 +292,7 @@ type MemChanFile struct {
 	ModTime        time.Time   // FileInfo.ModTime
 	ChunkWriteSize int         //  0 value means no limit
 	Sys            interface{} // FileInfo.Sys
-	reader         io.Reader
+	ErrChan        chan error
 	data           []byte
 }
 
@@ -292,15 +300,19 @@ func (f *MemChanFile) Stat() (fs.FileInfo, error) {
 	return &MemFileChanInfo{name: f.Name, f: f}, nil
 }
 func (f *MemChanFile) Read(p []byte) (int, error) {
-	recieveData, ok := <-f.Buffer
-	if !ok {
-		return 0, io.EOF
+	select {
+	case err := <-f.ErrChan:
+		return 0, err
+	case recieveData, ok := <-f.Buffer:
+		if !ok {
+			return 0, io.EOF
+		}
+		if len(recieveData) > len(p) {
+			return 0, io.ErrShortBuffer
+		}
+		n := copy(p, recieveData)
+		return n, nil
 	}
-	if len(recieveData) > len(p) {
-		return 0, io.ErrShortBuffer
-	}
-	n := copy(p, recieveData)
-	return n, nil
 }
 
 func (f *MemChanFile) Write(p []byte) (n int, err error) {
@@ -310,7 +322,7 @@ func (f *MemChanFile) Write(p []byte) (n int, err error) {
 		f.Buffer <- data
 	} else {
 		if cap(f.data) == 0 {
-			f.data = make([]byte, 0, f.ChunkWriteSize)
+			f.data = make([]byte, 0, len(p))
 		}
 		f.data = append(f.data, p...)
 	}
@@ -326,7 +338,7 @@ func (f *MemChanFile) Sync() error {
 		}
 		f.Buffer <- f.data[current:end]
 	}
-	f.data = make([]byte, 0, f.ChunkWriteSize)
+	f.data = nil
 	return nil
 }
 func (f *MemChanFile) Seek(offset int64, whence int) (ret int64, err error) {
@@ -334,7 +346,6 @@ func (f *MemChanFile) Seek(offset int64, whence int) (ret int64, err error) {
 }
 
 func (f *MemChanFile) Close() error {
-	f.reader = nil
 	close(f.Buffer)
 	return nil
 }

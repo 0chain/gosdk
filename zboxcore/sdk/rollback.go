@@ -58,10 +58,11 @@ func GetWritemarker(allocID, allocTx, id, baseUrl string) (*LatestPrevWriteMarke
 	if err != nil {
 		return nil, err
 	}
-
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 	for retries := 0; retries < 3; retries++ {
 
-		resp, err := zboxutil.Client.Do(req)
+		resp, err := zboxutil.Client.Do(req.WithContext(ctx))
 		if err != nil {
 			return nil, err
 		}

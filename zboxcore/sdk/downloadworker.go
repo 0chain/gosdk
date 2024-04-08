@@ -105,7 +105,7 @@ type DownloadRequest struct {
 	bufferMap          map[int]zboxutil.DownloadBuffer
 	downloadStorer     DownloadProgressStorer
 	workdir            string
-	downloadQueue      downloadQueue
+	downloadQueue      downloadQueue // Always initialize this queue with max time taken
 }
 
 type downloadPriority struct {
@@ -285,7 +285,7 @@ func (req *DownloadRequest) downloadBlock(
 			if req.shouldVerify {
 				go AddBlockDownloadReq(req.ctx, blockDownloadReq, nil, req.effectiveBlockSize)
 			} else {
-				go AddBlockDownloadReq(req.ctx, blockDownloadReq, req.bufferMap[int(pos)], req.effectiveBlockSize)
+				go AddBlockDownloadReq(req.ctx, blockDownloadReq, req.bufferMap[blobberIdx], req.effectiveBlockSize)
 			}
 		}
 
@@ -308,7 +308,9 @@ func (req *DownloadRequest) downloadBlock(
 					downloadErrors[i] = fmt.Sprintf("Error %s from %s",
 						err.Error(), req.blobbers[result.idx].Baseurl)
 					logger.Logger.Error(err)
-					req.bufferMap[result.idx].ReleaseChunk(int(req.startBlock / req.numBlocks))
+					if req.bufferMap != nil {
+						req.bufferMap[result.idx].ReleaseChunk(int(req.startBlock / req.numBlocks))
+					}
 				} else if timeRequest {
 					req.downloadQueue[result.idx].timeTaken = result.timeTaken
 				}
@@ -538,10 +540,11 @@ func (req *DownloadRequest) processDownload() {
 		}
 		for i := req.downloadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 			pos = uint64(i.TrailingZeros())
+			blobberIdx := req.downloadQueue[pos].blobberIdx
 			if writerAt {
-				req.bufferMap[int(pos)] = zboxutil.NewDownloadBufferWithChan(sz, int(numBlocks), req.effectiveBlockSize)
+				req.bufferMap[blobberIdx] = zboxutil.NewDownloadBufferWithChan(sz, int(numBlocks), req.effectiveBlockSize)
 			} else {
-				req.bufferMap[int(pos)] = zboxutil.NewDownloadBufferWithMask(sz, int(numBlocks), req.effectiveBlockSize)
+				req.bufferMap[blobberIdx] = zboxutil.NewDownloadBufferWithMask(sz, int(numBlocks), req.effectiveBlockSize)
 			}
 		}
 	}
@@ -678,13 +681,18 @@ func (req *DownloadRequest) processDownload() {
 	var progressLock sync.Mutex
 	firstReqWG := sync.WaitGroup{}
 	firstReqWG.Add(1)
-	eg, _ := errgroup.WithContext(ctx)
+	eg, egCtx := errgroup.WithContext(ctx)
 	eg.SetLimit(downloadWorkerCount + EXTRA_COUNT)
 	for i := 0; i < n; i++ {
 		j := i
 		if i == 1 {
 			firstReqWG.Wait()
 			heap.Init(&req.downloadQueue)
+		}
+		select {
+		case <-egCtx.Done():
+			goto breakDownloadLoop
+		default:
 		}
 		eg.Go(func() error {
 
@@ -735,11 +743,13 @@ func (req *DownloadRequest) processDownload() {
 			}
 			return nil
 		})
+	breakDownloadLoop:
 	}
 	if err := eg.Wait(); err != nil {
 		writeCancel()
-		req.errorCB(err, remotePathCB)
 		close(blocks)
+		wg.Wait()
+		req.errorCB(err, remotePathCB)
 		return
 	}
 
@@ -1082,11 +1092,8 @@ func GetFileRefFromBlobber(allocationID, blobberId, remotePath string) (fRef *fi
 	listReq.ctx = ctx
 	listReq.remotefilepath = remotePath
 
-	listReq.wg = &sync.WaitGroup{}
-	listReq.wg.Add(1)
 	rspCh := make(chan *fileMetaResponse, 1)
 	go listReq.getFileMetaInfoFromBlobber(listReq.blobbers[0], 0, rspCh)
-	listReq.wg.Wait()
 	resp := <-rspCh
 	return resp.fileref, resp.err
 }

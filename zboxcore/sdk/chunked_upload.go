@@ -33,7 +33,7 @@ import (
 )
 
 const (
-	DefaultUploadTimeOut = 45 * time.Second
+	DefaultUploadTimeOut = 90 * time.Second
 )
 
 var (
@@ -442,6 +442,7 @@ func (su *ChunkedUpload) process() error {
 			}
 			if su.fileMeta.ActualSize == 0 {
 				su.fileMeta.ActualSize = su.progress.ReadLength
+				su.shardSize = getShardSize(su.fileMeta.ActualSize, su.allocationObj.DataShards, su.encryptOnUpload)
 			} else if su.fileMeta.ActualSize != su.progress.ReadLength && su.thumbnailBytes == nil {
 				if su.statusCallback != nil {
 					su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, thrown.New("upload_failed", "Upload failed. Uploaded size does not match with actual size: "+fmt.Sprintf("%d != %d", su.fileMeta.ActualSize, su.progress.ReadLength)))
@@ -568,7 +569,6 @@ func (su *ChunkedUpload) readChunks(num int) (*batchChunksData, error) {
 
 		// upload entire thumbnail in first chunk request only
 		if chunk.Index == 0 && len(su.thumbnailBytes) > 0 {
-			data.totalReadSize += int64(su.fileMeta.ActualThumbnailSize)
 
 			data.thumbnailShards, err = su.chunkReader.Read(su.thumbnailBytes)
 			if err != nil {
