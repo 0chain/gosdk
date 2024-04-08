@@ -488,7 +488,7 @@ func (req *DownloadRequest) processDownload() {
 	remainingSize := size - startBlock*int64(req.effectiveBlockSize)*int64(req.datashards)
 
 	if endBlock*int64(req.effectiveBlockSize)*int64(req.datashards) < req.size {
-		remainingSize = endBlock*int64(req.effectiveBlockSize) - startBlock*int64(req.effectiveBlockSize)
+		remainingSize = (endBlock - startBlock - 1) * int64(req.effectiveBlockSize) * int64(req.datashards)
 	}
 
 	if memFile, ok := req.fileHandler.(*sys.MemFile); ok {
