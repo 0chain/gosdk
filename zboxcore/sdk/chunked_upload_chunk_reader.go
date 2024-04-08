@@ -97,7 +97,7 @@ func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards i
 		erasureEncoder:  erasureEncoder,
 		encscheme:       encscheme,
 		hasher:          hasher,
-		hasherDataChan:  make(chan []byte, 2*chunkNumber),
+		hasherDataChan:  make(chan []byte, 3*chunkNumber),
 		hasherWG:        sync.WaitGroup{},
 	}
 
@@ -110,9 +110,10 @@ func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards i
 	}
 
 	r.chunkDataSizePerRead = r.chunkDataSize * int64(dataShards)
-	// TODO: enable this for concurrent hashing
-	// r.hasherWG.Add(1)
-	// go r.hashData()
+	if CurrentMode == UploadModeHigh {
+		r.hasherWG.Add(1)
+		go r.hashData()
+	}
 	return r, nil
 }
 
@@ -186,7 +187,11 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 	if r.hasherError != nil {
 		return chunk, r.hasherError
 	}
-	_ = r.hasher.WriteToFile(chunkBytes)
+	if CurrentMode == UploadModeHigh {
+		r.hasherDataChan <- chunkBytes
+	} else {
+		_ = r.hasher.WriteToFile(chunkBytes)
+	}
 	fragments, err := r.erasureEncoder.Split(chunkBytes)
 	if err != nil {
 		return nil, err
