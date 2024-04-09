@@ -1236,6 +1236,11 @@ func CreateFreeAllocation(marker string, value uint64) (string, int64, error) {
 
 	input["blobbers"] = blobbers
 
+	var blobberAuthTickets []string
+	for range blobbers {
+		blobberAuthTickets = append(blobberAuthTickets, "")
+	}
+
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.NEW_FREE_ALLOCATION,
 		InputArgs: input,
