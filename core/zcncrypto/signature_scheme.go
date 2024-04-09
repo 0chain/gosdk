@@ -20,14 +20,15 @@ type KeyPair struct {
 
 // Wallet structure
 type Wallet struct {
-	ClientID    string    `json:"client_id"`
-	ClientKey   string    `json:"client_key"`
-	Keys        []KeyPair `json:"keys"`
-	Mnemonic    string    `json:"mnemonics"`
-	Version     string    `json:"version"`
-	DateCreated string    `json:"date_created"`
-	Nonce       int64     `json:"nonce"`
-	IsSplit     bool      `json:"is_split"`
+	ClientID      string    `json:"client_id"`
+	ClientKey     string    `json:"client_key"`
+	PeerPublicKey string    `json:"peer_public_key"` // Peer public key exists only in split wallet
+	Keys          []KeyPair `json:"keys"`
+	Mnemonic      string    `json:"mnemonics"`
+	Version       string    `json:"version"`
+	DateCreated   string    `json:"date_created"`
+	Nonce         int64     `json:"nonce"`
+	IsSplit       bool      `json:"is_split"`
 }
 
 // SignatureScheme - an encryption scheme for signing and verifying messages

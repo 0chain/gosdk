@@ -54,7 +54,6 @@ func (ta *TransactionWithAuth) getAuthorize() (*transaction.Transaction, error) 
 	if err != nil {
 		return nil, errors.Wrap(err, "invalid json on auth response.")
 	}
-	logging.Debug(txnResp)
 	// Verify the signature on the result
 	ok, err := txnResp.VerifyTransaction(sys.VerifyWith)
 	if err != nil {

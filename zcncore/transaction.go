@@ -260,9 +260,6 @@ func NewTransaction(cb TransactionCallback, txnFee uint64, nonce int64) (Transac
 		return nil, err
 	}
 	if _config.isSplitWallet {
-		if _config.authUrl == "" {
-			return nil, errors.New("", "auth url not set")
-		}
 		logging.Info("New transaction interface with auth")
 		return newTransactionWithAuth(cb, txnFee, nonce)
 	}
