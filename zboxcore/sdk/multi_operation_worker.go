@@ -16,7 +16,6 @@ import (
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
-	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
 	l "github.com/0chain/gosdk/zboxcore/logger"
@@ -217,30 +216,33 @@ func (mo *MultiOperation) Process() error {
 	start := time.Now()
 	mo.changes = zboxutil.Transpose(mo.changes)
 
-	writeMarkerMutex, err := CreateWriteMarkerMutex(client.GetClient(), mo.allocationObj)
-	if err != nil {
-		return fmt.Errorf("Operation failed: %s", err.Error())
-	}
+	// writeMarkerMutex, err := CreateWriteMarkerMutex(client.GetClient(), mo.allocationObj)
+	// if err != nil {
+	// 	return fmt.Errorf("Operation failed: %s", err.Error())
+	// }
 
 	l.Logger.Info("Trying to lock write marker.....")
-	err = writeMarkerMutex.Lock(mo.ctx, &mo.operationMask, mo.maskMU,
-		mo.allocationObj.Blobbers, &mo.Consensus, 0, time.Minute, mo.connectionID)
-	if err != nil {
-		return fmt.Errorf("Operation failed: %s", err.Error())
-	}
+	// err = writeMarkerMutex.Lock(mo.ctx, &mo.operationMask, mo.maskMU,
+	// 	mo.allocationObj.Blobbers, &mo.Consensus, 0, time.Minute, mo.connectionID)
+	// if err != nil {
+	// 	return fmt.Errorf("Operation failed: %s", err.Error())
+	// }
+	mo.allocationObj.commitLock.Lock()
 	logger.Logger.Info("[writemarkerLocked]", time.Since(start).Milliseconds())
 	start = time.Now()
 	status := Commit
 	if !mo.isRepair {
-		status, err = mo.allocationObj.CheckAllocStatus()
+		status, err := mo.allocationObj.CheckAllocStatus()
 		if err != nil {
 			logger.Logger.Error("Error checking allocation status", err)
-			writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
+			// writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
+			mo.allocationObj.commitLock.Unlock()
 			return fmt.Errorf("Check allocation status failed: %s", err.Error())
 		}
 		if status == Repair {
 			logger.Logger.Info("Repairing allocation")
-			writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
+			mo.allocationObj.commitLock.Unlock()
+			// writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
 			statusBar := NewRepairBar(mo.allocationObj.ID)
 			if statusBar == nil {
 				for _, op := range mo.operations {
@@ -265,7 +267,8 @@ func (mo *MultiOperation) Process() error {
 			return ErrRetryOperation
 		}
 	}
-	defer writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
+	// defer writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
+	defer mo.allocationObj.commitLock.Unlock()
 	if status != Commit {
 		for _, op := range mo.operations {
 			op.Error(mo.allocationObj, 0, ErrRetryOperation)
@@ -321,7 +324,7 @@ func (mo *MultiOperation) Process() error {
 	}
 
 	if !mo.isConsensusOk() {
-		err = zboxutil.MajorError(errSlice)
+		err := zboxutil.MajorError(errSlice)
 		if mo.getConsensus() != 0 {
 			l.Logger.Info("Rolling back changes on minority blobbers")
 			mo.allocationObj.RollbackWithMask(rollbackMask)
