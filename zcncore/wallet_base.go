@@ -468,6 +468,8 @@ func SplitKeysWallet(privateKey string, numSplits int) (*zcncrypto.Wallet, error
 		return nil, errors.Wrap(err, "split key failed.")
 	}
 
+	w.IsSplit = true
+
 	return w, nil
 }
 

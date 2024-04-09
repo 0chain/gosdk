@@ -27,6 +27,7 @@ type Wallet struct {
 	Version     string    `json:"version"`
 	DateCreated string    `json:"date_created"`
 	Nonce       int64     `json:"nonce"`
+	IsSplit     bool      `json:"is_split"`
 }
 
 // SignatureScheme - an encryption scheme for signing and verifying messages
