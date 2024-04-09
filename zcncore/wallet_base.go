@@ -443,15 +443,7 @@ func RecoverWallet(mnemonic string, statusCb WalletCallback) error {
 
 // Split keys from the primary master key
 func SplitKeys(privateKey string, numSplits int) (string, error) {
-	if _config.chain.SignatureScheme != "bls0chain" {
-		return "", errors.New("", "signature key doesn't support split key")
-	}
-	sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
-	err := sigScheme.SetPrivateKey(privateKey)
-	if err != nil {
-		return "", errors.Wrap(err, "set private key failed")
-	}
-	w, err := sigScheme.SplitKeys(numSplits)
+	w, err := SplitKeysWallet(privateKey, numSplits)
 	if err != nil {
 		return "", errors.Wrap(err, "split key failed.")
 	}
@@ -460,6 +452,23 @@ func SplitKeys(privateKey string, numSplits int) (string, error) {
 		return "", errors.Wrap(err, "wallet encoding failed.")
 	}
 	return wStr, nil
+}
+
+func SplitKeysWallet(privateKey string, numSplits int) (*zcncrypto.Wallet, error) {
+	if _config.chain.SignatureScheme != "bls0chain" {
+		return nil, errors.New("", "signature key doesn't support split key")
+	}
+	sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
+	err := sigScheme.SetPrivateKey(privateKey)
+	if err != nil {
+		return nil, errors.Wrap(err, "set private key failed")
+	}
+	w, err := sigScheme.SplitKeys(numSplits)
+	if err != nil {
+		return nil, errors.Wrap(err, "split key failed.")
+	}
+
+	return w, nil
 }
 
 type GetClientResponse struct {
@@ -583,7 +592,7 @@ func getWalletBalance(clientId string) (common.Balance, int64, error) {
 	cb.Wait()
 
 	var clientState struct {
-		Nonce   int64   `json:"nonce"`
+		Nonce int64 `json:"nonce"`
 	}
 	err = json.Unmarshal([]byte(cb.info), &clientState)
 	if err != nil {
