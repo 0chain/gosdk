@@ -2,6 +2,8 @@ package zcncrypto
 
 import (
 	"encoding/json"
+	"fmt"
+	"os"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/encryption"
@@ -79,6 +81,22 @@ func (w *Wallet) Sign(hash, scheme string) (string, error) {
 		return "", err
 	}
 	return sigScheme.Sign(hash)
+}
+
+// SetSplitKeys sets split keys and wipes out mnemonic and original primary keys
+func (w *Wallet) SetSplitKeys(sw *Wallet) {
+	*w = *sw
+}
+
+func (w *Wallet) SaveTo(file string) error {
+	d, err := json.Marshal(w)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Saving wallet to file: ", string(d))
+
+	return os.WriteFile(file, d, 0644)
 }
 
 func IsMnemonicValid(mnemonic string) bool {
