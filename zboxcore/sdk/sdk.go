@@ -58,6 +58,11 @@ type StatusCallback interface {
 var numBlockDownloads = 100
 var sdkInitialized = false
 var networkWorkerTimerInHours = 1
+var singleClientMode bool
+
+func SetSingleClietnMode(mode bool) {
+	singleClientMode = mode
+}
 
 // GetVersion - returns version string
 func GetVersion() string {

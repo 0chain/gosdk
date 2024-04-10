@@ -223,24 +223,36 @@ func (mo *MultiOperation) Process() error {
 	}
 
 	l.Logger.Info("Trying to lock write marker.....")
-	err = writeMarkerMutex.Lock(mo.ctx, &mo.operationMask, mo.maskMU,
-		mo.allocationObj.Blobbers, &mo.Consensus, 0, time.Minute, mo.connectionID)
-	if err != nil {
-		return fmt.Errorf("Operation failed: %s", err.Error())
+	if singleClientMode {
+		mo.allocationObj.commitMutex.Lock()
+	} else {
+		err = writeMarkerMutex.Lock(mo.ctx, &mo.operationMask, mo.maskMU,
+			mo.allocationObj.Blobbers, &mo.Consensus, 0, time.Minute, mo.connectionID)
+		if err != nil {
+			return fmt.Errorf("Operation failed: %s", err.Error())
+		}
 	}
 	logger.Logger.Info("[writemarkerLocked]", time.Since(start).Milliseconds())
 	start = time.Now()
 	status := Commit
-	if !mo.isRepair {
+	if !mo.isRepair && (!singleClientMode || !mo.allocationObj.checkStatus) {
 		status, err = mo.allocationObj.CheckAllocStatus()
 		if err != nil {
 			logger.Logger.Error("Error checking allocation status", err)
-			writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
+			if singleClientMode {
+				mo.allocationObj.commitMutex.Unlock()
+			} else {
+				writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
+			}
 			return fmt.Errorf("Check allocation status failed: %s", err.Error())
 		}
 		if status == Repair {
 			logger.Logger.Info("Repairing allocation")
-			writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
+			if singleClientMode {
+				mo.allocationObj.commitMutex.Unlock()
+			} else {
+				writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
+			}
 			statusBar := NewRepairBar(mo.allocationObj.ID)
 			if statusBar == nil {
 				for _, op := range mo.operations {
@@ -264,8 +276,13 @@ func (mo *MultiOperation) Process() error {
 			}
 			return ErrRetryOperation
 		}
+		mo.allocationObj.checkStatus = true
 	}
-	defer writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
+	if singleClientMode {
+		defer mo.allocationObj.commitMutex.Unlock()
+	} else {
+		defer writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
+	}
 	if status != Commit {
 		for _, op := range mo.operations {
 			op.Error(mo.allocationObj, 0, ErrRetryOperation)
