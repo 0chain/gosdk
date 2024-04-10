@@ -1182,9 +1182,6 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 				dr.freeRead = true
 			}
 			defer wg.Done()
-			if isReadFree {
-				dr.freeRead = true
-			}
 			dr.processDownloadRequest()
 			var pos uint64
 			if !dr.skip {
