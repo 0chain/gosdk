@@ -319,7 +319,8 @@ func (mo *MultiOperation) Process() error {
 	wg.Wait()
 	logger.Logger.Info("[commitRequests]", time.Since(start).Milliseconds())
 	rollbackMask := zboxutil.NewUint128(0)
-	for _, commitReq := range commitReqs {
+	errSlice := make([]error, len(commitReqs))
+	for idx, commitReq := range commitReqs {
 		if commitReq.result != nil {
 			if commitReq.result.Success {
 				l.Logger.Info("Commit success", commitReq.blobber.Baseurl)
@@ -328,6 +329,7 @@ func (mo *MultiOperation) Process() error {
 				}
 				mo.consensus++
 			} else {
+				errSlice[idx] = errors.New("commit_failed", commitReq.result.ErrorMessage)
 				l.Logger.Info("Commit failed", commitReq.blobber.Baseurl, commitReq.result.ErrorMessage)
 			}
 		} else {
@@ -336,9 +338,7 @@ func (mo *MultiOperation) Process() error {
 	}
 
 	if !mo.isConsensusOk() {
-		err := errors.New("consensus_not_met",
-			fmt.Sprintf("Commit failed. Required consensus %d, got %d",
-				mo.Consensus.consensusThresh, mo.Consensus.consensus))
+		err = zboxutil.MajorError(errSlice)
 		if mo.getConsensus() != 0 {
 			l.Logger.Info("Rolling back changes on minority blobbers")
 			mo.allocationObj.RollbackWithMask(rollbackMask)
