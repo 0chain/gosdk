@@ -235,7 +235,7 @@ func (mo *MultiOperation) Process() error {
 	logger.Logger.Info("[writemarkerLocked]", time.Since(start).Milliseconds())
 	start = time.Now()
 	status := Commit
-	if !mo.isRepair && (!singleClientMode || !mo.allocationObj.checkStatus) {
+	if !mo.isRepair && !mo.allocationObj.checkStatus {
 		status, err = mo.allocationObj.CheckAllocStatus()
 		if err != nil {
 			logger.Logger.Error("Error checking allocation status", err)
@@ -276,9 +276,9 @@ func (mo *MultiOperation) Process() error {
 			}
 			return ErrRetryOperation
 		}
-		mo.allocationObj.checkStatus = true
 	}
 	if singleClientMode {
+		mo.allocationObj.checkStatus = true
 		defer mo.allocationObj.commitMutex.Unlock()
 	} else {
 		defer writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
