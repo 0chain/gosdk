@@ -79,14 +79,14 @@ func InitBlockDownloader(blobbers []*blockchain.StorageNode, workerCount int) {
 	for _, blobber := range blobbers {
 		if _, ok := downloadBlockChan[blobber.ID]; !ok {
 			downloadBlockChan[blobber.ID] = make(chan *BlockDownloadRequest, workerCount)
-			go startBlockDownloadWorker(downloadBlockChan[blobber.ID], workerCount, blobber.ID)
+			go startBlockDownloadWorker(downloadBlockChan[blobber.ID], workerCount, blobber.ID, blobber.Baseurl)
 		}
 	}
 }
 
-func startBlockDownloadWorker(blobberChan chan *BlockDownloadRequest, workers int, id string) {
+func startBlockDownloadWorker(blobberChan chan *BlockDownloadRequest, workers int, id, baseURL string) {
 	sem := semaphore.NewWeighted(int64(workers))
-	hostClient := zboxutil.GetHostClient(id)
+	hostClient := zboxutil.GetHostClient(id, baseURL)
 	for {
 		blockDownloadReq, open := <-blobberChan
 		if !open {
@@ -161,11 +161,11 @@ func (req *BlockDownloadRequest) downloadBlobberBlock(hostClient *fasthttp.HostC
 			fasthttp.ReleaseRequest(httpreq)
 			timeTaken := time.Since(now).Milliseconds()
 			if err != nil {
+				zlogger.Logger.Error("Error downloading block: ", err)
 				if errors.Is(err, fasthttp.ErrConnectionClosed) || errors.Is(err, syscall.EPIPE) {
 					shouldRetry = true
 					return errors.New("connection_closed", "Connection closed")
 				}
-				zlogger.Logger.Error("Error downloading block: ", err)
 				return err
 			}
 
