@@ -68,7 +68,7 @@ func (s *StatusBar) Completed(allocationID, filePath string, filename string, mi
 	if s.localPath != "" {
 		fs, _ := sys.Files.Open(s.localPath)
 		mf, _ := fs.(*sys.MemFile)
-		s.objURL = CreateObjectURL(mf.Buffer, "application/octet-stream")
+		s.objURL = CreateObjectURL(mf.Buffer, mimetype)
 	}
 	if s.callback != nil {
 		jsCallbackMutex.Lock()
