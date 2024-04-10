@@ -60,7 +60,7 @@ func getNewLeaf() *leaf {
 // FixedMerkleTree A trusted mekerle tree for outsourcing attack protection. see section 1.8 on whitepager
 // see detail on https://github.com/0chain/blobber/wiki/Protocols#what-is-fixedmerkletree
 type FixedMerkleTree struct {
-	// Leaves will store hash digester that calculates blake3 hash of the leaf content
+	// Leaves will store hash digester that calculates sha256 hash of the leaf content
 	Leaves []Hashable `json:"leaves,omitempty"`
 
 	writeLock sync.Mutex
