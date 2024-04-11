@@ -31,6 +31,7 @@ import (
 type LatestPrevWriteMarker struct {
 	LatestWM *marker.WriteMarker `json:"latest_write_marker"`
 	PrevWM   *marker.WriteMarker `json:"prev_write_marker"`
+	Version  string              `json:"version"`
 }
 
 type AllocStatus byte
@@ -126,12 +127,16 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 			return nil
 		}
 	}
-	decodedHash, _ := hex.DecodeString(wm.AllocationRoot)
-	prevChainHash, _ := hex.DecodeString(rb.lpm.LatestWM.ChainHash)
-	hasher := sha256.New()
-	hasher.Write(prevChainHash) //nolint:errcheck
-	hasher.Write(decodedHash)   //nolint:errcheck
-	wm.ChainHash = hex.EncodeToString(hasher.Sum(nil))
+	if rb.lpm.Version == MARKER_VERSION {
+		decodedHash, _ := hex.DecodeString(wm.AllocationRoot)
+		prevChainHash, _ := hex.DecodeString(rb.lpm.LatestWM.ChainHash)
+		hasher := sha256.New()
+		hasher.Write(prevChainHash) //nolint:errcheck
+		hasher.Write(decodedHash)   //nolint:errcheck
+		wm.ChainHash = hex.EncodeToString(hasher.Sum(nil))
+	} else if rb.lpm.Version == "" {
+		wm.Size = 0
+	}
 
 	err := wm.Sign()
 	if err != nil {
@@ -178,6 +183,11 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 			}
 
 			var respBody []byte
+			respBody, err = io.ReadAll(resp.Body)
+			if err != nil {
+				l.Logger.Error("Response read: ", err)
+				return
+			}
 			if resp.StatusCode == http.StatusOK {
 				l.Logger.Info(rb.blobber.Baseurl, connID, "rollbacked")
 				return
@@ -197,13 +207,16 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 				return
 			}
 
-			respBody, err = io.ReadAll(resp.Body)
-			if err != nil {
-				l.Logger.Error("Response read: ", err)
-				return
-			}
 			if strings.Contains(string(respBody), "pending_markers:") {
 				l.Logger.Info("Commit pending for blobber ",
+					rb.blobber.Baseurl, " Retrying")
+				time.Sleep(5 * time.Second)
+				shouldContinue = true
+				return
+			}
+
+			if strings.Contains(string(respBody), "chain_length_exceeded") {
+				l.Logger.Info("Chain length exceeded for blobber ",
 					rb.blobber.Baseurl, " Retrying")
 				time.Sleep(5 * time.Second)
 				shouldContinue = true
