@@ -183,6 +183,11 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 			}
 
 			var respBody []byte
+			respBody, err = io.ReadAll(resp.Body)
+			if err != nil {
+				l.Logger.Error("Response read: ", err)
+				return
+			}
 			if resp.StatusCode == http.StatusOK {
 				l.Logger.Info(rb.blobber.Baseurl, connID, "rollbacked")
 				return
@@ -202,13 +207,16 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 				return
 			}
 
-			respBody, err = io.ReadAll(resp.Body)
-			if err != nil {
-				l.Logger.Error("Response read: ", err)
-				return
-			}
 			if strings.Contains(string(respBody), "pending_markers:") {
 				l.Logger.Info("Commit pending for blobber ",
+					rb.blobber.Baseurl, " Retrying")
+				time.Sleep(5 * time.Second)
+				shouldContinue = true
+				return
+			}
+
+			if strings.Contains(string(respBody), "chain_length_exceeded") {
+				l.Logger.Info("Chain length exceeded for blobber ",
 					rb.blobber.Baseurl, " Retrying")
 				time.Sleep(5 * time.Second)
 				shouldContinue = true

@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
@@ -284,6 +285,11 @@ func (req *CommitRequest) commitBlobber(
 			}
 
 			var respBody []byte
+			respBody, err = io.ReadAll(resp.Body)
+			if err != nil {
+				logger.Logger.Error("Response read: ", err)
+				return
+			}
 			if resp.StatusCode == http.StatusOK {
 				logger.Logger.Info(req.blobber.Baseurl, " committed")
 				return
@@ -305,14 +311,16 @@ func (req *CommitRequest) commitBlobber(
 				return
 			}
 
-			respBody, err = ioutil.ReadAll(resp.Body)
-			if err != nil {
-				logger.Logger.Error("Response read: ", err)
+			if strings.Contains(string(respBody), "pending_markers:") {
+				logger.Logger.Info("Commit pending for blobber ",
+					req.blobber.Baseurl, " Retrying")
+				time.Sleep(5 * time.Second)
+				shouldContinue = true
 				return
 			}
 
-			if strings.Contains(string(respBody), "pending_markers:") {
-				logger.Logger.Info("Commit pending for blobber ",
+			if strings.Contains(string(respBody), "chain_length_exceeded") {
+				l.Logger.Info("Chain length exceeded for blobber ",
 					req.blobber.Baseurl, " Retrying")
 				time.Sleep(5 * time.Second)
 				shouldContinue = true
