@@ -30,6 +30,7 @@ import (
 type ReferencePathResult struct {
 	*fileref.ReferencePath
 	LatestWM *marker.WriteMarker `json:"latest_write_marker"`
+	Version  string              `json:"version"`
 }
 
 type CommitResult struct {
@@ -46,6 +47,8 @@ func SuccessCommitResult() *CommitResult {
 	result := &CommitResult{Success: true}
 	return result
 }
+
+const MARKER_VERSION = "v2"
 
 type CommitRequest struct {
 	changes      []allocationchange.AllocationChange
@@ -170,12 +173,14 @@ func (commitreq *CommitRequest) processCommit() {
 			commitreq.result = ErrorCommitResult(errMsg)
 			return
 		}
-		prevChainHash, err := hex.DecodeString(lR.LatestWM.ChainHash)
-		if err != nil {
-			commitreq.result = ErrorCommitResult(err.Error())
-			return
+		if lR.LatestWM.ChainHash != "" {
+			prevChainHash, err := hex.DecodeString(lR.LatestWM.ChainHash)
+			if err != nil {
+				commitreq.result = ErrorCommitResult(err.Error())
+				return
+			}
+			hasher.Write(prevChainHash) //nolint:errcheck
 		}
-		hasher.Write(prevChainHash) //nolint:errcheck
 	}
 
 	var size int64
@@ -190,9 +195,12 @@ func (commitreq *CommitRequest) processCommit() {
 		size += change.GetSize()
 	}
 	rootRef.CalculateHash()
-	decodedHash, _ := hex.DecodeString(rootRef.Hash)
-	hasher.Write(decodedHash) //nolint:errcheck
-	chainHash := hex.EncodeToString(hasher.Sum(nil))
+	var chainHash string
+	if lR.Version == MARKER_VERSION {
+		decodedHash, _ := hex.DecodeString(rootRef.Hash)
+		hasher.Write(decodedHash) //nolint:errcheck
+		chainHash = hex.EncodeToString(hasher.Sum(nil))
+	}
 	err = commitreq.commitBlobber(rootRef, chainHash, lR.LatestWM, size, fileIDMeta)
 	if err != nil {
 		commitreq.result = ErrorCommitResult(err.Error())

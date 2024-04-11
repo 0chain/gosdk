@@ -25,10 +25,19 @@ type WriteMarker struct {
 }
 
 func (wm *WriteMarker) GetHashData() string {
-	sigData := fmt.Sprintf("%s:%s:%s:%s:%s:%s:%s:%d:%d:%d",
-		wm.AllocationRoot, wm.PreviousAllocationRoot,
-		wm.FileMetaRoot, wm.ChainHash, wm.AllocationID, wm.BlobberID,
-		wm.ClientID, wm.Size, wm.ChainSize, wm.Timestamp)
+	var sigData string
+	if wm.ChainHash != "" {
+		sigData = fmt.Sprintf("%s:%s:%s:%s:%s:%s:%s:%d:%d:%d",
+			wm.AllocationRoot, wm.PreviousAllocationRoot,
+			wm.FileMetaRoot, wm.ChainHash, wm.AllocationID, wm.BlobberID,
+			wm.ClientID, wm.Size, wm.ChainSize, wm.Timestamp)
+	} else {
+		sigData = fmt.Sprintf("%s:%s:%s:%s:%s:%s:%d:%d",
+			wm.AllocationRoot, wm.PreviousAllocationRoot,
+			wm.FileMetaRoot, wm.AllocationID,
+			wm.BlobberID, wm.ClientID, wm.Size,
+			wm.Timestamp)
+	}
 	return sigData
 }
 

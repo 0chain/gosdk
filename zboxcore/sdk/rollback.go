@@ -31,6 +31,7 @@ import (
 type LatestPrevWriteMarker struct {
 	LatestWM *marker.WriteMarker `json:"latest_write_marker"`
 	PrevWM   *marker.WriteMarker `json:"prev_write_marker"`
+	Version  string              `json:"version"`
 }
 
 type AllocStatus byte
@@ -126,12 +127,16 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 			return nil
 		}
 	}
-	decodedHash, _ := hex.DecodeString(wm.AllocationRoot)
-	prevChainHash, _ := hex.DecodeString(rb.lpm.LatestWM.ChainHash)
-	hasher := sha256.New()
-	hasher.Write(prevChainHash) //nolint:errcheck
-	hasher.Write(decodedHash)   //nolint:errcheck
-	wm.ChainHash = hex.EncodeToString(hasher.Sum(nil))
+	if rb.lpm.Version == MARKER_VERSION {
+		decodedHash, _ := hex.DecodeString(wm.AllocationRoot)
+		prevChainHash, _ := hex.DecodeString(rb.lpm.LatestWM.ChainHash)
+		hasher := sha256.New()
+		hasher.Write(prevChainHash) //nolint:errcheck
+		hasher.Write(decodedHash)   //nolint:errcheck
+		wm.ChainHash = hex.EncodeToString(hasher.Sum(nil))
+	} else if rb.lpm.Version == "" {
+		wm.Size = 0
+	}
 
 	err := wm.Sign()
 	if err != nil {
