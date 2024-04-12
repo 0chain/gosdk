@@ -51,6 +51,12 @@ func init() {
 	sys.VerifyWith = VerifySignatureWith
 }
 
+func SetClient(w *zcncrypto.Wallet, signatureScheme string, txnFee uint64) {
+	client.Wallet = w
+	client.SignatureScheme = signatureScheme
+	client.txnFee = txnFee
+}
+
 // PopulateClient populates single client
 func PopulateClient(clientjson string, signatureScheme string) error {
 	err := json.Unmarshal([]byte(clientjson), &client)
@@ -156,7 +162,7 @@ func VerifySignature(signature string, msg string) (bool, error) {
 
 func VerifySignatureWith(pubKey, signature, hash string) (bool, error) {
 	sch := zcncrypto.NewSignatureScheme(client.SignatureScheme)
-	err := sch.SetPublicKey(pubKey)
+	err := sch.SetPublicKey(client.Wallet.PeerPublicKey)
 	if err != nil {
 		return false, err
 	}

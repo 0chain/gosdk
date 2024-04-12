@@ -27,3 +27,8 @@ var (
 
 	AuthCommon AuthorizeFunc
 )
+
+// SetAuthorize sets the authorize callback function
+func SetAuthorize(auth AuthorizeFunc) {
+	Authorize = auth
+}

@@ -260,9 +260,6 @@ func NewTransaction(cb TransactionCallback, txnFee uint64, nonce int64) (Transac
 		return nil, err
 	}
 	if _config.isSplitWallet {
-		if _config.authUrl == "" {
-			return nil, errors.New("", "auth url not set")
-		}
 		logging.Info("New transaction interface with auth")
 		return newTransactionWithAuth(cb, txnFee, nonce)
 	}
@@ -1389,6 +1386,13 @@ func WithConfirmationChainLength(m int) func(c *ChainConfig) error {
 func WithSharderConsensous(m int) func(c *ChainConfig) error {
 	return func(c *ChainConfig) error {
 		c.SharderConsensous = m
+		return nil
+	}
+}
+
+func WithIsSplitWallet(v bool) func(c *ChainConfig) error {
+	return func(c *ChainConfig) error {
+		c.IsSplitWallet = v
 		return nil
 	}
 }

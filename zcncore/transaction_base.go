@@ -112,6 +112,7 @@ type ChainConfig struct {
 	ConfirmationChainLength int      `json:"confirmation_chain_length"`
 	EthNode                 string   `json:"eth_node"`
 	SharderConsensous       int      `json:"sharder_consensous"`
+	IsSplitWallet           bool     `json:"is_split_wallet"`
 }
 
 var Sharders *node.NodeHolder
@@ -138,6 +139,7 @@ func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainCon
 			return errors.Wrap(err, "invalid/unsupported options.")
 		}
 	}
+	_config.isSplitWallet = _config.chain.IsSplitWallet
 	assertConfig()
 	_config.isConfigured = true
 	logging.Info("******* Wallet SDK Version:", version.VERSIONSTR, " ******* (InitZCNSDK)")
@@ -154,6 +156,8 @@ func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainCon
 	}
 
 	conf.InitClientConfig(cfg)
+
+	fmt.Println("initZCNCore is_split_wallet:", _config.isSplitWallet)
 
 	return nil
 }

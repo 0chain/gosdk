@@ -2,6 +2,8 @@ package zcncrypto
 
 import (
 	"encoding/json"
+	"fmt"
+	"os"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/encryption"
@@ -18,13 +20,15 @@ type KeyPair struct {
 
 // Wallet structure
 type Wallet struct {
-	ClientID    string    `json:"client_id"`
-	ClientKey   string    `json:"client_key"`
-	Keys        []KeyPair `json:"keys"`
-	Mnemonic    string    `json:"mnemonics"`
-	Version     string    `json:"version"`
-	DateCreated string    `json:"date_created"`
-	Nonce       int64     `json:"nonce"`
+	ClientID      string    `json:"client_id"`
+	ClientKey     string    `json:"client_key"`
+	PeerPublicKey string    `json:"peer_public_key"` // Peer public key exists only in split wallet
+	Keys          []KeyPair `json:"keys"`
+	Mnemonic      string    `json:"mnemonics"`
+	Version       string    `json:"version"`
+	DateCreated   string    `json:"date_created"`
+	Nonce         int64     `json:"nonce"`
+	IsSplit       bool      `json:"is_split"`
 }
 
 // SignatureScheme - an encryption scheme for signing and verifying messages
@@ -79,6 +83,22 @@ func (w *Wallet) Sign(hash, scheme string) (string, error) {
 		return "", err
 	}
 	return sigScheme.Sign(hash)
+}
+
+// SetSplitKeys sets split keys and wipes out mnemonic and original primary keys
+func (w *Wallet) SetSplitKeys(sw *Wallet) {
+	*w = *sw
+}
+
+func (w *Wallet) SaveTo(file string) error {
+	d, err := json.Marshal(w)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Saving wallet to file: ", string(d))
+
+	return os.WriteFile(file, d, 0644)
 }
 
 func IsMnemonicValid(mnemonic string) bool {
