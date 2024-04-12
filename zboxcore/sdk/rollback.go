@@ -55,10 +55,11 @@ func GetWritemarker(allocID, allocTx, sig, id, baseUrl string) (*LatestPrevWrite
 	if err != nil {
 		return nil, err
 	}
-
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 	for retries := 0; retries < 3; retries++ {
 
-		resp, err := zboxutil.Client.Do(req)
+		resp, err := zboxutil.Client.Do(req.WithContext(ctx))
 		if err != nil {
 			return nil, err
 		}
@@ -148,7 +149,6 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 	l.Logger.Info("Sending Rollback request to blobber: ", rb.blobber.Baseurl)
 
 	var (
-		resp           *http.Response
 		shouldContinue bool
 	)
 
@@ -208,7 +208,7 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 
 	}
 
-	return thrown.New("rolback_error", fmt.Sprintf("Rollback failed with response status %d", resp.StatusCode))
+	return thrown.New("rolback_error", fmt.Sprint("Rollback failed"))
 }
 
 func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {

@@ -171,10 +171,10 @@
     }
 
     const getWallet = () => {
-      const clientID = get('clientId').value
-      const publicKey = get('publicKey').value
-      const privateKey = get('privateKey').value
-      const mnemonic = get('mnemonic').value
+      const clientID = "b1d533fa60431a76014c4f94a7e8e19a3b1a7f34eebd4cacd29a8dd948b3844c"
+      const publicKey = "1f30a07b34146435cabc3244a1452fb8933f6982e0b33f384e5d25b9d6531e24e342003349990483f8481052a0748cbc72355d9cbda621ec914f7ed03c127791"
+      const privateKey = "fb98f46969be6921586e547b0f6f70c6b92d7823359f00bafa3900523910661a"
+      const mnemonic = "snake second property crush thrive monkey already lake fire sort cheap lake census adult this cloth panic filter taste punch pistol project rack obscure"
       return {
         clientID, publicKey, privateKey, mnemonic
       }
@@ -211,7 +211,7 @@
 
     let network = query.get('network')
     if (!network || network == 'undefined') {
-      network = "test.zus.network"
+      network = "dev.zus.network"
     }
 
     const blockWorker = 'https://' + network + '/dns';
@@ -308,7 +308,7 @@
       }
       try {
         const allocation = await goWasm.sdk.createAllocation(config.datashards, config.parityshards, config.size, config.minReadPrice, config.maxReadPrice, config.minWritePrice, config.maxWritePrice,
-          config.lock, [], false)
+          config.lock, [], [], false)
 
         console.log(allocation)
         allocations = await goWasm.sdk.listAllocations()

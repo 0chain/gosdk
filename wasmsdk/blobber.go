@@ -38,6 +38,17 @@ func listObjects(allocationID string, remotePath string, offset, pageLimit int) 
 	return alloc.ListDir(remotePath, sdk.WithListRequestOffset(offset), sdk.WithListRequestPageLimit(pageLimit))
 }
 
+	return alloc.ListDir(remotePath, sdk.WithListRequestOffset(offset), sdk.WithListRequestPageLimit(pageLimit))
+}
+
+func listObjectsFromAuthTicket(allocationID, authTicket, lookupHash string, offset, pageLimit int) (*sdk.ListResult, error) {
+	alloc, err := getAllocation(allocationID)
+	if err != nil {
+		return nil, err
+	}
+	return alloc.ListDirFromAuthTicket(authTicket, lookupHash, sdk.WithListRequestOffset(offset), sdk.WithListRequestPageLimit(pageLimit))
+}
+
 func cancelUpload(allocationID string, remotePath string) error {
 	allocationObj, err := getAllocation(allocationID)
 	if err != nil {
@@ -574,6 +585,18 @@ func bulkUpload(jsonBulkUploadOptions string) ([]BulkUploadResult, error) {
 	return results, nil
 }
 
+// set upload mode, default is medium, for low set 0, for high set 2
+func setUploadMode(mode int) {
+	switch mode {
+	case 0:
+		sdk.SetUploadMode(sdk.UploadModeLow)
+	case 1:
+		sdk.SetUploadMode(sdk.UploadModeMedium)
+	case 2:
+		sdk.SetUploadMode(sdk.UploadModeHigh)
+	}
+}
+
 func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 	var options []BulkUploadOption
 	result := MultiUploadResult{}
@@ -839,9 +862,17 @@ func upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, w
 }
 
 // download download file blocks
-func downloadBlocks(alloc *sdk.Allocation, remotePath, authTicket, lookupHash string, startBlock, endBlock int64) ([]byte, error) {
+func downloadBlocks(allocId string, remotePath, authTicket, lookupHash string, startBlock, endBlock int64) ([]byte, error) {
+
 	if len(remotePath) == 0 && len(authTicket) == 0 {
 		return nil, RequiredArg("remotePath/authTicket")
+	}
+
+	alloc, err := getAllocation(allocId)
+
+	if err != nil {
+		PrintError("Error fetching the allocation", err)
+		return nil, err
 	}
 
 	var (
@@ -865,19 +896,23 @@ func downloadBlocks(alloc *sdk.Allocation, remotePath, authTicket, lookupHash st
 	defer sys.Files.Remove(localPath) //nolint
 
 	wg.Add(1)
-	err = alloc.DownloadByBlocksToFileHandler(
-		mf,
-		remotePath,
-		startBlock,
-		endBlock,
-		10,
-		false,
-		statusBar, true)
+	if authTicket != "" {
+		err = alloc.DownloadByBlocksToFileHandlerFromAuthTicket(mf, authTicket, lookupHash, startBlock, endBlock, 100, remotePath, false, statusBar, true)
+	} else {
+		err = alloc.DownloadByBlocksToFileHandler(
+			mf,
+			remotePath,
+			startBlock,
+			endBlock,
+			100,
+			false,
+			statusBar, true)
+	}
 	if err != nil {
 		return nil, err
 	}
 	wg.Wait()
-	return mf.Buffer.Bytes(), nil
+	return mf.Buffer, nil
 }
 
 // GetBlobbersList get list of active blobbers, and format them as array json string

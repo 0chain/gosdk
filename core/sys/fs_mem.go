@@ -33,7 +33,7 @@ func (mfs *MemFS) Open(name string) (File, error) {
 
 	fileName := filepath.Base(name)
 
-	file = &MemFile{Name: fileName, Buffer: new(bytes.Buffer), Mode: fs.ModePerm, ModTime: time.Now()}
+	file = &MemFile{Name: fileName, Mode: fs.ModePerm, ModTime: time.Now()}
 
 	mfs.files[name] = file
 
@@ -47,7 +47,7 @@ func (mfs *MemFS) OpenFile(name string, flag int, perm os.FileMode) (File, error
 	}
 
 	fileName := filepath.Base(name)
-	file = &MemFile{Name: fileName, Buffer: new(bytes.Buffer), Mode: perm, ModTime: time.Now()}
+	file = &MemFile{Name: fileName, Mode: perm, ModTime: time.Now()}
 
 	mfs.files[name] = file
 
@@ -59,7 +59,7 @@ func (mfs *MemFS) OpenFile(name string, flag int, perm os.FileMode) (File, error
 func (mfs *MemFS) ReadFile(name string) ([]byte, error) {
 	file, ok := mfs.files[name]
 	if ok {
-		return file.Buffer.Bytes(), nil
+		return file.Buffer, nil
 	}
 
 	return nil, os.ErrNotExist
@@ -68,7 +68,7 @@ func (mfs *MemFS) ReadFile(name string) ([]byte, error) {
 // WriteFile writes data to a file named by filename.
 func (mfs *MemFS) WriteFile(name string, data []byte, perm os.FileMode) error {
 	fileName := filepath.Base(name)
-	file := &MemFile{Name: fileName, Buffer: new(bytes.Buffer), Mode: perm, ModTime: time.Now()}
+	file := &MemFile{Name: fileName, Mode: perm, ModTime: time.Now()}
 
 	mfs.files[name] = file
 
@@ -189,10 +189,10 @@ func (mfs *MemChanFS) Stat(name string) (fs.FileInfo, error) {
 
 type MemFile struct {
 	Name    string
-	Buffer  *bytes.Buffer // file content
-	Mode    fs.FileMode   // FileInfo.Mode
-	ModTime time.Time     // FileInfo.ModTime
-	Sys     interface{}   // FileInfo.Sys
+	Buffer  []byte      // file content
+	Mode    fs.FileMode // FileInfo.Mode
+	ModTime time.Time   // FileInfo.ModTime
+	Sys     interface{} // FileInfo.Sys
 	reader  io.Reader
 }
 
@@ -201,14 +201,28 @@ func (f *MemFile) Stat() (fs.FileInfo, error) {
 }
 func (f *MemFile) Read(p []byte) (int, error) {
 	if f.reader == nil {
-		f.reader = bytes.NewReader(f.Buffer.Bytes())
+		f.reader = bytes.NewReader(f.Buffer)
 	}
 	return f.reader.Read(p)
 
 }
 func (f *MemFile) Write(p []byte) (n int, err error) {
-	return f.Buffer.Write(p)
+	f.Buffer = append(f.Buffer, p...)
+	return len(p), nil
+}
 
+func (f *MemFile) WriteAt(p []byte, offset int64) (n int, err error) {
+	if offset < 0 || offset > int64(len(f.Buffer)) {
+		return 0, io.ErrShortWrite
+	}
+
+	copy(f.Buffer[offset:], p)
+
+	return len(p), nil
+}
+
+func (f *MemFile) InitBuffer(size int) {
+	f.Buffer = make([]byte, size)
 }
 
 func (f *MemFile) Sync() error {
@@ -216,10 +230,18 @@ func (f *MemFile) Sync() error {
 }
 func (f *MemFile) Seek(offset int64, whence int) (ret int64, err error) {
 
-	// always reset it from beginning, it only work for wasm download
-	f.reader = bytes.NewReader(f.Buffer.Bytes())
-
-	return 0, nil
+	if whence != io.SeekStart {
+		return 0, os.ErrInvalid
+	}
+	switch {
+	case offset < 0:
+		return 0, os.ErrInvalid
+	case offset > int64(len(f.Buffer)):
+		return 0, io.EOF
+	default:
+		f.reader = bytes.NewReader(f.Buffer[offset:])
+		return offset, nil
+	}
 }
 
 func (f *MemFile) Close() error {
@@ -236,7 +258,7 @@ func (i *MemFileInfo) Name() string {
 	return i.name
 }
 func (i *MemFileInfo) Size() int64 {
-	return int64(i.f.Buffer.Len())
+	return int64(len(i.f.Buffer))
 }
 
 func (i *MemFileInfo) Mode() fs.FileMode {
@@ -270,7 +292,7 @@ type MemChanFile struct {
 	ModTime        time.Time   // FileInfo.ModTime
 	ChunkWriteSize int         //  0 value means no limit
 	Sys            interface{} // FileInfo.Sys
-	reader         io.Reader
+	ErrChan        chan error
 	data           []byte
 }
 
@@ -278,23 +300,29 @@ func (f *MemChanFile) Stat() (fs.FileInfo, error) {
 	return &MemFileChanInfo{name: f.Name, f: f}, nil
 }
 func (f *MemChanFile) Read(p []byte) (int, error) {
-	recieveData, ok := <-f.Buffer
-	if !ok {
-		return 0, io.EOF
+	select {
+	case err := <-f.ErrChan:
+		return 0, err
+	case recieveData, ok := <-f.Buffer:
+		if !ok {
+			return 0, io.EOF
+		}
+		if len(recieveData) > len(p) {
+			return 0, io.ErrShortBuffer
+		}
+		n := copy(p, recieveData)
+		return n, nil
 	}
-	if len(recieveData) > len(p) {
-		return 0, io.ErrShortBuffer
-	}
-	n := copy(p, recieveData)
-	return n, nil
 }
 
 func (f *MemChanFile) Write(p []byte) (n int, err error) {
 	if f.ChunkWriteSize == 0 {
-		f.Buffer <- p
+		data := make([]byte, len(p))
+		copy(data, p)
+		f.Buffer <- data
 	} else {
 		if cap(f.data) == 0 {
-			f.data = make([]byte, 0, f.ChunkWriteSize)
+			f.data = make([]byte, 0, len(p))
 		}
 		f.data = append(f.data, p...)
 	}
@@ -310,7 +338,7 @@ func (f *MemChanFile) Sync() error {
 		}
 		f.Buffer <- f.data[current:end]
 	}
-	f.data = make([]byte, 0, f.ChunkWriteSize)
+	f.data = nil
 	return nil
 }
 func (f *MemChanFile) Seek(offset int64, whence int) (ret int64, err error) {
@@ -318,7 +346,6 @@ func (f *MemChanFile) Seek(offset int64, whence int) (ret int64, err error) {
 }
 
 func (f *MemChanFile) Close() error {
-	f.reader = nil
 	close(f.Buffer)
 	return nil
 }

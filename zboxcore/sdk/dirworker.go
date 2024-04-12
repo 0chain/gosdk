@@ -196,7 +196,7 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode, pos u
 
 	for i := 0; i < 3; i++ {
 		err, shouldContinue = func() (err error, shouldContinue bool) {
-			ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
+			ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 10))
 			resp, err = zboxutil.Client.Do(httpreq.WithContext(ctx))
 			cncl()
 			if err != nil {

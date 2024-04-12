@@ -17,6 +17,11 @@ const (
 	Right
 )
 
+const (
+	START_LENGTH = 64
+	ADD_LENGTH   = 320
+)
+
 type ValidationTree struct {
 	writeLock      sync.Mutex
 	writeCount     int
@@ -61,7 +66,7 @@ func (v *ValidationTree) Write(b []byte) (int, error) {
 		return 0, nil
 	}
 
-	if v.writtenSize+int64(len(b)) > v.dataSize {
+	if v.dataSize > 0 && v.writtenSize+int64(len(b)) > v.dataSize {
 		return 0, fmt.Errorf("data size overflow. expected %d, got %d", v.dataSize, v.writtenSize+int64(len(b)))
 	}
 
@@ -80,6 +85,12 @@ func (v *ValidationTree) Write(b []byte) (int, error) {
 		n, _ := v.h.Write(b[i:j])
 		v.writeCount += n // update write count
 		if v.writeCount == MaxMerkleLeavesSize {
+			if v.leafIndex >= len(v.leaves) {
+				// increase leaves size
+				leaves := make([][]byte, len(v.leaves)+ADD_LENGTH)
+				copy(leaves, v.leaves)
+				v.leaves = leaves
+			}
 			v.leaves[v.leafIndex] = v.h.Sum(nil)
 			v.leafIndex++
 			v.writeCount = 0 // reset writeCount
@@ -137,7 +148,7 @@ func (v *ValidationTree) Finalize() error {
 	if v.isFinalized {
 		return errors.New("already finalized")
 	}
-	if v.writtenSize != v.dataSize {
+	if v.dataSize > 0 && v.writtenSize != v.dataSize {
 		return fmt.Errorf("invalid size. Expected %d got %d", v.dataSize, v.writtenSize)
 	}
 
@@ -145,13 +156,20 @@ func (v *ValidationTree) Finalize() error {
 
 	if v.writeCount > 0 {
 		v.leaves[v.leafIndex] = v.h.Sum(nil)
+	} else {
+		v.leafIndex--
+	}
+	if v.leafIndex < len(v.leaves) {
+		v.leaves = v.leaves[:v.leafIndex+1]
 	}
 	return nil
 }
 
 func NewValidationTree(dataSize int64) *ValidationTree {
 	totalLeaves := (dataSize + MaxMerkleLeavesSize - 1) / MaxMerkleLeavesSize
-
+	if totalLeaves == 0 {
+		totalLeaves = START_LENGTH
+	}
 	return &ValidationTree{
 		dataSize: dataSize,
 		h:        sha256.New(),
