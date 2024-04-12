@@ -893,7 +893,6 @@ func GetAllocation(allocationID string) (*Allocation, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("auth - alloc sig:", sig)
 
 	allocationObj.sig = sig
 	allocationObj.numBlockDownloads = numBlockDownloads

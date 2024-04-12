@@ -8,6 +8,7 @@ import (
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/zcncrypto"
+	"github.com/0chain/gosdk/zboxcore/client"
 )
 
 type TransactionWithAuth struct {
@@ -54,8 +55,8 @@ func (ta *TransactionWithAuth) getAuthorize() (*transaction.Transaction, error) 
 	if err != nil {
 		return nil, errors.Wrap(err, "invalid json on auth response.")
 	}
-	// Verify the signature on the result
-	ok, err := txnResp.VerifyTransaction(sys.VerifyWith)
+	// Verify the split key signed signature
+	ok, err := txnResp.VerifySigWith(client.GetClientPeerPublicKey(), sys.VerifyWith)
 	if err != nil {
 		logging.Error("verification failed for txn from auth", err.Error())
 		return nil, errAuthVerifyFailed

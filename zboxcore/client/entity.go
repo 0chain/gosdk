@@ -2,8 +2,6 @@ package client
 
 import (
 	"encoding/json"
-	"fmt"
-	"runtime/debug"
 
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/core/zcncrypto"
@@ -28,6 +26,7 @@ func init() {
 	client = &Client{
 		Wallet: &zcncrypto.Wallet{},
 	}
+
 	sigC <- struct{}{}
 
 	sys.Sign = signHash
@@ -37,13 +36,10 @@ func init() {
 			return sys.Sign(hash, client.SignatureScheme, GetClientSysKeys())
 		}
 
-		fmt.Println("auth - sign with default impl")
-		fmt.Println("auth - stack:", string(debug.Stack()))
 		// get sign lock
 		<-sigC
 		sig, err := sys.SignWithAuth(hash, client.SignatureScheme, GetClientSysKeys())
 		sigC <- struct{}{}
-		fmt.Println("auth - sign done with sig:", sig)
 		return sig, err
 	}
 
@@ -107,6 +103,11 @@ func GetClientPublicKey() string {
 	return client.ClientKey
 }
 
+func GetClientPeerPublicKey() string {
+	return client.PeerPublicKey
+
+}
+
 func GetClientPrivateKey() string {
 	for _, kv := range client.Keys {
 		return kv.PrivateKey
@@ -162,7 +163,7 @@ func VerifySignature(signature string, msg string) (bool, error) {
 
 func VerifySignatureWith(pubKey, signature, hash string) (bool, error) {
 	sch := zcncrypto.NewSignatureScheme(client.SignatureScheme)
-	err := sch.SetPublicKey(client.Wallet.PeerPublicKey)
+	err := sch.SetPublicKey(pubKey)
 	if err != nil {
 		return false, err
 	}

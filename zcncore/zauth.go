@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/0chain/gosdk/core/sys"
+	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/pkg/errors"
 )
 
@@ -79,5 +80,77 @@ func ZauthSignTxn(serverAddr string) sys.AuthorizeFunc {
 		}
 
 		return string(d), nil
+	}
+}
+
+func ZauthAuthCommon(serverAddr string) sys.AuthorizeFunc {
+	return func(msg string) (string, error) {
+		// return func(msg string) (string, error) {
+		req, err := http.NewRequest("POST", serverAddr+"/sign/msg", bytes.NewBuffer([]byte(msg)))
+		if err != nil {
+			return "", errors.Wrap(err, "failed to create HTTP request")
+		}
+		req.Header.Set("Content-Type", "application/json")
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to send HTTP request")
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			rsp, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return "", errors.Wrap(err, "failed to read response body")
+			}
+
+			return "", errors.Errorf("unexpected status code: %d, res: %s", resp.StatusCode, string(rsp))
+		}
+
+		d, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to read response body")
+		}
+
+		return string(d), nil
+	}
+}
+
+type AuthMessage struct {
+	Data     string `json:"data"`
+	ClientID string `json:"client_id"`
+}
+
+type AuthResponse struct {
+	Sig    string `json:"sig"`
+	Pubkey string `json:"public_key"`
+}
+
+func ZauthSignMsg(serverAddr string) sys.SignFunc {
+	return func(hash string, signatureScheme string, keys []sys.KeyPair) (string, error) {
+		data, err := json.Marshal(AuthMessage{
+			Data:     hash,
+			ClientID: client.GetClient().ClientID,
+		})
+		if err != nil {
+			return "", err
+		}
+
+		// fmt.Println("auth - sys.AuthCommon:", sys.AuthCommon)
+		if sys.AuthCommon == nil {
+			return "", errors.New("authCommon is not set")
+		}
+
+		rsp, err := sys.AuthCommon(string(data))
+		if err != nil {
+			return "", err
+		}
+
+		var ar AuthResponse
+		err = json.Unmarshal([]byte(rsp), &ar)
+		if err != nil {
+			return "", err
+		}
+
+		return AddSignature(client.GetClientPrivateKey(), ar.Sig, hash)
 	}
 }
