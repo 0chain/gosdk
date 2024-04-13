@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"path"
 	"strconv"
@@ -191,9 +192,25 @@ func estimateBurnWZCNGasAmount(from, to string, amountTokens int) string { // no
 }
 
 // estimateMintWZCNGasAmount performs gas amount estimation for the given mint wzcn transaction.
-func estimateMintWZCNGasAmount(from, to, zcnTransaction string, amountToken, nonce int64, signatures []string) string { // nolint:golint,unused
+func estimateMintWZCNGasAmount(from, to, zcnTransaction string, amountToken, nonce int64, signaturesRaw []string) string { // nolint:golint,unused
+	var signaturesBytes [][]byte
+
+	var (
+		signatureBytes []byte
+		err            error
+	)
+
+	for _, signature := range signaturesRaw {
+		signatureBytes, err = base64.StdEncoding.DecodeString(signature)
+		if err != nil {
+			return errors.Wrap("estimateMintWZCNGasAmount", "failed to convert raw signature into bytes", err).Error()
+		}
+
+		signaturesBytes = append(signaturesBytes, signatureBytes)
+	}
+
 	estimateMintWZCNGasAmountResponse, err := bridge.EstimateMintWZCNGasAmount(
-		context.Background(), from, to, zcnTransaction, amountToken, nonce, signatures)
+		context.Background(), from, to, zcnTransaction, amountToken, nonce, signaturesBytes)
 	if err != nil {
 		return errors.Wrap("estimateMintWZCNGasAmount", "failed to estimate gas amount", err).Error()
 	}
