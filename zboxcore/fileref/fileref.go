@@ -9,6 +9,7 @@ import (
 
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/encryption"
+	lru "github.com/hashicorp/golang-lru/v2"
 )
 
 const CHUNK_SIZE = 64 * 1024
@@ -17,6 +18,8 @@ const (
 	FILE      = "f"
 	DIRECTORY = "d"
 )
+
+var fileCache, _ = lru.New[string, FileRef](100)
 
 type Collaborator struct {
 	RefID     int64  `json:"ref_id"`
@@ -96,6 +99,21 @@ type Ref struct {
 
 func GetReferenceLookup(allocationID string, path string) string {
 	return encryption.Hash(allocationID + ":" + path)
+}
+
+func GetCacheKey(lookuphash, blobberID string) string {
+	return encryption.FastHash(lookuphash + ":" + blobberID)
+}
+
+func StoreFileRef(key string, fr FileRef) {
+	fileCache.Add(key, fr)
+}
+
+func GetFileRef(key string) (FileRef, bool) {
+	if fr, ok := fileCache.Get(key); ok {
+		return fr, true
+	}
+	return FileRef{}, false
 }
 
 func (r *Ref) CalculateHash() string {
