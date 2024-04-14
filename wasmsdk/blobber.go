@@ -34,9 +34,6 @@ func listObjects(allocationID string, remotePath string, offset, pageLimit int) 
 	if err != nil {
 		return nil, err
 	}
-  
-	return alloc.ListDir(remotePath, sdk.WithListRequestOffset(offset), sdk.WithListRequestPageLimit(pageLimit))
-}
 
 	return alloc.ListDir(remotePath, sdk.WithListRequestOffset(offset), sdk.WithListRequestPageLimit(pageLimit))
 }
