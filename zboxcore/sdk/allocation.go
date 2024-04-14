@@ -1756,6 +1756,15 @@ func (a *Allocation) GetAuthTicketForShare(
 	return a.GetAuthTicket(path, filename, referenceType, refereeClientID, "", 0, &now)
 }
 
+// RevokeShare revokes the shared access to a file or directory within the allocation.
+// It revokes the shared access to the file or directory for the specified recipient.
+//
+// Parameters:
+// 		- path: The path of the file or directory to revoke the shared access.
+// 		- refereeClientID: The client ID of the recipient whose shared access is to be revoked.
+//
+// Returns:
+// 		- error: An error if the shared access revocation fails.
 func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
 	success := make(chan int, len(a.Blobbers))
 	notFound := make(chan int, len(a.Blobbers))
@@ -1822,7 +1831,7 @@ GetAuthTicket generates an authentication ticket for the specified file or direc
 The authentication ticket is used to grant access to the file or directory to another client.
 The function takes the following parameters:
 
-	- path: The path of the file or directory.
+	- path: The path of the file or directory (should be absolute).
 	- filename: The name of the file.
 	- referenceType: The type of reference (file or directory).
 	- refereeClientID: The client ID of the referee.

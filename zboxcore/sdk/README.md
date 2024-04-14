@@ -1385,7 +1385,7 @@ func (a *Allocation) CanUpload() bool
 
 
 <a name="Allocation.CancelDownload"></a>
-### func \(\*Allocation\) [CancelDownload](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L1974>)
+### func \(\*Allocation\) [CancelDownload](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L1983>)
 
 ```go
 func (a *Allocation) CancelDownload(remotepath string) error
@@ -1394,7 +1394,7 @@ func (a *Allocation) CancelDownload(remotepath string) error
 
 
 <a name="Allocation.CancelRepair"></a>
-### func \(\*Allocation\) [CancelRepair](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2370>)
+### func \(\*Allocation\) [CancelRepair](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2379>)
 
 ```go
 func (a *Allocation) CancelRepair() error
@@ -1403,7 +1403,7 @@ func (a *Allocation) CancelRepair() error
 
 
 <a name="Allocation.CancelUpload"></a>
-### func \(\*Allocation\) [CancelUpload](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2358>)
+### func \(\*Allocation\) [CancelUpload](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2367>)
 
 ```go
 func (a *Allocation) CancelUpload(remotePath string) error
@@ -1448,7 +1448,7 @@ func (a *Allocation) DownloadByBlocksToFileHandler(fileHandler sys.File, remoteP
 
 
 <a name="Allocation.DownloadByBlocksToFileHandlerFromAuthTicket"></a>
-### func \(\*Allocation\) [DownloadByBlocksToFileHandlerFromAuthTicket](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2130-L2141>)
+### func \(\*Allocation\) [DownloadByBlocksToFileHandlerFromAuthTicket](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2139-L2150>)
 
 ```go
 func (a *Allocation) DownloadByBlocksToFileHandlerFromAuthTicket(fileHandler sys.File, authTicket string, remoteLookupHash string, startBlock, endBlock int64, numBlocks int, remoteFilename string, verifyDownload bool, status StatusCallback, isFinal bool, downloadReqOpts ...DownloadRequestOption) error
@@ -1484,7 +1484,7 @@ func (a *Allocation) DownloadFileToFileHandler(fileHandler sys.File, remotePath 
 
 
 <a name="Allocation.DownloadFileToFileHandlerFromAuthTicket"></a>
-### func \(\*Allocation\) [DownloadFileToFileHandlerFromAuthTicket](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2116-L2125>)
+### func \(\*Allocation\) [DownloadFileToFileHandlerFromAuthTicket](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2125-L2134>)
 
 ```go
 func (a *Allocation) DownloadFileToFileHandlerFromAuthTicket(fileHandler sys.File, authTicket string, remoteLookupHash string, remoteFilename string, verifyDownload bool, status StatusCallback, isFinal bool, downloadReqOpts ...DownloadRequestOption) error
@@ -1506,7 +1506,7 @@ Parameters:
 Returns: \- An error if the download fails, nil otherwise.
 
 <a name="Allocation.DownloadFromAuthTicket"></a>
-### func \(\*Allocation\) [DownloadFromAuthTicket](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2188-L2189>)
+### func \(\*Allocation\) [DownloadFromAuthTicket](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2197-L2198>)
 
 ```go
 func (a *Allocation) DownloadFromAuthTicket(localPath string, authTicket string, remoteLookupHash string, remoteFilename string, verifyDownload bool, status StatusCallback, isFinal bool, downloadReqOpts ...DownloadRequestOption) error
@@ -1515,7 +1515,7 @@ func (a *Allocation) DownloadFromAuthTicket(localPath string, authTicket string,
 
 
 <a name="Allocation.DownloadFromAuthTicketByBlocks"></a>
-### func \(\*Allocation\) [DownloadFromAuthTicketByBlocks](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2209-L2212>)
+### func \(\*Allocation\) [DownloadFromAuthTicketByBlocks](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2218-L2221>)
 
 ```go
 func (a *Allocation) DownloadFromAuthTicketByBlocks(localPath string, authTicket string, startBlock int64, endBlock int64, numBlocks int, remoteLookupHash string, remoteFilename string, verifyDownload bool, status StatusCallback, isFinal bool, downloadReqOpts ...DownloadRequestOption) error
@@ -1533,7 +1533,7 @@ func (a *Allocation) DownloadFromBlobber(blobberID, localPath, remotePath string
 
 
 <a name="Allocation.DownloadFromReader"></a>
-### func \(\*Allocation\) [DownloadFromReader](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L1983-L1987>)
+### func \(\*Allocation\) [DownloadFromReader](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L1992-L1996>)
 
 ```go
 func (a *Allocation) DownloadFromReader(remotePath, localPath, lookupHash, authTicket, contentMode string, verifyDownload bool, blocksPerMarker uint) error
@@ -1551,7 +1551,7 @@ func (a *Allocation) DownloadThumbnail(localPath string, remotePath string, veri
 
 
 <a name="Allocation.DownloadThumbnailFromAuthTicket"></a>
-### func \(\*Allocation\) [DownloadThumbnailFromAuthTicket](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2159-L2168>)
+### func \(\*Allocation\) [DownloadThumbnailFromAuthTicket](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2168-L2177>)
 
 ```go
 func (a *Allocation) DownloadThumbnailFromAuthTicket(localPath string, authTicket string, remoteLookupHash string, remoteFilename string, verifyDownload bool, status StatusCallback, isFinal bool, downloadReqOpts ...DownloadRequestOption) error
@@ -1569,7 +1569,7 @@ func (a *Allocation) DownloadThumbnailToFileHandler(fileHandler sys.File, remote
 
 
 <a name="Allocation.DownloadThumbnailToFileHandlerFromAuthTicket"></a>
-### func \(\*Allocation\) [DownloadThumbnailToFileHandlerFromAuthTicket](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2146-L2154>)
+### func \(\*Allocation\) [DownloadThumbnailToFileHandlerFromAuthTicket](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2155-L2163>)
 
 ```go
 func (a *Allocation) DownloadThumbnailToFileHandlerFromAuthTicket(fileHandler sys.File, authTicket string, remoteLookupHash string, remoteFilename string, verifyDownload bool, status StatusCallback, isFinal bool) error
@@ -1623,7 +1623,7 @@ func (a *Allocation) GetAllocationDiff(lastSyncCachePath string, localRootPath s
 
 
 <a name="Allocation.GetAllocationFileReader"></a>
-### func \(\*Allocation\) [GetAllocationFileReader](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2051-L2055>)
+### func \(\*Allocation\) [GetAllocationFileReader](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2060-L2064>)
 
 ```go
 func (a *Allocation) GetAllocationFileReader(remotePath, lookupHash, authTicket, contentMode string, verifyDownload bool, blocksPerMarker uint) (io.ReadSeekCloser, error)
@@ -1632,7 +1632,7 @@ func (a *Allocation) GetAllocationFileReader(remotePath, lookupHash, authTicket,
 GetStreamDownloader will check file ref existence and returns an instance that provides io.ReadSeekerCloser interface
 
 <a name="Allocation.GetAuthTicket"></a>
-### func \(\*Allocation\) [GetAuthTicket](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L1835-L1836>)
+### func \(\*Allocation\) [GetAuthTicket](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L1844-L1845>)
 
 ```go
 func (a *Allocation) GetAuthTicket(path, filename string, referenceType, refereeClientID, refereeEncryptionPublicKey string, expiration int64, availableAfter *time.Time) (string, error)
@@ -1640,7 +1640,7 @@ func (a *Allocation) GetAuthTicket(path, filename string, referenceType, referee
 
 GetAuthTicket generates an authentication ticket for the specified file or directory in the allocation. The authentication ticket is used to grant access to the file or directory to another client. The function takes the following parameters:
 
-- path: The path of the file or directory.
+- path: The path of the file or directory \(should be absolute\).
 - filename: The name of the file.
 - referenceType: The type of reference \(file or directory\).
 - refereeClientID: The client ID of the referee.
@@ -1659,9 +1659,17 @@ func (a *Allocation) GetAuthTicketForShare(path, filename, referenceType, refere
 
 GetAuthTicketForShare returns the authentication ticket for sharing a file or directory within the allocation. It generates an authentication ticket using the provided parameters and the current time. The authentication ticket can be used by the recipient to access the shared file or directory.
 
-Parameters: \- path: The path of the file or directory to be shared. \- filename: The name of the file to be shared. \- referenceType: The type of reference for the shared file or directory. \- refereeClientID: The client ID of the recipient who will be granted access to the shared file or directory.
+Parameters:
 
-Returns: \- string: The authentication ticket for sharing the file or directory. \- error: An error if the authentication ticket generation fails.
+- path: The path of the file or directory to be shared.
+- filename: The name of the file to be shared.
+- referenceType: The type of reference for the shared file or directory.
+- refereeClientID: The client ID of the recipient who will be granted access to the shared file or directory.
+
+Returns:
+
+- string: The authentication ticket for sharing the file or directory.
+- error: An error if the authentication ticket generation fails.
 
 <a name="Allocation.GetBlobberStats"></a>
 ### func \(\*Allocation\) [GetBlobberStats](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L285>)
@@ -1718,7 +1726,7 @@ func (a *Allocation) GetFileStats(path string) (map[string]*FileStats, error)
 
 
 <a name="Allocation.GetMaxStorageCost"></a>
-### func \(\*Allocation\) [GetMaxStorageCost](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2458>)
+### func \(\*Allocation\) [GetMaxStorageCost](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2467>)
 
 ```go
 func (a *Allocation) GetMaxStorageCost(size int64) (float64, error)
@@ -1727,7 +1735,7 @@ func (a *Allocation) GetMaxStorageCost(size int64) (float64, error)
 
 
 <a name="Allocation.GetMaxStorageCostFromBlobbers"></a>
-### func \(\*Allocation\) [GetMaxStorageCostFromBlobbers](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2443>)
+### func \(\*Allocation\) [GetMaxStorageCostFromBlobbers](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2452>)
 
 ```go
 func (a *Allocation) GetMaxStorageCostFromBlobbers(size int64, blobbers []*BlobberAllocation) (float64, error)
@@ -1736,7 +1744,7 @@ func (a *Allocation) GetMaxStorageCostFromBlobbers(size int64, blobbers []*Blobb
 
 
 <a name="Allocation.GetMaxWriteRead"></a>
-### func \(\*Allocation\) [GetMaxWriteRead](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2408>)
+### func \(\*Allocation\) [GetMaxWriteRead](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2417>)
 
 ```go
 func (a *Allocation) GetMaxWriteRead() (maxW float64, maxR float64, err error)
@@ -1745,7 +1753,7 @@ func (a *Allocation) GetMaxWriteRead() (maxW float64, maxR float64, err error)
 
 
 <a name="Allocation.GetMaxWriteReadFromBlobbers"></a>
-### func \(\*Allocation\) [GetMaxWriteReadFromBlobbers](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2378>)
+### func \(\*Allocation\) [GetMaxWriteReadFromBlobbers](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2387>)
 
 ```go
 func (a *Allocation) GetMaxWriteReadFromBlobbers(blobbers []*BlobberAllocation) (maxW float64, maxR float64, err error)
@@ -1754,7 +1762,7 @@ func (a *Allocation) GetMaxWriteReadFromBlobbers(blobbers []*BlobberAllocation) 
 
 
 <a name="Allocation.GetMinStorageCost"></a>
-### func \(\*Allocation\) [GetMinStorageCost](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2476>)
+### func \(\*Allocation\) [GetMinStorageCost](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2485>)
 
 ```go
 func (a *Allocation) GetMinStorageCost(size int64) (common.Balance, error)
@@ -1763,7 +1771,7 @@ func (a *Allocation) GetMinStorageCost(size int64) (common.Balance, error)
 
 
 <a name="Allocation.GetMinWriteRead"></a>
-### func \(\*Allocation\) [GetMinWriteRead](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2412>)
+### func \(\*Allocation\) [GetMinWriteRead](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2421>)
 
 ```go
 func (a *Allocation) GetMinWriteRead() (minW float64, minR float64, err error)
@@ -1853,7 +1861,7 @@ func (a *Allocation) ListDirFromAuthTicket(authTicket string, lookupHash string,
 
 
 <a name="Allocation.RepairAlloc"></a>
-### func \(\*Allocation\) [RepairAlloc](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2345>)
+### func \(\*Allocation\) [RepairAlloc](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2354>)
 
 ```go
 func (a *Allocation) RepairAlloc(statusCB StatusCallback) (err error)
@@ -1880,13 +1888,22 @@ func (a *Allocation) RepairRequired(remotepath string) (zboxutil.Uint128, zboxut
 
 
 <a name="Allocation.RevokeShare"></a>
-### func \(\*Allocation\) [RevokeShare](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L1759>)
+### func \(\*Allocation\) [RevokeShare](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L1768>)
 
 ```go
 func (a *Allocation) RevokeShare(path string, refereeClientID string) error
 ```
 
+RevokeShare revokes the shared access to a file or directory within the allocation. It revokes the shared access to the file or directory for the specified recipient.
 
+Parameters:
+
+- path: The path of the file or directory to revoke the shared access.
+- refereeClientID: The client ID of the recipient whose shared access is to be revoked.
+
+Returns:
+
+- error: An error if the shared access revocation fails.
 
 <a name="Allocation.RollbackWithMask"></a>
 ### func \(\*Allocation\) [RollbackWithMask](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/rollback.go#L333>)
@@ -1907,7 +1924,7 @@ func (a *Allocation) SaveRemoteSnapshot(pathToSave string, remoteExcludePath []s
 SaveRemoteSnapShot \- Saves the remote current information to the given file This file can be passed to GetAllocationDiff to exactly find the previous sync state to current.
 
 <a name="Allocation.SetConsensusThreshold"></a>
-### func \(\*Allocation\) [SetConsensusThreshold](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2514>)
+### func \(\*Allocation\) [SetConsensusThreshold](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2523>)
 
 ```go
 func (a *Allocation) SetConsensusThreshold()
@@ -1934,7 +1951,7 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 
 
 <a name="Allocation.StartRepair"></a>
-### func \(\*Allocation\) [StartRepair](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2310>)
+### func \(\*Allocation\) [StartRepair](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2319>)
 
 ```go
 func (a *Allocation) StartRepair(localRootPath, pathToRepair string, statusCB StatusCallback) error
@@ -1961,7 +1978,7 @@ func (a *Allocation) UpdateFileWithThumbnail(workdir, localpath string, remotepa
 UpdateFileWithThumbnail \[Deprecated\]please use CreateChunkedUpload
 
 <a name="Allocation.UpdateWithRepair"></a>
-### func \(\*Allocation\) [UpdateWithRepair](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2518-L2525>)
+### func \(\*Allocation\) [UpdateWithRepair](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2527-L2534>)
 
 ```go
 func (a *Allocation) UpdateWithRepair(size int64, extend bool, lock uint64, addBlobberId, removeBlobberId string, setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters, statusCB StatusCallback) (string, error)
@@ -1970,7 +1987,7 @@ func (a *Allocation) UpdateWithRepair(size int64, extend bool, lock uint64, addB
 
 
 <a name="Allocation.UploadAuthTicketToBlobber"></a>
-### func \(\*Allocation\) [UploadAuthTicketToBlobber](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L1907>)
+### func \(\*Allocation\) [UploadAuthTicketToBlobber](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L1916>)
 
 ```go
 func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKey string, availableAfter *time.Time) error
