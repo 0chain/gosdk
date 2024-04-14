@@ -845,6 +845,11 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 		wg.Wait()
 		// Check consensus
 		if mo.operationMask.CountOnes() < mo.consensusThresh {
+			l.Logger.Error("Multioperation: create connection failed. Required consensus not met",
+				zap.Int("consensusThresh", mo.consensusThresh),
+				zap.Int("operationMask", mo.operationMask.CountOnes()),
+				zap.Any("connectionErrors", connectionErrors))
+
 			majorErr := zboxutil.MajorError(connectionErrors)
 			if majorErr != nil {
 				return errors.New("consensus_not_met",
@@ -1049,7 +1054,9 @@ func (a *Allocation) DownloadThumbnail(localPath string, remotePath string, veri
 	}
 
 	err = a.addAndGenerateDownloadRequest(f, remotePath, DOWNLOAD_CONTENT_THUMB, 1, 0,
-		numBlockDownloads, verifyDownload, status, isFinal, localFilePath)
+		numBlockDownloads, verifyDownload, status, isFinal, localFilePath, WithFileCallback(func() {
+			f.Close() //nolint: errcheck
+		}))
 	if err != nil {
 		if !toKeep {
 			os.Remove(localFilePath) //nolint: errcheck
@@ -2471,7 +2478,7 @@ func (a *Allocation) UpdateWithRepair(
 	size int64,
 	extend bool,
 	lock uint64,
-	addBlobberId, removeBlobberId string,
+	addBlobberId, addBlobberAuthTicket, removeBlobberId string,
 	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
 	statusCB StatusCallback,
 ) (string, error) {
@@ -2480,7 +2487,7 @@ func (a *Allocation) UpdateWithRepair(
 	}
 
 	l.Logger.Info("Updating allocation")
-	hash, _, err := UpdateAllocation(size, extend, a.ID, lock, addBlobberId, removeBlobberId, setThirdPartyExtendable, fileOptionsParams)
+	hash, _, err := UpdateAllocation(size, extend, a.ID, lock, addBlobberId, addBlobberAuthTicket, removeBlobberId, setThirdPartyExtendable, fileOptionsParams)
 	if err != nil {
 		return "", err
 	}

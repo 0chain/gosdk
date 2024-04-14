@@ -582,6 +582,18 @@ func bulkUpload(jsonBulkUploadOptions string) ([]BulkUploadResult, error) {
 	return results, nil
 }
 
+// set upload mode, default is medium, for low set 0, for high set 2
+func setUploadMode(mode int) {
+	switch mode {
+	case 0:
+		sdk.SetUploadMode(sdk.UploadModeLow)
+	case 1:
+		sdk.SetUploadMode(sdk.UploadModeMedium)
+	case 2:
+		sdk.SetUploadMode(sdk.UploadModeHigh)
+	}
+}
+
 func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 	var options []BulkUploadOption
 	result := MultiUploadResult{}
@@ -901,8 +913,8 @@ func downloadBlocks(allocId string, remotePath, authTicket, lookupHash string, s
 }
 
 // GetBlobbersList get list of active blobbers, and format them as array json string
-func getBlobbers() ([]*sdk.Blobber, error) {
-	blobbs, err := sdk.GetBlobbers(true)
+func getBlobbers(stakable bool) ([]*sdk.Blobber, error) {
+	blobbs, err := sdk.GetBlobbers(true, stakable)
 	if err != nil {
 		return nil, err
 	}

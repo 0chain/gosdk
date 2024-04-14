@@ -33,7 +33,7 @@ import (
 )
 
 const (
-	DefaultUploadTimeOut = 45 * time.Second
+	DefaultUploadTimeOut = 120 * time.Second
 )
 
 var (
@@ -47,6 +47,7 @@ var (
 	ErrNoEnoughSpaceLeftInAllocation = errors.New("alloc: no enough space left in allocation")
 	CancelOpCtx                      = make(map[string]context.CancelCauseFunc)
 	cancelLock                       sync.Mutex
+	CurrentMode                      = UploadModeMedium
 )
 
 // DefaultChunkSize default chunk size for file and thumbnail
@@ -60,6 +61,18 @@ const (
 	// ReEncryptionHeaderSize re-encryption header size in chunk
 	ReEncryptionHeaderSize = 256
 )
+
+type UploadMode byte
+
+const (
+	UploadModeLow UploadMode = iota
+	UploadModeMedium
+	UploadModeHigh
+)
+
+func SetUploadMode(mode UploadMode) {
+	CurrentMode = mode
+}
 
 /*
   CreateChunkedUpload create a ChunkedUpload instance
@@ -297,10 +310,22 @@ func CreateChunkedUpload(
 }
 
 func calculateWorkersAndRequests(dataShards, totalShards, chunknumber int) (uploadWorkers int, uploadRequests int) {
+	if IsWasm {
+		uploadWorkers = 1
+		uploadRequests = 2
+		return
+	}
 	if totalShards < 4 {
 		uploadWorkers = 4
 	} else {
-		uploadWorkers = 2
+		switch CurrentMode {
+		case UploadModeLow:
+			uploadWorkers = 1
+		case UploadModeMedium:
+			uploadWorkers = 2
+		case UploadModeHigh:
+			uploadWorkers = 4
+		}
 	}
 
 	if chunknumber*dataShards < 640 {

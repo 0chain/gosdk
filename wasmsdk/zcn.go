@@ -11,11 +11,12 @@ import (
 type Balance struct {
 	ZCN float64 `json:"zcn"`
 	USD float64 `json:"usd"`
+	Nonce   int64   `json:"nonce"`
 }
 
 func getWalletBalance(clientId string) (*Balance, error) {
 
-	zcn, err := zcncore.GetWalletBalance(clientId)
+	zcn, nonce, err := zcncore.GetWalletBalance(clientId)
 	if err != nil {
 		return nil, err
 	}
@@ -33,6 +34,7 @@ func getWalletBalance(clientId string) (*Balance, error) {
 	return &Balance{
 		ZCN: zcnToken,
 		USD: usd,
+		Nonce: nonce,
 	}, nil
 }
 
