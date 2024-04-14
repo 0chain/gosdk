@@ -832,7 +832,7 @@ func GetValidators(stakable bool) (validators []*Validator, err error) {
 		STORAGE_SCADDRESS,
 		"/validators",
 		map[string]string{
-			"stakable" : strconv.FormatBool(stakable),
+			"stakable": strconv.FormatBool(stakable),
 		},
 		nil)
 	if err != nil {
@@ -1116,7 +1116,7 @@ func getNewAllocationBlobbers(
 	preferredBlobberIds, blobberAuthTickets []string,
 ) (map[string]interface{}, error) {
 	allocBlobberIDs, err := GetAllocationBlobbers(
-		datashards, parityshards, size, false, readPrice, writePrice, false,
+		datashards, parityshards, size, false, readPrice, writePrice, true,
 	)
 	if err != nil {
 		return nil, err
