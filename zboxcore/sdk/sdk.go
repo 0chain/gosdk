@@ -1075,7 +1075,7 @@ func CreateAllocationForOwner(
 func GetAllocationBlobbers(
 	datashards, parityshards int,
 	size int64,
-	isRestricted bool,
+	isRestricted int,
 	readPrice, writePrice PriceRange,
 	force ...bool,
 ) ([]string, error) {
