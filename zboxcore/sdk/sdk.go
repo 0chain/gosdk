@@ -1080,7 +1080,7 @@ func CreateAllocationForOwner(
 func GetAllocationBlobbers(
 	datashards, parityshards int,
 	size int64,
-	isRestricted bool,
+	isRestricted int,
 	readPrice, writePrice PriceRange,
 	force ...bool,
 ) ([]string, error) {
@@ -1122,7 +1122,7 @@ func getNewAllocationBlobbers(
 	preferredBlobberIds, blobberAuthTickets []string, force bool,
 ) (map[string]interface{}, error) {
 	allocBlobberIDs, err := GetAllocationBlobbers(
-		datashards, parityshards, size, false, readPrice, writePrice, force,
+		datashards, parityshards, size, 2, readPrice, writePrice, force,
 	)
 	if err != nil {
 		return nil, err
