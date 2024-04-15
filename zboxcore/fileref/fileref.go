@@ -116,6 +116,10 @@ func GetFileRef(key string) (FileRef, bool) {
 	return FileRef{}, false
 }
 
+func DeleteFileRef(key string) {
+	fileCache.Remove(key)
+}
+
 func (r *Ref) CalculateHash() string {
 	if len(r.Children) == 0 && !r.ChildrenLoaded && !r.HashToBeComputed {
 		return r.Hash
