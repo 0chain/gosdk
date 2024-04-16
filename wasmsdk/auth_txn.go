@@ -8,6 +8,7 @@ import (
 	"syscall/js"
 
 	"github.com/0chain/gosdk/core/sys"
+	"github.com/0chain/gosdk/zcncore"
 )
 
 type AuthCallbackFunc func(msg string) string
@@ -26,6 +27,14 @@ func registerAuthorizer(this js.Value, args []js.Value) interface{} {
 		return <-authResponseC, nil
 	}
 	return nil
+}
+
+func registerZauthServer(serverAddr string) {
+	sys.SetAuthorize(zcncore.ZauthSignTxn(serverAddr))
+}
+
+func zauthServerSetup(serverAddr string, splitWallet string) error {
+	return zcncore.CallZauthSetupString(serverAddr, splitWallet)
 }
 
 func registerAuthCommon(this js.Value, args []js.Value) interface{} {

@@ -306,6 +306,11 @@ func main() {
 				"registerAuthCommon": js.FuncOf(registerAuthCommon),
 				"callAuth":           js.FuncOf(callAuth),
 				"authResponse":       authResponse,
+
+				// zauth
+				"registerZauthServer": registerZauthServer,
+				// "generateKeysFromZVault": generateKeysFromZVault,
+				"zauthServerSetup": zauthServerSetup,
 			})
 
 			fmt.Println("__wasm_initialized__ = true;")

@@ -48,6 +48,51 @@ func CallZauthSetup(serverAddr string, splitWallet SplitWallet) error {
 		return errors.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
+	var rsp struct {
+		Result string `json:"result"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&rsp); err != nil {
+		return errors.Wrap(err, "failed to decode response body")
+	}
+
+	if rsp.Result != "success" {
+		return errors.New("failed to setup zauth server")
+	}
+
+	return nil
+}
+
+func CallZauthSetupString(serverAddr, splitWallet string) error {
+	// Add your code here
+	endpoint := serverAddr + "/setup"
+	req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer([]byte(splitWallet)))
+	if err != nil {
+		return errors.Wrap(err, "failed to create HTTP request")
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return errors.Wrap(err, "failed to send HTTP request")
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return errors.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	var rsp struct {
+		Result string `json:"result"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&rsp); err != nil {
+		return errors.Wrap(err, "failed to decode response body")
+	}
+
+	if rsp.Result != "success" {
+		return errors.New("failed to setup zauth server")
+	}
 	return nil
 }
 
@@ -59,6 +104,7 @@ func ZauthSignTxn(serverAddr string) sys.AuthorizeFunc {
 			return "", errors.Wrap(err, "failed to create HTTP request")
 		}
 		req.Header.Set("Content-Type", "application/json")
+
 		client := &http.Client{}
 		resp, err := client.Do(req)
 		if err != nil {
@@ -116,19 +162,20 @@ func ZauthAuthCommon(serverAddr string) sys.AuthorizeFunc {
 }
 
 type AuthMessage struct {
-	Data     string `json:"data"`
-	ClientID string `json:"client_id"`
+	Hash      string `json:"hash"`
+	Signature string `json:"signature"`
+	ClientID  string `json:"client_id"`
 }
 
 type AuthResponse struct {
-	Sig    string `json:"sig"`
-	Pubkey string `json:"public_key"`
+	Sig string `json:"sig"`
+	// Pubkey string `json:"public_key"`
 }
 
 func ZauthSignMsg(serverAddr string) sys.SignFunc {
 	return func(hash string, signatureScheme string, keys []sys.KeyPair) (string, error) {
 		data, err := json.Marshal(AuthMessage{
-			Data:     hash,
+			Hash:     hash,
 			ClientID: client.GetClient().ClientID,
 		})
 		if err != nil {
