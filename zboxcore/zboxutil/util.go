@@ -66,13 +66,14 @@ func (b *lazybuf) string() string {
 }
 
 func GetFileContentType(out io.ReadSeeker) (string, error) {
-	buffer := make([]byte, 261)
-	_, err := out.Read(buffer)
+	buffer := make([]byte, 10240)
+	n, err := out.Read(buffer)
 	defer out.Seek(0, 0) //nolint
 
 	if err != nil && err != io.EOF {
 		return "", err
 	}
+	buffer = buffer[:n]
 
 	kind, _ := filetype.Match(buffer)
 	if kind == filetype.Unknown {

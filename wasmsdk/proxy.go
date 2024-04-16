@@ -204,6 +204,7 @@ func main() {
 				"showLogs":               showLogs,
 				"getUSDRate":             getUSDRate,
 				"isWalletID":             isWalletID,
+				"getVersion":             getVersion,
 				"getLookupHash":          getLookupHash,
 				"createThumbnail":        createThumbnail,
 				"makeSCRestAPICall":      makeSCRestAPICall,

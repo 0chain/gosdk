@@ -45,7 +45,7 @@ func createfreeallocation(freeStorageMarker string) (string, error) {
 
 func getAllocationBlobbers(preferredBlobberURLs []string,
 	dataShards, parityShards int, size int64,
-	minReadPrice, maxReadPrice, minWritePrice, maxWritePrice int64, isRestricted, force bool) ([]string, error) {
+	minReadPrice, maxReadPrice, minWritePrice, maxWritePrice int64, isRestricted int, force bool) ([]string, error) {
 
 	if len(preferredBlobberURLs) > 0 {
 		return sdk.GetBlobberIds(preferredBlobberURLs)
