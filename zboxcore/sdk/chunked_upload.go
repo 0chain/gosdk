@@ -464,6 +464,7 @@ func (su *ChunkedUpload) process() error {
 					}
 					return err
 				}
+				logger.Logger.Info("Actual hash: ", su.fileMeta.ActualHash)
 			}
 			if su.fileMeta.ActualSize == 0 {
 				su.fileMeta.ActualSize = su.progress.ReadLength
