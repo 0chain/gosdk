@@ -143,8 +143,6 @@ func (car *CreateAllocationRequest) toCreateAllocationSCInput() *createAllocatio
 
 type StakePoolSettings struct {
 	DelegateWallet string  `json:"delegate_wallet"`
-	MinStake       int64   `json:"min_stake"`
-	MaxStake       int64   `json:"max_stake"`
 	NumDelegates   int     `json:"num_delegates"`
 	ServiceCharge  float64 `json:"service_charge"`
 }
@@ -157,7 +155,7 @@ type Terms struct {
 
 type Blobber interface {
 	SetTerms(readPrice int64, writePrice int64, minLockDemand float64, maxOfferDuration int64)
-	SetStakePoolSettings(delegateWallet string, minStake int64, maxStake int64, numDelegates int, serviceCharge float64)
+	SetStakePoolSettings(delegateWallet string, numDelegates int, serviceCharge float64)
 	SetAvailable(bool)
 }
 
@@ -182,11 +180,9 @@ type blobber struct {
 	NotAvailable      bool              `json:"not_available"`
 }
 
-func (b *blobber) SetStakePoolSettings(delegateWallet string, minStake int64, maxStake int64, numDelegates int, serviceCharge float64) {
+func (b *blobber) SetStakePoolSettings(delegateWallet string, numDelegates int, serviceCharge float64) {
 	b.StakePoolSettings = StakePoolSettings{
 		DelegateWallet: delegateWallet,
-		MinStake:       minStake,
-		MaxStake:       maxStake,
 		NumDelegates:   numDelegates,
 		ServiceCharge:  serviceCharge,
 	}
@@ -205,7 +201,7 @@ func (b *blobber) SetAvailable(availability bool) {
 }
 
 type Validator interface {
-	SetStakePoolSettings(delegateWallet string, minStake int64, maxStake int64, numDelegates int, serviceCharge float64)
+	SetStakePoolSettings(delegateWallet string, numDelegates int, serviceCharge float64)
 }
 
 func NewValidator(id string, baseUrl string) Validator {
@@ -221,18 +217,16 @@ type validator struct {
 	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
 }
 
-func (v *validator) SetStakePoolSettings(delegateWallet string, minStake int64, maxStake int64, numDelegates int, serviceCharge float64) {
+func (v *validator) SetStakePoolSettings(delegateWallet string, numDelegates int, serviceCharge float64) {
 	v.StakePoolSettings = StakePoolSettings{
 		DelegateWallet: delegateWallet,
-		MinStake:       minStake,
-		MaxStake:       maxStake,
 		NumDelegates:   numDelegates,
 		ServiceCharge:  serviceCharge,
 	}
 }
 
 type AddAuthorizerPayload interface {
-	SetStakePoolSettings(delegateWallet string, minStake int64, maxStake int64, numDelegates int, serviceCharge float64)
+	SetStakePoolSettings(delegateWallet string, numDelegates int, serviceCharge float64)
 }
 
 func NewAddAuthorizerPayload(pubKey, url string) AddAuthorizerPayload {
@@ -248,11 +242,9 @@ type addAuthorizerPayload struct {
 	StakePoolSettings AuthorizerStakePoolSettings `json:"stake_pool_settings"` // Used to initially create stake pool
 }
 
-func (a *addAuthorizerPayload) SetStakePoolSettings(delegateWallet string, minStake int64, maxStake int64, numDelegates int, serviceCharge float64) {
+func (a *addAuthorizerPayload) SetStakePoolSettings(delegateWallet string, numDelegates int, serviceCharge float64) {
 	a.StakePoolSettings = AuthorizerStakePoolSettings{
 		DelegateWallet: delegateWallet,
-		MinStake:       minStake,
-		MaxStake:       maxStake,
 		NumDelegates:   numDelegates,
 		ServiceCharge:  serviceCharge,
 	}
@@ -264,8 +256,6 @@ type AuthorizerHealthCheckPayload struct {
 
 type AuthorizerStakePoolSettings struct {
 	DelegateWallet string  `json:"delegate_wallet"`
-	MinStake       int64   `json:"min_stake"`
-	MaxStake       int64   `json:"max_stake"`
 	NumDelegates   int     `json:"num_delegates"`
 	ServiceCharge  float64 `json:"service_charge"`
 }
@@ -829,8 +819,6 @@ func NewMinerSCMinerInfo(id string, delegateWallet string,
 		minerSCDelegatePool: minerSCDelegatePool{
 			Settings: StakePoolSettings{
 				DelegateWallet: delegateWallet,
-				MinStake:       minStake,
-				MaxStake:       maxStake,
 				NumDelegates:   numDelegates,
 				ServiceCharge:  serviceCharge,
 			},

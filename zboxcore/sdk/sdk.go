@@ -700,8 +700,6 @@ func (v *UpdateValidator) ConvertToValidationNode() *blockchain.UpdateValidation
 
 	sp := &blockchain.UpdateStakePoolSettings{
 		DelegateWallet: v.DelegateWallet,
-		MinStake:       v.MinStake,
-		MaxStake:       v.MaxStake,
 		NumDelegates:   v.NumDelegates,
 		ServiceCharge:  v.ServiceCharge,
 	}
