@@ -716,12 +716,12 @@ func AddCommitRequest(req *CommitRequest)
 func AddFreeStorageAssigner(name, publicKey string, individualLimit, totalLimit float64) (string, int64, error)
 ```
 
-AddFreeStorageAssigner adds a new free storage assigner \(txn: \`storagesc.add\_free\_allocation\_assigner\`\). The free storage assigner is used to create free allocations.
+AddFreeStorageAssigner adds a new free storage assigner \(txn: `storagesc.add\_free\_allocation\_assigner`\). The free storage assigner is used to create free allocations.
 
-- \`name\` is the name of the assigner.
-- \`publicKey\` is the public key of the assigner.
-- \`individualLimit\` is the individual limit of the assigner for a single free allocation request
-- \`totalLimit\` is the total limit of the assigner for all free allocation requests.
+- `name` is the name of the assigner.
+- `publicKey` is the public key of the assigner.
+- `individualLimit` is the individual limit of the assigner for a single free allocation request
+- `totalLimit` is the total limit of the assigner for all free allocation requests.
 
 returns the hash of the transaction, the nonce of the transaction and an error if any.
 
@@ -732,9 +732,9 @@ returns the hash of the transaction, the nonce of the transaction and an error i
 func CancelAllocation(allocID string) (hash string, nonce int64, err error)
 ```
 
-CancelAllocation sends a cancel request for an allocation \(txn: \`storagesc.cancel\_allocation\`\)
+CancelAllocation sends a cancel request for an allocation \(txn: `storagesc.cancel\_allocation`\)
 
-- \`allocID\` is the id of the allocation.
+- `allocID` is the id of the allocation.
 
 returns the hash of the transaction, the nonce of the transaction and an error if any.
 
@@ -763,19 +763,19 @@ func CommitToFabric(metaTxnData, fabricConfigJSON string) (string, error)
 func CreateAllocationForOwner(owner, ownerpublickey string, datashards, parityshards int, size int64, readPrice, writePrice PriceRange, lock uint64, preferredBlobberIds []string, thirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters) (hash string, nonce int64, txn *transaction.Transaction, err error)
 ```
 
-CreateAllocationForOwner creates a new allocation with the given options \(txn: \`storagesc.new\_allocation\_request\`\).
+CreateAllocationForOwner creates a new allocation with the given options \(txn: `storagesc.new\_allocation\_request`\).
 
-- \`owner\` is the client id of the owner of the allocation.
-- \`ownerpublickey\` is the public key of the owner of the allocation.
-- \`datashards\` is the number of data shards for the allocation.
-- \`parityshards\` is the number of parity shards for the allocation.
-- \`size\` is the size of the allocation.
-- \`readPrice\` is the read price range for the allocation \(Reads in Züs are free\!\).
-- \`writePrice\` is the write price range for the allocation.
-- \`lock\` is the lock value for the transaction \(how much tokens to lock to the allocation, in SAS\).
-- \`preferredBlobberIds\` is a list of preferred blobber ids for the allocation.
-- \`thirdPartyExtendable\` is a flag indicating whether the allocation can be extended by a third party.
-- \`fileOptionsParams\` is the file options parameters for the allocation, which control the usage permissions of the files in the allocation.
+- `owner` is the client id of the owner of the allocation.
+- `ownerpublickey` is the public key of the owner of the allocation.
+- `datashards` is the number of data shards for the allocation.
+- `parityshards` is the number of parity shards for the allocation.
+- `size` is the size of the allocation.
+- `readPrice` is the read price range for the allocation \(Reads in Züs are free\!\).
+- `writePrice` is the write price range for the allocation.
+- `lock` is the lock value for the transaction \(how much tokens to lock to the allocation, in SAS\).
+- `preferredBlobberIds` is a list of preferred blobber ids for the allocation.
+- `thirdPartyExtendable` is a flag indicating whether the allocation can be extended by a third party.
+- `fileOptionsParams` is the file options parameters for the allocation, which control the usage permissions of the files in the allocation.
 
 returns the hash of the transaction, the nonce of the transaction, the transaction object and an error if any.
 
@@ -795,10 +795,10 @@ returns the hash of the new\_allocation\_request transaction, the nonce of the t
 func CreateFreeAllocation(marker string, value uint64) (string, int64, error)
 ```
 
-CreateFreeAllocation creates a new free allocation \(txn: \`storagesc.free\_allocation\_request\`\).
+CreateFreeAllocation creates a new free allocation \(txn: `storagesc.free\_allocation\_request`\).
 
-- \`marker\` is the marker for the free allocation.
-- \`value\` is the value of the free allocation.
+- `marker` is the marker for the free allocation.
+- `value` is the value of the free allocation.
 
 returns the hash of the transaction, the nonce of the transaction and an error if any.
 
@@ -818,9 +818,9 @@ func CreateReadPool() (hash string, nonce int64, err error)
 func FinalizeAllocation(allocID string) (hash string, nonce int64, err error)
 ```
 
-FinalizeAllocation sends a finalize request for an allocation \(txn: \`storagesc.finalize\_allocation\`\)
+FinalizeAllocation sends a finalize request for an allocation \(txn: `storagesc.finalize\_allocation`\)
 
-- \`allocID\` is the id of the allocation.
+- `allocID` is the id of the allocation.
 
 returns the hash of the transaction, the nonce of the transaction and an error if any.
 
@@ -842,12 +842,12 @@ func GetAllocationBlobbers(datashards, parityshards int, size int64, readPrice, 
 
 GetAllocationBlobbers returns a list of blobber ids that can be used for a new allocation.
 
-- \`datashards\` is the number of data shards for the allocation.
-- \`parityshards\` is the number of parity shards for the allocation.
-- \`size\` is the size of the allocation.
-- \`readPrice\` is the read price range for the allocation \(Reads in Züs are free\!\).
-- \`writePrice\` is the write price range for the allocation.
-- \`force\` is a flag indicating whether to force the allocation to be created.
+- `datashards` is the number of data shards for the allocation.
+- `parityshards` is the number of parity shards for the allocation.
+- `size` is the size of the allocation.
+- `readPrice` is the read price range for the allocation \(Reads in Züs are free\!\).
+- `writePrice` is the write price range for the allocation.
+- `force` is a flag indicating whether to force the allocation to be created.
 
 returns the list of blobber ids and an error if any.
 
@@ -878,7 +878,7 @@ func GetBlobberIds(blobberUrls []string) ([]string, error)
 
 GetBlobberIds returns a list of blobber ids that can be used for a new allocation.
 
-- \`blobberUrls\` is a list of blobber urls.
+- `blobberUrls` is a list of blobber urls.
 
 returns a list of blobber ids that can be used for the new allocation and an error if any.
 
@@ -918,7 +918,7 @@ func GetFreeAllocationBlobbers(request map[string]interface{}) ([]string, error)
 
 GetFreeAllocationBlobbers returns a list of blobber ids that can be used for a new free allocation.
 
-- \`request\` is the request data for the free allocation.
+- `request` is the request data for the free allocation.
 
 returns a list of blobber ids that can be used for the new free allocation and an error if any.
 
@@ -958,11 +958,11 @@ func GetUpdateAllocationMinLock(allocationID string, size int64, extend bool, ad
 
 GetUpdateAllocationMinLock returns the minimum lock demand for updating an allocation, which represents the cost of the update operation.
 
-- \`allocationID\` is the id of the allocation.
-- \`size\` is the new size of the allocation.
-- \`extend\` is a flag indicating whether to extend the expiry of the allocation.
-- \`addBlobberId\` is the id of the blobber to add to the allocation.
-- \`removeBlobberId\` is the id of the blobber to remove from the allocation.
+- `allocationID` is the id of the allocation.
+- `size` is the new size of the allocation.
+- `extend` is a flag indicating whether to extend the expiry of the allocation.
+- `addBlobberId` is the id of the blobber to add to the allocation.
+- `removeBlobberId` is the id of the blobber to remove from the allocation.
 
 returns the minimum lock demand for the update operation and an error if any.
 
@@ -1207,11 +1207,11 @@ func StorageSmartContractTxn(sn transaction.SmartContractTxnData) (hash, out str
 func TransferAllocation(allocationId, newOwner, newOwnerPublicKey string) (string, int64, error)
 ```
 
-TransferAllocation transfers the ownership of an allocation to a new owner. \(txn: \`storagesc.update\_allocation\_request\`\)
+TransferAllocation transfers the ownership of an allocation to a new owner. \(txn: `storagesc.update\_allocation\_request`\)
 
-- \`allocationId\` is the id of the allocation.
-- \`newOwner\` is the client id of the new owner.
-- \`newOwnerPublicKey\` is the public key of the new owner.
+- `allocationId` is the id of the allocation.
+- `newOwner` is the client id of the new owner.
+- `newOwnerPublicKey` is the public key of the new owner.
 
 returns the hash of the transaction, the nonce of the transaction and an error if any.
 
@@ -1222,16 +1222,16 @@ returns the hash of the transaction, the nonce of the transaction and an error i
 func UpdateAllocation(size int64, extend bool, allocationID string, lock uint64, addBlobberId, removeBlobberId string, setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters) (hash string, nonce int64, err error)
 ```
 
-UpdateFreeAllocation sends an update request for an allocation \(txn: \`storagesc.update\_allocation\_request\`\)
+UpdateFreeAllocation sends an update request for an allocation \(txn: `storagesc.update\_allocation\_request`\)
 
-- \`size\` is the size of the allocation.
-- \`extend\` is a flag indicating whether to extend the allocation.
-- \`allocationID\` is the id of the allocation.
-- \`lock\` is the lock value for the transaction \(how much tokens to lock to the allocation, in SAS\).
-- \`addBlobberId\` is the id of the blobber to add to the allocation.
-- \`removeBlobberId\` is the id of the blobber to remove from the allocation.
-- \`setThirdPartyExtendable\` is a flag indicating whether the allocation can be extended by a third party.
-- \`fileOptionsParams\` is the file options parameters for the allocation, which control the usage permissions of the files in the allocation.
+- `size` is the size of the allocation.
+- `extend` is a flag indicating whether to extend the allocation.
+- `allocationID` is the id of the allocation.
+- `lock` is the lock value for the transaction \(how much tokens to lock to the allocation, in SAS\).
+- `addBlobberId` is the id of the blobber to add to the allocation.
+- `removeBlobberId` is the id of the blobber to remove from the allocation.
+- `setThirdPartyExtendable` is a flag indicating whether the allocation can be extended by a third party.
+- `fileOptionsParams` is the file options parameters for the allocation, which control the usage permissions of the files in the allocation.
 
 returns the hash of the transaction, the nonce of the transaction and an error if any.
 
@@ -1379,7 +1379,7 @@ func GetAllocation(allocationID string) (*Allocation, error)
 
 GetAllocation \- get allocation from given allocation id
 
-- \`allocationID\`: the allocation id
+- `allocationID`: the allocation id
 
 returns the allocation instance and error if any
 
@@ -1392,7 +1392,7 @@ func GetAllocationFromAuthTicket(authTicket string) (*Allocation, error)
 
 GetAllocationFromAuthTicket \- get allocation from given auth ticket hash
 
-- \`authTicket\`: the auth ticket hash
+- `authTicket`: the auth ticket hash
 
 returns the allocation instance and error if any
 
@@ -1416,7 +1416,7 @@ func GetAllocationsForClient(clientID string) ([]*Allocation, error)
 
 GetAllocationsForClient \- get all allocations for given client id
 
-- \`clientID\`: the client id
+- `clientID`: the client id
 
 returns the list of allocations and error if any
 
