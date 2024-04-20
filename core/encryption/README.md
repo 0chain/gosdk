@@ -26,7 +26,7 @@ const HASH_LENGTH = 32
 ```
 
 <a name="FastHash"></a>
-## func [FastHash](<https://github.com/0chain/gosdk/blob/staging/core/encryption/hash.go#L57>)
+## func [FastHash](<https://github.com/0chain/gosdk/blob/doc/initial/core/encryption/hash.go#L57>)
 
 ```go
 func FastHash(data interface{}) string
@@ -35,7 +35,7 @@ func FastHash(data interface{}) string
 FastHash \- sha1 hash the given data and return the hash as hex string
 
 <a name="Hash"></a>
-## func [Hash](<https://github.com/0chain/gosdk/blob/staging/core/encryption/hash.go#L16>)
+## func [Hash](<https://github.com/0chain/gosdk/blob/doc/initial/core/encryption/hash.go#L16>)
 
 ```go
 func Hash(data interface{}) string
@@ -44,7 +44,7 @@ func Hash(data interface{}) string
 Hash \- hash the given data and return the hash as hex string
 
 <a name="RawFastHash"></a>
-## func [RawFastHash](<https://github.com/0chain/gosdk/blob/staging/core/encryption/hash.go#L62>)
+## func [RawFastHash](<https://github.com/0chain/gosdk/blob/doc/initial/core/encryption/hash.go#L62>)
 
 ```go
 func RawFastHash(data interface{}) []byte
@@ -53,7 +53,7 @@ func RawFastHash(data interface{}) []byte
 RawFastHash \- Logic to sha1 hash the text and return the hash bytes
 
 <a name="RawHash"></a>
-## func [RawHash](<https://github.com/0chain/gosdk/blob/staging/core/encryption/hash.go#L21>)
+## func [RawHash](<https://github.com/0chain/gosdk/blob/doc/initial/core/encryption/hash.go#L21>)
 
 ```go
 func RawHash(data interface{}) []byte
@@ -62,7 +62,7 @@ func RawHash(data interface{}) []byte
 RawHash \- Logic to hash the text and return the hash bytes
 
 <a name="ShaHash"></a>
-## func [ShaHash](<https://github.com/0chain/gosdk/blob/staging/core/encryption/hash.go#L39>)
+## func [ShaHash](<https://github.com/0chain/gosdk/blob/doc/initial/core/encryption/hash.go#L39>)
 
 ```go
 func ShaHash(data interface{}) []byte
@@ -71,7 +71,7 @@ func ShaHash(data interface{}) []byte
 
 
 <a name="HashBytes"></a>
-## type [HashBytes](<https://github.com/0chain/gosdk/blob/staging/core/encryption/hash.go#L13>)
+## type [HashBytes](<https://github.com/0chain/gosdk/blob/doc/initial/core/encryption/hash.go#L13>)
 
 
 

@@ -19,7 +19,7 @@ import "github.com/0chain/gosdk/zcnbridge/authorizer"
 
 
 <a name="ProofOfBurn"></a>
-## type [ProofOfBurn](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/authorizer/proofBurnTicket.go#L17-L23>)
+## type [ProofOfBurn](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/authorizer/proofBurnTicket.go#L17-L23>)
 
 
 
@@ -34,7 +34,7 @@ type ProofOfBurn struct {
 ```
 
 <a name="ProofOfBurn.Decode"></a>
-### func \(\*ProofOfBurn\) [Decode](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/authorizer/proofBurnTicket.go#L29>)
+### func \(\*ProofOfBurn\) [Decode](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/authorizer/proofBurnTicket.go#L29>)
 
 ```go
 func (pb *ProofOfBurn) Decode(input []byte) error
@@ -43,7 +43,7 @@ func (pb *ProofOfBurn) Decode(input []byte) error
 
 
 <a name="ProofOfBurn.Encode"></a>
-### func \(\*ProofOfBurn\) [Encode](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/authorizer/proofBurnTicket.go#L25>)
+### func \(\*ProofOfBurn\) [Encode](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/authorizer/proofBurnTicket.go#L25>)
 
 ```go
 func (pb *ProofOfBurn) Encode() []byte
@@ -52,7 +52,7 @@ func (pb *ProofOfBurn) Encode() []byte
 
 
 <a name="ProofOfBurn.Sign"></a>
-### func \(\*ProofOfBurn\) [Sign](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/authorizer/proofBurnTicket.go#L62>)
+### func \(\*ProofOfBurn\) [Sign](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/authorizer/proofBurnTicket.go#L62>)
 
 ```go
 func (pb *ProofOfBurn) Sign() (err error)
@@ -61,7 +61,7 @@ func (pb *ProofOfBurn) Sign() (err error)
 Sign can sign if chain config is initialized
 
 <a name="ProofOfBurn.SignWith0Chain"></a>
-### func \(\*ProofOfBurn\) [SignWith0Chain](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/authorizer/proofBurnTicket.go#L74>)
+### func \(\*ProofOfBurn\) [SignWith0Chain](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/authorizer/proofBurnTicket.go#L74>)
 
 ```go
 func (pb *ProofOfBurn) SignWith0Chain(w *zcncrypto.Wallet) (err error)
@@ -70,7 +70,7 @@ func (pb *ProofOfBurn) SignWith0Chain(w *zcncrypto.Wallet) (err error)
 SignWith0Chain can sign with the provided walletString
 
 <a name="ProofOfBurn.SignWithEthereum"></a>
-### func \(\*ProofOfBurn\) [SignWithEthereum](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/authorizer/proofBurnTicket.go#L51>)
+### func \(\*ProofOfBurn\) [SignWithEthereum](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/authorizer/proofBurnTicket.go#L51>)
 
 ```go
 func (pb *ProofOfBurn) SignWithEthereum(b *zcnbridge.BridgeClient) (err error)
@@ -79,7 +79,7 @@ func (pb *ProofOfBurn) SignWithEthereum(b *zcnbridge.BridgeClient) (err error)
 
 
 <a name="ProofOfBurn.UnsignedMessage"></a>
-### func \(\*ProofOfBurn\) [UnsignedMessage](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/authorizer/proofBurnTicket.go#L47>)
+### func \(\*ProofOfBurn\) [UnsignedMessage](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/authorizer/proofBurnTicket.go#L47>)
 
 ```go
 func (pb *ProofOfBurn) UnsignedMessage() string
@@ -88,7 +88,7 @@ func (pb *ProofOfBurn) UnsignedMessage() string
 
 
 <a name="ProofOfBurn.Verify"></a>
-### func \(\*ProofOfBurn\) [Verify](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/authorizer/proofBurnTicket.go#L33>)
+### func \(\*ProofOfBurn\) [Verify](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/authorizer/proofBurnTicket.go#L33>)
 
 ```go
 func (pb *ProofOfBurn) Verify() (err error)

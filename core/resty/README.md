@@ -89,7 +89,7 @@ var DefaultTransport = &http.Transport{
 ```
 
 <a name="Client"></a>
-## type [Client](<https://github.com/0chain/gosdk/blob/staging/core/resty/resty.go#L59-L61>)
+## type [Client](<https://github.com/0chain/gosdk/blob/doc/initial/core/resty/resty.go#L59-L61>)
 
 Client http client
 
@@ -100,7 +100,7 @@ type Client interface {
 ```
 
 <a name="Handle"></a>
-## type [Handle](<https://github.com/0chain/gosdk/blob/staging/core/resty/resty.go#L64>)
+## type [Handle](<https://github.com/0chain/gosdk/blob/doc/initial/core/resty/resty.go#L64>)
 
 Handle handler of http response
 
@@ -109,7 +109,7 @@ type Handle func(req *http.Request, resp *http.Response, respBody []byte, cf con
 ```
 
 <a name="Option"></a>
-## type [Option](<https://github.com/0chain/gosdk/blob/staging/core/resty/resty.go#L67>)
+## type [Option](<https://github.com/0chain/gosdk/blob/doc/initial/core/resty/resty.go#L67>)
 
 Option set restry option
 
@@ -118,7 +118,7 @@ type Option func(*Resty)
 ```
 
 <a name="WithClient"></a>
-### func [WithClient](<https://github.com/0chain/gosdk/blob/staging/core/resty/option.go#L44>)
+### func [WithClient](<https://github.com/0chain/gosdk/blob/doc/initial/core/resty/option.go#L44>)
 
 ```go
 func WithClient(c Client) Option
@@ -127,7 +127,7 @@ func WithClient(c Client) Option
 WithClient set client
 
 <a name="WithHeader"></a>
-### func [WithHeader](<https://github.com/0chain/gosdk/blob/staging/core/resty/option.go#L17>)
+### func [WithHeader](<https://github.com/0chain/gosdk/blob/doc/initial/core/resty/option.go#L17>)
 
 ```go
 func WithHeader(header map[string]string) Option
@@ -136,7 +136,7 @@ func WithHeader(header map[string]string) Option
 WithHeader set header for http request
 
 <a name="WithRequestInterceptor"></a>
-### func [WithRequestInterceptor](<https://github.com/0chain/gosdk/blob/staging/core/resty/option.go#L30>)
+### func [WithRequestInterceptor](<https://github.com/0chain/gosdk/blob/doc/initial/core/resty/option.go#L30>)
 
 ```go
 func WithRequestInterceptor(interceptor func(req *http.Request) error) Option
@@ -145,7 +145,7 @@ func WithRequestInterceptor(interceptor func(req *http.Request) error) Option
 WithRequestInterceptor intercept request
 
 <a name="WithRetry"></a>
-### func [WithRetry](<https://github.com/0chain/gosdk/blob/staging/core/resty/option.go#L8>)
+### func [WithRetry](<https://github.com/0chain/gosdk/blob/doc/initial/core/resty/option.go#L8>)
 
 ```go
 func WithRetry(retry int) Option
@@ -154,7 +154,7 @@ func WithRetry(retry int) Option
 WithRetry set retry times if request is failure with 5xx status code. retry is ingore if it is less than 1.
 
 <a name="WithTransport"></a>
-### func [WithTransport](<https://github.com/0chain/gosdk/blob/staging/core/resty/option.go#L37>)
+### func [WithTransport](<https://github.com/0chain/gosdk/blob/doc/initial/core/resty/option.go#L37>)
 
 ```go
 func WithTransport(transport *http.Transport) Option
@@ -163,7 +163,7 @@ func WithTransport(transport *http.Transport) Option
 WithTransport set transport
 
 <a name="Resty"></a>
-## type [Resty](<https://github.com/0chain/gosdk/blob/staging/core/resty/resty.go#L70-L84>)
+## type [Resty](<https://github.com/0chain/gosdk/blob/doc/initial/core/resty/resty.go#L70-L84>)
 
 Resty HTTP and REST client library with parallel feature
 
@@ -174,7 +174,7 @@ type Resty struct {
 ```
 
 <a name="New"></a>
-### func [New](<https://github.com/0chain/gosdk/blob/staging/core/resty/resty.go#L26>)
+### func [New](<https://github.com/0chain/gosdk/blob/doc/initial/core/resty/resty.go#L26>)
 
 ```go
 func New(opts ...Option) *Resty
@@ -183,7 +183,7 @@ func New(opts ...Option) *Resty
 New create a Resty instance.
 
 <a name="Resty.Do"></a>
-### func \(\*Resty\) [Do](<https://github.com/0chain/gosdk/blob/staging/core/resty/resty.go#L115>)
+### func \(\*Resty\) [Do](<https://github.com/0chain/gosdk/blob/doc/initial/core/resty/resty.go#L115>)
 
 ```go
 func (r *Resty) Do(ctx context.Context, method string, body io.Reader, urls ...string) *Resty
@@ -192,7 +192,7 @@ func (r *Resty) Do(ctx context.Context, method string, body io.Reader, urls ...s
 
 
 <a name="Resty.DoDelete"></a>
-### func \(\*Resty\) [DoDelete](<https://github.com/0chain/gosdk/blob/staging/core/resty/resty.go#L111>)
+### func \(\*Resty\) [DoDelete](<https://github.com/0chain/gosdk/blob/doc/initial/core/resty/resty.go#L111>)
 
 ```go
 func (r *Resty) DoDelete(ctx context.Context, urls ...string) *Resty
@@ -201,7 +201,7 @@ func (r *Resty) DoDelete(ctx context.Context, urls ...string) *Resty
 DoDelete executes http requests with DELETE method in parallel
 
 <a name="Resty.DoGet"></a>
-### func \(\*Resty\) [DoGet](<https://github.com/0chain/gosdk/blob/staging/core/resty/resty.go#L96>)
+### func \(\*Resty\) [DoGet](<https://github.com/0chain/gosdk/blob/doc/initial/core/resty/resty.go#L96>)
 
 ```go
 func (r *Resty) DoGet(ctx context.Context, urls ...string) *Resty
@@ -210,7 +210,7 @@ func (r *Resty) DoGet(ctx context.Context, urls ...string) *Resty
 DoGet executes http requests with GET method in parallel
 
 <a name="Resty.DoPost"></a>
-### func \(\*Resty\) [DoPost](<https://github.com/0chain/gosdk/blob/staging/core/resty/resty.go#L101>)
+### func \(\*Resty\) [DoPost](<https://github.com/0chain/gosdk/blob/doc/initial/core/resty/resty.go#L101>)
 
 ```go
 func (r *Resty) DoPost(ctx context.Context, body io.Reader, urls ...string) *Resty
@@ -219,7 +219,7 @@ func (r *Resty) DoPost(ctx context.Context, body io.Reader, urls ...string) *Res
 DoPost executes http requests with POST method in parallel
 
 <a name="Resty.DoPut"></a>
-### func \(\*Resty\) [DoPut](<https://github.com/0chain/gosdk/blob/staging/core/resty/resty.go#L106>)
+### func \(\*Resty\) [DoPut](<https://github.com/0chain/gosdk/blob/doc/initial/core/resty/resty.go#L106>)
 
 ```go
 func (r *Resty) DoPut(ctx context.Context, body io.Reader, urls ...string) *Resty
@@ -228,7 +228,7 @@ func (r *Resty) DoPut(ctx context.Context, body io.Reader, urls ...string) *Rest
 DoPut executes http requests with PUT method in parallel
 
 <a name="Resty.First"></a>
-### func \(\*Resty\) [First](<https://github.com/0chain/gosdk/blob/staging/core/resty/resty.go#L258>)
+### func \(\*Resty\) [First](<https://github.com/0chain/gosdk/blob/doc/initial/core/resty/resty.go#L258>)
 
 ```go
 func (r *Resty) First() []error
@@ -237,7 +237,7 @@ func (r *Resty) First() []error
 First successful result or errors
 
 <a name="Resty.Then"></a>
-### func \(\*Resty\) [Then](<https://github.com/0chain/gosdk/blob/staging/core/resty/resty.go#L87>)
+### func \(\*Resty\) [Then](<https://github.com/0chain/gosdk/blob/doc/initial/core/resty/resty.go#L87>)
 
 ```go
 func (r *Resty) Then(fn Handle) *Resty
@@ -246,7 +246,7 @@ func (r *Resty) Then(fn Handle) *Resty
 Then is used to call the handle function when the request has completed processing
 
 <a name="Resty.Wait"></a>
-### func \(\*Resty\) [Wait](<https://github.com/0chain/gosdk/blob/staging/core/resty/resty.go#L213>)
+### func \(\*Resty\) [Wait](<https://github.com/0chain/gosdk/blob/doc/initial/core/resty/resty.go#L213>)
 
 ```go
 func (r *Resty) Wait() []error
@@ -255,7 +255,7 @@ func (r *Resty) Wait() []error
 Wait waits for all the requests to be completed
 
 <a name="Result"></a>
-## type [Result](<https://github.com/0chain/gosdk/blob/staging/core/resty/result.go#L6-L11>)
+## type [Result](<https://github.com/0chain/gosdk/blob/doc/initial/core/resty/result.go#L6-L11>)
 
 Result result of a http request
 

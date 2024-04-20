@@ -311,7 +311,7 @@ var BancorMetaData = &bind.MetaData{
 ```
 
 <a name="Bancor"></a>
-## type [Bancor](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L42-L46>)
+## type [Bancor](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L42-L46>)
 
 Bancor is an auto generated Go binding around an Ethereum contract.
 
@@ -324,7 +324,7 @@ type Bancor struct {
 ```
 
 <a name="NewBancor"></a>
-### func [NewBancor](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L101>)
+### func [NewBancor](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L101>)
 
 ```go
 func NewBancor(address common.Address, backend bind.ContractBackend) (*Bancor, error)
@@ -333,7 +333,7 @@ func NewBancor(address common.Address, backend bind.ContractBackend) (*Bancor, e
 NewBancor creates a new instance of Bancor, bound to a specific deployed contract.
 
 <a name="BancorCaller"></a>
-## type [BancorCaller](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L49-L51>)
+## type [BancorCaller](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L49-L51>)
 
 BancorCaller is an auto generated read\-only Go binding around an Ethereum contract.
 
@@ -344,7 +344,7 @@ type BancorCaller struct {
 ```
 
 <a name="NewBancorCaller"></a>
-### func [NewBancorCaller](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L110>)
+### func [NewBancorCaller](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L110>)
 
 ```go
 func NewBancorCaller(address common.Address, caller bind.ContractCaller) (*BancorCaller, error)
@@ -353,7 +353,7 @@ func NewBancorCaller(address common.Address, caller bind.ContractCaller) (*Banco
 NewBancorCaller creates a new read\-only instance of Bancor, bound to a specific deployed contract.
 
 <a name="BancorCaller.CollectionByPool"></a>
-### func \(\*BancorCaller\) [CollectionByPool](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L217>)
+### func \(\*BancorCaller\) [CollectionByPool](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L217>)
 
 ```go
 func (_Bancor *BancorCaller) CollectionByPool(opts *bind.CallOpts, pool common.Address) (common.Address, error)
@@ -364,7 +364,7 @@ CollectionByPool is a free data retrieval call binding the contract method 0x9bc
 Solidity: function collectionByPool\(address pool\) view returns\(address\)
 
 <a name="BancorCaller.DEFAULTADMINROLE"></a>
-### func \(\*BancorCaller\) [DEFAULTADMINROLE](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L186>)
+### func \(\*BancorCaller\) [DEFAULTADMINROLE](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L186>)
 
 ```go
 func (_Bancor *BancorCaller) DEFAULTADMINROLE(opts *bind.CallOpts) ([32]byte, error)
@@ -375,7 +375,7 @@ DEFAULTADMINROLE is a free data retrieval call binding the contract method 0xa21
 Solidity: function DEFAULT\_ADMIN\_ROLE\(\) view returns\(bytes32\)
 
 <a name="BancorCaller.DepositingEnabled"></a>
-### func \(\*BancorCaller\) [DepositingEnabled](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L248>)
+### func \(\*BancorCaller\) [DepositingEnabled](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L248>)
 
 ```go
 func (_Bancor *BancorCaller) DepositingEnabled(opts *bind.CallOpts) (bool, error)
@@ -386,7 +386,7 @@ DepositingEnabled is a free data retrieval call binding the contract method 0x71
 Solidity: function depositingEnabled\(\) view returns\(bool\)
 
 <a name="BancorCaller.GetRoleAdmin"></a>
-### func \(\*BancorCaller\) [GetRoleAdmin](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L279>)
+### func \(\*BancorCaller\) [GetRoleAdmin](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L279>)
 
 ```go
 func (_Bancor *BancorCaller) GetRoleAdmin(opts *bind.CallOpts, role [32]byte) ([32]byte, error)
@@ -397,7 +397,7 @@ GetRoleAdmin is a free data retrieval call binding the contract method 0x248a9ca
 Solidity: function getRoleAdmin\(bytes32 role\) view returns\(bytes32\)
 
 <a name="BancorCaller.GetRoleMember"></a>
-### func \(\*BancorCaller\) [GetRoleMember](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L310>)
+### func \(\*BancorCaller\) [GetRoleMember](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L310>)
 
 ```go
 func (_Bancor *BancorCaller) GetRoleMember(opts *bind.CallOpts, role [32]byte, index *big.Int) (common.Address, error)
@@ -408,7 +408,7 @@ GetRoleMember is a free data retrieval call binding the contract method 0x9010d0
 Solidity: function getRoleMember\(bytes32 role, uint256 index\) view returns\(address\)
 
 <a name="BancorCaller.GetRoleMemberCount"></a>
-### func \(\*BancorCaller\) [GetRoleMemberCount](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L341>)
+### func \(\*BancorCaller\) [GetRoleMemberCount](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L341>)
 
 ```go
 func (_Bancor *BancorCaller) GetRoleMemberCount(opts *bind.CallOpts, role [32]byte) (*big.Int, error)
@@ -419,7 +419,7 @@ GetRoleMemberCount is a free data retrieval call binding the contract method 0xc
 Solidity: function getRoleMemberCount\(bytes32 role\) view returns\(uint256\)
 
 <a name="BancorCaller.HasRole"></a>
-### func \(\*BancorCaller\) [HasRole](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L372>)
+### func \(\*BancorCaller\) [HasRole](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L372>)
 
 ```go
 func (_Bancor *BancorCaller) HasRole(opts *bind.CallOpts, role [32]byte, account common.Address) (bool, error)
@@ -430,7 +430,7 @@ HasRole is a free data retrieval call binding the contract method 0x91d14854.
 Solidity: function hasRole\(bytes32 role, address account\) view returns\(bool\)
 
 <a name="BancorCaller.LiquidityPools"></a>
-### func \(\*BancorCaller\) [LiquidityPools](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L403>)
+### func \(\*BancorCaller\) [LiquidityPools](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L403>)
 
 ```go
 func (_Bancor *BancorCaller) LiquidityPools(opts *bind.CallOpts) ([]common.Address, error)
@@ -441,7 +441,7 @@ LiquidityPools is a free data retrieval call binding the contract method 0xd6efd
 Solidity: function liquidityPools\(\) view returns\(address\[\]\)
 
 <a name="BancorCaller.Paused"></a>
-### func \(\*BancorCaller\) [Paused](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L434>)
+### func \(\*BancorCaller\) [Paused](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L434>)
 
 ```go
 func (_Bancor *BancorCaller) Paused(opts *bind.CallOpts) (bool, error)
@@ -452,7 +452,7 @@ Paused is a free data retrieval call binding the contract method 0x5c975abb.
 Solidity: function paused\(\) view returns\(bool\)
 
 <a name="BancorCaller.PendingNetworkFeeAmount"></a>
-### func \(\*BancorCaller\) [PendingNetworkFeeAmount](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L465>)
+### func \(\*BancorCaller\) [PendingNetworkFeeAmount](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L465>)
 
 ```go
 func (_Bancor *BancorCaller) PendingNetworkFeeAmount(opts *bind.CallOpts) (*big.Int, error)
@@ -463,7 +463,7 @@ PendingNetworkFeeAmount is a free data retrieval call binding the contract metho
 Solidity: function pendingNetworkFeeAmount\(\) view returns\(uint256\)
 
 <a name="BancorCaller.PolRewardsPPM"></a>
-### func \(\*BancorCaller\) [PolRewardsPPM](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L496>)
+### func \(\*BancorCaller\) [PolRewardsPPM](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L496>)
 
 ```go
 func (_Bancor *BancorCaller) PolRewardsPPM(opts *bind.CallOpts) (uint32, error)
@@ -474,7 +474,7 @@ PolRewardsPPM is a free data retrieval call binding the contract method 0x1329db
 Solidity: function polRewardsPPM\(\) view returns\(uint32\)
 
 <a name="BancorCaller.PoolCollections"></a>
-### func \(\*BancorCaller\) [PoolCollections](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L527>)
+### func \(\*BancorCaller\) [PoolCollections](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L527>)
 
 ```go
 func (_Bancor *BancorCaller) PoolCollections(opts *bind.CallOpts) ([]common.Address, error)
@@ -485,7 +485,7 @@ PoolCollections is a free data retrieval call binding the contract method 0x39fa
 Solidity: function poolCollections\(\) view returns\(address\[\]\)
 
 <a name="BancorCaller.RoleAdmin"></a>
-### func \(\*BancorCaller\) [RoleAdmin](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L558>)
+### func \(\*BancorCaller\) [RoleAdmin](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L558>)
 
 ```go
 func (_Bancor *BancorCaller) RoleAdmin(opts *bind.CallOpts) ([32]byte, error)
@@ -496,7 +496,7 @@ RoleAdmin is a free data retrieval call binding the contract method 0x93867fb5.
 Solidity: function roleAdmin\(\) pure returns\(bytes32\)
 
 <a name="BancorCaller.RoleEmergencyStopper"></a>
-### func \(\*BancorCaller\) [RoleEmergencyStopper](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L589>)
+### func \(\*BancorCaller\) [RoleEmergencyStopper](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L589>)
 
 ```go
 func (_Bancor *BancorCaller) RoleEmergencyStopper(opts *bind.CallOpts) ([32]byte, error)
@@ -507,7 +507,7 @@ RoleEmergencyStopper is a free data retrieval call binding the contract method 0
 Solidity: function roleEmergencyStopper\(\) pure returns\(bytes32\)
 
 <a name="BancorCaller.RoleMigrationManager"></a>
-### func \(\*BancorCaller\) [RoleMigrationManager](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L620>)
+### func \(\*BancorCaller\) [RoleMigrationManager](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L620>)
 
 ```go
 func (_Bancor *BancorCaller) RoleMigrationManager(opts *bind.CallOpts) ([32]byte, error)
@@ -518,7 +518,7 @@ RoleMigrationManager is a free data retrieval call binding the contract method 0
 Solidity: function roleMigrationManager\(\) pure returns\(bytes32\)
 
 <a name="BancorCaller.RoleNetworkFeeManager"></a>
-### func \(\*BancorCaller\) [RoleNetworkFeeManager](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L651>)
+### func \(\*BancorCaller\) [RoleNetworkFeeManager](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L651>)
 
 ```go
 func (_Bancor *BancorCaller) RoleNetworkFeeManager(opts *bind.CallOpts) ([32]byte, error)
@@ -529,7 +529,7 @@ RoleNetworkFeeManager is a free data retrieval call binding the contract method 
 Solidity: function roleNetworkFeeManager\(\) pure returns\(bytes32\)
 
 <a name="BancorCaller.SupportsInterface"></a>
-### func \(\*BancorCaller\) [SupportsInterface](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L682>)
+### func \(\*BancorCaller\) [SupportsInterface](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L682>)
 
 ```go
 func (_Bancor *BancorCaller) SupportsInterface(opts *bind.CallOpts, interfaceId [4]byte) (bool, error)
@@ -540,7 +540,7 @@ SupportsInterface is a free data retrieval call binding the contract method 0x01
 Solidity: function supportsInterface\(bytes4 interfaceId\) view returns\(bool\)
 
 <a name="BancorCaller.Version"></a>
-### func \(\*BancorCaller\) [Version](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L713>)
+### func \(\*BancorCaller\) [Version](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L713>)
 
 ```go
 func (_Bancor *BancorCaller) Version(opts *bind.CallOpts) (uint16, error)
@@ -551,7 +551,7 @@ Version is a free data retrieval call binding the contract method 0x54fd4d50.
 Solidity: function version\(\) pure returns\(uint16\)
 
 <a name="BancorCallerRaw"></a>
-## type [BancorCallerRaw](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L91-L93>)
+## type [BancorCallerRaw](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L91-L93>)
 
 BancorCallerRaw is an auto generated low\-level read\-only Go binding around an Ethereum contract.
 
@@ -562,7 +562,7 @@ type BancorCallerRaw struct {
 ```
 
 <a name="BancorCallerRaw.Call"></a>
-### func \(\*BancorCallerRaw\) [Call](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L168>)
+### func \(\*BancorCallerRaw\) [Call](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L168>)
 
 ```go
 func (_Bancor *BancorCallerRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error
@@ -571,7 +571,7 @@ func (_Bancor *BancorCallerRaw) Call(opts *bind.CallOpts, result *[]interface{},
 Call invokes the \(constant\) contract method with params as input values and sets the output to result. The result type might be a single field for simple returns, a slice of interfaces for anonymous returns and a struct for named returns.
 
 <a name="BancorCallerSession"></a>
-## type [BancorCallerSession](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L73-L76>)
+## type [BancorCallerSession](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L73-L76>)
 
 BancorCallerSession is an auto generated read\-only Go binding around an Ethereum contract, with pre\-set call options.
 
@@ -583,7 +583,7 @@ type BancorCallerSession struct {
 ```
 
 <a name="BancorCallerSession.CollectionByPool"></a>
-### func \(\*BancorCallerSession\) [CollectionByPool](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L241>)
+### func \(\*BancorCallerSession\) [CollectionByPool](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L241>)
 
 ```go
 func (_Bancor *BancorCallerSession) CollectionByPool(pool common.Address) (common.Address, error)
@@ -594,7 +594,7 @@ CollectionByPool is a free data retrieval call binding the contract method 0x9bc
 Solidity: function collectionByPool\(address pool\) view returns\(address\)
 
 <a name="BancorCallerSession.DEFAULTADMINROLE"></a>
-### func \(\*BancorCallerSession\) [DEFAULTADMINROLE](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L210>)
+### func \(\*BancorCallerSession\) [DEFAULTADMINROLE](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L210>)
 
 ```go
 func (_Bancor *BancorCallerSession) DEFAULTADMINROLE() ([32]byte, error)
@@ -605,7 +605,7 @@ DEFAULTADMINROLE is a free data retrieval call binding the contract method 0xa21
 Solidity: function DEFAULT\_ADMIN\_ROLE\(\) view returns\(bytes32\)
 
 <a name="BancorCallerSession.DepositingEnabled"></a>
-### func \(\*BancorCallerSession\) [DepositingEnabled](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L272>)
+### func \(\*BancorCallerSession\) [DepositingEnabled](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L272>)
 
 ```go
 func (_Bancor *BancorCallerSession) DepositingEnabled() (bool, error)
@@ -616,7 +616,7 @@ DepositingEnabled is a free data retrieval call binding the contract method 0x71
 Solidity: function depositingEnabled\(\) view returns\(bool\)
 
 <a name="BancorCallerSession.GetRoleAdmin"></a>
-### func \(\*BancorCallerSession\) [GetRoleAdmin](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L303>)
+### func \(\*BancorCallerSession\) [GetRoleAdmin](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L303>)
 
 ```go
 func (_Bancor *BancorCallerSession) GetRoleAdmin(role [32]byte) ([32]byte, error)
@@ -627,7 +627,7 @@ GetRoleAdmin is a free data retrieval call binding the contract method 0x248a9ca
 Solidity: function getRoleAdmin\(bytes32 role\) view returns\(bytes32\)
 
 <a name="BancorCallerSession.GetRoleMember"></a>
-### func \(\*BancorCallerSession\) [GetRoleMember](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L334>)
+### func \(\*BancorCallerSession\) [GetRoleMember](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L334>)
 
 ```go
 func (_Bancor *BancorCallerSession) GetRoleMember(role [32]byte, index *big.Int) (common.Address, error)
@@ -638,7 +638,7 @@ GetRoleMember is a free data retrieval call binding the contract method 0x9010d0
 Solidity: function getRoleMember\(bytes32 role, uint256 index\) view returns\(address\)
 
 <a name="BancorCallerSession.GetRoleMemberCount"></a>
-### func \(\*BancorCallerSession\) [GetRoleMemberCount](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L365>)
+### func \(\*BancorCallerSession\) [GetRoleMemberCount](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L365>)
 
 ```go
 func (_Bancor *BancorCallerSession) GetRoleMemberCount(role [32]byte) (*big.Int, error)
@@ -649,7 +649,7 @@ GetRoleMemberCount is a free data retrieval call binding the contract method 0xc
 Solidity: function getRoleMemberCount\(bytes32 role\) view returns\(uint256\)
 
 <a name="BancorCallerSession.HasRole"></a>
-### func \(\*BancorCallerSession\) [HasRole](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L396>)
+### func \(\*BancorCallerSession\) [HasRole](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L396>)
 
 ```go
 func (_Bancor *BancorCallerSession) HasRole(role [32]byte, account common.Address) (bool, error)
@@ -660,7 +660,7 @@ HasRole is a free data retrieval call binding the contract method 0x91d14854.
 Solidity: function hasRole\(bytes32 role, address account\) view returns\(bool\)
 
 <a name="BancorCallerSession.LiquidityPools"></a>
-### func \(\*BancorCallerSession\) [LiquidityPools](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L427>)
+### func \(\*BancorCallerSession\) [LiquidityPools](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L427>)
 
 ```go
 func (_Bancor *BancorCallerSession) LiquidityPools() ([]common.Address, error)
@@ -671,7 +671,7 @@ LiquidityPools is a free data retrieval call binding the contract method 0xd6efd
 Solidity: function liquidityPools\(\) view returns\(address\[\]\)
 
 <a name="BancorCallerSession.Paused"></a>
-### func \(\*BancorCallerSession\) [Paused](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L458>)
+### func \(\*BancorCallerSession\) [Paused](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L458>)
 
 ```go
 func (_Bancor *BancorCallerSession) Paused() (bool, error)
@@ -682,7 +682,7 @@ Paused is a free data retrieval call binding the contract method 0x5c975abb.
 Solidity: function paused\(\) view returns\(bool\)
 
 <a name="BancorCallerSession.PendingNetworkFeeAmount"></a>
-### func \(\*BancorCallerSession\) [PendingNetworkFeeAmount](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L489>)
+### func \(\*BancorCallerSession\) [PendingNetworkFeeAmount](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L489>)
 
 ```go
 func (_Bancor *BancorCallerSession) PendingNetworkFeeAmount() (*big.Int, error)
@@ -693,7 +693,7 @@ PendingNetworkFeeAmount is a free data retrieval call binding the contract metho
 Solidity: function pendingNetworkFeeAmount\(\) view returns\(uint256\)
 
 <a name="BancorCallerSession.PolRewardsPPM"></a>
-### func \(\*BancorCallerSession\) [PolRewardsPPM](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L520>)
+### func \(\*BancorCallerSession\) [PolRewardsPPM](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L520>)
 
 ```go
 func (_Bancor *BancorCallerSession) PolRewardsPPM() (uint32, error)
@@ -704,7 +704,7 @@ PolRewardsPPM is a free data retrieval call binding the contract method 0x1329db
 Solidity: function polRewardsPPM\(\) view returns\(uint32\)
 
 <a name="BancorCallerSession.PoolCollections"></a>
-### func \(\*BancorCallerSession\) [PoolCollections](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L551>)
+### func \(\*BancorCallerSession\) [PoolCollections](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L551>)
 
 ```go
 func (_Bancor *BancorCallerSession) PoolCollections() ([]common.Address, error)
@@ -715,7 +715,7 @@ PoolCollections is a free data retrieval call binding the contract method 0x39fa
 Solidity: function poolCollections\(\) view returns\(address\[\]\)
 
 <a name="BancorCallerSession.RoleAdmin"></a>
-### func \(\*BancorCallerSession\) [RoleAdmin](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L582>)
+### func \(\*BancorCallerSession\) [RoleAdmin](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L582>)
 
 ```go
 func (_Bancor *BancorCallerSession) RoleAdmin() ([32]byte, error)
@@ -726,7 +726,7 @@ RoleAdmin is a free data retrieval call binding the contract method 0x93867fb5.
 Solidity: function roleAdmin\(\) pure returns\(bytes32\)
 
 <a name="BancorCallerSession.RoleEmergencyStopper"></a>
-### func \(\*BancorCallerSession\) [RoleEmergencyStopper](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L613>)
+### func \(\*BancorCallerSession\) [RoleEmergencyStopper](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L613>)
 
 ```go
 func (_Bancor *BancorCallerSession) RoleEmergencyStopper() ([32]byte, error)
@@ -737,7 +737,7 @@ RoleEmergencyStopper is a free data retrieval call binding the contract method 0
 Solidity: function roleEmergencyStopper\(\) pure returns\(bytes32\)
 
 <a name="BancorCallerSession.RoleMigrationManager"></a>
-### func \(\*BancorCallerSession\) [RoleMigrationManager](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L644>)
+### func \(\*BancorCallerSession\) [RoleMigrationManager](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L644>)
 
 ```go
 func (_Bancor *BancorCallerSession) RoleMigrationManager() ([32]byte, error)
@@ -748,7 +748,7 @@ RoleMigrationManager is a free data retrieval call binding the contract method 0
 Solidity: function roleMigrationManager\(\) pure returns\(bytes32\)
 
 <a name="BancorCallerSession.RoleNetworkFeeManager"></a>
-### func \(\*BancorCallerSession\) [RoleNetworkFeeManager](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L675>)
+### func \(\*BancorCallerSession\) [RoleNetworkFeeManager](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L675>)
 
 ```go
 func (_Bancor *BancorCallerSession) RoleNetworkFeeManager() ([32]byte, error)
@@ -759,7 +759,7 @@ RoleNetworkFeeManager is a free data retrieval call binding the contract method 
 Solidity: function roleNetworkFeeManager\(\) pure returns\(bytes32\)
 
 <a name="BancorCallerSession.SupportsInterface"></a>
-### func \(\*BancorCallerSession\) [SupportsInterface](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L706>)
+### func \(\*BancorCallerSession\) [SupportsInterface](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L706>)
 
 ```go
 func (_Bancor *BancorCallerSession) SupportsInterface(interfaceId [4]byte) (bool, error)
@@ -770,7 +770,7 @@ SupportsInterface is a free data retrieval call binding the contract method 0x01
 Solidity: function supportsInterface\(bytes4 interfaceId\) view returns\(bool\)
 
 <a name="BancorCallerSession.Version"></a>
-### func \(\*BancorCallerSession\) [Version](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L737>)
+### func \(\*BancorCallerSession\) [Version](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L737>)
 
 ```go
 func (_Bancor *BancorCallerSession) Version() (uint16, error)
@@ -781,7 +781,7 @@ Version is a free data retrieval call binding the contract method 0x54fd4d50.
 Solidity: function version\(\) pure returns\(uint16\)
 
 <a name="BancorFilterer"></a>
-## type [BancorFilterer](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L59-L61>)
+## type [BancorFilterer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L59-L61>)
 
 BancorFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
 
@@ -792,7 +792,7 @@ type BancorFilterer struct {
 ```
 
 <a name="NewBancorFilterer"></a>
-### func [NewBancorFilterer](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L128>)
+### func [NewBancorFilterer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L128>)
 
 ```go
 func NewBancorFilterer(address common.Address, filterer bind.ContractFilterer) (*BancorFilterer, error)
@@ -801,7 +801,7 @@ func NewBancorFilterer(address common.Address, filterer bind.ContractFilterer) (
 NewBancorFilterer creates a new log filterer instance of Bancor, bound to a specific deployed contract.
 
 <a name="BancorFilterer.FilterFlashLoanCompleted"></a>
-### func \(\*BancorFilterer\) [FilterFlashLoanCompleted](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1387>)
+### func \(\*BancorFilterer\) [FilterFlashLoanCompleted](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1387>)
 
 ```go
 func (_Bancor *BancorFilterer) FilterFlashLoanCompleted(opts *bind.FilterOpts, token []common.Address, borrower []common.Address) (*BancorFlashLoanCompletedIterator, error)
@@ -812,7 +812,7 @@ FilterFlashLoanCompleted is a free log retrieval operation binding the contract 
 Solidity: event FlashLoanCompleted\(address indexed zcntoken, address indexed borrower, uint256 amount, uint256 feeAmount\)
 
 <a name="BancorFilterer.FilterFundsMigrated"></a>
-### func \(\*BancorFilterer\) [FilterFundsMigrated](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1544>)
+### func \(\*BancorFilterer\) [FilterFundsMigrated](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1544>)
 
 ```go
 func (_Bancor *BancorFilterer) FilterFundsMigrated(opts *bind.FilterOpts, contextId [][32]byte, token []common.Address, provider []common.Address) (*BancorFundsMigratedIterator, error)
@@ -823,7 +823,7 @@ FilterFundsMigrated is a free log retrieval operation binding the contract event
 Solidity: event FundsMigrated\(bytes32 indexed contextId, address indexed zcntoken, address indexed provider, uint256 amount, uint256 availableAmount, uint256 originalAmount\)
 
 <a name="BancorFilterer.FilterNetworkFeesWithdrawn"></a>
-### func \(\*BancorFilterer\) [FilterNetworkFeesWithdrawn](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1706>)
+### func \(\*BancorFilterer\) [FilterNetworkFeesWithdrawn](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1706>)
 
 ```go
 func (_Bancor *BancorFilterer) FilterNetworkFeesWithdrawn(opts *bind.FilterOpts, caller []common.Address, recipient []common.Address) (*BancorNetworkFeesWithdrawnIterator, error)
@@ -834,7 +834,7 @@ FilterNetworkFeesWithdrawn is a free log retrieval operation binding the contrac
 Solidity: event NetworkFeesWithdrawn\(address indexed caller, address indexed recipient, uint256 amount\)
 
 <a name="BancorFilterer.FilterPOLRewardsPPMUpdated"></a>
-### func \(\*BancorFilterer\) [FilterPOLRewardsPPMUpdated](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1859>)
+### func \(\*BancorFilterer\) [FilterPOLRewardsPPMUpdated](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1859>)
 
 ```go
 func (_Bancor *BancorFilterer) FilterPOLRewardsPPMUpdated(opts *bind.FilterOpts) (*BancorPOLRewardsPPMUpdatedIterator, error)
@@ -845,7 +845,7 @@ FilterPOLRewardsPPMUpdated is a free log retrieval operation binding the contrac
 Solidity: event POLRewardsPPMUpdated\(uint32 oldRewardsPPM, uint32 newRewardsPPM\)
 
 <a name="BancorFilterer.FilterPOLWithdrawn"></a>
-### func \(\*BancorFilterer\) [FilterPOLWithdrawn](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1996>)
+### func \(\*BancorFilterer\) [FilterPOLWithdrawn](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1996>)
 
 ```go
 func (_Bancor *BancorFilterer) FilterPOLWithdrawn(opts *bind.FilterOpts, caller []common.Address, token []common.Address) (*BancorPOLWithdrawnIterator, error)
@@ -856,7 +856,7 @@ FilterPOLWithdrawn is a free log retrieval operation binding the contract event 
 Solidity: event POLWithdrawn\(address indexed caller, address indexed zcntoken, uint256 polTokenAmount, uint256 userReward\)
 
 <a name="BancorFilterer.FilterPaused"></a>
-### func \(\*BancorFilterer\) [FilterPaused](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2148>)
+### func \(\*BancorFilterer\) [FilterPaused](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2148>)
 
 ```go
 func (_Bancor *BancorFilterer) FilterPaused(opts *bind.FilterOpts) (*BancorPausedIterator, error)
@@ -867,7 +867,7 @@ FilterPaused is a free log retrieval operation binding the contract event 0x62e7
 Solidity: event Paused\(address account\)
 
 <a name="BancorFilterer.FilterPoolAdded"></a>
-### func \(\*BancorFilterer\) [FilterPoolAdded](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2283>)
+### func \(\*BancorFilterer\) [FilterPoolAdded](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2283>)
 
 ```go
 func (_Bancor *BancorFilterer) FilterPoolAdded(opts *bind.FilterOpts, pool []common.Address, poolCollection []common.Address) (*BancorPoolAddedIterator, error)
@@ -878,7 +878,7 @@ FilterPoolAdded is a free log retrieval operation binding the contract event 0x9
 Solidity: event PoolAdded\(address indexed pool, address indexed poolCollection\)
 
 <a name="BancorFilterer.FilterPoolCollectionAdded"></a>
-### func \(\*BancorFilterer\) [FilterPoolCollectionAdded](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2436>)
+### func \(\*BancorFilterer\) [FilterPoolCollectionAdded](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2436>)
 
 ```go
 func (_Bancor *BancorFilterer) FilterPoolCollectionAdded(opts *bind.FilterOpts, poolType []uint16, poolCollection []common.Address) (*BancorPoolCollectionAddedIterator, error)
@@ -889,7 +889,7 @@ FilterPoolCollectionAdded is a free log retrieval operation binding the contract
 Solidity: event PoolCollectionAdded\(uint16 indexed poolType, address indexed poolCollection\)
 
 <a name="BancorFilterer.FilterPoolCollectionRemoved"></a>
-### func \(\*BancorFilterer\) [FilterPoolCollectionRemoved](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2589>)
+### func \(\*BancorFilterer\) [FilterPoolCollectionRemoved](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2589>)
 
 ```go
 func (_Bancor *BancorFilterer) FilterPoolCollectionRemoved(opts *bind.FilterOpts, poolType []uint16, poolCollection []common.Address) (*BancorPoolCollectionRemovedIterator, error)
@@ -900,7 +900,7 @@ FilterPoolCollectionRemoved is a free log retrieval operation binding the contra
 Solidity: event PoolCollectionRemoved\(uint16 indexed poolType, address indexed poolCollection\)
 
 <a name="BancorFilterer.FilterPoolCreated"></a>
-### func \(\*BancorFilterer\) [FilterPoolCreated](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2742>)
+### func \(\*BancorFilterer\) [FilterPoolCreated](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2742>)
 
 ```go
 func (_Bancor *BancorFilterer) FilterPoolCreated(opts *bind.FilterOpts, pool []common.Address, poolCollection []common.Address) (*BancorPoolCreatedIterator, error)
@@ -911,7 +911,7 @@ FilterPoolCreated is a free log retrieval operation binding the contract event 0
 Solidity: event PoolCreated\(address indexed pool, address indexed poolCollection\)
 
 <a name="BancorFilterer.FilterPoolRemoved"></a>
-### func \(\*BancorFilterer\) [FilterPoolRemoved](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2895>)
+### func \(\*BancorFilterer\) [FilterPoolRemoved](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2895>)
 
 ```go
 func (_Bancor *BancorFilterer) FilterPoolRemoved(opts *bind.FilterOpts, pool []common.Address, poolCollection []common.Address) (*BancorPoolRemovedIterator, error)
@@ -922,7 +922,7 @@ FilterPoolRemoved is a free log retrieval operation binding the contract event 0
 Solidity: event PoolRemoved\(address indexed pool, address indexed poolCollection\)
 
 <a name="BancorFilterer.FilterRoleAdminChanged"></a>
-### func \(\*BancorFilterer\) [FilterRoleAdminChanged](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3049>)
+### func \(\*BancorFilterer\) [FilterRoleAdminChanged](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3049>)
 
 ```go
 func (_Bancor *BancorFilterer) FilterRoleAdminChanged(opts *bind.FilterOpts, role [][32]byte, previousAdminRole [][32]byte, newAdminRole [][32]byte) (*BancorRoleAdminChangedIterator, error)
@@ -933,7 +933,7 @@ FilterRoleAdminChanged is a free log retrieval operation binding the contract ev
 Solidity: event RoleAdminChanged\(bytes32 indexed role, bytes32 indexed previousAdminRole, bytes32 indexed newAdminRole\)
 
 <a name="BancorFilterer.FilterRoleGranted"></a>
-### func \(\*BancorFilterer\) [FilterRoleGranted](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3211>)
+### func \(\*BancorFilterer\) [FilterRoleGranted](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3211>)
 
 ```go
 func (_Bancor *BancorFilterer) FilterRoleGranted(opts *bind.FilterOpts, role [][32]byte, account []common.Address, sender []common.Address) (*BancorRoleGrantedIterator, error)
@@ -944,7 +944,7 @@ FilterRoleGranted is a free log retrieval operation binding the contract event 0
 Solidity: event RoleGranted\(bytes32 indexed role, address indexed account, address indexed sender\)
 
 <a name="BancorFilterer.FilterRoleRevoked"></a>
-### func \(\*BancorFilterer\) [FilterRoleRevoked](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3373>)
+### func \(\*BancorFilterer\) [FilterRoleRevoked](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3373>)
 
 ```go
 func (_Bancor *BancorFilterer) FilterRoleRevoked(opts *bind.FilterOpts, role [][32]byte, account []common.Address, sender []common.Address) (*BancorRoleRevokedIterator, error)
@@ -955,7 +955,7 @@ FilterRoleRevoked is a free log retrieval operation binding the contract event 0
 Solidity: event RoleRevoked\(bytes32 indexed role, address indexed account, address indexed sender\)
 
 <a name="BancorFilterer.FilterTokensTraded"></a>
-### func \(\*BancorFilterer\) [FilterTokensTraded](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3541>)
+### func \(\*BancorFilterer\) [FilterTokensTraded](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3541>)
 
 ```go
 func (_Bancor *BancorFilterer) FilterTokensTraded(opts *bind.FilterOpts, contextId [][32]byte, sourceToken []common.Address, targetToken []common.Address) (*BancorTokensTradedIterator, error)
@@ -966,7 +966,7 @@ FilterTokensTraded is a free log retrieval operation binding the contract event 
 Solidity: event TokensTraded\(bytes32 indexed contextId, address indexed sourceToken, address indexed targetToken, uint256 sourceAmount, uint256 targetAmount, uint256 bntAmount, uint256 targetFeeAmount, uint256 bntFeeAmount, address trader\)
 
 <a name="BancorFilterer.FilterUnpaused"></a>
-### func \(\*BancorFilterer\) [FilterUnpaused](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3701>)
+### func \(\*BancorFilterer\) [FilterUnpaused](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3701>)
 
 ```go
 func (_Bancor *BancorFilterer) FilterUnpaused(opts *bind.FilterOpts) (*BancorUnpausedIterator, error)
@@ -977,7 +977,7 @@ FilterUnpaused is a free log retrieval operation binding the contract event 0x5d
 Solidity: event Unpaused\(address account\)
 
 <a name="BancorFilterer.ParseFlashLoanCompleted"></a>
-### func \(\*BancorFilterer\) [ParseFlashLoanCompleted](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1454>)
+### func \(\*BancorFilterer\) [ParseFlashLoanCompleted](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1454>)
 
 ```go
 func (_Bancor *BancorFilterer) ParseFlashLoanCompleted(log types.Log) (*BancorFlashLoanCompleted, error)
@@ -988,7 +988,7 @@ ParseFlashLoanCompleted is a log parse operation binding the contract event 0x0d
 Solidity: event FlashLoanCompleted\(address indexed zcntoken, address indexed borrower, uint256 amount, uint256 feeAmount\)
 
 <a name="BancorFilterer.ParseFundsMigrated"></a>
-### func \(\*BancorFilterer\) [ParseFundsMigrated](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1619>)
+### func \(\*BancorFilterer\) [ParseFundsMigrated](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1619>)
 
 ```go
 func (_Bancor *BancorFilterer) ParseFundsMigrated(log types.Log) (*BancorFundsMigrated, error)
@@ -999,7 +999,7 @@ ParseFundsMigrated is a log parse operation binding the contract event 0x102bce4
 Solidity: event FundsMigrated\(bytes32 indexed contextId, address indexed zcntoken, address indexed provider, uint256 amount, uint256 availableAmount, uint256 originalAmount\)
 
 <a name="BancorFilterer.ParseNetworkFeesWithdrawn"></a>
-### func \(\*BancorFilterer\) [ParseNetworkFeesWithdrawn](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1773>)
+### func \(\*BancorFilterer\) [ParseNetworkFeesWithdrawn](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1773>)
 
 ```go
 func (_Bancor *BancorFilterer) ParseNetworkFeesWithdrawn(log types.Log) (*BancorNetworkFeesWithdrawn, error)
@@ -1010,7 +1010,7 @@ ParseNetworkFeesWithdrawn is a log parse operation binding the contract event 0x
 Solidity: event NetworkFeesWithdrawn\(address indexed caller, address indexed recipient, uint256 amount\)
 
 <a name="BancorFilterer.ParsePOLRewardsPPMUpdated"></a>
-### func \(\*BancorFilterer\) [ParsePOLRewardsPPMUpdated](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1908>)
+### func \(\*BancorFilterer\) [ParsePOLRewardsPPMUpdated](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1908>)
 
 ```go
 func (_Bancor *BancorFilterer) ParsePOLRewardsPPMUpdated(log types.Log) (*BancorPOLRewardsPPMUpdated, error)
@@ -1021,7 +1021,7 @@ ParsePOLRewardsPPMUpdated is a log parse operation binding the contract event 0x
 Solidity: event POLRewardsPPMUpdated\(uint32 oldRewardsPPM, uint32 newRewardsPPM\)
 
 <a name="BancorFilterer.ParsePOLWithdrawn"></a>
-### func \(\*BancorFilterer\) [ParsePOLWithdrawn](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2063>)
+### func \(\*BancorFilterer\) [ParsePOLWithdrawn](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2063>)
 
 ```go
 func (_Bancor *BancorFilterer) ParsePOLWithdrawn(log types.Log) (*BancorPOLWithdrawn, error)
@@ -1032,7 +1032,7 @@ ParsePOLWithdrawn is a log parse operation binding the contract event 0x5ad7a218
 Solidity: event POLWithdrawn\(address indexed caller, address indexed zcntoken, uint256 polTokenAmount, uint256 userReward\)
 
 <a name="BancorFilterer.ParsePaused"></a>
-### func \(\*BancorFilterer\) [ParsePaused](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2197>)
+### func \(\*BancorFilterer\) [ParsePaused](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2197>)
 
 ```go
 func (_Bancor *BancorFilterer) ParsePaused(log types.Log) (*BancorPaused, error)
@@ -1043,7 +1043,7 @@ ParsePaused is a log parse operation binding the contract event 0x62e78cea01bee3
 Solidity: event Paused\(address account\)
 
 <a name="BancorFilterer.ParsePoolAdded"></a>
-### func \(\*BancorFilterer\) [ParsePoolAdded](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2350>)
+### func \(\*BancorFilterer\) [ParsePoolAdded](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2350>)
 
 ```go
 func (_Bancor *BancorFilterer) ParsePoolAdded(log types.Log) (*BancorPoolAdded, error)
@@ -1054,7 +1054,7 @@ ParsePoolAdded is a log parse operation binding the contract event 0x95f865c2808
 Solidity: event PoolAdded\(address indexed pool, address indexed poolCollection\)
 
 <a name="BancorFilterer.ParsePoolCollectionAdded"></a>
-### func \(\*BancorFilterer\) [ParsePoolCollectionAdded](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2503>)
+### func \(\*BancorFilterer\) [ParsePoolCollectionAdded](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2503>)
 
 ```go
 func (_Bancor *BancorFilterer) ParsePoolCollectionAdded(log types.Log) (*BancorPoolCollectionAdded, error)
@@ -1065,7 +1065,7 @@ ParsePoolCollectionAdded is a log parse operation binding the contract event 0x5
 Solidity: event PoolCollectionAdded\(uint16 indexed poolType, address indexed poolCollection\)
 
 <a name="BancorFilterer.ParsePoolCollectionRemoved"></a>
-### func \(\*BancorFilterer\) [ParsePoolCollectionRemoved](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2656>)
+### func \(\*BancorFilterer\) [ParsePoolCollectionRemoved](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2656>)
 
 ```go
 func (_Bancor *BancorFilterer) ParsePoolCollectionRemoved(log types.Log) (*BancorPoolCollectionRemoved, error)
@@ -1076,7 +1076,7 @@ ParsePoolCollectionRemoved is a log parse operation binding the contract event 0
 Solidity: event PoolCollectionRemoved\(uint16 indexed poolType, address indexed poolCollection\)
 
 <a name="BancorFilterer.ParsePoolCreated"></a>
-### func \(\*BancorFilterer\) [ParsePoolCreated](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2809>)
+### func \(\*BancorFilterer\) [ParsePoolCreated](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2809>)
 
 ```go
 func (_Bancor *BancorFilterer) ParsePoolCreated(log types.Log) (*BancorPoolCreated, error)
@@ -1087,7 +1087,7 @@ ParsePoolCreated is a log parse operation binding the contract event 0x4f2ce4e40
 Solidity: event PoolCreated\(address indexed pool, address indexed poolCollection\)
 
 <a name="BancorFilterer.ParsePoolRemoved"></a>
-### func \(\*BancorFilterer\) [ParsePoolRemoved](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2962>)
+### func \(\*BancorFilterer\) [ParsePoolRemoved](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2962>)
 
 ```go
 func (_Bancor *BancorFilterer) ParsePoolRemoved(log types.Log) (*BancorPoolRemoved, error)
@@ -1098,7 +1098,7 @@ ParsePoolRemoved is a log parse operation binding the contract event 0x987eb3c2f
 Solidity: event PoolRemoved\(address indexed pool, address indexed poolCollection\)
 
 <a name="BancorFilterer.ParseRoleAdminChanged"></a>
-### func \(\*BancorFilterer\) [ParseRoleAdminChanged](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3124>)
+### func \(\*BancorFilterer\) [ParseRoleAdminChanged](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3124>)
 
 ```go
 func (_Bancor *BancorFilterer) ParseRoleAdminChanged(log types.Log) (*BancorRoleAdminChanged, error)
@@ -1109,7 +1109,7 @@ ParseRoleAdminChanged is a log parse operation binding the contract event 0xbd79
 Solidity: event RoleAdminChanged\(bytes32 indexed role, bytes32 indexed previousAdminRole, bytes32 indexed newAdminRole\)
 
 <a name="BancorFilterer.ParseRoleGranted"></a>
-### func \(\*BancorFilterer\) [ParseRoleGranted](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3286>)
+### func \(\*BancorFilterer\) [ParseRoleGranted](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3286>)
 
 ```go
 func (_Bancor *BancorFilterer) ParseRoleGranted(log types.Log) (*BancorRoleGranted, error)
@@ -1120,7 +1120,7 @@ ParseRoleGranted is a log parse operation binding the contract event 0x2f8788117
 Solidity: event RoleGranted\(bytes32 indexed role, address indexed account, address indexed sender\)
 
 <a name="BancorFilterer.ParseRoleRevoked"></a>
-### func \(\*BancorFilterer\) [ParseRoleRevoked](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3448>)
+### func \(\*BancorFilterer\) [ParseRoleRevoked](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3448>)
 
 ```go
 func (_Bancor *BancorFilterer) ParseRoleRevoked(log types.Log) (*BancorRoleRevoked, error)
@@ -1131,7 +1131,7 @@ ParseRoleRevoked is a log parse operation binding the contract event 0xf6391f5c3
 Solidity: event RoleRevoked\(bytes32 indexed role, address indexed account, address indexed sender\)
 
 <a name="BancorFilterer.ParseTokensTraded"></a>
-### func \(\*BancorFilterer\) [ParseTokensTraded](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3616>)
+### func \(\*BancorFilterer\) [ParseTokensTraded](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3616>)
 
 ```go
 func (_Bancor *BancorFilterer) ParseTokensTraded(log types.Log) (*BancorTokensTraded, error)
@@ -1142,7 +1142,7 @@ ParseTokensTraded is a log parse operation binding the contract event 0x5c02c2bb
 Solidity: event TokensTraded\(bytes32 indexed contextId, address indexed sourceToken, address indexed targetToken, uint256 sourceAmount, uint256 targetAmount, uint256 bntAmount, uint256 targetFeeAmount, uint256 bntFeeAmount, address trader\)
 
 <a name="BancorFilterer.ParseUnpaused"></a>
-### func \(\*BancorFilterer\) [ParseUnpaused](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3750>)
+### func \(\*BancorFilterer\) [ParseUnpaused](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3750>)
 
 ```go
 func (_Bancor *BancorFilterer) ParseUnpaused(log types.Log) (*BancorUnpaused, error)
@@ -1153,7 +1153,7 @@ ParseUnpaused is a log parse operation binding the contract event 0x5db9ee0a495b
 Solidity: event Unpaused\(address account\)
 
 <a name="BancorFilterer.WatchFlashLoanCompleted"></a>
-### func \(\*BancorFilterer\) [WatchFlashLoanCompleted](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1408>)
+### func \(\*BancorFilterer\) [WatchFlashLoanCompleted](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1408>)
 
 ```go
 func (_Bancor *BancorFilterer) WatchFlashLoanCompleted(opts *bind.WatchOpts, sink chan<- *BancorFlashLoanCompleted, token []common.Address, borrower []common.Address) (event.Subscription, error)
@@ -1164,7 +1164,7 @@ WatchFlashLoanCompleted is a free log subscription operation binding the contrac
 Solidity: event FlashLoanCompleted\(address indexed zcntoken, address indexed borrower, uint256 amount, uint256 feeAmount\)
 
 <a name="BancorFilterer.WatchFundsMigrated"></a>
-### func \(\*BancorFilterer\) [WatchFundsMigrated](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1569>)
+### func \(\*BancorFilterer\) [WatchFundsMigrated](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1569>)
 
 ```go
 func (_Bancor *BancorFilterer) WatchFundsMigrated(opts *bind.WatchOpts, sink chan<- *BancorFundsMigrated, contextId [][32]byte, token []common.Address, provider []common.Address) (event.Subscription, error)
@@ -1175,7 +1175,7 @@ WatchFundsMigrated is a free log subscription operation binding the contract eve
 Solidity: event FundsMigrated\(bytes32 indexed contextId, address indexed zcntoken, address indexed provider, uint256 amount, uint256 availableAmount, uint256 originalAmount\)
 
 <a name="BancorFilterer.WatchNetworkFeesWithdrawn"></a>
-### func \(\*BancorFilterer\) [WatchNetworkFeesWithdrawn](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1727>)
+### func \(\*BancorFilterer\) [WatchNetworkFeesWithdrawn](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1727>)
 
 ```go
 func (_Bancor *BancorFilterer) WatchNetworkFeesWithdrawn(opts *bind.WatchOpts, sink chan<- *BancorNetworkFeesWithdrawn, caller []common.Address, recipient []common.Address) (event.Subscription, error)
@@ -1186,7 +1186,7 @@ WatchNetworkFeesWithdrawn is a free log subscription operation binding the contr
 Solidity: event NetworkFeesWithdrawn\(address indexed caller, address indexed recipient, uint256 amount\)
 
 <a name="BancorFilterer.WatchPOLRewardsPPMUpdated"></a>
-### func \(\*BancorFilterer\) [WatchPOLRewardsPPMUpdated](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1871>)
+### func \(\*BancorFilterer\) [WatchPOLRewardsPPMUpdated](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1871>)
 
 ```go
 func (_Bancor *BancorFilterer) WatchPOLRewardsPPMUpdated(opts *bind.WatchOpts, sink chan<- *BancorPOLRewardsPPMUpdated) (event.Subscription, error)
@@ -1197,7 +1197,7 @@ WatchPOLRewardsPPMUpdated is a free log subscription operation binding the contr
 Solidity: event POLRewardsPPMUpdated\(uint32 oldRewardsPPM, uint32 newRewardsPPM\)
 
 <a name="BancorFilterer.WatchPOLWithdrawn"></a>
-### func \(\*BancorFilterer\) [WatchPOLWithdrawn](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2017>)
+### func \(\*BancorFilterer\) [WatchPOLWithdrawn](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2017>)
 
 ```go
 func (_Bancor *BancorFilterer) WatchPOLWithdrawn(opts *bind.WatchOpts, sink chan<- *BancorPOLWithdrawn, caller []common.Address, token []common.Address) (event.Subscription, error)
@@ -1208,7 +1208,7 @@ WatchPOLWithdrawn is a free log subscription operation binding the contract even
 Solidity: event POLWithdrawn\(address indexed caller, address indexed zcntoken, uint256 polTokenAmount, uint256 userReward\)
 
 <a name="BancorFilterer.WatchPaused"></a>
-### func \(\*BancorFilterer\) [WatchPaused](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2160>)
+### func \(\*BancorFilterer\) [WatchPaused](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2160>)
 
 ```go
 func (_Bancor *BancorFilterer) WatchPaused(opts *bind.WatchOpts, sink chan<- *BancorPaused) (event.Subscription, error)
@@ -1219,7 +1219,7 @@ WatchPaused is a free log subscription operation binding the contract event 0x62
 Solidity: event Paused\(address account\)
 
 <a name="BancorFilterer.WatchPoolAdded"></a>
-### func \(\*BancorFilterer\) [WatchPoolAdded](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2304>)
+### func \(\*BancorFilterer\) [WatchPoolAdded](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2304>)
 
 ```go
 func (_Bancor *BancorFilterer) WatchPoolAdded(opts *bind.WatchOpts, sink chan<- *BancorPoolAdded, pool []common.Address, poolCollection []common.Address) (event.Subscription, error)
@@ -1230,7 +1230,7 @@ WatchPoolAdded is a free log subscription operation binding the contract event 0
 Solidity: event PoolAdded\(address indexed pool, address indexed poolCollection\)
 
 <a name="BancorFilterer.WatchPoolCollectionAdded"></a>
-### func \(\*BancorFilterer\) [WatchPoolCollectionAdded](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2457>)
+### func \(\*BancorFilterer\) [WatchPoolCollectionAdded](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2457>)
 
 ```go
 func (_Bancor *BancorFilterer) WatchPoolCollectionAdded(opts *bind.WatchOpts, sink chan<- *BancorPoolCollectionAdded, poolType []uint16, poolCollection []common.Address) (event.Subscription, error)
@@ -1241,7 +1241,7 @@ WatchPoolCollectionAdded is a free log subscription operation binding the contra
 Solidity: event PoolCollectionAdded\(uint16 indexed poolType, address indexed poolCollection\)
 
 <a name="BancorFilterer.WatchPoolCollectionRemoved"></a>
-### func \(\*BancorFilterer\) [WatchPoolCollectionRemoved](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2610>)
+### func \(\*BancorFilterer\) [WatchPoolCollectionRemoved](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2610>)
 
 ```go
 func (_Bancor *BancorFilterer) WatchPoolCollectionRemoved(opts *bind.WatchOpts, sink chan<- *BancorPoolCollectionRemoved, poolType []uint16, poolCollection []common.Address) (event.Subscription, error)
@@ -1252,7 +1252,7 @@ WatchPoolCollectionRemoved is a free log subscription operation binding the cont
 Solidity: event PoolCollectionRemoved\(uint16 indexed poolType, address indexed poolCollection\)
 
 <a name="BancorFilterer.WatchPoolCreated"></a>
-### func \(\*BancorFilterer\) [WatchPoolCreated](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2763>)
+### func \(\*BancorFilterer\) [WatchPoolCreated](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2763>)
 
 ```go
 func (_Bancor *BancorFilterer) WatchPoolCreated(opts *bind.WatchOpts, sink chan<- *BancorPoolCreated, pool []common.Address, poolCollection []common.Address) (event.Subscription, error)
@@ -1263,7 +1263,7 @@ WatchPoolCreated is a free log subscription operation binding the contract event
 Solidity: event PoolCreated\(address indexed pool, address indexed poolCollection\)
 
 <a name="BancorFilterer.WatchPoolRemoved"></a>
-### func \(\*BancorFilterer\) [WatchPoolRemoved](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2916>)
+### func \(\*BancorFilterer\) [WatchPoolRemoved](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2916>)
 
 ```go
 func (_Bancor *BancorFilterer) WatchPoolRemoved(opts *bind.WatchOpts, sink chan<- *BancorPoolRemoved, pool []common.Address, poolCollection []common.Address) (event.Subscription, error)
@@ -1274,7 +1274,7 @@ WatchPoolRemoved is a free log subscription operation binding the contract event
 Solidity: event PoolRemoved\(address indexed pool, address indexed poolCollection\)
 
 <a name="BancorFilterer.WatchRoleAdminChanged"></a>
-### func \(\*BancorFilterer\) [WatchRoleAdminChanged](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3074>)
+### func \(\*BancorFilterer\) [WatchRoleAdminChanged](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3074>)
 
 ```go
 func (_Bancor *BancorFilterer) WatchRoleAdminChanged(opts *bind.WatchOpts, sink chan<- *BancorRoleAdminChanged, role [][32]byte, previousAdminRole [][32]byte, newAdminRole [][32]byte) (event.Subscription, error)
@@ -1285,7 +1285,7 @@ WatchRoleAdminChanged is a free log subscription operation binding the contract 
 Solidity: event RoleAdminChanged\(bytes32 indexed role, bytes32 indexed previousAdminRole, bytes32 indexed newAdminRole\)
 
 <a name="BancorFilterer.WatchRoleGranted"></a>
-### func \(\*BancorFilterer\) [WatchRoleGranted](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3236>)
+### func \(\*BancorFilterer\) [WatchRoleGranted](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3236>)
 
 ```go
 func (_Bancor *BancorFilterer) WatchRoleGranted(opts *bind.WatchOpts, sink chan<- *BancorRoleGranted, role [][32]byte, account []common.Address, sender []common.Address) (event.Subscription, error)
@@ -1296,7 +1296,7 @@ WatchRoleGranted is a free log subscription operation binding the contract event
 Solidity: event RoleGranted\(bytes32 indexed role, address indexed account, address indexed sender\)
 
 <a name="BancorFilterer.WatchRoleRevoked"></a>
-### func \(\*BancorFilterer\) [WatchRoleRevoked](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3398>)
+### func \(\*BancorFilterer\) [WatchRoleRevoked](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3398>)
 
 ```go
 func (_Bancor *BancorFilterer) WatchRoleRevoked(opts *bind.WatchOpts, sink chan<- *BancorRoleRevoked, role [][32]byte, account []common.Address, sender []common.Address) (event.Subscription, error)
@@ -1307,7 +1307,7 @@ WatchRoleRevoked is a free log subscription operation binding the contract event
 Solidity: event RoleRevoked\(bytes32 indexed role, address indexed account, address indexed sender\)
 
 <a name="BancorFilterer.WatchTokensTraded"></a>
-### func \(\*BancorFilterer\) [WatchTokensTraded](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3566>)
+### func \(\*BancorFilterer\) [WatchTokensTraded](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3566>)
 
 ```go
 func (_Bancor *BancorFilterer) WatchTokensTraded(opts *bind.WatchOpts, sink chan<- *BancorTokensTraded, contextId [][32]byte, sourceToken []common.Address, targetToken []common.Address) (event.Subscription, error)
@@ -1318,7 +1318,7 @@ WatchTokensTraded is a free log subscription operation binding the contract even
 Solidity: event TokensTraded\(bytes32 indexed contextId, address indexed sourceToken, address indexed targetToken, uint256 sourceAmount, uint256 targetAmount, uint256 bntAmount, uint256 targetFeeAmount, uint256 bntFeeAmount, address trader\)
 
 <a name="BancorFilterer.WatchUnpaused"></a>
-### func \(\*BancorFilterer\) [WatchUnpaused](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3713>)
+### func \(\*BancorFilterer\) [WatchUnpaused](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3713>)
 
 ```go
 func (_Bancor *BancorFilterer) WatchUnpaused(opts *bind.WatchOpts, sink chan<- *BancorUnpaused) (event.Subscription, error)
@@ -1329,7 +1329,7 @@ WatchUnpaused is a free log subscription operation binding the contract event 0x
 Solidity: event Unpaused\(address account\)
 
 <a name="BancorFlashLoanCompleted"></a>
-## type [BancorFlashLoanCompleted](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1376-L1382>)
+## type [BancorFlashLoanCompleted](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1376-L1382>)
 
 BancorFlashLoanCompleted represents a FlashLoanCompleted event raised by the Bancor contract.
 
@@ -1344,7 +1344,7 @@ type BancorFlashLoanCompleted struct {
 ```
 
 <a name="BancorFlashLoanCompletedIterator"></a>
-## type [BancorFlashLoanCompletedIterator](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1309-L1319>)
+## type [BancorFlashLoanCompletedIterator](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1309-L1319>)
 
 BancorFlashLoanCompletedIterator is returned from FilterFlashLoanCompleted and is used to iterate over the raw logs and unpacked data for FlashLoanCompleted events raised by the Bancor contract.
 
@@ -1356,7 +1356,7 @@ type BancorFlashLoanCompletedIterator struct {
 ```
 
 <a name="BancorFlashLoanCompletedIterator.Close"></a>
-### func \(\*BancorFlashLoanCompletedIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1370>)
+### func \(\*BancorFlashLoanCompletedIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1370>)
 
 ```go
 func (it *BancorFlashLoanCompletedIterator) Close() error
@@ -1365,7 +1365,7 @@ func (it *BancorFlashLoanCompletedIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="BancorFlashLoanCompletedIterator.Error"></a>
-### func \(\*BancorFlashLoanCompletedIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1364>)
+### func \(\*BancorFlashLoanCompletedIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1364>)
 
 ```go
 func (it *BancorFlashLoanCompletedIterator) Error() error
@@ -1374,7 +1374,7 @@ func (it *BancorFlashLoanCompletedIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="BancorFlashLoanCompletedIterator.Next"></a>
-### func \(\*BancorFlashLoanCompletedIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1324>)
+### func \(\*BancorFlashLoanCompletedIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1324>)
 
 ```go
 func (it *BancorFlashLoanCompletedIterator) Next() bool
@@ -1383,7 +1383,7 @@ func (it *BancorFlashLoanCompletedIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="BancorFundsMigrated"></a>
-## type [BancorFundsMigrated](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1531-L1539>)
+## type [BancorFundsMigrated](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1531-L1539>)
 
 BancorFundsMigrated represents a FundsMigrated event raised by the Bancor contract.
 
@@ -1400,7 +1400,7 @@ type BancorFundsMigrated struct {
 ```
 
 <a name="BancorFundsMigratedIterator"></a>
-## type [BancorFundsMigratedIterator](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1464-L1474>)
+## type [BancorFundsMigratedIterator](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1464-L1474>)
 
 BancorFundsMigratedIterator is returned from FilterFundsMigrated and is used to iterate over the raw logs and unpacked data for FundsMigrated events raised by the Bancor contract.
 
@@ -1412,7 +1412,7 @@ type BancorFundsMigratedIterator struct {
 ```
 
 <a name="BancorFundsMigratedIterator.Close"></a>
-### func \(\*BancorFundsMigratedIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1525>)
+### func \(\*BancorFundsMigratedIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1525>)
 
 ```go
 func (it *BancorFundsMigratedIterator) Close() error
@@ -1421,7 +1421,7 @@ func (it *BancorFundsMigratedIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="BancorFundsMigratedIterator.Error"></a>
-### func \(\*BancorFundsMigratedIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1519>)
+### func \(\*BancorFundsMigratedIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1519>)
 
 ```go
 func (it *BancorFundsMigratedIterator) Error() error
@@ -1430,7 +1430,7 @@ func (it *BancorFundsMigratedIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="BancorFundsMigratedIterator.Next"></a>
-### func \(\*BancorFundsMigratedIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1479>)
+### func \(\*BancorFundsMigratedIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1479>)
 
 ```go
 func (it *BancorFundsMigratedIterator) Next() bool
@@ -1439,7 +1439,7 @@ func (it *BancorFundsMigratedIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="BancorNetworkFeesWithdrawn"></a>
-## type [BancorNetworkFeesWithdrawn](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1696-L1701>)
+## type [BancorNetworkFeesWithdrawn](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1696-L1701>)
 
 BancorNetworkFeesWithdrawn represents a NetworkFeesWithdrawn event raised by the Bancor contract.
 
@@ -1453,7 +1453,7 @@ type BancorNetworkFeesWithdrawn struct {
 ```
 
 <a name="BancorNetworkFeesWithdrawnIterator"></a>
-## type [BancorNetworkFeesWithdrawnIterator](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1629-L1639>)
+## type [BancorNetworkFeesWithdrawnIterator](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1629-L1639>)
 
 BancorNetworkFeesWithdrawnIterator is returned from FilterNetworkFeesWithdrawn and is used to iterate over the raw logs and unpacked data for NetworkFeesWithdrawn events raised by the Bancor contract.
 
@@ -1465,7 +1465,7 @@ type BancorNetworkFeesWithdrawnIterator struct {
 ```
 
 <a name="BancorNetworkFeesWithdrawnIterator.Close"></a>
-### func \(\*BancorNetworkFeesWithdrawnIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1690>)
+### func \(\*BancorNetworkFeesWithdrawnIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1690>)
 
 ```go
 func (it *BancorNetworkFeesWithdrawnIterator) Close() error
@@ -1474,7 +1474,7 @@ func (it *BancorNetworkFeesWithdrawnIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="BancorNetworkFeesWithdrawnIterator.Error"></a>
-### func \(\*BancorNetworkFeesWithdrawnIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1684>)
+### func \(\*BancorNetworkFeesWithdrawnIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1684>)
 
 ```go
 func (it *BancorNetworkFeesWithdrawnIterator) Error() error
@@ -1483,7 +1483,7 @@ func (it *BancorNetworkFeesWithdrawnIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="BancorNetworkFeesWithdrawnIterator.Next"></a>
-### func \(\*BancorNetworkFeesWithdrawnIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1644>)
+### func \(\*BancorNetworkFeesWithdrawnIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1644>)
 
 ```go
 func (it *BancorNetworkFeesWithdrawnIterator) Next() bool
@@ -1492,7 +1492,7 @@ func (it *BancorNetworkFeesWithdrawnIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="BancorPOLRewardsPPMUpdated"></a>
-## type [BancorPOLRewardsPPMUpdated](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1850-L1854>)
+## type [BancorPOLRewardsPPMUpdated](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1850-L1854>)
 
 BancorPOLRewardsPPMUpdated represents a POLRewardsPPMUpdated event raised by the Bancor contract.
 
@@ -1505,7 +1505,7 @@ type BancorPOLRewardsPPMUpdated struct {
 ```
 
 <a name="BancorPOLRewardsPPMUpdatedIterator"></a>
-## type [BancorPOLRewardsPPMUpdatedIterator](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1783-L1793>)
+## type [BancorPOLRewardsPPMUpdatedIterator](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1783-L1793>)
 
 BancorPOLRewardsPPMUpdatedIterator is returned from FilterPOLRewardsPPMUpdated and is used to iterate over the raw logs and unpacked data for POLRewardsPPMUpdated events raised by the Bancor contract.
 
@@ -1517,7 +1517,7 @@ type BancorPOLRewardsPPMUpdatedIterator struct {
 ```
 
 <a name="BancorPOLRewardsPPMUpdatedIterator.Close"></a>
-### func \(\*BancorPOLRewardsPPMUpdatedIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1844>)
+### func \(\*BancorPOLRewardsPPMUpdatedIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1844>)
 
 ```go
 func (it *BancorPOLRewardsPPMUpdatedIterator) Close() error
@@ -1526,7 +1526,7 @@ func (it *BancorPOLRewardsPPMUpdatedIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="BancorPOLRewardsPPMUpdatedIterator.Error"></a>
-### func \(\*BancorPOLRewardsPPMUpdatedIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1838>)
+### func \(\*BancorPOLRewardsPPMUpdatedIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1838>)
 
 ```go
 func (it *BancorPOLRewardsPPMUpdatedIterator) Error() error
@@ -1535,7 +1535,7 @@ func (it *BancorPOLRewardsPPMUpdatedIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="BancorPOLRewardsPPMUpdatedIterator.Next"></a>
-### func \(\*BancorPOLRewardsPPMUpdatedIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1798>)
+### func \(\*BancorPOLRewardsPPMUpdatedIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1798>)
 
 ```go
 func (it *BancorPOLRewardsPPMUpdatedIterator) Next() bool
@@ -1544,7 +1544,7 @@ func (it *BancorPOLRewardsPPMUpdatedIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="BancorPOLWithdrawn"></a>
-## type [BancorPOLWithdrawn](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1985-L1991>)
+## type [BancorPOLWithdrawn](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1985-L1991>)
 
 BancorPOLWithdrawn represents a POLWithdrawn event raised by the Bancor contract.
 
@@ -1559,7 +1559,7 @@ type BancorPOLWithdrawn struct {
 ```
 
 <a name="BancorPOLWithdrawnIterator"></a>
-## type [BancorPOLWithdrawnIterator](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1918-L1928>)
+## type [BancorPOLWithdrawnIterator](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1918-L1928>)
 
 BancorPOLWithdrawnIterator is returned from FilterPOLWithdrawn and is used to iterate over the raw logs and unpacked data for POLWithdrawn events raised by the Bancor contract.
 
@@ -1571,7 +1571,7 @@ type BancorPOLWithdrawnIterator struct {
 ```
 
 <a name="BancorPOLWithdrawnIterator.Close"></a>
-### func \(\*BancorPOLWithdrawnIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1979>)
+### func \(\*BancorPOLWithdrawnIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1979>)
 
 ```go
 func (it *BancorPOLWithdrawnIterator) Close() error
@@ -1580,7 +1580,7 @@ func (it *BancorPOLWithdrawnIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="BancorPOLWithdrawnIterator.Error"></a>
-### func \(\*BancorPOLWithdrawnIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1973>)
+### func \(\*BancorPOLWithdrawnIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1973>)
 
 ```go
 func (it *BancorPOLWithdrawnIterator) Error() error
@@ -1589,7 +1589,7 @@ func (it *BancorPOLWithdrawnIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="BancorPOLWithdrawnIterator.Next"></a>
-### func \(\*BancorPOLWithdrawnIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1933>)
+### func \(\*BancorPOLWithdrawnIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1933>)
 
 ```go
 func (it *BancorPOLWithdrawnIterator) Next() bool
@@ -1598,7 +1598,7 @@ func (it *BancorPOLWithdrawnIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="BancorPaused"></a>
-## type [BancorPaused](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2140-L2143>)
+## type [BancorPaused](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2140-L2143>)
 
 BancorPaused represents a Paused event raised by the Bancor contract.
 
@@ -1610,7 +1610,7 @@ type BancorPaused struct {
 ```
 
 <a name="BancorPausedIterator"></a>
-## type [BancorPausedIterator](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2073-L2083>)
+## type [BancorPausedIterator](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2073-L2083>)
 
 BancorPausedIterator is returned from FilterPaused and is used to iterate over the raw logs and unpacked data for Paused events raised by the Bancor contract.
 
@@ -1622,7 +1622,7 @@ type BancorPausedIterator struct {
 ```
 
 <a name="BancorPausedIterator.Close"></a>
-### func \(\*BancorPausedIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2134>)
+### func \(\*BancorPausedIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2134>)
 
 ```go
 func (it *BancorPausedIterator) Close() error
@@ -1631,7 +1631,7 @@ func (it *BancorPausedIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="BancorPausedIterator.Error"></a>
-### func \(\*BancorPausedIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2128>)
+### func \(\*BancorPausedIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2128>)
 
 ```go
 func (it *BancorPausedIterator) Error() error
@@ -1640,7 +1640,7 @@ func (it *BancorPausedIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="BancorPausedIterator.Next"></a>
-### func \(\*BancorPausedIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2088>)
+### func \(\*BancorPausedIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2088>)
 
 ```go
 func (it *BancorPausedIterator) Next() bool
@@ -1649,7 +1649,7 @@ func (it *BancorPausedIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="BancorPoolAdded"></a>
-## type [BancorPoolAdded](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2274-L2278>)
+## type [BancorPoolAdded](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2274-L2278>)
 
 BancorPoolAdded represents a PoolAdded event raised by the Bancor contract.
 
@@ -1662,7 +1662,7 @@ type BancorPoolAdded struct {
 ```
 
 <a name="BancorPoolAddedIterator"></a>
-## type [BancorPoolAddedIterator](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2207-L2217>)
+## type [BancorPoolAddedIterator](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2207-L2217>)
 
 BancorPoolAddedIterator is returned from FilterPoolAdded and is used to iterate over the raw logs and unpacked data for PoolAdded events raised by the Bancor contract.
 
@@ -1674,7 +1674,7 @@ type BancorPoolAddedIterator struct {
 ```
 
 <a name="BancorPoolAddedIterator.Close"></a>
-### func \(\*BancorPoolAddedIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2268>)
+### func \(\*BancorPoolAddedIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2268>)
 
 ```go
 func (it *BancorPoolAddedIterator) Close() error
@@ -1683,7 +1683,7 @@ func (it *BancorPoolAddedIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="BancorPoolAddedIterator.Error"></a>
-### func \(\*BancorPoolAddedIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2262>)
+### func \(\*BancorPoolAddedIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2262>)
 
 ```go
 func (it *BancorPoolAddedIterator) Error() error
@@ -1692,7 +1692,7 @@ func (it *BancorPoolAddedIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="BancorPoolAddedIterator.Next"></a>
-### func \(\*BancorPoolAddedIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2222>)
+### func \(\*BancorPoolAddedIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2222>)
 
 ```go
 func (it *BancorPoolAddedIterator) Next() bool
@@ -1701,7 +1701,7 @@ func (it *BancorPoolAddedIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="BancorPoolCollectionAdded"></a>
-## type [BancorPoolCollectionAdded](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2427-L2431>)
+## type [BancorPoolCollectionAdded](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2427-L2431>)
 
 BancorPoolCollectionAdded represents a PoolCollectionAdded event raised by the Bancor contract.
 
@@ -1714,7 +1714,7 @@ type BancorPoolCollectionAdded struct {
 ```
 
 <a name="BancorPoolCollectionAddedIterator"></a>
-## type [BancorPoolCollectionAddedIterator](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2360-L2370>)
+## type [BancorPoolCollectionAddedIterator](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2360-L2370>)
 
 BancorPoolCollectionAddedIterator is returned from FilterPoolCollectionAdded and is used to iterate over the raw logs and unpacked data for PoolCollectionAdded events raised by the Bancor contract.
 
@@ -1726,7 +1726,7 @@ type BancorPoolCollectionAddedIterator struct {
 ```
 
 <a name="BancorPoolCollectionAddedIterator.Close"></a>
-### func \(\*BancorPoolCollectionAddedIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2421>)
+### func \(\*BancorPoolCollectionAddedIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2421>)
 
 ```go
 func (it *BancorPoolCollectionAddedIterator) Close() error
@@ -1735,7 +1735,7 @@ func (it *BancorPoolCollectionAddedIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="BancorPoolCollectionAddedIterator.Error"></a>
-### func \(\*BancorPoolCollectionAddedIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2415>)
+### func \(\*BancorPoolCollectionAddedIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2415>)
 
 ```go
 func (it *BancorPoolCollectionAddedIterator) Error() error
@@ -1744,7 +1744,7 @@ func (it *BancorPoolCollectionAddedIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="BancorPoolCollectionAddedIterator.Next"></a>
-### func \(\*BancorPoolCollectionAddedIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2375>)
+### func \(\*BancorPoolCollectionAddedIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2375>)
 
 ```go
 func (it *BancorPoolCollectionAddedIterator) Next() bool
@@ -1753,7 +1753,7 @@ func (it *BancorPoolCollectionAddedIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="BancorPoolCollectionRemoved"></a>
-## type [BancorPoolCollectionRemoved](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2580-L2584>)
+## type [BancorPoolCollectionRemoved](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2580-L2584>)
 
 BancorPoolCollectionRemoved represents a PoolCollectionRemoved event raised by the Bancor contract.
 
@@ -1766,7 +1766,7 @@ type BancorPoolCollectionRemoved struct {
 ```
 
 <a name="BancorPoolCollectionRemovedIterator"></a>
-## type [BancorPoolCollectionRemovedIterator](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2513-L2523>)
+## type [BancorPoolCollectionRemovedIterator](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2513-L2523>)
 
 BancorPoolCollectionRemovedIterator is returned from FilterPoolCollectionRemoved and is used to iterate over the raw logs and unpacked data for PoolCollectionRemoved events raised by the Bancor contract.
 
@@ -1778,7 +1778,7 @@ type BancorPoolCollectionRemovedIterator struct {
 ```
 
 <a name="BancorPoolCollectionRemovedIterator.Close"></a>
-### func \(\*BancorPoolCollectionRemovedIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2574>)
+### func \(\*BancorPoolCollectionRemovedIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2574>)
 
 ```go
 func (it *BancorPoolCollectionRemovedIterator) Close() error
@@ -1787,7 +1787,7 @@ func (it *BancorPoolCollectionRemovedIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="BancorPoolCollectionRemovedIterator.Error"></a>
-### func \(\*BancorPoolCollectionRemovedIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2568>)
+### func \(\*BancorPoolCollectionRemovedIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2568>)
 
 ```go
 func (it *BancorPoolCollectionRemovedIterator) Error() error
@@ -1796,7 +1796,7 @@ func (it *BancorPoolCollectionRemovedIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="BancorPoolCollectionRemovedIterator.Next"></a>
-### func \(\*BancorPoolCollectionRemovedIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2528>)
+### func \(\*BancorPoolCollectionRemovedIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2528>)
 
 ```go
 func (it *BancorPoolCollectionRemovedIterator) Next() bool
@@ -1805,7 +1805,7 @@ func (it *BancorPoolCollectionRemovedIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="BancorPoolCreated"></a>
-## type [BancorPoolCreated](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2733-L2737>)
+## type [BancorPoolCreated](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2733-L2737>)
 
 BancorPoolCreated represents a PoolCreated event raised by the Bancor contract.
 
@@ -1818,7 +1818,7 @@ type BancorPoolCreated struct {
 ```
 
 <a name="BancorPoolCreatedIterator"></a>
-## type [BancorPoolCreatedIterator](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2666-L2676>)
+## type [BancorPoolCreatedIterator](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2666-L2676>)
 
 BancorPoolCreatedIterator is returned from FilterPoolCreated and is used to iterate over the raw logs and unpacked data for PoolCreated events raised by the Bancor contract.
 
@@ -1830,7 +1830,7 @@ type BancorPoolCreatedIterator struct {
 ```
 
 <a name="BancorPoolCreatedIterator.Close"></a>
-### func \(\*BancorPoolCreatedIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2727>)
+### func \(\*BancorPoolCreatedIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2727>)
 
 ```go
 func (it *BancorPoolCreatedIterator) Close() error
@@ -1839,7 +1839,7 @@ func (it *BancorPoolCreatedIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="BancorPoolCreatedIterator.Error"></a>
-### func \(\*BancorPoolCreatedIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2721>)
+### func \(\*BancorPoolCreatedIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2721>)
 
 ```go
 func (it *BancorPoolCreatedIterator) Error() error
@@ -1848,7 +1848,7 @@ func (it *BancorPoolCreatedIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="BancorPoolCreatedIterator.Next"></a>
-### func \(\*BancorPoolCreatedIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2681>)
+### func \(\*BancorPoolCreatedIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2681>)
 
 ```go
 func (it *BancorPoolCreatedIterator) Next() bool
@@ -1857,7 +1857,7 @@ func (it *BancorPoolCreatedIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="BancorPoolRemoved"></a>
-## type [BancorPoolRemoved](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2886-L2890>)
+## type [BancorPoolRemoved](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2886-L2890>)
 
 BancorPoolRemoved represents a PoolRemoved event raised by the Bancor contract.
 
@@ -1870,7 +1870,7 @@ type BancorPoolRemoved struct {
 ```
 
 <a name="BancorPoolRemovedIterator"></a>
-## type [BancorPoolRemovedIterator](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2819-L2829>)
+## type [BancorPoolRemovedIterator](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2819-L2829>)
 
 BancorPoolRemovedIterator is returned from FilterPoolRemoved and is used to iterate over the raw logs and unpacked data for PoolRemoved events raised by the Bancor contract.
 
@@ -1882,7 +1882,7 @@ type BancorPoolRemovedIterator struct {
 ```
 
 <a name="BancorPoolRemovedIterator.Close"></a>
-### func \(\*BancorPoolRemovedIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2880>)
+### func \(\*BancorPoolRemovedIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2880>)
 
 ```go
 func (it *BancorPoolRemovedIterator) Close() error
@@ -1891,7 +1891,7 @@ func (it *BancorPoolRemovedIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="BancorPoolRemovedIterator.Error"></a>
-### func \(\*BancorPoolRemovedIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2874>)
+### func \(\*BancorPoolRemovedIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2874>)
 
 ```go
 func (it *BancorPoolRemovedIterator) Error() error
@@ -1900,7 +1900,7 @@ func (it *BancorPoolRemovedIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="BancorPoolRemovedIterator.Next"></a>
-### func \(\*BancorPoolRemovedIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2834>)
+### func \(\*BancorPoolRemovedIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2834>)
 
 ```go
 func (it *BancorPoolRemovedIterator) Next() bool
@@ -1909,7 +1909,7 @@ func (it *BancorPoolRemovedIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="BancorRaw"></a>
-## type [BancorRaw](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L86-L88>)
+## type [BancorRaw](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L86-L88>)
 
 BancorRaw is an auto generated low\-level Go binding around an Ethereum contract.
 
@@ -1920,7 +1920,7 @@ type BancorRaw struct {
 ```
 
 <a name="BancorRaw.Call"></a>
-### func \(\*BancorRaw\) [Call](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L149>)
+### func \(\*BancorRaw\) [Call](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L149>)
 
 ```go
 func (_Bancor *BancorRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error
@@ -1929,7 +1929,7 @@ func (_Bancor *BancorRaw) Call(opts *bind.CallOpts, result *[]interface{}, metho
 Call invokes the \(constant\) contract method with params as input values and sets the output to result. The result type might be a single field for simple returns, a slice of interfaces for anonymous returns and a struct for named returns.
 
 <a name="BancorRaw.Transact"></a>
-### func \(\*BancorRaw\) [Transact](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L160>)
+### func \(\*BancorRaw\) [Transact](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L160>)
 
 ```go
 func (_Bancor *BancorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error)
@@ -1938,7 +1938,7 @@ func (_Bancor *BancorRaw) Transact(opts *bind.TransactOpts, method string, param
 Transact invokes the \(paid\) contract method with params as input values.
 
 <a name="BancorRaw.Transfer"></a>
-### func \(\*BancorRaw\) [Transfer](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L155>)
+### func \(\*BancorRaw\) [Transfer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L155>)
 
 ```go
 func (_Bancor *BancorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error)
@@ -1947,7 +1947,7 @@ func (_Bancor *BancorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction,
 Transfer initiates a plain transaction to move funds to the contract, calling its default method if one is available.
 
 <a name="BancorRoleAdminChanged"></a>
-## type [BancorRoleAdminChanged](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3039-L3044>)
+## type [BancorRoleAdminChanged](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3039-L3044>)
 
 BancorRoleAdminChanged represents a RoleAdminChanged event raised by the Bancor contract.
 
@@ -1961,7 +1961,7 @@ type BancorRoleAdminChanged struct {
 ```
 
 <a name="BancorRoleAdminChangedIterator"></a>
-## type [BancorRoleAdminChangedIterator](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2972-L2982>)
+## type [BancorRoleAdminChangedIterator](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2972-L2982>)
 
 BancorRoleAdminChangedIterator is returned from FilterRoleAdminChanged and is used to iterate over the raw logs and unpacked data for RoleAdminChanged events raised by the Bancor contract.
 
@@ -1973,7 +1973,7 @@ type BancorRoleAdminChangedIterator struct {
 ```
 
 <a name="BancorRoleAdminChangedIterator.Close"></a>
-### func \(\*BancorRoleAdminChangedIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3033>)
+### func \(\*BancorRoleAdminChangedIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3033>)
 
 ```go
 func (it *BancorRoleAdminChangedIterator) Close() error
@@ -1982,7 +1982,7 @@ func (it *BancorRoleAdminChangedIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="BancorRoleAdminChangedIterator.Error"></a>
-### func \(\*BancorRoleAdminChangedIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3027>)
+### func \(\*BancorRoleAdminChangedIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3027>)
 
 ```go
 func (it *BancorRoleAdminChangedIterator) Error() error
@@ -1991,7 +1991,7 @@ func (it *BancorRoleAdminChangedIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="BancorRoleAdminChangedIterator.Next"></a>
-### func \(\*BancorRoleAdminChangedIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2987>)
+### func \(\*BancorRoleAdminChangedIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L2987>)
 
 ```go
 func (it *BancorRoleAdminChangedIterator) Next() bool
@@ -2000,7 +2000,7 @@ func (it *BancorRoleAdminChangedIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="BancorRoleGranted"></a>
-## type [BancorRoleGranted](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3201-L3206>)
+## type [BancorRoleGranted](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3201-L3206>)
 
 BancorRoleGranted represents a RoleGranted event raised by the Bancor contract.
 
@@ -2014,7 +2014,7 @@ type BancorRoleGranted struct {
 ```
 
 <a name="BancorRoleGrantedIterator"></a>
-## type [BancorRoleGrantedIterator](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3134-L3144>)
+## type [BancorRoleGrantedIterator](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3134-L3144>)
 
 BancorRoleGrantedIterator is returned from FilterRoleGranted and is used to iterate over the raw logs and unpacked data for RoleGranted events raised by the Bancor contract.
 
@@ -2026,7 +2026,7 @@ type BancorRoleGrantedIterator struct {
 ```
 
 <a name="BancorRoleGrantedIterator.Close"></a>
-### func \(\*BancorRoleGrantedIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3195>)
+### func \(\*BancorRoleGrantedIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3195>)
 
 ```go
 func (it *BancorRoleGrantedIterator) Close() error
@@ -2035,7 +2035,7 @@ func (it *BancorRoleGrantedIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="BancorRoleGrantedIterator.Error"></a>
-### func \(\*BancorRoleGrantedIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3189>)
+### func \(\*BancorRoleGrantedIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3189>)
 
 ```go
 func (it *BancorRoleGrantedIterator) Error() error
@@ -2044,7 +2044,7 @@ func (it *BancorRoleGrantedIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="BancorRoleGrantedIterator.Next"></a>
-### func \(\*BancorRoleGrantedIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3149>)
+### func \(\*BancorRoleGrantedIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3149>)
 
 ```go
 func (it *BancorRoleGrantedIterator) Next() bool
@@ -2053,7 +2053,7 @@ func (it *BancorRoleGrantedIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="BancorRoleRevoked"></a>
-## type [BancorRoleRevoked](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3363-L3368>)
+## type [BancorRoleRevoked](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3363-L3368>)
 
 BancorRoleRevoked represents a RoleRevoked event raised by the Bancor contract.
 
@@ -2067,7 +2067,7 @@ type BancorRoleRevoked struct {
 ```
 
 <a name="BancorRoleRevokedIterator"></a>
-## type [BancorRoleRevokedIterator](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3296-L3306>)
+## type [BancorRoleRevokedIterator](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3296-L3306>)
 
 BancorRoleRevokedIterator is returned from FilterRoleRevoked and is used to iterate over the raw logs and unpacked data for RoleRevoked events raised by the Bancor contract.
 
@@ -2079,7 +2079,7 @@ type BancorRoleRevokedIterator struct {
 ```
 
 <a name="BancorRoleRevokedIterator.Close"></a>
-### func \(\*BancorRoleRevokedIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3357>)
+### func \(\*BancorRoleRevokedIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3357>)
 
 ```go
 func (it *BancorRoleRevokedIterator) Close() error
@@ -2088,7 +2088,7 @@ func (it *BancorRoleRevokedIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="BancorRoleRevokedIterator.Error"></a>
-### func \(\*BancorRoleRevokedIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3351>)
+### func \(\*BancorRoleRevokedIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3351>)
 
 ```go
 func (it *BancorRoleRevokedIterator) Error() error
@@ -2097,7 +2097,7 @@ func (it *BancorRoleRevokedIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="BancorRoleRevokedIterator.Next"></a>
-### func \(\*BancorRoleRevokedIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3311>)
+### func \(\*BancorRoleRevokedIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3311>)
 
 ```go
 func (it *BancorRoleRevokedIterator) Next() bool
@@ -2106,7 +2106,7 @@ func (it *BancorRoleRevokedIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="BancorSession"></a>
-## type [BancorSession](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L65-L69>)
+## type [BancorSession](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L65-L69>)
 
 BancorSession is an auto generated Go binding around an Ethereum contract, with pre\-set call and transact options.
 
@@ -2119,7 +2119,7 @@ type BancorSession struct {
 ```
 
 <a name="BancorSession.CancelWithdrawal"></a>
-### func \(\*BancorSession\) [CancelWithdrawal](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L751>)
+### func \(\*BancorSession\) [CancelWithdrawal](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L751>)
 
 ```go
 func (_Bancor *BancorSession) CancelWithdrawal(id *big.Int) (*types.Transaction, error)
@@ -2130,7 +2130,7 @@ CancelWithdrawal is a paid mutator transaction binding the contract method 0x3ef
 Solidity: function cancelWithdrawal\(uint256 id\) returns\(uint256\)
 
 <a name="BancorSession.CollectionByPool"></a>
-### func \(\*BancorSession\) [CollectionByPool](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L234>)
+### func \(\*BancorSession\) [CollectionByPool](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L234>)
 
 ```go
 func (_Bancor *BancorSession) CollectionByPool(pool common.Address) (common.Address, error)
@@ -2141,7 +2141,7 @@ CollectionByPool is a free data retrieval call binding the contract method 0x9bc
 Solidity: function collectionByPool\(address pool\) view returns\(address\)
 
 <a name="BancorSession.CreatePools"></a>
-### func \(\*BancorSession\) [CreatePools](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L772>)
+### func \(\*BancorSession\) [CreatePools](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L772>)
 
 ```go
 func (_Bancor *BancorSession) CreatePools(tokens []common.Address, poolCollection common.Address) (*types.Transaction, error)
@@ -2152,7 +2152,7 @@ CreatePools is a paid mutator transaction binding the contract method 0x42659964
 Solidity: function createPools\(address\[\] tokens, address poolCollection\) returns\(\)
 
 <a name="BancorSession.DEFAULTADMINROLE"></a>
-### func \(\*BancorSession\) [DEFAULTADMINROLE](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L203>)
+### func \(\*BancorSession\) [DEFAULTADMINROLE](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L203>)
 
 ```go
 func (_Bancor *BancorSession) DEFAULTADMINROLE() ([32]byte, error)
@@ -2163,7 +2163,7 @@ DEFAULTADMINROLE is a free data retrieval call binding the contract method 0xa21
 Solidity: function DEFAULT\_ADMIN\_ROLE\(\) view returns\(bytes32\)
 
 <a name="BancorSession.Deposit"></a>
-### func \(\*BancorSession\) [Deposit](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L793>)
+### func \(\*BancorSession\) [Deposit](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L793>)
 
 ```go
 func (_Bancor *BancorSession) Deposit(pool common.Address, tokenAmount *big.Int) (*types.Transaction, error)
@@ -2174,7 +2174,7 @@ Deposit is a paid mutator transaction binding the contract method 0x47e7ef24.
 Solidity: function deposit\(address pool, uint256 tokenAmount\) payable returns\(uint256\)
 
 <a name="BancorSession.DepositFor"></a>
-### func \(\*BancorSession\) [DepositFor](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L814>)
+### func \(\*BancorSession\) [DepositFor](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L814>)
 
 ```go
 func (_Bancor *BancorSession) DepositFor(provider common.Address, pool common.Address, tokenAmount *big.Int) (*types.Transaction, error)
@@ -2185,7 +2185,7 @@ DepositFor is a paid mutator transaction binding the contract method 0xb3db428b.
 Solidity: function depositFor\(address provider, address pool, uint256 tokenAmount\) payable returns\(uint256\)
 
 <a name="BancorSession.DepositingEnabled"></a>
-### func \(\*BancorSession\) [DepositingEnabled](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L265>)
+### func \(\*BancorSession\) [DepositingEnabled](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L265>)
 
 ```go
 func (_Bancor *BancorSession) DepositingEnabled() (bool, error)
@@ -2196,7 +2196,7 @@ DepositingEnabled is a free data retrieval call binding the contract method 0x71
 Solidity: function depositingEnabled\(\) view returns\(bool\)
 
 <a name="BancorSession.EnableDepositing"></a>
-### func \(\*BancorSession\) [EnableDepositing](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L835>)
+### func \(\*BancorSession\) [EnableDepositing](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L835>)
 
 ```go
 func (_Bancor *BancorSession) EnableDepositing(status bool) (*types.Transaction, error)
@@ -2207,7 +2207,7 @@ EnableDepositing is a paid mutator transaction binding the contract method 0x26e
 Solidity: function enableDepositing\(bool status\) returns\(\)
 
 <a name="BancorSession.FlashLoan"></a>
-### func \(\*BancorSession\) [FlashLoan](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L856>)
+### func \(\*BancorSession\) [FlashLoan](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L856>)
 
 ```go
 func (_Bancor *BancorSession) FlashLoan(token common.Address, amount *big.Int, recipient common.Address, data []byte) (*types.Transaction, error)
@@ -2218,7 +2218,7 @@ FlashLoan is a paid mutator transaction binding the contract method 0xadf51de1.
 Solidity: function flashLoan\(address zcntoken, uint256 amount, address recipient, bytes data\) returns\(\)
 
 <a name="BancorSession.GetRoleAdmin"></a>
-### func \(\*BancorSession\) [GetRoleAdmin](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L296>)
+### func \(\*BancorSession\) [GetRoleAdmin](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L296>)
 
 ```go
 func (_Bancor *BancorSession) GetRoleAdmin(role [32]byte) ([32]byte, error)
@@ -2229,7 +2229,7 @@ GetRoleAdmin is a free data retrieval call binding the contract method 0x248a9ca
 Solidity: function getRoleAdmin\(bytes32 role\) view returns\(bytes32\)
 
 <a name="BancorSession.GetRoleMember"></a>
-### func \(\*BancorSession\) [GetRoleMember](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L327>)
+### func \(\*BancorSession\) [GetRoleMember](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L327>)
 
 ```go
 func (_Bancor *BancorSession) GetRoleMember(role [32]byte, index *big.Int) (common.Address, error)
@@ -2240,7 +2240,7 @@ GetRoleMember is a free data retrieval call binding the contract method 0x9010d0
 Solidity: function getRoleMember\(bytes32 role, uint256 index\) view returns\(address\)
 
 <a name="BancorSession.GetRoleMemberCount"></a>
-### func \(\*BancorSession\) [GetRoleMemberCount](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L358>)
+### func \(\*BancorSession\) [GetRoleMemberCount](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L358>)
 
 ```go
 func (_Bancor *BancorSession) GetRoleMemberCount(role [32]byte) (*big.Int, error)
@@ -2251,7 +2251,7 @@ GetRoleMemberCount is a free data retrieval call binding the contract method 0xc
 Solidity: function getRoleMemberCount\(bytes32 role\) view returns\(uint256\)
 
 <a name="BancorSession.GrantRole"></a>
-### func \(\*BancorSession\) [GrantRole](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L877>)
+### func \(\*BancorSession\) [GrantRole](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L877>)
 
 ```go
 func (_Bancor *BancorSession) GrantRole(role [32]byte, account common.Address) (*types.Transaction, error)
@@ -2262,7 +2262,7 @@ GrantRole is a paid mutator transaction binding the contract method 0x2f2ff15d.
 Solidity: function grantRole\(bytes32 role, address account\) returns\(\)
 
 <a name="BancorSession.HasRole"></a>
-### func \(\*BancorSession\) [HasRole](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L389>)
+### func \(\*BancorSession\) [HasRole](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L389>)
 
 ```go
 func (_Bancor *BancorSession) HasRole(role [32]byte, account common.Address) (bool, error)
@@ -2273,7 +2273,7 @@ HasRole is a free data retrieval call binding the contract method 0x91d14854.
 Solidity: function hasRole\(bytes32 role, address account\) view returns\(bool\)
 
 <a name="BancorSession.InitWithdrawal"></a>
-### func \(\*BancorSession\) [InitWithdrawal](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L898>)
+### func \(\*BancorSession\) [InitWithdrawal](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L898>)
 
 ```go
 func (_Bancor *BancorSession) InitWithdrawal(poolToken common.Address, poolTokenAmount *big.Int) (*types.Transaction, error)
@@ -2284,7 +2284,7 @@ InitWithdrawal is a paid mutator transaction binding the contract method 0x357a0
 Solidity: function initWithdrawal\(address poolToken, uint256 poolTokenAmount\) returns\(uint256\)
 
 <a name="BancorSession.Initialize"></a>
-### func \(\*BancorSession\) [Initialize](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L919>)
+### func \(\*BancorSession\) [Initialize](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L919>)
 
 ```go
 func (_Bancor *BancorSession) Initialize(initBNTPool common.Address, initPendingWithdrawals common.Address, initPoolMigrator common.Address) (*types.Transaction, error)
@@ -2295,7 +2295,7 @@ Initialize is a paid mutator transaction binding the contract method 0xc0c53b8b.
 Solidity: function initialize\(address initBNTPool, address initPendingWithdrawals, address initPoolMigrator\) returns\(\)
 
 <a name="BancorSession.LiquidityPools"></a>
-### func \(\*BancorSession\) [LiquidityPools](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L420>)
+### func \(\*BancorSession\) [LiquidityPools](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L420>)
 
 ```go
 func (_Bancor *BancorSession) LiquidityPools() ([]common.Address, error)
@@ -2306,7 +2306,7 @@ LiquidityPools is a free data retrieval call binding the contract method 0xd6efd
 Solidity: function liquidityPools\(\) view returns\(address\[\]\)
 
 <a name="BancorSession.MigrateLiquidity"></a>
-### func \(\*BancorSession\) [MigrateLiquidity](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L940>)
+### func \(\*BancorSession\) [MigrateLiquidity](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L940>)
 
 ```go
 func (_Bancor *BancorSession) MigrateLiquidity(token common.Address, provider common.Address, amount *big.Int, availableAmount *big.Int, originalAmount *big.Int) (*types.Transaction, error)
@@ -2317,7 +2317,7 @@ MigrateLiquidity is a paid mutator transaction binding the contract method 0x3d1
 Solidity: function migrateLiquidity\(address zcntoken, address provider, uint256 amount, uint256 availableAmount, uint256 originalAmount\) payable returns\(\)
 
 <a name="BancorSession.MigratePools"></a>
-### func \(\*BancorSession\) [MigratePools](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L961>)
+### func \(\*BancorSession\) [MigratePools](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L961>)
 
 ```go
 func (_Bancor *BancorSession) MigratePools(pools []common.Address, newPoolCollection common.Address) (*types.Transaction, error)
@@ -2328,7 +2328,7 @@ MigratePools is a paid mutator transaction binding the contract method 0xc109ba1
 Solidity: function migratePools\(address\[\] pools, address newPoolCollection\) returns\(\)
 
 <a name="BancorSession.Pause"></a>
-### func \(\*BancorSession\) [Pause](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L982>)
+### func \(\*BancorSession\) [Pause](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L982>)
 
 ```go
 func (_Bancor *BancorSession) Pause() (*types.Transaction, error)
@@ -2339,7 +2339,7 @@ Pause is a paid mutator transaction binding the contract method 0x8456cb59.
 Solidity: function pause\(\) returns\(\)
 
 <a name="BancorSession.Paused"></a>
-### func \(\*BancorSession\) [Paused](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L451>)
+### func \(\*BancorSession\) [Paused](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L451>)
 
 ```go
 func (_Bancor *BancorSession) Paused() (bool, error)
@@ -2350,7 +2350,7 @@ Paused is a free data retrieval call binding the contract method 0x5c975abb.
 Solidity: function paused\(\) view returns\(bool\)
 
 <a name="BancorSession.PendingNetworkFeeAmount"></a>
-### func \(\*BancorSession\) [PendingNetworkFeeAmount](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L482>)
+### func \(\*BancorSession\) [PendingNetworkFeeAmount](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L482>)
 
 ```go
 func (_Bancor *BancorSession) PendingNetworkFeeAmount() (*big.Int, error)
@@ -2361,7 +2361,7 @@ PendingNetworkFeeAmount is a free data retrieval call binding the contract metho
 Solidity: function pendingNetworkFeeAmount\(\) view returns\(uint256\)
 
 <a name="BancorSession.PolRewardsPPM"></a>
-### func \(\*BancorSession\) [PolRewardsPPM](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L513>)
+### func \(\*BancorSession\) [PolRewardsPPM](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L513>)
 
 ```go
 func (_Bancor *BancorSession) PolRewardsPPM() (uint32, error)
@@ -2372,7 +2372,7 @@ PolRewardsPPM is a free data retrieval call binding the contract method 0x1329db
 Solidity: function polRewardsPPM\(\) view returns\(uint32\)
 
 <a name="BancorSession.PoolCollections"></a>
-### func \(\*BancorSession\) [PoolCollections](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L544>)
+### func \(\*BancorSession\) [PoolCollections](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L544>)
 
 ```go
 func (_Bancor *BancorSession) PoolCollections() ([]common.Address, error)
@@ -2383,7 +2383,7 @@ PoolCollections is a free data retrieval call binding the contract method 0x39fa
 Solidity: function poolCollections\(\) view returns\(address\[\]\)
 
 <a name="BancorSession.PostUpgrade"></a>
-### func \(\*BancorSession\) [PostUpgrade](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1003>)
+### func \(\*BancorSession\) [PostUpgrade](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1003>)
 
 ```go
 func (_Bancor *BancorSession) PostUpgrade(data []byte) (*types.Transaction, error)
@@ -2394,7 +2394,7 @@ PostUpgrade is a paid mutator transaction binding the contract method 0x8cd2403d
 Solidity: function postUpgrade\(bytes data\) returns\(\)
 
 <a name="BancorSession.Receive"></a>
-### func \(\*BancorSession\) [Receive](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1297>)
+### func \(\*BancorSession\) [Receive](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1297>)
 
 ```go
 func (_Bancor *BancorSession) Receive() (*types.Transaction, error)
@@ -2405,7 +2405,7 @@ Receive is a paid mutator transaction binding the contract receive function.
 Solidity: receive\(\) payable returns\(\)
 
 <a name="BancorSession.RegisterPoolCollection"></a>
-### func \(\*BancorSession\) [RegisterPoolCollection](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1024>)
+### func \(\*BancorSession\) [RegisterPoolCollection](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1024>)
 
 ```go
 func (_Bancor *BancorSession) RegisterPoolCollection(newPoolCollection common.Address) (*types.Transaction, error)
@@ -2416,7 +2416,7 @@ RegisterPoolCollection is a paid mutator transaction binding the contract method
 Solidity: function registerPoolCollection\(address newPoolCollection\) returns\(\)
 
 <a name="BancorSession.RenounceRole"></a>
-### func \(\*BancorSession\) [RenounceRole](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1045>)
+### func \(\*BancorSession\) [RenounceRole](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1045>)
 
 ```go
 func (_Bancor *BancorSession) RenounceRole(role [32]byte, account common.Address) (*types.Transaction, error)
@@ -2427,7 +2427,7 @@ RenounceRole is a paid mutator transaction binding the contract method 0x36568ab
 Solidity: function renounceRole\(bytes32 role, address account\) returns\(\)
 
 <a name="BancorSession.Resume"></a>
-### func \(\*BancorSession\) [Resume](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1066>)
+### func \(\*BancorSession\) [Resume](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1066>)
 
 ```go
 func (_Bancor *BancorSession) Resume() (*types.Transaction, error)
@@ -2438,7 +2438,7 @@ Resume is a paid mutator transaction binding the contract method 0x046f7da2.
 Solidity: function resume\(\) returns\(\)
 
 <a name="BancorSession.RevokeRole"></a>
-### func \(\*BancorSession\) [RevokeRole](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1087>)
+### func \(\*BancorSession\) [RevokeRole](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1087>)
 
 ```go
 func (_Bancor *BancorSession) RevokeRole(role [32]byte, account common.Address) (*types.Transaction, error)
@@ -2449,7 +2449,7 @@ RevokeRole is a paid mutator transaction binding the contract method 0xd547741f.
 Solidity: function revokeRole\(bytes32 role, address account\) returns\(\)
 
 <a name="BancorSession.RoleAdmin"></a>
-### func \(\*BancorSession\) [RoleAdmin](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L575>)
+### func \(\*BancorSession\) [RoleAdmin](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L575>)
 
 ```go
 func (_Bancor *BancorSession) RoleAdmin() ([32]byte, error)
@@ -2460,7 +2460,7 @@ RoleAdmin is a free data retrieval call binding the contract method 0x93867fb5.
 Solidity: function roleAdmin\(\) pure returns\(bytes32\)
 
 <a name="BancorSession.RoleEmergencyStopper"></a>
-### func \(\*BancorSession\) [RoleEmergencyStopper](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L606>)
+### func \(\*BancorSession\) [RoleEmergencyStopper](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L606>)
 
 ```go
 func (_Bancor *BancorSession) RoleEmergencyStopper() ([32]byte, error)
@@ -2471,7 +2471,7 @@ RoleEmergencyStopper is a free data retrieval call binding the contract method 0
 Solidity: function roleEmergencyStopper\(\) pure returns\(bytes32\)
 
 <a name="BancorSession.RoleMigrationManager"></a>
-### func \(\*BancorSession\) [RoleMigrationManager](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L637>)
+### func \(\*BancorSession\) [RoleMigrationManager](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L637>)
 
 ```go
 func (_Bancor *BancorSession) RoleMigrationManager() ([32]byte, error)
@@ -2482,7 +2482,7 @@ RoleMigrationManager is a free data retrieval call binding the contract method 0
 Solidity: function roleMigrationManager\(\) pure returns\(bytes32\)
 
 <a name="BancorSession.RoleNetworkFeeManager"></a>
-### func \(\*BancorSession\) [RoleNetworkFeeManager](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L668>)
+### func \(\*BancorSession\) [RoleNetworkFeeManager](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L668>)
 
 ```go
 func (_Bancor *BancorSession) RoleNetworkFeeManager() ([32]byte, error)
@@ -2493,7 +2493,7 @@ RoleNetworkFeeManager is a free data retrieval call binding the contract method 
 Solidity: function roleNetworkFeeManager\(\) pure returns\(bytes32\)
 
 <a name="BancorSession.SetPOLRewardsPPM"></a>
-### func \(\*BancorSession\) [SetPOLRewardsPPM](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1108>)
+### func \(\*BancorSession\) [SetPOLRewardsPPM](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1108>)
 
 ```go
 func (_Bancor *BancorSession) SetPOLRewardsPPM(newRewardsPPM uint32) (*types.Transaction, error)
@@ -2504,7 +2504,7 @@ SetPOLRewardsPPM is a paid mutator transaction binding the contract method 0x533
 Solidity: function setPOLRewardsPPM\(uint32 newRewardsPPM\) returns\(\)
 
 <a name="BancorSession.SupportsInterface"></a>
-### func \(\*BancorSession\) [SupportsInterface](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L699>)
+### func \(\*BancorSession\) [SupportsInterface](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L699>)
 
 ```go
 func (_Bancor *BancorSession) SupportsInterface(interfaceId [4]byte) (bool, error)
@@ -2515,7 +2515,7 @@ SupportsInterface is a free data retrieval call binding the contract method 0x01
 Solidity: function supportsInterface\(bytes4 interfaceId\) view returns\(bool\)
 
 <a name="BancorSession.TradeBySourceAmount"></a>
-### func \(\*BancorSession\) [TradeBySourceAmount](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1129>)
+### func \(\*BancorSession\) [TradeBySourceAmount](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1129>)
 
 ```go
 func (_Bancor *BancorSession) TradeBySourceAmount(sourceToken common.Address, targetToken common.Address, sourceAmount *big.Int, minReturnAmount *big.Int, deadline *big.Int, beneficiary common.Address) (*types.Transaction, error)
@@ -2526,7 +2526,7 @@ TradeBySourceAmount is a paid mutator transaction binding the contract method 0x
 Solidity: function tradeBySourceAmount\(address sourceToken, address targetToken, uint256 sourceAmount, uint256 minReturnAmount, uint256 deadline, address beneficiary\) payable returns\(uint256\)
 
 <a name="BancorSession.TradeBySourceAmountArb"></a>
-### func \(\*BancorSession\) [TradeBySourceAmountArb](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1150>)
+### func \(\*BancorSession\) [TradeBySourceAmountArb](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1150>)
 
 ```go
 func (_Bancor *BancorSession) TradeBySourceAmountArb(sourceToken common.Address, targetToken common.Address, sourceAmount *big.Int, minReturnAmount *big.Int, deadline *big.Int, beneficiary common.Address) (*types.Transaction, error)
@@ -2537,7 +2537,7 @@ TradeBySourceAmountArb is a paid mutator transaction binding the contract method
 Solidity: function tradeBySourceAmountArb\(address sourceToken, address targetToken, uint256 sourceAmount, uint256 minReturnAmount, uint256 deadline, address beneficiary\) payable returns\(uint256\)
 
 <a name="BancorSession.TradeByTargetAmount"></a>
-### func \(\*BancorSession\) [TradeByTargetAmount](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1171>)
+### func \(\*BancorSession\) [TradeByTargetAmount](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1171>)
 
 ```go
 func (_Bancor *BancorSession) TradeByTargetAmount(sourceToken common.Address, targetToken common.Address, targetAmount *big.Int, maxSourceAmount *big.Int, deadline *big.Int, beneficiary common.Address) (*types.Transaction, error)
@@ -2548,7 +2548,7 @@ TradeByTargetAmount is a paid mutator transaction binding the contract method 0x
 Solidity: function tradeByTargetAmount\(address sourceToken, address targetToken, uint256 targetAmount, uint256 maxSourceAmount, uint256 deadline, address beneficiary\) payable returns\(uint256\)
 
 <a name="BancorSession.TradeByTargetAmountArb"></a>
-### func \(\*BancorSession\) [TradeByTargetAmountArb](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1192>)
+### func \(\*BancorSession\) [TradeByTargetAmountArb](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1192>)
 
 ```go
 func (_Bancor *BancorSession) TradeByTargetAmountArb(sourceToken common.Address, targetToken common.Address, targetAmount *big.Int, maxSourceAmount *big.Int, deadline *big.Int, beneficiary common.Address) (*types.Transaction, error)
@@ -2559,7 +2559,7 @@ TradeByTargetAmountArb is a paid mutator transaction binding the contract method
 Solidity: function tradeByTargetAmountArb\(address sourceToken, address targetToken, uint256 targetAmount, uint256 maxSourceAmount, uint256 deadline, address beneficiary\) payable returns\(uint256\)
 
 <a name="BancorSession.UnregisterPoolCollection"></a>
-### func \(\*BancorSession\) [UnregisterPoolCollection](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1213>)
+### func \(\*BancorSession\) [UnregisterPoolCollection](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1213>)
 
 ```go
 func (_Bancor *BancorSession) UnregisterPoolCollection(poolCollection common.Address) (*types.Transaction, error)
@@ -2570,7 +2570,7 @@ UnregisterPoolCollection is a paid mutator transaction binding the contract meth
 Solidity: function unregisterPoolCollection\(address poolCollection\) returns\(\)
 
 <a name="BancorSession.Version"></a>
-### func \(\*BancorSession\) [Version](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L730>)
+### func \(\*BancorSession\) [Version](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L730>)
 
 ```go
 func (_Bancor *BancorSession) Version() (uint16, error)
@@ -2581,7 +2581,7 @@ Version is a free data retrieval call binding the contract method 0x54fd4d50.
 Solidity: function version\(\) pure returns\(uint16\)
 
 <a name="BancorSession.Withdraw"></a>
-### func \(\*BancorSession\) [Withdraw](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1234>)
+### func \(\*BancorSession\) [Withdraw](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1234>)
 
 ```go
 func (_Bancor *BancorSession) Withdraw(id *big.Int) (*types.Transaction, error)
@@ -2592,7 +2592,7 @@ Withdraw is a paid mutator transaction binding the contract method 0x2e1a7d4d.
 Solidity: function withdraw\(uint256 id\) returns\(uint256\)
 
 <a name="BancorSession.WithdrawNetworkFees"></a>
-### func \(\*BancorSession\) [WithdrawNetworkFees](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1255>)
+### func \(\*BancorSession\) [WithdrawNetworkFees](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1255>)
 
 ```go
 func (_Bancor *BancorSession) WithdrawNetworkFees(recipient common.Address) (*types.Transaction, error)
@@ -2603,7 +2603,7 @@ WithdrawNetworkFees is a paid mutator transaction binding the contract method 0x
 Solidity: function withdrawNetworkFees\(address recipient\) returns\(uint256\)
 
 <a name="BancorSession.WithdrawPOL"></a>
-### func \(\*BancorSession\) [WithdrawPOL](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1276>)
+### func \(\*BancorSession\) [WithdrawPOL](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1276>)
 
 ```go
 func (_Bancor *BancorSession) WithdrawPOL(pool common.Address) (*types.Transaction, error)
@@ -2614,7 +2614,7 @@ WithdrawPOL is a paid mutator transaction binding the contract method 0x8ffcca07
 Solidity: function withdrawPOL\(address pool\) returns\(uint256\)
 
 <a name="BancorTokensTraded"></a>
-## type [BancorTokensTraded](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3525-L3536>)
+## type [BancorTokensTraded](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3525-L3536>)
 
 BancorTokensTraded represents a TokensTraded event raised by the Bancor contract.
 
@@ -2634,7 +2634,7 @@ type BancorTokensTraded struct {
 ```
 
 <a name="BancorTokensTradedIterator"></a>
-## type [BancorTokensTradedIterator](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3458-L3468>)
+## type [BancorTokensTradedIterator](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3458-L3468>)
 
 BancorTokensTradedIterator is returned from FilterTokensTraded and is used to iterate over the raw logs and unpacked data for TokensTraded events raised by the Bancor contract.
 
@@ -2646,7 +2646,7 @@ type BancorTokensTradedIterator struct {
 ```
 
 <a name="BancorTokensTradedIterator.Close"></a>
-### func \(\*BancorTokensTradedIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3519>)
+### func \(\*BancorTokensTradedIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3519>)
 
 ```go
 func (it *BancorTokensTradedIterator) Close() error
@@ -2655,7 +2655,7 @@ func (it *BancorTokensTradedIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="BancorTokensTradedIterator.Error"></a>
-### func \(\*BancorTokensTradedIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3513>)
+### func \(\*BancorTokensTradedIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3513>)
 
 ```go
 func (it *BancorTokensTradedIterator) Error() error
@@ -2664,7 +2664,7 @@ func (it *BancorTokensTradedIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="BancorTokensTradedIterator.Next"></a>
-### func \(\*BancorTokensTradedIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3473>)
+### func \(\*BancorTokensTradedIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3473>)
 
 ```go
 func (it *BancorTokensTradedIterator) Next() bool
@@ -2673,7 +2673,7 @@ func (it *BancorTokensTradedIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="BancorTransactor"></a>
-## type [BancorTransactor](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L54-L56>)
+## type [BancorTransactor](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L54-L56>)
 
 BancorTransactor is an auto generated write\-only Go binding around an Ethereum contract.
 
@@ -2684,7 +2684,7 @@ type BancorTransactor struct {
 ```
 
 <a name="NewBancorTransactor"></a>
-### func [NewBancorTransactor](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L119>)
+### func [NewBancorTransactor](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L119>)
 
 ```go
 func NewBancorTransactor(address common.Address, transactor bind.ContractTransactor) (*BancorTransactor, error)
@@ -2693,7 +2693,7 @@ func NewBancorTransactor(address common.Address, transactor bind.ContractTransac
 NewBancorTransactor creates a new write\-only instance of Bancor, bound to a specific deployed contract.
 
 <a name="BancorTransactor.CancelWithdrawal"></a>
-### func \(\*BancorTransactor\) [CancelWithdrawal](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L744>)
+### func \(\*BancorTransactor\) [CancelWithdrawal](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L744>)
 
 ```go
 func (_Bancor *BancorTransactor) CancelWithdrawal(opts *bind.TransactOpts, id *big.Int) (*types.Transaction, error)
@@ -2704,7 +2704,7 @@ CancelWithdrawal is a paid mutator transaction binding the contract method 0x3ef
 Solidity: function cancelWithdrawal\(uint256 id\) returns\(uint256\)
 
 <a name="BancorTransactor.CreatePools"></a>
-### func \(\*BancorTransactor\) [CreatePools](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L765>)
+### func \(\*BancorTransactor\) [CreatePools](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L765>)
 
 ```go
 func (_Bancor *BancorTransactor) CreatePools(opts *bind.TransactOpts, tokens []common.Address, poolCollection common.Address) (*types.Transaction, error)
@@ -2715,7 +2715,7 @@ CreatePools is a paid mutator transaction binding the contract method 0x42659964
 Solidity: function createPools\(address\[\] tokens, address poolCollection\) returns\(\)
 
 <a name="BancorTransactor.Deposit"></a>
-### func \(\*BancorTransactor\) [Deposit](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L786>)
+### func \(\*BancorTransactor\) [Deposit](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L786>)
 
 ```go
 func (_Bancor *BancorTransactor) Deposit(opts *bind.TransactOpts, pool common.Address, tokenAmount *big.Int) (*types.Transaction, error)
@@ -2726,7 +2726,7 @@ Deposit is a paid mutator transaction binding the contract method 0x47e7ef24.
 Solidity: function deposit\(address pool, uint256 tokenAmount\) payable returns\(uint256\)
 
 <a name="BancorTransactor.DepositFor"></a>
-### func \(\*BancorTransactor\) [DepositFor](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L807>)
+### func \(\*BancorTransactor\) [DepositFor](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L807>)
 
 ```go
 func (_Bancor *BancorTransactor) DepositFor(opts *bind.TransactOpts, provider common.Address, pool common.Address, tokenAmount *big.Int) (*types.Transaction, error)
@@ -2737,7 +2737,7 @@ DepositFor is a paid mutator transaction binding the contract method 0xb3db428b.
 Solidity: function depositFor\(address provider, address pool, uint256 tokenAmount\) payable returns\(uint256\)
 
 <a name="BancorTransactor.EnableDepositing"></a>
-### func \(\*BancorTransactor\) [EnableDepositing](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L828>)
+### func \(\*BancorTransactor\) [EnableDepositing](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L828>)
 
 ```go
 func (_Bancor *BancorTransactor) EnableDepositing(opts *bind.TransactOpts, status bool) (*types.Transaction, error)
@@ -2748,7 +2748,7 @@ EnableDepositing is a paid mutator transaction binding the contract method 0x26e
 Solidity: function enableDepositing\(bool status\) returns\(\)
 
 <a name="BancorTransactor.FlashLoan"></a>
-### func \(\*BancorTransactor\) [FlashLoan](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L849>)
+### func \(\*BancorTransactor\) [FlashLoan](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L849>)
 
 ```go
 func (_Bancor *BancorTransactor) FlashLoan(opts *bind.TransactOpts, token common.Address, amount *big.Int, recipient common.Address, data []byte) (*types.Transaction, error)
@@ -2759,7 +2759,7 @@ FlashLoan is a paid mutator transaction binding the contract method 0xadf51de1.
 Solidity: function flashLoan\(address zcntoken, uint256 amount, address recipient, bytes data\) returns\(\)
 
 <a name="BancorTransactor.GrantRole"></a>
-### func \(\*BancorTransactor\) [GrantRole](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L870>)
+### func \(\*BancorTransactor\) [GrantRole](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L870>)
 
 ```go
 func (_Bancor *BancorTransactor) GrantRole(opts *bind.TransactOpts, role [32]byte, account common.Address) (*types.Transaction, error)
@@ -2770,7 +2770,7 @@ GrantRole is a paid mutator transaction binding the contract method 0x2f2ff15d.
 Solidity: function grantRole\(bytes32 role, address account\) returns\(\)
 
 <a name="BancorTransactor.InitWithdrawal"></a>
-### func \(\*BancorTransactor\) [InitWithdrawal](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L891>)
+### func \(\*BancorTransactor\) [InitWithdrawal](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L891>)
 
 ```go
 func (_Bancor *BancorTransactor) InitWithdrawal(opts *bind.TransactOpts, poolToken common.Address, poolTokenAmount *big.Int) (*types.Transaction, error)
@@ -2781,7 +2781,7 @@ InitWithdrawal is a paid mutator transaction binding the contract method 0x357a0
 Solidity: function initWithdrawal\(address poolToken, uint256 poolTokenAmount\) returns\(uint256\)
 
 <a name="BancorTransactor.Initialize"></a>
-### func \(\*BancorTransactor\) [Initialize](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L912>)
+### func \(\*BancorTransactor\) [Initialize](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L912>)
 
 ```go
 func (_Bancor *BancorTransactor) Initialize(opts *bind.TransactOpts, initBNTPool common.Address, initPendingWithdrawals common.Address, initPoolMigrator common.Address) (*types.Transaction, error)
@@ -2792,7 +2792,7 @@ Initialize is a paid mutator transaction binding the contract method 0xc0c53b8b.
 Solidity: function initialize\(address initBNTPool, address initPendingWithdrawals, address initPoolMigrator\) returns\(\)
 
 <a name="BancorTransactor.MigrateLiquidity"></a>
-### func \(\*BancorTransactor\) [MigrateLiquidity](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L933>)
+### func \(\*BancorTransactor\) [MigrateLiquidity](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L933>)
 
 ```go
 func (_Bancor *BancorTransactor) MigrateLiquidity(opts *bind.TransactOpts, token common.Address, provider common.Address, amount *big.Int, availableAmount *big.Int, originalAmount *big.Int) (*types.Transaction, error)
@@ -2803,7 +2803,7 @@ MigrateLiquidity is a paid mutator transaction binding the contract method 0x3d1
 Solidity: function migrateLiquidity\(address zcntoken, address provider, uint256 amount, uint256 availableAmount, uint256 originalAmount\) payable returns\(\)
 
 <a name="BancorTransactor.MigratePools"></a>
-### func \(\*BancorTransactor\) [MigratePools](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L954>)
+### func \(\*BancorTransactor\) [MigratePools](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L954>)
 
 ```go
 func (_Bancor *BancorTransactor) MigratePools(opts *bind.TransactOpts, pools []common.Address, newPoolCollection common.Address) (*types.Transaction, error)
@@ -2814,7 +2814,7 @@ MigratePools is a paid mutator transaction binding the contract method 0xc109ba1
 Solidity: function migratePools\(address\[\] pools, address newPoolCollection\) returns\(\)
 
 <a name="BancorTransactor.Pause"></a>
-### func \(\*BancorTransactor\) [Pause](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L975>)
+### func \(\*BancorTransactor\) [Pause](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L975>)
 
 ```go
 func (_Bancor *BancorTransactor) Pause(opts *bind.TransactOpts) (*types.Transaction, error)
@@ -2825,7 +2825,7 @@ Pause is a paid mutator transaction binding the contract method 0x8456cb59.
 Solidity: function pause\(\) returns\(\)
 
 <a name="BancorTransactor.PostUpgrade"></a>
-### func \(\*BancorTransactor\) [PostUpgrade](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L996>)
+### func \(\*BancorTransactor\) [PostUpgrade](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L996>)
 
 ```go
 func (_Bancor *BancorTransactor) PostUpgrade(opts *bind.TransactOpts, data []byte) (*types.Transaction, error)
@@ -2836,7 +2836,7 @@ PostUpgrade is a paid mutator transaction binding the contract method 0x8cd2403d
 Solidity: function postUpgrade\(bytes data\) returns\(\)
 
 <a name="BancorTransactor.Receive"></a>
-### func \(\*BancorTransactor\) [Receive](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1290>)
+### func \(\*BancorTransactor\) [Receive](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1290>)
 
 ```go
 func (_Bancor *BancorTransactor) Receive(opts *bind.TransactOpts) (*types.Transaction, error)
@@ -2847,7 +2847,7 @@ Receive is a paid mutator transaction binding the contract receive function.
 Solidity: receive\(\) payable returns\(\)
 
 <a name="BancorTransactor.RegisterPoolCollection"></a>
-### func \(\*BancorTransactor\) [RegisterPoolCollection](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1017>)
+### func \(\*BancorTransactor\) [RegisterPoolCollection](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1017>)
 
 ```go
 func (_Bancor *BancorTransactor) RegisterPoolCollection(opts *bind.TransactOpts, newPoolCollection common.Address) (*types.Transaction, error)
@@ -2858,7 +2858,7 @@ RegisterPoolCollection is a paid mutator transaction binding the contract method
 Solidity: function registerPoolCollection\(address newPoolCollection\) returns\(\)
 
 <a name="BancorTransactor.RenounceRole"></a>
-### func \(\*BancorTransactor\) [RenounceRole](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1038>)
+### func \(\*BancorTransactor\) [RenounceRole](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1038>)
 
 ```go
 func (_Bancor *BancorTransactor) RenounceRole(opts *bind.TransactOpts, role [32]byte, account common.Address) (*types.Transaction, error)
@@ -2869,7 +2869,7 @@ RenounceRole is a paid mutator transaction binding the contract method 0x36568ab
 Solidity: function renounceRole\(bytes32 role, address account\) returns\(\)
 
 <a name="BancorTransactor.Resume"></a>
-### func \(\*BancorTransactor\) [Resume](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1059>)
+### func \(\*BancorTransactor\) [Resume](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1059>)
 
 ```go
 func (_Bancor *BancorTransactor) Resume(opts *bind.TransactOpts) (*types.Transaction, error)
@@ -2880,7 +2880,7 @@ Resume is a paid mutator transaction binding the contract method 0x046f7da2.
 Solidity: function resume\(\) returns\(\)
 
 <a name="BancorTransactor.RevokeRole"></a>
-### func \(\*BancorTransactor\) [RevokeRole](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1080>)
+### func \(\*BancorTransactor\) [RevokeRole](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1080>)
 
 ```go
 func (_Bancor *BancorTransactor) RevokeRole(opts *bind.TransactOpts, role [32]byte, account common.Address) (*types.Transaction, error)
@@ -2891,7 +2891,7 @@ RevokeRole is a paid mutator transaction binding the contract method 0xd547741f.
 Solidity: function revokeRole\(bytes32 role, address account\) returns\(\)
 
 <a name="BancorTransactor.SetPOLRewardsPPM"></a>
-### func \(\*BancorTransactor\) [SetPOLRewardsPPM](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1101>)
+### func \(\*BancorTransactor\) [SetPOLRewardsPPM](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1101>)
 
 ```go
 func (_Bancor *BancorTransactor) SetPOLRewardsPPM(opts *bind.TransactOpts, newRewardsPPM uint32) (*types.Transaction, error)
@@ -2902,7 +2902,7 @@ SetPOLRewardsPPM is a paid mutator transaction binding the contract method 0x533
 Solidity: function setPOLRewardsPPM\(uint32 newRewardsPPM\) returns\(\)
 
 <a name="BancorTransactor.TradeBySourceAmount"></a>
-### func \(\*BancorTransactor\) [TradeBySourceAmount](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1122>)
+### func \(\*BancorTransactor\) [TradeBySourceAmount](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1122>)
 
 ```go
 func (_Bancor *BancorTransactor) TradeBySourceAmount(opts *bind.TransactOpts, sourceToken common.Address, targetToken common.Address, sourceAmount *big.Int, minReturnAmount *big.Int, deadline *big.Int, beneficiary common.Address) (*types.Transaction, error)
@@ -2913,7 +2913,7 @@ TradeBySourceAmount is a paid mutator transaction binding the contract method 0x
 Solidity: function tradeBySourceAmount\(address sourceToken, address targetToken, uint256 sourceAmount, uint256 minReturnAmount, uint256 deadline, address beneficiary\) payable returns\(uint256\)
 
 <a name="BancorTransactor.TradeBySourceAmountArb"></a>
-### func \(\*BancorTransactor\) [TradeBySourceAmountArb](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1143>)
+### func \(\*BancorTransactor\) [TradeBySourceAmountArb](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1143>)
 
 ```go
 func (_Bancor *BancorTransactor) TradeBySourceAmountArb(opts *bind.TransactOpts, sourceToken common.Address, targetToken common.Address, sourceAmount *big.Int, minReturnAmount *big.Int, deadline *big.Int, beneficiary common.Address) (*types.Transaction, error)
@@ -2924,7 +2924,7 @@ TradeBySourceAmountArb is a paid mutator transaction binding the contract method
 Solidity: function tradeBySourceAmountArb\(address sourceToken, address targetToken, uint256 sourceAmount, uint256 minReturnAmount, uint256 deadline, address beneficiary\) payable returns\(uint256\)
 
 <a name="BancorTransactor.TradeByTargetAmount"></a>
-### func \(\*BancorTransactor\) [TradeByTargetAmount](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1164>)
+### func \(\*BancorTransactor\) [TradeByTargetAmount](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1164>)
 
 ```go
 func (_Bancor *BancorTransactor) TradeByTargetAmount(opts *bind.TransactOpts, sourceToken common.Address, targetToken common.Address, targetAmount *big.Int, maxSourceAmount *big.Int, deadline *big.Int, beneficiary common.Address) (*types.Transaction, error)
@@ -2935,7 +2935,7 @@ TradeByTargetAmount is a paid mutator transaction binding the contract method 0x
 Solidity: function tradeByTargetAmount\(address sourceToken, address targetToken, uint256 targetAmount, uint256 maxSourceAmount, uint256 deadline, address beneficiary\) payable returns\(uint256\)
 
 <a name="BancorTransactor.TradeByTargetAmountArb"></a>
-### func \(\*BancorTransactor\) [TradeByTargetAmountArb](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1185>)
+### func \(\*BancorTransactor\) [TradeByTargetAmountArb](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1185>)
 
 ```go
 func (_Bancor *BancorTransactor) TradeByTargetAmountArb(opts *bind.TransactOpts, sourceToken common.Address, targetToken common.Address, targetAmount *big.Int, maxSourceAmount *big.Int, deadline *big.Int, beneficiary common.Address) (*types.Transaction, error)
@@ -2946,7 +2946,7 @@ TradeByTargetAmountArb is a paid mutator transaction binding the contract method
 Solidity: function tradeByTargetAmountArb\(address sourceToken, address targetToken, uint256 targetAmount, uint256 maxSourceAmount, uint256 deadline, address beneficiary\) payable returns\(uint256\)
 
 <a name="BancorTransactor.UnregisterPoolCollection"></a>
-### func \(\*BancorTransactor\) [UnregisterPoolCollection](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1206>)
+### func \(\*BancorTransactor\) [UnregisterPoolCollection](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1206>)
 
 ```go
 func (_Bancor *BancorTransactor) UnregisterPoolCollection(opts *bind.TransactOpts, poolCollection common.Address) (*types.Transaction, error)
@@ -2957,7 +2957,7 @@ UnregisterPoolCollection is a paid mutator transaction binding the contract meth
 Solidity: function unregisterPoolCollection\(address poolCollection\) returns\(\)
 
 <a name="BancorTransactor.Withdraw"></a>
-### func \(\*BancorTransactor\) [Withdraw](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1227>)
+### func \(\*BancorTransactor\) [Withdraw](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1227>)
 
 ```go
 func (_Bancor *BancorTransactor) Withdraw(opts *bind.TransactOpts, id *big.Int) (*types.Transaction, error)
@@ -2968,7 +2968,7 @@ Withdraw is a paid mutator transaction binding the contract method 0x2e1a7d4d.
 Solidity: function withdraw\(uint256 id\) returns\(uint256\)
 
 <a name="BancorTransactor.WithdrawNetworkFees"></a>
-### func \(\*BancorTransactor\) [WithdrawNetworkFees](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1248>)
+### func \(\*BancorTransactor\) [WithdrawNetworkFees](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1248>)
 
 ```go
 func (_Bancor *BancorTransactor) WithdrawNetworkFees(opts *bind.TransactOpts, recipient common.Address) (*types.Transaction, error)
@@ -2979,7 +2979,7 @@ WithdrawNetworkFees is a paid mutator transaction binding the contract method 0x
 Solidity: function withdrawNetworkFees\(address recipient\) returns\(uint256\)
 
 <a name="BancorTransactor.WithdrawPOL"></a>
-### func \(\*BancorTransactor\) [WithdrawPOL](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1269>)
+### func \(\*BancorTransactor\) [WithdrawPOL](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1269>)
 
 ```go
 func (_Bancor *BancorTransactor) WithdrawPOL(opts *bind.TransactOpts, pool common.Address) (*types.Transaction, error)
@@ -2990,7 +2990,7 @@ WithdrawPOL is a paid mutator transaction binding the contract method 0x8ffcca07
 Solidity: function withdrawPOL\(address pool\) returns\(uint256\)
 
 <a name="BancorTransactorRaw"></a>
-## type [BancorTransactorRaw](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L96-L98>)
+## type [BancorTransactorRaw](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L96-L98>)
 
 BancorTransactorRaw is an auto generated low\-level write\-only Go binding around an Ethereum contract.
 
@@ -3001,7 +3001,7 @@ type BancorTransactorRaw struct {
 ```
 
 <a name="BancorTransactorRaw.Transact"></a>
-### func \(\*BancorTransactorRaw\) [Transact](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L179>)
+### func \(\*BancorTransactorRaw\) [Transact](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L179>)
 
 ```go
 func (_Bancor *BancorTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error)
@@ -3010,7 +3010,7 @@ func (_Bancor *BancorTransactorRaw) Transact(opts *bind.TransactOpts, method str
 Transact invokes the \(paid\) contract method with params as input values.
 
 <a name="BancorTransactorRaw.Transfer"></a>
-### func \(\*BancorTransactorRaw\) [Transfer](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L174>)
+### func \(\*BancorTransactorRaw\) [Transfer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L174>)
 
 ```go
 func (_Bancor *BancorTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error)
@@ -3019,7 +3019,7 @@ func (_Bancor *BancorTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Tr
 Transfer initiates a plain transaction to move funds to the contract, calling its default method if one is available.
 
 <a name="BancorTransactorSession"></a>
-## type [BancorTransactorSession](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L80-L83>)
+## type [BancorTransactorSession](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L80-L83>)
 
 BancorTransactorSession is an auto generated write\-only Go binding around an Ethereum contract, with pre\-set transact options.
 
@@ -3031,7 +3031,7 @@ type BancorTransactorSession struct {
 ```
 
 <a name="BancorTransactorSession.CancelWithdrawal"></a>
-### func \(\*BancorTransactorSession\) [CancelWithdrawal](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L758>)
+### func \(\*BancorTransactorSession\) [CancelWithdrawal](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L758>)
 
 ```go
 func (_Bancor *BancorTransactorSession) CancelWithdrawal(id *big.Int) (*types.Transaction, error)
@@ -3042,7 +3042,7 @@ CancelWithdrawal is a paid mutator transaction binding the contract method 0x3ef
 Solidity: function cancelWithdrawal\(uint256 id\) returns\(uint256\)
 
 <a name="BancorTransactorSession.CreatePools"></a>
-### func \(\*BancorTransactorSession\) [CreatePools](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L779>)
+### func \(\*BancorTransactorSession\) [CreatePools](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L779>)
 
 ```go
 func (_Bancor *BancorTransactorSession) CreatePools(tokens []common.Address, poolCollection common.Address) (*types.Transaction, error)
@@ -3053,7 +3053,7 @@ CreatePools is a paid mutator transaction binding the contract method 0x42659964
 Solidity: function createPools\(address\[\] tokens, address poolCollection\) returns\(\)
 
 <a name="BancorTransactorSession.Deposit"></a>
-### func \(\*BancorTransactorSession\) [Deposit](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L800>)
+### func \(\*BancorTransactorSession\) [Deposit](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L800>)
 
 ```go
 func (_Bancor *BancorTransactorSession) Deposit(pool common.Address, tokenAmount *big.Int) (*types.Transaction, error)
@@ -3064,7 +3064,7 @@ Deposit is a paid mutator transaction binding the contract method 0x47e7ef24.
 Solidity: function deposit\(address pool, uint256 tokenAmount\) payable returns\(uint256\)
 
 <a name="BancorTransactorSession.DepositFor"></a>
-### func \(\*BancorTransactorSession\) [DepositFor](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L821>)
+### func \(\*BancorTransactorSession\) [DepositFor](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L821>)
 
 ```go
 func (_Bancor *BancorTransactorSession) DepositFor(provider common.Address, pool common.Address, tokenAmount *big.Int) (*types.Transaction, error)
@@ -3075,7 +3075,7 @@ DepositFor is a paid mutator transaction binding the contract method 0xb3db428b.
 Solidity: function depositFor\(address provider, address pool, uint256 tokenAmount\) payable returns\(uint256\)
 
 <a name="BancorTransactorSession.EnableDepositing"></a>
-### func \(\*BancorTransactorSession\) [EnableDepositing](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L842>)
+### func \(\*BancorTransactorSession\) [EnableDepositing](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L842>)
 
 ```go
 func (_Bancor *BancorTransactorSession) EnableDepositing(status bool) (*types.Transaction, error)
@@ -3086,7 +3086,7 @@ EnableDepositing is a paid mutator transaction binding the contract method 0x26e
 Solidity: function enableDepositing\(bool status\) returns\(\)
 
 <a name="BancorTransactorSession.FlashLoan"></a>
-### func \(\*BancorTransactorSession\) [FlashLoan](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L863>)
+### func \(\*BancorTransactorSession\) [FlashLoan](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L863>)
 
 ```go
 func (_Bancor *BancorTransactorSession) FlashLoan(token common.Address, amount *big.Int, recipient common.Address, data []byte) (*types.Transaction, error)
@@ -3097,7 +3097,7 @@ FlashLoan is a paid mutator transaction binding the contract method 0xadf51de1.
 Solidity: function flashLoan\(address zcntoken, uint256 amount, address recipient, bytes data\) returns\(\)
 
 <a name="BancorTransactorSession.GrantRole"></a>
-### func \(\*BancorTransactorSession\) [GrantRole](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L884>)
+### func \(\*BancorTransactorSession\) [GrantRole](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L884>)
 
 ```go
 func (_Bancor *BancorTransactorSession) GrantRole(role [32]byte, account common.Address) (*types.Transaction, error)
@@ -3108,7 +3108,7 @@ GrantRole is a paid mutator transaction binding the contract method 0x2f2ff15d.
 Solidity: function grantRole\(bytes32 role, address account\) returns\(\)
 
 <a name="BancorTransactorSession.InitWithdrawal"></a>
-### func \(\*BancorTransactorSession\) [InitWithdrawal](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L905>)
+### func \(\*BancorTransactorSession\) [InitWithdrawal](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L905>)
 
 ```go
 func (_Bancor *BancorTransactorSession) InitWithdrawal(poolToken common.Address, poolTokenAmount *big.Int) (*types.Transaction, error)
@@ -3119,7 +3119,7 @@ InitWithdrawal is a paid mutator transaction binding the contract method 0x357a0
 Solidity: function initWithdrawal\(address poolToken, uint256 poolTokenAmount\) returns\(uint256\)
 
 <a name="BancorTransactorSession.Initialize"></a>
-### func \(\*BancorTransactorSession\) [Initialize](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L926>)
+### func \(\*BancorTransactorSession\) [Initialize](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L926>)
 
 ```go
 func (_Bancor *BancorTransactorSession) Initialize(initBNTPool common.Address, initPendingWithdrawals common.Address, initPoolMigrator common.Address) (*types.Transaction, error)
@@ -3130,7 +3130,7 @@ Initialize is a paid mutator transaction binding the contract method 0xc0c53b8b.
 Solidity: function initialize\(address initBNTPool, address initPendingWithdrawals, address initPoolMigrator\) returns\(\)
 
 <a name="BancorTransactorSession.MigrateLiquidity"></a>
-### func \(\*BancorTransactorSession\) [MigrateLiquidity](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L947>)
+### func \(\*BancorTransactorSession\) [MigrateLiquidity](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L947>)
 
 ```go
 func (_Bancor *BancorTransactorSession) MigrateLiquidity(token common.Address, provider common.Address, amount *big.Int, availableAmount *big.Int, originalAmount *big.Int) (*types.Transaction, error)
@@ -3141,7 +3141,7 @@ MigrateLiquidity is a paid mutator transaction binding the contract method 0x3d1
 Solidity: function migrateLiquidity\(address zcntoken, address provider, uint256 amount, uint256 availableAmount, uint256 originalAmount\) payable returns\(\)
 
 <a name="BancorTransactorSession.MigratePools"></a>
-### func \(\*BancorTransactorSession\) [MigratePools](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L968>)
+### func \(\*BancorTransactorSession\) [MigratePools](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L968>)
 
 ```go
 func (_Bancor *BancorTransactorSession) MigratePools(pools []common.Address, newPoolCollection common.Address) (*types.Transaction, error)
@@ -3152,7 +3152,7 @@ MigratePools is a paid mutator transaction binding the contract method 0xc109ba1
 Solidity: function migratePools\(address\[\] pools, address newPoolCollection\) returns\(\)
 
 <a name="BancorTransactorSession.Pause"></a>
-### func \(\*BancorTransactorSession\) [Pause](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L989>)
+### func \(\*BancorTransactorSession\) [Pause](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L989>)
 
 ```go
 func (_Bancor *BancorTransactorSession) Pause() (*types.Transaction, error)
@@ -3163,7 +3163,7 @@ Pause is a paid mutator transaction binding the contract method 0x8456cb59.
 Solidity: function pause\(\) returns\(\)
 
 <a name="BancorTransactorSession.PostUpgrade"></a>
-### func \(\*BancorTransactorSession\) [PostUpgrade](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1010>)
+### func \(\*BancorTransactorSession\) [PostUpgrade](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1010>)
 
 ```go
 func (_Bancor *BancorTransactorSession) PostUpgrade(data []byte) (*types.Transaction, error)
@@ -3174,7 +3174,7 @@ PostUpgrade is a paid mutator transaction binding the contract method 0x8cd2403d
 Solidity: function postUpgrade\(bytes data\) returns\(\)
 
 <a name="BancorTransactorSession.Receive"></a>
-### func \(\*BancorTransactorSession\) [Receive](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1304>)
+### func \(\*BancorTransactorSession\) [Receive](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1304>)
 
 ```go
 func (_Bancor *BancorTransactorSession) Receive() (*types.Transaction, error)
@@ -3185,7 +3185,7 @@ Receive is a paid mutator transaction binding the contract receive function.
 Solidity: receive\(\) payable returns\(\)
 
 <a name="BancorTransactorSession.RegisterPoolCollection"></a>
-### func \(\*BancorTransactorSession\) [RegisterPoolCollection](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1031>)
+### func \(\*BancorTransactorSession\) [RegisterPoolCollection](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1031>)
 
 ```go
 func (_Bancor *BancorTransactorSession) RegisterPoolCollection(newPoolCollection common.Address) (*types.Transaction, error)
@@ -3196,7 +3196,7 @@ RegisterPoolCollection is a paid mutator transaction binding the contract method
 Solidity: function registerPoolCollection\(address newPoolCollection\) returns\(\)
 
 <a name="BancorTransactorSession.RenounceRole"></a>
-### func \(\*BancorTransactorSession\) [RenounceRole](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1052>)
+### func \(\*BancorTransactorSession\) [RenounceRole](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1052>)
 
 ```go
 func (_Bancor *BancorTransactorSession) RenounceRole(role [32]byte, account common.Address) (*types.Transaction, error)
@@ -3207,7 +3207,7 @@ RenounceRole is a paid mutator transaction binding the contract method 0x36568ab
 Solidity: function renounceRole\(bytes32 role, address account\) returns\(\)
 
 <a name="BancorTransactorSession.Resume"></a>
-### func \(\*BancorTransactorSession\) [Resume](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1073>)
+### func \(\*BancorTransactorSession\) [Resume](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1073>)
 
 ```go
 func (_Bancor *BancorTransactorSession) Resume() (*types.Transaction, error)
@@ -3218,7 +3218,7 @@ Resume is a paid mutator transaction binding the contract method 0x046f7da2.
 Solidity: function resume\(\) returns\(\)
 
 <a name="BancorTransactorSession.RevokeRole"></a>
-### func \(\*BancorTransactorSession\) [RevokeRole](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1094>)
+### func \(\*BancorTransactorSession\) [RevokeRole](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1094>)
 
 ```go
 func (_Bancor *BancorTransactorSession) RevokeRole(role [32]byte, account common.Address) (*types.Transaction, error)
@@ -3229,7 +3229,7 @@ RevokeRole is a paid mutator transaction binding the contract method 0xd547741f.
 Solidity: function revokeRole\(bytes32 role, address account\) returns\(\)
 
 <a name="BancorTransactorSession.SetPOLRewardsPPM"></a>
-### func \(\*BancorTransactorSession\) [SetPOLRewardsPPM](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1115>)
+### func \(\*BancorTransactorSession\) [SetPOLRewardsPPM](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1115>)
 
 ```go
 func (_Bancor *BancorTransactorSession) SetPOLRewardsPPM(newRewardsPPM uint32) (*types.Transaction, error)
@@ -3240,7 +3240,7 @@ SetPOLRewardsPPM is a paid mutator transaction binding the contract method 0x533
 Solidity: function setPOLRewardsPPM\(uint32 newRewardsPPM\) returns\(\)
 
 <a name="BancorTransactorSession.TradeBySourceAmount"></a>
-### func \(\*BancorTransactorSession\) [TradeBySourceAmount](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1136>)
+### func \(\*BancorTransactorSession\) [TradeBySourceAmount](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1136>)
 
 ```go
 func (_Bancor *BancorTransactorSession) TradeBySourceAmount(sourceToken common.Address, targetToken common.Address, sourceAmount *big.Int, minReturnAmount *big.Int, deadline *big.Int, beneficiary common.Address) (*types.Transaction, error)
@@ -3251,7 +3251,7 @@ TradeBySourceAmount is a paid mutator transaction binding the contract method 0x
 Solidity: function tradeBySourceAmount\(address sourceToken, address targetToken, uint256 sourceAmount, uint256 minReturnAmount, uint256 deadline, address beneficiary\) payable returns\(uint256\)
 
 <a name="BancorTransactorSession.TradeBySourceAmountArb"></a>
-### func \(\*BancorTransactorSession\) [TradeBySourceAmountArb](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1157>)
+### func \(\*BancorTransactorSession\) [TradeBySourceAmountArb](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1157>)
 
 ```go
 func (_Bancor *BancorTransactorSession) TradeBySourceAmountArb(sourceToken common.Address, targetToken common.Address, sourceAmount *big.Int, minReturnAmount *big.Int, deadline *big.Int, beneficiary common.Address) (*types.Transaction, error)
@@ -3262,7 +3262,7 @@ TradeBySourceAmountArb is a paid mutator transaction binding the contract method
 Solidity: function tradeBySourceAmountArb\(address sourceToken, address targetToken, uint256 sourceAmount, uint256 minReturnAmount, uint256 deadline, address beneficiary\) payable returns\(uint256\)
 
 <a name="BancorTransactorSession.TradeByTargetAmount"></a>
-### func \(\*BancorTransactorSession\) [TradeByTargetAmount](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1178>)
+### func \(\*BancorTransactorSession\) [TradeByTargetAmount](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1178>)
 
 ```go
 func (_Bancor *BancorTransactorSession) TradeByTargetAmount(sourceToken common.Address, targetToken common.Address, targetAmount *big.Int, maxSourceAmount *big.Int, deadline *big.Int, beneficiary common.Address) (*types.Transaction, error)
@@ -3273,7 +3273,7 @@ TradeByTargetAmount is a paid mutator transaction binding the contract method 0x
 Solidity: function tradeByTargetAmount\(address sourceToken, address targetToken, uint256 targetAmount, uint256 maxSourceAmount, uint256 deadline, address beneficiary\) payable returns\(uint256\)
 
 <a name="BancorTransactorSession.TradeByTargetAmountArb"></a>
-### func \(\*BancorTransactorSession\) [TradeByTargetAmountArb](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1199>)
+### func \(\*BancorTransactorSession\) [TradeByTargetAmountArb](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1199>)
 
 ```go
 func (_Bancor *BancorTransactorSession) TradeByTargetAmountArb(sourceToken common.Address, targetToken common.Address, targetAmount *big.Int, maxSourceAmount *big.Int, deadline *big.Int, beneficiary common.Address) (*types.Transaction, error)
@@ -3284,7 +3284,7 @@ TradeByTargetAmountArb is a paid mutator transaction binding the contract method
 Solidity: function tradeByTargetAmountArb\(address sourceToken, address targetToken, uint256 targetAmount, uint256 maxSourceAmount, uint256 deadline, address beneficiary\) payable returns\(uint256\)
 
 <a name="BancorTransactorSession.UnregisterPoolCollection"></a>
-### func \(\*BancorTransactorSession\) [UnregisterPoolCollection](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1220>)
+### func \(\*BancorTransactorSession\) [UnregisterPoolCollection](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1220>)
 
 ```go
 func (_Bancor *BancorTransactorSession) UnregisterPoolCollection(poolCollection common.Address) (*types.Transaction, error)
@@ -3295,7 +3295,7 @@ UnregisterPoolCollection is a paid mutator transaction binding the contract meth
 Solidity: function unregisterPoolCollection\(address poolCollection\) returns\(\)
 
 <a name="BancorTransactorSession.Withdraw"></a>
-### func \(\*BancorTransactorSession\) [Withdraw](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1241>)
+### func \(\*BancorTransactorSession\) [Withdraw](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1241>)
 
 ```go
 func (_Bancor *BancorTransactorSession) Withdraw(id *big.Int) (*types.Transaction, error)
@@ -3306,7 +3306,7 @@ Withdraw is a paid mutator transaction binding the contract method 0x2e1a7d4d.
 Solidity: function withdraw\(uint256 id\) returns\(uint256\)
 
 <a name="BancorTransactorSession.WithdrawNetworkFees"></a>
-### func \(\*BancorTransactorSession\) [WithdrawNetworkFees](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1262>)
+### func \(\*BancorTransactorSession\) [WithdrawNetworkFees](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1262>)
 
 ```go
 func (_Bancor *BancorTransactorSession) WithdrawNetworkFees(recipient common.Address) (*types.Transaction, error)
@@ -3317,7 +3317,7 @@ WithdrawNetworkFees is a paid mutator transaction binding the contract method 0x
 Solidity: function withdrawNetworkFees\(address recipient\) returns\(uint256\)
 
 <a name="BancorTransactorSession.WithdrawPOL"></a>
-### func \(\*BancorTransactorSession\) [WithdrawPOL](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1283>)
+### func \(\*BancorTransactorSession\) [WithdrawPOL](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L1283>)
 
 ```go
 func (_Bancor *BancorTransactorSession) WithdrawPOL(pool common.Address) (*types.Transaction, error)
@@ -3328,7 +3328,7 @@ WithdrawPOL is a paid mutator transaction binding the contract method 0x8ffcca07
 Solidity: function withdrawPOL\(address pool\) returns\(uint256\)
 
 <a name="BancorUnpaused"></a>
-## type [BancorUnpaused](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3693-L3696>)
+## type [BancorUnpaused](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3693-L3696>)
 
 BancorUnpaused represents a Unpaused event raised by the Bancor contract.
 
@@ -3340,7 +3340,7 @@ type BancorUnpaused struct {
 ```
 
 <a name="BancorUnpausedIterator"></a>
-## type [BancorUnpausedIterator](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3626-L3636>)
+## type [BancorUnpausedIterator](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3626-L3636>)
 
 BancorUnpausedIterator is returned from FilterUnpaused and is used to iterate over the raw logs and unpacked data for Unpaused events raised by the Bancor contract.
 
@@ -3352,7 +3352,7 @@ type BancorUnpausedIterator struct {
 ```
 
 <a name="BancorUnpausedIterator.Close"></a>
-### func \(\*BancorUnpausedIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3687>)
+### func \(\*BancorUnpausedIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3687>)
 
 ```go
 func (it *BancorUnpausedIterator) Close() error
@@ -3361,7 +3361,7 @@ func (it *BancorUnpausedIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="BancorUnpausedIterator.Error"></a>
-### func \(\*BancorUnpausedIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3681>)
+### func \(\*BancorUnpausedIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3681>)
 
 ```go
 func (it *BancorUnpausedIterator) Error() error
@@ -3370,7 +3370,7 @@ func (it *BancorUnpausedIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="BancorUnpausedIterator.Next"></a>
-### func \(\*BancorUnpausedIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3641>)
+### func \(\*BancorUnpausedIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancornetwork/bancornetwork.go#L3641>)
 
 ```go
 func (it *BancorUnpausedIterator) Next() bool

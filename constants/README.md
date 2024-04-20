@@ -71,7 +71,7 @@ var (
 ```
 
 <a name="ContextKey"></a>
-## type [ContextKey](<https://github.com/0chain/gosdk/blob/staging/constants/context_key.go#L4>)
+## type [ContextKey](<https://github.com/0chain/gosdk/blob/doc/initial/constants/context_key.go#L4>)
 
 ContextKey \- type for key used to store values into context
 

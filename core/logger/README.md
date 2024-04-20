@@ -36,7 +36,7 @@ const (
 ```
 
 <a name="SyncLoggers"></a>
-## func [SyncLoggers](<https://github.com/0chain/gosdk/blob/staging/core/logger/logger.go#L63>)
+## func [SyncLoggers](<https://github.com/0chain/gosdk/blob/doc/initial/core/logger/logger.go#L63>)
 
 ```go
 func SyncLoggers(loggers []*Logger)
@@ -45,7 +45,7 @@ func SyncLoggers(loggers []*Logger)
 SyncLoggers \- syncs the loggers
 
 <a name="Logger"></a>
-## type [Logger](<https://github.com/0chain/gosdk/blob/staging/core/logger/logger.go#L28-L36>)
+## type [Logger](<https://github.com/0chain/gosdk/blob/doc/initial/core/logger/logger.go#L28-L36>)
 
 
 
@@ -56,7 +56,7 @@ type Logger struct {
 ```
 
 <a name="Logger.Close"></a>
-### func \(\*Logger\) [Close](<https://github.com/0chain/gosdk/blob/staging/core/logger/logger.go#L115>)
+### func \(\*Logger\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/core/logger/logger.go#L115>)
 
 ```go
 func (l *Logger) Close()
@@ -65,7 +65,7 @@ func (l *Logger) Close()
 
 
 <a name="Logger.Debug"></a>
-### func \(\*Logger\) [Debug](<https://github.com/0chain/gosdk/blob/staging/core/logger/logger.go#L91>)
+### func \(\*Logger\) [Debug](<https://github.com/0chain/gosdk/blob/doc/initial/core/logger/logger.go#L91>)
 
 ```go
 func (l *Logger) Debug(v ...interface{})
@@ -74,7 +74,7 @@ func (l *Logger) Debug(v ...interface{})
 
 
 <a name="Logger.Error"></a>
-### func \(\*Logger\) [Error](<https://github.com/0chain/gosdk/blob/staging/core/logger/logger.go#L103>)
+### func \(\*Logger\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/core/logger/logger.go#L103>)
 
 ```go
 func (l *Logger) Error(v ...interface{})
@@ -83,7 +83,7 @@ func (l *Logger) Error(v ...interface{})
 
 
 <a name="Logger.Fatal"></a>
-### func \(\*Logger\) [Fatal](<https://github.com/0chain/gosdk/blob/staging/core/logger/logger.go#L109>)
+### func \(\*Logger\) [Fatal](<https://github.com/0chain/gosdk/blob/doc/initial/core/logger/logger.go#L109>)
 
 ```go
 func (l *Logger) Fatal(v ...interface{})
@@ -92,7 +92,7 @@ func (l *Logger) Fatal(v ...interface{})
 
 
 <a name="Logger.Info"></a>
-### func \(\*Logger\) [Info](<https://github.com/0chain/gosdk/blob/staging/core/logger/logger.go#L97>)
+### func \(\*Logger\) [Info](<https://github.com/0chain/gosdk/blob/doc/initial/core/logger/logger.go#L97>)
 
 ```go
 func (l *Logger) Info(v ...interface{})
@@ -101,7 +101,7 @@ func (l *Logger) Info(v ...interface{})
 
 
 <a name="Logger.Init"></a>
-### func \(\*Logger\) [Init](<https://github.com/0chain/gosdk/blob/staging/core/logger/logger.go#L39>)
+### func \(\*Logger\) [Init](<https://github.com/0chain/gosdk/blob/doc/initial/core/logger/logger.go#L39>)
 
 ```go
 func (l *Logger) Init(lvl int, prefix string)
@@ -110,7 +110,7 @@ func (l *Logger) Init(lvl int, prefix string)
 Init \- Initialize logging
 
 <a name="Logger.SetLevel"></a>
-### func \(\*Logger\) [SetLevel](<https://github.com/0chain/gosdk/blob/staging/core/logger/logger.go#L49>)
+### func \(\*Logger\) [SetLevel](<https://github.com/0chain/gosdk/blob/doc/initial/core/logger/logger.go#L49>)
 
 ```go
 func (l *Logger) SetLevel(lvl int)
@@ -119,7 +119,7 @@ func (l *Logger) SetLevel(lvl int)
 SetLevel \- Configures the log level. Higher the number more verbose.
 
 <a name="Logger.SetLogFile"></a>
-### func \(\*Logger\) [SetLogFile](<https://github.com/0chain/gosdk/blob/staging/core/logger/logger.go#L74>)
+### func \(\*Logger\) [SetLogFile](<https://github.com/0chain/gosdk/blob/doc/initial/core/logger/logger.go#L74>)
 
 ```go
 func (l *Logger) SetLogFile(logFile io.Writer, verbose bool)

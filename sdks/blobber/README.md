@@ -33,7 +33,7 @@ const (
 ```
 
 <a name="Blobber"></a>
-## type [Blobber](<https://github.com/0chain/gosdk/blob/staging/sdks/blobber/blobber.go#L9-L12>)
+## type [Blobber](<https://github.com/0chain/gosdk/blob/doc/initial/sdks/blobber/blobber.go#L9-L12>)
 
 Blobber blobber sdk client instance
 
@@ -45,7 +45,7 @@ type Blobber struct {
 ```
 
 <a name="New"></a>
-### func [New](<https://github.com/0chain/gosdk/blob/staging/sdks/blobber/blobber.go#L14>)
+### func [New](<https://github.com/0chain/gosdk/blob/doc/initial/sdks/blobber/blobber.go#L14>)
 
 ```go
 func New(zbox *sdks.ZBox, baseURLs ...string) *Blobber

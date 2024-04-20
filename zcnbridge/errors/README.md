@@ -25,7 +25,7 @@ import "github.com/0chain/gosdk/zcnbridge/errors"
 
 
 <a name="Any"></a>
-## func [Any](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/errors/errors.go#L47>)
+## func [Any](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/errors/errors.go#L47>)
 
 ```go
 func Any(err error, targets ...error) bool
@@ -34,7 +34,7 @@ func Any(err error, targets ...error) bool
 Any reports whether an error in error's chain matches to any error provided in list.
 
 <a name="ExitErr"></a>
-## func [ExitErr](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/errors/errors.go#L58>)
+## func [ExitErr](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/errors/errors.go#L58>)
 
 ```go
 func ExitErr(text string, err error, code int)
@@ -43,7 +43,7 @@ func ExitErr(text string, err error, code int)
 ExitErr prints error to os.Stderr and call os.Exit with given code.
 
 <a name="ExitMsg"></a>
-## func [ExitMsg](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/errors/errors.go#L65>)
+## func [ExitMsg](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/errors/errors.go#L65>)
 
 ```go
 func ExitMsg(text string, code int)
@@ -52,7 +52,7 @@ func ExitMsg(text string, code int)
 ExitMsg prints message to os.Stderr and call os.Exit with given code.
 
 <a name="Is"></a>
-## func [Is](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/errors/errors.go#L73>)
+## func [Is](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/errors/errors.go#L73>)
 
 ```go
 func Is(err, target error) bool
@@ -61,7 +61,7 @@ func Is(err, target error) bool
 Is wraps function errors.Is from stdlib to avoid import it in other places of the magma smart contract \(magmasc\) package.
 
 <a name="ErrWrapper"></a>
-## type [ErrWrapper](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/errors/errors.go#L23-L27>)
+## type [ErrWrapper](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/errors/errors.go#L23-L27>)
 
 ErrWrapper implements error wrapper interface.
 
@@ -72,7 +72,7 @@ type ErrWrapper struct {
 ```
 
 <a name="New"></a>
-### func [New](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/errors/errors.go#L78>)
+### func [New](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/errors/errors.go#L78>)
 
 ```go
 func New(code, text string) *ErrWrapper
@@ -81,7 +81,7 @@ func New(code, text string) *ErrWrapper
 New returns constructed error wrapper interface.
 
 <a name="Wrap"></a>
-### func [Wrap](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/errors/errors.go#L83>)
+### func [Wrap](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/errors/errors.go#L83>)
 
 ```go
 func Wrap(code, text string, err error) *ErrWrapper
@@ -90,7 +90,7 @@ func Wrap(code, text string, err error) *ErrWrapper
 Wrap wraps given error into a new error with format.
 
 <a name="ErrWrapper.Error"></a>
-### func \(\*ErrWrapper\) [Error](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/errors/errors.go#L31>)
+### func \(\*ErrWrapper\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/errors/errors.go#L31>)
 
 ```go
 func (e *ErrWrapper) Error() string
@@ -99,7 +99,7 @@ func (e *ErrWrapper) Error() string
 Error implements error interface.
 
 <a name="ErrWrapper.Unwrap"></a>
-### func \(\*ErrWrapper\) [Unwrap](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/errors/errors.go#L36>)
+### func \(\*ErrWrapper\) [Unwrap](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/errors/errors.go#L36>)
 
 ```go
 func (e *ErrWrapper) Unwrap() error
@@ -108,7 +108,7 @@ func (e *ErrWrapper) Unwrap() error
 Unwrap implements error unwrap interface.
 
 <a name="ErrWrapper.Wrap"></a>
-### func \(\*ErrWrapper\) [Wrap](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/errors/errors.go#L41>)
+### func \(\*ErrWrapper\) [Wrap](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/errors/errors.go#L41>)
 
 ```go
 func (e *ErrWrapper) Wrap(err error) *ErrWrapper
@@ -117,7 +117,7 @@ func (e *ErrWrapper) Wrap(err error) *ErrWrapper
 Wrap implements error wrapper interface.
 
 <a name="Error"></a>
-## type [Error](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/errors/errors.go#L15-L18>)
+## type [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/errors/errors.go#L15-L18>)
 
 Error type for a new application error.
 
@@ -129,7 +129,7 @@ type Error struct {
 ```
 
 <a name="NewError"></a>
-### func [NewError](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/errors/errors.go#L97>)
+### func [NewError](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/errors/errors.go#L97>)
 
 ```go
 func NewError(code string, msg string) *Error
@@ -138,7 +138,7 @@ func NewError(code string, msg string) *Error
 
 
 <a name="NewErrorf"></a>
-### func [NewErrorf](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/errors/errors.go#L102>)
+### func [NewErrorf](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/errors/errors.go#L102>)
 
 ```go
 func NewErrorf(code string, format string, args ...interface{}) *Error
@@ -147,7 +147,7 @@ func NewErrorf(code string, format string, args ...interface{}) *Error
 NewErrorf \- create a new error with format
 
 <a name="Error.Error"></a>
-### func \(\*Error\) [Error](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/errors/errors.go#L93>)
+### func \(\*Error\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/errors/errors.go#L93>)
 
 ```go
 func (err *Error) Error() string

@@ -320,7 +320,7 @@ var BindingMetaData = &bind.MetaData{
 ```
 
 <a name="Binding"></a>
-## type [Binding](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L41-L45>)
+## type [Binding](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L41-L45>)
 
 Binding is an auto generated Go binding around an Ethereum contract.
 
@@ -333,7 +333,7 @@ type Binding struct {
 ```
 
 <a name="NewBinding"></a>
-### func [NewBinding](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L100>)
+### func [NewBinding](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L100>)
 
 ```go
 func NewBinding(address common.Address, backend bind.ContractBackend) (*Binding, error)
@@ -342,7 +342,7 @@ func NewBinding(address common.Address, backend bind.ContractBackend) (*Binding,
 NewBinding creates a new instance of Binding, bound to a specific deployed contract.
 
 <a name="BindingApproval"></a>
-## type [BindingApproval](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1529-L1534>)
+## type [BindingApproval](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1529-L1534>)
 
 BindingApproval represents a Approval event raised by the Binding contract.
 
@@ -356,7 +356,7 @@ type BindingApproval struct {
 ```
 
 <a name="BindingApprovalForAll"></a>
-## type [BindingApprovalForAll](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1691-L1696>)
+## type [BindingApprovalForAll](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1691-L1696>)
 
 BindingApprovalForAll represents a ApprovalForAll event raised by the Binding contract.
 
@@ -370,7 +370,7 @@ type BindingApprovalForAll struct {
 ```
 
 <a name="BindingApprovalForAllIterator"></a>
-## type [BindingApprovalForAllIterator](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1624-L1634>)
+## type [BindingApprovalForAllIterator](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1624-L1634>)
 
 BindingApprovalForAllIterator is returned from FilterApprovalForAll and is used to iterate over the raw logs and unpacked data for ApprovalForAll events raised by the Binding contract.
 
@@ -382,7 +382,7 @@ type BindingApprovalForAllIterator struct {
 ```
 
 <a name="BindingApprovalForAllIterator.Close"></a>
-### func \(\*BindingApprovalForAllIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1685>)
+### func \(\*BindingApprovalForAllIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1685>)
 
 ```go
 func (it *BindingApprovalForAllIterator) Close() error
@@ -391,7 +391,7 @@ func (it *BindingApprovalForAllIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="BindingApprovalForAllIterator.Error"></a>
-### func \(\*BindingApprovalForAllIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1679>)
+### func \(\*BindingApprovalForAllIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1679>)
 
 ```go
 func (it *BindingApprovalForAllIterator) Error() error
@@ -400,7 +400,7 @@ func (it *BindingApprovalForAllIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="BindingApprovalForAllIterator.Next"></a>
-### func \(\*BindingApprovalForAllIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1639>)
+### func \(\*BindingApprovalForAllIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1639>)
 
 ```go
 func (it *BindingApprovalForAllIterator) Next() bool
@@ -409,7 +409,7 @@ func (it *BindingApprovalForAllIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="BindingApprovalIterator"></a>
-## type [BindingApprovalIterator](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1462-L1472>)
+## type [BindingApprovalIterator](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1462-L1472>)
 
 BindingApprovalIterator is returned from FilterApproval and is used to iterate over the raw logs and unpacked data for Approval events raised by the Binding contract.
 
@@ -421,7 +421,7 @@ type BindingApprovalIterator struct {
 ```
 
 <a name="BindingApprovalIterator.Close"></a>
-### func \(\*BindingApprovalIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1523>)
+### func \(\*BindingApprovalIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1523>)
 
 ```go
 func (it *BindingApprovalIterator) Close() error
@@ -430,7 +430,7 @@ func (it *BindingApprovalIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="BindingApprovalIterator.Error"></a>
-### func \(\*BindingApprovalIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1517>)
+### func \(\*BindingApprovalIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1517>)
 
 ```go
 func (it *BindingApprovalIterator) Error() error
@@ -439,7 +439,7 @@ func (it *BindingApprovalIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="BindingApprovalIterator.Next"></a>
-### func \(\*BindingApprovalIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1477>)
+### func \(\*BindingApprovalIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1477>)
 
 ```go
 func (it *BindingApprovalIterator) Next() bool
@@ -448,7 +448,7 @@ func (it *BindingApprovalIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="BindingBatchUpdated"></a>
-## type [BindingBatchUpdated](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1845-L1849>)
+## type [BindingBatchUpdated](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1845-L1849>)
 
 BindingBatchUpdated represents a BatchUpdated event raised by the Binding contract.
 
@@ -461,7 +461,7 @@ type BindingBatchUpdated struct {
 ```
 
 <a name="BindingBatchUpdatedIterator"></a>
-## type [BindingBatchUpdatedIterator](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1778-L1788>)
+## type [BindingBatchUpdatedIterator](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1778-L1788>)
 
 BindingBatchUpdatedIterator is returned from FilterBatchUpdated and is used to iterate over the raw logs and unpacked data for BatchUpdated events raised by the Binding contract.
 
@@ -473,7 +473,7 @@ type BindingBatchUpdatedIterator struct {
 ```
 
 <a name="BindingBatchUpdatedIterator.Close"></a>
-### func \(\*BindingBatchUpdatedIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1839>)
+### func \(\*BindingBatchUpdatedIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1839>)
 
 ```go
 func (it *BindingBatchUpdatedIterator) Close() error
@@ -482,7 +482,7 @@ func (it *BindingBatchUpdatedIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="BindingBatchUpdatedIterator.Error"></a>
-### func \(\*BindingBatchUpdatedIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1833>)
+### func \(\*BindingBatchUpdatedIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1833>)
 
 ```go
 func (it *BindingBatchUpdatedIterator) Error() error
@@ -491,7 +491,7 @@ func (it *BindingBatchUpdatedIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="BindingBatchUpdatedIterator.Next"></a>
-### func \(\*BindingBatchUpdatedIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1793>)
+### func \(\*BindingBatchUpdatedIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1793>)
 
 ```go
 func (it *BindingBatchUpdatedIterator) Next() bool
@@ -500,7 +500,7 @@ func (it *BindingBatchUpdatedIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="BindingCaller"></a>
-## type [BindingCaller](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L48-L50>)
+## type [BindingCaller](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L48-L50>)
 
 BindingCaller is an auto generated read\-only Go binding around an Ethereum contract.
 
@@ -511,7 +511,7 @@ type BindingCaller struct {
 ```
 
 <a name="NewBindingCaller"></a>
-### func [NewBindingCaller](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L109>)
+### func [NewBindingCaller](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L109>)
 
 ```go
 func NewBindingCaller(address common.Address, caller bind.ContractCaller) (*BindingCaller, error)
@@ -520,7 +520,7 @@ func NewBindingCaller(address common.Address, caller bind.ContractCaller) (*Bind
 NewBindingCaller creates a new read\-only instance of Binding, bound to a specific deployed contract.
 
 <a name="BindingCaller.Allocation"></a>
-### func \(\*BindingCaller\) [Allocation](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L185>)
+### func \(\*BindingCaller\) [Allocation](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L185>)
 
 ```go
 func (_Binding *BindingCaller) Allocation(opts *bind.CallOpts) (string, error)
@@ -531,7 +531,7 @@ Allocation is a free data retrieval call binding the contract method 0x88a17bde.
 Solidity: function allocation\(\) view returns\(string\)
 
 <a name="BindingCaller.BalanceOf"></a>
-### func \(\*BindingCaller\) [BalanceOf](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L216>)
+### func \(\*BindingCaller\) [BalanceOf](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L216>)
 
 ```go
 func (_Binding *BindingCaller) BalanceOf(opts *bind.CallOpts, owner common.Address) (*big.Int, error)
@@ -542,7 +542,7 @@ BalanceOf is a free data retrieval call binding the contract method 0x70a08231.
 Solidity: function balanceOf\(address owner\) view returns\(uint256\)
 
 <a name="BindingCaller.Batch"></a>
-### func \(\*BindingCaller\) [Batch](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L247>)
+### func \(\*BindingCaller\) [Batch](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L247>)
 
 ```go
 func (_Binding *BindingCaller) Batch(opts *bind.CallOpts) (*big.Int, error)
@@ -553,7 +553,7 @@ Batch is a free data retrieval call binding the contract method 0xaf713566.
 Solidity: function batch\(\) view returns\(uint256\)
 
 <a name="BindingCaller.Closed"></a>
-### func \(\*BindingCaller\) [Closed](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L278>)
+### func \(\*BindingCaller\) [Closed](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L278>)
 
 ```go
 func (_Binding *BindingCaller) Closed(opts *bind.CallOpts) (string, error)
@@ -564,7 +564,7 @@ Closed is a free data retrieval call binding the contract method 0x597e1fb5.
 Solidity: function closed\(\) view returns\(string\)
 
 <a name="BindingCaller.Contents"></a>
-### func \(\*BindingCaller\) [Contents](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L309>)
+### func \(\*BindingCaller\) [Contents](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L309>)
 
 ```go
 func (_Binding *BindingCaller) Contents(opts *bind.CallOpts, arg0 *big.Int) (*big.Int, error)
@@ -575,7 +575,7 @@ Contents is a free data retrieval call binding the contract method 0xb5ecf912.
 Solidity: function contents\(uint256 \) view returns\(uint256\)
 
 <a name="BindingCaller.Frozen"></a>
-### func \(\*BindingCaller\) [Frozen](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L340>)
+### func \(\*BindingCaller\) [Frozen](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L340>)
 
 ```go
 func (_Binding *BindingCaller) Frozen(opts *bind.CallOpts) (bool, error)
@@ -586,7 +586,7 @@ Frozen is a free data retrieval call binding the contract method 0x054f7d9c.
 Solidity: function frozen\(\) view returns\(bool\)
 
 <a name="BindingCaller.GetApproved"></a>
-### func \(\*BindingCaller\) [GetApproved](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L371>)
+### func \(\*BindingCaller\) [GetApproved](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L371>)
 
 ```go
 func (_Binding *BindingCaller) GetApproved(opts *bind.CallOpts, tokenId *big.Int) (common.Address, error)
@@ -597,7 +597,7 @@ GetApproved is a free data retrieval call binding the contract method 0x081812fc
 Solidity: function getApproved\(uint256 tokenId\) view returns\(address\)
 
 <a name="BindingCaller.IsApprovedForAll"></a>
-### func \(\*BindingCaller\) [IsApprovedForAll](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L402>)
+### func \(\*BindingCaller\) [IsApprovedForAll](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L402>)
 
 ```go
 func (_Binding *BindingCaller) IsApprovedForAll(opts *bind.CallOpts, owner common.Address, operator common.Address) (bool, error)
@@ -608,7 +608,7 @@ IsApprovedForAll is a free data retrieval call binding the contract method 0xe98
 Solidity: function isApprovedForAll\(address owner, address operator\) view returns\(bool\)
 
 <a name="BindingCaller.Max"></a>
-### func \(\*BindingCaller\) [Max](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L433>)
+### func \(\*BindingCaller\) [Max](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L433>)
 
 ```go
 func (_Binding *BindingCaller) Max(opts *bind.CallOpts) (*big.Int, error)
@@ -619,7 +619,7 @@ Max is a free data retrieval call binding the contract method 0x6ac5db19.
 Solidity: function max\(\) view returns\(uint256\)
 
 <a name="BindingCaller.Mintable"></a>
-### func \(\*BindingCaller\) [Mintable](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L464>)
+### func \(\*BindingCaller\) [Mintable](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L464>)
 
 ```go
 func (_Binding *BindingCaller) Mintable(opts *bind.CallOpts) (bool, error)
@@ -630,7 +630,7 @@ Mintable is a free data retrieval call binding the contract method 0x4bf365df.
 Solidity: function mintable\(\) view returns\(bool\)
 
 <a name="BindingCaller.Name"></a>
-### func \(\*BindingCaller\) [Name](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L495>)
+### func \(\*BindingCaller\) [Name](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L495>)
 
 ```go
 func (_Binding *BindingCaller) Name(opts *bind.CallOpts) (string, error)
@@ -641,7 +641,7 @@ Name is a free data retrieval call binding the contract method 0x06fdde03.
 Solidity: function name\(\) view returns\(string\)
 
 <a name="BindingCaller.Opened"></a>
-### func \(\*BindingCaller\) [Opened](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L526>)
+### func \(\*BindingCaller\) [Opened](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L526>)
 
 ```go
 func (_Binding *BindingCaller) Opened(opts *bind.CallOpts) (string, error)
@@ -652,7 +652,7 @@ Opened is a free data retrieval call binding the contract method 0x5f88eade.
 Solidity: function opened\(\) view returns\(string\)
 
 <a name="BindingCaller.Owner"></a>
-### func \(\*BindingCaller\) [Owner](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L557>)
+### func \(\*BindingCaller\) [Owner](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L557>)
 
 ```go
 func (_Binding *BindingCaller) Owner(opts *bind.CallOpts) (common.Address, error)
@@ -663,7 +663,7 @@ Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
 Solidity: function owner\(\) view returns\(address\)
 
 <a name="BindingCaller.OwnerOf"></a>
-### func \(\*BindingCaller\) [OwnerOf](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L588>)
+### func \(\*BindingCaller\) [OwnerOf](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L588>)
 
 ```go
 func (_Binding *BindingCaller) OwnerOf(opts *bind.CallOpts, tokenId *big.Int) (common.Address, error)
@@ -674,7 +674,7 @@ OwnerOf is a free data retrieval call binding the contract method 0x6352211e.
 Solidity: function ownerOf\(uint256 tokenId\) view returns\(address\)
 
 <a name="BindingCaller.Price"></a>
-### func \(\*BindingCaller\) [Price](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L619>)
+### func \(\*BindingCaller\) [Price](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L619>)
 
 ```go
 func (_Binding *BindingCaller) Price(opts *bind.CallOpts) (*big.Int, error)
@@ -685,7 +685,7 @@ Price is a free data retrieval call binding the contract method 0xa035b1fe.
 Solidity: function price\(\) view returns\(uint256\)
 
 <a name="BindingCaller.Receiver"></a>
-### func \(\*BindingCaller\) [Receiver](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L650>)
+### func \(\*BindingCaller\) [Receiver](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L650>)
 
 ```go
 func (_Binding *BindingCaller) Receiver(opts *bind.CallOpts) (common.Address, error)
@@ -696,7 +696,7 @@ Receiver is a free data retrieval call binding the contract method 0xf7260d3e.
 Solidity: function receiver\(\) view returns\(address\)
 
 <a name="BindingCaller.Royalty"></a>
-### func \(\*BindingCaller\) [Royalty](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L681>)
+### func \(\*BindingCaller\) [Royalty](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L681>)
 
 ```go
 func (_Binding *BindingCaller) Royalty(opts *bind.CallOpts) (*big.Int, error)
@@ -707,7 +707,7 @@ Royalty is a free data retrieval call binding the contract method 0x29ee566c.
 Solidity: function royalty\(\) view returns\(uint256\)
 
 <a name="BindingCaller.RoyaltyInfo"></a>
-### func \(\*BindingCaller\) [RoyaltyInfo](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L712>)
+### func \(\*BindingCaller\) [RoyaltyInfo](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L712>)
 
 ```go
 func (_Binding *BindingCaller) RoyaltyInfo(opts *bind.CallOpts, tokenId *big.Int, salePrice *big.Int) (common.Address, *big.Int, error)
@@ -718,7 +718,7 @@ RoyaltyInfo is a free data retrieval call binding the contract method 0x2a55205a
 Solidity: function royaltyInfo\(uint256 tokenId, uint256 salePrice\) view returns\(address, uint256\)
 
 <a name="BindingCaller.Size"></a>
-### func \(\*BindingCaller\) [Size](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L744>)
+### func \(\*BindingCaller\) [Size](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L744>)
 
 ```go
 func (_Binding *BindingCaller) Size(opts *bind.CallOpts) (*big.Int, error)
@@ -729,7 +729,7 @@ Size is a free data retrieval call binding the contract method 0x949d225d.
 Solidity: function size\(\) view returns\(uint256\)
 
 <a name="BindingCaller.SupportsInterface"></a>
-### func \(\*BindingCaller\) [SupportsInterface](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L775>)
+### func \(\*BindingCaller\) [SupportsInterface](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L775>)
 
 ```go
 func (_Binding *BindingCaller) SupportsInterface(opts *bind.CallOpts, interfaceId [4]byte) (bool, error)
@@ -740,7 +740,7 @@ SupportsInterface is a free data retrieval call binding the contract method 0x01
 Solidity: function supportsInterface\(bytes4 interfaceId\) view returns\(bool\)
 
 <a name="BindingCaller.Symbol"></a>
-### func \(\*BindingCaller\) [Symbol](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L806>)
+### func \(\*BindingCaller\) [Symbol](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L806>)
 
 ```go
 func (_Binding *BindingCaller) Symbol(opts *bind.CallOpts) (string, error)
@@ -751,7 +751,7 @@ Symbol is a free data retrieval call binding the contract method 0x95d89b41.
 Solidity: function symbol\(\) view returns\(string\)
 
 <a name="BindingCaller.Token"></a>
-### func \(\*BindingCaller\) [Token](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L837>)
+### func \(\*BindingCaller\) [Token](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L837>)
 
 ```go
 func (_Binding *BindingCaller) Token(opts *bind.CallOpts) (common.Address, error)
@@ -762,7 +762,7 @@ Token is a free data retrieval call binding the contract method 0xfc0c546a.
 Solidity: function token\(\) view returns\(address\)
 
 <a name="BindingCaller.TokenURI"></a>
-### func \(\*BindingCaller\) [TokenURI](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L868>)
+### func \(\*BindingCaller\) [TokenURI](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L868>)
 
 ```go
 func (_Binding *BindingCaller) TokenURI(opts *bind.CallOpts, tokenId *big.Int) (string, error)
@@ -773,7 +773,7 @@ TokenURI is a free data retrieval call binding the contract method 0xc87b56dd.
 Solidity: function tokenURI\(uint256 tokenId\) view returns\(string\)
 
 <a name="BindingCaller.TokenURIFallback"></a>
-### func \(\*BindingCaller\) [TokenURIFallback](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L899>)
+### func \(\*BindingCaller\) [TokenURIFallback](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L899>)
 
 ```go
 func (_Binding *BindingCaller) TokenURIFallback(opts *bind.CallOpts, tokenId *big.Int) (string, error)
@@ -784,7 +784,7 @@ TokenURIFallback is a free data retrieval call binding the contract method 0xc7c
 Solidity: function tokenURIFallback\(uint256 tokenId\) view returns\(string\)
 
 <a name="BindingCaller.Total"></a>
-### func \(\*BindingCaller\) [Total](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L930>)
+### func \(\*BindingCaller\) [Total](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L930>)
 
 ```go
 func (_Binding *BindingCaller) Total(opts *bind.CallOpts) (*big.Int, error)
@@ -795,7 +795,7 @@ Total is a free data retrieval call binding the contract method 0x2ddbd13a.
 Solidity: function total\(\) view returns\(uint256\)
 
 <a name="BindingCaller.Uri"></a>
-### func \(\*BindingCaller\) [Uri](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L961>)
+### func \(\*BindingCaller\) [Uri](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L961>)
 
 ```go
 func (_Binding *BindingCaller) Uri(opts *bind.CallOpts) (string, error)
@@ -806,7 +806,7 @@ Uri is a free data retrieval call binding the contract method 0xeac989f8.
 Solidity: function uri\(\) view returns\(string\)
 
 <a name="BindingCaller.UriFallback"></a>
-### func \(\*BindingCaller\) [UriFallback](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L992>)
+### func \(\*BindingCaller\) [UriFallback](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L992>)
 
 ```go
 func (_Binding *BindingCaller) UriFallback(opts *bind.CallOpts) (string, error)
@@ -817,7 +817,7 @@ UriFallback is a free data retrieval call binding the contract method 0x6dd8e21a
 Solidity: function uriFallback\(\) view returns\(string\)
 
 <a name="BindingCallerRaw"></a>
-## type [BindingCallerRaw](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L90-L92>)
+## type [BindingCallerRaw](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L90-L92>)
 
 BindingCallerRaw is an auto generated low\-level read\-only Go binding around an Ethereum contract.
 
@@ -828,7 +828,7 @@ type BindingCallerRaw struct {
 ```
 
 <a name="BindingCallerRaw.Call"></a>
-### func \(\*BindingCallerRaw\) [Call](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L167>)
+### func \(\*BindingCallerRaw\) [Call](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L167>)
 
 ```go
 func (_Binding *BindingCallerRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error
@@ -837,7 +837,7 @@ func (_Binding *BindingCallerRaw) Call(opts *bind.CallOpts, result *[]interface{
 Call invokes the \(constant\) contract method with params as input values and sets the output to result. The result type might be a single field for simple returns, a slice of interfaces for anonymous returns and a struct for named returns.
 
 <a name="BindingCallerSession"></a>
-## type [BindingCallerSession](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L72-L75>)
+## type [BindingCallerSession](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L72-L75>)
 
 BindingCallerSession is an auto generated read\-only Go binding around an Ethereum contract, with pre\-set call options.
 
@@ -849,7 +849,7 @@ type BindingCallerSession struct {
 ```
 
 <a name="BindingCallerSession.Allocation"></a>
-### func \(\*BindingCallerSession\) [Allocation](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L209>)
+### func \(\*BindingCallerSession\) [Allocation](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L209>)
 
 ```go
 func (_Binding *BindingCallerSession) Allocation() (string, error)
@@ -860,7 +860,7 @@ Allocation is a free data retrieval call binding the contract method 0x88a17bde.
 Solidity: function allocation\(\) view returns\(string\)
 
 <a name="BindingCallerSession.BalanceOf"></a>
-### func \(\*BindingCallerSession\) [BalanceOf](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L240>)
+### func \(\*BindingCallerSession\) [BalanceOf](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L240>)
 
 ```go
 func (_Binding *BindingCallerSession) BalanceOf(owner common.Address) (*big.Int, error)
@@ -871,7 +871,7 @@ BalanceOf is a free data retrieval call binding the contract method 0x70a08231.
 Solidity: function balanceOf\(address owner\) view returns\(uint256\)
 
 <a name="BindingCallerSession.Batch"></a>
-### func \(\*BindingCallerSession\) [Batch](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L271>)
+### func \(\*BindingCallerSession\) [Batch](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L271>)
 
 ```go
 func (_Binding *BindingCallerSession) Batch() (*big.Int, error)
@@ -882,7 +882,7 @@ Batch is a free data retrieval call binding the contract method 0xaf713566.
 Solidity: function batch\(\) view returns\(uint256\)
 
 <a name="BindingCallerSession.Closed"></a>
-### func \(\*BindingCallerSession\) [Closed](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L302>)
+### func \(\*BindingCallerSession\) [Closed](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L302>)
 
 ```go
 func (_Binding *BindingCallerSession) Closed() (string, error)
@@ -893,7 +893,7 @@ Closed is a free data retrieval call binding the contract method 0x597e1fb5.
 Solidity: function closed\(\) view returns\(string\)
 
 <a name="BindingCallerSession.Contents"></a>
-### func \(\*BindingCallerSession\) [Contents](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L333>)
+### func \(\*BindingCallerSession\) [Contents](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L333>)
 
 ```go
 func (_Binding *BindingCallerSession) Contents(arg0 *big.Int) (*big.Int, error)
@@ -904,7 +904,7 @@ Contents is a free data retrieval call binding the contract method 0xb5ecf912.
 Solidity: function contents\(uint256 \) view returns\(uint256\)
 
 <a name="BindingCallerSession.Frozen"></a>
-### func \(\*BindingCallerSession\) [Frozen](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L364>)
+### func \(\*BindingCallerSession\) [Frozen](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L364>)
 
 ```go
 func (_Binding *BindingCallerSession) Frozen() (bool, error)
@@ -915,7 +915,7 @@ Frozen is a free data retrieval call binding the contract method 0x054f7d9c.
 Solidity: function frozen\(\) view returns\(bool\)
 
 <a name="BindingCallerSession.GetApproved"></a>
-### func \(\*BindingCallerSession\) [GetApproved](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L395>)
+### func \(\*BindingCallerSession\) [GetApproved](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L395>)
 
 ```go
 func (_Binding *BindingCallerSession) GetApproved(tokenId *big.Int) (common.Address, error)
@@ -926,7 +926,7 @@ GetApproved is a free data retrieval call binding the contract method 0x081812fc
 Solidity: function getApproved\(uint256 tokenId\) view returns\(address\)
 
 <a name="BindingCallerSession.IsApprovedForAll"></a>
-### func \(\*BindingCallerSession\) [IsApprovedForAll](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L426>)
+### func \(\*BindingCallerSession\) [IsApprovedForAll](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L426>)
 
 ```go
 func (_Binding *BindingCallerSession) IsApprovedForAll(owner common.Address, operator common.Address) (bool, error)
@@ -937,7 +937,7 @@ IsApprovedForAll is a free data retrieval call binding the contract method 0xe98
 Solidity: function isApprovedForAll\(address owner, address operator\) view returns\(bool\)
 
 <a name="BindingCallerSession.Max"></a>
-### func \(\*BindingCallerSession\) [Max](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L457>)
+### func \(\*BindingCallerSession\) [Max](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L457>)
 
 ```go
 func (_Binding *BindingCallerSession) Max() (*big.Int, error)
@@ -948,7 +948,7 @@ Max is a free data retrieval call binding the contract method 0x6ac5db19.
 Solidity: function max\(\) view returns\(uint256\)
 
 <a name="BindingCallerSession.Mintable"></a>
-### func \(\*BindingCallerSession\) [Mintable](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L488>)
+### func \(\*BindingCallerSession\) [Mintable](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L488>)
 
 ```go
 func (_Binding *BindingCallerSession) Mintable() (bool, error)
@@ -959,7 +959,7 @@ Mintable is a free data retrieval call binding the contract method 0x4bf365df.
 Solidity: function mintable\(\) view returns\(bool\)
 
 <a name="BindingCallerSession.Name"></a>
-### func \(\*BindingCallerSession\) [Name](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L519>)
+### func \(\*BindingCallerSession\) [Name](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L519>)
 
 ```go
 func (_Binding *BindingCallerSession) Name() (string, error)
@@ -970,7 +970,7 @@ Name is a free data retrieval call binding the contract method 0x06fdde03.
 Solidity: function name\(\) view returns\(string\)
 
 <a name="BindingCallerSession.Opened"></a>
-### func \(\*BindingCallerSession\) [Opened](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L550>)
+### func \(\*BindingCallerSession\) [Opened](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L550>)
 
 ```go
 func (_Binding *BindingCallerSession) Opened() (string, error)
@@ -981,7 +981,7 @@ Opened is a free data retrieval call binding the contract method 0x5f88eade.
 Solidity: function opened\(\) view returns\(string\)
 
 <a name="BindingCallerSession.Owner"></a>
-### func \(\*BindingCallerSession\) [Owner](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L581>)
+### func \(\*BindingCallerSession\) [Owner](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L581>)
 
 ```go
 func (_Binding *BindingCallerSession) Owner() (common.Address, error)
@@ -992,7 +992,7 @@ Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
 Solidity: function owner\(\) view returns\(address\)
 
 <a name="BindingCallerSession.OwnerOf"></a>
-### func \(\*BindingCallerSession\) [OwnerOf](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L612>)
+### func \(\*BindingCallerSession\) [OwnerOf](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L612>)
 
 ```go
 func (_Binding *BindingCallerSession) OwnerOf(tokenId *big.Int) (common.Address, error)
@@ -1003,7 +1003,7 @@ OwnerOf is a free data retrieval call binding the contract method 0x6352211e.
 Solidity: function ownerOf\(uint256 tokenId\) view returns\(address\)
 
 <a name="BindingCallerSession.Price"></a>
-### func \(\*BindingCallerSession\) [Price](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L643>)
+### func \(\*BindingCallerSession\) [Price](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L643>)
 
 ```go
 func (_Binding *BindingCallerSession) Price() (*big.Int, error)
@@ -1014,7 +1014,7 @@ Price is a free data retrieval call binding the contract method 0xa035b1fe.
 Solidity: function price\(\) view returns\(uint256\)
 
 <a name="BindingCallerSession.Receiver"></a>
-### func \(\*BindingCallerSession\) [Receiver](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L674>)
+### func \(\*BindingCallerSession\) [Receiver](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L674>)
 
 ```go
 func (_Binding *BindingCallerSession) Receiver() (common.Address, error)
@@ -1025,7 +1025,7 @@ Receiver is a free data retrieval call binding the contract method 0xf7260d3e.
 Solidity: function receiver\(\) view returns\(address\)
 
 <a name="BindingCallerSession.Royalty"></a>
-### func \(\*BindingCallerSession\) [Royalty](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L705>)
+### func \(\*BindingCallerSession\) [Royalty](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L705>)
 
 ```go
 func (_Binding *BindingCallerSession) Royalty() (*big.Int, error)
@@ -1036,7 +1036,7 @@ Royalty is a free data retrieval call binding the contract method 0x29ee566c.
 Solidity: function royalty\(\) view returns\(uint256\)
 
 <a name="BindingCallerSession.RoyaltyInfo"></a>
-### func \(\*BindingCallerSession\) [RoyaltyInfo](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L737>)
+### func \(\*BindingCallerSession\) [RoyaltyInfo](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L737>)
 
 ```go
 func (_Binding *BindingCallerSession) RoyaltyInfo(tokenId *big.Int, salePrice *big.Int) (common.Address, *big.Int, error)
@@ -1047,7 +1047,7 @@ RoyaltyInfo is a free data retrieval call binding the contract method 0x2a55205a
 Solidity: function royaltyInfo\(uint256 tokenId, uint256 salePrice\) view returns\(address, uint256\)
 
 <a name="BindingCallerSession.Size"></a>
-### func \(\*BindingCallerSession\) [Size](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L768>)
+### func \(\*BindingCallerSession\) [Size](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L768>)
 
 ```go
 func (_Binding *BindingCallerSession) Size() (*big.Int, error)
@@ -1058,7 +1058,7 @@ Size is a free data retrieval call binding the contract method 0x949d225d.
 Solidity: function size\(\) view returns\(uint256\)
 
 <a name="BindingCallerSession.SupportsInterface"></a>
-### func \(\*BindingCallerSession\) [SupportsInterface](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L799>)
+### func \(\*BindingCallerSession\) [SupportsInterface](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L799>)
 
 ```go
 func (_Binding *BindingCallerSession) SupportsInterface(interfaceId [4]byte) (bool, error)
@@ -1069,7 +1069,7 @@ SupportsInterface is a free data retrieval call binding the contract method 0x01
 Solidity: function supportsInterface\(bytes4 interfaceId\) view returns\(bool\)
 
 <a name="BindingCallerSession.Symbol"></a>
-### func \(\*BindingCallerSession\) [Symbol](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L830>)
+### func \(\*BindingCallerSession\) [Symbol](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L830>)
 
 ```go
 func (_Binding *BindingCallerSession) Symbol() (string, error)
@@ -1080,7 +1080,7 @@ Symbol is a free data retrieval call binding the contract method 0x95d89b41.
 Solidity: function symbol\(\) view returns\(string\)
 
 <a name="BindingCallerSession.Token"></a>
-### func \(\*BindingCallerSession\) [Token](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L861>)
+### func \(\*BindingCallerSession\) [Token](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L861>)
 
 ```go
 func (_Binding *BindingCallerSession) Token() (common.Address, error)
@@ -1091,7 +1091,7 @@ Token is a free data retrieval call binding the contract method 0xfc0c546a.
 Solidity: function token\(\) view returns\(address\)
 
 <a name="BindingCallerSession.TokenURI"></a>
-### func \(\*BindingCallerSession\) [TokenURI](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L892>)
+### func \(\*BindingCallerSession\) [TokenURI](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L892>)
 
 ```go
 func (_Binding *BindingCallerSession) TokenURI(tokenId *big.Int) (string, error)
@@ -1102,7 +1102,7 @@ TokenURI is a free data retrieval call binding the contract method 0xc87b56dd.
 Solidity: function tokenURI\(uint256 tokenId\) view returns\(string\)
 
 <a name="BindingCallerSession.TokenURIFallback"></a>
-### func \(\*BindingCallerSession\) [TokenURIFallback](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L923>)
+### func \(\*BindingCallerSession\) [TokenURIFallback](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L923>)
 
 ```go
 func (_Binding *BindingCallerSession) TokenURIFallback(tokenId *big.Int) (string, error)
@@ -1113,7 +1113,7 @@ TokenURIFallback is a free data retrieval call binding the contract method 0xc7c
 Solidity: function tokenURIFallback\(uint256 tokenId\) view returns\(string\)
 
 <a name="BindingCallerSession.Total"></a>
-### func \(\*BindingCallerSession\) [Total](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L954>)
+### func \(\*BindingCallerSession\) [Total](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L954>)
 
 ```go
 func (_Binding *BindingCallerSession) Total() (*big.Int, error)
@@ -1124,7 +1124,7 @@ Total is a free data retrieval call binding the contract method 0x2ddbd13a.
 Solidity: function total\(\) view returns\(uint256\)
 
 <a name="BindingCallerSession.Uri"></a>
-### func \(\*BindingCallerSession\) [Uri](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L985>)
+### func \(\*BindingCallerSession\) [Uri](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L985>)
 
 ```go
 func (_Binding *BindingCallerSession) Uri() (string, error)
@@ -1135,7 +1135,7 @@ Uri is a free data retrieval call binding the contract method 0xeac989f8.
 Solidity: function uri\(\) view returns\(string\)
 
 <a name="BindingCallerSession.UriFallback"></a>
-### func \(\*BindingCallerSession\) [UriFallback](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1016>)
+### func \(\*BindingCallerSession\) [UriFallback](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1016>)
 
 ```go
 func (_Binding *BindingCallerSession) UriFallback() (string, error)
@@ -1146,7 +1146,7 @@ UriFallback is a free data retrieval call binding the contract method 0x6dd8e21a
 Solidity: function uriFallback\(\) view returns\(string\)
 
 <a name="BindingClosedUpdated"></a>
-## type [BindingClosedUpdated](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1980-L1984>)
+## type [BindingClosedUpdated](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1980-L1984>)
 
 BindingClosedUpdated represents a ClosedUpdated event raised by the Binding contract.
 
@@ -1159,7 +1159,7 @@ type BindingClosedUpdated struct {
 ```
 
 <a name="BindingClosedUpdatedIterator"></a>
-## type [BindingClosedUpdatedIterator](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1913-L1923>)
+## type [BindingClosedUpdatedIterator](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1913-L1923>)
 
 BindingClosedUpdatedIterator is returned from FilterClosedUpdated and is used to iterate over the raw logs and unpacked data for ClosedUpdated events raised by the Binding contract.
 
@@ -1171,7 +1171,7 @@ type BindingClosedUpdatedIterator struct {
 ```
 
 <a name="BindingClosedUpdatedIterator.Close"></a>
-### func \(\*BindingClosedUpdatedIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1974>)
+### func \(\*BindingClosedUpdatedIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1974>)
 
 ```go
 func (it *BindingClosedUpdatedIterator) Close() error
@@ -1180,7 +1180,7 @@ func (it *BindingClosedUpdatedIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="BindingClosedUpdatedIterator.Error"></a>
-### func \(\*BindingClosedUpdatedIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1968>)
+### func \(\*BindingClosedUpdatedIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1968>)
 
 ```go
 func (it *BindingClosedUpdatedIterator) Error() error
@@ -1189,7 +1189,7 @@ func (it *BindingClosedUpdatedIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="BindingClosedUpdatedIterator.Next"></a>
-### func \(\*BindingClosedUpdatedIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1928>)
+### func \(\*BindingClosedUpdatedIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1928>)
 
 ```go
 func (it *BindingClosedUpdatedIterator) Next() bool
@@ -1198,7 +1198,7 @@ func (it *BindingClosedUpdatedIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="BindingFilterer"></a>
-## type [BindingFilterer](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L58-L60>)
+## type [BindingFilterer](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L58-L60>)
 
 BindingFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
 
@@ -1209,7 +1209,7 @@ type BindingFilterer struct {
 ```
 
 <a name="NewBindingFilterer"></a>
-### func [NewBindingFilterer](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L127>)
+### func [NewBindingFilterer](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L127>)
 
 ```go
 func NewBindingFilterer(address common.Address, filterer bind.ContractFilterer) (*BindingFilterer, error)
@@ -1218,7 +1218,7 @@ func NewBindingFilterer(address common.Address, filterer bind.ContractFilterer) 
 NewBindingFilterer creates a new log filterer instance of Binding, bound to a specific deployed contract.
 
 <a name="BindingFilterer.FilterApproval"></a>
-### func \(\*BindingFilterer\) [FilterApproval](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1539>)
+### func \(\*BindingFilterer\) [FilterApproval](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1539>)
 
 ```go
 func (_Binding *BindingFilterer) FilterApproval(opts *bind.FilterOpts, owner []common.Address, approved []common.Address, tokenId []*big.Int) (*BindingApprovalIterator, error)
@@ -1229,7 +1229,7 @@ FilterApproval is a free log retrieval operation binding the contract event 0x8c
 Solidity: event Approval\(address indexed owner, address indexed approved, uint256 indexed tokenId\)
 
 <a name="BindingFilterer.FilterApprovalForAll"></a>
-### func \(\*BindingFilterer\) [FilterApprovalForAll](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1701>)
+### func \(\*BindingFilterer\) [FilterApprovalForAll](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1701>)
 
 ```go
 func (_Binding *BindingFilterer) FilterApprovalForAll(opts *bind.FilterOpts, owner []common.Address, operator []common.Address) (*BindingApprovalForAllIterator, error)
@@ -1240,7 +1240,7 @@ FilterApprovalForAll is a free log retrieval operation binding the contract even
 Solidity: event ApprovalForAll\(address indexed owner, address indexed operator, bool approved\)
 
 <a name="BindingFilterer.FilterBatchUpdated"></a>
-### func \(\*BindingFilterer\) [FilterBatchUpdated](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1854>)
+### func \(\*BindingFilterer\) [FilterBatchUpdated](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1854>)
 
 ```go
 func (_Binding *BindingFilterer) FilterBatchUpdated(opts *bind.FilterOpts) (*BindingBatchUpdatedIterator, error)
@@ -1251,7 +1251,7 @@ FilterBatchUpdated is a free log retrieval operation binding the contract event 
 Solidity: event BatchUpdated\(uint256 previous, uint256 updated\)
 
 <a name="BindingFilterer.FilterClosedUpdated"></a>
-### func \(\*BindingFilterer\) [FilterClosedUpdated](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1989>)
+### func \(\*BindingFilterer\) [FilterClosedUpdated](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1989>)
 
 ```go
 func (_Binding *BindingFilterer) FilterClosedUpdated(opts *bind.FilterOpts) (*BindingClosedUpdatedIterator, error)
@@ -1262,7 +1262,7 @@ FilterClosedUpdated is a free log retrieval operation binding the contract event
 Solidity: event ClosedUpdated\(string previous, string updated\)
 
 <a name="BindingFilterer.FilterMetadataFrozen"></a>
-### func \(\*BindingFilterer\) [FilterMetadataFrozen](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2123>)
+### func \(\*BindingFilterer\) [FilterMetadataFrozen](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2123>)
 
 ```go
 func (_Binding *BindingFilterer) FilterMetadataFrozen(opts *bind.FilterOpts) (*BindingMetadataFrozenIterator, error)
@@ -1273,7 +1273,7 @@ FilterMetadataFrozen is a free log retrieval operation binding the contract even
 Solidity: event MetadataFrozen\(string uri\)
 
 <a name="BindingFilterer.FilterMintableUpdated"></a>
-### func \(\*BindingFilterer\) [FilterMintableUpdated](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2258>)
+### func \(\*BindingFilterer\) [FilterMintableUpdated](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2258>)
 
 ```go
 func (_Binding *BindingFilterer) FilterMintableUpdated(opts *bind.FilterOpts) (*BindingMintableUpdatedIterator, error)
@@ -1284,7 +1284,7 @@ FilterMintableUpdated is a free log retrieval operation binding the contract eve
 Solidity: event MintableUpdated\(bool previous, bool updated\)
 
 <a name="BindingFilterer.FilterOpenedUpdated"></a>
-### func \(\*BindingFilterer\) [FilterOpenedUpdated](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2393>)
+### func \(\*BindingFilterer\) [FilterOpenedUpdated](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2393>)
 
 ```go
 func (_Binding *BindingFilterer) FilterOpenedUpdated(opts *bind.FilterOpts) (*BindingOpenedUpdatedIterator, error)
@@ -1295,7 +1295,7 @@ FilterOpenedUpdated is a free log retrieval operation binding the contract event
 Solidity: event OpenedUpdated\(string previous, string updated\)
 
 <a name="BindingFilterer.FilterOwnershipTransferred"></a>
-### func \(\*BindingFilterer\) [FilterOwnershipTransferred](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2528>)
+### func \(\*BindingFilterer\) [FilterOwnershipTransferred](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2528>)
 
 ```go
 func (_Binding *BindingFilterer) FilterOwnershipTransferred(opts *bind.FilterOpts, previousOwner []common.Address, newOwner []common.Address) (*BindingOwnershipTransferredIterator, error)
@@ -1306,7 +1306,7 @@ FilterOwnershipTransferred is a free log retrieval operation binding the contrac
 Solidity: event OwnershipTransferred\(address indexed previousOwner, address indexed newOwner\)
 
 <a name="BindingFilterer.FilterPackOpened"></a>
-### func \(\*BindingFilterer\) [FilterPackOpened](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2682>)
+### func \(\*BindingFilterer\) [FilterPackOpened](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2682>)
 
 ```go
 func (_Binding *BindingFilterer) FilterPackOpened(opts *bind.FilterOpts, user []common.Address) (*BindingPackOpenedIterator, error)
@@ -1317,7 +1317,7 @@ FilterPackOpened is a free log retrieval operation binding the contract event 0x
 Solidity: event PackOpened\(address indexed user, bytes32 requestId, uint256 tokenId\)
 
 <a name="BindingFilterer.FilterPackRedeemed"></a>
-### func \(\*BindingFilterer\) [FilterPackRedeemed](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2828>)
+### func \(\*BindingFilterer\) [FilterPackRedeemed](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2828>)
 
 ```go
 func (_Binding *BindingFilterer) FilterPackRedeemed(opts *bind.FilterOpts, user []common.Address) (*BindingPackRedeemedIterator, error)
@@ -1328,7 +1328,7 @@ FilterPackRedeemed is a free log retrieval operation binding the contract event 
 Solidity: event PackRedeemed\(address indexed user, uint256 tokenId, uint256 content\)
 
 <a name="BindingFilterer.FilterPriceUpdated"></a>
-### func \(\*BindingFilterer\) [FilterPriceUpdated](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2973>)
+### func \(\*BindingFilterer\) [FilterPriceUpdated](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2973>)
 
 ```go
 func (_Binding *BindingFilterer) FilterPriceUpdated(opts *bind.FilterOpts) (*BindingPriceUpdatedIterator, error)
@@ -1339,7 +1339,7 @@ FilterPriceUpdated is a free log retrieval operation binding the contract event 
 Solidity: event PriceUpdated\(uint256 previous, uint256 updated\)
 
 <a name="BindingFilterer.FilterReceiverUpdated"></a>
-### func \(\*BindingFilterer\) [FilterReceiverUpdated](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3108>)
+### func \(\*BindingFilterer\) [FilterReceiverUpdated](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3108>)
 
 ```go
 func (_Binding *BindingFilterer) FilterReceiverUpdated(opts *bind.FilterOpts) (*BindingReceiverUpdatedIterator, error)
@@ -1350,7 +1350,7 @@ FilterReceiverUpdated is a free log retrieval operation binding the contract eve
 Solidity: event ReceiverUpdated\(address previous, address updated\)
 
 <a name="BindingFilterer.FilterRoyaltyUpdated"></a>
-### func \(\*BindingFilterer\) [FilterRoyaltyUpdated](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3243>)
+### func \(\*BindingFilterer\) [FilterRoyaltyUpdated](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3243>)
 
 ```go
 func (_Binding *BindingFilterer) FilterRoyaltyUpdated(opts *bind.FilterOpts) (*BindingRoyaltyUpdatedIterator, error)
@@ -1361,7 +1361,7 @@ FilterRoyaltyUpdated is a free log retrieval operation binding the contract even
 Solidity: event RoyaltyUpdated\(uint256 previous, uint256 updated\)
 
 <a name="BindingFilterer.FilterTransfer"></a>
-### func \(\*BindingFilterer\) [FilterTransfer](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3379>)
+### func \(\*BindingFilterer\) [FilterTransfer](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3379>)
 
 ```go
 func (_Binding *BindingFilterer) FilterTransfer(opts *bind.FilterOpts, from []common.Address, to []common.Address, tokenId []*big.Int) (*BindingTransferIterator, error)
@@ -1372,7 +1372,7 @@ FilterTransfer is a free log retrieval operation binding the contract event 0xdd
 Solidity: event Transfer\(address indexed from, address indexed to, uint256 indexed tokenId\)
 
 <a name="BindingFilterer.FilterUriFallbackUpdated"></a>
-### func \(\*BindingFilterer\) [FilterUriFallbackUpdated](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3540>)
+### func \(\*BindingFilterer\) [FilterUriFallbackUpdated](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3540>)
 
 ```go
 func (_Binding *BindingFilterer) FilterUriFallbackUpdated(opts *bind.FilterOpts) (*BindingUriFallbackUpdatedIterator, error)
@@ -1383,7 +1383,7 @@ FilterUriFallbackUpdated is a free log retrieval operation binding the contract 
 Solidity: event UriFallbackUpdated\(string previous, string updated\)
 
 <a name="BindingFilterer.FilterUriUpdated"></a>
-### func \(\*BindingFilterer\) [FilterUriUpdated](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3675>)
+### func \(\*BindingFilterer\) [FilterUriUpdated](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3675>)
 
 ```go
 func (_Binding *BindingFilterer) FilterUriUpdated(opts *bind.FilterOpts) (*BindingUriUpdatedIterator, error)
@@ -1394,7 +1394,7 @@ FilterUriUpdated is a free log retrieval operation binding the contract event 0x
 Solidity: event UriUpdated\(string previous, string updated\)
 
 <a name="BindingFilterer.ParseApproval"></a>
-### func \(\*BindingFilterer\) [ParseApproval](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1614>)
+### func \(\*BindingFilterer\) [ParseApproval](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1614>)
 
 ```go
 func (_Binding *BindingFilterer) ParseApproval(log types.Log) (*BindingApproval, error)
@@ -1405,7 +1405,7 @@ ParseApproval is a log parse operation binding the contract event 0x8c5be1e5ebec
 Solidity: event Approval\(address indexed owner, address indexed approved, uint256 indexed tokenId\)
 
 <a name="BindingFilterer.ParseApprovalForAll"></a>
-### func \(\*BindingFilterer\) [ParseApprovalForAll](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1768>)
+### func \(\*BindingFilterer\) [ParseApprovalForAll](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1768>)
 
 ```go
 func (_Binding *BindingFilterer) ParseApprovalForAll(log types.Log) (*BindingApprovalForAll, error)
@@ -1416,7 +1416,7 @@ ParseApprovalForAll is a log parse operation binding the contract event 0x17307e
 Solidity: event ApprovalForAll\(address indexed owner, address indexed operator, bool approved\)
 
 <a name="BindingFilterer.ParseBatchUpdated"></a>
-### func \(\*BindingFilterer\) [ParseBatchUpdated](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1903>)
+### func \(\*BindingFilterer\) [ParseBatchUpdated](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1903>)
 
 ```go
 func (_Binding *BindingFilterer) ParseBatchUpdated(log types.Log) (*BindingBatchUpdated, error)
@@ -1427,7 +1427,7 @@ ParseBatchUpdated is a log parse operation binding the contract event 0x656359bd
 Solidity: event BatchUpdated\(uint256 previous, uint256 updated\)
 
 <a name="BindingFilterer.ParseClosedUpdated"></a>
-### func \(\*BindingFilterer\) [ParseClosedUpdated](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2038>)
+### func \(\*BindingFilterer\) [ParseClosedUpdated](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2038>)
 
 ```go
 func (_Binding *BindingFilterer) ParseClosedUpdated(log types.Log) (*BindingClosedUpdated, error)
@@ -1438,7 +1438,7 @@ ParseClosedUpdated is a log parse operation binding the contract event 0xe522ca0
 Solidity: event ClosedUpdated\(string previous, string updated\)
 
 <a name="BindingFilterer.ParseMetadataFrozen"></a>
-### func \(\*BindingFilterer\) [ParseMetadataFrozen](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2172>)
+### func \(\*BindingFilterer\) [ParseMetadataFrozen](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2172>)
 
 ```go
 func (_Binding *BindingFilterer) ParseMetadataFrozen(log types.Log) (*BindingMetadataFrozen, error)
@@ -1449,7 +1449,7 @@ ParseMetadataFrozen is a log parse operation binding the contract event 0xac3232
 Solidity: event MetadataFrozen\(string uri\)
 
 <a name="BindingFilterer.ParseMintableUpdated"></a>
-### func \(\*BindingFilterer\) [ParseMintableUpdated](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2307>)
+### func \(\*BindingFilterer\) [ParseMintableUpdated](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2307>)
 
 ```go
 func (_Binding *BindingFilterer) ParseMintableUpdated(log types.Log) (*BindingMintableUpdated, error)
@@ -1460,7 +1460,7 @@ ParseMintableUpdated is a log parse operation binding the contract event 0x8d938
 Solidity: event MintableUpdated\(bool previous, bool updated\)
 
 <a name="BindingFilterer.ParseOpenedUpdated"></a>
-### func \(\*BindingFilterer\) [ParseOpenedUpdated](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2442>)
+### func \(\*BindingFilterer\) [ParseOpenedUpdated](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2442>)
 
 ```go
 func (_Binding *BindingFilterer) ParseOpenedUpdated(log types.Log) (*BindingOpenedUpdated, error)
@@ -1471,7 +1471,7 @@ ParseOpenedUpdated is a log parse operation binding the contract event 0x26d3ff7
 Solidity: event OpenedUpdated\(string previous, string updated\)
 
 <a name="BindingFilterer.ParseOwnershipTransferred"></a>
-### func \(\*BindingFilterer\) [ParseOwnershipTransferred](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2595>)
+### func \(\*BindingFilterer\) [ParseOwnershipTransferred](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2595>)
 
 ```go
 func (_Binding *BindingFilterer) ParseOwnershipTransferred(log types.Log) (*BindingOwnershipTransferred, error)
@@ -1482,7 +1482,7 @@ ParseOwnershipTransferred is a log parse operation binding the contract event 0x
 Solidity: event OwnershipTransferred\(address indexed previousOwner, address indexed newOwner\)
 
 <a name="BindingFilterer.ParsePackOpened"></a>
-### func \(\*BindingFilterer\) [ParsePackOpened](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2741>)
+### func \(\*BindingFilterer\) [ParsePackOpened](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2741>)
 
 ```go
 func (_Binding *BindingFilterer) ParsePackOpened(log types.Log) (*BindingPackOpened, error)
@@ -1493,7 +1493,7 @@ ParsePackOpened is a log parse operation binding the contract event 0x5b8ff795b3
 Solidity: event PackOpened\(address indexed user, bytes32 requestId, uint256 tokenId\)
 
 <a name="BindingFilterer.ParsePackRedeemed"></a>
-### func \(\*BindingFilterer\) [ParsePackRedeemed](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2887>)
+### func \(\*BindingFilterer\) [ParsePackRedeemed](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2887>)
 
 ```go
 func (_Binding *BindingFilterer) ParsePackRedeemed(log types.Log) (*BindingPackRedeemed, error)
@@ -1504,7 +1504,7 @@ ParsePackRedeemed is a log parse operation binding the contract event 0x3bfe8a64
 Solidity: event PackRedeemed\(address indexed user, uint256 tokenId, uint256 content\)
 
 <a name="BindingFilterer.ParsePriceUpdated"></a>
-### func \(\*BindingFilterer\) [ParsePriceUpdated](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3022>)
+### func \(\*BindingFilterer\) [ParsePriceUpdated](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3022>)
 
 ```go
 func (_Binding *BindingFilterer) ParsePriceUpdated(log types.Log) (*BindingPriceUpdated, error)
@@ -1515,7 +1515,7 @@ ParsePriceUpdated is a log parse operation binding the contract event 0x945c1c4e
 Solidity: event PriceUpdated\(uint256 previous, uint256 updated\)
 
 <a name="BindingFilterer.ParseReceiverUpdated"></a>
-### func \(\*BindingFilterer\) [ParseReceiverUpdated](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3157>)
+### func \(\*BindingFilterer\) [ParseReceiverUpdated](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3157>)
 
 ```go
 func (_Binding *BindingFilterer) ParseReceiverUpdated(log types.Log) (*BindingReceiverUpdated, error)
@@ -1526,7 +1526,7 @@ ParseReceiverUpdated is a log parse operation binding the contract event 0xbda2b
 Solidity: event ReceiverUpdated\(address previous, address updated\)
 
 <a name="BindingFilterer.ParseRoyaltyUpdated"></a>
-### func \(\*BindingFilterer\) [ParseRoyaltyUpdated](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3292>)
+### func \(\*BindingFilterer\) [ParseRoyaltyUpdated](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3292>)
 
 ```go
 func (_Binding *BindingFilterer) ParseRoyaltyUpdated(log types.Log) (*BindingRoyaltyUpdated, error)
@@ -1537,7 +1537,7 @@ ParseRoyaltyUpdated is a log parse operation binding the contract event 0x54e506
 Solidity: event RoyaltyUpdated\(uint256 previous, uint256 updated\)
 
 <a name="BindingFilterer.ParseTransfer"></a>
-### func \(\*BindingFilterer\) [ParseTransfer](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3454>)
+### func \(\*BindingFilterer\) [ParseTransfer](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3454>)
 
 ```go
 func (_Binding *BindingFilterer) ParseTransfer(log types.Log) (*BindingTransfer, error)
@@ -1548,7 +1548,7 @@ ParseTransfer is a log parse operation binding the contract event 0xddf252ad1be2
 Solidity: event Transfer\(address indexed from, address indexed to, uint256 indexed tokenId\)
 
 <a name="BindingFilterer.ParseUriFallbackUpdated"></a>
-### func \(\*BindingFilterer\) [ParseUriFallbackUpdated](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3589>)
+### func \(\*BindingFilterer\) [ParseUriFallbackUpdated](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3589>)
 
 ```go
 func (_Binding *BindingFilterer) ParseUriFallbackUpdated(log types.Log) (*BindingUriFallbackUpdated, error)
@@ -1559,7 +1559,7 @@ ParseUriFallbackUpdated is a log parse operation binding the contract event 0xe1
 Solidity: event UriFallbackUpdated\(string previous, string updated\)
 
 <a name="BindingFilterer.ParseUriUpdated"></a>
-### func \(\*BindingFilterer\) [ParseUriUpdated](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3724>)
+### func \(\*BindingFilterer\) [ParseUriUpdated](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3724>)
 
 ```go
 func (_Binding *BindingFilterer) ParseUriUpdated(log types.Log) (*BindingUriUpdated, error)
@@ -1570,7 +1570,7 @@ ParseUriUpdated is a log parse operation binding the contract event 0x7d8ebb5abe
 Solidity: event UriUpdated\(string previous, string updated\)
 
 <a name="BindingFilterer.WatchApproval"></a>
-### func \(\*BindingFilterer\) [WatchApproval](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1564>)
+### func \(\*BindingFilterer\) [WatchApproval](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1564>)
 
 ```go
 func (_Binding *BindingFilterer) WatchApproval(opts *bind.WatchOpts, sink chan<- *BindingApproval, owner []common.Address, approved []common.Address, tokenId []*big.Int) (event.Subscription, error)
@@ -1581,7 +1581,7 @@ WatchApproval is a free log subscription operation binding the contract event 0x
 Solidity: event Approval\(address indexed owner, address indexed approved, uint256 indexed tokenId\)
 
 <a name="BindingFilterer.WatchApprovalForAll"></a>
-### func \(\*BindingFilterer\) [WatchApprovalForAll](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1722>)
+### func \(\*BindingFilterer\) [WatchApprovalForAll](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1722>)
 
 ```go
 func (_Binding *BindingFilterer) WatchApprovalForAll(opts *bind.WatchOpts, sink chan<- *BindingApprovalForAll, owner []common.Address, operator []common.Address) (event.Subscription, error)
@@ -1592,7 +1592,7 @@ WatchApprovalForAll is a free log subscription operation binding the contract ev
 Solidity: event ApprovalForAll\(address indexed owner, address indexed operator, bool approved\)
 
 <a name="BindingFilterer.WatchBatchUpdated"></a>
-### func \(\*BindingFilterer\) [WatchBatchUpdated](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1866>)
+### func \(\*BindingFilterer\) [WatchBatchUpdated](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1866>)
 
 ```go
 func (_Binding *BindingFilterer) WatchBatchUpdated(opts *bind.WatchOpts, sink chan<- *BindingBatchUpdated) (event.Subscription, error)
@@ -1603,7 +1603,7 @@ WatchBatchUpdated is a free log subscription operation binding the contract even
 Solidity: event BatchUpdated\(uint256 previous, uint256 updated\)
 
 <a name="BindingFilterer.WatchClosedUpdated"></a>
-### func \(\*BindingFilterer\) [WatchClosedUpdated](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2001>)
+### func \(\*BindingFilterer\) [WatchClosedUpdated](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2001>)
 
 ```go
 func (_Binding *BindingFilterer) WatchClosedUpdated(opts *bind.WatchOpts, sink chan<- *BindingClosedUpdated) (event.Subscription, error)
@@ -1614,7 +1614,7 @@ WatchClosedUpdated is a free log subscription operation binding the contract eve
 Solidity: event ClosedUpdated\(string previous, string updated\)
 
 <a name="BindingFilterer.WatchMetadataFrozen"></a>
-### func \(\*BindingFilterer\) [WatchMetadataFrozen](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2135>)
+### func \(\*BindingFilterer\) [WatchMetadataFrozen](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2135>)
 
 ```go
 func (_Binding *BindingFilterer) WatchMetadataFrozen(opts *bind.WatchOpts, sink chan<- *BindingMetadataFrozen) (event.Subscription, error)
@@ -1625,7 +1625,7 @@ WatchMetadataFrozen is a free log subscription operation binding the contract ev
 Solidity: event MetadataFrozen\(string uri\)
 
 <a name="BindingFilterer.WatchMintableUpdated"></a>
-### func \(\*BindingFilterer\) [WatchMintableUpdated](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2270>)
+### func \(\*BindingFilterer\) [WatchMintableUpdated](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2270>)
 
 ```go
 func (_Binding *BindingFilterer) WatchMintableUpdated(opts *bind.WatchOpts, sink chan<- *BindingMintableUpdated) (event.Subscription, error)
@@ -1636,7 +1636,7 @@ WatchMintableUpdated is a free log subscription operation binding the contract e
 Solidity: event MintableUpdated\(bool previous, bool updated\)
 
 <a name="BindingFilterer.WatchOpenedUpdated"></a>
-### func \(\*BindingFilterer\) [WatchOpenedUpdated](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2405>)
+### func \(\*BindingFilterer\) [WatchOpenedUpdated](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2405>)
 
 ```go
 func (_Binding *BindingFilterer) WatchOpenedUpdated(opts *bind.WatchOpts, sink chan<- *BindingOpenedUpdated) (event.Subscription, error)
@@ -1647,7 +1647,7 @@ WatchOpenedUpdated is a free log subscription operation binding the contract eve
 Solidity: event OpenedUpdated\(string previous, string updated\)
 
 <a name="BindingFilterer.WatchOwnershipTransferred"></a>
-### func \(\*BindingFilterer\) [WatchOwnershipTransferred](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2549>)
+### func \(\*BindingFilterer\) [WatchOwnershipTransferred](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2549>)
 
 ```go
 func (_Binding *BindingFilterer) WatchOwnershipTransferred(opts *bind.WatchOpts, sink chan<- *BindingOwnershipTransferred, previousOwner []common.Address, newOwner []common.Address) (event.Subscription, error)
@@ -1658,7 +1658,7 @@ WatchOwnershipTransferred is a free log subscription operation binding the contr
 Solidity: event OwnershipTransferred\(address indexed previousOwner, address indexed newOwner\)
 
 <a name="BindingFilterer.WatchPackOpened"></a>
-### func \(\*BindingFilterer\) [WatchPackOpened](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2699>)
+### func \(\*BindingFilterer\) [WatchPackOpened](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2699>)
 
 ```go
 func (_Binding *BindingFilterer) WatchPackOpened(opts *bind.WatchOpts, sink chan<- *BindingPackOpened, user []common.Address) (event.Subscription, error)
@@ -1669,7 +1669,7 @@ WatchPackOpened is a free log subscription operation binding the contract event 
 Solidity: event PackOpened\(address indexed user, bytes32 requestId, uint256 tokenId\)
 
 <a name="BindingFilterer.WatchPackRedeemed"></a>
-### func \(\*BindingFilterer\) [WatchPackRedeemed](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2845>)
+### func \(\*BindingFilterer\) [WatchPackRedeemed](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2845>)
 
 ```go
 func (_Binding *BindingFilterer) WatchPackRedeemed(opts *bind.WatchOpts, sink chan<- *BindingPackRedeemed, user []common.Address) (event.Subscription, error)
@@ -1680,7 +1680,7 @@ WatchPackRedeemed is a free log subscription operation binding the contract even
 Solidity: event PackRedeemed\(address indexed user, uint256 tokenId, uint256 content\)
 
 <a name="BindingFilterer.WatchPriceUpdated"></a>
-### func \(\*BindingFilterer\) [WatchPriceUpdated](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2985>)
+### func \(\*BindingFilterer\) [WatchPriceUpdated](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2985>)
 
 ```go
 func (_Binding *BindingFilterer) WatchPriceUpdated(opts *bind.WatchOpts, sink chan<- *BindingPriceUpdated) (event.Subscription, error)
@@ -1691,7 +1691,7 @@ WatchPriceUpdated is a free log subscription operation binding the contract even
 Solidity: event PriceUpdated\(uint256 previous, uint256 updated\)
 
 <a name="BindingFilterer.WatchReceiverUpdated"></a>
-### func \(\*BindingFilterer\) [WatchReceiverUpdated](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3120>)
+### func \(\*BindingFilterer\) [WatchReceiverUpdated](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3120>)
 
 ```go
 func (_Binding *BindingFilterer) WatchReceiverUpdated(opts *bind.WatchOpts, sink chan<- *BindingReceiverUpdated) (event.Subscription, error)
@@ -1702,7 +1702,7 @@ WatchReceiverUpdated is a free log subscription operation binding the contract e
 Solidity: event ReceiverUpdated\(address previous, address updated\)
 
 <a name="BindingFilterer.WatchRoyaltyUpdated"></a>
-### func \(\*BindingFilterer\) [WatchRoyaltyUpdated](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3255>)
+### func \(\*BindingFilterer\) [WatchRoyaltyUpdated](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3255>)
 
 ```go
 func (_Binding *BindingFilterer) WatchRoyaltyUpdated(opts *bind.WatchOpts, sink chan<- *BindingRoyaltyUpdated) (event.Subscription, error)
@@ -1713,7 +1713,7 @@ WatchRoyaltyUpdated is a free log subscription operation binding the contract ev
 Solidity: event RoyaltyUpdated\(uint256 previous, uint256 updated\)
 
 <a name="BindingFilterer.WatchTransfer"></a>
-### func \(\*BindingFilterer\) [WatchTransfer](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3404>)
+### func \(\*BindingFilterer\) [WatchTransfer](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3404>)
 
 ```go
 func (_Binding *BindingFilterer) WatchTransfer(opts *bind.WatchOpts, sink chan<- *BindingTransfer, from []common.Address, to []common.Address, tokenId []*big.Int) (event.Subscription, error)
@@ -1724,7 +1724,7 @@ WatchTransfer is a free log subscription operation binding the contract event 0x
 Solidity: event Transfer\(address indexed from, address indexed to, uint256 indexed tokenId\)
 
 <a name="BindingFilterer.WatchUriFallbackUpdated"></a>
-### func \(\*BindingFilterer\) [WatchUriFallbackUpdated](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3552>)
+### func \(\*BindingFilterer\) [WatchUriFallbackUpdated](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3552>)
 
 ```go
 func (_Binding *BindingFilterer) WatchUriFallbackUpdated(opts *bind.WatchOpts, sink chan<- *BindingUriFallbackUpdated) (event.Subscription, error)
@@ -1735,7 +1735,7 @@ WatchUriFallbackUpdated is a free log subscription operation binding the contrac
 Solidity: event UriFallbackUpdated\(string previous, string updated\)
 
 <a name="BindingFilterer.WatchUriUpdated"></a>
-### func \(\*BindingFilterer\) [WatchUriUpdated](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3687>)
+### func \(\*BindingFilterer\) [WatchUriUpdated](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3687>)
 
 ```go
 func (_Binding *BindingFilterer) WatchUriUpdated(opts *bind.WatchOpts, sink chan<- *BindingUriUpdated) (event.Subscription, error)
@@ -1746,7 +1746,7 @@ WatchUriUpdated is a free log subscription operation binding the contract event 
 Solidity: event UriUpdated\(string previous, string updated\)
 
 <a name="BindingMetadataFrozen"></a>
-## type [BindingMetadataFrozen](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2115-L2118>)
+## type [BindingMetadataFrozen](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2115-L2118>)
 
 BindingMetadataFrozen represents a MetadataFrozen event raised by the Binding contract.
 
@@ -1758,7 +1758,7 @@ type BindingMetadataFrozen struct {
 ```
 
 <a name="BindingMetadataFrozenIterator"></a>
-## type [BindingMetadataFrozenIterator](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2048-L2058>)
+## type [BindingMetadataFrozenIterator](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2048-L2058>)
 
 BindingMetadataFrozenIterator is returned from FilterMetadataFrozen and is used to iterate over the raw logs and unpacked data for MetadataFrozen events raised by the Binding contract.
 
@@ -1770,7 +1770,7 @@ type BindingMetadataFrozenIterator struct {
 ```
 
 <a name="BindingMetadataFrozenIterator.Close"></a>
-### func \(\*BindingMetadataFrozenIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2109>)
+### func \(\*BindingMetadataFrozenIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2109>)
 
 ```go
 func (it *BindingMetadataFrozenIterator) Close() error
@@ -1779,7 +1779,7 @@ func (it *BindingMetadataFrozenIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="BindingMetadataFrozenIterator.Error"></a>
-### func \(\*BindingMetadataFrozenIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2103>)
+### func \(\*BindingMetadataFrozenIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2103>)
 
 ```go
 func (it *BindingMetadataFrozenIterator) Error() error
@@ -1788,7 +1788,7 @@ func (it *BindingMetadataFrozenIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="BindingMetadataFrozenIterator.Next"></a>
-### func \(\*BindingMetadataFrozenIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2063>)
+### func \(\*BindingMetadataFrozenIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2063>)
 
 ```go
 func (it *BindingMetadataFrozenIterator) Next() bool
@@ -1797,7 +1797,7 @@ func (it *BindingMetadataFrozenIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="BindingMintableUpdated"></a>
-## type [BindingMintableUpdated](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2249-L2253>)
+## type [BindingMintableUpdated](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2249-L2253>)
 
 BindingMintableUpdated represents a MintableUpdated event raised by the Binding contract.
 
@@ -1810,7 +1810,7 @@ type BindingMintableUpdated struct {
 ```
 
 <a name="BindingMintableUpdatedIterator"></a>
-## type [BindingMintableUpdatedIterator](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2182-L2192>)
+## type [BindingMintableUpdatedIterator](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2182-L2192>)
 
 BindingMintableUpdatedIterator is returned from FilterMintableUpdated and is used to iterate over the raw logs and unpacked data for MintableUpdated events raised by the Binding contract.
 
@@ -1822,7 +1822,7 @@ type BindingMintableUpdatedIterator struct {
 ```
 
 <a name="BindingMintableUpdatedIterator.Close"></a>
-### func \(\*BindingMintableUpdatedIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2243>)
+### func \(\*BindingMintableUpdatedIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2243>)
 
 ```go
 func (it *BindingMintableUpdatedIterator) Close() error
@@ -1831,7 +1831,7 @@ func (it *BindingMintableUpdatedIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="BindingMintableUpdatedIterator.Error"></a>
-### func \(\*BindingMintableUpdatedIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2237>)
+### func \(\*BindingMintableUpdatedIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2237>)
 
 ```go
 func (it *BindingMintableUpdatedIterator) Error() error
@@ -1840,7 +1840,7 @@ func (it *BindingMintableUpdatedIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="BindingMintableUpdatedIterator.Next"></a>
-### func \(\*BindingMintableUpdatedIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2197>)
+### func \(\*BindingMintableUpdatedIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2197>)
 
 ```go
 func (it *BindingMintableUpdatedIterator) Next() bool
@@ -1849,7 +1849,7 @@ func (it *BindingMintableUpdatedIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="BindingOpenedUpdated"></a>
-## type [BindingOpenedUpdated](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2384-L2388>)
+## type [BindingOpenedUpdated](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2384-L2388>)
 
 BindingOpenedUpdated represents a OpenedUpdated event raised by the Binding contract.
 
@@ -1862,7 +1862,7 @@ type BindingOpenedUpdated struct {
 ```
 
 <a name="BindingOpenedUpdatedIterator"></a>
-## type [BindingOpenedUpdatedIterator](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2317-L2327>)
+## type [BindingOpenedUpdatedIterator](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2317-L2327>)
 
 BindingOpenedUpdatedIterator is returned from FilterOpenedUpdated and is used to iterate over the raw logs and unpacked data for OpenedUpdated events raised by the Binding contract.
 
@@ -1874,7 +1874,7 @@ type BindingOpenedUpdatedIterator struct {
 ```
 
 <a name="BindingOpenedUpdatedIterator.Close"></a>
-### func \(\*BindingOpenedUpdatedIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2378>)
+### func \(\*BindingOpenedUpdatedIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2378>)
 
 ```go
 func (it *BindingOpenedUpdatedIterator) Close() error
@@ -1883,7 +1883,7 @@ func (it *BindingOpenedUpdatedIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="BindingOpenedUpdatedIterator.Error"></a>
-### func \(\*BindingOpenedUpdatedIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2372>)
+### func \(\*BindingOpenedUpdatedIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2372>)
 
 ```go
 func (it *BindingOpenedUpdatedIterator) Error() error
@@ -1892,7 +1892,7 @@ func (it *BindingOpenedUpdatedIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="BindingOpenedUpdatedIterator.Next"></a>
-### func \(\*BindingOpenedUpdatedIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2332>)
+### func \(\*BindingOpenedUpdatedIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2332>)
 
 ```go
 func (it *BindingOpenedUpdatedIterator) Next() bool
@@ -1901,7 +1901,7 @@ func (it *BindingOpenedUpdatedIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="BindingOwnershipTransferred"></a>
-## type [BindingOwnershipTransferred](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2519-L2523>)
+## type [BindingOwnershipTransferred](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2519-L2523>)
 
 BindingOwnershipTransferred represents a OwnershipTransferred event raised by the Binding contract.
 
@@ -1914,7 +1914,7 @@ type BindingOwnershipTransferred struct {
 ```
 
 <a name="BindingOwnershipTransferredIterator"></a>
-## type [BindingOwnershipTransferredIterator](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2452-L2462>)
+## type [BindingOwnershipTransferredIterator](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2452-L2462>)
 
 BindingOwnershipTransferredIterator is returned from FilterOwnershipTransferred and is used to iterate over the raw logs and unpacked data for OwnershipTransferred events raised by the Binding contract.
 
@@ -1926,7 +1926,7 @@ type BindingOwnershipTransferredIterator struct {
 ```
 
 <a name="BindingOwnershipTransferredIterator.Close"></a>
-### func \(\*BindingOwnershipTransferredIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2513>)
+### func \(\*BindingOwnershipTransferredIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2513>)
 
 ```go
 func (it *BindingOwnershipTransferredIterator) Close() error
@@ -1935,7 +1935,7 @@ func (it *BindingOwnershipTransferredIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="BindingOwnershipTransferredIterator.Error"></a>
-### func \(\*BindingOwnershipTransferredIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2507>)
+### func \(\*BindingOwnershipTransferredIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2507>)
 
 ```go
 func (it *BindingOwnershipTransferredIterator) Error() error
@@ -1944,7 +1944,7 @@ func (it *BindingOwnershipTransferredIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="BindingOwnershipTransferredIterator.Next"></a>
-### func \(\*BindingOwnershipTransferredIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2467>)
+### func \(\*BindingOwnershipTransferredIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2467>)
 
 ```go
 func (it *BindingOwnershipTransferredIterator) Next() bool
@@ -1953,7 +1953,7 @@ func (it *BindingOwnershipTransferredIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="BindingPackOpened"></a>
-## type [BindingPackOpened](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2672-L2677>)
+## type [BindingPackOpened](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2672-L2677>)
 
 BindingPackOpened represents a PackOpened event raised by the Binding contract.
 
@@ -1967,7 +1967,7 @@ type BindingPackOpened struct {
 ```
 
 <a name="BindingPackOpenedIterator"></a>
-## type [BindingPackOpenedIterator](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2605-L2615>)
+## type [BindingPackOpenedIterator](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2605-L2615>)
 
 BindingPackOpenedIterator is returned from FilterPackOpened and is used to iterate over the raw logs and unpacked data for PackOpened events raised by the Binding contract.
 
@@ -1979,7 +1979,7 @@ type BindingPackOpenedIterator struct {
 ```
 
 <a name="BindingPackOpenedIterator.Close"></a>
-### func \(\*BindingPackOpenedIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2666>)
+### func \(\*BindingPackOpenedIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2666>)
 
 ```go
 func (it *BindingPackOpenedIterator) Close() error
@@ -1988,7 +1988,7 @@ func (it *BindingPackOpenedIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="BindingPackOpenedIterator.Error"></a>
-### func \(\*BindingPackOpenedIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2660>)
+### func \(\*BindingPackOpenedIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2660>)
 
 ```go
 func (it *BindingPackOpenedIterator) Error() error
@@ -1997,7 +1997,7 @@ func (it *BindingPackOpenedIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="BindingPackOpenedIterator.Next"></a>
-### func \(\*BindingPackOpenedIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2620>)
+### func \(\*BindingPackOpenedIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2620>)
 
 ```go
 func (it *BindingPackOpenedIterator) Next() bool
@@ -2006,7 +2006,7 @@ func (it *BindingPackOpenedIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="BindingPackRedeemed"></a>
-## type [BindingPackRedeemed](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2818-L2823>)
+## type [BindingPackRedeemed](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2818-L2823>)
 
 BindingPackRedeemed represents a PackRedeemed event raised by the Binding contract.
 
@@ -2020,7 +2020,7 @@ type BindingPackRedeemed struct {
 ```
 
 <a name="BindingPackRedeemedIterator"></a>
-## type [BindingPackRedeemedIterator](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2751-L2761>)
+## type [BindingPackRedeemedIterator](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2751-L2761>)
 
 BindingPackRedeemedIterator is returned from FilterPackRedeemed and is used to iterate over the raw logs and unpacked data for PackRedeemed events raised by the Binding contract.
 
@@ -2032,7 +2032,7 @@ type BindingPackRedeemedIterator struct {
 ```
 
 <a name="BindingPackRedeemedIterator.Close"></a>
-### func \(\*BindingPackRedeemedIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2812>)
+### func \(\*BindingPackRedeemedIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2812>)
 
 ```go
 func (it *BindingPackRedeemedIterator) Close() error
@@ -2041,7 +2041,7 @@ func (it *BindingPackRedeemedIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="BindingPackRedeemedIterator.Error"></a>
-### func \(\*BindingPackRedeemedIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2806>)
+### func \(\*BindingPackRedeemedIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2806>)
 
 ```go
 func (it *BindingPackRedeemedIterator) Error() error
@@ -2050,7 +2050,7 @@ func (it *BindingPackRedeemedIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="BindingPackRedeemedIterator.Next"></a>
-### func \(\*BindingPackRedeemedIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2766>)
+### func \(\*BindingPackRedeemedIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2766>)
 
 ```go
 func (it *BindingPackRedeemedIterator) Next() bool
@@ -2059,7 +2059,7 @@ func (it *BindingPackRedeemedIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="BindingPriceUpdated"></a>
-## type [BindingPriceUpdated](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2964-L2968>)
+## type [BindingPriceUpdated](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2964-L2968>)
 
 BindingPriceUpdated represents a PriceUpdated event raised by the Binding contract.
 
@@ -2072,7 +2072,7 @@ type BindingPriceUpdated struct {
 ```
 
 <a name="BindingPriceUpdatedIterator"></a>
-## type [BindingPriceUpdatedIterator](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2897-L2907>)
+## type [BindingPriceUpdatedIterator](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2897-L2907>)
 
 BindingPriceUpdatedIterator is returned from FilterPriceUpdated and is used to iterate over the raw logs and unpacked data for PriceUpdated events raised by the Binding contract.
 
@@ -2084,7 +2084,7 @@ type BindingPriceUpdatedIterator struct {
 ```
 
 <a name="BindingPriceUpdatedIterator.Close"></a>
-### func \(\*BindingPriceUpdatedIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2958>)
+### func \(\*BindingPriceUpdatedIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2958>)
 
 ```go
 func (it *BindingPriceUpdatedIterator) Close() error
@@ -2093,7 +2093,7 @@ func (it *BindingPriceUpdatedIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="BindingPriceUpdatedIterator.Error"></a>
-### func \(\*BindingPriceUpdatedIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2952>)
+### func \(\*BindingPriceUpdatedIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2952>)
 
 ```go
 func (it *BindingPriceUpdatedIterator) Error() error
@@ -2102,7 +2102,7 @@ func (it *BindingPriceUpdatedIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="BindingPriceUpdatedIterator.Next"></a>
-### func \(\*BindingPriceUpdatedIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2912>)
+### func \(\*BindingPriceUpdatedIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L2912>)
 
 ```go
 func (it *BindingPriceUpdatedIterator) Next() bool
@@ -2111,7 +2111,7 @@ func (it *BindingPriceUpdatedIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="BindingRaw"></a>
-## type [BindingRaw](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L85-L87>)
+## type [BindingRaw](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L85-L87>)
 
 BindingRaw is an auto generated low\-level Go binding around an Ethereum contract.
 
@@ -2122,7 +2122,7 @@ type BindingRaw struct {
 ```
 
 <a name="BindingRaw.Call"></a>
-### func \(\*BindingRaw\) [Call](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L148>)
+### func \(\*BindingRaw\) [Call](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L148>)
 
 ```go
 func (_Binding *BindingRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error
@@ -2131,7 +2131,7 @@ func (_Binding *BindingRaw) Call(opts *bind.CallOpts, result *[]interface{}, met
 Call invokes the \(constant\) contract method with params as input values and sets the output to result. The result type might be a single field for simple returns, a slice of interfaces for anonymous returns and a struct for named returns.
 
 <a name="BindingRaw.Transact"></a>
-### func \(\*BindingRaw\) [Transact](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L159>)
+### func \(\*BindingRaw\) [Transact](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L159>)
 
 ```go
 func (_Binding *BindingRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error)
@@ -2140,7 +2140,7 @@ func (_Binding *BindingRaw) Transact(opts *bind.TransactOpts, method string, par
 Transact invokes the \(paid\) contract method with params as input values.
 
 <a name="BindingRaw.Transfer"></a>
-### func \(\*BindingRaw\) [Transfer](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L154>)
+### func \(\*BindingRaw\) [Transfer](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L154>)
 
 ```go
 func (_Binding *BindingRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error)
@@ -2149,7 +2149,7 @@ func (_Binding *BindingRaw) Transfer(opts *bind.TransactOpts) (*types.Transactio
 Transfer initiates a plain transaction to move funds to the contract, calling its default method if one is available.
 
 <a name="BindingReceiverUpdated"></a>
-## type [BindingReceiverUpdated](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3099-L3103>)
+## type [BindingReceiverUpdated](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3099-L3103>)
 
 BindingReceiverUpdated represents a ReceiverUpdated event raised by the Binding contract.
 
@@ -2162,7 +2162,7 @@ type BindingReceiverUpdated struct {
 ```
 
 <a name="BindingReceiverUpdatedIterator"></a>
-## type [BindingReceiverUpdatedIterator](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3032-L3042>)
+## type [BindingReceiverUpdatedIterator](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3032-L3042>)
 
 BindingReceiverUpdatedIterator is returned from FilterReceiverUpdated and is used to iterate over the raw logs and unpacked data for ReceiverUpdated events raised by the Binding contract.
 
@@ -2174,7 +2174,7 @@ type BindingReceiverUpdatedIterator struct {
 ```
 
 <a name="BindingReceiverUpdatedIterator.Close"></a>
-### func \(\*BindingReceiverUpdatedIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3093>)
+### func \(\*BindingReceiverUpdatedIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3093>)
 
 ```go
 func (it *BindingReceiverUpdatedIterator) Close() error
@@ -2183,7 +2183,7 @@ func (it *BindingReceiverUpdatedIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="BindingReceiverUpdatedIterator.Error"></a>
-### func \(\*BindingReceiverUpdatedIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3087>)
+### func \(\*BindingReceiverUpdatedIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3087>)
 
 ```go
 func (it *BindingReceiverUpdatedIterator) Error() error
@@ -2192,7 +2192,7 @@ func (it *BindingReceiverUpdatedIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="BindingReceiverUpdatedIterator.Next"></a>
-### func \(\*BindingReceiverUpdatedIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3047>)
+### func \(\*BindingReceiverUpdatedIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3047>)
 
 ```go
 func (it *BindingReceiverUpdatedIterator) Next() bool
@@ -2201,7 +2201,7 @@ func (it *BindingReceiverUpdatedIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="BindingRoyaltyUpdated"></a>
-## type [BindingRoyaltyUpdated](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3234-L3238>)
+## type [BindingRoyaltyUpdated](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3234-L3238>)
 
 BindingRoyaltyUpdated represents a RoyaltyUpdated event raised by the Binding contract.
 
@@ -2214,7 +2214,7 @@ type BindingRoyaltyUpdated struct {
 ```
 
 <a name="BindingRoyaltyUpdatedIterator"></a>
-## type [BindingRoyaltyUpdatedIterator](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3167-L3177>)
+## type [BindingRoyaltyUpdatedIterator](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3167-L3177>)
 
 BindingRoyaltyUpdatedIterator is returned from FilterRoyaltyUpdated and is used to iterate over the raw logs and unpacked data for RoyaltyUpdated events raised by the Binding contract.
 
@@ -2226,7 +2226,7 @@ type BindingRoyaltyUpdatedIterator struct {
 ```
 
 <a name="BindingRoyaltyUpdatedIterator.Close"></a>
-### func \(\*BindingRoyaltyUpdatedIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3228>)
+### func \(\*BindingRoyaltyUpdatedIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3228>)
 
 ```go
 func (it *BindingRoyaltyUpdatedIterator) Close() error
@@ -2235,7 +2235,7 @@ func (it *BindingRoyaltyUpdatedIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="BindingRoyaltyUpdatedIterator.Error"></a>
-### func \(\*BindingRoyaltyUpdatedIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3222>)
+### func \(\*BindingRoyaltyUpdatedIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3222>)
 
 ```go
 func (it *BindingRoyaltyUpdatedIterator) Error() error
@@ -2244,7 +2244,7 @@ func (it *BindingRoyaltyUpdatedIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="BindingRoyaltyUpdatedIterator.Next"></a>
-### func \(\*BindingRoyaltyUpdatedIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3182>)
+### func \(\*BindingRoyaltyUpdatedIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3182>)
 
 ```go
 func (it *BindingRoyaltyUpdatedIterator) Next() bool
@@ -2253,7 +2253,7 @@ func (it *BindingRoyaltyUpdatedIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="BindingSession"></a>
-## type [BindingSession](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L64-L68>)
+## type [BindingSession](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L64-L68>)
 
 BindingSession is an auto generated Go binding around an Ethereum contract, with pre\-set call and transact options.
 
@@ -2266,7 +2266,7 @@ type BindingSession struct {
 ```
 
 <a name="BindingSession.Allocation"></a>
-### func \(\*BindingSession\) [Allocation](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L202>)
+### func \(\*BindingSession\) [Allocation](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L202>)
 
 ```go
 func (_Binding *BindingSession) Allocation() (string, error)
@@ -2277,7 +2277,7 @@ Allocation is a free data retrieval call binding the contract method 0x88a17bde.
 Solidity: function allocation\(\) view returns\(string\)
 
 <a name="BindingSession.Approve"></a>
-### func \(\*BindingSession\) [Approve](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1030>)
+### func \(\*BindingSession\) [Approve](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1030>)
 
 ```go
 func (_Binding *BindingSession) Approve(to common.Address, tokenId *big.Int) (*types.Transaction, error)
@@ -2288,7 +2288,7 @@ Approve is a paid mutator transaction binding the contract method 0x095ea7b3.
 Solidity: function approve\(address to, uint256 tokenId\) returns\(\)
 
 <a name="BindingSession.BalanceOf"></a>
-### func \(\*BindingSession\) [BalanceOf](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L233>)
+### func \(\*BindingSession\) [BalanceOf](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L233>)
 
 ```go
 func (_Binding *BindingSession) BalanceOf(owner common.Address) (*big.Int, error)
@@ -2299,7 +2299,7 @@ BalanceOf is a free data retrieval call binding the contract method 0x70a08231.
 Solidity: function balanceOf\(address owner\) view returns\(uint256\)
 
 <a name="BindingSession.Batch"></a>
-### func \(\*BindingSession\) [Batch](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L264>)
+### func \(\*BindingSession\) [Batch](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L264>)
 
 ```go
 func (_Binding *BindingSession) Batch() (*big.Int, error)
@@ -2310,7 +2310,7 @@ Batch is a free data retrieval call binding the contract method 0xaf713566.
 Solidity: function batch\(\) view returns\(uint256\)
 
 <a name="BindingSession.Closed"></a>
-### func \(\*BindingSession\) [Closed](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L295>)
+### func \(\*BindingSession\) [Closed](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L295>)
 
 ```go
 func (_Binding *BindingSession) Closed() (string, error)
@@ -2321,7 +2321,7 @@ Closed is a free data retrieval call binding the contract method 0x597e1fb5.
 Solidity: function closed\(\) view returns\(string\)
 
 <a name="BindingSession.Contents"></a>
-### func \(\*BindingSession\) [Contents](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L326>)
+### func \(\*BindingSession\) [Contents](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L326>)
 
 ```go
 func (_Binding *BindingSession) Contents(arg0 *big.Int) (*big.Int, error)
@@ -2332,7 +2332,7 @@ Contents is a free data retrieval call binding the contract method 0xb5ecf912.
 Solidity: function contents\(uint256 \) view returns\(uint256\)
 
 <a name="BindingSession.Freeze"></a>
-### func \(\*BindingSession\) [Freeze](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1051>)
+### func \(\*BindingSession\) [Freeze](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1051>)
 
 ```go
 func (_Binding *BindingSession) Freeze() (*types.Transaction, error)
@@ -2343,7 +2343,7 @@ Freeze is a paid mutator transaction binding the contract method 0x62a5af3b.
 Solidity: function freeze\(\) returns\(\)
 
 <a name="BindingSession.Frozen"></a>
-### func \(\*BindingSession\) [Frozen](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L357>)
+### func \(\*BindingSession\) [Frozen](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L357>)
 
 ```go
 func (_Binding *BindingSession) Frozen() (bool, error)
@@ -2354,7 +2354,7 @@ Frozen is a free data retrieval call binding the contract method 0x054f7d9c.
 Solidity: function frozen\(\) view returns\(bool\)
 
 <a name="BindingSession.GetApproved"></a>
-### func \(\*BindingSession\) [GetApproved](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L388>)
+### func \(\*BindingSession\) [GetApproved](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L388>)
 
 ```go
 func (_Binding *BindingSession) GetApproved(tokenId *big.Int) (common.Address, error)
@@ -2365,7 +2365,7 @@ GetApproved is a free data retrieval call binding the contract method 0x081812fc
 Solidity: function getApproved\(uint256 tokenId\) view returns\(address\)
 
 <a name="BindingSession.IsApprovedForAll"></a>
-### func \(\*BindingSession\) [IsApprovedForAll](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L419>)
+### func \(\*BindingSession\) [IsApprovedForAll](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L419>)
 
 ```go
 func (_Binding *BindingSession) IsApprovedForAll(owner common.Address, operator common.Address) (bool, error)
@@ -2376,7 +2376,7 @@ IsApprovedForAll is a free data retrieval call binding the contract method 0xe98
 Solidity: function isApprovedForAll\(address owner, address operator\) view returns\(bool\)
 
 <a name="BindingSession.Max"></a>
-### func \(\*BindingSession\) [Max](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L450>)
+### func \(\*BindingSession\) [Max](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L450>)
 
 ```go
 func (_Binding *BindingSession) Max() (*big.Int, error)
@@ -2387,7 +2387,7 @@ Max is a free data retrieval call binding the contract method 0x6ac5db19.
 Solidity: function max\(\) view returns\(uint256\)
 
 <a name="BindingSession.Mint"></a>
-### func \(\*BindingSession\) [Mint](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1072>)
+### func \(\*BindingSession\) [Mint](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1072>)
 
 ```go
 func (_Binding *BindingSession) Mint(amount *big.Int) (*types.Transaction, error)
@@ -2398,7 +2398,7 @@ Mint is a paid mutator transaction binding the contract method 0xa0712d68.
 Solidity: function mint\(uint256 amount\) payable returns\(\)
 
 <a name="BindingSession.MintOwner"></a>
-### func \(\*BindingSession\) [MintOwner](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1093>)
+### func \(\*BindingSession\) [MintOwner](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1093>)
 
 ```go
 func (_Binding *BindingSession) MintOwner(amount *big.Int) (*types.Transaction, error)
@@ -2409,7 +2409,7 @@ MintOwner is a paid mutator transaction binding the contract method 0x33f88d22.
 Solidity: function mintOwner\(uint256 amount\) returns\(\)
 
 <a name="BindingSession.Mintable"></a>
-### func \(\*BindingSession\) [Mintable](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L481>)
+### func \(\*BindingSession\) [Mintable](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L481>)
 
 ```go
 func (_Binding *BindingSession) Mintable() (bool, error)
@@ -2420,7 +2420,7 @@ Mintable is a free data retrieval call binding the contract method 0x4bf365df.
 Solidity: function mintable\(\) view returns\(bool\)
 
 <a name="BindingSession.Name"></a>
-### func \(\*BindingSession\) [Name](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L512>)
+### func \(\*BindingSession\) [Name](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L512>)
 
 ```go
 func (_Binding *BindingSession) Name() (string, error)
@@ -2431,7 +2431,7 @@ Name is a free data retrieval call binding the contract method 0x06fdde03.
 Solidity: function name\(\) view returns\(string\)
 
 <a name="BindingSession.Opened"></a>
-### func \(\*BindingSession\) [Opened](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L543>)
+### func \(\*BindingSession\) [Opened](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L543>)
 
 ```go
 func (_Binding *BindingSession) Opened() (string, error)
@@ -2442,7 +2442,7 @@ Opened is a free data retrieval call binding the contract method 0x5f88eade.
 Solidity: function opened\(\) view returns\(string\)
 
 <a name="BindingSession.Owner"></a>
-### func \(\*BindingSession\) [Owner](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L574>)
+### func \(\*BindingSession\) [Owner](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L574>)
 
 ```go
 func (_Binding *BindingSession) Owner() (common.Address, error)
@@ -2453,7 +2453,7 @@ Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
 Solidity: function owner\(\) view returns\(address\)
 
 <a name="BindingSession.OwnerOf"></a>
-### func \(\*BindingSession\) [OwnerOf](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L605>)
+### func \(\*BindingSession\) [OwnerOf](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L605>)
 
 ```go
 func (_Binding *BindingSession) OwnerOf(tokenId *big.Int) (common.Address, error)
@@ -2464,7 +2464,7 @@ OwnerOf is a free data retrieval call binding the contract method 0x6352211e.
 Solidity: function ownerOf\(uint256 tokenId\) view returns\(address\)
 
 <a name="BindingSession.Price"></a>
-### func \(\*BindingSession\) [Price](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L636>)
+### func \(\*BindingSession\) [Price](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L636>)
 
 ```go
 func (_Binding *BindingSession) Price() (*big.Int, error)
@@ -2475,7 +2475,7 @@ Price is a free data retrieval call binding the contract method 0xa035b1fe.
 Solidity: function price\(\) view returns\(uint256\)
 
 <a name="BindingSession.Receiver"></a>
-### func \(\*BindingSession\) [Receiver](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L667>)
+### func \(\*BindingSession\) [Receiver](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L667>)
 
 ```go
 func (_Binding *BindingSession) Receiver() (common.Address, error)
@@ -2486,7 +2486,7 @@ Receiver is a free data retrieval call binding the contract method 0xf7260d3e.
 Solidity: function receiver\(\) view returns\(address\)
 
 <a name="BindingSession.Redeem"></a>
-### func \(\*BindingSession\) [Redeem](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1114>)
+### func \(\*BindingSession\) [Redeem](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1114>)
 
 ```go
 func (_Binding *BindingSession) Redeem(tokenId *big.Int) (*types.Transaction, error)
@@ -2497,7 +2497,7 @@ Redeem is a paid mutator transaction binding the contract method 0xdb006a75.
 Solidity: function redeem\(uint256 tokenId\) returns\(\)
 
 <a name="BindingSession.RenounceOwnership"></a>
-### func \(\*BindingSession\) [RenounceOwnership](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1135>)
+### func \(\*BindingSession\) [RenounceOwnership](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1135>)
 
 ```go
 func (_Binding *BindingSession) RenounceOwnership() (*types.Transaction, error)
@@ -2508,7 +2508,7 @@ RenounceOwnership is a paid mutator transaction binding the contract method 0x71
 Solidity: function renounceOwnership\(\) returns\(\)
 
 <a name="BindingSession.Reveal"></a>
-### func \(\*BindingSession\) [Reveal](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1156>)
+### func \(\*BindingSession\) [Reveal](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1156>)
 
 ```go
 func (_Binding *BindingSession) Reveal(tokenId *big.Int) (*types.Transaction, error)
@@ -2519,7 +2519,7 @@ Reveal is a paid mutator transaction binding the contract method 0xc2ca0ac5.
 Solidity: function reveal\(uint256 tokenId\) returns\(bytes32\)
 
 <a name="BindingSession.Royalty"></a>
-### func \(\*BindingSession\) [Royalty](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L698>)
+### func \(\*BindingSession\) [Royalty](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L698>)
 
 ```go
 func (_Binding *BindingSession) Royalty() (*big.Int, error)
@@ -2530,7 +2530,7 @@ Royalty is a free data retrieval call binding the contract method 0x29ee566c.
 Solidity: function royalty\(\) view returns\(uint256\)
 
 <a name="BindingSession.RoyaltyInfo"></a>
-### func \(\*BindingSession\) [RoyaltyInfo](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L730>)
+### func \(\*BindingSession\) [RoyaltyInfo](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L730>)
 
 ```go
 func (_Binding *BindingSession) RoyaltyInfo(tokenId *big.Int, salePrice *big.Int) (common.Address, *big.Int, error)
@@ -2541,7 +2541,7 @@ RoyaltyInfo is a free data retrieval call binding the contract method 0x2a55205a
 Solidity: function royaltyInfo\(uint256 tokenId, uint256 salePrice\) view returns\(address, uint256\)
 
 <a name="BindingSession.SafeTransferFrom"></a>
-### func \(\*BindingSession\) [SafeTransferFrom](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1177>)
+### func \(\*BindingSession\) [SafeTransferFrom](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1177>)
 
 ```go
 func (_Binding *BindingSession) SafeTransferFrom(from common.Address, to common.Address, tokenId *big.Int) (*types.Transaction, error)
@@ -2552,7 +2552,7 @@ SafeTransferFrom is a paid mutator transaction binding the contract method 0x428
 Solidity: function safeTransferFrom\(address from, address to, uint256 tokenId\) returns\(\)
 
 <a name="BindingSession.SafeTransferFrom0"></a>
-### func \(\*BindingSession\) [SafeTransferFrom0](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1198>)
+### func \(\*BindingSession\) [SafeTransferFrom0](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1198>)
 
 ```go
 func (_Binding *BindingSession) SafeTransferFrom0(from common.Address, to common.Address, tokenId *big.Int, _data []byte) (*types.Transaction, error)
@@ -2563,7 +2563,7 @@ SafeTransferFrom0 is a paid mutator transaction binding the contract method 0xb8
 Solidity: function safeTransferFrom\(address from, address to, uint256 tokenId, bytes \_data\) returns\(\)
 
 <a name="BindingSession.SetAllocation"></a>
-### func \(\*BindingSession\) [SetAllocation](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1219>)
+### func \(\*BindingSession\) [SetAllocation](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1219>)
 
 ```go
 func (_Binding *BindingSession) SetAllocation(allocation_ string) (*types.Transaction, error)
@@ -2574,7 +2574,7 @@ SetAllocation is a paid mutator transaction binding the contract method 0x970a1f
 Solidity: function setAllocation\(string allocation\_\) returns\(\)
 
 <a name="BindingSession.SetApprovalForAll"></a>
-### func \(\*BindingSession\) [SetApprovalForAll](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1240>)
+### func \(\*BindingSession\) [SetApprovalForAll](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1240>)
 
 ```go
 func (_Binding *BindingSession) SetApprovalForAll(operator common.Address, approved bool) (*types.Transaction, error)
@@ -2585,7 +2585,7 @@ SetApprovalForAll is a paid mutator transaction binding the contract method 0xa2
 Solidity: function setApprovalForAll\(address operator, bool approved\) returns\(\)
 
 <a name="BindingSession.SetClosed"></a>
-### func \(\*BindingSession\) [SetClosed](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1261>)
+### func \(\*BindingSession\) [SetClosed](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1261>)
 
 ```go
 func (_Binding *BindingSession) SetClosed(closed_ string) (*types.Transaction, error)
@@ -2596,7 +2596,7 @@ SetClosed is a paid mutator transaction binding the contract method 0x2b079e9c.
 Solidity: function setClosed\(string closed\_\) returns\(\)
 
 <a name="BindingSession.SetMintable"></a>
-### func \(\*BindingSession\) [SetMintable](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1282>)
+### func \(\*BindingSession\) [SetMintable](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1282>)
 
 ```go
 func (_Binding *BindingSession) SetMintable(status_ bool) (*types.Transaction, error)
@@ -2607,7 +2607,7 @@ SetMintable is a paid mutator transaction binding the contract method 0x285d70d4
 Solidity: function setMintable\(bool status\_\) returns\(\)
 
 <a name="BindingSession.SetOpened"></a>
-### func \(\*BindingSession\) [SetOpened](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1303>)
+### func \(\*BindingSession\) [SetOpened](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1303>)
 
 ```go
 func (_Binding *BindingSession) SetOpened(opened_ string) (*types.Transaction, error)
@@ -2618,7 +2618,7 @@ SetOpened is a paid mutator transaction binding the contract method 0x8967032b.
 Solidity: function setOpened\(string opened\_\) returns\(\)
 
 <a name="BindingSession.SetReceiver"></a>
-### func \(\*BindingSession\) [SetReceiver](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1324>)
+### func \(\*BindingSession\) [SetReceiver](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1324>)
 
 ```go
 func (_Binding *BindingSession) SetReceiver(receiver_ common.Address) (*types.Transaction, error)
@@ -2629,7 +2629,7 @@ SetReceiver is a paid mutator transaction binding the contract method 0x718da7ee
 Solidity: function setReceiver\(address receiver\_\) returns\(\)
 
 <a name="BindingSession.SetRoyalty"></a>
-### func \(\*BindingSession\) [SetRoyalty](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1345>)
+### func \(\*BindingSession\) [SetRoyalty](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1345>)
 
 ```go
 func (_Binding *BindingSession) SetRoyalty(royalty_ *big.Int) (*types.Transaction, error)
@@ -2640,7 +2640,7 @@ SetRoyalty is a paid mutator transaction binding the contract method 0x4209a2e1.
 Solidity: function setRoyalty\(uint256 royalty\_\) returns\(\)
 
 <a name="BindingSession.SetURI"></a>
-### func \(\*BindingSession\) [SetURI](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1366>)
+### func \(\*BindingSession\) [SetURI](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1366>)
 
 ```go
 func (_Binding *BindingSession) SetURI(uri_ string) (*types.Transaction, error)
@@ -2651,7 +2651,7 @@ SetURI is a paid mutator transaction binding the contract method 0x02fe5305.
 Solidity: function setURI\(string uri\_\) returns\(\)
 
 <a name="BindingSession.SetURIFallback"></a>
-### func \(\*BindingSession\) [SetURIFallback](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1387>)
+### func \(\*BindingSession\) [SetURIFallback](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1387>)
 
 ```go
 func (_Binding *BindingSession) SetURIFallback(uri_ string) (*types.Transaction, error)
@@ -2662,7 +2662,7 @@ SetURIFallback is a paid mutator transaction binding the contract method 0x0c8ab
 Solidity: function setURIFallback\(string uri\_\) returns\(\)
 
 <a name="BindingSession.Size"></a>
-### func \(\*BindingSession\) [Size](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L761>)
+### func \(\*BindingSession\) [Size](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L761>)
 
 ```go
 func (_Binding *BindingSession) Size() (*big.Int, error)
@@ -2673,7 +2673,7 @@ Size is a free data retrieval call binding the contract method 0x949d225d.
 Solidity: function size\(\) view returns\(uint256\)
 
 <a name="BindingSession.SupportsInterface"></a>
-### func \(\*BindingSession\) [SupportsInterface](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L792>)
+### func \(\*BindingSession\) [SupportsInterface](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L792>)
 
 ```go
 func (_Binding *BindingSession) SupportsInterface(interfaceId [4]byte) (bool, error)
@@ -2684,7 +2684,7 @@ SupportsInterface is a free data retrieval call binding the contract method 0x01
 Solidity: function supportsInterface\(bytes4 interfaceId\) view returns\(bool\)
 
 <a name="BindingSession.Symbol"></a>
-### func \(\*BindingSession\) [Symbol](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L823>)
+### func \(\*BindingSession\) [Symbol](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L823>)
 
 ```go
 func (_Binding *BindingSession) Symbol() (string, error)
@@ -2695,7 +2695,7 @@ Symbol is a free data retrieval call binding the contract method 0x95d89b41.
 Solidity: function symbol\(\) view returns\(string\)
 
 <a name="BindingSession.Token"></a>
-### func \(\*BindingSession\) [Token](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L854>)
+### func \(\*BindingSession\) [Token](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L854>)
 
 ```go
 func (_Binding *BindingSession) Token() (common.Address, error)
@@ -2706,7 +2706,7 @@ Token is a free data retrieval call binding the contract method 0xfc0c546a.
 Solidity: function token\(\) view returns\(address\)
 
 <a name="BindingSession.TokenURI"></a>
-### func \(\*BindingSession\) [TokenURI](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L885>)
+### func \(\*BindingSession\) [TokenURI](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L885>)
 
 ```go
 func (_Binding *BindingSession) TokenURI(tokenId *big.Int) (string, error)
@@ -2717,7 +2717,7 @@ TokenURI is a free data retrieval call binding the contract method 0xc87b56dd.
 Solidity: function tokenURI\(uint256 tokenId\) view returns\(string\)
 
 <a name="BindingSession.TokenURIFallback"></a>
-### func \(\*BindingSession\) [TokenURIFallback](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L916>)
+### func \(\*BindingSession\) [TokenURIFallback](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L916>)
 
 ```go
 func (_Binding *BindingSession) TokenURIFallback(tokenId *big.Int) (string, error)
@@ -2728,7 +2728,7 @@ TokenURIFallback is a free data retrieval call binding the contract method 0xc7c
 Solidity: function tokenURIFallback\(uint256 tokenId\) view returns\(string\)
 
 <a name="BindingSession.Total"></a>
-### func \(\*BindingSession\) [Total](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L947>)
+### func \(\*BindingSession\) [Total](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L947>)
 
 ```go
 func (_Binding *BindingSession) Total() (*big.Int, error)
@@ -2739,7 +2739,7 @@ Total is a free data retrieval call binding the contract method 0x2ddbd13a.
 Solidity: function total\(\) view returns\(uint256\)
 
 <a name="BindingSession.TransferFrom"></a>
-### func \(\*BindingSession\) [TransferFrom](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1408>)
+### func \(\*BindingSession\) [TransferFrom](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1408>)
 
 ```go
 func (_Binding *BindingSession) TransferFrom(from common.Address, to common.Address, tokenId *big.Int) (*types.Transaction, error)
@@ -2750,7 +2750,7 @@ TransferFrom is a paid mutator transaction binding the contract method 0x23b872d
 Solidity: function transferFrom\(address from, address to, uint256 tokenId\) returns\(\)
 
 <a name="BindingSession.TransferOwnership"></a>
-### func \(\*BindingSession\) [TransferOwnership](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1429>)
+### func \(\*BindingSession\) [TransferOwnership](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1429>)
 
 ```go
 func (_Binding *BindingSession) TransferOwnership(newOwner common.Address) (*types.Transaction, error)
@@ -2761,7 +2761,7 @@ TransferOwnership is a paid mutator transaction binding the contract method 0xf2
 Solidity: function transferOwnership\(address newOwner\) returns\(\)
 
 <a name="BindingSession.Uri"></a>
-### func \(\*BindingSession\) [Uri](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L978>)
+### func \(\*BindingSession\) [Uri](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L978>)
 
 ```go
 func (_Binding *BindingSession) Uri() (string, error)
@@ -2772,7 +2772,7 @@ Uri is a free data retrieval call binding the contract method 0xeac989f8.
 Solidity: function uri\(\) view returns\(string\)
 
 <a name="BindingSession.UriFallback"></a>
-### func \(\*BindingSession\) [UriFallback](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1009>)
+### func \(\*BindingSession\) [UriFallback](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1009>)
 
 ```go
 func (_Binding *BindingSession) UriFallback() (string, error)
@@ -2783,7 +2783,7 @@ UriFallback is a free data retrieval call binding the contract method 0x6dd8e21a
 Solidity: function uriFallback\(\) view returns\(string\)
 
 <a name="BindingSession.Withdraw"></a>
-### func \(\*BindingSession\) [Withdraw](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1450>)
+### func \(\*BindingSession\) [Withdraw](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1450>)
 
 ```go
 func (_Binding *BindingSession) Withdraw() (*types.Transaction, error)
@@ -2794,7 +2794,7 @@ Withdraw is a paid mutator transaction binding the contract method 0x3ccfd60b.
 Solidity: function withdraw\(\) returns\(\)
 
 <a name="BindingTransactor"></a>
-## type [BindingTransactor](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L53-L55>)
+## type [BindingTransactor](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L53-L55>)
 
 BindingTransactor is an auto generated write\-only Go binding around an Ethereum contract.
 
@@ -2805,7 +2805,7 @@ type BindingTransactor struct {
 ```
 
 <a name="NewBindingTransactor"></a>
-### func [NewBindingTransactor](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L118>)
+### func [NewBindingTransactor](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L118>)
 
 ```go
 func NewBindingTransactor(address common.Address, transactor bind.ContractTransactor) (*BindingTransactor, error)
@@ -2814,7 +2814,7 @@ func NewBindingTransactor(address common.Address, transactor bind.ContractTransa
 NewBindingTransactor creates a new write\-only instance of Binding, bound to a specific deployed contract.
 
 <a name="BindingTransactor.Approve"></a>
-### func \(\*BindingTransactor\) [Approve](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1023>)
+### func \(\*BindingTransactor\) [Approve](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1023>)
 
 ```go
 func (_Binding *BindingTransactor) Approve(opts *bind.TransactOpts, to common.Address, tokenId *big.Int) (*types.Transaction, error)
@@ -2825,7 +2825,7 @@ Approve is a paid mutator transaction binding the contract method 0x095ea7b3.
 Solidity: function approve\(address to, uint256 tokenId\) returns\(\)
 
 <a name="BindingTransactor.Freeze"></a>
-### func \(\*BindingTransactor\) [Freeze](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1044>)
+### func \(\*BindingTransactor\) [Freeze](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1044>)
 
 ```go
 func (_Binding *BindingTransactor) Freeze(opts *bind.TransactOpts) (*types.Transaction, error)
@@ -2836,7 +2836,7 @@ Freeze is a paid mutator transaction binding the contract method 0x62a5af3b.
 Solidity: function freeze\(\) returns\(\)
 
 <a name="BindingTransactor.Mint"></a>
-### func \(\*BindingTransactor\) [Mint](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1065>)
+### func \(\*BindingTransactor\) [Mint](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1065>)
 
 ```go
 func (_Binding *BindingTransactor) Mint(opts *bind.TransactOpts, amount *big.Int) (*types.Transaction, error)
@@ -2847,7 +2847,7 @@ Mint is a paid mutator transaction binding the contract method 0xa0712d68.
 Solidity: function mint\(uint256 amount\) payable returns\(\)
 
 <a name="BindingTransactor.MintOwner"></a>
-### func \(\*BindingTransactor\) [MintOwner](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1086>)
+### func \(\*BindingTransactor\) [MintOwner](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1086>)
 
 ```go
 func (_Binding *BindingTransactor) MintOwner(opts *bind.TransactOpts, amount *big.Int) (*types.Transaction, error)
@@ -2858,7 +2858,7 @@ MintOwner is a paid mutator transaction binding the contract method 0x33f88d22.
 Solidity: function mintOwner\(uint256 amount\) returns\(\)
 
 <a name="BindingTransactor.Redeem"></a>
-### func \(\*BindingTransactor\) [Redeem](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1107>)
+### func \(\*BindingTransactor\) [Redeem](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1107>)
 
 ```go
 func (_Binding *BindingTransactor) Redeem(opts *bind.TransactOpts, tokenId *big.Int) (*types.Transaction, error)
@@ -2869,7 +2869,7 @@ Redeem is a paid mutator transaction binding the contract method 0xdb006a75.
 Solidity: function redeem\(uint256 tokenId\) returns\(\)
 
 <a name="BindingTransactor.RenounceOwnership"></a>
-### func \(\*BindingTransactor\) [RenounceOwnership](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1128>)
+### func \(\*BindingTransactor\) [RenounceOwnership](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1128>)
 
 ```go
 func (_Binding *BindingTransactor) RenounceOwnership(opts *bind.TransactOpts) (*types.Transaction, error)
@@ -2880,7 +2880,7 @@ RenounceOwnership is a paid mutator transaction binding the contract method 0x71
 Solidity: function renounceOwnership\(\) returns\(\)
 
 <a name="BindingTransactor.Reveal"></a>
-### func \(\*BindingTransactor\) [Reveal](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1149>)
+### func \(\*BindingTransactor\) [Reveal](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1149>)
 
 ```go
 func (_Binding *BindingTransactor) Reveal(opts *bind.TransactOpts, tokenId *big.Int) (*types.Transaction, error)
@@ -2891,7 +2891,7 @@ Reveal is a paid mutator transaction binding the contract method 0xc2ca0ac5.
 Solidity: function reveal\(uint256 tokenId\) returns\(bytes32\)
 
 <a name="BindingTransactor.SafeTransferFrom"></a>
-### func \(\*BindingTransactor\) [SafeTransferFrom](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1170>)
+### func \(\*BindingTransactor\) [SafeTransferFrom](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1170>)
 
 ```go
 func (_Binding *BindingTransactor) SafeTransferFrom(opts *bind.TransactOpts, from common.Address, to common.Address, tokenId *big.Int) (*types.Transaction, error)
@@ -2902,7 +2902,7 @@ SafeTransferFrom is a paid mutator transaction binding the contract method 0x428
 Solidity: function safeTransferFrom\(address from, address to, uint256 tokenId\) returns\(\)
 
 <a name="BindingTransactor.SafeTransferFrom0"></a>
-### func \(\*BindingTransactor\) [SafeTransferFrom0](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1191>)
+### func \(\*BindingTransactor\) [SafeTransferFrom0](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1191>)
 
 ```go
 func (_Binding *BindingTransactor) SafeTransferFrom0(opts *bind.TransactOpts, from common.Address, to common.Address, tokenId *big.Int, _data []byte) (*types.Transaction, error)
@@ -2913,7 +2913,7 @@ SafeTransferFrom0 is a paid mutator transaction binding the contract method 0xb8
 Solidity: function safeTransferFrom\(address from, address to, uint256 tokenId, bytes \_data\) returns\(\)
 
 <a name="BindingTransactor.SetAllocation"></a>
-### func \(\*BindingTransactor\) [SetAllocation](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1212>)
+### func \(\*BindingTransactor\) [SetAllocation](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1212>)
 
 ```go
 func (_Binding *BindingTransactor) SetAllocation(opts *bind.TransactOpts, allocation_ string) (*types.Transaction, error)
@@ -2924,7 +2924,7 @@ SetAllocation is a paid mutator transaction binding the contract method 0x970a1f
 Solidity: function setAllocation\(string allocation\_\) returns\(\)
 
 <a name="BindingTransactor.SetApprovalForAll"></a>
-### func \(\*BindingTransactor\) [SetApprovalForAll](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1233>)
+### func \(\*BindingTransactor\) [SetApprovalForAll](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1233>)
 
 ```go
 func (_Binding *BindingTransactor) SetApprovalForAll(opts *bind.TransactOpts, operator common.Address, approved bool) (*types.Transaction, error)
@@ -2935,7 +2935,7 @@ SetApprovalForAll is a paid mutator transaction binding the contract method 0xa2
 Solidity: function setApprovalForAll\(address operator, bool approved\) returns\(\)
 
 <a name="BindingTransactor.SetClosed"></a>
-### func \(\*BindingTransactor\) [SetClosed](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1254>)
+### func \(\*BindingTransactor\) [SetClosed](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1254>)
 
 ```go
 func (_Binding *BindingTransactor) SetClosed(opts *bind.TransactOpts, closed_ string) (*types.Transaction, error)
@@ -2946,7 +2946,7 @@ SetClosed is a paid mutator transaction binding the contract method 0x2b079e9c.
 Solidity: function setClosed\(string closed\_\) returns\(\)
 
 <a name="BindingTransactor.SetMintable"></a>
-### func \(\*BindingTransactor\) [SetMintable](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1275>)
+### func \(\*BindingTransactor\) [SetMintable](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1275>)
 
 ```go
 func (_Binding *BindingTransactor) SetMintable(opts *bind.TransactOpts, status_ bool) (*types.Transaction, error)
@@ -2957,7 +2957,7 @@ SetMintable is a paid mutator transaction binding the contract method 0x285d70d4
 Solidity: function setMintable\(bool status\_\) returns\(\)
 
 <a name="BindingTransactor.SetOpened"></a>
-### func \(\*BindingTransactor\) [SetOpened](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1296>)
+### func \(\*BindingTransactor\) [SetOpened](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1296>)
 
 ```go
 func (_Binding *BindingTransactor) SetOpened(opts *bind.TransactOpts, opened_ string) (*types.Transaction, error)
@@ -2968,7 +2968,7 @@ SetOpened is a paid mutator transaction binding the contract method 0x8967032b.
 Solidity: function setOpened\(string opened\_\) returns\(\)
 
 <a name="BindingTransactor.SetReceiver"></a>
-### func \(\*BindingTransactor\) [SetReceiver](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1317>)
+### func \(\*BindingTransactor\) [SetReceiver](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1317>)
 
 ```go
 func (_Binding *BindingTransactor) SetReceiver(opts *bind.TransactOpts, receiver_ common.Address) (*types.Transaction, error)
@@ -2979,7 +2979,7 @@ SetReceiver is a paid mutator transaction binding the contract method 0x718da7ee
 Solidity: function setReceiver\(address receiver\_\) returns\(\)
 
 <a name="BindingTransactor.SetRoyalty"></a>
-### func \(\*BindingTransactor\) [SetRoyalty](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1338>)
+### func \(\*BindingTransactor\) [SetRoyalty](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1338>)
 
 ```go
 func (_Binding *BindingTransactor) SetRoyalty(opts *bind.TransactOpts, royalty_ *big.Int) (*types.Transaction, error)
@@ -2990,7 +2990,7 @@ SetRoyalty is a paid mutator transaction binding the contract method 0x4209a2e1.
 Solidity: function setRoyalty\(uint256 royalty\_\) returns\(\)
 
 <a name="BindingTransactor.SetURI"></a>
-### func \(\*BindingTransactor\) [SetURI](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1359>)
+### func \(\*BindingTransactor\) [SetURI](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1359>)
 
 ```go
 func (_Binding *BindingTransactor) SetURI(opts *bind.TransactOpts, uri_ string) (*types.Transaction, error)
@@ -3001,7 +3001,7 @@ SetURI is a paid mutator transaction binding the contract method 0x02fe5305.
 Solidity: function setURI\(string uri\_\) returns\(\)
 
 <a name="BindingTransactor.SetURIFallback"></a>
-### func \(\*BindingTransactor\) [SetURIFallback](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1380>)
+### func \(\*BindingTransactor\) [SetURIFallback](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1380>)
 
 ```go
 func (_Binding *BindingTransactor) SetURIFallback(opts *bind.TransactOpts, uri_ string) (*types.Transaction, error)
@@ -3012,7 +3012,7 @@ SetURIFallback is a paid mutator transaction binding the contract method 0x0c8ab
 Solidity: function setURIFallback\(string uri\_\) returns\(\)
 
 <a name="BindingTransactor.TransferFrom"></a>
-### func \(\*BindingTransactor\) [TransferFrom](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1401>)
+### func \(\*BindingTransactor\) [TransferFrom](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1401>)
 
 ```go
 func (_Binding *BindingTransactor) TransferFrom(opts *bind.TransactOpts, from common.Address, to common.Address, tokenId *big.Int) (*types.Transaction, error)
@@ -3023,7 +3023,7 @@ TransferFrom is a paid mutator transaction binding the contract method 0x23b872d
 Solidity: function transferFrom\(address from, address to, uint256 tokenId\) returns\(\)
 
 <a name="BindingTransactor.TransferOwnership"></a>
-### func \(\*BindingTransactor\) [TransferOwnership](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1422>)
+### func \(\*BindingTransactor\) [TransferOwnership](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1422>)
 
 ```go
 func (_Binding *BindingTransactor) TransferOwnership(opts *bind.TransactOpts, newOwner common.Address) (*types.Transaction, error)
@@ -3034,7 +3034,7 @@ TransferOwnership is a paid mutator transaction binding the contract method 0xf2
 Solidity: function transferOwnership\(address newOwner\) returns\(\)
 
 <a name="BindingTransactor.Withdraw"></a>
-### func \(\*BindingTransactor\) [Withdraw](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1443>)
+### func \(\*BindingTransactor\) [Withdraw](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1443>)
 
 ```go
 func (_Binding *BindingTransactor) Withdraw(opts *bind.TransactOpts) (*types.Transaction, error)
@@ -3045,7 +3045,7 @@ Withdraw is a paid mutator transaction binding the contract method 0x3ccfd60b.
 Solidity: function withdraw\(\) returns\(\)
 
 <a name="BindingTransactorRaw"></a>
-## type [BindingTransactorRaw](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L95-L97>)
+## type [BindingTransactorRaw](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L95-L97>)
 
 BindingTransactorRaw is an auto generated low\-level write\-only Go binding around an Ethereum contract.
 
@@ -3056,7 +3056,7 @@ type BindingTransactorRaw struct {
 ```
 
 <a name="BindingTransactorRaw.Transact"></a>
-### func \(\*BindingTransactorRaw\) [Transact](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L178>)
+### func \(\*BindingTransactorRaw\) [Transact](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L178>)
 
 ```go
 func (_Binding *BindingTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error)
@@ -3065,7 +3065,7 @@ func (_Binding *BindingTransactorRaw) Transact(opts *bind.TransactOpts, method s
 Transact invokes the \(paid\) contract method with params as input values.
 
 <a name="BindingTransactorRaw.Transfer"></a>
-### func \(\*BindingTransactorRaw\) [Transfer](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L173>)
+### func \(\*BindingTransactorRaw\) [Transfer](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L173>)
 
 ```go
 func (_Binding *BindingTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error)
@@ -3074,7 +3074,7 @@ func (_Binding *BindingTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.
 Transfer initiates a plain transaction to move funds to the contract, calling its default method if one is available.
 
 <a name="BindingTransactorSession"></a>
-## type [BindingTransactorSession](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L79-L82>)
+## type [BindingTransactorSession](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L79-L82>)
 
 BindingTransactorSession is an auto generated write\-only Go binding around an Ethereum contract, with pre\-set transact options.
 
@@ -3086,7 +3086,7 @@ type BindingTransactorSession struct {
 ```
 
 <a name="BindingTransactorSession.Approve"></a>
-### func \(\*BindingTransactorSession\) [Approve](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1037>)
+### func \(\*BindingTransactorSession\) [Approve](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1037>)
 
 ```go
 func (_Binding *BindingTransactorSession) Approve(to common.Address, tokenId *big.Int) (*types.Transaction, error)
@@ -3097,7 +3097,7 @@ Approve is a paid mutator transaction binding the contract method 0x095ea7b3.
 Solidity: function approve\(address to, uint256 tokenId\) returns\(\)
 
 <a name="BindingTransactorSession.Freeze"></a>
-### func \(\*BindingTransactorSession\) [Freeze](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1058>)
+### func \(\*BindingTransactorSession\) [Freeze](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1058>)
 
 ```go
 func (_Binding *BindingTransactorSession) Freeze() (*types.Transaction, error)
@@ -3108,7 +3108,7 @@ Freeze is a paid mutator transaction binding the contract method 0x62a5af3b.
 Solidity: function freeze\(\) returns\(\)
 
 <a name="BindingTransactorSession.Mint"></a>
-### func \(\*BindingTransactorSession\) [Mint](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1079>)
+### func \(\*BindingTransactorSession\) [Mint](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1079>)
 
 ```go
 func (_Binding *BindingTransactorSession) Mint(amount *big.Int) (*types.Transaction, error)
@@ -3119,7 +3119,7 @@ Mint is a paid mutator transaction binding the contract method 0xa0712d68.
 Solidity: function mint\(uint256 amount\) payable returns\(\)
 
 <a name="BindingTransactorSession.MintOwner"></a>
-### func \(\*BindingTransactorSession\) [MintOwner](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1100>)
+### func \(\*BindingTransactorSession\) [MintOwner](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1100>)
 
 ```go
 func (_Binding *BindingTransactorSession) MintOwner(amount *big.Int) (*types.Transaction, error)
@@ -3130,7 +3130,7 @@ MintOwner is a paid mutator transaction binding the contract method 0x33f88d22.
 Solidity: function mintOwner\(uint256 amount\) returns\(\)
 
 <a name="BindingTransactorSession.Redeem"></a>
-### func \(\*BindingTransactorSession\) [Redeem](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1121>)
+### func \(\*BindingTransactorSession\) [Redeem](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1121>)
 
 ```go
 func (_Binding *BindingTransactorSession) Redeem(tokenId *big.Int) (*types.Transaction, error)
@@ -3141,7 +3141,7 @@ Redeem is a paid mutator transaction binding the contract method 0xdb006a75.
 Solidity: function redeem\(uint256 tokenId\) returns\(\)
 
 <a name="BindingTransactorSession.RenounceOwnership"></a>
-### func \(\*BindingTransactorSession\) [RenounceOwnership](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1142>)
+### func \(\*BindingTransactorSession\) [RenounceOwnership](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1142>)
 
 ```go
 func (_Binding *BindingTransactorSession) RenounceOwnership() (*types.Transaction, error)
@@ -3152,7 +3152,7 @@ RenounceOwnership is a paid mutator transaction binding the contract method 0x71
 Solidity: function renounceOwnership\(\) returns\(\)
 
 <a name="BindingTransactorSession.Reveal"></a>
-### func \(\*BindingTransactorSession\) [Reveal](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1163>)
+### func \(\*BindingTransactorSession\) [Reveal](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1163>)
 
 ```go
 func (_Binding *BindingTransactorSession) Reveal(tokenId *big.Int) (*types.Transaction, error)
@@ -3163,7 +3163,7 @@ Reveal is a paid mutator transaction binding the contract method 0xc2ca0ac5.
 Solidity: function reveal\(uint256 tokenId\) returns\(bytes32\)
 
 <a name="BindingTransactorSession.SafeTransferFrom"></a>
-### func \(\*BindingTransactorSession\) [SafeTransferFrom](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1184>)
+### func \(\*BindingTransactorSession\) [SafeTransferFrom](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1184>)
 
 ```go
 func (_Binding *BindingTransactorSession) SafeTransferFrom(from common.Address, to common.Address, tokenId *big.Int) (*types.Transaction, error)
@@ -3174,7 +3174,7 @@ SafeTransferFrom is a paid mutator transaction binding the contract method 0x428
 Solidity: function safeTransferFrom\(address from, address to, uint256 tokenId\) returns\(\)
 
 <a name="BindingTransactorSession.SafeTransferFrom0"></a>
-### func \(\*BindingTransactorSession\) [SafeTransferFrom0](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1205>)
+### func \(\*BindingTransactorSession\) [SafeTransferFrom0](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1205>)
 
 ```go
 func (_Binding *BindingTransactorSession) SafeTransferFrom0(from common.Address, to common.Address, tokenId *big.Int, _data []byte) (*types.Transaction, error)
@@ -3185,7 +3185,7 @@ SafeTransferFrom0 is a paid mutator transaction binding the contract method 0xb8
 Solidity: function safeTransferFrom\(address from, address to, uint256 tokenId, bytes \_data\) returns\(\)
 
 <a name="BindingTransactorSession.SetAllocation"></a>
-### func \(\*BindingTransactorSession\) [SetAllocation](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1226>)
+### func \(\*BindingTransactorSession\) [SetAllocation](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1226>)
 
 ```go
 func (_Binding *BindingTransactorSession) SetAllocation(allocation_ string) (*types.Transaction, error)
@@ -3196,7 +3196,7 @@ SetAllocation is a paid mutator transaction binding the contract method 0x970a1f
 Solidity: function setAllocation\(string allocation\_\) returns\(\)
 
 <a name="BindingTransactorSession.SetApprovalForAll"></a>
-### func \(\*BindingTransactorSession\) [SetApprovalForAll](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1247>)
+### func \(\*BindingTransactorSession\) [SetApprovalForAll](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1247>)
 
 ```go
 func (_Binding *BindingTransactorSession) SetApprovalForAll(operator common.Address, approved bool) (*types.Transaction, error)
@@ -3207,7 +3207,7 @@ SetApprovalForAll is a paid mutator transaction binding the contract method 0xa2
 Solidity: function setApprovalForAll\(address operator, bool approved\) returns\(\)
 
 <a name="BindingTransactorSession.SetClosed"></a>
-### func \(\*BindingTransactorSession\) [SetClosed](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1268>)
+### func \(\*BindingTransactorSession\) [SetClosed](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1268>)
 
 ```go
 func (_Binding *BindingTransactorSession) SetClosed(closed_ string) (*types.Transaction, error)
@@ -3218,7 +3218,7 @@ SetClosed is a paid mutator transaction binding the contract method 0x2b079e9c.
 Solidity: function setClosed\(string closed\_\) returns\(\)
 
 <a name="BindingTransactorSession.SetMintable"></a>
-### func \(\*BindingTransactorSession\) [SetMintable](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1289>)
+### func \(\*BindingTransactorSession\) [SetMintable](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1289>)
 
 ```go
 func (_Binding *BindingTransactorSession) SetMintable(status_ bool) (*types.Transaction, error)
@@ -3229,7 +3229,7 @@ SetMintable is a paid mutator transaction binding the contract method 0x285d70d4
 Solidity: function setMintable\(bool status\_\) returns\(\)
 
 <a name="BindingTransactorSession.SetOpened"></a>
-### func \(\*BindingTransactorSession\) [SetOpened](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1310>)
+### func \(\*BindingTransactorSession\) [SetOpened](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1310>)
 
 ```go
 func (_Binding *BindingTransactorSession) SetOpened(opened_ string) (*types.Transaction, error)
@@ -3240,7 +3240,7 @@ SetOpened is a paid mutator transaction binding the contract method 0x8967032b.
 Solidity: function setOpened\(string opened\_\) returns\(\)
 
 <a name="BindingTransactorSession.SetReceiver"></a>
-### func \(\*BindingTransactorSession\) [SetReceiver](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1331>)
+### func \(\*BindingTransactorSession\) [SetReceiver](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1331>)
 
 ```go
 func (_Binding *BindingTransactorSession) SetReceiver(receiver_ common.Address) (*types.Transaction, error)
@@ -3251,7 +3251,7 @@ SetReceiver is a paid mutator transaction binding the contract method 0x718da7ee
 Solidity: function setReceiver\(address receiver\_\) returns\(\)
 
 <a name="BindingTransactorSession.SetRoyalty"></a>
-### func \(\*BindingTransactorSession\) [SetRoyalty](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1352>)
+### func \(\*BindingTransactorSession\) [SetRoyalty](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1352>)
 
 ```go
 func (_Binding *BindingTransactorSession) SetRoyalty(royalty_ *big.Int) (*types.Transaction, error)
@@ -3262,7 +3262,7 @@ SetRoyalty is a paid mutator transaction binding the contract method 0x4209a2e1.
 Solidity: function setRoyalty\(uint256 royalty\_\) returns\(\)
 
 <a name="BindingTransactorSession.SetURI"></a>
-### func \(\*BindingTransactorSession\) [SetURI](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1373>)
+### func \(\*BindingTransactorSession\) [SetURI](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1373>)
 
 ```go
 func (_Binding *BindingTransactorSession) SetURI(uri_ string) (*types.Transaction, error)
@@ -3273,7 +3273,7 @@ SetURI is a paid mutator transaction binding the contract method 0x02fe5305.
 Solidity: function setURI\(string uri\_\) returns\(\)
 
 <a name="BindingTransactorSession.SetURIFallback"></a>
-### func \(\*BindingTransactorSession\) [SetURIFallback](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1394>)
+### func \(\*BindingTransactorSession\) [SetURIFallback](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1394>)
 
 ```go
 func (_Binding *BindingTransactorSession) SetURIFallback(uri_ string) (*types.Transaction, error)
@@ -3284,7 +3284,7 @@ SetURIFallback is a paid mutator transaction binding the contract method 0x0c8ab
 Solidity: function setURIFallback\(string uri\_\) returns\(\)
 
 <a name="BindingTransactorSession.TransferFrom"></a>
-### func \(\*BindingTransactorSession\) [TransferFrom](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1415>)
+### func \(\*BindingTransactorSession\) [TransferFrom](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1415>)
 
 ```go
 func (_Binding *BindingTransactorSession) TransferFrom(from common.Address, to common.Address, tokenId *big.Int) (*types.Transaction, error)
@@ -3295,7 +3295,7 @@ TransferFrom is a paid mutator transaction binding the contract method 0x23b872d
 Solidity: function transferFrom\(address from, address to, uint256 tokenId\) returns\(\)
 
 <a name="BindingTransactorSession.TransferOwnership"></a>
-### func \(\*BindingTransactorSession\) [TransferOwnership](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1436>)
+### func \(\*BindingTransactorSession\) [TransferOwnership](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1436>)
 
 ```go
 func (_Binding *BindingTransactorSession) TransferOwnership(newOwner common.Address) (*types.Transaction, error)
@@ -3306,7 +3306,7 @@ TransferOwnership is a paid mutator transaction binding the contract method 0xf2
 Solidity: function transferOwnership\(address newOwner\) returns\(\)
 
 <a name="BindingTransactorSession.Withdraw"></a>
-### func \(\*BindingTransactorSession\) [Withdraw](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1457>)
+### func \(\*BindingTransactorSession\) [Withdraw](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L1457>)
 
 ```go
 func (_Binding *BindingTransactorSession) Withdraw() (*types.Transaction, error)
@@ -3317,7 +3317,7 @@ Withdraw is a paid mutator transaction binding the contract method 0x3ccfd60b.
 Solidity: function withdraw\(\) returns\(\)
 
 <a name="BindingTransfer"></a>
-## type [BindingTransfer](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3369-L3374>)
+## type [BindingTransfer](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3369-L3374>)
 
 BindingTransfer represents a Transfer event raised by the Binding contract.
 
@@ -3331,7 +3331,7 @@ type BindingTransfer struct {
 ```
 
 <a name="BindingTransferIterator"></a>
-## type [BindingTransferIterator](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3302-L3312>)
+## type [BindingTransferIterator](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3302-L3312>)
 
 BindingTransferIterator is returned from FilterTransfer and is used to iterate over the raw logs and unpacked data for Transfer events raised by the Binding contract.
 
@@ -3343,7 +3343,7 @@ type BindingTransferIterator struct {
 ```
 
 <a name="BindingTransferIterator.Close"></a>
-### func \(\*BindingTransferIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3363>)
+### func \(\*BindingTransferIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3363>)
 
 ```go
 func (it *BindingTransferIterator) Close() error
@@ -3352,7 +3352,7 @@ func (it *BindingTransferIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="BindingTransferIterator.Error"></a>
-### func \(\*BindingTransferIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3357>)
+### func \(\*BindingTransferIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3357>)
 
 ```go
 func (it *BindingTransferIterator) Error() error
@@ -3361,7 +3361,7 @@ func (it *BindingTransferIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="BindingTransferIterator.Next"></a>
-### func \(\*BindingTransferIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3317>)
+### func \(\*BindingTransferIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3317>)
 
 ```go
 func (it *BindingTransferIterator) Next() bool
@@ -3370,7 +3370,7 @@ func (it *BindingTransferIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="BindingUriFallbackUpdated"></a>
-## type [BindingUriFallbackUpdated](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3531-L3535>)
+## type [BindingUriFallbackUpdated](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3531-L3535>)
 
 BindingUriFallbackUpdated represents a UriFallbackUpdated event raised by the Binding contract.
 
@@ -3383,7 +3383,7 @@ type BindingUriFallbackUpdated struct {
 ```
 
 <a name="BindingUriFallbackUpdatedIterator"></a>
-## type [BindingUriFallbackUpdatedIterator](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3464-L3474>)
+## type [BindingUriFallbackUpdatedIterator](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3464-L3474>)
 
 BindingUriFallbackUpdatedIterator is returned from FilterUriFallbackUpdated and is used to iterate over the raw logs and unpacked data for UriFallbackUpdated events raised by the Binding contract.
 
@@ -3395,7 +3395,7 @@ type BindingUriFallbackUpdatedIterator struct {
 ```
 
 <a name="BindingUriFallbackUpdatedIterator.Close"></a>
-### func \(\*BindingUriFallbackUpdatedIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3525>)
+### func \(\*BindingUriFallbackUpdatedIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3525>)
 
 ```go
 func (it *BindingUriFallbackUpdatedIterator) Close() error
@@ -3404,7 +3404,7 @@ func (it *BindingUriFallbackUpdatedIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="BindingUriFallbackUpdatedIterator.Error"></a>
-### func \(\*BindingUriFallbackUpdatedIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3519>)
+### func \(\*BindingUriFallbackUpdatedIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3519>)
 
 ```go
 func (it *BindingUriFallbackUpdatedIterator) Error() error
@@ -3413,7 +3413,7 @@ func (it *BindingUriFallbackUpdatedIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="BindingUriFallbackUpdatedIterator.Next"></a>
-### func \(\*BindingUriFallbackUpdatedIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3479>)
+### func \(\*BindingUriFallbackUpdatedIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3479>)
 
 ```go
 func (it *BindingUriFallbackUpdatedIterator) Next() bool
@@ -3422,7 +3422,7 @@ func (it *BindingUriFallbackUpdatedIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="BindingUriUpdated"></a>
-## type [BindingUriUpdated](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3666-L3670>)
+## type [BindingUriUpdated](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3666-L3670>)
 
 BindingUriUpdated represents a UriUpdated event raised by the Binding contract.
 
@@ -3435,7 +3435,7 @@ type BindingUriUpdated struct {
 ```
 
 <a name="BindingUriUpdatedIterator"></a>
-## type [BindingUriUpdatedIterator](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3599-L3609>)
+## type [BindingUriUpdatedIterator](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3599-L3609>)
 
 BindingUriUpdatedIterator is returned from FilterUriUpdated and is used to iterate over the raw logs and unpacked data for UriUpdated events raised by the Binding contract.
 
@@ -3447,7 +3447,7 @@ type BindingUriUpdatedIterator struct {
 ```
 
 <a name="BindingUriUpdatedIterator.Close"></a>
-### func \(\*BindingUriUpdatedIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3660>)
+### func \(\*BindingUriUpdatedIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3660>)
 
 ```go
 func (it *BindingUriUpdatedIterator) Close() error
@@ -3456,7 +3456,7 @@ func (it *BindingUriUpdatedIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="BindingUriUpdatedIterator.Error"></a>
-### func \(\*BindingUriUpdatedIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3654>)
+### func \(\*BindingUriUpdatedIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3654>)
 
 ```go
 func (it *BindingUriUpdatedIterator) Error() error
@@ -3465,7 +3465,7 @@ func (it *BindingUriUpdatedIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="BindingUriUpdatedIterator.Next"></a>
-### func \(\*BindingUriUpdatedIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3614>)
+### func \(\*BindingUriUpdatedIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/dstorageerc721pack/binding/dstorageerc721pack.go#L3614>)
 
 ```go
 func (it *BindingUriUpdatedIterator) Next() bool

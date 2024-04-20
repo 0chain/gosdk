@@ -14,7 +14,7 @@ import "github.com/0chain/gosdk/dev/blobber"
 
 
 <a name="Handle404"></a>
-## func [Handle404](<https://github.com/0chain/gosdk/blob/staging/dev/blobber/init.go#L27>)
+## func [Handle404](<https://github.com/0chain/gosdk/blob/doc/initial/dev/blobber/init.go#L27>)
 
 ```go
 func Handle404(m mock.ResponseMap) http.Handler
@@ -23,7 +23,7 @@ func Handle404(m mock.ResponseMap) http.Handler
 Handle404 ...
 
 <a name="MockReferencePathResult"></a>
-## func [MockReferencePathResult](<https://github.com/0chain/gosdk/blob/staging/dev/blobber/ref.go#L12>)
+## func [MockReferencePathResult](<https://github.com/0chain/gosdk/blob/doc/initial/dev/blobber/ref.go#L12>)
 
 ```go
 func MockReferencePathResult(allocationId string, rootRef *model.Ref) func()
@@ -32,7 +32,7 @@ func MockReferencePathResult(allocationId string, rootRef *model.Ref) func()
 
 
 <a name="RegisterHandlers"></a>
-## func [RegisterHandlers](<https://github.com/0chain/gosdk/blob/staging/dev/blobber/init.go#L10>)
+## func [RegisterHandlers](<https://github.com/0chain/gosdk/blob/doc/initial/dev/blobber/init.go#L10>)
 
 ```go
 func RegisterHandlers(r *mux.Router, m mock.ResponseMap)

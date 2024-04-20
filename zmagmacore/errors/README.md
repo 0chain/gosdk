@@ -16,7 +16,7 @@ import "github.com/0chain/gosdk/zmagmacore/errors"
 
 
 <a name="Any"></a>
-## func [Any](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/errors/errors.go#L46>)
+## func [Any](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/errors/errors.go#L46>)
 
 ```go
 func Any(err error, targets ...error) bool
@@ -25,7 +25,7 @@ func Any(err error, targets ...error) bool
 Any reports whether an error in error's chain matches to any error provided in list.
 
 <a name="ExitErr"></a>
-## func [ExitErr](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/errors/errors.go#L57>)
+## func [ExitErr](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/errors/errors.go#L57>)
 
 ```go
 func ExitErr(text string, err error, code int)
@@ -34,7 +34,7 @@ func ExitErr(text string, err error, code int)
 ExitErr prints error to os.Stderr and call os.Exit with given code.
 
 <a name="ExitMsg"></a>
-## func [ExitMsg](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/errors/errors.go#L64>)
+## func [ExitMsg](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/errors/errors.go#L64>)
 
 ```go
 func ExitMsg(text string, code int)
@@ -43,7 +43,7 @@ func ExitMsg(text string, code int)
 ExitMsg prints message to os.Stderr and call os.Exit with given code.
 
 <a name="Is"></a>
-## func [Is](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/errors/errors.go#L72>)
+## func [Is](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/errors/errors.go#L72>)
 
 ```go
 func Is(err, target error) bool
@@ -52,7 +52,7 @@ func Is(err, target error) bool
 Is wraps function errors.Is from stdlib to avoid import it in other places of the magma smart contract \(magmasc\) package.
 
 <a name="Error"></a>
-## type [Error](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/errors/errors.go#L14-L17>)
+## type [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/errors/errors.go#L14-L17>)
 
 Error type for a new application error.
 

@@ -22,7 +22,7 @@ import "github.com/0chain/gosdk/zmagmacore/storage"
 
 
 <a name="Open"></a>
-## func [Open](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/storage/interface.go#L35>)
+## func [Open](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/storage/interface.go#L35>)
 
 ```go
 func Open(path string)
@@ -35,7 +35,7 @@ If an error occurs during execution, the program terminates with code 2 and the 
 Should be used only once while application is starting.
 
 <a name="Storage"></a>
-## type [Storage](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/storage/interface.go#L13-L17>)
+## type [Storage](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/storage/interface.go#L13-L17>)
 
 Storage represents the main storage based on badger.DB.
 
@@ -46,7 +46,7 @@ type Storage struct {
 ```
 
 <a name="GetStorage"></a>
-### func [GetStorage](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/storage/interface.go#L50>)
+### func [GetStorage](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/storage/interface.go#L50>)
 
 ```go
 func GetStorage() *Storage
@@ -55,7 +55,7 @@ func GetStorage() *Storage
 GetStorage returns current storage implementation.
 
 <a name="Storage.Close"></a>
-### func \(\*Storage\) [Close](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/storage/interface.go#L123>)
+### func \(\*Storage\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/storage/interface.go#L123>)
 
 ```go
 func (s *Storage) Close() error
@@ -64,7 +64,7 @@ func (s *Storage) Close() error
 Close closes a DB.
 
 <a name="Storage.Del"></a>
-### func \(\*Storage\) [Del](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/storage/interface.go#L55>)
+### func \(\*Storage\) [Del](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/storage/interface.go#L55>)
 
 ```go
 func (s *Storage) Del(key []byte) error
@@ -73,7 +73,7 @@ func (s *Storage) Del(key []byte) error
 Del deletes entry by the key.
 
 <a name="Storage.Get"></a>
-### func \(\*Storage\) [Get](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/storage/interface.go#L62>)
+### func \(\*Storage\) [Get](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/storage/interface.go#L62>)
 
 ```go
 func (s *Storage) Get(key []byte) (value []byte, err error)
@@ -82,7 +82,7 @@ func (s *Storage) Get(key []byte) (value []byte, err error)
 Get retrieves entry by the key.
 
 <a name="Storage.Iterate"></a>
-### func \(\*Storage\) [Iterate](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/storage/interface.go#L101>)
+### func \(\*Storage\) [Iterate](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/storage/interface.go#L101>)
 
 ```go
 func (s *Storage) Iterate(handler func(item *badger.Item) error, prefix []byte) error
@@ -91,7 +91,7 @@ func (s *Storage) Iterate(handler func(item *badger.Item) error, prefix []byte) 
 Iterate iterates all elements with provided prefix and processes it with the handler.
 
 <a name="Storage.NewTransaction"></a>
-### func \(\*Storage\) [NewTransaction](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/storage/interface.go#L118>)
+### func \(\*Storage\) [NewTransaction](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/storage/interface.go#L118>)
 
 ```go
 func (s *Storage) NewTransaction(update bool) *badger.Txn
@@ -102,7 +102,7 @@ NewTransaction creates new badger.Txn.
 For read\-only transactions set update flag to false.
 
 <a name="Storage.Set"></a>
-### func \(\*Storage\) [Set](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/storage/interface.go#L80>)
+### func \(\*Storage\) [Set](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/storage/interface.go#L80>)
 
 ```go
 func (s *Storage) Set(key []byte, value Value) error
@@ -111,7 +111,7 @@ func (s *Storage) Set(key []byte, value Value) error
 Set sets encoded Value with provided key.
 
 <a name="Storage.SetWithRetries"></a>
-### func \(\*Storage\) [SetWithRetries](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/storage/interface.go#L88>)
+### func \(\*Storage\) [SetWithRetries](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/storage/interface.go#L88>)
 
 ```go
 func (s *Storage) SetWithRetries(key []byte, value Value, numRetries int) error
@@ -120,7 +120,7 @@ func (s *Storage) SetWithRetries(key []byte, value Value, numRetries int) error
 SetWithRetries sets encoded Value with provided key with retries.
 
 <a name="Value"></a>
-## type [Value](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/storage/interface.go#L20-L22>)
+## type [Value](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/storage/interface.go#L20-L22>)
 
 Value represent value that can be stored as encoded bytes.
 

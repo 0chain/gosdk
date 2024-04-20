@@ -48,7 +48,7 @@ var (
 ```
 
 <a name="GetLogger"></a>
-## func [GetLogger](<https://github.com/0chain/gosdk/blob/staging/zboxapi/sdk.go#L23>)
+## func [GetLogger](<https://github.com/0chain/gosdk/blob/doc/initial/zboxapi/sdk.go#L23>)
 
 ```go
 func GetLogger() *logger.Logger
@@ -57,7 +57,7 @@ func GetLogger() *logger.Logger
 
 
 <a name="Client"></a>
-## type [Client](<https://github.com/0chain/gosdk/blob/staging/zboxapi/sdk.go#L48-L54>)
+## type [Client](<https://github.com/0chain/gosdk/blob/doc/initial/zboxapi/sdk.go#L48-L54>)
 
 
 
@@ -68,7 +68,7 @@ type Client struct {
 ```
 
 <a name="NewClient"></a>
-### func [NewClient](<https://github.com/0chain/gosdk/blob/staging/zboxapi/sdk.go#L57>)
+### func [NewClient](<https://github.com/0chain/gosdk/blob/doc/initial/zboxapi/sdk.go#L57>)
 
 ```go
 func NewClient() *Client
@@ -77,7 +77,7 @@ func NewClient() *Client
 NewClient create a zbox api client with wallet info
 
 <a name="Client.CreateJwtSession"></a>
-### func \(\*Client\) [CreateJwtSession](<https://github.com/0chain/gosdk/blob/staging/zboxapi/sdk.go#L147>)
+### func \(\*Client\) [CreateJwtSession](<https://github.com/0chain/gosdk/blob/doc/initial/zboxapi/sdk.go#L147>)
 
 ```go
 func (c *Client) CreateJwtSession(ctx context.Context, phoneNumber string) (int64, error)
@@ -86,7 +86,7 @@ func (c *Client) CreateJwtSession(ctx context.Context, phoneNumber string) (int6
 CreateJwtSession create a jwt session with phone number
 
 <a name="Client.CreateJwtToken"></a>
-### func \(\*Client\) [CreateJwtToken](<https://github.com/0chain/gosdk/blob/staging/zboxapi/sdk.go#L179>)
+### func \(\*Client\) [CreateJwtToken](<https://github.com/0chain/gosdk/blob/doc/initial/zboxapi/sdk.go#L179>)
 
 ```go
 func (c *Client) CreateJwtToken(ctx context.Context, phoneNumber string, jwtSessionID int64, otp string) (string, error)
@@ -95,7 +95,7 @@ func (c *Client) CreateJwtToken(ctx context.Context, phoneNumber string, jwtSess
 CreateJwtToken create a jwt token with jwt session id and otp
 
 <a name="Client.CreateSharedInfo"></a>
-### func \(\*Client\) [CreateSharedInfo](<https://github.com/0chain/gosdk/blob/staging/zboxapi/sdk.go#L278>)
+### func \(\*Client\) [CreateSharedInfo](<https://github.com/0chain/gosdk/blob/doc/initial/zboxapi/sdk.go#L278>)
 
 ```go
 func (c *Client) CreateSharedInfo(ctx context.Context, phoneNumber, token string, s SharedInfo) error
@@ -104,7 +104,7 @@ func (c *Client) CreateSharedInfo(ctx context.Context, phoneNumber, token string
 
 
 <a name="Client.DeleteSharedInfo"></a>
-### func \(\*Client\) [DeleteSharedInfo](<https://github.com/0chain/gosdk/blob/staging/zboxapi/sdk.go#L316>)
+### func \(\*Client\) [DeleteSharedInfo](<https://github.com/0chain/gosdk/blob/doc/initial/zboxapi/sdk.go#L316>)
 
 ```go
 func (c *Client) DeleteSharedInfo(ctx context.Context, phoneNumber, token, authTicket string, lookupHash string) error
@@ -113,7 +113,7 @@ func (c *Client) DeleteSharedInfo(ctx context.Context, phoneNumber, token, authT
 
 
 <a name="Client.GetCsrfToken"></a>
-### func \(\*Client\) [GetCsrfToken](<https://github.com/0chain/gosdk/blob/staging/zboxapi/sdk.go#L96>)
+### func \(\*Client\) [GetCsrfToken](<https://github.com/0chain/gosdk/blob/doc/initial/zboxapi/sdk.go#L96>)
 
 ```go
 func (c *Client) GetCsrfToken(ctx context.Context) (string, error)
@@ -122,7 +122,7 @@ func (c *Client) GetCsrfToken(ctx context.Context) (string, error)
 GetCsrfToken obtain a fresh csrf token from 0box api server
 
 <a name="Client.GetFreeStorage"></a>
-### func \(\*Client\) [GetFreeStorage](<https://github.com/0chain/gosdk/blob/staging/zboxapi/sdk.go#L245>)
+### func \(\*Client\) [GetFreeStorage](<https://github.com/0chain/gosdk/blob/doc/initial/zboxapi/sdk.go#L245>)
 
 ```go
 func (c *Client) GetFreeStorage(ctx context.Context, phoneNumber, token string) (*FreeMarker, error)
@@ -131,7 +131,7 @@ func (c *Client) GetFreeStorage(ctx context.Context, phoneNumber, token string) 
 
 
 <a name="Client.GetSharedByMe"></a>
-### func \(\*Client\) [GetSharedByMe](<https://github.com/0chain/gosdk/blob/staging/zboxapi/sdk.go#L352>)
+### func \(\*Client\) [GetSharedByMe](<https://github.com/0chain/gosdk/blob/doc/initial/zboxapi/sdk.go#L352>)
 
 ```go
 func (c *Client) GetSharedByMe(ctx context.Context, phoneNumber, token string) ([]SharedInfoSent, error)
@@ -140,7 +140,7 @@ func (c *Client) GetSharedByMe(ctx context.Context, phoneNumber, token string) (
 
 
 <a name="Client.GetSharedByPublic"></a>
-### func \(\*Client\) [GetSharedByPublic](<https://github.com/0chain/gosdk/blob/staging/zboxapi/sdk.go#L348>)
+### func \(\*Client\) [GetSharedByPublic](<https://github.com/0chain/gosdk/blob/doc/initial/zboxapi/sdk.go#L348>)
 
 ```go
 func (c *Client) GetSharedByPublic(ctx context.Context, phoneNumber, token string) ([]SharedInfoSent, error)
@@ -149,7 +149,7 @@ func (c *Client) GetSharedByPublic(ctx context.Context, phoneNumber, token strin
 
 
 <a name="Client.GetSharedToMe"></a>
-### func \(\*Client\) [GetSharedToMe](<https://github.com/0chain/gosdk/blob/staging/zboxapi/sdk.go#L394>)
+### func \(\*Client\) [GetSharedToMe](<https://github.com/0chain/gosdk/blob/doc/initial/zboxapi/sdk.go#L394>)
 
 ```go
 func (c *Client) GetSharedToMe(ctx context.Context, phoneNumber, token string) ([]SharedInfoReceived, error)
@@ -158,7 +158,7 @@ func (c *Client) GetSharedToMe(ctx context.Context, phoneNumber, token string) (
 
 
 <a name="Client.RefreshJwtToken"></a>
-### func \(\*Client\) [RefreshJwtToken](<https://github.com/0chain/gosdk/blob/staging/zboxapi/sdk.go#L213>)
+### func \(\*Client\) [RefreshJwtToken](<https://github.com/0chain/gosdk/blob/doc/initial/zboxapi/sdk.go#L213>)
 
 ```go
 func (c *Client) RefreshJwtToken(ctx context.Context, phoneNumber string, token string) (string, error)
@@ -167,7 +167,7 @@ func (c *Client) RefreshJwtToken(ctx context.Context, phoneNumber string, token 
 RefreshJwtToken refresh jwt token
 
 <a name="Client.SetRequest"></a>
-### func \(\*Client\) [SetRequest](<https://github.com/0chain/gosdk/blob/staging/zboxapi/sdk.go#L62>)
+### func \(\*Client\) [SetRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxapi/sdk.go#L62>)
 
 ```go
 func (c *Client) SetRequest(baseUrl, appType string)
@@ -176,7 +176,7 @@ func (c *Client) SetRequest(baseUrl, appType string)
 SetRequest set base url and app type of zbox api request
 
 <a name="Client.SetWallet"></a>
-### func \(\*Client\) [SetWallet](<https://github.com/0chain/gosdk/blob/staging/zboxapi/sdk.go#L67>)
+### func \(\*Client\) [SetWallet](<https://github.com/0chain/gosdk/blob/doc/initial/zboxapi/sdk.go#L67>)
 
 ```go
 func (c *Client) SetWallet(clientID, clientPrivateKey, clientPublicKey string)
@@ -185,7 +185,7 @@ func (c *Client) SetWallet(clientID, clientPrivateKey, clientPublicKey string)
 
 
 <a name="CsrfTokenResponse"></a>
-## type [CsrfTokenResponse](<https://github.com/0chain/gosdk/blob/staging/zboxapi/response.go#L17-L19>)
+## type [CsrfTokenResponse](<https://github.com/0chain/gosdk/blob/doc/initial/zboxapi/response.go#L17-L19>)
 
 
 
@@ -196,7 +196,7 @@ type CsrfTokenResponse struct {
 ```
 
 <a name="ErrorResponse"></a>
-## type [ErrorResponse](<https://github.com/0chain/gosdk/blob/staging/zboxapi/response.go#L13-L15>)
+## type [ErrorResponse](<https://github.com/0chain/gosdk/blob/doc/initial/zboxapi/response.go#L13-L15>)
 
 
 
@@ -207,7 +207,7 @@ type ErrorResponse struct {
 ```
 
 <a name="FreeMarker"></a>
-## type [FreeMarker](<https://github.com/0chain/gosdk/blob/staging/zboxapi/response.go#L64-L70>)
+## type [FreeMarker](<https://github.com/0chain/gosdk/blob/doc/initial/zboxapi/response.go#L64-L70>)
 
 
 
@@ -222,7 +222,7 @@ type FreeMarker struct {
 ```
 
 <a name="FreeStorageResponse"></a>
-## type [FreeStorageResponse](<https://github.com/0chain/gosdk/blob/staging/zboxapi/response.go#L25-L28>)
+## type [FreeStorageResponse](<https://github.com/0chain/gosdk/blob/doc/initial/zboxapi/response.go#L25-L28>)
 
 
 
@@ -234,7 +234,7 @@ type FreeStorageResponse struct {
 ```
 
 <a name="FreeStorageResponse.ToMarker"></a>
-### func \(\*FreeStorageResponse\) [ToMarker](<https://github.com/0chain/gosdk/blob/staging/zboxapi/response.go#L35>)
+### func \(\*FreeStorageResponse\) [ToMarker](<https://github.com/0chain/gosdk/blob/doc/initial/zboxapi/response.go#L35>)
 
 ```go
 func (fs *FreeStorageResponse) ToMarker() (*FreeMarker, error)
@@ -243,7 +243,7 @@ func (fs *FreeStorageResponse) ToMarker() (*FreeMarker, error)
 
 
 <a name="JsonResult"></a>
-## type [JsonResult](<https://github.com/0chain/gosdk/blob/staging/zboxapi/response.go#L72-L76>)
+## type [JsonResult](<https://github.com/0chain/gosdk/blob/doc/initial/zboxapi/response.go#L72-L76>)
 
 
 
@@ -256,7 +256,7 @@ type JsonResult[T any] struct {
 ```
 
 <a name="JwtTokenResponse"></a>
-## type [JwtTokenResponse](<https://github.com/0chain/gosdk/blob/staging/zboxapi/response.go#L21-L23>)
+## type [JwtTokenResponse](<https://github.com/0chain/gosdk/blob/doc/initial/zboxapi/response.go#L21-L23>)
 
 
 
@@ -267,7 +267,7 @@ type JwtTokenResponse struct {
 ```
 
 <a name="MarkerData"></a>
-## type [MarkerData](<https://github.com/0chain/gosdk/blob/staging/zboxapi/response.go#L30-L33>)
+## type [MarkerData](<https://github.com/0chain/gosdk/blob/doc/initial/zboxapi/response.go#L30-L33>)
 
 
 
@@ -279,7 +279,7 @@ type MarkerData struct {
 ```
 
 <a name="SharedInfo"></a>
-## type [SharedInfo](<https://github.com/0chain/gosdk/blob/staging/zboxapi/response.go#L78-L83>)
+## type [SharedInfo](<https://github.com/0chain/gosdk/blob/doc/initial/zboxapi/response.go#L78-L83>)
 
 
 
@@ -293,7 +293,7 @@ type SharedInfo struct {
 ```
 
 <a name="SharedInfoReceived"></a>
-## type [SharedInfoReceived](<https://github.com/0chain/gosdk/blob/staging/zboxapi/response.go#L96-L106>)
+## type [SharedInfoReceived](<https://github.com/0chain/gosdk/blob/doc/initial/zboxapi/response.go#L96-L106>)
 
 
 
@@ -312,7 +312,7 @@ type SharedInfoReceived struct {
 ```
 
 <a name="SharedInfoSent"></a>
-## type [SharedInfoSent](<https://github.com/0chain/gosdk/blob/staging/zboxapi/response.go#L85-L94>)
+## type [SharedInfoSent](<https://github.com/0chain/gosdk/blob/doc/initial/zboxapi/response.go#L85-L94>)
 
 
 

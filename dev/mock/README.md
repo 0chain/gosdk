@@ -14,7 +14,7 @@ import "github.com/0chain/gosdk/dev/mock"
 
 
 <a name="WithResponse"></a>
-## func [WithResponse](<https://github.com/0chain/gosdk/blob/staging/dev/mock/response.go#L13>)
+## func [WithResponse](<https://github.com/0chain/gosdk/blob/doc/initial/dev/mock/response.go#L13>)
 
 ```go
 func WithResponse(m ResponseMap) func(w http.ResponseWriter, r *http.Request)
@@ -23,7 +23,7 @@ func WithResponse(m ResponseMap) func(w http.ResponseWriter, r *http.Request)
 WithResponse mock respone
 
 <a name="Response"></a>
-## type [Response](<https://github.com/0chain/gosdk/blob/staging/dev/mock/response.go#L7-L10>)
+## type [Response](<https://github.com/0chain/gosdk/blob/doc/initial/dev/mock/response.go#L7-L10>)
 
 
 
@@ -35,7 +35,7 @@ type Response struct {
 ```
 
 <a name="ResponseMap"></a>
-## type [ResponseMap](<https://github.com/0chain/gosdk/blob/staging/dev/mock/response.go#L5>)
+## type [ResponseMap](<https://github.com/0chain/gosdk/blob/doc/initial/dev/mock/response.go#L5>)
 
 
 

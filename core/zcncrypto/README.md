@@ -70,7 +70,7 @@ const CryptoVersion = "1.0"
 ```
 
 <a name="IsMnemonicValid"></a>
-## func [IsMnemonicValid](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/signature_scheme.go#L84>)
+## func [IsMnemonicValid](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/signature_scheme.go#L84>)
 
 ```go
 func IsMnemonicValid(mnemonic string) bool
@@ -79,7 +79,7 @@ func IsMnemonicValid(mnemonic string) bool
 
 
 <a name="Sha3Sum256"></a>
-## func [Sha3Sum256](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/signature_scheme.go#L88>)
+## func [Sha3Sum256](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/signature_scheme.go#L88>)
 
 ```go
 func Sha3Sum256(data string) string
@@ -88,7 +88,7 @@ func Sha3Sum256(data string) string
 
 
 <a name="BlsSigner"></a>
-## type [BlsSigner](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/bls.go#L7-L16>)
+## type [BlsSigner](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/bls.go#L7-L16>)
 
 
 
@@ -112,7 +112,7 @@ var BlsSignerInstance BlsSigner
 ```
 
 <a name="ED255190chainScheme"></a>
-## type [ED255190chainScheme](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/ed255190chain.go#L16-L20>)
+## type [ED255190chainScheme](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/ed255190chain.go#L16-L20>)
 
 ED255190chainScheme \- a signature scheme based on ED25519
 
@@ -123,7 +123,7 @@ type ED255190chainScheme struct {
 ```
 
 <a name="NewED255190chainScheme"></a>
-### func [NewED255190chainScheme](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/ed255190chain.go#L23>)
+### func [NewED255190chainScheme](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/ed255190chain.go#L23>)
 
 ```go
 func NewED255190chainScheme() *ED255190chainScheme
@@ -132,7 +132,7 @@ func NewED255190chainScheme() *ED255190chainScheme
 NewED255190chainScheme \- create a ED255190chainScheme object
 
 <a name="ED255190chainScheme.Add"></a>
-### func \(\*ED255190chainScheme\) [Add](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/ed255190chain.go#L141>)
+### func \(\*ED255190chainScheme\) [Add](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/ed255190chain.go#L141>)
 
 ```go
 func (ed *ED255190chainScheme) Add(signature, msg string) (string, error)
@@ -141,7 +141,7 @@ func (ed *ED255190chainScheme) Add(signature, msg string) (string, error)
 
 
 <a name="ED255190chainScheme.GenerateKeys"></a>
-### func \(\*ED255190chainScheme\) [GenerateKeys](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/ed255190chain.go#L28>)
+### func \(\*ED255190chainScheme\) [GenerateKeys](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/ed255190chain.go#L28>)
 
 ```go
 func (ed *ED255190chainScheme) GenerateKeys() (*Wallet, error)
@@ -150,7 +150,7 @@ func (ed *ED255190chainScheme) GenerateKeys() (*Wallet, error)
 GenerateKeys \- implement interface
 
 <a name="ED255190chainScheme.GenerateKeysWithEth"></a>
-### func \(\*ED255190chainScheme\) [GenerateKeysWithEth](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/ed255190chain.go#L61>)
+### func \(\*ED255190chainScheme\) [GenerateKeysWithEth](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/ed255190chain.go#L61>)
 
 ```go
 func (ed *ED255190chainScheme) GenerateKeysWithEth(mnemonic, password string) (*Wallet, error)
@@ -159,7 +159,7 @@ func (ed *ED255190chainScheme) GenerateKeysWithEth(mnemonic, password string) (*
 GenerateKeysWithEth \- not implemented
 
 <a name="ED255190chainScheme.GetID"></a>
-### func \(\*ED255190chainScheme\) [GetID](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/ed255190chain.go#L163>)
+### func \(\*ED255190chainScheme\) [GetID](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/ed255190chain.go#L163>)
 
 ```go
 func (ed *ED255190chainScheme) GetID() string
@@ -168,7 +168,7 @@ func (ed *ED255190chainScheme) GetID() string
 GetID gets ID in hex string format
 
 <a name="ED255190chainScheme.GetMnemonic"></a>
-### func \(\*ED255190chainScheme\) [GetMnemonic](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/ed255190chain.go#L76>)
+### func \(\*ED255190chainScheme\) [GetMnemonic](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/ed255190chain.go#L76>)
 
 ```go
 func (b0 *ED255190chainScheme) GetMnemonic() string
@@ -177,7 +177,7 @@ func (b0 *ED255190chainScheme) GetMnemonic() string
 
 
 <a name="ED255190chainScheme.GetPrivateKey"></a>
-### func \(\*ED255190chainScheme\) [GetPrivateKey](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/ed255190chain.go#L151>)
+### func \(\*ED255190chainScheme\) [GetPrivateKey](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/ed255190chain.go#L151>)
 
 ```go
 func (ed *ED255190chainScheme) GetPrivateKey() string
@@ -186,7 +186,7 @@ func (ed *ED255190chainScheme) GetPrivateKey() string
 GetPrivateKey \- implement interface
 
 <a name="ED255190chainScheme.GetPrivateKeyAsByteArray"></a>
-### func \(\*ED255190chainScheme\) [GetPrivateKeyAsByteArray](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/ed255190chain.go#L169>)
+### func \(\*ED255190chainScheme\) [GetPrivateKeyAsByteArray](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/ed255190chain.go#L169>)
 
 ```go
 func (ed *ED255190chainScheme) GetPrivateKeyAsByteArray() ([]byte, error)
@@ -195,7 +195,7 @@ func (ed *ED255190chainScheme) GetPrivateKeyAsByteArray() ([]byte, error)
 GetPrivateKeyAsByteArray \- converts private key into byte array
 
 <a name="ED255190chainScheme.GetPublicKey"></a>
-### func \(\*ED255190chainScheme\) [GetPublicKey](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/ed255190chain.go#L146>)
+### func \(\*ED255190chainScheme\) [GetPublicKey](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/ed255190chain.go#L146>)
 
 ```go
 func (ed *ED255190chainScheme) GetPublicKey() string
@@ -204,7 +204,7 @@ func (ed *ED255190chainScheme) GetPublicKey() string
 GetPublicKey \- implement interface
 
 <a name="ED255190chainScheme.RecoverKeys"></a>
-### func \(\*ED255190chainScheme\) [RecoverKeys](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/ed255190chain.go#L65>)
+### func \(\*ED255190chainScheme\) [RecoverKeys](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/ed255190chain.go#L65>)
 
 ```go
 func (ed *ED255190chainScheme) RecoverKeys(mnemonic string) (*Wallet, error)
@@ -213,7 +213,7 @@ func (ed *ED255190chainScheme) RecoverKeys(mnemonic string) (*Wallet, error)
 
 
 <a name="ED255190chainScheme.SetID"></a>
-### func \(\*ED255190chainScheme\) [SetID](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/ed255190chain.go#L156>)
+### func \(\*ED255190chainScheme\) [SetID](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/ed255190chain.go#L156>)
 
 ```go
 func (ed *ED255190chainScheme) SetID(id string) error
@@ -222,7 +222,7 @@ func (ed *ED255190chainScheme) SetID(id string) error
 SetID sets ID in HexString format
 
 <a name="ED255190chainScheme.SetPrivateKey"></a>
-### func \(\*ED255190chainScheme\) [SetPrivateKey](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/ed255190chain.go#L84>)
+### func \(\*ED255190chainScheme\) [SetPrivateKey](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/ed255190chain.go#L84>)
 
 ```go
 func (ed *ED255190chainScheme) SetPrivateKey(privateKey string) error
@@ -231,7 +231,7 @@ func (ed *ED255190chainScheme) SetPrivateKey(privateKey string) error
 
 
 <a name="ED255190chainScheme.SetPublicKey"></a>
-### func \(\*ED255190chainScheme\) [SetPublicKey](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/ed255190chain.go#L96>)
+### func \(\*ED255190chainScheme\) [SetPublicKey](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/ed255190chain.go#L96>)
 
 ```go
 func (ed *ED255190chainScheme) SetPublicKey(publicKey string) error
@@ -240,7 +240,7 @@ func (ed *ED255190chainScheme) SetPublicKey(publicKey string) error
 
 
 <a name="ED255190chainScheme.Sign"></a>
-### func \(\*ED255190chainScheme\) [Sign](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/ed255190chain.go#L112>)
+### func \(\*ED255190chainScheme\) [Sign](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/ed255190chain.go#L112>)
 
 ```go
 func (ed *ED255190chainScheme) Sign(hash string) (string, error)
@@ -249,7 +249,7 @@ func (ed *ED255190chainScheme) Sign(hash string) (string, error)
 
 
 <a name="ED255190chainScheme.SplitKeys"></a>
-### func \(\*ED255190chainScheme\) [SplitKeys](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/ed255190chain.go#L108>)
+### func \(\*ED255190chainScheme\) [SplitKeys](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/ed255190chain.go#L108>)
 
 ```go
 func (b0 *ED255190chainScheme) SplitKeys(numSplits int) (*Wallet, error)
@@ -258,7 +258,7 @@ func (b0 *ED255190chainScheme) SplitKeys(numSplits int) (*Wallet, error)
 
 
 <a name="ED255190chainScheme.Verify"></a>
-### func \(\*ED255190chainScheme\) [Verify](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/ed255190chain.go#L126>)
+### func \(\*ED255190chainScheme\) [Verify](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/ed255190chain.go#L126>)
 
 ```go
 func (ed *ED255190chainScheme) Verify(signature, msg string) (bool, error)
@@ -267,7 +267,7 @@ func (ed *ED255190chainScheme) Verify(signature, msg string) (bool, error)
 
 
 <a name="Fr"></a>
-## type [Fr](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/bls.go#L19-L23>)
+## type [Fr](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/bls.go#L19-L23>)
 
 Fr \-\-
 
@@ -280,7 +280,7 @@ type Fr interface {
 ```
 
 <a name="HerumiScheme"></a>
-## type [HerumiScheme](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/bls0chain_herumi.go#L23-L30>)
+## type [HerumiScheme](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/bls0chain_herumi.go#L23-L30>)
 
 HerumiScheme \- a signature scheme for BLS0Chain Signature
 
@@ -296,7 +296,7 @@ type HerumiScheme struct {
 ```
 
 <a name="NewHerumiScheme"></a>
-### func [NewHerumiScheme](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/bls0chain_herumi.go#L33>)
+### func [NewHerumiScheme](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/bls0chain_herumi.go#L33>)
 
 ```go
 func NewHerumiScheme() *HerumiScheme
@@ -305,7 +305,7 @@ func NewHerumiScheme() *HerumiScheme
 NewHerumiScheme \- create a MiraclScheme object
 
 <a name="HerumiScheme.Add"></a>
-### func \(\*HerumiScheme\) [Add](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/bls0chain_herumi.go#L206>)
+### func \(\*HerumiScheme\) [Add](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/bls0chain_herumi.go#L206>)
 
 ```go
 func (b0 *HerumiScheme) Add(signature, msg string) (string, error)
@@ -314,7 +314,7 @@ func (b0 *HerumiScheme) Add(signature, msg string) (string, error)
 
 
 <a name="HerumiScheme.GenerateKeys"></a>
-### func \(\*HerumiScheme\) [GenerateKeys](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/bls0chain_herumi.go#L40>)
+### func \(\*HerumiScheme\) [GenerateKeys](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/bls0chain_herumi.go#L40>)
 
 ```go
 func (b0 *HerumiScheme) GenerateKeys() (*Wallet, error)
@@ -323,7 +323,7 @@ func (b0 *HerumiScheme) GenerateKeys() (*Wallet, error)
 GenerateKeys generate fresh keys
 
 <a name="HerumiScheme.GenerateKeysWithEth"></a>
-### func \(\*HerumiScheme\) [GenerateKeysWithEth](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/bls0chain_herumi.go#L45>)
+### func \(\*HerumiScheme\) [GenerateKeysWithEth](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/bls0chain_herumi.go#L45>)
 
 ```go
 func (b0 *HerumiScheme) GenerateKeysWithEth(mnemonic, password string) (*Wallet, error)
@@ -332,7 +332,7 @@ func (b0 *HerumiScheme) GenerateKeysWithEth(mnemonic, password string) (*Wallet,
 GenerateKeysWithEth generate fresh keys based on eth wallet
 
 <a name="HerumiScheme.GetID"></a>
-### func \(\*HerumiScheme\) [GetID](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/bls0chain_herumi.go#L242>)
+### func \(\*HerumiScheme\) [GetID](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/bls0chain_herumi.go#L242>)
 
 ```go
 func (b0 *HerumiScheme) GetID() string
@@ -341,7 +341,7 @@ func (b0 *HerumiScheme) GetID() string
 GetID gets ID in hex string format
 
 <a name="HerumiScheme.GetMnemonic"></a>
-### func \(\*HerumiScheme\) [GetMnemonic](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/bls0chain_herumi.go#L71>)
+### func \(\*HerumiScheme\) [GetMnemonic](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/bls0chain_herumi.go#L71>)
 
 ```go
 func (b0 *HerumiScheme) GetMnemonic() string
@@ -350,7 +350,7 @@ func (b0 *HerumiScheme) GetMnemonic() string
 
 
 <a name="HerumiScheme.GetPrivateKey"></a>
-### func \(\*HerumiScheme\) [GetPrivateKey](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/bls0chain_herumi.go#L92>)
+### func \(\*HerumiScheme\) [GetPrivateKey](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/bls0chain_herumi.go#L92>)
 
 ```go
 func (b0 *HerumiScheme) GetPrivateKey() string
@@ -359,7 +359,7 @@ func (b0 *HerumiScheme) GetPrivateKey() string
 
 
 <a name="HerumiScheme.GetPrivateKeyAsByteArray"></a>
-### func \(\*HerumiScheme\) [GetPrivateKeyAsByteArray](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/bls0chain_herumi.go#L221>)
+### func \(\*HerumiScheme\) [GetPrivateKeyAsByteArray](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/bls0chain_herumi.go#L221>)
 
 ```go
 func (b0 *HerumiScheme) GetPrivateKeyAsByteArray() ([]byte, error)
@@ -368,7 +368,7 @@ func (b0 *HerumiScheme) GetPrivateKeyAsByteArray() ([]byte, error)
 GetPrivateKeyAsByteArray \- converts private key into byte array
 
 <a name="HerumiScheme.GetPublicKey"></a>
-### func \(\*HerumiScheme\) [GetPublicKey](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/bls0chain_herumi.go#L176>)
+### func \(\*HerumiScheme\) [GetPublicKey](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/bls0chain_herumi.go#L176>)
 
 ```go
 func (b0 *HerumiScheme) GetPublicKey() string
@@ -377,7 +377,7 @@ func (b0 *HerumiScheme) GetPublicKey() string
 GetPublicKey \- implement interface
 
 <a name="HerumiScheme.RecoverKeys"></a>
-### func \(\*HerumiScheme\) [RecoverKeys](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/bls0chain_herumi.go#L60>)
+### func \(\*HerumiScheme\) [RecoverKeys](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/bls0chain_herumi.go#L60>)
 
 ```go
 func (b0 *HerumiScheme) RecoverKeys(mnemonic string) (*Wallet, error)
@@ -386,7 +386,7 @@ func (b0 *HerumiScheme) RecoverKeys(mnemonic string) (*Wallet, error)
 RecoverKeys recovery keys from mnemonic
 
 <a name="HerumiScheme.SetID"></a>
-### func \(\*HerumiScheme\) [SetID](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/bls0chain_herumi.go#L233>)
+### func \(\*HerumiScheme\) [SetID](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/bls0chain_herumi.go#L233>)
 
 ```go
 func (b0 *HerumiScheme) SetID(id string) error
@@ -395,7 +395,7 @@ func (b0 *HerumiScheme) SetID(id string) error
 SetID sets ID in HexString format
 
 <a name="HerumiScheme.SetPrivateKey"></a>
-### func \(\*HerumiScheme\) [SetPrivateKey](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/bls0chain_herumi.go#L80>)
+### func \(\*HerumiScheme\) [SetPrivateKey](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/bls0chain_herumi.go#L80>)
 
 ```go
 func (b0 *HerumiScheme) SetPrivateKey(privateKey string) error
@@ -404,7 +404,7 @@ func (b0 *HerumiScheme) SetPrivateKey(privateKey string) error
 SetPrivateKey set private key to sign
 
 <a name="HerumiScheme.SetPublicKey"></a>
-### func \(\*HerumiScheme\) [SetPublicKey](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/bls0chain_herumi.go#L164>)
+### func \(\*HerumiScheme\) [SetPublicKey](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/bls0chain_herumi.go#L164>)
 
 ```go
 func (b0 *HerumiScheme) SetPublicKey(publicKey string) error
@@ -413,7 +413,7 @@ func (b0 *HerumiScheme) SetPublicKey(publicKey string) error
 SetPublicKey \- implement interface
 
 <a name="HerumiScheme.Sign"></a>
-### func \(\*HerumiScheme\) [Sign](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/bls0chain_herumi.go#L155>)
+### func \(\*HerumiScheme\) [Sign](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/bls0chain_herumi.go#L155>)
 
 ```go
 func (b0 *HerumiScheme) Sign(hash string) (string, error)
@@ -422,7 +422,7 @@ func (b0 *HerumiScheme) Sign(hash string) (string, error)
 Sign sign message
 
 <a name="HerumiScheme.SplitKeys"></a>
-### func \(\*HerumiScheme\) [SplitKeys](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/bls0chain_herumi.go#L96>)
+### func \(\*HerumiScheme\) [SplitKeys](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/bls0chain_herumi.go#L96>)
 
 ```go
 func (b0 *HerumiScheme) SplitKeys(numSplits int) (*Wallet, error)
@@ -431,7 +431,7 @@ func (b0 *HerumiScheme) SplitKeys(numSplits int) (*Wallet, error)
 
 
 <a name="HerumiScheme.Verify"></a>
-### func \(\*HerumiScheme\) [Verify](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/bls0chain_herumi.go#L181>)
+### func \(\*HerumiScheme\) [Verify](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/bls0chain_herumi.go#L181>)
 
 ```go
 func (b0 *HerumiScheme) Verify(signature, msg string) (bool, error)
@@ -440,7 +440,7 @@ func (b0 *HerumiScheme) Verify(signature, msg string) (bool, error)
 Verify \- implement interface
 
 <a name="ID"></a>
-## type [ID](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/bls.go#L61-L66>)
+## type [ID](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/bls.go#L61-L66>)
 
 
 
@@ -454,7 +454,7 @@ type ID interface {
 ```
 
 <a name="KeyPair"></a>
-## type [KeyPair](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/signature_scheme.go#L14-L17>)
+## type [KeyPair](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/signature_scheme.go#L14-L17>)
 
 KeyPair private and publickey
 
@@ -466,7 +466,7 @@ type KeyPair struct {
 ```
 
 <a name="PublicKey"></a>
-## type [PublicKey](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/bls.go#L45-L50>)
+## type [PublicKey](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/bls.go#L45-L50>)
 
 
 
@@ -480,7 +480,7 @@ type PublicKey interface {
 ```
 
 <a name="SecretKey"></a>
-## type [SecretKey](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/bls.go#L25-L43>)
+## type [SecretKey](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/bls.go#L25-L43>)
 
 
 
@@ -507,7 +507,7 @@ type SecretKey interface {
 ```
 
 <a name="Signature"></a>
-## type [Signature](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/bls.go#L52-L59>)
+## type [Signature](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/bls.go#L52-L59>)
 
 
 
@@ -523,7 +523,7 @@ type Signature interface {
 ```
 
 <a name="SignatureScheme"></a>
-## type [SignatureScheme](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/signature_scheme.go#L31-L64>)
+## type [SignatureScheme](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/signature_scheme.go#L31-L64>)
 
 SignatureScheme \- an encryption scheme for signing and verifying messages
 
@@ -561,7 +561,7 @@ type SignatureScheme interface {
 ```
 
 <a name="GenerateThresholdKeyShares"></a>
-### func [GenerateThresholdKeyShares](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/factory.go#L66>)
+### func [GenerateThresholdKeyShares](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/factory.go#L66>)
 
 ```go
 func GenerateThresholdKeyShares(t, n int, originalKey SignatureScheme) ([]SignatureScheme, error)
@@ -570,7 +570,7 @@ func GenerateThresholdKeyShares(t, n int, originalKey SignatureScheme) ([]Signat
 GenerateThresholdKeyShares given a signature scheme will generate threshold sig keys
 
 <a name="NewSignatureScheme"></a>
-### func [NewSignatureScheme](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/factory.go#L15>)
+### func [NewSignatureScheme](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/factory.go#L15>)
 
 ```go
 func NewSignatureScheme(sigScheme string) SignatureScheme
@@ -579,7 +579,7 @@ func NewSignatureScheme(sigScheme string) SignatureScheme
 NewSignatureScheme creates an instance for using signature functions
 
 <a name="UnmarshalSignatureSchemes"></a>
-### func [UnmarshalSignatureSchemes](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/factory.go#L27>)
+### func [UnmarshalSignatureSchemes](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/factory.go#L27>)
 
 ```go
 func UnmarshalSignatureSchemes(sigScheme string, obj interface{}) ([]SignatureScheme, error)
@@ -588,7 +588,7 @@ func UnmarshalSignatureSchemes(sigScheme string, obj interface{}) ([]SignatureSc
 UnmarshalThresholdSignatureSchemes unmarshal SignatureScheme from json string
 
 <a name="Wallet"></a>
-## type [Wallet](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/signature_scheme.go#L20-L28>)
+## type [Wallet](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/signature_scheme.go#L20-L28>)
 
 Wallet structure
 
@@ -605,7 +605,7 @@ type Wallet struct {
 ```
 
 <a name="Wallet.Marshal"></a>
-### func \(\*Wallet\) [Marshal](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/signature_scheme.go#L67>)
+### func \(\*Wallet\) [Marshal](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/signature_scheme.go#L67>)
 
 ```go
 func (w *Wallet) Marshal() (string, error)
@@ -614,7 +614,7 @@ func (w *Wallet) Marshal() (string, error)
 Marshal returns json string
 
 <a name="Wallet.Sign"></a>
-### func \(\*Wallet\) [Sign](<https://github.com/0chain/gosdk/blob/staging/core/zcncrypto/signature_scheme.go#L75>)
+### func \(\*Wallet\) [Sign](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/signature_scheme.go#L75>)
 
 ```go
 func (w *Wallet) Sign(hash, scheme string) (string, error)

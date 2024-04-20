@@ -75,7 +75,7 @@ const CHUNK_SIZE = 64 * 1024
 ```
 
 <a name="GetReferenceLookup"></a>
-## func [GetReferenceLookup](<https://github.com/0chain/gosdk/blob/staging/zboxcore/fileref/fileref.go#L97>)
+## func [GetReferenceLookup](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/fileref/fileref.go#L97>)
 
 ```go
 func GetReferenceLookup(allocationID string, path string) string
@@ -84,7 +84,7 @@ func GetReferenceLookup(allocationID string, path string) string
 
 
 <a name="Collaborator"></a>
-## type [Collaborator](<https://github.com/0chain/gosdk/blob/staging/zboxcore/fileref/fileref.go#L21-L25>)
+## type [Collaborator](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/fileref/fileref.go#L21-L25>)
 
 
 
@@ -97,7 +97,7 @@ type Collaborator struct {
 ```
 
 <a name="FileRef"></a>
-## type [FileRef](<https://github.com/0chain/gosdk/blob/staging/zboxcore/fileref/fileref.go#L27-L46>)
+## type [FileRef](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/fileref/fileref.go#L27-L46>)
 
 
 
@@ -125,7 +125,7 @@ type FileRef struct {
 ```
 
 <a name="FileRef.CalculateHash"></a>
-### func \(\*FileRef\) [CalculateHash](<https://github.com/0chain/gosdk/blob/staging/zboxcore/fileref/fileref.go#L244>)
+### func \(\*FileRef\) [CalculateHash](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/fileref/fileref.go#L244>)
 
 ```go
 func (fr *FileRef) CalculateHash() string
@@ -134,7 +134,7 @@ func (fr *FileRef) CalculateHash() string
 
 
 <a name="FileRef.GetCreatedAt"></a>
-### func \(\*FileRef\) [GetCreatedAt](<https://github.com/0chain/gosdk/blob/staging/zboxcore/fileref/fileref.go#L283>)
+### func \(\*FileRef\) [GetCreatedAt](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/fileref/fileref.go#L283>)
 
 ```go
 func (fr *FileRef) GetCreatedAt() common.Timestamp
@@ -143,7 +143,7 @@ func (fr *FileRef) GetCreatedAt() common.Timestamp
 
 
 <a name="FileRef.GetFileID"></a>
-### func \(\*FileRef\) [GetFileID](<https://github.com/0chain/gosdk/blob/staging/zboxcore/fileref/fileref.go#L279>)
+### func \(\*FileRef\) [GetFileID](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/fileref/fileref.go#L279>)
 
 ```go
 func (fr *FileRef) GetFileID() string
@@ -152,7 +152,7 @@ func (fr *FileRef) GetFileID() string
 
 
 <a name="FileRef.GetFileMetaHash"></a>
-### func \(\*FileRef\) [GetFileMetaHash](<https://github.com/0chain/gosdk/blob/staging/zboxcore/fileref/fileref.go#L213>)
+### func \(\*FileRef\) [GetFileMetaHash](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/fileref/fileref.go#L213>)
 
 ```go
 func (fr *FileRef) GetFileMetaHash() string
@@ -161,7 +161,7 @@ func (fr *FileRef) GetFileMetaHash() string
 
 
 <a name="FileRef.GetFileMetaHashData"></a>
-### func \(\*FileRef\) [GetFileMetaHashData](<https://github.com/0chain/gosdk/blob/staging/zboxcore/fileref/fileref.go#L216>)
+### func \(\*FileRef\) [GetFileMetaHashData](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/fileref/fileref.go#L216>)
 
 ```go
 func (fr *FileRef) GetFileMetaHashData() string
@@ -170,7 +170,7 @@ func (fr *FileRef) GetFileMetaHashData() string
 
 
 <a name="FileRef.GetHash"></a>
-### func \(\*FileRef\) [GetHash](<https://github.com/0chain/gosdk/blob/staging/zboxcore/fileref/fileref.go#L240>)
+### func \(\*FileRef\) [GetHash](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/fileref/fileref.go#L240>)
 
 ```go
 func (fr *FileRef) GetHash() string
@@ -179,7 +179,7 @@ func (fr *FileRef) GetHash() string
 
 
 <a name="FileRef.GetHashData"></a>
-### func \(\*FileRef\) [GetHashData](<https://github.com/0chain/gosdk/blob/staging/zboxcore/fileref/fileref.go#L223>)
+### func \(\*FileRef\) [GetHashData](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/fileref/fileref.go#L223>)
 
 ```go
 func (fr *FileRef) GetHashData() string
@@ -188,7 +188,7 @@ func (fr *FileRef) GetHashData() string
 
 
 <a name="FileRef.GetLookupHash"></a>
-### func \(\*FileRef\) [GetLookupHash](<https://github.com/0chain/gosdk/blob/staging/zboxcore/fileref/fileref.go#L267>)
+### func \(\*FileRef\) [GetLookupHash](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/fileref/fileref.go#L267>)
 
 ```go
 func (fr *FileRef) GetLookupHash() string
@@ -197,7 +197,7 @@ func (fr *FileRef) GetLookupHash() string
 
 
 <a name="FileRef.GetName"></a>
-### func \(\*FileRef\) [GetName](<https://github.com/0chain/gosdk/blob/staging/zboxcore/fileref/fileref.go#L275>)
+### func \(\*FileRef\) [GetName](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/fileref/fileref.go#L275>)
 
 ```go
 func (fr *FileRef) GetName() string
@@ -206,7 +206,7 @@ func (fr *FileRef) GetName() string
 
 
 <a name="FileRef.GetNumBlocks"></a>
-### func \(\*FileRef\) [GetNumBlocks](<https://github.com/0chain/gosdk/blob/staging/zboxcore/fileref/fileref.go#L255>)
+### func \(\*FileRef\) [GetNumBlocks](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/fileref/fileref.go#L255>)
 
 ```go
 func (fr *FileRef) GetNumBlocks() int64
@@ -215,7 +215,7 @@ func (fr *FileRef) GetNumBlocks() int64
 
 
 <a name="FileRef.GetPath"></a>
-### func \(\*FileRef\) [GetPath](<https://github.com/0chain/gosdk/blob/staging/zboxcore/fileref/fileref.go#L271>)
+### func \(\*FileRef\) [GetPath](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/fileref/fileref.go#L271>)
 
 ```go
 func (fr *FileRef) GetPath() string
@@ -224,7 +224,7 @@ func (fr *FileRef) GetPath() string
 
 
 <a name="FileRef.GetPathHash"></a>
-### func \(\*FileRef\) [GetPathHash](<https://github.com/0chain/gosdk/blob/staging/zboxcore/fileref/fileref.go#L263>)
+### func \(\*FileRef\) [GetPathHash](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/fileref/fileref.go#L263>)
 
 ```go
 func (fr *FileRef) GetPathHash() string
@@ -233,7 +233,7 @@ func (fr *FileRef) GetPathHash() string
 
 
 <a name="FileRef.GetSize"></a>
-### func \(\*FileRef\) [GetSize](<https://github.com/0chain/gosdk/blob/staging/zboxcore/fileref/fileref.go#L259>)
+### func \(\*FileRef\) [GetSize](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/fileref/fileref.go#L259>)
 
 ```go
 func (fr *FileRef) GetSize() int64
@@ -242,7 +242,7 @@ func (fr *FileRef) GetSize() int64
 
 
 <a name="FileRef.GetType"></a>
-### func \(\*FileRef\) [GetType](<https://github.com/0chain/gosdk/blob/staging/zboxcore/fileref/fileref.go#L251>)
+### func \(\*FileRef\) [GetType](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/fileref/fileref.go#L251>)
 
 ```go
 func (fr *FileRef) GetType() string
@@ -251,7 +251,7 @@ func (fr *FileRef) GetType() string
 
 
 <a name="FileRef.GetUpdatedAt"></a>
-### func \(\*FileRef\) [GetUpdatedAt](<https://github.com/0chain/gosdk/blob/staging/zboxcore/fileref/fileref.go#L287>)
+### func \(\*FileRef\) [GetUpdatedAt](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/fileref/fileref.go#L287>)
 
 ```go
 func (fr *FileRef) GetUpdatedAt() common.Timestamp
@@ -260,7 +260,7 @@ func (fr *FileRef) GetUpdatedAt() common.Timestamp
 
 
 <a name="FileRef.MetaID"></a>
-### func \(\*FileRef\) [MetaID](<https://github.com/0chain/gosdk/blob/staging/zboxcore/fileref/fileref.go#L48>)
+### func \(\*FileRef\) [MetaID](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/fileref/fileref.go#L48>)
 
 ```go
 func (fRef *FileRef) MetaID() string
@@ -269,7 +269,7 @@ func (fRef *FileRef) MetaID() string
 
 
 <a name="Hashnode"></a>
-## type [Hashnode](<https://github.com/0chain/gosdk/blob/staging/zboxcore/fileref/hashnode.go#L11-L26>)
+## type [Hashnode](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/fileref/hashnode.go#L11-L26>)
 
 Hashnode ref node in hash tree
 
@@ -293,7 +293,7 @@ type Hashnode struct {
 ```
 
 <a name="Hashnode.AddChild"></a>
-### func \(\*Hashnode\) [AddChild](<https://github.com/0chain/gosdk/blob/staging/zboxcore/fileref/hashnode.go#L28>)
+### func \(\*Hashnode\) [AddChild](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/fileref/hashnode.go#L28>)
 
 ```go
 func (n *Hashnode) AddChild(c *Hashnode)
@@ -302,7 +302,7 @@ func (n *Hashnode) AddChild(c *Hashnode)
 
 
 <a name="Hashnode.GetHashCode"></a>
-### func \(\*Hashnode\) [GetHashCode](<https://github.com/0chain/gosdk/blob/staging/zboxcore/fileref/hashnode.go#L45>)
+### func \(\*Hashnode\) [GetHashCode](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/fileref/hashnode.go#L45>)
 
 ```go
 func (n *Hashnode) GetHashCode() string
@@ -311,7 +311,7 @@ func (n *Hashnode) GetHashCode() string
 GetHashCode get hash code
 
 <a name="Hashnode.GetLookupHash"></a>
-### func \(\*Hashnode\) [GetLookupHash](<https://github.com/0chain/gosdk/blob/staging/zboxcore/fileref/hashnode.go#L37>)
+### func \(\*Hashnode\) [GetLookupHash](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/fileref/hashnode.go#L37>)
 
 ```go
 func (n *Hashnode) GetLookupHash() string
@@ -320,7 +320,7 @@ func (n *Hashnode) GetLookupHash() string
 GetLookupHash get lookuphash
 
 <a name="ListResult"></a>
-## type [ListResult](<https://github.com/0chain/gosdk/blob/staging/zboxcore/fileref/list.go#L8-L12>)
+## type [ListResult](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/fileref/list.go#L8-L12>)
 
 
 
@@ -333,7 +333,7 @@ type ListResult struct {
 ```
 
 <a name="ListResult.GetDirTree"></a>
-### func \(\*ListResult\) [GetDirTree](<https://github.com/0chain/gosdk/blob/staging/zboxcore/fileref/list.go#L14>)
+### func \(\*ListResult\) [GetDirTree](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/fileref/list.go#L14>)
 
 ```go
 func (lr *ListResult) GetDirTree(allocationID string) (*Ref, error)
@@ -342,7 +342,7 @@ func (lr *ListResult) GetDirTree(allocationID string) (*Ref, error)
 
 
 <a name="Ref"></a>
-## type [Ref](<https://github.com/0chain/gosdk/blob/staging/zboxcore/fileref/fileref.go#L72-L95>)
+## type [Ref](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/fileref/fileref.go#L72-L95>)
 
 
 
@@ -374,7 +374,7 @@ type Ref struct {
 ```
 
 <a name="Ref.AddChild"></a>
-### func \(\*Ref\) [AddChild](<https://github.com/0chain/gosdk/blob/staging/zboxcore/fileref/fileref.go#L183>)
+### func \(\*Ref\) [AddChild](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/fileref/fileref.go#L183>)
 
 ```go
 func (r *Ref) AddChild(child RefEntity)
@@ -383,7 +383,7 @@ func (r *Ref) AddChild(child RefEntity)
 
 
 <a name="Ref.CalculateHash"></a>
-### func \(\*Ref\) [CalculateHash](<https://github.com/0chain/gosdk/blob/staging/zboxcore/fileref/fileref.go#L101>)
+### func \(\*Ref\) [CalculateHash](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/fileref/fileref.go#L101>)
 
 ```go
 func (r *Ref) CalculateHash() string
@@ -392,7 +392,7 @@ func (r *Ref) CalculateHash() string
 
 
 <a name="Ref.GetCreatedAt"></a>
-### func \(\*Ref\) [GetCreatedAt](<https://github.com/0chain/gosdk/blob/staging/zboxcore/fileref/fileref.go#L175>)
+### func \(\*Ref\) [GetCreatedAt](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/fileref/fileref.go#L175>)
 
 ```go
 func (r *Ref) GetCreatedAt() common.Timestamp
@@ -401,7 +401,7 @@ func (r *Ref) GetCreatedAt() common.Timestamp
 
 
 <a name="Ref.GetFileID"></a>
-### func \(\*Ref\) [GetFileID](<https://github.com/0chain/gosdk/blob/staging/zboxcore/fileref/fileref.go#L171>)
+### func \(\*Ref\) [GetFileID](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/fileref/fileref.go#L171>)
 
 ```go
 func (r *Ref) GetFileID() string
@@ -410,7 +410,7 @@ func (r *Ref) GetFileID() string
 
 
 <a name="Ref.GetFileMetaHash"></a>
-### func \(\*Ref\) [GetFileMetaHash](<https://github.com/0chain/gosdk/blob/staging/zboxcore/fileref/fileref.go#L131>)
+### func \(\*Ref\) [GetFileMetaHash](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/fileref/fileref.go#L131>)
 
 ```go
 func (r *Ref) GetFileMetaHash() string
@@ -419,7 +419,7 @@ func (r *Ref) GetFileMetaHash() string
 
 
 <a name="Ref.GetHash"></a>
-### func \(\*Ref\) [GetHash](<https://github.com/0chain/gosdk/blob/staging/zboxcore/fileref/fileref.go#L135>)
+### func \(\*Ref\) [GetHash](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/fileref/fileref.go#L135>)
 
 ```go
 func (r *Ref) GetHash() string
@@ -428,7 +428,7 @@ func (r *Ref) GetHash() string
 
 
 <a name="Ref.GetHashData"></a>
-### func \(\*Ref\) [GetHashData](<https://github.com/0chain/gosdk/blob/staging/zboxcore/fileref/fileref.go#L139>)
+### func \(\*Ref\) [GetHashData](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/fileref/fileref.go#L139>)
 
 ```go
 func (r *Ref) GetHashData() string
@@ -437,7 +437,7 @@ func (r *Ref) GetHashData() string
 
 
 <a name="Ref.GetLookupHash"></a>
-### func \(\*Ref\) [GetLookupHash](<https://github.com/0chain/gosdk/blob/staging/zboxcore/fileref/fileref.go#L159>)
+### func \(\*Ref\) [GetLookupHash](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/fileref/fileref.go#L159>)
 
 ```go
 func (r *Ref) GetLookupHash() string
@@ -446,7 +446,7 @@ func (r *Ref) GetLookupHash() string
 
 
 <a name="Ref.GetName"></a>
-### func \(\*Ref\) [GetName](<https://github.com/0chain/gosdk/blob/staging/zboxcore/fileref/fileref.go#L167>)
+### func \(\*Ref\) [GetName](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/fileref/fileref.go#L167>)
 
 ```go
 func (r *Ref) GetName() string
@@ -455,7 +455,7 @@ func (r *Ref) GetName() string
 
 
 <a name="Ref.GetNumBlocks"></a>
-### func \(\*Ref\) [GetNumBlocks](<https://github.com/0chain/gosdk/blob/staging/zboxcore/fileref/fileref.go#L147>)
+### func \(\*Ref\) [GetNumBlocks](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/fileref/fileref.go#L147>)
 
 ```go
 func (r *Ref) GetNumBlocks() int64
@@ -464,7 +464,7 @@ func (r *Ref) GetNumBlocks() int64
 
 
 <a name="Ref.GetPath"></a>
-### func \(\*Ref\) [GetPath](<https://github.com/0chain/gosdk/blob/staging/zboxcore/fileref/fileref.go#L163>)
+### func \(\*Ref\) [GetPath](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/fileref/fileref.go#L163>)
 
 ```go
 func (r *Ref) GetPath() string
@@ -473,7 +473,7 @@ func (r *Ref) GetPath() string
 
 
 <a name="Ref.GetPathHash"></a>
-### func \(\*Ref\) [GetPathHash](<https://github.com/0chain/gosdk/blob/staging/zboxcore/fileref/fileref.go#L155>)
+### func \(\*Ref\) [GetPathHash](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/fileref/fileref.go#L155>)
 
 ```go
 func (r *Ref) GetPathHash() string
@@ -482,7 +482,7 @@ func (r *Ref) GetPathHash() string
 
 
 <a name="Ref.GetSize"></a>
-### func \(\*Ref\) [GetSize](<https://github.com/0chain/gosdk/blob/staging/zboxcore/fileref/fileref.go#L151>)
+### func \(\*Ref\) [GetSize](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/fileref/fileref.go#L151>)
 
 ```go
 func (r *Ref) GetSize() int64
@@ -491,7 +491,7 @@ func (r *Ref) GetSize() int64
 
 
 <a name="Ref.GetType"></a>
-### func \(\*Ref\) [GetType](<https://github.com/0chain/gosdk/blob/staging/zboxcore/fileref/fileref.go#L143>)
+### func \(\*Ref\) [GetType](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/fileref/fileref.go#L143>)
 
 ```go
 func (r *Ref) GetType() string
@@ -500,7 +500,7 @@ func (r *Ref) GetType() string
 
 
 <a name="Ref.GetUpdatedAt"></a>
-### func \(\*Ref\) [GetUpdatedAt](<https://github.com/0chain/gosdk/blob/staging/zboxcore/fileref/fileref.go#L179>)
+### func \(\*Ref\) [GetUpdatedAt](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/fileref/fileref.go#L179>)
 
 ```go
 func (r *Ref) GetUpdatedAt() common.Timestamp
@@ -509,7 +509,7 @@ func (r *Ref) GetUpdatedAt() common.Timestamp
 
 
 <a name="Ref.RemoveChild"></a>
-### func \(\*Ref\) [RemoveChild](<https://github.com/0chain/gosdk/blob/staging/zboxcore/fileref/fileref.go#L206>)
+### func \(\*Ref\) [RemoveChild](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/fileref/fileref.go#L206>)
 
 ```go
 func (r *Ref) RemoveChild(idx int)
@@ -518,7 +518,7 @@ func (r *Ref) RemoveChild(idx int)
 
 
 <a name="RefEntity"></a>
-## type [RefEntity](<https://github.com/0chain/gosdk/blob/staging/zboxcore/fileref/fileref.go#L56-L70>)
+## type [RefEntity](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/fileref/fileref.go#L56-L70>)
 
 
 
@@ -541,7 +541,7 @@ type RefEntity interface {
 ```
 
 <a name="ReferencePath"></a>
-## type [ReferencePath](<https://github.com/0chain/gosdk/blob/staging/zboxcore/fileref/refpath.go#L8-L11>)
+## type [ReferencePath](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/fileref/refpath.go#L8-L11>)
 
 
 
@@ -553,7 +553,7 @@ type ReferencePath struct {
 ```
 
 <a name="ReferencePath.GetDirTree"></a>
-### func \(\*ReferencePath\) [GetDirTree](<https://github.com/0chain/gosdk/blob/staging/zboxcore/fileref/refpath.go#L39>)
+### func \(\*ReferencePath\) [GetDirTree](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/fileref/refpath.go#L39>)
 
 ```go
 func (rp *ReferencePath) GetDirTree(allocationID string) (*Ref, error)
@@ -562,7 +562,7 @@ func (rp *ReferencePath) GetDirTree(allocationID string) (*Ref, error)
 GetDirTree covert and build root Ref with children
 
 <a name="ReferencePath.GetRefFromObjectTree"></a>
-### func \(\*ReferencePath\) [GetRefFromObjectTree](<https://github.com/0chain/gosdk/blob/staging/zboxcore/fileref/refpath.go#L13>)
+### func \(\*ReferencePath\) [GetRefFromObjectTree](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/fileref/refpath.go#L13>)
 
 ```go
 func (rp *ReferencePath) GetRefFromObjectTree(allocationID string) (RefEntity, error)

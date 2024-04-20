@@ -15,7 +15,7 @@ import "github.com/0chain/gosdk/wasmsdk"
 
 
 <a name="InvalidArg"></a>
-## func [InvalidArg](<https://github.com/0chain/gosdk/blob/staging/wasmsdk/errors.go#L9>)
+## func [InvalidArg](<https://github.com/0chain/gosdk/blob/doc/initial/wasmsdk/errors.go#L9>)
 
 ```go
 func InvalidArg(argName string) error
@@ -24,7 +24,7 @@ func InvalidArg(argName string) error
 
 
 <a name="RequiredArg"></a>
-## func [RequiredArg](<https://github.com/0chain/gosdk/blob/staging/wasmsdk/errors.go#L5>)
+## func [RequiredArg](<https://github.com/0chain/gosdk/blob/doc/initial/wasmsdk/errors.go#L5>)
 
 ```go
 func RequiredArg(argName string) error
@@ -33,7 +33,7 @@ func RequiredArg(argName string) error
 
 
 <a name="DownloadCommandResponse"></a>
-## type [DownloadCommandResponse](<https://github.com/0chain/gosdk/blob/staging/wasmsdk/response.go#L8-L14>)
+## type [DownloadCommandResponse](<https://github.com/0chain/gosdk/blob/doc/initial/wasmsdk/response.go#L8-L14>)
 
 
 
@@ -48,7 +48,7 @@ type DownloadCommandResponse struct {
 ```
 
 <a name="FileCommandResponse"></a>
-## type [FileCommandResponse](<https://github.com/0chain/gosdk/blob/staging/wasmsdk/response.go#L3-L6>)
+## type [FileCommandResponse](<https://github.com/0chain/gosdk/blob/doc/initial/wasmsdk/response.go#L3-L6>)
 
 
 

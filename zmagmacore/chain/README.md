@@ -16,7 +16,7 @@ import "github.com/0chain/gosdk/zmagmacore/chain"
 
 
 <a name="SetServerChain"></a>
-## func [SetServerChain](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/chain/entity.go#L20>)
+## func [SetServerChain](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/chain/entity.go#L20>)
 
 ```go
 func SetServerChain(c *Chain)
@@ -25,7 +25,7 @@ func SetServerChain(c *Chain)
 SetServerChain sets the server chain object to package variable serverChain.
 
 <a name="Chain"></a>
-## type [Chain](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/chain/entity.go#L8-L14>)
+## type [Chain](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/chain/entity.go#L8-L14>)
 
 Chain represents data structure that holds the chain data.
 
@@ -40,7 +40,7 @@ type Chain struct {
 ```
 
 <a name="GetServerChain"></a>
-### func [GetServerChain](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/chain/entity.go#L25>)
+### func [GetServerChain](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/chain/entity.go#L25>)
 
 ```go
 func GetServerChain() *Chain
@@ -49,7 +49,7 @@ func GetServerChain() *Chain
 GetServerChain returns the chain object for the server chain.
 
 <a name="NewChain"></a>
-### func [NewChain](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/chain/entity.go#L30>)
+### func [NewChain](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/chain/entity.go#L30>)
 
 ```go
 func NewChain(id, OwnerID, blockWorker string) *Chain
@@ -58,7 +58,7 @@ func NewChain(id, OwnerID, blockWorker string) *Chain
 NewChain creates a new Chain.
 
 <a name="Provider"></a>
-### func [Provider](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/chain/entity.go#L39>)
+### func [Provider](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/chain/entity.go#L39>)
 
 ```go
 func Provider() *Chain

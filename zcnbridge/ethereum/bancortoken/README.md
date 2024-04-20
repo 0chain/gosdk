@@ -156,7 +156,7 @@ var BancortokenMetaData = &bind.MetaData{
 ```
 
 <a name="Bancortoken"></a>
-## type [Bancortoken](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L42-L46>)
+## type [Bancortoken](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L42-L46>)
 
 Bancortoken is an auto generated Go binding around an Ethereum contract.
 
@@ -169,7 +169,7 @@ type Bancortoken struct {
 ```
 
 <a name="NewBancortoken"></a>
-### func [NewBancortoken](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L101>)
+### func [NewBancortoken](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L101>)
 
 ```go
 func NewBancortoken(address common.Address, backend bind.ContractBackend) (*Bancortoken, error)
@@ -178,7 +178,7 @@ func NewBancortoken(address common.Address, backend bind.ContractBackend) (*Banc
 NewBancortoken creates a new instance of Bancortoken, bound to a specific deployed contract.
 
 <a name="BancortokenApproval"></a>
-## type [BancortokenApproval](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L781-L786>)
+## type [BancortokenApproval](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L781-L786>)
 
 BancortokenApproval represents a Approval event raised by the Bancortoken contract.
 
@@ -192,7 +192,7 @@ type BancortokenApproval struct {
 ```
 
 <a name="BancortokenApprovalIterator"></a>
-## type [BancortokenApprovalIterator](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L714-L724>)
+## type [BancortokenApprovalIterator](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L714-L724>)
 
 BancortokenApprovalIterator is returned from FilterApproval and is used to iterate over the raw logs and unpacked data for Approval events raised by the Bancortoken contract.
 
@@ -204,7 +204,7 @@ type BancortokenApprovalIterator struct {
 ```
 
 <a name="BancortokenApprovalIterator.Close"></a>
-### func \(\*BancortokenApprovalIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L775>)
+### func \(\*BancortokenApprovalIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L775>)
 
 ```go
 func (it *BancortokenApprovalIterator) Close() error
@@ -213,7 +213,7 @@ func (it *BancortokenApprovalIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="BancortokenApprovalIterator.Error"></a>
-### func \(\*BancortokenApprovalIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L769>)
+### func \(\*BancortokenApprovalIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L769>)
 
 ```go
 func (it *BancortokenApprovalIterator) Error() error
@@ -222,7 +222,7 @@ func (it *BancortokenApprovalIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="BancortokenApprovalIterator.Next"></a>
-### func \(\*BancortokenApprovalIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L729>)
+### func \(\*BancortokenApprovalIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L729>)
 
 ```go
 func (it *BancortokenApprovalIterator) Next() bool
@@ -231,7 +231,7 @@ func (it *BancortokenApprovalIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="BancortokenCaller"></a>
-## type [BancortokenCaller](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L49-L51>)
+## type [BancortokenCaller](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L49-L51>)
 
 BancortokenCaller is an auto generated read\-only Go binding around an Ethereum contract.
 
@@ -242,7 +242,7 @@ type BancortokenCaller struct {
 ```
 
 <a name="NewBancortokenCaller"></a>
-### func [NewBancortokenCaller](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L110>)
+### func [NewBancortokenCaller](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L110>)
 
 ```go
 func NewBancortokenCaller(address common.Address, caller bind.ContractCaller) (*BancortokenCaller, error)
@@ -251,7 +251,7 @@ func NewBancortokenCaller(address common.Address, caller bind.ContractCaller) (*
 NewBancortokenCaller creates a new read\-only instance of Bancortoken, bound to a specific deployed contract.
 
 <a name="BancortokenCaller.Allowance"></a>
-### func \(\*BancortokenCaller\) [Allowance](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L186>)
+### func \(\*BancortokenCaller\) [Allowance](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L186>)
 
 ```go
 func (_Bancortoken *BancortokenCaller) Allowance(opts *bind.CallOpts, arg0 common.Address, arg1 common.Address) (*big.Int, error)
@@ -262,7 +262,7 @@ Allowance is a free data retrieval call binding the contract method 0xdd62ed3e.
 Solidity: function allowance\(address , address \) returns\(uint256\)
 
 <a name="BancortokenCaller.BalanceOf"></a>
-### func \(\*BancortokenCaller\) [BalanceOf](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L217>)
+### func \(\*BancortokenCaller\) [BalanceOf](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L217>)
 
 ```go
 func (_Bancortoken *BancortokenCaller) BalanceOf(opts *bind.CallOpts, arg0 common.Address) (*big.Int, error)
@@ -273,7 +273,7 @@ BalanceOf is a free data retrieval call binding the contract method 0x70a08231.
 Solidity: function balanceOf\(address \) returns\(uint256\)
 
 <a name="BancortokenCaller.Decimals"></a>
-### func \(\*BancortokenCaller\) [Decimals](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L248>)
+### func \(\*BancortokenCaller\) [Decimals](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L248>)
 
 ```go
 func (_Bancortoken *BancortokenCaller) Decimals(opts *bind.CallOpts) (uint8, error)
@@ -284,7 +284,7 @@ Decimals is a free data retrieval call binding the contract method 0x313ce567.
 Solidity: function decimals\(\) returns\(uint8\)
 
 <a name="BancortokenCaller.Name"></a>
-### func \(\*BancortokenCaller\) [Name](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L279>)
+### func \(\*BancortokenCaller\) [Name](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L279>)
 
 ```go
 func (_Bancortoken *BancortokenCaller) Name(opts *bind.CallOpts) (string, error)
@@ -295,7 +295,7 @@ Name is a free data retrieval call binding the contract method 0x06fdde03.
 Solidity: function name\(\) returns\(string\)
 
 <a name="BancortokenCaller.NewOwner"></a>
-### func \(\*BancortokenCaller\) [NewOwner](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L310>)
+### func \(\*BancortokenCaller\) [NewOwner](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L310>)
 
 ```go
 func (_Bancortoken *BancortokenCaller) NewOwner(opts *bind.CallOpts) (common.Address, error)
@@ -306,7 +306,7 @@ NewOwner is a free data retrieval call binding the contract method 0xd4ee1d90.
 Solidity: function newOwner\(\) returns\(address\)
 
 <a name="BancortokenCaller.Owner"></a>
-### func \(\*BancortokenCaller\) [Owner](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L341>)
+### func \(\*BancortokenCaller\) [Owner](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L341>)
 
 ```go
 func (_Bancortoken *BancortokenCaller) Owner(opts *bind.CallOpts) (common.Address, error)
@@ -317,7 +317,7 @@ Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
 Solidity: function owner\(\) returns\(address\)
 
 <a name="BancortokenCaller.Standard"></a>
-### func \(\*BancortokenCaller\) [Standard](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L372>)
+### func \(\*BancortokenCaller\) [Standard](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L372>)
 
 ```go
 func (_Bancortoken *BancortokenCaller) Standard(opts *bind.CallOpts) (string, error)
@@ -328,7 +328,7 @@ Standard is a free data retrieval call binding the contract method 0x5a3b7e42.
 Solidity: function standard\(\) returns\(string\)
 
 <a name="BancortokenCaller.Symbol"></a>
-### func \(\*BancortokenCaller\) [Symbol](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L403>)
+### func \(\*BancortokenCaller\) [Symbol](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L403>)
 
 ```go
 func (_Bancortoken *BancortokenCaller) Symbol(opts *bind.CallOpts) (string, error)
@@ -339,7 +339,7 @@ Symbol is a free data retrieval call binding the contract method 0x95d89b41.
 Solidity: function symbol\(\) returns\(string\)
 
 <a name="BancortokenCaller.TotalSupply"></a>
-### func \(\*BancortokenCaller\) [TotalSupply](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L434>)
+### func \(\*BancortokenCaller\) [TotalSupply](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L434>)
 
 ```go
 func (_Bancortoken *BancortokenCaller) TotalSupply(opts *bind.CallOpts) (*big.Int, error)
@@ -350,7 +350,7 @@ TotalSupply is a free data retrieval call binding the contract method 0x18160ddd
 Solidity: function totalSupply\(\) returns\(uint256\)
 
 <a name="BancortokenCaller.TransfersEnabled"></a>
-### func \(\*BancortokenCaller\) [TransfersEnabled](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L465>)
+### func \(\*BancortokenCaller\) [TransfersEnabled](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L465>)
 
 ```go
 func (_Bancortoken *BancortokenCaller) TransfersEnabled(opts *bind.CallOpts) (bool, error)
@@ -361,7 +361,7 @@ TransfersEnabled is a free data retrieval call binding the contract method 0xbef
 Solidity: function transfersEnabled\(\) returns\(bool\)
 
 <a name="BancortokenCaller.Version"></a>
-### func \(\*BancortokenCaller\) [Version](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L496>)
+### func \(\*BancortokenCaller\) [Version](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L496>)
 
 ```go
 func (_Bancortoken *BancortokenCaller) Version(opts *bind.CallOpts) (string, error)
@@ -372,7 +372,7 @@ Version is a free data retrieval call binding the contract method 0x54fd4d50.
 Solidity: function version\(\) returns\(string\)
 
 <a name="BancortokenCallerRaw"></a>
-## type [BancortokenCallerRaw](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L91-L93>)
+## type [BancortokenCallerRaw](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L91-L93>)
 
 BancortokenCallerRaw is an auto generated low\-level read\-only Go binding around an Ethereum contract.
 
@@ -383,7 +383,7 @@ type BancortokenCallerRaw struct {
 ```
 
 <a name="BancortokenCallerRaw.Call"></a>
-### func \(\*BancortokenCallerRaw\) [Call](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L168>)
+### func \(\*BancortokenCallerRaw\) [Call](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L168>)
 
 ```go
 func (_Bancortoken *BancortokenCallerRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error
@@ -392,7 +392,7 @@ func (_Bancortoken *BancortokenCallerRaw) Call(opts *bind.CallOpts, result *[]in
 Call invokes the \(constant\) contract method with params as input values and sets the output to result. The result type might be a single field for simple returns, a slice of interfaces for anonymous returns and a struct for named returns.
 
 <a name="BancortokenCallerSession"></a>
-## type [BancortokenCallerSession](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L73-L76>)
+## type [BancortokenCallerSession](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L73-L76>)
 
 BancortokenCallerSession is an auto generated read\-only Go binding around an Ethereum contract, with pre\-set call options.
 
@@ -404,7 +404,7 @@ type BancortokenCallerSession struct {
 ```
 
 <a name="BancortokenCallerSession.Allowance"></a>
-### func \(\*BancortokenCallerSession\) [Allowance](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L210>)
+### func \(\*BancortokenCallerSession\) [Allowance](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L210>)
 
 ```go
 func (_Bancortoken *BancortokenCallerSession) Allowance(arg0 common.Address, arg1 common.Address) (*big.Int, error)
@@ -415,7 +415,7 @@ Allowance is a free data retrieval call binding the contract method 0xdd62ed3e.
 Solidity: function allowance\(address , address \) returns\(uint256\)
 
 <a name="BancortokenCallerSession.BalanceOf"></a>
-### func \(\*BancortokenCallerSession\) [BalanceOf](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L241>)
+### func \(\*BancortokenCallerSession\) [BalanceOf](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L241>)
 
 ```go
 func (_Bancortoken *BancortokenCallerSession) BalanceOf(arg0 common.Address) (*big.Int, error)
@@ -426,7 +426,7 @@ BalanceOf is a free data retrieval call binding the contract method 0x70a08231.
 Solidity: function balanceOf\(address \) returns\(uint256\)
 
 <a name="BancortokenCallerSession.Decimals"></a>
-### func \(\*BancortokenCallerSession\) [Decimals](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L272>)
+### func \(\*BancortokenCallerSession\) [Decimals](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L272>)
 
 ```go
 func (_Bancortoken *BancortokenCallerSession) Decimals() (uint8, error)
@@ -437,7 +437,7 @@ Decimals is a free data retrieval call binding the contract method 0x313ce567.
 Solidity: function decimals\(\) returns\(uint8\)
 
 <a name="BancortokenCallerSession.Name"></a>
-### func \(\*BancortokenCallerSession\) [Name](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L303>)
+### func \(\*BancortokenCallerSession\) [Name](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L303>)
 
 ```go
 func (_Bancortoken *BancortokenCallerSession) Name() (string, error)
@@ -448,7 +448,7 @@ Name is a free data retrieval call binding the contract method 0x06fdde03.
 Solidity: function name\(\) returns\(string\)
 
 <a name="BancortokenCallerSession.NewOwner"></a>
-### func \(\*BancortokenCallerSession\) [NewOwner](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L334>)
+### func \(\*BancortokenCallerSession\) [NewOwner](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L334>)
 
 ```go
 func (_Bancortoken *BancortokenCallerSession) NewOwner() (common.Address, error)
@@ -459,7 +459,7 @@ NewOwner is a free data retrieval call binding the contract method 0xd4ee1d90.
 Solidity: function newOwner\(\) returns\(address\)
 
 <a name="BancortokenCallerSession.Owner"></a>
-### func \(\*BancortokenCallerSession\) [Owner](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L365>)
+### func \(\*BancortokenCallerSession\) [Owner](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L365>)
 
 ```go
 func (_Bancortoken *BancortokenCallerSession) Owner() (common.Address, error)
@@ -470,7 +470,7 @@ Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
 Solidity: function owner\(\) returns\(address\)
 
 <a name="BancortokenCallerSession.Standard"></a>
-### func \(\*BancortokenCallerSession\) [Standard](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L396>)
+### func \(\*BancortokenCallerSession\) [Standard](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L396>)
 
 ```go
 func (_Bancortoken *BancortokenCallerSession) Standard() (string, error)
@@ -481,7 +481,7 @@ Standard is a free data retrieval call binding the contract method 0x5a3b7e42.
 Solidity: function standard\(\) returns\(string\)
 
 <a name="BancortokenCallerSession.Symbol"></a>
-### func \(\*BancortokenCallerSession\) [Symbol](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L427>)
+### func \(\*BancortokenCallerSession\) [Symbol](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L427>)
 
 ```go
 func (_Bancortoken *BancortokenCallerSession) Symbol() (string, error)
@@ -492,7 +492,7 @@ Symbol is a free data retrieval call binding the contract method 0x95d89b41.
 Solidity: function symbol\(\) returns\(string\)
 
 <a name="BancortokenCallerSession.TotalSupply"></a>
-### func \(\*BancortokenCallerSession\) [TotalSupply](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L458>)
+### func \(\*BancortokenCallerSession\) [TotalSupply](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L458>)
 
 ```go
 func (_Bancortoken *BancortokenCallerSession) TotalSupply() (*big.Int, error)
@@ -503,7 +503,7 @@ TotalSupply is a free data retrieval call binding the contract method 0x18160ddd
 Solidity: function totalSupply\(\) returns\(uint256\)
 
 <a name="BancortokenCallerSession.TransfersEnabled"></a>
-### func \(\*BancortokenCallerSession\) [TransfersEnabled](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L489>)
+### func \(\*BancortokenCallerSession\) [TransfersEnabled](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L489>)
 
 ```go
 func (_Bancortoken *BancortokenCallerSession) TransfersEnabled() (bool, error)
@@ -514,7 +514,7 @@ TransfersEnabled is a free data retrieval call binding the contract method 0xbef
 Solidity: function transfersEnabled\(\) returns\(bool\)
 
 <a name="BancortokenCallerSession.Version"></a>
-### func \(\*BancortokenCallerSession\) [Version](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L520>)
+### func \(\*BancortokenCallerSession\) [Version](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L520>)
 
 ```go
 func (_Bancortoken *BancortokenCallerSession) Version() (string, error)
@@ -525,7 +525,7 @@ Version is a free data retrieval call binding the contract method 0x54fd4d50.
 Solidity: function version\(\) returns\(string\)
 
 <a name="BancortokenDestruction"></a>
-## type [BancortokenDestruction](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L935-L938>)
+## type [BancortokenDestruction](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L935-L938>)
 
 BancortokenDestruction represents a Destruction event raised by the Bancortoken contract.
 
@@ -537,7 +537,7 @@ type BancortokenDestruction struct {
 ```
 
 <a name="BancortokenDestructionIterator"></a>
-## type [BancortokenDestructionIterator](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L868-L878>)
+## type [BancortokenDestructionIterator](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L868-L878>)
 
 BancortokenDestructionIterator is returned from FilterDestruction and is used to iterate over the raw logs and unpacked data for Destruction events raised by the Bancortoken contract.
 
@@ -549,7 +549,7 @@ type BancortokenDestructionIterator struct {
 ```
 
 <a name="BancortokenDestructionIterator.Close"></a>
-### func \(\*BancortokenDestructionIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L929>)
+### func \(\*BancortokenDestructionIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L929>)
 
 ```go
 func (it *BancortokenDestructionIterator) Close() error
@@ -558,7 +558,7 @@ func (it *BancortokenDestructionIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="BancortokenDestructionIterator.Error"></a>
-### func \(\*BancortokenDestructionIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L923>)
+### func \(\*BancortokenDestructionIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L923>)
 
 ```go
 func (it *BancortokenDestructionIterator) Error() error
@@ -567,7 +567,7 @@ func (it *BancortokenDestructionIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="BancortokenDestructionIterator.Next"></a>
-### func \(\*BancortokenDestructionIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L883>)
+### func \(\*BancortokenDestructionIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L883>)
 
 ```go
 func (it *BancortokenDestructionIterator) Next() bool
@@ -576,7 +576,7 @@ func (it *BancortokenDestructionIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="BancortokenFilterer"></a>
-## type [BancortokenFilterer](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L59-L61>)
+## type [BancortokenFilterer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L59-L61>)
 
 BancortokenFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
 
@@ -587,7 +587,7 @@ type BancortokenFilterer struct {
 ```
 
 <a name="NewBancortokenFilterer"></a>
-### func [NewBancortokenFilterer](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L128>)
+### func [NewBancortokenFilterer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L128>)
 
 ```go
 func NewBancortokenFilterer(address common.Address, filterer bind.ContractFilterer) (*BancortokenFilterer, error)
@@ -596,7 +596,7 @@ func NewBancortokenFilterer(address common.Address, filterer bind.ContractFilter
 NewBancortokenFilterer creates a new log filterer instance of Bancortoken, bound to a specific deployed contract.
 
 <a name="BancortokenFilterer.FilterApproval"></a>
-### func \(\*BancortokenFilterer\) [FilterApproval](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L791>)
+### func \(\*BancortokenFilterer\) [FilterApproval](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L791>)
 
 ```go
 func (_Bancortoken *BancortokenFilterer) FilterApproval(opts *bind.FilterOpts, _owner []common.Address, _spender []common.Address) (*BancortokenApprovalIterator, error)
@@ -607,7 +607,7 @@ FilterApproval is a free log retrieval operation binding the contract event 0x8c
 Solidity: event Approval\(address indexed \_owner, address indexed \_spender, uint256 \_value\)
 
 <a name="BancortokenFilterer.FilterDestruction"></a>
-### func \(\*BancortokenFilterer\) [FilterDestruction](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L943>)
+### func \(\*BancortokenFilterer\) [FilterDestruction](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L943>)
 
 ```go
 func (_Bancortoken *BancortokenFilterer) FilterDestruction(opts *bind.FilterOpts) (*BancortokenDestructionIterator, error)
@@ -618,7 +618,7 @@ FilterDestruction is a free log retrieval operation binding the contract event 0
 Solidity: event Destruction\(uint256 \_amount\)
 
 <a name="BancortokenFilterer.FilterIssuance"></a>
-### func \(\*BancortokenFilterer\) [FilterIssuance](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L1077>)
+### func \(\*BancortokenFilterer\) [FilterIssuance](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L1077>)
 
 ```go
 func (_Bancortoken *BancortokenFilterer) FilterIssuance(opts *bind.FilterOpts) (*BancortokenIssuanceIterator, error)
@@ -629,7 +629,7 @@ FilterIssuance is a free log retrieval operation binding the contract event 0x93
 Solidity: event Issuance\(uint256 \_amount\)
 
 <a name="BancortokenFilterer.FilterNewSmartToken"></a>
-### func \(\*BancortokenFilterer\) [FilterNewSmartToken](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L1211>)
+### func \(\*BancortokenFilterer\) [FilterNewSmartToken](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L1211>)
 
 ```go
 func (_Bancortoken *BancortokenFilterer) FilterNewSmartToken(opts *bind.FilterOpts) (*BancortokenNewSmartTokenIterator, error)
@@ -640,7 +640,7 @@ FilterNewSmartToken is a free log retrieval operation binding the contract event
 Solidity: event NewSmartToken\(address \_token\)
 
 <a name="BancortokenFilterer.FilterOwnerUpdate"></a>
-### func \(\*BancortokenFilterer\) [FilterOwnerUpdate](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L1346>)
+### func \(\*BancortokenFilterer\) [FilterOwnerUpdate](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L1346>)
 
 ```go
 func (_Bancortoken *BancortokenFilterer) FilterOwnerUpdate(opts *bind.FilterOpts) (*BancortokenOwnerUpdateIterator, error)
@@ -651,7 +651,7 @@ FilterOwnerUpdate is a free log retrieval operation binding the contract event 0
 Solidity: event OwnerUpdate\(address \_prevOwner, address \_newOwner\)
 
 <a name="BancortokenFilterer.FilterTransfer"></a>
-### func \(\*BancortokenFilterer\) [FilterTransfer](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L1482>)
+### func \(\*BancortokenFilterer\) [FilterTransfer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L1482>)
 
 ```go
 func (_Bancortoken *BancortokenFilterer) FilterTransfer(opts *bind.FilterOpts, _from []common.Address, _to []common.Address) (*BancortokenTransferIterator, error)
@@ -662,7 +662,7 @@ FilterTransfer is a free log retrieval operation binding the contract event 0xdd
 Solidity: event Transfer\(address indexed \_from, address indexed \_to, uint256 \_value\)
 
 <a name="BancortokenFilterer.ParseApproval"></a>
-### func \(\*BancortokenFilterer\) [ParseApproval](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L858>)
+### func \(\*BancortokenFilterer\) [ParseApproval](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L858>)
 
 ```go
 func (_Bancortoken *BancortokenFilterer) ParseApproval(log types.Log) (*BancortokenApproval, error)
@@ -673,7 +673,7 @@ ParseApproval is a log parse operation binding the contract event 0x8c5be1e5ebec
 Solidity: event Approval\(address indexed \_owner, address indexed \_spender, uint256 \_value\)
 
 <a name="BancortokenFilterer.ParseDestruction"></a>
-### func \(\*BancortokenFilterer\) [ParseDestruction](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L992>)
+### func \(\*BancortokenFilterer\) [ParseDestruction](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L992>)
 
 ```go
 func (_Bancortoken *BancortokenFilterer) ParseDestruction(log types.Log) (*BancortokenDestruction, error)
@@ -684,7 +684,7 @@ ParseDestruction is a log parse operation binding the contract event 0x9a1b418bc
 Solidity: event Destruction\(uint256 \_amount\)
 
 <a name="BancortokenFilterer.ParseIssuance"></a>
-### func \(\*BancortokenFilterer\) [ParseIssuance](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L1126>)
+### func \(\*BancortokenFilterer\) [ParseIssuance](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L1126>)
 
 ```go
 func (_Bancortoken *BancortokenFilterer) ParseIssuance(log types.Log) (*BancortokenIssuance, error)
@@ -695,7 +695,7 @@ ParseIssuance is a log parse operation binding the contract event 0x9386c90217c3
 Solidity: event Issuance\(uint256 \_amount\)
 
 <a name="BancortokenFilterer.ParseNewSmartToken"></a>
-### func \(\*BancortokenFilterer\) [ParseNewSmartToken](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L1260>)
+### func \(\*BancortokenFilterer\) [ParseNewSmartToken](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L1260>)
 
 ```go
 func (_Bancortoken *BancortokenFilterer) ParseNewSmartToken(log types.Log) (*BancortokenNewSmartToken, error)
@@ -706,7 +706,7 @@ ParseNewSmartToken is a log parse operation binding the contract event 0xf4cd1f8
 Solidity: event NewSmartToken\(address \_token\)
 
 <a name="BancortokenFilterer.ParseOwnerUpdate"></a>
-### func \(\*BancortokenFilterer\) [ParseOwnerUpdate](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L1395>)
+### func \(\*BancortokenFilterer\) [ParseOwnerUpdate](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L1395>)
 
 ```go
 func (_Bancortoken *BancortokenFilterer) ParseOwnerUpdate(log types.Log) (*BancortokenOwnerUpdate, error)
@@ -717,7 +717,7 @@ ParseOwnerUpdate is a log parse operation binding the contract event 0x343765429
 Solidity: event OwnerUpdate\(address \_prevOwner, address \_newOwner\)
 
 <a name="BancortokenFilterer.ParseTransfer"></a>
-### func \(\*BancortokenFilterer\) [ParseTransfer](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L1549>)
+### func \(\*BancortokenFilterer\) [ParseTransfer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L1549>)
 
 ```go
 func (_Bancortoken *BancortokenFilterer) ParseTransfer(log types.Log) (*BancortokenTransfer, error)
@@ -728,7 +728,7 @@ ParseTransfer is a log parse operation binding the contract event 0xddf252ad1be2
 Solidity: event Transfer\(address indexed \_from, address indexed \_to, uint256 \_value\)
 
 <a name="BancortokenFilterer.WatchApproval"></a>
-### func \(\*BancortokenFilterer\) [WatchApproval](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L812>)
+### func \(\*BancortokenFilterer\) [WatchApproval](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L812>)
 
 ```go
 func (_Bancortoken *BancortokenFilterer) WatchApproval(opts *bind.WatchOpts, sink chan<- *BancortokenApproval, _owner []common.Address, _spender []common.Address) (event.Subscription, error)
@@ -739,7 +739,7 @@ WatchApproval is a free log subscription operation binding the contract event 0x
 Solidity: event Approval\(address indexed \_owner, address indexed \_spender, uint256 \_value\)
 
 <a name="BancortokenFilterer.WatchDestruction"></a>
-### func \(\*BancortokenFilterer\) [WatchDestruction](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L955>)
+### func \(\*BancortokenFilterer\) [WatchDestruction](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L955>)
 
 ```go
 func (_Bancortoken *BancortokenFilterer) WatchDestruction(opts *bind.WatchOpts, sink chan<- *BancortokenDestruction) (event.Subscription, error)
@@ -750,7 +750,7 @@ WatchDestruction is a free log subscription operation binding the contract event
 Solidity: event Destruction\(uint256 \_amount\)
 
 <a name="BancortokenFilterer.WatchIssuance"></a>
-### func \(\*BancortokenFilterer\) [WatchIssuance](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L1089>)
+### func \(\*BancortokenFilterer\) [WatchIssuance](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L1089>)
 
 ```go
 func (_Bancortoken *BancortokenFilterer) WatchIssuance(opts *bind.WatchOpts, sink chan<- *BancortokenIssuance) (event.Subscription, error)
@@ -761,7 +761,7 @@ WatchIssuance is a free log subscription operation binding the contract event 0x
 Solidity: event Issuance\(uint256 \_amount\)
 
 <a name="BancortokenFilterer.WatchNewSmartToken"></a>
-### func \(\*BancortokenFilterer\) [WatchNewSmartToken](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L1223>)
+### func \(\*BancortokenFilterer\) [WatchNewSmartToken](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L1223>)
 
 ```go
 func (_Bancortoken *BancortokenFilterer) WatchNewSmartToken(opts *bind.WatchOpts, sink chan<- *BancortokenNewSmartToken) (event.Subscription, error)
@@ -772,7 +772,7 @@ WatchNewSmartToken is a free log subscription operation binding the contract eve
 Solidity: event NewSmartToken\(address \_token\)
 
 <a name="BancortokenFilterer.WatchOwnerUpdate"></a>
-### func \(\*BancortokenFilterer\) [WatchOwnerUpdate](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L1358>)
+### func \(\*BancortokenFilterer\) [WatchOwnerUpdate](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L1358>)
 
 ```go
 func (_Bancortoken *BancortokenFilterer) WatchOwnerUpdate(opts *bind.WatchOpts, sink chan<- *BancortokenOwnerUpdate) (event.Subscription, error)
@@ -783,7 +783,7 @@ WatchOwnerUpdate is a free log subscription operation binding the contract event
 Solidity: event OwnerUpdate\(address \_prevOwner, address \_newOwner\)
 
 <a name="BancortokenFilterer.WatchTransfer"></a>
-### func \(\*BancortokenFilterer\) [WatchTransfer](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L1503>)
+### func \(\*BancortokenFilterer\) [WatchTransfer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L1503>)
 
 ```go
 func (_Bancortoken *BancortokenFilterer) WatchTransfer(opts *bind.WatchOpts, sink chan<- *BancortokenTransfer, _from []common.Address, _to []common.Address) (event.Subscription, error)
@@ -794,7 +794,7 @@ WatchTransfer is a free log subscription operation binding the contract event 0x
 Solidity: event Transfer\(address indexed \_from, address indexed \_to, uint256 \_value\)
 
 <a name="BancortokenIssuance"></a>
-## type [BancortokenIssuance](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L1069-L1072>)
+## type [BancortokenIssuance](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L1069-L1072>)
 
 BancortokenIssuance represents a Issuance event raised by the Bancortoken contract.
 
@@ -806,7 +806,7 @@ type BancortokenIssuance struct {
 ```
 
 <a name="BancortokenIssuanceIterator"></a>
-## type [BancortokenIssuanceIterator](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L1002-L1012>)
+## type [BancortokenIssuanceIterator](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L1002-L1012>)
 
 BancortokenIssuanceIterator is returned from FilterIssuance and is used to iterate over the raw logs and unpacked data for Issuance events raised by the Bancortoken contract.
 
@@ -818,7 +818,7 @@ type BancortokenIssuanceIterator struct {
 ```
 
 <a name="BancortokenIssuanceIterator.Close"></a>
-### func \(\*BancortokenIssuanceIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L1063>)
+### func \(\*BancortokenIssuanceIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L1063>)
 
 ```go
 func (it *BancortokenIssuanceIterator) Close() error
@@ -827,7 +827,7 @@ func (it *BancortokenIssuanceIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="BancortokenIssuanceIterator.Error"></a>
-### func \(\*BancortokenIssuanceIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L1057>)
+### func \(\*BancortokenIssuanceIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L1057>)
 
 ```go
 func (it *BancortokenIssuanceIterator) Error() error
@@ -836,7 +836,7 @@ func (it *BancortokenIssuanceIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="BancortokenIssuanceIterator.Next"></a>
-### func \(\*BancortokenIssuanceIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L1017>)
+### func \(\*BancortokenIssuanceIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L1017>)
 
 ```go
 func (it *BancortokenIssuanceIterator) Next() bool
@@ -845,7 +845,7 @@ func (it *BancortokenIssuanceIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="BancortokenNewSmartToken"></a>
-## type [BancortokenNewSmartToken](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L1203-L1206>)
+## type [BancortokenNewSmartToken](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L1203-L1206>)
 
 BancortokenNewSmartToken represents a NewSmartToken event raised by the Bancortoken contract.
 
@@ -857,7 +857,7 @@ type BancortokenNewSmartToken struct {
 ```
 
 <a name="BancortokenNewSmartTokenIterator"></a>
-## type [BancortokenNewSmartTokenIterator](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L1136-L1146>)
+## type [BancortokenNewSmartTokenIterator](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L1136-L1146>)
 
 BancortokenNewSmartTokenIterator is returned from FilterNewSmartToken and is used to iterate over the raw logs and unpacked data for NewSmartToken events raised by the Bancortoken contract.
 
@@ -869,7 +869,7 @@ type BancortokenNewSmartTokenIterator struct {
 ```
 
 <a name="BancortokenNewSmartTokenIterator.Close"></a>
-### func \(\*BancortokenNewSmartTokenIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L1197>)
+### func \(\*BancortokenNewSmartTokenIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L1197>)
 
 ```go
 func (it *BancortokenNewSmartTokenIterator) Close() error
@@ -878,7 +878,7 @@ func (it *BancortokenNewSmartTokenIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="BancortokenNewSmartTokenIterator.Error"></a>
-### func \(\*BancortokenNewSmartTokenIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L1191>)
+### func \(\*BancortokenNewSmartTokenIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L1191>)
 
 ```go
 func (it *BancortokenNewSmartTokenIterator) Error() error
@@ -887,7 +887,7 @@ func (it *BancortokenNewSmartTokenIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="BancortokenNewSmartTokenIterator.Next"></a>
-### func \(\*BancortokenNewSmartTokenIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L1151>)
+### func \(\*BancortokenNewSmartTokenIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L1151>)
 
 ```go
 func (it *BancortokenNewSmartTokenIterator) Next() bool
@@ -896,7 +896,7 @@ func (it *BancortokenNewSmartTokenIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="BancortokenOwnerUpdate"></a>
-## type [BancortokenOwnerUpdate](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L1337-L1341>)
+## type [BancortokenOwnerUpdate](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L1337-L1341>)
 
 BancortokenOwnerUpdate represents a OwnerUpdate event raised by the Bancortoken contract.
 
@@ -909,7 +909,7 @@ type BancortokenOwnerUpdate struct {
 ```
 
 <a name="BancortokenOwnerUpdateIterator"></a>
-## type [BancortokenOwnerUpdateIterator](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L1270-L1280>)
+## type [BancortokenOwnerUpdateIterator](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L1270-L1280>)
 
 BancortokenOwnerUpdateIterator is returned from FilterOwnerUpdate and is used to iterate over the raw logs and unpacked data for OwnerUpdate events raised by the Bancortoken contract.
 
@@ -921,7 +921,7 @@ type BancortokenOwnerUpdateIterator struct {
 ```
 
 <a name="BancortokenOwnerUpdateIterator.Close"></a>
-### func \(\*BancortokenOwnerUpdateIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L1331>)
+### func \(\*BancortokenOwnerUpdateIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L1331>)
 
 ```go
 func (it *BancortokenOwnerUpdateIterator) Close() error
@@ -930,7 +930,7 @@ func (it *BancortokenOwnerUpdateIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="BancortokenOwnerUpdateIterator.Error"></a>
-### func \(\*BancortokenOwnerUpdateIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L1325>)
+### func \(\*BancortokenOwnerUpdateIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L1325>)
 
 ```go
 func (it *BancortokenOwnerUpdateIterator) Error() error
@@ -939,7 +939,7 @@ func (it *BancortokenOwnerUpdateIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="BancortokenOwnerUpdateIterator.Next"></a>
-### func \(\*BancortokenOwnerUpdateIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L1285>)
+### func \(\*BancortokenOwnerUpdateIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L1285>)
 
 ```go
 func (it *BancortokenOwnerUpdateIterator) Next() bool
@@ -948,7 +948,7 @@ func (it *BancortokenOwnerUpdateIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="BancortokenRaw"></a>
-## type [BancortokenRaw](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L86-L88>)
+## type [BancortokenRaw](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L86-L88>)
 
 BancortokenRaw is an auto generated low\-level Go binding around an Ethereum contract.
 
@@ -959,7 +959,7 @@ type BancortokenRaw struct {
 ```
 
 <a name="BancortokenRaw.Call"></a>
-### func \(\*BancortokenRaw\) [Call](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L149>)
+### func \(\*BancortokenRaw\) [Call](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L149>)
 
 ```go
 func (_Bancortoken *BancortokenRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error
@@ -968,7 +968,7 @@ func (_Bancortoken *BancortokenRaw) Call(opts *bind.CallOpts, result *[]interfac
 Call invokes the \(constant\) contract method with params as input values and sets the output to result. The result type might be a single field for simple returns, a slice of interfaces for anonymous returns and a struct for named returns.
 
 <a name="BancortokenRaw.Transact"></a>
-### func \(\*BancortokenRaw\) [Transact](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L160>)
+### func \(\*BancortokenRaw\) [Transact](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L160>)
 
 ```go
 func (_Bancortoken *BancortokenRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error)
@@ -977,7 +977,7 @@ func (_Bancortoken *BancortokenRaw) Transact(opts *bind.TransactOpts, method str
 Transact invokes the \(paid\) contract method with params as input values.
 
 <a name="BancortokenRaw.Transfer"></a>
-### func \(\*BancortokenRaw\) [Transfer](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L155>)
+### func \(\*BancortokenRaw\) [Transfer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L155>)
 
 ```go
 func (_Bancortoken *BancortokenRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error)
@@ -986,7 +986,7 @@ func (_Bancortoken *BancortokenRaw) Transfer(opts *bind.TransactOpts) (*types.Tr
 Transfer initiates a plain transaction to move funds to the contract, calling its default method if one is available.
 
 <a name="BancortokenSession"></a>
-## type [BancortokenSession](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L65-L69>)
+## type [BancortokenSession](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L65-L69>)
 
 BancortokenSession is an auto generated Go binding around an Ethereum contract, with pre\-set call and transact options.
 
@@ -999,7 +999,7 @@ type BancortokenSession struct {
 ```
 
 <a name="BancortokenSession.AcceptOwnership"></a>
-### func \(\*BancortokenSession\) [AcceptOwnership](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L534>)
+### func \(\*BancortokenSession\) [AcceptOwnership](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L534>)
 
 ```go
 func (_Bancortoken *BancortokenSession) AcceptOwnership() (*types.Transaction, error)
@@ -1010,7 +1010,7 @@ AcceptOwnership is a paid mutator transaction binding the contract method 0x79ba
 Solidity: function acceptOwnership\(\) returns\(\)
 
 <a name="BancortokenSession.Allowance"></a>
-### func \(\*BancortokenSession\) [Allowance](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L203>)
+### func \(\*BancortokenSession\) [Allowance](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L203>)
 
 ```go
 func (_Bancortoken *BancortokenSession) Allowance(arg0 common.Address, arg1 common.Address) (*big.Int, error)
@@ -1021,7 +1021,7 @@ Allowance is a free data retrieval call binding the contract method 0xdd62ed3e.
 Solidity: function allowance\(address , address \) returns\(uint256\)
 
 <a name="BancortokenSession.Approve"></a>
-### func \(\*BancortokenSession\) [Approve](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L555>)
+### func \(\*BancortokenSession\) [Approve](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L555>)
 
 ```go
 func (_Bancortoken *BancortokenSession) Approve(_spender common.Address, _value *big.Int) (*types.Transaction, error)
@@ -1032,7 +1032,7 @@ Approve is a paid mutator transaction binding the contract method 0x095ea7b3.
 Solidity: function approve\(address \_spender, uint256 \_value\) returns\(bool success\)
 
 <a name="BancortokenSession.BalanceOf"></a>
-### func \(\*BancortokenSession\) [BalanceOf](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L234>)
+### func \(\*BancortokenSession\) [BalanceOf](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L234>)
 
 ```go
 func (_Bancortoken *BancortokenSession) BalanceOf(arg0 common.Address) (*big.Int, error)
@@ -1043,7 +1043,7 @@ BalanceOf is a free data retrieval call binding the contract method 0x70a08231.
 Solidity: function balanceOf\(address \) returns\(uint256\)
 
 <a name="BancortokenSession.Decimals"></a>
-### func \(\*BancortokenSession\) [Decimals](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L265>)
+### func \(\*BancortokenSession\) [Decimals](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L265>)
 
 ```go
 func (_Bancortoken *BancortokenSession) Decimals() (uint8, error)
@@ -1054,7 +1054,7 @@ Decimals is a free data retrieval call binding the contract method 0x313ce567.
 Solidity: function decimals\(\) returns\(uint8\)
 
 <a name="BancortokenSession.Destroy"></a>
-### func \(\*BancortokenSession\) [Destroy](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L576>)
+### func \(\*BancortokenSession\) [Destroy](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L576>)
 
 ```go
 func (_Bancortoken *BancortokenSession) Destroy(_from common.Address, _amount *big.Int) (*types.Transaction, error)
@@ -1065,7 +1065,7 @@ Destroy is a paid mutator transaction binding the contract method 0xa24835d1.
 Solidity: function destroy\(address \_from, uint256 \_amount\) returns\(\)
 
 <a name="BancortokenSession.DisableTransfers"></a>
-### func \(\*BancortokenSession\) [DisableTransfers](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L597>)
+### func \(\*BancortokenSession\) [DisableTransfers](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L597>)
 
 ```go
 func (_Bancortoken *BancortokenSession) DisableTransfers(_disable bool) (*types.Transaction, error)
@@ -1076,7 +1076,7 @@ DisableTransfers is a paid mutator transaction binding the contract method 0x160
 Solidity: function disableTransfers\(bool \_disable\) returns\(\)
 
 <a name="BancortokenSession.Issue"></a>
-### func \(\*BancortokenSession\) [Issue](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L618>)
+### func \(\*BancortokenSession\) [Issue](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L618>)
 
 ```go
 func (_Bancortoken *BancortokenSession) Issue(_to common.Address, _amount *big.Int) (*types.Transaction, error)
@@ -1087,7 +1087,7 @@ Issue is a paid mutator transaction binding the contract method 0x867904b4.
 Solidity: function issue\(address \_to, uint256 \_amount\) returns\(\)
 
 <a name="BancortokenSession.Name"></a>
-### func \(\*BancortokenSession\) [Name](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L296>)
+### func \(\*BancortokenSession\) [Name](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L296>)
 
 ```go
 func (_Bancortoken *BancortokenSession) Name() (string, error)
@@ -1098,7 +1098,7 @@ Name is a free data retrieval call binding the contract method 0x06fdde03.
 Solidity: function name\(\) returns\(string\)
 
 <a name="BancortokenSession.NewOwner"></a>
-### func \(\*BancortokenSession\) [NewOwner](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L327>)
+### func \(\*BancortokenSession\) [NewOwner](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L327>)
 
 ```go
 func (_Bancortoken *BancortokenSession) NewOwner() (common.Address, error)
@@ -1109,7 +1109,7 @@ NewOwner is a free data retrieval call binding the contract method 0xd4ee1d90.
 Solidity: function newOwner\(\) returns\(address\)
 
 <a name="BancortokenSession.Owner"></a>
-### func \(\*BancortokenSession\) [Owner](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L358>)
+### func \(\*BancortokenSession\) [Owner](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L358>)
 
 ```go
 func (_Bancortoken *BancortokenSession) Owner() (common.Address, error)
@@ -1120,7 +1120,7 @@ Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
 Solidity: function owner\(\) returns\(address\)
 
 <a name="BancortokenSession.Standard"></a>
-### func \(\*BancortokenSession\) [Standard](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L389>)
+### func \(\*BancortokenSession\) [Standard](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L389>)
 
 ```go
 func (_Bancortoken *BancortokenSession) Standard() (string, error)
@@ -1131,7 +1131,7 @@ Standard is a free data retrieval call binding the contract method 0x5a3b7e42.
 Solidity: function standard\(\) returns\(string\)
 
 <a name="BancortokenSession.Symbol"></a>
-### func \(\*BancortokenSession\) [Symbol](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L420>)
+### func \(\*BancortokenSession\) [Symbol](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L420>)
 
 ```go
 func (_Bancortoken *BancortokenSession) Symbol() (string, error)
@@ -1142,7 +1142,7 @@ Symbol is a free data retrieval call binding the contract method 0x95d89b41.
 Solidity: function symbol\(\) returns\(string\)
 
 <a name="BancortokenSession.TotalSupply"></a>
-### func \(\*BancortokenSession\) [TotalSupply](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L451>)
+### func \(\*BancortokenSession\) [TotalSupply](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L451>)
 
 ```go
 func (_Bancortoken *BancortokenSession) TotalSupply() (*big.Int, error)
@@ -1153,7 +1153,7 @@ TotalSupply is a free data retrieval call binding the contract method 0x18160ddd
 Solidity: function totalSupply\(\) returns\(uint256\)
 
 <a name="BancortokenSession.Transfer"></a>
-### func \(\*BancortokenSession\) [Transfer](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L639>)
+### func \(\*BancortokenSession\) [Transfer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L639>)
 
 ```go
 func (_Bancortoken *BancortokenSession) Transfer(_to common.Address, _value *big.Int) (*types.Transaction, error)
@@ -1164,7 +1164,7 @@ Transfer is a paid mutator transaction binding the contract method 0xa9059cbb.
 Solidity: function transfer\(address \_to, uint256 \_value\) returns\(bool success\)
 
 <a name="BancortokenSession.TransferFrom"></a>
-### func \(\*BancortokenSession\) [TransferFrom](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L660>)
+### func \(\*BancortokenSession\) [TransferFrom](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L660>)
 
 ```go
 func (_Bancortoken *BancortokenSession) TransferFrom(_from common.Address, _to common.Address, _value *big.Int) (*types.Transaction, error)
@@ -1175,7 +1175,7 @@ TransferFrom is a paid mutator transaction binding the contract method 0x23b872d
 Solidity: function transferFrom\(address \_from, address \_to, uint256 \_value\) returns\(bool success\)
 
 <a name="BancortokenSession.TransferOwnership"></a>
-### func \(\*BancortokenSession\) [TransferOwnership](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L681>)
+### func \(\*BancortokenSession\) [TransferOwnership](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L681>)
 
 ```go
 func (_Bancortoken *BancortokenSession) TransferOwnership(_newOwner common.Address) (*types.Transaction, error)
@@ -1186,7 +1186,7 @@ TransferOwnership is a paid mutator transaction binding the contract method 0xf2
 Solidity: function transferOwnership\(address \_newOwner\) returns\(\)
 
 <a name="BancortokenSession.TransfersEnabled"></a>
-### func \(\*BancortokenSession\) [TransfersEnabled](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L482>)
+### func \(\*BancortokenSession\) [TransfersEnabled](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L482>)
 
 ```go
 func (_Bancortoken *BancortokenSession) TransfersEnabled() (bool, error)
@@ -1197,7 +1197,7 @@ TransfersEnabled is a free data retrieval call binding the contract method 0xbef
 Solidity: function transfersEnabled\(\) returns\(bool\)
 
 <a name="BancortokenSession.Version"></a>
-### func \(\*BancortokenSession\) [Version](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L513>)
+### func \(\*BancortokenSession\) [Version](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L513>)
 
 ```go
 func (_Bancortoken *BancortokenSession) Version() (string, error)
@@ -1208,7 +1208,7 @@ Version is a free data retrieval call binding the contract method 0x54fd4d50.
 Solidity: function version\(\) returns\(string\)
 
 <a name="BancortokenSession.WithdrawTokens"></a>
-### func \(\*BancortokenSession\) [WithdrawTokens](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L702>)
+### func \(\*BancortokenSession\) [WithdrawTokens](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L702>)
 
 ```go
 func (_Bancortoken *BancortokenSession) WithdrawTokens(_token common.Address, _to common.Address, _amount *big.Int) (*types.Transaction, error)
@@ -1219,7 +1219,7 @@ WithdrawTokens is a paid mutator transaction binding the contract method 0x5e353
 Solidity: function withdrawTokens\(address \_token, address \_to, uint256 \_amount\) returns\(\)
 
 <a name="BancortokenTransactor"></a>
-## type [BancortokenTransactor](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L54-L56>)
+## type [BancortokenTransactor](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L54-L56>)
 
 BancortokenTransactor is an auto generated write\-only Go binding around an Ethereum contract.
 
@@ -1230,7 +1230,7 @@ type BancortokenTransactor struct {
 ```
 
 <a name="NewBancortokenTransactor"></a>
-### func [NewBancortokenTransactor](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L119>)
+### func [NewBancortokenTransactor](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L119>)
 
 ```go
 func NewBancortokenTransactor(address common.Address, transactor bind.ContractTransactor) (*BancortokenTransactor, error)
@@ -1239,7 +1239,7 @@ func NewBancortokenTransactor(address common.Address, transactor bind.ContractTr
 NewBancortokenTransactor creates a new write\-only instance of Bancortoken, bound to a specific deployed contract.
 
 <a name="BancortokenTransactor.AcceptOwnership"></a>
-### func \(\*BancortokenTransactor\) [AcceptOwnership](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L527>)
+### func \(\*BancortokenTransactor\) [AcceptOwnership](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L527>)
 
 ```go
 func (_Bancortoken *BancortokenTransactor) AcceptOwnership(opts *bind.TransactOpts) (*types.Transaction, error)
@@ -1250,7 +1250,7 @@ AcceptOwnership is a paid mutator transaction binding the contract method 0x79ba
 Solidity: function acceptOwnership\(\) returns\(\)
 
 <a name="BancortokenTransactor.Approve"></a>
-### func \(\*BancortokenTransactor\) [Approve](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L548>)
+### func \(\*BancortokenTransactor\) [Approve](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L548>)
 
 ```go
 func (_Bancortoken *BancortokenTransactor) Approve(opts *bind.TransactOpts, _spender common.Address, _value *big.Int) (*types.Transaction, error)
@@ -1261,7 +1261,7 @@ Approve is a paid mutator transaction binding the contract method 0x095ea7b3.
 Solidity: function approve\(address \_spender, uint256 \_value\) returns\(bool success\)
 
 <a name="BancortokenTransactor.Destroy"></a>
-### func \(\*BancortokenTransactor\) [Destroy](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L569>)
+### func \(\*BancortokenTransactor\) [Destroy](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L569>)
 
 ```go
 func (_Bancortoken *BancortokenTransactor) Destroy(opts *bind.TransactOpts, _from common.Address, _amount *big.Int) (*types.Transaction, error)
@@ -1272,7 +1272,7 @@ Destroy is a paid mutator transaction binding the contract method 0xa24835d1.
 Solidity: function destroy\(address \_from, uint256 \_amount\) returns\(\)
 
 <a name="BancortokenTransactor.DisableTransfers"></a>
-### func \(\*BancortokenTransactor\) [DisableTransfers](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L590>)
+### func \(\*BancortokenTransactor\) [DisableTransfers](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L590>)
 
 ```go
 func (_Bancortoken *BancortokenTransactor) DisableTransfers(opts *bind.TransactOpts, _disable bool) (*types.Transaction, error)
@@ -1283,7 +1283,7 @@ DisableTransfers is a paid mutator transaction binding the contract method 0x160
 Solidity: function disableTransfers\(bool \_disable\) returns\(\)
 
 <a name="BancortokenTransactor.Issue"></a>
-### func \(\*BancortokenTransactor\) [Issue](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L611>)
+### func \(\*BancortokenTransactor\) [Issue](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L611>)
 
 ```go
 func (_Bancortoken *BancortokenTransactor) Issue(opts *bind.TransactOpts, _to common.Address, _amount *big.Int) (*types.Transaction, error)
@@ -1294,7 +1294,7 @@ Issue is a paid mutator transaction binding the contract method 0x867904b4.
 Solidity: function issue\(address \_to, uint256 \_amount\) returns\(\)
 
 <a name="BancortokenTransactor.Transfer"></a>
-### func \(\*BancortokenTransactor\) [Transfer](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L632>)
+### func \(\*BancortokenTransactor\) [Transfer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L632>)
 
 ```go
 func (_Bancortoken *BancortokenTransactor) Transfer(opts *bind.TransactOpts, _to common.Address, _value *big.Int) (*types.Transaction, error)
@@ -1305,7 +1305,7 @@ Transfer is a paid mutator transaction binding the contract method 0xa9059cbb.
 Solidity: function transfer\(address \_to, uint256 \_value\) returns\(bool success\)
 
 <a name="BancortokenTransactor.TransferFrom"></a>
-### func \(\*BancortokenTransactor\) [TransferFrom](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L653>)
+### func \(\*BancortokenTransactor\) [TransferFrom](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L653>)
 
 ```go
 func (_Bancortoken *BancortokenTransactor) TransferFrom(opts *bind.TransactOpts, _from common.Address, _to common.Address, _value *big.Int) (*types.Transaction, error)
@@ -1316,7 +1316,7 @@ TransferFrom is a paid mutator transaction binding the contract method 0x23b872d
 Solidity: function transferFrom\(address \_from, address \_to, uint256 \_value\) returns\(bool success\)
 
 <a name="BancortokenTransactor.TransferOwnership"></a>
-### func \(\*BancortokenTransactor\) [TransferOwnership](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L674>)
+### func \(\*BancortokenTransactor\) [TransferOwnership](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L674>)
 
 ```go
 func (_Bancortoken *BancortokenTransactor) TransferOwnership(opts *bind.TransactOpts, _newOwner common.Address) (*types.Transaction, error)
@@ -1327,7 +1327,7 @@ TransferOwnership is a paid mutator transaction binding the contract method 0xf2
 Solidity: function transferOwnership\(address \_newOwner\) returns\(\)
 
 <a name="BancortokenTransactor.WithdrawTokens"></a>
-### func \(\*BancortokenTransactor\) [WithdrawTokens](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L695>)
+### func \(\*BancortokenTransactor\) [WithdrawTokens](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L695>)
 
 ```go
 func (_Bancortoken *BancortokenTransactor) WithdrawTokens(opts *bind.TransactOpts, _token common.Address, _to common.Address, _amount *big.Int) (*types.Transaction, error)
@@ -1338,7 +1338,7 @@ WithdrawTokens is a paid mutator transaction binding the contract method 0x5e353
 Solidity: function withdrawTokens\(address \_token, address \_to, uint256 \_amount\) returns\(\)
 
 <a name="BancortokenTransactorRaw"></a>
-## type [BancortokenTransactorRaw](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L96-L98>)
+## type [BancortokenTransactorRaw](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L96-L98>)
 
 BancortokenTransactorRaw is an auto generated low\-level write\-only Go binding around an Ethereum contract.
 
@@ -1349,7 +1349,7 @@ type BancortokenTransactorRaw struct {
 ```
 
 <a name="BancortokenTransactorRaw.Transact"></a>
-### func \(\*BancortokenTransactorRaw\) [Transact](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L179>)
+### func \(\*BancortokenTransactorRaw\) [Transact](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L179>)
 
 ```go
 func (_Bancortoken *BancortokenTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error)
@@ -1358,7 +1358,7 @@ func (_Bancortoken *BancortokenTransactorRaw) Transact(opts *bind.TransactOpts, 
 Transact invokes the \(paid\) contract method with params as input values.
 
 <a name="BancortokenTransactorRaw.Transfer"></a>
-### func \(\*BancortokenTransactorRaw\) [Transfer](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L174>)
+### func \(\*BancortokenTransactorRaw\) [Transfer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L174>)
 
 ```go
 func (_Bancortoken *BancortokenTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error)
@@ -1367,7 +1367,7 @@ func (_Bancortoken *BancortokenTransactorRaw) Transfer(opts *bind.TransactOpts) 
 Transfer initiates a plain transaction to move funds to the contract, calling its default method if one is available.
 
 <a name="BancortokenTransactorSession"></a>
-## type [BancortokenTransactorSession](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L80-L83>)
+## type [BancortokenTransactorSession](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L80-L83>)
 
 BancortokenTransactorSession is an auto generated write\-only Go binding around an Ethereum contract, with pre\-set transact options.
 
@@ -1379,7 +1379,7 @@ type BancortokenTransactorSession struct {
 ```
 
 <a name="BancortokenTransactorSession.AcceptOwnership"></a>
-### func \(\*BancortokenTransactorSession\) [AcceptOwnership](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L541>)
+### func \(\*BancortokenTransactorSession\) [AcceptOwnership](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L541>)
 
 ```go
 func (_Bancortoken *BancortokenTransactorSession) AcceptOwnership() (*types.Transaction, error)
@@ -1390,7 +1390,7 @@ AcceptOwnership is a paid mutator transaction binding the contract method 0x79ba
 Solidity: function acceptOwnership\(\) returns\(\)
 
 <a name="BancortokenTransactorSession.Approve"></a>
-### func \(\*BancortokenTransactorSession\) [Approve](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L562>)
+### func \(\*BancortokenTransactorSession\) [Approve](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L562>)
 
 ```go
 func (_Bancortoken *BancortokenTransactorSession) Approve(_spender common.Address, _value *big.Int) (*types.Transaction, error)
@@ -1401,7 +1401,7 @@ Approve is a paid mutator transaction binding the contract method 0x095ea7b3.
 Solidity: function approve\(address \_spender, uint256 \_value\) returns\(bool success\)
 
 <a name="BancortokenTransactorSession.Destroy"></a>
-### func \(\*BancortokenTransactorSession\) [Destroy](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L583>)
+### func \(\*BancortokenTransactorSession\) [Destroy](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L583>)
 
 ```go
 func (_Bancortoken *BancortokenTransactorSession) Destroy(_from common.Address, _amount *big.Int) (*types.Transaction, error)
@@ -1412,7 +1412,7 @@ Destroy is a paid mutator transaction binding the contract method 0xa24835d1.
 Solidity: function destroy\(address \_from, uint256 \_amount\) returns\(\)
 
 <a name="BancortokenTransactorSession.DisableTransfers"></a>
-### func \(\*BancortokenTransactorSession\) [DisableTransfers](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L604>)
+### func \(\*BancortokenTransactorSession\) [DisableTransfers](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L604>)
 
 ```go
 func (_Bancortoken *BancortokenTransactorSession) DisableTransfers(_disable bool) (*types.Transaction, error)
@@ -1423,7 +1423,7 @@ DisableTransfers is a paid mutator transaction binding the contract method 0x160
 Solidity: function disableTransfers\(bool \_disable\) returns\(\)
 
 <a name="BancortokenTransactorSession.Issue"></a>
-### func \(\*BancortokenTransactorSession\) [Issue](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L625>)
+### func \(\*BancortokenTransactorSession\) [Issue](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L625>)
 
 ```go
 func (_Bancortoken *BancortokenTransactorSession) Issue(_to common.Address, _amount *big.Int) (*types.Transaction, error)
@@ -1434,7 +1434,7 @@ Issue is a paid mutator transaction binding the contract method 0x867904b4.
 Solidity: function issue\(address \_to, uint256 \_amount\) returns\(\)
 
 <a name="BancortokenTransactorSession.Transfer"></a>
-### func \(\*BancortokenTransactorSession\) [Transfer](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L646>)
+### func \(\*BancortokenTransactorSession\) [Transfer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L646>)
 
 ```go
 func (_Bancortoken *BancortokenTransactorSession) Transfer(_to common.Address, _value *big.Int) (*types.Transaction, error)
@@ -1445,7 +1445,7 @@ Transfer is a paid mutator transaction binding the contract method 0xa9059cbb.
 Solidity: function transfer\(address \_to, uint256 \_value\) returns\(bool success\)
 
 <a name="BancortokenTransactorSession.TransferFrom"></a>
-### func \(\*BancortokenTransactorSession\) [TransferFrom](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L667>)
+### func \(\*BancortokenTransactorSession\) [TransferFrom](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L667>)
 
 ```go
 func (_Bancortoken *BancortokenTransactorSession) TransferFrom(_from common.Address, _to common.Address, _value *big.Int) (*types.Transaction, error)
@@ -1456,7 +1456,7 @@ TransferFrom is a paid mutator transaction binding the contract method 0x23b872d
 Solidity: function transferFrom\(address \_from, address \_to, uint256 \_value\) returns\(bool success\)
 
 <a name="BancortokenTransactorSession.TransferOwnership"></a>
-### func \(\*BancortokenTransactorSession\) [TransferOwnership](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L688>)
+### func \(\*BancortokenTransactorSession\) [TransferOwnership](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L688>)
 
 ```go
 func (_Bancortoken *BancortokenTransactorSession) TransferOwnership(_newOwner common.Address) (*types.Transaction, error)
@@ -1467,7 +1467,7 @@ TransferOwnership is a paid mutator transaction binding the contract method 0xf2
 Solidity: function transferOwnership\(address \_newOwner\) returns\(\)
 
 <a name="BancortokenTransactorSession.WithdrawTokens"></a>
-### func \(\*BancortokenTransactorSession\) [WithdrawTokens](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L709>)
+### func \(\*BancortokenTransactorSession\) [WithdrawTokens](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L709>)
 
 ```go
 func (_Bancortoken *BancortokenTransactorSession) WithdrawTokens(_token common.Address, _to common.Address, _amount *big.Int) (*types.Transaction, error)
@@ -1478,7 +1478,7 @@ WithdrawTokens is a paid mutator transaction binding the contract method 0x5e353
 Solidity: function withdrawTokens\(address \_token, address \_to, uint256 \_amount\) returns\(\)
 
 <a name="BancortokenTransfer"></a>
-## type [BancortokenTransfer](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L1472-L1477>)
+## type [BancortokenTransfer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L1472-L1477>)
 
 BancortokenTransfer represents a Transfer event raised by the Bancortoken contract.
 
@@ -1492,7 +1492,7 @@ type BancortokenTransfer struct {
 ```
 
 <a name="BancortokenTransferIterator"></a>
-## type [BancortokenTransferIterator](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L1405-L1415>)
+## type [BancortokenTransferIterator](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L1405-L1415>)
 
 BancortokenTransferIterator is returned from FilterTransfer and is used to iterate over the raw logs and unpacked data for Transfer events raised by the Bancortoken contract.
 
@@ -1504,7 +1504,7 @@ type BancortokenTransferIterator struct {
 ```
 
 <a name="BancortokenTransferIterator.Close"></a>
-### func \(\*BancortokenTransferIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L1466>)
+### func \(\*BancortokenTransferIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L1466>)
 
 ```go
 func (it *BancortokenTransferIterator) Close() error
@@ -1513,7 +1513,7 @@ func (it *BancortokenTransferIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="BancortokenTransferIterator.Error"></a>
-### func \(\*BancortokenTransferIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L1460>)
+### func \(\*BancortokenTransferIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L1460>)
 
 ```go
 func (it *BancortokenTransferIterator) Error() error
@@ -1522,7 +1522,7 @@ func (it *BancortokenTransferIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="BancortokenTransferIterator.Next"></a>
-### func \(\*BancortokenTransferIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bancortoken/bancortoken.go#L1420>)
+### func \(\*BancortokenTransferIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L1420>)
 
 ```go
 func (it *BancortokenTransferIterator) Next() bool

@@ -65,7 +65,7 @@ var DefaultRootDerivationPath = accounts.DefaultRootDerivationPath
 ```
 
 <a name="MustParseDerivationPath"></a>
-## func [MustParseDerivationPath](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethhdwallet/hdwallet.go#L459>)
+## func [MustParseDerivationPath](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethhdwallet/hdwallet.go#L459>)
 
 ```go
 func MustParseDerivationPath(path string) accounts.DerivationPath
@@ -74,7 +74,7 @@ func MustParseDerivationPath(path string) accounts.DerivationPath
 MustParseDerivationPath parses the derivation path in string format into \[\]uint32 but will panic if it can't parse it.
 
 <a name="NewEntropy"></a>
-## func [NewEntropy](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethhdwallet/hdwallet.go#L483>)
+## func [NewEntropy](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethhdwallet/hdwallet.go#L483>)
 
 ```go
 func NewEntropy(bits int) ([]byte, error)
@@ -83,7 +83,7 @@ func NewEntropy(bits int) ([]byte, error)
 NewEntropy returns a randomly generated entropy.
 
 <a name="NewMnemonic"></a>
-## func [NewMnemonic](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethhdwallet/hdwallet.go#L469>)
+## func [NewMnemonic](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethhdwallet/hdwallet.go#L469>)
 
 ```go
 func NewMnemonic(bits int) (string, error)
@@ -92,7 +92,7 @@ func NewMnemonic(bits int) (string, error)
 NewMnemonic returns a randomly generated BIP\-39 mnemonic using 128\-256 bits of entropy.
 
 <a name="NewMnemonicFromEntropy"></a>
-## func [NewMnemonicFromEntropy](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethhdwallet/hdwallet.go#L478>)
+## func [NewMnemonicFromEntropy](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethhdwallet/hdwallet.go#L478>)
 
 ```go
 func NewMnemonicFromEntropy(entropy []byte) (string, error)
@@ -101,7 +101,7 @@ func NewMnemonicFromEntropy(entropy []byte) (string, error)
 NewMnemonicFromEntropy returns a BIP\-39 mnemonic from entropy.
 
 <a name="NewSeed"></a>
-## func [NewSeed](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethhdwallet/hdwallet.go#L488>)
+## func [NewSeed](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethhdwallet/hdwallet.go#L488>)
 
 ```go
 func NewSeed() ([]byte, error)
@@ -110,7 +110,7 @@ func NewSeed() ([]byte, error)
 NewSeed returns a randomly generated BIP\-39 seed.
 
 <a name="NewSeedFromMnemonic"></a>
-## func [NewSeedFromMnemonic](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethhdwallet/hdwallet.go#L495>)
+## func [NewSeedFromMnemonic](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethhdwallet/hdwallet.go#L495>)
 
 ```go
 func NewSeedFromMnemonic(mnemonic string) ([]byte, error)
@@ -119,7 +119,7 @@ func NewSeedFromMnemonic(mnemonic string) ([]byte, error)
 NewSeedFromMnemonic returns a BIP\-39 seed based on a BIP\-39 mnemonic.
 
 <a name="ParseDerivationPath"></a>
-## func [ParseDerivationPath](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethhdwallet/hdwallet.go#L453>)
+## func [ParseDerivationPath](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethhdwallet/hdwallet.go#L453>)
 
 ```go
 func ParseDerivationPath(path string) (accounts.DerivationPath, error)
@@ -128,7 +128,7 @@ func ParseDerivationPath(path string) (accounts.DerivationPath, error)
 ParseDerivationPath parses the derivation path in string format into \[\]uint32
 
 <a name="Wallet"></a>
-## type [Wallet](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethhdwallet/hdwallet.go#L37-L46>)
+## type [Wallet](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethhdwallet/hdwallet.go#L37-L46>)
 
 Wallet is the underlying wallet struct.
 
@@ -139,7 +139,7 @@ type Wallet struct {
 ```
 
 <a name="NewFromMnemonic"></a>
-### func [NewFromMnemonic](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethhdwallet/hdwallet.go#L64>)
+### func [NewFromMnemonic](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethhdwallet/hdwallet.go#L64>)
 
 ```go
 func NewFromMnemonic(mnemonic string) (*Wallet, error)
@@ -148,7 +148,7 @@ func NewFromMnemonic(mnemonic string) (*Wallet, error)
 NewFromMnemonic returns a new wallet from a BIP\-39 mnemonic.
 
 <a name="NewFromSeed"></a>
-### func [NewFromSeed](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethhdwallet/hdwallet.go#L88>)
+### func [NewFromSeed](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethhdwallet/hdwallet.go#L88>)
 
 ```go
 func NewFromSeed(seed []byte) (*Wallet, error)
@@ -157,7 +157,7 @@ func NewFromSeed(seed []byte) (*Wallet, error)
 NewFromSeed returns a new wallet from a BIP\-39 seed.
 
 <a name="Wallet.Accounts"></a>
-### func \(\*Wallet\) [Accounts](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethhdwallet/hdwallet.go#L124>)
+### func \(\*Wallet\) [Accounts](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethhdwallet/hdwallet.go#L124>)
 
 ```go
 func (w *Wallet) Accounts() []accounts.Account
@@ -166,7 +166,7 @@ func (w *Wallet) Accounts() []accounts.Account
 Accounts implements accounts.Wallet, returning the list of accounts pinned to the wallet. If self\-derivation was enabled, the account list is periodically expanded based on current chain state.
 
 <a name="Wallet.Address"></a>
-### func \(\*Wallet\) [Address](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethhdwallet/hdwallet.go#L377>)
+### func \(\*Wallet\) [Address](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethhdwallet/hdwallet.go#L377>)
 
 ```go
 func (w *Wallet) Address(account accounts.Account) (common.Address, error)
@@ -175,7 +175,7 @@ func (w *Wallet) Address(account accounts.Account) (common.Address, error)
 Address returns the address of the account.
 
 <a name="Wallet.AddressBytes"></a>
-### func \(\*Wallet\) [AddressBytes](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethhdwallet/hdwallet.go#L387>)
+### func \(\*Wallet\) [AddressBytes](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethhdwallet/hdwallet.go#L387>)
 
 ```go
 func (w *Wallet) AddressBytes(account accounts.Account) ([]byte, error)
@@ -184,7 +184,7 @@ func (w *Wallet) AddressBytes(account accounts.Account) ([]byte, error)
 AddressBytes returns the address in bytes format of the account.
 
 <a name="Wallet.AddressHex"></a>
-### func \(\*Wallet\) [AddressHex](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethhdwallet/hdwallet.go#L396>)
+### func \(\*Wallet\) [AddressHex](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethhdwallet/hdwallet.go#L396>)
 
 ```go
 func (w *Wallet) AddressHex(account accounts.Account) (string, error)
@@ -193,7 +193,7 @@ func (w *Wallet) AddressHex(account accounts.Account) (string, error)
 AddressHex returns the address in hex string format of the account.
 
 <a name="Wallet.Close"></a>
-### func \(\*Wallet\) [Close](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethhdwallet/hdwallet.go#L117>)
+### func \(\*Wallet\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethhdwallet/hdwallet.go#L117>)
 
 ```go
 func (w *Wallet) Close() error
@@ -202,7 +202,7 @@ func (w *Wallet) Close() error
 Close implements accounts.Wallet, however this does nothing since this is not a hardware device.
 
 <a name="Wallet.Contains"></a>
-### func \(\*Wallet\) [Contains](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethhdwallet/hdwallet.go#L137>)
+### func \(\*Wallet\) [Contains](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethhdwallet/hdwallet.go#L137>)
 
 ```go
 func (w *Wallet) Contains(account accounts.Account) bool
@@ -211,7 +211,7 @@ func (w *Wallet) Contains(account accounts.Account) bool
 Contains implements accounts.Wallet, returning whether a particular account is or is not pinned into this wallet instance.
 
 <a name="Wallet.Derive"></a>
-### func \(\*Wallet\) [Derive](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethhdwallet/hdwallet.go#L172>)
+### func \(\*Wallet\) [Derive](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethhdwallet/hdwallet.go#L172>)
 
 ```go
 func (w *Wallet) Derive(path accounts.DerivationPath, pin bool) (accounts.Account, error)
@@ -220,7 +220,7 @@ func (w *Wallet) Derive(path accounts.DerivationPath, pin bool) (accounts.Accoun
 Derive implements accounts.Wallet, deriving a new account at the specific derivation path. If pin is set to true, the account will be added to the list of tracked accounts.
 
 <a name="Wallet.Open"></a>
-### func \(\*Wallet\) [Open](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethhdwallet/hdwallet.go#L111>)
+### func \(\*Wallet\) [Open](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethhdwallet/hdwallet.go#L111>)
 
 ```go
 func (w *Wallet) Open(passphrase string) error
@@ -229,7 +229,7 @@ func (w *Wallet) Open(passphrase string) error
 Open implements accounts.Wallet, however this does nothing since this is not a hardware device.
 
 <a name="Wallet.Path"></a>
-### func \(\*Wallet\) [Path](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethhdwallet/hdwallet.go#L405>)
+### func \(\*Wallet\) [Path](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethhdwallet/hdwallet.go#L405>)
 
 ```go
 func (w *Wallet) Path(account accounts.Account) (string, error)
@@ -238,7 +238,7 @@ func (w *Wallet) Path(account accounts.Account) (string, error)
 Path return the derivation path of the account.
 
 <a name="Wallet.PrivateKey"></a>
-### func \(\*Wallet\) [PrivateKey](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethhdwallet/hdwallet.go#L317>)
+### func \(\*Wallet\) [PrivateKey](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethhdwallet/hdwallet.go#L317>)
 
 ```go
 func (w *Wallet) PrivateKey(account accounts.Account) (*ecdsa.PrivateKey, error)
@@ -247,7 +247,7 @@ func (w *Wallet) PrivateKey(account accounts.Account) (*ecdsa.PrivateKey, error)
 PrivateKey returns the ECDSA private key of the account.
 
 <a name="Wallet.PrivateKeyBytes"></a>
-### func \(\*Wallet\) [PrivateKeyBytes](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethhdwallet/hdwallet.go#L327>)
+### func \(\*Wallet\) [PrivateKeyBytes](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethhdwallet/hdwallet.go#L327>)
 
 ```go
 func (w *Wallet) PrivateKeyBytes(account accounts.Account) ([]byte, error)
@@ -256,7 +256,7 @@ func (w *Wallet) PrivateKeyBytes(account accounts.Account) ([]byte, error)
 PrivateKeyBytes returns the ECDSA private key in bytes format of the account.
 
 <a name="Wallet.PrivateKeyHex"></a>
-### func \(\*Wallet\) [PrivateKeyHex](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethhdwallet/hdwallet.go#L337>)
+### func \(\*Wallet\) [PrivateKeyHex](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethhdwallet/hdwallet.go#L337>)
 
 ```go
 func (w *Wallet) PrivateKeyHex(account accounts.Account) (string, error)
@@ -265,7 +265,7 @@ func (w *Wallet) PrivateKeyHex(account accounts.Account) (string, error)
 PrivateKeyHex return the ECDSA private key in hex string format of the account.
 
 <a name="Wallet.PublicKey"></a>
-### func \(\*Wallet\) [PublicKey](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethhdwallet/hdwallet.go#L347>)
+### func \(\*Wallet\) [PublicKey](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethhdwallet/hdwallet.go#L347>)
 
 ```go
 func (w *Wallet) PublicKey(account accounts.Account) (*ecdsa.PublicKey, error)
@@ -274,7 +274,7 @@ func (w *Wallet) PublicKey(account accounts.Account) (*ecdsa.PublicKey, error)
 PublicKey returns the ECDSA public key of the account.
 
 <a name="Wallet.PublicKeyBytes"></a>
-### func \(\*Wallet\) [PublicKeyBytes](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethhdwallet/hdwallet.go#L357>)
+### func \(\*Wallet\) [PublicKeyBytes](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethhdwallet/hdwallet.go#L357>)
 
 ```go
 func (w *Wallet) PublicKeyBytes(account accounts.Account) ([]byte, error)
@@ -283,7 +283,7 @@ func (w *Wallet) PublicKeyBytes(account accounts.Account) ([]byte, error)
 PublicKeyBytes returns the ECDSA public key in bytes format of the account.
 
 <a name="Wallet.PublicKeyHex"></a>
-### func \(\*Wallet\) [PublicKeyHex](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethhdwallet/hdwallet.go#L367>)
+### func \(\*Wallet\) [PublicKeyHex](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethhdwallet/hdwallet.go#L367>)
 
 ```go
 func (w *Wallet) PublicKeyHex(account accounts.Account) (string, error)
@@ -292,7 +292,7 @@ func (w *Wallet) PublicKeyHex(account accounts.Account) (string, error)
 PublicKeyHex return the ECDSA public key in hex string format of the account.
 
 <a name="Wallet.SelfDerive"></a>
-### func \(\*Wallet\) [SelfDerive](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethhdwallet/hdwallet.go#L213>)
+### func \(\*Wallet\) [SelfDerive](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethhdwallet/hdwallet.go#L213>)
 
 ```go
 func (w *Wallet) SelfDerive(base []accounts.DerivationPath, chain ethereum.ChainStateReader)
@@ -301,7 +301,7 @@ func (w *Wallet) SelfDerive(base []accounts.DerivationPath, chain ethereum.Chain
 SelfDerive implements accounts.Wallet, trying to discover accounts that the user used previously \(based on the chain state\), but ones that he/she did not explicitly pin to the wallet manually. To avoid chain head monitoring, self derivation only runs during account listing \(and even then throttled\).
 
 <a name="Wallet.SetFixIssue172"></a>
-### func \(\*Wallet\) [SetFixIssue172](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethhdwallet/hdwallet.go#L165>)
+### func \(\*Wallet\) [SetFixIssue172](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethhdwallet/hdwallet.go#L165>)
 
 ```go
 func (w *Wallet) SetFixIssue172(fixIssue172 bool)
@@ -310,7 +310,7 @@ func (w *Wallet) SetFixIssue172(fixIssue172 bool)
 SetFixIssue172 determines whether the standard \(correct\) bip39 derivation path was used, or if derivation should be affected by Issue172 \[0\] which was how this library was originally implemented. \[0\] https://github.com/btcsuite/btcutil/pull/182/files
 
 <a name="Wallet.SignData"></a>
-### func \(\*Wallet\) [SignData](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethhdwallet/hdwallet.go#L410>)
+### func \(\*Wallet\) [SignData](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethhdwallet/hdwallet.go#L410>)
 
 ```go
 func (w *Wallet) SignData(account accounts.Account, mimeType string, data []byte) ([]byte, error)
@@ -319,7 +319,7 @@ func (w *Wallet) SignData(account accounts.Account, mimeType string, data []byte
 SignData signs keccak256\(data\). The mimetype parameter describes the type of data being signed
 
 <a name="Wallet.SignDataWithPassphrase"></a>
-### func \(\*Wallet\) [SignDataWithPassphrase](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethhdwallet/hdwallet.go#L420>)
+### func \(\*Wallet\) [SignDataWithPassphrase](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethhdwallet/hdwallet.go#L420>)
 
 ```go
 func (w *Wallet) SignDataWithPassphrase(account accounts.Account, passphrase, mimeType string, data []byte) ([]byte, error)
@@ -328,7 +328,7 @@ func (w *Wallet) SignDataWithPassphrase(account accounts.Account, passphrase, mi
 SignDataWithPassphrase signs keccak256\(data\). The mimetype parameter describes the type of data being signed
 
 <a name="Wallet.SignHash"></a>
-### func \(\*Wallet\) [SignHash](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethhdwallet/hdwallet.go#L218>)
+### func \(\*Wallet\) [SignHash](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethhdwallet/hdwallet.go#L218>)
 
 ```go
 func (w *Wallet) SignHash(account accounts.Account, hash []byte) ([]byte, error)
@@ -337,7 +337,7 @@ func (w *Wallet) SignHash(account accounts.Account, hash []byte) ([]byte, error)
 SignHash implements accounts.Wallet, which allows signing arbitrary data.
 
 <a name="Wallet.SignHashWithPassphrase"></a>
-### func \(\*Wallet\) [SignHashWithPassphrase](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethhdwallet/hdwallet.go#L306>)
+### func \(\*Wallet\) [SignHashWithPassphrase](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethhdwallet/hdwallet.go#L306>)
 
 ```go
 func (w *Wallet) SignHashWithPassphrase(account accounts.Account, passphrase string, hash []byte) ([]byte, error)
@@ -346,7 +346,7 @@ func (w *Wallet) SignHashWithPassphrase(account accounts.Account, passphrase str
 SignHashWithPassphrase implements accounts.Wallet, attempting to sign the given hash with the given account using the passphrase as extra authentication.
 
 <a name="Wallet.SignText"></a>
-### func \(\*Wallet\) [SignText](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethhdwallet/hdwallet.go#L432>)
+### func \(\*Wallet\) [SignText](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethhdwallet/hdwallet.go#L432>)
 
 ```go
 func (w *Wallet) SignText(account accounts.Account, text []byte) ([]byte, error)
@@ -355,7 +355,7 @@ func (w *Wallet) SignText(account accounts.Account, text []byte) ([]byte, error)
 SignText requests the wallet to sign the hash of a given piece of data, prefixed the needed details via SignHashWithPassphrase, or by other means \(e.g. unlock the account in a keystore\).
 
 <a name="Wallet.SignTextWithPassphrase"></a>
-### func \(\*Wallet\) [SignTextWithPassphrase](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethhdwallet/hdwallet.go#L443>)
+### func \(\*Wallet\) [SignTextWithPassphrase](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethhdwallet/hdwallet.go#L443>)
 
 ```go
 func (w *Wallet) SignTextWithPassphrase(account accounts.Account, passphrase string, text []byte) ([]byte, error)
@@ -364,7 +364,7 @@ func (w *Wallet) SignTextWithPassphrase(account accounts.Account, passphrase str
 SignTextWithPassphrase implements accounts.Wallet, attempting to sign the given text \(which is hashed\) with the given account using passphrase as extra authentication.
 
 <a name="Wallet.SignTx"></a>
-### func \(\*Wallet\) [SignTx](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethhdwallet/hdwallet.go#L269>)
+### func \(\*Wallet\) [SignTx](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethhdwallet/hdwallet.go#L269>)
 
 ```go
 func (w *Wallet) SignTx(account accounts.Account, tx *types.Transaction, chainID *big.Int) (*types.Transaction, error)
@@ -373,7 +373,7 @@ func (w *Wallet) SignTx(account accounts.Account, tx *types.Transaction, chainID
 SignTx implements accounts.Wallet, which allows the account to sign an Ethereum transaction.
 
 <a name="Wallet.SignTxEIP155"></a>
-### func \(\*Wallet\) [SignTxEIP155](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethhdwallet/hdwallet.go#L234>)
+### func \(\*Wallet\) [SignTxEIP155](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethhdwallet/hdwallet.go#L234>)
 
 ```go
 func (w *Wallet) SignTxEIP155(account accounts.Account, tx *types.Transaction, chainID *big.Int) (*types.Transaction, error)
@@ -382,7 +382,7 @@ func (w *Wallet) SignTxEIP155(account accounts.Account, tx *types.Transaction, c
 SignTxEIP155 implements accounts.Wallet, which allows the account to sign an ERC\-20 transaction.
 
 <a name="Wallet.SignTxWithPassphrase"></a>
-### func \(\*Wallet\) [SignTxWithPassphrase](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethhdwallet/hdwallet.go#L312>)
+### func \(\*Wallet\) [SignTxWithPassphrase](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethhdwallet/hdwallet.go#L312>)
 
 ```go
 func (w *Wallet) SignTxWithPassphrase(account accounts.Account, passphrase string, tx *types.Transaction, chainID *big.Int) (*types.Transaction, error)
@@ -391,7 +391,7 @@ func (w *Wallet) SignTxWithPassphrase(account accounts.Account, passphrase strin
 SignTxWithPassphrase implements accounts.Wallet, attempting to sign the given transaction with the given account using passphrase as extra authentication.
 
 <a name="Wallet.Status"></a>
-### func \(\*Wallet\) [Status](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethhdwallet/hdwallet.go#L105>)
+### func \(\*Wallet\) [Status](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethhdwallet/hdwallet.go#L105>)
 
 ```go
 func (w *Wallet) Status() (string, error)
@@ -400,7 +400,7 @@ func (w *Wallet) Status() (string, error)
 Status implements accounts.Wallet, returning a custom status message from the underlying vendor\-specific hardware wallet implementation, however this does nothing since this is not a hardware device.
 
 <a name="Wallet.URL"></a>
-### func \(\*Wallet\) [URL](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethhdwallet/hdwallet.go#L98>)
+### func \(\*Wallet\) [URL](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethhdwallet/hdwallet.go#L98>)
 
 ```go
 func (w *Wallet) URL() accounts.URL
@@ -409,7 +409,7 @@ func (w *Wallet) URL() accounts.URL
 URL implements accounts.Wallet, returning the URL of the device that the wallet is on, however this does nothing since this is not a hardware device.
 
 <a name="Wallet.Unpin"></a>
-### func \(\*Wallet\) [Unpin](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethhdwallet/hdwallet.go#L146>)
+### func \(\*Wallet\) [Unpin](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethhdwallet/hdwallet.go#L146>)
 
 ```go
 func (w *Wallet) Unpin(account accounts.Account) error

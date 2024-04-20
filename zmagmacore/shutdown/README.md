@@ -13,7 +13,7 @@ import "github.com/0chain/gosdk/zmagmacore/shutdown"
 
 
 <a name="Handle"></a>
-## func [Handle](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/shutdown/shutdown.go#L25>)
+## func [Handle](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/shutdown/shutdown.go#L25>)
 
 ```go
 func Handle(ctx context.Context, server *http.Server, grpcServer *grpc.Server, closable ...Closable)
@@ -22,7 +22,7 @@ func Handle(ctx context.Context, server *http.Server, grpcServer *grpc.Server, c
 Handle handles various shutdown signals.
 
 <a name="Closable"></a>
-## type [Closable](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/shutdown/shutdown.go#L19-L21>)
+## type [Closable](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/shutdown/shutdown.go#L19-L21>)
 
 Closable represents interface for types that might be closed.
 

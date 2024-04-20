@@ -172,7 +172,7 @@ var Logger logger.Logger
 ```
 
 <a name="AccountExists"></a>
-## func [AccountExists](<https://github.com/0chain/gosdk/blob/staging/znft/keystore.go#L49>)
+## func [AccountExists](<https://github.com/0chain/gosdk/blob/doc/initial/znft/keystore.go#L49>)
 
 ```go
 func AccountExists(homedir, address string) bool
@@ -181,7 +181,7 @@ func AccountExists(homedir, address string) bool
 AccountExists checks if account exists
 
 <a name="CreateEthClient"></a>
-## func [CreateEthClient](<https://github.com/0chain/gosdk/blob/staging/znft/ethereum_wallet.go#L18>)
+## func [CreateEthClient](<https://github.com/0chain/gosdk/blob/doc/initial/znft/ethereum_wallet.go#L18>)
 
 ```go
 func CreateEthClient(ethereumNodeURL string) (*ethclient.Client, error)
@@ -190,7 +190,7 @@ func CreateEthClient(ethereumNodeURL string) (*ethclient.Client, error)
 
 
 <a name="CreateKeyStorage"></a>
-## func [CreateKeyStorage](<https://github.com/0chain/gosdk/blob/staging/znft/keystore.go#L70>)
+## func [CreateKeyStorage](<https://github.com/0chain/gosdk/blob/doc/initial/znft/keystore.go#L70>)
 
 ```go
 func CreateKeyStorage(homedir, password string) error
@@ -199,7 +199,7 @@ func CreateKeyStorage(homedir, password string) error
 CreateKeyStorage create, restore or unlock key storage
 
 <a name="DeleteAccount"></a>
-## func [DeleteAccount](<https://github.com/0chain/gosdk/blob/staging/znft/keystore.go#L25>)
+## func [DeleteAccount](<https://github.com/0chain/gosdk/blob/doc/initial/znft/keystore.go#L25>)
 
 ```go
 func DeleteAccount(homedir, address string) bool
@@ -208,7 +208,7 @@ func DeleteAccount(homedir, address string) bool
 DeleteAccount deletes account from wallet
 
 <a name="GetConfigDir"></a>
-## func [GetConfigDir](<https://github.com/0chain/gosdk/blob/staging/znft/znft.go#L58>)
+## func [GetConfigDir](<https://github.com/0chain/gosdk/blob/doc/initial/znft/znft.go#L58>)
 
 ```go
 func GetConfigDir() string
@@ -217,7 +217,7 @@ func GetConfigDir() string
 
 
 <a name="ImportAccount"></a>
-## func [ImportAccount](<https://github.com/0chain/gosdk/blob/staging/znft/keystore.go#L109>)
+## func [ImportAccount](<https://github.com/0chain/gosdk/blob/doc/initial/znft/keystore.go#L109>)
 
 ```go
 func ImportAccount(homedir, mnemonic, password string) (string, error)
@@ -226,7 +226,7 @@ func ImportAccount(homedir, mnemonic, password string) (string, error)
 ImportAccount imports account using mnemonic password is used to lock and unlock keystorage before signing transaction
 
 <a name="ListStorageAccounts"></a>
-## func [ListStorageAccounts](<https://github.com/0chain/gosdk/blob/staging/znft/keystore.go#L17>)
+## func [ListStorageAccounts](<https://github.com/0chain/gosdk/blob/doc/initial/znft/keystore.go#L17>)
 
 ```go
 func ListStorageAccounts(homedir string) []common.Address
@@ -235,7 +235,7 @@ func ListStorageAccounts(homedir string) []common.Address
 ListStorageAccounts List available accounts
 
 <a name="UpdateClientEthereumAddress"></a>
-## func [UpdateClientEthereumAddress](<https://github.com/0chain/gosdk/blob/staging/znft/keystore.go#L83>)
+## func [UpdateClientEthereumAddress](<https://github.com/0chain/gosdk/blob/doc/initial/znft/keystore.go#L83>)
 
 ```go
 func UpdateClientEthereumAddress(homedir, address string) (err error)
@@ -244,7 +244,7 @@ func UpdateClientEthereumAddress(homedir, address string) (err error)
 UpdateClientEthereumAddress updates Ethereum address
 
 <a name="Configuration"></a>
-## type [Configuration](<https://github.com/0chain/gosdk/blob/staging/znft/znft.go#L33-L44>)
+## type [Configuration](<https://github.com/0chain/gosdk/blob/doc/initial/znft/znft.go#L33-L44>)
 
 
 
@@ -264,7 +264,7 @@ type Configuration struct {
 ```
 
 <a name="FactoryERC721"></a>
-## type [FactoryERC721](<https://github.com/0chain/gosdk/blob/staging/znft/factoryerc721.go#L31-L34>)
+## type [FactoryERC721](<https://github.com/0chain/gosdk/blob/doc/initial/znft/factoryerc721.go#L31-L34>)
 
 
 
@@ -275,7 +275,7 @@ type FactoryERC721 struct {
 ```
 
 <a name="FactoryERC721.CreateToken"></a>
-### func \(\*FactoryERC721\) [CreateToken](<https://github.com/0chain/gosdk/blob/staging/znft/factoryerc721.go#L36>)
+### func \(\*FactoryERC721\) [CreateToken](<https://github.com/0chain/gosdk/blob/doc/initial/znft/factoryerc721.go#L36>)
 
 ```go
 func (s *FactoryERC721) CreateToken(owner, name, symbol, uri string, max *big.Int, data []byte) error
@@ -284,7 +284,7 @@ func (s *FactoryERC721) CreateToken(owner, name, symbol, uri string, max *big.In
 
 
 <a name="FactoryFixed"></a>
-## type [FactoryFixed](<https://github.com/0chain/gosdk/blob/staging/znft/factoryerc721fixed.go#L30-L33>)
+## type [FactoryFixed](<https://github.com/0chain/gosdk/blob/doc/initial/znft/factoryerc721fixed.go#L30-L33>)
 
 
 
@@ -295,7 +295,7 @@ type FactoryFixed struct {
 ```
 
 <a name="FactoryFixed.CreateToken"></a>
-### func \(\*FactoryFixed\) [CreateToken](<https://github.com/0chain/gosdk/blob/staging/znft/factoryerc721fixed.go#L35>)
+### func \(\*FactoryFixed\) [CreateToken](<https://github.com/0chain/gosdk/blob/doc/initial/znft/factoryerc721fixed.go#L35>)
 
 ```go
 func (s *FactoryFixed) CreateToken(owner, name, symbol, uri string, max, price, batch *big.Int, calldata []byte) error
@@ -304,7 +304,7 @@ func (s *FactoryFixed) CreateToken(owner, name, symbol, uri string, max, price, 
 
 
 <a name="FactoryPack"></a>
-## type [FactoryPack](<https://github.com/0chain/gosdk/blob/staging/znft/factoryerc721pack.go#L30-L33>)
+## type [FactoryPack](<https://github.com/0chain/gosdk/blob/doc/initial/znft/factoryerc721pack.go#L30-L33>)
 
 
 
@@ -315,7 +315,7 @@ type FactoryPack struct {
 ```
 
 <a name="FactoryPack.CreateToken"></a>
-### func \(\*FactoryPack\) [CreateToken](<https://github.com/0chain/gosdk/blob/staging/znft/factoryerc721pack.go#L35>)
+### func \(\*FactoryPack\) [CreateToken](<https://github.com/0chain/gosdk/blob/doc/initial/znft/factoryerc721pack.go#L35>)
 
 ```go
 func (s *FactoryPack) CreateToken(owner, name, symbol, uri string, max, price, batch *big.Int, calldata []byte) error
@@ -324,7 +324,7 @@ func (s *FactoryPack) CreateToken(owner, name, symbol, uri string, max, price, b
 
 
 <a name="FactoryRandom"></a>
-## type [FactoryRandom](<https://github.com/0chain/gosdk/blob/staging/znft/factoryerc721random.go#L30-L33>)
+## type [FactoryRandom](<https://github.com/0chain/gosdk/blob/doc/initial/znft/factoryerc721random.go#L30-L33>)
 
 
 
@@ -335,7 +335,7 @@ type FactoryRandom struct {
 ```
 
 <a name="FactoryRandom.CreateToken"></a>
-### func \(\*FactoryRandom\) [CreateToken](<https://github.com/0chain/gosdk/blob/staging/znft/factoryerc721random.go#L35>)
+### func \(\*FactoryRandom\) [CreateToken](<https://github.com/0chain/gosdk/blob/doc/initial/znft/factoryerc721random.go#L35>)
 
 ```go
 func (s *FactoryRandom) CreateToken(owner, name, symbol, uri string, max, price, batch *big.Int, calldata []byte) error
@@ -344,7 +344,7 @@ func (s *FactoryRandom) CreateToken(owner, name, symbol, uri string, max, price,
 
 
 <a name="IFactoryERC721"></a>
-## type [IFactoryERC721](<https://github.com/0chain/gosdk/blob/staging/znft/factoryerc721.go#L27-L29>)
+## type [IFactoryERC721](<https://github.com/0chain/gosdk/blob/doc/initial/znft/factoryerc721.go#L27-L29>)
 
 
 
@@ -355,7 +355,7 @@ type IFactoryERC721 interface {
 ```
 
 <a name="IFactoryFixed"></a>
-## type [IFactoryFixed](<https://github.com/0chain/gosdk/blob/staging/znft/factoryerc721fixed.go#L26-L28>)
+## type [IFactoryFixed](<https://github.com/0chain/gosdk/blob/doc/initial/znft/factoryerc721fixed.go#L26-L28>)
 
 
 
@@ -366,7 +366,7 @@ type IFactoryFixed interface {
 ```
 
 <a name="IFactoryPack"></a>
-## type [IFactoryPack](<https://github.com/0chain/gosdk/blob/staging/znft/factoryerc721pack.go#L26-L28>)
+## type [IFactoryPack](<https://github.com/0chain/gosdk/blob/doc/initial/znft/factoryerc721pack.go#L26-L28>)
 
 
 
@@ -377,7 +377,7 @@ type IFactoryPack interface {
 ```
 
 <a name="IFactoryRandom"></a>
-## type [IFactoryRandom](<https://github.com/0chain/gosdk/blob/staging/znft/factoryerc721random.go#L26-L28>)
+## type [IFactoryRandom](<https://github.com/0chain/gosdk/blob/doc/initial/znft/factoryerc721random.go#L26-L28>)
 
 
 
@@ -388,7 +388,7 @@ type IFactoryRandom interface {
 ```
 
 <a name="IStorageECR721"></a>
-## type [IStorageECR721](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721.go#L58-L80>)
+## type [IStorageECR721](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721.go#L58-L80>)
 
 
 
@@ -419,7 +419,7 @@ type IStorageECR721 interface {
 ```
 
 <a name="IStorageECR721Fixed"></a>
-## type [IStorageECR721Fixed](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721fixed.go#L17-L19>)
+## type [IStorageECR721Fixed](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721fixed.go#L17-L19>)
 
 
 
@@ -430,7 +430,7 @@ type IStorageECR721Fixed interface {
 ```
 
 <a name="IStorageECR721Pack"></a>
-## type [IStorageECR721Pack](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721pack.go#L23-L33>)
+## type [IStorageECR721Pack](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721pack.go#L23-L33>)
 
 
 
@@ -449,7 +449,7 @@ type IStorageECR721Pack interface {
 ```
 
 <a name="IStorageECR721Random"></a>
-## type [IStorageECR721Random](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721random.go#L24-L34>)
+## type [IStorageECR721Random](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721random.go#L24-L34>)
 
 
 
@@ -468,7 +468,7 @@ type IStorageECR721Random interface {
 ```
 
 <a name="StorageECR721"></a>
-## type [StorageECR721](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721.go#L86-L89>)
+## type [StorageECR721](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721.go#L86-L89>)
 
 
 
@@ -479,7 +479,7 @@ type StorageECR721 struct {
 ```
 
 <a name="StorageECR721.Allocation"></a>
-### func \(\*StorageECR721\) [Allocation](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721.go#L137>)
+### func \(\*StorageECR721\) [Allocation](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721.go#L137>)
 
 ```go
 func (s *StorageECR721) Allocation() (string, error)
@@ -488,7 +488,7 @@ func (s *StorageECR721) Allocation() (string, error)
 
 
 <a name="StorageECR721.Batch"></a>
-### func \(\*StorageECR721\) [Batch](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721.go#L115>)
+### func \(\*StorageECR721\) [Batch](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721.go#L115>)
 
 ```go
 func (s *StorageECR721) Batch() (*big.Int, error)
@@ -497,7 +497,7 @@ func (s *StorageECR721) Batch() (*big.Int, error)
 
 
 <a name="StorageECR721.Max"></a>
-### func \(\*StorageECR721\) [Max](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721.go#L192>)
+### func \(\*StorageECR721\) [Max](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721.go#L192>)
 
 ```go
 func (s *StorageECR721) Max() (*big.Int, error)
@@ -506,7 +506,7 @@ func (s *StorageECR721) Max() (*big.Int, error)
 
 
 <a name="StorageECR721.Mint"></a>
-### func \(\*StorageECR721\) [Mint](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721.go#L203>)
+### func \(\*StorageECR721\) [Mint](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721.go#L203>)
 
 ```go
 func (s *StorageECR721) Mint(amount *big.Int) error
@@ -515,7 +515,7 @@ func (s *StorageECR721) Mint(amount *big.Int) error
 
 
 <a name="StorageECR721.MintOwner"></a>
-### func \(\*StorageECR721\) [MintOwner](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721.go#L227>)
+### func \(\*StorageECR721\) [MintOwner](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721.go#L227>)
 
 ```go
 func (s *StorageECR721) MintOwner(amount *big.Int) error
@@ -524,7 +524,7 @@ func (s *StorageECR721) MintOwner(amount *big.Int) error
 
 
 <a name="StorageECR721.Mintable"></a>
-### func \(\*StorageECR721\) [Mintable](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721.go#L126>)
+### func \(\*StorageECR721\) [Mintable](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721.go#L126>)
 
 ```go
 func (s *StorageECR721) Mintable() (bool, error)
@@ -533,7 +533,7 @@ func (s *StorageECR721) Mintable() (bool, error)
 
 
 <a name="StorageECR721.Price"></a>
-### func \(\*StorageECR721\) [Price](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721.go#L252>)
+### func \(\*StorageECR721\) [Price](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721.go#L252>)
 
 ```go
 func (s *StorageECR721) Price() (*big.Int, error)
@@ -542,7 +542,7 @@ func (s *StorageECR721) Price() (*big.Int, error)
 Price returns price
 
 <a name="StorageECR721.Receiver"></a>
-### func \(\*StorageECR721\) [Receiver](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721.go#L181>)
+### func \(\*StorageECR721\) [Receiver](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721.go#L181>)
 
 ```go
 func (s *StorageECR721) Receiver() (string, error)
@@ -551,7 +551,7 @@ func (s *StorageECR721) Receiver() (string, error)
 
 
 <a name="StorageECR721.Royalty"></a>
-### func \(\*StorageECR721\) [Royalty](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721.go#L170>)
+### func \(\*StorageECR721\) [Royalty](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721.go#L170>)
 
 ```go
 func (s *StorageECR721) Royalty() (*big.Int, error)
@@ -560,7 +560,7 @@ func (s *StorageECR721) Royalty() (*big.Int, error)
 
 
 <a name="StorageECR721.RoyaltyInfo"></a>
-### func \(\*StorageECR721\) [RoyaltyInfo](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721.go#L216>)
+### func \(\*StorageECR721\) [RoyaltyInfo](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721.go#L216>)
 
 ```go
 func (s *StorageECR721) RoyaltyInfo(tokenId, salePrice *big.Int) (string, *big.Int, error)
@@ -569,7 +569,7 @@ func (s *StorageECR721) RoyaltyInfo(tokenId, salePrice *big.Int) (string, *big.I
 
 
 <a name="StorageECR721.SetAllocation"></a>
-### func \(\*StorageECR721\) [SetAllocation](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721.go#L278>)
+### func \(\*StorageECR721\) [SetAllocation](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721.go#L278>)
 
 ```go
 func (s *StorageECR721) SetAllocation(allocation string) error
@@ -578,7 +578,7 @@ func (s *StorageECR721) SetAllocation(allocation string) error
 SetAllocation updates allocation
 
 <a name="StorageECR721.SetMintable"></a>
-### func \(\*StorageECR721\) [SetMintable](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721.go#L292>)
+### func \(\*StorageECR721\) [SetMintable](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721.go#L292>)
 
 ```go
 func (s *StorageECR721) SetMintable(status bool) error
@@ -587,7 +587,7 @@ func (s *StorageECR721) SetMintable(status bool) error
 SetMintable updates mintable state
 
 <a name="StorageECR721.SetReceiver"></a>
-### func \(\*StorageECR721\) [SetReceiver](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721.go#L320>)
+### func \(\*StorageECR721\) [SetReceiver](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721.go#L320>)
 
 ```go
 func (s *StorageECR721) SetReceiver(receiver string) error
@@ -596,7 +596,7 @@ func (s *StorageECR721) SetReceiver(receiver string) error
 SetReceiver eth balance from token contract \- setReceiver\(address receiver\_\)
 
 <a name="StorageECR721.SetRoyalty"></a>
-### func \(\*StorageECR721\) [SetRoyalty](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721.go#L306>)
+### func \(\*StorageECR721\) [SetRoyalty](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721.go#L306>)
 
 ```go
 func (s *StorageECR721) SetRoyalty(sum *big.Int) error
@@ -605,7 +605,7 @@ func (s *StorageECR721) SetRoyalty(sum *big.Int) error
 SetRoyalty eth balance from token contract \- setReceiver\(address receiver\_\)
 
 <a name="StorageECR721.SetURI"></a>
-### func \(\*StorageECR721\) [SetURI](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721.go#L264>)
+### func \(\*StorageECR721\) [SetURI](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721.go#L264>)
 
 ```go
 func (s *StorageECR721) SetURI(uri string) error
@@ -614,7 +614,7 @@ func (s *StorageECR721) SetURI(uri string) error
 SetURI updates uri
 
 <a name="StorageECR721.SetURIFallback"></a>
-### func \(\*StorageECR721\) [SetURIFallback](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721.go#L91>)
+### func \(\*StorageECR721\) [SetURIFallback](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721.go#L91>)
 
 ```go
 func (s *StorageECR721) SetURIFallback(uri string) error
@@ -623,7 +623,7 @@ func (s *StorageECR721) SetURIFallback(uri string) error
 
 
 <a name="StorageECR721.TokenURIFallback"></a>
-### func \(\*StorageECR721\) [TokenURIFallback](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721.go#L240>)
+### func \(\*StorageECR721\) [TokenURIFallback](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721.go#L240>)
 
 ```go
 func (s *StorageECR721) TokenURIFallback(token *big.Int) (string, error)
@@ -632,7 +632,7 @@ func (s *StorageECR721) TokenURIFallback(token *big.Int) (string, error)
 
 
 <a name="StorageECR721.Total"></a>
-### func \(\*StorageECR721\) [Total](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721.go#L104>)
+### func \(\*StorageECR721\) [Total](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721.go#L104>)
 
 ```go
 func (s *StorageECR721) Total() (*big.Int, error)
@@ -641,7 +641,7 @@ func (s *StorageECR721) Total() (*big.Int, error)
 
 
 <a name="StorageECR721.Uri"></a>
-### func \(\*StorageECR721\) [Uri](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721.go#L148>)
+### func \(\*StorageECR721\) [Uri](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721.go#L148>)
 
 ```go
 func (s *StorageECR721) Uri() (string, error)
@@ -650,7 +650,7 @@ func (s *StorageECR721) Uri() (string, error)
 
 
 <a name="StorageECR721.UriFallback"></a>
-### func \(\*StorageECR721\) [UriFallback](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721.go#L159>)
+### func \(\*StorageECR721\) [UriFallback](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721.go#L159>)
 
 ```go
 func (s *StorageECR721) UriFallback() (string, error)
@@ -659,7 +659,7 @@ func (s *StorageECR721) UriFallback() (string, error)
 
 
 <a name="StorageECR721.Withdraw"></a>
-### func \(\*StorageECR721\) [Withdraw](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721.go#L336>)
+### func \(\*StorageECR721\) [Withdraw](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721.go#L336>)
 
 ```go
 func (s *StorageECR721) Withdraw() error
@@ -668,7 +668,7 @@ func (s *StorageECR721) Withdraw() error
 Withdraw eth balance from token contract \- withdraw\(\)
 
 <a name="StorageECR721Fixed"></a>
-## type [StorageECR721Fixed](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721fixed.go#L25-L28>)
+## type [StorageECR721Fixed](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721fixed.go#L25-L28>)
 
 
 
@@ -679,7 +679,7 @@ type StorageECR721Fixed struct {
 ```
 
 <a name="StorageECR721Fixed.Allocation"></a>
-### func \(\*StorageECR721Fixed\) [Allocation](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721fixed.go#L76>)
+### func \(\*StorageECR721Fixed\) [Allocation](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721fixed.go#L76>)
 
 ```go
 func (s *StorageECR721Fixed) Allocation() (string, error)
@@ -688,7 +688,7 @@ func (s *StorageECR721Fixed) Allocation() (string, error)
 
 
 <a name="StorageECR721Fixed.Batch"></a>
-### func \(\*StorageECR721Fixed\) [Batch](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721fixed.go#L54>)
+### func \(\*StorageECR721Fixed\) [Batch](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721fixed.go#L54>)
 
 ```go
 func (s *StorageECR721Fixed) Batch() (*big.Int, error)
@@ -697,7 +697,7 @@ func (s *StorageECR721Fixed) Batch() (*big.Int, error)
 
 
 <a name="StorageECR721Fixed.Max"></a>
-### func \(\*StorageECR721Fixed\) [Max](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721fixed.go#L131>)
+### func \(\*StorageECR721Fixed\) [Max](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721fixed.go#L131>)
 
 ```go
 func (s *StorageECR721Fixed) Max() (*big.Int, error)
@@ -706,7 +706,7 @@ func (s *StorageECR721Fixed) Max() (*big.Int, error)
 
 
 <a name="StorageECR721Fixed.Mint"></a>
-### func \(\*StorageECR721Fixed\) [Mint](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721fixed.go#L142>)
+### func \(\*StorageECR721Fixed\) [Mint](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721fixed.go#L142>)
 
 ```go
 func (s *StorageECR721Fixed) Mint(amount *big.Int) error
@@ -715,7 +715,7 @@ func (s *StorageECR721Fixed) Mint(amount *big.Int) error
 
 
 <a name="StorageECR721Fixed.MintOwner"></a>
-### func \(\*StorageECR721Fixed\) [MintOwner](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721fixed.go#L166>)
+### func \(\*StorageECR721Fixed\) [MintOwner](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721fixed.go#L166>)
 
 ```go
 func (s *StorageECR721Fixed) MintOwner(amount *big.Int) error
@@ -724,7 +724,7 @@ func (s *StorageECR721Fixed) MintOwner(amount *big.Int) error
 
 
 <a name="StorageECR721Fixed.Mintable"></a>
-### func \(\*StorageECR721Fixed\) [Mintable](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721fixed.go#L65>)
+### func \(\*StorageECR721Fixed\) [Mintable](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721fixed.go#L65>)
 
 ```go
 func (s *StorageECR721Fixed) Mintable() (bool, error)
@@ -733,7 +733,7 @@ func (s *StorageECR721Fixed) Mintable() (bool, error)
 
 
 <a name="StorageECR721Fixed.Price"></a>
-### func \(\*StorageECR721Fixed\) [Price](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721fixed.go#L202>)
+### func \(\*StorageECR721Fixed\) [Price](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721fixed.go#L202>)
 
 ```go
 func (s *StorageECR721Fixed) Price() (*big.Int, error)
@@ -742,7 +742,7 @@ func (s *StorageECR721Fixed) Price() (*big.Int, error)
 Price returns price
 
 <a name="StorageECR721Fixed.Receiver"></a>
-### func \(\*StorageECR721Fixed\) [Receiver](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721fixed.go#L120>)
+### func \(\*StorageECR721Fixed\) [Receiver](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721fixed.go#L120>)
 
 ```go
 func (s *StorageECR721Fixed) Receiver() (string, error)
@@ -751,7 +751,7 @@ func (s *StorageECR721Fixed) Receiver() (string, error)
 
 
 <a name="StorageECR721Fixed.Royalty"></a>
-### func \(\*StorageECR721Fixed\) [Royalty](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721fixed.go#L109>)
+### func \(\*StorageECR721Fixed\) [Royalty](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721fixed.go#L109>)
 
 ```go
 func (s *StorageECR721Fixed) Royalty() (*big.Int, error)
@@ -760,7 +760,7 @@ func (s *StorageECR721Fixed) Royalty() (*big.Int, error)
 
 
 <a name="StorageECR721Fixed.RoyaltyInfo"></a>
-### func \(\*StorageECR721Fixed\) [RoyaltyInfo](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721fixed.go#L155>)
+### func \(\*StorageECR721Fixed\) [RoyaltyInfo](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721fixed.go#L155>)
 
 ```go
 func (s *StorageECR721Fixed) RoyaltyInfo(tokenId, salePrice *big.Int) (string, *big.Int, error)
@@ -769,7 +769,7 @@ func (s *StorageECR721Fixed) RoyaltyInfo(tokenId, salePrice *big.Int) (string, *
 
 
 <a name="StorageECR721Fixed.SetAllocation"></a>
-### func \(\*StorageECR721Fixed\) [SetAllocation](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721fixed.go#L228>)
+### func \(\*StorageECR721Fixed\) [SetAllocation](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721fixed.go#L228>)
 
 ```go
 func (s *StorageECR721Fixed) SetAllocation(allocation string) error
@@ -778,7 +778,7 @@ func (s *StorageECR721Fixed) SetAllocation(allocation string) error
 SetAllocation updates allocation
 
 <a name="StorageECR721Fixed.SetMintable"></a>
-### func \(\*StorageECR721Fixed\) [SetMintable](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721fixed.go#L242>)
+### func \(\*StorageECR721Fixed\) [SetMintable](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721fixed.go#L242>)
 
 ```go
 func (s *StorageECR721Fixed) SetMintable(status bool) error
@@ -787,7 +787,7 @@ func (s *StorageECR721Fixed) SetMintable(status bool) error
 SetMintable updates mintable state
 
 <a name="StorageECR721Fixed.SetReceiver"></a>
-### func \(\*StorageECR721Fixed\) [SetReceiver](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721fixed.go#L270>)
+### func \(\*StorageECR721Fixed\) [SetReceiver](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721fixed.go#L270>)
 
 ```go
 func (s *StorageECR721Fixed) SetReceiver(receiver string) error
@@ -796,7 +796,7 @@ func (s *StorageECR721Fixed) SetReceiver(receiver string) error
 SetReceiver eth balance from token contract \- setReceiver\(address receiver\_\)
 
 <a name="StorageECR721Fixed.SetRoyalty"></a>
-### func \(\*StorageECR721Fixed\) [SetRoyalty](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721fixed.go#L256>)
+### func \(\*StorageECR721Fixed\) [SetRoyalty](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721fixed.go#L256>)
 
 ```go
 func (s *StorageECR721Fixed) SetRoyalty(sum *big.Int) error
@@ -805,7 +805,7 @@ func (s *StorageECR721Fixed) SetRoyalty(sum *big.Int) error
 SetRoyalty eth balance from token contract \- setReceiver\(address receiver\_\)
 
 <a name="StorageECR721Fixed.SetURI"></a>
-### func \(\*StorageECR721Fixed\) [SetURI](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721fixed.go#L214>)
+### func \(\*StorageECR721Fixed\) [SetURI](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721fixed.go#L214>)
 
 ```go
 func (s *StorageECR721Fixed) SetURI(uri string) error
@@ -814,7 +814,7 @@ func (s *StorageECR721Fixed) SetURI(uri string) error
 SetURI updates uri
 
 <a name="StorageECR721Fixed.SetURIFallback"></a>
-### func \(\*StorageECR721Fixed\) [SetURIFallback](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721fixed.go#L30>)
+### func \(\*StorageECR721Fixed\) [SetURIFallback](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721fixed.go#L30>)
 
 ```go
 func (s *StorageECR721Fixed) SetURIFallback(uri string) error
@@ -823,7 +823,7 @@ func (s *StorageECR721Fixed) SetURIFallback(uri string) error
 
 
 <a name="StorageECR721Fixed.TokenURI"></a>
-### func \(\*StorageECR721Fixed\) [TokenURI](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721fixed.go#L179>)
+### func \(\*StorageECR721Fixed\) [TokenURI](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721fixed.go#L179>)
 
 ```go
 func (s *StorageECR721Fixed) TokenURI(token *big.Int) (string, error)
@@ -832,7 +832,7 @@ func (s *StorageECR721Fixed) TokenURI(token *big.Int) (string, error)
 
 
 <a name="StorageECR721Fixed.TokenURIFallback"></a>
-### func \(\*StorageECR721Fixed\) [TokenURIFallback](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721fixed.go#L190>)
+### func \(\*StorageECR721Fixed\) [TokenURIFallback](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721fixed.go#L190>)
 
 ```go
 func (s *StorageECR721Fixed) TokenURIFallback(token *big.Int) (string, error)
@@ -841,7 +841,7 @@ func (s *StorageECR721Fixed) TokenURIFallback(token *big.Int) (string, error)
 
 
 <a name="StorageECR721Fixed.Total"></a>
-### func \(\*StorageECR721Fixed\) [Total](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721fixed.go#L43>)
+### func \(\*StorageECR721Fixed\) [Total](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721fixed.go#L43>)
 
 ```go
 func (s *StorageECR721Fixed) Total() (*big.Int, error)
@@ -850,7 +850,7 @@ func (s *StorageECR721Fixed) Total() (*big.Int, error)
 
 
 <a name="StorageECR721Fixed.Uri"></a>
-### func \(\*StorageECR721Fixed\) [Uri](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721fixed.go#L87>)
+### func \(\*StorageECR721Fixed\) [Uri](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721fixed.go#L87>)
 
 ```go
 func (s *StorageECR721Fixed) Uri() (string, error)
@@ -859,7 +859,7 @@ func (s *StorageECR721Fixed) Uri() (string, error)
 
 
 <a name="StorageECR721Fixed.UriFallback"></a>
-### func \(\*StorageECR721Fixed\) [UriFallback](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721fixed.go#L98>)
+### func \(\*StorageECR721Fixed\) [UriFallback](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721fixed.go#L98>)
 
 ```go
 func (s *StorageECR721Fixed) UriFallback() (string, error)
@@ -868,7 +868,7 @@ func (s *StorageECR721Fixed) UriFallback() (string, error)
 
 
 <a name="StorageECR721Fixed.Withdraw"></a>
-### func \(\*StorageECR721Fixed\) [Withdraw](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721fixed.go#L286>)
+### func \(\*StorageECR721Fixed\) [Withdraw](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721fixed.go#L286>)
 
 ```go
 func (s *StorageECR721Fixed) Withdraw() error
@@ -877,7 +877,7 @@ func (s *StorageECR721Fixed) Withdraw() error
 Withdraw eth balance from token contract \- withdraw\(\)
 
 <a name="StorageECR721Pack"></a>
-## type [StorageECR721Pack](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721pack.go#L39-L42>)
+## type [StorageECR721Pack](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721pack.go#L39-L42>)
 
 
 
@@ -888,7 +888,7 @@ type StorageECR721Pack struct {
 ```
 
 <a name="StorageECR721Pack.Allocation"></a>
-### func \(\*StorageECR721Pack\) [Allocation](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721pack.go#L203>)
+### func \(\*StorageECR721Pack\) [Allocation](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721pack.go#L203>)
 
 ```go
 func (s *StorageECR721Pack) Allocation() (string, error)
@@ -897,7 +897,7 @@ func (s *StorageECR721Pack) Allocation() (string, error)
 
 
 <a name="StorageECR721Pack.Batch"></a>
-### func \(\*StorageECR721Pack\) [Batch](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721pack.go#L181>)
+### func \(\*StorageECR721Pack\) [Batch](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721pack.go#L181>)
 
 ```go
 func (s *StorageECR721Pack) Batch() (*big.Int, error)
@@ -906,7 +906,7 @@ func (s *StorageECR721Pack) Batch() (*big.Int, error)
 
 
 <a name="StorageECR721Pack.Max"></a>
-### func \(\*StorageECR721Pack\) [Max](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721pack.go#L159>)
+### func \(\*StorageECR721Pack\) [Max](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721pack.go#L159>)
 
 ```go
 func (s *StorageECR721Pack) Max() (*big.Int, error)
@@ -915,7 +915,7 @@ func (s *StorageECR721Pack) Max() (*big.Int, error)
 
 
 <a name="StorageECR721Pack.Mint"></a>
-### func \(\*StorageECR721Pack\) [Mint](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721pack.go#L269>)
+### func \(\*StorageECR721Pack\) [Mint](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721pack.go#L269>)
 
 ```go
 func (s *StorageECR721Pack) Mint(amount *big.Int) error
@@ -924,7 +924,7 @@ func (s *StorageECR721Pack) Mint(amount *big.Int) error
 
 
 <a name="StorageECR721Pack.MintOwner"></a>
-### func \(\*StorageECR721Pack\) [MintOwner](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721pack.go#L258>)
+### func \(\*StorageECR721Pack\) [MintOwner](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721pack.go#L258>)
 
 ```go
 func (s *StorageECR721Pack) MintOwner(amount *big.Int) error
@@ -933,7 +933,7 @@ func (s *StorageECR721Pack) MintOwner(amount *big.Int) error
 
 
 <a name="StorageECR721Pack.Mintable"></a>
-### func \(\*StorageECR721Pack\) [Mintable](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721pack.go#L192>)
+### func \(\*StorageECR721Pack\) [Mintable](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721pack.go#L192>)
 
 ```go
 func (s *StorageECR721Pack) Mintable() (bool, error)
@@ -942,7 +942,7 @@ func (s *StorageECR721Pack) Mintable() (bool, error)
 
 
 <a name="StorageECR721Pack.Price"></a>
-### func \(\*StorageECR721Pack\) [Price](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721pack.go#L137>)
+### func \(\*StorageECR721Pack\) [Price](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721pack.go#L137>)
 
 ```go
 func (s *StorageECR721Pack) Price() (*big.Int, error)
@@ -951,7 +951,7 @@ func (s *StorageECR721Pack) Price() (*big.Int, error)
 
 
 <a name="StorageECR721Pack.Receiver"></a>
-### func \(\*StorageECR721Pack\) [Receiver](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721pack.go#L247>)
+### func \(\*StorageECR721Pack\) [Receiver](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721pack.go#L247>)
 
 ```go
 func (s *StorageECR721Pack) Receiver() (string, error)
@@ -960,7 +960,7 @@ func (s *StorageECR721Pack) Receiver() (string, error)
 
 
 <a name="StorageECR721Pack.Redeem"></a>
-### func \(\*StorageECR721Pack\) [Redeem](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721pack.go#L280>)
+### func \(\*StorageECR721Pack\) [Redeem](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721pack.go#L280>)
 
 ```go
 func (s *StorageECR721Pack) Redeem(tokenId *big.Int) error
@@ -969,7 +969,7 @@ func (s *StorageECR721Pack) Redeem(tokenId *big.Int) error
 
 
 <a name="StorageECR721Pack.Reveal"></a>
-### func \(\*StorageECR721Pack\) [Reveal](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721pack.go#L291>)
+### func \(\*StorageECR721Pack\) [Reveal](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721pack.go#L291>)
 
 ```go
 func (s *StorageECR721Pack) Reveal(tokenId *big.Int) error
@@ -978,7 +978,7 @@ func (s *StorageECR721Pack) Reveal(tokenId *big.Int) error
 
 
 <a name="StorageECR721Pack.Royalty"></a>
-### func \(\*StorageECR721Pack\) [Royalty](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721pack.go#L236>)
+### func \(\*StorageECR721Pack\) [Royalty](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721pack.go#L236>)
 
 ```go
 func (s *StorageECR721Pack) Royalty() (*big.Int, error)
@@ -987,7 +987,7 @@ func (s *StorageECR721Pack) Royalty() (*big.Int, error)
 
 
 <a name="StorageECR721Pack.RoyaltyInfo"></a>
-### func \(\*StorageECR721Pack\) [RoyaltyInfo](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721pack.go#L148>)
+### func \(\*StorageECR721Pack\) [RoyaltyInfo](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721pack.go#L148>)
 
 ```go
 func (s *StorageECR721Pack) RoyaltyInfo(tokenId, salePrice *big.Int) (string, *big.Int, error)
@@ -996,7 +996,7 @@ func (s *StorageECR721Pack) RoyaltyInfo(tokenId, salePrice *big.Int) (string, *b
 
 
 <a name="StorageECR721Pack.SetAllocation"></a>
-### func \(\*StorageECR721Pack\) [SetAllocation](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721pack.go#L111>)
+### func \(\*StorageECR721Pack\) [SetAllocation](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721pack.go#L111>)
 
 ```go
 func (s *StorageECR721Pack) SetAllocation(allocation string) error
@@ -1005,7 +1005,7 @@ func (s *StorageECR721Pack) SetAllocation(allocation string) error
 
 
 <a name="StorageECR721Pack.SetClosed"></a>
-### func \(\*StorageECR721Pack\) [SetClosed](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721pack.go#L324>)
+### func \(\*StorageECR721Pack\) [SetClosed](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721pack.go#L324>)
 
 ```go
 func (s *StorageECR721Pack) SetClosed(closed string) error
@@ -1014,7 +1014,7 @@ func (s *StorageECR721Pack) SetClosed(closed string) error
 
 
 <a name="StorageECR721Pack.SetMintable"></a>
-### func \(\*StorageECR721Pack\) [SetMintable](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721pack.go#L98>)
+### func \(\*StorageECR721Pack\) [SetMintable](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721pack.go#L98>)
 
 ```go
 func (s *StorageECR721Pack) SetMintable(status bool) error
@@ -1023,7 +1023,7 @@ func (s *StorageECR721Pack) SetMintable(status bool) error
 
 
 <a name="StorageECR721Pack.SetOpened"></a>
-### func \(\*StorageECR721Pack\) [SetOpened](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721pack.go#L335>)
+### func \(\*StorageECR721Pack\) [SetOpened](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721pack.go#L335>)
 
 ```go
 func (s *StorageECR721Pack) SetOpened(opened string) error
@@ -1032,7 +1032,7 @@ func (s *StorageECR721Pack) SetOpened(opened string) error
 
 
 <a name="StorageECR721Pack.SetReceiver"></a>
-### func \(\*StorageECR721Pack\) [SetReceiver](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721pack.go#L70>)
+### func \(\*StorageECR721Pack\) [SetReceiver](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721pack.go#L70>)
 
 ```go
 func (s *StorageECR721Pack) SetReceiver(receiver string) error
@@ -1041,7 +1041,7 @@ func (s *StorageECR721Pack) SetReceiver(receiver string) error
 
 
 <a name="StorageECR721Pack.SetRoyalty"></a>
-### func \(\*StorageECR721Pack\) [SetRoyalty](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721pack.go#L85>)
+### func \(\*StorageECR721Pack\) [SetRoyalty](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721pack.go#L85>)
 
 ```go
 func (s *StorageECR721Pack) SetRoyalty(sum *big.Int) error
@@ -1050,7 +1050,7 @@ func (s *StorageECR721Pack) SetRoyalty(sum *big.Int) error
 
 
 <a name="StorageECR721Pack.SetURI"></a>
-### func \(\*StorageECR721Pack\) [SetURI](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721pack.go#L124>)
+### func \(\*StorageECR721Pack\) [SetURI](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721pack.go#L124>)
 
 ```go
 func (s *StorageECR721Pack) SetURI(uri string) error
@@ -1059,7 +1059,7 @@ func (s *StorageECR721Pack) SetURI(uri string) error
 
 
 <a name="StorageECR721Pack.SetURIFallback"></a>
-### func \(\*StorageECR721Pack\) [SetURIFallback](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721pack.go#L44>)
+### func \(\*StorageECR721Pack\) [SetURIFallback](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721pack.go#L44>)
 
 ```go
 func (s *StorageECR721Pack) SetURIFallback(uri string) error
@@ -1068,7 +1068,7 @@ func (s *StorageECR721Pack) SetURIFallback(uri string) error
 
 
 <a name="StorageECR721Pack.TokenURI"></a>
-### func \(\*StorageECR721Pack\) [TokenURI](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721pack.go#L302>)
+### func \(\*StorageECR721Pack\) [TokenURI](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721pack.go#L302>)
 
 ```go
 func (s *StorageECR721Pack) TokenURI(tokenId *big.Int) (string, error)
@@ -1077,7 +1077,7 @@ func (s *StorageECR721Pack) TokenURI(tokenId *big.Int) (string, error)
 
 
 <a name="StorageECR721Pack.TokenURIFallback"></a>
-### func \(\*StorageECR721Pack\) [TokenURIFallback](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721pack.go#L313>)
+### func \(\*StorageECR721Pack\) [TokenURIFallback](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721pack.go#L313>)
 
 ```go
 func (s *StorageECR721Pack) TokenURIFallback(tokenId *big.Int) (string, error)
@@ -1086,7 +1086,7 @@ func (s *StorageECR721Pack) TokenURIFallback(tokenId *big.Int) (string, error)
 
 
 <a name="StorageECR721Pack.Total"></a>
-### func \(\*StorageECR721Pack\) [Total](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721pack.go#L170>)
+### func \(\*StorageECR721Pack\) [Total](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721pack.go#L170>)
 
 ```go
 func (s *StorageECR721Pack) Total() (*big.Int, error)
@@ -1095,7 +1095,7 @@ func (s *StorageECR721Pack) Total() (*big.Int, error)
 
 
 <a name="StorageECR721Pack.Uri"></a>
-### func \(\*StorageECR721Pack\) [Uri](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721pack.go#L214>)
+### func \(\*StorageECR721Pack\) [Uri](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721pack.go#L214>)
 
 ```go
 func (s *StorageECR721Pack) Uri() (string, error)
@@ -1104,7 +1104,7 @@ func (s *StorageECR721Pack) Uri() (string, error)
 
 
 <a name="StorageECR721Pack.UriFallback"></a>
-### func \(\*StorageECR721Pack\) [UriFallback](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721pack.go#L225>)
+### func \(\*StorageECR721Pack\) [UriFallback](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721pack.go#L225>)
 
 ```go
 func (s *StorageECR721Pack) UriFallback() (string, error)
@@ -1113,7 +1113,7 @@ func (s *StorageECR721Pack) UriFallback() (string, error)
 
 
 <a name="StorageECR721Pack.Withdraw"></a>
-### func \(\*StorageECR721Pack\) [Withdraw](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721pack.go#L57>)
+### func \(\*StorageECR721Pack\) [Withdraw](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721pack.go#L57>)
 
 ```go
 func (s *StorageECR721Pack) Withdraw() error
@@ -1122,7 +1122,7 @@ func (s *StorageECR721Pack) Withdraw() error
 
 
 <a name="StorageECR721Random"></a>
-## type [StorageECR721Random](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721random.go#L40-L43>)
+## type [StorageECR721Random](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721random.go#L40-L43>)
 
 
 
@@ -1133,7 +1133,7 @@ type StorageECR721Random struct {
 ```
 
 <a name="StorageECR721Random.Mint"></a>
-### func \(\*StorageECR721Random\) [Mint](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721random.go#L58>)
+### func \(\*StorageECR721Random\) [Mint](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721random.go#L58>)
 
 ```go
 func (s *StorageECR721Random) Mint(amount *big.Int) error
@@ -1142,7 +1142,7 @@ func (s *StorageECR721Random) Mint(amount *big.Int) error
 
 
 <a name="StorageECR721Random.MintOwner"></a>
-### func \(\*StorageECR721Random\) [MintOwner](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721random.go#L45>)
+### func \(\*StorageECR721Random\) [MintOwner](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721random.go#L45>)
 
 ```go
 func (s *StorageECR721Random) MintOwner(amount *big.Int) error
@@ -1151,7 +1151,7 @@ func (s *StorageECR721Random) MintOwner(amount *big.Int) error
 
 
 <a name="StorageECR721Random.Price"></a>
-### func \(\*StorageECR721Random\) [Price](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721random.go#L145>)
+### func \(\*StorageECR721Random\) [Price](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721random.go#L145>)
 
 ```go
 func (s *StorageECR721Random) Price() (*big.Int, error)
@@ -1160,7 +1160,7 @@ func (s *StorageECR721Random) Price() (*big.Int, error)
 
 
 <a name="StorageECR721Random.Reveal"></a>
-### func \(\*StorageECR721Random\) [Reveal](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721random.go#L71>)
+### func \(\*StorageECR721Random\) [Reveal](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721random.go#L71>)
 
 ```go
 func (s *StorageECR721Random) Reveal(tokens []*big.Int) error
@@ -1169,7 +1169,7 @@ func (s *StorageECR721Random) Reveal(tokens []*big.Int) error
 
 
 <a name="StorageECR721Random.SetHidden"></a>
-### func \(\*StorageECR721Random\) [SetHidden](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721random.go#L106>)
+### func \(\*StorageECR721Random\) [SetHidden](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721random.go#L106>)
 
 ```go
 func (s *StorageECR721Random) SetHidden(hidden string) error
@@ -1178,7 +1178,7 @@ func (s *StorageECR721Random) SetHidden(hidden string) error
 
 
 <a name="StorageECR721Random.SetPack"></a>
-### func \(\*StorageECR721Random\) [SetPack](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721random.go#L119>)
+### func \(\*StorageECR721Random\) [SetPack](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721random.go#L119>)
 
 ```go
 func (s *StorageECR721Random) SetPack(address common.Address) error
@@ -1187,7 +1187,7 @@ func (s *StorageECR721Random) SetPack(address common.Address) error
 
 
 <a name="StorageECR721Random.SetRevealable"></a>
-### func \(\*StorageECR721Random\) [SetRevealable](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721random.go#L132>)
+### func \(\*StorageECR721Random\) [SetRevealable](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721random.go#L132>)
 
 ```go
 func (s *StorageECR721Random) SetRevealable(status bool) error
@@ -1196,7 +1196,7 @@ func (s *StorageECR721Random) SetRevealable(status bool) error
 
 
 <a name="StorageECR721Random.TokenURI"></a>
-### func \(\*StorageECR721Random\) [TokenURI](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721random.go#L84>)
+### func \(\*StorageECR721Random\) [TokenURI](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721random.go#L84>)
 
 ```go
 func (s *StorageECR721Random) TokenURI(token *big.Int) (string, error)
@@ -1205,7 +1205,7 @@ func (s *StorageECR721Random) TokenURI(token *big.Int) (string, error)
 
 
 <a name="StorageECR721Random.TokenURIFallback"></a>
-### func \(\*StorageECR721Random\) [TokenURIFallback](<https://github.com/0chain/gosdk/blob/staging/znft/storageerc721random.go#L95>)
+### func \(\*StorageECR721Random\) [TokenURIFallback](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721random.go#L95>)
 
 ```go
 func (s *StorageECR721Random) TokenURIFallback(token *big.Int) (string, error)
@@ -1214,7 +1214,7 @@ func (s *StorageECR721Random) TokenURIFallback(token *big.Int) (string, error)
 
 
 <a name="Znft"></a>
-## type [Znft](<https://github.com/0chain/gosdk/blob/staging/znft/znft.go#L46-L48>)
+## type [Znft](<https://github.com/0chain/gosdk/blob/doc/initial/znft/znft.go#L46-L48>)
 
 
 
@@ -1225,7 +1225,7 @@ type Znft struct {
 ```
 
 <a name="NewNFTApplication"></a>
-### func [NewNFTApplication](<https://github.com/0chain/gosdk/blob/staging/znft/znft.go#L54>)
+### func [NewNFTApplication](<https://github.com/0chain/gosdk/blob/doc/initial/znft/znft.go#L54>)
 
 ```go
 func NewNFTApplication(c *Configuration) *Znft
@@ -1234,7 +1234,7 @@ func NewNFTApplication(c *Configuration) *Znft
 
 
 <a name="Znft.CreateFactoryERC721FixedSession"></a>
-### func \(\*Znft\) [CreateFactoryERC721FixedSession](<https://github.com/0chain/gosdk/blob/staging/znft/znft.go#L263>)
+### func \(\*Znft\) [CreateFactoryERC721FixedSession](<https://github.com/0chain/gosdk/blob/doc/initial/znft/znft.go#L263>)
 
 ```go
 func (app *Znft) CreateFactoryERC721FixedSession(ctx context.Context, addr string) (IFactoryFixed, error)
@@ -1243,7 +1243,7 @@ func (app *Znft) CreateFactoryERC721FixedSession(ctx context.Context, addr strin
 
 
 <a name="Znft.CreateFactoryERC721PackSession"></a>
-### func \(\*Znft\) [CreateFactoryERC721PackSession](<https://github.com/0chain/gosdk/blob/staging/znft/znft.go#L239>)
+### func \(\*Znft\) [CreateFactoryERC721PackSession](<https://github.com/0chain/gosdk/blob/doc/initial/znft/znft.go#L239>)
 
 ```go
 func (app *Znft) CreateFactoryERC721PackSession(ctx context.Context, addr string) (IFactoryPack, error)
@@ -1252,7 +1252,7 @@ func (app *Znft) CreateFactoryERC721PackSession(ctx context.Context, addr string
 
 
 <a name="Znft.CreateFactoryERC721RandomSession"></a>
-### func \(\*Znft\) [CreateFactoryERC721RandomSession](<https://github.com/0chain/gosdk/blob/staging/znft/znft.go#L287>)
+### func \(\*Znft\) [CreateFactoryERC721RandomSession](<https://github.com/0chain/gosdk/blob/doc/initial/znft/znft.go#L287>)
 
 ```go
 func (app *Znft) CreateFactoryERC721RandomSession(ctx context.Context, addr string) (IFactoryRandom, error)
@@ -1261,7 +1261,7 @@ func (app *Znft) CreateFactoryERC721RandomSession(ctx context.Context, addr stri
 
 
 <a name="Znft.CreateFactoryERC721Session"></a>
-### func \(\*Znft\) [CreateFactoryERC721Session](<https://github.com/0chain/gosdk/blob/staging/znft/znft.go#L215>)
+### func \(\*Znft\) [CreateFactoryERC721Session](<https://github.com/0chain/gosdk/blob/doc/initial/znft/znft.go#L215>)
 
 ```go
 func (app *Znft) CreateFactoryERC721Session(ctx context.Context, addr string) (IFactoryERC721, error)
@@ -1270,7 +1270,7 @@ func (app *Znft) CreateFactoryERC721Session(ctx context.Context, addr string) (I
 
 
 <a name="Znft.CreateStorageERC721FixedSession"></a>
-### func \(\*Znft\) [CreateStorageERC721FixedSession](<https://github.com/0chain/gosdk/blob/staging/znft/znft.go#L361>)
+### func \(\*Znft\) [CreateStorageERC721FixedSession](<https://github.com/0chain/gosdk/blob/doc/initial/znft/znft.go#L361>)
 
 ```go
 func (app *Znft) CreateStorageERC721FixedSession(ctx context.Context, addr string) (IStorageECR721Fixed, error)
@@ -1279,7 +1279,7 @@ func (app *Znft) CreateStorageERC721FixedSession(ctx context.Context, addr strin
 
 
 <a name="Znft.CreateStorageERC721PackSession"></a>
-### func \(\*Znft\) [CreateStorageERC721PackSession](<https://github.com/0chain/gosdk/blob/staging/znft/znft.go#L313>)
+### func \(\*Znft\) [CreateStorageERC721PackSession](<https://github.com/0chain/gosdk/blob/doc/initial/znft/znft.go#L313>)
 
 ```go
 func (app *Znft) CreateStorageERC721PackSession(ctx context.Context, addr string) (IStorageECR721Pack, error)
@@ -1288,7 +1288,7 @@ func (app *Znft) CreateStorageERC721PackSession(ctx context.Context, addr string
 
 
 <a name="Znft.CreateStorageERC721RandomSession"></a>
-### func \(\*Znft\) [CreateStorageERC721RandomSession](<https://github.com/0chain/gosdk/blob/staging/znft/znft.go#L337>)
+### func \(\*Znft\) [CreateStorageERC721RandomSession](<https://github.com/0chain/gosdk/blob/doc/initial/znft/znft.go#L337>)
 
 ```go
 func (app *Znft) CreateStorageERC721RandomSession(ctx context.Context, addr string) (IStorageECR721Random, error)
@@ -1297,7 +1297,7 @@ func (app *Znft) CreateStorageERC721RandomSession(ctx context.Context, addr stri
 
 
 <a name="Znft.CreateStorageERC721Session"></a>
-### func \(\*Znft\) [CreateStorageERC721Session](<https://github.com/0chain/gosdk/blob/staging/znft/znft.go#L385>)
+### func \(\*Znft\) [CreateStorageERC721Session](<https://github.com/0chain/gosdk/blob/doc/initial/znft/znft.go#L385>)
 
 ```go
 func (app *Znft) CreateStorageERC721Session(ctx context.Context, addr string) (IStorageECR721, error)

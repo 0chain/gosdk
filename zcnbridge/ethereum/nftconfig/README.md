@@ -85,7 +85,7 @@ var NFTConfigMetaData = &bind.MetaData{
 ```
 
 <a name="NFTConfig"></a>
-## type [NFTConfig](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L41-L45>)
+## type [NFTConfig](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L41-L45>)
 
 NFTConfig is an auto generated Go binding around an Ethereum contract.
 
@@ -98,7 +98,7 @@ type NFTConfig struct {
 ```
 
 <a name="NewNFTConfig"></a>
-### func [NewNFTConfig](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L100>)
+### func [NewNFTConfig](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L100>)
 
 ```go
 func NewNFTConfig(address common.Address, backend bind.ContractBackend) (*NFTConfig, error)
@@ -107,7 +107,7 @@ func NewNFTConfig(address common.Address, backend bind.ContractBackend) (*NFTCon
 NewNFTConfig creates a new instance of NFTConfig, bound to a specific deployed contract.
 
 <a name="NFTConfigCaller"></a>
-## type [NFTConfigCaller](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L48-L50>)
+## type [NFTConfigCaller](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L48-L50>)
 
 NFTConfigCaller is an auto generated read\-only Go binding around an Ethereum contract.
 
@@ -118,7 +118,7 @@ type NFTConfigCaller struct {
 ```
 
 <a name="NewNFTConfigCaller"></a>
-### func [NewNFTConfigCaller](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L109>)
+### func [NewNFTConfigCaller](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L109>)
 
 ```go
 func NewNFTConfigCaller(address common.Address, caller bind.ContractCaller) (*NFTConfigCaller, error)
@@ -127,7 +127,7 @@ func NewNFTConfigCaller(address common.Address, caller bind.ContractCaller) (*NF
 NewNFTConfigCaller creates a new read\-only instance of NFTConfig, bound to a specific deployed contract.
 
 <a name="NFTConfigCaller.GetAddress"></a>
-### func \(\*NFTConfigCaller\) [GetAddress](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L185>)
+### func \(\*NFTConfigCaller\) [GetAddress](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L185>)
 
 ```go
 func (_NFTConfig *NFTConfigCaller) GetAddress(opts *bind.CallOpts, key [32]byte) (common.Address, error)
@@ -138,7 +138,7 @@ GetAddress is a free data retrieval call binding the contract method 0x21f8a721.
 Solidity: function getAddress\(bytes32 key\) view returns\(address\)
 
 <a name="NFTConfigCaller.GetUint256"></a>
-### func \(\*NFTConfigCaller\) [GetUint256](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L216>)
+### func \(\*NFTConfigCaller\) [GetUint256](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L216>)
 
 ```go
 func (_NFTConfig *NFTConfigCaller) GetUint256(opts *bind.CallOpts, key [32]byte) (*big.Int, error)
@@ -149,7 +149,7 @@ GetUint256 is a free data retrieval call binding the contract method 0x33598b00.
 Solidity: function getUint256\(bytes32 key\) view returns\(uint256\)
 
 <a name="NFTConfigCaller.Owner"></a>
-### func \(\*NFTConfigCaller\) [Owner](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L247>)
+### func \(\*NFTConfigCaller\) [Owner](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L247>)
 
 ```go
 func (_NFTConfig *NFTConfigCaller) Owner(opts *bind.CallOpts) (common.Address, error)
@@ -160,7 +160,7 @@ Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
 Solidity: function owner\(\) view returns\(address\)
 
 <a name="NFTConfigCallerRaw"></a>
-## type [NFTConfigCallerRaw](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L90-L92>)
+## type [NFTConfigCallerRaw](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L90-L92>)
 
 NFTConfigCallerRaw is an auto generated low\-level read\-only Go binding around an Ethereum contract.
 
@@ -171,7 +171,7 @@ type NFTConfigCallerRaw struct {
 ```
 
 <a name="NFTConfigCallerRaw.Call"></a>
-### func \(\*NFTConfigCallerRaw\) [Call](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L167>)
+### func \(\*NFTConfigCallerRaw\) [Call](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L167>)
 
 ```go
 func (_NFTConfig *NFTConfigCallerRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error
@@ -180,7 +180,7 @@ func (_NFTConfig *NFTConfigCallerRaw) Call(opts *bind.CallOpts, result *[]interf
 Call invokes the \(constant\) contract method with params as input values and sets the output to result. The result type might be a single field for simple returns, a slice of interfaces for anonymous returns and a struct for named returns.
 
 <a name="NFTConfigCallerSession"></a>
-## type [NFTConfigCallerSession](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L72-L75>)
+## type [NFTConfigCallerSession](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L72-L75>)
 
 NFTConfigCallerSession is an auto generated read\-only Go binding around an Ethereum contract, with pre\-set call options.
 
@@ -192,7 +192,7 @@ type NFTConfigCallerSession struct {
 ```
 
 <a name="NFTConfigCallerSession.GetAddress"></a>
-### func \(\*NFTConfigCallerSession\) [GetAddress](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L209>)
+### func \(\*NFTConfigCallerSession\) [GetAddress](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L209>)
 
 ```go
 func (_NFTConfig *NFTConfigCallerSession) GetAddress(key [32]byte) (common.Address, error)
@@ -203,7 +203,7 @@ GetAddress is a free data retrieval call binding the contract method 0x21f8a721.
 Solidity: function getAddress\(bytes32 key\) view returns\(address\)
 
 <a name="NFTConfigCallerSession.GetUint256"></a>
-### func \(\*NFTConfigCallerSession\) [GetUint256](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L240>)
+### func \(\*NFTConfigCallerSession\) [GetUint256](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L240>)
 
 ```go
 func (_NFTConfig *NFTConfigCallerSession) GetUint256(key [32]byte) (*big.Int, error)
@@ -214,7 +214,7 @@ GetUint256 is a free data retrieval call binding the contract method 0x33598b00.
 Solidity: function getUint256\(bytes32 key\) view returns\(uint256\)
 
 <a name="NFTConfigCallerSession.Owner"></a>
-### func \(\*NFTConfigCallerSession\) [Owner](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L271>)
+### func \(\*NFTConfigCallerSession\) [Owner](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L271>)
 
 ```go
 func (_NFTConfig *NFTConfigCallerSession) Owner() (common.Address, error)
@@ -225,7 +225,7 @@ Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
 Solidity: function owner\(\) view returns\(address\)
 
 <a name="NFTConfigConfigUpdated"></a>
-## type [NFTConfigConfigUpdated](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L427-L432>)
+## type [NFTConfigConfigUpdated](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L427-L432>)
 
 NFTConfigConfigUpdated represents a ConfigUpdated event raised by the NFTConfig contract.
 
@@ -239,7 +239,7 @@ type NFTConfigConfigUpdated struct {
 ```
 
 <a name="NFTConfigConfigUpdatedIterator"></a>
-## type [NFTConfigConfigUpdatedIterator](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L360-L370>)
+## type [NFTConfigConfigUpdatedIterator](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L360-L370>)
 
 NFTConfigConfigUpdatedIterator is returned from FilterConfigUpdated and is used to iterate over the raw logs and unpacked data for ConfigUpdated events raised by the NFTConfig contract.
 
@@ -251,7 +251,7 @@ type NFTConfigConfigUpdatedIterator struct {
 ```
 
 <a name="NFTConfigConfigUpdatedIterator.Close"></a>
-### func \(\*NFTConfigConfigUpdatedIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L421>)
+### func \(\*NFTConfigConfigUpdatedIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L421>)
 
 ```go
 func (it *NFTConfigConfigUpdatedIterator) Close() error
@@ -260,7 +260,7 @@ func (it *NFTConfigConfigUpdatedIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="NFTConfigConfigUpdatedIterator.Error"></a>
-### func \(\*NFTConfigConfigUpdatedIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L415>)
+### func \(\*NFTConfigConfigUpdatedIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L415>)
 
 ```go
 func (it *NFTConfigConfigUpdatedIterator) Error() error
@@ -269,7 +269,7 @@ func (it *NFTConfigConfigUpdatedIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="NFTConfigConfigUpdatedIterator.Next"></a>
-### func \(\*NFTConfigConfigUpdatedIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L375>)
+### func \(\*NFTConfigConfigUpdatedIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L375>)
 
 ```go
 func (it *NFTConfigConfigUpdatedIterator) Next() bool
@@ -278,7 +278,7 @@ func (it *NFTConfigConfigUpdatedIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="NFTConfigFilterer"></a>
-## type [NFTConfigFilterer](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L58-L60>)
+## type [NFTConfigFilterer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L58-L60>)
 
 NFTConfigFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
 
@@ -289,7 +289,7 @@ type NFTConfigFilterer struct {
 ```
 
 <a name="NewNFTConfigFilterer"></a>
-### func [NewNFTConfigFilterer](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L127>)
+### func [NewNFTConfigFilterer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L127>)
 
 ```go
 func NewNFTConfigFilterer(address common.Address, filterer bind.ContractFilterer) (*NFTConfigFilterer, error)
@@ -298,7 +298,7 @@ func NewNFTConfigFilterer(address common.Address, filterer bind.ContractFilterer
 NewNFTConfigFilterer creates a new log filterer instance of NFTConfig, bound to a specific deployed contract.
 
 <a name="NFTConfigFilterer.FilterConfigUpdated"></a>
-### func \(\*NFTConfigFilterer\) [FilterConfigUpdated](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L437>)
+### func \(\*NFTConfigFilterer\) [FilterConfigUpdated](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L437>)
 
 ```go
 func (_NFTConfig *NFTConfigFilterer) FilterConfigUpdated(opts *bind.FilterOpts, key [][32]byte) (*NFTConfigConfigUpdatedIterator, error)
@@ -309,7 +309,7 @@ FilterConfigUpdated is a free log retrieval operation binding the contract event
 Solidity: event ConfigUpdated\(bytes32 indexed key, uint256 previous, uint256 updated\)
 
 <a name="NFTConfigFilterer.FilterOwnershipTransferred"></a>
-### func \(\*NFTConfigFilterer\) [FilterOwnershipTransferred](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L582>)
+### func \(\*NFTConfigFilterer\) [FilterOwnershipTransferred](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L582>)
 
 ```go
 func (_NFTConfig *NFTConfigFilterer) FilterOwnershipTransferred(opts *bind.FilterOpts, previousOwner []common.Address, newOwner []common.Address) (*NFTConfigOwnershipTransferredIterator, error)
@@ -320,7 +320,7 @@ FilterOwnershipTransferred is a free log retrieval operation binding the contrac
 Solidity: event OwnershipTransferred\(address indexed previousOwner, address indexed newOwner\)
 
 <a name="NFTConfigFilterer.ParseConfigUpdated"></a>
-### func \(\*NFTConfigFilterer\) [ParseConfigUpdated](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L496>)
+### func \(\*NFTConfigFilterer\) [ParseConfigUpdated](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L496>)
 
 ```go
 func (_NFTConfig *NFTConfigFilterer) ParseConfigUpdated(log types.Log) (*NFTConfigConfigUpdated, error)
@@ -331,7 +331,7 @@ ParseConfigUpdated is a log parse operation binding the contract event 0xac2ccce
 Solidity: event ConfigUpdated\(bytes32 indexed key, uint256 previous, uint256 updated\)
 
 <a name="NFTConfigFilterer.ParseOwnershipTransferred"></a>
-### func \(\*NFTConfigFilterer\) [ParseOwnershipTransferred](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L649>)
+### func \(\*NFTConfigFilterer\) [ParseOwnershipTransferred](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L649>)
 
 ```go
 func (_NFTConfig *NFTConfigFilterer) ParseOwnershipTransferred(log types.Log) (*NFTConfigOwnershipTransferred, error)
@@ -342,7 +342,7 @@ ParseOwnershipTransferred is a log parse operation binding the contract event 0x
 Solidity: event OwnershipTransferred\(address indexed previousOwner, address indexed newOwner\)
 
 <a name="NFTConfigFilterer.WatchConfigUpdated"></a>
-### func \(\*NFTConfigFilterer\) [WatchConfigUpdated](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L454>)
+### func \(\*NFTConfigFilterer\) [WatchConfigUpdated](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L454>)
 
 ```go
 func (_NFTConfig *NFTConfigFilterer) WatchConfigUpdated(opts *bind.WatchOpts, sink chan<- *NFTConfigConfigUpdated, key [][32]byte) (event.Subscription, error)
@@ -353,7 +353,7 @@ WatchConfigUpdated is a free log subscription operation binding the contract eve
 Solidity: event ConfigUpdated\(bytes32 indexed key, uint256 previous, uint256 updated\)
 
 <a name="NFTConfigFilterer.WatchOwnershipTransferred"></a>
-### func \(\*NFTConfigFilterer\) [WatchOwnershipTransferred](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L603>)
+### func \(\*NFTConfigFilterer\) [WatchOwnershipTransferred](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L603>)
 
 ```go
 func (_NFTConfig *NFTConfigFilterer) WatchOwnershipTransferred(opts *bind.WatchOpts, sink chan<- *NFTConfigOwnershipTransferred, previousOwner []common.Address, newOwner []common.Address) (event.Subscription, error)
@@ -364,7 +364,7 @@ WatchOwnershipTransferred is a free log subscription operation binding the contr
 Solidity: event OwnershipTransferred\(address indexed previousOwner, address indexed newOwner\)
 
 <a name="NFTConfigOwnershipTransferred"></a>
-## type [NFTConfigOwnershipTransferred](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L573-L577>)
+## type [NFTConfigOwnershipTransferred](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L573-L577>)
 
 NFTConfigOwnershipTransferred represents a OwnershipTransferred event raised by the NFTConfig contract.
 
@@ -377,7 +377,7 @@ type NFTConfigOwnershipTransferred struct {
 ```
 
 <a name="NFTConfigOwnershipTransferredIterator"></a>
-## type [NFTConfigOwnershipTransferredIterator](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L506-L516>)
+## type [NFTConfigOwnershipTransferredIterator](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L506-L516>)
 
 NFTConfigOwnershipTransferredIterator is returned from FilterOwnershipTransferred and is used to iterate over the raw logs and unpacked data for OwnershipTransferred events raised by the NFTConfig contract.
 
@@ -389,7 +389,7 @@ type NFTConfigOwnershipTransferredIterator struct {
 ```
 
 <a name="NFTConfigOwnershipTransferredIterator.Close"></a>
-### func \(\*NFTConfigOwnershipTransferredIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L567>)
+### func \(\*NFTConfigOwnershipTransferredIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L567>)
 
 ```go
 func (it *NFTConfigOwnershipTransferredIterator) Close() error
@@ -398,7 +398,7 @@ func (it *NFTConfigOwnershipTransferredIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="NFTConfigOwnershipTransferredIterator.Error"></a>
-### func \(\*NFTConfigOwnershipTransferredIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L561>)
+### func \(\*NFTConfigOwnershipTransferredIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L561>)
 
 ```go
 func (it *NFTConfigOwnershipTransferredIterator) Error() error
@@ -407,7 +407,7 @@ func (it *NFTConfigOwnershipTransferredIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="NFTConfigOwnershipTransferredIterator.Next"></a>
-### func \(\*NFTConfigOwnershipTransferredIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L521>)
+### func \(\*NFTConfigOwnershipTransferredIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L521>)
 
 ```go
 func (it *NFTConfigOwnershipTransferredIterator) Next() bool
@@ -416,7 +416,7 @@ func (it *NFTConfigOwnershipTransferredIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="NFTConfigRaw"></a>
-## type [NFTConfigRaw](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L85-L87>)
+## type [NFTConfigRaw](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L85-L87>)
 
 NFTConfigRaw is an auto generated low\-level Go binding around an Ethereum contract.
 
@@ -427,7 +427,7 @@ type NFTConfigRaw struct {
 ```
 
 <a name="NFTConfigRaw.Call"></a>
-### func \(\*NFTConfigRaw\) [Call](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L148>)
+### func \(\*NFTConfigRaw\) [Call](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L148>)
 
 ```go
 func (_NFTConfig *NFTConfigRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error
@@ -436,7 +436,7 @@ func (_NFTConfig *NFTConfigRaw) Call(opts *bind.CallOpts, result *[]interface{},
 Call invokes the \(constant\) contract method with params as input values and sets the output to result. The result type might be a single field for simple returns, a slice of interfaces for anonymous returns and a struct for named returns.
 
 <a name="NFTConfigRaw.Transact"></a>
-### func \(\*NFTConfigRaw\) [Transact](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L159>)
+### func \(\*NFTConfigRaw\) [Transact](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L159>)
 
 ```go
 func (_NFTConfig *NFTConfigRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error)
@@ -445,7 +445,7 @@ func (_NFTConfig *NFTConfigRaw) Transact(opts *bind.TransactOpts, method string,
 Transact invokes the \(paid\) contract method with params as input values.
 
 <a name="NFTConfigRaw.Transfer"></a>
-### func \(\*NFTConfigRaw\) [Transfer](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L154>)
+### func \(\*NFTConfigRaw\) [Transfer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L154>)
 
 ```go
 func (_NFTConfig *NFTConfigRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error)
@@ -454,7 +454,7 @@ func (_NFTConfig *NFTConfigRaw) Transfer(opts *bind.TransactOpts) (*types.Transa
 Transfer initiates a plain transaction to move funds to the contract, calling its default method if one is available.
 
 <a name="NFTConfigSession"></a>
-## type [NFTConfigSession](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L64-L68>)
+## type [NFTConfigSession](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L64-L68>)
 
 NFTConfigSession is an auto generated Go binding around an Ethereum contract, with pre\-set call and transact options.
 
@@ -467,7 +467,7 @@ type NFTConfigSession struct {
 ```
 
 <a name="NFTConfigSession.GetAddress"></a>
-### func \(\*NFTConfigSession\) [GetAddress](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L202>)
+### func \(\*NFTConfigSession\) [GetAddress](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L202>)
 
 ```go
 func (_NFTConfig *NFTConfigSession) GetAddress(key [32]byte) (common.Address, error)
@@ -478,7 +478,7 @@ GetAddress is a free data retrieval call binding the contract method 0x21f8a721.
 Solidity: function getAddress\(bytes32 key\) view returns\(address\)
 
 <a name="NFTConfigSession.GetUint256"></a>
-### func \(\*NFTConfigSession\) [GetUint256](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L233>)
+### func \(\*NFTConfigSession\) [GetUint256](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L233>)
 
 ```go
 func (_NFTConfig *NFTConfigSession) GetUint256(key [32]byte) (*big.Int, error)
@@ -489,7 +489,7 @@ GetUint256 is a free data retrieval call binding the contract method 0x33598b00.
 Solidity: function getUint256\(bytes32 key\) view returns\(uint256\)
 
 <a name="NFTConfigSession.Owner"></a>
-### func \(\*NFTConfigSession\) [Owner](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L264>)
+### func \(\*NFTConfigSession\) [Owner](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L264>)
 
 ```go
 func (_NFTConfig *NFTConfigSession) Owner() (common.Address, error)
@@ -500,7 +500,7 @@ Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
 Solidity: function owner\(\) view returns\(address\)
 
 <a name="NFTConfigSession.RenounceOwnership"></a>
-### func \(\*NFTConfigSession\) [RenounceOwnership](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L285>)
+### func \(\*NFTConfigSession\) [RenounceOwnership](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L285>)
 
 ```go
 func (_NFTConfig *NFTConfigSession) RenounceOwnership() (*types.Transaction, error)
@@ -511,7 +511,7 @@ RenounceOwnership is a paid mutator transaction binding the contract method 0x71
 Solidity: function renounceOwnership\(\) returns\(\)
 
 <a name="NFTConfigSession.SetAddress"></a>
-### func \(\*NFTConfigSession\) [SetAddress](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L306>)
+### func \(\*NFTConfigSession\) [SetAddress](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L306>)
 
 ```go
 func (_NFTConfig *NFTConfigSession) SetAddress(key [32]byte, value common.Address) (*types.Transaction, error)
@@ -522,7 +522,7 @@ SetAddress is a paid mutator transaction binding the contract method 0xca446dd9.
 Solidity: function setAddress\(bytes32 key, address value\) returns\(\)
 
 <a name="NFTConfigSession.SetUint256"></a>
-### func \(\*NFTConfigSession\) [SetUint256](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L327>)
+### func \(\*NFTConfigSession\) [SetUint256](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L327>)
 
 ```go
 func (_NFTConfig *NFTConfigSession) SetUint256(key [32]byte, value *big.Int) (*types.Transaction, error)
@@ -533,7 +533,7 @@ SetUint256 is a paid mutator transaction binding the contract method 0x4f3029c2.
 Solidity: function setUint256\(bytes32 key, uint256 value\) returns\(\)
 
 <a name="NFTConfigSession.TransferOwnership"></a>
-### func \(\*NFTConfigSession\) [TransferOwnership](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L348>)
+### func \(\*NFTConfigSession\) [TransferOwnership](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L348>)
 
 ```go
 func (_NFTConfig *NFTConfigSession) TransferOwnership(newOwner common.Address) (*types.Transaction, error)
@@ -544,7 +544,7 @@ TransferOwnership is a paid mutator transaction binding the contract method 0xf2
 Solidity: function transferOwnership\(address newOwner\) returns\(\)
 
 <a name="NFTConfigTransactor"></a>
-## type [NFTConfigTransactor](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L53-L55>)
+## type [NFTConfigTransactor](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L53-L55>)
 
 NFTConfigTransactor is an auto generated write\-only Go binding around an Ethereum contract.
 
@@ -555,7 +555,7 @@ type NFTConfigTransactor struct {
 ```
 
 <a name="NewNFTConfigTransactor"></a>
-### func [NewNFTConfigTransactor](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L118>)
+### func [NewNFTConfigTransactor](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L118>)
 
 ```go
 func NewNFTConfigTransactor(address common.Address, transactor bind.ContractTransactor) (*NFTConfigTransactor, error)
@@ -564,7 +564,7 @@ func NewNFTConfigTransactor(address common.Address, transactor bind.ContractTran
 NewNFTConfigTransactor creates a new write\-only instance of NFTConfig, bound to a specific deployed contract.
 
 <a name="NFTConfigTransactor.RenounceOwnership"></a>
-### func \(\*NFTConfigTransactor\) [RenounceOwnership](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L278>)
+### func \(\*NFTConfigTransactor\) [RenounceOwnership](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L278>)
 
 ```go
 func (_NFTConfig *NFTConfigTransactor) RenounceOwnership(opts *bind.TransactOpts) (*types.Transaction, error)
@@ -575,7 +575,7 @@ RenounceOwnership is a paid mutator transaction binding the contract method 0x71
 Solidity: function renounceOwnership\(\) returns\(\)
 
 <a name="NFTConfigTransactor.SetAddress"></a>
-### func \(\*NFTConfigTransactor\) [SetAddress](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L299>)
+### func \(\*NFTConfigTransactor\) [SetAddress](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L299>)
 
 ```go
 func (_NFTConfig *NFTConfigTransactor) SetAddress(opts *bind.TransactOpts, key [32]byte, value common.Address) (*types.Transaction, error)
@@ -586,7 +586,7 @@ SetAddress is a paid mutator transaction binding the contract method 0xca446dd9.
 Solidity: function setAddress\(bytes32 key, address value\) returns\(\)
 
 <a name="NFTConfigTransactor.SetUint256"></a>
-### func \(\*NFTConfigTransactor\) [SetUint256](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L320>)
+### func \(\*NFTConfigTransactor\) [SetUint256](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L320>)
 
 ```go
 func (_NFTConfig *NFTConfigTransactor) SetUint256(opts *bind.TransactOpts, key [32]byte, value *big.Int) (*types.Transaction, error)
@@ -597,7 +597,7 @@ SetUint256 is a paid mutator transaction binding the contract method 0x4f3029c2.
 Solidity: function setUint256\(bytes32 key, uint256 value\) returns\(\)
 
 <a name="NFTConfigTransactor.TransferOwnership"></a>
-### func \(\*NFTConfigTransactor\) [TransferOwnership](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L341>)
+### func \(\*NFTConfigTransactor\) [TransferOwnership](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L341>)
 
 ```go
 func (_NFTConfig *NFTConfigTransactor) TransferOwnership(opts *bind.TransactOpts, newOwner common.Address) (*types.Transaction, error)
@@ -608,7 +608,7 @@ TransferOwnership is a paid mutator transaction binding the contract method 0xf2
 Solidity: function transferOwnership\(address newOwner\) returns\(\)
 
 <a name="NFTConfigTransactorRaw"></a>
-## type [NFTConfigTransactorRaw](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L95-L97>)
+## type [NFTConfigTransactorRaw](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L95-L97>)
 
 NFTConfigTransactorRaw is an auto generated low\-level write\-only Go binding around an Ethereum contract.
 
@@ -619,7 +619,7 @@ type NFTConfigTransactorRaw struct {
 ```
 
 <a name="NFTConfigTransactorRaw.Transact"></a>
-### func \(\*NFTConfigTransactorRaw\) [Transact](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L178>)
+### func \(\*NFTConfigTransactorRaw\) [Transact](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L178>)
 
 ```go
 func (_NFTConfig *NFTConfigTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error)
@@ -628,7 +628,7 @@ func (_NFTConfig *NFTConfigTransactorRaw) Transact(opts *bind.TransactOpts, meth
 Transact invokes the \(paid\) contract method with params as input values.
 
 <a name="NFTConfigTransactorRaw.Transfer"></a>
-### func \(\*NFTConfigTransactorRaw\) [Transfer](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L173>)
+### func \(\*NFTConfigTransactorRaw\) [Transfer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L173>)
 
 ```go
 func (_NFTConfig *NFTConfigTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error)
@@ -637,7 +637,7 @@ func (_NFTConfig *NFTConfigTransactorRaw) Transfer(opts *bind.TransactOpts) (*ty
 Transfer initiates a plain transaction to move funds to the contract, calling its default method if one is available.
 
 <a name="NFTConfigTransactorSession"></a>
-## type [NFTConfigTransactorSession](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L79-L82>)
+## type [NFTConfigTransactorSession](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L79-L82>)
 
 NFTConfigTransactorSession is an auto generated write\-only Go binding around an Ethereum contract, with pre\-set transact options.
 
@@ -649,7 +649,7 @@ type NFTConfigTransactorSession struct {
 ```
 
 <a name="NFTConfigTransactorSession.RenounceOwnership"></a>
-### func \(\*NFTConfigTransactorSession\) [RenounceOwnership](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L292>)
+### func \(\*NFTConfigTransactorSession\) [RenounceOwnership](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L292>)
 
 ```go
 func (_NFTConfig *NFTConfigTransactorSession) RenounceOwnership() (*types.Transaction, error)
@@ -660,7 +660,7 @@ RenounceOwnership is a paid mutator transaction binding the contract method 0x71
 Solidity: function renounceOwnership\(\) returns\(\)
 
 <a name="NFTConfigTransactorSession.SetAddress"></a>
-### func \(\*NFTConfigTransactorSession\) [SetAddress](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L313>)
+### func \(\*NFTConfigTransactorSession\) [SetAddress](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L313>)
 
 ```go
 func (_NFTConfig *NFTConfigTransactorSession) SetAddress(key [32]byte, value common.Address) (*types.Transaction, error)
@@ -671,7 +671,7 @@ SetAddress is a paid mutator transaction binding the contract method 0xca446dd9.
 Solidity: function setAddress\(bytes32 key, address value\) returns\(\)
 
 <a name="NFTConfigTransactorSession.SetUint256"></a>
-### func \(\*NFTConfigTransactorSession\) [SetUint256](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L334>)
+### func \(\*NFTConfigTransactorSession\) [SetUint256](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L334>)
 
 ```go
 func (_NFTConfig *NFTConfigTransactorSession) SetUint256(key [32]byte, value *big.Int) (*types.Transaction, error)
@@ -682,7 +682,7 @@ SetUint256 is a paid mutator transaction binding the contract method 0x4f3029c2.
 Solidity: function setUint256\(bytes32 key, uint256 value\) returns\(\)
 
 <a name="NFTConfigTransactorSession.TransferOwnership"></a>
-### func \(\*NFTConfigTransactorSession\) [TransferOwnership](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/nftconfig/nftconfig.go#L355>)
+### func \(\*NFTConfigTransactorSession\) [TransferOwnership](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/nftconfig/nftconfig.go#L355>)
 
 ```go
 func (_NFTConfig *NFTConfigTransactorSession) TransferOwnership(newOwner common.Address) (*types.Transaction, error)

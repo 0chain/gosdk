@@ -44,7 +44,7 @@ import "github.com/0chain/gosdk/zboxcore/allocationchange"
 
 
 <a name="AllocationChange"></a>
-## type [AllocationChange](<https://github.com/0chain/gosdk/blob/staging/zboxcore/allocationchange/change.go#L13-L17>)
+## type [AllocationChange](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/allocationchange/change.go#L13-L17>)
 
 
 
@@ -57,7 +57,7 @@ type AllocationChange interface {
 ```
 
 <a name="CopyFileChange"></a>
-## type [CopyFileChange](<https://github.com/0chain/gosdk/blob/staging/zboxcore/allocationchange/copyobject.go#L14-L19>)
+## type [CopyFileChange](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/allocationchange/copyobject.go#L14-L19>)
 
 
 
@@ -71,7 +71,7 @@ type CopyFileChange struct {
 ```
 
 <a name="CopyFileChange.GetAffectedPath"></a>
-### func \(\*CopyFileChange\) [GetAffectedPath](<https://github.com/0chain/gosdk/blob/staging/zboxcore/allocationchange/copyobject.go#L104>)
+### func \(\*CopyFileChange\) [GetAffectedPath](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/allocationchange/copyobject.go#L104>)
 
 ```go
 func (n *CopyFileChange) GetAffectedPath() []string
@@ -80,7 +80,7 @@ func (n *CopyFileChange) GetAffectedPath() []string
 
 
 <a name="CopyFileChange.GetSize"></a>
-### func \(\*CopyFileChange\) [GetSize](<https://github.com/0chain/gosdk/blob/staging/zboxcore/allocationchange/copyobject.go#L108>)
+### func \(\*CopyFileChange\) [GetSize](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/allocationchange/copyobject.go#L108>)
 
 ```go
 func (n *CopyFileChange) GetSize() int64
@@ -89,7 +89,7 @@ func (n *CopyFileChange) GetSize() int64
 
 
 <a name="CopyFileChange.ProcessChange"></a>
-### func \(\*CopyFileChange\) [ProcessChange](<https://github.com/0chain/gosdk/blob/staging/zboxcore/allocationchange/copyobject.go#L21>)
+### func \(\*CopyFileChange\) [ProcessChange](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/allocationchange/copyobject.go#L21>)
 
 ```go
 func (ch *CopyFileChange) ProcessChange(rootRef *fileref.Ref, fileIDMeta map[string]string) (err error)
@@ -98,7 +98,7 @@ func (ch *CopyFileChange) ProcessChange(rootRef *fileref.Ref, fileIDMeta map[str
 
 
 <a name="DeleteFileChange"></a>
-## type [DeleteFileChange](<https://github.com/0chain/gosdk/blob/staging/zboxcore/allocationchange/deletefile.go#L11-L14>)
+## type [DeleteFileChange](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/allocationchange/deletefile.go#L11-L14>)
 
 
 
@@ -110,7 +110,7 @@ type DeleteFileChange struct {
 ```
 
 <a name="DeleteFileChange.GetAffectedPath"></a>
-### func \(\*DeleteFileChange\) [GetAffectedPath](<https://github.com/0chain/gosdk/blob/staging/zboxcore/allocationchange/deletefile.go#L58>)
+### func \(\*DeleteFileChange\) [GetAffectedPath](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/allocationchange/deletefile.go#L58>)
 
 ```go
 func (n *DeleteFileChange) GetAffectedPath() []string
@@ -119,7 +119,7 @@ func (n *DeleteFileChange) GetAffectedPath() []string
 
 
 <a name="DeleteFileChange.GetSize"></a>
-### func \(\*DeleteFileChange\) [GetSize](<https://github.com/0chain/gosdk/blob/staging/zboxcore/allocationchange/deletefile.go#L65>)
+### func \(\*DeleteFileChange\) [GetSize](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/allocationchange/deletefile.go#L65>)
 
 ```go
 func (n *DeleteFileChange) GetSize() int64
@@ -128,7 +128,7 @@ func (n *DeleteFileChange) GetSize() int64
 
 
 <a name="DeleteFileChange.ProcessChange"></a>
-### func \(\*DeleteFileChange\) [ProcessChange](<https://github.com/0chain/gosdk/blob/staging/zboxcore/allocationchange/deletefile.go#L16>)
+### func \(\*DeleteFileChange\) [ProcessChange](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/allocationchange/deletefile.go#L16>)
 
 ```go
 func (ch *DeleteFileChange) ProcessChange(rootRef *fileref.Ref, _ map[string]string) (err error)
@@ -137,7 +137,7 @@ func (ch *DeleteFileChange) ProcessChange(rootRef *fileref.Ref, _ map[string]str
 
 
 <a name="DirCreateChange"></a>
-## type [DirCreateChange](<https://github.com/0chain/gosdk/blob/staging/zboxcore/allocationchange/createdir.go#L14-L18>)
+## type [DirCreateChange](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/allocationchange/createdir.go#L14-L18>)
 
 
 
@@ -150,7 +150,7 @@ type DirCreateChange struct {
 ```
 
 <a name="DirCreateChange.GetAffectedPath"></a>
-### func \(\*DirCreateChange\) [GetAffectedPath](<https://github.com/0chain/gosdk/blob/staging/zboxcore/allocationchange/createdir.go#L66>)
+### func \(\*DirCreateChange\) [GetAffectedPath](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/allocationchange/createdir.go#L66>)
 
 ```go
 func (d *DirCreateChange) GetAffectedPath() []string
@@ -159,7 +159,7 @@ func (d *DirCreateChange) GetAffectedPath() []string
 
 
 <a name="DirCreateChange.GetSize"></a>
-### func \(\*DirCreateChange\) [GetSize](<https://github.com/0chain/gosdk/blob/staging/zboxcore/allocationchange/createdir.go#L70>)
+### func \(\*DirCreateChange\) [GetSize](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/allocationchange/createdir.go#L70>)
 
 ```go
 func (d *DirCreateChange) GetSize() int64
@@ -168,7 +168,7 @@ func (d *DirCreateChange) GetSize() int64
 
 
 <a name="DirCreateChange.ProcessChange"></a>
-### func \(\*DirCreateChange\) [ProcessChange](<https://github.com/0chain/gosdk/blob/staging/zboxcore/allocationchange/createdir.go#L20>)
+### func \(\*DirCreateChange\) [ProcessChange](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/allocationchange/createdir.go#L20>)
 
 ```go
 func (d *DirCreateChange) ProcessChange(rootRef *fileref.Ref, FileIDMeta map[string]string) (err error)
@@ -177,7 +177,7 @@ func (d *DirCreateChange) ProcessChange(rootRef *fileref.Ref, FileIDMeta map[str
 
 
 <a name="EmptyFileChange"></a>
-## type [EmptyFileChange](<https://github.com/0chain/gosdk/blob/staging/zboxcore/allocationchange/change.go#L19-L21>)
+## type [EmptyFileChange](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/allocationchange/change.go#L19-L21>)
 
 
 
@@ -188,7 +188,7 @@ type EmptyFileChange struct {
 ```
 
 <a name="EmptyFileChange.GetAffectedPath"></a>
-### func \(\*EmptyFileChange\) [GetAffectedPath](<https://github.com/0chain/gosdk/blob/staging/zboxcore/allocationchange/change.go#L27>)
+### func \(\*EmptyFileChange\) [GetAffectedPath](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/allocationchange/change.go#L27>)
 
 ```go
 func (ch *EmptyFileChange) GetAffectedPath() []string
@@ -197,7 +197,7 @@ func (ch *EmptyFileChange) GetAffectedPath() []string
 
 
 <a name="EmptyFileChange.GetSize"></a>
-### func \(\*EmptyFileChange\) [GetSize](<https://github.com/0chain/gosdk/blob/staging/zboxcore/allocationchange/change.go#L31>)
+### func \(\*EmptyFileChange\) [GetSize](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/allocationchange/change.go#L31>)
 
 ```go
 func (ch *EmptyFileChange) GetSize() int64
@@ -206,7 +206,7 @@ func (ch *EmptyFileChange) GetSize() int64
 
 
 <a name="EmptyFileChange.ProcessChange"></a>
-### func \(\*EmptyFileChange\) [ProcessChange](<https://github.com/0chain/gosdk/blob/staging/zboxcore/allocationchange/change.go#L23>)
+### func \(\*EmptyFileChange\) [ProcessChange](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/allocationchange/change.go#L23>)
 
 ```go
 func (ch *EmptyFileChange) ProcessChange(rootRef *fileref.Ref, _ map[string]string) (err error)
@@ -215,7 +215,7 @@ func (ch *EmptyFileChange) ProcessChange(rootRef *fileref.Ref, _ map[string]stri
 
 
 <a name="MoveFileChange"></a>
-## type [MoveFileChange](<https://github.com/0chain/gosdk/blob/staging/zboxcore/allocationchange/moveobject.go#L15-L20>)
+## type [MoveFileChange](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/allocationchange/moveobject.go#L15-L20>)
 
 
 
@@ -229,7 +229,7 @@ type MoveFileChange struct {
 ```
 
 <a name="MoveFileChange.GetAffectedPath"></a>
-### func \(\*MoveFileChange\) [GetAffectedPath](<https://github.com/0chain/gosdk/blob/staging/zboxcore/allocationchange/moveobject.go#L135>)
+### func \(\*MoveFileChange\) [GetAffectedPath](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/allocationchange/moveobject.go#L135>)
 
 ```go
 func (n *MoveFileChange) GetAffectedPath() []string
@@ -238,7 +238,7 @@ func (n *MoveFileChange) GetAffectedPath() []string
 
 
 <a name="MoveFileChange.GetSize"></a>
-### func \(\*MoveFileChange\) [GetSize](<https://github.com/0chain/gosdk/blob/staging/zboxcore/allocationchange/moveobject.go#L139>)
+### func \(\*MoveFileChange\) [GetSize](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/allocationchange/moveobject.go#L139>)
 
 ```go
 func (n *MoveFileChange) GetSize() int64
@@ -247,7 +247,7 @@ func (n *MoveFileChange) GetSize() int64
 
 
 <a name="MoveFileChange.ProcessChange"></a>
-### func \(\*MoveFileChange\) [ProcessChange](<https://github.com/0chain/gosdk/blob/staging/zboxcore/allocationchange/moveobject.go#L22>)
+### func \(\*MoveFileChange\) [ProcessChange](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/allocationchange/moveobject.go#L22>)
 
 ```go
 func (ch *MoveFileChange) ProcessChange(rootRef *fileref.Ref, fileIDMeta map[string]string) (err error)
@@ -256,7 +256,7 @@ func (ch *MoveFileChange) ProcessChange(rootRef *fileref.Ref, fileIDMeta map[str
 
 
 <a name="NewFileChange"></a>
-## type [NewFileChange](<https://github.com/0chain/gosdk/blob/staging/zboxcore/allocationchange/newfile.go#L18-L22>)
+## type [NewFileChange](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/allocationchange/newfile.go#L18-L22>)
 
 
 
@@ -269,7 +269,7 @@ type NewFileChange struct {
 ```
 
 <a name="NewFileChange.GetAffectedPath"></a>
-### func \(\*NewFileChange\) [GetAffectedPath](<https://github.com/0chain/gosdk/blob/staging/zboxcore/allocationchange/newfile.go#L98>)
+### func \(\*NewFileChange\) [GetAffectedPath](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/allocationchange/newfile.go#L98>)
 
 ```go
 func (n *NewFileChange) GetAffectedPath() []string
@@ -278,7 +278,7 @@ func (n *NewFileChange) GetAffectedPath() []string
 
 
 <a name="NewFileChange.GetSize"></a>
-### func \(\*NewFileChange\) [GetSize](<https://github.com/0chain/gosdk/blob/staging/zboxcore/allocationchange/newfile.go#L105>)
+### func \(\*NewFileChange\) [GetSize](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/allocationchange/newfile.go#L105>)
 
 ```go
 func (n *NewFileChange) GetSize() int64
@@ -287,7 +287,7 @@ func (n *NewFileChange) GetSize() int64
 
 
 <a name="NewFileChange.ProcessChange"></a>
-### func \(\*NewFileChange\) [ProcessChange](<https://github.com/0chain/gosdk/blob/staging/zboxcore/allocationchange/newfile.go#L24>)
+### func \(\*NewFileChange\) [ProcessChange](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/allocationchange/newfile.go#L24>)
 
 ```go
 func (ch *NewFileChange) ProcessChange(rootRef *fileref.Ref, fileIDMeta map[string]string) (err error)
@@ -296,7 +296,7 @@ func (ch *NewFileChange) ProcessChange(rootRef *fileref.Ref, fileIDMeta map[stri
 
 
 <a name="RenameFileChange"></a>
-## type [RenameFileChange](<https://github.com/0chain/gosdk/blob/staging/zboxcore/allocationchange/renameobject.go#L12-L16>)
+## type [RenameFileChange](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/allocationchange/renameobject.go#L12-L16>)
 
 
 
@@ -309,7 +309,7 @@ type RenameFileChange struct {
 ```
 
 <a name="RenameFileChange.GetAffectedPath"></a>
-### func \(\*RenameFileChange\) [GetAffectedPath](<https://github.com/0chain/gosdk/blob/staging/zboxcore/allocationchange/renameobject.go#L86>)
+### func \(\*RenameFileChange\) [GetAffectedPath](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/allocationchange/renameobject.go#L86>)
 
 ```go
 func (n *RenameFileChange) GetAffectedPath() []string
@@ -318,7 +318,7 @@ func (n *RenameFileChange) GetAffectedPath() []string
 
 
 <a name="RenameFileChange.GetSize"></a>
-### func \(\*RenameFileChange\) [GetSize](<https://github.com/0chain/gosdk/blob/staging/zboxcore/allocationchange/renameobject.go#L93>)
+### func \(\*RenameFileChange\) [GetSize](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/allocationchange/renameobject.go#L93>)
 
 ```go
 func (n *RenameFileChange) GetSize() int64
@@ -327,7 +327,7 @@ func (n *RenameFileChange) GetSize() int64
 
 
 <a name="RenameFileChange.ProcessChange"></a>
-### func \(\*RenameFileChange\) [ProcessChange](<https://github.com/0chain/gosdk/blob/staging/zboxcore/allocationchange/renameobject.go#L18>)
+### func \(\*RenameFileChange\) [ProcessChange](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/allocationchange/renameobject.go#L18>)
 
 ```go
 func (ch *RenameFileChange) ProcessChange(rootRef *fileref.Ref, _ map[string]string) (err error)
@@ -336,7 +336,7 @@ func (ch *RenameFileChange) ProcessChange(rootRef *fileref.Ref, _ map[string]str
 
 
 <a name="UpdateFileChange"></a>
-## type [UpdateFileChange](<https://github.com/0chain/gosdk/blob/staging/zboxcore/allocationchange/updatefile.go#L13-L17>)
+## type [UpdateFileChange](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/allocationchange/updatefile.go#L13-L17>)
 
 
 
@@ -349,7 +349,7 @@ type UpdateFileChange struct {
 ```
 
 <a name="UpdateFileChange.GetAffectedPath"></a>
-### func \(\*UpdateFileChange\) [GetAffectedPath](<https://github.com/0chain/gosdk/blob/staging/zboxcore/allocationchange/updatefile.go#L92>)
+### func \(\*UpdateFileChange\) [GetAffectedPath](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/allocationchange/updatefile.go#L92>)
 
 ```go
 func (n *UpdateFileChange) GetAffectedPath() []string
@@ -358,7 +358,7 @@ func (n *UpdateFileChange) GetAffectedPath() []string
 
 
 <a name="UpdateFileChange.GetSize"></a>
-### func \(\*UpdateFileChange\) [GetSize](<https://github.com/0chain/gosdk/blob/staging/zboxcore/allocationchange/updatefile.go#L99>)
+### func \(\*UpdateFileChange\) [GetSize](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/allocationchange/updatefile.go#L99>)
 
 ```go
 func (n *UpdateFileChange) GetSize() int64
@@ -367,7 +367,7 @@ func (n *UpdateFileChange) GetSize() int64
 
 
 <a name="UpdateFileChange.ProcessChange"></a>
-### func \(\*UpdateFileChange\) [ProcessChange](<https://github.com/0chain/gosdk/blob/staging/zboxcore/allocationchange/updatefile.go#L19>)
+### func \(\*UpdateFileChange\) [ProcessChange](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/allocationchange/updatefile.go#L19>)
 
 ```go
 func (ch *UpdateFileChange) ProcessChange(rootRef *fileref.Ref, _ map[string]string) (err error)

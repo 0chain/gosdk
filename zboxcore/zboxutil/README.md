@@ -192,7 +192,7 @@ var DefaultTransport = &http.Transport{
 ```
 
 <a name="Decrypt"></a>
-## func [Decrypt](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/util.go#L190>)
+## func [Decrypt](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/util.go#L190>)
 
 ```go
 func Decrypt(key, text []byte) ([]byte, error)
@@ -201,7 +201,7 @@ func Decrypt(key, text []byte) ([]byte, error)
 
 
 <a name="DeleteCollaboratorRequest"></a>
-## func [DeleteCollaboratorRequest](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/http.go#L459>)
+## func [DeleteCollaboratorRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/http.go#L459>)
 
 ```go
 func DeleteCollaboratorRequest(baseUrl string, allocationID string, allocationTx string, query *url.Values) (*http.Request, error)
@@ -210,7 +210,7 @@ func DeleteCollaboratorRequest(baseUrl string, allocationID string, allocationTx
 
 
 <a name="Encrypt"></a>
-## func [Encrypt](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/util.go#L174>)
+## func [Encrypt](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/util.go#L174>)
 
 ```go
 func Encrypt(key, text []byte) ([]byte, error)
@@ -219,7 +219,7 @@ func Encrypt(key, text []byte) ([]byte, error)
 
 
 <a name="GetActiveBlobbers"></a>
-## func [GetActiveBlobbers](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/util.go#L217>)
+## func [GetActiveBlobbers](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/util.go#L217>)
 
 ```go
 func GetActiveBlobbers(dirMask uint32, blobbers []*blockchain.StorageNode) []*blockchain.StorageNode
@@ -228,7 +228,7 @@ func GetActiveBlobbers(dirMask uint32, blobbers []*blockchain.StorageNode) []*bl
 
 
 <a name="GetCollaboratorsRequest"></a>
-## func [GetCollaboratorsRequest](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/http.go#L439>)
+## func [GetCollaboratorsRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/http.go#L439>)
 
 ```go
 func GetCollaboratorsRequest(baseUrl string, allocationID string, allocationTx string, query *url.Values) (*http.Request, error)
@@ -237,7 +237,7 @@ func GetCollaboratorsRequest(baseUrl string, allocationID string, allocationTx s
 
 
 <a name="GetErrorMessageCode"></a>
-## func [GetErrorMessageCode](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/util.go#L351>)
+## func [GetErrorMessageCode](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/util.go#L351>)
 
 ```go
 func GetErrorMessageCode(errorMsg string) (string, error)
@@ -246,7 +246,7 @@ func GetErrorMessageCode(errorMsg string) (string, error)
 Returns the error message code, message should be strictly of the format: ".... err: \{"code" : \<return\_this\>, ...\}, ..."
 
 <a name="GetFastRateLimitValue"></a>
-## func [GetFastRateLimitValue](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/util.go#L246>)
+## func [GetFastRateLimitValue](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/util.go#L246>)
 
 ```go
 func GetFastRateLimitValue(r *fasthttp.Response) (int, error)
@@ -255,7 +255,7 @@ func GetFastRateLimitValue(r *fasthttp.Response) (int, error)
 
 
 <a name="GetFileContentType"></a>
-## func [GetFileContentType](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/util.go#L68>)
+## func [GetFileContentType](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/util.go#L68>)
 
 ```go
 func GetFileContentType(out io.ReadSeeker) (string, error)
@@ -264,7 +264,7 @@ func GetFileContentType(out io.ReadSeeker) (string, error)
 
 
 <a name="GetFullRemotePath"></a>
-## func [GetFullRemotePath](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/util.go#L86>)
+## func [GetFullRemotePath](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/util.go#L86>)
 
 ```go
 func GetFullRemotePath(localPath, remotePath string) string
@@ -273,7 +273,7 @@ func GetFullRemotePath(localPath, remotePath string) string
 
 
 <a name="GetHostClient"></a>
-## func [GetHostClient](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/http.go#L156>)
+## func [GetHostClient](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/http.go#L156>)
 
 ```go
 func GetHostClient(id string) *fasthttp.HostClient
@@ -282,7 +282,7 @@ func GetHostClient(id string) *fasthttp.HostClient
 
 
 <a name="GetLogger"></a>
-## func [GetLogger](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/http.go#L54>)
+## func [GetLogger](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/http.go#L54>)
 
 ```go
 func GetLogger() *logger.Logger
@@ -291,7 +291,7 @@ func GetLogger() *logger.Logger
 
 
 <a name="GetRateLimitValue"></a>
-## func [GetRateLimitValue](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/util.go#L229>)
+## func [GetRateLimitValue](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/util.go#L229>)
 
 ```go
 func GetRateLimitValue(r *http.Response) (int, error)
@@ -300,7 +300,7 @@ func GetRateLimitValue(r *http.Response) (int, error)
 
 
 <a name="GetRefsHash"></a>
-## func [GetRefsHash](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/util.go#L209>)
+## func [GetRefsHash](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/util.go#L209>)
 
 ```go
 func GetRefsHash(r []byte) string
@@ -309,7 +309,7 @@ func GetRefsHash(r []byte) string
 
 
 <a name="HttpDo"></a>
-## func [HttpDo](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/http.go#L1012>)
+## func [HttpDo](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/http.go#L1012>)
 
 ```go
 func HttpDo(ctx context.Context, cncl context.CancelFunc, req *http.Request, f func(*http.Response, error) error) error
@@ -318,7 +318,7 @@ func HttpDo(ctx context.Context, cncl context.CancelFunc, req *http.Request, f f
 
 
 <a name="IsRemoteAbs"></a>
-## func [IsRemoteAbs](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/util.go#L100>)
+## func [IsRemoteAbs](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/util.go#L100>)
 
 ```go
 func IsRemoteAbs(path string) bool
@@ -327,7 +327,7 @@ func IsRemoteAbs(path string) bool
 
 
 <a name="MajorError"></a>
-## func [MajorError](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/util.go#L263>)
+## func [MajorError](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/util.go#L263>)
 
 ```go
 func MajorError(errors []error) error
@@ -336,7 +336,7 @@ func MajorError(errors []error) error
 
 
 <a name="MakeSCRestAPICall"></a>
-## func [MakeSCRestAPICall](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/http.go#L918>)
+## func [MakeSCRestAPICall](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/http.go#L918>)
 
 ```go
 func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]string, handler SCRestAPIHandler) ([]byte, error)
@@ -345,7 +345,7 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 
 
 <a name="NewAllocationRequest"></a>
-## func [NewAllocationRequest](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/http.go#L402>)
+## func [NewAllocationRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/http.go#L402>)
 
 ```go
 func NewAllocationRequest(baseUrl, allocationID, allocationTx string) (*http.Request, error)
@@ -354,7 +354,7 @@ func NewAllocationRequest(baseUrl, allocationID, allocationTx string) (*http.Req
 
 
 <a name="NewCalculateHashRequest"></a>
-## func [NewCalculateHashRequest](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/http.go#L299>)
+## func [NewCalculateHashRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/http.go#L299>)
 
 ```go
 func NewCalculateHashRequest(baseUrl, allocationID string, allocationTx string, paths []string) (*http.Request, error)
@@ -363,7 +363,7 @@ func NewCalculateHashRequest(baseUrl, allocationID string, allocationTx string, 
 
 
 <a name="NewCollaboratorRequest"></a>
-## func [NewCollaboratorRequest](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/http.go#L420>)
+## func [NewCollaboratorRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/http.go#L420>)
 
 ```go
 func NewCollaboratorRequest(baseUrl string, allocationID string, allocationTx string, body io.Reader) (*http.Request, error)
@@ -372,7 +372,7 @@ func NewCollaboratorRequest(baseUrl string, allocationID string, allocationTx st
 
 
 <a name="NewCommitRequest"></a>
-## func [NewCommitRequest](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/http.go#L253>)
+## func [NewCommitRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/http.go#L253>)
 
 ```go
 func NewCommitRequest(baseUrl, allocationID string, allocationTx string, body io.Reader) (*http.Request, error)
@@ -381,7 +381,7 @@ func NewCommitRequest(baseUrl, allocationID string, allocationTx string, body io
 
 
 <a name="NewConnectionId"></a>
-## func [NewConnectionId](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/util.go#L96>)
+## func [NewConnectionId](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/util.go#L96>)
 
 ```go
 func NewConnectionId() string
@@ -390,7 +390,7 @@ func NewConnectionId() string
 NewConnectionId generate new connection id
 
 <a name="NewConnectionRequest"></a>
-## func [NewConnectionRequest](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/http.go#L663>)
+## func [NewConnectionRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/http.go#L663>)
 
 ```go
 func NewConnectionRequest(baseUrl, allocationID string, allocationTx string, body io.Reader) (*http.Request, error)
@@ -399,7 +399,7 @@ func NewConnectionRequest(baseUrl, allocationID string, allocationTx string, bod
 
 
 <a name="NewCopyRequest"></a>
-## func [NewCopyRequest](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/http.go#L703>)
+## func [NewCopyRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/http.go#L703>)
 
 ```go
 func NewCopyRequest(baseUrl, allocationID string, allocationTx string, body io.Reader) (*http.Request, error)
@@ -408,7 +408,7 @@ func NewCopyRequest(baseUrl, allocationID string, allocationTx string, body io.R
 
 
 <a name="NewCreateDirRequest"></a>
-## func [NewCreateDirRequest](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/http.go#L820>)
+## func [NewCreateDirRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/http.go#L820>)
 
 ```go
 func NewCreateDirRequest(baseUrl, allocationID string, allocationTx string, body io.Reader) (*http.Request, error)
@@ -417,7 +417,7 @@ func NewCreateDirRequest(baseUrl, allocationID string, allocationTx string, body
 
 
 <a name="NewDeleteRequest"></a>
-## func [NewDeleteRequest](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/http.go#L799>)
+## func [NewDeleteRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/http.go#L799>)
 
 ```go
 func NewDeleteRequest(baseUrl, allocationID string, allocationTx string, query *url.Values) (*http.Request, error)
@@ -426,7 +426,7 @@ func NewDeleteRequest(baseUrl, allocationID string, allocationTx string, query *
 
 
 <a name="NewDownloadRequest"></a>
-## func [NewDownloadRequest](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/http.go#L743>)
+## func [NewDownloadRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/http.go#L743>)
 
 ```go
 func NewDownloadRequest(baseUrl, allocationID, allocationTx string) (*http.Request, error)
@@ -435,7 +435,7 @@ func NewDownloadRequest(baseUrl, allocationID, allocationTx string) (*http.Reque
 
 
 <a name="NewFastDownloadRequest"></a>
-## func [NewFastDownloadRequest](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/http.go#L763>)
+## func [NewFastDownloadRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/http.go#L763>)
 
 ```go
 func NewFastDownloadRequest(baseUrl, allocationID, allocationTx string) (*fasthttp.Request, error)
@@ -444,7 +444,7 @@ func NewFastDownloadRequest(baseUrl, allocationID, allocationTx string) (*fastht
 
 
 <a name="NewFastUploadRequest"></a>
-## func [NewFastUploadRequest](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/http.go#L617>)
+## func [NewFastUploadRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/http.go#L617>)
 
 ```go
 func NewFastUploadRequest(baseURL, allocationID string, allocationTx string, body []byte, method string) (*fasthttp.Request, error)
@@ -453,7 +453,7 @@ func NewFastUploadRequest(baseURL, allocationID string, allocationTx string, bod
 
 
 <a name="NewFileMetaRequest"></a>
-## func [NewFileMetaRequest](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/http.go#L480>)
+## func [NewFileMetaRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/http.go#L480>)
 
 ```go
 func NewFileMetaRequest(baseUrl string, allocationID string, allocationTx string, body io.Reader) (*http.Request, error)
@@ -462,7 +462,7 @@ func NewFileMetaRequest(baseUrl string, allocationID string, allocationTx string
 
 
 <a name="NewFileStatsRequest"></a>
-## func [NewFileStatsRequest](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/http.go#L499>)
+## func [NewFileStatsRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/http.go#L499>)
 
 ```go
 func NewFileStatsRequest(baseUrl string, allocationID string, allocationTx string, body io.Reader) (*http.Request, error)
@@ -471,7 +471,7 @@ func NewFileStatsRequest(baseUrl string, allocationID string, allocationTx strin
 
 
 <a name="NewHTTPRequest"></a>
-## func [NewHTTPRequest](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/http.go#L199>)
+## func [NewHTTPRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/http.go#L199>)
 
 ```go
 func NewHTTPRequest(method string, url string, data []byte) (*http.Request, context.Context, context.CancelFunc, error)
@@ -480,7 +480,7 @@ func NewHTTPRequest(method string, url string, data []byte) (*http.Request, cont
 
 
 <a name="NewListRequest"></a>
-## func [NewListRequest](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/http.go#L518>)
+## func [NewListRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/http.go#L518>)
 
 ```go
 func NewListRequest(baseUrl, allocationID, allocationTx, path, pathHash, auth_token string, list bool, offset, pageLimit int) (*http.Request, error)
@@ -489,7 +489,7 @@ func NewListRequest(baseUrl, allocationID, allocationTx, path, pathHash, auth_to
 
 
 <a name="NewMoveRequest"></a>
-## func [NewMoveRequest](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/http.go#L723>)
+## func [NewMoveRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/http.go#L723>)
 
 ```go
 func NewMoveRequest(baseUrl, allocationID string, allocationTx string, body io.Reader) (*http.Request, error)
@@ -498,7 +498,7 @@ func NewMoveRequest(baseUrl, allocationID string, allocationTx string, body io.R
 
 
 <a name="NewObjectTreeRequest"></a>
-## func [NewObjectTreeRequest](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/http.go#L322>)
+## func [NewObjectTreeRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/http.go#L322>)
 
 ```go
 func NewObjectTreeRequest(baseUrl, allocationID string, allocationTx string, path string) (*http.Request, error)
@@ -507,7 +507,7 @@ func NewObjectTreeRequest(baseUrl, allocationID string, allocationTx string, pat
 
 
 <a name="NewRecentlyAddedRefsRequest"></a>
-## func [NewRecentlyAddedRefsRequest](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/http.go#L376>)
+## func [NewRecentlyAddedRefsRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/http.go#L376>)
 
 ```go
 func NewRecentlyAddedRefsRequest(bUrl, allocID, allocTx string, fromDate, offset int64, pageLimit int) (*http.Request, error)
@@ -516,7 +516,7 @@ func NewRecentlyAddedRefsRequest(bUrl, allocID, allocTx string, fromDate, offset
 
 
 <a name="NewRedeemRequest"></a>
-## func [NewRedeemRequest](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/http.go#L784>)
+## func [NewRedeemRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/http.go#L784>)
 
 ```go
 func NewRedeemRequest(baseUrl, allocationID, allocationTx string) (*http.Request, error)
@@ -525,7 +525,7 @@ func NewRedeemRequest(baseUrl, allocationID, allocationTx string) (*http.Request
 
 
 <a name="NewReferencePathRequest"></a>
-## func [NewReferencePathRequest](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/http.go#L270>)
+## func [NewReferencePathRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/http.go#L270>)
 
 ```go
 func NewReferencePathRequest(baseUrl, allocationID string, allocationTx string, paths []string) (*http.Request, error)
@@ -534,7 +534,7 @@ func NewReferencePathRequest(baseUrl, allocationID string, allocationTx string, 
 
 
 <a name="NewRefsRequest"></a>
-## func [NewRefsRequest](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/http.go#L345>)
+## func [NewRefsRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/http.go#L345>)
 
 ```go
 func NewRefsRequest(baseUrl, allocationID, allocationTx, path, pathHash, authToken, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*http.Request, error)
@@ -543,7 +543,7 @@ func NewRefsRequest(baseUrl, allocationID, allocationTx, path, pathHash, authTok
 
 
 <a name="NewRenameRequest"></a>
-## func [NewRenameRequest](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/http.go#L682>)
+## func [NewRenameRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/http.go#L682>)
 
 ```go
 func NewRenameRequest(baseUrl, allocationID string, allocationTx string, body io.Reader) (*http.Request, error)
@@ -552,7 +552,7 @@ func NewRenameRequest(baseUrl, allocationID string, allocationTx string, body io
 
 
 <a name="NewRevokeShareRequest"></a>
-## func [NewRevokeShareRequest](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/http.go#L860>)
+## func [NewRevokeShareRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/http.go#L860>)
 
 ```go
 func NewRevokeShareRequest(baseUrl, allocationID string, allocationTx string, query *url.Values) (*http.Request, error)
@@ -561,7 +561,7 @@ func NewRevokeShareRequest(baseUrl, allocationID string, allocationTx string, qu
 
 
 <a name="NewRollbackRequest"></a>
-## func [NewRollbackRequest](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/http.go#L901>)
+## func [NewRollbackRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/http.go#L901>)
 
 ```go
 func NewRollbackRequest(baseUrl, allocationID string, allocationTx string, body io.Reader) (*http.Request, error)
@@ -570,7 +570,7 @@ func NewRollbackRequest(baseUrl, allocationID string, allocationTx string, body 
 
 
 <a name="NewShareRequest"></a>
-## func [NewShareRequest](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/http.go#L840>)
+## func [NewShareRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/http.go#L840>)
 
 ```go
 func NewShareRequest(baseUrl, allocationID string, allocationTx string, body io.Reader) (*http.Request, error)
@@ -579,7 +579,7 @@ func NewShareRequest(baseUrl, allocationID string, allocationTx string, body io.
 
 
 <a name="NewUploadRequest"></a>
-## func [NewUploadRequest](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/http.go#L638>)
+## func [NewUploadRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/http.go#L638>)
 
 ```go
 func NewUploadRequest(baseUrl, allocationID string, allocationTx string, body io.Reader, update bool) (*http.Request, error)
@@ -588,7 +588,7 @@ func NewUploadRequest(baseUrl, allocationID string, allocationTx string, body io
 
 
 <a name="NewUploadRequestWithMethod"></a>
-## func [NewUploadRequestWithMethod](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/http.go#L545>)
+## func [NewUploadRequestWithMethod](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/http.go#L545>)
 
 ```go
 func NewUploadRequestWithMethod(baseURL, allocationID string, allocationTx string, body io.Reader, method string) (*http.Request, error)
@@ -597,7 +597,7 @@ func NewUploadRequestWithMethod(baseURL, allocationID string, allocationTx strin
 NewUploadRequestWithMethod create a http request of upload
 
 <a name="NewWriteMarkerLockRequest"></a>
-## func [NewWriteMarkerLockRequest](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/http.go#L569-L570>)
+## func [NewWriteMarkerLockRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/http.go#L569-L570>)
 
 ```go
 func NewWriteMarkerLockRequest(baseURL, allocationID, allocationTx, connID string) (*http.Request, error)
@@ -606,7 +606,7 @@ func NewWriteMarkerLockRequest(baseURL, allocationID, allocationTx, connID strin
 
 
 <a name="NewWriteMarkerUnLockRequest"></a>
-## func [NewWriteMarkerUnLockRequest](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/http.go#L595-L596>)
+## func [NewWriteMarkerUnLockRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/http.go#L595-L596>)
 
 ```go
 func NewWriteMarkerUnLockRequest(baseURL, allocationID, allocationTx, connID, requestTime string) (*http.Request, error)
@@ -615,7 +615,7 @@ func NewWriteMarkerUnLockRequest(baseURL, allocationID, allocationTx, connID, re
 
 
 <a name="NewWritemarkerRequest"></a>
-## func [NewWritemarkerRequest](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/http.go#L880>)
+## func [NewWritemarkerRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/http.go#L880>)
 
 ```go
 func NewWritemarkerRequest(baseUrl, allocationID, allocationTx string) (*http.Request, error)
@@ -624,7 +624,7 @@ func NewWritemarkerRequest(baseUrl, allocationID, allocationTx string) (*http.Re
 
 
 <a name="RemoteClean"></a>
-## func [RemoteClean](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/util.go#L104>)
+## func [RemoteClean](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/util.go#L104>)
 
 ```go
 func RemoteClean(path string) string
@@ -633,7 +633,7 @@ func RemoteClean(path string) string
 
 
 <a name="ScryptDecrypt"></a>
-## func [ScryptDecrypt](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/util.go#L324>)
+## func [ScryptDecrypt](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/util.go#L324>)
 
 ```go
 func ScryptDecrypt(key, ciphertext []byte) ([]byte, error)
@@ -642,7 +642,7 @@ func ScryptDecrypt(key, ciphertext []byte) ([]byte, error)
 
 
 <a name="ScryptEncrypt"></a>
-## func [ScryptEncrypt](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/util.go#L292>)
+## func [ScryptEncrypt](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/util.go#L292>)
 
 ```go
 func ScryptEncrypt(key, text []byte) ([]byte, error)
@@ -651,7 +651,7 @@ func ScryptEncrypt(key, text []byte) ([]byte, error)
 
 
 <a name="SetHostClient"></a>
-## func [SetHostClient](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/http.go#L135>)
+## func [SetHostClient](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/http.go#L135>)
 
 ```go
 func SetHostClient(id, baseURL string)
@@ -660,7 +660,7 @@ func SetHostClient(id, baseURL string)
 
 
 <a name="Transpose"></a>
-## func [Transpose](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/util.go#L373>)
+## func [Transpose](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/util.go#L373>)
 
 ```go
 func Transpose(matrix [][]allocationchange.AllocationChange) [][]allocationchange.AllocationChange
@@ -669,7 +669,7 @@ func Transpose(matrix [][]allocationchange.AllocationChange) [][]allocationchang
 Returns transpose of 2\-D slice Example: Given matrix \[\[a, b\], \[c, d\], \[e, f\]\] returns \[\[a, c, e\], \[b, d, f\]\]
 
 <a name="DownloadBuffer"></a>
-## type [DownloadBuffer](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/download_buffer.go#L9-L13>)
+## type [DownloadBuffer](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/download_buffer.go#L9-L13>)
 
 
 
@@ -682,7 +682,7 @@ type DownloadBuffer interface {
 ```
 
 <a name="DownloadBufferWithChan"></a>
-## type [DownloadBufferWithChan](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/download_buffer.go#L15-L22>)
+## type [DownloadBufferWithChan](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/download_buffer.go#L15-L22>)
 
 
 
@@ -693,7 +693,7 @@ type DownloadBufferWithChan struct {
 ```
 
 <a name="NewDownloadBufferWithChan"></a>
-### func [NewDownloadBufferWithChan](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/download_buffer.go#L24>)
+### func [NewDownloadBufferWithChan](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/download_buffer.go#L24>)
 
 ```go
 func NewDownloadBufferWithChan(size, numBlocks, effectiveBlockSize int) *DownloadBufferWithChan
@@ -702,7 +702,7 @@ func NewDownloadBufferWithChan(size, numBlocks, effectiveBlockSize int) *Downloa
 
 
 <a name="DownloadBufferWithChan.ClearBuffer"></a>
-### func \(\*DownloadBufferWithChan\) [ClearBuffer](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/download_buffer.go#L63>)
+### func \(\*DownloadBufferWithChan\) [ClearBuffer](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/download_buffer.go#L63>)
 
 ```go
 func (r *DownloadBufferWithChan) ClearBuffer()
@@ -711,7 +711,7 @@ func (r *DownloadBufferWithChan) ClearBuffer()
 
 
 <a name="DownloadBufferWithChan.ReleaseChunk"></a>
-### func \(\*DownloadBufferWithChan\) [ReleaseChunk](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/download_buffer.go#L39>)
+### func \(\*DownloadBufferWithChan\) [ReleaseChunk](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/download_buffer.go#L39>)
 
 ```go
 func (r *DownloadBufferWithChan) ReleaseChunk(num int)
@@ -720,7 +720,7 @@ func (r *DownloadBufferWithChan) ReleaseChunk(num int)
 
 
 <a name="DownloadBufferWithChan.RequestChunk"></a>
-### func \(\*DownloadBufferWithChan\) [RequestChunk](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/download_buffer.go#L51>)
+### func \(\*DownloadBufferWithChan\) [RequestChunk](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/download_buffer.go#L51>)
 
 ```go
 func (r *DownloadBufferWithChan) RequestChunk(ctx context.Context, num int) []byte
@@ -729,7 +729,7 @@ func (r *DownloadBufferWithChan) RequestChunk(ctx context.Context, num int) []by
 
 
 <a name="DownloadBufferWithMask"></a>
-## type [DownloadBufferWithMask](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/download_buffer.go#L72-L78>)
+## type [DownloadBufferWithMask](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/download_buffer.go#L72-L78>)
 
 
 
@@ -740,7 +740,7 @@ type DownloadBufferWithMask struct {
 ```
 
 <a name="NewDownloadBufferWithMask"></a>
-### func [NewDownloadBufferWithMask](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/download_buffer.go#L80>)
+### func [NewDownloadBufferWithMask](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/download_buffer.go#L80>)
 
 ```go
 func NewDownloadBufferWithMask(size, numBlocks, effectiveBlockSize int) *DownloadBufferWithMask
@@ -749,7 +749,7 @@ func NewDownloadBufferWithMask(size, numBlocks, effectiveBlockSize int) *Downloa
 
 
 <a name="DownloadBufferWithMask.ClearBuffer"></a>
-### func \(\*DownloadBufferWithMask\) [ClearBuffer](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/download_buffer.go#L120>)
+### func \(\*DownloadBufferWithMask\) [ClearBuffer](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/download_buffer.go#L120>)
 
 ```go
 func (r *DownloadBufferWithMask) ClearBuffer()
@@ -758,7 +758,7 @@ func (r *DownloadBufferWithMask) ClearBuffer()
 
 
 <a name="DownloadBufferWithMask.ReleaseChunk"></a>
-### func \(\*DownloadBufferWithMask\) [ReleaseChunk](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/download_buffer.go#L113>)
+### func \(\*DownloadBufferWithMask\) [ReleaseChunk](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/download_buffer.go#L113>)
 
 ```go
 func (r *DownloadBufferWithMask) ReleaseChunk(num int)
@@ -767,7 +767,7 @@ func (r *DownloadBufferWithMask) ReleaseChunk(num int)
 
 
 <a name="DownloadBufferWithMask.RequestChunk"></a>
-### func \(\*DownloadBufferWithMask\) [RequestChunk](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/download_buffer.go#L90>)
+### func \(\*DownloadBufferWithMask\) [RequestChunk](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/download_buffer.go#L90>)
 
 ```go
 func (r *DownloadBufferWithMask) RequestChunk(ctx context.Context, num int) []byte
@@ -776,7 +776,7 @@ func (r *DownloadBufferWithMask) RequestChunk(ctx context.Context, num int) []by
 
 
 <a name="FastClient"></a>
-## type [FastClient](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/http.go#L42-L44>)
+## type [FastClient](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/http.go#L42-L44>)
 
 
 
@@ -787,7 +787,7 @@ type FastClient interface {
 ```
 
 <a name="HttpClient"></a>
-## type [HttpClient](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/http.go#L38-L40>)
+## type [HttpClient](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/http.go#L38-L40>)
 
 
 
@@ -798,7 +798,7 @@ type HttpClient interface {
 ```
 
 <a name="SCRestAPIHandler"></a>
-## type [SCRestAPIHandler](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/http.go#L36>)
+## type [SCRestAPIHandler](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/http.go#L36>)
 
 
 
@@ -807,7 +807,7 @@ type SCRestAPIHandler func(response map[string][]byte, numSharders int, err erro
 ```
 
 <a name="Uint128"></a>
-## type [Uint128](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/uint128.go#L5-L8>)
+## type [Uint128](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/uint128.go#L5-L8>)
 
 
 
@@ -818,7 +818,7 @@ type Uint128 struct {
 ```
 
 <a name="NewUint128"></a>
-### func [NewUint128](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/uint128.go#L10>)
+### func [NewUint128](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/uint128.go#L10>)
 
 ```go
 func NewUint128(x uint64) Uint128
@@ -827,7 +827,7 @@ func NewUint128(x uint64) Uint128
 
 
 <a name="Uint128.Add"></a>
-### func \(Uint128\) [Add](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/uint128.go#L15>)
+### func \(Uint128\) [Add](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/uint128.go#L15>)
 
 ```go
 func (x Uint128) Add(y Uint128) Uint128
@@ -836,7 +836,7 @@ func (x Uint128) Add(y Uint128) Uint128
 Add returns x\+y.
 
 <a name="Uint128.Add64"></a>
-### func \(Uint128\) [Add64](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/uint128.go#L25>)
+### func \(Uint128\) [Add64](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/uint128.go#L25>)
 
 ```go
 func (x Uint128) Add64(y uint64) Uint128
@@ -845,7 +845,7 @@ func (x Uint128) Add64(y uint64) Uint128
 Add64 returns x\+y.
 
 <a name="Uint128.And"></a>
-### func \(Uint128\) [And](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/uint128.go#L59>)
+### func \(Uint128\) [And](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/uint128.go#L59>)
 
 ```go
 func (x Uint128) And(v Uint128) Uint128
@@ -854,7 +854,7 @@ func (x Uint128) And(v Uint128) Uint128
 And returns x&y.
 
 <a name="Uint128.And64"></a>
-### func \(Uint128\) [And64](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/uint128.go#L64>)
+### func \(Uint128\) [And64](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/uint128.go#L64>)
 
 ```go
 func (x Uint128) And64(y uint64) Uint128
@@ -863,7 +863,7 @@ func (x Uint128) And64(y uint64) Uint128
 And64 returns x&y.
 
 <a name="Uint128.CountOnes"></a>
-### func \(Uint128\) [CountOnes](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/uint128.go#L98>)
+### func \(Uint128\) [CountOnes](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/uint128.go#L98>)
 
 ```go
 func (x Uint128) CountOnes() int
@@ -872,7 +872,7 @@ func (x Uint128) CountOnes() int
 CountOnes return num of 1 bits in x.
 
 <a name="Uint128.Equals"></a>
-### func \(Uint128\) [Equals](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/uint128.go#L49>)
+### func \(Uint128\) [Equals](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/uint128.go#L49>)
 
 ```go
 func (x Uint128) Equals(y Uint128) bool
@@ -881,7 +881,7 @@ func (x Uint128) Equals(y Uint128) bool
 Equals returns true if x == y.
 
 <a name="Uint128.Equals64"></a>
-### func \(Uint128\) [Equals64](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/uint128.go#L54>)
+### func \(Uint128\) [Equals64](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/uint128.go#L54>)
 
 ```go
 func (x Uint128) Equals64(y uint64) bool
@@ -890,7 +890,7 @@ func (x Uint128) Equals64(y uint64) bool
 Equals64 returns true if x == y.
 
 <a name="Uint128.Lsh"></a>
-### func \(Uint128\) [Lsh](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/uint128.go#L69>)
+### func \(Uint128\) [Lsh](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/uint128.go#L69>)
 
 ```go
 func (x Uint128) Lsh(y uint64) Uint128
@@ -899,7 +899,7 @@ func (x Uint128) Lsh(y uint64) Uint128
 Lsh returns x\<\<y.
 
 <a name="Uint128.Not"></a>
-### func \(Uint128\) [Not](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/uint128.go#L83>)
+### func \(Uint128\) [Not](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/uint128.go#L83>)
 
 ```go
 func (x Uint128) Not() Uint128
@@ -908,7 +908,7 @@ func (x Uint128) Not() Uint128
 Not returns ^x.
 
 <a name="Uint128.Or"></a>
-### func \(Uint128\) [Or](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/uint128.go#L88>)
+### func \(Uint128\) [Or](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/uint128.go#L88>)
 
 ```go
 func (x Uint128) Or(v Uint128) Uint128
@@ -917,7 +917,7 @@ func (x Uint128) Or(v Uint128) Uint128
 Or returns x|y.
 
 <a name="Uint128.Sub"></a>
-### func \(Uint128\) [Sub](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/uint128.go#L35>)
+### func \(Uint128\) [Sub](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/uint128.go#L35>)
 
 ```go
 func (x Uint128) Sub(y Uint128) Uint128
@@ -926,7 +926,7 @@ func (x Uint128) Sub(y Uint128) Uint128
 Sub returns x\-y.
 
 <a name="Uint128.Sub64"></a>
-### func \(Uint128\) [Sub64](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/uint128.go#L42>)
+### func \(Uint128\) [Sub64](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/uint128.go#L42>)
 
 ```go
 func (x Uint128) Sub64(y uint64) Uint128
@@ -935,7 +935,7 @@ func (x Uint128) Sub64(y uint64) Uint128
 Sub64 returns x\-y.
 
 <a name="Uint128.TrailingZeros"></a>
-### func \(Uint128\) [TrailingZeros](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/uint128.go#L103>)
+### func \(Uint128\) [TrailingZeros](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/uint128.go#L103>)
 
 ```go
 func (x Uint128) TrailingZeros() int
@@ -944,7 +944,7 @@ func (x Uint128) TrailingZeros() int
 TrailingZeros returns the number of trailing zero bits in x; the result is 128 for x == 0.
 
 <a name="Uint128.Xor"></a>
-### func \(Uint128\) [Xor](<https://github.com/0chain/gosdk/blob/staging/zboxcore/zboxutil/uint128.go#L93>)
+### func \(Uint128\) [Xor](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/zboxutil/uint128.go#L93>)
 
 ```go
 func (x Uint128) Xor(v Uint128) Uint128

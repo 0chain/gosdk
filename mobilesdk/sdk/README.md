@@ -23,7 +23,7 @@ var ErrInvalidSignatureScheme = errors.New("invalid_signature_scheme")
 ```
 
 <a name="SignRequest"></a>
-## func [SignRequest](<https://github.com/0chain/gosdk/blob/staging/mobilesdk/sdk/sign.go#L15>)
+## func [SignRequest](<https://github.com/0chain/gosdk/blob/doc/initial/mobilesdk/sdk/sign.go#L15>)
 
 ```go
 func SignRequest(privateKey, signatureScheme string, data string) (string, error)
@@ -32,7 +32,7 @@ func SignRequest(privateKey, signatureScheme string, data string) (string, error
 SignRequest sign data with private key and scheme
 
 <a name="SplitKeys"></a>
-## func [SplitKeys](<https://github.com/0chain/gosdk/blob/staging/mobilesdk/sdk/keys.go#L21>)
+## func [SplitKeys](<https://github.com/0chain/gosdk/blob/doc/initial/mobilesdk/sdk/keys.go#L21>)
 
 ```go
 func SplitKeys(privateKey, signatureScheme string, numSplits int) ([]byte, error)
@@ -54,7 +54,7 @@ SplitKeys split keys by private key, return json string of wallet
 ```
 
 <a name="VerifySignature"></a>
-## func [VerifySignature](<https://github.com/0chain/gosdk/blob/staging/mobilesdk/sdk/sign.go#L23>)
+## func [VerifySignature](<https://github.com/0chain/gosdk/blob/doc/initial/mobilesdk/sdk/sign.go#L23>)
 
 ```go
 func VerifySignature(publicKey, signatureScheme string, data string, signature string) (bool, error)

@@ -28,7 +28,7 @@ const (
 ```
 
 <a name="Duration"></a>
-## type [Duration](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/time/time.go#L16>)
+## type [Duration](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/time/time.go#L16>)
 
 A Duration represents the elapsed time between two instants as an int64 nanosecond count. The representation limits the largest representable duration to approximately 290 years.
 
@@ -37,7 +37,7 @@ type Duration = time.Duration
 ```
 
 <a name="Time"></a>
-## type [Time](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/time/time.go#L20>)
+## type [Time](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/time/time.go#L20>)
 
 Time is a copy of time from golang std lib to avoid import it from other packages.
 
@@ -46,7 +46,7 @@ type Time = time.Time
 ```
 
 <a name="NowTime"></a>
-### func [NowTime](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/time/time.go#L32>)
+### func [NowTime](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/time/time.go#L32>)
 
 ```go
 func NowTime() Time
@@ -55,7 +55,7 @@ func NowTime() Time
 NowTime returns the current local time.
 
 <a name="Timestamp"></a>
-## type [Timestamp](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/time/time.go#L23>)
+## type [Timestamp](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/time/time.go#L23>)
 
 Timestamp represents a wrapper to control the json encoding.
 
@@ -64,7 +64,7 @@ type Timestamp int64
 ```
 
 <a name="Now"></a>
-### func [Now](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/time/time.go#L27>)
+### func [Now](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/time/time.go#L27>)
 
 ```go
 func Now() Timestamp

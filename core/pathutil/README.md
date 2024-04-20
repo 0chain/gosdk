@@ -14,7 +14,7 @@ import "github.com/0chain/gosdk/core/pathutil"
 
 
 <a name="Dir"></a>
-## func [Dir](<https://github.com/0chain/gosdk/blob/staging/core/pathutil/path.go#L31>)
+## func [Dir](<https://github.com/0chain/gosdk/blob/doc/initial/core/pathutil/path.go#L31>)
 
 ```go
 func Dir(path string) string
@@ -23,7 +23,7 @@ func Dir(path string) string
 Dir returns all but the last element of path, typically the path's directory.
 
 <a name="Join"></a>
-## func [Join](<https://github.com/0chain/gosdk/blob/staging/core/pathutil/path.go#L42>)
+## func [Join](<https://github.com/0chain/gosdk/blob/doc/initial/core/pathutil/path.go#L42>)
 
 ```go
 func Join(elem ...string) string
@@ -32,7 +32,7 @@ func Join(elem ...string) string
 Join joins any number of path elements into a single path, separating them with slash. Empty elements are ignored. The result is Cleaned. However, if the argument list is empty or all its elements are empty, Join returns an empty string.
 
 <a name="Split"></a>
-## func [Split](<https://github.com/0chain/gosdk/blob/staging/core/pathutil/path.go#L12>)
+## func [Split](<https://github.com/0chain/gosdk/blob/doc/initial/core/pathutil/path.go#L12>)
 
 ```go
 func Split(path string) (dir, file string)

@@ -26,7 +26,7 @@ import "github.com/0chain/gosdk/zboxcore/client"
 
 
 <a name="GetClientID"></a>
-## func [GetClientID](<https://github.com/0chain/gosdk/blob/staging/zboxcore/client/entity.go#L81>)
+## func [GetClientID](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/client/entity.go#L81>)
 
 ```go
 func GetClientID() string
@@ -35,7 +35,7 @@ func GetClientID() string
 
 
 <a name="GetClientPrivateKey"></a>
-## func [GetClientPrivateKey](<https://github.com/0chain/gosdk/blob/staging/zboxcore/client/entity.go#L89>)
+## func [GetClientPrivateKey](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/client/entity.go#L89>)
 
 ```go
 func GetClientPrivateKey() string
@@ -44,7 +44,7 @@ func GetClientPrivateKey() string
 
 
 <a name="GetClientPublicKey"></a>
-## func [GetClientPublicKey](<https://github.com/0chain/gosdk/blob/staging/zboxcore/client/entity.go#L85>)
+## func [GetClientPublicKey](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/client/entity.go#L85>)
 
 ```go
 func GetClientPublicKey() string
@@ -53,7 +53,7 @@ func GetClientPublicKey() string
 
 
 <a name="GetClientSysKeys"></a>
-## func [GetClientSysKeys](<https://github.com/0chain/gosdk/blob/staging/zboxcore/client/entity.go#L98>)
+## func [GetClientSysKeys](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/client/entity.go#L98>)
 
 ```go
 func GetClientSysKeys() []sys.KeyPair
@@ -62,7 +62,7 @@ func GetClientSysKeys() []sys.KeyPair
 GetClientSysKeys convert client.KeyPair to sys.KeyPair
 
 <a name="PopulateClient"></a>
-## func [PopulateClient](<https://github.com/0chain/gosdk/blob/staging/zboxcore/client/entity.go#L40>)
+## func [PopulateClient](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/client/entity.go#L40>)
 
 ```go
 func PopulateClient(clientjson string, signatureScheme string) error
@@ -71,7 +71,7 @@ func PopulateClient(clientjson string, signatureScheme string) error
 PopulateClient populates single client
 
 <a name="PopulateClients"></a>
-## func [PopulateClients](<https://github.com/0chain/gosdk/blob/staging/zboxcore/client/entity.go#L61>)
+## func [PopulateClients](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/client/entity.go#L61>)
 
 ```go
 func PopulateClients(clientJsons []string, signatureScheme string) error
@@ -80,7 +80,7 @@ func PopulateClients(clientJsons []string, signatureScheme string) error
 PopulateClients This is a workaround for blobber tests that requires multiple clients to test authticket functionality
 
 <a name="SetClientNonce"></a>
-## func [SetClientNonce](<https://github.com/0chain/gosdk/blob/staging/zboxcore/client/entity.go#L46>)
+## func [SetClientNonce](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/client/entity.go#L46>)
 
 ```go
 func SetClientNonce(nonce int64)
@@ -89,7 +89,7 @@ func SetClientNonce(nonce int64)
 
 
 <a name="SetTxnFee"></a>
-## func [SetTxnFee](<https://github.com/0chain/gosdk/blob/staging/zboxcore/client/entity.go#L51>)
+## func [SetTxnFee](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/client/entity.go#L51>)
 
 ```go
 func SetTxnFee(fee uint64)
@@ -98,7 +98,7 @@ func SetTxnFee(fee uint64)
 SetTxnFee sets general transaction fee
 
 <a name="TxnFee"></a>
-## func [TxnFee](<https://github.com/0chain/gosdk/blob/staging/zboxcore/client/entity.go#L56>)
+## func [TxnFee](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/client/entity.go#L56>)
 
 ```go
 func TxnFee() uint64
@@ -107,7 +107,7 @@ func TxnFee() uint64
 TxnFee gets general txn fee
 
 <a name="VerifySignature"></a>
-## func [VerifySignature](<https://github.com/0chain/gosdk/blob/staging/zboxcore/client/entity.go#L133>)
+## func [VerifySignature](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/client/entity.go#L133>)
 
 ```go
 func VerifySignature(signature string, msg string) (bool, error)
@@ -116,7 +116,7 @@ func VerifySignature(signature string, msg string) (bool, error)
 
 
 <a name="VerifySignatureWith"></a>
-## func [VerifySignatureWith](<https://github.com/0chain/gosdk/blob/staging/zboxcore/client/entity.go#L142>)
+## func [VerifySignatureWith](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/client/entity.go#L142>)
 
 ```go
 func VerifySignatureWith(pubKey, signature, hash string) (bool, error)
@@ -125,7 +125,7 @@ func VerifySignatureWith(pubKey, signature, hash string) (bool, error)
 
 
 <a name="Client"></a>
-## type [Client](<https://github.com/0chain/gosdk/blob/staging/zboxcore/client/entity.go#L12-L16>)
+## type [Client](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/client/entity.go#L12-L16>)
 
 
 
@@ -138,7 +138,7 @@ type Client struct {
 ```
 
 <a name="GetClient"></a>
-### func [GetClient](<https://github.com/0chain/gosdk/blob/staging/zboxcore/client/entity.go#L73>)
+### func [GetClient](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/client/entity.go#L73>)
 
 ```go
 func GetClient() *Client
@@ -147,7 +147,7 @@ func GetClient() *Client
 
 
 <a name="GetClients"></a>
-### func [GetClients](<https://github.com/0chain/gosdk/blob/staging/zboxcore/client/entity.go#L77>)
+### func [GetClients](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/client/entity.go#L77>)
 
 ```go
 func GetClients() []*Client
@@ -156,7 +156,7 @@ func GetClients() []*Client
 
 
 <a name="SignFunc"></a>
-## type [SignFunc](<https://github.com/0chain/gosdk/blob/staging/zboxcore/client/entity.go#L10>)
+## type [SignFunc](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/client/entity.go#L10>)
 
 
 

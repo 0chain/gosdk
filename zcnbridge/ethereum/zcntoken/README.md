@@ -136,7 +136,7 @@ var TokenMetaData = &bind.MetaData{
 ```
 
 <a name="Token"></a>
-## type [Token](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L42-L46>)
+## type [Token](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L42-L46>)
 
 Token is an auto generated Go binding around an Ethereum contract.
 
@@ -149,7 +149,7 @@ type Token struct {
 ```
 
 <a name="NewToken"></a>
-### func [NewToken](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L101>)
+### func [NewToken](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L101>)
 
 ```go
 func NewToken(address common.Address, backend bind.ContractBackend) (*Token, error)
@@ -158,7 +158,7 @@ func NewToken(address common.Address, backend bind.ContractBackend) (*Token, err
 NewToken creates a new instance of Token, bound to a specific deployed contract.
 
 <a name="TokenApproval"></a>
-## type [TokenApproval](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L667-L672>)
+## type [TokenApproval](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L667-L672>)
 
 TokenApproval represents a Approval event raised by the Token contract.
 
@@ -172,7 +172,7 @@ type TokenApproval struct {
 ```
 
 <a name="TokenApprovalIterator"></a>
-## type [TokenApprovalIterator](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L600-L610>)
+## type [TokenApprovalIterator](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L600-L610>)
 
 TokenApprovalIterator is returned from FilterApproval and is used to iterate over the raw logs and unpacked data for Approval events raised by the Token contract.
 
@@ -184,7 +184,7 @@ type TokenApprovalIterator struct {
 ```
 
 <a name="TokenApprovalIterator.Close"></a>
-### func \(\*TokenApprovalIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L661>)
+### func \(\*TokenApprovalIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L661>)
 
 ```go
 func (it *TokenApprovalIterator) Close() error
@@ -193,7 +193,7 @@ func (it *TokenApprovalIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="TokenApprovalIterator.Error"></a>
-### func \(\*TokenApprovalIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L655>)
+### func \(\*TokenApprovalIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L655>)
 
 ```go
 func (it *TokenApprovalIterator) Error() error
@@ -202,7 +202,7 @@ func (it *TokenApprovalIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="TokenApprovalIterator.Next"></a>
-### func \(\*TokenApprovalIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L615>)
+### func \(\*TokenApprovalIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L615>)
 
 ```go
 func (it *TokenApprovalIterator) Next() bool
@@ -211,7 +211,7 @@ func (it *TokenApprovalIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="TokenCaller"></a>
-## type [TokenCaller](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L49-L51>)
+## type [TokenCaller](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L49-L51>)
 
 TokenCaller is an auto generated read\-only Go binding around an Ethereum contract.
 
@@ -222,7 +222,7 @@ type TokenCaller struct {
 ```
 
 <a name="NewTokenCaller"></a>
-### func [NewTokenCaller](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L110>)
+### func [NewTokenCaller](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L110>)
 
 ```go
 func NewTokenCaller(address common.Address, caller bind.ContractCaller) (*TokenCaller, error)
@@ -231,7 +231,7 @@ func NewTokenCaller(address common.Address, caller bind.ContractCaller) (*TokenC
 NewTokenCaller creates a new read\-only instance of Token, bound to a specific deployed contract.
 
 <a name="TokenCaller.Allowance"></a>
-### func \(\*TokenCaller\) [Allowance](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L186>)
+### func \(\*TokenCaller\) [Allowance](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L186>)
 
 ```go
 func (_Token *TokenCaller) Allowance(opts *bind.CallOpts, _owner common.Address, _spender common.Address) (*big.Int, error)
@@ -242,7 +242,7 @@ Allowance is a free data retrieval call binding the contract method 0xdd62ed3e.
 Solidity: function allowance\(address \_owner, address \_spender\) view returns\(uint256\)
 
 <a name="TokenCaller.BalanceOf"></a>
-### func \(\*TokenCaller\) [BalanceOf](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L217>)
+### func \(\*TokenCaller\) [BalanceOf](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L217>)
 
 ```go
 func (_Token *TokenCaller) BalanceOf(opts *bind.CallOpts, _owner common.Address) (*big.Int, error)
@@ -253,7 +253,7 @@ BalanceOf is a free data retrieval call binding the contract method 0x70a08231.
 Solidity: function balanceOf\(address \_owner\) view returns\(uint256 balance\)
 
 <a name="TokenCaller.Decimals"></a>
-### func \(\*TokenCaller\) [Decimals](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L248>)
+### func \(\*TokenCaller\) [Decimals](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L248>)
 
 ```go
 func (_Token *TokenCaller) Decimals(opts *bind.CallOpts) (uint8, error)
@@ -264,7 +264,7 @@ Decimals is a free data retrieval call binding the contract method 0x313ce567.
 Solidity: function decimals\(\) view returns\(uint8\)
 
 <a name="TokenCaller.MintingFinished"></a>
-### func \(\*TokenCaller\) [MintingFinished](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L279>)
+### func \(\*TokenCaller\) [MintingFinished](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L279>)
 
 ```go
 func (_Token *TokenCaller) MintingFinished(opts *bind.CallOpts) (bool, error)
@@ -275,7 +275,7 @@ MintingFinished is a free data retrieval call binding the contract method 0x05d2
 Solidity: function mintingFinished\(\) view returns\(bool\)
 
 <a name="TokenCaller.Name"></a>
-### func \(\*TokenCaller\) [Name](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L310>)
+### func \(\*TokenCaller\) [Name](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L310>)
 
 ```go
 func (_Token *TokenCaller) Name(opts *bind.CallOpts) (string, error)
@@ -286,7 +286,7 @@ Name is a free data retrieval call binding the contract method 0x06fdde03.
 Solidity: function name\(\) view returns\(string\)
 
 <a name="TokenCaller.Owner"></a>
-### func \(\*TokenCaller\) [Owner](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L341>)
+### func \(\*TokenCaller\) [Owner](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L341>)
 
 ```go
 func (_Token *TokenCaller) Owner(opts *bind.CallOpts) (common.Address, error)
@@ -297,7 +297,7 @@ Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
 Solidity: function owner\(\) view returns\(address\)
 
 <a name="TokenCaller.Symbol"></a>
-### func \(\*TokenCaller\) [Symbol](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L372>)
+### func \(\*TokenCaller\) [Symbol](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L372>)
 
 ```go
 func (_Token *TokenCaller) Symbol(opts *bind.CallOpts) (string, error)
@@ -308,7 +308,7 @@ Symbol is a free data retrieval call binding the contract method 0x95d89b41.
 Solidity: function symbol\(\) view returns\(string\)
 
 <a name="TokenCaller.TotalSupply"></a>
-### func \(\*TokenCaller\) [TotalSupply](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L403>)
+### func \(\*TokenCaller\) [TotalSupply](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L403>)
 
 ```go
 func (_Token *TokenCaller) TotalSupply(opts *bind.CallOpts) (*big.Int, error)
@@ -319,7 +319,7 @@ TotalSupply is a free data retrieval call binding the contract method 0x18160ddd
 Solidity: function totalSupply\(\) view returns\(uint256\)
 
 <a name="TokenCallerRaw"></a>
-## type [TokenCallerRaw](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L91-L93>)
+## type [TokenCallerRaw](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L91-L93>)
 
 TokenCallerRaw is an auto generated low\-level read\-only Go binding around an Ethereum contract.
 
@@ -330,7 +330,7 @@ type TokenCallerRaw struct {
 ```
 
 <a name="TokenCallerRaw.Call"></a>
-### func \(\*TokenCallerRaw\) [Call](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L168>)
+### func \(\*TokenCallerRaw\) [Call](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L168>)
 
 ```go
 func (_Token *TokenCallerRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error
@@ -339,7 +339,7 @@ func (_Token *TokenCallerRaw) Call(opts *bind.CallOpts, result *[]interface{}, m
 Call invokes the \(constant\) contract method with params as input values and sets the output to result. The result type might be a single field for simple returns, a slice of interfaces for anonymous returns and a struct for named returns.
 
 <a name="TokenCallerSession"></a>
-## type [TokenCallerSession](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L73-L76>)
+## type [TokenCallerSession](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L73-L76>)
 
 TokenCallerSession is an auto generated read\-only Go binding around an Ethereum contract, with pre\-set call options.
 
@@ -351,7 +351,7 @@ type TokenCallerSession struct {
 ```
 
 <a name="TokenCallerSession.Allowance"></a>
-### func \(\*TokenCallerSession\) [Allowance](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L210>)
+### func \(\*TokenCallerSession\) [Allowance](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L210>)
 
 ```go
 func (_Token *TokenCallerSession) Allowance(_owner common.Address, _spender common.Address) (*big.Int, error)
@@ -362,7 +362,7 @@ Allowance is a free data retrieval call binding the contract method 0xdd62ed3e.
 Solidity: function allowance\(address \_owner, address \_spender\) view returns\(uint256\)
 
 <a name="TokenCallerSession.BalanceOf"></a>
-### func \(\*TokenCallerSession\) [BalanceOf](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L241>)
+### func \(\*TokenCallerSession\) [BalanceOf](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L241>)
 
 ```go
 func (_Token *TokenCallerSession) BalanceOf(_owner common.Address) (*big.Int, error)
@@ -373,7 +373,7 @@ BalanceOf is a free data retrieval call binding the contract method 0x70a08231.
 Solidity: function balanceOf\(address \_owner\) view returns\(uint256 balance\)
 
 <a name="TokenCallerSession.Decimals"></a>
-### func \(\*TokenCallerSession\) [Decimals](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L272>)
+### func \(\*TokenCallerSession\) [Decimals](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L272>)
 
 ```go
 func (_Token *TokenCallerSession) Decimals() (uint8, error)
@@ -384,7 +384,7 @@ Decimals is a free data retrieval call binding the contract method 0x313ce567.
 Solidity: function decimals\(\) view returns\(uint8\)
 
 <a name="TokenCallerSession.MintingFinished"></a>
-### func \(\*TokenCallerSession\) [MintingFinished](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L303>)
+### func \(\*TokenCallerSession\) [MintingFinished](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L303>)
 
 ```go
 func (_Token *TokenCallerSession) MintingFinished() (bool, error)
@@ -395,7 +395,7 @@ MintingFinished is a free data retrieval call binding the contract method 0x05d2
 Solidity: function mintingFinished\(\) view returns\(bool\)
 
 <a name="TokenCallerSession.Name"></a>
-### func \(\*TokenCallerSession\) [Name](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L334>)
+### func \(\*TokenCallerSession\) [Name](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L334>)
 
 ```go
 func (_Token *TokenCallerSession) Name() (string, error)
@@ -406,7 +406,7 @@ Name is a free data retrieval call binding the contract method 0x06fdde03.
 Solidity: function name\(\) view returns\(string\)
 
 <a name="TokenCallerSession.Owner"></a>
-### func \(\*TokenCallerSession\) [Owner](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L365>)
+### func \(\*TokenCallerSession\) [Owner](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L365>)
 
 ```go
 func (_Token *TokenCallerSession) Owner() (common.Address, error)
@@ -417,7 +417,7 @@ Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
 Solidity: function owner\(\) view returns\(address\)
 
 <a name="TokenCallerSession.Symbol"></a>
-### func \(\*TokenCallerSession\) [Symbol](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L396>)
+### func \(\*TokenCallerSession\) [Symbol](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L396>)
 
 ```go
 func (_Token *TokenCallerSession) Symbol() (string, error)
@@ -428,7 +428,7 @@ Symbol is a free data retrieval call binding the contract method 0x95d89b41.
 Solidity: function symbol\(\) view returns\(string\)
 
 <a name="TokenCallerSession.TotalSupply"></a>
-### func \(\*TokenCallerSession\) [TotalSupply](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L427>)
+### func \(\*TokenCallerSession\) [TotalSupply](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L427>)
 
 ```go
 func (_Token *TokenCallerSession) TotalSupply() (*big.Int, error)
@@ -439,7 +439,7 @@ TotalSupply is a free data retrieval call binding the contract method 0x18160ddd
 Solidity: function totalSupply\(\) view returns\(uint256\)
 
 <a name="TokenFilterer"></a>
-## type [TokenFilterer](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L59-L61>)
+## type [TokenFilterer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L59-L61>)
 
 TokenFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
 
@@ -450,7 +450,7 @@ type TokenFilterer struct {
 ```
 
 <a name="NewTokenFilterer"></a>
-### func [NewTokenFilterer](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L128>)
+### func [NewTokenFilterer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L128>)
 
 ```go
 func NewTokenFilterer(address common.Address, filterer bind.ContractFilterer) (*TokenFilterer, error)
@@ -459,7 +459,7 @@ func NewTokenFilterer(address common.Address, filterer bind.ContractFilterer) (*
 NewTokenFilterer creates a new log filterer instance of Token, bound to a specific deployed contract.
 
 <a name="TokenFilterer.FilterApproval"></a>
-### func \(\*TokenFilterer\) [FilterApproval](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L677>)
+### func \(\*TokenFilterer\) [FilterApproval](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L677>)
 
 ```go
 func (_Token *TokenFilterer) FilterApproval(opts *bind.FilterOpts, owner []common.Address, spender []common.Address) (*TokenApprovalIterator, error)
@@ -470,7 +470,7 @@ FilterApproval is a free log retrieval operation binding the contract event 0x8c
 Solidity: event Approval\(address indexed owner, address indexed spender, uint256 value\)
 
 <a name="TokenFilterer.FilterMint"></a>
-### func \(\*TokenFilterer\) [FilterMint](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L830>)
+### func \(\*TokenFilterer\) [FilterMint](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L830>)
 
 ```go
 func (_Token *TokenFilterer) FilterMint(opts *bind.FilterOpts, to []common.Address) (*TokenMintIterator, error)
@@ -481,7 +481,7 @@ FilterMint is a free log retrieval operation binding the contract event 0x0f6798
 Solidity: event Mint\(address indexed to, uint256 amount\)
 
 <a name="TokenFilterer.FilterMintFinished"></a>
-### func \(\*TokenFilterer\) [FilterMintFinished](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L973>)
+### func \(\*TokenFilterer\) [FilterMintFinished](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L973>)
 
 ```go
 func (_Token *TokenFilterer) FilterMintFinished(opts *bind.FilterOpts) (*TokenMintFinishedIterator, error)
@@ -492,7 +492,7 @@ FilterMintFinished is a free log retrieval operation binding the contract event 
 Solidity: event MintFinished\(\)
 
 <a name="TokenFilterer.FilterOwnershipTransferred"></a>
-### func \(\*TokenFilterer\) [FilterOwnershipTransferred](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L1108>)
+### func \(\*TokenFilterer\) [FilterOwnershipTransferred](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L1108>)
 
 ```go
 func (_Token *TokenFilterer) FilterOwnershipTransferred(opts *bind.FilterOpts, previousOwner []common.Address, newOwner []common.Address) (*TokenOwnershipTransferredIterator, error)
@@ -503,7 +503,7 @@ FilterOwnershipTransferred is a free log retrieval operation binding the contrac
 Solidity: event OwnershipTransferred\(address indexed previousOwner, address indexed newOwner\)
 
 <a name="TokenFilterer.FilterTransfer"></a>
-### func \(\*TokenFilterer\) [FilterTransfer](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L1262>)
+### func \(\*TokenFilterer\) [FilterTransfer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L1262>)
 
 ```go
 func (_Token *TokenFilterer) FilterTransfer(opts *bind.FilterOpts, from []common.Address, to []common.Address) (*TokenTransferIterator, error)
@@ -514,7 +514,7 @@ FilterTransfer is a free log retrieval operation binding the contract event 0xdd
 Solidity: event Transfer\(address indexed from, address indexed to, uint256 value\)
 
 <a name="TokenFilterer.ParseApproval"></a>
-### func \(\*TokenFilterer\) [ParseApproval](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L744>)
+### func \(\*TokenFilterer\) [ParseApproval](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L744>)
 
 ```go
 func (_Token *TokenFilterer) ParseApproval(log types.Log) (*TokenApproval, error)
@@ -525,7 +525,7 @@ ParseApproval is a log parse operation binding the contract event 0x8c5be1e5ebec
 Solidity: event Approval\(address indexed owner, address indexed spender, uint256 value\)
 
 <a name="TokenFilterer.ParseMint"></a>
-### func \(\*TokenFilterer\) [ParseMint](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L889>)
+### func \(\*TokenFilterer\) [ParseMint](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L889>)
 
 ```go
 func (_Token *TokenFilterer) ParseMint(log types.Log) (*TokenMint, error)
@@ -536,7 +536,7 @@ ParseMint is a log parse operation binding the contract event 0x0f6798a560793a54
 Solidity: event Mint\(address indexed to, uint256 amount\)
 
 <a name="TokenFilterer.ParseMintFinished"></a>
-### func \(\*TokenFilterer\) [ParseMintFinished](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L1022>)
+### func \(\*TokenFilterer\) [ParseMintFinished](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L1022>)
 
 ```go
 func (_Token *TokenFilterer) ParseMintFinished(log types.Log) (*TokenMintFinished, error)
@@ -547,7 +547,7 @@ ParseMintFinished is a log parse operation binding the contract event 0xae5184fb
 Solidity: event MintFinished\(\)
 
 <a name="TokenFilterer.ParseOwnershipTransferred"></a>
-### func \(\*TokenFilterer\) [ParseOwnershipTransferred](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L1175>)
+### func \(\*TokenFilterer\) [ParseOwnershipTransferred](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L1175>)
 
 ```go
 func (_Token *TokenFilterer) ParseOwnershipTransferred(log types.Log) (*TokenOwnershipTransferred, error)
@@ -558,7 +558,7 @@ ParseOwnershipTransferred is a log parse operation binding the contract event 0x
 Solidity: event OwnershipTransferred\(address indexed previousOwner, address indexed newOwner\)
 
 <a name="TokenFilterer.ParseTransfer"></a>
-### func \(\*TokenFilterer\) [ParseTransfer](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L1329>)
+### func \(\*TokenFilterer\) [ParseTransfer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L1329>)
 
 ```go
 func (_Token *TokenFilterer) ParseTransfer(log types.Log) (*TokenTransfer, error)
@@ -569,7 +569,7 @@ ParseTransfer is a log parse operation binding the contract event 0xddf252ad1be2
 Solidity: event Transfer\(address indexed from, address indexed to, uint256 value\)
 
 <a name="TokenFilterer.WatchApproval"></a>
-### func \(\*TokenFilterer\) [WatchApproval](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L698>)
+### func \(\*TokenFilterer\) [WatchApproval](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L698>)
 
 ```go
 func (_Token *TokenFilterer) WatchApproval(opts *bind.WatchOpts, sink chan<- *TokenApproval, owner []common.Address, spender []common.Address) (event.Subscription, error)
@@ -580,7 +580,7 @@ WatchApproval is a free log subscription operation binding the contract event 0x
 Solidity: event Approval\(address indexed owner, address indexed spender, uint256 value\)
 
 <a name="TokenFilterer.WatchMint"></a>
-### func \(\*TokenFilterer\) [WatchMint](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L847>)
+### func \(\*TokenFilterer\) [WatchMint](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L847>)
 
 ```go
 func (_Token *TokenFilterer) WatchMint(opts *bind.WatchOpts, sink chan<- *TokenMint, to []common.Address) (event.Subscription, error)
@@ -591,7 +591,7 @@ WatchMint is a free log subscription operation binding the contract event 0x0f67
 Solidity: event Mint\(address indexed to, uint256 amount\)
 
 <a name="TokenFilterer.WatchMintFinished"></a>
-### func \(\*TokenFilterer\) [WatchMintFinished](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L985>)
+### func \(\*TokenFilterer\) [WatchMintFinished](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L985>)
 
 ```go
 func (_Token *TokenFilterer) WatchMintFinished(opts *bind.WatchOpts, sink chan<- *TokenMintFinished) (event.Subscription, error)
@@ -602,7 +602,7 @@ WatchMintFinished is a free log subscription operation binding the contract even
 Solidity: event MintFinished\(\)
 
 <a name="TokenFilterer.WatchOwnershipTransferred"></a>
-### func \(\*TokenFilterer\) [WatchOwnershipTransferred](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L1129>)
+### func \(\*TokenFilterer\) [WatchOwnershipTransferred](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L1129>)
 
 ```go
 func (_Token *TokenFilterer) WatchOwnershipTransferred(opts *bind.WatchOpts, sink chan<- *TokenOwnershipTransferred, previousOwner []common.Address, newOwner []common.Address) (event.Subscription, error)
@@ -613,7 +613,7 @@ WatchOwnershipTransferred is a free log subscription operation binding the contr
 Solidity: event OwnershipTransferred\(address indexed previousOwner, address indexed newOwner\)
 
 <a name="TokenFilterer.WatchTransfer"></a>
-### func \(\*TokenFilterer\) [WatchTransfer](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L1283>)
+### func \(\*TokenFilterer\) [WatchTransfer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L1283>)
 
 ```go
 func (_Token *TokenFilterer) WatchTransfer(opts *bind.WatchOpts, sink chan<- *TokenTransfer, from []common.Address, to []common.Address) (event.Subscription, error)
@@ -624,7 +624,7 @@ WatchTransfer is a free log subscription operation binding the contract event 0x
 Solidity: event Transfer\(address indexed from, address indexed to, uint256 value\)
 
 <a name="TokenMint"></a>
-## type [TokenMint](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L821-L825>)
+## type [TokenMint](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L821-L825>)
 
 TokenMint represents a Mint event raised by the Token contract.
 
@@ -637,7 +637,7 @@ type TokenMint struct {
 ```
 
 <a name="TokenMintFinished"></a>
-## type [TokenMintFinished](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L966-L968>)
+## type [TokenMintFinished](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L966-L968>)
 
 TokenMintFinished represents a MintFinished event raised by the Token contract.
 
@@ -648,7 +648,7 @@ type TokenMintFinished struct {
 ```
 
 <a name="TokenMintFinishedIterator"></a>
-## type [TokenMintFinishedIterator](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L899-L909>)
+## type [TokenMintFinishedIterator](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L899-L909>)
 
 TokenMintFinishedIterator is returned from FilterMintFinished and is used to iterate over the raw logs and unpacked data for MintFinished events raised by the Token contract.
 
@@ -660,7 +660,7 @@ type TokenMintFinishedIterator struct {
 ```
 
 <a name="TokenMintFinishedIterator.Close"></a>
-### func \(\*TokenMintFinishedIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L960>)
+### func \(\*TokenMintFinishedIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L960>)
 
 ```go
 func (it *TokenMintFinishedIterator) Close() error
@@ -669,7 +669,7 @@ func (it *TokenMintFinishedIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="TokenMintFinishedIterator.Error"></a>
-### func \(\*TokenMintFinishedIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L954>)
+### func \(\*TokenMintFinishedIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L954>)
 
 ```go
 func (it *TokenMintFinishedIterator) Error() error
@@ -678,7 +678,7 @@ func (it *TokenMintFinishedIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="TokenMintFinishedIterator.Next"></a>
-### func \(\*TokenMintFinishedIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L914>)
+### func \(\*TokenMintFinishedIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L914>)
 
 ```go
 func (it *TokenMintFinishedIterator) Next() bool
@@ -687,7 +687,7 @@ func (it *TokenMintFinishedIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="TokenMintIterator"></a>
-## type [TokenMintIterator](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L754-L764>)
+## type [TokenMintIterator](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L754-L764>)
 
 TokenMintIterator is returned from FilterMint and is used to iterate over the raw logs and unpacked data for Mint events raised by the Token contract.
 
@@ -699,7 +699,7 @@ type TokenMintIterator struct {
 ```
 
 <a name="TokenMintIterator.Close"></a>
-### func \(\*TokenMintIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L815>)
+### func \(\*TokenMintIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L815>)
 
 ```go
 func (it *TokenMintIterator) Close() error
@@ -708,7 +708,7 @@ func (it *TokenMintIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="TokenMintIterator.Error"></a>
-### func \(\*TokenMintIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L809>)
+### func \(\*TokenMintIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L809>)
 
 ```go
 func (it *TokenMintIterator) Error() error
@@ -717,7 +717,7 @@ func (it *TokenMintIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="TokenMintIterator.Next"></a>
-### func \(\*TokenMintIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L769>)
+### func \(\*TokenMintIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L769>)
 
 ```go
 func (it *TokenMintIterator) Next() bool
@@ -726,7 +726,7 @@ func (it *TokenMintIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="TokenOwnershipTransferred"></a>
-## type [TokenOwnershipTransferred](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L1099-L1103>)
+## type [TokenOwnershipTransferred](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L1099-L1103>)
 
 TokenOwnershipTransferred represents a OwnershipTransferred event raised by the Token contract.
 
@@ -739,7 +739,7 @@ type TokenOwnershipTransferred struct {
 ```
 
 <a name="TokenOwnershipTransferredIterator"></a>
-## type [TokenOwnershipTransferredIterator](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L1032-L1042>)
+## type [TokenOwnershipTransferredIterator](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L1032-L1042>)
 
 TokenOwnershipTransferredIterator is returned from FilterOwnershipTransferred and is used to iterate over the raw logs and unpacked data for OwnershipTransferred events raised by the Token contract.
 
@@ -751,7 +751,7 @@ type TokenOwnershipTransferredIterator struct {
 ```
 
 <a name="TokenOwnershipTransferredIterator.Close"></a>
-### func \(\*TokenOwnershipTransferredIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L1093>)
+### func \(\*TokenOwnershipTransferredIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L1093>)
 
 ```go
 func (it *TokenOwnershipTransferredIterator) Close() error
@@ -760,7 +760,7 @@ func (it *TokenOwnershipTransferredIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="TokenOwnershipTransferredIterator.Error"></a>
-### func \(\*TokenOwnershipTransferredIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L1087>)
+### func \(\*TokenOwnershipTransferredIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L1087>)
 
 ```go
 func (it *TokenOwnershipTransferredIterator) Error() error
@@ -769,7 +769,7 @@ func (it *TokenOwnershipTransferredIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="TokenOwnershipTransferredIterator.Next"></a>
-### func \(\*TokenOwnershipTransferredIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L1047>)
+### func \(\*TokenOwnershipTransferredIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L1047>)
 
 ```go
 func (it *TokenOwnershipTransferredIterator) Next() bool
@@ -778,7 +778,7 @@ func (it *TokenOwnershipTransferredIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="TokenRaw"></a>
-## type [TokenRaw](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L86-L88>)
+## type [TokenRaw](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L86-L88>)
 
 TokenRaw is an auto generated low\-level Go binding around an Ethereum contract.
 
@@ -789,7 +789,7 @@ type TokenRaw struct {
 ```
 
 <a name="TokenRaw.Call"></a>
-### func \(\*TokenRaw\) [Call](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L149>)
+### func \(\*TokenRaw\) [Call](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L149>)
 
 ```go
 func (_Token *TokenRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error
@@ -798,7 +798,7 @@ func (_Token *TokenRaw) Call(opts *bind.CallOpts, result *[]interface{}, method 
 Call invokes the \(constant\) contract method with params as input values and sets the output to result. The result type might be a single field for simple returns, a slice of interfaces for anonymous returns and a struct for named returns.
 
 <a name="TokenRaw.Transact"></a>
-### func \(\*TokenRaw\) [Transact](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L160>)
+### func \(\*TokenRaw\) [Transact](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L160>)
 
 ```go
 func (_Token *TokenRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error)
@@ -807,7 +807,7 @@ func (_Token *TokenRaw) Transact(opts *bind.TransactOpts, method string, params 
 Transact invokes the \(paid\) contract method with params as input values.
 
 <a name="TokenRaw.Transfer"></a>
-### func \(\*TokenRaw\) [Transfer](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L155>)
+### func \(\*TokenRaw\) [Transfer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L155>)
 
 ```go
 func (_Token *TokenRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error)
@@ -816,7 +816,7 @@ func (_Token *TokenRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, e
 Transfer initiates a plain transaction to move funds to the contract, calling its default method if one is available.
 
 <a name="TokenSession"></a>
-## type [TokenSession](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L65-L69>)
+## type [TokenSession](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L65-L69>)
 
 TokenSession is an auto generated Go binding around an Ethereum contract, with pre\-set call and transact options.
 
@@ -829,7 +829,7 @@ type TokenSession struct {
 ```
 
 <a name="TokenSession.Allowance"></a>
-### func \(\*TokenSession\) [Allowance](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L203>)
+### func \(\*TokenSession\) [Allowance](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L203>)
 
 ```go
 func (_Token *TokenSession) Allowance(_owner common.Address, _spender common.Address) (*big.Int, error)
@@ -840,7 +840,7 @@ Allowance is a free data retrieval call binding the contract method 0xdd62ed3e.
 Solidity: function allowance\(address \_owner, address \_spender\) view returns\(uint256\)
 
 <a name="TokenSession.Approve"></a>
-### func \(\*TokenSession\) [Approve](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L441>)
+### func \(\*TokenSession\) [Approve](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L441>)
 
 ```go
 func (_Token *TokenSession) Approve(_spender common.Address, _value *big.Int) (*types.Transaction, error)
@@ -851,7 +851,7 @@ Approve is a paid mutator transaction binding the contract method 0x095ea7b3.
 Solidity: function approve\(address \_spender, uint256 \_value\) returns\(bool\)
 
 <a name="TokenSession.BalanceOf"></a>
-### func \(\*TokenSession\) [BalanceOf](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L234>)
+### func \(\*TokenSession\) [BalanceOf](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L234>)
 
 ```go
 func (_Token *TokenSession) BalanceOf(_owner common.Address) (*big.Int, error)
@@ -862,7 +862,7 @@ BalanceOf is a free data retrieval call binding the contract method 0x70a08231.
 Solidity: function balanceOf\(address \_owner\) view returns\(uint256 balance\)
 
 <a name="TokenSession.Decimals"></a>
-### func \(\*TokenSession\) [Decimals](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L265>)
+### func \(\*TokenSession\) [Decimals](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L265>)
 
 ```go
 func (_Token *TokenSession) Decimals() (uint8, error)
@@ -873,7 +873,7 @@ Decimals is a free data retrieval call binding the contract method 0x313ce567.
 Solidity: function decimals\(\) view returns\(uint8\)
 
 <a name="TokenSession.DecreaseApproval"></a>
-### func \(\*TokenSession\) [DecreaseApproval](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L462>)
+### func \(\*TokenSession\) [DecreaseApproval](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L462>)
 
 ```go
 func (_Token *TokenSession) DecreaseApproval(_spender common.Address, _subtractedValue *big.Int) (*types.Transaction, error)
@@ -884,7 +884,7 @@ DecreaseApproval is a paid mutator transaction binding the contract method 0x661
 Solidity: function decreaseApproval\(address \_spender, uint256 \_subtractedValue\) returns\(bool\)
 
 <a name="TokenSession.FinishMinting"></a>
-### func \(\*TokenSession\) [FinishMinting](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L483>)
+### func \(\*TokenSession\) [FinishMinting](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L483>)
 
 ```go
 func (_Token *TokenSession) FinishMinting() (*types.Transaction, error)
@@ -895,7 +895,7 @@ FinishMinting is a paid mutator transaction binding the contract method 0x7d64bc
 Solidity: function finishMinting\(\) returns\(bool\)
 
 <a name="TokenSession.IncreaseApproval"></a>
-### func \(\*TokenSession\) [IncreaseApproval](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L504>)
+### func \(\*TokenSession\) [IncreaseApproval](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L504>)
 
 ```go
 func (_Token *TokenSession) IncreaseApproval(_spender common.Address, _addedValue *big.Int) (*types.Transaction, error)
@@ -906,7 +906,7 @@ IncreaseApproval is a paid mutator transaction binding the contract method 0xd73
 Solidity: function increaseApproval\(address \_spender, uint256 \_addedValue\) returns\(bool\)
 
 <a name="TokenSession.Mint"></a>
-### func \(\*TokenSession\) [Mint](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L525>)
+### func \(\*TokenSession\) [Mint](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L525>)
 
 ```go
 func (_Token *TokenSession) Mint(_to common.Address, _amount *big.Int) (*types.Transaction, error)
@@ -917,7 +917,7 @@ Mint is a paid mutator transaction binding the contract method 0x40c10f19.
 Solidity: function mint\(address \_to, uint256 \_amount\) returns\(bool\)
 
 <a name="TokenSession.MintingFinished"></a>
-### func \(\*TokenSession\) [MintingFinished](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L296>)
+### func \(\*TokenSession\) [MintingFinished](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L296>)
 
 ```go
 func (_Token *TokenSession) MintingFinished() (bool, error)
@@ -928,7 +928,7 @@ MintingFinished is a free data retrieval call binding the contract method 0x05d2
 Solidity: function mintingFinished\(\) view returns\(bool\)
 
 <a name="TokenSession.Name"></a>
-### func \(\*TokenSession\) [Name](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L327>)
+### func \(\*TokenSession\) [Name](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L327>)
 
 ```go
 func (_Token *TokenSession) Name() (string, error)
@@ -939,7 +939,7 @@ Name is a free data retrieval call binding the contract method 0x06fdde03.
 Solidity: function name\(\) view returns\(string\)
 
 <a name="TokenSession.Owner"></a>
-### func \(\*TokenSession\) [Owner](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L358>)
+### func \(\*TokenSession\) [Owner](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L358>)
 
 ```go
 func (_Token *TokenSession) Owner() (common.Address, error)
@@ -950,7 +950,7 @@ Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
 Solidity: function owner\(\) view returns\(address\)
 
 <a name="TokenSession.Symbol"></a>
-### func \(\*TokenSession\) [Symbol](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L389>)
+### func \(\*TokenSession\) [Symbol](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L389>)
 
 ```go
 func (_Token *TokenSession) Symbol() (string, error)
@@ -961,7 +961,7 @@ Symbol is a free data retrieval call binding the contract method 0x95d89b41.
 Solidity: function symbol\(\) view returns\(string\)
 
 <a name="TokenSession.TotalSupply"></a>
-### func \(\*TokenSession\) [TotalSupply](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L420>)
+### func \(\*TokenSession\) [TotalSupply](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L420>)
 
 ```go
 func (_Token *TokenSession) TotalSupply() (*big.Int, error)
@@ -972,7 +972,7 @@ TotalSupply is a free data retrieval call binding the contract method 0x18160ddd
 Solidity: function totalSupply\(\) view returns\(uint256\)
 
 <a name="TokenSession.Transfer"></a>
-### func \(\*TokenSession\) [Transfer](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L546>)
+### func \(\*TokenSession\) [Transfer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L546>)
 
 ```go
 func (_Token *TokenSession) Transfer(_to common.Address, _value *big.Int) (*types.Transaction, error)
@@ -983,7 +983,7 @@ Transfer is a paid mutator transaction binding the contract method 0xa9059cbb.
 Solidity: function transfer\(address \_to, uint256 \_value\) returns\(bool\)
 
 <a name="TokenSession.TransferFrom"></a>
-### func \(\*TokenSession\) [TransferFrom](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L567>)
+### func \(\*TokenSession\) [TransferFrom](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L567>)
 
 ```go
 func (_Token *TokenSession) TransferFrom(_from common.Address, _to common.Address, _value *big.Int) (*types.Transaction, error)
@@ -994,7 +994,7 @@ TransferFrom is a paid mutator transaction binding the contract method 0x23b872d
 Solidity: function transferFrom\(address \_from, address \_to, uint256 \_value\) returns\(bool\)
 
 <a name="TokenSession.TransferOwnership"></a>
-### func \(\*TokenSession\) [TransferOwnership](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L588>)
+### func \(\*TokenSession\) [TransferOwnership](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L588>)
 
 ```go
 func (_Token *TokenSession) TransferOwnership(newOwner common.Address) (*types.Transaction, error)
@@ -1005,7 +1005,7 @@ TransferOwnership is a paid mutator transaction binding the contract method 0xf2
 Solidity: function transferOwnership\(address newOwner\) returns\(\)
 
 <a name="TokenTransactor"></a>
-## type [TokenTransactor](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L54-L56>)
+## type [TokenTransactor](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L54-L56>)
 
 TokenTransactor is an auto generated write\-only Go binding around an Ethereum contract.
 
@@ -1016,7 +1016,7 @@ type TokenTransactor struct {
 ```
 
 <a name="NewTokenTransactor"></a>
-### func [NewTokenTransactor](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L119>)
+### func [NewTokenTransactor](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L119>)
 
 ```go
 func NewTokenTransactor(address common.Address, transactor bind.ContractTransactor) (*TokenTransactor, error)
@@ -1025,7 +1025,7 @@ func NewTokenTransactor(address common.Address, transactor bind.ContractTransact
 NewTokenTransactor creates a new write\-only instance of Token, bound to a specific deployed contract.
 
 <a name="TokenTransactor.Approve"></a>
-### func \(\*TokenTransactor\) [Approve](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L434>)
+### func \(\*TokenTransactor\) [Approve](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L434>)
 
 ```go
 func (_Token *TokenTransactor) Approve(opts *bind.TransactOpts, _spender common.Address, _value *big.Int) (*types.Transaction, error)
@@ -1036,7 +1036,7 @@ Approve is a paid mutator transaction binding the contract method 0x095ea7b3.
 Solidity: function approve\(address \_spender, uint256 \_value\) returns\(bool\)
 
 <a name="TokenTransactor.DecreaseApproval"></a>
-### func \(\*TokenTransactor\) [DecreaseApproval](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L455>)
+### func \(\*TokenTransactor\) [DecreaseApproval](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L455>)
 
 ```go
 func (_Token *TokenTransactor) DecreaseApproval(opts *bind.TransactOpts, _spender common.Address, _subtractedValue *big.Int) (*types.Transaction, error)
@@ -1047,7 +1047,7 @@ DecreaseApproval is a paid mutator transaction binding the contract method 0x661
 Solidity: function decreaseApproval\(address \_spender, uint256 \_subtractedValue\) returns\(bool\)
 
 <a name="TokenTransactor.FinishMinting"></a>
-### func \(\*TokenTransactor\) [FinishMinting](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L476>)
+### func \(\*TokenTransactor\) [FinishMinting](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L476>)
 
 ```go
 func (_Token *TokenTransactor) FinishMinting(opts *bind.TransactOpts) (*types.Transaction, error)
@@ -1058,7 +1058,7 @@ FinishMinting is a paid mutator transaction binding the contract method 0x7d64bc
 Solidity: function finishMinting\(\) returns\(bool\)
 
 <a name="TokenTransactor.IncreaseApproval"></a>
-### func \(\*TokenTransactor\) [IncreaseApproval](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L497>)
+### func \(\*TokenTransactor\) [IncreaseApproval](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L497>)
 
 ```go
 func (_Token *TokenTransactor) IncreaseApproval(opts *bind.TransactOpts, _spender common.Address, _addedValue *big.Int) (*types.Transaction, error)
@@ -1069,7 +1069,7 @@ IncreaseApproval is a paid mutator transaction binding the contract method 0xd73
 Solidity: function increaseApproval\(address \_spender, uint256 \_addedValue\) returns\(bool\)
 
 <a name="TokenTransactor.Mint"></a>
-### func \(\*TokenTransactor\) [Mint](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L518>)
+### func \(\*TokenTransactor\) [Mint](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L518>)
 
 ```go
 func (_Token *TokenTransactor) Mint(opts *bind.TransactOpts, _to common.Address, _amount *big.Int) (*types.Transaction, error)
@@ -1080,7 +1080,7 @@ Mint is a paid mutator transaction binding the contract method 0x40c10f19.
 Solidity: function mint\(address \_to, uint256 \_amount\) returns\(bool\)
 
 <a name="TokenTransactor.Transfer"></a>
-### func \(\*TokenTransactor\) [Transfer](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L539>)
+### func \(\*TokenTransactor\) [Transfer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L539>)
 
 ```go
 func (_Token *TokenTransactor) Transfer(opts *bind.TransactOpts, _to common.Address, _value *big.Int) (*types.Transaction, error)
@@ -1091,7 +1091,7 @@ Transfer is a paid mutator transaction binding the contract method 0xa9059cbb.
 Solidity: function transfer\(address \_to, uint256 \_value\) returns\(bool\)
 
 <a name="TokenTransactor.TransferFrom"></a>
-### func \(\*TokenTransactor\) [TransferFrom](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L560>)
+### func \(\*TokenTransactor\) [TransferFrom](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L560>)
 
 ```go
 func (_Token *TokenTransactor) TransferFrom(opts *bind.TransactOpts, _from common.Address, _to common.Address, _value *big.Int) (*types.Transaction, error)
@@ -1102,7 +1102,7 @@ TransferFrom is a paid mutator transaction binding the contract method 0x23b872d
 Solidity: function transferFrom\(address \_from, address \_to, uint256 \_value\) returns\(bool\)
 
 <a name="TokenTransactor.TransferOwnership"></a>
-### func \(\*TokenTransactor\) [TransferOwnership](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L581>)
+### func \(\*TokenTransactor\) [TransferOwnership](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L581>)
 
 ```go
 func (_Token *TokenTransactor) TransferOwnership(opts *bind.TransactOpts, newOwner common.Address) (*types.Transaction, error)
@@ -1113,7 +1113,7 @@ TransferOwnership is a paid mutator transaction binding the contract method 0xf2
 Solidity: function transferOwnership\(address newOwner\) returns\(\)
 
 <a name="TokenTransactorRaw"></a>
-## type [TokenTransactorRaw](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L96-L98>)
+## type [TokenTransactorRaw](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L96-L98>)
 
 TokenTransactorRaw is an auto generated low\-level write\-only Go binding around an Ethereum contract.
 
@@ -1124,7 +1124,7 @@ type TokenTransactorRaw struct {
 ```
 
 <a name="TokenTransactorRaw.Transact"></a>
-### func \(\*TokenTransactorRaw\) [Transact](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L179>)
+### func \(\*TokenTransactorRaw\) [Transact](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L179>)
 
 ```go
 func (_Token *TokenTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error)
@@ -1133,7 +1133,7 @@ func (_Token *TokenTransactorRaw) Transact(opts *bind.TransactOpts, method strin
 Transact invokes the \(paid\) contract method with params as input values.
 
 <a name="TokenTransactorRaw.Transfer"></a>
-### func \(\*TokenTransactorRaw\) [Transfer](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L174>)
+### func \(\*TokenTransactorRaw\) [Transfer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L174>)
 
 ```go
 func (_Token *TokenTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error)
@@ -1142,7 +1142,7 @@ func (_Token *TokenTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Tran
 Transfer initiates a plain transaction to move funds to the contract, calling its default method if one is available.
 
 <a name="TokenTransactorSession"></a>
-## type [TokenTransactorSession](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L80-L83>)
+## type [TokenTransactorSession](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L80-L83>)
 
 TokenTransactorSession is an auto generated write\-only Go binding around an Ethereum contract, with pre\-set transact options.
 
@@ -1154,7 +1154,7 @@ type TokenTransactorSession struct {
 ```
 
 <a name="TokenTransactorSession.Approve"></a>
-### func \(\*TokenTransactorSession\) [Approve](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L448>)
+### func \(\*TokenTransactorSession\) [Approve](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L448>)
 
 ```go
 func (_Token *TokenTransactorSession) Approve(_spender common.Address, _value *big.Int) (*types.Transaction, error)
@@ -1165,7 +1165,7 @@ Approve is a paid mutator transaction binding the contract method 0x095ea7b3.
 Solidity: function approve\(address \_spender, uint256 \_value\) returns\(bool\)
 
 <a name="TokenTransactorSession.DecreaseApproval"></a>
-### func \(\*TokenTransactorSession\) [DecreaseApproval](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L469>)
+### func \(\*TokenTransactorSession\) [DecreaseApproval](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L469>)
 
 ```go
 func (_Token *TokenTransactorSession) DecreaseApproval(_spender common.Address, _subtractedValue *big.Int) (*types.Transaction, error)
@@ -1176,7 +1176,7 @@ DecreaseApproval is a paid mutator transaction binding the contract method 0x661
 Solidity: function decreaseApproval\(address \_spender, uint256 \_subtractedValue\) returns\(bool\)
 
 <a name="TokenTransactorSession.FinishMinting"></a>
-### func \(\*TokenTransactorSession\) [FinishMinting](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L490>)
+### func \(\*TokenTransactorSession\) [FinishMinting](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L490>)
 
 ```go
 func (_Token *TokenTransactorSession) FinishMinting() (*types.Transaction, error)
@@ -1187,7 +1187,7 @@ FinishMinting is a paid mutator transaction binding the contract method 0x7d64bc
 Solidity: function finishMinting\(\) returns\(bool\)
 
 <a name="TokenTransactorSession.IncreaseApproval"></a>
-### func \(\*TokenTransactorSession\) [IncreaseApproval](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L511>)
+### func \(\*TokenTransactorSession\) [IncreaseApproval](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L511>)
 
 ```go
 func (_Token *TokenTransactorSession) IncreaseApproval(_spender common.Address, _addedValue *big.Int) (*types.Transaction, error)
@@ -1198,7 +1198,7 @@ IncreaseApproval is a paid mutator transaction binding the contract method 0xd73
 Solidity: function increaseApproval\(address \_spender, uint256 \_addedValue\) returns\(bool\)
 
 <a name="TokenTransactorSession.Mint"></a>
-### func \(\*TokenTransactorSession\) [Mint](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L532>)
+### func \(\*TokenTransactorSession\) [Mint](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L532>)
 
 ```go
 func (_Token *TokenTransactorSession) Mint(_to common.Address, _amount *big.Int) (*types.Transaction, error)
@@ -1209,7 +1209,7 @@ Mint is a paid mutator transaction binding the contract method 0x40c10f19.
 Solidity: function mint\(address \_to, uint256 \_amount\) returns\(bool\)
 
 <a name="TokenTransactorSession.Transfer"></a>
-### func \(\*TokenTransactorSession\) [Transfer](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L553>)
+### func \(\*TokenTransactorSession\) [Transfer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L553>)
 
 ```go
 func (_Token *TokenTransactorSession) Transfer(_to common.Address, _value *big.Int) (*types.Transaction, error)
@@ -1220,7 +1220,7 @@ Transfer is a paid mutator transaction binding the contract method 0xa9059cbb.
 Solidity: function transfer\(address \_to, uint256 \_value\) returns\(bool\)
 
 <a name="TokenTransactorSession.TransferFrom"></a>
-### func \(\*TokenTransactorSession\) [TransferFrom](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L574>)
+### func \(\*TokenTransactorSession\) [TransferFrom](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L574>)
 
 ```go
 func (_Token *TokenTransactorSession) TransferFrom(_from common.Address, _to common.Address, _value *big.Int) (*types.Transaction, error)
@@ -1231,7 +1231,7 @@ TransferFrom is a paid mutator transaction binding the contract method 0x23b872d
 Solidity: function transferFrom\(address \_from, address \_to, uint256 \_value\) returns\(bool\)
 
 <a name="TokenTransactorSession.TransferOwnership"></a>
-### func \(\*TokenTransactorSession\) [TransferOwnership](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L595>)
+### func \(\*TokenTransactorSession\) [TransferOwnership](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L595>)
 
 ```go
 func (_Token *TokenTransactorSession) TransferOwnership(newOwner common.Address) (*types.Transaction, error)
@@ -1242,7 +1242,7 @@ TransferOwnership is a paid mutator transaction binding the contract method 0xf2
 Solidity: function transferOwnership\(address newOwner\) returns\(\)
 
 <a name="TokenTransfer"></a>
-## type [TokenTransfer](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L1252-L1257>)
+## type [TokenTransfer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L1252-L1257>)
 
 TokenTransfer represents a Transfer event raised by the Token contract.
 
@@ -1256,7 +1256,7 @@ type TokenTransfer struct {
 ```
 
 <a name="TokenTransferIterator"></a>
-## type [TokenTransferIterator](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L1185-L1195>)
+## type [TokenTransferIterator](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L1185-L1195>)
 
 TokenTransferIterator is returned from FilterTransfer and is used to iterate over the raw logs and unpacked data for Transfer events raised by the Token contract.
 
@@ -1268,7 +1268,7 @@ type TokenTransferIterator struct {
 ```
 
 <a name="TokenTransferIterator.Close"></a>
-### func \(\*TokenTransferIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L1246>)
+### func \(\*TokenTransferIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L1246>)
 
 ```go
 func (it *TokenTransferIterator) Close() error
@@ -1277,7 +1277,7 @@ func (it *TokenTransferIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="TokenTransferIterator.Error"></a>
-### func \(\*TokenTransferIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L1240>)
+### func \(\*TokenTransferIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L1240>)
 
 ```go
 func (it *TokenTransferIterator) Error() error
@@ -1286,7 +1286,7 @@ func (it *TokenTransferIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="TokenTransferIterator.Next"></a>
-### func \(\*TokenTransferIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/zcntoken/zcntoken.go#L1200>)
+### func \(\*TokenTransferIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/zcntoken/zcntoken.go#L1200>)
 
 ```go
 func (it *TokenTransferIterator) Next() bool

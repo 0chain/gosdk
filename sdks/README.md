@@ -22,7 +22,7 @@ import "github.com/0chain/gosdk/sdks"
 
 
 <a name="Client"></a>
-## type [Client](<https://github.com/0chain/gosdk/blob/staging/sdks/client.go#L15-L19>)
+## type [Client](<https://github.com/0chain/gosdk/blob/doc/initial/sdks/client.go#L15-L19>)
 
 Client a client instance of restful api
 
@@ -35,7 +35,7 @@ type Client struct {
 ```
 
 <a name="NewClient"></a>
-### func [NewClient](<https://github.com/0chain/gosdk/blob/staging/sdks/client.go#L22>)
+### func [NewClient](<https://github.com/0chain/gosdk/blob/doc/initial/sdks/client.go#L22>)
 
 ```go
 func NewClient(clientID, clientPublicKey, baseURL string) (Client, error)
@@ -44,7 +44,7 @@ func NewClient(clientID, clientPublicKey, baseURL string) (Client, error)
 create client instance
 
 <a name="Client.SignRequest"></a>
-### func \(\*Client\) [SignRequest](<https://github.com/0chain/gosdk/blob/staging/sdks/client.go#L39>)
+### func \(\*Client\) [SignRequest](<https://github.com/0chain/gosdk/blob/doc/initial/sdks/client.go#L39>)
 
 ```go
 func (c *Client) SignRequest(req *http.Request, allocation string) error
@@ -53,7 +53,7 @@ func (c *Client) SignRequest(req *http.Request, allocation string) error
 
 
 <a name="Request"></a>
-## type [Request](<https://github.com/0chain/gosdk/blob/staging/sdks/request.go#L8-L21>)
+## type [Request](<https://github.com/0chain/gosdk/blob/doc/initial/sdks/request.go#L8-L21>)
 
 Request request payload
 
@@ -75,7 +75,7 @@ type Request struct {
 ```
 
 <a name="ZBox"></a>
-## type [ZBox](<https://github.com/0chain/gosdk/blob/staging/sdks/zbox.go#L21-L34>)
+## type [ZBox](<https://github.com/0chain/gosdk/blob/doc/initial/sdks/zbox.go#L21-L34>)
 
 ZBox sdk client instance
 
@@ -97,7 +97,7 @@ type ZBox struct {
 ```
 
 <a name="New"></a>
-### func [New](<https://github.com/0chain/gosdk/blob/staging/sdks/zbox.go#L37>)
+### func [New](<https://github.com/0chain/gosdk/blob/doc/initial/sdks/zbox.go#L37>)
 
 ```go
 func New(clientID, clientKey, signatureScheme string, wallet *zcncrypto.Wallet) *ZBox
@@ -106,7 +106,7 @@ func New(clientID, clientKey, signatureScheme string, wallet *zcncrypto.Wallet) 
 New create a sdk client instance
 
 <a name="ZBox.BuildUrls"></a>
-### func \(\*ZBox\) [BuildUrls](<https://github.com/0chain/gosdk/blob/staging/sdks/zbox.go#L88>)
+### func \(\*ZBox\) [BuildUrls](<https://github.com/0chain/gosdk/blob/doc/initial/sdks/zbox.go#L88>)
 
 ```go
 func (z *ZBox) BuildUrls(baseURLs []string, queryString map[string]string, pathFormat string, pathArgs ...interface{}) []string
@@ -115,7 +115,7 @@ func (z *ZBox) BuildUrls(baseURLs []string, queryString map[string]string, pathF
 BuildUrls build full request url
 
 <a name="ZBox.CreateTransport"></a>
-### func \(\*ZBox\) [CreateTransport](<https://github.com/0chain/gosdk/blob/staging/sdks/zbox.go#L78>)
+### func \(\*ZBox\) [CreateTransport](<https://github.com/0chain/gosdk/blob/doc/initial/sdks/zbox.go#L78>)
 
 ```go
 func (z *ZBox) CreateTransport() *http.Transport
@@ -124,7 +124,7 @@ func (z *ZBox) CreateTransport() *http.Transport
 CreateTransport create http.Transport with default dial timeout
 
 <a name="ZBox.DoPost"></a>
-### func \(\*ZBox\) [DoPost](<https://github.com/0chain/gosdk/blob/staging/sdks/zbox.go#L112>)
+### func \(\*ZBox\) [DoPost](<https://github.com/0chain/gosdk/blob/doc/initial/sdks/zbox.go#L112>)
 
 ```go
 func (z *ZBox) DoPost(req *Request, handle resty.Handle) *resty.Resty
@@ -133,7 +133,7 @@ func (z *ZBox) DoPost(req *Request, handle resty.Handle) *resty.Resty
 
 
 <a name="ZBox.InitWallet"></a>
-### func \(\*ZBox\) [InitWallet](<https://github.com/0chain/gosdk/blob/staging/sdks/zbox.go#L50>)
+### func \(\*ZBox\) [InitWallet](<https://github.com/0chain/gosdk/blob/doc/initial/sdks/zbox.go#L50>)
 
 ```go
 func (z *ZBox) InitWallet(js string) error
@@ -142,7 +142,7 @@ func (z *ZBox) InitWallet(js string) error
 InitWallet init wallet from json
 
 <a name="ZBox.SignRequest"></a>
-### func \(\*ZBox\) [SignRequest](<https://github.com/0chain/gosdk/blob/staging/sdks/zbox.go#L55>)
+### func \(\*ZBox\) [SignRequest](<https://github.com/0chain/gosdk/blob/doc/initial/sdks/zbox.go#L55>)
 
 ```go
 func (z *ZBox) SignRequest(req *http.Request, allocationID string) error

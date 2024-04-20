@@ -19,7 +19,7 @@ import "github.com/0chain/gosdk/zmagmacore/node"
 
 
 <a name="ExtID"></a>
-## func [ExtID](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/node/self.go#L62>)
+## func [ExtID](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/node/self.go#L62>)
 
 ```go
 func ExtID() string
@@ -28,7 +28,7 @@ func ExtID() string
 
 
 <a name="GetWalletString"></a>
-## func [GetWalletString](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/node/self.go#L49>)
+## func [GetWalletString](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/node/self.go#L49>)
 
 ```go
 func GetWalletString() (string, error)
@@ -37,7 +37,7 @@ func GetWalletString() (string, error)
 GetWalletString returns marshaled to JSON string nodes wallet.
 
 <a name="ID"></a>
-## func [ID](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/node/self.go#L58>)
+## func [ID](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/node/self.go#L58>)
 
 ```go
 func ID() string
@@ -46,7 +46,7 @@ func ID() string
 ID returns id of Node.
 
 <a name="PublicKey"></a>
-## func [PublicKey](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/node/self.go#L67>)
+## func [PublicKey](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/node/self.go#L67>)
 
 ```go
 func PublicKey() string
@@ -55,7 +55,7 @@ func PublicKey() string
 PublicKey returns id of Node.
 
 <a name="SetWallet"></a>
-## func [SetWallet](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/node/self.go#L53>)
+## func [SetWallet](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/node/self.go#L53>)
 
 ```go
 func SetWallet(wall *wallet.Wallet)
@@ -64,7 +64,7 @@ func SetWallet(wall *wallet.Wallet)
 
 
 <a name="Start"></a>
-## func [Start](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/node/self.go#L26>)
+## func [Start](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/node/self.go#L26>)
 
 ```go
 func Start(host string, port int, extID string, wallet *wallet.Wallet)
@@ -75,7 +75,7 @@ Start writes to self node current time, sets wallet, external id and url
 Start should be used only once while application is starting.
 
 <a name="StartTime"></a>
-## func [StartTime](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/node/self.go#L72>)
+## func [StartTime](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/node/self.go#L72>)
 
 ```go
 func StartTime() time.Time
@@ -84,7 +84,7 @@ func StartTime() time.Time
 StartTime returns time when Node is started.
 
 <a name="Node"></a>
-## type [Node](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/node/self.go#L12-L17>)
+## type [Node](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/node/self.go#L12-L17>)
 
 Node represent self node type.
 

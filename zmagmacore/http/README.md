@@ -28,7 +28,7 @@ const (
 ```
 
 <a name="CreateServer"></a>
-## func [CreateServer](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/http/server.go#L20>)
+## func [CreateServer](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/http/server.go#L20>)
 
 ```go
 func CreateServer(setupHandlers setupHandlers, cfg config.Handler, port int, development bool) *http.Server
@@ -37,7 +37,7 @@ func CreateServer(setupHandlers setupHandlers, cfg config.Handler, port int, dev
 CreateServer creates http.Server and setups handlers.
 
 <a name="MakeSCRestAPICall"></a>
-## func [MakeSCRestAPICall](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/http/sc-api.go#L19>)
+## func [MakeSCRestAPICall](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/http/sc-api.go#L19>)
 
 ```go
 func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]string) ([]byte, error)
@@ -46,7 +46,7 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 MakeSCRestAPICall calls smart contract with provided address and makes retryable request to smart contract resource with provided relative path using params.
 
 <a name="NewClient"></a>
-## func [NewClient](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/http/client.go#L23>)
+## func [NewClient](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/http/client.go#L23>)
 
 ```go
 func NewClient() *http.Client
@@ -55,7 +55,7 @@ func NewClient() *http.Client
 NewClient creates default http.Client with timeouts.
 
 <a name="NewRetryableClient"></a>
-## func [NewRetryableClient](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/http/client.go#L36>)
+## func [NewRetryableClient](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/http/client.go#L36>)
 
 ```go
 func NewRetryableClient(retryMax int) *retryablehttp.Client
@@ -64,7 +64,7 @@ func NewRetryableClient(retryMax int) *retryablehttp.Client
 NewRetryableClient creates default retryablehttp.Client with timeouts and embedded NewClient result.
 
 <a name="StartServer"></a>
-## func [StartServer](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/http/server.go#L52>)
+## func [StartServer](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/http/server.go#L52>)
 
 ```go
 func StartServer(server *http.Server, appCtxCancel func())

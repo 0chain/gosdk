@@ -13,7 +13,7 @@ import "github.com/0chain/gosdk/zmagmacore/limiter"
 
 
 <a name="ConfigRateLimits"></a>
-## func [ConfigRateLimits](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/limiter/limiter.go#L35>)
+## func [ConfigRateLimits](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/limiter/limiter.go#L35>)
 
 ```go
 func ConfigRateLimits(limit float64)
@@ -24,7 +24,7 @@ ConfigRateLimits configures rate limits used in app.
 Should be called only once while application starting process.
 
 <a name="UserRateLimit"></a>
-## func [UserRateLimit](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/limiter/limiter.go#L41>)
+## func [UserRateLimit](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/limiter/limiter.go#L41>)
 
 ```go
 func UserRateLimit(handler http.HandlerFunc) http.HandlerFunc

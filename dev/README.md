@@ -16,7 +16,7 @@ package dev providers tools for local development
 
 
 <a name="Server"></a>
-## type [Server](<https://github.com/0chain/gosdk/blob/staging/dev/server.go#L13-L16>)
+## type [Server](<https://github.com/0chain/gosdk/blob/doc/initial/dev/server.go#L13-L16>)
 
 Server a local dev server to mock server APIs
 
@@ -28,7 +28,7 @@ type Server struct {
 ```
 
 <a name="NewBlobberServer"></a>
-### func [NewBlobberServer](<https://github.com/0chain/gosdk/blob/staging/dev/server.go#L30>)
+### func [NewBlobberServer](<https://github.com/0chain/gosdk/blob/doc/initial/dev/server.go#L30>)
 
 ```go
 func NewBlobberServer(m mock.ResponseMap) *Server
@@ -37,7 +37,7 @@ func NewBlobberServer(m mock.ResponseMap) *Server
 NewBlobberServer create a local dev blobber server
 
 <a name="NewServer"></a>
-### func [NewServer](<https://github.com/0chain/gosdk/blob/staging/dev/server.go#L19>)
+### func [NewServer](<https://github.com/0chain/gosdk/blob/doc/initial/dev/server.go#L19>)
 
 ```go
 func NewServer() *Server

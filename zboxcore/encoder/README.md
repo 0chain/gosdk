@@ -15,7 +15,7 @@ import "github.com/0chain/gosdk/zboxcore/encoder"
 
 
 <a name="StreamEncoder"></a>
-## type [StreamEncoder](<https://github.com/0chain/gosdk/blob/staging/zboxcore/encoder/erasurecode.go#L14-L19>)
+## type [StreamEncoder](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/encoder/erasurecode.go#L14-L19>)
 
 
 
@@ -26,7 +26,7 @@ type StreamEncoder struct {
 ```
 
 <a name="NewEncoder"></a>
-### func [NewEncoder](<https://github.com/0chain/gosdk/blob/staging/zboxcore/encoder/erasurecode.go#L22>)
+### func [NewEncoder](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/encoder/erasurecode.go#L22>)
 
 ```go
 func NewEncoder(iDataShards, iParityShards int) (*StreamEncoder, error)
@@ -35,7 +35,7 @@ func NewEncoder(iDataShards, iParityShards int) (*StreamEncoder, error)
 Creates New encoder instance and return index for further access
 
 <a name="StreamEncoder.Decode"></a>
-### func \(\*StreamEncoder\) [Decode](<https://github.com/0chain/gosdk/blob/staging/zboxcore/encoder/erasurecode.go#L52>)
+### func \(\*StreamEncoder\) [Decode](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/encoder/erasurecode.go#L52>)
 
 ```go
 func (e *StreamEncoder) Decode(in [][]byte, shardSize int) ([]byte, error)
@@ -44,7 +44,7 @@ func (e *StreamEncoder) Decode(in [][]byte, shardSize int) ([]byte, error)
 
 
 <a name="StreamEncoder.Encode"></a>
-### func \(\*StreamEncoder\) [Encode](<https://github.com/0chain/gosdk/blob/staging/zboxcore/encoder/erasurecode.go#L36>)
+### func \(\*StreamEncoder\) [Encode](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/encoder/erasurecode.go#L36>)
 
 ```go
 func (e *StreamEncoder) Encode(in []byte) ([][]byte, error)

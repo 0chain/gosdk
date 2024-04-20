@@ -26,7 +26,7 @@ import "github.com/0chain/gosdk/zboxcore/marker"
 
 
 <a name="AuthTicket"></a>
-## type [AuthTicket](<https://github.com/0chain/gosdk/blob/staging/zboxcore/marker/authticket.go#L10-L23>)
+## type [AuthTicket](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/marker/authticket.go#L10-L23>)
 
 
 
@@ -48,7 +48,7 @@ type AuthTicket struct {
 ```
 
 <a name="AuthTicket.GetHashData"></a>
-### func \(\*AuthTicket\) [GetHashData](<https://github.com/0chain/gosdk/blob/staging/zboxcore/marker/authticket.go#L25>)
+### func \(\*AuthTicket\) [GetHashData](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/marker/authticket.go#L25>)
 
 ```go
 func (at *AuthTicket) GetHashData() string
@@ -57,7 +57,7 @@ func (at *AuthTicket) GetHashData() string
 
 
 <a name="AuthTicket.Sign"></a>
-### func \(\*AuthTicket\) [Sign](<https://github.com/0chain/gosdk/blob/staging/zboxcore/marker/authticket.go#L42>)
+### func \(\*AuthTicket\) [Sign](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/marker/authticket.go#L42>)
 
 ```go
 func (at *AuthTicket) Sign() error
@@ -66,7 +66,7 @@ func (at *AuthTicket) Sign() error
 
 
 <a name="DeleteToken"></a>
-## type [DeleteToken](<https://github.com/0chain/gosdk/blob/staging/zboxcore/marker/deletetoken.go#L10-L19>)
+## type [DeleteToken](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/marker/deletetoken.go#L10-L19>)
 
 
 
@@ -84,7 +84,7 @@ type DeleteToken struct {
 ```
 
 <a name="DeleteToken.GetHash"></a>
-### func \(\*DeleteToken\) [GetHash](<https://github.com/0chain/gosdk/blob/staging/zboxcore/marker/deletetoken.go#L21>)
+### func \(\*DeleteToken\) [GetHash](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/marker/deletetoken.go#L21>)
 
 ```go
 func (dt *DeleteToken) GetHash() string
@@ -93,7 +93,7 @@ func (dt *DeleteToken) GetHash() string
 
 
 <a name="DeleteToken.Sign"></a>
-### func \(\*DeleteToken\) [Sign](<https://github.com/0chain/gosdk/blob/staging/zboxcore/marker/deletetoken.go#L26>)
+### func \(\*DeleteToken\) [Sign](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/marker/deletetoken.go#L26>)
 
 ```go
 func (dt *DeleteToken) Sign() error
@@ -102,7 +102,7 @@ func (dt *DeleteToken) Sign() error
 
 
 <a name="ReadMarker"></a>
-## type [ReadMarker](<https://github.com/0chain/gosdk/blob/staging/zboxcore/marker/readmarker.go#L13-L23>)
+## type [ReadMarker](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/marker/readmarker.go#L13-L23>)
 
 
 
@@ -121,7 +121,7 @@ type ReadMarker struct {
 ```
 
 <a name="ReadMarker.GetHash"></a>
-### func \(\*ReadMarker\) [GetHash](<https://github.com/0chain/gosdk/blob/staging/zboxcore/marker/readmarker.go#L25>)
+### func \(\*ReadMarker\) [GetHash](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/marker/readmarker.go#L25>)
 
 ```go
 func (rm *ReadMarker) GetHash() string
@@ -130,7 +130,7 @@ func (rm *ReadMarker) GetHash() string
 
 
 <a name="ReadMarker.Sign"></a>
-### func \(\*ReadMarker\) [Sign](<https://github.com/0chain/gosdk/blob/staging/zboxcore/marker/readmarker.go#L32>)
+### func \(\*ReadMarker\) [Sign](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/marker/readmarker.go#L32>)
 
 ```go
 func (rm *ReadMarker) Sign() error
@@ -139,7 +139,7 @@ func (rm *ReadMarker) Sign() error
 
 
 <a name="ReadMarker.ValidateWithOtherRM"></a>
-### func \(\*ReadMarker\) [ValidateWithOtherRM](<https://github.com/0chain/gosdk/blob/staging/zboxcore/marker/readmarker.go#L39>)
+### func \(\*ReadMarker\) [ValidateWithOtherRM](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/marker/readmarker.go#L39>)
 
 ```go
 func (rm *ReadMarker) ValidateWithOtherRM(rm1 *ReadMarker) error
@@ -148,7 +148,7 @@ func (rm *ReadMarker) ValidateWithOtherRM(rm1 *ReadMarker) error
 ValidateWithOtherRM will validate rm1 assuming rm is valid. It checks parameters equality and validity of signature
 
 <a name="WriteMarker"></a>
-## type [WriteMarker](<https://github.com/0chain/gosdk/blob/staging/zboxcore/marker/writemarker.go#L12-L22>)
+## type [WriteMarker](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/marker/writemarker.go#L12-L22>)
 
 
 
@@ -167,7 +167,7 @@ type WriteMarker struct {
 ```
 
 <a name="WriteMarker.GetHash"></a>
-### func \(\*WriteMarker\) [GetHash](<https://github.com/0chain/gosdk/blob/staging/zboxcore/marker/writemarker.go#L34>)
+### func \(\*WriteMarker\) [GetHash](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/marker/writemarker.go#L34>)
 
 ```go
 func (wm *WriteMarker) GetHash() string
@@ -176,7 +176,7 @@ func (wm *WriteMarker) GetHash() string
 
 
 <a name="WriteMarker.GetHashData"></a>
-### func \(\*WriteMarker\) [GetHashData](<https://github.com/0chain/gosdk/blob/staging/zboxcore/marker/writemarker.go#L24>)
+### func \(\*WriteMarker\) [GetHashData](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/marker/writemarker.go#L24>)
 
 ```go
 func (wm *WriteMarker) GetHashData() string
@@ -185,7 +185,7 @@ func (wm *WriteMarker) GetHashData() string
 
 
 <a name="WriteMarker.Sign"></a>
-### func \(\*WriteMarker\) [Sign](<https://github.com/0chain/gosdk/blob/staging/zboxcore/marker/writemarker.go#L39>)
+### func \(\*WriteMarker\) [Sign](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/marker/writemarker.go#L39>)
 
 ```go
 func (wm *WriteMarker) Sign() error
@@ -194,7 +194,7 @@ func (wm *WriteMarker) Sign() error
 
 
 <a name="WriteMarker.VerifySignature"></a>
-### func \(\*WriteMarker\) [VerifySignature](<https://github.com/0chain/gosdk/blob/staging/zboxcore/marker/writemarker.go#L45>)
+### func \(\*WriteMarker\) [VerifySignature](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/marker/writemarker.go#L45>)
 
 ```go
 func (wm *WriteMarker) VerifySignature(clientPublicKey string) error

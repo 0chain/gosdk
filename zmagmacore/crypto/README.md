@@ -25,7 +25,7 @@ const HashLength = 32
 ```
 
 <a name="Hash"></a>
-## func [Hash](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/crypto/hash.go#L14>)
+## func [Hash](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/crypto/hash.go#L14>)
 
 ```go
 func Hash(data interface{}) string
@@ -34,7 +34,7 @@ func Hash(data interface{}) string
 Hash computes hash of the given data using RawHash and returns result as hex decoded string.
 
 <a name="RawHash"></a>
-## func [RawHash](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/crypto/hash.go#L29>)
+## func [RawHash](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/crypto/hash.go#L29>)
 
 ```go
 func RawHash(data interface{}) []byte
@@ -53,7 +53,7 @@ Known types:
 \- string
 
 <a name="ReadKeysFile"></a>
-## func [ReadKeysFile](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/crypto/keys.go#L14>)
+## func [ReadKeysFile](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/crypto/keys.go#L14>)
 
 ```go
 func ReadKeysFile(keysFile string) (publicKey, privateKey []byte, err error)
@@ -62,7 +62,7 @@ func ReadKeysFile(keysFile string) (publicKey, privateKey []byte, err error)
 ReadKeysFile reads file existing in keysFile dir and parses public and private keys from file.
 
 <a name="Verify"></a>
-## func [Verify](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/crypto/keys.go#L53>)
+## func [Verify](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/crypto/keys.go#L53>)
 
 ```go
 func Verify(publicKey, signature, hash, scheme string) (bool, error)
@@ -71,7 +71,7 @@ func Verify(publicKey, signature, hash, scheme string) (bool, error)
 Verify verifies passed signature of the passed hash with passed public key using the signature scheme.
 
 <a name="HashBytes"></a>
-## type [HashBytes](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/crypto/hash.go#L11>)
+## type [HashBytes](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/crypto/hash.go#L11>)
 
 
 

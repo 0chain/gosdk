@@ -26,7 +26,7 @@ import "github.com/0chain/gosdk/core/block"
 
 
 <a name="Block"></a>
-## type [Block](<https://github.com/0chain/gosdk/blob/staging/core/block/block.go#L34-L61>)
+## type [Block](<https://github.com/0chain/gosdk/blob/doc/initial/core/block/block.go#L34-L61>)
 
 Block \- data structure that holds the block data
 
@@ -57,7 +57,7 @@ type Block struct {
 ```
 
 <a name="ChainStats"></a>
-## type [ChainStats](<https://github.com/0chain/gosdk/blob/staging/core/block/block.go#L63-L82>)
+## type [ChainStats](<https://github.com/0chain/gosdk/blob/doc/initial/core/block/block.go#L63-L82>)
 
 
 
@@ -85,7 +85,7 @@ type ChainStats struct {
 ```
 
 <a name="DKGKeyShare"></a>
-## type [DKGKeyShare](<https://github.com/0chain/gosdk/blob/staging/core/block/magic_block_entity.go#L43-L48>)
+## type [DKGKeyShare](<https://github.com/0chain/gosdk/blob/doc/initial/core/block/magic_block_entity.go#L43-L48>)
 
 
 
@@ -99,7 +99,7 @@ type DKGKeyShare struct {
 ```
 
 <a name="FeeStats"></a>
-## type [FeeStats](<https://github.com/0chain/gosdk/blob/staging/core/block/block.go#L84-L88>)
+## type [FeeStats](<https://github.com/0chain/gosdk/blob/doc/initial/core/block/block.go#L84-L88>)
 
 
 
@@ -112,7 +112,7 @@ type FeeStats struct {
 ```
 
 <a name="GroupSharesOrSigns"></a>
-## type [GroupSharesOrSigns](<https://github.com/0chain/gosdk/blob/staging/core/block/magic_block_entity.go#L34-L36>)
+## type [GroupSharesOrSigns](<https://github.com/0chain/gosdk/blob/doc/initial/core/block/magic_block_entity.go#L34-L36>)
 
 
 
@@ -123,7 +123,7 @@ type GroupSharesOrSigns struct {
 ```
 
 <a name="Header"></a>
-## type [Header](<https://github.com/0chain/gosdk/blob/staging/core/block/block.go#L13-L24>)
+## type [Header](<https://github.com/0chain/gosdk/blob/doc/initial/core/block/block.go#L13-L24>)
 
 
 
@@ -143,7 +143,7 @@ type Header struct {
 ```
 
 <a name="Header.IsBlockExtends"></a>
-### func \(\*Header\) [IsBlockExtends](<https://github.com/0chain/gosdk/blob/staging/core/block/block.go#L26>)
+### func \(\*Header\) [IsBlockExtends](<https://github.com/0chain/gosdk/blob/doc/initial/core/block/block.go#L26>)
 
 ```go
 func (h *Header) IsBlockExtends(prevHash string) bool
@@ -152,7 +152,7 @@ func (h *Header) IsBlockExtends(prevHash string) bool
 
 
 <a name="Info"></a>
-## type [Info](<https://github.com/0chain/gosdk/blob/staging/core/block/magic_block_entity.go#L22-L27>)
+## type [Info](<https://github.com/0chain/gosdk/blob/doc/initial/core/block/magic_block_entity.go#L22-L27>)
 
 
 
@@ -166,7 +166,7 @@ type Info struct {
 ```
 
 <a name="Key"></a>
-## type [Key](<https://github.com/0chain/gosdk/blob/staging/core/block/block.go#L11>)
+## type [Key](<https://github.com/0chain/gosdk/blob/doc/initial/core/block/block.go#L11>)
 
 
 
@@ -175,7 +175,7 @@ type Key []byte
 ```
 
 <a name="MPK"></a>
-## type [MPK](<https://github.com/0chain/gosdk/blob/staging/core/block/magic_block_entity.go#L54-L57>)
+## type [MPK](<https://github.com/0chain/gosdk/blob/doc/initial/core/block/magic_block_entity.go#L54-L57>)
 
 
 
@@ -187,7 +187,7 @@ type MPK struct {
 ```
 
 <a name="MagicBlock"></a>
-## type [MagicBlock](<https://github.com/0chain/gosdk/blob/staging/core/block/magic_block_entity.go#L59-L71>)
+## type [MagicBlock](<https://github.com/0chain/gosdk/blob/doc/initial/core/block/magic_block_entity.go#L59-L71>)
 
 
 
@@ -208,7 +208,7 @@ type MagicBlock struct {
 ```
 
 <a name="Mpks"></a>
-## type [Mpks](<https://github.com/0chain/gosdk/blob/staging/core/block/magic_block_entity.go#L50-L52>)
+## type [Mpks](<https://github.com/0chain/gosdk/blob/doc/initial/core/block/magic_block_entity.go#L50-L52>)
 
 
 
@@ -219,7 +219,7 @@ type Mpks struct {
 ```
 
 <a name="Node"></a>
-## type [Node](<https://github.com/0chain/gosdk/blob/staging/core/block/magic_block_entity.go#L5-L20>)
+## type [Node](<https://github.com/0chain/gosdk/blob/doc/initial/core/block/magic_block_entity.go#L5-L20>)
 
 
 
@@ -243,7 +243,7 @@ type Node struct {
 ```
 
 <a name="NodePool"></a>
-## type [NodePool](<https://github.com/0chain/gosdk/blob/staging/core/block/magic_block_entity.go#L29-L32>)
+## type [NodePool](<https://github.com/0chain/gosdk/blob/doc/initial/core/block/magic_block_entity.go#L29-L32>)
 
 
 
@@ -255,7 +255,7 @@ type NodePool struct {
 ```
 
 <a name="ShareOrSigns"></a>
-## type [ShareOrSigns](<https://github.com/0chain/gosdk/blob/staging/core/block/magic_block_entity.go#L38-L41>)
+## type [ShareOrSigns](<https://github.com/0chain/gosdk/blob/doc/initial/core/block/magic_block_entity.go#L38-L41>)
 
 
 

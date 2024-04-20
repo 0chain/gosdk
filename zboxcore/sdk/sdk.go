@@ -858,6 +858,11 @@ func GetClientEncryptedPublicKey() (string, error) {
 	return encScheme.GetPublicKey()
 }
 
+// GetAllocationFromAuthTicket - get allocation from given auth ticket hash
+//
+//		- `authTicket`: the auth ticket hash
+//
+// returns the allocation instance and error if any
 func GetAllocationFromAuthTicket(authTicket string) (*Allocation, error) {
 	if !sdkInitialized {
 		return nil, sdkNotInitialized
@@ -874,6 +879,11 @@ func GetAllocationFromAuthTicket(authTicket string) (*Allocation, error) {
 	return GetAllocation(at.AllocationID)
 }
 
+// GetAllocation - get allocation from given allocation id
+//
+//		- `allocationID`: the allocation id
+//
+// returns the allocation instance and error if any
 func GetAllocation(allocationID string) (*Allocation, error) {
 	if !sdkInitialized {
 		return nil, sdkNotInitialized
@@ -939,6 +949,9 @@ func SetNumBlockDownloads(num int) {
 	}
 }
 
+// GetAllocations - get all allocations for the current client
+//
+// returns the list of allocations and error if any
 func GetAllocations() ([]*Allocation, error) {
 	return GetAllocationsForClient(client.GetClientID())
 }
@@ -960,7 +973,11 @@ func getAllocationsInternal(clientID string, limit, offset int) ([]*Allocation, 
 	return allocations, nil
 }
 
-// get paginated results
+// GetAllocationsForClient - get all allocations for given client id
+//
+//		- `clientID`: the client id
+//
+// returns the list of allocations and error if any
 func GetAllocationsForClient(clientID string) ([]*Allocation, error) {
 	if !sdkInitialized {
 		return nil, sdkNotInitialized
@@ -997,6 +1014,7 @@ type FileOptionParam struct {
 	Value   bool
 }
 
+// FileOptionsParameters is used to specify the file options parameters for an allocation, which control the usage permissions of the files in the allocation.
 type FileOptionsParameters struct {
 	ForbidUpload FileOptionParam
 	ForbidDelete FileOptionParam
@@ -1006,6 +1024,7 @@ type FileOptionsParameters struct {
 	ForbidRename FileOptionParam
 }
 
+// CreateAllocationOptions is used to specify the options for creating a new allocation.
 type CreateAllocationOptions struct {
 	DataShards           int
 	ParityShards         int
@@ -1018,6 +1037,11 @@ type CreateAllocationOptions struct {
 	FileOptionsParams    *FileOptionsParameters
 }
 
+// CreateAllocationWith creates a new allocation with the given options for the current client using the SDK.
+//
+// 		- `options` is the options for creating the allocation.
+
+// returns the hash of the new_allocation_request transaction, the nonce of the transaction, the transaction object and an error if any.
 func CreateAllocationWith(options CreateAllocationOptions) (
 	string, int64, *transaction.Transaction, error) {
 
@@ -1027,6 +1051,21 @@ func CreateAllocationWith(options CreateAllocationOptions) (
 		options.BlobberIds, options.ThirdPartyExtendable, options.FileOptionsParams)
 }
 
+// CreateAllocationForOwner creates a new allocation with the given options (txn: `storagesc.new_allocation_request`).
+//
+// 		- `owner` is the client id of the owner of the allocation.
+// 		- `ownerpublickey` is the public key of the owner of the allocation.
+// 		- `datashards` is the number of data shards for the allocation.
+// 		- `parityshards` is the number of parity shards for the allocation.
+// 		- `size` is the size of the allocation.
+// 		- `readPrice` is the read price range for the allocation (Reads in Züs are free!).
+// 		- `writePrice` is the write price range for the allocation.
+// 		- `lock` is the lock value for the transaction (how much tokens to lock to the allocation, in SAS).
+// 		- `preferredBlobberIds` is a list of preferred blobber ids for the allocation.
+// 		- `thirdPartyExtendable` is a flag indicating whether the allocation can be extended by a third party.
+// 		- `fileOptionsParams` is the file options parameters for the allocation, which control the usage permissions of the files in the allocation.
+//
+// returns the hash of the transaction, the nonce of the transaction, the transaction object and an error if any.
 func CreateAllocationForOwner(
 	owner, ownerpublickey string,
 	datashards, parityshards int, size int64,
@@ -1065,6 +1104,16 @@ func CreateAllocationForOwner(
 	return
 }
 
+// GetAllocationBlobbers returns a list of blobber ids that can be used for a new allocation.
+//
+// 		- `datashards` is the number of data shards for the allocation.
+// 		- `parityshards` is the number of parity shards for the allocation.
+// 		- `size` is the size of the allocation.
+// 		- `readPrice` is the read price range for the allocation (Reads in Züs are free!).
+// 		- `writePrice` is the write price range for the allocation.
+// 		- `force` is a flag indicating whether to force the allocation to be created.
+//
+// returns the list of blobber ids and an error if any.
 func GetAllocationBlobbers(
 	datashards, parityshards int,
 	size int64,
@@ -1136,6 +1185,11 @@ func getNewAllocationBlobbers(
 	}, nil
 }
 
+// GetBlobberIds returns a list of blobber ids that can be used for a new allocation.
+//
+// 		- `blobberUrls` is a list of blobber urls.
+//
+// returns a list of blobber ids that can be used for the new allocation and an error if any.
 func GetBlobberIds(blobberUrls []string) ([]string, error) {
 
 	if len(blobberUrls) == 0 {
@@ -1163,6 +1217,11 @@ func GetBlobberIds(blobberUrls []string) ([]string, error) {
 	return blobberIDs, nil
 }
 
+// GetFreeAllocationBlobbers returns a list of blobber ids that can be used for a new free allocation.
+//
+// 		- `request` is the request data for the free allocation.
+//
+// returns a list of blobber ids that can be used for the new free allocation and an error if any.
 func GetFreeAllocationBlobbers(request map[string]interface{}) ([]string, error) {
 	data, _ := json.Marshal(request)
 
@@ -1183,6 +1242,15 @@ func GetFreeAllocationBlobbers(request map[string]interface{}) ([]string, error)
 	return allocBlobberIDs, nil
 }
 
+// AddFreeStorageAssigner adds a new free storage assigner (txn: `storagesc.add_free_allocation_assigner`).
+// The free storage assigner is used to create free allocations.
+//
+// 		- `name` is the name of the assigner.
+// 		- `publicKey` is the public key of the assigner.
+// 		- `individualLimit` is the individual limit of the assigner for a single free allocation request
+// 		- `totalLimit` is the total limit of the assigner for all free allocation requests.
+//
+// returns the hash of the transaction, the nonce of the transaction and an error if any.
 func AddFreeStorageAssigner(name, publicKey string, individualLimit, totalLimit float64) (string, int64, error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
@@ -1204,6 +1272,11 @@ func AddFreeStorageAssigner(name, publicKey string, individualLimit, totalLimit 
 	return hash, n, err
 }
 
+// CreateFreeAllocation creates a new free allocation (txn: `storagesc.free_allocation_request`).
+// 		- `marker` is the marker for the free allocation.
+// 		- `value` is the value of the free allocation.
+//
+// returns the hash of the transaction, the nonce of the transaction and an error if any.
 func CreateFreeAllocation(marker string, value uint64) (string, int64, error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
@@ -1231,6 +1304,18 @@ func CreateFreeAllocation(marker string, value uint64) (string, int64, error) {
 	return hash, n, err
 }
 
+// UpdateFreeAllocation sends an update request for an allocation (txn: `storagesc.update_allocation_request`)
+//
+// 		- `size` is the size of the allocation.
+// 		- `extend` is a flag indicating whether to extend the allocation.
+// 		- `allocationID` is the id of the allocation.
+// 		- `lock` is the lock value for the transaction (how much tokens to lock to the allocation, in SAS).
+// 		- `addBlobberId` is the id of the blobber to add to the allocation.
+// 		- `removeBlobberId` is the id of the blobber to remove from the allocation.
+// 		- `setThirdPartyExtendable` is a flag indicating whether the allocation can be extended by a third party.
+// 		- `fileOptionsParams` is the file options parameters for the allocation, which control the usage permissions of the files in the allocation.
+//
+// returns the hash of the transaction, the nonce of the transaction and an error if any.
 func UpdateAllocation(
 	size int64,
 	extend bool,
@@ -1272,6 +1357,11 @@ func UpdateAllocation(
 	return
 }
 
+// FinalizeAllocation sends a finalize request for an allocation (txn: `storagesc.finalize_allocation`)
+//
+// 		- `allocID` is the id of the allocation.
+//
+// returns the hash of the transaction, the nonce of the transaction and an error if any.
 func FinalizeAllocation(allocID string) (hash string, nonce int64, err error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
@@ -1284,6 +1374,11 @@ func FinalizeAllocation(allocID string) (hash string, nonce int64, err error) {
 	return
 }
 
+// CancelAllocation sends a cancel request for an allocation (txn: `storagesc.cancel_allocation`)
+//
+// 		- `allocID` is the id of the allocation.
+//
+// returns the hash of the transaction, the nonce of the transaction and an error if any.
 func CancelAllocation(allocID string) (hash string, nonce int64, err error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
@@ -1386,6 +1481,13 @@ func CollectRewards(providerId string, providerType ProviderType) (string, int64
 	return hash, n, err
 }
 
+// TransferAllocation transfers the ownership of an allocation to a new owner. (txn: `storagesc.update_allocation_request`)
+//
+// 		- `allocationId` is the id of the allocation.
+// 		- `newOwner` is the client id of the new owner.
+// 		- `newOwnerPublicKey` is the public key of the new owner.
+//
+// returns the hash of the transaction, the nonce of the transaction and an error if any.
 func TransferAllocation(allocationId, newOwner, newOwnerPublicKey string) (string, int64, error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
@@ -1668,6 +1770,15 @@ func GetAllocationMinLock(
 	return i, nil
 }
 
+// GetUpdateAllocationMinLock returns the minimum lock demand for updating an allocation, which represents the cost of the update operation.
+//
+//		- `allocationID` is the id of the allocation.
+//		- `size` is the new size of the allocation.
+//		- `extend` is a flag indicating whether to extend the expiry of the allocation.
+// 		- `addBlobberId` is the id of the blobber to add to the allocation.
+// 		- `removeBlobberId` is the id of the blobber to remove from the allocation.
+//
+// returns the minimum lock demand for the update operation and an error if any.
 func GetUpdateAllocationMinLock(
 	allocationID string,
 	size int64,

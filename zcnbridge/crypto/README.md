@@ -23,7 +23,7 @@ const HashLength = 32
 ```
 
 <a name="Hash"></a>
-## func [Hash](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/crypto/hash.go#L14>)
+## func [Hash](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/crypto/hash.go#L14>)
 
 ```go
 func Hash(data interface{}) string
@@ -32,7 +32,7 @@ func Hash(data interface{}) string
 Hash computes hash of the given data using RawHash and returns result as hex decoded string.
 
 <a name="RawHash"></a>
-## func [RawHash](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/crypto/hash.go#L29>)
+## func [RawHash](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/crypto/hash.go#L29>)
 
 ```go
 func RawHash(data interface{}) []byte
@@ -51,7 +51,7 @@ Known types:
 \- string
 
 <a name="HashBytes"></a>
-## type [HashBytes](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/crypto/hash.go#L11>)
+## type [HashBytes](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/crypto/hash.go#L11>)
 
 
 

@@ -539,7 +539,7 @@ var SignFn = func(hash string) (string, error) {
 ```
 
 <a name="CheckConfig"></a>
-## func [CheckConfig](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L262>)
+## func [CheckConfig](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L262>)
 
 ```go
 func CheckConfig() error
@@ -548,7 +548,7 @@ func CheckConfig() error
 
 
 <a name="CheckEthHashStatus"></a>
-## func [CheckEthHashStatus](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethwallet_base.go#L177>)
+## func [CheckEthHashStatus](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethwallet_base.go#L177>)
 
 ```go
 func CheckEthHashStatus(hash string) int
@@ -557,7 +557,7 @@ func CheckEthHashStatus(hash string) int
 CheckEthHashStatus \- checking the status of ETH transaction possible values 0 or 1
 
 <a name="CloseLog"></a>
-## func [CloseLog](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L142>)
+## func [CloseLog](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L142>)
 
 ```go
 func CloseLog()
@@ -566,7 +566,7 @@ func CloseLog()
 CloseLog closes log file
 
 <a name="ConvertToToken"></a>
-## func [ConvertToToken](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L723>)
+## func [ConvertToToken](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L723>)
 
 ```go
 func ConvertToToken(token int64) float64
@@ -577,7 +577,7 @@ ConvertToToken converts the SAS tokens to ZCN tokens \# Inputs
 - token: SAS tokens
 
 <a name="ConvertToValue"></a>
-## func [ConvertToValue](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L1067>)
+## func [ConvertToValue](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L1067>)
 
 ```go
 func ConvertToValue(token float64) uint64
@@ -588,7 +588,7 @@ ConvertToValue converts ZCN tokens to SAS tokens \# Inputs
 - token: ZCN tokens
 
 <a name="ConvertTokenToUSD"></a>
-## func [ConvertTokenToUSD](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L727>)
+## func [ConvertTokenToUSD](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L727>)
 
 ```go
 func ConvertTokenToUSD(token float64) (float64, error)
@@ -597,7 +597,7 @@ func ConvertTokenToUSD(token float64) (float64, error)
 
 
 <a name="ConvertUSDToToken"></a>
-## func [ConvertUSDToToken](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L735>)
+## func [ConvertUSDToToken](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L735>)
 
 ```go
 func ConvertUSDToToken(usd float64) (float64, error)
@@ -606,7 +606,7 @@ func ConvertUSDToToken(usd float64) (float64, error)
 
 
 <a name="ConvertZcnTokenToETH"></a>
-## func [ConvertZcnTokenToETH](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethwallet_base.go#L194>)
+## func [ConvertZcnTokenToETH](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethwallet_base.go#L194>)
 
 ```go
 func ConvertZcnTokenToETH(f float64) (float64, error)
@@ -615,7 +615,7 @@ func ConvertZcnTokenToETH(f float64) (float64, error)
 ConvertZcnTokenToETH \- converting Zcn tokens to Eth
 
 <a name="CreateMSVote"></a>
-## func [CreateMSVote](<https://github.com/0chain/gosdk/blob/staging/zcncore/mswallet.go#L160>)
+## func [CreateMSVote](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/mswallet.go#L160>)
 
 ```go
 func CreateMSVote(proposal, grpClientID, signerWalletstr, toClientID string, token uint64) (string, error)
@@ -624,7 +624,7 @@ func CreateMSVote(proposal, grpClientID, signerWalletstr, toClientID string, tok
 CreateMSVote create a vote for multisig
 
 <a name="CreateMSWallet"></a>
-## func [CreateMSWallet](<https://github.com/0chain/gosdk/blob/staging/zcncore/mswallet_base.go#L22>)
+## func [CreateMSWallet](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/mswallet_base.go#L22>)
 
 ```go
 func CreateMSWallet(t, n int) (string, string, []string, error)
@@ -633,7 +633,7 @@ func CreateMSWallet(t, n int) (string, string, []string, error)
 CreateMSWallet returns multisig wallet information
 
 <a name="CreateWalletFromEthMnemonic"></a>
-## func [CreateWalletFromEthMnemonic](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethwallet_base.go#L160>)
+## func [CreateWalletFromEthMnemonic](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethwallet_base.go#L160>)
 
 ```go
 func CreateWalletFromEthMnemonic(mnemonic, password string, statusCb WalletCallback) error
@@ -642,7 +642,7 @@ func CreateWalletFromEthMnemonic(mnemonic, password string, statusCb WalletCallb
 CreateWalletFromEthMnemonic \- creating new wallet from Eth mnemonics
 
 <a name="CreateWalletOffline"></a>
-## func [CreateWalletOffline](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L394>)
+## func [CreateWalletOffline](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L394>)
 
 ```go
 func CreateWalletOffline() (string, error)
@@ -651,7 +651,7 @@ func CreateWalletOffline() (string, error)
 CreateWalletOffline creates the wallet for the config signature scheme.
 
 <a name="CryptoJsDecrypt"></a>
-## func [CryptoJsDecrypt](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L1293>)
+## func [CryptoJsDecrypt](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L1293>)
 
 ```go
 func CryptoJsDecrypt(passphrase, encryptedMessage string) (string, error)
@@ -660,7 +660,7 @@ func CryptoJsDecrypt(passphrase, encryptedMessage string) (string, error)
 
 
 <a name="CryptoJsEncrypt"></a>
-## func [CryptoJsEncrypt](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L1282>)
+## func [CryptoJsEncrypt](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L1282>)
 
 ```go
 func CryptoJsEncrypt(passphrase, message string) (string, error)
@@ -669,7 +669,7 @@ func CryptoJsEncrypt(passphrase, message string) (string, error)
 
 
 <a name="Decrypt"></a>
-## func [Decrypt](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L1272>)
+## func [Decrypt](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L1272>)
 
 ```go
 func Decrypt(key, text string) (string, error)
@@ -678,7 +678,7 @@ func Decrypt(key, text string) (string, error)
 
 
 <a name="Encrypt"></a>
-## func [Encrypt](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L1262>)
+## func [Encrypt](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L1262>)
 
 ```go
 func Encrypt(key, text string) (string, error)
@@ -687,7 +687,7 @@ func Encrypt(key, text string) (string, error)
 
 
 <a name="EthToTokens"></a>
-## func [EthToTokens](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethwallet_base.go#L60>)
+## func [EthToTokens](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethwallet_base.go#L60>)
 
 ```go
 func EthToTokens(tokens float64) int64
@@ -696,7 +696,7 @@ func EthToTokens(tokens float64) int64
 TokensToEth \- converting eth tokens to wei
 
 <a name="GEthToTokens"></a>
-## func [GEthToTokens](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethwallet_base.go#L68>)
+## func [GEthToTokens](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethwallet_base.go#L68>)
 
 ```go
 func GEthToTokens(gwei float64) int64
@@ -705,7 +705,7 @@ func GEthToTokens(gwei float64) int64
 
 
 <a name="GTokensToEth"></a>
-## func [GTokensToEth](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethwallet_base.go#L64>)
+## func [GTokensToEth](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethwallet_base.go#L64>)
 
 ```go
 func GTokensToEth(tokens int64) float64
@@ -714,7 +714,7 @@ func GTokensToEth(tokens int64) float64
 
 
 <a name="GetAllocation"></a>
-## func [GetAllocation](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L980>)
+## func [GetAllocation](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L980>)
 
 ```go
 func GetAllocation(allocID string, cb GetInfoCallback) (err error)
@@ -723,7 +723,7 @@ func GetAllocation(allocID string, cb GetInfoCallback) (err error)
 GetAllocation obtains allocation information.
 
 <a name="GetAllocations"></a>
-## func [GetAllocations](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L992>)
+## func [GetAllocations](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L992>)
 
 ```go
 func GetAllocations(clientID string, cb GetInfoCallback) (err error)
@@ -732,7 +732,7 @@ func GetAllocations(clientID string, cb GetInfoCallback) (err error)
 GetAllocations obtains list of allocations of a user.
 
 <a name="GetAuthorizer"></a>
-## func [GetAuthorizer](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L1199>)
+## func [GetAuthorizer](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L1199>)
 
 ```go
 func GetAuthorizer(authorizerID string, cb GetInfoCallback) (err error)
@@ -741,7 +741,7 @@ func GetAuthorizer(authorizerID string, cb GetInfoCallback) (err error)
 
 
 <a name="GetAuthorizerSnapshots"></a>
-## func [GetAuthorizerSnapshots](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L1076>)
+## func [GetAuthorizerSnapshots](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L1076>)
 
 ```go
 func GetAuthorizerSnapshots(round int64, limit int64, offset int64, cb GetInfoCallback) (err error)
@@ -750,7 +750,7 @@ func GetAuthorizerSnapshots(round int64, limit int64, offset int64, cb GetInfoCa
 GetAuthorizerSnapshots obtains list of allocations of an authorizer.
 
 <a name="GetBalance"></a>
-## func [GetBalance](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L592>)
+## func [GetBalance](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L592>)
 
 ```go
 func GetBalance(cb GetBalanceCallback) error
@@ -764,7 +764,7 @@ GetBalance retrieve wallet balance from sharders
 ```
 
 <a name="GetBalanceWallet"></a>
-## func [GetBalanceWallet](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L693>)
+## func [GetBalanceWallet](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L693>)
 
 ```go
 func GetBalanceWallet(walletStr string, cb GetBalanceCallback) error
@@ -773,7 +773,7 @@ func GetBalanceWallet(walletStr string, cb GetBalanceCallback) error
 GetBalanceWallet retreives wallet balance from sharders
 
 <a name="GetBlobber"></a>
-## func [GetBlobber](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L1177>)
+## func [GetBlobber](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L1177>)
 
 ```go
 func GetBlobber(blobberID string, cb GetInfoCallback) (err error)
@@ -782,7 +782,7 @@ func GetBlobber(blobberID string, cb GetInfoCallback) (err error)
 GetBlobber obtains blobber information.
 
 <a name="GetBlobberSnapshots"></a>
-## func [GetBlobberSnapshots](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L1020>)
+## func [GetBlobberSnapshots](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L1020>)
 
 ```go
 func GetBlobberSnapshots(round int64, limit int64, offset int64, cb GetInfoCallback) (err error)
@@ -791,7 +791,7 @@ func GetBlobberSnapshots(round int64, limit int64, offset int64, cb GetInfoCallb
 GetBlobberSnapshots obtains list of allocations of a blobber.
 
 <a name="GetBlobbers"></a>
-## func [GetBlobbers](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L1158>)
+## func [GetBlobbers](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L1158>)
 
 ```go
 func GetBlobbers(cb GetInfoCallback, limit, offset int, active bool)
@@ -805,7 +805,7 @@ GetBlobbers obtains list of all active blobbers. \# Inputs
 - active: only fetch active blobbers
 
 <a name="GetBlockByRound"></a>
-## func [GetBlockByRound](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L1234>)
+## func [GetBlockByRound](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L1234>)
 
 ```go
 func GetBlockByRound(ctx context.Context, numSharders int, round int64) (b *block.Block, err error)
@@ -814,7 +814,7 @@ func GetBlockByRound(ctx context.Context, numSharders int, round int64) (b *bloc
 
 
 <a name="GetChainStats"></a>
-## func [GetChainStats](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L1167>)
+## func [GetChainStats](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L1167>)
 
 ```go
 func GetChainStats(ctx context.Context) (b *block.ChainStats, err error)
@@ -823,7 +823,7 @@ func GetChainStats(ctx context.Context) (b *block.ChainStats, err error)
 
 
 <a name="GetChallengePoolInfo"></a>
-## func [GetChallengePoolInfo](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L968>)
+## func [GetChallengePoolInfo](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L968>)
 
 ```go
 func GetChallengePoolInfo(allocID string, cb GetInfoCallback) (err error)
@@ -832,7 +832,7 @@ func GetChallengePoolInfo(allocID string, cb GetInfoCallback) (err error)
 GetChallengePoolInfo obtains challenge pool information for an allocation.
 
 <a name="GetClientID"></a>
-## func [GetClientID](<https://github.com/0chain/gosdk/blob/staging/zcncore/mswallet_base.go#L117>)
+## func [GetClientID](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/mswallet_base.go#L117>)
 
 ```go
 func GetClientID(pkey string) string
@@ -841,7 +841,7 @@ func GetClientID(pkey string) string
 GetClientID \-\- computes Client ID from publickey
 
 <a name="GetClientWalletID"></a>
-## func [GetClientWalletID](<https://github.com/0chain/gosdk/blob/staging/zcncore/mswallet_base.go#L130>)
+## func [GetClientWalletID](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/mswallet_base.go#L130>)
 
 ```go
 func GetClientWalletID() string
@@ -850,7 +850,7 @@ func GetClientWalletID() string
 
 
 <a name="GetClientWalletKey"></a>
-## func [GetClientWalletKey](<https://github.com/0chain/gosdk/blob/staging/zcncore/mswallet_base.go#L126>)
+## func [GetClientWalletKey](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/mswallet_base.go#L126>)
 
 ```go
 func GetClientWalletKey() string
@@ -859,7 +859,7 @@ func GetClientWalletKey() string
 
 
 <a name="GetEthBalance"></a>
-## func [GetEthBalance](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethwallet_base.go#L100>)
+## func [GetEthBalance](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethwallet_base.go#L100>)
 
 ```go
 func GetEthBalance(ethAddr string, cb GetBalanceCallback) error
@@ -868,7 +868,7 @@ func GetEthBalance(ethAddr string, cb GetBalanceCallback) error
 GetEthBalance \- getting back balance for ETH wallet
 
 <a name="GetEthClient"></a>
-## func [GetEthClient](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethwallet.go#L8>)
+## func [GetEthClient](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethwallet.go#L8>)
 
 ```go
 func GetEthClient() (*ethclient.Client, error)
@@ -877,7 +877,7 @@ func GetEthClient() (*ethclient.Client, error)
 
 
 <a name="GetEvents"></a>
-## func [GetEvents](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction_query.go#L584>)
+## func [GetEvents](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction_query.go#L584>)
 
 ```go
 func GetEvents(cb GetInfoCallback, filters map[string]string) (err error)
@@ -886,7 +886,7 @@ func GetEvents(cb GetInfoCallback, filters map[string]string) (err error)
 
 
 <a name="GetFaucetSCConfig"></a>
-## func [GetFaucetSCConfig](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L1460>)
+## func [GetFaucetSCConfig](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L1460>)
 
 ```go
 func GetFaucetSCConfig(cb GetInfoCallback) (err error)
@@ -895,7 +895,7 @@ func GetFaucetSCConfig(cb GetInfoCallback) (err error)
 
 
 <a name="GetFeeStats"></a>
-## func [GetFeeStats](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L1196>)
+## func [GetFeeStats](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L1196>)
 
 ```go
 func GetFeeStats(ctx context.Context) (b *block.FeeStats, err error)
@@ -904,7 +904,7 @@ func GetFeeStats(ctx context.Context) (b *block.FeeStats, err error)
 
 
 <a name="GetHardForkRound"></a>
-## func [GetHardForkRound](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L1242>)
+## func [GetHardForkRound](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L1242>)
 
 ```go
 func GetHardForkRound(hardFork string) (int64, error)
@@ -913,7 +913,7 @@ func GetHardForkRound(hardFork string) (int64, error)
 
 
 <a name="GetIdForUrl"></a>
-## func [GetIdForUrl](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L797>)
+## func [GetIdForUrl](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L797>)
 
 ```go
 func GetIdForUrl(url string) string
@@ -922,7 +922,7 @@ func GetIdForUrl(url string) string
 
 
 <a name="GetInfoFromAnyMiner"></a>
-## func [GetInfoFromAnyMiner](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction_query.go#L567>)
+## func [GetInfoFromAnyMiner](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction_query.go#L567>)
 
 ```go
 func GetInfoFromAnyMiner(urlSuffix string, op int, cb getInfoCallback)
@@ -931,7 +931,7 @@ func GetInfoFromAnyMiner(urlSuffix string, op int, cb getInfoCallback)
 
 
 <a name="GetInfoFromAnySharder"></a>
-## func [GetInfoFromAnySharder](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction_query.go#L550>)
+## func [GetInfoFromAnySharder](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction_query.go#L550>)
 
 ```go
 func GetInfoFromAnySharder(urlSuffix string, op int, cb GetInfoCallback)
@@ -940,7 +940,7 @@ func GetInfoFromAnySharder(urlSuffix string, op int, cb GetInfoCallback)
 
 
 <a name="GetInfoFromSharders"></a>
-## func [GetInfoFromSharders](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction_query.go#L528>)
+## func [GetInfoFromSharders](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction_query.go#L528>)
 
 ```go
 func GetInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback)
@@ -949,7 +949,7 @@ func GetInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback)
 
 
 <a name="GetLatestFinalized"></a>
-## func [GetLatestFinalized](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L1071>)
+## func [GetLatestFinalized](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L1071>)
 
 ```go
 func GetLatestFinalized(ctx context.Context, numSharders int) (b *block.Header, err error)
@@ -958,7 +958,7 @@ func GetLatestFinalized(ctx context.Context, numSharders int) (b *block.Header, 
 
 
 <a name="GetLatestFinalizedMagicBlock"></a>
-## func [GetLatestFinalizedMagicBlock](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L1116>)
+## func [GetLatestFinalizedMagicBlock](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L1116>)
 
 ```go
 func GetLatestFinalizedMagicBlock(ctx context.Context, numSharders int) (m *block.MagicBlock, err error)
@@ -967,7 +967,7 @@ func GetLatestFinalizedMagicBlock(ctx context.Context, numSharders int) (m *bloc
 
 
 <a name="GetLogger"></a>
-## func [GetLogger](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L137>)
+## func [GetLogger](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L137>)
 
 ```go
 func GetLogger() *logger.Logger
@@ -976,7 +976,7 @@ func GetLogger() *logger.Logger
 
 
 <a name="GetMagicBlockByNumber"></a>
-## func [GetMagicBlockByNumber](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L1246>)
+## func [GetMagicBlockByNumber](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L1246>)
 
 ```go
 func GetMagicBlockByNumber(ctx context.Context, numSharders int, number int64) (m *block.MagicBlock, err error)
@@ -985,7 +985,7 @@ func GetMagicBlockByNumber(ctx context.Context, numSharders int, number int64) (
 
 
 <a name="GetMinShardersVerify"></a>
-## func [GetMinShardersVerify](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L291>)
+## func [GetMinShardersVerify](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L291>)
 
 ```go
 func GetMinShardersVerify() int
@@ -994,7 +994,7 @@ func GetMinShardersVerify() int
 
 
 <a name="GetMinerSCConfig"></a>
-## func [GetMinerSCConfig](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L938>)
+## func [GetMinerSCConfig](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L938>)
 
 ```go
 func GetMinerSCConfig(cb GetInfoCallback) (err error)
@@ -1003,7 +1003,7 @@ func GetMinerSCConfig(cb GetInfoCallback) (err error)
 
 
 <a name="GetMinerSCGlobals"></a>
-## func [GetMinerSCGlobals](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L946>)
+## func [GetMinerSCGlobals](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L946>)
 
 ```go
 func GetMinerSCGlobals(cb GetInfoCallback) (err error)
@@ -1012,7 +1012,7 @@ func GetMinerSCGlobals(cb GetInfoCallback) (err error)
 
 
 <a name="GetMinerSCNodeInfo"></a>
-## func [GetMinerSCNodeInfo](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L896>)
+## func [GetMinerSCNodeInfo](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L896>)
 
 ```go
 func GetMinerSCNodeInfo(id string, cb GetInfoCallback) (err error)
@@ -1024,7 +1024,7 @@ GetMinerSCNodeInfo get miner information from sharders \# Inputs
 - cb: callback for checking result
 
 <a name="GetMinerSCNodePool"></a>
-## func [GetMinerSCNodePool](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L908>)
+## func [GetMinerSCNodePool](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L908>)
 
 ```go
 func GetMinerSCNodePool(id string, cb GetInfoCallback) (err error)
@@ -1033,7 +1033,7 @@ func GetMinerSCNodePool(id string, cb GetInfoCallback) (err error)
 
 
 <a name="GetMinerSCUserInfo"></a>
-## func [GetMinerSCUserInfo](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L924>)
+## func [GetMinerSCUserInfo](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L924>)
 
 ```go
 func GetMinerSCUserInfo(clientID string, cb GetInfoCallback) (err error)
@@ -1045,7 +1045,7 @@ GetMinerSCUserInfo get user pool \# Inputs
 - cb: callback for checking result
 
 <a name="GetMinerSharder"></a>
-## func [GetMinerSharder](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L1210>)
+## func [GetMinerSharder](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L1210>)
 
 ```go
 func GetMinerSharder(id string, cb GetInfoCallback) (err error)
@@ -1054,7 +1054,7 @@ func GetMinerSharder(id string, cb GetInfoCallback) (err error)
 
 
 <a name="GetMinerSnapshots"></a>
-## func [GetMinerSnapshots](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L1034>)
+## func [GetMinerSnapshots](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L1034>)
 
 ```go
 func GetMinerSnapshots(round int64, limit int64, offset int64, cb GetInfoCallback) (err error)
@@ -1063,7 +1063,7 @@ func GetMinerSnapshots(round int64, limit int64, offset int64, cb GetInfoCallbac
 GetMinerSnapshots obtains list of allocations of a miner.
 
 <a name="GetMiners"></a>
-## func [GetMiners](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L846>)
+## func [GetMiners](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L846>)
 
 ```go
 func GetMiners(cb GetInfoCallback, limit, offset int, active bool)
@@ -1080,7 +1080,7 @@ GetMiners obtains list of all active miners.
 ```
 
 <a name="GetMintNonce"></a>
-## func [GetMintNonce](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L610>)
+## func [GetMintNonce](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L610>)
 
 ```go
 func GetMintNonce(cb GetInfoCallback) error
@@ -1089,7 +1089,7 @@ func GetMintNonce(cb GetInfoCallback) error
 GetMintNonce retrieve mint nonce from sharders
 
 <a name="GetMultisigPayload"></a>
-## func [GetMultisigPayload](<https://github.com/0chain/gosdk/blob/staging/zcncore/mswallet.go#L113>)
+## func [GetMultisigPayload](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/mswallet.go#L113>)
 
 ```go
 func GetMultisigPayload(mswstr string) (interface{}, error)
@@ -1098,7 +1098,7 @@ func GetMultisigPayload(mswstr string) (interface{}, error)
 GetMultisigPayload given a multisig wallet as a string, makes a multisig wallet payload to register
 
 <a name="GetMultisigVotePayload"></a>
-## func [GetMultisigVotePayload](<https://github.com/0chain/gosdk/blob/staging/zcncore/mswallet.go#L144>)
+## func [GetMultisigVotePayload](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/mswallet.go#L144>)
 
 ```go
 func GetMultisigVotePayload(msvstr string) (interface{}, error)
@@ -1107,7 +1107,7 @@ func GetMultisigVotePayload(msvstr string) (interface{}, error)
 GetMultisigVotePayload given a multisig vote as a string, makes a multisig vote payload to register
 
 <a name="GetNetworkJSON"></a>
-## func [GetNetworkJSON](<https://github.com/0chain/gosdk/blob/staging/zcncore/networkworker.go#L147>)
+## func [GetNetworkJSON](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/networkworker.go#L147>)
 
 ```go
 func GetNetworkJSON() string
@@ -1116,7 +1116,7 @@ func GetNetworkJSON() string
 
 
 <a name="GetNonce"></a>
-## func [GetNonce](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L638>)
+## func [GetNonce](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L638>)
 
 ```go
 func GetNonce(cb GetNonceCallback) error
@@ -1125,7 +1125,7 @@ func GetNonce(cb GetNonceCallback) error
 GetBalance retrieve wallet nonce from sharders
 
 <a name="GetNotProcessedZCNBurnTickets"></a>
-## func [GetNotProcessedZCNBurnTickets](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L623>)
+## func [GetNotProcessedZCNBurnTickets](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L623>)
 
 ```go
 func GetNotProcessedZCNBurnTickets(ethereumAddress, startNonce string, cb GetInfoCallback) error
@@ -1134,7 +1134,7 @@ func GetNotProcessedZCNBurnTickets(ethereumAddress, startNonce string, cb GetInf
 GetNotProcessedZCNBurnTickets retrieve wallet burn tickets from sharders
 
 <a name="GetPublicEncryptionKey"></a>
-## func [GetPublicEncryptionKey](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L1303>)
+## func [GetPublicEncryptionKey](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L1303>)
 
 ```go
 func GetPublicEncryptionKey(mnemonic string) (string, error)
@@ -1143,7 +1143,7 @@ func GetPublicEncryptionKey(mnemonic string) (string, error)
 
 
 <a name="GetReadPoolInfo"></a>
-## func [GetReadPoolInfo](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L1104>)
+## func [GetReadPoolInfo](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L1104>)
 
 ```go
 func GetReadPoolInfo(clientID string, cb GetInfoCallback) (err error)
@@ -1152,7 +1152,7 @@ func GetReadPoolInfo(clientID string, cb GetInfoCallback) (err error)
 GetReadPoolInfo obtains information about read pool of a user.
 
 <a name="GetRoundFromSharders"></a>
-## func [GetRoundFromSharders](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L1238>)
+## func [GetRoundFromSharders](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L1238>)
 
 ```go
 func GetRoundFromSharders() (int64, error)
@@ -1161,7 +1161,7 @@ func GetRoundFromSharders() (int64, error)
 
 
 <a name="GetSharderSnapshots"></a>
-## func [GetSharderSnapshots](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L1048>)
+## func [GetSharderSnapshots](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L1048>)
 
 ```go
 func GetSharderSnapshots(round int64, limit int64, offset int64, cb GetInfoCallback) (err error)
@@ -1170,7 +1170,7 @@ func GetSharderSnapshots(round int64, limit int64, offset int64, cb GetInfoCallb
 GetSharderSnapshots obtains list of allocations of a sharder.
 
 <a name="GetSharders"></a>
-## func [GetSharders](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L870>)
+## func [GetSharders](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L870>)
 
 ```go
 func GetSharders(cb GetInfoCallback, limit, offset int, active bool)
@@ -1184,7 +1184,7 @@ GetSharders obtains list of all active sharders. \# Inputs
 - active: only fetch active sharders
 
 <a name="GetSnapshots"></a>
-## func [GetSnapshots](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L1007>)
+## func [GetSnapshots](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L1007>)
 
 ```go
 func GetSnapshots(round int64, limit int64, cb GetInfoCallback) (err error)
@@ -1193,7 +1193,7 @@ func GetSnapshots(round int64, limit int64, cb GetInfoCallback) (err error)
 GetSnapshots obtains list of allocations of a user.
 
 <a name="GetStableMiners"></a>
-## func [GetStableMiners](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L234>)
+## func [GetStableMiners](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L234>)
 
 ```go
 func GetStableMiners() []string
@@ -1202,7 +1202,7 @@ func GetStableMiners() []string
 
 
 <a name="GetStakePoolInfo"></a>
-## func [GetStakePoolInfo](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L1120>)
+## func [GetStakePoolInfo](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L1120>)
 
 ```go
 func GetStakePoolInfo(blobberID string, cb GetInfoCallback) (err error)
@@ -1211,7 +1211,7 @@ func GetStakePoolInfo(blobberID string, cb GetInfoCallback) (err error)
 GetStakePoolInfo obtains information about stake pool of a blobber and related validator.
 
 <a name="GetStakePoolUserInfo"></a>
-## func [GetStakePoolUserInfo](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L1135>)
+## func [GetStakePoolUserInfo](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L1135>)
 
 ```go
 func GetStakePoolUserInfo(clientID string, offset, limit int, cb GetInfoCallback) (err error)
@@ -1223,7 +1223,7 @@ GetStakePoolUserInfo for a user. \# Inputs
 - cb: callback for checking result
 
 <a name="GetStorageSCConfig"></a>
-## func [GetStorageSCConfig](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L959>)
+## func [GetStorageSCConfig](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L959>)
 
 ```go
 func GetStorageSCConfig(cb GetInfoCallback) (err error)
@@ -1232,7 +1232,7 @@ func GetStorageSCConfig(cb GetInfoCallback) (err error)
 GetStorageSCConfig obtains Storage SC configurations.
 
 <a name="GetTransactions"></a>
-## func [GetTransactions](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L1230>)
+## func [GetTransactions](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L1230>)
 
 ```go
 func GetTransactions(toClient, fromClient, block_hash, sort string, limit, offset int, cb GetInfoCallback) (err error)
@@ -1249,7 +1249,7 @@ GetTransactions query transactions from sharders \# Inputs
 - cb: callback to get result
 
 <a name="GetUserLockedTotal"></a>
-## func [GetUserLockedTotal](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction_query_base.go#L13>)
+## func [GetUserLockedTotal](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction_query_base.go#L13>)
 
 ```go
 func GetUserLockedTotal(clientID string) (int64, error)
@@ -1260,7 +1260,7 @@ GetUserLockedTotal get total token user locked \# Inputs
 - clientID wallet id
 
 <a name="GetUserSnapshots"></a>
-## func [GetUserSnapshots](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L1090>)
+## func [GetUserSnapshots](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L1090>)
 
 ```go
 func GetUserSnapshots(round int64, limit int64, offset int64, cb GetInfoCallback) (err error)
@@ -1269,7 +1269,7 @@ func GetUserSnapshots(round int64, limit int64, offset int64, cb GetInfoCallback
 GetUserSnapshots replicates user aggregates from events\_db.
 
 <a name="GetValidator"></a>
-## func [GetValidator](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L1188>)
+## func [GetValidator](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L1188>)
 
 ```go
 func GetValidator(validatorID string, cb GetInfoCallback) (err error)
@@ -1278,7 +1278,7 @@ func GetValidator(validatorID string, cb GetInfoCallback) (err error)
 
 
 <a name="GetValidatorSnapshots"></a>
-## func [GetValidatorSnapshots](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L1062>)
+## func [GetValidatorSnapshots](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L1062>)
 
 ```go
 func GetValidatorSnapshots(round int64, limit int64, offset int64, cb GetInfoCallback) (err error)
@@ -1287,7 +1287,7 @@ func GetValidatorSnapshots(round int64, limit int64, offset int64, cb GetInfoCal
 GetValidatorSnapshots obtains list of allocations of a validator.
 
 <a name="GetVersion"></a>
-## func [GetVersion](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L309>)
+## func [GetVersion](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L309>)
 
 ```go
 func GetVersion() string
@@ -1296,7 +1296,7 @@ func GetVersion() string
 GetVersion \- returns version string
 
 <a name="GetVestingClientList"></a>
-## func [GetVestingClientList](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L1408>)
+## func [GetVestingClientList](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L1408>)
 
 ```go
 func GetVestingClientList(clientID string, cb GetInfoCallback) (err error)
@@ -1305,7 +1305,7 @@ func GetVestingClientList(clientID string, cb GetInfoCallback) (err error)
 
 
 <a name="GetVestingPoolInfo"></a>
-## func [GetVestingPoolInfo](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L1440>)
+## func [GetVestingPoolInfo](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L1440>)
 
 ```go
 func GetVestingPoolInfo(poolID string, cb GetInfoCallback) (err error)
@@ -1314,7 +1314,7 @@ func GetVestingPoolInfo(poolID string, cb GetInfoCallback) (err error)
 
 
 <a name="GetVestingSCConfig"></a>
-## func [GetVestingSCConfig](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L1450>)
+## func [GetVestingSCConfig](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L1450>)
 
 ```go
 func GetVestingSCConfig(cb GetInfoCallback) (err error)
@@ -1323,7 +1323,7 @@ func GetVestingSCConfig(cb GetInfoCallback) (err error)
 
 
 <a name="GetWallet"></a>
-## func [GetWallet](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet.go#L12>)
+## func [GetWallet](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet.go#L12>)
 
 ```go
 func GetWallet(walletStr string) (*zcncrypto.Wallet, error)
@@ -1332,7 +1332,7 @@ func GetWallet(walletStr string) (*zcncrypto.Wallet, error)
 GetWallet get a wallet object from a wallet string
 
 <a name="GetWalletAddrFromEthMnemonic"></a>
-## func [GetWalletAddrFromEthMnemonic](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethwallet_base.go#L73>)
+## func [GetWalletAddrFromEthMnemonic](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethwallet_base.go#L73>)
 
 ```go
 func GetWalletAddrFromEthMnemonic(mnemonic string) (string, error)
@@ -1341,7 +1341,7 @@ func GetWalletAddrFromEthMnemonic(mnemonic string) (string, error)
 GetWalletAddrFromEthMnemonic \- wallet ETH address from mnemoninnc
 
 <a name="GetWalletBalance"></a>
-## func [GetWalletBalance](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet.go#L16>)
+## func [GetWalletBalance](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet.go#L16>)
 
 ```go
 func GetWalletBalance(clientId string) (common.Balance, error)
@@ -1350,7 +1350,7 @@ func GetWalletBalance(clientId string) (common.Balance, error)
 
 
 <a name="GetWalletClientID"></a>
-## func [GetWalletClientID](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L760>)
+## func [GetWalletClientID](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L760>)
 
 ```go
 func GetWalletClientID(walletStr string) (string, error)
@@ -1359,7 +1359,7 @@ func GetWalletClientID(walletStr string) (string, error)
 GetWalletClientID \-\- given a walletstr return ClientID
 
 <a name="GetWalletNonce"></a>
-## func [GetWalletNonce](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L663>)
+## func [GetWalletNonce](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L663>)
 
 ```go
 func GetWalletNonce(clientID string) (int64, error)
@@ -1368,7 +1368,7 @@ func GetWalletNonce(clientID string) (int64, error)
 GetWalletBalance retrieve wallet nonce from sharders
 
 <a name="GetWalletRaw"></a>
-## func [GetWalletRaw](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L517>)
+## func [GetWalletRaw](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L517>)
 
 ```go
 func GetWalletRaw() zcncrypto.Wallet
@@ -1377,7 +1377,7 @@ func GetWalletRaw() zcncrypto.Wallet
 
 
 <a name="GetZcnUSDInfo"></a>
-## func [GetZcnUSDInfo](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L769>)
+## func [GetZcnUSDInfo](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L769>)
 
 ```go
 func GetZcnUSDInfo() (float64, error)
@@ -1386,7 +1386,7 @@ func GetZcnUSDInfo() (float64, error)
 GetZcnUSDInfo returns USD value for ZCN token by tokenrate
 
 <a name="Init"></a>
-## func [Init](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L352>)
+## func [Init](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L352>)
 
 ```go
 func Init(chainConfigJSON string) error
@@ -1397,7 +1397,7 @@ Init initialize the SDK with miner, sharder and signature scheme provided in con
 - chainConfigJSON: json format of zcn config \{ "block\_worker": "https://dev.0chain.net/dns", "signature\_scheme": "bls0chain", "min\_submit": 50, "min\_confirmation": 50, "confirmation\_chain\_length": 3, "max\_txn\_query": 5, "query\_sleep\_time": 5, "preferred\_blobbers": \["https://dev.0chain.net/blobber02","https://dev.0chain.net/blobber03"\], "chain\_id":"0afc093ffb509f059c55478bc1a60351cef7b4e9c008a53a6cc8241ca8617dfe", "ethereum\_node":"https://ropsten.infura.io/v3/xxxxxxxxxxxxxxx", "zbox\_host":"https://0box.dev.0chain.net", "zbox\_app\_type":"vult", "sharder\_consensous": 2, \}
 
 <a name="InitSignatureScheme"></a>
-## func [InitSignatureScheme](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L389>)
+## func [InitSignatureScheme](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L389>)
 
 ```go
 func InitSignatureScheme(scheme string)
@@ -1406,7 +1406,7 @@ func InitSignatureScheme(scheme string)
 InitSignatureScheme initializes signature scheme only.
 
 <a name="InitZCNSDK"></a>
-## func [InitZCNSDK](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction_base.go#L120>)
+## func [InitZCNSDK](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction_base.go#L120>)
 
 ```go
 func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainConfig) error) error
@@ -1415,7 +1415,7 @@ func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainCon
 InitZCNSDK initializes the SDK with miner, sharder and signature scheme provided.
 
 <a name="IsEthTransactionVerified"></a>
-## func [IsEthTransactionVerified](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethwallet_base.go#L125>)
+## func [IsEthTransactionVerified](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethwallet_base.go#L125>)
 
 ```go
 func IsEthTransactionVerified(txHash string) (bool, error)
@@ -1424,7 +1424,7 @@ func IsEthTransactionVerified(txHash string) (bool, error)
 IsEthTransactionVerified \- checks if the transaction is verified with a help of the given transaction hash
 
 <a name="IsMnemonicValid"></a>
-## func [IsMnemonicValid](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L500>)
+## func [IsMnemonicValid](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L500>)
 
 ```go
 func IsMnemonicValid(mnemonic string) bool
@@ -1438,7 +1438,7 @@ IsMnemonicValid is an utility function to check the mnemonic valid
 ```
 
 <a name="IsValidEthAddress"></a>
-## func [IsValidEthAddress](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethwallet_base.go#L114>)
+## func [IsValidEthAddress](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethwallet_base.go#L114>)
 
 ```go
 func IsValidEthAddress(ethAddr string) (bool, error)
@@ -1447,7 +1447,7 @@ func IsValidEthAddress(ethAddr string) (bool, error)
 IsValidEthAddress \- multiple checks for valid ETH address
 
 <a name="RecoverOfflineWallet"></a>
-## func [RecoverOfflineWallet](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L408>)
+## func [RecoverOfflineWallet](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L408>)
 
 ```go
 func RecoverOfflineWallet(mnemonic string) (string, error)
@@ -1456,7 +1456,7 @@ func RecoverOfflineWallet(mnemonic string) (string, error)
 RecoverOfflineWallet recovers the previously generated wallet using the mnemonic.
 
 <a name="RecoverWallet"></a>
-## func [RecoverWallet](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L429>)
+## func [RecoverWallet](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L429>)
 
 ```go
 func RecoverWallet(mnemonic string, statusCb WalletCallback) error
@@ -1465,7 +1465,7 @@ func RecoverWallet(mnemonic string, statusCb WalletCallback) error
 RecoverWallet recovers the previously generated wallet using the mnemonic. It also registers the wallet again to block chain.
 
 <a name="ResetStableMiners"></a>
-## func [ResetStableMiners](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L243>)
+## func [ResetStableMiners](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L243>)
 
 ```go
 func ResetStableMiners()
@@ -1474,7 +1474,7 @@ func ResetStableMiners()
 
 
 <a name="SetAuthUrl"></a>
-## func [SetAuthUrl](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L553>)
+## func [SetAuthUrl](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L553>)
 
 ```go
 func SetAuthUrl(url string) error
@@ -1485,7 +1485,7 @@ SetAuthUrl will be called by app to set zauth URL to SDK. \# Inputs
 - url: the url of zAuth server
 
 <a name="SetLogFile"></a>
-## func [SetLogFile](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L321>)
+## func [SetLogFile](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L321>)
 
 ```go
 func SetLogFile(logFile string, verbose bool)
@@ -1494,7 +1494,7 @@ func SetLogFile(logFile string, verbose bool)
 SetLogFile \- sets file path to write log verbose \- true \- console output; false \- no console output
 
 <a name="SetLogLevel"></a>
-## func [SetLogLevel](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L315>)
+## func [SetLogLevel](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L315>)
 
 ```go
 func SetLogLevel(lvl int)
@@ -1503,7 +1503,7 @@ func SetLogLevel(lvl int)
 SetLogLevel set the log level. lvl \- 0 disabled; higher number \(upto 4\) more verbosity
 
 <a name="SetNetwork"></a>
-## func [SetNetwork](<https://github.com/0chain/gosdk/blob/staging/zcncore/networkworker.go#L126>)
+## func [SetNetwork](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/networkworker.go#L126>)
 
 ```go
 func SetNetwork(miners []string, sharders []string)
@@ -1512,7 +1512,7 @@ func SetNetwork(miners []string, sharders []string)
 
 
 <a name="SetWallet"></a>
-## func [SetWallet](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L506>)
+## func [SetWallet](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L506>)
 
 ```go
 func SetWallet(w zcncrypto.Wallet, splitKeyWallet bool) error
@@ -1521,7 +1521,7 @@ func SetWallet(w zcncrypto.Wallet, splitKeyWallet bool) error
 SetWallet should be set before any transaction or client specific APIs splitKeyWallet parameter is valid only if SignatureScheme is "BLS0Chain"
 
 <a name="SetWalletInfo"></a>
-## func [SetWalletInfo](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L539>)
+## func [SetWalletInfo](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L539>)
 
 ```go
 func SetWalletInfo(jsonWallet string, splitKeyWallet bool) error
@@ -1548,7 +1548,7 @@ SetWalletInfo should be set before any transaction or client specific APIs split
 \- splitKeyWallet: if wallet keys is split
 
 <a name="SetupAuth"></a>
-## func [SetupAuth](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L775>)
+## func [SetupAuth](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L775>)
 
 ```go
 func SetupAuth(authHost, clientID, clientKey, publicKey, privateKey, localPublicKey string, cb AuthCallback) error
@@ -1557,7 +1557,7 @@ func SetupAuth(authHost, clientID, clientKey, publicKey, privateKey, localPublic
 SetupAuth prepare auth app with clientid, key and a set of public, private key and local publickey which is running on PC/Mac.
 
 <a name="Sign"></a>
-## func [Sign](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction_base.go#L219>)
+## func [Sign](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction_base.go#L219>)
 
 ```go
 func Sign(hash string) (string, error)
@@ -1566,7 +1566,7 @@ func Sign(hash string) (string, error)
 
 
 <a name="SignWith0Wallet"></a>
-## func [SignWith0Wallet](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet.go#L20>)
+## func [SignWith0Wallet](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet.go#L20>)
 
 ```go
 func SignWith0Wallet(hash string, w *zcncrypto.Wallet) (string, error)
@@ -1575,7 +1575,7 @@ func SignWith0Wallet(hash string, w *zcncrypto.Wallet) (string, error)
 
 
 <a name="SignWithKey"></a>
-## func [SignWithKey](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction_base.go#L228>)
+## func [SignWithKey](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction_base.go#L228>)
 
 ```go
 func SignWithKey(privateKey, hash string) (string, error)
@@ -1584,7 +1584,7 @@ func SignWithKey(privateKey, hash string) (string, error)
 
 
 <a name="SplitKeys"></a>
-## func [SplitKeys](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L445>)
+## func [SplitKeys](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L445>)
 
 ```go
 func SplitKeys(privateKey string, numSplits int) (string, error)
@@ -1593,7 +1593,7 @@ func SplitKeys(privateKey string, numSplits int) (string, error)
 Split keys from the primary master key
 
 <a name="SuggestEthGasPrice"></a>
-## func [SuggestEthGasPrice](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethwallet_base.go#L203>)
+## func [SuggestEthGasPrice](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethwallet_base.go#L203>)
 
 ```go
 func SuggestEthGasPrice() (int64, error)
@@ -1602,7 +1602,7 @@ func SuggestEthGasPrice() (int64, error)
 SuggestEthGasPrice \- return back suggested price for gas
 
 <a name="TokensToEth"></a>
-## func [TokensToEth](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethwallet_base.go#L52>)
+## func [TokensToEth](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethwallet_base.go#L52>)
 
 ```go
 func TokensToEth(tokens int64) float64
@@ -1611,7 +1611,7 @@ func TokensToEth(tokens int64) float64
 TokensToEth \- converting wei to eth tokens
 
 <a name="TransferEthTokens"></a>
-## func [TransferEthTokens](<https://github.com/0chain/gosdk/blob/staging/zcncore/ethwallet_base.go#L219>)
+## func [TransferEthTokens](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/ethwallet_base.go#L219>)
 
 ```go
 func TransferEthTokens(fromPrivKey string, amountTokens, gasPrice int64) (string, error)
@@ -1620,7 +1620,7 @@ func TransferEthTokens(fromPrivKey string, amountTokens, gasPrice int64) (string
 TransferEthTokens \- transfer ETH tokens to multisign wallet
 
 <a name="UpdateNetworkDetails"></a>
-## func [UpdateNetworkDetails](<https://github.com/0chain/gosdk/blob/staging/zcncore/networkworker.go#L48>)
+## func [UpdateNetworkDetails](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/networkworker.go#L48>)
 
 ```go
 func UpdateNetworkDetails() error
@@ -1629,7 +1629,7 @@ func UpdateNetworkDetails() error
 
 
 <a name="UpdateRequired"></a>
-## func [UpdateRequired](<https://github.com/0chain/gosdk/blob/staging/zcncore/networkworker.go#L79>)
+## func [UpdateRequired](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/networkworker.go#L79>)
 
 ```go
 func UpdateRequired(networkDetails *Network) bool
@@ -1638,7 +1638,7 @@ func UpdateRequired(networkDetails *Network) bool
 
 
 <a name="VerifyContentHash"></a>
-## func [VerifyContentHash](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction_base.go#L878>)
+## func [VerifyContentHash](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction_base.go#L878>)
 
 ```go
 func VerifyContentHash(metaTxnDataJSON string) (bool, error)
@@ -1647,7 +1647,7 @@ func VerifyContentHash(metaTxnDataJSON string) (bool, error)
 
 
 <a name="VerifyWithKey"></a>
-## func [VerifyWithKey](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction_base.go#L237>)
+## func [VerifyWithKey](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction_base.go#L237>)
 
 ```go
 func VerifyWithKey(pubKey, signature, hash string) (bool, error)
@@ -1656,7 +1656,7 @@ func VerifyWithKey(pubKey, signature, hash string) (bool, error)
 
 
 <a name="WithChainID"></a>
-## func [WithChainID](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L1356>)
+## func [WithChainID](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L1356>)
 
 ```go
 func WithChainID(id string) func(c *ChainConfig) error
@@ -1665,7 +1665,7 @@ func WithChainID(id string) func(c *ChainConfig) error
 
 
 <a name="WithConfirmationChainLength"></a>
-## func [WithConfirmationChainLength](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L1377>)
+## func [WithConfirmationChainLength](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L1377>)
 
 ```go
 func WithConfirmationChainLength(m int) func(c *ChainConfig) error
@@ -1674,7 +1674,7 @@ func WithConfirmationChainLength(m int) func(c *ChainConfig) error
 
 
 <a name="WithEthereumNode"></a>
-## func [WithEthereumNode](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L1349>)
+## func [WithEthereumNode](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L1349>)
 
 ```go
 func WithEthereumNode(uri string) func(c *ChainConfig) error
@@ -1683,7 +1683,7 @@ func WithEthereumNode(uri string) func(c *ChainConfig) error
 
 
 <a name="WithMinConfirmation"></a>
-## func [WithMinConfirmation](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L1370>)
+## func [WithMinConfirmation](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L1370>)
 
 ```go
 func WithMinConfirmation(m int) func(c *ChainConfig) error
@@ -1692,7 +1692,7 @@ func WithMinConfirmation(m int) func(c *ChainConfig) error
 
 
 <a name="WithMinSubmit"></a>
-## func [WithMinSubmit](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L1363>)
+## func [WithMinSubmit](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L1363>)
 
 ```go
 func WithMinSubmit(m int) func(c *ChainConfig) error
@@ -1701,7 +1701,7 @@ func WithMinSubmit(m int) func(c *ChainConfig) error
 
 
 <a name="WithParams"></a>
-## func [WithParams](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction_query.go#L597>)
+## func [WithParams](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction_query.go#L597>)
 
 ```go
 func WithParams(uri string, params Params) string
@@ -1710,7 +1710,7 @@ func WithParams(uri string, params Params) string
 
 
 <a name="WithSharderConsensous"></a>
-## func [WithSharderConsensous](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L1384>)
+## func [WithSharderConsensous](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L1384>)
 
 ```go
 func WithSharderConsensous(m int) func(c *ChainConfig) error
@@ -1719,7 +1719,7 @@ func WithSharderConsensous(m int) func(c *ChainConfig) error
 
 
 <a name="AddAuthorizerPayload"></a>
-## type [AddAuthorizerPayload](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L225-L229>)
+## type [AddAuthorizerPayload](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L225-L229>)
 
 
 
@@ -1732,7 +1732,7 @@ type AddAuthorizerPayload struct {
 ```
 
 <a name="AuthCallback"></a>
-## type [AuthCallback](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L220-L223>)
+## type [AuthCallback](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L220-L223>)
 
 AuthCallback needs to be implemented by the caller SetupAuth\(\)
 
@@ -1744,7 +1744,7 @@ type AuthCallback interface {
 ```
 
 <a name="AuthorizerConfig"></a>
-## type [AuthorizerConfig](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L247-L249>)
+## type [AuthorizerConfig](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L247-L249>)
 
 
 
@@ -1755,7 +1755,7 @@ type AuthorizerConfig struct {
 ```
 
 <a name="AuthorizerHealthCheckPayload"></a>
-## type [AuthorizerHealthCheckPayload](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L235-L237>)
+## type [AuthorizerHealthCheckPayload](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L235-L237>)
 
 
 
@@ -1766,7 +1766,7 @@ type AuthorizerHealthCheckPayload struct {
 ```
 
 <a name="AuthorizerNode"></a>
-## type [AuthorizerNode](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L949-L953>)
+## type [AuthorizerNode](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L949-L953>)
 
 
 
@@ -1779,7 +1779,7 @@ type AuthorizerNode struct {
 ```
 
 <a name="AuthorizerStakePoolSettings"></a>
-## type [AuthorizerStakePoolSettings](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L239-L245>)
+## type [AuthorizerStakePoolSettings](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L239-L245>)
 
 
 
@@ -1794,7 +1794,7 @@ type AuthorizerStakePoolSettings struct {
 ```
 
 <a name="Blobber"></a>
-## type [Blobber](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L208-L217>)
+## type [Blobber](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L208-L217>)
 
 
 
@@ -1812,7 +1812,7 @@ type Blobber struct {
 ```
 
 <a name="BurnTicket"></a>
-## type [BurnTicket](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L188-L192>)
+## type [BurnTicket](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L188-L192>)
 
 BurnTicket model used for deserialization of the response received from sharders
 
@@ -1825,7 +1825,7 @@ type BurnTicket struct {
 ```
 
 <a name="ChainConfig"></a>
-## type [ChainConfig](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction_base.go#L104-L115>)
+## type [ChainConfig](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction_base.go#L104-L115>)
 
 
 
@@ -1845,7 +1845,7 @@ type ChainConfig struct {
 ```
 
 <a name="ConfirmationStatus"></a>
-## type [ConfirmationStatus](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L44>)
+## type [ConfirmationStatus](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L44>)
 
 
 
@@ -1864,7 +1864,7 @@ const (
 ```
 
 <a name="CreateAllocationRequest"></a>
-## type [CreateAllocationRequest](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L182-L192>)
+## type [CreateAllocationRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L182-L192>)
 
 CreateAllocationRequest is information to create allocation.
 
@@ -1883,7 +1883,7 @@ type CreateAllocationRequest struct {
 ```
 
 <a name="DelegatePool"></a>
-## type [DelegatePool](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L81-L87>)
+## type [DelegatePool](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L81-L87>)
 
 
 
@@ -1898,7 +1898,7 @@ type DelegatePool struct {
 ```
 
 <a name="DeleteAuthorizerPayload"></a>
-## type [DeleteAuthorizerPayload](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L231-L233>)
+## type [DeleteAuthorizerPayload](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L231-L233>)
 
 
 
@@ -1909,7 +1909,7 @@ type DeleteAuthorizerPayload struct {
 ```
 
 <a name="FeeOption"></a>
-## type [FeeOption](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction_base.go#L481>)
+## type [FeeOption](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction_base.go#L481>)
 
 FeeOption represents txn fee related option type
 
@@ -1918,7 +1918,7 @@ type FeeOption func(*TxnFeeOption)
 ```
 
 <a name="WithNoEstimateFee"></a>
-### func [WithNoEstimateFee](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction_base.go#L484>)
+### func [WithNoEstimateFee](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction_base.go#L484>)
 
 ```go
 func WithNoEstimateFee() FeeOption
@@ -1927,7 +1927,7 @@ func WithNoEstimateFee() FeeOption
 WithNoEstimateFee would prevent txn fee estimation from remote
 
 <a name="GetBalanceCallback"></a>
-## type [GetBalanceCallback](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L183-L185>)
+## type [GetBalanceCallback](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L183-L185>)
 
 GetBalanceCallback needs to be implemented by the caller of GetBalance\(\) to get the status
 
@@ -1938,7 +1938,7 @@ type GetBalanceCallback interface {
 ```
 
 <a name="GetClientResponse"></a>
-## type [GetClientResponse](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L465-L470>)
+## type [GetClientResponse](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L465-L470>)
 
 
 
@@ -1952,7 +1952,7 @@ type GetClientResponse struct {
 ```
 
 <a name="GetClientDetails"></a>
-### func [GetClientDetails](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L472>)
+### func [GetClientDetails](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L472>)
 
 ```go
 func GetClientDetails(clientID string) (*GetClientResponse, error)
@@ -1961,7 +1961,7 @@ func GetClientDetails(clientID string) (*GetClientResponse, error)
 
 
 <a name="GetInfoCallback"></a>
-## type [GetInfoCallback](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L212-L217>)
+## type [GetInfoCallback](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L212-L217>)
 
 GetInfoCallback needs to be implemented by the caller of GetLockTokenConfig\(\) and GetLockedTokens\(\)
 
@@ -1975,7 +1975,7 @@ type GetInfoCallback interface {
 ```
 
 <a name="GetNonceCallback"></a>
-## type [GetNonceCallback](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L195-L197>)
+## type [GetNonceCallback](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L195-L197>)
 
 GetNonceCallback needs to be implemented by the caller of GetNonce\(\) to get the status
 
@@ -1986,7 +1986,7 @@ type GetNonceCallback interface {
 ```
 
 <a name="GetNonceCallbackStub"></a>
-## type [GetNonceCallbackStub](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L199-L203>)
+## type [GetNonceCallbackStub](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L199-L203>)
 
 
 
@@ -1997,7 +1997,7 @@ type GetNonceCallbackStub struct {
 ```
 
 <a name="GetNonceCallbackStub.OnNonceAvailable"></a>
-### func \(\*GetNonceCallbackStub\) [OnNonceAvailable](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L205>)
+### func \(\*GetNonceCallbackStub\) [OnNonceAvailable](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L205>)
 
 ```go
 func (g *GetNonceCallbackStub) OnNonceAvailable(status int, nonce int64, info string)
@@ -2006,7 +2006,7 @@ func (g *GetNonceCallbackStub) OnNonceAvailable(status int, nonce int64, info st
 
 
 <a name="InputMap"></a>
-## type [InputMap](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L251-L253>)
+## type [InputMap](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L251-L253>)
 
 
 
@@ -2017,7 +2017,7 @@ type InputMap struct {
 ```
 
 <a name="MSTransfer"></a>
-## type [MSTransfer](<https://github.com/0chain/gosdk/blob/staging/zcncore/mswallet.go#L26-L30>)
+## type [MSTransfer](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/mswallet.go#L26-L30>)
 
 MSTransfer \- a data structure to hold state transfer from one client to another
 
@@ -2030,7 +2030,7 @@ type MSTransfer struct {
 ```
 
 <a name="MSVote"></a>
-## type [MSVote](<https://github.com/0chain/gosdk/blob/staging/zcncore/mswallet.go#L16-L23>)
+## type [MSVote](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/mswallet.go#L16-L23>)
 
 MSVote \-\- this should mimic the type Vote defined in MultiSig SC
 
@@ -2046,7 +2046,7 @@ type MSVote struct {
 ```
 
 <a name="MSVoteCallback"></a>
-## type [MSVoteCallback](<https://github.com/0chain/gosdk/blob/staging/zcncore/mswallet_base.go#L17-L19>)
+## type [MSVoteCallback](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/mswallet_base.go#L17-L19>)
 
 MSVoteCallback callback definition multisig Vote function
 
@@ -2057,7 +2057,7 @@ type MSVoteCallback interface {
 ```
 
 <a name="MSWallet"></a>
-## type [MSWallet](<https://github.com/0chain/gosdk/blob/staging/zcncore/mswallet.go#L45-L54>)
+## type [MSWallet](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/mswallet.go#L45-L54>)
 
 MSWallet Client data necessary for a multi\-sig wallet.
 
@@ -2075,7 +2075,7 @@ type MSWallet struct {
 ```
 
 <a name="MSWallet.Marshal"></a>
-### func \(\*MSWallet\) [Marshal](<https://github.com/0chain/gosdk/blob/staging/zcncore/mswallet.go#L104>)
+### func \(\*MSWallet\) [Marshal](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/mswallet.go#L104>)
 
 ```go
 func (msw *MSWallet) Marshal() (string, error)
@@ -2084,7 +2084,7 @@ func (msw *MSWallet) Marshal() (string, error)
 Marshal returns json string
 
 <a name="MSWallet.UnmarshalJSON"></a>
-### func \(\*MSWallet\) [UnmarshalJSON](<https://github.com/0chain/gosdk/blob/staging/zcncore/mswallet.go#L56>)
+### func \(\*MSWallet\) [UnmarshalJSON](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/mswallet.go#L56>)
 
 ```go
 func (msw *MSWallet) UnmarshalJSON(data []byte) error
@@ -2093,7 +2093,7 @@ func (msw *MSWallet) UnmarshalJSON(data []byte) error
 
 
 <a name="Miner"></a>
-## type [Miner](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L52-L62>)
+## type [Miner](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L52-L62>)
 
 
 
@@ -2112,7 +2112,7 @@ type Miner struct {
 ```
 
 <a name="MinerSCDelegatePool"></a>
-## type [MinerSCDelegatePool](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L892-L894>)
+## type [MinerSCDelegatePool](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L892-L894>)
 
 
 
@@ -2123,7 +2123,7 @@ type MinerSCDelegatePool struct {
 ```
 
 <a name="MinerSCDelegatePoolInfo"></a>
-## type [MinerSCDelegatePoolInfo](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L101-L107>)
+## type [MinerSCDelegatePoolInfo](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L101-L107>)
 
 
 
@@ -2138,7 +2138,7 @@ type MinerSCDelegatePoolInfo struct {
 ```
 
 <a name="MinerSCLock"></a>
-## type [MinerSCLock](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction_base.go#L870-L872>)
+## type [MinerSCLock](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction_base.go#L870-L872>)
 
 
 
@@ -2149,7 +2149,7 @@ type MinerSCLock struct {
 ```
 
 <a name="MinerSCMinerInfo"></a>
-## type [MinerSCMinerInfo](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L900-L903>)
+## type [MinerSCMinerInfo](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L900-L903>)
 
 
 
@@ -2161,7 +2161,7 @@ type MinerSCMinerInfo struct {
 ```
 
 <a name="MinerSCNodes"></a>
-## type [MinerSCNodes](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L69-L71>)
+## type [MinerSCNodes](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L69-L71>)
 
 
 
@@ -2172,7 +2172,7 @@ type MinerSCNodes struct {
 ```
 
 <a name="MinerSCUnlock"></a>
-## type [MinerSCUnlock](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction_base.go#L874-L876>)
+## type [MinerSCUnlock](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction_base.go#L874-L876>)
 
 
 
@@ -2183,7 +2183,7 @@ type MinerSCUnlock struct {
 ```
 
 <a name="MinerSCUserPoolsInfo"></a>
-## type [MinerSCUserPoolsInfo](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L109-L111>)
+## type [MinerSCUserPoolsInfo](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L109-L111>)
 
 
 
@@ -2194,7 +2194,7 @@ type MinerSCUserPoolsInfo struct {
 ```
 
 <a name="MultisigSCWallet"></a>
-## type [MultisigSCWallet](<https://github.com/0chain/gosdk/blob/staging/zcncore/mswallet.go#L33-L42>)
+## type [MultisigSCWallet](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/mswallet.go#L33-L42>)
 
 MultisigSCWallet \-\-this should mimic MultisigWallet definition in MultiSig SC
 
@@ -2212,7 +2212,7 @@ type MultisigSCWallet struct {
 ```
 
 <a name="Network"></a>
-## type [Network](<https://github.com/0chain/gosdk/blob/staging/zcncore/networkworker.go#L24-L27>)
+## type [Network](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/networkworker.go#L24-L27>)
 
 
 
@@ -2224,7 +2224,7 @@ type Network struct {
 ```
 
 <a name="GetNetwork"></a>
-### func [GetNetwork](<https://github.com/0chain/gosdk/blob/staging/zcncore/networkworker.go#L119>)
+### func [GetNetwork](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/networkworker.go#L119>)
 
 ```go
 func GetNetwork() *Network
@@ -2233,7 +2233,7 @@ func GetNetwork() *Network
 
 
 <a name="GetNetworkDetails"></a>
-### func [GetNetworkDetails](<https://github.com/0chain/gosdk/blob/staging/zcncore/networkworker.go#L95>)
+### func [GetNetworkDetails](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/networkworker.go#L95>)
 
 ```go
 func GetNetworkDetails() (*Network, error)
@@ -2242,7 +2242,7 @@ func GetNetworkDetails() (*Network, error)
 
 
 <a name="Node"></a>
-## type [Node](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L64-L67>)
+## type [Node](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L64-L67>)
 
 
 
@@ -2254,7 +2254,7 @@ type Node struct {
 ```
 
 <a name="NonceCache"></a>
-## type [NonceCache](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L1299-L1302>)
+## type [NonceCache](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L1299-L1302>)
 
 
 
@@ -2265,7 +2265,7 @@ type NonceCache struct {
 ```
 
 <a name="NewNonceCache"></a>
-### func [NewNonceCache](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L1304>)
+### func [NewNonceCache](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L1304>)
 
 ```go
 func NewNonceCache() *NonceCache
@@ -2274,7 +2274,7 @@ func NewNonceCache() *NonceCache
 
 
 <a name="NonceCache.Evict"></a>
-### func \(\*NonceCache\) [Evict](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L1343>)
+### func \(\*NonceCache\) [Evict](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L1343>)
 
 ```go
 func (nc *NonceCache) Evict(clientId string)
@@ -2283,7 +2283,7 @@ func (nc *NonceCache) Evict(clientId string)
 
 
 <a name="NonceCache.GetNextNonce"></a>
-### func \(\*NonceCache\) [GetNextNonce](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L1308>)
+### func \(\*NonceCache\) [GetNextNonce](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L1308>)
 
 ```go
 func (nc *NonceCache) GetNextNonce(clientId string) int64
@@ -2292,7 +2292,7 @@ func (nc *NonceCache) GetNextNonce(clientId string) int64
 
 
 <a name="NonceCache.Set"></a>
-### func \(\*NonceCache\) [Set](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L1337>)
+### func \(\*NonceCache\) [Set](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L1337>)
 
 ```go
 func (nc *NonceCache) Set(clientId string, nonce int64)
@@ -2301,7 +2301,7 @@ func (nc *NonceCache) Set(clientId string, nonce int64)
 
 
 <a name="Params"></a>
-## type [Params](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L822>)
+## type [Params](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L822>)
 
 
 
@@ -2310,7 +2310,7 @@ type Params map[string]string
 ```
 
 <a name="Params.Query"></a>
-### func \(Params\) [Query](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L824>)
+### func \(Params\) [Query](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L824>)
 
 ```go
 func (p Params) Query() string
@@ -2319,7 +2319,7 @@ func (p Params) Query() string
 
 
 <a name="PriceRange"></a>
-## type [PriceRange](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L176-L179>)
+## type [PriceRange](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L176-L179>)
 
 PriceRange represents a price range allowed by user to filter blobbers.
 
@@ -2331,7 +2331,7 @@ type PriceRange struct {
 ```
 
 <a name="Provider"></a>
-## type [Provider](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L24>)
+## type [Provider](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L24>)
 
 
 
@@ -2352,7 +2352,7 @@ const (
 ```
 
 <a name="QueryResult"></a>
-## type [QueryResult](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction_query.go#L39-L43>)
+## type [QueryResult](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction_query.go#L39-L43>)
 
 
 
@@ -2365,7 +2365,7 @@ type QueryResult struct {
 ```
 
 <a name="QueryResultHandle"></a>
-## type [QueryResultHandle](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction_query.go#L46>)
+## type [QueryResultHandle](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction_query.go#L46>)
 
 QueryResultHandle handle query response, return true if it is a consensus\-result
 
@@ -2374,7 +2374,7 @@ type QueryResultHandle func(result QueryResult) bool
 ```
 
 <a name="SendTxnData"></a>
-## type [SendTxnData](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction_base.go#L215-L217>)
+## type [SendTxnData](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction_base.go#L215-L217>)
 
 
 
@@ -2385,7 +2385,7 @@ type SendTxnData struct {
 ```
 
 <a name="SimpleMiner"></a>
-## type [SimpleMiner](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L896-L898>)
+## type [SimpleMiner](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L896-L898>)
 
 
 
@@ -2396,7 +2396,7 @@ type SimpleMiner struct {
 ```
 
 <a name="StakePool"></a>
-## type [StakePool](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L89-L94>)
+## type [StakePool](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L89-L94>)
 
 
 
@@ -2410,7 +2410,7 @@ type StakePool struct {
 ```
 
 <a name="StakePoolSettings"></a>
-## type [StakePoolSettings](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L194-L200>)
+## type [StakePoolSettings](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L194-L200>)
 
 
 
@@ -2425,7 +2425,7 @@ type StakePoolSettings struct {
 ```
 
 <a name="Terms"></a>
-## type [Terms](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L202-L206>)
+## type [Terms](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L202-L206>)
 
 
 
@@ -2438,7 +2438,7 @@ type Terms struct {
 ```
 
 <a name="Transaction"></a>
-## type [Transaction](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction_base.go#L202-L213>)
+## type [Transaction](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction_base.go#L202-L213>)
 
 
 
@@ -2449,7 +2449,7 @@ type Transaction struct {
 ```
 
 <a name="NewMSTransaction"></a>
-### func [NewMSTransaction](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L829>)
+### func [NewMSTransaction](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L829>)
 
 ```go
 func NewMSTransaction(walletstr string, cb TransactionCallback) (*Transaction, error)
@@ -2458,7 +2458,7 @@ func NewMSTransaction(walletstr string, cb TransactionCallback) (*Transaction, e
 NewMSTransaction new transaction object for multisig operation
 
 <a name="Transaction.AddHardfork"></a>
-### func \(\*Transaction\) [AddHardfork](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L755>)
+### func \(\*Transaction\) [AddHardfork](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L755>)
 
 ```go
 func (t *Transaction) AddHardfork(ip *InputMap) (err error)
@@ -2467,7 +2467,7 @@ func (t *Transaction) AddHardfork(ip *InputMap) (err error)
 
 
 <a name="Transaction.CancelAllocation"></a>
-### func \(\*Transaction\) [CancelAllocation](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L466-L467>)
+### func \(\*Transaction\) [CancelAllocation](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L466-L467>)
 
 ```go
 func (t *Transaction) CancelAllocation(allocID string) (err error)
@@ -2476,7 +2476,7 @@ func (t *Transaction) CancelAllocation(allocID string) (err error)
 CancelAllocation transaction.
 
 <a name="Transaction.CreateAllocation"></a>
-### func \(\*Transaction\) [CreateAllocation](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L485-L486>)
+### func \(\*Transaction\) [CreateAllocation](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L485-L486>)
 
 ```go
 func (t *Transaction) CreateAllocation(car *CreateAllocationRequest, lock uint64) (err error)
@@ -2485,7 +2485,7 @@ func (t *Transaction) CreateAllocation(car *CreateAllocationRequest, lock uint64
 CreateAllocation transaction.
 
 <a name="Transaction.CreateReadPool"></a>
-### func \(\*Transaction\) [CreateReadPool](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L499>)
+### func \(\*Transaction\) [CreateReadPool](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L499>)
 
 ```go
 func (t *Transaction) CreateReadPool() (err error)
@@ -2494,7 +2494,7 @@ func (t *Transaction) CreateReadPool() (err error)
 CreateReadPool for current user.
 
 <a name="Transaction.ExecuteFaucetSCWallet"></a>
-### func \(\*Transaction\) [ExecuteFaucetSCWallet](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction_base.go#L543>)
+### func \(\*Transaction\) [ExecuteFaucetSCWallet](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction_base.go#L543>)
 
 ```go
 func (t *Transaction) ExecuteFaucetSCWallet(walletStr string, methodName string, input []byte) error
@@ -2503,7 +2503,7 @@ func (t *Transaction) ExecuteFaucetSCWallet(walletStr string, methodName string,
 ExecuteFaucetSCWallet implements the Faucet Smart contract for a given wallet
 
 <a name="Transaction.ExecuteSmartContract"></a>
-### func \(\*Transaction\) [ExecuteSmartContract](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L272>)
+### func \(\*Transaction\) [ExecuteSmartContract](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L272>)
 
 ```go
 func (t *Transaction) ExecuteSmartContract(address, methodName string, input interface{}, val uint64, opts ...FeeOption) (*transaction.Transaction, error)
@@ -2512,7 +2512,7 @@ func (t *Transaction) ExecuteSmartContract(address, methodName string, input int
 
 
 <a name="Transaction.FaucetUpdateConfig"></a>
-### func \(\*Transaction\) [FaucetUpdateConfig](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L707>)
+### func \(\*Transaction\) [FaucetUpdateConfig](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L707>)
 
 ```go
 func (t *Transaction) FaucetUpdateConfig(ip *InputMap) (err error)
@@ -2521,7 +2521,7 @@ func (t *Transaction) FaucetUpdateConfig(ip *InputMap) (err error)
 
 
 <a name="Transaction.FinalizeAllocation"></a>
-### func \(\*Transaction\) [FinalizeAllocation](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L446-L447>)
+### func \(\*Transaction\) [FinalizeAllocation](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L446-L447>)
 
 ```go
 func (t *Transaction) FinalizeAllocation(allocID string) (err error)
@@ -2530,7 +2530,7 @@ func (t *Transaction) FinalizeAllocation(allocID string) (err error)
 FinalizeAllocation transaction.
 
 <a name="Transaction.GetTransactionError"></a>
-### func \(\*Transaction\) [GetTransactionError](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction_base.go#L781>)
+### func \(\*Transaction\) [GetTransactionError](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction_base.go#L781>)
 
 ```go
 func (t *Transaction) GetTransactionError() string
@@ -2539,7 +2539,7 @@ func (t *Transaction) GetTransactionError() string
 
 
 <a name="Transaction.GetTransactionHash"></a>
-### func \(\*Transaction\) [GetTransactionHash](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction_base.go#L574>)
+### func \(\*Transaction\) [GetTransactionHash](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction_base.go#L574>)
 
 ```go
 func (t *Transaction) GetTransactionHash() string
@@ -2548,7 +2548,7 @@ func (t *Transaction) GetTransactionHash() string
 
 
 <a name="Transaction.GetTransactionNonce"></a>
-### func \(\*Transaction\) [GetTransactionNonce](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction_base.go#L796>)
+### func \(\*Transaction\) [GetTransactionNonce](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction_base.go#L796>)
 
 ```go
 func (t *Transaction) GetTransactionNonce() int64
@@ -2557,7 +2557,7 @@ func (t *Transaction) GetTransactionNonce() int64
 GetTransactionNonce returns nonce
 
 <a name="Transaction.GetVerifyConfirmationStatus"></a>
-### func \(\*Transaction\) [GetVerifyConfirmationStatus](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L776>)
+### func \(\*Transaction\) [GetVerifyConfirmationStatus](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L776>)
 
 ```go
 func (t *Transaction) GetVerifyConfirmationStatus() ConfirmationStatus
@@ -2566,7 +2566,7 @@ func (t *Transaction) GetVerifyConfirmationStatus() ConfirmationStatus
 
 
 <a name="Transaction.GetVerifyError"></a>
-### func \(\*Transaction\) [GetVerifyError](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction_base.go#L788>)
+### func \(\*Transaction\) [GetVerifyError](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction_base.go#L788>)
 
 ```go
 func (t *Transaction) GetVerifyError() string
@@ -2575,7 +2575,7 @@ func (t *Transaction) GetVerifyError() string
 
 
 <a name="Transaction.GetVerifyOutput"></a>
-### func \(\*Transaction\) [GetVerifyOutput](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction_base.go#L774>)
+### func \(\*Transaction\) [GetVerifyOutput](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction_base.go#L774>)
 
 ```go
 func (t *Transaction) GetVerifyOutput() string
@@ -2584,7 +2584,7 @@ func (t *Transaction) GetVerifyOutput() string
 
 
 <a name="Transaction.Hash"></a>
-### func \(\*Transaction\) [Hash](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction_base.go#L303>)
+### func \(\*Transaction\) [Hash](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction_base.go#L303>)
 
 ```go
 func (t *Transaction) Hash() string
@@ -2593,7 +2593,7 @@ func (t *Transaction) Hash() string
 
 
 <a name="Transaction.MinerSCCollectReward"></a>
-### func \(\*Transaction\) [MinerSCCollectReward](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L391>)
+### func \(\*Transaction\) [MinerSCCollectReward](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L391>)
 
 ```go
 func (t *Transaction) MinerSCCollectReward(providerId string, providerType Provider) error
@@ -2602,7 +2602,7 @@ func (t *Transaction) MinerSCCollectReward(providerId string, providerType Provi
 
 
 <a name="Transaction.MinerSCDeleteMiner"></a>
-### func \(\*Transaction\) [MinerSCDeleteMiner](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L927>)
+### func \(\*Transaction\) [MinerSCDeleteMiner](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L927>)
 
 ```go
 func (t *Transaction) MinerSCDeleteMiner(info *MinerSCMinerInfo) (err error)
@@ -2611,7 +2611,7 @@ func (t *Transaction) MinerSCDeleteMiner(info *MinerSCMinerInfo) (err error)
 
 
 <a name="Transaction.MinerSCDeleteSharder"></a>
-### func \(\*Transaction\) [MinerSCDeleteSharder](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L938>)
+### func \(\*Transaction\) [MinerSCDeleteSharder](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L938>)
 
 ```go
 func (t *Transaction) MinerSCDeleteSharder(info *MinerSCMinerInfo) (err error)
@@ -2620,7 +2620,7 @@ func (t *Transaction) MinerSCDeleteSharder(info *MinerSCMinerInfo) (err error)
 
 
 <a name="Transaction.MinerSCKill"></a>
-### func \(\*Transaction\) [MinerSCKill](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L406>)
+### func \(\*Transaction\) [MinerSCKill](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L406>)
 
 ```go
 func (t *Transaction) MinerSCKill(providerId string, providerType Provider) error
@@ -2629,7 +2629,7 @@ func (t *Transaction) MinerSCKill(providerId string, providerType Provider) erro
 
 
 <a name="Transaction.MinerSCLock"></a>
-### func \(\*Transaction\) [MinerSCLock](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L358>)
+### func \(\*Transaction\) [MinerSCLock](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L358>)
 
 ```go
 func (t *Transaction) MinerSCLock(providerId string, providerType Provider, lock uint64) error
@@ -2638,7 +2638,7 @@ func (t *Transaction) MinerSCLock(providerId string, providerType Provider, lock
 
 
 <a name="Transaction.MinerSCMinerSettings"></a>
-### func \(\*Transaction\) [MinerSCMinerSettings](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L905>)
+### func \(\*Transaction\) [MinerSCMinerSettings](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L905>)
 
 ```go
 func (t *Transaction) MinerSCMinerSettings(info *MinerSCMinerInfo) (err error)
@@ -2647,7 +2647,7 @@ func (t *Transaction) MinerSCMinerSettings(info *MinerSCMinerInfo) (err error)
 
 
 <a name="Transaction.MinerSCSharderSettings"></a>
-### func \(\*Transaction\) [MinerSCSharderSettings](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L916>)
+### func \(\*Transaction\) [MinerSCSharderSettings](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L916>)
 
 ```go
 func (t *Transaction) MinerSCSharderSettings(info *MinerSCMinerInfo) (err error)
@@ -2656,7 +2656,7 @@ func (t *Transaction) MinerSCSharderSettings(info *MinerSCMinerInfo) (err error)
 
 
 <a name="Transaction.MinerSCUnlock"></a>
-### func \(\*Transaction\) [MinerSCUnlock](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L376>)
+### func \(\*Transaction\) [MinerSCUnlock](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L376>)
 
 ```go
 func (t *Transaction) MinerSCUnlock(providerId string, providerType Provider) error
@@ -2665,7 +2665,7 @@ func (t *Transaction) MinerSCUnlock(providerId string, providerType Provider) er
 
 
 <a name="Transaction.MinerScUpdateConfig"></a>
-### func \(\*Transaction\) [MinerScUpdateConfig](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L723>)
+### func \(\*Transaction\) [MinerScUpdateConfig](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L723>)
 
 ```go
 func (t *Transaction) MinerScUpdateConfig(ip *InputMap) (err error)
@@ -2674,7 +2674,7 @@ func (t *Transaction) MinerScUpdateConfig(ip *InputMap) (err error)
 
 
 <a name="Transaction.MinerScUpdateGlobals"></a>
-### func \(\*Transaction\) [MinerScUpdateGlobals](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L734>)
+### func \(\*Transaction\) [MinerScUpdateGlobals](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L734>)
 
 ```go
 func (t *Transaction) MinerScUpdateGlobals(ip *InputMap) (err error)
@@ -2683,7 +2683,7 @@ func (t *Transaction) MinerScUpdateGlobals(ip *InputMap) (err error)
 
 
 <a name="Transaction.Output"></a>
-### func \(\*Transaction\) [Output](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction_base.go#L299>)
+### func \(\*Transaction\) [Output](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction_base.go#L299>)
 
 ```go
 func (t *Transaction) Output() []byte
@@ -2692,7 +2692,7 @@ func (t *Transaction) Output() []byte
 
 
 <a name="Transaction.ReadPoolLock"></a>
-### func \(\*Transaction\) [ReadPoolLock](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L513>)
+### func \(\*Transaction\) [ReadPoolLock](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L513>)
 
 ```go
 func (t *Transaction) ReadPoolLock(allocID, blobberID string, duration int64, lock uint64) (err error)
@@ -2701,7 +2701,7 @@ func (t *Transaction) ReadPoolLock(allocID, blobberID string, duration int64, lo
 ReadPoolLock locks tokens for current user and given allocation, using given duration. If blobberID is not empty, then tokens will be locked for given allocation\-\>blobber only.
 
 <a name="Transaction.ReadPoolUnlock"></a>
-### func \(\*Transaction\) [ReadPoolUnlock](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L540>)
+### func \(\*Transaction\) [ReadPoolUnlock](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L540>)
 
 ```go
 func (t *Transaction) ReadPoolUnlock() (err error)
@@ -2710,7 +2710,7 @@ func (t *Transaction) ReadPoolUnlock() (err error)
 ReadPoolUnlock for current user and given pool.
 
 <a name="Transaction.RegisterMultiSig"></a>
-### func \(\*Transaction\) [RegisterMultiSig](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L781>)
+### func \(\*Transaction\) [RegisterMultiSig](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L781>)
 
 ```go
 func (t *Transaction) RegisterMultiSig(walletstr string, mswallet string) error
@@ -2719,7 +2719,7 @@ func (t *Transaction) RegisterMultiSig(walletstr string, mswallet string) error
 RegisterMultiSig register a multisig wallet with the SC.
 
 <a name="Transaction.RegisterVote"></a>
-### func \(\*Transaction\) [RegisterVote](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L843>)
+### func \(\*Transaction\) [RegisterVote](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L843>)
 
 ```go
 func (t *Transaction) RegisterVote(signerwalletstr string, msvstr string) error
@@ -2728,7 +2728,7 @@ func (t *Transaction) RegisterVote(signerwalletstr string, msvstr string) error
 RegisterVote register a multisig wallet with the SC.
 
 <a name="Transaction.Send"></a>
-### func \(\*Transaction\) [Send](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L283>)
+### func \(\*Transaction\) [Send](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L283>)
 
 ```go
 func (t *Transaction) Send(toClientID string, val uint64, desc string) error
@@ -2737,7 +2737,7 @@ func (t *Transaction) Send(toClientID string, val uint64, desc string) error
 
 
 <a name="Transaction.SendWithSignatureHash"></a>
-### func \(\*Transaction\) [SendWithSignatureHash](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L307>)
+### func \(\*Transaction\) [SendWithSignatureHash](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L307>)
 
 ```go
 func (t *Transaction) SendWithSignatureHash(toClientID string, val uint64, desc string, sig string, CreationDate int64, hash string) error
@@ -2746,7 +2746,7 @@ func (t *Transaction) SendWithSignatureHash(toClientID string, val uint64, desc 
 
 
 <a name="Transaction.SetTransactionCallback"></a>
-### func \(\*Transaction\) [SetTransactionCallback](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction_base.go#L448>)
+### func \(\*Transaction\) [SetTransactionCallback](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction_base.go#L448>)
 
 ```go
 func (t *Transaction) SetTransactionCallback(cb TransactionCallback) error
@@ -2755,7 +2755,7 @@ func (t *Transaction) SetTransactionCallback(cb TransactionCallback) error
 
 
 <a name="Transaction.SetTransactionHash"></a>
-### func \(\*Transaction\) [SetTransactionHash](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction_base.go#L566>)
+### func \(\*Transaction\) [SetTransactionHash](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction_base.go#L566>)
 
 ```go
 func (t *Transaction) SetTransactionHash(hash string) error
@@ -2764,7 +2764,7 @@ func (t *Transaction) SetTransactionHash(hash string) error
 
 
 <a name="Transaction.SetTransactionNonce"></a>
-### func \(\*Transaction\) [SetTransactionNonce](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction_base.go#L456>)
+### func \(\*Transaction\) [SetTransactionNonce](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction_base.go#L456>)
 
 ```go
 func (t *Transaction) SetTransactionNonce(txnNonce int64) error
@@ -2773,7 +2773,7 @@ func (t *Transaction) SetTransactionNonce(txnNonce int64) error
 
 
 <a name="Transaction.StakePoolLock"></a>
-### func \(\*Transaction\) [StakePoolLock](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L552>)
+### func \(\*Transaction\) [StakePoolLock](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L552>)
 
 ```go
 func (t *Transaction) StakePoolLock(providerId string, providerType Provider, lock uint64) error
@@ -2782,7 +2782,7 @@ func (t *Transaction) StakePoolLock(providerId string, providerType Provider, lo
 StakePoolLock used to lock tokens in a stake pool of a blobber.
 
 <a name="Transaction.StakePoolUnlock"></a>
-### func \(\*Transaction\) [StakePoolUnlock](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L579>)
+### func \(\*Transaction\) [StakePoolUnlock](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L579>)
 
 ```go
 func (t *Transaction) StakePoolUnlock(providerId string, providerType Provider) error
@@ -2791,7 +2791,7 @@ func (t *Transaction) StakePoolUnlock(providerId string, providerType Provider) 
 StakePoolUnlock by blobberID and poolID.
 
 <a name="Transaction.StorageSCCollectReward"></a>
-### func \(\*Transaction\) [StorageSCCollectReward](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L430>)
+### func \(\*Transaction\) [StorageSCCollectReward](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L430>)
 
 ```go
 func (t *Transaction) StorageSCCollectReward(providerId string, providerType Provider) error
@@ -2800,7 +2800,7 @@ func (t *Transaction) StorageSCCollectReward(providerId string, providerType Pro
 
 
 <a name="Transaction.StorageScUpdateConfig"></a>
-### func \(\*Transaction\) [StorageScUpdateConfig](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L745>)
+### func \(\*Transaction\) [StorageScUpdateConfig](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L745>)
 
 ```go
 func (t *Transaction) StorageScUpdateConfig(ip *InputMap) (err error)
@@ -2809,7 +2809,7 @@ func (t *Transaction) StorageScUpdateConfig(ip *InputMap) (err error)
 
 
 <a name="Transaction.StoreData"></a>
-### func \(\*Transaction\) [StoreData](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction_base.go#L464>)
+### func \(\*Transaction\) [StoreData](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction_base.go#L464>)
 
 ```go
 func (t *Transaction) StoreData(data string) error
@@ -2818,7 +2818,7 @@ func (t *Transaction) StoreData(data string) error
 
 
 <a name="Transaction.UpdateAllocation"></a>
-### func \(\*Transaction\) [UpdateAllocation](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L614-L615>)
+### func \(\*Transaction\) [UpdateAllocation](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L614-L615>)
 
 ```go
 func (t *Transaction) UpdateAllocation(allocID string, sizeDiff int64, expirationDiff int64, lock uint64) (err error)
@@ -2827,7 +2827,7 @@ func (t *Transaction) UpdateAllocation(allocID string, sizeDiff int64, expiratio
 UpdateAllocation transaction.
 
 <a name="Transaction.UpdateBlobberSettings"></a>
-### func \(\*Transaction\) [UpdateBlobberSettings](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L601>)
+### func \(\*Transaction\) [UpdateBlobberSettings](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L601>)
 
 ```go
 func (t *Transaction) UpdateBlobberSettings(b *Blobber) (err error)
@@ -2836,7 +2836,7 @@ func (t *Transaction) UpdateBlobberSettings(b *Blobber) (err error)
 UpdateBlobberSettings update settings of a blobber.
 
 <a name="Transaction.UpdateValidatorSettings"></a>
-### func \(\*Transaction\) [UpdateValidatorSettings](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L1392>)
+### func \(\*Transaction\) [UpdateValidatorSettings](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L1392>)
 
 ```go
 func (t *Transaction) UpdateValidatorSettings(v *Validator) (err error)
@@ -2845,7 +2845,7 @@ func (t *Transaction) UpdateValidatorSettings(v *Validator) (err error)
 UpdateValidatorSettings update settings of a validator.
 
 <a name="Transaction.Verify"></a>
-### func \(\*Transaction\) [Verify](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L965>)
+### func \(\*Transaction\) [Verify](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L965>)
 
 ```go
 func (t *Transaction) Verify() error
@@ -2854,7 +2854,7 @@ func (t *Transaction) Verify() error
 
 
 <a name="Transaction.VestingAdd"></a>
-### func \(\*Transaction\) [VestingAdd](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L345-L346>)
+### func \(\*Transaction\) [VestingAdd](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L345-L346>)
 
 ```go
 func (t *Transaction) VestingAdd(ar *VestingAddRequest, value uint64) (err error)
@@ -2863,7 +2863,7 @@ func (t *Transaction) VestingAdd(ar *VestingAddRequest, value uint64) (err error
 
 
 <a name="Transaction.VestingDelete"></a>
-### func \(\*Transaction\) [VestingDelete](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction_base.go#L854>)
+### func \(\*Transaction\) [VestingDelete](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction_base.go#L854>)
 
 ```go
 func (t *Transaction) VestingDelete(poolID string) (err error)
@@ -2872,7 +2872,7 @@ func (t *Transaction) VestingDelete(poolID string) (err error)
 
 
 <a name="Transaction.VestingStop"></a>
-### func \(\*Transaction\) [VestingStop](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction_base.go#L831>)
+### func \(\*Transaction\) [VestingStop](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction_base.go#L831>)
 
 ```go
 func (t *Transaction) VestingStop(sr *VestingStopRequest) (err error)
@@ -2881,7 +2881,7 @@ func (t *Transaction) VestingStop(sr *VestingStopRequest) (err error)
 
 
 <a name="Transaction.VestingTrigger"></a>
-### func \(\*Transaction\) [VestingTrigger](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction_base.go#L815>)
+### func \(\*Transaction\) [VestingTrigger](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction_base.go#L815>)
 
 ```go
 func (t *Transaction) VestingTrigger(poolID string) (err error)
@@ -2890,7 +2890,7 @@ func (t *Transaction) VestingTrigger(poolID string) (err error)
 
 
 <a name="Transaction.VestingUnlock"></a>
-### func \(\*Transaction\) [VestingUnlock](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction_base.go#L843>)
+### func \(\*Transaction\) [VestingUnlock](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction_base.go#L843>)
 
 ```go
 func (t *Transaction) VestingUnlock(poolID string) (err error)
@@ -2899,7 +2899,7 @@ func (t *Transaction) VestingUnlock(poolID string) (err error)
 
 
 <a name="Transaction.VestingUpdateConfig"></a>
-### func \(\*Transaction\) [VestingUpdateConfig](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L693>)
+### func \(\*Transaction\) [VestingUpdateConfig](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L693>)
 
 ```go
 func (t *Transaction) VestingUpdateConfig(vscc *InputMap) (err error)
@@ -2908,7 +2908,7 @@ func (t *Transaction) VestingUpdateConfig(vscc *InputMap) (err error)
 
 
 <a name="Transaction.WritePoolLock"></a>
-### func \(\*Transaction\) [WritePoolLock](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L645-L646>)
+### func \(\*Transaction\) [WritePoolLock](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L645-L646>)
 
 ```go
 func (t *Transaction) WritePoolLock(allocID, blobberID string, duration int64, lock uint64) (err error)
@@ -2917,7 +2917,7 @@ func (t *Transaction) WritePoolLock(allocID, blobberID string, duration int64, l
 WritePoolLock locks tokens for current user and given allocation, using given duration. If blobberID is not empty, then tokens will be locked for given allocation\-\>blobber only.
 
 <a name="Transaction.WritePoolUnlock"></a>
-### func \(\*Transaction\) [WritePoolUnlock](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L674-L675>)
+### func \(\*Transaction\) [WritePoolUnlock](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L674-L675>)
 
 ```go
 func (t *Transaction) WritePoolUnlock(allocID string) (err error)
@@ -2926,7 +2926,7 @@ func (t *Transaction) WritePoolUnlock(allocID string) (err error)
 WritePoolUnlock for current user and given pool.
 
 <a name="Transaction.ZCNSCAddAuthorizer"></a>
-### func \(\*Transaction\) [ZCNSCAddAuthorizer](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L1468>)
+### func \(\*Transaction\) [ZCNSCAddAuthorizer](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L1468>)
 
 ```go
 func (t *Transaction) ZCNSCAddAuthorizer(ip *AddAuthorizerPayload) (err error)
@@ -2935,7 +2935,7 @@ func (t *Transaction) ZCNSCAddAuthorizer(ip *AddAuthorizerPayload) (err error)
 
 
 <a name="Transaction.ZCNSCAuthorizerHealthCheck"></a>
-### func \(\*Transaction\) [ZCNSCAuthorizerHealthCheck](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L1478>)
+### func \(\*Transaction\) [ZCNSCAuthorizerHealthCheck](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L1478>)
 
 ```go
 func (t *Transaction) ZCNSCAuthorizerHealthCheck(ip *AuthorizerHealthCheckPayload) (err error)
@@ -2944,7 +2944,7 @@ func (t *Transaction) ZCNSCAuthorizerHealthCheck(ip *AuthorizerHealthCheckPayloa
 
 
 <a name="Transaction.ZCNSCCollectReward"></a>
-### func \(\*Transaction\) [ZCNSCCollectReward](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L1498>)
+### func \(\*Transaction\) [ZCNSCCollectReward](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L1498>)
 
 ```go
 func (t *Transaction) ZCNSCCollectReward(providerId string, providerType Provider) error
@@ -2953,7 +2953,7 @@ func (t *Transaction) ZCNSCCollectReward(providerId string, providerType Provide
 
 
 <a name="Transaction.ZCNSCDeleteAuthorizer"></a>
-### func \(\*Transaction\) [ZCNSCDeleteAuthorizer](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L1488>)
+### func \(\*Transaction\) [ZCNSCDeleteAuthorizer](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L1488>)
 
 ```go
 func (t *Transaction) ZCNSCDeleteAuthorizer(ip *DeleteAuthorizerPayload) (err error)
@@ -2962,7 +2962,7 @@ func (t *Transaction) ZCNSCDeleteAuthorizer(ip *DeleteAuthorizerPayload) (err er
 
 
 <a name="Transaction.ZCNSCUpdateAuthorizerConfig"></a>
-### func \(\*Transaction\) [ZCNSCUpdateAuthorizerConfig](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L955>)
+### func \(\*Transaction\) [ZCNSCUpdateAuthorizerConfig](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L955>)
 
 ```go
 func (t *Transaction) ZCNSCUpdateAuthorizerConfig(ip *AuthorizerNode) (err error)
@@ -2971,7 +2971,7 @@ func (t *Transaction) ZCNSCUpdateAuthorizerConfig(ip *AuthorizerNode) (err error
 
 
 <a name="Transaction.ZCNSCUpdateGlobalConfig"></a>
-### func \(\*Transaction\) [ZCNSCUpdateGlobalConfig](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L766>)
+### func \(\*Transaction\) [ZCNSCUpdateGlobalConfig](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L766>)
 
 ```go
 func (t *Transaction) ZCNSCUpdateGlobalConfig(ip *InputMap) (err error)
@@ -2980,7 +2980,7 @@ func (t *Transaction) ZCNSCUpdateGlobalConfig(ip *InputMap) (err error)
 
 
 <a name="TransactionCallback"></a>
-## type [TransactionCallback](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction_base.go#L89-L93>)
+## type [TransactionCallback](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction_base.go#L89-L93>)
 
 TransactionCallback needs to be implemented by the caller for transaction related APIs
 
@@ -2993,7 +2993,7 @@ type TransactionCallback interface {
 ```
 
 <a name="TransactionCommon"></a>
-## type [TransactionCommon](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L113-L173>)
+## type [TransactionCommon](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L113-L173>)
 
 
 
@@ -3062,7 +3062,7 @@ type TransactionCommon interface {
 ```
 
 <a name="TransactionQuery"></a>
-## type [TransactionQuery](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction_query.go#L48-L57>)
+## type [TransactionQuery](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction_query.go#L48-L57>)
 
 
 
@@ -3074,7 +3074,7 @@ type TransactionQuery struct {
 ```
 
 <a name="NewTransactionQuery"></a>
-### func [NewTransactionQuery](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction_query.go#L59>)
+### func [NewTransactionQuery](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction_query.go#L59>)
 
 ```go
 func NewTransactionQuery(sharders []string, miners []string) (*TransactionQuery, error)
@@ -3083,7 +3083,7 @@ func NewTransactionQuery(sharders []string, miners []string) (*TransactionQuery,
 
 
 <a name="TransactionQuery.FromAll"></a>
-### func \(\*TransactionQuery\) [FromAll](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction_query.go#L246>)
+### func \(\*TransactionQuery\) [FromAll](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction_query.go#L246>)
 
 ```go
 func (tq *TransactionQuery) FromAll(ctx context.Context, query string, handle QueryResultHandle) error
@@ -3092,7 +3092,7 @@ func (tq *TransactionQuery) FromAll(ctx context.Context, query string, handle Qu
 FromAll query transaction from all sharders whatever it is selected or offline in previous queires, and return consensus result
 
 <a name="TransactionQuery.FromAny"></a>
-### func \(\*TransactionQuery\) [FromAny](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction_query.go#L341>)
+### func \(\*TransactionQuery\) [FromAny](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction_query.go#L341>)
 
 ```go
 func (tq *TransactionQuery) FromAny(ctx context.Context, query string, provider Provider) (QueryResult, error)
@@ -3101,7 +3101,7 @@ func (tq *TransactionQuery) FromAny(ctx context.Context, query string, provider 
 FromAny queries transaction from any sharder that is not selected in previous queries. use any used sharder if there is not any unused sharder
 
 <a name="TransactionQuery.GetInfo"></a>
-### func \(\*TransactionQuery\) [GetInfo](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction_query.go#L290>)
+### func \(\*TransactionQuery\) [GetInfo](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction_query.go#L290>)
 
 ```go
 func (tq *TransactionQuery) GetInfo(ctx context.Context, query string) (*QueryResult, error)
@@ -3110,7 +3110,7 @@ func (tq *TransactionQuery) GetInfo(ctx context.Context, query string) (*QueryRe
 
 
 <a name="TransactionQuery.Reset"></a>
-### func \(\*TransactionQuery\) [Reset](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction_query.go#L76>)
+### func \(\*TransactionQuery\) [Reset](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction_query.go#L76>)
 
 ```go
 func (tq *TransactionQuery) Reset()
@@ -3119,7 +3119,7 @@ func (tq *TransactionQuery) Reset()
 
 
 <a name="TransactionScheme"></a>
-## type [TransactionScheme](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction_base.go#L46-L86>)
+## type [TransactionScheme](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction_base.go#L46-L86>)
 
 TransactionScheme implements few methods for block chain.
 
@@ -3166,7 +3166,7 @@ type TransactionScheme interface {
 ```
 
 <a name="NewTransaction"></a>
-### func [NewTransaction](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L256>)
+### func [NewTransaction](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L256>)
 
 ```go
 func NewTransaction(cb TransactionCallback, txnFee uint64, nonce int64) (TransactionScheme, error)
@@ -3175,7 +3175,7 @@ func NewTransaction(cb TransactionCallback, txnFee uint64, nonce int64) (Transac
 NewTransaction allocation new generic transaction object for any operation
 
 <a name="TransactionVelocity"></a>
-## type [TransactionVelocity](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L34>)
+## type [TransactionVelocity](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L34>)
 
 
 
@@ -3194,7 +3194,7 @@ const (
 ```
 
 <a name="TransactionWithAuth"></a>
-## type [TransactionWithAuth](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth_base.go#L13-L15>)
+## type [TransactionWithAuth](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth_base.go#L13-L15>)
 
 
 
@@ -3205,7 +3205,7 @@ type TransactionWithAuth struct {
 ```
 
 <a name="TransactionWithAuth.AddHardfork"></a>
-### func \(\*TransactionWithAuth\) [AddHardfork](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth.go#L470>)
+### func \(\*TransactionWithAuth\) [AddHardfork](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth.go#L470>)
 
 ```go
 func (t *TransactionWithAuth) AddHardfork(ip *InputMap) (err error)
@@ -3214,7 +3214,7 @@ func (t *TransactionWithAuth) AddHardfork(ip *InputMap) (err error)
 
 
 <a name="TransactionWithAuth.CancelAllocation"></a>
-### func \(\*TransactionWithAuth\) [CancelAllocation](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth.go#L110-L111>)
+### func \(\*TransactionWithAuth\) [CancelAllocation](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth.go#L110-L111>)
 
 ```go
 func (ta *TransactionWithAuth) CancelAllocation(allocID string) (err error)
@@ -3223,7 +3223,7 @@ func (ta *TransactionWithAuth) CancelAllocation(allocID string) (err error)
 CancelAllocation transaction.
 
 <a name="TransactionWithAuth.CreateAllocation"></a>
-### func \(\*TransactionWithAuth\) [CreateAllocation](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth.go#L129-L130>)
+### func \(\*TransactionWithAuth\) [CreateAllocation](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth.go#L129-L130>)
 
 ```go
 func (ta *TransactionWithAuth) CreateAllocation(car *CreateAllocationRequest, lock uint64) (err error)
@@ -3232,7 +3232,7 @@ func (ta *TransactionWithAuth) CreateAllocation(car *CreateAllocationRequest, lo
 CreateAllocation transaction.
 
 <a name="TransactionWithAuth.CreateReadPool"></a>
-### func \(\*TransactionWithAuth\) [CreateReadPool](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth.go#L147>)
+### func \(\*TransactionWithAuth\) [CreateReadPool](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth.go#L147>)
 
 ```go
 func (ta *TransactionWithAuth) CreateReadPool() (err error)
@@ -3241,7 +3241,7 @@ func (ta *TransactionWithAuth) CreateReadPool() (err error)
 CreateReadPool for current user.
 
 <a name="TransactionWithAuth.ExecuteFaucetSCWallet"></a>
-### func \(\*TransactionWithAuth\) [ExecuteFaucetSCWallet](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth_base.go#L151>)
+### func \(\*TransactionWithAuth\) [ExecuteFaucetSCWallet](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth_base.go#L151>)
 
 ```go
 func (ta *TransactionWithAuth) ExecuteFaucetSCWallet(walletStr string, methodName string, input []byte) error
@@ -3250,7 +3250,7 @@ func (ta *TransactionWithAuth) ExecuteFaucetSCWallet(walletStr string, methodNam
 ExecuteFaucetSCWallet impements the Faucet Smart contract for a given wallet
 
 <a name="TransactionWithAuth.ExecuteSmartContract"></a>
-### func \(\*TransactionWithAuth\) [ExecuteSmartContract](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth.go#L16-L17>)
+### func \(\*TransactionWithAuth\) [ExecuteSmartContract](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth.go#L16-L17>)
 
 ```go
 func (ta *TransactionWithAuth) ExecuteSmartContract(address, methodName string, input interface{}, val uint64, feeOpts ...FeeOption) (*transaction.Transaction, error)
@@ -3259,7 +3259,7 @@ func (ta *TransactionWithAuth) ExecuteSmartContract(address, methodName string, 
 
 
 <a name="TransactionWithAuth.FaucetUpdateConfig"></a>
-### func \(\*TransactionWithAuth\) [FaucetUpdateConfig](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth.go#L426>)
+### func \(\*TransactionWithAuth\) [FaucetUpdateConfig](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth.go#L426>)
 
 ```go
 func (ta *TransactionWithAuth) FaucetUpdateConfig(ip *InputMap) (err error)
@@ -3268,7 +3268,7 @@ func (ta *TransactionWithAuth) FaucetUpdateConfig(ip *InputMap) (err error)
 
 
 <a name="TransactionWithAuth.FinalizeAllocation"></a>
-### func \(\*TransactionWithAuth\) [FinalizeAllocation](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth.go#L91-L92>)
+### func \(\*TransactionWithAuth\) [FinalizeAllocation](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth.go#L91-L92>)
 
 ```go
 func (ta *TransactionWithAuth) FinalizeAllocation(allocID string) (err error)
@@ -3277,7 +3277,7 @@ func (ta *TransactionWithAuth) FinalizeAllocation(allocID string) (err error)
 FinalizeAllocation transaction.
 
 <a name="TransactionWithAuth.GetTransactionError"></a>
-### func \(\*TransactionWithAuth\) [GetTransactionError](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth_base.go#L193>)
+### func \(\*TransactionWithAuth\) [GetTransactionError](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth_base.go#L193>)
 
 ```go
 func (ta *TransactionWithAuth) GetTransactionError() string
@@ -3286,7 +3286,7 @@ func (ta *TransactionWithAuth) GetTransactionError() string
 
 
 <a name="TransactionWithAuth.GetTransactionHash"></a>
-### func \(\*TransactionWithAuth\) [GetTransactionHash](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth_base.go#L181>)
+### func \(\*TransactionWithAuth\) [GetTransactionHash](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth_base.go#L181>)
 
 ```go
 func (ta *TransactionWithAuth) GetTransactionHash() string
@@ -3295,7 +3295,7 @@ func (ta *TransactionWithAuth) GetTransactionHash() string
 
 
 <a name="TransactionWithAuth.GetTransactionNonce"></a>
-### func \(\*TransactionWithAuth\) [GetTransactionNonce](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth_base.go#L206>)
+### func \(\*TransactionWithAuth\) [GetTransactionNonce](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth_base.go#L206>)
 
 ```go
 func (ta *TransactionWithAuth) GetTransactionNonce() int64
@@ -3304,7 +3304,7 @@ func (ta *TransactionWithAuth) GetTransactionNonce() int64
 GetTransactionNonce returns nonce
 
 <a name="TransactionWithAuth.GetVerifyConfirmationStatus"></a>
-### func \(\*TransactionWithAuth\) [GetVerifyConfirmationStatus](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth.go#L491>)
+### func \(\*TransactionWithAuth\) [GetVerifyConfirmationStatus](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth.go#L491>)
 
 ```go
 func (ta *TransactionWithAuth) GetVerifyConfirmationStatus() ConfirmationStatus
@@ -3313,7 +3313,7 @@ func (ta *TransactionWithAuth) GetVerifyConfirmationStatus() ConfirmationStatus
 
 
 <a name="TransactionWithAuth.GetVerifyError"></a>
-### func \(\*TransactionWithAuth\) [GetVerifyError](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth_base.go#L197>)
+### func \(\*TransactionWithAuth\) [GetVerifyError](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth_base.go#L197>)
 
 ```go
 func (ta *TransactionWithAuth) GetVerifyError() string
@@ -3322,7 +3322,7 @@ func (ta *TransactionWithAuth) GetVerifyError() string
 
 
 <a name="TransactionWithAuth.GetVerifyOutput"></a>
-### func \(\*TransactionWithAuth\) [GetVerifyOutput](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth_base.go#L189>)
+### func \(\*TransactionWithAuth\) [GetVerifyOutput](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth_base.go#L189>)
 
 ```go
 func (ta *TransactionWithAuth) GetVerifyOutput() string
@@ -3331,7 +3331,7 @@ func (ta *TransactionWithAuth) GetVerifyOutput() string
 
 
 <a name="TransactionWithAuth.Hash"></a>
-### func \(\*TransactionWithAuth\) [Hash](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth_base.go#L17>)
+### func \(\*TransactionWithAuth\) [Hash](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth_base.go#L17>)
 
 ```go
 func (ta *TransactionWithAuth) Hash() string
@@ -3340,7 +3340,7 @@ func (ta *TransactionWithAuth) Hash() string
 
 
 <a name="TransactionWithAuth.MinerSCCollectReward"></a>
-### func \(\*TransactionWithAuth\) [MinerSCCollectReward](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth.go#L360>)
+### func \(\*TransactionWithAuth\) [MinerSCCollectReward](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth.go#L360>)
 
 ```go
 func (ta *TransactionWithAuth) MinerSCCollectReward(providerId string, providerType Provider) error
@@ -3349,7 +3349,7 @@ func (ta *TransactionWithAuth) MinerSCCollectReward(providerId string, providerT
 
 
 <a name="TransactionWithAuth.MinerSCDeleteMiner"></a>
-### func \(\*TransactionWithAuth\) [MinerSCDeleteMiner](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth.go#L521-L522>)
+### func \(\*TransactionWithAuth\) [MinerSCDeleteMiner](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth.go#L521-L522>)
 
 ```go
 func (ta *TransactionWithAuth) MinerSCDeleteMiner(info *MinerSCMinerInfo) (err error)
@@ -3358,7 +3358,7 @@ func (ta *TransactionWithAuth) MinerSCDeleteMiner(info *MinerSCMinerInfo) (err e
 
 
 <a name="TransactionWithAuth.MinerSCDeleteSharder"></a>
-### func \(\*TransactionWithAuth\) [MinerSCDeleteSharder](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth.go#L534-L535>)
+### func \(\*TransactionWithAuth\) [MinerSCDeleteSharder](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth.go#L534-L535>)
 
 ```go
 func (ta *TransactionWithAuth) MinerSCDeleteSharder(info *MinerSCMinerInfo) (err error)
@@ -3367,7 +3367,7 @@ func (ta *TransactionWithAuth) MinerSCDeleteSharder(info *MinerSCMinerInfo) (err
 
 
 <a name="TransactionWithAuth.MinerSCKill"></a>
-### func \(\*TransactionWithAuth\) [MinerSCKill](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth.go#L375>)
+### func \(\*TransactionWithAuth\) [MinerSCKill](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth.go#L375>)
 
 ```go
 func (ta *TransactionWithAuth) MinerSCKill(providerId string, providerType Provider) error
@@ -3376,7 +3376,7 @@ func (ta *TransactionWithAuth) MinerSCKill(providerId string, providerType Provi
 
 
 <a name="TransactionWithAuth.MinerSCLock"></a>
-### func \(\*TransactionWithAuth\) [MinerSCLock](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth.go#L56>)
+### func \(\*TransactionWithAuth\) [MinerSCLock](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth.go#L56>)
 
 ```go
 func (ta *TransactionWithAuth) MinerSCLock(providerId string, providerType Provider, lock uint64) error
@@ -3385,7 +3385,7 @@ func (ta *TransactionWithAuth) MinerSCLock(providerId string, providerType Provi
 
 
 <a name="TransactionWithAuth.MinerSCMinerSettings"></a>
-### func \(\*TransactionWithAuth\) [MinerSCMinerSettings](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth.go#L495-L496>)
+### func \(\*TransactionWithAuth\) [MinerSCMinerSettings](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth.go#L495-L496>)
 
 ```go
 func (ta *TransactionWithAuth) MinerSCMinerSettings(info *MinerSCMinerInfo) (err error)
@@ -3394,7 +3394,7 @@ func (ta *TransactionWithAuth) MinerSCMinerSettings(info *MinerSCMinerInfo) (err
 
 
 <a name="TransactionWithAuth.MinerSCSharderSettings"></a>
-### func \(\*TransactionWithAuth\) [MinerSCSharderSettings](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth.go#L508-L509>)
+### func \(\*TransactionWithAuth\) [MinerSCSharderSettings](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth.go#L508-L509>)
 
 ```go
 func (ta *TransactionWithAuth) MinerSCSharderSettings(info *MinerSCMinerInfo) (err error)
@@ -3403,7 +3403,7 @@ func (ta *TransactionWithAuth) MinerSCSharderSettings(info *MinerSCMinerInfo) (e
 
 
 <a name="TransactionWithAuth.MinerSCUnlock"></a>
-### func \(\*TransactionWithAuth\) [MinerSCUnlock](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth.go#L75>)
+### func \(\*TransactionWithAuth\) [MinerSCUnlock](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth.go#L75>)
 
 ```go
 func (ta *TransactionWithAuth) MinerSCUnlock(providerId string, providerType Provider) error
@@ -3412,7 +3412,7 @@ func (ta *TransactionWithAuth) MinerSCUnlock(providerId string, providerType Pro
 
 
 <a name="TransactionWithAuth.MinerScUpdateConfig"></a>
-### func \(\*TransactionWithAuth\) [MinerScUpdateConfig](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth.go#L437>)
+### func \(\*TransactionWithAuth\) [MinerScUpdateConfig](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth.go#L437>)
 
 ```go
 func (ta *TransactionWithAuth) MinerScUpdateConfig(ip *InputMap) (err error)
@@ -3421,7 +3421,7 @@ func (ta *TransactionWithAuth) MinerScUpdateConfig(ip *InputMap) (err error)
 
 
 <a name="TransactionWithAuth.MinerScUpdateGlobals"></a>
-### func \(\*TransactionWithAuth\) [MinerScUpdateGlobals](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth.go#L448>)
+### func \(\*TransactionWithAuth\) [MinerScUpdateGlobals](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth.go#L448>)
 
 ```go
 func (ta *TransactionWithAuth) MinerScUpdateGlobals(ip *InputMap) (err error)
@@ -3430,7 +3430,7 @@ func (ta *TransactionWithAuth) MinerScUpdateGlobals(ip *InputMap) (err error)
 
 
 <a name="TransactionWithAuth.Output"></a>
-### func \(\*TransactionWithAuth\) [Output](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth_base.go#L201>)
+### func \(\*TransactionWithAuth\) [Output](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth_base.go#L201>)
 
 ```go
 func (ta *TransactionWithAuth) Output() []byte
@@ -3439,7 +3439,7 @@ func (ta *TransactionWithAuth) Output() []byte
 
 
 <a name="TransactionWithAuth.ReadPoolLock"></a>
-### func \(\*TransactionWithAuth\) [ReadPoolLock](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth.go#L162-L163>)
+### func \(\*TransactionWithAuth\) [ReadPoolLock](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth.go#L162-L163>)
 
 ```go
 func (ta *TransactionWithAuth) ReadPoolLock(allocID, blobberID string, duration int64, lock uint64) (err error)
@@ -3448,7 +3448,7 @@ func (ta *TransactionWithAuth) ReadPoolLock(allocID, blobberID string, duration 
 ReadPoolLock locks tokens for current user and given allocation, using given duration. If blobberID is not empty, then tokens will be locked for given allocation\-\>blobber only.
 
 <a name="TransactionWithAuth.ReadPoolUnlock"></a>
-### func \(\*TransactionWithAuth\) [ReadPoolUnlock](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth.go#L191-L192>)
+### func \(\*TransactionWithAuth\) [ReadPoolUnlock](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth.go#L191-L192>)
 
 ```go
 func (ta *TransactionWithAuth) ReadPoolUnlock() (err error)
@@ -3457,7 +3457,7 @@ func (ta *TransactionWithAuth) ReadPoolUnlock() (err error)
 ReadPoolUnlock for current user and given pool.
 
 <a name="TransactionWithAuth.RegisterMultiSig"></a>
-### func \(\*TransactionWithAuth\) [RegisterMultiSig](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth_base.go#L261>)
+### func \(\*TransactionWithAuth\) [RegisterMultiSig](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth_base.go#L261>)
 
 ```go
 func (ta *TransactionWithAuth) RegisterMultiSig(walletstr string, mswallet string) error
@@ -3466,7 +3466,7 @@ func (ta *TransactionWithAuth) RegisterMultiSig(walletstr string, mswallet strin
 RegisterMultiSig register a multisig wallet with the SC.
 
 <a name="TransactionWithAuth.Send"></a>
-### func \(\*TransactionWithAuth\) [Send](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth.go#L28>)
+### func \(\*TransactionWithAuth\) [Send](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth.go#L28>)
 
 ```go
 func (ta *TransactionWithAuth) Send(toClientID string, val uint64, desc string) error
@@ -3475,7 +3475,7 @@ func (ta *TransactionWithAuth) Send(toClientID string, val uint64, desc string) 
 
 
 <a name="TransactionWithAuth.SetTransactionCallback"></a>
-### func \(\*TransactionWithAuth\) [SetTransactionCallback](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth_base.go#L173>)
+### func \(\*TransactionWithAuth\) [SetTransactionCallback](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth_base.go#L173>)
 
 ```go
 func (ta *TransactionWithAuth) SetTransactionCallback(cb TransactionCallback) error
@@ -3484,7 +3484,7 @@ func (ta *TransactionWithAuth) SetTransactionCallback(cb TransactionCallback) er
 
 
 <a name="TransactionWithAuth.SetTransactionHash"></a>
-### func \(\*TransactionWithAuth\) [SetTransactionHash](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth_base.go#L177>)
+### func \(\*TransactionWithAuth\) [SetTransactionHash](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth_base.go#L177>)
 
 ```go
 func (ta *TransactionWithAuth) SetTransactionHash(hash string) error
@@ -3493,7 +3493,7 @@ func (ta *TransactionWithAuth) SetTransactionHash(hash string) error
 
 
 <a name="TransactionWithAuth.SetTransactionNonce"></a>
-### func \(\*TransactionWithAuth\) [SetTransactionNonce](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth_base.go#L21>)
+### func \(\*TransactionWithAuth\) [SetTransactionNonce](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth_base.go#L21>)
 
 ```go
 func (ta *TransactionWithAuth) SetTransactionNonce(txnNonce int64) error
@@ -3502,7 +3502,7 @@ func (ta *TransactionWithAuth) SetTransactionNonce(txnNonce int64) error
 
 
 <a name="TransactionWithAuth.StakePoolLock"></a>
-### func \(\*TransactionWithAuth\) [StakePoolLock](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth.go#L205>)
+### func \(\*TransactionWithAuth\) [StakePoolLock](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth.go#L205>)
 
 ```go
 func (ta *TransactionWithAuth) StakePoolLock(providerId string, providerType Provider, lock uint64) error
@@ -3511,7 +3511,7 @@ func (ta *TransactionWithAuth) StakePoolLock(providerId string, providerType Pro
 StakePoolLock used to lock tokens in a stake pool of a blobber.
 
 <a name="TransactionWithAuth.StakePoolUnlock"></a>
-### func \(\*TransactionWithAuth\) [StakePoolUnlock](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth.go#L232>)
+### func \(\*TransactionWithAuth\) [StakePoolUnlock](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth.go#L232>)
 
 ```go
 func (ta *TransactionWithAuth) StakePoolUnlock(providerId string, providerType Provider) error
@@ -3520,7 +3520,7 @@ func (ta *TransactionWithAuth) StakePoolUnlock(providerId string, providerType P
 StakePoolUnlock by blobberID
 
 <a name="TransactionWithAuth.StorageSCCollectReward"></a>
-### func \(\*TransactionWithAuth\) [StorageSCCollectReward](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth.go#L398>)
+### func \(\*TransactionWithAuth\) [StorageSCCollectReward](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth.go#L398>)
 
 ```go
 func (ta *TransactionWithAuth) StorageSCCollectReward(providerId string, providerType Provider) error
@@ -3529,7 +3529,7 @@ func (ta *TransactionWithAuth) StorageSCCollectReward(providerId string, provide
 
 
 <a name="TransactionWithAuth.StorageScUpdateConfig"></a>
-### func \(\*TransactionWithAuth\) [StorageScUpdateConfig](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth.go#L459>)
+### func \(\*TransactionWithAuth\) [StorageScUpdateConfig](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth.go#L459>)
 
 ```go
 func (ta *TransactionWithAuth) StorageScUpdateConfig(ip *InputMap) (err error)
@@ -3538,7 +3538,7 @@ func (ta *TransactionWithAuth) StorageScUpdateConfig(ip *InputMap) (err error)
 
 
 <a name="TransactionWithAuth.StoreData"></a>
-### func \(\*TransactionWithAuth\) [StoreData](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth_base.go#L141>)
+### func \(\*TransactionWithAuth\) [StoreData](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth_base.go#L141>)
 
 ```go
 func (ta *TransactionWithAuth) StoreData(data string) error
@@ -3547,7 +3547,7 @@ func (ta *TransactionWithAuth) StoreData(data string) error
 
 
 <a name="TransactionWithAuth.UpdateAllocation"></a>
-### func \(\*TransactionWithAuth\) [UpdateAllocation](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth.go#L283-L284>)
+### func \(\*TransactionWithAuth\) [UpdateAllocation](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth.go#L283-L284>)
 
 ```go
 func (ta *TransactionWithAuth) UpdateAllocation(allocID string, sizeDiff int64, expirationDiff int64, lock uint64) (err error)
@@ -3556,7 +3556,7 @@ func (ta *TransactionWithAuth) UpdateAllocation(allocID string, sizeDiff int64, 
 UpdateAllocation transaction.
 
 <a name="TransactionWithAuth.UpdateBlobberSettings"></a>
-### func \(\*TransactionWithAuth\) [UpdateBlobberSettings](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth.go#L255-L256>)
+### func \(\*TransactionWithAuth\) [UpdateBlobberSettings](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth.go#L255-L256>)
 
 ```go
 func (ta *TransactionWithAuth) UpdateBlobberSettings(blob *Blobber) (err error)
@@ -3565,7 +3565,7 @@ func (ta *TransactionWithAuth) UpdateBlobberSettings(blob *Blobber) (err error)
 UpdateBlobberSettings update settings of a blobber.
 
 <a name="TransactionWithAuth.UpdateValidatorSettings"></a>
-### func \(\*TransactionWithAuth\) [UpdateValidatorSettings](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth.go#L269-L270>)
+### func \(\*TransactionWithAuth\) [UpdateValidatorSettings](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth.go#L269-L270>)
 
 ```go
 func (ta *TransactionWithAuth) UpdateValidatorSettings(v *Validator) (err error)
@@ -3574,7 +3574,7 @@ func (ta *TransactionWithAuth) UpdateValidatorSettings(v *Validator) (err error)
 UpdateValidatorSettings update settings of a validator.
 
 <a name="TransactionWithAuth.Verify"></a>
-### func \(\*TransactionWithAuth\) [Verify](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth_base.go#L185>)
+### func \(\*TransactionWithAuth\) [Verify](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth_base.go#L185>)
 
 ```go
 func (ta *TransactionWithAuth) Verify() error
@@ -3583,7 +3583,7 @@ func (ta *TransactionWithAuth) Verify() error
 
 
 <a name="TransactionWithAuth.VestingAdd"></a>
-### func \(\*TransactionWithAuth\) [VestingAdd](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth.go#L43-L44>)
+### func \(\*TransactionWithAuth\) [VestingAdd](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth.go#L43-L44>)
 
 ```go
 func (ta *TransactionWithAuth) VestingAdd(ar *VestingAddRequest, value uint64) (err error)
@@ -3592,7 +3592,7 @@ func (ta *TransactionWithAuth) VestingAdd(ar *VestingAddRequest, value uint64) (
 
 
 <a name="TransactionWithAuth.VestingDelete"></a>
-### func \(\*TransactionWithAuth\) [VestingDelete](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth_base.go#L246>)
+### func \(\*TransactionWithAuth\) [VestingDelete](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth_base.go#L246>)
 
 ```go
 func (ta *TransactionWithAuth) VestingDelete(poolID string) (err error)
@@ -3601,7 +3601,7 @@ func (ta *TransactionWithAuth) VestingDelete(poolID string) (err error)
 
 
 <a name="TransactionWithAuth.VestingStop"></a>
-### func \(\*TransactionWithAuth\) [VestingStop](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth_base.go#L224>)
+### func \(\*TransactionWithAuth\) [VestingStop](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth_base.go#L224>)
 
 ```go
 func (ta *TransactionWithAuth) VestingStop(sr *VestingStopRequest) (err error)
@@ -3610,7 +3610,7 @@ func (ta *TransactionWithAuth) VestingStop(sr *VestingStopRequest) (err error)
 
 
 <a name="TransactionWithAuth.VestingTrigger"></a>
-### func \(\*TransactionWithAuth\) [VestingTrigger](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth_base.go#L214>)
+### func \(\*TransactionWithAuth\) [VestingTrigger](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth_base.go#L214>)
 
 ```go
 func (ta *TransactionWithAuth) VestingTrigger(poolID string) (err error)
@@ -3619,7 +3619,7 @@ func (ta *TransactionWithAuth) VestingTrigger(poolID string) (err error)
 
 
 <a name="TransactionWithAuth.VestingUnlock"></a>
-### func \(\*TransactionWithAuth\) [VestingUnlock](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth_base.go#L235>)
+### func \(\*TransactionWithAuth\) [VestingUnlock](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth_base.go#L235>)
 
 ```go
 func (ta *TransactionWithAuth) VestingUnlock(poolID string) (err error)
@@ -3628,7 +3628,7 @@ func (ta *TransactionWithAuth) VestingUnlock(poolID string) (err error)
 
 
 <a name="TransactionWithAuth.VestingUpdateConfig"></a>
-### func \(\*TransactionWithAuth\) [VestingUpdateConfig](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth.go#L413>)
+### func \(\*TransactionWithAuth\) [VestingUpdateConfig](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth.go#L413>)
 
 ```go
 func (ta *TransactionWithAuth) VestingUpdateConfig(ip *InputMap) (err error)
@@ -3637,7 +3637,7 @@ func (ta *TransactionWithAuth) VestingUpdateConfig(ip *InputMap) (err error)
 
 
 <a name="TransactionWithAuth.WritePoolLock"></a>
-### func \(\*TransactionWithAuth\) [WritePoolLock](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth.go#L314-L315>)
+### func \(\*TransactionWithAuth\) [WritePoolLock](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth.go#L314-L315>)
 
 ```go
 func (ta *TransactionWithAuth) WritePoolLock(allocID, blobberID string, duration int64, lock uint64) (err error)
@@ -3646,7 +3646,7 @@ func (ta *TransactionWithAuth) WritePoolLock(allocID, blobberID string, duration
 WritePoolLock locks tokens for current user and given allocation, using given duration. If blobberID is not empty, then tokens will be locked for given allocation\-\>blobber only.
 
 <a name="TransactionWithAuth.WritePoolUnlock"></a>
-### func \(\*TransactionWithAuth\) [WritePoolUnlock](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth.go#L343>)
+### func \(\*TransactionWithAuth\) [WritePoolUnlock](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth.go#L343>)
 
 ```go
 func (ta *TransactionWithAuth) WritePoolUnlock(allocID string) (err error)
@@ -3655,7 +3655,7 @@ func (ta *TransactionWithAuth) WritePoolUnlock(allocID string) (err error)
 WritePoolUnlock for current user and given pool.
 
 <a name="TransactionWithAuth.ZCNSCAddAuthorizer"></a>
-### func \(\*TransactionWithAuth\) [ZCNSCAddAuthorizer](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth.go#L557>)
+### func \(\*TransactionWithAuth\) [ZCNSCAddAuthorizer](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth.go#L557>)
 
 ```go
 func (ta *TransactionWithAuth) ZCNSCAddAuthorizer(ip *AddAuthorizerPayload) (err error)
@@ -3664,7 +3664,7 @@ func (ta *TransactionWithAuth) ZCNSCAddAuthorizer(ip *AddAuthorizerPayload) (err
 
 
 <a name="TransactionWithAuth.ZCNSCAuthorizerHealthCheck"></a>
-### func \(\*TransactionWithAuth\) [ZCNSCAuthorizerHealthCheck](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth.go#L567>)
+### func \(\*TransactionWithAuth\) [ZCNSCAuthorizerHealthCheck](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth.go#L567>)
 
 ```go
 func (ta *TransactionWithAuth) ZCNSCAuthorizerHealthCheck(ip *AuthorizerHealthCheckPayload) (err error)
@@ -3673,7 +3673,7 @@ func (ta *TransactionWithAuth) ZCNSCAuthorizerHealthCheck(ip *AuthorizerHealthCh
 
 
 <a name="TransactionWithAuth.ZCNSCCollectReward"></a>
-### func \(\*TransactionWithAuth\) [ZCNSCCollectReward](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth.go#L587>)
+### func \(\*TransactionWithAuth\) [ZCNSCCollectReward](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth.go#L587>)
 
 ```go
 func (ta *TransactionWithAuth) ZCNSCCollectReward(providerId string, providerType Provider) error
@@ -3682,7 +3682,7 @@ func (ta *TransactionWithAuth) ZCNSCCollectReward(providerId string, providerTyp
 
 
 <a name="TransactionWithAuth.ZCNSCDeleteAuthorizer"></a>
-### func \(\*TransactionWithAuth\) [ZCNSCDeleteAuthorizer](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth.go#L577>)
+### func \(\*TransactionWithAuth\) [ZCNSCDeleteAuthorizer](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth.go#L577>)
 
 ```go
 func (ta *TransactionWithAuth) ZCNSCDeleteAuthorizer(ip *DeleteAuthorizerPayload) (err error)
@@ -3691,7 +3691,7 @@ func (ta *TransactionWithAuth) ZCNSCDeleteAuthorizer(ip *DeleteAuthorizerPayload
 
 
 <a name="TransactionWithAuth.ZCNSCUpdateAuthorizerConfig"></a>
-### func \(\*TransactionWithAuth\) [ZCNSCUpdateAuthorizerConfig](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth.go#L547>)
+### func \(\*TransactionWithAuth\) [ZCNSCUpdateAuthorizerConfig](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth.go#L547>)
 
 ```go
 func (ta *TransactionWithAuth) ZCNSCUpdateAuthorizerConfig(ip *AuthorizerNode) (err error)
@@ -3700,7 +3700,7 @@ func (ta *TransactionWithAuth) ZCNSCUpdateAuthorizerConfig(ip *AuthorizerNode) (
 
 
 <a name="TransactionWithAuth.ZCNSCUpdateGlobalConfig"></a>
-### func \(\*TransactionWithAuth\) [ZCNSCUpdateGlobalConfig](<https://github.com/0chain/gosdk/blob/staging/zcncore/transactionauth.go#L481>)
+### func \(\*TransactionWithAuth\) [ZCNSCUpdateGlobalConfig](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transactionauth.go#L481>)
 
 ```go
 func (ta *TransactionWithAuth) ZCNSCUpdateGlobalConfig(ip *InputMap) (err error)
@@ -3709,7 +3709,7 @@ func (ta *TransactionWithAuth) ZCNSCUpdateGlobalConfig(ip *InputMap) (err error)
 
 
 <a name="TxnFeeOption"></a>
-## type [TxnFeeOption](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction_base.go#L473-L478>)
+## type [TxnFeeOption](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction_base.go#L473-L478>)
 
 
 
@@ -3720,7 +3720,7 @@ type TxnFeeOption struct {
 ```
 
 <a name="Validator"></a>
-## type [Validator](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L219-L223>)
+## type [Validator](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L219-L223>)
 
 
 
@@ -3733,7 +3733,7 @@ type Validator struct {
 ```
 
 <a name="VestingAddRequest"></a>
-## type [VestingAddRequest](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L338-L343>)
+## type [VestingAddRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L338-L343>)
 
 
 
@@ -3747,7 +3747,7 @@ type VestingAddRequest struct {
 ```
 
 <a name="VestingClientList"></a>
-## type [VestingClientList](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L1404-L1406>)
+## type [VestingClientList](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L1404-L1406>)
 
 
 
@@ -3758,7 +3758,7 @@ type VestingClientList struct {
 ```
 
 <a name="VestingDest"></a>
-## type [VestingDest](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L333-L336>)
+## type [VestingDest](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L333-L336>)
 
 
 
@@ -3770,7 +3770,7 @@ type VestingDest struct {
 ```
 
 <a name="VestingDestInfo"></a>
-## type [VestingDestInfo](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L1421-L1427>)
+## type [VestingDestInfo](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L1421-L1427>)
 
 
 
@@ -3785,7 +3785,7 @@ type VestingDestInfo struct {
 ```
 
 <a name="VestingPoolInfo"></a>
-## type [VestingPoolInfo](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L1429-L1438>)
+## type [VestingPoolInfo](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L1429-L1438>)
 
 
 
@@ -3803,7 +3803,7 @@ type VestingPoolInfo struct {
 ```
 
 <a name="VestingSCConfig"></a>
-## type [VestingSCConfig](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction.go#L73-L79>)
+## type [VestingSCConfig](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction.go#L73-L79>)
 
 
 
@@ -3818,7 +3818,7 @@ type VestingSCConfig struct {
 ```
 
 <a name="VestingStopRequest"></a>
-## type [VestingStopRequest](<https://github.com/0chain/gosdk/blob/staging/zcncore/transaction_base.go#L826-L829>)
+## type [VestingStopRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/transaction_base.go#L826-L829>)
 
 
 
@@ -3830,7 +3830,7 @@ type VestingStopRequest struct {
 ```
 
 <a name="WalletCallback"></a>
-## type [WalletCallback](<https://github.com/0chain/gosdk/blob/staging/zcncore/wallet_base.go#L178-L180>)
+## type [WalletCallback](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L178-L180>)
 
 WalletCallback needs to be implemented for wallet creation.
 

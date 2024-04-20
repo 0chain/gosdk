@@ -71,7 +71,7 @@ var (
 ```
 
 <a name="InitChainNetwork"></a>
-## func [InitChainNetwork](<https://github.com/0chain/gosdk/blob/staging/core/conf/vars.go#L54>)
+## func [InitChainNetwork](<https://github.com/0chain/gosdk/blob/doc/initial/core/conf/vars.go#L54>)
 
 ```go
 func InitChainNetwork(n *Network)
@@ -80,7 +80,7 @@ func InitChainNetwork(n *Network)
 InitChainNetwork set global chain network
 
 <a name="InitClientConfig"></a>
-## func [InitClientConfig](<https://github.com/0chain/gosdk/blob/staging/core/conf/vars.go#L42>)
+## func [InitClientConfig](<https://github.com/0chain/gosdk/blob/doc/initial/core/conf/vars.go#L42>)
 
 ```go
 func InitClientConfig(c *Config)
@@ -89,7 +89,7 @@ func InitClientConfig(c *Config)
 InitClientConfig set global client config
 
 <a name="Config"></a>
-## type [Config](<https://github.com/0chain/gosdk/blob/staging/core/conf/config.go#L42-L77>)
+## type [Config](<https://github.com/0chain/gosdk/blob/doc/initial/core/conf/config.go#L42-L77>)
 
 Config settings from \~/.zcn/config.yaml block\_worker: http://198.18.0.98:9091 signature\_scheme: bls0chain min\_submit: 50 min\_confirmation: 50 confirmation\_chain\_length: 3 max\_txn\_query: 5 query\_sleep\_time: 5 \# \# OPTIONAL \- Uncomment to use/ Add more if you want \# preferred\_blobbers: \# \- http://one.devnet-0chain.net:31051 \# \- http://one.devnet-0chain.net:31052 \# \- http://one.devnet-0chain.net:31053
 
@@ -133,7 +133,7 @@ type Config struct {
 ```
 
 <a name="GetClientConfig"></a>
-### func [GetClientConfig](<https://github.com/0chain/gosdk/blob/staging/core/conf/vars.go#L33>)
+### func [GetClientConfig](<https://github.com/0chain/gosdk/blob/doc/initial/core/conf/vars.go#L33>)
 
 ```go
 func GetClientConfig() (*Config, error)
@@ -142,7 +142,7 @@ func GetClientConfig() (*Config, error)
 GetClientConfig get global client config
 
 <a name="LoadConfig"></a>
-### func [LoadConfig](<https://github.com/0chain/gosdk/blob/staging/core/conf/config.go#L106>)
+### func [LoadConfig](<https://github.com/0chain/gosdk/blob/doc/initial/core/conf/config.go#L106>)
 
 ```go
 func LoadConfig(v Reader) (Config, error)
@@ -151,7 +151,7 @@ func LoadConfig(v Reader) (Config, error)
 LoadConfig load and parse config
 
 <a name="LoadConfigFile"></a>
-### func [LoadConfigFile](<https://github.com/0chain/gosdk/blob/staging/core/conf/config.go#L80>)
+### func [LoadConfigFile](<https://github.com/0chain/gosdk/blob/doc/initial/core/conf/config.go#L80>)
 
 ```go
 func LoadConfigFile(file string) (Config, error)
@@ -160,7 +160,7 @@ func LoadConfigFile(file string) (Config, error)
 LoadConfigFile load and parse Config from file
 
 <a name="JSONReader"></a>
-## type [JSONReader](<https://github.com/0chain/gosdk/blob/staging/core/conf/reader.go#L17-L19>)
+## type [JSONReader](<https://github.com/0chain/gosdk/blob/doc/initial/core/conf/reader.go#L17-L19>)
 
 JSONReader read config from json
 
@@ -171,7 +171,7 @@ type JSONReader struct {
 ```
 
 <a name="JSONReader.GetInt"></a>
-### func \(\*JSONReader\) [GetInt](<https://github.com/0chain/gosdk/blob/staging/core/conf/reader.go#L51>)
+### func \(\*JSONReader\) [GetInt](<https://github.com/0chain/gosdk/blob/doc/initial/core/conf/reader.go#L51>)
 
 ```go
 func (r *JSONReader) GetInt(key string) int
@@ -180,7 +180,7 @@ func (r *JSONReader) GetInt(key string) int
 GetInt read int from key
 
 <a name="JSONReader.GetString"></a>
-### func \(\*JSONReader\) [GetString](<https://github.com/0chain/gosdk/blob/staging/core/conf/reader.go#L35>)
+### func \(\*JSONReader\) [GetString](<https://github.com/0chain/gosdk/blob/doc/initial/core/conf/reader.go#L35>)
 
 ```go
 func (r *JSONReader) GetString(key string) string
@@ -189,7 +189,7 @@ func (r *JSONReader) GetString(key string) string
 GetString read string from key
 
 <a name="JSONReader.GetStringSlice"></a>
-### func \(\*JSONReader\) [GetStringSlice](<https://github.com/0chain/gosdk/blob/staging/core/conf/reader.go#L68>)
+### func \(\*JSONReader\) [GetStringSlice](<https://github.com/0chain/gosdk/blob/doc/initial/core/conf/reader.go#L68>)
 
 ```go
 func (r *JSONReader) GetStringSlice(key string) []string
@@ -198,7 +198,7 @@ func (r *JSONReader) GetStringSlice(key string) []string
 GetStringSlice get string slice from key
 
 <a name="Network"></a>
-## type [Network](<https://github.com/0chain/gosdk/blob/staging/core/conf/network.go#L13-L18>)
+## type [Network](<https://github.com/0chain/gosdk/blob/doc/initial/core/conf/network.go#L13-L18>)
 
 Network settings from \~/.zcn/network.yaml
 
@@ -212,7 +212,7 @@ type Network struct {
 ```
 
 <a name="LoadNetwork"></a>
-### func [LoadNetwork](<https://github.com/0chain/gosdk/blob/staging/core/conf/network.go#L52>)
+### func [LoadNetwork](<https://github.com/0chain/gosdk/blob/doc/initial/core/conf/network.go#L52>)
 
 ```go
 func LoadNetwork(v Reader) Network
@@ -221,7 +221,7 @@ func LoadNetwork(v Reader) Network
 LoadNetwork load and parse network
 
 <a name="LoadNetworkFile"></a>
-### func [LoadNetworkFile](<https://github.com/0chain/gosdk/blob/staging/core/conf/network.go#L26>)
+### func [LoadNetworkFile](<https://github.com/0chain/gosdk/blob/doc/initial/core/conf/network.go#L26>)
 
 ```go
 func LoadNetworkFile(file string) (Network, error)
@@ -230,7 +230,7 @@ func LoadNetworkFile(file string) (Network, error)
 LoadNetworkFile load and parse Network from file
 
 <a name="Network.IsValid"></a>
-### func \(\*Network\) [IsValid](<https://github.com/0chain/gosdk/blob/staging/core/conf/network.go#L21>)
+### func \(\*Network\) [IsValid](<https://github.com/0chain/gosdk/blob/doc/initial/core/conf/network.go#L21>)
 
 ```go
 func (n *Network) IsValid() bool
@@ -239,7 +239,7 @@ func (n *Network) IsValid() bool
 IsValid check network if it has miners and sharders
 
 <a name="Reader"></a>
-## type [Reader](<https://github.com/0chain/gosdk/blob/staging/core/conf/reader.go#L10-L14>)
+## type [Reader](<https://github.com/0chain/gosdk/blob/doc/initial/core/conf/reader.go#L10-L14>)
 
 Reader a config reader
 
@@ -252,7 +252,7 @@ type Reader interface {
 ```
 
 <a name="NewReaderFromJSON"></a>
-### func [NewReaderFromJSON](<https://github.com/0chain/gosdk/blob/staging/core/conf/reader.go#L86>)
+### func [NewReaderFromJSON](<https://github.com/0chain/gosdk/blob/doc/initial/core/conf/reader.go#L86>)
 
 ```go
 func NewReaderFromJSON(data string) (Reader, error)

@@ -103,7 +103,7 @@ var AuthorizersMetaData = &bind.MetaData{
 ```
 
 <a name="Authorizers"></a>
-## type [Authorizers](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L63-L67>)
+## type [Authorizers](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L63-L67>)
 
 Authorizers is an auto generated Go binding around an Ethereum contract.
 
@@ -116,7 +116,7 @@ type Authorizers struct {
 ```
 
 <a name="DeployAuthorizers"></a>
-### func [DeployAuthorizers](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L46>)
+### func [DeployAuthorizers](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L46>)
 
 ```go
 func DeployAuthorizers(auth *bind.TransactOpts, backend bind.ContractBackend) (common.Address, *types.Transaction, *Authorizers, error)
@@ -125,7 +125,7 @@ func DeployAuthorizers(auth *bind.TransactOpts, backend bind.ContractBackend) (c
 DeployAuthorizers deploys a new Ethereum contract, binding an instance of Authorizers to it.
 
 <a name="NewAuthorizers"></a>
-### func [NewAuthorizers](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L122>)
+### func [NewAuthorizers](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L122>)
 
 ```go
 func NewAuthorizers(address common.Address, backend bind.ContractBackend) (*Authorizers, error)
@@ -134,7 +134,7 @@ func NewAuthorizers(address common.Address, backend bind.ContractBackend) (*Auth
 NewAuthorizers creates a new instance of Authorizers, bound to a specific deployed contract.
 
 <a name="AuthorizersCaller"></a>
-## type [AuthorizersCaller](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L70-L72>)
+## type [AuthorizersCaller](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L70-L72>)
 
 AuthorizersCaller is an auto generated read\-only Go binding around an Ethereum contract.
 
@@ -145,7 +145,7 @@ type AuthorizersCaller struct {
 ```
 
 <a name="NewAuthorizersCaller"></a>
-### func [NewAuthorizersCaller](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L131>)
+### func [NewAuthorizersCaller](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L131>)
 
 ```go
 func NewAuthorizersCaller(address common.Address, caller bind.ContractCaller) (*AuthorizersCaller, error)
@@ -154,7 +154,7 @@ func NewAuthorizersCaller(address common.Address, caller bind.ContractCaller) (*
 NewAuthorizersCaller creates a new read\-only instance of Authorizers, bound to a specific deployed contract.
 
 <a name="AuthorizersCaller.Authorize"></a>
-### func \(\*AuthorizersCaller\) [Authorize](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L207>)
+### func \(\*AuthorizersCaller\) [Authorize](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L207>)
 
 ```go
 func (_Authorizers *AuthorizersCaller) Authorize(opts *bind.CallOpts, message_ [32]byte, signatures_ [][]byte) (bool, error)
@@ -165,7 +165,7 @@ Authorize is a free data retrieval call binding the contract method 0xe304688f.
 Solidity: function authorize\(bytes32 message\_, bytes\[\] signatures\_\) view returns\(bool\)
 
 <a name="AuthorizersCaller.AuthorizerCount"></a>
-### func \(\*AuthorizersCaller\) [AuthorizerCount](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L238>)
+### func \(\*AuthorizersCaller\) [AuthorizerCount](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L238>)
 
 ```go
 func (_Authorizers *AuthorizersCaller) AuthorizerCount(opts *bind.CallOpts) (*big.Int, error)
@@ -176,7 +176,7 @@ AuthorizerCount is a free data retrieval call binding the contract method 0x7ac3
 Solidity: function authorizerCount\(\) view returns\(uint256\)
 
 <a name="AuthorizersCaller.Authorizers"></a>
-### func \(\*AuthorizersCaller\) [Authorizers](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L269-L272>)
+### func \(\*AuthorizersCaller\) [Authorizers](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L269-L272>)
 
 ```go
 func (_Authorizers *AuthorizersCaller) Authorizers(opts *bind.CallOpts, arg0 common.Address) (struct {
@@ -190,7 +190,7 @@ Authorizers is a free data retrieval call binding the contract method 0x09c7a20f
 Solidity: function authorizers\(address \) view returns\(uint256 index, bool isAuthorizer\)
 
 <a name="AuthorizersCaller.MessageHash"></a>
-### func \(\*AuthorizersCaller\) [MessageHash](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L314>)
+### func \(\*AuthorizersCaller\) [MessageHash](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L314>)
 
 ```go
 func (_Authorizers *AuthorizersCaller) MessageHash(opts *bind.CallOpts, to_ common.Address, amount_ *big.Int, txid_ []byte, nonce_ *big.Int) ([32]byte, error)
@@ -201,7 +201,7 @@ MessageHash is a free data retrieval call binding the contract method 0x0b249ae4
 Solidity: function messageHash\(address to\_, uint256 amount\_, bytes txid\_, uint256 nonce\_\) pure returns\(bytes32\)
 
 <a name="AuthorizersCaller.MinThreshold"></a>
-### func \(\*AuthorizersCaller\) [MinThreshold](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L345>)
+### func \(\*AuthorizersCaller\) [MinThreshold](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L345>)
 
 ```go
 func (_Authorizers *AuthorizersCaller) MinThreshold(opts *bind.CallOpts) (*big.Int, error)
@@ -212,7 +212,7 @@ MinThreshold is a free data retrieval call binding the contract method 0xc85501b
 Solidity: function minThreshold\(\) view returns\(uint256\)
 
 <a name="AuthorizersCaller.Owner"></a>
-### func \(\*AuthorizersCaller\) [Owner](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L376>)
+### func \(\*AuthorizersCaller\) [Owner](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L376>)
 
 ```go
 func (_Authorizers *AuthorizersCaller) Owner(opts *bind.CallOpts) (common.Address, error)
@@ -223,7 +223,7 @@ Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
 Solidity: function owner\(\) view returns\(address\)
 
 <a name="AuthorizersCallerRaw"></a>
-## type [AuthorizersCallerRaw](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L112-L114>)
+## type [AuthorizersCallerRaw](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L112-L114>)
 
 AuthorizersCallerRaw is an auto generated low\-level read\-only Go binding around an Ethereum contract.
 
@@ -234,7 +234,7 @@ type AuthorizersCallerRaw struct {
 ```
 
 <a name="AuthorizersCallerRaw.Call"></a>
-### func \(\*AuthorizersCallerRaw\) [Call](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L189>)
+### func \(\*AuthorizersCallerRaw\) [Call](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L189>)
 
 ```go
 func (_Authorizers *AuthorizersCallerRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error
@@ -243,7 +243,7 @@ func (_Authorizers *AuthorizersCallerRaw) Call(opts *bind.CallOpts, result *[]in
 Call invokes the \(constant\) contract method with params as input values and sets the output to result. The result type might be a single field for simple returns, a slice of interfaces for anonymous returns and a struct for named returns.
 
 <a name="AuthorizersCallerSession"></a>
-## type [AuthorizersCallerSession](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L94-L97>)
+## type [AuthorizersCallerSession](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L94-L97>)
 
 AuthorizersCallerSession is an auto generated read\-only Go binding around an Ethereum contract, with pre\-set call options.
 
@@ -255,7 +255,7 @@ type AuthorizersCallerSession struct {
 ```
 
 <a name="AuthorizersCallerSession.Authorize"></a>
-### func \(\*AuthorizersCallerSession\) [Authorize](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L231>)
+### func \(\*AuthorizersCallerSession\) [Authorize](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L231>)
 
 ```go
 func (_Authorizers *AuthorizersCallerSession) Authorize(message_ [32]byte, signatures_ [][]byte) (bool, error)
@@ -266,7 +266,7 @@ Authorize is a free data retrieval call binding the contract method 0xe304688f.
 Solidity: function authorize\(bytes32 message\_, bytes\[\] signatures\_\) view returns\(bool\)
 
 <a name="AuthorizersCallerSession.AuthorizerCount"></a>
-### func \(\*AuthorizersCallerSession\) [AuthorizerCount](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L262>)
+### func \(\*AuthorizersCallerSession\) [AuthorizerCount](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L262>)
 
 ```go
 func (_Authorizers *AuthorizersCallerSession) AuthorizerCount() (*big.Int, error)
@@ -277,7 +277,7 @@ AuthorizerCount is a free data retrieval call binding the contract method 0x7ac3
 Solidity: function authorizerCount\(\) view returns\(uint256\)
 
 <a name="AuthorizersCallerSession.Authorizers"></a>
-### func \(\*AuthorizersCallerSession\) [Authorizers](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L304-L307>)
+### func \(\*AuthorizersCallerSession\) [Authorizers](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L304-L307>)
 
 ```go
 func (_Authorizers *AuthorizersCallerSession) Authorizers(arg0 common.Address) (struct {
@@ -291,7 +291,7 @@ Authorizers is a free data retrieval call binding the contract method 0x09c7a20f
 Solidity: function authorizers\(address \) view returns\(uint256 index, bool isAuthorizer\)
 
 <a name="AuthorizersCallerSession.MessageHash"></a>
-### func \(\*AuthorizersCallerSession\) [MessageHash](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L338>)
+### func \(\*AuthorizersCallerSession\) [MessageHash](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L338>)
 
 ```go
 func (_Authorizers *AuthorizersCallerSession) MessageHash(to_ common.Address, amount_ *big.Int, txid_ []byte, nonce_ *big.Int) ([32]byte, error)
@@ -302,7 +302,7 @@ MessageHash is a free data retrieval call binding the contract method 0x0b249ae4
 Solidity: function messageHash\(address to\_, uint256 amount\_, bytes txid\_, uint256 nonce\_\) pure returns\(bytes32\)
 
 <a name="AuthorizersCallerSession.MinThreshold"></a>
-### func \(\*AuthorizersCallerSession\) [MinThreshold](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L369>)
+### func \(\*AuthorizersCallerSession\) [MinThreshold](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L369>)
 
 ```go
 func (_Authorizers *AuthorizersCallerSession) MinThreshold() (*big.Int, error)
@@ -313,7 +313,7 @@ MinThreshold is a free data retrieval call binding the contract method 0xc85501b
 Solidity: function minThreshold\(\) view returns\(uint256\)
 
 <a name="AuthorizersCallerSession.Owner"></a>
-### func \(\*AuthorizersCallerSession\) [Owner](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L400>)
+### func \(\*AuthorizersCallerSession\) [Owner](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L400>)
 
 ```go
 func (_Authorizers *AuthorizersCallerSession) Owner() (common.Address, error)
@@ -324,7 +324,7 @@ Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
 Solidity: function owner\(\) view returns\(address\)
 
 <a name="AuthorizersFilterer"></a>
-## type [AuthorizersFilterer](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L80-L82>)
+## type [AuthorizersFilterer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L80-L82>)
 
 AuthorizersFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
 
@@ -335,7 +335,7 @@ type AuthorizersFilterer struct {
 ```
 
 <a name="NewAuthorizersFilterer"></a>
-### func [NewAuthorizersFilterer](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L149>)
+### func [NewAuthorizersFilterer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L149>)
 
 ```go
 func NewAuthorizersFilterer(address common.Address, filterer bind.ContractFilterer) (*AuthorizersFilterer, error)
@@ -344,7 +344,7 @@ func NewAuthorizersFilterer(address common.Address, filterer bind.ContractFilter
 NewAuthorizersFilterer creates a new log filterer instance of Authorizers, bound to a specific deployed contract.
 
 <a name="AuthorizersFilterer.FilterOwnershipTransferred"></a>
-### func \(\*AuthorizersFilterer\) [FilterOwnershipTransferred](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L565>)
+### func \(\*AuthorizersFilterer\) [FilterOwnershipTransferred](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L565>)
 
 ```go
 func (_Authorizers *AuthorizersFilterer) FilterOwnershipTransferred(opts *bind.FilterOpts, previousOwner []common.Address, newOwner []common.Address) (*AuthorizersOwnershipTransferredIterator, error)
@@ -355,7 +355,7 @@ FilterOwnershipTransferred is a free log retrieval operation binding the contrac
 Solidity: event OwnershipTransferred\(address indexed previousOwner, address indexed newOwner\)
 
 <a name="AuthorizersFilterer.ParseOwnershipTransferred"></a>
-### func \(\*AuthorizersFilterer\) [ParseOwnershipTransferred](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L632>)
+### func \(\*AuthorizersFilterer\) [ParseOwnershipTransferred](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L632>)
 
 ```go
 func (_Authorizers *AuthorizersFilterer) ParseOwnershipTransferred(log types.Log) (*AuthorizersOwnershipTransferred, error)
@@ -366,7 +366,7 @@ ParseOwnershipTransferred is a log parse operation binding the contract event 0x
 Solidity: event OwnershipTransferred\(address indexed previousOwner, address indexed newOwner\)
 
 <a name="AuthorizersFilterer.WatchOwnershipTransferred"></a>
-### func \(\*AuthorizersFilterer\) [WatchOwnershipTransferred](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L586>)
+### func \(\*AuthorizersFilterer\) [WatchOwnershipTransferred](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L586>)
 
 ```go
 func (_Authorizers *AuthorizersFilterer) WatchOwnershipTransferred(opts *bind.WatchOpts, sink chan<- *AuthorizersOwnershipTransferred, previousOwner []common.Address, newOwner []common.Address) (event.Subscription, error)
@@ -377,7 +377,7 @@ WatchOwnershipTransferred is a free log subscription operation binding the contr
 Solidity: event OwnershipTransferred\(address indexed previousOwner, address indexed newOwner\)
 
 <a name="AuthorizersOwnershipTransferred"></a>
-## type [AuthorizersOwnershipTransferred](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L556-L560>)
+## type [AuthorizersOwnershipTransferred](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L556-L560>)
 
 AuthorizersOwnershipTransferred represents a OwnershipTransferred event raised by the Authorizers contract.
 
@@ -390,7 +390,7 @@ type AuthorizersOwnershipTransferred struct {
 ```
 
 <a name="AuthorizersOwnershipTransferredIterator"></a>
-## type [AuthorizersOwnershipTransferredIterator](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L489-L499>)
+## type [AuthorizersOwnershipTransferredIterator](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L489-L499>)
 
 AuthorizersOwnershipTransferredIterator is returned from FilterOwnershipTransferred and is used to iterate over the raw logs and unpacked data for OwnershipTransferred events raised by the Authorizers contract.
 
@@ -402,7 +402,7 @@ type AuthorizersOwnershipTransferredIterator struct {
 ```
 
 <a name="AuthorizersOwnershipTransferredIterator.Close"></a>
-### func \(\*AuthorizersOwnershipTransferredIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L550>)
+### func \(\*AuthorizersOwnershipTransferredIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L550>)
 
 ```go
 func (it *AuthorizersOwnershipTransferredIterator) Close() error
@@ -411,7 +411,7 @@ func (it *AuthorizersOwnershipTransferredIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="AuthorizersOwnershipTransferredIterator.Error"></a>
-### func \(\*AuthorizersOwnershipTransferredIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L544>)
+### func \(\*AuthorizersOwnershipTransferredIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L544>)
 
 ```go
 func (it *AuthorizersOwnershipTransferredIterator) Error() error
@@ -420,7 +420,7 @@ func (it *AuthorizersOwnershipTransferredIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="AuthorizersOwnershipTransferredIterator.Next"></a>
-### func \(\*AuthorizersOwnershipTransferredIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L504>)
+### func \(\*AuthorizersOwnershipTransferredIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L504>)
 
 ```go
 func (it *AuthorizersOwnershipTransferredIterator) Next() bool
@@ -429,7 +429,7 @@ func (it *AuthorizersOwnershipTransferredIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="AuthorizersRaw"></a>
-## type [AuthorizersRaw](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L107-L109>)
+## type [AuthorizersRaw](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L107-L109>)
 
 AuthorizersRaw is an auto generated low\-level Go binding around an Ethereum contract.
 
@@ -440,7 +440,7 @@ type AuthorizersRaw struct {
 ```
 
 <a name="AuthorizersRaw.Call"></a>
-### func \(\*AuthorizersRaw\) [Call](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L170>)
+### func \(\*AuthorizersRaw\) [Call](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L170>)
 
 ```go
 func (_Authorizers *AuthorizersRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error
@@ -449,7 +449,7 @@ func (_Authorizers *AuthorizersRaw) Call(opts *bind.CallOpts, result *[]interfac
 Call invokes the \(constant\) contract method with params as input values and sets the output to result. The result type might be a single field for simple returns, a slice of interfaces for anonymous returns and a struct for named returns.
 
 <a name="AuthorizersRaw.Transact"></a>
-### func \(\*AuthorizersRaw\) [Transact](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L181>)
+### func \(\*AuthorizersRaw\) [Transact](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L181>)
 
 ```go
 func (_Authorizers *AuthorizersRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error)
@@ -458,7 +458,7 @@ func (_Authorizers *AuthorizersRaw) Transact(opts *bind.TransactOpts, method str
 Transact invokes the \(paid\) contract method with params as input values.
 
 <a name="AuthorizersRaw.Transfer"></a>
-### func \(\*AuthorizersRaw\) [Transfer](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L176>)
+### func \(\*AuthorizersRaw\) [Transfer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L176>)
 
 ```go
 func (_Authorizers *AuthorizersRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error)
@@ -467,7 +467,7 @@ func (_Authorizers *AuthorizersRaw) Transfer(opts *bind.TransactOpts) (*types.Tr
 Transfer initiates a plain transaction to move funds to the contract, calling its default method if one is available.
 
 <a name="AuthorizersSession"></a>
-## type [AuthorizersSession](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L86-L90>)
+## type [AuthorizersSession](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L86-L90>)
 
 AuthorizersSession is an auto generated Go binding around an Ethereum contract, with pre\-set call and transact options.
 
@@ -480,7 +480,7 @@ type AuthorizersSession struct {
 ```
 
 <a name="AuthorizersSession.AddAuthorizers"></a>
-### func \(\*AuthorizersSession\) [AddAuthorizers](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L414>)
+### func \(\*AuthorizersSession\) [AddAuthorizers](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L414>)
 
 ```go
 func (_Authorizers *AuthorizersSession) AddAuthorizers(authorizer_ common.Address) (*types.Transaction, error)
@@ -491,7 +491,7 @@ AddAuthorizers is a paid mutator transaction binding the contract method 0x43ab2
 Solidity: function addAuthorizers\(address authorizer\_\) returns\(\)
 
 <a name="AuthorizersSession.Authorize"></a>
-### func \(\*AuthorizersSession\) [Authorize](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L224>)
+### func \(\*AuthorizersSession\) [Authorize](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L224>)
 
 ```go
 func (_Authorizers *AuthorizersSession) Authorize(message_ [32]byte, signatures_ [][]byte) (bool, error)
@@ -502,7 +502,7 @@ Authorize is a free data retrieval call binding the contract method 0xe304688f.
 Solidity: function authorize\(bytes32 message\_, bytes\[\] signatures\_\) view returns\(bool\)
 
 <a name="AuthorizersSession.AuthorizerCount"></a>
-### func \(\*AuthorizersSession\) [AuthorizerCount](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L255>)
+### func \(\*AuthorizersSession\) [AuthorizerCount](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L255>)
 
 ```go
 func (_Authorizers *AuthorizersSession) AuthorizerCount() (*big.Int, error)
@@ -513,7 +513,7 @@ AuthorizerCount is a free data retrieval call binding the contract method 0x7ac3
 Solidity: function authorizerCount\(\) view returns\(uint256\)
 
 <a name="AuthorizersSession.Authorizers"></a>
-### func \(\*AuthorizersSession\) [Authorizers](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L294-L297>)
+### func \(\*AuthorizersSession\) [Authorizers](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L294-L297>)
 
 ```go
 func (_Authorizers *AuthorizersSession) Authorizers(arg0 common.Address) (struct {
@@ -527,7 +527,7 @@ Authorizers is a free data retrieval call binding the contract method 0x09c7a20f
 Solidity: function authorizers\(address \) view returns\(uint256 index, bool isAuthorizer\)
 
 <a name="AuthorizersSession.MessageHash"></a>
-### func \(\*AuthorizersSession\) [MessageHash](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L331>)
+### func \(\*AuthorizersSession\) [MessageHash](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L331>)
 
 ```go
 func (_Authorizers *AuthorizersSession) MessageHash(to_ common.Address, amount_ *big.Int, txid_ []byte, nonce_ *big.Int) ([32]byte, error)
@@ -538,7 +538,7 @@ MessageHash is a free data retrieval call binding the contract method 0x0b249ae4
 Solidity: function messageHash\(address to\_, uint256 amount\_, bytes txid\_, uint256 nonce\_\) pure returns\(bytes32\)
 
 <a name="AuthorizersSession.MinThreshold"></a>
-### func \(\*AuthorizersSession\) [MinThreshold](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L362>)
+### func \(\*AuthorizersSession\) [MinThreshold](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L362>)
 
 ```go
 func (_Authorizers *AuthorizersSession) MinThreshold() (*big.Int, error)
@@ -549,7 +549,7 @@ MinThreshold is a free data retrieval call binding the contract method 0xc85501b
 Solidity: function minThreshold\(\) view returns\(uint256\)
 
 <a name="AuthorizersSession.Owner"></a>
-### func \(\*AuthorizersSession\) [Owner](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L393>)
+### func \(\*AuthorizersSession\) [Owner](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L393>)
 
 ```go
 func (_Authorizers *AuthorizersSession) Owner() (common.Address, error)
@@ -560,7 +560,7 @@ Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
 Solidity: function owner\(\) view returns\(address\)
 
 <a name="AuthorizersSession.RemoveAuthorizers"></a>
-### func \(\*AuthorizersSession\) [RemoveAuthorizers](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L435>)
+### func \(\*AuthorizersSession\) [RemoveAuthorizers](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L435>)
 
 ```go
 func (_Authorizers *AuthorizersSession) RemoveAuthorizers(authorizer_ common.Address) (*types.Transaction, error)
@@ -571,7 +571,7 @@ RemoveAuthorizers is a paid mutator transaction binding the contract method 0xf3
 Solidity: function removeAuthorizers\(address authorizer\_\) returns\(\)
 
 <a name="AuthorizersSession.RenounceOwnership"></a>
-### func \(\*AuthorizersSession\) [RenounceOwnership](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L456>)
+### func \(\*AuthorizersSession\) [RenounceOwnership](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L456>)
 
 ```go
 func (_Authorizers *AuthorizersSession) RenounceOwnership() (*types.Transaction, error)
@@ -582,7 +582,7 @@ RenounceOwnership is a paid mutator transaction binding the contract method 0x71
 Solidity: function renounceOwnership\(\) returns\(\)
 
 <a name="AuthorizersSession.TransferOwnership"></a>
-### func \(\*AuthorizersSession\) [TransferOwnership](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L477>)
+### func \(\*AuthorizersSession\) [TransferOwnership](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L477>)
 
 ```go
 func (_Authorizers *AuthorizersSession) TransferOwnership(newOwner common.Address) (*types.Transaction, error)
@@ -593,7 +593,7 @@ TransferOwnership is a paid mutator transaction binding the contract method 0xf2
 Solidity: function transferOwnership\(address newOwner\) returns\(\)
 
 <a name="AuthorizersTransactor"></a>
-## type [AuthorizersTransactor](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L75-L77>)
+## type [AuthorizersTransactor](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L75-L77>)
 
 AuthorizersTransactor is an auto generated write\-only Go binding around an Ethereum contract.
 
@@ -604,7 +604,7 @@ type AuthorizersTransactor struct {
 ```
 
 <a name="NewAuthorizersTransactor"></a>
-### func [NewAuthorizersTransactor](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L140>)
+### func [NewAuthorizersTransactor](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L140>)
 
 ```go
 func NewAuthorizersTransactor(address common.Address, transactor bind.ContractTransactor) (*AuthorizersTransactor, error)
@@ -613,7 +613,7 @@ func NewAuthorizersTransactor(address common.Address, transactor bind.ContractTr
 NewAuthorizersTransactor creates a new write\-only instance of Authorizers, bound to a specific deployed contract.
 
 <a name="AuthorizersTransactor.AddAuthorizers"></a>
-### func \(\*AuthorizersTransactor\) [AddAuthorizers](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L407>)
+### func \(\*AuthorizersTransactor\) [AddAuthorizers](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L407>)
 
 ```go
 func (_Authorizers *AuthorizersTransactor) AddAuthorizers(opts *bind.TransactOpts, authorizer_ common.Address) (*types.Transaction, error)
@@ -624,7 +624,7 @@ AddAuthorizers is a paid mutator transaction binding the contract method 0x43ab2
 Solidity: function addAuthorizers\(address authorizer\_\) returns\(\)
 
 <a name="AuthorizersTransactor.RemoveAuthorizers"></a>
-### func \(\*AuthorizersTransactor\) [RemoveAuthorizers](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L428>)
+### func \(\*AuthorizersTransactor\) [RemoveAuthorizers](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L428>)
 
 ```go
 func (_Authorizers *AuthorizersTransactor) RemoveAuthorizers(opts *bind.TransactOpts, authorizer_ common.Address) (*types.Transaction, error)
@@ -635,7 +635,7 @@ RemoveAuthorizers is a paid mutator transaction binding the contract method 0xf3
 Solidity: function removeAuthorizers\(address authorizer\_\) returns\(\)
 
 <a name="AuthorizersTransactor.RenounceOwnership"></a>
-### func \(\*AuthorizersTransactor\) [RenounceOwnership](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L449>)
+### func \(\*AuthorizersTransactor\) [RenounceOwnership](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L449>)
 
 ```go
 func (_Authorizers *AuthorizersTransactor) RenounceOwnership(opts *bind.TransactOpts) (*types.Transaction, error)
@@ -646,7 +646,7 @@ RenounceOwnership is a paid mutator transaction binding the contract method 0x71
 Solidity: function renounceOwnership\(\) returns\(\)
 
 <a name="AuthorizersTransactor.TransferOwnership"></a>
-### func \(\*AuthorizersTransactor\) [TransferOwnership](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L470>)
+### func \(\*AuthorizersTransactor\) [TransferOwnership](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L470>)
 
 ```go
 func (_Authorizers *AuthorizersTransactor) TransferOwnership(opts *bind.TransactOpts, newOwner common.Address) (*types.Transaction, error)
@@ -657,7 +657,7 @@ TransferOwnership is a paid mutator transaction binding the contract method 0xf2
 Solidity: function transferOwnership\(address newOwner\) returns\(\)
 
 <a name="AuthorizersTransactorRaw"></a>
-## type [AuthorizersTransactorRaw](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L117-L119>)
+## type [AuthorizersTransactorRaw](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L117-L119>)
 
 AuthorizersTransactorRaw is an auto generated low\-level write\-only Go binding around an Ethereum contract.
 
@@ -668,7 +668,7 @@ type AuthorizersTransactorRaw struct {
 ```
 
 <a name="AuthorizersTransactorRaw.Transact"></a>
-### func \(\*AuthorizersTransactorRaw\) [Transact](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L200>)
+### func \(\*AuthorizersTransactorRaw\) [Transact](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L200>)
 
 ```go
 func (_Authorizers *AuthorizersTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error)
@@ -677,7 +677,7 @@ func (_Authorizers *AuthorizersTransactorRaw) Transact(opts *bind.TransactOpts, 
 Transact invokes the \(paid\) contract method with params as input values.
 
 <a name="AuthorizersTransactorRaw.Transfer"></a>
-### func \(\*AuthorizersTransactorRaw\) [Transfer](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L195>)
+### func \(\*AuthorizersTransactorRaw\) [Transfer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L195>)
 
 ```go
 func (_Authorizers *AuthorizersTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error)
@@ -686,7 +686,7 @@ func (_Authorizers *AuthorizersTransactorRaw) Transfer(opts *bind.TransactOpts) 
 Transfer initiates a plain transaction to move funds to the contract, calling its default method if one is available.
 
 <a name="AuthorizersTransactorSession"></a>
-## type [AuthorizersTransactorSession](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L101-L104>)
+## type [AuthorizersTransactorSession](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L101-L104>)
 
 AuthorizersTransactorSession is an auto generated write\-only Go binding around an Ethereum contract, with pre\-set transact options.
 
@@ -698,7 +698,7 @@ type AuthorizersTransactorSession struct {
 ```
 
 <a name="AuthorizersTransactorSession.AddAuthorizers"></a>
-### func \(\*AuthorizersTransactorSession\) [AddAuthorizers](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L421>)
+### func \(\*AuthorizersTransactorSession\) [AddAuthorizers](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L421>)
 
 ```go
 func (_Authorizers *AuthorizersTransactorSession) AddAuthorizers(authorizer_ common.Address) (*types.Transaction, error)
@@ -709,7 +709,7 @@ AddAuthorizers is a paid mutator transaction binding the contract method 0x43ab2
 Solidity: function addAuthorizers\(address authorizer\_\) returns\(\)
 
 <a name="AuthorizersTransactorSession.RemoveAuthorizers"></a>
-### func \(\*AuthorizersTransactorSession\) [RemoveAuthorizers](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L442>)
+### func \(\*AuthorizersTransactorSession\) [RemoveAuthorizers](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L442>)
 
 ```go
 func (_Authorizers *AuthorizersTransactorSession) RemoveAuthorizers(authorizer_ common.Address) (*types.Transaction, error)
@@ -720,7 +720,7 @@ RemoveAuthorizers is a paid mutator transaction binding the contract method 0xf3
 Solidity: function removeAuthorizers\(address authorizer\_\) returns\(\)
 
 <a name="AuthorizersTransactorSession.RenounceOwnership"></a>
-### func \(\*AuthorizersTransactorSession\) [RenounceOwnership](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L463>)
+### func \(\*AuthorizersTransactorSession\) [RenounceOwnership](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L463>)
 
 ```go
 func (_Authorizers *AuthorizersTransactorSession) RenounceOwnership() (*types.Transaction, error)
@@ -731,7 +731,7 @@ RenounceOwnership is a paid mutator transaction binding the contract method 0x71
 Solidity: function renounceOwnership\(\) returns\(\)
 
 <a name="AuthorizersTransactorSession.TransferOwnership"></a>
-### func \(\*AuthorizersTransactorSession\) [TransferOwnership](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/authorizers/authorizers.go#L484>)
+### func \(\*AuthorizersTransactorSession\) [TransferOwnership](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/authorizers/authorizers.go#L484>)
 
 ```go
 func (_Authorizers *AuthorizersTransactorSession) TransferOwnership(newOwner common.Address) (*types.Transaction, error)

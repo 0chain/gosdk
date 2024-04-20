@@ -12,7 +12,7 @@ import "github.com/0chain/gosdk/zcnbridge/utils"
 
 
 <a name="Encode"></a>
-## func [Encode](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/utils/convert.go#L9>)
+## func [Encode](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/utils/convert.go#L9>)
 
 ```go
 func Encode(publicKey *ecdsa.PublicKey, privateKey *ecdsa.PrivateKey) (string, string)

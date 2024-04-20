@@ -112,7 +112,7 @@ var BridgeMetaData = &bind.MetaData{
 ```
 
 <a name="Bridge"></a>
-## type [Bridge](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L63-L67>)
+## type [Bridge](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L63-L67>)
 
 Bridge is an auto generated Go binding around an Ethereum contract.
 
@@ -125,7 +125,7 @@ type Bridge struct {
 ```
 
 <a name="DeployBridge"></a>
-### func [DeployBridge](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L46>)
+### func [DeployBridge](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L46>)
 
 ```go
 func DeployBridge(auth *bind.TransactOpts, backend bind.ContractBackend, token_ common.Address, authorizers_ common.Address) (common.Address, *types.Transaction, *Bridge, error)
@@ -134,7 +134,7 @@ func DeployBridge(auth *bind.TransactOpts, backend bind.ContractBackend, token_ 
 DeployBridge deploys a new Ethereum contract, binding an instance of Bridge to it.
 
 <a name="NewBridge"></a>
-### func [NewBridge](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L122>)
+### func [NewBridge](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L122>)
 
 ```go
 func NewBridge(address common.Address, backend bind.ContractBackend) (*Bridge, error)
@@ -143,7 +143,7 @@ func NewBridge(address common.Address, backend bind.ContractBackend) (*Bridge, e
 NewBridge creates a new instance of Bridge, bound to a specific deployed contract.
 
 <a name="BridgeBurned"></a>
-## type [BridgeBurned](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L470-L476>)
+## type [BridgeBurned](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L470-L476>)
 
 BridgeBurned represents a Burned event raised by the Bridge contract.
 
@@ -158,7 +158,7 @@ type BridgeBurned struct {
 ```
 
 <a name="BridgeBurnedFullIndex"></a>
-## type [BridgeBurnedFullIndex](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L627-L633>)
+## type [BridgeBurnedFullIndex](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L627-L633>)
 
 BridgeBurnedFullIndex represents a BurnedFullIndex event raised by the Bridge contract.
 
@@ -173,7 +173,7 @@ type BridgeBurnedFullIndex struct {
 ```
 
 <a name="BridgeBurnedFullIndexIterator"></a>
-## type [BridgeBurnedFullIndexIterator](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L560-L570>)
+## type [BridgeBurnedFullIndexIterator](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L560-L570>)
 
 BridgeBurnedFullIndexIterator is returned from FilterBurnedFullIndex and is used to iterate over the raw logs and unpacked data for BurnedFullIndex events raised by the Bridge contract.
 
@@ -185,7 +185,7 @@ type BridgeBurnedFullIndexIterator struct {
 ```
 
 <a name="BridgeBurnedFullIndexIterator.Close"></a>
-### func \(\*BridgeBurnedFullIndexIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L621>)
+### func \(\*BridgeBurnedFullIndexIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L621>)
 
 ```go
 func (it *BridgeBurnedFullIndexIterator) Close() error
@@ -194,7 +194,7 @@ func (it *BridgeBurnedFullIndexIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="BridgeBurnedFullIndexIterator.Error"></a>
-### func \(\*BridgeBurnedFullIndexIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L615>)
+### func \(\*BridgeBurnedFullIndexIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L615>)
 
 ```go
 func (it *BridgeBurnedFullIndexIterator) Error() error
@@ -203,7 +203,7 @@ func (it *BridgeBurnedFullIndexIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="BridgeBurnedFullIndexIterator.Next"></a>
-### func \(\*BridgeBurnedFullIndexIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L575>)
+### func \(\*BridgeBurnedFullIndexIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L575>)
 
 ```go
 func (it *BridgeBurnedFullIndexIterator) Next() bool
@@ -212,7 +212,7 @@ func (it *BridgeBurnedFullIndexIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="BridgeBurnedIterator"></a>
-## type [BridgeBurnedIterator](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L403-L413>)
+## type [BridgeBurnedIterator](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L403-L413>)
 
 BridgeBurnedIterator is returned from FilterBurned and is used to iterate over the raw logs and unpacked data for Burned events raised by the Bridge contract.
 
@@ -224,7 +224,7 @@ type BridgeBurnedIterator struct {
 ```
 
 <a name="BridgeBurnedIterator.Close"></a>
-### func \(\*BridgeBurnedIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L464>)
+### func \(\*BridgeBurnedIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L464>)
 
 ```go
 func (it *BridgeBurnedIterator) Close() error
@@ -233,7 +233,7 @@ func (it *BridgeBurnedIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="BridgeBurnedIterator.Error"></a>
-### func \(\*BridgeBurnedIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L458>)
+### func \(\*BridgeBurnedIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L458>)
 
 ```go
 func (it *BridgeBurnedIterator) Error() error
@@ -242,7 +242,7 @@ func (it *BridgeBurnedIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="BridgeBurnedIterator.Next"></a>
-### func \(\*BridgeBurnedIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L418>)
+### func \(\*BridgeBurnedIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L418>)
 
 ```go
 func (it *BridgeBurnedIterator) Next() bool
@@ -251,7 +251,7 @@ func (it *BridgeBurnedIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="BridgeCaller"></a>
-## type [BridgeCaller](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L70-L72>)
+## type [BridgeCaller](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L70-L72>)
 
 BridgeCaller is an auto generated read\-only Go binding around an Ethereum contract.
 
@@ -262,7 +262,7 @@ type BridgeCaller struct {
 ```
 
 <a name="NewBridgeCaller"></a>
-### func [NewBridgeCaller](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L131>)
+### func [NewBridgeCaller](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L131>)
 
 ```go
 func NewBridgeCaller(address common.Address, caller bind.ContractCaller) (*BridgeCaller, error)
@@ -271,7 +271,7 @@ func NewBridgeCaller(address common.Address, caller bind.ContractCaller) (*Bridg
 NewBridgeCaller creates a new read\-only instance of Bridge, bound to a specific deployed contract.
 
 <a name="BridgeCaller.GetUserNonceMinted"></a>
-### func \(\*BridgeCaller\) [GetUserNonceMinted](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L207>)
+### func \(\*BridgeCaller\) [GetUserNonceMinted](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L207>)
 
 ```go
 func (_Bridge *BridgeCaller) GetUserNonceMinted(opts *bind.CallOpts, to_ common.Address) (*big.Int, error)
@@ -282,7 +282,7 @@ GetUserNonceMinted is a free data retrieval call binding the contract method 0xe
 Solidity: function getUserNonceMinted\(address to\_\) view returns\(uint256\)
 
 <a name="BridgeCaller.Owner"></a>
-### func \(\*BridgeCaller\) [Owner](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L238>)
+### func \(\*BridgeCaller\) [Owner](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L238>)
 
 ```go
 func (_Bridge *BridgeCaller) Owner(opts *bind.CallOpts) (common.Address, error)
@@ -293,7 +293,7 @@ Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
 Solidity: function owner\(\) view returns\(address\)
 
 <a name="BridgeCaller.UserNonceMinted"></a>
-### func \(\*BridgeCaller\) [UserNonceMinted](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L269>)
+### func \(\*BridgeCaller\) [UserNonceMinted](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L269>)
 
 ```go
 func (_Bridge *BridgeCaller) UserNonceMinted(opts *bind.CallOpts, arg0 common.Address) (*big.Int, error)
@@ -304,7 +304,7 @@ UserNonceMinted is a free data retrieval call binding the contract method 0x062f
 Solidity: function userNonceMinted\(address \) view returns\(uint256\)
 
 <a name="BridgeCallerRaw"></a>
-## type [BridgeCallerRaw](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L112-L114>)
+## type [BridgeCallerRaw](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L112-L114>)
 
 BridgeCallerRaw is an auto generated low\-level read\-only Go binding around an Ethereum contract.
 
@@ -315,7 +315,7 @@ type BridgeCallerRaw struct {
 ```
 
 <a name="BridgeCallerRaw.Call"></a>
-### func \(\*BridgeCallerRaw\) [Call](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L189>)
+### func \(\*BridgeCallerRaw\) [Call](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L189>)
 
 ```go
 func (_Bridge *BridgeCallerRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error
@@ -324,7 +324,7 @@ func (_Bridge *BridgeCallerRaw) Call(opts *bind.CallOpts, result *[]interface{},
 Call invokes the \(constant\) contract method with params as input values and sets the output to result. The result type might be a single field for simple returns, a slice of interfaces for anonymous returns and a struct for named returns.
 
 <a name="BridgeCallerSession"></a>
-## type [BridgeCallerSession](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L94-L97>)
+## type [BridgeCallerSession](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L94-L97>)
 
 BridgeCallerSession is an auto generated read\-only Go binding around an Ethereum contract, with pre\-set call options.
 
@@ -336,7 +336,7 @@ type BridgeCallerSession struct {
 ```
 
 <a name="BridgeCallerSession.GetUserNonceMinted"></a>
-### func \(\*BridgeCallerSession\) [GetUserNonceMinted](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L231>)
+### func \(\*BridgeCallerSession\) [GetUserNonceMinted](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L231>)
 
 ```go
 func (_Bridge *BridgeCallerSession) GetUserNonceMinted(to_ common.Address) (*big.Int, error)
@@ -347,7 +347,7 @@ GetUserNonceMinted is a free data retrieval call binding the contract method 0xe
 Solidity: function getUserNonceMinted\(address to\_\) view returns\(uint256\)
 
 <a name="BridgeCallerSession.Owner"></a>
-### func \(\*BridgeCallerSession\) [Owner](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L262>)
+### func \(\*BridgeCallerSession\) [Owner](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L262>)
 
 ```go
 func (_Bridge *BridgeCallerSession) Owner() (common.Address, error)
@@ -358,7 +358,7 @@ Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
 Solidity: function owner\(\) view returns\(address\)
 
 <a name="BridgeCallerSession.UserNonceMinted"></a>
-### func \(\*BridgeCallerSession\) [UserNonceMinted](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L293>)
+### func \(\*BridgeCallerSession\) [UserNonceMinted](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L293>)
 
 ```go
 func (_Bridge *BridgeCallerSession) UserNonceMinted(arg0 common.Address) (*big.Int, error)
@@ -369,7 +369,7 @@ UserNonceMinted is a free data retrieval call binding the contract method 0x062f
 Solidity: function userNonceMinted\(address \) view returns\(uint256\)
 
 <a name="BridgeFilterer"></a>
-## type [BridgeFilterer](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L80-L82>)
+## type [BridgeFilterer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L80-L82>)
 
 BridgeFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
 
@@ -380,7 +380,7 @@ type BridgeFilterer struct {
 ```
 
 <a name="NewBridgeFilterer"></a>
-### func [NewBridgeFilterer](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L149>)
+### func [NewBridgeFilterer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L149>)
 
 ```go
 func NewBridgeFilterer(address common.Address, filterer bind.ContractFilterer) (*BridgeFilterer, error)
@@ -389,7 +389,7 @@ func NewBridgeFilterer(address common.Address, filterer bind.ContractFilterer) (
 NewBridgeFilterer creates a new log filterer instance of Bridge, bound to a specific deployed contract.
 
 <a name="BridgeFilterer.FilterBurned"></a>
-### func \(\*BridgeFilterer\) [FilterBurned](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L481>)
+### func \(\*BridgeFilterer\) [FilterBurned](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L481>)
 
 ```go
 func (_Bridge *BridgeFilterer) FilterBurned(opts *bind.FilterOpts, from []common.Address, nonce []*big.Int) (*BridgeBurnedIterator, error)
@@ -400,7 +400,7 @@ FilterBurned is a free log retrieval operation binding the contract event 0x2b11
 Solidity: event Burned\(address indexed from, uint256 amount, bytes clientId, uint256 indexed nonce\)
 
 <a name="BridgeFilterer.FilterBurnedFullIndex"></a>
-### func \(\*BridgeFilterer\) [FilterBurnedFullIndex](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L638>)
+### func \(\*BridgeFilterer\) [FilterBurnedFullIndex](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L638>)
 
 ```go
 func (_Bridge *BridgeFilterer) FilterBurnedFullIndex(opts *bind.FilterOpts, from []common.Address, clientId [][]byte, nonce []*big.Int) (*BridgeBurnedFullIndexIterator, error)
@@ -411,7 +411,7 @@ FilterBurnedFullIndex is a free log retrieval operation binding the contract eve
 Solidity: event BurnedFullIndex\(address indexed from, uint256 amount, bytes indexed clientId, uint256 indexed nonce\)
 
 <a name="BridgeFilterer.FilterMinted"></a>
-### func \(\*BridgeFilterer\) [FilterMinted](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L803>)
+### func \(\*BridgeFilterer\) [FilterMinted](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L803>)
 
 ```go
 func (_Bridge *BridgeFilterer) FilterMinted(opts *bind.FilterOpts, to []common.Address, nonce []*big.Int) (*BridgeMintedIterator, error)
@@ -422,7 +422,7 @@ FilterMinted is a free log retrieval operation binding the contract event 0xe044
 Solidity: event Minted\(address indexed to, uint256 amount, bytes txid, uint256 indexed nonce\)
 
 <a name="BridgeFilterer.FilterOwnershipTransferred"></a>
-### func \(\*BridgeFilterer\) [FilterOwnershipTransferred](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L958>)
+### func \(\*BridgeFilterer\) [FilterOwnershipTransferred](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L958>)
 
 ```go
 func (_Bridge *BridgeFilterer) FilterOwnershipTransferred(opts *bind.FilterOpts, previousOwner []common.Address, newOwner []common.Address) (*BridgeOwnershipTransferredIterator, error)
@@ -433,7 +433,7 @@ FilterOwnershipTransferred is a free log retrieval operation binding the contrac
 Solidity: event OwnershipTransferred\(address indexed previousOwner, address indexed newOwner\)
 
 <a name="BridgeFilterer.ParseBurned"></a>
-### func \(\*BridgeFilterer\) [ParseBurned](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L550>)
+### func \(\*BridgeFilterer\) [ParseBurned](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L550>)
 
 ```go
 func (_Bridge *BridgeFilterer) ParseBurned(log types.Log) (*BridgeBurned, error)
@@ -444,7 +444,7 @@ ParseBurned is a log parse operation binding the contract event 0x2b1155a5de2441
 Solidity: event Burned\(address indexed from, uint256 amount, bytes clientId, uint256 indexed nonce\)
 
 <a name="BridgeFilterer.ParseBurnedFullIndex"></a>
-### func \(\*BridgeFilterer\) [ParseBurnedFullIndex](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L715>)
+### func \(\*BridgeFilterer\) [ParseBurnedFullIndex](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L715>)
 
 ```go
 func (_Bridge *BridgeFilterer) ParseBurnedFullIndex(log types.Log) (*BridgeBurnedFullIndex, error)
@@ -455,7 +455,7 @@ ParseBurnedFullIndex is a log parse operation binding the contract event 0xf92c6
 Solidity: event BurnedFullIndex\(address indexed from, uint256 amount, bytes indexed clientId, uint256 indexed nonce\)
 
 <a name="BridgeFilterer.ParseMinted"></a>
-### func \(\*BridgeFilterer\) [ParseMinted](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L872>)
+### func \(\*BridgeFilterer\) [ParseMinted](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L872>)
 
 ```go
 func (_Bridge *BridgeFilterer) ParseMinted(log types.Log) (*BridgeMinted, error)
@@ -466,7 +466,7 @@ ParseMinted is a log parse operation binding the contract event 0xe04478a4154dc3
 Solidity: event Minted\(address indexed to, uint256 amount, bytes txid, uint256 indexed nonce\)
 
 <a name="BridgeFilterer.ParseOwnershipTransferred"></a>
-### func \(\*BridgeFilterer\) [ParseOwnershipTransferred](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L1025>)
+### func \(\*BridgeFilterer\) [ParseOwnershipTransferred](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L1025>)
 
 ```go
 func (_Bridge *BridgeFilterer) ParseOwnershipTransferred(log types.Log) (*BridgeOwnershipTransferred, error)
@@ -477,7 +477,7 @@ ParseOwnershipTransferred is a log parse operation binding the contract event 0x
 Solidity: event OwnershipTransferred\(address indexed previousOwner, address indexed newOwner\)
 
 <a name="BridgeFilterer.WatchBurned"></a>
-### func \(\*BridgeFilterer\) [WatchBurned](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L503>)
+### func \(\*BridgeFilterer\) [WatchBurned](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L503>)
 
 ```go
 func (_Bridge *BridgeFilterer) WatchBurned(opts *bind.WatchOpts, sink chan<- *BridgeBurned, from []common.Address, nonce []*big.Int) (event.Subscription, error)
@@ -488,7 +488,7 @@ WatchBurned is a free log subscription operation binding the contract event 0x2b
 Solidity: event Burned\(address indexed from, uint256 amount, bytes clientId, uint256 indexed nonce\)
 
 <a name="BridgeFilterer.WatchBurnedFullIndex"></a>
-### func \(\*BridgeFilterer\) [WatchBurnedFullIndex](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L664>)
+### func \(\*BridgeFilterer\) [WatchBurnedFullIndex](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L664>)
 
 ```go
 func (_Bridge *BridgeFilterer) WatchBurnedFullIndex(opts *bind.WatchOpts, sink chan<- *BridgeBurnedFullIndex, from []common.Address, clientId [][]byte, nonce []*big.Int) (event.Subscription, error)
@@ -499,7 +499,7 @@ WatchBurnedFullIndex is a free log subscription operation binding the contract e
 Solidity: event BurnedFullIndex\(address indexed from, uint256 amount, bytes indexed clientId, uint256 indexed nonce\)
 
 <a name="BridgeFilterer.WatchMinted"></a>
-### func \(\*BridgeFilterer\) [WatchMinted](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L825>)
+### func \(\*BridgeFilterer\) [WatchMinted](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L825>)
 
 ```go
 func (_Bridge *BridgeFilterer) WatchMinted(opts *bind.WatchOpts, sink chan<- *BridgeMinted, to []common.Address, nonce []*big.Int) (event.Subscription, error)
@@ -510,7 +510,7 @@ WatchMinted is a free log subscription operation binding the contract event 0xe0
 Solidity: event Minted\(address indexed to, uint256 amount, bytes txid, uint256 indexed nonce\)
 
 <a name="BridgeFilterer.WatchOwnershipTransferred"></a>
-### func \(\*BridgeFilterer\) [WatchOwnershipTransferred](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L979>)
+### func \(\*BridgeFilterer\) [WatchOwnershipTransferred](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L979>)
 
 ```go
 func (_Bridge *BridgeFilterer) WatchOwnershipTransferred(opts *bind.WatchOpts, sink chan<- *BridgeOwnershipTransferred, previousOwner []common.Address, newOwner []common.Address) (event.Subscription, error)
@@ -521,7 +521,7 @@ WatchOwnershipTransferred is a free log subscription operation binding the contr
 Solidity: event OwnershipTransferred\(address indexed previousOwner, address indexed newOwner\)
 
 <a name="BridgeMinted"></a>
-## type [BridgeMinted](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L792-L798>)
+## type [BridgeMinted](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L792-L798>)
 
 BridgeMinted represents a Minted event raised by the Bridge contract.
 
@@ -536,7 +536,7 @@ type BridgeMinted struct {
 ```
 
 <a name="BridgeMintedIterator"></a>
-## type [BridgeMintedIterator](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L725-L735>)
+## type [BridgeMintedIterator](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L725-L735>)
 
 BridgeMintedIterator is returned from FilterMinted and is used to iterate over the raw logs and unpacked data for Minted events raised by the Bridge contract.
 
@@ -548,7 +548,7 @@ type BridgeMintedIterator struct {
 ```
 
 <a name="BridgeMintedIterator.Close"></a>
-### func \(\*BridgeMintedIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L786>)
+### func \(\*BridgeMintedIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L786>)
 
 ```go
 func (it *BridgeMintedIterator) Close() error
@@ -557,7 +557,7 @@ func (it *BridgeMintedIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="BridgeMintedIterator.Error"></a>
-### func \(\*BridgeMintedIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L780>)
+### func \(\*BridgeMintedIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L780>)
 
 ```go
 func (it *BridgeMintedIterator) Error() error
@@ -566,7 +566,7 @@ func (it *BridgeMintedIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="BridgeMintedIterator.Next"></a>
-### func \(\*BridgeMintedIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L740>)
+### func \(\*BridgeMintedIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L740>)
 
 ```go
 func (it *BridgeMintedIterator) Next() bool
@@ -575,7 +575,7 @@ func (it *BridgeMintedIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="BridgeOwnershipTransferred"></a>
-## type [BridgeOwnershipTransferred](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L949-L953>)
+## type [BridgeOwnershipTransferred](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L949-L953>)
 
 BridgeOwnershipTransferred represents a OwnershipTransferred event raised by the Bridge contract.
 
@@ -588,7 +588,7 @@ type BridgeOwnershipTransferred struct {
 ```
 
 <a name="BridgeOwnershipTransferredIterator"></a>
-## type [BridgeOwnershipTransferredIterator](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L882-L892>)
+## type [BridgeOwnershipTransferredIterator](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L882-L892>)
 
 BridgeOwnershipTransferredIterator is returned from FilterOwnershipTransferred and is used to iterate over the raw logs and unpacked data for OwnershipTransferred events raised by the Bridge contract.
 
@@ -600,7 +600,7 @@ type BridgeOwnershipTransferredIterator struct {
 ```
 
 <a name="BridgeOwnershipTransferredIterator.Close"></a>
-### func \(\*BridgeOwnershipTransferredIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L943>)
+### func \(\*BridgeOwnershipTransferredIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L943>)
 
 ```go
 func (it *BridgeOwnershipTransferredIterator) Close() error
@@ -609,7 +609,7 @@ func (it *BridgeOwnershipTransferredIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="BridgeOwnershipTransferredIterator.Error"></a>
-### func \(\*BridgeOwnershipTransferredIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L937>)
+### func \(\*BridgeOwnershipTransferredIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L937>)
 
 ```go
 func (it *BridgeOwnershipTransferredIterator) Error() error
@@ -618,7 +618,7 @@ func (it *BridgeOwnershipTransferredIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="BridgeOwnershipTransferredIterator.Next"></a>
-### func \(\*BridgeOwnershipTransferredIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L897>)
+### func \(\*BridgeOwnershipTransferredIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L897>)
 
 ```go
 func (it *BridgeOwnershipTransferredIterator) Next() bool
@@ -627,7 +627,7 @@ func (it *BridgeOwnershipTransferredIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="BridgeRaw"></a>
-## type [BridgeRaw](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L107-L109>)
+## type [BridgeRaw](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L107-L109>)
 
 BridgeRaw is an auto generated low\-level Go binding around an Ethereum contract.
 
@@ -638,7 +638,7 @@ type BridgeRaw struct {
 ```
 
 <a name="BridgeRaw.Call"></a>
-### func \(\*BridgeRaw\) [Call](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L170>)
+### func \(\*BridgeRaw\) [Call](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L170>)
 
 ```go
 func (_Bridge *BridgeRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error
@@ -647,7 +647,7 @@ func (_Bridge *BridgeRaw) Call(opts *bind.CallOpts, result *[]interface{}, metho
 Call invokes the \(constant\) contract method with params as input values and sets the output to result. The result type might be a single field for simple returns, a slice of interfaces for anonymous returns and a struct for named returns.
 
 <a name="BridgeRaw.Transact"></a>
-### func \(\*BridgeRaw\) [Transact](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L181>)
+### func \(\*BridgeRaw\) [Transact](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L181>)
 
 ```go
 func (_Bridge *BridgeRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error)
@@ -656,7 +656,7 @@ func (_Bridge *BridgeRaw) Transact(opts *bind.TransactOpts, method string, param
 Transact invokes the \(paid\) contract method with params as input values.
 
 <a name="BridgeRaw.Transfer"></a>
-### func \(\*BridgeRaw\) [Transfer](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L176>)
+### func \(\*BridgeRaw\) [Transfer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L176>)
 
 ```go
 func (_Bridge *BridgeRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error)
@@ -665,7 +665,7 @@ func (_Bridge *BridgeRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction,
 Transfer initiates a plain transaction to move funds to the contract, calling its default method if one is available.
 
 <a name="BridgeSession"></a>
-## type [BridgeSession](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L86-L90>)
+## type [BridgeSession](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L86-L90>)
 
 BridgeSession is an auto generated Go binding around an Ethereum contract, with pre\-set call and transact options.
 
@@ -678,7 +678,7 @@ type BridgeSession struct {
 ```
 
 <a name="BridgeSession.Burn"></a>
-### func \(\*BridgeSession\) [Burn](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L307>)
+### func \(\*BridgeSession\) [Burn](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L307>)
 
 ```go
 func (_Bridge *BridgeSession) Burn(amount_ *big.Int, clientId_ []byte) (*types.Transaction, error)
@@ -689,7 +689,7 @@ Burn is a paid mutator transaction binding the contract method 0xfe9d9303.
 Solidity: function burn\(uint256 amount\_, bytes clientId\_\) returns\(\)
 
 <a name="BridgeSession.GetUserNonceMinted"></a>
-### func \(\*BridgeSession\) [GetUserNonceMinted](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L224>)
+### func \(\*BridgeSession\) [GetUserNonceMinted](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L224>)
 
 ```go
 func (_Bridge *BridgeSession) GetUserNonceMinted(to_ common.Address) (*big.Int, error)
@@ -700,7 +700,7 @@ GetUserNonceMinted is a free data retrieval call binding the contract method 0xe
 Solidity: function getUserNonceMinted\(address to\_\) view returns\(uint256\)
 
 <a name="BridgeSession.Mint"></a>
-### func \(\*BridgeSession\) [Mint](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L328>)
+### func \(\*BridgeSession\) [Mint](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L328>)
 
 ```go
 func (_Bridge *BridgeSession) Mint(to_ common.Address, amount_ *big.Int, txid_ []byte, nonce_ *big.Int, signatures_ [][]byte) (*types.Transaction, error)
@@ -711,7 +711,7 @@ Mint is a paid mutator transaction binding the contract method 0x56f6dd62.
 Solidity: function mint\(address to\_, uint256 amount\_, bytes txid\_, uint256 nonce\_, bytes\[\] signatures\_\) returns\(\)
 
 <a name="BridgeSession.Owner"></a>
-### func \(\*BridgeSession\) [Owner](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L255>)
+### func \(\*BridgeSession\) [Owner](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L255>)
 
 ```go
 func (_Bridge *BridgeSession) Owner() (common.Address, error)
@@ -722,7 +722,7 @@ Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
 Solidity: function owner\(\) view returns\(address\)
 
 <a name="BridgeSession.RenounceOwnership"></a>
-### func \(\*BridgeSession\) [RenounceOwnership](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L349>)
+### func \(\*BridgeSession\) [RenounceOwnership](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L349>)
 
 ```go
 func (_Bridge *BridgeSession) RenounceOwnership() (*types.Transaction, error)
@@ -733,7 +733,7 @@ RenounceOwnership is a paid mutator transaction binding the contract method 0x71
 Solidity: function renounceOwnership\(\) returns\(\)
 
 <a name="BridgeSession.ResetUserNonceMinted"></a>
-### func \(\*BridgeSession\) [ResetUserNonceMinted](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L370>)
+### func \(\*BridgeSession\) [ResetUserNonceMinted](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L370>)
 
 ```go
 func (_Bridge *BridgeSession) ResetUserNonceMinted() (*types.Transaction, error)
@@ -744,7 +744,7 @@ ResetUserNonceMinted is a paid mutator transaction binding the contract method 0
 Solidity: function resetUserNonceMinted\(\) returns\(\)
 
 <a name="BridgeSession.TransferOwnership"></a>
-### func \(\*BridgeSession\) [TransferOwnership](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L391>)
+### func \(\*BridgeSession\) [TransferOwnership](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L391>)
 
 ```go
 func (_Bridge *BridgeSession) TransferOwnership(newOwner common.Address) (*types.Transaction, error)
@@ -755,7 +755,7 @@ TransferOwnership is a paid mutator transaction binding the contract method 0xf2
 Solidity: function transferOwnership\(address newOwner\) returns\(\)
 
 <a name="BridgeSession.UserNonceMinted"></a>
-### func \(\*BridgeSession\) [UserNonceMinted](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L286>)
+### func \(\*BridgeSession\) [UserNonceMinted](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L286>)
 
 ```go
 func (_Bridge *BridgeSession) UserNonceMinted(arg0 common.Address) (*big.Int, error)
@@ -766,7 +766,7 @@ UserNonceMinted is a free data retrieval call binding the contract method 0x062f
 Solidity: function userNonceMinted\(address \) view returns\(uint256\)
 
 <a name="BridgeTransactor"></a>
-## type [BridgeTransactor](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L75-L77>)
+## type [BridgeTransactor](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L75-L77>)
 
 BridgeTransactor is an auto generated write\-only Go binding around an Ethereum contract.
 
@@ -777,7 +777,7 @@ type BridgeTransactor struct {
 ```
 
 <a name="NewBridgeTransactor"></a>
-### func [NewBridgeTransactor](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L140>)
+### func [NewBridgeTransactor](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L140>)
 
 ```go
 func NewBridgeTransactor(address common.Address, transactor bind.ContractTransactor) (*BridgeTransactor, error)
@@ -786,7 +786,7 @@ func NewBridgeTransactor(address common.Address, transactor bind.ContractTransac
 NewBridgeTransactor creates a new write\-only instance of Bridge, bound to a specific deployed contract.
 
 <a name="BridgeTransactor.Burn"></a>
-### func \(\*BridgeTransactor\) [Burn](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L300>)
+### func \(\*BridgeTransactor\) [Burn](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L300>)
 
 ```go
 func (_Bridge *BridgeTransactor) Burn(opts *bind.TransactOpts, amount_ *big.Int, clientId_ []byte) (*types.Transaction, error)
@@ -797,7 +797,7 @@ Burn is a paid mutator transaction binding the contract method 0xfe9d9303.
 Solidity: function burn\(uint256 amount\_, bytes clientId\_\) returns\(\)
 
 <a name="BridgeTransactor.Mint"></a>
-### func \(\*BridgeTransactor\) [Mint](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L321>)
+### func \(\*BridgeTransactor\) [Mint](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L321>)
 
 ```go
 func (_Bridge *BridgeTransactor) Mint(opts *bind.TransactOpts, to_ common.Address, amount_ *big.Int, txid_ []byte, nonce_ *big.Int, signatures_ [][]byte) (*types.Transaction, error)
@@ -808,7 +808,7 @@ Mint is a paid mutator transaction binding the contract method 0x56f6dd62.
 Solidity: function mint\(address to\_, uint256 amount\_, bytes txid\_, uint256 nonce\_, bytes\[\] signatures\_\) returns\(\)
 
 <a name="BridgeTransactor.RenounceOwnership"></a>
-### func \(\*BridgeTransactor\) [RenounceOwnership](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L342>)
+### func \(\*BridgeTransactor\) [RenounceOwnership](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L342>)
 
 ```go
 func (_Bridge *BridgeTransactor) RenounceOwnership(opts *bind.TransactOpts) (*types.Transaction, error)
@@ -819,7 +819,7 @@ RenounceOwnership is a paid mutator transaction binding the contract method 0x71
 Solidity: function renounceOwnership\(\) returns\(\)
 
 <a name="BridgeTransactor.ResetUserNonceMinted"></a>
-### func \(\*BridgeTransactor\) [ResetUserNonceMinted](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L363>)
+### func \(\*BridgeTransactor\) [ResetUserNonceMinted](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L363>)
 
 ```go
 func (_Bridge *BridgeTransactor) ResetUserNonceMinted(opts *bind.TransactOpts) (*types.Transaction, error)
@@ -830,7 +830,7 @@ ResetUserNonceMinted is a paid mutator transaction binding the contract method 0
 Solidity: function resetUserNonceMinted\(\) returns\(\)
 
 <a name="BridgeTransactor.TransferOwnership"></a>
-### func \(\*BridgeTransactor\) [TransferOwnership](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L384>)
+### func \(\*BridgeTransactor\) [TransferOwnership](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L384>)
 
 ```go
 func (_Bridge *BridgeTransactor) TransferOwnership(opts *bind.TransactOpts, newOwner common.Address) (*types.Transaction, error)
@@ -841,7 +841,7 @@ TransferOwnership is a paid mutator transaction binding the contract method 0xf2
 Solidity: function transferOwnership\(address newOwner\) returns\(\)
 
 <a name="BridgeTransactorRaw"></a>
-## type [BridgeTransactorRaw](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L117-L119>)
+## type [BridgeTransactorRaw](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L117-L119>)
 
 BridgeTransactorRaw is an auto generated low\-level write\-only Go binding around an Ethereum contract.
 
@@ -852,7 +852,7 @@ type BridgeTransactorRaw struct {
 ```
 
 <a name="BridgeTransactorRaw.Transact"></a>
-### func \(\*BridgeTransactorRaw\) [Transact](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L200>)
+### func \(\*BridgeTransactorRaw\) [Transact](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L200>)
 
 ```go
 func (_Bridge *BridgeTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error)
@@ -861,7 +861,7 @@ func (_Bridge *BridgeTransactorRaw) Transact(opts *bind.TransactOpts, method str
 Transact invokes the \(paid\) contract method with params as input values.
 
 <a name="BridgeTransactorRaw.Transfer"></a>
-### func \(\*BridgeTransactorRaw\) [Transfer](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L195>)
+### func \(\*BridgeTransactorRaw\) [Transfer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L195>)
 
 ```go
 func (_Bridge *BridgeTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error)
@@ -870,7 +870,7 @@ func (_Bridge *BridgeTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Tr
 Transfer initiates a plain transaction to move funds to the contract, calling its default method if one is available.
 
 <a name="BridgeTransactorSession"></a>
-## type [BridgeTransactorSession](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L101-L104>)
+## type [BridgeTransactorSession](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L101-L104>)
 
 BridgeTransactorSession is an auto generated write\-only Go binding around an Ethereum contract, with pre\-set transact options.
 
@@ -882,7 +882,7 @@ type BridgeTransactorSession struct {
 ```
 
 <a name="BridgeTransactorSession.Burn"></a>
-### func \(\*BridgeTransactorSession\) [Burn](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L314>)
+### func \(\*BridgeTransactorSession\) [Burn](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L314>)
 
 ```go
 func (_Bridge *BridgeTransactorSession) Burn(amount_ *big.Int, clientId_ []byte) (*types.Transaction, error)
@@ -893,7 +893,7 @@ Burn is a paid mutator transaction binding the contract method 0xfe9d9303.
 Solidity: function burn\(uint256 amount\_, bytes clientId\_\) returns\(\)
 
 <a name="BridgeTransactorSession.Mint"></a>
-### func \(\*BridgeTransactorSession\) [Mint](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L335>)
+### func \(\*BridgeTransactorSession\) [Mint](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L335>)
 
 ```go
 func (_Bridge *BridgeTransactorSession) Mint(to_ common.Address, amount_ *big.Int, txid_ []byte, nonce_ *big.Int, signatures_ [][]byte) (*types.Transaction, error)
@@ -904,7 +904,7 @@ Mint is a paid mutator transaction binding the contract method 0x56f6dd62.
 Solidity: function mint\(address to\_, uint256 amount\_, bytes txid\_, uint256 nonce\_, bytes\[\] signatures\_\) returns\(\)
 
 <a name="BridgeTransactorSession.RenounceOwnership"></a>
-### func \(\*BridgeTransactorSession\) [RenounceOwnership](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L356>)
+### func \(\*BridgeTransactorSession\) [RenounceOwnership](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L356>)
 
 ```go
 func (_Bridge *BridgeTransactorSession) RenounceOwnership() (*types.Transaction, error)
@@ -915,7 +915,7 @@ RenounceOwnership is a paid mutator transaction binding the contract method 0x71
 Solidity: function renounceOwnership\(\) returns\(\)
 
 <a name="BridgeTransactorSession.ResetUserNonceMinted"></a>
-### func \(\*BridgeTransactorSession\) [ResetUserNonceMinted](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L377>)
+### func \(\*BridgeTransactorSession\) [ResetUserNonceMinted](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L377>)
 
 ```go
 func (_Bridge *BridgeTransactorSession) ResetUserNonceMinted() (*types.Transaction, error)
@@ -926,7 +926,7 @@ ResetUserNonceMinted is a paid mutator transaction binding the contract method 0
 Solidity: function resetUserNonceMinted\(\) returns\(\)
 
 <a name="BridgeTransactorSession.TransferOwnership"></a>
-### func \(\*BridgeTransactorSession\) [TransferOwnership](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/ethereum/bridge/bridge.go#L398>)
+### func \(\*BridgeTransactorSession\) [TransferOwnership](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bridge/bridge.go#L398>)
 
 ```go
 func (_Bridge *BridgeTransactorSession) TransferOwnership(newOwner common.Address) (*types.Transaction, error)

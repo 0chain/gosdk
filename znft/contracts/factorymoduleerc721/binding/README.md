@@ -51,7 +51,7 @@ var BindingMetaData = &bind.MetaData{
 ```
 
 <a name="Binding"></a>
-## type [Binding](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factorymoduleerc721/binding/factorymoduleerc721.go#L41-L45>)
+## type [Binding](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factorymoduleerc721/binding/factorymoduleerc721.go#L41-L45>)
 
 Binding is an auto generated Go binding around an Ethereum contract.
 
@@ -64,7 +64,7 @@ type Binding struct {
 ```
 
 <a name="NewBinding"></a>
-### func [NewBinding](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factorymoduleerc721/binding/factorymoduleerc721.go#L100>)
+### func [NewBinding](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factorymoduleerc721/binding/factorymoduleerc721.go#L100>)
 
 ```go
 func NewBinding(address common.Address, backend bind.ContractBackend) (*Binding, error)
@@ -73,7 +73,7 @@ func NewBinding(address common.Address, backend bind.ContractBackend) (*Binding,
 NewBinding creates a new instance of Binding, bound to a specific deployed contract.
 
 <a name="BindingCaller"></a>
-## type [BindingCaller](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factorymoduleerc721/binding/factorymoduleerc721.go#L48-L50>)
+## type [BindingCaller](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factorymoduleerc721/binding/factorymoduleerc721.go#L48-L50>)
 
 BindingCaller is an auto generated read\-only Go binding around an Ethereum contract.
 
@@ -84,7 +84,7 @@ type BindingCaller struct {
 ```
 
 <a name="NewBindingCaller"></a>
-### func [NewBindingCaller](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factorymoduleerc721/binding/factorymoduleerc721.go#L109>)
+### func [NewBindingCaller](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factorymoduleerc721/binding/factorymoduleerc721.go#L109>)
 
 ```go
 func NewBindingCaller(address common.Address, caller bind.ContractCaller) (*BindingCaller, error)
@@ -93,7 +93,7 @@ func NewBindingCaller(address common.Address, caller bind.ContractCaller) (*Bind
 NewBindingCaller creates a new read\-only instance of Binding, bound to a specific deployed contract.
 
 <a name="BindingCallerRaw"></a>
-## type [BindingCallerRaw](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factorymoduleerc721/binding/factorymoduleerc721.go#L90-L92>)
+## type [BindingCallerRaw](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factorymoduleerc721/binding/factorymoduleerc721.go#L90-L92>)
 
 BindingCallerRaw is an auto generated low\-level read\-only Go binding around an Ethereum contract.
 
@@ -104,7 +104,7 @@ type BindingCallerRaw struct {
 ```
 
 <a name="BindingCallerRaw.Call"></a>
-### func \(\*BindingCallerRaw\) [Call](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factorymoduleerc721/binding/factorymoduleerc721.go#L167>)
+### func \(\*BindingCallerRaw\) [Call](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factorymoduleerc721/binding/factorymoduleerc721.go#L167>)
 
 ```go
 func (_Binding *BindingCallerRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error
@@ -113,7 +113,7 @@ func (_Binding *BindingCallerRaw) Call(opts *bind.CallOpts, result *[]interface{
 Call invokes the \(constant\) contract method with params as input values and sets the output to result. The result type might be a single field for simple returns, a slice of interfaces for anonymous returns and a struct for named returns.
 
 <a name="BindingCallerSession"></a>
-## type [BindingCallerSession](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factorymoduleerc721/binding/factorymoduleerc721.go#L72-L75>)
+## type [BindingCallerSession](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factorymoduleerc721/binding/factorymoduleerc721.go#L72-L75>)
 
 BindingCallerSession is an auto generated read\-only Go binding around an Ethereum contract, with pre\-set call options.
 
@@ -125,7 +125,7 @@ type BindingCallerSession struct {
 ```
 
 <a name="BindingFilterer"></a>
-## type [BindingFilterer](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factorymoduleerc721/binding/factorymoduleerc721.go#L58-L60>)
+## type [BindingFilterer](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factorymoduleerc721/binding/factorymoduleerc721.go#L58-L60>)
 
 BindingFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
 
@@ -136,7 +136,7 @@ type BindingFilterer struct {
 ```
 
 <a name="NewBindingFilterer"></a>
-### func [NewBindingFilterer](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factorymoduleerc721/binding/factorymoduleerc721.go#L127>)
+### func [NewBindingFilterer](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factorymoduleerc721/binding/factorymoduleerc721.go#L127>)
 
 ```go
 func NewBindingFilterer(address common.Address, filterer bind.ContractFilterer) (*BindingFilterer, error)
@@ -145,7 +145,7 @@ func NewBindingFilterer(address common.Address, filterer bind.ContractFilterer) 
 NewBindingFilterer creates a new log filterer instance of Binding, bound to a specific deployed contract.
 
 <a name="BindingRaw"></a>
-## type [BindingRaw](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factorymoduleerc721/binding/factorymoduleerc721.go#L85-L87>)
+## type [BindingRaw](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factorymoduleerc721/binding/factorymoduleerc721.go#L85-L87>)
 
 BindingRaw is an auto generated low\-level Go binding around an Ethereum contract.
 
@@ -156,7 +156,7 @@ type BindingRaw struct {
 ```
 
 <a name="BindingRaw.Call"></a>
-### func \(\*BindingRaw\) [Call](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factorymoduleerc721/binding/factorymoduleerc721.go#L148>)
+### func \(\*BindingRaw\) [Call](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factorymoduleerc721/binding/factorymoduleerc721.go#L148>)
 
 ```go
 func (_Binding *BindingRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error
@@ -165,7 +165,7 @@ func (_Binding *BindingRaw) Call(opts *bind.CallOpts, result *[]interface{}, met
 Call invokes the \(constant\) contract method with params as input values and sets the output to result. The result type might be a single field for simple returns, a slice of interfaces for anonymous returns and a struct for named returns.
 
 <a name="BindingRaw.Transact"></a>
-### func \(\*BindingRaw\) [Transact](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factorymoduleerc721/binding/factorymoduleerc721.go#L159>)
+### func \(\*BindingRaw\) [Transact](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factorymoduleerc721/binding/factorymoduleerc721.go#L159>)
 
 ```go
 func (_Binding *BindingRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error)
@@ -174,7 +174,7 @@ func (_Binding *BindingRaw) Transact(opts *bind.TransactOpts, method string, par
 Transact invokes the \(paid\) contract method with params as input values.
 
 <a name="BindingRaw.Transfer"></a>
-### func \(\*BindingRaw\) [Transfer](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factorymoduleerc721/binding/factorymoduleerc721.go#L154>)
+### func \(\*BindingRaw\) [Transfer](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factorymoduleerc721/binding/factorymoduleerc721.go#L154>)
 
 ```go
 func (_Binding *BindingRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error)
@@ -183,7 +183,7 @@ func (_Binding *BindingRaw) Transfer(opts *bind.TransactOpts) (*types.Transactio
 Transfer initiates a plain transaction to move funds to the contract, calling its default method if one is available.
 
 <a name="BindingSession"></a>
-## type [BindingSession](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factorymoduleerc721/binding/factorymoduleerc721.go#L64-L68>)
+## type [BindingSession](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factorymoduleerc721/binding/factorymoduleerc721.go#L64-L68>)
 
 BindingSession is an auto generated Go binding around an Ethereum contract, with pre\-set call and transact options.
 
@@ -196,7 +196,7 @@ type BindingSession struct {
 ```
 
 <a name="BindingSession.CreateToken"></a>
-### func \(\*BindingSession\) [CreateToken](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factorymoduleerc721/binding/factorymoduleerc721.go#L192>)
+### func \(\*BindingSession\) [CreateToken](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factorymoduleerc721/binding/factorymoduleerc721.go#L192>)
 
 ```go
 func (_Binding *BindingSession) CreateToken(owner common.Address, name string, symbol string, uri string, max *big.Int, arg5 *big.Int, arg6 *big.Int, arg7 []byte) (*types.Transaction, error)
@@ -207,7 +207,7 @@ CreateToken is a paid mutator transaction binding the contract method 0x3d774115
 Solidity: function createToken\(address owner, string name, string symbol, string uri, uint256 max, uint256 , uint256 , bytes \) returns\(address\)
 
 <a name="BindingTransactor"></a>
-## type [BindingTransactor](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factorymoduleerc721/binding/factorymoduleerc721.go#L53-L55>)
+## type [BindingTransactor](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factorymoduleerc721/binding/factorymoduleerc721.go#L53-L55>)
 
 BindingTransactor is an auto generated write\-only Go binding around an Ethereum contract.
 
@@ -218,7 +218,7 @@ type BindingTransactor struct {
 ```
 
 <a name="NewBindingTransactor"></a>
-### func [NewBindingTransactor](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factorymoduleerc721/binding/factorymoduleerc721.go#L118>)
+### func [NewBindingTransactor](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factorymoduleerc721/binding/factorymoduleerc721.go#L118>)
 
 ```go
 func NewBindingTransactor(address common.Address, transactor bind.ContractTransactor) (*BindingTransactor, error)
@@ -227,7 +227,7 @@ func NewBindingTransactor(address common.Address, transactor bind.ContractTransa
 NewBindingTransactor creates a new write\-only instance of Binding, bound to a specific deployed contract.
 
 <a name="BindingTransactor.CreateToken"></a>
-### func \(\*BindingTransactor\) [CreateToken](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factorymoduleerc721/binding/factorymoduleerc721.go#L185>)
+### func \(\*BindingTransactor\) [CreateToken](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factorymoduleerc721/binding/factorymoduleerc721.go#L185>)
 
 ```go
 func (_Binding *BindingTransactor) CreateToken(opts *bind.TransactOpts, owner common.Address, name string, symbol string, uri string, max *big.Int, arg5 *big.Int, arg6 *big.Int, arg7 []byte) (*types.Transaction, error)
@@ -238,7 +238,7 @@ CreateToken is a paid mutator transaction binding the contract method 0x3d774115
 Solidity: function createToken\(address owner, string name, string symbol, string uri, uint256 max, uint256 , uint256 , bytes \) returns\(address\)
 
 <a name="BindingTransactorRaw"></a>
-## type [BindingTransactorRaw](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factorymoduleerc721/binding/factorymoduleerc721.go#L95-L97>)
+## type [BindingTransactorRaw](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factorymoduleerc721/binding/factorymoduleerc721.go#L95-L97>)
 
 BindingTransactorRaw is an auto generated low\-level write\-only Go binding around an Ethereum contract.
 
@@ -249,7 +249,7 @@ type BindingTransactorRaw struct {
 ```
 
 <a name="BindingTransactorRaw.Transact"></a>
-### func \(\*BindingTransactorRaw\) [Transact](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factorymoduleerc721/binding/factorymoduleerc721.go#L178>)
+### func \(\*BindingTransactorRaw\) [Transact](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factorymoduleerc721/binding/factorymoduleerc721.go#L178>)
 
 ```go
 func (_Binding *BindingTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error)
@@ -258,7 +258,7 @@ func (_Binding *BindingTransactorRaw) Transact(opts *bind.TransactOpts, method s
 Transact invokes the \(paid\) contract method with params as input values.
 
 <a name="BindingTransactorRaw.Transfer"></a>
-### func \(\*BindingTransactorRaw\) [Transfer](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factorymoduleerc721/binding/factorymoduleerc721.go#L173>)
+### func \(\*BindingTransactorRaw\) [Transfer](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factorymoduleerc721/binding/factorymoduleerc721.go#L173>)
 
 ```go
 func (_Binding *BindingTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error)
@@ -267,7 +267,7 @@ func (_Binding *BindingTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.
 Transfer initiates a plain transaction to move funds to the contract, calling its default method if one is available.
 
 <a name="BindingTransactorSession"></a>
-## type [BindingTransactorSession](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factorymoduleerc721/binding/factorymoduleerc721.go#L79-L82>)
+## type [BindingTransactorSession](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factorymoduleerc721/binding/factorymoduleerc721.go#L79-L82>)
 
 BindingTransactorSession is an auto generated write\-only Go binding around an Ethereum contract, with pre\-set transact options.
 
@@ -279,7 +279,7 @@ type BindingTransactorSession struct {
 ```
 
 <a name="BindingTransactorSession.CreateToken"></a>
-### func \(\*BindingTransactorSession\) [CreateToken](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factorymoduleerc721/binding/factorymoduleerc721.go#L199>)
+### func \(\*BindingTransactorSession\) [CreateToken](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factorymoduleerc721/binding/factorymoduleerc721.go#L199>)
 
 ```go
 func (_Binding *BindingTransactorSession) CreateToken(owner common.Address, name string, symbol string, uri string, max *big.Int, arg5 *big.Int, arg6 *big.Int, arg7 []byte) (*types.Transaction, error)

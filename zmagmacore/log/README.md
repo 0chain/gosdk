@@ -25,7 +25,7 @@ var (
 ```
 
 <a name="HandleFunc"></a>
-## func [HandleFunc](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/log/handler.go#L13>)
+## func [HandleFunc](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/log/handler.go#L13>)
 
 ```go
 func HandleFunc(buffLen int64) func(http.ResponseWriter, *http.Request)
@@ -34,7 +34,7 @@ func HandleFunc(buffLen int64) func(http.ResponseWriter, *http.Request)
 HandleFunc returns handle function that writes logs to http.ResponseWriter with provided buffer size. Buffered length represented in kilobytes.
 
 <a name="InitLogging"></a>
-## func [InitLogging](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/log/logging.go#L26>)
+## func [InitLogging](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/log/logging.go#L26>)
 
 ```go
 func InitLogging(development bool, logDir, level string)

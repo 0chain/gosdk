@@ -13,7 +13,7 @@ import "github.com/0chain/gosdk/core/imageutil"
 
 
 <a name="CreateThumbnail"></a>
-## func [CreateThumbnail](<https://github.com/0chain/gosdk/blob/staging/core/imageutil/thumbnailer.go#L38>)
+## func [CreateThumbnail](<https://github.com/0chain/gosdk/blob/doc/initial/core/imageutil/thumbnailer.go#L38>)
 
 ```go
 func CreateThumbnail(buf []byte, width, height int) ([]byte, error)
@@ -34,7 +34,7 @@ CreateThumbnail create thumbnail of an image buffer. It supports
 - webp
 
 <a name="SubImager"></a>
-## type [SubImager](<https://github.com/0chain/gosdk/blob/staging/core/imageutil/thumbnailer.go#L22-L24>)
+## type [SubImager](<https://github.com/0chain/gosdk/blob/doc/initial/core/imageutil/thumbnailer.go#L22-L24>)
 
 
 

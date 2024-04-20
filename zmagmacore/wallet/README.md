@@ -19,7 +19,7 @@ import "github.com/0chain/gosdk/zmagmacore/wallet"
 
 
 <a name="Balance"></a>
-## func [Balance](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/wallet/balance.go#L21>)
+## func [Balance](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/wallet/balance.go#L21>)
 
 ```go
 func Balance(ctx context.Context) (int64, error)
@@ -30,7 +30,7 @@ Balance responds balance of the wallet that used.
 NOTE: for using Balance you must set wallet info by running zcncore.SetWalletInfo.
 
 <a name="SetupZCNSDK"></a>
-## func [SetupZCNSDK](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/wallet/setup.go#L13>)
+## func [SetupZCNSDK](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/wallet/setup.go#L13>)
 
 ```go
 func SetupZCNSDK(cfg Config) error
@@ -43,7 +43,7 @@ If an error occurs during execution, the program terminates with code 2 and the 
 SetupZCNSDK should be used only once while application is starting.
 
 <a name="Config"></a>
-## type [Config](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/wallet/types.go#L5-L17>)
+## type [Config](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/wallet/types.go#L5-L17>)
 
 Config represents config interface used for setup wallet.
 
@@ -64,7 +64,7 @@ type Config interface {
 ```
 
 <a name="Wallet"></a>
-## type [Wallet](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/wallet/wallet.go#L13-L15>)
+## type [Wallet](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/wallet/wallet.go#L13-L15>)
 
 Wallet represents a wallet that stores keys and additional info.
 
@@ -75,7 +75,7 @@ type Wallet struct {
 ```
 
 <a name="New"></a>
-### func [New](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/wallet/wallet.go#L19>)
+### func [New](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/wallet/wallet.go#L19>)
 
 ```go
 func New(publicKey, privateKey []byte) *Wallet
@@ -84,7 +84,7 @@ func New(publicKey, privateKey []byte) *Wallet
 New creates initialized Wallet.
 
 <a name="Wallet.ID"></a>
-### func \(\*Wallet\) [ID](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/wallet/wallet.go#L46>)
+### func \(\*Wallet\) [ID](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/wallet/wallet.go#L46>)
 
 ```go
 func (w *Wallet) ID() string
@@ -95,7 +95,7 @@ ID returns the client id.
 NOTE: client id represents hex encoded SHA3\-256 hash of the raw public key.
 
 <a name="Wallet.PublicKey"></a>
-### func \(\*Wallet\) [PublicKey](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/wallet/wallet.go#L39>)
+### func \(\*Wallet\) [PublicKey](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/wallet/wallet.go#L39>)
 
 ```go
 func (w *Wallet) PublicKey() string
@@ -104,7 +104,7 @@ func (w *Wallet) PublicKey() string
 PublicKey returns the public key.
 
 <a name="Wallet.StringJSON"></a>
-### func \(\*Wallet\) [StringJSON](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/wallet/wallet.go#L51>)
+### func \(\*Wallet\) [StringJSON](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/wallet/wallet.go#L51>)
 
 ```go
 func (w *Wallet) StringJSON() (string, error)

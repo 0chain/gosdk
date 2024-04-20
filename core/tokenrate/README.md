@@ -26,7 +26,7 @@ var ErrNoAvailableQuoteQuery = errors.New("token: no available quote query servi
 ```
 
 <a name="GetUSD"></a>
-## func [GetUSD](<https://github.com/0chain/gosdk/blob/staging/core/tokenrate/tokenrate.go#L24>)
+## func [GetUSD](<https://github.com/0chain/gosdk/blob/doc/initial/core/tokenrate/tokenrate.go#L24>)
 
 ```go
 func GetUSD(ctx context.Context, symbol string) (float64, error)
@@ -35,7 +35,7 @@ func GetUSD(ctx context.Context, symbol string) (float64, error)
 
 
 <a name="Float64"></a>
-## type [Float64](<https://github.com/0chain/gosdk/blob/staging/core/tokenrate/bancor.go#L122-L124>)
+## type [Float64](<https://github.com/0chain/gosdk/blob/doc/initial/core/tokenrate/bancor.go#L122-L124>)
 
 
 
@@ -46,7 +46,7 @@ type Float64 struct {
 ```
 
 <a name="Float64.UnmarshalJSON"></a>
-### func \(\*Float64\) [UnmarshalJSON](<https://github.com/0chain/gosdk/blob/staging/core/tokenrate/bancor.go#L126>)
+### func \(\*Float64\) [UnmarshalJSON](<https://github.com/0chain/gosdk/blob/doc/initial/core/tokenrate/bancor.go#L126>)
 
 ```go
 func (s *Float64) UnmarshalJSON(data []byte) error
@@ -55,7 +55,7 @@ func (s *Float64) UnmarshalJSON(data []byte) error
 
 
 <a name="Query"></a>
-## type [Query](<https://github.com/0chain/gosdk/blob/staging/core/tokenrate/uniswap.go#L28-L31>)
+## type [Query](<https://github.com/0chain/gosdk/blob/doc/initial/core/tokenrate/uniswap.go#L28-L31>)
 
 
 
@@ -67,7 +67,7 @@ type Query struct {
 ```
 
 <a name="V2Pair"></a>
-## type [V2Pair](<https://github.com/0chain/gosdk/blob/staging/core/tokenrate/uniswap.go#L13-L21>)
+## type [V2Pair](<https://github.com/0chain/gosdk/blob/doc/initial/core/tokenrate/uniswap.go#L13-L21>)
 
 
 
@@ -84,7 +84,7 @@ type V2Pair struct {
 ```
 
 <a name="V2Token"></a>
-## type [V2Token](<https://github.com/0chain/gosdk/blob/staging/core/tokenrate/uniswap.go#L23-L26>)
+## type [V2Token](<https://github.com/0chain/gosdk/blob/doc/initial/core/tokenrate/uniswap.go#L23-L26>)
 
 
 

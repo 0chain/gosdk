@@ -692,7 +692,7 @@ var GetFileInfo = func(localpath string) (os.FileInfo, error) {
 ```
 
 <a name="AddBlockDownloadReq"></a>
-## func [AddBlockDownloadReq](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/blockdownloadworker.go#L262>)
+## func [AddBlockDownloadReq](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/blockdownloadworker.go#L262>)
 
 ```go
 func AddBlockDownloadReq(ctx context.Context, req *BlockDownloadRequest, rb zboxutil.DownloadBuffer, effectiveBlockSize int)
@@ -701,7 +701,7 @@ func AddBlockDownloadReq(ctx context.Context, req *BlockDownloadRequest, rb zbox
 
 
 <a name="AddCommitRequest"></a>
-## func [AddCommitRequest](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/commitworker.go#L312>)
+## func [AddCommitRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/commitworker.go#L312>)
 
 ```go
 func AddCommitRequest(req *CommitRequest)
@@ -710,25 +710,36 @@ func AddCommitRequest(req *CommitRequest)
 
 
 <a name="AddFreeStorageAssigner"></a>
-## func [AddFreeStorageAssigner](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L1186>)
+## func [AddFreeStorageAssigner](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L1254>)
 
 ```go
 func AddFreeStorageAssigner(name, publicKey string, individualLimit, totalLimit float64) (string, int64, error)
 ```
 
+AddFreeStorageAssigner adds a new free storage assigner \(txn: \`storagesc.add\_free\_allocation\_assigner\`\). The free storage assigner is used to create free allocations.
 
+- \`name\` is the name of the assigner.
+- \`publicKey\` is the public key of the assigner.
+- \`individualLimit\` is the individual limit of the assigner for a single free allocation request
+- \`totalLimit\` is the total limit of the assigner for all free allocation requests.
+
+returns the hash of the transaction, the nonce of the transaction and an error if any.
 
 <a name="CancelAllocation"></a>
-## func [CancelAllocation](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L1287>)
+## func [CancelAllocation](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L1382>)
 
 ```go
 func CancelAllocation(allocID string) (hash string, nonce int64, err error)
 ```
 
+CancelAllocation sends a cancel request for an allocation \(txn: \`storagesc.cancel\_allocation\`\)
 
+- \`allocID\` is the id of the allocation.
+
+returns the hash of the transaction, the nonce of the transaction and an error if any.
 
 <a name="CollectRewards"></a>
-## func [CollectRewards](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L1356>)
+## func [CollectRewards](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L1451>)
 
 ```go
 func CollectRewards(providerId string, providerType ProviderType) (string, int64, error)
@@ -737,7 +748,7 @@ func CollectRewards(providerId string, providerType ProviderType) (string, int64
 
 
 <a name="CommitToFabric"></a>
-## func [CommitToFabric](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L1585>)
+## func [CommitToFabric](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L1687>)
 
 ```go
 func CommitToFabric(metaTxnData, fabricConfigJSON string) (string, error)
@@ -746,34 +757,53 @@ func CommitToFabric(metaTxnData, fabricConfigJSON string) (string, error)
 
 
 <a name="CreateAllocationForOwner"></a>
-## func [CreateAllocationForOwner](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L1030-L1035>)
+## func [CreateAllocationForOwner](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L1069-L1074>)
 
 ```go
 func CreateAllocationForOwner(owner, ownerpublickey string, datashards, parityshards int, size int64, readPrice, writePrice PriceRange, lock uint64, preferredBlobberIds []string, thirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters) (hash string, nonce int64, txn *transaction.Transaction, err error)
 ```
 
+CreateAllocationForOwner creates a new allocation with the given options \(txn: \`storagesc.new\_allocation\_request\`\).
 
+- \`owner\` is the client id of the owner of the allocation.
+- \`ownerpublickey\` is the public key of the owner of the allocation.
+- \`datashards\` is the number of data shards for the allocation.
+- \`parityshards\` is the number of parity shards for the allocation.
+- \`size\` is the size of the allocation.
+- \`readPrice\` is the read price range for the allocation \(Reads in Züs are free\!\).
+- \`writePrice\` is the write price range for the allocation.
+- \`lock\` is the lock value for the transaction \(how much tokens to lock to the allocation, in SAS\).
+- \`preferredBlobberIds\` is a list of preferred blobber ids for the allocation.
+- \`thirdPartyExtendable\` is a flag indicating whether the allocation can be extended by a third party.
+- \`fileOptionsParams\` is the file options parameters for the allocation, which control the usage permissions of the files in the allocation.
+
+returns the hash of the transaction, the nonce of the transaction, the transaction object and an error if any.
 
 <a name="CreateAllocationWith"></a>
-## func [CreateAllocationWith](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L1021-L1022>)
+## func [CreateAllocationWith](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L1045-L1046>)
 
 ```go
 func CreateAllocationWith(options CreateAllocationOptions) (string, int64, *transaction.Transaction, error)
 ```
 
-
+returns the hash of the new\_allocation\_request transaction, the nonce of the transaction, the transaction object and an error if any.
 
 <a name="CreateFreeAllocation"></a>
-## func [CreateFreeAllocation](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L1207>)
+## func [CreateFreeAllocation](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L1280>)
 
 ```go
 func CreateFreeAllocation(marker string, value uint64) (string, int64, error)
 ```
 
+CreateFreeAllocation creates a new free allocation \(txn: \`storagesc.free\_allocation\_request\`\).
 
+- \`marker\` is the marker for the free allocation.
+- \`value\` is the value of the free allocation.
+
+returns the hash of the transaction, the nonce of the transaction and an error if any.
 
 <a name="CreateReadPool"></a>
-## func [CreateReadPool](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L166>)
+## func [CreateReadPool](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L166>)
 
 ```go
 func CreateReadPool() (hash string, nonce int64, err error)
@@ -782,16 +812,20 @@ func CreateReadPool() (hash string, nonce int64, err error)
 
 
 <a name="FinalizeAllocation"></a>
-## func [FinalizeAllocation](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L1275>)
+## func [FinalizeAllocation](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L1365>)
 
 ```go
 func FinalizeAllocation(allocID string) (hash string, nonce int64, err error)
 ```
 
+FinalizeAllocation sends a finalize request for an allocation \(txn: \`storagesc.finalize\_allocation\`\)
 
+- \`allocID\` is the id of the allocation.
+
+returns the hash of the transaction, the nonce of the transaction and an error if any.
 
 <a name="GenerateParentPaths"></a>
-## func [GenerateParentPaths](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L957>)
+## func [GenerateParentPaths](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L957>)
 
 ```go
 func GenerateParentPaths(path string) map[string]bool
@@ -800,16 +834,25 @@ func GenerateParentPaths(path string) map[string]bool
 
 
 <a name="GetAllocationBlobbers"></a>
-## func [GetAllocationBlobbers](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L1068-L1073>)
+## func [GetAllocationBlobbers](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L1117-L1122>)
 
 ```go
 func GetAllocationBlobbers(datashards, parityshards int, size int64, readPrice, writePrice PriceRange, force ...bool) ([]string, error)
 ```
 
+GetAllocationBlobbers returns a list of blobber ids that can be used for a new allocation.
 
+- \`datashards\` is the number of data shards for the allocation.
+- \`parityshards\` is the number of parity shards for the allocation.
+- \`size\` is the size of the allocation.
+- \`readPrice\` is the read price range for the allocation \(Reads in Züs are free\!\).
+- \`writePrice\` is the write price range for the allocation.
+- \`force\` is a flag indicating whether to force the allocation to be created.
+
+returns the list of blobber ids and an error if any.
 
 <a name="GetAllocationMinLock"></a>
-## func [GetAllocationMinLock](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L1649-L1653>)
+## func [GetAllocationMinLock](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L1751-L1755>)
 
 ```go
 func GetAllocationMinLock(datashards, parityshards int, size int64, writePrice PriceRange) (int64, error)
@@ -818,7 +861,7 @@ func GetAllocationMinLock(datashards, parityshards int, size int64, writePrice P
 expire in milliseconds
 
 <a name="GetAllocationUpdates"></a>
-## func [GetAllocationUpdates](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L897>)
+## func [GetAllocationUpdates](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L907>)
 
 ```go
 func GetAllocationUpdates(allocation *Allocation) error
@@ -827,16 +870,20 @@ func GetAllocationUpdates(allocation *Allocation) error
 
 
 <a name="GetBlobberIds"></a>
-## func [GetBlobberIds](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L1139>)
+## func [GetBlobberIds](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L1193>)
 
 ```go
 func GetBlobberIds(blobberUrls []string) ([]string, error)
 ```
 
+GetBlobberIds returns a list of blobber ids that can be used for a new allocation.
 
+- \`blobberUrls\` is a list of blobber urls.
+
+returns a list of blobber ids that can be used for the new allocation and an error if any.
 
 <a name="GetClientEncryptedPublicKey"></a>
-## func [GetClientEncryptedPublicKey](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L849>)
+## func [GetClientEncryptedPublicKey](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L849>)
 
 ```go
 func GetClientEncryptedPublicKey() (string, error)
@@ -845,7 +892,7 @@ func GetClientEncryptedPublicKey() (string, error)
 
 
 <a name="GetDStorageFileReader"></a>
-## func [GetDStorageFileReader](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/reader.go#L167>)
+## func [GetDStorageFileReader](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/reader.go#L167>)
 
 ```go
 func GetDStorageFileReader(alloc *Allocation, ref *ORef, sdo *StreamDownloadOption) (io.ReadSeekCloser, error)
@@ -854,7 +901,7 @@ func GetDStorageFileReader(alloc *Allocation, ref *ORef, sdo *StreamDownloadOpti
 GetDStorageFileReader will initialize erasure decoder, decrypter if file is encrypted and other necessary fields and returns a reader that comply with io.ReadSeekCloser interface.
 
 <a name="GetFileRefFromBlobber"></a>
-## func [GetFileRefFromBlobber](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/downloadworker.go#L1085>)
+## func [GetFileRefFromBlobber](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/downloadworker.go#L1085>)
 
 ```go
 func GetFileRefFromBlobber(allocationID, blobberId, remotePath string) (fRef *fileref.FileRef, err error)
@@ -863,16 +910,20 @@ func GetFileRefFromBlobber(allocationID, blobberId, remotePath string) (fRef *fi
 
 
 <a name="GetFreeAllocationBlobbers"></a>
-## func [GetFreeAllocationBlobbers](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L1166>)
+## func [GetFreeAllocationBlobbers](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L1225>)
 
 ```go
 func GetFreeAllocationBlobbers(request map[string]interface{}) ([]string, error)
 ```
 
+GetFreeAllocationBlobbers returns a list of blobber ids that can be used for a new free allocation.
 
+- \`request\` is the request data for the free allocation.
+
+returns a list of blobber ids that can be used for the new free allocation and an error if any.
 
 <a name="GetLogger"></a>
-## func [GetLogger](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L90>)
+## func [GetLogger](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L90>)
 
 ```go
 func GetLogger() *logger.Logger
@@ -881,7 +932,7 @@ func GetLogger() *logger.Logger
 
 
 <a name="GetMptData"></a>
-## func [GetMptData](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L555>)
+## func [GetMptData](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L555>)
 
 ```go
 func GetMptData(key string) ([]byte, error)
@@ -890,7 +941,7 @@ func GetMptData(key string) ([]byte, error)
 
 
 <a name="GetTranscodeFile"></a>
-## func [GetTranscodeFile](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/chunked_upload_web_streaming.go#L79>)
+## func [GetTranscodeFile](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/chunked_upload_web_streaming.go#L79>)
 
 ```go
 func GetTranscodeFile(remotePath string) (string, string)
@@ -899,16 +950,24 @@ func GetTranscodeFile(remotePath string) (string, string)
 
 
 <a name="GetUpdateAllocationMinLock"></a>
-## func [GetUpdateAllocationMinLock](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L1671-L1676>)
+## func [GetUpdateAllocationMinLock](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L1782-L1787>)
 
 ```go
 func GetUpdateAllocationMinLock(allocationID string, size int64, extend bool, addBlobberId, removeBlobberId string) (int64, error)
 ```
 
+GetUpdateAllocationMinLock returns the minimum lock demand for updating an allocation, which represents the cost of the update operation.
 
+- \`allocationID\` is the id of the allocation.
+- \`size\` is the new size of the allocation.
+- \`extend\` is a flag indicating whether to extend the expiry of the allocation.
+- \`addBlobberId\` is the id of the blobber to add to the allocation.
+- \`removeBlobberId\` is the id of the blobber to remove from the allocation.
+
+returns the minimum lock demand for the update operation and an error if any.
 
 <a name="GetVersion"></a>
-## func [GetVersion](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L63>)
+## func [GetVersion](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L63>)
 
 ```go
 func GetVersion() string
@@ -917,7 +976,7 @@ func GetVersion() string
 GetVersion \- returns version string
 
 <a name="InitBlockDownloader"></a>
-## func [InitBlockDownloader](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/blockdownloadworker.go#L72>)
+## func [InitBlockDownloader](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/blockdownloadworker.go#L72>)
 
 ```go
 func InitBlockDownloader(blobbers []*blockchain.StorageNode, workerCount int)
@@ -926,7 +985,7 @@ func InitBlockDownloader(blobbers []*blockchain.StorageNode, workerCount int)
 
 
 <a name="InitCommitWorker"></a>
-## func [InitCommitWorker](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/commitworker.go#L63>)
+## func [InitCommitWorker](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/commitworker.go#L63>)
 
 ```go
 func InitCommitWorker(blobbers []*blockchain.StorageNode)
@@ -935,7 +994,7 @@ func InitCommitWorker(blobbers []*blockchain.StorageNode)
 
 
 <a name="InitNetworkDetails"></a>
-## func [InitNetworkDetails](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/networkworker.go#L62>)
+## func [InitNetworkDetails](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/networkworker.go#L62>)
 
 ```go
 func InitNetworkDetails() error
@@ -944,7 +1003,7 @@ func InitNetworkDetails() error
 
 
 <a name="InitStorageSDK"></a>
-## func [InitStorageSDK](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L94-L98>)
+## func [InitStorageSDK](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L94-L98>)
 
 ```go
 func InitStorageSDK(walletJSON string, blockWorker, chainID, signatureScheme string, preferredBlobbers []string, nonce int64, fee ...uint64) error
@@ -953,7 +1012,7 @@ func InitStorageSDK(walletJSON string, blockWorker, chainID, signatureScheme str
 
 
 <a name="IsErrCode"></a>
-## func [IsErrCode](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/downloadworker.go#L939>)
+## func [IsErrCode](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/downloadworker.go#L939>)
 
 ```go
 func IsErrCode(err error, code string) bool
@@ -962,7 +1021,7 @@ func IsErrCode(err error, code string) bool
 
 
 <a name="KillProvider"></a>
-## func [KillProvider](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L1309>)
+## func [KillProvider](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L1404>)
 
 ```go
 func KillProvider(providerId string, providerType ProviderType) (string, int64, error)
@@ -971,7 +1030,7 @@ func KillProvider(providerId string, providerType ProviderType) (string, int64, 
 
 
 <a name="NewSignalContext"></a>
-## func [NewSignalContext](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/live_upload_context.go#L16>)
+## func [NewSignalContext](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/live_upload_context.go#L16>)
 
 ```go
 func NewSignalContext(ctx context.Context) context.Context
@@ -980,7 +1039,7 @@ func NewSignalContext(ctx context.Context) context.Context
 NewSignalContext create SignalContext instance
 
 <a name="ReadPoolLock"></a>
-## func [ReadPoolLock](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L219>)
+## func [ReadPoolLock](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L219>)
 
 ```go
 func ReadPoolLock(tokens, fee uint64) (hash string, nonce int64, err error)
@@ -989,7 +1048,7 @@ func ReadPoolLock(tokens, fee uint64) (hash string, nonce int64, err error)
 ReadPoolLock locks given number of tokes for given duration in read pool.
 
 <a name="ReadPoolUnlock"></a>
-## func [ReadPoolUnlock](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L233>)
+## func [ReadPoolUnlock](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L233>)
 
 ```go
 func ReadPoolUnlock(fee uint64) (hash string, nonce int64, err error)
@@ -998,7 +1057,7 @@ func ReadPoolUnlock(fee uint64) (hash string, nonce int64, err error)
 ReadPoolUnlock unlocks tokens in expired read pool
 
 <a name="ResetBlobberStats"></a>
-## func [ResetBlobberStats](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L1445>)
+## func [ResetBlobberStats](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L1547>)
 
 ```go
 func ResetBlobberStats(rbs *ResetBlobberStatsDto) (string, int64, error)
@@ -1007,7 +1066,7 @@ func ResetBlobberStats(rbs *ResetBlobberStatsDto) (string, int64, error)
 
 
 <a name="SetLogFile"></a>
-## func [SetLogFile](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L76>)
+## func [SetLogFile](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L76>)
 
 ```go
 func SetLogFile(logFile string, verbose bool)
@@ -1016,7 +1075,7 @@ func SetLogFile(logFile string, verbose bool)
 SetLogFile logFile \- Log file verbose \- true \- console output; false \- no console output
 
 <a name="SetLogLevel"></a>
-## func [SetLogLevel](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L69>)
+## func [SetLogLevel](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L69>)
 
 ```go
 func SetLogLevel(lvl int)
@@ -1025,7 +1084,7 @@ func SetLogLevel(lvl int)
 SetLogLevel set the log level. lvl \- 0 disabled; higher number \(upto 4\) more verbosity
 
 <a name="SetMaxTxnQuery"></a>
-## func [SetMaxTxnQuery](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L129>)
+## func [SetMaxTxnQuery](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L129>)
 
 ```go
 func SetMaxTxnQuery(num int)
@@ -1034,7 +1093,7 @@ func SetMaxTxnQuery(num int)
 
 
 <a name="SetMinConfirmation"></a>
-## func [SetMinConfirmation](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L152>)
+## func [SetMinConfirmation](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L152>)
 
 ```go
 func SetMinConfirmation(num int)
@@ -1043,7 +1102,7 @@ func SetMinConfirmation(num int)
 
 
 <a name="SetMinSubmit"></a>
-## func [SetMinSubmit](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L149>)
+## func [SetMinSubmit](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L149>)
 
 ```go
 func SetMinSubmit(num int)
@@ -1052,7 +1111,7 @@ func SetMinSubmit(num int)
 
 
 <a name="SetMultiOpBatchSize"></a>
-## func [SetMultiOpBatchSize](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L246>)
+## func [SetMultiOpBatchSize](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L246>)
 
 ```go
 func SetMultiOpBatchSize(size int)
@@ -1061,7 +1120,7 @@ func SetMultiOpBatchSize(size int)
 
 
 <a name="SetNetwork"></a>
-## func [SetNetwork](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L156>)
+## func [SetNetwork](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L156>)
 
 ```go
 func SetNetwork(miners []string, sharders []string)
@@ -1070,7 +1129,7 @@ func SetNetwork(miners []string, sharders []string)
 
 
 <a name="SetNumBlockDownloads"></a>
-## func [SetNumBlockDownloads](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L936>)
+## func [SetNumBlockDownloads](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L946>)
 
 ```go
 func SetNumBlockDownloads(num int)
@@ -1079,7 +1138,7 @@ func SetNumBlockDownloads(num int)
 
 
 <a name="SetQuerySleepTime"></a>
-## func [SetQuerySleepTime](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L139>)
+## func [SetQuerySleepTime](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L139>)
 
 ```go
 func SetQuerySleepTime(time int)
@@ -1088,7 +1147,7 @@ func SetQuerySleepTime(time int)
 
 
 <a name="SetWasm"></a>
-## func [SetWasm](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L250>)
+## func [SetWasm](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L250>)
 
 ```go
 func SetWasm()
@@ -1097,7 +1156,7 @@ func SetWasm()
 
 
 <a name="ShutdownProvider"></a>
-## func [ShutdownProvider](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L1332>)
+## func [ShutdownProvider](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L1427>)
 
 ```go
 func ShutdownProvider(providerType ProviderType, providerID string) (string, int64, error)
@@ -1106,7 +1165,7 @@ func ShutdownProvider(providerType ProviderType, providerID string) (string, int
 
 
 <a name="StakePoolLock"></a>
-## func [StakePoolLock](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L364>)
+## func [StakePoolLock](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L364>)
 
 ```go
 func StakePoolLock(providerType ProviderType, providerID string, value, fee uint64) (hash string, nonce int64, err error)
@@ -1115,7 +1174,7 @@ func StakePoolLock(providerType ProviderType, providerID string, value, fee uint
 StakePoolLock locks tokens lack in stake pool
 
 <a name="StakePoolUnlock"></a>
-## func [StakePoolUnlock](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L420>)
+## func [StakePoolUnlock](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L420>)
 
 ```go
 func StakePoolUnlock(providerType ProviderType, providerID string, fee uint64) (unstake int64, nonce int64, err error)
@@ -1124,7 +1183,7 @@ func StakePoolUnlock(providerType ProviderType, providerID string, fee uint64) (
 StakePoolUnlock unlocks a stake pool tokens. If tokens can't be unlocked due to opened offers, then it returns time where the tokens can be unlocked, marking the pool as 'want to unlock' to avoid its usage in offers in the future. The time is maximal time that can be lesser in some cases. To unlock tokens can't be unlocked now, wait the time and unlock them \(call this function again\).
 
 <a name="StartWriteWorker"></a>
-## func [StartWriteWorker](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/streamreader.go#L40>)
+## func [StartWriteWorker](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/streamreader.go#L40>)
 
 ```go
 func StartWriteWorker(ctx context.Context, source io.Reader, dataChan chan *DataChan, chunkDataSizePerRead int64)
@@ -1133,7 +1192,7 @@ func StartWriteWorker(ctx context.Context, source io.Reader, dataChan chan *Data
 
 
 <a name="StorageSmartContractTxn"></a>
-## func [StorageSmartContractTxn](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L1463-L1464>)
+## func [StorageSmartContractTxn](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L1565-L1566>)
 
 ```go
 func StorageSmartContractTxn(sn transaction.SmartContractTxnData) (hash, out string, nonce int64, txn *transaction.Transaction, err error)
@@ -1142,25 +1201,42 @@ func StorageSmartContractTxn(sn transaction.SmartContractTxnData) (hash, out str
 
 
 <a name="TransferAllocation"></a>
-## func [TransferAllocation](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L1389>)
+## func [TransferAllocation](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L1491>)
 
 ```go
 func TransferAllocation(allocationId, newOwner, newOwnerPublicKey string) (string, int64, error)
 ```
 
+TransferAllocation transfers the ownership of an allocation to a new owner. \(txn: \`storagesc.update\_allocation\_request\`\)
 
+- \`allocationId\` is the id of the allocation.
+- \`newOwner\` is the client id of the new owner.
+- \`newOwnerPublicKey\` is the public key of the new owner.
+
+returns the hash of the transaction, the nonce of the transaction and an error if any.
 
 <a name="UpdateAllocation"></a>
-## func [UpdateAllocation](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L1234-L1241>)
+## func [UpdateAllocation](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L1319-L1326>)
 
 ```go
 func UpdateAllocation(size int64, extend bool, allocationID string, lock uint64, addBlobberId, removeBlobberId string, setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters) (hash string, nonce int64, err error)
 ```
 
+UpdateFreeAllocation sends an update request for an allocation \(txn: \`storagesc.update\_allocation\_request\`\)
 
+- \`size\` is the size of the allocation.
+- \`extend\` is a flag indicating whether to extend the allocation.
+- \`allocationID\` is the id of the allocation.
+- \`lock\` is the lock value for the transaction \(how much tokens to lock to the allocation, in SAS\).
+- \`addBlobberId\` is the id of the blobber to add to the allocation.
+- \`removeBlobberId\` is the id of the blobber to remove from the allocation.
+- \`setThirdPartyExtendable\` is a flag indicating whether the allocation can be extended by a third party.
+- \`fileOptionsParams\` is the file options parameters for the allocation, which control the usage permissions of the files in the allocation.
+
+returns the hash of the transaction, the nonce of the transaction and an error if any.
 
 <a name="UpdateBlobberSettings"></a>
-## func [UpdateBlobberSettings](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L1420>)
+## func [UpdateBlobberSettings](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L1522>)
 
 ```go
 func UpdateBlobberSettings(blob *UpdateBlobber) (resp string, nonce int64, err error)
@@ -1169,7 +1245,7 @@ func UpdateBlobberSettings(blob *UpdateBlobber) (resp string, nonce int64, err e
 
 
 <a name="UpdateNetworkDetails"></a>
-## func [UpdateNetworkDetails](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/networkworker.go#L48>)
+## func [UpdateNetworkDetails](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/networkworker.go#L48>)
 
 ```go
 func UpdateNetworkDetails() error
@@ -1178,7 +1254,7 @@ func UpdateNetworkDetails() error
 
 
 <a name="UpdateNetworkDetailsWorker"></a>
-## func [UpdateNetworkDetailsWorker](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/networkworker.go#L29>)
+## func [UpdateNetworkDetailsWorker](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/networkworker.go#L29>)
 
 ```go
 func UpdateNetworkDetailsWorker(ctx context.Context)
@@ -1187,7 +1263,7 @@ func UpdateNetworkDetailsWorker(ctx context.Context)
 
 
 <a name="UpdateRequired"></a>
-## func [UpdateRequired](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/networkworker.go#L84>)
+## func [UpdateRequired](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/networkworker.go#L84>)
 
 ```go
 func UpdateRequired(networkDetails *Network) bool
@@ -1196,7 +1272,7 @@ func UpdateRequired(networkDetails *Network) bool
 
 
 <a name="UpdateValidatorSettings"></a>
-## func [UpdateValidatorSettings](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L1432>)
+## func [UpdateValidatorSettings](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L1534>)
 
 ```go
 func UpdateValidatorSettings(v *UpdateValidator) (resp string, nonce int64, err error)
@@ -1205,7 +1281,7 @@ func UpdateValidatorSettings(v *UpdateValidator) (resp string, nonce int64, err 
 
 
 <a name="ValidateRemoteFileName"></a>
-## func [ValidateRemoteFileName](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/common.go#L115>)
+## func [ValidateRemoteFileName](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/common.go#L115>)
 
 ```go
 func ValidateRemoteFileName(remotePath string) error
@@ -1214,7 +1290,7 @@ func ValidateRemoteFileName(remotePath string) error
 
 
 <a name="WritePoolLock"></a>
-## func [WritePoolLock](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L475>)
+## func [WritePoolLock](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L475>)
 
 ```go
 func WritePoolLock(allocID string, tokens, fee uint64) (hash string, nonce int64, err error)
@@ -1223,7 +1299,7 @@ func WritePoolLock(allocID string, tokens, fee uint64) (hash string, nonce int64
 WritePoolLock locks given number of tokes for given duration in read pool.
 
 <a name="WritePoolUnlock"></a>
-## func [WritePoolUnlock](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L497>)
+## func [WritePoolUnlock](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L497>)
 
 ```go
 func WritePoolUnlock(allocID string, fee uint64) (hash string, nonce int64, err error)
@@ -1232,7 +1308,7 @@ func WritePoolUnlock(allocID string, fee uint64) (hash string, nonce int64, err 
 WritePoolUnlock unlocks tokens in expired read pool
 
 <a name="AllocStatus"></a>
-## type [AllocStatus](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/rollback.go#L33>)
+## type [AllocStatus](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/rollback.go#L33>)
 
 
 
@@ -1252,7 +1328,7 @@ const (
 ```
 
 <a name="Allocation"></a>
-## type [Allocation](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L170-L218>)
+## type [Allocation](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L170-L218>)
 
 
 
@@ -1295,43 +1371,57 @@ type Allocation struct {
 ```
 
 <a name="GetAllocation"></a>
-### func [GetAllocation](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L877>)
+### func [GetAllocation](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L887>)
 
 ```go
 func GetAllocation(allocationID string) (*Allocation, error)
 ```
 
+GetAllocation \- get allocation from given allocation id
 
+- \`allocationID\`: the allocation id
+
+returns the allocation instance and error if any
 
 <a name="GetAllocationFromAuthTicket"></a>
-### func [GetAllocationFromAuthTicket](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L861>)
+### func [GetAllocationFromAuthTicket](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L866>)
 
 ```go
 func GetAllocationFromAuthTicket(authTicket string) (*Allocation, error)
 ```
 
+GetAllocationFromAuthTicket \- get allocation from given auth ticket hash
 
+- \`authTicket\`: the auth ticket hash
+
+returns the allocation instance and error if any
 
 <a name="GetAllocations"></a>
-### func [GetAllocations](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L942>)
+### func [GetAllocations](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L955>)
 
 ```go
 func GetAllocations() ([]*Allocation, error)
 ```
 
+GetAllocations \- get all allocations for the current client
 
+returns the list of allocations and error if any
 
 <a name="GetAllocationsForClient"></a>
-### func [GetAllocationsForClient](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L964>)
+### func [GetAllocationsForClient](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L981>)
 
 ```go
 func GetAllocationsForClient(clientID string) ([]*Allocation, error)
 ```
 
-get paginated results
+GetAllocationsForClient \- get all allocations for given client id
+
+- \`clientID\`: the client id
+
+returns the list of allocations and error if any
 
 <a name="Allocation.CanCopy"></a>
-### func \(\*Allocation\) [CanCopy](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L364>)
+### func \(\*Allocation\) [CanCopy](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L364>)
 
 ```go
 func (a *Allocation) CanCopy() bool
@@ -1340,7 +1430,7 @@ func (a *Allocation) CanCopy() bool
 
 
 <a name="Allocation.CanDelete"></a>
-### func \(\*Allocation\) [CanDelete](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L352>)
+### func \(\*Allocation\) [CanDelete](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L352>)
 
 ```go
 func (a *Allocation) CanDelete() bool
@@ -1349,7 +1439,7 @@ func (a *Allocation) CanDelete() bool
 
 
 <a name="Allocation.CanMove"></a>
-### func \(\*Allocation\) [CanMove](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L360>)
+### func \(\*Allocation\) [CanMove](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L360>)
 
 ```go
 func (a *Allocation) CanMove() bool
@@ -1358,7 +1448,7 @@ func (a *Allocation) CanMove() bool
 
 
 <a name="Allocation.CanRename"></a>
-### func \(\*Allocation\) [CanRename](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L368>)
+### func \(\*Allocation\) [CanRename](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L368>)
 
 ```go
 func (a *Allocation) CanRename() bool
@@ -1367,7 +1457,7 @@ func (a *Allocation) CanRename() bool
 
 
 <a name="Allocation.CanUpdate"></a>
-### func \(\*Allocation\) [CanUpdate](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L356>)
+### func \(\*Allocation\) [CanUpdate](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L356>)
 
 ```go
 func (a *Allocation) CanUpdate() bool
@@ -1376,7 +1466,7 @@ func (a *Allocation) CanUpdate() bool
 
 
 <a name="Allocation.CanUpload"></a>
-### func \(\*Allocation\) [CanUpload](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L348>)
+### func \(\*Allocation\) [CanUpload](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L348>)
 
 ```go
 func (a *Allocation) CanUpload() bool
@@ -1385,7 +1475,7 @@ func (a *Allocation) CanUpload() bool
 
 
 <a name="Allocation.CancelDownload"></a>
-### func \(\*Allocation\) [CancelDownload](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L1983>)
+### func \(\*Allocation\) [CancelDownload](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L1983>)
 
 ```go
 func (a *Allocation) CancelDownload(remotepath string) error
@@ -1394,7 +1484,7 @@ func (a *Allocation) CancelDownload(remotepath string) error
 
 
 <a name="Allocation.CancelRepair"></a>
-### func \(\*Allocation\) [CancelRepair](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2379>)
+### func \(\*Allocation\) [CancelRepair](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L2379>)
 
 ```go
 func (a *Allocation) CancelRepair() error
@@ -1403,7 +1493,7 @@ func (a *Allocation) CancelRepair() error
 
 
 <a name="Allocation.CancelUpload"></a>
-### func \(\*Allocation\) [CancelUpload](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2367>)
+### func \(\*Allocation\) [CancelUpload](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L2367>)
 
 ```go
 func (a *Allocation) CancelUpload(remotePath string) error
@@ -1412,7 +1502,7 @@ func (a *Allocation) CancelUpload(remotePath string) error
 
 
 <a name="Allocation.CheckAllocStatus"></a>
-### func \(\*Allocation\) [CheckAllocStatus](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/rollback.go#L214>)
+### func \(\*Allocation\) [CheckAllocStatus](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/rollback.go#L214>)
 
 ```go
 func (a *Allocation) CheckAllocStatus() (AllocStatus, error)
@@ -1421,7 +1511,7 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error)
 
 
 <a name="Allocation.DeleteFile"></a>
-### func \(\*Allocation\) [DeleteFile](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L1662>)
+### func \(\*Allocation\) [DeleteFile](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L1662>)
 
 ```go
 func (a *Allocation) DeleteFile(path string) error
@@ -1430,7 +1520,7 @@ func (a *Allocation) DeleteFile(path string) error
 
 
 <a name="Allocation.DoMultiOperation"></a>
-### func \(\*Allocation\) [DoMultiOperation](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L805>)
+### func \(\*Allocation\) [DoMultiOperation](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L805>)
 
 ```go
 func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...MultiOperationOption) error
@@ -1439,7 +1529,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 
 
 <a name="Allocation.DownloadByBlocksToFileHandler"></a>
-### func \(\*Allocation\) [DownloadByBlocksToFileHandler](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L980-L989>)
+### func \(\*Allocation\) [DownloadByBlocksToFileHandler](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L980-L989>)
 
 ```go
 func (a *Allocation) DownloadByBlocksToFileHandler(fileHandler sys.File, remotePath string, startBlock, endBlock int64, numBlocks int, verifyDownload bool, status StatusCallback, isFinal bool, downloadReqOpts ...DownloadRequestOption) error
@@ -1448,7 +1538,7 @@ func (a *Allocation) DownloadByBlocksToFileHandler(fileHandler sys.File, remoteP
 
 
 <a name="Allocation.DownloadByBlocksToFileHandlerFromAuthTicket"></a>
-### func \(\*Allocation\) [DownloadByBlocksToFileHandlerFromAuthTicket](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2139-L2150>)
+### func \(\*Allocation\) [DownloadByBlocksToFileHandlerFromAuthTicket](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L2139-L2150>)
 
 ```go
 func (a *Allocation) DownloadByBlocksToFileHandlerFromAuthTicket(fileHandler sys.File, authTicket string, remoteLookupHash string, startBlock, endBlock int64, numBlocks int, remoteFilename string, verifyDownload bool, status StatusCallback, isFinal bool, downloadReqOpts ...DownloadRequestOption) error
@@ -1457,7 +1547,7 @@ func (a *Allocation) DownloadByBlocksToFileHandlerFromAuthTicket(fileHandler sys
 
 
 <a name="Allocation.DownloadFile"></a>
-### func \(\*Allocation\) [DownloadFile](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L1006>)
+### func \(\*Allocation\) [DownloadFile](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L1006>)
 
 ```go
 func (a *Allocation) DownloadFile(localPath string, remotePath string, verifyDownload bool, status StatusCallback, isFinal bool, downloadReqOpts ...DownloadRequestOption) error
@@ -1466,7 +1556,7 @@ func (a *Allocation) DownloadFile(localPath string, remotePath string, verifyDow
 
 
 <a name="Allocation.DownloadFileByBlock"></a>
-### func \(\*Allocation\) [DownloadFileByBlock](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L1027-L1029>)
+### func \(\*Allocation\) [DownloadFileByBlock](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L1027-L1029>)
 
 ```go
 func (a *Allocation) DownloadFileByBlock(localPath string, remotePath string, startBlock int64, endBlock int64, numBlocks int, verifyDownload bool, status StatusCallback, isFinal bool, downloadReqOpts ...DownloadRequestOption) error
@@ -1475,7 +1565,7 @@ func (a *Allocation) DownloadFileByBlock(localPath string, remotePath string, st
 TODO: Use a map to store the download request and use flag isFinal to start the download, calculate readCount in parallel if possible
 
 <a name="Allocation.DownloadFileToFileHandler"></a>
-### func \(\*Allocation\) [DownloadFileToFileHandler](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L968-L975>)
+### func \(\*Allocation\) [DownloadFileToFileHandler](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L968-L975>)
 
 ```go
 func (a *Allocation) DownloadFileToFileHandler(fileHandler sys.File, remotePath string, verifyDownload bool, status StatusCallback, isFinal bool, downloadReqOpts ...DownloadRequestOption) error
@@ -1484,7 +1574,7 @@ func (a *Allocation) DownloadFileToFileHandler(fileHandler sys.File, remotePath 
 
 
 <a name="Allocation.DownloadFileToFileHandlerFromAuthTicket"></a>
-### func \(\*Allocation\) [DownloadFileToFileHandlerFromAuthTicket](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2125-L2134>)
+### func \(\*Allocation\) [DownloadFileToFileHandlerFromAuthTicket](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L2125-L2134>)
 
 ```go
 func (a *Allocation) DownloadFileToFileHandlerFromAuthTicket(fileHandler sys.File, authTicket string, remoteLookupHash string, remoteFilename string, verifyDownload bool, status StatusCallback, isFinal bool, downloadReqOpts ...DownloadRequestOption) error
@@ -1506,7 +1596,7 @@ Parameters:
 Returns: \- An error if the download fails, nil otherwise.
 
 <a name="Allocation.DownloadFromAuthTicket"></a>
-### func \(\*Allocation\) [DownloadFromAuthTicket](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2197-L2198>)
+### func \(\*Allocation\) [DownloadFromAuthTicket](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L2197-L2198>)
 
 ```go
 func (a *Allocation) DownloadFromAuthTicket(localPath string, authTicket string, remoteLookupHash string, remoteFilename string, verifyDownload bool, status StatusCallback, isFinal bool, downloadReqOpts ...DownloadRequestOption) error
@@ -1515,7 +1605,7 @@ func (a *Allocation) DownloadFromAuthTicket(localPath string, authTicket string,
 
 
 <a name="Allocation.DownloadFromAuthTicketByBlocks"></a>
-### func \(\*Allocation\) [DownloadFromAuthTicketByBlocks](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2218-L2221>)
+### func \(\*Allocation\) [DownloadFromAuthTicketByBlocks](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L2218-L2221>)
 
 ```go
 func (a *Allocation) DownloadFromAuthTicketByBlocks(localPath string, authTicket string, startBlock int64, endBlock int64, numBlocks int, remoteLookupHash string, remoteFilename string, verifyDownload bool, status StatusCallback, isFinal bool, downloadReqOpts ...DownloadRequestOption) error
@@ -1524,7 +1614,7 @@ func (a *Allocation) DownloadFromAuthTicketByBlocks(localPath string, authTicket
 
 
 <a name="Allocation.DownloadFromBlobber"></a>
-### func \(\*Allocation\) [DownloadFromBlobber](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L1424>)
+### func \(\*Allocation\) [DownloadFromBlobber](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L1424>)
 
 ```go
 func (a *Allocation) DownloadFromBlobber(blobberID, localPath, remotePath string, status StatusCallback, opts ...DownloadRequestOption) error
@@ -1533,7 +1623,7 @@ func (a *Allocation) DownloadFromBlobber(blobberID, localPath, remotePath string
 
 
 <a name="Allocation.DownloadFromReader"></a>
-### func \(\*Allocation\) [DownloadFromReader](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L1992-L1996>)
+### func \(\*Allocation\) [DownloadFromReader](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L1992-L1996>)
 
 ```go
 func (a *Allocation) DownloadFromReader(remotePath, localPath, lookupHash, authTicket, contentMode string, verifyDownload bool, blocksPerMarker uint) error
@@ -1542,7 +1632,7 @@ func (a *Allocation) DownloadFromReader(remotePath, localPath, lookupHash, authT
 
 
 <a name="Allocation.DownloadThumbnail"></a>
-### func \(\*Allocation\) [DownloadThumbnail](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L1049>)
+### func \(\*Allocation\) [DownloadThumbnail](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L1049>)
 
 ```go
 func (a *Allocation) DownloadThumbnail(localPath string, remotePath string, verifyDownload bool, status StatusCallback, isFinal bool) error
@@ -1551,7 +1641,7 @@ func (a *Allocation) DownloadThumbnail(localPath string, remotePath string, veri
 
 
 <a name="Allocation.DownloadThumbnailFromAuthTicket"></a>
-### func \(\*Allocation\) [DownloadThumbnailFromAuthTicket](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2168-L2177>)
+### func \(\*Allocation\) [DownloadThumbnailFromAuthTicket](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L2168-L2177>)
 
 ```go
 func (a *Allocation) DownloadThumbnailFromAuthTicket(localPath string, authTicket string, remoteLookupHash string, remoteFilename string, verifyDownload bool, status StatusCallback, isFinal bool, downloadReqOpts ...DownloadRequestOption) error
@@ -1560,7 +1650,7 @@ func (a *Allocation) DownloadThumbnailFromAuthTicket(localPath string, authTicke
 
 
 <a name="Allocation.DownloadThumbnailToFileHandler"></a>
-### func \(\*Allocation\) [DownloadThumbnailToFileHandler](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L994-L1001>)
+### func \(\*Allocation\) [DownloadThumbnailToFileHandler](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L994-L1001>)
 
 ```go
 func (a *Allocation) DownloadThumbnailToFileHandler(fileHandler sys.File, remotePath string, verifyDownload bool, status StatusCallback, isFinal bool, downloadReqOpts ...DownloadRequestOption) error
@@ -1569,7 +1659,7 @@ func (a *Allocation) DownloadThumbnailToFileHandler(fileHandler sys.File, remote
 
 
 <a name="Allocation.DownloadThumbnailToFileHandlerFromAuthTicket"></a>
-### func \(\*Allocation\) [DownloadThumbnailToFileHandlerFromAuthTicket](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2155-L2163>)
+### func \(\*Allocation\) [DownloadThumbnailToFileHandlerFromAuthTicket](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L2155-L2163>)
 
 ```go
 func (a *Allocation) DownloadThumbnailToFileHandlerFromAuthTicket(fileHandler sys.File, authTicket string, remoteLookupHash string, remoteFilename string, verifyDownload bool, status StatusCallback, isFinal bool) error
@@ -1578,7 +1668,7 @@ func (a *Allocation) DownloadThumbnailToFileHandlerFromAuthTicket(fileHandler sy
 
 
 <a name="Allocation.EncryptAndUpdateFile"></a>
-### func \(\*Allocation\) [EncryptAndUpdateFile](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L444-L445>)
+### func \(\*Allocation\) [EncryptAndUpdateFile](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L444-L445>)
 
 ```go
 func (a *Allocation) EncryptAndUpdateFile(workdir string, localpath string, remotepath string, status StatusCallback) error
@@ -1587,7 +1677,7 @@ func (a *Allocation) EncryptAndUpdateFile(workdir string, localpath string, remo
 EncryptAndUpdateFile \[Deprecated\]please use CreateChunkedUpload
 
 <a name="Allocation.EncryptAndUpdateFileWithThumbnail"></a>
-### func \(\*Allocation\) [EncryptAndUpdateFileWithThumbnail](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L458-L459>)
+### func \(\*Allocation\) [EncryptAndUpdateFileWithThumbnail](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L458-L459>)
 
 ```go
 func (a *Allocation) EncryptAndUpdateFileWithThumbnail(workdir string, localpath string, remotepath string, thumbnailpath string, status StatusCallback) error
@@ -1596,7 +1686,7 @@ func (a *Allocation) EncryptAndUpdateFileWithThumbnail(workdir string, localpath
 EncryptAndUpdateFileWithThumbnail \[Deprecated\]please use CreateChunkedUpload
 
 <a name="Allocation.EncryptAndUploadFile"></a>
-### func \(\*Allocation\) [EncryptAndUploadFile](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L451-L452>)
+### func \(\*Allocation\) [EncryptAndUploadFile](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L451-L452>)
 
 ```go
 func (a *Allocation) EncryptAndUploadFile(workdir string, localpath string, remotepath string, status StatusCallback) error
@@ -1605,7 +1695,7 @@ func (a *Allocation) EncryptAndUploadFile(workdir string, localpath string, remo
 EncryptAndUploadFile \[Deprecated\]please use CreateChunkedUpload
 
 <a name="Allocation.EncryptAndUploadFileWithThumbnail"></a>
-### func \(\*Allocation\) [EncryptAndUploadFileWithThumbnail](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L466-L473>)
+### func \(\*Allocation\) [EncryptAndUploadFileWithThumbnail](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L466-L473>)
 
 ```go
 func (a *Allocation) EncryptAndUploadFileWithThumbnail(workdir string, localpath string, remotepath string, thumbnailpath string, status StatusCallback) error
@@ -1614,7 +1704,7 @@ func (a *Allocation) EncryptAndUploadFileWithThumbnail(workdir string, localpath
 EncryptAndUploadFileWithThumbnail \[Deprecated\]please use CreateChunkedUpload
 
 <a name="Allocation.GetAllocationDiff"></a>
-### func \(\*Allocation\) [GetAllocationDiff](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sync.go#L293>)
+### func \(\*Allocation\) [GetAllocationDiff](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sync.go#L293>)
 
 ```go
 func (a *Allocation) GetAllocationDiff(lastSyncCachePath string, localRootPath string, localFileFilters []string, remoteExcludePath []string, remotePath string) ([]FileDiff, error)
@@ -1623,7 +1713,7 @@ func (a *Allocation) GetAllocationDiff(lastSyncCachePath string, localRootPath s
 
 
 <a name="Allocation.GetAllocationFileReader"></a>
-### func \(\*Allocation\) [GetAllocationFileReader](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2060-L2064>)
+### func \(\*Allocation\) [GetAllocationFileReader](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L2060-L2064>)
 
 ```go
 func (a *Allocation) GetAllocationFileReader(remotePath, lookupHash, authTicket, contentMode string, verifyDownload bool, blocksPerMarker uint) (io.ReadSeekCloser, error)
@@ -1632,7 +1722,7 @@ func (a *Allocation) GetAllocationFileReader(remotePath, lookupHash, authTicket,
 GetStreamDownloader will check file ref existence and returns an instance that provides io.ReadSeekerCloser interface
 
 <a name="Allocation.GetAuthTicket"></a>
-### func \(\*Allocation\) [GetAuthTicket](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L1844-L1845>)
+### func \(\*Allocation\) [GetAuthTicket](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L1844-L1845>)
 
 ```go
 func (a *Allocation) GetAuthTicket(path, filename string, referenceType, refereeClientID, refereeEncryptionPublicKey string, expiration int64, availableAfter *time.Time) (string, error)
@@ -1651,7 +1741,7 @@ GetAuthTicket generates an authentication ticket for the specified file or direc
 The function returns the authentication ticket as a base64\-encoded string and an error if any.
 
 <a name="Allocation.GetAuthTicketForShare"></a>
-### func \(\*Allocation\) [GetAuthTicketForShare](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L1752-L1753>)
+### func \(\*Allocation\) [GetAuthTicketForShare](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L1752-L1753>)
 
 ```go
 func (a *Allocation) GetAuthTicketForShare(path, filename, referenceType, refereeClientID string) (string, error)
@@ -1672,7 +1762,7 @@ Returns:
 - error: An error if the authentication ticket generation fails.
 
 <a name="Allocation.GetBlobberStats"></a>
-### func \(\*Allocation\) [GetBlobberStats](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L285>)
+### func \(\*Allocation\) [GetBlobberStats](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L285>)
 
 ```go
 func (a *Allocation) GetBlobberStats() map[string]*BlobberAllocationStats
@@ -1681,7 +1771,7 @@ func (a *Allocation) GetBlobberStats() map[string]*BlobberAllocationStats
 
 
 <a name="Allocation.GetChunkReadSize"></a>
-### func \(\*Allocation\) [GetChunkReadSize](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L1578>)
+### func \(\*Allocation\) [GetChunkReadSize](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L1578>)
 
 ```go
 func (a *Allocation) GetChunkReadSize(encrypt bool) int64
@@ -1690,7 +1780,7 @@ func (a *Allocation) GetChunkReadSize(encrypt bool) int64
 
 
 <a name="Allocation.GetCurrentVersion"></a>
-### func \(\*Allocation\) [GetCurrentVersion](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L674>)
+### func \(\*Allocation\) [GetCurrentVersion](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L674>)
 
 ```go
 func (a *Allocation) GetCurrentVersion() (bool, error)
@@ -1699,7 +1789,7 @@ func (a *Allocation) GetCurrentVersion() (bool, error)
 
 
 <a name="Allocation.GetFileMeta"></a>
-### func \(\*Allocation\) [GetFileMeta](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L1541>)
+### func \(\*Allocation\) [GetFileMeta](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L1541>)
 
 ```go
 func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error)
@@ -1708,7 +1798,7 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error)
 
 
 <a name="Allocation.GetFileMetaFromAuthTicket"></a>
-### func \(\*Allocation\) [GetFileMetaFromAuthTicket](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L1586>)
+### func \(\*Allocation\) [GetFileMetaFromAuthTicket](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L1586>)
 
 ```go
 func (a *Allocation) GetFileMetaFromAuthTicket(authTicket string, lookupHash string) (*ConsolidatedFileMeta, error)
@@ -1717,7 +1807,7 @@ func (a *Allocation) GetFileMetaFromAuthTicket(authTicket string, lookupHash str
 
 
 <a name="Allocation.GetFileStats"></a>
-### func \(\*Allocation\) [GetFileStats](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L1635>)
+### func \(\*Allocation\) [GetFileStats](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L1635>)
 
 ```go
 func (a *Allocation) GetFileStats(path string) (map[string]*FileStats, error)
@@ -1726,7 +1816,7 @@ func (a *Allocation) GetFileStats(path string) (map[string]*FileStats, error)
 
 
 <a name="Allocation.GetMaxStorageCost"></a>
-### func \(\*Allocation\) [GetMaxStorageCost](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2467>)
+### func \(\*Allocation\) [GetMaxStorageCost](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L2467>)
 
 ```go
 func (a *Allocation) GetMaxStorageCost(size int64) (float64, error)
@@ -1735,7 +1825,7 @@ func (a *Allocation) GetMaxStorageCost(size int64) (float64, error)
 
 
 <a name="Allocation.GetMaxStorageCostFromBlobbers"></a>
-### func \(\*Allocation\) [GetMaxStorageCostFromBlobbers](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2452>)
+### func \(\*Allocation\) [GetMaxStorageCostFromBlobbers](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L2452>)
 
 ```go
 func (a *Allocation) GetMaxStorageCostFromBlobbers(size int64, blobbers []*BlobberAllocation) (float64, error)
@@ -1744,7 +1834,7 @@ func (a *Allocation) GetMaxStorageCostFromBlobbers(size int64, blobbers []*Blobb
 
 
 <a name="Allocation.GetMaxWriteRead"></a>
-### func \(\*Allocation\) [GetMaxWriteRead](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2417>)
+### func \(\*Allocation\) [GetMaxWriteRead](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L2417>)
 
 ```go
 func (a *Allocation) GetMaxWriteRead() (maxW float64, maxR float64, err error)
@@ -1753,7 +1843,7 @@ func (a *Allocation) GetMaxWriteRead() (maxW float64, maxR float64, err error)
 
 
 <a name="Allocation.GetMaxWriteReadFromBlobbers"></a>
-### func \(\*Allocation\) [GetMaxWriteReadFromBlobbers](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2387>)
+### func \(\*Allocation\) [GetMaxWriteReadFromBlobbers](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L2387>)
 
 ```go
 func (a *Allocation) GetMaxWriteReadFromBlobbers(blobbers []*BlobberAllocation) (maxW float64, maxR float64, err error)
@@ -1762,7 +1852,7 @@ func (a *Allocation) GetMaxWriteReadFromBlobbers(blobbers []*BlobberAllocation) 
 
 
 <a name="Allocation.GetMinStorageCost"></a>
-### func \(\*Allocation\) [GetMinStorageCost](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2485>)
+### func \(\*Allocation\) [GetMinStorageCost](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L2485>)
 
 ```go
 func (a *Allocation) GetMinStorageCost(size int64) (common.Balance, error)
@@ -1771,7 +1861,7 @@ func (a *Allocation) GetMinStorageCost(size int64) (common.Balance, error)
 
 
 <a name="Allocation.GetMinWriteRead"></a>
-### func \(\*Allocation\) [GetMinWriteRead](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2421>)
+### func \(\*Allocation\) [GetMinWriteRead](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L2421>)
 
 ```go
 func (a *Allocation) GetMinWriteRead() (minW float64, minR float64, err error)
@@ -1780,7 +1870,7 @@ func (a *Allocation) GetMinWriteRead() (minW float64, minR float64, err error)
 
 
 <a name="Allocation.GetRecentlyAddedRefs"></a>
-### func \(\*Allocation\) [GetRecentlyAddedRefs](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L1511>)
+### func \(\*Allocation\) [GetRecentlyAddedRefs](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L1511>)
 
 ```go
 func (a *Allocation) GetRecentlyAddedRefs(page int, fromDate int64, pageLimit int) (*RecentlyAddedRefResult, error)
@@ -1789,7 +1879,7 @@ func (a *Allocation) GetRecentlyAddedRefs(page int, fromDate int64, pageLimit in
 
 
 <a name="Allocation.GetRefs"></a>
-### func \(\*Allocation\) [GetRefs](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L1494>)
+### func \(\*Allocation\) [GetRefs](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L1494>)
 
 ```go
 func (a *Allocation) GetRefs(path, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*ObjectTreeResult, error)
@@ -1798,7 +1888,7 @@ func (a *Allocation) GetRefs(path, offsetPath, updatedDate, offsetDate, fileType
 This function will retrieve paginated objectTree and will handle concensus; Required tree should be made in application side.
 
 <a name="Allocation.GetRefsFromLookupHash"></a>
-### func \(\*Allocation\) [GetRefsFromLookupHash](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L1502>)
+### func \(\*Allocation\) [GetRefsFromLookupHash](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L1502>)
 
 ```go
 func (a *Allocation) GetRefsFromLookupHash(pathHash, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*ObjectTreeResult, error)
@@ -1807,7 +1897,7 @@ func (a *Allocation) GetRefsFromLookupHash(pathHash, offsetPath, updatedDate, of
 
 
 <a name="Allocation.GetRefsWithAuthTicket"></a>
-### func \(\*Allocation\) [GetRefsWithAuthTicket](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L1475>)
+### func \(\*Allocation\) [GetRefsWithAuthTicket](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L1475>)
 
 ```go
 func (a *Allocation) GetRefsWithAuthTicket(authToken, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*ObjectTreeResult, error)
@@ -1816,7 +1906,7 @@ func (a *Allocation) GetRefsWithAuthTicket(authToken, offsetPath, updatedDate, o
 GetRefsWithAuthTicket get refs that are children of shared remote path.
 
 <a name="Allocation.GetRemoteFileMap"></a>
-### func \(\*Allocation\) [GetRemoteFileMap](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sync.go#L82>)
+### func \(\*Allocation\) [GetRemoteFileMap](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sync.go#L82>)
 
 ```go
 func (a *Allocation) GetRemoteFileMap(exclMap map[string]int, remotepath string) (map[string]FileInfo, error)
@@ -1825,7 +1915,7 @@ func (a *Allocation) GetRemoteFileMap(exclMap map[string]int, remotepath string)
 
 
 <a name="Allocation.GetStats"></a>
-### func \(\*Allocation\) [GetStats](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L281>)
+### func \(\*Allocation\) [GetStats](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L281>)
 
 ```go
 func (a *Allocation) GetStats() *AllocationStats
@@ -1834,7 +1924,7 @@ func (a *Allocation) GetStats() *AllocationStats
 
 
 <a name="Allocation.InitAllocation"></a>
-### func \(\*Allocation\) [InitAllocation](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L304>)
+### func \(\*Allocation\) [InitAllocation](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L304>)
 
 ```go
 func (a *Allocation) InitAllocation()
@@ -1843,7 +1933,7 @@ func (a *Allocation) InitAllocation()
 
 
 <a name="Allocation.ListDir"></a>
-### func \(\*Allocation\) [ListDir](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L1344>)
+### func \(\*Allocation\) [ListDir](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L1344>)
 
 ```go
 func (a *Allocation) ListDir(path string, opts ...ListRequestOptions) (*ListResult, error)
@@ -1852,7 +1942,7 @@ func (a *Allocation) ListDir(path string, opts ...ListRequestOptions) (*ListResu
 
 
 <a name="Allocation.ListDirFromAuthTicket"></a>
-### func \(\*Allocation\) [ListDirFromAuthTicket](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L1303>)
+### func \(\*Allocation\) [ListDirFromAuthTicket](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L1303>)
 
 ```go
 func (a *Allocation) ListDirFromAuthTicket(authTicket string, lookupHash string, opts ...ListRequestOptions) (*ListResult, error)
@@ -1861,7 +1951,7 @@ func (a *Allocation) ListDirFromAuthTicket(authTicket string, lookupHash string,
 
 
 <a name="Allocation.RepairAlloc"></a>
-### func \(\*Allocation\) [RepairAlloc](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2354>)
+### func \(\*Allocation\) [RepairAlloc](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L2354>)
 
 ```go
 func (a *Allocation) RepairAlloc(statusCB StatusCallback) (err error)
@@ -1870,7 +1960,7 @@ func (a *Allocation) RepairAlloc(statusCB StatusCallback) (err error)
 RepairAlloc repairs all the files in allocation
 
 <a name="Allocation.RepairFile"></a>
-### func \(\*Allocation\) [RepairFile](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L386>)
+### func \(\*Allocation\) [RepairFile](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L386>)
 
 ```go
 func (a *Allocation) RepairFile(file sys.File, remotepath string, statusCallback StatusCallback, mask zboxutil.Uint128, ref *fileref.FileRef) *OperationRequest
@@ -1879,7 +1969,7 @@ func (a *Allocation) RepairFile(file sys.File, remotepath string, statusCallback
 
 
 <a name="Allocation.RepairRequired"></a>
-### func \(\*Allocation\) [RepairRequired](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L778>)
+### func \(\*Allocation\) [RepairRequired](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L778>)
 
 ```go
 func (a *Allocation) RepairRequired(remotepath string) (zboxutil.Uint128, zboxutil.Uint128, bool, *fileref.FileRef, error)
@@ -1888,7 +1978,7 @@ func (a *Allocation) RepairRequired(remotepath string) (zboxutil.Uint128, zboxut
 
 
 <a name="Allocation.RevokeShare"></a>
-### func \(\*Allocation\) [RevokeShare](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L1768>)
+### func \(\*Allocation\) [RevokeShare](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L1768>)
 
 ```go
 func (a *Allocation) RevokeShare(path string, refereeClientID string) error
@@ -1906,7 +1996,7 @@ Returns:
 - error: An error if the shared access revocation fails.
 
 <a name="Allocation.RollbackWithMask"></a>
-### func \(\*Allocation\) [RollbackWithMask](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/rollback.go#L333>)
+### func \(\*Allocation\) [RollbackWithMask](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/rollback.go#L333>)
 
 ```go
 func (a *Allocation) RollbackWithMask(mask zboxutil.Uint128)
@@ -1915,7 +2005,7 @@ func (a *Allocation) RollbackWithMask(mask zboxutil.Uint128)
 
 
 <a name="Allocation.SaveRemoteSnapshot"></a>
-### func \(\*Allocation\) [SaveRemoteSnapshot](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sync.go#L339>)
+### func \(\*Allocation\) [SaveRemoteSnapshot](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sync.go#L339>)
 
 ```go
 func (a *Allocation) SaveRemoteSnapshot(pathToSave string, remoteExcludePath []string) error
@@ -1924,7 +2014,7 @@ func (a *Allocation) SaveRemoteSnapshot(pathToSave string, remoteExcludePath []s
 SaveRemoteSnapShot \- Saves the remote current information to the given file This file can be passed to GetAllocationDiff to exactly find the previous sync state to current.
 
 <a name="Allocation.SetConsensusThreshold"></a>
-### func \(\*Allocation\) [SetConsensusThreshold](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2523>)
+### func \(\*Allocation\) [SetConsensusThreshold](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L2523>)
 
 ```go
 func (a *Allocation) SetConsensusThreshold()
@@ -1933,7 +2023,7 @@ func (a *Allocation) SetConsensusThreshold()
 
 
 <a name="Allocation.StartChunkedUpload"></a>
-### func \(\*Allocation\) [StartChunkedUpload](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L591-L600>)
+### func \(\*Allocation\) [StartChunkedUpload](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L591-L600>)
 
 ```go
 func (a *Allocation) StartChunkedUpload(workdir, localPath string, remotePath string, status StatusCallback, isUpdate bool, isRepair bool, thumbnailPath string, encryption bool, webStreaming bool, uploadOpts ...ChunkedUploadOption) error
@@ -1942,7 +2032,7 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string, remotePath st
 
 
 <a name="Allocation.StartMultiUpload"></a>
-### func \(\*Allocation\) [StartMultiUpload](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L487>)
+### func \(\*Allocation\) [StartMultiUpload](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L487>)
 
 ```go
 func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileNames []string, thumbnailPaths []string, encrypts []bool, chunkNumbers []int, remotePaths []string, isUpdate []bool, isWebstreaming []bool, status StatusCallback) error
@@ -1951,7 +2041,7 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 
 
 <a name="Allocation.StartRepair"></a>
-### func \(\*Allocation\) [StartRepair](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2319>)
+### func \(\*Allocation\) [StartRepair](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L2319>)
 
 ```go
 func (a *Allocation) StartRepair(localRootPath, pathToRepair string, statusCB StatusCallback) error
@@ -1960,7 +2050,7 @@ func (a *Allocation) StartRepair(localRootPath, pathToRepair string, statusCB St
 
 
 <a name="Allocation.UpdateFile"></a>
-### func \(\*Allocation\) [UpdateFile](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L373-L374>)
+### func \(\*Allocation\) [UpdateFile](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L373-L374>)
 
 ```go
 func (a *Allocation) UpdateFile(workdir, localpath string, remotepath string, status StatusCallback) error
@@ -1969,7 +2059,7 @@ func (a *Allocation) UpdateFile(workdir, localpath string, remotepath string, st
 UpdateFile \[Deprecated\]please use CreateChunkedUpload
 
 <a name="Allocation.UpdateFileWithThumbnail"></a>
-### func \(\*Allocation\) [UpdateFileWithThumbnail](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L427-L428>)
+### func \(\*Allocation\) [UpdateFileWithThumbnail](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L427-L428>)
 
 ```go
 func (a *Allocation) UpdateFileWithThumbnail(workdir, localpath string, remotepath string, thumbnailpath string, status StatusCallback) error
@@ -1978,7 +2068,7 @@ func (a *Allocation) UpdateFileWithThumbnail(workdir, localpath string, remotepa
 UpdateFileWithThumbnail \[Deprecated\]please use CreateChunkedUpload
 
 <a name="Allocation.UpdateWithRepair"></a>
-### func \(\*Allocation\) [UpdateWithRepair](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L2527-L2534>)
+### func \(\*Allocation\) [UpdateWithRepair](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L2527-L2534>)
 
 ```go
 func (a *Allocation) UpdateWithRepair(size int64, extend bool, lock uint64, addBlobberId, removeBlobberId string, setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters, statusCB StatusCallback) (string, error)
@@ -1987,7 +2077,7 @@ func (a *Allocation) UpdateWithRepair(size int64, extend bool, lock uint64, addB
 
 
 <a name="Allocation.UploadAuthTicketToBlobber"></a>
-### func \(\*Allocation\) [UploadAuthTicketToBlobber](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L1916>)
+### func \(\*Allocation\) [UploadAuthTicketToBlobber](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L1916>)
 
 ```go
 func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKey string, availableAfter *time.Time) error
@@ -1996,7 +2086,7 @@ func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKe
 
 
 <a name="Allocation.UploadFile"></a>
-### func \(\*Allocation\) [UploadFile](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L380-L381>)
+### func \(\*Allocation\) [UploadFile](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L380-L381>)
 
 ```go
 func (a *Allocation) UploadFile(workdir, localpath string, remotepath string, status StatusCallback) error
@@ -2005,7 +2095,7 @@ func (a *Allocation) UploadFile(workdir, localpath string, remotepath string, st
 UploadFile \[Deprecated\]please use CreateChunkedUpload
 
 <a name="Allocation.UploadFileWithThumbnail"></a>
-### func \(\*Allocation\) [UploadFileWithThumbnail](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L435-L437>)
+### func \(\*Allocation\) [UploadFileWithThumbnail](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L435-L437>)
 
 ```go
 func (a *Allocation) UploadFileWithThumbnail(workdir string, localpath string, remotepath string, thumbnailpath string, status StatusCallback) error
@@ -2014,7 +2104,7 @@ func (a *Allocation) UploadFileWithThumbnail(workdir string, localpath string, r
 UploadFileWithThumbnail \[Deprecated\]please use CreateChunkedUpload
 
 <a name="AllocationStats"></a>
-## type [AllocationStats](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L119-L128>)
+## type [AllocationStats](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L119-L128>)
 
 
 
@@ -2032,7 +2122,7 @@ type AllocationStats struct {
 ```
 
 <a name="AuthTicket"></a>
-## type [AuthTicket](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/authticket.go#L12-L14>)
+## type [AuthTicket](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/authticket.go#L12-L14>)
 
 
 
@@ -2043,7 +2133,7 @@ type AuthTicket struct {
 ```
 
 <a name="InitAuthTicket"></a>
-### func [InitAuthTicket](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/authticket.go#L16>)
+### func [InitAuthTicket](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/authticket.go#L16>)
 
 ```go
 func InitAuthTicket(authTicket string) *AuthTicket
@@ -2052,7 +2142,7 @@ func InitAuthTicket(authTicket string) *AuthTicket
 
 
 <a name="AuthTicket.GetFileName"></a>
-### func \(\*AuthTicket\) [GetFileName](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/authticket.go#L35>)
+### func \(\*AuthTicket\) [GetFileName](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/authticket.go#L35>)
 
 ```go
 func (at *AuthTicket) GetFileName() (string, error)
@@ -2061,7 +2151,7 @@ func (at *AuthTicket) GetFileName() (string, error)
 
 
 <a name="AuthTicket.GetLookupHash"></a>
-### func \(\*AuthTicket\) [GetLookupHash](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/authticket.go#L48>)
+### func \(\*AuthTicket\) [GetLookupHash](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/authticket.go#L48>)
 
 ```go
 func (at *AuthTicket) GetLookupHash() (string, error)
@@ -2070,7 +2160,7 @@ func (at *AuthTicket) GetLookupHash() (string, error)
 
 
 <a name="AuthTicket.IsDir"></a>
-### func \(\*AuthTicket\) [IsDir](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/authticket.go#L22>)
+### func \(\*AuthTicket\) [IsDir](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/authticket.go#L22>)
 
 ```go
 func (at *AuthTicket) IsDir() (bool, error)
@@ -2079,7 +2169,7 @@ func (at *AuthTicket) IsDir() (bool, error)
 
 
 <a name="AuthTicket.Unmarshall"></a>
-### func \(\*AuthTicket\) [Unmarshall](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/authticket.go#L61>)
+### func \(\*AuthTicket\) [Unmarshall](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/authticket.go#L61>)
 
 ```go
 func (at *AuthTicket) Unmarshall() (*marker.AuthTicket, error)
@@ -2088,7 +2178,7 @@ func (at *AuthTicket) Unmarshall() (*marker.AuthTicket, error)
 
 
 <a name="BackPool"></a>
-## type [BackPool](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L176-L179>)
+## type [BackPool](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L176-L179>)
 
 
 
@@ -2100,7 +2190,7 @@ type BackPool struct {
 ```
 
 <a name="Blobber"></a>
-## type [Blobber](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L607-L624>)
+## type [Blobber](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L607-L624>)
 
 
 
@@ -2126,7 +2216,7 @@ type Blobber struct {
 ```
 
 <a name="GetBlobber"></a>
-### func [GetBlobber](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L775>)
+### func [GetBlobber](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L775>)
 
 ```go
 func GetBlobber(blobberID string) (blob *Blobber, err error)
@@ -2140,7 +2230,7 @@ GetBlobber instance.
 ```
 
 <a name="GetBlobbers"></a>
-### func [GetBlobbers](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L739>)
+### func [GetBlobbers](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L739>)
 
 ```go
 func GetBlobbers(active bool) (bs []*Blobber, err error)
@@ -2149,7 +2239,7 @@ func GetBlobbers(active bool) (bs []*Blobber, err error)
 
 
 <a name="BlobberAllocation"></a>
-## type [BlobberAllocation](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L157-L168>)
+## type [BlobberAllocation](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L157-L168>)
 
 
 
@@ -2169,7 +2259,7 @@ type BlobberAllocation struct {
 ```
 
 <a name="BlobberAllocationStats"></a>
-## type [BlobberAllocationStats](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L74-L98>)
+## type [BlobberAllocationStats](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L74-L98>)
 
 
 
@@ -2202,7 +2292,7 @@ type BlobberAllocationStats struct {
 ```
 
 <a name="BlockDownloadRequest"></a>
-## type [BlockDownloadRequest](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/blockdownloadworker.go#L30-L51>)
+## type [BlockDownloadRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/blockdownloadworker.go#L30-L51>)
 
 
 
@@ -2213,7 +2303,7 @@ type BlockDownloadRequest struct {
 ```
 
 <a name="ChallengePoolInfo"></a>
-## type [ChallengePoolInfo](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L522-L528>)
+## type [ChallengePoolInfo](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L522-L528>)
 
 ChallengePoolInfo represents a challenge pool stat.
 
@@ -2228,7 +2318,7 @@ type ChallengePoolInfo struct {
 ```
 
 <a name="GetChallengePoolInfo"></a>
-### func [GetChallengePoolInfo](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L531>)
+### func [GetChallengePoolInfo](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L531>)
 
 ```go
 func GetChallengePoolInfo(allocID string) (info *ChallengePoolInfo, err error)
@@ -2237,7 +2327,7 @@ func GetChallengePoolInfo(allocID string) (info *ChallengePoolInfo, err error)
 GetChallengePoolInfo for given allocation.
 
 <a name="ChunkData"></a>
-## type [ChunkData](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/chunked_upload_chunk_reader.go#L120-L132>)
+## type [ChunkData](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/chunked_upload_chunk_reader.go#L120-L132>)
 
 ChunkData data of a chunk
 
@@ -2258,7 +2348,7 @@ type ChunkData struct {
 ```
 
 <a name="ChunkedUpload"></a>
-## type [ChunkedUpload](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/chunked_upload_model.go#L24-L90>)
+## type [ChunkedUpload](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/chunked_upload_model.go#L24-L90>)
 
 ChunkedUpload upload manager with chunked upload feature
 
@@ -2269,7 +2359,7 @@ type ChunkedUpload struct {
 ```
 
 <a name="CreateChunkedUpload"></a>
-### func [CreateChunkedUpload](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/chunked_upload.go#L91-L98>)
+### func [CreateChunkedUpload](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/chunked_upload.go#L91-L98>)
 
 ```go
 func CreateChunkedUpload(ctx context.Context, workdir string, allocationObj *Allocation, fileMeta FileMeta, fileReader io.Reader, isUpdate, isRepair bool, webStreaming bool, connectionId string, opts ...ChunkedUploadOption) (*ChunkedUpload, error)
@@ -2278,7 +2368,7 @@ func CreateChunkedUpload(ctx context.Context, workdir string, allocationObj *All
 
 
 <a name="ChunkedUpload.Start"></a>
-### func \(\*ChunkedUpload\) [Start](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/chunked_upload.go#L504>)
+### func \(\*ChunkedUpload\) [Start](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/chunked_upload.go#L504>)
 
 ```go
 func (su *ChunkedUpload) Start() error
@@ -2287,7 +2377,7 @@ func (su *ChunkedUpload) Start() error
 Start start/resume upload
 
 <a name="ChunkedUploadBlobber"></a>
-## type [ChunkedUploadBlobber](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/chunked_upload_blobber.go#L30-L38>)
+## type [ChunkedUploadBlobber](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/chunked_upload_blobber.go#L30-L38>)
 
 ChunkedUploadBlobber client of blobber's upload
 
@@ -2298,7 +2388,7 @@ type ChunkedUploadBlobber struct {
 ```
 
 <a name="ChunkedUploadChunkReader"></a>
-## type [ChunkedUploadChunkReader](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/chunked_upload_chunk_reader.go#L16-L27>)
+## type [ChunkedUploadChunkReader](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/chunked_upload_chunk_reader.go#L16-L27>)
 
 
 
@@ -2318,7 +2408,7 @@ type ChunkedUploadChunkReader interface {
 ```
 
 <a name="ChunkedUploadFormBuilder"></a>
-## type [ChunkedUploadFormBuilder](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/chunked_upload_form_builder.go#L17-L25>)
+## type [ChunkedUploadFormBuilder](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/chunked_upload_form_builder.go#L17-L25>)
 
 ChunkedUploadFormBuilder build form data for uploading
 
@@ -2335,7 +2425,7 @@ type ChunkedUploadFormBuilder interface {
 ```
 
 <a name="CreateChunkedUploadFormBuilder"></a>
-### func [CreateChunkedUploadFormBuilder](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/chunked_upload_form_builder.go#L38>)
+### func [CreateChunkedUploadFormBuilder](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/chunked_upload_form_builder.go#L38>)
 
 ```go
 func CreateChunkedUploadFormBuilder() ChunkedUploadFormBuilder
@@ -2344,7 +2434,7 @@ func CreateChunkedUploadFormBuilder() ChunkedUploadFormBuilder
 CreateChunkedUploadFormBuilder create ChunkedUploadFormBuilder instance
 
 <a name="ChunkedUploadFormMetadata"></a>
-## type [ChunkedUploadFormMetadata](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/chunked_upload_form_builder.go#L28-L35>)
+## type [ChunkedUploadFormMetadata](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/chunked_upload_form_builder.go#L28-L35>)
 
 ChunkedUploadFormMetadata upload form metadata
 
@@ -2360,7 +2450,7 @@ type ChunkedUploadFormMetadata struct {
 ```
 
 <a name="ChunkedUploadOption"></a>
-## type [ChunkedUploadOption](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/chunked_upload_option.go#L15>)
+## type [ChunkedUploadOption](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/chunked_upload_option.go#L15>)
 
 ChunkedUploadOption set stream option
 
@@ -2369,7 +2459,7 @@ type ChunkedUploadOption func(su *ChunkedUpload)
 ```
 
 <a name="WithActualHash"></a>
-### func [WithActualHash](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/chunked_upload_option.go#L101>)
+### func [WithActualHash](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/chunked_upload_option.go#L101>)
 
 ```go
 func WithActualHash(hash string) ChunkedUploadOption
@@ -2378,7 +2468,7 @@ func WithActualHash(hash string) ChunkedUploadOption
 
 
 <a name="WithChunkNumber"></a>
-### func [WithChunkNumber](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/chunked_upload_option.go#L49>)
+### func [WithChunkNumber](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/chunked_upload_option.go#L49>)
 
 ```go
 func WithChunkNumber(num int) ChunkedUploadOption
@@ -2387,7 +2477,7 @@ func WithChunkNumber(num int) ChunkedUploadOption
 WithChunkNumber set the number of chunks should be upload in a request. ignore if size \<=0
 
 <a name="WithCommitTimeout"></a>
-### func [WithCommitTimeout](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/chunked_upload_option.go#L83>)
+### func [WithCommitTimeout](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/chunked_upload_option.go#L83>)
 
 ```go
 func WithCommitTimeout(t time.Duration) ChunkedUploadOption
@@ -2396,7 +2486,7 @@ func WithCommitTimeout(t time.Duration) ChunkedUploadOption
 
 
 <a name="WithEncrypt"></a>
-### func [WithEncrypt](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/chunked_upload_option.go#L58>)
+### func [WithEncrypt](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/chunked_upload_option.go#L58>)
 
 ```go
 func WithEncrypt(on bool) ChunkedUploadOption
@@ -2405,7 +2495,7 @@ func WithEncrypt(on bool) ChunkedUploadOption
 WithEncrypt turn on/off encrypt on upload. It is turn off as default.
 
 <a name="WithEncryptedPoint"></a>
-### func [WithEncryptedPoint](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/chunked_upload_option.go#L95>)
+### func [WithEncryptedPoint](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/chunked_upload_option.go#L95>)
 
 ```go
 func WithEncryptedPoint(point string) ChunkedUploadOption
@@ -2414,7 +2504,7 @@ func WithEncryptedPoint(point string) ChunkedUploadOption
 
 
 <a name="WithMask"></a>
-### func [WithMask](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/chunked_upload_option.go#L89>)
+### func [WithMask](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/chunked_upload_option.go#L89>)
 
 ```go
 func WithMask(mask zboxutil.Uint128) ChunkedUploadOption
@@ -2423,7 +2513,7 @@ func WithMask(mask zboxutil.Uint128) ChunkedUploadOption
 
 
 <a name="WithProgressStorer"></a>
-### func [WithProgressStorer](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/chunked_upload_option.go#L71>)
+### func [WithProgressStorer](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/chunked_upload_option.go#L71>)
 
 ```go
 func WithProgressStorer(progressStorer ChunkedUploadProgressStorer) ChunkedUploadOption
@@ -2432,7 +2522,7 @@ func WithProgressStorer(progressStorer ChunkedUploadProgressStorer) ChunkedUploa
 
 
 <a name="WithStatusCallback"></a>
-### func [WithStatusCallback](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/chunked_upload_option.go#L65>)
+### func [WithStatusCallback](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/chunked_upload_option.go#L65>)
 
 ```go
 func WithStatusCallback(callback StatusCallback) ChunkedUploadOption
@@ -2441,7 +2531,7 @@ func WithStatusCallback(callback StatusCallback) ChunkedUploadOption
 WithStatusCallback register StatusCallback instance
 
 <a name="WithThumbnail"></a>
-### func [WithThumbnail](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/chunked_upload_option.go#L18>)
+### func [WithThumbnail](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/chunked_upload_option.go#L18>)
 
 ```go
 func WithThumbnail(buf []byte) ChunkedUploadOption
@@ -2450,7 +2540,7 @@ func WithThumbnail(buf []byte) ChunkedUploadOption
 WithThumbnail add thumbnail. stream mode is unnecessary for thumbnail
 
 <a name="WithThumbnailFile"></a>
-### func [WithThumbnailFile](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/chunked_upload_option.go#L41>)
+### func [WithThumbnailFile](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/chunked_upload_option.go#L41>)
 
 ```go
 func WithThumbnailFile(fileName string) ChunkedUploadOption
@@ -2459,7 +2549,7 @@ func WithThumbnailFile(fileName string) ChunkedUploadOption
 WithThumbnailFile add thumbnail from file. stream mode is unnecessary for thumbnail
 
 <a name="WithUploadTimeout"></a>
-### func [WithUploadTimeout](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/chunked_upload_option.go#L77>)
+### func [WithUploadTimeout](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/chunked_upload_option.go#L77>)
 
 ```go
 func WithUploadTimeout(t time.Duration) ChunkedUploadOption
@@ -2468,7 +2558,7 @@ func WithUploadTimeout(t time.Duration) ChunkedUploadOption
 
 
 <a name="ChunkedUploadProgressStorer"></a>
-## type [ChunkedUploadProgressStorer](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/chunked_upload_progress_storer.go#L18-L27>)
+## type [ChunkedUploadProgressStorer](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/chunked_upload_progress_storer.go#L18-L27>)
 
 ChunkedUploadProgressStorer load and save upload progress
 
@@ -2486,7 +2576,7 @@ type ChunkedUploadProgressStorer interface {
 ```
 
 <a name="CommitMetaData"></a>
-## type [CommitMetaData](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/commitmetaworker.go#L3-L6>)
+## type [CommitMetaData](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/commitmetaworker.go#L3-L6>)
 
 
 
@@ -2498,7 +2588,7 @@ type CommitMetaData struct {
 ```
 
 <a name="CommitMetaResponse"></a>
-## type [CommitMetaResponse](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/commitmetaworker.go#L8-L11>)
+## type [CommitMetaResponse](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/commitmetaworker.go#L8-L11>)
 
 
 
@@ -2510,7 +2600,7 @@ type CommitMetaResponse struct {
 ```
 
 <a name="CommitRequest"></a>
-## type [CommitRequest](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/commitworker.go#L48-L58>)
+## type [CommitRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/commitworker.go#L48-L58>)
 
 
 
@@ -2521,7 +2611,7 @@ type CommitRequest struct {
 ```
 
 <a name="CommitResult"></a>
-## type [CommitResult](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/commitworker.go#L33-L36>)
+## type [CommitResult](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/commitworker.go#L33-L36>)
 
 
 
@@ -2533,7 +2623,7 @@ type CommitResult struct {
 ```
 
 <a name="ErrorCommitResult"></a>
-### func [ErrorCommitResult](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/commitworker.go#L38>)
+### func [ErrorCommitResult](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/commitworker.go#L38>)
 
 ```go
 func ErrorCommitResult(errMsg string) *CommitResult
@@ -2542,7 +2632,7 @@ func ErrorCommitResult(errMsg string) *CommitResult
 
 
 <a name="SuccessCommitResult"></a>
-### func [SuccessCommitResult](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/commitworker.go#L43>)
+### func [SuccessCommitResult](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/commitworker.go#L43>)
 
 ```go
 func SuccessCommitResult() *CommitResult
@@ -2551,7 +2641,7 @@ func SuccessCommitResult() *CommitResult
 
 
 <a name="Consensus"></a>
-## type [Consensus](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/consensus.go#L5-L10>)
+## type [Consensus](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/consensus.go#L5-L10>)
 
 
 
@@ -2563,7 +2653,7 @@ type Consensus struct {
 ```
 
 <a name="Consensus.Done"></a>
-### func \(\*Consensus\) [Done](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/consensus.go#L13>)
+### func \(\*Consensus\) [Done](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/consensus.go#L13>)
 
 ```go
 func (c *Consensus) Done()
@@ -2572,7 +2662,7 @@ func (c *Consensus) Done()
 Done increase consensus by 1
 
 <a name="Consensus.Init"></a>
-### func \(\*Consensus\) [Init](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/consensus.go#L26>)
+### func \(\*Consensus\) [Init](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/consensus.go#L26>)
 
 ```go
 func (c *Consensus) Init(threshConsensus, fullConsensus int)
@@ -2581,7 +2671,7 @@ func (c *Consensus) Init(threshConsensus, fullConsensus int)
 
 
 <a name="Consensus.Reset"></a>
-### func \(\*Consensus\) [Reset](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/consensus.go#L20>)
+### func \(\*Consensus\) [Reset](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/consensus.go#L20>)
 
 ```go
 func (c *Consensus) Reset()
@@ -2590,7 +2680,7 @@ func (c *Consensus) Reset()
 Reset reset consensus to 0
 
 <a name="ConsolidatedFileMeta"></a>
-## type [ConsolidatedFileMeta](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L100-L117>)
+## type [ConsolidatedFileMeta](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L100-L117>)
 
 
 
@@ -2616,7 +2706,7 @@ type ConsolidatedFileMeta struct {
 ```
 
 <a name="CopyOperation"></a>
-## type [CopyOperation](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/copyworker.go#L294-L303>)
+## type [CopyOperation](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/copyworker.go#L294-L303>)
 
 
 
@@ -2628,7 +2718,7 @@ type CopyOperation struct {
 ```
 
 <a name="NewCopyOperation"></a>
-### func [NewCopyOperation](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/copyworker.go#L390>)
+### func [NewCopyOperation](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/copyworker.go#L390>)
 
 ```go
 func NewCopyOperation(remotePath string, destPath string, copyMask zboxutil.Uint128, maskMU *sync.Mutex, consensusTh int, fullConsensus int, ctx context.Context) *CopyOperation
@@ -2637,7 +2727,7 @@ func NewCopyOperation(remotePath string, destPath string, copyMask zboxutil.Uint
 
 
 <a name="CopyOperation.Completed"></a>
-### func \(\*CopyOperation\) [Completed](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/copyworker.go#L382>)
+### func \(\*CopyOperation\) [Completed](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/copyworker.go#L382>)
 
 ```go
 func (co *CopyOperation) Completed(allocObj *Allocation)
@@ -2646,7 +2736,7 @@ func (co *CopyOperation) Completed(allocObj *Allocation)
 
 
 <a name="CopyOperation.Error"></a>
-### func \(\*CopyOperation\) [Error](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/copyworker.go#L386>)
+### func \(\*CopyOperation\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/copyworker.go#L386>)
 
 ```go
 func (co *CopyOperation) Error(allocObj *Allocation, consensus int, err error)
@@ -2655,7 +2745,7 @@ func (co *CopyOperation) Error(allocObj *Allocation, consensus int, err error)
 
 
 <a name="CopyOperation.Process"></a>
-### func \(\*CopyOperation\) [Process](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/copyworker.go#L305>)
+### func \(\*CopyOperation\) [Process](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/copyworker.go#L305>)
 
 ```go
 func (co *CopyOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error)
@@ -2664,7 +2754,7 @@ func (co *CopyOperation) Process(allocObj *Allocation, connectionID string) ([]f
 
 
 <a name="CopyOperation.Verify"></a>
-### func \(\*CopyOperation\) [Verify](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/copyworker.go#L361>)
+### func \(\*CopyOperation\) [Verify](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/copyworker.go#L361>)
 
 ```go
 func (co *CopyOperation) Verify(a *Allocation) error
@@ -2673,7 +2763,7 @@ func (co *CopyOperation) Verify(a *Allocation) error
 
 
 <a name="CopyRequest"></a>
-## type [CopyRequest](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/copyworker.go#L30-L44>)
+## type [CopyRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/copyworker.go#L30-L44>)
 
 
 
@@ -2685,7 +2775,7 @@ type CopyRequest struct {
 ```
 
 <a name="CopyRequest.ProcessCopy"></a>
-### func \(\*CopyRequest\) [ProcessCopy](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/copyworker.go#L191>)
+### func \(\*CopyRequest\) [ProcessCopy](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/copyworker.go#L191>)
 
 ```go
 func (req *CopyRequest) ProcessCopy() error
@@ -2694,7 +2784,7 @@ func (req *CopyRequest) ProcessCopy() error
 
 
 <a name="CopyRequest.ProcessWithBlobbers"></a>
-### func \(\*CopyRequest\) [ProcessWithBlobbers](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/copyworker.go#L166>)
+### func \(\*CopyRequest\) [ProcessWithBlobbers](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/copyworker.go#L166>)
 
 ```go
 func (req *CopyRequest) ProcessWithBlobbers() ([]fileref.RefEntity, []error)
@@ -2703,9 +2793,9 @@ func (req *CopyRequest) ProcessWithBlobbers() ([]fileref.RefEntity, []error)
 
 
 <a name="CreateAllocationOptions"></a>
-## type [CreateAllocationOptions](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L1009-L1019>)
+## type [CreateAllocationOptions](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L1028-L1038>)
 
-
+CreateAllocationOptions is used to specify the options for creating a new allocation.
 
 ```go
 type CreateAllocationOptions struct {
@@ -2722,7 +2812,7 @@ type CreateAllocationOptions struct {
 ```
 
 <a name="DataChan"></a>
-## type [DataChan](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/streamreader.go#L11-L14>)
+## type [DataChan](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/streamreader.go#L11-L14>)
 
 Example implementation of a reader
 
@@ -2733,7 +2823,7 @@ type DataChan struct {
 ```
 
 <a name="DeleteOperation"></a>
-## type [DeleteOperation](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/deleteworker.go#L293-L300>)
+## type [DeleteOperation](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/deleteworker.go#L293-L300>)
 
 
 
@@ -2744,7 +2834,7 @@ type DeleteOperation struct {
 ```
 
 <a name="NewDeleteOperation"></a>
-### func [NewDeleteOperation](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/deleteworker.go#L407>)
+### func [NewDeleteOperation](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/deleteworker.go#L407>)
 
 ```go
 func NewDeleteOperation(remotePath string, deleteMask zboxutil.Uint128, maskMu *sync.Mutex, consensusTh int, fullConsensus int, ctx context.Context) *DeleteOperation
@@ -2753,7 +2843,7 @@ func NewDeleteOperation(remotePath string, deleteMask zboxutil.Uint128, maskMu *
 
 
 <a name="DeleteOperation.Completed"></a>
-### func \(\*DeleteOperation\) [Completed](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/deleteworker.go#L399>)
+### func \(\*DeleteOperation\) [Completed](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/deleteworker.go#L399>)
 
 ```go
 func (dop *DeleteOperation) Completed(allocObj *Allocation)
@@ -2762,7 +2852,7 @@ func (dop *DeleteOperation) Completed(allocObj *Allocation)
 
 
 <a name="DeleteOperation.Error"></a>
-### func \(\*DeleteOperation\) [Error](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/deleteworker.go#L403>)
+### func \(\*DeleteOperation\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/deleteworker.go#L403>)
 
 ```go
 func (dop *DeleteOperation) Error(allocObj *Allocation, consensus int, err error)
@@ -2771,7 +2861,7 @@ func (dop *DeleteOperation) Error(allocObj *Allocation, consensus int, err error
 
 
 <a name="DeleteOperation.Process"></a>
-### func \(\*DeleteOperation\) [Process](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/deleteworker.go#L302>)
+### func \(\*DeleteOperation\) [Process](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/deleteworker.go#L302>)
 
 ```go
 func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error)
@@ -2780,7 +2870,7 @@ func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string) (
 
 
 <a name="DeleteOperation.Verify"></a>
-### func \(\*DeleteOperation\) [Verify](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/deleteworker.go#L383>)
+### func \(\*DeleteOperation\) [Verify](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/deleteworker.go#L383>)
 
 ```go
 func (dop *DeleteOperation) Verify(a *Allocation) error
@@ -2789,7 +2879,7 @@ func (dop *DeleteOperation) Verify(a *Allocation) error
 
 
 <a name="DeleteRequest"></a>
-## type [DeleteRequest](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/deleteworker.go#L28-L42>)
+## type [DeleteRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/deleteworker.go#L28-L42>)
 
 
 
@@ -2800,7 +2890,7 @@ type DeleteRequest struct {
 ```
 
 <a name="DeleteRequest.ProcessDelete"></a>
-### func \(\*DeleteRequest\) [ProcessDelete](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/deleteworker.go#L156>)
+### func \(\*DeleteRequest\) [ProcessDelete](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/deleteworker.go#L156>)
 
 ```go
 func (req *DeleteRequest) ProcessDelete() (err error)
@@ -2809,7 +2899,7 @@ func (req *DeleteRequest) ProcessDelete() (err error)
 
 
 <a name="DirOperation"></a>
-## type [DirOperation](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/dirworker.go#L268-L277>)
+## type [DirOperation](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/dirworker.go#L268-L277>)
 
 
 
@@ -2821,7 +2911,7 @@ type DirOperation struct {
 ```
 
 <a name="NewDirOperation"></a>
-### func [NewDirOperation](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/dirworker.go#L350>)
+### func [NewDirOperation](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/dirworker.go#L350>)
 
 ```go
 func NewDirOperation(remotePath string, dirMask zboxutil.Uint128, maskMU *sync.Mutex, consensusTh int, fullConsensus int, ctx context.Context) *DirOperation
@@ -2830,7 +2920,7 @@ func NewDirOperation(remotePath string, dirMask zboxutil.Uint128, maskMU *sync.M
 
 
 <a name="DirOperation.Completed"></a>
-### func \(\*DirOperation\) [Completed](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/dirworker.go#L342>)
+### func \(\*DirOperation\) [Completed](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/dirworker.go#L342>)
 
 ```go
 func (dirOp *DirOperation) Completed(allocObj *Allocation)
@@ -2839,7 +2929,7 @@ func (dirOp *DirOperation) Completed(allocObj *Allocation)
 
 
 <a name="DirOperation.Error"></a>
-### func \(\*DirOperation\) [Error](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/dirworker.go#L346>)
+### func \(\*DirOperation\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/dirworker.go#L346>)
 
 ```go
 func (dirOp *DirOperation) Error(allocObj *Allocation, consensus int, err error)
@@ -2848,7 +2938,7 @@ func (dirOp *DirOperation) Error(allocObj *Allocation, consensus int, err error)
 
 
 <a name="DirOperation.Process"></a>
-### func \(\*DirOperation\) [Process](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/dirworker.go#L279>)
+### func \(\*DirOperation\) [Process](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/dirworker.go#L279>)
 
 ```go
 func (dirOp *DirOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error)
@@ -2857,7 +2947,7 @@ func (dirOp *DirOperation) Process(allocObj *Allocation, connectionID string) ([
 
 
 <a name="DirOperation.Verify"></a>
-### func \(\*DirOperation\) [Verify](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/dirworker.go#L331>)
+### func \(\*DirOperation\) [Verify](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/dirworker.go#L331>)
 
 ```go
 func (dirOp *DirOperation) Verify(a *Allocation) error
@@ -2866,7 +2956,7 @@ func (dirOp *DirOperation) Verify(a *Allocation) error
 
 
 <a name="DirRequest"></a>
-## type [DirRequest](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/dirworker.go#L32-L47>)
+## type [DirRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/dirworker.go#L32-L47>)
 
 
 
@@ -2878,7 +2968,7 @@ type DirRequest struct {
 ```
 
 <a name="DirRequest.ProcessDir"></a>
-### func \(\*DirRequest\) [ProcessDir](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/dirworker.go#L78>)
+### func \(\*DirRequest\) [ProcessDir](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/dirworker.go#L78>)
 
 ```go
 func (req *DirRequest) ProcessDir(a *Allocation) error
@@ -2887,7 +2977,7 @@ func (req *DirRequest) ProcessDir(a *Allocation) error
 
 
 <a name="DirRequest.ProcessWithBlobbers"></a>
-### func \(\*DirRequest\) [ProcessWithBlobbers](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/dirworker.go#L49>)
+### func \(\*DirRequest\) [ProcessWithBlobbers](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/dirworker.go#L49>)
 
 ```go
 func (req *DirRequest) ProcessWithBlobbers(a *Allocation) int
@@ -2896,7 +2986,7 @@ func (req *DirRequest) ProcessWithBlobbers(a *Allocation) int
 
 
 <a name="DownloadOption"></a>
-## type [DownloadOption](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/downloader_option.go#L8>)
+## type [DownloadOption](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/downloader_option.go#L8>)
 
 DownloadOption set download option
 
@@ -2905,7 +2995,7 @@ type DownloadOption func(do *DownloadOptions)
 ```
 
 <a name="WithAllocation"></a>
-### func [WithAllocation](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/downloader_option.go#L16>)
+### func [WithAllocation](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/downloader_option.go#L16>)
 
 ```go
 func WithAllocation(obj *Allocation) DownloadOption
@@ -2914,7 +3004,7 @@ func WithAllocation(obj *Allocation) DownloadOption
 
 
 <a name="WithAuthticket"></a>
-### func [WithAuthticket](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/downloader_option.go#L46>)
+### func [WithAuthticket](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/downloader_option.go#L46>)
 
 ```go
 func WithAuthticket(authTicket, lookupHash string) DownloadOption
@@ -2923,7 +3013,7 @@ func WithAuthticket(authTicket, lookupHash string) DownloadOption
 
 
 <a name="WithBlocks"></a>
-### func [WithBlocks](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/downloader_option.go#L22>)
+### func [WithBlocks](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/downloader_option.go#L22>)
 
 ```go
 func WithBlocks(start, end int64, blocksPerMarker int) DownloadOption
@@ -2932,7 +3022,7 @@ func WithBlocks(start, end int64, blocksPerMarker int) DownloadOption
 
 
 <a name="WithFileHandler"></a>
-### func [WithFileHandler](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/downloader_option.go#L56>)
+### func [WithFileHandler](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/downloader_option.go#L56>)
 
 ```go
 func WithFileHandler(fileHandler sys.File) DownloadOption
@@ -2941,7 +3031,7 @@ func WithFileHandler(fileHandler sys.File) DownloadOption
 
 
 <a name="WithOnlyThumbnail"></a>
-### func [WithOnlyThumbnail](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/downloader_option.go#L40>)
+### func [WithOnlyThumbnail](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/downloader_option.go#L40>)
 
 ```go
 func WithOnlyThumbnail(thumbnail bool) DownloadOption
@@ -2950,7 +3040,7 @@ func WithOnlyThumbnail(thumbnail bool) DownloadOption
 
 
 <a name="WithVerifyDownload"></a>
-### func [WithVerifyDownload](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/downloader_option.go#L10>)
+### func [WithVerifyDownload](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/downloader_option.go#L10>)
 
 ```go
 func WithVerifyDownload(shouldVerify bool) DownloadOption
@@ -2959,7 +3049,7 @@ func WithVerifyDownload(shouldVerify bool) DownloadOption
 
 
 <a name="DownloadOptions"></a>
-## type [DownloadOptions](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/downloader.go#L20-L42>)
+## type [DownloadOptions](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/downloader.go#L20-L42>)
 
 DownloadOptions download options
 
@@ -2970,7 +3060,7 @@ type DownloadOptions struct {
 ```
 
 <a name="DownloadProgress"></a>
-## type [DownloadProgress](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/downloadworker.go#L140-L144>)
+## type [DownloadProgress](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/downloadworker.go#L140-L144>)
 
 
 
@@ -2983,7 +3073,7 @@ type DownloadProgress struct {
 ```
 
 <a name="DownloadProgressStorer"></a>
-## type [DownloadProgressStorer](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/download_progress_storer.go#L15-L26>)
+## type [DownloadProgressStorer](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/download_progress_storer.go#L15-L26>)
 
 
 
@@ -3003,7 +3093,7 @@ type DownloadProgressStorer interface {
 ```
 
 <a name="DownloadRequest"></a>
-## type [DownloadRequest](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/downloadworker.go#L64-L109>)
+## type [DownloadRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/downloadworker.go#L64-L109>)
 
 
 
@@ -3015,7 +3105,7 @@ type DownloadRequest struct {
 ```
 
 <a name="DownloadRequest.Seek"></a>
-### func \(\*DownloadRequest\) [Seek](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/downloadworker.go#L1305>)
+### func \(\*DownloadRequest\) [Seek](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/downloadworker.go#L1305>)
 
 ```go
 func (req *DownloadRequest) Seek(offset int64, whence int) (int64, error)
@@ -3024,7 +3114,7 @@ func (req *DownloadRequest) Seek(offset int64, whence int) (int64, error)
 
 
 <a name="DownloadRequestHeader"></a>
-## type [DownloadRequestHeader](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/download_reqeust_header.go#L13-L24>)
+## type [DownloadRequestHeader](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/download_reqeust_header.go#L13-L24>)
 
 DownloadRequestHeader download request header
 
@@ -3044,7 +3134,7 @@ type DownloadRequestHeader struct {
 ```
 
 <a name="DownloadRequestHeader.ToFastHeader"></a>
-### func \(\*DownloadRequestHeader\) [ToFastHeader](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/download_reqeust_header.go#L64>)
+### func \(\*DownloadRequestHeader\) [ToFastHeader](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/download_reqeust_header.go#L64>)
 
 ```go
 func (h *DownloadRequestHeader) ToFastHeader(req *fasthttp.Request)
@@ -3053,7 +3143,7 @@ func (h *DownloadRequestHeader) ToFastHeader(req *fasthttp.Request)
 
 
 <a name="DownloadRequestHeader.ToHeader"></a>
-### func \(\*DownloadRequestHeader\) [ToHeader](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/download_reqeust_header.go#L27>)
+### func \(\*DownloadRequestHeader\) [ToHeader](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/download_reqeust_header.go#L27>)
 
 ```go
 func (h *DownloadRequestHeader) ToHeader(req *http.Request)
@@ -3062,7 +3152,7 @@ func (h *DownloadRequestHeader) ToHeader(req *http.Request)
 ToHeader update header
 
 <a name="DownloadRequestOption"></a>
-## type [DownloadRequestOption](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/downloadworker.go#L44>)
+## type [DownloadRequestOption](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/downloadworker.go#L44>)
 
 
 
@@ -3071,7 +3161,7 @@ type DownloadRequestOption func(dr *DownloadRequest)
 ```
 
 <a name="WithDownloadProgressStorer"></a>
-### func [WithDownloadProgressStorer](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/downloadworker.go#L46>)
+### func [WithDownloadProgressStorer](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/downloadworker.go#L46>)
 
 ```go
 func WithDownloadProgressStorer(storer DownloadProgressStorer) DownloadRequestOption
@@ -3080,7 +3170,7 @@ func WithDownloadProgressStorer(storer DownloadProgressStorer) DownloadRequestOp
 
 
 <a name="WithFileCallback"></a>
-### func [WithFileCallback](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/downloadworker.go#L58>)
+### func [WithFileCallback](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/downloadworker.go#L58>)
 
 ```go
 func WithFileCallback(cb func()) DownloadRequestOption
@@ -3089,7 +3179,7 @@ func WithFileCallback(cb func()) DownloadRequestOption
 
 
 <a name="WithWorkDir"></a>
-### func [WithWorkDir](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/downloadworker.go#L52>)
+### func [WithWorkDir](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/downloadworker.go#L52>)
 
 ```go
 func WithWorkDir(workdir string) DownloadRequestOption
@@ -3098,7 +3188,7 @@ func WithWorkDir(workdir string) DownloadRequestOption
 
 
 <a name="Downloader"></a>
-## type [Downloader](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/downloader.go#L13-L17>)
+## type [Downloader](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/downloader.go#L13-L17>)
 
 Downloader downloader for file, blocks and thumbnail
 
@@ -3111,7 +3201,7 @@ type Downloader interface {
 ```
 
 <a name="CreateDownloader"></a>
-### func [CreateDownloader](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/downloader.go#L45>)
+### func [CreateDownloader](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/downloader.go#L45>)
 
 ```go
 func CreateDownloader(allocationID, localPath, remotePath string, opts ...DownloadOption) (Downloader, error)
@@ -3120,7 +3210,7 @@ func CreateDownloader(allocationID, localPath, remotePath string, opts ...Downlo
 CreateDownloader create a downloander
 
 <a name="FfmpegRecorder"></a>
-## type [FfmpegRecorder](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/live_upload_reader_ffmpeg.go#L14-L16>)
+## type [FfmpegRecorder](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/live_upload_reader_ffmpeg.go#L14-L16>)
 
 FfmpegRecorder wrap ffmpeg command to capture video and audio from local camera and microphone
 
@@ -3131,7 +3221,7 @@ type FfmpegRecorder struct {
 ```
 
 <a name="CreateFfmpegRecorder"></a>
-### func [CreateFfmpegRecorder](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/live_upload_reader_ffmpeg.go#L19>)
+### func [CreateFfmpegRecorder](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/live_upload_reader_ffmpeg.go#L19>)
 
 ```go
 func CreateFfmpegRecorder(file string, delay int) (*FfmpegRecorder, error)
@@ -3140,7 +3230,7 @@ func CreateFfmpegRecorder(file string, delay int) (*FfmpegRecorder, error)
 CreateFfmpegRecorder create a ffmpeg commander to capture video and audio local camera and microphone
 
 <a name="FileDiff"></a>
-## type [FileDiff](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sync.go#L44-L48>)
+## type [FileDiff](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sync.go#L44-L48>)
 
 
 
@@ -3153,7 +3243,7 @@ type FileDiff struct {
 ```
 
 <a name="FileInfo"></a>
-## type [FileInfo](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sync.go#L32-L42>)
+## type [FileInfo](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sync.go#L32-L42>)
 
 
 
@@ -3172,7 +3262,7 @@ type FileInfo struct {
 ```
 
 <a name="FileMeta"></a>
-## type [FileMeta](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/chunked_upload_model.go#L93-L115>)
+## type [FileMeta](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/chunked_upload_model.go#L93-L115>)
 
 FileMeta metadata of stream input/local
 
@@ -3203,7 +3293,7 @@ type FileMeta struct {
 ```
 
 <a name="TranscodeWebStreaming"></a>
-### func [TranscodeWebStreaming](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/chunked_upload_web_streaming.go#L18>)
+### func [TranscodeWebStreaming](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/chunked_upload_web_streaming.go#L18>)
 
 ```go
 func TranscodeWebStreaming(workdir string, fileReader io.Reader, fileMeta FileMeta) (io.Reader, *FileMeta, string, error)
@@ -3212,7 +3302,7 @@ func TranscodeWebStreaming(workdir string, fileReader io.Reader, fileMeta FileMe
 Converting the video file to fmp4 format for web streaming
 
 <a name="FileMeta.FileID"></a>
-### func \(\*FileMeta\) [FileID](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/chunked_upload_model.go#L118>)
+### func \(\*FileMeta\) [FileID](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/chunked_upload_model.go#L118>)
 
 ```go
 func (meta *FileMeta) FileID() string
@@ -3221,7 +3311,7 @@ func (meta *FileMeta) FileID() string
 FileID generate id of progress on local cache
 
 <a name="FileNameBuilder"></a>
-## type [FileNameBuilder](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/live_upload_reader_ffmpeg_filename_builder.go#L10-L16>)
+## type [FileNameBuilder](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/live_upload_reader_ffmpeg_filename_builder.go#L10-L16>)
 
 FileNameBuilder build file name based output format
 
@@ -3236,7 +3326,7 @@ type FileNameBuilder interface {
 ```
 
 <a name="FileOptionParam"></a>
-## type [FileOptionParam](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L995-L998>)
+## type [FileOptionParam](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L1012-L1015>)
 
 
 
@@ -3248,9 +3338,9 @@ type FileOptionParam struct {
 ```
 
 <a name="FileOptionsParameters"></a>
-## type [FileOptionsParameters](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L1000-L1007>)
+## type [FileOptionsParameters](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L1018-L1025>)
 
-
+FileOptionsParameters is used to specify the file options parameters for an allocation, which control the usage permissions of the files in the allocation.
 
 ```go
 type FileOptionsParameters struct {
@@ -3264,7 +3354,7 @@ type FileOptionsParameters struct {
 ```
 
 <a name="FileStats"></a>
-## type [FileStats](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/filestatsworker.go#L20-L37>)
+## type [FileStats](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/filestatsworker.go#L20-L37>)
 
 
 
@@ -3290,7 +3380,7 @@ type FileStats struct {
 ```
 
 <a name="FsDownloadProgressStorer"></a>
-## type [FsDownloadProgressStorer](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/download_progress_storer.go#L28-L34>)
+## type [FsDownloadProgressStorer](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/download_progress_storer.go#L28-L34>)
 
 
 
@@ -3302,7 +3392,7 @@ type FsDownloadProgressStorer struct {
 ```
 
 <a name="CreateFsDownloadProgress"></a>
-### func [CreateFsDownloadProgress](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/download_progress_storer.go#L36>)
+### func [CreateFsDownloadProgress](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/download_progress_storer.go#L36>)
 
 ```go
 func CreateFsDownloadProgress() *FsDownloadProgressStorer
@@ -3311,7 +3401,7 @@ func CreateFsDownloadProgress() *FsDownloadProgressStorer
 
 
 <a name="FsDownloadProgressStorer.Load"></a>
-### func \(\*FsDownloadProgressStorer\) [Load](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/download_progress_storer.go#L75>)
+### func \(\*FsDownloadProgressStorer\) [Load](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/download_progress_storer.go#L75>)
 
 ```go
 func (ds *FsDownloadProgressStorer) Load(progressID string, numBlocks int) *DownloadProgress
@@ -3320,7 +3410,7 @@ func (ds *FsDownloadProgressStorer) Load(progressID string, numBlocks int) *Down
 
 
 <a name="FsDownloadProgressStorer.Remove"></a>
-### func \(\*FsDownloadProgressStorer\) [Remove](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/download_progress_storer.go#L120>)
+### func \(\*FsDownloadProgressStorer\) [Remove](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/download_progress_storer.go#L120>)
 
 ```go
 func (ds *FsDownloadProgressStorer) Remove() error
@@ -3329,7 +3419,7 @@ func (ds *FsDownloadProgressStorer) Remove() error
 
 
 <a name="FsDownloadProgressStorer.Save"></a>
-### func \(\*FsDownloadProgressStorer\) [Save](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/download_progress_storer.go#L106>)
+### func \(\*FsDownloadProgressStorer\) [Save](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/download_progress_storer.go#L106>)
 
 ```go
 func (ds *FsDownloadProgressStorer) Save(dp *DownloadProgress)
@@ -3338,7 +3428,7 @@ func (ds *FsDownloadProgressStorer) Save(dp *DownloadProgress)
 
 
 <a name="FsDownloadProgressStorer.Start"></a>
-### func \(\*FsDownloadProgressStorer\) [Start](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/download_progress_storer.go#L44>)
+### func \(\*FsDownloadProgressStorer\) [Start](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/download_progress_storer.go#L44>)
 
 ```go
 func (ds *FsDownloadProgressStorer) Start(ctx context.Context)
@@ -3347,7 +3437,7 @@ func (ds *FsDownloadProgressStorer) Start(ctx context.Context)
 
 
 <a name="FsDownloadProgressStorer.Update"></a>
-### func \(\*FsDownloadProgressStorer\) [Update](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/download_progress_storer.go#L111>)
+### func \(\*FsDownloadProgressStorer\) [Update](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/download_progress_storer.go#L111>)
 
 ```go
 func (ds *FsDownloadProgressStorer) Update(writtenBlock int)
@@ -3356,7 +3446,7 @@ func (ds *FsDownloadProgressStorer) Update(writtenBlock int)
 
 
 <a name="Hasher"></a>
-## type [Hasher](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/chunked_upload_hasher.go#L14-L29>)
+## type [Hasher](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/chunked_upload_hasher.go#L14-L29>)
 
 
 
@@ -3380,7 +3470,7 @@ type Hasher interface {
 ```
 
 <a name="CreateHasher"></a>
-### func [CreateHasher](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/chunked_upload_hasher.go#L39>)
+### func [CreateHasher](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/chunked_upload_hasher.go#L39>)
 
 ```go
 func CreateHasher(dataSize int64) Hasher
@@ -3389,7 +3479,7 @@ func CreateHasher(dataSize int64) Hasher
 CreateHasher creat Hasher instance
 
 <a name="InputMap"></a>
-## type [InputMap](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L579-L581>)
+## type [InputMap](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L579-L581>)
 
 
 
@@ -3400,7 +3490,7 @@ type InputMap struct {
 ```
 
 <a name="GetStorageSCConfig"></a>
-### func [GetStorageSCConfig](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L583>)
+### func [GetStorageSCConfig](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L583>)
 
 ```go
 func GetStorageSCConfig() (conf *InputMap, err error)
@@ -3409,7 +3499,7 @@ func GetStorageSCConfig() (conf *InputMap, err error)
 
 
 <a name="LatestPrevWriteMarker"></a>
-## type [LatestPrevWriteMarker](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/rollback.go#L28-L31>)
+## type [LatestPrevWriteMarker](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/rollback.go#L28-L31>)
 
 
 
@@ -3421,7 +3511,7 @@ type LatestPrevWriteMarker struct {
 ```
 
 <a name="GetWritemarker"></a>
-### func [GetWritemarker](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/rollback.go#L50>)
+### func [GetWritemarker](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/rollback.go#L50>)
 
 ```go
 func GetWritemarker(allocID, allocTx, id, baseUrl string) (*LatestPrevWriteMarker, error)
@@ -3430,7 +3520,7 @@ func GetWritemarker(allocID, allocTx, id, baseUrl string) (*LatestPrevWriteMarke
 
 
 <a name="ListRequest"></a>
-## type [ListRequest](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/listworker.go#L25-L38>)
+## type [ListRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/listworker.go#L25-L38>)
 
 
 
@@ -3442,7 +3532,7 @@ type ListRequest struct {
 ```
 
 <a name="ListRequest.GetListFromBlobbers"></a>
-### func \(\*ListRequest\) [GetListFromBlobbers](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/listworker.go#L210>)
+### func \(\*ListRequest\) [GetListFromBlobbers](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/listworker.go#L210>)
 
 ```go
 func (req *ListRequest) GetListFromBlobbers() (*ListResult, error)
@@ -3451,7 +3541,7 @@ func (req *ListRequest) GetListFromBlobbers() (*ListResult, error)
 
 
 <a name="ListRequestOptions"></a>
-## type [ListRequestOptions](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/listworker.go#L72>)
+## type [ListRequestOptions](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/listworker.go#L72>)
 
 
 
@@ -3460,7 +3550,7 @@ type ListRequestOptions func(req *ListRequest)
 ```
 
 <a name="WithListRequestForRepair"></a>
-### func [WithListRequestForRepair](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/listworker.go#L86>)
+### func [WithListRequestForRepair](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/listworker.go#L86>)
 
 ```go
 func WithListRequestForRepair(forRepair bool) ListRequestOptions
@@ -3469,7 +3559,7 @@ func WithListRequestForRepair(forRepair bool) ListRequestOptions
 
 
 <a name="WithListRequestOffset"></a>
-### func [WithListRequestOffset](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/listworker.go#L74>)
+### func [WithListRequestOffset](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/listworker.go#L74>)
 
 ```go
 func WithListRequestOffset(offset int) ListRequestOptions
@@ -3478,7 +3568,7 @@ func WithListRequestOffset(offset int) ListRequestOptions
 
 
 <a name="WithListRequestPageLimit"></a>
-### func [WithListRequestPageLimit](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/listworker.go#L80>)
+### func [WithListRequestPageLimit](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/listworker.go#L80>)
 
 ```go
 func WithListRequestPageLimit(pageLimit int) ListRequestOptions
@@ -3487,7 +3577,7 @@ func WithListRequestPageLimit(pageLimit int) ListRequestOptions
 
 
 <a name="ListResult"></a>
-## type [ListResult](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/listworker.go#L47-L70>)
+## type [ListResult](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/listworker.go#L47-L70>)
 
 
 
@@ -3519,7 +3609,7 @@ type ListResult struct {
 ```
 
 <a name="LiveMeta"></a>
-## type [LiveMeta](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/live_upload_model.go#L4-L12>)
+## type [LiveMeta](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/live_upload_model.go#L4-L12>)
 
 LiveMeta metadata of live stream input
 
@@ -3536,7 +3626,7 @@ type LiveMeta struct {
 ```
 
 <a name="LiveUpload"></a>
-## type [LiveUpload](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/live_upload.go#L6-L27>)
+## type [LiveUpload](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/live_upload.go#L6-L27>)
 
 LiveUpload live streaming video upload manager
 
@@ -3547,7 +3637,7 @@ type LiveUpload struct {
 ```
 
 <a name="CreateLiveUpload"></a>
-### func [CreateLiveUpload](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/live_upload.go#L30>)
+### func [CreateLiveUpload](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/live_upload.go#L30>)
 
 ```go
 func CreateLiveUpload(homedir string, allocationObj *Allocation, liveMeta LiveMeta, liveReader LiveUploadReader, opts ...LiveUploadOption) *LiveUpload
@@ -3556,7 +3646,7 @@ func CreateLiveUpload(homedir string, allocationObj *Allocation, liveMeta LiveMe
 CreateLiveUpload create a LiveChunkedUpload instance
 
 <a name="LiveUpload.Start"></a>
-### func \(\*LiveUpload\) [Start](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/live_upload.go#L49>)
+### func \(\*LiveUpload\) [Start](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/live_upload.go#L49>)
 
 ```go
 func (lu *LiveUpload) Start() error
@@ -3565,7 +3655,7 @@ func (lu *LiveUpload) Start() error
 Start start live streaming upload
 
 <a name="LiveUploadOption"></a>
-## type [LiveUploadOption](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/live_upload_option.go#L4>)
+## type [LiveUploadOption](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/live_upload_option.go#L4>)
 
 LiveUploadOption set live upload option
 
@@ -3574,7 +3664,7 @@ type LiveUploadOption func(lu *LiveUpload)
 ```
 
 <a name="WithLiveChunkNumber"></a>
-### func [WithLiveChunkNumber](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/live_upload_option.go#L16>)
+### func [WithLiveChunkNumber](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/live_upload_option.go#L16>)
 
 ```go
 func WithLiveChunkNumber(num int) LiveUploadOption
@@ -3583,7 +3673,7 @@ func WithLiveChunkNumber(num int) LiveUploadOption
 WithLiveChunkNumber set the number of chunks should be upload in a request. ignore if size \<=0
 
 <a name="WithLiveDelay"></a>
-### func [WithLiveDelay](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/live_upload_option.go#L7>)
+### func [WithLiveDelay](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/live_upload_option.go#L7>)
 
 ```go
 func WithLiveDelay(delaySeconds int) LiveUploadOption
@@ -3592,7 +3682,7 @@ func WithLiveDelay(delaySeconds int) LiveUploadOption
 WithLiveDelay set delayed . ignore if delayed \<=0
 
 <a name="WithLiveEncrypt"></a>
-### func [WithLiveEncrypt](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/live_upload_option.go#L25>)
+### func [WithLiveEncrypt](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/live_upload_option.go#L25>)
 
 ```go
 func WithLiveEncrypt(status bool) LiveUploadOption
@@ -3601,7 +3691,7 @@ func WithLiveEncrypt(status bool) LiveUploadOption
 WithLiveEncrypt trun on/off encrypt on upload. It is turn off as default.
 
 <a name="WithLiveStatusCallback"></a>
-### func [WithLiveStatusCallback](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/live_upload_option.go#L32>)
+### func [WithLiveStatusCallback](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/live_upload_option.go#L32>)
 
 ```go
 func WithLiveStatusCallback(callback func() StatusCallback) LiveUploadOption
@@ -3610,7 +3700,7 @@ func WithLiveStatusCallback(callback func() StatusCallback) LiveUploadOption
 WithLiveStatusCallback register StatusCallback instance
 
 <a name="LiveUploadReader"></a>
-## type [LiveUploadReader](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/live_upload_reader.go#L22-L27>)
+## type [LiveUploadReader](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/live_upload_reader.go#L22-L27>)
 
 LiveUploadReader implements io.Reader and Size for live stream upload
 
@@ -3624,7 +3714,7 @@ type LiveUploadReader interface {
 ```
 
 <a name="M3u8Writer"></a>
-## type [M3u8Writer](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/m3u8.go#L130-L134>)
+## type [M3u8Writer](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/m3u8.go#L130-L134>)
 
 M3u8Writer m3u8 writer
 
@@ -3637,7 +3727,7 @@ type M3u8Writer interface {
 ```
 
 <a name="MediaPlaylist"></a>
-## type [MediaPlaylist](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/m3u8.go#L30-L41>)
+## type [MediaPlaylist](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/m3u8.go#L30-L41>)
 
 MediaPlaylist m3u8 encoder and decoder
 
@@ -3648,7 +3738,7 @@ type MediaPlaylist struct {
 ```
 
 <a name="NewMediaPlaylist"></a>
-### func [NewMediaPlaylist](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/m3u8.go#L44>)
+### func [NewMediaPlaylist](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/m3u8.go#L44>)
 
 ```go
 func NewMediaPlaylist(delay int, dir string, writer M3u8Writer) *MediaPlaylist
@@ -3657,7 +3747,7 @@ func NewMediaPlaylist(delay int, dir string, writer M3u8Writer) *MediaPlaylist
 NewMediaPlaylist create media playlist\(.m3u8\)
 
 <a name="MediaPlaylist.Append"></a>
-### func \(\*MediaPlaylist\) [Append](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/m3u8.go#L64>)
+### func \(\*MediaPlaylist\) [Append](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/m3u8.go#L64>)
 
 ```go
 func (m *MediaPlaylist) Append(item string)
@@ -3666,7 +3756,7 @@ func (m *MediaPlaylist) Append(item string)
 Append append new item
 
 <a name="MediaPlaylist.Encode"></a>
-### func \(\*MediaPlaylist\) [Encode](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/m3u8.go#L106>)
+### func \(\*MediaPlaylist\) [Encode](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/m3u8.go#L106>)
 
 ```go
 func (m *MediaPlaylist) Encode() []byte
@@ -3675,7 +3765,7 @@ func (m *MediaPlaylist) Encode() []byte
 Encode encode m3u8
 
 <a name="MediaPlaylist.Play"></a>
-### func \(\*MediaPlaylist\) [Play](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/m3u8.go#L69>)
+### func \(\*MediaPlaylist\) [Play](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/m3u8.go#L69>)
 
 ```go
 func (m *MediaPlaylist) Play()
@@ -3684,7 +3774,7 @@ func (m *MediaPlaylist) Play()
 Play start to push item into playlist
 
 <a name="MediaPlaylist.String"></a>
-### func \(\*MediaPlaylist\) [String](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/m3u8.go#L125>)
+### func \(\*MediaPlaylist\) [String](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/m3u8.go#L125>)
 
 ```go
 func (m *MediaPlaylist) String() string
@@ -3693,7 +3783,7 @@ func (m *MediaPlaylist) String() string
 String implement Stringer
 
 <a name="MoveOperation"></a>
-## type [MoveOperation](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/moveworker.go#L289-L297>)
+## type [MoveOperation](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/moveworker.go#L289-L297>)
 
 
 
@@ -3704,7 +3794,7 @@ type MoveOperation struct {
 ```
 
 <a name="NewMoveOperation"></a>
-### func [NewMoveOperation](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/moveworker.go#L384>)
+### func [NewMoveOperation](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/moveworker.go#L384>)
 
 ```go
 func NewMoveOperation(remotePath string, destPath string, moveMask zboxutil.Uint128, maskMU *sync.Mutex, consensusTh int, fullConsensus int, ctx context.Context) *MoveOperation
@@ -3713,7 +3803,7 @@ func NewMoveOperation(remotePath string, destPath string, moveMask zboxutil.Uint
 
 
 <a name="MoveOperation.Completed"></a>
-### func \(\*MoveOperation\) [Completed](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/moveworker.go#L376>)
+### func \(\*MoveOperation\) [Completed](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/moveworker.go#L376>)
 
 ```go
 func (mo *MoveOperation) Completed(allocObj *Allocation)
@@ -3722,7 +3812,7 @@ func (mo *MoveOperation) Completed(allocObj *Allocation)
 
 
 <a name="MoveOperation.Error"></a>
-### func \(\*MoveOperation\) [Error](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/moveworker.go#L380>)
+### func \(\*MoveOperation\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/moveworker.go#L380>)
 
 ```go
 func (mo *MoveOperation) Error(allocObj *Allocation, consensus int, err error)
@@ -3731,7 +3821,7 @@ func (mo *MoveOperation) Error(allocObj *Allocation, consensus int, err error)
 
 
 <a name="MoveOperation.Process"></a>
-### func \(\*MoveOperation\) [Process](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/moveworker.go#L299>)
+### func \(\*MoveOperation\) [Process](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/moveworker.go#L299>)
 
 ```go
 func (mo *MoveOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error)
@@ -3740,7 +3830,7 @@ func (mo *MoveOperation) Process(allocObj *Allocation, connectionID string) ([]f
 
 
 <a name="MoveOperation.Verify"></a>
-### func \(\*MoveOperation\) [Verify](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/moveworker.go#L354>)
+### func \(\*MoveOperation\) [Verify](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/moveworker.go#L354>)
 
 ```go
 func (mo *MoveOperation) Verify(a *Allocation) error
@@ -3749,7 +3839,7 @@ func (mo *MoveOperation) Verify(a *Allocation) error
 
 
 <a name="MoveRequest"></a>
-## type [MoveRequest](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/moveworker.go#L30-L44>)
+## type [MoveRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/moveworker.go#L30-L44>)
 
 
 
@@ -3761,7 +3851,7 @@ type MoveRequest struct {
 ```
 
 <a name="MoveRequest.ProcessMove"></a>
-### func \(\*MoveRequest\) [ProcessMove](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/moveworker.go#L187>)
+### func \(\*MoveRequest\) [ProcessMove](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/moveworker.go#L187>)
 
 ```go
 func (req *MoveRequest) ProcessMove() error
@@ -3770,7 +3860,7 @@ func (req *MoveRequest) ProcessMove() error
 
 
 <a name="MoveRequest.ProcessWithBlobbers"></a>
-### func \(\*MoveRequest\) [ProcessWithBlobbers](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/moveworker.go#L163>)
+### func \(\*MoveRequest\) [ProcessWithBlobbers](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/moveworker.go#L163>)
 
 ```go
 func (req *MoveRequest) ProcessWithBlobbers() ([]fileref.RefEntity, []error)
@@ -3779,7 +3869,7 @@ func (req *MoveRequest) ProcessWithBlobbers() ([]fileref.RefEntity, []error)
 
 
 <a name="MultiOperation"></a>
-## type [MultiOperation](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/multi_operation_worker.go#L51-L62>)
+## type [MultiOperation](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/multi_operation_worker.go#L51-L62>)
 
 
 
@@ -3791,7 +3881,7 @@ type MultiOperation struct {
 ```
 
 <a name="MultiOperation.Process"></a>
-### func \(\*MultiOperation\) [Process](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/multi_operation_worker.go#L161>)
+### func \(\*MultiOperation\) [Process](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/multi_operation_worker.go#L161>)
 
 ```go
 func (mo *MultiOperation) Process() error
@@ -3800,7 +3890,7 @@ func (mo *MultiOperation) Process() error
 
 
 <a name="MultiOperationOption"></a>
-## type [MultiOperationOption](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/multi_operation_worker.go#L34>)
+## type [MultiOperationOption](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/multi_operation_worker.go#L34>)
 
 
 
@@ -3809,7 +3899,7 @@ type MultiOperationOption func(mo *MultiOperation)
 ```
 
 <a name="WithRepair"></a>
-### func [WithRepair](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/multi_operation_worker.go#L36>)
+### func [WithRepair](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/multi_operation_worker.go#L36>)
 
 ```go
 func WithRepair() MultiOperationOption
@@ -3818,7 +3908,7 @@ func WithRepair() MultiOperationOption
 
 
 <a name="Network"></a>
-## type [Network](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/networkworker.go#L24-L27>)
+## type [Network](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/networkworker.go#L24-L27>)
 
 
 
@@ -3830,7 +3920,7 @@ type Network struct {
 ```
 
 <a name="GetNetwork"></a>
-### func [GetNetwork](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L122>)
+### func [GetNetwork](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L122>)
 
 ```go
 func GetNetwork() *Network
@@ -3839,7 +3929,7 @@ func GetNetwork() *Network
 
 
 <a name="GetNetworkDetails"></a>
-### func [GetNetworkDetails](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/networkworker.go#L100>)
+### func [GetNetworkDetails](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/networkworker.go#L100>)
 
 ```go
 func GetNetworkDetails() (*Network, error)
@@ -3848,7 +3938,7 @@ func GetNetworkDetails() (*Network, error)
 
 
 <a name="ORef"></a>
-## type [ORef](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/filerefsworker.go#L168-L173>)
+## type [ORef](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/filerefsworker.go#L168-L173>)
 
 Blobber response will be different from each other so we should only consider similar fields i.e. we cannot calculate hash of response and have consensus on it
 
@@ -3862,7 +3952,7 @@ type ORef struct {
 ```
 
 <a name="ObjectTreeRequest"></a>
-## type [ObjectTreeRequest](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/filerefsworker.go#L30-L47>)
+## type [ObjectTreeRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/filerefsworker.go#L30-L47>)
 
 
 
@@ -3874,7 +3964,7 @@ type ObjectTreeRequest struct {
 ```
 
 <a name="ObjectTreeRequest.GetRefs"></a>
-### func \(\*ObjectTreeRequest\) [GetRefs](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/filerefsworker.go#L56>)
+### func \(\*ObjectTreeRequest\) [GetRefs](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/filerefsworker.go#L56>)
 
 ```go
 func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error)
@@ -3883,7 +3973,7 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error)
 Paginated tree should not be collected as this will stall the client It should rather be handled by application that uses gosdk
 
 <a name="ObjectTreeResult"></a>
-## type [ObjectTreeResult](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/filerefsworker.go#L20-L26>)
+## type [ObjectTreeResult](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/filerefsworker.go#L20-L26>)
 
 
 
@@ -3898,7 +3988,7 @@ type ObjectTreeResult struct {
 ```
 
 <a name="OperationRequest"></a>
-## type [OperationRequest](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L220-L237>)
+## type [OperationRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L220-L237>)
 
 
 
@@ -3924,7 +4014,7 @@ type OperationRequest struct {
 ```
 
 <a name="Operationer"></a>
-## type [Operationer](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/multi_operation_worker.go#L43-L49>)
+## type [Operationer](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/multi_operation_worker.go#L43-L49>)
 
 
 
@@ -3940,7 +4030,7 @@ type Operationer interface {
 ```
 
 <a name="PlaylistFile"></a>
-## type [PlaylistFile](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/playlist.go#L19-L29>)
+## type [PlaylistFile](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/playlist.go#L19-L29>)
 
 
 
@@ -3959,7 +4049,7 @@ type PlaylistFile struct {
 ```
 
 <a name="GetPlaylist"></a>
-### func [GetPlaylist](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/playlist.go#L31>)
+### func [GetPlaylist](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/playlist.go#L31>)
 
 ```go
 func GetPlaylist(ctx context.Context, alloc *Allocation, path, since string) ([]PlaylistFile, error)
@@ -3968,7 +4058,7 @@ func GetPlaylist(ctx context.Context, alloc *Allocation, path, since string) ([]
 
 
 <a name="GetPlaylistByAuthTicket"></a>
-### func [GetPlaylistByAuthTicket](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/playlist.go#L40>)
+### func [GetPlaylistByAuthTicket](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/playlist.go#L40>)
 
 ```go
 func GetPlaylistByAuthTicket(ctx context.Context, alloc *Allocation, authTicket, lookupHash, since string) ([]PlaylistFile, error)
@@ -3977,7 +4067,7 @@ func GetPlaylistByAuthTicket(ctx context.Context, alloc *Allocation, authTicket,
 
 
 <a name="GetPlaylistFile"></a>
-### func [GetPlaylistFile](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/playlist.go#L116>)
+### func [GetPlaylistFile](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/playlist.go#L116>)
 
 ```go
 func GetPlaylistFile(ctx context.Context, alloc *Allocation, path string) (*PlaylistFile, error)
@@ -3986,7 +4076,7 @@ func GetPlaylistFile(ctx context.Context, alloc *Allocation, path string) (*Play
 
 
 <a name="GetPlaylistFileByAuthTicket"></a>
-### func [GetPlaylistFileByAuthTicket](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/playlist.go#L123>)
+### func [GetPlaylistFileByAuthTicket](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/playlist.go#L123>)
 
 ```go
 func GetPlaylistFileByAuthTicket(ctx context.Context, alloc *Allocation, authTicket, lookupHash string) (*PlaylistFile, error)
@@ -3995,7 +4085,7 @@ func GetPlaylistFileByAuthTicket(ctx context.Context, alloc *Allocation, authTic
 
 
 <a name="PriceRange"></a>
-## type [PriceRange](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L131-L134>)
+## type [PriceRange](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L131-L134>)
 
 PriceRange represents a price range allowed by user to filter blobbers.
 
@@ -4007,7 +4097,7 @@ type PriceRange struct {
 ```
 
 <a name="GetReadPriceRange"></a>
-### func [GetReadPriceRange](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L239>)
+### func [GetReadPriceRange](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L239>)
 
 ```go
 func GetReadPriceRange() (PriceRange, error)
@@ -4016,7 +4106,7 @@ func GetReadPriceRange() (PriceRange, error)
 
 
 <a name="GetWritePriceRange"></a>
-### func [GetWritePriceRange](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L242>)
+### func [GetWritePriceRange](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L242>)
 
 ```go
 func GetWritePriceRange() (PriceRange, error)
@@ -4025,7 +4115,7 @@ func GetWritePriceRange() (PriceRange, error)
 
 
 <a name="PriceRange.IsValid"></a>
-### func \(\*PriceRange\) [IsValid](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L137>)
+### func \(\*PriceRange\) [IsValid](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L137>)
 
 ```go
 func (pr *PriceRange) IsValid() bool
@@ -4034,7 +4124,7 @@ func (pr *PriceRange) IsValid() bool
 IsValid price range.
 
 <a name="ProcessResult"></a>
-## type [ProcessResult](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/common.go#L107-L111>)
+## type [ProcessResult](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/common.go#L107-L111>)
 
 
 
@@ -4047,7 +4137,7 @@ type ProcessResult struct {
 ```
 
 <a name="ProviderType"></a>
-## type [ProviderType](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L1299>)
+## type [ProviderType](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L1394>)
 
 
 
@@ -4068,7 +4158,7 @@ const (
 ```
 
 <a name="ReadPool"></a>
-## type [ReadPool](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L185-L187>)
+## type [ReadPool](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L185-L187>)
 
 
 
@@ -4079,7 +4169,7 @@ type ReadPool struct {
 ```
 
 <a name="GetReadPoolInfo"></a>
-### func [GetReadPoolInfo](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L191>)
+### func [GetReadPoolInfo](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L191>)
 
 ```go
 func GetReadPoolInfo(clientID string) (info *ReadPool, err error)
@@ -4088,7 +4178,7 @@ func GetReadPoolInfo(clientID string) (info *ReadPool, err error)
 GetReadPoolInfo for given client, or, if the given clientID is empty, for current client of the sdk.
 
 <a name="RecentlyAddedRefRequest"></a>
-## type [RecentlyAddedRefRequest](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/filerefsworker.go#L195-L205>)
+## type [RecentlyAddedRefRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/filerefsworker.go#L195-L205>)
 
 
 
@@ -4100,7 +4190,7 @@ type RecentlyAddedRefRequest struct {
 ```
 
 <a name="RecentlyAddedRefRequest.GetRecentlyAddedRefs"></a>
-### func \(\*RecentlyAddedRefRequest\) [GetRecentlyAddedRefs](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/filerefsworker.go#L217>)
+### func \(\*RecentlyAddedRefRequest\) [GetRecentlyAddedRefs](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/filerefsworker.go#L217>)
 
 ```go
 func (r *RecentlyAddedRefRequest) GetRecentlyAddedRefs() (*RecentlyAddedRefResult, error)
@@ -4109,7 +4199,7 @@ func (r *RecentlyAddedRefRequest) GetRecentlyAddedRefs() (*RecentlyAddedRefResul
 
 
 <a name="RecentlyAddedRefResponse"></a>
-## type [RecentlyAddedRefResponse](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/filerefsworker.go#L212-L215>)
+## type [RecentlyAddedRefResponse](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/filerefsworker.go#L212-L215>)
 
 
 
@@ -4121,7 +4211,7 @@ type RecentlyAddedRefResponse struct {
 ```
 
 <a name="RecentlyAddedRefResult"></a>
-## type [RecentlyAddedRefResult](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/filerefsworker.go#L207-L210>)
+## type [RecentlyAddedRefResult](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/filerefsworker.go#L207-L210>)
 
 
 
@@ -4133,7 +4223,7 @@ type RecentlyAddedRefResult struct {
 ```
 
 <a name="ReferencePathResult"></a>
-## type [ReferencePathResult](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/commitworker.go#L28-L31>)
+## type [ReferencePathResult](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/commitworker.go#L28-L31>)
 
 
 
@@ -4145,7 +4235,7 @@ type ReferencePathResult struct {
 ```
 
 <a name="RenameOperation"></a>
-## type [RenameOperation](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/renameworker.go#L292-L301>)
+## type [RenameOperation](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/renameworker.go#L292-L301>)
 
 
 
@@ -4156,7 +4246,7 @@ type RenameOperation struct {
 ```
 
 <a name="NewRenameOperation"></a>
-### func [NewRenameOperation](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/renameworker.go#L397>)
+### func [NewRenameOperation](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/renameworker.go#L397>)
 
 ```go
 func NewRenameOperation(remotePath string, destName string, renameMask zboxutil.Uint128, maskMU *sync.Mutex, consensusTh int, fullConsensus int, ctx context.Context) *RenameOperation
@@ -4165,7 +4255,7 @@ func NewRenameOperation(remotePath string, destName string, renameMask zboxutil.
 
 
 <a name="RenameOperation.Completed"></a>
-### func \(\*RenameOperation\) [Completed](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/renameworker.go#L389>)
+### func \(\*RenameOperation\) [Completed](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/renameworker.go#L389>)
 
 ```go
 func (ro *RenameOperation) Completed(allocObj *Allocation)
@@ -4174,7 +4264,7 @@ func (ro *RenameOperation) Completed(allocObj *Allocation)
 
 
 <a name="RenameOperation.Error"></a>
-### func \(\*RenameOperation\) [Error](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/renameworker.go#L393>)
+### func \(\*RenameOperation\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/renameworker.go#L393>)
 
 ```go
 func (ro *RenameOperation) Error(allocObj *Allocation, consensus int, err error)
@@ -4183,7 +4273,7 @@ func (ro *RenameOperation) Error(allocObj *Allocation, consensus int, err error)
 
 
 <a name="RenameOperation.Process"></a>
-### func \(\*RenameOperation\) [Process](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/renameworker.go#L303>)
+### func \(\*RenameOperation\) [Process](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/renameworker.go#L303>)
 
 ```go
 func (ro *RenameOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error)
@@ -4192,7 +4282,7 @@ func (ro *RenameOperation) Process(allocObj *Allocation, connectionID string) ([
 
 
 <a name="RenameOperation.Verify"></a>
-### func \(\*RenameOperation\) [Verify](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/renameworker.go#L362>)
+### func \(\*RenameOperation\) [Verify](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/renameworker.go#L362>)
 
 ```go
 func (ro *RenameOperation) Verify(a *Allocation) error
@@ -4201,7 +4291,7 @@ func (ro *RenameOperation) Verify(a *Allocation) error
 
 
 <a name="RenameRequest"></a>
-## type [RenameRequest](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/renameworker.go#L28-L43>)
+## type [RenameRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/renameworker.go#L28-L43>)
 
 
 
@@ -4212,7 +4302,7 @@ type RenameRequest struct {
 ```
 
 <a name="RenameRequest.ProcessRename"></a>
-### func \(\*RenameRequest\) [ProcessRename](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/renameworker.go#L185>)
+### func \(\*RenameRequest\) [ProcessRename](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/renameworker.go#L185>)
 
 ```go
 func (req *RenameRequest) ProcessRename() error
@@ -4221,7 +4311,7 @@ func (req *RenameRequest) ProcessRename() error
 
 
 <a name="RenameRequest.ProcessWithBlobbers"></a>
-### func \(\*RenameRequest\) [ProcessWithBlobbers](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/renameworker.go#L161>)
+### func \(\*RenameRequest\) [ProcessWithBlobbers](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/renameworker.go#L161>)
 
 ```go
 func (req *RenameRequest) ProcessWithBlobbers() ([]fileref.RefEntity, []error)
@@ -4230,7 +4320,7 @@ func (req *RenameRequest) ProcessWithBlobbers() ([]fileref.RefEntity, []error)
 
 
 <a name="RepairRequest"></a>
-## type [RepairRequest](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/repairworker.go#L16-L24>)
+## type [RepairRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/repairworker.go#L16-L24>)
 
 
 
@@ -4241,7 +4331,7 @@ type RepairRequest struct {
 ```
 
 <a name="RepairStatusCB"></a>
-## type [RepairStatusCB](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/repairworker.go#L26-L31>)
+## type [RepairStatusCB](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/repairworker.go#L26-L31>)
 
 
 
@@ -4252,7 +4342,7 @@ type RepairStatusCB struct {
 ```
 
 <a name="RepairStatusCB.Completed"></a>
-### func \(\*RepairStatusCB\) [Completed](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/repairworker.go#L45>)
+### func \(\*RepairStatusCB\) [Completed](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/repairworker.go#L45>)
 
 ```go
 func (cb *RepairStatusCB) Completed(allocationId, filePath string, filename string, mimetype string, size int, op int)
@@ -4261,7 +4351,7 @@ func (cb *RepairStatusCB) Completed(allocationId, filePath string, filename stri
 
 
 <a name="RepairStatusCB.Error"></a>
-### func \(\*RepairStatusCB\) [Error](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/repairworker.go#L51>)
+### func \(\*RepairStatusCB\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/repairworker.go#L51>)
 
 ```go
 func (cb *RepairStatusCB) Error(allocationID string, filePath string, op int, err error)
@@ -4270,7 +4360,7 @@ func (cb *RepairStatusCB) Error(allocationID string, filePath string, op int, er
 
 
 <a name="RepairStatusCB.InProgress"></a>
-### func \(\*RepairStatusCB\) [InProgress](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/repairworker.go#L37>)
+### func \(\*RepairStatusCB\) [InProgress](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/repairworker.go#L37>)
 
 ```go
 func (cb *RepairStatusCB) InProgress(allocationId, filePath string, op int, completedBytes int, data []byte)
@@ -4279,7 +4369,7 @@ func (cb *RepairStatusCB) InProgress(allocationId, filePath string, op int, comp
 
 
 <a name="RepairStatusCB.RepairCompleted"></a>
-### func \(\*RepairStatusCB\) [RepairCompleted](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/repairworker.go#L41>)
+### func \(\*RepairStatusCB\) [RepairCompleted](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/repairworker.go#L41>)
 
 ```go
 func (cb *RepairStatusCB) RepairCompleted(filesRepaired int)
@@ -4288,7 +4378,7 @@ func (cb *RepairStatusCB) RepairCompleted(filesRepaired int)
 
 
 <a name="RepairStatusCB.Started"></a>
-### func \(\*RepairStatusCB\) [Started](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/repairworker.go#L33>)
+### func \(\*RepairStatusCB\) [Started](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/repairworker.go#L33>)
 
 ```go
 func (cb *RepairStatusCB) Started(allocationId, filePath string, op int, totalBytes int)
@@ -4297,7 +4387,7 @@ func (cb *RepairStatusCB) Started(allocationId, filePath string, op int, totalBy
 
 
 <a name="ResetBlobberStatsDto"></a>
-## type [ResetBlobberStatsDto](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L647-L653>)
+## type [ResetBlobberStatsDto](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L647-L653>)
 
 
 
@@ -4312,7 +4402,7 @@ type ResetBlobberStatsDto struct {
 ```
 
 <a name="RollbackBlobber"></a>
-## type [RollbackBlobber](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/rollback.go#L44-L48>)
+## type [RollbackBlobber](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/rollback.go#L44-L48>)
 
 
 
@@ -4323,7 +4413,7 @@ type RollbackBlobber struct {
 ```
 
 <a name="ShareRequest"></a>
-## type [ShareRequest](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sharerequest.go#L17-L26>)
+## type [ShareRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sharerequest.go#L17-L26>)
 
 
 
@@ -4334,7 +4424,7 @@ type ShareRequest struct {
 ```
 
 <a name="ShareRequest.GetFileRef"></a>
-### func \(\*ShareRequest\) [GetFileRef](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sharerequest.go#L28>)
+### func \(\*ShareRequest\) [GetFileRef](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sharerequest.go#L28>)
 
 ```go
 func (req *ShareRequest) GetFileRef() (*fileref.FileRef, error)
@@ -4343,7 +4433,7 @@ func (req *ShareRequest) GetFileRef() (*fileref.FileRef, error)
 
 
 <a name="SignalContext"></a>
-## type [SignalContext](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/live_upload_context.go#L11-L13>)
+## type [SignalContext](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/live_upload_context.go#L11-L13>)
 
 SignalContext listen syscall signal to cancel context
 
@@ -4354,7 +4444,7 @@ type SignalContext struct {
 ```
 
 <a name="SimilarField"></a>
-## type [SimilarField](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/filerefsworker.go#L175-L193>)
+## type [SimilarField](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/filerefsworker.go#L175-L193>)
 
 
 
@@ -4381,7 +4471,7 @@ type SimilarField struct {
 ```
 
 <a name="StakePoolDelegatePoolInfo"></a>
-## type [StakePoolDelegatePoolInfo](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L266-L278>)
+## type [StakePoolDelegatePoolInfo](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L266-L278>)
 
 StakePoolDelegatePoolInfo represents delegate pool of a stake pool info.
 
@@ -4402,7 +4492,7 @@ type StakePoolDelegatePoolInfo struct {
 ```
 
 <a name="StakePoolInfo"></a>
-## type [StakePoolInfo](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L281-L293>)
+## type [StakePoolInfo](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L281-L293>)
 
 StakePool full info.
 
@@ -4423,7 +4513,7 @@ type StakePoolInfo struct {
 ```
 
 <a name="GetStakePoolInfo"></a>
-### func [GetStakePoolInfo](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L297>)
+### func [GetStakePoolInfo](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L297>)
 
 ```go
 func GetStakePoolInfo(providerType ProviderType, providerID string) (info *StakePoolInfo, err error)
@@ -4432,7 +4522,7 @@ func GetStakePoolInfo(providerType ProviderType, providerID string) (info *Stake
 GetStakePoolInfo for given client, or, if the given clientID is empty, for current client of the sdk.
 
 <a name="StakePoolOfferInfo"></a>
-## type [StakePoolOfferInfo](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L251-L256>)
+## type [StakePoolOfferInfo](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L251-L256>)
 
 StakePoolOfferInfo represents stake pool offer information.
 
@@ -4446,7 +4536,7 @@ type StakePoolOfferInfo struct {
 ```
 
 <a name="StakePoolRewardsInfo"></a>
-## type [StakePoolRewardsInfo](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L259-L263>)
+## type [StakePoolRewardsInfo](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L259-L263>)
 
 StakePoolRewardsInfo represents stake pool rewards.
 
@@ -4459,7 +4549,7 @@ type StakePoolRewardsInfo struct {
 ```
 
 <a name="StakePoolUserInfo"></a>
-## type [StakePoolUserInfo](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L321-L323>)
+## type [StakePoolUserInfo](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L321-L323>)
 
 StakePoolUserInfo represents user stake pools statistic.
 
@@ -4470,7 +4560,7 @@ type StakePoolUserInfo struct {
 ```
 
 <a name="GetStakePoolUserInfo"></a>
-### func [GetStakePoolUserInfo](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L327>)
+### func [GetStakePoolUserInfo](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L327>)
 
 ```go
 func GetStakePoolUserInfo(clientID string, offset, limit int) (info *StakePoolUserInfo, err error)
@@ -4479,7 +4569,7 @@ func GetStakePoolUserInfo(clientID string, offset, limit int) (info *StakePoolUs
 GetStakePoolUserInfo obtains blobbers/validators delegate pools statistic for a user. If given clientID is empty string, then current client used.
 
 <a name="StatusBar"></a>
-## type [StatusBar](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/repairCallback.go#L42-L47>)
+## type [StatusBar](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/repairCallback.go#L42-L47>)
 
 
 
@@ -4490,7 +4580,7 @@ type StatusBar struct {
 ```
 
 <a name="NewRepairBar"></a>
-### func [NewRepairBar](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/repairCallback.go#L49>)
+### func [NewRepairBar](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/repairCallback.go#L49>)
 
 ```go
 func NewRepairBar(allocID string) *StatusBar
@@ -4499,7 +4589,7 @@ func NewRepairBar(allocID string) *StatusBar
 
 
 <a name="StatusBar.Completed"></a>
-### func \(\*StatusBar\) [Completed](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/repairCallback.go#L21>)
+### func \(\*StatusBar\) [Completed](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/repairCallback.go#L21>)
 
 ```go
 func (s *StatusBar) Completed(allocationId, filePath string, filename string, mimetype string, size int, op int)
@@ -4508,7 +4598,7 @@ func (s *StatusBar) Completed(allocationId, filePath string, filename string, mi
 
 
 <a name="StatusBar.Error"></a>
-### func \(\*StatusBar\) [Error](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/repairCallback.go#L26>)
+### func \(\*StatusBar\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/repairCallback.go#L26>)
 
 ```go
 func (s *StatusBar) Error(allocationID string, filePath string, op int, err error)
@@ -4517,7 +4607,7 @@ func (s *StatusBar) Error(allocationID string, filePath string, op int, err erro
 
 
 <a name="StatusBar.InProgress"></a>
-### func \(\*StatusBar\) [InProgress](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/repairCallback.go#L17>)
+### func \(\*StatusBar\) [InProgress](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/repairCallback.go#L17>)
 
 ```go
 func (s *StatusBar) InProgress(allocationId, filePath string, op int, completedBytes int, data []byte)
@@ -4526,7 +4616,7 @@ func (s *StatusBar) InProgress(allocationId, filePath string, op int, completedB
 
 
 <a name="StatusBar.RepairCompleted"></a>
-### func \(\*StatusBar\) [RepairCompleted](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/repairCallback.go#L32>)
+### func \(\*StatusBar\) [RepairCompleted](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/repairCallback.go#L32>)
 
 ```go
 func (s *StatusBar) RepairCompleted(filesRepaired int)
@@ -4535,7 +4625,7 @@ func (s *StatusBar) RepairCompleted(filesRepaired int)
 
 
 <a name="StatusBar.Started"></a>
-### func \(\*StatusBar\) [Started](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/repairCallback.go#L14>)
+### func \(\*StatusBar\) [Started](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/repairCallback.go#L14>)
 
 ```go
 func (s *StatusBar) Started(allocationId, filePath string, op int, totalBytes int)
@@ -4544,7 +4634,7 @@ func (s *StatusBar) Started(allocationId, filePath string, op int, totalBytes in
 
 
 <a name="StatusCallback"></a>
-## type [StatusCallback](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L50-L56>)
+## type [StatusCallback](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L50-L56>)
 
 
 
@@ -4559,7 +4649,7 @@ type StatusCallback interface {
 ```
 
 <a name="StreamDownload"></a>
-## type [StreamDownload](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/reader.go#L56-L61>)
+## type [StreamDownload](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/reader.go#L56-L61>)
 
 
 
@@ -4571,7 +4661,7 @@ type StreamDownload struct {
 ```
 
 <a name="StreamDownload.Close"></a>
-### func \(\*StreamDownload\) [Close](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/reader.go#L63>)
+### func \(\*StreamDownload\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/reader.go#L63>)
 
 ```go
 func (sd *StreamDownload) Close() error
@@ -4580,7 +4670,7 @@ func (sd *StreamDownload) Close() error
 
 
 <a name="StreamDownload.Read"></a>
-### func \(\*StreamDownload\) [Read](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/reader.go#L110>)
+### func \(\*StreamDownload\) [Read](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/reader.go#L110>)
 
 ```go
 func (sd *StreamDownload) Read(b []byte) (int, error)
@@ -4589,7 +4679,7 @@ func (sd *StreamDownload) Read(b []byte) (int, error)
 
 
 <a name="StreamDownload.Seek"></a>
-### func \(\*StreamDownload\) [Seek](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/reader.go#L68>)
+### func \(\*StreamDownload\) [Seek](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/reader.go#L68>)
 
 ```go
 func (sd *StreamDownload) Seek(offset int64, whence int) (int64, error)
@@ -4598,7 +4688,7 @@ func (sd *StreamDownload) Seek(offset int64, whence int) (int64, error)
 
 
 <a name="StreamDownloadOption"></a>
-## type [StreamDownloadOption](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/reader.go#L49-L54>)
+## type [StreamDownloadOption](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/reader.go#L49-L54>)
 
 
 
@@ -4612,7 +4702,7 @@ type StreamDownloadOption struct {
 ```
 
 <a name="StreamReader"></a>
-## type [StreamReader](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/streamreader.go#L20-L22>)
+## type [StreamReader](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/streamreader.go#L20-L22>)
 
 
 
@@ -4623,7 +4713,7 @@ type StreamReader struct {
 ```
 
 <a name="NewStreamReader"></a>
-### func [NewStreamReader](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/streamreader.go#L16>)
+### func [NewStreamReader](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/streamreader.go#L16>)
 
 ```go
 func NewStreamReader(dataChan chan *DataChan) *StreamReader
@@ -4632,7 +4722,7 @@ func NewStreamReader(dataChan chan *DataChan) *StreamReader
 
 
 <a name="StreamReader.Read"></a>
-### func \(\*StreamReader\) [Read](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/streamreader.go#L25>)
+### func \(\*StreamReader\) [Read](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/streamreader.go#L25>)
 
 ```go
 func (r *StreamReader) Read(p []byte) (int, error)
@@ -4641,7 +4731,7 @@ func (r *StreamReader) Read(p []byte) (int, error)
 Client should always send bytes equal to less than chunkDataSizePerRead
 
 <a name="Terms"></a>
-## type [Terms](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L143-L147>)
+## type [Terms](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L143-L147>)
 
 Terms represents Blobber terms. A Blobber can update its terms, but any existing offer will use terms of offer signing time.
 
@@ -4654,7 +4744,7 @@ type Terms struct {
 ```
 
 <a name="UpdateBlobber"></a>
-## type [UpdateBlobber](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L629-L645>)
+## type [UpdateBlobber](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L629-L645>)
 
 UpdateBlobber is used during update blobber settings calls. Note the types are of pointer types with omitempty json property. This is done to correctly identify which properties are actually changing.
 
@@ -4679,7 +4769,7 @@ type UpdateBlobber struct {
 ```
 
 <a name="UpdateTerms"></a>
-## type [UpdateTerms](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/allocation.go#L151-L155>)
+## type [UpdateTerms](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/allocation.go#L151-L155>)
 
 UpdateTerms represents Blobber terms during update blobber calls. A Blobber can update its terms, but any existing offer will use terms of offer signing time.
 
@@ -4692,7 +4782,7 @@ type UpdateTerms struct {
 ```
 
 <a name="UpdateValidator"></a>
-## type [UpdateValidator](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L672-L686>)
+## type [UpdateValidator](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L672-L686>)
 
 
 
@@ -4715,7 +4805,7 @@ type UpdateValidator struct {
 ```
 
 <a name="UpdateValidator.ConvertToValidationNode"></a>
-### func \(\*UpdateValidator\) [ConvertToValidationNode](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L688>)
+### func \(\*UpdateValidator\) [ConvertToValidationNode](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L688>)
 
 ```go
 func (v *UpdateValidator) ConvertToValidationNode() *blockchain.UpdateValidationNode
@@ -4724,7 +4814,7 @@ func (v *UpdateValidator) ConvertToValidationNode() *blockchain.UpdateValidation
 
 
 <a name="UploadBlobberStatus"></a>
-## type [UploadBlobberStatus](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/chunked_upload_model.go#L194-L199>)
+## type [UploadBlobberStatus](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/chunked_upload_model.go#L194-L199>)
 
 UploadBlobberStatus the status of blobber's upload progress
 
@@ -4738,7 +4828,7 @@ type UploadBlobberStatus struct {
 ```
 
 <a name="UploadBlobberStatus.UnmarshalJSON"></a>
-### func \(\*UploadBlobberStatus\) [UnmarshalJSON](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/chunked_upload_model.go#L223>)
+### func \(\*UploadBlobberStatus\) [UnmarshalJSON](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/chunked_upload_model.go#L223>)
 
 ```go
 func (s *UploadBlobberStatus) UnmarshalJSON(b []byte) error
@@ -4747,7 +4837,7 @@ func (s *UploadBlobberStatus) UnmarshalJSON(b []byte) error
 
 
 <a name="UploadData"></a>
-## type [UploadData](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/chunked_upload_model.go#L203-L210>)
+## type [UploadData](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/chunked_upload_model.go#L203-L210>)
 
 
 
@@ -4758,7 +4848,7 @@ type UploadData struct {
 ```
 
 <a name="UploadFileMeta"></a>
-## type [UploadFileMeta](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/upload_helper.go#L3-L18>)
+## type [UploadFileMeta](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/upload_helper.go#L3-L18>)
 
 
 
@@ -4782,7 +4872,7 @@ type UploadFileMeta struct {
 ```
 
 <a name="UploadFormData"></a>
-## type [UploadFormData](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/chunked_upload_model.go#L127-L165>)
+## type [UploadFormData](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/chunked_upload_model.go#L127-L165>)
 
 UploadFormData form data of upload
 
@@ -4829,7 +4919,7 @@ type UploadFormData struct {
 ```
 
 <a name="UploadOperation"></a>
-## type [UploadOperation](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/upload_worker.go#L20-L26>)
+## type [UploadOperation](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/upload_worker.go#L20-L26>)
 
 
 
@@ -4840,7 +4930,7 @@ type UploadOperation struct {
 ```
 
 <a name="NewUploadOperation"></a>
-### func [NewUploadOperation](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/upload_worker.go#L141>)
+### func [NewUploadOperation](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/upload_worker.go#L141>)
 
 ```go
 func NewUploadOperation(ctx context.Context, workdir string, allocObj *Allocation, connectionID string, fileMeta FileMeta, fileReader io.Reader, isUpdate, isWebstreaming, isRepair, isMemoryDownload bool, opts ...ChunkedUploadOption) (*UploadOperation, string, error)
@@ -4849,7 +4939,7 @@ func NewUploadOperation(ctx context.Context, workdir string, allocObj *Allocatio
 
 
 <a name="UploadOperation.Completed"></a>
-### func \(\*UploadOperation\) [Completed](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/upload_worker.go#L117>)
+### func \(\*UploadOperation\) [Completed](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/upload_worker.go#L117>)
 
 ```go
 func (uo *UploadOperation) Completed(allocObj *Allocation)
@@ -4858,7 +4948,7 @@ func (uo *UploadOperation) Completed(allocObj *Allocation)
 
 
 <a name="UploadOperation.Error"></a>
-### func \(\*UploadOperation\) [Error](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/upload_worker.go#L129>)
+### func \(\*UploadOperation\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/upload_worker.go#L129>)
 
 ```go
 func (uo *UploadOperation) Error(allocObj *Allocation, consensus int, err error)
@@ -4867,7 +4957,7 @@ func (uo *UploadOperation) Error(allocObj *Allocation, consensus int, err error)
 
 
 <a name="UploadOperation.Process"></a>
-### func \(\*UploadOperation\) [Process](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/upload_worker.go#L28>)
+### func \(\*UploadOperation\) [Process](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/upload_worker.go#L28>)
 
 ```go
 func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error)
@@ -4876,7 +4966,7 @@ func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([
 
 
 <a name="UploadOperation.Verify"></a>
-### func \(\*UploadOperation\) [Verify](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/upload_worker.go#L86>)
+### func \(\*UploadOperation\) [Verify](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/upload_worker.go#L86>)
 
 ```go
 func (uo *UploadOperation) Verify(allocationObj *Allocation) error
@@ -4885,7 +4975,7 @@ func (uo *UploadOperation) Verify(allocationObj *Allocation) error
 
 
 <a name="UploadProgress"></a>
-## type [UploadProgress](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/chunked_upload_model.go#L168-L191>)
+## type [UploadProgress](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/chunked_upload_model.go#L168-L191>)
 
 UploadProgress progress of upload
 
@@ -4917,7 +5007,7 @@ type UploadProgress struct {
 ```
 
 <a name="UploadResult"></a>
-## type [UploadResult](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/upload_helper.go#L20-L25>)
+## type [UploadResult](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/upload_helper.go#L20-L25>)
 
 
 
@@ -4931,7 +5021,7 @@ type UploadResult struct {
 ```
 
 <a name="Validator"></a>
-## type [Validator](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L655-L670>)
+## type [Validator](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L655-L670>)
 
 
 
@@ -4955,7 +5045,7 @@ type Validator struct {
 ```
 
 <a name="GetValidator"></a>
-### func [GetValidator](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L799>)
+### func [GetValidator](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L799>)
 
 ```go
 func GetValidator(validatorID string) (validator *Validator, err error)
@@ -4964,7 +5054,7 @@ func GetValidator(validatorID string) (validator *Validator, err error)
 GetValidator instance.
 
 <a name="GetValidators"></a>
-### func [GetValidators](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/sdk.go#L823>)
+### func [GetValidators](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L823>)
 
 ```go
 func GetValidators() (validators []*Validator, err error)
@@ -4973,7 +5063,7 @@ func GetValidators() (validators []*Validator, err error)
 List all validators
 
 <a name="WMLockResult"></a>
-## type [WMLockResult](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/writemarker_mutex.go#L29-L32>)
+## type [WMLockResult](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/writemarker_mutex.go#L29-L32>)
 
 
 
@@ -4985,7 +5075,7 @@ type WMLockResult struct {
 ```
 
 <a name="WMLockStatus"></a>
-## type [WMLockStatus](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/writemarker_mutex.go#L20>)
+## type [WMLockStatus](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/writemarker_mutex.go#L20>)
 
 
 
@@ -5004,7 +5094,7 @@ const (
 ```
 
 <a name="WriteMarkerMutex"></a>
-## type [WriteMarkerMutex](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/writemarker_mutex.go#L35-L40>)
+## type [WriteMarkerMutex](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/writemarker_mutex.go#L35-L40>)
 
 WriteMarkerMutex blobber WriteMarkerMutex client
 
@@ -5015,7 +5105,7 @@ type WriteMarkerMutex struct {
 ```
 
 <a name="CreateWriteMarkerMutex"></a>
-### func [CreateWriteMarkerMutex](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/writemarker_mutex.go#L43>)
+### func [CreateWriteMarkerMutex](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/writemarker_mutex.go#L43>)
 
 ```go
 func CreateWriteMarkerMutex(client *client.Client, allocationObj *Allocation) (*WriteMarkerMutex, error)
@@ -5024,7 +5114,7 @@ func CreateWriteMarkerMutex(client *client.Client, allocationObj *Allocation) (*
 CreateWriteMarkerMutex create WriteMarkerMutex for allocation
 
 <a name="WriteMarkerMutex.Lock"></a>
-### func \(\*WriteMarkerMutex\) [Lock](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/writemarker_mutex.go#L175-L178>)
+### func \(\*WriteMarkerMutex\) [Lock](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/writemarker_mutex.go#L175-L178>)
 
 ```go
 func (wmMu *WriteMarkerMutex) Lock(ctx context.Context, mask *zboxutil.Uint128, maskMu *sync.Mutex, blobbers []*blockchain.StorageNode, consensus *Consensus, addConsensus int, timeOut time.Duration, connID string) error
@@ -5033,7 +5123,7 @@ func (wmMu *WriteMarkerMutex) Lock(ctx context.Context, mask *zboxutil.Uint128, 
 
 
 <a name="WriteMarkerMutex.Unlock"></a>
-### func \(\*WriteMarkerMutex\) [Unlock](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/writemarker_mutex.go#L64-L68>)
+### func \(\*WriteMarkerMutex\) [Unlock](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/writemarker_mutex.go#L64-L68>)
 
 ```go
 func (wmMu *WriteMarkerMutex) Unlock(ctx context.Context, mask zboxutil.Uint128, blobbers []*blockchain.StorageNode, timeOut time.Duration, connID string)
@@ -5042,7 +5132,7 @@ func (wmMu *WriteMarkerMutex) Unlock(ctx context.Context, mask zboxutil.Uint128,
 
 
 <a name="WriteMarkerMutex.UnlockBlobber"></a>
-### func \(\*WriteMarkerMutex\) [UnlockBlobber](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/writemarker_mutex.go#L89-L92>)
+### func \(\*WriteMarkerMutex\) [UnlockBlobber](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/writemarker_mutex.go#L89-L92>)
 
 ```go
 func (wmMu *WriteMarkerMutex) UnlockBlobber(ctx context.Context, b *blockchain.StorageNode, connID string, timeOut time.Duration, wg *sync.WaitGroup)
@@ -5051,7 +5141,7 @@ func (wmMu *WriteMarkerMutex) UnlockBlobber(ctx context.Context, b *blockchain.S
 Change status code to 204
 
 <a name="YoutubeDL"></a>
-## type [YoutubeDL](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/live_upload_reader_youtubedl.go#L14-L24>)
+## type [YoutubeDL](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/live_upload_reader_youtubedl.go#L14-L24>)
 
 YoutubeDL wrap youtube\-dl to download video from youtube
 
@@ -5062,7 +5152,7 @@ type YoutubeDL struct {
 ```
 
 <a name="CreateYoutubeDL"></a>
-### func [CreateYoutubeDL](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/live_upload_reader_youtubedl.go#L27>)
+### func [CreateYoutubeDL](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/live_upload_reader_youtubedl.go#L27>)
 
 ```go
 func CreateYoutubeDL(ctx context.Context, localPath string, feedURL string, downloadArgs []string, ffmpegArgs []string, delay int) (*YoutubeDL, error)
@@ -5071,7 +5161,7 @@ func CreateYoutubeDL(ctx context.Context, localPath string, feedURL string, down
 CreateYoutubeDL create a youtube\-dl instance to download video file from youtube
 
 <a name="YoutubeDL.Close"></a>
-### func \(\*YoutubeDL\) [Close](<https://github.com/0chain/gosdk/blob/staging/zboxcore/sdk/live_upload_reader_youtubedl.go#L103>)
+### func \(\*YoutubeDL\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/live_upload_reader_youtubedl.go#L103>)
 
 ```go
 func (r *YoutubeDL) Close() error

@@ -131,7 +131,7 @@ var (
 ```
 
 <a name="DecodeAndMHash"></a>
-## func [DecodeAndMHash](<https://github.com/0chain/gosdk/blob/staging/core/util/merkle_tree_interface.go#L57>)
+## func [DecodeAndMHash](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/merkle_tree_interface.go#L57>)
 
 ```go
 func DecodeAndMHash(h1, h2 string) string
@@ -140,7 +140,7 @@ func DecodeAndMHash(h1, h2 string) string
 DecodeAndMHash will decode hex\-encoded string to \[\]byte format. This function should only be used with hex\-encoded string otherwise the result will be obsolute.
 
 <a name="GetNewUUID"></a>
-## func [GetNewUUID](<https://github.com/0chain/gosdk/blob/staging/core/util/uuid.go#L18>)
+## func [GetNewUUID](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/uuid.go#L18>)
 
 ```go
 func GetNewUUID() uuid.UUID
@@ -149,7 +149,7 @@ func GetNewUUID() uuid.UUID
 GetNewUUID will give new version1 uuid. It will panic if any error occurred
 
 <a name="GetRandom"></a>
-## func [GetRandom](<https://github.com/0chain/gosdk/blob/staging/core/util/rand.go#L49>)
+## func [GetRandom](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/rand.go#L49>)
 
 ```go
 func GetRandom(in []string, n int) []string
@@ -158,7 +158,7 @@ func GetRandom(in []string, n int) []string
 GetRandom returns n random slice from in If n \> len\(in\), then this will return a shuffled version of in
 
 <a name="GetSHA1Uuid"></a>
-## func [GetSHA1Uuid](<https://github.com/0chain/gosdk/blob/staging/core/util/uuid.go#L13>)
+## func [GetSHA1Uuid](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/uuid.go#L13>)
 
 ```go
 func GetSHA1Uuid(u uuid.UUID, name string) uuid.UUID
@@ -167,7 +167,7 @@ func GetSHA1Uuid(u uuid.UUID, name string) uuid.UUID
 GetSHA1Uuid will give version 5 uuid. It depends on already existing uuid. The main idea is to synchronize uuid among blobbers. So for example, if a file is being uploaded to 4 blobbers then we require that file in each blobber have same uuid. All the goroutine that assigns uuid, calculates hashes and commits to blobber will use initial version 1 uuid and updates the uuid with recently calculated uuid so that the file will get same uuid in all blobbers.
 
 <a name="Hash"></a>
-## func [Hash](<https://github.com/0chain/gosdk/blob/staging/core/util/merkle_tree_interface.go#L36>)
+## func [Hash](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/merkle_tree_interface.go#L36>)
 
 ```go
 func Hash(text string) string
@@ -176,7 +176,7 @@ func Hash(text string) string
 Hash \- the hashing used for the merkle tree construction
 
 <a name="HashStringToBytes"></a>
-## func [HashStringToBytes](<https://github.com/0chain/gosdk/blob/staging/core/util/secure_value.go#L24>)
+## func [HashStringToBytes](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/secure_value.go#L24>)
 
 ```go
 func HashStringToBytes(hash string) []byte
@@ -185,7 +185,7 @@ func HashStringToBytes(hash string) []byte
 HashStringToBytes \- convert a hex hash string to bytes
 
 <a name="MHash"></a>
-## func [MHash](<https://github.com/0chain/gosdk/blob/staging/core/util/merkle_tree_interface.go#L50>)
+## func [MHash](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/merkle_tree_interface.go#L50>)
 
 ```go
 func MHash(h1 string, h2 string) string
@@ -194,7 +194,7 @@ func MHash(h1 string, h2 string) string
 MHash \- merkle hashing of a pair of child hashes
 
 <a name="MHashBytes"></a>
-## func [MHashBytes](<https://github.com/0chain/gosdk/blob/staging/core/util/merkle_tree_interface.go#L40>)
+## func [MHashBytes](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/merkle_tree_interface.go#L40>)
 
 ```go
 func MHashBytes(h1, h2 []byte) []byte
@@ -203,7 +203,7 @@ func MHashBytes(h1, h2 []byte) []byte
 
 
 <a name="MaxInt"></a>
-## func [MaxInt](<https://github.com/0chain/gosdk/blob/staging/core/util/rand.go#L16>)
+## func [MaxInt](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/rand.go#L16>)
 
 ```go
 func MaxInt(x, y int) int
@@ -212,7 +212,7 @@ func MaxInt(x, y int) int
 
 
 <a name="MaxInt64"></a>
-## func [MaxInt64](<https://github.com/0chain/gosdk/blob/staging/core/util/rand.go#L30>)
+## func [MaxInt64](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/rand.go#L30>)
 
 ```go
 func MaxInt64(x, y int64) int64
@@ -221,7 +221,7 @@ func MaxInt64(x, y int64) int64
 
 
 <a name="MinInt"></a>
-## func [MinInt](<https://github.com/0chain/gosdk/blob/staging/core/util/rand.go#L9>)
+## func [MinInt](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/rand.go#L9>)
 
 ```go
 func MinInt(x, y int) int
@@ -230,7 +230,7 @@ func MinInt(x, y int) int
 
 
 <a name="MinInt64"></a>
-## func [MinInt64](<https://github.com/0chain/gosdk/blob/staging/core/util/rand.go#L23>)
+## func [MinInt64](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/rand.go#L23>)
 
 ```go
 func MinInt64(x, y int64) int64
@@ -239,7 +239,7 @@ func MinInt64(x, y int64) int64
 
 
 <a name="ParseCoinStr"></a>
-## func [ParseCoinStr](<https://github.com/0chain/gosdk/blob/staging/core/util/uint64.go#L8>)
+## func [ParseCoinStr](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/uint64.go#L8>)
 
 ```go
 func ParseCoinStr(vs string) (uint64, error)
@@ -248,7 +248,7 @@ func ParseCoinStr(vs string) (uint64, error)
 
 
 <a name="Shuffle"></a>
-## func [Shuffle](<https://github.com/0chain/gosdk/blob/staging/core/util/rand.go#L37>)
+## func [Shuffle](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/rand.go#L37>)
 
 ```go
 func Shuffle(in []string) (shuffle []string)
@@ -257,7 +257,7 @@ func Shuffle(in []string) (shuffle []string)
 
 
 <a name="ToHex"></a>
-## func [ToHex](<https://github.com/0chain/gosdk/blob/staging/core/util/secure_value.go#L49>)
+## func [ToHex](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/secure_value.go#L49>)
 
 ```go
 func ToHex(buf []byte) string
@@ -266,7 +266,7 @@ func ToHex(buf []byte) string
 ToHex \- converts a byte array to hex encoding with upper case
 
 <a name="VerifyMerklePath"></a>
-## func [VerifyMerklePath](<https://github.com/0chain/gosdk/blob/staging/core/util/merkle_tree.go#L14>)
+## func [VerifyMerklePath](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/merkle_tree.go#L14>)
 
 ```go
 func VerifyMerklePath(hash string, path *MTPath, root string) bool
@@ -275,7 +275,7 @@ func VerifyMerklePath(hash string, path *MTPath, root string) bool
 
 
 <a name="FixedMerklePath"></a>
-## type [FixedMerklePath](<https://github.com/0chain/gosdk/blob/staging/core/util/fixed_merkle_tree.go#L204-L209>)
+## type [FixedMerklePath](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/fixed_merkle_tree.go#L204-L209>)
 
 FixedMerklePath is used to verify existence of leaf hash for fixed merkle tree
 
@@ -289,7 +289,7 @@ type FixedMerklePath struct {
 ```
 
 <a name="FixedMerklePath.VerifyMerklePath"></a>
-### func \(FixedMerklePath\) [VerifyMerklePath](<https://github.com/0chain/gosdk/blob/staging/core/util/fixed_merkle_tree.go#L211>)
+### func \(FixedMerklePath\) [VerifyMerklePath](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/fixed_merkle_tree.go#L211>)
 
 ```go
 func (fp FixedMerklePath) VerifyMerklePath() bool
@@ -298,7 +298,7 @@ func (fp FixedMerklePath) VerifyMerklePath() bool
 
 
 <a name="FixedMerkleTree"></a>
-## type [FixedMerkleTree](<https://github.com/0chain/gosdk/blob/staging/core/util/fixed_merkle_tree.go#L62-L76>)
+## type [FixedMerkleTree](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/fixed_merkle_tree.go#L62-L76>)
 
 FixedMerkleTree A trusted mekerle tree for outsourcing attack protection. see section 1.8 on whitepager see detail on https://github.com/0chain/blobber/wiki/Protocols#what-is-fixedmerkletree
 
@@ -311,7 +311,7 @@ type FixedMerkleTree struct {
 ```
 
 <a name="NewFixedMerkleTree"></a>
-### func [NewFixedMerkleTree](<https://github.com/0chain/gosdk/blob/staging/core/util/fixed_merkle_tree.go#L94>)
+### func [NewFixedMerkleTree](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/fixed_merkle_tree.go#L94>)
 
 ```go
 func NewFixedMerkleTree() *FixedMerkleTree
@@ -320,7 +320,7 @@ func NewFixedMerkleTree() *FixedMerkleTree
 NewFixedMerkleTree create a FixedMerkleTree with specify hash method
 
 <a name="FixedMerkleTree.CalculateMerkleRoot"></a>
-### func \(\*FixedMerkleTree\) [CalculateMerkleRoot](<https://github.com/0chain/gosdk/blob/staging/core/util/fixed_merkle_tree.go#L179>)
+### func \(\*FixedMerkleTree\) [CalculateMerkleRoot](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/fixed_merkle_tree.go#L179>)
 
 ```go
 func (fmt *FixedMerkleTree) CalculateMerkleRoot()
@@ -329,7 +329,7 @@ func (fmt *FixedMerkleTree) CalculateMerkleRoot()
 
 
 <a name="FixedMerkleTree.Finalize"></a>
-### func \(\*FixedMerkleTree\) [Finalize](<https://github.com/0chain/gosdk/blob/staging/core/util/fixed_merkle_tree.go#L79>)
+### func \(\*FixedMerkleTree\) [Finalize](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/fixed_merkle_tree.go#L79>)
 
 ```go
 func (fmt *FixedMerkleTree) Finalize() error
@@ -338,7 +338,7 @@ func (fmt *FixedMerkleTree) Finalize() error
 Finalize will set isFinal to true and sends remaining bytes for leaf hash calculation
 
 <a name="FixedMerkleTree.GetMerkleRoot"></a>
-### func \(\*FixedMerkleTree\) [GetMerkleRoot](<https://github.com/0chain/gosdk/blob/staging/core/util/fixed_merkle_tree.go#L226>)
+### func \(\*FixedMerkleTree\) [GetMerkleRoot](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/fixed_merkle_tree.go#L226>)
 
 ```go
 func (fmt *FixedMerkleTree) GetMerkleRoot() string
@@ -347,7 +347,7 @@ func (fmt *FixedMerkleTree) GetMerkleRoot() string
 GetMerkleRoot get merkle root.
 
 <a name="FixedMerkleTree.GetMerkleTree"></a>
-### func \(\*FixedMerkleTree\) [GetMerkleTree](<https://github.com/0chain/gosdk/blob/staging/core/util/fixed_merkle_tree.go#L175>)
+### func \(\*FixedMerkleTree\) [GetMerkleTree](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/fixed_merkle_tree.go#L175>)
 
 ```go
 func (fmt *FixedMerkleTree) GetMerkleTree() MerkleTreeI
@@ -356,7 +356,7 @@ func (fmt *FixedMerkleTree) GetMerkleTree() MerkleTreeI
 GetMerkleRoot is only for interface compliance.
 
 <a name="FixedMerkleTree.Reload"></a>
-### func \(\*FixedMerkleTree\) [Reload](<https://github.com/0chain/gosdk/blob/staging/core/util/fixed_merkle_tree.go#L235>)
+### func \(\*FixedMerkleTree\) [Reload](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/fixed_merkle_tree.go#L235>)
 
 ```go
 func (fmt *FixedMerkleTree) Reload(reader io.Reader) error
@@ -365,7 +365,7 @@ func (fmt *FixedMerkleTree) Reload(reader io.Reader) error
 Reload reset and reload leaves from io.Reader
 
 <a name="FixedMerkleTree.Write"></a>
-### func \(\*FixedMerkleTree\) [Write](<https://github.com/0chain/gosdk/blob/staging/core/util/fixed_merkle_tree.go#L146>)
+### func \(\*FixedMerkleTree\) [Write](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/fixed_merkle_tree.go#L146>)
 
 ```go
 func (fmt *FixedMerkleTree) Write(b []byte) (int, error)
@@ -374,7 +374,7 @@ func (fmt *FixedMerkleTree) Write(b []byte) (int, error)
 Write will write data to the leaves once MaxMerkleLeavesSize\(64 KB\) is reached. Since each 64KB is divided into 1024 pieces with 64 bytes each, once data len reaches 64KB then it will be written to leaf hashes. The remaining data that is not multiple of 64KB will be written to leaf hashes by Finalize\(\) function. This can be used to write stream of data as well. fmt.Finalize\(\) is required after data write is complete.
 
 <a name="GetRequest"></a>
-## type [GetRequest](<https://github.com/0chain/gosdk/blob/staging/core/util/httpnet.go#L14-L16>)
+## type [GetRequest](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/httpnet.go#L14-L16>)
 
 
 
@@ -385,7 +385,7 @@ type GetRequest struct {
 ```
 
 <a name="NewHTTPGetRequest"></a>
-### func [NewHTTPGetRequest](<https://github.com/0chain/gosdk/blob/staging/core/util/httpnet.go#L100>)
+### func [NewHTTPGetRequest](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/httpnet.go#L100>)
 
 ```go
 func NewHTTPGetRequest(url string) (*GetRequest, error)
@@ -394,7 +394,7 @@ func NewHTTPGetRequest(url string) (*GetRequest, error)
 NewHTTPGetRequest create a GetRequest instance with 60s timeout
 
 <a name="NewHTTPGetRequestContext"></a>
-### func [NewHTTPGetRequestContext](<https://github.com/0chain/gosdk/blob/staging/core/util/httpnet.go#L114>)
+### func [NewHTTPGetRequestContext](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/httpnet.go#L114>)
 
 ```go
 func NewHTTPGetRequestContext(ctx context.Context, url string) (*GetRequest, error)
@@ -403,7 +403,7 @@ func NewHTTPGetRequestContext(ctx context.Context, url string) (*GetRequest, err
 NewHTTPGetRequestContext create a GetRequest with context and url
 
 <a name="GetRequest.Get"></a>
-### func \(\*GetRequest\) [Get](<https://github.com/0chain/gosdk/blob/staging/core/util/httpnet.go#L150>)
+### func \(\*GetRequest\) [Get](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/httpnet.go#L150>)
 
 ```go
 func (r *GetRequest) Get() (*GetResponse, error)
@@ -412,7 +412,7 @@ func (r *GetRequest) Get() (*GetResponse, error)
 
 
 <a name="GetResponse"></a>
-## type [GetResponse](<https://github.com/0chain/gosdk/blob/staging/core/util/httpnet.go#L18-L20>)
+## type [GetResponse](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/httpnet.go#L18-L20>)
 
 
 
@@ -423,7 +423,7 @@ type GetResponse struct {
 ```
 
 <a name="Hashable"></a>
-## type [Hashable](<https://github.com/0chain/gosdk/blob/staging/core/util/secure_value.go#L11-L15>)
+## type [Hashable](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/secure_value.go#L11-L15>)
 
 Hashable \- anything that can provide it's hash
 
@@ -436,7 +436,7 @@ type Hashable interface {
 ```
 
 <a name="HttpClient"></a>
-## type [HttpClient](<https://github.com/0chain/gosdk/blob/staging/core/util/httpnet.go#L36-L38>)
+## type [HttpClient](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/httpnet.go#L36-L38>)
 
 
 
@@ -453,7 +453,7 @@ var Client HttpClient
 ```
 
 <a name="HttpConsensusMaps"></a>
-## type [HttpConsensusMaps](<https://github.com/0chain/gosdk/blob/staging/core/util/http_consensus_maps.go#L15-L24>)
+## type [HttpConsensusMaps](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/http_consensus_maps.go#L15-L24>)
 
 
 
@@ -471,7 +471,7 @@ type HttpConsensusMaps struct {
 ```
 
 <a name="NewHttpConsensusMaps"></a>
-### func [NewHttpConsensusMaps](<https://github.com/0chain/gosdk/blob/staging/core/util/http_consensus_maps.go#L26>)
+### func [NewHttpConsensusMaps](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/http_consensus_maps.go#L26>)
 
 ```go
 func NewHttpConsensusMaps(consensusThresh int) *HttpConsensusMaps
@@ -480,7 +480,7 @@ func NewHttpConsensusMaps(consensusThresh int) *HttpConsensusMaps
 
 
 <a name="HttpConsensusMaps.Add"></a>
-### func \(\*HttpConsensusMaps\) [Add](<https://github.com/0chain/gosdk/blob/staging/core/util/http_consensus_maps.go#L41>)
+### func \(\*HttpConsensusMaps\) [Add](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/http_consensus_maps.go#L41>)
 
 ```go
 func (c *HttpConsensusMaps) Add(statusCode int, respBody string) error
@@ -489,7 +489,7 @@ func (c *HttpConsensusMaps) Add(statusCode int, respBody string) error
 
 
 <a name="HttpConsensusMaps.GetValue"></a>
-### func \(\*HttpConsensusMaps\) [GetValue](<https://github.com/0chain/gosdk/blob/staging/core/util/http_consensus_maps.go#L33>)
+### func \(\*HttpConsensusMaps\) [GetValue](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/http_consensus_maps.go#L33>)
 
 ```go
 func (c *HttpConsensusMaps) GetValue(name string) (json.RawMessage, bool)
@@ -498,7 +498,7 @@ func (c *HttpConsensusMaps) GetValue(name string) (json.RawMessage, bool)
 
 
 <a name="MTPath"></a>
-## type [MTPath](<https://github.com/0chain/gosdk/blob/staging/core/util/merkle_tree_interface.go#L30-L33>)
+## type [MTPath](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/merkle_tree_interface.go#L30-L33>)
 
 MTPath \- The merkle tree path
 
@@ -510,7 +510,7 @@ type MTPath struct {
 ```
 
 <a name="MerklePathForMultiLeafVerification"></a>
-## type [MerklePathForMultiLeafVerification](<https://github.com/0chain/gosdk/blob/staging/core/util/validation_tree.go#L166-L183>)
+## type [MerklePathForMultiLeafVerification](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/validation_tree.go#L166-L183>)
 
 MerklePathForMultiLeafVerification is used to verify multiple blocks with single instance of merkle path. Usually client would request with counter incremented by 10. So if the block size is 64KB and counter is incremented by 10 then client is requesting 640 KB of data. Blobber can then provide sinlge merkle path instead of sending 10 merkle paths.
 
@@ -535,7 +535,7 @@ type MerklePathForMultiLeafVerification struct {
 ```
 
 <a name="MerklePathForMultiLeafVerification.VerifyMultipleBlocks"></a>
-### func \(\*MerklePathForMultiLeafVerification\) [VerifyMultipleBlocks](<https://github.com/0chain/gosdk/blob/staging/core/util/validation_tree.go#L223>)
+### func \(\*MerklePathForMultiLeafVerification\) [VerifyMultipleBlocks](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/validation_tree.go#L223>)
 
 ```go
 func (m *MerklePathForMultiLeafVerification) VerifyMultipleBlocks(data []byte) error
@@ -558,7 +558,7 @@ Consider there are 16 leaves\(0..15\) with total data = 16\*64KB as shown above.
 If client had required data from 2\-9 then blobber would have to provide: 1. Zero nodes from i\#0 2. Two nodes from i\#1, \[h16, h21\] 3. One node from i\#2, \[h27\]
 
 <a name="MerkleTree"></a>
-## type [MerkleTree](<https://github.com/0chain/gosdk/blob/staging/core/util/merkle_tree.go#L8-L12>)
+## type [MerkleTree](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/merkle_tree.go#L8-L12>)
 
 MerkleTree \- A data structure that implements MerkleTreeI interface
 
@@ -569,7 +569,7 @@ type MerkleTree struct {
 ```
 
 <a name="MerkleTree.ComputeTree"></a>
-### func \(\*MerkleTree\) [ComputeTree](<https://github.com/0chain/gosdk/blob/staging/core/util/merkle_tree.go#L46>)
+### func \(\*MerkleTree\) [ComputeTree](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/merkle_tree.go#L46>)
 
 ```go
 func (mt *MerkleTree) ComputeTree(hashes []Hashable)
@@ -578,7 +578,7 @@ func (mt *MerkleTree) ComputeTree(hashes []Hashable)
 ComputeTree \- given the leaf nodes, compute the merkle tree
 
 <a name="MerkleTree.GetLeafIndex"></a>
-### func \(\*MerkleTree\) [GetLeafIndex](<https://github.com/0chain/gosdk/blob/staging/core/util/merkle_tree.go#L92>)
+### func \(\*MerkleTree\) [GetLeafIndex](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/merkle_tree.go#L92>)
 
 ```go
 func (mt *MerkleTree) GetLeafIndex(hash Hashable) int
@@ -587,7 +587,7 @@ func (mt *MerkleTree) GetLeafIndex(hash Hashable) int
 GetLeafIndex \- Get the index of the leaf node in the tree
 
 <a name="MerkleTree.GetPath"></a>
-### func \(\*MerkleTree\) [GetPath](<https://github.com/0chain/gosdk/blob/staging/core/util/merkle_tree.go#L103>)
+### func \(\*MerkleTree\) [GetPath](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/merkle_tree.go#L103>)
 
 ```go
 func (mt *MerkleTree) GetPath(hash Hashable) *MTPath
@@ -596,7 +596,7 @@ func (mt *MerkleTree) GetPath(hash Hashable) *MTPath
 GetPath \- get the path that can be used to verify the merkle tree
 
 <a name="MerkleTree.GetPathByIndex"></a>
-### func \(\*MerkleTree\) [GetPathByIndex](<https://github.com/0chain/gosdk/blob/staging/core/util/merkle_tree.go#L118>)
+### func \(\*MerkleTree\) [GetPathByIndex](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/merkle_tree.go#L118>)
 
 ```go
 func (mt *MerkleTree) GetPathByIndex(idx int) *MTPath
@@ -605,7 +605,7 @@ func (mt *MerkleTree) GetPathByIndex(idx int) *MTPath
 GetPathByIndex \- get the path of a leaf node at index i
 
 <a name="MerkleTree.GetRoot"></a>
-### func \(\*MerkleTree\) [GetRoot](<https://github.com/0chain/gosdk/blob/staging/core/util/merkle_tree.go#L70>)
+### func \(\*MerkleTree\) [GetRoot](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/merkle_tree.go#L70>)
 
 ```go
 func (mt *MerkleTree) GetRoot() string
@@ -614,7 +614,7 @@ func (mt *MerkleTree) GetRoot() string
 GetRoot \- get the root of the merkle tree
 
 <a name="MerkleTree.GetTree"></a>
-### func \(\*MerkleTree\) [GetTree](<https://github.com/0chain/gosdk/blob/staging/core/util/merkle_tree.go#L75>)
+### func \(\*MerkleTree\) [GetTree](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/merkle_tree.go#L75>)
 
 ```go
 func (mt *MerkleTree) GetTree() []string
@@ -623,7 +623,7 @@ func (mt *MerkleTree) GetTree() []string
 GetTree \- get the entire merkle tree
 
 <a name="MerkleTree.SetTree"></a>
-### func \(\*MerkleTree\) [SetTree](<https://github.com/0chain/gosdk/blob/staging/core/util/merkle_tree.go#L80>)
+### func \(\*MerkleTree\) [SetTree](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/merkle_tree.go#L80>)
 
 ```go
 func (mt *MerkleTree) SetTree(leavesCount int, tree []string) error
@@ -632,7 +632,7 @@ func (mt *MerkleTree) SetTree(leavesCount int, tree []string) error
 SetTree \- set the entire merkle tree
 
 <a name="MerkleTree.VerifyPath"></a>
-### func \(\*MerkleTree\) [VerifyPath](<https://github.com/0chain/gosdk/blob/staging/core/util/merkle_tree.go#L112>)
+### func \(\*MerkleTree\) [VerifyPath](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/merkle_tree.go#L112>)
 
 ```go
 func (mt *MerkleTree) VerifyPath(hash Hashable, path *MTPath) bool
@@ -641,7 +641,7 @@ func (mt *MerkleTree) VerifyPath(hash Hashable, path *MTPath) bool
 VerifyPath \- given a leaf node and the path, verify that the node is part of the tree
 
 <a name="MerkleTreeI"></a>
-## type [MerkleTreeI](<https://github.com/0chain/gosdk/blob/staging/core/util/merkle_tree_interface.go#L11-L27>)
+## type [MerkleTreeI](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/merkle_tree_interface.go#L11-L27>)
 
 MerkleTreeI \- a merkle tree interface required for constructing and providing verification
 
@@ -666,7 +666,7 @@ type MerkleTreeI interface {
 ```
 
 <a name="PostRequest"></a>
-## type [PostRequest](<https://github.com/0chain/gosdk/blob/staging/core/util/httpnet.go#L22-L27>)
+## type [PostRequest](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/httpnet.go#L22-L27>)
 
 
 
@@ -677,7 +677,7 @@ type PostRequest struct {
 ```
 
 <a name="NewHTTPPostRequest"></a>
-### func [NewHTTPPostRequest](<https://github.com/0chain/gosdk/blob/staging/core/util/httpnet.go#L132>)
+### func [NewHTTPPostRequest](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/httpnet.go#L132>)
 
 ```go
 func NewHTTPPostRequest(url string, data interface{}) (*PostRequest, error)
@@ -686,7 +686,7 @@ func NewHTTPPostRequest(url string, data interface{}) (*PostRequest, error)
 
 
 <a name="PostRequest.Post"></a>
-### func \(\*PostRequest\) [Post](<https://github.com/0chain/gosdk/blob/staging/core/util/httpnet.go#L157>)
+### func \(\*PostRequest\) [Post](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/httpnet.go#L157>)
 
 ```go
 func (r *PostRequest) Post() (*PostResponse, error)
@@ -695,7 +695,7 @@ func (r *PostRequest) Post() (*PostResponse, error)
 
 
 <a name="PostResponse"></a>
-## type [PostResponse](<https://github.com/0chain/gosdk/blob/staging/core/util/httpnet.go#L29-L34>)
+## type [PostResponse](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/httpnet.go#L29-L34>)
 
 
 
@@ -709,7 +709,7 @@ type PostResponse struct {
 ```
 
 <a name="Rand"></a>
-## type [Rand](<https://github.com/0chain/gosdk/blob/staging/core/util/rand.go#L68-L70>)
+## type [Rand](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/rand.go#L68-L70>)
 
 Rand a progressive rand
 
@@ -720,7 +720,7 @@ type Rand struct {
 ```
 
 <a name="NewRand"></a>
-### func [NewRand](<https://github.com/0chain/gosdk/blob/staging/core/util/rand.go#L90>)
+### func [NewRand](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/rand.go#L90>)
 
 ```go
 func NewRand(max int) Rand
@@ -729,7 +729,7 @@ func NewRand(max int) Rand
 NewRand create a ProgressiveRand instance
 
 <a name="Rand.Next"></a>
-### func \(\*Rand\) [Next](<https://github.com/0chain/gosdk/blob/staging/core/util/rand.go#L73>)
+### func \(\*Rand\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/rand.go#L73>)
 
 ```go
 func (r *Rand) Next() (int, error)
@@ -738,7 +738,7 @@ func (r *Rand) Next() (int, error)
 Next get next random item
 
 <a name="SecureSerializableValue"></a>
-## type [SecureSerializableValue](<https://github.com/0chain/gosdk/blob/staging/core/util/secure_value.go#L39-L41>)
+## type [SecureSerializableValue](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/secure_value.go#L39-L41>)
 
 SecureSerializableValue \- a proxy persisted value that just tracks the encoded bytes of a persisted value
 
@@ -749,7 +749,7 @@ type SecureSerializableValue struct {
 ```
 
 <a name="SecureSerializableValue.Decode"></a>
-### func \(\*SecureSerializableValue\) [Decode](<https://github.com/0chain/gosdk/blob/staging/core/util/secure_value.go#L64>)
+### func \(\*SecureSerializableValue\) [Decode](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/secure_value.go#L64>)
 
 ```go
 func (spv *SecureSerializableValue) Decode(buf []byte) error
@@ -758,7 +758,7 @@ func (spv *SecureSerializableValue) Decode(buf []byte) error
 Decode \- implement interface
 
 <a name="SecureSerializableValue.Encode"></a>
-### func \(\*SecureSerializableValue\) [Encode](<https://github.com/0chain/gosdk/blob/staging/core/util/secure_value.go#L59>)
+### func \(\*SecureSerializableValue\) [Encode](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/secure_value.go#L59>)
 
 ```go
 func (spv *SecureSerializableValue) Encode() []byte
@@ -767,7 +767,7 @@ func (spv *SecureSerializableValue) Encode() []byte
 Encode \- implement interface
 
 <a name="SecureSerializableValue.GetHash"></a>
-### func \(\*SecureSerializableValue\) [GetHash](<https://github.com/0chain/gosdk/blob/staging/core/util/secure_value.go#L44>)
+### func \(\*SecureSerializableValue\) [GetHash](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/secure_value.go#L44>)
 
 ```go
 func (spv *SecureSerializableValue) GetHash() string
@@ -776,7 +776,7 @@ func (spv *SecureSerializableValue) GetHash() string
 GetHash \- implement interface
 
 <a name="SecureSerializableValue.GetHashBytes"></a>
-### func \(\*SecureSerializableValue\) [GetHashBytes](<https://github.com/0chain/gosdk/blob/staging/core/util/secure_value.go#L54>)
+### func \(\*SecureSerializableValue\) [GetHashBytes](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/secure_value.go#L54>)
 
 ```go
 func (spv *SecureSerializableValue) GetHashBytes() []byte
@@ -785,7 +785,7 @@ func (spv *SecureSerializableValue) GetHashBytes() []byte
 GetHashBytes \- implement interface
 
 <a name="SecureSerializableValueI"></a>
-## type [SecureSerializableValueI](<https://github.com/0chain/gosdk/blob/staging/core/util/secure_value.go#L33-L36>)
+## type [SecureSerializableValueI](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/secure_value.go#L33-L36>)
 
 SecureSerializableValueI an interface that makes a serializable value secure with hashing
 
@@ -797,7 +797,7 @@ type SecureSerializableValueI interface {
 ```
 
 <a name="Serializable"></a>
-## type [Serializable](<https://github.com/0chain/gosdk/blob/staging/core/util/secure_value.go#L18-L21>)
+## type [Serializable](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/secure_value.go#L18-L21>)
 
 Serializable interface
 
@@ -809,7 +809,7 @@ type Serializable interface {
 ```
 
 <a name="StringHashable"></a>
-## type [StringHashable](<https://github.com/0chain/gosdk/blob/staging/core/util/merkle_tree_interface.go#L66-L68>)
+## type [StringHashable](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/merkle_tree_interface.go#L66-L68>)
 
 
 
@@ -820,7 +820,7 @@ type StringHashable struct {
 ```
 
 <a name="NewStringHashable"></a>
-### func [NewStringHashable](<https://github.com/0chain/gosdk/blob/staging/core/util/merkle_tree_interface.go#L70>)
+### func [NewStringHashable](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/merkle_tree_interface.go#L70>)
 
 ```go
 func NewStringHashable(hash string) *StringHashable
@@ -829,7 +829,7 @@ func NewStringHashable(hash string) *StringHashable
 
 
 <a name="StringHashable.GetHash"></a>
-### func \(\*StringHashable\) [GetHash](<https://github.com/0chain/gosdk/blob/staging/core/util/merkle_tree_interface.go#L74>)
+### func \(\*StringHashable\) [GetHash](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/merkle_tree_interface.go#L74>)
 
 ```go
 func (sh *StringHashable) GetHash() string
@@ -838,7 +838,7 @@ func (sh *StringHashable) GetHash() string
 
 
 <a name="StringHashable.GetHashBytes"></a>
-### func \(\*StringHashable\) [GetHashBytes](<https://github.com/0chain/gosdk/blob/staging/core/util/merkle_tree_interface.go#L77>)
+### func \(\*StringHashable\) [GetHashBytes](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/merkle_tree_interface.go#L77>)
 
 ```go
 func (sh *StringHashable) GetHashBytes() []byte
@@ -847,7 +847,7 @@ func (sh *StringHashable) GetHashBytes() []byte
 
 
 <a name="StringHashable.Write"></a>
-### func \(StringHashable\) [Write](<https://github.com/0chain/gosdk/blob/staging/core/util/merkle_tree_interface.go#L81>)
+### func \(StringHashable\) [Write](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/merkle_tree_interface.go#L81>)
 
 ```go
 func (StringHashable) Write(_ []byte) (int, error)
@@ -856,7 +856,7 @@ func (StringHashable) Write(_ []byte) (int, error)
 
 
 <a name="ValidationTree"></a>
-## type [ValidationTree](<https://github.com/0chain/gosdk/blob/staging/core/util/validation_tree.go#L20-L30>)
+## type [ValidationTree](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/validation_tree.go#L20-L30>)
 
 
 
@@ -867,7 +867,7 @@ type ValidationTree struct {
 ```
 
 <a name="NewValidationTree"></a>
-### func [NewValidationTree](<https://github.com/0chain/gosdk/blob/staging/core/util/validation_tree.go#L152>)
+### func [NewValidationTree](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/validation_tree.go#L152>)
 
 ```go
 func NewValidationTree(dataSize int64) *ValidationTree
@@ -876,7 +876,7 @@ func NewValidationTree(dataSize int64) *ValidationTree
 
 
 <a name="ValidationTree.CalculateDepth"></a>
-### func \(\*ValidationTree\) [CalculateDepth](<https://github.com/0chain/gosdk/blob/staging/core/util/validation_tree.go#L93>)
+### func \(\*ValidationTree\) [CalculateDepth](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/validation_tree.go#L93>)
 
 ```go
 func (v *ValidationTree) CalculateDepth() int
@@ -885,7 +885,7 @@ func (v *ValidationTree) CalculateDepth() int
 
 
 <a name="ValidationTree.Finalize"></a>
-### func \(\*ValidationTree\) [Finalize](<https://github.com/0chain/gosdk/blob/staging/core/util/validation_tree.go#L133>)
+### func \(\*ValidationTree\) [Finalize](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/validation_tree.go#L133>)
 
 ```go
 func (v *ValidationTree) Finalize() error
@@ -894,7 +894,7 @@ func (v *ValidationTree) Finalize() error
 
 
 <a name="ValidationTree.GetDataSize"></a>
-### func \(\*ValidationTree\) [GetDataSize](<https://github.com/0chain/gosdk/blob/staging/core/util/validation_tree.go#L40>)
+### func \(\*ValidationTree\) [GetDataSize](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/validation_tree.go#L40>)
 
 ```go
 func (v *ValidationTree) GetDataSize() int64
@@ -903,7 +903,7 @@ func (v *ValidationTree) GetDataSize() int64
 
 
 <a name="ValidationTree.GetLeaves"></a>
-### func \(\*ValidationTree\) [GetLeaves](<https://github.com/0chain/gosdk/blob/staging/core/util/validation_tree.go#L32>)
+### func \(\*ValidationTree\) [GetLeaves](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/validation_tree.go#L32>)
 
 ```go
 func (v *ValidationTree) GetLeaves() [][]byte
@@ -912,7 +912,7 @@ func (v *ValidationTree) GetLeaves() [][]byte
 
 
 <a name="ValidationTree.GetValidationRoot"></a>
-### func \(\*ValidationTree\) [GetValidationRoot](<https://github.com/0chain/gosdk/blob/staging/core/util/validation_tree.go#L44>)
+### func \(\*ValidationTree\) [GetValidationRoot](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/validation_tree.go#L44>)
 
 ```go
 func (v *ValidationTree) GetValidationRoot() []byte
@@ -921,7 +921,7 @@ func (v *ValidationTree) GetValidationRoot() []byte
 
 
 <a name="ValidationTree.SetLeaves"></a>
-### func \(\*ValidationTree\) [SetLeaves](<https://github.com/0chain/gosdk/blob/staging/core/util/validation_tree.go#L36>)
+### func \(\*ValidationTree\) [SetLeaves](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/validation_tree.go#L36>)
 
 ```go
 func (v *ValidationTree) SetLeaves(leaves [][]byte)
@@ -930,7 +930,7 @@ func (v *ValidationTree) SetLeaves(leaves [][]byte)
 
 
 <a name="ValidationTree.Write"></a>
-### func \(\*ValidationTree\) [Write](<https://github.com/0chain/gosdk/blob/staging/core/util/validation_tree.go#L52>)
+### func \(\*ValidationTree\) [Write](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/validation_tree.go#L52>)
 
 ```go
 func (v *ValidationTree) Write(b []byte) (int, error)

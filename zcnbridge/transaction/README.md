@@ -22,7 +22,7 @@ import "github.com/0chain/gosdk/zcnbridge/transaction"
 
 
 <a name="Transaction"></a>
-## type [Transaction](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/transaction/txn.go#L30-L38>)
+## type [Transaction](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/transaction/txn.go#L30-L38>)
 
 Transaction interface describes transaction entity.
 
@@ -39,7 +39,7 @@ type Transaction interface {
 ```
 
 <a name="AddAuthorizer"></a>
-### func [AddAuthorizer](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/transaction/functions.go#L11>)
+### func [AddAuthorizer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/transaction/functions.go#L11>)
 
 ```go
 func AddAuthorizer(ctx context.Context, input *zcncore.AddAuthorizerPayload) (Transaction, error)
@@ -48,7 +48,7 @@ func AddAuthorizer(ctx context.Context, input *zcncore.AddAuthorizerPayload) (Tr
 
 
 <a name="AuthorizerHealthCheck"></a>
-### func [AuthorizerHealthCheck](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/transaction/functions.go#L35>)
+### func [AuthorizerHealthCheck](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/transaction/functions.go#L35>)
 
 ```go
 func AuthorizerHealthCheck(ctx context.Context, input *zcncore.AuthorizerHealthCheckPayload) (Transaction, error)
@@ -57,7 +57,7 @@ func AuthorizerHealthCheck(ctx context.Context, input *zcncore.AuthorizerHealthC
 
 
 <a name="NewTransactionEntity"></a>
-### func [NewTransactionEntity](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/transaction/txn.go#L84>)
+### func [NewTransactionEntity](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/transaction/txn.go#L84>)
 
 ```go
 func NewTransactionEntity(txnFee uint64) (Transaction, error)
@@ -66,7 +66,7 @@ func NewTransactionEntity(txnFee uint64) (Transaction, error)
 NewTransactionEntity creates Transaction with initialized fields. Sets version, client ID, creation date, public key and creates internal zcncore.TransactionScheme.
 
 <a name="Verify"></a>
-### func [Verify](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/transaction/txn.go#L195>)
+### func [Verify](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/transaction/txn.go#L195>)
 
 ```go
 func Verify(ctx context.Context, hash string) (Transaction, error)
@@ -75,7 +75,7 @@ func Verify(ctx context.Context, hash string) (Transaction, error)
 Verify checks including of transaction in the blockchain.
 
 <a name="TransactionCallbackAwaitable"></a>
-## type [TransactionCallbackAwaitable](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/transaction/callback.go#L17-L22>)
+## type [TransactionCallbackAwaitable](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/transaction/callback.go#L17-L22>)
 
 TransactionCallbackAwaitable extends zcncore.TransactionCallback with synchronization methods
 
@@ -89,7 +89,7 @@ type TransactionCallbackAwaitable interface {
 ```
 
 <a name="NewStatus"></a>
-### func [NewStatus](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/transaction/callback.go#L33>)
+### func [NewStatus](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/transaction/callback.go#L33>)
 
 ```go
 func NewStatus() TransactionCallbackAwaitable
@@ -98,7 +98,7 @@ func NewStatus() TransactionCallbackAwaitable
 
 
 <a name="TransactionProvider"></a>
-## type [TransactionProvider](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/transaction/txn.go#L22-L24>)
+## type [TransactionProvider](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/transaction/txn.go#L22-L24>)
 
 TransactionProvider ...
 
@@ -109,7 +109,7 @@ type TransactionProvider interface {
 ```
 
 <a name="NewTransactionProvider"></a>
-### func [NewTransactionProvider](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/transaction/txn.go#L74>)
+### func [NewTransactionProvider](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/transaction/txn.go#L74>)
 
 ```go
 func NewTransactionProvider() TransactionProvider
@@ -118,7 +118,7 @@ func NewTransactionProvider() TransactionProvider
 
 
 <a name="TxnStatus"></a>
-## type [TxnStatus](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/transaction/const.go#L5>)
+## type [TxnStatus](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/transaction/const.go#L5>)
 
 TxnStatus represented zcncore.TransactionCallback operations statuses.
 
@@ -152,7 +152,7 @@ const (
 ```
 
 <a name="TxnStatus.String"></a>
-### func \(TxnStatus\) [String](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/transaction/const.go#L30>)
+### func \(TxnStatus\) [String](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/transaction/const.go#L30>)
 
 ```go
 func (ts TxnStatus) String() string

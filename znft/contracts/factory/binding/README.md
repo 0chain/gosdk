@@ -99,7 +99,7 @@ var BindingMetaData = &bind.MetaData{
 ```
 
 <a name="Binding"></a>
-## type [Binding](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L41-L45>)
+## type [Binding](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L41-L45>)
 
 Binding is an auto generated Go binding around an Ethereum contract.
 
@@ -112,7 +112,7 @@ type Binding struct {
 ```
 
 <a name="NewBinding"></a>
-### func [NewBinding](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L100>)
+### func [NewBinding](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L100>)
 
 ```go
 func NewBinding(address common.Address, backend bind.ContractBackend) (*Binding, error)
@@ -121,7 +121,7 @@ func NewBinding(address common.Address, backend bind.ContractBackend) (*Binding,
 NewBinding creates a new instance of Binding, bound to a specific deployed contract.
 
 <a name="BindingCaller"></a>
-## type [BindingCaller](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L48-L50>)
+## type [BindingCaller](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L48-L50>)
 
 BindingCaller is an auto generated read\-only Go binding around an Ethereum contract.
 
@@ -132,7 +132,7 @@ type BindingCaller struct {
 ```
 
 <a name="NewBindingCaller"></a>
-### func [NewBindingCaller](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L109>)
+### func [NewBindingCaller](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L109>)
 
 ```go
 func NewBindingCaller(address common.Address, caller bind.ContractCaller) (*BindingCaller, error)
@@ -141,7 +141,7 @@ func NewBindingCaller(address common.Address, caller bind.ContractCaller) (*Bind
 NewBindingCaller creates a new read\-only instance of Binding, bound to a specific deployed contract.
 
 <a name="BindingCaller.Count"></a>
-### func \(\*BindingCaller\) [Count](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L185>)
+### func \(\*BindingCaller\) [Count](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L185>)
 
 ```go
 func (_Binding *BindingCaller) Count(opts *bind.CallOpts) (*big.Int, error)
@@ -152,7 +152,7 @@ Count is a free data retrieval call binding the contract method 0x06661abd.
 Solidity: function count\(\) view returns\(uint256\)
 
 <a name="BindingCaller.ModuleRegistry"></a>
-### func \(\*BindingCaller\) [ModuleRegistry](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L216>)
+### func \(\*BindingCaller\) [ModuleRegistry](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L216>)
 
 ```go
 func (_Binding *BindingCaller) ModuleRegistry(opts *bind.CallOpts, arg0 common.Address) (bool, error)
@@ -163,7 +163,7 @@ ModuleRegistry is a free data retrieval call binding the contract method 0x082a1
 Solidity: function moduleRegistry\(address \) view returns\(bool\)
 
 <a name="BindingCaller.Owner"></a>
-### func \(\*BindingCaller\) [Owner](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L247>)
+### func \(\*BindingCaller\) [Owner](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L247>)
 
 ```go
 func (_Binding *BindingCaller) Owner(opts *bind.CallOpts) (common.Address, error)
@@ -174,7 +174,7 @@ Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
 Solidity: function owner\(\) view returns\(address\)
 
 <a name="BindingCaller.TokenList"></a>
-### func \(\*BindingCaller\) [TokenList](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L278>)
+### func \(\*BindingCaller\) [TokenList](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L278>)
 
 ```go
 func (_Binding *BindingCaller) TokenList(opts *bind.CallOpts, arg0 *big.Int) (common.Address, error)
@@ -185,7 +185,7 @@ TokenList is a free data retrieval call binding the contract method 0x9ead7222.
 Solidity: function tokenList\(uint256 \) view returns\(address\)
 
 <a name="BindingCaller.TokenMapping"></a>
-### func \(\*BindingCaller\) [TokenMapping](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L309>)
+### func \(\*BindingCaller\) [TokenMapping](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L309>)
 
 ```go
 func (_Binding *BindingCaller) TokenMapping(opts *bind.CallOpts, arg0 common.Address) (bool, error)
@@ -196,7 +196,7 @@ TokenMapping is a free data retrieval call binding the contract method 0xba27f50
 Solidity: function tokenMapping\(address \) view returns\(bool\)
 
 <a name="BindingCallerRaw"></a>
-## type [BindingCallerRaw](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L90-L92>)
+## type [BindingCallerRaw](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L90-L92>)
 
 BindingCallerRaw is an auto generated low\-level read\-only Go binding around an Ethereum contract.
 
@@ -207,7 +207,7 @@ type BindingCallerRaw struct {
 ```
 
 <a name="BindingCallerRaw.Call"></a>
-### func \(\*BindingCallerRaw\) [Call](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L167>)
+### func \(\*BindingCallerRaw\) [Call](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L167>)
 
 ```go
 func (_Binding *BindingCallerRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error
@@ -216,7 +216,7 @@ func (_Binding *BindingCallerRaw) Call(opts *bind.CallOpts, result *[]interface{
 Call invokes the \(constant\) contract method with params as input values and sets the output to result. The result type might be a single field for simple returns, a slice of interfaces for anonymous returns and a struct for named returns.
 
 <a name="BindingCallerSession"></a>
-## type [BindingCallerSession](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L72-L75>)
+## type [BindingCallerSession](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L72-L75>)
 
 BindingCallerSession is an auto generated read\-only Go binding around an Ethereum contract, with pre\-set call options.
 
@@ -228,7 +228,7 @@ type BindingCallerSession struct {
 ```
 
 <a name="BindingCallerSession.Count"></a>
-### func \(\*BindingCallerSession\) [Count](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L209>)
+### func \(\*BindingCallerSession\) [Count](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L209>)
 
 ```go
 func (_Binding *BindingCallerSession) Count() (*big.Int, error)
@@ -239,7 +239,7 @@ Count is a free data retrieval call binding the contract method 0x06661abd.
 Solidity: function count\(\) view returns\(uint256\)
 
 <a name="BindingCallerSession.ModuleRegistry"></a>
-### func \(\*BindingCallerSession\) [ModuleRegistry](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L240>)
+### func \(\*BindingCallerSession\) [ModuleRegistry](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L240>)
 
 ```go
 func (_Binding *BindingCallerSession) ModuleRegistry(arg0 common.Address) (bool, error)
@@ -250,7 +250,7 @@ ModuleRegistry is a free data retrieval call binding the contract method 0x082a1
 Solidity: function moduleRegistry\(address \) view returns\(bool\)
 
 <a name="BindingCallerSession.Owner"></a>
-### func \(\*BindingCallerSession\) [Owner](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L271>)
+### func \(\*BindingCallerSession\) [Owner](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L271>)
 
 ```go
 func (_Binding *BindingCallerSession) Owner() (common.Address, error)
@@ -261,7 +261,7 @@ Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
 Solidity: function owner\(\) view returns\(address\)
 
 <a name="BindingCallerSession.TokenList"></a>
-### func \(\*BindingCallerSession\) [TokenList](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L302>)
+### func \(\*BindingCallerSession\) [TokenList](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L302>)
 
 ```go
 func (_Binding *BindingCallerSession) TokenList(arg0 *big.Int) (common.Address, error)
@@ -272,7 +272,7 @@ TokenList is a free data retrieval call binding the contract method 0x9ead7222.
 Solidity: function tokenList\(uint256 \) view returns\(address\)
 
 <a name="BindingCallerSession.TokenMapping"></a>
-### func \(\*BindingCallerSession\) [TokenMapping](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L333>)
+### func \(\*BindingCallerSession\) [TokenMapping](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L333>)
 
 ```go
 func (_Binding *BindingCallerSession) TokenMapping(arg0 common.Address) (bool, error)
@@ -283,7 +283,7 @@ TokenMapping is a free data retrieval call binding the contract method 0xba27f50
 Solidity: function tokenMapping\(address \) view returns\(bool\)
 
 <a name="BindingFilterer"></a>
-## type [BindingFilterer](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L58-L60>)
+## type [BindingFilterer](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L58-L60>)
 
 BindingFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
 
@@ -294,7 +294,7 @@ type BindingFilterer struct {
 ```
 
 <a name="NewBindingFilterer"></a>
-### func [NewBindingFilterer](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L127>)
+### func [NewBindingFilterer](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L127>)
 
 ```go
 func NewBindingFilterer(address common.Address, filterer bind.ContractFilterer) (*BindingFilterer, error)
@@ -303,7 +303,7 @@ func NewBindingFilterer(address common.Address, filterer bind.ContractFilterer) 
 NewBindingFilterer creates a new log filterer instance of Binding, bound to a specific deployed contract.
 
 <a name="BindingFilterer.FilterModuleRegistered"></a>
-### func \(\*BindingFilterer\) [FilterModuleRegistered](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L498>)
+### func \(\*BindingFilterer\) [FilterModuleRegistered](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L498>)
 
 ```go
 func (_Binding *BindingFilterer) FilterModuleRegistered(opts *bind.FilterOpts, module []common.Address) (*BindingModuleRegisteredIterator, error)
@@ -314,7 +314,7 @@ FilterModuleRegistered is a free log retrieval operation binding the contract ev
 Solidity: event ModuleRegistered\(address indexed module, bool status\)
 
 <a name="BindingFilterer.FilterOwnershipTransferred"></a>
-### func \(\*BindingFilterer\) [FilterOwnershipTransferred](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L643>)
+### func \(\*BindingFilterer\) [FilterOwnershipTransferred](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L643>)
 
 ```go
 func (_Binding *BindingFilterer) FilterOwnershipTransferred(opts *bind.FilterOpts, previousOwner []common.Address, newOwner []common.Address) (*BindingOwnershipTransferredIterator, error)
@@ -325,7 +325,7 @@ FilterOwnershipTransferred is a free log retrieval operation binding the contrac
 Solidity: event OwnershipTransferred\(address indexed previousOwner, address indexed newOwner\)
 
 <a name="BindingFilterer.FilterTokenCreated"></a>
-### func \(\*BindingFilterer\) [FilterTokenCreated](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L796>)
+### func \(\*BindingFilterer\) [FilterTokenCreated](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L796>)
 
 ```go
 func (_Binding *BindingFilterer) FilterTokenCreated(opts *bind.FilterOpts, owner []common.Address) (*BindingTokenCreatedIterator, error)
@@ -336,7 +336,7 @@ FilterTokenCreated is a free log retrieval operation binding the contract event 
 Solidity: event TokenCreated\(address indexed owner, address token\)
 
 <a name="BindingFilterer.ParseModuleRegistered"></a>
-### func \(\*BindingFilterer\) [ParseModuleRegistered](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L557>)
+### func \(\*BindingFilterer\) [ParseModuleRegistered](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L557>)
 
 ```go
 func (_Binding *BindingFilterer) ParseModuleRegistered(log types.Log) (*BindingModuleRegistered, error)
@@ -347,7 +347,7 @@ ParseModuleRegistered is a log parse operation binding the contract event 0x3009
 Solidity: event ModuleRegistered\(address indexed module, bool status\)
 
 <a name="BindingFilterer.ParseOwnershipTransferred"></a>
-### func \(\*BindingFilterer\) [ParseOwnershipTransferred](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L710>)
+### func \(\*BindingFilterer\) [ParseOwnershipTransferred](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L710>)
 
 ```go
 func (_Binding *BindingFilterer) ParseOwnershipTransferred(log types.Log) (*BindingOwnershipTransferred, error)
@@ -358,7 +358,7 @@ ParseOwnershipTransferred is a log parse operation binding the contract event 0x
 Solidity: event OwnershipTransferred\(address indexed previousOwner, address indexed newOwner\)
 
 <a name="BindingFilterer.ParseTokenCreated"></a>
-### func \(\*BindingFilterer\) [ParseTokenCreated](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L855>)
+### func \(\*BindingFilterer\) [ParseTokenCreated](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L855>)
 
 ```go
 func (_Binding *BindingFilterer) ParseTokenCreated(log types.Log) (*BindingTokenCreated, error)
@@ -369,7 +369,7 @@ ParseTokenCreated is a log parse operation binding the contract event 0xd5f9bdf1
 Solidity: event TokenCreated\(address indexed owner, address token\)
 
 <a name="BindingFilterer.WatchModuleRegistered"></a>
-### func \(\*BindingFilterer\) [WatchModuleRegistered](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L515>)
+### func \(\*BindingFilterer\) [WatchModuleRegistered](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L515>)
 
 ```go
 func (_Binding *BindingFilterer) WatchModuleRegistered(opts *bind.WatchOpts, sink chan<- *BindingModuleRegistered, module []common.Address) (event.Subscription, error)
@@ -380,7 +380,7 @@ WatchModuleRegistered is a free log subscription operation binding the contract 
 Solidity: event ModuleRegistered\(address indexed module, bool status\)
 
 <a name="BindingFilterer.WatchOwnershipTransferred"></a>
-### func \(\*BindingFilterer\) [WatchOwnershipTransferred](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L664>)
+### func \(\*BindingFilterer\) [WatchOwnershipTransferred](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L664>)
 
 ```go
 func (_Binding *BindingFilterer) WatchOwnershipTransferred(opts *bind.WatchOpts, sink chan<- *BindingOwnershipTransferred, previousOwner []common.Address, newOwner []common.Address) (event.Subscription, error)
@@ -391,7 +391,7 @@ WatchOwnershipTransferred is a free log subscription operation binding the contr
 Solidity: event OwnershipTransferred\(address indexed previousOwner, address indexed newOwner\)
 
 <a name="BindingFilterer.WatchTokenCreated"></a>
-### func \(\*BindingFilterer\) [WatchTokenCreated](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L813>)
+### func \(\*BindingFilterer\) [WatchTokenCreated](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L813>)
 
 ```go
 func (_Binding *BindingFilterer) WatchTokenCreated(opts *bind.WatchOpts, sink chan<- *BindingTokenCreated, owner []common.Address) (event.Subscription, error)
@@ -402,7 +402,7 @@ WatchTokenCreated is a free log subscription operation binding the contract even
 Solidity: event TokenCreated\(address indexed owner, address token\)
 
 <a name="BindingModuleRegistered"></a>
-## type [BindingModuleRegistered](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L489-L493>)
+## type [BindingModuleRegistered](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L489-L493>)
 
 BindingModuleRegistered represents a ModuleRegistered event raised by the Binding contract.
 
@@ -415,7 +415,7 @@ type BindingModuleRegistered struct {
 ```
 
 <a name="BindingModuleRegisteredIterator"></a>
-## type [BindingModuleRegisteredIterator](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L422-L432>)
+## type [BindingModuleRegisteredIterator](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L422-L432>)
 
 BindingModuleRegisteredIterator is returned from FilterModuleRegistered and is used to iterate over the raw logs and unpacked data for ModuleRegistered events raised by the Binding contract.
 
@@ -427,7 +427,7 @@ type BindingModuleRegisteredIterator struct {
 ```
 
 <a name="BindingModuleRegisteredIterator.Close"></a>
-### func \(\*BindingModuleRegisteredIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L483>)
+### func \(\*BindingModuleRegisteredIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L483>)
 
 ```go
 func (it *BindingModuleRegisteredIterator) Close() error
@@ -436,7 +436,7 @@ func (it *BindingModuleRegisteredIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="BindingModuleRegisteredIterator.Error"></a>
-### func \(\*BindingModuleRegisteredIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L477>)
+### func \(\*BindingModuleRegisteredIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L477>)
 
 ```go
 func (it *BindingModuleRegisteredIterator) Error() error
@@ -445,7 +445,7 @@ func (it *BindingModuleRegisteredIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="BindingModuleRegisteredIterator.Next"></a>
-### func \(\*BindingModuleRegisteredIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L437>)
+### func \(\*BindingModuleRegisteredIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L437>)
 
 ```go
 func (it *BindingModuleRegisteredIterator) Next() bool
@@ -454,7 +454,7 @@ func (it *BindingModuleRegisteredIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="BindingOwnershipTransferred"></a>
-## type [BindingOwnershipTransferred](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L634-L638>)
+## type [BindingOwnershipTransferred](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L634-L638>)
 
 BindingOwnershipTransferred represents a OwnershipTransferred event raised by the Binding contract.
 
@@ -467,7 +467,7 @@ type BindingOwnershipTransferred struct {
 ```
 
 <a name="BindingOwnershipTransferredIterator"></a>
-## type [BindingOwnershipTransferredIterator](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L567-L577>)
+## type [BindingOwnershipTransferredIterator](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L567-L577>)
 
 BindingOwnershipTransferredIterator is returned from FilterOwnershipTransferred and is used to iterate over the raw logs and unpacked data for OwnershipTransferred events raised by the Binding contract.
 
@@ -479,7 +479,7 @@ type BindingOwnershipTransferredIterator struct {
 ```
 
 <a name="BindingOwnershipTransferredIterator.Close"></a>
-### func \(\*BindingOwnershipTransferredIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L628>)
+### func \(\*BindingOwnershipTransferredIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L628>)
 
 ```go
 func (it *BindingOwnershipTransferredIterator) Close() error
@@ -488,7 +488,7 @@ func (it *BindingOwnershipTransferredIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="BindingOwnershipTransferredIterator.Error"></a>
-### func \(\*BindingOwnershipTransferredIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L622>)
+### func \(\*BindingOwnershipTransferredIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L622>)
 
 ```go
 func (it *BindingOwnershipTransferredIterator) Error() error
@@ -497,7 +497,7 @@ func (it *BindingOwnershipTransferredIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="BindingOwnershipTransferredIterator.Next"></a>
-### func \(\*BindingOwnershipTransferredIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L582>)
+### func \(\*BindingOwnershipTransferredIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L582>)
 
 ```go
 func (it *BindingOwnershipTransferredIterator) Next() bool
@@ -506,7 +506,7 @@ func (it *BindingOwnershipTransferredIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="BindingRaw"></a>
-## type [BindingRaw](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L85-L87>)
+## type [BindingRaw](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L85-L87>)
 
 BindingRaw is an auto generated low\-level Go binding around an Ethereum contract.
 
@@ -517,7 +517,7 @@ type BindingRaw struct {
 ```
 
 <a name="BindingRaw.Call"></a>
-### func \(\*BindingRaw\) [Call](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L148>)
+### func \(\*BindingRaw\) [Call](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L148>)
 
 ```go
 func (_Binding *BindingRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error
@@ -526,7 +526,7 @@ func (_Binding *BindingRaw) Call(opts *bind.CallOpts, result *[]interface{}, met
 Call invokes the \(constant\) contract method with params as input values and sets the output to result. The result type might be a single field for simple returns, a slice of interfaces for anonymous returns and a struct for named returns.
 
 <a name="BindingRaw.Transact"></a>
-### func \(\*BindingRaw\) [Transact](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L159>)
+### func \(\*BindingRaw\) [Transact](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L159>)
 
 ```go
 func (_Binding *BindingRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error)
@@ -535,7 +535,7 @@ func (_Binding *BindingRaw) Transact(opts *bind.TransactOpts, method string, par
 Transact invokes the \(paid\) contract method with params as input values.
 
 <a name="BindingRaw.Transfer"></a>
-### func \(\*BindingRaw\) [Transfer](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L154>)
+### func \(\*BindingRaw\) [Transfer](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L154>)
 
 ```go
 func (_Binding *BindingRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error)
@@ -544,7 +544,7 @@ func (_Binding *BindingRaw) Transfer(opts *bind.TransactOpts) (*types.Transactio
 Transfer initiates a plain transaction to move funds to the contract, calling its default method if one is available.
 
 <a name="BindingSession"></a>
-## type [BindingSession](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L64-L68>)
+## type [BindingSession](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L64-L68>)
 
 BindingSession is an auto generated Go binding around an Ethereum contract, with pre\-set call and transact options.
 
@@ -557,7 +557,7 @@ type BindingSession struct {
 ```
 
 <a name="BindingSession.Count"></a>
-### func \(\*BindingSession\) [Count](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L202>)
+### func \(\*BindingSession\) [Count](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L202>)
 
 ```go
 func (_Binding *BindingSession) Count() (*big.Int, error)
@@ -568,7 +568,7 @@ Count is a free data retrieval call binding the contract method 0x06661abd.
 Solidity: function count\(\) view returns\(uint256\)
 
 <a name="BindingSession.Create"></a>
-### func \(\*BindingSession\) [Create](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L347>)
+### func \(\*BindingSession\) [Create](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L347>)
 
 ```go
 func (_Binding *BindingSession) Create(module common.Address, name string, symbol string, uri string, data []byte) (*types.Transaction, error)
@@ -579,7 +579,7 @@ Create is a paid mutator transaction binding the contract method 0x9eeeaa75.
 Solidity: function create\(address module, string name, string symbol, string uri, bytes data\) returns\(address\)
 
 <a name="BindingSession.ModuleRegistry"></a>
-### func \(\*BindingSession\) [ModuleRegistry](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L233>)
+### func \(\*BindingSession\) [ModuleRegistry](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L233>)
 
 ```go
 func (_Binding *BindingSession) ModuleRegistry(arg0 common.Address) (bool, error)
@@ -590,7 +590,7 @@ ModuleRegistry is a free data retrieval call binding the contract method 0x082a1
 Solidity: function moduleRegistry\(address \) view returns\(bool\)
 
 <a name="BindingSession.Owner"></a>
-### func \(\*BindingSession\) [Owner](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L264>)
+### func \(\*BindingSession\) [Owner](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L264>)
 
 ```go
 func (_Binding *BindingSession) Owner() (common.Address, error)
@@ -601,7 +601,7 @@ Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
 Solidity: function owner\(\) view returns\(address\)
 
 <a name="BindingSession.Register"></a>
-### func \(\*BindingSession\) [Register](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L368>)
+### func \(\*BindingSession\) [Register](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L368>)
 
 ```go
 func (_Binding *BindingSession) Register(module common.Address, status bool) (*types.Transaction, error)
@@ -612,7 +612,7 @@ Register is a paid mutator transaction binding the contract method 0xab01b469.
 Solidity: function register\(address module, bool status\) returns\(\)
 
 <a name="BindingSession.RenounceOwnership"></a>
-### func \(\*BindingSession\) [RenounceOwnership](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L389>)
+### func \(\*BindingSession\) [RenounceOwnership](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L389>)
 
 ```go
 func (_Binding *BindingSession) RenounceOwnership() (*types.Transaction, error)
@@ -623,7 +623,7 @@ RenounceOwnership is a paid mutator transaction binding the contract method 0x71
 Solidity: function renounceOwnership\(\) returns\(\)
 
 <a name="BindingSession.TokenList"></a>
-### func \(\*BindingSession\) [TokenList](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L295>)
+### func \(\*BindingSession\) [TokenList](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L295>)
 
 ```go
 func (_Binding *BindingSession) TokenList(arg0 *big.Int) (common.Address, error)
@@ -634,7 +634,7 @@ TokenList is a free data retrieval call binding the contract method 0x9ead7222.
 Solidity: function tokenList\(uint256 \) view returns\(address\)
 
 <a name="BindingSession.TokenMapping"></a>
-### func \(\*BindingSession\) [TokenMapping](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L326>)
+### func \(\*BindingSession\) [TokenMapping](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L326>)
 
 ```go
 func (_Binding *BindingSession) TokenMapping(arg0 common.Address) (bool, error)
@@ -645,7 +645,7 @@ TokenMapping is a free data retrieval call binding the contract method 0xba27f50
 Solidity: function tokenMapping\(address \) view returns\(bool\)
 
 <a name="BindingSession.TransferOwnership"></a>
-### func \(\*BindingSession\) [TransferOwnership](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L410>)
+### func \(\*BindingSession\) [TransferOwnership](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L410>)
 
 ```go
 func (_Binding *BindingSession) TransferOwnership(newOwner common.Address) (*types.Transaction, error)
@@ -656,7 +656,7 @@ TransferOwnership is a paid mutator transaction binding the contract method 0xf2
 Solidity: function transferOwnership\(address newOwner\) returns\(\)
 
 <a name="BindingTokenCreated"></a>
-## type [BindingTokenCreated](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L787-L791>)
+## type [BindingTokenCreated](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L787-L791>)
 
 BindingTokenCreated represents a TokenCreated event raised by the Binding contract.
 
@@ -669,7 +669,7 @@ type BindingTokenCreated struct {
 ```
 
 <a name="BindingTokenCreatedIterator"></a>
-## type [BindingTokenCreatedIterator](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L720-L730>)
+## type [BindingTokenCreatedIterator](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L720-L730>)
 
 BindingTokenCreatedIterator is returned from FilterTokenCreated and is used to iterate over the raw logs and unpacked data for TokenCreated events raised by the Binding contract.
 
@@ -681,7 +681,7 @@ type BindingTokenCreatedIterator struct {
 ```
 
 <a name="BindingTokenCreatedIterator.Close"></a>
-### func \(\*BindingTokenCreatedIterator\) [Close](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L781>)
+### func \(\*BindingTokenCreatedIterator\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L781>)
 
 ```go
 func (it *BindingTokenCreatedIterator) Close() error
@@ -690,7 +690,7 @@ func (it *BindingTokenCreatedIterator) Close() error
 Close terminates the iteration process, releasing any pending underlying resources.
 
 <a name="BindingTokenCreatedIterator.Error"></a>
-### func \(\*BindingTokenCreatedIterator\) [Error](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L775>)
+### func \(\*BindingTokenCreatedIterator\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L775>)
 
 ```go
 func (it *BindingTokenCreatedIterator) Error() error
@@ -699,7 +699,7 @@ func (it *BindingTokenCreatedIterator) Error() error
 Error returns any retrieval or parsing error occurred during filtering.
 
 <a name="BindingTokenCreatedIterator.Next"></a>
-### func \(\*BindingTokenCreatedIterator\) [Next](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L735>)
+### func \(\*BindingTokenCreatedIterator\) [Next](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L735>)
 
 ```go
 func (it *BindingTokenCreatedIterator) Next() bool
@@ -708,7 +708,7 @@ func (it *BindingTokenCreatedIterator) Next() bool
 Next advances the iterator to the subsequent event, returning whether there are any more events found. In case of a retrieval or parsing error, false is returned and Error\(\) can be queried for the exact failure.
 
 <a name="BindingTransactor"></a>
-## type [BindingTransactor](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L53-L55>)
+## type [BindingTransactor](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L53-L55>)
 
 BindingTransactor is an auto generated write\-only Go binding around an Ethereum contract.
 
@@ -719,7 +719,7 @@ type BindingTransactor struct {
 ```
 
 <a name="NewBindingTransactor"></a>
-### func [NewBindingTransactor](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L118>)
+### func [NewBindingTransactor](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L118>)
 
 ```go
 func NewBindingTransactor(address common.Address, transactor bind.ContractTransactor) (*BindingTransactor, error)
@@ -728,7 +728,7 @@ func NewBindingTransactor(address common.Address, transactor bind.ContractTransa
 NewBindingTransactor creates a new write\-only instance of Binding, bound to a specific deployed contract.
 
 <a name="BindingTransactor.Create"></a>
-### func \(\*BindingTransactor\) [Create](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L340>)
+### func \(\*BindingTransactor\) [Create](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L340>)
 
 ```go
 func (_Binding *BindingTransactor) Create(opts *bind.TransactOpts, module common.Address, name string, symbol string, uri string, data []byte) (*types.Transaction, error)
@@ -739,7 +739,7 @@ Create is a paid mutator transaction binding the contract method 0x9eeeaa75.
 Solidity: function create\(address module, string name, string symbol, string uri, bytes data\) returns\(address\)
 
 <a name="BindingTransactor.Register"></a>
-### func \(\*BindingTransactor\) [Register](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L361>)
+### func \(\*BindingTransactor\) [Register](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L361>)
 
 ```go
 func (_Binding *BindingTransactor) Register(opts *bind.TransactOpts, module common.Address, status bool) (*types.Transaction, error)
@@ -750,7 +750,7 @@ Register is a paid mutator transaction binding the contract method 0xab01b469.
 Solidity: function register\(address module, bool status\) returns\(\)
 
 <a name="BindingTransactor.RenounceOwnership"></a>
-### func \(\*BindingTransactor\) [RenounceOwnership](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L382>)
+### func \(\*BindingTransactor\) [RenounceOwnership](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L382>)
 
 ```go
 func (_Binding *BindingTransactor) RenounceOwnership(opts *bind.TransactOpts) (*types.Transaction, error)
@@ -761,7 +761,7 @@ RenounceOwnership is a paid mutator transaction binding the contract method 0x71
 Solidity: function renounceOwnership\(\) returns\(\)
 
 <a name="BindingTransactor.TransferOwnership"></a>
-### func \(\*BindingTransactor\) [TransferOwnership](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L403>)
+### func \(\*BindingTransactor\) [TransferOwnership](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L403>)
 
 ```go
 func (_Binding *BindingTransactor) TransferOwnership(opts *bind.TransactOpts, newOwner common.Address) (*types.Transaction, error)
@@ -772,7 +772,7 @@ TransferOwnership is a paid mutator transaction binding the contract method 0xf2
 Solidity: function transferOwnership\(address newOwner\) returns\(\)
 
 <a name="BindingTransactorRaw"></a>
-## type [BindingTransactorRaw](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L95-L97>)
+## type [BindingTransactorRaw](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L95-L97>)
 
 BindingTransactorRaw is an auto generated low\-level write\-only Go binding around an Ethereum contract.
 
@@ -783,7 +783,7 @@ type BindingTransactorRaw struct {
 ```
 
 <a name="BindingTransactorRaw.Transact"></a>
-### func \(\*BindingTransactorRaw\) [Transact](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L178>)
+### func \(\*BindingTransactorRaw\) [Transact](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L178>)
 
 ```go
 func (_Binding *BindingTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error)
@@ -792,7 +792,7 @@ func (_Binding *BindingTransactorRaw) Transact(opts *bind.TransactOpts, method s
 Transact invokes the \(paid\) contract method with params as input values.
 
 <a name="BindingTransactorRaw.Transfer"></a>
-### func \(\*BindingTransactorRaw\) [Transfer](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L173>)
+### func \(\*BindingTransactorRaw\) [Transfer](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L173>)
 
 ```go
 func (_Binding *BindingTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error)
@@ -801,7 +801,7 @@ func (_Binding *BindingTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.
 Transfer initiates a plain transaction to move funds to the contract, calling its default method if one is available.
 
 <a name="BindingTransactorSession"></a>
-## type [BindingTransactorSession](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L79-L82>)
+## type [BindingTransactorSession](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L79-L82>)
 
 BindingTransactorSession is an auto generated write\-only Go binding around an Ethereum contract, with pre\-set transact options.
 
@@ -813,7 +813,7 @@ type BindingTransactorSession struct {
 ```
 
 <a name="BindingTransactorSession.Create"></a>
-### func \(\*BindingTransactorSession\) [Create](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L354>)
+### func \(\*BindingTransactorSession\) [Create](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L354>)
 
 ```go
 func (_Binding *BindingTransactorSession) Create(module common.Address, name string, symbol string, uri string, data []byte) (*types.Transaction, error)
@@ -824,7 +824,7 @@ Create is a paid mutator transaction binding the contract method 0x9eeeaa75.
 Solidity: function create\(address module, string name, string symbol, string uri, bytes data\) returns\(address\)
 
 <a name="BindingTransactorSession.Register"></a>
-### func \(\*BindingTransactorSession\) [Register](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L375>)
+### func \(\*BindingTransactorSession\) [Register](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L375>)
 
 ```go
 func (_Binding *BindingTransactorSession) Register(module common.Address, status bool) (*types.Transaction, error)
@@ -835,7 +835,7 @@ Register is a paid mutator transaction binding the contract method 0xab01b469.
 Solidity: function register\(address module, bool status\) returns\(\)
 
 <a name="BindingTransactorSession.RenounceOwnership"></a>
-### func \(\*BindingTransactorSession\) [RenounceOwnership](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L396>)
+### func \(\*BindingTransactorSession\) [RenounceOwnership](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L396>)
 
 ```go
 func (_Binding *BindingTransactorSession) RenounceOwnership() (*types.Transaction, error)
@@ -846,7 +846,7 @@ RenounceOwnership is a paid mutator transaction binding the contract method 0x71
 Solidity: function renounceOwnership\(\) returns\(\)
 
 <a name="BindingTransactorSession.TransferOwnership"></a>
-### func \(\*BindingTransactorSession\) [TransferOwnership](<https://github.com/0chain/gosdk/blob/staging/znft/contracts/factory/binding/factory.go#L417>)
+### func \(\*BindingTransactorSession\) [TransferOwnership](<https://github.com/0chain/gosdk/blob/doc/initial/znft/contracts/factory/binding/factory.go#L417>)
 
 ```go
 func (_Binding *BindingTransactorSession) TransferOwnership(newOwner common.Address) (*types.Transaction, error)

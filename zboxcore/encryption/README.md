@@ -43,7 +43,7 @@ import "github.com/0chain/gosdk/zboxcore/encryption"
 
 
 <a name="UnmarshallPublicKey"></a>
-## func [UnmarshallPublicKey](<https://github.com/0chain/gosdk/blob/staging/zboxcore/encryption/pre.go#L417>)
+## func [UnmarshallPublicKey](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/encryption/pre.go#L417>)
 
 ```go
 func UnmarshallPublicKey(publicKey string) (kyber.Point, error)
@@ -52,7 +52,7 @@ func UnmarshallPublicKey(publicKey string) (kyber.Point, error)
 
 
 <a name="EncryptedMessage"></a>
-## type [EncryptedMessage](<https://github.com/0chain/gosdk/blob/staging/zboxcore/encryption/scheme.go#L25-L31>)
+## type [EncryptedMessage](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/encryption/scheme.go#L25-L31>)
 
 
 
@@ -67,7 +67,7 @@ type EncryptedMessage struct {
 ```
 
 <a name="EncryptionScheme"></a>
-## type [EncryptionScheme](<https://github.com/0chain/gosdk/blob/staging/zboxcore/encryption/scheme.go#L3-L19>)
+## type [EncryptionScheme](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/encryption/scheme.go#L3-L19>)
 
 
 
@@ -92,7 +92,7 @@ type EncryptionScheme interface {
 ```
 
 <a name="NewEncryptionScheme"></a>
-### func [NewEncryptionScheme](<https://github.com/0chain/gosdk/blob/staging/zboxcore/encryption/scheme.go#L21>)
+### func [NewEncryptionScheme](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/encryption/scheme.go#L21>)
 
 ```go
 func NewEncryptionScheme() EncryptionScheme
@@ -101,7 +101,7 @@ func NewEncryptionScheme() EncryptionScheme
 
 
 <a name="PREEncryptedMessage"></a>
-## type [PREEncryptedMessage](<https://github.com/0chain/gosdk/blob/staging/zboxcore/encryption/pre.go#L36-L42>)
+## type [PREEncryptedMessage](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/encryption/pre.go#L36-L42>)
 
 
 
@@ -116,7 +116,7 @@ type PREEncryptedMessage struct {
 ```
 
 <a name="PREEncryptedMessage.MarshalJSON"></a>
-### func \(\*PREEncryptedMessage\) [MarshalJSON](<https://github.com/0chain/gosdk/blob/staging/zboxcore/encryption/pre.go#L105>)
+### func \(\*PREEncryptedMessage\) [MarshalJSON](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/encryption/pre.go#L105>)
 
 ```go
 func (u *PREEncryptedMessage) MarshalJSON() ([]byte, error)
@@ -125,7 +125,7 @@ func (u *PREEncryptedMessage) MarshalJSON() ([]byte, error)
 
 
 <a name="PREEncryptionScheme"></a>
-## type [PREEncryptionScheme](<https://github.com/0chain/gosdk/blob/staging/zboxcore/encryption/pre.go#L26-L34>)
+## type [PREEncryptionScheme](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/encryption/pre.go#L26-L34>)
 
 
 
@@ -142,7 +142,7 @@ type PREEncryptionScheme struct {
 ```
 
 <a name="PREEncryptionScheme.Decrypt"></a>
-### func \(\*PREEncryptionScheme\) [Decrypt](<https://github.com/0chain/gosdk/blob/staging/zboxcore/encryption/pre.go#L587>)
+### func \(\*PREEncryptionScheme\) [Decrypt](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/encryption/pre.go#L587>)
 
 ```go
 func (pre *PREEncryptionScheme) Decrypt(encMsg *EncryptedMessage) ([]byte, error)
@@ -151,7 +151,7 @@ func (pre *PREEncryptionScheme) Decrypt(encMsg *EncryptedMessage) ([]byte, error
 
 
 <a name="PREEncryptionScheme.Encrypt"></a>
-### func \(\*PREEncryptionScheme\) [Encrypt](<https://github.com/0chain/gosdk/blob/staging/zboxcore/encryption/pre.go#L449>)
+### func \(\*PREEncryptionScheme\) [Encrypt](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/encryption/pre.go#L449>)
 
 ```go
 func (pre *PREEncryptionScheme) Encrypt(data []byte) (*EncryptedMessage, error)
@@ -160,7 +160,7 @@ func (pre *PREEncryptionScheme) Encrypt(data []byte) (*EncryptedMessage, error)
 
 
 <a name="PREEncryptionScheme.GetEncryptedKey"></a>
-### func \(\*PREEncryptionScheme\) [GetEncryptedKey](<https://github.com/0chain/gosdk/blob/staging/zboxcore/encryption/pre.go#L606>)
+### func \(\*PREEncryptionScheme\) [GetEncryptedKey](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/encryption/pre.go#L606>)
 
 ```go
 func (pre *PREEncryptionScheme) GetEncryptedKey() string
@@ -169,7 +169,7 @@ func (pre *PREEncryptionScheme) GetEncryptedKey() string
 
 
 <a name="PREEncryptionScheme.GetEncryptedKeyPoint"></a>
-### func \(\*PREEncryptionScheme\) [GetEncryptedKeyPoint](<https://github.com/0chain/gosdk/blob/staging/zboxcore/encryption/pre.go#L612>)
+### func \(\*PREEncryptionScheme\) [GetEncryptedKeyPoint](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/encryption/pre.go#L612>)
 
 ```go
 func (pre *PREEncryptionScheme) GetEncryptedKeyPoint() string
@@ -178,7 +178,7 @@ func (pre *PREEncryptionScheme) GetEncryptedKeyPoint() string
 
 
 <a name="PREEncryptionScheme.GetPrivateKey"></a>
-### func \(\*PREEncryptionScheme\) [GetPrivateKey](<https://github.com/0chain/gosdk/blob/staging/zboxcore/encryption/pre.go#L627>)
+### func \(\*PREEncryptionScheme\) [GetPrivateKey](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/encryption/pre.go#L627>)
 
 ```go
 func (pre *PREEncryptionScheme) GetPrivateKey() (string, error)
@@ -187,7 +187,7 @@ func (pre *PREEncryptionScheme) GetPrivateKey() (string, error)
 
 
 <a name="PREEncryptionScheme.GetPublicKey"></a>
-### func \(\*PREEncryptionScheme\) [GetPublicKey](<https://github.com/0chain/gosdk/blob/staging/zboxcore/encryption/pre.go#L618>)
+### func \(\*PREEncryptionScheme\) [GetPublicKey](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/encryption/pre.go#L618>)
 
 ```go
 func (pre *PREEncryptionScheme) GetPublicKey() (string, error)
@@ -196,7 +196,7 @@ func (pre *PREEncryptionScheme) GetPublicKey() (string, error)
 
 
 <a name="PREEncryptionScheme.GetReGenKey"></a>
-### func \(\*PREEncryptionScheme\) [GetReGenKey](<https://github.com/0chain/gosdk/blob/staging/zboxcore/encryption/pre.go#L636>)
+### func \(\*PREEncryptionScheme\) [GetReGenKey](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/encryption/pre.go#L636>)
 
 ```go
 func (pre *PREEncryptionScheme) GetReGenKey(encPublicKey string, tag string) (string, error)
@@ -205,7 +205,7 @@ func (pre *PREEncryptionScheme) GetReGenKey(encPublicKey string, tag string) (st
 
 
 <a name="PREEncryptionScheme.InitForDecryption"></a>
-### func \(\*PREEncryptionScheme\) [InitForDecryption](<https://github.com/0chain/gosdk/blob/staging/zboxcore/encryption/pre.go#L267>)
+### func \(\*PREEncryptionScheme\) [InitForDecryption](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/encryption/pre.go#L267>)
 
 ```go
 func (pre *PREEncryptionScheme) InitForDecryption(tag string, encryptedKey string) error
@@ -214,7 +214,7 @@ func (pre *PREEncryptionScheme) InitForDecryption(tag string, encryptedKey strin
 
 
 <a name="PREEncryptionScheme.InitForDecryptionWithPoint"></a>
-### func \(\*PREEncryptionScheme\) [InitForDecryptionWithPoint](<https://github.com/0chain/gosdk/blob/staging/zboxcore/encryption/pre.go#L263>)
+### func \(\*PREEncryptionScheme\) [InitForDecryptionWithPoint](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/encryption/pre.go#L263>)
 
 ```go
 func (pre *PREEncryptionScheme) InitForDecryptionWithPoint(tag, point string) error
@@ -223,7 +223,7 @@ func (pre *PREEncryptionScheme) InitForDecryptionWithPoint(tag, point string) er
 
 
 <a name="PREEncryptionScheme.InitForEncryption"></a>
-### func \(\*PREEncryptionScheme\) [InitForEncryption](<https://github.com/0chain/gosdk/blob/staging/zboxcore/encryption/pre.go#L234>)
+### func \(\*PREEncryptionScheme\) [InitForEncryption](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/encryption/pre.go#L234>)
 
 ```go
 func (pre *PREEncryptionScheme) InitForEncryption(tag string)
@@ -232,7 +232,7 @@ func (pre *PREEncryptionScheme) InitForEncryption(tag string)
 
 
 <a name="PREEncryptionScheme.InitForEncryptionWithPoint"></a>
-### func \(\*PREEncryptionScheme\) [InitForEncryptionWithPoint](<https://github.com/0chain/gosdk/blob/staging/zboxcore/encryption/pre.go#L243>)
+### func \(\*PREEncryptionScheme\) [InitForEncryptionWithPoint](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/encryption/pre.go#L243>)
 
 ```go
 func (pre *PREEncryptionScheme) InitForEncryptionWithPoint(tag, point string) error
@@ -241,7 +241,7 @@ func (pre *PREEncryptionScheme) InitForEncryptionWithPoint(tag, point string) er
 
 
 <a name="PREEncryptionScheme.Initialize"></a>
-### func \(\*PREEncryptionScheme\) [Initialize](<https://github.com/0chain/gosdk/blob/staging/zboxcore/encryption/pre.go#L199>)
+### func \(\*PREEncryptionScheme\) [Initialize](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/encryption/pre.go#L199>)
 
 ```go
 func (pre *PREEncryptionScheme) Initialize(mnemonic string) ([]byte, error)
@@ -250,7 +250,7 @@ func (pre *PREEncryptionScheme) Initialize(mnemonic string) ([]byte, error)
 
 
 <a name="PREEncryptionScheme.InitializeWithPrivateKey"></a>
-### func \(\*PREEncryptionScheme\) [InitializeWithPrivateKey](<https://github.com/0chain/gosdk/blob/staging/zboxcore/encryption/pre.go#L215>)
+### func \(\*PREEncryptionScheme\) [InitializeWithPrivateKey](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/encryption/pre.go#L215>)
 
 ```go
 func (pre *PREEncryptionScheme) InitializeWithPrivateKey(privateKey []byte) error
@@ -259,7 +259,7 @@ func (pre *PREEncryptionScheme) InitializeWithPrivateKey(privateKey []byte) erro
 InitializeWithPrivateKey initialize with private key
 
 <a name="PREEncryptionScheme.ReDecrypt"></a>
-### func \(\*PREEncryptionScheme\) [ReDecrypt](<https://github.com/0chain/gosdk/blob/staging/zboxcore/encryption/pre.go#L562>)
+### func \(\*PREEncryptionScheme\) [ReDecrypt](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/encryption/pre.go#L562>)
 
 ```go
 func (pre *PREEncryptionScheme) ReDecrypt(D *ReEncryptedMessage) ([]byte, error)
@@ -268,7 +268,7 @@ func (pre *PREEncryptionScheme) ReDecrypt(D *ReEncryptedMessage) ([]byte, error)
 \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-ReDecryption\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-
 
 <a name="PREEncryptionScheme.ReEncrypt"></a>
-### func \(\*PREEncryptionScheme\) [ReEncrypt](<https://github.com/0chain/gosdk/blob/staging/zboxcore/encryption/pre.go#L505>)
+### func \(\*PREEncryptionScheme\) [ReEncrypt](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/encryption/pre.go#L505>)
 
 ```go
 func (pre *PREEncryptionScheme) ReEncrypt(encMsg *EncryptedMessage, reGenKey string, clientPublicKey string) (*ReEncryptedMessage, error)
@@ -277,7 +277,7 @@ func (pre *PREEncryptionScheme) ReEncrypt(encMsg *EncryptedMessage, reGenKey str
 
 
 <a name="PREEncryptionScheme.SymDec"></a>
-### func \(\*PREEncryptionScheme\) [SymDec](<https://github.com/0chain/gosdk/blob/staging/zboxcore/encryption/pre.go#L432>)
+### func \(\*PREEncryptionScheme\) [SymDec](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/encryption/pre.go#L432>)
 
 ```go
 func (pre *PREEncryptionScheme) SymDec(group kyber.Group, ctx []byte, keyhash []byte) ([]byte, error)
@@ -286,7 +286,7 @@ func (pre *PREEncryptionScheme) SymDec(group kyber.Group, ctx []byte, keyhash []
 \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-Symmetric Decryption using AES with GCM mode\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-
 
 <a name="PREEncryptionScheme.SymEnc"></a>
-### func \(\*PREEncryptionScheme\) [SymEnc](<https://github.com/0chain/gosdk/blob/staging/zboxcore/encryption/pre.go#L396>)
+### func \(\*PREEncryptionScheme\) [SymEnc](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/encryption/pre.go#L396>)
 
 ```go
 func (pre *PREEncryptionScheme) SymEnc(group kyber.Group, message []byte, keyhash []byte) ([]byte, error)
@@ -295,7 +295,7 @@ func (pre *PREEncryptionScheme) SymEnc(group kyber.Group, message []byte, keyhas
 \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-Symmetric Encryption using AES with GCM mode\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-
 
 <a name="ReEncryptedMessage"></a>
-## type [ReEncryptedMessage](<https://github.com/0chain/gosdk/blob/staging/zboxcore/encryption/pre.go#L56-L62>)
+## type [ReEncryptedMessage](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/encryption/pre.go#L56-L62>)
 
 
 
@@ -310,7 +310,7 @@ type ReEncryptedMessage struct {
 ```
 
 <a name="ReEncryptedMessage.Marshal"></a>
-### func \(\*ReEncryptedMessage\) [Marshal](<https://github.com/0chain/gosdk/blob/staging/zboxcore/encryption/pre.go#L120>)
+### func \(\*ReEncryptedMessage\) [Marshal](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/encryption/pre.go#L120>)
 
 ```go
 func (reEncMsg *ReEncryptedMessage) Marshal() ([]byte, error)
@@ -319,7 +319,7 @@ func (reEncMsg *ReEncryptedMessage) Marshal() ([]byte, error)
 
 
 <a name="ReEncryptedMessage.Unmarshal"></a>
-### func \(\*ReEncryptedMessage\) [Unmarshal](<https://github.com/0chain/gosdk/blob/staging/zboxcore/encryption/pre.go#L145>)
+### func \(\*ReEncryptedMessage\) [Unmarshal](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/encryption/pre.go#L145>)
 
 ```go
 func (reEncMsg *ReEncryptedMessage) Unmarshal(data []byte) error
@@ -328,7 +328,7 @@ func (reEncMsg *ReEncryptedMessage) Unmarshal(data []byte) error
 
 
 <a name="ReKey"></a>
-## type [ReKey](<https://github.com/0chain/gosdk/blob/staging/zboxcore/encryption/pre.go#L44-L48>)
+## type [ReKey](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/encryption/pre.go#L44-L48>)
 
 
 
@@ -341,7 +341,7 @@ type ReKey struct {
 ```
 
 <a name="ReKey.MarshalJSON"></a>
-### func \(\*ReKey\) [MarshalJSON](<https://github.com/0chain/gosdk/blob/staging/zboxcore/encryption/pre.go#L64>)
+### func \(\*ReKey\) [MarshalJSON](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/encryption/pre.go#L64>)
 
 ```go
 func (u *ReKey) MarshalJSON() ([]byte, error)
@@ -350,7 +350,7 @@ func (u *ReKey) MarshalJSON() ([]byte, error)
 
 
 <a name="ReKey.UnmarshalJSON"></a>
-### func \(\*ReKey\) [UnmarshalJSON](<https://github.com/0chain/gosdk/blob/staging/zboxcore/encryption/pre.go#L84>)
+### func \(\*ReKey\) [UnmarshalJSON](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/encryption/pre.go#L84>)
 
 ```go
 func (u *ReKey) UnmarshalJSON(data []byte) error
@@ -359,7 +359,7 @@ func (u *ReKey) UnmarshalJSON(data []byte) error
 
 
 <a name="ReKeyBytes"></a>
-## type [ReKeyBytes](<https://github.com/0chain/gosdk/blob/staging/zboxcore/encryption/pre.go#L50-L54>)
+## type [ReKeyBytes](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/encryption/pre.go#L50-L54>)
 
 
 
@@ -372,7 +372,7 @@ type ReKeyBytes struct {
 ```
 
 <a name="Suite"></a>
-## type [Suite](<https://github.com/0chain/gosdk/blob/staging/zboxcore/encryption/pre.go#L21-L24>)
+## type [Suite](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/encryption/pre.go#L21-L24>)
 
 Suite represents the set of functionalities needed by the package schnorr.
 

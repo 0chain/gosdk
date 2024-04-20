@@ -18,7 +18,7 @@ import "github.com/0chain/gosdk/zmagmacore/transaction"
 
 
 <a name="Transaction"></a>
-## type [Transaction](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/transaction/txn.go#L18-L36>)
+## type [Transaction](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/transaction/txn.go#L18-L36>)
 
 Transaction entity that encapsulates the transaction related data and metadata.
 
@@ -42,7 +42,7 @@ type Transaction struct {
 ```
 
 <a name="NewTransactionEntity"></a>
-### func [NewTransactionEntity](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/transaction/txn.go#L41>)
+### func [NewTransactionEntity](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/transaction/txn.go#L41>)
 
 ```go
 func NewTransactionEntity() (*Transaction, error)
@@ -51,7 +51,7 @@ func NewTransactionEntity() (*Transaction, error)
 NewTransactionEntity creates Transaction with initialized fields. Sets version, client ID, creation date, public key and creates internal zcncore.TransactionScheme.
 
 <a name="VerifyTransaction"></a>
-### func [VerifyTransaction](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/transaction/http.go#L10>)
+### func [VerifyTransaction](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/transaction/http.go#L10>)
 
 ```go
 func VerifyTransaction(ctx context.Context, txnHash string) (*Transaction, error)
@@ -62,7 +62,7 @@ VerifyTransaction verifies including in blockchain transaction with provided has
 If execution completed with no error, returns Transaction with provided hash.
 
 <a name="Transaction.ExecuteSmartContract"></a>
-### func \(\*Transaction\) [ExecuteSmartContract](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/transaction/txn.go#L62-L63>)
+### func \(\*Transaction\) [ExecuteSmartContract](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/transaction/txn.go#L62-L63>)
 
 ```go
 func (t *Transaction) ExecuteSmartContract(ctx context.Context, address, funcName, input string, val uint64) (string, error)
@@ -73,7 +73,7 @@ ExecuteSmartContract executes function of smart contract with provided address.
 Returns hash of executed transaction.
 
 <a name="Transaction.Verify"></a>
-### func \(\*Transaction\) [Verify](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/transaction/txn.go#L110>)
+### func \(\*Transaction\) [Verify](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/transaction/txn.go#L110>)
 
 ```go
 func (t *Transaction) Verify(ctx context.Context) error
@@ -82,7 +82,7 @@ func (t *Transaction) Verify(ctx context.Context) error
 Verify checks including of transaction in the blockchain.
 
 <a name="TxnStatus"></a>
-## type [TxnStatus](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/transaction/const.go#L5>)
+## type [TxnStatus](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/transaction/const.go#L5>)
 
 TxnStatus represented zcncore.TransactionCallback operations statuses.
 
@@ -116,7 +116,7 @@ const (
 ```
 
 <a name="TxnStatus.String"></a>
-### func \(TxnStatus\) [String](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/transaction/const.go#L30>)
+### func \(TxnStatus\) [String](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/transaction/const.go#L30>)
 
 ```go
 func (ts TxnStatus) String() string

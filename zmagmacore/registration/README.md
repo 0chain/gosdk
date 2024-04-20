@@ -13,7 +13,7 @@ import "github.com/0chain/gosdk/zmagmacore/registration"
 
 
 <a name="RegisterOrUpdateWithRetries"></a>
-## func [RegisterOrUpdateWithRetries](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/registration/node.go#L24>)
+## func [RegisterOrUpdateWithRetries](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/registration/node.go#L24>)
 
 ```go
 func RegisterOrUpdateWithRetries(ctx context.Context, bmNode Node, numTries int)
@@ -26,7 +26,7 @@ If an error occurs during execution, the program terminates with code 2 and the 
 RegisterOrUpdateWithRetries should be used only once while application is starting.
 
 <a name="Node"></a>
-## type [Node](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/registration/types.go#L11-L26>)
+## type [Node](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/registration/types.go#L11-L26>)
 
 Node represent bandwidth\-marketplace node that can be registered.
 

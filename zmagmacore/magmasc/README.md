@@ -200,7 +200,7 @@ const (
 ```
 
 <a name="IsAcknowledgmentExist"></a>
-## func [IsAcknowledgmentExist](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/api.go#L63>)
+## func [IsAcknowledgmentExist](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/api.go#L63>)
 
 ```go
 func IsAcknowledgmentExist(sessionID string) (bool, error)
@@ -209,7 +209,7 @@ func IsAcknowledgmentExist(sessionID string) (bool, error)
 IsAcknowledgmentExist makes smart contract rest api call to magma smart contract IsAcknowledgmentExistRP rest point to ensure that Acknowledgment with provided session ID exist in the blockchain.
 
 <a name="IsConsumerRegisteredRP"></a>
-## func [IsConsumerRegisteredRP](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/api.go#L146>)
+## func [IsConsumerRegisteredRP](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/api.go#L146>)
 
 ```go
 func IsConsumerRegisteredRP(extID string) (bool, error)
@@ -218,7 +218,7 @@ func IsConsumerRegisteredRP(extID string) (bool, error)
 IsConsumerRegisteredRP makes smart contract rest api call to magma smart contract ConsumerRegisteredRP rest point to check registration of the consumer with provided external ID.
 
 <a name="IsProviderRegisteredRP"></a>
-## func [IsProviderRegisteredRP](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/api.go#L165>)
+## func [IsProviderRegisteredRP](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/api.go#L165>)
 
 ```go
 func IsProviderRegisteredRP(extID string) (bool, error)
@@ -227,7 +227,7 @@ func IsProviderRegisteredRP(extID string) (bool, error)
 IsProviderRegisteredRP makes smart contract rest api call to magma smart contract ProviderRegisteredRP rest point to check registration of the provider with provided external ID.
 
 <a name="Acknowledgment"></a>
-## type [Acknowledgment](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/acknowledgment.go#L15-L23>)
+## type [Acknowledgment](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/acknowledgment.go#L15-L23>)
 
 Acknowledgment contains the necessary data obtained when the consumer accepts the provider terms and stores in the state of the blockchain as a result of performing the consumerAcceptTerms MagmaSmartContract function.
 
@@ -244,7 +244,7 @@ type Acknowledgment struct {
 ```
 
 <a name="ExecuteDataUsage"></a>
-### func [ExecuteDataUsage](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/actions.go#L50-L51>)
+### func [ExecuteDataUsage](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/actions.go#L50-L51>)
 
 ```go
 func ExecuteDataUsage(ctx context.Context, downloadBytes, uploadBytes uint64, sessID string, sessTime uint32) (*Acknowledgment, error)
@@ -253,7 +253,7 @@ func ExecuteDataUsage(ctx context.Context, downloadBytes, uploadBytes uint64, se
 ExecuteDataUsage executes ProviderDataUsageFuncName and returns current Acknowledgment.
 
 <a name="ExecuteSessionInit"></a>
-### func [ExecuteSessionInit](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/actions.go#L241>)
+### func [ExecuteSessionInit](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/actions.go#L241>)
 
 ```go
 func ExecuteSessionInit(ctx context.Context, consExtID, provExtID, apID, sessID string, terms ProviderTerms) (*Acknowledgment, error)
@@ -262,7 +262,7 @@ func ExecuteSessionInit(ctx context.Context, consExtID, provExtID, apID, sessID 
 ExecuteSessionInit executes session init magma sc function and returns Acknowledgment.
 
 <a name="ExecuteSessionStart"></a>
-### func [ExecuteSessionStart](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/actions.go#L11>)
+### func [ExecuteSessionStart](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/actions.go#L11>)
 
 ```go
 func ExecuteSessionStart(ctx context.Context, sessID string) (*Acknowledgment, error)
@@ -271,7 +271,7 @@ func ExecuteSessionStart(ctx context.Context, sessID string) (*Acknowledgment, e
 ExecuteSessionStart starts session for provided IDs by executing ConsumerSessionStartFuncName.
 
 <a name="ExecuteSessionStop"></a>
-### func [ExecuteSessionStop](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/actions.go#L90>)
+### func [ExecuteSessionStop](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/actions.go#L90>)
 
 ```go
 func ExecuteSessionStop(ctx context.Context, sessionID string) (*Acknowledgment, error)
@@ -282,7 +282,7 @@ ExecuteSessionStop requests Acknowledgment from the blockchain and executes Cons
 Returns Acknowledgment for session with provided ID.
 
 <a name="RequestAcknowledgment"></a>
-### func [RequestAcknowledgment](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/api.go#L43>)
+### func [RequestAcknowledgment](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/api.go#L43>)
 
 ```go
 func RequestAcknowledgment(sessionID string) (*Acknowledgment, error)
@@ -291,7 +291,7 @@ func RequestAcknowledgment(sessionID string) (*Acknowledgment, error)
 RequestAcknowledgment makes smart contract rest api call to magma smart contract AcknowledgmentRP rest point to retrieve Acknowledgment.
 
 <a name="VerifyAcknowledgmentAccepted"></a>
-### func [VerifyAcknowledgmentAccepted](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/api.go#L83>)
+### func [VerifyAcknowledgmentAccepted](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/api.go#L83>)
 
 ```go
 func VerifyAcknowledgmentAccepted(sessionID, accessPointID, consumerExtID, providerExtID string) (*Acknowledgment, error)
@@ -300,7 +300,7 @@ func VerifyAcknowledgmentAccepted(sessionID, accessPointID, consumerExtID, provi
 VerifyAcknowledgmentAccepted makes smart contract rest api call to magma smart contract VerifyAcknowledgmentAcceptedRP rest point to ensure that Acknowledgment with provided IDs was accepted.
 
 <a name="Acknowledgment.ActiveKey"></a>
-### func \(\*Acknowledgment\) [ActiveKey](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/acknowledgment.go#L39>)
+### func \(\*Acknowledgment\) [ActiveKey](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/acknowledgment.go#L39>)
 
 ```go
 func (m *Acknowledgment) ActiveKey() []byte
@@ -309,7 +309,7 @@ func (m *Acknowledgment) ActiveKey() []byte
 ActiveKey returns key used for operations with storage.Storage AcknowledgmentPrefix \+ AcknowledgmentActivePrefixPart \+ Acknowledgment.SessionID.
 
 <a name="Acknowledgment.Decode"></a>
-### func \(\*Acknowledgment\) [Decode](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/acknowledgment.go#L44>)
+### func \(\*Acknowledgment\) [Decode](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/acknowledgment.go#L44>)
 
 ```go
 func (m *Acknowledgment) Decode(blob []byte) error
@@ -318,7 +318,7 @@ func (m *Acknowledgment) Decode(blob []byte) error
 Decode implements util.Serializable interface.
 
 <a name="Acknowledgment.Encode"></a>
-### func \(\*Acknowledgment\) [Encode](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/acknowledgment.go#L65>)
+### func \(\*Acknowledgment\) [Encode](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/acknowledgment.go#L65>)
 
 ```go
 func (m *Acknowledgment) Encode() []byte
@@ -327,7 +327,7 @@ func (m *Acknowledgment) Encode() []byte
 Encode implements util.Serializable interface.
 
 <a name="Acknowledgment.Key"></a>
-### func \(\*Acknowledgment\) [Key](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/acknowledgment.go#L72>)
+### func \(\*Acknowledgment\) [Key](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/acknowledgment.go#L72>)
 
 ```go
 func (m *Acknowledgment) Key() []byte
@@ -336,7 +336,7 @@ func (m *Acknowledgment) Key() []byte
 Key returns key with AcknowledgmentPrefix. Used for operations with storage.Storage.
 
 <a name="Acknowledgment.PoolBalance"></a>
-### func \(\*Acknowledgment\) [PoolBalance](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/acknowledgment.go#L77>)
+### func \(\*Acknowledgment\) [PoolBalance](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/acknowledgment.go#L77>)
 
 ```go
 func (m *Acknowledgment) PoolBalance() uint64
@@ -345,7 +345,7 @@ func (m *Acknowledgment) PoolBalance() uint64
 PoolBalance implements PoolConfigurator interface.
 
 <a name="Acknowledgment.PoolHolderID"></a>
-### func \(\*Acknowledgment\) [PoolHolderID](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/acknowledgment.go#L87>)
+### func \(\*Acknowledgment\) [PoolHolderID](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/acknowledgment.go#L87>)
 
 ```go
 func (m *Acknowledgment) PoolHolderID() string
@@ -354,7 +354,7 @@ func (m *Acknowledgment) PoolHolderID() string
 PoolHolderID implements PoolConfigurator interface.
 
 <a name="Acknowledgment.PoolID"></a>
-### func \(\*Acknowledgment\) [PoolID](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/acknowledgment.go#L82>)
+### func \(\*Acknowledgment\) [PoolID](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/acknowledgment.go#L82>)
 
 ```go
 func (m *Acknowledgment) PoolID() string
@@ -363,7 +363,7 @@ func (m *Acknowledgment) PoolID() string
 PoolID implements PoolConfigurator interface.
 
 <a name="Acknowledgment.PoolPayeeID"></a>
-### func \(\*Acknowledgment\) [PoolPayeeID](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/acknowledgment.go#L97>)
+### func \(\*Acknowledgment\) [PoolPayeeID](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/acknowledgment.go#L97>)
 
 ```go
 func (m *Acknowledgment) PoolPayeeID() string
@@ -372,7 +372,7 @@ func (m *Acknowledgment) PoolPayeeID() string
 PoolPayeeID implements PoolConfigurator interface.
 
 <a name="Acknowledgment.PoolPayerID"></a>
-### func \(\*Acknowledgment\) [PoolPayerID](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/acknowledgment.go#L92>)
+### func \(\*Acknowledgment\) [PoolPayerID](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/acknowledgment.go#L92>)
 
 ```go
 func (m *Acknowledgment) PoolPayerID() string
@@ -381,7 +381,7 @@ func (m *Acknowledgment) PoolPayerID() string
 PoolPayerID implements PoolConfigurator interface.
 
 <a name="Acknowledgment.Validate"></a>
-### func \(\*Acknowledgment\) [Validate](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/acknowledgment.go#L103>)
+### func \(\*Acknowledgment\) [Validate](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/acknowledgment.go#L103>)
 
 ```go
 func (m *Acknowledgment) Validate() (err error)
@@ -390,7 +390,7 @@ func (m *Acknowledgment) Validate() (err error)
 Validate checks Acknowledgment for correctness. If it is not return errInvalidAcknowledgment.
 
 <a name="Billing"></a>
-## type [Billing](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/billing.go#L13-L17>)
+## type [Billing](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/billing.go#L13-L17>)
 
 Billing represents all info about data usage.
 
@@ -403,7 +403,7 @@ type Billing struct {
 ```
 
 <a name="Billing.CalcAmount"></a>
-### func \(\*Billing\) [CalcAmount](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/billing.go#L27>)
+### func \(\*Billing\) [CalcAmount](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/billing.go#L27>)
 
 ```go
 func (m *Billing) CalcAmount(terms ProviderTerms)
@@ -412,7 +412,7 @@ func (m *Billing) CalcAmount(terms ProviderTerms)
 CalcAmount calculates and sets the billing Amount value by given price. NOTE: the cost value must be represented in token units per megabyte.
 
 <a name="Billing.Decode"></a>
-### func \(\*Billing\) [Decode](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/billing.go#L40>)
+### func \(\*Billing\) [Decode](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/billing.go#L40>)
 
 ```go
 func (m *Billing) Decode(blob []byte) error
@@ -421,7 +421,7 @@ func (m *Billing) Decode(blob []byte) error
 Decode implements util.Serializable interface.
 
 <a name="Billing.Encode"></a>
-### func \(\*Billing\) [Encode](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/billing.go#L54>)
+### func \(\*Billing\) [Encode](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/billing.go#L54>)
 
 ```go
 func (m *Billing) Encode() []byte
@@ -430,7 +430,7 @@ func (m *Billing) Encode() []byte
 Encode implements util.Serializable interface.
 
 <a name="Billing.Validate"></a>
-### func \(\*Billing\) [Validate](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/billing.go#L60>)
+### func \(\*Billing\) [Validate](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/billing.go#L60>)
 
 ```go
 func (m *Billing) Validate(dataUsage *DataUsage) (err error)
@@ -439,7 +439,7 @@ func (m *Billing) Validate(dataUsage *DataUsage) (err error)
 Validate checks given data usage is correctness for the billing.
 
 <a name="Consumer"></a>
-## type [Consumer](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/consumer.go#L14-L18>)
+## type [Consumer](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/consumer.go#L14-L18>)
 
 Consumer represents consumers node stored in blockchain.
 
@@ -452,7 +452,7 @@ type Consumer struct {
 ```
 
 <a name="ConsumerFetch"></a>
-### func [ConsumerFetch](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/api.go#L106>)
+### func [ConsumerFetch](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/api.go#L106>)
 
 ```go
 func ConsumerFetch(id string) (*Consumer, error)
@@ -461,7 +461,7 @@ func ConsumerFetch(id string) (*Consumer, error)
 ConsumerFetch makes smart contract rest api call to magma smart contract ConsumerFetchRP rest point to fetch Consumer info.
 
 <a name="ExecuteConsumerRegister"></a>
-### func [ExecuteConsumerRegister](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/actions.go#L186>)
+### func [ExecuteConsumerRegister](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/actions.go#L186>)
 
 ```go
 func ExecuteConsumerRegister(ctx context.Context, consumer *Consumer) (*Consumer, error)
@@ -470,7 +470,7 @@ func ExecuteConsumerRegister(ctx context.Context, consumer *Consumer) (*Consumer
 ExecuteConsumerRegister executes consumer registration magma sc function and returns current Consumer.
 
 <a name="ExecuteConsumerUpdate"></a>
-### func [ExecuteConsumerUpdate](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/actions.go#L215>)
+### func [ExecuteConsumerUpdate](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/actions.go#L215>)
 
 ```go
 func ExecuteConsumerUpdate(ctx context.Context, consumer *Consumer) (*Consumer, error)
@@ -479,7 +479,7 @@ func ExecuteConsumerUpdate(ctx context.Context, consumer *Consumer) (*Consumer, 
 ExecuteConsumerUpdate executes update consumer magma sc function and returns updated Consumer.
 
 <a name="GetAllConsumers"></a>
-### func [GetAllConsumers](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/api.go#L11>)
+### func [GetAllConsumers](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/api.go#L11>)
 
 ```go
 func GetAllConsumers() ([]Consumer, error)
@@ -488,7 +488,7 @@ func GetAllConsumers() ([]Consumer, error)
 GetAllConsumers makes smart contract rest api call to magma smart contract GetAllConsumersRP rest point to retrieve all registered consumer.Consumer.
 
 <a name="NewConsumerFromCfg"></a>
-### func [NewConsumerFromCfg](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/consumer.go#L27>)
+### func [NewConsumerFromCfg](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/consumer.go#L27>)
 
 ```go
 func NewConsumerFromCfg(cfg *config.Consumer) *Consumer
@@ -497,7 +497,7 @@ func NewConsumerFromCfg(cfg *config.Consumer) *Consumer
 NewConsumerFromCfg creates Consumer from config.Consumer.
 
 <a name="Consumer.Decode"></a>
-### func \(\*Consumer\) [Decode](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/consumer.go#L36>)
+### func \(\*Consumer\) [Decode](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/consumer.go#L36>)
 
 ```go
 func (m *Consumer) Decode(blob []byte) error
@@ -506,7 +506,7 @@ func (m *Consumer) Decode(blob []byte) error
 Decode implements util.Serializable interface.
 
 <a name="Consumer.Encode"></a>
-### func \(\*Consumer\) [Encode](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/consumer.go#L53>)
+### func \(\*Consumer\) [Encode](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/consumer.go#L53>)
 
 ```go
 func (m *Consumer) Encode() []byte
@@ -515,7 +515,7 @@ func (m *Consumer) Encode() []byte
 Encode implements util.Serializable interface.
 
 <a name="Consumer.ExternalID"></a>
-### func \(\*Consumer\) [ExternalID](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/interfaces.go#L4>)
+### func \(\*Consumer\) [ExternalID](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/interfaces.go#L4>)
 
 ```go
 func (m *Consumer) ExternalID() string
@@ -524,7 +524,7 @@ func (m *Consumer) ExternalID() string
 ExternalID represents simple getter for ExtID.
 
 <a name="Consumer.FetchNodeRP"></a>
-### func \(\*Consumer\) [FetchNodeRP](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/interfaces.go#L9>)
+### func \(\*Consumer\) [FetchNodeRP](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/interfaces.go#L9>)
 
 ```go
 func (m *Consumer) FetchNodeRP() string
@@ -533,7 +533,7 @@ func (m *Consumer) FetchNodeRP() string
 FetchNodeRP returns name of magma sc rest point used for fetching consumer's node info.
 
 <a name="Consumer.GetType"></a>
-### func \(\*Consumer\) [GetType](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/consumer.go#L59>)
+### func \(\*Consumer\) [GetType](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/consumer.go#L59>)
 
 ```go
 func (m *Consumer) GetType() string
@@ -542,7 +542,7 @@ func (m *Consumer) GetType() string
 GetType returns node type.
 
 <a name="Consumer.IsNodeRegisteredRP"></a>
-### func \(\*Consumer\) [IsNodeRegisteredRP](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/interfaces.go#L14>)
+### func \(\*Consumer\) [IsNodeRegisteredRP](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/interfaces.go#L14>)
 
 ```go
 func (m *Consumer) IsNodeRegisteredRP() string
@@ -551,7 +551,7 @@ func (m *Consumer) IsNodeRegisteredRP() string
 IsNodeRegisteredRP returns name of magma sc rest point used for checking consumer's node registration.
 
 <a name="Consumer.RegistrationFuncName"></a>
-### func \(\*Consumer\) [RegistrationFuncName](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/interfaces.go#L19>)
+### func \(\*Consumer\) [RegistrationFuncName](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/interfaces.go#L19>)
 
 ```go
 func (m *Consumer) RegistrationFuncName() string
@@ -560,7 +560,7 @@ func (m *Consumer) RegistrationFuncName() string
 RegistrationFuncName returns name of magma sc function used for consumer's node registration.
 
 <a name="Consumer.UpdateNodeFuncName"></a>
-### func \(\*Consumer\) [UpdateNodeFuncName](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/interfaces.go#L24>)
+### func \(\*Consumer\) [UpdateNodeFuncName](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/interfaces.go#L24>)
 
 ```go
 func (m *Consumer) UpdateNodeFuncName() string
@@ -569,7 +569,7 @@ func (m *Consumer) UpdateNodeFuncName() string
 UpdateNodeFuncName returns name of magma sc function used for consumer's node updating.
 
 <a name="Consumer.Validate"></a>
-### func \(\*Consumer\) [Validate](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/consumer.go#L65>)
+### func \(\*Consumer\) [Validate](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/consumer.go#L65>)
 
 ```go
 func (m *Consumer) Validate() (err error)
@@ -578,7 +578,7 @@ func (m *Consumer) Validate() (err error)
 Validate checks the Consumer for correctness. If it is not return errInvalidConsumer.
 
 <a name="DataUsage"></a>
-## type [DataUsage](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/datausage.go#L12-L17>)
+## type [DataUsage](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/datausage.go#L12-L17>)
 
 DataUsage represents session data sage implementation.
 
@@ -592,7 +592,7 @@ type DataUsage struct {
 ```
 
 <a name="DataUsage.Decode"></a>
-### func \(\*DataUsage\) [Decode](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/datausage.go#L26>)
+### func \(\*DataUsage\) [Decode](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/datausage.go#L26>)
 
 ```go
 func (m *DataUsage) Decode(blob []byte) error
@@ -601,7 +601,7 @@ func (m *DataUsage) Decode(blob []byte) error
 Decode implements util.Serializable interface.
 
 <a name="DataUsage.Encode"></a>
-### func \(\*DataUsage\) [Encode](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/datausage.go#L44>)
+### func \(\*DataUsage\) [Encode](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/datausage.go#L44>)
 
 ```go
 func (m *DataUsage) Encode() []byte
@@ -610,7 +610,7 @@ func (m *DataUsage) Encode() []byte
 Encode implements util.Serializable interface.
 
 <a name="DataUsage.Validate"></a>
-### func \(\*DataUsage\) [Validate](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/datausage.go#L50>)
+### func \(\*DataUsage\) [Validate](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/datausage.go#L50>)
 
 ```go
 func (m *DataUsage) Validate() (err error)
@@ -619,7 +619,7 @@ func (m *DataUsage) Validate() (err error)
 Validate checks DataUsage for correctness.
 
 <a name="PoolConfigurator"></a>
-## type [PoolConfigurator](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/tokenpool_configurator.go#L5-L20>)
+## type [PoolConfigurator](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/tokenpool_configurator.go#L5-L20>)
 
 PoolConfigurator represents a pool config interface.
 
@@ -643,7 +643,7 @@ type PoolConfigurator interface {
 ```
 
 <a name="Provider"></a>
-## type [Provider](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/provider.go#L14-L19>)
+## type [Provider](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/provider.go#L14-L19>)
 
 Provider represents providers node stored in blockchain.
 
@@ -657,7 +657,7 @@ type Provider struct {
 ```
 
 <a name="ExecuteProviderRegister"></a>
-### func [ExecuteProviderRegister](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/actions.go#L131>)
+### func [ExecuteProviderRegister](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/actions.go#L131>)
 
 ```go
 func ExecuteProviderRegister(ctx context.Context, provider *Provider) (*Provider, error)
@@ -666,7 +666,7 @@ func ExecuteProviderRegister(ctx context.Context, provider *Provider) (*Provider
 ExecuteProviderRegister executes provider registration magma sc function and returns current Provider.
 
 <a name="ExecuteProviderUpdate"></a>
-### func [ExecuteProviderUpdate](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/actions.go#L160>)
+### func [ExecuteProviderUpdate](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/actions.go#L160>)
 
 ```go
 func ExecuteProviderUpdate(ctx context.Context, provider *Provider) (*Provider, error)
@@ -675,7 +675,7 @@ func ExecuteProviderUpdate(ctx context.Context, provider *Provider) (*Provider, 
 ExecuteProviderUpdate executes update provider magma sc function and returns updated Provider.
 
 <a name="GetAllProviders"></a>
-### func [GetAllProviders](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/api.go#L27>)
+### func [GetAllProviders](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/api.go#L27>)
 
 ```go
 func GetAllProviders() ([]Provider, error)
@@ -684,7 +684,7 @@ func GetAllProviders() ([]Provider, error)
 GetAllProviders makes smart contract rest api call to magma smart contract GetAllProvidersRP rest point to retrieve all registered provider.Provider.
 
 <a name="NewProviderFromCfg"></a>
-### func [NewProviderFromCfg](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/provider.go#L28>)
+### func [NewProviderFromCfg](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/provider.go#L28>)
 
 ```go
 func NewProviderFromCfg(cfg *config.Provider) *Provider
@@ -693,7 +693,7 @@ func NewProviderFromCfg(cfg *config.Provider) *Provider
 NewProviderFromCfg creates Provider from config.Provider.
 
 <a name="ProviderFetch"></a>
-### func [ProviderFetch](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/api.go#L126>)
+### func [ProviderFetch](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/api.go#L126>)
 
 ```go
 func ProviderFetch(id string) (*Provider, error)
@@ -702,7 +702,7 @@ func ProviderFetch(id string) (*Provider, error)
 ProviderFetch makes smart contract rest api call to magma smart contract ProviderFetchRP rest point to fetch Provider info.
 
 <a name="Provider.Decode"></a>
-### func \(\*Provider\) [Decode](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/provider.go#L38>)
+### func \(\*Provider\) [Decode](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/provider.go#L38>)
 
 ```go
 func (m *Provider) Decode(blob []byte) error
@@ -711,7 +711,7 @@ func (m *Provider) Decode(blob []byte) error
 Decode implements util.Serializable interface.
 
 <a name="Provider.Encode"></a>
-### func \(\*Provider\) [Encode](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/provider.go#L56>)
+### func \(\*Provider\) [Encode](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/provider.go#L56>)
 
 ```go
 func (m *Provider) Encode() []byte
@@ -720,7 +720,7 @@ func (m *Provider) Encode() []byte
 Encode implements util.Serializable interface.
 
 <a name="Provider.ExternalID"></a>
-### func \(\*Provider\) [ExternalID](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/interfaces.go#L29>)
+### func \(\*Provider\) [ExternalID](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/interfaces.go#L29>)
 
 ```go
 func (m *Provider) ExternalID() string
@@ -729,7 +729,7 @@ func (m *Provider) ExternalID() string
 ExternalID represents simple getter for ExtID.
 
 <a name="Provider.FetchNodeRP"></a>
-### func \(\*Provider\) [FetchNodeRP](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/interfaces.go#L34>)
+### func \(\*Provider\) [FetchNodeRP](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/interfaces.go#L34>)
 
 ```go
 func (m *Provider) FetchNodeRP() string
@@ -738,7 +738,7 @@ func (m *Provider) FetchNodeRP() string
 FetchNodeRP returns name of magma sc rest point used for fetching provider's node info.
 
 <a name="Provider.GetType"></a>
-### func \(\*Provider\) [GetType](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/provider.go#L62>)
+### func \(\*Provider\) [GetType](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/provider.go#L62>)
 
 ```go
 func (m *Provider) GetType() string
@@ -747,7 +747,7 @@ func (m *Provider) GetType() string
 GetType returns Provider's type.
 
 <a name="Provider.IsNodeRegisteredRP"></a>
-### func \(\*Provider\) [IsNodeRegisteredRP](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/interfaces.go#L39>)
+### func \(\*Provider\) [IsNodeRegisteredRP](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/interfaces.go#L39>)
 
 ```go
 func (m *Provider) IsNodeRegisteredRP() string
@@ -756,7 +756,7 @@ func (m *Provider) IsNodeRegisteredRP() string
 IsNodeRegisteredRP returns name of magma sc rest point used for checking provider's node registration.
 
 <a name="Provider.RegistrationFuncName"></a>
-### func \(\*Provider\) [RegistrationFuncName](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/interfaces.go#L44>)
+### func \(\*Provider\) [RegistrationFuncName](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/interfaces.go#L44>)
 
 ```go
 func (m *Provider) RegistrationFuncName() string
@@ -765,7 +765,7 @@ func (m *Provider) RegistrationFuncName() string
 RegistrationFuncName returns name of magma sc function used for provider's node registration.
 
 <a name="Provider.UpdateNodeFuncName"></a>
-### func \(\*Provider\) [UpdateNodeFuncName](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/interfaces.go#L49>)
+### func \(\*Provider\) [UpdateNodeFuncName](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/interfaces.go#L49>)
 
 ```go
 func (m *Provider) UpdateNodeFuncName() string
@@ -774,7 +774,7 @@ func (m *Provider) UpdateNodeFuncName() string
 UpdateNodeFuncName returns name of magma sc function used for provider's node updating.
 
 <a name="Provider.Validate"></a>
-### func \(\*Provider\) [Validate](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/provider.go#L68>)
+### func \(\*Provider\) [Validate](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/provider.go#L68>)
 
 ```go
 func (m *Provider) Validate() (err error)
@@ -783,7 +783,7 @@ func (m *Provider) Validate() (err error)
 Validate checks Provider for correctness. If it is not return errInvalidProvider.
 
 <a name="ProviderTerms"></a>
-## type [ProviderTerms](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/provider_terms.go#L15-L25>)
+## type [ProviderTerms](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/provider_terms.go#L15-L25>)
 
 ProviderTerms represents a provider and service terms.
 
@@ -802,7 +802,7 @@ type ProviderTerms struct {
 ```
 
 <a name="NewProviderTerms"></a>
-### func [NewProviderTerms](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/provider_terms.go#L40>)
+### func [NewProviderTerms](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/provider_terms.go#L40>)
 
 ```go
 func NewProviderTerms() *ProviderTerms
@@ -811,7 +811,7 @@ func NewProviderTerms() *ProviderTerms
 NewProviderTerms returns a new constructed provider terms.
 
 <a name="ProviderTerms.Decode"></a>
-### func \(\*ProviderTerms\) [Decode](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/provider_terms.go#L45>)
+### func \(\*ProviderTerms\) [Decode](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/provider_terms.go#L45>)
 
 ```go
 func (m *ProviderTerms) Decode(blob []byte) error
@@ -820,7 +820,7 @@ func (m *ProviderTerms) Decode(blob []byte) error
 Decode implements util.Serializable interface.
 
 <a name="ProviderTerms.Decrease"></a>
-### func \(\*ProviderTerms\) [Decrease](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/provider_terms.go#L69>)
+### func \(\*ProviderTerms\) [Decrease](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/provider_terms.go#L69>)
 
 ```go
 func (m *ProviderTerms) Decrease() *ProviderTerms
@@ -829,7 +829,7 @@ func (m *ProviderTerms) Decrease() *ProviderTerms
 Decrease makes automatically Decrease provider terms by config.
 
 <a name="ProviderTerms.Encode"></a>
-### func \(\*ProviderTerms\) [Encode](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/provider_terms.go#L94>)
+### func \(\*ProviderTerms\) [Encode](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/provider_terms.go#L94>)
 
 ```go
 func (m *ProviderTerms) Encode() []byte
@@ -838,7 +838,7 @@ func (m *ProviderTerms) Encode() []byte
 Encode implements util.Serializable interface.
 
 <a name="ProviderTerms.Expired"></a>
-### func \(\*ProviderTerms\) [Expired](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/provider_terms.go#L100>)
+### func \(\*ProviderTerms\) [Expired](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/provider_terms.go#L100>)
 
 ```go
 func (m *ProviderTerms) Expired() bool
@@ -847,7 +847,7 @@ func (m *ProviderTerms) Expired() bool
 Expired returns if terms already expired.
 
 <a name="ProviderTerms.GetAmount"></a>
-### func \(\*ProviderTerms\) [GetAmount](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/provider_terms.go#L105>)
+### func \(\*ProviderTerms\) [GetAmount](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/provider_terms.go#L105>)
 
 ```go
 func (m *ProviderTerms) GetAmount() (amount uint64)
@@ -856,7 +856,7 @@ func (m *ProviderTerms) GetAmount() (amount uint64)
 GetAmount returns calculated amount value of provider terms.
 
 <a name="ProviderTerms.GetMinCost"></a>
-### func \(\*ProviderTerms\) [GetMinCost](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/provider_terms.go#L119>)
+### func \(\*ProviderTerms\) [GetMinCost](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/provider_terms.go#L119>)
 
 ```go
 func (m *ProviderTerms) GetMinCost() (cost uint64)
@@ -865,7 +865,7 @@ func (m *ProviderTerms) GetMinCost() (cost uint64)
 GetMinCost returns calculated min cost value of provider terms.
 
 <a name="ProviderTerms.GetPrice"></a>
-### func \(\*ProviderTerms\) [GetPrice](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/provider_terms.go#L129>)
+### func \(\*ProviderTerms\) [GetPrice](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/provider_terms.go#L129>)
 
 ```go
 func (m *ProviderTerms) GetPrice() (price uint64)
@@ -874,7 +874,7 @@ func (m *ProviderTerms) GetPrice() (price uint64)
 GetPrice returns calculated price value of provider terms. NOTE: the price value will be represented in token units per megabyte.
 
 <a name="ProviderTerms.GetVolume"></a>
-### func \(\*ProviderTerms\) [GetVolume](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/provider_terms.go#L139>)
+### func \(\*ProviderTerms\) [GetVolume](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/provider_terms.go#L139>)
 
 ```go
 func (m *ProviderTerms) GetVolume() int64
@@ -883,7 +883,7 @@ func (m *ProviderTerms) GetVolume() int64
 GetVolume returns value of the provider terms volume. If the Volume is empty it will be calculated by the provider terms.
 
 <a name="ProviderTerms.Increase"></a>
-### func \(\*ProviderTerms\) [Increase](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/provider_terms.go#L151>)
+### func \(\*ProviderTerms\) [Increase](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/provider_terms.go#L151>)
 
 ```go
 func (m *ProviderTerms) Increase() *ProviderTerms
@@ -892,7 +892,7 @@ func (m *ProviderTerms) Increase() *ProviderTerms
 Increase makes automatically Increase provider terms by config.
 
 <a name="ProviderTerms.Validate"></a>
-### func \(\*ProviderTerms\) [Validate](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/provider_terms.go#L177>)
+### func \(\*ProviderTerms\) [Validate](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/provider_terms.go#L177>)
 
 ```go
 func (m *ProviderTerms) Validate() (err error)
@@ -901,7 +901,7 @@ func (m *ProviderTerms) Validate() (err error)
 Validate checks ProviderTerms for correctness. If it is not return errInvalidProviderTerms.
 
 <a name="QoSAutoUpdate"></a>
-## type [QoSAutoUpdate](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/provider_terms.go#L28-L31>)
+## type [QoSAutoUpdate](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/provider_terms.go#L28-L31>)
 
 QoSAutoUpdate represents data of qos terms on auto update.
 
@@ -913,7 +913,7 @@ type QoSAutoUpdate struct {
 ```
 
 <a name="TokenPool"></a>
-## type [TokenPool](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/tokenpool.go#L11-L18>)
+## type [TokenPool](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/tokenpool.go#L11-L18>)
 
 TokenPool represents token pool implementation.
 
@@ -929,7 +929,7 @@ type TokenPool struct {
 ```
 
 <a name="TokenPool.Decode"></a>
-### func \(\*TokenPool\) [Decode](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/tokenpool.go#L27>)
+### func \(\*TokenPool\) [Decode](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/tokenpool.go#L27>)
 
 ```go
 func (m *TokenPool) Decode(blob []byte) error
@@ -938,7 +938,7 @@ func (m *TokenPool) Decode(blob []byte) error
 Decode implements util.Serializable interface.
 
 <a name="TokenPool.Encode"></a>
-### func \(\*TokenPool\) [Encode](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/tokenpool.go#L44>)
+### func \(\*TokenPool\) [Encode](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/tokenpool.go#L44>)
 
 ```go
 func (m *TokenPool) Encode() []byte
@@ -947,7 +947,7 @@ func (m *TokenPool) Encode() []byte
 Encode implements util.Serializable interface.
 
 <a name="TokenPoolTransfer"></a>
-## type [TokenPoolTransfer](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/tokenpool_transfer.go#L11-L18>)
+## type [TokenPoolTransfer](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/tokenpool_transfer.go#L11-L18>)
 
 TokenPoolTransfer stores info about token transfers from pool to pool.
 
@@ -963,7 +963,7 @@ type TokenPoolTransfer struct {
 ```
 
 <a name="TokenPoolTransfer.Decode"></a>
-### func \(\*TokenPoolTransfer\) [Decode](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/tokenpool_transfer.go#L27>)
+### func \(\*TokenPoolTransfer\) [Decode](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/tokenpool_transfer.go#L27>)
 
 ```go
 func (m *TokenPoolTransfer) Decode(blob []byte) error
@@ -972,7 +972,7 @@ func (m *TokenPoolTransfer) Decode(blob []byte) error
 Decode implements util.Serializable interface.
 
 <a name="TokenPoolTransfer.Encode"></a>
-### func \(\*TokenPoolTransfer\) [Encode](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/magmasc/tokenpool_transfer.go#L32>)
+### func \(\*TokenPoolTransfer\) [Encode](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/magmasc/tokenpool_transfer.go#L32>)
 
 ```go
 func (m *TokenPoolTransfer) Encode() []byte

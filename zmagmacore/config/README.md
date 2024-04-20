@@ -19,7 +19,7 @@ import "github.com/0chain/gosdk/zmagmacore/config"
 
 
 <a name="BalanceWorker"></a>
-## type [BalanceWorker](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/config/workers.go#L5-L8>)
+## type [BalanceWorker](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/config/workers.go#L5-L8>)
 
 BalanceWorker represents worker options described in "workers.balance" section of the config yaml file.
 
@@ -31,7 +31,7 @@ type BalanceWorker struct {
 ```
 
 <a name="Consumer"></a>
-## type [Consumer](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/config/consumer.go#L11-L15>)
+## type [Consumer](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/config/consumer.go#L11-L15>)
 
 Consumer represents config used for registration of node.
 
@@ -44,7 +44,7 @@ type Consumer struct {
 ```
 
 <a name="Consumer.Read"></a>
-### func \(\*Consumer\) [Read](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/config/consumer.go#L19>)
+### func \(\*Consumer\) [Read](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/config/consumer.go#L19>)
 
 ```go
 func (c *Consumer) Read(path string) error
@@ -53,7 +53,7 @@ func (c *Consumer) Read(path string) error
 Read reads config yaml file from path.
 
 <a name="Handler"></a>
-## type [Handler](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/config/handler.go#L5-L8>)
+## type [Handler](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/config/handler.go#L5-L8>)
 
 Handler represents config options for handlers.
 
@@ -65,7 +65,7 @@ type Handler struct {
 ```
 
 <a name="LogHandler"></a>
-## type [LogHandler](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/config/handler.go#L11-L13>)
+## type [LogHandler](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/config/handler.go#L11-L13>)
 
 LogHandler represents config options described in "handler.log" section of the config yaml file.
 
@@ -76,7 +76,7 @@ type LogHandler struct {
 ```
 
 <a name="Provider"></a>
-## type [Provider](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/config/provider.go#L11-L16>)
+## type [Provider](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/config/provider.go#L11-L16>)
 
 Provider represents configs of the providers' node.
 
@@ -90,7 +90,7 @@ type Provider struct {
 ```
 
 <a name="Provider.Read"></a>
-### func \(\*Provider\) [Read](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/config/provider.go#L20>)
+### func \(\*Provider\) [Read](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/config/provider.go#L20>)
 
 ```go
 func (p *Provider) Read(path string) error
@@ -99,7 +99,7 @@ func (p *Provider) Read(path string) error
 Read reads config yaml file from path.
 
 <a name="ServerChain"></a>
-## type [ServerChain](<https://github.com/0chain/gosdk/blob/staging/zmagmacore/config/chain.go#L5-L10>)
+## type [ServerChain](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/config/chain.go#L5-L10>)
 
 ServerChain represents config describes blockchain options and signature scheme options.
 

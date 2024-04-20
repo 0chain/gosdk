@@ -51,7 +51,7 @@ var Logger logger.Logger
 ```
 
 <a name="ExitWithError"></a>
-## func [ExitWithError](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/wallet/status.go#L149>)
+## func [ExitWithError](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/wallet/status.go#L149>)
 
 ```go
 func ExitWithError(v ...interface{})
@@ -60,7 +60,7 @@ func ExitWithError(v ...interface{})
 
 
 <a name="PrintError"></a>
-## func [PrintError](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/wallet/status.go#L144>)
+## func [PrintError](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/wallet/status.go#L144>)
 
 ```go
 func PrintError(v ...interface{})
@@ -69,7 +69,7 @@ func PrintError(v ...interface{})
 
 
 <a name="ZCNStatus"></a>
-## type [ZCNStatus](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/wallet/status.go#L14-L21>)
+## type [ZCNStatus](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/wallet/status.go#L14-L21>)
 
 
 
@@ -83,7 +83,7 @@ type ZCNStatus struct {
 ```
 
 <a name="NewZCNStatus"></a>
-### func [NewZCNStatus](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/wallet/status.go#L23>)
+### func [NewZCNStatus](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/wallet/status.go#L23>)
 
 ```go
 func NewZCNStatus(value interface{}) (zcns *ZCNStatus)
@@ -92,7 +92,7 @@ func NewZCNStatus(value interface{}) (zcns *ZCNStatus)
 
 
 <a name="ZCNStatus.Begin"></a>
-### func \(\*ZCNStatus\) [Begin](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/wallet/status.go#L30>)
+### func \(\*ZCNStatus\) [Begin](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/wallet/status.go#L30>)
 
 ```go
 func (zcn *ZCNStatus) Begin()
@@ -101,7 +101,7 @@ func (zcn *ZCNStatus) Begin()
 
 
 <a name="ZCNStatus.OnAuthComplete"></a>
-### func \(\*ZCNStatus\) [OnAuthComplete](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/wallet/status.go#L67>)
+### func \(\*ZCNStatus\) [OnAuthComplete](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/wallet/status.go#L67>)
 
 ```go
 func (zcn *ZCNStatus) OnAuthComplete(_ *zcncore.Transaction, status int)
@@ -110,7 +110,7 @@ func (zcn *ZCNStatus) OnAuthComplete(_ *zcncore.Transaction, status int)
 
 
 <a name="ZCNStatus.OnAuthorizeSendComplete"></a>
-### func \(\*ZCNStatus\) [OnAuthorizeSendComplete](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/wallet/status.go#L121>)
+### func \(\*ZCNStatus\) [OnAuthorizeSendComplete](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/wallet/status.go#L121>)
 
 ```go
 func (zcn *ZCNStatus) OnAuthorizeSendComplete(status int, _ string, _ int64, _ string, creationDate int64, signature string)
@@ -119,7 +119,7 @@ func (zcn *ZCNStatus) OnAuthorizeSendComplete(status int, _ string, _ int64, _ s
 
 
 <a name="ZCNStatus.OnBalanceAvailable"></a>
-### func \(\*ZCNStatus\) [OnBalanceAvailable](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/wallet/status.go#L39>)
+### func \(\*ZCNStatus\) [OnBalanceAvailable](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/wallet/status.go#L39>)
 
 ```go
 func (zcn *ZCNStatus) OnBalanceAvailable(status int, value int64, _ string)
@@ -128,7 +128,7 @@ func (zcn *ZCNStatus) OnBalanceAvailable(status int, value int64, _ string)
 
 
 <a name="ZCNStatus.OnInfoAvailable"></a>
-### func \(\*ZCNStatus\) [OnInfoAvailable](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/wallet/status.go#L84>)
+### func \(\*ZCNStatus\) [OnInfoAvailable](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/wallet/status.go#L84>)
 
 ```go
 func (zcn *ZCNStatus) OnInfoAvailable(op int, status int, info string, err string)
@@ -137,7 +137,7 @@ func (zcn *ZCNStatus) OnInfoAvailable(op int, status int, info string, err strin
 
 
 <a name="ZCNStatus.OnSetupComplete"></a>
-### func \(\*ZCNStatus\) [OnSetupComplete](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/wallet/status.go#L117>)
+### func \(\*ZCNStatus\) [OnSetupComplete](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/wallet/status.go#L117>)
 
 ```go
 func (zcn *ZCNStatus) OnSetupComplete(_ int, _ string)
@@ -146,7 +146,7 @@ func (zcn *ZCNStatus) OnSetupComplete(_ int, _ string)
 
 
 <a name="ZCNStatus.OnTransactionComplete"></a>
-### func \(\*ZCNStatus\) [OnTransactionComplete](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/wallet/status.go#L49>)
+### func \(\*ZCNStatus\) [OnTransactionComplete](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/wallet/status.go#L49>)
 
 ```go
 func (zcn *ZCNStatus) OnTransactionComplete(t *zcncore.Transaction, status int)
@@ -155,7 +155,7 @@ func (zcn *ZCNStatus) OnTransactionComplete(t *zcncore.Transaction, status int)
 
 
 <a name="ZCNStatus.OnVerifyComplete"></a>
-### func \(\*ZCNStatus\) [OnVerifyComplete](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/wallet/status.go#L58>)
+### func \(\*ZCNStatus\) [OnVerifyComplete](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/wallet/status.go#L58>)
 
 ```go
 func (zcn *ZCNStatus) OnVerifyComplete(t *zcncore.Transaction, status int)
@@ -164,7 +164,7 @@ func (zcn *ZCNStatus) OnVerifyComplete(t *zcncore.Transaction, status int)
 
 
 <a name="ZCNStatus.OnVoteComplete"></a>
-### func \(\*ZCNStatus\) [OnVoteComplete](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/wallet/status.go#L130>)
+### func \(\*ZCNStatus\) [OnVoteComplete](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/wallet/status.go#L130>)
 
 ```go
 func (zcn *ZCNStatus) OnVoteComplete(status int, proposal string, err string)
@@ -173,7 +173,7 @@ func (zcn *ZCNStatus) OnVoteComplete(status int, proposal string, err string)
 OnVoteComplete callback when a multisig vote is completed
 
 <a name="ZCNStatus.OnWalletCreateComplete"></a>
-### func \(\*ZCNStatus\) [OnWalletCreateComplete](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/wallet/status.go#L71>)
+### func \(\*ZCNStatus\) [OnWalletCreateComplete](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/wallet/status.go#L71>)
 
 ```go
 func (zcn *ZCNStatus) OnWalletCreateComplete(status int, wallet string, err string)
@@ -182,7 +182,7 @@ func (zcn *ZCNStatus) OnWalletCreateComplete(status int, wallet string, err stri
 
 
 <a name="ZCNStatus.Wait"></a>
-### func \(\*ZCNStatus\) [Wait](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/wallet/status.go#L34>)
+### func \(\*ZCNStatus\) [Wait](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/wallet/status.go#L34>)
 
 ```go
 func (zcn *ZCNStatus) Wait() error

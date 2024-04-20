@@ -19,7 +19,7 @@ import "github.com/0chain/gosdk/zcnbridge/zcnsc"
 
 
 <a name="AuthorizerSignature"></a>
-## type [AuthorizerSignature](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/zcnsc/mint_payload.go#L18-L21>)
+## type [AuthorizerSignature](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/zcnsc/mint_payload.go#L18-L21>)
 
 
 
@@ -31,7 +31,7 @@ type AuthorizerSignature struct {
 ```
 
 <a name="BurnEvent"></a>
-## type [BurnEvent](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/zcnsc/burn_event.go#L4-L6>)
+## type [BurnEvent](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/zcnsc/burn_event.go#L4-L6>)
 
 BurnEvent represents WZCN burn event
 
@@ -42,7 +42,7 @@ type BurnEvent struct {
 ```
 
 <a name="BurnPayload"></a>
-## type [BurnPayload](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/zcnsc/burn_payload.go#L6-L8>)
+## type [BurnPayload](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/zcnsc/burn_payload.go#L6-L8>)
 
 BurnPayload Payload to submit to ZCN chain \`burn\` smart contract
 
@@ -53,7 +53,7 @@ type BurnPayload struct {
 ```
 
 <a name="BurnPayload.Decode"></a>
-### func \(\*BurnPayload\) [Decode](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/zcnsc/burn_payload.go#L15>)
+### func \(\*BurnPayload\) [Decode](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/zcnsc/burn_payload.go#L15>)
 
 ```go
 func (bp *BurnPayload) Decode(input []byte) error
@@ -62,7 +62,7 @@ func (bp *BurnPayload) Decode(input []byte) error
 
 
 <a name="BurnPayload.Encode"></a>
-### func \(\*BurnPayload\) [Encode](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/zcnsc/burn_payload.go#L10>)
+### func \(\*BurnPayload\) [Encode](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/zcnsc/burn_payload.go#L10>)
 
 ```go
 func (bp *BurnPayload) Encode() []byte
@@ -71,7 +71,7 @@ func (bp *BurnPayload) Encode() []byte
 
 
 <a name="BurnTicket"></a>
-## type [BurnTicket](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/zcnsc/burn_ticket.go#L4-L7>)
+## type [BurnTicket](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/zcnsc/burn_ticket.go#L4-L7>)
 
 BurnTicket represents WZCN burn ticket details
 
@@ -83,7 +83,7 @@ type BurnTicket struct {
 ```
 
 <a name="MintPayload"></a>
-## type [MintPayload](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/zcnsc/mint_payload.go#L10-L16>)
+## type [MintPayload](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/zcnsc/mint_payload.go#L10-L16>)
 
 MintPayload Payload to submit to ZCN chain \`mint\` smart contract
 
@@ -98,7 +98,7 @@ type MintPayload struct {
 ```
 
 <a name="MintPayload.Encode"></a>
-### func \(\*MintPayload\) [Encode](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/zcnsc/mint_payload.go#L23>)
+### func \(\*MintPayload\) [Encode](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/zcnsc/mint_payload.go#L23>)
 
 ```go
 func (mp *MintPayload) Encode() []byte

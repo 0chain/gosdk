@@ -153,7 +153,7 @@ var Logger logger.Logger
 ```
 
 <a name="AccountExists"></a>
-## func [AccountExists](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/keystore.go#L92>)
+## func [AccountExists](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/keystore.go#L92>)
 
 ```go
 func AccountExists(homedir, address string) bool
@@ -162,7 +162,7 @@ func AccountExists(homedir, address string) bool
 AccountExists checks if account exists
 
 <a name="ConfirmEthereumTransaction"></a>
-## func [ConfirmEthereumTransaction](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/bridge_helper.go#L54>)
+## func [ConfirmEthereumTransaction](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/bridge_helper.go#L54>)
 
 ```go
 func ConfirmEthereumTransaction(hash string, times int, duration time.Duration) (int, error)
@@ -171,7 +171,7 @@ func ConfirmEthereumTransaction(hash string, times int, duration time.Duration) 
 
 
 <a name="ConvertIntToHex"></a>
-## func [ConvertIntToHex](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/bridge_helper.go#L99>)
+## func [ConvertIntToHex](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/bridge_helper.go#L99>)
 
 ```go
 func ConvertIntToHex(value int64) string
@@ -180,7 +180,7 @@ func ConvertIntToHex(value int64) string
 ConvertIntToHex converts given int value to hex string.
 
 <a name="CreateKeyStorage"></a>
-## func [CreateKeyStorage](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/keystore.go#L116>)
+## func [CreateKeyStorage](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/keystore.go#L116>)
 
 ```go
 func CreateKeyStorage(homedir, password string) error
@@ -189,7 +189,7 @@ func CreateKeyStorage(homedir, password string) error
 CreateKeyStorage create, restore or unlock key storage
 
 <a name="DeleteAccount"></a>
-## func [DeleteAccount](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/keystore.go#L73>)
+## func [DeleteAccount](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/keystore.go#L73>)
 
 ```go
 func DeleteAccount(homedir, address string) bool
@@ -198,7 +198,7 @@ func DeleteAccount(homedir, address string) bool
 DeleteAccount deletes account from wallet
 
 <a name="EncodePackInt64"></a>
-## func [EncodePackInt64](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/bridge.go#L242>)
+## func [EncodePackInt64](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/bridge.go#L242>)
 
 ```go
 func EncodePackInt64(key string, param int64) common.Hash
@@ -207,7 +207,7 @@ func EncodePackInt64(key string, param int64) common.Hash
 EncodePackInt do abi.encodedPack\(string, int\), it is used for setting plan id for royalty
 
 <a name="GetAuthorizer"></a>
-## func [GetAuthorizer](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/rest.go#L75>)
+## func [GetAuthorizer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/rest.go#L75>)
 
 ```go
 func GetAuthorizer(id string, cb zcncore.GetInfoCallback) (err error)
@@ -216,7 +216,7 @@ func GetAuthorizer(id string, cb zcncore.GetInfoCallback) (err error)
 GetAuthorizer returned authorizer by ID
 
 <a name="GetAuthorizers"></a>
-## func [GetAuthorizers](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/rest.go#L94>)
+## func [GetAuthorizers](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/rest.go#L94>)
 
 ```go
 func GetAuthorizers(active bool, cb zcncore.GetInfoCallback) (err error)
@@ -225,7 +225,7 @@ func GetAuthorizers(active bool, cb zcncore.GetInfoCallback) (err error)
 GetAuthorizers Returns all or only active authorizers
 
 <a name="GetGlobalConfig"></a>
-## func [GetGlobalConfig](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/rest.go#L104>)
+## func [GetGlobalConfig](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/rest.go#L104>)
 
 ```go
 func GetGlobalConfig(cb zcncore.GetInfoCallback) (err error)
@@ -234,7 +234,7 @@ func GetGlobalConfig(cb zcncore.GetInfoCallback) (err error)
 GetGlobalConfig Returns global config
 
 <a name="GetTransactionStatus"></a>
-## func [GetTransactionStatus](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/bridge_helper.go#L45>)
+## func [GetTransactionStatus](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/bridge_helper.go#L45>)
 
 ```go
 func GetTransactionStatus(hash string) (int, error)
@@ -243,7 +243,7 @@ func GetTransactionStatus(hash string) (int, error)
 
 
 <a name="ImportAccount"></a>
-## func [ImportAccount](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/keystore.go#L135>)
+## func [ImportAccount](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/keystore.go#L135>)
 
 ```go
 func ImportAccount(homedir, mnemonic, password string, accountAddrIndex ...AccountAddressIndex) (string, error)
@@ -252,7 +252,7 @@ func ImportAccount(homedir, mnemonic, password string, accountAddrIndex ...Accou
 ImportAccount imports account using mnemonic
 
 <a name="ListStorageAccounts"></a>
-## func [ListStorageAccounts](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/keystore.go#L62>)
+## func [ListStorageAccounts](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/keystore.go#L62>)
 
 ```go
 func ListStorageAccounts(homedir string) []common.Address
@@ -261,7 +261,7 @@ func ListStorageAccounts(homedir string) []common.Address
 ListStorageAccounts List available accounts
 
 <a name="AccountAddressIndex"></a>
-## type [AccountAddressIndex](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/keystore.go#L128-L132>)
+## type [AccountAddressIndex](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/keystore.go#L128-L132>)
 
 
 
@@ -274,7 +274,7 @@ type AccountAddressIndex struct {
 ```
 
 <a name="AlchemyGasEstimationRequest"></a>
-## type [AlchemyGasEstimationRequest](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/bridge_helper.go#L14-L19>)
+## type [AlchemyGasEstimationRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/bridge_helper.go#L14-L19>)
 
 AlchemyGasEstimationRequest describes request used for Alchemy enhanced JSON\-RPC API.
 
@@ -288,7 +288,7 @@ type AlchemyGasEstimationRequest struct {
 ```
 
 <a name="AuthorizerNode"></a>
-## type [AuthorizerNode](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/rest.go#L41-L44>)
+## type [AuthorizerNode](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/rest.go#L41-L44>)
 
 
 
@@ -300,7 +300,7 @@ type AuthorizerNode struct {
 ```
 
 <a name="AuthorizerNodesResponse"></a>
-## type [AuthorizerNodesResponse](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/rest.go#L37-L39>)
+## type [AuthorizerNodesResponse](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/rest.go#L37-L39>)
 
 
 
@@ -311,7 +311,7 @@ type AuthorizerNodesResponse struct {
 ```
 
 <a name="AuthorizerResponse"></a>
-## type [AuthorizerResponse](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/rest.go#L15-L35>)
+## type [AuthorizerResponse](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/rest.go#L15-L35>)
 
 
 
@@ -340,7 +340,7 @@ type AuthorizerResponse struct {
 ```
 
 <a name="BancorTokenDetails"></a>
-## type [BancorTokenDetails](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/bridge_helper.go#L34-L43>)
+## type [BancorTokenDetails](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/bridge_helper.go#L34-L43>)
 
 BancorTokenDetails describes Bancor ZCN zcntoken pool details
 
@@ -358,7 +358,7 @@ type BancorTokenDetails struct {
 ```
 
 <a name="BridgeClient"></a>
-## type [BridgeClient](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/config.go#L55-L72>)
+## type [BridgeClient](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/config.go#L55-L72>)
 
 
 
@@ -381,7 +381,7 @@ type BridgeClient struct {
 ```
 
 <a name="NewBridgeClient"></a>
-### func [NewBridgeClient](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/config.go#L75-L87>)
+### func [NewBridgeClient](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/config.go#L75-L87>)
 
 ```go
 func NewBridgeClient(bridgeAddress, tokenAddress, authorizersAddress, ethereumAddress, ethereumNodeURL, password string, gasLimit uint64, consensusThreshold float64, bancorAPIURL string, ethereumClient EthereumClient, transactionProvider transaction.TransactionProvider, keyStore KeyStore) *BridgeClient
@@ -390,7 +390,7 @@ func NewBridgeClient(bridgeAddress, tokenAddress, authorizersAddress, ethereumAd
 NewBridgeClient creates BridgeClient with the given parameters.
 
 <a name="SetupBridgeClientSDK"></a>
-### func [SetupBridgeClientSDK](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/config.go#L128>)
+### func [SetupBridgeClientSDK](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/config.go#L128>)
 
 ```go
 func SetupBridgeClientSDK(cfg *BridgeSDKConfig) *BridgeClient
@@ -399,7 +399,7 @@ func SetupBridgeClientSDK(cfg *BridgeSDKConfig) *BridgeClient
 SetupBridgeClientSDK initializes new bridge client. Meant to be used from standalone application with 0chain SDK initialized.
 
 <a name="BridgeClient.AddEthereumAuthorizer"></a>
-### func \(\*BridgeClient\) [AddEthereumAuthorizer](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/bridge.go#L124>)
+### func \(\*BridgeClient\) [AddEthereumAuthorizer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/bridge.go#L124>)
 
 ```go
 func (b *BridgeClient) AddEthereumAuthorizer(ctx context.Context, address common.Address) (*types.Transaction, error)
@@ -408,7 +408,7 @@ func (b *BridgeClient) AddEthereumAuthorizer(ctx context.Context, address common
 AddEthereumAuthorizer Adds authorizer to Ethereum bridge. Only contract deployer can call this method
 
 <a name="BridgeClient.AddEthereumAuthorizers"></a>
-### func \(\*BridgeClient\) [AddEthereumAuthorizers](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/bridge.go#L155>)
+### func \(\*BridgeClient\) [AddEthereumAuthorizers](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/bridge.go#L155>)
 
 ```go
 func (b *BridgeClient) AddEthereumAuthorizers(configDir string)
@@ -417,7 +417,7 @@ func (b *BridgeClient) AddEthereumAuthorizers(configDir string)
 
 
 <a name="BridgeClient.ApproveSwap"></a>
-### func \(\*BridgeClient\) [ApproveSwap](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/bridge.go#L732>)
+### func \(\*BridgeClient\) [ApproveSwap](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/bridge.go#L732>)
 
 ```go
 func (b *BridgeClient) ApproveSwap(ctx context.Context, sourceTokenAddress string, maxAmountSwap *big.Int) (*types.Transaction, error)
@@ -426,7 +426,7 @@ func (b *BridgeClient) ApproveSwap(ctx context.Context, sourceTokenAddress strin
 ApproveSwap provides opportunity to approve swap operation for ERC20 tokens
 
 <a name="BridgeClient.BurnWZCN"></a>
-### func \(\*BridgeClient\) [BurnWZCN](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/bridge.go#L556>)
+### func \(\*BridgeClient\) [BurnWZCN](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/bridge.go#L556>)
 
 ```go
 func (b *BridgeClient) BurnWZCN(ctx context.Context, amountTokens uint64) (*types.Transaction, error)
@@ -435,7 +435,7 @@ func (b *BridgeClient) BurnWZCN(ctx context.Context, amountTokens uint64) (*type
 BurnWZCN Burns WZCN tokens on behalf of the 0ZCN client amountTokens \- ZCN tokens clientID \- 0ZCN client ERC20 signature: "burn\(uint256,bytes\)"
 
 <a name="BridgeClient.BurnZCN"></a>
-### func \(\*BridgeClient\) [BurnZCN](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/bridge.go#L626>)
+### func \(\*BridgeClient\) [BurnZCN](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/bridge.go#L626>)
 
 ```go
 func (b *BridgeClient) BurnZCN(ctx context.Context, amount, txnfee uint64) (transaction.Transaction, error)
@@ -444,7 +444,7 @@ func (b *BridgeClient) BurnZCN(ctx context.Context, amount, txnfee uint64) (tran
 BurnZCN burns ZCN tokens before conversion from ZCN to WZCN as a first step
 
 <a name="BridgeClient.CreateSignedTransactionFromKeyStore"></a>
-### func \(\*BridgeClient\) [CreateSignedTransactionFromKeyStore](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/bridge.go#L76>)
+### func \(\*BridgeClient\) [CreateSignedTransactionFromKeyStore](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/bridge.go#L76>)
 
 ```go
 func (b *BridgeClient) CreateSignedTransactionFromKeyStore(client EthereumClient, gasLimitUnits uint64) *bind.TransactOpts
@@ -453,7 +453,7 @@ func (b *BridgeClient) CreateSignedTransactionFromKeyStore(client EthereumClient
 
 
 <a name="BridgeClient.EstimateBurnWZCNGasAmount"></a>
-### func \(\*BridgeClient\) [EstimateBurnWZCNGasAmount](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/bridge.go#L1050>)
+### func \(\*BridgeClient\) [EstimateBurnWZCNGasAmount](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/bridge.go#L1050>)
 
 ```go
 func (b *BridgeClient) EstimateBurnWZCNGasAmount(ctx context.Context, from, to string, amountTokens int) (float64, error)
@@ -462,7 +462,7 @@ func (b *BridgeClient) EstimateBurnWZCNGasAmount(ctx context.Context, from, to s
 EstimateBurnWZCNGasAmount performs gas amount estimation for the given wzcn burn transaction.
 
 <a name="BridgeClient.EstimateGasPrice"></a>
-### func \(\*BridgeClient\) [EstimateGasPrice](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/bridge.go#L1148>)
+### func \(\*BridgeClient\) [EstimateGasPrice](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/bridge.go#L1148>)
 
 ```go
 func (b *BridgeClient) EstimateGasPrice(ctx context.Context) (float64, error)
@@ -471,7 +471,7 @@ func (b *BridgeClient) EstimateGasPrice(ctx context.Context) (float64, error)
 EstimateGasPrice performs gas estimation for the given transaction.
 
 <a name="BridgeClient.EstimateMintWZCNGasAmount"></a>
-### func \(\*BridgeClient\) [EstimateMintWZCNGasAmount](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/bridge.go#L1080-L1081>)
+### func \(\*BridgeClient\) [EstimateMintWZCNGasAmount](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/bridge.go#L1080-L1081>)
 
 ```go
 func (b *BridgeClient) EstimateMintWZCNGasAmount(ctx context.Context, from, to, zcnTransactionRaw string, amountToken, nonceRaw int64, signaturesRaw [][]byte) (float64, error)
@@ -480,7 +480,7 @@ func (b *BridgeClient) EstimateMintWZCNGasAmount(ctx context.Context, from, to, 
 EstimateMintWZCNGasAmount performs gas amount estimation for the given wzcn mint transaction.
 
 <a name="BridgeClient.FetchZCNToSourceTokenRate"></a>
-### func \(\*BridgeClient\) [FetchZCNToSourceTokenRate](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/bridge.go#L673>)
+### func \(\*BridgeClient\) [FetchZCNToSourceTokenRate](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/bridge.go#L673>)
 
 ```go
 func (b *BridgeClient) FetchZCNToSourceTokenRate(sourceTokenAddress string) (*big.Float, error)
@@ -489,7 +489,7 @@ func (b *BridgeClient) FetchZCNToSourceTokenRate(sourceTokenAddress string) (*bi
 FetchZCNToETHRate retrieves latest ZCN to ETH rate using Bancor API
 
 <a name="BridgeClient.GetMaxBancorTargetAmount"></a>
-### func \(\*BridgeClient\) [GetMaxBancorTargetAmount](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/bridge.go#L714>)
+### func \(\*BridgeClient\) [GetMaxBancorTargetAmount](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/bridge.go#L714>)
 
 ```go
 func (b *BridgeClient) GetMaxBancorTargetAmount(sourceTokenAddress string, amountSwap uint64) (*big.Int, error)
@@ -498,7 +498,7 @@ func (b *BridgeClient) GetMaxBancorTargetAmount(sourceTokenAddress string, amoun
 GetMaxBancorTargetAmount retrieves max amount of a given source token for Bancor swap
 
 <a name="BridgeClient.GetTokenBalance"></a>
-### func \(\*BridgeClient\) [GetTokenBalance](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/bridge.go#L399>)
+### func \(\*BridgeClient\) [GetTokenBalance](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/bridge.go#L399>)
 
 ```go
 func (b *BridgeClient) GetTokenBalance() (*big.Int, error)
@@ -507,7 +507,7 @@ func (b *BridgeClient) GetTokenBalance() (*big.Int, error)
 GetTokenBalance returns balance of the current client for the zcntoken address
 
 <a name="BridgeClient.GetUserNonceMinted"></a>
-### func \(\*BridgeClient\) [GetUserNonceMinted](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/bridge.go#L450>)
+### func \(\*BridgeClient\) [GetUserNonceMinted](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/bridge.go#L450>)
 
 ```go
 func (b *BridgeClient) GetUserNonceMinted(ctx context.Context, rawEthereumAddress string) (*big.Int, error)
@@ -516,7 +516,7 @@ func (b *BridgeClient) GetUserNonceMinted(ctx context.Context, rawEthereumAddres
 GetUserNonceMinted Returns nonce for a specified Ethereum address
 
 <a name="BridgeClient.IncreaseBurnerAllowance"></a>
-### func \(\*BridgeClient\) [IncreaseBurnerAllowance](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/bridge.go#L350>)
+### func \(\*BridgeClient\) [IncreaseBurnerAllowance](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/bridge.go#L350>)
 
 ```go
 func (b *BridgeClient) IncreaseBurnerAllowance(ctx context.Context, allowanceAmount uint64) (*types.Transaction, error)
@@ -525,7 +525,7 @@ func (b *BridgeClient) IncreaseBurnerAllowance(ctx context.Context, allowanceAmo
 IncreaseBurnerAllowance Increases allowance for bridge contract address to transfer ERC\-20 tokens on behalf of the zcntoken owner to the Burn TokenPool During the burn the script transfers amount from zcntoken owner to the bridge burn zcntoken pool Example: owner wants to burn some amount. The contract will transfer some amount from owner address to the pool. So the owner must call IncreaseAllowance of the WZCN zcntoken with 2 parameters: spender address which is the bridge contract and amount to be burned \(transferred\) Token signature: "increaseApproval\(address,uint256\)"
 
 <a name="BridgeClient.MintWZCN"></a>
-### func \(\*BridgeClient\) [MintWZCN](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/bridge.go#L495>)
+### func \(\*BridgeClient\) [MintWZCN](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/bridge.go#L495>)
 
 ```go
 func (b *BridgeClient) MintWZCN(ctx context.Context, payload *ethereum.MintPayload) (*types.Transaction, error)
@@ -534,7 +534,7 @@ func (b *BridgeClient) MintWZCN(ctx context.Context, payload *ethereum.MintPaylo
 MintWZCN Mint ZCN tokens on behalf of the 0ZCN client payload: received from authorizers
 
 <a name="BridgeClient.MintZCN"></a>
-### func \(\*BridgeClient\) [MintZCN](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/bridge.go#L594>)
+### func \(\*BridgeClient\) [MintZCN](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/bridge.go#L594>)
 
 ```go
 func (b *BridgeClient) MintZCN(ctx context.Context, payload *zcnsc.MintPayload) (string, error)
@@ -543,7 +543,7 @@ func (b *BridgeClient) MintZCN(ctx context.Context, payload *zcnsc.MintPayload) 
 MintZCN mints ZCN tokens after receiving proof\-of\-burn of WZCN tokens
 
 <a name="BridgeClient.NFTConfigGetAddress"></a>
-### func \(\*BridgeClient\) [NFTConfigGetAddress](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/bridge.go#L321>)
+### func \(\*BridgeClient\) [NFTConfigGetAddress](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/bridge.go#L321>)
 
 ```go
 func (b *BridgeClient) NFTConfigGetAddress(ctx context.Context, key string) (string, string, error)
@@ -552,7 +552,7 @@ func (b *BridgeClient) NFTConfigGetAddress(ctx context.Context, key string) (str
 
 
 <a name="BridgeClient.NFTConfigGetUint256"></a>
-### func \(\*BridgeClient\) [NFTConfigGetUint256](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/bridge.go#L276>)
+### func \(\*BridgeClient\) [NFTConfigGetUint256](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/bridge.go#L276>)
 
 ```go
 func (b *BridgeClient) NFTConfigGetUint256(ctx context.Context, key string, keyParam ...int64) (string, int64, error)
@@ -561,7 +561,7 @@ func (b *BridgeClient) NFTConfigGetUint256(ctx context.Context, key string, keyP
 
 
 <a name="BridgeClient.NFTConfigSetAddress"></a>
-### func \(\*BridgeClient\) [NFTConfigSetAddress](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/bridge.go#L298>)
+### func \(\*BridgeClient\) [NFTConfigSetAddress](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/bridge.go#L298>)
 
 ```go
 func (b *BridgeClient) NFTConfigSetAddress(ctx context.Context, key, address string) (*types.Transaction, error)
@@ -570,7 +570,7 @@ func (b *BridgeClient) NFTConfigSetAddress(ctx context.Context, key, address str
 
 
 <a name="BridgeClient.NFTConfigSetUint256"></a>
-### func \(\*BridgeClient\) [NFTConfigSetUint256](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/bridge.go#L250>)
+### func \(\*BridgeClient\) [NFTConfigSetUint256](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/bridge.go#L250>)
 
 ```go
 func (b *BridgeClient) NFTConfigSetUint256(ctx context.Context, key string, value int64) (*types.Transaction, error)
@@ -579,7 +579,7 @@ func (b *BridgeClient) NFTConfigSetUint256(ctx context.Context, key string, valu
 NFTConfigSetUint256 call setUint256 method of NFTConfig contract
 
 <a name="BridgeClient.NFTConfigSetUint256Raw"></a>
-### func \(\*BridgeClient\) [NFTConfigSetUint256Raw](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/bridge.go#L255>)
+### func \(\*BridgeClient\) [NFTConfigSetUint256Raw](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/bridge.go#L255>)
 
 ```go
 func (b *BridgeClient) NFTConfigSetUint256Raw(ctx context.Context, key common.Hash, value int64) (*types.Transaction, error)
@@ -588,7 +588,7 @@ func (b *BridgeClient) NFTConfigSetUint256Raw(ctx context.Context, key common.Ha
 
 
 <a name="BridgeClient.QueryEthereumBurnEvents"></a>
-### func \(\*BridgeClient\) [QueryEthereumBurnEvents](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/authorizers_query.go#L112>)
+### func \(\*BridgeClient\) [QueryEthereumBurnEvents](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/authorizers_query.go#L112>)
 
 ```go
 func (b *BridgeClient) QueryEthereumBurnEvents(startNonce string) ([]*ethereum.BurnEvent, error)
@@ -597,7 +597,7 @@ func (b *BridgeClient) QueryEthereumBurnEvents(startNonce string) ([]*ethereum.B
 QueryEthereumBurnEvents gets ethereum burn events
 
 <a name="BridgeClient.QueryEthereumMintPayload"></a>
-### func \(\*BridgeClient\) [QueryEthereumMintPayload](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/authorizers_query.go#L50>)
+### func \(\*BridgeClient\) [QueryEthereumMintPayload](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/authorizers_query.go#L50>)
 
 ```go
 func (b *BridgeClient) QueryEthereumMintPayload(zchainBurnHash string) (*ethereum.MintPayload, error)
@@ -606,7 +606,7 @@ func (b *BridgeClient) QueryEthereumMintPayload(zchainBurnHash string) (*ethereu
 QueryEthereumMintPayload gets burn ticket and creates mint payload to be minted in the Ethereum chain zchainBurnHash \- Ethereum burn transaction hash
 
 <a name="BridgeClient.QueryZChainMintPayload"></a>
-### func \(\*BridgeClient\) [QueryZChainMintPayload](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/authorizers_query.go#L168>)
+### func \(\*BridgeClient\) [QueryZChainMintPayload](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/authorizers_query.go#L168>)
 
 ```go
 func (b *BridgeClient) QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPayload, error)
@@ -615,7 +615,7 @@ func (b *BridgeClient) QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPa
 QueryZChainMintPayload gets burn ticket and creates mint payload to be minted in the ZChain ethBurnHash \- Ethereum burn transaction hash
 
 <a name="BridgeClient.RemoveEthereumAuthorizer"></a>
-### func \(\*BridgeClient\) [RemoveEthereumAuthorizer](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/bridge.go#L140>)
+### func \(\*BridgeClient\) [RemoveEthereumAuthorizer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/bridge.go#L140>)
 
 ```go
 func (b *BridgeClient) RemoveEthereumAuthorizer(ctx context.Context, address common.Address) (*types.Transaction, error)
@@ -624,7 +624,7 @@ func (b *BridgeClient) RemoveEthereumAuthorizer(ctx context.Context, address com
 RemoveEthereumAuthorizer Removes authorizer from Ethereum bridge. Only contract deployer can call this method
 
 <a name="BridgeClient.ResetUserNonceMinted"></a>
-### func \(\*BridgeClient\) [ResetUserNonceMinted](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/bridge.go#L472>)
+### func \(\*BridgeClient\) [ResetUserNonceMinted](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/bridge.go#L472>)
 
 ```go
 func (b *BridgeClient) ResetUserNonceMinted(ctx context.Context) (*types.Transaction, error)
@@ -633,7 +633,7 @@ func (b *BridgeClient) ResetUserNonceMinted(ctx context.Context) (*types.Transac
 ResetUserNonceMinted Resets nonce for a specified Ethereum address
 
 <a name="BridgeClient.SignWithEthereumChain"></a>
-### func \(\*BridgeClient\) [SignWithEthereumChain](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/bridge.go#L425>)
+### func \(\*BridgeClient\) [SignWithEthereumChain](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/bridge.go#L425>)
 
 ```go
 func (b *BridgeClient) SignWithEthereumChain(message string) ([]byte, error)
@@ -642,7 +642,7 @@ func (b *BridgeClient) SignWithEthereumChain(message string) ([]byte, error)
 SignWithEthereumChain signs the digest with Ethereum chain signer taking key from the current user key storage
 
 <a name="BridgeClient.Swap"></a>
-### func \(\*BridgeClient\) [Swap](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/bridge.go#L759>)
+### func \(\*BridgeClient\) [Swap](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/bridge.go#L759>)
 
 ```go
 func (b *BridgeClient) Swap(ctx context.Context, sourceTokenAddress string, amountSwap uint64, maxAmountSwap *big.Int, deadlinePeriod time.Time) (*types.Transaction, error)
@@ -651,7 +651,7 @@ func (b *BridgeClient) Swap(ctx context.Context, sourceTokenAddress string, amou
 Swap provides opportunity to perform zcntoken swap operation.
 
 <a name="BridgeClient.VerifyZCNTransaction"></a>
-### func \(\*BridgeClient\) [VerifyZCNTransaction](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/bridge.go#L420>)
+### func \(\*BridgeClient\) [VerifyZCNTransaction](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/bridge.go#L420>)
 
 ```go
 func (b *BridgeClient) VerifyZCNTransaction(ctx context.Context, hash string) (transaction.Transaction, error)
@@ -660,7 +660,7 @@ func (b *BridgeClient) VerifyZCNTransaction(ctx context.Context, hash string) (t
 VerifyZCNTransaction verifies 0CHain transaction
 
 <a name="BridgeSDKConfig"></a>
-## type [BridgeSDKConfig](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/config.go#L40-L46>)
+## type [BridgeSDKConfig](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/config.go#L40-L46>)
 
 
 
@@ -675,7 +675,7 @@ type BridgeSDKConfig struct {
 ```
 
 <a name="DetailedAccount"></a>
-## type [DetailedAccount](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/keystore.go#L16-L20>)
+## type [DetailedAccount](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/keystore.go#L16-L20>)
 
 DetailedAccount describes detailed account
 
@@ -688,7 +688,7 @@ type DetailedAccount struct {
 ```
 
 <a name="EthereumBurnEvents"></a>
-## type [EthereumBurnEvents](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/authorizer_response.go#L28-L34>)
+## type [EthereumBurnEvents](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/authorizer_response.go#L28-L34>)
 
 EthereumBurnEvents represents burn events returned by authorizers
 
@@ -703,7 +703,7 @@ type EthereumBurnEvents struct {
 ```
 
 <a name="EthereumBurnEvents.Data"></a>
-### func \(\*EthereumBurnEvents\) [Data](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/authorizer_response.go#L105>)
+### func \(\*EthereumBurnEvents\) [Data](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/authorizer_response.go#L105>)
 
 ```go
 func (r *EthereumBurnEvents) Data() interface{}
@@ -712,7 +712,7 @@ func (r *EthereumBurnEvents) Data() interface{}
 
 
 <a name="EthereumBurnEvents.Error"></a>
-### func \(\*EthereumBurnEvents\) [Error](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/authorizer_response.go#L101>)
+### func \(\*EthereumBurnEvents\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/authorizer_response.go#L101>)
 
 ```go
 func (r *EthereumBurnEvents) Error() error
@@ -721,7 +721,7 @@ func (r *EthereumBurnEvents) Error() error
 
 
 <a name="EthereumBurnEvents.GetAuthorizerID"></a>
-### func \(\*EthereumBurnEvents\) [GetAuthorizerID](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/authorizer_response.go#L93>)
+### func \(\*EthereumBurnEvents\) [GetAuthorizerID](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/authorizer_response.go#L93>)
 
 ```go
 func (r *EthereumBurnEvents) GetAuthorizerID() string
@@ -730,7 +730,7 @@ func (r *EthereumBurnEvents) GetAuthorizerID() string
 
 
 <a name="EthereumBurnEvents.SetAuthorizerID"></a>
-### func \(\*EthereumBurnEvents\) [SetAuthorizerID](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/authorizer_response.go#L97>)
+### func \(\*EthereumBurnEvents\) [SetAuthorizerID](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/authorizer_response.go#L97>)
 
 ```go
 func (r *EthereumBurnEvents) SetAuthorizerID(id string)
@@ -739,7 +739,7 @@ func (r *EthereumBurnEvents) SetAuthorizerID(id string)
 
 
 <a name="EthereumClient"></a>
-## type [EthereumClient](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/config.go#L49-L53>)
+## type [EthereumClient](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/config.go#L49-L53>)
 
 EthereumClient describes Ethereum JSON\-RPC client generealized interface
 
@@ -752,7 +752,7 @@ type EthereumClient interface {
 ```
 
 <a name="GasEstimationRequest"></a>
-## type [GasEstimationRequest](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/bridge_helper.go#L22-L26>)
+## type [GasEstimationRequest](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/bridge_helper.go#L22-L26>)
 
 GasEstimationRequest describes request used for Alchemy enhanced JSON\-RPC API.
 
@@ -765,7 +765,7 @@ type GasEstimationRequest struct {
 ```
 
 <a name="GasPriceEstimationResult"></a>
-## type [GasPriceEstimationResult](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/bridge_helper.go#L29-L31>)
+## type [GasPriceEstimationResult](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/bridge_helper.go#L29-L31>)
 
 GasPriceEstimationResult represents result of the gas price estimation operation execution.
 
@@ -776,7 +776,7 @@ type GasPriceEstimationResult struct {
 ```
 
 <a name="JobError"></a>
-## type [JobError](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/authorizer_response.go#L23-L25>)
+## type [JobError](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/authorizer_response.go#L23-L25>)
 
 JobError result of internal request wrapped in authorizer job
 
@@ -787,7 +787,7 @@ type JobError struct {
 ```
 
 <a name="JobError.MarshalJSON"></a>
-### func \(\*JobError\) [MarshalJSON](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/authorizer_response.go#L61>)
+### func \(\*JobError\) [MarshalJSON](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/authorizer_response.go#L61>)
 
 ```go
 func (e *JobError) MarshalJSON() ([]byte, error)
@@ -796,7 +796,7 @@ func (e *JobError) MarshalJSON() ([]byte, error)
 
 
 <a name="JobError.UnmarshalJSON"></a>
-### func \(\*JobError\) [UnmarshalJSON](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/authorizer_response.go#L56>)
+### func \(\*JobError\) [UnmarshalJSON](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/authorizer_response.go#L56>)
 
 ```go
 func (e *JobError) UnmarshalJSON(buf []byte) error
@@ -805,7 +805,7 @@ func (e *JobError) UnmarshalJSON(buf []byte) error
 
 
 <a name="JobResult"></a>
-## type [JobResult](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/authorizer_response.go#L12-L21>)
+## type [JobResult](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/authorizer_response.go#L12-L21>)
 
 JobResult = Authorizer task result, it wraps actual result of the query inside authorizer
 
@@ -823,7 +823,7 @@ type JobResult interface {
 ```
 
 <a name="JobStatus"></a>
-## type [JobStatus](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/authorizer_response.go#L10>)
+## type [JobStatus](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/authorizer_response.go#L10>)
 
 JobStatus = Ethereum transaction status
 
@@ -832,7 +832,7 @@ type JobStatus uint
 ```
 
 <a name="KeyStore"></a>
-## type [KeyStore](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/keystore.go#L23-L28>)
+## type [KeyStore](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/keystore.go#L23-L28>)
 
 KeyStore is a wrapper, which exposes Ethereum KeyStore methods used by DEX bridge.
 
@@ -846,7 +846,7 @@ type KeyStore interface {
 ```
 
 <a name="NewKeyStore"></a>
-### func [NewKeyStore](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/keystore.go#L35>)
+### func [NewKeyStore](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/keystore.go#L35>)
 
 ```go
 func NewKeyStore(path string) KeyStore
@@ -855,7 +855,7 @@ func NewKeyStore(path string) KeyStore
 NewKeyStore creates new KeyStore wrapper instance
 
 <a name="ProofEthereumBurn"></a>
-## type [ProofEthereumBurn](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/authorizer_response.go#L37-L43>)
+## type [ProofEthereumBurn](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/authorizer_response.go#L37-L43>)
 
 ProofEthereumBurn Authorizer returns this type for Ethereum transaction
 
@@ -870,7 +870,7 @@ type ProofEthereumBurn struct {
 ```
 
 <a name="ProofZCNBurn"></a>
-## type [ProofZCNBurn](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/authorizer_response.go#L46-L53>)
+## type [ProofZCNBurn](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/authorizer_response.go#L46-L53>)
 
 ProofZCNBurn Authorizer returns this type for ZCN transaction
 
@@ -886,7 +886,7 @@ type ProofZCNBurn struct {
 ```
 
 <a name="ProofZCNBurn.Data"></a>
-### func \(\*ProofZCNBurn\) [Data](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/authorizer_response.go#L121>)
+### func \(\*ProofZCNBurn\) [Data](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/authorizer_response.go#L121>)
 
 ```go
 func (r *ProofZCNBurn) Data() interface{}
@@ -895,7 +895,7 @@ func (r *ProofZCNBurn) Data() interface{}
 
 
 <a name="ProofZCNBurn.Error"></a>
-### func \(\*ProofZCNBurn\) [Error](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/authorizer_response.go#L117>)
+### func \(\*ProofZCNBurn\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/authorizer_response.go#L117>)
 
 ```go
 func (r *ProofZCNBurn) Error() error
@@ -904,7 +904,7 @@ func (r *ProofZCNBurn) Error() error
 
 
 <a name="ProofZCNBurn.GetAuthorizerID"></a>
-### func \(\*ProofZCNBurn\) [GetAuthorizerID](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/authorizer_response.go#L109>)
+### func \(\*ProofZCNBurn\) [GetAuthorizerID](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/authorizer_response.go#L109>)
 
 ```go
 func (r *ProofZCNBurn) GetAuthorizerID() string
@@ -913,7 +913,7 @@ func (r *ProofZCNBurn) GetAuthorizerID() string
 
 
 <a name="ProofZCNBurn.SetAuthorizerID"></a>
-### func \(\*ProofZCNBurn\) [SetAuthorizerID](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/authorizer_response.go#L113>)
+### func \(\*ProofZCNBurn\) [SetAuthorizerID](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/authorizer_response.go#L113>)
 
 ```go
 func (r *ProofZCNBurn) SetAuthorizerID(id string)
@@ -922,7 +922,7 @@ func (r *ProofZCNBurn) SetAuthorizerID(id string)
 
 
 <a name="WZCNBurnEvent"></a>
-## type [WZCNBurnEvent](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/authorizer_response.go#L66-L75>)
+## type [WZCNBurnEvent](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/authorizer_response.go#L66-L75>)
 
 WZCNBurnEvent returned from burn ticket handler of: /v1/ether/burnticket/get
 
@@ -940,7 +940,7 @@ type WZCNBurnEvent struct {
 ```
 
 <a name="WZCNBurnEvent.Data"></a>
-### func \(\*WZCNBurnEvent\) [Data](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/authorizer_response.go#L89>)
+### func \(\*WZCNBurnEvent\) [Data](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/authorizer_response.go#L89>)
 
 ```go
 func (r *WZCNBurnEvent) Data() interface{}
@@ -949,7 +949,7 @@ func (r *WZCNBurnEvent) Data() interface{}
 
 
 <a name="WZCNBurnEvent.Error"></a>
-### func \(\*WZCNBurnEvent\) [Error](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/authorizer_response.go#L85>)
+### func \(\*WZCNBurnEvent\) [Error](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/authorizer_response.go#L85>)
 
 ```go
 func (r *WZCNBurnEvent) Error() error
@@ -958,7 +958,7 @@ func (r *WZCNBurnEvent) Error() error
 
 
 <a name="WZCNBurnEvent.GetAuthorizerID"></a>
-### func \(\*WZCNBurnEvent\) [GetAuthorizerID](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/authorizer_response.go#L77>)
+### func \(\*WZCNBurnEvent\) [GetAuthorizerID](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/authorizer_response.go#L77>)
 
 ```go
 func (r *WZCNBurnEvent) GetAuthorizerID() string
@@ -967,7 +967,7 @@ func (r *WZCNBurnEvent) GetAuthorizerID() string
 
 
 <a name="WZCNBurnEvent.SetAuthorizerID"></a>
-### func \(\*WZCNBurnEvent\) [SetAuthorizerID](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/authorizer_response.go#L81>)
+### func \(\*WZCNBurnEvent\) [SetAuthorizerID](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/authorizer_response.go#L81>)
 
 ```go
 func (r *WZCNBurnEvent) SetAuthorizerID(id string)

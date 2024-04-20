@@ -29,7 +29,7 @@ var (
 ```
 
 <a name="CreateJwtSession"></a>
-## func [CreateJwtSession](<https://github.com/0chain/gosdk/blob/staging/mobilesdk/zboxapi/client.go#L64>)
+## func [CreateJwtSession](<https://github.com/0chain/gosdk/blob/doc/initial/mobilesdk/zboxapi/client.go#L64>)
 
 ```go
 func CreateJwtSession(phoneNumber string) (int64, error)
@@ -38,7 +38,7 @@ func CreateJwtSession(phoneNumber string) (int64, error)
 CreateJwtSession create a jwt session
 
 <a name="CreateJwtToken"></a>
-## func [CreateJwtToken](<https://github.com/0chain/gosdk/blob/staging/mobilesdk/zboxapi/client.go#L72>)
+## func [CreateJwtToken](<https://github.com/0chain/gosdk/blob/doc/initial/mobilesdk/zboxapi/client.go#L72>)
 
 ```go
 func CreateJwtToken(phoneNumber string, jwtSessionID int64, otp string) (string, error)
@@ -47,7 +47,7 @@ func CreateJwtToken(phoneNumber string, jwtSessionID int64, otp string) (string,
 CreateJwtToken create a fresh jwt token
 
 <a name="GetCsrfToken"></a>
-## func [GetCsrfToken](<https://github.com/0chain/gosdk/blob/staging/mobilesdk/zboxapi/client.go#L56>)
+## func [GetCsrfToken](<https://github.com/0chain/gosdk/blob/doc/initial/mobilesdk/zboxapi/client.go#L56>)
 
 ```go
 func GetCsrfToken() (string, error)
@@ -56,7 +56,7 @@ func GetCsrfToken() (string, error)
 GetCsrfToken create a fresh CSRF token
 
 <a name="Init"></a>
-## func [Init](<https://github.com/0chain/gosdk/blob/staging/mobilesdk/zboxapi/client.go#L28>)
+## func [Init](<https://github.com/0chain/gosdk/blob/doc/initial/mobilesdk/zboxapi/client.go#L28>)
 
 ```go
 func Init(baseUrl, appType string)
@@ -65,7 +65,7 @@ func Init(baseUrl, appType string)
 
 
 <a name="RefreshJwtToken"></a>
-## func [RefreshJwtToken](<https://github.com/0chain/gosdk/blob/staging/mobilesdk/zboxapi/client.go#L80>)
+## func [RefreshJwtToken](<https://github.com/0chain/gosdk/blob/doc/initial/mobilesdk/zboxapi/client.go#L80>)
 
 ```go
 func RefreshJwtToken(phoneNumber string, token string) (string, error)
@@ -74,7 +74,7 @@ func RefreshJwtToken(phoneNumber string, token string) (string, error)
 RefreshJwtToken refresh jwt token
 
 <a name="SetWallet"></a>
-## func [SetWallet](<https://github.com/0chain/gosdk/blob/staging/mobilesdk/zboxapi/client.go#L43>)
+## func [SetWallet](<https://github.com/0chain/gosdk/blob/doc/initial/mobilesdk/zboxapi/client.go#L43>)
 
 ```go
 func SetWallet(clientID, clientPrivateKey, clientPublicKey string) error

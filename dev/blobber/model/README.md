@@ -45,7 +45,7 @@ const (
 ```
 
 <a name="GetListingFieldsMap"></a>
-## func [GetListingFieldsMap](<https://github.com/0chain/gosdk/blob/staging/dev/blobber/model/ref.go#L66>)
+## func [GetListingFieldsMap](<https://github.com/0chain/gosdk/blob/doc/initial/dev/blobber/model/ref.go#L66>)
 
 ```go
 func GetListingFieldsMap(refEntity interface{}, tagName string) map[string]interface{}
@@ -54,7 +54,7 @@ func GetListingFieldsMap(refEntity interface{}, tagName string) map[string]inter
 
 
 <a name="GetReferenceLookup"></a>
-## func [GetReferenceLookup](<https://github.com/0chain/gosdk/blob/staging/dev/blobber/model/ref.go#L146>)
+## func [GetReferenceLookup](<https://github.com/0chain/gosdk/blob/doc/initial/dev/blobber/model/ref.go#L146>)
 
 ```go
 func GetReferenceLookup(allocationID string, path string) string
@@ -63,7 +63,7 @@ func GetReferenceLookup(allocationID string, path string) string
 GetReferenceLookup hash\(allocationID \+ ":" \+ path\)
 
 <a name="GetSubDirsFromPath"></a>
-## func [GetSubDirsFromPath](<https://github.com/0chain/gosdk/blob/staging/dev/blobber/model/ref.go#L101>)
+## func [GetSubDirsFromPath](<https://github.com/0chain/gosdk/blob/doc/initial/dev/blobber/model/ref.go#L101>)
 
 ```go
 func GetSubDirsFromPath(p string) []string
@@ -72,7 +72,7 @@ func GetSubDirsFromPath(p string) []string
 
 
 <a name="CommitResult"></a>
-## type [CommitResult](<https://github.com/0chain/gosdk/blob/staging/dev/blobber/model/commit_result.go#L3-L10>)
+## type [CommitResult](<https://github.com/0chain/gosdk/blob/doc/initial/dev/blobber/model/commit_result.go#L3-L10>)
 
 
 
@@ -86,7 +86,7 @@ type CommitResult struct {
 ```
 
 <a name="LatestPrevWriteMarker"></a>
-## type [LatestPrevWriteMarker](<https://github.com/0chain/gosdk/blob/staging/dev/blobber/model/write_marker.go#L19-L22>)
+## type [LatestPrevWriteMarker](<https://github.com/0chain/gosdk/blob/doc/initial/dev/blobber/model/write_marker.go#L19-L22>)
 
 
 
@@ -98,7 +98,7 @@ type LatestPrevWriteMarker struct {
 ```
 
 <a name="Ref"></a>
-## type [Ref](<https://github.com/0chain/gosdk/blob/staging/dev/blobber/model/ref.go#L24-L45>)
+## type [Ref](<https://github.com/0chain/gosdk/blob/doc/initial/dev/blobber/model/ref.go#L24-L45>)
 
 
 
@@ -128,7 +128,7 @@ type Ref struct {
 ```
 
 <a name="Ref.CalculateDirHash"></a>
-### func \(\*Ref\) [CalculateDirHash](<https://github.com/0chain/gosdk/blob/staging/dev/blobber/model/ref.go#L115>)
+### func \(\*Ref\) [CalculateDirHash](<https://github.com/0chain/gosdk/blob/doc/initial/dev/blobber/model/ref.go#L115>)
 
 ```go
 func (r *Ref) CalculateDirHash(ctx context.Context) (string, error)
@@ -137,7 +137,7 @@ func (r *Ref) CalculateDirHash(ctx context.Context) (string, error)
 
 
 <a name="Ref.CalculateFileHash"></a>
-### func \(\*Ref\) [CalculateFileHash](<https://github.com/0chain/gosdk/blob/staging/dev/blobber/model/ref.go#L150>)
+### func \(\*Ref\) [CalculateFileHash](<https://github.com/0chain/gosdk/blob/doc/initial/dev/blobber/model/ref.go#L150>)
 
 ```go
 func (fr *Ref) CalculateFileHash(ctx context.Context) (string, error)
@@ -146,7 +146,7 @@ func (fr *Ref) CalculateFileHash(ctx context.Context) (string, error)
 
 
 <a name="Ref.CalculateHash"></a>
-### func \(\*Ref\) [CalculateHash](<https://github.com/0chain/gosdk/blob/staging/dev/blobber/model/ref.go#L47>)
+### func \(\*Ref\) [CalculateHash](<https://github.com/0chain/gosdk/blob/doc/initial/dev/blobber/model/ref.go#L47>)
 
 ```go
 func (r *Ref) CalculateHash(ctx context.Context) (string, error)
@@ -155,7 +155,7 @@ func (r *Ref) CalculateHash(ctx context.Context) (string, error)
 
 
 <a name="Ref.GetFileHashData"></a>
-### func \(\*Ref\) [GetFileHashData](<https://github.com/0chain/gosdk/blob/staging/dev/blobber/model/ref.go#L160>)
+### func \(\*Ref\) [GetFileHashData](<https://github.com/0chain/gosdk/blob/doc/initial/dev/blobber/model/ref.go#L160>)
 
 ```go
 func (fr *Ref) GetFileHashData() string
@@ -164,7 +164,7 @@ func (fr *Ref) GetFileHashData() string
 
 
 <a name="Ref.GetListingData"></a>
-### func \(\*Ref\) [GetListingData](<https://github.com/0chain/gosdk/blob/staging/dev/blobber/model/ref.go#L55>)
+### func \(\*Ref\) [GetListingData](<https://github.com/0chain/gosdk/blob/doc/initial/dev/blobber/model/ref.go#L55>)
 
 ```go
 func (r *Ref) GetListingData(ctx context.Context) map[string]interface{}
@@ -173,7 +173,7 @@ func (r *Ref) GetListingData(ctx context.Context) map[string]interface{}
 GetListingData reflect and convert all fields into map\[string\]interface\{\}
 
 <a name="ReferencePath"></a>
-## type [ReferencePath](<https://github.com/0chain/gosdk/blob/staging/dev/blobber/model/reference_path.go#L3-L7>)
+## type [ReferencePath](<https://github.com/0chain/gosdk/blob/doc/initial/dev/blobber/model/reference_path.go#L3-L7>)
 
 
 
@@ -186,7 +186,7 @@ type ReferencePath struct {
 ```
 
 <a name="ReferencePathResult"></a>
-## type [ReferencePathResult](<https://github.com/0chain/gosdk/blob/staging/dev/blobber/model/reference_path_result.go#L5-L8>)
+## type [ReferencePathResult](<https://github.com/0chain/gosdk/blob/doc/initial/dev/blobber/model/reference_path_result.go#L5-L8>)
 
 
 
@@ -198,7 +198,7 @@ type ReferencePathResult struct {
 ```
 
 <a name="BuildReferencePathResult"></a>
-### func [BuildReferencePathResult](<https://github.com/0chain/gosdk/blob/staging/dev/blobber/model/reference_path_result.go#L10>)
+### func [BuildReferencePathResult](<https://github.com/0chain/gosdk/blob/doc/initial/dev/blobber/model/reference_path_result.go#L10>)
 
 ```go
 func BuildReferencePathResult(rootRef *Ref) *ReferencePathResult
@@ -207,7 +207,7 @@ func BuildReferencePathResult(rootRef *Ref) *ReferencePathResult
 
 
 <a name="UploadFormData"></a>
-## type [UploadFormData](<https://github.com/0chain/gosdk/blob/staging/dev/blobber/model/upload_form_data.go#L4-L38>)
+## type [UploadFormData](<https://github.com/0chain/gosdk/blob/doc/initial/dev/blobber/model/upload_form_data.go#L4-L38>)
 
 UploadFormData form data of upload
 
@@ -250,7 +250,7 @@ type UploadFormData struct {
 ```
 
 <a name="UploadResult"></a>
-## type [UploadResult](<https://github.com/0chain/gosdk/blob/staging/dev/blobber/model/upload_result.go#L3-L8>)
+## type [UploadResult](<https://github.com/0chain/gosdk/blob/doc/initial/dev/blobber/model/upload_result.go#L3-L8>)
 
 
 
@@ -264,7 +264,7 @@ type UploadResult struct {
 ```
 
 <a name="WriteMarker"></a>
-## type [WriteMarker](<https://github.com/0chain/gosdk/blob/staging/dev/blobber/model/write_marker.go#L8-L17>)
+## type [WriteMarker](<https://github.com/0chain/gosdk/blob/doc/initial/dev/blobber/model/write_marker.go#L8-L17>)
 
 
 

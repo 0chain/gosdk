@@ -77,7 +77,7 @@ var ErrInvalidTime = errors.New("invalid time")
 ```
 
 <a name="AutoFormatBalance"></a>
-## func [AutoFormatBalance](<https://github.com/0chain/gosdk/blob/staging/core/common/misc.go#L157>)
+## func [AutoFormatBalance](<https://github.com/0chain/gosdk/blob/doc/initial/core/common/misc.go#L157>)
 
 ```go
 func AutoFormatBalance(b Balance) (string, error)
@@ -86,7 +86,7 @@ func AutoFormatBalance(b Balance) (string, error)
 
 
 <a name="AutoFormatStatic"></a>
-## func [AutoFormatStatic](<https://github.com/0chain/gosdk/blob/staging/core/common/misc.go#L249>)
+## func [AutoFormatStatic](<https://github.com/0chain/gosdk/blob/doc/initial/core/common/misc.go#L249>)
 
 ```go
 func AutoFormatStatic(amount int64) (string, error)
@@ -95,7 +95,7 @@ func AutoFormatStatic(amount int64) (string, error)
 
 
 <a name="FormatBalance"></a>
-## func [FormatBalance](<https://github.com/0chain/gosdk/blob/staging/core/common/misc.go#L153>)
+## func [FormatBalance](<https://github.com/0chain/gosdk/blob/doc/initial/core/common/misc.go#L153>)
 
 ```go
 func FormatBalance(b Balance, unit BalanceUnit) (string, error)
@@ -104,7 +104,7 @@ func FormatBalance(b Balance, unit BalanceUnit) (string, error)
 
 
 <a name="FormatStatic"></a>
-## func [FormatStatic](<https://github.com/0chain/gosdk/blob/staging/core/common/misc.go#L237>)
+## func [FormatStatic](<https://github.com/0chain/gosdk/blob/doc/initial/core/common/misc.go#L237>)
 
 ```go
 func FormatStatic(amount int64, unit string) (string, error)
@@ -113,7 +113,7 @@ func FormatStatic(amount int64, unit string) (string, error)
 
 
 <a name="GetPathFields"></a>
-## func [GetPathFields](<https://github.com/0chain/gosdk/blob/staging/core/common/utils.go#L9>)
+## func [GetPathFields](<https://github.com/0chain/gosdk/blob/doc/initial/core/common/utils.go#L9>)
 
 ```go
 func GetPathFields(p string) ([]string, error)
@@ -122,7 +122,7 @@ func GetPathFields(p string) ([]string, error)
 
 
 <a name="MustAddInt"></a>
-## func [MustAddInt](<https://github.com/0chain/gosdk/blob/staging/core/common/math.go#L26>)
+## func [MustAddInt](<https://github.com/0chain/gosdk/blob/doc/initial/core/common/math.go#L26>)
 
 ```go
 func MustAddInt(a, b int) int
@@ -131,7 +131,7 @@ func MustAddInt(a, b int) int
 
 
 <a name="ParseBalanceStatic"></a>
-## func [ParseBalanceStatic](<https://github.com/0chain/gosdk/blob/staging/core/common/misc.go#L232>)
+## func [ParseBalanceStatic](<https://github.com/0chain/gosdk/blob/doc/initial/core/common/misc.go#L232>)
 
 ```go
 func ParseBalanceStatic(str string) (int64, error)
@@ -140,7 +140,7 @@ func ParseBalanceStatic(str string) (int64, error)
 
 
 <a name="ParseTime"></a>
-## func [ParseTime](<https://github.com/0chain/gosdk/blob/staging/core/common/time.go#L36>)
+## func [ParseTime](<https://github.com/0chain/gosdk/blob/doc/initial/core/common/time.go#L36>)
 
 ```go
 func ParseTime(now time.Time, input string) (*time.Time, error)
@@ -149,7 +149,7 @@ func ParseTime(now time.Time, input string) (*time.Time, error)
 ParseTime parse a time string with 4 formats \+1h5m : now \(local timezone\) \+ 1h5m \+3900 : now \(local timezone\) \+3900s 1647858200 : Unix timestamp 2022\-03\-21 10:21:38 : parse UTC date string with YYYY\-MM\-dd HH:mm:ss
 
 <a name="TryAddInt"></a>
-## func [TryAddInt](<https://github.com/0chain/gosdk/blob/staging/core/common/math.go#L8>)
+## func [TryAddInt](<https://github.com/0chain/gosdk/blob/doc/initial/core/common/math.go#L8>)
 
 ```go
 func TryAddInt(a, b int) (int, error)
@@ -158,7 +158,7 @@ func TryAddInt(a, b int) (int, error)
 
 
 <a name="Balance"></a>
-## type [Balance](<https://github.com/0chain/gosdk/blob/staging/core/common/misc.go#L63>)
+## type [Balance](<https://github.com/0chain/gosdk/blob/doc/initial/core/common/misc.go#L63>)
 
 Balance represents 0chain native token
 
@@ -167,7 +167,7 @@ type Balance uint64
 ```
 
 <a name="AddBalance"></a>
-### func [AddBalance](<https://github.com/0chain/gosdk/blob/staging/core/common/misc.go#L145>)
+### func [AddBalance](<https://github.com/0chain/gosdk/blob/doc/initial/core/common/misc.go#L145>)
 
 ```go
 func AddBalance(c, b Balance) (Balance, error)
@@ -176,7 +176,7 @@ func AddBalance(c, b Balance) (Balance, error)
 AddBalance adds c and b, returning an error if the values overflow
 
 <a name="ParseBalance"></a>
-### func [ParseBalance](<https://github.com/0chain/gosdk/blob/staging/core/common/misc.go#L161>)
+### func [ParseBalance](<https://github.com/0chain/gosdk/blob/doc/initial/core/common/misc.go#L161>)
 
 ```go
 func ParseBalance(str string) (Balance, error)
@@ -185,7 +185,7 @@ func ParseBalance(str string) (Balance, error)
 
 
 <a name="ToBalance"></a>
-### func [ToBalance](<https://github.com/0chain/gosdk/blob/staging/core/common/misc.go#L115>)
+### func [ToBalance](<https://github.com/0chain/gosdk/blob/doc/initial/core/common/misc.go#L115>)
 
 ```go
 func ToBalance(token float64) (Balance, error)
@@ -194,7 +194,7 @@ func ToBalance(token float64) (Balance, error)
 ToBalance converts ZCN tokens to Balance.
 
 <a name="Balance.AutoFormat"></a>
-### func \(Balance\) [AutoFormat](<https://github.com/0chain/gosdk/blob/staging/core/common/misc.go#L102>)
+### func \(Balance\) [AutoFormat](<https://github.com/0chain/gosdk/blob/doc/initial/core/common/misc.go#L102>)
 
 ```go
 func (b Balance) AutoFormat() (string, error)
@@ -203,7 +203,7 @@ func (b Balance) AutoFormat() (string, error)
 
 
 <a name="Balance.Format"></a>
-### func \(Balance\) [Format](<https://github.com/0chain/gosdk/blob/staging/core/common/misc.go#L82>)
+### func \(Balance\) [Format](<https://github.com/0chain/gosdk/blob/doc/initial/core/common/misc.go#L82>)
 
 ```go
 func (b Balance) Format(unit BalanceUnit) (string, error)
@@ -212,7 +212,7 @@ func (b Balance) Format(unit BalanceUnit) (string, error)
 
 
 <a name="Balance.String"></a>
-### func \(Balance\) [String](<https://github.com/0chain/gosdk/blob/staging/core/common/misc.go#L75>)
+### func \(Balance\) [String](<https://github.com/0chain/gosdk/blob/doc/initial/core/common/misc.go#L75>)
 
 ```go
 func (b Balance) String() string
@@ -221,7 +221,7 @@ func (b Balance) String() string
 String implements fmt.Stringer interface.
 
 <a name="Balance.ToToken"></a>
-### func \(Balance\) [ToToken](<https://github.com/0chain/gosdk/blob/staging/core/common/misc.go#L65>)
+### func \(Balance\) [ToToken](<https://github.com/0chain/gosdk/blob/doc/initial/core/common/misc.go#L65>)
 
 ```go
 func (b Balance) ToToken() (float64, error)
@@ -230,7 +230,7 @@ func (b Balance) ToToken() (float64, error)
 
 
 <a name="BalanceUnit"></a>
-## type [BalanceUnit](<https://github.com/0chain/gosdk/blob/staging/core/common/misc.go#L200>)
+## type [BalanceUnit](<https://github.com/0chain/gosdk/blob/doc/initial/core/common/misc.go#L200>)
 
 
 
@@ -250,7 +250,7 @@ const (
 ```
 
 <a name="BalanceUnit.Parse"></a>
-### func \(\*BalanceUnit\) [Parse](<https://github.com/0chain/gosdk/blob/staging/core/common/misc.go#L216>)
+### func \(\*BalanceUnit\) [Parse](<https://github.com/0chain/gosdk/blob/doc/initial/core/common/misc.go#L216>)
 
 ```go
 func (unit *BalanceUnit) Parse(s string) error
@@ -259,7 +259,7 @@ func (unit *BalanceUnit) Parse(s string) error
 
 
 <a name="BalanceUnit.String"></a>
-### func \(BalanceUnit\) [String](<https://github.com/0chain/gosdk/blob/staging/core/common/misc.go#L202>)
+### func \(BalanceUnit\) [String](<https://github.com/0chain/gosdk/blob/doc/initial/core/common/misc.go#L202>)
 
 ```go
 func (unit BalanceUnit) String() string
@@ -268,7 +268,7 @@ func (unit BalanceUnit) String() string
 
 
 <a name="Key"></a>
-## type [Key](<https://github.com/0chain/gosdk/blob/staging/core/common/misc.go#L34>)
+## type [Key](<https://github.com/0chain/gosdk/blob/doc/initial/core/common/misc.go#L34>)
 
 A Key represents an identifier. It can be a pool ID, client ID, smart contract address, etc.
 
@@ -277,7 +277,7 @@ type Key string
 ```
 
 <a name="Size"></a>
-## type [Size](<https://github.com/0chain/gosdk/blob/staging/core/common/misc.go#L37>)
+## type [Size](<https://github.com/0chain/gosdk/blob/doc/initial/core/common/misc.go#L37>)
 
 A Size represents a size in bytes.
 
@@ -286,7 +286,7 @@ type Size int64
 ```
 
 <a name="Size.String"></a>
-### func \(Size\) [String](<https://github.com/0chain/gosdk/blob/staging/core/common/misc.go#L53>)
+### func \(Size\) [String](<https://github.com/0chain/gosdk/blob/doc/initial/core/common/misc.go#L53>)
 
 ```go
 func (s Size) String() string
@@ -295,7 +295,7 @@ func (s Size) String() string
 String implements fmt.Stringer interface
 
 <a name="Timestamp"></a>
-## type [Timestamp](<https://github.com/0chain/gosdk/blob/staging/core/common/time.go#L11>)
+## type [Timestamp](<https://github.com/0chain/gosdk/blob/doc/initial/core/common/time.go#L11>)
 
 Timestamp represents Unix time \(e.g. in seconds\)
 
@@ -304,7 +304,7 @@ type Timestamp int64
 ```
 
 <a name="Now"></a>
-### func [Now](<https://github.com/0chain/gosdk/blob/staging/core/common/time.go#L14>)
+### func [Now](<https://github.com/0chain/gosdk/blob/doc/initial/core/common/time.go#L14>)
 
 ```go
 func Now() Timestamp
@@ -313,7 +313,7 @@ func Now() Timestamp
 Now \- current datetime
 
 <a name="Timestamp.ToTime"></a>
-### func \(Timestamp\) [ToTime](<https://github.com/0chain/gosdk/blob/staging/core/common/time.go#L25>)
+### func \(Timestamp\) [ToTime](<https://github.com/0chain/gosdk/blob/doc/initial/core/common/time.go#L25>)
 
 ```go
 func (t Timestamp) ToTime() time.Time
@@ -322,7 +322,7 @@ func (t Timestamp) ToTime() time.Time
 ToTime converts the Timestamp to standard time.Time
 
 <a name="Timestamp.Within"></a>
-### func \(Timestamp\) [Within](<https://github.com/0chain/gosdk/blob/staging/core/common/time.go#L19>)
+### func \(Timestamp\) [Within](<https://github.com/0chain/gosdk/blob/doc/initial/core/common/time.go#L19>)
 
 ```go
 func (t Timestamp) Within(seconds Timestamp) bool

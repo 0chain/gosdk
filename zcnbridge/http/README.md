@@ -51,7 +51,7 @@ var Logger logger.Logger
 ```
 
 <a name="CleanClient"></a>
-## func [CleanClient](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/http/client.go#L23>)
+## func [CleanClient](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/http/client.go#L23>)
 
 ```go
 func CleanClient() *http.Client
@@ -60,7 +60,7 @@ func CleanClient() *http.Client
 
 
 <a name="MakeSCRestAPICall"></a>
-## func [MakeSCRestAPICall](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/http/rest.go#L70>)
+## func [MakeSCRestAPICall](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/http/rest.go#L70>)
 
 ```go
 func MakeSCRestAPICall(opCode int, relativePath string, params Params, cb zcncore.GetInfoCallback)
@@ -69,7 +69,7 @@ func MakeSCRestAPICall(opCode int, relativePath string, params Params, cb zcncor
 MakeSCRestAPICall calls smart contract with provided address and makes retryable request to smart contract resource with provided relative path using params.
 
 <a name="NewClient"></a>
-## func [NewClient](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/http/client.go#L17>)
+## func [NewClient](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/http/client.go#L17>)
 
 ```go
 func NewClient() *http.Client
@@ -78,7 +78,7 @@ func NewClient() *http.Client
 NewClient creates default http.Client with timeouts.
 
 <a name="NewRetryableClient"></a>
-## func [NewRetryableClient](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/http/client.go#L32>)
+## func [NewRetryableClient](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/http/client.go#L32>)
 
 ```go
 func NewRetryableClient(verbose bool) *retryablehttp.Client
@@ -87,7 +87,7 @@ func NewRetryableClient(verbose bool) *retryablehttp.Client
 NewRetryableClient creates default retryablehttp.Client with timeouts and embedded NewClient result.
 
 <a name="SetLogFile"></a>
-## func [SetLogFile](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/http/rest.go#L52>)
+## func [SetLogFile](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/http/rest.go#L52>)
 
 ```go
 func SetLogFile(logFile string, verbose bool)
@@ -96,7 +96,7 @@ func SetLogFile(logFile string, verbose bool)
 
 
 <a name="Params"></a>
-## type [Params](<https://github.com/0chain/gosdk/blob/staging/zcnbridge/http/rest.go#L31>)
+## type [Params](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/http/rest.go#L31>)
 
 
 
