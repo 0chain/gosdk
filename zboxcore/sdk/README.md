@@ -716,7 +716,7 @@ func AddCommitRequest(req *CommitRequest)
 func AddFreeStorageAssigner(name, publicKey string, individualLimit, totalLimit float64) (string, int64, error)
 ```
 
-AddFreeStorageAssigner adds a new free storage assigner \(txn: `storagesc.add\_free\_allocation\_assigner`\). The free storage assigner is used to create free allocations.
+AddFreeStorageAssigner adds a new free storage assigner \(txn: `storagesc.add_free_allocation_assigner`\). The free storage assigner is used to create free allocations.
 
 - `name` is the name of the assigner.
 - `publicKey` is the public key of the assigner.
@@ -732,7 +732,7 @@ returns the hash of the transaction, the nonce of the transaction and an error i
 func CancelAllocation(allocID string) (hash string, nonce int64, err error)
 ```
 
-CancelAllocation sends a cancel request for an allocation \(txn: `storagesc.cancel\_allocation`\)
+CancelAllocation sends a cancel request for an allocation \(txn: `storagesc.cancel_allocation`\)
 
 - `allocID` is the id of the allocation.
 
@@ -763,7 +763,7 @@ func CommitToFabric(metaTxnData, fabricConfigJSON string) (string, error)
 func CreateAllocationForOwner(owner, ownerpublickey string, datashards, parityshards int, size int64, readPrice, writePrice PriceRange, lock uint64, preferredBlobberIds []string, thirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters) (hash string, nonce int64, txn *transaction.Transaction, err error)
 ```
 
-CreateAllocationForOwner creates a new allocation with the given options \(txn: `storagesc.new\_allocation\_request`\).
+CreateAllocationForOwner creates a new allocation with the given options \(txn: `storagesc.new_allocation_request`\).
 
 - `owner` is the client id of the owner of the allocation.
 - `ownerpublickey` is the public key of the owner of the allocation.
@@ -786,7 +786,7 @@ returns the hash of the transaction, the nonce of the transaction, the transacti
 func CreateAllocationWith(options CreateAllocationOptions) (string, int64, *transaction.Transaction, error)
 ```
 
-returns the hash of the new\_allocation\_request transaction, the nonce of the transaction, the transaction object and an error if any.
+returns the hash of the new_allocation_request transaction, the nonce of the transaction, the transaction object and an error if any.
 
 <a name="CreateFreeAllocation"></a>
 ## func [CreateFreeAllocation](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L1280>)
@@ -795,7 +795,7 @@ returns the hash of the new\_allocation\_request transaction, the nonce of the t
 func CreateFreeAllocation(marker string, value uint64) (string, int64, error)
 ```
 
-CreateFreeAllocation creates a new free allocation \(txn: `storagesc.free\_allocation\_request`\).
+CreateFreeAllocation creates a new free allocation \(txn: `storagesc.free_allocation_request`\).
 
 - `marker` is the marker for the free allocation.
 - `value` is the value of the free allocation.
@@ -818,7 +818,7 @@ func CreateReadPool() (hash string, nonce int64, err error)
 func FinalizeAllocation(allocID string) (hash string, nonce int64, err error)
 ```
 
-FinalizeAllocation sends a finalize request for an allocation \(txn: `storagesc.finalize\_allocation`\)
+FinalizeAllocation sends a finalize request for an allocation \(txn: `storagesc.finalize_allocation`\)
 
 - `allocID` is the id of the allocation.
 
@@ -1207,7 +1207,7 @@ func StorageSmartContractTxn(sn transaction.SmartContractTxnData) (hash, out str
 func TransferAllocation(allocationId, newOwner, newOwnerPublicKey string) (string, int64, error)
 ```
 
-TransferAllocation transfers the ownership of an allocation to a new owner. \(txn: `storagesc.update\_allocation\_request`\)
+TransferAllocation transfers the ownership of an allocation to a new owner. \(txn: `storagesc.update_allocation_request`\)
 
 - `allocationId` is the id of the allocation.
 - `newOwner` is the client id of the new owner.
@@ -1222,7 +1222,7 @@ returns the hash of the transaction, the nonce of the transaction and an error i
 func UpdateAllocation(size int64, extend bool, allocationID string, lock uint64, addBlobberId, removeBlobberId string, setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters) (hash string, nonce int64, err error)
 ```
 
-UpdateFreeAllocation sends an update request for an allocation \(txn: `storagesc.update\_allocation\_request`\)
+UpdateFreeAllocation sends an update request for an allocation \(txn: `storagesc.update_allocation_request`\)
 
 - `size` is the size of the allocation.
 - `extend` is a flag indicating whether to extend the allocation.
