@@ -1078,7 +1078,7 @@ func (b *BridgeClient) EstimateBurnWZCNGasAmount(ctx context.Context, from, to s
 
 // EstimateMintWZCNGasAmount performs gas amount estimation for the given wzcn mint transaction.
 func (b *BridgeClient) EstimateMintWZCNGasAmount(
-	ctx context.Context, from, to, zcnTransactionRaw string, amountToken, nonceRaw int64, signaturesRaw []string) (float64, error) {
+	ctx context.Context, from, to, zcnTransactionRaw string, amountToken, nonceRaw int64, signaturesRaw [][]byte) (float64, error) {
 	switch b.getProviderType() {
 	case AlchemyProvider:
 		amount := new(big.Int)
@@ -1089,11 +1089,6 @@ func (b *BridgeClient) EstimateMintWZCNGasAmount(
 		nonce := new(big.Int)
 		nonce.SetInt64(nonceRaw)
 
-		var signatures [][]byte
-		for _, signature := range signaturesRaw {
-			signatures = append(signatures, []byte(signature))
-		}
-
 		fromRaw := common.HexToAddress(from)
 
 		abi, err := bridge.BridgeMetaData.GetAbi()
@@ -1102,7 +1097,7 @@ func (b *BridgeClient) EstimateMintWZCNGasAmount(
 		}
 
 		var packRaw []byte
-		packRaw, err = abi.Pack("mint", fromRaw, amount, zcnTransaction, nonce, signatures)
+		packRaw, err = abi.Pack("mint", fromRaw, amount, zcnTransaction, nonce, signaturesRaw)
 		if err != nil {
 			return 0, errors.Wrap(err, "failed to pack arguments")
 		}
@@ -1149,8 +1144,7 @@ func (b *BridgeClient) estimateAlchemyGasPrice(ctx context.Context) (float64, er
 	return gasPriceFloat, nil
 }
 
-// EstimateGasPrice performs gas estimation for the given transaction using Alchemy enhanced API returning
-// approximate final gas fee.
+// EstimateGasPrice performs gas estimation for the given transaction.
 func (b *BridgeClient) EstimateGasPrice(ctx context.Context) (float64, error) {
 	switch b.getProviderType() {
 	case AlchemyProvider:

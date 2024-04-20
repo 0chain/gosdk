@@ -79,14 +79,14 @@ func InitBlockDownloader(blobbers []*blockchain.StorageNode, workerCount int) {
 	for _, blobber := range blobbers {
 		if _, ok := downloadBlockChan[blobber.ID]; !ok {
 			downloadBlockChan[blobber.ID] = make(chan *BlockDownloadRequest, workerCount)
-			go startBlockDownloadWorker(downloadBlockChan[blobber.ID], workerCount, blobber.ID)
+			go startBlockDownloadWorker(downloadBlockChan[blobber.ID], workerCount, blobber.ID, blobber.Baseurl)
 		}
 	}
 }
 
-func startBlockDownloadWorker(blobberChan chan *BlockDownloadRequest, workers int, id string) {
+func startBlockDownloadWorker(blobberChan chan *BlockDownloadRequest, workers int, id, baseURL string) {
 	sem := semaphore.NewWeighted(int64(workers))
-	hostClient := zboxutil.GetHostClient(id)
+	hostClient := zboxutil.GetHostClient(id, baseURL)
 	for {
 		blockDownloadReq, open := <-blobberChan
 		if !open {
@@ -157,15 +157,15 @@ func (req *BlockDownloadRequest) downloadBlobberBlock(hostClient *fasthttp.HostC
 
 		err = func() error {
 			now := time.Now()
-			statuscode, respBuf, err := hostClient.GetWithRequestTimeout(httpreq, req.respBuf, 45*time.Second)
+			statuscode, respBuf, err := hostClient.GetWithRequest(httpreq, req.respBuf)
 			fasthttp.ReleaseRequest(httpreq)
 			timeTaken := time.Since(now).Milliseconds()
 			if err != nil {
-				if errors.Is(err, fasthttp.ErrConnectionClosed) || err == syscall.EPIPE {
+				zlogger.Logger.Error("Error downloading block: ", err)
+				if errors.Is(err, fasthttp.ErrConnectionClosed) || errors.Is(err, syscall.EPIPE) {
 					shouldRetry = true
 					return errors.New("connection_closed", "Connection closed")
 				}
-				zlogger.Logger.Error("Error downloading block: ", err)
 				return err
 			}
 
@@ -263,10 +263,12 @@ func AddBlockDownloadReq(ctx context.Context, req *BlockDownloadRequest, rb zbox
 	if rb != nil {
 		reqCtx, cncl := context.WithTimeout(ctx, (time.Second * 10))
 		defer cncl()
-		req.respBuf = rb.RequestChunk(reqCtx, int(req.blockNum/req.numBlocks))
+		req.respBuf = rb.RequestChunk(reqCtx, int(req.blockNum))
 		if len(req.respBuf) == 0 {
 			req.respBuf = make([]byte, int(req.numBlocks)*effectiveBlockSize)
 		}
+	} else {
+		req.respBuf = make([]byte, int(req.numBlocks)*effectiveBlockSize)
 	}
 	downloadBlockChan[req.blobber.ID] <- req
 }
