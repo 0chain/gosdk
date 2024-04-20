@@ -852,13 +852,20 @@ GetAllocationBlobbers returns a list of blobber ids that can be used for a new a
 returns the list of blobber ids and an error if any.
 
 <a name="GetAllocationMinLock"></a>
-## func [GetAllocationMinLock](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L1751-L1755>)
+## func [GetAllocationMinLock](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L1758-L1762>)
 
 ```go
 func GetAllocationMinLock(datashards, parityshards int, size int64, writePrice PriceRange) (int64, error)
 ```
 
-expire in milliseconds
+GetAllocationMinLock calculates and returns the minimum lock demand for creating a new allocation, which represents the cost of the creation process.
+
+- `datashards` is the number of data shards for the allocation.
+- `parityshards` is the number of parity shards for the allocation.
+- `size` is the size of the allocation.
+- `writePrice` is the write price range for the allocation.
+
+returns the minimum lock demand for the creation process and an error if any.
 
 <a name="GetAllocationUpdates"></a>
 ## func [GetAllocationUpdates](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L907>)
@@ -950,7 +957,7 @@ func GetTranscodeFile(remotePath string) (string, string)
 
 
 <a name="GetUpdateAllocationMinLock"></a>
-## func [GetUpdateAllocationMinLock](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L1782-L1787>)
+## func [GetUpdateAllocationMinLock](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/sdk/sdk.go#L1789-L1794>)
 
 ```go
 func GetUpdateAllocationMinLock(allocationID string, size int64, extend bool, addBlobberId, removeBlobberId string) (int64, error)

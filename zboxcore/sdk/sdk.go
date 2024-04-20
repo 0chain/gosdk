@@ -1747,7 +1747,14 @@ func CommitToFabric(metaTxnData, fabricConfigJSON string) (string, error) {
 	return fabricResponse, err
 }
 
-// expire in milliseconds
+// GetAllocationMinLock calculates and returns the minimum lock demand for creating a new allocation, which represents the cost of the creation process.
+//
+//		- `datashards` is the number of data shards for the allocation.
+//		- `parityshards` is the number of parity shards for the allocation.
+//		- `size` is the size of the allocation.
+//		- `writePrice` is the write price range for the allocation.
+//
+// returns the minimum lock demand for the creation process and an error if any.
 func GetAllocationMinLock(
 	datashards, parityshards int,
 	size int64,
