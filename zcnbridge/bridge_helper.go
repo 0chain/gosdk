@@ -18,6 +18,13 @@ type AlchemyGasEstimationRequest struct {
 	Data  string `json:"data"`
 }
 
+// GasEstimationRequest describes request used for Alchemy enhanced JSON-RPC API.
+type GasEstimationRequest struct {
+	From  string `json:"from"`
+	To    string `json:"to"`
+	Value string `json:"value"`
+}
+
 // GasPriceEstimationResult represents result of the gas price estimation operation execution.
 type GasPriceEstimationResult struct {
 	Value float64 `json:"value"`

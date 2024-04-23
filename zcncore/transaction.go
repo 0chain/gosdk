@@ -193,8 +193,6 @@ type CreateAllocationRequest struct {
 
 type StakePoolSettings struct {
 	DelegateWallet *string         `json:"delegate_wallet,omitempty"`
-	MinStake       *common.Balance `json:"min_stake,omitempty"`
-	MaxStake       *common.Balance `json:"max_stake,omitempty"`
 	NumDelegates   *int            `json:"num_delegates,omitempty"`
 	ServiceCharge  *float64        `json:"service_charge,omitempty"`
 }
@@ -214,6 +212,7 @@ type Blobber struct {
 	LastHealthCheck   common.Timestamp  `json:"last_health_check"`
 	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
 	NotAvailable      bool              `json:"not_available"`
+	IsRestricted      bool              `json:"is_restricted"`
 }
 
 type Validator struct {
@@ -238,8 +237,6 @@ type AuthorizerHealthCheckPayload struct {
 
 type AuthorizerStakePoolSettings struct {
 	DelegateWallet string         `json:"delegate_wallet"`
-	MinStake       common.Balance `json:"min_stake"`
-	MaxStake       common.Balance `json:"max_stake"`
 	NumDelegates   int            `json:"num_delegates"`
 	ServiceCharge  float64        `json:"service_charge"`
 }

@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
@@ -30,6 +31,7 @@ import (
 type ReferencePathResult struct {
 	*fileref.ReferencePath
 	LatestWM *marker.WriteMarker `json:"latest_write_marker"`
+	Version  string              `json:"version"`
 }
 
 type CommitResult struct {
@@ -46,6 +48,8 @@ func SuccessCommitResult() *CommitResult {
 	result := &CommitResult{Success: true}
 	return result
 }
+
+const MARKER_VERSION = "v2"
 
 type CommitRequest struct {
 	changes      []allocationchange.AllocationChange
@@ -170,12 +174,14 @@ func (commitreq *CommitRequest) processCommit() {
 			commitreq.result = ErrorCommitResult(errMsg)
 			return
 		}
-		prevChainHash, err := hex.DecodeString(lR.LatestWM.ChainHash)
-		if err != nil {
-			commitreq.result = ErrorCommitResult(err.Error())
-			return
+		if lR.LatestWM.ChainHash != "" {
+			prevChainHash, err := hex.DecodeString(lR.LatestWM.ChainHash)
+			if err != nil {
+				commitreq.result = ErrorCommitResult(err.Error())
+				return
+			}
+			hasher.Write(prevChainHash) //nolint:errcheck
 		}
-		hasher.Write(prevChainHash) //nolint:errcheck
 	}
 
 	var size int64
@@ -190,9 +196,12 @@ func (commitreq *CommitRequest) processCommit() {
 		size += change.GetSize()
 	}
 	rootRef.CalculateHash()
-	decodedHash, _ := hex.DecodeString(rootRef.Hash)
-	hasher.Write(decodedHash) //nolint:errcheck
-	chainHash := hex.EncodeToString(hasher.Sum(nil))
+	var chainHash string
+	if lR.Version == MARKER_VERSION {
+		decodedHash, _ := hex.DecodeString(rootRef.Hash)
+		hasher.Write(decodedHash) //nolint:errcheck
+		chainHash = hex.EncodeToString(hasher.Sum(nil))
+	}
 	err = commitreq.commitBlobber(rootRef, chainHash, lR.LatestWM, size, fileIDMeta)
 	if err != nil {
 		commitreq.result = ErrorCommitResult(err.Error())
@@ -276,6 +285,11 @@ func (req *CommitRequest) commitBlobber(
 			}
 
 			var respBody []byte
+			respBody, err = io.ReadAll(resp.Body)
+			if err != nil {
+				logger.Logger.Error("Response read: ", err)
+				return
+			}
 			if resp.StatusCode == http.StatusOK {
 				logger.Logger.Info(req.blobber.Baseurl, " committed")
 				return
@@ -297,14 +311,16 @@ func (req *CommitRequest) commitBlobber(
 				return
 			}
 
-			respBody, err = ioutil.ReadAll(resp.Body)
-			if err != nil {
-				logger.Logger.Error("Response read: ", err)
+			if strings.Contains(string(respBody), "pending_markers:") {
+				logger.Logger.Info("Commit pending for blobber ",
+					req.blobber.Baseurl, " Retrying")
+				time.Sleep(5 * time.Second)
+				shouldContinue = true
 				return
 			}
 
-			if strings.Contains(string(respBody), "pending_markers:") {
-				logger.Logger.Info("Commit pending for blobber ",
+			if strings.Contains(string(respBody), "chain_length_exceeded") {
+				l.Logger.Info("Chain length exceeded for blobber ",
 					req.blobber.Baseurl, " Retrying")
 				time.Sleep(5 * time.Second)
 				shouldContinue = true

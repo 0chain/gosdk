@@ -207,10 +207,12 @@ type Allocation struct {
 	ctx                     context.Context
 	ctxCancelF              context.CancelFunc
 	mutex                   *sync.Mutex
+	commitMutex             *sync.Mutex
 	downloadProgressMap     map[string]*DownloadRequest
 	downloadRequests        []*DownloadRequest
 	repairRequestInProgress *RepairRequest
 	initialized             bool
+	checkStatus             bool
 	commitLock              *sync.Mutex
 
 	// conseususes
@@ -310,7 +312,7 @@ func (a *Allocation) InitAllocation() {
 	a.downloadProgressMap = make(map[string]*DownloadRequest)
 	a.downloadRequests = make([]*DownloadRequest, 0, 100)
 	a.mutex = &sync.Mutex{}
-	a.commitLock = &sync.Mutex{}
+	a.commitMutex = &sync.Mutex{}
 	a.fullconsensus, a.consensusThreshold = a.getConsensuses()
 	for _, blobber := range a.Blobbers {
 		zboxutil.SetHostClient(blobber.ID, blobber.Baseurl)
@@ -1178,9 +1180,6 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 	for _, dr := range drs {
 		wg.Add(1)
 		go func(dr *DownloadRequest) {
-			if isReadFree {
-				dr.freeRead = true
-			}
 			defer wg.Done()
 			dr.processDownloadRequest()
 			var pos uint64
@@ -2477,7 +2476,7 @@ func (a *Allocation) UpdateWithRepair(
 	size int64,
 	extend bool,
 	lock uint64,
-	addBlobberId, removeBlobberId string,
+	addBlobberId, addBlobberAuthTicket, removeBlobberId string,
 	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
 	statusCB StatusCallback,
 ) (string, error) {
@@ -2486,7 +2485,7 @@ func (a *Allocation) UpdateWithRepair(
 	}
 
 	l.Logger.Info("Updating allocation")
-	hash, _, err := UpdateAllocation(size, extend, a.ID, lock, addBlobberId, removeBlobberId, setThirdPartyExtendable, fileOptionsParams)
+	hash, _, err := UpdateAllocation(size, extend, a.ID, lock, addBlobberId, addBlobberAuthTicket, removeBlobberId, setThirdPartyExtendable, fileOptionsParams)
 	if err != nil {
 		return "", err
 	}
