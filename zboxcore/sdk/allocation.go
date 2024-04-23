@@ -213,7 +213,6 @@ type Allocation struct {
 	repairRequestInProgress *RepairRequest
 	initialized             bool
 	checkStatus             bool
-	commitLock              *sync.Mutex
 
 	// conseususes
 	consensusThreshold int
@@ -1175,6 +1174,7 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 	if a.ReadPriceRange.Max == 0 && a.ReadPriceRange.Min == 0 {
 		isReadFree = true
 	}
+
 	now := time.Now()
 
 	for _, dr := range drs {
