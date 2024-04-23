@@ -432,7 +432,7 @@ func (req *DownloadRequest) getDecryptedDataForAuthTicket(result *downloadBlock,
 // This will also write data to the file handler and will verify content by calculating content hash.
 func (req *DownloadRequest) processDownload() {
 	ctx := req.ctx
-	req.numBlocks = 50
+	req.numBlocks = 100
 	if req.completedCallback != nil {
 		defer req.completedCallback(req.remotefilepath, req.remotefilepathhash)
 	}
@@ -1348,7 +1348,7 @@ func writeData(dest io.Writer, data [][][]byte, dataShards, remaining int) (int,
 					return total, err
 				}
 			} else {
-				n, err := dest.Write(data[i][j][:remaining])
+				n, err := bbuf.Write(data[i][j][:remaining])
 				total += n
 				if err != nil {
 					return total, err
@@ -1360,11 +1360,13 @@ func writeData(dest io.Writer, data [][][]byte, dataShards, remaining int) (int,
 			}
 		}
 		if bbuf.Len() >= 50*CHUNK_SIZE {
-			io.Copy(dest, bbuf)
+			dest.Write(bbuf.Bytes()) //nolint:errcheck
+			bbuf.Reset()
 		}
 	}
 	if bbuf.Len() > 0 {
-		io.Copy(dest, bbuf)
+		dest.Write(bbuf.Bytes()) //nolint:errcheck
+		bbuf.Reset()
 	}
 
 	return total, nil
