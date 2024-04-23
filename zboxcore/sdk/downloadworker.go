@@ -1337,18 +1337,16 @@ func (req *DownloadRequest) Seek(offset int64, whence int) (int64, error) {
 
 func writeData(dest io.Writer, data [][][]byte, dataShards, remaining int) (int, error) {
 	total := 0
-	buf := make([]byte, 0, 100*CHUNK_SIZE)
-	bbuf := bytes.NewBuffer(buf)
 	for i := 0; i < len(data); i++ {
 		for j := 0; j < dataShards; j++ {
 			if len(data[i][j]) <= remaining {
-				n, err := bbuf.Write(data[i][j])
+				n, err := dest.Write(data[i][j])
 				total += n
 				if err != nil {
 					return total, err
 				}
 			} else {
-				n, err := bbuf.Write(data[i][j][:remaining])
+				n, err := dest.Write(data[i][j][:remaining])
 				total += n
 				if err != nil {
 					return total, err
@@ -1359,14 +1357,6 @@ func writeData(dest io.Writer, data [][][]byte, dataShards, remaining int) (int,
 				return total, nil
 			}
 		}
-		if bbuf.Len() >= 50*CHUNK_SIZE {
-			dest.Write(bbuf.Bytes()) //nolint:errcheck
-			bbuf.Reset()
-		}
-	}
-	if bbuf.Len() > 0 {
-		dest.Write(bbuf.Bytes()) //nolint:errcheck
-		bbuf.Reset()
 	}
 
 	return total, nil

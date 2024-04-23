@@ -106,7 +106,7 @@ func (r *DownloadBufferWithMask) RequestChunk(ctx context.Context, num int) []by
 		// already assigned
 		if isSet == 0 {
 			r.mu.Unlock()
-			time.Sleep(500 * time.Millisecond)
+			time.Sleep(100 * time.Millisecond)
 			continue
 		}
 		// assign the chunk by clearing the bit
