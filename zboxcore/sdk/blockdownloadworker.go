@@ -265,6 +265,7 @@ func AddBlockDownloadReq(ctx context.Context, req *BlockDownloadRequest, rb zbox
 		defer cncl()
 		req.respBuf = rb.RequestChunk(reqCtx, int(req.blockNum))
 		if len(req.respBuf) == 0 {
+			zlogger.Logger.Info("Buffer not available for block: ", req.blockNum)
 			req.respBuf = make([]byte, int(req.numBlocks)*effectiveBlockSize)
 		}
 	} else {

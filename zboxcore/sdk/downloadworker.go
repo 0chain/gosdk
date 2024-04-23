@@ -524,7 +524,7 @@ func (req *DownloadRequest) processDownload() {
 
 	if !req.shouldVerify && (startBlock == 0 && endBlock == chunksPerShard) {
 		actualFileHasher = md5.New()
-		isPREAndWholeFile = true
+		// isPREAndWholeFile = true
 	}
 
 	toSync := false
@@ -574,7 +574,7 @@ func (req *DownloadRequest) processDownload() {
 	writeCtx, writeCancel := context.WithCancel(ctx)
 	defer writeCancel()
 	var wg sync.WaitGroup
-
+	var totalWrittenTime time.Duration
 	if !writerAt {
 		wg.Add(1)
 		// Handle writing the blocks in order as soon as they are downloaded
@@ -606,12 +606,13 @@ func (req *DownloadRequest) processDownload() {
 							}()
 						}
 					}
-
+					writeStart := time.Now()
 					totalWritten, err := writeData(req.fileHandler, data, req.datashards, int(remainingSize))
 					if err != nil {
 						req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
 						return
 					}
+					totalWrittenTime += time.Since(writeStart)
 					if toSync {
 						req.fileHandler.Sync() //nolint
 					}
@@ -653,12 +654,13 @@ func (req *DownloadRequest) processDownload() {
 									}()
 								}
 							}
-
+							writeStart := time.Now()
 							totalWritten, err := writeData(req.fileHandler, block.data, req.datashards, int(remainingSize))
 							if err != nil {
 								req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
 								return
 							}
+							totalWrittenTime += time.Since(writeStart)
 
 							if toSync {
 								req.fileHandler.Sync() //nolint
@@ -699,7 +701,7 @@ func (req *DownloadRequest) processDownload() {
 	firstReqWG := sync.WaitGroup{}
 	firstReqWG.Add(1)
 	eg, egCtx := errgroup.WithContext(ctx)
-	eg.SetLimit(downloadWorkerCount + EXTRA_COUNT)
+	eg.SetLimit(EXTRA_COUNT)
 	for i := 0; i < n; i++ {
 		j := i
 		if i == 1 {
@@ -775,12 +777,13 @@ func (req *DownloadRequest) processDownload() {
 	// req.fileHandler.Sync() //nolint
 	elapsedGetBlocksAndWrite := time.Since(now) - elapsedInitEC - elapsedInitEncryption
 	l.Logger.Info("downloadBlocks: ", downloaded, remainingSize)
-	l.Logger.Info(fmt.Sprintf("[processDownload] Timings:\n allocation_id: %s,\n remotefilepath: %s,\n initEC: %d ms,\n initEncryption: %d ms,\n getBlocks and writes: %d ms",
+	l.Logger.Info(fmt.Sprintf("[processDownload] Timings:\n allocation_id: %s,\n remotefilepath: %s,\n initEC: %d ms,\n initEncryption: %d ms,\n getBlocks and writes: %d ms, \n totalWrittenTime: %d ms",
 		req.allocationID,
 		req.remotefilepath,
 		elapsedInitEC.Milliseconds(),
 		elapsedInitEncryption.Milliseconds(),
 		elapsedGetBlocksAndWrite.Milliseconds(),
+		totalWrittenTime.Milliseconds(),
 	))
 
 	if req.statusCallback != nil && !req.skip {
@@ -1331,10 +1334,12 @@ func (req *DownloadRequest) Seek(offset int64, whence int) (int64, error) {
 
 func writeData(dest io.Writer, data [][][]byte, dataShards, remaining int) (int, error) {
 	total := 0
+	buf := make([]byte, 0, 100*CHUNK_SIZE)
+	bbuf := bytes.NewBuffer(buf)
 	for i := 0; i < len(data); i++ {
 		for j := 0; j < dataShards; j++ {
 			if len(data[i][j]) <= remaining {
-				n, err := dest.Write(data[i][j])
+				n, err := bbuf.Write(data[i][j])
 				total += n
 				if err != nil {
 					return total, err
@@ -1351,6 +1356,13 @@ func writeData(dest io.Writer, data [][][]byte, dataShards, remaining int) (int,
 				return total, nil
 			}
 		}
+
+		_, err := dest.Write(bbuf.Bytes())
+		if err != nil {
+			return total, err
+		}
+		bbuf.Reset()
+
 	}
 	return total, nil
 }
