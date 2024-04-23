@@ -557,7 +557,9 @@ func (req *DownloadRequest) processDownload() {
 			if writerAt {
 				req.bufferMap[blobberIdx] = zboxutil.NewDownloadBufferWithChan(sz, int(numBlocks), req.effectiveBlockSize)
 			} else {
-				req.bufferMap[blobberIdx] = zboxutil.NewDownloadBufferWithMask(sz, int(numBlocks), req.effectiveBlockSize)
+				bufMask := zboxutil.NewDownloadBufferWithMask(sz, int(numBlocks), req.effectiveBlockSize)
+				bufMask.SetNumBlocks(int(numBlocks))
+				req.bufferMap[blobberIdx] = bufMask
 			}
 		}
 	}
