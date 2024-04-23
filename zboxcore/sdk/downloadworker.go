@@ -559,7 +559,9 @@ func (req *DownloadRequest) processDownload() {
 			if writerAt {
 				req.bufferMap[blobberIdx] = zboxutil.NewDownloadBufferWithChan(sz, int(numBlocks), req.effectiveBlockSize)
 			} else {
-				req.bufferMap[blobberIdx] = zboxutil.NewDownloadBufferWithMask(sz, int(numBlocks), req.effectiveBlockSize)
+				bufMask := zboxutil.NewDownloadBufferWithMask(sz, int(numBlocks), req.effectiveBlockSize)
+				bufMask.SetNumBlocks(int(numBlocks))
+				req.bufferMap[blobberIdx] = bufMask
 			}
 		}
 	}
@@ -1357,20 +1359,12 @@ func writeData(dest io.Writer, data [][][]byte, dataShards, remaining int) (int,
 				return total, nil
 			}
 		}
-		if bbuf.Len() >= 100*CHUNK_SIZE {
-			_, err := dest.Write(bbuf.Bytes())
-			if err != nil {
-				return total, err
-			}
-			bbuf.Reset()
+		if bbuf.Len() >= 50*CHUNK_SIZE {
+			io.Copy(dest, bbuf)
 		}
 	}
 	if bbuf.Len() > 0 {
-		_, err := dest.Write(bbuf.Bytes())
-		if err != nil {
-			return total, err
-		}
-		bbuf.Reset()
+		io.Copy(dest, bbuf)
 	}
 
 	return total, nil
