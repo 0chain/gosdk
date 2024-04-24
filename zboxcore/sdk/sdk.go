@@ -55,13 +55,20 @@ type StatusCallback interface {
 	RepairCompleted(filesRepaired int)
 }
 
-var numBlockDownloads = 100
-var sdkInitialized = false
-var networkWorkerTimerInHours = 1
-var singleClientMode bool
+var (
+	numBlockDownloads         = 100
+	sdkInitialized            = false
+	networkWorkerTimerInHours = 1
+	singleClientMode          = false
+	shouldVerifyHash          = true
+)
 
 func SetSingleClietnMode(mode bool) {
 	singleClientMode = mode
+}
+
+func SetShouldVerifyHash(verify bool) {
+	shouldVerifyHash = verify
 }
 
 // GetVersion - returns version string

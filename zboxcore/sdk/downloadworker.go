@@ -521,7 +521,7 @@ func (req *DownloadRequest) processDownload() {
 		isPREAndWholeFile bool
 	)
 
-	if !req.shouldVerify && (startBlock == 0 && endBlock == chunksPerShard) {
+	if !req.shouldVerify && (startBlock == 0 && endBlock == chunksPerShard) && shouldVerifyHash {
 		actualFileHasher = md5.New()
 		isPREAndWholeFile = true
 	}
