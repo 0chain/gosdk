@@ -21,6 +21,7 @@ import (
 
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/encryption"
+	"github.com/0chain/gosdk/core/imageutil"
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/core/zcncrypto"
@@ -383,4 +384,12 @@ func GetFileContentType(file *C.char) *C.char {
 	}
 
 	return WithJSON(mime, nil)
+}
+
+func Thumbnail(buf *C.char, width, height C.int, options *C.char) *C.char {
+	res, err := imageutil.Thumbnail([]byte(C.GoString(buf)), int(width), int(height), C.GoString(options))
+	if err != nil {
+		return WithJSON("", err)
+	}
+	return WithJSON(res, nil)
 }

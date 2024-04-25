@@ -1,0 +1,22 @@
+[package]
+name = "image_rs"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+crate-type = ["cdylib"]
+name = "image_rs"
+path = "image.rs"
+
+[dependencies]
+image = "*"
+# wee_aloc is a WebAssembly optimized allocator, which is needed to use non-numeric types like strings.
+# See https://docs.rs/wee_alloc/latest/wee_alloc/
+wee_alloc = "0.4.5"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1

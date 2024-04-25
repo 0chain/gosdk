@@ -48,6 +48,7 @@ require (
 require (
 	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d
 	github.com/minio/sha256-simd v1.0.1
+	github.com/tetratelabs/wazero v1.7.0
 	github.com/ybbus/jsonrpc/v3 v3.1.5
 )
 
