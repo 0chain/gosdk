@@ -532,7 +532,7 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 			return err
 		}
 
-		mimeType, err := zboxutil.GetFileContentType(fileReader)
+		mimeType, err := zboxutil.GetFileContentType(path.Ext(fileName), fileReader)
 		if err != nil {
 			return err
 		}
@@ -621,10 +621,6 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 		return err
 	}
 
-	mimeType, err := zboxutil.GetFileContentType(fileReader)
-	if err != nil {
-		return err
-	}
 	remotePath = zboxutil.RemoteClean(remotePath)
 	isabs := zboxutil.IsRemoteAbs(remotePath)
 	if !isabs {
@@ -634,6 +630,11 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 	remotePath = zboxutil.GetFullRemotePath(localPath, remotePath)
 
 	_, fileName := pathutil.Split(remotePath)
+
+	mimeType, err := zboxutil.GetFileContentType(path.Ext(fileName), fileReader)
+	if err != nil {
+		return err
+	}
 
 	fileMeta := FileMeta{
 		Path:       localPath,
