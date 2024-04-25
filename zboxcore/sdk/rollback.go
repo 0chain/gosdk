@@ -3,10 +3,12 @@ package sdk
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
 	"mime/multipart"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -22,12 +24,14 @@ import (
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/minio/sha256-simd"
 	"go.uber.org/zap"
 )
 
 type LatestPrevWriteMarker struct {
 	LatestWM *marker.WriteMarker `json:"latest_write_marker"`
 	PrevWM   *marker.WriteMarker `json:"prev_write_marker"`
+	Version  string              `json:"version"`
 }
 
 type AllocStatus byte
@@ -112,7 +116,9 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 	wm.Timestamp = rb.lpm.LatestWM.Timestamp
 	wm.BlobberID = rb.lpm.LatestWM.BlobberID
 	wm.ClientID = client.GetClientID()
-	wm.Size = 0
+	wm.Size = -rb.lpm.LatestWM.Size
+	wm.ChainSize = wm.Size + rb.lpm.LatestWM.ChainSize
+
 	if rb.lpm.PrevWM != nil {
 		wm.AllocationRoot = rb.lpm.PrevWM.AllocationRoot
 		wm.PreviousAllocationRoot = rb.lpm.PrevWM.AllocationRoot
@@ -120,6 +126,16 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 		if wm.AllocationRoot == rb.lpm.LatestWM.AllocationRoot {
 			return nil
 		}
+	}
+	if rb.lpm.Version == MARKER_VERSION {
+		decodedHash, _ := hex.DecodeString(wm.AllocationRoot)
+		prevChainHash, _ := hex.DecodeString(rb.lpm.LatestWM.ChainHash)
+		hasher := sha256.New()
+		hasher.Write(prevChainHash) //nolint:errcheck
+		hasher.Write(decodedHash)   //nolint:errcheck
+		wm.ChainHash = hex.EncodeToString(hasher.Sum(nil))
+	} else if rb.lpm.Version == "" {
+		wm.Size = 0
 	}
 
 	err := wm.Sign()
@@ -167,6 +183,11 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 			}
 
 			var respBody []byte
+			respBody, err = io.ReadAll(resp.Body)
+			if err != nil {
+				l.Logger.Error("Response read: ", err)
+				return
+			}
 			if resp.StatusCode == http.StatusOK {
 				l.Logger.Info(rb.blobber.Baseurl, connID, "rollbacked")
 				return
@@ -186,9 +207,19 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 				return
 			}
 
-			respBody, err = io.ReadAll(resp.Body)
-			if err != nil {
-				l.Logger.Error("Response read: ", err)
+			if strings.Contains(string(respBody), "pending_markers:") {
+				l.Logger.Info("Commit pending for blobber ",
+					rb.blobber.Baseurl, " Retrying")
+				time.Sleep(5 * time.Second)
+				shouldContinue = true
+				return
+			}
+
+			if strings.Contains(string(respBody), "chain_length_exceeded") {
+				l.Logger.Info("Chain length exceeded for blobber ",
+					rb.blobber.Baseurl, " Retrying")
+				time.Sleep(5 * time.Second)
+				shouldContinue = true
 				return
 			}
 

@@ -12,7 +12,7 @@ var DefaultTransport = &http.Transport{
 	Proxy: envProxy.Proxy,
 
 	MaxIdleConns:          100,
-	IdleConnTimeout:       90 * time.Second,
+	IdleConnTimeout:       60 * time.Second,
 	TLSHandshakeTimeout:   10 * time.Second,
 	ExpectContinueTimeout: 1 * time.Second,
 	MaxIdleConnsPerHost:   100,

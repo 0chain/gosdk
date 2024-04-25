@@ -346,6 +346,11 @@ func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string) (
 			if err != nil {
 				blobberErrors[blobberIdx] = err
 			}
+			if singleClientMode {
+				lookuphash := fileref.GetReferenceLookup(deleteReq.allocationID, deleteReq.remotefilepath)
+				cacheKey := fileref.GetCacheKey(lookuphash, deleteReq.blobbers[blobberIdx].ID)
+				fileref.DeleteFileRef(cacheKey)
+			}
 			objectTreeRefs[blobberIdx] = refEntity
 		}(int(pos))
 	}

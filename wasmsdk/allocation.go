@@ -45,7 +45,7 @@ func createfreeallocation(freeStorageMarker string) (string, error) {
 
 func getAllocationBlobbers(preferredBlobberURLs []string,
 	dataShards, parityShards int, size int64,
-	minReadPrice, maxReadPrice, minWritePrice, maxWritePrice int64, isRestricted, force bool) ([]string, error) {
+	minReadPrice, maxReadPrice, minWritePrice, maxWritePrice int64, isRestricted int, force bool) ([]string, error) {
 
 	if len(preferredBlobberURLs) > 0 {
 		return sdk.GetBlobberIds(preferredBlobberURLs)
@@ -61,7 +61,7 @@ func getAllocationBlobbers(preferredBlobberURLs []string,
 }
 
 func createAllocation(datashards, parityshards int, size int64,
-	minReadPrice, maxReadPrice, minWritePrice, maxWritePrice int64, lock int64, blobberIds, blobberAuthTickets []string, setThirdPartyExtendable bool) (
+	minReadPrice, maxReadPrice, minWritePrice, maxWritePrice int64, lock int64, blobberIds, blobberAuthTickets []string, setThirdPartyExtendable, force bool) (
 	*transaction.Transaction, error) {
 
 	options := sdk.CreateAllocationOptions{
@@ -80,6 +80,7 @@ func createAllocation(datashards, parityshards int, size int64,
 		BlobberIds:           blobberIds,
 		ThirdPartyExtendable: setThirdPartyExtendable,
 		BlobberAuthTickets:   blobberAuthTickets,
+		Force:                force,
 	}
 
 	sdkLogger.Info(options)

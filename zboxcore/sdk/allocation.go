@@ -207,11 +207,12 @@ type Allocation struct {
 	ctx                     context.Context
 	ctxCancelF              context.CancelFunc
 	mutex                   *sync.Mutex
+	commitMutex             *sync.Mutex
 	downloadProgressMap     map[string]*DownloadRequest
 	downloadRequests        []*DownloadRequest
 	repairRequestInProgress *RepairRequest
 	initialized             bool
-
+	checkStatus             bool
 	// conseususes
 	consensusThreshold int
 	fullconsensus      int
@@ -310,6 +311,7 @@ func (a *Allocation) InitAllocation() {
 	a.downloadProgressMap = make(map[string]*DownloadRequest)
 	a.downloadRequests = make([]*DownloadRequest, 0, 100)
 	a.mutex = &sync.Mutex{}
+	a.commitMutex = &sync.Mutex{}
 	a.fullconsensus, a.consensusThreshold = a.getConsensuses()
 	for _, blobber := range a.Blobbers {
 		zboxutil.SetHostClient(blobber.ID, blobber.Baseurl)
@@ -531,7 +533,7 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 			return err
 		}
 
-		mimeType, err := zboxutil.GetFileContentType(fileReader)
+		mimeType, err := zboxutil.GetFileContentType(path.Ext(fileName), fileReader)
 		if err != nil {
 			return err
 		}
@@ -620,10 +622,6 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 		return err
 	}
 
-	mimeType, err := zboxutil.GetFileContentType(fileReader)
-	if err != nil {
-		return err
-	}
 	remotePath = zboxutil.RemoteClean(remotePath)
 	isabs := zboxutil.IsRemoteAbs(remotePath)
 	if !isabs {
@@ -633,6 +631,11 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 	remotePath = zboxutil.GetFullRemotePath(localPath, remotePath)
 
 	_, fileName := pathutil.Split(remotePath)
+
+	mimeType, err := zboxutil.GetFileContentType(path.Ext(fileName), fileReader)
+	if err != nil {
+		return err
+	}
 
 	fileMeta := FileMeta{
 		Path:       localPath,
@@ -848,6 +851,11 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 		wg.Wait()
 		// Check consensus
 		if mo.operationMask.CountOnes() < mo.consensusThresh {
+			l.Logger.Error("Multioperation: create connection failed. Required consensus not met",
+				zap.Int("consensusThresh", mo.consensusThresh),
+				zap.Int("operationMask", mo.operationMask.CountOnes()),
+				zap.Any("connectionErrors", connectionErrors))
+
 			majorErr := zboxutil.MajorError(connectionErrors)
 			if majorErr != nil {
 				return errors.New("consensus_not_met",
@@ -1052,7 +1060,9 @@ func (a *Allocation) DownloadThumbnail(localPath string, remotePath string, veri
 	}
 
 	err = a.addAndGenerateDownloadRequest(f, remotePath, DOWNLOAD_CONTENT_THUMB, 1, 0,
-		numBlockDownloads, verifyDownload, status, isFinal, localFilePath)
+		numBlockDownloads, verifyDownload, status, isFinal, localFilePath, WithFileCallback(func() {
+			f.Close() //nolint: errcheck
+		}))
 	if err != nil {
 		if !toKeep {
 			os.Remove(localFilePath) //nolint: errcheck
@@ -1173,9 +1183,6 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 	for _, dr := range drs {
 		wg.Add(1)
 		go func(dr *DownloadRequest) {
-			if isReadFree {
-				dr.freeRead = true
-			}
 			defer wg.Done()
 			if isReadFree {
 				dr.freeRead = true

@@ -53,9 +53,21 @@ type StatusCallback interface {
 	RepairCompleted(filesRepaired int)
 }
 
-var numBlockDownloads = 100
-var sdkInitialized = false
-var networkWorkerTimerInHours = 1
+var (
+	numBlockDownloads         = 100
+	sdkInitialized            = false
+	networkWorkerTimerInHours = 1
+	singleClientMode          = false
+	shouldVerifyHash          = true
+)
+
+func SetSingleClietnMode(mode bool) {
+	singleClientMode = mode
+}
+
+func SetShouldVerifyHash(verify bool) {
+	shouldVerifyHash = verify
+}
 
 // GetVersion - returns version string
 func GetVersion() string {
@@ -693,8 +705,6 @@ func (v *UpdateValidator) ConvertToValidationNode() *blockchain.UpdateValidation
 
 	sp := &blockchain.UpdateStakePoolSettings{
 		DelegateWallet: v.DelegateWallet,
-		MinStake:       v.MinStake,
-		MaxStake:       v.MaxStake,
 		NumDelegates:   v.NumDelegates,
 		ServiceCharge:  v.ServiceCharge,
 	}
@@ -710,15 +720,16 @@ func (v *UpdateValidator) ConvertToValidationNode() *blockchain.UpdateValidation
 	return blockValidator
 }
 
-func getBlobbersInternal(active bool, limit, offset int) (bs []*Blobber, err error) {
+func getBlobbersInternal(active, stakable bool, limit, offset int) (bs []*Blobber, err error) {
 	type nodes struct {
 		Nodes []*Blobber
 	}
 
-	url := fmt.Sprintf("/getblobbers?active=%s&limit=%d&offset=%d",
+	url := fmt.Sprintf("/getblobbers?active=%s&limit=%d&offset=%d&stakable=%s",
 		strconv.FormatBool(active),
 		limit,
 		offset,
+		strconv.FormatBool(stakable),
 	)
 	b, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, url, nil, nil)
 	var wrap nodes
@@ -736,14 +747,14 @@ func getBlobbersInternal(active bool, limit, offset int) (bs []*Blobber, err err
 	return wrap.Nodes, nil
 }
 
-func GetBlobbers(active bool) (bs []*Blobber, err error) {
+func GetBlobbers(active, stakable bool) (bs []*Blobber, err error) {
 	if !sdkInitialized {
 		return nil, sdkNotInitialized
 	}
 
 	limit, offset := 20, 0
 
-	blobbers, err := getBlobbersInternal(active, limit, offset)
+	blobbers, err := getBlobbersInternal(active, stakable, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -758,7 +769,7 @@ func GetBlobbers(active bool) (bs []*Blobber, err error) {
 
 		// get the next set of blobbers
 		offset += 20
-		blobbers, err = getBlobbersInternal(active, limit, offset)
+		blobbers, err = getBlobbersInternal(active, stakable, limit, offset)
 		if err != nil {
 			return blobbers, err
 		}
@@ -820,7 +831,7 @@ func GetValidator(validatorID string) (validator *Validator, err error) {
 }
 
 // List all validators
-func GetValidators() (validators []*Validator, err error) {
+func GetValidators(stakable bool) (validators []*Validator, err error) {
 	if !sdkInitialized {
 		return nil, sdkNotInitialized
 	}
@@ -828,7 +839,9 @@ func GetValidators() (validators []*Validator, err error) {
 	b, err = zboxutil.MakeSCRestAPICall(
 		STORAGE_SCADDRESS,
 		"/validators",
-		nil,
+		map[string]string{
+			"stakable": strconv.FormatBool(stakable),
+		},
 		nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "requesting validator list")
@@ -1024,6 +1037,7 @@ type CreateAllocationOptions struct {
 	BlobberAuthTickets   []string
 	ThirdPartyExtendable bool
 	FileOptionsParams    *FileOptionsParameters
+	Force                bool
 }
 
 func CreateAllocationWith(options CreateAllocationOptions) (
@@ -1032,14 +1046,14 @@ func CreateAllocationWith(options CreateAllocationOptions) (
 	return CreateAllocationForOwner(client.GetClientID(),
 		client.GetClientPublicKey(), options.DataShards, options.ParityShards,
 		options.Size, options.ReadPrice, options.WritePrice, options.Lock,
-		options.BlobberIds, options.BlobberAuthTickets, options.ThirdPartyExtendable, options.FileOptionsParams)
+		options.BlobberIds, options.BlobberAuthTickets, options.ThirdPartyExtendable, options.Force, options.FileOptionsParams)
 }
 
 func CreateAllocationForOwner(
 	owner, ownerpublickey string,
 	datashards, parityshards int, size int64,
 	readPrice, writePrice PriceRange,
-	lock uint64, preferredBlobberIds, blobberAuthTickets []string, thirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
+	lock uint64, preferredBlobberIds, blobberAuthTickets []string, thirdPartyExtendable, force bool, fileOptionsParams *FileOptionsParameters,
 ) (hash string, nonce int64, txn *transaction.Transaction, err error) {
 
 	if lock > math.MaxInt64 {
@@ -1051,7 +1065,7 @@ func CreateAllocationForOwner(
 	}
 
 	allocationRequest, err := getNewAllocationBlobbers(
-		datashards, parityshards, size, readPrice, writePrice, preferredBlobberIds, blobberAuthTickets)
+		datashards, parityshards, size, readPrice, writePrice, preferredBlobberIds, blobberAuthTickets, force)
 	if err != nil {
 		return "", 0, nil, errors.New("failed_get_allocation_blobbers", "failed to get blobbers for allocation: "+err.Error())
 	}
@@ -1076,7 +1090,7 @@ func CreateAllocationForOwner(
 func GetAllocationBlobbers(
 	datashards, parityshards int,
 	size int64,
-	isRestricted bool,
+	isRestricted int,
 	readPrice, writePrice PriceRange,
 	force ...bool,
 ) ([]string, error) {
@@ -1115,10 +1129,10 @@ func getNewAllocationBlobbers(
 	datashards, parityshards int,
 	size int64,
 	readPrice, writePrice PriceRange,
-	preferredBlobberIds, blobberAuthTickets []string,
+	preferredBlobberIds, blobberAuthTickets []string, force bool,
 ) (map[string]interface{}, error) {
 	allocBlobberIDs, err := GetAllocationBlobbers(
-		datashards, parityshards, size, false, readPrice, writePrice, false,
+		datashards, parityshards, size, 2, readPrice, writePrice, force,
 	)
 	if err != nil {
 		return nil, err
