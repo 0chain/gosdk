@@ -647,7 +647,7 @@ func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 		_, fileName := pathutil.Split(fullRemotePath)
 
 		if mimeType == "" {
-			mimeType, err = zboxutil.GetFileContentType(fileName, fileReader)
+			mimeType, err = zboxutil.GetFileContentType(path.Ext(fileName), fileReader)
 			if err != nil {
 				result.Error = "Error in file operation"
 				result.Success = false
@@ -734,7 +734,7 @@ func uploadWithJsFuncs(allocationID, remotePath string, readChunkFuncName string
 
 	_, fileName := pathutil.Split(remotePath)
 
-	mimeType, err := zboxutil.GetFileContentType(fileName, fileReader)
+	mimeType, err := zboxutil.GetFileContentType(path.Ext(fileName), fileReader)
 	if err != nil {
 		return false, err
 	}
