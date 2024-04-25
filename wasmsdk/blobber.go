@@ -633,14 +633,6 @@ func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 
 		fileReader := jsbridge.NewFileReader(option.ReadChunkFuncName, option.FileSize)
 		mimeType := option.MimeType
-		if mimeType == "" {
-			mimeType, err = zboxutil.GetFileContentType(fileReader)
-			if err != nil {
-				result.Error = "Error in file operation"
-				result.Success = false
-				return result, err
-			}
-		}
 		localPath := remotePath
 		remotePath = zboxutil.RemoteClean(remotePath)
 		isabs := zboxutil.IsRemoteAbs(remotePath)
@@ -653,6 +645,15 @@ func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 		fullRemotePath := zboxutil.GetFullRemotePath(localPath, remotePath)
 
 		_, fileName := pathutil.Split(fullRemotePath)
+
+		if mimeType == "" {
+			mimeType, err = zboxutil.GetFileContentType(fileName, fileReader)
+			if err != nil {
+				result.Error = "Error in file operation"
+				result.Success = false
+				return result, err
+			}
+		}
 
 		fileMeta := sdk.FileMeta{
 			Path:       localPath,
@@ -721,11 +722,6 @@ func uploadWithJsFuncs(allocationID, remotePath string, readChunkFuncName string
 
 	fileReader := jsbridge.NewFileReader(readChunkFuncName, fileSize)
 
-	mimeType, err := zboxutil.GetFileContentType(fileReader)
-	if err != nil {
-		return false, err
-	}
-
 	localPath := remotePath
 
 	remotePath = zboxutil.RemoteClean(remotePath)
@@ -737,6 +733,11 @@ func uploadWithJsFuncs(allocationID, remotePath string, readChunkFuncName string
 	remotePath = zboxutil.GetFullRemotePath(localPath, remotePath)
 
 	_, fileName := pathutil.Split(remotePath)
+
+	mimeType, err := zboxutil.GetFileContentType(fileName, fileReader)
+	if err != nil {
+		return false, err
+	}
 
 	fileMeta := sdk.FileMeta{
 		Path:       localPath,
@@ -800,11 +801,6 @@ func upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, w
 
 	fileReader := bytes.NewReader(fileBytes)
 
-	mimeType, err := zboxutil.GetFileContentType(fileReader)
-	if err != nil {
-		return nil, err
-	}
-
 	localPath := remotePath
 
 	remotePath = zboxutil.RemoteClean(remotePath)
@@ -816,6 +812,11 @@ func upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, w
 	remotePath = zboxutil.GetFullRemotePath(localPath, remotePath)
 
 	_, fileName := pathutil.Split(remotePath)
+
+	mimeType, err := zboxutil.GetFileContentType(fileName, fileReader)
+	if err != nil {
+		return nil, err
+	}
 
 	fileMeta := sdk.FileMeta{
 		Path:       localPath,
