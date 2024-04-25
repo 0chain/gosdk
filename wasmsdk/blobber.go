@@ -813,7 +813,7 @@ func upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, w
 
 	_, fileName := pathutil.Split(remotePath)
 
-	mimeType, err := zboxutil.GetFileContentType(fileName, fileReader)
+	mimeType, err := zboxutil.GetFileContentType(path.Ext(fileName), fileReader)
 	if err != nil {
 		return nil, err
 	}
