@@ -1392,7 +1392,7 @@ func writeAtData(dest io.WriterAt, data [][][]byte, dataShards int, offset int64
 func (dr *DownloadRequest) progressID() string {
 
 	if len(dr.allocationID) > 8 {
-		return filepath.Join(dr.workdir, "download", dr.allocationID[:8]+"_"+dr.fRef.MetaID())
+		return filepath.Join(dr.workdir, "download", "d"+dr.allocationID[:8]+"_"+dr.fRef.MetaID())
 	}
 
 	return filepath.Join(dr.workdir, "download", dr.allocationID+"_"+dr.fRef.MetaID())

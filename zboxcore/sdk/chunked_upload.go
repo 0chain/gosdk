@@ -340,7 +340,7 @@ func calculateWorkersAndRequests(dataShards, totalShards, chunknumber int) (uplo
 func (su *ChunkedUpload) progressID() string {
 
 	if len(su.allocationObj.ID) > 8 {
-		return filepath.Join(su.workdir, "upload", su.allocationObj.ID[:8]+"_"+su.fileMeta.FileID())
+		return filepath.Join(su.workdir, "upload", "u"+su.allocationObj.ID[:8]+"_"+su.fileMeta.FileID())
 	}
 
 	return filepath.Join(su.workdir, "upload", su.allocationObj.ID+"_"+su.fileMeta.FileID())

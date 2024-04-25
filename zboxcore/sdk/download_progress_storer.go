@@ -74,7 +74,7 @@ func (ds *FsDownloadProgressStorer) Start(ctx context.Context) {
 
 func (ds *FsDownloadProgressStorer) Load(progressID string, numBlocks int) *DownloadProgress {
 	dp := &DownloadProgress{}
-	buf, err := sys.Files.ReadFile(progressID)
+	buf, err := sys.Files.LoadProgress(progressID)
 	if err != nil {
 		return nil
 	}
@@ -97,7 +97,7 @@ func (ds *FsDownloadProgressStorer) saveToDisk() {
 	if err != nil {
 		return
 	}
-	err = sys.Files.WriteFile(ds.dp.ID, buf, 0666)
+	err = sys.Files.SaveProgress(ds.dp.ID, buf, 0666)
 	if err != nil {
 		return
 	}
@@ -124,7 +124,7 @@ func (ds *FsDownloadProgressStorer) Remove() error {
 		return nil
 	}
 	ds.isRemoved = true
-	err := sys.Files.Remove(ds.dp.ID)
+	err := sys.Files.RemoveProgress(ds.dp.ID)
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return err
 	}
