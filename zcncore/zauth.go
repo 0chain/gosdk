@@ -3,6 +3,7 @@ package zcncore
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -22,7 +23,7 @@ type SplitWallet struct {
 }
 
 // CallZauthSetup calls the zauth setup endpoint
-func CallZauthSetup(serverAddr string, splitWallet SplitWallet) error {
+func CallZauthSetup(serverAddr string, token string, splitWallet SplitWallet) error {
 	// Add your code here
 	endpoint := serverAddr + "/setup"
 	wData, err := json.Marshal(splitWallet)
@@ -30,12 +31,17 @@ func CallZauthSetup(serverAddr string, splitWallet SplitWallet) error {
 		return errors.Wrap(err, "failed to marshal split wallet")
 	}
 
+	fmt.Println("call zauth setup:", endpoint)
 	req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(wData))
 	if err != nil {
 		return errors.Wrap(err, "failed to create HTTP request")
 	}
 
+	fmt.Println("split wallet:", splitWallet)
+
 	req.Header.Set("Content-Type", "application/json")
+	// req.Header.Set("X-Client-ID", splitWallet.ClientID)
+	req.Header.Set("X-Jwt-Token", token)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -45,7 +51,12 @@ func CallZauthSetup(serverAddr string, splitWallet SplitWallet) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return errors.Errorf("unexpected status code: %d", resp.StatusCode)
+		errMsg, _ := io.ReadAll(resp.Body)
+		if len(errMsg) > 0 {
+			return errors.Errorf("code: %d, err: %s", resp.StatusCode, string(errMsg))
+		}
+
+		return errors.Errorf("code: %d", resp.StatusCode)
 	}
 
 	var rsp struct {
@@ -169,14 +180,19 @@ type AuthMessage struct {
 
 type AuthResponse struct {
 	Sig string `json:"sig"`
-	// Pubkey string `json:"public_key"`
 }
 
 func ZauthSignMsg(serverAddr string) sys.SignFunc {
 	return func(hash string, signatureScheme string, keys []sys.KeyPair) (string, error) {
+		sig, err := SignWithKey(keys[0].PrivateKey, hash)
+		if err != nil {
+			return "", err
+		}
+
 		data, err := json.Marshal(AuthMessage{
-			Hash:     hash,
-			ClientID: client.GetClient().ClientID,
+			Hash:      hash,
+			Signature: sig,
+			ClientID:  client.GetClient().ClientID,
 		})
 		if err != nil {
 			return "", err
