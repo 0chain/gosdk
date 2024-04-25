@@ -582,6 +582,18 @@ func bulkUpload(jsonBulkUploadOptions string) ([]BulkUploadResult, error) {
 	return results, nil
 }
 
+// set upload mode, default is medium, for low set 0, for high set 2
+func setUploadMode(mode int) {
+	switch mode {
+	case 0:
+		sdk.SetUploadMode(sdk.UploadModeLow)
+	case 1:
+		sdk.SetUploadMode(sdk.UploadModeMedium)
+	case 2:
+		sdk.SetUploadMode(sdk.UploadModeHigh)
+	}
+}
+
 func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 	var options []BulkUploadOption
 	result := MultiUploadResult{}
@@ -621,14 +633,6 @@ func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 
 		fileReader := jsbridge.NewFileReader(option.ReadChunkFuncName, option.FileSize)
 		mimeType := option.MimeType
-		if mimeType == "" {
-			mimeType, err = zboxutil.GetFileContentType(fileReader)
-			if err != nil {
-				result.Error = "Error in file operation"
-				result.Success = false
-				return result, err
-			}
-		}
 		localPath := remotePath
 		remotePath = zboxutil.RemoteClean(remotePath)
 		isabs := zboxutil.IsRemoteAbs(remotePath)
@@ -641,6 +645,15 @@ func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 		fullRemotePath := zboxutil.GetFullRemotePath(localPath, remotePath)
 
 		_, fileName := pathutil.Split(fullRemotePath)
+
+		if mimeType == "" {
+			mimeType, err = zboxutil.GetFileContentType(path.Ext(fileName), fileReader)
+			if err != nil {
+				result.Error = "Error in file operation"
+				result.Success = false
+				return result, err
+			}
+		}
 
 		fileMeta := sdk.FileMeta{
 			Path:       localPath,
@@ -709,11 +722,6 @@ func uploadWithJsFuncs(allocationID, remotePath string, readChunkFuncName string
 
 	fileReader := jsbridge.NewFileReader(readChunkFuncName, fileSize)
 
-	mimeType, err := zboxutil.GetFileContentType(fileReader)
-	if err != nil {
-		return false, err
-	}
-
 	localPath := remotePath
 
 	remotePath = zboxutil.RemoteClean(remotePath)
@@ -725,6 +733,11 @@ func uploadWithJsFuncs(allocationID, remotePath string, readChunkFuncName string
 	remotePath = zboxutil.GetFullRemotePath(localPath, remotePath)
 
 	_, fileName := pathutil.Split(remotePath)
+
+	mimeType, err := zboxutil.GetFileContentType(path.Ext(fileName), fileReader)
+	if err != nil {
+		return false, err
+	}
 
 	fileMeta := sdk.FileMeta{
 		Path:       localPath,
@@ -788,11 +801,6 @@ func upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, w
 
 	fileReader := bytes.NewReader(fileBytes)
 
-	mimeType, err := zboxutil.GetFileContentType(fileReader)
-	if err != nil {
-		return nil, err
-	}
-
 	localPath := remotePath
 
 	remotePath = zboxutil.RemoteClean(remotePath)
@@ -804,6 +812,11 @@ func upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, w
 	remotePath = zboxutil.GetFullRemotePath(localPath, remotePath)
 
 	_, fileName := pathutil.Split(remotePath)
+
+	mimeType, err := zboxutil.GetFileContentType(path.Ext(fileName), fileReader)
+	if err != nil {
+		return nil, err
+	}
 
 	fileMeta := sdk.FileMeta{
 		Path:       localPath,
@@ -901,8 +914,8 @@ func downloadBlocks(allocId string, remotePath, authTicket, lookupHash string, s
 }
 
 // GetBlobbersList get list of active blobbers, and format them as array json string
-func getBlobbers() ([]*sdk.Blobber, error) {
-	blobbs, err := sdk.GetBlobbers(true)
+func getBlobbers(stakable bool) ([]*sdk.Blobber, error) {
+	blobbs, err := sdk.GetBlobbers(true, stakable)
 	if err != nil {
 		return nil, err
 	}

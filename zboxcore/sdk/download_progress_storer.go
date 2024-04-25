@@ -14,7 +14,7 @@ import (
 
 type DownloadProgressStorer interface {
 	// Load load download progress by id
-	Load(id string) *DownloadProgress
+	Load(id string, numBlocks int) *DownloadProgress
 	// Update download progress
 	Update(writtenBlock int)
 	// Remove remove download progress by id
@@ -72,7 +72,7 @@ func (ds *FsDownloadProgressStorer) Start(ctx context.Context) {
 	}()
 }
 
-func (ds *FsDownloadProgressStorer) Load(progressID string) *DownloadProgress {
+func (ds *FsDownloadProgressStorer) Load(progressID string, numBlocks int) *DownloadProgress {
 	dp := &DownloadProgress{}
 	buf, err := sys.Files.ReadFile(progressID)
 	if err != nil {
@@ -82,6 +82,8 @@ func (ds *FsDownloadProgressStorer) Load(progressID string) *DownloadProgress {
 		return nil
 	}
 	ds.dp = dp
+	dp.numBlocks = numBlocks
+	ds.next = dp.LastWrittenBlock
 	return ds.dp
 }
 

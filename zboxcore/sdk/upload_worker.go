@@ -49,6 +49,13 @@ func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([
 		pos = uint64(i.TrailingZeros())
 		uo.refs[pos] = uo.chunkedUpload.blobbers[pos].fileRef
 		uo.refs[pos].ChunkSize = uo.chunkedUpload.chunkSize
+		remotePath := uo.chunkedUpload.fileMeta.RemotePath
+		allocationID := allocObj.ID
+		if singleClientMode {
+			lookuphash := fileref.GetReferenceLookup(allocationID, remotePath)
+			cacheKey := fileref.GetCacheKey(lookuphash, uo.chunkedUpload.blobbers[pos].blobber.ID)
+			fileref.DeleteFileRef(cacheKey)
+		}
 	}
 	l.Logger.Info("UploadOperation Success", zap.String("name", uo.chunkedUpload.fileMeta.RemoteName))
 	return nil, uo.chunkedUpload.uploadMask, nil
