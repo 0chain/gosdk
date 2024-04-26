@@ -5,7 +5,6 @@ package jsbridge
 
 import (
 	"errors"
-	"fmt"
 	"io/fs"
 	"sync"
 	"syscall/js"
@@ -53,7 +52,6 @@ func (w *FileWriter) WriteAt(p []byte, offset int64) (int, error) {
 }
 
 func (w *FileWriter) Close() error {
-	fmt.Println("file_writer: close")
 	_, err := Await(w.writableStream.Call("close"))
 	if len(err) > 0 && !err[0].IsNull() {
 		return errors.New("file_writer: " + err[0].String())

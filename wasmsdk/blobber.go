@@ -671,7 +671,6 @@ func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 			sdk.WithThumbnail(option.ThumbnailBytes.Buffer),
 			sdk.WithEncrypt(encrypt),
 			sdk.WithStatusCallback(statusBar),
-			sdk.WithProgressStorer(&chunkedUploadProgressStorer{list: make(map[string]*sdk.UploadProgress)}),
 			sdk.WithChunkNumber(numBlocks),
 		}
 		operationRequests[idx] = sdk.OperationRequest{
@@ -758,7 +757,6 @@ func uploadWithJsFuncs(allocationID, remotePath string, readChunkFuncName string
 		sdk.WithThumbnail(thumbnailBytes),
 		sdk.WithEncrypt(encrypt),
 		sdk.WithStatusCallback(statusBar),
-		sdk.WithProgressStorer(&chunkedUploadProgressStorer{list: make(map[string]*sdk.UploadProgress)}),
 		sdk.WithChunkNumber(numBlocks))
 	if err != nil {
 		return false, err
@@ -835,7 +833,6 @@ func upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, w
 		sdk.WithThumbnail(thumbnailBytes),
 		sdk.WithEncrypt(encrypt),
 		sdk.WithStatusCallback(statusBar),
-		sdk.WithProgressStorer(&chunkedUploadProgressStorer{list: make(map[string]*sdk.UploadProgress)}),
 		sdk.WithChunkNumber(numBlocks))
 	if err != nil {
 		return nil, err
