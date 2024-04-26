@@ -36,6 +36,19 @@ func (req *ListRequest) getFileMetaInfoFromBlobber(blobber *blockchain.StorageNo
 	if len(req.remotefilepath) > 0 {
 		req.remotefilepathhash = fileref.GetReferenceLookup(req.allocationID, req.remotefilepath)
 	}
+	if singleClientMode {
+		fileMetaHash := fileref.GetCacheKey(req.remotefilepathhash, blobber.ID)
+		cachedRef, ok := fileref.GetFileRef(fileMetaHash)
+		if ok {
+			fileRef = &cachedRef
+			return
+		}
+		defer func() {
+			if fileRef != nil && err == nil {
+				fileref.StoreFileRef(fileMetaHash, *fileRef)
+			}
+		}()
+	}
 	err = formWriter.WriteField("path_hash", req.remotefilepathhash)
 	if err != nil {
 		l.Logger.Error("File meta info request error: ", err.Error())

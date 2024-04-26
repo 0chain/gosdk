@@ -521,7 +521,7 @@ func (req *DownloadRequest) processDownload() {
 		isPREAndWholeFile bool
 	)
 
-	if !req.shouldVerify && (startBlock == 0 && endBlock == chunksPerShard) {
+	if !req.shouldVerify && (startBlock == 0 && endBlock == chunksPerShard) && shouldVerifyHash {
 		actualFileHasher = md5.New()
 		isPREAndWholeFile = true
 	}
@@ -557,7 +557,9 @@ func (req *DownloadRequest) processDownload() {
 			if writerAt {
 				req.bufferMap[blobberIdx] = zboxutil.NewDownloadBufferWithChan(sz, int(numBlocks), req.effectiveBlockSize)
 			} else {
-				req.bufferMap[blobberIdx] = zboxutil.NewDownloadBufferWithMask(sz, int(numBlocks), req.effectiveBlockSize)
+				bufMask := zboxutil.NewDownloadBufferWithMask(sz, int(numBlocks), req.effectiveBlockSize)
+				bufMask.SetNumBlocks(int(numBlocks))
+				req.bufferMap[blobberIdx] = bufMask
 			}
 		}
 	}

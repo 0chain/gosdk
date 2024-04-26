@@ -65,7 +65,14 @@ func (b *lazybuf) string() string {
 	return b.volAndPath[:b.volLen] + string(b.buf[:b.w])
 }
 
-func GetFileContentType(out io.ReadSeeker) (string, error) {
+func GetFileContentType(ext string, out io.ReadSeeker) (string, error) {
+
+	if ext != "" {
+		if content, ok := mimeDB[strings.TrimPrefix(ext, ".")]; ok {
+			return content.ContentType, nil
+		}
+	}
+
 	buffer := make([]byte, 10240)
 	n, err := out.Read(buffer)
 	defer out.Seek(0, 0) //nolint

@@ -70,11 +70,12 @@ func (r *DownloadBufferWithChan) ClearBuffer() {
 }
 
 type DownloadBufferWithMask struct {
-	buf     []byte
-	length  int
-	reqSize int
-	mask    uint32
-	mu      sync.Mutex
+	buf       []byte
+	length    int
+	reqSize   int
+	numBlocks int
+	mask      uint32
+	mu        sync.Mutex
 }
 
 func NewDownloadBufferWithMask(size, numBlocks, effectiveBlockSize int) *DownloadBufferWithMask {
@@ -87,7 +88,12 @@ func NewDownloadBufferWithMask(size, numBlocks, effectiveBlockSize int) *Downloa
 	}
 }
 
+func (r *DownloadBufferWithMask) SetNumBlocks(numBlocks int) {
+	r.numBlocks = numBlocks
+}
+
 func (r *DownloadBufferWithMask) RequestChunk(ctx context.Context, num int) []byte {
+	num = num / r.numBlocks
 	num = num % r.length
 	for {
 		select {
@@ -100,7 +106,7 @@ func (r *DownloadBufferWithMask) RequestChunk(ctx context.Context, num int) []by
 		// already assigned
 		if isSet == 0 {
 			r.mu.Unlock()
-			time.Sleep(500 * time.Millisecond)
+			time.Sleep(200 * time.Millisecond)
 			continue
 		}
 		// assign the chunk by clearing the bit
@@ -111,6 +117,7 @@ func (r *DownloadBufferWithMask) RequestChunk(ctx context.Context, num int) []by
 }
 
 func (r *DownloadBufferWithMask) ReleaseChunk(num int) {
+	num = num / r.numBlocks
 	num = num % r.length
 	r.mu.Lock()
 	defer r.mu.Unlock()
