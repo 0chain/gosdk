@@ -30,11 +30,17 @@ func registerAuthorizer(this js.Value, args []js.Value) interface{} {
 }
 
 func registerZauthServer(serverAddr string) {
+	authResponseC = make(chan string, 1)
 	sys.SetAuthorize(zcncore.ZauthSignTxn(serverAddr))
+	sys.SetAuthCommon(zcncore.ZauthSignMsg(serverAddr))
 }
 
-func zauthServerSetup(serverAddr string, splitWallet string) error {
-	return zcncore.CallZauthSetupString(serverAddr, splitWallet)
+func zvaultNewWallet(serverAddr, token string) (string, error) {
+	return zcncore.CallZvaultNewWalletString(serverAddr, token)
+}
+
+func zvaultStoreKey(serverAddr, token, privateKey string) (string, error) {
+	return zcncore.CallZvaultStoreKeyString(serverAddr, token, privateKey)
 }
 
 func registerAuthCommon(this js.Value, args []js.Value) interface{} {
@@ -42,15 +48,6 @@ func registerAuthCommon(this js.Value, args []js.Value) interface{} {
 	authResponseC = make(chan string, 1)
 
 	sys.AuthCommon = func(msg string) (string, error) {
-		// fmt.Println("auth - authCallback:", authCallback)
-		// result := authCallback(msg)
-		// fmt.Println("auth - result:", result)
-		// if result != "" {
-		// 	// Handle the error returned by authCallback
-		// 	fmt.Println("auth - Error:", result)
-		// 	return "", fmt.Errorf(result)
-		// 	// Perform error handling logic here
-		// }
 		authCallback(msg)
 		return <-authResponseC, nil
 	}

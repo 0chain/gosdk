@@ -22,7 +22,8 @@ var CreateObjectURL func(buf []byte, mimeType string) string
 
 // initSDKs init sharder/miners ,
 func initSDKs(chainID, blockWorker, signatureScheme string,
-	minConfirmation, minSubmit, confirmationChainLength int, zboxHost, zboxAppType string, sharderconsensous int) error {
+	minConfirmation, minSubmit, confirmationChainLength int,
+	zboxHost, zboxAppType string, sharderconsensous int) error {
 
 	zboxApiClient.SetRequest(zboxHost, zboxAppType)
 

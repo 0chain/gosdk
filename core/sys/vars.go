@@ -32,3 +32,7 @@ var (
 func SetAuthorize(auth AuthorizeFunc) {
 	Authorize = auth
 }
+
+func SetAuthCommon(auth AuthorizeFunc) {
+	AuthCommon = auth
+}

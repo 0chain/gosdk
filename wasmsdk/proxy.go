@@ -310,8 +310,9 @@ func main() {
 
 				// zauth
 				"registerZauthServer": registerZauthServer,
-				// "generateKeysFromZVault": generateKeysFromZVault,
-				"zauthServerSetup": zauthServerSetup,
+				// zvault
+				"zvaultNewWallet": zvaultNewWallet,
+				"zvaultStoreKey":  zvaultStoreKey,
 			})
 
 			fmt.Println("__wasm_initialized__ = true;")

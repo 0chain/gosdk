@@ -8,7 +8,6 @@ import (
 	"net/http"
 
 	"github.com/0chain/gosdk/core/sys"
-	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/pkg/errors"
 )
 
@@ -31,16 +30,12 @@ func CallZauthSetup(serverAddr string, token string, splitWallet SplitWallet) er
 		return errors.Wrap(err, "failed to marshal split wallet")
 	}
 
-	fmt.Println("call zauth setup:", endpoint)
 	req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(wData))
 	if err != nil {
 		return errors.Wrap(err, "failed to create HTTP request")
 	}
 
-	fmt.Println("split wallet:", splitWallet)
-
 	req.Header.Set("Content-Type", "application/json")
-	// req.Header.Set("X-Client-ID", splitWallet.ClientID)
 	req.Header.Set("X-Jwt-Token", token)
 
 	client := &http.Client{}
@@ -73,38 +68,118 @@ func CallZauthSetup(serverAddr string, token string, splitWallet SplitWallet) er
 	return nil
 }
 
-func CallZauthSetupString(serverAddr, splitWallet string) error {
+// func CallZauthSetupString(serverAddr, splitWallet string) error {
+// 	// Add your code here
+// 	endpoint := serverAddr + "/setup"
+// 	req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer([]byte(splitWallet)))
+// 	if err != nil {
+// 		return errors.Wrap(err, "failed to create HTTP request")
+// 	}
+
+// 	req.Header.Set("Content-Type", "application/json")
+
+// 	client := &http.Client{}
+// 	resp, err := client.Do(req)
+// 	if err != nil {
+// 		return errors.Wrap(err, "failed to send HTTP request")
+// 	}
+// 	defer resp.Body.Close()
+
+// 	if resp.StatusCode != http.StatusOK {
+// 		return errors.Errorf("unexpected status code: %d", resp.StatusCode)
+// 	}
+
+// 	var rsp struct {
+// 		Result string `json:"result"`
+// 	}
+// 	if err := json.NewDecoder(resp.Body).Decode(&rsp); err != nil {
+// 		return errors.Wrap(err, "failed to decode response body")
+// 	}
+
+// 	if rsp.Result != "success" {
+// 		return errors.New("failed to setup zauth server")
+// 	}
+// 	return nil
+// }
+
+func CallZvaultNewWalletString(serverAddr, token string) (string, error) {
 	// Add your code here
-	endpoint := serverAddr + "/setup"
-	req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer([]byte(splitWallet)))
+	endpoint := serverAddr + "/generate"
+	req, err := http.NewRequest("POST", endpoint, nil)
 	if err != nil {
-		return errors.Wrap(err, "failed to create HTTP request")
+		return "", errors.Wrap(err, "failed to create HTTP request")
 	}
 
+	fmt.Println("call zvault /generate:", endpoint)
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Jwt-Token", token)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return errors.Wrap(err, "failed to send HTTP request")
+		return "", errors.Wrap(err, "failed to send HTTP request")
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return errors.Errorf("unexpected status code: %d", resp.StatusCode)
+		errMsg, _ := io.ReadAll(resp.Body)
+		if len(errMsg) > 0 {
+			return "", errors.Errorf("code: %d, err: %s", resp.StatusCode, string(errMsg))
+		}
+
+		return "", errors.Errorf("code: %d", resp.StatusCode)
 	}
 
-	var rsp struct {
-		Result string `json:"result"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&rsp); err != nil {
-		return errors.Wrap(err, "failed to decode response body")
+	d, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to read response body")
 	}
 
-	if rsp.Result != "success" {
-		return errors.New("failed to setup zauth server")
+	return string(d), nil
+}
+
+func CallZvaultStoreKeyString(serverAddr, token, privateKey string) (string, error) {
+	// Add your code here
+	endpoint := serverAddr + "/store"
+
+	reqData := struct {
+		PrivateKey string `json:"private_key"`
+	}{
+		PrivateKey: privateKey,
 	}
-	return nil
+
+	rd, _ := json.Marshal(reqData)
+	req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(rd))
+	if err != nil {
+		return "", errors.Wrap(err, "failed to create HTTP request")
+	}
+
+	fmt.Println("call zvault /store:", endpoint)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Jwt-Token", token)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to send HTTP request")
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		errMsg, _ := io.ReadAll(resp.Body)
+		if len(errMsg) > 0 {
+			return "", errors.Errorf("code: %d, err: %s", resp.StatusCode, string(errMsg))
+		}
+
+		return "", errors.Errorf("code: %d", resp.StatusCode)
+	}
+
+	d, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to read response body")
+	}
+
+	return string(d), nil
 }
 
 // ZauthSignTxn returns a function that sends a txn signing request to the zauth server
@@ -140,7 +215,7 @@ func ZauthSignTxn(serverAddr string) sys.AuthorizeFunc {
 	}
 }
 
-func ZauthAuthCommon(serverAddr string) sys.AuthorizeFunc {
+func ZauthSignMsg(serverAddr string) sys.AuthorizeFunc {
 	return func(msg string) (string, error) {
 		// return func(msg string) (string, error) {
 		req, err := http.NewRequest("POST", serverAddr+"/sign/msg", bytes.NewBuffer([]byte(msg)))
@@ -180,40 +255,4 @@ type AuthMessage struct {
 
 type AuthResponse struct {
 	Sig string `json:"sig"`
-}
-
-func ZauthSignMsg(serverAddr string) sys.SignFunc {
-	return func(hash string, signatureScheme string, keys []sys.KeyPair) (string, error) {
-		sig, err := SignWithKey(keys[0].PrivateKey, hash)
-		if err != nil {
-			return "", err
-		}
-
-		data, err := json.Marshal(AuthMessage{
-			Hash:      hash,
-			Signature: sig,
-			ClientID:  client.GetClient().ClientID,
-		})
-		if err != nil {
-			return "", err
-		}
-
-		// fmt.Println("auth - sys.AuthCommon:", sys.AuthCommon)
-		if sys.AuthCommon == nil {
-			return "", errors.New("authCommon is not set")
-		}
-
-		rsp, err := sys.AuthCommon(string(data))
-		if err != nil {
-			return "", err
-		}
-
-		var ar AuthResponse
-		err = json.Unmarshal([]byte(rsp), &ar)
-		if err != nil {
-			return "", err
-		}
-
-		return AddSignature(client.GetClientPrivateKey(), ar.Sig, hash)
-	}
 }
