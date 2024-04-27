@@ -440,9 +440,9 @@ func (su *ChunkedUpload) process() error {
 	defer su.chunkReader.Close()
 	defer su.ctxCncl(nil)
 	for {
-
+		now := time.Now()
 		chunks, err := su.readChunks(su.chunkNumber)
-
+		TotalReadTime += time.Since(now).Milliseconds()
 		// chunk, err := su.chunkReader.Next()
 		if err != nil {
 			if su.statusCallback != nil {

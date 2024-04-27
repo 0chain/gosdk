@@ -924,3 +924,19 @@ func getBlobbers(stakable bool) ([]*sdk.Blobber, error) {
 	}
 	return blobbs, err
 }
+
+type timingRes struct {
+	UploadTime int64 `json:"upload_time"`
+	ReadTime   int64 `json:"read_time"`
+	TotalTime  int64 `json:"total_time"`
+}
+
+func getUploadTiming() string {
+	res := timingRes{
+		UploadTime: sdk.TotalUploadTime,
+		ReadTime:   sdk.TotalReadTime,
+		TotalTime:  sdk.TotalTime,
+	}
+	respBytes, _ := json.Marshal(res)
+	return string(respBytes)
+}
