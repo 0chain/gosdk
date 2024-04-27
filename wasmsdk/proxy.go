@@ -66,13 +66,22 @@ func main() {
 				}
 
 				sys.SignWithAuth = func(hash, signatureScheme string, keys []sys.KeyPair) (string, error) {
-					fmt.Println("auth - sign with auth")
+					fmt.Println("auth - sign with auth, hash:", hash)
+
+					sig, err := sys.Sign(hash, signatureScheme, keys)
+					if err != nil {
+						return "", fmt.Errorf("failed to sign with split key: %v", err)
+					}
+
 					data, err := json.Marshal(struct {
-						Data     string `json:"data"`
-						ClientID string `json:"client_id"`
+						// Data      string `json:"data"`
+						Hash      string `json:"hash"`
+						Signature string `json:"signature"`
+						ClientID  string `json:"client_id"`
 					}{
-						Data:     hash,
-						ClientID: client.GetClient().ClientID,
+						Hash:      hash,
+						Signature: sig,
+						ClientID:  client.GetClient().ClientID,
 					})
 					if err != nil {
 						return "", err
@@ -89,8 +98,7 @@ func main() {
 					}
 
 					var sigpk struct {
-						Sig    string `json:"sig"`
-						Pubkey string `json:"public_key"`
+						Sig string `json:"sig"`
 					}
 
 					err = json.Unmarshal([]byte(rsp), &sigpk)
