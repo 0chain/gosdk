@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/0chain/gosdk/core/sys"
+	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/pkg/errors"
 )
 
@@ -185,6 +186,7 @@ func CallZvaultStoreKeyString(serverAddr, token, privateKey string) (string, err
 // ZauthSignTxn returns a function that sends a txn signing request to the zauth server
 func ZauthSignTxn(serverAddr string) sys.AuthorizeFunc {
 	return func(msg string) (string, error) {
+		fmt.Println("zvault sign txn - in sign txn...")
 		req, err := http.NewRequest("POST", serverAddr+"/sign/txn", bytes.NewBuffer([]byte(msg)))
 		if err != nil {
 			return "", errors.Wrap(err, "failed to create HTTP request")
@@ -215,7 +217,7 @@ func ZauthSignTxn(serverAddr string) sys.AuthorizeFunc {
 	}
 }
 
-func ZauthSignMsg(serverAddr string) sys.AuthorizeFunc {
+func ZauthAuthCommon(serverAddr string) sys.AuthorizeFunc {
 	return func(msg string) (string, error) {
 		// return func(msg string) (string, error) {
 		req, err := http.NewRequest("POST", serverAddr+"/sign/msg", bytes.NewBuffer([]byte(msg)))
@@ -255,4 +257,40 @@ type AuthMessage struct {
 
 type AuthResponse struct {
 	Sig string `json:"sig"`
+}
+
+func ZauthSignMsg(serverAddr string) sys.SignFunc {
+	return func(hash string, signatureScheme string, keys []sys.KeyPair) (string, error) {
+		sig, err := SignWithKey(keys[0].PrivateKey, hash)
+		if err != nil {
+			return "", err
+		}
+
+		data, err := json.Marshal(AuthMessage{
+			Hash:      hash,
+			Signature: sig,
+			ClientID:  client.GetClient().ClientID,
+		})
+		if err != nil {
+			return "", err
+		}
+
+		// fmt.Println("auth - sys.AuthCommon:", sys.AuthCommon)
+		if sys.AuthCommon == nil {
+			return "", errors.New("authCommon is not set")
+		}
+
+		rsp, err := sys.AuthCommon(string(data))
+		if err != nil {
+			return "", err
+		}
+
+		var ar AuthResponse
+		err = json.Unmarshal([]byte(rsp), &ar)
+		if err != nil {
+			return "", err
+		}
+
+		return AddSignature(client.GetClientPrivateKey(), ar.Sig, hash)
+	}
 }
