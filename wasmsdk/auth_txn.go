@@ -30,9 +30,8 @@ func registerAuthorizer(this js.Value, args []js.Value) interface{} {
 }
 
 func registerZauthServer(serverAddr string) {
-	authResponseC = make(chan string, 1)
 	sys.SetAuthorize(zcncore.ZauthSignTxn(serverAddr))
-	sys.SetAuthCommon(zcncore.ZauthSignMsg(serverAddr))
+	sys.SetAuthCommon(zcncore.ZauthAuthCommon(serverAddr))
 }
 
 func zvaultNewWallet(serverAddr, token string) (string, error) {
