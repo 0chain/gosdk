@@ -1154,14 +1154,10 @@ func getNewAllocationBlobbers(
 	uniqueBlobbers := []string{}
 	uniqueBlobberAuthTickets := []string{}
 
-	for i, b := range blobbers {
+	for _, b := range blobbers {
 		if !ids[b] {
 			uniqueBlobbers = append(uniqueBlobbers, b)
-			if i < len(blobberAuthTickets) {
-				uniqueBlobberAuthTickets = append(uniqueBlobberAuthTickets, blobberAuthTickets[i])
-			} else {
-				uniqueBlobberAuthTickets = append(uniqueBlobberAuthTickets, "")
-			}
+			uniqueBlobberAuthTickets = append(uniqueBlobberAuthTickets, "")
 			ids[b] = true
 		}
 	}
