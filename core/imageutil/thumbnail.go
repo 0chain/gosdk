@@ -1,6 +1,7 @@
 package imageutil
 
 import (
+	"bytes"
 	"context"
 	_ "embed"
 	"encoding/json"
@@ -93,7 +94,7 @@ func NewImageRs() (*ImageRs, error) {
 		return nil, fmt.Errorf("error compiling imageWasm: %v", err)
 	}
 	supportedFormats := map[string]bool{
-		"avif": true, "bmp": true, "dds": true, "exr": true, "ff": true, "gif": true,
+		"bmp": true, "dds": true, "exr": true, "ff": true, "gif": true,
 		"hdr": true, "ico": true, "jpeg": true, "png": true, "pnm": true, "qoi": true,
 		"tga": true, "tiff": true, "webp": true,
 	}
@@ -106,7 +107,8 @@ func NewImageRs() (*ImageRs, error) {
 }
 
 func (i *ImageRs) Convert(img []byte, width, height int, co ConvertOptions) (ConvertRes, error) {
-	mod, err := i.runtime.InstantiateModule(i.ctx, i.compiledMod, wazero.NewModuleConfig())
+	var errW bytes.Buffer
+	mod, err := i.runtime.InstantiateModule(i.ctx, i.compiledMod, wazero.NewModuleConfig().WithStderr(&errW))
 	if err != nil {
 		return ConvertRes{}, fmt.Errorf("failed to instantiate module: %v", err)
 	}
@@ -153,7 +155,7 @@ func (i *ImageRs) Convert(img []byte, width, height int, co ConvertOptions) (Con
 	}
 
 	if len(res) == 0 {
-		return ConvertRes{}, fmt.Errorf("error occurred : %v", err)
+		return ConvertRes{}, fmt.Errorf("error occurred : %v", errW.String())
 	}
 
 	cr := ConvertRes{}
