@@ -162,6 +162,10 @@ func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainCon
 	return nil
 }
 
+func IsSplitWallet() bool {
+	return _config.isSplitWallet
+}
+
 /*Confirmation - a data structure that provides the confirmation that a transaction is included into the block chain */
 type confirmation struct {
 	Version               string                   `json:"version"`

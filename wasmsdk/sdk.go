@@ -33,6 +33,12 @@ func initSDKs(chainID, blockWorker, signatureScheme string,
 		return err
 	}
 
+	if !isSplit && zcncore.IsSplitWallet() {
+		// split wallet should not be reset back, use the existing
+		isSplit = true
+	}
+
+	fmt.Println("init SDKs, isSplit:", isSplit)
 	err = zcncore.InitZCNSDK(blockWorker, signatureScheme,
 		zcncore.WithChainID(chainID),
 		zcncore.WithMinConfirmation(minConfirmation),
@@ -43,7 +49,6 @@ func initSDKs(chainID, blockWorker, signatureScheme string,
 	)
 
 	if err != nil {
-		fmt.Println("wasm: InitZCNSDK ", err)
 		return err
 	}
 	sdk.SetWasm()

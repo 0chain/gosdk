@@ -181,7 +181,6 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 	}()
 
 	rootRef, latestWM, size, fileIDMeta, err := sb.processWriteMarker(ctx, su)
-
 	if err != nil {
 		logger.Logger.Error(err)
 		return err

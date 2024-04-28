@@ -61,20 +61,16 @@ func main() {
 				zcncore.SignFn = signFunc
 				sys.Sign = func(hash, signatureScheme string, keys []sys.KeyPair) (string, error) {
 					// js already has signatureScheme and keys
-					fmt.Println("auth - wasm sign setting")
 					return signFunc(hash)
 				}
 
 				sys.SignWithAuth = func(hash, signatureScheme string, keys []sys.KeyPair) (string, error) {
-					fmt.Println("auth - sign with auth, hash:", hash)
-
 					sig, err := sys.Sign(hash, signatureScheme, keys)
 					if err != nil {
 						return "", fmt.Errorf("failed to sign with split key: %v", err)
 					}
 
 					data, err := json.Marshal(struct {
-						// Data      string `json:"data"`
 						Hash      string `json:"hash"`
 						Signature string `json:"signature"`
 						ClientID  string `json:"client_id"`
@@ -87,7 +83,6 @@ func main() {
 						return "", err
 					}
 
-					fmt.Println("auth - sys.AuthCommon:", sys.AuthCommon)
 					if sys.AuthCommon == nil {
 						return "", errors.New("authCommon is not set")
 					}
@@ -106,12 +101,7 @@ func main() {
 						return "", err
 					}
 
-					// c := client.GetClient()
-					// client.GetClient().ClientKey = sigpk.Pubkey
-					fmt.Println("auth - sign response:", sigpk)
-					// return zcncore.AddSignature(keys[0].PrivateKey, sigpk.Sig, hash)
 					return zcncore.AddSignature(client.GetClientPrivateKey(), sigpk.Sig, hash)
-
 				}
 			} else {
 				PrintError("__zcn_wasm__.jsProxy.sign is not installed yet")
@@ -156,7 +146,6 @@ func main() {
 			jsAddSignature := jsProxy.Get("addSignature")
 			if !(jsAddSignature.IsNull() || jsAddSignature.IsUndefined()) {
 				zcncore.AddSignature = func(privateKey, signature, hash string) (string, error) {
-					fmt.Println("jsAddSignature")
 					result, err := jsbridge.Await(jsAddSignature.Invoke(privateKey, signature, hash))
 					if len(err) > 0 && !err[0].IsNull() {
 						return "", errors.New("add signature: " + err[0].String())
