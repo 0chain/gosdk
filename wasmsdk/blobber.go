@@ -469,6 +469,7 @@ type BulkUploadOption struct {
 	ReadChunkFuncName string `json:"readChunkFuncName,omitempty"`
 	CallbackFuncName  string `json:"callbackFuncName,omitempty"`
 	MimeType          string `json:"mimeType,omitempty"`
+	MemoryStorer      bool   `json:"memoryStorer,omitempty"`
 }
 
 type BulkUploadResult struct {
@@ -671,8 +672,12 @@ func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 			sdk.WithThumbnail(option.ThumbnailBytes.Buffer),
 			sdk.WithEncrypt(encrypt),
 			sdk.WithStatusCallback(statusBar),
-			sdk.WithProgressStorer(&chunkedUploadProgressStorer{list: make(map[string]*sdk.UploadProgress)}),
 			sdk.WithChunkNumber(numBlocks),
+		}
+		if option.MemoryStorer {
+			options = append(options, sdk.WithProgressStorer(&chunkedUploadProgressStorer{
+				list: make(map[string]*sdk.UploadProgress),
+			}))
 		}
 		operationRequests[idx] = sdk.OperationRequest{
 			FileMeta:       fileMeta,
@@ -758,7 +763,6 @@ func uploadWithJsFuncs(allocationID, remotePath string, readChunkFuncName string
 		sdk.WithThumbnail(thumbnailBytes),
 		sdk.WithEncrypt(encrypt),
 		sdk.WithStatusCallback(statusBar),
-		sdk.WithProgressStorer(&chunkedUploadProgressStorer{list: make(map[string]*sdk.UploadProgress)}),
 		sdk.WithChunkNumber(numBlocks))
 	if err != nil {
 		return false, err
@@ -835,7 +839,6 @@ func upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, w
 		sdk.WithThumbnail(thumbnailBytes),
 		sdk.WithEncrypt(encrypt),
 		sdk.WithStatusCallback(statusBar),
-		sdk.WithProgressStorer(&chunkedUploadProgressStorer{list: make(map[string]*sdk.UploadProgress)}),
 		sdk.WithChunkNumber(numBlocks))
 	if err != nil {
 		return nil, err
