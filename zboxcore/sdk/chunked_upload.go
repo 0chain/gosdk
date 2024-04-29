@@ -458,6 +458,7 @@ func (su *ChunkedUpload) process() error {
 		if chunks.isFinal {
 			if su.fileMeta.ActualHash == "" {
 				su.fileMeta.ActualHash, err = su.chunkReader.GetFileHash()
+				logger.Logger.Info("ActualHash: ", su.fileMeta.ActualHash)
 				if err != nil {
 					if su.statusCallback != nil {
 						su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
@@ -476,7 +477,7 @@ func (su *ChunkedUpload) process() error {
 			}
 		}
 		if chunks.totalReadSize == 0 {
-			logger.Logger.Info("isFinal: ", chunks.isFinal)
+			logger.Logger.Info("isFinal: ", chunks.isFinal, " totalReadSize: ", su.progress.ReadLength)
 			break
 		}
 		//chunk has not be uploaded yet
