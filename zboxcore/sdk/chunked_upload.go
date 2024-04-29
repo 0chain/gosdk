@@ -475,7 +475,9 @@ func (su *ChunkedUpload) process() error {
 				return thrown.New("upload_failed", "Upload failed. Uploaded size does not match with actual size: "+fmt.Sprintf("%d != %d", su.fileMeta.ActualSize, su.progress.ReadLength))
 			}
 		}
-
+		if chunks.totalReadSize == 0 {
+			break
+		}
 		//chunk has not be uploaded yet
 		if chunks.chunkEndIndex > su.progress.ChunkIndex {
 			err = su.processUpload(
