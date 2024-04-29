@@ -476,6 +476,7 @@ func (su *ChunkedUpload) process() error {
 			}
 		}
 		if chunks.totalReadSize == 0 {
+			logger.Logger.Info("isFinal: ", chunks.isFinal)
 			break
 		}
 		//chunk has not be uploaded yet
@@ -613,6 +614,9 @@ func (su *ChunkedUpload) readChunks(num int) (*batchChunksData, error) {
 				//blobber i
 				data.fileShards[i] = append(data.fileShards[i], v)
 			}
+		} else {
+			data.isFinal = true
+			break
 		}
 
 		if chunk.IsFinal {
