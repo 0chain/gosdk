@@ -1047,7 +1047,7 @@ func (b *BridgeClient) estimateAlchemyGasAmount(ctx context.Context, from, to, d
 }
 
 // EstimateBurnWZCNGasAmount performs gas amount estimation for the given wzcn burn transaction.
-func (b *BridgeClient) EstimateBurnWZCNGasAmount(ctx context.Context, from, to string, amountTokens int) (float64, error) {
+func (b *BridgeClient) EstimateBurnWZCNGasAmount(ctx context.Context, from, to, amountTokens string) (float64, error) {
 	switch b.getProviderType() {
 	case AlchemyProvider:
 		abi, err := bridge.BridgeMetaData.GetAbi()
@@ -1058,7 +1058,7 @@ func (b *BridgeClient) EstimateBurnWZCNGasAmount(ctx context.Context, from, to s
 		clientID := DefaultClientIDEncoder(zcncore.GetClientWalletID())
 
 		amount := new(big.Int)
-		amount.SetInt64(int64(amountTokens))
+		amount.SetString(amountTokens, 10)
 
 		var packRaw []byte
 		packRaw, err = abi.Pack("burn", amount, clientID)
@@ -1078,11 +1078,11 @@ func (b *BridgeClient) EstimateBurnWZCNGasAmount(ctx context.Context, from, to s
 
 // EstimateMintWZCNGasAmount performs gas amount estimation for the given wzcn mint transaction.
 func (b *BridgeClient) EstimateMintWZCNGasAmount(
-	ctx context.Context, from, to, zcnTransactionRaw string, amountToken, nonceRaw int64, signaturesRaw [][]byte) (float64, error) {
+	ctx context.Context, from, to, zcnTransactionRaw, amountToken string, nonceRaw int64, signaturesRaw [][]byte) (float64, error) {
 	switch b.getProviderType() {
 	case AlchemyProvider:
 		amount := new(big.Int)
-		amount.SetInt64(amountToken)
+		amount.SetString(amountToken, 10)
 
 		zcnTransaction := DefaultClientIDEncoder(zcnTransactionRaw)
 
