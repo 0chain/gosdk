@@ -4,6 +4,7 @@
   <!-- for zcn.wasm-->
   <script src="https://cdn.jsdelivr.net/gh/herumi/bls-wasm@v1.0.0/browser/bls.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/golang/go@go1.21.5/misc/wasm/wasm_exec.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/hash-wasm@4"></script>
   <script src="zcn.js"></script>
 
 
@@ -171,10 +172,10 @@
     }
 
     const getWallet = () => {
-      const clientID = "b1d533fa60431a76014c4f94a7e8e19a3b1a7f34eebd4cacd29a8dd948b3844c"
-      const publicKey = "1f30a07b34146435cabc3244a1452fb8933f6982e0b33f384e5d25b9d6531e24e342003349990483f8481052a0748cbc72355d9cbda621ec914f7ed03c127791"
-      const privateKey = "fb98f46969be6921586e547b0f6f70c6b92d7823359f00bafa3900523910661a"
-      const mnemonic = "snake second property crush thrive monkey already lake fire sort cheap lake census adult this cloth panic filter taste punch pistol project rack obscure"
+      const clientID = "2ba00d37a162b3fe7783fd65c0507bca67418e9b2cac2a25244339f00ac30026"
+      const publicKey = "174cb917c5e5e5a7906b244bc73d03dc8adaf85a61d7c31989959ad1b4ffaa01884556b5e739f01bea08a329c14552e85540300484b24037962b730cca3dbd0c"
+      const privateKey = "8564a063420e98ee6826f56342b81a4ab3e5acab0b5bd5d9598b8c7207656415"
+      const mnemonic = "grunt human dog license demise black similar level satoshi hockey guide wrap drive chase lazy engage cruel fly unable verb point else minor where"
       return {
         clientID, publicKey, privateKey, mnemonic
       }
@@ -211,7 +212,7 @@
 
     let network = query.get('network')
     if (!network || network == 'undefined') {
-      network = "dev.zus.network"
+      network = "demo.zus.network"
     }
 
     const blockWorker = 'https://' + network + '/dns';
@@ -441,13 +442,14 @@
         alert("please selection allocationID")
         return
       }
-      const { list = [] } = await goWasm.sdk.listObjects(allocationId, '/')
+      const { list = [] } = await goWasm.sdk.listObjects(allocationId, '/',0,100)
       files = list || []
       bindFiles()
     })
 
     onClick('btnUploadFile', async () => {
       const { files } = get('inputSelectedFile')
+      console.log("start upload")
       if (files && files.length > 0) {
 
         const objects = []
@@ -457,16 +459,26 @@
             allocationId: allocationId,
             remotePath: `/${file.name}`,
             file: file,
-            thumbnailBytes: await readBytes(file),//only for demo, don't upload original file as thumbnail in production
             encrypt: false,
             webstreaming: false,
             isUpdate: false,
             isRepair: false,
-            numBlocks: 100,
+            numBlocks: 250,
             callback: function (totalBytes, completedBytes, error) {
               console.log(file.name + " " + completedBytes + "/" + totalBytes + " err:" + error)
             }
           })
+            {{/* const startChunkSize = 3 * 64 * 1024;
+  let endOffset = startChunkSize + 335413248;
+  //Time this for loop
+  const startTime = new Date().getTime();
+  for (let j = 0; j < endOffset; j += startChunkSize) {
+  console.log("readChunk",j)
+    const chunk = await readChunk(j, startChunkSize, file);
+  } */}}
+
+  {{/* const endTime = new Date().getTime();
+  console.log('Time taken: ', endTime - startTime); */}}
         }
         const results = await goWasm.bulkUpload(objects)
         console.log(JSON.stringify(results))
