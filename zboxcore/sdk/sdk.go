@@ -1500,7 +1500,7 @@ func ResetAllocationStats(allocationId string) (string, int64, error) {
 
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_RESET_ALLOCATION_STATS,
-		InputArgs: map[string]interface{}{"allocation_id": allocationId},
+		InputArgs: allocationId,
 	}
 	hash, _, n, _, err := storageSmartContractTxn(sn)
 	return hash, n, err
