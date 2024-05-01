@@ -3,7 +3,6 @@ package client
 import (
 	"encoding/json"
 	"fmt"
-	"runtime/debug"
 
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/core/zcncrypto"
@@ -38,7 +37,6 @@ func init() {
 		}
 
 		fmt.Println("auth - sign with default impl")
-		fmt.Println("auth - stack:", string(debug.Stack()))
 		// get sign lock
 		<-sigC
 		sig, err := sys.SignWithAuth(hash, client.SignatureScheme, GetClientSysKeys())

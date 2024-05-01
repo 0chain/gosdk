@@ -66,7 +66,6 @@ func main() {
 				}
 
 				sys.SignWithAuth = func(hash, signatureScheme string, keys []sys.KeyPair) (string, error) {
-					fmt.Println("auth - sign with auth")
 					data, err := json.Marshal(struct {
 						Data     string `json:"data"`
 						ClientID string `json:"client_id"`
@@ -100,10 +99,7 @@ func main() {
 
 					// c := client.GetClient()
 					// client.GetClient().ClientKey = sigpk.Pubkey
-					fmt.Println("auth - sign response:", sigpk)
-					// return zcncore.AddSignature(keys[0].PrivateKey, sigpk.Sig, hash)
-					return zcncore.AddSignature(client.GetClientPrivateKey(), sigpk.Sig, hash)
-
+					return zcncore.AddSignature(keys[0].PrivateKey, sigpk.Sig, hash)
 				}
 			} else {
 				PrintError("__zcn_wasm__.jsProxy.sign is not installed yet")
@@ -305,8 +301,8 @@ func main() {
 
 				"registerAuthorizer": js.FuncOf(registerAuthorizer),
 				"registerAuthCommon": js.FuncOf(registerAuthCommon),
-				"callAuth":           js.FuncOf(callAuth),
 				"authResponse":       authResponse,
+				"authMsgResponse":    authMsgResponse,
 			})
 
 			fmt.Println("__wasm_initialized__ = true;")
