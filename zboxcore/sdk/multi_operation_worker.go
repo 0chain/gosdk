@@ -168,6 +168,7 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 func (mo *MultiOperation) Process() error {
 	l.Logger.Info("MultiOperation Process start")
 	TotalReadTime = 0
+	TotalReadChunkTime = 0
 	wg := &sync.WaitGroup{}
 	mo.changes = make([][]allocationchange.AllocationChange, len(mo.operations))
 	ctx := mo.ctx

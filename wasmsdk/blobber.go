@@ -934,17 +934,17 @@ func getBlobbers(stakable bool) ([]*sdk.Blobber, error) {
 
 type timingRes struct {
 	UploadTime         int64 `json:"upload_time"`
+	TotalReadChunkTime int64 `json:"total_read_chunk_time"`
 	ReadTime           int64 `json:"read_time"`
 	TotalTime          int64 `json:"total_time"`
-	TotalReadChunkTime int64 `json:"total_read_chunk_time"`
 }
 
 func getUploadTiming() string {
 	res := timingRes{
 		UploadTime:         sdk.TotalUploadTime,
+		TotalReadChunkTime: sdk.TotalReadChunkTime,
 		ReadTime:           sdk.TotalReadTime,
 		TotalTime:          sdk.TotalTime,
-		TotalReadChunkTime: sdk.TotalReadChunkTime,
 	}
 	respBytes, _ := json.Marshal(res)
 	return string(respBytes)
