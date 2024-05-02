@@ -1,6 +1,6 @@
 module github.com/0chain/gosdk
 
-go 1.21
+go 1.22.0
 
 require (
 	github.com/0chain/common v0.0.6-0.20230127095721-8df4d1d72565
@@ -9,7 +9,9 @@ require (
 	github.com/btcsuite/btcd v0.23.4
 	github.com/dgraph-io/badger/v3 v3.2103.5
 	github.com/didip/tollbooth v4.0.2+incompatible
+	github.com/disintegration/imaging v1.6.2
 	github.com/ethereum/go-ethereum v1.10.26
+	github.com/gen2brain/heic v0.3.0
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
@@ -46,7 +48,7 @@ require (
 require (
 	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d
 	github.com/minio/sha256-simd v1.0.1
-	github.com/tetratelabs/wazero v1.7.0
+	github.com/tetratelabs/wazero v1.7.1
 	github.com/ybbus/jsonrpc/v3 v3.1.5
 )
 
@@ -63,6 +65,7 @@ require (
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.1.0 // indirect
 	github.com/dgraph-io/ristretto v0.1.1 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
+	github.com/ebitengine/purego v0.7.1 // indirect
 	github.com/edsrzf/mmap-go v1.0.0 // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/fjl/memsize v0.0.0-20190710130421-bcb5799ab5e5 // indirect
@@ -121,7 +124,7 @@ require (
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	go.dedis.ch/fixbuf v1.0.3 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	golang.org/x/sys v0.15.0 // indirect
+	golang.org/x/sys v0.19.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
@@ -143,3 +146,4 @@ require (
 )
 
 //replace github.com/ethereum/go-ethereum => github.com/certifaction/go-ethereum v1.10.3-wasm
+replace github.com/gen2brain/heic => github.com/storybehind/heic v1.0.0

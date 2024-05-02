@@ -7,10 +7,21 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"image"
 
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/tetratelabs/wazero"
 	"github.com/tetratelabs/wazero/imports/wasi_snapshot_preview1"
+
+	_ "image/gif"
+	"image/jpeg"
+	_ "image/png"
+
+	"github.com/disintegration/imaging"
+	_ "github.com/gen2brain/heic"
+	_ "golang.org/x/image/bmp"
+	_ "golang.org/x/image/tiff"
+	_ "golang.org/x/image/webp"
 )
 
 var (
@@ -18,6 +29,7 @@ var (
 	imageWasm []byte
 
 	imageRs    *ImageRs
+ 	gonative   *GoNativeDecode
 	converters []Converter
 	logging    *logger.Logger
 )
@@ -28,9 +40,13 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	converters = []Converter{imageRs}
+	gonative, err = NewGoNativeDecode()
+	if err != nil {
+		panic(err)
+	}
+	converters = []Converter{gonative, imageRs}
 	logging = &logger.Logger{}
-	logging.Init(3, "imageutil")
+	logging.Init(4, "imageutil")
 }
 
 type Option struct {
@@ -52,14 +68,14 @@ func Thumbnail(img []byte, width, height int, options string) (ConvertRes, error
 		if err == nil {
 			return res, nil
 		}
-		logging.Error("convertor failed to convert", err)
+		logging.Error(fmt.Sprintf("convertor %s failed to convert: %v", converter.Name(), err))
 	}
 	for _, converter := range converters {
 		res, err := converter.Convert(img, width, height, ConvertOptions{})
 		if err == nil {
+			logging.Debug(fmt.Sprintf("converter %s produced thumbnail", converter.Name()))
 			return res, nil
 		}
-		logging.Error(err)
 	}
 	return ConvertRes{}, errors.New("all converters failed to convert; use default thumbnail image")
 }
@@ -74,6 +90,7 @@ type ConvertRes struct {
 }
 
 type Converter interface {
+	Name() string
 	Convert([]byte, int, int, ConvertOptions) (ConvertRes, error)
 	IsFormatSupported(format string) bool
 }
@@ -104,6 +121,10 @@ func NewImageRs() (*ImageRs, error) {
 		runtime:          runtime,
 		compiledMod:      compiledMod,
 	}, nil
+}
+
+func (i *ImageRs) Name() string {
+	return "image-rs"
 }
 
 func (i *ImageRs) Convert(img []byte, width, height int, co ConvertOptions) (ConvertRes, error) {
@@ -166,4 +187,42 @@ func (i *ImageRs) Convert(img []byte, width, height int, co ConvertOptions) (Con
 
 func (i *ImageRs) IsFormatSupported(format string) bool {
 	return i.supportedFormats[format]
+}
+
+type GoNativeDecode struct {
+	supportedFormats map[string]bool
+}
+
+func NewGoNativeDecode() (*GoNativeDecode, error) {
+	return &GoNativeDecode{
+		supportedFormats: map[string]bool{
+			"gif": true, "jpeg": true, "png": true, "bmp": true, "tiff": true, "webp": true,
+			"heic": true, "heif": true, "avif": true,
+		},
+	}, nil
+}
+
+func (n *GoNativeDecode) Name() string {
+	return "go-native-decode"
+}
+
+func (n *GoNativeDecode) Convert(buf []byte, width, height int, co ConvertOptions) (ConvertRes, error) {
+	img, _, err := image.Decode(bytes.NewReader(buf))
+	if err != nil {
+		return ConvertRes{}, err
+	}
+	nrgba := imaging.Thumbnail(img, width, height, imaging.Lanczos)
+	fd := &bytes.Buffer{}
+	err = jpeg.Encode(fd, nrgba, nil)
+	if err != nil {
+		return ConvertRes{}, err
+	}
+	cr := ConvertRes{}
+	cr.ThumbnailImg = append(cr.ThumbnailImg, fd.Bytes()...)
+	cr.Format = "jpeg"
+	return cr, nil
+}
+
+func (n *GoNativeDecode) IsFormatSupported(format string) bool {
+	return n.supportedFormats[format]
 }

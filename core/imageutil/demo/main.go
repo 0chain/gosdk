@@ -28,40 +28,64 @@ var (
 	permissions = 0644
 	images      = []img{
 		{
-			location:     filepath.Join("..", "resources", "input.gif"),
-			locationType: "local",
-			width:        500,
-			height:       500,
+			location:     filepath.Join("..", "resources", "input.avif"), locationType: "local", width: 500, height: 500,
 		},
 		{
-			location:     filepath.Join("..", "resources", "input.png"),
-			locationType: "local",
-			width:        500,
-			height:       500,
+			location:     filepath.Join("..", "resources", "input.bmp"), locationType: "local", width: 500, height: 500,
 		},
 		{
-			location:     filepath.Join("..", "resources", "input.jpeg"),
-			locationType: "local",
-			width:        500,
-			height:       500,
+			location:     filepath.Join("..", "resources", "input.dds"), locationType: "local", width: 500, height: 500,
 		},
 		{
-			location:     filepath.Join("..", "resources", "input.webp"),
-			locationType: "local",
-			width:        500,
-			height:       500,
+			location:     filepath.Join("..", "resources", "input.exr"), locationType: "local", width: 500, height: 500,
 		},
 		{
-			location:     filepath.Join("..", "resources", "input.heic"),
-			locationType: "local",
-			width:        500,
-			height:       500,
+			location:     filepath.Join("..", "resources", "input.gif"), locationType: "local", width: 500, height: 500,
 		},
 		{
-			location:     filepath.Join("..", "resources", "input.avif"),
-			locationType: "local",
-			width:        500,
-			height:       500,
+			location:     filepath.Join("..", "resources", "input.hdr"), locationType: "local", width: 500, height: 500,
+		},
+		{
+			location:     filepath.Join("..", "resources", "input.heic"), locationType: "local", width: 500, height: 500,
+		},
+		{
+			location:     filepath.Join("..", "resources", "input.heif"), locationType: "local", width: 500, height: 500,
+		},
+		{
+			location:     filepath.Join("..", "resources", "input.ico"), locationType: "local", width: 500, height: 500,
+		},
+		{
+			location:     filepath.Join("..", "resources", "input.jfif"), locationType: "local", width: 500, height: 500,
+		},
+		{
+			location:     filepath.Join("..", "resources", "input.jpe"), locationType: "local", width: 500, height: 500,
+		},
+		{
+			location:     filepath.Join("..", "resources", "input.jpeg"), locationType: "local", width: 500, height: 500,
+		},
+		{
+			location:     filepath.Join("..", "resources", "input.jpg"), locationType: "local", width: 500, height: 500,
+		},
+		{
+			location:     filepath.Join("..", "resources", "input.jps"), locationType: "local", width: 500, height: 500,
+		},
+		{
+			location:     filepath.Join("..", "resources", "input.png"), locationType: "local", width: 500, height: 500,
+		},
+		{
+			location:     filepath.Join("..", "resources", "input.pnm"), locationType: "local", width: 500, height: 500,
+		},
+		{
+			location:     filepath.Join("..", "resources", "input.svg"), locationType: "local", width: 500, height: 500,
+		},
+		{
+			location:     filepath.Join("..", "resources", "input.tga"), locationType: "local", width: 500, height: 500,
+		},
+		{
+			location:     filepath.Join("..", "resources", "input.tiff"), locationType: "local", width: 500, height: 500,
+		},
+		{
+			location:     filepath.Join("..", "resources", "input.webp"), locationType: "local", width: 500, height: 500,
 		},
 	}
 )
@@ -82,7 +106,7 @@ func main() {
 	}
 
 	for i, input := range images {
-		log.Printf("Location: %s", input.location)
+		log.Printf("%d) Location: %s", i, input.location)
 		var b []byte
 		switch input.locationType {
 		case "remote":
@@ -118,15 +142,13 @@ func main() {
 			continue
 		}
 
-		log.Printf("res_arr size: %v, first 30 bytes: %v\n", len(res.ThumbnailImg), res.ThumbnailImg[0:30])
-
 		log.Printf("creating outfile file")
 		opath := filepath.Join(folderPath, fmt.Sprintf("output%d.jpeg", i))
 		err = os.WriteFile(opath, res.ThumbnailImg, fs.FileMode(permissions))
 		if err != nil {
 			log.Printf("err creating outfile file: %v", err)
 		}
-
+		log.Printf("%s success!", input.location)
 	}
 	log.Println("Done!")
 }
