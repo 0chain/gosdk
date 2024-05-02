@@ -2332,6 +2332,18 @@ func (a *Allocation) CancelUpload(remotePath string) error {
 	return nil
 }
 
+func (a *Allocation) PauseUpload(remotePath string) error {
+	cancelLock.Lock()
+	cancelFunc, ok := CancelOpCtx[remotePath]
+	cancelLock.Unlock()
+	if !ok {
+		return errors.New("remote_path_not_found", "Invalid path. No upload in progress for the path "+remotePath)
+	} else {
+		cancelFunc(ErrPauseUpload)
+	}
+	return nil
+}
+
 func (a *Allocation) CancelRepair() error {
 	if a.repairRequestInProgress != nil {
 		a.repairRequestInProgress.isRepairCanceled = true

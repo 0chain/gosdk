@@ -33,7 +33,7 @@ func getAllocation(allocationId string) (*sdk.Allocation, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	sdk.SetShouldVerifyHash(false)
 	it = &cachedAllocation{
 		Allocation: a,
 		Expiration: time.Now().Add(5 * time.Minute),

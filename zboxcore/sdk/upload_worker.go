@@ -3,6 +3,7 @@ package sdk
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"strings"
 
@@ -24,6 +25,8 @@ type UploadOperation struct {
 	isUpdate      bool
 	isDownload    bool
 }
+
+var ErrPauseUpload = errors.New("retry_operation")
 
 func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
 	if uo.isDownload {
@@ -134,7 +137,7 @@ func (uo *UploadOperation) Completed(allocObj *Allocation) {
 }
 
 func (uo *UploadOperation) Error(allocObj *Allocation, consensus int, err error) {
-	if uo.chunkedUpload.progressStorer != nil && !strings.Contains(err.Error(), "context") {
+	if uo.chunkedUpload.progressStorer != nil && !strings.Contains(err.Error(), "context") && !errors.Is(err, ErrPauseUpload) {
 		uo.chunkedUpload.removeProgress()
 	}
 	cancelLock.Lock()

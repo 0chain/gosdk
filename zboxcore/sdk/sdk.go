@@ -1126,6 +1126,20 @@ func getNewAllocationBlobbers(
 	readPrice, writePrice PriceRange,
 	preferredBlobberIds, blobberAuthTickets []string, force bool,
 ) (map[string]interface{}, error) {
+	for _, authTicket := range blobberAuthTickets {
+		if len(authTicket) > 0 {
+			return map[string]interface{}{
+				"data_shards":          datashards,
+				"parity_shards":        parityshards,
+				"size":                 size,
+				"blobbers":             preferredBlobberIds,
+				"blobber_auth_tickets": blobberAuthTickets,
+				"read_price_range":     readPrice,
+				"write_price_range":    writePrice,
+			}, nil
+		}
+	}
+
 	allocBlobberIDs, err := GetAllocationBlobbers(
 		datashards, parityshards, size, 2, readPrice, writePrice, force,
 	)
@@ -1140,14 +1154,10 @@ func getNewAllocationBlobbers(
 	uniqueBlobbers := []string{}
 	uniqueBlobberAuthTickets := []string{}
 
-	for i, b := range blobbers {
+	for _, b := range blobbers {
 		if !ids[b] {
 			uniqueBlobbers = append(uniqueBlobbers, b)
-			if i < len(blobberAuthTickets) {
-				uniqueBlobberAuthTickets = append(uniqueBlobberAuthTickets, blobberAuthTickets[i])
-			} else {
-				uniqueBlobberAuthTickets = append(uniqueBlobberAuthTickets, "")
-			}
+			uniqueBlobberAuthTickets = append(uniqueBlobberAuthTickets, "")
 			ids[b] = true
 		}
 	}
