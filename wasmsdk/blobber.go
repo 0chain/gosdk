@@ -46,13 +46,22 @@ func listObjectsFromAuthTicket(allocationID, authTicket, lookupHash string, offs
 	return alloc.ListDirFromAuthTicket(authTicket, lookupHash, sdk.WithListRequestOffset(offset), sdk.WithListRequestPageLimit(pageLimit))
 }
 
-func cancelUpload(allocationID string, remotePath string) error {
+func cancelUpload(allocationID, remotePath string) error {
 	allocationObj, err := getAllocation(allocationID)
 	if err != nil {
 		PrintError("Error fetching the allocation", err)
 		return err
 	}
 	return allocationObj.CancelUpload(remotePath)
+}
+
+func pauseUpload(allocationID, remotePath string) error {
+	allocationObj, err := getAllocation(allocationID)
+	if err != nil {
+		PrintError("Error fetching the allocation", err)
+		return err
+	}
+	return allocationObj.PauseUpload(remotePath)
 }
 
 func createDir(allocationID, remotePath string) error {
