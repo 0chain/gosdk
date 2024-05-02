@@ -631,8 +631,12 @@ func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 		wg.Add(1)
 		encrypt := option.Encrypt
 		remotePath := option.RemotePath
-
-		fileReader := jsbridge.NewFileReader(option.ReadChunkFuncName, option.FileSize)
+		fileReader, err := jsbridge.NewFileReader(option.ReadChunkFuncName, option.FileSize, allocationObj.GetChunkReadSize(encrypt))
+		if err != nil {
+			result.Error = "Error in file operation"
+			result.Success = false
+			return result, err
+		}
 		mimeType := option.MimeType
 		localPath := remotePath
 		remotePath = zboxutil.RemoteClean(remotePath)
@@ -725,7 +729,10 @@ func uploadWithJsFuncs(allocationID, remotePath string, readChunkFuncName string
 	}
 	wg.Add(1)
 
-	fileReader := jsbridge.NewFileReader(readChunkFuncName, fileSize)
+	fileReader, err := jsbridge.NewFileReader(readChunkFuncName, fileSize, allocationObj.GetChunkReadSize(encrypt))
+	if err != nil {
+		return false, err
+	}
 
 	localPath := remotePath
 

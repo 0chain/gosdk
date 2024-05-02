@@ -2,7 +2,6 @@ package sdk
 
 import (
 	"bytes"
-	"container/heap"
 	"context"
 	"crypto/md5"
 	"encoding/hex"
@@ -14,6 +13,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -119,22 +119,6 @@ func (pq downloadQueue) Len() int { return len(pq) }
 
 func (pq downloadQueue) Less(i, j int) bool {
 	return pq[i].timeTaken < pq[j].timeTaken
-}
-
-func (pq downloadQueue) Swap(i, j int) {
-	pq[i], pq[j] = pq[j], pq[i]
-}
-
-func (pq *downloadQueue) Push(x interface{}) {
-	*pq = append(*pq, x.(downloadPriority))
-}
-
-func (pq *downloadQueue) Pop() interface{} {
-	old := *pq
-	n := len(old)
-	item := old[n-1]
-	*pq = old[0 : n-1]
-	return item
 }
 
 type DownloadProgress struct {
@@ -705,7 +689,7 @@ func (req *DownloadRequest) processDownload() {
 		j := i
 		if i == 1 {
 			firstReqWG.Wait()
-			heap.Init(&req.downloadQueue)
+			sort.Slice(req.downloadQueue, req.downloadQueue.Less)
 		}
 		select {
 		case <-egCtx.Done():
@@ -1246,7 +1230,7 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 		return nil, fmt.Errorf("consensus_not_met")
 	}
 	req.downloadMask = foundMask
-	heap.Init(&req.downloadQueue)
+	sort.Slice(req.downloadQueue, req.downloadQueue.Less)
 	return selected.fileref, nil
 }
 
