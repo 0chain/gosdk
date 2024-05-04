@@ -813,6 +813,13 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 	if !a.isInitialized() {
 		return notInitialized
 	}
+	TotalFormBuildTime = 0     // reset the time
+	TotalUploadTime = 0        // reset the time
+	TotalReadChunkTime = 0     // reset the time
+	TotalUploadBlobberTime = 0 // reset the time
+	TotalTime = 0              // reset the time
+	TotalReadTime = 0          // reset the time
+
 	connectionID := zboxutil.NewConnectionId()
 	var mo MultiOperation
 	for i := 0; i < len(operations); {

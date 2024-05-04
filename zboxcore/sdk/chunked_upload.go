@@ -643,7 +643,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		uploadBody:      make([]blobberData, len(su.blobbers)),
 		uploadLength:    uploadLength,
 	}
-
+	now := time.Now()
 	wgErrors := make(chan error, len(su.blobbers))
 	if len(fileShards) == 0 {
 		return thrown.New("upload_failed", "Upload failed. No data to upload")
@@ -697,6 +697,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		su.removeProgress()
 		return thrown.New("upload_failed", fmt.Sprintf("Upload failed. %s", err))
 	}
+	TotalFormBuildTime += time.Since(now).Milliseconds()
 	if !lastBufferOnly {
 		su.uploadWG.Add(1)
 		select {
@@ -817,6 +818,7 @@ func (su *ChunkedUpload) uploadToBlobbers(uploadData UploadData) error {
 		return context.Cause(su.ctx)
 	default:
 	}
+	now := time.Now()
 	consensus := Consensus{
 		RWMutex:         &sync.RWMutex{},
 		consensusThresh: su.consensus.consensusThresh,
@@ -873,6 +875,7 @@ func (su *ChunkedUpload) uploadToBlobbers(uploadData UploadData) error {
 			su.statusCallback.InProgress(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, int(atomic.AddInt64(&su.progress.UploadLength, uploadLength)), nil)
 		}
 	}
+	atomic.AddInt64(&TotalUploadBlobberTime, time.Since(now).Milliseconds())
 	uploadData = UploadData{} // release memory
 	return nil
 }

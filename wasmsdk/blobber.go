@@ -937,6 +937,8 @@ type timingRes struct {
 	TotalReadChunkTime int64 `json:"total_read_chunk_time"`
 	ReadTime           int64 `json:"read_time"`
 	TotalTime          int64 `json:"total_time"`
+	TotalBuildTime     int64 `json:"total_build_time"`
+	TotalBlobberUpload int64 `json:"total_blobber_upload"`
 }
 
 func getUploadTiming() string {
@@ -945,6 +947,8 @@ func getUploadTiming() string {
 		TotalReadChunkTime: sdk.TotalReadChunkTime,
 		ReadTime:           sdk.TotalReadTime,
 		TotalTime:          sdk.TotalTime,
+		TotalBuildTime:     sdk.TotalFormBuildTime,
+		TotalBlobberUpload: sdk.TotalUploadBlobberTime,
 	}
 	respBytes, _ := json.Marshal(res)
 	return string(respBytes)

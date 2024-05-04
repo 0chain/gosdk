@@ -41,10 +41,12 @@ func WithRepair() MultiOperationOption {
 }
 
 var (
-	TotalUploadTime    int64
-	TotalTime          int64
-	TotalReadTime      int64
-	TotalReadChunkTime int64
+	TotalUploadTime        int64
+	TotalTime              int64
+	TotalReadTime          int64
+	TotalReadChunkTime     int64
+	TotalFormBuildTime     int64
+	TotalUploadBlobberTime int64
 )
 
 type Operationer interface {
