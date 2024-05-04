@@ -40,6 +40,15 @@ func WithRepair() MultiOperationOption {
 	}
 }
 
+var (
+	TotalUploadTime        int64
+	TotalTime              int64
+	TotalReadTime          int64
+	TotalReadChunkTime     int64
+	TotalFormBuildTime     int64
+	TotalUploadBlobberTime int64
+)
+
 type Operationer interface {
 	Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error)
 	buildChange(refs []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange
@@ -160,6 +169,8 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 
 func (mo *MultiOperation) Process() error {
 	l.Logger.Info("MultiOperation Process start")
+	TotalReadTime = 0
+	TotalReadChunkTime = 0
 	wg := &sync.WaitGroup{}
 	mo.changes = make([][]allocationchange.AllocationChange, len(mo.operations))
 	ctx := mo.ctx
@@ -168,6 +179,7 @@ func (mo *MultiOperation) Process() error {
 	swg := sizedwaitgroup.New(BatchSize)
 	errsSlice := make([]error, len(mo.operations))
 	mo.operationMask = zboxutil.NewUint128(0)
+	now := time.Now()
 	for idx, op := range mo.operations {
 		uid := util.GetNewUUID()
 		swg.Add()
@@ -196,7 +208,8 @@ func (mo *MultiOperation) Process() error {
 		}(op, idx)
 	}
 	swg.Wait()
-
+	logger.Logger.Info("[process]", time.Since(now).Milliseconds())
+	TotalUploadTime = time.Since(now).Milliseconds()
 	// Check consensus
 	if mo.operationMask.CountOnes() < mo.consensusThresh || ctx.Err() != nil {
 		majorErr := zboxutil.MajorError(errsSlice)
@@ -353,6 +366,7 @@ func (mo *MultiOperation) Process() error {
 			op.Completed(mo.allocationObj)
 		}
 	}
+	TotalTime = time.Since(now).Milliseconds()
 
 	return nil
 
