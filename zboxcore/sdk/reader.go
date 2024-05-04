@@ -213,7 +213,7 @@ func GetDStorageFileReader(alloc *Allocation, ref *ORef, sdo *StreamDownloadOpti
 		sd.authTicket = at
 	}
 
-	sd.ctx, sd.ctxCncl = context.WithCancel(alloc.ctx)
+	sd.ctx, sd.ctxCncl = context.WithCancelCause(alloc.ctx)
 
 	err := sd.initEC()
 	if err != nil {

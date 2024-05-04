@@ -208,7 +208,7 @@ type Allocation struct {
 	ctxCancelF              context.CancelFunc
 	mutex                   *sync.Mutex
 	commitMutex             *sync.Mutex
-	downloadProgressMap     map[string]*DownloadRequest
+	downloadProgressMap     map[string]context.CancelCauseFunc
 	downloadRequests        []*DownloadRequest
 	repairRequestInProgress *RepairRequest
 	initialized             bool
@@ -307,7 +307,7 @@ func (a *Allocation) InitAllocation() {
 	a.downloadChan = make(chan *DownloadRequest, 100)
 	a.repairChan = make(chan *RepairRequest, 1)
 	a.ctx, a.ctxCancelF = context.WithCancel(context.Background())
-	a.downloadProgressMap = make(map[string]*DownloadRequest)
+	a.downloadProgressMap = make(map[string]context.CancelCauseFunc)
 	a.downloadRequests = make([]*DownloadRequest, 0, 100)
 	a.mutex = &sync.Mutex{}
 	a.commitMutex = &sync.Mutex{}
@@ -1091,7 +1091,7 @@ func (a *Allocation) generateDownloadRequest(
 	downloadReq.allocationTx = a.Tx
 	downloadReq.allocOwnerID = a.Owner
 	downloadReq.allocOwnerPubKey = a.OwnerPublicKey
-	downloadReq.ctx, downloadReq.ctxCncl = context.WithCancel(a.ctx)
+	downloadReq.ctx, downloadReq.ctxCncl = context.WithCancelCause(a.ctx)
 	downloadReq.fileHandler = fileHandler
 	downloadReq.localFilePath = localFilePath
 	downloadReq.remotefilepath = remotePath
@@ -1154,7 +1154,7 @@ func (a *Allocation) addAndGenerateDownloadRequest(
 		opt(downloadReq)
 	}
 	downloadReq.workdir = filepath.Join(downloadReq.workdir, ".zcn")
-	a.downloadProgressMap[remotePath] = downloadReq
+	a.downloadProgressMap[remotePath] = downloadReq.ctxCncl
 	a.downloadRequests = append(a.downloadRequests, downloadReq)
 	if isFinal {
 		downloadOps := a.downloadRequests
@@ -1946,9 +1946,16 @@ func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKe
 }
 
 func (a *Allocation) CancelDownload(remotepath string) error {
-	if downloadReq, ok := a.downloadProgressMap[remotepath]; ok {
-		downloadReq.isDownloadCanceled = true
-		downloadReq.ctxCncl()
+	if cancelFunc, ok := a.downloadProgressMap[remotepath]; ok {
+		cancelFunc(ErrCancelDownload)
+		return nil
+	}
+	return errors.New("remote_path_not_found", "Invalid path. No download in progress for the path "+remotepath)
+}
+
+func (a *Allocation) PauseDownload(remotepath string) error {
+	if cancelFunc, ok := a.downloadProgressMap[remotepath]; ok {
+		cancelFunc(ErrPauseDownload)
 		return nil
 	}
 	return errors.New("remote_path_not_found", "Invalid path. No download in progress for the path "+remotepath)
@@ -2214,7 +2221,7 @@ func (a *Allocation) downloadFromAuthTicket(fileHandler sys.File, authTicket str
 	downloadReq.allocationTx = a.Tx
 	downloadReq.allocOwnerID = a.Owner
 	downloadReq.allocOwnerPubKey = a.OwnerPublicKey
-	downloadReq.ctx, downloadReq.ctxCncl = context.WithCancel(a.ctx)
+	downloadReq.ctx, downloadReq.ctxCncl = context.WithCancelCause(a.ctx)
 	downloadReq.fileHandler = fileHandler
 	downloadReq.localFilePath = localFilePath
 	downloadReq.remotefilepathhash = remoteLookupHash
@@ -2250,7 +2257,7 @@ func (a *Allocation) downloadFromAuthTicket(fileHandler sys.File, authTicket str
 		opt(downloadReq)
 	}
 	a.mutex.Lock()
-	a.downloadProgressMap[remoteLookupHash] = downloadReq
+	a.downloadProgressMap[remoteLookupHash] = downloadReq.ctxCncl
 	if len(a.downloadRequests) > 0 {
 		downloadReq.connectionID = a.downloadRequests[0].connectionID
 	}

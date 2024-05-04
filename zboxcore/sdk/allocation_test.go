@@ -377,7 +377,7 @@ func TestAllocation_dispatchWork(t *testing.T) {
 		cancelFn()
 	})
 	t.Run("Test_Cover_Download_Request", func(t *testing.T) {
-		ctx, ctxCncl := context.WithCancel(context.Background())
+		ctx, ctxCncl := context.WithCancelCause(context.Background())
 		go a.dispatchWork(context.Background())
 		a.downloadChan <- &DownloadRequest{ctx: ctx, ctxCncl: ctxCncl}
 	})
@@ -975,7 +975,7 @@ func TestAllocation_downloadFile(t *testing.T) {
 			a.downloadChan = make(chan *DownloadRequest, 10)
 			a.repairChan = make(chan *RepairRequest, 1)
 			a.ctx, a.ctxCancelF = context.WithCancel(context.Background())
-			a.downloadProgressMap = make(map[string]*DownloadRequest)
+			a.downloadProgressMap = make(map[string]context.CancelCauseFunc)
 			a.mutex = &sync.Mutex{}
 			a.initialized = true
 			sdkInitialized = true
@@ -1453,8 +1453,8 @@ func TestAllocation_CancelDownload(t *testing.T) {
 			},
 			setup: func(t *testing.T, a *Allocation) (teardown func(t *testing.T)) {
 				req := &DownloadRequest{}
-				req.ctx, req.ctxCncl = context.WithCancel(context.TODO())
-				a.downloadProgressMap[remotePath] = req
+				req.ctx, req.ctxCncl = context.WithCancelCause(context.TODO())
+				a.downloadProgressMap[remotePath] = req.ctxCncl
 				return nil
 			},
 		},
@@ -2335,7 +2335,7 @@ func setupMockAllocation(t *testing.T, a *Allocation) {
 	a.downloadChan = make(chan *DownloadRequest, 10)
 	a.repairChan = make(chan *RepairRequest, 1)
 	a.ctx, a.ctxCancelF = context.WithCancel(context.Background())
-	a.downloadProgressMap = make(map[string]*DownloadRequest)
+	a.downloadProgressMap = make(map[string]context.CancelCauseFunc)
 	a.mutex = &sync.Mutex{}
 	a.FileOptions = uint16(63) // 0011 1111 All allowed
 	InitCommitWorker(a.Blobbers)

@@ -886,7 +886,7 @@ func TestAllocation_RepairFile(t *testing.T) {
 			a.downloadChan = make(chan *DownloadRequest, 10)
 			a.repairChan = make(chan *RepairRequest, 1)
 			a.ctx, a.ctxCancelF = context.WithCancel(context.Background())
-			a.downloadProgressMap = make(map[string]*DownloadRequest)
+			a.downloadProgressMap = make(map[string]context.CancelCauseFunc)
 			a.mutex = &sync.Mutex{}
 			a.initialized = true
 			sdkInitialized = true

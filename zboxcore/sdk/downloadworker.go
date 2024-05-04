@@ -41,6 +41,11 @@ const (
 	EXTRA_COUNT            = 2
 )
 
+var (
+	ErrCancelDownload = errors.New("download_cancel", "Download canceled")
+	ErrPauseDownload  = errors.New("download_pause", "Download paused")
+)
+
 type DownloadRequestOption func(dr *DownloadRequest)
 
 func WithDownloadProgressStorer(storer DownloadProgressStorer) DownloadRequestOption {
@@ -80,11 +85,10 @@ type DownloadRequest struct {
 	validationRootMap  map[string]*blobberFile
 	statusCallback     StatusCallback
 	ctx                context.Context
-	ctxCncl            context.CancelFunc
+	ctxCncl            context.CancelCauseFunc
 	authTicket         *marker.AuthTicket
 	downloadMask       zboxutil.Uint128
 	encryptedKey       string
-	isDownloadCanceled bool
 	completedCallback  func(remotepath string, remotepathhash string)
 	fileCallback       func()
 	contentMode        string
@@ -426,7 +430,7 @@ func (req *DownloadRequest) processDownload() {
 			}
 		}()
 	}
-	defer req.ctxCncl()
+	defer req.ctxCncl(nil)
 	remotePathCB := req.remotefilepath
 	if remotePathCB == "" {
 		remotePathCB = req.remotefilepathhash
@@ -706,8 +710,10 @@ func (req *DownloadRequest) processDownload() {
 				blocksToDownload = endBlock - (startBlock + int64(j)*numBlocks)
 			}
 			data, err := req.getBlocksData(startBlock+int64(j)*numBlocks, blocksToDownload, j == 0)
-			if req.isDownloadCanceled {
-				return errors.New("download_abort", "Download aborted by user")
+			select {
+			case <-ctx.Done():
+				return context.Cause(ctx)
+			default:
 			}
 			if err != nil {
 				return errors.Wrap(err, fmt.Sprintf("Download failed for block %d. ", startBlock+int64(j)*numBlocks))
@@ -978,7 +984,7 @@ func (req *DownloadRequest) errorCB(err error, remotePathCB string) {
 	if req.contentMode == DOWNLOAD_CONTENT_THUMB {
 		op = opThumbnailDownload
 	}
-	if req.downloadStorer != nil && !strings.Contains(err.Error(), "context canceled") {
+	if req.downloadStorer != nil && !strings.Contains(err.Error(), "context canceled") && errors.Is(err, ErrPauseDownload) {
 		req.downloadStorer.Remove() //nolint: errcheck
 	}
 	if req.skip {
