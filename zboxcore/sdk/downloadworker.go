@@ -2,7 +2,6 @@ package sdk
 
 import (
 	"bytes"
-	"container/heap"
 	"context"
 	"crypto/md5"
 	"encoding/hex"
@@ -14,6 +13,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -119,22 +119,6 @@ func (pq downloadQueue) Len() int { return len(pq) }
 
 func (pq downloadQueue) Less(i, j int) bool {
 	return pq[i].timeTaken < pq[j].timeTaken
-}
-
-func (pq downloadQueue) Swap(i, j int) {
-	pq[i], pq[j] = pq[j], pq[i]
-}
-
-func (pq *downloadQueue) Push(x interface{}) {
-	*pq = append(*pq, x.(downloadPriority))
-}
-
-func (pq *downloadQueue) Pop() interface{} {
-	old := *pq
-	n := len(old)
-	item := old[n-1]
-	*pq = old[0 : n-1]
-	return item
 }
 
 type DownloadProgress struct {
@@ -493,7 +477,7 @@ func (req *DownloadRequest) processDownload() {
 	remainingSize := size - startBlock*int64(req.effectiveBlockSize)*int64(req.datashards)
 
 	if endBlock*int64(req.effectiveBlockSize)*int64(req.datashards) < req.size {
-		remainingSize = endBlock*int64(req.effectiveBlockSize) - startBlock*int64(req.effectiveBlockSize)
+		remainingSize = (endBlock - startBlock - 1) * int64(req.effectiveBlockSize) * int64(req.datashards)
 	}
 
 	if memFile, ok := req.fileHandler.(*sys.MemFile); ok {
@@ -521,7 +505,7 @@ func (req *DownloadRequest) processDownload() {
 		isPREAndWholeFile bool
 	)
 
-	if !req.shouldVerify && (startBlock == 0 && endBlock == chunksPerShard) {
+	if !req.shouldVerify && (startBlock == 0 && endBlock == chunksPerShard) && shouldVerifyHash {
 		actualFileHasher = md5.New()
 		isPREAndWholeFile = true
 	}
@@ -705,7 +689,7 @@ func (req *DownloadRequest) processDownload() {
 		j := i
 		if i == 1 {
 			firstReqWG.Wait()
-			heap.Init(&req.downloadQueue)
+			sort.Slice(req.downloadQueue, req.downloadQueue.Less)
 		}
 		select {
 		case <-egCtx.Done():
@@ -1246,7 +1230,7 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 		return nil, fmt.Errorf("consensus_not_met")
 	}
 	req.downloadMask = foundMask
-	heap.Init(&req.downloadQueue)
+	sort.Slice(req.downloadQueue, req.downloadQueue.Less)
 	return selected.fileref, nil
 }
 
@@ -1392,7 +1376,7 @@ func writeAtData(dest io.WriterAt, data [][][]byte, dataShards int, offset int64
 func (dr *DownloadRequest) progressID() string {
 
 	if len(dr.allocationID) > 8 {
-		return filepath.Join(dr.workdir, "download", dr.allocationID[:8]+"_"+dr.fRef.MetaID())
+		return filepath.Join(dr.workdir, "download", "d"+dr.allocationID[:8]+"_"+dr.fRef.MetaID())
 	}
 
 	return filepath.Join(dr.workdir, "download", dr.allocationID+"_"+dr.fRef.MetaID())

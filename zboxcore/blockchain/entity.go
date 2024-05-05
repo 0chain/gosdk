@@ -7,7 +7,6 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/node"
 )
@@ -53,8 +52,6 @@ type ChainConfig struct {
 // StakePoolSettings information.
 type StakePoolSettings struct {
 	DelegateWallet string         `json:"delegate_wallet"`
-	MinStake       common.Balance `json:"min_stake"`
-	MaxStake       common.Balance `json:"max_stake"`
 	NumDelegates   int            `json:"num_delegates"`
 	ServiceCharge  float64        `json:"service_charge"`
 }
@@ -62,8 +59,6 @@ type StakePoolSettings struct {
 // UpdateStakePoolSettings information.
 type UpdateStakePoolSettings struct {
 	DelegateWallet *string         `json:"delegate_wallet,omitempty"`
-	MinStake       *common.Balance `json:"min_stake,omitempty"`
-	MaxStake       *common.Balance `json:"max_stake,omitempty"`
 	NumDelegates   *int            `json:"num_delegates,omitempty"`
 	ServiceCharge  *float64        `json:"service_charge,omitempty"`
 }

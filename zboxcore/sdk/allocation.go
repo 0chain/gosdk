@@ -207,11 +207,13 @@ type Allocation struct {
 	ctx                     context.Context
 	ctxCancelF              context.CancelFunc
 	mutex                   *sync.Mutex
+	commitMutex             *sync.Mutex
 	downloadProgressMap     map[string]*DownloadRequest
 	downloadRequests        []*DownloadRequest
 	repairRequestInProgress *RepairRequest
 	initialized             bool
-
+	checkStatus             bool
+	readFree                bool
 	// conseususes
 	consensusThreshold int
 	fullconsensus      int
@@ -233,6 +235,7 @@ type OperationRequest struct {
 	FileReader   io.Reader
 	Mask         *zboxutil.Uint128 // Required for delete repair operation
 	DownloadFile bool              // Required for upload repair operation
+	StreamUpload bool              // Required for streaming file when actualSize is not available
 	Opts         []ChunkedUploadOption
 }
 
@@ -308,9 +311,19 @@ func (a *Allocation) InitAllocation() {
 	a.downloadProgressMap = make(map[string]*DownloadRequest)
 	a.downloadRequests = make([]*DownloadRequest, 0, 100)
 	a.mutex = &sync.Mutex{}
+	a.commitMutex = &sync.Mutex{}
 	a.fullconsensus, a.consensusThreshold = a.getConsensuses()
 	for _, blobber := range a.Blobbers {
 		zboxutil.SetHostClient(blobber.ID, blobber.Baseurl)
+	}
+	a.readFree = true
+	if a.ReadPriceRange.Max > 0 {
+		for _, blobberDetail := range a.BlobberDetails {
+			if blobberDetail.Terms.ReadPrice > 0 {
+				a.readFree = false
+				break
+			}
+		}
 	}
 	a.startWorker(a.ctx)
 	InitCommitWorker(a.Blobbers)
@@ -529,7 +542,7 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 			return err
 		}
 
-		mimeType, err := zboxutil.GetFileContentType(fileReader)
+		mimeType, err := zboxutil.GetFileContentType(path.Ext(fileName), fileReader)
 		if err != nil {
 			return err
 		}
@@ -618,10 +631,6 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 		return err
 	}
 
-	mimeType, err := zboxutil.GetFileContentType(fileReader)
-	if err != nil {
-		return err
-	}
 	remotePath = zboxutil.RemoteClean(remotePath)
 	isabs := zboxutil.IsRemoteAbs(remotePath)
 	if !isabs {
@@ -631,6 +640,11 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 	remotePath = zboxutil.GetFullRemotePath(localPath, remotePath)
 
 	_, fileName := pathutil.Split(remotePath)
+
+	mimeType, err := zboxutil.GetFileContentType(path.Ext(fileName), fileReader)
+	if err != nil {
+		return err
+	}
 
 	fileMeta := FileMeta{
 		Path:       localPath,
@@ -901,7 +915,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 				cancelLock.Lock()
 				CancelOpCtx[op.FileMeta.RemotePath] = mo.ctxCncl
 				cancelLock.Unlock()
-				operation, newConnectionID, err = NewUploadOperation(mo.ctx, op.Workdir, mo.allocationObj, mo.connectionID, op.FileMeta, op.FileReader, false, op.IsWebstreaming, op.IsRepair, op.DownloadFile, op.Opts...)
+				operation, newConnectionID, err = NewUploadOperation(mo.ctx, op.Workdir, mo.allocationObj, mo.connectionID, op.FileMeta, op.FileReader, false, op.IsWebstreaming, op.IsRepair, op.DownloadFile, op.StreamUpload, op.Opts...)
 
 			case constants.FileOperationDelete:
 				if op.Mask != nil {
@@ -914,7 +928,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 				cancelLock.Lock()
 				CancelOpCtx[op.FileMeta.RemotePath] = mo.ctxCncl
 				cancelLock.Unlock()
-				operation, newConnectionID, err = NewUploadOperation(mo.ctx, op.Workdir, mo.allocationObj, mo.connectionID, op.FileMeta, op.FileReader, true, op.IsWebstreaming, op.IsRepair, op.DownloadFile, op.Opts...)
+				operation, newConnectionID, err = NewUploadOperation(mo.ctx, op.Workdir, mo.allocationObj, mo.connectionID, op.FileMeta, op.FileReader, true, op.IsWebstreaming, op.IsRepair, op.DownloadFile, op.StreamUpload, op.Opts...)
 
 			case constants.FileOperationCreateDir:
 				operation = NewDirOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
@@ -1166,20 +1180,13 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 	blobberMap := make(map[uint64]int64)
 	mpLock := sync.Mutex{}
 	wg := sync.WaitGroup{}
-	var isReadFree bool
-	if a.ReadPriceRange.Max == 0 && a.ReadPriceRange.Min == 0 {
-		isReadFree = true
-	}
 	now := time.Now()
 
 	for _, dr := range drs {
 		wg.Add(1)
 		go func(dr *DownloadRequest) {
-			if isReadFree {
-				dr.freeRead = true
-			}
 			defer wg.Done()
-			if isReadFree {
+			if a.readFree {
 				dr.freeRead = true
 			}
 			dr.processDownloadRequest()
@@ -1198,7 +1205,7 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 	elapsedProcessDownloadRequest := time.Since(now)
 
 	// Do not send readmarkers for free reads
-	if isReadFree {
+	if a.readFree {
 		for _, dr := range drs {
 			if dr.skip {
 				continue
@@ -2325,6 +2332,18 @@ func (a *Allocation) CancelUpload(remotePath string) error {
 	return nil
 }
 
+func (a *Allocation) PauseUpload(remotePath string) error {
+	cancelLock.Lock()
+	cancelFunc, ok := CancelOpCtx[remotePath]
+	cancelLock.Unlock()
+	if !ok {
+		return errors.New("remote_path_not_found", "Invalid path. No upload in progress for the path "+remotePath)
+	} else {
+		cancelFunc(ErrPauseUpload)
+	}
+	return nil
+}
+
 func (a *Allocation) CancelRepair() error {
 	if a.repairRequestInProgress != nil {
 		a.repairRequestInProgress.isRepairCanceled = true
@@ -2477,7 +2496,7 @@ func (a *Allocation) UpdateWithRepair(
 	size int64,
 	extend bool,
 	lock uint64,
-	addBlobberId, removeBlobberId string,
+	addBlobberId, addBlobberAuthTicket, removeBlobberId string,
 	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
 	statusCB StatusCallback,
 ) (string, error) {
@@ -2486,7 +2505,7 @@ func (a *Allocation) UpdateWithRepair(
 	}
 
 	l.Logger.Info("Updating allocation")
-	hash, _, err := UpdateAllocation(size, extend, a.ID, lock, addBlobberId, removeBlobberId, setThirdPartyExtendable, fileOptionsParams)
+	hash, _, err := UpdateAllocation(size, extend, a.ID, lock, addBlobberId, addBlobberAuthTicket, removeBlobberId, setThirdPartyExtendable, fileOptionsParams)
 	if err != nil {
 		return "", err
 	}

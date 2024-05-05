@@ -740,3 +740,45 @@ func DeleteAuthTicket(allocationID, remotePath, refereeClientID *C.char) *C.char
 	return WithJSON(true, nil)
 
 }
+
+func CancelUpload(allocationID, remotePath *C.char) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
+	alloc, err := getAllocation(C.GoString(allocationID))
+	if err != nil {
+		log.Error("win: ", err)
+		return WithJSON(false, err)
+	}
+
+	rPath := C.GoString(remotePath)
+	err = alloc.CancelUpload(rPath)
+	if err != nil {
+		log.Error("win: ", err)
+		return WithJSON(false, err)
+	}
+	return WithJSON(true, nil)
+}
+
+func PauseUpload(allocationID, remotePath *C.char) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
+	alloc, err := getAllocation(C.GoString(allocationID))
+	if err != nil {
+		log.Error("win: ", err)
+		return WithJSON(false, err)
+	}
+
+	rPath := C.GoString(remotePath)
+	err = alloc.PauseUpload(rPath)
+	if err != nil {
+		log.Error("win: ", err)
+		return WithJSON(false, err)
+	}
+	return WithJSON(true, nil)
+}

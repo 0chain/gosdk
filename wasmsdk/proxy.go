@@ -170,6 +170,7 @@ func main() {
 				"share":                     Share,
 				"multiDownload":             multiDownload,
 				"upload":                    upload,
+				"setUploadMode":             setUploadMode,
 				"multiUpload":               multiUpload,
 				"multiOperation":            MultiOperation,
 				"listObjects":               listObjects,
@@ -186,6 +187,7 @@ func main() {
 				"updateForbidAllocation":    UpdateForbidAllocation,
 				"send":                      send,
 				"cancelUpload":              cancelUpload,
+				"pauseUpload":               pauseUpload,
 
 				// player
 				"play":           play,
