@@ -710,13 +710,28 @@ func CancelDownload(allocationID, remotepath string) error {
 //
 //	## Inputs
 //	- allocationID
-//	- localPath
+//	- remotePath
 func CancelUpload(allocationID, remotePath string) error {
 	a, err := getAllocation(allocationID)
 	if err != nil {
 		return err
 	}
 	return a.CancelUpload(remotePath)
+}
+
+// PauseUpload - pause file upload
+
+//	## Inputs
+//	- allocationID
+//	- remotePath
+
+func PauseUpload(allocationID, remotePath string) error {
+	a, err := getAllocation(allocationID)
+	if err != nil {
+		return err
+	}
+	return a.PauseUpload(remotePath)
+
 }
 
 // StartRepair - start repair files from path
