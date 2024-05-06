@@ -324,3 +324,181 @@ func TestGoNativeDecodeConvert(t *testing.T) {
 		require.Equal(t, "jpeg", format, "format mismatch; result format: jpeg, image format: %v", format)
 	}
 }
+
+func BenchmarkThumbnail(b *testing.B) {
+	type inp struct {
+		name 	string
+		filePath string
+		width    int
+		height   int
+		options  imageutil.Option
+	}
+
+	inpData := []inp{
+		{
+			name: "sample_640*426.jpeg", filePath: filepath.Join("resources_large", "jpeg", "sample_640*426.jpeg"),
+			width: 120, height: 90,
+		},
+		{
+			name: "sample_1280*853.jpeg", filePath: filepath.Join("resources_large", "jpeg", "sample_1280*853.jpeg"),
+			width: 120, height: 90,
+		},
+		{
+			name: "sample_1920*1280.jpeg", filePath: filepath.Join("resources_large", "jpeg", "sample_1920*1280.jpeg"),
+			width: 120, height: 90,
+		},
+		{
+			name: "sample_5184*3456.jpeg", filePath: filepath.Join("resources_large", "jpeg", "sample_5184*3456.jpeg"),
+			width: 120, height: 90,
+		},
+
+		{
+			name: "sample_640*426.tiff", filePath: filepath.Join("resources_large", "tiff", "sample_640*426.tiff"),
+			width: 120, height: 90,
+		},
+		{
+			name: "sample_1280*853.tiff", filePath: filepath.Join("resources_large", "tiff", "sample_1280*853.tiff"),
+			width: 120, height: 90,
+		},
+		{
+			name: "sample_1920*1280.tiff", filePath: filepath.Join("resources_large", "tiff", "sample_1920*1280.tiff"),
+			width: 120, height: 90,
+		},
+		{
+			name: "sample_5184*3456.tiff", filePath: filepath.Join("resources_large", "tiff", "sample_5184*3456.tiff"),
+			width: 120, height: 90,
+		},
+	}
+
+	for _, iData := range inpData {
+		b.Run(iData.name, func(b *testing.B) {
+			buf, err := os.ReadFile(iData.filePath)
+			require.Nilf(b, err, "err reading file %s : %v", iData.filePath, err)
+			options, err := json.Marshal(iData.options)
+			require.Nilf(b, err, "err marshal options %v: %v", iData.options, err)
+			b.ResetTimer()
+			for i:=0; i<b.N; i++ {
+				_, err = imageutil.Thumbnail(buf, iData.width, iData.height, string(options))
+				require.Nilf(b, err, "convert failed with err : %v", err)
+			}
+		})
+	}
+}
+
+func BenchmarkImageRsConvert(b *testing.B) {
+	type inp struct {
+		name 	string
+		filePath string
+		width    int
+		height   int
+	}
+
+	inpData := []inp{
+		{
+			name: "sample_640*426.jpeg", filePath: filepath.Join("resources_large", "jpeg", "sample_640*426.jpeg"),
+			width: 120, height: 90,
+		},
+		{
+			name: "sample_1280*853.jpeg", filePath: filepath.Join("resources_large", "jpeg", "sample_1280*853.jpeg"),
+			width: 120, height: 90,
+		},
+		{
+			name: "sample_1920*1280.jpeg", filePath: filepath.Join("resources_large", "jpeg", "sample_1920*1280.jpeg"),
+			width: 120, height: 90,
+		},
+		{
+			name: "sample_5184*3456.jpeg", filePath: filepath.Join("resources_large", "jpeg", "sample_5184*3456.jpeg"),
+			width: 120, height: 90,
+		},
+
+		{
+			name: "sample_640*426.tiff", filePath: filepath.Join("resources_large", "tiff", "sample_640*426.tiff"),
+			width: 120, height: 90,
+		},
+		{
+			name: "sample_1280*853.tiff", filePath: filepath.Join("resources_large", "tiff", "sample_1280*853.tiff"),
+			width: 120, height: 90,
+		},
+		{
+			name: "sample_1920*1280.tiff", filePath: filepath.Join("resources_large", "tiff", "sample_1920*1280.tiff"),
+			width: 120, height: 90,
+		},
+		{
+			name: "sample_5184*3456.tiff", filePath: filepath.Join("resources_large", "tiff", "sample_5184*3456.tiff"),
+			width: 120, height: 90,
+		},
+	}
+
+	imageRs, err := imageutil.NewImageRs()
+	require.Nilf(b, err, "err instantiating image-rs")
+	for _, iData := range inpData {
+		b.Run(iData.name, func(b *testing.B) {
+			buf, err := os.ReadFile(iData.filePath)
+			require.Nilf(b, err, "err reading file %s : %v", iData.filePath, err)
+			b.ResetTimer()
+			for i:=0; i<b.N; i++ {
+				_, err = imageRs.Convert(buf, iData.width, iData.height, imageutil.ConvertOptions{})
+				require.Nilf(b, err, "convert failed with err : %v", err)
+			}
+		})
+	}
+}
+
+func BenchmarkGoNativeDecodeConvert(b *testing.B) {
+	type inp struct {
+		name 	string
+		filePath string
+		width    int
+		height   int
+	}
+
+	inpData := []inp{
+		{
+			name: "sample_640*426.jpeg", filePath: filepath.Join("resources_large", "jpeg", "sample_640*426.jpeg"),
+			width: 120, height: 90,
+		},
+		{
+			name: "sample_1280*853.jpeg", filePath: filepath.Join("resources_large", "jpeg", "sample_1280*853.jpeg"),
+			width: 120, height: 90,
+		},
+		{
+			name: "sample_1920*1280.jpeg", filePath: filepath.Join("resources_large", "jpeg", "sample_1920*1280.jpeg"),
+			width: 120, height: 90,
+		},
+		{
+			name: "sample_5184*3456.jpeg", filePath: filepath.Join("resources_large", "jpeg", "sample_5184*3456.jpeg"),
+			width: 120, height: 90,
+		},
+
+		{
+			name: "sample_640*426.tiff", filePath: filepath.Join("resources_large", "tiff", "sample_640*426.tiff"),
+			width: 120, height: 90,
+		},
+		{
+			name: "sample_1280*853.tiff", filePath: filepath.Join("resources_large", "tiff", "sample_1280*853.tiff"),
+			width: 120, height: 90,
+		},
+		{
+			name: "sample_1920*1280.tiff", filePath: filepath.Join("resources_large", "tiff", "sample_1920*1280.tiff"),
+			width: 120, height: 90,
+		},
+		{
+			name: "sample_5184*3456.tiff", filePath: filepath.Join("resources_large", "tiff", "sample_5184*3456.tiff"),
+			width: 120, height: 90,
+		},
+	}
+
+	gonative, err := imageutil.NewGoNativeDecode()
+	require.Nilf(b, err, "err instantiating go-native-decode")
+	for _, iData := range inpData {
+		b.Run(iData.name, func(b *testing.B) {
+			buf, err := os.ReadFile(iData.filePath)
+			require.Nilf(b, err, "err reading file %s : %v", iData.filePath, err)
+			b.ResetTimer()
+			for i:=0; i<b.N; i++ {
+				_, err = gonative.Convert(buf, iData.width, iData.height, imageutil.ConvertOptions{})
+				require.Nilf(b, err, "convert failed with err : %v", err)
+			}
+		})
+	}
+}
