@@ -33,3 +33,6 @@ wasmsdk/demo/demo
 sdkversion.go
 gosdk.code-workspace
 sdkversion
+
+# generated images
+core/imageutil/imaging/demo/images

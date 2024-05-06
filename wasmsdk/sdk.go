@@ -14,6 +14,7 @@ import (
 
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/imageutil"
+	"github.com/0chain/gosdk/core/imageutil/imaging"
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
@@ -116,6 +117,10 @@ func getLookupHash(allocationID string, path string) string {
 //   - webp
 func createThumbnail(buf []byte, width, height int) ([]byte, error) {
 	return imageutil.CreateThumbnail(buf, width, height)
+}
+
+func thumbnail(buf []byte, width, height int, resampleFilter string) ([]byte, error) {
+	return imaging.Thumbnail(buf, width, height, imaging.ResampleFilter(resampleFilter))
 }
 
 func makeSCRestAPICall(scAddress, relativePath, paramsJson string) (string, error) {
