@@ -213,6 +213,7 @@ type Allocation struct {
 	repairRequestInProgress *RepairRequest
 	initialized             bool
 	checkStatus             bool
+	readFree                bool
 	// conseususes
 	consensusThreshold int
 	fullconsensus      int
@@ -314,6 +315,15 @@ func (a *Allocation) InitAllocation() {
 	a.fullconsensus, a.consensusThreshold = a.getConsensuses()
 	for _, blobber := range a.Blobbers {
 		zboxutil.SetHostClient(blobber.ID, blobber.Baseurl)
+	}
+	a.readFree = true
+	if a.ReadPriceRange.Max > 0 {
+		for _, blobberDetail := range a.BlobberDetails {
+			if blobberDetail.Terms.ReadPrice > 0 {
+				a.readFree = false
+				break
+			}
+		}
 	}
 	a.startWorker(a.ctx)
 	InitCommitWorker(a.Blobbers)
@@ -1170,17 +1180,13 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 	blobberMap := make(map[uint64]int64)
 	mpLock := sync.Mutex{}
 	wg := sync.WaitGroup{}
-	var isReadFree bool
-	if a.ReadPriceRange.Max == 0 && a.ReadPriceRange.Min == 0 {
-		isReadFree = true
-	}
 	now := time.Now()
 
 	for _, dr := range drs {
 		wg.Add(1)
 		go func(dr *DownloadRequest) {
 			defer wg.Done()
-			if isReadFree {
+			if a.readFree {
 				dr.freeRead = true
 			}
 			dr.processDownloadRequest()
@@ -1199,7 +1205,7 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 	elapsedProcessDownloadRequest := time.Since(now)
 
 	// Do not send readmarkers for free reads
-	if isReadFree {
+	if a.readFree {
 		for _, dr := range drs {
 			if dr.skip {
 				continue

@@ -46,13 +46,22 @@ func listObjectsFromAuthTicket(allocationID, authTicket, lookupHash string, offs
 	return alloc.ListDirFromAuthTicket(authTicket, lookupHash, sdk.WithListRequestOffset(offset), sdk.WithListRequestPageLimit(pageLimit))
 }
 
-func cancelUpload(allocationID string, remotePath string) error {
+func cancelUpload(allocationID, remotePath string) error {
 	allocationObj, err := getAllocation(allocationID)
 	if err != nil {
 		PrintError("Error fetching the allocation", err)
 		return err
 	}
 	return allocationObj.CancelUpload(remotePath)
+}
+
+func pauseUpload(allocationID, remotePath string) error {
+	allocationObj, err := getAllocation(allocationID)
+	if err != nil {
+		PrintError("Error fetching the allocation", err)
+		return err
+	}
+	return allocationObj.PauseUpload(remotePath)
 }
 
 func createDir(allocationID, remotePath string) error {
@@ -631,8 +640,12 @@ func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 		wg.Add(1)
 		encrypt := option.Encrypt
 		remotePath := option.RemotePath
-
-		fileReader := jsbridge.NewFileReader(option.ReadChunkFuncName, option.FileSize)
+		fileReader, err := jsbridge.NewFileReader(option.ReadChunkFuncName, option.FileSize, allocationObj.GetChunkReadSize(encrypt))
+		if err != nil {
+			result.Error = "Error in file operation"
+			result.Success = false
+			return result, err
+		}
 		mimeType := option.MimeType
 		localPath := remotePath
 		remotePath = zboxutil.RemoteClean(remotePath)
@@ -725,7 +738,10 @@ func uploadWithJsFuncs(allocationID, remotePath string, readChunkFuncName string
 	}
 	wg.Add(1)
 
-	fileReader := jsbridge.NewFileReader(readChunkFuncName, fileSize)
+	fileReader, err := jsbridge.NewFileReader(readChunkFuncName, fileSize, allocationObj.GetChunkReadSize(encrypt))
+	if err != nil {
+		return false, err
+	}
 
 	localPath := remotePath
 

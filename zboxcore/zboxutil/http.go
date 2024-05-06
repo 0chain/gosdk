@@ -198,8 +198,10 @@ func init() {
 			Concurrency:      4096,
 			DNSCacheDuration: time.Hour,
 		}).Dial,
-		ReadTimeout:  120 * time.Second,
-		WriteTimeout: 120 * time.Second,
+		ReadTimeout:         120 * time.Second,
+		WriteTimeout:        120 * time.Second,
+		MaxConnDuration:     45 * time.Second,
+		MaxResponseBodySize: 1024 * 1024 * 64, //64MB
 	}
 	envProxy.initialize()
 	log.Init(logger.DEBUG, "0box-sdk")
