@@ -57,13 +57,12 @@ func (b *chunkedUploadFormBuilder) Build(
 
 	var res blobberData
 
-	if len(fileChunksData) == 0 {
-		return res, nil
-	}
-
 	numBodies := len(fileChunksData) / MAX_BLOCKS
 	if len(fileChunksData)%MAX_BLOCKS > 0 {
 		numBodies++
+	}
+	if len(fileChunksData) == 0 {
+		numBodies = 1
 	}
 	dataBuffers := make([]*bytes.Buffer, 0, numBodies)
 	contentSlice := make([]string, 0, numBodies)
@@ -103,33 +102,34 @@ func (b *chunkedUploadFormBuilder) Build(
 		body := bytes.NewBuffer(bodyBuf)
 		formWriter := multipart.NewWriter(body)
 		defer formWriter.Close()
-
-		uploadFile, err := formWriter.CreateFormFile("uploadFile", formData.Filename)
-		if err != nil {
-			return res, err
-		}
-
-		for _, chunkBytes := range fileChunksData[startRange:endRange] {
-			_, err = uploadFile.Write(chunkBytes)
+		if endRange > startRange {
+			uploadFile, err := formWriter.CreateFormFile("uploadFile", formData.Filename)
 			if err != nil {
 				return res, err
 			}
 
-			err = hasher.WriteToFixedMT(chunkBytes)
-			if err != nil {
-				return res, err
-			}
+			for _, chunkBytes := range fileChunksData[startRange:endRange] {
+				_, err = uploadFile.Write(chunkBytes)
+				if err != nil {
+					return res, err
+				}
 
-			err = hasher.WriteToValidationMT(chunkBytes)
-			if err != nil {
-				return res, err
-			}
+				err = hasher.WriteToFixedMT(chunkBytes)
+				if err != nil {
+					return res, err
+				}
 
-			metadata.FileBytesLen += len(chunkBytes)
+				err = hasher.WriteToValidationMT(chunkBytes)
+				if err != nil {
+					return res, err
+				}
+
+				metadata.FileBytesLen += len(chunkBytes)
+			}
 		}
 
 		if isFinal && i == numBodies-1 {
-			err = hasher.Finalize()
+			err := hasher.Finalize()
 			if err != nil {
 				return res, err
 			}
@@ -202,7 +202,7 @@ func (b *chunkedUploadFormBuilder) Build(
 			formData.UploadOffset = formData.UploadOffset + chunkSize*int64(MAX_BLOCKS)
 		}
 
-		err = formWriter.WriteField("connection_id", connectionID)
+		err := formWriter.WriteField("connection_id", connectionID)
 		if err != nil {
 			return res, err
 		}

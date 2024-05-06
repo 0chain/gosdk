@@ -476,10 +476,7 @@ func (su *ChunkedUpload) process() error {
 				return thrown.New("upload_failed", "Upload failed. Uploaded size does not match with actual size: "+fmt.Sprintf("%d != %d", su.fileMeta.ActualSize, su.progress.ReadLength))
 			}
 		}
-		if chunks.totalReadSize == 0 {
-			logger.Logger.Info("isFinal: ", chunks.isFinal, " totalReadSize: ", su.progress.ReadLength)
-			break
-		}
+
 		//chunk has not be uploaded yet
 		if chunks.chunkEndIndex > su.progress.ChunkIndex {
 			err = su.processUpload(
@@ -653,7 +650,10 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 
 	wgErrors := make(chan error, len(su.blobbers))
 	if len(fileShards) == 0 {
-		return thrown.New("upload_failed", "Upload failed. No data to upload")
+		if !isFinal {
+			return thrown.New("upload_failed", "Upload failed. No data to upload")
+		}
+		fileShards = make([]blobberShards, len(su.blobbers))
 	}
 
 	for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
