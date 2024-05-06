@@ -53,21 +53,6 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 		}
 	}()
 
-	if formData.FileBytesLen == 0 {
-		//fixed fileRef in last chunk on stream. io.EOF with nil bytes
-		if isFinal {
-			sb.fileRef.ChunkSize = su.chunkSize
-			sb.fileRef.Size = su.shardUploadedSize
-			sb.fileRef.Path = su.fileMeta.RemotePath
-			sb.fileRef.ActualFileHash = su.fileMeta.ActualHash
-			sb.fileRef.ActualFileSize = su.fileMeta.ActualSize
-
-			sb.fileRef.EncryptedKey = encryptedKey
-			sb.fileRef.CalculateHash()
-			consensus.Done()
-		}
-	}
-
 	eg, _ := errgroup.WithContext(ctx)
 
 	for dataInd := 0; dataInd < len(dataBuffers); dataInd++ {

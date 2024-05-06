@@ -458,6 +458,7 @@ func (su *ChunkedUpload) process() error {
 		if chunks.isFinal {
 			if su.fileMeta.ActualHash == "" {
 				su.fileMeta.ActualHash, err = su.chunkReader.GetFileHash()
+				logger.Logger.Info("ActualHash: ", su.fileMeta.ActualHash)
 				if err != nil {
 					if su.statusCallback != nil {
 						su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
@@ -611,6 +612,9 @@ func (su *ChunkedUpload) readChunks(num int) (*batchChunksData, error) {
 				//blobber i
 				data.fileShards[i] = append(data.fileShards[i], v)
 			}
+		} else {
+			data.isFinal = true
+			break
 		}
 
 		if chunk.IsFinal {
@@ -646,7 +650,10 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 
 	wgErrors := make(chan error, len(su.blobbers))
 	if len(fileShards) == 0 {
-		return thrown.New("upload_failed", "Upload failed. No data to upload")
+		if !isFinal {
+			return thrown.New("upload_failed", "Upload failed. No data to upload")
+		}
+		fileShards = make([]blobberShards, len(su.blobbers))
 	}
 
 	for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
