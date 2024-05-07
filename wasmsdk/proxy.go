@@ -160,6 +160,7 @@ func main() {
 				"showLogs":               showLogs,
 				"getUSDRate":             getUSDRate,
 				"isWalletID":             isWalletID,
+				"getVersion":             getVersion,
 				"getLookupHash":          getLookupHash,
 				"createThumbnail":        createThumbnail,
 				"makeSCRestAPICall":      makeSCRestAPICall,
@@ -169,6 +170,7 @@ func main() {
 				"share":                     Share,
 				"multiDownload":             multiDownload,
 				"upload":                    upload,
+				"setUploadMode":             setUploadMode,
 				"multiUpload":               multiUpload,
 				"multiOperation":            MultiOperation,
 				"listObjects":               listObjects,
@@ -185,6 +187,7 @@ func main() {
 				"updateForbidAllocation":    UpdateForbidAllocation,
 				"send":                      send,
 				"cancelUpload":              cancelUpload,
+				"pauseUpload":               pauseUpload,
 
 				// player
 				"play":           play,
@@ -236,6 +239,9 @@ func main() {
 				"getMintWZCNPayload":            getMintWZCNPayload,
 				"getNotProcessedWZCNBurnEvents": getNotProcessedWZCNBurnEvents,
 				"getNotProcessedZCNBurnTickets": getNotProcessedZCNBurnTickets,
+				"estimateBurnWZCNGasAmount":     estimateBurnWZCNGasAmount,
+				"estimateMintWZCNGasAmount":     estimateMintWZCNGasAmount,
+				"estimateGasPrice":              estimateGasPrice,
 
 				//zcn
 				"getWalletBalance": getWalletBalance,

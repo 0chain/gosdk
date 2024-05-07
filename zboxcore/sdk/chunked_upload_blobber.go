@@ -92,7 +92,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 					fasthttp.ReleaseRequest(req)
 					if err != nil {
 						logger.Logger.Error("Upload : ", err)
-						if errors.Is(err, fasthttp.ErrConnectionClosed) || err == syscall.EPIPE {
+						if errors.Is(err, fasthttp.ErrConnectionClosed) || errors.Is(err, syscall.EPIPE) {
 							return err, true
 						}
 						return fmt.Errorf("Error while doing reqeust. Error %s", err), false
@@ -103,11 +103,6 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 					}
 
 					respbody := resp.Body()
-					if err != nil {
-						logger.Logger.Error("Error: Resp ", err)
-						return fmt.Errorf("Error while reading body. Error %s", err), false
-					}
-
 					if resp.StatusCode() == http.StatusTooManyRequests {
 						logger.Logger.Error("Got too many request error")
 						var r int

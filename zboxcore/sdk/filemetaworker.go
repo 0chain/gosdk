@@ -8,7 +8,6 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/0chain/errors"
@@ -25,7 +24,6 @@ type fileMetaResponse struct {
 }
 
 func (req *ListRequest) getFileMetaInfoFromBlobber(blobber *blockchain.StorageNode, blobberIdx int, rspCh chan<- *fileMetaResponse) {
-	defer req.wg.Done()
 	body := new(bytes.Buffer)
 	formWriter := multipart.NewWriter(body)
 
@@ -37,6 +35,19 @@ func (req *ListRequest) getFileMetaInfoFromBlobber(blobber *blockchain.StorageNo
 	defer fileMetaRetFn()
 	if len(req.remotefilepath) > 0 {
 		req.remotefilepathhash = fileref.GetReferenceLookup(req.allocationID, req.remotefilepath)
+	}
+	if singleClientMode {
+		fileMetaHash := fileref.GetCacheKey(req.remotefilepathhash, blobber.ID)
+		cachedRef, ok := fileref.GetFileRef(fileMetaHash)
+		if ok {
+			fileRef = &cachedRef
+			return
+		}
+		defer func() {
+			if fileRef != nil && err == nil {
+				fileref.StoreFileRef(fileMetaHash, *fileRef)
+			}
+		}()
 	}
 	err = formWriter.WriteField("path_hash", req.remotefilepathhash)
 	if err != nil {
@@ -92,13 +103,10 @@ func (req *ListRequest) getFileMetaInfoFromBlobber(blobber *blockchain.StorageNo
 
 func (req *ListRequest) getFileMetaFromBlobbers() []*fileMetaResponse {
 	numList := len(req.blobbers)
-	req.wg = &sync.WaitGroup{}
-	req.wg.Add(numList)
 	rspCh := make(chan *fileMetaResponse, numList)
 	for i := 0; i < numList; i++ {
 		go req.getFileMetaInfoFromBlobber(req.blobbers[i], i, rspCh)
 	}
-	req.wg.Wait()
 	fileInfos := make([]*fileMetaResponse, len(req.blobbers))
 	for i := 0; i < numList; i++ {
 		ch := <-rspCh

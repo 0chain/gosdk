@@ -46,13 +46,22 @@ func listObjectsFromAuthTicket(allocationID, authTicket, lookupHash string, offs
 	return alloc.ListDirFromAuthTicket(authTicket, lookupHash, sdk.WithListRequestOffset(offset), sdk.WithListRequestPageLimit(pageLimit))
 }
 
-func cancelUpload(allocationID string, remotePath string) error {
+func cancelUpload(allocationID, remotePath string) error {
 	allocationObj, err := getAllocation(allocationID)
 	if err != nil {
 		PrintError("Error fetching the allocation", err)
 		return err
 	}
 	return allocationObj.CancelUpload(remotePath)
+}
+
+func pauseUpload(allocationID, remotePath string) error {
+	allocationObj, err := getAllocation(allocationID)
+	if err != nil {
+		PrintError("Error fetching the allocation", err)
+		return err
+	}
+	return allocationObj.PauseUpload(remotePath)
 }
 
 func createDir(allocationID, remotePath string) error {
@@ -469,6 +478,7 @@ type BulkUploadOption struct {
 	ReadChunkFuncName string `json:"readChunkFuncName,omitempty"`
 	CallbackFuncName  string `json:"callbackFuncName,omitempty"`
 	MimeType          string `json:"mimeType,omitempty"`
+	MemoryStorer      bool   `json:"memoryStorer,omitempty"`
 }
 
 type BulkUploadResult struct {
@@ -582,6 +592,18 @@ func bulkUpload(jsonBulkUploadOptions string) ([]BulkUploadResult, error) {
 	return results, nil
 }
 
+// set upload mode, default is medium, for low set 0, for high set 2
+func setUploadMode(mode int) {
+	switch mode {
+	case 0:
+		sdk.SetUploadMode(sdk.UploadModeLow)
+	case 1:
+		sdk.SetUploadMode(sdk.UploadModeMedium)
+	case 2:
+		sdk.SetUploadMode(sdk.UploadModeHigh)
+	}
+}
+
 func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 	var options []BulkUploadOption
 	result := MultiUploadResult{}
@@ -618,17 +640,13 @@ func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 		wg.Add(1)
 		encrypt := option.Encrypt
 		remotePath := option.RemotePath
-
-		fileReader := jsbridge.NewFileReader(option.ReadChunkFuncName, option.FileSize)
-		mimeType := option.MimeType
-		if mimeType == "" {
-			mimeType, err = zboxutil.GetFileContentType(fileReader)
-			if err != nil {
-				result.Error = "Error in file operation"
-				result.Success = false
-				return result, err
-			}
+		fileReader, err := jsbridge.NewFileReader(option.ReadChunkFuncName, option.FileSize, allocationObj.GetChunkReadSize(encrypt))
+		if err != nil {
+			result.Error = "Error in file operation"
+			result.Success = false
+			return result, err
 		}
+		mimeType := option.MimeType
 		localPath := remotePath
 		remotePath = zboxutil.RemoteClean(remotePath)
 		isabs := zboxutil.IsRemoteAbs(remotePath)
@@ -641,6 +659,15 @@ func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 		fullRemotePath := zboxutil.GetFullRemotePath(localPath, remotePath)
 
 		_, fileName := pathutil.Split(fullRemotePath)
+
+		if mimeType == "" {
+			mimeType, err = zboxutil.GetFileContentType(path.Ext(fileName), fileReader)
+			if err != nil {
+				result.Error = "Error in file operation"
+				result.Success = false
+				return result, err
+			}
+		}
 
 		fileMeta := sdk.FileMeta{
 			Path:       localPath,
@@ -658,8 +685,12 @@ func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 			sdk.WithThumbnail(option.ThumbnailBytes.Buffer),
 			sdk.WithEncrypt(encrypt),
 			sdk.WithStatusCallback(statusBar),
-			sdk.WithProgressStorer(&chunkedUploadProgressStorer{list: make(map[string]*sdk.UploadProgress)}),
 			sdk.WithChunkNumber(numBlocks),
+		}
+		if option.MemoryStorer {
+			options = append(options, sdk.WithProgressStorer(&chunkedUploadProgressStorer{
+				list: make(map[string]*sdk.UploadProgress),
+			}))
 		}
 		operationRequests[idx] = sdk.OperationRequest{
 			FileMeta:       fileMeta,
@@ -707,9 +738,7 @@ func uploadWithJsFuncs(allocationID, remotePath string, readChunkFuncName string
 	}
 	wg.Add(1)
 
-	fileReader := jsbridge.NewFileReader(readChunkFuncName, fileSize)
-
-	mimeType, err := zboxutil.GetFileContentType(fileReader)
+	fileReader, err := jsbridge.NewFileReader(readChunkFuncName, fileSize, allocationObj.GetChunkReadSize(encrypt))
 	if err != nil {
 		return false, err
 	}
@@ -725,6 +754,11 @@ func uploadWithJsFuncs(allocationID, remotePath string, readChunkFuncName string
 	remotePath = zboxutil.GetFullRemotePath(localPath, remotePath)
 
 	_, fileName := pathutil.Split(remotePath)
+
+	mimeType, err := zboxutil.GetFileContentType(path.Ext(fileName), fileReader)
+	if err != nil {
+		return false, err
+	}
 
 	fileMeta := sdk.FileMeta{
 		Path:       localPath,
@@ -745,7 +779,6 @@ func uploadWithJsFuncs(allocationID, remotePath string, readChunkFuncName string
 		sdk.WithThumbnail(thumbnailBytes),
 		sdk.WithEncrypt(encrypt),
 		sdk.WithStatusCallback(statusBar),
-		sdk.WithProgressStorer(&chunkedUploadProgressStorer{list: make(map[string]*sdk.UploadProgress)}),
 		sdk.WithChunkNumber(numBlocks))
 	if err != nil {
 		return false, err
@@ -788,11 +821,6 @@ func upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, w
 
 	fileReader := bytes.NewReader(fileBytes)
 
-	mimeType, err := zboxutil.GetFileContentType(fileReader)
-	if err != nil {
-		return nil, err
-	}
-
 	localPath := remotePath
 
 	remotePath = zboxutil.RemoteClean(remotePath)
@@ -804,6 +832,11 @@ func upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, w
 	remotePath = zboxutil.GetFullRemotePath(localPath, remotePath)
 
 	_, fileName := pathutil.Split(remotePath)
+
+	mimeType, err := zboxutil.GetFileContentType(path.Ext(fileName), fileReader)
+	if err != nil {
+		return nil, err
+	}
 
 	fileMeta := sdk.FileMeta{
 		Path:       localPath,
@@ -822,7 +855,6 @@ func upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, w
 		sdk.WithThumbnail(thumbnailBytes),
 		sdk.WithEncrypt(encrypt),
 		sdk.WithStatusCallback(statusBar),
-		sdk.WithProgressStorer(&chunkedUploadProgressStorer{list: make(map[string]*sdk.UploadProgress)}),
 		sdk.WithChunkNumber(numBlocks))
 	if err != nil {
 		return nil, err
@@ -901,8 +933,8 @@ func downloadBlocks(allocId string, remotePath, authTicket, lookupHash string, s
 }
 
 // GetBlobbersList get list of active blobbers, and format them as array json string
-func getBlobbers() ([]*sdk.Blobber, error) {
-	blobbs, err := sdk.GetBlobbers(true)
+func getBlobbers(stakable bool) ([]*sdk.Blobber, error) {
+	blobbs, err := sdk.GetBlobbers(true, stakable)
 	if err != nil {
 		return nil, err
 	}

@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	DefaultCreateConnectionTimeOut = 2 * time.Minute
+	DefaultCreateConnectionTimeOut = 10 * time.Second
 )
 
 var BatchSize = 6
@@ -223,24 +223,36 @@ func (mo *MultiOperation) Process() error {
 	}
 
 	l.Logger.Info("Trying to lock write marker.....")
-	err = writeMarkerMutex.Lock(mo.ctx, &mo.operationMask, mo.maskMU,
-		mo.allocationObj.Blobbers, &mo.Consensus, 0, time.Minute, mo.connectionID)
-	if err != nil {
-		return fmt.Errorf("Operation failed: %s", err.Error())
+	if singleClientMode {
+		mo.allocationObj.commitMutex.Lock()
+	} else {
+		err = writeMarkerMutex.Lock(mo.ctx, &mo.operationMask, mo.maskMU,
+			mo.allocationObj.Blobbers, &mo.Consensus, 0, time.Minute, mo.connectionID)
+		if err != nil {
+			return fmt.Errorf("Operation failed: %s", err.Error())
+		}
 	}
 	logger.Logger.Info("[writemarkerLocked]", time.Since(start).Milliseconds())
 	start = time.Now()
 	status := Commit
-	if !mo.isRepair {
+	if !mo.isRepair && !mo.allocationObj.checkStatus {
 		status, err = mo.allocationObj.CheckAllocStatus()
 		if err != nil {
 			logger.Logger.Error("Error checking allocation status", err)
-			writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
+			if singleClientMode {
+				mo.allocationObj.commitMutex.Unlock()
+			} else {
+				writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
+			}
 			return fmt.Errorf("Check allocation status failed: %s", err.Error())
 		}
 		if status == Repair {
 			logger.Logger.Info("Repairing allocation")
-			writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
+			if singleClientMode {
+				mo.allocationObj.commitMutex.Unlock()
+			} else {
+				writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
+			}
 			statusBar := NewRepairBar(mo.allocationObj.ID)
 			if statusBar == nil {
 				for _, op := range mo.operations {
@@ -265,7 +277,12 @@ func (mo *MultiOperation) Process() error {
 			return ErrRetryOperation
 		}
 	}
-	defer writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
+	if singleClientMode {
+		mo.allocationObj.checkStatus = true
+		defer mo.allocationObj.commitMutex.Unlock()
+	} else {
+		defer writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
+	}
 	if status != Commit {
 		for _, op := range mo.operations {
 			op.Error(mo.allocationObj, 0, ErrRetryOperation)
@@ -302,7 +319,8 @@ func (mo *MultiOperation) Process() error {
 	wg.Wait()
 	logger.Logger.Info("[commitRequests]", time.Since(start).Milliseconds())
 	rollbackMask := zboxutil.NewUint128(0)
-	for _, commitReq := range commitReqs {
+	errSlice := make([]error, len(commitReqs))
+	for idx, commitReq := range commitReqs {
 		if commitReq.result != nil {
 			if commitReq.result.Success {
 				l.Logger.Info("Commit success", commitReq.blobber.Baseurl)
@@ -311,6 +329,7 @@ func (mo *MultiOperation) Process() error {
 				}
 				mo.consensus++
 			} else {
+				errSlice[idx] = errors.New("commit_failed", commitReq.result.ErrorMessage)
 				l.Logger.Info("Commit failed", commitReq.blobber.Baseurl, commitReq.result.ErrorMessage)
 			}
 		} else {
@@ -319,9 +338,8 @@ func (mo *MultiOperation) Process() error {
 	}
 
 	if !mo.isConsensusOk() {
-		err := errors.New("consensus_not_met",
-			fmt.Sprintf("Commit failed. Required consensus %d, got %d",
-				mo.Consensus.consensusThresh, mo.Consensus.consensus))
+		mo.allocationObj.checkStatus = false
+		err = zboxutil.MajorError(errSlice)
 		if mo.getConsensus() != 0 {
 			l.Logger.Info("Rolling back changes on minority blobbers")
 			mo.allocationObj.RollbackWithMask(rollbackMask)

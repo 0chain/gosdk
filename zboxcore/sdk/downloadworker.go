@@ -2,7 +2,6 @@ package sdk
 
 import (
 	"bytes"
-	"container/heap"
 	"context"
 	"crypto/md5"
 	"encoding/hex"
@@ -14,6 +13,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -105,7 +105,7 @@ type DownloadRequest struct {
 	bufferMap          map[int]zboxutil.DownloadBuffer
 	downloadStorer     DownloadProgressStorer
 	workdir            string
-	downloadQueue      downloadQueue
+	downloadQueue      downloadQueue // Always initialize this queue with max time taken
 }
 
 type downloadPriority struct {
@@ -119,22 +119,6 @@ func (pq downloadQueue) Len() int { return len(pq) }
 
 func (pq downloadQueue) Less(i, j int) bool {
 	return pq[i].timeTaken < pq[j].timeTaken
-}
-
-func (pq downloadQueue) Swap(i, j int) {
-	pq[i], pq[j] = pq[j], pq[i]
-}
-
-func (pq *downloadQueue) Push(x interface{}) {
-	*pq = append(*pq, x.(downloadPriority))
-}
-
-func (pq *downloadQueue) Pop() interface{} {
-	old := *pq
-	n := len(old)
-	item := old[n-1]
-	*pq = old[0 : n-1]
-	return item
 }
 
 type DownloadProgress struct {
@@ -285,7 +269,7 @@ func (req *DownloadRequest) downloadBlock(
 			if req.shouldVerify {
 				go AddBlockDownloadReq(req.ctx, blockDownloadReq, nil, req.effectiveBlockSize)
 			} else {
-				go AddBlockDownloadReq(req.ctx, blockDownloadReq, req.bufferMap[int(pos)], req.effectiveBlockSize)
+				go AddBlockDownloadReq(req.ctx, blockDownloadReq, req.bufferMap[blobberIdx], req.effectiveBlockSize)
 			}
 		}
 
@@ -303,14 +287,21 @@ func (req *DownloadRequest) downloadBlock(
 			var err error
 			defer func() {
 				if err != nil {
-					atomic.AddInt32(&failed, 1)
-					req.removeFromMask(uint64(result.maskIdx))
+					totalFail := atomic.AddInt32(&failed, 1)
+					// if first request remove from end as we will convert the slice into heap
+					if timeRequest {
+						req.removeFromMask(uint64(activeBlobbers - int(totalFail)))
+					} else {
+						req.removeFromMask(uint64(result.maskIdx))
+					}
 					downloadErrors[i] = fmt.Sprintf("Error %s from %s",
 						err.Error(), req.blobbers[result.idx].Baseurl)
 					logger.Logger.Error(err)
-					req.bufferMap[result.idx].ReleaseChunk(int(req.startBlock / req.numBlocks))
+					if req.bufferMap != nil && req.bufferMap[result.idx] != nil {
+						req.bufferMap[result.idx].ReleaseChunk(int(req.startBlock))
+					}
 				} else if timeRequest {
-					req.downloadQueue[result.idx].timeTaken = result.timeTaken
+					req.downloadQueue[result.maskIdx].timeTaken = result.timeTaken
 				}
 				wg.Done()
 			}()
@@ -486,7 +477,7 @@ func (req *DownloadRequest) processDownload() {
 	remainingSize := size - startBlock*int64(req.effectiveBlockSize)*int64(req.datashards)
 
 	if endBlock*int64(req.effectiveBlockSize)*int64(req.datashards) < req.size {
-		remainingSize = endBlock*int64(req.effectiveBlockSize) - startBlock*int64(req.effectiveBlockSize)
+		remainingSize = (endBlock - startBlock - 1) * int64(req.effectiveBlockSize) * int64(req.datashards)
 	}
 
 	if memFile, ok := req.fileHandler.(*sys.MemFile); ok {
@@ -514,7 +505,7 @@ func (req *DownloadRequest) processDownload() {
 		isPREAndWholeFile bool
 	)
 
-	if !req.shouldVerify && (startBlock == 0 && endBlock == chunksPerShard) {
+	if !req.shouldVerify && (startBlock == 0 && endBlock == chunksPerShard) && shouldVerifyHash {
 		actualFileHasher = md5.New()
 		isPREAndWholeFile = true
 	}
@@ -532,19 +523,33 @@ func (req *DownloadRequest) processDownload() {
 	if !req.shouldVerify {
 		var pos uint64
 		req.bufferMap = make(map[int]zboxutil.DownloadBuffer)
+		defer func() {
+			l.Logger.Info("Clearing download buffers: ", len(req.bufferMap))
+			for ind, rb := range req.bufferMap {
+				rb.ClearBuffer()
+				delete(req.bufferMap, ind)
+			}
+			req.bufferMap = nil
+		}()
 		sz := downloadWorkerCount + EXTRA_COUNT
 		if sz > n {
 			sz = n
 		}
 		for i := req.downloadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 			pos = uint64(i.TrailingZeros())
+			blobberIdx := int(pos)
 			if writerAt {
-				req.bufferMap[int(pos)] = zboxutil.NewDownloadBufferWithChan(sz, int(numBlocks), req.effectiveBlockSize)
+				req.bufferMap[blobberIdx] = zboxutil.NewDownloadBufferWithChan(sz, int(numBlocks), req.effectiveBlockSize)
 			} else {
-				req.bufferMap[int(pos)] = zboxutil.NewDownloadBufferWithMask(sz, int(numBlocks), req.effectiveBlockSize)
+				bufMask := zboxutil.NewDownloadBufferWithMask(sz, int(numBlocks), req.effectiveBlockSize)
+				bufMask.SetNumBlocks(int(numBlocks))
+				req.bufferMap[blobberIdx] = bufMask
 			}
 		}
 	}
+	// reset mask to number of active blobbers, not it denotes index of download queue and not blobber index
+	activeBlobbers := req.downloadMask.CountOnes()
+	req.downloadMask = zboxutil.NewUint128(1).Lsh(uint64(activeBlobbers)).Sub64(1)
 
 	logger.Logger.Info(
 		fmt.Sprintf("Downloading file with size: %d from start block: %d and end block: %d. "+
@@ -600,7 +605,7 @@ func (req *DownloadRequest) processDownload() {
 						hashWg.Wait()
 					}
 					for _, rb := range req.bufferMap {
-						rb.ReleaseChunk(i)
+						rb.ReleaseChunk(int(startBlock + int64(i)*numBlocks))
 					}
 					downloaded = downloaded + totalWritten
 					remainingSize -= int64(totalWritten)
@@ -648,7 +653,7 @@ func (req *DownloadRequest) processDownload() {
 								hashWg.Wait()
 							}
 							for _, rb := range req.bufferMap {
-								rb.ReleaseChunk(i)
+								rb.ReleaseChunk(int(startBlock + int64(i)*numBlocks))
 							}
 
 							downloaded = downloaded + totalWritten
@@ -678,13 +683,18 @@ func (req *DownloadRequest) processDownload() {
 	var progressLock sync.Mutex
 	firstReqWG := sync.WaitGroup{}
 	firstReqWG.Add(1)
-	eg, _ := errgroup.WithContext(ctx)
+	eg, egCtx := errgroup.WithContext(ctx)
 	eg.SetLimit(downloadWorkerCount + EXTRA_COUNT)
 	for i := 0; i < n; i++ {
 		j := i
 		if i == 1 {
 			firstReqWG.Wait()
-			heap.Init(&req.downloadQueue)
+			sort.Slice(req.downloadQueue, req.downloadQueue.Less)
+		}
+		select {
+		case <-egCtx.Done():
+			goto breakDownloadLoop
+		default:
 		}
 		eg.Go(func() error {
 
@@ -721,7 +731,7 @@ func (req *DownloadRequest) processDownload() {
 					return errors.Wrap(err, fmt.Sprintf("WriteAt failed for block %d. ", startBlock+int64(j)*numBlocks))
 				}
 				for _, rb := range req.bufferMap {
-					rb.ReleaseChunk(j)
+					rb.ReleaseChunk(int(startBlock + int64(j)*numBlocks))
 				}
 				if req.downloadStorer != nil {
 					go req.downloadStorer.Update(int(startBlock + int64(j)*numBlocks + blocksToDownload))
@@ -735,11 +745,13 @@ func (req *DownloadRequest) processDownload() {
 			}
 			return nil
 		})
+	breakDownloadLoop:
 	}
 	if err := eg.Wait(); err != nil {
 		writeCancel()
-		req.errorCB(err, remotePathCB)
 		close(blocks)
+		wg.Wait()
+		req.errorCB(err, remotePathCB)
 		return
 	}
 
@@ -1025,17 +1037,17 @@ func (req *DownloadRequest) calculateShardsParams(
 			progressID := req.progressID()
 			var dp *DownloadProgress
 			if info.Size() > 0 {
-				dp = req.downloadStorer.Load(progressID)
+				dp = req.downloadStorer.Load(progressID, int(req.numBlocks))
 			}
 			if dp != nil {
 				req.startBlock = int64(dp.LastWrittenBlock)
 			} else {
 				dp = &DownloadProgress{
-					ID: progressID,
+					ID:        progressID,
+					numBlocks: int(req.numBlocks),
 				}
 				req.downloadStorer.Save(dp)
 			}
-			dp.numBlocks = int(req.numBlocks)
 		}
 	}
 
@@ -1082,11 +1094,8 @@ func GetFileRefFromBlobber(allocationID, blobberId, remotePath string) (fRef *fi
 	listReq.ctx = ctx
 	listReq.remotefilepath = remotePath
 
-	listReq.wg = &sync.WaitGroup{}
-	listReq.wg.Add(1)
 	rspCh := make(chan *fileMetaResponse, 1)
 	go listReq.getFileMetaInfoFromBlobber(listReq.blobbers[0], 0, rspCh)
-	listReq.wg.Wait()
 	resp := <-rspCh
 	return resp.fileref, resp.err
 }
@@ -1221,6 +1230,7 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 		return nil, fmt.Errorf("consensus_not_met")
 	}
 	req.downloadMask = foundMask
+	sort.Slice(req.downloadQueue, req.downloadQueue.Less)
 	return selected.fileref, nil
 }
 
@@ -1366,7 +1376,7 @@ func writeAtData(dest io.WriterAt, data [][][]byte, dataShards int, offset int64
 func (dr *DownloadRequest) progressID() string {
 
 	if len(dr.allocationID) > 8 {
-		return filepath.Join(dr.workdir, "download", dr.allocationID[:8]+"_"+dr.fRef.MetaID())
+		return filepath.Join(dr.workdir, "download", "d"+dr.allocationID[:8]+"_"+dr.fRef.MetaID())
 	}
 
 	return filepath.Join(dr.workdir, "download", dr.allocationID+"_"+dr.fRef.MetaID())

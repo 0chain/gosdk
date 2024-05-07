@@ -3,6 +3,7 @@ package sdk
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"strings"
 
@@ -24,6 +25,8 @@ type UploadOperation struct {
 	isUpdate      bool
 	isDownload    bool
 }
+
+var ErrPauseUpload = errors.New("retry_operation")
 
 func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
 	if uo.isDownload {
@@ -49,6 +52,13 @@ func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([
 		pos = uint64(i.TrailingZeros())
 		uo.refs[pos] = uo.chunkedUpload.blobbers[pos].fileRef
 		uo.refs[pos].ChunkSize = uo.chunkedUpload.chunkSize
+		remotePath := uo.chunkedUpload.fileMeta.RemotePath
+		allocationID := allocObj.ID
+		if singleClientMode {
+			lookuphash := fileref.GetReferenceLookup(allocationID, remotePath)
+			cacheKey := fileref.GetCacheKey(lookuphash, uo.chunkedUpload.blobbers[pos].blobber.ID)
+			fileref.DeleteFileRef(cacheKey)
+		}
 	}
 	l.Logger.Info("UploadOperation Success", zap.String("name", uo.chunkedUpload.fileMeta.RemoteName))
 	return nil, uo.chunkedUpload.uploadMask, nil
@@ -127,7 +137,7 @@ func (uo *UploadOperation) Completed(allocObj *Allocation) {
 }
 
 func (uo *UploadOperation) Error(allocObj *Allocation, consensus int, err error) {
-	if uo.chunkedUpload.progressStorer != nil && !strings.Contains(err.Error(), "context") {
+	if uo.chunkedUpload.progressStorer != nil && !strings.Contains(err.Error(), "context") && !errors.Is(err, ErrPauseUpload) {
 		uo.chunkedUpload.removeProgress()
 	}
 	cancelLock.Lock()
@@ -138,9 +148,9 @@ func (uo *UploadOperation) Error(allocObj *Allocation, consensus int, err error)
 	}
 }
 
-func NewUploadOperation(ctx context.Context, workdir string, allocObj *Allocation, connectionID string, fileMeta FileMeta, fileReader io.Reader, isUpdate, isWebstreaming, isRepair, isMemoryDownload bool, opts ...ChunkedUploadOption) (*UploadOperation, string, error) {
+func NewUploadOperation(ctx context.Context, workdir string, allocObj *Allocation, connectionID string, fileMeta FileMeta, fileReader io.Reader, isUpdate, isWebstreaming, isRepair, isMemoryDownload, isStreamUpload bool, opts ...ChunkedUploadOption) (*UploadOperation, string, error) {
 	uo := &UploadOperation{}
-	if fileMeta.ActualSize == 0 {
+	if fileMeta.ActualSize == 0 && !isStreamUpload {
 		byteReader := bytes.NewReader([]byte(
 			emptyFileDataHash))
 		fileReader = byteReader
