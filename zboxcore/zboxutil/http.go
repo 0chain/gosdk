@@ -644,18 +644,15 @@ func NewFastUploadRequest(baseURL, allocationID string, allocationTx string, bod
 	return req, nil
 }
 
-func NewUploadRequest(baseUrl, allocationID string, allocationTx string, body io.Reader, update bool) (*http.Request, error) {
+func NewUploadRequest(baseUrl, allocationID string, allocationTx string, body io.Reader, method string) (*http.Request, error) {
 	u, err := joinUrl(baseUrl, UPLOAD_ENDPOINT, allocationTx)
 	if err != nil {
 		return nil, err
 	}
 
 	var req *http.Request
-	if update {
-		req, err = http.NewRequest(http.MethodPut, u.String(), body)
-	} else {
-		req, err = http.NewRequest(http.MethodPost, u.String(), body)
-	}
+	req, err = http.NewRequest(method, u.String(), body)
+
 	if err != nil {
 		return nil, err
 	}
