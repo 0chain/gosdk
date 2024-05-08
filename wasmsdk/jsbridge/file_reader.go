@@ -5,6 +5,7 @@ package jsbridge
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"syscall/js"
 )
@@ -40,13 +41,15 @@ func NewFileReader(readChunkFuncName string, fileSize, chunkReadSize int64) (*Fi
 	if n < len(buf) {
 		return nil, errors.New("file_reader: failed to read first chunk")
 	}
-	return &FileReader{
+	fr := &FileReader{
 		size:      fileSize,
 		offset:    int64(n),
 		readChunk: readChunk,
 		buf:       buf,
 		endOfFile: n == int(fileSize),
-	}, nil
+	}
+	fmt.Println("file_reader: created", fr.size, fr.offset, fr.endOfFile)
+	return fr, nil
 }
 
 func (r *FileReader) Read(p []byte) (int, error) {
@@ -68,12 +71,15 @@ func (r *FileReader) Read(p []byte) (int, error) {
 		if n < len(r.buf) {
 			r.buf = r.buf[:n]
 			r.endOfFile = true
+			fmt.Println("file_reader: reached end of file", r.offset, r.size)
 		}
 	}
 
 	n := copy(p, r.buf[r.bufOffset:])
+	fmt.Println("file_reader: read", r.offset, r.bufOffset, len(r.buf), len(p), n)
 	r.bufOffset += n
 	if r.endOfFile && r.bufOffset == len(r.buf) {
+		fmt.Println("file_reader: last call", r.offset, r.bufOffset, len(r.buf), len(p), n)
 		return n, io.EOF
 	}
 
@@ -96,6 +102,10 @@ func (r *FileReader) Seek(offset int64, whence int) (int64, error) {
 	if abs < 0 {
 		return 0, errors.New("FileReader.Seek: negative position")
 	}
-	r.offset = abs
+	if abs > int64(len(r.buf)) {
+		return 0, errors.New("FileReader.Seek: position out of bounds")
+	}
+	r.bufOffset = int(abs)
+	fmt.Println("file_reader: seek", r.bufOffset, abs)
 	return abs, nil
 }
