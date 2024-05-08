@@ -46,13 +46,22 @@ func listObjectsFromAuthTicket(allocationID, authTicket, lookupHash string, offs
 	return alloc.ListDirFromAuthTicket(authTicket, lookupHash, sdk.WithListRequestOffset(offset), sdk.WithListRequestPageLimit(pageLimit))
 }
 
-func cancelUpload(allocationID string, remotePath string) error {
+func cancelUpload(allocationID, remotePath string) error {
 	allocationObj, err := getAllocation(allocationID)
 	if err != nil {
 		PrintError("Error fetching the allocation", err)
 		return err
 	}
 	return allocationObj.CancelUpload(remotePath)
+}
+
+func pauseUpload(allocationID, remotePath string) error {
+	allocationObj, err := getAllocation(allocationID)
+	if err != nil {
+		PrintError("Error fetching the allocation", err)
+		return err
+	}
+	return allocationObj.PauseUpload(remotePath)
 }
 
 func createDir(allocationID, remotePath string) error {
@@ -469,6 +478,7 @@ type BulkUploadOption struct {
 	ReadChunkFuncName string `json:"readChunkFuncName,omitempty"`
 	CallbackFuncName  string `json:"callbackFuncName,omitempty"`
 	MimeType          string `json:"mimeType,omitempty"`
+	MemoryStorer      bool   `json:"memoryStorer,omitempty"`
 }
 
 type BulkUploadResult struct {
@@ -630,8 +640,12 @@ func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 		wg.Add(1)
 		encrypt := option.Encrypt
 		remotePath := option.RemotePath
-
-		fileReader := jsbridge.NewFileReader(option.ReadChunkFuncName, option.FileSize)
+		fileReader, err := jsbridge.NewFileReader(option.ReadChunkFuncName, option.FileSize, allocationObj.GetChunkReadSize(encrypt))
+		if err != nil {
+			result.Error = "Error in file operation"
+			result.Success = false
+			return result, err
+		}
 		mimeType := option.MimeType
 		localPath := remotePath
 		remotePath = zboxutil.RemoteClean(remotePath)
@@ -671,8 +685,12 @@ func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 			sdk.WithThumbnail(option.ThumbnailBytes.Buffer),
 			sdk.WithEncrypt(encrypt),
 			sdk.WithStatusCallback(statusBar),
-			sdk.WithProgressStorer(&chunkedUploadProgressStorer{list: make(map[string]*sdk.UploadProgress)}),
 			sdk.WithChunkNumber(numBlocks),
+		}
+		if option.MemoryStorer {
+			options = append(options, sdk.WithProgressStorer(&chunkedUploadProgressStorer{
+				list: make(map[string]*sdk.UploadProgress),
+			}))
 		}
 		operationRequests[idx] = sdk.OperationRequest{
 			FileMeta:       fileMeta,
@@ -720,7 +738,10 @@ func uploadWithJsFuncs(allocationID, remotePath string, readChunkFuncName string
 	}
 	wg.Add(1)
 
-	fileReader := jsbridge.NewFileReader(readChunkFuncName, fileSize)
+	fileReader, err := jsbridge.NewFileReader(readChunkFuncName, fileSize, allocationObj.GetChunkReadSize(encrypt))
+	if err != nil {
+		return false, err
+	}
 
 	localPath := remotePath
 
@@ -758,7 +779,6 @@ func uploadWithJsFuncs(allocationID, remotePath string, readChunkFuncName string
 		sdk.WithThumbnail(thumbnailBytes),
 		sdk.WithEncrypt(encrypt),
 		sdk.WithStatusCallback(statusBar),
-		sdk.WithProgressStorer(&chunkedUploadProgressStorer{list: make(map[string]*sdk.UploadProgress)}),
 		sdk.WithChunkNumber(numBlocks))
 	if err != nil {
 		return false, err
@@ -835,7 +855,6 @@ func upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, w
 		sdk.WithThumbnail(thumbnailBytes),
 		sdk.WithEncrypt(encrypt),
 		sdk.WithStatusCallback(statusBar),
-		sdk.WithProgressStorer(&chunkedUploadProgressStorer{list: make(map[string]*sdk.UploadProgress)}),
 		sdk.WithChunkNumber(numBlocks))
 	if err != nil {
 		return nil, err
