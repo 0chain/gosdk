@@ -96,6 +96,9 @@ func (r *FileReader) Seek(offset int64, whence int) (int64, error) {
 	if abs < 0 {
 		return 0, errors.New("FileReader.Seek: negative position")
 	}
-	r.offset = abs
+	if abs > int64(len(r.buf)) {
+		return 0, errors.New("FileReader.Seek: position out of bounds")
+	}
+	r.bufOffset = int(abs)
 	return abs, nil
 }
