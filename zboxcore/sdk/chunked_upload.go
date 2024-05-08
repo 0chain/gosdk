@@ -47,7 +47,7 @@ var (
 	ErrNoEnoughSpaceLeftInAllocation = errors.New("alloc: no enough space left in allocation")
 	CancelOpCtx                      = make(map[string]context.CancelCauseFunc)
 	cancelLock                       sync.Mutex
-	CurrentMode                      = UploadModeMedium
+	CurrentMode                      = UploadModeHigh
 )
 
 // DefaultChunkSize default chunk size for file and thumbnail
