@@ -16,4 +16,5 @@ var DefaultTransport = &http.Transport{
 	TLSHandshakeTimeout:   10 * time.Second,
 	ExpectContinueTimeout: 1 * time.Second,
 	MaxIdleConnsPerHost:   100,
+	ForceAttemptHTTP2:     true,
 }
