@@ -433,6 +433,9 @@ func (a *Allocation) RepairFile(file sys.File, remotepath string, statusCallback
 		Opts:          opts,
 		FileReader:    file,
 	}
+	if ref.ActualFileHash == emptyFileDataHash {
+		op.FileMeta.ActualSize = 0
+	}
 	return op
 }
 
