@@ -103,7 +103,7 @@ func CallZauthSetup(serverAddr string, token string, splitWallet SplitWallet) er
 // 	return nil
 // }
 
-func CallZvaultNewWalletString(serverAddr, token string) (string, error) {
+func CallZvaultNewWalletString(serverAddr, token, passphrase string) (string, error) {
 	// Add your code here
 	endpoint := serverAddr + "/generate"
 	req, err := http.NewRequest("POST", endpoint, nil)
@@ -111,9 +111,9 @@ func CallZvaultNewWalletString(serverAddr, token string) (string, error) {
 		return "", errors.Wrap(err, "failed to create HTTP request")
 	}
 
-	fmt.Println("call zvault /generate:", endpoint)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-Jwt-Token", token)
+	req.Header.Set("X-Passphrase", passphrase)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -139,7 +139,7 @@ func CallZvaultNewWalletString(serverAddr, token string) (string, error) {
 	return string(d), nil
 }
 
-func CallZvaultStoreKeyString(serverAddr, token, privateKey string) (string, error) {
+func CallZvaultStoreKeyString(serverAddr, token, privateKey, passphrase string) (string, error) {
 	// Add your code here
 	endpoint := serverAddr + "/store"
 
@@ -158,6 +158,7 @@ func CallZvaultStoreKeyString(serverAddr, token, privateKey string) (string, err
 	fmt.Println("call zvault /store:", endpoint)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-Jwt-Token", token)
+	req.Header.Set("X-Passphrase", passphrase)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)

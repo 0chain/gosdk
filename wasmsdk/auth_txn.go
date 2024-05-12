@@ -34,12 +34,12 @@ func registerZauthServer(serverAddr string) {
 	sys.SetAuthCommon(zcncore.ZauthAuthCommon(serverAddr))
 }
 
-func zvaultNewWallet(serverAddr, token string) (string, error) {
-	return zcncore.CallZvaultNewWalletString(serverAddr, token)
+func zvaultNewWallet(serverAddr, token, passphrase string) (string, error) {
+	return zcncore.CallZvaultNewWalletString(serverAddr, token, passphrase)
 }
 
-func zvaultStoreKey(serverAddr, token, privateKey string) (string, error) {
-	return zcncore.CallZvaultStoreKeyString(serverAddr, token, privateKey)
+func zvaultStoreKey(serverAddr, token, privateKey, passphrase string) (string, error) {
+	return zcncore.CallZvaultStoreKeyString(serverAddr, token, privateKey, passphrase)
 }
 
 func registerAuthCommon(this js.Value, args []js.Value) interface{} {
