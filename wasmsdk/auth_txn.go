@@ -29,13 +29,19 @@ func registerAuthorizer(this js.Value, args []js.Value) interface{} {
 	return nil
 }
 
-func registerZauthServer(serverAddr string) {
-	sys.SetAuthorize(zcncore.ZauthSignTxn(serverAddr))
-	sys.SetAuthCommon(zcncore.ZauthAuthCommon(serverAddr))
+func registerZauthServer(serverAddr, splitPublicKey string) {
+	sys.SetAuthorize(zcncore.ZauthSignTxn(serverAddr, splitPublicKey))
+	sys.SetAuthCommon(zcncore.ZauthAuthCommon(serverAddr, splitPublicKey))
 }
 
+// zvaultNewWallet generates new split wallet
 func zvaultNewWallet(serverAddr, token, passphrase string) (string, error) {
-	return zcncore.CallZvaultNewWalletString(serverAddr, token, passphrase)
+	return zcncore.CallZvaultNewWalletString(serverAddr, token, "", passphrase)
+}
+
+// zvaultNewSplit generates new split wallet from existing clientID
+func zvaultNewSplit(clientID, serverAddr, token, passphrase string) (string, error) {
+	return zcncore.CallZvaultNewWalletString(serverAddr, token, clientID, passphrase)
 }
 
 func zvaultStoreKey(serverAddr, token, privateKey, passphrase string) (string, error) {

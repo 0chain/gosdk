@@ -103,13 +103,21 @@ func CallZauthSetup(serverAddr string, token string, splitWallet SplitWallet) er
 // 	return nil
 // }
 
-func CallZvaultNewWalletString(serverAddr, token, passphrase string) (string, error) {
+func CallZvaultNewWalletString(serverAddr, token, clientID, passphrase string) (string, error) {
 	// Add your code here
 	endpoint := serverAddr + "/generate"
+	if clientID != "" {
+		endpoint = endpoint + "/" + clientID
+	}
+
 	req, err := http.NewRequest("POST", endpoint, nil)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to create HTTP request")
 	}
+
+	fmt.Println("new wallet endpoint:", endpoint)
+	fmt.Println("new wallet: serverAddr:", serverAddr)
+	fmt.Println("new wallet: clientID:", clientID)
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-Jwt-Token", token)
@@ -185,7 +193,7 @@ func CallZvaultStoreKeyString(serverAddr, token, privateKey, passphrase string) 
 }
 
 // ZauthSignTxn returns a function that sends a txn signing request to the zauth server
-func ZauthSignTxn(serverAddr string) sys.AuthorizeFunc {
+func ZauthSignTxn(serverAddr, splitPublicKey string) sys.AuthorizeFunc {
 	return func(msg string) (string, error) {
 		fmt.Println("zvault sign txn - in sign txn...")
 		req, err := http.NewRequest("POST", serverAddr+"/sign/txn", bytes.NewBuffer([]byte(msg)))
@@ -193,6 +201,7 @@ func ZauthSignTxn(serverAddr string) sys.AuthorizeFunc {
 			return "", errors.Wrap(err, "failed to create HTTP request")
 		}
 		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-Peer-Public-Key", splitPublicKey)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -218,7 +227,7 @@ func ZauthSignTxn(serverAddr string) sys.AuthorizeFunc {
 	}
 }
 
-func ZauthAuthCommon(serverAddr string) sys.AuthorizeFunc {
+func ZauthAuthCommon(serverAddr, splitPublicKey string) sys.AuthorizeFunc {
 	return func(msg string) (string, error) {
 		// return func(msg string) (string, error) {
 		req, err := http.NewRequest("POST", serverAddr+"/sign/msg", bytes.NewBuffer([]byte(msg)))
@@ -226,6 +235,8 @@ func ZauthAuthCommon(serverAddr string) sys.AuthorizeFunc {
 			return "", errors.Wrap(err, "failed to create HTTP request")
 		}
 		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-Peer-Public-Key", splitPublicKey)
+
 		client := &http.Client{}
 		resp, err := client.Do(req)
 		if err != nil {

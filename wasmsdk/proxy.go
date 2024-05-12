@@ -310,6 +310,7 @@ func main() {
 				"registerZauthServer": registerZauthServer,
 				// zvault
 				"zvaultNewWallet": zvaultNewWallet,
+				"zvaultNewSplit":  zvaultNewSplit,
 				"zvaultStoreKey":  zvaultStoreKey,
 			})
 
