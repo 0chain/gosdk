@@ -101,7 +101,7 @@ func main() {
 						return "", err
 					}
 
-					return zcncore.AddSignature(client.GetClientPrivateKey(), sigpk.Sig, hash)
+					return sigpk.Sig, nil
 				}
 			} else {
 				PrintError("__zcn_wasm__.jsProxy.sign is not installed yet")
