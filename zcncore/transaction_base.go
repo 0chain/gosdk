@@ -74,6 +74,8 @@ type TransactionScheme interface {
 
 	// Hash Transaction status regardless of status
 	Hash() string
+	Fee() uint64
+	Txn() *transaction.Transaction
 
 	// Vesting SC
 
@@ -862,6 +864,14 @@ func (t *Transaction) VestingDelete(poolID string) (err error) {
 	}
 	go func() { t.setNonceAndSubmit() }()
 	return
+}
+
+func (t *Transaction) Fee() uint64 {
+	return t.txn.TransactionFee
+}
+
+func (t *Transaction) Txn() *transaction.Transaction {
+	return t.txn
 }
 
 type scCollectReward struct {

@@ -11,13 +11,13 @@ import (
 	"github.com/0chain/gosdk/core/transaction"
 )
 
-func (ta *TransactionWithAuth) ExecuteSmartContract(address, methodName string, input string, val string) error {
+func (ta *TransactionWithAuth) ExecuteSmartContract(address, methodName string, input interface{}, val string) error {
 	v, err := parseCoinStr(val)
 	if err != nil {
 		return err
 	}
 
-	err = ta.t.createSmartContractTxn(address, methodName, json.RawMessage(input), v)
+	err = ta.t.createSmartContractTxn(address, methodName, input, v)
 	if err != nil {
 		return err
 	}

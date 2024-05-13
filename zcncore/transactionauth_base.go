@@ -18,6 +18,14 @@ func (ta *TransactionWithAuth) Hash() string {
 	return ta.t.txnHash
 }
 
+func (ta *TransactionWithAuth) Fee() uint64 {
+	return ta.t.txn.TransactionFee
+}
+
+func (ta *TransactionWithAuth) Txn() *transaction.Transaction {
+	return ta.t.txn
+}
+
 func (ta *TransactionWithAuth) SetTransactionNonce(txnNonce int64) error {
 	return ta.t.SetTransactionNonce(txnNonce)
 }

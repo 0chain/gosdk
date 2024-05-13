@@ -2,6 +2,7 @@ package sdk
 
 import (
 	"fmt"
+	"strconv"
 	"sync"
 
 	"errors"
@@ -48,20 +49,20 @@ func (cb *transactionCallback) OnAuthComplete(t *zcncore.Transaction, status int
 func ExecuteSmartContract(address string, sn transaction.SmartContractTxnData, value, fee uint64) (*transaction.Transaction, error) {
 	wg := &sync.WaitGroup{}
 	cb := &transactionCallback{wg: wg}
-	txn, err := zcncore.NewTransaction(cb, fee, 0)
+	txn, err := zcncore.NewTransaction(cb, strconv.FormatUint(fee, 10), 0)
 	if err != nil {
 		return nil, err
 	}
 
 	wg.Add(1)
-	t, err := txn.ExecuteSmartContract(address, sn.Name, sn.InputArgs, value)
+	err = txn.ExecuteSmartContract(address, sn.Name, sn.InputArgs, strconv.FormatUint(value, 10))
 	if err != nil {
 		return nil, err
 	}
 
-	msg := fmt.Sprintf("Executing transaction '%s' with hash %s ", sn.Name, t.Hash)
+	msg := fmt.Sprintf("Executing transaction '%s' with hash %s ", sn.Name, txn.Hash())
 	l.Logger.Info(msg)
-	l.Logger.Info("estimated txn fee: ", t.TransactionFee)
+	l.Logger.Info("estimated txn fee: ", txn.Fee())
 
 	wg.Wait()
 
@@ -86,7 +87,7 @@ func ExecuteSmartContract(address string, sn transaction.SmartContractTxnData, v
 	case zcncore.ChargeableError:
 		return nil, fmt.Errorf("smartcontract: %s", txn.GetVerifyOutput())
 	case zcncore.Success:
-		return t, nil
+		return txn.Txn(), nil
 	}
 
 	return nil, fmt.Errorf("smartcontract: %v", txn.GetVerifyConfirmationStatus())
@@ -96,13 +97,13 @@ func ExecuteSmartContract(address string, sn transaction.SmartContractTxnData, v
 func ExecuteSmartContractSend(to string, tokens, fee uint64, desc string) (string, error) {
 	wg := &sync.WaitGroup{}
 	cb := &transactionCallback{wg: wg}
-	txn, err := zcncore.NewTransaction(cb, fee, 0)
+	txn, err := zcncore.NewTransaction(cb, strconv.FormatUint(fee, 10), 0)
 	if err != nil {
 		return "", err
 	}
 
 	wg.Add(1)
-	err = txn.Send(to, tokens, desc)
+	err = txn.Send(to, strconv.FormatUint(tokens, 10), desc)
 	if err == nil {
 		wg.Wait()
 	} else {

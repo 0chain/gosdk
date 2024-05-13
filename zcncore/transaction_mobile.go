@@ -44,7 +44,7 @@ type stakePoolRequest struct {
 
 type TransactionCommon interface {
 	// ExecuteSmartContract implements wrapper for smart contract function
-	ExecuteSmartContract(address, methodName string, input string, val string) error
+	ExecuteSmartContract(address, methodName string, input interface{}, val string) error
 
 	// Send implements sending token to a given clientid
 	Send(toClientID string, val string, desc string) error
@@ -350,13 +350,13 @@ func NewTransaction(cb TransactionCallback, txnFee string, nonce int64) (Transac
 	return t, err
 }
 
-func (t *Transaction) ExecuteSmartContract(address, methodName string, input string, val string) error {
+func (t *Transaction) ExecuteSmartContract(address, methodName string, input interface{}, val string) error {
 	v, err := parseCoinStr(val)
 	if err != nil {
 		return err
 	}
 
-	err = t.createSmartContractTxn(address, methodName, json.RawMessage(input), v)
+	err = t.createSmartContractTxn(address, methodName, input, v)
 	if err != nil {
 		return err
 	}
