@@ -252,7 +252,9 @@ var SignFn = func(hash string) (string, error) {
 	return sigScheme.Sign(hash)
 }
 
-var AddSignature = func(privateKey, signature string, hash string) (string, error) {
+var AddSignature = SignAndAggregate
+
+func SignAndAggregate(privateKey, signature, hash string) (string, error) {
 	var (
 		ss  = zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
 		err error

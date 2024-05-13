@@ -62,7 +62,7 @@ func (ta *TransactionWithAuth) getAuthorize() (*transaction.Transaction, error) 
 		return nil, errAuthVerifyFailed
 	}
 	if !ok {
-		ta.completeTxn(StatusAuthVerifyFailed, "", errAuthVerifyFailed)
+		// ta.completeTxn(StatusAuthVerifyFailed, "", errAuthVerifyFailed)
 		return nil, errAuthVerifyFailed
 	}
 	return &txnResp, nil
@@ -130,11 +130,7 @@ func (ta *TransactionWithAuth) submitTxn() {
 	}
 	// Use the timestamp from auth and sign
 	ta.t.txn.CreationDate = authTxn.CreationDate
-	err = ta.sign(authTxn.Signature)
-	if err != nil {
-		ta.completeTxn(StatusError, "", errAddSignature)
-	}
-
+	ta.t.txn.Signature = authTxn.Signature
 	ta.t.submitTxn()
 }
 
