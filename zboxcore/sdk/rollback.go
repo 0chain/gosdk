@@ -43,7 +43,10 @@ const (
 	Rollback
 )
 
-var ErrRetryOperation = errors.New("retry_operation")
+var (
+	ErrRetryOperation = errors.New("retry_operation")
+	ErrRepairRequired = errors.New("repair_required")
+)
 
 type RollbackBlobber struct {
 	blobber      *blockchain.StorageNode
