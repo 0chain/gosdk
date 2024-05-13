@@ -56,13 +56,12 @@ func (ta *TransactionWithAuth) getAuthorize() (*transaction.Transaction, error) 
 		return nil, errors.Wrap(err, "invalid json on auth response.")
 	}
 	// Verify the split key signed signature
-	ok, err := txnResp.VerifySigWith(client.GetClientPeerPublicKey(), sys.VerifyWith)
+	ok, err := txnResp.VerifySigWith(client.GetClientPublicKey(), sys.VerifyWith)
 	if err != nil {
 		logging.Error("verification failed for txn from auth", err.Error())
 		return nil, errAuthVerifyFailed
 	}
 	if !ok {
-		ta.completeTxn(StatusAuthVerifyFailed, "", errAuthVerifyFailed)
 		return nil, errAuthVerifyFailed
 	}
 	return &txnResp, nil
@@ -120,7 +119,7 @@ func (ta *TransactionWithAuth) submitTxn() {
 	ta.t.txn.TransactionNonce = nonce
 	authTxn, err := ta.getAuthorize()
 	if err != nil {
-		logging.Error("get auth error for send.", err.Error())
+		logging.Error("get auth error for send, err: ", err.Error())
 		ta.completeTxn(StatusAuthError, "", err)
 		return
 	}
@@ -131,12 +130,6 @@ func (ta *TransactionWithAuth) submitTxn() {
 	// Use the timestamp from auth and sign
 	ta.t.txn.CreationDate = authTxn.CreationDate
 	ta.t.txn.Signature = authTxn.Signature
-
-	// err = ta.sign(authTxn.Signature)
-	// if err != nil {
-	// 	ta.completeTxn(StatusError, "", errAddSignature)
-	// }
-
 	ta.t.submitTxn()
 }
 
