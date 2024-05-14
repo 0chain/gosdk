@@ -256,9 +256,11 @@ var SignFn = func(hash string) (string, error) {
 
 var AddSignature = SignAndAggregate
 
+// SignAndAggregate will be used by mobile for signing and
+// aggregating signatures
 func SignAndAggregate(privateKey, signature, hash string) (string, error) {
 	var (
-		ss  = zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
+		ss  = zcncrypto.NewSignatureScheme("bls0chain")
 		err error
 	)
 

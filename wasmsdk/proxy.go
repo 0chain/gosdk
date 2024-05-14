@@ -66,12 +66,19 @@ func main() {
 				}
 
 				sys.SignWithAuth = func(hash, signatureScheme string, keys []sys.KeyPair) (string, error) {
+					sig, err := sys.Sign(hash, signatureScheme, keys)
+					if err != nil {
+						return "", err
+					}
+
 					data, err := json.Marshal(struct {
 						Data     string `json:"data"`
 						ClientID string `json:"client_id"`
+						Sig      string `json:"sig"`
 					}{
 						Data:     hash,
 						ClientID: client.GetClient().ClientID,
+						Sig:      sig,
 					})
 					if err != nil {
 						return "", err
@@ -88,8 +95,7 @@ func main() {
 					}
 
 					var sigpk struct {
-						Sig    string `json:"sig"`
-						Pubkey string `json:"public_key"`
+						Sig string `json:"sig"`
 					}
 
 					err = json.Unmarshal([]byte(rsp), &sigpk)
@@ -97,9 +103,7 @@ func main() {
 						return "", err
 					}
 
-					// c := client.GetClient()
-					// client.GetClient().ClientKey = sigpk.Pubkey
-					return zcncore.AddSignature(keys[0].PrivateKey, sigpk.Sig, hash)
+					return sigpk.Sig, nil
 				}
 			} else {
 				PrintError("__zcn_wasm__.jsProxy.sign is not installed yet")

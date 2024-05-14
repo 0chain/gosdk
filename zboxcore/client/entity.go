@@ -36,7 +36,6 @@ func init() {
 			return sys.Sign(hash, client.SignatureScheme, GetClientSysKeys())
 		}
 
-		fmt.Println("auth - sign with default impl")
 		// get sign lock
 		<-sigC
 		sig, err := sys.SignWithAuth(hash, client.SignatureScheme, GetClientSysKeys())
