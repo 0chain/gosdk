@@ -188,6 +188,7 @@ func main() {
 				"updateForbidAllocation":    UpdateForbidAllocation,
 				"send":                      send,
 				"cancelUpload":              cancelUpload,
+				"pauseUpload":               pauseUpload,
 
 				// player
 				"play":           play,
