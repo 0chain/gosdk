@@ -28,64 +28,67 @@ var (
 	permissions = 0644
 	images      = []img{
 		{
-			location:     filepath.Join("..", "resources", "input.avif"), locationType: "local", width: 500, height: 500,
+			location:     filepath.Join("..", "test_data", "input.avif"), locationType: "local", width: 500, height: 500,
 		},
 		{
-			location:     filepath.Join("..", "resources", "input.bmp"), locationType: "local", width: 500, height: 500,
+			location:     filepath.Join("..", "test_data", "input.bmp"), locationType: "local", width: 500, height: 500,
 		},
 		{
-			location:     filepath.Join("..", "resources", "input.dds"), locationType: "local", width: 500, height: 500,
+			location:     filepath.Join("..", "test_data", "input.dds"), locationType: "local", width: 500, height: 500,
 		},
 		{
-			location:     filepath.Join("..", "resources", "input.exr"), locationType: "local", width: 500, height: 500,
+			location:     filepath.Join("..", "test_data", "input.exr"), locationType: "local", width: 500, height: 500,
 		},
 		{
-			location:     filepath.Join("..", "resources", "input.gif"), locationType: "local", width: 500, height: 500,
+			location:     filepath.Join("..", "test_data", "input.gif"), locationType: "local", width: 500, height: 500,
 		},
 		{
-			location:     filepath.Join("..", "resources", "input.hdr"), locationType: "local", width: 500, height: 500,
+			location:     filepath.Join("..", "test_data", "input.hdr"), locationType: "local", width: 500, height: 500,
 		},
 		{
-			location:     filepath.Join("..", "resources", "input.heic"), locationType: "local", width: 500, height: 500,
+			location:     filepath.Join("..", "test_data", "input.heic"), locationType: "local", width: 500, height: 500,
 		},
 		{
-			location:     filepath.Join("..", "resources", "input.heif"), locationType: "local", width: 500, height: 500,
+			location:     filepath.Join("..", "test_data", "input.heif"), locationType: "local", width: 500, height: 500,
 		},
 		{
-			location:     filepath.Join("..", "resources", "input.ico"), locationType: "local", width: 500, height: 500,
+			location:     filepath.Join("..", "test_data", "input.ico"), locationType: "local", width: 500, height: 500,
 		},
 		{
-			location:     filepath.Join("..", "resources", "input.jfif"), locationType: "local", width: 500, height: 500,
+			location:     filepath.Join("..", "test_data", "input.jfif"), locationType: "local", width: 500, height: 500,
 		},
 		{
-			location:     filepath.Join("..", "resources", "input.jpe"), locationType: "local", width: 500, height: 500,
+			location:     filepath.Join("..", "test_data", "input.jp2"), locationType: "local", width: 500, height: 500,
 		},
 		{
-			location:     filepath.Join("..", "resources", "input.jpeg"), locationType: "local", width: 500, height: 500,
+			location:     filepath.Join("..", "test_data", "input.jpe"), locationType: "local", width: 500, height: 500,
 		},
 		{
-			location:     filepath.Join("..", "resources", "input.jpg"), locationType: "local", width: 500, height: 500,
+			location:     filepath.Join("..", "test_data", "input.jpeg"), locationType: "local", width: 500, height: 500,
 		},
 		{
-			location:     filepath.Join("..", "resources", "input.jps"), locationType: "local", width: 500, height: 500,
+			location:     filepath.Join("..", "test_data", "input.jpg"), locationType: "local", width: 500, height: 500,
 		},
 		{
-			location:     filepath.Join("..", "resources", "input.png"), locationType: "local", width: 500, height: 500,
+			location:     filepath.Join("..", "test_data", "input.jps"), locationType: "local", width: 500, height: 500,
 		},
 		{
-			location:     filepath.Join("..", "resources", "input.pnm"), locationType: "local", width: 500, height: 500,
+			location:     filepath.Join("..", "test_data", "input.png"), locationType: "local", width: 500, height: 500,
 		},
 		{
-			location:     filepath.Join("..", "resources", "input.svg"), locationType: "local", width: 500, height: 500,
+			location:     filepath.Join("..", "test_data", "input.pnm"), locationType: "local", width: 500, height: 500,
 		},
 		{
-			location:     filepath.Join("..", "resources", "input.tga"), locationType: "local", width: 500, height: 500,
+			location:     filepath.Join("..", "test_data", "input.svg"), locationType: "local", width: 500, height: 500,
 		},
 		{
-			location:     filepath.Join("..", "resources", "input.tiff"), locationType: "local", width: 500, height: 500,
+			location:     filepath.Join("..", "test_data", "input.tga"), locationType: "local", width: 500, height: 500,
 		},
 		{
-			location:     filepath.Join("..", "resources", "input.webp"), locationType: "local", width: 500, height: 500,
+			location:     filepath.Join("..", "test_data", "input.tiff"), locationType: "local", width: 500, height: 500,
+		},
+		{
+			location:     filepath.Join("..", "test_data", "input.webp"), locationType: "local", width: 500, height: 500,
 		},
 	}
 )

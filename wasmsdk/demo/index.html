@@ -151,6 +151,12 @@
   <fieldset>
     <legend>Image Viewer</legend>
     <img id="viewer" src="image.png" width="600" />
+    <div id="thumbnailImages">
+      <span>
+        <input id="inputThumbnail" type="file" multiple="multiple"/> 
+        <button id="btnThumbnail">Thumbnail</button>
+      </span>
+    </div>
   </fieldset>
 
   <fieldset>
@@ -933,6 +939,47 @@
       const message = "Hello, World!";
       const result = goWasm.sdk.callAuth(message);
       console.log(result); // Output: "Authorized: Hello, World!"
+    })
+
+    onClick('btnThumbnail', async () => {
+      document.querySelectorAll(".thumbnailImage").forEach(el => el.remove());
+      const { files } = get('inputThumbnail')
+      console.log(files);
+      const width = 120
+      const height = 90
+      if (files && files.length > 0) {
+        let i = 0
+        for (const file of files) {
+          i++
+          console.log(`${i}: ${file.name}`);
+          console.time(file.name);
+          try {
+            const fileBytes = await readBytes(file);
+            const results = await goWasm.sdk.thumbnail(fileBytes, width, height, "{}");
+            
+            var div = document.createElement("div");
+            var text = document.createElement("p");
+            var image = document.createElement("img");
+
+            text.innerText = `${i}: ${file.name}`;
+            image.setAttribute("src", `data:image/${results.format};base64,` + results.thumbnail_img);
+            image.setAttribute("width", `${width}px`);
+            image.setAttribute("height", `${height}px`);
+            div.setAttribute("class", "thumbnailImage")
+
+            div.appendChild(text);
+            div.appendChild(image);
+            document.getElementById("thumbnailImages").appendChild(div);
+            console.log(results.converter);
+          }
+          catch(ex) {
+            console.error(ex.message);
+          }
+          finally {
+            console.timeEnd(file.name);
+          }
+        }
+      }
     })
 
   </script>

@@ -5,7 +5,6 @@ import (
 	"context"
 	_ "embed"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"image"
 
@@ -18,7 +17,10 @@ import (
 	_ "image/png"
 
 	"github.com/disintegration/imaging"
-	_ "github.com/gen2brain/heic"
+	"github.com/gen2brain/heic"
+	_ "github.com/gen2brain/avif"
+	_ "github.com/gen2brain/jpegxl"
+	_ "github.com/gen2brain/svg"
 	_ "golang.org/x/image/bmp"
 	_ "golang.org/x/image/tiff"
 	_ "golang.org/x/image/webp"
@@ -27,6 +29,9 @@ import (
 var (
 	//go:embed image_rs/image_rs.wasm
 	imageWasm []byte
+
+	//go:embed file-icon.png
+	defThumbnail []byte
 
 	imageRs    *ImageRs
  	gonative   *GoNativeDecode
@@ -47,6 +52,7 @@ func init() {
 	converters = []Converter{gonative, imageRs}
 	logging = &logger.Logger{}
 	logging.Init(4, "imageutil")
+	logging.Debug("heic dynamicErr: ", heic.Dynamic())
 }
 
 type Option struct {
@@ -73,11 +79,10 @@ func Thumbnail(img []byte, width, height int, options string) (ConvertRes, error
 	for _, converter := range converters {
 		res, err := converter.Convert(img, width, height, ConvertOptions{})
 		if err == nil {
-			logging.Debug(fmt.Sprintf("converter %s produced thumbnail", converter.Name()))
 			return res, nil
 		}
 	}
-	return ConvertRes{}, errors.New("all converters failed to convert; use default thumbnail image")
+	return gonative.Convert(defThumbnail, width, height, ConvertOptions{})
 }
 
 type ConvertOptions struct{}
@@ -87,6 +92,8 @@ type ConvertRes struct {
 	ThumbnailImg []byte `json:"thumbnail_img,omitempty"`
 	// format of thumbnail image
 	Format string	`json:"format,omitempty"`
+	// converter
+	Converter string `json:"converter,omitempty"`
 }
 
 type Converter interface {
@@ -182,6 +189,7 @@ func (i *ImageRs) Convert(img []byte, width, height int, co ConvertOptions) (Con
 	cr := ConvertRes{}
 	cr.ThumbnailImg = append(cr.ThumbnailImg, res...)
 	cr.Format = "jpeg"
+	cr.Converter = i.Name()
 	return cr, nil
 }
 
@@ -197,7 +205,7 @@ func NewGoNativeDecode() (*GoNativeDecode, error) {
 	return &GoNativeDecode{
 		supportedFormats: map[string]bool{
 			"gif": true, "jpeg": true, "png": true, "bmp": true, "tiff": true, "webp": true,
-			"heic": true, "heif": true, "avif": true,
+			"heic": true, "heif": true, "avif": true, "svg": true,
 		},
 	}, nil
 }
@@ -211,7 +219,7 @@ func (n *GoNativeDecode) Convert(buf []byte, width, height int, co ConvertOption
 	if err != nil {
 		return ConvertRes{}, err
 	}
-	nrgba := imaging.Thumbnail(img, width, height, imaging.Lanczos)
+	nrgba := imaging.Resize(img, width, height, imaging.Lanczos)
 	fd := &bytes.Buffer{}
 	err = jpeg.Encode(fd, nrgba, nil)
 	if err != nil {
@@ -220,6 +228,7 @@ func (n *GoNativeDecode) Convert(buf []byte, width, height int, co ConvertOption
 	cr := ConvertRes{}
 	cr.ThumbnailImg = append(cr.ThumbnailImg, fd.Bytes()...)
 	cr.Format = "jpeg"
+	cr.Converter = n.Name()
 	return cr, nil
 }
 
