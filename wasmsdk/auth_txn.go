@@ -4,6 +4,8 @@
 package main
 
 import (
+	"fmt"
+	"sync"
 	"syscall/js"
 
 	"github.com/0chain/gosdk/core/sys"
@@ -13,12 +15,17 @@ type AuthCallbackFunc func(msg string) string
 
 var authResponseC chan string
 var authMsgResponseC chan string
+var authMsgLockC chan struct{}
+var authInitOnce sync.Once
+var authMsgInitOnce sync.Once
 
 // Register the callback function
 func registerAuthorizer(this js.Value, args []js.Value) interface{} {
 	// Store the callback function
 	authCallback := parseAuthorizerCallback(args[0])
-	authResponseC = make(chan string, 1)
+	authInitOnce.Do(func() {
+		authResponseC = make(chan string, 1)
+	})
 
 	sys.Authorize = func(msg string) (string, error) {
 		authCallback(msg)
@@ -29,11 +36,21 @@ func registerAuthorizer(this js.Value, args []js.Value) interface{} {
 
 func registerAuthCommon(this js.Value, args []js.Value) interface{} {
 	authMsgCallback := parseAuthorizerCallback(args[0])
-	authResponseC = make(chan string, 1)
+	authMsgInitOnce.Do(func() {
+		authMsgLockC = make(chan struct{}, 1)
+		authMsgResponseC = make(chan string, 1)
+		authMsgLockC <- struct{}{}
+	})
 
 	sys.AuthCommon = func(msg string) (string, error) {
+		fmt.Printf("try acquire lock: %p\n", &authMsgLockC)
+		<-authMsgLockC
+		fmt.Printf("acquired lock: %p\n", &authMsgLockC)
 		authMsgCallback(msg)
-		return <-authResponseC, nil
+		rsp := <-authMsgResponseC
+		fmt.Println("got auth common rsp:", rsp)
+		authMsgLockC <- struct{}{}
+		return rsp, nil
 	}
 	return nil
 }
