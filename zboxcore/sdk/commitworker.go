@@ -163,8 +163,8 @@ func (commitreq *CommitRequest) processCommit() {
 			commitreq.result = ErrorCommitResult(e.Error())
 			return
 		}
-		if commitreq.timestamp == lR.LatestWM.Timestamp {
-			commitreq.timestamp += 1
+		if commitreq.timestamp <= lR.LatestWM.Timestamp {
+			commitreq.timestamp = lR.LatestWM.Timestamp + 1
 		}
 
 		rootRef.CalculateHash()
