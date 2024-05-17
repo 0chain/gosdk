@@ -9,9 +9,7 @@ require (
 	github.com/btcsuite/btcd v0.23.4
 	github.com/dgraph-io/badger/v3 v3.2103.5
 	github.com/didip/tollbooth v4.0.2+incompatible
-	github.com/disintegration/imaging v1.6.2
 	github.com/ethereum/go-ethereum v1.10.26
-	github.com/gen2brain/heic v0.3.0
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
@@ -46,9 +44,6 @@ require (
 )
 
 require (
-	github.com/gen2brain/avif v0.3.1
-	github.com/gen2brain/jpegxl v0.3.0
-	github.com/gen2brain/svg v0.1.0
 	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d
 	github.com/minio/sha256-simd v1.0.1
 	github.com/tetratelabs/wazero v1.7.1
@@ -68,7 +63,6 @@ require (
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.1.0 // indirect
 	github.com/dgraph-io/ristretto v0.1.1 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/ebitengine/purego v0.7.1 // indirect
 	github.com/edsrzf/mmap-go v1.0.0 // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/fjl/memsize v0.0.0-20190710130421-bcb5799ab5e5 // indirect
@@ -114,8 +108,6 @@ require (
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/srwiley/oksvg v0.0.0-20221011165216-be6e8873101c // indirect
-	github.com/srwiley/rasterx v0.0.0-20220730225603-2ab79fcdd4ef // indirect
 	github.com/status-im/keycard-go v0.2.0 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/subosito/gotenv v1.4.2 // indirect
@@ -151,6 +143,3 @@ require (
 )
 
 //replace github.com/ethereum/go-ethereum => github.com/certifaction/go-ethereum v1.10.3-wasm
-replace github.com/gen2brain/heic => github.com/storybehind/heic v1.0.2
-
-replace github.com/gen2brain/avif => github.com/storybehind/avif v1.0.0

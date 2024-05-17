@@ -26,7 +26,6 @@ var (
 	jpsPath = filepath.Join("test_data", "input.jps")
 	pngPath = filepath.Join("test_data", "input.png")
 	pnmPath = filepath.Join("test_data", "input.pnm")
-	svgPath = filepath.Join("test_data", "input.svg")
 	// tgaPath = filepath.Join("test_data", "input.tga")
 	tiffPath = filepath.Join("test_data", "input.tiff")
 	webpPath = filepath.Join("test_data", "input.webp")
