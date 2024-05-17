@@ -388,8 +388,8 @@ func GetFileContentType(file *C.char) *C.char {
 	return WithJSON(mime, nil)
 }
 
-func Thumbnail(buf *C.char, width, height C.int, options *C.char) *C.char {
-	res, err := imageutil.Thumbnail([]byte(C.GoString(buf)), int(width), int(height), C.GoString(options))
+func Thumbnail(buf *C.char, width, height C.int) *C.char {
+	res, err := imageutil.Thumbnail([]byte(C.GoString(buf)), int(width), int(height))
 	if err != nil {
 		return WithJSON("", err)
 	}

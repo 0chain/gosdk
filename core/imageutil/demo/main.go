@@ -28,9 +28,6 @@ var (
 	permissions = 0644
 	images      = []img{
 		{
-			location:     filepath.Join("..", "test_data", "input.avif"), locationType: "local", width: 500, height: 500,
-		},
-		{
 			location:     filepath.Join("..", "test_data", "input.bmp"), locationType: "local", width: 500, height: 500,
 		},
 		{
@@ -46,19 +43,10 @@ var (
 			location:     filepath.Join("..", "test_data", "input.hdr"), locationType: "local", width: 500, height: 500,
 		},
 		{
-			location:     filepath.Join("..", "test_data", "input.heic"), locationType: "local", width: 500, height: 500,
-		},
-		{
-			location:     filepath.Join("..", "test_data", "input.heif"), locationType: "local", width: 500, height: 500,
-		},
-		{
 			location:     filepath.Join("..", "test_data", "input.ico"), locationType: "local", width: 500, height: 500,
 		},
 		{
 			location:     filepath.Join("..", "test_data", "input.jfif"), locationType: "local", width: 500, height: 500,
-		},
-		{
-			location:     filepath.Join("..", "test_data", "input.jp2"), locationType: "local", width: 500, height: 500,
 		},
 		{
 			location:     filepath.Join("..", "test_data", "input.jpe"), locationType: "local", width: 500, height: 500,
@@ -138,8 +126,7 @@ func main() {
 		}
 
 		log.Printf("creating Thumbnail...")
-		var res imageutil.ConvertRes
-		res, err := imageutil.Thumbnail(b, input.width, input.height, "{}")
+		res, err := imageutil.Thumbnail(b, input.width, input.height)
 		if err != nil {
 			log.Printf("err creating thumbnail: %v", err)
 			continue
@@ -147,7 +134,7 @@ func main() {
 
 		log.Printf("creating outfile file")
 		opath := filepath.Join(folderPath, fmt.Sprintf("output%d.jpeg", i))
-		err = os.WriteFile(opath, res.ThumbnailImg, fs.FileMode(permissions))
+		err = os.WriteFile(opath, res, fs.FileMode(permissions))
 		if err != nil {
 			log.Printf("err creating outfile file: %v", err)
 		}

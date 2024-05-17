@@ -19,6 +19,6 @@ func GetLookupHash(allocationID string, remotePath string) string {
 	return encryption.Hash(allocationID + ":" + remotePath)
 }
 
-func Thumbnail(buf []byte, width, height int, options string) (imageutil.ConvertRes, error) {	
-	return imageutil.Thumbnail(buf, width, height, options)
+func Thumbnail(buf []byte, width, height int) ([]byte, error) {	
+	return imageutil.Thumbnail(buf, width, height)
 }

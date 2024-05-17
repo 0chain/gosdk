@@ -118,8 +118,8 @@ func createThumbnail(buf []byte, width, height int) ([]byte, error) {
 	return imageutil.CreateThumbnail(buf, width, height)
 }
 
-func thumbnail(buf []byte, width, height int, options string) (imageutil.ConvertRes, error) {	
-	return imageutil.Thumbnail(buf, width, height, options)
+func thumbnail(buf []byte, width, height int) ([]byte, error) {	
+	return imageutil.Thumbnail(buf, width, height)
 }
 
 func makeSCRestAPICall(scAddress, relativePath, paramsJson string) (string, error) {

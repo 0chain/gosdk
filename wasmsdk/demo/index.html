@@ -941,6 +941,13 @@
       console.log(result); // Output: "Authorized: Hello, World!"
     })
 
+  </script>
+
+  <script type="module">
+    import init, {thumbnail_js} from "./../../core/imageutil/image_rs/pkg/image_rs.js"
+    init().then(() => {
+      console.log('rust wasm is initialized');
+    })
     onClick('btnThumbnail', async () => {
       document.querySelectorAll(".thumbnailImage").forEach(el => el.remove());
       const { files } = get('inputThumbnail')
@@ -955,14 +962,16 @@
           console.time(file.name);
           try {
             const fileBytes = await readBytes(file);
-            const results = await goWasm.sdk.thumbnail(fileBytes, width, height, "{}");
+            const res = await thumbnail_js(fileBytes, width, height);
             
             var div = document.createElement("div");
             var text = document.createElement("p");
             var image = document.createElement("img");
 
             text.innerText = `${i}: ${file.name}`;
-            image.setAttribute("src", `data:image/${results.format};base64,` + results.thumbnail_img);
+            image.setAttribute("src", URL.createObjectURL(
+              new Blob([res.buffer], { type: 'image/jpeg' })
+            ));
             image.setAttribute("width", `${width}px`);
             image.setAttribute("height", `${height}px`);
             div.setAttribute("class", "thumbnailImage")
@@ -970,7 +979,6 @@
             div.appendChild(text);
             div.appendChild(image);
             document.getElementById("thumbnailImages").appendChild(div);
-            console.log(results.converter);
           }
           catch(ex) {
             console.error(ex.message);
@@ -981,6 +989,5 @@
         }
       }
     })
-
   </script>
 </body>

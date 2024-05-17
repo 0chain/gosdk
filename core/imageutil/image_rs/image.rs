@@ -1,7 +1,26 @@
 use std::{io::Cursor, mem::ManuallyDrop, slice, u32};
 use image::{codecs::jpeg::JpegEncoder, io::Reader as ImageReader, ImageEncoder};
+use wasm_bindgen::prelude::*;
 
-fn thumbnail(img_bytes: &[u8], width: u32, height: u32) -> Result<Vec<u8>, image::ImageError> {
+#[wasm_bindgen]
+extern {
+}
+
+#[wasm_bindgen]
+pub fn thumbnail_js(img_bytes: &[u8], width: u32, height: u32) -> js_sys::Uint8Array {
+    return js_sys::Uint8Array::from(thumbnail(img_bytes, width, height).as_slice());
+}
+
+pub fn thumbnail(img_bytes: &[u8], width: u32, height: u32) -> Vec<u8> {
+    let image_rs: Result<Vec<u8>, image::ImageError> = thumbnail_image_rs(img_bytes, width, height);
+    if !image_rs.is_err() {
+        return image_rs.unwrap();
+    }
+    let default_img = include_bytes!("file-icon.png");
+    return thumbnail_image_rs(default_img, width, height).unwrap();
+}
+
+pub fn thumbnail_image_rs(img_bytes: &[u8], width: u32, height: u32) -> Result<Vec<u8>, image::ImageError> {
     let mut res: Vec<u8> = Vec::new();
     let img_buf: image::ImageBuffer<image::Rgb<u8>, Vec<u8>>= ImageReader::new(Cursor::new(img_bytes)).with_guessed_format()?.decode()?.into_rgb8();
     let thumbnail: image::ImageBuffer<image::Rgb<u8>, Vec<u8>> = image::imageops::thumbnail(&img_buf, width, height);
@@ -11,17 +30,10 @@ fn thumbnail(img_bytes: &[u8], width: u32, height: u32) -> Result<Vec<u8>, image
 
 #[cfg_attr(all(target_arch = "wasm32"), export_name = "thumbnail")]
 #[no_mangle]
-pub unsafe extern "C" fn _thumbnail(ptr: u32, len: u32, width: u32, height: u32) -> u64 {
-    let binding = ptr_to_u8_vec(ptr, len);
-    let res_with_err = thumbnail(binding.as_slice(), width, height);
-    let mut res = Vec::new();
-    if !res_with_err.is_err() {
-        res = res_with_err.unwrap(); 
-    }
-    else {
-        eprintln!("error creating thumbnail: {}", res_with_err.unwrap_err().to_string());
-    }
-    let mut v = ManuallyDrop::new(res);
+pub unsafe extern "C" fn _thumbnail_ptr(ptr: u32, len: u32, width: u32, height: u32) -> u64 {
+    let binding: Vec<u8> = ptr_to_u8_vec(ptr, len);
+    let res: Vec<u8> = thumbnail(binding.as_slice(), width, height);
+    let mut v: ManuallyDrop<Vec<u8>> = ManuallyDrop::new(res);
     let (ptr_res, len_res) = (v.as_mut_ptr(), v.len());
     return ((ptr_res as u64) << 32) | len_res as u64;
 }
