@@ -164,7 +164,7 @@ func (commitreq *CommitRequest) processCommit() {
 			return
 		}
 		if commitreq.timestamp <= lR.LatestWM.Timestamp {
-			commitreq.timestamp += 1
+			commitreq.timestamp = lR.LatestWM.Timestamp + 1
 		}
 
 		rootRef.CalculateHash()
