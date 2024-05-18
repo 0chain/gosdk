@@ -347,8 +347,7 @@ func (mo *MultiOperation) Process() error {
 		for _, op := range mo.operations {
 			op.Error(mo.allocationObj, mo.getConsensus(), err)
 		}
-		l.Logger.Error("Consensus not met. Required ", mo.consensusThresh, " got ", mo.getConsensus(), " error: ", err)
-		return errors.New("consensus_not_met", fmt.Sprintf("Consensus not met. Required %d got %d", mo.consensusThresh, mo.getConsensus()))
+		return err
 	} else {
 		for _, op := range mo.operations {
 			op.Completed(mo.allocationObj)
