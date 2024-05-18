@@ -347,6 +347,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get -y install build-essential nghttp2 libnghttp2-dev libssl-dev wget
+          sudo apt install rustc
 
       - name: Build
         run:  docker run --rm -v $PWD:/gosdk -w /gosdk golang:1.21.5 make wasm-build
