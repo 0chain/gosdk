@@ -347,9 +347,9 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get -y install build-essential nghttp2 libnghttp2-dev libssl-dev wget
-          sudo apt install rustc -y
+          curl https://sh.rustup.rs -sSf | sh -s -- -y
 
-      - name: Build
+      - name: Build using rust
         run: |
           cd core/imageutil/image_rs
           bash build.sh
