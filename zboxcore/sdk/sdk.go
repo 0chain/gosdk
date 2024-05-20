@@ -71,6 +71,10 @@ func SetShouldVerifyHash(verify bool) {
 	shouldVerifyHash = verify
 }
 
+func SetSaveProgress(save bool) {
+	shouldSaveProgress = save
+}
+
 // GetVersion - returns version string
 func GetVersion() string {
 	return version.VERSIONSTR
