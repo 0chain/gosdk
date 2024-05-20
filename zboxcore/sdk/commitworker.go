@@ -260,7 +260,7 @@ func (req *CommitRequest) commitBlobber(
 		resp           *http.Response
 		shouldContinue bool
 	)
-	for retries := 0; retries < 3; retries++ {
+	for retries := 0; retries < 6; retries++ {
 		err, shouldContinue = func() (err error, shouldContinue bool) {
 			body := new(bytes.Buffer)
 			formWriter, err := getFormWritter(req.connectionID, wmData, fileIDMetaData, body)

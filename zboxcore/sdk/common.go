@@ -26,7 +26,7 @@ func getObjectTreeFromBlobber(ctx context.Context, allocationID, allocationTx st
 		return nil, err
 	}
 	var lR ReferencePathResult
-	ctx, cncl := context.WithTimeout(ctx, (time.Second * 30))
+	ctx, cncl := context.WithTimeout(ctx, (time.Second * 60))
 	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
 		if err != nil {
 			l.Logger.Error("Object tree:", err)
