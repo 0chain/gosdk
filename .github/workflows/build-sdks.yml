@@ -348,14 +348,15 @@ jobs:
           sudo apt-get update
           sudo apt-get -y install build-essential nghttp2 libnghttp2-dev libssl-dev wget
           curl https://sh.rustup.rs -sSf | sh -s -- -y
+          ll $HOME/.cargo/bin
 
-      - name: Build using rust
+      - name: Executing core/imageutil/image_rs/build.sh script
         run: |
           cd core/imageutil/image_rs
           bash build.sh
           cd ../../../
 
-      - name: Build
+      - name: Build wasm binary
         run:  docker run --rm -v $PWD:/gosdk -w /gosdk golang:1.21.5 make wasm-build
 
       - name: 'Upload Artifact'
