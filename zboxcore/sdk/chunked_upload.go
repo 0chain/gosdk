@@ -705,6 +705,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		su.removeProgress()
 		return thrown.New("upload_failed", fmt.Sprintf("Upload failed. %s", err))
 	}
+	logger.Logger.Info("uploadingData: ", blobberUpload.chunkStartIndex, " - ", blobberUpload.chunkEndIndex, " ", isFinal, " ", su.fileMeta.RemotePath)
 	if !lastBufferOnly {
 		su.uploadWG.Add(1)
 		select {
@@ -716,7 +717,9 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 
 	if isFinal {
 		close(su.uploadChan)
+		logger.Logger.Info("Waiting for upload to complete")
 		su.uploadWG.Wait()
+		logger.Logger.Info("Upload completed")
 		select {
 		case <-su.ctx.Done():
 			return context.Cause(su.ctx)
@@ -814,6 +817,7 @@ func (su *ChunkedUpload) uploadProcessor() {
 				return
 			}
 			su.uploadToBlobbers(uploadData) //nolint:errcheck
+			logger.Logger.Info("upload_processor_complete: ", uploadData.chunkEndIndex, " ", uploadData.isFinal, " ", su.fileMeta.RemotePath)
 			su.uploadWG.Done()
 		}
 	}
