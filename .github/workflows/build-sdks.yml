@@ -347,7 +347,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get -y install build-essential nghttp2 libnghttp2-dev libssl-dev wget
-          sudo apt install rustc
+          sudo apt install rustc -y
 
       - name: Build
         run: |
