@@ -350,6 +350,12 @@ jobs:
           sudo apt install rustc
 
       - name: Build
+        run: |
+          cd core/imageutil/image_rs
+          bash build.sh
+          cd ../../../
+
+      - name: Build
         run:  docker run --rm -v $PWD:/gosdk -w /gosdk golang:1.21.5 make wasm-build
 
       - name: 'Upload Artifact'
