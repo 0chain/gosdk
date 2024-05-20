@@ -978,6 +978,7 @@ func (req *DownloadRequest) errorCB(err error, remotePathCB string) {
 	if req.contentMode == DOWNLOAD_CONTENT_THUMB {
 		op = opThumbnailDownload
 	}
+	logger.Logger.Error("download_error: ", err)
 	if req.downloadStorer != nil && !strings.Contains(err.Error(), "context canceled") {
 		req.downloadStorer.Remove() //nolint: errcheck
 	}

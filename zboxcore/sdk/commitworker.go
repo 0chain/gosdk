@@ -260,7 +260,7 @@ func (req *CommitRequest) commitBlobber(
 		resp           *http.Response
 		shouldContinue bool
 	)
-	for retries := 0; retries < 3; retries++ {
+	for retries := 0; retries < 6; retries++ {
 		err, shouldContinue = func() (err error, shouldContinue bool) {
 			body := new(bytes.Buffer)
 			formWriter, err := getFormWritter(req.connectionID, wmData, fileIDMetaData, body)
@@ -323,7 +323,7 @@ func (req *CommitRequest) commitBlobber(
 			}
 
 			if strings.Contains(string(respBody), "chain_length_exceeded") {
-				l.Logger.Info("Chain length exceeded for blobber ",
+				l.Logger.Error("Chain length exceeded for blobber ",
 					req.blobber.Baseurl, " Retrying")
 				time.Sleep(5 * time.Second)
 				shouldContinue = true
@@ -331,7 +331,7 @@ func (req *CommitRequest) commitBlobber(
 			}
 
 			err = thrown.New("commit_error",
-				fmt.Sprintf("Got error response %s with status %d", respBody, resp.StatusCode))
+				fmt.Sprintf("Got error response %s with status %d and resp %s", respBody, resp.StatusCode, string(respBody)))
 			return
 		}()
 		if shouldContinue {

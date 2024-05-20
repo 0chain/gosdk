@@ -330,7 +330,7 @@ func (mo *MultiOperation) Process() error {
 				mo.consensus++
 			} else {
 				errSlice[idx] = errors.New("commit_failed", commitReq.result.ErrorMessage)
-				l.Logger.Info("Commit failed", commitReq.blobber.Baseurl, commitReq.result.ErrorMessage)
+				l.Logger.Error("Commit failed", commitReq.blobber.Baseurl, commitReq.result.ErrorMessage)
 			}
 		} else {
 			l.Logger.Info("Commit result not set", commitReq.blobber.Baseurl)
@@ -341,12 +341,13 @@ func (mo *MultiOperation) Process() error {
 		mo.allocationObj.checkStatus = false
 		err = zboxutil.MajorError(errSlice)
 		if mo.getConsensus() != 0 {
-			l.Logger.Info("Rolling back changes on minority blobbers")
+			l.Logger.Error("Rolling back changes on minority blobbers")
 			mo.allocationObj.RollbackWithMask(rollbackMask)
 		}
 		for _, op := range mo.operations {
 			op.Error(mo.allocationObj, mo.getConsensus(), err)
 		}
+		l.Logger.Error("commit_error: ", err)
 		return err
 	} else {
 		for _, op := range mo.operations {
