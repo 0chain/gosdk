@@ -348,7 +348,7 @@ jobs:
           sudo apt-get update
           sudo apt-get -y install build-essential nghttp2 libnghttp2-dev libssl-dev wget
           curl https://sh.rustup.rs -sSf | sh -s -- -y
-          ll $HOME/.cargo/bin
+          ls -lha $HOME/.cargo/bin
 
       - name: Executing core/imageutil/image_rs/build.sh script
         run: |
