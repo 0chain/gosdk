@@ -349,10 +349,12 @@ jobs:
           sudo apt-get -y install build-essential nghttp2 libnghttp2-dev libssl-dev wget
           curl https://sh.rustup.rs -sSf | sh -s -- -y
           ls -lha $HOME/.cargo/bin
-          $HOME/.cargo/bin/cargo install cargo-wasi
-          $HOME/.cargo/bin/cargo wasi --version
-          $HOME/.cargo/bin/cargo install wasm-pack
-          $HOME/.cargo/bin/wasm-pack --version
+          echo 'export PATH=$PATH:$HOME/.cargo/bin/' >> ~/.bashrc
+          source ~/.bashrc
+          cargo install cargo-wasi
+          cargo wasi --version
+          cargo install wasm-pack
+          wasm-pack --version
 
       - name: Executing core/imageutil/image_rs/build.sh script
         run: |
