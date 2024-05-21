@@ -785,6 +785,9 @@ func (su *ChunkedUpload) processCommit() error {
 
 // getShardSize will return the size of data of a file each blobber is getting.
 func getShardSize(dataSize int64, dataShards int, isEncrypted bool) int64 {
+	if dataSize == 0 {
+		return 0
+	}
 	chunkSize := int64(DefaultChunkSize)
 	if isEncrypted {
 		chunkSize -= (EncryptedDataPaddingSize + EncryptionHeaderSize)
