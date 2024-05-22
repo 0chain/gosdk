@@ -188,6 +188,9 @@ func main() {
 				"send":                      send,
 				"cancelUpload":              cancelUpload,
 				"pauseUpload":               pauseUpload,
+				"repairAllocation":          repairAllocation,
+				"checkAllocStatus":          checkAllocStatus,
+				"skipStatusCheck":           skipStatusCheck,
 
 				// player
 				"play":           play,

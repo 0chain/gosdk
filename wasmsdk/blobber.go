@@ -940,3 +940,54 @@ func getBlobbers(stakable bool) ([]*sdk.Blobber, error) {
 	}
 	return blobbs, err
 }
+
+func repairAllocation(allocationID string) error {
+	alloc, err := getAllocation(allocationID)
+	if err != nil {
+		return err
+	}
+	statusBar := sdk.NewRepairBar(allocationID)
+	err = alloc.RepairAlloc(statusBar)
+	if err != nil {
+		return err
+	}
+	statusBar.Wait()
+	return statusBar.CheckError()
+}
+
+func checkAllocStatus(allocationID string) ([]byte, error) {
+	alloc, err := getAllocation(allocationID)
+	if err != nil {
+		return nil, err
+	}
+	status, blobberStatus, err := alloc.CheckAllocStatus()
+	var statusStr string
+	switch status {
+	case sdk.Repair:
+		statusStr = "repair"
+	case sdk.Broken:
+		statusStr = "broken"
+	default:
+		statusStr = "ok"
+	}
+	statusResult := CheckStatusResult{
+		Status:        statusStr,
+		Err:           err,
+		BlobberStatus: blobberStatus,
+	}
+	statusBytes, err := json.Marshal(statusResult)
+	if err != nil {
+		return nil, err
+	}
+
+	return statusBytes, err
+}
+
+func skipStatusCheck(allocationID string, checkStatus bool) error {
+	alloc, err := getAllocation(allocationID)
+	if err != nil {
+		return err
+	}
+	alloc.SetCheckStatus(checkStatus)
+	return nil
+}
