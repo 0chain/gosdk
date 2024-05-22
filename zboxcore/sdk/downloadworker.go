@@ -769,7 +769,7 @@ func (req *DownloadRequest) processDownload() {
 
 	if req.statusCallback != nil && !req.skip {
 		req.statusCallback.Completed(
-			req.allocationID, remotePathCB, fRef.Name, "", int(size), op)
+			req.allocationID, remotePathCB, fRef.Name, fRef.MimeType, int(size), op)
 	}
 	if req.downloadStorer != nil {
 		req.downloadStorer.Remove() //nolint:errcheck

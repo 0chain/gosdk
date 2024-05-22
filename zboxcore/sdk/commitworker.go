@@ -163,8 +163,8 @@ func (commitreq *CommitRequest) processCommit() {
 			commitreq.result = ErrorCommitResult(e.Error())
 			return
 		}
-		if commitreq.timestamp == lR.LatestWM.Timestamp {
-			commitreq.timestamp += 1
+		if commitreq.timestamp <= lR.LatestWM.Timestamp {
+			commitreq.timestamp = lR.LatestWM.Timestamp + 1
 		}
 
 		rootRef.CalculateHash()
@@ -260,7 +260,7 @@ func (req *CommitRequest) commitBlobber(
 		resp           *http.Response
 		shouldContinue bool
 	)
-	for retries := 0; retries < 3; retries++ {
+	for retries := 0; retries < 6; retries++ {
 		err, shouldContinue = func() (err error, shouldContinue bool) {
 			body := new(bytes.Buffer)
 			formWriter, err := getFormWritter(req.connectionID, wmData, fileIDMetaData, body)

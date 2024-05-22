@@ -330,7 +330,7 @@ func (mo *MultiOperation) Process() error {
 				mo.consensus++
 			} else {
 				errSlice[idx] = errors.New("commit_failed", commitReq.result.ErrorMessage)
-				l.Logger.Info("Commit failed", commitReq.blobber.Baseurl, commitReq.result.ErrorMessage)
+				l.Logger.Error("Commit failed", commitReq.blobber.Baseurl, commitReq.result.ErrorMessage)
 			}
 		} else {
 			l.Logger.Info("Commit result not set", commitReq.blobber.Baseurl)
