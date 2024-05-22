@@ -1217,7 +1217,7 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 				a.downloadChan <- dr
 			}(dr)
 		}
-		l.Logger.Info("[processReadMarker]", zap.String("allocation_id", a.ID),
+		l.Logger.Debug("[processReadMarker]", zap.String("allocation_id", a.ID),
 			zap.Int("num of download requests", len(drs)),
 			zap.Duration("processDownloadRequest", elapsedProcessDownloadRequest))
 		return
