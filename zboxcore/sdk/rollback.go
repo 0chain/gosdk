@@ -261,7 +261,7 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
 	for ind, blobber := range a.Blobbers {
 
 		wg.Add(1)
-		go func(blobber *blockchain.StorageNode) {
+		go func(blobber *blockchain.StorageNode, ind int) {
 
 			defer wg.Done()
 			blobStatus := BlobberStatus{
@@ -286,7 +286,7 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
 				}
 			}
 			blobberRes[ind] = blobStatus
-		}(blobber)
+		}(blobber, ind)
 
 	}
 	wg.Wait()
