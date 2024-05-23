@@ -31,7 +31,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          curl https://sh.rustup.rs -sSf | sh -s -- -y
+          # curl https://sh.rustup.rs -sSf | sh -s -- -y
           ls -lha $HOME/.cargo/bin
           # export PATH=$PATH:/bin/
           . "$HOME/.cargo/env"
@@ -42,6 +42,7 @@ jobs:
 
       - name: Executing core/imageutil/image_rs/build.sh script
         run: |
+          . "$HOME/.cargo/env"
           cd core/imageutil/image_rs
           bash build.sh
           cd ../../../
@@ -126,7 +127,7 @@ jobs:
           #echo "deb http://mirror.pit.teraswitch.com/ubuntu/ $codename main" >> ./gitaction.list
           #sudo mv -f ./gitaction.list /etc/apt/sources.list.d/
           sudo apt-get update -y && sudo apt-get install build-essential wget unzip -y
-          curl https://sh.rustup.rs -sSf | sh -s -- -y
+          # curl https://sh.rustup.rs -sSf | sh -s -- -y
           ls -lha $HOME/.cargo/bin
           # export PATH=$PATH:/bin/
           . "$HOME/.cargo/env"
@@ -137,6 +138,7 @@ jobs:
 
       - name: Executing core/imageutil/image_rs/build.sh script
         run: |
+          . "$HOME/.cargo/env"
           cd core/imageutil/image_rs
           bash build.sh
           cd ../../../
@@ -237,7 +239,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          curl https://sh.rustup.rs -sSf | sh -s -- -y
+          # curl https://sh.rustup.rs -sSf | sh -s -- -y
           ls -lha $HOME/.cargo/bin
           # export PATH=$PATH:/bin/
           . "$HOME/.cargo/env"
@@ -248,6 +250,7 @@ jobs:
 
       - name: Executing core/imageutil/image_rs/build.sh script
         run: |
+          . "$HOME/.cargo/env"
           cd core/imageutil/image_rs
           bash build.sh
           cd ../../../
@@ -406,6 +409,7 @@ jobs:
 
       - name: Executing core/imageutil/image_rs/build.sh script
         run: |
+          . "$HOME/.cargo/env"
           cd core/imageutil/image_rs
           bash build.sh
           cd ../../../
