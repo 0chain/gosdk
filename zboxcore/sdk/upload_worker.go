@@ -26,7 +26,7 @@ type UploadOperation struct {
 	isDownload    bool
 }
 
-var ErrPauseUpload = errors.New("retry_operation")
+var ErrPauseUpload = errors.New("upload paused by user")
 
 func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
 	if uo.isDownload {

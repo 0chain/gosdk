@@ -123,7 +123,7 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 			latestRespMsg = string(respBody)
 			latestStatusCode = resp.StatusCode
 			if resp.StatusCode == http.StatusOK {
-				l.Logger.Info(blobber.Baseurl, " connection obj created.")
+				l.Logger.Debug(blobber.Baseurl, " connection obj created.")
 				return
 			}
 
@@ -159,7 +159,7 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 }
 
 func (mo *MultiOperation) Process() error {
-	l.Logger.Info("MultiOperation Process start")
+	l.Logger.Debug("MultiOperation Process start")
 	wg := &sync.WaitGroup{}
 	mo.changes = make([][]allocationchange.AllocationChange, len(mo.operations))
 	ctx := mo.ctx
@@ -222,7 +222,7 @@ func (mo *MultiOperation) Process() error {
 		return fmt.Errorf("Operation failed: %s", err.Error())
 	}
 
-	l.Logger.Info("Trying to lock write marker.....")
+	l.Logger.Debug("Trying to lock write marker.....")
 	if singleClientMode {
 		mo.allocationObj.commitMutex.Lock()
 	} else {
@@ -232,7 +232,7 @@ func (mo *MultiOperation) Process() error {
 			return fmt.Errorf("Operation failed: %s", err.Error())
 		}
 	}
-	logger.Logger.Info("[writemarkerLocked]", time.Since(start).Milliseconds())
+	logger.Logger.Debug("[writemarkerLocked]", time.Since(start).Milliseconds())
 	start = time.Now()
 	status := Commit
 	if !mo.isRepair && !mo.allocationObj.checkStatus {
@@ -289,7 +289,7 @@ func (mo *MultiOperation) Process() error {
 		}
 		return ErrRetryOperation
 	}
-	logger.Logger.Info("[checkAllocStatus]", time.Since(start).Milliseconds())
+	logger.Logger.Debug("[checkAllocStatus]", time.Since(start).Milliseconds())
 	mo.Consensus.Reset()
 	activeBlobbers := mo.operationMask.CountOnes()
 	commitReqs := make([]*CommitRequest, activeBlobbers)
@@ -312,28 +312,28 @@ func (mo *MultiOperation) Process() error {
 
 		commitReq.changes = append(commitReq.changes, mo.changes[pos]...)
 		commitReqs[counter] = commitReq
-		l.Logger.Info("Commit request sending to blobber ", commitReq.blobber.Baseurl)
+		l.Logger.Debug("Commit request sending to blobber ", commitReq.blobber.Baseurl)
 		go AddCommitRequest(commitReq)
 		counter++
 	}
 	wg.Wait()
-	logger.Logger.Info("[commitRequests]", time.Since(start).Milliseconds())
+	logger.Logger.Debug("[commitRequests]", time.Since(start).Milliseconds())
 	rollbackMask := zboxutil.NewUint128(0)
 	errSlice := make([]error, len(commitReqs))
 	for idx, commitReq := range commitReqs {
 		if commitReq.result != nil {
 			if commitReq.result.Success {
-				l.Logger.Info("Commit success", commitReq.blobber.Baseurl)
+				l.Logger.Debug("Commit success", commitReq.blobber.Baseurl)
 				if !mo.isRepair {
 					rollbackMask = rollbackMask.Or(zboxutil.NewUint128(1).Lsh(commitReq.blobberInd))
 				}
 				mo.consensus++
 			} else {
 				errSlice[idx] = errors.New("commit_failed", commitReq.result.ErrorMessage)
-				l.Logger.Info("Commit failed", commitReq.blobber.Baseurl, commitReq.result.ErrorMessage)
+				l.Logger.Error("Commit failed", commitReq.blobber.Baseurl, commitReq.result.ErrorMessage)
 			}
 		} else {
-			l.Logger.Info("Commit result not set", commitReq.blobber.Baseurl)
+			l.Logger.Debug("Commit result not set", commitReq.blobber.Baseurl)
 		}
 	}
 

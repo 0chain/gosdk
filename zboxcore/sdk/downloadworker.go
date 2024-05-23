@@ -524,7 +524,7 @@ func (req *DownloadRequest) processDownload() {
 		var pos uint64
 		req.bufferMap = make(map[int]zboxutil.DownloadBuffer)
 		defer func() {
-			l.Logger.Info("Clearing download buffers: ", len(req.bufferMap))
+			l.Logger.Debug("Clearing download buffers: ", len(req.bufferMap))
 			for ind, rb := range req.bufferMap {
 				rb.ClearBuffer()
 				delete(req.bufferMap, ind)
@@ -759,7 +759,7 @@ func (req *DownloadRequest) processDownload() {
 	wg.Wait()
 	// req.fileHandler.Sync() //nolint
 	elapsedGetBlocksAndWrite := time.Since(now) - elapsedInitEC - elapsedInitEncryption
-	l.Logger.Info(fmt.Sprintf("[processDownload] Timings:\n allocation_id: %s,\n remotefilepath: %s,\n initEC: %d ms,\n initEncryption: %d ms,\n getBlocks and writes: %d ms",
+	l.Logger.Debug(fmt.Sprintf("[processDownload] Timings:\n allocation_id: %s,\n remotefilepath: %s,\n initEC: %d ms,\n initEncryption: %d ms,\n getBlocks and writes: %d ms",
 		req.allocationID,
 		req.remotefilepath,
 		elapsedInitEC.Milliseconds(),
@@ -769,7 +769,7 @@ func (req *DownloadRequest) processDownload() {
 
 	if req.statusCallback != nil && !req.skip {
 		req.statusCallback.Completed(
-			req.allocationID, remotePathCB, fRef.Name, "", int(size), op)
+			req.allocationID, remotePathCB, fRef.Name, fRef.MimeType, int(size), op)
 	}
 	if req.downloadStorer != nil {
 		req.downloadStorer.Remove() //nolint:errcheck
