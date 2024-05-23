@@ -429,10 +429,16 @@ jobs:
           bash build.sh
           cd ../../../
 
+      - name: 'Upload pkg as an Artifact'
+        uses: actions/upload-artifact@v3
+        with:
+          name: pkg
+          path: core/imageutil/image_rs/pkg
+
       - name: Build wasm binary
         run:  docker run --rm -v $PWD:/gosdk -w /gosdk golang:1.21.5 make wasm-build
 
-      - name: 'Upload Artifact'
+      - name: 'Upload zcn.wasm as an Artifact'
         uses: actions/upload-artifact@v3
         with:
           name: zcn.wasm
