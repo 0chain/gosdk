@@ -955,10 +955,10 @@ func repairAllocation(allocationID string) error {
 	return statusBar.CheckError()
 }
 
-func checkAllocStatus(allocationID string) ([]byte, error) {
+func checkAllocStatus(allocationID string) (string, error) {
 	alloc, err := getAllocation(allocationID)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	status, blobberStatus, err := alloc.CheckAllocStatus()
 	var statusStr string
@@ -977,10 +977,10 @@ func checkAllocStatus(allocationID string) ([]byte, error) {
 	}
 	statusBytes, err := json.Marshal(statusResult)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	return statusBytes, err
+	return string(statusBytes), err
 }
 
 func skipStatusCheck(allocationID string, checkStatus bool) error {
