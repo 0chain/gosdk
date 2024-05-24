@@ -826,14 +826,14 @@ func (b *BridgeClient) prepareUniswapNetwork(ctx context.Context, value *big.Int
 		opts.Value = value
 	}
 
-	//var gasLimitUnits uint64
-	//
-	//gasLimitUnits, err = b.ethereumClient.EstimateGas(ctx, opts)
-	//if err != nil {
-	//	return nil, nil, errors.Wrap(err, "failed to estimate gas limit")
-	//}
+	var gasLimitUnits uint64
 
-	gasLimitUnits := addPercents(400000, 10).Uint64()
+	gasLimitUnits, err = b.ethereumClient.EstimateGas(ctx, opts)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to estimate gas limit")
+	}
+
+	gasLimitUnits = addPercents(gasLimitUnits, 10).Uint64()
 
 	transactOpts := b.CreateSignedTransactionFromKeyStore(b.ethereumClient, gasLimitUnits)
 	if value.Int64() != 0 {
@@ -882,14 +882,14 @@ func (b *BridgeClient) prepareUniswapRouter(ctx context.Context, value *big.Int,
 		opts.Value = value
 	}
 
-	//var gasLimitUnits uint64
-	//
-	//gasLimitUnits, err = b.ethereumClient.EstimateGas(ctx, opts)
-	//if err != nil {
-	//	return nil, nil, errors.Wrap(err, "failed to estimate gas limit")
-	//}
+	var gasLimitUnits uint64
 
-	gasLimitUnits := addPercents(400000, 10).Uint64()
+	gasLimitUnits, err = b.ethereumClient.EstimateGas(ctx, opts)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to estimate gas limit")
+	}
+
+	gasLimitUnits = addPercents(gasLimitUnits, 10).Uint64()
 
 	transactOpts := b.CreateSignedTransactionFromKeyStore(b.ethereumClient, gasLimitUnits)
 	if value.Int64() != 0 {
