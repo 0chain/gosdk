@@ -1411,7 +1411,7 @@ func (a *Allocation) getRefs(path, pathHash, authToken, offsetPath, updatedDate,
 		ctx:            a.ctx,
 	}
 	oTreeReq.fullconsensus = a.fullconsensus
-	oTreeReq.consensusThresh = a.consensusThreshold
+	oTreeReq.consensusThresh = a.DataShards
 	return oTreeReq.GetRefs()
 }
 

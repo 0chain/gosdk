@@ -72,9 +72,9 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 			l.Logger.Error("Error while getting file refs from blobber:", oTreeResponse.err)
 			continue
 		}
-		var similarFieldRefs []SimilarField
+		var similarFieldRefs []string
 		for _, ref := range oTreeResponse.oTResult.Refs {
-			similarFieldRefs = append(similarFieldRefs, ref.SimilarField)
+			similarFieldRefs = append(similarFieldRefs, ref.SimilarField.FileMetaHash)
 		}
 		refsMarshall, err := json.Marshal(similarFieldRefs)
 		if err != nil {
@@ -107,6 +107,9 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 
 	if selected != nil {
 		return selected, nil
+	}
+	if majorError != nil {
+		l.Logger.Error("error while gettings refs: ", majorError)
 	}
 	return nil, errors.New("consensus_failed", "Refs consensus is less than consensus threshold")
 }
