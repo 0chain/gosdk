@@ -48,6 +48,7 @@ var (
 	CancelOpCtx                      = make(map[string]context.CancelCauseFunc)
 	cancelLock                       sync.Mutex
 	CurrentMode                      = UploadModeMedium
+	shouldSaveProgress               = true
 )
 
 // DefaultChunkSize default chunk size for file and thumbnail
@@ -224,7 +225,7 @@ func CreateChunkedUpload(
 		opt(su)
 	}
 
-	if su.progressStorer == nil {
+	if su.progressStorer == nil && shouldSaveProgress {
 		su.progressStorer = createFsChunkedUploadProgress(context.Background())
 	}
 
@@ -352,27 +353,34 @@ func (su *ChunkedUpload) loadProgress() {
 	su.progress.ChunkIndex = -1
 
 	progressID := su.progressID()
+	if shouldSaveProgress {
+		progress := su.progressStorer.Load(progressID)
 
-	progress := su.progressStorer.Load(progressID)
-
-	if progress != nil {
-		su.progress = *progress
-		su.progress.ID = progressID
+		if progress != nil {
+			su.progress = *progress
+			su.progress.ID = progressID
+		}
 	}
 }
 
 // saveProgress save progress to ~/.zcn/upload/[progressID]
 func (su *ChunkedUpload) saveProgress() {
-	su.progressStorer.Save(su.progress)
+	if su.progressStorer != nil {
+		su.progressStorer.Save(su.progress)
+	}
 }
 
 // removeProgress remove progress info once it is done
 func (su *ChunkedUpload) removeProgress() {
-	su.progressStorer.Remove(su.progress.ID) //nolint
+	if su.progressStorer != nil {
+		su.progressStorer.Remove(su.progress.ID) //nolint
+	}
 }
 
 func (su *ChunkedUpload) updateProgress(chunkIndex int) {
-	su.progressStorer.Update(su.progress.ID, chunkIndex)
+	if su.progressStorer != nil {
+		su.progressStorer.Update(su.progress.ID, chunkIndex)
+	}
 }
 
 // createUploadProgress create a new UploadProgress
@@ -697,6 +705,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		su.removeProgress()
 		return thrown.New("upload_failed", fmt.Sprintf("Upload failed. %s", err))
 	}
+	logger.Logger.Info("uploadingData: ", blobberUpload.chunkStartIndex, " - ", blobberUpload.chunkEndIndex, " ", isFinal, " ", su.fileMeta.RemotePath)
 	if !lastBufferOnly {
 		su.uploadWG.Add(1)
 		select {
@@ -708,7 +717,9 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 
 	if isFinal {
 		close(su.uploadChan)
+		logger.Logger.Info("Waiting for upload to complete")
 		su.uploadWG.Wait()
+		logger.Logger.Info("Upload completed")
 		select {
 		case <-su.ctx.Done():
 			return context.Cause(su.ctx)
@@ -777,6 +788,9 @@ func (su *ChunkedUpload) processCommit() error {
 
 // getShardSize will return the size of data of a file each blobber is getting.
 func getShardSize(dataSize int64, dataShards int, isEncrypted bool) int64 {
+	if dataSize == 0 {
+		return 0
+	}
 	chunkSize := int64(DefaultChunkSize)
 	if isEncrypted {
 		chunkSize -= (EncryptedDataPaddingSize + EncryptionHeaderSize)
@@ -806,6 +820,7 @@ func (su *ChunkedUpload) uploadProcessor() {
 				return
 			}
 			su.uploadToBlobbers(uploadData) //nolint:errcheck
+			logger.Logger.Info("upload_processor_complete: ", uploadData.chunkEndIndex, " ", uploadData.isFinal, " ", su.fileMeta.RemotePath)
 			su.uploadWG.Done()
 		}
 	}
