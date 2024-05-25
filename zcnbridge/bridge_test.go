@@ -3,20 +3,16 @@ package zcnbridge
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"github.com/0chain/gosdk/zcnbridge/ethereum/uniswapnetwork"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"log"
 	"math/big"
-	"net/http"
-	"net/http/httptest"
 	"os"
-	"os/signal"
 	"path"
 	"strconv"
-	"syscall"
 	"testing"
 	"time"
 
-	"github.com/0chain/gosdk/zcnbridge/ethereum/bancornetwork"
 	"github.com/0chain/gosdk/zcnbridge/ethereum/zcntoken"
 
 	sdkcommon "github.com/0chain/gosdk/core/common"
@@ -53,8 +49,7 @@ const (
 	bridgeAddress      = "0x7bbbEa24ac1751317D7669f05558632c4A9113D7"
 	tokenAddress       = "0xb9EF770B6A5e12E45983C5D80545258aA38F3B78"
 	authorizersAddress = "0xEAe8229c0E457efBA1A1769e7F8c20110fF68E61"
-
-	sourceAddress = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
+	uniswapAddress     = "0x2d899d91a7ccd2126e03459ea08f6a8ad3342289"
 
 	zcnTxnID = "b26abeb31fcee5d2e75b26717722938a06fa5ce4a5b5e68ddad68357432caace"
 	amount   = 1
@@ -223,7 +218,7 @@ func getEthereumClient(t mock.TestingT) *bridgemocks.EthereumClient {
 	return bridgemocks.NewEthereumClient(&ethereumClientMock{t})
 }
 
-func getBridgeClient(bancorAPIURL, ethereumNodeURL string, ethereumClient EthereumClient, transactionProvider transaction.TransactionProvider, keyStore KeyStore) *BridgeClient {
+func getBridgeClient(ethereumNodeURL string, ethereumClient EthereumClient, transactionProvider transaction.TransactionProvider, keyStore KeyStore) *BridgeClient {
 	cfg := viper.New()
 
 	tempConfigFile, err := os.CreateTemp(".", "config.yaml")
@@ -243,6 +238,7 @@ func getBridgeClient(bancorAPIURL, ethereumNodeURL string, ethereumClient Ethere
 	cfg.SetDefault("bridge.bridge_address", bridgeAddress)
 	cfg.SetDefault("bridge.token_address", tokenAddress)
 	cfg.SetDefault("bridge.authorizers_address", authorizersAddress)
+	cfg.SetDefault("bridge.uniswap_address", uniswapAddress)
 	cfg.SetDefault("bridge.ethereum_address", ethereumAddress)
 	cfg.SetDefault("bridge.password", password)
 	cfg.SetDefault("bridge.gas_limit", 0)
@@ -252,12 +248,13 @@ func getBridgeClient(bancorAPIURL, ethereumNodeURL string, ethereumClient Ethere
 		cfg.GetString("bridge.bridge_address"),
 		cfg.GetString("bridge.token_address"),
 		cfg.GetString("bridge.authorizers_address"),
+		cfg.GetString("bridge.uniswap_address"),
 		cfg.GetString("bridge.ethereum_address"),
 		ethereumNodeURL,
 		cfg.GetString("bridge.password"),
 		cfg.GetUint64("bridge.gas_limit"),
 		cfg.GetFloat64("bridge.consensus_threshold"),
-		bancorAPIURL,
+
 		ethereumClient,
 		transactionProvider,
 		keyStore,
@@ -310,38 +307,6 @@ func prepareKeyStoreGeneralMockCalls(keyStore *bridgemocks.KeyStore) {
 	keyStore.On("GetEthereumKeyStore").Return(ks)
 }
 
-func prepareBancorMockServer() string {
-	ts := httptest.NewServer(
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			_, err := fmt.Fprintln(w, `{"data":{"dltId":"0xb9EF770B6A5e12E45983C5D80545258aA38F3B78","symbol":"ZCN","decimals":10,"rate":{"bnt":"0.175290404525335519","usd":"0.100266","eur":"0.094499","eth":"1"},"rate24hAgo":{"bnt":"0.175290404525335519","usd":"0.100266","eur":"0.094499","eth":"0.000064086171894462"}},"timestamp":{"ethereum":{"block":18333798,"timestamp":1697107211}}}`)
-			if err != nil {
-				log.Fatalln(err)
-			}
-		}))
-
-	sigs := make(chan os.Signal, 1)
-
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-
-	go func() {
-		load := time.NewTicker(time.Millisecond * 500)
-
-		for range load.C {
-			select {
-			case <-sigs:
-				load.Stop()
-
-				ts.Close()
-
-				close(sigs)
-			default:
-			}
-		}
-	}()
-
-	return ts.URL
-}
-
 func Test_ZCNBridge(t *testing.T) {
 	ethereumClient := getEthereumClient(t)
 	prepareEthereumClientGeneralMockCalls(&ethereumClient.Mock)
@@ -355,9 +320,7 @@ func Test_ZCNBridge(t *testing.T) {
 	keyStore := getKeyStore(t)
 	prepareKeyStoreGeneralMockCalls(keyStore)
 
-	bancorMockServerURL := prepareBancorMockServer()
-
-	bridgeClient := getBridgeClient(bancorMockServerURL, alchemyEthereumNodeURL, ethereumClient, transactionProvider, keyStore)
+	bridgeClient := getBridgeClient(alchemyEthereumNodeURL, ethereumClient, transactionProvider, keyStore)
 
 	t.Run("should update authorizer config.", func(t *testing.T) {
 		source := &authorizerNodeSource{
@@ -398,10 +361,10 @@ func Test_ZCNBridge(t *testing.T) {
 		to := common.HexToAddress(bridgeAddress)
 		fromAddress := common.HexToAddress(ethereumAddress)
 
-		abi, err := binding.BridgeMetaData.GetAbi()
+		rawAbi, err := binding.BridgeMetaData.GetAbi()
 		require.NoError(t, err)
 
-		pack, err := abi.Pack("mint", common.HexToAddress(ethereumAddress),
+		pack, err := rawAbi.Pack("mint", common.HexToAddress(ethereumAddress),
 			big.NewInt(amount),
 			DefaultClientIDEncoder(zcnTxnID),
 			big.NewInt(nonce),
@@ -427,10 +390,10 @@ func Test_ZCNBridge(t *testing.T) {
 		to := common.HexToAddress(bridgeAddress)
 		fromAddress := common.HexToAddress(ethereumAddress)
 
-		abi, err := binding.BridgeMetaData.GetAbi()
+		rawAbi, err := binding.BridgeMetaData.GetAbi()
 		require.NoError(t, err)
 
-		pack, err := abi.Pack("burn", big.NewInt(amount), DefaultClientIDEncoder(zcncore.GetClientWalletID()))
+		pack, err := rawAbi.Pack("burn", big.NewInt(amount), DefaultClientIDEncoder(zcncore.GetClientWalletID()))
 		require.NoError(t, err)
 
 		require.True(t, ethereumClient.AssertCalled(
@@ -492,10 +455,10 @@ func Test_ZCNBridge(t *testing.T) {
 		to := common.HexToAddress(authorizersAddress)
 		fromAddress := common.HexToAddress(ethereumAddress)
 
-		abi, err := authorizers.AuthorizersMetaData.GetAbi()
+		rawAbi, err := authorizers.AuthorizersMetaData.GetAbi()
 		require.NoError(t, err)
 
-		pack, err := abi.Pack("addAuthorizers", common.HexToAddress(authorizerDelegatedAddress))
+		pack, err := rawAbi.Pack("addAuthorizers", common.HexToAddress(authorizerDelegatedAddress))
 		require.NoError(t, err)
 
 		require.True(t, ethereumClient.AssertCalled(
@@ -517,10 +480,10 @@ func Test_ZCNBridge(t *testing.T) {
 		to := common.HexToAddress(authorizersAddress)
 		fromAddress := common.HexToAddress(ethereumAddress)
 
-		abi, err := authorizers.AuthorizersMetaData.GetAbi()
+		rawAbi, err := authorizers.AuthorizersMetaData.GetAbi()
 		require.NoError(t, err)
 
-		pack, err := abi.Pack("removeAuthorizers", common.HexToAddress(authorizerDelegatedAddress))
+		pack, err := rawAbi.Pack("removeAuthorizers", common.HexToAddress(authorizerDelegatedAddress))
 		require.NoError(t, err)
 
 		require.True(t, ethereumClient.AssertCalled(
@@ -544,10 +507,10 @@ func Test_ZCNBridge(t *testing.T) {
 		to := common.HexToAddress(tokenAddress)
 		fromAddress := common.HexToAddress(ethereumAddress)
 
-		abi, err := zcntoken.TokenMetaData.GetAbi()
+		rawAbi, err := zcntoken.TokenMetaData.GetAbi()
 		require.NoError(t, err)
 
-		pack, err := abi.Pack("increaseApproval", spenderAddress, big.NewInt(amount))
+		pack, err := rawAbi.Pack("increaseApproval", spenderAddress, big.NewInt(amount))
 		require.NoError(t, err)
 
 		require.True(t, ethereumClient.AssertCalled(
@@ -562,38 +525,27 @@ func Test_ZCNBridge(t *testing.T) {
 		))
 	})
 
-	t.Run("should check configuration used by Swap", func(t *testing.T) {
-		// 1. Predefined deadline period
-		deadlinePeriod := time.Date(2009, 11, 17, 20, 34, 58, 651387237, time.UTC)
-
-		_, err := bridgeClient.Swap(context.Background(), SourceTokenETHAddress, amount, big.NewInt(amount), deadlinePeriod)
+	t.Run("should check configuration used by SwapETH", func(t *testing.T) {
+		_, err := bridgeClient.SwapETH(context.Background(), amount, amount)
 		require.NoError(t, err)
 
-		// 2. Trade deadline
-		deadline := big.NewInt(deadlinePeriod.Unix())
+		// 1. To address parameter.
+		to := common.HexToAddress(bridgeClient.TokenAddress)
+
+		// 2. From address parameter.
+		from := common.HexToAddress(bridgeClient.EthereumAddress)
 
 		// 3. Swap amount parameter
 		swapAmount := big.NewInt(amount)
 
-		// 4. User's Ethereum wallet address.
-		beneficiary := common.HexToAddress(ethereumAddress)
+		var rawAbi *abi.ABI
 
-		// 5. Source zcntoken address parameter
-		from := common.HexToAddress(sourceAddress)
-
-		// 6. Target zcntoken address parameter
-		to := common.HexToAddress(tokenAddress)
-
-		// 7. Max trade zcntoken amount
-		maxAmount := big.NewInt(amount)
-
-		// 8. Bancor network smart contract address
-		contractAddress := common.HexToAddress(BancorNetworkAddress)
-
-		abi, err := bancornetwork.BancorMetaData.GetAbi()
+		rawAbi, err = uniswapnetwork.UniswapMetaData.GetAbi()
 		require.NoError(t, err)
 
-		pack, err := abi.Pack("tradeByTargetAmount", from, to, swapAmount, maxAmount, deadline, beneficiary)
+		var pack []byte
+
+		pack, err = rawAbi.Pack("swapETHForZCNExactAmountOut", swapAmount)
 		require.NoError(t, err)
 
 		require.True(t, ethereumClient.AssertCalled(
@@ -601,10 +553,45 @@ func Test_ZCNBridge(t *testing.T) {
 			"EstimateGas",
 			context.Background(),
 			eth.CallMsg{
-				To:    &contractAddress,
-				From:  beneficiary,
+				To:    &to,
+				From:  from,
 				Data:  pack,
-				Value: maxAmount,
+				Value: swapAmount,
+			},
+		))
+	})
+
+	t.Run("should check configuration used by SwapUSDC", func(t *testing.T) {
+		_, err := bridgeClient.SwapUSDC(context.Background(), amount, amount)
+		require.NoError(t, err)
+
+		// 1. To address parameter.
+		to := common.HexToAddress(bridgeClient.TokenAddress)
+
+		// 2. From address parameter.
+		from := common.HexToAddress(bridgeClient.EthereumAddress)
+
+		// 3. Swap amount parameter
+		swapAmount := big.NewInt(amount)
+
+		var rawAbi *abi.ABI
+
+		rawAbi, err = uniswapnetwork.UniswapMetaData.GetAbi()
+		require.NoError(t, err)
+
+		var pack []byte
+
+		pack, err = rawAbi.Pack("swapUSDCForZCNExactAmountOut", swapAmount, swapAmount)
+		require.NoError(t, err)
+
+		require.True(t, ethereumClient.AssertCalled(
+			t,
+			"EstimateGas",
+			context.Background(),
+			eth.CallMsg{
+				To:   &to,
+				From: from,
+				Data: pack,
 			},
 		))
 	})
@@ -630,21 +617,21 @@ func Test_ZCNBridge(t *testing.T) {
 	})
 
 	t.Run("should check if gas price estimation works with correct alchemy ethereum node url", func(t *testing.T) {
-		bridgeClient = getBridgeClient(bancorMockServerURL, alchemyEthereumNodeURL, ethereumClient, transactionProvider, keyStore)
+		bridgeClient = getBridgeClient(alchemyEthereumNodeURL, ethereumClient, transactionProvider, keyStore)
 
 		_, err := bridgeClient.EstimateGasPrice(context.Background())
 		require.Contains(t, err.Error(), "Must be authenticated!")
 	})
 
 	t.Run("should check if gas price estimation works with correct tenderly ethereum node url", func(t *testing.T) {
-		bridgeClient = getBridgeClient(bancorMockServerURL, tenderlyEthereumNodeURL, ethereumClient, transactionProvider, keyStore)
+		bridgeClient = getBridgeClient(tenderlyEthereumNodeURL, ethereumClient, transactionProvider, keyStore)
 
 		_, err := bridgeClient.EstimateGasPrice(context.Background())
 		require.NoError(t, err)
 	})
 
 	t.Run("should check if gas price estimation works with incorrect ethereum node url", func(t *testing.T) {
-		bridgeClient = getBridgeClient(bancorMockServerURL, infuraEthereumNodeURL, ethereumClient, transactionProvider, keyStore)
+		bridgeClient = getBridgeClient(infuraEthereumNodeURL, ethereumClient, transactionProvider, keyStore)
 
 		_, err := bridgeClient.EstimateGasPrice(context.Background())
 		require.Error(t, err)

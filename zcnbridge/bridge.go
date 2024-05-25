@@ -681,7 +681,7 @@ func (b *BridgeClient) ApproveUSDCSwap(ctx context.Context, source uint64) (*typ
 	}
 
 	Logger.Info(
-		"Starting Approve",
+		"Starting ApproveUSDCSwap",
 		zap.String("usdctoken", tokenAddress.String()),
 		zap.String("spender", spenderAddress.String()),
 		zap.Int64("source", sourceInt.Int64()),
