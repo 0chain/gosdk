@@ -118,38 +118,38 @@ func BenchmarkThumbnail(b *testing.B) {
 	inpData := []inp{
 		// bmp
 		{
-			name: "sample_640*426.bmp", filePath: filepath.Join("benchmark_data", "sample_640*426.bmp"),
+			name: "sample_640x426.bmp", filePath: filepath.Join("benchmark_data", "sample_640x426.bmp"),
 			width: 120, height: 90,
 		},
 		{
-			name: "sample_1280*853.bmp", filePath: filepath.Join("benchmark_data", "sample_1280*853.bmp"),
+			name: "sample_1280x853.bmp", filePath: filepath.Join("benchmark_data", "sample_1280x853.bmp"),
 			width: 120, height: 90,
 		},
 		// exr
 		{
-			name: "sample_640*426.exr", filePath: filepath.Join("benchmark_data", "sample_640*426.exr"),
+			name: "sample_640x426.exr", filePath: filepath.Join("benchmark_data", "sample_640x426.exr"),
 			width: 120, height: 90,
 		},
 		{
-			name: "sample_1280*853.exr", filePath: filepath.Join("benchmark_data", "sample_1280*853.exr"),
+			name: "sample_1280x853.exr", filePath: filepath.Join("benchmark_data", "sample_1280x853.exr"),
 			width: 120, height: 90,
 		},
 		// gif
 		{
-			name: "sample_640*426.gif", filePath: filepath.Join("benchmark_data", "sample_640*426.gif"),
+			name: "sample_640x426.gif", filePath: filepath.Join("benchmark_data", "sample_640x426.gif"),
 			width: 120, height: 90,
 		},
 		{
-			name: "sample_1280*853.gif", filePath: filepath.Join("benchmark_data", "sample_1280*853.gif"),
+			name: "sample_1280x853.gif", filePath: filepath.Join("benchmark_data", "sample_1280x853.gif"),
 			width: 120, height: 90,
 		},
 		// ico
 		{
-			name: "sample_640*426.ico", filePath: filepath.Join("benchmark_data", "sample_640*426.ico"),
+			name: "sample_640x426.ico", filePath: filepath.Join("benchmark_data", "sample_640x426.ico"),
 			width: 120, height: 90,
 		},
 		{
-			name: "sample_1280*853.ico", filePath: filepath.Join("benchmark_data", "sample_1280*853.ico"),
+			name: "sample_1280x853.ico", filePath: filepath.Join("benchmark_data", "sample_1280x853.ico"),
 			width: 120, height: 90,
 		},
 		// jfif
@@ -159,65 +159,65 @@ func BenchmarkThumbnail(b *testing.B) {
 		},
 		// jpe
 		{
-			name: "sample_640*426.jpe", filePath: filepath.Join("benchmark_data", "sample_640*426.jpe"),
+			name: "sample_640x426.jpe", filePath: filepath.Join("benchmark_data", "sample_640x426.jpe"),
 			width: 120, height: 90,
 		},
 		{
-			name: "sample_1280*853.jpe", filePath: filepath.Join("benchmark_data", "sample_1280*853.jpe"),
+			name: "sample_1280x853.jpe", filePath: filepath.Join("benchmark_data", "sample_1280x853.jpe"),
 			width: 120, height: 90,
 		},
 		// jpeg
 		{
-			name: "sample_640*426.jpeg", filePath: filepath.Join("benchmark_data", "sample_640*426.jpeg"),
+			name: "sample_640x426.jpeg", filePath: filepath.Join("benchmark_data", "sample_640x426.jpeg"),
 			width: 120, height: 90,
 		},
 		{
-			name: "sample_1280*853.jpeg", filePath: filepath.Join("benchmark_data", "sample_1280*853.jpeg"),
+			name: "sample_1280x853.jpeg", filePath: filepath.Join("benchmark_data", "sample_1280x853.jpeg"),
 			width: 120, height: 90,
 		},
 		// jpg
 		{
-			name: "sample_640*426.jpg", filePath: filepath.Join("benchmark_data", "sample_640*426.jpg"),
+			name: "sample_640x426.jpg", filePath: filepath.Join("benchmark_data", "sample_640x426.jpg"),
 			width: 120, height: 90,
 		},
 		{
-			name: "sample_1280*853.jpg", filePath: filepath.Join("benchmark_data", "sample_1280*853.jpg"),
+			name: "sample_1280x853.jpg", filePath: filepath.Join("benchmark_data", "sample_1280x853.jpg"),
 			width: 120, height: 90,
 		},
 		// jps
 		{
-			name: "sample_640*426.jps", filePath: filepath.Join("benchmark_data", "sample_640*426.jps"),
+			name: "sample_640x426.jps", filePath: filepath.Join("benchmark_data", "sample_640x426.jps"),
 			width: 120, height: 90,
 		},
 		{
-			name: "sample_1280*853.jps", filePath: filepath.Join("benchmark_data", "sample_1280*853.jps"),
+			name: "sample_1280x853.jps", filePath: filepath.Join("benchmark_data", "sample_1280x853.jps"),
 			width: 120, height: 90,
 		},
 		// png
 		{
-			name: "sample_640*426.png", filePath: filepath.Join("benchmark_data", "sample_640*426.png"),
+			name: "sample_640x426.png", filePath: filepath.Join("benchmark_data", "sample_640x426.png"),
 			width: 120, height: 90,
 		},
 		{
-			name: "sample_1280*853.png", filePath: filepath.Join("benchmark_data", "sample_1280*853.png"),
+			name: "sample_1280x853.png", filePath: filepath.Join("benchmark_data", "sample_1280x853.png"),
 			width: 120, height: 90,
 		},
 		// pnm
 		{
-			name: "sample_640*426.pnm", filePath: filepath.Join("benchmark_data", "sample_640*426.pnm"),
+			name: "sample_640x426.pnm", filePath: filepath.Join("benchmark_data", "sample_640x426.pnm"),
 			width: 120, height: 90,
 		},
 		{
-			name: "sample_1280*853.pnm", filePath: filepath.Join("benchmark_data", "sample_1280*853.pnm"),
+			name: "sample_1280x853.pnm", filePath: filepath.Join("benchmark_data", "sample_1280x853.pnm"),
 			width: 120, height: 90,
 		},
 		// tiff
 		{
-			name: "sample_640*426.tiff", filePath: filepath.Join("benchmark_data", "sample_640*426.tiff"),
+			name: "sample_640x426.tiff", filePath: filepath.Join("benchmark_data", "sample_640x426.tiff"),
 			width: 120, height: 90,
 		},
 		{
-			name: "sample_1280*853.tiff", filePath: filepath.Join("benchmark_data", "sample_1280*853.tiff"),
+			name: "sample_1280x853.tiff", filePath: filepath.Join("benchmark_data", "sample_1280x853.tiff"),
 			width: 120, height: 90,
 		},
 		// webp

@@ -19,6 +19,11 @@ var (
 	logging    *logger.Logger
 )
 
+const (
+	DefWidth = 120
+	DefHeight = 90
+)
+
 func init() {
 	var err error
 	imageRs, err = NewImageRs()
