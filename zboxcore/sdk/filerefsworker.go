@@ -30,6 +30,7 @@ const INVALID_PATH = "invalid_path"
 type ObjectTreeRequest struct {
 	allocationID   string
 	allocationTx   string
+	allocationObj  *Allocation
 	blobbers       []*blockchain.StorageNode
 	authToken      string
 	pathHash       string
@@ -57,11 +58,17 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 	totalBlobbersCount := len(o.blobbers)
 	oTreeResponses := make([]oTreeResponse, totalBlobbersCount)
 	o.wg.Add(totalBlobbersCount)
+	if singleClientMode {
+		o.allocationObj.commitMutex.RLock()
+	}
 	for i, blob := range o.blobbers {
 		l.Logger.Debug(fmt.Sprintf("Getting file refs for path %v from blobber %v", o.remotefilepath, blob.Baseurl))
 		go o.getFileRefs(&oTreeResponses[i], blob.Baseurl)
 	}
 	o.wg.Wait()
+	if singleClientMode {
+		o.allocationObj.commitMutex.RUnlock()
+	}
 	hashCount := make(map[string]int)
 	hashRefsMap := make(map[string]*ObjectTreeResult)
 	oTreeResponseErrors := make([]error, totalBlobbersCount)
