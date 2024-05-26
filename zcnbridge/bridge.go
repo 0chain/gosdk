@@ -841,53 +841,6 @@ func (b *BridgeClient) prepareUniswapNetwork(ctx context.Context, value *big.Int
 	return uniswapNetworkInstance, transactOpts, nil
 }
 
-func (b *BridgeClient) prepareUniswapRouter(ctx context.Context, value *big.Int, method string, params ...interface{}) (*uniswaprouter.Uniswaprouter, *bind.TransactOpts, error) {
-	// 1. Uniswap smart contract address
-	contractAddress := common.HexToAddress(b.UniswapAddress)
-
-	// 2. To address parameter.
-	to := common.HexToAddress(b.TokenAddress)
-
-	// 3. From address parameter.
-	from := common.HexToAddress(b.EthereumAddress)
-
-	abi, err := uniswaprouter.UniswaprouterMetaData.GetAbi()
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to get uniswapnetwork abi")
-	}
-
-	var pack []byte
-
-	pack, err = abi.Pack(method, params...)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to pack arguments")
-	}
-
-	opts := eth.CallMsg{
-		To:   &to,
-		From: from,
-		Data: pack,
-	}
-
-	if value.Int64() != 0 {
-		opts.Value = value
-	}
-
-	transactOpts := b.CreateSignedTransactionFromKeyStore(b.ethereumClient, 0)
-	if value.Int64() != 0 {
-		transactOpts.Value = value
-	}
-
-	var uniswapRouterInstance *uniswaprouter.Uniswaprouter
-
-	uniswapRouterInstance, err = uniswaprouter.NewUniswaprouter(contractAddress, b.ethereumClient)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to initialize uniswaprouter instance")
-	}
-
-	return uniswapRouterInstance, transactOpts, nil
-}
-
 func (b *BridgeClient) prepareToken(ctx context.Context, method string, tokenAddress common.Address, params ...interface{}) (*zcntoken.Token, *bind.TransactOpts, error) {
 	abi, err := zcntoken.TokenMetaData.GetAbi()
 	if err != nil {
