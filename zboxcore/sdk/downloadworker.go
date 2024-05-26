@@ -484,6 +484,7 @@ func (req *DownloadRequest) processDownload() {
 	}
 
 	if memFile, ok := req.fileHandler.(*sys.MemFile); ok {
+		l.Logger.Info("Initializing buffer for mem file: ", remainingSize)
 		memFile.InitBuffer(int(remainingSize))
 	}
 
@@ -1352,12 +1353,14 @@ func writeAtData(dest io.WriterAt, data [][][]byte, dataShards int, offset int64
 					n, err := dest.WriteAt(data[i][j], offset+int64(total))
 					total += n
 					if err != nil {
+						logger.Logger.Error("writeAt failed: ", err, " offset: ", offset, " total: ", total)
 						return total, err
 					}
 				} else {
 					n, err := dest.WriteAt(data[i][j][:lastBlock], offset+int64(total))
 					total += n
 					if err != nil {
+						logger.Logger.Error("writeAt failed: ", err, " offset: ", offset, " total: ", total)
 						return total, err
 					}
 				}

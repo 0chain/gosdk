@@ -2,6 +2,7 @@ package sys
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"io/fs"
 	"os"
@@ -33,7 +34,8 @@ func (f *MemFile) Write(p []byte) (n int, err error) {
 }
 
 func (f *MemFile) WriteAt(p []byte, offset int64) (n int, err error) {
-	if offset < 0 || offset > int64(len(f.Buffer)) {
+	if offset < 0 || offset > int64(len(f.Buffer)) || len(p) > len(f.Buffer)-int(offset) {
+		fmt.Println("offset out of range: ", offset, len(f.Buffer), len(p))
 		return 0, io.ErrShortWrite
 	}
 
