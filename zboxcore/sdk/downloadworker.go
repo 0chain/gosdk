@@ -484,7 +484,6 @@ func (req *DownloadRequest) processDownload() {
 	}
 
 	if memFile, ok := req.fileHandler.(*sys.MemFile); ok {
-		l.Logger.Info("Initializing buffer for mem file: ", remainingSize)
 		memFile.InitBuffer(int(remainingSize))
 	}
 
