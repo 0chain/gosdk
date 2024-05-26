@@ -731,6 +731,7 @@ func (req *DownloadRequest) processDownload() {
 					total, err = writeAtData(writeAtHandler, data, req.datashards, offset, -1)
 				}
 				if err != nil {
+					logger.Logger.Error("downloadFailed: ", startBlock+int64(j)*numBlocks, " remainingSize: ", remainingSize, " offset: ", offset)
 					return errors.Wrap(err, fmt.Sprintf("WriteAt failed for block %d. ", startBlock+int64(j)*numBlocks))
 				}
 				for _, rb := range req.bufferMap {
@@ -1368,6 +1369,7 @@ func writeAtData(dest io.WriterAt, data [][][]byte, dataShards int, offset int64
 				n, err := dest.WriteAt(data[i][j], offset+int64(total))
 				total += n
 				if err != nil {
+					logger.Logger.Error("writeAt failed: ", err, " offset: ", offset, " total: ", total)
 					return total, err
 				}
 			}
