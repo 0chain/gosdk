@@ -22,20 +22,14 @@ const (
 )
 
 const (
-	ZChainsClientConfigName  = "config.yaml"
-	ZChainWalletConfigName   = "wallet.json"
 	EthereumWalletStorageDir = "wallets"
 )
 
 const (
-	BancorNetworkAddress   = "0xeEF417e1D5CC832e619ae18D2F140De2999dD4fB"
-	SourceTokenETHAddress  = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
-	SourceTokenUSDCAddress = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
-	SourceTokenEURCAddress = "0x1aBaEA1f7C830bD89Acc67eC4af516284b1bC33c"
-	SourceTokenBNTAddress  = "0x1f573d6fb3f13d689ff844b4ce37794d79a7ff1c"
+	UniswapRouterAddress = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+	UsdcTokenAddress     = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+	WethTokenAddress     = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
 )
-
-const BancorAPIURL = "https://api-v3.bancor.network"
 
 type BridgeSDKConfig struct {
 	LogLevel        *string
@@ -60,6 +54,7 @@ type BridgeClient struct {
 	BridgeAddress,
 	TokenAddress,
 	AuthorizersAddress,
+	UniswapAddress,
 	NFTConfigAddress,
 	EthereumAddress,
 	EthereumNodeURL,
@@ -76,12 +71,12 @@ func NewBridgeClient(
 	bridgeAddress,
 	tokenAddress,
 	authorizersAddress,
+	uniswapAddress,
 	ethereumAddress,
 	ethereumNodeURL,
 	password string,
 	gasLimit uint64,
 	consensusThreshold float64,
-	bancorAPIURL string,
 	ethereumClient EthereumClient,
 	transactionProvider transaction.TransactionProvider,
 	keyStore KeyStore) *BridgeClient {
@@ -89,12 +84,12 @@ func NewBridgeClient(
 		BridgeAddress:       bridgeAddress,
 		TokenAddress:        tokenAddress,
 		AuthorizersAddress:  authorizersAddress,
+		UniswapAddress:      uniswapAddress,
 		EthereumAddress:     ethereumAddress,
 		EthereumNodeURL:     ethereumNodeURL,
 		Password:            password,
 		GasLimit:            gasLimit,
 		ConsensusThreshold:  consensusThreshold,
-		BancorAPIURL:        bancorAPIURL,
 		ethereumClient:      ethereumClient,
 		transactionProvider: transactionProvider,
 		keyStore:            keyStore,
@@ -150,12 +145,12 @@ func SetupBridgeClientSDK(cfg *BridgeSDKConfig) *BridgeClient {
 		chainCfg.GetString("bridge.bridge_address"),
 		chainCfg.GetString("bridge.token_address"),
 		chainCfg.GetString("bridge.authorizers_address"),
+		chainCfg.GetString("bridge.uniswap_address"),
 		chainCfg.GetString("bridge.ethereum_address"),
 		ethereumNodeURL,
 		chainCfg.GetString("bridge.password"),
 		chainCfg.GetUint64("bridge.gas_limit"),
 		chainCfg.GetFloat64("bridge.consensus_threshold"),
-		BancorAPIURL,
 		ethereumClient,
 		transactionProvider,
 		keyStore,
