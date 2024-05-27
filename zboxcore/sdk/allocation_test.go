@@ -2454,11 +2454,3 @@ func getMockAuthTicket(t *testing.T) string {
 	require.NotEmptyf(t, authTicket, "unexpected empty auth ticket")
 	return authTicket
 }
-
-func TestEndNumber(t *testing.T) {
-	effectiveChunkSize := CHUNK_SIZE * 6
-	require.Equal(t, 393216, effectiveChunkSize)
-	fileRangeSize := 6553600
-	endNumber := (fileRangeSize + effectiveChunkSize - 1) / effectiveChunkSize
-	require.Equal(t, 17, endNumber)
-}

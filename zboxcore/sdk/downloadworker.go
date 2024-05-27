@@ -726,7 +726,7 @@ func (req *DownloadRequest) processDownload() {
 				}
 				var total int
 				if j == n-1 {
-					total, err = writeAtData(writeAtHandler, data, req.datashards, offset, int(size-offset))
+					total, err = writeAtData(writeAtHandler, data, req.datashards, offset, int(remainingSize-offset))
 				} else {
 					total, err = writeAtData(writeAtHandler, data, req.datashards, offset, -1)
 				}
@@ -1352,14 +1352,14 @@ func writeAtData(dest io.WriterAt, data [][][]byte, dataShards int, offset int64
 					n, err := dest.WriteAt(data[i][j], offset+int64(total))
 					total += n
 					if err != nil {
-						logger.Logger.Error("writeAt failed: ", err, " offset: ", offset, " total: ", total)
+						logger.Logger.Error("writeAt failed: ", err, " offset: ", offset, " total: ", total, "toWriteData: ", len(data[i][j]), " lastBlock: ", lastBlock)
 						return total, err
 					}
 				} else {
 					n, err := dest.WriteAt(data[i][j][:lastBlock], offset+int64(total))
 					total += n
 					if err != nil {
-						logger.Logger.Error("writeAt failed: ", err, " offset: ", offset, " total: ", total)
+						logger.Logger.Error("writeAt failed: ", err, " offset: ", offset, " total: ", total, "toWriteData: ", len(data[i][j]), " lastBlock: ", lastBlock)
 						return total, err
 					}
 				}
