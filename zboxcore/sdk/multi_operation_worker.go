@@ -197,8 +197,12 @@ func (mo *MultiOperation) Process() error {
 	}
 	swg.Wait()
 
+	if ctx.Err() != nil {
+		return context.Cause(ctx)
+	}
+
 	// Check consensus
-	if mo.operationMask.CountOnes() < mo.consensusThresh || ctx.Err() != nil {
+	if mo.operationMask.CountOnes() < mo.consensusThresh {
 		majorErr := zboxutil.MajorError(errsSlice)
 		if majorErr != nil {
 			return errors.New("consensus_not_met",

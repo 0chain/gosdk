@@ -38,7 +38,10 @@ import (
 const (
 	DOWNLOAD_CONTENT_FULL  = "full"
 	DOWNLOAD_CONTENT_THUMB = "thumbnail"
-	EXTRA_COUNT            = 2
+)
+
+var (
+	extraCount = 2
 )
 
 type DownloadRequestOption func(dr *DownloadRequest)
@@ -531,7 +534,7 @@ func (req *DownloadRequest) processDownload() {
 			}
 			req.bufferMap = nil
 		}()
-		sz := downloadWorkerCount + EXTRA_COUNT
+		sz := downloadWorkerCount + extraCount
 		if sz > n {
 			sz = n
 		}
@@ -684,7 +687,7 @@ func (req *DownloadRequest) processDownload() {
 	firstReqWG := sync.WaitGroup{}
 	firstReqWG.Add(1)
 	eg, egCtx := errgroup.WithContext(ctx)
-	eg.SetLimit(downloadWorkerCount + EXTRA_COUNT)
+	eg.SetLimit(downloadWorkerCount + extraCount)
 	for i := 0; i < n; i++ {
 		j := i
 		if i == 1 {

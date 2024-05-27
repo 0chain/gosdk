@@ -6,6 +6,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"runtime/debug"
 	"sync"
 	"time"
 
@@ -274,6 +275,8 @@ func main() {
 	}
 
 	hideLogs()
+	debug.SetGCPercent(40)
+	debug.SetMemoryLimit(2.5 * 1024 * 1024 * 1024) //2.5 GB
 
 	<-make(chan bool)
 

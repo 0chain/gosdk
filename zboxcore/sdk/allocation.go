@@ -253,6 +253,7 @@ func SetMultiOpBatchSize(size int) {
 func SetWasm() {
 	IsWasm = true
 	BatchSize = 5
+	extraCount = 0
 }
 
 func (a *Allocation) SetCheckStatus(checkStatus bool) {
@@ -2344,8 +2345,10 @@ func (a *Allocation) PauseUpload(remotePath string) error {
 	cancelFunc, ok := CancelOpCtx[remotePath]
 	cancelLock.Unlock()
 	if !ok {
+		logger.Logger.Error("PauseUpload: remote path not found", remotePath)
 		return errors.New("remote_path_not_found", "Invalid path. No upload in progress for the path "+remotePath)
 	} else {
+		logger.Logger.Info("PauseUpload: remote path found", remotePath)
 		cancelFunc(ErrPauseUpload)
 	}
 	return nil
