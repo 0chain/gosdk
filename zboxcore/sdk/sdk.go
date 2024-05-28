@@ -662,14 +662,29 @@ type UpdateBlobber struct {
 	IsRestricted             *bool                               `json:"is_restricted,omitempty"`
 }
 
-type ResetBlobberStatsDto struct {
-	BlobberID     string `json:"blobber_id"`
-	PrevAllocated int64  `json:"prev_allocated"`
-	PrevSavedData int64  `json:"prev_saved_data"`
-	NewAllocated  int64  `json:"new_allocated"`
-	NewSavedData  int64  `json:"new_saved_data"`
+type ResetBlobberStatsV2Dto struct {
+	AllocatedUpdates   BlobberAllocatedUpdates   `json:"allocated_updates"`
+	SavedDataUpdates   BlobberSavedDataUpdates   `json:"saved_data_updates"`
+	TotalOffersUpdates BlobberTotalOffersUpdates `json:"total_offers_updates"`
 }
 
+type BlobberAllocatedUpdates struct {
+	BlobberIds    []string `json:"blobber_ids"`
+	PrevAllocated []int64  `json:"prev_allocated"`
+	NewAllocated  []int64  `json:"new_allocated"`
+}
+
+type BlobberSavedDataUpdates struct {
+	BlobberIds    []string `json:"blobber_ids"`
+	PrevSavedData []int64  `json:"prev_saved_data"`
+	NewSavedData  []int64  `json:"new_saved_data"`
+}
+
+type BlobberTotalOffersUpdates struct {
+	BlobberIds      []string        `json:"blobber_ids"`
+	PrevTotalOffers []currency.Coin `json:"prev_total_offers"`
+	NewTotalOffers  []currency.Coin `json:"new_total_offers"`
+}
 type Validator struct {
 	ID                       common.Key       `json:"validator_id"`
 	BaseURL                  string           `json:"url"`
@@ -1484,7 +1499,7 @@ func UpdateValidatorSettings(v *UpdateValidator) (resp string, nonce int64, err 
 	return
 }
 
-func ResetBlobberStats(rbs *ResetBlobberStatsDto) (string, int64, error) {
+func ResetBlobberStats(rbs *ResetBlobberStatsV2Dto) (string, int64, error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
 	}
