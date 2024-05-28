@@ -662,10 +662,10 @@ type UpdateBlobber struct {
 	IsRestricted             *bool                               `json:"is_restricted,omitempty"`
 }
 
-type ResetBlobberStatsV2Dto struct {
-	AllocatedUpdates   BlobberAllocatedUpdates   `json:"allocated_updates"`
-	SavedDataUpdates   BlobberSavedDataUpdates   `json:"saved_data_updates"`
-	TotalOffersUpdates BlobberTotalOffersUpdates `json:"total_offers_updates"`
+type ResetBlobberStatsDto struct {
+	BlobberID       string        `json:"blobber_id"`
+	PrevTotalOffers currency.Coin `json:"prev_total_offers"`
+	NewTotalOffers  currency.Coin `json:"new_total_offers"`
 }
 
 type BlobberAllocatedUpdates struct {
@@ -1499,7 +1499,7 @@ func UpdateValidatorSettings(v *UpdateValidator) (resp string, nonce int64, err 
 	return
 }
 
-func ResetBlobberStats(rbs *ResetBlobberStatsV2Dto) (string, int64, error) {
+func ResetBlobberStats(rbs *ResetBlobberStatsDto) (string, int64, error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
 	}
