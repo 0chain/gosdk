@@ -230,13 +230,14 @@ type OperationRequest struct {
 	IsWebstreaming bool
 
 	// Required for uploads
-	Workdir      string
-	FileMeta     FileMeta
-	FileReader   io.Reader
-	Mask         *zboxutil.Uint128 // Required for delete repair operation
-	DownloadFile bool              // Required for upload repair operation
-	StreamUpload bool              // Required for streaming file when actualSize is not available
-	Opts         []ChunkedUploadOption
+	Workdir         string
+	FileMeta        FileMeta
+	FileReader      io.Reader
+	Mask            *zboxutil.Uint128 // Required for delete repair operation
+	DownloadFile    bool              // Required for upload repair operation
+	StreamUpload    bool              // Required for streaming file when actualSize is not available
+	CancelCauseFunc context.CancelCauseFunc
+	Opts            []ChunkedUploadOption
 }
 
 func GetReadPriceRange() (PriceRange, error) {
