@@ -76,7 +76,9 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 	for idx, oTreeResponse := range oTreeResponses {
 		oTreeResponseErrors[idx] = oTreeResponse.err
 		if oTreeResponse.err != nil {
-			l.Logger.Error("Error while getting file refs from blobber:", oTreeResponse.err)
+			if code, _ := zboxutil.GetErrorMessageCode(oTreeResponse.err.Error()); code != INVALID_PATH {
+				l.Logger.Error("Error while getting file refs from blobber:", oTreeResponse.err)
+			}
 			continue
 		}
 		var similarFieldRefs []string
