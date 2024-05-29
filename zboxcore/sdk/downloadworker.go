@@ -109,6 +109,7 @@ type DownloadRequest struct {
 	downloadStorer     DownloadProgressStorer
 	workdir            string
 	downloadQueue      downloadQueue // Always initialize this queue with max time taken
+	isResume           bool
 }
 
 type downloadPriority struct {
@@ -481,6 +482,8 @@ func (req *DownloadRequest) processDownload() {
 
 	if endBlock*int64(req.effectiveBlockSize)*int64(req.datashards) < req.size {
 		remainingSize = blocksPerShard * int64(req.effectiveBlockSize) * int64(req.datashards)
+	} else if req.isResume {
+		remainingSize = size
 	}
 
 	if memFile, ok := req.fileHandler.(*sys.MemFile); ok {
@@ -1038,6 +1041,9 @@ func (req *DownloadRequest) calculateShardsParams(
 			}
 			if dp != nil {
 				req.startBlock = int64(dp.LastWrittenBlock)
+				if req.startBlock > 0 {
+					req.isResume = true
+				}
 			} else {
 				dp = &DownloadProgress{
 					ID:        progressID,
