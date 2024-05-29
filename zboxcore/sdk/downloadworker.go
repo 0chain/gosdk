@@ -960,14 +960,7 @@ func (req *DownloadRequest) initEncryption() (err error) {
 			return err
 		}
 	} else {
-		key, err := hex.DecodeString(client.GetClientPrivateKey())
-		if err != nil {
-			return err
-		}
-		err = req.encScheme.InitializeWithPrivateKey(key)
-		if err != nil {
-			return err
-		}
+		return errors.New("invalid_mnemonic", "Invalid mnemonic")
 	}
 
 	err = req.encScheme.InitForDecryption("filetype:audio", req.encryptedKey)

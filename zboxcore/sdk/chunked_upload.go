@@ -420,7 +420,11 @@ func (su *ChunkedUpload) createEncscheme() encryption.EncryptionScheme {
 			return nil
 		}
 	} else {
-		privateKey, err := encscheme.Initialize(client.GetClient().Mnemonic)
+		mnemonic := client.GetClient().Mnemonic
+		if mnemonic == "" {
+			return nil
+		}
+		privateKey, err := encscheme.Initialize(mnemonic)
 		if err != nil {
 			return nil
 		}
