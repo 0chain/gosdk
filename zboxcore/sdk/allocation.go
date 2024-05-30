@@ -256,6 +256,10 @@ func SetWasm() {
 	extraCount = 0
 }
 
+func (a *Allocation) SetCheckStatus(checkStatus bool) {
+	a.checkStatus = checkStatus
+}
+
 func getPriceRange(name string) (PriceRange, error) {
 	conf, err := GetStorageSCConfig()
 	if err != nil {
