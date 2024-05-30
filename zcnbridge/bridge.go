@@ -3,22 +3,16 @@ package zcnbridge
 import (
 	"context"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
-	"io"
+	"github.com/0chain/gosdk/zcnbridge/ethereum/uniswapnetwork"
+	"github.com/0chain/gosdk/zcnbridge/ethereum/uniswaprouter"
 	"math/big"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/ybbus/jsonrpc/v3"
 
-	"github.com/0chain/gosdk/zcnbridge/ethereum/bancortoken"
-
-	"github.com/0chain/common/core/currency"
-	"github.com/0chain/gosdk/zcnbridge/ethereum/bancornetwork"
 	"github.com/0chain/gosdk/zcnbridge/ethereum/zcntoken"
-	h "github.com/0chain/gosdk/zcnbridge/http"
 	hdw "github.com/0chain/gosdk/zcncore/ethhdwallet"
 	"github.com/spf13/viper"
 
@@ -452,19 +446,20 @@ func (b *BridgeClient) GetUserNonceMinted(ctx context.Context, rawEthereumAddres
 
 	contractAddress := common.HexToAddress(b.BridgeAddress)
 
-	var bridgeInstance *bridge.Bridge
 	bridgeInstance, err := bridge.NewBridge(contractAddress, b.ethereumClient)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create bridge instance")
 	}
 
 	var nonce *big.Int
+
 	nonce, err = bridgeInstance.GetUserNonceMinted(nil, ethereumAddress)
 	if err != nil {
 		Logger.Error("GetUserNonceMinted FAILED", zap.Error(err))
 		msg := "failed to execute GetUserNonceMinted call, ethereumAddress = %s"
 		return nil, errors.Wrapf(err, msg, rawEthereumAddress)
 	}
+
 	return nonce, err
 }
 
@@ -669,155 +664,160 @@ func (b *BridgeClient) BurnZCN(ctx context.Context, amount, txnfee uint64) (tran
 	return trx, nil
 }
 
-// FetchZCNToETHRate retrieves latest ZCN to ETH rate using Bancor API
-func (b *BridgeClient) FetchZCNToSourceTokenRate(sourceTokenAddress string) (*big.Float, error) {
-	client = h.CleanClient()
+// ApproveUSDCSwap provides opportunity to approve swap operation for ERC20 tokens
+func (b *BridgeClient) ApproveUSDCSwap(ctx context.Context, source uint64) (*types.Transaction, error) {
+	// 1. USDC token smart contract address
+	tokenAddress := common.HexToAddress(UsdcTokenAddress)
 
-	resp, err := client.Get(fmt.Sprintf("%s/tokens?dlt_id=%s", b.BancorAPIURL, b.TokenAddress))
+	// 2. Swap source amount parameter.
+	sourceInt := big.NewInt(int64(source))
+
+	// 3. User's Ethereum wallet address parameter
+	spenderAddress := common.HexToAddress(b.UniswapAddress)
+
+	tokenInstance, transactOpts, err := b.prepareToken(ctx, "approve", tokenAddress, spenderAddress, sourceInt)
 	if err != nil {
-		return nil, err
-	}
-
-	var body []byte
-	body, err = io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	var bancorTokenDetails *BancorTokenDetails
-	err = json.Unmarshal(body, &bancorTokenDetails)
-	if err != nil {
-		return nil, err
-	}
-
-	var zcnSourceTokenRateFloat float64
-
-	switch sourceTokenAddress {
-	case SourceTokenETHAddress:
-		zcnSourceTokenRateFloat, err = strconv.ParseFloat(bancorTokenDetails.Data.Rate.ETH, 64)
-	case SourceTokenBNTAddress:
-		zcnSourceTokenRateFloat, err = strconv.ParseFloat(bancorTokenDetails.Data.Rate.BNT, 64)
-	case SourceTokenUSDCAddress:
-		zcnSourceTokenRateFloat, err = strconv.ParseFloat(bancorTokenDetails.Data.Rate.USDC, 64)
-	case SourceTokenEURCAddress:
-		zcnSourceTokenRateFloat, err = strconv.ParseFloat(bancorTokenDetails.Data.Rate.EURC, 64)
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	return big.NewFloat(zcnSourceTokenRateFloat), nil
-}
-
-// GetMaxBancorTargetAmount retrieves max amount of a given source token for Bancor swap
-func (b *BridgeClient) GetMaxBancorTargetAmount(sourceTokenAddress string, amountSwap uint64) (*big.Int, error) {
-	amountSwapZCN, err := currency.Coin(amountSwap).ToZCN()
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to convert current zcntoken balance to ZCN")
-	}
-
-	var zcnEthRate *big.Float
-	zcnEthRate, err = b.FetchZCNToSourceTokenRate(sourceTokenAddress)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to retrieve ZCN to source zcntoken rate using Bancor API")
-	}
-
-	zcnEthRateFloat, _ := zcnEthRate.Float64()
-
-	return big.NewInt(int64(amountSwapZCN * zcnEthRateFloat * 1.5 * 1e18)), nil
-}
-
-// ApproveSwap provides opportunity to approve swap operation for ERC20 tokens
-func (b *BridgeClient) ApproveSwap(ctx context.Context, sourceTokenAddress string, maxAmountSwap *big.Int) (*types.Transaction, error) {
-	// 1. Token source token address parameter
-	tokenAddress := common.HexToAddress(sourceTokenAddress)
-
-	// 2. Spender source token address parameter
-	spender := common.HexToAddress(BancorNetworkAddress)
-
-	bancorTokenInstance, transactOpts, err := b.prepareBancorToken(ctx, "approve", tokenAddress, spender, maxAmountSwap)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to prepare bancor token")
+		return nil, errors.Wrap(err, "failed to prepare usdctoken")
 	}
 
 	Logger.Info(
-		"Starting ApproveSwap",
-		zap.Int64("amount", maxAmountSwap.Int64()),
-		zap.String("spender", spender.String()),
+		"Starting ApproveUSDCSwap",
+		zap.String("usdctoken", tokenAddress.String()),
+		zap.String("spender", spenderAddress.String()),
+		zap.Int64("source", sourceInt.Int64()),
 	)
 
-	tran, err := bancorTokenInstance.Approve(transactOpts, spender, maxAmountSwap)
+	var tran *types.Transaction
+
+	tran, err = tokenInstance.Approve(transactOpts, spenderAddress, sourceInt)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to execute Approve transaction")
+		return nil, errors.Wrap(err, "failed to execute approve transaction")
 	}
 
 	return tran, nil
 }
 
-// Swap provides opportunity to perform zcntoken swap operation.
-func (b *BridgeClient) Swap(ctx context.Context, sourceTokenAddress string, amountSwap uint64, maxAmountSwap *big.Int, deadlinePeriod time.Time) (*types.Transaction, error) {
-	// 1. Swap amount parameter.
-	amount := big.NewInt(int64(amountSwap))
+// GetETHSwapAmount retrieves ETH swap amount from the given source.
+func (b *BridgeClient) GetETHSwapAmount(ctx context.Context, source uint64) (*big.Int, error) {
+	// 1. Uniswap smart contract address
+	contractAddress := common.HexToAddress(UniswapRouterAddress)
 
-	// 2. User's Ethereum wallet address.
-	beneficiary := common.HexToAddress(b.EthereumAddress)
+	// 2. User's Ethereum wallet address parameter
+	from := common.HexToAddress(b.EthereumAddress)
 
-	// 3. Trade deadline
-	deadline := big.NewInt(deadlinePeriod.Unix())
+	// 3. Swap source amount parameter.
+	sourceInt := big.NewInt(int64(source))
 
-	// 4. Value of the Ethereum transaction
-	var value *big.Int
+	// 3. Swap path parameter.
+	path := []common.Address{
+		common.HexToAddress(WethTokenAddress),
+		common.HexToAddress(b.TokenAddress)}
 
-	if sourceTokenAddress == SourceTokenETHAddress {
-		value = maxAmountSwap
-	} else {
-		value = big.NewInt(0)
+	uniswapRouterInstance, err := uniswaprouter.NewUniswaprouter(contractAddress, b.ethereumClient)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to initialize uniswaprouter instance")
 	}
 
-	// 6. Source zcntoken address parameter
-	from := common.HexToAddress(sourceTokenAddress)
+	Logger.Info(
+		"Starting GetETHSwapAmount",
+		zap.Uint64("source", source))
 
-	// 7. Target zcntoken address parameter
+	var result []*big.Int
+
+	result, err = uniswapRouterInstance.GetAmountsIn(&bind.CallOpts{From: from}, sourceInt, path)
+	if err != nil {
+		Logger.Error("GetAmountsIn FAILED", zap.Error(err))
+		msg := "failed to execute GetAmountsIn call, ethereumAddress = %s"
+
+		return nil, errors.Wrapf(err, msg, from)
+	}
+
+	return result[0], nil
+}
+
+// SwapETH provides opportunity to perform zcn token swap operation using ETH as source token.
+func (b *BridgeClient) SwapETH(ctx context.Context, source uint64, target uint64) (*types.Transaction, error) {
+	// 1. Swap source amount parameter.
+	sourceInt := big.NewInt(int64(source))
+
+	// 2. Swap target amount parameter.
+	targetInt := big.NewInt(int64(target))
+
+	uniswapNetworkInstance, transactOpts, err := b.prepareUniswapNetwork(
+		ctx, sourceInt, "swapETHForZCNExactAmountOut", targetInt)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to prepare uniswapnetwork")
+	}
+
+	Logger.Info(
+		"Starting SwapETH",
+		zap.Uint64("source", source),
+		zap.Uint64("target", target))
+
+	var tran *types.Transaction
+
+	tran, err = uniswapNetworkInstance.SwapETHForZCNExactAmountOut(transactOpts, targetInt)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to execute swapETHForZCNExactAmountOut transaction")
+	}
+
+	return tran, nil
+}
+
+// SwapUSDC provides opportunity to perform zcn token swap operation using USDC as source token.
+func (b *BridgeClient) SwapUSDC(ctx context.Context, source uint64, target uint64) (*types.Transaction, error) {
+	// 1. Swap target amount parameter.
+	sourceInt := big.NewInt(int64(source))
+
+	// 2. Swap source amount parameter.
+	targetInt := big.NewInt(int64(target))
+
+	uniswapNetworkInstance, transactOpts, err := b.prepareUniswapNetwork(
+		ctx, big.NewInt(0), "swapUSDCForZCNExactAmountOut", targetInt, sourceInt)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to prepare uniswapnetwork")
+	}
+
+	Logger.Info(
+		"Starting SwapUSDC",
+		zap.Uint64("source", source),
+		zap.Uint64("target", target))
+
+	var tran *types.Transaction
+
+	tran, err = uniswapNetworkInstance.SwapUSDCForZCNExactAmountOut(transactOpts, targetInt, sourceInt)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to execute swapUSDCForZCNExactAmountOut transaction")
+	}
+
+	return tran, nil
+}
+
+// prepareUniswapNetwork performs uniswap network smart contract preparation actions.
+func (b *BridgeClient) prepareUniswapNetwork(ctx context.Context, value *big.Int, method string, params ...interface{}) (*uniswapnetwork.Uniswap, *bind.TransactOpts, error) {
+	// 1. Uniswap smart contract address
+	contractAddress := common.HexToAddress(b.UniswapAddress)
+
+	// 2. To address parameter.
 	to := common.HexToAddress(b.TokenAddress)
 
-	bancorInstance, transactOpts, err := b.prepareBancor(ctx, value, "tradeByTargetAmount", from, to, amount, maxAmountSwap, deadline, beneficiary)
+	// 3. From address parameter.
+	from := common.HexToAddress(b.EthereumAddress)
+
+	abi, err := uniswapnetwork.UniswapMetaData.GetAbi()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to prepare bancornetwork")
+		return nil, nil, errors.Wrap(err, "failed to get uniswaprouter abi")
 	}
 
-	Logger.Info(
-		"Starting Swap",
-		zap.Int64("amount", amount.Int64()),
-		zap.String("sourceToken", sourceTokenAddress),
-	)
+	var pack []byte
 
-	tran, err := bancorInstance.TradeByTargetAmount(transactOpts, from, to, amount, maxAmountSwap, deadline, beneficiary)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to execute TradeByTargetAmount transaction")
-	}
-
-	return tran, nil
-}
-
-func (b *BridgeClient) prepareBancor(ctx context.Context, value *big.Int, method string, params ...interface{}) (*bancornetwork.Bancor, *bind.TransactOpts, error) {
-	// 1. Bancor network smart contract address
-	contractAddress := common.HexToAddress(BancorNetworkAddress)
-
-	abi, err := bancornetwork.BancorMetaData.GetAbi()
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to get bancornetwork abi")
-	}
-
-	pack, err := abi.Pack(method, params...)
+	pack, err = abi.Pack(method, params...)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to pack arguments")
 	}
 
-	from := common.HexToAddress(b.EthereumAddress)
-
 	opts := eth.CallMsg{
-		To:   &contractAddress,
+		To:   &to,
 		From: from,
 		Data: pack,
 	}
@@ -826,58 +826,19 @@ func (b *BridgeClient) prepareBancor(ctx context.Context, value *big.Int, method
 		opts.Value = value
 	}
 
-	gasLimitUnits, err := b.ethereumClient.EstimateGas(ctx, opts)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to estimate gas limit")
-	}
-
-	gasLimitUnits = addPercents(gasLimitUnits, 10).Uint64()
-
-	transactOpts := b.CreateSignedTransactionFromKeyStore(b.ethereumClient, gasLimitUnits)
+	transactOpts := b.CreateSignedTransactionFromKeyStore(b.ethereumClient, 0)
 	if value.Int64() != 0 {
 		transactOpts.Value = value
 	}
 
-	bancorInstance, err := bancornetwork.NewBancor(contractAddress, b.ethereumClient)
+	var uniswapNetworkInstance *uniswapnetwork.Uniswap
+
+	uniswapNetworkInstance, err = uniswapnetwork.NewUniswap(contractAddress, b.ethereumClient)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to initialize bancornetwork instance")
+		return nil, nil, errors.Wrap(err, "failed to initialize uniswapnetwork instance")
 	}
 
-	return bancorInstance, transactOpts, nil
-}
-
-func (b *BridgeClient) prepareBancorToken(ctx context.Context, method string, tokenAddress common.Address, params ...interface{}) (*bancortoken.Bancortoken, *bind.TransactOpts, error) {
-	abi, err := zcntoken.TokenMetaData.GetAbi()
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to get zcntoken abi")
-	}
-
-	pack, err := abi.Pack(method, params...)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to pack arguments")
-	}
-
-	from := common.HexToAddress(b.EthereumAddress)
-
-	gasLimitUnits, err := b.ethereumClient.EstimateGas(ctx, eth.CallMsg{
-		To:   &tokenAddress,
-		From: from,
-		Data: pack,
-	})
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to estimate gas limit")
-	}
-
-	gasLimitUnits = addPercents(gasLimitUnits, 10).Uint64()
-
-	transactOpts := b.CreateSignedTransactionFromKeyStore(b.ethereumClient, gasLimitUnits)
-
-	bancorTokenInstance, err := bancortoken.NewBancortoken(tokenAddress, b.ethereumClient)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to initialize zcntoken instance")
-	}
-
-	return bancorTokenInstance, transactOpts, nil
+	return uniswapNetworkInstance, transactOpts, nil
 }
 
 func (b *BridgeClient) prepareToken(ctx context.Context, method string, tokenAddress common.Address, params ...interface{}) (*zcntoken.Token, *bind.TransactOpts, error) {
@@ -906,7 +867,9 @@ func (b *BridgeClient) prepareToken(ctx context.Context, method string, tokenAdd
 
 	transactOpts := b.CreateSignedTransactionFromKeyStore(b.ethereumClient, gasLimitUnits)
 
-	tokenInstance, err := zcntoken.NewToken(tokenAddress, b.ethereumClient)
+	var tokenInstance *zcntoken.Token
+
+	tokenInstance, err = zcntoken.NewToken(tokenAddress, b.ethereumClient)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to initialize zcntoken instance")
 	}
