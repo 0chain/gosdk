@@ -668,23 +668,6 @@ type ResetBlobberStatsDto struct {
 	NewTotalOffers  currency.Coin `json:"new_total_offers"`
 }
 
-type BlobberAllocatedUpdates struct {
-	BlobberIds    []string `json:"blobber_ids"`
-	PrevAllocated []int64  `json:"prev_allocated"`
-	NewAllocated  []int64  `json:"new_allocated"`
-}
-
-type BlobberSavedDataUpdates struct {
-	BlobberIds    []string `json:"blobber_ids"`
-	PrevSavedData []int64  `json:"prev_saved_data"`
-	NewSavedData  []int64  `json:"new_saved_data"`
-}
-
-type BlobberTotalOffersUpdates struct {
-	BlobberIds      []string        `json:"blobber_ids"`
-	PrevTotalOffers []currency.Coin `json:"prev_total_offers"`
-	NewTotalOffers  []currency.Coin `json:"new_total_offers"`
-}
 type Validator struct {
 	ID                       common.Key       `json:"validator_id"`
 	BaseURL                  string           `json:"url"`
