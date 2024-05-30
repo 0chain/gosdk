@@ -84,9 +84,24 @@ jobs:
 
       - name: "Setup"
         run: |
-          echo "CURRENT_BRANCH_HEAD=$(echo $(([ -z '${{ github.event.pull_request.head.sha }}' ] && echo  $GITHUB_SHA) || echo '${{ github.event.pull_request.head.sha }}'))" >> $GITHUB_ENV
+          if [[ "${{github.ref}}" == refs/pull/* ]]; then
+            tag=${GITHUB_REF/\/merge/}
+            echo "TAG=$(echo pr-${tag:10})" >> $GITHUB_ENV
+          else
+            echo "TAG=$(echo ${GITHUB_REF#refs/*/} | sed 's/\//-/g')" >> $GITHUB_ENV
+          fi
+
+          echo "BRANCH=$([ -z '${{ github.event.pull_request.head.sha }}' ] && echo ${GITHUB_REF#refs/*/} || echo $GITHUB_HEAD_REF)" >> $GITHUB_ENV
+          echo "SHORT_SHA=$(([ -z '${{ github.event.pull_request.head.sha }}' ] && echo $GITHUB_SHA || echo '${{ github.event.pull_request.head.sha }}') | head -c 8)" >> $GITHUB_ENV
+
           echo "NETWORK_URL=$(echo dev-${RUNNER_NAME:(-1)}.devnet-0chain.net)" >> $GITHUB_ENV
           echo "RUNNER_NUMBER=${RUNNER_NAME:(-1)}" >> $GITHUB_ENV
+          
+          if [[ "${{github.base_ref}}" == "staging" ]]; then
+            echo "REPO_SNAPSHOTS_BRANCH=<CURRENT BRANCH WITH FALLBACK TO STAGING>" >> $GITHUB_ENV
+          else
+            echo "REPO_SNAPSHOTS_BRANCH=<CURRENT BRANCH WITH FALLBACK TO CURRENT_SPRINT>" >> $GITHUB_ENV
+          fi
 
       - name: 'Setup jq'
         uses: dcarbone/install-jq-action@v2.1.0
