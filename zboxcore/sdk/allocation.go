@@ -253,6 +253,7 @@ func SetMultiOpBatchSize(size int) {
 func SetWasm() {
 	IsWasm = true
 	BatchSize = 5
+	extraCount = 0
 }
 
 func getPriceRange(name string) (PriceRange, error) {
@@ -1217,7 +1218,7 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 				a.downloadChan <- dr
 			}(dr)
 		}
-		l.Logger.Info("[processReadMarker]", zap.String("allocation_id", a.ID),
+		l.Logger.Debug("[processReadMarker]", zap.String("allocation_id", a.ID),
 			zap.Int("num of download requests", len(drs)),
 			zap.Duration("processDownloadRequest", elapsedProcessDownloadRequest))
 		return
@@ -2340,8 +2341,10 @@ func (a *Allocation) PauseUpload(remotePath string) error {
 	cancelFunc, ok := CancelOpCtx[remotePath]
 	cancelLock.Unlock()
 	if !ok {
+		logger.Logger.Error("PauseUpload: remote path not found", remotePath)
 		return errors.New("remote_path_not_found", "Invalid path. No upload in progress for the path "+remotePath)
 	} else {
+		logger.Logger.Info("PauseUpload: remote path found", remotePath)
 		cancelFunc(ErrPauseUpload)
 	}
 	return nil

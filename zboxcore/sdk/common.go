@@ -47,7 +47,6 @@ func getObjectTreeFromBlobber(ctx context.Context, allocationID, allocationTx st
 			}
 			return errors.New(strconv.Itoa(resp.StatusCode), fmt.Sprintf("Object tree error response: Body: %s ", string(resp_body)))
 		} else {
-			l.Logger.Info("Object tree:", string(resp_body))
 			err = json.Unmarshal(resp_body, &lR)
 			if err != nil {
 				l.Logger.Error("Object tree json decode error: ", err)
@@ -110,12 +109,12 @@ type ProcessResult struct {
 	Succeed      bool
 }
 
-var ErrFileNameTooLong = errors.New("invalid_parameter", "filename is longer than 100 characters")
+var ErrFileNameTooLong = errors.New("invalid_parameter", "filename is longer than 150 characters")
 
 func ValidateRemoteFileName(remotePath string) error {
 	_, fileName := path.Split(remotePath)
 
-	if len(fileName) > 100 {
+	if len(fileName) > 150 {
 		return ErrFileNameTooLong
 	}
 

@@ -58,7 +58,7 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 	oTreeResponses := make([]oTreeResponse, totalBlobbersCount)
 	o.wg.Add(totalBlobbersCount)
 	for i, blob := range o.blobbers {
-		l.Logger.Info(fmt.Sprintf("Getting file refs for path %v from blobber %v", o.remotefilepath, blob.Baseurl))
+		l.Logger.Debug(fmt.Sprintf("Getting file refs for path %v from blobber %v", o.remotefilepath, blob.Baseurl))
 		go o.getFileRefs(&oTreeResponses[i], blob.Baseurl)
 	}
 	o.wg.Wait()
