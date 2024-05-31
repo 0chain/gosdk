@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
-	"github.com/remeh/sizedwaitgroup"
 
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/util"
@@ -165,14 +164,15 @@ func (mo *MultiOperation) Process() error {
 	ctx := mo.ctx
 	ctxCncl := mo.ctxCncl
 	defer ctxCncl(nil)
-	swg := sizedwaitgroup.New(BatchSize)
+	// swg := sizedwaitgroup.New(BatchSize)
+	startTime := time.Now()
 	errsSlice := make([]error, len(mo.operations))
 	mo.operationMask = zboxutil.NewUint128(0)
 	for idx, op := range mo.operations {
 		uid := util.GetNewUUID()
-		swg.Add()
+		wg.Add(1)
 		go func(op Operationer, idx int) {
-			defer swg.Done()
+			defer wg.Done()
 
 			// Check for other goroutines signal
 			select {
@@ -195,8 +195,7 @@ func (mo *MultiOperation) Process() error {
 			mo.changes[idx] = changes
 		}(op, idx)
 	}
-	swg.Wait()
-
+	wg.Wait()
 	if ctx.Err() != nil {
 		return context.Cause(ctx)
 	}
@@ -227,6 +226,8 @@ func (mo *MultiOperation) Process() error {
 	}
 
 	l.Logger.Debug("Trying to lock write marker.....")
+	logger.Logger.Info("committing_changes: ", len(mo.operations), " time: ", time.Since(startTime).Milliseconds())
+	startTime = time.Now()
 	if singleClientMode {
 		mo.allocationObj.commitMutex.Lock()
 	} else {
@@ -338,7 +339,7 @@ func (mo *MultiOperation) Process() error {
 			op.Completed(mo.allocationObj)
 		}
 	}
-
+	logger.Logger.Info("committing_changes_done: ", len(mo.operations), " time: ", time.Since(startTime).Milliseconds())
 	return nil
 
 }
