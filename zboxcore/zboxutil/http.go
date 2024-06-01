@@ -142,7 +142,7 @@ func SetHostClient(id, baseURL string) {
 			NoDefaultUserAgentHeader:      true,
 			Addr:                          host,
 			MaxConns:                      1024,
-			MaxIdleConnDuration:           15 * time.Second,
+			MaxIdleConnDuration:           0,
 			DisableHeaderNamesNormalizing: true,
 			DisablePathNormalizing:        true,
 			Dial: (&fasthttp.TCPDialer{
