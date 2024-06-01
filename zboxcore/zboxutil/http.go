@@ -141,6 +141,7 @@ func SetHostClient(id, baseURL string) {
 		HostClientMap[id] = &fasthttp.HostClient{
 			NoDefaultUserAgentHeader:      true,
 			Addr:                          host,
+			MaxConns:                      1024,
 			MaxIdleConnDuration:           60 * time.Second,
 			DisableHeaderNamesNormalizing: true,
 			DisablePathNormalizing:        true,

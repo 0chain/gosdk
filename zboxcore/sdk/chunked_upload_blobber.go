@@ -52,7 +52,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 			su.maskMu.Unlock()
 		}
 	}()
-
+	hostClient := zboxutil.GetHostClient(sb.blobber.ID, sb.blobber.Baseurl)
 	if formData.FileBytesLen == 0 {
 		//fixed fileRef in last chunk on stream. io.EOF with nil bytes
 		if isFinal {
@@ -88,7 +88,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 				err, shouldContinue = func() (err error, shouldContinue bool) {
 					resp := fasthttp.AcquireResponse()
 					defer fasthttp.ReleaseResponse(resp)
-					err = zboxutil.FastHttpClient.DoTimeout(req, resp, su.uploadTimeOut)
+					err = hostClient.DoTimeout(req, resp, su.uploadTimeOut)
 					fasthttp.ReleaseRequest(req)
 					if err != nil {
 						logger.Logger.Error("Upload : ", err)
