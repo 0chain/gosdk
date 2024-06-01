@@ -141,7 +141,8 @@ func SetHostClient(id, baseURL string) {
 		HostClientMap[id] = &fasthttp.HostClient{
 			NoDefaultUserAgentHeader:      true,
 			Addr:                          host,
-			MaxIdleConnDuration:           60 * time.Second,
+			MaxConns:                      1024,
+			MaxIdleConnDuration:           45 * time.Second,
 			DisableHeaderNamesNormalizing: true,
 			DisablePathNormalizing:        true,
 			Dial: (&fasthttp.TCPDialer{
@@ -189,7 +190,7 @@ func init() {
 	}
 
 	FastHttpClient = &fasthttp.Client{
-		MaxIdleConnDuration:           60 * time.Second,
+		MaxIdleConnDuration:           45 * time.Second,
 		NoDefaultUserAgentHeader:      true, // Don't send: User-Agent: fasthttp
 		DisableHeaderNamesNormalizing: true, // If you set the case on your headers correctly you can enable this
 		DisablePathNormalizing:        true,
@@ -202,6 +203,7 @@ func init() {
 		WriteTimeout:        120 * time.Second,
 		MaxConnDuration:     45 * time.Second,
 		MaxResponseBodySize: 1024 * 1024 * 64, //64MB
+		MaxConnsPerHost:     1024,
 	}
 	envProxy.initialize()
 	log.Init(logger.DEBUG, "0box-sdk")

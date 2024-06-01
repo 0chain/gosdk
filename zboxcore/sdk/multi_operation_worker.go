@@ -323,7 +323,6 @@ func (mo *MultiOperation) Process() error {
 	}
 
 	if !mo.isConsensusOk() {
-		mo.allocationObj.checkStatus = false
 		err = zboxutil.MajorError(errSlice)
 		if mo.getConsensus() != 0 {
 			l.Logger.Info("Rolling back changes on minority blobbers")
