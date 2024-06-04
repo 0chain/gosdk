@@ -290,7 +290,8 @@ func CreateChunkedUpload(
 			},
 		}
 	}
-	cReader, err := createChunkReader(su.fileReader, fileMeta.ActualSize, int64(su.chunkSize), su.allocationObj.DataShards, su.encryptOnUpload, su.uploadMask, su.fileErasureEncoder, su.fileEncscheme, su.fileHasher, su.chunkNumber)
+	toHashData := su.fileHashResultFunc == nil
+	cReader, err := createChunkReader(su.fileReader, fileMeta.ActualSize, int64(su.chunkSize), su.allocationObj.DataShards, su.encryptOnUpload, su.uploadMask, su.fileErasureEncoder, su.fileEncscheme, su.fileHasher, su.chunkNumber, toHashData)
 
 	if err != nil {
 		return nil, err
@@ -465,7 +466,11 @@ func (su *ChunkedUpload) process() error {
 
 		if chunks.isFinal {
 			if su.fileMeta.ActualHash == "" {
-				su.fileMeta.ActualHash, err = su.chunkReader.GetFileHash()
+				if su.fileHashResultFunc != nil {
+					su.fileMeta.ActualHash, err = su.fileHashResultFunc()
+				} else {
+					su.fileMeta.ActualHash, err = su.chunkReader.GetFileHash()
+				}
 				if err != nil {
 					if su.statusCallback != nil {
 						su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)

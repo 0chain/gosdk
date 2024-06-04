@@ -43,6 +43,7 @@ type ChunkedUpload struct {
 	fileErasureEncoder reedsolomon.Encoder
 	fileEncscheme      encryption.EncryptionScheme
 	fileHasher         Hasher
+	fileHashResultFunc func() (string, error)
 
 	thumbnailBytes         []byte
 	thumbailErasureEncoder reedsolomon.Encoder

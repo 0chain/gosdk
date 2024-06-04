@@ -103,3 +103,9 @@ func WithActualHash(hash string) ChunkedUploadOption {
 		su.fileMeta.ActualHash = hash
 	}
 }
+
+func WithFileHashResultFunc(f func() (string, error)) ChunkedUploadOption {
+	return func(su *ChunkedUpload) {
+		su.fileHashResultFunc = f
+	}
+}

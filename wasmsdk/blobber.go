@@ -477,6 +477,7 @@ type BulkUploadOption struct {
 	FileSize          int64  `json:"fileSize,omitempty"`
 	ReadChunkFuncName string `json:"readChunkFuncName,omitempty"`
 	CallbackFuncName  string `json:"callbackFuncName,omitempty"`
+	Md5HashFuncName   string `json:"md5HashFuncName,omitempty"`
 	MimeType          string `json:"mimeType,omitempty"`
 	MemoryStorer      bool   `json:"memoryStorer,omitempty"`
 }
@@ -691,6 +692,17 @@ func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 			options = append(options, sdk.WithProgressStorer(&chunkedUploadProgressStorer{
 				list: make(map[string]*sdk.UploadProgress),
 			}))
+		}
+		if option.Md5HashFuncName != "" {
+			md5HashFunc := func() (string, error) {
+				md5Callback := js.Global().Get(option.Md5HashFuncName)
+				result, err := jsbridge.Await(md5Callback.Invoke())
+				if len(err) > 0 && !err[0].IsNull() {
+					return "", errors.New("file_hash: " + err[0].String())
+				}
+				return result[0].String(), nil
+			}
+			options = append(options, sdk.WithFileHashResultFunc(md5HashFunc))
 		}
 		operationRequests[idx] = sdk.OperationRequest{
 			FileMeta:       fileMeta,

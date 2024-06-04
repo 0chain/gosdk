@@ -144,10 +144,15 @@ async function bulkUpload(options) {
     bridge.glob.index++
     const readChunkFuncName = "__zcn_upload_reader_"+i.toString()
     const callbackFuncName = "__zcn_upload_callback_"+i.toString()
+    const md5HashFuncName = "__zcn_md5_hash_"+i.toString()
+    const md5Res = md5Hash(obj.file)
     g[readChunkFuncName] =  async (offset,chunkSize) => {
-      console.log("multi_upload: read chunk remotePath:"+ obj.remotePath + " offset:"+offset+" chunkSize:"+chunkSize)
       const chunk = await readChunk(offset,chunkSize,obj.file)
       return chunk.buffer
+    }
+    g[md5HashFuncName] = async () => {
+      const hash = await md5Res
+      return hash
     }
 
     if(obj.callback) {
@@ -165,16 +170,38 @@ async function bulkUpload(options) {
       isUpdate:obj.isUpdate,
       isRepair:obj.isRepair,
       numBlocks:obj.numBlocks,
-      callbackFuncName:callbackFuncName
+      callbackFuncName:callbackFuncName,
+      md5HashFuncName:md5HashFuncName,
     }
   })
+
+  // md5Hash(options[0].file).then(hash=>{
+  //   console.log("md5 hash: ",hash)
+  // }).catch(err=>{
+  //   console.log("md5 hash error: ",err)
+  // })
 
   const end =  bridge.glob.index
   const result = await bridge.__proxy__.sdk.multiUpload(JSON.stringify(opts))
   for (let i=start; i<end;i++){
     g["__zcn_upload_reader_"+i.toString()] = null;
     g["__zcn_upload_callback_"+i.toString()] =null;
+    g["__zcn_md5_hash_"+i.toString()] = null;
   }
+  return result
+}
+
+
+async function md5Hash(file) {
+  const result = new Promise((resolve, reject) => {
+    const worker = new Worker('md5worker.js')
+    worker.postMessage(file)
+    worker.onmessage = e => {
+      resolve(e.data)
+      worker.terminate()
+    }
+    worker.onerror = reject
+  })
   return result
 }
 

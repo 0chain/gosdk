@@ -84,6 +84,7 @@ func TestReadChunks(t *testing.T) {
 				test.EncryptOnUpload, uploadMask,
 				erasureEncoder, encscheme,
 				CreateHasher(getShardSize(test.Size, test.DataShards, test.EncryptOnUpload)), 100,
+				true,
 			)
 			require.Nil(err)
 

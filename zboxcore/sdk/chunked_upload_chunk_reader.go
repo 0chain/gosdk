@@ -54,6 +54,8 @@ type chunkedUploadChunkReader struct {
 	// encryptOnUpload enccrypt data on upload
 	encryptOnUpload bool
 
+	toHashData bool
+
 	uploadMask zboxutil.Uint128
 	// erasureEncoder erasuer encoder
 	erasureEncoder reedsolomon.Encoder
@@ -68,7 +70,7 @@ type chunkedUploadChunkReader struct {
 }
 
 // createChunkReader create ChunkReader instance
-func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards int, encryptOnUpload bool, uploadMask zboxutil.Uint128, erasureEncoder reedsolomon.Encoder, encscheme encryption.EncryptionScheme, hasher Hasher, chunkNumber int) (ChunkedUploadChunkReader, error) {
+func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards int, encryptOnUpload bool, uploadMask zboxutil.Uint128, erasureEncoder reedsolomon.Encoder, encscheme encryption.EncryptionScheme, hasher Hasher, chunkNumber int, toHashData bool) (ChunkedUploadChunkReader, error) {
 
 	if chunkSize <= 0 {
 		return nil, errors.Throw(constants.ErrInvalidParameter, "chunkSize: "+strconv.FormatInt(chunkSize, 10))
@@ -99,6 +101,7 @@ func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards i
 		hasher:          hasher,
 		hasherDataChan:  make(chan []byte, 3*chunkNumber),
 		hasherWG:        sync.WaitGroup{},
+		toHashData:      toHashData,
 	}
 
 	if r.encryptOnUpload {
@@ -110,7 +113,7 @@ func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards i
 	}
 
 	r.chunkDataSizePerRead = r.chunkDataSize * int64(dataShards)
-	if CurrentMode == UploadModeHigh {
+	if CurrentMode == UploadModeHigh && toHashData {
 		r.hasherWG.Add(1)
 		go r.hashData()
 	}
@@ -195,10 +198,12 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 	if r.hasherError != nil {
 		return chunk, r.hasherError
 	}
-	if CurrentMode == UploadModeHigh {
-		r.hasherDataChan <- chunkBytes
-	} else {
-		_ = r.hasher.WriteToFile(chunkBytes)
+	if r.toHashData {
+		if CurrentMode == UploadModeHigh {
+			r.hasherDataChan <- chunkBytes
+		} else {
+			_ = r.hasher.WriteToFile(chunkBytes)
+		}
 	}
 	fragments, err := r.erasureEncoder.Split(chunkBytes)
 	if err != nil {
