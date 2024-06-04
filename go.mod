@@ -44,6 +44,7 @@ require (
 )
 
 require (
+	github.com/hack-pad/go-webworkers v0.1.0
 	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d
 	github.com/minio/sha256-simd v1.0.1
 	github.com/ybbus/jsonrpc/v3 v3.1.5
@@ -130,6 +131,7 @@ require (
 
 require (
 	github.com/btcsuite/btcd/btcutil v1.1.3
+	github.com/hack-pad/safejs v0.1.1
 	github.com/klauspost/compress v1.17.0 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.4 // indirect
 	github.com/remeh/sizedwaitgroup v1.0.0
@@ -142,3 +144,4 @@ require (
 )
 
 //replace github.com/ethereum/go-ethereum => github.com/certifaction/go-ethereum v1.10.3-wasm
+replace github.com/hack-pad/go-webworkers => ../go-webworkers

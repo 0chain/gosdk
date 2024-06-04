@@ -6,6 +6,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"os"
 	"runtime/debug"
 	"sync"
 	"time"
@@ -35,6 +36,9 @@ func main() {
 	zcnLogger = zcncore.GetLogger()
 
 	window := js.Global()
+
+	fmt.Println("initializing: ", os.Getenv("BLOBBER_URL"), os.Getenv("CLIENT_ID"), os.Getenv("PRIVATE_KEY"), os.Getenv("MODE"))
+	mode := os.Getenv("MODE")
 
 	zcn := window.Get("__zcn_wasm__")
 	if !(zcn.IsNull() || zcn.IsUndefined()) {
@@ -274,9 +278,48 @@ func main() {
 
 	}
 
+	if mode != "" {
+		jsProxy := window.Get("__zcn_worker_wasm__")
+		if !(jsProxy.IsNull() || jsProxy.IsUndefined()) {
+			jsSign := jsProxy.Get("sign")
+			if !(jsSign.IsNull() || jsSign.IsUndefined()) {
+				signFunc := func(hash string) (string, error) {
+					c := client.GetClient()
+					pk := c.Keys[0].PrivateKey
+					result, err := jsbridge.Await(jsSign.Invoke(hash, pk))
+
+					if len(err) > 0 && !err[0].IsNull() {
+						return "", errors.New("sign: " + err[0].String())
+					}
+					return result[0].String(), nil
+				}
+				fmt.Println("setting up sign function in worker")
+				//update sign with js sign
+				zcncrypto.Sign = signFunc
+				zcncore.SignFn = signFunc
+				sys.Sign = func(hash, signatureScheme string, keys []sys.KeyPair) (string, error) {
+					// js already has signatureScheme and keys
+					return signFunc(hash)
+				}
+			} else {
+				PrintError("__zcn_worker_wasm__.jsProxy.sign is not installed yet")
+			}
+		} else {
+			PrintError("__zcn_worker_wasm__ is not installed yet")
+		}
+	}
+
 	hideLogs()
 	debug.SetGCPercent(40)
 	debug.SetMemoryLimit(2.5 * 1024 * 1024 * 1024) //2.5 GB
+	if mode == "" {
+		for i := 0; i < 3; i++ {
+			_, err := jsbridge.NewWasmWebWorker("https://blobber.com"+fmt.Sprint(i), "clientID", "privateKey")
+			if err != nil {
+				fmt.Println("Error creating web worker", err)
+			}
+		}
+	}
 
 	<-make(chan bool)
 
