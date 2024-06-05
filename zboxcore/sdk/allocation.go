@@ -1751,6 +1751,7 @@ func (a *Allocation) createDir(remotePath string, threshConsensus, fullConsensus
 			consensusThresh: threshConsensus,
 			fullconsensus:   fullConsensus,
 		},
+		alreadyExists: make(map[uint64]bool),
 	}
 	req.ctx, req.ctxCncl = context.WithCancel(a.ctx)
 
