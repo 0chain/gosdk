@@ -1003,3 +1003,24 @@ func skipStatusCheck(allocationID string, checkStatus bool) error {
 	alloc.SetCheckStatus(checkStatus)
 	return nil
 }
+
+// func startListener() error {
+// 	ctx, cancel := context.WithCancel(context.Background())
+// 	defer cancel()
+
+// 	selfWorker, err := jsbridge.NewSelfWorker()
+// 	if err != nil {
+// 		return err
+// 	}
+
+// 	listener, err := selfWorker.Listen(ctx)
+// 	if err != nil {
+// 		return err
+// 	}
+
+// 	for event := range listener{
+
+// 	}
+
+// 	return nil
+// }

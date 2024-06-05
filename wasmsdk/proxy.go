@@ -37,8 +37,8 @@ func main() {
 
 	window := js.Global()
 
-	fmt.Println("initializing: ", os.Getenv("BLOBBER_URL"), os.Getenv("CLIENT_ID"), os.Getenv("PRIVATE_KEY"), os.Getenv("MODE"))
 	mode := os.Getenv("MODE")
+	fmt.Println("initializing: ", mode)
 
 	zcn := window.Get("__zcn_wasm__")
 	if !(zcn.IsNull() || zcn.IsUndefined()) {
@@ -307,6 +307,7 @@ func main() {
 		} else {
 			PrintError("__zcn_worker_wasm__ is not installed yet")
 		}
+		setWallet(os.Getenv("CLIENT_ID"), os.Getenv("PUBLIC_KEY"), os.Getenv("PRIVATE_KEY"), os.Getenv("MNEMONIC"))
 	}
 
 	hideLogs()
@@ -314,7 +315,7 @@ func main() {
 	debug.SetMemoryLimit(2.5 * 1024 * 1024 * 1024) //2.5 GB
 	if mode == "" {
 		for i := 0; i < 3; i++ {
-			_, err := jsbridge.NewWasmWebWorker("https://blobber.com"+fmt.Sprint(i), "clientID", "privateKey")
+			_, err := jsbridge.NewWasmWebWorker("https://blobber.com"+fmt.Sprint(i), "clientID", "publicKey", "privateKey", "mnemonic")
 			if err != nil {
 				fmt.Println("Error creating web worker", err)
 			}

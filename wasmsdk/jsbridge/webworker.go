@@ -35,16 +35,24 @@ type WasmWebWorker struct {
 	worker *worker.Worker
 }
 
-func NewWasmWebWorker(blobberURL, clientID, privateKey string) (*WasmWebWorker, error) {
+var workers []*WasmWebWorker
+
+func NewWasmWebWorker(blobberURL, clientID, publicKey, privateKey, mnemonic string) (*WasmWebWorker, error) {
 	w := &WasmWebWorker{
 		Name: blobberURL,
-		Env:  []string{"BLOBBER_URL=" + blobberURL, "CLIENT_ID=" + clientID, "PRIVATE_KEY=" + privateKey, "MODE=worker"},
+		Env:  []string{"BLOBBER_URL=" + blobberURL, "CLIENT_ID=" + clientID, "PRIVATE_KEY=" + privateKey, "MODE=worker", "PUBLIC_KEY=" + publicKey, "MNEMONIC=" + mnemonic},
 	}
 
 	if err := w.Start(); err != nil {
 		return nil, err
 	}
+	workers = append(workers, w)
+
 	return w, nil
+}
+
+func GetWorkers() []*WasmWebWorker {
+	return workers
 }
 
 func (ww *WasmWebWorker) Start() error {
