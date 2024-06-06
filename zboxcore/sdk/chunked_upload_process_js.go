@@ -353,7 +353,7 @@ func ProcessEventData(data safejs.Value) {
 		return
 	}
 	hasher, ok := hasherMap[fileMeta.RemotePath]
-	if !ok {
+	if !ok || formInfo.ChunkStartIndex == 0 {
 		hasher = CreateHasher(formInfo.ShardSize)
 		hasherMap[fileMeta.RemotePath] = hasher
 	}
