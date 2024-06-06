@@ -12,7 +12,10 @@ var (
 )
 
 func NewSelfWorker() (*worker.GlobalSelf, error) {
-	selfWorker, err := worker.Self()
+	worker, err := worker.Self()
+	if worker != nil {
+		selfWorker = worker
+	}
 	return selfWorker, err
 }
 

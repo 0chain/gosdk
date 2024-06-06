@@ -309,6 +309,8 @@ func main() {
 		}
 		setWallet(os.Getenv("CLIENT_ID"), os.Getenv("PUBLIC_KEY"), os.Getenv("PRIVATE_KEY"), os.Getenv("MNEMONIC"))
 		hideLogs()
+		debug.SetGCPercent(40)
+		debug.SetMemoryLimit(500 * 1024 * 1024) //500MB
 		err := startListener()
 		if err != nil {
 			fmt.Println("Error starting listener", err)
@@ -319,44 +321,6 @@ func main() {
 	hideLogs()
 	debug.SetGCPercent(40)
 	debug.SetMemoryLimit(2.5 * 1024 * 1024 * 1024) //2.5 GB
-	if mode == "" {
-		for i := 0; i < 3; i++ {
-			_, err := jsbridge.NewWasmWebWorker("https://blobber.com"+fmt.Sprint(i), "clientID", "publicKey", "privateKey", "mnemonic")
-			if err != nil {
-				fmt.Println("Error creating web worker", err)
-			}
-		}
-		// sys.Sleep(2 * time.Second)
-		// workers := jsbridge.GetWorkers()
-		// for _, worker := range workers {
-		// 	buf1 := make([]byte, 1024)
-		// 	rand.Read(buf1)
-		// 	buf2 := make([]byte, 1024)
-		// 	rand.Read(buf2)
-		// 	//convert to uint8array
-		// 	jsBuf1 := js.Global().Get("Uint8Array").New(len(buf1))
-		// 	js.CopyBytesToJS(jsBuf1, buf1)
-		// 	jsBuf2 := js.Global().Get("Uint8Array").New(len(buf2))
-		// 	js.CopyBytesToJS(jsBuf2, buf2)
-		// 	// create object and assign both arrays
-		// 	obj := js.Global().Get("Object").New()
-		// 	obj.Set("buf1", jsBuf1)
-		// 	obj.Set("buf2", jsBuf2)
-
-		// 	err := worker.PostMessage(safejs.Safe(obj), []safejs.Value{safejs.Safe(jsBuf2.Get("buffer"))})
-		// 	if err != nil {
-		// 		fmt.Println("Error posting message to worker", err)
-		// 	} else {
-		// 		//jsbuf2 should be transferred and be empty
-		// 		//get length of jsbuf2
-		// 		if jsBuf2.Get("length").Int() != 0 {
-		// 			fmt.Println("Error transferring buffer")
-		// 		} else {
-		// 			fmt.Println("Buffer transferred successfully")
-		// 		}
-		// 	}
-		// }
-	}
 
 	<-make(chan bool)
 

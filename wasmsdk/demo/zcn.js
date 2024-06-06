@@ -144,16 +144,19 @@ async function bulkUpload(options) {
     bridge.glob.index++
     const readChunkFuncName = "__zcn_upload_reader_"+i.toString()
     const callbackFuncName = "__zcn_upload_callback_"+i.toString()
-    const md5HashFuncName = "__zcn_md5_hash_"+i.toString()
-    const md5Res = md5Hash(obj.file)
+    var md5HashFuncName = ""
     g[readChunkFuncName] =  async (offset,chunkSize) => {
       const chunk = await readChunk(offset,chunkSize,obj.file)
       return chunk.buffer
     }
-    g[md5HashFuncName] = async () => {
+    if (obj.file.size > 25*1024*1024) {
+      const md5Res = md5Hash(obj.file)
+      g[md5HashFuncName] = async () => {
       const hash = await md5Res
       return hash
-    }
+      }
+      md5HashFuncName = "__zcn_md5_hash_"+i.toString()
+  }
 
     if(obj.callback) {
       g[callbackFuncName] =  async (totalBytes,completedBytes,error)=> obj.callback(totalBytes,completedBytes,error)

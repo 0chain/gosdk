@@ -252,7 +252,7 @@ func SetMultiOpBatchSize(size int) {
 
 func SetWasm() {
 	IsWasm = true
-	BatchSize = 5
+	BatchSize = 1
 	extraCount = 0
 }
 

@@ -115,9 +115,19 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 	js.CopyBytesToJS(formInfoUint8, formInfoJSON)
 
 	if chunkStartIndex > 0 {
-		err = su.listen(isFinal)
+		err = su.listen(false)
 		if err != nil {
 			return err
+		}
+		index := chunkStartIndex - 1
+		uploadLength := su.allocationObj.GetChunkReadSize(su.encryptOnUpload) * int64(su.chunkNumber)
+		go su.updateProgress(index)
+		su.progress.UploadLength += uploadLength
+		if su.progress.UploadLength > su.fileMeta.ActualSize {
+			su.progress.UploadLength = su.fileMeta.ActualSize
+		}
+		if su.statusCallback != nil {
+			su.statusCallback.InProgress(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, int(su.progress.UploadLength), nil)
 		}
 	}
 
@@ -164,7 +174,16 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 	}
 
 	if isFinal {
-		return su.listen(true)
+		err = su.listen(true)
+		if err != nil {
+			return err
+		}
+		index := chunkEndIndex
+		go su.updateProgress(index)
+		su.progress.UploadLength = su.fileMeta.ActualSize
+		if su.statusCallback != nil {
+			su.statusCallback.InProgress(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, int(su.progress.UploadLength), nil)
+		}
 	}
 
 	return nil
@@ -179,7 +198,6 @@ type FinalWorkerResult struct {
 func (su *ChunkedUpload) listen(isFinal bool) error {
 	su.consensus.Reset()
 	workers := jsbridge.GetWorkers()
-
 	ctx, cancel := context.WithTimeout(su.ctx, su.uploadTimeOut)
 	defer cancel()
 
@@ -216,6 +234,7 @@ func (su *ChunkedUpload) listen(isFinal bool) error {
 			}
 			event, ok := <-eventChan
 			if !ok {
+				logger.Logger.Error("chan closed from: ", worker.Name)
 				errC := atomic.AddInt32(&errCount, 1)
 				if errC >= int32(su.consensus.consensusThresh) {
 					wgErrors <- thrown.New("upload_failed", "Upload failed. Worker event channel closed")
@@ -250,6 +269,7 @@ func (su *ChunkedUpload) listen(isFinal bool) error {
 					return
 				}
 				errMsgStr, _ := errMsg.String()
+				logger.Logger.Error("error from worker: ", errMsgStr)
 				errC := atomic.AddInt32(&errCount, 1)
 				if errC >= int32(su.consensus.consensusThresh) {
 					wgErrors <- thrown.New("upload_failed", fmt.Sprintf("Upload failed. %s", errMsgStr))
@@ -259,6 +279,7 @@ func (su *ChunkedUpload) listen(isFinal bool) error {
 				//get final result
 				finalResult, err := data.Get("finalResult")
 				if err != nil {
+					logger.Logger.Error("errorGettingFinalResult")
 					errC := atomic.AddInt32(&errCount, 1)
 					if errC >= int32(su.consensus.consensusThresh) {
 						wgErrors <- thrown.New("upload_failed", "Upload failed. Error getting worker data")
@@ -267,6 +288,7 @@ func (su *ChunkedUpload) listen(isFinal bool) error {
 				}
 				len, err := finalResult.Length()
 				if err != nil {
+					logger.Logger.Error("errorGettingFinalResultLength")
 					errC := atomic.AddInt32(&errCount, 1)
 					if errC >= int32(su.consensus.consensusThresh) {
 						wgErrors <- thrown.New("upload_failed", "Upload failed. Error getting worker data")
@@ -278,6 +300,7 @@ func (su *ChunkedUpload) listen(isFinal bool) error {
 				var finalResultObj FinalWorkerResult
 				err = json.Unmarshal(resBuf, &finalResultObj)
 				if err != nil {
+					logger.Logger.Error("errorGettingFinalResultUnmarshal")
 					errC := atomic.AddInt32(&errCount, 1)
 					if errC >= int32(su.consensus.consensusThresh) {
 						wgErrors <- thrown.New("upload_failed", "Upload failed. Error getting worker data")
@@ -294,9 +317,8 @@ func (su *ChunkedUpload) listen(isFinal bool) error {
 				blobber.fileRef.ActualFileSize = su.fileMeta.ActualSize
 				blobber.fileRef.EncryptedKey = su.encryptedKey
 				blobber.fileRef.CalculateHash()
-			} else {
-				su.consensus.Done()
 			}
+			su.consensus.Done()
 
 		}(pos)
 
@@ -351,14 +373,16 @@ func ProcessEventData(data safejs.Value) {
 			ThumbnailContentHash: blobberData.formData.ThumbnailContentHash,
 		}
 		selfPostMessage(true, "", finalResult)
+	} else {
+		selfPostMessage(true, "", nil)
 	}
 
 }
 
-func selfPostMessage(success bool, error string, finalResult *FinalWorkerResult) {
+func selfPostMessage(success bool, errMsg string, finalResult *FinalWorkerResult) {
 	obj := js.Global().Get("Object").New()
 	obj.Set("success", success)
-	obj.Set("error", error)
+	obj.Set("error", errMsg)
 	if finalResult != nil {
 		finalResultJSON, err := json.Marshal(finalResult)
 		if err != nil {
@@ -371,6 +395,7 @@ func selfPostMessage(success bool, error string, finalResult *FinalWorkerResult)
 	}
 	self := jsbridge.GetSelfWorker()
 	self.PostMessage(safejs.Safe(obj), nil) //nolint:errcheck
+
 }
 
 func parseEventData(data safejs.Value) (*FileMeta, *ChunkedUploadFormInfo, [][]byte, []byte, error) {
@@ -457,7 +482,7 @@ func sendUploadRequest(dataBuffers []*bytes.Buffer, contentSlice []string, blobb
 				err, shouldContinue = func() (err error, shouldContinue bool) {
 					resp := fasthttp.AcquireResponse()
 					defer fasthttp.ReleaseResponse(resp)
-					err = zboxutil.FastHttpClient.DoTimeout(req, resp, 45*time.Second)
+					err = zboxutil.FastHttpClient.DoTimeout(req, resp, DefaultUploadTimeOut)
 					fasthttp.ReleaseRequest(req)
 					if err != nil {
 						logger.Logger.Error("Upload : ", err)

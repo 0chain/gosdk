@@ -6,6 +6,8 @@ package main
 import (
 	"time"
 
+	"github.com/0chain/gosdk/wasmsdk/jsbridge"
+	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	lru "github.com/hashicorp/golang-lru/v2"
 )
@@ -36,7 +38,13 @@ func getAllocation(allocationId string) (*sdk.Allocation, error) {
 	sdk.SetShouldVerifyHash(false)
 	it = &cachedAllocation{
 		Allocation: a,
-		Expiration: time.Now().Add(5 * time.Minute),
+		Expiration: time.Now().Add(120 * time.Minute),
+	}
+	if !ok {
+		for _, blober := range a.Blobbers {
+			c := client.GetClient()
+			jsbridge.NewWasmWebWorker(blober.Baseurl, c.ClientID, c.Keys[0].PublicKey, c.Keys[0].PrivateKey, c.Mnemonic) //nolint:errcheck
+		}
 	}
 
 	cachedAllocations.Add(allocationId, it)
