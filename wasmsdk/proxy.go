@@ -293,7 +293,6 @@ func main() {
 					}
 					return result[0].String(), nil
 				}
-				fmt.Println("setting up sign function in worker")
 				//update sign with js sign
 				zcncrypto.Sign = signFunc
 				zcncore.SignFn = signFunc

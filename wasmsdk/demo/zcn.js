@@ -150,12 +150,12 @@ async function bulkUpload(options) {
       return chunk.buffer
     }
     if (obj.file.size > 25*1024*1024) {
+      md5HashFuncName = "__zcn_md5_hash_"+i.toString()
       const md5Res = md5Hash(obj.file)
       g[md5HashFuncName] = async () => {
       const hash = await md5Res
       return hash
       }
-      md5HashFuncName = "__zcn_md5_hash_"+i.toString()
   }
 
     if(obj.callback) {
