@@ -1,5 +1,4 @@
-importScripts('https://cdn.jsdelivr.net/gh/golang/go@go1.21.5/misc/wasm/wasm_exec.js');
-importScripts('https://herumi.github.io/bls-wasm/browser/bls.js')
+importScripts('https://cdn.jsdelivr.net/gh/golang/go@go1.21.5/misc/wasm/wasm_exec.js','https://herumi.github.io/bls-wasm/browser/bls.js');
 
 const go = new Go();
 go.argv = {{.ArgsToJS}}

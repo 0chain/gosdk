@@ -4,6 +4,10 @@
 package main
 
 import (
+	"errors"
+	"syscall/js"
+
+	"github.com/0chain/gosdk/wasmsdk/jsbridge"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
 
@@ -41,4 +45,47 @@ func getFileMeta(allocationObj *sdk.Allocation, remotePath string, commit bool) 
 	}
 
 	return fileMeta, isFile, nil
+}
+
+type hasher struct {
+	md5HashFuncName string
+}
+
+func newFileHasher(md5HashFuncName string) sdk.Hasher {
+	return &hasher{
+		md5HashFuncName: md5HashFuncName,
+	}
+}
+
+func (h *hasher) GetFileHash() (string, error) {
+	md5Callback := js.Global().Get(h.md5HashFuncName)
+	result, err := jsbridge.Await(md5Callback.Invoke())
+	if len(err) > 0 && !err[0].IsNull() {
+		return "", errors.New("file_hash: " + err[0].String())
+	}
+	return result[0].String(), nil
+}
+
+func (h *hasher) WriteToFile(_ []byte) error {
+	return nil
+}
+
+func (h *hasher) GetFixedMerkleRoot() (string, error) {
+	return "", nil
+}
+
+func (h *hasher) WriteToFixedMT(_ []byte) error {
+	return nil
+}
+
+func (h *hasher) GetValidationRoot() (string, error) {
+	return "", nil
+}
+
+func (h *hasher) WriteToValidationMT(_ []byte) error {
+	return nil
+}
+
+func (h *hasher) Finalize() error {
+	return nil
 }

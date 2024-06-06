@@ -171,7 +171,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		su.removeProgress()
 		return thrown.New("upload_failed", "Upload failed. Error posting message to worker")
 	}
-
+	fileShards = nil
 	if isFinal {
 		err = su.listen(true)
 		if err != nil {
@@ -359,10 +359,23 @@ func ProcessEventData(data safejs.Value) {
 		return
 	}
 	blobberURL := os.Getenv("BLOBBER_URL")
-	err = sendUploadRequest(blobberData.dataBuffers, blobberData.contentSlice, blobberURL, formInfo.AllocationID, formInfo.AllocationTx, formInfo.HttpMethod)
-	if err != nil {
-		selfPostMessage(false, err.Error(), nil)
-		return
+	if formInfo.IsFinal && len(blobberData.dataBuffers) > 1 {
+		err = sendUploadRequest(blobberData.dataBuffers[:len(blobberData.dataBuffers)-1], blobberData.contentSlice[:len(blobberData.contentSlice)-1], blobberURL, formInfo.AllocationID, formInfo.AllocationTx, formInfo.HttpMethod)
+		if err != nil {
+			selfPostMessage(false, err.Error(), nil)
+			return
+		}
+		err = sendUploadRequest(blobberData.dataBuffers[len(blobberData.dataBuffers)-1:], blobberData.contentSlice[len(blobberData.contentSlice)-1:], blobberURL, formInfo.AllocationID, formInfo.AllocationTx, formInfo.HttpMethod)
+		if err != nil {
+			selfPostMessage(false, err.Error(), nil)
+			return
+		}
+	} else {
+		err = sendUploadRequest(blobberData.dataBuffers, blobberData.contentSlice, blobberURL, formInfo.AllocationID, formInfo.AllocationTx, formInfo.HttpMethod)
+		if err != nil {
+			selfPostMessage(false, err.Error(), nil)
+			return
+		}
 	}
 	if formInfo.IsFinal {
 		finalResult := &FinalWorkerResult{
