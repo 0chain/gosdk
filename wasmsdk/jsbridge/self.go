@@ -7,6 +7,15 @@ import (
 	"github.com/hack-pad/go-webworkers/worker"
 )
 
+var (
+	selfWorker *worker.GlobalSelf
+)
+
 func NewSelfWorker() (*worker.GlobalSelf, error) {
-	return worker.Self()
+	selfWorker, err := worker.Self()
+	return selfWorker, err
+}
+
+func GetSelfWorker() *worker.GlobalSelf {
+	return selfWorker
 }

@@ -4,6 +4,8 @@ import (
 	"context"
 	"sync"
 	"time"
+
+	"github.com/0chain/gosdk/core/sys"
 )
 
 type DownloadBuffer interface {
@@ -106,7 +108,7 @@ func (r *DownloadBufferWithMask) RequestChunk(ctx context.Context, num int) []by
 		// already assigned
 		if isSet == 0 {
 			r.mu.Unlock()
-			time.Sleep(200 * time.Millisecond)
+			sys.Sleep(200 * time.Millisecond)
 			continue
 		}
 		// assign the chunk by clearing the bit

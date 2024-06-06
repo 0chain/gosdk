@@ -1004,23 +1004,61 @@ func skipStatusCheck(allocationID string, checkStatus bool) error {
 	return nil
 }
 
-// func startListener() error {
-// 	ctx, cancel := context.WithCancel(context.Background())
-// 	defer cancel()
+func startListener() error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-// 	selfWorker, err := jsbridge.NewSelfWorker()
-// 	if err != nil {
-// 		return err
-// 	}
+	selfWorker, err := jsbridge.NewSelfWorker()
+	if err != nil {
+		return err
+	}
 
-// 	listener, err := selfWorker.Listen(ctx)
-// 	if err != nil {
-// 		return err
-// 	}
+	listener, err := selfWorker.Listen(ctx)
+	if err != nil {
+		return err
+	}
 
-// 	for event := range listener{
+	for event := range listener {
+		data, err := event.Data()
+		if err != nil {
+			PrintError("Error in getting data from event", err)
+			return err
+		}
+		sdk.ProcessEventData(data)
+		// jsbuf1, err := data.Get("buf1")
+		// if err != nil {
+		// 	fmt.Println("Error in getting buf1 from data", err)
+		// 	return err
+		// }
+		// jsbuf2, err := data.Get("buf2")
+		// if err != nil {
+		// 	fmt.Println("Error in getting buf2 from data", err)
+		// 	return err
+		// }
+		// //get length of jsbuf1
+		// jslen1, err := jsbuf1.Get("length")
+		// if err != nil {
+		// 	fmt.Println("Error in getting length from jsbuf1", err)
+		// }
+		// //get length of jsbuf2
+		// jslen2, err := jsbuf2.Get("length")
+		// if err != nil {
+		// 	fmt.Println("Error in getting length from jsbuf2", err)
+		// }
+		// len1, err := jslen1.Int()
+		// if err != nil {
+		// 	fmt.Println("Error in converting jslen1 to int", err)
+		// }
+		// len2, err := jslen2.Int()
+		// if err != nil {
+		// 	fmt.Println("Error in converting jslen2 to int", err)
+		// }
+		// if len1 != len2 || len1 != 1024 {
+		// 	fmt.Println("Error: Length of buffers should be 1024")
+		// } else {
+		// 	fmt.Println("data read successfully")
+		// }
+	}
 
-// 	}
-
-// 	return nil
-// }
+	return nil
+}

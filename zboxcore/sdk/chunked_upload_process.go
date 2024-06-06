@@ -14,6 +14,31 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
+// createUploadProgress create a new UploadProgress
+func (su *ChunkedUpload) createUploadProgress(connectionId string) {
+	if su.progress.ChunkSize <= 0 {
+		su.progress = UploadProgress{
+			ConnectionID:      connectionId,
+			ChunkIndex:        -1,
+			ChunkSize:         su.chunkSize,
+			EncryptOnUpload:   su.encryptOnUpload,
+			EncryptedKeyPoint: su.encryptedKeyPoint,
+			ActualSize:        su.fileMeta.ActualSize,
+			ChunkNumber:       su.chunkNumber,
+		}
+	}
+	su.progress.Blobbers = make([]*UploadBlobberStatus, su.allocationObj.DataShards+su.allocationObj.ParityShards)
+
+	for i := 0; i < len(su.progress.Blobbers); i++ {
+		su.progress.Blobbers[i] = &UploadBlobberStatus{
+			Hasher: CreateHasher(su.shardSize),
+		}
+	}
+
+	su.progress.ID = su.progressID()
+	su.saveProgress()
+}
+
 // processUpload process upload fragment to its blobber
 func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 	fileShards []blobberShards, thumbnailShards blobberShards,
@@ -32,7 +57,6 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		chunkStartIndex: chunkStartIndex,
 		chunkEndIndex:   chunkEndIndex,
 		isFinal:         isFinal,
-		encryptedKey:    su.encryptedKey,
 		uploadBody:      make([]blobberData, len(su.blobbers)),
 		uploadLength:    uploadLength,
 	}

@@ -206,7 +206,6 @@ type UploadData struct {
 	chunkEndIndex   int
 	isFinal         bool
 	uploadLength    int64
-	encryptedKey    string
 	uploadBody      []blobberData
 }
 

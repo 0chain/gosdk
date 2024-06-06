@@ -384,31 +384,6 @@ func (su *ChunkedUpload) updateProgress(chunkIndex int) {
 	}
 }
 
-// createUploadProgress create a new UploadProgress
-func (su *ChunkedUpload) createUploadProgress(connectionId string) {
-	if su.progress.ChunkSize <= 0 {
-		su.progress = UploadProgress{
-			ConnectionID:      connectionId,
-			ChunkIndex:        -1,
-			ChunkSize:         su.chunkSize,
-			EncryptOnUpload:   su.encryptOnUpload,
-			EncryptedKeyPoint: su.encryptedKeyPoint,
-			ActualSize:        su.fileMeta.ActualSize,
-			ChunkNumber:       su.chunkNumber,
-		}
-	}
-	su.progress.Blobbers = make([]*UploadBlobberStatus, su.allocationObj.DataShards+su.allocationObj.ParityShards)
-
-	for i := 0; i < len(su.progress.Blobbers); i++ {
-		su.progress.Blobbers[i] = &UploadBlobberStatus{
-			Hasher: CreateHasher(su.shardSize),
-		}
-	}
-
-	su.progress.ID = su.progressID()
-	su.saveProgress()
-}
-
 func (su *ChunkedUpload) createEncscheme() encryption.EncryptionScheme {
 	encscheme := encryption.NewEncryptionScheme()
 
