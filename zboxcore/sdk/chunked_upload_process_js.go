@@ -76,6 +76,12 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		return thrown.New("upload_failed", "Upload failed. No data to upload")
 	}
 
+	select {
+	case <-su.ctx.Done():
+		return context.Cause(su.ctx)
+	default:
+	}
+
 	fileMetaJSON, err := json.Marshal(su.fileMeta)
 	if err != nil {
 		return err
@@ -235,6 +241,9 @@ func (su *ChunkedUpload) listen(isFinal bool) error {
 				logger.Logger.Error("chan closed from: ", worker.Name)
 				errC := atomic.AddInt32(&errCount, 1)
 				if errC >= int32(su.consensus.consensusThresh) {
+					if su.ctx.Err() != nil {
+						wgErrors <- context.Cause(su.ctx)
+					}
 					wgErrors <- thrown.New("upload_failed", "Upload failed. Worker event channel closed")
 				}
 				return
