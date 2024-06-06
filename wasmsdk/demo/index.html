@@ -211,7 +211,7 @@
 
     let network = query.get('network')
     if (!network || network == 'undefined') {
-      network = "mainnet.zus.network"
+      network = "dev.zus.network"
     }
 
     const blockWorker = 'https://' + network + '/dns';
@@ -462,7 +462,7 @@
             webstreaming: false,
             isUpdate: false,
             isRepair: false,
-            numBlocks: 100,
+            numBlocks: 120,
             callback: function (totalBytes, completedBytes, error) {
               console.log(file.name + " " + completedBytes + "/" + totalBytes + " err:" + error)
             }

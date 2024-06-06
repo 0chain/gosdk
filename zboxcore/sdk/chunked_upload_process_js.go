@@ -119,9 +119,9 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		if err != nil {
 			return err
 		}
-		index := chunkStartIndex - 1
+		// index := chunkStartIndex - 1
+		// go su.updateProgress(index)
 		uploadLength := su.allocationObj.GetChunkReadSize(su.encryptOnUpload) * int64(su.chunkNumber)
-		go su.updateProgress(index)
 		su.progress.UploadLength += uploadLength
 		if su.progress.UploadLength > su.fileMeta.ActualSize {
 			su.progress.UploadLength = su.fileMeta.ActualSize
@@ -178,8 +178,8 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		if err != nil {
 			return err
 		}
-		index := chunkEndIndex
-		go su.updateProgress(index)
+		// index := chunkEndIndex
+		// go su.updateProgress(index)
 		su.progress.UploadLength = su.fileMeta.ActualSize
 		if su.statusCallback != nil {
 			su.statusCallback.InProgress(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, int(su.progress.UploadLength), nil)
