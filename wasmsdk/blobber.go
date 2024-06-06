@@ -22,6 +22,7 @@ import (
 
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/wasmsdk/jsbridge"
+	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
@@ -1002,6 +1003,30 @@ func skipStatusCheck(allocationID string, checkStatus bool) error {
 	}
 	alloc.SetCheckStatus(checkStatus)
 	return nil
+}
+
+func terminateWorkers(allocationID string) {
+	alloc, err := getAllocation(allocationID)
+	if err != nil {
+		return
+	}
+	for _, blobber := range alloc.Blobbers {
+		worker := jsbridge.GetWorker(blobber.Baseurl)
+		if worker != nil {
+			worker.Terminate()
+		}
+	}
+}
+
+func createWorkers(allocationID string) {
+	alloc, err := getAllocation(allocationID)
+	if err != nil {
+		return
+	}
+	for _, blobber := range alloc.Blobbers {
+		client := client.GetClient()
+		jsbridge.NewWasmWebWorker(blobber.Baseurl, client.ClientID, client.Keys[0].PublicKey, client.Keys[0].PrivateKey, client.Mnemonic) //nolint:errcheck
+	}
 }
 
 func startListener() error {

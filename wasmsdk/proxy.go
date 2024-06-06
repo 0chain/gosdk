@@ -196,6 +196,8 @@ func main() {
 				"repairAllocation":          repairAllocation,
 				"checkAllocStatus":          checkAllocStatus,
 				"skipStatusCheck":           skipStatusCheck,
+				"terminateWorkers":          terminateWorkers,
+				"createWorkers":             createWorkers,
 
 				// player
 				"play":           play,

@@ -85,10 +85,6 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		pos          uint64
 		successCount int
 	)
-	workers := jsbridge.GetWorkers()
-	if len(workers) == 0 || len(workers) < len(su.blobbers) {
-		return thrown.New("upload_failed", "Upload failed. No workers to upload")
-	}
 
 	formInfo := ChunkedUploadFormInfo{
 		ConnectionID:      su.progress.ConnectionID,
@@ -136,7 +132,10 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		blobber := su.blobbers[pos]
 		blobber.progress.UploadLength += uploadLength
 		var thumbnailChunkData []byte
-
+		worker := jsbridge.GetWorker(blobber.blobber.Baseurl)
+		if worker == nil {
+			continue
+		}
 		if len(thumbnailShards) > 0 {
 			thumbnailChunkData = thumbnailShards[pos]
 		}
@@ -162,7 +161,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 			offset += len(shard)
 		}
 		obj.Set("fileShard", fileshardUint8)
-		err = workers[pos].PostMessage(safejs.Safe(obj), []safejs.Value{safejs.Safe(fileshardUint8.Get("buffer"))})
+		err = worker.PostMessage(safejs.Safe(obj), []safejs.Value{safejs.Safe(fileshardUint8.Get("buffer"))})
 		if err == nil {
 			successCount++
 		}
@@ -197,7 +196,6 @@ type FinalWorkerResult struct {
 
 func (su *ChunkedUpload) listen(isFinal bool) error {
 	su.consensus.Reset()
-	workers := jsbridge.GetWorkers()
 	ctx, cancel := context.WithTimeout(su.ctx, su.uploadTimeOut)
 	defer cancel()
 
@@ -221,8 +219,8 @@ func (su *ChunkedUpload) listen(isFinal bool) error {
 				}
 				wg.Done()
 			}()
-			worker := workers[pos]
 			blobber := su.blobbers[pos]
+			worker := jsbridge.GetWorker(blobber.blobber.Baseurl)
 			eventChan, err := worker.Listen(ctx)
 			if err != nil {
 				errC := atomic.AddInt32(&errCount, 1)
