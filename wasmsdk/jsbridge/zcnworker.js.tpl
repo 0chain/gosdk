@@ -6,7 +6,7 @@ go.argv = {{.ArgsToJS}}
 go.env = {{.EnvToJS}}
 const bls = self.bls
 bls.init(bls.BN254).then(()=>{})
-WebAssembly.instantiateStreaming(fetch("/zcn.wasm"), go.importObject).then((result) => {
+WebAssembly.instantiateStreaming(fetch("http://localhost:3430/zcn.wasm"), go.importObject).then((result) => {
     go.run(result.instance);
 });
 
