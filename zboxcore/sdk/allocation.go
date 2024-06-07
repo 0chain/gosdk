@@ -207,7 +207,7 @@ type Allocation struct {
 	ctx                     context.Context
 	ctxCancelF              context.CancelFunc
 	mutex                   *sync.Mutex
-	commitMutex             *sync.RWMutex
+	commitMutex             *sync.Mutex
 	downloadProgressMap     map[string]*DownloadRequest
 	downloadRequests        []*DownloadRequest
 	repairRequestInProgress *RepairRequest
@@ -321,7 +321,7 @@ func (a *Allocation) InitAllocation() {
 	a.downloadProgressMap = make(map[string]*DownloadRequest)
 	a.downloadRequests = make([]*DownloadRequest, 0, 100)
 	a.mutex = &sync.Mutex{}
-	a.commitMutex = &sync.RWMutex{}
+	a.commitMutex = &sync.Mutex{}
 	a.fullconsensus, a.consensusThreshold = a.getConsensuses()
 	for _, blobber := range a.Blobbers {
 		zboxutil.SetHostClient(blobber.ID, blobber.Baseurl)

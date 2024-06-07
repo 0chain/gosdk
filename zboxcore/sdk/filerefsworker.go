@@ -2,9 +2,11 @@ package sdk
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"net/http"
 	"sync"
 	"time"
@@ -58,17 +60,11 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 	totalBlobbersCount := len(o.blobbers)
 	oTreeResponses := make([]oTreeResponse, totalBlobbersCount)
 	o.wg.Add(totalBlobbersCount)
-	if singleClientMode {
-		o.allocationObj.commitMutex.RLock()
-	}
 	for i, blob := range o.blobbers {
 		l.Logger.Debug(fmt.Sprintf("Getting file refs for path %v from blobber %v", o.remotefilepath, blob.Baseurl))
 		go o.getFileRefs(&oTreeResponses[i], blob.Baseurl)
 	}
 	o.wg.Wait()
-	if singleClientMode {
-		o.allocationObj.commitMutex.RUnlock()
-	}
 	hashCount := make(map[string]int)
 	hashRefsMap := make(map[string]*ObjectTreeResult)
 	oTreeResponseErrors := make([]error, totalBlobbersCount)
@@ -81,15 +77,12 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 			}
 			continue
 		}
-		var similarFieldRefs []string
+		var similarFieldRefs []byte
 		for _, ref := range oTreeResponse.oTResult.Refs {
-			similarFieldRefs = append(similarFieldRefs, ref.SimilarField.FileMetaHash)
+			decodeBytes, _ := hex.DecodeString(ref.SimilarField.FileMetaHash)
+			similarFieldRefs = append(similarFieldRefs, decodeBytes...)
 		}
-		refsMarshall, err := json.Marshal(similarFieldRefs)
-		if err != nil {
-			continue
-		}
-		hash := zboxutil.GetRefsHash(refsMarshall)
+		hash := zboxutil.GetRefsHash(similarFieldRefs)
 
 		if _, ok := hashCount[hash]; ok {
 			hashCount[hash]++
@@ -119,6 +112,31 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 	}
 	if majorError != nil {
 		l.Logger.Error("error while gettings refs: ", majorError)
+	}
+	// build the object tree result by using consensus on individual refs
+	refHash := make(map[string]int)
+	selected = &ObjectTreeResult{}
+	minPage := int64(math.MaxInt64)
+	for _, oTreeResponse := range oTreeResponses {
+		if oTreeResponse.err != nil {
+			continue
+		}
+		if oTreeResponse.oTResult.TotalPages < minPage {
+			minPage = oTreeResponse.oTResult.TotalPages
+			selected.TotalPages = minPage
+		}
+		for _, ref := range oTreeResponse.oTResult.Refs {
+			if refHash[ref.FileMetaHash] == o.consensusThresh {
+				continue
+			}
+			refHash[ref.FileMetaHash] += 1
+			if refHash[ref.FileMetaHash] == o.consensusThresh {
+				selected.Refs = append(selected.Refs, ref)
+			}
+		}
+	}
+	if len(selected.Refs) > 0 {
+		selected.OffsetPath = selected.Refs[len(selected.Refs)-1].Path
 	}
 	return nil, errors.New("consensus_failed", "Refs consensus is less than consensus threshold")
 }
