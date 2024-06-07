@@ -22,6 +22,7 @@ import (
 	"github.com/0chain/gosdk/wasmsdk/jsbridge"
 	"github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/hack-pad/go-webworkers/worker"
 	"github.com/hack-pad/safejs"
 	"github.com/hitenjain14/fasthttp"
 	"golang.org/x/sync/errgroup"
@@ -179,11 +180,9 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 	}
 	fileShards = nil
 	if isFinal {
-		fmt.Println("final chunk")
 		su.uploadWG.Wait()
 		select {
 		case <-su.ctx.Done():
-			fmt.Println("context done")
 			return context.Cause(su.ctx)
 		default:
 		}
@@ -204,7 +203,7 @@ type FinalWorkerResult struct {
 	ThumbnailContentHash string
 }
 
-func (su *ChunkedUpload) listen(respChan chan error) {
+func (su *ChunkedUpload) listen(allEventChan []<-chan worker.MessageEvent, respChan chan error) {
 	su.consensus.Reset()
 
 	var (
@@ -229,18 +228,18 @@ func (su *ChunkedUpload) listen(respChan chan error) {
 				wg.Done()
 			}()
 			blobber := su.blobbers[pos]
-			worker := jsbridge.GetWorker(blobber.blobber.Baseurl)
-			eventChan, err := worker.Listen(su.ctx)
-			if err != nil {
+
+			eventChan := allEventChan[pos]
+			if eventChan == nil {
 				errC := atomic.AddInt32(&errCount, 1)
 				if errC >= int32(su.consensus.consensusThresh) {
-					wgErrors <- err
+					wgErrors <- thrown.New("upload_failed", "Upload failed. Worker event channel not found")
 				}
 				return
 			}
 			event, ok := <-eventChan
 			if !ok {
-				logger.Logger.Error("chan closed from: ", worker.Name)
+				logger.Logger.Error("chan closed from: ", blobber.blobber.Baseurl)
 				errC := atomic.AddInt32(&errCount, 1)
 				if errC >= int32(su.consensus.consensusThresh) {
 					wgErrors <- thrown.New("upload_failed", "Upload failed. Worker event channel closed")
@@ -285,7 +284,6 @@ func (su *ChunkedUpload) listen(respChan chan error) {
 			finalRequest, _ := finalRequestObject.Bool()
 			if finalRequest {
 				//get final result
-				logger.Logger.Info("finalRequest from: ", blobber.blobber.Baseurl)
 				finalResult, err := data.Get("finalResult")
 				if err != nil {
 					logger.Logger.Error("errorGettingFinalResult")
@@ -361,7 +359,6 @@ func ProcessEventData(data safejs.Value) {
 		selfPostMessage(false, false, err.Error(), nil)
 		return
 	}
-	fmt.Println("eventRecieved: ", formInfo.ChunkStartIndex)
 	wp, ok := hasherMap[fileMeta.RemotePath]
 	if !ok {
 		wp = workerProcess{
@@ -391,7 +388,6 @@ func ProcessEventData(data safejs.Value) {
 				selfPostMessage(false, true, err.Error(), nil)
 				return
 			}
-			fmt.Println("waiting for last chunk")
 			wg.Wait()
 			err = sendUploadRequest(blobberData.dataBuffers[len(blobberData.dataBuffers)-1:], blobberData.contentSlice[len(blobberData.contentSlice)-1:], blobberURL, formInfo.AllocationID, formInfo.AllocationTx, formInfo.HttpMethod)
 			if err != nil {
@@ -400,7 +396,6 @@ func ProcessEventData(data safejs.Value) {
 			}
 		} else {
 			if formInfo.IsFinal {
-				fmt.Println("waiting for last chunk")
 				wg.Wait()
 			}
 			err = sendUploadRequest(blobberData.dataBuffers, blobberData.contentSlice, blobberURL, formInfo.AllocationID, formInfo.AllocationTx, formInfo.HttpMethod)
@@ -426,7 +421,6 @@ func ProcessEventData(data safejs.Value) {
 }
 
 func selfPostMessage(success, isFinal bool, errMsg string, finalResult *FinalWorkerResult) {
-	fmt.Println("selfPostMessage: ", success, isFinal, errMsg)
 	obj := js.Global().Get("Object").New()
 	obj.Set("success", success)
 	obj.Set("error", errMsg)
@@ -586,10 +580,20 @@ func (su *ChunkedUpload) startProcessor(uploadWorker int) {
 	su.listenChan = make(chan struct{}, uploadWorker)
 	respChan := make(chan error, 1)
 	su.uploadWG.Add(1)
+	allEventChan := make([]<-chan worker.MessageEvent, len(su.blobbers))
+	var pos uint64
+	for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		pos = uint64(i.TrailingZeros())
+		blobber := su.blobbers[pos]
+		worker := jsbridge.GetWorker(blobber.blobber.Baseurl)
+		eventChan, _ := worker.Listen(su.ctx)
+		allEventChan[pos] = eventChan
+	}
+
 	go func() {
 		defer su.uploadWG.Done()
 		for {
-			go su.listen(respChan)
+			go su.listen(allEventChan, respChan)
 			select {
 			case <-su.ctx.Done():
 				return

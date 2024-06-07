@@ -43,7 +43,7 @@ func NewWasmWebWorker(blobberURL, clientID, publicKey, privateKey, mnemonic stri
 	w := &WasmWebWorker{
 		Name: blobberURL,
 		Env:  []string{"BLOBBER_URL=" + blobberURL, "CLIENT_ID=" + clientID, "PRIVATE_KEY=" + privateKey, "MODE=worker", "PUBLIC_KEY=" + publicKey, "MNEMONIC=" + mnemonic},
-		Path: "wasmsdk/demo/zcn.wasm",
+		Path: "zcn.wasm",
 	}
 
 	_, ok := workers[blobberURL]
