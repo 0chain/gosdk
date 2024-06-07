@@ -305,10 +305,7 @@ func CreateChunkedUpload(
 	su.isRepair = isRepair
 	uploadWorker, uploadRequest := calculateWorkersAndRequests(su.allocationObj.DataShards, len(su.blobbers), su.chunkNumber)
 	su.uploadChan = make(chan UploadData, uploadRequest)
-	for i := 0; i < uploadWorker; i++ {
-		go su.uploadProcessor()
-	}
-
+	su.startProcessor(uploadWorker)
 	return su, nil
 }
 

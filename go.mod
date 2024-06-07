@@ -144,3 +144,4 @@ require (
 )
 
 //replace github.com/ethereum/go-ethereum => github.com/certifaction/go-ethereum v1.10.3-wasm
+replace github.com/hack-pad/go-webworkers => ../go-webworkers

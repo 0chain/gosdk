@@ -311,7 +311,7 @@ func main() {
 		setWallet(os.Getenv("CLIENT_ID"), os.Getenv("PUBLIC_KEY"), os.Getenv("PRIVATE_KEY"), os.Getenv("MNEMONIC"))
 		hideLogs()
 		debug.SetGCPercent(40)
-		debug.SetMemoryLimit(500 * 1024 * 1024) //500MB
+		debug.SetMemoryLimit(300 * 1024 * 1024) //300MB
 		err := startListener()
 		if err != nil {
 			fmt.Println("Error starting listener", err)

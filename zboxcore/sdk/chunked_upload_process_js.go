@@ -28,8 +28,13 @@ import (
 )
 
 var (
-	hasherMap = make(map[string]Hasher)
+	hasherMap = make(map[string]workerProcess)
 )
+
+type workerProcess struct {
+	wg     *sync.WaitGroup
+	hasher Hasher
+}
 
 type ChunkedUploadFormInfo struct {
 	ConnectionID      string
@@ -111,9 +116,10 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 	js.CopyBytesToJS(formInfoUint8, formInfoJSON)
 
 	if chunkStartIndex > 0 {
-		err = su.listen(false)
-		if err != nil {
-			return err
+		select {
+		case <-su.ctx.Done():
+			return context.Cause(su.ctx)
+		case su.listenChan <- struct{}{}:
 		}
 		// index := chunkStartIndex - 1
 		// go su.updateProgress(index)
@@ -173,9 +179,13 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 	}
 	fileShards = nil
 	if isFinal {
-		err = su.listen(true)
-		if err != nil {
-			return err
+		fmt.Println("final chunk")
+		su.uploadWG.Wait()
+		select {
+		case <-su.ctx.Done():
+			fmt.Println("context done")
+			return context.Cause(su.ctx)
+		default:
 		}
 		// index := chunkEndIndex
 		// go su.updateProgress(index)
@@ -194,16 +204,15 @@ type FinalWorkerResult struct {
 	ThumbnailContentHash string
 }
 
-func (su *ChunkedUpload) listen(isFinal bool) error {
+func (su *ChunkedUpload) listen(respChan chan error) {
 	su.consensus.Reset()
-	ctx, cancel := context.WithTimeout(su.ctx, su.uploadTimeOut)
-	defer cancel()
 
 	var (
 		pos      uint64
 		errCount int32
 		wg       sync.WaitGroup
 		wgErrors = make(chan error, len(su.blobbers))
+		isFinal  bool
 	)
 
 	for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
@@ -221,11 +230,10 @@ func (su *ChunkedUpload) listen(isFinal bool) error {
 			}()
 			blobber := su.blobbers[pos]
 			worker := jsbridge.GetWorker(blobber.blobber.Baseurl)
-			eventChan, err := worker.Listen(ctx)
+			eventChan, err := worker.Listen(su.ctx)
 			if err != nil {
 				errC := atomic.AddInt32(&errCount, 1)
 				if errC >= int32(su.consensus.consensusThresh) {
-					cancel()
 					wgErrors <- err
 				}
 				return
@@ -273,8 +281,11 @@ func (su *ChunkedUpload) listen(isFinal bool) error {
 					wgErrors <- thrown.New("upload_failed", fmt.Sprintf("Upload failed. %s", errMsgStr))
 				}
 			}
-			if isFinal {
+			finalRequestObject, _ := data.Get("isFinal")
+			finalRequest, _ := finalRequestObject.Bool()
+			if finalRequest {
 				//get final result
+				logger.Logger.Info("finalRequest from: ", blobber.blobber.Baseurl)
 				finalResult, err := data.Get("finalResult")
 				if err != nil {
 					logger.Logger.Error("errorGettingFinalResult")
@@ -315,6 +326,7 @@ func (su *ChunkedUpload) listen(isFinal bool) error {
 				blobber.fileRef.ActualFileSize = su.fileMeta.ActualSize
 				blobber.fileRef.EncryptedKey = su.encryptedKey
 				blobber.fileRef.CalculateHash()
+				isFinal = true
 			}
 			su.consensus.Done()
 
@@ -324,76 +336,101 @@ func (su *ChunkedUpload) listen(isFinal bool) error {
 	wg.Wait()
 	close(wgErrors)
 	for err := range wgErrors {
+		logger.Logger.Error("error from worker: ", err)
 		su.ctxCncl(thrown.New("upload_failed", fmt.Sprintf("Upload failed. %s", err)))
-		return err
+		respChan <- err
 	}
 
 	if !su.consensus.isConsensusOk() {
+		logger.Logger.Error("consensus not met")
 		err := thrown.New("consensus_not_met", fmt.Sprintf("Upload failed File not found for path %s. Required consensus atleast %d, got %d",
 			su.fileMeta.RemotePath, su.consensus.consensusThresh, su.consensus.getConsensus()))
 		su.ctxCncl(err)
-		return err
+		respChan <- err
 	}
-	return nil
+	if isFinal {
+		close(respChan)
+	} else {
+		respChan <- nil
+	}
 }
 
 func ProcessEventData(data safejs.Value) {
 	fileMeta, formInfo, fileShards, thumbnailChunkData, err := parseEventData(data)
 	if err != nil {
-		selfPostMessage(false, err.Error(), nil)
+		selfPostMessage(false, false, err.Error(), nil)
 		return
 	}
-	hasher, ok := hasherMap[fileMeta.RemotePath]
+	fmt.Println("eventRecieved: ", formInfo.ChunkStartIndex)
+	wp, ok := hasherMap[fileMeta.RemotePath]
 	if !ok {
-		hasher = CreateHasher(formInfo.ShardSize)
-		hasherMap[fileMeta.RemotePath] = hasher
+		wp = workerProcess{
+			hasher: CreateHasher(formInfo.ShardSize),
+			wg:     &sync.WaitGroup{},
+		}
+		hasherMap[fileMeta.RemotePath] = wp
 	}
 	if formInfo.IsFinal {
 		defer delete(hasherMap, fileMeta.RemotePath)
 	}
 	formBuilder := CreateChunkedUploadFormBuilder()
-	blobberData, err := formBuilder.Build(fileMeta, hasher, formInfo.ConnectionID, formInfo.ChunkSize, formInfo.ChunkStartIndex, formInfo.ChunkEndIndex, formInfo.IsFinal, formInfo.EncryptedKey, formInfo.EncryptedKeyPoint,
+	uploadData, err := formBuilder.Build(fileMeta, wp.hasher, formInfo.ConnectionID, formInfo.ChunkSize, formInfo.ChunkStartIndex, formInfo.ChunkEndIndex, formInfo.IsFinal, formInfo.EncryptedKey, formInfo.EncryptedKeyPoint,
 		fileShards, thumbnailChunkData, formInfo.ShardSize)
 	if err != nil {
-		selfPostMessage(false, err.Error(), nil)
+		selfPostMessage(false, false, err.Error(), nil)
 		return
 	}
 	blobberURL := os.Getenv("BLOBBER_URL")
-	if formInfo.IsFinal && len(blobberData.dataBuffers) > 1 {
-		err = sendUploadRequest(blobberData.dataBuffers[:len(blobberData.dataBuffers)-1], blobberData.contentSlice[:len(blobberData.contentSlice)-1], blobberURL, formInfo.AllocationID, formInfo.AllocationTx, formInfo.HttpMethod)
-		if err != nil {
-			selfPostMessage(false, err.Error(), nil)
-			return
-		}
-		err = sendUploadRequest(blobberData.dataBuffers[len(blobberData.dataBuffers)-1:], blobberData.contentSlice[len(blobberData.contentSlice)-1:], blobberURL, formInfo.AllocationID, formInfo.AllocationTx, formInfo.HttpMethod)
-		if err != nil {
-			selfPostMessage(false, err.Error(), nil)
-			return
-		}
-	} else {
-		err = sendUploadRequest(blobberData.dataBuffers, blobberData.contentSlice, blobberURL, formInfo.AllocationID, formInfo.AllocationTx, formInfo.HttpMethod)
-		if err != nil {
-			selfPostMessage(false, err.Error(), nil)
-			return
-		}
+	if !formInfo.IsFinal {
+		wp.wg.Add(1)
 	}
-	if formInfo.IsFinal {
-		finalResult := &FinalWorkerResult{
-			FixedMerkleRoot:      blobberData.formData.FixedMerkleRoot,
-			ValidationRoot:       blobberData.formData.ValidationRoot,
-			ThumbnailContentHash: blobberData.formData.ThumbnailContentHash,
+	go func(blobberData blobberData, wg *sync.WaitGroup) {
+		if formInfo.IsFinal && len(blobberData.dataBuffers) > 1 {
+			err = sendUploadRequest(blobberData.dataBuffers[:len(blobberData.dataBuffers)-1], blobberData.contentSlice[:len(blobberData.contentSlice)-1], blobberURL, formInfo.AllocationID, formInfo.AllocationTx, formInfo.HttpMethod)
+			if err != nil {
+				selfPostMessage(false, true, err.Error(), nil)
+				return
+			}
+			fmt.Println("waiting for last chunk")
+			wg.Wait()
+			err = sendUploadRequest(blobberData.dataBuffers[len(blobberData.dataBuffers)-1:], blobberData.contentSlice[len(blobberData.contentSlice)-1:], blobberURL, formInfo.AllocationID, formInfo.AllocationTx, formInfo.HttpMethod)
+			if err != nil {
+				selfPostMessage(false, true, err.Error(), nil)
+				return
+			}
+		} else {
+			if formInfo.IsFinal {
+				fmt.Println("waiting for last chunk")
+				wg.Wait()
+			}
+			err = sendUploadRequest(blobberData.dataBuffers, blobberData.contentSlice, blobberURL, formInfo.AllocationID, formInfo.AllocationTx, formInfo.HttpMethod)
+			if err != nil {
+				selfPostMessage(false, formInfo.IsFinal, err.Error(), nil)
+				wg.Done()
+				return
+			}
 		}
-		selfPostMessage(true, "", finalResult)
-	} else {
-		selfPostMessage(true, "", nil)
-	}
+		if formInfo.IsFinal {
+			finalResult := &FinalWorkerResult{
+				FixedMerkleRoot:      blobberData.formData.FixedMerkleRoot,
+				ValidationRoot:       blobberData.formData.ValidationRoot,
+				ThumbnailContentHash: blobberData.formData.ThumbnailContentHash,
+			}
+			selfPostMessage(true, true, "", finalResult)
+		} else {
+			selfPostMessage(true, false, "", nil)
+			wg.Done()
+		}
+	}(uploadData, wp.wg)
 
 }
 
-func selfPostMessage(success bool, errMsg string, finalResult *FinalWorkerResult) {
+func selfPostMessage(success, isFinal bool, errMsg string, finalResult *FinalWorkerResult) {
+	fmt.Println("selfPostMessage: ", success, isFinal, errMsg)
 	obj := js.Global().Get("Object").New()
 	obj.Set("success", success)
 	obj.Set("error", errMsg)
+	obj.Set("isFinal", isFinal)
 	if finalResult != nil {
 		finalResultJSON, err := json.Marshal(finalResult)
 		if err != nil {
@@ -543,4 +580,25 @@ func sendUploadRequest(dataBuffers []*bytes.Buffer, contentSlice []string, blobb
 		})
 	}
 	return eg.Wait()
+}
+
+func (su *ChunkedUpload) startProcessor(uploadWorker int) {
+	su.listenChan = make(chan struct{}, uploadWorker)
+	respChan := make(chan error, 1)
+	su.uploadWG.Add(1)
+	go func() {
+		defer su.uploadWG.Done()
+		for {
+			go su.listen(respChan)
+			select {
+			case <-su.ctx.Done():
+				return
+			case err, ok := <-respChan:
+				if !ok || err != nil {
+					return
+				}
+				<-su.listenChan
+			}
+		}
+	}()
 }
