@@ -104,8 +104,8 @@ func WithActualHash(hash string) ChunkedUploadOption {
 	}
 }
 
-func WithFileHashResultFunc(f func() (string, error)) ChunkedUploadOption {
+func WithFileHasher(h Hasher) ChunkedUploadOption {
 	return func(su *ChunkedUpload) {
-		su.fileHashResultFunc = f
+		su.fileHasher = h
 	}
 }

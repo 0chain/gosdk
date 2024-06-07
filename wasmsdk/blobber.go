@@ -695,15 +695,8 @@ func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 			}))
 		}
 		if option.Md5HashFuncName != "" {
-			md5HashFunc := func() (string, error) {
-				md5Callback := js.Global().Get(option.Md5HashFuncName)
-				result, err := jsbridge.Await(md5Callback.Invoke())
-				if len(err) > 0 && !err[0].IsNull() {
-					return "", errors.New("file_hash: " + err[0].String())
-				}
-				return result[0].String(), nil
-			}
-			options = append(options, sdk.WithFileHashResultFunc(md5HashFunc))
+			fileHasher := newFileHasher(option.Md5HashFuncName)
+			options = append(options, sdk.WithFileHasher(fileHasher))
 		}
 		operationRequests[idx] = sdk.OperationRequest{
 			FileMeta:       fileMeta,

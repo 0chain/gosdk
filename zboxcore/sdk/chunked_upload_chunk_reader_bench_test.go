@@ -65,11 +65,10 @@ func BenchmarkChunkedUploadChunkReader(b *testing.B) {
 				encscheme.InitForEncryption("filetype:audio")
 				reader, err := createChunkReader(
 					bytes.NewReader(buf), int64(bm.Size),
-					int64(bm.ChunkSize), bm.DataShards,
+					int64(bm.ChunkSize), bm.DataShards, bm.ParityShards,
 					bm.EncryptOnUpload, uploadMask,
 					erasureEncoder, encscheme,
 					CreateHasher(getShardSize(bm.Size, bm.DataShards, bm.EncryptOnUpload)), 100,
-					true,
 				)
 				if err != nil {
 					b.Fatal(err)
