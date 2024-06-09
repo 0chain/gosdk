@@ -32,7 +32,6 @@ const INVALID_PATH = "invalid_path"
 type ObjectTreeRequest struct {
 	allocationID   string
 	allocationTx   string
-	allocationObj  *Allocation
 	blobbers       []*blockchain.StorageNode
 	authToken      string
 	pathHash       string
