@@ -334,7 +334,7 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
 
 	req := a.DataShards
 
-	if len(versionMap[latestVersion]) > req {
+	if len(versionMap[latestVersion]) > req || len(versionMap[prevVersion]) > req {
 		return Commit, blobberRes, nil
 	}
 
