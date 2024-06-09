@@ -41,10 +41,7 @@ func getAllocation(allocationId string) (*sdk.Allocation, error) {
 		Expiration: time.Now().Add(120 * time.Minute),
 	}
 	if !ok {
-		for _, blober := range a.Blobbers {
-			c := client.GetClient()
-			jsbridge.NewWasmWebWorker(blober.Baseurl, c.ClientID, c.Keys[0].PublicKey, c.Keys[0].PrivateKey, c.Mnemonic) //nolint:errcheck
-		}
+		addWebWorkers(a)
 	}
 
 	cachedAllocations.Add(allocationId, it)
@@ -70,4 +67,11 @@ func reloadAllocation(allocationID string) (*sdk.Allocation, error) {
 	cachedAllocations.Add(allocationID, it)
 
 	return it.Allocation, nil
+}
+
+func addWebWorkers(alloc *sdk.Allocation) {
+	for _, blober := range alloc.Blobbers {
+		c := client.GetClient()
+		jsbridge.NewWasmWebWorker(blober.ID, blober.Baseurl, c.ClientID, c.Keys[0].PublicKey, c.Keys[0].PrivateKey, c.Mnemonic) //nolint:errcheck
+	}
 }

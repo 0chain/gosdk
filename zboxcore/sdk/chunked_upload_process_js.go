@@ -145,7 +145,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		blobber := su.blobbers[pos]
 		blobber.progress.UploadLength += uploadLength
 		var thumbnailChunkData []byte
-		worker := jsbridge.GetWorker(blobber.blobber.Baseurl)
+		worker := jsbridge.GetWorker(blobber.blobber.ID)
 		if worker == nil {
 			continue
 		}
@@ -594,7 +594,7 @@ func (su *ChunkedUpload) startProcessor(uploadWorker int) {
 	for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		blobber := su.blobbers[pos]
-		worker := jsbridge.GetWorker(blobber.blobber.Baseurl)
+		worker := jsbridge.GetWorker(blobber.blobber.ID)
 		eventChan, _ := worker.Listen(su.ctx)
 		allEventChan[pos] = eventChan
 	}

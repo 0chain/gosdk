@@ -39,28 +39,36 @@ var (
 	workers = make(map[string]*WasmWebWorker)
 )
 
-func NewWasmWebWorker(blobberURL, clientID, publicKey, privateKey, mnemonic string) (*WasmWebWorker, error) {
+func NewWasmWebWorker(blobberID, blobberURL, clientID, publicKey, privateKey, mnemonic string) (*WasmWebWorker, error) {
 	w := &WasmWebWorker{
 		Name: blobberURL,
 		Env:  []string{"BLOBBER_URL=" + blobberURL, "CLIENT_ID=" + clientID, "PRIVATE_KEY=" + privateKey, "MODE=worker", "PUBLIC_KEY=" + publicKey, "MNEMONIC=" + mnemonic},
 		Path: "zcn.wasm",
 	}
 
-	_, ok := workers[blobberURL]
+	_, ok := workers[blobberID]
 	if ok {
-		return workers[blobberURL], nil
+		return workers[blobberID], nil
 	}
 
 	if err := w.Start(); err != nil {
 		return nil, err
 	}
-	workers[blobberURL] = w
+	workers[blobberID] = w
 
 	return w, nil
 }
 
-func GetWorker(url string) *WasmWebWorker {
-	return workers[url]
+func GetWorker(blobberID string) *WasmWebWorker {
+	return workers[blobberID]
+}
+
+func RemoveWorker(blobberID string) {
+	worker, ok := workers[blobberID]
+	if ok {
+		worker.Terminate()
+		delete(workers, blobberID)
+	}
 }
 
 func (ww *WasmWebWorker) Start() error {
