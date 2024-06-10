@@ -87,6 +87,12 @@ type ChunkedUpload struct {
 	encryptedKey      string
 	uploadChan        chan UploadData
 	uploadWG          sync.WaitGroup
+	//used in wasm check chunked_upload_process_js.go
+	listenChan chan struct{} //nolint:unused
+	//used in wasm check chunked_upload_process_js.go
+	processMap map[int]int //nolint:unused
+	//used in wasm check chunked_upload_process_js.go
+	processMapLock sync.Mutex //nolint:unused
 }
 
 // FileMeta metadata of stream input/local

@@ -22,7 +22,6 @@ import (
 
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/wasmsdk/jsbridge"
-	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
@@ -1004,10 +1003,7 @@ func terminateWorkers(allocationID string) {
 		return
 	}
 	for _, blobber := range alloc.Blobbers {
-		worker := jsbridge.GetWorker(blobber.Baseurl)
-		if worker != nil {
-			worker.Terminate()
-		}
+		jsbridge.RemoveWorker(blobber.ID)
 	}
 }
 
@@ -1016,10 +1012,7 @@ func createWorkers(allocationID string) {
 	if err != nil {
 		return
 	}
-	for _, blobber := range alloc.Blobbers {
-		client := client.GetClient()
-		jsbridge.NewWasmWebWorker(blobber.Baseurl, client.ClientID, client.Keys[0].PublicKey, client.Keys[0].PrivateKey, client.Mnemonic) //nolint:errcheck
-	}
+	addWebWorkers(alloc)
 }
 
 func startListener() error {
@@ -1035,7 +1028,7 @@ func startListener() error {
 	if err != nil {
 		return err
 	}
-
+	sdk.InitHasherMap()
 	for event := range listener {
 		data, err := event.Data()
 		if err != nil {
