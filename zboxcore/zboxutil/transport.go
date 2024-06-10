@@ -12,7 +12,7 @@ import (
 var DefaultTransport = &http.Transport{
 	Proxy: envProxy.Proxy,
 	DialContext: (&net.Dialer{
-		Timeout:   45 * time.Second,
+		Timeout:   3 * time.Minute,
 		KeepAlive: 45 * time.Second,
 		DualStack: true,
 	}).DialContext,
