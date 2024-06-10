@@ -18,8 +18,7 @@ var DefaultTransport = &http.Transport{
 	}).DialContext,
 	MaxIdleConns:          100,
 	IdleConnTimeout:       90 * time.Second,
-	TLSHandshakeTimeout:   10 * time.Second,
+	TLSHandshakeTimeout:   45 * time.Second,
 	ExpectContinueTimeout: 1 * time.Second,
 	MaxIdleConnsPerHost:   25,
-	WriteBufferSize:       16 * 1024,
 }
