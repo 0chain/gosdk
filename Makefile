@@ -44,7 +44,7 @@ gosdk-mocks:
 	./generate_mocks.sh
 
 gosdk-test:
-	go test -v -tags bn256 -p 1 ./...
+	go test -tags bn256 -p 1 ./...
 
 install-gosdk: | gosdk-build wasm-build
 
