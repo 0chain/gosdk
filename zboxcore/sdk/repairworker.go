@@ -2,6 +2,7 @@ package sdk
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"sync"
 
@@ -21,6 +22,7 @@ type RepairRequest struct {
 	completedCallback func()
 	filesRepaired     int
 	wg                *sync.WaitGroup
+	allocation			*Allocation	
 }
 
 type RepairStatusCB struct {
@@ -69,6 +71,39 @@ func (r *RepairRequest) processRepair(ctx context.Context, a *Allocation) {
 	if r.statusCB != nil {
 		r.statusCB.RepairCompleted(r.filesRepaired)
 	}
+}
+
+func (r *RepairRequest) Size(ctx context.Context, dir *ListResult) (uint64, error) {
+	res := uint64(0)
+	var err error
+	switch dir.Type {
+		case fileref.DIRECTORY:
+			if len(dir.Children) == 0 {
+				// fetch dir
+				dir, err = r.allocation.ListDir(dir.Path, WithListRequestForRepair(true), WithListRequestPageLimit(-1))
+				if err != nil {
+					return 0, err
+				}
+			}
+			for _, subDir := range dir.Children {
+				sz, err := r.Size(ctx, subDir)
+				if err != nil {
+					return 0, err
+				}
+				res += sz
+			}
+		case fileref.FILE:
+			// this returns op object and mask
+			repairOps := r.repairFile(r.allocation, dir)
+			if repairOps == nil {
+				err = fmt.Errorf("fetch repairOps failed")
+				return 0, err
+			}
+			for _, repairOp := range repairOps {
+				res += uint64(repairOp.FileMeta.ActualSize)
+			}
+	}
+	return res, err
 }
 
 func (r *RepairRequest) iterateDir(a *Allocation, dir *ListResult) []OperationRequest {

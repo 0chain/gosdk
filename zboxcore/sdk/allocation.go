@@ -2330,15 +2330,18 @@ func (a *Allocation) RepairSize(remotePath string) (uint64, error) {
 		return 0, notInitialized
 	}
 
-	listDir, err := a.ListDir(remotePath,
+	dir, err := a.ListDir(remotePath,
 		WithListRequestForRepair(true),
 		WithListRequestPageLimit(-1),
 	)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
-	
+	repairReq := RepairRequest{
+		allocation: a,
+	}
+	return repairReq.Size(context.Background(), dir)
 }
 
 func (a *Allocation) CancelUpload(remotePath string) error {
