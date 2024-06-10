@@ -1028,7 +1028,7 @@ func startListener() error {
 	if err != nil {
 		return err
 	}
-
+	sdk.InitHasherMap()
 	for event := range listener {
 		data, err := event.Data()
 		if err != nil {

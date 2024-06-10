@@ -378,7 +378,9 @@ func (su *ChunkedUpload) removeProgress() {
 
 func (su *ChunkedUpload) updateProgress(chunkIndex int) {
 	if su.progressStorer != nil {
-		su.progressStorer.Update(su.progress.ID, chunkIndex)
+		if chunkIndex > su.progress.ChunkIndex {
+			su.progressStorer.Update(su.progress.ID, chunkIndex)
+		}
 	}
 }
 
@@ -458,40 +460,16 @@ func (su *ChunkedUpload) process() error {
 			}
 		}
 
-		//chunk has not be uploaded yet
-		if chunks.chunkEndIndex > su.progress.ChunkIndex {
-			err = su.processUpload(
-				chunks.chunkStartIndex, chunks.chunkEndIndex,
-				chunks.fileShards, chunks.thumbnailShards,
-				chunks.isFinal, chunks.totalReadSize,
-			)
-			if err != nil {
-				if su.statusCallback != nil {
-					su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
-				}
-				return err
+		err = su.processUpload(
+			chunks.chunkStartIndex, chunks.chunkEndIndex,
+			chunks.fileShards, chunks.thumbnailShards,
+			chunks.isFinal, chunks.totalReadSize,
+		)
+		if err != nil {
+			if su.statusCallback != nil {
+				su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
 			}
-		} else {
-			// Write data to hashers
-			for i, blobberShard := range chunks.fileShards {
-				hasher := su.blobbers[i].progress.Hasher
-				for _, chunkBytes := range blobberShard {
-					err = hasher.WriteToFixedMT(chunkBytes)
-					if err != nil {
-						if su.statusCallback != nil {
-							su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
-						}
-						return err
-					}
-					err = hasher.WriteToValidationMT(chunkBytes)
-					if err != nil {
-						if su.statusCallback != nil {
-							su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
-						}
-						return err
-					}
-				}
-			}
+			return err
 		}
 
 		// last chunk might 0 with io.EOF

@@ -43,6 +43,32 @@ func (su *ChunkedUpload) createUploadProgress(connectionId string) {
 func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 	fileShards []blobberShards, thumbnailShards blobberShards,
 	isFinal bool, uploadLength int64) error {
+
+	//chunk has not be uploaded yet
+	if chunkEndIndex <= su.progress.ChunkIndex {
+		// Write data to hashers
+		for i, blobberShard := range fileShards {
+			hasher := su.blobbers[i].progress.Hasher
+			for _, chunkBytes := range blobberShard {
+				err := hasher.WriteToFixedMT(chunkBytes)
+				if err != nil {
+					if su.statusCallback != nil {
+						su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
+					}
+					return err
+				}
+				err = hasher.WriteToValidationMT(chunkBytes)
+				if err != nil {
+					if su.statusCallback != nil {
+						su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
+					}
+					return err
+				}
+			}
+		}
+		return nil
+	}
+
 	var (
 		errCount       int32
 		finalBuffer    []blobberData
