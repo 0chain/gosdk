@@ -841,7 +841,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 	for i := 0; i < len(operations); {
 		// resetting multi operation and previous paths for every batch
 		mo.allocationObj = a
-		mo.operationMask = zboxutil.NewUint128(0)
+		mo.operationMask = zboxutil.NewUint128(1).Lsh(uint64(len(mo.allocationObj.Blobbers))).Sub64(1)
 		mo.maskMU = &sync.Mutex{}
 		mo.connectionID = connectionID
 		mo.ctx, mo.ctxCncl = context.WithCancelCause(a.ctx)
@@ -856,8 +856,14 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 		previousPaths := make(map[string]bool)
 		connectionErrors := make([]error, len(mo.allocationObj.Blobbers))
 
-		var wg sync.WaitGroup
-		for blobberIdx := range mo.allocationObj.Blobbers {
+		var (
+			wg  sync.WaitGroup
+			pos uint64
+		)
+
+		for i := mo.operationMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+			pos = uint64(i.TrailingZeros())
+			blobberIdx := int(pos)
 			wg.Add(1)
 			go func(pos int) {
 				defer wg.Done()
@@ -868,6 +874,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 				}
 			}(blobberIdx)
 		}
+
 		wg.Wait()
 		// Check consensus
 		if mo.operationMask.CountOnes() < mo.consensusThresh {
@@ -1703,19 +1710,12 @@ func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus int,
 		return errors.New("invalid_path", "Path should be valid and absolute")
 	}
 
-	req := &DeleteRequest{consensus: Consensus{RWMutex: &sync.RWMutex{}}}
-	req.allocationObj = a
-	req.blobbers = a.Blobbers
-	req.allocationID = a.ID
-	req.allocationTx = a.Tx
-	req.consensus.Init(threshConsensus, fullConsensus)
-	req.ctx, req.ctxCncl = context.WithCancel(a.ctx)
-	req.remotefilepath = path
-	req.connectionID = zboxutil.NewConnectionId()
-	req.deleteMask = mask
-	req.maskMu = &sync.Mutex{}
-	req.timestamp = int64(common.Now())
-	err := req.ProcessDelete()
+	err := a.DoMultiOperation([]OperationRequest{
+		{
+			OperationType: constants.FileOperationDelete,
+			RemotePath:    path,
+		},
+	}, WithRepair(), WithConsensus(threshConsensus, fullConsensus), WithOperationalMask(mask))
 	return err
 }
 
@@ -1733,28 +1733,13 @@ func (a *Allocation) createDir(remotePath string, threshConsensus, fullConsensus
 	}
 
 	remotePath = zboxutil.RemoteClean(remotePath)
-	timestamp := int64(common.Now())
-	req := DirRequest{
-		allocationObj: a,
-		allocationID:  a.ID,
-		allocationTx:  a.Tx,
-		blobbers:      a.Blobbers,
-		mu:            &sync.Mutex{},
-		dirMask:       mask,
-		connectionID:  zboxutil.NewConnectionId(),
-		remotePath:    remotePath,
-		wg:            &sync.WaitGroup{},
-		timestamp:     timestamp,
-		Consensus: Consensus{
-			RWMutex:         &sync.RWMutex{},
-			consensusThresh: threshConsensus,
-			fullconsensus:   fullConsensus,
+	err := a.DoMultiOperation([]OperationRequest{
+		{
+			OperationType: constants.FileOperationCreateDir,
+			RemotePath:    remotePath,
 		},
-		alreadyExists: make(map[uint64]bool),
-	}
-	req.ctx, req.ctxCncl = context.WithCancel(a.ctx)
+	}, WithRepair(), WithConsensus(threshConsensus, fullConsensus), WithOperationalMask(mask))
 
-	err := req.ProcessDir(a)
 	return err
 }
 

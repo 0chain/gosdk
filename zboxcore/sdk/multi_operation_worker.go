@@ -40,6 +40,19 @@ func WithRepair() MultiOperationOption {
 	}
 }
 
+func WithConsensus(consensusThresh, fullconsensus int) MultiOperationOption {
+	return func(mo *MultiOperation) {
+		mo.Consensus.consensusThresh = consensusThresh
+		mo.Consensus.fullconsensus = fullconsensus
+	}
+}
+
+func WithOperationalMask(mask zboxutil.Uint128) MultiOperationOption {
+	return func(mo *MultiOperation) {
+		mo.operationMask = mask
+	}
+}
+
 type Operationer interface {
 	Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error)
 	buildChange(refs []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange
@@ -64,9 +77,9 @@ type MultiOperation struct {
 func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 
 	defer func() {
-		if err == nil {
+		if err != nil {
 			mo.maskMU.Lock()
-			mo.operationMask = mo.operationMask.Or(zboxutil.NewUint128(1).Lsh(uint64(blobberIdx)))
+			mo.operationMask = mo.operationMask.And(zboxutil.NewUint128(1).Lsh(uint64(blobberIdx)).Not())
 			mo.maskMU.Unlock()
 		}
 	}()
