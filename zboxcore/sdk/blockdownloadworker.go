@@ -182,7 +182,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock(hostClient *fasthttp.HostC
 
 			var rspData downloadBlock
 			if statuscode != http.StatusOK {
-				zlogger.Logger.Debug(fmt.Sprintf("downloadBlobberBlock FAIL - blobberID: %v, clientID: %v, blockNum: %d, retry: %d, response: %v", req.blobber.ID, client.GetClientID(), header.BlockNum, retry, string(respBuf)))
+				zlogger.Logger.Error(fmt.Sprintf("downloadBlobberBlock FAIL - blobberID: %v, clientID: %v, blockNum: %d, retry: %d, response: %v", req.blobber.ID, client.GetClientID(), header.BlockNum, retry, string(respBuf)))
 				if err = json.Unmarshal(respBuf, &rspData); err == nil {
 					return errors.New("download_error", fmt.Sprintf("Response status: %d, Error: %v,", statuscode, rspData.err))
 				}
@@ -261,7 +261,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock(hostClient *fasthttp.HostC
 
 func AddBlockDownloadReq(ctx context.Context, req *BlockDownloadRequest, rb zboxutil.DownloadBuffer, effectiveBlockSize int) {
 	if rb != nil {
-		reqCtx, cncl := context.WithTimeout(ctx, (time.Second * 10))
+		reqCtx, cncl := context.WithTimeout(ctx, (time.Second * 45))
 		defer cncl()
 		req.respBuf = rb.RequestChunk(reqCtx, int(req.blockNum))
 		if len(req.respBuf) == 0 {

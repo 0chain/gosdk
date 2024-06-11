@@ -46,12 +46,12 @@ func initBridge(
 		bridgeAddress,
 		tokenAddress,
 		authorizersAddress,
+		"",
 		ethereumAddress,
 		ethereumNodeURL,
 		"",
 		gasLimit,
 		consensusThreshold,
-		zcnbridge.BancorAPIURL,
 		ethereumClient,
 		transactionProvider,
 		keyStore,
@@ -175,7 +175,7 @@ func getNotProcessedZCNBurnTickets() string {
 }
 
 // estimateBurnWZCNGasAmount performs gas amount estimation for the given burn wzcn transaction.
-func estimateBurnWZCNGasAmount(from, to string, amountTokens int) string { // nolint:golint,unused
+func estimateBurnWZCNGasAmount(from, to, amountTokens string) string { // nolint:golint,unused
 	estimateBurnWZCNGasAmountResponse, err := bridge.EstimateBurnWZCNGasAmount(
 		context.Background(), from, to, amountTokens)
 	if err != nil {
@@ -192,7 +192,7 @@ func estimateBurnWZCNGasAmount(from, to string, amountTokens int) string { // no
 }
 
 // estimateMintWZCNGasAmount performs gas amount estimation for the given mint wzcn transaction.
-func estimateMintWZCNGasAmount(from, to, zcnTransaction string, amountToken, nonce int64, signaturesRaw []string) string { // nolint:golint,unused
+func estimateMintWZCNGasAmount(from, to, zcnTransaction, amountToken string, nonce int64, signaturesRaw []string) string { // nolint:golint,unused
 	var signaturesBytes [][]byte
 
 	var (

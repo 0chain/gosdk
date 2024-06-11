@@ -181,7 +181,9 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) []OperationR
 					ChunkWriteSize: int(a.GetChunkReadSize(ref.EncryptedKey != "")),
 				}
 				op = a.RepairFile(memFile, file.Path, statusCB, found, ref)
-				op.DownloadFile = true
+				if op.FileMeta.ActualSize > 0 {
+					op.DownloadFile = true
+				}
 			} else {
 				f, err := sys.Files.Open(localPath)
 				if err != nil {

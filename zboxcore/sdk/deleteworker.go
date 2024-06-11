@@ -89,7 +89,7 @@ func (req *DeleteRequest) deleteBlobberFile(
 
 			if resp.StatusCode == http.StatusOK {
 				req.consensus.Done()
-				l.Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " deleted.")
+				l.Logger.Debug(blobber.Baseurl, " "+req.remotefilepath, " deleted.")
 				return
 			}
 
@@ -362,7 +362,7 @@ func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string) (
 			fmt.Sprintf("Delete failed. Required consensus %d, got %d",
 				deleteReq.consensus.consensusThresh, deleteReq.consensus.consensus))
 	}
-	l.Logger.Info("Delete Process Ended ")
+	l.Logger.Debug("Delete Process Ended ")
 	return objectTreeRefs, deleteReq.deleteMask, nil
 }
 

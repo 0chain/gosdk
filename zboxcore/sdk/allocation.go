@@ -253,6 +253,11 @@ func SetMultiOpBatchSize(size int) {
 func SetWasm() {
 	IsWasm = true
 	BatchSize = 5
+	extraCount = 0
+}
+
+func (a *Allocation) SetCheckStatus(checkStatus bool) {
+	a.checkStatus = checkStatus
 }
 
 func getPriceRange(name string) (PriceRange, error) {
@@ -432,6 +437,9 @@ func (a *Allocation) RepairFile(file sys.File, remotepath string, statusCallback
 		FileMeta:      fileMeta,
 		Opts:          opts,
 		FileReader:    file,
+	}
+	if ref.ActualFileHash == emptyFileDataHash {
+		op.FileMeta.ActualSize = 0
 	}
 	return op
 }
@@ -1214,7 +1222,7 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 				a.downloadChan <- dr
 			}(dr)
 		}
-		l.Logger.Info("[processReadMarker]", zap.String("allocation_id", a.ID),
+		l.Logger.Debug("[processReadMarker]", zap.String("allocation_id", a.ID),
 			zap.Int("num of download requests", len(drs)),
 			zap.Duration("processDownloadRequest", elapsedProcessDownloadRequest))
 		return
@@ -1737,6 +1745,7 @@ func (a *Allocation) createDir(remotePath string, threshConsensus, fullConsensus
 			consensusThresh: threshConsensus,
 			fullconsensus:   fullConsensus,
 		},
+		alreadyExists: make(map[uint64]bool),
 	}
 	req.ctx, req.ctxCncl = context.WithCancel(a.ctx)
 
@@ -2337,8 +2346,10 @@ func (a *Allocation) PauseUpload(remotePath string) error {
 	cancelFunc, ok := CancelOpCtx[remotePath]
 	cancelLock.Unlock()
 	if !ok {
+		logger.Logger.Error("PauseUpload: remote path not found", remotePath)
 		return errors.New("remote_path_not_found", "Invalid path. No upload in progress for the path "+remotePath)
 	} else {
+		logger.Logger.Info("PauseUpload: remote path found", remotePath)
 		cancelFunc(ErrPauseUpload)
 	}
 	return nil
