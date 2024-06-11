@@ -180,12 +180,14 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		if err == nil {
 			successCount++
 		}
-		blobber.fileRef.ChunkSize = su.chunkSize
-		blobber.fileRef.Size = su.shardUploadedSize
-		blobber.fileRef.Path = su.fileMeta.RemotePath
-		blobber.fileRef.ActualFileHash = su.fileMeta.ActualHash
-		blobber.fileRef.ActualFileSize = su.fileMeta.ActualSize
-		blobber.fileRef.EncryptedKey = su.encryptedKey
+		if isFinal {
+			blobber.fileRef.ChunkSize = su.chunkSize
+			blobber.fileRef.Size = su.shardUploadedSize
+			blobber.fileRef.Path = su.fileMeta.RemotePath
+			blobber.fileRef.ActualFileHash = su.fileMeta.ActualHash
+			blobber.fileRef.ActualFileSize = su.fileMeta.ActualSize
+			blobber.fileRef.EncryptedKey = su.encryptedKey
+		}
 	}
 
 	if successCount < su.consensus.consensusThresh {
@@ -632,8 +634,10 @@ func (su *ChunkedUpload) startProcessor(uploadWorker int) {
 		pos = uint64(i.TrailingZeros())
 		blobber := su.blobbers[pos]
 		worker := jsbridge.GetWorker(blobber.blobber.ID)
-		eventChan, _ := worker.Listen(su.ctx)
-		allEventChan[pos] = eventChan
+		if worker != nil {
+			eventChan, _ := worker.Listen(su.ctx)
+			allEventChan[pos] = eventChan
+		}
 	}
 
 	go func() {
