@@ -285,6 +285,10 @@ github.com/gorilla/websocket v1.5.0 h1:PPwGk2jz7EePpoHN/+ClbZu8SPxiqlu12wZP/3sWm
 github.com/gorilla/websocket v1.5.0/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
 github.com/h2non/filetype v1.1.4-0.20231228185113-6469358c2bcb h1:GlQyMv2C48qmfPItvAXFoyN341Swxp9JNVeUZxnmbJw=
 github.com/h2non/filetype v1.1.4-0.20231228185113-6469358c2bcb/go.mod h1:319b3zT68BvV+WRj7cwy856M2ehB3HqNOt6sy1HndBY=
+github.com/hack-pad/go-webworkers v0.1.0 h1:QHBJpkXJgW0QRi2iiUGcxwGnmy7lQJL0F8UfsgMXKhA=
+github.com/hack-pad/go-webworkers v0.1.0/go.mod h1:/rmjjgnlw0CursmeqRtP0NGIqo8CR+0o6AtzFydUHJ4=
+github.com/hack-pad/safejs v0.1.1 h1:d5qPO0iQ7h2oVtpzGnLExE+Wn9AtytxIfltcS2b9KD8=
+github.com/hack-pad/safejs v0.1.1/go.mod h1:HdS+bKF1NrE72VoXZeWzxFOVQVUSqZJAG0xNCnb+Tio=
 github.com/hashicorp/go-bexpr v0.1.10 h1:9kuI5PFotCboP3dkDYFr/wi0gg0QVbSNz5oFRpxn4uE=
 github.com/hashicorp/go-bexpr v0.1.10/go.mod h1:oxlubA2vC/gFVfX1A6JGp7ls7uCDlfJn732ehYYg+g0=
 github.com/hashicorp/go-cleanhttp v0.5.2 h1:035FKYIWjmULyFRBKPs8TBQoi0x6d9G4xc9neXJWAZQ=

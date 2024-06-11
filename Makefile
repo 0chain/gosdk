@@ -38,13 +38,13 @@ wasm-build: getrev
 	CGO_ENABLED=0 GOOS=js GOARCH=wasm go build -ldflags="-s -w" -buildvcs=false -o ./zcn.wasm  ./wasmsdk
 
 wasm-test: wasm-build
-	env -i $(shell go env) PATH="$(shell go env GOROOT)/misc/wasm:$(PATH)" CGO_ENABLED=0 GOOS=js GOARCH=wasm go test -v github.com/0chain/gosdk/wasmsdk/jsbridge/...
-
+	env -i $(shell go env) PATH="$(shell go env GOROOT)/misc/wasm:$(PATH)" CGO_ENABLED=0 GOOS=js GOARCH=wasm go test -v ./wasmsdk/jsbridge/input_test.go ./wasmsdk/jsbridge/input.go ./wasmsdk/jsbridge/object.go ./wasmsdk/jsbridge/error.go ./wasmsdk/jsbridge/func.go ./wasmsdk/jsbridge/func_test.go ./wasmsdk/jsbridge/sync.go ./wasmsdk/jsbridge/async.go ./wasmsdk/jsbridge/output.go ./wasmsdk/jsbridge/vars.go
+ 
 gosdk-mocks:
 	./generate_mocks.sh
 
 gosdk-test:
-	go test -v -tags bn256 -p 1 ./...
+	go test -tags bn256 -p 1 ./...
 
 install-gosdk: | gosdk-build wasm-build
 
