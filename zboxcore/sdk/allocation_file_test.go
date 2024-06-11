@@ -22,6 +22,7 @@ import (
 	"github.com/hitenjain14/fasthttp"
 
 	"github.com/0chain/gosdk/zboxcore/blockchain"
+	"github.com/0chain/gosdk/zboxcore/client"
 	zclient "github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/mocks"
@@ -34,6 +35,9 @@ func setupHttpResponses(
 	t *testing.T, mockClient *mocks.HttpClient, fastMock *mocks.FastClient, allocID string,
 	refsInput, fileMetaInput []byte, hashes []string,
 	numBlobbers, numCorrect int, isUpdate bool) {
+
+	walletJSON := `{"client_id":"00d2d56d0d573329fe61b8252a4b1715f93fac15176e5d90c413bc92a42e498b","client_key":"000b47144eb0366c3039bca10bc6df3ac289d8823de14ffc08cfdfe83f03e4079ab94bdc3932e7e9bc053f38834c7da63ce6f9c6e540d93cf0c52ba4149f2280","keys":[{"public_key":"000b47144eb0366c3039bca10bc6df3ac289d8823de14ffc08cfdfe83f03e4079ab94bdc3932e7e9bc053f38834c7da63ce6f9c6e540d93cf0c52ba4149f2280","private_key":"77a7faf0dcc1865a475963fee7ce71ca6dc6a20198209eb75d9fc1dc9df41f0f"}],"mnemonics":"mistake alone lumber swamp tape device flight oppose room combine useful typical deal lion device hope glad once million pudding artist brush sing vicious","version":"1.0","date_created":"2024-03-11T20:06:33+05:30","nonce":0}`
+	client.PopulateClient(walletJSON, "bls0chain") //nolint:errcheck
 
 	for i := 0; i < numBlobbers; i++ {
 		metaBlobberBase := t.Name() + "/" + mockBlobberUrl + strconv.Itoa(i) + zboxutil.FILE_META_ENDPOINT

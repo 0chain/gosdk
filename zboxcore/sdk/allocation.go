@@ -230,13 +230,14 @@ type OperationRequest struct {
 	IsWebstreaming bool
 
 	// Required for uploads
-	Workdir      string
-	FileMeta     FileMeta
-	FileReader   io.Reader
-	Mask         *zboxutil.Uint128 // Required for delete repair operation
-	DownloadFile bool              // Required for upload repair operation
-	StreamUpload bool              // Required for streaming file when actualSize is not available
-	Opts         []ChunkedUploadOption
+	Workdir         string
+	FileMeta        FileMeta
+	FileReader      io.Reader
+	Mask            *zboxutil.Uint128 // Required for delete repair operation
+	DownloadFile    bool              // Required for upload repair operation
+	StreamUpload    bool              // Required for streaming file when actualSize is not available
+	CancelCauseFunc context.CancelCauseFunc
+	Opts            []ChunkedUploadOption
 }
 
 func GetReadPriceRange() (PriceRange, error) {
@@ -307,7 +308,11 @@ func (a *Allocation) GetBlobberStats() map[string]*BlobberAllocationStats {
 	return result
 }
 
-const downloadWorkerCount = 6
+var downloadWorkerCount = 6
+
+func SetDownloadWorkerCount(count int) {
+	downloadWorkerCount = count
+}
 
 func (a *Allocation) InitAllocation() {
 	a.downloadChan = make(chan *DownloadRequest, 100)
@@ -1415,7 +1420,7 @@ func (a *Allocation) getRefs(path, pathHash, authToken, offsetPath, updatedDate,
 		ctx:            a.ctx,
 	}
 	oTreeReq.fullconsensus = a.fullconsensus
-	oTreeReq.consensusThresh = a.consensusThreshold
+	oTreeReq.consensusThresh = a.DataShards
 	return oTreeReq.GetRefs()
 }
 
