@@ -94,7 +94,6 @@ func (ch *NewFileChange) ProcessChange(rootRef *fileref.Ref, fileIDMeta map[stri
 	fileIDMeta[ch.File.GetPath()] = ch.File.FileID
 
 	dirRef.AddChild(ch.File)
-	logger.Logger.Info("childRef: ", *ch.File)
 	return
 }
 

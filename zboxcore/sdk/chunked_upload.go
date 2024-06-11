@@ -305,8 +305,7 @@ func CreateChunkedUpload(
 	su.isRepair = isRepair
 	uploadWorker, uploadRequest := calculateWorkersAndRequests(su.allocationObj.DataShards, len(su.blobbers), su.chunkNumber)
 	su.uploadChan = make(chan UploadData, uploadRequest)
-	logger.Logger.Info("startedUpload: ", su.fileMeta.RemotePath)
-	su.startProcessor(uploadWorker)
+	su.uploadWorkers = uploadWorker
 	return su, nil
 }
 
@@ -421,7 +420,7 @@ func (su *ChunkedUpload) process() error {
 	if su.statusCallback != nil {
 		su.statusCallback.Started(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, int(su.fileMeta.ActualSize)+int(su.fileMeta.ActualThumbnailSize))
 	}
-
+	su.startProcessor()
 	defer su.chunkReader.Close()
 	defer su.ctxCncl(nil)
 	for {
@@ -449,7 +448,6 @@ func (su *ChunkedUpload) process() error {
 					}
 					return err
 				}
-				logger.Logger.Info("actualFileHash: ", su.fileMeta.ActualHash, " remotePath: ", su.fileMeta.RemotePath)
 			}
 			if su.fileMeta.ActualSize == 0 {
 				su.fileMeta.ActualSize = su.progress.ReadLength

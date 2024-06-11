@@ -202,12 +202,6 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 			return context.Cause(su.ctx)
 		default:
 		}
-		pos = 0
-		for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
-			pos = uint64(i.TrailingZeros())
-			blobber := su.blobbers[pos]
-			blobber.fileRef.CalculateHash()
-		}
 		su.progress.UploadLength = su.fileMeta.ActualSize
 		if su.statusCallback != nil {
 			su.statusCallback.InProgress(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, int(su.progress.UploadLength), nil)
@@ -623,8 +617,8 @@ func sendUploadRequest(dataBuffers []*bytes.Buffer, contentSlice []string, blobb
 	return eg.Wait()
 }
 
-func (su *ChunkedUpload) startProcessor(uploadWorker int) {
-	su.listenChan = make(chan struct{}, uploadWorker)
+func (su *ChunkedUpload) startProcessor() {
+	su.listenChan = make(chan struct{}, su.uploadWorkers)
 	su.processMap = make(map[int]int)
 	respChan := make(chan error, 1)
 	su.uploadWG.Add(1)

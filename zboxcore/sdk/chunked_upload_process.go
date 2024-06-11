@@ -166,8 +166,8 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 	return nil
 }
 
-func (su *ChunkedUpload) startProcessor(uploadWorkers int) {
-	for i := 0; i < uploadWorkers; i++ {
+func (su *ChunkedUpload) startProcessor() {
+	for i := 0; i < su.uploadWorkers; i++ {
 		go su.uploadProcessor()
 	}
 }

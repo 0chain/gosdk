@@ -149,11 +149,12 @@ func Delete(allocationID, remotePath string) (*FileCommandResponse, error) {
 		return nil, err
 	}
 
-	err = allocationObj.DeleteFile(remotePath)
-	if err != nil {
-		return nil, err
-	}
-
+	err = allocationObj.DoMultiOperation([]sdk.OperationRequest{
+		{
+			OperationType: constants.FileOperationDelete,
+			RemotePath:    remotePath,
+		},
+	})
 	sdkLogger.Info(remotePath + " deleted")
 
 	resp := &FileCommandResponse{
