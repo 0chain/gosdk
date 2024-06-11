@@ -296,6 +296,7 @@ func (su *ChunkedUpload) listen(allEventChan []<-chan worker.MessageEvent, respC
 			su.updateChunkProgress(chunkEndIndex)
 			finalRequestObject, _ := data.Get("isFinal")
 			finalRequest, _ := finalRequestObject.Bool()
+			logger.Logger.Info("eventData: ", finalRequest)
 			if finalRequest {
 				//get final result
 				finalResult, err := data.Get("finalResult")
@@ -475,6 +476,7 @@ func selfPostMessage(success, isFinal bool, errMsg string, chunkEndIndex int, fi
 		}
 	}
 	self := jsbridge.GetSelfWorker()
+	logger.Logger.Info("postingMessage: ", isFinal, chunkEndIndex)
 	self.PostMessage(safejs.Safe(obj), nil) //nolint:errcheck
 
 }
