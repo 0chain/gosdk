@@ -48,7 +48,7 @@ func NewWasmWebWorker(blobberID, blobberURL, clientID, publicKey, privateKey, mn
 	w := &WasmWebWorker{
 		Name: blobberURL,
 		Env:  []string{"BLOBBER_URL=" + blobberURL, "CLIENT_ID=" + clientID, "PRIVATE_KEY=" + privateKey, "MODE=worker", "PUBLIC_KEY=" + publicKey, "MNEMONIC=" + mnemonic},
-		Path: "wasmsdk/demo/zcn.wasm",
+		Path: "zcn.wasm",
 	}
 
 	if err := w.Start(); err != nil {
