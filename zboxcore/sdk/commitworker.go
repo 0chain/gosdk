@@ -198,6 +198,7 @@ func (commitreq *CommitRequest) processCommit() {
 		}
 		size += change.GetSize()
 	}
+	logger.Logger.Info("changeSize: ", size)
 	rootRef.CalculateHash()
 	var chainHash string
 	if lR.Version == MARKER_VERSION {

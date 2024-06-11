@@ -1,6 +1,7 @@
 package allocationchange
 
 import (
+	"fmt"
 	"path"
 
 	"github.com/0chain/errors"
@@ -46,6 +47,7 @@ func (ch *DeleteFileChange) ProcessChange(rootRef *fileref.Ref, _ map[string]str
 
 	for i, child := range dirRef.Children {
 		if child.GetName() == ch.ObjectTree.GetName() {
+			fmt.Println("removeing child: ", child.GetSize())
 			dirRef.RemoveChild(i)
 			return
 		}

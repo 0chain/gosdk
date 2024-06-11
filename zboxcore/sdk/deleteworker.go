@@ -56,7 +56,7 @@ func (req *DeleteRequest) deleteBlobberFile(
 	}()
 
 	query := &url.Values{}
-
+	logger.Logger.Info("Delete: ", blobber.Baseurl, " connectionID: ", req.connectionID)
 	query.Add("connection_id", req.connectionID)
 	query.Add("path", req.remotefilepath)
 
