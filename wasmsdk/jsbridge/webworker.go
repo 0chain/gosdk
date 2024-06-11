@@ -40,15 +40,15 @@ var (
 )
 
 func NewWasmWebWorker(blobberID, blobberURL, clientID, publicKey, privateKey, mnemonic string) (*WasmWebWorker, error) {
+	_, ok := workers[blobberID]
+	if ok {
+		return workers[blobberID], nil
+	}
+
 	w := &WasmWebWorker{
 		Name: blobberURL,
 		Env:  []string{"BLOBBER_URL=" + blobberURL, "CLIENT_ID=" + clientID, "PRIVATE_KEY=" + privateKey, "MODE=worker", "PUBLIC_KEY=" + publicKey, "MNEMONIC=" + mnemonic},
 		Path: "zcn.wasm",
-	}
-
-	_, ok := workers[blobberID]
-	if ok {
-		return workers[blobberID], nil
 	}
 
 	if err := w.Start(); err != nil {

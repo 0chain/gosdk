@@ -404,6 +404,7 @@ func multiDownload(allocationID, jsonMultiDownloadOptions, authTicket, callbackF
 		}
 		var mf sys.File
 		if option.DownloadToDisk {
+			terminateWorkersWithAllocation(alloc)
 			mf, err = jsbridge.NewFileWriter(fileName)
 			if err != nil {
 				PrintError(err.Error())
@@ -627,6 +628,7 @@ func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 		result.Success = false
 		return result, errors.New("Error fetching the allocation")
 	}
+	addWebWorkers(allocationObj)
 	operationRequests := make([]sdk.OperationRequest, n)
 	for idx, option := range options {
 		wg := &sync.WaitGroup{}
@@ -1002,6 +1004,12 @@ func terminateWorkers(allocationID string) {
 	if err != nil {
 		return
 	}
+	for _, blobber := range alloc.Blobbers {
+		jsbridge.RemoveWorker(blobber.ID)
+	}
+}
+
+func terminateWorkersWithAllocation(alloc *sdk.Allocation) {
 	for _, blobber := range alloc.Blobbers {
 		jsbridge.RemoveWorker(blobber.ID)
 	}
