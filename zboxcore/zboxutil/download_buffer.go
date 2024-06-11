@@ -56,7 +56,7 @@ func (r *DownloadBufferWithChan) RequestChunk(ctx context.Context, num int) []by
 		r.mu.Lock()
 		r.mp[num] = ind
 		r.mu.Unlock()
-		return r.buf[ind*r.reqSize : (ind+1)*r.reqSize]
+		return r.buf[ind*r.reqSize : (ind+1)*r.reqSize : (ind+1)*r.reqSize]
 	}
 }
 
@@ -112,7 +112,7 @@ func (r *DownloadBufferWithMask) RequestChunk(ctx context.Context, num int) []by
 		// assign the chunk by clearing the bit
 		r.mask &= ^(1 << num)
 		r.mu.Unlock()
-		return r.buf[num*r.reqSize : (num+1)*r.reqSize]
+		return r.buf[num*r.reqSize : (num+1)*r.reqSize : (num+1)*r.reqSize]
 	}
 }
 

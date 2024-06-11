@@ -49,6 +49,7 @@ var (
 	cancelLock                       sync.Mutex
 	CurrentMode                      = UploadModeMedium
 	shouldSaveProgress               = true
+	HighModeWorkers                  = 4
 )
 
 // DefaultChunkSize default chunk size for file and thumbnail
@@ -73,6 +74,10 @@ const (
 
 func SetUploadMode(mode UploadMode) {
 	CurrentMode = mode
+}
+
+func SetHighModeWorkers(workers int) {
+	HighModeWorkers = workers
 }
 
 /*
@@ -325,7 +330,7 @@ func calculateWorkersAndRequests(dataShards, totalShards, chunknumber int) (uplo
 		case UploadModeMedium:
 			uploadWorkers = 2
 		case UploadModeHigh:
-			uploadWorkers = 4
+			uploadWorkers = HighModeWorkers
 		}
 	}
 
@@ -420,7 +425,11 @@ func (su *ChunkedUpload) createEncscheme() encryption.EncryptionScheme {
 			return nil
 		}
 	} else {
-		privateKey, err := encscheme.Initialize(client.GetClient().Mnemonic)
+		mnemonic := client.GetClient().Mnemonic
+		if mnemonic == "" {
+			return nil
+		}
+		privateKey, err := encscheme.Initialize(mnemonic)
 		if err != nil {
 			return nil
 		}
@@ -705,7 +714,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		su.removeProgress()
 		return thrown.New("upload_failed", fmt.Sprintf("Upload failed. %s", err))
 	}
-	logger.Logger.Info("uploadingData: ", blobberUpload.chunkStartIndex, " - ", blobberUpload.chunkEndIndex, " ", isFinal, " ", su.fileMeta.RemotePath)
+	logger.Logger.Debug("uploadingData: ", blobberUpload.chunkStartIndex, " - ", blobberUpload.chunkEndIndex, " ", isFinal, " ", su.fileMeta.RemotePath)
 	if !lastBufferOnly {
 		su.uploadWG.Add(1)
 		select {
@@ -717,9 +726,9 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 
 	if isFinal {
 		close(su.uploadChan)
-		logger.Logger.Info("Waiting for upload to complete")
+		logger.Logger.Debug("Waiting for upload to complete")
 		su.uploadWG.Wait()
-		logger.Logger.Info("Upload completed")
+		logger.Logger.Debug("Upload completed")
 		select {
 		case <-su.ctx.Done():
 			return context.Cause(su.ctx)
@@ -860,7 +869,7 @@ func (su *ChunkedUpload) uploadToBlobbers(uploadData UploadData) error {
 					}
 					return
 				}
-				logger.Logger.Error("error during sendUploadRequest", err)
+				logger.Logger.Error("error during sendUploadRequest", err, " connectionID: ", su.progress.ConnectionID)
 				errC := atomic.AddInt32(&errCount, 1)
 				if errC > int32(su.allocationObj.ParityShards-1) { // If atleast data shards + 1 number of blobbers can process the upload, it can be repaired later
 					wgErrors <- err
