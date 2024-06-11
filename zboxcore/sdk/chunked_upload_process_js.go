@@ -390,6 +390,9 @@ func ProcessEventData(data safejs.Value) {
 			wg:     &sync.WaitGroup{},
 		}
 		hasherMap[fileMeta.RemotePath] = wp
+	} else if formInfo.ChunkStartIndex == 0 {
+		wp.hasher = CreateHasher(formInfo.ShardSize)
+		hasherMap[fileMeta.RemotePath] = wp
 	}
 	if formInfo.IsFinal {
 		defer delete(hasherMap, fileMeta.RemotePath)
