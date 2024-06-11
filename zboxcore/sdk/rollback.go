@@ -309,6 +309,8 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
 			continue
 		}
 
+		l.Logger.Info("Blobber", zap.String("blobber", rb.blobber.Baseurl), zap.String("meta", rb.lpm.LatestWM.FileMetaRoot))
+
 		version := rb.lpm.LatestWM.FileMetaRoot
 
 		if highestTS < rb.lpm.LatestWM.Timestamp {
