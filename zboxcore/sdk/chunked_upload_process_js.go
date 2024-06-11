@@ -431,11 +431,12 @@ func ProcessEventData(data safejs.Value) {
 		} else {
 			if formInfo.IsFinal {
 				wg.Wait()
+			} else {
+				defer wg.Done()
 			}
 			err = sendUploadRequest(blobberData.dataBuffers, blobberData.contentSlice, blobberURL, formInfo.AllocationID, formInfo.AllocationTx, formInfo.HttpMethod)
 			if err != nil {
 				selfPostMessage(false, formInfo.IsFinal, err.Error(), formInfo.ChunkEndIndex, nil)
-				wg.Done()
 				return
 			}
 		}
@@ -448,7 +449,6 @@ func ProcessEventData(data safejs.Value) {
 			selfPostMessage(true, true, "", formInfo.ChunkEndIndex, finalResult)
 		} else {
 			selfPostMessage(true, false, "", formInfo.ChunkEndIndex, nil)
-			wg.Done()
 		}
 	}(uploadData, wp.wg)
 
