@@ -431,6 +431,7 @@ func (t *Transaction) submitTxn() {
 		} else {
 			t.completeTxn(StatusError, "", fmt.Errorf("submit transaction failed. %s", ret.Body))
 			node.Cache.Evict(t.txn.ClientID)
+			ResetStableMiners()
 		}
 	}
 }

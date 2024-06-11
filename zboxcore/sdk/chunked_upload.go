@@ -49,6 +49,7 @@ var (
 	cancelLock                       sync.Mutex
 	CurrentMode                      = UploadModeMedium
 	shouldSaveProgress               = true
+	HighModeWorkers                  = 4
 )
 
 // DefaultChunkSize default chunk size for file and thumbnail
@@ -73,6 +74,10 @@ const (
 
 func SetUploadMode(mode UploadMode) {
 	CurrentMode = mode
+}
+
+func SetHighModeWorkers(workers int) {
+	HighModeWorkers = workers
 }
 
 /*
@@ -325,7 +330,7 @@ func calculateWorkersAndRequests(dataShards, totalShards, chunknumber int) (uplo
 		case UploadModeMedium:
 			uploadWorkers = 2
 		case UploadModeHigh:
-			uploadWorkers = 4
+			uploadWorkers = HighModeWorkers
 		}
 	}
 
@@ -864,7 +869,7 @@ func (su *ChunkedUpload) uploadToBlobbers(uploadData UploadData) error {
 					}
 					return
 				}
-				logger.Logger.Error("error during sendUploadRequest", err)
+				logger.Logger.Error("error during sendUploadRequest", err, " connectionID: ", su.progress.ConnectionID)
 				errC := atomic.AddInt32(&errCount, 1)
 				if errC > int32(su.allocationObj.ParityShards-1) { // If atleast data shards + 1 number of blobbers can process the upload, it can be repaired later
 					wgErrors <- err

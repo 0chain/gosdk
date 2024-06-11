@@ -142,7 +142,7 @@ func SetHostClient(id, baseURL string) {
 			NoDefaultUserAgentHeader:      true,
 			Addr:                          host,
 			MaxConns:                      1024,
-			MaxIdleConnDuration:           0,
+			MaxIdleConnDuration:           45 * time.Second,
 			DisableHeaderNamesNormalizing: true,
 			DisablePathNormalizing:        true,
 			Dial: (&fasthttp.TCPDialer{
@@ -203,6 +203,7 @@ func init() {
 		WriteTimeout:        120 * time.Second,
 		MaxConnDuration:     45 * time.Second,
 		MaxResponseBodySize: 1024 * 1024 * 64, //64MB
+		MaxConnsPerHost:     1024,
 	}
 	envProxy.initialize()
 	log.Init(logger.DEBUG, "0box-sdk")

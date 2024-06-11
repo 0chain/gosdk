@@ -207,7 +207,7 @@ type Allocation struct {
 	ctx                     context.Context
 	ctxCancelF              context.CancelFunc
 	mutex                   *sync.Mutex
-	commitMutex             *sync.RWMutex
+	commitMutex             *sync.Mutex
 	downloadProgressMap     map[string]*DownloadRequest
 	downloadRequests        []*DownloadRequest
 	repairRequestInProgress *RepairRequest
@@ -308,7 +308,11 @@ func (a *Allocation) GetBlobberStats() map[string]*BlobberAllocationStats {
 	return result
 }
 
-const downloadWorkerCount = 6
+var downloadWorkerCount = 6
+
+func SetDownloadWorkerCount(count int) {
+	downloadWorkerCount = count
+}
 
 func (a *Allocation) InitAllocation() {
 	a.downloadChan = make(chan *DownloadRequest, 100)
@@ -317,7 +321,7 @@ func (a *Allocation) InitAllocation() {
 	a.downloadProgressMap = make(map[string]*DownloadRequest)
 	a.downloadRequests = make([]*DownloadRequest, 0, 100)
 	a.mutex = &sync.Mutex{}
-	a.commitMutex = &sync.RWMutex{}
+	a.commitMutex = &sync.Mutex{}
 	a.fullconsensus, a.consensusThreshold = a.getConsensuses()
 	for _, blobber := range a.Blobbers {
 		zboxutil.SetHostClient(blobber.ID, blobber.Baseurl)
@@ -1414,7 +1418,6 @@ func (a *Allocation) getRefs(path, pathHash, authToken, offsetPath, updatedDate,
 		refType:        refType,
 		wg:             &sync.WaitGroup{},
 		ctx:            a.ctx,
-		allocationObj:  a,
 	}
 	oTreeReq.fullconsensus = a.fullconsensus
 	oTreeReq.consensusThresh = a.DataShards
@@ -1747,6 +1750,7 @@ func (a *Allocation) createDir(remotePath string, threshConsensus, fullConsensus
 			consensusThresh: threshConsensus,
 			fullconsensus:   fullConsensus,
 		},
+		alreadyExists: make(map[uint64]bool),
 	}
 	req.ctx, req.ctxCncl = context.WithCancel(a.ctx)
 
