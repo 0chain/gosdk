@@ -180,6 +180,12 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		if err == nil {
 			successCount++
 		}
+		blobber.fileRef.ChunkSize = su.chunkSize
+		blobber.fileRef.Size = su.shardUploadedSize
+		blobber.fileRef.Path = su.fileMeta.RemotePath
+		blobber.fileRef.ActualFileHash = su.fileMeta.ActualHash
+		blobber.fileRef.ActualFileSize = su.fileMeta.ActualSize
+		blobber.fileRef.EncryptedKey = su.encryptedKey
 	}
 
 	if successCount < su.consensus.consensusThresh {
@@ -194,8 +200,12 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 			return context.Cause(su.ctx)
 		default:
 		}
-		// index := chunkEndIndex
-		// go su.updateProgress(index)
+		pos = 0
+		for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+			pos = uint64(i.TrailingZeros())
+			blobber := su.blobbers[pos]
+			blobber.fileRef.CalculateHash()
+		}
 		su.progress.UploadLength = su.fileMeta.ActualSize
 		if su.statusCallback != nil {
 			su.statusCallback.InProgress(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, int(su.progress.UploadLength), nil)
@@ -296,7 +306,6 @@ func (su *ChunkedUpload) listen(allEventChan []<-chan worker.MessageEvent, respC
 			su.updateChunkProgress(chunkEndIndex)
 			finalRequestObject, _ := data.Get("isFinal")
 			finalRequest, _ := finalRequestObject.Bool()
-			logger.Logger.Info("eventData: ", finalRequest)
 			if finalRequest {
 				//get final result
 				finalResult, err := data.Get("finalResult")
@@ -332,13 +341,6 @@ func (su *ChunkedUpload) listen(allEventChan []<-chan worker.MessageEvent, respC
 				blobber.fileRef.FixedMerkleRoot = finalResultObj.FixedMerkleRoot
 				blobber.fileRef.ValidationRoot = finalResultObj.ValidationRoot
 				blobber.fileRef.ThumbnailHash = finalResultObj.ThumbnailContentHash
-				blobber.fileRef.ChunkSize = su.chunkSize
-				blobber.fileRef.Size = su.shardUploadedSize
-				blobber.fileRef.Path = su.fileMeta.RemotePath
-				blobber.fileRef.ActualFileHash = su.fileMeta.ActualHash
-				blobber.fileRef.ActualFileSize = su.fileMeta.ActualSize
-				blobber.fileRef.EncryptedKey = su.encryptedKey
-				blobber.fileRef.CalculateHash()
 				isFinal = true
 			}
 			su.consensus.Done()
@@ -476,7 +478,6 @@ func selfPostMessage(success, isFinal bool, errMsg string, chunkEndIndex int, fi
 		}
 	}
 	self := jsbridge.GetSelfWorker()
-	logger.Logger.Info("postingMessage: ", isFinal, chunkEndIndex)
 	self.PostMessage(safejs.Safe(obj), nil) //nolint:errcheck
 
 }
