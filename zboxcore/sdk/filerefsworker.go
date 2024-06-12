@@ -136,6 +136,7 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 	}
 	if len(selected.Refs) > 0 {
 		selected.OffsetPath = selected.Refs[len(selected.Refs)-1].Path
+		return selected, nil
 	}
 	return nil, errors.New("consensus_failed", "Refs consensus is less than consensus threshold")
 }

@@ -103,7 +103,7 @@ func startBlockDownloadWorker(blobberChan chan *BlockDownloadRequest, workers in
 	}
 }
 
-func (req *BlockDownloadRequest) splitData(buf []byte, lim int) [][]byte {
+func splitData(buf []byte, lim int) [][]byte {
 	var chunk []byte
 	chunks := make([][]byte, 0, common.MustAddInt(len(buf)/lim, 1))
 	for len(buf) >= lim {
@@ -221,15 +221,15 @@ func (req *BlockDownloadRequest) downloadBlobberBlock(hostClient *fasthttp.HostC
 			if req.encryptedKey != "" {
 				if req.authTicket != nil {
 					// ReEncryptionHeaderSize for the additional header bytes for ReEncrypt,  where chunk_size - EncryptionHeaderSize is the encrypted data size
-					rspData.BlockChunks = req.splitData(dR.Data, req.chunkSize-EncryptionHeaderSize+ReEncryptionHeaderSize)
+					rspData.BlockChunks = splitData(dR.Data, req.chunkSize-EncryptionHeaderSize+ReEncryptionHeaderSize)
 				} else {
-					rspData.BlockChunks = req.splitData(dR.Data, req.chunkSize)
+					rspData.BlockChunks = splitData(dR.Data, req.chunkSize)
 				}
 			} else {
 				if req.chunkSize == 0 {
 					req.chunkSize = CHUNK_SIZE
 				}
-				rspData.BlockChunks = req.splitData(dR.Data, req.chunkSize)
+				rspData.BlockChunks = splitData(dR.Data, req.chunkSize)
 			}
 
 			zlogger.Logger.Debug(fmt.Sprintf("downloadBlobberBlock 200 OK: blobberID: %v, clientID: %v, blockNum: %d", req.blobber.ID, client.GetClientID(), header.BlockNum))
