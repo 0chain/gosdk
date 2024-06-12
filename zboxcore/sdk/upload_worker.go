@@ -7,7 +7,6 @@ import (
 	"io"
 	"strings"
 
-	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
@@ -94,33 +93,33 @@ func (uo *UploadOperation) buildChange(_ []fileref.RefEntity, uid uuid.UUID) []a
 }
 
 func (uo *UploadOperation) Verify(allocationObj *Allocation) error {
-	if allocationObj == nil {
-		return thrown.Throw(constants.ErrInvalidParameter, "allocationObj")
-	}
+	// if allocationObj == nil {
+	// 	return thrown.Throw(constants.ErrInvalidParameter, "allocationObj")
+	// }
 
-	if !uo.isUpdate && !allocationObj.CanUpload() || uo.isUpdate && !allocationObj.CanUpdate() {
-		return thrown.Throw(constants.ErrFileOptionNotPermitted, "file_option_not_permitted ")
-	}
+	// if !uo.isUpdate && !allocationObj.CanUpload() || uo.isUpdate && !allocationObj.CanUpdate() {
+	// 	return thrown.Throw(constants.ErrFileOptionNotPermitted, "file_option_not_permitted ")
+	// }
 
-	err := ValidateRemoteFileName(uo.chunkedUpload.fileMeta.RemoteName)
-	if err != nil {
-		return err
-	}
-	spaceLeft := allocationObj.Size
-	if allocationObj.Stats != nil {
-		spaceLeft -= allocationObj.Stats.UsedSize
-	}
+	// err := ValidateRemoteFileName(uo.chunkedUpload.fileMeta.RemoteName)
+	// if err != nil {
+	// 	return err
+	// }
+	// spaceLeft := allocationObj.Size
+	// if allocationObj.Stats != nil {
+	// 	spaceLeft -= allocationObj.Stats.UsedSize
+	// }
 
-	if uo.isUpdate {
-		f, err := allocationObj.GetFileMeta(uo.chunkedUpload.fileMeta.RemotePath)
-		if err != nil {
-			return err
-		}
-		spaceLeft += f.ActualFileSize
-	}
-	if uo.chunkedUpload.fileMeta.ActualSize > spaceLeft {
-		return ErrNoEnoughSpaceLeftInAllocation
-	}
+	// if uo.isUpdate {
+	// 	f, err := allocationObj.GetFileMeta(uo.chunkedUpload.fileMeta.RemotePath)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	spaceLeft += f.ActualFileSize
+	// }
+	// if uo.chunkedUpload.fileMeta.ActualSize > spaceLeft {
+	// 	return ErrNoEnoughSpaceLeftInAllocation
+	// }
 	return nil
 }
 

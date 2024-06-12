@@ -839,7 +839,6 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 	}
 	connectionID := zboxutil.NewConnectionId()
 	var mo MultiOperation
-	opLock := sync.Mutex{}
 	mo.operations = make([]Operationer, 0, len(operations))
 	for i := 0; i < len(operations); {
 		// resetting multi operation and previous paths for every batch
@@ -892,7 +891,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 					mo.consensusThresh, mo.operationMask.CountOnes()))
 		}
 		errorChan := make(chan error, len(operations))
-
+		opsChan := make(chan Operationer, len(operations))
 		for ; i < len(operations); i++ {
 			if len(mo.operations) >= MultiOpBatchSize {
 				// max batch size reached, commit
@@ -934,9 +933,9 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 					operation = NewMoveOperation(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 
 				case constants.FileOperationInsert:
-					cancelLock.Lock()
-					CancelOpCtx[op.FileMeta.RemotePath] = mo.ctxCncl
-					cancelLock.Unlock()
+					// cancelLock.Lock()
+					// CancelOpCtx[op.FileMeta.RemotePath] = mo.ctxCncl
+					// cancelLock.Unlock()
 					operation, _, err = NewUploadOperation(mo.ctx, op.Workdir, mo.allocationObj, mo.connectionID, op.FileMeta, op.FileReader, false, op.IsWebstreaming, op.IsRepair, op.DownloadFile, op.StreamUpload, op.Opts...)
 
 				case constants.FileOperationDelete:
@@ -947,9 +946,9 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 					}
 
 				case constants.FileOperationUpdate:
-					cancelLock.Lock()
-					CancelOpCtx[op.FileMeta.RemotePath] = mo.ctxCncl
-					cancelLock.Unlock()
+					// cancelLock.Lock()
+					// CancelOpCtx[op.FileMeta.RemotePath] = mo.ctxCncl
+					// cancelLock.Unlock()
 					operation, _, err = NewUploadOperation(mo.ctx, op.Workdir, mo.allocationObj, mo.connectionID, op.FileMeta, op.FileReader, true, op.IsWebstreaming, op.IsRepair, op.DownloadFile, op.StreamUpload, op.Opts...)
 
 				case constants.FileOperationCreateDir:
@@ -971,15 +970,17 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 					errorChan <- err
 					return
 				}
-				opLock.Lock()
-				mo.operations = append(mo.operations, operation)
-				opLock.Unlock()
+				opsChan <- operation
 			}()
 		}
 		wg.Wait()
 		close(errorChan)
+		close(opsChan)
 		for err := range errorChan {
 			return err
+		}
+		for operation := range opsChan {
+			mo.operations = append(mo.operations, operation)
 		}
 		logger.Logger.Info("[Initializing]", len(mo.operations), " time taken ", time.Since(now).Milliseconds())
 		now = time.Now()

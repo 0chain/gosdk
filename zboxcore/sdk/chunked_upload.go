@@ -148,11 +148,11 @@ func CreateChunkedUpload(
 	}
 
 	if isUpdate {
-		f, err := allocationObj.GetFileMeta(fileMeta.RemotePath)
-		if err != nil {
-			return nil, err
-		}
-		spaceLeft += f.ActualFileSize
+		// f, err := allocationObj.GetFileMeta(fileMeta.RemotePath)
+		// if err != nil {
+		// 	return nil, err
+		// }
+		// spaceLeft += f.ActualFileSize
 		opCode = OpUpdate
 	}
 
@@ -269,10 +269,10 @@ func CreateChunkedUpload(
 
 	}
 
-	su.writeMarkerMutex, err = CreateWriteMarkerMutex(client.GetClient(), su.allocationObj)
-	if err != nil {
-		return nil, err
-	}
+	// su.writeMarkerMutex, err = CreateWriteMarkerMutex(client.GetClient(), su.allocationObj)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	blobbers := su.allocationObj.Blobbers
 	if len(blobbers) == 0 {
