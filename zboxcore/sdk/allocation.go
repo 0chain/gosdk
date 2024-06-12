@@ -2325,9 +2325,9 @@ func (a *Allocation) RepairAlloc(statusCB StatusCallback) (err error) {
 }
 
 // RepairSize gets the size in bytes to upload and repair allocation
-func (a *Allocation) RepairSize(remotePath string) (uint64, error) {
+func (a *Allocation) RepairSize(remotePath string) (RepairSize, error) {
 	if !a.isInitialized() {
-		return 0, notInitialized
+		return RepairSize{}, notInitialized
 	}
 
 	dir, err := a.ListDir(remotePath,
@@ -2335,7 +2335,7 @@ func (a *Allocation) RepairSize(remotePath string) (uint64, error) {
 		WithListRequestPageLimit(-1),
 	)
 	if err != nil {
-		return 0, err
+		return RepairSize{}, err
 	}
 
 	repairReq := RepairRequest{
