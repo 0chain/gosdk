@@ -211,6 +211,9 @@ func (mo *MultiOperation) Process() error {
 		return errors.New("consensus_not_met",
 			fmt.Sprintf("Multioperation failed. Required consensus %d got %d",
 				mo.consensusThresh, mo.operationMask.CountOnes()))
+	} else {
+		logger.Logger.Info("committing_changes: ", len(mo.operations), " time: ", time.Since(startTime).Milliseconds())
+		return nil
 	}
 
 	// Take transpose of mo.change because it will be easier to iterate mo if it contains blobber changes
@@ -226,7 +229,6 @@ func (mo *MultiOperation) Process() error {
 	}
 
 	l.Logger.Debug("Trying to lock write marker.....")
-	logger.Logger.Info("committing_changes: ", len(mo.operations), " time: ", time.Since(startTime).Milliseconds())
 	startTime = time.Now()
 	if singleClientMode {
 		mo.allocationObj.commitMutex.Lock()
