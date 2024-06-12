@@ -833,6 +833,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 	if len(operations) == 0 {
 		return nil
 	}
+	now := time.Now()
 	if !a.isInitialized() {
 		return notInitialized
 	}
@@ -968,13 +969,14 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 
 			mo.operations = append(mo.operations, operation)
 		}
-
+		logger.Logger.Info("[Initializing]", len(mo.operations), " time taken ", time.Since(now).Milliseconds())
+		now = time.Now()
 		if len(mo.operations) > 0 {
 			err := mo.Process()
 			if err != nil {
 				return err
 			}
-
+			logger.Logger.Info("[DoMultiOperation]", len(mo.operations), " time taken ", time.Since(now).Milliseconds())
 			mo.operations = nil
 		}
 	}
