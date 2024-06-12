@@ -501,7 +501,6 @@ func (su *ChunkedUpload) Start() error {
 	su.ctx, su.ctxCncl = context.WithCancelCause(su.allocationObj.ctx)
 	defer su.ctxCncl(nil)
 	elapsedProcess := time.Since(now)
-	logger.Logger.Info("Completed the upload. Submitting for commit")
 
 	blobbers := make([]*blockchain.StorageNode, len(su.blobbers))
 	for i, b := range su.blobbers {
@@ -680,7 +679,6 @@ func (su *ChunkedUpload) uploadProcessor() {
 				return
 			}
 			su.uploadToBlobbers(uploadData) //nolint:errcheck
-			logger.Logger.Info("upload_processor_complete: ", uploadData.chunkEndIndex, " ", uploadData.isFinal, " ", su.fileMeta.RemotePath)
 			su.uploadWG.Done()
 		}
 	}
