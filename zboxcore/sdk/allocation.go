@@ -839,6 +839,8 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 	}
 	connectionID := zboxutil.NewConnectionId()
 	var mo MultiOperation
+	opLock := sync.Mutex{}
+	mo.operations = make([]Operationer, 0, len(operations))
 	for i := 0; i < len(operations); {
 		// resetting multi operation and previous paths for every batch
 		mo.allocationObj = a
@@ -870,6 +872,8 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 			}(blobberIdx)
 		}
 		wg.Wait()
+		logger.Logger.Info("[CreateConnection]", len(operations), " time taken ", time.Since(now).Milliseconds())
+		now = time.Now()
 		// Check consensus
 		if mo.operationMask.CountOnes() < mo.consensusThresh {
 			l.Logger.Error("Multioperation: create connection failed. Required consensus not met",
@@ -887,6 +891,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 				fmt.Sprintf("Multioperation: create connection failed. Required consensus %d got %d",
 					mo.consensusThresh, mo.operationMask.CountOnes()))
 		}
+		errorChan := make(chan error, len(operations))
 
 		for ; i < len(operations); i++ {
 			if len(mo.operations) >= MultiOpBatchSize {
@@ -908,66 +913,73 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 				connectionID = zboxutil.NewConnectionId()
 				break
 			}
-
-			var (
-				operation       Operationer
-				err             error
-				newConnectionID string
-			)
-
-			switch op.OperationType {
-			case constants.FileOperationRename:
-				operation = NewRenameOperation(op.RemotePath, op.DestName, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
-
-			case constants.FileOperationCopy:
-				operation = NewCopyOperation(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
-
-			case constants.FileOperationMove:
-				operation = NewMoveOperation(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
-
-			case constants.FileOperationInsert:
-				cancelLock.Lock()
-				CancelOpCtx[op.FileMeta.RemotePath] = mo.ctxCncl
-				cancelLock.Unlock()
-				operation, newConnectionID, err = NewUploadOperation(mo.ctx, op.Workdir, mo.allocationObj, mo.connectionID, op.FileMeta, op.FileReader, false, op.IsWebstreaming, op.IsRepair, op.DownloadFile, op.StreamUpload, op.Opts...)
-
-			case constants.FileOperationDelete:
-				if op.Mask != nil {
-					operation = NewDeleteOperation(op.RemotePath, *op.Mask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
-				} else {
-					operation = NewDeleteOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
-				}
-
-			case constants.FileOperationUpdate:
-				cancelLock.Lock()
-				CancelOpCtx[op.FileMeta.RemotePath] = mo.ctxCncl
-				cancelLock.Unlock()
-				operation, newConnectionID, err = NewUploadOperation(mo.ctx, op.Workdir, mo.allocationObj, mo.connectionID, op.FileMeta, op.FileReader, true, op.IsWebstreaming, op.IsRepair, op.DownloadFile, op.StreamUpload, op.Opts...)
-
-			case constants.FileOperationCreateDir:
-				operation = NewDirOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
-
-			default:
-				return errors.New("invalid_operation", "Operation is not valid")
-			}
-			if err != nil {
-				return err
-			}
-
-			if newConnectionID != "" && newConnectionID != connectionID {
-				connectionID = newConnectionID
-				break
-			}
-			err = operation.Verify(a)
-			if err != nil {
-				return err
-			}
-
 			for path := range parentPaths {
 				previousPaths[path] = true
 			}
+			wg.Add(1)
+			go func() {
+				var (
+					operation Operationer
+					err       error
+				)
+				defer wg.Done()
+				switch op.OperationType {
+				case constants.FileOperationRename:
+					operation = NewRenameOperation(op.RemotePath, op.DestName, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 
-			mo.operations = append(mo.operations, operation)
+				case constants.FileOperationCopy:
+					operation = NewCopyOperation(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
+
+				case constants.FileOperationMove:
+					operation = NewMoveOperation(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
+
+				case constants.FileOperationInsert:
+					cancelLock.Lock()
+					CancelOpCtx[op.FileMeta.RemotePath] = mo.ctxCncl
+					cancelLock.Unlock()
+					operation, _, err = NewUploadOperation(mo.ctx, op.Workdir, mo.allocationObj, mo.connectionID, op.FileMeta, op.FileReader, false, op.IsWebstreaming, op.IsRepair, op.DownloadFile, op.StreamUpload, op.Opts...)
+
+				case constants.FileOperationDelete:
+					if op.Mask != nil {
+						operation = NewDeleteOperation(op.RemotePath, *op.Mask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
+					} else {
+						operation = NewDeleteOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
+					}
+
+				case constants.FileOperationUpdate:
+					cancelLock.Lock()
+					CancelOpCtx[op.FileMeta.RemotePath] = mo.ctxCncl
+					cancelLock.Unlock()
+					operation, _, err = NewUploadOperation(mo.ctx, op.Workdir, mo.allocationObj, mo.connectionID, op.FileMeta, op.FileReader, true, op.IsWebstreaming, op.IsRepair, op.DownloadFile, op.StreamUpload, op.Opts...)
+
+				case constants.FileOperationCreateDir:
+					operation = NewDirOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
+
+				default:
+					err = errors.New("invalid_operation", "Operation is not valid")
+				}
+				if err != nil {
+					errorChan <- err
+					return
+				}
+
+				// if newConnectionID != "" && newConnectionID != connectionID {
+				// 	connectionID = newConnectionID
+				// }
+				err = operation.Verify(a)
+				if err != nil {
+					errorChan <- err
+					return
+				}
+				opLock.Lock()
+				mo.operations = append(mo.operations, operation)
+				opLock.Unlock()
+			}()
+		}
+		wg.Wait()
+		close(errorChan)
+		for err := range errorChan {
+			return err
 		}
 		logger.Logger.Info("[Initializing]", len(mo.operations), " time taken ", time.Since(now).Milliseconds())
 		now = time.Now()
