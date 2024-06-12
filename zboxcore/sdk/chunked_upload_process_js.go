@@ -258,8 +258,9 @@ func (su *ChunkedUpload) listen(allEventChan []<-chan worker.MessageEvent, respC
 				if errC >= int32(su.consensus.consensusThresh) {
 					if su.ctx.Err() != nil {
 						wgErrors <- context.Cause(su.ctx)
+					} else {
+						wgErrors <- thrown.New("upload_failed", "Upload failed. Worker event channel closed")
 					}
-					wgErrors <- thrown.New("upload_failed", "Upload failed. Worker event channel closed")
 				}
 				return
 			}

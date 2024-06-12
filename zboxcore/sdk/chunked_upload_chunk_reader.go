@@ -123,6 +123,11 @@ func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards, 
 	r.chunkDataSizePerRead = r.chunkDataSize * int64(dataShards)
 	r.totalChunkDataSizePerRead = r.chunkDataSize * int64(dataShards+parityShards)
 	totalDataSize := r.totalChunkDataSizePerRead * int64(chunkNumber)
+	readSize := r.chunkDataSizePerRead * int64(chunkNumber)
+	if size > 0 && readSize > size {
+		chunkNum := (size + r.chunkDataSizePerRead - 1) / r.chunkDataSizePerRead
+		totalDataSize = r.totalChunkDataSizePerRead * chunkNum
+	}
 	r.fileShardsDataBuffer = make([]byte, 0, totalDataSize)
 	if CurrentMode == UploadModeHigh {
 		r.hasherWG.Add(1)
