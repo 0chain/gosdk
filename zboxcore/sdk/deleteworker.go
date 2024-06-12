@@ -73,7 +73,7 @@ func (req *DeleteRequest) deleteBlobberFile(
 
 	for i := 0; i < 3; i++ {
 		err, shouldContinue = func() (err error, shouldContinue bool) {
-			ctx, cncl := context.WithTimeout(req.ctx, time.Minute)
+			ctx, cncl := context.WithTimeout(req.ctx, 2*time.Minute)
 			resp, err = zboxutil.Client.Do(httpreq.WithContext(ctx))
 			cncl()
 

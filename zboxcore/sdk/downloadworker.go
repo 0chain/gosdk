@@ -525,7 +525,10 @@ func (req *DownloadRequest) processDownload() {
 	if ok {
 		writerAt = true
 	}
-
+	bufBlocks := int(numBlocks)
+	if n == 1 && endBlock-startBlock < numBlocks {
+		bufBlocks = int(endBlock - startBlock)
+	}
 	if !req.shouldVerify {
 		var pos uint64
 		req.bufferMap = make(map[int]zboxutil.DownloadBuffer)
@@ -541,13 +544,14 @@ func (req *DownloadRequest) processDownload() {
 		if sz > n {
 			sz = n
 		}
+
 		for i := req.downloadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 			pos = uint64(i.TrailingZeros())
 			blobberIdx := int(pos)
 			if writerAt {
-				req.bufferMap[blobberIdx] = zboxutil.NewDownloadBufferWithChan(sz, int(numBlocks), req.effectiveBlockSize)
+				req.bufferMap[blobberIdx] = zboxutil.NewDownloadBufferWithChan(sz, bufBlocks, req.effectiveBlockSize)
 			} else {
-				bufMask := zboxutil.NewDownloadBufferWithMask(sz, int(numBlocks), req.effectiveBlockSize)
+				bufMask := zboxutil.NewDownloadBufferWithMask(sz, bufBlocks, req.effectiveBlockSize)
 				bufMask.SetNumBlocks(int(numBlocks))
 				req.bufferMap[blobberIdx] = bufMask
 			}
