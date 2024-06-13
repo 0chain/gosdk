@@ -329,7 +329,7 @@ func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string) (
 		deleteReq.wg.Add(1)
 		go func(blobberIdx int) {
 			defer deleteReq.wg.Done()
-			refEntity, err := deleteReq.getObjectTreeFromBlobber(pos)
+			refEntity, err := deleteReq.getObjectTreeFromBlobber(uint64(blobberIdx))
 			if errors.Is(err, constants.ErrNotFound) {
 				deleteReq.consensus.Done()
 				return
