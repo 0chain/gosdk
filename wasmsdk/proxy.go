@@ -288,6 +288,7 @@ func main() {
 				signFunc := func(hash string) (string, error) {
 					c := client.GetClient()
 					if len(c.Keys) == 0 {
+						fmt.Println("no keys found")
 						return "", errors.New("no keys found")
 					}
 					pk := c.Keys[0].PrivateKey
