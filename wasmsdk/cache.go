@@ -71,6 +71,9 @@ func reloadAllocation(allocationID string) (*sdk.Allocation, error) {
 
 func addWebWorkers(alloc *sdk.Allocation) {
 	c := client.GetClient()
+	if c == nil || len(c.Keys) == 0 {
+		return
+	}
 	for _, blober := range alloc.Blobbers {
 		jsbridge.NewWasmWebWorker(blober.ID, blober.Baseurl, c.ClientID, c.Keys[0].PublicKey, c.Keys[0].PrivateKey, c.Mnemonic) //nolint:errcheck
 	}

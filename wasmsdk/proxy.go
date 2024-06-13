@@ -287,6 +287,9 @@ func main() {
 			if !(jsSign.IsNull() || jsSign.IsUndefined()) {
 				signFunc := func(hash string) (string, error) {
 					c := client.GetClient()
+					if c == nil || len(c.Keys) == 0 {
+						return "", errors.New("no keys found")
+					}
 					pk := c.Keys[0].PrivateKey
 					result, err := jsbridge.Await(jsSign.Invoke(hash, pk))
 
