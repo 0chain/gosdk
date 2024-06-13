@@ -84,11 +84,6 @@ func Async(funcType reflect.Type) (AsyncInvoker, error) {
 		}
 		//func(...) (T,error)
 		return func(resolve, reject js.Value, fn reflect.Value, in []reflect.Value, err error) {
-			defer func() {
-				if r := recover(); r != nil {
-					fmt.Println("[recover]case2", r)
-				}
-			}()
 			if err != nil {
 				jsErr := NewJsError(err.Error())
 				resolve.Invoke(js.ValueOf(jsErr))

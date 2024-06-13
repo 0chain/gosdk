@@ -4,6 +4,7 @@
 package jsbridge
 
 import (
+	"fmt"
 	"sync"
 	"syscall/js"
 	"time"
@@ -29,6 +30,11 @@ func (t *Timer) Start() {
 	defer t.Unlock()
 
 	if !t.enabled {
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Println("[recover]timer", r)
+			}
+		}()
 		cb, _ := promise(t.updated)
 		t.id = js.Global().Call("setInterval", cb, t.interval.Milliseconds())
 		t.enabled = true

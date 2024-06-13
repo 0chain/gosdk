@@ -17,7 +17,11 @@ import (
 // - func(...) T
 // - func(...) (T,error)
 func BindFunc(global js.Value, jsFuncName string, fn interface{}) error {
-
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("[recover]case2: "+jsFuncName, r)
+		}
+	}()
 	jsFunc, err := promise(fn)
 	if err != nil {
 		return err
@@ -34,6 +38,11 @@ func BindAsyncFuncs(global js.Value, fnList map[string]interface{}) {
 		if jsFuncName == "registerAuthorizer" || jsFuncName == "callAuth" {
 			global.Set(jsFuncName, fn)
 		} else {
+			defer func(funcName string) {
+				if r := recover(); r != nil {
+					fmt.Println("[recover]: "+funcName, r)
+				}
+			}(jsFuncName)
 			jsFunc, err := promise(fn)
 
 			if err != nil {
