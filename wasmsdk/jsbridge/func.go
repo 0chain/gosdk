@@ -45,7 +45,6 @@ func BindAsyncFuncs(global js.Value, fnList map[string]interface{}) {
 	}
 }
 
-
 func BindFuncs(global js.Value, fnList map[string]interface{}) {
 
 	for jsFuncName, fn := range fnList {
@@ -95,7 +94,7 @@ func invoke(fn interface{}) (js.Func, error) {
 	jsFunc := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		defer func() {
 			if r := recover(); r != nil {
-				fmt.Println("[recover]", r)
+				fmt.Println("[recover]invoke", r)
 			}
 		}()
 
@@ -145,7 +144,7 @@ func promise(fn interface{}) (js.Func, error) {
 
 		defer func() {
 			if r := recover(); r != nil {
-				fmt.Println("[recover]", r)
+				fmt.Println("[recover]promise", r)
 			}
 		}()
 

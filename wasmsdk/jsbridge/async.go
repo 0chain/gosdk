@@ -23,7 +23,7 @@ func Async(funcType reflect.Type) (AsyncInvoker, error) {
 		return func(resolve, reject js.Value, fn reflect.Value, in []reflect.Value, err error) {
 			defer func() {
 				if r := recover(); r != nil {
-					fmt.Println("[recover]", r)
+					fmt.Println("[recover]case0", r)
 				}
 			}()
 			if err != nil {
@@ -44,7 +44,7 @@ func Async(funcType reflect.Type) (AsyncInvoker, error) {
 			return func(resolve, reject js.Value, fn reflect.Value, in []reflect.Value, err error) {
 				defer func() {
 					if r := recover(); r != nil {
-						fmt.Println("[recover]", r)
+						fmt.Println("[recover]case1", r)
 					}
 				}()
 				if err != nil {
@@ -86,7 +86,7 @@ func Async(funcType reflect.Type) (AsyncInvoker, error) {
 		return func(resolve, reject js.Value, fn reflect.Value, in []reflect.Value, err error) {
 			defer func() {
 				if r := recover(); r != nil {
-					fmt.Println("[recover]", r)
+					fmt.Println("[recover]case2", r)
 				}
 			}()
 			if err != nil {
