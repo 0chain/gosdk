@@ -240,7 +240,7 @@ func (mo *MultiOperation) Process() error {
 	start = time.Now()
 	status := Commit
 	if !mo.isRepair && !mo.allocationObj.checkStatus {
-		status, err = mo.allocationObj.CheckAllocStatus()
+		status, _, err = mo.allocationObj.CheckAllocStatus()
 		if err != nil {
 			logger.Logger.Error("Error checking allocation status", err)
 			if singleClientMode {
@@ -251,34 +251,15 @@ func (mo *MultiOperation) Process() error {
 			return fmt.Errorf("Check allocation status failed: %s", err.Error())
 		}
 		if status == Repair {
-			logger.Logger.Info("Repairing allocation")
 			if singleClientMode {
 				mo.allocationObj.commitMutex.Unlock()
 			} else {
 				writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
 			}
-			statusBar := NewRepairBar(mo.allocationObj.ID)
-			if statusBar == nil {
-				for _, op := range mo.operations {
-					op.Error(mo.allocationObj, 0, ErrRetryOperation)
-				}
-				return ErrRetryOperation
-			}
-			statusBar.wg.Add(1)
-			err = mo.allocationObj.RepairAlloc(statusBar)
-			if err != nil {
-				return err
-			}
-			statusBar.wg.Wait()
-			if statusBar.success {
-				l.Logger.Info("Repair success")
-			} else {
-				l.Logger.Error("Repair failed")
-			}
 			for _, op := range mo.operations {
-				op.Error(mo.allocationObj, 0, ErrRetryOperation)
+				op.Error(mo.allocationObj, 0, ErrRepairRequired)
 			}
-			return ErrRetryOperation
+			return ErrRepairRequired
 		}
 	}
 	if singleClientMode {

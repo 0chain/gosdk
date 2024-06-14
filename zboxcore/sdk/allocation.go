@@ -256,6 +256,10 @@ func SetWasm() {
 	extraCount = 0
 }
 
+func (a *Allocation) SetCheckStatus(checkStatus bool) {
+	a.checkStatus = checkStatus
+}
+
 func getPriceRange(name string) (PriceRange, error) {
 	conf, err := GetStorageSCConfig()
 	if err != nil {
@@ -1742,6 +1746,7 @@ func (a *Allocation) createDir(remotePath string, threshConsensus, fullConsensus
 			consensusThresh: threshConsensus,
 			fullconsensus:   fullConsensus,
 		},
+		alreadyExists: make(map[uint64]bool),
 	}
 	req.ctx, req.ctxCncl = context.WithCancel(a.ctx)
 
