@@ -433,6 +433,7 @@ func (a *Allocation) RepairFile(file sys.File, remotepath string, statusCallback
 		FileMeta:      fileMeta,
 		Opts:          opts,
 		FileReader:    file,
+		Mask: &mask,	
 	}
 	if ref.ActualFileHash == emptyFileDataHash {
 		op.FileMeta.ActualSize = 0
@@ -2324,7 +2325,7 @@ func (a *Allocation) RepairAlloc(statusCB StatusCallback) (err error) {
 	return a.StartRepair(dir, "/", statusCB)
 }
 
-// RepairSize gets the size in bytes to upload and repair allocation
+// Gets the size in bytes to repair allocation
 func (a *Allocation) RepairSize(remotePath string) (RepairSize, error) {
 	if !a.isInitialized() {
 		return RepairSize{}, notInitialized
