@@ -163,7 +163,7 @@ func (o *ObjectTreeRequest) getFileRefs(oTR *oTreeResponse, bUrl string) {
 		return
 	}
 	oResult := ObjectTreeResult{}
-	ctx, cncl := context.WithTimeout(o.ctx, time.Second*30)
+	ctx, cncl := context.WithTimeout(o.ctx, 2*time.Minute)
 	err = zboxutil.HttpDo(ctx, cncl, oReq, func(resp *http.Response, err error) error {
 		if err != nil {
 			l.Logger.Error(err)

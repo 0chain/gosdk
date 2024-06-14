@@ -3,6 +3,7 @@ package sdk
 import (
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -78,6 +79,10 @@ func (req *DeleteRequest) deleteBlobberFile(
 			cncl()
 
 			if err != nil {
+				if err == io.EOF {
+					shouldContinue = true
+					return
+				}
 				logger.Logger.Error(blobber.Baseurl, "Delete: ", err)
 				return
 			}
