@@ -96,7 +96,7 @@ func (req *ListRequest) getFileMetaInfoFromBlobber(blobber *blockchain.StorageNo
 				return errors.Wrap(err, "file meta data response parse error")
 			}
 			return nil
-		} else if resp.StatusCode == http.StatusNotFound {
+		} else if resp.StatusCode == http.StatusBadRequest {
 			return constants.ErrNotFound
 		}
 		return fmt.Errorf("unexpected response. status code: %d, response: %s",
