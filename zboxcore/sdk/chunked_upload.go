@@ -142,22 +142,9 @@ func CreateChunkedUpload(
 	}
 
 	opCode := OpUpload
-	spaceLeft := allocationObj.Size
-	if allocationObj.Stats != nil {
-		spaceLeft -= allocationObj.Stats.UsedSize
-	}
 
 	if isUpdate {
-		f, err := allocationObj.GetFileMeta(fileMeta.RemotePath)
-		if err != nil {
-			return nil, err
-		}
-		spaceLeft += f.ActualFileSize
 		opCode = OpUpdate
-	}
-
-	if fileMeta.ActualSize > spaceLeft {
-		return nil, ErrNoEnoughSpaceLeftInAllocation
 	}
 
 	consensus := Consensus{
