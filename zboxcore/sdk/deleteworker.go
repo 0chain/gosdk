@@ -171,6 +171,7 @@ func (req *DeleteRequest) getFileMetaFromBlobber(pos uint64) (fileRef *fileref.F
 		allocationTx:   req.allocationTx,
 		blobbers:       req.blobbers,
 		remotefilepath: req.remotefilepath,
+		ctx:            req.ctx,
 	}
 	respChan := make(chan *fileMetaResponse)
 	go listReq.getFileMetaInfoFromBlobber(req.blobbers[pos], int(pos), respChan)
