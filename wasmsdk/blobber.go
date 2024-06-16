@@ -955,6 +955,9 @@ func repairAllocation(allocationID string) error {
 		return err
 	}
 	statusBar := sdk.NewRepairBar(allocationID)
+	if statusBar == nil {
+		return errors.New("repair already in progress")
+	}
 	err = alloc.RepairAlloc(statusBar)
 	if err != nil {
 		return err
