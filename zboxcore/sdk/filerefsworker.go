@@ -187,7 +187,7 @@ func (o *ObjectTreeRequest) getFileRefs(oTR *oTreeResponse, bUrl string) {
 		return
 	}
 	oTR.oTResult = &oResult
-	var similarFieldRefs []byte
+	similarFieldRefs := make([]byte, 0, 32*len(oResult.Refs))
 	for _, ref := range oResult.Refs {
 		decodeBytes, _ := hex.DecodeString(ref.SimilarField.FileMetaHash)
 		similarFieldRefs = append(similarFieldRefs, decodeBytes...)
