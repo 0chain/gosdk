@@ -217,7 +217,7 @@ type FinalWorkerResult struct {
 	ThumbnailContentHash string
 }
 
-func (su *ChunkedUpload) listen(allEventChan []<-chan worker.MessageEvent, respChan chan error) {
+func (su *ChunkedUpload) listen(allEventChan []chan worker.MessageEvent, respChan chan error) {
 	su.consensus.Reset()
 
 	var (
@@ -623,14 +623,20 @@ func (su *ChunkedUpload) startProcessor() {
 	su.processMap = make(map[int]int)
 	respChan := make(chan error, 1)
 	su.uploadWG.Add(1)
-	allEventChan := make([]<-chan worker.MessageEvent, len(su.blobbers))
+	allEventChan := make([]chan worker.MessageEvent, len(su.blobbers))
 	var pos uint64
 	for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		blobber := su.blobbers[pos]
-		worker := jsbridge.GetWorker(blobber.blobber.ID)
-		if worker != nil {
-			eventChan, _ := worker.Listen(su.ctx)
+		webWorker := jsbridge.GetWorker(blobber.blobber.ID)
+		if webWorker != nil {
+			eventChan := make(chan worker.MessageEvent, su.uploadWorkers)
+			err := webWorker.SubscribeToEvents(su.fileMeta.Path, eventChan)
+			if err != nil {
+				logger.Logger.Error("error subscribing to events: ", err)
+				su.ctxCncl(thrown.New("upload_failed", "Upload failed. Error subscribing to events"))
+				return
+			}
 			allEventChan[pos] = eventChan
 		}
 	}
