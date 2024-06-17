@@ -41,6 +41,9 @@ type WasmWebWorker struct {
 	subscribers   map[string]chan worker.MessageEvent
 	numberOfSubs  int
 	subMutex      sync.Mutex
+
+	//isTerminated bool
+	isTerminated bool
 }
 
 var (
@@ -75,8 +78,13 @@ func GetWorker(blobberID string) *WasmWebWorker {
 func RemoveWorker(blobberID string) {
 	worker, ok := workers[blobberID]
 	if ok {
-		worker.Terminate()
-		delete(workers, blobberID)
+		worker.subMutex.Lock()
+		if worker.numberOfSubs == 0 {
+			worker.Terminate()
+			delete(workers, blobberID)
+			worker.isTerminated = true
+		}
+		worker.subMutex.Unlock()
 	}
 }
 
@@ -86,6 +94,10 @@ func (ww *WasmWebWorker) SubscribeToEvents(remotePath string, ch chan worker.Mes
 		return errors.New("channel is nil")
 	}
 	ww.subMutex.Lock()
+	if ww.isTerminated {
+		ww.subMutex.Unlock()
+		return errors.New("worker is terminated")
+	}
 	ww.subscribers[remotePath] = ch
 	ww.numberOfSubs++
 	//start the worker listener if there are subscribers
@@ -123,20 +135,27 @@ func (ww *WasmWebWorker) ListenForEvents(eventChan <-chan worker.MessageEvent) {
 		select {
 		case <-ww.ctx.Done():
 			return
-		case event := <-eventChan:
+		case event, ok := <-eventChan:
+			if !ok {
+				return
+			}
 			//get remote path from the event
 			data, err := event.Data()
 			// if above throws an error, pass it to all the subscribers
 			if err != nil {
-				ww.sendEventToAllSubscribers(event)
+				ww.removeAllSubscribers()
 				return
 			}
 			remotePathObject, err := data.Get("remotePath")
 			if err != nil {
-				ww.sendEventToAllSubscribers(event)
+				ww.removeAllSubscribers()
 				return
 			}
 			remotePath, _ := remotePathObject.String()
+			if remotePath == "" {
+				ww.removeAllSubscribers()
+				return
+			}
 			ww.subMutex.Lock()
 			ch, ok := ww.subscribers[remotePath]
 			if ok {
@@ -147,11 +166,14 @@ func (ww *WasmWebWorker) ListenForEvents(eventChan <-chan worker.MessageEvent) {
 	}
 }
 
-func (ww *WasmWebWorker) sendEventToAllSubscribers(event worker.MessageEvent) {
+func (ww *WasmWebWorker) removeAllSubscribers() {
 	ww.subMutex.Lock()
-	for _, ch := range ww.subscribers {
-		ch <- event
+	for path, ch := range ww.subscribers {
+		close(ch)
+		delete(ww.subscribers, path)
+		ww.numberOfSubs--
 	}
+	ww.cancelContext()
 	ww.subMutex.Unlock()
 }
 
