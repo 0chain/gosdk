@@ -356,7 +356,7 @@ func NewObjectTreeRequest(baseUrl, allocationID string, allocationTx string, pat
 }
 
 func NewRefsRequest(baseUrl, allocationID, allocationTx, path, pathHash, authToken, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*http.Request, error) {
-	nUrl, err := joinUrl(baseUrl, REFS_ENDPOINT, allocationID)
+	nUrl, err := joinUrl(baseUrl, REFS_ENDPOINT, allocationTx)
 	if err != nil {
 		return nil, err
 	}
