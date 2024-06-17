@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	l "github.com/0chain/gosdk/zboxcore/logger"
@@ -95,6 +96,8 @@ func (req *ListRequest) getFileMetaInfoFromBlobber(blobber *blockchain.StorageNo
 				return errors.Wrap(err, "file meta data response parse error")
 			}
 			return nil
+		} else if resp.StatusCode == http.StatusBadRequest {
+			return constants.ErrNotFound
 		}
 		return fmt.Errorf("unexpected response. status code: %d, response: %s",
 			resp.StatusCode, string(resp_body))
