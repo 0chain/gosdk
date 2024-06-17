@@ -51,6 +51,7 @@ type ObjectTreeRequest struct {
 type oTreeResponse struct {
 	oTResult *ObjectTreeResult
 	err      error
+	hash     string
 }
 
 // Paginated tree should not be collected as this will stall the client
@@ -76,12 +77,7 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 			}
 			continue
 		}
-		var similarFieldRefs []byte
-		for _, ref := range oTreeResponse.oTResult.Refs {
-			decodeBytes, _ := hex.DecodeString(ref.SimilarField.FileMetaHash)
-			similarFieldRefs = append(similarFieldRefs, decodeBytes...)
-		}
-		hash := zboxutil.GetRefsHash(similarFieldRefs)
+		hash := oTreeResponse.hash
 
 		if _, ok := hashCount[hash]; ok {
 			hashCount[hash]++
@@ -191,6 +187,12 @@ func (o *ObjectTreeRequest) getFileRefs(oTR *oTreeResponse, bUrl string) {
 		return
 	}
 	oTR.oTResult = &oResult
+	var similarFieldRefs []byte
+	for _, ref := range oResult.Refs {
+		decodeBytes, _ := hex.DecodeString(ref.SimilarField.FileMetaHash)
+		similarFieldRefs = append(similarFieldRefs, decodeBytes...)
+	}
+	oTR.hash = zboxutil.GetRefsHash(similarFieldRefs)
 }
 
 // Blobber response will be different from each other so we should only consider similar fields
