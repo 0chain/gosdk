@@ -234,7 +234,7 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 		for i := 0; i < numBlobbers; i++ {
 			url := mockBlobberUrl + strconv.Itoa(i)
 			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-				return req.Method == "GET" &&
+				return req.Method == "POST" &&
 					strings.Contains(req.URL.String(), testName+url)
 			})).Return(&http.Response{
 				StatusCode: http.StatusOK,
