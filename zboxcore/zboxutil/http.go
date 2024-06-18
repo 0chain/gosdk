@@ -45,7 +45,6 @@ type FastClient interface {
 
 var (
 	Client         HttpClient
-	HostClientMap  = make(map[string]*fasthttp.HostClient)
 	FastHttpClient FastClient
 	hostLock       sync.RWMutex
 	log            logger.Logger
@@ -132,41 +131,8 @@ func (pfe *proxyFromEnv) isLoopback(host string) (ok bool) {
 	return net.ParseIP(host).IsLoopback()
 }
 
-func SetHostClient(id, baseURL string) {
-	hostLock.Lock()
-	defer hostLock.Unlock()
-	if _, ok := HostClientMap[id]; !ok {
-		u, _ := url.Parse(baseURL)
-		host := fasthttp.AddMissingPort(u.Host, true)
-		HostClientMap[id] = &fasthttp.HostClient{
-			NoDefaultUserAgentHeader:      true,
-			Addr:                          host,
-			MaxConns:                      1024,
-			MaxIdleConnDuration:           45 * time.Second,
-			DisableHeaderNamesNormalizing: true,
-			DisablePathNormalizing:        true,
-			Dial: (&fasthttp.TCPDialer{
-				Concurrency:      4096,
-				DNSCacheDuration: time.Hour,
-			}).Dial,
-			IsTLS:        u.Scheme == "https",
-			ReadTimeout:  30 * time.Second,
-			WriteTimeout: 30 * time.Second,
-		}
-	}
-}
-
-func GetHostClient(id, baseURL string) *fasthttp.HostClient {
-	hostLock.RLock()
-	hc := HostClientMap[id]
-	if hc == nil {
-		hostLock.RUnlock()
-		SetHostClient(id, baseURL)
-		hostLock.RLock()
-		hc = HostClientMap[id]
-	}
-	hostLock.RUnlock()
-	return hc
+func GetFastHTTPClient() *fasthttp.Client {
+	return FastHttpClient.(*fasthttp.Client)
 }
 
 func (pfe *proxyFromEnv) Proxy(req *http.Request) (proxy *url.URL, err error) {
