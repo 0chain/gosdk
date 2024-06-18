@@ -79,12 +79,12 @@ func InitBlockDownloader(blobbers []*blockchain.StorageNode, workerCount int) {
 	for _, blobber := range blobbers {
 		if _, ok := downloadBlockChan[blobber.ID]; !ok {
 			downloadBlockChan[blobber.ID] = make(chan *BlockDownloadRequest, workerCount)
-			go startBlockDownloadWorker(downloadBlockChan[blobber.ID], workerCount, blobber.ID, blobber.Baseurl)
+			go startBlockDownloadWorker(downloadBlockChan[blobber.ID], workerCount)
 		}
 	}
 }
 
-func startBlockDownloadWorker(blobberChan chan *BlockDownloadRequest, workers int, id, baseURL string) {
+func startBlockDownloadWorker(blobberChan chan *BlockDownloadRequest, workers int) {
 	sem := semaphore.NewWeighted(int64(workers))
 	fastClient := zboxutil.GetFastHTTPClient()
 	for {

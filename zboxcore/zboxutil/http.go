@@ -132,7 +132,11 @@ func (pfe *proxyFromEnv) isLoopback(host string) (ok bool) {
 }
 
 func GetFastHTTPClient() *fasthttp.Client {
-	return FastHttpClient.(*fasthttp.Client)
+	fc, ok := FastHttpClient.(*fasthttp.Client)
+	if ok {
+		return fc
+	}
+	return nil
 }
 
 func (pfe *proxyFromEnv) Proxy(req *http.Request) (proxy *url.URL, err error) {
