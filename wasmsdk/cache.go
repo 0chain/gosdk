@@ -40,9 +40,6 @@ func getAllocation(allocationId string) (*sdk.Allocation, error) {
 		Allocation: a,
 		Expiration: time.Now().Add(120 * time.Minute),
 	}
-	if !ok {
-		addWebWorkers(a)
-	}
 
 	cachedAllocations.Add(allocationId, it)
 	return it.Allocation, nil
@@ -74,7 +71,12 @@ func addWebWorkers(alloc *sdk.Allocation) {
 	if c == nil || len(c.Keys) == 0 {
 		return
 	}
+	isCreated := false
 	for _, blober := range alloc.Blobbers {
-		jsbridge.NewWasmWebWorker(blober.ID, blober.Baseurl, c.ClientID, c.Keys[0].PublicKey, c.Keys[0].PrivateKey, c.Mnemonic) //nolint:errcheck
+		_, isCreated, _ = jsbridge.NewWasmWebWorker(blober.ID, blober.Baseurl, c.ClientID, c.Keys[0].PublicKey, c.Keys[0].PrivateKey, c.Mnemonic) //nolint:errcheck
+	}
+	// wait for worker to be instantiated
+	if isCreated {
+		time.Sleep(1 * time.Second)
 	}
 }
