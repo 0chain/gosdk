@@ -111,7 +111,7 @@ func (r *RepairRequest) Size(ctx context.Context, dir *ListResult) (RepairSize, 
 			}
 			for _, repairOp := range repairOps {
 				if repairOp.OperationType == constants.FileOperationInsert {
-					rs.UploadSize += uint64(repairOp.Mask.CountOnes()) * uint64(getShardSize(repairOp.FileMeta.ActualSize, r.allocation.DataShards, dir.EncryptionKey != ""))
+					rs.UploadSize += uint64(repairOp.Mask.CountOnes()) * uint64(getShardSize(repairOp.FileMeta.ActualSize, r.allocation.DataShards, repairOp.EncryptedKey != ""))
 					rs.DownloadSize += uint64(repairOp.FileMeta.ActualSize)
 				}
 			}

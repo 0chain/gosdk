@@ -228,6 +228,7 @@ type OperationRequest struct {
 	IsUpdate       bool
 	IsRepair       bool // Required for repair operation
 	IsWebstreaming bool
+	EncryptedKey	string
 
 	// Required for uploads
 	Workdir      string
@@ -437,7 +438,8 @@ func (a *Allocation) RepairFile(file sys.File, remotepath string, statusCallback
 		FileMeta:      fileMeta,
 		Opts:          opts,
 		FileReader:    file,
-		Mask: &mask,	
+		Mask: &mask,
+		EncryptedKey: ref.EncryptedKey,	
 	}
 	if ref.ActualFileHash == emptyFileDataHash {
 		op.FileMeta.ActualSize = 0
