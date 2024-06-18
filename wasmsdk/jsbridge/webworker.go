@@ -39,10 +39,11 @@ var (
 	workers = make(map[string]*WasmWebWorker)
 )
 
-func NewWasmWebWorker(blobberID, blobberURL, clientID, publicKey, privateKey, mnemonic string) (*WasmWebWorker, error) {
+func NewWasmWebWorker(blobberID, blobberURL, clientID, publicKey, privateKey, mnemonic string) (*WasmWebWorker, bool, error) {
+	created := false
 	_, ok := workers[blobberID]
 	if ok {
-		return workers[blobberID], nil
+		return workers[blobberID], created, nil
 	}
 
 	w := &WasmWebWorker{
@@ -52,11 +53,11 @@ func NewWasmWebWorker(blobberID, blobberURL, clientID, publicKey, privateKey, mn
 	}
 
 	if err := w.Start(); err != nil {
-		return nil, err
+		return nil, created, err
 	}
 	workers[blobberID] = w
-
-	return w, nil
+	created = true
+	return w, created, nil
 }
 
 func GetWorker(blobberID string) *WasmWebWorker {
