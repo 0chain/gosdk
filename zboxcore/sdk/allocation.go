@@ -323,9 +323,6 @@ func (a *Allocation) InitAllocation() {
 	a.mutex = &sync.Mutex{}
 	a.commitMutex = &sync.Mutex{}
 	a.fullconsensus, a.consensusThreshold = a.getConsensuses()
-	for _, blobber := range a.Blobbers {
-		zboxutil.SetHostClient(blobber.ID, blobber.Baseurl)
-	}
 	a.readFree = true
 	if a.ReadPriceRange.Max > 0 {
 		for _, blobberDetail := range a.BlobberDetails {
