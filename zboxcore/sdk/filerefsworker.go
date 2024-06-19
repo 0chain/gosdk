@@ -68,7 +68,7 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 	hashCount := make(map[string]int)
 	hashRefsMap := make(map[string]*ObjectTreeResult)
 	oTreeResponseErrors := make([]error, totalBlobbersCount)
-
+	var successCount int
 	for idx, oTreeResponse := range oTreeResponses {
 		oTreeResponseErrors[idx] = oTreeResponse.err
 		if oTreeResponse.err != nil {
@@ -77,6 +77,7 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 			}
 			continue
 		}
+		successCount++
 		hash := oTreeResponse.hash
 
 		if _, ok := hashCount[hash]; ok {
@@ -85,14 +86,6 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 			hashCount[hash]++
 			hashRefsMap[hash] = oTreeResponse.oTResult
 		}
-	}
-	majorError := zboxutil.MajorError(oTreeResponseErrors)
-	majorErrorMsg := ""
-	if majorError != nil {
-		majorErrorMsg = majorError.Error()
-	}
-	if code, _ := zboxutil.GetErrorMessageCode(majorErrorMsg); code == INVALID_PATH {
-		return &ObjectTreeResult{}, nil
 	}
 	var selected *ObjectTreeResult
 	for k, v := range hashCount {
@@ -105,8 +98,17 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 	if selected != nil {
 		return selected, nil
 	}
-	if majorError != nil {
-		l.Logger.Error("error while gettings refs: ", majorError)
+	if successCount < o.consensusThresh {
+		majorError := zboxutil.MajorError(oTreeResponseErrors)
+		majorErrorMsg := ""
+		if majorError != nil {
+			majorErrorMsg = majorError.Error()
+		}
+		if code, _ := zboxutil.GetErrorMessageCode(majorErrorMsg); code == INVALID_PATH {
+			return &ObjectTreeResult{}, nil
+		} else {
+			return nil, majorError
+		}
 	}
 	// build the object tree result by using consensus on individual refs
 	refHash := make(map[string]int)
