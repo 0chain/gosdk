@@ -454,7 +454,14 @@ func DeleteFile(allocationID, remotePath string) error {
 	if err != nil {
 		return err
 	}
-	return a.DeleteFile(remotePath)
+	a.SetCheckStatus(true)
+	defer a.SetCheckStatus(false)
+	return a.DoMultiOperation([]sdk.OperationRequest{
+		{
+			OperationType: constants.FileOperationDelete,
+			RemotePath:    remotePath,
+		},
+	})
 }
 
 // RenameObject - rename or move file
