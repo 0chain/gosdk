@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"math"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -157,6 +158,9 @@ func (o *ObjectTreeRequest) getFileRefs(oTR *oTreeResponse, bUrl string) {
 	if err != nil {
 		oTR.err = err
 		return
+	}
+	if strings.Contains(bUrl, "bv6") {
+		oTR.err = errors.New("blobber_down", "blobber is down")
 	}
 	oResult := ObjectTreeResult{}
 	ctx, cncl := context.WithTimeout(o.ctx, 2*time.Minute)
