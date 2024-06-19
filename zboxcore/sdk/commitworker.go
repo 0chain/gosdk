@@ -131,6 +131,7 @@ func (commitreq *CommitRequest) processCommit() {
 			l.Logger.Error("Ref path: Resp", err)
 			return err
 		}
+		logger.Logger.Info("refPathResponseSize: ", len(resp_body)/(1024*1024), " MB")
 		if resp.StatusCode != http.StatusOK {
 			return errors.New(
 				strconv.Itoa(resp.StatusCode),
