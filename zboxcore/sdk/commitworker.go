@@ -127,6 +127,7 @@ func (commitreq *CommitRequest) processCommit() {
 		if resp.StatusCode != http.StatusOK {
 			l.Logger.Error("Ref path response : ", resp.StatusCode)
 		}
+		logger.Logger.Info("refPathBodySize: ", resp.ContentLength/(1024*1024), " MB")
 		var bodyReader io.Reader
 		if strings.Contains(resp.Header.Get("Content-Encoding"), "lz4") {
 			bodyReader = lz4.NewReader(resp.Body)
