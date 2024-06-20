@@ -26,6 +26,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/minio/sha256-simd"
+	"github.com/pierrec/lz4/v4"
 )
 
 type ReferencePathResult struct {
@@ -126,7 +127,13 @@ func (commitreq *CommitRequest) processCommit() {
 		if resp.StatusCode != http.StatusOK {
 			l.Logger.Error("Ref path response : ", resp.StatusCode)
 		}
-		resp_body, err := ioutil.ReadAll(resp.Body)
+		var bodyReader io.Reader
+		if strings.Contains(resp.Header.Get("Content-Encoding"), "lz4") {
+			bodyReader = lz4.NewReader(resp.Body)
+		} else {
+			bodyReader = resp.Body
+		}
+		resp_body, err := io.ReadAll(bodyReader)
 		if err != nil {
 			l.Logger.Error("Ref path: Resp", err)
 			return err
