@@ -45,7 +45,6 @@ type FastClient interface {
 
 var (
 	Client         HttpClient
-	HostClientMap  = make(map[string]*fasthttp.HostClient)
 	FastHttpClient FastClient
 	hostLock       sync.RWMutex
 	log            logger.Logger
@@ -132,40 +131,12 @@ func (pfe *proxyFromEnv) isLoopback(host string) (ok bool) {
 	return net.ParseIP(host).IsLoopback()
 }
 
-func SetHostClient(id, baseURL string) {
-	hostLock.Lock()
-	defer hostLock.Unlock()
-	if _, ok := HostClientMap[id]; !ok {
-		u, _ := url.Parse(baseURL)
-		host := fasthttp.AddMissingPort(u.Host, true)
-		HostClientMap[id] = &fasthttp.HostClient{
-			NoDefaultUserAgentHeader:      true,
-			Addr:                          host,
-			MaxIdleConnDuration:           60 * time.Second,
-			DisableHeaderNamesNormalizing: true,
-			DisablePathNormalizing:        true,
-			Dial: (&fasthttp.TCPDialer{
-				Concurrency:      4096,
-				DNSCacheDuration: time.Hour,
-			}).Dial,
-			IsTLS:        u.Scheme == "https",
-			ReadTimeout:  30 * time.Second,
-			WriteTimeout: 30 * time.Second,
-		}
+func GetFastHTTPClient() *fasthttp.Client {
+	fc, ok := FastHttpClient.(*fasthttp.Client)
+	if ok {
+		return fc
 	}
-}
-
-func GetHostClient(id, baseURL string) *fasthttp.HostClient {
-	hostLock.RLock()
-	hc := HostClientMap[id]
-	if hc == nil {
-		hostLock.RUnlock()
-		SetHostClient(id, baseURL)
-		hostLock.RLock()
-		hc = HostClientMap[id]
-	}
-	hostLock.RUnlock()
-	return hc
+	return nil
 }
 
 func (pfe *proxyFromEnv) Proxy(req *http.Request) (proxy *url.URL, err error) {
@@ -189,7 +160,7 @@ func init() {
 	}
 
 	FastHttpClient = &fasthttp.Client{
-		MaxIdleConnDuration:           60 * time.Second,
+		MaxIdleConnDuration:           45 * time.Second,
 		NoDefaultUserAgentHeader:      true, // Don't send: User-Agent: fasthttp
 		DisableHeaderNamesNormalizing: true, // If you set the case on your headers correctly you can enable this
 		DisablePathNormalizing:        true,
@@ -202,6 +173,7 @@ func init() {
 		WriteTimeout:        120 * time.Second,
 		MaxConnDuration:     45 * time.Second,
 		MaxResponseBodySize: 1024 * 1024 * 64, //64MB
+		MaxConnsPerHost:     1024,
 	}
 	envProxy.initialize()
 	log.Init(logger.DEBUG, "0box-sdk")
@@ -334,8 +306,8 @@ func NewObjectTreeRequest(baseUrl, allocationID string, allocationTx string, sig
 	return req, nil
 }
 
-func NewRefsRequest(baseUrl, allocationID, sig, path, pathHash, authToken, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*http.Request, error) {
-	nUrl, err := joinUrl(baseUrl, REFS_ENDPOINT, allocationID)
+func NewRefsRequest(baseUrl, allocationID, sig, allocationTx, path, pathHash, authToken, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*http.Request, error) {
+	nUrl, err := joinUrl(baseUrl, REFS_ENDPOINT, allocationTx)
 	if err != nil {
 		return nil, err
 	}

@@ -454,7 +454,14 @@ func DeleteFile(allocationID, remotePath string) error {
 	if err != nil {
 		return err
 	}
-	return a.DeleteFile(remotePath)
+	a.SetCheckStatus(true)
+	defer a.SetCheckStatus(false)
+	return a.DoMultiOperation([]sdk.OperationRequest{
+		{
+			OperationType: constants.FileOperationDelete,
+			RemotePath:    remotePath,
+		},
+	})
 }
 
 // RenameObject - rename or move file
@@ -876,4 +883,19 @@ func SetWorkingDir(workDir string) {
 
 func SetMultiOpBatchSize(size int) {
 	sdk.SetMultiOpBatchSize(size)
+}
+
+// SetUploadMode sets upload mode
+//
+//	## Inputs
+//	- mode: 0 for low, 1 for medium, 2 for high
+func SetUploadMode(mode int) {
+	switch mode {
+	case 0:
+		sdk.SetUploadMode(sdk.UploadModeLow)
+	case 1:
+		sdk.SetUploadMode(sdk.UploadModeMedium)
+	case 2:
+		sdk.SetUploadMode(sdk.UploadModeHigh)
+	}
 }

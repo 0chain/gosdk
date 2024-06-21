@@ -38,7 +38,10 @@ import (
 const (
 	DOWNLOAD_CONTENT_FULL  = "full"
 	DOWNLOAD_CONTENT_THUMB = "thumbnail"
-	EXTRA_COUNT            = 2
+)
+
+var (
+	extraCount = 2
 )
 
 type DownloadRequestOption func(dr *DownloadRequest)
@@ -107,6 +110,7 @@ type DownloadRequest struct {
 	downloadStorer     DownloadProgressStorer
 	workdir            string
 	downloadQueue      downloadQueue // Always initialize this queue with max time taken
+	isResume           bool
 }
 
 type downloadPriority struct {
@@ -477,7 +481,9 @@ func (req *DownloadRequest) processDownload() {
 	remainingSize := size - startBlock*int64(req.effectiveBlockSize)*int64(req.datashards)
 
 	if endBlock*int64(req.effectiveBlockSize)*int64(req.datashards) < req.size {
-		remainingSize = (endBlock - startBlock - 1) * int64(req.effectiveBlockSize) * int64(req.datashards)
+		remainingSize = blocksPerShard * int64(req.effectiveBlockSize) * int64(req.datashards)
+	} else if req.isResume {
+		remainingSize = size
 	}
 
 	if memFile, ok := req.fileHandler.(*sys.MemFile); ok {
@@ -519,29 +525,33 @@ func (req *DownloadRequest) processDownload() {
 	if ok {
 		writerAt = true
 	}
-
+	bufBlocks := int(numBlocks)
+	if n == 1 && endBlock-startBlock < numBlocks {
+		bufBlocks = int(endBlock - startBlock)
+	}
 	if !req.shouldVerify {
 		var pos uint64
 		req.bufferMap = make(map[int]zboxutil.DownloadBuffer)
 		defer func() {
-			l.Logger.Info("Clearing download buffers: ", len(req.bufferMap))
+			l.Logger.Debug("Clearing download buffers: ", len(req.bufferMap))
 			for ind, rb := range req.bufferMap {
 				rb.ClearBuffer()
 				delete(req.bufferMap, ind)
 			}
 			req.bufferMap = nil
 		}()
-		sz := downloadWorkerCount + EXTRA_COUNT
+		sz := downloadWorkerCount + extraCount
 		if sz > n {
 			sz = n
 		}
+
 		for i := req.downloadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 			pos = uint64(i.TrailingZeros())
 			blobberIdx := int(pos)
 			if writerAt {
-				req.bufferMap[blobberIdx] = zboxutil.NewDownloadBufferWithChan(sz, int(numBlocks), req.effectiveBlockSize)
+				req.bufferMap[blobberIdx] = zboxutil.NewDownloadBufferWithChan(sz, bufBlocks, req.effectiveBlockSize)
 			} else {
-				bufMask := zboxutil.NewDownloadBufferWithMask(sz, int(numBlocks), req.effectiveBlockSize)
+				bufMask := zboxutil.NewDownloadBufferWithMask(sz, bufBlocks, req.effectiveBlockSize)
 				bufMask.SetNumBlocks(int(numBlocks))
 				req.bufferMap[blobberIdx] = bufMask
 			}
@@ -696,7 +706,7 @@ func (req *DownloadRequest) processDownload() {
 	firstReqWG := sync.WaitGroup{}
 	firstReqWG.Add(1)
 	eg, egCtx := errgroup.WithContext(ctx)
-	eg.SetLimit(downloadWorkerCount + EXTRA_COUNT)
+	eg.SetLimit(downloadWorkerCount + extraCount)
 	for i := 0; i < n; i++ {
 		j := i
 		if i == 1 {
@@ -735,11 +745,12 @@ func (req *DownloadRequest) processDownload() {
 				}
 				var total int
 				if j == n-1 {
-					total, err = writeAtData(writeAtHandler, data, req.datashards, offset, int(size-offset))
+					total, err = writeAtData(writeAtHandler, data, req.datashards, offset, int(remainingSize-offset))
 				} else {
 					total, err = writeAtData(writeAtHandler, data, req.datashards, offset, -1)
 				}
 				if err != nil {
+					logger.Logger.Error("downloadFailed: ", startBlock+int64(j)*numBlocks, " remainingSize: ", remainingSize, " offset: ", offset)
 					return errors.Wrap(err, fmt.Sprintf("WriteAt failed for block %d. ", startBlock+int64(j)*numBlocks))
 				}
 				for _, rb := range req.bufferMap {
@@ -771,7 +782,7 @@ func (req *DownloadRequest) processDownload() {
 	wg.Wait()
 	// req.fileHandler.Sync() //nolint
 	elapsedGetBlocksAndWrite := time.Since(now) - elapsedInitEC - elapsedInitEncryption
-	l.Logger.Info(fmt.Sprintf("[processDownload] Timings:\n allocation_id: %s,\n remotefilepath: %s,\n initEC: %d ms,\n initEncryption: %d ms,\n getBlocks and writes: %d ms",
+	l.Logger.Debug(fmt.Sprintf("[processDownload] Timings:\n allocation_id: %s,\n remotefilepath: %s,\n initEC: %d ms,\n initEncryption: %d ms,\n getBlocks and writes: %d ms",
 		req.allocationID,
 		req.remotefilepath,
 		elapsedInitEC.Milliseconds(),
@@ -781,7 +792,7 @@ func (req *DownloadRequest) processDownload() {
 
 	if req.statusCallback != nil && !req.skip {
 		req.statusCallback.Completed(
-			req.allocationID, remotePathCB, fRef.Name, "", int(size), op)
+			req.allocationID, remotePathCB, fRef.Name, fRef.MimeType, int(size), op)
 	}
 	if req.downloadStorer != nil {
 		req.downloadStorer.Remove() //nolint:errcheck
@@ -968,14 +979,7 @@ func (req *DownloadRequest) initEncryption() (err error) {
 			return err
 		}
 	} else {
-		key, err := hex.DecodeString(client.GetClientPrivateKey())
-		if err != nil {
-			return err
-		}
-		err = req.encScheme.InitializeWithPrivateKey(key)
-		if err != nil {
-			return err
-		}
+		return errors.New("invalid_mnemonic", "Invalid mnemonic")
 	}
 
 	err = req.encScheme.InitForDecryption("filetype:audio", req.encryptedKey)
@@ -1053,6 +1057,9 @@ func (req *DownloadRequest) calculateShardsParams(
 			}
 			if dp != nil {
 				req.startBlock = int64(dp.LastWrittenBlock)
+				if req.startBlock > 0 {
+					req.isResume = true
+				}
 			} else {
 				dp = &DownloadProgress{
 					ID:        progressID,
@@ -1362,12 +1369,14 @@ func writeAtData(dest io.WriterAt, data [][][]byte, dataShards int, offset int64
 					n, err := dest.WriteAt(data[i][j], offset+int64(total))
 					total += n
 					if err != nil {
+						logger.Logger.Error("writeAt failed: ", err, " offset: ", offset, " total: ", total, "toWriteData: ", len(data[i][j]), " lastBlock: ", lastBlock)
 						return total, err
 					}
 				} else {
 					n, err := dest.WriteAt(data[i][j][:lastBlock], offset+int64(total))
 					total += n
 					if err != nil {
+						logger.Logger.Error("writeAt failed: ", err, " offset: ", offset, " total: ", total, "toWriteData: ", len(data[i][j]), " lastBlock: ", lastBlock)
 						return total, err
 					}
 				}
@@ -1379,6 +1388,7 @@ func writeAtData(dest io.WriterAt, data [][][]byte, dataShards int, offset int64
 				n, err := dest.WriteAt(data[i][j], offset+int64(total))
 				total += n
 				if err != nil {
+					logger.Logger.Error("writeAt failed: ", err, " offset: ", offset, " total: ", total)
 					return total, err
 				}
 			}

@@ -33,7 +33,7 @@ func (f *MemFile) Write(p []byte) (n int, err error) {
 }
 
 func (f *MemFile) WriteAt(p []byte, offset int64) (n int, err error) {
-	if offset < 0 || offset > int64(len(f.Buffer)) {
+	if offset < 0 || offset > int64(len(f.Buffer)) || len(p) > len(f.Buffer)-int(offset) {
 		return 0, io.ErrShortWrite
 	}
 

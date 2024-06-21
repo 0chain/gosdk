@@ -215,7 +215,7 @@ func (req *MoveRequest) ProcessMove() error {
 	}
 
 	//Check if the allocation is to be repaired or rolled back
-	status, err := req.allocationObj.CheckAllocStatus()
+	status, _, err := req.allocationObj.CheckAllocStatus()
 	if err != nil {
 		logger.Logger.Error("Error checking allocation status: ", err)
 		return fmt.Errorf("Move failed: %s", err.Error())

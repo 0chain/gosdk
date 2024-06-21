@@ -44,6 +44,12 @@ func CreateHasher(dataSize int64) Hasher {
 	}
 }
 
+func CreateFileHasher() Hasher {
+	return &hasher{
+		File: md5.New(),
+	}
+}
+
 func (h *hasher) GetFileHash() (string, error) {
 	if h == nil {
 		return "", errors.Throw(constants.ErrInvalidParameter, "h")

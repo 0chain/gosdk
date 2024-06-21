@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	DefaultCreateConnectionTimeOut = 10 * time.Second
+	DefaultCreateConnectionTimeOut = 45 * time.Second
 )
 
 var BatchSize = 6
@@ -123,7 +123,7 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 			latestRespMsg = string(respBody)
 			latestStatusCode = resp.StatusCode
 			if resp.StatusCode == http.StatusOK {
-				l.Logger.Info(blobber.Baseurl, " connection obj created.")
+				l.Logger.Debug(blobber.Baseurl, " connection obj created.")
 				return
 			}
 
@@ -159,7 +159,7 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 }
 
 func (mo *MultiOperation) Process() error {
-	l.Logger.Info("MultiOperation Process start")
+	l.Logger.Debug("MultiOperation Process start")
 	wg := &sync.WaitGroup{}
 	mo.changes = make([][]allocationchange.AllocationChange, len(mo.operations))
 	ctx := mo.ctx
@@ -197,17 +197,19 @@ func (mo *MultiOperation) Process() error {
 	}
 	swg.Wait()
 
+	if ctx.Err() != nil {
+		return context.Cause(ctx)
+	}
+
 	// Check consensus
-	if mo.operationMask.CountOnes() < mo.consensusThresh || ctx.Err() != nil {
+	if mo.operationMask.CountOnes() < mo.consensusThresh {
 		majorErr := zboxutil.MajorError(errsSlice)
 		if majorErr != nil {
 			return errors.New("consensus_not_met",
 				fmt.Sprintf("Multioperation failed. Required consensus %d got %d. Major error: %s",
 					mo.consensusThresh, mo.operationMask.CountOnes(), majorErr.Error()))
 		}
-		return errors.New("consensus_not_met",
-			fmt.Sprintf("Multioperation failed. Required consensus %d got %d",
-				mo.consensusThresh, mo.operationMask.CountOnes()))
+		return nil
 	}
 
 	// Take transpose of mo.change because it will be easier to iterate mo if it contains blobber changes
@@ -222,7 +224,7 @@ func (mo *MultiOperation) Process() error {
 		return fmt.Errorf("Operation failed: %s", err.Error())
 	}
 
-	l.Logger.Info("Trying to lock write marker.....")
+	l.Logger.Debug("Trying to lock write marker.....")
 	if singleClientMode {
 		mo.allocationObj.commitMutex.Lock()
 	} else {
@@ -232,11 +234,11 @@ func (mo *MultiOperation) Process() error {
 			return fmt.Errorf("Operation failed: %s", err.Error())
 		}
 	}
-	logger.Logger.Info("[writemarkerLocked]", time.Since(start).Milliseconds())
+	logger.Logger.Debug("[writemarkerLocked]", time.Since(start).Milliseconds())
 	start = time.Now()
 	status := Commit
 	if !mo.isRepair && !mo.allocationObj.checkStatus {
-		status, err = mo.allocationObj.CheckAllocStatus()
+		status, _, err = mo.allocationObj.CheckAllocStatus()
 		if err != nil {
 			logger.Logger.Error("Error checking allocation status", err)
 			if singleClientMode {
@@ -247,34 +249,15 @@ func (mo *MultiOperation) Process() error {
 			return fmt.Errorf("Check allocation status failed: %s", err.Error())
 		}
 		if status == Repair {
-			logger.Logger.Info("Repairing allocation")
 			if singleClientMode {
 				mo.allocationObj.commitMutex.Unlock()
 			} else {
 				writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
 			}
-			statusBar := NewRepairBar(mo.allocationObj.ID)
-			if statusBar == nil {
-				for _, op := range mo.operations {
-					op.Error(mo.allocationObj, 0, ErrRetryOperation)
-				}
-				return ErrRetryOperation
-			}
-			statusBar.wg.Add(1)
-			err = mo.allocationObj.RepairAlloc(statusBar)
-			if err != nil {
-				return err
-			}
-			statusBar.wg.Wait()
-			if statusBar.success {
-				l.Logger.Info("Repair success")
-			} else {
-				l.Logger.Error("Repair failed")
-			}
 			for _, op := range mo.operations {
-				op.Error(mo.allocationObj, 0, ErrRetryOperation)
+				op.Error(mo.allocationObj, 0, ErrRepairRequired)
 			}
-			return ErrRetryOperation
+			return ErrRepairRequired
 		}
 	}
 	if singleClientMode {
@@ -289,7 +272,7 @@ func (mo *MultiOperation) Process() error {
 		}
 		return ErrRetryOperation
 	}
-	logger.Logger.Info("[checkAllocStatus]", time.Since(start).Milliseconds())
+	logger.Logger.Debug("[checkAllocStatus]", time.Since(start).Milliseconds())
 	mo.Consensus.Reset()
 	activeBlobbers := mo.operationMask.CountOnes()
 	commitReqs := make([]*CommitRequest, activeBlobbers)
@@ -313,33 +296,32 @@ func (mo *MultiOperation) Process() error {
 
 		commitReq.changes = append(commitReq.changes, mo.changes[pos]...)
 		commitReqs[counter] = commitReq
-		l.Logger.Info("Commit request sending to blobber ", commitReq.blobber.Baseurl)
+		l.Logger.Debug("Commit request sending to blobber ", commitReq.blobber.Baseurl)
 		go AddCommitRequest(commitReq)
 		counter++
 	}
 	wg.Wait()
-	logger.Logger.Info("[commitRequests]", time.Since(start).Milliseconds())
+	logger.Logger.Debug("[commitRequests]", time.Since(start).Milliseconds())
 	rollbackMask := zboxutil.NewUint128(0)
 	errSlice := make([]error, len(commitReqs))
 	for idx, commitReq := range commitReqs {
 		if commitReq.result != nil {
 			if commitReq.result.Success {
-				l.Logger.Info("Commit success", commitReq.blobber.Baseurl)
+				l.Logger.Debug("Commit success", commitReq.blobber.Baseurl)
 				if !mo.isRepair {
 					rollbackMask = rollbackMask.Or(zboxutil.NewUint128(1).Lsh(commitReq.blobberInd))
 				}
 				mo.consensus++
 			} else {
 				errSlice[idx] = errors.New("commit_failed", commitReq.result.ErrorMessage)
-				l.Logger.Info("Commit failed", commitReq.blobber.Baseurl, commitReq.result.ErrorMessage)
+				l.Logger.Error("Commit failed", commitReq.blobber.Baseurl, commitReq.result.ErrorMessage)
 			}
 		} else {
-			l.Logger.Info("Commit result not set", commitReq.blobber.Baseurl)
+			l.Logger.Debug("Commit result not set", commitReq.blobber.Baseurl)
 		}
 	}
 
 	if !mo.isConsensusOk() {
-		mo.allocationObj.checkStatus = false
 		err = zboxutil.MajorError(errSlice)
 		if mo.getConsensus() != 0 {
 			l.Logger.Info("Rolling back changes on minority blobbers")

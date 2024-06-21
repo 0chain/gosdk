@@ -149,11 +149,12 @@ func Delete(allocationID, remotePath string) (*FileCommandResponse, error) {
 		return nil, err
 	}
 
-	err = allocationObj.DeleteFile(remotePath)
-	if err != nil {
-		return nil, err
-	}
-
+	err = allocationObj.DoMultiOperation([]sdk.OperationRequest{
+		{
+			OperationType: constants.FileOperationDelete,
+			RemotePath:    remotePath,
+		},
+	})
 	sdkLogger.Info(remotePath + " deleted")
 
 	resp := &FileCommandResponse{
@@ -404,6 +405,7 @@ func multiDownload(allocationID, jsonMultiDownloadOptions, authTicket, callbackF
 		}
 		var mf sys.File
 		if option.DownloadToDisk {
+			terminateWorkersWithAllocation(alloc)
 			mf, err = jsbridge.NewFileWriter(fileName)
 			if err != nil {
 				PrintError(err.Error())
@@ -477,6 +479,7 @@ type BulkUploadOption struct {
 	FileSize          int64  `json:"fileSize,omitempty"`
 	ReadChunkFuncName string `json:"readChunkFuncName,omitempty"`
 	CallbackFuncName  string `json:"callbackFuncName,omitempty"`
+	Md5HashFuncName   string `json:"md5HashFuncName,omitempty"`
 	MimeType          string `json:"mimeType,omitempty"`
 	MemoryStorer      bool   `json:"memoryStorer,omitempty"`
 }
@@ -626,6 +629,7 @@ func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 		result.Success = false
 		return result, errors.New("Error fetching the allocation")
 	}
+	addWebWorkers(allocationObj)
 	operationRequests := make([]sdk.OperationRequest, n)
 	for idx, option := range options {
 		wg := &sync.WaitGroup{}
@@ -691,6 +695,10 @@ func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 			options = append(options, sdk.WithProgressStorer(&chunkedUploadProgressStorer{
 				list: make(map[string]*sdk.UploadProgress),
 			}))
+		}
+		if option.Md5HashFuncName != "" {
+			fileHasher := newFileHasher(option.Md5HashFuncName)
+			options = append(options, sdk.WithFileHasher(fileHasher))
 		}
 		operationRequests[idx] = sdk.OperationRequest{
 			FileMeta:       fileMeta,
@@ -939,4 +947,108 @@ func getBlobbers(stakable bool) ([]*sdk.Blobber, error) {
 		return nil, err
 	}
 	return blobbs, err
+}
+
+func repairAllocation(allocationID string) error {
+	alloc, err := getAllocation(allocationID)
+	if err != nil {
+		return err
+	}
+	statusBar := sdk.NewRepairBar(allocationID)
+	if statusBar == nil {
+		return errors.New("repair already in progress")
+	}
+	err = alloc.RepairAlloc(statusBar)
+	if err != nil {
+		return err
+	}
+	statusBar.Wait()
+	return statusBar.CheckError()
+}
+
+func checkAllocStatus(allocationID string) (string, error) {
+	alloc, err := getAllocation(allocationID)
+	if err != nil {
+		return "", err
+	}
+	status, blobberStatus, err := alloc.CheckAllocStatus()
+	var statusStr string
+	switch status {
+	case sdk.Repair:
+		statusStr = "repair"
+	case sdk.Broken:
+		statusStr = "broken"
+	default:
+		statusStr = "ok"
+	}
+	statusResult := CheckStatusResult{
+		Status:        statusStr,
+		Err:           err,
+		BlobberStatus: blobberStatus,
+	}
+	statusBytes, err := json.Marshal(statusResult)
+	if err != nil {
+		return "", err
+	}
+
+	return string(statusBytes), err
+}
+
+func skipStatusCheck(allocationID string, checkStatus bool) error {
+	alloc, err := getAllocation(allocationID)
+	if err != nil {
+		return err
+	}
+	alloc.SetCheckStatus(checkStatus)
+	return nil
+}
+
+func terminateWorkers(allocationID string) {
+	alloc, err := getAllocation(allocationID)
+	if err != nil {
+		return
+	}
+	for _, blobber := range alloc.Blobbers {
+		jsbridge.RemoveWorker(blobber.ID)
+	}
+}
+
+func terminateWorkersWithAllocation(alloc *sdk.Allocation) {
+	for _, blobber := range alloc.Blobbers {
+		jsbridge.RemoveWorker(blobber.ID)
+	}
+}
+
+func createWorkers(allocationID string) {
+	alloc, err := getAllocation(allocationID)
+	if err != nil {
+		return
+	}
+	addWebWorkers(alloc)
+}
+
+func startListener() error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	selfWorker, err := jsbridge.NewSelfWorker()
+	if err != nil {
+		return err
+	}
+
+	listener, err := selfWorker.Listen(ctx)
+	if err != nil {
+		return err
+	}
+	sdk.InitHasherMap()
+	for event := range listener {
+		data, err := event.Data()
+		if err != nil {
+			PrintError("Error in getting data from event", err)
+			return err
+		}
+		sdk.ProcessEventData(data)
+	}
+
+	return nil
 }
