@@ -237,6 +237,7 @@ func main() {
 
 				"decodeAuthTicket": decodeAuthTicket,
 				"allocationRepair": allocationRepair,
+				"repairSize": repairSize,
 
 				//smartcontract
 				"executeSmartContract": executeSmartContract,

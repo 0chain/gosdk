@@ -768,6 +768,22 @@ func CancelRepair(allocationID string) error {
 	return a.CancelRepair()
 }
 
+func RepairSize(allocationID, remotePath string) (string, error) {
+	alloc, err := getAllocation(allocationID)
+	if err != nil {
+		return "", err
+	}
+	size, err := alloc.RepairSize(remotePath)
+	if err != nil {
+		return "", err
+	}
+	retBytes, err := json.Marshal(size)
+	if err != nil {
+		return "", err
+	}
+	return string(retBytes), nil
+}
+
 // CopyObject - copy object from path to dest
 // ## Inputs
 //   - allocationID
