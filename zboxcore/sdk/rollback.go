@@ -291,7 +291,7 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
 	}
 	wg.Wait()
 	close(markerChan)
-	if a.ParityShards > 0 && errCnt > int32(a.ParityShards) {
+	if (a.ParityShards > 0 && errCnt > int32(a.ParityShards)) || (a.ParityShards == 0 && errCnt > 0) {
 		return Broken, blobberRes, common.NewError("check_alloc_status_failed", markerError.Error())
 	}
 
@@ -328,11 +328,11 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
 		versionMap[version] = append(versionMap[version], rb)
 	}
 
-	if len(versionMap) < 2 {
+	req := a.DataShards
+
+	if len(versionMap) < 2 && len(versionMap[latestVersion]) > req {
 		return Commit, blobberRes, nil
 	}
-
-	req := a.DataShards
 
 	if len(versionMap[latestVersion]) > req || len(versionMap[prevVersion]) > req {
 		return Commit, blobberRes, nil
