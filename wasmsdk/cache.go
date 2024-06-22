@@ -73,7 +73,15 @@ func addWebWorkers(alloc *sdk.Allocation) {
 	}
 	isCreated := false
 	for _, blober := range alloc.Blobbers {
-		_, isCreated, _ = jsbridge.NewWasmWebWorker(blober.ID, blober.Baseurl, c.ClientID, c.Keys[0].PublicKey, c.Keys[0].PrivateKey, c.Mnemonic) //nolint:errcheck
+		_, isCreated, _ = jsbridge.NewWasmWebWorker(blober.ID,
+			blober.Baseurl,
+			c.ClientID,
+			c.ClientKey,
+			c.PeerPublicKey,
+			c.Keys[0].PublicKey,
+			c.Keys[0].PrivateKey,
+			c.Mnemonic,
+			c.IsSplit) //nolint:errcheck
 	}
 	// wait for worker to be instantiated
 	if isCreated {

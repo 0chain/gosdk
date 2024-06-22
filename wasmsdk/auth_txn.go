@@ -30,6 +30,7 @@ func registerAuthorizer(this js.Value, args []js.Value) interface{} {
 }
 
 func registerZauthServer(serverAddr, splitPublicKey string) {
+	fmt.Println("registerZauthServer...")
 	sys.SetAuthorize(zcncore.ZauthSignTxn(serverAddr, splitPublicKey))
 	sys.SetAuthCommon(zcncore.ZauthAuthCommon(serverAddr, splitPublicKey))
 }

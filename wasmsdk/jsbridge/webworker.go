@@ -5,6 +5,7 @@ package jsbridge
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/google/uuid"
 	"github.com/hack-pad/go-webworkers/worker"
@@ -39,7 +40,7 @@ var (
 	workers = make(map[string]*WasmWebWorker)
 )
 
-func NewWasmWebWorker(blobberID, blobberURL, clientID, publicKey, privateKey, mnemonic string) (*WasmWebWorker, bool, error) {
+func NewWasmWebWorker(blobberID, blobberURL, clientID, clientKey, peerPublicKey, publicKey, privateKey, mnemonic string, isSplit bool) (*WasmWebWorker, bool, error) {
 	created := false
 	_, ok := workers[blobberID]
 	if ok {
@@ -48,7 +49,15 @@ func NewWasmWebWorker(blobberID, blobberURL, clientID, publicKey, privateKey, mn
 
 	w := &WasmWebWorker{
 		Name: blobberURL,
-		Env:  []string{"BLOBBER_URL=" + blobberURL, "CLIENT_ID=" + clientID, "PRIVATE_KEY=" + privateKey, "MODE=worker", "PUBLIC_KEY=" + publicKey, "MNEMONIC=" + mnemonic},
+		Env: []string{"BLOBBER_URL=" + blobberURL,
+			"CLIENT_ID=" + clientID,
+			"CLIENT_KEY=" + clientKey,
+			"PEER_PUBLIC_KEY=" + peerPublicKey,
+			"PRIVATE_KEY=" + privateKey,
+			"MODE=worker",
+			"PUBLIC_KEY=" + publicKey,
+			"IS_SPLIT=" + strconv.FormatBool(isSplit),
+			"MNEMONIC=" + mnemonic},
 		Path: "zcn.wasm",
 	}
 

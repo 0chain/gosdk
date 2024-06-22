@@ -2,6 +2,7 @@ package client
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/core/zcncrypto"
@@ -38,6 +39,7 @@ func init() {
 
 		// get sign lock
 		<-sigC
+		fmt.Println("sys.SignWithAuth:", sys.SignWithAuth, "sysKeys:", GetClientSysKeys())
 		sig, err := sys.SignWithAuth(hash, client.SignatureScheme, GetClientSysKeys())
 		sigC <- struct{}{}
 		return sig, err

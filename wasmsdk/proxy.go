@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"runtime/debug"
+	"strconv"
 	"sync"
 	"time"
 
@@ -43,6 +44,7 @@ func main() {
 
 	zcn := window.Get("__zcn_wasm__")
 	if !(zcn.IsNull() || zcn.IsUndefined()) {
+		fmt.Println("zcn is null, set it")
 
 		jsProxy := zcn.Get("jsProxy")
 		// import functions from js object
@@ -330,6 +332,9 @@ func main() {
 			PrintError("__zcn_wasm__.sdk is not installed yet")
 		}
 
+	} else {
+		fmt.Println("zcn is not null")
+		fmt.Println("signWithAuth:", sys.SignWithAuth)
 	}
 
 	if mode != "" {
@@ -357,17 +362,76 @@ func main() {
 					// js already has signatureScheme and keys
 					return signFunc(hash)
 				}
+
+				sys.SignWithAuth = func(hash, signatureScheme string, keys []sys.KeyPair) (string, error) {
+					sig, err := sys.Sign(hash, signatureScheme, keys)
+					if err != nil {
+						return "", fmt.Errorf("failed to sign with split key: %v", err)
+					}
+
+					data, err := json.Marshal(struct {
+						Hash      string `json:"hash"`
+						Signature string `json:"signature"`
+						ClientID  string `json:"client_id"`
+					}{
+						Hash:      hash,
+						Signature: sig,
+						ClientID:  client.GetClient().ClientID,
+					})
+					if err != nil {
+						return "", err
+					}
+
+					if sys.AuthCommon == nil {
+						return "", errors.New("authCommon is not set")
+					}
+
+					rsp, err := sys.AuthCommon(string(data))
+					if err != nil {
+						return "", err
+					}
+
+					var sigpk struct {
+						Sig string `json:"sig"`
+					}
+
+					err = json.Unmarshal([]byte(rsp), &sigpk)
+					if err != nil {
+						return "", err
+					}
+
+					return sigpk.Sig, nil
+				}
 			} else {
 				PrintError("__zcn_worker_wasm__.jsProxy.sign is not installed yet")
 			}
 		} else {
 			PrintError("__zcn_worker_wasm__ is not installed yet")
 		}
-		setWallet(os.Getenv("CLIENT_ID"), os.Getenv("PUBLIC_KEY"), os.Getenv("PRIVATE_KEY"), os.Getenv("MNEMONIC"))
+		fmt.Println("CLIENT_ID:", os.Getenv("CLIENT_ID"))
+		isSplitEnv := os.Getenv("IS_SPLIT")
+		// convert to bool
+		isSplit, err := strconv.ParseBool(isSplitEnv)
+		if err != nil {
+			fmt.Println("convert isSplitEnv failed:", err)
+			return
+		}
+
+		if isSplit {
+			fmt.Println("isSplit:", isSplit)
+			registerZauthServer("http://18.191.13.66:8080", os.Getenv("PUBLIC_KEY"))
+		}
+
+		setWallet(os.Getenv("CLIENT_ID"),
+			os.Getenv("PUBLIC_KEY"),
+			os.Getenv("PEER_PUBLIC_KEY"),
+			os.Getenv("PUBLIC_KEY"),
+			os.Getenv("PRIVATE_KEY"),
+			os.Getenv("MNEMONIC"), isSplit)
 		hideLogs()
 		debug.SetGCPercent(40)
 		debug.SetMemoryLimit(300 * 1024 * 1024) //300MB
-		err := startListener()
+		err = startListener()
 		if err != nil {
 			fmt.Println("Error starting listener", err)
 			return

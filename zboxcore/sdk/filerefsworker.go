@@ -144,6 +144,7 @@ func (o *ObjectTreeRequest) getFileRefs(oTR *oTreeResponse, bUrl string) {
 		bUrl,
 		o.allocationID,
 		o.sig,
+		o.allocationTx,
 		o.remotefilepath,
 		o.pathHash,
 		o.authToken,
