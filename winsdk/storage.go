@@ -91,7 +91,12 @@ func Delete(allocationID, path *C.char) *C.char {
 
 	s := C.GoString(path)
 
-	err = alloc.DeleteFile(s)
+	err = alloc.DoMultiOperation([]sdk.OperationRequest{
+		{
+			OperationType: "delete",
+			RemotePath:    s,
+		},
+	})
 
 	if err != nil {
 		return WithJSON(false, err)

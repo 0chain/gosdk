@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -301,8 +302,6 @@ type RenameOperation struct {
 }
 
 func (ro *RenameOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
-
-	l.Logger.Info("Started Rename Process with Connection Id", connectionID)
 	// make renameRequest object
 	rR := &RenameRequest{
 		allocationObj:  allocObj,
@@ -318,6 +317,9 @@ func (ro *RenameOperation) Process(allocObj *Allocation, connectionID string) ([
 		maskMU:         ro.maskMU,
 		wg:             &sync.WaitGroup{},
 		consensus:      Consensus{RWMutex: &sync.RWMutex{}},
+	}
+	if filepath.Base(ro.remotefilepath) == ro.newName {
+		return nil, ro.renameMask, errors.New("invalid_operation", "Cannot rename to same name")
 	}
 	rR.consensus.fullconsensus = ro.consensus.fullconsensus
 	rR.consensus.consensusThresh = ro.consensus.consensusThresh

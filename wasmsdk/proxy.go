@@ -6,6 +6,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"os"
 	"runtime/debug"
 	"sync"
 	"time"
@@ -35,6 +36,9 @@ func main() {
 	zcnLogger = zcncore.GetLogger()
 
 	window := js.Global()
+
+	mode := os.Getenv("MODE")
+	fmt.Println("initializing: ", mode)
 
 	zcn := window.Get("__zcn_wasm__")
 	if !(zcn.IsNull() || zcn.IsUndefined()) {
@@ -192,6 +196,8 @@ func main() {
 				"repairAllocation":          repairAllocation,
 				"checkAllocStatus":          checkAllocStatus,
 				"skipStatusCheck":           skipStatusCheck,
+				"terminateWorkers":          terminateWorkers,
+				"createWorkers":             createWorkers,
 
 				// player
 				"play":           play,
@@ -272,6 +278,48 @@ func main() {
 			PrintError("__zcn_wasm__.sdk is not installed yet")
 		}
 
+	}
+
+	if mode != "" {
+		jsProxy := window.Get("__zcn_worker_wasm__")
+		if !(jsProxy.IsNull() || jsProxy.IsUndefined()) {
+			jsSign := jsProxy.Get("sign")
+			if !(jsSign.IsNull() || jsSign.IsUndefined()) {
+				signFunc := func(hash string) (string, error) {
+					c := client.GetClient()
+					if c == nil || len(c.Keys) == 0 {
+						return "", errors.New("no keys found")
+					}
+					pk := c.Keys[0].PrivateKey
+					result, err := jsbridge.Await(jsSign.Invoke(hash, pk))
+
+					if len(err) > 0 && !err[0].IsNull() {
+						return "", errors.New("sign: " + err[0].String())
+					}
+					return result[0].String(), nil
+				}
+				//update sign with js sign
+				zcncrypto.Sign = signFunc
+				zcncore.SignFn = signFunc
+				sys.Sign = func(hash, signatureScheme string, keys []sys.KeyPair) (string, error) {
+					// js already has signatureScheme and keys
+					return signFunc(hash)
+				}
+			} else {
+				PrintError("__zcn_worker_wasm__.jsProxy.sign is not installed yet")
+			}
+		} else {
+			PrintError("__zcn_worker_wasm__ is not installed yet")
+		}
+		setWallet(os.Getenv("CLIENT_ID"), os.Getenv("PUBLIC_KEY"), os.Getenv("PRIVATE_KEY"), os.Getenv("MNEMONIC"))
+		hideLogs()
+		debug.SetGCPercent(40)
+		debug.SetMemoryLimit(300 * 1024 * 1024) //300MB
+		err := startListener()
+		if err != nil {
+			fmt.Println("Error starting listener", err)
+			return
+		}
 	}
 
 	hideLogs()

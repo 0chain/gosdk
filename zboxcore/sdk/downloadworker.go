@@ -109,6 +109,7 @@ type DownloadRequest struct {
 	downloadStorer     DownloadProgressStorer
 	workdir            string
 	downloadQueue      downloadQueue // Always initialize this queue with max time taken
+	isResume           bool
 }
 
 type downloadPriority struct {
@@ -480,7 +481,9 @@ func (req *DownloadRequest) processDownload() {
 	remainingSize := size - startBlock*int64(req.effectiveBlockSize)*int64(req.datashards)
 
 	if endBlock*int64(req.effectiveBlockSize)*int64(req.datashards) < req.size {
-		remainingSize = (endBlock - startBlock - 1) * int64(req.effectiveBlockSize) * int64(req.datashards)
+		remainingSize = blocksPerShard * int64(req.effectiveBlockSize) * int64(req.datashards)
+	} else if req.isResume {
+		remainingSize = size
 	}
 
 	if memFile, ok := req.fileHandler.(*sys.MemFile); ok {
@@ -522,7 +525,10 @@ func (req *DownloadRequest) processDownload() {
 	if ok {
 		writerAt = true
 	}
-
+	bufBlocks := int(numBlocks)
+	if n == 1 && endBlock-startBlock < numBlocks {
+		bufBlocks = int(endBlock - startBlock)
+	}
 	if !req.shouldVerify {
 		var pos uint64
 		req.bufferMap = make(map[int]zboxutil.DownloadBuffer)
@@ -538,13 +544,14 @@ func (req *DownloadRequest) processDownload() {
 		if sz > n {
 			sz = n
 		}
+
 		for i := req.downloadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 			pos = uint64(i.TrailingZeros())
 			blobberIdx := int(pos)
 			if writerAt {
-				req.bufferMap[blobberIdx] = zboxutil.NewDownloadBufferWithChan(sz, int(numBlocks), req.effectiveBlockSize)
+				req.bufferMap[blobberIdx] = zboxutil.NewDownloadBufferWithChan(sz, bufBlocks, req.effectiveBlockSize)
 			} else {
-				bufMask := zboxutil.NewDownloadBufferWithMask(sz, int(numBlocks), req.effectiveBlockSize)
+				bufMask := zboxutil.NewDownloadBufferWithMask(sz, bufBlocks, req.effectiveBlockSize)
 				bufMask.SetNumBlocks(int(numBlocks))
 				req.bufferMap[blobberIdx] = bufMask
 			}
@@ -726,11 +733,12 @@ func (req *DownloadRequest) processDownload() {
 				}
 				var total int
 				if j == n-1 {
-					total, err = writeAtData(writeAtHandler, data, req.datashards, offset, int(size-offset))
+					total, err = writeAtData(writeAtHandler, data, req.datashards, offset, int(remainingSize-offset))
 				} else {
 					total, err = writeAtData(writeAtHandler, data, req.datashards, offset, -1)
 				}
 				if err != nil {
+					logger.Logger.Error("downloadFailed: ", startBlock+int64(j)*numBlocks, " remainingSize: ", remainingSize, " offset: ", offset)
 					return errors.Wrap(err, fmt.Sprintf("WriteAt failed for block %d. ", startBlock+int64(j)*numBlocks))
 				}
 				for _, rb := range req.bufferMap {
@@ -959,14 +967,7 @@ func (req *DownloadRequest) initEncryption() (err error) {
 			return err
 		}
 	} else {
-		key, err := hex.DecodeString(client.GetClientPrivateKey())
-		if err != nil {
-			return err
-		}
-		err = req.encScheme.InitializeWithPrivateKey(key)
-		if err != nil {
-			return err
-		}
+		return errors.New("invalid_mnemonic", "Invalid mnemonic")
 	}
 
 	err = req.encScheme.InitForDecryption("filetype:audio", req.encryptedKey)
@@ -1044,6 +1045,9 @@ func (req *DownloadRequest) calculateShardsParams(
 			}
 			if dp != nil {
 				req.startBlock = int64(dp.LastWrittenBlock)
+				if req.startBlock > 0 {
+					req.isResume = true
+				}
 			} else {
 				dp = &DownloadProgress{
 					ID:        progressID,
@@ -1351,12 +1355,14 @@ func writeAtData(dest io.WriterAt, data [][][]byte, dataShards int, offset int64
 					n, err := dest.WriteAt(data[i][j], offset+int64(total))
 					total += n
 					if err != nil {
+						logger.Logger.Error("writeAt failed: ", err, " offset: ", offset, " total: ", total, "toWriteData: ", len(data[i][j]), " lastBlock: ", lastBlock)
 						return total, err
 					}
 				} else {
 					n, err := dest.WriteAt(data[i][j][:lastBlock], offset+int64(total))
 					total += n
 					if err != nil {
+						logger.Logger.Error("writeAt failed: ", err, " offset: ", offset, " total: ", total, "toWriteData: ", len(data[i][j]), " lastBlock: ", lastBlock)
 						return total, err
 					}
 				}
@@ -1368,6 +1374,7 @@ func writeAtData(dest io.WriterAt, data [][][]byte, dataShards int, offset int64
 				n, err := dest.WriteAt(data[i][j], offset+int64(total))
 				total += n
 				if err != nil {
+					logger.Logger.Error("writeAt failed: ", err, " offset: ", offset, " total: ", total)
 					return total, err
 				}
 			}

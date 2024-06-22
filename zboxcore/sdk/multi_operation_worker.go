@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	DefaultCreateConnectionTimeOut = 10 * time.Second
+	DefaultCreateConnectionTimeOut = 45 * time.Second
 )
 
 var BatchSize = 6
@@ -198,7 +198,8 @@ func (mo *MultiOperation) Process() error {
 	swg.Wait()
 
 	if ctx.Err() != nil {
-		return context.Cause(ctx)
+		err := context.Cause(ctx)
+		return err
 	}
 
 	// Check consensus
@@ -209,9 +210,7 @@ func (mo *MultiOperation) Process() error {
 				fmt.Sprintf("Multioperation failed. Required consensus %d got %d. Major error: %s",
 					mo.consensusThresh, mo.operationMask.CountOnes(), majorErr.Error()))
 		}
-		return errors.New("consensus_not_met",
-			fmt.Sprintf("Multioperation failed. Required consensus %d got %d",
-				mo.consensusThresh, mo.operationMask.CountOnes()))
+		return nil
 	}
 
 	// Take transpose of mo.change because it will be easier to iterate mo if it contains blobber changes
@@ -323,7 +322,6 @@ func (mo *MultiOperation) Process() error {
 	}
 
 	if !mo.isConsensusOk() {
-		mo.allocationObj.checkStatus = false
 		err = zboxutil.MajorError(errSlice)
 		if mo.getConsensus() != 0 {
 			l.Logger.Info("Rolling back changes on minority blobbers")

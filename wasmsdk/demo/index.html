@@ -2,7 +2,7 @@
 
 <head>
   <!-- for zcn.wasm-->
-  <script src="https://cdn.jsdelivr.net/gh/herumi/bls-wasm@v1.0.0/browser/bls.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/herumi/bls-wasm@v1.1.1/browser/bls.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/golang/go@go1.21.5/misc/wasm/wasm_exec.js"></script>
   <script src="zcn.js"></script>
 
@@ -211,7 +211,7 @@
 
     let network = query.get('network')
     if (!network || network == 'undefined') {
-      network = "mainnet.zus.network"
+      network = "mob.zus.network"
     }
 
     const blockWorker = 'https://' + network + '/dns';
@@ -457,12 +457,12 @@
             allocationId: allocationId,
             remotePath: `/${file.name}`,
             file: file,
-            thumbnailBytes: await readBytes(file),//only for demo, don't upload original file as thumbnail in production
+            // thumbnailBytes: await readBytes(file),//only for demo, don't upload original file as thumbnail in production
             encrypt: false,
             webstreaming: false,
             isUpdate: false,
             isRepair: false,
-            numBlocks: 100,
+            numBlocks: 120,
             callback: function (totalBytes, completedBytes, error) {
               console.log(file.name + " " + completedBytes + "/" + totalBytes + " err:" + error)
             }
