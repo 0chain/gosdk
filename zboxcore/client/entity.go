@@ -39,7 +39,7 @@ func init() {
 
 		// get sign lock
 		<-sigC
-		fmt.Println("sys.SignWithAuth:", sys.SignWithAuth, "sysKeys:", GetClientSysKeys())
+		fmt.Println("Sign: with sys.SignWithAuth:", sys.SignWithAuth, "sysKeys:", GetClientSysKeys())
 		sig, err := sys.SignWithAuth(hash, client.SignatureScheme, GetClientSysKeys())
 		sigC <- struct{}{}
 		return sig, err

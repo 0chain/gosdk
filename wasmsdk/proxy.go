@@ -334,7 +334,7 @@ func main() {
 
 	} else {
 		fmt.Println("zcn is not null")
-		fmt.Println("signWithAuth:", sys.SignWithAuth)
+		fmt.Println("zcn is not null - signWithAuth:", sys.SignWithAuth)
 	}
 
 	if mode != "" {
@@ -364,6 +364,7 @@ func main() {
 				}
 
 				sys.SignWithAuth = func(hash, signatureScheme string, keys []sys.KeyPair) (string, error) {
+					fmt.Println("SignWithAuth keys:", keys)
 					sig, err := sys.Sign(hash, signatureScheme, keys)
 					if err != nil {
 						return "", fmt.Errorf("failed to sign with split key: %v", err)
@@ -402,12 +403,81 @@ func main() {
 
 					return sigpk.Sig, nil
 				}
+
+				fmt.Println("Init SignWithAuth:", sys.SignWithAuth)
+
 			} else {
 				PrintError("__zcn_worker_wasm__.jsProxy.sign is not installed yet")
 			}
+
+			jsVerify := jsProxy.Get("verify")
+			if !(jsVerify.IsNull() || jsVerify.IsUndefined()) {
+				verifyFunc := func(signature, hash string) (bool, error) {
+					result, err := jsbridge.Await(jsVerify.Invoke(signature, hash))
+
+					if len(err) > 0 && !err[0].IsNull() {
+						return false, errors.New("verify: " + err[0].String())
+					}
+					return result[0].Bool(), nil
+				}
+
+				//update Verify with js sign
+				sys.Verify = verifyFunc
+			} else {
+				PrintError("__zcn_wasm__.jsProxy.verify is not installed yet")
+			}
+
+			jsVerifyWith := jsProxy.Get("verifyWith")
+			if !(jsVerifyWith.IsNull() || jsVerifyWith.IsUndefined()) {
+				verifyFuncWith := func(pk, signature, hash string) (bool, error) {
+					result, err := jsbridge.Await(jsVerifyWith.Invoke(pk, signature, hash))
+
+					if len(err) > 0 && !err[0].IsNull() {
+						return false, errors.New("verify: " + err[0].String())
+					}
+					return result[0].Bool(), nil
+				}
+
+				//update Verify with js sign
+				sys.VerifyWith = verifyFuncWith
+			} else {
+				PrintError("__zcn_wasm__.jsProxy.verifyWith is not installed yet")
+			}
+
+			jsAddSignature := jsProxy.Get("addSignature")
+			if !(jsAddSignature.IsNull() || jsAddSignature.IsUndefined()) {
+				zcncore.AddSignature = func(privateKey, signature, hash string) (string, error) {
+					result, err := jsbridge.Await(jsAddSignature.Invoke(privateKey, signature, hash))
+					if len(err) > 0 && !err[0].IsNull() {
+						return "", errors.New("add signature: " + err[0].String())
+					}
+
+					return result[0].String(), nil
+				}
+			} else {
+				PrintError("__zcn_worker_wasm__.jsProxy.addSignature is not installed yet")
+			}
+
+			initProxyKeys := jsProxy.Get("initProxyKeys")
+			if !(initProxyKeys.IsNull() || initProxyKeys.IsUndefined()) {
+				gInitProxyKeys = func(publicKey, privateKey string) {
+					// jsProxy.Set("publicKey", bls.DeserializeHexStrToPublicKey(publicKey))
+					// jsProxy.Set("secretKey", bls.DeserializeHexStrToSecretKey(privateKey))
+					_, err := jsbridge.Await(initProxyKeys.Invoke(publicKey, privateKey))
+					if len(err) > 0 && !err[0].IsNull() {
+						PrintError("initProxyKeys: ", err[0].String())
+						return
+					}
+
+					// return result[0].String(), nil
+					return
+				}
+			}
+
 		} else {
 			PrintError("__zcn_worker_wasm__ is not installed yet")
 		}
+
 		fmt.Println("CLIENT_ID:", os.Getenv("CLIENT_ID"))
 		isSplitEnv := os.Getenv("IS_SPLIT")
 		// convert to bool
@@ -417,17 +487,22 @@ func main() {
 			return
 		}
 
+		clientID := os.Getenv("CLIENT_ID")
+		publicKey := os.Getenv("PUBLIC_KEY")
+		peerPublicKey := os.Getenv("PEER_PUBLIC_KEY")
+		mnemonic := os.Getenv("MNEMONIC")
+		privateKey := os.Getenv("PRIVATE_KEY")
+
+		// TODO: the private key should be empty for split wallet
+		gInitProxyKeys(publicKey, privateKey)
+
 		if isSplit {
 			fmt.Println("isSplit:", isSplit)
-			registerZauthServer("http://18.191.13.66:8080", os.Getenv("PUBLIC_KEY"))
+			// TODO: differe the registerAuthorizer
+			registerZauthServer("http://18.191.13.66:8080", publicKey)
 		}
 
-		setWallet(os.Getenv("CLIENT_ID"),
-			os.Getenv("PUBLIC_KEY"),
-			os.Getenv("PEER_PUBLIC_KEY"),
-			os.Getenv("PUBLIC_KEY"),
-			os.Getenv("PRIVATE_KEY"),
-			os.Getenv("MNEMONIC"), isSplit)
+		setWallet(clientID, publicKey, peerPublicKey, publicKey, privateKey, mnemonic, isSplit)
 		hideLogs()
 		debug.SetGCPercent(40)
 		debug.SetMemoryLimit(300 * 1024 * 1024) //300MB
@@ -446,3 +521,5 @@ func main() {
 
 	jsbridge.Close()
 }
+
+var gInitProxyKeys func(publicKey, privateKey string)
