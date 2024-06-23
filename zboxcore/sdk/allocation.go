@@ -213,6 +213,7 @@ type Allocation struct {
 	repairRequestInProgress *RepairRequest
 	initialized             bool
 	checkStatus             bool
+	readFree                bool
 	// conseususes
 	consensusThreshold int
 	fullconsensus      int
@@ -228,15 +229,17 @@ type OperationRequest struct {
 	IsUpdate       bool
 	IsRepair       bool // Required for repair operation
 	IsWebstreaming bool
+	EncryptedKey	string
 
 	// Required for uploads
-	Workdir      string
-	FileMeta     FileMeta
-	FileReader   io.Reader
-	Mask         *zboxutil.Uint128 // Required for delete repair operation
-	DownloadFile bool              // Required for upload repair operation
-	StreamUpload bool              // Required for streaming file when actualSize is not available
-	Opts         []ChunkedUploadOption
+	Workdir         string
+	FileMeta        FileMeta
+	FileReader      io.Reader
+	Mask            *zboxutil.Uint128 // Required for delete repair operation
+	DownloadFile    bool              // Required for upload repair operation
+	StreamUpload    bool              // Required for streaming file when actualSize is not available
+	CancelCauseFunc context.CancelCauseFunc
+	Opts            []ChunkedUploadOption
 }
 
 func GetReadPriceRange() (PriceRange, error) {
@@ -252,7 +255,12 @@ func SetMultiOpBatchSize(size int) {
 
 func SetWasm() {
 	IsWasm = true
-	BatchSize = 5
+	BatchSize = 1
+	extraCount = 0
+}
+
+func (a *Allocation) SetCheckStatus(checkStatus bool) {
+	a.checkStatus = checkStatus
 }
 
 func getPriceRange(name string) (PriceRange, error) {
@@ -302,7 +310,11 @@ func (a *Allocation) GetBlobberStats() map[string]*BlobberAllocationStats {
 	return result
 }
 
-const downloadWorkerCount = 6
+var downloadWorkerCount = 6
+
+func SetDownloadWorkerCount(count int) {
+	downloadWorkerCount = count
+}
 
 func (a *Allocation) InitAllocation() {
 	a.downloadChan = make(chan *DownloadRequest, 100)
@@ -313,8 +325,14 @@ func (a *Allocation) InitAllocation() {
 	a.mutex = &sync.Mutex{}
 	a.commitMutex = &sync.Mutex{}
 	a.fullconsensus, a.consensusThreshold = a.getConsensuses()
-	for _, blobber := range a.Blobbers {
-		zboxutil.SetHostClient(blobber.ID, blobber.Baseurl)
+	a.readFree = true
+	if a.ReadPriceRange.Max > 0 {
+		for _, blobberDetail := range a.BlobberDetails {
+			if blobberDetail.Terms.ReadPrice > 0 {
+				a.readFree = false
+				break
+			}
+		}
 	}
 	a.startWorker(a.ctx)
 	InitCommitWorker(a.Blobbers)
@@ -423,6 +441,11 @@ func (a *Allocation) RepairFile(file sys.File, remotepath string, statusCallback
 		FileMeta:      fileMeta,
 		Opts:          opts,
 		FileReader:    file,
+		Mask: &mask,
+		EncryptedKey: ref.EncryptedKey,	
+	}
+	if ref.ActualFileHash == emptyFileDataHash {
+		op.FileMeta.ActualSize = 0
 	}
 	return op
 }
@@ -1174,17 +1197,13 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 	blobberMap := make(map[uint64]int64)
 	mpLock := sync.Mutex{}
 	wg := sync.WaitGroup{}
-	var isReadFree bool
-	if a.ReadPriceRange.Max == 0 && a.ReadPriceRange.Min == 0 {
-		isReadFree = true
-	}
 	now := time.Now()
 
 	for _, dr := range drs {
 		wg.Add(1)
 		go func(dr *DownloadRequest) {
 			defer wg.Done()
-			if isReadFree {
+			if a.readFree {
 				dr.freeRead = true
 			}
 			dr.processDownloadRequest()
@@ -1203,7 +1222,7 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 	elapsedProcessDownloadRequest := time.Since(now)
 
 	// Do not send readmarkers for free reads
-	if isReadFree {
+	if a.readFree {
 		for _, dr := range drs {
 			if dr.skip {
 				continue
@@ -1212,7 +1231,7 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 				a.downloadChan <- dr
 			}(dr)
 		}
-		l.Logger.Info("[processReadMarker]", zap.String("allocation_id", a.ID),
+		l.Logger.Debug("[processReadMarker]", zap.String("allocation_id", a.ID),
 			zap.Int("num of download requests", len(drs)),
 			zap.Duration("processDownloadRequest", elapsedProcessDownloadRequest))
 		return
@@ -1408,7 +1427,7 @@ func (a *Allocation) getRefs(path, pathHash, authToken, offsetPath, updatedDate,
 		ctx:            a.ctx,
 	}
 	oTreeReq.fullconsensus = a.fullconsensus
-	oTreeReq.consensusThresh = a.consensusThreshold
+	oTreeReq.consensusThresh = a.DataShards
 	return oTreeReq.GetRefs()
 }
 
@@ -1744,6 +1763,7 @@ func (a *Allocation) createDir(remotePath string, threshConsensus, fullConsensus
 			consensusThresh: threshConsensus,
 			fullconsensus:   fullConsensus,
 		},
+		alreadyExists: make(map[uint64]bool),
 	}
 	req.ctx, req.ctxCncl = context.WithCancel(a.ctx)
 
@@ -2329,6 +2349,26 @@ func (a *Allocation) RepairAlloc(statusCB StatusCallback) (err error) {
 	return a.StartRepair(dir, "/", statusCB)
 }
 
+// Gets the size in bytes to repair allocation
+func (a *Allocation) RepairSize(remotePath string) (RepairSize, error) {
+	if !a.isInitialized() {
+		return RepairSize{}, notInitialized
+	}
+
+	dir, err := a.ListDir(remotePath,
+		WithListRequestForRepair(true),
+		WithListRequestPageLimit(-1),
+	)
+	if err != nil {
+		return RepairSize{}, err
+	}
+
+	repairReq := RepairRequest{
+		allocation: a,
+	}
+	return repairReq.Size(context.Background(), dir)
+}
+
 func (a *Allocation) CancelUpload(remotePath string) error {
 	cancelLock.Lock()
 	cancelFunc, ok := CancelOpCtx[remotePath]
@@ -2337,6 +2377,20 @@ func (a *Allocation) CancelUpload(remotePath string) error {
 		return errors.New("remote_path_not_found", "Invalid path. No upload in progress for the path "+remotePath)
 	} else {
 		cancelFunc(fmt.Errorf("upload canceled by user"))
+	}
+	return nil
+}
+
+func (a *Allocation) PauseUpload(remotePath string) error {
+	cancelLock.Lock()
+	cancelFunc, ok := CancelOpCtx[remotePath]
+	cancelLock.Unlock()
+	if !ok {
+		logger.Logger.Error("PauseUpload: remote path not found", remotePath)
+		return errors.New("remote_path_not_found", "Invalid path. No upload in progress for the path "+remotePath)
+	} else {
+		logger.Logger.Info("PauseUpload: remote path found", remotePath)
+		cancelFunc(ErrPauseUpload)
 	}
 	return nil
 }
@@ -2497,18 +2551,43 @@ func (a *Allocation) UpdateWithRepair(
 	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
 	statusCB StatusCallback,
 ) (string, error) {
+	updatedAlloc, hash, isRepairRequired, err := a.UpdateWithStatus(size, extend, lock, addBlobberId, addBlobberAuthTicket, removeBlobberId, setThirdPartyExtendable, fileOptionsParams, statusCB)
+	if err != nil {
+		return hash, err
+	}
+
+	if isRepairRequired {
+		if err := updatedAlloc.RepairAlloc(statusCB); err != nil {
+			return hash, err
+		}
+	}
+
+	return hash, nil
+}
+
+func (a *Allocation) UpdateWithStatus(
+	size int64,
+	extend bool,
+	lock uint64,
+	addBlobberId, addBlobberAuthTicket, removeBlobberId string,
+	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
+	statusCB StatusCallback,
+) (*Allocation, string, bool, error) {
+	var (
+		alloc            *Allocation
+		isRepairRequired bool
+	)
 	if lock > math.MaxInt64 {
-		return "", errors.New("invalid_lock", "int64 overflow on lock value")
+		return alloc, "", isRepairRequired, errors.New("invalid_lock", "int64 overflow on lock value")
 	}
 
 	l.Logger.Info("Updating allocation")
 	hash, _, err := UpdateAllocation(size, extend, a.ID, lock, addBlobberId, addBlobberAuthTicket, removeBlobberId, setThirdPartyExtendable, fileOptionsParams)
 	if err != nil {
-		return "", err
+		return alloc, "", isRepairRequired, err
 	}
 	l.Logger.Info(fmt.Sprintf("allocation updated with hash: %s", hash))
 
-	var alloc *Allocation
 	if addBlobberId != "" {
 		l.Logger.Info("waiting for a minute for the blobber to be added to network")
 
@@ -2517,7 +2596,7 @@ func (a *Allocation) UpdateWithRepair(
 			alloc, err = GetAllocation(a.ID)
 			if err != nil {
 				l.Logger.Error("failed to get allocation")
-				return hash, err
+				return alloc, hash, isRepairRequired, err
 			}
 
 			for _, blobber := range alloc.Blobbers {
@@ -2529,7 +2608,7 @@ func (a *Allocation) UpdateWithRepair(
 			}
 			time.Sleep(1 * time.Second)
 		}
-		return "", errors.New("", "new blobber not found in the updated allocation")
+		return alloc, "", isRepairRequired, errors.New("", "new blobber not found in the updated allocation")
 	}
 
 repair:
@@ -2541,11 +2620,8 @@ repair:
 	}
 
 	if shouldRepair {
-		err := alloc.RepairAlloc(statusCB)
-		if err != nil {
-			return "", err
-		}
+		isRepairRequired = true
 	}
 
-	return hash, nil
+	return alloc, hash, isRepairRequired, nil
 }

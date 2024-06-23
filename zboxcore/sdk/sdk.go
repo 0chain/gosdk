@@ -69,6 +69,10 @@ func SetShouldVerifyHash(verify bool) {
 	shouldVerifyHash = verify
 }
 
+func SetSaveProgress(save bool) {
+	shouldSaveProgress = save
+}
+
 // GetVersion - returns version string
 func GetVersion() string {
 	return version.VERSIONSTR
@@ -1131,6 +1135,20 @@ func getNewAllocationBlobbers(
 	readPrice, writePrice PriceRange,
 	preferredBlobberIds, blobberAuthTickets []string, force bool,
 ) (map[string]interface{}, error) {
+	for _, authTicket := range blobberAuthTickets {
+		if len(authTicket) > 0 {
+			return map[string]interface{}{
+				"data_shards":          datashards,
+				"parity_shards":        parityshards,
+				"size":                 size,
+				"blobbers":             preferredBlobberIds,
+				"blobber_auth_tickets": blobberAuthTickets,
+				"read_price_range":     readPrice,
+				"write_price_range":    writePrice,
+			}, nil
+		}
+	}
+
 	allocBlobberIDs, err := GetAllocationBlobbers(
 		datashards, parityshards, size, 2, readPrice, writePrice, force,
 	)
@@ -1145,14 +1163,10 @@ func getNewAllocationBlobbers(
 	uniqueBlobbers := []string{}
 	uniqueBlobberAuthTickets := []string{}
 
-	for i, b := range blobbers {
+	for _, b := range blobbers {
 		if !ids[b] {
 			uniqueBlobbers = append(uniqueBlobbers, b)
-			if i < len(blobberAuthTickets) {
-				uniqueBlobberAuthTickets = append(uniqueBlobberAuthTickets, blobberAuthTickets[i])
-			} else {
-				uniqueBlobberAuthTickets = append(uniqueBlobberAuthTickets, "")
-			}
+			uniqueBlobberAuthTickets = append(uniqueBlobberAuthTickets, "")
 			ids[b] = true
 		}
 	}
@@ -1483,6 +1497,19 @@ func ResetBlobberStats(rbs *ResetBlobberStatsDto) (string, int64, error) {
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_RESET_BLOBBER_STATS,
 		InputArgs: rbs,
+	}
+	hash, _, n, _, err := storageSmartContractTxn(sn)
+	return hash, n, err
+}
+
+func ResetAllocationStats(allocationId string) (string, int64, error) {
+	if !sdkInitialized {
+		return "", 0, sdkNotInitialized
+	}
+
+	var sn = transaction.SmartContractTxnData{
+		Name:      transaction.STORAGESC_RESET_ALLOCATION_STATS,
+		InputArgs: allocationId,
 	}
 	hash, _, n, _, err := storageSmartContractTxn(sn)
 	return hash, n, err

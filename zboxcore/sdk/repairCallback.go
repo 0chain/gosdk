@@ -55,10 +55,23 @@ func NewRepairBar(allocID string) *StatusBar {
 	if !mutMap[allocID].TryLock() {
 		return nil
 	}
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
 	return &StatusBar{
-		wg:      &sync.WaitGroup{},
+		wg:      wg,
 		allocID: allocID,
 	}
+}
+
+func (s *StatusBar) Wait() {
+	s.wg.Wait()
+}
+
+func (s *StatusBar) CheckError() error {
+	if !s.success {
+		return s.err
+	}
+	return nil
 }
 
 func mutUnlock(allocID string) {

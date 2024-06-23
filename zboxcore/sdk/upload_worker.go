@@ -3,10 +3,10 @@ package sdk
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"strings"
 
-	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
@@ -24,6 +24,8 @@ type UploadOperation struct {
 	isUpdate      bool
 	isDownload    bool
 }
+
+var ErrPauseUpload = errors.New("upload paused by user")
 
 func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
 	if uo.isDownload {
@@ -91,33 +93,6 @@ func (uo *UploadOperation) buildChange(_ []fileref.RefEntity, uid uuid.UUID) []a
 }
 
 func (uo *UploadOperation) Verify(allocationObj *Allocation) error {
-	if allocationObj == nil {
-		return thrown.Throw(constants.ErrInvalidParameter, "allocationObj")
-	}
-
-	if !uo.isUpdate && !allocationObj.CanUpload() || uo.isUpdate && !allocationObj.CanUpdate() {
-		return thrown.Throw(constants.ErrFileOptionNotPermitted, "file_option_not_permitted ")
-	}
-
-	err := ValidateRemoteFileName(uo.chunkedUpload.fileMeta.RemoteName)
-	if err != nil {
-		return err
-	}
-	spaceLeft := allocationObj.Size
-	if allocationObj.Stats != nil {
-		spaceLeft -= allocationObj.Stats.UsedSize
-	}
-
-	if uo.isUpdate {
-		f, err := allocationObj.GetFileMeta(uo.chunkedUpload.fileMeta.RemotePath)
-		if err != nil {
-			return err
-		}
-		spaceLeft += f.ActualFileSize
-	}
-	if uo.chunkedUpload.fileMeta.ActualSize > spaceLeft {
-		return ErrNoEnoughSpaceLeftInAllocation
-	}
 	return nil
 }
 
@@ -134,7 +109,7 @@ func (uo *UploadOperation) Completed(allocObj *Allocation) {
 }
 
 func (uo *UploadOperation) Error(allocObj *Allocation, consensus int, err error) {
-	if uo.chunkedUpload.progressStorer != nil && !strings.Contains(err.Error(), "context") {
+	if uo.chunkedUpload.progressStorer != nil && !strings.Contains(err.Error(), "context") && !errors.Is(err, ErrPauseUpload) {
 		uo.chunkedUpload.removeProgress()
 	}
 	cancelLock.Lock()

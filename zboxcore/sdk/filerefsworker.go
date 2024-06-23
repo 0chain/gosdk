@@ -2,9 +2,11 @@ package sdk
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"net/http"
 	"sync"
 	"time"
@@ -50,6 +52,7 @@ type ObjectTreeRequest struct {
 type oTreeResponse struct {
 	oTResult *ObjectTreeResult
 	err      error
+	hash     string
 }
 
 // Paginated tree should not be collected as this will stall the client
@@ -59,7 +62,7 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 	oTreeResponses := make([]oTreeResponse, totalBlobbersCount)
 	o.wg.Add(totalBlobbersCount)
 	for i, blob := range o.blobbers {
-		l.Logger.Info(fmt.Sprintf("Getting file refs for path %v from blobber %v", o.remotefilepath, blob.Baseurl))
+		l.Logger.Debug(fmt.Sprintf("Getting file refs for path %v from blobber %v", o.remotefilepath, blob.Baseurl))
 		go o.getFileRefs(&oTreeResponses[i], blob.Baseurl)
 	}
 	o.wg.Wait()
@@ -70,18 +73,12 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 	for idx, oTreeResponse := range oTreeResponses {
 		oTreeResponseErrors[idx] = oTreeResponse.err
 		if oTreeResponse.err != nil {
-			l.Logger.Error("Error while getting file refs from blobber:", oTreeResponse.err)
+			if code, _ := zboxutil.GetErrorMessageCode(oTreeResponse.err.Error()); code != INVALID_PATH {
+				l.Logger.Error("Error while getting file refs from blobber:", oTreeResponse.err)
+			}
 			continue
 		}
-		var similarFieldRefs []SimilarField
-		for _, ref := range oTreeResponse.oTResult.Refs {
-			similarFieldRefs = append(similarFieldRefs, ref.SimilarField)
-		}
-		refsMarshall, err := json.Marshal(similarFieldRefs)
-		if err != nil {
-			continue
-		}
-		hash := zboxutil.GetRefsHash(refsMarshall)
+		hash := oTreeResponse.hash
 
 		if _, ok := hashCount[hash]; ok {
 			hashCount[hash]++
@@ -109,6 +106,35 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 	if selected != nil {
 		return selected, nil
 	}
+	if majorError != nil {
+		l.Logger.Error("error while gettings refs: ", majorError)
+	}
+	// build the object tree result by using consensus on individual refs
+	refHash := make(map[string]int)
+	selected = &ObjectTreeResult{}
+	minPage := int64(math.MaxInt64)
+	for _, oTreeResponse := range oTreeResponses {
+		if oTreeResponse.err != nil {
+			continue
+		}
+		if oTreeResponse.oTResult.TotalPages < minPage {
+			minPage = oTreeResponse.oTResult.TotalPages
+			selected.TotalPages = minPage
+		}
+		for _, ref := range oTreeResponse.oTResult.Refs {
+			if refHash[ref.FileMetaHash] == o.consensusThresh {
+				continue
+			}
+			refHash[ref.FileMetaHash] += 1
+			if refHash[ref.FileMetaHash] == o.consensusThresh {
+				selected.Refs = append(selected.Refs, ref)
+			}
+		}
+	}
+	if len(selected.Refs) > 0 {
+		selected.OffsetPath = selected.Refs[len(selected.Refs)-1].Path
+		return selected, nil
+	}
 	return nil, errors.New("consensus_failed", "Refs consensus is less than consensus threshold")
 }
 
@@ -134,7 +160,7 @@ func (o *ObjectTreeRequest) getFileRefs(oTR *oTreeResponse, bUrl string) {
 		return
 	}
 	oResult := ObjectTreeResult{}
-	ctx, cncl := context.WithTimeout(o.ctx, time.Second*30)
+	ctx, cncl := context.WithTimeout(o.ctx, 2*time.Minute)
 	err = zboxutil.HttpDo(ctx, cncl, oReq, func(resp *http.Response, err error) error {
 		if err != nil {
 			l.Logger.Error(err)
@@ -162,6 +188,12 @@ func (o *ObjectTreeRequest) getFileRefs(oTR *oTreeResponse, bUrl string) {
 		return
 	}
 	oTR.oTResult = &oResult
+	similarFieldRefs := make([]byte, 0, 32*len(oResult.Refs))
+	for _, ref := range oResult.Refs {
+		decodeBytes, _ := hex.DecodeString(ref.SimilarField.FileMetaHash)
+		similarFieldRefs = append(similarFieldRefs, decodeBytes...)
+	}
+	oTR.hash = zboxutil.GetRefsHash(similarFieldRefs)
 }
 
 // Blobber response will be different from each other so we should only consider similar fields
