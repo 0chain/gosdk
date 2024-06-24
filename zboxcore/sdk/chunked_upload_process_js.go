@@ -217,7 +217,7 @@ type FinalWorkerResult struct {
 	ThumbnailContentHash string
 }
 
-func (su *ChunkedUpload) listen(allEventChan []<-chan worker.MessageEvent, respChan chan error) {
+func (su *ChunkedUpload) listen(allEventChan []chan worker.MessageEvent, respChan chan error) {
 	su.consensus.Reset()
 
 	var (
@@ -376,8 +376,12 @@ func (su *ChunkedUpload) listen(allEventChan []<-chan worker.MessageEvent, respC
 
 func ProcessEventData(data safejs.Value) {
 	fileMeta, formInfo, fileShards, thumbnailChunkData, err := parseEventData(data)
+	var remotePath string
+	if fileMeta != nil {
+		remotePath = fileMeta.RemotePath
+	}
 	if err != nil {
-		selfPostMessage(false, false, err.Error(), 0, nil)
+		selfPostMessage(false, false, err.Error(), remotePath, 0, nil)
 		return
 	}
 	wp, ok := hasherMap[fileMeta.RemotePath]
@@ -398,7 +402,7 @@ func ProcessEventData(data safejs.Value) {
 	uploadData, err := formBuilder.Build(fileMeta, wp.hasher, formInfo.ConnectionID, formInfo.ChunkSize, formInfo.ChunkStartIndex, formInfo.ChunkEndIndex, formInfo.IsFinal, formInfo.EncryptedKey, formInfo.EncryptedKeyPoint,
 		fileShards, thumbnailChunkData, formInfo.ShardSize)
 	if err != nil {
-		selfPostMessage(false, false, err.Error(), formInfo.ChunkEndIndex, nil)
+		selfPostMessage(false, false, err.Error(), remotePath, formInfo.ChunkEndIndex, nil)
 		return
 	}
 	if formInfo.OnlyHash {
@@ -408,9 +412,9 @@ func ProcessEventData(data safejs.Value) {
 				ValidationRoot:       uploadData.formData.ValidationRoot,
 				ThumbnailContentHash: uploadData.formData.ThumbnailContentHash,
 			}
-			selfPostMessage(true, true, "", formInfo.ChunkEndIndex, finalResult)
+			selfPostMessage(true, true, "", remotePath, formInfo.ChunkEndIndex, finalResult)
 		} else {
-			selfPostMessage(true, false, "", formInfo.ChunkEndIndex, nil)
+			selfPostMessage(true, false, "", remotePath, formInfo.ChunkEndIndex, nil)
 		}
 		return
 	}
@@ -418,17 +422,17 @@ func ProcessEventData(data safejs.Value) {
 	if !formInfo.IsFinal {
 		wp.wg.Add(1)
 	}
-	go func(blobberData blobberData, wg *sync.WaitGroup) {
+	go func(blobberData blobberData, remotePath string, wg *sync.WaitGroup) {
 		if formInfo.IsFinal && len(blobberData.dataBuffers) > 1 {
 			err = sendUploadRequest(blobberData.dataBuffers[:len(blobberData.dataBuffers)-1], blobberData.contentSlice[:len(blobberData.contentSlice)-1], blobberURL, formInfo.AllocationID, formInfo.AllocationTx, formInfo.HttpMethod)
 			if err != nil {
-				selfPostMessage(false, true, err.Error(), formInfo.ChunkEndIndex, nil)
+				selfPostMessage(false, true, err.Error(), remotePath, formInfo.ChunkEndIndex, nil)
 				return
 			}
 			wg.Wait()
 			err = sendUploadRequest(blobberData.dataBuffers[len(blobberData.dataBuffers)-1:], blobberData.contentSlice[len(blobberData.contentSlice)-1:], blobberURL, formInfo.AllocationID, formInfo.AllocationTx, formInfo.HttpMethod)
 			if err != nil {
-				selfPostMessage(false, true, err.Error(), formInfo.ChunkEndIndex, nil)
+				selfPostMessage(false, true, err.Error(), remotePath, formInfo.ChunkEndIndex, nil)
 				return
 			}
 		} else {
@@ -439,7 +443,7 @@ func ProcessEventData(data safejs.Value) {
 			}
 			err = sendUploadRequest(blobberData.dataBuffers, blobberData.contentSlice, blobberURL, formInfo.AllocationID, formInfo.AllocationTx, formInfo.HttpMethod)
 			if err != nil {
-				selfPostMessage(false, formInfo.IsFinal, err.Error(), formInfo.ChunkEndIndex, nil)
+				selfPostMessage(false, formInfo.IsFinal, err.Error(), remotePath, formInfo.ChunkEndIndex, nil)
 				return
 			}
 		}
@@ -449,11 +453,11 @@ func ProcessEventData(data safejs.Value) {
 				ValidationRoot:       blobberData.formData.ValidationRoot,
 				ThumbnailContentHash: blobberData.formData.ThumbnailContentHash,
 			}
-			selfPostMessage(true, true, "", formInfo.ChunkEndIndex, finalResult)
+			selfPostMessage(true, true, "", remotePath, formInfo.ChunkEndIndex, finalResult)
 		} else {
-			selfPostMessage(true, false, "", formInfo.ChunkEndIndex, nil)
+			selfPostMessage(true, false, "", remotePath, formInfo.ChunkEndIndex, nil)
 		}
-	}(uploadData, wp.wg)
+	}(uploadData, remotePath, wp.wg)
 
 }
 
@@ -461,12 +465,13 @@ func InitHasherMap() {
 	hasherMap = make(map[string]workerProcess)
 }
 
-func selfPostMessage(success, isFinal bool, errMsg string, chunkEndIndex int, finalResult *FinalWorkerResult) {
+func selfPostMessage(success, isFinal bool, errMsg, remotePath string, chunkEndIndex int, finalResult *FinalWorkerResult) {
 	obj := js.Global().Get("Object").New()
 	obj.Set("success", success)
 	obj.Set("error", errMsg)
 	obj.Set("isFinal", isFinal)
 	obj.Set("chunkEndIndex", chunkEndIndex)
+	obj.Set("remotePath", remotePath)
 	if finalResult != nil {
 		finalResultJSON, err := json.Marshal(finalResult)
 		if err != nil {
@@ -621,21 +626,28 @@ func sendUploadRequest(dataBuffers []*bytes.Buffer, contentSlice []string, blobb
 func (su *ChunkedUpload) startProcessor() {
 	su.listenChan = make(chan struct{}, su.uploadWorkers)
 	su.processMap = make(map[int]int)
-	respChan := make(chan error, 1)
 	su.uploadWG.Add(1)
-	allEventChan := make([]<-chan worker.MessageEvent, len(su.blobbers))
-	var pos uint64
-	for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
-		pos = uint64(i.TrailingZeros())
-		blobber := su.blobbers[pos]
-		worker := jsbridge.GetWorker(blobber.blobber.ID)
-		if worker != nil {
-			eventChan, _ := worker.Listen(su.ctx)
-			allEventChan[pos] = eventChan
-		}
-	}
 
 	go func() {
+		respChan := make(chan error, 1)
+		allEventChan := make([]chan worker.MessageEvent, len(su.blobbers))
+		var pos uint64
+		for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+			pos = uint64(i.TrailingZeros())
+			blobber := su.blobbers[pos]
+			webWorker := jsbridge.GetWorker(blobber.blobber.ID)
+			if webWorker != nil {
+				eventChan := make(chan worker.MessageEvent, su.uploadWorkers)
+				err := webWorker.SubscribeToEvents(su.fileMeta.RemotePath, eventChan)
+				if err != nil {
+					logger.Logger.Error("error subscribing to events: ", err)
+					su.ctxCncl(thrown.New("upload_failed", "Upload failed. Error subscribing to events"))
+					return
+				}
+				defer webWorker.UnsubscribeToEvents(su.fileMeta.RemotePath)
+				allEventChan[pos] = eventChan
+			}
+		}
 		defer su.uploadWG.Done()
 		for {
 			go su.listen(allEventChan, respChan)
