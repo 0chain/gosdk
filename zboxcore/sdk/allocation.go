@@ -1413,7 +1413,6 @@ func (a *Allocation) getRefs(path, pathHash, authToken, offsetPath, updatedDate,
 		offsetDate:     offsetDate,
 		fileType:       fileType,
 		refType:        refType,
-		wg:             &sync.WaitGroup{},
 		ctx:            a.ctx,
 	}
 	oTreeReq.fullconsensus = a.fullconsensus
