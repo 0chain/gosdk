@@ -4,6 +4,7 @@
 package main
 
 import (
+	"fmt"
 	"syscall/js"
 
 	"github.com/0chain/gosdk/core/sys"
@@ -29,12 +30,13 @@ func registerAuthorizer(this js.Value, args []js.Value) interface{} {
 
 func registerAuthCommon(this js.Value, args []js.Value) interface{} {
 	authMsgCallback := parseAuthorizerCallback(args[0])
-	authResponseC = make(chan string, 1)
+	authMsgResponseC = make(chan string, 1)
 
 	sys.AuthCommon = func(msg string) (string, error) {
 		authMsgCallback(msg)
-		return <-authResponseC, nil
+		return <-authMsgResponseC, nil
 	}
+	fmt.Println("register auth common:", sys.AuthCommon)
 	return nil
 }
 

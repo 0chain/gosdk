@@ -20,7 +20,7 @@ func splitKeys(privateKey string, numSplits int) (string, error) {
 
 // nolint: unused
 func setWalletInfo(jsonWallet string, splitKeyWallet bool) bool {
-	err := zcncore.SetWalletInfo(jsonWallet, splitKeyWallet)
+	err := zcncore.SetWalletInfoJSON(jsonWallet, splitKeyWallet)
 	if err == nil {
 		return true
 	} else {

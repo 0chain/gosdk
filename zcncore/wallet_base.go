@@ -519,7 +519,11 @@ func GetWalletRaw() zcncrypto.Wallet {
 	return _config.wallet
 }
 
-// SetWalletInfo should be set before any transaction or client specific APIs
+func IsWalletSplit() bool {
+	return _config.isSplitWallet
+}
+
+// SetWalletInfoJSON should be set before any transaction or client specific APIs
 // splitKeyWallet parameter is valid only if SignatureScheme is "BLS0Chain"
 //
 //	# Inputs
@@ -537,11 +541,19 @@ func GetWalletRaw() zcncrypto.Wallet {
 //	}
 //
 // - splitKeyWallet: if wallet keys is split
-func SetWalletInfo(jsonWallet string, splitKeyWallet bool) error {
-	err := json.Unmarshal([]byte(jsonWallet), &_config.wallet)
+func SetWalletInfoJSON(jsonWallet string, splitKeyWallet bool) error {
+	wlt := &zcncrypto.Wallet{}
+	err := json.Unmarshal([]byte(jsonWallet), wlt)
 	if err != nil {
 		return err
 	}
+
+	SetWalletInfo(wlt, splitKeyWallet)
+	return nil
+}
+
+func SetWalletInfo(wallet *zcncrypto.Wallet, splitKeyWallet bool) {
+	_config.wallet = *wallet
 
 	if _config.chain.SignatureScheme == "bls0chain" {
 		_config.isSplitWallet = splitKeyWallet
@@ -550,12 +562,6 @@ func SetWalletInfo(jsonWallet string, splitKeyWallet bool) error {
 
 	c := client.GetClient()
 	c.Wallet = &_config.wallet
-	// c.Mnemonic = mnemonic
-	// c.ClientID = clientID
-	// c.ClientKey = _config.wallet.ClientKey
-	// c.Keys = _config.wallet.Keys
-
-	return nil
 }
 
 // SetAuthUrl will be called by app to set zauth URL to SDK.
@@ -594,7 +600,7 @@ func getWalletBalance(clientId string) (common.Balance, int64, error) {
 	cb.Wait()
 
 	var clientState struct {
-		Nonce   int64   `json:"nonce"`
+		Nonce int64 `json:"nonce"`
 	}
 	err = json.Unmarshal([]byte(cb.info), &clientState)
 	if err != nil {
@@ -872,10 +878,10 @@ func getMinersInternal(cb GetInfoCallback, active, stakable bool, limit, offset 
 	}
 
 	var url = withParams(GET_MINERSC_MINERS, Params{
-		"active": strconv.FormatBool(active),
+		"active":   strconv.FormatBool(active),
 		"stakable": strconv.FormatBool(stakable),
-		"offset": strconv.FormatInt(int64(offset), 10),
-		"limit":  strconv.FormatInt(int64(limit), 10),
+		"offset":   strconv.FormatInt(int64(offset), 10),
+		"limit":    strconv.FormatInt(int64(limit), 10),
 	})
 
 	go GetInfoFromSharders(url, 0, cb)
@@ -887,7 +893,7 @@ func getMinersInternal(cb GetInfoCallback, active, stakable bool, limit, offset 
 //   - limit: how many sharders should be fetched
 //   - offset: how many sharders should be skipped
 //   - active: only fetch active sharders
-//	 - stakable: only fetch sharders that can be staked 
+//   - stakable: only fetch sharders that can be staked
 func GetSharders(cb GetInfoCallback, limit, offset int, active, stakable bool) {
 	getShardersInternal(cb, active, stakable, limit, offset)
 }
@@ -898,10 +904,10 @@ func getShardersInternal(cb GetInfoCallback, active, stakable bool, limit, offse
 	}
 
 	var url = withParams(GET_MINERSC_SHARDERS, Params{
-		"active": strconv.FormatBool(active),
+		"active":   strconv.FormatBool(active),
 		"stakable": strconv.FormatBool(stakable),
-		"offset": strconv.FormatInt(int64(offset), 10),
-		"limit":  strconv.FormatInt(int64(limit), 10),
+		"offset":   strconv.FormatInt(int64(offset), 10),
+		"limit":    strconv.FormatInt(int64(limit), 10),
 	})
 
 	go GetInfoFromSharders(url, 0, cb)
