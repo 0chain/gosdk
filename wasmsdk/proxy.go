@@ -499,7 +499,8 @@ func main() {
 		if isSplit {
 			fmt.Println("isSplit:", isSplit)
 			// TODO: differe the registerAuthorizer
-			registerZauthServer("http://18.191.13.66:8080", publicKey)
+			// registerZauthServer("http://18.191.13.66:8080", publicKey)
+			registerZauthServer("http://127.0.0.1:8080", publicKey)
 		}
 
 		setWallet(clientID, publicKey, peerPublicKey, publicKey, privateKey, mnemonic, isSplit)

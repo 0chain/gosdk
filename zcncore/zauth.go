@@ -71,39 +71,46 @@ func CallZauthSetup(serverAddr string, token string, splitWallet SplitWallet) er
 	return nil
 }
 
-// func CallZauthSetupString(serverAddr, splitWallet string) error {
-// 	// Add your code here
-// 	endpoint := serverAddr + "/setup"
-// 	req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer([]byte(splitWallet)))
-// 	if err != nil {
-// 		return errors.Wrap(err, "failed to create HTTP request")
-// 	}
+func CallZauthRevoke(serverAddr, token, clientID, publicKey string) error {
+	endpoint := serverAddr + "/revoke/" + clientID
+	endpoint += "?peer_public_key=" + publicKey
+	req, err := http.NewRequest("POST", endpoint, nil)
+	if err != nil {
+		return errors.Wrap(err, "failed to create HTTP request")
+	}
 
-// 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Jwt-Token", token)
 
-// 	client := &http.Client{}
-// 	resp, err := client.Do(req)
-// 	if err != nil {
-// 		return errors.Wrap(err, "failed to send HTTP request")
-// 	}
-// 	defer resp.Body.Close()
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return errors.Wrap(err, "failed to send HTTP request")
+	}
+	defer resp.Body.Close()
 
-// 	if resp.StatusCode != http.StatusOK {
-// 		return errors.Errorf("unexpected status code: %d", resp.StatusCode)
-// 	}
+	if resp.StatusCode != http.StatusOK {
+		errMsg, _ := io.ReadAll(resp.Body)
+		if len(errMsg) > 0 {
+			return errors.Errorf("code: %d, err: %s", resp.StatusCode, string(errMsg))
+		}
 
-// 	var rsp struct {
-// 		Result string `json:"result"`
-// 	}
-// 	if err := json.NewDecoder(resp.Body).Decode(&rsp); err != nil {
-// 		return errors.Wrap(err, "failed to decode response body")
-// 	}
+		return errors.Errorf("code: %d", resp.StatusCode)
+	}
 
-// 	if rsp.Result != "success" {
-// 		return errors.New("failed to setup zauth server")
-// 	}
-// 	return nil
-// }
+	var rsp struct {
+		Result string `json:"result"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&rsp); err != nil {
+		return errors.Wrap(err, "failed to decode response body")
+	}
+
+	if rsp.Result != "success" {
+		return errors.New("failed to setup zauth server")
+	}
+
+	return nil
+}
 
 func CallZvaultNewWalletString(serverAddr, token, clientID, passphrase string) (string, error) {
 	// Add your code here
