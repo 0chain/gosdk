@@ -20,6 +20,8 @@ type SplitWallet struct {
 	PublicKey     string `json:"public_key"`
 	PrivateKey    string `json:"private_key"`
 	PeerPublicKey string `json:"peer_public_key"`
+	IsRevoked     bool   `json:"is_revoked"`
+	ExpiredAt     int64  `json:"expired_at"`
 }
 
 // CallZauthSetup calls the zauth setup endpoint
