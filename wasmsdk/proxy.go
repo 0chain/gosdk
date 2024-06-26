@@ -21,6 +21,8 @@ import (
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk/zcncore"
 
+	"github.com/hack-pad/safejs"
+
 	"syscall/js"
 )
 
@@ -439,7 +441,7 @@ func main() {
 				// return sigpk.Sig, nil
 			}
 
-			fmt.Println("Init SignWithAuth:", sys.SignWithAuth)
+			// fmt.Println("Init SignWithAuth:", sys.SignWithAuth)
 		} else {
 			PrintError("__zcn_worker_wasm__ is not installed yet")
 		}
@@ -465,7 +467,8 @@ func main() {
 			os.Getenv("CLIENT_KEY"),
 			os.Getenv("PUBLIC_KEY"),
 			os.Getenv("PRIVATE_KEY"),
-			os.Getenv("MNEMONIC"), isSplit)
+			os.Getenv("MNEMONIC"),
+			isSplit)
 
 		hideLogs()
 		debug.SetGCPercent(40)
@@ -489,4 +492,40 @@ func main() {
 func sendMessageToMainThread(msg string) {
 	PrintInfo("[send to main thread]:", msg)
 	jsbridge.PostMessage(jsbridge.GetSelfWorker(), jsbridge.MsgTypeAuth, map[string]string{"msg": msg})
+}
+
+func UpdateWalletWithEventData(data *safejs.Value) error {
+	clientID, err := jsbridge.ParseEventDataField(data, "client_id")
+	if err != nil {
+		return err
+	}
+	clientKey, err := jsbridge.ParseEventDataField(data, "client_key")
+	if err != nil {
+		return err
+	}
+	publicKey, err := jsbridge.ParseEventDataField(data, "public_key")
+	if err != nil {
+		return err
+	}
+	privateKey, err := jsbridge.ParseEventDataField(data, "private_key")
+	if err != nil {
+		return err
+	}
+	mnemonic, err := jsbridge.ParseEventDataField(data, "mnemonic")
+	if err != nil {
+		return err
+	}
+	isSplitStr, err := jsbridge.ParseEventDataField(data, "is_split")
+	if err != nil {
+		return err
+	}
+
+	isSplit, err := strconv.ParseBool(isSplitStr)
+	if err != nil {
+		isSplit = false
+	}
+
+	fmt.Println("update wallet with event data")
+	setWallet(clientID, clientKey, publicKey, privateKey, mnemonic, isSplit)
+	return nil
 }

@@ -1053,15 +1053,20 @@ func startListener(respChan chan string) error {
 			}
 
 			switch msgType {
-			case "auth_rsp":
+			case jsbridge.MsgTypeAuthRsp:
 				rsp, err := jsbridge.ParseEventDataField(data, "data")
 				if err != nil {
 					PrintError("Error in parsing data from event", err)
 					return
 				}
 				respChan <- rsp
-			case "upload":
+			case jsbridge.MsgTypeUpload:
 				go sdk.ProcessEventData(*data)
+			case jsbridge.MsgTypeUpdateWallet:
+				fmt.Println("received update wallet event")
+				if err := UpdateWalletWithEventData(data); err != nil {
+					PrintError("Error in updating wallet", err)
+				}
 			default:
 				PrintError("Unknown message type", msgType)
 			}
