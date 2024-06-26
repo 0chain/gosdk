@@ -129,7 +129,7 @@ func getNotProcessedWZCNBurnEvents() string {
 	log.Logger.Debug("MintNonce = " + strconv.Itoa(int(mintNonce)))
 	burnEvents, err := bridge.QueryEthereumBurnEvents(strconv.Itoa(int(mintNonce)))
 	if err != nil {
-		return errors.Wrap("getNotProcessedWZCNBurnEvents", "failed to retreive WZCN burn events", err).Error()
+		return errors.Wrap("getNotProcessedWZCNBurnEvents", "failed to retrieve WZCN burn events", err).Error()
 	}
 
 	var result []byte

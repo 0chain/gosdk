@@ -2,8 +2,10 @@ package ethereum
 
 import "encoding/json"
 
+// BurnEvent represents received WZCN burn event.
 type BurnEvent struct {
 	Nonce           int64  `json:"nonce"`
+	Amount          int64  `json:"amount"`
 	TransactionHash string `json:"hash"`
 }
 
