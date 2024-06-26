@@ -25,6 +25,8 @@ import (
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+
+	"github.com/hack-pad/go-webworkers/worker"
 )
 
 const FileOperationInsert = "insert"
@@ -1027,7 +1029,7 @@ func createWorkers(allocationID string) {
 	addWebWorkers(alloc)
 }
 
-func startListener() error {
+func startListener(respChan chan string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -1035,6 +1037,7 @@ func startListener() error {
 	if err != nil {
 		return err
 	}
+	defer fmt.Println("[web worker] exiting")
 
 	listener, err := selfWorker.Listen(ctx)
 	if err != nil {
@@ -1042,12 +1045,27 @@ func startListener() error {
 	}
 	sdk.InitHasherMap()
 	for event := range listener {
-		data, err := event.Data()
-		if err != nil {
-			PrintError("Error in getting data from event", err)
-			return err
-		}
-		sdk.ProcessEventData(data)
+		func(event worker.MessageEvent) {
+			msgType, data, err := jsbridge.GetMsgType(event)
+			if err != nil {
+				PrintError("Error in getting data from event", err)
+				return
+			}
+
+			switch msgType {
+			case "auth_rsp":
+				rsp, err := jsbridge.ParseEventDataField(data, "data")
+				if err != nil {
+					PrintError("Error in parsing data from event", err)
+					return
+				}
+				respChan <- rsp
+			case "upload":
+				go sdk.ProcessEventData(*data)
+			default:
+				PrintError("Unknown message type", msgType)
+			}
+		}(event)
 	}
 
 	return nil

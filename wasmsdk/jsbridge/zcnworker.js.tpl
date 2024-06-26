@@ -43,7 +43,7 @@ self.__zcn_worker_wasm__ = {
     verify: blsVerify,
     verifyWith: blsVerifyWith,
     addSignature: blsAddSignature
-} 
+}  
 
 async function initProxyKeys(publicKey, privateKey) {
   const pubKey = bls.deserializeHexStrToPublicKey(publicKey)

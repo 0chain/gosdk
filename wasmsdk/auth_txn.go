@@ -14,8 +14,11 @@ import (
 
 type AuthCallbackFunc func(msg string) string
 
+var authMsgCallback AuthCallbackFunc
 var authCallback AuthCallbackFunc
 var authResponseC chan string
+var authMsgResponseC chan string
+var authMsgLock = make(chan struct{}, 1)
 
 // Register the callback function
 func registerAuthorizer(this js.Value, args []js.Value) interface{} {
@@ -60,12 +63,16 @@ func zvaultRevokeKey(serverAddr, token, clientID, publicKey string) error {
 }
 
 func registerAuthCommon(this js.Value, args []js.Value) interface{} {
-	authCallback = parseAuthorizerCallback(args[0])
-	authResponseC = make(chan string, 1)
+	authMsgCallback = parseAuthorizerCallback(args[0])
+	authMsgResponseC = make(chan string, 1)
 
 	sys.AuthCommon = func(msg string) (string, error) {
-		authCallback(msg)
-		return <-authResponseC, nil
+		authMsgLock <- struct{}{}
+		defer func() {
+			<-authMsgLock
+		}()
+		authMsgCallback(msg)
+		return <-authMsgResponseC, nil
 	}
 	return nil
 }

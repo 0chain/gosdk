@@ -283,6 +283,7 @@ func main() {
 
 				"decodeAuthTicket": decodeAuthTicket,
 				"allocationRepair": allocationRepair,
+				"repairSize":       repairSize,
 
 				//smartcontract
 				"executeSmartContract": executeSmartContract,
@@ -340,6 +341,7 @@ func main() {
 	}
 
 	if mode != "" {
+		respChan := make(chan string, 1)
 		jsProxy := window.Get("__zcn_worker_wasm__")
 		if !(jsProxy.IsNull() || jsProxy.IsUndefined()) {
 			jsSign := jsProxy.Get("sign")
@@ -412,52 +414,92 @@ func main() {
 				PrintError("__zcn_worker_wasm__.jsProxy.sign is not installed yet")
 			}
 
-			jsVerify := jsProxy.Get("verify")
-			if !(jsVerify.IsNull() || jsVerify.IsUndefined()) {
-				verifyFunc := func(signature, hash string) (bool, error) {
-					result, err := jsbridge.Await(jsVerify.Invoke(signature, hash))
-
-					if len(err) > 0 && !err[0].IsNull() {
-						return false, errors.New("verify: " + err[0].String())
-					}
-					return result[0].Bool(), nil
-				}
-
-				//update Verify with js sign
-				sys.Verify = verifyFunc
-			} else {
-				PrintError("__zcn_wasm__.jsProxy.verify is not installed yet")
+			sys.AuthCommon = func(msg string) (string, error) {
+				// send message to main thread
+				sendMessageToMainThread(msg)
+				// wait for response from main thread
+				rsp := <-respChan
+				return rsp, nil
 			}
 
-			jsVerifyWith := jsProxy.Get("verifyWith")
-			if !(jsVerifyWith.IsNull() || jsVerifyWith.IsUndefined()) {
-				verifyFuncWith := func(pk, signature, hash string) (bool, error) {
-					result, err := jsbridge.Await(jsVerifyWith.Invoke(pk, signature, hash))
-
-					if len(err) > 0 && !err[0].IsNull() {
-						return false, errors.New("verify: " + err[0].String())
-					}
-					return result[0].Bool(), nil
+			sys.SignWithAuth = func(hash, signatureScheme string, keys []sys.KeyPair) (string, error) {
+				sig, err := sys.Sign(hash, signatureScheme, keys)
+				if err != nil {
+					return "", err
 				}
 
-				//update Verify with js sign
-				sys.VerifyWith = verifyFuncWith
-			} else {
-				PrintError("__zcn_wasm__.jsProxy.verifyWith is not installed yet")
-			}
-
-			jsAddSignature := jsProxy.Get("addSignature")
-			if !(jsAddSignature.IsNull() || jsAddSignature.IsUndefined()) {
-				zcncore.AddSignature = func(privateKey, signature, hash string) (string, error) {
-					result, err := jsbridge.Await(jsAddSignature.Invoke(privateKey, signature, hash))
-					if len(err) > 0 && !err[0].IsNull() {
-						return "", errors.New("add signature: " + err[0].String())
-					}
-
-					return result[0].String(), nil
+				data, err := json.Marshal(struct {
+					Data     string `json:"data"`
+					ClientID string `json:"client_id"`
+					Sig      string `json:"sig"`
+				}{
+					Data:     hash,
+					ClientID: client.GetClient().ClientID,
+					Sig:      sig,
+				})
+				if err != nil {
+					return "", err
 				}
-			} else {
-				PrintError("__zcn_worker_wasm__.jsProxy.addSignature is not installed yet")
+
+				if sys.AuthCommon == nil {
+					return "", errors.New("authCommon is not set")
+				}
+
+				rsp, err := sys.AuthCommon(string(data))
+				if err != nil {
+					return "", err
+				}
+
+				var sigpk struct {
+					Sig string `json:"sig"`
+				}
+
+				err = json.Unmarshal([]byte(rsp), &sigpk)
+				if err != nil {
+					return "", err
+				}
+
+				return sigpk.Sig, nil
+
+				// TODO: Note: the below is for zauth auth msg
+				// fmt.Println("SignWithAuth keys:", keys)
+				// sig, err := sys.Sign(hash, signatureScheme, keys)
+				// if err != nil {
+				// 	return "", fmt.Errorf("failed to sign with split key: %v", err)
+				// }
+
+				// data, err := json.Marshal(struct {
+				// 	Hash      string `json:"hash"`
+				// 	Signature string `json:"signature"`
+				// 	ClientID  string `json:"client_id"`
+				// }{
+				// 	Hash:      hash,
+				// 	Signature: sig,
+				// 	ClientID:  client.GetClient().ClientID,
+				// })
+				// if err != nil {
+				// 	return "", err
+				// }
+
+				// if sys.AuthCommon == nil {
+				// 	return "", errors.New("authCommon is not set")
+				// }
+
+				// rsp, err := sys.AuthCommon(string(data))
+				// if err != nil {
+				// 	return "", err
+				// }
+
+				// var sigpk struct {
+				// 	Sig string `json:"sig"`
+				// }
+
+				// err = json.Unmarshal([]byte(rsp), &sigpk)
+				// if err != nil {
+				// 	return "", err
+				// }
+
+				// return sigpk.Sig, nil
 			}
 
 			initProxyKeys := jsProxy.Get("initProxyKeys")
@@ -476,6 +518,7 @@ func main() {
 				}
 			}
 
+			fmt.Println("Init SignWithAuth:", sys.SignWithAuth)
 		} else {
 			PrintError("__zcn_worker_wasm__ is not installed yet")
 		}
@@ -511,7 +554,7 @@ func main() {
 		hideLogs()
 		debug.SetGCPercent(40)
 		debug.SetMemoryLimit(300 * 1024 * 1024) //300MB
-		err = startListener()
+		err = startListener(respChan)
 		if err != nil {
 			fmt.Println("Error starting listener", err)
 			return
@@ -528,3 +571,8 @@ func main() {
 }
 
 var gInitProxyKeys func(publicKey, privateKey string)
+
+func sendMessageToMainThread(msg string) {
+	PrintInfo("[send to main thread]:", msg)
+	jsbridge.PostMessage(jsbridge.GetSelfWorker(), jsbridge.MsgTypeAuth, map[string]string{"msg": msg})
+}

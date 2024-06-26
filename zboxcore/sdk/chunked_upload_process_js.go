@@ -19,6 +19,7 @@ import (
 	"github.com/0chain/errors"
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
+	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/wasmsdk/jsbridge"
 	"github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
@@ -155,6 +156,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 			thumbnailChunkData = thumbnailShards[pos]
 		}
 		obj := js.Global().Get("Object").New()
+		jsbridge.SetMsgType(&obj, "upload")
 		obj.Set("fileMeta", fileMetaUint8)
 		obj.Set("formInfo", formInfoUint8)
 
@@ -217,7 +219,7 @@ type FinalWorkerResult struct {
 	ThumbnailContentHash string
 }
 
-func (su *ChunkedUpload) listen(allEventChan []<-chan worker.MessageEvent, respChan chan error) {
+func (su *ChunkedUpload) listen(allEventChan []eventChanWorker, respChan chan error) {
 	su.consensus.Reset()
 
 	var (
@@ -244,107 +246,64 @@ func (su *ChunkedUpload) listen(allEventChan []<-chan worker.MessageEvent, respC
 			blobber := su.blobbers[pos]
 
 			eventChan := allEventChan[pos]
-			if eventChan == nil {
+			if eventChan.C == nil {
 				errC := atomic.AddInt32(&errCount, 1)
 				if errC >= int32(su.consensus.consensusThresh) {
 					wgErrors <- thrown.New("upload_failed", "Upload failed. Worker event channel not found")
 				}
 				return
 			}
-			event, ok := <-eventChan
-			if !ok {
-				logger.Logger.Error("chan closed from: ", blobber.blobber.Baseurl)
-				errC := atomic.AddInt32(&errCount, 1)
-				if errC >= int32(su.consensus.consensusThresh) {
-					if su.ctx.Err() != nil {
-						wgErrors <- context.Cause(su.ctx)
-					} else {
-						wgErrors <- thrown.New("upload_failed", "Upload failed. Worker event channel closed")
-					}
-				}
-				return
-			}
-			data, err := event.Data()
-			if err != nil {
-				errC := atomic.AddInt32(&errCount, 1)
-				if errC >= int32(su.consensus.consensusThresh) {
-					wgErrors <- thrown.New("upload_failed", "Upload failed. Error getting worker data")
-				}
-				return
-			}
-			success, err := data.Get("success")
-			if err != nil {
-				errC := atomic.AddInt32(&errCount, 1)
-				if errC >= int32(su.consensus.consensusThresh) {
-					wgErrors <- thrown.New("upload_failed", "Upload failed. Error getting worker data")
-				}
-				return
-			}
-			res, _ := success.Bool()
-			if !res {
-				//get error message
-				errMsg, err := data.Get("error")
-				if err != nil {
+			for {
+				event, ok := <-eventChan.C
+				if !ok {
+					logger.Logger.Error("chan closed from: ", blobber.blobber.Baseurl)
 					errC := atomic.AddInt32(&errCount, 1)
 					if errC >= int32(su.consensus.consensusThresh) {
-						wgErrors <- thrown.New("upload_failed", "Upload failed. Error getting worker data")
+						if su.ctx.Err() != nil {
+							wgErrors <- context.Cause(su.ctx)
+						} else {
+							wgErrors <- thrown.New("upload_failed", "Upload failed. Worker event channel closed")
+						}
 					}
 					return
 				}
-				errMsgStr, _ := errMsg.String()
-				logger.Logger.Error("error from worker: ", errMsgStr)
-				errC := atomic.AddInt32(&errCount, 1)
-				if errC >= int32(su.consensus.consensusThresh) {
-					wgErrors <- thrown.New("upload_failed", fmt.Sprintf("Upload failed. %s", errMsgStr))
-				}
-			}
-			chunkEndIndexObj, _ := data.Get("chunkEndIndex")
-			chunkEndIndex, _ := chunkEndIndexObj.Int()
-			su.updateChunkProgress(chunkEndIndex)
-			finalRequestObject, _ := data.Get("isFinal")
-			finalRequest, _ := finalRequestObject.Bool()
-			if finalRequest {
-				//get final result
-				finalResult, err := data.Get("finalResult")
+				msgType, data, err := jsbridge.GetMsgType(event)
 				if err != nil {
-					logger.Logger.Error("errorGettingFinalResult")
 					errC := atomic.AddInt32(&errCount, 1)
 					if errC >= int32(su.consensus.consensusThresh) {
-						wgErrors <- thrown.New("upload_failed", "Upload failed. Error getting worker data")
+						wgErrors <- errors.Wrap(err, "could not get msgType")
 					}
 					return
 				}
-				len, err := finalResult.Length()
-				if err != nil {
-					logger.Logger.Error("errorGettingFinalResultLength")
-					errC := atomic.AddInt32(&errCount, 1)
-					if errC >= int32(su.consensus.consensusThresh) {
-						wgErrors <- thrown.New("upload_failed", "Upload failed. Error getting worker data")
-					}
-					return
-				}
-				resBuf := make([]byte, len)
-				safejs.CopyBytesToGo(resBuf, finalResult)
-				var finalResultObj FinalWorkerResult
-				err = json.Unmarshal(resBuf, &finalResultObj)
-				if err != nil {
-					logger.Logger.Error("errorGettingFinalResultUnmarshal")
-					errC := atomic.AddInt32(&errCount, 1)
-					if errC >= int32(su.consensus.consensusThresh) {
-						wgErrors <- thrown.New("upload_failed", "Upload failed. Error getting worker data")
-					}
-					return
-				}
-				blobber.fileRef.FixedMerkleRoot = finalResultObj.FixedMerkleRoot
-				blobber.fileRef.ValidationRoot = finalResultObj.ValidationRoot
-				blobber.fileRef.ThumbnailHash = finalResultObj.ThumbnailContentHash
-				isFinal = true
-			}
-			su.consensus.Done()
 
+				switch msgType {
+				case "auth":
+					if err := su.processWebWorkerAuthRequest(data, eventChan); err != nil {
+						errC := atomic.AddInt32(&errCount, 1)
+						if errC >= int32(su.consensus.consensusThresh) {
+							wgErrors <- err
+						}
+						return
+					}
+				case "upload":
+					//get error message
+					//get final result
+					var err error
+					isFinal, err = su.processWebWorkerUpload(data, blobber)
+					if err != nil {
+						errC := atomic.AddInt32(&errCount, 1)
+						if errC >= int32(su.consensus.consensusThresh) {
+							wgErrors <- err
+						}
+					}
+					return
+				default:
+					logger.Logger.Error("unknown msg type: ", msgType)
+				}
+			}
 		}(pos)
-
 	}
+
 	wg.Wait()
 	close(wgErrors)
 	for err := range wgErrors {
@@ -372,6 +331,81 @@ func (su *ChunkedUpload) listen(allEventChan []<-chan worker.MessageEvent, respC
 	} else {
 		respChan <- nil
 	}
+}
+
+func (su *ChunkedUpload) processWebWorkerUpload(data *safejs.Value, blobber *ChunkedUploadBlobber) (bool, error) {
+	var isFinal bool
+	success, err := data.Get("success")
+	if err != nil {
+		return false, errors.Wrap(err, "could not get 'success' field")
+	}
+	res, _ := success.Bool()
+	if !res {
+		errMsg, err := data.Get("error")
+		if err != nil {
+			return false, errors.Wrap(err, "could not get 'error' field")
+		}
+
+		errMsgStr, _ := errMsg.String()
+		return false, fmt.Errorf("%s", errMsgStr)
+	}
+
+	chunkEndIndexObj, _ := data.Get("chunkEndIndex")
+	chunkEndIndex, _ := chunkEndIndexObj.Int()
+	su.updateChunkProgress(chunkEndIndex)
+	finalRequestObject, _ := data.Get("isFinal")
+	finalRequest, _ := finalRequestObject.Bool()
+	if finalRequest {
+		finalResult, err := data.Get("finalResult")
+		if err != nil {
+			logger.Logger.Error("errorGettingFinalResult")
+			return false, errors.Wrap(err, "could not get 'finalResult' field")
+		}
+
+		len, err := finalResult.Length()
+		if err != nil {
+			logger.Logger.Error("errorGettingFinalResultLength")
+			return false, errors.Wrap(err, "could not get 'finalResult' Length")
+		}
+
+		resBuf := make([]byte, len)
+		safejs.CopyBytesToGo(resBuf, finalResult)
+		var finalResultObj FinalWorkerResult
+		err = json.Unmarshal(resBuf, &finalResultObj)
+		if err != nil {
+			logger.Logger.Error("errorGettingFinalResultUnmarshal")
+			return false, errors.Wrap(err, "could not unmarshal 'finalResult' obj")
+		}
+
+		blobber.fileRef.FixedMerkleRoot = finalResultObj.FixedMerkleRoot
+		blobber.fileRef.ValidationRoot = finalResultObj.ValidationRoot
+		blobber.fileRef.ThumbnailHash = finalResultObj.ThumbnailContentHash
+		isFinal = true
+	}
+
+	su.consensus.Done()
+	return isFinal, nil
+}
+
+func (su *ChunkedUpload) processWebWorkerAuthRequest(data *safejs.Value, eventChan eventChanWorker) error {
+	authMsg, err := jsbridge.ParseEventDataField(data, "msg")
+	if err != nil {
+		return errors.Wrap(err, "could not parse 'msg' field")
+	}
+
+	rsp, err := sys.AuthCommon(string(authMsg))
+	if err != nil {
+		return errors.Wrap(err, "chunk upload authCommon failed")
+	}
+
+	if err := jsbridge.PostMessage(jsbridge.GetWorker(eventChan.workerID), jsbridge.MsgTypeAuthRsp,
+		map[string]string{
+			"data": rsp,
+		}); err != nil {
+		return errors.Wrap(err, "chunk upload postMessage failed")
+	}
+
+	return nil
 }
 
 func ProcessEventData(data safejs.Value) {
@@ -477,9 +511,12 @@ func selfPostMessage(success, isFinal bool, errMsg string, chunkEndIndex int, fi
 			obj.Set("finalResult", finalResultUint8)
 		}
 	}
+
+	// msgType is upload
+	jsbridge.SetMsgType(&obj, jsbridge.MsgTypeUpload)
+
 	self := jsbridge.GetSelfWorker()
 	self.PostMessage(safejs.Safe(obj), nil) //nolint:errcheck
-
 }
 
 func parseEventData(data safejs.Value) (*FileMeta, *ChunkedUploadFormInfo, [][]byte, []byte, error) {
@@ -618,12 +655,17 @@ func sendUploadRequest(dataBuffers []*bytes.Buffer, contentSlice []string, blobb
 	return eg.Wait()
 }
 
+type eventChanWorker struct {
+	C        <-chan worker.MessageEvent
+	workerID string
+}
+
 func (su *ChunkedUpload) startProcessor() {
 	su.listenChan = make(chan struct{}, su.uploadWorkers)
 	su.processMap = make(map[int]int)
 	respChan := make(chan error, 1)
 	su.uploadWG.Add(1)
-	allEventChan := make([]<-chan worker.MessageEvent, len(su.blobbers))
+	allEventChan := make([]eventChanWorker, len(su.blobbers))
 	var pos uint64
 	for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
@@ -631,7 +673,10 @@ func (su *ChunkedUpload) startProcessor() {
 		worker := jsbridge.GetWorker(blobber.blobber.ID)
 		if worker != nil {
 			eventChan, _ := worker.Listen(su.ctx)
-			allEventChan[pos] = eventChan
+			allEventChan[pos] = eventChanWorker{
+				C:        eventChan,
+				workerID: blobber.blobber.ID,
+			}
 		}
 	}
 
