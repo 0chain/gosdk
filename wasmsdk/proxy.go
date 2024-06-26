@@ -21,6 +21,8 @@ import (
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk/zcncore"
 
+	"github.com/hack-pad/safejs"
+
 	"syscall/js"
 )
 
@@ -574,4 +576,40 @@ var gInitProxyKeys func(publicKey, privateKey string)
 func sendMessageToMainThread(msg string) {
 	PrintInfo("[send to main thread]:", msg)
 	jsbridge.PostMessage(jsbridge.GetSelfWorker(), jsbridge.MsgTypeAuth, map[string]string{"msg": msg})
+}
+
+func UpdateWalletWithEventData(data *safejs.Value) error {
+	clientID, err := jsbridge.ParseEventDataField(data, "client_id")
+	if err != nil {
+		return err
+	}
+	clientKey, err := jsbridge.ParseEventDataField(data, "client_key")
+	if err != nil {
+		return err
+	}
+	publicKey, err := jsbridge.ParseEventDataField(data, "public_key")
+	if err != nil {
+		return err
+	}
+	privateKey, err := jsbridge.ParseEventDataField(data, "private_key")
+	if err != nil {
+		return err
+	}
+	mnemonic, err := jsbridge.ParseEventDataField(data, "mnemonic")
+	if err != nil {
+		return err
+	}
+	isSplitStr, err := jsbridge.ParseEventDataField(data, "is_split")
+	if err != nil {
+		return err
+	}
+
+	isSplit, err := strconv.ParseBool(isSplitStr)
+	if err != nil {
+		isSplit = false
+	}
+
+	fmt.Println("update wallet with event data")
+	setWallet(clientID, clientKey, publicKey, privateKey, mnemonic, isSplit)
+	return nil
 }

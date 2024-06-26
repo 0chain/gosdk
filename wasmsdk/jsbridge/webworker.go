@@ -16,9 +16,10 @@ import (
 )
 
 const (
-	MsgTypeAuth    = "auth"
-	MsgTypeAuthRsp = "auth_rsp"
-	MsgTypeUpload  = "upload"
+	MsgTypeAuth         = "auth"
+	MsgTypeAuthRsp      = "auth_rsp"
+	MsgTypeUpload       = "upload"
+	MsgTypeUpdateWallet = "update_wallet"
 )
 
 type WasmWebWorker struct {
@@ -198,4 +199,16 @@ func ParseEventDataField(data *safejs.Value, field string) (string, error) {
 	safejs.CopyBytesToGo(fieldData, fieldUint8Array)
 
 	return string(fieldData), nil
+}
+
+func PostMessageToAllWorkers(msgType string, data map[string]string) error {
+	for id, worker := range workers {
+		fmt.Println("post message to worker", id)
+		err := PostMessage(worker, msgType, data)
+		if err != nil {
+			return fmt.Errorf("failed to post message to worker: %s, err: %v", id, err)
+		}
+	}
+
+	return nil
 }
