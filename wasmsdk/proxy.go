@@ -134,7 +134,6 @@ func main() {
 			}
 
 			jsVerifyWith := jsProxy.Get("verifyWith")
-
 			if !(jsVerifyWith.IsNull() || jsVerifyWith.IsUndefined()) {
 				verifyFuncWith := func(pk, signature, hash string) (bool, error) {
 					result, err := jsbridge.Await(jsVerifyWith.Invoke(pk, signature, hash))
@@ -360,14 +359,6 @@ func main() {
 				PrintError("__zcn_worker_wasm__.jsProxy.sign is not installed yet")
 			}
 
-			sys.AuthCommon = func(msg string) (string, error) {
-				// send message to main thread
-				sendMessageToMainThread(msg)
-				// wait for response from main thread
-				rsp := <-respChan
-				return rsp, nil
-			}
-
 			sys.SignWithAuth = func(hash, signatureScheme string, keys []sys.KeyPair) (string, error) {
 				sig, err := sys.Sign(hash, signatureScheme, keys)
 				if err != nil {
@@ -457,6 +448,16 @@ func main() {
 		isSplit, err := strconv.ParseBool(isSplitStr)
 		if err != nil {
 			isSplit = false
+		}
+
+		if isSplit {
+			sys.AuthCommon = func(msg string) (string, error) {
+				// send message to main thread
+				sendMessageToMainThread(msg)
+				// wait for response from main thread
+				rsp := <-respChan
+				return rsp, nil
+			}
 		}
 
 		setWallet(
