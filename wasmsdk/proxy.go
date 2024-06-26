@@ -133,7 +133,6 @@ func main() {
 			}
 
 			jsVerifyWith := jsProxy.Get("verifyWith")
-
 			if !(jsVerifyWith.IsNull() || jsVerifyWith.IsUndefined()) {
 				verifyFuncWith := func(pk, signature, hash string) (bool, error) {
 					result, err := jsbridge.Await(jsVerifyWith.Invoke(pk, signature, hash))
@@ -414,14 +413,6 @@ func main() {
 				PrintError("__zcn_worker_wasm__.jsProxy.sign is not installed yet")
 			}
 
-			sys.AuthCommon = func(msg string) (string, error) {
-				// send message to main thread
-				sendMessageToMainThread(msg)
-				// wait for response from main thread
-				rsp := <-respChan
-				return rsp, nil
-			}
-
 			sys.SignWithAuth = func(hash, signatureScheme string, keys []sys.KeyPair) (string, error) {
 				sig, err := sys.Sign(hash, signatureScheme, keys)
 				if err != nil {
@@ -533,6 +524,7 @@ func main() {
 		}
 
 		clientID := os.Getenv("CLIENT_ID")
+		clientKey := os.Getenv("CLIENT_KEY")
 		publicKey := os.Getenv("PUBLIC_KEY")
 		peerPublicKey := os.Getenv("PEER_PUBLIC_KEY")
 		mnemonic := os.Getenv("MNEMONIC")
@@ -543,14 +535,21 @@ func main() {
 		gInitProxyKeys(publicKey, privateKey)
 
 		if isSplit {
-			fmt.Println("isSplit:", isSplit)
+			sys.AuthCommon = func(msg string) (string, error) {
+				// send message to main thread
+				sendMessageToMainThread(msg)
+				// wait for response from main thread
+				rsp := <-respChan
+				return rsp, nil
+			}
+
 			// TODO: differe the registerAuthorizer
 			// registerZauthServer("http://18.191.13.66:8080", publicKey)
 			// registerZauthServer("http://127.0.0.1:8080", publicKey)
 			registerZauthServer(zauthServer)
 		}
 
-		setWallet(clientID, publicKey, peerPublicKey, publicKey, privateKey, mnemonic, isSplit)
+		setWallet(clientID, clientKey, peerPublicKey, publicKey, privateKey, mnemonic, isSplit)
 		hideLogs()
 		debug.SetGCPercent(40)
 		debug.SetMemoryLimit(300 * 1024 * 1024) //300MB
