@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"runtime/debug"
+	"strconv"
 	"sync"
 	"time"
 
@@ -284,7 +285,7 @@ func main() {
 
 				"decodeAuthTicket": decodeAuthTicket,
 				"allocationRepair": allocationRepair,
-				"repairSize": repairSize,
+				"repairSize":       repairSize,
 
 				//smartcontract
 				"executeSmartContract": executeSmartContract,
@@ -330,6 +331,7 @@ func main() {
 	}
 
 	if mode != "" {
+		respChan := make(chan string, 1)
 		jsProxy := window.Get("__zcn_worker_wasm__")
 		if !(jsProxy.IsNull() || jsProxy.IsUndefined()) {
 			jsSign := jsProxy.Get("sign")
@@ -357,14 +359,117 @@ func main() {
 			} else {
 				PrintError("__zcn_worker_wasm__.jsProxy.sign is not installed yet")
 			}
+
+			sys.AuthCommon = func(msg string) (string, error) {
+				// send message to main thread
+				sendMessageToMainThread(msg)
+				// wait for response from main thread
+				rsp := <-respChan
+				return rsp, nil
+			}
+
+			sys.SignWithAuth = func(hash, signatureScheme string, keys []sys.KeyPair) (string, error) {
+				sig, err := sys.Sign(hash, signatureScheme, keys)
+				if err != nil {
+					return "", err
+				}
+
+				data, err := json.Marshal(struct {
+					Data     string `json:"data"`
+					ClientID string `json:"client_id"`
+					Sig      string `json:"sig"`
+				}{
+					Data:     hash,
+					ClientID: client.GetClient().ClientID,
+					Sig:      sig,
+				})
+				if err != nil {
+					return "", err
+				}
+
+				if sys.AuthCommon == nil {
+					return "", errors.New("authCommon is not set")
+				}
+
+				rsp, err := sys.AuthCommon(string(data))
+				if err != nil {
+					return "", err
+				}
+
+				var sigpk struct {
+					Sig string `json:"sig"`
+				}
+
+				err = json.Unmarshal([]byte(rsp), &sigpk)
+				if err != nil {
+					return "", err
+				}
+
+				return sigpk.Sig, nil
+
+				// TODO: Note: the below is for zauth auth msg
+				// fmt.Println("SignWithAuth keys:", keys)
+				// sig, err := sys.Sign(hash, signatureScheme, keys)
+				// if err != nil {
+				// 	return "", fmt.Errorf("failed to sign with split key: %v", err)
+				// }
+
+				// data, err := json.Marshal(struct {
+				// 	Hash      string `json:"hash"`
+				// 	Signature string `json:"signature"`
+				// 	ClientID  string `json:"client_id"`
+				// }{
+				// 	Hash:      hash,
+				// 	Signature: sig,
+				// 	ClientID:  client.GetClient().ClientID,
+				// })
+				// if err != nil {
+				// 	return "", err
+				// }
+
+				// if sys.AuthCommon == nil {
+				// 	return "", errors.New("authCommon is not set")
+				// }
+
+				// rsp, err := sys.AuthCommon(string(data))
+				// if err != nil {
+				// 	return "", err
+				// }
+
+				// var sigpk struct {
+				// 	Sig string `json:"sig"`
+				// }
+
+				// err = json.Unmarshal([]byte(rsp), &sigpk)
+				// if err != nil {
+				// 	return "", err
+				// }
+
+				// return sigpk.Sig, nil
+			}
+
+			fmt.Println("Init SignWithAuth:", sys.SignWithAuth)
 		} else {
 			PrintError("__zcn_worker_wasm__ is not installed yet")
 		}
-		setWallet(os.Getenv("CLIENT_ID"), os.Getenv("PUBLIC_KEY"), os.Getenv("PRIVATE_KEY"), os.Getenv("MNEMONIC"))
+
+		isSplitStr := os.Getenv("IS_SPLIT")
+		isSplit, err := strconv.ParseBool(isSplitStr)
+		if err != nil {
+			isSplit = false
+		}
+
+		setWallet(
+			os.Getenv("CLIENT_ID"),
+			os.Getenv("CLIENT_KEY"),
+			os.Getenv("PUBLIC_KEY"),
+			os.Getenv("PRIVATE_KEY"),
+			os.Getenv("MNEMONIC"), isSplit)
+
 		hideLogs()
 		debug.SetGCPercent(40)
 		debug.SetMemoryLimit(300 * 1024 * 1024) //300MB
-		err := startListener()
+		err = startListener(respChan)
 		if err != nil {
 			fmt.Println("Error starting listener", err)
 			return
@@ -378,4 +483,9 @@ func main() {
 	<-make(chan bool)
 
 	jsbridge.Close()
+}
+
+func sendMessageToMainThread(msg string) {
+	PrintInfo("[send to main thread]:", msg)
+	jsbridge.PostMessage(jsbridge.GetSelfWorker(), jsbridge.MsgTypeAuth, map[string]string{"msg": msg})
 }

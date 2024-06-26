@@ -14,6 +14,7 @@ type AuthCallbackFunc func(msg string) string
 
 var authResponseC chan string
 var authMsgResponseC chan string
+var authMsgLock = make(chan struct{}, 1)
 
 // Register the callback function
 func registerAuthorizer(this js.Value, args []js.Value) interface{} {
@@ -33,6 +34,10 @@ func registerAuthCommon(this js.Value, args []js.Value) interface{} {
 	authMsgResponseC = make(chan string, 1)
 
 	sys.AuthCommon = func(msg string) (string, error) {
+		authMsgLock <- struct{}{}
+		defer func() {
+			<-authMsgLock
+		}()
 		authMsgCallback(msg)
 		return <-authMsgResponseC, nil
 	}

@@ -9,6 +9,7 @@ import (
 	"github.com/0chain/gosdk/wasmsdk/jsbridge"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/sdk"
+	"github.com/0chain/gosdk/zcncore"
 	lru "github.com/hashicorp/golang-lru/v2"
 )
 
@@ -72,8 +73,9 @@ func addWebWorkers(alloc *sdk.Allocation) {
 		return
 	}
 	isCreated := false
+	isSplit := zcncore.IsWalletSplit()
 	for _, blober := range alloc.Blobbers {
-		_, isCreated, _ = jsbridge.NewWasmWebWorker(blober.ID, blober.Baseurl, c.ClientID, c.Keys[0].PublicKey, c.Keys[0].PrivateKey, c.Mnemonic) //nolint:errcheck
+		_, isCreated, _ = jsbridge.NewWasmWebWorker(blober.ID, blober.Baseurl, c.ClientID, c.ClientKey, c.Keys[0].PublicKey, c.Keys[0].PrivateKey, c.Mnemonic, isSplit) //nolint:errcheck
 	}
 	// wait for worker to be instantiated
 	if isCreated {

@@ -9,7 +9,7 @@ import (
 	"github.com/0chain/gosdk/zcncore"
 )
 
-func setWallet(clientID, publicKey, privateKey, mnemonic string) error {
+func setWallet(clientID, clientKey, publicKey, privateKey, mnemonic string, isSplit bool) error {
 	keys := []zcncrypto.KeyPair{
 		{
 			PrivateKey: privateKey,
@@ -20,16 +20,16 @@ func setWallet(clientID, publicKey, privateKey, mnemonic string) error {
 	c := client.GetClient()
 	c.Mnemonic = mnemonic
 	c.ClientID = clientID
-	c.ClientKey = publicKey
+	c.ClientKey = clientKey
 	c.Keys = keys
 
 	w := &zcncrypto.Wallet{
 		ClientID:  clientID,
-		ClientKey: publicKey,
+		ClientKey: clientKey,
 		Mnemonic:  mnemonic,
 		Keys:      keys,
 	}
-	err := zcncore.SetWallet(*w, false)
+	err := zcncore.SetWallet(*w, isSplit)
 	if err != nil {
 		return err
 	}

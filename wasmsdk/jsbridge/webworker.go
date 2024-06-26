@@ -5,10 +5,19 @@ package jsbridge
 
 import (
 	"context"
+	"errors"
+	"strconv"
+	"syscall/js"
 
 	"github.com/google/uuid"
 	"github.com/hack-pad/go-webworkers/worker"
 	"github.com/hack-pad/safejs"
+)
+
+const (
+	MsgTypeAuth    = "auth"
+	MsgTypeAuthRsp = "auth_rsp"
+	MsgTypeUpload  = "upload"
 )
 
 type WasmWebWorker struct {
@@ -39,7 +48,7 @@ var (
 	workers = make(map[string]*WasmWebWorker)
 )
 
-func NewWasmWebWorker(blobberID, blobberURL, clientID, publicKey, privateKey, mnemonic string) (*WasmWebWorker, bool, error) {
+func NewWasmWebWorker(blobberID, blobberURL, clientID, clientKey, publicKey, privateKey, mnemonic string, isSplit bool) (*WasmWebWorker, bool, error) {
 	created := false
 	_, ok := workers[blobberID]
 	if ok {
@@ -48,7 +57,16 @@ func NewWasmWebWorker(blobberID, blobberURL, clientID, publicKey, privateKey, mn
 
 	w := &WasmWebWorker{
 		Name: blobberURL,
-		Env:  []string{"BLOBBER_URL=" + blobberURL, "CLIENT_ID=" + clientID, "PRIVATE_KEY=" + privateKey, "MODE=worker", "PUBLIC_KEY=" + publicKey, "MNEMONIC=" + mnemonic},
+		Env: []string{
+			"BLOBBER_URL=" + blobberURL,
+			"CLIENT_ID=" + clientID,
+			"CLIENT_KEY=" + clientKey,
+			"PRIVATE_KEY=" + privateKey,
+			"MODE=worker",
+			"PUBLIC_KEY=" + publicKey,
+			"MNEMONIC=" + mnemonic,
+			"IS_SPLIT=" + strconv.FormatBool(isSplit),
+		},
 		Path: "zcn.wasm",
 	}
 
@@ -106,4 +124,71 @@ func (ww *WasmWebWorker) Terminate() {
 // Stops the listener and closes the channel when ctx is canceled.
 func (ww *WasmWebWorker) Listen(ctx context.Context) (<-chan worker.MessageEvent, error) {
 	return ww.worker.Listen(ctx)
+}
+
+type PostWorker interface {
+	PostMessage(data safejs.Value, transferables []safejs.Value) error
+}
+
+func PostMessage(w PostWorker, msgType string, data map[string]string) error {
+	msgTypeUint8Array := js.Global().Get("Uint8Array").New(len(msgType))
+	js.CopyBytesToJS(msgTypeUint8Array, []byte(msgType))
+
+	obj := js.Global().Get("Object").New()
+	obj.Set("msgType", msgTypeUint8Array)
+
+	for k, v := range data {
+		if k == "msgType" {
+			return errors.New("msgType is key word reserved")
+		}
+
+		dataUint8Array := js.Global().Get("Uint8Array").New(len(v))
+		js.CopyBytesToJS(dataUint8Array, []byte(v))
+		obj.Set(k, dataUint8Array)
+	}
+
+	return w.PostMessage(safejs.Safe(obj), nil)
+}
+
+func GetMsgType(event worker.MessageEvent) (string, *safejs.Value, error) {
+	data, err := event.Data()
+	if err != nil {
+		return "", nil, err
+	}
+
+	mt, err := data.Get("msgType")
+	if err != nil {
+		return "", nil, err
+	}
+	msgTypeLen, err := mt.Length()
+	if err != nil {
+		return "", nil, err
+	}
+
+	mstType := make([]byte, msgTypeLen)
+	safejs.CopyBytesToGo(mstType, mt)
+
+	return string(mstType), &data, nil
+}
+
+func SetMsgType(data *js.Value, msgType string) {
+	msgTypeUint8Array := js.Global().Get("Uint8Array").New(len(msgType))
+	js.CopyBytesToJS(msgTypeUint8Array, []byte(msgType))
+	data.Set("msgType", msgTypeUint8Array)
+}
+
+func ParseEventDataField(data *safejs.Value, field string) (string, error) {
+	fieldUint8Array, err := data.Get(field)
+	if err != nil {
+		return "", err
+	}
+	fieldLen, err := fieldUint8Array.Length()
+	if err != nil {
+		return "", err
+	}
+
+	fieldData := make([]byte, fieldLen)
+	safejs.CopyBytesToGo(fieldData, fieldUint8Array)
+
+	return string(fieldData), nil
 }
