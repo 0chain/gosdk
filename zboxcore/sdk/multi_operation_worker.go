@@ -198,7 +198,8 @@ func (mo *MultiOperation) Process() error {
 	swg.Wait()
 
 	if ctx.Err() != nil {
-		return context.Cause(ctx)
+		err := context.Cause(ctx)
+		return err
 	}
 
 	// Check consensus
