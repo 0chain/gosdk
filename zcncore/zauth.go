@@ -112,6 +112,46 @@ func CallZauthRevoke(serverAddr, token, clientID, publicKey string) error {
 	return nil
 }
 
+func CallZauthDelete(serverAddr, token, userID, clientID string) error {
+	endpoint := serverAddr + "/delete/" + clientID
+	req, err := http.NewRequest("POST", endpoint, nil)
+	if err != nil {
+		return errors.Wrap(err, "failed to create HTTP request")
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Jwt-Token", token)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return errors.Wrap(err, "failed to send HTTP request")
+	}
+
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		errMsg, _ := io.ReadAll(resp.Body)
+		if len(errMsg) > 0 {
+			return errors.Errorf("code: %d, err: %s", resp.StatusCode, string(errMsg))
+		}
+
+		return errors.Errorf("code: %d", resp.StatusCode)
+	}
+
+	var rsp struct {
+		Result string `json:"result"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&rsp); err != nil {
+		return errors.Wrap(err, "failed to decode response body")
+	}
+
+	if rsp.Result != "success" {
+		return errors.New("failed to setup zauth server")
+	}
+
+	return nil
+}
+
 func CallZvaultNewWalletString(serverAddr, token, clientID, passphrase string) (string, error) {
 	// Add your code here
 	endpoint := serverAddr + "/generate"
