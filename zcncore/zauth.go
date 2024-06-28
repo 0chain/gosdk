@@ -112,7 +112,7 @@ func CallZauthRevoke(serverAddr, token, clientID, publicKey string) error {
 	return nil
 }
 
-func CallZauthDelete(serverAddr, token, userID, clientID string) error {
+func CallZauthDelete(serverAddr, token, clientID string) error {
 	endpoint := serverAddr + "/delete/" + clientID
 	req, err := http.NewRequest("POST", endpoint, nil)
 	if err != nil {
@@ -152,7 +152,7 @@ func CallZauthDelete(serverAddr, token, userID, clientID string) error {
 	return nil
 }
 
-func CallZvaultNewWalletString(serverAddr, token, clientID, passphrase string) (string, error) {
+func CallZvaultNewWalletString(serverAddr, token, clientID string) (string, error) {
 	// Add your code here
 	endpoint := serverAddr + "/generate"
 	if clientID != "" {
@@ -170,7 +170,6 @@ func CallZvaultNewWalletString(serverAddr, token, clientID, passphrase string) (
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-Jwt-Token", token)
-	req.Header.Set("X-Passphrase", passphrase)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -196,7 +195,7 @@ func CallZvaultNewWalletString(serverAddr, token, clientID, passphrase string) (
 	return string(d), nil
 }
 
-func CallZvaultStoreKeyString(serverAddr, token, privateKey, passphrase string) (string, error) {
+func CallZvaultStoreKeyString(serverAddr, token, privateKey string) (string, error) {
 	// Add your code here
 	endpoint := serverAddr + "/store"
 
@@ -215,7 +214,6 @@ func CallZvaultStoreKeyString(serverAddr, token, privateKey, passphrase string) 
 	fmt.Println("call zvault /store:", endpoint)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-Jwt-Token", token)
-	req.Header.Set("X-Passphrase", passphrase)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -239,6 +237,70 @@ func CallZvaultStoreKeyString(serverAddr, token, privateKey, passphrase string) 
 	}
 
 	return string(d), nil
+}
+
+func CallZvaultDeletePrimaryKey(serverAddr, token, clientID string) error {
+	// Add your code here
+	endpoint := serverAddr + "/delete/" + clientID
+	req, err := http.NewRequest("POST", endpoint, nil)
+	if err != nil {
+		return errors.Wrap(err, "failed to create HTTP request")
+	}
+
+	fmt.Println("call zvault /delete:", endpoint)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Jwt-Token", token)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return errors.Wrap(err, "failed to send HTTP request")
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		errMsg, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("code: %d, err: %s", resp.StatusCode, string(errMsg))
+	}
+
+	_, err = io.ReadAll(resp.Body)
+	if err != nil {
+		return errors.Wrap(err, "failed to read response body")
+	}
+
+	return nil
+}
+
+func CallZvaultRevokeKey(serverAddr, token, clientID, publicKey string) error {
+	// Add your code here
+	endpoint := fmt.Sprintf("%s/revoke/%s?public_key=%s", serverAddr, clientID, publicKey)
+	req, err := http.NewRequest("POST", endpoint, nil)
+	if err != nil {
+		return errors.Wrap(err, "failed to create HTTP request")
+	}
+
+	fmt.Println("call zvault /revoke:", endpoint)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Jwt-Token", token)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return errors.Wrap(err, "failed to send HTTP request")
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		errMsg, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("code: %d, err: %s", resp.StatusCode, string(errMsg))
+	}
+
+	_, err = io.ReadAll(resp.Body)
+	if err != nil {
+		return errors.Wrap(err, "failed to read response body")
+	}
+
+	return nil
 }
 
 // ZauthSignTxn returns a function that sends a txn signing request to the zauth server
