@@ -670,6 +670,11 @@ type ResetBlobberStatsDto struct {
 	NewSavedData  int64  `json:"new_saved_data"`
 }
 
+type FixValidatorRequest struct {
+	ValidatorID string
+	BaseUrl     string
+}
+
 type Validator struct {
 	ID                       common.Key       `json:"validator_id"`
 	BaseURL                  string           `json:"url"`
@@ -1491,6 +1496,19 @@ func ResetBlobberStats(rbs *ResetBlobberStatsDto) (string, int64, error) {
 
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_RESET_BLOBBER_STATS,
+		InputArgs: rbs,
+	}
+	hash, _, n, _, err := storageSmartContractTxn(sn)
+	return hash, n, err
+}
+
+func ResetValidator(rbs *FixValidatorRequest) (string, int64, error) {
+	if !sdkInitialized {
+		return "", 0, sdkNotInitialized
+	}
+
+	var sn = transaction.SmartContractTxnData{
+		Name:      transaction.STORAGESC_FIX_VALIDATOR,
 		InputArgs: rbs,
 	}
 	hash, _, n, _, err := storageSmartContractTxn(sn)
