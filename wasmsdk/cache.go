@@ -6,6 +6,7 @@ package main
 import (
 	"time"
 
+	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/wasmsdk/jsbridge"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/sdk"
@@ -77,6 +78,6 @@ func addWebWorkers(alloc *sdk.Allocation) {
 	}
 	// wait for worker to be instantiated
 	if isCreated {
-		time.Sleep(1 * time.Second)
+		sys.Sleep(1 * time.Second)
 	}
 }
