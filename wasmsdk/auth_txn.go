@@ -8,6 +8,7 @@ import (
 	"syscall/js"
 
 	"github.com/0chain/gosdk/core/sys"
+	"github.com/0chain/gosdk/wasmsdk/jsbridge"
 	"github.com/0chain/gosdk/zcncore"
 )
 
@@ -31,6 +32,7 @@ func registerAuthorizer(this js.Value, args []js.Value) interface{} {
 
 func registerZauthServer(serverAddr, splitPublicKey string) {
 	fmt.Println("registerZauthServer...")
+	jsbridge.SetZauthServer(serverAddr)
 	sys.SetAuthorize(zcncore.ZauthSignTxn(serverAddr, splitPublicKey))
 	sys.SetAuthCommon(zcncore.ZauthAuthCommon(serverAddr, splitPublicKey))
 }

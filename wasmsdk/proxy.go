@@ -492,6 +492,7 @@ func main() {
 		peerPublicKey := os.Getenv("PEER_PUBLIC_KEY")
 		mnemonic := os.Getenv("MNEMONIC")
 		privateKey := os.Getenv("PRIVATE_KEY")
+		zauthServer := os.Getenv("ZAUTH_SERVER")
 
 		// TODO: the private key should be empty for split wallet
 		gInitProxyKeys(publicKey, privateKey)
@@ -500,7 +501,8 @@ func main() {
 			fmt.Println("isSplit:", isSplit)
 			// TODO: differe the registerAuthorizer
 			// registerZauthServer("http://18.191.13.66:8080", publicKey)
-			registerZauthServer("http://127.0.0.1:8080", publicKey)
+			// registerZauthServer("http://127.0.0.1:8080", publicKey)
+			registerZauthServer(zauthServer, publicKey)
 		}
 
 		setWallet(clientID, publicKey, peerPublicKey, publicKey, privateKey, mnemonic, isSplit)
