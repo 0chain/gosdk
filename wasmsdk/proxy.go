@@ -504,7 +504,7 @@ func main() {
 			// TODO: differe the registerAuthorizer
 			// registerZauthServer("http://18.191.13.66:8080", publicKey)
 			// registerZauthServer("http://127.0.0.1:8080", publicKey)
-			registerZauthServer(zauthServer, publicKey)
+			registerZauthServer(zauthServer)
 		}
 
 		setWallet(clientID, publicKey, peerPublicKey, publicKey, privateKey, mnemonic, isSplit)

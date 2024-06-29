@@ -30,11 +30,11 @@ func registerAuthorizer(this js.Value, args []js.Value) interface{} {
 	return nil
 }
 
-func registerZauthServer(serverAddr, splitPublicKey string) {
+func registerZauthServer(serverAddr string) {
 	fmt.Println("registerZauthServer...")
 	jsbridge.SetZauthServer(serverAddr)
-	sys.SetAuthorize(zcncore.ZauthSignTxn(serverAddr, splitPublicKey))
-	sys.SetAuthCommon(zcncore.ZauthAuthCommon(serverAddr, splitPublicKey))
+	sys.SetAuthorize(zcncore.ZauthSignTxn(serverAddr))
+	sys.SetAuthCommon(zcncore.ZauthAuthCommon(serverAddr))
 }
 
 // zvaultNewWallet generates new split wallet

@@ -304,7 +304,7 @@ func CallZvaultRevokeKey(serverAddr, token, clientID, publicKey string) error {
 }
 
 // ZauthSignTxn returns a function that sends a txn signing request to the zauth server
-func ZauthSignTxn(serverAddr, splitPublicKey string) sys.AuthorizeFunc {
+func ZauthSignTxn(serverAddr string) sys.AuthorizeFunc {
 	return func(msg string) (string, error) {
 		fmt.Println("zvault sign txn - in sign txn...")
 		req, err := http.NewRequest("POST", serverAddr+"/sign/txn", bytes.NewBuffer([]byte(msg)))
@@ -312,7 +312,9 @@ func ZauthSignTxn(serverAddr, splitPublicKey string) sys.AuthorizeFunc {
 			return "", errors.Wrap(err, "failed to create HTTP request")
 		}
 		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("X-Peer-Public-Key", splitPublicKey)
+		c := client.GetClient()
+		pubkey := c.Keys[0].PublicKey
+		req.Header.Set("X-Peer-Public-Key", pubkey)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -338,15 +340,18 @@ func ZauthSignTxn(serverAddr, splitPublicKey string) sys.AuthorizeFunc {
 	}
 }
 
-func ZauthAuthCommon(serverAddr, splitPublicKey string) sys.AuthorizeFunc {
+func ZauthAuthCommon(serverAddr string) sys.AuthorizeFunc {
 	return func(msg string) (string, error) {
 		// return func(msg string) (string, error) {
 		req, err := http.NewRequest("POST", serverAddr+"/sign/msg", bytes.NewBuffer([]byte(msg)))
 		if err != nil {
 			return "", errors.Wrap(err, "failed to create HTTP request")
 		}
+
+		c := client.GetClient()
+		pubkey := c.Keys[0].PublicKey
 		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("X-Peer-Public-Key", splitPublicKey)
+		req.Header.Set("X-Peer-Public-Key", pubkey)
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
