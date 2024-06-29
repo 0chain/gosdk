@@ -24,12 +24,6 @@ func setWallet(clientID, clientKey, peerPublicKey, publicKey, privateKey, mnemon
 		},
 	}
 
-	prevIsSplit := zcncore.IsWalletSplit()
-	if prevIsSplit && !isSplit {
-		// zcncore.SetWalletInfo(mnemonic, isSplit)
-		// TODO: reset back to default sign and auth methods
-	}
-
 	c := client.GetClient()
 	c.Mnemonic = mnemonic
 	c.ClientID = clientID

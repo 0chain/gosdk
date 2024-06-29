@@ -587,6 +587,11 @@ func UpdateWalletWithEventData(data *safejs.Value) error {
 	if err != nil {
 		return err
 	}
+	peerPublicKey, err := jsbridge.ParseEventDataField(data, "peer_public_key")
+	if err != nil {
+		return err
+	}
+
 	publicKey, err := jsbridge.ParseEventDataField(data, "public_key")
 	if err != nil {
 		return err
@@ -610,6 +615,6 @@ func UpdateWalletWithEventData(data *safejs.Value) error {
 	}
 
 	fmt.Println("update wallet with event data")
-	setWallet(clientID, clientKey, publicKey, privateKey, mnemonic, isSplit)
+	setWallet(clientID, clientKey, peerPublicKey, publicKey, privateKey, mnemonic, isSplit)
 	return nil
 }
