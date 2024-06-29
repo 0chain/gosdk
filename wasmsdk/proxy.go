@@ -369,7 +369,7 @@ func main() {
 				}
 
 				sys.SignWithAuth = func(hash, signatureScheme string, keys []sys.KeyPair) (string, error) {
-					fmt.Println("SignWithAuth keys:", keys)
+					fmt.Println("[worker] SignWithAuth pubkey:", keys[0])
 					sig, err := sys.Sign(hash, signatureScheme, keys)
 					if err != nil {
 						return "", fmt.Errorf("failed to sign with split key: %v", err)
@@ -415,86 +415,6 @@ func main() {
 				PrintError("__zcn_worker_wasm__.jsProxy.sign is not installed yet")
 			}
 
-			sys.SignWithAuth = func(hash, signatureScheme string, keys []sys.KeyPair) (string, error) {
-				sig, err := sys.Sign(hash, signatureScheme, keys)
-				if err != nil {
-					return "", err
-				}
-
-				data, err := json.Marshal(struct {
-					Data     string `json:"data"`
-					ClientID string `json:"client_id"`
-					Sig      string `json:"sig"`
-				}{
-					Data:     hash,
-					ClientID: client.GetClient().ClientID,
-					Sig:      sig,
-				})
-				if err != nil {
-					return "", err
-				}
-
-				if sys.AuthCommon == nil {
-					return "", errors.New("authCommon is not set")
-				}
-
-				rsp, err := sys.AuthCommon(string(data))
-				if err != nil {
-					return "", err
-				}
-
-				var sigpk struct {
-					Sig string `json:"sig"`
-				}
-
-				err = json.Unmarshal([]byte(rsp), &sigpk)
-				if err != nil {
-					return "", err
-				}
-
-				return sigpk.Sig, nil
-
-				// TODO: Note: the below is for zauth auth msg
-				// fmt.Println("SignWithAuth keys:", keys)
-				// sig, err := sys.Sign(hash, signatureScheme, keys)
-				// if err != nil {
-				// 	return "", fmt.Errorf("failed to sign with split key: %v", err)
-				// }
-
-				// data, err := json.Marshal(struct {
-				// 	Hash      string `json:"hash"`
-				// 	Signature string `json:"signature"`
-				// 	ClientID  string `json:"client_id"`
-				// }{
-				// 	Hash:      hash,
-				// 	Signature: sig,
-				// 	ClientID:  client.GetClient().ClientID,
-				// })
-				// if err != nil {
-				// 	return "", err
-				// }
-
-				// if sys.AuthCommon == nil {
-				// 	return "", errors.New("authCommon is not set")
-				// }
-
-				// rsp, err := sys.AuthCommon(string(data))
-				// if err != nil {
-				// 	return "", err
-				// }
-
-				// var sigpk struct {
-				// 	Sig string `json:"sig"`
-				// }
-
-				// err = json.Unmarshal([]byte(rsp), &sigpk)
-				// if err != nil {
-				// 	return "", err
-				// }
-
-				// return sigpk.Sig, nil
-			}
-
 			initProxyKeys := jsProxy.Get("initProxyKeys")
 			if !(initProxyKeys.IsNull() || initProxyKeys.IsUndefined()) {
 				gInitProxyKeys = func(publicKey, privateKey string) {
@@ -533,7 +453,6 @@ func main() {
 		privateKey := os.Getenv("PRIVATE_KEY")
 		zauthServer := os.Getenv("ZAUTH_SERVER")
 
-		// TODO: the private key should be empty for split wallet
 		gInitProxyKeys(publicKey, privateKey)
 
 		if isSplit {

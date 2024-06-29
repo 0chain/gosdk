@@ -50,12 +50,13 @@ func setWallet(clientID, clientKey, peerPublicKey, publicKey, privateKey, mnemon
 	if mode == "" { // main thread, need to notify the web worker to update wallet
 		// notify the web worker to update wallet
 		if err := jsbridge.PostMessageToAllWorkers(jsbridge.MsgTypeUpdateWallet, map[string]string{
-			"client_id":   clientID,
-			"client_key":  clientKey,
-			"public_key":  publicKey,
-			"private_key": privateKey,
-			"mnemonic":    mnemonic,
-			"is_split":    strconv.FormatBool(isSplit),
+			"client_id":       clientID,
+			"client_key":      clientKey,
+			"peer_public_key": peerPublicKey,
+			"public_key":      publicKey,
+			"private_key":     privateKey,
+			"mnemonic":        mnemonic,
+			"is_split":        strconv.FormatBool(isSplit),
 		}); err != nil {
 			return err
 		}
