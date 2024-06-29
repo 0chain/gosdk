@@ -6,7 +6,6 @@ package main
 import (
 	"time"
 
-	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/wasmsdk/jsbridge"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/sdk"
@@ -67,17 +66,17 @@ func reloadAllocation(allocationID string) (*sdk.Allocation, error) {
 	return it.Allocation, nil
 }
 
-func addWebWorkers(alloc *sdk.Allocation) {
+func addWebWorkers(alloc *sdk.Allocation) (isCreated bool) {
 	c := client.GetClient()
 	if c == nil || len(c.Keys) == 0 {
 		return
 	}
-	isCreated := false
+
 	for _, blober := range alloc.Blobbers {
-		_, isCreated, _ = jsbridge.NewWasmWebWorker(blober.ID, blober.Baseurl, c.ClientID, c.Keys[0].PublicKey, c.Keys[0].PrivateKey, c.Mnemonic) //nolint:errcheck
+		_, workerCreated, _ := jsbridge.NewWasmWebWorker(blober.ID, blober.Baseurl, c.ClientID, c.Keys[0].PublicKey, c.Keys[0].PrivateKey, c.Mnemonic) //nolint:errcheck
+		if workerCreated {
+			isCreated = true
+		}
 	}
-	// wait for worker to be instantiated
-	if isCreated {
-		sys.Sleep(1 * time.Second)
-	}
+	return
 }
