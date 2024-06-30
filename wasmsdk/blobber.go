@@ -630,7 +630,12 @@ func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 		result.Success = false
 		return result, errors.New("Error fetching the allocation")
 	}
-	addWebWorkers(allocationObj)
+	err = addWebWorkers(allocationObj)
+	if err != nil {
+		result.Error = err.Error()
+		result.Success = false
+		return result, err
+	}
 
 	operationRequests := make([]sdk.OperationRequest, n)
 	for idx, option := range options {
@@ -1021,10 +1026,10 @@ func terminateWorkersWithAllocation(alloc *sdk.Allocation) {
 	}
 }
 
-func createWorkers(allocationID string) bool {
+func createWorkers(allocationID string) error {
 	alloc, err := getAllocation(allocationID)
 	if err != nil {
-		return false
+		return err
 	}
 	return addWebWorkers(alloc)
 }

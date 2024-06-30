@@ -68,7 +68,7 @@ func reloadAllocation(allocationID string) (*sdk.Allocation, error) {
 	return it.Allocation, nil
 }
 
-func addWebWorkers(alloc *sdk.Allocation) (isCreated bool) {
+func addWebWorkers(alloc *sdk.Allocation) (err error) {
 	c := client.GetClient()
 	if c == nil || len(c.Keys) == 0 {
 		return
@@ -94,17 +94,16 @@ func addWebWorkers(alloc *sdk.Allocation) (isCreated bool) {
 				}
 				respChan <- nil
 			}()
-			isCreated = true
 		}
 	}
-	if !isCreated {
+	if respRequired == 0 {
 		return
 	}
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case err := <-respChan:
+		case err = <-respChan:
 			if err != nil {
 				PrintError(err)
 				return
