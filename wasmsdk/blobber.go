@@ -19,6 +19,7 @@ import (
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/pathutil"
 	"github.com/0chain/gosdk/core/sys"
+	"github.com/hack-pad/safejs"
 
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/wasmsdk/jsbridge"
@@ -629,6 +630,7 @@ func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 		result.Success = false
 		return result, errors.New("Error fetching the allocation")
 	}
+	addWebWorkers(allocationObj)
 
 	operationRequests := make([]sdk.OperationRequest, n)
 	for idx, option := range options {
@@ -1035,6 +1037,8 @@ func startListener() error {
 	if err != nil {
 		return err
 	}
+	safeVal, _ := safejs.ValueOf("startListener")
+	selfWorker.PostMessage(safeVal, nil) //nolint:errcheck
 
 	listener, err := selfWorker.Listen(ctx)
 	if err != nil {
