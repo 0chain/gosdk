@@ -8,6 +8,7 @@ import (
 	"errors"
 	"sync"
 
+	"github.com/0chain/gosdk/core/version"
 	"github.com/google/uuid"
 	"github.com/hack-pad/go-webworkers/worker"
 	"github.com/hack-pad/safejs"
@@ -60,7 +61,7 @@ func NewWasmWebWorker(blobberID, blobberURL, clientID, publicKey, privateKey, mn
 	w := &WasmWebWorker{
 		Name:        blobberURL,
 		Env:         []string{"BLOBBER_URL=" + blobberURL, "CLIENT_ID=" + clientID, "PRIVATE_KEY=" + privateKey, "MODE=worker", "PUBLIC_KEY=" + publicKey, "MNEMONIC=" + mnemonic},
-		Path:        "zcn.wasm",
+		Path:        "zcn.wasm?v=" + version.VERSIONSTR,
 		subscribers: make(map[string]chan worker.MessageEvent),
 	}
 
@@ -108,6 +109,7 @@ func (ww *WasmWebWorker) SubscribeToEvents(remotePath string, ch chan worker.Mes
 		ww.cancelContext = cancel
 		eventChan, err := ww.Listen(ctx)
 		if err != nil {
+			ww.subMutex.Unlock()
 			return err
 		}
 		go ww.ListenForEvents(eventChan)
