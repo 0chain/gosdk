@@ -102,7 +102,8 @@ func addWebWorkers(alloc *sdk.Allocation) (err error) {
 	for {
 		select {
 		case <-ctx.Done():
-			return
+			PrintError(ctx.Err())
+			return ctx.Err()
 		case err = <-respChan:
 			if err != nil {
 				PrintError(err)
