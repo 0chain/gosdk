@@ -8,9 +8,12 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"path"
 	"strings"
 	"syscall/js"
 	"text/template"
+
+	"github.com/0chain/gosdk/core/version"
 )
 
 //go:embed zcnworker.js.tpl
@@ -20,28 +23,31 @@ func buildWorkerJS(args, env []string, path string) (string, error) {
 	return buildJS(args, env, path, WorkerJSTpl)
 }
 
-func buildJS(args, env []string, path string, tpl []byte) (string, error) {
+func buildJS(args, env []string, wasmPath string, tpl []byte) (string, error) {
 	var workerJS bytes.Buffer
 
 	if len(args) == 0 {
-		args = []string{path}
+		args = []string{wasmPath}
 	}
 
 	if len(env) == 0 {
 		env = os.Environ()
 	}
 
-	if uRL, err := url.ParseRequestURI(path); err != nil || !uRL.IsAbs() {
+	if uRL, err := url.ParseRequestURI(wasmPath); err != nil || !uRL.IsAbs() {
 		origin := js.Global().Get("location").Get("origin").String()
-		baseURL, err := url.ParseRequestURI(origin)
+		u, err := url.Parse(origin)
 		if err != nil {
 			return "", err
 		}
-		path = baseURL.JoinPath(path).String()
+		u.Path = path.Join(u.Path, wasmPath)
+		params := url.Values{}
+		params.Add("v", version.VERSIONSTR)
+		u.RawQuery = params.Encode()
+		wasmPath = u.String()
 	}
-
 	data := templateData{
-		Path: path,
+		Path: wasmPath,
 		Args: args,
 		Env:  env,
 	}
