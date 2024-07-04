@@ -1200,19 +1200,20 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 		if selected.fileref.ActualFileHashSignature != fRef.ActualFileHashSignature {
 			continue
 		}
-
-		isValid, err := sys.VerifyWith(
-			req.allocOwnerPubKey,
-			fRef.ValidationRootSignature,
-			fRef.ActualFileHashSignature+fRef.ValidationRoot,
-		)
-		if err != nil {
-			l.Logger.Error(err)
-			continue
-		}
-		if !isValid {
-			l.Logger.Error("invalid validation root signature")
-			continue
+		if fRef.ValidationRoot != "" && fRef.ValidationRootSignature != "" {
+			isValid, err := sys.VerifyWith(
+				req.allocOwnerPubKey,
+				fRef.ValidationRootSignature,
+				fRef.ActualFileHashSignature+fRef.ValidationRoot,
+			)
+			if err != nil {
+				l.Logger.Error(err, "allocOwnerPubKey: ", req.allocOwnerPubKey, " validationRootSignature: ", fRef.ValidationRootSignature, " actualFileHashSignature: ", fRef.ActualFileHashSignature, " validationRoot: ", fRef.ValidationRoot)
+				continue
+			}
+			if !isValid {
+				l.Logger.Error("invalid validation root signature")
+				continue
+			}
 		}
 
 		blobber := req.blobbers[fmr.blobberIdx]
