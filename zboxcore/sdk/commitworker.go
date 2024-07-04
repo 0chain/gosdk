@@ -193,10 +193,13 @@ func (commitreq *CommitRequest) processCommit() {
 	for _, change := range commitreq.changes {
 		err = change.ProcessChange(rootRef, fileIDMeta)
 		if err != nil {
-			commitreq.result = ErrorCommitResult(err.Error())
-			return
+			if !errors.Is(err, allocationchange.ErrRefNotFound) {
+				commitreq.result = ErrorCommitResult(err.Error())
+				return
+			}
+		} else {
+			size += change.GetSize()
 		}
-		size += change.GetSize()
 	}
 	rootRef.CalculateHash()
 	var chainHash string

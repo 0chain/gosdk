@@ -13,6 +13,8 @@ type DeleteFileChange struct {
 	FileMetaRef fileref.RefEntity
 }
 
+var ErrRefNotFound = errors.New("ref_not_found", "Ref not found")
+
 func (ch *DeleteFileChange) ProcessChange(rootRef *fileref.Ref, _ map[string]string) (err error) {
 
 	if ch.FileMetaRef.GetPath() == "/" {
@@ -39,7 +41,7 @@ func (ch *DeleteFileChange) ProcessChange(rootRef *fileref.Ref, _ map[string]str
 		}
 
 		if !found {
-			err = errors.New("invalid_reference_path", "Invalid reference path from the blobber")
+			err = ErrRefNotFound
 			return
 		}
 	}
