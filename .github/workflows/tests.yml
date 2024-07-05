@@ -105,6 +105,7 @@ jobs:
       - name: "Parse Tenderly virtual testnet creation transaction result"
         run: |
           echo "TENDERLY_VIRTUAL_TESTNET_ID=$(echo '${{ env.TENDERLY_CREATION_INFO }}' | jq -r '.container.id')" >> $GITHUB_ENV
+          echo "TENDERLY_VIRTUAL_TESTNET_RPC_ID=$(echo '${{ env.TENDERLY_CREATION_INFO }}' | jq -r '.container.connectivityConfig.endpoints[0].id')" >> $GITHUB_ENV
 
       - name: "Deploy 0Chain"
         uses: 0chain/actions/deploy-0chain@master
@@ -114,10 +115,10 @@ jobs:
           teardown_condition: "TESTS_PASSED"
           custom_go_sdk_version: ${{ env.CURRENT_BRANCH_HEAD }}
           SUBGRAPH_API_URL: ${{ secrets.SUBGRAPH_API_URL }}
-          TENDERLY_VIRTUAL_TESTNET_ID: ${{ env.TENDERLY_VIRTUAL_TESTNET_ID }}
+          TENDERLY_VIRTUAL_TESTNET_RPC_ID: ${{ env.TENDERLY_VIRTUAL_TESTNET_RPC_ID }}
           graphnode_sc: ${{ secrets.GRAPHNODE_SC }}
           graphnode_network: ${{ secrets.GRAPHNODE_NETWORK }}
-          graphnode_ethereum_node_url: https://virtual.mainnet.rpc.tenderly.co/${{ env.TENDERLY_VIRTUAL_TESTNET_ID }}
+          graphnode_ethereum_node_url: https://virtual.mainnet.rpc.tenderly.co/${{ env.TENDERLY_VIRTUAL_TESTNET_RPC_ID }}
           svc_account_secret: ${{ secrets.SVC_ACCOUNT_SECRET }}
 
       - name: "Run System tests"
@@ -133,7 +134,7 @@ jobs:
           retry_failures: true
           run_frontend_tests: true
           run_smoke_tests: ${{ github.ref != 'refs/heads/staging' && github.base_ref != 'staging' && github.ref != 'refs/heads/master' && github.base_ref != 'master' }}
-          TENDERLY_VIRTUAL_TESTNET_ID: ${{ env.TENDERLY_VIRTUAL_TESTNET_ID }}
+          TENDERLY_VIRTUAL_TESTNET_RPC_ID: ${{ env.TENDERLY_VIRTUAL_TESTNET_RPC_ID }}
           DEVOPS_CHANNEL_WEBHOOK_URL: ${{ secrets.DEVOPS_CHANNEL_WEBHOOK_URL }}
           S3_ACCESS_KEY: ${{ secrets.S3_ACCESS_KEY }}
           S3_SECRET_KEY: ${{ secrets.S3_SECRET_KEY }}
