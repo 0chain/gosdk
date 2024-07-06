@@ -228,7 +228,7 @@ type OperationRequest struct {
 	IsUpdate       bool
 	IsRepair       bool // Required for repair operation
 	IsWebstreaming bool
-	EncryptedKey	string
+	EncryptedKey   string
 
 	// Required for uploads
 	Workdir         string
@@ -440,8 +440,8 @@ func (a *Allocation) RepairFile(file sys.File, remotepath string, statusCallback
 		FileMeta:      fileMeta,
 		Opts:          opts,
 		FileReader:    file,
-		Mask: &mask,
-		EncryptedKey: ref.EncryptedKey,	
+		Mask:          &mask,
+		EncryptedKey:  ref.EncryptedKey,
 	}
 	if ref.ActualFileHash == emptyFileDataHash {
 		op.FileMeta.ActualSize = 0
@@ -944,7 +944,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 				operation, newConnectionID, err = NewUploadOperation(mo.ctx, op.Workdir, mo.allocationObj, mo.connectionID, op.FileMeta, op.FileReader, true, op.IsWebstreaming, op.IsRepair, op.DownloadFile, op.StreamUpload, op.Opts...)
 
 			case constants.FileOperationCreateDir:
-				operation = NewDirOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
+				operation = NewDirOperation(op.RemotePath, op.FileMeta.CustomMeta, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 
 			default:
 				return errors.New("invalid_operation", "Operation is not valid")
