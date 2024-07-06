@@ -228,6 +228,7 @@ type OperationRequest struct {
 	IsUpdate       bool
 	IsRepair       bool // Required for repair operation
 	IsWebstreaming bool
+	EncryptedKey	string
 
 	// Required for uploads
 	Workdir         string
@@ -439,6 +440,8 @@ func (a *Allocation) RepairFile(file sys.File, remotepath string, statusCallback
 		FileMeta:      fileMeta,
 		Opts:          opts,
 		FileReader:    file,
+		Mask: &mask,
+		EncryptedKey: ref.EncryptedKey,	
 	}
 	if ref.ActualFileHash == emptyFileDataHash {
 		op.FileMeta.ActualSize = 0
@@ -2328,6 +2331,26 @@ func (a *Allocation) RepairAlloc(statusCB StatusCallback) (err error) {
 		}
 	}
 	return a.StartRepair(dir, "/", statusCB)
+}
+
+// Gets the size in bytes to repair allocation
+func (a *Allocation) RepairSize(remotePath string) (RepairSize, error) {
+	if !a.isInitialized() {
+		return RepairSize{}, notInitialized
+	}
+
+	dir, err := a.ListDir(remotePath,
+		WithListRequestForRepair(true),
+		WithListRequestPageLimit(-1),
+	)
+	if err != nil {
+		return RepairSize{}, err
+	}
+
+	repairReq := RepairRequest{
+		allocation: a,
+	}
+	return repairReq.Size(context.Background(), dir)
 }
 
 func (a *Allocation) CancelUpload(remotePath string) error {
