@@ -4,12 +4,17 @@
 package main
 
 import (
+	"errors"
+
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zcncore"
 )
 
 func setWallet(clientID, publicKey, privateKey, mnemonic string) error {
+	if mnemonic == "" {
+		return errors.New("mnemonic is required")
+	}
 	keys := []zcncrypto.KeyPair{
 		{
 			PrivateKey: privateKey,
