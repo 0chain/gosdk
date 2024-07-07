@@ -177,7 +177,6 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode, pos u
 	if err != nil {
 		return err, false
 	}
-	l.Logger.Info("Custom meta: ", req.customMeta)
 
 	if req.customMeta != "" {
 		err = formWriter.WriteField("custom_meta", req.customMeta)
@@ -247,12 +246,12 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode, pos u
 			latestStatusCode = resp.StatusCode
 
 			msg = string(respBody)
-			l.Logger.Error(blobber.Baseurl, " Response: ", msg)
 			if strings.Contains(msg, DirectoryExists) {
 				req.Consensus.Done()
 				alreadyExists = true
 				return
 			}
+			l.Logger.Error(blobber.Baseurl, " Response: ", msg)
 
 			err = errors.New("response_error", msg)
 			return
