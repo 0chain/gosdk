@@ -177,6 +177,7 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode, pos u
 	if err != nil {
 		return err, false
 	}
+	l.Logger.Info("Custom meta: ", req.customMeta)
 
 	if req.customMeta != "" {
 		err = formWriter.WriteField("custom_meta", req.customMeta)
