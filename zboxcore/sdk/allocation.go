@@ -228,7 +228,7 @@ type OperationRequest struct {
 	IsUpdate       bool
 	IsRepair       bool // Required for repair operation
 	IsWebstreaming bool
-	EncryptedKey	string
+	EncryptedKey   string
 
 	// Required for uploads
 	Workdir         string
@@ -440,8 +440,8 @@ func (a *Allocation) RepairFile(file sys.File, remotepath string, statusCallback
 		FileMeta:      fileMeta,
 		Opts:          opts,
 		FileReader:    file,
-		Mask: &mask,
-		EncryptedKey: ref.EncryptedKey,	
+		Mask:          &mask,
+		EncryptedKey:  ref.EncryptedKey,
 	}
 	if ref.ActualFileHash == emptyFileDataHash {
 		op.FileMeta.ActualSize = 0
@@ -735,7 +735,7 @@ func (a *Allocation) GetCurrentVersion() (bool, error) {
 
 	for rb := range markerChan {
 
-		if rb == nil {
+		if rb == nil || rb.lpm.LatestWM == nil {
 			continue
 		}
 
@@ -756,7 +756,7 @@ func (a *Allocation) GetCurrentVersion() (bool, error) {
 	}
 
 	if len(versionMap) == 0 {
-		return false, nil
+		return true, nil
 	}
 
 	// TODO:return if len(versionMap) == 1
