@@ -108,6 +108,7 @@ func (ww *WasmWebWorker) SubscribeToEvents(remotePath string, ch chan worker.Mes
 		ww.cancelContext = cancel
 		eventChan, err := ww.Listen(ctx)
 		if err != nil {
+			ww.subMutex.Unlock()
 			return err
 		}
 		go ww.ListenForEvents(eventChan)
