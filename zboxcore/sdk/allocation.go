@@ -43,6 +43,7 @@ var (
 	notInitialized   = errors.New("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
 	IsWasm           = false
 	MultiOpBatchSize = 50
+	RepairBatchSize  = 50
 	Workdir          string
 )
 
@@ -228,7 +229,7 @@ type OperationRequest struct {
 	IsUpdate       bool
 	IsRepair       bool // Required for repair operation
 	IsWebstreaming bool
-	EncryptedKey	string
+	EncryptedKey   string
 
 	// Required for uploads
 	Workdir         string
@@ -256,6 +257,7 @@ func SetWasm() {
 	IsWasm = true
 	BatchSize = 4
 	extraCount = 0
+	RepairBatchSize = 20
 }
 
 func (a *Allocation) SetCheckStatus(checkStatus bool) {
@@ -440,8 +442,8 @@ func (a *Allocation) RepairFile(file sys.File, remotepath string, statusCallback
 		FileMeta:      fileMeta,
 		Opts:          opts,
 		FileReader:    file,
-		Mask: &mask,
-		EncryptedKey: ref.EncryptedKey,	
+		Mask:          &mask,
+		EncryptedKey:  ref.EncryptedKey,
 	}
 	if ref.ActualFileHash == emptyFileDataHash {
 		op.FileMeta.ActualSize = 0
