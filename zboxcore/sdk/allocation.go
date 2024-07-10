@@ -43,6 +43,7 @@ var (
 	notInitialized   = errors.New("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
 	IsWasm           = false
 	MultiOpBatchSize = 50
+	RepairBatchSize  = 50
 	Workdir          string
 )
 
@@ -256,6 +257,7 @@ func SetWasm() {
 	IsWasm = true
 	BatchSize = 4
 	extraCount = 0
+	RepairBatchSize = 20
 }
 
 func (a *Allocation) SetCheckStatus(checkStatus bool) {
