@@ -10,17 +10,17 @@ import (
 
 type DeleteFileChange struct {
 	change
-	ObjectTree fileref.RefEntity
+	FileMetaRef fileref.RefEntity
 }
 
 func (ch *DeleteFileChange) ProcessChange(rootRef *fileref.Ref, _ map[string]string) (err error) {
 
-	if ch.ObjectTree.GetPath() == "/" {
+	if ch.FileMetaRef.GetPath() == "/" {
 		rootRef.Children = nil
 		return
 	}
 
-	parentPath := path.Dir(ch.ObjectTree.GetPath())
+	parentPath := path.Dir(ch.FileMetaRef.GetPath())
 
 	fields, err := common.GetPathFields(parentPath)
 	if err != nil {
@@ -45,7 +45,7 @@ func (ch *DeleteFileChange) ProcessChange(rootRef *fileref.Ref, _ map[string]str
 	}
 
 	for i, child := range dirRef.Children {
-		if child.GetName() == ch.ObjectTree.GetName() {
+		if child.GetName() == ch.FileMetaRef.GetName() {
 			dirRef.RemoveChild(i)
 			return
 		}
@@ -56,15 +56,15 @@ func (ch *DeleteFileChange) ProcessChange(rootRef *fileref.Ref, _ map[string]str
 }
 
 func (n *DeleteFileChange) GetAffectedPath() []string {
-	if n.ObjectTree != nil {
-		return []string{n.ObjectTree.GetPath()}
+	if n.FileMetaRef != nil {
+		return []string{n.FileMetaRef.GetPath()}
 	}
 	return nil
 }
 
 func (n *DeleteFileChange) GetSize() int64 {
-	if n.ObjectTree != nil {
-		return -n.ObjectTree.GetSize()
+	if n.FileMetaRef != nil {
+		return -n.FileMetaRef.GetSize()
 	}
 	return int64(0)
 }

@@ -99,13 +99,13 @@ func startCommitWorker(blobberChan chan *CommitRequest, blobberID string) {
 func (commitreq *CommitRequest) processCommit() {
 	defer commitreq.wg.Done()
 	start := time.Now()
-	l.Logger.Info("received a commit request")
+	l.Logger.Debug("received a commit request")
 	paths := make([]string, 0)
 	for _, change := range commitreq.changes {
 		paths = append(paths, change.GetAffectedPath()...)
 	}
 	if len(paths) == 0 {
-		l.Logger.Info("Nothing to commit")
+		l.Logger.Debug("Nothing to commit")
 		commitreq.result = SuccessCommitResult()
 		return
 	}
@@ -163,14 +163,14 @@ func (commitreq *CommitRequest) processCommit() {
 			commitreq.result = ErrorCommitResult(e.Error())
 			return
 		}
-		if commitreq.timestamp == lR.LatestWM.Timestamp {
-			commitreq.timestamp += 1
+		if commitreq.timestamp <= lR.LatestWM.Timestamp {
+			commitreq.timestamp = lR.LatestWM.Timestamp + 1
 		}
 
 		rootRef.CalculateHash()
 		prevAllocationRoot := rootRef.Hash
 		if prevAllocationRoot != lR.LatestWM.AllocationRoot {
-			l.Logger.Info("Allocation root from latest writemarker mismatch. Expected: " + prevAllocationRoot + " got: " + lR.LatestWM.AllocationRoot)
+			l.Logger.Error("Allocation root from latest writemarker mismatch. Expected: " + prevAllocationRoot + " got: " + lR.LatestWM.AllocationRoot)
 			errMsg := fmt.Sprintf(
 				"calculated allocation root mismatch from blobber %s. Expected: %s, Got: %s",
 				commitreq.blobber.Baseurl, prevAllocationRoot, lR.LatestWM.AllocationRoot)
@@ -210,7 +210,7 @@ func (commitreq *CommitRequest) processCommit() {
 		commitreq.result = ErrorCommitResult(err.Error())
 		return
 	}
-	l.Logger.Info("[commitBlobber]", time.Since(start).Milliseconds())
+	l.Logger.Debug("[commitBlobber]", time.Since(start).Milliseconds())
 	commitreq.result = SuccessCommitResult()
 }
 
@@ -234,8 +234,8 @@ func (req *CommitRequest) commitBlobber(
 		wm.PreviousAllocationRoot = ""
 	}
 	if wm.AllocationRoot == wm.PreviousAllocationRoot {
-		l.Logger.Error("Allocation root and previous allocation root are same")
-		return thrown.New("commit_error", "Allocation root and previous allocation root are same")
+		l.Logger.Debug("Allocation root and previous allocation root are same")
+		return nil
 	}
 	wm.ChainHash = chainHash
 	wm.FileMetaRoot = rootRef.FileMetaHash
@@ -255,12 +255,12 @@ func (req *CommitRequest) commitBlobber(
 		return err
 	}
 
-	l.Logger.Info("Committing to blobber." + req.blobber.Baseurl)
+	l.Logger.Debug("Committing to blobber." + req.blobber.Baseurl)
 	var (
 		resp           *http.Response
 		shouldContinue bool
 	)
-	for retries := 0; retries < 3; retries++ {
+	for retries := 0; retries < 6; retries++ {
 		err, shouldContinue = func() (err error, shouldContinue bool) {
 			body := new(bytes.Buffer)
 			formWriter, err := getFormWritter(req.connectionID, wmData, fileIDMetaData, body)
@@ -294,12 +294,12 @@ func (req *CommitRequest) commitBlobber(
 				return
 			}
 			if resp.StatusCode == http.StatusOK {
-				logger.Logger.Info(req.blobber.Baseurl, " committed")
+				logger.Logger.Debug(req.blobber.Baseurl, " committed")
 				return
 			}
 
 			if resp.StatusCode == http.StatusTooManyRequests {
-				logger.Logger.Info(req.blobber.Baseurl,
+				logger.Logger.Debug(req.blobber.Baseurl,
 					" got too many request error. Retrying")
 
 				var r int
@@ -315,7 +315,7 @@ func (req *CommitRequest) commitBlobber(
 			}
 
 			if strings.Contains(string(respBody), "pending_markers:") {
-				logger.Logger.Info("Commit pending for blobber ",
+				logger.Logger.Debug("Commit pending for blobber ",
 					req.blobber.Baseurl, " Retrying")
 				time.Sleep(5 * time.Second)
 				shouldContinue = true
@@ -323,7 +323,7 @@ func (req *CommitRequest) commitBlobber(
 			}
 
 			if strings.Contains(string(respBody), "chain_length_exceeded") {
-				l.Logger.Info("Chain length exceeded for blobber ",
+				l.Logger.Error("Chain length exceeded for blobber ",
 					req.blobber.Baseurl, " Retrying")
 				time.Sleep(5 * time.Second)
 				shouldContinue = true

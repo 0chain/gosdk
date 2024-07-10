@@ -13,6 +13,7 @@ import (
 	"sync"
 
 	"github.com/0chain/gosdk/core/transaction"
+	"github.com/0chain/gosdk/wasmsdk/jsbridge"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
 
@@ -195,12 +196,24 @@ func updateAllocationWithRepair(allocationID string,
 	statusBar := &StatusBar{wg: wg, isRepair: true}
 	wg.Add(1)
 
-	hash, err := allocationObj.UpdateWithRepair(size, extend, uint64(lock), addBlobberId, addBlobberAuthTicket, removeBlobberId, false, &sdk.FileOptionsParameters{}, statusBar)
-	if err == nil {
-		clearAllocation(allocationID)
+	alloc, hash, isRepairRequired, err := allocationObj.UpdateWithStatus(size, extend, uint64(lock), addBlobberId, addBlobberAuthTicket, removeBlobberId, false, &sdk.FileOptionsParameters{}, statusBar)
+	if err != nil {
+		return hash, err
+	}
+	clearAllocation(allocationID)
+
+	if isRepairRequired {
+		addWebWorkers(alloc)
+		if removeBlobberId != "" {
+			jsbridge.RemoveWorker(removeBlobberId)
+		}
+		err := alloc.RepairAlloc(statusBar)
+		if err != nil {
+			return "", err
+		}
 		wg.Wait()
 		if statusBar.err != nil {
-			return hash, statusBar.err
+			return "", statusBar.err
 		}
 	}
 
@@ -402,4 +415,12 @@ func allocationRepair(allocationID, remotePath string) error {
 		return errors.New("upload failed: unknown")
 	}
 	return nil
+}
+
+func repairSize(allocationID, remotePath string) (sdk.RepairSize, error) {
+	alloc, err := sdk.GetAllocation(allocationID)
+	if err != nil {
+		return sdk.RepairSize{}, err
+	}
+	return alloc.RepairSize(remotePath)
 }

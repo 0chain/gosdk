@@ -91,7 +91,12 @@ func Delete(allocationID, path *C.char) *C.char {
 
 	s := C.GoString(path)
 
-	err = alloc.DeleteFile(s)
+	err = alloc.DoMultiOperation([]sdk.OperationRequest{
+		{
+			OperationType: "delete",
+			RemotePath:    s,
+		},
+	})
 
 	if err != nil {
 		return WithJSON(false, err)
@@ -781,4 +786,19 @@ func PauseUpload(allocationID, remotePath *C.char) *C.char {
 		return WithJSON(false, err)
 	}
 	return WithJSON(true, nil)
+}
+
+// SetUploadMode sets upload mode
+//
+//	## Inputs
+//	- mode: 0 for low, 1 for medium, 2 for high
+func SetUploadMode(mode int) {
+	switch mode {
+	case 0:
+		sdk.SetUploadMode(sdk.UploadModeLow)
+	case 1:
+		sdk.SetUploadMode(sdk.UploadModeMedium)
+	case 2:
+		sdk.SetUploadMode(sdk.UploadModeHigh)
+	}
 }

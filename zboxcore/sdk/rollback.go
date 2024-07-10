@@ -43,12 +43,21 @@ const (
 	Rollback
 )
 
-var ErrRetryOperation = errors.New("retry_operation")
+var (
+	ErrRetryOperation = errors.New("retry_operation")
+	ErrRepairRequired = errors.New("repair_required")
+)
 
 type RollbackBlobber struct {
 	blobber      *blockchain.StorageNode
 	commitResult *CommitResult
 	lpm          *LatestPrevWriteMarker
+	blobIndex    int
+}
+
+type BlobberStatus struct {
+	ID     string
+	Status string
 }
 
 func GetWritemarker(allocID, allocTx, id, baseUrl string) (*LatestPrevWriteMarker, error) {
@@ -242,23 +251,29 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 	return thrown.New("rolback_error", fmt.Sprint("Rollback failed"))
 }
 
-func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
+func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
 
 	wg := &sync.WaitGroup{}
 	markerChan := make(chan *RollbackBlobber, len(a.Blobbers))
 	var errCnt int32
 	var markerError error
-	for _, blobber := range a.Blobbers {
+	blobberRes := make([]BlobberStatus, len(a.Blobbers))
+	for ind, blobber := range a.Blobbers {
 
 		wg.Add(1)
-		go func(blobber *blockchain.StorageNode) {
+		go func(blobber *blockchain.StorageNode, ind int) {
 
 			defer wg.Done()
+			blobStatus := BlobberStatus{
+				ID:     blobber.ID,
+				Status: "available",
+			}
 			wr, err := GetWritemarker(a.ID, a.Tx, blobber.ID, blobber.Baseurl)
 			if err != nil {
 				atomic.AddInt32(&errCnt, 1)
 				markerError = err
 				l.Logger.Error("error during getWritemarker", zap.Error(err))
+				blobStatus.Status = "unavailable"
 			}
 			if wr == nil {
 				markerChan <- nil
@@ -267,15 +282,17 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 					blobber:      blobber,
 					lpm:          wr,
 					commitResult: &CommitResult{},
+					blobIndex:    ind,
 				}
 			}
-		}(blobber)
+			blobberRes[ind] = blobStatus
+		}(blobber, ind)
 
 	}
 	wg.Wait()
 	close(markerChan)
-	if a.ParityShards > 0 && errCnt > int32(a.ParityShards) {
-		return Broken, common.NewError("check_alloc_status_failed", markerError.Error())
+	if (a.ParityShards > 0 && errCnt > int32(a.ParityShards)) || (a.ParityShards == 0 && errCnt > 0) {
+		return Broken, blobberRes, common.NewError("check_alloc_status_failed", markerError.Error())
 	}
 
 	versionMap := make(map[string][]*RollbackBlobber)
@@ -311,19 +328,21 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 		versionMap[version] = append(versionMap[version], rb)
 	}
 
-	if len(versionMap) < 2 {
-		return Commit, nil
-	}
-
 	req := a.DataShards
 
-	if len(versionMap[latestVersion]) > req {
-		return Commit, nil
+	if len(versionMap) == 0 {
+		return Commit, blobberRes, nil
+	}
+
+	if len(versionMap[latestVersion]) > req || len(versionMap[prevVersion]) > req {
+		return Commit, blobberRes, nil
 	}
 
 	if len(versionMap[latestVersion]) >= req || len(versionMap[prevVersion]) >= req || len(versionMap) > 2 {
-		// TODO: Return Repair after refactoring the repair function
-		return Repair, nil
+		for _, rb := range versionMap[prevVersion] {
+			blobberRes[rb.blobIndex].Status = "repair"
+		}
+		return Repair, blobberRes, nil
 	} else {
 		l.Logger.Info("versionMapLen", zap.Int("versionMapLen", len(versionMap)), zap.Int("latestLen", len(versionMap[latestVersion])), zap.Int("prevLen", len(versionMap[prevVersion])))
 	}
@@ -351,14 +370,14 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 
 	wg.Wait()
 	if errCnt > int32(fullConsensus) {
-		return Broken, common.NewError("rollback_failed", "Rollback failed")
+		return Broken, blobberRes, common.NewError("rollback_failed", "Rollback failed")
 	}
 
 	if errCnt == int32(fullConsensus) {
-		return Repair, nil
+		return Repair, blobberRes, nil
 	}
 
-	return Rollback, nil
+	return Rollback, blobberRes, nil
 }
 
 func (a *Allocation) RollbackWithMask(mask zboxutil.Uint128) {

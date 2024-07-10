@@ -3,6 +3,7 @@ package sdk
 import (
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -73,11 +74,15 @@ func (req *DeleteRequest) deleteBlobberFile(
 
 	for i := 0; i < 3; i++ {
 		err, shouldContinue = func() (err error, shouldContinue bool) {
-			ctx, cncl := context.WithTimeout(req.ctx, time.Minute)
+			ctx, cncl := context.WithTimeout(req.ctx, 2*time.Minute)
 			resp, err = zboxutil.Client.Do(httpreq.WithContext(ctx))
 			cncl()
 
 			if err != nil {
+				if err == io.EOF {
+					shouldContinue = true
+					return
+				}
 				logger.Logger.Error(blobber.Baseurl, "Delete: ", err)
 				return
 			}
@@ -89,7 +94,7 @@ func (req *DeleteRequest) deleteBlobberFile(
 
 			if resp.StatusCode == http.StatusOK {
 				req.consensus.Done()
-				l.Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " deleted.")
+				l.Logger.Debug(blobber.Baseurl, " "+req.remotefilepath, " deleted.")
 				return
 			}
 
@@ -153,6 +158,32 @@ func (req *DeleteRequest) getObjectTreeFromBlobber(pos uint64) (
 	return
 }
 
+func (req *DeleteRequest) getFileMetaFromBlobber(pos uint64) (fileRef *fileref.FileRef, err error) {
+	defer func() {
+		if err != nil {
+			req.maskMu.Lock()
+			req.deleteMask = req.deleteMask.And(zboxutil.NewUint128(1).Lsh(pos).Not())
+			req.maskMu.Unlock()
+		}
+	}()
+	listReq := &ListRequest{
+		allocationID:   req.allocationID,
+		allocationTx:   req.allocationTx,
+		blobbers:       req.blobbers,
+		remotefilepath: req.remotefilepath,
+		ctx:            req.ctx,
+	}
+	respChan := make(chan *fileMetaResponse)
+	go listReq.getFileMetaInfoFromBlobber(req.blobbers[pos], int(pos), respChan)
+	refRes := <-respChan
+	if refRes.err != nil {
+		err = refRes.err
+		return
+	}
+	fileRef = refRes.fileref
+	return
+}
+
 func (req *DeleteRequest) ProcessDelete() (err error) {
 	defer req.ctxCncl()
 
@@ -167,7 +198,7 @@ func (req *DeleteRequest) ProcessDelete() (err error) {
 		pos = uint64(i.TrailingZeros())
 		go func(blobberIdx uint64) {
 			defer req.wg.Done()
-			refEntity, err := req.getObjectTreeFromBlobber(blobberIdx)
+			refEntity, err := req.getFileMetaFromBlobber(blobberIdx)
 			if err == nil {
 				req.consensus.Done()
 				objectTreeRefs[blobberIdx] = refEntity
@@ -250,10 +281,10 @@ func (req *DeleteRequest) ProcessDelete() (err error) {
 	for i := req.deleteMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		newChange := &allocationchange.DeleteFileChange{}
-		newChange.ObjectTree = objectTreeRefs[pos]
-		newChange.NumBlocks = newChange.ObjectTree.GetNumBlocks()
+		newChange.FileMetaRef = objectTreeRefs[pos]
+		newChange.NumBlocks = newChange.FileMetaRef.GetNumBlocks()
 		newChange.Operation = constants.FileOperationDelete
-		newChange.Size = newChange.ObjectTree.GetSize()
+		newChange.Size = newChange.FileMetaRef.GetSize()
 		commitReq := &CommitRequest{
 			allocationID: req.allocationID,
 			allocationTx: req.allocationTx,
@@ -329,7 +360,7 @@ func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string) (
 		deleteReq.wg.Add(1)
 		go func(blobberIdx int) {
 			defer deleteReq.wg.Done()
-			refEntity, err := deleteReq.getObjectTreeFromBlobber(pos)
+			refEntity, err := deleteReq.getFileMetaFromBlobber(uint64(blobberIdx))
 			if errors.Is(err, constants.ErrNotFound) {
 				deleteReq.consensus.Done()
 				return
@@ -362,7 +393,7 @@ func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string) (
 			fmt.Sprintf("Delete failed. Required consensus %d, got %d",
 				deleteReq.consensus.consensusThresh, deleteReq.consensus.consensus))
 	}
-	l.Logger.Info("Delete Process Ended ")
+	l.Logger.Debug("Delete Process Ended ")
 	return objectTreeRefs, deleteReq.deleteMask, nil
 }
 
@@ -375,10 +406,10 @@ func (do *DeleteOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) 
 			changes[idx] = newChange
 		} else {
 			newChange := &allocationchange.DeleteFileChange{}
-			newChange.ObjectTree = ref
-			newChange.NumBlocks = newChange.ObjectTree.GetNumBlocks()
+			newChange.FileMetaRef = ref
+			newChange.NumBlocks = newChange.FileMetaRef.GetNumBlocks()
 			newChange.Operation = constants.FileOperationDelete
-			newChange.Size = newChange.ObjectTree.GetSize()
+			newChange.Size = newChange.FileMetaRef.GetSize()
 			changes[idx] = newChange
 		}
 	}

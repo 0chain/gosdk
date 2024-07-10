@@ -2,9 +2,11 @@ package sdk
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"net/http"
 	"sync"
 	"time"
@@ -42,13 +44,14 @@ type ObjectTreeRequest struct {
 	updatedDate    string // must have "2006-01-02T15:04:05.99999Z07:00" format
 	offsetDate     string // must have "2006-01-02T15:04:05.99999Z07:00" format
 	ctx            context.Context
-	wg             *sync.WaitGroup
 	Consensus
 }
 
 type oTreeResponse struct {
 	oTResult *ObjectTreeResult
 	err      error
+	hash     string
+	idx      int
 }
 
 // Paginated tree should not be collected as this will stall the client
@@ -56,63 +59,91 @@ type oTreeResponse struct {
 func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 	totalBlobbersCount := len(o.blobbers)
 	oTreeResponses := make([]oTreeResponse, totalBlobbersCount)
-	o.wg.Add(totalBlobbersCount)
+	respChan := make(chan *oTreeResponse, totalBlobbersCount)
 	for i, blob := range o.blobbers {
-		l.Logger.Info(fmt.Sprintf("Getting file refs for path %v from blobber %v", o.remotefilepath, blob.Baseurl))
-		go o.getFileRefs(&oTreeResponses[i], blob.Baseurl)
+		l.Logger.Debug(fmt.Sprintf("Getting file refs for path %v from blobber %v", o.remotefilepath, blob.Baseurl))
+		idx := i
+		baseURL := blob.Baseurl
+		go o.getFileRefs(baseURL, respChan, idx)
 	}
-	o.wg.Wait()
 	hashCount := make(map[string]int)
 	hashRefsMap := make(map[string]*ObjectTreeResult)
 	oTreeResponseErrors := make([]error, totalBlobbersCount)
-
-	for idx, oTreeResponse := range oTreeResponses {
-		oTreeResponseErrors[idx] = oTreeResponse.err
-		if oTreeResponse.err != nil {
-			l.Logger.Error("Error while getting file refs from blobber:", oTreeResponse.err)
-			continue
+	var successCount int
+	for i := 0; i < totalBlobbersCount; i++ {
+		select {
+		case <-o.ctx.Done():
+			return nil, o.ctx.Err()
+		case oTreeResponse := <-respChan:
+			oTreeResponseErrors[oTreeResponse.idx] = oTreeResponse.err
+			if oTreeResponse.err != nil {
+				if code, _ := zboxutil.GetErrorMessageCode(oTreeResponse.err.Error()); code != INVALID_PATH {
+					l.Logger.Error("Error while getting file refs from blobber:", oTreeResponse.err)
+				}
+				continue
+			}
+			successCount++
+			hash := oTreeResponse.hash
+			if _, ok := hashCount[hash]; ok {
+				hashCount[hash]++
+			} else {
+				hashCount[hash]++
+				hashRefsMap[hash] = oTreeResponse.oTResult
+			}
+			if hashCount[hash] == o.consensusThresh {
+				return oTreeResponse.oTResult, nil
+			}
 		}
-		var similarFieldRefs []SimilarField
-		for _, ref := range oTreeResponse.oTResult.Refs {
-			similarFieldRefs = append(similarFieldRefs, ref.SimilarField)
-		}
-		refsMarshall, err := json.Marshal(similarFieldRefs)
-		if err != nil {
-			continue
-		}
-		hash := zboxutil.GetRefsHash(refsMarshall)
-
-		if _, ok := hashCount[hash]; ok {
-			hashCount[hash]++
-		} else {
-			hashCount[hash]++
-			hashRefsMap[hash] = oTreeResponse.oTResult
-		}
-	}
-	majorError := zboxutil.MajorError(oTreeResponseErrors)
-	majorErrorMsg := ""
-	if majorError != nil {
-		majorErrorMsg = majorError.Error()
-	}
-	if code, _ := zboxutil.GetErrorMessageCode(majorErrorMsg); code == INVALID_PATH {
-		return &ObjectTreeResult{}, nil
 	}
 	var selected *ObjectTreeResult
-	for k, v := range hashCount {
-		if v >= o.consensusThresh {
-			selected = hashRefsMap[k]
-			break
+	if successCount < o.consensusThresh {
+		majorError := zboxutil.MajorError(oTreeResponseErrors)
+		majorErrorMsg := ""
+		if majorError != nil {
+			majorErrorMsg = majorError.Error()
+		}
+		if code, _ := zboxutil.GetErrorMessageCode(majorErrorMsg); code == INVALID_PATH {
+			return &ObjectTreeResult{}, nil
+		} else {
+			return nil, majorError
 		}
 	}
-
-	if selected != nil {
+	// build the object tree result by using consensus on individual refs
+	refHash := make(map[string]int)
+	selected = &ObjectTreeResult{}
+	minPage := int64(math.MaxInt64)
+	for _, oTreeResponse := range oTreeResponses {
+		if oTreeResponse.err != nil {
+			continue
+		}
+		if oTreeResponse.oTResult.TotalPages < minPage {
+			minPage = oTreeResponse.oTResult.TotalPages
+			selected.TotalPages = minPage
+		}
+		for _, ref := range oTreeResponse.oTResult.Refs {
+			if refHash[ref.FileMetaHash] == o.consensusThresh {
+				continue
+			}
+			refHash[ref.FileMetaHash] += 1
+			if refHash[ref.FileMetaHash] == o.consensusThresh {
+				selected.Refs = append(selected.Refs, ref)
+			}
+		}
+	}
+	if len(selected.Refs) > 0 {
+		selected.OffsetPath = selected.Refs[len(selected.Refs)-1].Path
 		return selected, nil
 	}
 	return nil, errors.New("consensus_failed", "Refs consensus is less than consensus threshold")
 }
 
-func (o *ObjectTreeRequest) getFileRefs(oTR *oTreeResponse, bUrl string) {
-	defer o.wg.Done()
+func (o *ObjectTreeRequest) getFileRefs(bUrl string, respChan chan *oTreeResponse, idx int) {
+	oTR := &oTreeResponse{
+		idx: idx,
+	}
+	defer func() {
+		respChan <- oTR
+	}()
 	oReq, err := zboxutil.NewRefsRequest(
 		bUrl,
 		o.allocationID,
@@ -133,7 +164,7 @@ func (o *ObjectTreeRequest) getFileRefs(oTR *oTreeResponse, bUrl string) {
 		return
 	}
 	oResult := ObjectTreeResult{}
-	ctx, cncl := context.WithTimeout(o.ctx, time.Second*30)
+	ctx, cncl := context.WithTimeout(o.ctx, 2*time.Minute)
 	err = zboxutil.HttpDo(ctx, cncl, oReq, func(resp *http.Response, err error) error {
 		if err != nil {
 			l.Logger.Error(err)
@@ -161,6 +192,12 @@ func (o *ObjectTreeRequest) getFileRefs(oTR *oTreeResponse, bUrl string) {
 		return
 	}
 	oTR.oTResult = &oResult
+	similarFieldRefs := make([]byte, 0, 32*len(oResult.Refs))
+	for _, ref := range oResult.Refs {
+		decodeBytes, _ := hex.DecodeString(ref.SimilarField.FileMetaHash)
+		similarFieldRefs = append(similarFieldRefs, decodeBytes...)
+	}
+	oTR.hash = zboxutil.GetRefsHash(similarFieldRefs)
 }
 
 // Blobber response will be different from each other so we should only consider similar fields
