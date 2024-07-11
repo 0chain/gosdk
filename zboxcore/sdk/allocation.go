@@ -737,7 +737,7 @@ func (a *Allocation) GetCurrentVersion() (bool, error) {
 
 	for rb := range markerChan {
 
-		if rb == nil {
+		if rb == nil || rb.lpm.LatestWM == nil {
 			continue
 		}
 
@@ -758,7 +758,7 @@ func (a *Allocation) GetCurrentVersion() (bool, error) {
 	}
 
 	if len(versionMap) == 0 {
-		return false, nil
+		return true, nil
 	}
 
 	// TODO:return if len(versionMap) == 1
