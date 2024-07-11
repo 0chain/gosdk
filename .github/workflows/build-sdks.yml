@@ -31,7 +31,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          # curl https://sh.rustup.rs -sSf | sh -s -- -y
+          curl https://sh.rustup.rs -sSf | sh -s -- -y
           ls -lha $HOME/.cargo/bin
           # export PATH=$PATH:/bin/
           . "$HOME/.cargo/env"
@@ -239,7 +239,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          # curl https://sh.rustup.rs -sSf | sh -s -- -y
+          curl https://sh.rustup.rs -sSf | sh -s -- -y
           ls -lha $HOME/.cargo/bin
           # export PATH=$PATH:/bin/
           . "$HOME/.cargo/env"
