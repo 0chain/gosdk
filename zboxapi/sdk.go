@@ -117,7 +117,7 @@ func (c *Client) createResty(ctx context.Context, csrfToken, phoneNumber string,
 	h := make(map[string]string)
 	h["X-App-Client-ID"] = c.clientID
 	h["X-App-Client-Key"] = c.clientPublicKey
-	h["X-App-Phone-Number"] = phoneNumber
+	h["X-App-User-ID"] = phoneNumber
 
 	if c.clientPrivateKey != "" {
 		data := fmt.Sprintf("%v:%v:%v", c.clientID, phoneNumber, c.clientPublicKey)
