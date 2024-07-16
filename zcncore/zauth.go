@@ -239,6 +239,38 @@ func CallZvaultStoreKeyString(serverAddr, token, privateKey string) (string, err
 	return string(d), nil
 }
 
+func CallZvaultRetrieveKeys(serverAddr, token, clientID string) (string, error) {
+	// Add your code here
+	endpoint := fmt.Sprintf("%s/keys/%s", serverAddr, clientID)
+	req, err := http.NewRequest("GET", endpoint, nil)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to create HTTP request")
+	}
+
+	fmt.Println("call zvault /keys:", endpoint)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Jwt-Token", token)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to send HTTP request")
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		errMsg, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("code: %d, err: %s", resp.StatusCode, string(errMsg))
+	}
+
+	d, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to read response body")
+	}
+
+	return string(d), nil
+}
+
 func CallZvaultDeletePrimaryKey(serverAddr, token, clientID string) error {
 	// Add your code here
 	endpoint := serverAddr + "/delete/" + clientID
@@ -301,6 +333,38 @@ func CallZvaultRevokeKey(serverAddr, token, clientID, publicKey string) error {
 	}
 
 	return nil
+}
+
+func CallZvaultRetrieveWallets(serverAddr, token string) (string, error) {
+	// Add your code here
+	endpoint := fmt.Sprintf("%s/wallets", serverAddr)
+	req, err := http.NewRequest("GET", endpoint, nil)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to create HTTP request")
+	}
+
+	fmt.Println("call zvault /keys:", endpoint)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Jwt-Token", token)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to send HTTP request")
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		errMsg, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("code: %d, err: %s", resp.StatusCode, string(errMsg))
+	}
+
+	d, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to read response body")
+	}
+
+	return string(d), nil
 }
 
 // ZauthSignTxn returns a function that sends a txn signing request to the zauth server
