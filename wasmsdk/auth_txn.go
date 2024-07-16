@@ -54,12 +54,20 @@ func zvaultStoreKey(serverAddr, token, privateKey string) (string, error) {
 	return zcncore.CallZvaultStoreKeyString(serverAddr, token, privateKey)
 }
 
-func zvaultDeletePrimaryKey(serverAddr, token, clientID string) error {
-	return zcncore.CallZvaultDeletePrimaryKey(serverAddr, token, clientID)
+func zvaultRetrieveKeys(serverAddr, token, clientID string) (string, error) {
+	return zcncore.CallZvaultRetrieveKeys(serverAddr, token, clientID)
 }
 
 func zvaultRevokeKey(serverAddr, token, clientID, publicKey string) error {
 	return zcncore.CallZvaultRevokeKey(serverAddr, token, clientID, publicKey)
+}
+
+func zvaultDeletePrimaryKey(serverAddr, token, clientID string) error {
+	return zcncore.CallZvaultDeletePrimaryKey(serverAddr, token, clientID)
+}
+
+func zvaultRetrieveWallets(serverAddr, token string) (string, error) {
+	return zcncore.CallZvaultRetrieveWallets(serverAddr, token)
 }
 
 func registerAuthCommon(this js.Value, args []js.Value) interface{} {

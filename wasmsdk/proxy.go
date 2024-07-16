@@ -326,8 +326,10 @@ func main() {
 				"zvaultNewWallet":        zvaultNewWallet,
 				"zvaultNewSplit":         zvaultNewSplit,
 				"zvaultStoreKey":         zvaultStoreKey,
-				"zvaultDeletePrimaryKey": zvaultDeletePrimaryKey,
+				"zvaultRetrieveKeys":     zvaultRetrieveKeys,
 				"zvaultRevokeKey":        zvaultRevokeKey,
+				"zvaultDeletePrimaryKey": zvaultDeletePrimaryKey,
+				"zvaultRetrieveWallets":  zvaultRetrieveWallets,
 			})
 
 			fmt.Println("__wasm_initialized__ = true;")
