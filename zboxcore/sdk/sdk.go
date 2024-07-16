@@ -1106,6 +1106,8 @@ func GetAllocationBlobbers(
 
 	params := make(map[string]string)
 	params["allocation_data"] = string(allocationData)
+	params["limit"] = string(rune(datashards + parityshards))
+
 	if len(force) > 0 && force[0] {
 		params["force"] = strconv.FormatBool(force[0])
 	}
