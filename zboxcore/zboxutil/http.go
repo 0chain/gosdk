@@ -918,7 +918,18 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 		wg.Add(1)
 		go func(sharder string) {
 			defer wg.Done()
-			urlString := fmt.Sprintf("%v/%v%v%v", sharder, SC_REST_API_URL, scAddress, relativePath)
+			allocationData := params["allocation_data"]
+
+			var parsedAllocationRequest map[string]interface{}
+			err := json.Unmarshal([]byte(allocationData), &parsedAllocationRequest)
+			if err != nil {
+				fmt.Println("Error unmarshalling allocationData:", err)
+				return
+			}
+
+			maxBlobbersPerAllocation := parsedAllocationRequest["max_blobbers_per_allocation"].(int)
+
+			urlString := fmt.Sprintf("%v/%v%v%v?limit=%v", sharder, SC_REST_API_URL, scAddress, relativePath, maxBlobbersPerAllocation)
 			urlObj, err := url.Parse(urlString)
 			if err != nil {
 				log.Error(err)
@@ -931,7 +942,6 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 			urlObj.RawQuery = q.Encode()
 			client := &http.Client{Transport: DefaultTransport}
 			response, err := client.Get(urlObj.String())
-			log.Info("urlobject", urlObj.String())
 			if err != nil {
 				blockchain.Sharders.Fail(sharder)
 				return
