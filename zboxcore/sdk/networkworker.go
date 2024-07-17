@@ -100,8 +100,6 @@ func UpdateRequired(networkDetails *Network) bool {
 func GetNetworkDetails() (*Network, error) {
 	req, ctx, cncl, err := zboxutil.NewHTTPRequest(http.MethodGet, blockchain.GetBlockWorker()+NETWORK_ENDPOINT, nil)
 
-	l.Logger.Info("Endpoint url", blockchain.GetBlockWorker()+NETWORK_ENDPOINT)
-
 	if err != nil {
 		return nil, errors.New("get_network_details_error", "Unable to create new http request with error "+err.Error())
 	}
