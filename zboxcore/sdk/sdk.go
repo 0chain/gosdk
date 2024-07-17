@@ -1100,6 +1100,7 @@ func GetAllocationBlobbers(
 		"read_price_range":  readPrice,
 		"write_price_range": writePrice,
 		"is_restricted":     isRestricted,
+		"max_blobbers_per_allocation": datashards + parityshards,
 	}
 
 	allocationData, _ := json.Marshal(allocationRequest)
