@@ -88,6 +88,7 @@ func (b *chunkedUploadFormBuilder) Build(
 		Size:              shardSize,
 		EncryptedKeyPoint: encryptedKeyPoint,
 		EncryptedKey:      encryptedKey,
+		CustomMeta:        fileMeta.CustomMeta,
 	}
 
 	for i := 0; i < numBodies; i++ {
