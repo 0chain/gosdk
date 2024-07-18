@@ -918,24 +918,16 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 		wg.Add(1)
 		go func(sharder string) {
 			defer wg.Done()
-			allocationData := params["allocation_data"]
-
-			var parsedAllocationRequest map[string]interface{}
-			err := json.Unmarshal([]byte(allocationData), &parsedAllocationRequest)
-			if err != nil {
-				fmt.Println("Error unmarshalling allocationData:", err)
-				return
-			}
-
-			maxBlobbersPerAllocation := parsedAllocationRequest["max_blobbers_per_allocation"].(int)
-
-			urlString := fmt.Sprintf("%v/%v%v%v?limit=%v", sharder, SC_REST_API_URL, scAddress, relativePath, maxBlobbersPerAllocation)
+			urlString := fmt.Sprintf("%v/%v%v%v", sharder, SC_REST_API_URL, scAddress, relativePath)
 			urlObj, err := url.Parse(urlString)
 			if err != nil {
 				log.Error(err)
 				return
 			}
 			q := urlObj.Query()
+			log.Info("URL: ", urlObj.String())
+			log.Info("params:", params)
+
 			for k, v := range params {
 				q.Add(k, v)
 			}

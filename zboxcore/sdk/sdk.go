@@ -1103,13 +1103,12 @@ func GetAllocationBlobbers(
 		"max_blobbers_per_allocation": datashards + parityshards,
 	}
 
-	allocationData, _ := json.Marshal(allocationRequest)
-
 	params := make(map[string]string)
-	params["limit"] = string(rune(datashards + parityshards))
-	params["allocation_data"] = string(allocationData)
+	// params["limit"] = string(datashards + parityshards)
+
 	l.Logger.Info("allocation", params["allocationData"])
 	l.Logger.Info("allocation", allocationRequest)
+
 	if len(force) > 0 && force[0] {
 		params["force"] = strconv.FormatBool(force[0])
 	}
