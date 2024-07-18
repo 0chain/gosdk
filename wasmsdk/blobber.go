@@ -961,6 +961,10 @@ func repairAllocation(allocationID string) error {
 	if err != nil {
 		return err
 	}
+	err = addWebWorkers(alloc)
+	if err != nil {
+		return err
+	}
 	statusBar := sdk.NewRepairBar(allocationID)
 	if statusBar == nil {
 		return errors.New("repair already in progress")
