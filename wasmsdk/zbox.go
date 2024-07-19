@@ -40,9 +40,9 @@ func createJwtToken(phoneNumber string, jwtSessionID int64, otp string) (string,
 	return zboxApiClient.CreateJwtToken(context.TODO(), phoneNumber, jwtSessionID, otp)
 }
 
-func refreshJwtToken(phoneNumber string, token string) (string, error) {
+func refreshJwtToken(phoneNumber string, token, signature string) (string, error) {
 	if zboxApiClient == nil {
 		return "", ErrZboxApiNotInitialized
 	}
-	return zboxApiClient.RefreshJwtToken(context.TODO(), phoneNumber, token)
+	return zboxApiClient.RefreshJwtToken(context.TODO(), phoneNumber, token, signature)
 }

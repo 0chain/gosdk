@@ -210,13 +210,14 @@ func (c *Client) CreateJwtToken(ctx context.Context, phoneNumber string, jwtSess
 }
 
 // RefreshJwtToken refresh jwt token
-func (c *Client) RefreshJwtToken(ctx context.Context, phoneNumber string, token string) (string, error) {
+func (c *Client) RefreshJwtToken(ctx context.Context, phoneNumber string, token, signature string) (string, error) {
 	csrfToken, err := c.GetCsrfToken(ctx)
 	if err != nil {
 		return "", err
 	}
 	headers := map[string]string{
-		"X-JWT-Token": token,
+		"X-JWT-Token":            token,
+		"X-App-Client-Signature": signature,
 	}
 
 	r, err := c.createResty(ctx, csrfToken, phoneNumber, headers)
