@@ -33,7 +33,7 @@ const FileOperationInsert = "insert"
 func listObjects(allocationID string, remotePath string, offset, pageLimit int) (*sdk.ListResult, error) {
 	defer func() {
 		if r := recover(); r != nil {
-			PrintError("Recovered in multiupload Error", r)
+			PrintError("Recovered in listObjects Error", r)
 		}
 	}()
 	alloc, err := getAllocation(allocationID)
@@ -377,7 +377,7 @@ func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expir
 func multiDownload(allocationID, jsonMultiDownloadOptions, authTicket, callbackFuncName string) (string, error) {
 	defer func() {
 		if r := recover(); r != nil {
-			PrintError("Recovered in multiupload Error", r)
+			PrintError("Recovered in multiDownload Error", r)
 		}
 	}()
 	sdkLogger.Info("starting multidownload")
