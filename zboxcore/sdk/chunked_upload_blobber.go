@@ -154,9 +154,6 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 
 	// fixed fileRef in last chunk on stream
 	if isFinal {
-		sb.fileRef.FixedMerkleRoot = formData.FixedMerkleRoot
-		sb.fileRef.ValidationRoot = formData.ValidationRoot
-
 		sb.fileRef.ChunkSize = su.chunkSize
 		sb.fileRef.Size = su.shardUploadedSize
 		sb.fileRef.Path = su.fileMeta.RemotePath

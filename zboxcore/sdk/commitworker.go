@@ -3,7 +3,6 @@ package sdk
 import (
 	"bytes"
 	"context"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -25,7 +24,6 @@ import (
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
-	"github.com/minio/sha256-simd"
 )
 
 type ReferencePathResult struct {
@@ -52,15 +50,19 @@ func SuccessCommitResult() *CommitResult {
 const MARKER_VERSION = "v2"
 
 type CommitRequest struct {
-	changes      []allocationchange.AllocationChange
-	blobber      *blockchain.StorageNode
-	allocationID string
-	allocationTx string
-	connectionID string
-	wg           *sync.WaitGroup
-	result       *CommitResult
-	timestamp    int64
-	blobberInd   uint64
+	changes       []allocationchange.AllocationChange
+	blobber       *blockchain.StorageNode
+	allocationID  string
+	allocationTx  string
+	connectionID  string
+	wg            *sync.WaitGroup
+	result        *CommitResult
+	timestamp     int64
+	blobberInd    uint64
+	version       int64
+	isRepair      bool
+	repairVersion int64
+	repairOffset  string
 }
 
 var commitChan map[string]chan *CommitRequest
@@ -100,115 +102,12 @@ func (commitreq *CommitRequest) processCommit() {
 	defer commitreq.wg.Done()
 	start := time.Now()
 	l.Logger.Debug("received a commit request")
-	paths := make([]string, 0)
-	for _, change := range commitreq.changes {
-		paths = append(paths, change.GetAffectedPath()...)
-	}
-	if len(paths) == 0 {
+	if len(commitreq.changes) == 0 {
 		l.Logger.Debug("Nothing to commit")
 		commitreq.result = SuccessCommitResult()
 		return
 	}
-	var req *http.Request
-	var lR ReferencePathResult
-	req, err := zboxutil.NewReferencePathRequest(commitreq.blobber.Baseurl, commitreq.allocationID, commitreq.allocationTx, paths)
-	if err != nil {
-		l.Logger.Error("Creating ref path req", err)
-		return
-	}
-	ctx, cncl := context.WithTimeout(context.Background(), (time.Second * 30))
-	err = zboxutil.HttpDo(ctx, cncl, req, func(resp *http.Response, err error) error {
-		if err != nil {
-			l.Logger.Error("Ref path error:", err)
-			return err
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusOK {
-			l.Logger.Error("Ref path response : ", resp.StatusCode)
-		}
-		resp_body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			l.Logger.Error("Ref path: Resp", err)
-			return err
-		}
-		if resp.StatusCode != http.StatusOK {
-			return errors.New(
-				strconv.Itoa(resp.StatusCode),
-				fmt.Sprintf("Reference path error response: Status: %d - %s ",
-					resp.StatusCode, string(resp_body)))
-		}
-		err = json.Unmarshal(resp_body, &lR)
-		if err != nil {
-			l.Logger.Error("Reference path json decode error: ", err)
-			return err
-		}
-		return nil
-	})
-
-	if err != nil {
-		commitreq.result = ErrorCommitResult(err.Error())
-		return
-	}
-	rootRef, err := lR.GetDirTree(commitreq.allocationID)
-
-	if err != nil {
-		commitreq.result = ErrorCommitResult(err.Error())
-		return
-	}
-	hasher := sha256.New()
-	if lR.LatestWM != nil {
-		err = lR.LatestWM.VerifySignature(client.GetClientPublicKey())
-		if err != nil {
-			e := errors.New("signature_verification_failed", err.Error())
-			commitreq.result = ErrorCommitResult(e.Error())
-			return
-		}
-		if commitreq.timestamp <= lR.LatestWM.Timestamp {
-			commitreq.timestamp = lR.LatestWM.Timestamp + 1
-		}
-
-		rootRef.CalculateHash()
-		prevAllocationRoot := rootRef.Hash
-		if prevAllocationRoot != lR.LatestWM.AllocationRoot {
-			l.Logger.Error("Allocation root from latest writemarker mismatch. Expected: " + prevAllocationRoot + " got: " + lR.LatestWM.AllocationRoot)
-			errMsg := fmt.Sprintf(
-				"calculated allocation root mismatch from blobber %s. Expected: %s, Got: %s",
-				commitreq.blobber.Baseurl, prevAllocationRoot, lR.LatestWM.AllocationRoot)
-			commitreq.result = ErrorCommitResult(errMsg)
-			return
-		}
-		if lR.LatestWM.ChainHash != "" {
-			prevChainHash, err := hex.DecodeString(lR.LatestWM.ChainHash)
-			if err != nil {
-				commitreq.result = ErrorCommitResult(err.Error())
-				return
-			}
-			hasher.Write(prevChainHash) //nolint:errcheck
-		}
-	}
-
-	var size int64
-	fileIDMeta := make(map[string]string)
-
-	for _, change := range commitreq.changes {
-		err = change.ProcessChange(rootRef, fileIDMeta)
-		if err != nil {
-			if !errors.Is(err, allocationchange.ErrRefNotFound) {
-				commitreq.result = ErrorCommitResult(err.Error())
-				return
-			}
-		} else {
-			size += change.GetSize()
-		}
-	}
-	rootRef.CalculateHash()
-	var chainHash string
-	if lR.Version == MARKER_VERSION {
-		decodedHash, _ := hex.DecodeString(rootRef.Hash)
-		hasher.Write(decodedHash) //nolint:errcheck
-		chainHash = hex.EncodeToString(hasher.Sum(nil))
-	}
-	err = commitreq.commitBlobber(rootRef, chainHash, lR.LatestWM, size, fileIDMeta)
+	err := commitreq.commitBlobber()
 	if err != nil {
 		commitreq.result = ErrorCommitResult(err.Error())
 		return
@@ -217,42 +116,20 @@ func (commitreq *CommitRequest) processCommit() {
 	commitreq.result = SuccessCommitResult()
 }
 
-func (req *CommitRequest) commitBlobber(
-	rootRef *fileref.Ref, chainHash string, latestWM *marker.WriteMarker, size int64,
-	fileIDMeta map[string]string) (err error) {
-
-	fileIDMetaData, err := json.Marshal(fileIDMeta)
-	if err != nil {
-		l.Logger.Error("Marshalling inode metadata failed: ", err)
-		return err
+func (req *CommitRequest) commitBlobber() (err error) {
+	vm := &marker.VersionMarker{
+		Version:      req.version,
+		Timestamp:    req.timestamp,
+		ClientID:     client.GetClientID(),
+		AllocationID: req.allocationID,
+		BlobberID:    req.blobber.ID,
 	}
-
-	wm := &marker.WriteMarker{}
-	wm.AllocationRoot = rootRef.Hash
-	wm.ChainSize = size
-	if latestWM != nil {
-		wm.PreviousAllocationRoot = latestWM.AllocationRoot
-		wm.ChainSize += latestWM.ChainSize
-	} else {
-		wm.PreviousAllocationRoot = ""
-	}
-	if wm.AllocationRoot == wm.PreviousAllocationRoot {
-		l.Logger.Debug("Allocation root and previous allocation root are same")
-		return nil
-	}
-	wm.ChainHash = chainHash
-	wm.FileMetaRoot = rootRef.FileMetaHash
-	wm.AllocationID = req.allocationID
-	wm.Size = size
-	wm.BlobberID = req.blobber.ID
-	wm.Timestamp = req.timestamp
-	wm.ClientID = client.GetClientID()
-	err = wm.Sign()
+	err = vm.Sign()
 	if err != nil {
 		l.Logger.Error("Signing writemarker failed: ", err)
 		return err
 	}
-	wmData, err := json.Marshal(wm)
+	vmData, err := json.Marshal(vm)
 	if err != nil {
 		l.Logger.Error("Creating writemarker failed: ", err)
 		return err
@@ -266,7 +143,7 @@ func (req *CommitRequest) commitBlobber(
 	for retries := 0; retries < 6; retries++ {
 		err, shouldContinue = func() (err error, shouldContinue bool) {
 			body := new(bytes.Buffer)
-			formWriter, err := getFormWritter(req.connectionID, wmData, fileIDMetaData, body)
+			formWriter, err := getFormWritter(req.connectionID, vmData, body)
 			if err != nil {
 				l.Logger.Error("Creating form writer failed: ", err)
 				return
@@ -379,19 +256,14 @@ func (commitreq *CommitRequest) calculateHashRequest(ctx context.Context, paths 
 	return err
 }
 
-func getFormWritter(connectionID string, wmData, fileIDMetaData []byte, body *bytes.Buffer) (*multipart.Writer, error) {
+func getFormWritter(connectionID string, vmData []byte, body *bytes.Buffer) (*multipart.Writer, error) {
 	formWriter := multipart.NewWriter(body)
 	err := formWriter.WriteField("connection_id", connectionID)
 	if err != nil {
 		return nil, err
 	}
 
-	err = formWriter.WriteField("write_marker", string(wmData))
-	if err != nil {
-		return nil, err
-	}
-
-	err = formWriter.WriteField("file_id_meta", string(fileIDMetaData))
+	err = formWriter.WriteField("version_marker", string(vmData))
 	if err != nil {
 		return nil, err
 	}

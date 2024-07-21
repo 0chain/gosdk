@@ -26,6 +26,10 @@ type Hasher interface {
 	WriteToValidationMT(buf []byte) error
 	// Finalize will let merkle tree know that tree is finalized with the content it has received
 	Finalize() error
+	// WriteToBlockHasher write bytes to block hasher
+	WriteToBlockHasher(buf []byte) error
+	// GetBlockHash get block hash
+	GetBlockHash() (string, error)
 }
 
 // see more detail about hash on  https://github.com/0chain/blobber/wiki/Protocols#file-hash
@@ -33,14 +37,14 @@ type hasher struct {
 	File         hash.Hash             `json:"-"`
 	FixedMT      *util.FixedMerkleTree `json:"fixed_merkle_tree"`
 	ValidationMT *util.ValidationTree  `json:"validation_merkle_tree"`
+	BlockHasher  hash.Hash             `json:"-"`
 }
 
 // CreateHasher creat Hasher instance
 func CreateHasher(dataSize int64) Hasher {
 	return &hasher{
-		File:         md5.New(),
-		FixedMT:      util.NewFixedMerkleTree(),
-		ValidationMT: util.NewValidationTree(dataSize),
+		File:        md5.New(),
+		BlockHasher: md5.New(),
 	}
 }
 
@@ -121,6 +125,31 @@ func (h *hasher) WriteToValidationMT(buf []byte) error {
 	}
 	_, err := h.ValidationMT.Write(buf)
 	return err
+}
+
+func (h *hasher) WriteToBlockHasher(buf []byte) error {
+	if h == nil {
+		return errors.Throw(constants.ErrInvalidParameter, "h")
+	}
+
+	if h.BlockHasher == nil {
+		return errors.Throw(constants.ErrInvalidParameter, "h.BlockHasher")
+	}
+
+	_, err := h.BlockHasher.Write(buf)
+	return err
+}
+
+func (h *hasher) GetBlockHash() (string, error) {
+	if h == nil {
+		return "", errors.Throw(constants.ErrInvalidParameter, "h")
+	}
+
+	if h.BlockHasher == nil {
+		return "", errors.Throw(constants.ErrInvalidParameter, "h.BlockHasher")
+	}
+
+	return hex.EncodeToString(h.BlockHasher.Sum(nil)), nil
 }
 
 func (h *hasher) Finalize() error {

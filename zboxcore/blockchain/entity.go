@@ -2,10 +2,11 @@ package blockchain
 
 import (
 	"encoding/json"
-	"github.com/0chain/gosdk/core/util"
 	"math"
 	"sync"
 	"sync/atomic"
+
+	"github.com/0chain/gosdk/core/util"
 
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/node"
@@ -51,16 +52,16 @@ type ChainConfig struct {
 
 // StakePoolSettings information.
 type StakePoolSettings struct {
-	DelegateWallet string         `json:"delegate_wallet"`
-	NumDelegates   int            `json:"num_delegates"`
-	ServiceCharge  float64        `json:"service_charge"`
+	DelegateWallet string  `json:"delegate_wallet"`
+	NumDelegates   int     `json:"num_delegates"`
+	ServiceCharge  float64 `json:"service_charge"`
 }
 
 // UpdateStakePoolSettings information.
 type UpdateStakePoolSettings struct {
-	DelegateWallet *string         `json:"delegate_wallet,omitempty"`
-	NumDelegates   *int            `json:"num_delegates,omitempty"`
-	ServiceCharge  *float64        `json:"service_charge,omitempty"`
+	DelegateWallet *string  `json:"delegate_wallet,omitempty"`
+	NumDelegates   *int     `json:"num_delegates,omitempty"`
+	ServiceCharge  *float64 `json:"service_charge,omitempty"`
 }
 
 type ValidationNode struct {
@@ -76,8 +77,9 @@ type UpdateValidationNode struct {
 }
 
 type StorageNode struct {
-	ID      string `json:"id"`
-	Baseurl string `json:"url"`
+	ID                string `json:"id"`
+	Baseurl           string `json:"url"`
+	AllocationVersion int64  `json:"-"`
 
 	skip uint64 `json:"-"` // skip on error
 }

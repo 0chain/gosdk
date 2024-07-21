@@ -140,14 +140,8 @@ type UploadFormData struct {
 	// Path remote path
 	Path string `json:"filepath,omitempty"`
 
-	// ValidationRoot is merkle root of sha256 of 64KB as leaf
-	ValidationRoot          string `json:"validation_root,omitempty"`
-	ValidationRootSignature string `json:"validation_root_signature,omitempty"`
 	// Hash hash of shard thumbnail  (encoded,encrypted)
 	ThumbnailContentHash string `json:"thumbnail_content_hash,omitempty"`
-
-	// ChallengeHash challenge hash of shard data (encoded, encrypted)
-	FixedMerkleRoot string `json:"fixed_merkle_root,omitempty"`
 
 	// ActualHash hash of original file (un-encoded, un-encrypted)
 	ActualHash              string `json:"actual_hash,omitempty"`
@@ -164,13 +158,14 @@ type UploadFormData struct {
 	EncryptedKey      string `json:"encrypted_key,omitempty"`
 	EncryptedKeyPoint string `json:"encrypted_key_point,omitempty"`
 
-	IsFinal         bool  `json:"is_final,omitempty"`          // all of chunks are uploaded
-	ChunkStartIndex int   `json:"chunk_start_index,omitempty"` // start index of chunks.
-	ChunkEndIndex   int   `json:"chunk_end_index,omitempty"`   // end index of chunks. all chunks MUST be uploaded one by one because of streaming merkle hash
-	ChunkSize       int64 `json:"chunk_size,omitempty"`        // the size of a chunk. 64*1024 is default
-	UploadOffset    int64 `json:"upload_offset,omitempty"`     // It is next position that new incoming chunk should be append to
-	Size            int64 `json:"size"`                        // total size of shard
-
+	IsFinal           bool   `json:"is_final,omitempty"`          // all of chunks are uploaded
+	ChunkStartIndex   int    `json:"chunk_start_index,omitempty"` // start index of chunks.
+	ChunkEndIndex     int    `json:"chunk_end_index,omitempty"`   // end index of chunks. all chunks MUST be uploaded one by one because of streaming merkle hash
+	ChunkSize         int64  `json:"chunk_size,omitempty"`        // the size of a chunk. 64*1024 is default
+	UploadOffset      int64  `json:"upload_offset,omitempty"`     // It is next position that new incoming chunk should be append to
+	Size              int64  `json:"size"`                        // total size of shard
+	DataHash          string `json:"data_hash,omitempty"`         // hash of shard data (encoded,encrypted)
+	DataHashSignature string `json:"data_hash_signature,omitempty"`
 }
 
 // UploadProgress progress of upload

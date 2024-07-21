@@ -292,6 +292,7 @@ func (mo *MultiOperation) Process() error {
 			wg:           wg,
 			timestamp:    timestamp,
 			blobberInd:   pos,
+			version:      mo.allocationObj.Blobbers[pos].AllocationVersion + 1,
 		}
 
 		commitReq.changes = append(commitReq.changes, mo.changes[pos]...)
@@ -334,6 +335,13 @@ func (mo *MultiOperation) Process() error {
 	} else {
 		for _, op := range mo.operations {
 			op.Completed(mo.allocationObj)
+		}
+		if singleClientMode && !mo.isRepair {
+			for _, commitReq := range commitReqs {
+				if commitReq.result.Success {
+					mo.allocationObj.Blobbers[commitReq.blobberInd].AllocationVersion++
+				}
+			}
 		}
 	}
 

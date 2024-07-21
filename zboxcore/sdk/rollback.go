@@ -3,7 +3,6 @@ package sdk
 import (
 	"bytes"
 	"context"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -24,7 +23,6 @@ import (
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
-	"github.com/minio/sha256-simd"
 	"go.uber.org/zap"
 )
 
@@ -32,6 +30,10 @@ type LatestPrevWriteMarker struct {
 	LatestWM *marker.WriteMarker `json:"latest_write_marker"`
 	PrevWM   *marker.WriteMarker `json:"prev_write_marker"`
 	Version  string              `json:"version"`
+}
+
+type LatestVersionMarker struct {
+	VersionMarker *marker.VersionMarker `json:"version_marker"`
 }
 
 type AllocStatus byte
@@ -51,7 +53,7 @@ var (
 type RollbackBlobber struct {
 	blobber      *blockchain.StorageNode
 	commitResult *CommitResult
-	lpm          *LatestPrevWriteMarker
+	lvm          *LatestVersionMarker
 	blobIndex    int
 }
 
@@ -60,9 +62,9 @@ type BlobberStatus struct {
 	Status string
 }
 
-func GetWritemarker(allocID, allocTx, id, baseUrl string) (*LatestPrevWriteMarker, error) {
+func GetWritemarker(allocID, allocTx, id, baseUrl string) (*LatestVersionMarker, error) {
 
-	var lpm LatestPrevWriteMarker
+	var lvm LatestVersionMarker
 
 	req, err := zboxutil.NewWritemarkerRequest(baseUrl, allocID, allocTx)
 	if err != nil {
@@ -96,75 +98,49 @@ func GetWritemarker(allocID, allocTx, id, baseUrl string) (*LatestPrevWriteMarke
 		if err != nil {
 			return nil, err
 		}
-		err = json.Unmarshal(body, &lpm)
+		err = json.Unmarshal(body, &lvm)
 		if err != nil {
 			return nil, err
 		}
-		if lpm.LatestWM != nil {
-			err = lpm.LatestWM.VerifySignature(client.GetClientPublicKey())
+		if lvm.VersionMarker != nil && lvm.VersionMarker.Version != 0 {
+			err = lvm.VersionMarker.VerifySignature(client.GetClientPublicKey())
 			if err != nil {
 				return nil, fmt.Errorf("signature verification failed for latest writemarker: %s", err.Error())
 			}
-			if lpm.PrevWM != nil {
-				err = lpm.PrevWM.VerifySignature(client.GetClientPublicKey())
-				if err != nil {
-					return nil, fmt.Errorf("signature verification failed for latest writemarker: %s", err.Error())
-				}
-			}
 		}
-		return &lpm, nil
+		return &lvm, nil
 	}
 
 	return nil, fmt.Errorf("writemarker error response %d", http.StatusTooManyRequests)
 }
 
 func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error {
-
-	wm := &marker.WriteMarker{}
-	wm.AllocationID = rb.lpm.LatestWM.AllocationID
-	wm.Timestamp = rb.lpm.LatestWM.Timestamp
-	wm.BlobberID = rb.lpm.LatestWM.BlobberID
-	wm.ClientID = client.GetClientID()
-	wm.Size = -rb.lpm.LatestWM.Size
-	wm.ChainSize = wm.Size + rb.lpm.LatestWM.ChainSize
-
-	if rb.lpm.PrevWM != nil {
-		wm.AllocationRoot = rb.lpm.PrevWM.AllocationRoot
-		wm.PreviousAllocationRoot = rb.lpm.PrevWM.AllocationRoot
-		wm.FileMetaRoot = rb.lpm.PrevWM.FileMetaRoot
-		if wm.AllocationRoot == rb.lpm.LatestWM.AllocationRoot {
-			return nil
-		}
-	}
-	if rb.lpm.Version == MARKER_VERSION {
-		decodedHash, _ := hex.DecodeString(wm.AllocationRoot)
-		prevChainHash, _ := hex.DecodeString(rb.lpm.LatestWM.ChainHash)
-		hasher := sha256.New()
-		hasher.Write(prevChainHash) //nolint:errcheck
-		hasher.Write(decodedHash)   //nolint:errcheck
-		wm.ChainHash = hex.EncodeToString(hasher.Sum(nil))
-	} else if rb.lpm.Version == "" {
-		wm.Size = 0
+	vm := &marker.VersionMarker{
+		ClientID:     client.GetClientID(),
+		BlobberID:    rb.lvm.VersionMarker.BlobberID,
+		AllocationID: rb.lvm.VersionMarker.AllocationID,
+		Version:      rb.lvm.VersionMarker.Version - 1,
+		Timestamp:    rb.lvm.VersionMarker.Timestamp,
 	}
 
-	err := wm.Sign()
+	err := vm.Sign()
 	if err != nil {
 		l.Logger.Error("Signing writemarker failed: ", err)
 		return err
 	}
 	body := new(bytes.Buffer)
 	formWriter := multipart.NewWriter(body)
-	wmData, err := json.Marshal(wm)
+	vmData, err := json.Marshal(vm)
 	if err != nil {
 		l.Logger.Error("Creating writemarker failed: ", err)
 		return err
 	}
 	connID := zboxutil.NewConnectionId()
-	formWriter.WriteField("write_marker", string(wmData))
+	formWriter.WriteField("version_marker", string(vmData))
 	formWriter.WriteField("connection_id", connID)
 	formWriter.Close()
 
-	req, err := zboxutil.NewRollbackRequest(rb.blobber.Baseurl, wm.AllocationID, tx, body)
+	req, err := zboxutil.NewRollbackRequest(rb.blobber.Baseurl, vm.AllocationID, tx, body)
 	if err != nil {
 		l.Logger.Error("Creating rollback request failed: ", err)
 		return err
@@ -268,22 +244,23 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
 				ID:     blobber.ID,
 				Status: "available",
 			}
-			wr, err := GetWritemarker(a.ID, a.Tx, blobber.ID, blobber.Baseurl)
+			lvm, err := GetWritemarker(a.ID, a.Tx, blobber.ID, blobber.Baseurl)
 			if err != nil {
 				atomic.AddInt32(&errCnt, 1)
 				markerError = err
 				l.Logger.Error("error during getWritemarker", zap.Error(err))
 				blobStatus.Status = "unavailable"
 			}
-			if wr == nil {
+			if lvm == nil {
 				markerChan <- nil
 			} else {
 				markerChan <- &RollbackBlobber{
 					blobber:      blobber,
-					lpm:          wr,
+					lvm:          lvm,
 					commitResult: &CommitResult{},
 					blobIndex:    ind,
 				}
+				blobber.AllocationVersion = lvm.VersionMarker.Version
 			}
 			blobberRes[ind] = blobStatus
 		}(blobber, ind)
@@ -295,30 +272,24 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
 		return Broken, blobberRes, common.NewError("check_alloc_status_failed", markerError.Error())
 	}
 
-	versionMap := make(map[string][]*RollbackBlobber)
+	versionMap := make(map[int64][]*RollbackBlobber)
 
 	var (
-		prevVersion   string
-		latestVersion string
-		highestTS     int64
+		consensusReached bool
+		latestVersion    int64
+		prevVersion      int64
 	)
 
 	for rb := range markerChan {
 
-		if rb == nil || rb.lpm.LatestWM == nil {
+		if rb == nil || rb.lvm == nil {
 			continue
 		}
 
-		version := rb.lpm.LatestWM.FileMetaRoot
-
-		if highestTS < rb.lpm.LatestWM.Timestamp {
-			prevVersion = latestVersion
-			highestTS = rb.lpm.LatestWM.Timestamp
+		version := rb.lvm.VersionMarker.Version
+		if version > latestVersion {
 			latestVersion = version
-		}
-
-		if prevVersion == "" && version != latestVersion {
-			prevVersion = version
+			prevVersion = latestVersion
 		}
 
 		if _, ok := versionMap[version]; !ok {
@@ -326,6 +297,9 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
 		}
 
 		versionMap[version] = append(versionMap[version], rb)
+		if len(versionMap[version]) >= a.DataShards && version == latestVersion {
+			consensusReached = true
+		}
 	}
 
 	req := a.DataShards
@@ -334,17 +308,15 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
 		return Commit, blobberRes, nil
 	}
 
-	if len(versionMap[latestVersion]) > req || len(versionMap[prevVersion]) > req {
+	if consensusReached {
 		return Commit, blobberRes, nil
 	}
 
-	if len(versionMap[latestVersion]) >= req || len(versionMap[prevVersion]) >= req || len(versionMap) > 2 {
-		for _, rb := range versionMap[prevVersion] {
-			blobberRes[rb.blobIndex].Status = "repair"
-		}
+	if len(versionMap[latestVersion]) >= req {
+		// for _, rb := range versionMap[prevVersion] {
+		// 	blobberRes[rb.blobIndex].Status = "repair"
+		// }
 		return Repair, blobberRes, nil
-	} else {
-		l.Logger.Info("versionMapLen", zap.Int("versionMapLen", len(versionMap)), zap.Int("latestLen", len(versionMap[latestVersion])), zap.Int("prevLen", len(versionMap[prevVersion])))
 	}
 
 	// rollback to previous version
@@ -401,7 +373,7 @@ func (a *Allocation) RollbackWithMask(mask zboxutil.Uint128) {
 			} else {
 				markerChan <- &RollbackBlobber{
 					blobber:      blobber,
-					lpm:          wr,
+					lvm:          wr,
 					commitResult: &CommitResult{},
 				}
 			}
@@ -412,7 +384,7 @@ func (a *Allocation) RollbackWithMask(mask zboxutil.Uint128) {
 	close(markerChan)
 
 	for rb := range markerChan {
-		if rb == nil || rb.lpm.LatestWM == nil {
+		if rb == nil || rb.lvm == nil {
 			continue
 		}
 		wg.Add(1)

@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"io"
 	"mime/multipart"
-	"sync"
 
 	"github.com/0chain/gosdk/zboxcore/client"
 
@@ -29,9 +28,8 @@ type ChunkedUploadFormMetadata struct {
 	FileBytesLen         int
 	ThumbnailBytesLen    int
 	ContentType          string
-	FixedMerkleRoot      string
-	ValidationRoot       string
 	ThumbnailContentHash string
+	DataHash             string
 }
 
 // CreateChunkedUploadFormBuilder create ChunkedUploadFormBuilder instance
@@ -116,12 +114,7 @@ func (b *chunkedUploadFormBuilder) Build(
 				return res, err
 			}
 
-			err = hasher.WriteToFixedMT(chunkBytes)
-			if err != nil {
-				return res, err
-			}
-
-			err = hasher.WriteToValidationMT(chunkBytes)
+			err = hasher.WriteToBlockHasher(chunkBytes)
 			if err != nil {
 				return res, err
 			}
@@ -130,50 +123,24 @@ func (b *chunkedUploadFormBuilder) Build(
 		}
 
 		if isFinal && i == numBodies-1 {
-			err = hasher.Finalize()
-			if err != nil {
-				return res, err
-			}
 
-			var (
-				wg      sync.WaitGroup
-				errChan = make(chan error, 2)
-			)
-			wg.Add(2)
-			go func() {
-				formData.FixedMerkleRoot, err = hasher.GetFixedMerkleRoot()
-				if err != nil {
-					errChan <- err
-				}
-				wg.Done()
-			}()
-			go func() {
-				formData.ValidationRoot, err = hasher.GetValidationRoot()
-				if err != nil {
-					errChan <- err
-				}
-				wg.Done()
-			}()
-			wg.Wait()
-			close(errChan)
-			for err := range errChan {
-				return res, err
-			}
 			actualHashSignature, err := client.Sign(fileMeta.ActualHash)
-			if err != nil {
-				return res, err
-			}
-
-			validationRootSignature, err := client.Sign(actualHashSignature + formData.ValidationRoot)
 			if err != nil {
 				return res, err
 			}
 
 			formData.ActualHash = fileMeta.ActualHash
 			formData.ActualFileHashSignature = actualHashSignature
-			formData.ValidationRootSignature = validationRootSignature
 			formData.ActualSize = fileMeta.ActualSize
-
+			dataHash, err := hasher.GetBlockHash()
+			if err != nil {
+				return res, err
+			}
+			formData.DataHash = dataHash
+			formData.DataHashSignature, err = client.Sign(dataHash)
+			if err != nil {
+				return res, err
+			}
 		}
 
 		thumbnailSize := len(thumbnailChunkData)
@@ -225,9 +192,8 @@ func (b *chunkedUploadFormBuilder) Build(
 		contentSlice = append(contentSlice, formWriter.FormDataContentType())
 		dataBuffers = append(dataBuffers, body)
 	}
-	metadata.FixedMerkleRoot = formData.FixedMerkleRoot
-	metadata.ValidationRoot = formData.ValidationRoot
 	metadata.ThumbnailContentHash = formData.ThumbnailContentHash
+	metadata.DataHash = formData.DataHash
 	res.dataBuffers = dataBuffers
 	res.contentSlice = contentSlice
 	res.formData = metadata

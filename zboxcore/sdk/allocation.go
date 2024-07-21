@@ -722,7 +722,7 @@ func (a *Allocation) GetCurrentVersion() (bool, error) {
 			} else {
 				markerChan <- &RollbackBlobber{
 					blobber:      blobber,
-					lpm:          wr,
+					lvm:          wr,
 					commitResult: &CommitResult{},
 				}
 			}
@@ -737,15 +737,15 @@ func (a *Allocation) GetCurrentVersion() (bool, error) {
 
 	for rb := range markerChan {
 
-		if rb == nil || rb.lpm.LatestWM == nil {
+		if rb == nil || rb.lvm == nil {
 			continue
 		}
 
-		if _, ok := versionMap[rb.lpm.LatestWM.Timestamp]; !ok {
-			versionMap[rb.lpm.LatestWM.Timestamp] = make([]*RollbackBlobber, 0)
+		if _, ok := versionMap[rb.lvm.VersionMarker.Version]; !ok {
+			versionMap[rb.lvm.VersionMarker.Version] = make([]*RollbackBlobber, 0)
 		}
 
-		versionMap[rb.lpm.LatestWM.Timestamp] = append(versionMap[rb.lpm.LatestWM.Timestamp], rb)
+		versionMap[rb.lvm.VersionMarker.Version] = append(versionMap[rb.lvm.VersionMarker.Version], rb)
 
 		if len(versionMap) > 2 {
 			return false, fmt.Errorf("more than 2 versions found")

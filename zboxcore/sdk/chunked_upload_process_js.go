@@ -212,8 +212,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 }
 
 type FinalWorkerResult struct {
-	FixedMerkleRoot      string
-	ValidationRoot       string
+	DataHash             string
 	ThumbnailContentHash string
 }
 
@@ -335,8 +334,6 @@ func (su *ChunkedUpload) listen(allEventChan []chan worker.MessageEvent, respCha
 					}
 					return
 				}
-				blobber.fileRef.FixedMerkleRoot = finalResultObj.FixedMerkleRoot
-				blobber.fileRef.ValidationRoot = finalResultObj.ValidationRoot
 				blobber.fileRef.ThumbnailHash = finalResultObj.ThumbnailContentHash
 				isFinal = true
 			}
@@ -408,8 +405,7 @@ func ProcessEventData(data safejs.Value) {
 	if formInfo.OnlyHash {
 		if formInfo.IsFinal {
 			finalResult := &FinalWorkerResult{
-				FixedMerkleRoot:      uploadData.formData.FixedMerkleRoot,
-				ValidationRoot:       uploadData.formData.ValidationRoot,
+				DataHash:             uploadData.formData.DataHash,
 				ThumbnailContentHash: uploadData.formData.ThumbnailContentHash,
 			}
 			selfPostMessage(true, true, "", remotePath, formInfo.ChunkEndIndex, finalResult)
@@ -449,8 +445,7 @@ func ProcessEventData(data safejs.Value) {
 		}
 		if formInfo.IsFinal {
 			finalResult := &FinalWorkerResult{
-				FixedMerkleRoot:      blobberData.formData.FixedMerkleRoot,
-				ValidationRoot:       blobberData.formData.ValidationRoot,
+				DataHash:             blobberData.formData.DataHash,
 				ThumbnailContentHash: blobberData.formData.ThumbnailContentHash,
 			}
 			selfPostMessage(true, true, "", remotePath, formInfo.ChunkEndIndex, finalResult)
