@@ -118,11 +118,14 @@ func (commitreq *CommitRequest) processCommit() {
 
 func (req *CommitRequest) commitBlobber() (err error) {
 	vm := &marker.VersionMarker{
-		Version:      req.version,
-		Timestamp:    req.timestamp,
-		ClientID:     client.GetClientID(),
-		AllocationID: req.allocationID,
-		BlobberID:    req.blobber.ID,
+		Version:       req.version,
+		Timestamp:     req.timestamp,
+		ClientID:      client.GetClientID(),
+		AllocationID:  req.allocationID,
+		BlobberID:     req.blobber.ID,
+		IsRepair:      req.isRepair,
+		RepairVersion: req.repairVersion,
+		RepairOffset:  req.repairOffset,
 	}
 	err = vm.Sign()
 	if err != nil {
