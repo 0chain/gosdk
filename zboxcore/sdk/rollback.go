@@ -115,6 +115,10 @@ func GetWritemarker(allocID, allocTx, id, baseUrl string) (*LatestVersionMarker,
 }
 
 func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error {
+	// don't rollback if the blobber is already in repair mode otherwise it will lead to inconsistent state
+	if rb.lvm == nil || rb.lvm.VersionMarker.IsRepair {
+		return nil
+	}
 	vm := &marker.VersionMarker{
 		ClientID:     client.GetClientID(),
 		BlobberID:    rb.lvm.VersionMarker.BlobberID,
