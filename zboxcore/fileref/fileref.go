@@ -90,6 +90,7 @@ type Ref struct {
 	ThumbnailSize       int64  `json:"thumbnail_size" mapstructure:"thumbnail_size"`
 	ActualThumbnailHash string `json:"actual_thumbnail_hash" mapstructure:"actual_thumbnail_hash"`
 	ActualThumbnailSize int64  `json:"actual_thumbnail_size" mapstructure:"actual_thumbnail_size"`
+	IsEmpty             bool   `json:"is_empty" mapstructure:"is_empty"`
 	HashToBeComputed    bool
 	ChildrenLoaded      bool
 	Children            []RefEntity      `json:"-" mapstructure:"-"`

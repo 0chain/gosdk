@@ -201,6 +201,7 @@ type Allocation struct {
 	MovedToValidators       common.Balance   `json:"moved_to_validators,omitempty"`
 	FileOptions             uint16           `json:"file_options"`
 	ThirdPartyExtendable    bool             `json:"third_party_extendable"`
+	AllocationVersion       int64            `json:"-"`
 
 	numBlockDownloads       int
 	downloadChan            chan *DownloadRequest
@@ -338,6 +339,7 @@ func (a *Allocation) InitAllocation() {
 	a.startWorker(a.ctx)
 	InitCommitWorker(a.Blobbers)
 	InitBlockDownloader(a.Blobbers, downloadWorkerCount)
+	a.CheckAllocStatus() //nolint:errcheck
 	a.initialized = true
 }
 

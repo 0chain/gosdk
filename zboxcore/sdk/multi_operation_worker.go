@@ -275,11 +275,21 @@ func (mo *MultiOperation) Process() error {
 	}
 	logger.Logger.Debug("[checkAllocStatus]", time.Since(start).Milliseconds())
 	mo.Consensus.Reset()
+	var pos uint64
+	for i := mo.operationMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		pos = uint64(i.TrailingZeros())
+		if mo.allocationObj.Blobbers[pos].AllocationVersion != mo.allocationObj.AllocationVersion {
+			mo.operationMask = mo.operationMask.And(zboxutil.NewUint128(1).Lsh(pos).Not())
+		}
+	}
 	activeBlobbers := mo.operationMask.CountOnes()
+	if activeBlobbers < mo.consensusThresh {
+		return errors.New("consensus_not_met", "Active blobbers less than consensus threshold")
+	}
 	commitReqs := make([]*CommitRequest, activeBlobbers)
 	start = time.Now()
 	wg.Add(activeBlobbers)
-	var pos uint64
+
 	var counter = 0
 	timestamp := int64(common.Now())
 	for i := mo.operationMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
@@ -342,6 +352,7 @@ func (mo *MultiOperation) Process() error {
 					mo.allocationObj.Blobbers[commitReq.blobberInd].AllocationVersion++
 				}
 			}
+			mo.allocationObj.AllocationVersion += 1
 		}
 	}
 

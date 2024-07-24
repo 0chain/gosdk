@@ -313,13 +313,14 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
 	}
 
 	if consensusReached {
+		a.AllocationVersion = latestVersion
 		return Commit, blobberRes, nil
 	}
 
 	if len(versionMap[latestVersion]) >= req {
-		// for _, rb := range versionMap[prevVersion] {
-		// 	blobberRes[rb.blobIndex].Status = "repair"
-		// }
+		for _, rb := range versionMap[prevVersion] {
+			blobberRes[rb.blobIndex].Status = "repair"
+		}
 		return Repair, blobberRes, nil
 	}
 
