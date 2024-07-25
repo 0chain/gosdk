@@ -19,6 +19,7 @@ import (
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/pathutil"
 	"github.com/0chain/gosdk/core/sys"
+	"github.com/hack-pad/safejs"
 
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/wasmsdk/jsbridge"
@@ -46,13 +47,22 @@ func listObjectsFromAuthTicket(allocationID, authTicket, lookupHash string, offs
 	return alloc.ListDirFromAuthTicket(authTicket, lookupHash, sdk.WithListRequestOffset(offset), sdk.WithListRequestPageLimit(pageLimit))
 }
 
-func cancelUpload(allocationID string, remotePath string) error {
+func cancelUpload(allocationID, remotePath string) error {
 	allocationObj, err := getAllocation(allocationID)
 	if err != nil {
 		PrintError("Error fetching the allocation", err)
 		return err
 	}
 	return allocationObj.CancelUpload(remotePath)
+}
+
+func pauseUpload(allocationID, remotePath string) error {
+	allocationObj, err := getAllocation(allocationID)
+	if err != nil {
+		PrintError("Error fetching the allocation", err)
+		return err
+	}
+	return allocationObj.PauseUpload(remotePath)
 }
 
 func createDir(allocationID, remotePath string) error {
@@ -140,11 +150,12 @@ func Delete(allocationID, remotePath string) (*FileCommandResponse, error) {
 		return nil, err
 	}
 
-	err = allocationObj.DeleteFile(remotePath)
-	if err != nil {
-		return nil, err
-	}
-
+	err = allocationObj.DoMultiOperation([]sdk.OperationRequest{
+		{
+			OperationType: constants.FileOperationDelete,
+			RemotePath:    remotePath,
+		},
+	})
 	sdkLogger.Info(remotePath + " deleted")
 
 	resp := &FileCommandResponse{
@@ -395,6 +406,7 @@ func multiDownload(allocationID, jsonMultiDownloadOptions, authTicket, callbackF
 		}
 		var mf sys.File
 		if option.DownloadToDisk {
+			terminateWorkersWithAllocation(alloc)
 			mf, err = jsbridge.NewFileWriter(fileName)
 			if err != nil {
 				PrintError(err.Error())
@@ -468,7 +480,9 @@ type BulkUploadOption struct {
 	FileSize          int64  `json:"fileSize,omitempty"`
 	ReadChunkFuncName string `json:"readChunkFuncName,omitempty"`
 	CallbackFuncName  string `json:"callbackFuncName,omitempty"`
+	Md5HashFuncName   string `json:"md5HashFuncName,omitempty"`
 	MimeType          string `json:"mimeType,omitempty"`
+	MemoryStorer      bool   `json:"memoryStorer,omitempty"`
 }
 
 type BulkUploadResult struct {
@@ -582,6 +596,18 @@ func bulkUpload(jsonBulkUploadOptions string) ([]BulkUploadResult, error) {
 	return results, nil
 }
 
+// set upload mode, default is medium, for low set 0, for high set 2
+func setUploadMode(mode int) {
+	switch mode {
+	case 0:
+		sdk.SetUploadMode(sdk.UploadModeLow)
+	case 1:
+		sdk.SetUploadMode(sdk.UploadModeMedium)
+	case 2:
+		sdk.SetUploadMode(sdk.UploadModeHigh)
+	}
+}
+
 func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 	var options []BulkUploadOption
 	result := MultiUploadResult{}
@@ -604,6 +630,13 @@ func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 		result.Success = false
 		return result, errors.New("Error fetching the allocation")
 	}
+	err = addWebWorkers(allocationObj)
+	if err != nil {
+		result.Error = err.Error()
+		result.Success = false
+		return result, err
+	}
+
 	operationRequests := make([]sdk.OperationRequest, n)
 	for idx, option := range options {
 		wg := &sync.WaitGroup{}
@@ -618,17 +651,13 @@ func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 		wg.Add(1)
 		encrypt := option.Encrypt
 		remotePath := option.RemotePath
-
-		fileReader := jsbridge.NewFileReader(option.ReadChunkFuncName, option.FileSize)
-		mimeType := option.MimeType
-		if mimeType == "" {
-			mimeType, err = zboxutil.GetFileContentType(fileReader)
-			if err != nil {
-				result.Error = "Error in file operation"
-				result.Success = false
-				return result, err
-			}
+		fileReader, err := jsbridge.NewFileReader(option.ReadChunkFuncName, option.FileSize, allocationObj.GetChunkReadSize(encrypt))
+		if err != nil {
+			result.Error = "Error in file operation"
+			result.Success = false
+			return result, err
 		}
+		mimeType := option.MimeType
 		localPath := remotePath
 		remotePath = zboxutil.RemoteClean(remotePath)
 		isabs := zboxutil.IsRemoteAbs(remotePath)
@@ -641,6 +670,15 @@ func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 		fullRemotePath := zboxutil.GetFullRemotePath(localPath, remotePath)
 
 		_, fileName := pathutil.Split(fullRemotePath)
+
+		if mimeType == "" {
+			mimeType, err = zboxutil.GetFileContentType(path.Ext(fileName), fileReader)
+			if err != nil {
+				result.Error = "Error in file operation"
+				result.Success = false
+				return result, err
+			}
+		}
 
 		fileMeta := sdk.FileMeta{
 			Path:       localPath,
@@ -658,8 +696,16 @@ func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 			sdk.WithThumbnail(option.ThumbnailBytes.Buffer),
 			sdk.WithEncrypt(encrypt),
 			sdk.WithStatusCallback(statusBar),
-			sdk.WithProgressStorer(&chunkedUploadProgressStorer{list: make(map[string]*sdk.UploadProgress)}),
 			sdk.WithChunkNumber(numBlocks),
+		}
+		if option.MemoryStorer {
+			options = append(options, sdk.WithProgressStorer(&chunkedUploadProgressStorer{
+				list: make(map[string]*sdk.UploadProgress),
+			}))
+		}
+		if option.Md5HashFuncName != "" {
+			fileHasher := newFileHasher(option.Md5HashFuncName)
+			options = append(options, sdk.WithFileHasher(fileHasher))
 		}
 		operationRequests[idx] = sdk.OperationRequest{
 			FileMeta:       fileMeta,
@@ -707,9 +753,7 @@ func uploadWithJsFuncs(allocationID, remotePath string, readChunkFuncName string
 	}
 	wg.Add(1)
 
-	fileReader := jsbridge.NewFileReader(readChunkFuncName, fileSize)
-
-	mimeType, err := zboxutil.GetFileContentType(fileReader)
+	fileReader, err := jsbridge.NewFileReader(readChunkFuncName, fileSize, allocationObj.GetChunkReadSize(encrypt))
 	if err != nil {
 		return false, err
 	}
@@ -725,6 +769,11 @@ func uploadWithJsFuncs(allocationID, remotePath string, readChunkFuncName string
 	remotePath = zboxutil.GetFullRemotePath(localPath, remotePath)
 
 	_, fileName := pathutil.Split(remotePath)
+
+	mimeType, err := zboxutil.GetFileContentType(path.Ext(fileName), fileReader)
+	if err != nil {
+		return false, err
+	}
 
 	fileMeta := sdk.FileMeta{
 		Path:       localPath,
@@ -745,7 +794,6 @@ func uploadWithJsFuncs(allocationID, remotePath string, readChunkFuncName string
 		sdk.WithThumbnail(thumbnailBytes),
 		sdk.WithEncrypt(encrypt),
 		sdk.WithStatusCallback(statusBar),
-		sdk.WithProgressStorer(&chunkedUploadProgressStorer{list: make(map[string]*sdk.UploadProgress)}),
 		sdk.WithChunkNumber(numBlocks))
 	if err != nil {
 		return false, err
@@ -788,11 +836,6 @@ func upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, w
 
 	fileReader := bytes.NewReader(fileBytes)
 
-	mimeType, err := zboxutil.GetFileContentType(fileReader)
-	if err != nil {
-		return nil, err
-	}
-
 	localPath := remotePath
 
 	remotePath = zboxutil.RemoteClean(remotePath)
@@ -804,6 +847,11 @@ func upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, w
 	remotePath = zboxutil.GetFullRemotePath(localPath, remotePath)
 
 	_, fileName := pathutil.Split(remotePath)
+
+	mimeType, err := zboxutil.GetFileContentType(path.Ext(fileName), fileReader)
+	if err != nil {
+		return nil, err
+	}
 
 	fileMeta := sdk.FileMeta{
 		Path:       localPath,
@@ -822,7 +870,6 @@ func upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, w
 		sdk.WithThumbnail(thumbnailBytes),
 		sdk.WithEncrypt(encrypt),
 		sdk.WithStatusCallback(statusBar),
-		sdk.WithProgressStorer(&chunkedUploadProgressStorer{list: make(map[string]*sdk.UploadProgress)}),
 		sdk.WithChunkNumber(numBlocks))
 	if err != nil {
 		return nil, err
@@ -901,10 +948,116 @@ func downloadBlocks(allocId string, remotePath, authTicket, lookupHash string, s
 }
 
 // GetBlobbersList get list of active blobbers, and format them as array json string
-func getBlobbers() ([]*sdk.Blobber, error) {
-	blobbs, err := sdk.GetBlobbers(true)
+func getBlobbers(stakable bool) ([]*sdk.Blobber, error) {
+	blobbs, err := sdk.GetBlobbers(true, stakable)
 	if err != nil {
 		return nil, err
 	}
 	return blobbs, err
+}
+
+func repairAllocation(allocationID string) error {
+	alloc, err := getAllocation(allocationID)
+	if err != nil {
+		return err
+	}
+	statusBar := sdk.NewRepairBar(allocationID)
+	if statusBar == nil {
+		return errors.New("repair already in progress")
+	}
+	err = alloc.RepairAlloc(statusBar)
+	if err != nil {
+		return err
+	}
+	statusBar.Wait()
+	return statusBar.CheckError()
+}
+
+func checkAllocStatus(allocationID string) (string, error) {
+	alloc, err := getAllocation(allocationID)
+	if err != nil {
+		return "", err
+	}
+	status, blobberStatus, err := alloc.CheckAllocStatus()
+	var statusStr string
+	switch status {
+	case sdk.Repair:
+		statusStr = "repair"
+	case sdk.Broken:
+		statusStr = "broken"
+	default:
+		statusStr = "ok"
+	}
+	statusResult := CheckStatusResult{
+		Status:        statusStr,
+		Err:           err,
+		BlobberStatus: blobberStatus,
+	}
+	statusBytes, err := json.Marshal(statusResult)
+	if err != nil {
+		return "", err
+	}
+
+	return string(statusBytes), err
+}
+
+func skipStatusCheck(allocationID string, checkStatus bool) error {
+	alloc, err := getAllocation(allocationID)
+	if err != nil {
+		return err
+	}
+	alloc.SetCheckStatus(checkStatus)
+	return nil
+}
+
+func terminateWorkers(allocationID string) {
+	alloc, err := getAllocation(allocationID)
+	if err != nil {
+		return
+	}
+	for _, blobber := range alloc.Blobbers {
+		jsbridge.RemoveWorker(blobber.ID)
+	}
+}
+
+func terminateWorkersWithAllocation(alloc *sdk.Allocation) {
+	for _, blobber := range alloc.Blobbers {
+		jsbridge.RemoveWorker(blobber.ID)
+	}
+}
+
+func createWorkers(allocationID string) error {
+	alloc, err := getAllocation(allocationID)
+	if err != nil {
+		return err
+	}
+	return addWebWorkers(alloc)
+}
+
+func startListener() error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	selfWorker, err := jsbridge.NewSelfWorker()
+	if err != nil {
+		return err
+	}
+	safeVal, _ := safejs.ValueOf("startListener")
+	selfWorker.PostMessage(safeVal, nil) //nolint:errcheck
+
+	listener, err := selfWorker.Listen(ctx)
+	if err != nil {
+		return err
+	}
+	sdk.InitHasherMap()
+	for event := range listener {
+		data, err := event.Data()
+		if err != nil {
+			PrintError("Error in getting data from event", err)
+			return err
+		}
+		sdk.ProcessEventData(data)
+	}
+
+	return nil
 }

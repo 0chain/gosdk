@@ -79,14 +79,14 @@ func InitBlockDownloader(blobbers []*blockchain.StorageNode, workerCount int) {
 	for _, blobber := range blobbers {
 		if _, ok := downloadBlockChan[blobber.ID]; !ok {
 			downloadBlockChan[blobber.ID] = make(chan *BlockDownloadRequest, workerCount)
-			go startBlockDownloadWorker(downloadBlockChan[blobber.ID], workerCount, blobber.ID)
+			go startBlockDownloadWorker(downloadBlockChan[blobber.ID], workerCount)
 		}
 	}
 }
 
-func startBlockDownloadWorker(blobberChan chan *BlockDownloadRequest, workers int, id string) {
+func startBlockDownloadWorker(blobberChan chan *BlockDownloadRequest, workers int) {
 	sem := semaphore.NewWeighted(int64(workers))
-	hostClient := zboxutil.GetHostClient(id)
+	fastClient := zboxutil.GetFastHTTPClient()
 	for {
 		blockDownloadReq, open := <-blobberChan
 		if !open {
@@ -97,13 +97,13 @@ func startBlockDownloadWorker(blobberChan chan *BlockDownloadRequest, workers in
 			continue
 		}
 		go func() {
-			blockDownloadReq.downloadBlobberBlock(hostClient)
+			blockDownloadReq.downloadBlobberBlock(fastClient)
 			sem.Release(1)
 		}()
 	}
 }
 
-func (req *BlockDownloadRequest) splitData(buf []byte, lim int) [][]byte {
+func splitData(buf []byte, lim int) [][]byte {
 	var chunk []byte
 	chunks := make([][]byte, 0, common.MustAddInt(len(buf)/lim, 1))
 	for len(buf) >= lim {
@@ -116,7 +116,7 @@ func (req *BlockDownloadRequest) splitData(buf []byte, lim int) [][]byte {
 	return chunks
 }
 
-func (req *BlockDownloadRequest) downloadBlobberBlock(hostClient *fasthttp.HostClient) {
+func (req *BlockDownloadRequest) downloadBlobberBlock(fastClient *fasthttp.Client) {
 	if req.numBlocks <= 0 {
 		req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.New("invalid_request", "Invalid number of blocks for download")}
 		return
@@ -157,15 +157,15 @@ func (req *BlockDownloadRequest) downloadBlobberBlock(hostClient *fasthttp.HostC
 
 		err = func() error {
 			now := time.Now()
-			statuscode, respBuf, err := hostClient.GetWithRequestTimeout(httpreq, req.respBuf, 45*time.Second)
+			statuscode, respBuf, err := fastClient.GetWithRequest(httpreq, req.respBuf)
 			fasthttp.ReleaseRequest(httpreq)
 			timeTaken := time.Since(now).Milliseconds()
 			if err != nil {
-				if errors.Is(err, fasthttp.ErrConnectionClosed) || err == syscall.EPIPE {
+				zlogger.Logger.Error("Error downloading block: ", err)
+				if errors.Is(err, fasthttp.ErrConnectionClosed) || errors.Is(err, syscall.EPIPE) {
 					shouldRetry = true
 					return errors.New("connection_closed", "Connection closed")
 				}
-				zlogger.Logger.Error("Error downloading block: ", err)
 				return err
 			}
 
@@ -182,7 +182,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock(hostClient *fasthttp.HostC
 
 			var rspData downloadBlock
 			if statuscode != http.StatusOK {
-				zlogger.Logger.Debug(fmt.Sprintf("downloadBlobberBlock FAIL - blobberID: %v, clientID: %v, blockNum: %d, retry: %d, response: %v", req.blobber.ID, client.GetClientID(), header.BlockNum, retry, string(respBuf)))
+				zlogger.Logger.Error(fmt.Sprintf("downloadBlobberBlock FAIL - blobberID: %v, clientID: %v, blockNum: %d, retry: %d, response: %v", req.blobber.ID, client.GetClientID(), header.BlockNum, retry, string(respBuf)))
 				if err = json.Unmarshal(respBuf, &rspData); err == nil {
 					return errors.New("download_error", fmt.Sprintf("Response status: %d, Error: %v,", statuscode, rspData.err))
 				}
@@ -221,15 +221,15 @@ func (req *BlockDownloadRequest) downloadBlobberBlock(hostClient *fasthttp.HostC
 			if req.encryptedKey != "" {
 				if req.authTicket != nil {
 					// ReEncryptionHeaderSize for the additional header bytes for ReEncrypt,  where chunk_size - EncryptionHeaderSize is the encrypted data size
-					rspData.BlockChunks = req.splitData(dR.Data, req.chunkSize-EncryptionHeaderSize+ReEncryptionHeaderSize)
+					rspData.BlockChunks = splitData(dR.Data, req.chunkSize-EncryptionHeaderSize+ReEncryptionHeaderSize)
 				} else {
-					rspData.BlockChunks = req.splitData(dR.Data, req.chunkSize)
+					rspData.BlockChunks = splitData(dR.Data, req.chunkSize)
 				}
 			} else {
 				if req.chunkSize == 0 {
 					req.chunkSize = CHUNK_SIZE
 				}
-				rspData.BlockChunks = req.splitData(dR.Data, req.chunkSize)
+				rspData.BlockChunks = splitData(dR.Data, req.chunkSize)
 			}
 
 			zlogger.Logger.Debug(fmt.Sprintf("downloadBlobberBlock 200 OK: blobberID: %v, clientID: %v, blockNum: %d", req.blobber.ID, client.GetClientID(), header.BlockNum))
@@ -261,7 +261,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock(hostClient *fasthttp.HostC
 
 func AddBlockDownloadReq(ctx context.Context, req *BlockDownloadRequest, rb zboxutil.DownloadBuffer, effectiveBlockSize int) {
 	if rb != nil {
-		reqCtx, cncl := context.WithTimeout(ctx, (time.Second * 10))
+		reqCtx, cncl := context.WithTimeout(ctx, (time.Second * 45))
 		defer cncl()
 		req.respBuf = rb.RequestChunk(reqCtx, int(req.blockNum))
 		if len(req.respBuf) == 0 {

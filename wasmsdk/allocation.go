@@ -13,6 +13,7 @@ import (
 	"sync"
 
 	"github.com/0chain/gosdk/core/transaction"
+	"github.com/0chain/gosdk/wasmsdk/jsbridge"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
 
@@ -45,13 +46,13 @@ func createfreeallocation(freeStorageMarker string) (string, error) {
 
 func getAllocationBlobbers(preferredBlobberURLs []string,
 	dataShards, parityShards int, size int64,
-	minReadPrice, maxReadPrice, minWritePrice, maxWritePrice int64, force bool) ([]string, error) {
+	minReadPrice, maxReadPrice, minWritePrice, maxWritePrice int64, isRestricted int, force bool) ([]string, error) {
 
 	if len(preferredBlobberURLs) > 0 {
 		return sdk.GetBlobberIds(preferredBlobberURLs)
 	}
 
-	return sdk.GetAllocationBlobbers(dataShards, parityShards, size, sdk.PriceRange{
+	return sdk.GetAllocationBlobbers(dataShards, parityShards, size, isRestricted, sdk.PriceRange{
 		Min: uint64(minReadPrice),
 		Max: uint64(maxReadPrice),
 	}, sdk.PriceRange{
@@ -61,7 +62,7 @@ func getAllocationBlobbers(preferredBlobberURLs []string,
 }
 
 func createAllocation(datashards, parityshards int, size int64,
-	minReadPrice, maxReadPrice, minWritePrice, maxWritePrice int64, lock int64, blobberIds []string, setThirdPartyExtendable bool) (
+	minReadPrice, maxReadPrice, minWritePrice, maxWritePrice int64, lock int64, blobberIds, blobberAuthTickets []string, setThirdPartyExtendable, force bool) (
 	*transaction.Transaction, error) {
 
 	options := sdk.CreateAllocationOptions{
@@ -79,6 +80,8 @@ func createAllocation(datashards, parityshards int, size int64,
 		Lock:                 uint64(lock),
 		BlobberIds:           blobberIds,
 		ThirdPartyExtendable: setThirdPartyExtendable,
+		BlobberAuthTickets:   blobberAuthTickets,
+		Force:                force,
 	}
 
 	sdkLogger.Info(options)
@@ -122,6 +125,7 @@ func UpdateForbidAllocation(allocationID string, forbidupload, forbiddelete, for
 		allocationID, // allocID,
 		0,            //lock,
 		"",           //addBlobberId,
+		"",           //addBlobberAuthTicket
 		"",           //removeBlobberId,
 		false,        //thirdPartyExtendable,
 		&sdk.FileOptionsParameters{
@@ -146,6 +150,7 @@ func freezeAllocation(allocationID string) (string, error) {
 		allocationID, // allocID,
 		0,            //lock,
 		"",           //addBlobberId,
+		"",           //addBlobberAuthTicket
 		"",           //removeBlobberId,
 		false,        //thirdPartyExtendable,
 		&sdk.FileOptionsParameters{
@@ -180,7 +185,7 @@ func updateAllocationWithRepair(allocationID string,
 	size int64,
 	extend bool,
 	lock int64,
-	addBlobberId, removeBlobberId string) (string, error) {
+	addBlobberId, addBlobberAuthTicket, removeBlobberId string) (string, error) {
 	sdk.SetWasm()
 	allocationObj, err := sdk.GetAllocation(allocationID)
 	if err != nil {
@@ -191,12 +196,24 @@ func updateAllocationWithRepair(allocationID string,
 	statusBar := &StatusBar{wg: wg, isRepair: true}
 	wg.Add(1)
 
-	hash, err := allocationObj.UpdateWithRepair(size, extend, uint64(lock), addBlobberId, removeBlobberId, false, &sdk.FileOptionsParameters{}, statusBar)
-	if err == nil {
-		clearAllocation(allocationID)
+	alloc, hash, isRepairRequired, err := allocationObj.UpdateWithStatus(size, extend, uint64(lock), addBlobberId, addBlobberAuthTicket, removeBlobberId, false, &sdk.FileOptionsParameters{}, statusBar)
+	if err != nil {
+		return hash, err
+	}
+	clearAllocation(allocationID)
+
+	if isRepairRequired {
+		addWebWorkers(alloc)
+		if removeBlobberId != "" {
+			jsbridge.RemoveWorker(removeBlobberId)
+		}
+		err := alloc.RepairAlloc(statusBar)
+		if err != nil {
+			return "", err
+		}
 		wg.Wait()
 		if statusBar.err != nil {
-			return hash, statusBar.err
+			return "", statusBar.err
 		}
 	}
 
@@ -206,8 +223,8 @@ func updateAllocationWithRepair(allocationID string,
 func updateAllocation(allocationID string,
 	size int64, extend bool,
 	lock int64,
-	addBlobberId, removeBlobberId string, setThirdPartyExtendable bool) (string, error) {
-	hash, _, err := sdk.UpdateAllocation(size, extend, allocationID, uint64(lock), addBlobberId, removeBlobberId, setThirdPartyExtendable, &sdk.FileOptionsParameters{})
+	addBlobberId, addBlobberAuthTicket, removeBlobberId string, setThirdPartyExtendable bool) (string, error) {
+	hash, _, err := sdk.UpdateAllocation(size, extend, allocationID, uint64(lock), addBlobberId, addBlobberAuthTicket, removeBlobberId, setThirdPartyExtendable, &sdk.FileOptionsParameters{})
 
 	if err == nil {
 		clearAllocation(allocationID)
@@ -398,4 +415,12 @@ func allocationRepair(allocationID, remotePath string) error {
 		return errors.New("upload failed: unknown")
 	}
 	return nil
+}
+
+func repairSize(allocationID, remotePath string) (sdk.RepairSize, error) {
+	alloc, err := sdk.GetAllocation(allocationID)
+	if err != nil {
+		return sdk.RepairSize{}, err
+	}
+	return alloc.RepairSize(remotePath)
 }

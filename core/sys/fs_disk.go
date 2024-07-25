@@ -2,7 +2,6 @@ package sys
 
 import (
 	"io/fs"
-	"io/ioutil"
 	"os"
 )
 
@@ -29,12 +28,12 @@ func (dfs *DiskFS) OpenFile(name string, flag int, perm os.FileMode) (File, erro
 
 // ReadFile reads the file named by filename and returns the contents.
 func (dfs *DiskFS) ReadFile(name string) ([]byte, error) {
-	return ioutil.ReadFile(name)
+	return os.ReadFile(name)
 }
 
 // WriteFile writes data to a file named by filename.
 func (dfs *DiskFS) WriteFile(name string, data []byte, perm os.FileMode) error {
-	return ioutil.WriteFile(name, data, perm)
+	return os.WriteFile(name, data, perm)
 }
 
 // Remove removes the named file or (empty) directory.
@@ -43,7 +42,7 @@ func (dfs *DiskFS) Remove(name string) error {
 	return os.Remove(name)
 }
 
-//MkdirAll creates a directory named path
+// MkdirAll creates a directory named path
 func (dfs *DiskFS) MkdirAll(path string, perm os.FileMode) error {
 	return os.MkdirAll(path, perm)
 }
@@ -52,4 +51,16 @@ func (dfs *DiskFS) MkdirAll(path string, perm os.FileMode) error {
 // If there is an error, it will be of type *PathError.
 func (dfs *DiskFS) Stat(name string) (fs.FileInfo, error) {
 	return os.Stat(name)
+}
+
+func (dfs *DiskFS) LoadProgress(progressID string) ([]byte, error) {
+	return dfs.ReadFile(progressID)
+}
+
+func (dfs *DiskFS) SaveProgress(progressID string, data []byte, perm fs.FileMode) error {
+	return dfs.WriteFile(progressID, data, perm)
+}
+
+func (dfs *DiskFS) RemoveProgress(progressID string) error {
+	return dfs.Remove(progressID)
 }

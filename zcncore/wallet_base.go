@@ -561,10 +561,10 @@ func SetAuthUrl(url string) error {
 	return nil
 }
 
-func getWalletBalance(clientId string) (common.Balance, error) {
+func getWalletBalance(clientId string) (common.Balance, int64, error) {
 	err := checkSdkInit()
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 
 	cb := &walletCallback{}
@@ -582,7 +582,15 @@ func getWalletBalance(clientId string) (common.Balance, error) {
 
 	cb.Wait()
 
-	return cb.balance, cb.err
+	var clientState struct {
+		Nonce   int64   `json:"nonce"`
+	}
+	err = json.Unmarshal([]byte(cb.info), &clientState)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	return cb.balance, clientState.Nonce, cb.err
 }
 
 // GetBalance retrieve wallet balance from sharders
@@ -843,17 +851,18 @@ func (p Params) Query() string {
 //	  - limit: how many miners should be fetched
 //	  - offset: how many miners should be skipped
 //	  - active: only fetch active miners
-func GetMiners(cb GetInfoCallback, limit, offset int, active bool) {
-	getMinersInternal(cb, active, limit, offset)
+func GetMiners(cb GetInfoCallback, limit, offset int, active bool, stakable bool) {
+	getMinersInternal(cb, active, stakable, limit, offset)
 }
 
-func getMinersInternal(cb GetInfoCallback, active bool, limit, offset int) {
+func getMinersInternal(cb GetInfoCallback, active, stakable bool, limit, offset int) {
 	if err := CheckConfig(); err != nil {
 		return
 	}
 
 	var url = withParams(GET_MINERSC_MINERS, Params{
 		"active": strconv.FormatBool(active),
+		"stakable": strconv.FormatBool(stakable),
 		"offset": strconv.FormatInt(int64(offset), 10),
 		"limit":  strconv.FormatInt(int64(limit), 10),
 	})
@@ -867,17 +876,19 @@ func getMinersInternal(cb GetInfoCallback, active bool, limit, offset int) {
 //   - limit: how many sharders should be fetched
 //   - offset: how many sharders should be skipped
 //   - active: only fetch active sharders
-func GetSharders(cb GetInfoCallback, limit, offset int, active bool) {
-	getShardersInternal(cb, active, limit, offset)
+//	 - stakable: only fetch sharders that can be staked 
+func GetSharders(cb GetInfoCallback, limit, offset int, active, stakable bool) {
+	getShardersInternal(cb, active, stakable, limit, offset)
 }
 
-func getShardersInternal(cb GetInfoCallback, active bool, limit, offset int) {
+func getShardersInternal(cb GetInfoCallback, active, stakable bool, limit, offset int) {
 	if err := CheckConfig(); err != nil {
 		return
 	}
 
 	var url = withParams(GET_MINERSC_SHARDERS, Params{
 		"active": strconv.FormatBool(active),
+		"stakable": strconv.FormatBool(stakable),
 		"offset": strconv.FormatInt(int64(offset), 10),
 		"limit":  strconv.FormatInt(int64(limit), 10),
 	})
@@ -1149,6 +1160,16 @@ func GetStakePoolUserInfo(clientID string, offset, limit int, cb GetInfoCallback
 	return
 }
 
+// GetStakeableBlobbers obtains list of all active blobbers that can be staked (i.e. still number of delegations < max_delegations)
+// # Inputs
+//   - cb: callback for checking result
+//   - limit: how many blobbers should be fetched
+//   - offset: how many blobbers should be skipped
+//   - active: only fetch active blobbers
+func GetStakableBlobbers(cb GetInfoCallback, limit, offset int, active bool) {
+	getBlobbersInternal(cb, active, limit, offset, true)
+}
+
 // GetBlobbers obtains list of all active blobbers.
 // # Inputs
 //   - cb: callback for checking result
@@ -1156,10 +1177,10 @@ func GetStakePoolUserInfo(clientID string, offset, limit int, cb GetInfoCallback
 //   - offset: how many blobbers should be skipped
 //   - active: only fetch active blobbers
 func GetBlobbers(cb GetInfoCallback, limit, offset int, active bool) {
-	getBlobbersInternal(cb, active, limit, offset)
+	getBlobbersInternal(cb, active, limit, offset, false)
 }
 
-func getBlobbersInternal(cb GetInfoCallback, active bool, limit, offset int) {
+func getBlobbersInternal(cb GetInfoCallback, active bool, limit, offset int, stakable bool) {
 	if err := CheckConfig(); err != nil {
 		return
 	}
@@ -1168,6 +1189,7 @@ func getBlobbersInternal(cb GetInfoCallback, active bool, limit, offset int) {
 		"active": strconv.FormatBool(active),
 		"offset": strconv.FormatInt(int64(offset), 10),
 		"limit":  strconv.FormatInt(int64(limit), 10),
+		"stakable": strconv.FormatBool(stakable),
 	})
 
 	go GetInfoFromSharders(url, OpStorageSCGetBlobbers, cb)

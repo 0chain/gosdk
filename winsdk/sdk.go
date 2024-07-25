@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"path"
 
 	"github.com/0chain/gosdk/zboxapi"
 	"github.com/0chain/gosdk/zboxcore/client"
@@ -370,14 +371,15 @@ func GetFileContentType(file *C.char) *C.char {
 			log.Error("win: crash ", r)
 		}
 	}()
-	f, err := os.Open(C.GoString(file))
+	fileName := C.GoString(file)
+	f, err := os.Open(fileName)
 	if err != nil {
 		log.Error("win: ", err)
 		return WithJSON("", err)
 	}
 	defer f.Close()
 
-	mime, err := zboxutil.GetFileContentType(f)
+	mime, err := zboxutil.GetFileContentType(path.Ext(fileName), f)
 	if err != nil {
 		return WithJSON("", err)
 	}

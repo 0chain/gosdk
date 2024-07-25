@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	l "github.com/0chain/gosdk/zboxcore/logger"
@@ -35,6 +36,19 @@ func (req *ListRequest) getFileMetaInfoFromBlobber(blobber *blockchain.StorageNo
 	defer fileMetaRetFn()
 	if len(req.remotefilepath) > 0 {
 		req.remotefilepathhash = fileref.GetReferenceLookup(req.allocationID, req.remotefilepath)
+	}
+	if singleClientMode {
+		fileMetaHash := fileref.GetCacheKey(req.remotefilepathhash, blobber.ID)
+		cachedRef, ok := fileref.GetFileRef(fileMetaHash)
+		if ok {
+			fileRef = &cachedRef
+			return
+		}
+		defer func() {
+			if fileRef != nil && err == nil {
+				fileref.StoreFileRef(fileMetaHash, *fileRef)
+			}
+		}()
 	}
 	err = formWriter.WriteField("path_hash", req.remotefilepathhash)
 	if err != nil {
@@ -82,6 +96,8 @@ func (req *ListRequest) getFileMetaInfoFromBlobber(blobber *blockchain.StorageNo
 				return errors.Wrap(err, "file meta data response parse error")
 			}
 			return nil
+		} else if resp.StatusCode == http.StatusBadRequest {
+			return constants.ErrNotFound
 		}
 		return fmt.Errorf("unexpected response. status code: %d, response: %s",
 			resp.StatusCode, string(resp_body))

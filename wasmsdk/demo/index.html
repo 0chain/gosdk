@@ -2,7 +2,7 @@
 
 <head>
   <!-- for zcn.wasm-->
-  <script src="https://cdn.jsdelivr.net/gh/herumi/bls-wasm@v1.0.0/browser/bls.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/herumi/bls-wasm@v1.1.1/browser/bls.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/golang/go@go1.21.5/misc/wasm/wasm_exec.js"></script>
   <script src="zcn.js"></script>
 
@@ -171,10 +171,10 @@
     }
 
     const getWallet = () => {
-      const clientID = "b1d533fa60431a76014c4f94a7e8e19a3b1a7f34eebd4cacd29a8dd948b3844c"
-      const publicKey = "1f30a07b34146435cabc3244a1452fb8933f6982e0b33f384e5d25b9d6531e24e342003349990483f8481052a0748cbc72355d9cbda621ec914f7ed03c127791"
-      const privateKey = "fb98f46969be6921586e547b0f6f70c6b92d7823359f00bafa3900523910661a"
-      const mnemonic = "snake second property crush thrive monkey already lake fire sort cheap lake census adult this cloth panic filter taste punch pistol project rack obscure"
+      const clientID = "ab5b8ab19abe574d92238e0a5dc0c2abd53614cd12cab6b09576fab2a0f64a83"
+      const publicKey = "d430b1b33eab43bd09886e6125e246600e36e3f88d658d00bf836aa564251e2364bccbfb18f1cb1b5fa4d96ba602b59bc009e6e0223b6a8ebdafc14822b78d23"
+      const privateKey = "0c2cb85c8c33b3cc35dc12b4754e61ae9488bba857982c382caa461ecac19d19"
+      const mnemonic = "grace fiscal menu squeeze certain drum ostrich lunar ugly remember cousin observe oxygen brisk toward notable shoot cushion develop marble open aspect couch noise"
       return {
         clientID, publicKey, privateKey, mnemonic
       }
@@ -308,7 +308,7 @@
       }
       try {
         const allocation = await goWasm.sdk.createAllocation(config.datashards, config.parityshards, config.size, config.minReadPrice, config.maxReadPrice, config.minWritePrice, config.maxWritePrice,
-          config.lock, [], false)
+          config.lock, [], [], false)
 
         console.log(allocation)
         allocations = await goWasm.sdk.listAllocations()
@@ -441,7 +441,7 @@
         alert("please selection allocationID")
         return
       }
-      const { list = [] } = await goWasm.sdk.listObjects(allocationId, '/')
+      const { list = [] } = await goWasm.sdk.listObjects(allocationId, '/',-1,50)
       files = list || []
       bindFiles()
     })
@@ -457,12 +457,12 @@
             allocationId: allocationId,
             remotePath: `/${file.name}`,
             file: file,
-            thumbnailBytes: await readBytes(file),//only for demo, don't upload original file as thumbnail in production
+            // thumbnailBytes: await readBytes(file),//only for demo, don't upload original file as thumbnail in production
             encrypt: false,
             webstreaming: false,
             isUpdate: false,
             isRepair: false,
-            numBlocks: 100,
+            numBlocks: 120,
             callback: function (totalBytes, completedBytes, error) {
               console.log(file.name + " " + completedBytes + "/" + totalBytes + " err:" + error)
             }
@@ -799,7 +799,7 @@
       }
 
       objects.push({
-        remotePath: path,
+        //remotePath: path,
         downloadOp: 1,
         numBlocks: 0,
         downloadToDisk: true,
@@ -807,7 +807,7 @@
       let stringifiedArray = JSON.stringify(objects);
 
       try {
-        const results = await goWasm.sdk.multiDownload(allocationId, stringifiedArray, '', '')
+        const results = await goWasm.sdk.multiDownload('', stringifiedArray, 'eyJjbGllbnRfaWQiOiIiLCJvd25lcl9pZCI6IjI2ZTIzMjFhZWMxZmEyZDY1NGQ1MDQ5OWY3ZjhmYWJhNjNkYWMxYTExYTQwZDU3NDJkNDAzMWJmMzEzMzAxMTYiLCJhbGxvY2F0aW9uX2lkIjoiMDAwMzAzOTA1MGI3ZDdiM2FlNmI3MGEwZTVjMWU4ZjRhOTkxNzc1YWJiOTQ2NjljMDg4YzczNzJlMzYwMzkyYiIsImZpbGVfcGF0aF9oYXNoIjoiYWEzODE0NTM2ZWI2OWQwNjU4ZWM0OTgyZmE3ZTIwM2I2ZGI2ZWExYmU4ZmMxODRiMWJhOTZhMTk3NmMwM2JlOCIsImFjdHVhbF9maWxlX2hhc2giOiIxMjUwMjJhZGRiZTIwZDNhOWUzYjcxZTA0NjUzZjY3YiIsImZpbGVfbmFtZSI6InVidW50dS0yMi4wNC40LWxpdmUtc2VydmVyLWFtZDY0LmlzbyIsInJlZmVyZW5jZV90eXBlIjoiZiIsImV4cGlyYXRpb24iOjAsInRpbWVzdGFtcCI6MTcxNjM3ODIxNiwiZW5jcnlwdGVkIjpmYWxzZSwic2lnbmF0dXJlIjoiYmEzNzQ1NzlmZTczZDc1MWIwMTNiMjM2NjUzZDRiMGYyYzNjZDJlYTMyNTFkODg0MmRiNWQxNTlhNjBiN2ExMiJ9', '')
         console.log(JSON.stringify(results))
       } catch (e) {
         alert(e)

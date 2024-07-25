@@ -55,9 +55,25 @@ type StatusCallback interface {
 	RepairCompleted(filesRepaired int)
 }
 
-var numBlockDownloads = 100
-var sdkInitialized = false
-var networkWorkerTimerInHours = 1
+var (
+	numBlockDownloads         = 100
+	sdkInitialized            = false
+	networkWorkerTimerInHours = 1
+	singleClientMode          = false
+	shouldVerifyHash          = true
+)
+
+func SetSingleClietnMode(mode bool) {
+	singleClientMode = mode
+}
+
+func SetShouldVerifyHash(verify bool) {
+	shouldVerifyHash = verify
+}
+
+func SetSaveProgress(save bool) {
+	shouldSaveProgress = save
+}
 
 // GetVersion - returns version string
 func GetVersion() string {
@@ -621,6 +637,7 @@ type Blobber struct {
 	IsKilled                 bool                         `json:"is_killed"`
 	IsShutdown               bool                         `json:"is_shutdown"`
 	NotAvailable             bool                         `json:"not_available"`
+	IsRestricted             bool                         `json:"is_restricted"`
 }
 
 // UpdateBlobber is used during update blobber settings calls.
@@ -642,6 +659,7 @@ type UpdateBlobber struct {
 	IsKilled                 *bool                               `json:"is_killed,omitempty"`
 	IsShutdown               *bool                               `json:"is_shutdown,omitempty"`
 	NotAvailable             *bool                               `json:"not_available,omitempty"`
+	IsRestricted             *bool                               `json:"is_restricted,omitempty"`
 }
 
 type ResetBlobberStatsDto struct {
@@ -693,8 +711,6 @@ func (v *UpdateValidator) ConvertToValidationNode() *blockchain.UpdateValidation
 
 	sp := &blockchain.UpdateStakePoolSettings{
 		DelegateWallet: v.DelegateWallet,
-		MinStake:       v.MinStake,
-		MaxStake:       v.MaxStake,
 		NumDelegates:   v.NumDelegates,
 		ServiceCharge:  v.ServiceCharge,
 	}
@@ -710,15 +726,16 @@ func (v *UpdateValidator) ConvertToValidationNode() *blockchain.UpdateValidation
 	return blockValidator
 }
 
-func getBlobbersInternal(active bool, limit, offset int) (bs []*Blobber, err error) {
+func getBlobbersInternal(active, stakable bool, limit, offset int) (bs []*Blobber, err error) {
 	type nodes struct {
 		Nodes []*Blobber
 	}
 
-	url := fmt.Sprintf("/getblobbers?active=%s&limit=%d&offset=%d",
+	url := fmt.Sprintf("/getblobbers?active=%s&limit=%d&offset=%d&stakable=%s",
 		strconv.FormatBool(active),
 		limit,
 		offset,
+		strconv.FormatBool(stakable),
 	)
 	b, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, url, nil, nil)
 	var wrap nodes
@@ -736,14 +753,14 @@ func getBlobbersInternal(active bool, limit, offset int) (bs []*Blobber, err err
 	return wrap.Nodes, nil
 }
 
-func GetBlobbers(active bool) (bs []*Blobber, err error) {
+func GetBlobbers(active, stakable bool) (bs []*Blobber, err error) {
 	if !sdkInitialized {
 		return nil, sdkNotInitialized
 	}
 
 	limit, offset := 20, 0
 
-	blobbers, err := getBlobbersInternal(active, limit, offset)
+	blobbers, err := getBlobbersInternal(active, stakable, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -758,7 +775,7 @@ func GetBlobbers(active bool) (bs []*Blobber, err error) {
 
 		// get the next set of blobbers
 		offset += 20
-		blobbers, err = getBlobbersInternal(active, limit, offset)
+		blobbers, err = getBlobbersInternal(active, stakable, limit, offset)
 		if err != nil {
 			return blobbers, err
 		}
@@ -820,7 +837,7 @@ func GetValidator(validatorID string) (validator *Validator, err error) {
 }
 
 // List all validators
-func GetValidators() (validators []*Validator, err error) {
+func GetValidators(stakable bool) (validators []*Validator, err error) {
 	if !sdkInitialized {
 		return nil, sdkNotInitialized
 	}
@@ -828,7 +845,9 @@ func GetValidators() (validators []*Validator, err error) {
 	b, err = zboxutil.MakeSCRestAPICall(
 		STORAGE_SCADDRESS,
 		"/validators",
-		nil,
+		map[string]string{
+			"stakable": strconv.FormatBool(stakable),
+		},
 		nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "requesting validator list")
@@ -1033,8 +1052,10 @@ type CreateAllocationOptions struct {
 	WritePrice           PriceRange
 	Lock                 uint64
 	BlobberIds           []string
+	BlobberAuthTickets   []string
 	ThirdPartyExtendable bool
 	FileOptionsParams    *FileOptionsParameters
+	Force                bool
 }
 
 // CreateAllocationWith creates a new allocation with the given options for the current client using the SDK.
@@ -1048,7 +1069,7 @@ func CreateAllocationWith(options CreateAllocationOptions) (
 	return CreateAllocationForOwner(client.GetClientID(),
 		client.GetClientPublicKey(), options.DataShards, options.ParityShards,
 		options.Size, options.ReadPrice, options.WritePrice, options.Lock,
-		options.BlobberIds, options.ThirdPartyExtendable, options.FileOptionsParams)
+		options.BlobberIds, options.BlobberAuthTickets, options.ThirdPartyExtendable, options.Force, options.FileOptionsParams)
 }
 
 // CreateAllocationForOwner creates a new allocation with the given options (txn: `storagesc.new_allocation_request`).
@@ -1070,7 +1091,7 @@ func CreateAllocationForOwner(
 	owner, ownerpublickey string,
 	datashards, parityshards int, size int64,
 	readPrice, writePrice PriceRange,
-	lock uint64, preferredBlobberIds []string, thirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
+	lock uint64, preferredBlobberIds, blobberAuthTickets []string, thirdPartyExtendable, force bool, fileOptionsParams *FileOptionsParameters,
 ) (hash string, nonce int64, txn *transaction.Transaction, err error) {
 
 	if lock > math.MaxInt64 {
@@ -1082,7 +1103,7 @@ func CreateAllocationForOwner(
 	}
 
 	allocationRequest, err := getNewAllocationBlobbers(
-		datashards, parityshards, size, readPrice, writePrice, preferredBlobberIds)
+		datashards, parityshards, size, readPrice, writePrice, preferredBlobberIds, blobberAuthTickets, force)
 	if err != nil {
 		return "", 0, nil, errors.New("failed_get_allocation_blobbers", "failed to get blobbers for allocation: "+err.Error())
 	}
@@ -1117,6 +1138,7 @@ func CreateAllocationForOwner(
 func GetAllocationBlobbers(
 	datashards, parityshards int,
 	size int64,
+	isRestricted int,
 	readPrice, writePrice PriceRange,
 	force ...bool,
 ) ([]string, error) {
@@ -1126,6 +1148,7 @@ func GetAllocationBlobbers(
 		"size":              size,
 		"read_price_range":  readPrice,
 		"write_price_range": writePrice,
+		"is_restricted":     isRestricted,
 	}
 
 	allocationData, _ := json.Marshal(allocationRequest)
@@ -1154,10 +1177,24 @@ func getNewAllocationBlobbers(
 	datashards, parityshards int,
 	size int64,
 	readPrice, writePrice PriceRange,
-	preferredBlobberIds []string,
+	preferredBlobberIds, blobberAuthTickets []string, force bool,
 ) (map[string]interface{}, error) {
+	for _, authTicket := range blobberAuthTickets {
+		if len(authTicket) > 0 {
+			return map[string]interface{}{
+				"data_shards":          datashards,
+				"parity_shards":        parityshards,
+				"size":                 size,
+				"blobbers":             preferredBlobberIds,
+				"blobber_auth_tickets": blobberAuthTickets,
+				"read_price_range":     readPrice,
+				"write_price_range":    writePrice,
+			}, nil
+		}
+	}
+
 	allocBlobberIDs, err := GetAllocationBlobbers(
-		datashards, parityshards, size, readPrice, writePrice,
+		datashards, parityshards, size, 2, readPrice, writePrice, force,
 	)
 	if err != nil {
 		return nil, err
@@ -1168,20 +1205,24 @@ func getNewAllocationBlobbers(
 	// filter duplicates
 	ids := make(map[string]bool)
 	uniqueBlobbers := []string{}
+	uniqueBlobberAuthTickets := []string{}
+
 	for _, b := range blobbers {
 		if !ids[b] {
 			uniqueBlobbers = append(uniqueBlobbers, b)
+			uniqueBlobberAuthTickets = append(uniqueBlobberAuthTickets, "")
 			ids[b] = true
 		}
 	}
 
 	return map[string]interface{}{
-		"data_shards":       datashards,
-		"parity_shards":     parityshards,
-		"size":              size,
-		"blobbers":          uniqueBlobbers,
-		"read_price_range":  readPrice,
-		"write_price_range": writePrice,
+		"data_shards":          datashards,
+		"parity_shards":        parityshards,
+		"size":                 size,
+		"blobbers":             uniqueBlobbers,
+		"blobber_auth_tickets": uniqueBlobberAuthTickets,
+		"read_price_range":     readPrice,
+		"write_price_range":    writePrice,
 	}, nil
 }
 
@@ -1321,7 +1362,7 @@ func UpdateAllocation(
 	extend bool,
 	allocationID string,
 	lock uint64,
-	addBlobberId, removeBlobberId string,
+	addBlobberId, addBlobberAuthTicket, removeBlobberId string,
 	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
 ) (hash string, nonce int64, err error) {
 
@@ -1345,6 +1386,7 @@ func UpdateAllocation(
 	updateAllocationRequest["size"] = size
 	updateAllocationRequest["extend"] = extend
 	updateAllocationRequest["add_blobber_id"] = addBlobberId
+	updateAllocationRequest["add_blobber_auth_ticket"] = addBlobberAuthTicket
 	updateAllocationRequest["remove_blobber_id"] = removeBlobberId
 	updateAllocationRequest["set_third_party_extendable"] = setThirdPartyExtendable
 	updateAllocationRequest["file_options_changed"], updateAllocationRequest["file_options"] = calculateAllocationFileOptions(alloc.FileOptions, fileOptionsParams)
@@ -1552,6 +1594,19 @@ func ResetBlobberStats(rbs *ResetBlobberStatsDto) (string, int64, error) {
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_RESET_BLOBBER_STATS,
 		InputArgs: rbs,
+	}
+	hash, _, n, _, err := storageSmartContractTxn(sn)
+	return hash, n, err
+}
+
+func ResetAllocationStats(allocationId string) (string, int64, error) {
+	if !sdkInitialized {
+		return "", 0, sdkNotInitialized
+	}
+
+	var sn = transaction.SmartContractTxnData{
+		Name:      transaction.STORAGESC_RESET_ALLOCATION_STATS,
+		InputArgs: allocationId,
 	}
 	hash, _, n, _, err := storageSmartContractTxn(sn)
 	return hash, n, err
