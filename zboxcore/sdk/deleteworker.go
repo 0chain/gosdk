@@ -373,18 +373,7 @@ func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string) (
 				l.Logger.Error(err.Error())
 				return
 			}
-			if refEntity.Type == fileref.DIRECTORY && !refEntity.IsEmpty {
-				//TODO: Handle directory delete
-			}
-			// err = deleteReq.deleteBlobberFile(deleteReq.blobbers[blobberIdx], blobberIdx)
-			// if err != nil {
-			// 	blobberErrors[blobberIdx] = err
-			// }
-			// if singleClientMode {
-			// 	lookuphash := fileref.GetReferenceLookup(deleteReq.allocationID, deleteReq.remotefilepath)
-			// 	cacheKey := fileref.GetCacheKey(lookuphash, deleteReq.blobbers[blobberIdx].ID)
-			// 	fileref.DeleteFileRef(cacheKey)
-			// }
+			deleteReq.consensus.Done()
 			objectTreeRefs[blobberIdx] = refEntity
 			deleteReq.maskMu.Lock()
 			versionMap[refEntity.AllocationVersion]++
