@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math"
+	"math/rand"
 	"net/http"
 	"sync"
 	"time"
@@ -43,7 +44,9 @@ type ObjectTreeRequest struct {
 	offsetPath     string
 	updatedDate    string // must have "2006-01-02T15:04:05.99999Z07:00" format
 	offsetDate     string // must have "2006-01-02T15:04:05.99999Z07:00" format
+	reqMask        zboxutil.Uint128
 	ctx            context.Context
+	singleBlobber  bool
 	Consensus
 }
 
@@ -54,18 +57,72 @@ type oTreeResponse struct {
 	idx      int
 }
 
+type ObjectTreeRequestOption func(*ObjectTreeRequest)
+
+func WithObjectContext(ctx context.Context) ObjectTreeRequestOption {
+	return func(o *ObjectTreeRequest) {
+		o.ctx = ctx
+	}
+}
+
+func WitObjectMask(mask zboxutil.Uint128) ObjectTreeRequestOption {
+	return func(o *ObjectTreeRequest) {
+		o.reqMask = mask
+	}
+}
+
+func WithObjectConsensusThresh(thresh int) ObjectTreeRequestOption {
+	return func(o *ObjectTreeRequest) {
+		o.consensusThresh = thresh
+	}
+}
+
+func WithSingleBlobber(singleBlobber bool) ObjectTreeRequestOption {
+	return func(o *ObjectTreeRequest) {
+		o.singleBlobber = singleBlobber
+	}
+}
+
 // Paginated tree should not be collected as this will stall the client
 // It should rather be handled by application that uses gosdk
 func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 	totalBlobbersCount := len(o.blobbers)
 	oTreeResponses := make([]oTreeResponse, totalBlobbersCount)
 	respChan := make(chan *oTreeResponse, totalBlobbersCount)
-	for i, blob := range o.blobbers {
+	activeCount := o.reqMask.CountOnes()
+	if o.singleBlobber {
+		var respErr error
+		for i := 0; i < activeCount; i++ {
+			var rnd = rand.New(rand.NewSource(time.Now().UnixNano()))
+			num := rnd.Intn(activeCount)
+			blob := o.blobbers[num]
+			l.Logger.Debug(fmt.Sprintf("Getting file refs for path %v from blobber %v", o.remotefilepath, blob.Baseurl))
+			idx := num
+			baseURL := blob.Baseurl
+			go o.getFileRefs(baseURL, respChan, idx)
+			select {
+			case <-o.ctx.Done():
+				return nil, o.ctx.Err()
+			case oTreeResponse := <-respChan:
+				if oTreeResponse.err != nil {
+					respErr = oTreeResponse.err
+				} else {
+					return oTreeResponse.oTResult, nil
+				}
+			}
+		}
+		return nil, respErr
+	}
+	var pos uint64
+	for i := o.reqMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		pos = uint64(i.TrailingZeros())
+		blob := o.blobbers[pos]
 		l.Logger.Debug(fmt.Sprintf("Getting file refs for path %v from blobber %v", o.remotefilepath, blob.Baseurl))
-		idx := i
+		idx := int(pos)
 		baseURL := blob.Baseurl
 		go o.getFileRefs(baseURL, respChan, idx)
 	}
+
 	hashCount := make(map[string]int)
 	hashRefsMap := make(map[string]*ObjectTreeResult)
 	oTreeResponseErrors := make([]error, totalBlobbersCount)

@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -352,8 +353,11 @@ func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string) (
 	numList := len(deleteReq.blobbers)
 	objectTreeRefs := make([]fileref.RefEntity, numList)
 	blobberErrors := make([]error, numList)
-
-	var pos uint64
+	versionMap := make(map[int64]int)
+	var (
+		pos          uint64
+		consensusRef *fileref.FileRef
+	)
 
 	for i := deleteReq.deleteMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
@@ -372,16 +376,22 @@ func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string) (
 			if refEntity.Type == fileref.DIRECTORY && !refEntity.IsEmpty {
 				//TODO: Handle directory delete
 			}
-			err = deleteReq.deleteBlobberFile(deleteReq.blobbers[blobberIdx], blobberIdx)
-			if err != nil {
-				blobberErrors[blobberIdx] = err
-			}
-			if singleClientMode {
-				lookuphash := fileref.GetReferenceLookup(deleteReq.allocationID, deleteReq.remotefilepath)
-				cacheKey := fileref.GetCacheKey(lookuphash, deleteReq.blobbers[blobberIdx].ID)
-				fileref.DeleteFileRef(cacheKey)
-			}
+			// err = deleteReq.deleteBlobberFile(deleteReq.blobbers[blobberIdx], blobberIdx)
+			// if err != nil {
+			// 	blobberErrors[blobberIdx] = err
+			// }
+			// if singleClientMode {
+			// 	lookuphash := fileref.GetReferenceLookup(deleteReq.allocationID, deleteReq.remotefilepath)
+			// 	cacheKey := fileref.GetCacheKey(lookuphash, deleteReq.blobbers[blobberIdx].ID)
+			// 	fileref.DeleteFileRef(cacheKey)
+			// }
 			objectTreeRefs[blobberIdx] = refEntity
+			deleteReq.maskMu.Lock()
+			versionMap[refEntity.AllocationVersion]++
+			if versionMap[refEntity.AllocationVersion] > deleteReq.consensus.consensusThresh {
+				consensusRef = refEntity
+			}
+			deleteReq.maskMu.Unlock()
 		}(int(pos))
 	}
 	deleteReq.wg.Wait()
@@ -396,6 +406,50 @@ func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string) (
 			fmt.Sprintf("Delete failed. Required consensus %d, got %d",
 				deleteReq.consensus.consensusThresh, deleteReq.consensus.consensus))
 	}
+	if consensusRef == nil {
+		return nil, deleteReq.deleteMask, thrown.New("delete_failed", "Delete failed. No consensus found")
+	}
+	if consensusRef.Type == fileref.DIRECTORY && !consensusRef.IsEmpty {
+		for ind, refEntity := range objectTreeRefs {
+			if refEntity.GetAllocationVersion() != consensusRef.AllocationVersion {
+				deleteReq.deleteMask = deleteReq.deleteMask.And(zboxutil.NewUint128(1).Lsh(uint64(ind)).Not())
+			}
+		}
+		err := deleteReq.deleteSubDirectories()
+		if err != nil {
+			return nil, deleteReq.deleteMask, err
+		}
+	}
+	pos = 0
+	for i := deleteReq.deleteMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		pos = uint64(i.TrailingZeros())
+		deleteReq.wg.Add(1)
+		go func(blobberIdx int) {
+			defer deleteReq.wg.Done()
+			err := deleteReq.deleteBlobberFile(deleteReq.blobbers[blobberIdx], blobberIdx)
+			if err != nil {
+				blobberErrors[blobberIdx] = err
+			}
+			if singleClientMode {
+				lookuphash := fileref.GetReferenceLookup(deleteReq.allocationID, deleteReq.remotefilepath)
+				cacheKey := fileref.GetCacheKey(lookuphash, deleteReq.blobbers[blobberIdx].ID)
+				fileref.DeleteFileRef(cacheKey)
+			}
+		}(int(pos))
+	}
+	deleteReq.wg.Wait()
+
+	if !deleteReq.consensus.isConsensusOk() {
+		err := zboxutil.MajorError(blobberErrors)
+		if err != nil {
+			return nil, deleteReq.deleteMask, thrown.New("delete_failed", fmt.Sprintf("Delete failed. %s", err.Error()))
+		}
+
+		return nil, deleteReq.deleteMask, thrown.New("consensus_not_met",
+			fmt.Sprintf("Delete failed. Required consensus %d, got %d",
+				deleteReq.consensus.consensusThresh, deleteReq.consensus.consensus))
+	}
+
 	l.Logger.Debug("Delete Process Ended ")
 	return objectTreeRefs, deleteReq.deleteMask, nil
 }
@@ -452,4 +506,74 @@ func NewDeleteOperation(remotePath string, deleteMask zboxutil.Uint128, maskMu *
 	dop.consensus.fullconsensus = fullConsensus
 	dop.ctx, dop.ctxCncl = context.WithCancel(ctx)
 	return dop
+}
+
+func (req *DeleteRequest) deleteSubDirectories() error {
+	// list all files
+	var (
+		offsetPath string
+		pathLevel  int
+	)
+	for {
+		oResult, err := req.allocationObj.GetRefs(req.remotefilepath, offsetPath, "", "", fileref.FILE, fileref.REGULAR, 0, getRefPageLimit, WithObjectContext(req.ctx), WitObjectMask(req.deleteMask), WithObjectConsensusThresh(req.consensus.consensusThresh), WithSingleBlobber(true))
+		if err != nil {
+			return err
+		}
+		if len(oResult.Refs) == 0 {
+			break
+		}
+		ops := make([]OperationRequest, 0, len(oResult.Refs))
+		for _, ref := range oResult.Refs {
+			opMask := req.deleteMask
+			op := OperationRequest{
+				OperationType: constants.FileOperationDelete,
+				RemotePath:    ref.Path,
+				Mask:          &opMask,
+			}
+			ops = append(ops, op)
+		}
+		err = req.allocationObj.DoMultiOperation(ops)
+		if err != nil {
+			return err
+		}
+		offsetPath = oResult.Refs[len(oResult.Refs)-1].Path
+		pathLevel = oResult.Refs[len(oResult.Refs)-1].PathLevel
+		if len(oResult.Refs) < getRefPageLimit {
+			break
+		}
+	}
+	// reset offsetPath
+	offsetPath = ""
+	level := len(strings.Split(strings.TrimSuffix(req.remotefilepath, "/"), "/"))
+	// list all directories by descending order of path level
+	for pathLevel > level {
+		oResult, err := req.allocationObj.GetRefs(req.remotefilepath, offsetPath, "", "", fileref.DIRECTORY, fileref.REGULAR, pathLevel, getRefPageLimit, WithObjectContext(req.ctx), WitObjectMask(req.deleteMask), WithObjectConsensusThresh(req.consensus.consensusThresh), WithSingleBlobber(true))
+		if err != nil {
+			return err
+		}
+		if len(oResult.Refs) == 0 {
+			pathLevel--
+		} else {
+			ops := make([]OperationRequest, 0, len(oResult.Refs))
+			for _, ref := range oResult.Refs {
+				opMask := req.deleteMask
+				op := OperationRequest{
+					OperationType: constants.FileOperationDelete,
+					RemotePath:    ref.Path,
+					Mask:          &opMask,
+				}
+				ops = append(ops, op)
+			}
+			err = req.allocationObj.DoMultiOperation(ops)
+			if err != nil {
+				return err
+			}
+			offsetPath = oResult.Refs[len(oResult.Refs)-1].Path
+			if len(oResult.Refs) < getRefPageLimit {
+				pathLevel--
+			}
+		}
+	}
+
+	return nil
 }

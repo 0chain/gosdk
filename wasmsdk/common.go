@@ -89,3 +89,11 @@ func (h *hasher) WriteToValidationMT(_ []byte) error {
 func (h *hasher) Finalize() error {
 	return nil
 }
+
+func (h *hasher) GetBlockHash() (string, error) {
+	return "", nil
+}
+
+func (h *hasher) WriteToBlockHasher(buf []byte) error {
+	return nil
+}

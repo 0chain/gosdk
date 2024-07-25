@@ -17,6 +17,7 @@ const CHUNK_SIZE = 64 * 1024
 const (
 	FILE      = "f"
 	DIRECTORY = "d"
+	REGULAR   = "regular"
 )
 
 var fileCache, _ = lru.New[string, FileRef](100)
@@ -70,6 +71,7 @@ type RefEntity interface {
 	GetFileID() string
 	GetCreatedAt() common.Timestamp
 	GetUpdatedAt() common.Timestamp
+	GetAllocationVersion() int64
 }
 
 type Ref struct {
@@ -91,6 +93,7 @@ type Ref struct {
 	ActualThumbnailHash string `json:"actual_thumbnail_hash" mapstructure:"actual_thumbnail_hash"`
 	ActualThumbnailSize int64  `json:"actual_thumbnail_size" mapstructure:"actual_thumbnail_size"`
 	IsEmpty             bool   `json:"is_empty" mapstructure:"is_empty"`
+	AllocationVersion   int64  `json:"allocation_version" mapstructure:"allocation_version"`
 	HashToBeComputed    bool
 	ChildrenLoaded      bool
 	Children            []RefEntity      `json:"-" mapstructure:"-"`
@@ -231,6 +234,10 @@ func (r *Ref) RemoveChild(idx int) {
 		return
 	}
 	r.Children = append(r.Children[:idx], r.Children[idx+1:]...)
+}
+
+func (r *Ref) GetAllocationVersion() int64 {
+	return r.AllocationVersion
 }
 
 func (fr *FileRef) GetFileMetaHash() string {

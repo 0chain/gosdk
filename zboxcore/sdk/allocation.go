@@ -64,6 +64,7 @@ const (
 
 const (
 	emptyFileDataHash = "d41d8cd98f00b204e9800998ecf8427e"
+	getRefPageLimit   = 1000
 )
 
 // Expected success rate is calculated (NumDataShards)*100/(NumDataShards+NumParityShards)
@@ -1401,7 +1402,7 @@ func (a *Allocation) ListDir(path string, opts ...ListRequestOptions) (*ListResu
 	return nil, errors.New("list_request_failed", "Failed to get list response from the blobbers")
 }
 
-func (a *Allocation) getRefs(path, pathHash, authToken, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*ObjectTreeResult, error) {
+func (a *Allocation) getRefs(path, pathHash, authToken, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int, opts ...ObjectTreeRequestOption) (*ObjectTreeResult, error) {
 	if !a.isInitialized() {
 		return nil, notInitialized
 	}
@@ -1421,9 +1422,16 @@ func (a *Allocation) getRefs(path, pathHash, authToken, offsetPath, updatedDate,
 		fileType:       fileType,
 		refType:        refType,
 		ctx:            a.ctx,
+		reqMask:        zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1),
 	}
 	oTreeReq.fullconsensus = a.fullconsensus
 	oTreeReq.consensusThresh = a.DataShards
+	for _, opt := range opts {
+		opt(oTreeReq)
+	}
+	if singleClientMode {
+		oTreeReq.singleBlobber = true
+	}
 	return oTreeReq.GetRefs()
 }
 
@@ -1516,7 +1524,7 @@ func (a *Allocation) GetRefsWithAuthTicket(authToken, offsetPath, updatedDate, o
 }
 
 // This function will retrieve paginated objectTree and will handle concensus; Required tree should be made in application side.
-func (a *Allocation) GetRefs(path, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*ObjectTreeResult, error) {
+func (a *Allocation) GetRefs(path, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int, opts ...ObjectTreeRequestOption) (*ObjectTreeResult, error) {
 	if len(path) == 0 || !zboxutil.IsRemoteAbs(path) {
 		return nil, errors.New("invalid_path", fmt.Sprintf("Absolute path required. Path provided: %v", path))
 	}
