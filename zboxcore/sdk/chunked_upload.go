@@ -181,9 +181,9 @@ func CreateChunkedUpload(
 
 	// su.ctx, su.ctxCncl = context.WithCancel(allocationObj.ctx)
 	su.ctx, su.ctxCncl = context.WithCancelCause(ctx)
+	su.httpMethod = http.MethodPost
 
 	if isUpdate {
-		su.httpMethod = http.MethodPut
 		su.buildChange = func(ref *fileref.FileRef, _ uuid.UUID, ts common.Timestamp) allocationchange.AllocationChange {
 			change := &allocationchange.UpdateFileChange{}
 			change.NewFile = ref
@@ -193,7 +193,6 @@ func CreateChunkedUpload(
 			return change
 		}
 	} else {
-		su.httpMethod = http.MethodPost
 		su.buildChange = func(ref *fileref.FileRef, uid uuid.UUID, ts common.Timestamp) allocationchange.AllocationChange {
 			change := &allocationchange.NewFileChange{}
 			change.File = ref

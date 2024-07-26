@@ -384,7 +384,6 @@ func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string) (
 		}(int(pos))
 	}
 	deleteReq.wg.Wait()
-
 	if !deleteReq.consensus.isConsensusOk() {
 		err := zboxutil.MajorError(blobberErrors)
 		if err != nil {
@@ -514,6 +513,12 @@ func (req *DeleteRequest) deleteSubDirectories() error {
 		ops := make([]OperationRequest, 0, len(oResult.Refs))
 		for _, ref := range oResult.Refs {
 			opMask := req.deleteMask
+			if ref.Type == fileref.DIRECTORY {
+				continue
+			}
+			if ref.PathLevel > pathLevel {
+				pathLevel = ref.PathLevel
+			}
 			op := OperationRequest{
 				OperationType: constants.FileOperationDelete,
 				RemotePath:    ref.Path,
@@ -526,7 +531,6 @@ func (req *DeleteRequest) deleteSubDirectories() error {
 			return err
 		}
 		offsetPath = oResult.Refs[len(oResult.Refs)-1].Path
-		pathLevel = oResult.Refs[len(oResult.Refs)-1].PathLevel
 		if len(oResult.Refs) < getRefPageLimit {
 			break
 		}
@@ -534,6 +538,9 @@ func (req *DeleteRequest) deleteSubDirectories() error {
 	// reset offsetPath
 	offsetPath = ""
 	level := len(strings.Split(strings.TrimSuffix(req.remotefilepath, "/"), "/"))
+	if pathLevel == 0 {
+		pathLevel = level + 1
+	}
 	// list all directories by descending order of path level
 	for pathLevel > level {
 		oResult, err := req.allocationObj.GetRefs(req.remotefilepath, offsetPath, "", "", fileref.DIRECTORY, fileref.REGULAR, pathLevel, getRefPageLimit, WithObjectContext(req.ctx), WitObjectMask(req.deleteMask), WithObjectConsensusThresh(req.consensus.consensusThresh), WithSingleBlobber(true))
