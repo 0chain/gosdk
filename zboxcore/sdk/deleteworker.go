@@ -376,8 +376,8 @@ func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string) (
 			deleteReq.consensus.Done()
 			objectTreeRefs[blobberIdx] = refEntity
 			deleteReq.maskMu.Lock()
-			versionMap[refEntity.AllocationVersion]++
-			if versionMap[refEntity.AllocationVersion] > deleteReq.consensus.consensusThresh {
+			versionMap[refEntity.AllocationVersion] += 1
+			if versionMap[refEntity.AllocationVersion] >= deleteReq.consensus.consensusThresh {
 				consensusRef = refEntity
 			}
 			deleteReq.maskMu.Unlock()
