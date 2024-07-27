@@ -323,13 +323,14 @@ func main() {
 				// zauth
 				"registerZauthServer": registerZauthServer,
 				// zvault
-				"zvaultNewWallet":        zvaultNewWallet,
-				"zvaultNewSplit":         zvaultNewSplit,
-				"zvaultStoreKey":         zvaultStoreKey,
-				"zvaultRetrieveKeys":     zvaultRetrieveKeys,
-				"zvaultRevokeKey":        zvaultRevokeKey,
-				"zvaultDeletePrimaryKey": zvaultDeletePrimaryKey,
-				"zvaultRetrieveWallets":  zvaultRetrieveWallets,
+				"zvaultNewWallet":             zvaultNewWallet,
+				"zvaultNewSplit":              zvaultNewSplit,
+				"zvaultStoreKey":              zvaultStoreKey,
+				"zvaultRetrieveKeys":          zvaultRetrieveKeys,
+				"zvaultRevokeKey":             zvaultRevokeKey,
+				"zvaultDeletePrimaryKey":      zvaultDeletePrimaryKey,
+				"zvaultRetrieveWallets":       zvaultRetrieveWallets,
+				"zvaultRetrieveSharedWallets": zvaultRetrieveSharedWallets,
 			})
 
 			fmt.Println("__wasm_initialized__ = true;")
