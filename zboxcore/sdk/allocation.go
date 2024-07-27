@@ -1429,9 +1429,10 @@ func (a *Allocation) getRefs(path, pathHash, authToken, offsetPath, updatedDate,
 	for _, opt := range opts {
 		opt(oTreeReq)
 	}
-	if singleClientMode {
-		oTreeReq.singleBlobber = true
-	}
+	//TODO: Have a mask on allocation object to track blobbers which are on latest version
+	// if singleClientMode {
+	// 	oTreeReq.singleBlobber = true
+	// }
 	return oTreeReq.GetRefs()
 }
 
