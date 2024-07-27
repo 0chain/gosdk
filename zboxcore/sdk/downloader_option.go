@@ -13,12 +13,14 @@ func WithVerifyDownload(shouldVerify bool) DownloadOption {
 	}
 }
 
+// WithAllocation set allocation object of the download option
 func WithAllocation(obj *Allocation) DownloadOption {
 	return func(do *DownloadOptions) {
 		do.allocationObj = obj
 	}
 }
 
+// WithBlocks set block range for the download request options
 func WithBlocks(start, end int64, blocksPerMarker int) DownloadOption {
 	return func(do *DownloadOptions) {
 		if start > 0 && end > 0 && end >= start {
@@ -37,12 +39,14 @@ func WithBlocks(start, end int64, blocksPerMarker int) DownloadOption {
 	}
 }
 
+// WithOnlyThumbnail set thumbnail download option which makes the request download only the thumbnail.
 func WithOnlyThumbnail(thumbnail bool) DownloadOption {
 	return func(do *DownloadOptions) {
 		do.isThumbnailDownload = thumbnail
 	}
 }
 
+// WithAuthTicket set auth ticket and lookup hash for the download request options
 func WithAuthticket(authTicket, lookupHash string) DownloadOption {
 	return func(do *DownloadOptions) {
 		if len(authTicket) > 0 {
@@ -53,6 +57,7 @@ func WithAuthticket(authTicket, lookupHash string) DownloadOption {
 	}
 }
 
+// WithFileHandler set file handler for the download request options
 func WithFileHandler(fileHandler sys.File) DownloadOption {
 	return func(do *DownloadOptions) {
 		do.fileHandler = fileHandler

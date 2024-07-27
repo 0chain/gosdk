@@ -13,27 +13,20 @@ Package sys provides platform\-independent interfaces to support webassembly run
 - [Variables](<#variables>)
 - [type AuthorizeFunc](<#AuthorizeFunc>)
 - [type DiskFS](<#DiskFS>)
+  - [func \(dfs \*DiskFS\) LoadProgress\(progressID string\) \(\[\]byte, error\)](<#DiskFS.LoadProgress>)
   - [func \(dfs \*DiskFS\) MkdirAll\(path string, perm os.FileMode\) error](<#DiskFS.MkdirAll>)
   - [func \(dfs \*DiskFS\) Open\(name string\) \(File, error\)](<#DiskFS.Open>)
   - [func \(dfs \*DiskFS\) OpenFile\(name string, flag int, perm os.FileMode\) \(File, error\)](<#DiskFS.OpenFile>)
   - [func \(dfs \*DiskFS\) ReadFile\(name string\) \(\[\]byte, error\)](<#DiskFS.ReadFile>)
   - [func \(dfs \*DiskFS\) Remove\(name string\) error](<#DiskFS.Remove>)
+  - [func \(dfs \*DiskFS\) RemoveProgress\(progressID string\) error](<#DiskFS.RemoveProgress>)
+  - [func \(dfs \*DiskFS\) SaveProgress\(progressID string, data \[\]byte, perm fs.FileMode\) error](<#DiskFS.SaveProgress>)
   - [func \(dfs \*DiskFS\) Stat\(name string\) \(fs.FileInfo, error\)](<#DiskFS.Stat>)
   - [func \(dfs \*DiskFS\) WriteFile\(name string, data \[\]byte, perm os.FileMode\) error](<#DiskFS.WriteFile>)
 - [type FS](<#FS>)
   - [func NewDiskFS\(\) FS](<#NewDiskFS>)
-  - [func NewMemChanFS\(\) FS](<#NewMemChanFS>)
-  - [func NewMemFS\(\) FS](<#NewMemFS>)
 - [type File](<#File>)
 - [type KeyPair](<#KeyPair>)
-- [type MemChanFS](<#MemChanFS>)
-  - [func \(mfs \*MemChanFS\) MkdirAll\(path string, perm os.FileMode\) error](<#MemChanFS.MkdirAll>)
-  - [func \(mfs \*MemChanFS\) Open\(name string\) \(File, error\)](<#MemChanFS.Open>)
-  - [func \(mfs \*MemChanFS\) OpenFile\(name string, flag int, perm os.FileMode\) \(File, error\)](<#MemChanFS.OpenFile>)
-  - [func \(mfs \*MemChanFS\) ReadFile\(name string\) \(\[\]byte, error\)](<#MemChanFS.ReadFile>)
-  - [func \(mfs \*MemChanFS\) Remove\(name string\) error](<#MemChanFS.Remove>)
-  - [func \(mfs \*MemChanFS\) Stat\(name string\) \(fs.FileInfo, error\)](<#MemChanFS.Stat>)
-  - [func \(mfs \*MemChanFS\) WriteFile\(name string, data \[\]byte, perm os.FileMode\) error](<#MemChanFS.WriteFile>)
 - [type MemChanFile](<#MemChanFile>)
   - [func \(f \*MemChanFile\) Close\(\) error](<#MemChanFile.Close>)
   - [func \(f \*MemChanFile\) Read\(p \[\]byte\) \(int, error\)](<#MemChanFile.Read>)
@@ -41,14 +34,6 @@ Package sys provides platform\-independent interfaces to support webassembly run
   - [func \(f \*MemChanFile\) Stat\(\) \(fs.FileInfo, error\)](<#MemChanFile.Stat>)
   - [func \(f \*MemChanFile\) Sync\(\) error](<#MemChanFile.Sync>)
   - [func \(f \*MemChanFile\) Write\(p \[\]byte\) \(n int, err error\)](<#MemChanFile.Write>)
-- [type MemFS](<#MemFS>)
-  - [func \(mfs \*MemFS\) MkdirAll\(path string, perm os.FileMode\) error](<#MemFS.MkdirAll>)
-  - [func \(mfs \*MemFS\) Open\(name string\) \(File, error\)](<#MemFS.Open>)
-  - [func \(mfs \*MemFS\) OpenFile\(name string, flag int, perm os.FileMode\) \(File, error\)](<#MemFS.OpenFile>)
-  - [func \(mfs \*MemFS\) ReadFile\(name string\) \(\[\]byte, error\)](<#MemFS.ReadFile>)
-  - [func \(mfs \*MemFS\) Remove\(name string\) error](<#MemFS.Remove>)
-  - [func \(mfs \*MemFS\) Stat\(name string\) \(fs.FileInfo, error\)](<#MemFS.Stat>)
-  - [func \(mfs \*MemFS\) WriteFile\(name string, data \[\]byte, perm os.FileMode\) error](<#MemFS.WriteFile>)
 - [type MemFile](<#MemFile>)
   - [func \(f \*MemFile\) Close\(\) error](<#MemFile.Close>)
   - [func \(f \*MemFile\) InitBuffer\(size int\)](<#MemFile.InitBuffer>)
@@ -117,7 +102,7 @@ type AuthorizeFunc func(msg string) (string, error)
 ```
 
 <a name="DiskFS"></a>
-## type [DiskFS](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_disk.go#L10-L11>)
+## type [DiskFS](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_disk.go#L9-L10>)
 
 DiskFS implement file system on disk
 
@@ -126,8 +111,17 @@ type DiskFS struct {
 }
 ```
 
+<a name="DiskFS.LoadProgress"></a>
+### func \(\*DiskFS\) [LoadProgress](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_disk.go#L56>)
+
+```go
+func (dfs *DiskFS) LoadProgress(progressID string) ([]byte, error)
+```
+
+
+
 <a name="DiskFS.MkdirAll"></a>
-### func \(\*DiskFS\) [MkdirAll](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_disk.go#L47>)
+### func \(\*DiskFS\) [MkdirAll](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_disk.go#L46>)
 
 ```go
 func (dfs *DiskFS) MkdirAll(path string, perm os.FileMode) error
@@ -136,7 +130,7 @@ func (dfs *DiskFS) MkdirAll(path string, perm os.FileMode) error
 MkdirAll creates a directory named path
 
 <a name="DiskFS.Open"></a>
-### func \(\*DiskFS\) [Open](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_disk.go#L22>)
+### func \(\*DiskFS\) [Open](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_disk.go#L21>)
 
 ```go
 func (dfs *DiskFS) Open(name string) (File, error)
@@ -145,7 +139,7 @@ func (dfs *DiskFS) Open(name string) (File, error)
 Open opens the named file for reading. If successful, methods on the returned file can be used for reading; the associated file descriptor has mode O\_RDONLY. If there is an error, it will be of type \*PathError.
 
 <a name="DiskFS.OpenFile"></a>
-### func \(\*DiskFS\) [OpenFile](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_disk.go#L26>)
+### func \(\*DiskFS\) [OpenFile](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_disk.go#L25>)
 
 ```go
 func (dfs *DiskFS) OpenFile(name string, flag int, perm os.FileMode) (File, error)
@@ -154,7 +148,7 @@ func (dfs *DiskFS) OpenFile(name string, flag int, perm os.FileMode) (File, erro
 
 
 <a name="DiskFS.ReadFile"></a>
-### func \(\*DiskFS\) [ReadFile](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_disk.go#L31>)
+### func \(\*DiskFS\) [ReadFile](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_disk.go#L30>)
 
 ```go
 func (dfs *DiskFS) ReadFile(name string) ([]byte, error)
@@ -163,7 +157,7 @@ func (dfs *DiskFS) ReadFile(name string) ([]byte, error)
 ReadFile reads the file named by filename and returns the contents.
 
 <a name="DiskFS.Remove"></a>
-### func \(\*DiskFS\) [Remove](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_disk.go#L42>)
+### func \(\*DiskFS\) [Remove](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_disk.go#L41>)
 
 ```go
 func (dfs *DiskFS) Remove(name string) error
@@ -171,8 +165,26 @@ func (dfs *DiskFS) Remove(name string) error
 
 Remove removes the named file or \(empty\) directory. If there is an error, it will be of type \*PathError.
 
+<a name="DiskFS.RemoveProgress"></a>
+### func \(\*DiskFS\) [RemoveProgress](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_disk.go#L64>)
+
+```go
+func (dfs *DiskFS) RemoveProgress(progressID string) error
+```
+
+
+
+<a name="DiskFS.SaveProgress"></a>
+### func \(\*DiskFS\) [SaveProgress](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_disk.go#L60>)
+
+```go
+func (dfs *DiskFS) SaveProgress(progressID string, data []byte, perm fs.FileMode) error
+```
+
+
+
 <a name="DiskFS.Stat"></a>
-### func \(\*DiskFS\) [Stat](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_disk.go#L53>)
+### func \(\*DiskFS\) [Stat](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_disk.go#L52>)
 
 ```go
 func (dfs *DiskFS) Stat(name string) (fs.FileInfo, error)
@@ -181,7 +193,7 @@ func (dfs *DiskFS) Stat(name string) (fs.FileInfo, error)
 Stat returns a FileInfo describing the named file. If there is an error, it will be of type \*PathError.
 
 <a name="DiskFS.WriteFile"></a>
-### func \(\*DiskFS\) [WriteFile](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_disk.go#L36>)
+### func \(\*DiskFS\) [WriteFile](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_disk.go#L35>)
 
 ```go
 func (dfs *DiskFS) WriteFile(name string, data []byte, perm os.FileMode) error
@@ -190,7 +202,7 @@ func (dfs *DiskFS) WriteFile(name string, data []byte, perm os.FileMode) error
 WriteFile writes data to a file named by filename.
 
 <a name="FS"></a>
-## type [FS](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs.go#L9-L34>)
+## type [FS](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs.go#L9-L43>)
 
 FS An FS provides access to a hierarchical file system.
 
@@ -220,11 +232,20 @@ type FS interface {
 
     //MkdirAll creates a directory named path
     MkdirAll(path string, perm os.FileMode) error
+
+    // LoadProgress load progress
+    LoadProgress(progressID string) ([]byte, error)
+
+    // SaveProgress save progress
+    SaveProgress(progressID string, data []byte, perm fs.FileMode) error
+
+    // RemoveProgress remove progress
+    RemoveProgress(progressID string) error
 }
 ```
 
 <a name="NewDiskFS"></a>
-### func [NewDiskFS](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_disk.go#L14>)
+### func [NewDiskFS](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_disk.go#L13>)
 
 ```go
 func NewDiskFS() FS
@@ -232,26 +253,8 @@ func NewDiskFS() FS
 
 NewDiskFS create DiskFS instance
 
-<a name="NewMemChanFS"></a>
-### func [NewMemChanFS](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L107>)
-
-```go
-func NewMemChanFS() FS
-```
-
-NewMemFS create MemFS instance
-
-<a name="NewMemFS"></a>
-### func [NewMemFS](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L18>)
-
-```go
-func NewMemFS() FS
-```
-
-NewMemFS create MemFS instance
-
 <a name="File"></a>
-## type [File](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs.go#L36-L45>)
+## type [File](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs.go#L45-L54>)
 
 
 
@@ -280,82 +283,8 @@ type KeyPair struct {
 }
 ```
 
-<a name="MemChanFS"></a>
-## type [MemChanFS](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L102-L104>)
-
-MemFS implement file system on memory
-
-```go
-type MemChanFS struct {
-    // contains filtered or unexported fields
-}
-```
-
-<a name="MemChanFS.MkdirAll"></a>
-### func \(\*MemChanFS\) [MkdirAll](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L175>)
-
-```go
-func (mfs *MemChanFS) MkdirAll(path string, perm os.FileMode) error
-```
-
-MkdirAll creates a directory named path
-
-<a name="MemChanFS.Open"></a>
-### func \(\*MemChanFS\) [Open](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L117>)
-
-```go
-func (mfs *MemChanFS) Open(name string) (File, error)
-```
-
-Open opens the named file for reading. If successful, methods on the returned file can be used for reading; the associated file descriptor has mode O\_RDONLY. If there is an error, it will be of type \*PathError.
-
-<a name="MemChanFS.OpenFile"></a>
-### func \(\*MemChanFS\) [OpenFile](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L132>)
-
-```go
-func (mfs *MemChanFS) OpenFile(name string, flag int, perm os.FileMode) (File, error)
-```
-
-
-
-<a name="MemChanFS.ReadFile"></a>
-### func \(\*MemChanFS\) [ReadFile](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L148>)
-
-```go
-func (mfs *MemChanFS) ReadFile(name string) ([]byte, error)
-```
-
-ReadFile reads the file named by filename and returns the contents.
-
-<a name="MemChanFS.Remove"></a>
-### func \(\*MemChanFS\) [Remove](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L169>)
-
-```go
-func (mfs *MemChanFS) Remove(name string) error
-```
-
-Remove removes the named file or \(empty\) directory. If there is an error, it will be of type \*PathError.
-
-<a name="MemChanFS.Stat"></a>
-### func \(\*MemChanFS\) [Stat](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L181>)
-
-```go
-func (mfs *MemChanFS) Stat(name string) (fs.FileInfo, error)
-```
-
-Stat returns a FileInfo describing the named file. If there is an error, it will be of type \*PathError.
-
-<a name="MemChanFS.WriteFile"></a>
-### func \(\*MemChanFS\) [WriteFile](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L158>)
-
-```go
-func (mfs *MemChanFS) WriteFile(name string, data []byte, perm os.FileMode) error
-```
-
-WriteFile writes data to a file named by filename.
-
 <a name="MemChanFile"></a>
-## type [MemChanFile](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L280-L289>)
+## type [MemChanFile](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/util.go#L109-L118>)
 
 
 
@@ -367,12 +296,13 @@ type MemChanFile struct {
     ModTime        time.Time   // FileInfo.ModTime
     ChunkWriteSize int         //  0 value means no limit
     Sys            interface{} // FileInfo.Sys
+    ErrChan        chan error
     // contains filtered or unexported fields
 }
 ```
 
 <a name="MemChanFile.Close"></a>
-### func \(\*MemChanFile\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L336>)
+### func \(\*MemChanFile\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/util.go#L169>)
 
 ```go
 func (f *MemChanFile) Close() error
@@ -381,7 +311,7 @@ func (f *MemChanFile) Close() error
 
 
 <a name="MemChanFile.Read"></a>
-### func \(\*MemChanFile\) [Read](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L294>)
+### func \(\*MemChanFile\) [Read](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/util.go#L123>)
 
 ```go
 func (f *MemChanFile) Read(p []byte) (int, error)
@@ -390,7 +320,7 @@ func (f *MemChanFile) Read(p []byte) (int, error)
 
 
 <a name="MemChanFile.Seek"></a>
-### func \(\*MemChanFile\) [Seek](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L332>)
+### func \(\*MemChanFile\) [Seek](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/util.go#L165>)
 
 ```go
 func (f *MemChanFile) Seek(offset int64, whence int) (ret int64, err error)
@@ -399,7 +329,7 @@ func (f *MemChanFile) Seek(offset int64, whence int) (ret int64, err error)
 
 
 <a name="MemChanFile.Stat"></a>
-### func \(\*MemChanFile\) [Stat](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L291>)
+### func \(\*MemChanFile\) [Stat](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/util.go#L120>)
 
 ```go
 func (f *MemChanFile) Stat() (fs.FileInfo, error)
@@ -408,7 +338,7 @@ func (f *MemChanFile) Stat() (fs.FileInfo, error)
 
 
 <a name="MemChanFile.Sync"></a>
-### func \(\*MemChanFile\) [Sync](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L320>)
+### func \(\*MemChanFile\) [Sync](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/util.go#L153>)
 
 ```go
 func (f *MemChanFile) Sync() error
@@ -417,7 +347,7 @@ func (f *MemChanFile) Sync() error
 
 
 <a name="MemChanFile.Write"></a>
-### func \(\*MemChanFile\) [Write](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L306>)
+### func \(\*MemChanFile\) [Write](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/util.go#L139>)
 
 ```go
 func (f *MemChanFile) Write(p []byte) (n int, err error)
@@ -425,82 +355,8 @@ func (f *MemChanFile) Write(p []byte) (n int, err error)
 
 
 
-<a name="MemFS"></a>
-## type [MemFS](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L13-L15>)
-
-MemFS implement file system on memory
-
-```go
-type MemFS struct {
-    // contains filtered or unexported fields
-}
-```
-
-<a name="MemFS.MkdirAll"></a>
-### func \(\*MemFS\) [MkdirAll](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L86>)
-
-```go
-func (mfs *MemFS) MkdirAll(path string, perm os.FileMode) error
-```
-
-MkdirAll creates a directory named path
-
-<a name="MemFS.Open"></a>
-### func \(\*MemFS\) [Open](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L28>)
-
-```go
-func (mfs *MemFS) Open(name string) (File, error)
-```
-
-Open opens the named file for reading. If successful, methods on the returned file can be used for reading; the associated file descriptor has mode O\_RDONLY. If there is an error, it will be of type \*PathError.
-
-<a name="MemFS.OpenFile"></a>
-### func \(\*MemFS\) [OpenFile](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L43>)
-
-```go
-func (mfs *MemFS) OpenFile(name string, flag int, perm os.FileMode) (File, error)
-```
-
-
-
-<a name="MemFS.ReadFile"></a>
-### func \(\*MemFS\) [ReadFile](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L59>)
-
-```go
-func (mfs *MemFS) ReadFile(name string) ([]byte, error)
-```
-
-ReadFile reads the file named by filename and returns the contents.
-
-<a name="MemFS.Remove"></a>
-### func \(\*MemFS\) [Remove](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L80>)
-
-```go
-func (mfs *MemFS) Remove(name string) error
-```
-
-Remove removes the named file or \(empty\) directory. If there is an error, it will be of type \*PathError.
-
-<a name="MemFS.Stat"></a>
-### func \(\*MemFS\) [Stat](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L92>)
-
-```go
-func (mfs *MemFS) Stat(name string) (fs.FileInfo, error)
-```
-
-Stat returns a FileInfo describing the named file. If there is an error, it will be of type \*PathError.
-
-<a name="MemFS.WriteFile"></a>
-### func \(\*MemFS\) [WriteFile](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L69>)
-
-```go
-func (mfs *MemFS) WriteFile(name string, data []byte, perm os.FileMode) error
-```
-
-WriteFile writes data to a file named by filename.
-
 <a name="MemFile"></a>
-## type [MemFile](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L190-L197>)
+## type [MemFile](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/util.go#L11-L18>)
 
 
 
@@ -516,7 +372,7 @@ type MemFile struct {
 ```
 
 <a name="MemFile.Close"></a>
-### func \(\*MemFile\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L239>)
+### func \(\*MemFile\) [Close](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/util.go#L68>)
 
 ```go
 func (f *MemFile) Close() error
@@ -525,7 +381,7 @@ func (f *MemFile) Close() error
 
 
 <a name="MemFile.InitBuffer"></a>
-### func \(\*MemFile\) [InitBuffer](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L224>)
+### func \(\*MemFile\) [InitBuffer](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/util.go#L45>)
 
 ```go
 func (f *MemFile) InitBuffer(size int)
@@ -534,7 +390,7 @@ func (f *MemFile) InitBuffer(size int)
 
 
 <a name="MemFile.Read"></a>
-### func \(\*MemFile\) [Read](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L202>)
+### func \(\*MemFile\) [Read](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/util.go#L23>)
 
 ```go
 func (f *MemFile) Read(p []byte) (int, error)
@@ -543,7 +399,7 @@ func (f *MemFile) Read(p []byte) (int, error)
 
 
 <a name="MemFile.Seek"></a>
-### func \(\*MemFile\) [Seek](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L231>)
+### func \(\*MemFile\) [Seek](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/util.go#L52>)
 
 ```go
 func (f *MemFile) Seek(offset int64, whence int) (ret int64, err error)
@@ -552,7 +408,7 @@ func (f *MemFile) Seek(offset int64, whence int) (ret int64, err error)
 
 
 <a name="MemFile.Stat"></a>
-### func \(\*MemFile\) [Stat](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L199>)
+### func \(\*MemFile\) [Stat](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/util.go#L20>)
 
 ```go
 func (f *MemFile) Stat() (fs.FileInfo, error)
@@ -561,7 +417,7 @@ func (f *MemFile) Stat() (fs.FileInfo, error)
 
 
 <a name="MemFile.Sync"></a>
-### func \(\*MemFile\) [Sync](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L228>)
+### func \(\*MemFile\) [Sync](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/util.go#L49>)
 
 ```go
 func (f *MemFile) Sync() error
@@ -570,7 +426,7 @@ func (f *MemFile) Sync() error
 
 
 <a name="MemFile.Write"></a>
-### func \(\*MemFile\) [Write](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L209>)
+### func \(\*MemFile\) [Write](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/util.go#L30>)
 
 ```go
 func (f *MemFile) Write(p []byte) (n int, err error)
@@ -579,7 +435,7 @@ func (f *MemFile) Write(p []byte) (n int, err error)
 
 
 <a name="MemFile.WriteAt"></a>
-### func \(\*MemFile\) [WriteAt](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L214>)
+### func \(\*MemFile\) [WriteAt](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/util.go#L35>)
 
 ```go
 func (f *MemFile) WriteAt(p []byte, offset int64) (n int, err error)
@@ -588,7 +444,7 @@ func (f *MemFile) WriteAt(p []byte, offset int64) (n int, err error)
 
 
 <a name="MemFileChanInfo"></a>
-## type [MemFileChanInfo](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L342-L345>)
+## type [MemFileChanInfo](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/util.go#L174-L177>)
 
 
 
@@ -599,7 +455,7 @@ type MemFileChanInfo struct {
 ```
 
 <a name="MemFileChanInfo.Info"></a>
-### func \(\*MemFileChanInfo\) [Info](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L374>)
+### func \(\*MemFileChanInfo\) [Info](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/util.go#L206>)
 
 ```go
 func (i *MemFileChanInfo) Info() (fs.FileInfo, error)
@@ -608,7 +464,7 @@ func (i *MemFileChanInfo) Info() (fs.FileInfo, error)
 
 
 <a name="MemFileChanInfo.IsDir"></a>
-### func \(\*MemFileChanInfo\) [IsDir](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L366>)
+### func \(\*MemFileChanInfo\) [IsDir](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/util.go#L198>)
 
 ```go
 func (i *MemFileChanInfo) IsDir() bool
@@ -617,7 +473,7 @@ func (i *MemFileChanInfo) IsDir() bool
 
 
 <a name="MemFileChanInfo.ModTime"></a>
-### func \(\*MemFileChanInfo\) [ModTime](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L362>)
+### func \(\*MemFileChanInfo\) [ModTime](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/util.go#L194>)
 
 ```go
 func (i *MemFileChanInfo) ModTime() time.Time
@@ -626,7 +482,7 @@ func (i *MemFileChanInfo) ModTime() time.Time
 
 
 <a name="MemFileChanInfo.Mode"></a>
-### func \(\*MemFileChanInfo\) [Mode](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L354>)
+### func \(\*MemFileChanInfo\) [Mode](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/util.go#L186>)
 
 ```go
 func (i *MemFileChanInfo) Mode() fs.FileMode
@@ -635,7 +491,7 @@ func (i *MemFileChanInfo) Mode() fs.FileMode
 
 
 <a name="MemFileChanInfo.Name"></a>
-### func \(\*MemFileChanInfo\) [Name](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L347>)
+### func \(\*MemFileChanInfo\) [Name](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/util.go#L179>)
 
 ```go
 func (i *MemFileChanInfo) Name() string
@@ -644,7 +500,7 @@ func (i *MemFileChanInfo) Name() string
 
 
 <a name="MemFileChanInfo.Size"></a>
-### func \(\*MemFileChanInfo\) [Size](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L350>)
+### func \(\*MemFileChanInfo\) [Size](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/util.go#L182>)
 
 ```go
 func (i *MemFileChanInfo) Size() int64
@@ -653,7 +509,7 @@ func (i *MemFileChanInfo) Size() int64
 
 
 <a name="MemFileChanInfo.Sys"></a>
-### func \(\*MemFileChanInfo\) [Sys](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L370>)
+### func \(\*MemFileChanInfo\) [Sys](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/util.go#L202>)
 
 ```go
 func (i *MemFileChanInfo) Sys() interface{}
@@ -662,7 +518,7 @@ func (i *MemFileChanInfo) Sys() interface{}
 
 
 <a name="MemFileChanInfo.Type"></a>
-### func \(\*MemFileChanInfo\) [Type](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L358>)
+### func \(\*MemFileChanInfo\) [Type](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/util.go#L190>)
 
 ```go
 func (i *MemFileChanInfo) Type() fs.FileMode
@@ -671,7 +527,7 @@ func (i *MemFileChanInfo) Type() fs.FileMode
 
 
 <a name="MemFileInfo"></a>
-## type [MemFileInfo](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L244-L247>)
+## type [MemFileInfo](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/util.go#L73-L76>)
 
 
 
@@ -682,7 +538,7 @@ type MemFileInfo struct {
 ```
 
 <a name="MemFileInfo.Info"></a>
-### func \(\*MemFileInfo\) [Info](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L276>)
+### func \(\*MemFileInfo\) [Info](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/util.go#L105>)
 
 ```go
 func (i *MemFileInfo) Info() (fs.FileInfo, error)
@@ -691,7 +547,7 @@ func (i *MemFileInfo) Info() (fs.FileInfo, error)
 
 
 <a name="MemFileInfo.IsDir"></a>
-### func \(\*MemFileInfo\) [IsDir](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L268>)
+### func \(\*MemFileInfo\) [IsDir](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/util.go#L97>)
 
 ```go
 func (i *MemFileInfo) IsDir() bool
@@ -700,7 +556,7 @@ func (i *MemFileInfo) IsDir() bool
 
 
 <a name="MemFileInfo.ModTime"></a>
-### func \(\*MemFileInfo\) [ModTime](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L264>)
+### func \(\*MemFileInfo\) [ModTime](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/util.go#L93>)
 
 ```go
 func (i *MemFileInfo) ModTime() time.Time
@@ -709,7 +565,7 @@ func (i *MemFileInfo) ModTime() time.Time
 
 
 <a name="MemFileInfo.Mode"></a>
-### func \(\*MemFileInfo\) [Mode](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L256>)
+### func \(\*MemFileInfo\) [Mode](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/util.go#L85>)
 
 ```go
 func (i *MemFileInfo) Mode() fs.FileMode
@@ -718,7 +574,7 @@ func (i *MemFileInfo) Mode() fs.FileMode
 
 
 <a name="MemFileInfo.Name"></a>
-### func \(\*MemFileInfo\) [Name](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L249>)
+### func \(\*MemFileInfo\) [Name](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/util.go#L78>)
 
 ```go
 func (i *MemFileInfo) Name() string
@@ -727,7 +583,7 @@ func (i *MemFileInfo) Name() string
 
 
 <a name="MemFileInfo.Size"></a>
-### func \(\*MemFileInfo\) [Size](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L252>)
+### func \(\*MemFileInfo\) [Size](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/util.go#L81>)
 
 ```go
 func (i *MemFileInfo) Size() int64
@@ -736,7 +592,7 @@ func (i *MemFileInfo) Size() int64
 
 
 <a name="MemFileInfo.Sys"></a>
-### func \(\*MemFileInfo\) [Sys](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L272>)
+### func \(\*MemFileInfo\) [Sys](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/util.go#L101>)
 
 ```go
 func (i *MemFileInfo) Sys() interface{}
@@ -745,7 +601,7 @@ func (i *MemFileInfo) Sys() interface{}
 
 
 <a name="MemFileInfo.Type"></a>
-### func \(\*MemFileInfo\) [Type](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/fs_mem.go#L260>)
+### func \(\*MemFileInfo\) [Type](<https://github.com/0chain/gosdk/blob/doc/initial/core/sys/util.go#L89>)
 
 ```go
 func (i *MemFileInfo) Type() fs.FileMode

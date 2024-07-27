@@ -49,7 +49,7 @@ var Sharders *node.NodeHolder
 ```
 
 <a name="GetAllSharders"></a>
-## func [GetAllSharders](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L142>)
+## func [GetAllSharders](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L137>)
 
 ```go
 func GetAllSharders() []string
@@ -58,7 +58,7 @@ func GetAllSharders() []string
 
 
 <a name="GetBlockWorker"></a>
-## func [GetBlockWorker](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L138>)
+## func [GetBlockWorker](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L133>)
 
 ```go
 func GetBlockWorker() string
@@ -67,7 +67,7 @@ func GetBlockWorker() string
 
 
 <a name="GetChainID"></a>
-## func [GetChainID](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L120>)
+## func [GetChainID](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L115>)
 
 ```go
 func GetChainID() string
@@ -76,7 +76,7 @@ func GetChainID() string
 
 
 <a name="GetMaxTxnQuery"></a>
-## func [GetMaxTxnQuery](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L153>)
+## func [GetMaxTxnQuery](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L148>)
 
 ```go
 func GetMaxTxnQuery() int
@@ -85,7 +85,7 @@ func GetMaxTxnQuery() int
 
 
 <a name="GetMinConfirmation"></a>
-## func [GetMinConfirmation](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L165>)
+## func [GetMinConfirmation](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L160>)
 
 ```go
 func GetMinConfirmation() int
@@ -94,7 +94,7 @@ func GetMinConfirmation() int
 
 
 <a name="GetMinSubmit"></a>
-## func [GetMinSubmit](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L161>)
+## func [GetMinSubmit](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L156>)
 
 ```go
 func GetMinSubmit() int
@@ -103,7 +103,7 @@ func GetMinSubmit() int
 
 
 <a name="GetMiners"></a>
-## func [GetMiners](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L149>)
+## func [GetMiners](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L144>)
 
 ```go
 func GetMiners() []string
@@ -112,7 +112,7 @@ func GetMiners() []string
 
 
 <a name="GetQuerySleepTime"></a>
-## func [GetQuerySleepTime](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L157>)
+## func [GetQuerySleepTime](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L152>)
 
 ```go
 func GetQuerySleepTime() int
@@ -121,7 +121,7 @@ func GetQuerySleepTime() int
 
 
 <a name="GetSharders"></a>
-## func [GetSharders](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L145>)
+## func [GetSharders](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L140>)
 
 ```go
 func GetSharders() []string
@@ -130,7 +130,7 @@ func GetSharders() []string
 
 
 <a name="GetStableMiners"></a>
-## func [GetStableMiners](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L27>)
+## func [GetStableMiners](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L26>)
 
 ```go
 func GetStableMiners() []string
@@ -139,7 +139,7 @@ func GetStableMiners() []string
 
 
 <a name="PopulateChain"></a>
-## func [PopulateChain](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L124>)
+## func [PopulateChain](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L119>)
 
 ```go
 func PopulateChain(minerjson string, sharderjson string) error
@@ -148,7 +148,7 @@ func PopulateChain(minerjson string, sharderjson string) error
 
 
 <a name="PopulateNodes"></a>
-## func [PopulateNodes](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L102>)
+## func [PopulateNodes](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L97>)
 
 ```go
 func PopulateNodes(nodesjson string) ([]string, error)
@@ -157,7 +157,7 @@ func PopulateNodes(nodesjson string) ([]string, error)
 
 
 <a name="ResetStableMiners"></a>
-## func [ResetStableMiners](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L36>)
+## func [ResetStableMiners](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L35>)
 
 ```go
 func ResetStableMiners()
@@ -166,7 +166,7 @@ func ResetStableMiners()
 
 
 <a name="SetBlockWorker"></a>
-## func [SetBlockWorker](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L169>)
+## func [SetBlockWorker](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L164>)
 
 ```go
 func SetBlockWorker(blockWorker string)
@@ -175,7 +175,7 @@ func SetBlockWorker(blockWorker string)
 
 
 <a name="SetChainID"></a>
-## func [SetChainID](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L189>)
+## func [SetChainID](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L184>)
 
 ```go
 func SetChainID(id string)
@@ -184,7 +184,7 @@ func SetChainID(id string)
 
 
 <a name="SetMaxTxnQuery"></a>
-## func [SetMaxTxnQuery](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L193>)
+## func [SetMaxTxnQuery](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L188>)
 
 ```go
 func SetMaxTxnQuery(num int)
@@ -193,7 +193,7 @@ func SetMaxTxnQuery(num int)
 
 
 <a name="SetMinConfirmation"></a>
-## func [SetMinConfirmation](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L205>)
+## func [SetMinConfirmation](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L200>)
 
 ```go
 func SetMinConfirmation(minConfirmation int)
@@ -202,7 +202,7 @@ func SetMinConfirmation(minConfirmation int)
 
 
 <a name="SetMinSubmit"></a>
-## func [SetMinSubmit](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L201>)
+## func [SetMinSubmit](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L196>)
 
 ```go
 func SetMinSubmit(minSubmit int)
@@ -211,7 +211,7 @@ func SetMinSubmit(minSubmit int)
 
 
 <a name="SetMiners"></a>
-## func [SetMiners](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L185>)
+## func [SetMiners](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L180>)
 
 ```go
 func SetMiners(minerArray []string)
@@ -220,7 +220,7 @@ func SetMiners(minerArray []string)
 
 
 <a name="SetQuerySleepTime"></a>
-## func [SetQuerySleepTime](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L197>)
+## func [SetQuerySleepTime](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L192>)
 
 ```go
 func SetQuerySleepTime(time int)
@@ -229,7 +229,7 @@ func SetQuerySleepTime(time int)
 
 
 <a name="SetSharders"></a>
-## func [SetSharders](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L173>)
+## func [SetSharders](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L168>)
 
 ```go
 func SetSharders(sharderArray []string)
@@ -238,7 +238,7 @@ func SetSharders(sharderArray []string)
 
 
 <a name="ChainConfig"></a>
-## type [ChainConfig](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L42-L51>)
+## type [ChainConfig](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L41-L50>)
 
 
 
@@ -256,22 +256,20 @@ type ChainConfig struct {
 ```
 
 <a name="StakePoolSettings"></a>
-## type [StakePoolSettings](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L54-L60>)
+## type [StakePoolSettings](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L53-L57>)
 
 StakePoolSettings information.
 
 ```go
 type StakePoolSettings struct {
-    DelegateWallet string         `json:"delegate_wallet"`
-    MinStake       common.Balance `json:"min_stake"`
-    MaxStake       common.Balance `json:"max_stake"`
-    NumDelegates   int            `json:"num_delegates"`
-    ServiceCharge  float64        `json:"service_charge"`
+    DelegateWallet string  `json:"delegate_wallet"`
+    NumDelegates   int     `json:"num_delegates"`
+    ServiceCharge  float64 `json:"service_charge"`
 }
 ```
 
 <a name="StorageNode"></a>
-## type [StorageNode](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L83-L88>)
+## type [StorageNode](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L78-L83>)
 
 
 
@@ -284,7 +282,7 @@ type StorageNode struct {
 ```
 
 <a name="StorageNode.IsSkip"></a>
-### func \(\*StorageNode\) [IsSkip](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L98>)
+### func \(\*StorageNode\) [IsSkip](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L93>)
 
 ```go
 func (sn *StorageNode) IsSkip() bool
@@ -293,7 +291,7 @@ func (sn *StorageNode) IsSkip() bool
 
 
 <a name="StorageNode.SetSkip"></a>
-### func \(\*StorageNode\) [SetSkip](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L90>)
+### func \(\*StorageNode\) [SetSkip](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L85>)
 
 ```go
 func (sn *StorageNode) SetSkip(t bool)
@@ -302,22 +300,20 @@ func (sn *StorageNode) SetSkip(t bool)
 
 
 <a name="UpdateStakePoolSettings"></a>
-## type [UpdateStakePoolSettings](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L63-L69>)
+## type [UpdateStakePoolSettings](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L60-L64>)
 
 UpdateStakePoolSettings information.
 
 ```go
 type UpdateStakePoolSettings struct {
-    DelegateWallet *string         `json:"delegate_wallet,omitempty"`
-    MinStake       *common.Balance `json:"min_stake,omitempty"`
-    MaxStake       *common.Balance `json:"max_stake,omitempty"`
-    NumDelegates   *int            `json:"num_delegates,omitempty"`
-    ServiceCharge  *float64        `json:"service_charge,omitempty"`
+    DelegateWallet *string  `json:"delegate_wallet,omitempty"`
+    NumDelegates   *int     `json:"num_delegates,omitempty"`
+    ServiceCharge  *float64 `json:"service_charge,omitempty"`
 }
 ```
 
 <a name="UpdateValidationNode"></a>
-## type [UpdateValidationNode](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L77-L81>)
+## type [UpdateValidationNode](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L72-L76>)
 
 
 
@@ -330,7 +326,7 @@ type UpdateValidationNode struct {
 ```
 
 <a name="ValidationNode"></a>
-## type [ValidationNode](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L71-L75>)
+## type [ValidationNode](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/blockchain/entity.go#L66-L70>)
 
 
 

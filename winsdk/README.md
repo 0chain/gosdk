@@ -10,6 +10,7 @@ import "github.com/0chain/gosdk/winsdk"
 
 - [Variables](<#variables>)
 - [func BulkUpload\(allocationID, files \*C.char\) \*C.char](<#BulkUpload>)
+- [func CancelUpload\(allocationID, remotePath \*C.char\) \*C.char](<#CancelUpload>)
 - [func CreateAuthTicket\(allocationID, remotePath, refereeClientID, refereePublicEncryptionKey, availableAfter \*C.char, expirationSeconds int64\) \*C.char](<#CreateAuthTicket>)
 - [func CreateFreeAllocation\(freemarker \*C.char\) \*C.char](<#CreateFreeAllocation>)
 - [func CreateJwtSession\(phoneNumber \*C.char\) \*C.char](<#CreateJwtSession>)
@@ -47,12 +48,14 @@ import "github.com/0chain/gosdk/winsdk"
 - [func List\(allocationID, remotePath, authTicket, lookupHash \*C.char\) \*C.char](<#List>)
 - [func ListAll\(allocationID \*C.char\) \*C.char](<#ListAll>)
 - [func ListAllocations\(\) \*C.char](<#ListAllocations>)
-- [func MultiOperation\(\_allocationID, \_jsonMultiOperationOptions \*C.char\) \*C.char](<#MultiOperation>)
+- [func MultiOperation\(_allocationID, _jsonMultiOperationOptions \*C.char\) \*C.char](<#MultiOperation>)
+- [func PauseUpload\(allocationID, remotePath \*C.char\) \*C.char](<#PauseUpload>)
 - [func RecoverWallet\(mnemonic \*C.char\) \*C.char](<#RecoverWallet>)
 - [func RefreshJwtToken\(phoneNumber, token \*C.char\) \*C.char](<#RefreshJwtToken>)
 - [func SetFFmpeg\(fullFileName \*C.char\) \*C.char](<#SetFFmpeg>)
 - [func SetLogFile\(file \*C.char\) \*C.char](<#SetLogFile>)
 - [func SetNumBlockDownloads\(num int\)](<#SetNumBlockDownloads>)
+- [func SetUploadMode\(mode int\)](<#SetUploadMode>)
 - [func SetZBoxWallet\(clientID, clientPrivateKey, clientPublicKey \*C.char\) \*C.char](<#SetZBoxWallet>)
 - [func SignRequest\(privateKey, signatureScheme, data \*C.char\) \*C.char](<#SignRequest>)
 - [func StartStreamServer\(allocationID \*C.char\) \*C.char](<#StartStreamServer>)
@@ -92,7 +95,7 @@ var ErrInvalidSignatureScheme = errors.New("invalid_signature_scheme")
 ```
 
 <a name="BulkUpload"></a>
-## func [BulkUpload](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/storage.go#L233>)
+## func [BulkUpload](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/storage.go#L238>)
 
 ```go
 func BulkUpload(allocationID, files *C.char) *C.char
@@ -103,8 +106,17 @@ BulkUpload \- upload files from local path to remote path \#\# Inputs
 - allocationID
 - files: Json Array of UploadFile return \{ "error":"", "result":"true", \}
 
+<a name="CancelUpload"></a>
+## func [CancelUpload](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/storage.go#L749>)
+
+```go
+func CancelUpload(allocationID, remotePath *C.char) *C.char
+```
+
+
+
 <a name="CreateAuthTicket"></a>
-## func [CreateAuthTicket](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/storage.go#L663>)
+## func [CreateAuthTicket](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/storage.go#L668>)
 
 ```go
 func CreateAuthTicket(allocationID, remotePath, refereeClientID, refereePublicEncryptionKey, availableAfter *C.char, expirationSeconds int64) *C.char
@@ -212,7 +224,7 @@ CreateWallet \- create a new wallet, and save it to \~/.zcn/wallet.json \#\# Out
 ```
 
 <a name="CryptoJsDecrypt"></a>
-## func [CryptoJsDecrypt](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/sdk.go#L279>)
+## func [CryptoJsDecrypt](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/sdk.go#L280>)
 
 ```go
 func CryptoJsDecrypt(passphrase, encryptedMessage *C.char) *C.char
@@ -229,7 +241,7 @@ return
 ```
 
 <a name="CryptoJsEncrypt"></a>
-## func [CryptoJsEncrypt](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/sdk.go#L258>)
+## func [CryptoJsEncrypt](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/sdk.go#L259>)
 
 ```go
 func CryptoJsEncrypt(passphrase, message *C.char) *C.char
@@ -263,7 +275,7 @@ return
 ```
 
 <a name="DeleteAuthTicket"></a>
-## func [DeleteAuthTicket](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/storage.go#L720>)
+## func [DeleteAuthTicket](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/storage.go#L725>)
 
 ```go
 func DeleteAuthTicket(allocationID, remotePath, refereeClientID *C.char) *C.char
@@ -308,7 +320,7 @@ DeleteSharedInfo create a shareInfo on 0box db \#\# Inputs
 ```
 
 <a name="DownloadFile"></a>
-## func [DownloadFile](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/storage.go#L360>)
+## func [DownloadFile](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/storage.go#L365>)
 
 ```go
 func DownloadFile(allocationID, localPath, remotePath *C.char, verifyDownload, isFinal bool) *C.char
@@ -332,7 +344,7 @@ DownloadFile \- downalod file \#\# Inputs
 ```
 
 <a name="DownloadFileBlocks"></a>
-## func [DownloadFileBlocks](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/storage.go#L536-L538>)
+## func [DownloadFileBlocks](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/storage.go#L541-L543>)
 
 ```go
 func DownloadFileBlocks(allocationID, localPath, remotePath *C.char, startBlock int64, endBlock int64, numBlocks int, verifyDownload bool, isFinal bool) *C.char
@@ -359,7 +371,7 @@ DownloadFileBlocks \- downalod file blocks \#\# Inputs
 ```
 
 <a name="DownloadSharedFile"></a>
-## func [DownloadSharedFile](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/storage.go#L440>)
+## func [DownloadSharedFile](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/storage.go#L445>)
 
 ```go
 func DownloadSharedFile(localPath, authTicket *C.char, verifyDownload bool, isFinal bool) *C.char
@@ -382,7 +394,7 @@ DownloadSharedFile \- downalod shared file by authTicket \#\# Inputs
 ```
 
 <a name="DownloadSharedFileBlocks"></a>
-## func [DownloadSharedFileBlocks](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/storage.go#L583-L584>)
+## func [DownloadSharedFileBlocks](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/storage.go#L588-L589>)
 
 ```go
 func DownloadSharedFileBlocks(localPath, authTicket *C.char, startBlock int64, endBlock int64, numBlocks int, verifyDownload bool, isFinal bool) *C.char
@@ -408,7 +420,7 @@ DownloadSharedFileBlocks \- downalod shared file blocks \#\# Inputs
 ```
 
 <a name="DownloadSharedThumbnail"></a>
-## func [DownloadSharedThumbnail](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/storage.go#L485>)
+## func [DownloadSharedThumbnail](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/storage.go#L490>)
 
 ```go
 func DownloadSharedThumbnail(localPath, authTicket *C.char, verifyDownload bool, isFinal bool) *C.char
@@ -431,7 +443,7 @@ DownloadSharedThumbnail \- downalod shared thumbnial by authTicket \#\# Inputs
 ```
 
 <a name="DownloadThumbnail"></a>
-## func [DownloadThumbnail](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/storage.go#L399>)
+## func [DownloadThumbnail](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/storage.go#L404>)
 
 ```go
 func DownloadThumbnail(allocationID, localPath, remotePath *C.char, verifyDownload bool, isFinal bool) *C.char
@@ -492,7 +504,7 @@ return
 ```
 
 <a name="GetDownloadStatus"></a>
-## func [GetDownloadStatus](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/storage.go#L626>)
+## func [GetDownloadStatus](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/storage.go#L631>)
 
 ```go
 func GetDownloadStatus(key *C.char, isThumbnail bool) *C.char
@@ -512,7 +524,7 @@ GetDownloadStatus \- get download status \#\# Inputs
 ```
 
 <a name="GetFileContentType"></a>
-## func [GetFileContentType](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/sdk.go#L367>)
+## func [GetFileContentType](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/sdk.go#L368>)
 
 ```go
 func GetFileContentType(file *C.char) *C.char
@@ -523,7 +535,7 @@ GetFileContentType get content/MIME type of file \#\# Inputs:
 - fullFileName return \{ "error":"", "result":true, \}
 
 <a name="GetFileMeta"></a>
-## func [GetFileMeta](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/storage.go#L179>)
+## func [GetFileMeta](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/storage.go#L184>)
 
 ```go
 func GetFileMeta(allocationID, path, authTicket *C.char) *C.char
@@ -575,7 +587,7 @@ GetFreeMarker create a free storage marker \#\# Inputs
 - token return \{ "error":"", "result":"\{\}", \}
 
 <a name="GetLookupHash"></a>
-## func [GetLookupHash](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/sdk.go#L321>)
+## func [GetLookupHash](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/sdk.go#L322>)
 
 ```go
 func GetLookupHash(allocationID *C.char, path *C.char) *C.char
@@ -587,7 +599,7 @@ GetLookupHash get lookup hash with allocation id and path \#\# Inputs:
 - path return \{ "error":"", "result":"xxxx", \}
 
 <a name="GetPublicEncryptionKey"></a>
-## func [GetPublicEncryptionKey](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/sdk.go#L300>)
+## func [GetPublicEncryptionKey](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/sdk.go#L301>)
 
 ```go
 func GetPublicEncryptionKey(mnemonics *C.char) *C.char
@@ -667,7 +679,7 @@ GetSharedToMe get file list that is shared to me \#\# Inputs
 ```
 
 <a name="GetUploadStatus"></a>
-## func [GetUploadStatus](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/storage.go#L305>)
+## func [GetUploadStatus](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/storage.go#L310>)
 
 ```go
 func GetUploadStatus(lookupHash *C.char) *C.char
@@ -703,7 +715,7 @@ GetWalletBalance \- get wallet balance \#\# Inputs \- clientID \#\# Outputs
 ```
 
 <a name="InitSDKs"></a>
-## func [InitSDKs](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/sdk.go#L88>)
+## func [InitSDKs](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/sdk.go#L89>)
 
 ```go
 func InitSDKs(configJson *C.char) *C.char
@@ -711,10 +723,10 @@ func InitSDKs(configJson *C.char) *C.char
 
 InitSDKs \- init zcncore sdk and zboxapi client from config
 
-- configJson \{ "block\_worker": "https://dev.0chain.net/dns", "signature\_scheme": "bls0chain", "min\_submit": 50, "min\_confirmation": 50, "confirmation\_chain\_length": 3, "max\_txn\_query": 5, "query\_sleep\_time": 5, "preferred\_blobbers": \["https://dev.0chain.net/blobber02","https://dev.0chain.net/blobber03"\], "chain\_id":"0afc093ffb509f059c55478bc1a60351cef7b4e9c008a53a6cc8241ca8617dfe", "ethereum\_node":"https://ropsten.infura.io/v3/xxxxxxxxxxxxxxx", "zbox\_host":"https://0box.dev.0chain.net", "zbox\_app\_type":"vult", "sharder\_consensous": 2, \}
+- configJson \{ "block_worker": "https://dev.0chain.net/dns", "signature_scheme": "bls0chain", "min_submit": 50, "min_confirmation": 50, "confirmation_chain_length": 3, "max_txn_query": 5, "query_sleep_time": 5, "preferred_blobbers": \["https://dev.0chain.net/blobber02","https://dev.0chain.net/blobber03"\], "chain_id":"0afc093ffb509f059c55478bc1a60351cef7b4e9c008a53a6cc8241ca8617dfe", "ethereum_node":"https://ropsten.infura.io/v3/xxxxxxxxxxxxxxx", "zbox_host":"https://0box.dev.0chain.net", "zbox_app_type":"vult", "sharder_consensous": 2, \}
 
 <a name="InitWallet"></a>
-## func [InitWallet](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/sdk.go#L158>)
+## func [InitWallet](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/sdk.go#L159>)
 
 ```go
 func InitWallet(clientJson *C.char) *C.char
@@ -722,7 +734,7 @@ func InitWallet(clientJson *C.char) *C.char
 
 InitWallet \- init wallet for storage sdk and zboxapi client
 
-- clientJson \{ "client\_id":"8f6ce6457fc04cfb4eb67b5ce3162fe2b85f66ef81db9d1a9eaa4ffe1d2359e0", "client\_key":"c8c88854822a1039c5a74bdb8c025081a64b17f52edd463fbecb9d4a42d15608f93b5434e926d67a828b88e63293b6aedbaf0042c7020d0a96d2e2f17d3779a4", "keys":\[ \{ "public\_key":"c8c88854822a1039c5a74bdb8c025081a64b17f52edd463fbecb9d4a42d15608f93b5434e926d67a828b88e63293b6aedbaf0042c7020d0a96d2e2f17d3779a4", "private\_key":"72f480d4b1e7fb76e04327b7c2348a99a64f0ff2c5ebc3334a002aa2e66e8506" \}\], "mnemonics":"abandon mercy into make powder fashion butter ignore blade vanish plastic shock learn nephew matrix indoor surge document motor group barely offer pottery antenna", "version":"1.0", "date\_created":"1668667145", "nonce":0 \}
+- clientJson \{ "client_id":"8f6ce6457fc04cfb4eb67b5ce3162fe2b85f66ef81db9d1a9eaa4ffe1d2359e0", "client_key":"c8c88854822a1039c5a74bdb8c025081a64b17f52edd463fbecb9d4a42d15608f93b5434e926d67a828b88e63293b6aedbaf0042c7020d0a96d2e2f17d3779a4", "keys":\[ \{ "public_key":"c8c88854822a1039c5a74bdb8c025081a64b17f52edd463fbecb9d4a42d15608f93b5434e926d67a828b88e63293b6aedbaf0042c7020d0a96d2e2f17d3779a4", "private_key":"72f480d4b1e7fb76e04327b7c2348a99a64f0ff2c5ebc3334a002aa2e66e8506" \}\], "mnemonics":"abandon mercy into make powder fashion butter ignore blade vanish plastic shock learn nephew matrix indoor surge document motor group barely offer pottery antenna", "version":"1.0", "date_created":"1668667145", "nonce":0 \}
 
 <a name="InitZBox"></a>
 ## func [InitZBox](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/zboxapi.go#L31>)
@@ -793,7 +805,7 @@ ListAllocations get allocation list \#\# Output
 ```
 
 <a name="MultiOperation"></a>
-## func [MultiOperation](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/storage.go#L123>)
+## func [MultiOperation](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/storage.go#L128>)
 
 ```go
 func MultiOperation(_allocationID, _jsonMultiOperationOptions *C.char) *C.char
@@ -803,6 +815,15 @@ MultiOperation \- do copy, move, delete and createdir operation together \#\# In
 
 - allocationID
 - jsonMultiOperationOptions: Json Array of MultiOperationOption. eg: "\[\{"operationType":"move","remotePath":"/README.md","destPath":"/folder1/"\},\{"operationType":"delete","remotePath":"/t3.txt"\}\]" return \{ "error":"", "result":"true", \}
+
+<a name="PauseUpload"></a>
+## func [PauseUpload](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/storage.go#L770>)
+
+```go
+func PauseUpload(allocationID, remotePath *C.char) *C.char
+```
+
+
 
 <a name="RecoverWallet"></a>
 ## func [RecoverWallet](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/wallet.go#L56>)
@@ -838,7 +859,7 @@ return
 ```
 
 <a name="SetFFmpeg"></a>
-## func [SetFFmpeg](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/sdk.go#L341>)
+## func [SetFFmpeg](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/sdk.go#L342>)
 
 ```go
 func SetFFmpeg(fullFileName *C.char) *C.char
@@ -849,7 +870,7 @@ SetFFmpeg set the full file name of ffmpeg.exe \#\# Inputs:
 - fullFileName return \{ "error":"", "result":true, \}
 
 <a name="SetLogFile"></a>
-## func [SetLogFile](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/sdk.go#L39>)
+## func [SetLogFile](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/sdk.go#L40>)
 
 ```go
 func SetLogFile(file *C.char) *C.char
@@ -860,7 +881,7 @@ SetLogFile \- set log file \#\# Inputs
 - file: the full path of log file
 
 <a name="SetNumBlockDownloads"></a>
-## func [SetNumBlockDownloads](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/storage.go#L340>)
+## func [SetNumBlockDownloads](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/storage.go#L345>)
 
 ```go
 func SetNumBlockDownloads(num int)
@@ -877,6 +898,20 @@ SetNumBlockDownloads \- set global the number of blocks on downloading \#\# Inpu
 "error":"",
 "result":"",
 }
+```
+
+<a name="SetUploadMode"></a>
+## func [SetUploadMode](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/storage.go#L795>)
+
+```go
+func SetUploadMode(mode int)
+```
+
+SetUploadMode sets upload mode
+
+```
+## Inputs
+- mode: 0 for low, 1 for medium, 2 for high
 ```
 
 <a name="SetZBoxWallet"></a>
@@ -897,7 +932,7 @@ return
 ```
 
 <a name="SignRequest"></a>
-## func [SignRequest](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/sdk.go#L204>)
+## func [SignRequest](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/sdk.go#L205>)
 
 ```go
 func SignRequest(privateKey, signatureScheme, data *C.char) *C.char
@@ -934,7 +969,7 @@ StartStreamServer \- start local media stream server \#\# Inputs
 ```
 
 <a name="VerifySignature"></a>
-## func [VerifySignature](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/sdk.go#L230>)
+## func [VerifySignature](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/sdk.go#L231>)
 
 ```go
 func VerifySignature(publicKey, signatureScheme string, data string, signature string) *C.char
@@ -971,7 +1006,7 @@ type JsonResult struct {
 ```
 
 <a name="MultiOperationOption"></a>
-## type [MultiOperationOption](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/storage.go#L105-L110>)
+## type [MultiOperationOption](<https://github.com/0chain/gosdk/blob/doc/initial/winsdk/storage.go#L110-L115>)
 
 
 

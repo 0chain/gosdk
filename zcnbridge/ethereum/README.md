@@ -15,7 +15,7 @@ import "github.com/0chain/gosdk/zcnbridge/ethereum"
 
 
 <a name="AuthorizerSignature"></a>
-## type [AuthorizerSignature](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/mint_payload.go#L19-L22>)
+## type [AuthorizerSignature](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/mint_payload.go#L21-L24>)
 
 
 
@@ -27,19 +27,20 @@ type AuthorizerSignature struct {
 ```
 
 <a name="BurnEvent"></a>
-## type [BurnEvent](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/mint_payload.go#L5-L8>)
+## type [BurnEvent](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/mint_payload.go#L6-L10>)
 
-
+BurnEvent represents received WZCN burn event.
 
 ```go
 type BurnEvent struct {
     Nonce           int64  `json:"nonce"`
+    Amount          int64  `json:"amount"`
     TransactionHash string `json:"hash"`
 }
 ```
 
 <a name="MintPayload"></a>
-## type [MintPayload](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/mint_payload.go#L11-L17>)
+## type [MintPayload](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/mint_payload.go#L13-L19>)
 
 MintPayload Payload to submit to the ethereum bridge contract
 
@@ -54,7 +55,7 @@ type MintPayload struct {
 ```
 
 <a name="MintPayload.Encode"></a>
-### func \(\*MintPayload\) [Encode](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/mint_payload.go#L24>)
+### func \(\*MintPayload\) [Encode](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/mint_payload.go#L26>)
 
 ```go
 func (mp *MintPayload) Encode() []byte

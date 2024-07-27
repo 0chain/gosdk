@@ -33,6 +33,7 @@ type FsDownloadProgressStorer struct {
 	queue     queue
 }
 
+// CreateFsDownloadProgress create a download progress storer instance to track download progress and queue
 func CreateFsDownloadProgress() *FsDownloadProgressStorer {
 	down := &FsDownloadProgressStorer{
 		queue: make(queue, 0),

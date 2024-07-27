@@ -11,7 +11,7 @@ import (
 	"github.com/klauspost/reedsolomon"
 )
 
-// ChunkedUploadOption set stream option
+// ChunkedUploadOption Generic type for chunked upload option functions 
 type ChunkedUploadOption func(su *ChunkedUpload)
 
 // WithThumbnail add thumbnail. stream mode is unnecessary for thumbnail
@@ -61,49 +61,56 @@ func WithEncrypt(on bool) ChunkedUploadOption {
 	}
 }
 
-// WithStatusCallback register StatusCallback instance
+// WithStatusCallback return a wrapper option function to set status callback of the chunked upload instance, which is used to track upload progress
 func WithStatusCallback(callback StatusCallback) ChunkedUploadOption {
 	return func(su *ChunkedUpload) {
 		su.statusCallback = callback
 	}
 }
 
+// WithProgressCallback return a wrapper option function to set progress callback of the chunked upload instance
 func WithProgressStorer(progressStorer ChunkedUploadProgressStorer) ChunkedUploadOption {
 	return func(su *ChunkedUpload) {
 		su.progressStorer = progressStorer
 	}
 }
 
+// WithUploadTimeout return a wrapper option function to set upload timeout of the chunked upload instance
 func WithUploadTimeout(t time.Duration) ChunkedUploadOption {
 	return func(su *ChunkedUpload) {
 		su.uploadTimeOut = t
 	}
 }
 
+// WithCommitTimeout return a wrapper option function to set commit timeout of the chunked upload instance
 func WithCommitTimeout(t time.Duration) ChunkedUploadOption {
 	return func(su *ChunkedUpload) {
 		su.commitTimeOut = t
 	}
 }
 
+// WithUploadMask return a wrapper option function to set upload mask of the chunked upload instance
 func WithMask(mask zboxutil.Uint128) ChunkedUploadOption {
 	return func(su *ChunkedUpload) {
 		su.uploadMask = mask
 	}
 }
 
+// WithEncryptedKeyPoint return a wrapper option function to set encrypted key point of the chunked upload instance
 func WithEncryptedPoint(point string) ChunkedUploadOption {
 	return func(su *ChunkedUpload) {
 		su.encryptedKeyPoint = point
 	}
 }
 
+// WithActualHash return a wrapper option function to set actual hash of the chunked upload instance
 func WithActualHash(hash string) ChunkedUploadOption {
 	return func(su *ChunkedUpload) {
 		su.fileMeta.ActualHash = hash
 	}
 }
 
+// WithActualSize return a wrapper option function to set the file hasher used in the chunked upload instance
 func WithFileHasher(h Hasher) ChunkedUploadOption {
 	return func(su *ChunkedUpload) {
 		su.fileHasher = h

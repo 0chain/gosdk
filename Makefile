@@ -110,3 +110,5 @@ install-herumi-ubuntu:
 
 docs:
 	@gomarkdoc --exclude-dirs ./zcncore/sample --output '{{.Dir}}/README.md' --repository.default-branch doc/initial ./...
+	@sed -i '' -r 's/\\_/_/g' ./**/README.md
+	@sed -i '' -r 's/\\`/`/g' ./**/README.md

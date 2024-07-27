@@ -593,7 +593,7 @@ SetMintable updates mintable state
 func (s *StorageECR721) SetReceiver(receiver string) error
 ```
 
-SetReceiver eth balance from token contract \- setReceiver\(address receiver\_\)
+SetReceiver eth balance from token contract \- setReceiver\(address receiver_\)
 
 <a name="StorageECR721.SetRoyalty"></a>
 ### func \(\*StorageECR721\) [SetRoyalty](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721.go#L306>)
@@ -602,7 +602,7 @@ SetReceiver eth balance from token contract \- setReceiver\(address receiver\_\)
 func (s *StorageECR721) SetRoyalty(sum *big.Int) error
 ```
 
-SetRoyalty eth balance from token contract \- setReceiver\(address receiver\_\)
+SetRoyalty eth balance from token contract \- setReceiver\(address receiver_\)
 
 <a name="StorageECR721.SetURI"></a>
 ### func \(\*StorageECR721\) [SetURI](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721.go#L264>)
@@ -793,7 +793,7 @@ SetMintable updates mintable state
 func (s *StorageECR721Fixed) SetReceiver(receiver string) error
 ```
 
-SetReceiver eth balance from token contract \- setReceiver\(address receiver\_\)
+SetReceiver eth balance from token contract \- setReceiver\(address receiver_\)
 
 <a name="StorageECR721Fixed.SetRoyalty"></a>
 ### func \(\*StorageECR721Fixed\) [SetRoyalty](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721fixed.go#L256>)
@@ -802,7 +802,7 @@ SetReceiver eth balance from token contract \- setReceiver\(address receiver\_\)
 func (s *StorageECR721Fixed) SetRoyalty(sum *big.Int) error
 ```
 
-SetRoyalty eth balance from token contract \- setReceiver\(address receiver\_\)
+SetRoyalty eth balance from token contract \- setReceiver\(address receiver_\)
 
 <a name="StorageECR721Fixed.SetURI"></a>
 ### func \(\*StorageECR721Fixed\) [SetURI](<https://github.com/0chain/gosdk/blob/doc/initial/znft/storageerc721fixed.go#L214>)

@@ -148,7 +148,7 @@ func (rm *ReadMarker) ValidateWithOtherRM(rm1 *ReadMarker) error
 ValidateWithOtherRM will validate rm1 assuming rm is valid. It checks parameters equality and validity of signature
 
 <a name="WriteMarker"></a>
-## type [WriteMarker](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/marker/writemarker.go#L12-L22>)
+## type [WriteMarker](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/marker/writemarker.go#L12-L25>)
 
 
 
@@ -159,6 +159,9 @@ type WriteMarker struct {
     FileMetaRoot           string `json:"file_meta_root"`
     AllocationID           string `json:"allocation_id"`
     Size                   int64  `json:"size"`
+    ChainSize              int64  `json:"chain_size"`
+    ChainHash              string `json:"chain_hash"`
+    ChainLength            int    `json:"chain_length"`
     BlobberID              string `json:"blobber_id"`
     Timestamp              int64  `json:"timestamp"`
     ClientID               string `json:"client_id"`
@@ -167,7 +170,7 @@ type WriteMarker struct {
 ```
 
 <a name="WriteMarker.GetHash"></a>
-### func \(\*WriteMarker\) [GetHash](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/marker/writemarker.go#L34>)
+### func \(\*WriteMarker\) [GetHash](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/marker/writemarker.go#L44>)
 
 ```go
 func (wm *WriteMarker) GetHash() string
@@ -176,7 +179,7 @@ func (wm *WriteMarker) GetHash() string
 
 
 <a name="WriteMarker.GetHashData"></a>
-### func \(\*WriteMarker\) [GetHashData](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/marker/writemarker.go#L24>)
+### func \(\*WriteMarker\) [GetHashData](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/marker/writemarker.go#L27>)
 
 ```go
 func (wm *WriteMarker) GetHashData() string
@@ -185,7 +188,7 @@ func (wm *WriteMarker) GetHashData() string
 
 
 <a name="WriteMarker.Sign"></a>
-### func \(\*WriteMarker\) [Sign](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/marker/writemarker.go#L39>)
+### func \(\*WriteMarker\) [Sign](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/marker/writemarker.go#L49>)
 
 ```go
 func (wm *WriteMarker) Sign() error
@@ -194,7 +197,7 @@ func (wm *WriteMarker) Sign() error
 
 
 <a name="WriteMarker.VerifySignature"></a>
-### func \(\*WriteMarker\) [VerifySignature](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/marker/writemarker.go#L45>)
+### func \(\*WriteMarker\) [VerifySignature](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/marker/writemarker.go#L55>)
 
 ```go
 func (wm *WriteMarker) VerifySignature(clientPublicKey string) error

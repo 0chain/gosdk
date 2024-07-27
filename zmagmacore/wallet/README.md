@@ -14,6 +14,7 @@ import "github.com/0chain/gosdk/zmagmacore/wallet"
 - [type Wallet](<#Wallet>)
   - [func New\(publicKey, privateKey \[\]byte\) \*Wallet](<#New>)
   - [func \(w \*Wallet\) ID\(\) string](<#Wallet.ID>)
+  - [func \(w \*Wallet\) PrivateKey\(\) string](<#Wallet.PrivateKey>)
   - [func \(w \*Wallet\) PublicKey\(\) string](<#Wallet.PublicKey>)
   - [func \(w \*Wallet\) StringJSON\(\) \(string, error\)](<#Wallet.StringJSON>)
 
@@ -84,7 +85,7 @@ func New(publicKey, privateKey []byte) *Wallet
 New creates initialized Wallet.
 
 <a name="Wallet.ID"></a>
-### func \(\*Wallet\) [ID](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/wallet/wallet.go#L46>)
+### func \(\*Wallet\) [ID](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/wallet/wallet.go#L51>)
 
 ```go
 func (w *Wallet) ID() string
@@ -93,6 +94,15 @@ func (w *Wallet) ID() string
 ID returns the client id.
 
 NOTE: client id represents hex encoded SHA3\-256 hash of the raw public key.
+
+<a name="Wallet.PrivateKey"></a>
+### func \(\*Wallet\) [PrivateKey](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/wallet/wallet.go#L44>)
+
+```go
+func (w *Wallet) PrivateKey() string
+```
+
+PrivateKey returns the public key.
 
 <a name="Wallet.PublicKey"></a>
 ### func \(\*Wallet\) [PublicKey](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/wallet/wallet.go#L39>)
@@ -104,7 +114,7 @@ func (w *Wallet) PublicKey() string
 PublicKey returns the public key.
 
 <a name="Wallet.StringJSON"></a>
-### func \(\*Wallet\) [StringJSON](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/wallet/wallet.go#L51>)
+### func \(\*Wallet\) [StringJSON](<https://github.com/0chain/gosdk/blob/doc/initial/zmagmacore/wallet/wallet.go#L56>)
 
 ```go
 func (w *Wallet) StringJSON() (string, error)

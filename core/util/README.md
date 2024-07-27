@@ -112,6 +112,15 @@ const (
 )
 ```
 
+<a name="START_LENGTH"></a>
+
+```go
+const (
+    START_LENGTH = 64
+    ADD_LENGTH   = 320
+)
+```
+
 ## Variables
 
 <a name="ErrNilHttpConsensusMaps"></a>
@@ -304,7 +313,7 @@ FixedMerkleTree A trusted mekerle tree for outsourcing attack protection. see se
 
 ```go
 type FixedMerkleTree struct {
-    // Leaves will store hash digester that calculates blake3 hash of the leaf content
+    // Leaves will store hash digester that calculates sha256 hash of the leaf content
     Leaves []Hashable `json:"leaves,omitempty"`
     // contains filtered or unexported fields
 }
@@ -510,7 +519,7 @@ type MTPath struct {
 ```
 
 <a name="MerklePathForMultiLeafVerification"></a>
-## type [MerklePathForMultiLeafVerification](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/validation_tree.go#L166-L183>)
+## type [MerklePathForMultiLeafVerification](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/validation_tree.go#L184-L201>)
 
 MerklePathForMultiLeafVerification is used to verify multiple blocks with single instance of merkle path. Usually client would request with counter incremented by 10. So if the block size is 64KB and counter is incremented by 10 then client is requesting 640 KB of data. Blobber can then provide sinlge merkle path instead of sending 10 merkle paths.
 
@@ -535,7 +544,7 @@ type MerklePathForMultiLeafVerification struct {
 ```
 
 <a name="MerklePathForMultiLeafVerification.VerifyMultipleBlocks"></a>
-### func \(\*MerklePathForMultiLeafVerification\) [VerifyMultipleBlocks](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/validation_tree.go#L223>)
+### func \(\*MerklePathForMultiLeafVerification\) [VerifyMultipleBlocks](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/validation_tree.go#L241>)
 
 ```go
 func (m *MerklePathForMultiLeafVerification) VerifyMultipleBlocks(data []byte) error
@@ -856,7 +865,7 @@ func (StringHashable) Write(_ []byte) (int, error)
 
 
 <a name="ValidationTree"></a>
-## type [ValidationTree](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/validation_tree.go#L20-L30>)
+## type [ValidationTree](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/validation_tree.go#L25-L35>)
 
 
 
@@ -867,7 +876,7 @@ type ValidationTree struct {
 ```
 
 <a name="NewValidationTree"></a>
-### func [NewValidationTree](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/validation_tree.go#L152>)
+### func [NewValidationTree](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/validation_tree.go#L168>)
 
 ```go
 func NewValidationTree(dataSize int64) *ValidationTree
@@ -876,7 +885,7 @@ func NewValidationTree(dataSize int64) *ValidationTree
 
 
 <a name="ValidationTree.CalculateDepth"></a>
-### func \(\*ValidationTree\) [CalculateDepth](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/validation_tree.go#L93>)
+### func \(\*ValidationTree\) [CalculateDepth](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/validation_tree.go#L104>)
 
 ```go
 func (v *ValidationTree) CalculateDepth() int
@@ -885,7 +894,7 @@ func (v *ValidationTree) CalculateDepth() int
 
 
 <a name="ValidationTree.Finalize"></a>
-### func \(\*ValidationTree\) [Finalize](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/validation_tree.go#L133>)
+### func \(\*ValidationTree\) [Finalize](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/validation_tree.go#L144>)
 
 ```go
 func (v *ValidationTree) Finalize() error
@@ -894,7 +903,7 @@ func (v *ValidationTree) Finalize() error
 
 
 <a name="ValidationTree.GetDataSize"></a>
-### func \(\*ValidationTree\) [GetDataSize](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/validation_tree.go#L40>)
+### func \(\*ValidationTree\) [GetDataSize](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/validation_tree.go#L45>)
 
 ```go
 func (v *ValidationTree) GetDataSize() int64
@@ -903,7 +912,7 @@ func (v *ValidationTree) GetDataSize() int64
 
 
 <a name="ValidationTree.GetLeaves"></a>
-### func \(\*ValidationTree\) [GetLeaves](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/validation_tree.go#L32>)
+### func \(\*ValidationTree\) [GetLeaves](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/validation_tree.go#L37>)
 
 ```go
 func (v *ValidationTree) GetLeaves() [][]byte
@@ -912,7 +921,7 @@ func (v *ValidationTree) GetLeaves() [][]byte
 
 
 <a name="ValidationTree.GetValidationRoot"></a>
-### func \(\*ValidationTree\) [GetValidationRoot](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/validation_tree.go#L44>)
+### func \(\*ValidationTree\) [GetValidationRoot](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/validation_tree.go#L49>)
 
 ```go
 func (v *ValidationTree) GetValidationRoot() []byte
@@ -921,7 +930,7 @@ func (v *ValidationTree) GetValidationRoot() []byte
 
 
 <a name="ValidationTree.SetLeaves"></a>
-### func \(\*ValidationTree\) [SetLeaves](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/validation_tree.go#L36>)
+### func \(\*ValidationTree\) [SetLeaves](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/validation_tree.go#L41>)
 
 ```go
 func (v *ValidationTree) SetLeaves(leaves [][]byte)
@@ -930,7 +939,7 @@ func (v *ValidationTree) SetLeaves(leaves [][]byte)
 
 
 <a name="ValidationTree.Write"></a>
-### func \(\*ValidationTree\) [Write](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/validation_tree.go#L52>)
+### func \(\*ValidationTree\) [Write](<https://github.com/0chain/gosdk/blob/doc/initial/core/util/validation_tree.go#L57>)
 
 ```go
 func (v *ValidationTree) Write(b []byte) (int, error)

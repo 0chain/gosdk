@@ -10,6 +10,7 @@ import "github.com/0chain/gosdk/wasmsdk"
 
 - [func InvalidArg\(argName string\) error](<#InvalidArg>)
 - [func RequiredArg\(argName string\) error](<#RequiredArg>)
+- [type CheckStatusResult](<#CheckStatusResult>)
 - [type DownloadCommandResponse](<#DownloadCommandResponse>)
 - [type FileCommandResponse](<#FileCommandResponse>)
 
@@ -32,8 +33,21 @@ func RequiredArg(argName string) error
 
 
 
+<a name="CheckStatusResult"></a>
+## type [CheckStatusResult](<https://github.com/0chain/gosdk/blob/doc/initial/wasmsdk/response.go#L18-L22>)
+
+
+
+```go
+type CheckStatusResult struct {
+    Status        string              `json:"status"`
+    Err           error               `json:"error"`
+    BlobberStatus []sdk.BlobberStatus `json:"blobberStatus"`
+}
+```
+
 <a name="DownloadCommandResponse"></a>
-## type [DownloadCommandResponse](<https://github.com/0chain/gosdk/blob/doc/initial/wasmsdk/response.go#L8-L14>)
+## type [DownloadCommandResponse](<https://github.com/0chain/gosdk/blob/doc/initial/wasmsdk/response.go#L10-L16>)
 
 
 
@@ -48,7 +62,7 @@ type DownloadCommandResponse struct {
 ```
 
 <a name="FileCommandResponse"></a>
-## type [FileCommandResponse](<https://github.com/0chain/gosdk/blob/doc/initial/wasmsdk/response.go#L3-L6>)
+## type [FileCommandResponse](<https://github.com/0chain/gosdk/blob/doc/initial/wasmsdk/response.go#L5-L8>)
 
 
 

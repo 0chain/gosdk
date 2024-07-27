@@ -104,7 +104,7 @@ func (ch *CopyFileChange) ProcessChange(rootRef *fileref.Ref, fileIDMeta map[str
 
 ```go
 type DeleteFileChange struct {
-    ObjectTree fileref.RefEntity
+    FileMetaRef fileref.RefEntity
     // contains filtered or unexported fields
 }
 ```
@@ -256,7 +256,7 @@ func (ch *MoveFileChange) ProcessChange(rootRef *fileref.Ref, fileIDMeta map[str
 
 
 <a name="NewFileChange"></a>
-## type [NewFileChange](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/allocationchange/newfile.go#L18-L22>)
+## type [NewFileChange](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/allocationchange/newfile.go#L19-L23>)
 
 
 
@@ -269,7 +269,7 @@ type NewFileChange struct {
 ```
 
 <a name="NewFileChange.GetAffectedPath"></a>
-### func \(\*NewFileChange\) [GetAffectedPath](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/allocationchange/newfile.go#L98>)
+### func \(\*NewFileChange\) [GetAffectedPath](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/allocationchange/newfile.go#L100>)
 
 ```go
 func (n *NewFileChange) GetAffectedPath() []string
@@ -278,7 +278,7 @@ func (n *NewFileChange) GetAffectedPath() []string
 
 
 <a name="NewFileChange.GetSize"></a>
-### func \(\*NewFileChange\) [GetSize](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/allocationchange/newfile.go#L105>)
+### func \(\*NewFileChange\) [GetSize](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/allocationchange/newfile.go#L107>)
 
 ```go
 func (n *NewFileChange) GetSize() int64
@@ -287,7 +287,7 @@ func (n *NewFileChange) GetSize() int64
 
 
 <a name="NewFileChange.ProcessChange"></a>
-### func \(\*NewFileChange\) [ProcessChange](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/allocationchange/newfile.go#L24>)
+### func \(\*NewFileChange\) [ProcessChange](<https://github.com/0chain/gosdk/blob/doc/initial/zboxcore/allocationchange/newfile.go#L25>)
 
 ```go
 func (ch *NewFileChange) ProcessChange(rootRef *fileref.Ref, fileIDMeta map[string]string) (err error)

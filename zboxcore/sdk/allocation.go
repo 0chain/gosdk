@@ -72,6 +72,7 @@ var GetFileInfo = func(localpath string) (os.FileInfo, error) {
 	return sys.Files.Stat(localpath)
 }
 
+// BlobberAllocationStats represents the blobber allocation statistics.
 type BlobberAllocationStats struct {
 	BlobberID        string
 	BlobberURL       string
@@ -98,6 +99,7 @@ type BlobberAllocationStats struct {
 	} `json:"Terms"`
 }
 
+// ConsolidatedFileMeta represents the file meta data.
 type ConsolidatedFileMeta struct {
 	Name            string
 	Type            string
@@ -168,20 +170,46 @@ type BlobberAllocation struct {
 	FinalReward     common.Balance `json:"final_reward"`
 }
 
+// Allocation represents a storage allocation.
 type Allocation struct {
+	// ID is the unique identifier of the allocation.
 	ID             string                    `json:"id"`
+	// Tx is the transaction hash of the latest transaction related to the allocation.
 	Tx             string                    `json:"tx"`
+
+	// DataShards is the number of data shards.
 	DataShards     int                       `json:"data_shards"`
+
+	// ParityShards is the number of parity shards.
 	ParityShards   int                       `json:"parity_shards"`
+
+	// Size is the size of the allocation.
 	Size           int64                     `json:"size"`
+
+	// Expiration is the expiration date of the allocation.
 	Expiration     int64                     `json:"expiration_date"`
+
+	// Owner is the id of the owner of the allocation.
 	Owner          string                    `json:"owner_id"`
+
+	// OwnerPublicKey is the public key of the owner of the allocation.
 	OwnerPublicKey string                    `json:"owner_public_key"`
+
+	// Payer is the id of the payer of the allocation.
 	Payer          string                    `json:"payer_id"`
+
+	// Blobbers is the list of blobbers that store the data of the allocation.
 	Blobbers       []*blockchain.StorageNode `json:"blobbers"`
+
+	// Stats contains the statistics of the allocation.
 	Stats          *AllocationStats          `json:"stats"`
+
+	// TimeUnit is the time unit of the allocation.
 	TimeUnit       time.Duration             `json:"time_unit"`
+
+	// WritePool is the write pool of the allocation.
 	WritePool      common.Balance            `json:"write_pool"`
+	
 	// BlobberDetails contains real terms used for the allocation.
 	// If the allocation has updated, then terms calculated using
 	// weighted average values.
@@ -189,17 +217,46 @@ type Allocation struct {
 
 	// ReadPriceRange is requested reading prices range.
 	ReadPriceRange PriceRange `json:"read_price_range"`
+	
 	// WritePriceRange is requested writing prices range.
 	WritePriceRange         PriceRange       `json:"write_price_range"`
+	
+	// MinLockDemand is the minimum lock demand of the allocation.
 	MinLockDemand           float64          `json:"min_lock_demand"`
+
+	// ChallengeCompletionTime is the time taken to complete a challenge.
 	ChallengeCompletionTime time.Duration    `json:"challenge_completion_time"`
+
+	// StartTime is the start time of the allocation.
 	StartTime               common.Timestamp `json:"start_time"`
+
+	// Finalized is the flag to indicate if the allocation is finalized.
 	Finalized               bool             `json:"finalized,omitempty"`
+
+	// Cancelled is the flag to indicate if the allocation is cancelled.
 	Canceled                bool             `json:"canceled,omitempty"`
+
+	// MovedToChallenge is the amount moved to challenge pool related to the allocation.
 	MovedToChallenge        common.Balance   `json:"moved_to_challenge,omitempty"`
+
+	// MovedBack is the amount moved back from the challenge pool related to the allocation.
 	MovedBack               common.Balance   `json:"moved_back,omitempty"`
+
+	// MovedToValidators is the amount moved to validators related to the allocation.
 	MovedToValidators       common.Balance   `json:"moved_to_validators,omitempty"`
+
+	// FileOptions is a bitmask of file options, which are the permissions of the allocation.
 	FileOptions             uint16           `json:"file_options"`
+
+	// FileOptions to define file restrictions on an allocation for third-parties
+	// default 00000000 for all crud operations suggesting only owner has the below listed abilities.
+	// enabling option/s allows any third party to perform certain ops
+	// 		00000001 - 1  - upload
+	// 		00000010 - 2  - delete
+	// 		00000100 - 4  - update
+	// 		00001000 - 8  - move
+	// 		00010000 - 16 - copy
+	// 		00100000 - 32 - rename
 	ThirdPartyExtendable    bool             `json:"third_party_extendable"`
 
 	numBlockDownloads       int
@@ -220,6 +277,7 @@ type Allocation struct {
 	fullconsensus      int
 }
 
+// OperationRequest represents an operation request with its related options.
 type OperationRequest struct {
 	OperationType  string
 	LocalPath      string
@@ -242,9 +300,12 @@ type OperationRequest struct {
 	Opts            []ChunkedUploadOption
 }
 
+// GetReadPriceRange returns the read price range from the global configuration.
 func GetReadPriceRange() (PriceRange, error) {
 	return getPriceRange("max_read_price")
 }
+
+// GetWritePriceRange returns the write price range from the global configuration.
 func GetWritePriceRange() (PriceRange, error) {
 	return getPriceRange("max_write_price")
 }
@@ -260,6 +321,8 @@ func SetWasm() {
 	RepairBatchSize = 20
 }
 
+// SetCheckStatus sets the check status of the allocation.
+// 		- `checkStatus`: the check status to set.
 func (a *Allocation) SetCheckStatus(checkStatus bool) {
 	a.checkStatus = checkStatus
 }
@@ -290,10 +353,12 @@ func getPriceRange(name string) (PriceRange, error) {
 
 }
 
+// GetStats returns the statistics of the allocation.
 func (a *Allocation) GetStats() *AllocationStats {
 	return a.Stats
 }
 
+// GetBlobberStats returns the statistics of the blobbers in the allocation.
 func (a *Allocation) GetBlobberStats() map[string]*BlobberAllocationStats {
 	numList := len(a.Blobbers)
 	wg := &sync.WaitGroup{}
@@ -317,6 +382,7 @@ func SetDownloadWorkerCount(count int) {
 	downloadWorkerCount = count
 }
 
+// InitAllocation initializes the allocation.
 func (a *Allocation) InitAllocation() {
 	a.downloadChan = make(chan *DownloadRequest, 100)
 	a.repairChan = make(chan *RepairRequest, 1)
@@ -368,26 +434,32 @@ func (a *Allocation) dispatchWork(ctx context.Context) {
 	}
 }
 
+// CanUpload returns true if the allocation grants upload operation
 func (a *Allocation) CanUpload() bool {
 	return (a.FileOptions & CanUploadMask) > 0
 }
 
+// CanDelete returns true if the allocation grants delete operation
 func (a *Allocation) CanDelete() bool {
 	return (a.FileOptions & CanDeleteMask) > 0
 }
 
+// CanUpdate returns true if the allocation grants update operation
 func (a *Allocation) CanUpdate() bool {
 	return (a.FileOptions & CanUpdateMask) > 0
 }
 
+// CanMove returns true if the allocation grants move operation
 func (a *Allocation) CanMove() bool {
 	return (a.FileOptions & CanMoveMask) > 0
 }
 
+// CanCopy returns true if the allocation grants copy operation
 func (a *Allocation) CanCopy() bool {
 	return (a.FileOptions & CanCopyMask) > 0
 }
 
+// CanRename returns true if the allocation grants rename operation
 func (a *Allocation) CanRename() bool {
 	return (a.FileOptions & CanRenameMask) > 0
 }
@@ -406,6 +478,12 @@ func (a *Allocation) UploadFile(workdir, localpath string, remotepath string,
 	return a.StartChunkedUpload(workdir, localpath, remotepath, status, false, false, "", false, false)
 }
 
+// RepairFile repair a file in the allocation.
+// 		- `file`: the file to repair.
+// 		- `remotepath`: the remote path of the file.
+// 		- `statusCallback`: a callback function to get the status of the repair.
+// 		- `mask`: the mask of the repair descriping the blobbers to repair.
+// 		- `ref`: the file reference, a representation of the file in the database.
 func (a *Allocation) RepairFile(file sys.File, remotepath string, statusCallback StatusCallback, mask zboxutil.Uint128, ref *fileref.FileRef) *OperationRequest {
 	idr, _ := homedir.Dir()
 	if Workdir != "" {

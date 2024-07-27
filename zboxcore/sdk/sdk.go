@@ -81,14 +81,14 @@ func GetVersion() string {
 }
 
 // SetLogLevel set the log level.
-// lvl - 0 disabled; higher number (upto 4) more verbosity
+//   - `lvl`: 0 disabled; higher number (upto 4) more verbosity
 func SetLogLevel(lvl int) {
 	l.Logger.SetLevel(lvl)
 }
 
-// SetLogFile
-// logFile - Log file
-// verbose - true - console output; false - no console output
+// SetLogFile set the log file and verbosity levels
+//   - `logFile`: Log file
+//   - `verbose`: true - console output; false - no console output
 func SetLogFile(logFile string, verbose bool) {
 	var ioWriter = &lumberjack.Logger{
 		Filename:   logFile,
@@ -103,10 +103,20 @@ func SetLogFile(logFile string, verbose bool) {
 	l.Logger.Info("******* Storage SDK Version: ", version.VERSIONSTR, " *******")
 }
 
+// GetLogger retrieves logger instance
 func GetLogger() *logger.Logger {
 	return &l.Logger
 }
 
+// InitStorageSDK Initialize the storage SDK
+//
+//   - `walletJSON`: Client's wallet JSON
+//   - `blockWorker`: Block worker URL (block worker refers to 0DNS)
+//   - `chainID`: ID of the blokcchain network
+//   - `signatureScheme`: Signature scheme that will be used for signing transactions
+//   - `preferredBlobbers`: List of preferred blobbers to use when creating an allocation. This is usually configured by the client in the configuration files
+//   - `nonce`: Initial nonce value for the transactions
+//   - `fee`: Preferred value for the transaction fee, just the first value is taken
 func InitStorageSDK(walletJSON string,
 	blockWorker, chainID, signatureScheme string,
 	preferredBlobbers []string,
@@ -135,6 +145,7 @@ func InitStorageSDK(walletJSON string,
 	return nil
 }
 
+// GetNetwork retrieves the network details
 func GetNetwork() *Network {
 	return &Network{
 		Miners:   blockchain.GetMiners(),
@@ -142,6 +153,7 @@ func GetNetwork() *Network {
 	}
 }
 
+// SetMaxTxnQuery set the maximum number of transactions to query
 func SetMaxTxnQuery(num int) {
 	blockchain.SetMaxTxnQuery(num)
 
@@ -152,6 +164,7 @@ func SetMaxTxnQuery(num int) {
 
 }
 
+// SetQuerySleepTime set the sleep time between queries
 func SetQuerySleepTime(time int) {
 	blockchain.SetQuerySleepTime(time)
 
@@ -162,23 +175,24 @@ func SetQuerySleepTime(time int) {
 
 }
 
+// SetMinSubmit set the minimum number of miners to submit the transaction
 func SetMinSubmit(num int) {
 	blockchain.SetMinSubmit(num)
 }
+
+// SetMinConfirmation set the minimum number of miners to confirm the transaction
 func SetMinConfirmation(num int) {
 	blockchain.SetMinConfirmation(num)
 }
 
+// SetNetwork set the network details, given the miners and sharders urls
 func SetNetwork(miners []string, sharders []string) {
 	blockchain.SetMiners(miners)
 	blockchain.SetSharders(sharders)
 	node.InitCache(blockchain.Sharders)
 }
 
-//
-// read pool
-//
-
+// CreateReadPool creates a read pool
 func CreateReadPool() (hash string, nonce int64, err error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
@@ -204,6 +218,7 @@ type ReadPool struct {
 
 // GetReadPoolInfo for given client, or, if the given clientID is empty,
 // for current client of the sdk.
+//  	- `clientID`: client ID
 func GetReadPoolInfo(clientID string) (info *ReadPool, err error) {
 	if !sdkInitialized {
 		return nil, sdkNotInitialized
@@ -232,6 +247,8 @@ func GetReadPoolInfo(clientID string) (info *ReadPool, err error) {
 }
 
 // ReadPoolLock locks given number of tokes for given duration in read pool.
+// 		- `tokens`: number of tokens to lock
+// 		- `fee`: transaction fee
 func ReadPoolLock(tokens, fee uint64) (hash string, nonce int64, err error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
@@ -246,6 +263,7 @@ func ReadPoolLock(tokens, fee uint64) (hash string, nonce int64, err error) {
 }
 
 // ReadPoolUnlock unlocks tokens in expired read pool
+// 		- `fee`: transaction fee
 func ReadPoolUnlock(fee uint64) (hash string, nonce int64, err error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
@@ -293,7 +311,7 @@ type StakePoolDelegatePoolInfo struct {
 	StakedAt     common.Timestamp `json:"staked_at"`
 }
 
-// StakePool full info.
+// StakePool information of stake pool of a provider.
 type StakePoolInfo struct {
 	ID         common.Key     `json:"pool_id"` // pool ID
 	Balance    common.Balance `json:"balance"` // total balance
@@ -308,8 +326,9 @@ type StakePoolInfo struct {
 	Settings blockchain.StakePoolSettings `json:"settings"`
 }
 
-// GetStakePoolInfo for given client, or, if the given clientID is empty,
-// for current client of the sdk.
+// GetStakePoolInfo retrieve stake pool info for the current client configured to the sdk, given provider type and provider ID.
+//  	- `providerType`: provider type
+//  	- `providerID`: provider ID
 func GetStakePoolInfo(providerType ProviderType, providerID string) (info *StakePoolInfo, err error) {
 	if !sdkInitialized {
 		return nil, sdkNotInitialized
@@ -338,8 +357,11 @@ type StakePoolUserInfo struct {
 	Pools map[common.Key][]*StakePoolDelegatePoolInfo `json:"pools"`
 }
 
-// GetStakePoolUserInfo obtains blobbers/validators delegate pools statistic
-// for a user. If given clientID is empty string, then current client used.
+// GetStakePoolUserInfo obtains blobbers/validators delegate pools statistic for a user.
+// If given clientID is empty string, then current client used.
+//  	- `clientID`: client ID
+//  	- `offset`: offset
+//  	- `limit`: limit
 func GetStakePoolUserInfo(clientID string, offset, limit int) (info *StakePoolUserInfo, err error) {
 	if !sdkInitialized {
 		return nil, sdkNotInitialized
@@ -377,6 +399,10 @@ type stakePoolRequest struct {
 }
 
 // StakePoolLock locks tokens lack in stake pool
+//  	- `providerType`: provider type
+//  	- `providerID`: provider ID
+//  	- `value`: value to lock
+//  	- `fee`: transaction fee
 func StakePoolLock(providerType ProviderType, providerID string, value, fee uint64) (hash string, nonce int64, err error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
@@ -433,6 +459,9 @@ type stakePoolLock struct {
 // future. The time is maximal time that can be lesser in some cases. To
 // unlock tokens can't be unlocked now, wait the time and unlock them (call
 // this function again).
+//  	- `providerType`: provider type
+//  	- `providerID`: provider ID
+//  	- `fee`: transaction fee
 func StakePoolUnlock(providerType ProviderType, providerID string, fee uint64) (unstake int64, nonce int64, err error) {
 	if !sdkInitialized {
 		return 0, 0, sdkNotInitialized
@@ -488,6 +517,9 @@ func StakePoolUnlock(providerType ProviderType, providerID string, fee uint64) (
 //
 
 // WritePoolLock locks given number of tokes for given duration in read pool.
+// 		- `allocID`: allocation ID
+// 		- `tokens`: number of tokens to lock
+// 		- `fee`: transaction fee
 func WritePoolLock(allocID string, tokens, fee uint64) (hash string, nonce int64, err error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
@@ -509,7 +541,9 @@ func WritePoolLock(allocID string, tokens, fee uint64) (hash string, nonce int64
 	return
 }
 
-// WritePoolUnlock unlocks tokens in expired read pool
+// WritePoolUnlock unlocks ALL tokens of a write pool. Needs to be cancelled first.
+// 		- `allocID`: allocation ID
+// 		- `fee`: transaction fee
 func WritePoolUnlock(allocID string, fee uint64) (hash string, nonce int64, err error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
@@ -543,7 +577,8 @@ type ChallengePoolInfo struct {
 	Finalized  bool             `json:"finalized"`
 }
 
-// GetChallengePoolInfo for given allocation.
+// GetChallengePoolInfo retrieve challenge pool info for given allocation.
+// 		- `allocID`: allocation ID
 func GetChallengePoolInfo(allocID string) (info *ChallengePoolInfo, err error) {
 	if !sdkInitialized {
 		return nil, sdkNotInitialized
@@ -568,6 +603,7 @@ func GetChallengePoolInfo(allocID string) (info *ChallengePoolInfo, err error) {
 	return
 }
 
+// GetMptData retrieves mpt key data.
 func GetMptData(key string) ([]byte, error) {
 	if !sdkInitialized {
 		return nil, sdkNotInitialized
@@ -596,6 +632,7 @@ type InputMap struct {
 	Fields map[string]interface{} `json:"fields"`
 }
 
+// GetStorageSCConfig retrieves storage SC configurations.
 func GetStorageSCConfig() (conf *InputMap, err error) {
 	if !sdkInitialized {
 		return nil, sdkNotInitialized
@@ -619,24 +656,57 @@ func GetStorageSCConfig() (conf *InputMap, err error) {
 
 	return
 }
-
+// Blobber type represents blobber information.
 type Blobber struct {
+	// ID of the blobber
 	ID                       common.Key                   `json:"id"`
+
+	// BaseURL of the blobber
 	BaseURL                  string                       `json:"url"`
+
+	// Terms of the blobber
 	Terms                    Terms                        `json:"terms"`
+
+	// Capacity of the blobber
 	Capacity                 common.Size                  `json:"capacity"`
+
+	// Allocated size of the blobber
 	Allocated                common.Size                  `json:"allocated"`
+
+	// LastHealthCheck of the blobber
 	LastHealthCheck          common.Timestamp             `json:"last_health_check"`
+
+	// PublicKey of the blobber
 	PublicKey                string                       `json:"-"`
+
+	// StakePoolSettings settings of the blobber staking
 	StakePoolSettings        blockchain.StakePoolSettings `json:"stake_pool_settings"`
+
+	// TotalStake of the blobber in SAS
 	TotalStake               int64                        `json:"total_stake"`
+
+	// UsedAllocation of the blobber in SAS
 	UsedAllocation           int64                        `json:"used_allocation"`
+
+	// TotalOffers of the blobber in SAS
 	TotalOffers              int64                        `json:"total_offers"`
+
+	// TotalServiceCharge of the blobber in SAS
 	TotalServiceCharge       int64                        `json:"total_service_charge"`
+
+	// UncollectedServiceCharge of the blobber in SAS
 	UncollectedServiceCharge int64                        `json:"uncollected_service_charge"`
+
+	// IsKilled flag of the blobber, if true then the blobber is killed
 	IsKilled                 bool                         `json:"is_killed"`
+
+	// IsShutdown flag of the blobber, if true then the blobber is shutdown
 	IsShutdown               bool                         `json:"is_shutdown"`
+
+	// NotAvailable flag of the blobber, if true then the blobber is not available
 	NotAvailable             bool                         `json:"not_available"`
+
+	// IsRestricted flag of the blobber, if true then the blobber is restricted
 	IsRestricted             bool                         `json:"is_restricted"`
 }
 
@@ -662,6 +732,7 @@ type UpdateBlobber struct {
 	IsRestricted             *bool                               `json:"is_restricted,omitempty"`
 }
 
+// ResetBlobberStatsDto represents blobber stats reset request.
 type ResetBlobberStatsDto struct {
 	BlobberID     string `json:"blobber_id"`
 	PrevAllocated int64  `json:"prev_allocated"`
@@ -670,6 +741,7 @@ type ResetBlobberStatsDto struct {
 	NewSavedData  int64  `json:"new_saved_data"`
 }
 
+// Validator represents validator information.
 type Validator struct {
 	ID                       common.Key       `json:"validator_id"`
 	BaseURL                  string           `json:"url"`
@@ -687,6 +759,9 @@ type Validator struct {
 	IsShutdown               bool             `json:"is_shutdown"`
 }
 
+// UpdateValidator is used during update validator settings calls.
+// Note the types are of pointer types with omitempty json property.
+// This is done to correctly identify which properties are actually changing.
 type UpdateValidator struct {
 	ID                       common.Key        `json:"validator_id"`
 	BaseURL                  *string           `json:"url,omitempty"`
@@ -703,6 +778,7 @@ type UpdateValidator struct {
 	IsShutdown               *bool             `json:"is_shutdown,omitempty"`
 }
 
+// ConvertToValidationNode converts UpdateValidator request to blockchain.UpdateValidationNode.
 func (v *UpdateValidator) ConvertToValidationNode() *blockchain.UpdateValidationNode {
 	blockValidator := &blockchain.UpdateValidationNode{
 		ID:      string(v.ID),
@@ -753,6 +829,9 @@ func getBlobbersInternal(active, stakable bool, limit, offset int) (bs []*Blobbe
 	return wrap.Nodes, nil
 }
 
+// GetBlobbers returns list of blobbers.
+//		- `active`: if true then only active blobbers are returned
+//		- `stakable`: if true then only stakable blobbers are returned
 func GetBlobbers(active, stakable bool) (bs []*Blobber, err error) {
 	if !sdkInitialized {
 		return nil, sdkNotInitialized
@@ -785,10 +864,8 @@ func GetBlobbers(active, stakable bool) (bs []*Blobber, err error) {
 	return blobbersSl, nil
 }
 
-// GetBlobber instance.
-//
-//	# Inputs
-//	-	blobberID: the id of blobber
+// GetBlobber retrieve blobber by id.
+//		- blobberID: the id of blobber
 func GetBlobber(blobberID string) (blob *Blobber, err error) {
 	if !sdkInitialized {
 		return nil, sdkNotInitialized
@@ -812,7 +889,7 @@ func GetBlobber(blobberID string) (blob *Blobber, err error) {
 	return
 }
 
-// GetValidator instance.
+// GetValidator retrieve validator instance by id.
 func GetValidator(validatorID string) (validator *Validator, err error) {
 	if !sdkInitialized {
 		return nil, sdkNotInitialized
@@ -836,7 +913,8 @@ func GetValidator(validatorID string) (validator *Validator, err error) {
 	return
 }
 
-// List all validators
+// GetValidators returns list of validators.
+//		- `stakable`: if true then only stakable validators are returned
 func GetValidators(stakable bool) (validators []*Validator, err error) {
 	if !sdkInitialized {
 		return nil, sdkNotInitialized
@@ -861,10 +939,7 @@ func GetValidators(stakable bool) (validators []*Validator, err error) {
 	return
 }
 
-//
-// ---
-//
-
+// GetClientEncryptedPublicKey - get the client's public key
 func GetClientEncryptedPublicKey() (string, error) {
 	if !sdkInitialized {
 		return "", sdkNotInitialized
@@ -962,6 +1037,7 @@ func GetAllocationUpdates(allocation *Allocation) error {
 	return nil
 }
 
+// SetNumBlockDownloads - set the number of block downloads, needs to be between 1 and 500 (inclusive). Default is 20.
 func SetNumBlockDownloads(num int) {
 	if num > 0 && num <= 500 {
 		numBlockDownloads = num
@@ -1345,7 +1421,7 @@ func CreateFreeAllocation(marker string, value uint64) (string, int64, error) {
 	return hash, n, err
 }
 
-// UpdateFreeAllocation sends an update request for an allocation (txn: `storagesc.update_allocation_request`)
+// UpdateAllocation sends an update request for an allocation (txn: `storagesc.update_allocation_request`)
 //
 // 		- `size` is the size of the allocation.
 // 		- `extend` is a flag indicating whether to extend the allocation.
@@ -1433,6 +1509,7 @@ func CancelAllocation(allocID string) (hash string, nonce int64, err error) {
 	return
 }
 
+// ProviderType is the type of the provider.
 type ProviderType int
 
 const (
@@ -1443,6 +1520,9 @@ const (
 	ProviderAuthorizer
 )
 
+// KillProvider kills a blobber or a validator (txn: `storagesc.kill_blobber` or `storagesc.kill_validator`)
+//		- `providerId` is the id of the provider.
+//		- `providerType` is the type of the provider, either 3 for `ProviderBlobber` or 4 for `ProviderValidator`.
 func KillProvider(providerId string, providerType ProviderType) (string, int64, error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
@@ -1466,6 +1546,9 @@ func KillProvider(providerId string, providerType ProviderType) (string, int64, 
 	return hash, n, err
 }
 
+// ShutdownProvider shuts down a blobber or a validator (txn: `storagesc.shutdown_blobber` or `storagesc.shutdown_validator`)
+//		- `providerId` is the id of the provider.
+//		- `providerType` is the type of the provider, either 3 for `ProviderBlobber` or 4 for `ProviderValidator`.
 func ShutdownProvider(providerType ProviderType, providerID string) (string, int64, error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
@@ -1490,6 +1573,9 @@ func ShutdownProvider(providerType ProviderType, providerID string) (string, int
 	return hash, n, err
 }
 
+// CollectRewards collects the rewards for a provider (txn: `storagesc.collect_reward`)
+// 		- `providerId` is the id of the provider.
+// 		- `providerType` is the type of the provider.
 func CollectRewards(providerId string, providerType ProviderType) (string, int64, error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
@@ -1561,6 +1647,8 @@ func TransferAllocation(allocationId, newOwner, newOwnerPublicKey string) (strin
 	return hash, n, err
 }
 
+// UpdateBlobberSettings updates the settings of a blobber (txn: `storagesc.update_blobber_settings`)
+// 		- `blob` is the update blobber request inputs.
 func UpdateBlobberSettings(blob *UpdateBlobber) (resp string, nonce int64, err error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
@@ -1573,6 +1661,8 @@ func UpdateBlobberSettings(blob *UpdateBlobber) (resp string, nonce int64, err e
 	return
 }
 
+// UpdateValidatorSettings updates the settings of a validator (txn: `storagesc.update_validator_settings`)
+// 		- `v` is the update validator request inputs.
 func UpdateValidatorSettings(v *UpdateValidator) (resp string, nonce int64, err error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
@@ -1586,6 +1676,8 @@ func UpdateValidatorSettings(v *UpdateValidator) (resp string, nonce int64, err 
 	return
 }
 
+// ResetBlobberStats resets the stats of a blobber (txn: `storagesc.reset_blobber_stats`)
+//		- `rbs` is the reset blobber stats dto, contains the blobber id and its stats.
 func ResetBlobberStats(rbs *ResetBlobberStatsDto) (string, int64, error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized

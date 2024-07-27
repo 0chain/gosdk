@@ -93,6 +93,7 @@ const (
     STORAGESC_SHUTDOWN_BLOBBER          = "shutdown_blobber"
     STORAGESC_SHUTDOWN_VALIDATOR        = "shutdown_validator"
     STORAGESC_RESET_BLOBBER_STATS       = "reset_blobber_stats"
+    STORAGESC_RESET_ALLOCATION_STATS    = "reset_allocation_stats"
 
     MINERSC_LOCK             = "addToDelegatePool"
     MINERSC_UNLOCK           = "deleteFromDelegatePool"
@@ -180,7 +181,7 @@ var (
 ```
 
 <a name="EstimateFee"></a>
-## func [EstimateFee](<https://github.com/0chain/gosdk/blob/doc/initial/core/transaction/entity.go#L338>)
+## func [EstimateFee](<https://github.com/0chain/gosdk/blob/doc/initial/core/transaction/entity.go#L339>)
 
 ```go
 func EstimateFee(txn *Transaction, miners []string, reqPercent ...float32) (uint64, error)
@@ -189,7 +190,7 @@ func EstimateFee(txn *Transaction, miners []string, reqPercent ...float32) (uint
 EstimateFee estimates transaction fee
 
 <a name="GetFeesTable"></a>
-## func [GetFeesTable](<https://github.com/0chain/gosdk/blob/doc/initial/core/transaction/entity.go#L395>)
+## func [GetFeesTable](<https://github.com/0chain/gosdk/blob/doc/initial/core/transaction/entity.go#L396>)
 
 ```go
 func GetFeesTable(miners []string, reqPercent ...float32) (map[string]map[string]int64, error)
@@ -198,7 +199,7 @@ func GetFeesTable(miners []string, reqPercent ...float32) (map[string]map[string
 GetFeesTable get fee tables
 
 <a name="SendTransactionSync"></a>
-## func [SendTransactionSync](<https://github.com/0chain/gosdk/blob/doc/initial/core/transaction/entity.go#L263>)
+## func [SendTransactionSync](<https://github.com/0chain/gosdk/blob/doc/initial/core/transaction/entity.go#L264>)
 
 ```go
 func SendTransactionSync(txn *Transaction, miners []string) error
@@ -297,7 +298,7 @@ type RoundBlockHeader struct {
 ```
 
 <a name="SignFunc"></a>
-## type [SignFunc](<https://github.com/0chain/gosdk/blob/doc/initial/core/transaction/entity.go#L179>)
+## type [SignFunc](<https://github.com/0chain/gosdk/blob/doc/initial/core/transaction/entity.go#L180>)
 
 
 
@@ -306,7 +307,7 @@ type SignFunc = func(msg string) (string, error)
 ```
 
 <a name="SignWithWallet"></a>
-## type [SignWithWallet](<https://github.com/0chain/gosdk/blob/doc/initial/core/transaction/entity.go#L181>)
+## type [SignWithWallet](<https://github.com/0chain/gosdk/blob/doc/initial/core/transaction/entity.go#L182>)
 
 
 
@@ -373,7 +374,7 @@ type Transaction struct {
 ```
 
 <a name="NewTransactionEntity"></a>
-### func [NewTransactionEntity](<https://github.com/0chain/gosdk/blob/doc/initial/core/transaction/entity.go#L193>)
+### func [NewTransactionEntity](<https://github.com/0chain/gosdk/blob/doc/initial/core/transaction/entity.go#L194>)
 
 ```go
 func NewTransactionEntity(clientID string, chainID string, publicKey string, nonce int64) *Transaction
@@ -400,7 +401,7 @@ func VerifyTransactionTrusted(txnHash string, sharders []string) (*Transaction, 
 VerifyTransaction query transaction status from sharders, and verify it by mininal confirmation
 
 <a name="Transaction.ComputeHashAndSign"></a>
-### func \(\*Transaction\) [ComputeHashAndSign](<https://github.com/0chain/gosdk/blob/doc/initial/core/transaction/entity.go#L214>)
+### func \(\*Transaction\) [ComputeHashAndSign](<https://github.com/0chain/gosdk/blob/doc/initial/core/transaction/entity.go#L215>)
 
 ```go
 func (t *Transaction) ComputeHashAndSign(signHandler SignFunc) error
@@ -409,7 +410,7 @@ func (t *Transaction) ComputeHashAndSign(signHandler SignFunc) error
 
 
 <a name="Transaction.ComputeHashAndSignWithWallet"></a>
-### func \(\*Transaction\) [ComputeHashAndSignWithWallet](<https://github.com/0chain/gosdk/blob/doc/initial/core/transaction/entity.go#L204>)
+### func \(\*Transaction\) [ComputeHashAndSignWithWallet](<https://github.com/0chain/gosdk/blob/doc/initial/core/transaction/entity.go#L205>)
 
 ```go
 func (t *Transaction) ComputeHashAndSignWithWallet(signHandler SignWithWallet, signingWallet interface{}) error
@@ -418,7 +419,7 @@ func (t *Transaction) ComputeHashAndSignWithWallet(signHandler SignWithWallet, s
 
 
 <a name="Transaction.ComputeHashData"></a>
-### func \(\*Transaction\) [ComputeHashData](<https://github.com/0chain/gosdk/blob/doc/initial/core/transaction/entity.go#L224>)
+### func \(\*Transaction\) [ComputeHashData](<https://github.com/0chain/gosdk/blob/doc/initial/core/transaction/entity.go#L225>)
 
 ```go
 func (t *Transaction) ComputeHashData()
@@ -427,7 +428,7 @@ func (t *Transaction) ComputeHashData()
 
 
 <a name="Transaction.DebugJSON"></a>
-### func \(\*Transaction\) [DebugJSON](<https://github.com/0chain/gosdk/blob/doc/initial/core/transaction/entity.go#L230>)
+### func \(\*Transaction\) [DebugJSON](<https://github.com/0chain/gosdk/blob/doc/initial/core/transaction/entity.go#L231>)
 
 ```go
 func (t *Transaction) DebugJSON() []byte
@@ -436,7 +437,7 @@ func (t *Transaction) DebugJSON() []byte
 
 
 <a name="Transaction.VerifyTransaction"></a>
-### func \(\*Transaction\) [VerifyTransaction](<https://github.com/0chain/gosdk/blob/doc/initial/core/transaction/entity.go#L253>)
+### func \(\*Transaction\) [VerifyTransaction](<https://github.com/0chain/gosdk/blob/doc/initial/core/transaction/entity.go#L254>)
 
 ```go
 func (t *Transaction) VerifyTransaction(verifyHandler VerifyFunc) (bool, error)
@@ -456,7 +457,7 @@ type TxnReceipt struct {
 ```
 
 <a name="NewTransactionReceipt"></a>
-### func [NewTransactionReceipt](<https://github.com/0chain/gosdk/blob/doc/initial/core/transaction/entity.go#L249>)
+### func [NewTransactionReceipt](<https://github.com/0chain/gosdk/blob/doc/initial/core/transaction/entity.go#L250>)
 
 ```go
 func NewTransactionReceipt(t *Transaction) *TxnReceipt
@@ -465,7 +466,7 @@ func NewTransactionReceipt(t *Transaction) *TxnReceipt
 NewTransactionReceipt \- create a new transaction receipt
 
 <a name="TxnReceipt.GetHash"></a>
-### func \(\*TxnReceipt\) [GetHash](<https://github.com/0chain/gosdk/blob/doc/initial/core/transaction/entity.go#L239>)
+### func \(\*TxnReceipt\) [GetHash](<https://github.com/0chain/gosdk/blob/doc/initial/core/transaction/entity.go#L240>)
 
 ```go
 func (rh *TxnReceipt) GetHash() string
@@ -474,7 +475,7 @@ func (rh *TxnReceipt) GetHash() string
 GetHash \- implement interface
 
 <a name="TxnReceipt.GetHashBytes"></a>
-### func \(\*TxnReceipt\) [GetHashBytes](<https://github.com/0chain/gosdk/blob/doc/initial/core/transaction/entity.go#L244>)
+### func \(\*TxnReceipt\) [GetHashBytes](<https://github.com/0chain/gosdk/blob/doc/initial/core/transaction/entity.go#L245>)
 
 ```go
 func (rh *TxnReceipt) GetHashBytes() []byte
@@ -483,7 +484,7 @@ func (rh *TxnReceipt) GetHashBytes() []byte
 GetHashBytes \- implement Hashable interface
 
 <a name="VerifyFunc"></a>
-## type [VerifyFunc](<https://github.com/0chain/gosdk/blob/doc/initial/core/transaction/entity.go#L180>)
+## type [VerifyFunc](<https://github.com/0chain/gosdk/blob/doc/initial/core/transaction/entity.go#L181>)
 
 
 

@@ -18,31 +18,31 @@ import "github.com/0chain/gosdk/zcnbridge/ethereum/bancortoken"
   - [func \(it \*BancortokenApprovalIterator\) Next\(\) bool](<#BancortokenApprovalIterator.Next>)
 - [type BancortokenCaller](<#BancortokenCaller>)
   - [func NewBancortokenCaller\(address common.Address, caller bind.ContractCaller\) \(\*BancortokenCaller, error\)](<#NewBancortokenCaller>)
-  - [func \(\_Bancortoken \*BancortokenCaller\) Allowance\(opts \*bind.CallOpts, arg0 common.Address, arg1 common.Address\) \(\*big.Int, error\)](<#BancortokenCaller.Allowance>)
-  - [func \(\_Bancortoken \*BancortokenCaller\) BalanceOf\(opts \*bind.CallOpts, arg0 common.Address\) \(\*big.Int, error\)](<#BancortokenCaller.BalanceOf>)
-  - [func \(\_Bancortoken \*BancortokenCaller\) Decimals\(opts \*bind.CallOpts\) \(uint8, error\)](<#BancortokenCaller.Decimals>)
-  - [func \(\_Bancortoken \*BancortokenCaller\) Name\(opts \*bind.CallOpts\) \(string, error\)](<#BancortokenCaller.Name>)
-  - [func \(\_Bancortoken \*BancortokenCaller\) NewOwner\(opts \*bind.CallOpts\) \(common.Address, error\)](<#BancortokenCaller.NewOwner>)
-  - [func \(\_Bancortoken \*BancortokenCaller\) Owner\(opts \*bind.CallOpts\) \(common.Address, error\)](<#BancortokenCaller.Owner>)
-  - [func \(\_Bancortoken \*BancortokenCaller\) Standard\(opts \*bind.CallOpts\) \(string, error\)](<#BancortokenCaller.Standard>)
-  - [func \(\_Bancortoken \*BancortokenCaller\) Symbol\(opts \*bind.CallOpts\) \(string, error\)](<#BancortokenCaller.Symbol>)
-  - [func \(\_Bancortoken \*BancortokenCaller\) TotalSupply\(opts \*bind.CallOpts\) \(\*big.Int, error\)](<#BancortokenCaller.TotalSupply>)
-  - [func \(\_Bancortoken \*BancortokenCaller\) TransfersEnabled\(opts \*bind.CallOpts\) \(bool, error\)](<#BancortokenCaller.TransfersEnabled>)
-  - [func \(\_Bancortoken \*BancortokenCaller\) Version\(opts \*bind.CallOpts\) \(string, error\)](<#BancortokenCaller.Version>)
+  - [func \(_Bancortoken \*BancortokenCaller\) Allowance\(opts \*bind.CallOpts, arg0 common.Address, arg1 common.Address\) \(\*big.Int, error\)](<#BancortokenCaller.Allowance>)
+  - [func \(_Bancortoken \*BancortokenCaller\) BalanceOf\(opts \*bind.CallOpts, arg0 common.Address\) \(\*big.Int, error\)](<#BancortokenCaller.BalanceOf>)
+  - [func \(_Bancortoken \*BancortokenCaller\) Decimals\(opts \*bind.CallOpts\) \(uint8, error\)](<#BancortokenCaller.Decimals>)
+  - [func \(_Bancortoken \*BancortokenCaller\) Name\(opts \*bind.CallOpts\) \(string, error\)](<#BancortokenCaller.Name>)
+  - [func \(_Bancortoken \*BancortokenCaller\) NewOwner\(opts \*bind.CallOpts\) \(common.Address, error\)](<#BancortokenCaller.NewOwner>)
+  - [func \(_Bancortoken \*BancortokenCaller\) Owner\(opts \*bind.CallOpts\) \(common.Address, error\)](<#BancortokenCaller.Owner>)
+  - [func \(_Bancortoken \*BancortokenCaller\) Standard\(opts \*bind.CallOpts\) \(string, error\)](<#BancortokenCaller.Standard>)
+  - [func \(_Bancortoken \*BancortokenCaller\) Symbol\(opts \*bind.CallOpts\) \(string, error\)](<#BancortokenCaller.Symbol>)
+  - [func \(_Bancortoken \*BancortokenCaller\) TotalSupply\(opts \*bind.CallOpts\) \(\*big.Int, error\)](<#BancortokenCaller.TotalSupply>)
+  - [func \(_Bancortoken \*BancortokenCaller\) TransfersEnabled\(opts \*bind.CallOpts\) \(bool, error\)](<#BancortokenCaller.TransfersEnabled>)
+  - [func \(_Bancortoken \*BancortokenCaller\) Version\(opts \*bind.CallOpts\) \(string, error\)](<#BancortokenCaller.Version>)
 - [type BancortokenCallerRaw](<#BancortokenCallerRaw>)
-  - [func \(\_Bancortoken \*BancortokenCallerRaw\) Call\(opts \*bind.CallOpts, result \*\[\]interface\{\}, method string, params ...interface\{\}\) error](<#BancortokenCallerRaw.Call>)
+  - [func \(_Bancortoken \*BancortokenCallerRaw\) Call\(opts \*bind.CallOpts, result \*\[\]interface\{\}, method string, params ...interface\{\}\) error](<#BancortokenCallerRaw.Call>)
 - [type BancortokenCallerSession](<#BancortokenCallerSession>)
-  - [func \(\_Bancortoken \*BancortokenCallerSession\) Allowance\(arg0 common.Address, arg1 common.Address\) \(\*big.Int, error\)](<#BancortokenCallerSession.Allowance>)
-  - [func \(\_Bancortoken \*BancortokenCallerSession\) BalanceOf\(arg0 common.Address\) \(\*big.Int, error\)](<#BancortokenCallerSession.BalanceOf>)
-  - [func \(\_Bancortoken \*BancortokenCallerSession\) Decimals\(\) \(uint8, error\)](<#BancortokenCallerSession.Decimals>)
-  - [func \(\_Bancortoken \*BancortokenCallerSession\) Name\(\) \(string, error\)](<#BancortokenCallerSession.Name>)
-  - [func \(\_Bancortoken \*BancortokenCallerSession\) NewOwner\(\) \(common.Address, error\)](<#BancortokenCallerSession.NewOwner>)
-  - [func \(\_Bancortoken \*BancortokenCallerSession\) Owner\(\) \(common.Address, error\)](<#BancortokenCallerSession.Owner>)
-  - [func \(\_Bancortoken \*BancortokenCallerSession\) Standard\(\) \(string, error\)](<#BancortokenCallerSession.Standard>)
-  - [func \(\_Bancortoken \*BancortokenCallerSession\) Symbol\(\) \(string, error\)](<#BancortokenCallerSession.Symbol>)
-  - [func \(\_Bancortoken \*BancortokenCallerSession\) TotalSupply\(\) \(\*big.Int, error\)](<#BancortokenCallerSession.TotalSupply>)
-  - [func \(\_Bancortoken \*BancortokenCallerSession\) TransfersEnabled\(\) \(bool, error\)](<#BancortokenCallerSession.TransfersEnabled>)
-  - [func \(\_Bancortoken \*BancortokenCallerSession\) Version\(\) \(string, error\)](<#BancortokenCallerSession.Version>)
+  - [func \(_Bancortoken \*BancortokenCallerSession\) Allowance\(arg0 common.Address, arg1 common.Address\) \(\*big.Int, error\)](<#BancortokenCallerSession.Allowance>)
+  - [func \(_Bancortoken \*BancortokenCallerSession\) BalanceOf\(arg0 common.Address\) \(\*big.Int, error\)](<#BancortokenCallerSession.BalanceOf>)
+  - [func \(_Bancortoken \*BancortokenCallerSession\) Decimals\(\) \(uint8, error\)](<#BancortokenCallerSession.Decimals>)
+  - [func \(_Bancortoken \*BancortokenCallerSession\) Name\(\) \(string, error\)](<#BancortokenCallerSession.Name>)
+  - [func \(_Bancortoken \*BancortokenCallerSession\) NewOwner\(\) \(common.Address, error\)](<#BancortokenCallerSession.NewOwner>)
+  - [func \(_Bancortoken \*BancortokenCallerSession\) Owner\(\) \(common.Address, error\)](<#BancortokenCallerSession.Owner>)
+  - [func \(_Bancortoken \*BancortokenCallerSession\) Standard\(\) \(string, error\)](<#BancortokenCallerSession.Standard>)
+  - [func \(_Bancortoken \*BancortokenCallerSession\) Symbol\(\) \(string, error\)](<#BancortokenCallerSession.Symbol>)
+  - [func \(_Bancortoken \*BancortokenCallerSession\) TotalSupply\(\) \(\*big.Int, error\)](<#BancortokenCallerSession.TotalSupply>)
+  - [func \(_Bancortoken \*BancortokenCallerSession\) TransfersEnabled\(\) \(bool, error\)](<#BancortokenCallerSession.TransfersEnabled>)
+  - [func \(_Bancortoken \*BancortokenCallerSession\) Version\(\) \(string, error\)](<#BancortokenCallerSession.Version>)
 - [type BancortokenDestruction](<#BancortokenDestruction>)
 - [type BancortokenDestructionIterator](<#BancortokenDestructionIterator>)
   - [func \(it \*BancortokenDestructionIterator\) Close\(\) error](<#BancortokenDestructionIterator.Close>)
@@ -50,24 +50,24 @@ import "github.com/0chain/gosdk/zcnbridge/ethereum/bancortoken"
   - [func \(it \*BancortokenDestructionIterator\) Next\(\) bool](<#BancortokenDestructionIterator.Next>)
 - [type BancortokenFilterer](<#BancortokenFilterer>)
   - [func NewBancortokenFilterer\(address common.Address, filterer bind.ContractFilterer\) \(\*BancortokenFilterer, error\)](<#NewBancortokenFilterer>)
-  - [func \(\_Bancortoken \*BancortokenFilterer\) FilterApproval\(opts \*bind.FilterOpts, \_owner \[\]common.Address, \_spender \[\]common.Address\) \(\*BancortokenApprovalIterator, error\)](<#BancortokenFilterer.FilterApproval>)
-  - [func \(\_Bancortoken \*BancortokenFilterer\) FilterDestruction\(opts \*bind.FilterOpts\) \(\*BancortokenDestructionIterator, error\)](<#BancortokenFilterer.FilterDestruction>)
-  - [func \(\_Bancortoken \*BancortokenFilterer\) FilterIssuance\(opts \*bind.FilterOpts\) \(\*BancortokenIssuanceIterator, error\)](<#BancortokenFilterer.FilterIssuance>)
-  - [func \(\_Bancortoken \*BancortokenFilterer\) FilterNewSmartToken\(opts \*bind.FilterOpts\) \(\*BancortokenNewSmartTokenIterator, error\)](<#BancortokenFilterer.FilterNewSmartToken>)
-  - [func \(\_Bancortoken \*BancortokenFilterer\) FilterOwnerUpdate\(opts \*bind.FilterOpts\) \(\*BancortokenOwnerUpdateIterator, error\)](<#BancortokenFilterer.FilterOwnerUpdate>)
-  - [func \(\_Bancortoken \*BancortokenFilterer\) FilterTransfer\(opts \*bind.FilterOpts, \_from \[\]common.Address, \_to \[\]common.Address\) \(\*BancortokenTransferIterator, error\)](<#BancortokenFilterer.FilterTransfer>)
-  - [func \(\_Bancortoken \*BancortokenFilterer\) ParseApproval\(log types.Log\) \(\*BancortokenApproval, error\)](<#BancortokenFilterer.ParseApproval>)
-  - [func \(\_Bancortoken \*BancortokenFilterer\) ParseDestruction\(log types.Log\) \(\*BancortokenDestruction, error\)](<#BancortokenFilterer.ParseDestruction>)
-  - [func \(\_Bancortoken \*BancortokenFilterer\) ParseIssuance\(log types.Log\) \(\*BancortokenIssuance, error\)](<#BancortokenFilterer.ParseIssuance>)
-  - [func \(\_Bancortoken \*BancortokenFilterer\) ParseNewSmartToken\(log types.Log\) \(\*BancortokenNewSmartToken, error\)](<#BancortokenFilterer.ParseNewSmartToken>)
-  - [func \(\_Bancortoken \*BancortokenFilterer\) ParseOwnerUpdate\(log types.Log\) \(\*BancortokenOwnerUpdate, error\)](<#BancortokenFilterer.ParseOwnerUpdate>)
-  - [func \(\_Bancortoken \*BancortokenFilterer\) ParseTransfer\(log types.Log\) \(\*BancortokenTransfer, error\)](<#BancortokenFilterer.ParseTransfer>)
-  - [func \(\_Bancortoken \*BancortokenFilterer\) WatchApproval\(opts \*bind.WatchOpts, sink chan\<\- \*BancortokenApproval, \_owner \[\]common.Address, \_spender \[\]common.Address\) \(event.Subscription, error\)](<#BancortokenFilterer.WatchApproval>)
-  - [func \(\_Bancortoken \*BancortokenFilterer\) WatchDestruction\(opts \*bind.WatchOpts, sink chan\<\- \*BancortokenDestruction\) \(event.Subscription, error\)](<#BancortokenFilterer.WatchDestruction>)
-  - [func \(\_Bancortoken \*BancortokenFilterer\) WatchIssuance\(opts \*bind.WatchOpts, sink chan\<\- \*BancortokenIssuance\) \(event.Subscription, error\)](<#BancortokenFilterer.WatchIssuance>)
-  - [func \(\_Bancortoken \*BancortokenFilterer\) WatchNewSmartToken\(opts \*bind.WatchOpts, sink chan\<\- \*BancortokenNewSmartToken\) \(event.Subscription, error\)](<#BancortokenFilterer.WatchNewSmartToken>)
-  - [func \(\_Bancortoken \*BancortokenFilterer\) WatchOwnerUpdate\(opts \*bind.WatchOpts, sink chan\<\- \*BancortokenOwnerUpdate\) \(event.Subscription, error\)](<#BancortokenFilterer.WatchOwnerUpdate>)
-  - [func \(\_Bancortoken \*BancortokenFilterer\) WatchTransfer\(opts \*bind.WatchOpts, sink chan\<\- \*BancortokenTransfer, \_from \[\]common.Address, \_to \[\]common.Address\) \(event.Subscription, error\)](<#BancortokenFilterer.WatchTransfer>)
+  - [func \(_Bancortoken \*BancortokenFilterer\) FilterApproval\(opts \*bind.FilterOpts, _owner \[\]common.Address, _spender \[\]common.Address\) \(\*BancortokenApprovalIterator, error\)](<#BancortokenFilterer.FilterApproval>)
+  - [func \(_Bancortoken \*BancortokenFilterer\) FilterDestruction\(opts \*bind.FilterOpts\) \(\*BancortokenDestructionIterator, error\)](<#BancortokenFilterer.FilterDestruction>)
+  - [func \(_Bancortoken \*BancortokenFilterer\) FilterIssuance\(opts \*bind.FilterOpts\) \(\*BancortokenIssuanceIterator, error\)](<#BancortokenFilterer.FilterIssuance>)
+  - [func \(_Bancortoken \*BancortokenFilterer\) FilterNewSmartToken\(opts \*bind.FilterOpts\) \(\*BancortokenNewSmartTokenIterator, error\)](<#BancortokenFilterer.FilterNewSmartToken>)
+  - [func \(_Bancortoken \*BancortokenFilterer\) FilterOwnerUpdate\(opts \*bind.FilterOpts\) \(\*BancortokenOwnerUpdateIterator, error\)](<#BancortokenFilterer.FilterOwnerUpdate>)
+  - [func \(_Bancortoken \*BancortokenFilterer\) FilterTransfer\(opts \*bind.FilterOpts, _from \[\]common.Address, _to \[\]common.Address\) \(\*BancortokenTransferIterator, error\)](<#BancortokenFilterer.FilterTransfer>)
+  - [func \(_Bancortoken \*BancortokenFilterer\) ParseApproval\(log types.Log\) \(\*BancortokenApproval, error\)](<#BancortokenFilterer.ParseApproval>)
+  - [func \(_Bancortoken \*BancortokenFilterer\) ParseDestruction\(log types.Log\) \(\*BancortokenDestruction, error\)](<#BancortokenFilterer.ParseDestruction>)
+  - [func \(_Bancortoken \*BancortokenFilterer\) ParseIssuance\(log types.Log\) \(\*BancortokenIssuance, error\)](<#BancortokenFilterer.ParseIssuance>)
+  - [func \(_Bancortoken \*BancortokenFilterer\) ParseNewSmartToken\(log types.Log\) \(\*BancortokenNewSmartToken, error\)](<#BancortokenFilterer.ParseNewSmartToken>)
+  - [func \(_Bancortoken \*BancortokenFilterer\) ParseOwnerUpdate\(log types.Log\) \(\*BancortokenOwnerUpdate, error\)](<#BancortokenFilterer.ParseOwnerUpdate>)
+  - [func \(_Bancortoken \*BancortokenFilterer\) ParseTransfer\(log types.Log\) \(\*BancortokenTransfer, error\)](<#BancortokenFilterer.ParseTransfer>)
+  - [func \(_Bancortoken \*BancortokenFilterer\) WatchApproval\(opts \*bind.WatchOpts, sink chan\<\- \*BancortokenApproval, _owner \[\]common.Address, _spender \[\]common.Address\) \(event.Subscription, error\)](<#BancortokenFilterer.WatchApproval>)
+  - [func \(_Bancortoken \*BancortokenFilterer\) WatchDestruction\(opts \*bind.WatchOpts, sink chan\<\- \*BancortokenDestruction\) \(event.Subscription, error\)](<#BancortokenFilterer.WatchDestruction>)
+  - [func \(_Bancortoken \*BancortokenFilterer\) WatchIssuance\(opts \*bind.WatchOpts, sink chan\<\- \*BancortokenIssuance\) \(event.Subscription, error\)](<#BancortokenFilterer.WatchIssuance>)
+  - [func \(_Bancortoken \*BancortokenFilterer\) WatchNewSmartToken\(opts \*bind.WatchOpts, sink chan\<\- \*BancortokenNewSmartToken\) \(event.Subscription, error\)](<#BancortokenFilterer.WatchNewSmartToken>)
+  - [func \(_Bancortoken \*BancortokenFilterer\) WatchOwnerUpdate\(opts \*bind.WatchOpts, sink chan\<\- \*BancortokenOwnerUpdate\) \(event.Subscription, error\)](<#BancortokenFilterer.WatchOwnerUpdate>)
+  - [func \(_Bancortoken \*BancortokenFilterer\) WatchTransfer\(opts \*bind.WatchOpts, sink chan\<\- \*BancortokenTransfer, _from \[\]common.Address, _to \[\]common.Address\) \(event.Subscription, error\)](<#BancortokenFilterer.WatchTransfer>)
 - [type BancortokenIssuance](<#BancortokenIssuance>)
 - [type BancortokenIssuanceIterator](<#BancortokenIssuanceIterator>)
   - [func \(it \*BancortokenIssuanceIterator\) Close\(\) error](<#BancortokenIssuanceIterator.Close>)
@@ -84,54 +84,54 @@ import "github.com/0chain/gosdk/zcnbridge/ethereum/bancortoken"
   - [func \(it \*BancortokenOwnerUpdateIterator\) Error\(\) error](<#BancortokenOwnerUpdateIterator.Error>)
   - [func \(it \*BancortokenOwnerUpdateIterator\) Next\(\) bool](<#BancortokenOwnerUpdateIterator.Next>)
 - [type BancortokenRaw](<#BancortokenRaw>)
-  - [func \(\_Bancortoken \*BancortokenRaw\) Call\(opts \*bind.CallOpts, result \*\[\]interface\{\}, method string, params ...interface\{\}\) error](<#BancortokenRaw.Call>)
-  - [func \(\_Bancortoken \*BancortokenRaw\) Transact\(opts \*bind.TransactOpts, method string, params ...interface\{\}\) \(\*types.Transaction, error\)](<#BancortokenRaw.Transact>)
-  - [func \(\_Bancortoken \*BancortokenRaw\) Transfer\(opts \*bind.TransactOpts\) \(\*types.Transaction, error\)](<#BancortokenRaw.Transfer>)
+  - [func \(_Bancortoken \*BancortokenRaw\) Call\(opts \*bind.CallOpts, result \*\[\]interface\{\}, method string, params ...interface\{\}\) error](<#BancortokenRaw.Call>)
+  - [func \(_Bancortoken \*BancortokenRaw\) Transact\(opts \*bind.TransactOpts, method string, params ...interface\{\}\) \(\*types.Transaction, error\)](<#BancortokenRaw.Transact>)
+  - [func \(_Bancortoken \*BancortokenRaw\) Transfer\(opts \*bind.TransactOpts\) \(\*types.Transaction, error\)](<#BancortokenRaw.Transfer>)
 - [type BancortokenSession](<#BancortokenSession>)
-  - [func \(\_Bancortoken \*BancortokenSession\) AcceptOwnership\(\) \(\*types.Transaction, error\)](<#BancortokenSession.AcceptOwnership>)
-  - [func \(\_Bancortoken \*BancortokenSession\) Allowance\(arg0 common.Address, arg1 common.Address\) \(\*big.Int, error\)](<#BancortokenSession.Allowance>)
-  - [func \(\_Bancortoken \*BancortokenSession\) Approve\(\_spender common.Address, \_value \*big.Int\) \(\*types.Transaction, error\)](<#BancortokenSession.Approve>)
-  - [func \(\_Bancortoken \*BancortokenSession\) BalanceOf\(arg0 common.Address\) \(\*big.Int, error\)](<#BancortokenSession.BalanceOf>)
-  - [func \(\_Bancortoken \*BancortokenSession\) Decimals\(\) \(uint8, error\)](<#BancortokenSession.Decimals>)
-  - [func \(\_Bancortoken \*BancortokenSession\) Destroy\(\_from common.Address, \_amount \*big.Int\) \(\*types.Transaction, error\)](<#BancortokenSession.Destroy>)
-  - [func \(\_Bancortoken \*BancortokenSession\) DisableTransfers\(\_disable bool\) \(\*types.Transaction, error\)](<#BancortokenSession.DisableTransfers>)
-  - [func \(\_Bancortoken \*BancortokenSession\) Issue\(\_to common.Address, \_amount \*big.Int\) \(\*types.Transaction, error\)](<#BancortokenSession.Issue>)
-  - [func \(\_Bancortoken \*BancortokenSession\) Name\(\) \(string, error\)](<#BancortokenSession.Name>)
-  - [func \(\_Bancortoken \*BancortokenSession\) NewOwner\(\) \(common.Address, error\)](<#BancortokenSession.NewOwner>)
-  - [func \(\_Bancortoken \*BancortokenSession\) Owner\(\) \(common.Address, error\)](<#BancortokenSession.Owner>)
-  - [func \(\_Bancortoken \*BancortokenSession\) Standard\(\) \(string, error\)](<#BancortokenSession.Standard>)
-  - [func \(\_Bancortoken \*BancortokenSession\) Symbol\(\) \(string, error\)](<#BancortokenSession.Symbol>)
-  - [func \(\_Bancortoken \*BancortokenSession\) TotalSupply\(\) \(\*big.Int, error\)](<#BancortokenSession.TotalSupply>)
-  - [func \(\_Bancortoken \*BancortokenSession\) Transfer\(\_to common.Address, \_value \*big.Int\) \(\*types.Transaction, error\)](<#BancortokenSession.Transfer>)
-  - [func \(\_Bancortoken \*BancortokenSession\) TransferFrom\(\_from common.Address, \_to common.Address, \_value \*big.Int\) \(\*types.Transaction, error\)](<#BancortokenSession.TransferFrom>)
-  - [func \(\_Bancortoken \*BancortokenSession\) TransferOwnership\(\_newOwner common.Address\) \(\*types.Transaction, error\)](<#BancortokenSession.TransferOwnership>)
-  - [func \(\_Bancortoken \*BancortokenSession\) TransfersEnabled\(\) \(bool, error\)](<#BancortokenSession.TransfersEnabled>)
-  - [func \(\_Bancortoken \*BancortokenSession\) Version\(\) \(string, error\)](<#BancortokenSession.Version>)
-  - [func \(\_Bancortoken \*BancortokenSession\) WithdrawTokens\(\_token common.Address, \_to common.Address, \_amount \*big.Int\) \(\*types.Transaction, error\)](<#BancortokenSession.WithdrawTokens>)
+  - [func \(_Bancortoken \*BancortokenSession\) AcceptOwnership\(\) \(\*types.Transaction, error\)](<#BancortokenSession.AcceptOwnership>)
+  - [func \(_Bancortoken \*BancortokenSession\) Allowance\(arg0 common.Address, arg1 common.Address\) \(\*big.Int, error\)](<#BancortokenSession.Allowance>)
+  - [func \(_Bancortoken \*BancortokenSession\) Approve\(_spender common.Address, _value \*big.Int\) \(\*types.Transaction, error\)](<#BancortokenSession.Approve>)
+  - [func \(_Bancortoken \*BancortokenSession\) BalanceOf\(arg0 common.Address\) \(\*big.Int, error\)](<#BancortokenSession.BalanceOf>)
+  - [func \(_Bancortoken \*BancortokenSession\) Decimals\(\) \(uint8, error\)](<#BancortokenSession.Decimals>)
+  - [func \(_Bancortoken \*BancortokenSession\) Destroy\(_from common.Address, _amount \*big.Int\) \(\*types.Transaction, error\)](<#BancortokenSession.Destroy>)
+  - [func \(_Bancortoken \*BancortokenSession\) DisableTransfers\(_disable bool\) \(\*types.Transaction, error\)](<#BancortokenSession.DisableTransfers>)
+  - [func \(_Bancortoken \*BancortokenSession\) Issue\(_to common.Address, _amount \*big.Int\) \(\*types.Transaction, error\)](<#BancortokenSession.Issue>)
+  - [func \(_Bancortoken \*BancortokenSession\) Name\(\) \(string, error\)](<#BancortokenSession.Name>)
+  - [func \(_Bancortoken \*BancortokenSession\) NewOwner\(\) \(common.Address, error\)](<#BancortokenSession.NewOwner>)
+  - [func \(_Bancortoken \*BancortokenSession\) Owner\(\) \(common.Address, error\)](<#BancortokenSession.Owner>)
+  - [func \(_Bancortoken \*BancortokenSession\) Standard\(\) \(string, error\)](<#BancortokenSession.Standard>)
+  - [func \(_Bancortoken \*BancortokenSession\) Symbol\(\) \(string, error\)](<#BancortokenSession.Symbol>)
+  - [func \(_Bancortoken \*BancortokenSession\) TotalSupply\(\) \(\*big.Int, error\)](<#BancortokenSession.TotalSupply>)
+  - [func \(_Bancortoken \*BancortokenSession\) Transfer\(_to common.Address, _value \*big.Int\) \(\*types.Transaction, error\)](<#BancortokenSession.Transfer>)
+  - [func \(_Bancortoken \*BancortokenSession\) TransferFrom\(_from common.Address, _to common.Address, _value \*big.Int\) \(\*types.Transaction, error\)](<#BancortokenSession.TransferFrom>)
+  - [func \(_Bancortoken \*BancortokenSession\) TransferOwnership\(_newOwner common.Address\) \(\*types.Transaction, error\)](<#BancortokenSession.TransferOwnership>)
+  - [func \(_Bancortoken \*BancortokenSession\) TransfersEnabled\(\) \(bool, error\)](<#BancortokenSession.TransfersEnabled>)
+  - [func \(_Bancortoken \*BancortokenSession\) Version\(\) \(string, error\)](<#BancortokenSession.Version>)
+  - [func \(_Bancortoken \*BancortokenSession\) WithdrawTokens\(_token common.Address, _to common.Address, _amount \*big.Int\) \(\*types.Transaction, error\)](<#BancortokenSession.WithdrawTokens>)
 - [type BancortokenTransactor](<#BancortokenTransactor>)
   - [func NewBancortokenTransactor\(address common.Address, transactor bind.ContractTransactor\) \(\*BancortokenTransactor, error\)](<#NewBancortokenTransactor>)
-  - [func \(\_Bancortoken \*BancortokenTransactor\) AcceptOwnership\(opts \*bind.TransactOpts\) \(\*types.Transaction, error\)](<#BancortokenTransactor.AcceptOwnership>)
-  - [func \(\_Bancortoken \*BancortokenTransactor\) Approve\(opts \*bind.TransactOpts, \_spender common.Address, \_value \*big.Int\) \(\*types.Transaction, error\)](<#BancortokenTransactor.Approve>)
-  - [func \(\_Bancortoken \*BancortokenTransactor\) Destroy\(opts \*bind.TransactOpts, \_from common.Address, \_amount \*big.Int\) \(\*types.Transaction, error\)](<#BancortokenTransactor.Destroy>)
-  - [func \(\_Bancortoken \*BancortokenTransactor\) DisableTransfers\(opts \*bind.TransactOpts, \_disable bool\) \(\*types.Transaction, error\)](<#BancortokenTransactor.DisableTransfers>)
-  - [func \(\_Bancortoken \*BancortokenTransactor\) Issue\(opts \*bind.TransactOpts, \_to common.Address, \_amount \*big.Int\) \(\*types.Transaction, error\)](<#BancortokenTransactor.Issue>)
-  - [func \(\_Bancortoken \*BancortokenTransactor\) Transfer\(opts \*bind.TransactOpts, \_to common.Address, \_value \*big.Int\) \(\*types.Transaction, error\)](<#BancortokenTransactor.Transfer>)
-  - [func \(\_Bancortoken \*BancortokenTransactor\) TransferFrom\(opts \*bind.TransactOpts, \_from common.Address, \_to common.Address, \_value \*big.Int\) \(\*types.Transaction, error\)](<#BancortokenTransactor.TransferFrom>)
-  - [func \(\_Bancortoken \*BancortokenTransactor\) TransferOwnership\(opts \*bind.TransactOpts, \_newOwner common.Address\) \(\*types.Transaction, error\)](<#BancortokenTransactor.TransferOwnership>)
-  - [func \(\_Bancortoken \*BancortokenTransactor\) WithdrawTokens\(opts \*bind.TransactOpts, \_token common.Address, \_to common.Address, \_amount \*big.Int\) \(\*types.Transaction, error\)](<#BancortokenTransactor.WithdrawTokens>)
+  - [func \(_Bancortoken \*BancortokenTransactor\) AcceptOwnership\(opts \*bind.TransactOpts\) \(\*types.Transaction, error\)](<#BancortokenTransactor.AcceptOwnership>)
+  - [func \(_Bancortoken \*BancortokenTransactor\) Approve\(opts \*bind.TransactOpts, _spender common.Address, _value \*big.Int\) \(\*types.Transaction, error\)](<#BancortokenTransactor.Approve>)
+  - [func \(_Bancortoken \*BancortokenTransactor\) Destroy\(opts \*bind.TransactOpts, _from common.Address, _amount \*big.Int\) \(\*types.Transaction, error\)](<#BancortokenTransactor.Destroy>)
+  - [func \(_Bancortoken \*BancortokenTransactor\) DisableTransfers\(opts \*bind.TransactOpts, _disable bool\) \(\*types.Transaction, error\)](<#BancortokenTransactor.DisableTransfers>)
+  - [func \(_Bancortoken \*BancortokenTransactor\) Issue\(opts \*bind.TransactOpts, _to common.Address, _amount \*big.Int\) \(\*types.Transaction, error\)](<#BancortokenTransactor.Issue>)
+  - [func \(_Bancortoken \*BancortokenTransactor\) Transfer\(opts \*bind.TransactOpts, _to common.Address, _value \*big.Int\) \(\*types.Transaction, error\)](<#BancortokenTransactor.Transfer>)
+  - [func \(_Bancortoken \*BancortokenTransactor\) TransferFrom\(opts \*bind.TransactOpts, _from common.Address, _to common.Address, _value \*big.Int\) \(\*types.Transaction, error\)](<#BancortokenTransactor.TransferFrom>)
+  - [func \(_Bancortoken \*BancortokenTransactor\) TransferOwnership\(opts \*bind.TransactOpts, _newOwner common.Address\) \(\*types.Transaction, error\)](<#BancortokenTransactor.TransferOwnership>)
+  - [func \(_Bancortoken \*BancortokenTransactor\) WithdrawTokens\(opts \*bind.TransactOpts, _token common.Address, _to common.Address, _amount \*big.Int\) \(\*types.Transaction, error\)](<#BancortokenTransactor.WithdrawTokens>)
 - [type BancortokenTransactorRaw](<#BancortokenTransactorRaw>)
-  - [func \(\_Bancortoken \*BancortokenTransactorRaw\) Transact\(opts \*bind.TransactOpts, method string, params ...interface\{\}\) \(\*types.Transaction, error\)](<#BancortokenTransactorRaw.Transact>)
-  - [func \(\_Bancortoken \*BancortokenTransactorRaw\) Transfer\(opts \*bind.TransactOpts\) \(\*types.Transaction, error\)](<#BancortokenTransactorRaw.Transfer>)
+  - [func \(_Bancortoken \*BancortokenTransactorRaw\) Transact\(opts \*bind.TransactOpts, method string, params ...interface\{\}\) \(\*types.Transaction, error\)](<#BancortokenTransactorRaw.Transact>)
+  - [func \(_Bancortoken \*BancortokenTransactorRaw\) Transfer\(opts \*bind.TransactOpts\) \(\*types.Transaction, error\)](<#BancortokenTransactorRaw.Transfer>)
 - [type BancortokenTransactorSession](<#BancortokenTransactorSession>)
-  - [func \(\_Bancortoken \*BancortokenTransactorSession\) AcceptOwnership\(\) \(\*types.Transaction, error\)](<#BancortokenTransactorSession.AcceptOwnership>)
-  - [func \(\_Bancortoken \*BancortokenTransactorSession\) Approve\(\_spender common.Address, \_value \*big.Int\) \(\*types.Transaction, error\)](<#BancortokenTransactorSession.Approve>)
-  - [func \(\_Bancortoken \*BancortokenTransactorSession\) Destroy\(\_from common.Address, \_amount \*big.Int\) \(\*types.Transaction, error\)](<#BancortokenTransactorSession.Destroy>)
-  - [func \(\_Bancortoken \*BancortokenTransactorSession\) DisableTransfers\(\_disable bool\) \(\*types.Transaction, error\)](<#BancortokenTransactorSession.DisableTransfers>)
-  - [func \(\_Bancortoken \*BancortokenTransactorSession\) Issue\(\_to common.Address, \_amount \*big.Int\) \(\*types.Transaction, error\)](<#BancortokenTransactorSession.Issue>)
-  - [func \(\_Bancortoken \*BancortokenTransactorSession\) Transfer\(\_to common.Address, \_value \*big.Int\) \(\*types.Transaction, error\)](<#BancortokenTransactorSession.Transfer>)
-  - [func \(\_Bancortoken \*BancortokenTransactorSession\) TransferFrom\(\_from common.Address, \_to common.Address, \_value \*big.Int\) \(\*types.Transaction, error\)](<#BancortokenTransactorSession.TransferFrom>)
-  - [func \(\_Bancortoken \*BancortokenTransactorSession\) TransferOwnership\(\_newOwner common.Address\) \(\*types.Transaction, error\)](<#BancortokenTransactorSession.TransferOwnership>)
-  - [func \(\_Bancortoken \*BancortokenTransactorSession\) WithdrawTokens\(\_token common.Address, \_to common.Address, \_amount \*big.Int\) \(\*types.Transaction, error\)](<#BancortokenTransactorSession.WithdrawTokens>)
+  - [func \(_Bancortoken \*BancortokenTransactorSession\) AcceptOwnership\(\) \(\*types.Transaction, error\)](<#BancortokenTransactorSession.AcceptOwnership>)
+  - [func \(_Bancortoken \*BancortokenTransactorSession\) Approve\(_spender common.Address, _value \*big.Int\) \(\*types.Transaction, error\)](<#BancortokenTransactorSession.Approve>)
+  - [func \(_Bancortoken \*BancortokenTransactorSession\) Destroy\(_from common.Address, _amount \*big.Int\) \(\*types.Transaction, error\)](<#BancortokenTransactorSession.Destroy>)
+  - [func \(_Bancortoken \*BancortokenTransactorSession\) DisableTransfers\(_disable bool\) \(\*types.Transaction, error\)](<#BancortokenTransactorSession.DisableTransfers>)
+  - [func \(_Bancortoken \*BancortokenTransactorSession\) Issue\(_to common.Address, _amount \*big.Int\) \(\*types.Transaction, error\)](<#BancortokenTransactorSession.Issue>)
+  - [func \(_Bancortoken \*BancortokenTransactorSession\) Transfer\(_to common.Address, _value \*big.Int\) \(\*types.Transaction, error\)](<#BancortokenTransactorSession.Transfer>)
+  - [func \(_Bancortoken \*BancortokenTransactorSession\) TransferFrom\(_from common.Address, _to common.Address, _value \*big.Int\) \(\*types.Transaction, error\)](<#BancortokenTransactorSession.TransferFrom>)
+  - [func \(_Bancortoken \*BancortokenTransactorSession\) TransferOwnership\(_newOwner common.Address\) \(\*types.Transaction, error\)](<#BancortokenTransactorSession.TransferOwnership>)
+  - [func \(_Bancortoken \*BancortokenTransactorSession\) WithdrawTokens\(_token common.Address, _to common.Address, _amount \*big.Int\) \(\*types.Transaction, error\)](<#BancortokenTransactorSession.WithdrawTokens>)
 - [type BancortokenTransfer](<#BancortokenTransfer>)
 - [type BancortokenTransferIterator](<#BancortokenTransferIterator>)
   - [func \(it \*BancortokenTransferIterator\) Close\(\) error](<#BancortokenTransferIterator.Close>)
@@ -604,7 +604,7 @@ func (_Bancortoken *BancortokenFilterer) FilterApproval(opts *bind.FilterOpts, _
 
 FilterApproval is a free log retrieval operation binding the contract event 0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925.
 
-Solidity: event Approval\(address indexed \_owner, address indexed \_spender, uint256 \_value\)
+Solidity: event Approval\(address indexed _owner, address indexed _spender, uint256 _value\)
 
 <a name="BancortokenFilterer.FilterDestruction"></a>
 ### func \(\*BancortokenFilterer\) [FilterDestruction](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L943>)
@@ -615,7 +615,7 @@ func (_Bancortoken *BancortokenFilterer) FilterDestruction(opts *bind.FilterOpts
 
 FilterDestruction is a free log retrieval operation binding the contract event 0x9a1b418bc061a5d80270261562e6986a35d995f8051145f277be16103abd3453.
 
-Solidity: event Destruction\(uint256 \_amount\)
+Solidity: event Destruction\(uint256 _amount\)
 
 <a name="BancortokenFilterer.FilterIssuance"></a>
 ### func \(\*BancortokenFilterer\) [FilterIssuance](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L1077>)
@@ -626,7 +626,7 @@ func (_Bancortoken *BancortokenFilterer) FilterIssuance(opts *bind.FilterOpts) (
 
 FilterIssuance is a free log retrieval operation binding the contract event 0x9386c90217c323f58030f9dadcbc938f807a940f4ff41cd4cead9562f5da7dc3.
 
-Solidity: event Issuance\(uint256 \_amount\)
+Solidity: event Issuance\(uint256 _amount\)
 
 <a name="BancortokenFilterer.FilterNewSmartToken"></a>
 ### func \(\*BancortokenFilterer\) [FilterNewSmartToken](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L1211>)
@@ -637,7 +637,7 @@ func (_Bancortoken *BancortokenFilterer) FilterNewSmartToken(opts *bind.FilterOp
 
 FilterNewSmartToken is a free log retrieval operation binding the contract event 0xf4cd1f8571e8d9c97ffcb81558807ab73f9803d54de5da6a0420593c82a4a9f0.
 
-Solidity: event NewSmartToken\(address \_token\)
+Solidity: event NewSmartToken\(address _token\)
 
 <a name="BancortokenFilterer.FilterOwnerUpdate"></a>
 ### func \(\*BancortokenFilterer\) [FilterOwnerUpdate](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L1346>)
@@ -648,7 +648,7 @@ func (_Bancortoken *BancortokenFilterer) FilterOwnerUpdate(opts *bind.FilterOpts
 
 FilterOwnerUpdate is a free log retrieval operation binding the contract event 0x343765429aea5a34b3ff6a3785a98a5abb2597aca87bfbb58632c173d585373a.
 
-Solidity: event OwnerUpdate\(address \_prevOwner, address \_newOwner\)
+Solidity: event OwnerUpdate\(address _prevOwner, address _newOwner\)
 
 <a name="BancortokenFilterer.FilterTransfer"></a>
 ### func \(\*BancortokenFilterer\) [FilterTransfer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L1482>)
@@ -659,7 +659,7 @@ func (_Bancortoken *BancortokenFilterer) FilterTransfer(opts *bind.FilterOpts, _
 
 FilterTransfer is a free log retrieval operation binding the contract event 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef.
 
-Solidity: event Transfer\(address indexed \_from, address indexed \_to, uint256 \_value\)
+Solidity: event Transfer\(address indexed _from, address indexed _to, uint256 _value\)
 
 <a name="BancortokenFilterer.ParseApproval"></a>
 ### func \(\*BancortokenFilterer\) [ParseApproval](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L858>)
@@ -670,7 +670,7 @@ func (_Bancortoken *BancortokenFilterer) ParseApproval(log types.Log) (*Bancorto
 
 ParseApproval is a log parse operation binding the contract event 0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925.
 
-Solidity: event Approval\(address indexed \_owner, address indexed \_spender, uint256 \_value\)
+Solidity: event Approval\(address indexed _owner, address indexed _spender, uint256 _value\)
 
 <a name="BancortokenFilterer.ParseDestruction"></a>
 ### func \(\*BancortokenFilterer\) [ParseDestruction](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L992>)
@@ -681,7 +681,7 @@ func (_Bancortoken *BancortokenFilterer) ParseDestruction(log types.Log) (*Banco
 
 ParseDestruction is a log parse operation binding the contract event 0x9a1b418bc061a5d80270261562e6986a35d995f8051145f277be16103abd3453.
 
-Solidity: event Destruction\(uint256 \_amount\)
+Solidity: event Destruction\(uint256 _amount\)
 
 <a name="BancortokenFilterer.ParseIssuance"></a>
 ### func \(\*BancortokenFilterer\) [ParseIssuance](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L1126>)
@@ -692,7 +692,7 @@ func (_Bancortoken *BancortokenFilterer) ParseIssuance(log types.Log) (*Bancorto
 
 ParseIssuance is a log parse operation binding the contract event 0x9386c90217c323f58030f9dadcbc938f807a940f4ff41cd4cead9562f5da7dc3.
 
-Solidity: event Issuance\(uint256 \_amount\)
+Solidity: event Issuance\(uint256 _amount\)
 
 <a name="BancortokenFilterer.ParseNewSmartToken"></a>
 ### func \(\*BancortokenFilterer\) [ParseNewSmartToken](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L1260>)
@@ -703,7 +703,7 @@ func (_Bancortoken *BancortokenFilterer) ParseNewSmartToken(log types.Log) (*Ban
 
 ParseNewSmartToken is a log parse operation binding the contract event 0xf4cd1f8571e8d9c97ffcb81558807ab73f9803d54de5da6a0420593c82a4a9f0.
 
-Solidity: event NewSmartToken\(address \_token\)
+Solidity: event NewSmartToken\(address _token\)
 
 <a name="BancortokenFilterer.ParseOwnerUpdate"></a>
 ### func \(\*BancortokenFilterer\) [ParseOwnerUpdate](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L1395>)
@@ -714,7 +714,7 @@ func (_Bancortoken *BancortokenFilterer) ParseOwnerUpdate(log types.Log) (*Banco
 
 ParseOwnerUpdate is a log parse operation binding the contract event 0x343765429aea5a34b3ff6a3785a98a5abb2597aca87bfbb58632c173d585373a.
 
-Solidity: event OwnerUpdate\(address \_prevOwner, address \_newOwner\)
+Solidity: event OwnerUpdate\(address _prevOwner, address _newOwner\)
 
 <a name="BancortokenFilterer.ParseTransfer"></a>
 ### func \(\*BancortokenFilterer\) [ParseTransfer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L1549>)
@@ -725,7 +725,7 @@ func (_Bancortoken *BancortokenFilterer) ParseTransfer(log types.Log) (*Bancorto
 
 ParseTransfer is a log parse operation binding the contract event 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef.
 
-Solidity: event Transfer\(address indexed \_from, address indexed \_to, uint256 \_value\)
+Solidity: event Transfer\(address indexed _from, address indexed _to, uint256 _value\)
 
 <a name="BancortokenFilterer.WatchApproval"></a>
 ### func \(\*BancortokenFilterer\) [WatchApproval](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L812>)
@@ -736,7 +736,7 @@ func (_Bancortoken *BancortokenFilterer) WatchApproval(opts *bind.WatchOpts, sin
 
 WatchApproval is a free log subscription operation binding the contract event 0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925.
 
-Solidity: event Approval\(address indexed \_owner, address indexed \_spender, uint256 \_value\)
+Solidity: event Approval\(address indexed _owner, address indexed _spender, uint256 _value\)
 
 <a name="BancortokenFilterer.WatchDestruction"></a>
 ### func \(\*BancortokenFilterer\) [WatchDestruction](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L955>)
@@ -747,7 +747,7 @@ func (_Bancortoken *BancortokenFilterer) WatchDestruction(opts *bind.WatchOpts, 
 
 WatchDestruction is a free log subscription operation binding the contract event 0x9a1b418bc061a5d80270261562e6986a35d995f8051145f277be16103abd3453.
 
-Solidity: event Destruction\(uint256 \_amount\)
+Solidity: event Destruction\(uint256 _amount\)
 
 <a name="BancortokenFilterer.WatchIssuance"></a>
 ### func \(\*BancortokenFilterer\) [WatchIssuance](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L1089>)
@@ -758,7 +758,7 @@ func (_Bancortoken *BancortokenFilterer) WatchIssuance(opts *bind.WatchOpts, sin
 
 WatchIssuance is a free log subscription operation binding the contract event 0x9386c90217c323f58030f9dadcbc938f807a940f4ff41cd4cead9562f5da7dc3.
 
-Solidity: event Issuance\(uint256 \_amount\)
+Solidity: event Issuance\(uint256 _amount\)
 
 <a name="BancortokenFilterer.WatchNewSmartToken"></a>
 ### func \(\*BancortokenFilterer\) [WatchNewSmartToken](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L1223>)
@@ -769,7 +769,7 @@ func (_Bancortoken *BancortokenFilterer) WatchNewSmartToken(opts *bind.WatchOpts
 
 WatchNewSmartToken is a free log subscription operation binding the contract event 0xf4cd1f8571e8d9c97ffcb81558807ab73f9803d54de5da6a0420593c82a4a9f0.
 
-Solidity: event NewSmartToken\(address \_token\)
+Solidity: event NewSmartToken\(address _token\)
 
 <a name="BancortokenFilterer.WatchOwnerUpdate"></a>
 ### func \(\*BancortokenFilterer\) [WatchOwnerUpdate](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L1358>)
@@ -780,7 +780,7 @@ func (_Bancortoken *BancortokenFilterer) WatchOwnerUpdate(opts *bind.WatchOpts, 
 
 WatchOwnerUpdate is a free log subscription operation binding the contract event 0x343765429aea5a34b3ff6a3785a98a5abb2597aca87bfbb58632c173d585373a.
 
-Solidity: event OwnerUpdate\(address \_prevOwner, address \_newOwner\)
+Solidity: event OwnerUpdate\(address _prevOwner, address _newOwner\)
 
 <a name="BancortokenFilterer.WatchTransfer"></a>
 ### func \(\*BancortokenFilterer\) [WatchTransfer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L1503>)
@@ -791,7 +791,7 @@ func (_Bancortoken *BancortokenFilterer) WatchTransfer(opts *bind.WatchOpts, sin
 
 WatchTransfer is a free log subscription operation binding the contract event 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef.
 
-Solidity: event Transfer\(address indexed \_from, address indexed \_to, uint256 \_value\)
+Solidity: event Transfer\(address indexed _from, address indexed _to, uint256 _value\)
 
 <a name="BancortokenIssuance"></a>
 ## type [BancortokenIssuance](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L1069-L1072>)
@@ -1029,7 +1029,7 @@ func (_Bancortoken *BancortokenSession) Approve(_spender common.Address, _value 
 
 Approve is a paid mutator transaction binding the contract method 0x095ea7b3.
 
-Solidity: function approve\(address \_spender, uint256 \_value\) returns\(bool success\)
+Solidity: function approve\(address _spender, uint256 _value\) returns\(bool success\)
 
 <a name="BancortokenSession.BalanceOf"></a>
 ### func \(\*BancortokenSession\) [BalanceOf](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L234>)
@@ -1062,7 +1062,7 @@ func (_Bancortoken *BancortokenSession) Destroy(_from common.Address, _amount *b
 
 Destroy is a paid mutator transaction binding the contract method 0xa24835d1.
 
-Solidity: function destroy\(address \_from, uint256 \_amount\) returns\(\)
+Solidity: function destroy\(address _from, uint256 _amount\) returns\(\)
 
 <a name="BancortokenSession.DisableTransfers"></a>
 ### func \(\*BancortokenSession\) [DisableTransfers](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L597>)
@@ -1073,7 +1073,7 @@ func (_Bancortoken *BancortokenSession) DisableTransfers(_disable bool) (*types.
 
 DisableTransfers is a paid mutator transaction binding the contract method 0x1608f18f.
 
-Solidity: function disableTransfers\(bool \_disable\) returns\(\)
+Solidity: function disableTransfers\(bool _disable\) returns\(\)
 
 <a name="BancortokenSession.Issue"></a>
 ### func \(\*BancortokenSession\) [Issue](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L618>)
@@ -1084,7 +1084,7 @@ func (_Bancortoken *BancortokenSession) Issue(_to common.Address, _amount *big.I
 
 Issue is a paid mutator transaction binding the contract method 0x867904b4.
 
-Solidity: function issue\(address \_to, uint256 \_amount\) returns\(\)
+Solidity: function issue\(address _to, uint256 _amount\) returns\(\)
 
 <a name="BancortokenSession.Name"></a>
 ### func \(\*BancortokenSession\) [Name](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L296>)
@@ -1161,7 +1161,7 @@ func (_Bancortoken *BancortokenSession) Transfer(_to common.Address, _value *big
 
 Transfer is a paid mutator transaction binding the contract method 0xa9059cbb.
 
-Solidity: function transfer\(address \_to, uint256 \_value\) returns\(bool success\)
+Solidity: function transfer\(address _to, uint256 _value\) returns\(bool success\)
 
 <a name="BancortokenSession.TransferFrom"></a>
 ### func \(\*BancortokenSession\) [TransferFrom](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L660>)
@@ -1172,7 +1172,7 @@ func (_Bancortoken *BancortokenSession) TransferFrom(_from common.Address, _to c
 
 TransferFrom is a paid mutator transaction binding the contract method 0x23b872dd.
 
-Solidity: function transferFrom\(address \_from, address \_to, uint256 \_value\) returns\(bool success\)
+Solidity: function transferFrom\(address _from, address _to, uint256 _value\) returns\(bool success\)
 
 <a name="BancortokenSession.TransferOwnership"></a>
 ### func \(\*BancortokenSession\) [TransferOwnership](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L681>)
@@ -1183,7 +1183,7 @@ func (_Bancortoken *BancortokenSession) TransferOwnership(_newOwner common.Addre
 
 TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
 
-Solidity: function transferOwnership\(address \_newOwner\) returns\(\)
+Solidity: function transferOwnership\(address _newOwner\) returns\(\)
 
 <a name="BancortokenSession.TransfersEnabled"></a>
 ### func \(\*BancortokenSession\) [TransfersEnabled](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L482>)
@@ -1216,7 +1216,7 @@ func (_Bancortoken *BancortokenSession) WithdrawTokens(_token common.Address, _t
 
 WithdrawTokens is a paid mutator transaction binding the contract method 0x5e35359e.
 
-Solidity: function withdrawTokens\(address \_token, address \_to, uint256 \_amount\) returns\(\)
+Solidity: function withdrawTokens\(address _token, address _to, uint256 _amount\) returns\(\)
 
 <a name="BancortokenTransactor"></a>
 ## type [BancortokenTransactor](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L54-L56>)
@@ -1258,7 +1258,7 @@ func (_Bancortoken *BancortokenTransactor) Approve(opts *bind.TransactOpts, _spe
 
 Approve is a paid mutator transaction binding the contract method 0x095ea7b3.
 
-Solidity: function approve\(address \_spender, uint256 \_value\) returns\(bool success\)
+Solidity: function approve\(address _spender, uint256 _value\) returns\(bool success\)
 
 <a name="BancortokenTransactor.Destroy"></a>
 ### func \(\*BancortokenTransactor\) [Destroy](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L569>)
@@ -1269,7 +1269,7 @@ func (_Bancortoken *BancortokenTransactor) Destroy(opts *bind.TransactOpts, _fro
 
 Destroy is a paid mutator transaction binding the contract method 0xa24835d1.
 
-Solidity: function destroy\(address \_from, uint256 \_amount\) returns\(\)
+Solidity: function destroy\(address _from, uint256 _amount\) returns\(\)
 
 <a name="BancortokenTransactor.DisableTransfers"></a>
 ### func \(\*BancortokenTransactor\) [DisableTransfers](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L590>)
@@ -1280,7 +1280,7 @@ func (_Bancortoken *BancortokenTransactor) DisableTransfers(opts *bind.TransactO
 
 DisableTransfers is a paid mutator transaction binding the contract method 0x1608f18f.
 
-Solidity: function disableTransfers\(bool \_disable\) returns\(\)
+Solidity: function disableTransfers\(bool _disable\) returns\(\)
 
 <a name="BancortokenTransactor.Issue"></a>
 ### func \(\*BancortokenTransactor\) [Issue](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L611>)
@@ -1291,7 +1291,7 @@ func (_Bancortoken *BancortokenTransactor) Issue(opts *bind.TransactOpts, _to co
 
 Issue is a paid mutator transaction binding the contract method 0x867904b4.
 
-Solidity: function issue\(address \_to, uint256 \_amount\) returns\(\)
+Solidity: function issue\(address _to, uint256 _amount\) returns\(\)
 
 <a name="BancortokenTransactor.Transfer"></a>
 ### func \(\*BancortokenTransactor\) [Transfer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L632>)
@@ -1302,7 +1302,7 @@ func (_Bancortoken *BancortokenTransactor) Transfer(opts *bind.TransactOpts, _to
 
 Transfer is a paid mutator transaction binding the contract method 0xa9059cbb.
 
-Solidity: function transfer\(address \_to, uint256 \_value\) returns\(bool success\)
+Solidity: function transfer\(address _to, uint256 _value\) returns\(bool success\)
 
 <a name="BancortokenTransactor.TransferFrom"></a>
 ### func \(\*BancortokenTransactor\) [TransferFrom](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L653>)
@@ -1313,7 +1313,7 @@ func (_Bancortoken *BancortokenTransactor) TransferFrom(opts *bind.TransactOpts,
 
 TransferFrom is a paid mutator transaction binding the contract method 0x23b872dd.
 
-Solidity: function transferFrom\(address \_from, address \_to, uint256 \_value\) returns\(bool success\)
+Solidity: function transferFrom\(address _from, address _to, uint256 _value\) returns\(bool success\)
 
 <a name="BancortokenTransactor.TransferOwnership"></a>
 ### func \(\*BancortokenTransactor\) [TransferOwnership](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L674>)
@@ -1324,7 +1324,7 @@ func (_Bancortoken *BancortokenTransactor) TransferOwnership(opts *bind.Transact
 
 TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
 
-Solidity: function transferOwnership\(address \_newOwner\) returns\(\)
+Solidity: function transferOwnership\(address _newOwner\) returns\(\)
 
 <a name="BancortokenTransactor.WithdrawTokens"></a>
 ### func \(\*BancortokenTransactor\) [WithdrawTokens](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L695>)
@@ -1335,7 +1335,7 @@ func (_Bancortoken *BancortokenTransactor) WithdrawTokens(opts *bind.TransactOpt
 
 WithdrawTokens is a paid mutator transaction binding the contract method 0x5e35359e.
 
-Solidity: function withdrawTokens\(address \_token, address \_to, uint256 \_amount\) returns\(\)
+Solidity: function withdrawTokens\(address _token, address _to, uint256 _amount\) returns\(\)
 
 <a name="BancortokenTransactorRaw"></a>
 ## type [BancortokenTransactorRaw](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L96-L98>)
@@ -1398,7 +1398,7 @@ func (_Bancortoken *BancortokenTransactorSession) Approve(_spender common.Addres
 
 Approve is a paid mutator transaction binding the contract method 0x095ea7b3.
 
-Solidity: function approve\(address \_spender, uint256 \_value\) returns\(bool success\)
+Solidity: function approve\(address _spender, uint256 _value\) returns\(bool success\)
 
 <a name="BancortokenTransactorSession.Destroy"></a>
 ### func \(\*BancortokenTransactorSession\) [Destroy](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L583>)
@@ -1409,7 +1409,7 @@ func (_Bancortoken *BancortokenTransactorSession) Destroy(_from common.Address, 
 
 Destroy is a paid mutator transaction binding the contract method 0xa24835d1.
 
-Solidity: function destroy\(address \_from, uint256 \_amount\) returns\(\)
+Solidity: function destroy\(address _from, uint256 _amount\) returns\(\)
 
 <a name="BancortokenTransactorSession.DisableTransfers"></a>
 ### func \(\*BancortokenTransactorSession\) [DisableTransfers](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L604>)
@@ -1420,7 +1420,7 @@ func (_Bancortoken *BancortokenTransactorSession) DisableTransfers(_disable bool
 
 DisableTransfers is a paid mutator transaction binding the contract method 0x1608f18f.
 
-Solidity: function disableTransfers\(bool \_disable\) returns\(\)
+Solidity: function disableTransfers\(bool _disable\) returns\(\)
 
 <a name="BancortokenTransactorSession.Issue"></a>
 ### func \(\*BancortokenTransactorSession\) [Issue](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L625>)
@@ -1431,7 +1431,7 @@ func (_Bancortoken *BancortokenTransactorSession) Issue(_to common.Address, _amo
 
 Issue is a paid mutator transaction binding the contract method 0x867904b4.
 
-Solidity: function issue\(address \_to, uint256 \_amount\) returns\(\)
+Solidity: function issue\(address _to, uint256 _amount\) returns\(\)
 
 <a name="BancortokenTransactorSession.Transfer"></a>
 ### func \(\*BancortokenTransactorSession\) [Transfer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L646>)
@@ -1442,7 +1442,7 @@ func (_Bancortoken *BancortokenTransactorSession) Transfer(_to common.Address, _
 
 Transfer is a paid mutator transaction binding the contract method 0xa9059cbb.
 
-Solidity: function transfer\(address \_to, uint256 \_value\) returns\(bool success\)
+Solidity: function transfer\(address _to, uint256 _value\) returns\(bool success\)
 
 <a name="BancortokenTransactorSession.TransferFrom"></a>
 ### func \(\*BancortokenTransactorSession\) [TransferFrom](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L667>)
@@ -1453,7 +1453,7 @@ func (_Bancortoken *BancortokenTransactorSession) TransferFrom(_from common.Addr
 
 TransferFrom is a paid mutator transaction binding the contract method 0x23b872dd.
 
-Solidity: function transferFrom\(address \_from, address \_to, uint256 \_value\) returns\(bool success\)
+Solidity: function transferFrom\(address _from, address _to, uint256 _value\) returns\(bool success\)
 
 <a name="BancortokenTransactorSession.TransferOwnership"></a>
 ### func \(\*BancortokenTransactorSession\) [TransferOwnership](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L688>)
@@ -1464,7 +1464,7 @@ func (_Bancortoken *BancortokenTransactorSession) TransferOwnership(_newOwner co
 
 TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
 
-Solidity: function transferOwnership\(address \_newOwner\) returns\(\)
+Solidity: function transferOwnership\(address _newOwner\) returns\(\)
 
 <a name="BancortokenTransactorSession.WithdrawTokens"></a>
 ### func \(\*BancortokenTransactorSession\) [WithdrawTokens](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L709>)
@@ -1475,7 +1475,7 @@ func (_Bancortoken *BancortokenTransactorSession) WithdrawTokens(_token common.A
 
 WithdrawTokens is a paid mutator transaction binding the contract method 0x5e35359e.
 
-Solidity: function withdrawTokens\(address \_token, address \_to, uint256 \_amount\) returns\(\)
+Solidity: function withdrawTokens\(address _token, address _to, uint256 _amount\) returns\(\)
 
 <a name="BancortokenTransfer"></a>
 ## type [BancortokenTransfer](<https://github.com/0chain/gosdk/blob/doc/initial/zcnbridge/ethereum/bancortoken/bancortoken.go#L1472-L1477>)

@@ -21,14 +21,26 @@ import (
 
 // For sync app
 const (
+	// Upload - Upload file to remote
 	Upload      = "Upload"
+
+	// Download - Download file from remote
 	Download    = "Download"
+
+	// Update - Update file in remote
 	Update      = "Update"
+
+	// Delete - Delete file from remote
 	Delete      = "Delete"
+
+	// Conflict - Conflict in file
 	Conflict    = "Conflict"
+
+	// LocalDelete - Delete file from local
 	LocalDelete = "LocalDelete"
 )
 
+// FileInfo file information representation for sync
 type FileInfo struct {
 	Size         int64            `json:"size"`
 	MimeType     string           `json:"mimetype"`
@@ -41,6 +53,7 @@ type FileInfo struct {
 	UpdatedAt    common.Timestamp `json:"updated_at"`
 }
 
+// FileDiff file difference representation for sync
 type FileDiff struct {
 	Op   string `json:"operation"`
 	Path string `json:"path"`
