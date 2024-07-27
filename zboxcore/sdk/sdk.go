@@ -1510,6 +1510,18 @@ func ResetAllocationStats(allocationId string) (string, int64, error) {
 	return hash, n, err
 }
 
+func RepairValidatorPartitions() (string, int64, error) {
+	if !sdkInitialized {
+		return "", 0, sdkNotInitialized
+	}
+
+	var sn = transaction.SmartContractTxnData{
+		Name: transaction.STORAGESC_REPAIR_VALIDATOR_PARTITIONS,
+	}
+	hash, _, n, _, err := storageSmartContractTxn(sn)
+	return hash, n, err
+}
+
 func smartContractTxn(scAddress string, sn transaction.SmartContractTxnData) (
 	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 	return smartContractTxnValue(scAddress, sn, 0)
