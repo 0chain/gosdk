@@ -254,7 +254,6 @@ func (req *DownloadRequest) downloadBlock(
 			remotefilepathhash: req.remotefilepathhash,
 			numBlocks:          totalBlock,
 			encryptedKey:       req.encryptedKey,
-			shouldVerify:       req.shouldVerify,
 			connectionID:       req.connectionID,
 		}
 
