@@ -395,7 +395,8 @@ func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string) (
 				deleteReq.consensus.consensusThresh, deleteReq.consensus.consensus))
 	}
 	if consensusRef == nil {
-		return nil, deleteReq.deleteMask, thrown.New("delete_failed", "Delete failed. No consensus found")
+		//Already deleted
+		return objectTreeRefs, dop.deleteMask, nil
 	}
 	if consensusRef.Type == fileref.DIRECTORY && !consensusRef.IsEmpty {
 		for ind, refEntity := range objectTreeRefs {
@@ -409,6 +410,7 @@ func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string) (
 		}
 	}
 	pos = 0
+	deleteReq.consensus.Reset()
 	for i := deleteReq.deleteMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		deleteReq.wg.Add(1)
@@ -416,8 +418,10 @@ func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string) (
 			defer deleteReq.wg.Done()
 			err := deleteReq.deleteBlobberFile(deleteReq.blobbers[blobberIdx], blobberIdx)
 			if err != nil {
+				logger.Logger.Error("error during deleteBlobberFile", err)
 				blobberErrors[blobberIdx] = err
 			}
+			deleteReq.consensus.Done()
 			if singleClientMode {
 				lookuphash := fileref.GetReferenceLookup(deleteReq.allocationID, deleteReq.remotefilepath)
 				cacheKey := fileref.GetCacheKey(lookuphash, deleteReq.blobbers[blobberIdx].ID)
