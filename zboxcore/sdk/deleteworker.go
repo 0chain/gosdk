@@ -43,6 +43,8 @@ type DeleteRequest struct {
 	timestamp      int64
 }
 
+var ErrFileDeleted = errors.New("file_deleted", "file is already deleted")
+
 func (req *DeleteRequest) deleteBlobberFile(
 	blobber *blockchain.StorageNode, blobberIdx int) error {
 
@@ -396,7 +398,7 @@ func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string) (
 	}
 	if consensusRef == nil {
 		//Already deleted
-		return nil, dop.deleteMask, nil
+		return nil, dop.deleteMask, ErrFileDeleted
 	}
 	if consensusRef.Type == fileref.DIRECTORY && !consensusRef.IsEmpty {
 		for ind, refEntity := range objectTreeRefs {

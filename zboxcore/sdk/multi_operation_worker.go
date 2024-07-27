@@ -179,18 +179,18 @@ func (mo *MultiOperation) Process() error {
 			default:
 			}
 
-			refs, mask, err := op.Process(mo.allocationObj, mo.connectionID) // Process with each blobber
+			_, mask, err := op.Process(mo.allocationObj, mo.connectionID) // Process with each blobber
 			if err != nil {
-				l.Logger.Error(err)
-				errsSlice[idx] = errors.New("", err.Error())
-				ctxCncl(err)
+				if err != ErrFileDeleted {
+					l.Logger.Error(err)
+					errsSlice[idx] = errors.New("", err.Error())
+					ctxCncl(err)
+				}
 				return
 			}
 			mo.maskMU.Lock()
 			mo.operationMask = mo.operationMask.And(mask)
-			if refs != nil {
-				changeCount += 1
-			}
+			changeCount += 1
 			mo.maskMU.Unlock()
 		}(op, idx)
 	}
