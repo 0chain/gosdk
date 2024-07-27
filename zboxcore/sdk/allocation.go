@@ -977,6 +977,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 		if len(mo.operations) > 0 {
 			err := mo.Process()
 			if err != nil {
+				logger.Logger.Error("Error in multi operation", zap.Error(err))
 				return err
 			}
 

@@ -167,7 +167,6 @@ func (mo *MultiOperation) Process() error {
 	defer ctxCncl(nil)
 	swg := sizedwaitgroup.New(BatchSize)
 	errsSlice := make([]error, len(mo.operations))
-	mo.operationMask = zboxutil.NewUint128(0)
 	for idx, op := range mo.operations {
 		uid := util.GetNewUUID()
 		swg.Add()
@@ -312,7 +311,7 @@ func (mo *MultiOperation) Process() error {
 		counter++
 	}
 	wg.Wait()
-	logger.Logger.Debug("[commitRequests]", time.Since(start).Milliseconds())
+	logger.Logger.Info("[commitRequests]", time.Since(start).Milliseconds())
 	rollbackMask := zboxutil.NewUint128(0)
 	errSlice := make([]error, len(commitReqs))
 	for idx, commitReq := range commitReqs {
@@ -353,6 +352,7 @@ func (mo *MultiOperation) Process() error {
 				}
 			}
 			mo.allocationObj.AllocationVersion += 1
+			logger.Logger.Info("Allocation version updated to ", mo.allocationObj.AllocationVersion)
 		}
 	}
 
