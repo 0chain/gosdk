@@ -70,6 +70,10 @@ func zvaultRetrieveWallets(serverAddr, token string) (string, error) {
 	return zcncore.CallZvaultRetrieveWallets(serverAddr, token)
 }
 
+func zvaultRetrieveSharedWallets(serverAddr, token string) (string, error) {
+	return zcncore.CallZvaultRetrieveSharedWallets(serverAddr, token)
+}
+
 func registerAuthCommon(this js.Value, args []js.Value) interface{} {
 	authMsgCallback = parseAuthorizerCallback(args[0])
 	authMsgResponseC = make(chan string, 1)

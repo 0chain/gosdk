@@ -205,8 +205,18 @@ func CallZvaultStoreKeyString(serverAddr, token, privateKey string) (string, err
 		PrivateKey: privateKey,
 	}
 
-	rd, _ := json.Marshal(reqData)
-	req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(rd))
+	var buff bytes.Buffer
+
+	encoder := json.NewEncoder(&buff)
+
+	err := encoder.Encode(reqData)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to create HTTP request")
+	}
+
+	var req *http.Request
+
+	req, err = http.NewRequest("POST", endpoint, &buff)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to create HTTP request")
 	}
@@ -215,9 +225,13 @@ func CallZvaultStoreKeyString(serverAddr, token, privateKey string) (string, err
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-Jwt-Token", token)
 
+	fmt.Println(req)
+
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
+		fmt.Println(err.Error())
+
 		return "", errors.Wrap(err, "failed to send HTTP request")
 	}
 	defer resp.Body.Close()
@@ -338,6 +352,38 @@ func CallZvaultRevokeKey(serverAddr, token, clientID, publicKey string) error {
 func CallZvaultRetrieveWallets(serverAddr, token string) (string, error) {
 	// Add your code here
 	endpoint := fmt.Sprintf("%s/wallets", serverAddr)
+	req, err := http.NewRequest("GET", endpoint, nil)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to create HTTP request")
+	}
+
+	fmt.Println("call zvault /keys:", endpoint)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Jwt-Token", token)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to send HTTP request")
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		errMsg, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("code: %d, err: %s", resp.StatusCode, string(errMsg))
+	}
+
+	d, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to read response body")
+	}
+
+	return string(d), nil
+}
+
+func CallZvaultRetrieveSharedWallets(serverAddr, token string) (string, error) {
+	// Add your code here
+	endpoint := fmt.Sprintf("%s/wallets/shared", serverAddr)
 	req, err := http.NewRequest("GET", endpoint, nil)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to create HTTP request")
