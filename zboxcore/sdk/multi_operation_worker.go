@@ -14,7 +14,6 @@ import (
 	"github.com/remeh/sizedwaitgroup"
 
 	"github.com/0chain/gosdk/core/common"
-	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
@@ -167,8 +166,8 @@ func (mo *MultiOperation) Process() error {
 	defer ctxCncl(nil)
 	swg := sizedwaitgroup.New(BatchSize)
 	errsSlice := make([]error, len(mo.operations))
+	var changeCount int
 	for idx, op := range mo.operations {
-		uid := util.GetNewUUID()
 		swg.Add()
 		go func(op Operationer, idx int) {
 			defer swg.Done()
@@ -189,9 +188,10 @@ func (mo *MultiOperation) Process() error {
 			}
 			mo.maskMU.Lock()
 			mo.operationMask = mo.operationMask.And(mask)
+			if refs != nil {
+				changeCount += 1
+			}
 			mo.maskMU.Unlock()
-			changes := op.buildChange(refs, uid)
-			mo.changes[idx] = changes
 		}(op, idx)
 	}
 	swg.Wait()
@@ -212,12 +212,15 @@ func (mo *MultiOperation) Process() error {
 		return nil
 	}
 
+	if changeCount == 0 {
+		return nil
+	}
+
 	// Take transpose of mo.change because it will be easier to iterate mo if it contains blobber changes
 	// in row instead of column. Currently mo.change[0] contains allocationChange for operation 1 and so on.
 	// But we want mo.changes[0] to have allocationChange for blobber 1 and mo.changes[1] to have allocationChange for
 	// blobber 2 and so on.
 	start := time.Now()
-	mo.changes = zboxutil.Transpose(mo.changes)
 
 	writeMarkerMutex, err := CreateWriteMarkerMutex(client.GetClient(), mo.allocationObj)
 	if err != nil {
@@ -303,8 +306,6 @@ func (mo *MultiOperation) Process() error {
 			blobberInd:   pos,
 			version:      mo.allocationObj.Blobbers[pos].AllocationVersion + 1,
 		}
-
-		commitReq.changes = append(commitReq.changes, mo.changes[pos]...)
 		commitReqs[counter] = commitReq
 		l.Logger.Debug("Commit request sending to blobber ", commitReq.blobber.Baseurl)
 		go AddCommitRequest(commitReq)

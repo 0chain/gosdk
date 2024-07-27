@@ -396,7 +396,7 @@ func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string) (
 	}
 	if consensusRef == nil {
 		//Already deleted
-		return objectTreeRefs, dop.deleteMask, nil
+		return nil, dop.deleteMask, nil
 	}
 	if consensusRef.Type == fileref.DIRECTORY && !consensusRef.IsEmpty {
 		for ind, refEntity := range objectTreeRefs {

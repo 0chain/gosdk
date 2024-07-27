@@ -102,11 +102,6 @@ func (commitreq *CommitRequest) processCommit() {
 	defer commitreq.wg.Done()
 	start := time.Now()
 	l.Logger.Debug("received a commit request")
-	if len(commitreq.changes) == 0 {
-		l.Logger.Debug("Nothing to commit")
-		commitreq.result = SuccessCommitResult()
-		return
-	}
 	err := commitreq.commitBlobber()
 	if err != nil {
 		commitreq.result = ErrorCommitResult(err.Error())
