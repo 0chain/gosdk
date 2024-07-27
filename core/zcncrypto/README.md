@@ -63,14 +63,14 @@ import "github.com/0chain/gosdk/core/zcncrypto"
 
 ## Constants
 
-<a name="CryptoVersion"></a>
+<a name="CryptoVersion"></a>CryptoVersion \- version of the crypto library
 
 ```go
 const CryptoVersion = "1.0"
 ```
 
 <a name="IsMnemonicValid"></a>
-## func [IsMnemonicValid](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/signature_scheme.go#L84>)
+## func [IsMnemonicValid](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/signature_scheme.go#L98>)
 
 ```go
 func IsMnemonicValid(mnemonic string) bool
@@ -79,7 +79,7 @@ func IsMnemonicValid(mnemonic string) bool
 
 
 <a name="Sha3Sum256"></a>
-## func [Sha3Sum256](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/signature_scheme.go#L88>)
+## func [Sha3Sum256](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/signature_scheme.go#L102>)
 
 ```go
 func Sha3Sum256(data string) string
@@ -454,7 +454,7 @@ type ID interface {
 ```
 
 <a name="KeyPair"></a>
-## type [KeyPair](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/signature_scheme.go#L14-L17>)
+## type [KeyPair](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/signature_scheme.go#L15-L18>)
 
 KeyPair private and publickey
 
@@ -523,7 +523,7 @@ type Signature interface {
 ```
 
 <a name="SignatureScheme"></a>
-## type [SignatureScheme](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/signature_scheme.go#L31-L64>)
+## type [SignatureScheme](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/signature_scheme.go#L45-L78>)
 
 SignatureScheme \- an encryption scheme for signing and verifying messages
 
@@ -588,24 +588,37 @@ func UnmarshalSignatureSchemes(sigScheme string, obj interface{}) ([]SignatureSc
 UnmarshalThresholdSignatureSchemes unmarshal SignatureScheme from json string
 
 <a name="Wallet"></a>
-## type [Wallet](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/signature_scheme.go#L20-L28>)
+## type [Wallet](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/signature_scheme.go#L21-L42>)
 
-Wallet structure
+Wallet represents client wallet information
 
 ```go
 type Wallet struct {
-    ClientID    string    `json:"client_id"`
-    ClientKey   string    `json:"client_key"`
-    Keys        []KeyPair `json:"keys"`
-    Mnemonic    string    `json:"mnemonics"`
-    Version     string    `json:"version"`
-    DateCreated string    `json:"date_created"`
-    Nonce       int64     `json:"nonce"`
+    // ClientID client unique identifier
+    ClientID string `json:"client_id"`
+
+    // ClientKey client public key
+    ClientKey string `json:"client_key"`
+
+    // Keys private and public key pair
+    Keys []KeyPair `json:"keys"`
+
+    // Mnemonic recovery phrase of the wallet
+    Mnemonic string `json:"mnemonics"`
+
+    // Version version of the wallet
+    Version string `json:"version"`
+
+    // DateCreated date of wallet creation
+    DateCreated string `json:"date_created"`
+
+    // Nonce nonce of the wallet
+    Nonce int64 `json:"nonce"`
 }
 ```
 
 <a name="Wallet.Marshal"></a>
-### func \(\*Wallet\) [Marshal](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/signature_scheme.go#L67>)
+### func \(\*Wallet\) [Marshal](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/signature_scheme.go#L81>)
 
 ```go
 func (w *Wallet) Marshal() (string, error)
@@ -614,7 +627,7 @@ func (w *Wallet) Marshal() (string, error)
 Marshal returns json string
 
 <a name="Wallet.Sign"></a>
-### func \(\*Wallet\) [Sign](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/signature_scheme.go#L75>)
+### func \(\*Wallet\) [Sign](<https://github.com/0chain/gosdk/blob/doc/initial/core/zcncrypto/signature_scheme.go#L89>)
 
 ```go
 func (w *Wallet) Sign(hash, scheme string) (string, error)

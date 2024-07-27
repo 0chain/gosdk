@@ -8,6 +8,7 @@ import (
 	"github.com/tyler-smith/go-bip39"
 )
 
+// CryptoVersion - version of the crypto library
 const CryptoVersion = "1.0"
 
 // KeyPair private and publickey
@@ -16,14 +17,27 @@ type KeyPair struct {
 	PrivateKey string `json:"private_key"`
 }
 
-// Wallet structure
+// Wallet represents client wallet information
 type Wallet struct {
+	// ClientID client unique identifier
 	ClientID    string    `json:"client_id"`
+
+	// ClientKey client public key
 	ClientKey   string    `json:"client_key"`
+
+	// Keys private and public key pair
 	Keys        []KeyPair `json:"keys"`
+
+	// Mnemonic recovery phrase of the wallet
 	Mnemonic    string    `json:"mnemonics"`
+
+	// Version version of the wallet
 	Version     string    `json:"version"`
+
+	// DateCreated date of wallet creation
 	DateCreated string    `json:"date_created"`
+
+	// Nonce nonce of the wallet
 	Nonce       int64     `json:"nonce"`
 }
 
