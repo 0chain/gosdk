@@ -27,18 +27,18 @@ const (
 )
 
 // Config settings from ~/.zcn/config.yaml
-// block_worker: http://198.18.0.98:9091
-// signature_scheme: bls0chain
-// min_submit: 50
-// min_confirmation: 50
-// confirmation_chain_length: 3
-// max_txn_query: 5
-// query_sleep_time: 5
-// # # OPTIONAL - Uncomment to use/ Add more if you want
-// # preferred_blobbers:
-// #   - http://one.devnet-0chain.net:31051
-// #   - http://one.devnet-0chain.net:31052
-// #   - http://one.devnet-0chain.net:31053
+// 			block_worker: http://198.18.0.98:9091
+// 			signature_scheme: bls0chain
+// 			min_submit: 50
+// 			min_confirmation: 50
+// 			confirmation_chain_length: 3
+// 			max_txn_query: 5
+// 			query_sleep_time: 5
+// 			# # OPTIONAL - Uncomment to use/ Add more if you want
+// 			# preferred_blobbers:
+// 			#   - http://one.devnet-0chain.net:31051
+// 			#   - http://one.devnet-0chain.net:31052
+// 			#   - http://one.devnet-0chain.net:31053
 type Config struct {
 	// BlockWorker the url of 0dns's network api
 	BlockWorker string `json:"block_worker,omitempty"`
@@ -77,6 +77,7 @@ type Config struct {
 }
 
 // LoadConfigFile load and parse Config from file
+// 		- `file`: config file path (full path)
 func LoadConfigFile(file string) (Config, error) {
 
 	var cfg Config

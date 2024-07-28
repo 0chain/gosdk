@@ -50,7 +50,7 @@ func InitClientConfig(c *Config) {
 	})
 }
 
-// InitChainNetwork set global chain network
+// InitChainNetwork set global chain network given its configuration
 func InitChainNetwork(n *Network) {
 	if n == nil {
 		return
