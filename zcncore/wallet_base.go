@@ -154,24 +154,61 @@ const (
 	OpGetNotProcessedBurnTickets
 	OpGetMintNonce
 	// storage SC ops
+	// OpStorageSCGetConfig Get global storage SC config
 	OpStorageSCGetConfig
+
+	// OpStorageSCGetChallengePoolInfo Get challenge pool info
 	OpStorageSCGetChallengePoolInfo
+
+	// OpStorageSCGetAllocation Get allocation info
 	OpStorageSCGetAllocation
+
+	// OpStorageSCGetAllocations Get all allocations
 	OpStorageSCGetAllocations
+
+	// OpStorageSCGetReadPoolInfo Get read pool info
 	OpStorageSCGetReadPoolInfo
+
+	// OpStorageSCGetStakePoolInfo Get stake pool info
 	OpStorageSCGetStakePoolInfo
+
+	// OpStorageSCGetStakePoolUserInfo Get blobbers
 	OpStorageSCGetBlobbers
+
+	// OpStorageSCGetBlobber Get blobber information
 	OpStorageSCGetBlobber
+
+	// OpStorageSCGetValidator Get transaction info
 	OpStorageSCGetTransactions
+
+	// OpStorageSCGetSnapshots Get global snapshots
 	OpStorageSCGetSnapshots
+
+	// OpStorageSCGetBlobberSnapshots Get blobber snapshots
 	OpStorageSCGetBlobberSnapshots
+
+	// OpStorageSCGetMinerSnapshots Get miner snapshots
 	OpStorageSCGetMinerSnapshots
+
+	// OpStorageSCGetSharderSnapshots Get sharder snapshots
 	OpStorageSCGetSharderSnapshots
+
+	// OpStorageSCGetAuthorizerSnapshots Get authorizer snapshots
 	OpStorageSCGetAuthorizerSnapshots
+
+	// OpStorageSCGetValidatorSnapshots Get validator snapshots
 	OpStorageSCGetValidatorSnapshots
+
+	// OpStorageSCGetUserSnapshots Get user snapshots
 	OpStorageSCGetUserSnapshots
+
+	// OpStorageSCGetUserLockedTotal Get global configuration
 	OpZCNSCGetGlobalConfig
+
+	// OpZCNSCGetMintNonce Get authorizer information
 	OpZCNSCGetAuthorizer
+
+	// OpZCNSCGetAuthorizerNodes Get authorizer nodes
 	OpZCNSCGetAuthorizerNodes
 )
 
@@ -210,6 +247,7 @@ func (g *GetNonceCallbackStub) OnNonceAvailable(status int, nonce int64, info st
 }
 
 // GetInfoCallback needs to be implemented by the caller of GetLockTokenConfig() and GetLockedTokens()
+// Represents the functions that will be called when the reesponse of a GET requesst to the sharders is available
 type GetInfoCallback interface {
 	// OnInfoAvailable will be called when GetLockTokenConfig is complete
 	// if status == StatusSuccess then info is valid
