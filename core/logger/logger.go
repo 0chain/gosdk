@@ -59,7 +59,8 @@ func syncPrefixes(maxPrefixLen int, loggers []*Logger) {
 	}
 }
 
-// SyncLoggers - syncs the loggers
+// SyncLoggers syncs the loggers
+// 		- `loggers` is the list of loggers to sync
 func SyncLoggers(loggers []*Logger) {
 	maxPrefixLen := 0
 	for _, lgr := range loggers {

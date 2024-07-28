@@ -11,6 +11,9 @@ type Blobber struct {
 	*sdks.ZBox
 }
 
+// New create an sdk client instance given its configuration
+// 		- `zbox` zbox sdk client instance
+// 		- `baseURLs` base urls of the blobber
 func New(zbox *sdks.ZBox, baseURLs ...string) *Blobber {
 	b := &Blobber{
 		BaseURLs: baseURLs,

@@ -50,6 +50,7 @@ type TxnReceipt struct {
 	Transaction *Transaction
 }
 
+// SmartContractTxnData data structure to hold the smart contract transaction data
 type SmartContractTxnData struct {
 	Name      string      `json:"name"`
 	InputArgs interface{} `json:"input"`

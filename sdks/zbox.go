@@ -33,7 +33,11 @@ type ZBox struct {
 	NewRequest func(method, url string, body io.Reader) (*http.Request, error)
 }
 
-// New create a sdk client instance
+// New create an sdk client instance given its configuration 
+// 		- `clientID` client id of the using client
+// 		- `clientKey` client key of the using client
+// 		- `signatureScheme` signature scheme for transaction encryption
+// 		- `wallet` wallet of the using client
 func New(clientID, clientKey, signatureScheme string, wallet *zcncrypto.Wallet) *ZBox {
 	s := &ZBox{
 		ClientID:        clientID,

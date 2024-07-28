@@ -10,7 +10,7 @@ import (
 // Timestamp represents Unix time (e.g. in seconds)
 type Timestamp int64
 
-// Now - current datetime
+// Now current datetime
 func Now() Timestamp {
 	return Timestamp(time.Now().Unix())
 }

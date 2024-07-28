@@ -9,6 +9,7 @@ import (
 // If there is no Separator in path, Split returns an empty dir
 // and file set to path.
 // The returned values have the property that path = dir+file.
+// 		- `path` is the path to be split.
 func Split(path string) (dir, file string) {
 	if path == "" {
 		return "", ""
@@ -28,6 +29,7 @@ func Split(path string) (dir, file string) {
 }
 
 // Dir returns all but the last element of path, typically the path's directory.
+// 		- `path` is the path to be split.
 func Dir(path string) string {
 	dir, _ := Split(path)
 
