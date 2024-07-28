@@ -227,6 +227,7 @@ type Validator struct {
 	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
 }
 
+// AddAuthorizerPayload represents the payload for adding an authorizer.
 type AddAuthorizerPayload struct {
 	PublicKey         string                      `json:"public_key"`
 	URL               string                      `json:"url"`
