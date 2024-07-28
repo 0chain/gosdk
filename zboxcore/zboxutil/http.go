@@ -33,6 +33,10 @@ const SLEEP_BETWEEN_RETRIES = 5
 // In percentage
 const consensusThresh = float32(25.0)
 
+// SCRestAPIHandler is a function type to handle the response from the SC Rest API
+// 		`response` - the response from the SC Rest API
+// 		`numSharders` - the number of sharders that responded
+// 		`err` - the error if any
 type SCRestAPIHandler func(response map[string][]byte, numSharders int, err error)
 
 type HttpClient interface {
@@ -898,6 +902,12 @@ func NewRollbackRequest(baseUrl, allocationID string, allocationTx string, body 
 	return req, nil
 }
 
+
+// MakeSCRestAPICall makes a rest api call to the sharders
+// 		-`scAddress` is the address of the smart contract
+//		-`relativePath` is the relative path of the api
+//		-`params` is the query parameters
+//		-`handler` is the handler function to handle the response
 func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]string, handler SCRestAPIHandler) ([]byte, error) {
 	numSharders := len(blockchain.GetSharders())
 	sharders := blockchain.GetSharders()

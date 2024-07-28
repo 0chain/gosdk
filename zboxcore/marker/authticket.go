@@ -7,6 +7,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/client"
 )
 
+// AuthTicket authentication ticket for file sharing
 type AuthTicket struct {
 	ClientID        string `json:"client_id"`
 	OwnerID         string `json:"owner_id"`
@@ -22,6 +23,7 @@ type AuthTicket struct {
 	Signature       string `json:"signature"`
 }
 
+// NewAuthTicket returns the MPT hash of the AuthTicket
 func (at *AuthTicket) GetHashData() string {
 	hashData := fmt.Sprintf("%v:%v:%v:%v:%v:%v:%v:%v:%v:%v:%v",
 		at.AllocationID,
@@ -39,6 +41,7 @@ func (at *AuthTicket) GetHashData() string {
 	return hashData
 }
 
+// Sign signs the AuthTicket
 func (at *AuthTicket) Sign() error {
 	var err error
 	hash := encryption.Hash(at.GetHashData())

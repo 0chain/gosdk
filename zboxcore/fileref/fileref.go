@@ -12,6 +12,7 @@ import (
 	lru "github.com/hashicorp/golang-lru/v2"
 )
 
+// File read/write chunk size
 const CHUNK_SIZE = 64 * 1024
 
 const (

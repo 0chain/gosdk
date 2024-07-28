@@ -23,6 +23,7 @@ func calculateMinRequired(minRequired, percent float64) int {
 	return int(math.Ceil(minRequired * percent))
 }
 
+// GetStableMiners get stable miners
 func GetStableMiners() []string {
 	mGuard.Lock()
 	defer mGuard.Unlock()
@@ -32,6 +33,8 @@ func GetStableMiners() []string {
 
 	return miners
 }
+
+// ResetStableMiners reset stable miners to random miners
 func ResetStableMiners() {
 	mGuard.Lock()
 	defer mGuard.Unlock()
@@ -56,25 +59,28 @@ type StakePoolSettings struct {
 	ServiceCharge  float64        `json:"service_charge"`
 }
 
-// UpdateStakePoolSettings information.
+// UpdateStakePoolSettings represent stake pool information of a provider node.
 type UpdateStakePoolSettings struct {
 	DelegateWallet *string         `json:"delegate_wallet,omitempty"`
 	NumDelegates   *int            `json:"num_delegates,omitempty"`
 	ServiceCharge  *float64        `json:"service_charge,omitempty"`
 }
 
+// ValidationNode represents a validation node (miner)
 type ValidationNode struct {
 	ID                string            `json:"id"`
 	BaseURL           string            `json:"url"`
 	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
 }
 
+// UpdateValidationNode represents a validation node (miner) update
 type UpdateValidationNode struct {
 	ID                string                   `json:"id"`
 	BaseURL           *string                  `json:"url"`
 	StakePoolSettings *UpdateStakePoolSettings `json:"stake_pool_settings"`
 }
 
+// StorageNode represents a storage node (blobber)
 type StorageNode struct {
 	ID      string `json:"id"`
 	Baseurl string `json:"url"`
@@ -82,6 +88,8 @@ type StorageNode struct {
 	skip uint64 `json:"-"` // skip on error
 }
 
+// SetSkip set skip
+// 		- `t` is the boolean value
 func (sn *StorageNode) SetSkip(t bool) {
 	var val uint64
 	if t {
@@ -90,10 +98,13 @@ func (sn *StorageNode) SetSkip(t bool) {
 	atomic.StoreUint64(&sn.skip, val)
 }
 
+// IsSkip check if skip
 func (sn *StorageNode) IsSkip() bool {
 	return atomic.LoadUint64(&sn.skip) > 0
 }
 
+// PopulateNodes populate nodes from json string
+// 		- `nodesjson` is the json string
 func PopulateNodes(nodesjson string) ([]string, error) {
 	sharders := make([]string, 0)
 	err := json.Unmarshal([]byte(nodesjson), &sharders)
@@ -112,10 +123,14 @@ func init() {
 	}
 }
 
+// GetChainConfig get chain config
 func GetChainID() string {
 	return chain.ChainID
 }
 
+// PopulateChain populate chain from json string
+// 		- `minerjson` is the array of miner urls, serialized as json
+// 		- `sharderjson` is the array of sharder urls, serialized as json
 func PopulateChain(minerjson string, sharderjson string) error {
 	var err error
 	chain.Miners, err = PopulateNodes(minerjson)
@@ -130,21 +145,27 @@ func PopulateChain(minerjson string, sharderjson string) error {
 	return nil
 }
 
+// GetBlockWorker get block worker
 func GetBlockWorker() string {
 	return chain.BlockWorker
 }
 
+// GetSharders get sharders
 func GetAllSharders() []string {
 	return Sharders.All()
 }
+
+// GetSharders get healthy sharders
 func GetSharders() []string {
 	return Sharders.Healthy()
 }
 
+// GetMiners get miners
 func GetMiners() []string {
 	return chain.Miners
 }
 
+// GetMaxTxnQuery get max transaction query
 func GetMaxTxnQuery() int {
 	return chain.MaxTxnQuery
 }
@@ -185,18 +206,26 @@ func SetChainID(id string) {
 	chain.ChainID = id
 }
 
+// SetMaxTxnQuery set max transaction query
+// 		- `num` is the number of transaction query
 func SetMaxTxnQuery(num int) {
 	chain.MaxTxnQuery = num
 }
 
+// SetQuerySleepTime set query sleep time
+// 		- `time` is the sleep time
 func SetQuerySleepTime(time int) {
 	chain.QuerySleepTime = time
 }
 
+// SetMinSubmit set minimum submit, minimum number of miners to submit a transaction
+// 		- `minSubmit` is the minimum submit
 func SetMinSubmit(minSubmit int) {
 	chain.MinSubmit = minSubmit
 }
 
+// SetMinConfirmation set minimum confirmation, minimum number of miners to confirm a transaction
+// 		- `minConfirmation` is the minimum confirmation
 func SetMinConfirmation(minConfirmation int) {
 	chain.MinConfirmation = minConfirmation
 }
