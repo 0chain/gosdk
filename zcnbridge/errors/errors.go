@@ -94,6 +94,9 @@ func (err *Error) Error() string {
 	return fmt.Sprintf("%s: %s", err.Code, err.Msg)
 }
 
+// NewError create a new error instance given a code and a message.
+// 		- `code`: error code
+// 		- `msg`: error message
 func NewError(code string, msg string) *Error {
 	return &Error{Code: code, Msg: msg}
 }
