@@ -46,6 +46,8 @@ type ConfirmationStatus int
 const (
 	Undefined ConfirmationStatus = iota
 	Success
+
+	// ChargeableError is an error that still charges the user for the transaction.
 	ChargeableError
 )
 
@@ -61,11 +63,13 @@ type Miner struct {
 	Stat       interface{} `json:"stat"`
 }
 
+// Node represents a node (miner or sharder) in the network.
 type Node struct {
 	Miner     Miner `json:"simple_miner"`
 	StakePool `json:"stake_pool"`
 }
 
+// MinerSCNodes list of nodes registered to the miner smart contract
 type MinerSCNodes struct {
 	Nodes []Node `json:"Nodes"`
 }
@@ -106,6 +110,7 @@ type MinerSCDelegatePoolInfo struct {
 	Status     string         `json:"status"`
 }
 
+// MinerSCUserPoolsInfo represents the user pools info
 type MinerSCUserPoolsInfo struct {
 	Pools map[string][]*MinerSCDelegatePoolInfo `json:"pools"`
 }
@@ -203,6 +208,7 @@ type Terms struct {
 	MaxOfferDuration time.Duration  `json:"max_offer_duration"`
 }
 
+// Blobber represents a blobber node.
 type Blobber struct {
 	ID                common.Key        `json:"id"`
 	BaseURL           string            `json:"url"`
@@ -227,14 +233,17 @@ type AddAuthorizerPayload struct {
 	StakePoolSettings AuthorizerStakePoolSettings `json:"stake_pool_settings"` // Used to initially create stake pool
 }
 
+// DeleteAuthorizerPayload represents the payload for deleting an authorizer.
 type DeleteAuthorizerPayload struct {
 	ID string `json:"id"` // authorizer ID
 }
 
+// AuthorizerHealthCheckPayload represents the payload for authorizer health check.
 type AuthorizerHealthCheckPayload struct {
 	ID string `json:"id"` // authorizer ID
 }
 
+// AuthorizerStakePoolSettings represents the settings for an authorizer's stake pool.
 type AuthorizerStakePoolSettings struct {
 	DelegateWallet string         `json:"delegate_wallet"`
 	NumDelegates   int            `json:"num_delegates"`
@@ -245,6 +254,7 @@ type AuthorizerConfig struct {
 	Fee common.Balance `json:"fee"`
 }
 
+// InputMap represents a map of input fields.
 type InputMap struct {
 	Fields map[string]string `json:"Fields"`
 }
@@ -890,6 +900,7 @@ type MinerSCDelegatePool struct {
 	Settings StakePoolSettings `json:"settings"`
 }
 
+// SimpleMiner represents a simple miner
 type SimpleMiner struct {
 	ID string `json:"id"`
 }
@@ -943,6 +954,7 @@ func (t *Transaction) MinerSCDeleteSharder(info *MinerSCMinerInfo) (err error) {
 	return
 }
 
+// AuthorizerNode represents an authorizer node
 type AuthorizerNode struct {
 	ID     string            `json:"id"`
 	URL    string            `json:"url"`
@@ -1060,7 +1072,7 @@ func (t *Transaction) Verify() error {
 
 // ConvertToValue converts ZCN tokens to SAS tokens
 // # Inputs
-//   - token: ZCN tokens
+//   - `token`: ZCN tokens
 func ConvertToValue(token float64) uint64 {
 	return uint64(token * common.TokenUnit)
 }
@@ -1232,10 +1244,13 @@ func GetBlockByRound(ctx context.Context, numSharders int, round int64) (b *bloc
 	return Sharders.GetBlockByRound(ctx, numSharders, round)
 }
 
+// GetRoundFromSharders returns the current round number from the sharders
 func GetRoundFromSharders() (int64, error) {
 	return Sharders.GetRoundFromSharders()
 }
 
+// GetHardForkRound returns the round number of the hard fork
+// 		- `hardFork`: hard fork name
 func GetHardForkRound(hardFork string) (int64, error) {
 	return Sharders.GetHardForkRound(hardFork)
 }
@@ -1343,6 +1358,8 @@ func (nc *NonceCache) Evict(clientId string) {
 	delete(nc.cache, clientId)
 }
 
+// WithEthereumNode set the ethereum node
+// 		- `uri`: ethereum node uri
 func WithEthereumNode(uri string) func(c *ChainConfig) error {
 	return func(c *ChainConfig) error {
 		c.EthNode = uri
@@ -1350,6 +1367,8 @@ func WithEthereumNode(uri string) func(c *ChainConfig) error {
 	}
 }
 
+// WithChainID set the chain id
+// 		- `id`: chain id
 func WithChainID(id string) func(c *ChainConfig) error {
 	return func(c *ChainConfig) error {
 		c.ChainID = id
@@ -1357,6 +1376,8 @@ func WithChainID(id string) func(c *ChainConfig) error {
 	}
 }
 
+// WithMinSubmit set the minimum submit
+// 		- `m`: minimum submit
 func WithMinSubmit(m int) func(c *ChainConfig) error {
 	return func(c *ChainConfig) error {
 		c.MinSubmit = m
@@ -1364,6 +1385,8 @@ func WithMinSubmit(m int) func(c *ChainConfig) error {
 	}
 }
 
+// WithMinConfirmation set the minimum confirmation
+// 		- `m`: minimum confirmation
 func WithMinConfirmation(m int) func(c *ChainConfig) error {
 	return func(c *ChainConfig) error {
 		c.MinConfirmation = m
@@ -1371,6 +1394,8 @@ func WithMinConfirmation(m int) func(c *ChainConfig) error {
 	}
 }
 
+// WithConfirmationChainLength set the confirmation chain length
+// 		- `m`: confirmation chain length
 func WithConfirmationChainLength(m int) func(c *ChainConfig) error {
 	return func(c *ChainConfig) error {
 		c.ConfirmationChainLength = m

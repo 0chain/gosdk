@@ -116,6 +116,7 @@ func GetNetworkDetails() (*Network, error) {
 
 }
 
+// GetNetwork - get the network details
 func GetNetwork() *Network {
 	return &Network{
 		Miners:   _config.chain.Miners,
@@ -123,6 +124,9 @@ func GetNetwork() *Network {
 	}
 }
 
+// SetNetwork set the network details
+//		- `miners`: miners
+//		- `sharders`: sharders
 func SetNetwork(miners []string, sharders []string) {
 	_config.chain.Miners = miners
 	_config.chain.Sharders = sharders
