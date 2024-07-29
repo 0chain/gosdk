@@ -1510,7 +1510,7 @@ func ResetAllocationStats(allocationId string) (string, int64, error) {
 	return hash, n, err
 }
 
-func RepairValidatorPartitions(partitionName string) (string, int64, error) {
+func RepairPartitions(partitionName string) (string, int64, error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
 	}
