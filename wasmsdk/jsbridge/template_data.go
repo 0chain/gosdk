@@ -46,6 +46,8 @@ func buildJS(args, env []string, wasmPath string, tpl []byte) (string, error) {
 		u.RawQuery = params.Encode()
 		wasmPath = u.String()
 	}
+	//Comment this line to use the wasm file from the local server
+	wasmPath = "https://d2os1u2xwjukgr.cloudfront.net/zcn.wasm"
 	data := templateData{
 		Path: wasmPath,
 		Args: args,
