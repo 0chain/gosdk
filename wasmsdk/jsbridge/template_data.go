@@ -47,7 +47,7 @@ func buildJS(args, env []string, wasmPath string, tpl []byte) (string, error) {
 		wasmPath = u.String()
 	}
 	//Comment this line to use the wasm file from the local server
-	wasmPath = "https://d2os1u2xwjukgr.cloudfront.net/zcn.wasm"
+	wasmPath = "https://d2os1u2xwjukgr.cloudfront.net/dev/zcn.wasm"
 	data := templateData{
 		Path: wasmPath,
 		Args: args,
