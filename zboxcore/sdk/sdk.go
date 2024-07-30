@@ -1106,6 +1106,14 @@ func GetAllocationBlobbers(
 
 	params := make(map[string]string)
 	params["allocation_data"] = string(allocationData)
+	offset := datashards + parityshards
+
+	offsetInt, _ := strconv.Atoi(strconv.Itoa(offset))
+
+	if offsetInt > 20 {
+		params["limit"] = strconv.Itoa(40)
+	}
+
 	if len(force) > 0 && force[0] {
 		params["force"] = strconv.FormatBool(force[0])
 	}
