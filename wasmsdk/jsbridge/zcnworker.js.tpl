@@ -1,18 +1,19 @@
 importScripts('https://cdn.jsdelivr.net/gh/golang/go@go1.21.5/misc/wasm/wasm_exec.js','https://cdn.jsdelivr.net/gh/herumi/bls-wasm@v1.1.1/browser/bls.js');
 
-const go = new Go();
-go.argv = {{.ArgsToJS}}
-go.env = {{.EnvToJS}}
-const bls = self.bls
-bls.init(bls.BN254).then(()=>{})
+
 
  (async () => {
+  const go = new Go();
+  go.argv = {{.ArgsToJS}}
+  go.env = {{.EnvToJS}}
+  const bls = self.bls
+  bls.init(bls.BN254).then(()=>{})
     let source = await fetch("{{.Path}}")
       .then(res => res)
       .catch(err => err)
     // fallback to our server where the app would be hosted
     if (!source?.ok) {
-      source = await fetch("{{.FallbackPath}}").then(res => res.arrayBuffer()).catch(err => console.log("Err: ", err))
+      source = await fetch("{{.FallbackPath}}")
     }
 
    WebAssembly.instantiate(source, go.importObject).then((result) => {
