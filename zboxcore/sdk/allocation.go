@@ -202,7 +202,6 @@ type Allocation struct {
 	MovedToValidators       common.Balance   `json:"moved_to_validators,omitempty"`
 	FileOptions             uint16           `json:"file_options"`
 	ThirdPartyExtendable    bool             `json:"third_party_extendable"`
-	AllocationVersion       int64            `json:"-"`
 
 	numBlockDownloads       int
 	downloadChan            chan *DownloadRequest
@@ -220,6 +219,7 @@ type Allocation struct {
 	// conseususes
 	consensusThreshold int
 	fullconsensus      int
+	allocationVersion  int64
 }
 
 type OperationRequest struct {

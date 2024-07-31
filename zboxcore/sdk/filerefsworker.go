@@ -86,10 +86,9 @@ func WithSingleBlobber(singleBlobber bool) ObjectTreeRequestOption {
 // Paginated tree should not be collected as this will stall the client
 // It should rather be handled by application that uses gosdk
 func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
-	totalBlobbersCount := len(o.blobbers)
-	oTreeResponses := make([]oTreeResponse, totalBlobbersCount)
-	respChan := make(chan *oTreeResponse, totalBlobbersCount)
 	activeCount := o.reqMask.CountOnes()
+	oTreeResponses := make([]oTreeResponse, activeCount)
+	respChan := make(chan *oTreeResponse, activeCount)
 	if o.singleBlobber {
 		var respErr error
 		for i := 0; i < activeCount; i++ {
@@ -125,15 +124,16 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 
 	hashCount := make(map[string]int)
 	hashRefsMap := make(map[string]*ObjectTreeResult)
-	oTreeResponseErrors := make([]error, totalBlobbersCount)
+	oTreeResponseErrors := make([]error, activeCount)
 	var successCount int
-	for i := 0; i < totalBlobbersCount; i++ {
+	for i := 0; i < activeCount; i++ {
 		select {
 		case <-o.ctx.Done():
 			return nil, o.ctx.Err()
 		case oTreeResponse := <-respChan:
 			oTreeResponseErrors[oTreeResponse.idx] = oTreeResponse.err
 			if oTreeResponse.err != nil {
+				l.Logger.Error(oTreeResponse.err)
 				if code, _ := zboxutil.GetErrorMessageCode(oTreeResponse.err.Error()); code != INVALID_PATH {
 					l.Logger.Error("Error while getting file refs from blobber:", oTreeResponse.err)
 				}
@@ -141,6 +141,7 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 			}
 			successCount++
 			hash := oTreeResponse.hash
+			l.Logger.Info("getRefsHash", hash)
 			if _, ok := hashCount[hash]; ok {
 				hashCount[hash]++
 			} else {
@@ -255,6 +256,7 @@ func (o *ObjectTreeRequest) getFileRefs(bUrl string, respChan chan *oTreeRespons
 		similarFieldRefs = append(similarFieldRefs, decodeBytes...)
 	}
 	oTR.hash = zboxutil.GetRefsHash(similarFieldRefs)
+	l.Logger.Info("getFileRefs: ", " blobber: ", bUrl, " path: ", o.remotefilepath, " hash: ", oTR.hash)
 }
 
 // Blobber response will be different from each other so we should only consider similar fields

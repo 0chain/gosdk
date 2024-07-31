@@ -280,7 +280,7 @@ func (mo *MultiOperation) Process() error {
 	var pos uint64
 	for i := mo.operationMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
-		if mo.allocationObj.Blobbers[pos].AllocationVersion != mo.allocationObj.AllocationVersion {
+		if mo.allocationObj.Blobbers[pos].AllocationVersion != mo.allocationObj.allocationVersion {
 			mo.operationMask = mo.operationMask.And(zboxutil.NewUint128(1).Lsh(pos).Not())
 		}
 	}
@@ -352,8 +352,8 @@ func (mo *MultiOperation) Process() error {
 					mo.allocationObj.Blobbers[commitReq.blobberInd].AllocationVersion++
 				}
 			}
-			mo.allocationObj.AllocationVersion += 1
-			logger.Logger.Info("Allocation version updated to ", mo.allocationObj.AllocationVersion)
+			mo.allocationObj.allocationVersion += 1
+			logger.Logger.Info("Allocation version updated to ", mo.allocationObj.allocationVersion, " activeBlobbers ", activeBlobbers)
 		}
 	}
 

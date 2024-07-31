@@ -315,3 +315,6 @@ func (r *RepairRequest) checkForCancel(a *Allocation) bool {
 	}
 	return false
 }
+
+//repair for enterprise workflow
+// list all files in the allocation recursively and repair them

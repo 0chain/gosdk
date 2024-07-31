@@ -313,7 +313,7 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
 	}
 
 	if consensusReached {
-		a.AllocationVersion = latestVersion
+		a.allocationVersion = latestVersion
 		return Commit, blobberRes, nil
 	}
 
