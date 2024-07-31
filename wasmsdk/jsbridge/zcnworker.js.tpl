@@ -12,7 +12,7 @@ bls.init(bls.BN254).then(()=>{})
       .catch(err => err)
     // fallback to our server where the app would be hosted
     if (!source?.ok) {
-      source = await fetch("{{.FallbackPath}}")
+      source = await fetch("{{.FallbackPath}}").then(res=> res)
     }
 
    WebAssembly.instantiate(source, go.importObject).then((result) => {
