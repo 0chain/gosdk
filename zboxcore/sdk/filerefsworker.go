@@ -90,7 +90,6 @@ func WithSingleBlobber(singleBlobber bool) ObjectTreeRequestOption {
 // It should rather be handled by application that uses gosdk
 func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 	activeCount := o.reqMask.CountOnes()
-	l.Logger.Info("GetRefs: ", " path: ", o.remotefilepath, " pageLimit: ", o.pageLimit, " offsetPath: ", o.offsetPath, " activeCount: ", activeCount)
 	oTreeResponses := make([]oTreeResponse, activeCount)
 	respChan := make(chan *oTreeResponse, activeCount)
 	if o.singleBlobber {
