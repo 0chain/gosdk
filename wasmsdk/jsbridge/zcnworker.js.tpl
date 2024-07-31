@@ -5,24 +5,9 @@ go.argv = {{.ArgsToJS}}
 go.env = {{.EnvToJS}}
 const bls = self.bls
 bls.init(bls.BN254).then(()=>{})
-
-async function getWasmModule() {
-  const cache = await caches.open('wasm-cache');
-  let response = await cache.match("{{.Path}}");
-  if(!response) {
-    response = await cache.match("{{.FallbackPath}}");
-  }
-
-  const bytes = await response.arrayBuffer();
-  return WebAssembly.instantiate(bytes, go.importObject);
-}
-
-getWasmModule().then(result => {
-  go.run(result.instance);
-}).catch(error => {
-  console.error("Failed to load WASM:", error);
+WebAssembly.instantiateStreaming(fetch("{{.Path}}"), go.importObject).then((result) => {
+    go.run(result.instance);
 });
-
 
 function hexStringToByte(str) {
     if (!str) return new Uint8Array()
