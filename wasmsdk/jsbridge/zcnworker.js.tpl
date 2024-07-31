@@ -8,8 +8,11 @@ bls.init(bls.BN254).then(()=>{})
 
 async function getWasmModule() {
   const cache = await caches.open('wasm-cache');
-  let response = await cache.match("/wasmUrl");
-  
+  let response = await cache.match("/dev/zcn.wasm");
+  if(!response) {
+    response = await cache.match("{{.FallbackPath}}");
+  }
+
   const bytes = await response.arrayBuffer();
   return WebAssembly.instantiate(bytes, go.importObject);
 }
