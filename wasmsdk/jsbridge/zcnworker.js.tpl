@@ -6,25 +6,22 @@ go.env = {{.EnvToJS}}
 const bls = self.bls
 bls.init(bls.BN254).then(()=>{})
 
-let source = fetch("{{.Path}}").then(response =>
-    response.arrayBuffer()
-).catch((err) => {
-    console.error(err);
-});
+ (async () => {
+    let source = await fetch("{{.Path}}")
+      .then(res => res)
+      .catch(err => err)
+    // fallback to our server where the app would be hosted
+    if (!source?.ok) {
+      source = await fetch("{{.FallbackPath}}")
+    }
 
-if !source {
-  fetch("{{.FallbackPath}}").then(response =>
-    response.arrayBuffer()
-  ).catch((err) => {
-    console.error(err);
-  });
-}
-
-WebAssembly.instantiate(source, go.importObject).then((result) => {
+   WebAssembly.instantiate(source, go.importObject).then((result) => {
     go.run(result.instance);
-}).catch((err) => {
+    }).catch((err) => {
     console.error(err);
-});
+    });
+
+  })();
 
 function hexStringToByte(str) {
     if (!str) return new Uint8Array()
