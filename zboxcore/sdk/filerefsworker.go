@@ -139,9 +139,10 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 				}
 				continue
 			}
+			oTreeResponses[oTreeResponse.idx] = *oTreeResponse
 			successCount++
 			hash := oTreeResponse.hash
-			l.Logger.Info("getRefsHash", hash)
+			l.Logger.Info("getRefsHash", hash, " blobber: ", o.blobbers[oTreeResponse.idx].Baseurl)
 			if _, ok := hashCount[hash]; ok {
 				hashCount[hash]++
 			} else {
@@ -171,7 +172,7 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 	selected = &ObjectTreeResult{}
 	minPage := int64(math.MaxInt64)
 	for _, oTreeResponse := range oTreeResponses {
-		if oTreeResponse.err != nil {
+		if oTreeResponse.err != nil || oTreeResponse.oTResult == nil {
 			continue
 		}
 		if oTreeResponse.oTResult.TotalPages < minPage {
