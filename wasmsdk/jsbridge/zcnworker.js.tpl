@@ -21,9 +21,6 @@ getWasModule().then(result => {
   console.error("Failed to load WASM:", error);
 });
 
-WebAssembly.instantiateStreaming(fetch("{{.Path}}"), go.importObject).then((result) => {
-    go.run(result.instance);
-});
 
 function hexStringToByte(str) {
     if (!str) return new Uint8Array()
