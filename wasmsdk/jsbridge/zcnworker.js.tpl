@@ -13,7 +13,7 @@ importScripts('https://cdn.jsdelivr.net/gh/golang/go@go1.21.5/misc/wasm/wasm_exe
       .catch(err => err)
     // fallback to our server where the app would be hosted
     if (!source?.ok) {
-      source = await fetch("{{.FallbackPath}}")
+      source = await fetch("{{.FallbackPath}}").then(res => res.arrayBuffer())
     }
 
    WebAssembly.instantiate(source, go.importObject).then((result) => {
