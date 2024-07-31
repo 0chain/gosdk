@@ -181,6 +181,7 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 			selected.TotalPages = minPage
 		}
 		for _, ref := range oTreeResponse.oTResult.Refs {
+			l.Logger.Info("selectFileRef: ", " blobber: ", o.blobbers[oTreeResponse.idx].Baseurl, " path: ", ref.Path, " hash: ", ref.FileMetaHash)
 			if refHash[ref.FileMetaHash] == o.consensusThresh {
 				continue
 			}
