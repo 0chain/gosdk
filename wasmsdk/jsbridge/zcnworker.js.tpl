@@ -15,7 +15,7 @@ async function getWasmModule() {
   return WebAssembly.instantiate(bytes, go.importObject);
 }
 
-getWasModule().then(result => {
+getWasmModule().then(result => {
   go.run(result.instance);
 }).catch(error => {
   console.error("Failed to load WASM:", error);
