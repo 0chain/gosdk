@@ -87,6 +87,7 @@ func WithSingleBlobber(singleBlobber bool) ObjectTreeRequestOption {
 // It should rather be handled by application that uses gosdk
 func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 	activeCount := o.reqMask.CountOnes()
+	l.Logger.Info("GetRefs: ", " path: ", o.remotefilepath, " pageLimit: ", o.pageLimit, " offsetPath: ", o.offsetPath, " activeCount: ", activeCount)
 	oTreeResponses := make([]oTreeResponse, activeCount)
 	respChan := make(chan *oTreeResponse, activeCount)
 	if o.singleBlobber {
@@ -142,7 +143,6 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 			oTreeResponses[oTreeResponse.idx] = *oTreeResponse
 			successCount++
 			hash := oTreeResponse.hash
-			l.Logger.Info("getRefsHash", hash, " blobber: ", o.blobbers[oTreeResponse.idx].Baseurl)
 			if _, ok := hashCount[hash]; ok {
 				hashCount[hash]++
 			} else {
@@ -154,6 +154,7 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 			}
 		}
 	}
+	l.Logger.Info("no consensus found: ", o.remotefilepath, " pageLimit: ", o.pageLimit, " offsetPath: ", o.offsetPath)
 	var selected *ObjectTreeResult
 	if successCount < o.consensusThresh {
 		majorError := zboxutil.MajorError(oTreeResponseErrors)
@@ -190,6 +191,14 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 		}
 	}
 	if len(selected.Refs) > 0 {
+		for _, oTreeResponse := range oTreeResponses {
+			if oTreeResponse.err != nil || oTreeResponse.oTResult == nil {
+				continue
+			}
+			if len(selected.Refs) != len(oTreeResponse.oTResult.Refs) {
+				l.Logger.Error("Consensus failed for refs: ", o.blobbers[oTreeResponse.idx].Baseurl)
+			}
+		}
 		selected.OffsetPath = selected.Refs[len(selected.Refs)-1].Path
 		return selected, nil
 	}

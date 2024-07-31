@@ -1434,6 +1434,11 @@ func (a *Allocation) getRefs(path, pathHash, authToken, offsetPath, updatedDate,
 	// if singleClientMode {
 	// 	oTreeReq.singleBlobber = true
 	// }
+	for _, blob := range a.Blobbers {
+		if blob.AllocationVersion != a.allocationVersion {
+			l.Logger.Error("blobber not on latest version: ", blob.Baseurl, " version: ", blob.AllocationVersion, " latest version: ", a.allocationVersion)
+		}
+	}
 	return oTreeReq.GetRefs()
 }
 
