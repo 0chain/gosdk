@@ -47,11 +47,12 @@ func buildJS(args, env []string, wasmPath string, tpl []byte) (string, error) {
 		wasmPath = u.String()
 	}
 	//Comment this line to use the wasm file from the local server
-	wasmPath = "https://d2os1u2xwjukgr.cloudfront.net/dev/zcn.wasm"
+	cdnPath := "https://d2os1u2xwjukgr.cloudfront.net/dev/zcn.wasm"
 	data := templateData{
-		Path: wasmPath,
-		Args: args,
-		Env:  env,
+		Path:         cdnPath,
+		Args:         args,
+		Env:          env,
+		FallbackPath: wasmPath,
 	}
 	if err := template.Must(template.New("js").Parse(string(tpl))).Execute(&workerJS, data); err != nil {
 		return "", err
@@ -60,9 +61,10 @@ func buildJS(args, env []string, wasmPath string, tpl []byte) (string, error) {
 }
 
 type templateData struct {
-	Path string
-	Args []string
-	Env  []string
+	Path         string
+	Args         []string
+	Env          []string
+	FallbackPath string
 }
 
 func (d templateData) ArgsToJS() string {

@@ -5,8 +5,25 @@ go.argv = {{.ArgsToJS}}
 go.env = {{.EnvToJS}}
 const bls = self.bls
 bls.init(bls.BN254).then(()=>{})
-WebAssembly.instantiateStreaming(fetch("{{.Path}}"), go.importObject).then((result) => {
+
+let source = fetch("{{.Path}}").then(response =>
+    response.arrayBuffer()
+).catch((err) => {
+    console.error(err);
+});
+
+if !source {
+  fetch("{{.FallbackPath}}").then(response =>
+    response.arrayBuffer()
+  ).catch((err) => {
+    console.error(err);
+  });
+}
+
+WebAssembly.instantiate(source, go.importObject).then((result) => {
     go.run(result.instance);
+}).catch((err) => {
+    console.error(err);
 });
 
 function hexStringToByte(str) {
