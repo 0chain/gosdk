@@ -449,6 +449,10 @@ func (req *DownloadRequest) processDownload() {
 			return
 		}
 		req.fileHandler.Sync() //nolint
+		if req.statusCallback != nil && !req.skip {
+			req.statusCallback.Completed(
+				req.allocationID, remotePathCB, fRef.Name, fRef.MimeType, 32, op)
+		}
 		return
 	}
 	size, chunksPerShard, blocksPerShard := req.size, req.chunksPerShard, req.blocksPerShard
@@ -1207,7 +1211,7 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 			fRef.ActualFileHashSignature+fRef.ValidationRoot,
 		)
 		if err != nil {
-			l.Logger.Error(err)
+			l.Logger.Error(err, "allocOwnerPubKey: ", req.allocOwnerPubKey, " validationRootSignature: ", fRef.ValidationRootSignature, " actualFileHashSignature: ", fRef.ActualFileHashSignature, " validationRoot: ", fRef.ValidationRoot)
 			continue
 		}
 		if !isValid {

@@ -31,6 +31,11 @@ import (
 const FileOperationInsert = "insert"
 
 func listObjects(allocationID string, remotePath string, offset, pageLimit int) (*sdk.ListResult, error) {
+	defer func() {
+		if r := recover(); r != nil {
+			PrintError("Recovered in listObjects Error", r)
+		}
+	}()
 	alloc, err := getAllocation(allocationID)
 	if err != nil {
 		return nil, err
@@ -370,6 +375,11 @@ func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expir
 // 	 - error
 
 func multiDownload(allocationID, jsonMultiDownloadOptions, authTicket, callbackFuncName string) (string, error) {
+	defer func() {
+		if r := recover(); r != nil {
+			PrintError("Recovered in multiDownload Error", r)
+		}
+	}()
 	sdkLogger.Info("starting multidownload")
 	wg := &sync.WaitGroup{}
 	useCallback := false
@@ -609,6 +619,11 @@ func setUploadMode(mode int) {
 }
 
 func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
+	defer func() {
+		if r := recover(); r != nil {
+			PrintError("Recovered in multiupload Error", r)
+		}
+	}()
 	var options []BulkUploadOption
 	result := MultiUploadResult{}
 	err := json.Unmarshal([]byte(jsonBulkUploadOptions), &options)
@@ -958,6 +973,10 @@ func getBlobbers(stakable bool) ([]*sdk.Blobber, error) {
 
 func repairAllocation(allocationID string) error {
 	alloc, err := getAllocation(allocationID)
+	if err != nil {
+		return err
+	}
+	err = addWebWorkers(alloc)
 	if err != nil {
 		return err
 	}
