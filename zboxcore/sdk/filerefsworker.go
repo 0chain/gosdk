@@ -15,6 +15,7 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
+	"github.com/0chain/gosdk/zboxcore/logger"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
@@ -56,6 +57,8 @@ type oTreeResponse struct {
 	hash     string
 	idx      int
 }
+
+var errTooManyRequests = errors.New("too_many_requests", "Too many requests")
 
 type ObjectTreeRequestOption func(*ObjectTreeRequest)
 
@@ -154,7 +157,7 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 			}
 		}
 	}
-	l.Logger.Info("no consensus found: ", o.remotefilepath, " pageLimit: ", o.pageLimit, " offsetPath: ", o.offsetPath)
+	l.Logger.Error("no consensus found: ", o.remotefilepath, " pageLimit: ", o.pageLimit, " offsetPath: ", o.offsetPath)
 	var selected *ObjectTreeResult
 	if successCount < o.consensusThresh {
 		majorError := zboxutil.MajorError(oTreeResponseErrors)
@@ -181,7 +184,6 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 			selected.TotalPages = minPage
 		}
 		for _, ref := range oTreeResponse.oTResult.Refs {
-			l.Logger.Info("selectFileRef: ", " blobber: ", o.blobbers[oTreeResponse.idx].Baseurl, " path: ", ref.Path, " hash: ", ref.FileMetaHash)
 			if refHash[ref.FileMetaHash] == o.consensusThresh {
 				continue
 			}
@@ -213,52 +215,72 @@ func (o *ObjectTreeRequest) getFileRefs(bUrl string, respChan chan *oTreeRespons
 	defer func() {
 		respChan <- oTR
 	}()
-	oReq, err := zboxutil.NewRefsRequest(
-		bUrl,
-		o.allocationID,
-		o.allocationTx,
-		o.remotefilepath,
-		o.pathHash,
-		o.authToken,
-		o.offsetPath,
-		o.updatedDate,
-		o.offsetDate,
-		o.fileType,
-		o.refType,
-		o.level,
-		o.pageLimit,
-	)
-	if err != nil {
-		oTR.err = err
-		return
-	}
+
 	oResult := ObjectTreeResult{}
-	ctx, cncl := context.WithTimeout(o.ctx, 2*time.Minute)
-	err = zboxutil.HttpDo(ctx, cncl, oReq, func(resp *http.Response, err error) error {
+	for i := 0; i < 3; i++ {
+		oReq, err := zboxutil.NewRefsRequest(
+			bUrl,
+			o.allocationID,
+			o.allocationTx,
+			o.remotefilepath,
+			o.pathHash,
+			o.authToken,
+			o.offsetPath,
+			o.updatedDate,
+			o.offsetDate,
+			o.fileType,
+			o.refType,
+			o.level,
+			o.pageLimit,
+		)
 		if err != nil {
-			l.Logger.Error(err)
-			return err
+			oTR.err = err
+			return
 		}
-		defer resp.Body.Close()
-		respBody, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			l.Logger.Error(err)
-			return err
-		}
-		if resp.StatusCode == http.StatusOK {
-			err := json.Unmarshal(respBody, &oResult)
+		ctx, cncl := context.WithTimeout(o.ctx, 2*time.Minute)
+		defer cncl()
+		err = zboxutil.HttpDo(ctx, cncl, oReq, func(resp *http.Response, err error) error {
 			if err != nil {
 				l.Logger.Error(err)
 				return err
 			}
-			return nil
-		} else {
-			return errors.New("response_error", fmt.Sprintf("got status %d, err: %s", resp.StatusCode, respBody))
+			defer resp.Body.Close()
+			respBody, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				l.Logger.Error(err)
+				return err
+			}
+			if resp.StatusCode == http.StatusOK {
+				err := json.Unmarshal(respBody, &oResult)
+				if err != nil {
+					l.Logger.Error(err)
+					return err
+				}
+				return nil
+			} else {
+				if resp.StatusCode == http.StatusTooManyRequests {
+					l.Logger.Error("Too many requests")
+					r, err := zboxutil.GetRateLimitValue(resp)
+					if err != nil {
+						logger.Logger.Error(err)
+						return err
+					}
+
+					time.Sleep(time.Duration(r) * time.Second)
+					return errTooManyRequests
+				}
+
+				return errors.New("response_error", fmt.Sprintf("got status %d, err: %s", resp.StatusCode, respBody))
+			}
+		})
+		if err != nil {
+			if err == errTooManyRequests && i < 2 {
+				continue
+			}
+			oTR.err = err
+			return
 		}
-	})
-	if err != nil {
-		oTR.err = err
-		return
+		break
 	}
 	oTR.oTResult = &oResult
 	similarFieldRefs := make([]byte, 0, 32*len(oResult.Refs))
@@ -267,7 +289,6 @@ func (o *ObjectTreeRequest) getFileRefs(bUrl string, respChan chan *oTreeRespons
 		similarFieldRefs = append(similarFieldRefs, decodeBytes...)
 	}
 	oTR.hash = zboxutil.GetRefsHash(similarFieldRefs)
-	l.Logger.Info("getFileRefs: ", " blobber: ", bUrl, " path: ", o.remotefilepath, " hash: ", oTR.hash)
 }
 
 // Blobber response will be different from each other so we should only consider similar fields
