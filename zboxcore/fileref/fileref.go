@@ -29,16 +29,13 @@ type Collaborator struct {
 }
 
 type FileRef struct {
-	Ref            `mapstructure:",squash"`
-	CustomMeta     string `json:"custom_meta" mapstructure:"custom_meta"`
-	ValidationRoot string `json:"validation_root" mapstructure:"validation_root"`
+	Ref        `mapstructure:",squash"`
+	CustomMeta string `json:"custom_meta" mapstructure:"custom_meta"`
 	// ValidationRootSignature is signature signed by client for hash_of(ActualFileHashSignature + ValidationRoot)
-	ValidationRootSignature string `json:"validation_root_signature" mapstructure:"validation_root_signature"`
-	FixedMerkleRoot         string `json:"fixed_merkle_root" mapstructure:"fixed_merkle_root"`
-	ThumbnailSize           int64  `json:"thumbnail_size" mapstructure:"thumbnail_size"`
-	ThumbnailHash           string `json:"thumbnail_hash" mapstructure:"thumbnail_hash"`
-	ActualFileSize          int64  `json:"actual_file_size" mapstructure:"actual_file_size"`
-	ActualFileHash          string `json:"actual_file_hash" mapstructure:"actual_file_hash"`
+	ThumbnailSize  int64  `json:"thumbnail_size" mapstructure:"thumbnail_size"`
+	ThumbnailHash  string `json:"thumbnail_hash" mapstructure:"thumbnail_hash"`
+	ActualFileSize int64  `json:"actual_file_size" mapstructure:"actual_file_size"`
+	ActualFileHash string `json:"actual_file_hash" mapstructure:"actual_file_hash"`
 	// ActualFileHashSignature is signature signed by client for ActualFileHash
 	ActualFileHashSignature string         `json:"actual_file_hash_signature" mapstructure:"actual_file_hash_signature"`
 	ActualThumbnailSize     int64          `json:"actual_thumbnail_size" mapstructure:"actual_thumbnail_size"`
@@ -252,14 +249,12 @@ func (fr *FileRef) GetFileMetaHashData() string {
 
 func (fr *FileRef) GetHashData() string {
 	return fmt.Sprintf(
-		"%s:%s:%s:%s:%d:%s:%s:%d:%s:%d:%s",
+		"%s:%s:%s:%s:%d:%d:%s:%d:%s",
 		fr.AllocationID,
 		fr.Type, // don't need to add it as well
 		fr.Name, // don't see any utility as fr.Path below has name in it
 		fr.Path,
 		fr.Size,
-		fr.ValidationRoot,
-		fr.FixedMerkleRoot,
 		fr.ActualFileSize,
 		fr.ActualFileHash,
 		fr.ChunkSize,

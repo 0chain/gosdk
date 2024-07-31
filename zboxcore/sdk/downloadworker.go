@@ -1196,20 +1196,6 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 			continue
 		}
 
-		isValid, err := sys.VerifyWith(
-			req.allocOwnerPubKey,
-			fRef.ValidationRootSignature,
-			fRef.ActualFileHashSignature+fRef.ValidationRoot,
-		)
-		if err != nil {
-			l.Logger.Error(err, "allocOwnerPubKey: ", req.allocOwnerPubKey, " validationRootSignature: ", fRef.ValidationRootSignature, " actualFileHashSignature: ", fRef.ActualFileHashSignature, " validationRoot: ", fRef.ValidationRoot)
-			continue
-		}
-		if !isValid {
-			l.Logger.Error("invalid validation root signature")
-			continue
-		}
-
 		shift := zboxutil.NewUint128(1).Lsh(uint64(fmr.blobberIdx))
 		foundMask = foundMask.Or(shift)
 		req.downloadQueue[fmr.blobberIdx] = downloadPriority{
