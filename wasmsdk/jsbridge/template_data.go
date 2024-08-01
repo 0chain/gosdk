@@ -47,7 +47,11 @@ func buildJS(args, env []string, wasmPath string, tpl []byte) (string, error) {
 		u.RawQuery = params.Encode()
 		wasmPath = u.String()
 	}
-	cdnPath := "https://d2os1u2xwjukgr.cloudfront.net/dev/zcn.wasm"
+	suffix := os.Getenv("SUFFIX")
+	if suffix == "" {
+		suffix = "dev"
+	}
+	cdnPath := fmt.Sprintf("https://d2os1u2xwjukgr.cloudfront.net/%s/zcn.wasm", suffix)
 	data := templateData{
 		Path:         cdnPath,
 		Args:         args,
