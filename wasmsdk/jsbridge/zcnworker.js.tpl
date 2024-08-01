@@ -10,7 +10,7 @@ async function getWasmModule() {
   const cache = await caches.open('wasm-cache');
   let response = await cache.match("{{.Path}}");
   if(!response) {
-    response = await fetch("{{.Path}}")
+    response = await fetch("{{.Path}}");
   }
   const bytes = await response.arrayBuffer();
   return WebAssembly.instantiate(bytes, go.importObject);
