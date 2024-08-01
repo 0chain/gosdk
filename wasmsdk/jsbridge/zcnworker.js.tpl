@@ -8,10 +8,10 @@ bls.init(bls.BN254).then(()=>{})
 
 async function getWasmModule() {
   const cache = await caches.open('wasm-cache');
-  let response = await cache.match("/zcn.wasm");
-  if(!response) {
-    response = await cache.match("{{.FallbackPath}}")
-    if (!response) {
+  let response = await cache.match("{{.CachePath}}");
+  if(!response?.ok) {
+    response = await fetch("{{.Path}}");
+    if (!response?.ok) {
     response = await fetch("{{.FallbackPath}}");
     }
     if (!response.ok) {
