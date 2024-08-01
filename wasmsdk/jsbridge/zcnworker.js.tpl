@@ -10,9 +10,9 @@ async function getWasmModule() {
   const cache = await caches.open('wasm-cache');
   let response = await cache.match("{{.CachePath}}");
   if(!response?.ok) {
-    response = await fetch("{{.Path}}");
+    response = await fetch("{{.Path}}").then(res => res).catch(err => err);
     if (!response?.ok) {
-    response = await fetch("{{.FallbackPath}}");
+    response = await fetch("{{.FallbackPath}}").then(res => res).catch(err => err);
     }
     if (!response.ok) {
       throw new Error(`Failed to fetch WASM: ${response.statusText}`);
