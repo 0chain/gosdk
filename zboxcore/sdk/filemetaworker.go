@@ -69,6 +69,13 @@ func (req *ListRequest) getFileMetaInfoFromBlobber(blobber *blockchain.StorageNo
 		}
 	}
 
+	if req.filename != "" {
+		err = formWriter.WriteField("name", req.filename)
+		if err != nil {
+			l.Logger.Error("File meta info request error: ", err.Error())
+			return
+		}
+	}
 	formWriter.Close()
 	httpreq, err := zboxutil.NewFileMetaRequest(blobber.Baseurl, req.allocationID, req.allocationTx, body)
 	if err != nil {
