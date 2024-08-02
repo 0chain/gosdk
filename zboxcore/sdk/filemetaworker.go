@@ -24,6 +24,12 @@ type fileMetaResponse struct {
 	err        error
 }
 
+type fileMetaByNameResponse struct {
+	fileref    []*fileref.FileRef
+	blobberIdx int
+	err        error
+}
+
 func (req *ListRequest) getFileMetaInfoFromBlobber(blobber *blockchain.StorageNode, blobberIdx int, rspCh chan<- *fileMetaResponse) {
 	body := new(bytes.Buffer)
 	formWriter := multipart.NewWriter(body)
@@ -69,10 +75,68 @@ func (req *ListRequest) getFileMetaInfoFromBlobber(blobber *blockchain.StorageNo
 		}
 	}
 
+	formWriter.Close()
+	httpreq, err := zboxutil.NewFileMetaRequest(blobber.Baseurl, req.allocationID, req.allocationTx, body)
+	if err != nil {
+		l.Logger.Error("File meta info request error: ", err.Error())
+		return
+	}
+
+	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
+	ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
+	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
+		if err != nil {
+			l.Logger.Error("GetFileMeta : ", err)
+			return err
+		}
+		defer resp.Body.Close()
+		resp_body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return errors.Wrap(err, "Error: Resp")
+		}
+		// l.Logger.Info("File Meta result:", string(resp_body))
+		l.Logger.Debug("File meta response status: ", resp.Status)
+		if resp.StatusCode == http.StatusOK {
+			err = json.Unmarshal(resp_body, &fileRef)
+			if err != nil {
+				return errors.Wrap(err, "file meta data response parse error")
+			}
+			return nil
+		} else if resp.StatusCode == http.StatusBadRequest {
+			return constants.ErrNotFound
+		}
+		return fmt.Errorf("unexpected response. status code: %d, response: %s",
+			resp.StatusCode, string(resp_body))
+	})
+}
+
+func (req *ListRequest) getFileMetaByNameInfoFromBlobber(blobber *blockchain.StorageNode, blobberIdx int, rspCh chan<- *fileMetaByNameResponse) {
+	body := new(bytes.Buffer)
+	formWriter := multipart.NewWriter(body)
+
+	var fileRef []*fileref.FileRef
+	var err error
+	fileMetaRetFn := func() {
+		rspCh <- &fileMetaByNameResponse{fileref: fileRef, blobberIdx: blobberIdx, err: err}
+	}
+	defer fileMetaRetFn()
+
 	if req.filename != "" {
 		err = formWriter.WriteField("name", req.filename)
 		if err != nil {
 			l.Logger.Error("File meta info request error: ", err.Error())
+			return
+		}
+	}
+	if req.authToken != nil {
+		authTokenBytes, err := json.Marshal(req.authToken)
+		if err != nil {
+			l.Logger.Error(blobber.Baseurl, " creating auth token bytes", err)
+			return
+		}
+		err = formWriter.WriteField("auth_token", string(authTokenBytes))
+		if err != nil {
+			l.Logger.Error(blobber.Baseurl, "error writing field", err)
 			return
 		}
 	}
@@ -118,6 +182,20 @@ func (req *ListRequest) getFileMetaFromBlobbers() []*fileMetaResponse {
 		go req.getFileMetaInfoFromBlobber(req.blobbers[i], i, rspCh)
 	}
 	fileInfos := make([]*fileMetaResponse, len(req.blobbers))
+	for i := 0; i < numList; i++ {
+		ch := <-rspCh
+		fileInfos[ch.blobberIdx] = ch
+	}
+	return fileInfos
+}
+
+func (req *ListRequest) getFileMetaByNameFromBlobbers() []*fileMetaByNameResponse {
+	numList := len(req.blobbers)
+	rspCh := make(chan *fileMetaByNameResponse, numList)
+	for i := 0; i < numList; i++ {
+		go req.getFileMetaByNameInfoFromBlobber(req.blobbers[i], i, rspCh)
+	}
+	fileInfos := make([]*fileMetaByNameResponse, len(req.blobbers))
 	for i := 0; i < numList; i++ {
 		ch := <-rspCh
 		fileInfos[ch.blobberIdx] = ch
@@ -173,6 +251,53 @@ func (req *ListRequest) getFileConsensusFromBlobbers() (zboxutil.Uint128, zboxut
 		}
 	}
 	return foundMask, deleteMask, selected.fileref, lR
+}
+
+func (req *ListRequest) getMultipleFileConsensusFromBlobbers() (zboxutil.Uint128, zboxutil.Uint128, []*fileref.FileRef, []*fileMetaByNameResponse) {
+	lR := req.getFileMetaByNameFromBlobbers()
+	var selected *fileMetaByNameResponse
+	return zboxutil.NewUint128(0), zboxutil.NewUint128(0), selected.fileref, lR
+	//todo make consensus and merge list form various blobber
+	//var selected *fileMetaByNameResponse
+	// foundMask := zboxutil.NewUint128(0)
+	// deleteMask := zboxutil.NewUint128(0)
+	// req.consensus = 0
+	// retMap := make(map[string]int)
+	// for i := 0; i < len(lR); i++ {
+	// 	ti := lR[i]
+	// 	if ti.err != nil || ti.fileref == nil {
+	// 		continue
+	// 	}
+	// 	for _, fRef := range ti.fileref {
+	// 		vv := fRef.FileMetaHash
+	// 	}
+	// 	fileMetaHash := ti.fileref.FileMetaHash
+	// 	retMap[fileMetaHash]++
+	// 	if retMap[fileMetaHash] > req.consensus {
+	// 		req.consensus = retMap[fileMetaHash]
+	// 		selected = ti
+	// 	}
+	// 	if req.isConsensusOk() {
+	// 		selected = ti
+	// 		break
+	// 	} else {
+	// 		selected = nil
+	// 	}
+	// }
+	// if selected == nil {
+	// 	l.Logger.Error("File consensus not found for ", req.remotefilepath)
+	// 	for i := 0; i < len(lR); i++ {
+	// 		ti := lR[i]
+	// 		if ti.err != nil || ti.fileref == nil {
+	// 			continue
+	// 		}
+	// 		shift := zboxutil.NewUint128(1).Lsh(uint64(ti.blobberIdx))
+	// 		deleteMask = deleteMask.Or(shift)
+	// 	}
+	// 	return foundMask, deleteMask, nil, nil
+	// }
+
+	// return foundMask, deleteMask, selected.fileref, lR
 }
 
 // return upload mask and delete mask

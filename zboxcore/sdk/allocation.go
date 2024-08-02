@@ -1598,6 +1598,49 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 	return nil, errors.New("file_meta_error", "Error getting the file meta data from blobbers")
 }
 
+func (a *Allocation) GetFileMetaByName(fileName string) ([]*ConsolidatedFileMeta, error) {
+	if !a.isInitialized() {
+		return nil, notInitialized
+	}
+
+	resultArr := []*ConsolidatedFileMeta{}
+	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
+	listReq.allocationID = a.ID
+	listReq.allocationTx = a.Tx
+	listReq.blobbers = a.Blobbers
+	listReq.fullconsensus = a.fullconsensus
+	listReq.consensusThresh = a.consensusThreshold
+	listReq.ctx = a.ctx
+	listReq.filename = fileName
+	_, _, refs, _ := listReq.getMultipleFileConsensusFromBlobbers()
+	if refs != nil && len(refs) != 0 {
+		for _, ref := range refs {
+			result := &ConsolidatedFileMeta{}
+			if ref != nil {
+				result.Type = ref.Type
+				result.Name = ref.Name
+				result.Hash = ref.ActualFileHash
+				result.LookupHash = ref.LookupHash
+				result.MimeType = ref.MimeType
+				result.Path = ref.Path
+				result.Size = ref.Size
+				result.NumBlocks = ref.NumBlocks
+				result.EncryptedKey = ref.EncryptedKey
+				result.Collaborators = ref.Collaborators
+				result.ActualFileSize = ref.ActualFileSize
+				result.ActualThumbnailHash = ref.ActualThumbnailHash
+				result.ActualThumbnailSize = ref.ActualThumbnailSize
+				if result.ActualFileSize > 0 {
+					result.ActualNumBlocks = (ref.ActualFileSize + CHUNK_SIZE - 1) / CHUNK_SIZE
+				}
+			}
+			resultArr = append(resultArr, result)
+		}
+		return resultArr, nil
+	}
+	return nil, errors.New("file_meta_error", "Error getting the file meta data from blobbers")
+}
+
 func (a *Allocation) GetChunkReadSize(encrypt bool) int64 {
 	chunkDataSize := int64(DefaultChunkSize)
 	if encrypt {
