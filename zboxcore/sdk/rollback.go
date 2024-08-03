@@ -251,6 +251,8 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 	return thrown.New("rolback_error", fmt.Sprint("Rollback failed"))
 }
 
+// CheckAllocStatus checks the status of the allocation
+// and returns the status of the allocation and its blobbers.
 func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
 
 	wg := &sync.WaitGroup{}

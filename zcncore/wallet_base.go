@@ -1402,6 +1402,7 @@ func CryptoJsDecrypt(passphrase, encryptedMessage string) (string, error) {
 	return string(dec), nil
 }
 
+// GetPublicEncryptionKey returns the public encryption key for the given mnemonic
 func GetPublicEncryptionKey(mnemonic string) (string, error) {
 	encScheme := encryption.NewEncryptionScheme()
 	_, err := encScheme.Initialize(mnemonic)

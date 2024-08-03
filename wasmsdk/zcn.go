@@ -14,6 +14,8 @@ type Balance struct {
 	Nonce   int64   `json:"nonce"`
 }
 
+// getWalletBalance retrieves the wallet balance of the client from the network.
+// 		- `clientId` is the client id
 func getWalletBalance(clientId string) (*Balance, error) {
 
 	zcn, nonce, err := zcncore.GetWalletBalance(clientId)
@@ -38,6 +40,7 @@ func getWalletBalance(clientId string) (*Balance, error) {
 	}, nil
 }
 
+// createReadPool creates a read pool for the client where they should lock tokens to be able to read data.
 func createReadPool() (string, error) {
 	hash, _, err := sdk.CreateReadPool()
 	return hash, err

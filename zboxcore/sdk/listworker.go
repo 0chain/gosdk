@@ -44,7 +44,7 @@ type listResponse struct {
 	err         error
 }
 
-// ListResult - a wrapper around the result of directory listing command.
+// ListResult a wrapper around the result of directory listing command.
 // It can represent a file or a directory.
 type ListResult struct {
 	Name                string `json:"name"`
