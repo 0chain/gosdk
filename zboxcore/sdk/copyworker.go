@@ -178,7 +178,7 @@ func (req *CopyRequest) ProcessWithBlobbers() ([]fileref.RefEntity, []error) {
 			refEntity, err := req.copyBlobberObject(req.blobbers[blobberIdx], blobberIdx)
 			if err != nil {
 				blobberErrors[blobberIdx] = err
-				l.Logger.Error(err.Error())
+				l.Logger.Debug(err.Error())
 				return
 			}
 			objectTreeRefs[blobberIdx] = refEntity
@@ -324,6 +324,7 @@ func (co *CopyOperation) Process(allocObj *Allocation, connectionID string) ([]f
 	objectTreeRefs, blobberErrors := cR.ProcessWithBlobbers()
 
 	if !cR.isConsensusOk() {
+		l.Logger.Error("copy failed: ", cR.remotefilepath, cR.destPath)
 		err := zboxutil.MajorError(blobberErrors)
 		if err != nil {
 			return nil, cR.copyMask, errors.New("copy_failed", fmt.Sprintf("Copy failed. %s", err.Error()))

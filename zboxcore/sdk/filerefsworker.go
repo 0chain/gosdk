@@ -227,6 +227,7 @@ type SimilarField struct {
 	MimeType            string `json:"mimetype"`
 	ActualThumbnailSize int64  `json:"actual_thumbnail_size"`
 	ActualThumbnailHash string `json:"actual_thumbnail_hash"`
+	CustomMeta          string `json:"custom_meta"`
 }
 
 type RecentlyAddedRefRequest struct {

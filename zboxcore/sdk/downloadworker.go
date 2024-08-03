@@ -1208,7 +1208,7 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 			fRef.ActualFileHashSignature+fRef.ValidationRoot,
 		)
 		if err != nil {
-			l.Logger.Error(err)
+			l.Logger.Error(err, "allocOwnerPubKey: ", req.allocOwnerPubKey, " validationRootSignature: ", fRef.ValidationRootSignature, " actualFileHashSignature: ", fRef.ActualFileHashSignature, " validationRoot: ", fRef.ValidationRoot)
 			continue
 		}
 		if !isValid {
