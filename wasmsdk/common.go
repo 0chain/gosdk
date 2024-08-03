@@ -47,8 +47,8 @@ func getFileMeta(allocationObj *sdk.Allocation, remotePath string, commit bool) 
 	return fileMeta, isFile, nil
 }
 
-func getFileMetaByName(allocationObj *sdk.Allocation, fileName string) ([]*sdk.ConsolidatedFileMeta, error) {
-	fileMetas, err := allocationObj.GetFileMetaByName(fileName)
+func getFileMetaByName(allocationObj *sdk.Allocation, fileNameQuery string) ([]*sdk.ConsolidatedFileMeta, error) {
+	fileMetas, err := allocationObj.GetFileMetaByName(fileNameQuery)
 	if err != nil {
 		return nil, err
 	}
