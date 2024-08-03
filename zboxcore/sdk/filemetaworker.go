@@ -25,7 +25,7 @@ type fileMetaResponse struct {
 }
 
 type fileMetaByNameResponse struct {
-	fileref    []*fileref.FileRef
+	filerefs   []*fileref.FileRef
 	blobberIdx int
 	err        error
 }
@@ -117,7 +117,7 @@ func (req *ListRequest) getFileMetaByNameInfoFromBlobber(blobber *blockchain.Sto
 	var fileRef []*fileref.FileRef
 	var err error
 	fileMetaRetFn := func() {
-		rspCh <- &fileMetaByNameResponse{fileref: fileRef, blobberIdx: blobberIdx, err: err}
+		rspCh <- &fileMetaByNameResponse{filerefs: fileRef, blobberIdx: blobberIdx, err: err}
 	}
 	defer fileMetaRetFn()
 
@@ -255,49 +255,46 @@ func (req *ListRequest) getFileConsensusFromBlobbers() (zboxutil.Uint128, zboxut
 
 func (req *ListRequest) getMultipleFileConsensusFromBlobbers() (zboxutil.Uint128, zboxutil.Uint128, []*fileref.FileRef, []*fileMetaByNameResponse) {
 	lR := req.getFileMetaByNameFromBlobbers()
-	var selected *fileMetaByNameResponse
-	return zboxutil.NewUint128(0), zboxutil.NewUint128(0), selected.fileref, lR
-	//todo make consensus and merge list form various blobber
-	//var selected *fileMetaByNameResponse
-	// foundMask := zboxutil.NewUint128(0)
-	// deleteMask := zboxutil.NewUint128(0)
-	// req.consensus = 0
-	// retMap := make(map[string]int)
-	// for i := 0; i < len(lR); i++ {
-	// 	ti := lR[i]
-	// 	if ti.err != nil || ti.fileref == nil {
-	// 		continue
-	// 	}
-	// 	for _, fRef := range ti.fileref {
-	// 		vv := fRef.FileMetaHash
-	// 	}
-	// 	fileMetaHash := ti.fileref.FileMetaHash
-	// 	retMap[fileMetaHash]++
-	// 	if retMap[fileMetaHash] > req.consensus {
-	// 		req.consensus = retMap[fileMetaHash]
-	// 		selected = ti
-	// 	}
-	// 	if req.isConsensusOk() {
-	// 		selected = ti
-	// 		break
-	// 	} else {
-	// 		selected = nil
-	// 	}
-	// }
-	// if selected == nil {
-	// 	l.Logger.Error("File consensus not found for ", req.remotefilepath)
-	// 	for i := 0; i < len(lR); i++ {
-	// 		ti := lR[i]
-	// 		if ti.err != nil || ti.fileref == nil {
-	// 			continue
-	// 		}
-	// 		shift := zboxutil.NewUint128(1).Lsh(uint64(ti.blobberIdx))
-	// 		deleteMask = deleteMask.Or(shift)
-	// 	}
-	// 	return foundMask, deleteMask, nil, nil
-	// }
-
-	// return foundMask, deleteMask, selected.fileref, lR
+	var filerRefs []*fileref.FileRef
+	uniquePathHashes := map[string]bool{}
+	for i := 0; i < len(lR); i++ {
+		ti := lR[i]
+		if ti.err != nil || ti.filerefs == nil || len(ti.filerefs) == 0 {
+			continue
+		}
+		for _, fileRef := range ti.filerefs {
+			uniquePathHashes[fileRef.PathHash] = true
+		}
+	}
+	// take the pathhash as unique and for each path hash append the fileref which have consensus.
+	for pathHash := range uniquePathHashes {
+		req.consensus = 0
+		retMap := make(map[string]int)
+		for i := 0; i < len(lR); i++ {
+			ti := lR[i]
+			if ti.err != nil || ti.filerefs == nil || len(ti.filerefs) == 0 {
+				continue
+			}
+			for _, fRef := range ti.filerefs {
+				if fRef == nil {
+					continue
+				}
+				if pathHash == fRef.PathHash {
+					fileMetaHash := fRef.FileMetaHash
+					retMap[fileMetaHash]++
+					if retMap[fileMetaHash] > req.consensus {
+						req.consensus = retMap[fileMetaHash]
+					}
+					if req.isConsensusOk() {
+						filerRefs = append(filerRefs, fRef)
+						break
+					}
+					break
+				}
+			}
+		}
+	}
+	return zboxutil.NewUint128(0), zboxutil.NewUint128(0), filerRefs, lR
 }
 
 // return upload mask and delete mask
