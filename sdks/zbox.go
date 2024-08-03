@@ -51,11 +51,14 @@ func New(clientID, clientKey, signatureScheme string, wallet *zcncrypto.Wallet) 
 }
 
 // InitWallet init wallet from json
+// 		- `js` json string of wallet
 func (z *ZBox) InitWallet(js string) error {
 	return json.Unmarshal([]byte(js), &z.Wallet)
 }
 
-// SignRequest sign request with client_id, client_key and sign
+// SignRequest sign request with client_id, client_key and sign by adding headers to the request
+// 		- `req` http request
+// 		- `allocationID` allocation id
 func (z *ZBox) SignRequest(req *http.Request, allocationID string) error {
 
 	if req == nil {
@@ -88,7 +91,11 @@ func (z *ZBox) CreateTransport() *http.Transport {
 	}
 }
 
-// BuildUrls build full request url
+// BuildUrls build full request url given base urls, query string, path format and path args
+// 		- `baseURLs` base urls
+// 		- `queryString` query string
+// 		- `pathFormat` path format
+// 		- `pathArgs` path args
 func (z *ZBox) BuildUrls(baseURLs []string, queryString map[string]string, pathFormat string, pathArgs ...interface{}) []string {
 
 	requestURL := pathFormat
@@ -113,6 +120,9 @@ func (z *ZBox) BuildUrls(baseURLs []string, queryString map[string]string, pathF
 	return list
 }
 
+// DoPost do post request with request and handle
+// 		- `req` request instance
+// 		- `handle` handle function for the response
 func (z *ZBox) DoPost(req *Request, handle resty.Handle) *resty.Resty {
 
 	opts := make([]resty.Option, 0, 5)
