@@ -92,6 +92,9 @@ func (a *Allocation) getRemoteFilesAndDirs(dirList []string, fMap map[string]Fil
 	return childDirList, nil
 }
 
+// GetRemoteFileMap retrieve the remote file map
+// 	- `exclMap` is the exclude map, a map of paths to exclude
+// 	- `remotepath` is the remote path to get the file map
 func (a *Allocation) GetRemoteFileMap(exclMap map[string]int, remotepath string) (map[string]FileInfo, error) {
 	// 1. Iteratively get dir and files separately till no more dirs left
 	remoteList := make(map[string]FileInfo)
@@ -303,6 +306,12 @@ func findDelta(rMap map[string]FileInfo, lMap map[string]FileInfo, prevMap map[s
 	return lFDiff
 }
 
+// GetAllocationDiff retrieves the difference between the remote and local filesystem representation of the allocation
+// 	- `lastSyncCachePath` is the path to the last sync cache file, which carries exact state of the remote filesystem
+// 	- `localRootPath` is the local root path of the allocation
+// 	- `localFileFilters` is the list of local file filters
+// 	- `remoteExcludePath` is the list of remote exclude paths
+// 	- `remotePath` is the remote path of the allocation
 func (a *Allocation) GetAllocationDiff(lastSyncCachePath string, localRootPath string, localFileFilters []string, remoteExcludePath []string, remotePath string) ([]FileDiff, error) {
 	var lFdiff []FileDiff
 	prevRemoteFileMap := make(map[string]FileInfo)
@@ -347,8 +356,10 @@ func (a *Allocation) GetAllocationDiff(lastSyncCachePath string, localRootPath s
 	return lFdiff, nil
 }
 
-// SaveRemoteSnapShot - Saves the remote current information to the given file
+// SaveRemoteSnapshot saves the remote current information to the given file.
 // This file can be passed to GetAllocationDiff to exactly find the previous sync state to current.
+// 	- `pathToSave` is the path to save the remote snapshot
+// 	- `remoteExcludePath` is the list of paths to exclude
 func (a *Allocation) SaveRemoteSnapshot(pathToSave string, remoteExcludePath []string) error {
 	bIsFileExists := false
 	// Validate path
