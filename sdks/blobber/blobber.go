@@ -1,4 +1,4 @@
-// package blobber  wrap blobber's apis as sdk client
+// Provides sdk functions to be used by the blobber
 package blobber
 
 import (

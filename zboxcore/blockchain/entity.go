@@ -1,3 +1,4 @@
+// Methods and types for blockchain entities and interactions
 package blockchain
 
 import (
