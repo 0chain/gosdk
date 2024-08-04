@@ -1,3 +1,4 @@
+// Provides low-level functions and types to work with the native smart contract transactions.
 package transaction
 
 import (

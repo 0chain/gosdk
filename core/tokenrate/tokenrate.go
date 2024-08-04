@@ -1,3 +1,4 @@
+// Provides functions to get token rates from different sources (e.g. CoinGecko, Bancor, Uniswap, CoinMarketCap).
 package tokenrate
 
 import (

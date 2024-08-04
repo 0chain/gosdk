@@ -1,4 +1,4 @@
-// package dev providers tools for local development
+// Providers tools for local development
 package dev
 
 import (

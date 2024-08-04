@@ -1,3 +1,4 @@
+// Provides low-level functions and types to work with different cryptographic schemes with a unified interface and provide cryptographic operations.
 package zcncrypto
 
 import (
@@ -20,25 +21,25 @@ type KeyPair struct {
 // Wallet represents client wallet information
 type Wallet struct {
 	// ClientID client unique identifier
-	ClientID    string    `json:"client_id"`
+	ClientID string `json:"client_id"`
 
 	// ClientKey client public key
-	ClientKey   string    `json:"client_key"`
+	ClientKey string `json:"client_key"`
 
 	// Keys private and public key pair
-	Keys        []KeyPair `json:"keys"`
+	Keys []KeyPair `json:"keys"`
 
 	// Mnemonic recovery phrase of the wallet
-	Mnemonic    string    `json:"mnemonics"`
+	Mnemonic string `json:"mnemonics"`
 
 	// Version version of the wallet
-	Version     string    `json:"version"`
+	Version string `json:"version"`
 
 	// DateCreated date of wallet creation
-	DateCreated string    `json:"date_created"`
+	DateCreated string `json:"date_created"`
 
 	// Nonce nonce of the wallet
-	Nonce       int64     `json:"nonce"`
+	Nonce int64 `json:"nonce"`
 }
 
 // SignatureScheme - an encryption scheme for signing and verifying messages
