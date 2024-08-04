@@ -1613,7 +1613,7 @@ func (a *Allocation) GetFileMetaByName(fileName string) ([]*ConsolidatedFileMeta
 	listReq.ctx = a.ctx
 	listReq.filename = fileName
 	_, _, refs, _ := listReq.getMultipleFileConsensusFromBlobbers()
-	if refs != nil && len(refs) != 0 {
+	if len(refs) != 0 {
 		for _, ref := range refs {
 			result := &ConsolidatedFileMeta{}
 			if ref != nil {

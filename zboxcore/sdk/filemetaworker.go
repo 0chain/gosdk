@@ -259,7 +259,7 @@ func (req *ListRequest) getMultipleFileConsensusFromBlobbers() (zboxutil.Uint128
 	uniquePathHashes := map[string]bool{}
 	for i := 0; i < len(lR); i++ {
 		ti := lR[i]
-		if ti.err != nil || ti.filerefs == nil || len(ti.filerefs) == 0 {
+		if ti.err != nil || len(ti.filerefs) == 0 {
 			continue
 		}
 		for _, fileRef := range ti.filerefs {
@@ -272,7 +272,7 @@ func (req *ListRequest) getMultipleFileConsensusFromBlobbers() (zboxutil.Uint128
 		retMap := make(map[string]int)
 		for i := 0; i < len(lR); i++ {
 			ti := lR[i]
-			if ti.err != nil || ti.filerefs == nil || len(ti.filerefs) == 0 {
+			if ti.err != nil || len(ti.filerefs) == 0 {
 				continue
 			}
 			for _, fRef := range ti.filerefs {
