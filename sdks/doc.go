@@ -1,2 +1,2 @@
-// Miscellaneous provider-related SDKs
+// Miscellaneous provider-related SDKs.
 package sdks

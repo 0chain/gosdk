@@ -1,2 +1,2 @@
-// Methods and types for encryption operations
+// Methods and types for encryption operations.
 package encryption

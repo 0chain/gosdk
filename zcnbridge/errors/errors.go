@@ -1,4 +1,4 @@
-// Error struct and functions
+// Error struct and functions.
 package errors
 
 import (

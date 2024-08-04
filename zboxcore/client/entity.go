@@ -1,4 +1,4 @@
-// Methods and types for client and wallet operations
+// Methods and types for client and wallet operations.
 package client
 
 import (

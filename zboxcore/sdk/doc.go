@@ -1,2 +1,2 @@
-// Main functionality of the SDK
+// Main functionality of the SDK.
 package sdk
