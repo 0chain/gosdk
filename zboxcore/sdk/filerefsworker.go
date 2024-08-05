@@ -17,16 +17,14 @@ import (
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/logger"
 	l "github.com/0chain/gosdk/zboxcore/logger"
-	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
 type ObjectTreeResult struct {
-	TotalPages int64               `json:"total_pages"`
-	OffsetPath string              `json:"offset_path"`
-	OffsetDate string              `json:"offset_date"`
-	Refs       []ORef              `json:"refs"`
-	LatestWM   *marker.WriteMarker `json:"latest_write_marker"`
+	TotalPages int64  `json:"total_pages"`
+	OffsetPath string `json:"offset_path"`
+	OffsetDate string `json:"offset_date"`
+	Refs       []ORef `json:"refs"`
 }
 
 const INVALID_PATH = "invalid_path"
@@ -68,7 +66,7 @@ func WithObjectContext(ctx context.Context) ObjectTreeRequestOption {
 	}
 }
 
-func WitObjectMask(mask zboxutil.Uint128) ObjectTreeRequestOption {
+func WithObjectMask(mask zboxutil.Uint128) ObjectTreeRequestOption {
 	return func(o *ObjectTreeRequest) {
 		o.reqMask = mask
 	}
@@ -97,7 +95,16 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 		for i := 0; i < activeCount; i++ {
 			var rnd = rand.New(rand.NewSource(time.Now().UnixNano()))
 			num := rnd.Intn(activeCount)
-			blob := o.blobbers[num]
+			var blob *blockchain.StorageNode
+			var pos uint64
+			for i := o.reqMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+				pos = uint64(i.TrailingZeros())
+				num--
+				if num < 0 {
+					blob = o.blobbers[pos]
+					break
+				}
+			}
 			l.Logger.Debug(fmt.Sprintf("Getting file refs for path %v from blobber %v", o.remotefilepath, blob.Baseurl))
 			idx := num
 			baseURL := blob.Baseurl
@@ -312,6 +319,7 @@ type SimilarField struct {
 	PathLevel           int    `json:"level"`
 	Size                int64  `json:"size"`
 	EncryptedKey        string `json:"encrypted_key"`
+	EncryptedKeyPoint   string `json:"encrypted_key_point"`
 	ActualFileSize      int64  `json:"actual_file_size"`
 	ActualFileHash      string `json:"actual_file_hash"`
 	MimeType            string `json:"mimetype"`

@@ -402,6 +402,9 @@ func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string) (
 	}
 	if consensusRef.Type == fileref.DIRECTORY && !consensusRef.IsEmpty {
 		for ind, refEntity := range objectTreeRefs {
+			if refEntity == nil {
+				continue
+			}
 			if refEntity.GetAllocationVersion() != consensusRef.AllocationVersion {
 				deleteReq.deleteMask = deleteReq.deleteMask.And(zboxutil.NewUint128(1).Lsh(uint64(ind)).Not())
 			}
@@ -410,6 +413,9 @@ func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string) (
 		if err != nil {
 			return nil, deleteReq.deleteMask, err
 		}
+	}
+	if dop.remotefilepath == "/" {
+		return objectTreeRefs, deleteReq.deleteMask, nil
 	}
 	pos = 0
 	deleteReq.consensus.Reset()
@@ -509,7 +515,7 @@ func (req *DeleteRequest) deleteSubDirectories() error {
 		pathLevel  int
 	)
 	for {
-		oResult, err := req.allocationObj.GetRefs(req.remotefilepath, offsetPath, "", "", fileref.FILE, fileref.REGULAR, 0, getRefPageLimit, WithObjectContext(req.ctx), WitObjectMask(req.deleteMask), WithObjectConsensusThresh(req.consensus.consensusThresh), WithSingleBlobber(true))
+		oResult, err := req.allocationObj.GetRefs(req.remotefilepath, offsetPath, "", "", fileref.FILE, fileref.REGULAR, 0, getRefPageLimit, WithObjectContext(req.ctx), WithObjectMask(req.deleteMask), WithObjectConsensusThresh(req.consensus.consensusThresh), WithSingleBlobber(true))
 		if err != nil {
 			return err
 		}
@@ -549,7 +555,7 @@ func (req *DeleteRequest) deleteSubDirectories() error {
 	}
 	// list all directories by descending order of path level
 	for pathLevel > level {
-		oResult, err := req.allocationObj.GetRefs(req.remotefilepath, offsetPath, "", "", fileref.DIRECTORY, fileref.REGULAR, pathLevel, getRefPageLimit, WithObjectContext(req.ctx), WitObjectMask(req.deleteMask), WithObjectConsensusThresh(req.consensus.consensusThresh), WithSingleBlobber(true))
+		oResult, err := req.allocationObj.GetRefs(req.remotefilepath, offsetPath, "", "", fileref.DIRECTORY, fileref.REGULAR, pathLevel, getRefPageLimit, WithObjectContext(req.ctx), WithObjectMask(req.deleteMask), WithObjectConsensusThresh(req.consensus.consensusThresh), WithSingleBlobber(true))
 		if err != nil {
 			return err
 		}

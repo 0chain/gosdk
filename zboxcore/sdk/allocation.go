@@ -39,12 +39,13 @@ import (
 )
 
 var (
-	noBLOBBERS       = errors.New("", "No Blobbers set in this allocation")
-	notInitialized   = errors.New("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
-	IsWasm           = false
-	MultiOpBatchSize = 50
-	RepairBatchSize  = 50
-	Workdir          string
+	noBLOBBERS             = errors.New("", "No Blobbers set in this allocation")
+	notInitialized         = errors.New("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
+	IsWasm                 = false
+	MultiOpBatchSize       = 50
+	RepairBatchSize        = 50
+	Workdir                string
+	multiOpRepairBatchSize = 10
 )
 
 const (
@@ -409,12 +410,11 @@ func (a *Allocation) UploadFile(workdir, localpath string, remotepath string,
 	return a.StartChunkedUpload(workdir, localpath, remotepath, status, false, false, "", false, false)
 }
 
-func (a *Allocation) RepairFile(file sys.File, remotepath string, statusCallback StatusCallback, mask zboxutil.Uint128, ref *fileref.FileRef) *OperationRequest {
+func (a *Allocation) RepairFile(file sys.File, remotepath string, statusCallback StatusCallback, mask zboxutil.Uint128, ref ORef) *OperationRequest {
 	idr, _ := homedir.Dir()
 	if Workdir != "" {
 		idr = Workdir
 	}
-	mask = mask.Not().And(zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1))
 	fileMeta := FileMeta{
 		ActualSize: ref.ActualFileSize,
 		MimeType:   ref.MimeType,
@@ -937,7 +937,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 
 			case constants.FileOperationDelete:
 				if op.Mask != nil {
-					operation = NewDeleteOperation(op.RemotePath, *op.Mask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
+					operation = NewDeleteOperation(op.RemotePath, *op.Mask, mo.maskMU, op.Mask.CountOnes(), mo.fullconsensus, mo.ctx)
 				} else {
 					operation = NewDeleteOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 				}
@@ -1434,11 +1434,6 @@ func (a *Allocation) getRefs(path, pathHash, authToken, offsetPath, updatedDate,
 	// if singleClientMode {
 	// 	oTreeReq.singleBlobber = true
 	// }
-	for _, blob := range a.Blobbers {
-		if blob.AllocationVersion != a.allocationVersion {
-			l.Logger.Error("blobber not on latest version: ", blob.Baseurl, " version: ", blob.AllocationVersion, " latest version: ", a.allocationVersion)
-		}
-	}
 	return oTreeReq.GetRefs()
 }
 
@@ -1536,7 +1531,7 @@ func (a *Allocation) GetRefs(path, offsetPath, updatedDate, offsetDate, fileType
 		return nil, errors.New("invalid_path", fmt.Sprintf("Absolute path required. Path provided: %v", path))
 	}
 
-	return a.getRefs(path, "", "", offsetPath, updatedDate, offsetDate, fileType, refType, level, pageLimit)
+	return a.getRefs(path, "", "", offsetPath, updatedDate, offsetDate, fileType, refType, level, pageLimit, opts...)
 }
 
 func (a *Allocation) GetRefsFromLookupHash(pathHash, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*ObjectTreeResult, error) {
@@ -2316,11 +2311,13 @@ func (a *Allocation) StartRepair(localRootPath, pathToRepair string, statusCB St
 	if err != nil {
 		return err
 	}
+	a.CheckAllocStatus() //nolint:errcheck
 
 	repairReq := &RepairRequest{
 		listDir:       listDir,
 		localRootPath: localRootPath,
 		statusCB:      statusCB,
+		repairPath:    pathToRepair,
 	}
 
 	repairReq.completedCallback = func() {

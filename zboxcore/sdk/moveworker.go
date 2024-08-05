@@ -47,8 +47,27 @@ func (req *MoveRequest) getObjectTreeFromBlobber(blobber *blockchain.StorageNode
 	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.allocationTx, req.remotefilepath, blobber)
 }
 
+func (req *MoveRequest) getFileMetaFromBlobber(pos int) (fileRef *fileref.FileRef, err error) {
+	listReq := &ListRequest{
+		allocationID:   req.allocationID,
+		allocationTx:   req.allocationTx,
+		blobbers:       req.blobbers,
+		remotefilepath: req.remotefilepath,
+		ctx:            req.ctx,
+	}
+	respChan := make(chan *fileMetaResponse)
+	go listReq.getFileMetaInfoFromBlobber(req.blobbers[pos], int(pos), respChan)
+	refRes := <-respChan
+	if refRes.err != nil {
+		err = refRes.err
+		return
+	}
+	fileRef = refRes.fileref
+	return
+}
+
 func (req *MoveRequest) moveBlobberObject(
-	blobber *blockchain.StorageNode, blobberIdx int) (refEntity fileref.RefEntity, err error) {
+	blobber *blockchain.StorageNode, blobberIdx int) (err error) {
 
 	defer func() {
 		if err != nil {
@@ -58,10 +77,6 @@ func (req *MoveRequest) moveBlobberObject(
 			req.maskMU.Unlock()
 		}
 	}()
-	refEntity, err = req.getObjectTreeFromBlobber(req.blobbers[blobberIdx])
-	if err != nil {
-		return nil, err
-	}
 
 	var resp *http.Response
 	var shouldContinue bool
@@ -156,32 +171,81 @@ func (req *MoveRequest) moveBlobberObject(
 		}
 		return
 	}
-	return nil, errors.New("unknown_issue",
+	return errors.New("unknown_issue",
 		fmt.Sprintf("last status code: %d, last response message: %s", latestStatusCode, latestRespMsg))
 }
 
-func (req *MoveRequest) ProcessWithBlobbers() ([]fileref.RefEntity, []error) {
-	var pos uint64
+func (req *MoveRequest) ProcessWithBlobbers() ([]fileref.RefEntity, error) {
+	var (
+		pos          uint64
+		consensusRef *fileref.FileRef
+	)
 	numList := len(req.blobbers)
 	objectTreeRefs := make([]fileref.RefEntity, numList)
 	blobberErrors := make([]error, numList)
+	versionMap := make(map[int64]int)
 	wg := &sync.WaitGroup{}
 	for i := req.moveMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		wg.Add(1)
 		go func(blobberIdx int) {
 			defer wg.Done()
-			refEntity, err := req.moveBlobberObject(req.blobbers[blobberIdx], blobberIdx)
+			refEntity, err := req.getFileMetaFromBlobber(blobberIdx)
 			if err != nil {
 				blobberErrors[blobberIdx] = err
-				l.Logger.Error(err.Error())
+				l.Logger.Debug(err.Error())
 				return
 			}
 			objectTreeRefs[blobberIdx] = refEntity
+			req.maskMU.Lock()
+			versionMap[refEntity.AllocationVersion] += 1
+			if versionMap[refEntity.AllocationVersion] >= req.consensusThresh {
+				consensusRef = refEntity
+			}
+			req.maskMU.Unlock()
 		}(int(pos))
 	}
 	wg.Wait()
-	return objectTreeRefs, blobberErrors
+	if consensusRef == nil {
+		return nil, zboxutil.MajorError(blobberErrors)
+	}
+
+	if consensusRef.Type == fileref.DIRECTORY && !consensusRef.IsEmpty {
+		for ind, refEntity := range objectTreeRefs {
+			if refEntity.GetAllocationVersion() != consensusRef.AllocationVersion {
+				req.moveMask = req.moveMask.And(zboxutil.NewUint128(1).Lsh(uint64(ind)).Not())
+			}
+		}
+		subRequest := &subDirRequest{
+			allocationObj:   req.allocationObj,
+			remotefilepath:  req.remotefilepath,
+			destPath:        req.destPath,
+			ctx:             req.ctx,
+			consensusThresh: req.consensusThresh,
+			opType:          constants.FileOperationMove,
+			mask:            req.moveMask,
+		}
+		err := subRequest.processSubDirectories()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	for i := req.moveMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		pos = uint64(i.TrailingZeros())
+		wg.Add(1)
+		go func(blobberIdx int) {
+			defer wg.Done()
+			err := req.moveBlobberObject(req.blobbers[blobberIdx], blobberIdx)
+			if err != nil {
+				blobberErrors[blobberIdx] = err
+				l.Logger.Debug(err.Error())
+				return
+			}
+		}(int(pos))
+	}
+	wg.Wait()
+	return objectTreeRefs, zboxutil.MajorError(blobberErrors)
 }
 
 func (req *MoveRequest) ProcessMove() error {
@@ -190,10 +254,9 @@ func (req *MoveRequest) ProcessMove() error {
 	wg := &sync.WaitGroup{}
 	var pos uint64
 
-	objectTreeRefs, blobberErrors := req.ProcessWithBlobbers()
+	objectTreeRefs, err := req.ProcessWithBlobbers()
 
 	if !req.isConsensusOk() {
-		err := zboxutil.MajorError(blobberErrors)
 		if err != nil {
 			return errors.New("move_failed", fmt.Sprintf("Move failed. %s", err.Error()))
 		}
@@ -314,10 +377,9 @@ func (mo *MoveOperation) Process(allocObj *Allocation, connectionID string) ([]f
 	mR.Consensus.fullconsensus = mo.consensus.fullconsensus
 	mR.Consensus.consensusThresh = mo.consensus.consensusThresh
 
-	objectTreeRefs, blobberErrors := mR.ProcessWithBlobbers()
+	objectTreeRefs, err := mR.ProcessWithBlobbers()
 
 	if !mR.Consensus.isConsensusOk() {
-		err := zboxutil.MajorError(blobberErrors)
 		if err != nil {
 			return nil, mR.moveMask, thrown.New("move_failed", fmt.Sprintf("Move failed. %s", err.Error()))
 		}

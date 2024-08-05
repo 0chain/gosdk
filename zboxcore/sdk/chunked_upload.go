@@ -154,11 +154,6 @@ func CreateChunkedUpload(
 	}
 
 	uploadMask := zboxutil.NewUint128(1).Lsh(uint64(len(allocationObj.Blobbers))).Sub64(1)
-	if isRepair {
-		opCode = OpUpdate
-		consensus.fullconsensus = uploadMask.CountOnes()
-		consensus.consensusThresh = 1
-	}
 
 	su := &ChunkedUpload{
 		allocationObj: allocationObj,
@@ -214,6 +209,12 @@ func CreateChunkedUpload(
 
 	for _, opt := range opts {
 		opt(su)
+	}
+
+	if isRepair {
+		opCode = OpUpdate
+		su.consensus.fullconsensus = su.uploadMask.CountOnes()
+		su.consensus.consensusThresh = su.uploadMask.CountOnes()
 	}
 
 	if su.progressStorer == nil && shouldSaveProgress {
