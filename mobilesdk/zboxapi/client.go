@@ -61,11 +61,11 @@ func GetCsrfToken() (string, error) {
 }
 
 // CreateJwtSession create a jwt session
-func CreateJwtSession(phoneNumber string) (int64, error) {
+func CreateJwtSession(userID string) (int64, error) {
 	if zboxApiClient == nil {
 		return 0, ErrZboxApiNotInitialized
 	}
-	return zboxApiClient.CreateJwtSession(context.TODO(), phoneNumber)
+	return zboxApiClient.CreateJwtSession(context.TODO(), userID)
 }
 
 // CreateJwtToken create a fresh jwt token

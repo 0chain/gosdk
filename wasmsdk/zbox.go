@@ -26,23 +26,23 @@ func getCsrfToken() (string, error) {
 	return zboxApiClient.GetCsrfToken(context.TODO())
 }
 
-func createJwtSession(phoneNumber string) (int64, error) {
+func createJwtSession(userID string) (int64, error) {
 	if zboxApiClient == nil {
 		return 0, ErrZboxApiNotInitialized
 	}
-	return zboxApiClient.CreateJwtSession(context.TODO(), phoneNumber)
+	return zboxApiClient.CreateJwtSession(context.TODO(), userID)
 }
 
-func createJwtToken(phoneNumber string, jwtSessionID int64, otp string) (string, error) {
+func createJwtToken(userID string, jwtSessionID int64) (string, error) {
 	if zboxApiClient == nil {
 		return "", ErrZboxApiNotInitialized
 	}
-	return zboxApiClient.CreateJwtToken(context.TODO(), phoneNumber, jwtSessionID, otp)
+	return zboxApiClient.CreateJwtToken(context.TODO(), userID, jwtSessionID)
 }
 
-func refreshJwtToken(phoneNumber string, token string) (string, error) {
+func refreshJwtToken(userID string, token string) (string, error) {
 	if zboxApiClient == nil {
 		return "", ErrZboxApiNotInitialized
 	}
-	return zboxApiClient.RefreshJwtToken(context.TODO(), phoneNumber, token)
+	return zboxApiClient.RefreshJwtToken(context.TODO(), userID, token)
 }
