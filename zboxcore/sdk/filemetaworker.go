@@ -267,9 +267,11 @@ func (req *ListRequest) getMultipleFileConsensusFromBlobbers() (zboxutil.Uint128
 		}
 	}
 	// take the pathhash as unique and for each path hash append the fileref which have consensus.
+
 	for pathHash := range uniquePathHashes {
 		req.consensus = 0
 		retMap := make(map[string]int)
+	outerLoop:
 		for i := 0; i < len(lR); i++ {
 			ti := lR[i]
 			if ti.err != nil || len(ti.filerefs) == 0 {
@@ -287,7 +289,7 @@ func (req *ListRequest) getMultipleFileConsensusFromBlobbers() (zboxutil.Uint128
 					}
 					if req.isConsensusOk() {
 						filerRefs = append(filerRefs, fRef)
-						break
+						break outerLoop
 					}
 					break
 				}
