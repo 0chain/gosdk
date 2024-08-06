@@ -364,6 +364,18 @@ func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expir
 
 }
 
+func getFileMetaByName(allocationID, fileNameQuery string) ([]*sdk.ConsolidatedFileMeta, error) {
+	allocationObj, err := getAllocation(allocationID)
+	if err != nil {
+		return nil, err
+	}
+	fileMetas, err := allocationObj.GetFileMetaByName(fileNameQuery)
+	if err != nil {
+		return nil, err
+	}
+	return fileMetas, nil
+}
+
 // MultiOperation - do copy, move, delete and createdir operation together
 // ## Inputs
 //   - allocationID

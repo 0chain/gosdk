@@ -47,14 +47,6 @@ func getFileMeta(allocationObj *sdk.Allocation, remotePath string, commit bool) 
 	return fileMeta, isFile, nil
 }
 
-func getFileMetaByName(allocationObj *sdk.Allocation, fileNameQuery string) ([]*sdk.ConsolidatedFileMeta, error) {
-	fileMetas, err := allocationObj.GetFileMetaByName(fileNameQuery)
-	if err != nil {
-		return nil, err
-	}
-	return fileMetas, nil
-}
-
 type hasher struct {
 	md5HashFuncName string
 }
