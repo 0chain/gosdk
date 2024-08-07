@@ -420,6 +420,7 @@ func (a *Allocation) RepairFile(file sys.File, remotepath string, statusCallback
 		MimeType:   ref.MimeType,
 		RemoteName: ref.Name,
 		RemotePath: remotepath,
+		CustomMeta: ref.CustomMeta,
 	}
 	var opts []ChunkedUploadOption
 	if ref.EncryptedKey != "" {

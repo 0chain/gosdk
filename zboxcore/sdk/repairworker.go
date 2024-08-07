@@ -302,7 +302,7 @@ func (r *RepairRequest) repairObjects(ctx context.Context, latestVersion int64, 
 					res.idx++
 					res.lastIndex = idx
 				} else if currentPath < file.Path {
-					for res.oTR.Refs[res.idx].Path < file.Path && res.idx < len(res.oTR.Refs) {
+					for res.idx < len(res.oTR.Refs) && res.oTR.Refs[res.idx].Path < file.Path {
 						//delete the file
 						opMask := r.versionMap[version]
 						op := OperationRequest{
@@ -313,9 +313,7 @@ func (r *RepairRequest) repairObjects(ctx context.Context, latestVersion int64, 
 						res.idx++
 						ops = append(ops, op)
 					}
-					if res.idx == len(res.oTR.Refs) {
-						res.lastIndex = idx
-					} else if res.oTR.Refs[res.idx].Path > file.Path {
+					if res.idx < len(res.oTR.Refs) && res.oTR.Refs[res.idx].Path > file.Path {
 						opMask := r.versionMap[version]
 						// upload the file
 						if fileType == fileref.FILE {
@@ -328,10 +326,10 @@ func (r *RepairRequest) repairObjects(ctx context.Context, latestVersion int64, 
 							}
 							ops = append(ops, op)
 						}
+						res.lastMatchedPath = file.Path
+						res.idx++
+						res.lastIndex = idx
 					}
-					res.lastMatchedPath = file.Path
-					res.idx++
-					res.lastIndex = idx
 				} else {
 					//TODO: take a union of mask so we don't have duplicate upload operations
 					// upload the file
@@ -369,6 +367,23 @@ func (r *RepairRequest) repairObjects(ctx context.Context, latestVersion int64, 
 					res.idx++
 					ops = append(ops, op)
 				}
+				if res.listCompleted {
+					for i := res.lastIndex + 1; i < len(r.resMap[latestVersion].oTR.Refs); i++ {
+						// upload the file
+						l.Logger.Debug("Uploading file: ", r.resMap[latestVersion].oTR.Refs[i].Path)
+						opMask := r.versionMap[version]
+						if fileType == fileref.FILE {
+							op := r.uploadFileOp(r.resMap[latestVersion].oTR.Refs[i], opMask)
+							ops = append(ops, op)
+						} else {
+							op := OperationRequest{
+								OperationType: constants.FileOperationCreateDir,
+								RemotePath:    r.resMap[latestVersion].oTR.Refs[i].Path,
+							}
+							ops = append(ops, op)
+						}
+					}
+				}
 			}
 		} else {
 			minLastIndex := len(r.resMap[latestVersion].oTR.Refs)
@@ -387,8 +402,10 @@ func (r *RepairRequest) repairObjects(ctx context.Context, latestVersion int64, 
 					}
 				}
 			}
-			if minLastIndex < len(r.resMap[latestVersion].oTR.Refs) {
-				r.resMap[latestVersion].oTR.Refs = r.resMap[latestVersion].oTR.Refs[minLastIndex:]
+			if minLastIndex+1 < len(r.resMap[latestVersion].oTR.Refs) {
+				r.resMap[latestVersion].oTR.Refs = r.resMap[latestVersion].oTR.Refs[minLastIndex+1:]
+			} else {
+				r.resMap[latestVersion].oTR.Refs = nil
 			}
 		}
 
@@ -397,7 +414,14 @@ func (r *RepairRequest) repairObjects(ctx context.Context, latestVersion int64, 
 			l.Logger.Error("Failed to repair files: ", err)
 			return err
 		}
-		if r.resMap[latestVersion].listCompleted {
+
+		completedLists := 0
+		for _, res := range r.resMap {
+			if res.listCompleted {
+				completedLists++
+			}
+		}
+		if completedLists == len(r.versionMap) {
 			break
 		}
 	}
@@ -438,9 +462,9 @@ func (r *RepairRequest) getRefsWithVersion(ctx context.Context, fileType string)
 					}
 				}
 				currRes.idx = 0
-				currRes.lastIndex = 0
+				currRes.lastIndex = -1
 			} else {
-				getResult := &getRes{oTR: res, err: err}
+				getResult := &getRes{oTR: res, err: err, lastIndex: -1}
 				if res != nil && len(res.Refs) < getRefPageLimit {
 					getResult.listCompleted = true
 				}
