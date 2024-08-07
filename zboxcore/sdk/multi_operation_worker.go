@@ -185,7 +185,7 @@ func (mo *MultiOperation) Process() error {
 
 			_, mask, err := op.Process(mo.allocationObj, mo.connectionID) // Process with each blobber
 			if err != nil {
-				if err != errFileDeleted || err != errNoChange {
+				if err != errFileDeleted && err != errNoChange {
 					l.Logger.Error(err)
 					errsSlice[idx] = errors.New("", err.Error())
 					ctxCncl(err)
