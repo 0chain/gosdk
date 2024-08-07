@@ -240,6 +240,7 @@ func (req *MoveRequest) ProcessWithBlobbers() ([]fileref.RefEntity, error) {
 		if err != nil {
 			return nil, err
 		}
+		req.consensus = req.moveMask.CountOnes()
 		return nil, errNoChange
 	}
 
@@ -393,6 +394,9 @@ func (mo *MoveOperation) Process(allocObj *Allocation, connectionID string) ([]f
 
 	if !mR.Consensus.isConsensusOk() {
 		if err != nil {
+			if err == errNoChange {
+				return nil, mR.moveMask, err
+			}
 			return nil, mR.moveMask, thrown.New("move_failed", fmt.Sprintf("Move failed. %s", err.Error()))
 		}
 
