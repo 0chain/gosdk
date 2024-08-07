@@ -147,6 +147,10 @@ func (req *CopyRequest) copyBlobberObject(
 
 			latestRespMsg = string(respBody)
 			latestStatusCode = resp.StatusCode
+			if strings.Contains(latestRespMsg, alreadyExists) {
+				req.Consensus.Done()
+				return
+			}
 
 			if resp.StatusCode == http.StatusTooManyRequests {
 				logger.Logger.Error("Got too many request error")
@@ -224,6 +228,8 @@ func (req *CopyRequest) ProcessWithBlobbers() ([]fileref.RefEntity, error) {
 		if err != nil {
 			return nil, err
 		}
+		req.consensus = req.copyMask.CountOnes()
+		return objectTreeRefs, nil
 	}
 
 	for i := req.copyMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {

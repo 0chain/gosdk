@@ -43,9 +43,7 @@ type MoveRequest struct {
 	Consensus
 }
 
-func (req *MoveRequest) getObjectTreeFromBlobber(blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
-	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.allocationTx, req.remotefilepath, blobber)
-}
+var errNoChange = errors.New("no_change", "No change in the operation")
 
 func (req *MoveRequest) getFileMetaFromBlobber(pos int) (fileRef *fileref.FileRef, err error) {
 	listReq := &ListRequest{
@@ -146,6 +144,11 @@ func (req *MoveRequest) moveBlobberObject(
 			latestRespMsg = string(respBody)
 			latestStatusCode = resp.StatusCode
 
+			if strings.Contains(latestRespMsg, alreadyExists) {
+				req.Consensus.Done()
+				return
+			}
+
 			if resp.StatusCode == http.StatusTooManyRequests {
 				logger.Logger.Error("Got too many request error")
 				var r int
@@ -229,6 +232,15 @@ func (req *MoveRequest) ProcessWithBlobbers() ([]fileref.RefEntity, error) {
 		if err != nil {
 			return nil, err
 		}
+		op := OperationRequest{
+			OperationType: constants.FileOperationDelete,
+			RemotePath:    req.remotefilepath,
+		}
+		err = req.allocationObj.DoMultiOperation([]OperationRequest{op})
+		if err != nil {
+			return nil, err
+		}
+		return nil, errNoChange
 	}
 
 	for i := req.moveMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {

@@ -8,6 +8,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -139,6 +140,11 @@ func (req *RenameRequest) renameBlobberObject(
 			if resp.StatusCode == http.StatusOK {
 				req.consensus.Done()
 				l.Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " renamed.")
+				return
+			}
+
+			if strings.Contains(latestRespMsg, alreadyExists) {
+				req.consensus.Done()
 				return
 			}
 
