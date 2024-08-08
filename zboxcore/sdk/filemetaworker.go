@@ -111,7 +111,6 @@ func (req *ListRequest) getFileMetaInfoFromBlobber(blobber *blockchain.StorageNo
 }
 
 func (req *ListRequest) getFileMetaByNameInfoFromBlobber(blobber *blockchain.StorageNode, blobberIdx int, rspCh chan<- *fileMetaByNameResponse) {
-	fmt.Println("getFileMetaByNameInfoFromBlobber")
 	body := new(bytes.Buffer)
 	formWriter := multipart.NewWriter(body)
 
@@ -147,27 +146,23 @@ func (req *ListRequest) getFileMetaByNameInfoFromBlobber(blobber *blockchain.Sto
 		l.Logger.Error("File meta info request error: ", err.Error())
 		return
 	}
-	fmt.Printf("req to the blobber %v \n", httpreq)
+
 	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
 	ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
 	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
 		if err != nil {
 			l.Logger.Error("GetFileMeta : ", err)
-			fmt.Println("GetFileMeta", err)
 			return err
 		}
 		defer resp.Body.Close()
 		resp_body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			fmt.Println("Error: Resp", err)
 			return errors.Wrap(err, "Error: Resp")
 		}
 		// l.Logger.Info("File Meta result:", string(resp_body))
 		l.Logger.Debug("File meta response status: ", resp.Status)
 		if resp.StatusCode == http.StatusOK {
 			err = json.Unmarshal(resp_body, &fileRef)
-			fmt.Printf("Resp body from blobber %v \n", fileRef)
-			fmt.Printf("Resp body file ref from blobber len %v \n", len(fileRef))
 			if err != nil {
 				return errors.Wrap(err, "file meta data response parse error")
 			}
@@ -260,8 +255,6 @@ func (req *ListRequest) getFileConsensusFromBlobbers() (zboxutil.Uint128, zboxut
 
 func (req *ListRequest) getMultipleFileConsensusFromBlobbers() (zboxutil.Uint128, zboxutil.Uint128, []*fileref.FileRef, []*fileMetaByNameResponse) {
 	lR := req.getFileMetaByNameFromBlobbers()
-	fmt.Printf("file meta resp %v\n", lR)
-	fmt.Printf("file meta resp len %v\n", len(lR))
 	var filerRefs []*fileref.FileRef
 	uniquePathHashes := map[string]bool{}
 	for i := 0; i < len(lR); i++ {
@@ -274,8 +267,7 @@ func (req *ListRequest) getMultipleFileConsensusFromBlobbers() (zboxutil.Uint128
 		}
 	}
 	// take the pathhash as unique and for each path hash append the fileref which have consensus.
-	fmt.Printf("uniquePathHashes %v \n", uniquePathHashes)
-	fmt.Printf("uniquePathHashes len %v \n", len(uniquePathHashes))
+
 	for pathHash := range uniquePathHashes {
 		req.consensus = 0
 		retMap := make(map[string]int)
@@ -304,8 +296,6 @@ func (req *ListRequest) getMultipleFileConsensusFromBlobbers() (zboxutil.Uint128
 			}
 		}
 	}
-	fmt.Printf("filerRefs %v\n", filerRefs)
-	fmt.Printf("filerRefs len %v\n", len(filerRefs))
 	return zboxutil.NewUint128(0), zboxutil.NewUint128(0), filerRefs, lR
 }
 
