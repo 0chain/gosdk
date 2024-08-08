@@ -197,7 +197,7 @@ func (req *subDirRequest) processSubDirectories() error {
 				if ref.Type == fileref.FILE {
 					continue
 				}
-				destPath := strings.Replace(ref.Path, req.remotefilepath, req.destPath, 1)
+				destPath := filepath.Dir(strings.Replace(ref.Path, req.remotefilepath, req.destPath, 1))
 				op := OperationRequest{
 					OperationType: req.opType,
 					RemotePath:    ref.Path,

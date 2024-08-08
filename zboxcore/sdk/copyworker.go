@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -34,6 +35,7 @@ type CopyRequest struct {
 	blobbers       []*blockchain.StorageNode
 	remotefilepath string
 	destPath       string
+	dirOnly        bool
 	ctx            context.Context
 	ctxCncl        context.CancelFunc
 	copyMask       zboxutil.Uint128
@@ -147,10 +149,6 @@ func (req *CopyRequest) copyBlobberObject(
 
 			latestRespMsg = string(respBody)
 			latestStatusCode = resp.StatusCode
-			if strings.Contains(latestRespMsg, alreadyExists) {
-				req.Consensus.Done()
-				return
-			}
 
 			if resp.StatusCode == http.StatusTooManyRequests {
 				logger.Logger.Error("Got too many request error")
@@ -224,7 +222,7 @@ func (req *CopyRequest) ProcessWithBlobbers() ([]fileref.RefEntity, error) {
 				req.copyMask = req.copyMask.And(zboxutil.NewUint128(1).Lsh(uint64(ind)).Not())
 			}
 		}
-		err := req.copySubDirectoriees()
+		err := req.copySubDirectoriees(req.dirOnly)
 		if err != nil {
 			return nil, err
 		}
@@ -355,6 +353,7 @@ func (req *CopyRequest) ProcessCopy() error {
 type CopyOperation struct {
 	remotefilepath string
 	destPath       string
+	dirOnly        bool
 	ctx            context.Context
 	ctxCncl        context.CancelFunc
 	copyMask       zboxutil.Uint128
@@ -364,6 +363,9 @@ type CopyOperation struct {
 }
 
 func (co *CopyOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
+	if co.remotefilepath == "/" {
+		return nil, co.copyMask, errors.New("invalid_path", "Invalid path for copy cannot copy root directory")
+	}
 	// make copyRequest object
 	cR := &CopyRequest{
 		allocationObj:  allocObj,
@@ -378,6 +380,7 @@ func (co *CopyOperation) Process(allocObj *Allocation, connectionID string) ([]f
 		copyMask:       co.copyMask,
 		maskMU:         co.maskMU,
 		Consensus:      Consensus{RWMutex: &sync.RWMutex{}},
+		dirOnly:        co.dirOnly,
 	}
 	cR.consensusThresh = co.consensusThresh
 	cR.fullconsensus = co.fullconsensus
@@ -385,8 +388,11 @@ func (co *CopyOperation) Process(allocObj *Allocation, connectionID string) ([]f
 	objectTreeRefs, err := cR.ProcessWithBlobbers()
 
 	if !cR.isConsensusOk() {
-		l.Logger.Error("copy failed: ", cR.remotefilepath, cR.destPath)
 		if err != nil {
+			if strings.Contains(err.Error(), alreadyExists) {
+				return objectTreeRefs, cR.copyMask, errNoChange
+			}
+			l.Logger.Error("copy failed: ", cR.remotefilepath, cR.destPath)
 			return nil, cR.copyMask, errors.New("copy_failed", fmt.Sprintf("Copy failed. %s", err.Error()))
 		}
 
@@ -448,7 +454,7 @@ func (co *CopyOperation) Error(allocObj *Allocation, consensus int, err error) {
 
 }
 
-func NewCopyOperation(remotePath string, destPath string, copyMask zboxutil.Uint128, maskMU *sync.Mutex, consensusTh int, fullConsensus int, ctx context.Context) *CopyOperation {
+func NewCopyOperation(remotePath string, destPath string, copyMask zboxutil.Uint128, maskMU *sync.Mutex, consensusTh int, fullConsensus int, copyDirOnly bool, ctx context.Context) *CopyOperation {
 	co := &CopyOperation{}
 	co.remotefilepath = zboxutil.RemoteClean(remotePath)
 	co.copyMask = copyMask
@@ -464,45 +470,47 @@ func NewCopyOperation(remotePath string, destPath string, copyMask zboxutil.Uint
 
 }
 
-func (req *CopyRequest) copySubDirectoriees() error {
+func (req *CopyRequest) copySubDirectoriees(dirOnly bool) error {
 	var (
 		offsetPath string
 		pathLevel  int
 	)
 
 	for {
-		oResult, err := req.allocationObj.GetRefs(req.remotefilepath, offsetPath, "", "", fileref.FILE, fileref.REGULAR, 0, getRefPageLimit, WithObjectContext(req.ctx), WithObjectConsensusThresh(req.consensusThresh), WithSingleBlobber(true))
-		if err != nil {
-			return err
-		}
-		if len(oResult.Refs) == 0 {
-			break
-		}
-		ops := make([]OperationRequest, 0, len(oResult.Refs))
-		for _, ref := range oResult.Refs {
-			opMask := req.copyMask
-			if ref.Type == fileref.DIRECTORY {
-				continue
+		if !dirOnly {
+			oResult, err := req.allocationObj.GetRefs(req.remotefilepath, offsetPath, "", "", fileref.FILE, fileref.REGULAR, 0, getRefPageLimit, WithObjectContext(req.ctx), WithObjectConsensusThresh(req.consensusThresh), WithSingleBlobber(true))
+			if err != nil {
+				return err
 			}
-			if ref.PathLevel > pathLevel {
-				pathLevel = ref.PathLevel
+			if len(oResult.Refs) == 0 {
+				break
 			}
-			destPath := strings.Replace(ref.Path, req.remotefilepath, req.destPath, 1)
-			op := OperationRequest{
-				OperationType: constants.FileOperationCopy,
-				RemotePath:    ref.Path,
-				DestPath:      destPath,
-				Mask:          &opMask,
+			ops := make([]OperationRequest, 0, len(oResult.Refs))
+			for _, ref := range oResult.Refs {
+				opMask := req.copyMask
+				if ref.Type == fileref.DIRECTORY {
+					continue
+				}
+				if ref.PathLevel > pathLevel {
+					pathLevel = ref.PathLevel
+				}
+				destPath := filepath.Dir(strings.Replace(ref.Path, filepath.Dir(req.remotefilepath), req.destPath, 1))
+				op := OperationRequest{
+					OperationType: constants.FileOperationCopy,
+					RemotePath:    ref.Path,
+					DestPath:      destPath,
+					Mask:          &opMask,
+				}
+				ops = append(ops, op)
 			}
-			ops = append(ops, op)
-		}
-		err = req.allocationObj.DoMultiOperation(ops)
-		if err != nil {
-			return err
-		}
-		offsetPath = oResult.Refs[len(oResult.Refs)-1].Path
-		if len(oResult.Refs) < getRefPageLimit {
-			break
+			err = req.allocationObj.DoMultiOperation(ops)
+			if err != nil {
+				return err
+			}
+			offsetPath = oResult.Refs[len(oResult.Refs)-1].Path
+			if len(oResult.Refs) < getRefPageLimit {
+				break
+			}
 		}
 	}
 
@@ -526,12 +534,13 @@ func (req *CopyRequest) copySubDirectoriees() error {
 				if ref.Type == fileref.FILE {
 					continue
 				}
-				destPath := strings.Replace(ref.Path, req.remotefilepath, req.destPath, 1)
+				destPath := filepath.Dir(strings.Replace(ref.Path, filepath.Dir(req.remotefilepath), req.destPath, 1))
 				op := OperationRequest{
 					OperationType: constants.FileOperationCopy,
 					RemotePath:    ref.Path,
 					DestPath:      destPath,
 					Mask:          &opMask,
+					CopyDirOnly:   true,
 				}
 				ops = append(ops, op)
 			}
