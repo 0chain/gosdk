@@ -117,6 +117,27 @@ type ConsolidatedFileMeta struct {
 	Collaborators []fileref.Collaborator
 }
 
+type ConsolidatedFileMetaByName struct {
+	Name                string
+	Type                string
+	Path                string
+	LookupHash          string
+	Hash                string
+	MimeType            string
+	Size                int64
+	NumBlocks           int64
+	ActualFileSize      int64
+	ActualNumBlocks     int64
+	EncryptedKey        string
+	FileMetaHash        string
+	ThumbnailHash       string
+	ActualThumbnailSize int64
+	ActualThumbnailHash string
+	Collaborators       []fileref.Collaborator
+	CreatedAt           common.Timestamp
+	UpdatedAt           common.Timestamp
+}
+
 type AllocationStats struct {
 	UsedSize                  int64  `json:"used_size"`
 	NumWrites                 int64  `json:"num_of_writes"`
@@ -1598,12 +1619,12 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 	return nil, errors.New("file_meta_error", "Error getting the file meta data from blobbers")
 }
 
-func (a *Allocation) GetFileMetaByName(fileName string) ([]*ConsolidatedFileMeta, error) {
+func (a *Allocation) GetFileMetaByName(fileName string) ([]*ConsolidatedFileMetaByName, error) {
 	if !a.isInitialized() {
 		return nil, notInitialized
 	}
 
-	resultArr := []*ConsolidatedFileMeta{}
+	resultArr := []*ConsolidatedFileMetaByName{}
 	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
@@ -1615,7 +1636,7 @@ func (a *Allocation) GetFileMetaByName(fileName string) ([]*ConsolidatedFileMeta
 	_, _, refs, _ := listReq.getMultipleFileConsensusFromBlobbers()
 	if len(refs) != 0 {
 		for _, ref := range refs {
-			result := &ConsolidatedFileMeta{}
+			result := &ConsolidatedFileMetaByName{}
 			if ref != nil {
 				result.Type = ref.Type
 				result.Name = ref.Name
@@ -1630,6 +1651,10 @@ func (a *Allocation) GetFileMetaByName(fileName string) ([]*ConsolidatedFileMeta
 				result.ActualFileSize = ref.ActualFileSize
 				result.ActualThumbnailHash = ref.ActualThumbnailHash
 				result.ActualThumbnailSize = ref.ActualThumbnailSize
+				result.FileMetaHash = ref.FileMetaHash
+				result.ThumbnailHash = ref.ThumbnailHash
+				result.CreatedAt = ref.CreatedAt
+				result.UpdatedAt = ref.UpdatedAt
 				if result.ActualFileSize > 0 {
 					result.ActualNumBlocks = (ref.ActualFileSize + CHUNK_SIZE - 1) / CHUNK_SIZE
 				}

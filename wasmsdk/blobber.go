@@ -364,7 +364,7 @@ func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expir
 
 }
 
-func getFileMetaByName(allocationID, fileNameQuery string) ([]*sdk.ConsolidatedFileMeta, error) {
+func getFileMetaByName(allocationID, fileNameQuery string) ([]*sdk.ConsolidatedFileMetaByName, error) {
 	allocationObj, err := getAllocation(allocationID)
 	if err != nil {
 		return nil, err
