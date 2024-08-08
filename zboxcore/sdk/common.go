@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -157,7 +158,7 @@ func (req *subDirRequest) processSubDirectories() error {
 			if ref.PathLevel > pathLevel {
 				pathLevel = ref.PathLevel
 			}
-			destPath := strings.Replace(ref.Path, req.remotefilepath, req.destPath, 1)
+			destPath := filepath.Dir(strings.Replace(ref.Path, req.remotefilepath, req.destPath, 1))
 			op := OperationRequest{
 				OperationType: req.opType,
 				RemotePath:    ref.Path,
