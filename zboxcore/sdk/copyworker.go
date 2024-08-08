@@ -45,6 +45,8 @@ type CopyRequest struct {
 	Consensus
 }
 
+const objAlreadyExists = "Object Already exists"
+
 func (req *CopyRequest) getObjectTreeFromBlobber(blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
 	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.allocationTx, req.remotefilepath, blobber)
 }
@@ -244,8 +246,12 @@ func (req *CopyRequest) ProcessWithBlobbers() ([]fileref.RefEntity, error) {
 		}(int(pos))
 	}
 	wg.Wait()
+	err := zboxutil.MajorError(blobberErrors)
+	if err != nil && strings.Contains(err.Error(), objAlreadyExists) && consensusRef.Type == fileref.DIRECTORY {
+		return nil, errNoChange
+	}
 
-	return objectTreeRefs, zboxutil.MajorError(blobberErrors)
+	return objectTreeRefs, err
 }
 
 func (req *CopyRequest) ProcessCopy() error {
@@ -389,8 +395,8 @@ func (co *CopyOperation) Process(allocObj *Allocation, connectionID string) ([]f
 
 	if !cR.isConsensusOk() {
 		if err != nil {
-			if strings.Contains(err.Error(), alreadyExists) {
-				return objectTreeRefs, cR.copyMask, errNoChange
+			if err == errNoChange {
+				return nil, cR.copyMask, err
 			}
 			l.Logger.Error("copy failed: ", cR.remotefilepath, cR.destPath)
 			return nil, cR.copyMask, errors.New("copy_failed", fmt.Sprintf("Copy failed. %s", err.Error()))
@@ -494,7 +500,7 @@ func (req *CopyRequest) copySubDirectoriees(dirOnly bool) error {
 				if ref.PathLevel > pathLevel {
 					pathLevel = ref.PathLevel
 				}
-				destPath := filepath.Dir(strings.Replace(ref.Path, filepath.Dir(req.remotefilepath), req.destPath, 1))
+				destPath := strings.Replace(filepath.Dir(ref.Path), req.remotefilepath, req.destPath, 1)
 				op := OperationRequest{
 					OperationType: constants.FileOperationCopy,
 					RemotePath:    ref.Path,
@@ -534,7 +540,7 @@ func (req *CopyRequest) copySubDirectoriees(dirOnly bool) error {
 				if ref.Type == fileref.FILE {
 					continue
 				}
-				destPath := filepath.Dir(strings.Replace(ref.Path, filepath.Dir(req.remotefilepath), req.destPath, 1))
+				destPath := strings.Replace(filepath.Dir(ref.Path), req.remotefilepath, req.destPath, 1)
 				op := OperationRequest{
 					OperationType: constants.FileOperationCopy,
 					RemotePath:    ref.Path,
