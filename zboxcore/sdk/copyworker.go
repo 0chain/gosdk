@@ -500,7 +500,8 @@ func (req *CopyRequest) copySubDirectoriees(dirOnly bool) error {
 				if ref.PathLevel > pathLevel {
 					pathLevel = ref.PathLevel
 				}
-				destPath := strings.Replace(filepath.Dir(ref.Path), req.remotefilepath, req.destPath, 1)
+				basePath := strings.TrimPrefix(filepath.Dir(ref.Path), filepath.Dir(req.remotefilepath))
+				destPath := filepath.Join(req.destPath, basePath)
 				op := OperationRequest{
 					OperationType: constants.FileOperationCopy,
 					RemotePath:    ref.Path,
@@ -540,7 +541,8 @@ func (req *CopyRequest) copySubDirectoriees(dirOnly bool) error {
 				if ref.Type == fileref.FILE {
 					continue
 				}
-				destPath := strings.Replace(filepath.Dir(ref.Path), req.remotefilepath, req.destPath, 1)
+				basePath := strings.TrimPrefix(filepath.Dir(ref.Path), filepath.Dir(req.remotefilepath))
+				destPath := filepath.Join(req.destPath, basePath)
 				op := OperationRequest{
 					OperationType: constants.FileOperationCopy,
 					RemotePath:    ref.Path,
