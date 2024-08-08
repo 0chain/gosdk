@@ -457,7 +457,7 @@ func (ro *RenameOperation) Error(allocObj *Allocation, consensus int, err error)
 func NewRenameOperation(remotePath string, destName string, renameMask zboxutil.Uint128, maskMU *sync.Mutex, consensusTh int, fullConsensus int, ctx context.Context) *RenameOperation {
 	ro := &RenameOperation{}
 	ro.remotefilepath = zboxutil.RemoteClean(remotePath)
-	ro.newName = destName
+	ro.newName = filepath.Base(destName)
 	ro.renameMask = renameMask
 	ro.maskMU = maskMU
 	ro.consensus.consensusThresh = consensusTh
