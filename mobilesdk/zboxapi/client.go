@@ -69,17 +69,17 @@ func CreateJwtSession(userID string) (int64, error) {
 }
 
 // CreateJwtToken create a fresh jwt token
-func CreateJwtToken(phoneNumber string, jwtSessionID int64, otp string) (string, error) {
+func CreateJwtToken(userID string, jwtSessionID int64) (string, error) {
 	if zboxApiClient == nil {
 		return "", ErrZboxApiNotInitialized
 	}
-	return zboxApiClient.CreateJwtToken(context.TODO(), phoneNumber, jwtSessionID, otp)
+	return zboxApiClient.CreateJwtToken(context.TODO(), userID, jwtSessionID)
 }
 
 // RefreshJwtToken refresh jwt token
-func RefreshJwtToken(phoneNumber string, token string) (string, error) {
+func RefreshJwtToken(userID string, token string) (string, error) {
 	if zboxApiClient == nil {
 		return "", ErrZboxApiNotInitialized
 	}
-	return zboxApiClient.RefreshJwtToken(context.TODO(), phoneNumber, token)
+	return zboxApiClient.RefreshJwtToken(context.TODO(), userID, token)
 }
