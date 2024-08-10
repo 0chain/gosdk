@@ -130,12 +130,12 @@ func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards, 
 		chunkNum := (size + r.chunkDataSizePerRead - 1) / r.chunkDataSizePerRead
 		totalDataSize = r.totalChunkDataSizePerRead * chunkNum
 	}
-	buf := zboxutil.BufferPool.Get()
-	if cap(buf.B) < int(totalDataSize) {
-		buf.B = make([]byte, 0, totalDataSize)
-	}
-	r.fileShardsDataBuffer = buf.B
-	r.byteBuffer = buf
+	// buf := zboxutil.BufferPool.Get()
+	// if cap(buf.B) < int(totalDataSize) {
+	// 	buf.B = make([]byte, 0, totalDataSize)
+	// }
+	r.fileShardsDataBuffer = make([]byte, 0, totalDataSize)
+	// r.byteBuffer = buf
 	if CurrentMode == UploadModeHigh {
 		r.hasherWG.Add(1)
 		go r.hashData()
@@ -304,7 +304,7 @@ func (r *chunkedUploadChunkReader) Close() {
 		close(r.hasherDataChan)
 		r.hasherWG.Wait()
 	})
-	zboxutil.BufferPool.Put(r.byteBuffer)
+	// zboxutil.BufferPool.Put(r.byteBuffer)
 	r.fileShardsDataBuffer = nil
 }
 

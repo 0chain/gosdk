@@ -73,11 +73,11 @@ func (r *RepairRequest) processRepair(ctx context.Context, a *Allocation) {
 	defer func() {
 		BatchSize = currBatchSize
 	}()
-	r.iterateDir(a, r.listDir)
 	if !singleClientMode {
 		SetSingleClietnMode(true)
 		defer SetSingleClietnMode(false)
 	}
+	r.iterateDir(a, r.listDir)
 	if r.statusCB != nil {
 		r.statusCB.RepairCompleted(r.filesRepaired)
 	}
