@@ -308,7 +308,6 @@ func (r *chunkedUploadChunkReader) Close() {
 		r.hasherWG.Wait()
 	})
 	uploadPool.Put(r.fileShardsDataBuffer)
-	r.fileShardsDataBuffer = nil
 }
 
 func (r *chunkedUploadChunkReader) GetFileHash() (string, error) {
