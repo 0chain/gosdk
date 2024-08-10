@@ -117,6 +117,27 @@ type ConsolidatedFileMeta struct {
 	Collaborators []fileref.Collaborator
 }
 
+type ConsolidatedFileMetaByName struct {
+	Name                string
+	Type                string
+	Path                string
+	LookupHash          string
+	Hash                string
+	MimeType            string
+	Size                int64
+	NumBlocks           int64
+	ActualFileSize      int64
+	ActualNumBlocks     int64
+	EncryptedKey        string
+	FileMetaHash        string
+	ThumbnailHash       string
+	ActualThumbnailSize int64
+	ActualThumbnailHash string
+	Collaborators       []fileref.Collaborator
+	CreatedAt           common.Timestamp
+	UpdatedAt           common.Timestamp
+}
+
 type AllocationStats struct {
 	UsedSize                  int64  `json:"used_size"`
 	NumWrites                 int64  `json:"num_of_writes"`
@@ -1594,6 +1615,53 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 			result.ActualNumBlocks = (ref.ActualFileSize + CHUNK_SIZE - 1) / CHUNK_SIZE
 		}
 		return result, nil
+	}
+	return nil, errors.New("file_meta_error", "Error getting the file meta data from blobbers")
+}
+
+func (a *Allocation) GetFileMetaByName(fileName string) ([]*ConsolidatedFileMetaByName, error) {
+	if !a.isInitialized() {
+		return nil, notInitialized
+	}
+
+	resultArr := []*ConsolidatedFileMetaByName{}
+	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
+	listReq.allocationID = a.ID
+	listReq.allocationTx = a.Tx
+	listReq.blobbers = a.Blobbers
+	listReq.fullconsensus = a.fullconsensus
+	listReq.consensusThresh = a.consensusThreshold
+	listReq.ctx = a.ctx
+	listReq.filename = fileName
+	_, _, refs, _ := listReq.getMultipleFileConsensusFromBlobbers()
+	if len(refs) != 0 {
+		for _, ref := range refs {
+			result := &ConsolidatedFileMetaByName{}
+			if ref != nil {
+				result.Type = ref.Type
+				result.Name = ref.Name
+				result.Hash = ref.ActualFileHash
+				result.LookupHash = ref.LookupHash
+				result.MimeType = ref.MimeType
+				result.Path = ref.Path
+				result.Size = ref.Size
+				result.NumBlocks = ref.NumBlocks
+				result.EncryptedKey = ref.EncryptedKey
+				result.Collaborators = ref.Collaborators
+				result.ActualFileSize = ref.ActualFileSize
+				result.ActualThumbnailHash = ref.ActualThumbnailHash
+				result.ActualThumbnailSize = ref.ActualThumbnailSize
+				result.FileMetaHash = ref.FileMetaHash
+				result.ThumbnailHash = ref.ThumbnailHash
+				result.CreatedAt = ref.CreatedAt
+				result.UpdatedAt = ref.UpdatedAt
+				if result.ActualFileSize > 0 {
+					result.ActualNumBlocks = (ref.ActualFileSize + CHUNK_SIZE - 1) / CHUNK_SIZE
+				}
+			}
+			resultArr = append(resultArr, result)
+		}
+		return resultArr, nil
 	}
 	return nil, errors.New("file_meta_error", "Error getting the file meta data from blobbers")
 }

@@ -231,10 +231,10 @@ func (su *ChunkedUpload) listen(allEventChan []chan worker.MessageEvent, respCha
 	for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		wg.Add(1)
-		var err error
 		go func(pos uint64) {
+			var uploadSuccess bool
 			defer func() {
-				if err != nil {
+				if !uploadSuccess {
 					su.maskMu.Lock()
 					su.uploadMask = su.uploadMask.And(zboxutil.NewUint128(1).Lsh(pos).Not())
 					su.maskMu.Unlock()
@@ -340,6 +340,7 @@ func (su *ChunkedUpload) listen(allEventChan []chan worker.MessageEvent, respCha
 				blobber.fileRef.ThumbnailHash = finalResultObj.ThumbnailContentHash
 				isFinal = true
 			}
+			uploadSuccess = true
 			su.consensus.Done()
 
 		}(pos)
@@ -575,7 +576,7 @@ func sendUploadRequest(dataBuffers []*bytes.Buffer, contentSlice []string, blobb
 					fasthttp.ReleaseRequest(req)
 					if err != nil {
 						logger.Logger.Error("Upload : ", err)
-						if errors.Is(err, fasthttp.ErrConnectionClosed) || errors.Is(err, syscall.EPIPE) {
+						if errors.Is(err, fasthttp.ErrConnectionClosed) || errors.Is(err, syscall.EPIPE) || errors.Is(err, fasthttp.ErrDialTimeout) {
 							return err, true
 						}
 						return fmt.Errorf("Error while doing reqeust. Error %s", err), false

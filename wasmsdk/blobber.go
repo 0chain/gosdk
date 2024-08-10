@@ -31,6 +31,11 @@ import (
 const FileOperationInsert = "insert"
 
 func listObjects(allocationID string, remotePath string, offset, pageLimit int) (*sdk.ListResult, error) {
+	defer func() {
+		if r := recover(); r != nil {
+			PrintError("Recovered in listObjects Error", r)
+		}
+	}()
 	alloc, err := getAllocation(allocationID)
 	if err != nil {
 		return nil, err
@@ -359,6 +364,18 @@ func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expir
 
 }
 
+func getFileMetaByName(allocationID, fileNameQuery string) ([]*sdk.ConsolidatedFileMetaByName, error) {
+	allocationObj, err := getAllocation(allocationID)
+	if err != nil {
+		return nil, err
+	}
+	fileMetas, err := allocationObj.GetFileMetaByName(fileNameQuery)
+	if err != nil {
+		return nil, err
+	}
+	return fileMetas, nil
+}
+
 // MultiOperation - do copy, move, delete and createdir operation together
 // ## Inputs
 //   - allocationID
@@ -370,6 +387,11 @@ func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expir
 // 	 - error
 
 func multiDownload(allocationID, jsonMultiDownloadOptions, authTicket, callbackFuncName string) (string, error) {
+	defer func() {
+		if r := recover(); r != nil {
+			PrintError("Recovered in multiDownload Error", r)
+		}
+	}()
 	sdkLogger.Info("starting multidownload")
 	wg := &sync.WaitGroup{}
 	useCallback := false
@@ -609,6 +631,11 @@ func setUploadMode(mode int) {
 }
 
 func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
+	defer func() {
+		if r := recover(); r != nil {
+			PrintError("Recovered in multiupload Error", r)
+		}
+	}()
 	var options []BulkUploadOption
 	result := MultiUploadResult{}
 	err := json.Unmarshal([]byte(jsonBulkUploadOptions), &options)

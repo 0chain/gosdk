@@ -28,6 +28,7 @@ type ListRequest struct {
 	blobbers           []*blockchain.StorageNode
 	remotefilepathhash string
 	remotefilepath     string
+	filename           string
 	authToken          *marker.AuthTicket
 	ctx                context.Context
 	forRepair          bool
