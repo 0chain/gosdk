@@ -98,6 +98,7 @@ func (req *ListRequest) getFileStatsInfoFromBlobber(blobber *blockchain.StorageN
 			} else {
 				fileStats.BlockchainAware = false
 			}
+			fileStats.PathHash = req.remotefilepathhash
 			fileStats.BlobberID = blobber.ID
 			fileStats.BlobberURL = blobber.Baseurl
 			return nil

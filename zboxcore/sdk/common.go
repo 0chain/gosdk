@@ -7,7 +7,9 @@ import (
 	"io/ioutil"
 	"net/http"
 	"path"
+	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -18,6 +20,8 @@ import (
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
+
+const alreadyExists = "file already exists"
 
 func getObjectTreeFromBlobber(ctx context.Context, allocationID, allocationTx string, remoteFilePath string, blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
 	httpreq, err := zboxutil.NewObjectTreeRequest(blobber.Baseurl, allocationID, allocationTx, remoteFilePath)
@@ -116,6 +120,101 @@ func ValidateRemoteFileName(remotePath string) error {
 
 	if len(fileName) > 150 {
 		return ErrFileNameTooLong
+	}
+
+	return nil
+}
+
+type subDirRequest struct {
+	opType          string
+	remotefilepath  string
+	destPath        string
+	allocationObj   *Allocation
+	ctx             context.Context
+	consensusThresh int
+	mask            zboxutil.Uint128
+}
+
+func (req *subDirRequest) processSubDirectories() error {
+	var (
+		offsetPath string
+		pathLevel  int
+	)
+
+	for {
+		oResult, err := req.allocationObj.GetRefs(req.remotefilepath, offsetPath, "", "", fileref.FILE, fileref.REGULAR, 0, getRefPageLimit, WithObjectContext(req.ctx), WithObjectConsensusThresh(req.consensusThresh), WithSingleBlobber(true), WithObjectMask(req.mask))
+		if err != nil {
+			return err
+		}
+		if len(oResult.Refs) == 0 {
+			break
+		}
+		ops := make([]OperationRequest, 0, len(oResult.Refs))
+		for _, ref := range oResult.Refs {
+			opMask := req.mask
+			if ref.Type == fileref.DIRECTORY {
+				continue
+			}
+			if ref.PathLevel > pathLevel {
+				pathLevel = ref.PathLevel
+			}
+			destPath := filepath.Dir(strings.Replace(ref.Path, req.remotefilepath, req.destPath, 1))
+			op := OperationRequest{
+				OperationType: req.opType,
+				RemotePath:    ref.Path,
+				DestPath:      destPath,
+				Mask:          &opMask,
+			}
+			ops = append(ops, op)
+		}
+		err = req.allocationObj.DoMultiOperation(ops)
+		if err != nil {
+			return err
+		}
+		offsetPath = oResult.Refs[len(oResult.Refs)-1].Path
+		if len(oResult.Refs) < getRefPageLimit {
+			break
+		}
+	}
+
+	offsetPath = ""
+	level := len(strings.Split(strings.TrimSuffix(req.remotefilepath, "/"), "/"))
+	if pathLevel == 0 {
+		pathLevel = level + 1
+	}
+
+	for pathLevel > level {
+		oResult, err := req.allocationObj.GetRefs(req.remotefilepath, offsetPath, "", "", fileref.DIRECTORY, fileref.REGULAR, pathLevel, getRefPageLimit, WithObjectContext(req.ctx), WithObjectMask(req.mask), WithObjectConsensusThresh(req.consensusThresh), WithSingleBlobber(true))
+		if err != nil {
+			return err
+		}
+		if len(oResult.Refs) == 0 {
+			pathLevel--
+		} else {
+			ops := make([]OperationRequest, 0, len(oResult.Refs))
+			for _, ref := range oResult.Refs {
+				opMask := req.mask
+				if ref.Type == fileref.FILE {
+					continue
+				}
+				destPath := filepath.Dir(strings.Replace(ref.Path, req.remotefilepath, req.destPath, 1))
+				op := OperationRequest{
+					OperationType: req.opType,
+					RemotePath:    ref.Path,
+					DestPath:      destPath,
+					Mask:          &opMask,
+				}
+				ops = append(ops, op)
+			}
+			err = req.allocationObj.DoMultiOperation(ops)
+			if err != nil {
+				return err
+			}
+			offsetPath = oResult.Refs[len(oResult.Refs)-1].Path
+			if len(oResult.Refs) < getRefPageLimit {
+				pathLevel--
+			}
+		}
 	}
 
 	return nil

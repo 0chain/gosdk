@@ -32,10 +32,12 @@ var BatchSize = 6
 
 type MultiOperationOption func(mo *MultiOperation)
 
-func WithRepair() MultiOperationOption {
+func WithRepair(latestVersion int64, repairOffsetPath string) MultiOperationOption {
 	return func(mo *MultiOperation) {
 		mo.Consensus.consensusThresh = 0
 		mo.isRepair = true
+		mo.repairVersion = latestVersion
+		mo.repairOffset = repairOffsetPath
 	}
 }
 
@@ -56,8 +58,10 @@ type MultiOperation struct {
 	operationMask zboxutil.Uint128
 	maskMU        *sync.Mutex
 	Consensus
-	changes  [][]allocationchange.AllocationChange
-	isRepair bool
+	changes       [][]allocationchange.AllocationChange
+	isRepair      bool
+	repairVersion int64
+	repairOffset  string
 }
 
 func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
@@ -181,7 +185,7 @@ func (mo *MultiOperation) Process() error {
 
 			_, mask, err := op.Process(mo.allocationObj, mo.connectionID) // Process with each blobber
 			if err != nil {
-				if err != ErrFileDeleted {
+				if err != errFileDeleted && err != errNoChange {
 					l.Logger.Error(err)
 					errsSlice[idx] = errors.New("", err.Error())
 					ctxCncl(err)
@@ -278,10 +282,12 @@ func (mo *MultiOperation) Process() error {
 	logger.Logger.Debug("[checkAllocStatus]", time.Since(start).Milliseconds())
 	mo.Consensus.Reset()
 	var pos uint64
-	for i := mo.operationMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
-		pos = uint64(i.TrailingZeros())
-		if mo.allocationObj.Blobbers[pos].AllocationVersion != mo.allocationObj.allocationVersion {
-			mo.operationMask = mo.operationMask.And(zboxutil.NewUint128(1).Lsh(pos).Not())
+	if !mo.isRepair {
+		for i := mo.operationMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+			pos = uint64(i.TrailingZeros())
+			if mo.allocationObj.Blobbers[pos].AllocationVersion != mo.allocationObj.allocationVersion {
+				mo.operationMask = mo.operationMask.And(zboxutil.NewUint128(1).Lsh(pos).Not())
+			}
 		}
 	}
 	activeBlobbers := mo.operationMask.CountOnes()
@@ -305,6 +311,12 @@ func (mo *MultiOperation) Process() error {
 			timestamp:    timestamp,
 			blobberInd:   pos,
 			version:      mo.allocationObj.Blobbers[pos].AllocationVersion + 1,
+		}
+		if mo.isRepair {
+			commitReq.isRepair = true
+			commitReq.version = mo.allocationObj.Blobbers[pos].AllocationVersion
+			commitReq.repairVersion = mo.repairVersion
+			commitReq.repairOffset = mo.repairOffset
 		}
 		commitReqs[counter] = commitReq
 		l.Logger.Debug("Commit request sending to blobber ", commitReq.blobber.Baseurl)
