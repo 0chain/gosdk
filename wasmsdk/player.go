@@ -16,11 +16,11 @@ type Player interface {
 var currentPlayer Player
 
 // play starts playing a playable file or stream
-// 		- `allocationID` is the allocation id
-// 		- `remotePath` is the remote path of the file or stream
-// 		- `authTicket` is the auth ticket, in case of accessing as a shared file
-// 		- `lookupHash` is the lookup hash for the file
-// 		- `isLive` is the flag to indicate if the file is live or not
+//   - allocationID is the allocation id
+//   - remotePath is the remote path of the file or stream
+//   - authTicket is the auth ticket, in case of accessing as a shared file
+//   - lookupHash is the lookup hash for the file
+//   - isLive is the flag to indicate if the file is live or not
 func play(allocationID, remotePath, authTicket, lookupHash string, isLive bool) error {
 	var err error
 

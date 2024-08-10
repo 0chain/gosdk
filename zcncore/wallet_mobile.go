@@ -27,10 +27,10 @@ func (w *wallet) Sign(hash string) (string, error) {
 	return sigScheme.Sign(hash)
 }
 
-// GetWalletBalance retrieve wallet nonce from sharders
-//		- `clientID`: client id
+// GetWalletBalance retrieve wallet balance from sharders
+//   - id: client id
 func GetWalletBalance(id string) (int64, error) {
-	balance, _ , err := getWalletBalance(id)
+	balance, _, err := getWalletBalance(id)
 	if err != nil {
 		return 0, err
 	}

@@ -43,7 +43,8 @@ func (v *ValidationTree) GetLeaves() [][]byte {
 	return v.leaves
 }
 
-// SetLeaves sets the leaves of the validation tree
+// SetLeaves sets the leaves of the validation tree.
+// 		- leaves: leaves of the validation tree, each leaf is in byte format
 func (v *ValidationTree) SetLeaves(leaves [][]byte) {
 	v.leaves = leaves
 }
@@ -81,7 +82,7 @@ func (v *ValidationTree) Write(b []byte) (int, error) {
 
 	byteLen := len(b)
 	shouldContinue := true
-	// j is initialized to MaxMerkleLeavesSize - writeCount so as to make up MaxMerkleLeavesSize with previouly
+	// j is initialized to MaxMerkleLeavesSize - writeCount so as to make up MaxMerkleLeavesSize with previously
 	// read bytes. If previously it had written MaxMerkleLeavesSize - 1, then j will be initialized to 1 so
 	// in first iteration it will only read 1 byte and write it to v.h after which hash of v.h will be calculated
 	// and stored in v.Leaves and v.h will be reset.
@@ -177,7 +178,7 @@ func (v *ValidationTree) Finalize() error {
 }
 
 // NewValidationTree creates a new validation tree
-// 		- `dataSize` is the size of the data
+//   - dataSize is the size of the data
 func NewValidationTree(dataSize int64) *ValidationTree {
 	totalLeaves := (dataSize + MaxMerkleLeavesSize - 1) / MaxMerkleLeavesSize
 	if totalLeaves == 0 {

@@ -16,7 +16,10 @@ import (
 const CHUNK_SIZE = 64 * 1024
 
 const (
+	// FILE represents a file for fileref
 	FILE      = "f"
+
+	// DIRECTORY represents a directory for fileref
 	DIRECTORY = "d"
 )
 
@@ -98,6 +101,9 @@ type Ref struct {
 	UpdatedAt           common.Timestamp `json:"updated_at" mapstructure:"updated_at"`
 }
 
+// GetReferenceLookup returns the lookup hash for a given allocationID and path
+// 		- allocationID: allocation ID
+// 		- path: path of the file
 func GetReferenceLookup(allocationID string, path string) string {
 	return encryption.Hash(allocationID + ":" + path)
 }

@@ -145,6 +145,8 @@ func (f *MemChanFile) Stat() (fs.FileInfo, error) {
 }
 
 // Read reads data from the file through the buffer channel
+// It returns io.EOF when the buffer channel is closed.
+// 		- p: file in bytes loaded from the buffer channel
 func (f *MemChanFile) Read(p []byte) (int, error) {
 	select {
 	case err := <-f.ErrChan:
@@ -162,6 +164,9 @@ func (f *MemChanFile) Read(p []byte) (int, error) {
 }
 
 // Write writes data to the file through the buffer channel
+// It writes the data to the buffer channel in chunks of ChunkWriteSize.
+// If ChunkWriteSize is 0, it writes the data as a whole.
+// 		- p: file in bytes to write to the buffer channel
 func (f *MemChanFile) Write(p []byte) (n int, err error) {
 	if f.ChunkWriteSize == 0 {
 		data := make([]byte, len(p))
@@ -177,6 +182,8 @@ func (f *MemChanFile) Write(p []byte) (n int, err error) {
 }
 
 // Sync write the data chunk to the buffer channel
+// It writes the data to the buffer channel in chunks of ChunkWriteSize.
+// If ChunkWriteSize is 0, it writes the data as a whole.
 func (f *MemChanFile) Sync() error {
 	current := 0
 	for ; current < len(f.data); current += f.ChunkWriteSize {

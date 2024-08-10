@@ -3,10 +3,11 @@ package blockchain
 
 import (
 	"encoding/json"
-	"github.com/0chain/gosdk/core/util"
 	"math"
 	"sync"
 	"sync/atomic"
+
+	"github.com/0chain/gosdk/core/util"
 
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/node"
@@ -55,16 +56,16 @@ type ChainConfig struct {
 
 // StakePoolSettings information.
 type StakePoolSettings struct {
-	DelegateWallet string         `json:"delegate_wallet"`
-	NumDelegates   int            `json:"num_delegates"`
-	ServiceCharge  float64        `json:"service_charge"`
+	DelegateWallet string  `json:"delegate_wallet"`
+	NumDelegates   int     `json:"num_delegates"`
+	ServiceCharge  float64 `json:"service_charge"`
 }
 
 // UpdateStakePoolSettings represent stake pool information of a provider node.
 type UpdateStakePoolSettings struct {
-	DelegateWallet *string         `json:"delegate_wallet,omitempty"`
-	NumDelegates   *int            `json:"num_delegates,omitempty"`
-	ServiceCharge  *float64        `json:"service_charge,omitempty"`
+	DelegateWallet *string  `json:"delegate_wallet,omitempty"`
+	NumDelegates   *int     `json:"num_delegates,omitempty"`
+	ServiceCharge  *float64 `json:"service_charge,omitempty"`
 }
 
 // ValidationNode represents a validation node (miner)
@@ -89,8 +90,8 @@ type StorageNode struct {
 	skip uint64 `json:"-"` // skip on error
 }
 
-// SetSkip set skip
-// 		- `t` is the boolean value
+// SetSkip set skip, whether to skip this node in operations or not
+//   - t is the boolean value
 func (sn *StorageNode) SetSkip(t bool) {
 	var val uint64
 	if t {
@@ -105,7 +106,7 @@ func (sn *StorageNode) IsSkip() bool {
 }
 
 // PopulateNodes populate nodes from json string
-// 		- `nodesjson` is the json string
+//   - nodesjson is the json string
 func PopulateNodes(nodesjson string) ([]string, error) {
 	sharders := make([]string, 0)
 	err := json.Unmarshal([]byte(nodesjson), &sharders)
@@ -130,8 +131,8 @@ func GetChainID() string {
 }
 
 // PopulateChain populate chain from json string
-// 		- `minerjson` is the array of miner urls, serialized as json
-// 		- `sharderjson` is the array of sharder urls, serialized as json
+//   - minerjson is the array of miner urls, serialized as json
+//   - sharderjson is the array of sharder urls, serialized as json
 func PopulateChain(minerjson string, sharderjson string) error {
 	var err error
 	chain.Miners, err = PopulateNodes(minerjson)
@@ -207,26 +208,26 @@ func SetChainID(id string) {
 	chain.ChainID = id
 }
 
-// SetMaxTxnQuery set max transaction query
-// 		- `num` is the number of transaction query
+// SetMaxTxnQuery set max transaction query, maximum number of trials to query a transaction confirmation from sharders.
+//   - num is the number of transaction query
 func SetMaxTxnQuery(num int) {
 	chain.MaxTxnQuery = num
 }
 
-// SetQuerySleepTime set query sleep time
-// 		- `time` is the sleep time
+// SetQuerySleepTime set query sleep time, number of seconds to sleep between each transaction query.
+//   - time is the sleep time
 func SetQuerySleepTime(time int) {
 	chain.QuerySleepTime = time
 }
 
 // SetMinSubmit set minimum submit, minimum number of miners to submit a transaction
-// 		- `minSubmit` is the minimum submit
+//   - minSubmit is the minimum submit
 func SetMinSubmit(minSubmit int) {
 	chain.MinSubmit = minSubmit
 }
 
 // SetMinConfirmation set minimum confirmation, minimum number of miners to confirm a transaction
-// 		- `minConfirmation` is the minimum confirmation
+//   - minConfirmation is the minimum confirmation
 func SetMinConfirmation(minConfirmation int) {
 	chain.MinConfirmation = minConfirmation
 }

@@ -761,7 +761,7 @@ GetBalance retrieve wallet balance from sharders
 
 ```
 # Inputs
--	cb: callback for checking result
+-	cb: info callback instance, carries the response of the GET request to the sharders
 ```
 
 <a name="GetBalanceWallet"></a>
@@ -800,7 +800,7 @@ func GetBlobbers(cb GetInfoCallback, limit, offset int, active bool)
 
 GetBlobbers obtains list of all active blobbers. \# Inputs
 
-- cb: callback for checking result
+- cb: info callback instance, carries the response of the GET request to the sharders
 - limit: how many blobbers should be fetched
 - offset: how many blobbers should be skipped
 - active: only fetch active blobbers
@@ -1022,7 +1022,7 @@ func GetMinerSCNodeInfo(id string, cb GetInfoCallback) (err error)
 GetMinerSCNodeInfo get miner information from sharders \# Inputs
 
 - id: the id of miner
-- cb: callback for checking result
+- cb: info callback instance, carries the response of the GET request to the sharders
 
 <a name="GetMinerSCNodePool"></a>
 ## func [GetMinerSCNodePool](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L919>)
@@ -1043,7 +1043,7 @@ func GetMinerSCUserInfo(clientID string, cb GetInfoCallback) (err error)
 GetMinerSCUserInfo get user pool \# Inputs
 
 - clientID: the id of wallet
-- cb: callback for checking result
+- cb: info callback instance, carries the response of the GET request to the sharders
 
 <a name="GetMinerSharder"></a>
 ## func [GetMinerSharder](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L1232>)
@@ -1074,7 +1074,7 @@ GetMiners obtains list of all active miners.
 
 ```
 # Inputs
-  - cb: callback for checking result
+  - cb: info callback instance, carries the response of the GET request to the sharders
   - limit: how many miners should be fetched
   - offset: how many miners should be skipped
   - active: only fetch active miners
@@ -1179,7 +1179,7 @@ func GetSharders(cb GetInfoCallback, limit, offset int, active, stakable bool)
 
 GetSharders obtains list of all active sharders. \# Inputs
 
-- cb: callback for checking result
+- cb: info callback instance, carries the response of the GET request to the sharders
 - limit: how many sharders should be fetched
 - offset: how many sharders should be skipped
 - active: only fetch active sharders
@@ -1212,7 +1212,7 @@ func GetStakableBlobbers(cb GetInfoCallback, limit, offset int, active bool)
 
 GetStakeableBlobbers obtains list of all active blobbers that can be staked \(i.e. still number of delegations \< max_delegations\) \# Inputs
 
-- cb: callback for checking result
+- cb: info callback instance, carries the response of the GET request to the sharders
 - limit: how many blobbers should be fetched
 - offset: how many blobbers should be skipped
 - active: only fetch active blobbers
@@ -1236,7 +1236,7 @@ func GetStakePoolUserInfo(clientID string, offset, limit int, cb GetInfoCallback
 GetStakePoolUserInfo for a user. \# Inputs
 
 - clientID: the id of wallet
-- cb: callback for checking result
+- cb: info callback instance, carries the response of the GET request to the sharders
 
 <a name="GetStorageSCConfig"></a>
 ## func [GetStorageSCConfig](<https://github.com/0chain/gosdk/blob/doc/initial/zcncore/wallet_base.go#L970>)

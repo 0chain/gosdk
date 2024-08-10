@@ -261,13 +261,14 @@ type AuthorizerHealthCheckPayload struct {
 	ID string `json:"id"` // authorizer ID
 }
 
-// AuthorizerNode represents configuration of an authorizer stake pool.
+// AuthorizerStakePoolSettings represents configuration of an authorizer stake pool.
 type AuthorizerStakePoolSettings struct {
 	DelegateWallet string  `json:"delegate_wallet"`
 	NumDelegates   int     `json:"num_delegates"`
 	ServiceCharge  float64 `json:"service_charge"`
 }
-// AuthorizerNode represents configuration of an authorizer node.
+
+// AuthorizerConfig represents configuration of an authorizer node.
 type AuthorizerConfig struct {
 	Fee int64 `json:"fee"`
 }
@@ -303,8 +304,8 @@ func (vr *vestingAddRequest) AddDestinations(id string, amount int64) {
 // InputMap represents an interface of functions to add fields to a map.
 type InputMap interface {
 	// AddField adds a field to the map.
-	// 		- `key`: field key
-	// 		- `value`: field value
+	// 		- key: field key
+	// 		- value: field value
 	AddField(key, value string)
 }
 
@@ -336,10 +337,10 @@ func parseCoinStr(vs string) (uint64, error) {
 	return v, nil
 }
 
-// NewTransaction allocation new generic transaction object for any operation
-//   - `cb`: callback for transaction state
-//   - `txnFee`: ZCN tokens
-//   - `nonce`: latest nonce of current wallet. please set it with 0 if you don't know the latest value
+// NewTransaction new generic transaction object for any operation
+//   - cb: callback for transaction state
+//   - txnFee: Transaction fees (in SAS tokens)
+//   - nonce: latest nonce of current wallet. please set it with 0 if you don't know the latest value
 func NewTransaction(cb TransactionCallback, txnFee string, nonce int64) (TransactionScheme, error) {
 	v, err := parseCoinStr(txnFee)
 	if err != nil {
@@ -409,12 +410,12 @@ func (t *Transaction) Send(toClientID string, val string, desc string) error {
 }
 
 // SendWithSignatureHash to send a transaction to a given clientID with a signature hash
-// 		- `toClientID`: client ID in the To field of the transaction
-// 		- `val`: amount of tokens to send
-// 		- `desc`: description of the transaction
-// 		- `sig`: signature hash
-// 		- `CreationDate`: creation date of the transaction
-// 		- `hash`: hash of the transaction
+//   - toClientID: client ID in the To field of the transaction
+//   - val: amount of tokens to send
+//   - desc: description of the transaction
+//   - sig: signature hash
+//   - CreationDate: creation date of the transaction
+//   - hash: hash of the transaction
 func (t *Transaction) SendWithSignatureHash(toClientID string, val string, desc string, sig string, CreationDate int64, hash string) error {
 	v, err := parseCoinStr(val)
 	if err != nil {
@@ -836,12 +837,12 @@ type MinerSCMinerInfo interface {
 }
 
 // NewMinerSCMinerInfo creates a new miner info.
-// 		- `id`: miner ID
-// 		- `delegateWallet`: delegate wallet
-// 		- `minStake`: minimum stake
-// 		- `maxStake`: maximum stake
-// 		- `numDelegates`: number of delegates
-// 		- `serviceCharge`: service charge
+//   - id: miner ID
+//   - delegateWallet: delegate wallet
+//   - minStake: minimum stake
+//   - maxStake: maximum stake
+//   - numDelegates: number of delegates
+//   - serviceCharge: service charge
 func NewMinerSCMinerInfo(id string, delegateWallet string,
 	minStake int64, maxStake int64, numDelegates int, serviceCharge float64) MinerSCMinerInfo {
 	return &minerSCMinerInfo{
@@ -1075,8 +1076,7 @@ func ConvertTokenToSAS(token float64) uint64 {
 }
 
 // ConvertToValue converts ZCN tokens to SAS tokens with string format
-// # Inputs
-//  	- `token`: ZCN tokens
+//   - token: ZCN tokens
 func ConvertToValue(token float64) string {
 	return strconv.FormatUint(ConvertTokenToSAS(token), 10)
 }
@@ -1140,8 +1140,8 @@ func GetLatestFinalized(numSharders int, timeout RequestTimeout) (b *BlockHeader
 }
 
 // GetLatestFinalizedMagicBlock gets latest finalized magic block
-// 		- `numSharders`: number of sharders
-// 		- `timeout`: request timeout
+//   - numSharders: number of sharders
+//   - timeout: request timeout
 func GetLatestFinalizedMagicBlock(numSharders int, timeout RequestTimeout) ([]byte, error) {
 	var result = make(chan *util.GetResponse, numSharders)
 	defer close(result)

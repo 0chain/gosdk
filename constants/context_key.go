@@ -6,10 +6,13 @@ type ContextKey string
 const (
 	// ContextKeyAllocation represents key for context value for allocation
 	ContextKeyAllocation ContextKey = "allocation"
+
 	// ContextKeyAllocationObject represents key for context value for allocation object
 	ContextKeyAllocationObject ContextKey = "allocation_object"
+
 	// ContextKeyClient represents key for context value for client
 	ContextKeyClient ContextKey = "client"
+	
 	// ContextKeyClientKey represents key for context value for client key
 	ContextKeyClientKey ContextKey = "client_key"
 

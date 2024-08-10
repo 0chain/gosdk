@@ -13,7 +13,7 @@ import (
 
 const (
 	// FileRef represents a file
-	FILE      = "f"
+	FILE = "f"
 
 	// FileRef represents a directory
 	DIRECTORY = "d"
@@ -146,8 +146,8 @@ func (r *Ref) CalculateDirHash(ctx context.Context) (string, error) {
 }
 
 // GetReferenceLookup hash(allocationID + ":" + path) which is used to lookup the file reference in the db.
-// 		- `allocationID` is the allocation ID.
-// 		- `path` is the path of the file.
+//   - allocationID is the allocation ID.
+//   - path is the path of the file.
 func GetReferenceLookup(allocationID string, path string) string {
 	return encryption.Hash(allocationID + ":" + path)
 }

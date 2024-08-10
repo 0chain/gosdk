@@ -59,7 +59,7 @@ func (s Size) String() string {
 // reParseToken is a regexp to parse string representation of token
 var reParseToken = regexp.MustCompile(`^((?:\d*\.)?\d+)\s+(SAS|sas|uZCN|uzcn|mZCN|mzcn|ZCN|zcn)$`)
 
-// Balance represents 0chain native token
+// Balance represents client's balance in Züs native token fractions (SAS = 10^-10 ZCN).
 type Balance uint64
 
 // ToToken converts Balance to ZCN tokens.
@@ -81,7 +81,7 @@ func (b Balance) String() string {
 }
 
 // Format returns a string representation of the balance with the given unit.
-// 		- `unit` is the balance unit.
+//   - unit is the balance unit.
 func (b Balance) Format(unit BalanceUnit) (string, error) {
 	v := float64(b)
 	if v < 0 {
@@ -116,7 +116,7 @@ func (b Balance) AutoFormat() (string, error) {
 }
 
 // ToBalance converts ZCN tokens to Balance.
-// 		- `token` amount of ZCN tokens.
+//   - token amount of ZCN tokens.
 func ToBalance(token float64) (Balance, error) {
 	d := decimal.NewFromFloat(token)
 	if d.Sign() == -1 {

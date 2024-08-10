@@ -384,7 +384,7 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
 
 // RollbackWithMask rolls back the latest operation from the allocation blobbers which ran it.
 // The mask is used to specify which blobbers to rollback.
-// 		- `mask`: 128-bitmask to specify which blobbers to rollback
+//   - mask: 128-bitmask to specify which blobbers to rollback
 func (a *Allocation) RollbackWithMask(mask zboxutil.Uint128) {
 
 	wg := &sync.WaitGroup{}

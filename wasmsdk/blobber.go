@@ -31,10 +31,10 @@ import (
 const FileOperationInsert = "insert"
 
 // listObjects list allocation objects from its blobbers
-// 		- `allocationID` is the allocation id
-// 		- `remotePath` is the remote path of the file
-// 		- `offset` is the offset of the list
-// 		- `pageLimit` is the limit of the page
+//   - allocationID is the allocation id
+//   - remotePath is the remote path of the file
+//   - offset is the offset of the list
+//   - pageLimit is the limit of the page
 func listObjects(allocationID string, remotePath string, offset, pageLimit int) (*sdk.ListResult, error) {
 	alloc, err := getAllocation(allocationID)
 	if err != nil {
@@ -45,11 +45,11 @@ func listObjects(allocationID string, remotePath string, offset, pageLimit int) 
 }
 
 // listObjectsFromAuthTicket list allocation objects from its blobbers using auth ticket
-// 		- `allocationID` is the allocation id
-// 		- `authTicket` is the auth ticket, provided usually by a non-owner to be able to access a shared source
-// 		- `lookupHash` is the lookup hash
-// 		- `offset` is the offset of the list
-// 		- `pageLimit` is the limit of the page
+//   - allocationID is the allocation id
+//   - authTicket is the auth ticket, provided usually by a non-owner to be able to access a shared source
+//   - lookupHash is the lookup hash
+//   - offset is the offset of the list
+//   - pageLimit is the limit of the page
 func listObjectsFromAuthTicket(allocationID, authTicket, lookupHash string, offset, pageLimit int) (*sdk.ListResult, error) {
 	alloc, err := getAllocation(allocationID)
 	if err != nil {
@@ -59,8 +59,8 @@ func listObjectsFromAuthTicket(allocationID, authTicket, lookupHash string, offs
 }
 
 // cancelUpload cancel the upload operation of the file
-// 		- `allocationID` is the allocation id
-// 		- `remotePath` is the remote path of the file
+//   - allocationID is the allocation id
+//   - remotePath is the remote path of the file
 func cancelUpload(allocationID, remotePath string) error {
 	allocationObj, err := getAllocation(allocationID)
 	if err != nil {
@@ -71,8 +71,8 @@ func cancelUpload(allocationID, remotePath string) error {
 }
 
 // pauseUpload pause the upload operation of the file
-// 		- `allocationID` is the allocation id
-// 		- `remotePath` is the remote path of the file
+//   - allocationID is the allocation id
+//   - remotePath is the remote path of the file
 func pauseUpload(allocationID, remotePath string) error {
 	allocationObj, err := getAllocation(allocationID)
 	if err != nil {
@@ -83,8 +83,8 @@ func pauseUpload(allocationID, remotePath string) error {
 }
 
 // createDir create a directory on blobbers
-// 		- `allocationID` is the allocation id
-// 		- `remotePath` is the remote path of the file
+//   - allocationID is the allocation id
+//   - remotePath is the remote path of the file
 func createDir(allocationID, remotePath string) error {
 	if len(allocationID) == 0 {
 		return RequiredArg("allocationID")
@@ -108,8 +108,8 @@ func createDir(allocationID, remotePath string) error {
 }
 
 // getFileStats get file stats from blobbers
-// 		- `allocationID` is the allocation id
-// 		- `remotePath` is the remote path of the file
+//   - allocationID is the allocation id
+//   - remotePath is the remote path of the file
 func getFileStats(allocationID, remotePath string) ([]*sdk.FileStats, error) {
 	if len(allocationID) == 0 {
 		return nil, RequiredArg("allocationID")
@@ -140,7 +140,7 @@ func getFileStats(allocationID, remotePath string) ([]*sdk.FileStats, error) {
 
 // updateBlobberSettings expects settings JSON of type sdk.Blobber
 // and updates the blobber settings. Can only be called by the owner of the blobber.
-// 		- `blobberSettingsJson` is the blobber settings in JSON format
+//   - blobberSettingsJson is the blobber settings in JSON format
 func updateBlobberSettings(blobberSettingsJson string) (*transaction.Transaction, error) {
 	var blobberSettings sdk.Blobber
 	err := json.Unmarshal([]byte(blobberSettingsJson), &blobberSettings)
@@ -159,8 +159,8 @@ func updateBlobberSettings(blobberSettingsJson string) (*transaction.Transaction
 }
 
 // Delete delete file from an allocation, only the owner of the allocation can delete a file.
-// 		- `allocationID` is the allocation id
-// 		- `remotePath` is the remote path of the file
+//   - allocationID is the allocation id
+//   - remotePath is the remote path of the file
 func Delete(allocationID, remotePath string) (*FileCommandResponse, error) {
 
 	if len(allocationID) == 0 {
@@ -192,9 +192,9 @@ func Delete(allocationID, remotePath string) (*FileCommandResponse, error) {
 }
 
 // Rename rename file on an allocation, only the owner of the allocation can rename a file.
-// 		- `allocationID` is the allocation id
-// 		- `remotePath` is the remote path of the file
-// 		- `destName` is the new name of the file
+//   - allocationID is the allocation id
+//   - remotePath is the remote path of the file
+//   - destName is the new name of the file
 func Rename(allocationID, remotePath, destName string) (*FileCommandResponse, error) {
 	if len(allocationID) == 0 {
 		return nil, RequiredArg("allocationID")
@@ -236,9 +236,9 @@ func Rename(allocationID, remotePath, destName string) (*FileCommandResponse, er
 }
 
 // Copy copy file to another folder path on an allocation, only the owner of the allocation can copy an object.
-// 		- `allocationID` is the allocation id
-// 		- `remotePath` is the remote path of the file (source path)
-// 		- `destPath` is the destination path of the file
+//   - allocationID is the allocation id
+//   - remotePath is the remote path of the file (source path)
+//   - destPath is the destination path of the file
 func Copy(allocationID, remotePath, destPath string) (*FileCommandResponse, error) {
 
 	if len(allocationID) == 0 {
@@ -282,9 +282,9 @@ func Copy(allocationID, remotePath, destPath string) (*FileCommandResponse, erro
 }
 
 // Move move file to another remote folder path on dStorage. Only the owner of the allocation can copy an object.
-// 		- `allocationID` is the allocation id
-// 		- `remotePath` is the remote path of the file (source path)
-// 		- `destPath` is the destination path of the file
+//   - allocationID is the allocation id
+//   - remotePath is the remote path of the file (source path)
+//   - destPath is the destination path of the file
 func Move(allocationID, remotePath, destPath string) (*FileCommandResponse, error) {
 	if len(allocationID) == 0 {
 		return nil, RequiredArg("allocationID")
@@ -327,13 +327,13 @@ func Move(allocationID, remotePath, destPath string) (*FileCommandResponse, erro
 }
 
 // Share  generate an authtoken that provides authorization to the holder to the specified file on the remotepath.
-// 		- `allocationID` is the allocation id
-// 		- `remotePath` is the remote path of the file
-// 		- `clientID` is the client id
-// 		- `encryptionPublicKey` is the encryption public key of the client to share with, in case of private sharing
-// 		- `expiration` is the expiration time of the auth ticket
-// 		- `revoke` is the flag to revoke the share
-// 		- `availableAfter` is the time after which the share is available
+//   - allocationID is the allocation id
+//   - remotePath is the remote path of the file
+//   - clientID is the client id
+//   - encryptionPublicKey is the encryption public key of the client to share with, in case of private sharing
+//   - expiration is the expiration time of the auth ticket
+//   - revoke is the flag to revoke the share
+//   - availableAfter is the time after which the share is available
 func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expiration int, revoke bool, availableAfter string) (string, error) {
 
 	if len(allocationID) == 0 {
@@ -406,12 +406,12 @@ func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expir
 // ## Inputs
 //   - allocationID
 //   - jsonMultiDownloadOptions: Json Array of MultiDownloadOption.
-//	 - authTicket
-//  - callbackFuncName: callback function name Invoke with totalBytes, completedBytes, objURL, err
+//   - authTicket
+//   - callbackFuncName: callback function name Invoke with totalBytes, completedBytes, objURL, err
 //
 // ## Outputs
 //   - json string of array of DownloadCommandResponse
-// 	 - error
+//   - error
 func multiDownload(allocationID, jsonMultiDownloadOptions, authTicket, callbackFuncName string) (string, error) {
 	sdkLogger.Info("starting multidownload")
 	wg := &sync.WaitGroup{}
@@ -602,7 +602,7 @@ func MultiOperation(allocationID string, jsonMultiUploadOptions string) error {
 }
 
 // bulkUpload upload multiple files in parallel
-// 		- `jsonBulkUploadOptions` is the json array of BulkUploadOption
+//   - jsonBulkUploadOptions is the json array of BulkUploadOption
 func bulkUpload(jsonBulkUploadOptions string) ([]BulkUploadResult, error) {
 	var options []BulkUploadOption
 	err := json.Unmarshal([]byte(jsonBulkUploadOptions), &options)
@@ -649,7 +649,7 @@ func bulkUpload(jsonBulkUploadOptions string) ([]BulkUploadResult, error) {
 }
 
 // setUploadMode set upload mode, default is medium, for low set 0, for high set 2
-// 		- `mode` is the upload mode
+//   - mode is the upload mode
 func setUploadMode(mode int) {
 	switch mode {
 	case 0:
@@ -662,7 +662,7 @@ func setUploadMode(mode int) {
 }
 
 // multiUpload upload multiple files in parallel
-// 		- `jsonBulkUploadOptions` is the json array of BulkUploadOption. Follows the BulkUploadOption struct
+//   - jsonBulkUploadOptions is the json array of BulkUploadOption. Follows the BulkUploadOption struct
 func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 	var options []BulkUploadOption
 	result := MultiUploadResult{}
@@ -870,15 +870,15 @@ func uploadWithJsFuncs(allocationID, remotePath string, readChunkFuncName string
 }
 
 // upload upload file
-// 		- `allocationID` is the allocation id
-// 		- `remotePath` is the remote path of the file
-// 		- `fileBytes` is the file in bytes
-// 		- `thumbnailBytes` is the thumbnail in bytes
-// 		- `webStreaming` is the flag to enable web streaming
-// 		- `encrypt` is the flag to enable encryption of the uploaded file
-// 		- `isUpdate` is the flag to update the file
-// 		- `isRepair` is the flag to repair the file
-// 		- `numBlocks` is the number of blocks to upload
+//   - allocationID is the allocation id
+//   - remotePath is the remote path of the file
+//   - fileBytes is the file in bytes
+//   - thumbnailBytes is the thumbnail in bytes
+//   - webStreaming is the flag to enable web streaming
+//   - encrypt is the flag to enable encryption of the uploaded file
+//   - isUpdate is the flag to update the file
+//   - isRepair is the flag to repair the file
+//   - numBlocks is the number of blocks to upload
 func upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, webStreaming, encrypt, isUpdate, isRepair bool, numBlocks int) (*FileCommandResponse, error) {
 	if len(allocationID) == 0 {
 		return nil, RequiredArg("allocationID")
@@ -958,10 +958,10 @@ func upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, w
 }
 
 // downloadBlocks download file blocks
-// 		- `allocId` : allocation ID of the file
-// 		- `remotePath` : remote path of the file
-// 		- `authTicket` : auth ticket of the file, if the file is shared
-// 		- `lookupHash` : lookup hash of the file, which is used to locate the file if remotepath and allocation id are not provided
+// 		- allocId : allocation ID of the file
+// 		- remotePath : remote path of the file
+// 		- authTicket : auth ticket of the file, if the file is shared
+// 		- lookupHash : lookup hash of the file, which is used to locate the file if remotepath and allocation id are not provided
 
 func downloadBlocks(allocId string, remotePath, authTicket, lookupHash string, startBlock, endBlock int64) ([]byte, error) {
 
@@ -1017,7 +1017,7 @@ func downloadBlocks(allocId string, remotePath, authTicket, lookupHash string, s
 }
 
 // getBlobbers get list of active blobbers, and format them as array json string
-// 		- `stakable` : flag to get only stakable blobbers
+//   - stakable : flag to get only stakable blobbers
 func getBlobbers(stakable bool) ([]*sdk.Blobber, error) {
 	blobbs, err := sdk.GetBlobbers(true, stakable)
 	if err != nil {
@@ -1028,7 +1028,7 @@ func getBlobbers(stakable bool) ([]*sdk.Blobber, error) {
 
 // repairAllocation repair the allocation
 // Allocation repair is a process to repair the allocation files on its blobbers by re-uploading the missing blocks.
-// 		- `allocationID` : allocation ID of the file
+//   - allocationID : allocation ID of the file
 func repairAllocation(allocationID string) error {
 	alloc, err := getAllocation(allocationID)
 	if err != nil {
@@ -1051,7 +1051,7 @@ func repairAllocation(allocationID string) error {
 }
 
 // checkAllocStatus check the status of the allocation, either it is ok, needs repair or broken
-// 		- `allocationID` : allocation ID of the file
+//   - allocationID : allocation ID of the file
 func checkAllocStatus(allocationID string) (string, error) {
 	alloc, err := getAllocation(allocationID)
 	if err != nil {
@@ -1081,7 +1081,7 @@ func checkAllocStatus(allocationID string) (string, error) {
 }
 
 // skipStatusCheck skip the status check of the allocation
-// 		- `allocationID` : allocation ID of the file
+//   - allocationID : allocation ID of the file
 func skipStatusCheck(allocationID string, checkStatus bool) error {
 	alloc, err := getAllocation(allocationID)
 	if err != nil {
@@ -1092,7 +1092,7 @@ func skipStatusCheck(allocationID string, checkStatus bool) error {
 }
 
 // terminateWorkers remove local workers that sync with the allocation
-// 		- `allocationID` : allocation ID of the file
+//   - allocationID : allocation ID of the file
 func terminateWorkers(allocationID string) {
 	alloc, err := getAllocation(allocationID)
 	if err != nil {
@@ -1110,7 +1110,7 @@ func terminateWorkersWithAllocation(alloc *sdk.Allocation) {
 }
 
 // createWorkers create local workers that sync with the allocation
-// 		- `allocationID` : allocation ID of the file
+//   - allocationID : allocation ID of the file
 func createWorkers(allocationID string) error {
 	alloc, err := getAllocation(allocationID)
 	if err != nil {

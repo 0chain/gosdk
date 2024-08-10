@@ -116,10 +116,10 @@ type ChainConfig struct {
 
 var Sharders *node.NodeHolder
 
-// InitZCNSDK initializes the SDK with miner, sharder and signature scheme provided.
-// 		- `blockWorker`: block worker
-// 		- `signscheme`: signature scheme
-// 		- `configs`: configuration options
+// InitZCNSDK initializes the SDK given block worker and signature scheme provided.
+//   - blockWorker: block worker, which is the url for the DNS service for locating miners and sharders
+//   - signscheme: signature scheme to be used for signing the transactions
+//   - configs: configuration options
 func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainConfig) error) error {
 	if signscheme != "ed25519" && signscheme != "bls0chain" {
 		return errors.New("", "invalid/unsupported signature scheme")
@@ -574,7 +574,7 @@ func (t *Transaction) ExecuteFaucetSCWallet(walletStr string, methodName string,
 }
 
 // SetTransactionHash implements verify a previous transaction status
-// 		- `hash`: transaction hash
+//   - hash: transaction hash
 func (t *Transaction) SetTransactionHash(hash string) error {
 	if t.txnStatus != StatusUnknown {
 		return errors.New("", "transaction already exists. cannot set transaction hash.")

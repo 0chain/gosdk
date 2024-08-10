@@ -33,11 +33,11 @@ type ZBox struct {
 	NewRequest func(method, url string, body io.Reader) (*http.Request, error)
 }
 
-// New create an sdk client instance given its configuration 
-// 		- `clientID` client id of the using client
-// 		- `clientKey` client key of the using client
-// 		- `signatureScheme` signature scheme for transaction encryption
-// 		- `wallet` wallet of the using client
+// New create an sdk client instance given its configuration
+//   - clientID client id of the using client
+//   - clientKey client key of the using client
+//   - signatureScheme signature scheme for transaction encryption
+//   - wallet wallet of the using client
 func New(clientID, clientKey, signatureScheme string, wallet *zcncrypto.Wallet) *ZBox {
 	s := &ZBox{
 		ClientID:        clientID,
@@ -51,14 +51,14 @@ func New(clientID, clientKey, signatureScheme string, wallet *zcncrypto.Wallet) 
 }
 
 // InitWallet init wallet from json
-// 		- `js` json string of wallet
+//   - js json string of wallet
 func (z *ZBox) InitWallet(js string) error {
 	return json.Unmarshal([]byte(js), &z.Wallet)
 }
 
 // SignRequest sign request with client_id, client_key and sign by adding headers to the request
-// 		- `req` http request
-// 		- `allocationID` allocation id
+//   - req http request
+//   - allocationID allocation id
 func (z *ZBox) SignRequest(req *http.Request, allocationID string) error {
 
 	if req == nil {
@@ -92,10 +92,10 @@ func (z *ZBox) CreateTransport() *http.Transport {
 }
 
 // BuildUrls build full request url given base urls, query string, path format and path args
-// 		- `baseURLs` base urls
-// 		- `queryString` query string
-// 		- `pathFormat` path format
-// 		- `pathArgs` path args
+//   - baseURLs base urls
+//   - queryString query string
+//   - pathFormat path format
+//   - pathArgs path args
 func (z *ZBox) BuildUrls(baseURLs []string, queryString map[string]string, pathFormat string, pathArgs ...interface{}) []string {
 
 	requestURL := pathFormat
@@ -121,8 +121,8 @@ func (z *ZBox) BuildUrls(baseURLs []string, queryString map[string]string, pathF
 }
 
 // DoPost do post request with request and handle
-// 		- `req` request instance
-// 		- `handle` handle function for the response
+//   - req request instance
+//   - handle handle function for the response
 func (z *ZBox) DoPost(req *Request, handle resty.Handle) *resty.Resty {
 
 	opts := make([]resty.Option, 0, 5)

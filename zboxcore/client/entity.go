@@ -22,7 +22,7 @@ var (
 	clients []*Client
 
 	// Sign is a function to sign a hash
-	Sign    SignFunc
+	Sign SignFunc
 )
 
 func init() {
@@ -41,6 +41,8 @@ func init() {
 }
 
 // PopulateClient populates single client
+//   - clientjson: client json string
+//   - signatureScheme: signature scheme
 func PopulateClient(clientjson string, signatureScheme string) error {
 	err := json.Unmarshal([]byte(clientjson), &client)
 	client.SignatureScheme = signatureScheme
@@ -63,8 +65,8 @@ func TxnFee() uint64 {
 }
 
 // PopulateClients This is a workaround for blobber tests that requires multiple clients to test authticket functionality
-// 		- `clientJsons`: array of client json strings
-// 		- `signatureScheme`: signature scheme
+//   - clientJsons: array of client json strings
+//   - signatureScheme: signature scheme
 func PopulateClients(clientJsons []string, signatureScheme string) error {
 	for _, clientJson := range clientJsons {
 		c := new(Client)
@@ -143,8 +145,8 @@ func signHash(hash string, signatureScheme string, keys []sys.KeyPair) (string, 
 }
 
 // VerifySignature verifies signature of a message with client public key and signature scheme
-// 		- `signature`: signature to verify
-// 		- `msg`: message to verify
+//   - signature: signature to use for verification
+//   - msg: message to verify
 func VerifySignature(signature string, msg string) (bool, error) {
 	ss := zcncrypto.NewSignatureScheme(client.SignatureScheme)
 	if err := ss.SetPublicKey(client.ClientKey); err != nil {
@@ -155,9 +157,9 @@ func VerifySignature(signature string, msg string) (bool, error) {
 }
 
 // VerifySignatureWith verifies signature of a message with a given public key, and the client's signature scheme
-// 		- `pubKey`: public key to verify
-// 		- `signature`: signature to verify
-// 		- `hash`: message to verify
+//   - pubKey: public key to use for verification
+//   - signature: signature to use for verification
+//   - hash: message to verify
 func VerifySignatureWith(pubKey, signature, hash string) (bool, error) {
 	sch := zcncrypto.NewSignatureScheme(client.SignatureScheme)
 	err := sch.SetPublicKey(pubKey)

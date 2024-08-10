@@ -59,7 +59,7 @@ func (k *keyStore) GetEthereumKeyStore() *keystore.KeyStore {
 }
 
 // ListStorageAccounts List available accounts
-// 		- `homedir` is the home directory
+//   - homedir is the home directory
 func ListStorageAccounts(homedir string) []common.Address {
 	keyDir := path.Join(homedir, EthereumWalletStorageDir)
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
@@ -71,8 +71,8 @@ func ListStorageAccounts(homedir string) []common.Address {
 }
 
 // DeleteAccount deletes account from wallet
-// 		- `homedir` is the home directory
-// 		- `address` is the account address
+//   - homedir is the home directory
+//   - address is the account address
 func DeleteAccount(homedir, address string) bool {
 	keyDir := path.Join(homedir, EthereumWalletStorageDir)
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
@@ -92,8 +92,8 @@ func DeleteAccount(homedir, address string) bool {
 }
 
 // AccountExists checks if account exists
-// 		- `homedir` is the home directory
-// 		- `address` is the account address
+//   - homedir is the home directory
+//   - address is the account address
 func AccountExists(homedir, address string) bool {
 	keyDir := path.Join(homedir, EthereumWalletStorageDir)
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
@@ -118,8 +118,8 @@ func AccountExists(homedir, address string) bool {
 }
 
 // CreateKeyStorage create, restore or unlock key storage
-// 		- `homedir` is the home directory
-// 		- `password` is the password
+//   - homedir is the home directory
+//   - password is the password
 func CreateKeyStorage(homedir, password string) error {
 	keyDir := path.Join(homedir, EthereumWalletStorageDir)
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
@@ -138,14 +138,14 @@ type AccountAddressIndex struct {
 	AddressIndex int
 
 	// Bip32 flag indicates if the account is derived using BIP32 derivation path.
-	Bip32        bool
+	Bip32 bool
 }
 
 // ImportAccount imports account using mnemonic
-// 		- `homedir` is the home directory
-// 		- `mnemonic` is the mnemonic phrase
-// 		- `password` is the password
-// 		- `accountAddrIndex` is the account and address indexes used for the derivation of the ethereum account
+//   - homedir is the home directory
+//   - mnemonic is the mnemonic phrase
+//   - password is the password
+//   - accountAddrIndex is the account and address indexes used for the derivation of the ethereum account
 func ImportAccount(homedir, mnemonic, password string, accountAddrIndex ...AccountAddressIndex) (string, error) {
 	// 1. Create storage and account if it doesn't exist and add account to it
 

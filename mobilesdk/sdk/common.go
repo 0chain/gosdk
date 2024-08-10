@@ -11,8 +11,8 @@ import (
 // Lookuphash is a hashed value of the augmentation of allocation id and remote path.
 // It is used to identify the file in the blobbers.
 //
-//   - `allocationID` : allocation id
-//   - `remotePath` : remote path
+//   - allocationID : allocation id
+//   - remotePath : remote path
 func GetLookupHash(allocationID string, remotePath string) string {
 	return encryption.Hash(allocationID + ":" + remotePath)
 }

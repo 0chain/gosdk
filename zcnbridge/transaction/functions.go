@@ -9,8 +9,8 @@ import (
 )
 
 // AddAuthorizer adds authorizer to the bridge
-// 		- `ctx` is the context of the request.
-// 		- `input` is the payload of the request.
+//   - ctx is the context of the request.
+//   - input is the payload of the request.
 func AddAuthorizer(ctx context.Context, input *zcncore.AddAuthorizerPayload) (Transaction, error) {
 	t, err := NewTransactionEntity(0)
 	if err != nil {
@@ -36,8 +36,8 @@ func AddAuthorizer(ctx context.Context, input *zcncore.AddAuthorizerPayload) (Tr
 }
 
 // AuthorizerHealthCheck performs health check of the authorizer
-// 		- `ctx` is the context of the request.
-// 		- `input` is the payload of the request.
+//   - ctx is the context of the request.
+//   - input is the payload of the request.
 func AuthorizerHealthCheck(ctx context.Context, input *zcncore.AuthorizerHealthCheckPayload) (Transaction, error) {
 	t, err := NewTransactionEntity(0)
 	if err != nil {

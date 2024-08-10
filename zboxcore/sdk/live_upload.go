@@ -27,11 +27,11 @@ type LiveUpload struct {
 }
 
 // CreateLiveUpload create a LiveChunkedUpload instance to upload live streaming video
-//		- `homedir`: home directory of the allocation
-//		- `allocationObj`: allocation object
-//		- `liveMeta`: live meta data
-//		- `liveReader`: live reader to read video data
-//		- `opts`: live upload options
+//   - homedir: home directory of the allocation
+//   - allocationObj: allocation object
+//   - liveMeta: live meta data
+//   - liveReader: live reader to read video data
+//   - opts: live upload option functions which customize the LiveUpload instance.
 func CreateLiveUpload(homedir string, allocationObj *Allocation, liveMeta LiveMeta, liveReader LiveUploadReader, opts ...LiveUploadOption) *LiveUpload {
 	u := &LiveUpload{
 		allocationObj: allocationObj,

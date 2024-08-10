@@ -15,13 +15,13 @@ const HASH_LENGTH = 32
 type HashBytes [HASH_LENGTH]byte
 
 // Hash hash the given data and return the hash as hex string
-//   - `data` is the data to hash
+//   - data is the data to hash
 func Hash(data interface{}) string {
 	return hex.EncodeToString(RawHash(data))
 }
 
 // RawHash Logic to hash the text and return the hash bytes
-//   - `data` is the data to hash
+//   - data is the data to hash
 func RawHash(data interface{}) []byte {
 	var databuf []byte
 	switch dataImpl := data.(type) {
@@ -41,7 +41,7 @@ func RawHash(data interface{}) []byte {
 }
 
 // ShaHash hash the given data and return the hash as hex string
-//   - `data` is the data to hash
+//   - data is the data to hash
 func ShaHash(data interface{}) []byte {
 	var databuf []byte
 	switch dataImpl := data.(type) {
@@ -60,13 +60,13 @@ func ShaHash(data interface{}) []byte {
 }
 
 // FastHash - sha1 hash the given data and return the hash as hex string
-//   - `data` is the data to hash
+//   - data is the data to hash
 func FastHash(data interface{}) string {
 	return hex.EncodeToString(RawFastHash(data))
 }
 
 // RawFastHash - Logic to sha1 hash the text and return the hash bytes
-//   - `data` is the data to hash
+//   - data is the data to hash
 func RawFastHash(data interface{}) []byte {
 	var databuf []byte
 	switch dataImpl := data.(type) {

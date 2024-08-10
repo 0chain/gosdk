@@ -39,11 +39,11 @@ const (
 // The request should be authenticated with the given username and password, by first creating an auth token then issuing the request.
 //
 // Parameters:
-// 		- `username` is the username to authenticate with
-// 		- `password` is the password to authenticate with
-// 		- `domain` is the domain to issue the request to
-// 		- `containerID` is the ID of the container to update
-// 		- `NewImageID` is the ID of the new image to update the container with
+//   - username is the username to authenticate with
+//   - password is the password to authenticate with
+//   - domain is the domain to issue the request to
+//   - containerID is the ID of the container to update
+//   - NewImageID is the ID of the new image to update the container with
 func UpdateContainer(username, password, domain, containerID, NewImageID string) (map[string]interface{}, error) {
 	sdkLogger.Info("generating authtoken")
 	authToken, err := getToken(username, password, domain)
@@ -124,9 +124,9 @@ func UpdateContainer(username, password, domain, containerID, NewImageID string)
 // The response is a list of containers in JSON format.
 //
 // Parameters:
-// 		- `username` is the username to authenticate with
-// 		- `password` is the password to authenticate with
-// 		- `domain` is the domain to issue the request to
+//   - username is the username to authenticate with
+//   - password is the password to authenticate with
+//   - domain is the domain to issue the request to
 func GetContainers(username, password, domain string) ([]*map[string]interface{}, error) {
 	authToken, err := getToken(username, password, domain)
 	if err != nil {
@@ -163,10 +163,10 @@ func GetContainers(username, password, domain string) ([]*map[string]interface{}
 // The response is a list of containers in JSON format that match the given name.
 //
 // Parameters:
-// 		- `username` is the username to authenticate with
-// 		- `password` is the password to authenticate with
-// 		- `domain` is the domain to issue the request to
-// 		- `name` is the name of the container to search for
+//   - username is the username to authenticate with
+//   - password is the password to authenticate with
+//   - domain is the domain to issue the request to
+//   - name is the name of the container to search for
 func SearchContainer(username, password, domain, name string) ([]*map[string]interface{}, error) {
 	authToken, err := getToken(username, password, domain)
 	if err != nil {

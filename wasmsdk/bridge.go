@@ -20,14 +20,14 @@ import (
 var bridge *zcnbridge.BridgeClient
 
 // initBridge initializes the bridge client
-// 		- `ethereumAddress`: ethereum address of the wallet owner
-// 		- `bridgeAddress`: address of the bridge contract on the Ethereum network
-// 		- `authorizersAddress`: address of the authorizers contract on the Ethereum network
-// 		- `tokenAddress`: address of the token contract on the Ethereum network
-// 		- `ethereumNodeURL`: URL of the Ethereum node
-// 		- `gasLimit`: gas limit for the transactions
-// 		- `value`: value to be sent with the transaction (unused)
-// 		- `consensusThreshold`: consensus threshold for the transactions
+//   - ethereumAddress: ethereum address of the wallet owner
+//   - bridgeAddress: address of the bridge contract on the Ethereum network
+//   - authorizersAddress: address of the authorizers contract on the Ethereum network
+//   - tokenAddress: address of the token contract on the Ethereum network
+//   - ethereumNodeURL: URL of the Ethereum node
+//   - gasLimit: gas limit for the transactions
+//   - value: value to be sent with the transaction (unused)
+//   - consensusThreshold: consensus threshold for the transactions
 func initBridge(
 	ethereumAddress string,
 	bridgeAddress string,
@@ -70,8 +70,8 @@ func initBridge(
 }
 
 // burnZCN Burns ZCN tokens and returns a hash of the burn transaction
-// 		- `amount`: amount of ZCN tokens to burn
-// 		- `txnfee`: transaction fee
+//   - amount: amount of ZCN tokens to burn
+//   - txnfee: transaction fee
 func burnZCN(amount, txnfee uint64) string { //nolint
 	if bridge == nil {
 		return errors.New("burnZCN", "bridge is not initialized").Error()
@@ -86,8 +86,8 @@ func burnZCN(amount, txnfee uint64) string { //nolint
 }
 
 // mintZCN Mints ZCN tokens and returns a hash of the mint transaction
-// 		- `burnTrxHash`: hash of the burn transaction
-// 		- `timeout`: timeout in seconds
+//   - burnTrxHash: hash of the burn transaction
+//   - timeout: timeout in seconds
 func mintZCN(burnTrxHash string, timeout int) string { //nolint
 	mintPayload, err := bridge.QueryZChainMintPayload(burnTrxHash)
 	if err != nil {
@@ -106,7 +106,7 @@ func mintZCN(burnTrxHash string, timeout int) string { //nolint
 }
 
 // getMintWZCNPayload returns the mint payload for the given burn transaction hash
-// 		- `burnTrxHash`: hash of the burn transaction
+//   - burnTrxHash: hash of the burn transaction
 func getMintWZCNPayload(burnTrxHash string) string {
 	mintPayload, err := bridge.QueryEthereumMintPayload(burnTrxHash)
 	if err != nil {
@@ -189,9 +189,9 @@ func getNotProcessedZCNBurnTickets() string {
 }
 
 // estimateBurnWZCNGasAmount performs gas amount estimation for the given burn wzcn transaction.
-// 		- `from`: address of the sender
-// 		- `to`: address of the receiver
-// 		- `amountTokens`: amount of tokens to burn (as a string)
+//   - from: address of the sender
+//   - to: address of the receiver
+//   - amountTokens: amount of tokens to burn (as a string)
 func estimateBurnWZCNGasAmount(from, to, amountTokens string) string { // nolint:golint,unused
 	estimateBurnWZCNGasAmountResponse, err := bridge.EstimateBurnWZCNGasAmount(
 		context.Background(), from, to, amountTokens)
@@ -209,12 +209,12 @@ func estimateBurnWZCNGasAmount(from, to, amountTokens string) string { // nolint
 }
 
 // estimateMintWZCNGasAmount performs gas amount estimation for the given mint wzcn transaction.
-// 		- `from`: address of the sender
-// 		- `to`: address of the receiver
-// 		- `zcnTransaction`: hash of the ZCN transaction
-// 		- `amountToken`: amount of tokens to mint (as a string)
-// 		- `nonce`: nonce of the transaction
-// 		- `signaturesRaw`: encoded format (base-64) of the burn signatures received from the authorizers.
+//   - from: address of the sender
+//   - to: address of the receiver
+//   - zcnTransaction: hash of the ZCN transaction
+//   - amountToken: amount of tokens to mint (as a string)
+//   - nonce: nonce of the transaction
+//   - signaturesRaw: encoded format (base-64) of the burn signatures received from the authorizers.
 func estimateMintWZCNGasAmount(from, to, zcnTransaction, amountToken string, nonce int64, signaturesRaw []string) string { // nolint:golint,unused
 	var signaturesBytes [][]byte
 

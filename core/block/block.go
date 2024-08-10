@@ -28,7 +28,7 @@ type Header struct {
 }
 
 // IsBlockExtends - check if the block extends the previous block
-//   - `prevHash` is the hash of the previous block
+//   - prevHash is the hash of the previous block
 func (h *Header) IsBlockExtends(prevHash string) bool {
 	var data = fmt.Sprintf("%s:%s:%d:%d:%d:%s:%s", h.MinerID, prevHash,
 		h.CreationDate, h.Round, h.RoundRandomSeed, h.MerkleTreeRoot,

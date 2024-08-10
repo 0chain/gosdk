@@ -174,43 +174,43 @@ type BlobberAllocation struct {
 // Allocation represents a storage allocation.
 type Allocation struct {
 	// ID is the unique identifier of the allocation.
-	ID             string                    `json:"id"`
+	ID string `json:"id"`
 	// Tx is the transaction hash of the latest transaction related to the allocation.
-	Tx             string                    `json:"tx"`
+	Tx string `json:"tx"`
 
 	// DataShards is the number of data shards.
-	DataShards     int                       `json:"data_shards"`
+	DataShards int `json:"data_shards"`
 
 	// ParityShards is the number of parity shards.
-	ParityShards   int                       `json:"parity_shards"`
+	ParityShards int `json:"parity_shards"`
 
 	// Size is the size of the allocation.
-	Size           int64                     `json:"size"`
+	Size int64 `json:"size"`
 
 	// Expiration is the expiration date of the allocation.
-	Expiration     int64                     `json:"expiration_date"`
+	Expiration int64 `json:"expiration_date"`
 
 	// Owner is the id of the owner of the allocation.
-	Owner          string                    `json:"owner_id"`
+	Owner string `json:"owner_id"`
 
 	// OwnerPublicKey is the public key of the owner of the allocation.
-	OwnerPublicKey string                    `json:"owner_public_key"`
+	OwnerPublicKey string `json:"owner_public_key"`
 
 	// Payer is the id of the payer of the allocation.
-	Payer          string                    `json:"payer_id"`
+	Payer string `json:"payer_id"`
 
 	// Blobbers is the list of blobbers that store the data of the allocation.
-	Blobbers       []*blockchain.StorageNode `json:"blobbers"`
+	Blobbers []*blockchain.StorageNode `json:"blobbers"`
 
 	// Stats contains the statistics of the allocation.
-	Stats          *AllocationStats          `json:"stats"`
+	Stats *AllocationStats `json:"stats"`
 
 	// TimeUnit is the time unit of the allocation.
-	TimeUnit       time.Duration             `json:"time_unit"`
+	TimeUnit time.Duration `json:"time_unit"`
 
 	// WritePool is the write pool of the allocation.
-	WritePool      common.Balance            `json:"write_pool"`
-	
+	WritePool common.Balance `json:"write_pool"`
+
 	// BlobberDetails contains real terms used for the allocation.
 	// If the allocation has updated, then terms calculated using
 	// weighted average values.
@@ -218,36 +218,36 @@ type Allocation struct {
 
 	// ReadPriceRange is requested reading prices range.
 	ReadPriceRange PriceRange `json:"read_price_range"`
-	
+
 	// WritePriceRange is requested writing prices range.
-	WritePriceRange         PriceRange       `json:"write_price_range"`
-	
+	WritePriceRange PriceRange `json:"write_price_range"`
+
 	// MinLockDemand is the minimum lock demand of the allocation.
-	MinLockDemand           float64          `json:"min_lock_demand"`
+	MinLockDemand float64 `json:"min_lock_demand"`
 
 	// ChallengeCompletionTime is the time taken to complete a challenge.
-	ChallengeCompletionTime time.Duration    `json:"challenge_completion_time"`
+	ChallengeCompletionTime time.Duration `json:"challenge_completion_time"`
 
 	// StartTime is the start time of the allocation.
-	StartTime               common.Timestamp `json:"start_time"`
+	StartTime common.Timestamp `json:"start_time"`
 
 	// Finalized is the flag to indicate if the allocation is finalized.
-	Finalized               bool             `json:"finalized,omitempty"`
+	Finalized bool `json:"finalized,omitempty"`
 
 	// Cancelled is the flag to indicate if the allocation is cancelled.
-	Canceled                bool             `json:"canceled,omitempty"`
+	Canceled bool `json:"canceled,omitempty"`
 
 	// MovedToChallenge is the amount moved to challenge pool related to the allocation.
-	MovedToChallenge        common.Balance   `json:"moved_to_challenge,omitempty"`
+	MovedToChallenge common.Balance `json:"moved_to_challenge,omitempty"`
 
 	// MovedBack is the amount moved back from the challenge pool related to the allocation.
-	MovedBack               common.Balance   `json:"moved_back,omitempty"`
+	MovedBack common.Balance `json:"moved_back,omitempty"`
 
 	// MovedToValidators is the amount moved to validators related to the allocation.
-	MovedToValidators       common.Balance   `json:"moved_to_validators,omitempty"`
+	MovedToValidators common.Balance `json:"moved_to_validators,omitempty"`
 
 	// FileOptions is a bitmask of file options, which are the permissions of the allocation.
-	FileOptions             uint16           `json:"file_options"`
+	FileOptions uint16 `json:"file_options"`
 
 	// FileOptions to define file restrictions on an allocation for third-parties
 	// default 00000000 for all crud operations suggesting only owner has the below listed abilities.
@@ -258,7 +258,7 @@ type Allocation struct {
 	// 		00001000 - 8  - move
 	// 		00010000 - 16 - copy
 	// 		00100000 - 32 - rename
-	ThirdPartyExtendable    bool             `json:"third_party_extendable"`
+	ThirdPartyExtendable bool `json:"third_party_extendable"`
 
 	numBlockDownloads       int
 	downloadChan            chan *DownloadRequest
@@ -323,7 +323,7 @@ func SetWasm() {
 }
 
 // SetCheckStatus sets the check status of the allocation.
-// 		- `checkStatus`: the check status to set.
+//   - checkStatus: the check status to set.
 func (a *Allocation) SetCheckStatus(checkStatus bool) {
 	a.checkStatus = checkStatus
 }
@@ -480,11 +480,11 @@ func (a *Allocation) UploadFile(workdir, localpath string, remotepath string,
 }
 
 // RepairFile repair a file in the allocation.
-// 		- `file`: the file to repair.
-// 		- `remotepath`: the remote path of the file.
-// 		- `statusCallback`: a callback function to get the status of the repair.
-// 		- `mask`: the mask of the repair descriping the blobbers to repair.
-// 		- `ref`: the file reference, a representation of the file in the database.
+//   - file: the file to repair.
+//   - remotepath: the remote path of the file.
+//   - statusCallback: a callback function to get the status of the repair.
+//   - mask: the mask of the repair descriping the blobbers to repair.
+//   - ref: the file reference, a representation of the file in the database.
 func (a *Allocation) RepairFile(file sys.File, remotepath string, statusCallback StatusCallback, mask zboxutil.Uint128, ref *fileref.FileRef) *OperationRequest {
 	idr, _ := homedir.Dir()
 	if Workdir != "" {
@@ -595,16 +595,17 @@ func (a *Allocation) EncryptAndUploadFileWithThumbnail(
 // A multi upload operation uploads multiple files to the allocation, given ordered arrays of upload parameters.
 // The paramteres are ordered in a way that the ith element of each array corresponds to the ith file to upload.
 // The upload operation is done in parallel.
-// 		- `workdir`: the working directory, where the files are stored.
-// 		- `localPaths`: the local paths of the files to upload.
-// 		- `fileNames`: the names of the files to upload.
-// 		- `thumbnailPaths`: the paths of the thumbnails of the files to upload.
-// 		- `encrypts`: the encryption flags of the files to upload.
-// 		- `chunkNumbers`: the chunk numbers of the files to upload. Chunk number is used to upload the file in chunks.
-// 		- `remotePaths`: the remote paths of the files to upload.
-// 		- `isUpdate`: the update flags of the files to upload. If true, the file is to overwrite an existing file.
-// 		- `isWebstreaming`: the webstreaming flags of the files to upload.
-// 		- `status`: the status callback function. Will be used to gather the status of the upload operations.
+//   - workdir: the working directory, where the files are stored.
+//   - localPaths: the local paths of the files to upload.
+//   - fileNames: the names of the files to upload.
+//   - thumbnailPaths: the paths of the thumbnails of the files to upload.
+//   - encrypts: the encryption flags of the files to upload.
+//   - chunkNumbers: the chunk numbers of the files to upload. Chunk number is used to upload the file in chunks.
+//   - remotePaths: the remote paths of the files to upload.
+//   - isUpdate: the update flags of the files to upload. If true, the file is to overwrite an existing file.
+//   - isWebstreaming: the webstreaming flags of the files to upload.
+//   - status: the status callback function. Will be used to gather the status of the upload operations.
+//
 // Returns any error encountered during any of the upload operations, or during preparation of the upload operations.
 func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileNames []string, thumbnailPaths []string, encrypts []bool, chunkNumbers []int, remotePaths []string, isUpdate []bool, isWebstreaming []bool, status StatusCallback) error {
 	if len(localPaths) != len(thumbnailPaths) {
@@ -712,16 +713,16 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 
 // StartChunkedUpload starts a chunked upload operation.
 // A chunked upload operation uploads a file to the allocation in chunks.
-// 		- `workdir`: the working directory, where the file is stored.	
-// 		- `localPath`: the local path of the file to upload.
-// 		- `remotePath`: the remote path of the file to upload.
-// 		- `status`: the status callback function. Will be used to gather the status of the upload operation.
-// 		- `isUpdate`: the update flag of the file to upload. If true, the file is to overwrite an existing file.
-// 		- `isRepair`: the repair flag of the file to upload. If true, the file is to repair an existing file.
-// 		- `thumbnailPath`: the path of the thumbnail of the file to upload.
-// 		- `encryption`: the encryption flag of the file to upload.
-// 		- `webStreaming`: the webstreaming flag of the file to upload.
-// 		- `uploadOpts`: the options of the upload operation as operation functions that customize the upload operation.
+//   - workdir: the working directory, where the file is stored.
+//   - localPath: the local path of the file to upload.
+//   - remotePath: the remote path of the file to upload.
+//   - status: the status callback function. Will be used to gather the status of the upload operation.
+//   - isUpdate: the update flag of the file to upload. If true, the file is to overwrite an existing file.
+//   - isRepair: the repair flag of the file to upload. If true, the file is to repair an existing file.
+//   - thumbnailPath: the path of the thumbnail of the file to upload.
+//   - encryption: the encryption flag of the file to upload.
+//   - webStreaming: the webstreaming flag of the file to upload.
+//   - uploadOpts: the options of the upload operation as operation functions that customize the upload operation.
 func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 	remotePath string,
 	status StatusCallback,
@@ -921,7 +922,7 @@ func (a *Allocation) GetCurrentVersion() (bool, error) {
 // Returns the found mask, delete mask, a boolean indicating if the repair is required, and an error if any.
 // The found mask is a 128-bitmask of the blobbers where the file is found.
 // The delete mask is a 128-bitmask of the blobbers where the file is not found.
-// 			- `remotepath`: the remote path of the file to check.
+//   - remotepath: the remote path of the file to check.
 func (a *Allocation) RepairRequired(remotepath string) (zboxutil.Uint128, zboxutil.Uint128, bool, *fileref.FileRef, error) {
 	if !a.isInitialized() {
 		return zboxutil.Uint128{}, zboxutil.Uint128{}, false, nil, notInitialized
@@ -951,8 +952,8 @@ func (a *Allocation) RepairRequired(remotepath string) (zboxutil.Uint128, zboxut
 
 // DoMultiOperation performs multiple operations on the allocation.
 // The operations are performed in parallel.
-// 		- `operations`: the operations to perform.
-// 		- `opts`: the options of the multi operation as operation functions that customize the multi operation.
+//   - operations: the operations to perform.
+//   - opts: the options of the multi operation as operation functions that customize the multi operation.
 func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...MultiOperationOption) error {
 	if len(operations) == 0 {
 		return nil
@@ -1106,7 +1107,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 }
 
 // GenerateParentPath generates the parent path of the given path.
-// 		- `path`: the path to generate the parent path from.
+//   - path: the path to generate the parent path from.
 func GenerateParentPaths(path string) map[string]bool {
 	path = strings.Trim(path, "/")
 	parts := strings.Split(path, "/")
@@ -1121,12 +1122,12 @@ func GenerateParentPaths(path string) map[string]bool {
 // DownloadFileToFileHandler adds a download operation a file to a file handler.
 // Triggers the download operations if the added download operation is final.
 // The file is downloaded from the allocation to the file handler.
-// 		- `fileHandler`: the file handler to download the file to.
-// 		- `remotePath`: the remote path of the file to download.
-// 		- `verifyDownload`: a flag to verify the download. If true, the download should be verified against the client keys.
-// 		- `status`: the status callback function. Will be used to gather the status of the download operation.
-// 		- `isFinal`: a flag to indicate if the download is the final download, meaning no more downloads are expected. It triggers the finalization of the download operation.
-// 		- `downloadReqOpts`: the options of the download operation as operation functions that customize the download operation.
+//   - fileHandler: the file handler to download the file to.
+//   - remotePath: the remote path of the file to download.
+//   - verifyDownload: a flag to verify the download. If true, the download should be verified against the client keys.
+//   - status: the status callback function. Will be used to gather the status of the download operation.
+//   - isFinal: a flag to indicate if the download is the final download, meaning no more downloads are expected. It triggers the finalization of the download operation.
+//   - downloadReqOpts: the options of the download operation as operation functions that customize the download operation.
 func (a *Allocation) DownloadFileToFileHandler(
 	fileHandler sys.File,
 	remotePath string,
@@ -1142,15 +1143,15 @@ func (a *Allocation) DownloadFileToFileHandler(
 // DownloadFileByBlockToFileHandler adds a download operation of a file by block to a file handler.
 // Triggers the download operations if the added download operation is final.
 // The file is downloaded from the allocation to the file handler in blocks.
-// 		- `fileHandler`: the file handler to download the file to.
-// 		- `remotePath`: the remote path of the file to download.
-// 		- `startBlock`: the start block of the file to download.
-// 		- `endBlock`: the end block of the file to download.
-// 		- `numBlocks`: the number of blocks to download.
-// 		- `verifyDownload`: a flag to verify the download. If true, the download should be verified against the client keys.
-// 		- `status`: the status callback function. Will be used to gather the status of the download operation.
-// 		- `isFinal`: a flag to indicate if the download is the final download, meaning no more downloads are expected. It triggers the finalization of the download operation.
-// 		- `downloadReqOpts`: the options of the download operation as operation functions that customize the download operation.
+//   - fileHandler: the file handler to download the file to.
+//   - remotePath: the remote path of the file to download.
+//   - startBlock: the start block of the file to download.
+//   - endBlock: the end block of the file to download.
+//   - numBlocks: the number of blocks to download.
+//   - verifyDownload: a flag to verify the download. If true, the download should be verified against the client keys.
+//   - status: the status callback function. Will be used to gather the status of the download operation.
+//   - isFinal: a flag to indicate if the download is the final download, meaning no more downloads are expected. It triggers the finalization of the download operation.
+//   - downloadReqOpts: the options of the download operation as operation functions that customize the download operation.
 func (a *Allocation) DownloadByBlocksToFileHandler(
 	fileHandler sys.File,
 	remotePath string,
@@ -1168,12 +1169,12 @@ func (a *Allocation) DownloadByBlocksToFileHandler(
 // DownloadThumbnailToFileHandler adds a download operation of a thumbnail to a file handler.
 // Triggers the download operations if the added download operation is final.
 // The thumbnail is downloaded from the allocation to the file handler.
-// 		- `fileHandler`: the file handler to download the thumbnail to.
-// 		- `remotePath`: the remote path of the thumbnail to download.
-// 		- `verifyDownload`: a flag to verify the download. If true, the download should be verified against the client keys.
-// 		- `status`: the status callback function. Will be used to gather the status of the download operation.
-// 		- `isFinal`: a flag to indicate if the download is the final download, meaning no more downloads are expected. It triggers the finalization of the download operation.
-// 		- `downloadReqOpts`: the options of the download operation as operation functions that customize the download operation.
+//   - fileHandler: the file handler to download the thumbnail to.
+//   - remotePath: the remote path of the thumbnail to download.
+//   - verifyDownload: a flag to verify the download. If true, the download should be verified against the client keys.
+//   - status: the status callback function. Will be used to gather the status of the download operation.
+//   - isFinal: a flag to indicate if the download is the final download, meaning no more downloads are expected. It triggers the finalization of the download operation.
+//   - downloadReqOpts: the options of the download operation as operation functions that customize the download operation.
 func (a *Allocation) DownloadThumbnailToFileHandler(
 	fileHandler sys.File,
 	remotePath string,
@@ -1189,13 +1190,12 @@ func (a *Allocation) DownloadThumbnailToFileHandler(
 // DownloadFile adds a download operation of a file from the allocation.
 // Triggers the download operations if the added download operation is final.
 // The file is downloaded from the allocation to the local path.
-// 		- `localPath`: the local path to download the file to.
-// 		- `remotePath`: the remote path of the file to download.
-// 		- `verifyDownload`: a flag to verify the download. If true, the download should be verified against the client keys.
-// 		- `status`: the status callback function. Will be used to gather the status of the download operation.
-// 		- `isFinal`: a flag to indicate if the download is the final download, meaning no more downloads are expected. It triggers the finalization of the download operation.
-// 		- `downloadReqOpts`: the options of the download operation as operation functions that customize the download operation.
-
+// 		- localPath: the local path to download the file to.
+// 		- remotePath: the remote path of the file to download.
+// 		- verifyDownload: a flag to verify the download. If true, the download should be verified against the client keys.
+// 		- status: the status callback function. Will be used to gather the status of the download operation.
+// 		- isFinal: a flag to indicate if the download is the final download, meaning no more downloads are expected. It triggers the finalization of the download operation.
+// 		- downloadReqOpts: the options of the download operation as operation functions that customize the download operation.
 
 func (a *Allocation) DownloadFile(localPath string, remotePath string, verifyDownload bool, status StatusCallback, isFinal bool, downloadReqOpts ...DownloadRequestOption) error {
 	f, localFilePath, toKeep, err := a.prepareAndOpenLocalFile(localPath, remotePath)
@@ -1216,18 +1216,19 @@ func (a *Allocation) DownloadFile(localPath string, remotePath string, verifyDow
 	}
 	return nil
 }
+
 // DownloadFileByBlock adds a download operation of a file by block from the allocation.
 // Triggers the download operations if the added download operation is final.
 // The file is downloaded from the allocation to the local path in blocks.
-// 		- `localPath`: the local path to download the file to.
-// 		- `remotePath`: the remote path of the file to download.
-// 		- `startBlock`: the start block of the file to download.
-// 		- `endBlock`: the end block of the file to download.
-// 		- `numBlocks`: the number of blocks to download.
-// 		- `verifyDownload`: a flag to verify the download. If true, the download should be verified against the client keys.
-// 		- `status`: the status callback function. Will be used to gather the status of the download operation.
-// 		- `isFinal`: a flag to indicate if the download is the final download, meaning no more downloads are expected. It triggers the finalization of the download operation.
-// 		- `downloadReqOpts`: the options of the download operation as operation functions that customize the download operation.
+// 		- localPath: the local path to download the file to.
+// 		- remotePath: the remote path of the file to download.
+// 		- startBlock: the start block of the file to download.
+// 		- endBlock: the end block of the file to download.
+// 		- numBlocks: the number of blocks to download.
+// 		- verifyDownload: a flag to verify the download. If true, the download should be verified against the client keys.
+// 		- status: the status callback function. Will be used to gather the status of the download operation.
+// 		- isFinal: a flag to indicate if the download is the final download, meaning no more downloads are expected. It triggers the finalization of the download operation.
+// 		- downloadReqOpts: the options of the download operation as operation functions that customize the download operation.
 
 // TODO: Use a map to store the download request and use flag isFinal to start the download, calculate readCount in parallel if possible
 func (a *Allocation) DownloadFileByBlock(
@@ -1255,11 +1256,11 @@ func (a *Allocation) DownloadFileByBlock(
 // DownloadThumbnail adds a download operation of a thumbnail from the allocation.
 // Triggers the download operations if the added download operation is final.
 // The thumbnail is downloaded from the allocation to the local path.
-// 		- `localPath`: the local path to download the thumbnail to.
-// 		- `remotePath`: the remote path of the thumbnail to download.
-// 		- `verifyDownload`: a flag to verify the download. If true, the download should be verified against the client keys.
-// 		- `status`: the status callback function. Will be used to gather the status of the download operation.
-// 		- `isFinal`: a flag to indicate if the download is the final download, meaning no more downloads are expected. It triggers the finalization of the download operation.
+//   - localPath: the local path to download the thumbnail to.
+//   - remotePath: the remote path of the thumbnail to download.
+//   - verifyDownload: a flag to verify the download. If true, the download should be verified against the client keys.
+//   - status: the status callback function. Will be used to gather the status of the download operation.
+//   - isFinal: a flag to indicate if the download is the final download, meaning no more downloads are expected. It triggers the finalization of the download operation.
 func (a *Allocation) DownloadThumbnail(localPath string, remotePath string, verifyDownload bool, status StatusCallback, isFinal bool) error {
 	f, localFilePath, toKeep, err := a.prepareAndOpenLocalFile(localPath, remotePath)
 	if err != nil {
@@ -1512,9 +1513,9 @@ func (a *Allocation) prepareAndOpenLocalFile(localPath string, remotePath string
 // ListDirFromAuthTicket lists the allocation directory encoded in the given auth ticket.
 // Usually used for directory sharing, the owner sets the directory as shared and generates an auth ticket which they should share with other non-owner users.
 // The non-owner users can list the shared directory using the auth ticket.
-// 		- `authTicket`: the auth ticket to list the directory.
-// 		- `lookupHash`: the lookup hash of the directory to list. It's an augmentation of the allocation ID and the path hash.
-// 		- `opts`: the options of the list request as operation functions that customize the list request.
+//   - authTicket: the auth ticket to list the directory.
+//   - lookupHash: the lookup hash of the directory to list. It's an augmentation of the allocation ID and the path hash.
+//   - opts: the options of the list request as operation functions that customize the list request.
 func (a *Allocation) ListDirFromAuthTicket(authTicket string, lookupHash string, opts ...ListRequestOptions) (*ListResult, error) {
 	if !a.isInitialized() {
 		return nil, notInitialized
@@ -1557,8 +1558,8 @@ func (a *Allocation) ListDirFromAuthTicket(authTicket string, lookupHash string,
 }
 
 // ListDir lists the allocation directory.
-// 		- `path`: the path of the directory to list.
-// 		- `opts`: the options of the list request as operation functions that customize the list request.
+//   - path: the path of the directory to list.
+//   - opts: the options of the list request as operation functions that customize the list request.
 func (a *Allocation) ListDir(path string, opts ...ListRequestOptions) (*ListResult, error) {
 	if !a.isInitialized() {
 		return nil, notInitialized
@@ -1639,11 +1640,11 @@ func (a *Allocation) getDownloadMaskForBlobber(blobberID string) (zboxutil.Uint1
 }
 
 // DownloadFromBlobber downloads a file from a specific blobber.
-// 		- `blobberID`: the ID of the blobber to download the file from.
-// 		- `localPath`: the local path to download the file to.
-// 		- `remotePath`: the remote path of the file to download.
-// 		- `status`: the status callback function. Will be used to gather the status of the download operation.
-// 		- `opts`: the options of the download request as operation functions that customize the download request.
+//   - blobberID: the ID of the blobber to download the file from.
+//   - localPath: the local path to download the file to.
+//   - remotePath: the remote path of the file to download.
+//   - status: the status callback function. Will be used to gather the status of the download operation.
+//   - opts: the options of the download request as operation functions that customize the download request.
 func (a *Allocation) DownloadFromBlobber(blobberID, localPath, remotePath string, status StatusCallback, opts ...DownloadRequestOption) error {
 
 	mask, blobbers, err := a.getDownloadMaskForBlobber(blobberID)
@@ -1698,14 +1699,14 @@ func (a *Allocation) DownloadFromBlobber(blobberID, localPath, remotePath string
 // Refs are the representations of files and directories in the blobber database.
 // An auth ticket is provided in case the path is shared, and usually by a non-owner user.
 // This function will retrieve paginated objectTree and will handle concensus; Required tree should be made in application side.
-// 		- `authToken`: the auth ticket to get the refs.
-// 		- `offsetPath`: the offset path to get the refs.
-// 		- `updatedDate`: the updated date to get the refs.
-// 		- `offsetDate`: the offset date to get the refs.
-// 		- `fileType`: the file type to get the refs.
-// 		- `refType`: the ref type to get the refs, e.g., file or directory.
-// 		- `level`: the level of the refs to get relative to the path root (strating from 0 as the root path).
-// 		- `pageLimit`: the limit of the refs to get per page.
+//   - authToken: the auth ticket to get the refs.
+//   - offsetPath: the offset path to get the refs.
+//   - updatedDate: the updated date to get the refs.
+//   - offsetDate: the offset date to get the refs.
+//   - fileType: the file type to get the refs.
+//   - refType: the ref type to get the refs, e.g., file or directory.
+//   - level: the level of the refs to get relative to the path root (strating from 0 as the root path).
+//   - pageLimit: the limit of the refs to get per page.
 func (a *Allocation) GetRefsWithAuthTicket(authToken, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*ObjectTreeResult, error) {
 	if authToken == "" {
 		return nil, errors.New("empty_auth_token", "auth token cannot be empty")
@@ -1727,14 +1728,14 @@ func (a *Allocation) GetRefsWithAuthTicket(authToken, offsetPath, updatedDate, o
 // GetRefs retrieve file refs that are children of a remote path.
 // Used by the owner to get the refs of the files and directories in the allocation.
 // This function will retrieve paginated objectTree and will handle concensus; Required tree should be made in application side.
-// 		- `path`: the path to get the refs.
-// 		- `offsetPath`: the offset path to get the refs.
-// 		- `updatedDate`: the updated date to get the refs.
-// 		- `offsetDate`: the offset date to get the refs.
-// 		- `fileType`: the file type to get the refs.
-// 		- `refType`: the ref type to get the refs, e.g., file or directory.
-// 		- `level`: the level of the refs to get relative to the path root (strating from 0 as the root path).
-// 		- `pageLimit`: the limit of the refs to get per page.
+//   - path: the path to get the refs.
+//   - offsetPath: the offset path to get the refs.
+//   - updatedDate: the updated date to get the refs.
+//   - offsetDate: the offset date to get the refs.
+//   - fileType: the file type to get the refs.
+//   - refType: the ref type to get the refs, e.g., file or directory.
+//   - level: the level of the refs to get relative to the path root (strating from 0 as the root path).
+//   - pageLimit: the limit of the refs to get per page.
 func (a *Allocation) GetRefs(path, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*ObjectTreeResult, error) {
 	if len(path) == 0 || !zboxutil.IsRemoteAbs(path) {
 		return nil, errors.New("invalid_path", fmt.Sprintf("Absolute path required. Path provided: %v", path))
@@ -1755,9 +1756,9 @@ func (a *Allocation) GetRefsFromLookupHash(pathHash, offsetPath, updatedDate, of
 // GetRecentlyAddedRefs retrieves the recently added refs in the allocation.
 // The refs are the representations of files and directories in the blobber database.
 // This function will retrieve paginated objectTree and will handle concensus; Required tree should be made in application side.
-// 		- `page`: the page number of the refs to get.
-// 		- `fromDate`: the date to get the refs from.
-// 		- `pageLimit`: the limit of the refs to get per page.
+//   - page: the page number of the refs to get.
+//   - fromDate: the date to get the refs from.
+//   - pageLimit: the limit of the refs to get per page.
 func (a *Allocation) GetRecentlyAddedRefs(page int, fromDate int64, pageLimit int) (*RecentlyAddedRefResult, error) {
 	if !a.isInitialized() {
 		return nil, notInitialized
@@ -1790,7 +1791,7 @@ func (a *Allocation) GetRecentlyAddedRefs(page int, fromDate int64, pageLimit in
 
 // GetFileMeta retrieves the file meta data of a file in the allocation.
 // The file meta data includes the file type, name, hash, lookup hash, mime type, path, size, number of blocks, encrypted key, collaborators, actual file size, actual thumbnail hash, and actual thumbnail size.
-// 		- `path`: the path of the file to get the meta data.
+//   - path: the path of the file to get the meta data.
 func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 	if !a.isInitialized() {
 		return nil, notInitialized
@@ -1832,7 +1833,7 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 // The size of the chunk to read is calculated based on the data shards and the encryption flag.
 // If the encryption flag is true, the size of the chunk to read is the chunk size minus the encrypted data padding size and the encryption header size.
 // Otherwise, the size of the chunk to read is the chunk size multiplied by the data shards.
-// 		- `encrypt`: the flag to indicate if the chunk is encrypted.
+//   - encrypt: the flag to indicate if the chunk is encrypted.
 func (a *Allocation) GetChunkReadSize(encrypt bool) int64 {
 	chunkDataSize := int64(DefaultChunkSize)
 	if encrypt {
@@ -1845,8 +1846,8 @@ func (a *Allocation) GetChunkReadSize(encrypt bool) int64 {
 // The file meta data includes the file type, name, hash, lookup hash, mime type, path, size, number of blocks, actual file size, actual thumbnail hash, and actual thumbnail size.
 // The auth ticket is used to access the file meta data of a shared file.
 // Usually used for file sharing, the owner sets the file as shared and generates an auth ticket which they should share with other non-owner users.
-// 		- `authTicket`: the auth ticket to get the file meta data.
-// 		- `lookupHash`: the lookup hash of the file to get the meta data. It's an augmentation of the allocation ID and the path hash.
+//   - authTicket: the auth ticket to get the file meta data.
+//   - lookupHash: the lookup hash of the file to get the meta data. It's an augmentation of the allocation ID and the path hash.
 func (a *Allocation) GetFileMetaFromAuthTicket(authTicket string, lookupHash string) (*ConsolidatedFileMeta, error) {
 	if !a.isInitialized() {
 		return nil, notInitialized
@@ -1898,7 +1899,7 @@ func (a *Allocation) GetFileMetaFromAuthTicket(authTicket string, lookupHash str
 
 // GetFileStats retrieves the file stats of a file in the allocation.
 // The file stats include the number of blocks, size, and actual file size.
-// 		- `path`: the path of the file to get the stats.
+//   - path: the path of the file to get the stats.
 func (a *Allocation) GetFileStats(path string) (map[string]*FileStats, error) {
 	if !a.isInitialized() {
 		return nil, notInitialized
@@ -1928,7 +1929,7 @@ func (a *Allocation) GetFileStats(path string) (map[string]*FileStats, error) {
 
 // DeleteFile deletes a file from the allocation.
 // The file is deleted from the allocation and the blobbers.
-// 		- `path`: the path of the file to delete.
+//   - path: the path of the file to delete.
 func (a *Allocation) DeleteFile(path string) error {
 	return a.deleteFile(path, a.consensusThreshold, a.fullconsensus, zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1))
 }
@@ -2006,20 +2007,19 @@ func (a *Allocation) createDir(remotePath string, threshConsensus, fullConsensus
 	return err
 }
 
-
 // GetAuthTicketForShare returns the authentication ticket for sharing a file or directory within the allocation.
 // It generates an authentication ticket using the provided parameters and the current time.
 // The authentication ticket can be used by the recipient to access the shared file or directory.
 //
 // Parameters:
-// 		- path: The path of the file or directory to be shared.
-// 		- filename: The name of the file to be shared.
-// 		- referenceType: The type of reference for the shared file or directory.
-// 		- refereeClientID: The client ID of the recipient who will be granted access to the shared file or directory.
+//   - path: The path of the file or directory to be shared.
+//   - filename: The name of the file to be shared.
+//   - referenceType: The type of reference for the shared file or directory.
+//   - refereeClientID: The client ID of the recipient who will be granted access to the shared file or directory.
 //
 // Returns:
-// 		- string: The authentication ticket for sharing the file or directory.
-// 		- error: An error if the authentication ticket generation fails.
+//   - string: The authentication ticket for sharing the file or directory.
+//   - error: An error if the authentication ticket generation fails.
 func (a *Allocation) GetAuthTicketForShare(
 	path, filename, referenceType, refereeClientID string) (string, error) {
 
@@ -2031,11 +2031,11 @@ func (a *Allocation) GetAuthTicketForShare(
 // It revokes the shared access to the file or directory for the specified recipient.
 //
 // Parameters:
-// 		- path: The path of the file or directory to revoke the shared access.
-// 		- refereeClientID: The client ID of the recipient whose shared access is to be revoked.
+//   - path: The path of the file or directory to revoke the shared access.
+//   - refereeClientID: The client ID of the recipient whose shared access is to be revoked.
 //
 // Returns:
-// 		- error: An error if the shared access revocation fails.
+//   - error: An error if the shared access revocation fails.
 func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
 	success := make(chan int, len(a.Blobbers))
 	notFound := make(chan int, len(a.Blobbers))
@@ -2097,17 +2097,17 @@ func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
 
 var ErrInvalidPrivateShare = errors.New("invalid_private_share", "private sharing is only available for encrypted file")
 
-
 // GetAuthTicket generates an authentication ticket for the specified file or directory in the allocation.
 // The authentication ticket is used to grant access to the file or directory to another client.
 // The function takes the following parameters:
-// 		- `path`: The path of the file or directory (should be absolute).
-// 		- `filename`: The name of the file.
-// 		- `referenceType`: The type of reference (file or directory).
-// 		- `refereeClientID`: The client ID of the referee.
-// 		- `refereeEncryptionPublicKey`: The encryption public key of the referee.
-// 		- `expiration`: The expiration time of the authentication ticket in Unix timestamp format.
-// 		- `availableAfter`: The time after which the authentication ticket becomes available in Unix timestamp format.
+//   - path: The path of the file or directory (should be absolute).
+//   - filename: The name of the file.
+//   - referenceType: The type of reference (file or directory).
+//   - refereeClientID: The client ID of the referee.
+//   - refereeEncryptionPublicKey: The encryption public key of the referee.
+//   - expiration: The expiration time of the authentication ticket in Unix timestamp format.
+//   - availableAfter: The time after which the authentication ticket becomes available in Unix timestamp format.
+//
 // Returns the authentication ticket as a base64-encoded string and an error if any.
 func (a *Allocation) GetAuthTicket(path, filename string,
 	referenceType, refereeClientID, refereeEncryptionPublicKey string, expiration int64, availableAfter *time.Time) (string, error) {
@@ -2183,9 +2183,9 @@ func (a *Allocation) GetAuthTicket(path, filename string,
 
 // UploadAuthTicketToBlobber uploads the authentication ticket to the blobbers after creating it at the client side.
 // The authentication ticket is uploaded to the blobbers to grant access to the file or directory to a client other than the owner.
-// 		- `authTicket`: The authentication ticket to upload.
-// 		- `clientEncPubKey`: The encryption public key of the client, used in case of private sharing.
-// 		- `availableAfter`: The time after which the authentication ticket becomes available in Unix timestamp format.
+//   - authTicket: The authentication ticket to upload.
+//   - clientEncPubKey: The encryption public key of the client, used in case of private sharing.
+//   - availableAfter: The time after which the authentication ticket becomes available in Unix timestamp format.
 func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKey string, availableAfter *time.Time) error {
 	success := make(chan int, len(a.Blobbers))
 	wg := &sync.WaitGroup{}
@@ -2255,7 +2255,7 @@ func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKe
 
 // CancelDownload cancels the download operation for the specified remote path.
 // It cancels the download operation and removes the download request from the download progress map.
-// 		- `remotepath`: The remote path of the file to cancel the download operation.
+//   - remotepath: The remote path of the file to cancel the download operation.
 func (a *Allocation) CancelDownload(remotepath string) error {
 	if downloadReq, ok := a.downloadProgressMap[remotepath]; ok {
 		downloadReq.isDownloadCanceled = true
@@ -2391,14 +2391,14 @@ func (a *Allocation) GetAllocationFileReader(
 // Triggers the downaload operations if this download request is the final one.
 //
 // Parameters:
-// 		- `fileHandler`: The file handler to write the downloaded file to.
-// 		- `authTicket`: The authentication ticket for accessing the allocation.
-// 		- `remoteLookupHash`: The lookup hash of the remote file.
-// 		- `remoteFilename`: The name of the remote file.
-// 		- `verifyDownload`: A boolean indicating whether to verify the downloaded file.
-// 		- `status`: A callback function to receive status updates during the download.
-// 		- `isFinal`: A boolean indicating whether this is the final download request.
-// 		- `downloadReqOpts`: the options of the download operation as operation functions that customize the download operation.
+//   - fileHandler: The file handler to write the downloaded file to.
+//   - authTicket: The authentication ticket for accessing the allocation.
+//   - remoteLookupHash: The lookup hash of the remote file.
+//   - remoteFilename: The name of the remote file.
+//   - verifyDownload: A boolean indicating whether to verify the downloaded file.
+//   - status: A callback function to receive status updates during the download.
+//   - isFinal: A boolean indicating whether this is the final download request.
+//   - downloadReqOpts: the options of the download operation as operation functions that customize the download operation.
 //
 // Returns:
 // - An error if the download fails, nil otherwise.
@@ -2421,17 +2421,17 @@ func (a *Allocation) DownloadFileToFileHandlerFromAuthTicket(
 // Triggers the downaload operations if this download request is the final one.
 //
 // Parameters:
-// 		- `fileHandler`: The file handler to write the downloaded file to.
-// 		- `authTicket`: The authentication ticket for accessing the allocation.
-// 		- `remoteLookupHash`: The lookup hash of the remote file.
-// 		- `startBlock`: The starting block number to download.
-// 		- `endBlock`: The ending block number to download.
-// 		- `numBlocks`: The number of blocks to download.
-// 		- `remoteFilename`: The name of the remote file.
-// 		- `verifyDownload`: A boolean indicating whether to verify the downloaded file.
-// 		- `status`: A callback function to receive status updates during the download.
-// 		- `isFinal`: A boolean indicating whether this is the final download request.
-// 		- `downloadReqOpts`: the options of the download operation as operation functions that customize the download operation.
+//   - fileHandler: The file handler to write the downloaded file to.
+//   - authTicket: The authentication ticket for accessing the allocation.
+//   - remoteLookupHash: The lookup hash of the remote file.
+//   - startBlock: The starting block number to download.
+//   - endBlock: The ending block number to download.
+//   - numBlocks: The number of blocks to download.
+//   - remoteFilename: The name of the remote file.
+//   - verifyDownload: A boolean indicating whether to verify the downloaded file.
+//   - status: A callback function to receive status updates during the download.
+//   - isFinal: A boolean indicating whether this is the final download request.
+//   - downloadReqOpts: the options of the download operation as operation functions that customize the download operation.
 func (a *Allocation) DownloadByBlocksToFileHandlerFromAuthTicket(
 	fileHandler sys.File,
 	authTicket string,
@@ -2453,13 +2453,13 @@ func (a *Allocation) DownloadByBlocksToFileHandlerFromAuthTicket(
 // Triggers the downaload operations if this download request is the final one.
 //
 // Parameters:
-// 		- `fileHandler`: The file handler to write the downloaded thumbnail to.
-// 		- `authTicket`: The authentication ticket for accessing the allocation.
-// 		- `remoteLookupHash`: The lookup hash of the remote file.
-// 		- `remoteFilename`: The name of the remote file.
-// 		- `verifyDownload`: A boolean indicating whether to verify the downloaded thumbnail.
-// 		- `status`: A callback function to receive status updates during the download.
-// 		- `isFinal`: A boolean indicating whether this is the final download request.
+//   - fileHandler: The file handler to write the downloaded thumbnail to.
+//   - authTicket: The authentication ticket for accessing the allocation.
+//   - remoteLookupHash: The lookup hash of the remote file.
+//   - remoteFilename: The name of the remote file.
+//   - verifyDownload: A boolean indicating whether to verify the downloaded thumbnail.
+//   - status: A callback function to receive status updates during the download.
+//   - isFinal: A boolean indicating whether this is the final download request.
 func (a *Allocation) DownloadThumbnailToFileHandlerFromAuthTicket(
 	fileHandler sys.File,
 	authTicket string,
@@ -2477,14 +2477,14 @@ func (a *Allocation) DownloadThumbnailToFileHandlerFromAuthTicket(
 // Triggers the downaload operations if this download request is the final one.
 //
 // Parameters:
-// 		- `localPath`: The local path to save the downloaded thumbnail.
-// 		- `authTicket`: The authentication ticket for accessing the allocation.
-// 		- `remoteLookupHash`: The lookup hash of the remote file.
-// 		- `remoteFilename`: The name of the remote file.
-// 		- `verifyDownload`: A boolean indicating whether to verify the downloaded thumbnail.
-// 		- `status`: A callback function to receive status updates during the download.
-// 		- `isFinal`: A boolean indicating whether this is the final download request.
-// 		- `downloadReqOpts`: the options of the download operation as operation functions that customize the download operation.
+//   - localPath: The local path to save the downloaded thumbnail.
+//   - authTicket: The authentication ticket for accessing the allocation.
+//   - remoteLookupHash: The lookup hash of the remote file.
+//   - remoteFilename: The name of the remote file.
+//   - verifyDownload: A boolean indicating whether to verify the downloaded thumbnail.
+//   - status: A callback function to receive status updates during the download.
+//   - isFinal: A boolean indicating whether this is the final download request.
+//   - downloadReqOpts: the options of the download operation as operation functions that customize the download operation.
 func (a *Allocation) DownloadThumbnailFromAuthTicket(
 	localPath string,
 	authTicket string,
@@ -2518,14 +2518,14 @@ func (a *Allocation) DownloadThumbnailFromAuthTicket(
 // Triggers the downaload operations if this download request is the final one.
 //
 // Parameters:
-// 		- `localPath`: The local path to save the downloaded file.
-// 		- `authTicket`: The authentication ticket for accessing the allocation.
-// 		- `remoteLookupHash`: The lookup hash of the remote file.
-// 		- `remoteFilename`: The name of the remote file.
-// 		- `verifyDownload`: A boolean indicating whether to verify the downloaded file.
-// 		- `status`: A callback function to receive status updates during the download.
-// 		- `isFinal`: A boolean indicating whether this is the final download request.
-// 		- `downloadReqOpts`: the options of the download operation as operation functions that customize the download operation.
+//   - localPath: The local path to save the downloaded file.
+//   - authTicket: The authentication ticket for accessing the allocation.
+//   - remoteLookupHash: The lookup hash of the remote file.
+//   - remoteFilename: The name of the remote file.
+//   - verifyDownload: A boolean indicating whether to verify the downloaded file.
+//   - status: A callback function to receive status updates during the download.
+//   - isFinal: A boolean indicating whether this is the final download request.
+//   - downloadReqOpts: the options of the download operation as operation functions that customize the download operation.
 func (a *Allocation) DownloadFromAuthTicket(localPath string, authTicket string,
 	remoteLookupHash string, remoteFilename string, verifyDownload bool, status StatusCallback, isFinal bool, downloadReqOpts ...DownloadRequestOption) error {
 	f, localFilePath, toKeep, err := a.prepareAndOpenLocalFile(localPath, remoteFilename)
@@ -2552,17 +2552,17 @@ func (a *Allocation) DownloadFromAuthTicket(localPath string, authTicket string,
 // Triggers the downaload operations if this download request is the final one.
 //
 // Parameters:
-// 		- `localPath`: The local path to save the downloaded file.
-// 		- `authTicket`: The authentication ticket for accessing the allocation.
-// 		- `startBlock`: The starting block number to download.
-// 		- `endBlock`: The ending block number to download.
-// 		- `numBlocks`: The number of blocks to download.
-// 		- `remoteLookupHash`: The lookup hash of the remote file.
-// 		- `remoteFilename`: The name of the remote file.
-// 		- `verifyDownload`: A boolean indicating whether to verify the downloaded file.
-// 		- `status`: A callback function to receive status updates during the download.
-// 		- `isFinal`: A boolean indicating whether this is the final download request.
-// 		- `downloadReqOpts`: the options of the download operation as operation functions that customize the download operation.
+//   - localPath: The local path to save the downloaded file.
+//   - authTicket: The authentication ticket for accessing the allocation.
+//   - startBlock: The starting block number to download.
+//   - endBlock: The ending block number to download.
+//   - numBlocks: The number of blocks to download.
+//   - remoteLookupHash: The lookup hash of the remote file.
+//   - remoteFilename: The name of the remote file.
+//   - verifyDownload: A boolean indicating whether to verify the downloaded file.
+//   - status: A callback function to receive status updates during the download.
+//   - isFinal: A boolean indicating whether this is the final download request.
+//   - downloadReqOpts: the options of the download operation as operation functions that customize the download operation.
 func (a *Allocation) DownloadFromAuthTicketByBlocks(localPath string,
 	authTicket string, startBlock int64, endBlock int64, numBlocks int,
 	remoteLookupHash string, remoteFilename string, verifyDownload bool,
@@ -2667,9 +2667,9 @@ func (a *Allocation) downloadFromAuthTicket(fileHandler sys.File, authTicket str
 // StartRepair starts the repair operation for the specified path in the allocation.
 // It starts the repair operation and returns an error if the path is not found.
 // Repair operation is used to repair the files in the allocation, which are corrupted or missing in some blobbers.
-//		- `localRootPath`: The local root path to repair the files.
-//		- `pathToRepair`: The path to repair in the allocation.
-//		- `statusCB`: A callback function to receive status updates during the repair operation.
+//   - localRootPath: The local root path to repair the files.
+//   - pathToRepair: The path to repair in the allocation.
+//   - statusCB: A callback function to receive status updates during the repair operation.
 func (a *Allocation) StartRepair(localRootPath, pathToRepair string, statusCB StatusCallback) error {
 	if !a.isInitialized() {
 		return notInitialized
@@ -2719,7 +2719,7 @@ func (a *Allocation) RepairAlloc(statusCB StatusCallback) (err error) {
 }
 
 // RepairSize Gets the size in bytes to repair allocation
-// 		- `remotePath`: the path to repair in the allocation.
+//   - remotePath: the path to repair in the allocation.
 func (a *Allocation) RepairSize(remotePath string) (RepairSize, error) {
 	if !a.isInitialized() {
 		return RepairSize{}, notInitialized
@@ -2741,7 +2741,7 @@ func (a *Allocation) RepairSize(remotePath string) (RepairSize, error) {
 
 // CancelUpload cancels the upload operation for the specified remote path.
 // It cancels the upload operation and returns an error if the remote path is not found.
-//		- `remotePath`: The remote path to cancel the upload operation.
+//   - remotePath: The remote path to cancel the upload operation.
 func (a *Allocation) CancelUpload(remotePath string) error {
 	cancelLock.Lock()
 	cancelFunc, ok := CancelOpCtx[remotePath]
@@ -2756,7 +2756,7 @@ func (a *Allocation) CancelUpload(remotePath string) error {
 
 // PauseUpload pauses the upload operation for the specified remote path.
 // It pauses the upload operation and returns an error if the remote path is not found.
-//		- `remotePath`: The remote path to pause the upload operation.
+//   - remotePath: The remote path to pause the upload operation.
 func (a *Allocation) PauseUpload(remotePath string) error {
 	cancelLock.Lock()
 	cancelFunc, ok := CancelOpCtx[remotePath]
@@ -2849,8 +2849,8 @@ func (a *Allocation) GetMinWriteRead() (minW float64, minR float64, err error) {
 }
 
 // GetMaxStorageCostFromBlobbers returns the maximum storage cost from a given list of allocation blobbers.
-// 		- `size`: The size of the file to calculate the storage cost.
-// 		- `blobbers`: The list of blobbers to calculate the storage cost.
+//   - size: The size of the file to calculate the storage cost.
+//   - blobbers: The list of blobbers to calculate the storage cost.
 func (a *Allocation) GetMaxStorageCostFromBlobbers(size int64, blobbers []*BlobberAllocation) (float64, error) {
 	var cost common.Balance // total price for size / duration
 
@@ -2867,7 +2867,7 @@ func (a *Allocation) GetMaxStorageCostFromBlobbers(size int64, blobbers []*Blobb
 }
 
 // GetMaxStorageCost returns the maximum storage cost from the blobbers in the allocation.
-// 		- `size`: The size of the file to calculate the storage cost.
+//   - size: The size of the file to calculate the storage cost.
 func (a *Allocation) GetMaxStorageCost(size int64) (float64, error) {
 	var cost common.Balance // total price for size / duration
 
@@ -2887,7 +2887,7 @@ func (a *Allocation) GetMaxStorageCost(size int64) (float64, error) {
 }
 
 // GetMinStorageCost returns the minimum storage cost from the blobbers in the allocation.
-// 		- `size`: The size of the file to calculate the storage cost.
+//   - size: The size of the file to calculate the storage cost.
 func (a *Allocation) GetMinStorageCost(size int64) (common.Balance, error) {
 	minW, _, err := a.GetMinWriteRead()
 	if err != nil {
@@ -2932,15 +2932,15 @@ func (a *Allocation) SetConsensusThreshold() {
 
 // UpdateWithRepair updates the allocation with the specified parameters and starts the repair operation if required.
 // It updates the allocation with the specified parameters and starts the repair operation if required.
-//		- `size`: The updated size of the allocation to update.
-//		- `extend`: A boolean indicating whether to extend the expiration of the allocation.
-//		- `lock`: The lock value to update the allocation.
-//		- `addBlobberId`: The blobber ID to add to the allocation.
-//		- `addBlobberAuthTicket`: The authentication ticket for the blobber to add to the allocation.
-//		- `removeBlobberId`: The blobber ID to remove from the allocation.
-//		- `setThirdPartyExtendable`: A boolean indicating whether to set the allocation as third-party extendable. If set to true, the allocation can be extended in terms of size by a non-owner.
-//		- `fileOptionsParams`: The file options parameters which control permissions of the files of the allocations.
-//		- `statusCB`: A callback function to receive status updates during the update operation.
+//   - size: The updated size of the allocation to update.
+//   - extend: A boolean indicating whether to extend the expiration of the allocation.
+//   - lock: The lock value to update the allocation.
+//   - addBlobberId: The blobber ID to add to the allocation.
+//   - addBlobberAuthTicket: The authentication ticket for the blobber to add to the allocation.
+//   - removeBlobberId: The blobber ID to remove from the allocation.
+//   - setThirdPartyExtendable: A boolean indicating whether to set the allocation as third-party extendable. If set to true, the allocation can be extended in terms of size by a non-owner.
+//   - fileOptionsParams: The file options parameters which control permissions of the files of the allocations.
+//   - statusCB: A callback function to receive status updates during the update operation.
 func (a *Allocation) UpdateWithRepair(
 	size int64,
 	extend bool,
@@ -2965,15 +2965,16 @@ func (a *Allocation) UpdateWithRepair(
 
 // UpdateWithStatus updates the allocation with the specified parameters.
 // It updates the allocation with the specified parameters and returns the updated allocation, hash, and a boolean indicating whether repair is required.
-//		- `size`: The updated size of the allocation to update.
-//		- `extend`: A boolean indicating whether to extend the expiration of the allocation.
-//		- `lock`: The lock value to update the allocation.
-//		- `addBlobberId`: The blobber ID to add to the allocation.
-//		- `addBlobberAuthTicket`: The authentication ticket for the blobber to add to the allocation. Used in case of adding a restricted blobber.
-//		- `removeBlobberId`: The blobber ID to remove from the allocation.
-//		- `setThirdPartyExtendable`: A boolean indicating whether to set the allocation as third-party extendable. If set to true, the allocation can be extended in terms of size by a non-owner.
-//		- `fileOptionsParams`: The file options parameters which control permissions of the files of the allocations.
-//		- `statusCB`: A callback function to receive status updates during the update operation.
+//   - size: The updated size of the allocation to update.
+//   - extend: A boolean indicating whether to extend the expiration of the allocation.
+//   - lock: The lock value to update the allocation.
+//   - addBlobberId: The blobber ID to add to the allocation.
+//   - addBlobberAuthTicket: The authentication ticket for the blobber to add to the allocation. Used in case of adding a restricted blobber.
+//   - removeBlobberId: The blobber ID to remove from the allocation.
+//   - setThirdPartyExtendable: A boolean indicating whether to set the allocation as third-party extendable. If set to true, the allocation can be extended in terms of size by a non-owner.
+//   - fileOptionsParams: The file options parameters which control permissions of the files of the allocations.
+//   - statusCB: A callback function to receive status updates during the update operation.
+//
 // Returns the updated allocation, hash, and a boolean indicating whether repair is required.
 func (a *Allocation) UpdateWithStatus(
 	size int64,

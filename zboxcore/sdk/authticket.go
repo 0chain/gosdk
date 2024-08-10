@@ -14,7 +14,7 @@ type AuthTicket struct {
 }
 
 // InitAuthTicket initialize auth ticket instance
-// 		- `authTicket`: base64 encoded auth ticket
+//   - authTicket: base64 encoded auth ticket
 func InitAuthTicket(authTicket string) *AuthTicket {
 	at := &AuthTicket{}
 	at.b64Ticket = authTicket

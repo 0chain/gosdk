@@ -142,7 +142,7 @@ func GetNetwork() *Network {
 }
 
 // SetNetwork set network details
-// 		- `net`: network details
+//   - net: network details
 func SetNetwork(net *Network) {
 	_config.chain.Miners = net.net.Miners
 	_config.chain.Sharders = net.net.Sharders

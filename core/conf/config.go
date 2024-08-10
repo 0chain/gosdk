@@ -80,8 +80,8 @@ type Config struct {
 	SharderConsensous int `json:"sharder_consensous"`
 }
 
-// LoadConfigFile load and parse Config from file
-//   - `file`: config file path (full path)
+// LoadConfigFile load and parse SDK Config from file
+//   - file: config file path (full path)
 func LoadConfigFile(file string) (Config, error) {
 
 	var cfg Config
