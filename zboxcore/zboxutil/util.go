@@ -24,11 +24,14 @@ import (
 	"github.com/hitenjain14/fasthttp"
 	"github.com/lithammer/shortuuid/v3"
 	"github.com/minio/sha256-simd"
+	"github.com/valyala/bytebufferpool"
 	"golang.org/x/crypto/chacha20poly1305"
 	"golang.org/x/crypto/scrypt"
 )
 
 const EncryptedFolderName = "encrypted"
+
+var BufferPool bytebufferpool.Pool
 
 type lazybuf struct {
 	path       string

@@ -11,6 +11,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/encryption"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/klauspost/reedsolomon"
+	"github.com/valyala/bytebufferpool"
 )
 
 type ChunkedUploadChunkReader interface {
@@ -74,6 +75,7 @@ type chunkedUploadChunkReader struct {
 	hasher         Hasher
 	hasherDataChan chan []byte
 	hasherError    error
+	byteBuffer     *bytebufferpool.ByteBuffer
 	hasherWG       sync.WaitGroup
 	closeOnce      sync.Once
 }
@@ -128,7 +130,12 @@ func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards, 
 		chunkNum := (size + r.chunkDataSizePerRead - 1) / r.chunkDataSizePerRead
 		totalDataSize = r.totalChunkDataSizePerRead * chunkNum
 	}
-	r.fileShardsDataBuffer = make([]byte, 0, totalDataSize)
+	buf := zboxutil.BufferPool.Get()
+	if cap(buf.B) < int(totalDataSize) {
+		buf.B = make([]byte, 0, totalDataSize)
+	}
+	r.fileShardsDataBuffer = buf.B
+	r.byteBuffer = buf
 	if CurrentMode == UploadModeHigh {
 		r.hasherWG.Add(1)
 		go r.hashData()
@@ -297,6 +304,7 @@ func (r *chunkedUploadChunkReader) Close() {
 		close(r.hasherDataChan)
 		r.hasherWG.Wait()
 	})
+	zboxutil.BufferPool.Put(r.byteBuffer)
 	r.fileShardsDataBuffer = nil
 }
 
