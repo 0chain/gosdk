@@ -9,10 +9,13 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/zboxcore/encryption"
+	"github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/klauspost/reedsolomon"
 	"github.com/valyala/bytebufferpool"
 )
+
+var uploadPool bytebufferpool.Pool
 
 type ChunkedUploadChunkReader interface {
 	// Next read, encode and encrypt next chunk
@@ -53,7 +56,7 @@ type chunkedUploadChunkReader struct {
 	totalChunkDataSizePerRead int64
 
 	//fileShardsDataBuffer
-	fileShardsDataBuffer []byte
+	fileShardsDataBuffer *bytebufferpool.ByteBuffer
 
 	//offset
 	offset int64
@@ -75,7 +78,6 @@ type chunkedUploadChunkReader struct {
 	hasher         Hasher
 	hasherDataChan chan []byte
 	hasherError    error
-	byteBuffer     *bytebufferpool.ByteBuffer
 	hasherWG       sync.WaitGroup
 	closeOnce      sync.Once
 }
@@ -130,12 +132,13 @@ func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards, 
 		chunkNum := (size + r.chunkDataSizePerRead - 1) / r.chunkDataSizePerRead
 		totalDataSize = r.totalChunkDataSizePerRead * chunkNum
 	}
-	// buf := zboxutil.BufferPool.Get()
-	// if cap(buf.B) < int(totalDataSize) {
-	// 	buf.B = make([]byte, 0, totalDataSize)
-	// }
-	r.fileShardsDataBuffer = make([]byte, 0, totalDataSize)
-	// r.byteBuffer = buf
+	buf := uploadPool.Get()
+	if cap(buf.B) < int(totalDataSize) {
+		buf.B = make([]byte, 0, totalDataSize)
+	} else {
+		logger.Logger.Info("reusing buffer with size: ", cap(buf.B), " totalDataSize: ", totalDataSize, " len: ", len(buf.B))
+	}
+	r.fileShardsDataBuffer = buf
 	if CurrentMode == UploadModeHigh {
 		r.hasherWG.Add(1)
 		go r.hashData()
@@ -179,7 +182,7 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 		ReadSize:     0,
 		FragmentSize: 0,
 	}
-	chunkBytes := r.fileShardsDataBuffer[r.offset : r.offset+r.chunkDataSizePerRead : r.offset+r.totalChunkDataSizePerRead]
+	chunkBytes := r.fileShardsDataBuffer.B[r.offset : r.offset+r.chunkDataSizePerRead : r.offset+r.totalChunkDataSizePerRead]
 	var (
 		readLen int
 		err     error
@@ -304,7 +307,7 @@ func (r *chunkedUploadChunkReader) Close() {
 		close(r.hasherDataChan)
 		r.hasherWG.Wait()
 	})
-	// zboxutil.BufferPool.Put(r.byteBuffer)
+	uploadPool.Put(r.fileShardsDataBuffer)
 	r.fileShardsDataBuffer = nil
 }
 
