@@ -249,6 +249,9 @@ func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
 		}
 		result.Size += ti.ref.Size
 		result.NumBlocks += ti.ref.NumBlocks
+		if ti.ref.Path == "/" {
+			result.ActualSize = ti.ref.Size * int64(req.consensusThresh)
+		}
 
 		if len(lR[i].ref.Children) > 0 {
 			result.populateChildren(lR[i].ref.Children, childResultMap, selected, req)
