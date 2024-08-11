@@ -135,6 +135,7 @@ func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards, 
 	buf := uploadPool.Get()
 	if cap(buf.B) < int(totalDataSize) {
 		buf.B = make([]byte, 0, totalDataSize)
+		logger.Logger.Info("creating buffer with size: ", " totalDataSize: ", totalDataSize)
 	} else {
 		logger.Logger.Info("reusing buffer with size: ", cap(buf.B), " totalDataSize: ", totalDataSize, " len: ", len(buf.B))
 	}
@@ -307,6 +308,7 @@ func (r *chunkedUploadChunkReader) Close() {
 		close(r.hasherDataChan)
 		r.hasherWG.Wait()
 	})
+	logger.Logger.Info("put buffer to pool: ", cap(r.fileShardsDataBuffer.B), " len: ", r.totalChunkDataSizePerRead)
 	uploadPool.Put(r.fileShardsDataBuffer)
 }
 
