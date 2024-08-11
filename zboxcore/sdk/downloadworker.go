@@ -451,6 +451,10 @@ func (req *DownloadRequest) processDownload() {
 			return
 		}
 		req.fileHandler.Sync() //nolint
+		if req.statusCallback != nil && !req.skip {
+			req.statusCallback.Completed(
+				req.allocationID, remotePathCB, fRef.Name, fRef.MimeType, 32, op)
+		}
 		return
 	}
 	size, chunksPerShard, blocksPerShard := req.size, req.chunksPerShard, req.blocksPerShard
