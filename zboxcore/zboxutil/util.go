@@ -68,6 +68,9 @@ func (b *lazybuf) string() string {
 	return b.volAndPath[:b.volLen] + string(b.buf[:b.w])
 }
 
+// GetFileContentType returns the content type of the file based on reading the first 10KB of the file
+//   - ext is the extension of the file, shouldn't be empty
+//   - out is the file content
 func GetFileContentType(ext string, out io.ReadSeeker) (string, error) {
 
 	if ext != "" {
@@ -93,6 +96,9 @@ func GetFileContentType(ext string, out io.ReadSeeker) (string, error) {
 	return kind.MIME.Value, nil
 }
 
+// GetFullRemotePath returns the full remote path by combining the local path and remote path
+//   - localPath is the local path of the file
+//   - remotePath is the remote path of the file
 func GetFullRemotePath(localPath, remotePath string) string {
 	if remotePath == "" || strings.HasSuffix(remotePath, "/") {
 		remotePath = strings.TrimRight(remotePath, "/")
@@ -102,15 +108,21 @@ func GetFullRemotePath(localPath, remotePath string) string {
 	return remotePath
 }
 
-// NewConnectionId generate new connection id
+// NewConnectionId generate new connection id.
+// Connection is used to track the upload/download progress and redeem the cost of the operation from the network.
+// It's in the short uuid format. Check here for more on this format: https://pkg.go.dev/github.com/lithammer/shortuuid/v3@v3.0.7
 func NewConnectionId() string {
 	return shortuuid.New()
 }
 
+// IsRemoteAbs returns true if the path is remote absolute path
+//   - path is the path to check
 func IsRemoteAbs(path string) bool {
 	return strings.HasPrefix(path, "/")
 }
 
+// RemoteClean returns the cleaned remote path
+//   - path is the path to clean
 func RemoteClean(path string) string {
 	originalPath := path
 	volLen := 0 //volumeNameLen(path)

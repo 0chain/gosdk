@@ -120,8 +120,8 @@ func IsValidEthAddress(ethAddr string) (bool, error) {
 	return isValidEthAddress(ethAddr, client)
 }
 
-// IsEthTransactionVerified - checks if the transaction is verified
-// with a help of the given transaction hash
+// IsEthTransactionVerified checks if the transaction - given its hash - is verified on the ethereum network
+//   - txHash: transaction hash
 func IsEthTransactionVerified(txHash string) (bool, error) {
 	client, err := getEthClient()
 	if err != nil {
@@ -191,6 +191,7 @@ func CheckEthHashStatus(hash string) int {
 }
 
 // ConvertZcnTokenToETH - converting Zcn tokens to Eth
+//   - f: ZCN tokens amount
 func ConvertZcnTokenToETH(f float64) (float64, error) {
 	ethRate, err := tokenrate.GetUSD(context.TODO(), "eth")
 	if err != nil {

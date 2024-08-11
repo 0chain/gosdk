@@ -1,3 +1,4 @@
+// Provides the data structures and methods used in encryption.
 package encryption
 
 import (
@@ -10,14 +11,17 @@ import (
 
 const HASH_LENGTH = 32
 
+// HashBytes hash bytes
 type HashBytes [HASH_LENGTH]byte
 
-/*Hash - hash the given data and return the hash as hex string */
+// Hash hash the given data and return the hash as hex string
+//   - data is the data to hash
 func Hash(data interface{}) string {
 	return hex.EncodeToString(RawHash(data))
 }
 
-/*RawHash - Logic to hash the text and return the hash bytes */
+// RawHash Logic to hash the text and return the hash bytes
+//   - data is the data to hash
 func RawHash(data interface{}) []byte {
 	var databuf []byte
 	switch dataImpl := data.(type) {
@@ -36,6 +40,8 @@ func RawHash(data interface{}) []byte {
 	return hash.Sum(buf)
 }
 
+// ShaHash hash the given data and return the hash as hex string
+//   - data is the data to hash
 func ShaHash(data interface{}) []byte {
 	var databuf []byte
 	switch dataImpl := data.(type) {
@@ -53,12 +59,14 @@ func ShaHash(data interface{}) []byte {
 	return hash.Sum(nil)
 }
 
-/*FastHash - sha1 hash the given data and return the hash as hex string */
+// FastHash - sha1 hash the given data and return the hash as hex string
+//   - data is the data to hash
 func FastHash(data interface{}) string {
 	return hex.EncodeToString(RawFastHash(data))
 }
 
-/*RawFastHash - Logic to sha1 hash the text and return the hash bytes */
+// RawFastHash - Logic to sha1 hash the text and return the hash bytes
+//   - data is the data to hash
 func RawFastHash(data interface{}) []byte {
 	var databuf []byte
 	switch dataImpl := data.(type) {

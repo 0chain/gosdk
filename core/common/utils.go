@@ -1,3 +1,4 @@
+// Provides the data structures and methods to work with the common data structures.
 package common
 
 import (
