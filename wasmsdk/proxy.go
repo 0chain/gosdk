@@ -201,6 +201,7 @@ func main() {
 				"skipStatusCheck":           skipStatusCheck,
 				"terminateWorkers":          terminateWorkers,
 				"createWorkers":             createWorkers,
+				"getFileMetaByName":         getFileMetaByName,
 
 				// player
 				"play":           play,
