@@ -17,7 +17,11 @@ import (
 //				}
 //			],
 //			"mnemonics":"guitar cook depend snake response major argue abstract script tonight energy soccer copy latin street bracket combine image fabric maximum mercy icon bitter dwarf",
-//			"version":"1.0","date_created":"2022-11-02T10:21:32+08:00","nonce":0}
+//			"version":"1.0","date_created":"2022-11-02T10:21:32+08:00","nonce":0
+//	 }
+//		- privateKey: private key to use for signing
+//		- signatureScheme: signature scheme to use for signing
+//		- numSplits: number of splits
 func SplitKeys(privateKey, signatureScheme string, numSplits int) ([]byte, error) {
 	signScheme := zcncrypto.NewSignatureScheme(signatureScheme)
 	if signScheme != nil {

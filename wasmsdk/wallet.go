@@ -11,6 +11,11 @@ import (
 	"github.com/0chain/gosdk/zcncore"
 )
 
+// setWallet sets the wallet used by the client for the network transactions and the backend API requests
+//   - clientID is the client id
+//   - publicKey is the public key of the client
+//   - privateKey is the private key of the client
+//   - mnemonic is the mnemonic of the client
 func setWallet(clientID, publicKey, privateKey, mnemonic string) error {
 	if mnemonic == "" {
 		return errors.New("mnemonic is required")

@@ -1,3 +1,4 @@
+// Error struct and functions.
 package errors
 
 import (
@@ -68,8 +69,9 @@ func ExitMsg(text string, code int) {
 	os.Exit(code)
 }
 
-// Is wraps function errors.Is from stdlib to avoid import it
-// in other places of the magma smart contract (magmasc) package.
+// Is checks if error is equal to target error.
+// 		- err: error to check
+// 		- target: target error to compare
 func Is(err, target error) bool {
 	return errors.Is(err, target)
 }
@@ -94,6 +96,9 @@ func (err *Error) Error() string {
 	return fmt.Sprintf("%s: %s", err.Code, err.Msg)
 }
 
+// NewError create a new error instance given a code and a message.
+//   - code: error code
+//   - msg: error message
 func NewError(code string, msg string) *Error {
 	return &Error{Code: code, Msg: msg}
 }

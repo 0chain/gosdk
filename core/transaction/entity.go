@@ -1,3 +1,4 @@
+// Provides low-level functions and types to work with the native smart contract transactions.
 package transaction
 
 import (
@@ -50,6 +51,7 @@ type TxnReceipt struct {
 	Transaction *Transaction
 }
 
+// SmartContractTxnData data structure to hold the smart contract transaction data
 type SmartContractTxnData struct {
 	Name      string      `json:"name"`
 	InputArgs interface{} `json:"input"`
