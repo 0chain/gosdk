@@ -341,6 +341,7 @@ func SetWasm() {
 	BatchSize = 4
 	extraCount = 0
 	RepairBatchSize = 20
+	RepairBlocks = 50
 }
 
 // SetCheckStatus sets the check status of the allocation.
@@ -525,13 +526,13 @@ func (a *Allocation) RepairFile(file sys.File, remotepath string, statusCallback
 			WithEncrypt(true),
 			WithStatusCallback(statusCallback),
 			WithEncryptedPoint(ref.EncryptedKeyPoint),
-			WithChunkNumber(100),
+			WithChunkNumber(RepairBlocks),
 		}
 	} else {
 		opts = []ChunkedUploadOption{
 			WithMask(mask),
 			WithStatusCallback(statusCallback),
-			WithChunkNumber(100),
+			WithChunkNumber(RepairBlocks),
 		}
 	}
 	op := &OperationRequest{
