@@ -12,6 +12,7 @@ import (
 
 // Models
 
+// AuthorizerResponse represents the response of the request to get authorizer info from the sharders.
 type AuthorizerResponse struct {
 	AuthorizerID string `json:"id"`
 	URL          string `json:"url"`
@@ -34,10 +35,12 @@ type AuthorizerResponse struct {
 	ServiceCharge  float64        `json:"service_charge"`
 }
 
+// AuthorizerNodesResponse represents the response of the request to get authorizers
 type AuthorizerNodesResponse struct {
 	Nodes []*AuthorizerNode `json:"nodes"`
 }
 
+// AuthorizerNode represents an authorizer node
 type AuthorizerNode struct {
 	ID  string `json:"id"`
 	URL string `json:"url"`
@@ -71,7 +74,9 @@ func getAuthorizers(active bool) ([]*AuthorizerNode, error) {
 	return authorizers.Nodes, nil
 }
 
-// GetAuthorizer returned authorizer by ID
+// GetAuthorizer returned authorizer information from Züs Blockchain by the ID
+//   - id is the authorizer ID
+//   - cb is the callback function to handle the response asynchronously
 func GetAuthorizer(id string, cb zcncore.GetInfoCallback) (err error) {
 	err = zcncore.CheckConfig()
 	if err != nil {
@@ -91,6 +96,8 @@ func GetAuthorizer(id string, cb zcncore.GetInfoCallback) (err error) {
 }
 
 // GetAuthorizers Returns all or only active authorizers
+//   - active is the flag to get only active authorizers
+//   - cb is the callback function to handle the response asynchronously
 func GetAuthorizers(active bool, cb zcncore.GetInfoCallback) (err error) {
 	err = zcncore.CheckConfig()
 	if err != nil {
@@ -101,6 +108,7 @@ func GetAuthorizers(active bool, cb zcncore.GetInfoCallback) (err error) {
 }
 
 // GetGlobalConfig Returns global config
+//   - cb is the callback function to handle the response asynchronously
 func GetGlobalConfig(cb zcncore.GetInfoCallback) (err error) {
 	err = zcncore.CheckConfig()
 	if err != nil {

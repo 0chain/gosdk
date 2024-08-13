@@ -1,3 +1,4 @@
+// Provides functions and data structures to interact with the system nodes in the context of the blockchain network.
 package node
 
 import (

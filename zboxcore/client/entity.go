@@ -1,3 +1,4 @@
+// Methods and types for client and wallet operations.
 package client
 
 import (
@@ -9,6 +10,7 @@ import (
 
 type SignFunc func(hash string) (string, error)
 
+// Client represents client information
 type Client struct {
 	*zcncrypto.Wallet
 	SignatureScheme string
@@ -18,7 +20,9 @@ type Client struct {
 var (
 	client  *Client
 	clients []*Client
-	Sign    SignFunc
+
+	// Sign is a function to sign a hash
+	Sign SignFunc
 )
 
 func init() {
@@ -37,12 +41,15 @@ func init() {
 }
 
 // PopulateClient populates single client
+//   - clientjson: client json string
+//   - signatureScheme: signature scheme
 func PopulateClient(clientjson string, signatureScheme string) error {
 	err := json.Unmarshal([]byte(clientjson), &client)
 	client.SignatureScheme = signatureScheme
 	return err
 }
 
+// SetClientNonce sets client nonce
 func SetClientNonce(nonce int64) {
 	client.Nonce = nonce
 }
@@ -58,6 +65,8 @@ func TxnFee() uint64 {
 }
 
 // PopulateClients This is a workaround for blobber tests that requires multiple clients to test authticket functionality
+//   - clientJsons: array of client json strings
+//   - signatureScheme: signature scheme
 func PopulateClients(clientJsons []string, signatureScheme string) error {
 	for _, clientJson := range clientJsons {
 		c := new(Client)
@@ -70,22 +79,27 @@ func PopulateClients(clientJsons []string, signatureScheme string) error {
 	return nil
 }
 
+// GetClient returns client instance
 func GetClient() *Client {
 	return client
 }
 
+// GetClients returns all clients
 func GetClients() []*Client {
 	return clients
 }
 
+// GetClientID returns client id
 func GetClientID() string {
 	return client.ClientID
 }
 
+// GetClientPublicKey returns client public key
 func GetClientPublicKey() string {
 	return client.ClientKey
 }
 
+// GetClientPrivateKey returns client private key
 func GetClientPrivateKey() string {
 	for _, kv := range client.Keys {
 		return kv.PrivateKey
@@ -130,6 +144,9 @@ func signHash(hash string, signatureScheme string, keys []sys.KeyPair) (string, 
 	return retSignature, nil
 }
 
+// VerifySignature verifies signature of a message with client public key and signature scheme
+//   - signature: signature to use for verification
+//   - msg: message to verify
 func VerifySignature(signature string, msg string) (bool, error) {
 	ss := zcncrypto.NewSignatureScheme(client.SignatureScheme)
 	if err := ss.SetPublicKey(client.ClientKey); err != nil {
@@ -139,6 +156,10 @@ func VerifySignature(signature string, msg string) (bool, error) {
 	return ss.Verify(signature, msg)
 }
 
+// VerifySignatureWith verifies signature of a message with a given public key, and the client's signature scheme
+//   - pubKey: public key to use for verification
+//   - signature: signature to use for verification
+//   - hash: message to verify
 func VerifySignatureWith(pubKey, signature, hash string) (bool, error) {
 	sch := zcncrypto.NewSignatureScheme(client.SignatureScheme)
 	err := sch.SetPublicKey(pubKey)

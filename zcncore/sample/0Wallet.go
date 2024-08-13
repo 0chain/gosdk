@@ -1,6 +1,7 @@
 //go:build ignore
 // +build ignore
 
+// Sample usage of the Wallet SDK - do not use.
 package main
 
 import (
