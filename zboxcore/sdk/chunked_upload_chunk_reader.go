@@ -307,7 +307,6 @@ func (r *chunkedUploadChunkReader) Close() {
 	r.closeOnce.Do(func() {
 		close(r.hasherDataChan)
 		r.hasherWG.Wait()
-		logger.Logger.Debug("put buffer to pool: ", cap(r.fileShardsDataBuffer.B), " len: ", r.totalChunkDataSizePerRead)
 		uploadPool.Put(r.fileShardsDataBuffer)
 		r.fileShardsDataBuffer = nil
 	})
