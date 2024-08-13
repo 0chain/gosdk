@@ -255,7 +255,7 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
 				l.Logger.Error("error during getWritemarker", zap.Error(err))
 				blobStatus.Status = "unavailable"
 			}
-			if lvm == nil {
+			if lvm == nil || lvm.VersionMarker == nil {
 				markerChan <- nil
 			} else {
 				markerChan <- &RollbackBlobber{
