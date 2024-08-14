@@ -421,3 +421,11 @@ func allocationRepair(allocationID, remotePath string) error {
 	}
 	return nil
 }
+
+func repairSize(allocationID, remotePath string) (sdk.RepairSize, error) {
+	alloc, err := sdk.GetAllocation(allocationID)
+	if err != nil {
+		return sdk.RepairSize{}, err
+	}
+	return alloc.RepairSize(remotePath)
+}

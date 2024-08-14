@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"sync"
 	"syscall/js"
 
 	"github.com/google/uuid"
@@ -41,9 +42,18 @@ type WasmWebWorker struct {
 	// environment.
 	// If Env contains duplicate environment keys, only the last
 	// value in the slice for each duplicate key is used.
-	Env []string
-
+	Env    []string
 	worker *worker.Worker
+
+	// For subscribing to events
+	ctx           context.Context
+	cancelContext context.CancelFunc
+	subscribers   map[string]chan worker.MessageEvent
+	numberOfSubs  int
+	subMutex      sync.Mutex
+
+	//isTerminated bool
+	isTerminated bool
 }
 
 var (
@@ -89,9 +99,104 @@ func GetWorker(blobberID string) *WasmWebWorker {
 func RemoveWorker(blobberID string) {
 	worker, ok := workers[blobberID]
 	if ok {
-		worker.Terminate()
-		delete(workers, blobberID)
+		worker.subMutex.Lock()
+		if worker.numberOfSubs == 0 {
+			worker.Terminate()
+			delete(workers, blobberID)
+			worker.isTerminated = true
+		}
+		worker.subMutex.Unlock()
 	}
+}
+
+// pass a buffered channel to subscribe to events so that the caller is not blocked
+func (ww *WasmWebWorker) SubscribeToEvents(remotePath string, ch chan worker.MessageEvent) error {
+	if ch == nil {
+		return errors.New("channel is nil")
+	}
+	ww.subMutex.Lock()
+	if ww.isTerminated {
+		ww.subMutex.Unlock()
+		return errors.New("worker is terminated")
+	}
+	ww.subscribers[remotePath] = ch
+	ww.numberOfSubs++
+	//start the worker listener if there are subscribers
+	if ww.numberOfSubs == 1 {
+		ctx, cancel := context.WithCancel(context.Background())
+		ww.ctx = ctx
+		ww.cancelContext = cancel
+		eventChan, err := ww.Listen(ctx)
+		if err != nil {
+			ww.subMutex.Unlock()
+			return err
+		}
+		go ww.ListenForEvents(eventChan)
+	}
+	ww.subMutex.Unlock()
+	return nil
+}
+
+func (ww *WasmWebWorker) UnsubscribeToEvents(remotePath string) {
+	ww.subMutex.Lock()
+	ch, ok := ww.subscribers[remotePath]
+	if ok {
+		close(ch)
+		delete(ww.subscribers, remotePath)
+		ww.numberOfSubs--
+		//stop the worker listener if there are no subscribers
+		if ww.numberOfSubs == 0 {
+			ww.cancelContext()
+		}
+	}
+	ww.subMutex.Unlock()
+}
+
+func (ww *WasmWebWorker) ListenForEvents(eventChan <-chan worker.MessageEvent) {
+	for {
+		select {
+		case <-ww.ctx.Done():
+			return
+		case event, ok := <-eventChan:
+			if !ok {
+				return
+			}
+			//get remote path from the event
+			data, err := event.Data()
+			// if above throws an error, pass it to all the subscribers
+			if err != nil {
+				ww.removeAllSubscribers()
+				return
+			}
+			remotePathObject, err := data.Get("remotePath")
+			if err != nil {
+				ww.removeAllSubscribers()
+				return
+			}
+			remotePath, _ := remotePathObject.String()
+			if remotePath == "" {
+				ww.removeAllSubscribers()
+				return
+			}
+			ww.subMutex.Lock()
+			ch, ok := ww.subscribers[remotePath]
+			if ok {
+				ch <- event
+			}
+			ww.subMutex.Unlock()
+		}
+	}
+}
+
+func (ww *WasmWebWorker) removeAllSubscribers() {
+	ww.subMutex.Lock()
+	for path, ch := range ww.subscribers {
+		close(ch)
+		delete(ww.subscribers, path)
+		ww.numberOfSubs--
+	}
+	ww.cancelContext()
+	ww.subMutex.Unlock()
 }
 
 func (ww *WasmWebWorker) Start() error {
