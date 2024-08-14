@@ -44,6 +44,7 @@ type DirRequest struct {
 	connectionID  string
 	timestamp     int64
 	alreadyExists map[uint64]bool
+	customMeta    string
 	Consensus
 }
 
@@ -178,6 +179,13 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode, pos u
 		return err, false
 	}
 
+	if req.customMeta != "" {
+		err = formWriter.WriteField("custom_meta", req.customMeta)
+		if err != nil {
+			return err, false
+		}
+	}
+
 	formWriter.Close()
 	httpreq, err := zboxutil.NewCreateDirRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body)
 	if err != nil {
@@ -239,12 +247,12 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode, pos u
 			latestStatusCode = resp.StatusCode
 
 			msg = string(respBody)
-			l.Logger.Error(blobber.Baseurl, " Response: ", msg)
 			if strings.Contains(msg, DirectoryExists) {
 				req.Consensus.Done()
 				alreadyExists = true
 				return
 			}
+			l.Logger.Error(blobber.Baseurl, " Response: ", msg)
 
 			err = errors.New("response_error", msg)
 			return
@@ -272,6 +280,7 @@ type DirOperation struct {
 	ctxCncl       context.CancelFunc
 	dirMask       zboxutil.Uint128
 	maskMU        *sync.Mutex
+	customMeta    string
 	alreadyExists map[uint64]bool
 
 	Consensus
@@ -292,6 +301,7 @@ func (dirOp *DirOperation) Process(allocObj *Allocation, connectionID string) ([
 		mu:            dirOp.maskMU,
 		wg:            &sync.WaitGroup{},
 		alreadyExists: make(map[uint64]bool),
+		customMeta:    dirOp.customMeta,
 	}
 	dR.Consensus = Consensus{
 		RWMutex:         &sync.RWMutex{},
@@ -349,13 +359,14 @@ func (dirOp *DirOperation) Error(allocObj *Allocation, consensus int, err error)
 
 }
 
-func NewDirOperation(remotePath string, dirMask zboxutil.Uint128, maskMU *sync.Mutex, consensusTh int, fullConsensus int, ctx context.Context) *DirOperation {
+func NewDirOperation(remotePath, customMeta string, dirMask zboxutil.Uint128, maskMU *sync.Mutex, consensusTh int, fullConsensus int, ctx context.Context) *DirOperation {
 	dirOp := &DirOperation{}
 	dirOp.remotePath = zboxutil.RemoteClean(remotePath)
 	dirOp.dirMask = dirMask
 	dirOp.maskMU = maskMU
 	dirOp.consensusThresh = consensusTh
 	dirOp.fullconsensus = fullConsensus
+	dirOp.customMeta = customMeta
 	dirOp.ctx, dirOp.ctxCncl = context.WithCancel(ctx)
 	dirOp.alreadyExists = make(map[uint64]bool)
 	return dirOp

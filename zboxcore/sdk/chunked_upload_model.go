@@ -119,6 +119,8 @@ type FileMeta struct {
 	RemoteName string
 	// RemotePath remote path
 	RemotePath string
+	// CustomMeta custom meta data
+	CustomMeta string
 }
 
 // FileID generate id of progress on local cache
