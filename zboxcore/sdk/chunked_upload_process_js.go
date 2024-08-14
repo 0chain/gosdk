@@ -295,14 +295,15 @@ func (su *ChunkedUpload) listen(allEventChan []eventChanWorker, respChan chan er
 						if errC >= int32(su.consensus.consensusThresh) {
 							wgErrors <- err
 						}
+					} else {
+						uploadSuccess = true
+						su.consensus.Done()
 					}
 					return
 				default:
 					logger.Logger.Error("unknown msg type: ", msgType)
 				}
 			}
-			uploadSuccess = true
-			su.consensus.Done()
 
 		}(pos)
 	}
@@ -671,6 +672,7 @@ type eventChanWorker struct {
 func (su *ChunkedUpload) startProcessor() {
 	su.listenChan = make(chan struct{}, su.uploadWorkers)
 	su.processMap = make(map[int]int)
+	respChan := make(chan error, 1)
 	su.uploadWG.Add(1)
 	allEventChan := make([]eventChanWorker, len(su.blobbers))
 	var pos uint64
