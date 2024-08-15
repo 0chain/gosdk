@@ -307,6 +307,7 @@ func (su *ChunkedUpload) listen(allEventChan []chan worker.MessageEvent, respCha
 				if errC >= int32(su.consensus.consensusThresh) {
 					wgErrors <- thrown.New("upload_failed", fmt.Sprintf("Upload failed. %s", errMsgStr))
 				}
+				return
 			}
 			chunkEndIndexObj, _ := data.Get("chunkEndIndex")
 			chunkEndIndex, _ := chunkEndIndexObj.Int()
