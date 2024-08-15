@@ -1,3 +1,4 @@
+// Subpackage to provide interface for zboxapi SDK (dealing with apps backend) to be used to build the mobile SDK.
 package zboxapi
 
 /*
@@ -25,6 +26,9 @@ var (
 	logging                  logger.Logger
 )
 
+// Init initialize the zbox api client for the mobile sdk
+//   - baseUrl is the base url of the server
+//   - appType is the type of the application
 func Init(baseUrl, appType string) {
 	zboxApiClient = zboxapi.NewClient()
 	zboxApiClient.SetRequest(baseUrl, appType)
@@ -40,6 +44,10 @@ func Init(baseUrl, appType string) {
 	}
 }
 
+// SetWallet set the client's wallet information for the zbox api client
+//   - clientID is the client id
+//   - clientPrivateKey is the client private key
+//   - clientPublicKey is the client public key
 func SetWallet(clientID, clientPrivateKey, clientPublicKey string) error {
 	if zboxApiClient == nil {
 		return ErrZboxApiNotInitialized
@@ -60,7 +68,8 @@ func GetCsrfToken() (string, error) {
 	return zboxApiClient.GetCsrfToken(context.TODO())
 }
 
-// CreateJwtSession create a jwt session
+// CreateJwtSession create a jwt session for the given phone number
+//   - phoneNumber is the phone number
 func CreateJwtSession(userID string) (int64, error) {
 	if zboxApiClient == nil {
 		return 0, ErrZboxApiNotInitialized
@@ -68,7 +77,10 @@ func CreateJwtSession(userID string) (int64, error) {
 	return zboxApiClient.CreateJwtSession(context.TODO(), userID)
 }
 
-// CreateJwtToken create a fresh jwt token
+// CreateJwtToken create a fresh jwt token for the given user id
+//   - phoneNumber is the phone number
+//   - jwtSessionID is the jwt session id
+//   - otp is the one time password
 func CreateJwtToken(userID string, jwtSessionID int64) (string, error) {
 	if zboxApiClient == nil {
 		return "", ErrZboxApiNotInitialized
@@ -77,6 +89,8 @@ func CreateJwtToken(userID string, jwtSessionID int64) (string, error) {
 }
 
 // RefreshJwtToken refresh jwt token
+//   - phoneNumber is the phone number for which the token is to be refreshed
+//   - token is the token to be refreshed
 func RefreshJwtToken(userID string, token string) (string, error) {
 	if zboxApiClient == nil {
 		return "", ErrZboxApiNotInitialized

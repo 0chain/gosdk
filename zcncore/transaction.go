@@ -21,6 +21,7 @@ import (
 	"github.com/0chain/gosdk/core/util"
 )
 
+// Provider represents the type of provider.
 type Provider int
 
 const (
@@ -46,6 +47,8 @@ type ConfirmationStatus int
 const (
 	Undefined ConfirmationStatus = iota
 	Success
+
+	// ChargeableError is an error that still charges the user for the transaction.
 	ChargeableError
 )
 
@@ -61,11 +64,13 @@ type Miner struct {
 	Stat       interface{} `json:"stat"`
 }
 
+// Node represents a node (miner or sharder) in the network.
 type Node struct {
 	Miner     Miner `json:"simple_miner"`
 	StakePool `json:"stake_pool"`
 }
 
+// MinerSCNodes list of nodes registered to the miner smart contract
 type MinerSCNodes struct {
 	Nodes []Node `json:"Nodes"`
 }
@@ -106,6 +111,7 @@ type MinerSCDelegatePoolInfo struct {
 	Status     string         `json:"status"`
 }
 
+// MinerSCUserPoolsInfo represents the user stake pools information
 type MinerSCUserPoolsInfo struct {
 	Pools map[string][]*MinerSCDelegatePoolInfo `json:"pools"`
 }
@@ -203,16 +209,28 @@ type Terms struct {
 	MaxOfferDuration time.Duration  `json:"max_offer_duration"`
 }
 
+// Blobber represents a blobber node.
 type Blobber struct {
-	ID                common.Key        `json:"id"`
-	BaseURL           string            `json:"url"`
-	Terms             Terms             `json:"terms"`
-	Capacity          common.Size       `json:"capacity"`
-	Allocated         common.Size       `json:"allocated"`
-	LastHealthCheck   common.Timestamp  `json:"last_health_check"`
+	// ID is the blobber ID.
+	ID common.Key `json:"id"`
+	// BaseURL is the blobber's base URL used to access the blobber
+	BaseURL string `json:"url"`
+	// Terms of storage service of the blobber (read/write price, max offer duration)
+	Terms Terms `json:"terms"`
+	// Capacity is the total capacity of the blobber
+	Capacity common.Size `json:"capacity"`
+	// Used is the capacity of the blobber used to create allocations
+	Allocated common.Size `json:"allocated"`
+	// LastHealthCheck is the last time the blobber was checked for health
+	LastHealthCheck common.Timestamp `json:"last_health_check"`
+	// StakePoolSettings is the settings of the blobber's stake pool
 	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
-	NotAvailable      bool              `json:"not_available"`
-	IsRestricted      bool              `json:"is_restricted"`
+	// NotAvailable is true if the blobber is not available
+	NotAvailable bool `json:"not_available"`
+	// IsRestricted is true if the blobber is restricted.
+	// Restricted blobbers needs to be authenticated using AuthTickets in order to be used for allocation creation.
+	// Check Restricted Blobbers documentation for more details.
+	IsRestricted bool `json:"is_restricted"`
 }
 
 type Validator struct {
@@ -221,20 +239,24 @@ type Validator struct {
 	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
 }
 
+// AddAuthorizerPayload represents the payload for adding an authorizer.
 type AddAuthorizerPayload struct {
 	PublicKey         string                      `json:"public_key"`
 	URL               string                      `json:"url"`
 	StakePoolSettings AuthorizerStakePoolSettings `json:"stake_pool_settings"` // Used to initially create stake pool
 }
 
+// DeleteAuthorizerPayload represents the payload for deleting an authorizer.
 type DeleteAuthorizerPayload struct {
 	ID string `json:"id"` // authorizer ID
 }
 
+// AuthorizerHealthCheckPayload represents the payload for authorizer health check.
 type AuthorizerHealthCheckPayload struct {
 	ID string `json:"id"` // authorizer ID
 }
 
+// AuthorizerStakePoolSettings represents the settings for an authorizer's stake pool.
 type AuthorizerStakePoolSettings struct {
 	DelegateWallet string  `json:"delegate_wallet"`
 	NumDelegates   int     `json:"num_delegates"`
@@ -245,11 +267,15 @@ type AuthorizerConfig struct {
 	Fee common.Balance `json:"fee"`
 }
 
+// InputMap represents a map of input fields.
 type InputMap struct {
 	Fields map[string]string `json:"Fields"`
 }
 
-// NewTransaction allocation new generic transaction object for any operation
+// NewTransaction new generic transaction object for any operation
+//   - cb: callback for transaction state
+//   - txnFee: Transaction fees (in SAS tokens)
+//   - nonce: latest nonce of current wallet. please set it with 0 if you don't know the latest value
 func NewTransaction(cb TransactionCallback, txnFee uint64, nonce int64) (TransactionScheme, error) {
 	err := CheckConfig()
 	if err != nil {
@@ -890,10 +916,12 @@ type MinerSCDelegatePool struct {
 	Settings StakePoolSettings `json:"settings"`
 }
 
+// SimpleMiner represents a node in the network, miner or sharder.
 type SimpleMiner struct {
 	ID string `json:"id"`
 }
 
+// MinerSCMinerInfo interface for miner/sharder info functions on miner smart contract.
 type MinerSCMinerInfo struct {
 	SimpleMiner         `json:"simple_miner"`
 	MinerSCDelegatePool `json:"stake_pool"`
@@ -943,6 +971,7 @@ func (t *Transaction) MinerSCDeleteSharder(info *MinerSCMinerInfo) (err error) {
 	return
 }
 
+// AuthorizerNode represents an authorizer node in the network
 type AuthorizerNode struct {
 	ID     string            `json:"id"`
 	URL    string            `json:"url"`
@@ -1114,6 +1143,9 @@ func GetLatestFinalized(ctx context.Context, numSharders int) (b *block.Header, 
 	return
 }
 
+// GetLatestFinalizedMagicBlock gets latest finalized magic block
+//   - numSharders: number of sharders
+//   - timeout: request timeout
 func GetLatestFinalizedMagicBlock(ctx context.Context, numSharders int) (m *block.MagicBlock, err error) {
 	var result = make(chan *util.GetResponse, numSharders)
 	defer close(result)
@@ -1236,10 +1268,13 @@ func GetBlockByRound(ctx context.Context, numSharders int, round int64) (b *bloc
 	return Sharders.GetBlockByRound(ctx, numSharders, round)
 }
 
+// GetRoundFromSharders returns the current round number from the sharders
 func GetRoundFromSharders() (int64, error) {
 	return Sharders.GetRoundFromSharders()
 }
 
+// GetHardForkRound returns the round number of the hard fork
+//   - hardFork: hard fork name
 func GetHardForkRound(hardFork string) (int64, error) {
 	return Sharders.GetHardForkRound(hardFork)
 }
@@ -1347,6 +1382,8 @@ func (nc *NonceCache) Evict(clientId string) {
 	delete(nc.cache, clientId)
 }
 
+// WithEthereumNode set the ethereum node used for bridge operations.
+//   - uri: ethereum node uri
 func WithEthereumNode(uri string) func(c *ChainConfig) error {
 	return func(c *ChainConfig) error {
 		c.EthNode = uri
@@ -1354,6 +1391,8 @@ func WithEthereumNode(uri string) func(c *ChainConfig) error {
 	}
 }
 
+// WithChainID set the chain id. Chain ID is a unique identifier for the blockchain which is set at the time of its creation.
+//   - id: chain id
 func WithChainID(id string) func(c *ChainConfig) error {
 	return func(c *ChainConfig) error {
 		c.ChainID = id
@@ -1361,6 +1400,8 @@ func WithChainID(id string) func(c *ChainConfig) error {
 	}
 }
 
+// WithMinSubmit set the minimum submit, minimum number of miners that should receive the transaction submission.
+//   - m: minimum submit
 func WithMinSubmit(m int) func(c *ChainConfig) error {
 	return func(c *ChainConfig) error {
 		c.MinSubmit = m
@@ -1368,6 +1409,8 @@ func WithMinSubmit(m int) func(c *ChainConfig) error {
 	}
 }
 
+// WithMinConfirmation set the minimum confirmation, minimum number of nodes that should confirm the transaction.
+//   - m: minimum confirmation
 func WithMinConfirmation(m int) func(c *ChainConfig) error {
 	return func(c *ChainConfig) error {
 		c.MinConfirmation = m
@@ -1375,6 +1418,8 @@ func WithMinConfirmation(m int) func(c *ChainConfig) error {
 	}
 }
 
+// WithConfirmationChainLength set the confirmation chain length, which is the number of blocks that need to be confirmed.
+//   - m: confirmation chain length
 func WithConfirmationChainLength(m int) func(c *ChainConfig) error {
 	return func(c *ChainConfig) error {
 		c.ConfirmationChainLength = m

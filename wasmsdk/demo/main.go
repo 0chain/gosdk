@@ -1,3 +1,4 @@
+// Demo for the wasm sdk- do not use.
 package main
 
 import (

@@ -23,6 +23,10 @@ var (
 	cachedAllocations, _ = lru.New[string, *cachedAllocation](100)
 )
 
+// getAllocation get allocation from cache
+// if not found in cache, fetch from blockchain
+// and store in cache
+//   - allocationId is the allocation id
 func getAllocation(allocationId string) (*sdk.Allocation, error) {
 
 	it, ok := cachedAllocations.Get(allocationId)
@@ -52,6 +56,8 @@ func clearAllocation(allocationID string) {
 	cachedAllocations.Remove(allocationID)
 }
 
+// reloadAllocation reload allocation from blockchain and update cache
+//   - allocationID is the allocation id
 func reloadAllocation(allocationID string) (*sdk.Allocation, error) {
 	a, err := sdk.GetAllocation(allocationID)
 	if err != nil {

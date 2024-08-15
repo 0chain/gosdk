@@ -16,6 +16,8 @@ type FfmpegRecorder struct {
 }
 
 // CreateFfmpegRecorder create a ffmpeg commander to capture video and audio  local camera and microphone
+//   - file: output file path
+//   - delay: delay in seconds
 func CreateFfmpegRecorder(file string, delay int) (*FfmpegRecorder, error) {
 
 	builder := createFileNameBuilder(file)

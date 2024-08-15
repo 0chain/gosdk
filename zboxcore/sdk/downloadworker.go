@@ -46,6 +46,8 @@ var (
 
 type DownloadRequestOption func(dr *DownloadRequest)
 
+// WithDownloadProgressStorer set download progress storer of download request options.
+// 		- storer: download progress storer instance, used to store download progress.
 func WithDownloadProgressStorer(storer DownloadProgressStorer) DownloadRequestOption {
 	return func(dr *DownloadRequest) {
 		dr.downloadStorer = storer

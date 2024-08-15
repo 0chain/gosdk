@@ -17,6 +17,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
+// FileStats - file stats structure
 type FileStats struct {
 	Name                     string    `json:"name"`
 	Size                     int64     `json:"size"`
