@@ -20,7 +20,7 @@ func Faucet(methodName, jsonInput string, zcnToken float64) (string, error) {
 func ExecuteSmartContract(address, methodName, input string, sasToken string) (string, error) {
 	wg := &sync.WaitGroup{}
 	cb := &transactionCallback{wg: wg}
-	txn, err := zcncore.NewTransaction(cb, "0", 0)
+	txn, err := zcncore.NewTransaction(cb, 0, 0)
 	if err != nil {
 		return "", err
 	}
@@ -29,7 +29,7 @@ func ExecuteSmartContract(address, methodName, input string, sasToken string) (s
 
 	v, err := strconv.ParseUint(sasToken, 10, 64)
 	if err != nil {
-		return 0, fmt.Errorf("invalid token value: %v, err: %v", sasToken, err)
+		return "", fmt.Errorf("invalid token value: %v, err: %v", sasToken, err)
 	}
 
 	_, err = txn.ExecuteSmartContract(address, methodName, input, v)
