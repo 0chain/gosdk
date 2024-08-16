@@ -342,7 +342,7 @@ func parseCoinStr(vs string) (uint64, error) {
 //   - txnFee: Transaction fees (in SAS tokens)
 //   - nonce: latest nonce of current wallet. please set it with 0 if you don't know the latest value
 func NewTransaction(cb TransactionCallback, txnFee uint64, nonce int64) (TransactionScheme, error) {
-	err = CheckConfig()
+	err := CheckConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -361,7 +361,7 @@ func NewTransaction(cb TransactionCallback, txnFee uint64, nonce int64) (Transac
 // ExecuteSmartContract prepare and send a smart contract transaction to the blockchain
 func (t *Transaction) ExecuteSmartContract(address, methodName string, input interface{}, val uint64, feeOpts ...FeeOption) (*transaction.Transaction, error) {
 	// t.createSmartContractTxn(address, methodName, input, val, opts...)
-	err = t.createSmartContractTxn(address, methodName, json.RawMessage(input), val)
+	err := t.createSmartContractTxn(address, methodName, input, val)
 	if err != nil {
 		return nil, err
 	}
