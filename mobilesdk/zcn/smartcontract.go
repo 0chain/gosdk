@@ -6,6 +6,7 @@ package zcn
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"sync"
 
 	"github.com/0chain/gosdk/zcncore"
@@ -25,7 +26,13 @@ func ExecuteSmartContract(address, methodName, input string, sasToken string) (s
 	}
 
 	wg.Add(1)
-	err = txn.ExecuteSmartContract(address, methodName, input, sasToken)
+
+	v, err := strconv.ParseUint(sasToken, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("invalid token value: %v, err: %v", sasToken, err)
+	}
+
+	_, err = txn.ExecuteSmartContract(address, methodName, input, v)
 	if err != nil {
 		return "", err
 
