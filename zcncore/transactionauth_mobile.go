@@ -23,12 +23,7 @@ func (ta *TransactionWithAuth) ExecuteSmartContract(address, methodName string,
 	return ta.t.txn, nil
 }
 
-func (ta *TransactionWithAuth) Send(toClientID string, val string, desc string) error {
-	v, err := parseCoinStr(val)
-	if err != nil {
-		return err
-	}
-
+func (ta *TransactionWithAuth) Send(toClientID string, val uint64, desc string) error {
 	txnData, err := json.Marshal(SendTxnData{Note: desc})
 	if err != nil {
 		return errors.New("", "Could not serialize description to transaction_data")
@@ -36,7 +31,7 @@ func (ta *TransactionWithAuth) Send(toClientID string, val string, desc string) 
 	go func() {
 		ta.t.txn.TransactionType = transaction.TxnTypeSend
 		ta.t.txn.ToClientID = toClientID
-		ta.t.txn.Value = v
+		ta.t.txn.Value = val
 		ta.t.txn.TransactionData = string(txnData)
 		ta.submitTxn()
 	}()
