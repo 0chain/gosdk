@@ -368,10 +368,10 @@ func (su *ChunkedUpload) removeProgress() {
 	}
 }
 
-func (su *ChunkedUpload) updateProgress(chunkIndex int) {
+func (su *ChunkedUpload) updateProgress(chunkIndex int, upMask zboxutil.Uint128) {
 	if su.progressStorer != nil {
 		if chunkIndex > su.progress.ChunkIndex {
-			su.progressStorer.Update(su.progress.ID, chunkIndex)
+			su.progressStorer.Update(su.progress.ID, chunkIndex, upMask)
 		}
 	}
 }
@@ -728,7 +728,7 @@ func (su *ChunkedUpload) uploadToBlobbers(uploadData UploadData) error {
 	if uploadData.uploadLength > 0 {
 		index := uploadData.chunkEndIndex
 		uploadLength := uploadData.uploadLength
-		go su.updateProgress(index)
+		go su.updateProgress(index, su.uploadMask)
 		if su.statusCallback != nil {
 			su.statusCallback.InProgress(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, int(atomic.AddInt64(&su.progress.UploadLength, uploadLength)), nil)
 		}

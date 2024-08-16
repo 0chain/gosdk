@@ -31,7 +31,7 @@ func (nope *nopeChunkedUploadProgressStorer) Remove(id string) error {
 	return nil
 }
 
-func (nope *nopeChunkedUploadProgressStorer) Update(id string, chunkIndex int) {
+func (nope *nopeChunkedUploadProgressStorer) Update(id string, chunkIndex int, upMask zboxutil.Uint128) {
 }
 
 func generateRandomBytes(n int64) []byte {

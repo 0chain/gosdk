@@ -189,7 +189,8 @@ type UploadProgress struct {
 	// UploadLength total bytes that has been uploaded to blobbers
 	UploadLength int64 `json:"-"`
 	// ReadLength total bytes that has been read from original reader (un-encoded, un-encrypted)
-	ReadLength int64 `json:"-"`
+	ReadLength int64            `json:"-"`
+	UploadMask zboxutil.Uint128 `json:"upload_mask"`
 
 	Blobbers []*UploadBlobberStatus `json:"-"`
 }
