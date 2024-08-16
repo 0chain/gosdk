@@ -31,6 +31,7 @@ const (
 	WethTokenAddress     = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
 )
 
+// BridgeSDKConfig describes the configuration for the bridge SDK.
 type BridgeSDKConfig struct {
 	LogLevel        *string
 	LogPath         *string
@@ -46,6 +47,7 @@ type EthereumClient interface {
 	ChainID(ctx context.Context) (*big.Int, error)
 }
 
+// BridgeClient is a wrapper, which exposes Ethereum KeyStore methods used by DEX bridge.
 type BridgeClient struct {
 	keyStore            KeyStore
 	transactionProvider transaction.TransactionProvider
@@ -67,6 +69,19 @@ type BridgeClient struct {
 }
 
 // NewBridgeClient creates BridgeClient with the given parameters.
+//   - bridgeAddress is the address of the bridge smart contract on the Ethereum network.
+//   - tokenAddress is the address of the token smart contract on the Ethereum network.
+//   - authorizersAddress is the address of the authorizers smart contract on the Ethereum network.
+//   - authorizersAddress is the address of the authorizers smart contract on the Ethereum network.
+//   - uniswapAddress is the address of the user's ethereum wallet (on UniSwap).
+//   - ethereumAddress is the address of the user's ethereum wallet.
+//   - ethereumNodeURL is the URL of the Ethereum node.
+//   - password is the password for the user's ethereum wallet.
+//   - gasLimit is the gas limit for the transactions.
+//   - consensusThreshold is the consensus threshold, the minimum percentage of authorizers that need to agree on a transaction.
+//   - ethereumClient is the Ethereum JSON-RPC client.
+//   - transactionProvider provider interface for the transaction entity.
+//   - keyStore is the Ethereum KeyStore instance.
 func NewBridgeClient(
 	bridgeAddress,
 	tokenAddress,
@@ -120,6 +135,7 @@ func readConfig(sdkConfig *BridgeSDKConfig, getConfigName func() string) *viper.
 
 // SetupBridgeClientSDK initializes new bridge client.
 // Meant to be used from standalone application with 0chain SDK initialized.
+//   - cfg is the configuration for the bridge SDK.
 func SetupBridgeClientSDK(cfg *BridgeSDKConfig) *BridgeClient {
 	log.InitLogging(*cfg.Development, *cfg.LogPath, *cfg.LogLevel)
 

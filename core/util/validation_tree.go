@@ -13,7 +13,10 @@ import (
 )
 
 const (
+	// Left tree node chile
 	Left = iota
+
+	// Right tree node child
 	Right
 )
 
@@ -22,6 +25,7 @@ const (
 	ADD_LENGTH   = 320
 )
 
+// ValidationTree is a merkle tree that is used to validate the data
 type ValidationTree struct {
 	writeLock      sync.Mutex
 	writeCount     int
@@ -34,18 +38,23 @@ type ValidationTree struct {
 	validationRoot []byte
 }
 
+// GetLeaves returns the leaves of the validation tree
 func (v *ValidationTree) GetLeaves() [][]byte {
 	return v.leaves
 }
 
+// SetLeaves sets the leaves of the validation tree.
+// 		- leaves: leaves of the validation tree, each leaf is in byte format
 func (v *ValidationTree) SetLeaves(leaves [][]byte) {
 	v.leaves = leaves
 }
 
+// GetDataSize returns the data size of the validation tree
 func (v *ValidationTree) GetDataSize() int64 {
 	return v.dataSize
 }
 
+// GetValidationRoot returns the validation root of the validation tree
 func (v *ValidationTree) GetValidationRoot() []byte {
 	if len(v.validationRoot) > 0 {
 		return v.validationRoot
@@ -54,6 +63,7 @@ func (v *ValidationTree) GetValidationRoot() []byte {
 	return v.validationRoot
 }
 
+// Write writes the data to the validation tree
 func (v *ValidationTree) Write(b []byte) (int, error) {
 	v.writeLock.Lock()
 	defer v.writeLock.Unlock()
@@ -72,7 +82,7 @@ func (v *ValidationTree) Write(b []byte) (int, error) {
 
 	byteLen := len(b)
 	shouldContinue := true
-	// j is initialized to MaxMerkleLeavesSize - writeCount so as to make up MaxMerkleLeavesSize with previouly
+	// j is initialized to MaxMerkleLeavesSize - writeCount so as to make up MaxMerkleLeavesSize with previously
 	// read bytes. If previously it had written MaxMerkleLeavesSize - 1, then j will be initialized to 1 so
 	// in first iteration it will only read 1 byte and write it to v.h after which hash of v.h will be calculated
 	// and stored in v.Leaves and v.h will be reset.
@@ -101,6 +111,7 @@ func (v *ValidationTree) Write(b []byte) (int, error) {
 	return byteLen, nil
 }
 
+// CalculateDepth calculates the depth of the validation tree
 func (v *ValidationTree) CalculateDepth() int {
 	return int(math.Ceil(math.Log2(float64(len(v.leaves))))) + 1
 }
@@ -141,6 +152,7 @@ func (v *ValidationTree) calculateRoot() {
 	v.validationRoot = nodes[0]
 }
 
+// Finalize finalizes the validation tree, set isFinalized to true and calculate the root
 func (v *ValidationTree) Finalize() error {
 	v.writeLock.Lock()
 	defer v.writeLock.Unlock()
@@ -165,6 +177,8 @@ func (v *ValidationTree) Finalize() error {
 	return nil
 }
 
+// NewValidationTree creates a new validation tree
+//   - dataSize is the size of the data
 func NewValidationTree(dataSize int64) *ValidationTree {
 	totalLeaves := (dataSize + MaxMerkleLeavesSize - 1) / MaxMerkleLeavesSize
 	if totalLeaves == 0 {

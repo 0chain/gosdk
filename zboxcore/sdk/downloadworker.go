@@ -46,6 +46,8 @@ var (
 
 type DownloadRequestOption func(dr *DownloadRequest)
 
+// WithDownloadProgressStorer set download progress storer of download request options.
+// 		- storer: download progress storer instance, used to store download progress.
 func WithDownloadProgressStorer(storer DownloadProgressStorer) DownloadRequestOption {
 	return func(dr *DownloadRequest) {
 		dr.downloadStorer = storer
@@ -445,6 +447,10 @@ func (req *DownloadRequest) processDownload() {
 			return
 		}
 		req.fileHandler.Sync() //nolint
+		if req.statusCallback != nil && !req.skip {
+			req.statusCallback.Completed(
+				req.allocationID, remotePathCB, fRef.Name, fRef.MimeType, 32, op)
+		}
 		return
 	}
 	size, chunksPerShard, blocksPerShard := req.size, req.chunksPerShard, req.blocksPerShard

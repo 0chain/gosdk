@@ -36,6 +36,8 @@ type RepairStatusCB struct {
 	statusCB StatusCallback
 }
 
+var RepairBlocks = 100
+
 type getRes struct {
 	oTR             *ObjectTreeResult
 	err             error
@@ -78,13 +80,21 @@ func (r *RepairRequest) processRepair(ctx context.Context, a *Allocation) {
 	if r.checkForCancel(a) {
 		return
 	}
-	SetNumBlockDownloads(100)
+	SetNumBlockDownloads(RepairBlocks)
+	currBatchSize := BatchSize
+	BatchSize = BatchSize / 2
+	defer func() {
+		BatchSize = currBatchSize
+	}()
+	if !singleClientMode {
+		SetSingleClietnMode(true)
+		defer SetSingleClietnMode(false)
+	}
 	currentSize := MultiOpBatchSize
 	SetMultiOpBatchSize(multiOpRepairBatchSize)
 	defer SetMultiOpBatchSize(currentSize)
 	r.allocation = a
 	r.iterateDir(ctx)
-
 	if r.statusCB != nil {
 		r.statusCB.RepairCompleted(r.filesRepaired)
 	}

@@ -18,7 +18,7 @@ endif
 include _util/build_$(PLATFORM).mk
 include _util/build_mobile.mk
 
-.PHONY: build-tools install-all herumi-all gosdk-all sdkver help lint
+.PHONY: build-tools install-all herumi-all gosdk-all sdkver help lint docs
 
 default: help
 
@@ -108,3 +108,7 @@ install-herumi-ubuntu:
         rm -R /tmp/mcl && \
         rm -R /tmp/bls
 
+docs:
+	@gomarkdoc --exclude-dirs ./zcncore/sample --output '{{.Dir}}/README.md' --repository.default-branch doc/initial ./...
+	@sed -i '' -r 's/\\_/_/g' ./**/README.md
+	@sed -i '' -r 's/\\`/`/g' ./**/README.md

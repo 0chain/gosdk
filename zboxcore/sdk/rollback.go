@@ -231,6 +231,8 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 	return thrown.New("rolback_error", fmt.Sprint("Rollback failed"))
 }
 
+// CheckAllocStatus checks the status of the allocation
+// and returns the status of the allocation and its blobbers.
 func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
 
 	wg := &sync.WaitGroup{}
@@ -357,6 +359,9 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
 	return Rollback, blobberRes, nil
 }
 
+// RollbackWithMask rolls back the latest operation from the allocation blobbers which ran it.
+// The mask is used to specify which blobbers to rollback.
+//   - mask: 128-bitmask to specify which blobbers to rollback
 func (a *Allocation) RollbackWithMask(mask zboxutil.Uint128) {
 
 	wg := &sync.WaitGroup{}
