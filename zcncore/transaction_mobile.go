@@ -47,7 +47,7 @@ type stakePoolRequest struct {
 
 type TransactionCommon interface {
 	// ExecuteSmartContract implements wrapper for smart contract function
-	ExecuteSmartContract(address, methodName string, input string, val string) error
+	ExecuteSmartContract(address, methodName string, input interface{}, val uint64, feeOpts ...FeeOption) (*transaction.Transaction, error)
 
 	// Send implements sending token to a given clientid
 	Send(toClientID string, val string, desc string) error
@@ -341,12 +341,7 @@ func parseCoinStr(vs string) (uint64, error) {
 //   - cb: callback for transaction state
 //   - txnFee: Transaction fees (in SAS tokens)
 //   - nonce: latest nonce of current wallet. please set it with 0 if you don't know the latest value
-func NewTransaction(cb TransactionCallback, txnFee string, nonce int64) (TransactionScheme, error) {
-	v, err := parseCoinStr(txnFee)
-	if err != nil {
-		return nil, err
-	}
-
+func NewTransaction(cb TransactionCallback, txnFee uint64, nonce int64) (TransactionScheme, error) {
 	err = CheckConfig()
 	if err != nil {
 		return nil, err
@@ -356,28 +351,25 @@ func NewTransaction(cb TransactionCallback, txnFee string, nonce int64) (Transac
 			return nil, errors.New("", "auth url not set")
 		}
 		logging.Info("New transaction interface with auth")
-		return newTransactionWithAuth(cb, v, nonce)
+		return newTransactionWithAuth(cb, txnFee, nonce)
 	}
 	logging.Info("New transaction interface")
-	t, err := newTransaction(cb, v, nonce)
+	t, err := newTransaction(cb, txnFee, nonce)
 	return t, err
 }
 
 // ExecuteSmartContract prepare and send a smart contract transaction to the blockchain
-func (t *Transaction) ExecuteSmartContract(address, methodName string, input string, val string) error {
-	v, err := parseCoinStr(val)
+func (t *Transaction) ExecuteSmartContract(address, methodName string, input interface{}, val uint64, feeOpts ...FeeOption) (*transaction.Transaction, error) {
+	// t.createSmartContractTxn(address, methodName, input, val, opts...)
+	err = t.createSmartContractTxn(address, methodName, json.RawMessage(input), val)
 	if err != nil {
-		return err
-	}
-
-	err = t.createSmartContractTxn(address, methodName, json.RawMessage(input), v)
-	if err != nil {
-		return err
+		return nil, err
 	}
 	go func() {
 		t.setNonceAndSubmit()
 	}()
-	return nil
+
+	return t, nil
 }
 
 func (t *Transaction) setTransactionFee(fee uint64) error {
