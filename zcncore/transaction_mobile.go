@@ -381,12 +381,7 @@ func (t *Transaction) setTransactionFee(fee uint64) error {
 }
 
 // Send to send a transaction to a given clientID
-func (t *Transaction) Send(toClientID string, val string, desc string) error {
-	v, err := parseCoinStr(val)
-	if err != nil {
-		return err
-	}
-
+func (t *Transaction) Send(toClientID string, val uint64, desc string) error {
 	txnData, err := json.Marshal(SendTxnData{Note: desc})
 	if err != nil {
 		return errors.New("", "Could not serialize description to transaction_data")
@@ -394,7 +389,7 @@ func (t *Transaction) Send(toClientID string, val string, desc string) error {
 	go func() {
 		t.txn.TransactionType = transaction.TxnTypeSend
 		t.txn.ToClientID = toClientID
-		t.txn.Value = v
+		t.txn.Value = val
 		t.txn.TransactionData = string(txnData)
 		t.setNonceAndSubmit()
 	}()
