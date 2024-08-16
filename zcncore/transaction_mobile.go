@@ -369,7 +369,7 @@ func (t *Transaction) ExecuteSmartContract(address, methodName string, input int
 		t.setNonceAndSubmit()
 	}()
 
-	return t, nil
+	return t.txn, nil
 }
 
 func (t *Transaction) setTransactionFee(fee uint64) error {
