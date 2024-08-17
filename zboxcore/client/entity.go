@@ -24,7 +24,7 @@ var (
 
 	// Sign is a function to sign a hash
 	Sign SignFunc
-	sigC    = make(chan struct{}, 1)
+	sigC = make(chan struct{}, 1)
 )
 
 func init() {
@@ -35,6 +35,8 @@ func init() {
 	sigC <- struct{}{}
 
 	sys.Sign = signHash
+	sys.SignWithAuth = signHash
+
 	// initialize SignFunc as default implementation
 	Sign = func(hash string) (string, error) {
 		if client.Mnemonic != "" {
