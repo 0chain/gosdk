@@ -34,9 +34,10 @@ const SLEEP_BETWEEN_RETRIES = 5
 const consensusThresh = float32(25.0)
 
 // SCRestAPIHandler is a function type to handle the response from the SC Rest API
-// 		`response` - the response from the SC Rest API
-// 		`numSharders` - the number of sharders that responded
-// 		`err` - the error if any
+//
+//	`response` - the response from the SC Rest API
+//	`numSharders` - the number of sharders that responded
+//	`err` - the error if any
 type SCRestAPIHandler func(response map[string][]byte, numSharders int, err error)
 
 type HttpClient interface {
@@ -50,8 +51,11 @@ type FastClient interface {
 var (
 	Client         HttpClient
 	FastHttpClient FastClient
-	hostLock       sync.RWMutex
 	log            logger.Logger
+)
+
+const (
+	respBodyPoolLimit = 1024 * 1024 * 16 //16MB
 )
 
 func GetLogger() *logger.Logger {
@@ -179,6 +183,7 @@ func init() {
 		MaxResponseBodySize: 1024 * 1024 * 64, //64MB
 		MaxConnsPerHost:     1024,
 	}
+	fasthttp.SetBodySizePoolLimit(respBodyPoolLimit, respBodyPoolLimit)
 	envProxy.initialize()
 	log.Init(logger.DEBUG, "0box-sdk")
 }
@@ -905,12 +910,11 @@ func NewRollbackRequest(baseUrl, allocationID string, allocationTx string, body 
 	return req, nil
 }
 
-
 // MakeSCRestAPICall makes a rest api call to the sharders.
-//		- scAddress is the address of the smart contract
-//		- relativePath is the relative path of the api
-//		- params is the query parameters
-//		- handler is the handler function to handle the response
+//   - scAddress is the address of the smart contract
+//   - relativePath is the relative path of the api
+//   - params is the query parameters
+//   - handler is the handler function to handle the response
 func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]string, handler SCRestAPIHandler) ([]byte, error) {
 	numSharders := len(blockchain.GetSharders())
 	sharders := blockchain.GetSharders()

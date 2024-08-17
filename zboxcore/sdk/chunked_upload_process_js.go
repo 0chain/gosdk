@@ -158,7 +158,17 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		obj := js.Global().Get("Object").New()
 		jsbridge.SetMsgType(&obj, "upload")
 		obj.Set("fileMeta", fileMetaUint8)
-		obj.Set("formInfo", formInfoUint8)
+		if formInfo.OnlyHash && su.progress.UploadMask.And(zboxutil.NewUint128(1).Lsh(pos)).Equals64(0) {
+			//check if pos is set in upload mask in progress
+			formInfo.OnlyHash = false
+			noHashFormInfoJSON, _ := json.Marshal(formInfo)
+			noHashFormInfoUint8 := js.Global().Get("Uint8Array").New(len(noHashFormInfoJSON))
+			js.CopyBytesToJS(noHashFormInfoUint8, noHashFormInfoJSON)
+			obj.Set("formInfo", noHashFormInfoUint8)
+			formInfo.OnlyHash = true //reset to true
+		} else {
+			obj.Set("formInfo", formInfoUint8)
+		}
 
 		if len(thumbnailChunkData) > 0 {
 			thumbnailChunkDataUint8 := js.Global().Get("Uint8Array").New(len(thumbnailChunkData))
@@ -303,6 +313,7 @@ func (su *ChunkedUpload) listen(allEventChan []eventChanWorker, respChan chan er
 				default:
 					logger.Logger.Error("unknown msg type: ", msgType)
 				}
+				return
 			}
 
 		}(pos)
@@ -325,7 +336,7 @@ func (su *ChunkedUpload) listen(allEventChan []eventChanWorker, respChan chan er
 	}
 	for chunkEndIndex, count := range su.processMap {
 		if count >= su.consensus.consensusThresh {
-			su.updateProgress(chunkEndIndex)
+			su.updateProgress(chunkEndIndex, su.uploadMask)
 			delete(su.processMap, chunkEndIndex)
 		}
 	}
