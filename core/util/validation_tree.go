@@ -167,6 +167,12 @@ func (v *ValidationTree) Finalize() error {
 	v.isFinalized = true
 
 	if v.writeCount > 0 {
+		if v.leafIndex == len(v.leaves) {
+			// increase leaves size
+			leaves := make([][]byte, len(v.leaves)+1)
+			copy(leaves, v.leaves)
+			v.leaves = leaves
+		}
 		v.leaves[v.leafIndex] = v.h.Sum(nil)
 	} else {
 		v.leafIndex--
