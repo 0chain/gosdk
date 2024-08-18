@@ -64,6 +64,7 @@ const (
 
 const (
 	emptyFileDataHash = "d41d8cd98f00b204e9800998ecf8427e"
+	getRefPageLimit   = 100
 )
 
 // Expected success rate is calculated (NumDataShards)*100/(NumDataShards+NumParityShards)
@@ -1766,6 +1767,54 @@ func (a *Allocation) GetRefs(path, offsetPath, updatedDate, offsetDate, fileType
 	return a.getRefs(path, "", "", offsetPath, updatedDate, offsetDate, fileType, refType, level, pageLimit)
 }
 
+func (a *Allocation) ListObjects(ctx context.Context, path, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) <-chan ORef {
+	oRefChan := make(chan ORef, 1)
+	sendObjectRef := func(ref ORef) {
+		select {
+		case oRefChan <- ref:
+		case <-ctx.Done():
+		}
+	}
+	go func(oRefChan chan<- ORef) {
+		defer func() {
+			if contextCanceled(ctx) {
+				oRefChan <- ORef{
+					Err: ctx.Err(),
+				}
+			}
+			close(oRefChan)
+		}()
+		continuationPath := offsetPath
+		for {
+			oRefs, err := a.GetRefs(path, continuationPath, updatedDate, offsetDate, fileType, refType, level, pageLimit)
+			if err != nil {
+				sendObjectRef(ORef{
+					Err: err,
+				})
+				return
+			}
+			for _, ref := range oRefs.Refs {
+				select {
+				// Send object content.
+				case oRefChan <- ref:
+				// If receives done from the caller, return here.
+				case <-ctx.Done():
+					return
+				}
+			}
+			if len(oRefs.Refs) < pageLimit {
+				return
+			}
+			if oRefs.OffsetPath == "" || oRefs.OffsetPath == continuationPath {
+				return
+			}
+			continuationPath = oRefs.OffsetPath
+		}
+
+	}(oRefChan)
+	return oRefChan
+}
+
 func (a *Allocation) GetRefsFromLookupHash(pathHash, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*ObjectTreeResult, error) {
 	if pathHash == "" {
 		return nil, errors.New("invalid_lookup_hash", "lookup hash cannot be empty")
@@ -1852,7 +1901,7 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 }
 
 // GetFileMetaByName retrieve consolidated file metadata given its name (its full path starting from root "/").
-//    - fileName: full file path starting from the allocation root.
+//   - fileName: full file path starting from the allocation root.
 func (a *Allocation) GetFileMetaByName(fileName string) ([]*ConsolidatedFileMetaByName, error) {
 	if !a.isInitialized() {
 		return nil, notInitialized
@@ -1899,7 +1948,6 @@ func (a *Allocation) GetFileMetaByName(fileName string) ([]*ConsolidatedFileMeta
 	}
 	return nil, errors.New("file_meta_error", "Error getting the file meta data from blobbers")
 }
-
 
 // GetChunkReadSize returns the size of the chunk to read.
 // The size of the chunk to read is calculated based on the data shards and the encryption flag.
@@ -3107,4 +3155,107 @@ repair:
 	}
 
 	return alloc, hash, isRepairRequired, nil
+}
+
+func (a *Allocation) DownloadDirectory(ctx context.Context, remotePath, localPath, authTicket string, sb StatusCallback) error {
+	if len(a.Blobbers) == 0 {
+		return noBLOBBERS
+	}
+	oRefChan := a.ListObjects(ctx, remotePath, "", "", "", fileref.FILE, fileref.REGULAR, 0, getRefPageLimit)
+	refSlice := make([]ORef, BatchSize)
+	refIndex := 0
+	wg := &sync.WaitGroup{}
+	dirPath := filepath.Dir(remotePath)
+	var totalSize int
+	for oRef := range oRefChan {
+		if contextCanceled(ctx) {
+			return ctx.Err()
+		}
+		if oRef.Err != nil {
+			return oRef.Err
+		}
+		refSlice[refIndex] = oRef
+		refIndex++
+		if refIndex == BatchSize {
+			wg.Add(refIndex)
+			downloadStatusBar := &StatusBar{
+				wg: wg,
+			}
+			for ind, ref := range refSlice {
+				fPath := ref.Path
+				if dirPath != "/" {
+					fPath = strings.TrimPrefix(ref.Path, dirPath)
+				}
+				fh, err := sys.Files.OpenFile(filepath.Join(localPath, fPath), os.O_CREATE|os.O_WRONLY, 0644)
+				if err != nil {
+					return err
+				}
+				if authTicket == "" {
+					a.DownloadFileToFileHandler(fh, ref.Path, false, downloadStatusBar, ind == BatchSize-1, WithFileCallback(func() {
+						fh.Close() //nolint: errcheck
+					})) //nolint: errcheck
+				} else {
+					a.DownloadFileToFileHandlerFromAuthTicket(fh, authTicket, ref.LookupHash, ref.Path, false, downloadStatusBar, ind == BatchSize-1, WithFileCallback(func() {
+						fh.Close() //nolint: errcheck
+					})) //nolint: errcheck
+				}
+				sb.Started(a.ID, ref.Path, OpDownload, int(ref.ActualFileSize))
+				totalSize += int(ref.ActualFileSize)
+			}
+			wg.Wait()
+			if downloadStatusBar.err != nil {
+				return downloadStatusBar.err
+			}
+			refIndex = 0
+			for _, ref := range refSlice {
+				sb.InProgress(a.ID, ref.Path, OpDownload, int(ref.ActualFileSize), nil)
+			}
+		}
+	}
+	if refIndex > 0 {
+		wg.Add(refIndex)
+		downloadStatusBar := &StatusBar{
+			wg: wg,
+		}
+		for ind, ref := range refSlice[:refIndex] {
+			fPath := ref.Path
+			if dirPath != "/" {
+				fPath = strings.TrimPrefix(ref.Path, dirPath)
+			}
+			fh, err := sys.Files.OpenFile(filepath.Join(localPath, fPath), os.O_CREATE|os.O_WRONLY, 0644)
+			if err != nil {
+				return err
+			}
+			if authTicket == "" {
+				a.DownloadFileToFileHandler(fh, ref.Path, false, downloadStatusBar, ind == BatchSize-1, WithFileCallback(func() {
+					fh.Close() //nolint: errcheck
+				})) //nolint: errcheck
+			} else {
+				a.DownloadFileToFileHandlerFromAuthTicket(fh, authTicket, ref.LookupHash, ref.Path, false, downloadStatusBar, ind == BatchSize-1, WithFileCallback(func() {
+					fh.Close() //nolint: errcheck
+				})) //nolint: errcheck
+			}
+			sb.Started(a.ID, ref.Path, OpDownload, int(ref.ActualFileSize))
+			totalSize += int(ref.ActualFileSize)
+		}
+		wg.Wait()
+		if downloadStatusBar.err != nil {
+			return downloadStatusBar.err
+		}
+		for _, ref := range refSlice[:refIndex] {
+			sb.InProgress(a.ID, ref.Path, OpDownload, int(ref.ActualFileSize), nil)
+		}
+	}
+	sb.Completed(a.ID, remotePath, filepath.Base(remotePath), "", totalSize, OpDownload)
+	return nil
+}
+
+// contextCanceled returns whether a context is canceled.
+func contextCanceled(ctx context.Context) bool {
+	select {
+	case <-ctx.Done():
+		return true
+	default:
+		return false
+	}
 }

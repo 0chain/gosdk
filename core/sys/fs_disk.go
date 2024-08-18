@@ -3,6 +3,7 @@ package sys
 import (
 	"io/fs"
 	"os"
+	"path/filepath"
 )
 
 // DiskFS implement file system on disk
@@ -23,6 +24,12 @@ func (dfs *DiskFS) Open(name string) (File, error) {
 }
 
 func (dfs *DiskFS) OpenFile(name string, flag int, perm os.FileMode) (File, error) {
+	dir := filepath.Dir(name)
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		if err := os.MkdirAll(dir, 0744); err != nil {
+			return nil, err
+		}
+	}
 	return os.OpenFile(name, flag, perm)
 }
 
