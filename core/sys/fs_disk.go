@@ -71,3 +71,20 @@ func (dfs *DiskFS) SaveProgress(progressID string, data []byte, perm fs.FileMode
 func (dfs *DiskFS) RemoveProgress(progressID string) error {
 	return dfs.Remove(progressID)
 }
+
+func (dfs *DiskFS) CreateDirectory(_ string) error {
+	return nil
+}
+
+func (dfs *DiskFS) GetFileHandler(_, name string) (File, error) {
+	dir := filepath.Dir(name)
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		if err := os.MkdirAll(dir, 0744); err != nil {
+			return nil, err
+		}
+	}
+	return os.OpenFile(name, os.O_CREATE|os.O_WRONLY, 0644)
+}
+
+func (dfs *DiskFS) RemoveAllDirectories() {
+}

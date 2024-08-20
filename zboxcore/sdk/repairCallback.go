@@ -12,10 +12,15 @@ var (
 )
 
 func (s *StatusBar) Started(allocationId, filePath string, op int, totalBytes int) {
+	if s.sb != nil {
+		s.sb.Started(allocationId, filePath, op, totalBytes)
+	}
 
 }
 func (s *StatusBar) InProgress(allocationId, filePath string, op int, completedBytes int, data []byte) {
-
+	if s.sb != nil {
+		s.sb.InProgress(allocationId, filePath, op, completedBytes, data)
+	}
 }
 
 func (s *StatusBar) Completed(allocationId, filePath string, filename string, mimetype string, size int, op int) {
@@ -53,6 +58,7 @@ type StatusBar struct {
 	success  bool
 	err      error
 	isRepair bool
+	sb       StatusCallback
 }
 
 func NewRepairBar(allocID string) *StatusBar {

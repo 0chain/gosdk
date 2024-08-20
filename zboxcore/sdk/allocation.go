@@ -3161,17 +3161,34 @@ func (a *Allocation) DownloadDirectory(ctx context.Context, remotePath, localPat
 	if len(a.Blobbers) == 0 {
 		return noBLOBBERS
 	}
+	localPath = filepath.Clean(localPath)
+	dirID := zboxutil.NewConnectionId()
+	err := sys.Files.CreateDirectory(dirID)
+	if err != nil {
+		if sb != nil {
+			sb.Error(a.ID, remotePath, OpDownload, err)
+		}
+		return err
+	}
+	defer sys.Files.RemoveAllDirectories()
+
 	oRefChan := a.ListObjects(ctx, remotePath, "", "", "", fileref.FILE, fileref.REGULAR, 0, getRefPageLimit)
 	refSlice := make([]ORef, BatchSize)
 	refIndex := 0
 	wg := &sync.WaitGroup{}
-	dirPath := filepath.Dir(remotePath)
+	dirPath := path.Dir(remotePath)
 	var totalSize int
 	for oRef := range oRefChan {
 		if contextCanceled(ctx) {
+			if sb != nil {
+				sb.Error(a.ID, remotePath, OpDownload, ctx.Err())
+			}
 			return ctx.Err()
 		}
 		if oRef.Err != nil {
+			if sb != nil {
+				sb.Error(a.ID, remotePath, OpDownload, oRef.Err)
+			}
 			return oRef.Err
 		}
 		refSlice[refIndex] = oRef
@@ -3180,14 +3197,18 @@ func (a *Allocation) DownloadDirectory(ctx context.Context, remotePath, localPat
 			wg.Add(refIndex)
 			downloadStatusBar := &StatusBar{
 				wg: wg,
+				sb: sb,
 			}
 			for ind, ref := range refSlice {
 				fPath := ref.Path
 				if dirPath != "/" {
 					fPath = strings.TrimPrefix(ref.Path, dirPath)
 				}
-				fh, err := sys.Files.OpenFile(filepath.Join(localPath, fPath), os.O_CREATE|os.O_WRONLY, 0644)
+				fh, err := sys.Files.GetFileHandler(dirID, filepath.Join("/", localPath, fPath))
 				if err != nil {
+					if sb != nil {
+						sb.Error(a.ID, remotePath, OpDownload, err)
+					}
 					return err
 				}
 				if authTicket == "" {
@@ -3199,7 +3220,6 @@ func (a *Allocation) DownloadDirectory(ctx context.Context, remotePath, localPat
 						fh.Close() //nolint: errcheck
 					})) //nolint: errcheck
 				}
-				sb.Started(a.ID, ref.Path, OpDownload, int(ref.ActualFileSize))
 				totalSize += int(ref.ActualFileSize)
 			}
 			wg.Wait()
@@ -3207,46 +3227,49 @@ func (a *Allocation) DownloadDirectory(ctx context.Context, remotePath, localPat
 				return downloadStatusBar.err
 			}
 			refIndex = 0
-			for _, ref := range refSlice {
-				sb.InProgress(a.ID, ref.Path, OpDownload, int(ref.ActualFileSize), nil)
-			}
 		}
 	}
 	if refIndex > 0 {
 		wg.Add(refIndex)
 		downloadStatusBar := &StatusBar{
 			wg: wg,
+			sb: sb,
 		}
 		for ind, ref := range refSlice[:refIndex] {
 			fPath := ref.Path
 			if dirPath != "/" {
 				fPath = strings.TrimPrefix(ref.Path, dirPath)
 			}
-			fh, err := sys.Files.OpenFile(filepath.Join(localPath, fPath), os.O_CREATE|os.O_WRONLY, 0644)
+			fh, err := sys.Files.GetFileHandler(dirID, filepath.Join("/", localPath, fPath))
 			if err != nil {
+				if sb != nil {
+					sb.Error(a.ID, remotePath, OpDownload, err)
+				}
 				return err
 			}
 			if authTicket == "" {
-				a.DownloadFileToFileHandler(fh, ref.Path, false, downloadStatusBar, ind == BatchSize-1, WithFileCallback(func() {
+				a.DownloadFileToFileHandler(fh, ref.Path, false, downloadStatusBar, ind == refIndex-1, WithFileCallback(func() {
 					fh.Close() //nolint: errcheck
 				})) //nolint: errcheck
 			} else {
-				a.DownloadFileToFileHandlerFromAuthTicket(fh, authTicket, ref.LookupHash, ref.Path, false, downloadStatusBar, ind == BatchSize-1, WithFileCallback(func() {
+				a.DownloadFileToFileHandlerFromAuthTicket(fh, authTicket, ref.LookupHash, ref.Path, false, downloadStatusBar, ind == refIndex-1, WithFileCallback(func() {
 					fh.Close() //nolint: errcheck
 				})) //nolint: errcheck
 			}
-			sb.Started(a.ID, ref.Path, OpDownload, int(ref.ActualFileSize))
 			totalSize += int(ref.ActualFileSize)
 		}
 		wg.Wait()
 		if downloadStatusBar.err != nil {
+			if sb != nil {
+				sb.Error(a.ID, remotePath, OpDownload, downloadStatusBar.err)
+			}
 			return downloadStatusBar.err
 		}
-		for _, ref := range refSlice[:refIndex] {
-			sb.InProgress(a.ID, ref.Path, OpDownload, int(ref.ActualFileSize), nil)
-		}
 	}
-	sb.Completed(a.ID, remotePath, filepath.Base(remotePath), "", totalSize, OpDownload)
+	refSlice = nil
+	if sb != nil {
+		sb.Completed(a.ID, remotePath, filepath.Base(remotePath), "", totalSize, OpDownload)
+	}
 	return nil
 }
 
