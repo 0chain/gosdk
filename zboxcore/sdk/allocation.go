@@ -3204,7 +3204,10 @@ func (a *Allocation) DownloadDirectory(ctx context.Context, remotePath, localPat
 				if dirPath != "/" {
 					fPath = strings.TrimPrefix(ref.Path, dirPath)
 				}
-				fh, err := sys.Files.GetFileHandler(dirID, filepath.Join("/", localPath, fPath))
+				if localPath != "" {
+					fPath = filepath.Join(localPath, fPath)
+				}
+				fh, err := sys.Files.GetFileHandler(dirID, fPath)
 				if err != nil {
 					if sb != nil {
 						sb.Error(a.ID, remotePath, OpDownload, err)
@@ -3240,7 +3243,10 @@ func (a *Allocation) DownloadDirectory(ctx context.Context, remotePath, localPat
 			if dirPath != "/" {
 				fPath = strings.TrimPrefix(ref.Path, dirPath)
 			}
-			fh, err := sys.Files.GetFileHandler(dirID, filepath.Join("/", localPath, fPath))
+			if localPath != "" {
+				fPath = filepath.Join(localPath, fPath)
+			}
+			fh, err := sys.Files.GetFileHandler(dirID, fPath)
 			if err != nil {
 				if sb != nil {
 					sb.Error(a.ID, remotePath, OpDownload, err)
