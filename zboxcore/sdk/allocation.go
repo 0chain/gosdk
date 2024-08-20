@@ -3212,11 +3212,11 @@ func (a *Allocation) DownloadDirectory(ctx context.Context, remotePath, localPat
 					return err
 				}
 				if authTicket == "" {
-					a.DownloadFileToFileHandler(fh, ref.Path, false, downloadStatusBar, ind == BatchSize-1, WithFileCallback(func() {
+					_ = a.DownloadFileToFileHandler(fh, ref.Path, false, downloadStatusBar, ind == BatchSize-1, WithFileCallback(func() {
 						fh.Close() //nolint: errcheck
 					})) //nolint: errcheck
 				} else {
-					a.DownloadFileToFileHandlerFromAuthTicket(fh, authTicket, ref.LookupHash, ref.Path, false, downloadStatusBar, ind == BatchSize-1, WithFileCallback(func() {
+					_ = a.DownloadFileToFileHandlerFromAuthTicket(fh, authTicket, ref.LookupHash, ref.Path, false, downloadStatusBar, ind == BatchSize-1, WithFileCallback(func() {
 						fh.Close() //nolint: errcheck
 					})) //nolint: errcheck
 				}
@@ -3248,11 +3248,11 @@ func (a *Allocation) DownloadDirectory(ctx context.Context, remotePath, localPat
 				return err
 			}
 			if authTicket == "" {
-				a.DownloadFileToFileHandler(fh, ref.Path, false, downloadStatusBar, ind == refIndex-1, WithFileCallback(func() {
+				_ = a.DownloadFileToFileHandler(fh, ref.Path, false, downloadStatusBar, ind == refIndex-1, WithFileCallback(func() {
 					fh.Close() //nolint: errcheck
 				})) //nolint: errcheck
 			} else {
-				a.DownloadFileToFileHandlerFromAuthTicket(fh, authTicket, ref.LookupHash, ref.Path, false, downloadStatusBar, ind == refIndex-1, WithFileCallback(func() {
+				_ = a.DownloadFileToFileHandlerFromAuthTicket(fh, authTicket, ref.LookupHash, ref.Path, false, downloadStatusBar, ind == refIndex-1, WithFileCallback(func() {
 					fh.Close() //nolint: errcheck
 				})) //nolint: errcheck
 			}
