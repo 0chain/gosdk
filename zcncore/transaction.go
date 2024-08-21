@@ -152,7 +152,7 @@ type TransactionCommon interface {
 
 	MinerSCMinerSettings(*MinerSCMinerInfo) error
 	MinerSCSharderSettings(*MinerSCMinerInfo) error
-	MinerSCDeleteMiner(*MinerSCMinerInfo) error
+	MinerSCDeleteMiner(id string) error
 	MinerSCDeleteSharder(*MinerSCMinerInfo) error
 
 	// ZCNSCUpdateAuthorizerConfig updates authorizer config by ID
@@ -192,9 +192,9 @@ type CreateAllocationRequest struct {
 }
 
 type StakePoolSettings struct {
-	DelegateWallet *string         `json:"delegate_wallet,omitempty"`
-	NumDelegates   *int            `json:"num_delegates,omitempty"`
-	ServiceCharge  *float64        `json:"service_charge,omitempty"`
+	DelegateWallet *string  `json:"delegate_wallet,omitempty"`
+	NumDelegates   *int     `json:"num_delegates,omitempty"`
+	ServiceCharge  *float64 `json:"service_charge,omitempty"`
 }
 
 type Terms struct {
@@ -236,9 +236,9 @@ type AuthorizerHealthCheckPayload struct {
 }
 
 type AuthorizerStakePoolSettings struct {
-	DelegateWallet string         `json:"delegate_wallet"`
-	NumDelegates   int            `json:"num_delegates"`
-	ServiceCharge  float64        `json:"service_charge"`
+	DelegateWallet string  `json:"delegate_wallet"`
+	NumDelegates   int     `json:"num_delegates"`
+	ServiceCharge  float64 `json:"service_charge"`
 }
 
 type AuthorizerConfig struct {
@@ -921,9 +921,14 @@ func (t *Transaction) MinerSCSharderSettings(info *MinerSCMinerInfo) (err error)
 	return
 }
 
-func (t *Transaction) MinerSCDeleteMiner(info *MinerSCMinerInfo) (err error) {
+func (t *Transaction) MinerSCDeleteMiner(id string) (err error) {
+	mi := &MinerSCMinerInfo{
+		SimpleMiner: SimpleMiner{
+			ID: id,
+		},
+	}
 	err = t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_MINER_DELETE, info, 0)
+		transaction.MINERSC_MINER_DELETE, mi, 0)
 	if err != nil {
 		logging.Error(err)
 		return

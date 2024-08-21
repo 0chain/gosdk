@@ -865,9 +865,14 @@ func (t *Transaction) MinerSCSharderSettings(info MinerSCMinerInfo) (err error) 
 	return
 }
 
-func (t *Transaction) MinerSCDeleteMiner(info MinerSCMinerInfo) (err error) {
+func (t *Transaction) MinerSCDeleteMiner(id string) (err error) {
+	mi := MinerSCMinerInfo{
+		SimpleMiner: SimpleMiner{
+			ID: id,
+		},
+	}
 	err = t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_MINER_DELETE, info, 0)
+		transaction.MINERSC_MINER_DELETE, mi, 0)
 	if err != nil {
 		logging.Error(err)
 		return

@@ -245,6 +245,7 @@ func VerifyWithKey(pubKey, signature, hash string) (bool, error) {
 
 var SignFn = func(hash string) (string, error) {
 	sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
+	fmt.Println("sgiScheme:", sigScheme)
 	err := sigScheme.SetPrivateKey(_config.wallet.Keys[0].PrivateKey)
 	if err != nil {
 		return "", err
