@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math"
 	"net"
 	"net/http"
 	"net/url"
@@ -17,7 +18,6 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
-	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -29,9 +29,6 @@ const SC_REST_API_URL = "v1/screst/"
 
 const MAX_RETRIES = 5
 const SLEEP_BETWEEN_RETRIES = 5
-
-// In percentage
-const consensusThresh = float32(25.0)
 
 type SCRestAPIHandler func(response map[string][]byte, numSharders int, err error)
 
@@ -900,6 +897,7 @@ func NewRollbackRequest(baseUrl, allocationID string, allocationTx string, body 
 
 func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]string, handler SCRestAPIHandler) ([]byte, error) {
 	numSharders := len(blockchain.GetSharders())
+	reqConsensus := int(math.Ceil(float64(numSharders) * float64(0.5)))
 	sharders := blockchain.GetSharders()
 	responses := make(map[int]int)
 	mu := &sync.Mutex{}
@@ -909,11 +907,8 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 	dominant := 200
 	wg := sync.WaitGroup{}
 
-	cfg, err := conf.GetClientConfig()
-	if err != nil {
-		return nil, err
-	}
-
+	ctx, cancelFunc := context.WithCancel(context.Background())
+	defer cancelFunc()
 	for _, sharder := range sharders {
 		wg.Add(1)
 		go func(sharder string) {
@@ -930,7 +925,12 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 			}
 			urlObj.RawQuery = q.Encode()
 			client := &http.Client{Transport: DefaultTransport}
-			response, err := client.Get(urlObj.String())
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, urlObj.String(), nil)
+			if err != nil {
+				log.Error(err)
+				return
+			}
+			response, err := client.Do(req)
 			if err != nil {
 				blockchain.Sharders.Fail(sharder)
 				return
@@ -956,13 +956,18 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 
 			entityResult[sharder] = entityBytes
 			blockchain.Sharders.Success(sharder)
+			
+			// if consensus is reached by enough sharders, cancel other requests
+			if maxCount >= reqConsensus {
+				cancelFunc()
+			}
 			mu.Unlock()
 		}(sharder)
 	}
 	wg.Wait()
 
-	rate := float32(maxCount*100) / float32(cfg.SharderConsensous)
-	if rate < consensusThresh {
+	var err error
+	if maxCount < reqConsensus {
 		err = errors.New("consensus_failed", "consensus failed on sharders")
 	}
 
@@ -986,7 +991,7 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 		handler(entityResult, numSharders, err)
 	}
 
-	if rate > consensusThresh {
+	if maxCount >= reqConsensus {
 		return retObj, nil
 	}
 	return nil, err
