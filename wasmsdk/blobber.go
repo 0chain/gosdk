@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"path"
 	"strings"
 	"sync"
@@ -29,6 +30,7 @@ import (
 )
 
 const FileOperationInsert = "insert"
+const defaultChunkSize = 64 * 1024
 
 func listObjects(allocationID string, remotePath string, offset, pageLimit int) (*sdk.ListResult, error) {
 	defer func() {
@@ -960,6 +962,112 @@ func downloadBlocks(allocId string, remotePath, authTicket, lookupHash string, s
 	}
 	wg.Wait()
 	return mf.Buffer, nil
+}
+
+func downloadFileRange(allocId string, remotePath, authTicket, lookupHash string, rangeStart, rangeEnd int64) ([]byte, error) {
+
+	if len(remotePath) == 0 && len(authTicket) == 0 {
+		return nil, RequiredArg("remotePath/authTicket")
+	}
+
+	alloc, err := getAllocation(allocId)
+
+	if err != nil {
+		PrintError("Error fetching the allocation", err)
+		return nil, err
+	}
+
+	fileRangeSize := rangeEnd - rangeStart + 1
+	var startBlock, endBlock int64
+	dataShards := int64(alloc.DataShards)
+	effectiveBlockSize := int64(defaultChunkSize)
+	effectiveChunkSize := effectiveBlockSize * int64(dataShards)
+
+	if rangeEnd >= rangeStart {
+		startBlock = int64(rangeStart / effectiveChunkSize)
+		if startBlock == 0 {
+			startBlock = 1
+		}
+		if rangeEnd < fileRangeSize {
+			endBlock = (fileRangeSize + effectiveChunkSize - 1) / effectiveChunkSize
+		} else {
+			endBlock = int64(rangeEnd+effectiveChunkSize-1) / effectiveChunkSize
+		}
+	} else {
+		startBlock = 1
+		endBlock = 0
+	}
+
+	if rangeEnd == -1 {
+		endBlock = 0
+		startBlock = int64(rangeStart / effectiveChunkSize)
+		if startBlock == 0 {
+			startBlock = 1
+		}
+		// fileRangeSize = objectInfo.Size - rangeStart
+	}
+
+	var (
+		wg        = &sync.WaitGroup{}
+		statusBar = &StatusBar{wg: wg}
+	)
+
+	fileName := strings.Replace(path.Base(remotePath), "/", "-", -1)
+	localPath := alloc.ID + "-" + fmt.Sprintf("%v-%s", startBlock, fileName)
+
+	fs, err := sys.Files.Open(localPath)
+	if err != nil {
+		return nil, fmt.Errorf("could not open local file: %v", err)
+	}
+
+	mf, _ := fs.(*sys.MemFile)
+	if mf == nil {
+		return nil, fmt.Errorf("invalid memfile")
+	}
+
+	defer sys.Files.Remove(localPath) //nolint
+
+	wg.Add(1)
+	if authTicket != "" {
+		err = alloc.DownloadByBlocksToFileHandlerFromAuthTicket(mf, authTicket, lookupHash, startBlock, endBlock, 100, remotePath, false, statusBar, true)
+	} else {
+		err = alloc.DownloadByBlocksToFileHandler(
+			mf,
+			remotePath,
+			startBlock,
+			endBlock,
+			100,
+			false,
+			statusBar, true)
+	}
+	if err != nil {
+		return nil, err
+	}
+	wg.Wait()
+
+	startOffset := rangeStart - (startBlock-1)*effectiveChunkSize
+	if startOffset < 0 {
+		startOffset = 0
+	}
+
+	stat, err := mf.Stat()
+	if err != nil {
+		return nil, err
+	}
+	if rangeEnd < rangeStart {
+		fileRangeSize = stat.Size()
+	}
+	if rangeEnd == -1 {
+		fileRangeSize = stat.Size() - rangeStart
+	}
+	_, err = mf.Seek(startOffset, io.SeekStart)
+	if err != nil {
+		return nil, err
+	}
+
+	lr := io.LimitReader(mf, fileRangeSize)
+	mflr, _ := lr.(*sys.MemFile)
+	return mflr.Buffer, nil
 }
 
 // GetBlobbersList get list of active blobbers, and format them as array json string
