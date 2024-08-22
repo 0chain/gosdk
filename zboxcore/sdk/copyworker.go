@@ -7,7 +7,7 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
-	"path/filepath"
+	"path"
 	"strings"
 	"sync"
 	"time"
@@ -229,7 +229,7 @@ func (req *CopyRequest) ProcessWithBlobbers() ([]fileref.RefEntity, error) {
 			return nil, err
 		}
 		req.consensus = req.copyMask.CountOnes()
-		return objectTreeRefs, nil
+		return objectTreeRefs, errNoChange
 	}
 
 	for i := req.copyMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
@@ -406,7 +406,7 @@ func (co *CopyOperation) Process(allocObj *Allocation, connectionID string) ([]f
 			fmt.Sprintf("Copy failed. Required consensus %d, got %d",
 				cR.Consensus.consensusThresh, cR.Consensus.consensus))
 	}
-	return objectTreeRefs, cR.copyMask, nil
+	return objectTreeRefs, cR.copyMask, err
 
 }
 
@@ -500,8 +500,8 @@ func (req *CopyRequest) copySubDirectoriees(dirOnly bool) error {
 				if ref.PathLevel > pathLevel {
 					pathLevel = ref.PathLevel
 				}
-				basePath := strings.TrimPrefix(filepath.Dir(ref.Path), filepath.Dir(req.remotefilepath))
-				destPath := filepath.Join(req.destPath, basePath)
+				basePath := strings.TrimPrefix(path.Dir(ref.Path), path.Dir(req.remotefilepath))
+				destPath := path.Join(req.destPath, basePath)
 				op := OperationRequest{
 					OperationType: constants.FileOperationCopy,
 					RemotePath:    ref.Path,
@@ -541,8 +541,8 @@ func (req *CopyRequest) copySubDirectoriees(dirOnly bool) error {
 				if ref.Type == fileref.FILE {
 					continue
 				}
-				basePath := strings.TrimPrefix(filepath.Dir(ref.Path), filepath.Dir(req.remotefilepath))
-				destPath := filepath.Join(req.destPath, basePath)
+				basePath := strings.TrimPrefix(path.Dir(ref.Path), path.Dir(req.remotefilepath))
+				destPath := path.Join(req.destPath, basePath)
 				op := OperationRequest{
 					OperationType: constants.FileOperationCopy,
 					RemotePath:    ref.Path,

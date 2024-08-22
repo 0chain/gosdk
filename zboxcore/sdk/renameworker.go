@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
+	"path"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -219,10 +220,18 @@ func (req *RenameRequest) ProcessWithBlobbers() ([]fileref.RefEntity, error) {
 				req.renameMask = req.renameMask.And(zboxutil.NewUint128(1).Lsh(uint64(ind)).Not())
 			}
 		}
-		// err := req.copySubDirectoriees()
-		// if err != nil {
-		// 	return nil, err
-		// }
+		op := OperationRequest{
+			OperationType: constants.FileOperationMove,
+			RemotePath:    req.remotefilepath,
+			DestPath:      path.Join(path.Dir(req.remotefilepath), req.newName),
+			Mask:          &req.renameMask,
+		}
+		err := req.allocationObj.DoMultiOperation([]OperationRequest{op})
+		if err != nil {
+			return nil, err
+		}
+		req.consensus.consensus = req.renameMask.CountOnes()
+		return nil, errNoChange
 	}
 
 	for i := req.renameMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
@@ -387,6 +396,9 @@ func (ro *RenameOperation) Process(allocObj *Allocation, connectionID string) ([
 
 	if !rR.consensus.isConsensusOk() {
 		if err != nil {
+			if err == errNoChange {
+				return nil, ro.renameMask, err
+			}
 			return nil, rR.renameMask, errors.New("rename_failed", fmt.Sprintf("Renamed failed. %s", err.Error()))
 		}
 
@@ -394,8 +406,7 @@ func (ro *RenameOperation) Process(allocObj *Allocation, connectionID string) ([
 			fmt.Sprintf("Rename failed. Required consensus %d, got %d",
 				rR.consensus.consensusThresh, rR.consensus.consensus))
 	}
-	l.Logger.Info("Rename Processs Ended ")
-	return objectTreeRefs, rR.renameMask, nil
+	return objectTreeRefs, rR.renameMask, err
 }
 
 func (ro *RenameOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange {

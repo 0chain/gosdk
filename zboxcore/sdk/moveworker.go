@@ -404,7 +404,7 @@ func (mo *MoveOperation) Process(allocObj *Allocation, connectionID string) ([]f
 			fmt.Sprintf("Move failed. Required consensus %d, got %d",
 				mR.Consensus.consensusThresh, mR.Consensus.consensus))
 	}
-	return objectTreeRefs, mR.moveMask, nil
+	return objectTreeRefs, mR.moveMask, err
 }
 
 func (mo *MoveOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange {
