@@ -12,6 +12,7 @@ import (
 	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/fileref"
+	"github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/google/uuid"
 )
 
@@ -29,6 +30,7 @@ func (ch *NewFileChange) ProcessChange(rootRef *fileref.Ref, fileIDMeta map[stri
 	}
 
 	if ch.File.ActualFileHash == "" {
+		logger.Logger.Error("emptyFileHash: ", ch.File.Path)
 		err = errors.New("empty actual file hash field")
 		return
 	}

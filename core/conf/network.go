@@ -46,6 +46,7 @@ func (n *Network) NormalizeURLs() {
 }
 
 // LoadNetworkFile load and parse Network from file
+//   - file is the path of the file (full path)
 func LoadNetworkFile(file string) (Network, error) {
 
 	var network Network

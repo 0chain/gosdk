@@ -540,6 +540,11 @@ func GetInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback) {
 
 	qr, err := tq.GetInfo(context.TODO(), urlSuffix)
 	if err != nil {
+		if qr != nil && op == OpGetMintNonce {
+			logging.Debug("OpGetMintNonce QueryResult error", "; Content = ",  qr.Content, "; Error = ", qr.Error.Error(), "; StatusCode = ", qr.StatusCode)
+			cb.OnInfoAvailable(op, qr.StatusCode, "", qr.Error.Error())
+			return
+		}
 		cb.OnInfoAvailable(op, StatusError, "", err.Error())
 		return
 	}

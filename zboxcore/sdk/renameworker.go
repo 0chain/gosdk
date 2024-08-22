@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -211,7 +212,7 @@ func (req *RenameRequest) ProcessRename() error {
 	defer writeMarkerMutex.Unlock(req.ctx, req.renameMask, req.blobbers, time.Minute, req.connectionID) //nolint: errcheck
 
 	//Check if the allocation is to be repaired or rolled back
-	status, err := req.allocationObj.CheckAllocStatus()
+	status, _, err := req.allocationObj.CheckAllocStatus()
 	if err != nil {
 		logger.Logger.Error("Error checking allocation status: ", err)
 		return fmt.Errorf("rename failed: %s", err.Error())
@@ -300,8 +301,6 @@ type RenameOperation struct {
 }
 
 func (ro *RenameOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
-
-	l.Logger.Info("Started Rename Process with Connection Id", connectionID)
 	// make renameRequest object
 	rR := &RenameRequest{
 		allocationObj:  allocObj,
@@ -317,6 +316,9 @@ func (ro *RenameOperation) Process(allocObj *Allocation, connectionID string) ([
 		maskMU:         ro.maskMU,
 		wg:             &sync.WaitGroup{},
 		consensus:      Consensus{RWMutex: &sync.RWMutex{}},
+	}
+	if filepath.Base(ro.remotefilepath) == ro.newName {
+		return nil, ro.renameMask, errors.New("invalid_operation", "Cannot rename to same name")
 	}
 	rR.consensus.fullconsensus = ro.consensus.fullconsensus
 	rR.consensus.consensusThresh = ro.consensus.consensusThresh

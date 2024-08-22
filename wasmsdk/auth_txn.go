@@ -15,7 +15,9 @@ type AuthCallbackFunc func(msg string) string
 var authCallback AuthCallbackFunc
 var authResponseC chan string
 
-// Register the callback function
+// registerAuthorizer Register the callback function to authorize the transaction.
+// This function is called from JavaScript.
+// It stores the callback function in the global variable authCallback.
 func registerAuthorizer(this js.Value, args []js.Value) interface{} {
 	// Store the callback function
 	authCallback = parseAuthorizerCallback(args[0])
@@ -28,11 +30,14 @@ func registerAuthorizer(this js.Value, args []js.Value) interface{} {
 	return nil
 }
 
+// authResponse Publishes the response to the authorization request.
+// 		`response` is the response to the authorization request.
 func authResponse(response string) {
 	authResponseC <- response
 }
 
-// Use the stored callback function
+// callAuth Call the authorization callback function and provide the message to pass to it.
+// The message is passed as the first argument to the js calling.
 func callAuth(this js.Value, args []js.Value) interface{} {
 	fmt.Println("callAuth is called")
 	if len(args) == 0 {

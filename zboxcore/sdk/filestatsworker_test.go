@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"sync"
 	"testing"
 
 	"github.com/0chain/errors"
@@ -156,12 +155,9 @@ func TestListRequest_getFileStatsInfoFromBlobber(t *testing.T) {
 				allocationTx:   mockAllocationTxId,
 				remotefilepath: mockRemoteFilePath,
 				ctx:            context.Background(),
-				wg:             &sync.WaitGroup{},
 			}
 			rspCh := make(chan *fileStatsResponse, 1)
-			req.wg.Add(1)
 			go req.getFileStatsInfoFromBlobber(&blobber, mockBlobberIndex, rspCh)
-			req.wg.Wait()
 			resp := <-rspCh
 			require.EqualValues(t, tt.wantErr, resp.err != nil)
 			if resp.err != nil {
@@ -255,7 +251,6 @@ func TestListRequest_getFileStatsFromBlobbers(t *testing.T) {
 				allocationTx: mockAllocationTxId,
 				ctx:          context.TODO(),
 				blobbers:     []*blockchain.StorageNode{},
-				wg:           &sync.WaitGroup{},
 			}
 			for i := 0; i < tt.numBlobbers; i++ {
 				req.blobbers = append(req.blobbers, &blockchain.StorageNode{

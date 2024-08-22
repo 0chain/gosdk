@@ -9,9 +9,13 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/zboxcore/encryption"
+	"github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/klauspost/reedsolomon"
+	"github.com/valyala/bytebufferpool"
 )
+
+var uploadPool bytebufferpool.Pool
 
 type ChunkedUploadChunkReader interface {
 	// Next read, encode and encrypt next chunk
@@ -24,6 +28,8 @@ type ChunkedUploadChunkReader interface {
 	Close()
 	//GetFileHash get file hash
 	GetFileHash() (string, error)
+	//Reset reset offset
+	Reset()
 }
 
 // chunkedUploadChunkReader read chunk bytes from io.Reader. see detail on https://github.com/0chain/blobber/wiki/Protocols#what-is-fixedmerkletree
@@ -45,6 +51,15 @@ type chunkedUploadChunkReader struct {
 
 	// chunkDataSizePerRead total size should be read from original io.Reader. It is DataSize * DataShards.
 	chunkDataSizePerRead int64
+
+	//totaChunkDataSizePerRead total size of data in a chunk. It is DataSize * (DataShards + ParityShards)
+	totalChunkDataSizePerRead int64
+
+	//fileShardsDataBuffer
+	fileShardsDataBuffer *bytebufferpool.ByteBuffer
+
+	//offset
+	offset int64
 
 	// nextChunkIndex next index for reading
 	nextChunkIndex int
@@ -68,7 +83,7 @@ type chunkedUploadChunkReader struct {
 }
 
 // createChunkReader create ChunkReader instance
-func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards int, encryptOnUpload bool, uploadMask zboxutil.Uint128, erasureEncoder reedsolomon.Encoder, encscheme encryption.EncryptionScheme, hasher Hasher, chunkNumber int) (ChunkedUploadChunkReader, error) {
+func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards, parityShards int, encryptOnUpload bool, uploadMask zboxutil.Uint128, erasureEncoder reedsolomon.Encoder, encscheme encryption.EncryptionScheme, hasher Hasher, chunkNumber int) (ChunkedUploadChunkReader, error) {
 
 	if chunkSize <= 0 {
 		return nil, errors.Throw(constants.ErrInvalidParameter, "chunkSize: "+strconv.FormatInt(chunkSize, 10))
@@ -97,7 +112,7 @@ func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards i
 		erasureEncoder:  erasureEncoder,
 		encscheme:       encscheme,
 		hasher:          hasher,
-		hasherDataChan:  make(chan []byte, 2*chunkNumber),
+		hasherDataChan:  make(chan []byte, 3*chunkNumber),
 		hasherWG:        sync.WaitGroup{},
 	}
 
@@ -110,9 +125,25 @@ func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards i
 	}
 
 	r.chunkDataSizePerRead = r.chunkDataSize * int64(dataShards)
-	// TODO: enable this for concurrent hashing
-	// r.hasherWG.Add(1)
-	// go r.hashData()
+	r.totalChunkDataSizePerRead = r.chunkDataSize * int64(dataShards+parityShards)
+	totalDataSize := r.totalChunkDataSizePerRead * int64(chunkNumber)
+	readSize := r.chunkDataSizePerRead * int64(chunkNumber)
+	if size > 0 && readSize > size {
+		chunkNum := (size + r.chunkDataSizePerRead - 1) / r.chunkDataSizePerRead
+		totalDataSize = r.totalChunkDataSizePerRead * chunkNum
+	}
+	buf := uploadPool.Get()
+	if cap(buf.B) < int(totalDataSize) {
+		buf.B = make([]byte, 0, totalDataSize)
+		logger.Logger.Debug("creating buffer with size: ", " totalDataSize: ", totalDataSize)
+	} else {
+		logger.Logger.Debug("reusing buffer with size: ", cap(buf.B), " totalDataSize: ", totalDataSize, " len: ", len(buf.B))
+	}
+	r.fileShardsDataBuffer = buf
+	if CurrentMode == UploadModeHigh {
+		r.hasherWG.Add(1)
+		go r.hashData()
+	}
 	return r, nil
 }
 
@@ -152,8 +183,16 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 		ReadSize:     0,
 		FragmentSize: 0,
 	}
-	chunkBytes := make([]byte, r.chunkDataSizePerRead)
-	readLen, err := r.fileReader.Read(chunkBytes)
+	chunkBytes := r.fileShardsDataBuffer.B[r.offset : r.offset+r.chunkDataSizePerRead : r.offset+r.totalChunkDataSizePerRead]
+	var (
+		readLen int
+		err     error
+	)
+	for readLen < len(chunkBytes) && err == nil {
+		var nn int
+		nn, err = r.fileReader.Read(chunkBytes[readLen:])
+		readLen += nn
+	}
 	if err != nil {
 
 		if !errors.Is(err, io.EOF) {
@@ -186,7 +225,13 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 	if r.hasherError != nil {
 		return chunk, r.hasherError
 	}
-	_ = r.hasher.WriteToFile(chunkBytes)
+
+	if CurrentMode == UploadModeHigh {
+		r.hasherDataChan <- chunkBytes
+	} else {
+		_ = r.hasher.WriteToFile(chunkBytes)
+	}
+
 	fragments, err := r.erasureEncoder.Split(chunkBytes)
 	if err != nil {
 		return nil, err
@@ -212,6 +257,7 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 
 	chunk.Fragments = fragments
 	r.nextChunkIndex++
+	r.offset += r.totalChunkDataSizePerRead
 	return chunk, nil
 }
 
@@ -253,11 +299,18 @@ func (r *chunkedUploadChunkReader) Read(buf []byte) ([][]byte, error) {
 	return fragments, nil
 }
 
+func (r *chunkedUploadChunkReader) Reset() {
+	r.offset = 0
+}
+
 func (r *chunkedUploadChunkReader) Close() {
 	r.closeOnce.Do(func() {
 		close(r.hasherDataChan)
 		r.hasherWG.Wait()
+		uploadPool.Put(r.fileShardsDataBuffer)
+		r.fileShardsDataBuffer = nil
 	})
+
 }
 
 func (r *chunkedUploadChunkReader) GetFileHash() (string, error) {

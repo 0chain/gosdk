@@ -3,8 +3,10 @@ package sdk
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
@@ -23,11 +25,13 @@ import (
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/minio/sha256-simd"
 )
 
 type ReferencePathResult struct {
 	*fileref.ReferencePath
 	LatestWM *marker.WriteMarker `json:"latest_write_marker"`
+	Version  string              `json:"version"`
 }
 
 type CommitResult struct {
@@ -44,6 +48,8 @@ func SuccessCommitResult() *CommitResult {
 	result := &CommitResult{Success: true}
 	return result
 }
+
+const MARKER_VERSION = "v2"
 
 type CommitRequest struct {
 	changes      []allocationchange.AllocationChange
@@ -93,13 +99,13 @@ func startCommitWorker(blobberChan chan *CommitRequest, blobberID string) {
 func (commitreq *CommitRequest) processCommit() {
 	defer commitreq.wg.Done()
 	start := time.Now()
-	l.Logger.Info("received a commit request")
+	l.Logger.Debug("received a commit request")
 	paths := make([]string, 0)
 	for _, change := range commitreq.changes {
 		paths = append(paths, change.GetAffectedPath()...)
 	}
 	if len(paths) == 0 {
-		l.Logger.Info("Nothing to commit")
+		l.Logger.Debug("Nothing to commit")
 		commitreq.result = SuccessCommitResult()
 		return
 	}
@@ -149,7 +155,7 @@ func (commitreq *CommitRequest) processCommit() {
 		commitreq.result = ErrorCommitResult(err.Error())
 		return
 	}
-
+	hasher := sha256.New()
 	if lR.LatestWM != nil {
 		err = lR.LatestWM.VerifySignature(client.PublicKey())
 		if err != nil {
@@ -157,16 +163,27 @@ func (commitreq *CommitRequest) processCommit() {
 			commitreq.result = ErrorCommitResult(e.Error())
 			return
 		}
+		if commitreq.timestamp <= lR.LatestWM.Timestamp {
+			commitreq.timestamp = lR.LatestWM.Timestamp + 1
+		}
 
 		rootRef.CalculateHash()
 		prevAllocationRoot := rootRef.Hash
 		if prevAllocationRoot != lR.LatestWM.AllocationRoot {
-			l.Logger.Info("Allocation root from latest writemarker mismatch. Expected: " + prevAllocationRoot + " got: " + lR.LatestWM.AllocationRoot)
+			l.Logger.Error("Allocation root from latest writemarker mismatch. Expected: " + prevAllocationRoot + " got: " + lR.LatestWM.AllocationRoot)
 			errMsg := fmt.Sprintf(
 				"calculated allocation root mismatch from blobber %s. Expected: %s, Got: %s",
 				commitreq.blobber.Baseurl, prevAllocationRoot, lR.LatestWM.AllocationRoot)
 			commitreq.result = ErrorCommitResult(errMsg)
 			return
+		}
+		if lR.LatestWM.ChainHash != "" {
+			prevChainHash, err := hex.DecodeString(lR.LatestWM.ChainHash)
+			if err != nil {
+				commitreq.result = ErrorCommitResult(err.Error())
+				return
+			}
+			hasher.Write(prevChainHash) //nolint:errcheck
 		}
 	}
 
@@ -176,23 +193,32 @@ func (commitreq *CommitRequest) processCommit() {
 	for _, change := range commitreq.changes {
 		err = change.ProcessChange(rootRef, fileIDMeta)
 		if err != nil {
-			commitreq.result = ErrorCommitResult(err.Error())
-			return
+			if !errors.Is(err, allocationchange.ErrRefNotFound) {
+				commitreq.result = ErrorCommitResult(err.Error())
+				return
+			}
+		} else {
+			size += change.GetSize()
 		}
-		size += change.GetSize()
 	}
 	rootRef.CalculateHash()
-	err = commitreq.commitBlobber(rootRef, lR.LatestWM, size, fileIDMeta)
+	var chainHash string
+	if lR.Version == MARKER_VERSION {
+		decodedHash, _ := hex.DecodeString(rootRef.Hash)
+		hasher.Write(decodedHash) //nolint:errcheck
+		chainHash = hex.EncodeToString(hasher.Sum(nil))
+	}
+	err = commitreq.commitBlobber(rootRef, chainHash, lR.LatestWM, size, fileIDMeta)
 	if err != nil {
 		commitreq.result = ErrorCommitResult(err.Error())
 		return
 	}
-	l.Logger.Info("[commitBlobber]", time.Since(start).Milliseconds())
+	l.Logger.Debug("[commitBlobber]", time.Since(start).Milliseconds())
 	commitreq.result = SuccessCommitResult()
 }
 
 func (req *CommitRequest) commitBlobber(
-	rootRef *fileref.Ref, latestWM *marker.WriteMarker, size int64,
+	rootRef *fileref.Ref, chainHash string, latestWM *marker.WriteMarker, size int64,
 	fileIDMeta map[string]string) (err error) {
 
 	fileIDMetaData, err := json.Marshal(fileIDMeta)
@@ -203,15 +229,18 @@ func (req *CommitRequest) commitBlobber(
 
 	wm := &marker.WriteMarker{}
 	wm.AllocationRoot = rootRef.Hash
+	wm.ChainSize = size
 	if latestWM != nil {
 		wm.PreviousAllocationRoot = latestWM.AllocationRoot
+		wm.ChainSize += latestWM.ChainSize
 	} else {
 		wm.PreviousAllocationRoot = ""
 	}
 	if wm.AllocationRoot == wm.PreviousAllocationRoot {
-		l.Logger.Error("Allocation root and previous allocation root are same")
-		return thrown.New("commit_error", "Allocation root and previous allocation root are same")
+		l.Logger.Debug("Allocation root and previous allocation root are same")
+		return nil
 	}
+	wm.ChainHash = chainHash
 	wm.FileMetaRoot = rootRef.FileMetaHash
 	wm.AllocationID = req.allocationID
 	wm.Size = size
@@ -229,12 +258,12 @@ func (req *CommitRequest) commitBlobber(
 		return err
 	}
 
-	l.Logger.Info("Committing to blobber." + req.blobber.Baseurl)
+	l.Logger.Debug("Committing to blobber." + req.blobber.Baseurl)
 	var (
 		resp           *http.Response
 		shouldContinue bool
 	)
-	for retries := 0; retries < 3; retries++ {
+	for retries := 0; retries < 6; retries++ {
 		err, shouldContinue = func() (err error, shouldContinue bool) {
 			body := new(bytes.Buffer)
 			formWriter, err := getFormWritter(req.connectionID, wmData, fileIDMetaData, body)
@@ -262,13 +291,18 @@ func (req *CommitRequest) commitBlobber(
 			}
 
 			var respBody []byte
+			respBody, err = io.ReadAll(resp.Body)
+			if err != nil {
+				logger.Logger.Error("Response read: ", err)
+				return
+			}
 			if resp.StatusCode == http.StatusOK {
-				logger.Logger.Info(req.blobber.Baseurl, " committed")
+				logger.Logger.Debug(req.blobber.Baseurl, " committed")
 				return
 			}
 
 			if resp.StatusCode == http.StatusTooManyRequests {
-				logger.Logger.Info(req.blobber.Baseurl,
+				logger.Logger.Debug(req.blobber.Baseurl,
 					" got too many request error. Retrying")
 
 				var r int
@@ -283,14 +317,16 @@ func (req *CommitRequest) commitBlobber(
 				return
 			}
 
-			respBody, err = ioutil.ReadAll(resp.Body)
-			if err != nil {
-				logger.Logger.Error("Response read: ", err)
+			if strings.Contains(string(respBody), "pending_markers:") {
+				logger.Logger.Debug("Commit pending for blobber ",
+					req.blobber.Baseurl, " Retrying")
+				time.Sleep(5 * time.Second)
+				shouldContinue = true
 				return
 			}
 
-			if strings.Contains(string(respBody), "pending_markers:") {
-				logger.Logger.Info("Commit pending for blobber ",
+			if strings.Contains(string(respBody), "chain_length_exceeded") {
+				l.Logger.Error("Chain length exceeded for blobber ",
 					req.blobber.Baseurl, " Retrying")
 				time.Sleep(5 * time.Second)
 				shouldContinue = true

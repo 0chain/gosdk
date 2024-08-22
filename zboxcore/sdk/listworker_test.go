@@ -184,12 +184,9 @@ func TestListRequest_getListInfoFromBlobber(t *testing.T) {
 				authToken: &marker.AuthTicket{
 					Signature: mockSignature,
 				},
-				wg: &sync.WaitGroup{},
 			}
 			rspCh := make(chan *listResponse, 1)
-			req.wg.Add(1)
 			go req.getListInfoFromBlobber(blobber, 41, rspCh)
-			req.wg.Wait()
 			resp := <-rspCh
 			require.EqualValues(tt.wantErr, resp.err != nil)
 			if resp.err != nil {
@@ -286,7 +283,6 @@ func TestListRequest_GetListFromBlobbers(t *testing.T) {
 				allocationTx: mockAllocationTxId,
 				ctx:          context.TODO(),
 				blobbers:     []*blockchain.StorageNode{},
-				wg:           &sync.WaitGroup{},
 				Consensus: Consensus{
 					consensusThresh: tt.consensusThresh,
 					fullconsensus:   tt.fullconsensus,

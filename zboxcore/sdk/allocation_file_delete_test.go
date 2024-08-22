@@ -67,7 +67,7 @@ func TestAllocation_DeleteFile(t *testing.T) {
 		},
 	})
 	require.NoError(err)
-	setupMockHttpResponse(t, &mockClient, "TestAllocation_DeleteFile", "", a, http.MethodGet, http.StatusOK, body)
+	setupMockHttpResponse(t, &mockClient, "TestAllocation_DeleteFile", "", a, http.MethodPost, http.StatusOK, body)
 	setupMockHttpResponse(t, &mockClient, "TestAllocation_DeleteFile", "", a, http.MethodDelete, http.StatusOK, []byte(""))
 	setupMockRollback(a, &mockClient)
 	setupMockCommitRequest(a)
@@ -149,7 +149,7 @@ func TestAllocation_deleteFile(t *testing.T) {
 					},
 				})
 				require.NoError(t, err)
-				setupMockHttpResponse(t, &mockClient, "TestAllocation_deleteFile", testCaseName, a, http.MethodGet, http.StatusOK, body)
+				setupMockHttpResponse(t, &mockClient, "TestAllocation_deleteFile", testCaseName, a, http.MethodPost, http.StatusOK, body)
 				setupMockHttpResponse(t, &mockClient, "TestAllocation_deleteFile", testCaseName, a, http.MethodDelete, http.StatusOK, []byte(""))
 				setupMockCommitRequest(a)
 				setupMockRollback(a, &mockClient)

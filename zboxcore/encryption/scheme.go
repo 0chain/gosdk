@@ -1,5 +1,6 @@
 package encryption
 
+// EncryptionScheme interface for encryption schemes
 type EncryptionScheme interface {
 	Initialize(mnemonic string) ([]byte, error)
 	InitializeWithPrivateKey(privateKey []byte) error
@@ -18,10 +19,12 @@ type EncryptionScheme interface {
 	GetEncryptedKeyPoint() string
 }
 
+// NewEncryptionScheme create a new encryption scheme
 func NewEncryptionScheme() EncryptionScheme {
 	return new(PREEncryptionScheme)
 }
 
+// EncryptedMessage encrypted message structure
 type EncryptedMessage struct {
 	EncryptedKey    string
 	EncryptedData   []byte

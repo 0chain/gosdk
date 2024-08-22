@@ -13,6 +13,11 @@ func faucet(methodName, input string, token float64) (*transaction.Transaction, 
 	return executeSmartContract(zcncore.FaucetSmartContractAddress, methodName, input, zcncore.ConvertToValue(token))
 }
 
+// executeSmartContract issue a smart contract transaction
+//   - address is the smart contract address
+//   - methodName is the method name to be called
+//   - input is the input data for the method
+//   - value is the value to be sent with the transaction
 func executeSmartContract(address, methodName, input string, value uint64) (*transaction.Transaction, error) {
 	wg := &sync.WaitGroup{}
 	cb := &transactionCallback{wg: wg}

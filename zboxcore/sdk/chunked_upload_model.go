@@ -87,6 +87,13 @@ type ChunkedUpload struct {
 	encryptedKey      string
 	uploadChan        chan UploadData
 	uploadWG          sync.WaitGroup
+	uploadWorkers     int
+	//used in wasm check chunked_upload_process_js.go
+	listenChan chan struct{} //nolint:unused
+	//used in wasm check chunked_upload_process_js.go
+	processMap map[int]int //nolint:unused
+	//used in wasm check chunked_upload_process_js.go
+	processMapLock sync.Mutex //nolint:unused
 }
 
 // FileMeta metadata of stream input/local
@@ -112,6 +119,8 @@ type FileMeta struct {
 	RemoteName string
 	// RemotePath remote path
 	RemotePath string
+	// CustomMeta custom meta data
+	CustomMeta string
 }
 
 // FileID generate id of progress on local cache
@@ -167,7 +176,8 @@ type UploadFormData struct {
 // UploadProgress progress of upload
 type UploadProgress struct {
 	ID string `json:"id"`
-
+	// Lat updated time
+	LastUpdated common.Timestamp `json:"last_updated,omitempty"`
 	// ChunkSize size of chunk
 	ChunkSize   int64 `json:"chunk_size,omitempty"`
 	ActualSize  int64 `json:"actual_size,omitempty"`
@@ -183,6 +193,9 @@ type UploadProgress struct {
 	ChunkIndex int `json:"chunk_index,omitempty"`
 	// UploadLength total bytes that has been uploaded to blobbers
 	UploadLength int64 `json:"-"`
+	// ReadLength total bytes that has been read from original reader (un-encoded, un-encrypted)
+	ReadLength int64            `json:"-"`
+	UploadMask zboxutil.Uint128 `json:"upload_mask"`
 
 	Blobbers []*UploadBlobberStatus `json:"-"`
 }
@@ -201,14 +214,14 @@ type UploadData struct {
 	chunkStartIndex int
 	chunkEndIndex   int
 	isFinal         bool
-	saveProgress    bool
-	encryptedKey    string
+	uploadLength    int64
 	uploadBody      []blobberData
 }
 
 type blobberData struct {
-	body     *bytes.Buffer
-	formData ChunkedUploadFormMetadata
+	dataBuffers  []*bytes.Buffer
+	formData     ChunkedUploadFormMetadata
+	contentSlice []string
 }
 
 type status struct {

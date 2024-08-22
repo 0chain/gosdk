@@ -3,9 +3,10 @@ package zcnbridge
 import (
 	"context"
 	"fmt"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"math/big"
 	"path"
+
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
 	"github.com/0chain/gosdk/zcnbridge/log"
 	"github.com/0chain/gosdk/zcnbridge/transaction"
@@ -15,21 +16,22 @@ import (
 )
 
 const (
-	ZChainsClientConfigName  = "config.yaml"
-	ZChainWalletConfigName   = "wallet.json"
+	TenderlyProvider = iota
+	AlchemyProvider
+	UnknownProvider
+)
+
+const (
 	EthereumWalletStorageDir = "wallets"
 )
 
 const (
-	BancorNetworkAddress   = "0xeEF417e1D5CC832e619ae18D2F140De2999dD4fB"
-	SourceTokenETHAddress  = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
-	SourceTokenUSDCAddress = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
-	SourceTokenEURCAddress = "0x1aBaEA1f7C830bD89Acc67eC4af516284b1bC33c"
-	SourceTokenBNTAddress  = "0x1f573d6fb3f13d689ff844b4ce37794d79a7ff1c"
+	UniswapRouterAddress = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"
+	UsdcTokenAddress     = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+	WethTokenAddress     = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
 )
 
-const BancorAPIURL = "https://api-v3.bancor.network"
-
+// BridgeSDKConfig describes the configuration for the bridge SDK.
 type BridgeSDKConfig struct {
 	LogLevel        *string
 	LogPath         *string
@@ -45,6 +47,7 @@ type EthereumClient interface {
 	ChainID(ctx context.Context) (*big.Int, error)
 }
 
+// BridgeClient is a wrapper, which exposes Ethereum KeyStore methods used by DEX bridge.
 type BridgeClient struct {
 	keyStore            KeyStore
 	transactionProvider transaction.TransactionProvider
@@ -53,8 +56,10 @@ type BridgeClient struct {
 	BridgeAddress,
 	TokenAddress,
 	AuthorizersAddress,
+	UniswapAddress,
 	NFTConfigAddress,
 	EthereumAddress,
+	EthereumNodeURL,
 	Password string
 
 	BancorAPIURL string
@@ -64,15 +69,29 @@ type BridgeClient struct {
 }
 
 // NewBridgeClient creates BridgeClient with the given parameters.
+//   - bridgeAddress is the address of the bridge smart contract on the Ethereum network.
+//   - tokenAddress is the address of the token smart contract on the Ethereum network.
+//   - authorizersAddress is the address of the authorizers smart contract on the Ethereum network.
+//   - authorizersAddress is the address of the authorizers smart contract on the Ethereum network.
+//   - uniswapAddress is the address of the user's ethereum wallet (on UniSwap).
+//   - ethereumAddress is the address of the user's ethereum wallet.
+//   - ethereumNodeURL is the URL of the Ethereum node.
+//   - password is the password for the user's ethereum wallet.
+//   - gasLimit is the gas limit for the transactions.
+//   - consensusThreshold is the consensus threshold, the minimum percentage of authorizers that need to agree on a transaction.
+//   - ethereumClient is the Ethereum JSON-RPC client.
+//   - transactionProvider provider interface for the transaction entity.
+//   - keyStore is the Ethereum KeyStore instance.
 func NewBridgeClient(
 	bridgeAddress,
 	tokenAddress,
 	authorizersAddress,
+	uniswapAddress,
 	ethereumAddress,
+	ethereumNodeURL,
 	password string,
 	gasLimit uint64,
 	consensusThreshold float64,
-	bancorAPIURL string,
 	ethereumClient EthereumClient,
 	transactionProvider transaction.TransactionProvider,
 	keyStore KeyStore) *BridgeClient {
@@ -80,11 +99,12 @@ func NewBridgeClient(
 		BridgeAddress:       bridgeAddress,
 		TokenAddress:        tokenAddress,
 		AuthorizersAddress:  authorizersAddress,
+		UniswapAddress:      uniswapAddress,
 		EthereumAddress:     ethereumAddress,
+		EthereumNodeURL:     ethereumNodeURL,
 		Password:            password,
 		GasLimit:            gasLimit,
 		ConsensusThreshold:  consensusThreshold,
-		BancorAPIURL:        bancorAPIURL,
 		ethereumClient:      ethereumClient,
 		transactionProvider: transactionProvider,
 		keyStore:            keyStore,
@@ -115,12 +135,15 @@ func readConfig(sdkConfig *BridgeSDKConfig, getConfigName func() string) *viper.
 
 // SetupBridgeClientSDK initializes new bridge client.
 // Meant to be used from standalone application with 0chain SDK initialized.
+//   - cfg is the configuration for the bridge SDK.
 func SetupBridgeClientSDK(cfg *BridgeSDKConfig) *BridgeClient {
 	log.InitLogging(*cfg.Development, *cfg.LogPath, *cfg.LogLevel)
 
 	chainCfg := initChainConfig(cfg)
 
-	ethereumClient, err := ethclient.Dial(chainCfg.GetString("ethereum_node_url"))
+	ethereumNodeURL := chainCfg.GetString("ethereum_node_url")
+
+	ethereumClient, err := ethclient.Dial(ethereumNodeURL)
 	if err != nil {
 		Logger.Error(err)
 	}
@@ -138,11 +161,12 @@ func SetupBridgeClientSDK(cfg *BridgeSDKConfig) *BridgeClient {
 		chainCfg.GetString("bridge.bridge_address"),
 		chainCfg.GetString("bridge.token_address"),
 		chainCfg.GetString("bridge.authorizers_address"),
+		chainCfg.GetString("bridge.uniswap_address"),
 		chainCfg.GetString("bridge.ethereum_address"),
+		ethereumNodeURL,
 		chainCfg.GetString("bridge.password"),
 		chainCfg.GetUint64("bridge.gas_limit"),
 		chainCfg.GetFloat64("bridge.consensus_threshold"),
-		BancorAPIURL,
 		ethereumClient,
 		transactionProvider,
 		keyStore,

@@ -1,3 +1,4 @@
+// Provides low-level functions and types to work with different cryptographic schemes with a unified interface and provide cryptographic operations.
 package zcncrypto
 
 import (
@@ -8,6 +9,7 @@ import (
 	"github.com/tyler-smith/go-bip39"
 )
 
+// CryptoVersion - version of the crypto library
 const CryptoVersion = "1.0"
 
 // KeyPair private and publickey
@@ -16,15 +18,28 @@ type KeyPair struct {
 	PrivateKey string `json:"private_key"`
 }
 
-// Wallet structure
+// Wallet represents client wallet information
 type Wallet struct {
-	ClientID    string    `json:"client_id"`
-	ClientKey   string    `json:"client_key"`
-	Keys        []KeyPair `json:"keys"`
-	Mnemonic    string    `json:"mnemonics"`
-	Version     string    `json:"version"`
-	DateCreated string    `json:"date_created"`
-	Nonce       int64     `json:"nonce"`
+	// ClientID client unique identifier
+	ClientID string `json:"client_id"`
+
+	// ClientKey client public key
+	ClientKey string `json:"client_key"`
+
+	// Keys private and public key pair
+	Keys []KeyPair `json:"keys"`
+
+	// Mnemonic recovery phrase of the wallet
+	Mnemonic string `json:"mnemonics"`
+
+	// Version version of the wallet
+	Version string `json:"version"`
+
+	// DateCreated date of wallet creation
+	DateCreated string `json:"date_created"`
+
+	// Nonce nonce of the wallet
+	Nonce int64 `json:"nonce"`
 }
 
 // SignatureScheme - an encryption scheme for signing and verifying messages

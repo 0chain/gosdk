@@ -14,7 +14,9 @@ func GetWallet(walletStr string) (*zcncrypto.Wallet, error) {
 	return getWallet(walletStr)
 }
 
-func GetWalletBalance(clientId string) (common.Balance, error) {
+// GetWalletBalance retrieve wallet balance from sharders
+//   - id: client id
+func GetWalletBalance(clientId string) (common.Balance, int64, error) {
 	return getWalletBalance(clientId)
 }
 

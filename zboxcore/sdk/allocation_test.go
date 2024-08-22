@@ -688,7 +688,7 @@ func TestAllocation_DownloadFileToFileHandler(t *testing.T) {
 		mockRemoteFilePath = "1.txt"
 	)
 
-	var mockFile = &sys.MemFile{Name: "mockFile", Buffer: new(bytes.Buffer), Mode: fs.ModePerm, ModTime: time.Now()}
+	var mockFile = &sys.MemFile{Name: "mockFile", Mode: fs.ModePerm, ModTime: time.Now()}
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
@@ -2043,7 +2043,7 @@ func TestAllocation_DownloadToFileHandlerFromAuthTicket(t *testing.T) {
 		mockType           = "d"
 	)
 
-	var mockFile = &sys.MemFile{Name: "mockFile", Buffer: new(bytes.Buffer), Mode: fs.ModePerm, ModTime: time.Now()}
+	var mockFile = &sys.MemFile{Name: "mockFile", Mode: fs.ModePerm, ModTime: time.Now()}
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 

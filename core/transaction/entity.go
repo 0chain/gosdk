@@ -1,3 +1,4 @@
+// Provides low-level functions and types to work with the native smart contract transactions.
 package transaction
 
 import (
@@ -50,6 +51,7 @@ type TxnReceipt struct {
 	Transaction *Transaction
 }
 
+// SmartContractTxnData data structure to hold the smart contract transaction data
 type SmartContractTxnData struct {
 	Name      string      `json:"name"`
 	InputArgs interface{} `json:"input"`
@@ -144,6 +146,8 @@ const (
 	STORAGESC_KILL_VALIDATOR            = "kill_validator"
 	STORAGESC_SHUTDOWN_BLOBBER          = "shutdown_blobber"
 	STORAGESC_SHUTDOWN_VALIDATOR        = "shutdown_validator"
+	STORAGESC_RESET_BLOBBER_STATS       = "reset_blobber_stats"
+	STORAGESC_RESET_ALLOCATION_STATS    = "reset_allocation_stats"
 
 	MINERSC_LOCK             = "addToDelegatePool"
 	MINERSC_UNLOCK           = "deleteFromDelegatePool"
@@ -167,7 +171,9 @@ const (
 	ZCNSC_ADD_AUTHORIZER           = "add-authorizer"
 	ZCNSC_AUTHORIZER_HEALTH_CHECK  = "authorizer-health-check"
 	ZCNSC_DELETE_AUTHORIZER        = "delete-authorizer"
-	ZCNSC_COLLECT_REWARD 	       = "collect-rewards"
+	ZCNSC_COLLECT_REWARD           = "collect-rewards"
+	ZCNSC_LOCK                     = "add-to-delegate-pool"
+	ZCNSC_UNLOCK                   = "delete-from-delegate-pool"
 
 	ESTIMATE_TRANSACTION_COST = `/v1/estimate_txn_fee`
 	FEES_TABLE                = `/v1/fees_table`

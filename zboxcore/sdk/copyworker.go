@@ -177,7 +177,7 @@ func (req *CopyRequest) ProcessWithBlobbers() ([]fileref.RefEntity, []error) {
 			refEntity, err := req.copyBlobberObject(req.blobbers[blobberIdx], blobberIdx)
 			if err != nil {
 				blobberErrors[blobberIdx] = err
-				l.Logger.Error(err.Error())
+				l.Logger.Debug(err.Error())
 				return
 			}
 			objectTreeRefs[blobberIdx] = refEntity
@@ -218,7 +218,7 @@ func (req *CopyRequest) ProcessCopy() error {
 	defer writeMarkerMutex.Unlock(req.ctx, req.copyMask, req.blobbers, time.Minute, req.connectionID) //nolint: errcheck
 
 	//Check if the allocation is to be repaired or rolled back
-	status, err := req.allocationObj.CheckAllocStatus()
+	status, _, err := req.allocationObj.CheckAllocStatus()
 	if err != nil {
 		logger.Logger.Error("Error checking allocation status: ", err)
 		return fmt.Errorf("Copy failed: %s", err.Error())
@@ -323,6 +323,7 @@ func (co *CopyOperation) Process(allocObj *Allocation, connectionID string) ([]f
 	objectTreeRefs, blobberErrors := cR.ProcessWithBlobbers()
 
 	if !cR.isConsensusOk() {
+		l.Logger.Error("copy failed: ", cR.remotefilepath, cR.destPath)
 		err := zboxutil.MajorError(blobberErrors)
 		if err != nil {
 			return nil, cR.copyMask, errors.New("copy_failed", fmt.Sprintf("Copy failed. %s", err.Error()))

@@ -3,10 +3,12 @@ package sdk
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
 	"mime/multipart"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -18,16 +20,18 @@ import (
 	"github.com/0chain/common/core/common"
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/core/client"
+	"github.com/0chain/gosdk/zboxcore/client"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/minio/sha256-simd"
 	"go.uber.org/zap"
 )
 
 type LatestPrevWriteMarker struct {
 	LatestWM *marker.WriteMarker `json:"latest_write_marker"`
 	PrevWM   *marker.WriteMarker `json:"prev_write_marker"`
+	Version  string              `json:"version"`
 }
 
 type AllocStatus byte
@@ -39,12 +43,21 @@ const (
 	Rollback
 )
 
-var ErrRetryOperation = errors.New("retry_operation")
+var (
+	ErrRetryOperation = errors.New("retry_operation")
+	ErrRepairRequired = errors.New("repair_required")
+)
 
 type RollbackBlobber struct {
 	blobber      *blockchain.StorageNode
 	commitResult *CommitResult
 	lpm          *LatestPrevWriteMarker
+	blobIndex    int
+}
+
+type BlobberStatus struct {
+	ID     string
+	Status string
 }
 
 func GetWritemarker(allocID, allocTx, id, baseUrl string) (*LatestPrevWriteMarker, error) {
@@ -55,10 +68,11 @@ func GetWritemarker(allocID, allocTx, id, baseUrl string) (*LatestPrevWriteMarke
 	if err != nil {
 		return nil, err
 	}
-
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 	for retries := 0; retries < 3; retries++ {
 
-		resp, err := zboxutil.Client.Do(req)
+		resp, err := zboxutil.Client.Do(req.WithContext(ctx))
 		if err != nil {
 			return nil, err
 		}
@@ -87,12 +101,12 @@ func GetWritemarker(allocID, allocTx, id, baseUrl string) (*LatestPrevWriteMarke
 			return nil, err
 		}
 		if lpm.LatestWM != nil {
-			err = lpm.LatestWM.VerifySignature(client.PublicKey())
+			err = lpm.LatestWM.VerifySignature(client.GetClientPublicKey())
 			if err != nil {
 				return nil, fmt.Errorf("signature verification failed for latest writemarker: %s", err.Error())
 			}
 			if lpm.PrevWM != nil {
-				err = lpm.PrevWM.VerifySignature(client.PublicKey())
+				err = lpm.PrevWM.VerifySignature(client.GetClientPublicKey())
 				if err != nil {
 					return nil, fmt.Errorf("signature verification failed for latest writemarker: %s", err.Error())
 				}
@@ -110,8 +124,10 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 	wm.AllocationID = rb.lpm.LatestWM.AllocationID
 	wm.Timestamp = rb.lpm.LatestWM.Timestamp
 	wm.BlobberID = rb.lpm.LatestWM.BlobberID
-	wm.ClientID = client.ClientID()
-	wm.Size = 0
+	wm.ClientID = client.GetClientID()
+	wm.Size = -rb.lpm.LatestWM.Size
+	wm.ChainSize = wm.Size + rb.lpm.LatestWM.ChainSize
+
 	if rb.lpm.PrevWM != nil {
 		wm.AllocationRoot = rb.lpm.PrevWM.AllocationRoot
 		wm.PreviousAllocationRoot = rb.lpm.PrevWM.AllocationRoot
@@ -119,6 +135,16 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 		if wm.AllocationRoot == rb.lpm.LatestWM.AllocationRoot {
 			return nil
 		}
+	}
+	if rb.lpm.Version == MARKER_VERSION {
+		decodedHash, _ := hex.DecodeString(wm.AllocationRoot)
+		prevChainHash, _ := hex.DecodeString(rb.lpm.LatestWM.ChainHash)
+		hasher := sha256.New()
+		hasher.Write(prevChainHash) //nolint:errcheck
+		hasher.Write(decodedHash)   //nolint:errcheck
+		wm.ChainHash = hex.EncodeToString(hasher.Sum(nil))
+	} else if rb.lpm.Version == "" {
+		wm.Size = 0
 	}
 
 	err := wm.Sign()
@@ -148,7 +174,6 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 	l.Logger.Info("Sending Rollback request to blobber: ", rb.blobber.Baseurl)
 
 	var (
-		resp           *http.Response
 		shouldContinue bool
 	)
 
@@ -167,6 +192,11 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 			}
 
 			var respBody []byte
+			respBody, err = io.ReadAll(resp.Body)
+			if err != nil {
+				l.Logger.Error("Response read: ", err)
+				return
+			}
 			if resp.StatusCode == http.StatusOK {
 				l.Logger.Info(rb.blobber.Baseurl, connID, "rollbacked")
 				return
@@ -186,9 +216,19 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 				return
 			}
 
-			respBody, err = io.ReadAll(resp.Body)
-			if err != nil {
-				l.Logger.Error("Response read: ", err)
+			if strings.Contains(string(respBody), "pending_markers:") {
+				l.Logger.Info("Commit pending for blobber ",
+					rb.blobber.Baseurl, " Retrying")
+				time.Sleep(5 * time.Second)
+				shouldContinue = true
+				return
+			}
+
+			if strings.Contains(string(respBody), "chain_length_exceeded") {
+				l.Logger.Info("Chain length exceeded for blobber ",
+					rb.blobber.Baseurl, " Retrying")
+				time.Sleep(5 * time.Second)
+				shouldContinue = true
 				return
 			}
 
@@ -208,26 +248,34 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 
 	}
 
-	return thrown.New("rolback_error", fmt.Sprintf("Rollback failed with response status %d", resp.StatusCode))
+	return thrown.New("rolback_error", fmt.Sprint("Rollback failed"))
 }
 
-func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
+// CheckAllocStatus checks the status of the allocation
+// and returns the status of the allocation and its blobbers.
+func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
 
 	wg := &sync.WaitGroup{}
 	markerChan := make(chan *RollbackBlobber, len(a.Blobbers))
 	var errCnt int32
 	var markerError error
-	for _, blobber := range a.Blobbers {
+	blobberRes := make([]BlobberStatus, len(a.Blobbers))
+	for ind, blobber := range a.Blobbers {
 
 		wg.Add(1)
-		go func(blobber *blockchain.StorageNode) {
+		go func(blobber *blockchain.StorageNode, ind int) {
 
 			defer wg.Done()
+			blobStatus := BlobberStatus{
+				ID:     blobber.ID,
+				Status: "available",
+			}
 			wr, err := GetWritemarker(a.ID, a.Tx, blobber.ID, blobber.Baseurl)
 			if err != nil {
 				atomic.AddInt32(&errCnt, 1)
 				markerError = err
 				l.Logger.Error("error during getWritemarker", zap.Error(err))
+				blobStatus.Status = "unavailable"
 			}
 			if wr == nil {
 				markerChan <- nil
@@ -236,15 +284,17 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 					blobber:      blobber,
 					lpm:          wr,
 					commitResult: &CommitResult{},
+					blobIndex:    ind,
 				}
 			}
-		}(blobber)
+			blobberRes[ind] = blobStatus
+		}(blobber, ind)
 
 	}
 	wg.Wait()
 	close(markerChan)
-	if a.ParityShards > 0 && errCnt > int32(a.ParityShards) {
-		return Broken, common.NewError("check_alloc_status_failed", markerError.Error())
+	if (a.ParityShards > 0 && errCnt > int32(a.ParityShards)) || (a.ParityShards == 0 && errCnt > 0) {
+		return Broken, blobberRes, common.NewError("check_alloc_status_failed", markerError.Error())
 	}
 
 	versionMap := make(map[string][]*RollbackBlobber)
@@ -280,19 +330,21 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 		versionMap[version] = append(versionMap[version], rb)
 	}
 
-	if len(versionMap) < 2 {
-		return Commit, nil
-	}
-
 	req := a.DataShards
 
-	if len(versionMap[latestVersion]) > req {
-		return Commit, nil
+	if len(versionMap) == 0 {
+		return Commit, blobberRes, nil
+	}
+
+	if len(versionMap[latestVersion]) > req || len(versionMap[prevVersion]) > req {
+		return Commit, blobberRes, nil
 	}
 
 	if len(versionMap[latestVersion]) >= req || len(versionMap[prevVersion]) >= req || len(versionMap) > 2 {
-		// TODO: Return Repair after refactoring the repair function
-		return Repair, nil
+		for _, rb := range versionMap[prevVersion] {
+			blobberRes[rb.blobIndex].Status = "repair"
+		}
+		return Repair, blobberRes, nil
 	} else {
 		l.Logger.Info("versionMapLen", zap.Int("versionMapLen", len(versionMap)), zap.Int("latestLen", len(versionMap[latestVersion])), zap.Int("prevLen", len(versionMap[prevVersion])))
 	}
@@ -320,16 +372,19 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 
 	wg.Wait()
 	if errCnt > int32(fullConsensus) {
-		return Broken, common.NewError("rollback_failed", "Rollback failed")
+		return Broken, blobberRes, common.NewError("rollback_failed", "Rollback failed")
 	}
 
 	if errCnt == int32(fullConsensus) {
-		return Repair, nil
+		return Repair, blobberRes, nil
 	}
 
-	return Rollback, nil
+	return Rollback, blobberRes, nil
 }
 
+// RollbackWithMask rolls back the latest operation from the allocation blobbers which ran it.
+// The mask is used to specify which blobbers to rollback.
+//   - mask: 128-bitmask to specify which blobbers to rollback
 func (a *Allocation) RollbackWithMask(mask zboxutil.Uint128) {
 
 	wg := &sync.WaitGroup{}

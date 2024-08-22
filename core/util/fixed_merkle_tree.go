@@ -14,9 +14,16 @@ import (
 )
 
 const (
+	// MerkleChunkSize is the size of a chunk of data that is hashed
 	MerkleChunkSize     = 64
+
+	// MaxMerkleLeavesSize is the maximum size of the data that can be written to the merkle tree
 	MaxMerkleLeavesSize = 64 * 1024
+
+	// FixedMerkleLeaves is the number of leaves in the fixed merkle tree
 	FixedMerkleLeaves   = 1024
+
+	// FixedMTDepth is the depth of the fixed merkle tree
 	FixedMTDepth        = 11
 )
 
@@ -60,7 +67,7 @@ func getNewLeaf() *leaf {
 // FixedMerkleTree A trusted mekerle tree for outsourcing attack protection. see section 1.8 on whitepager
 // see detail on https://github.com/0chain/blobber/wiki/Protocols#what-is-fixedmerkletree
 type FixedMerkleTree struct {
-	// Leaves will store hash digester that calculates blake3 hash of the leaf content
+	// Leaves will store hash digester that calculates sha256 hash of the leaf content
 	Leaves []Hashable `json:"leaves,omitempty"`
 
 	writeLock sync.Mutex
