@@ -226,6 +226,7 @@ func (req *MoveRequest) ProcessWithBlobbers() ([]fileref.RefEntity, error) {
 			ctx:             req.ctx,
 			consensusThresh: req.consensusThresh,
 			opType:          constants.FileOperationMove,
+			subOpType:       constants.FileOperationMove,
 			mask:            req.moveMask,
 		}
 		err := subRequest.processSubDirectories()

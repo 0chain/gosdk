@@ -220,13 +220,26 @@ func (req *RenameRequest) ProcessWithBlobbers() ([]fileref.RefEntity, error) {
 				req.renameMask = req.renameMask.And(zboxutil.NewUint128(1).Lsh(uint64(ind)).Not())
 			}
 		}
+		subRequest := &subDirRequest{
+			allocationObj:   req.allocationObj,
+			remotefilepath:  req.remotefilepath,
+			destPath:        path.Join(path.Dir(req.remotefilepath), req.newName),
+			ctx:             req.ctx,
+			consensusThresh: req.consensus.consensusThresh,
+			opType:          constants.FileOperationMove,
+			subOpType:       constants.FileOperationRename,
+			mask:            req.renameMask,
+		}
+		err := subRequest.processSubDirectories()
+		if err != nil {
+			return nil, err
+		}
 		op := OperationRequest{
-			OperationType: constants.FileOperationMove,
+			OperationType: constants.FileOperationDelete,
 			RemotePath:    req.remotefilepath,
-			DestPath:      path.Join(path.Dir(req.remotefilepath), req.newName),
 			Mask:          &req.renameMask,
 		}
-		err := req.allocationObj.DoMultiOperation([]OperationRequest{op})
+		err = req.allocationObj.DoMultiOperation([]OperationRequest{op})
 		if err != nil {
 			return nil, err
 		}

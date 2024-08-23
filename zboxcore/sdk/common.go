@@ -126,6 +126,7 @@ func ValidateRemoteFileName(remotePath string) error {
 
 type subDirRequest struct {
 	opType          string
+	subOpType       string
 	remotefilepath  string
 	destPath        string
 	allocationObj   *Allocation
@@ -157,8 +158,13 @@ func (req *subDirRequest) processSubDirectories() error {
 			if ref.PathLevel > pathLevel {
 				pathLevel = ref.PathLevel
 			}
-			basePath := strings.TrimPrefix(path.Dir(ref.Path), path.Dir(req.remotefilepath))
-			destPath := path.Join(req.destPath, basePath)
+			var destPath string
+			if req.subOpType == constants.FileOperationRename {
+				destPath = path.Dir(strings.Replace(ref.Path, req.remotefilepath, req.destPath, 1))
+			} else {
+				basePath := strings.TrimPrefix(path.Dir(ref.Path), path.Dir(req.remotefilepath))
+				destPath = path.Join(req.destPath, basePath)
+			}
 			op := OperationRequest{
 				OperationType: req.opType,
 				RemotePath:    ref.Path,
@@ -197,8 +203,13 @@ func (req *subDirRequest) processSubDirectories() error {
 				if ref.Type == fileref.FILE {
 					continue
 				}
-				basePath := strings.TrimPrefix(path.Dir(ref.Path), path.Dir(req.remotefilepath))
-				destPath := path.Join(req.destPath, basePath)
+				var destPath string
+				if req.subOpType == constants.FileOperationRename {
+					destPath = path.Dir(strings.Replace(ref.Path, req.remotefilepath, req.destPath, 1))
+				} else {
+					basePath := strings.TrimPrefix(path.Dir(ref.Path), path.Dir(req.remotefilepath))
+					destPath = path.Join(req.destPath, basePath)
+				}
 				op := OperationRequest{
 					OperationType: req.opType,
 					RemotePath:    ref.Path,
