@@ -16,6 +16,9 @@ const (
 	DEBUG = 4
 )
 
+// Log global logger instance
+var Log Logger
+
 const cRed = "\u001b[31m"
 const cReset = "\u001b[0m"
 

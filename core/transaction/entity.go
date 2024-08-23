@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/conf"
+	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/node"
 	"github.com/0chain/gosdk/core/sys"
-	l "github.com/0chain/gosdk/zboxcore/logger"
 	"go.uber.org/zap"
 	"net/http"
 	"strings"
@@ -21,6 +21,8 @@ import (
 	"github.com/0chain/gosdk/core/util"
 	lru "github.com/hashicorp/golang-lru"
 )
+
+var Logger logger.Logger
 
 const TXN_SUBMIT_URL = "v1/transaction/put"
 const TXN_VERIFY_URL = "v1/transaction/get/confirmation?hash="
@@ -540,7 +542,7 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 	if fee == 0 {
 		fee, err = EstimateFee(txn, nodeClient.Network().Miners, 0.2)
 		if err != nil {
-			l.Logger.Error("failed to estimate txn fee",
+			Logger.Error("failed to estimate txn fee",
 				zap.Error(err),
 				zap.Any("txn", txn))
 			return
@@ -557,12 +559,12 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 	}
 
 	msg := fmt.Sprintf("executing transaction '%s' with hash %s ", sn.Name, txn.Hash)
-	l.Logger.Info(msg)
-	l.Logger.Info("estimated txn fee: ", txn.TransactionFee)
+	Logger.Info(msg)
+	Logger.Info("estimated txn fee: ", txn.TransactionFee)
 
 	err = SendTransactionSync(txn, nodeClient.GetStableMiners())
 	if err != nil {
-		l.Logger.Info("transaction submission failed", zap.Error(err))
+		Logger.Info("transaction submission failed", zap.Error(err))
 		node.Cache.Evict(txn.ClientID)
 		nodeClient.ResetStableMiners()
 		return
@@ -585,7 +587,7 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 	}
 
 	if err != nil {
-		l.Logger.Error("Error verifying the transaction", err.Error(), txn.Hash)
+		Logger.Error("Error verifying the transaction", err.Error(), txn.Hash)
 		node.Cache.Evict(txn.ClientID)
 		return
 	}

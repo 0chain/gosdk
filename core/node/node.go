@@ -14,8 +14,6 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
-	"github.com/0chain/gosdk/core/block"
-	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/ethereum/go-ethereum/common/math"
@@ -121,7 +119,6 @@ const consensusThresh = 25
 const (
 	GET_BALANCE        = `/v1/client/get/balance?client_id=`
 	CURRENT_ROUND      = "/v1/current-round"
-	GET_BLOCK_INFO     = `/v1/block/get?`
 	GET_HARDFORK_ROUND = `/v1/screst/6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d9/hardfork?name=`
 )
 
@@ -218,77 +215,6 @@ func (h *NodeHolder) QueryFromShardersContext(ctx context.Context, numSharders i
 			result <- res
 		}(sharder)
 	}
-}
-
-func (h *NodeHolder) GetBlockByRound(ctx context.Context, numSharders int, round int64) (b *block.Block, err error) {
-
-	var result = make(chan *util.GetResponse, numSharders)
-	defer close(result)
-
-	numSharders = len(h.Healthy()) // overwrite, use all
-	h.QueryFromShardersContext(ctx, numSharders,
-		fmt.Sprintf("%sround=%d&content=full,header", GET_BLOCK_INFO, round),
-		result)
-
-	var (
-		maxConsensus   int
-		roundConsensus = make(map[string]int)
-	)
-
-	type respObj struct {
-		Block  *block.Block  `json:"block"`
-		Header *block.Header `json:"header"`
-	}
-
-	for i := 0; i < numSharders; i++ {
-		var rsp = <-result
-		if rsp == nil {
-			logger.Logger.Error("nil response")
-			continue
-		}
-		logger.Logger.Debug(rsp.Url, rsp.Status)
-
-		if rsp.StatusCode != http.StatusOK {
-			logger.Logger.Error(rsp.Body)
-			continue
-		}
-
-		var respo respObj
-		if err = json.Unmarshal([]byte(rsp.Body), &respo); err != nil {
-			logger.Logger.Error("block parse error: ", err)
-			err = nil
-			continue
-		}
-
-		if respo.Block == nil {
-			logger.Logger.Debug(rsp.Url, "no block in response:", rsp.Body)
-			continue
-		}
-
-		if respo.Header == nil {
-			logger.Logger.Debug(rsp.Url, "no block header in response:", rsp.Body)
-			continue
-		}
-
-		if respo.Header.Hash != string(respo.Block.Hash) {
-			logger.Logger.Debug(rsp.Url, "header and block hash mismatch:", rsp.Body)
-			continue
-		}
-
-		b = respo.Block
-		b.Header = respo.Header
-
-		var h = encryption.FastHash([]byte(b.Hash))
-		if roundConsensus[h]++; roundConsensus[h] > maxConsensus {
-			maxConsensus = roundConsensus[h]
-		}
-	}
-
-	if maxConsensus == 0 {
-		return nil, errors.New("", "round info not found")
-	}
-
-	return
 }
 
 func (h *NodeHolder) GetRoundFromSharders() (int64, error) {
