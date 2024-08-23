@@ -90,7 +90,7 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 				maxCount = responses[response.StatusCode]
 			}
 
-			if isCurrentDominantStatus(response.StatusCode, responses, maxCount) {
+			if IsCurrentDominantStatus(response.StatusCode, responses, maxCount) {
 				dominant = response.StatusCode
 				retObj = entityBytes
 			}
