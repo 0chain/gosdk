@@ -1,7 +1,7 @@
 //go:build !js && !wasm
 // +build !js,!wasm
 
-package zboxutil
+package http
 
 import (
 	"net"
@@ -10,7 +10,7 @@ import (
 )
 
 var DefaultTransport = &http.Transport{
-	Proxy: envProxy.Proxy,
+	Proxy: EnvProxy.Proxy,
 	DialContext: (&net.Dialer{
 		Timeout:   3 * time.Minute,
 		KeepAlive: 45 * time.Second,

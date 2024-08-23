@@ -1099,6 +1099,8 @@ func getBlobbersInternal(cb GetInfoCallback, active bool, limit, offset int) {
 }
 
 // GetBlobber obtains blobber information.
+//   - blobberID: blobber id
+//   - cb: info callback instance, carries the response of the GET request to the sharders
 func GetBlobber(blobberID string, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
@@ -1110,6 +1112,9 @@ func GetBlobber(blobberID string, cb GetInfoCallback) (err error) {
 	return
 }
 
+// GetValidator obtains validator information.
+//   - validatorID: validator id
+//   - cb: info callback instance, carries the response of the GET request to the sharders
 func GetValidator(validatorID string, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
@@ -1121,6 +1126,9 @@ func GetValidator(validatorID string, cb GetInfoCallback) (err error) {
 	return
 }
 
+// GetAuthorizer obtains authorizer information from the sharders.
+//   - authorizerID: authorizer id
+//   - cb: info callback instance, carries the response of the GET request to the sharders
 func GetAuthorizer(authorizerID string, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
@@ -1132,6 +1140,9 @@ func GetAuthorizer(authorizerID string, cb GetInfoCallback) (err error) {
 	return
 }
 
+// GetMinerSharder obtains miner sharder information from the sharders.
+//   - id: miner sharder id
+//   - cb: info callback instance, carries the response of the GET request to the sharders
 func GetMinerSharder(id string, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
@@ -1194,6 +1205,9 @@ func Encrypt(key, text string) (string, error) {
 	return hex.EncodeToString(response), nil
 }
 
+// Decrypt decrypts encrypted text using the key.
+//   - key: key to use for decryption
+//   - text: text to decrypt
 func Decrypt(key, text string) (string, error) {
 	keyBytes := []byte(key)
 	textBytes, _ := hex.DecodeString(text)
@@ -1225,6 +1239,7 @@ func CryptoJsDecrypt(passphrase, encryptedMessage string) (string, error) {
 	return string(dec), nil
 }
 
+// GetPublicEncryptionKey returns the public encryption key for the given mnemonic
 func GetPublicEncryptionKey(mnemonic string) (string, error) {
 	encScheme := encryption.NewEncryptionScheme()
 	_, err := encScheme.Initialize(mnemonic)

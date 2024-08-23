@@ -1,6 +1,7 @@
 package zboxutil
 
 import (
+	coreHttp "github.com/0chain/gosdk/core/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -59,7 +60,7 @@ func TestIsCurrentDominantStatus(t *testing.T) {
 	} {
 		tt := tc
 		t.Run(tt.name, func(t *testing.T) {
-			got := isCurrentDominantStatus(tt.status, tt.runningTotalPerStatus, tt.runningMax)
+			got := coreHttp.IsCurrentDominantStatus(tt.status, tt.runningTotalPerStatus, tt.runningMax)
 
 			assert.Equal(t, tt.wantIsDominant, got)
 		})
