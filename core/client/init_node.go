@@ -27,19 +27,19 @@ func init() {
 	logging.Init(logger.DEBUG, "0chain-core")
 }
 
-// Maintains central states of SDK (client's context, network).
+// Node Maintains central states of SDK (client's context, network).
 // Initialized through [Init] function.
 // Use client.GetNode() to get its instance after Init is called.
 type Node struct {
 	stableMiners []string
 	sharders     *node.NodeHolder
-	network 	*conf.Network
-	clientCtx context.Context
+	network      *conf.Network
+	clientCtx    context.Context
 
 	networkGuard sync.RWMutex
 }
 
-// Returns stable miner urls.
+// GetStableMiners Returns stable miner urls.
 // Length of stable miners is depedent on config's MinSubmit and number of miners in network.
 func (n *Node) GetStableMiners() []string {
 	n.networkGuard.RLock()
@@ -57,7 +57,7 @@ func (n *Node) ResetStableMiners() {
 	n.stableMiners = util.GetRandom(n.network.Miners, reqMiners)
 }
 
-// Returns minimum sharders used for verification
+// GetMinShardersVerify Returns minimum sharders used for verification
 func (n *Node) GetMinShardersVerify() int {
 	n.networkGuard.RLock()
 	defer n.networkGuard.RUnlock()
@@ -67,21 +67,21 @@ func (n *Node) GetMinShardersVerify() int {
 	return minSharders
 }
 
-// Returns NodeHolder instance
+// Sharders Returns NodeHolder instance
 func (n *Node) Sharders() *node.NodeHolder {
 	n.networkGuard.RLock()
 	defer n.networkGuard.RUnlock()
 	return n.sharders
 }
 
-// Returns network configuration
+// Network Returns network configuration
 func (n *Node) Network() *conf.Network {
 	n.networkGuard.RLock()
 	defer n.networkGuard.RUnlock()
 	return n.network
 }
 
-// Gets network details and return it as second value.
+// ShouldUpdateNetwork Gets network details and return it as second value.
 // First value is true iff current network details doesn't match existing network details.
 // Use node.UpdateNetwork() method to set the new network.
 func (n *Node) ShouldUpdateNetwork() (bool, *conf.Network, error) {
@@ -102,7 +102,7 @@ func (n *Node) ShouldUpdateNetwork() (bool, *conf.Network, error) {
 	return true, network, nil
 }
 
-// Use node.UpdateNetwork() method to set the new network. 
+// UpdateNetwork Use node.UpdateNetwork() method to set the new network.
 func (n *Node) UpdateNetwork(network *conf.Network) error {
 	n.networkGuard.Lock()
 	defer n.networkGuard.Unlock()
@@ -116,7 +116,7 @@ func (n *Node) UpdateNetwork(network *conf.Network) error {
 	return nil
 }
 
-// Initializes SDK. 
+// Init Initializes SDK.
 func Init(ctx context.Context, cfg conf.Config) error {
 	// validate
 	err := validate(&cfg)
@@ -138,8 +138,8 @@ func Init(ctx context.Context, cfg conf.Config) error {
 	nodeClient = &Node{
 		stableMiners: util.GetRandom(network.Miners, reqMiners),
 		sharders:     sharders,
-		network: network,
-		clientCtx: ctx,
+		network:      network,
+		clientCtx:    ctx,
 	}
 
 	//init packages
@@ -172,7 +172,7 @@ func Init(ctx context.Context, cfg conf.Config) error {
 	return nil
 }
 
-// Returns Node instance. If this function is called before Init(), error is returned.
+// GetNode Returns Node instance. If this function is called before Init(), error is returned.
 func GetNode() (*Node, error) {
 	if nodeClient != nil {
 		return nodeClient, nil

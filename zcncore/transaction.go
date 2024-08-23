@@ -134,8 +134,6 @@ type TransactionCommon interface {
 	MinerSCCollectReward(providerID string, providerType Provider) error
 	MinerSCKill(providerID string, providerType Provider) error
 
-	StorageSCCollectReward(providerID string, providerType Provider) error
-
 	VestingUpdateConfig(*InputMap) error
 	MinerScUpdateConfig(*InputMap) error
 	MinerScUpdateGlobals(*InputMap) error

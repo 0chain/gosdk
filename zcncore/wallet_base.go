@@ -17,7 +17,6 @@ import (
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/common"
-	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/tokenrate"
 	"github.com/0chain/gosdk/core/util"
@@ -52,7 +51,7 @@ const (
 	FAUCETSC_PFX        = `/v1/screst/` + FaucetSmartContractAddress
 	GET_FAUCETSC_CONFIG = FAUCETSC_PFX + `/faucet-config`
 
-	// zcn sc
+	// ZCNSC_PFX zcn sc
 	ZCNSC_PFX                      = `/v1/screst/` + ZCNSCSmartContractAddress
 	GET_MINT_NONCE                 = ZCNSC_PFX + `/v1/mint_nonce`
 	GET_NOT_PROCESSED_BURN_TICKETS = ZCNSC_PFX + `/v1/not_processed_burn_tickets`
@@ -132,7 +131,9 @@ const (
 )
 
 var defaultLogLevel = logger.DEBUG
+var logging logger.Logger
 
+// GetLogger returns the logger instance
 func GetLogger() *logger.Logger {
 	return &logging
 }
@@ -152,24 +153,61 @@ const (
 	OpGetNotProcessedBurnTickets
 	OpGetMintNonce
 	// storage SC ops
+	// OpStorageSCGetConfig Get global storage SC config
 	OpStorageSCGetConfig
+
+	// OpStorageSCGetChallengePoolInfo Get challenge pool info
 	OpStorageSCGetChallengePoolInfo
+
+	// OpStorageSCGetAllocation Get allocation info
 	OpStorageSCGetAllocation
+
+	// OpStorageSCGetAllocations Get all allocations
 	OpStorageSCGetAllocations
+
+	// OpStorageSCGetReadPoolInfo Get read pool info
 	OpStorageSCGetReadPoolInfo
+
+	// OpStorageSCGetStakePoolInfo Get stake pool info
 	OpStorageSCGetStakePoolInfo
+
+	// OpStorageSCGetStakePoolUserInfo Get blobbers
 	OpStorageSCGetBlobbers
+
+	// OpStorageSCGetBlobber Get blobber information
 	OpStorageSCGetBlobber
+
+	// OpStorageSCGetValidator Get transaction info
 	OpStorageSCGetTransactions
+
+	// OpStorageSCGetSnapshots Get global snapshots
 	OpStorageSCGetSnapshots
+
+	// OpStorageSCGetBlobberSnapshots Get blobber snapshots
 	OpStorageSCGetBlobberSnapshots
+
+	// OpStorageSCGetMinerSnapshots Get miner snapshots
 	OpStorageSCGetMinerSnapshots
+
+	// OpStorageSCGetSharderSnapshots Get sharder snapshots
 	OpStorageSCGetSharderSnapshots
+
+	// OpStorageSCGetAuthorizerSnapshots Get authorizer snapshots
 	OpStorageSCGetAuthorizerSnapshots
+
+	// OpStorageSCGetValidatorSnapshots Get validator snapshots
 	OpStorageSCGetValidatorSnapshots
+
+	// OpStorageSCGetUserSnapshots Get user snapshots
 	OpStorageSCGetUserSnapshots
+
+	// OpStorageSCGetUserLockedTotal Get global configuration
 	OpZCNSCGetGlobalConfig
+
+	// OpZCNSCGetMintNonce Get authorizer information
 	OpZCNSCGetAuthorizer
+
+	// OpZCNSCGetAuthorizerNodes Get authorizer nodes
 	OpZCNSCGetAuthorizerNodes
 )
 
@@ -183,7 +221,7 @@ type GetBalanceCallback interface {
 	OnBalanceAvailable(status int, value int64, info string)
 }
 
-// BurnTicket model used for deserialization of the response received from sharders
+// BurnTicket represents the burn ticket of native ZCN tokens used by the bridge protocol to mint ERC20 tokens
 type BurnTicket struct {
 	Hash   string `json:"hash"`
 	Amount int64  `json:"amount"`
@@ -207,7 +245,7 @@ func (g *GetNonceCallbackStub) OnNonceAvailable(status int, nonce int64, info st
 	g.info = info
 }
 
-// GetInfoCallback needs to be implemented by the caller of GetLockTokenConfig() and GetLockedTokens()
+// GetInfoCallback represents the functions that will be called when the response of a GET request to the sharders is available
 type GetInfoCallback interface {
 	// OnInfoAvailable will be called when GetLockTokenConfig is complete
 	// if status == StatusSuccess then info is valid
@@ -217,34 +255,12 @@ type GetInfoCallback interface {
 
 // AuthCallback needs to be implemented by the caller SetupAuth()
 type AuthCallback interface {
-	// This call back gives the status of the Two factor authenticator(zauth) setup.
+	// OnSetupComplete This call back gives the status of the Two factor authenticator(zauth) setup.
 	OnSetupComplete(status int, err string)
 }
 
-var (
-	logging logger.Logger
-)
-
 func init() {
 	logging.Init(defaultLogLevel, "0chain-core-sdk")
-}
-
-// Deprecated: Use client.GetNode().GetStableMiners()
-func GetStableMiners() []string {
-	clientNode, err := client.GetNode()
-	if err != nil {
-		panic(err)
-	}
-	return clientNode.GetStableMiners()
-}
-
-// Deprecated: Use client.GetNode().ResetStableMiners()
-func ResetStableMiners() {
-	clientNode, err := client.GetNode()
-	if err != nil {
-		panic(err)
-	}
-	clientNode.ResetStableMiners()
 }
 
 func checkSdkInit() error {
@@ -274,20 +290,6 @@ func CheckConfig() error {
 	return nil
 }
 
-// Deprecated: Use client.GetNode().GetMinShardersVerify() after Init call
-func GetMinShardersVerify() int {
-	clientNode, err := client.GetNode()
-	if err != nil {
-		panic(err)
-	}
-	return clientNode.GetMinShardersVerify()
-}
-
-// GetVersion - returns version string
-func GetVersion() string {
-	return version.VERSIONSTR
-}
-
 // SetLogLevel set the log level.
 // lvl - 0 disabled; higher number (upto 4) more verbosity
 func SetLogLevel(lvl int) {
@@ -309,37 +311,9 @@ func SetLogFile(logFile string, verbose bool) {
 	logging.Info("******* Wallet SDK Version:", version.VERSIONSTR, " ******* (SetLogFile)")
 }
 
-// Deprecated: Use client.Init() in core/client package
-// Init initialize the SDK with miner, sharder and signature scheme provided in configuration provided in JSON format
-// # Inputs
-//   - chainConfigJSON: json format of zcn config
-//     {
-//     "block_worker": "https://dev.0chain.net/dns",
-//     "signature_scheme": "bls0chain",
-//     "min_submit": 50,
-//     "min_confirmation": 50,
-//     "confirmation_chain_length": 3,
-//     "max_txn_query": 5,
-//     "query_sleep_time": 5,
-//     "preferred_blobbers": ["https://dev.0chain.net/blobber02","https://dev.0chain.net/blobber03"],
-//     "chain_id":"0afc093ffb509f059c55478bc1a60351cef7b4e9c008a53a6cc8241ca8617dfe",
-//     "ethereum_node":"https://ropsten.infura.io/v3/xxxxxxxxxxxxxxx",
-//     "zbox_host":"https://0box.dev.0chain.net",
-//     "zbox_app_type":"vult",
-//     "sharder_consensous": 2,
-//     }
-func Init(chainConfigJSON string) error {
-	cfg := conf.Config{}
-	err := json.Unmarshal([]byte(chainConfigJSON), &cfg)
-	if err != nil {
-		return err
-	}
-	return client.Init(context.Background(), cfg)
-}
-
 var signatureScheme string
 
-// Use client.Init() in core/client package to initialize SDK.
+// InitSignatureScheme Use client.Init() in core/client package to initialize SDK.
 // InitSignatureScheme initializes signature scheme only.
 func InitSignatureScheme(scheme string) {
 	if scheme != constants.BLS0CHAIN.String() && scheme != constants.ED25519.String() {
@@ -398,7 +372,7 @@ func RecoverWallet(mnemonic string, statusCb WalletCallback) error {
 	return nil
 }
 
-// Split keys from the primary master key
+// SplitKeys Split keys from the primary master key
 func SplitKeys(privateKey string, numSplits int) (string, error) {
 	if signatureScheme != constants.BLS0CHAIN.String() {
 		return "", errors.New("signature key doesn't support split key")
@@ -577,7 +551,7 @@ func GetNotProcessedZCNBurnTickets(ethereumAddress, startNonce string, cb GetInf
 	return nil
 }
 
-// GetBalance retrieve wallet nonce from sharders
+// GetNonce GetBalance retrieve wallet nonce from sharders
 func GetNonce(cb GetNonceCallback) error {
 	if cb == nil {
 		cb = &GetNonceCallbackStub{}
@@ -602,7 +576,7 @@ func GetNonce(cb GetNonceCallback) error {
 	return nil
 }
 
-// GetWalletBalance retrieve wallet nonce from sharders
+// GetWalletNonce GetWalletBalance retrieve wallet nonce from sharders
 func GetWalletNonce(clientID string) (int64, error) {
 	cb := &GetNonceCallbackStub{}
 

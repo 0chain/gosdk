@@ -5,22 +5,16 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"math"
-	"net/http"
-	"strconv"
-	"strings"
-	"time"
-
 	"github.com/0chain/common/core/currency"
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/logger"
-	"github.com/0chain/gosdk/core/node"
-	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/core/zcncrypto"
-	"go.uber.org/zap"
 	"gopkg.in/natefinch/lumberjack.v2"
+	"io/ioutil"
+	"math"
+	"net/http"
+	"strconv"
 
 	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/common"
@@ -218,7 +212,7 @@ func ReadPoolLock(tokens, fee uint64) (hash string, nonce int64, err error) {
 		Name:      transaction.STORAGESC_READ_POOL_LOCK,
 		InputArgs: nil,
 	}
-	hash, _, nonce, _, err = smartContractTxnValueFeeWithRetry(STORAGE_SCADDRESS, sn, tokens, fee)
+	hash, _, nonce, _, err = transaction.SmartContractTxnValueFeeWithRetry(STORAGE_SCADDRESS, sn, tokens, fee)
 	return
 }
 
@@ -233,7 +227,7 @@ func ReadPoolUnlock(fee uint64) (hash string, nonce int64, err error) {
 		Name:      transaction.STORAGESC_READ_POOL_UNLOCK,
 		InputArgs: nil,
 	}
-	hash, _, nonce, _, err = smartContractTxnValueFeeWithRetry(STORAGE_SCADDRESS, sn, 0, fee)
+	hash, _, nonce, _, err = transaction.SmartContractTxnValueFeeWithRetry(STORAGE_SCADDRESS, sn, 0, fee)
 	return
 }
 
@@ -403,7 +397,7 @@ func StakePoolLock(providerType ProviderType, providerID string, value, fee uint
 		return "", 0, errors.Newf("stake_pool_lock", "unsupported provider type: %v", providerType)
 	}
 
-	hash, _, nonce, _, err = smartContractTxnValueFeeWithRetry(scAddress, sn, value, fee)
+	hash, _, nonce, _, err = transaction.SmartContractTxnValueFeeWithRetry(scAddress, sn, value, fee)
 	return
 }
 
@@ -463,7 +457,7 @@ func StakePoolUnlock(providerType ProviderType, providerID string, fee uint64) (
 	}
 
 	var out string
-	if _, out, nonce, _, err = smartContractTxnValueFeeWithRetry(scAddress, sn, 0, fee); err != nil {
+	if _, out, nonce, _, err = transaction.SmartContractTxnValueFeeWithRetry(scAddress, sn, 0, fee); err != nil {
 		return // an error
 	}
 
@@ -500,7 +494,7 @@ func WritePoolLock(allocID string, tokens, fee uint64) (hash string, nonce int64
 		InputArgs: &req,
 	}
 
-	hash, _, nonce, _, err = smartContractTxnValueFeeWithRetry(STORAGE_SCADDRESS, sn, tokens, fee)
+	hash, _, nonce, _, err = transaction.SmartContractTxnValueFeeWithRetry(STORAGE_SCADDRESS, sn, tokens, fee)
 	return
 }
 
@@ -523,7 +517,7 @@ func WritePoolUnlock(allocID string, fee uint64) (hash string, nonce int64, err 
 		Name:      transaction.STORAGESC_WRITE_POOL_UNLOCK,
 		InputArgs: &req,
 	}
-	hash, _, nonce, _, err = smartContractTxnValueFeeWithRetry(STORAGE_SCADDRESS, sn, 0, fee)
+	hash, _, nonce, _, err = transaction.SmartContractTxnValueFeeWithRetry(STORAGE_SCADDRESS, sn, 0, fee)
 	return
 }
 
@@ -1574,7 +1568,7 @@ func CollectRewards(providerId string, providerType ProviderType) (string, int64
 		return "", 0, fmt.Errorf("collect rewards provider type %v not implimented", providerType)
 	}
 
-	hash, _, n, _, err := smartContractTxn(scAddress, sn)
+	hash, _, n, _, err := transaction.SmartContractTxn(scAddress, sn)
 	return hash, n, err
 }
 
@@ -1673,11 +1667,6 @@ func ResetAllocationStats(allocationId string) (string, int64, error) {
 	return hash, n, err
 }
 
-func smartContractTxn(scAddress string, sn transaction.SmartContractTxnData) (
-	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
-	return smartContractTxnValue(scAddress, sn, 0)
-}
-
 func StorageSmartContractTxn(sn transaction.SmartContractTxnData) (
 	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 
@@ -1690,124 +1679,11 @@ func storageSmartContractTxn(sn transaction.SmartContractTxnData) (
 	return storageSmartContractTxnValue(sn, 0)
 }
 
-func smartContractTxnValue(scAddress string, sn transaction.SmartContractTxnData, value uint64) (
-	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
-
-	return smartContractTxnValueFeeWithRetry(scAddress, sn, value, client.TxnFee())
-}
-
 func storageSmartContractTxnValue(sn transaction.SmartContractTxnData, value uint64) (
 	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 
 	// Fee is set during sdk initialization.
-	return smartContractTxnValueFeeWithRetry(STORAGE_SCADDRESS, sn, value, client.TxnFee())
-}
-
-func smartContractTxnValueFeeWithRetry(scAddress string, sn transaction.SmartContractTxnData,
-	value, fee uint64) (hash, out string, nonce int64, t *transaction.Transaction, err error) {
-	hash, out, nonce, t, err = smartContractTxnValueFee(scAddress, sn, value, fee)
-
-	if err != nil && strings.Contains(err.Error(), "invalid transaction nonce") {
-		return smartContractTxnValueFee(scAddress, sn, value, fee)
-	}
-	return
-}
-
-func smartContractTxnValueFee(scAddress string, sn transaction.SmartContractTxnData,
-	value, fee uint64) (hash, out string, nonce int64, t *transaction.Transaction, err error) {
-
-	var requestBytes []byte
-	if requestBytes, err = json.Marshal(sn); err != nil {
-		return
-	}
-
-	cfg, err := conf.GetClientConfig()
-	if err != nil {
-		return
-	}
-
-	nodeClient, err := client.GetNode()
-	if err != nil {
-		return
-	}
-
-	txn := transaction.NewTransactionEntity(client.ClientID(),
-		cfg.ChainID, client.PublicKey(), nonce)
-
-	txn.TransactionData = string(requestBytes)
-	txn.ToClientID = scAddress
-	txn.Value = value
-	txn.TransactionFee = fee
-	txn.TransactionType = transaction.TxnTypeSmartContract
-
-	// adjust fees if not set
-	if fee == 0 {
-		fee, err = transaction.EstimateFee(txn, nodeClient.Network().Miners, 0.2)
-		if err != nil {
-			l.Logger.Error("failed to estimate txn fee",
-				zap.Error(err),
-				zap.Any("txn", txn))
-			return
-		}
-		txn.TransactionFee = fee
-	}
-
-	if txn.TransactionNonce == 0 {
-		txn.TransactionNonce = node.Cache.GetNextNonce(txn.ClientID)
-	}
-
-	if err = txn.ComputeHashAndSign(client.Sign); err != nil {
-		return
-	}
-
-	msg := fmt.Sprintf("executing transaction '%s' with hash %s ", sn.Name, txn.Hash)
-	l.Logger.Info(msg)
-	l.Logger.Info("estimated txn fee: ", txn.TransactionFee)
-
-	err = transaction.SendTransactionSync(txn, nodeClient.GetStableMiners())
-	if err != nil {
-		l.Logger.Info("transaction submission failed", zap.Error(err))
-		node.Cache.Evict(txn.ClientID)
-		nodeClient.ResetStableMiners()
-		return
-	}
-
-	var (
-		querySleepTime = time.Duration(cfg.QuerySleepTime) * time.Second
-		retries        = 0
-	)
-
-	sys.Sleep(querySleepTime)
-
-	for retries < cfg.MaxTxnQuery {
-		t, err = transaction.VerifyTransaction(txn.Hash, nodeClient.Sharders().Healthy())
-		if err == nil {
-			break
-		}
-		retries++
-		sys.Sleep(querySleepTime)
-	}
-
-	if err != nil {
-		l.Logger.Error("Error verifying the transaction", err.Error(), txn.Hash)
-		node.Cache.Evict(txn.ClientID)
-		return
-	}
-
-	if t == nil {
-		return "", "", 0, txn, errors.New("transaction_validation_failed",
-			"Failed to get the transaction confirmation")
-	}
-
-	if t.Status == transaction.TxnFail {
-		return t.Hash, t.TransactionOutput, 0, t, errors.New("", t.TransactionOutput)
-	}
-
-	if t.Status == transaction.TxnChargeableError {
-		return t.Hash, t.TransactionOutput, t.TransactionNonce, t, errors.New("", t.TransactionOutput)
-	}
-
-	return t.Hash, t.TransactionOutput, t.TransactionNonce, t, nil
+	return transaction.SmartContractTxnValueFeeWithRetry(STORAGE_SCADDRESS, sn, value, client.TxnFee())
 }
 
 func CommitToFabric(metaTxnData, fabricConfigJSON string) (string, error) {

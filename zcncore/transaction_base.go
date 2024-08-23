@@ -104,7 +104,7 @@ type ChainConfig struct {
 	SharderConsensous       int      `json:"sharder_consensous"`
 }
 
-//Deprecated: Use client.Init() in core/client package
+// Deprecated: Use client.Init() in core/client package
 // InitZCNSDK initializes the SDK with miner, sharder and signature scheme provided.
 func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainConfig) error) error {
 	if signscheme != "ed25519" && signscheme != "bls0chain" {
@@ -119,14 +119,14 @@ func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainCon
 		}
 	}
 	cfg := conf.Config{
-		BlockWorker:     			blockWorker,
-		SignatureScheme: 			signscheme,
-		MinSubmit:               	chainCfg.MinSubmit,
-		MinConfirmation:         	chainCfg.MinConfirmation,
-		ConfirmationChainLength: 	chainCfg.ConfirmationChainLength,
-		ChainID:                 	chainCfg.ChainID,
-		EthereumNode:            	chainCfg.EthNode,
-		SharderConsensous:       	chainCfg.SharderConsensous,
+		BlockWorker:             blockWorker,
+		SignatureScheme:         signscheme,
+		MinSubmit:               chainCfg.MinSubmit,
+		MinConfirmation:         chainCfg.MinConfirmation,
+		ConfirmationChainLength: chainCfg.ConfirmationChainLength,
+		ChainID:                 chainCfg.ChainID,
+		EthereumNode:            chainCfg.EthNode,
+		SharderConsensous:       chainCfg.SharderConsensous,
 	}
 	return client.Init(context.Background(), cfg)
 }
@@ -347,8 +347,15 @@ func (t *Transaction) submitTxn() {
 		}
 	}
 
+	nodeClient, err := client.GetNode()
+	if err != nil {
+		t.completeTxn(StatusError, "", err)
+		node.Cache.Evict(t.txn.ClientID)
+		return
+	}
+
 	var (
-		randomMiners = GetStableMiners()
+		randomMiners = nodeClient.GetStableMiners()
 		minersN      = len(randomMiners)
 		failedCount  int32
 		failC        = make(chan struct{})
@@ -395,7 +402,7 @@ func (t *Transaction) submitTxn() {
 		logging.Error("failed to submit transaction")
 		t.completeTxn(StatusError, "", fmt.Errorf("failed to submit transaction to all miners"))
 		node.Cache.Evict(t.txn.ClientID)
-		ResetStableMiners()
+		nodeClient.ResetStableMiners()
 		return
 	case ret := <-resultC:
 		logging.Debug("finish txn submitting, ", ret.Url, ", Status: ", ret.Status, ", output:", ret.Body)

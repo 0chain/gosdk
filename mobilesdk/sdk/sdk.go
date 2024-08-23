@@ -14,9 +14,9 @@ import (
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/pkg/errors"
 
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/version"
-	"github.com/0chain/gosdk/core/client"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 
@@ -66,7 +66,12 @@ func SetLogLevel(logLevel int) {
 // Init init the sdk with chain config
 //   - chainConfigJson: chain config json string
 func Init(chainConfigJson string) error {
-	return zcncore.Init(chainConfigJson)
+	cfg := conf.Config{}
+	err := json.Unmarshal([]byte(chainConfigJSON), &cfg)
+	if err != nil {
+		return err
+	}
+	return client.Init(context.Background(), cfg)
 }
 
 // InitStorageSDK init storage sdk from config

@@ -4,6 +4,12 @@ package transaction
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/0chain/gosdk/core/client"
+	"github.com/0chain/gosdk/core/conf"
+	"github.com/0chain/gosdk/core/node"
+	"github.com/0chain/gosdk/core/sys"
+	l "github.com/0chain/gosdk/zboxcore/logger"
+	"go.uber.org/zap"
 	"net/http"
 	"strings"
 	"sync"
@@ -480,4 +486,122 @@ func GetFeesTable(miners []string, reqPercent ...float32) (map[string]map[string
 	}
 
 	return nil, errors.New("failed to get fees table", strings.Join(errs, ","))
+}
+
+func SmartContractTxn(scAddress string, sn SmartContractTxnData) (
+	hash, out string, nonce int64, txn *Transaction, err error) {
+	return SmartContractTxnValue(scAddress, sn, 0)
+}
+
+func SmartContractTxnValue(scAddress string, sn SmartContractTxnData, value uint64) (
+	hash, out string, nonce int64, txn *Transaction, err error) {
+
+	return SmartContractTxnValueFeeWithRetry(scAddress, sn, value, client.TxnFee())
+}
+
+func SmartContractTxnValueFeeWithRetry(scAddress string, sn SmartContractTxnData,
+	value, fee uint64) (hash, out string, nonce int64, t *Transaction, err error) {
+	hash, out, nonce, t, err = SmartContractTxnValueFee(scAddress, sn, value, fee)
+
+	if err != nil && strings.Contains(err.Error(), "invalid transaction nonce") {
+		return SmartContractTxnValueFee(scAddress, sn, value, fee)
+	}
+	return
+}
+
+func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
+	value, fee uint64) (hash, out string, nonce int64, t *Transaction, err error) {
+
+	var requestBytes []byte
+	if requestBytes, err = json.Marshal(sn); err != nil {
+		return
+	}
+
+	cfg, err := conf.GetClientConfig()
+	if err != nil {
+		return
+	}
+
+	nodeClient, err := client.GetNode()
+	if err != nil {
+		return
+	}
+
+	txn := NewTransactionEntity(client.ClientID(),
+		cfg.ChainID, client.PublicKey(), nonce)
+
+	txn.TransactionData = string(requestBytes)
+	txn.ToClientID = scAddress
+	txn.Value = value
+	txn.TransactionFee = fee
+	txn.TransactionType = TxnTypeSmartContract
+
+	// adjust fees if not set
+	if fee == 0 {
+		fee, err = EstimateFee(txn, nodeClient.Network().Miners, 0.2)
+		if err != nil {
+			l.Logger.Error("failed to estimate txn fee",
+				zap.Error(err),
+				zap.Any("txn", txn))
+			return
+		}
+		txn.TransactionFee = fee
+	}
+
+	if txn.TransactionNonce == 0 {
+		txn.TransactionNonce = node.Cache.GetNextNonce(txn.ClientID)
+	}
+
+	if err = txn.ComputeHashAndSign(client.Sign); err != nil {
+		return
+	}
+
+	msg := fmt.Sprintf("executing transaction '%s' with hash %s ", sn.Name, txn.Hash)
+	l.Logger.Info(msg)
+	l.Logger.Info("estimated txn fee: ", txn.TransactionFee)
+
+	err = SendTransactionSync(txn, nodeClient.GetStableMiners())
+	if err != nil {
+		l.Logger.Info("transaction submission failed", zap.Error(err))
+		node.Cache.Evict(txn.ClientID)
+		nodeClient.ResetStableMiners()
+		return
+	}
+
+	var (
+		querySleepTime = time.Duration(cfg.QuerySleepTime) * time.Second
+		retries        = 0
+	)
+
+	sys.Sleep(querySleepTime)
+
+	for retries < cfg.MaxTxnQuery {
+		t, err = VerifyTransaction(txn.Hash, nodeClient.Sharders().Healthy())
+		if err == nil {
+			break
+		}
+		retries++
+		sys.Sleep(querySleepTime)
+	}
+
+	if err != nil {
+		l.Logger.Error("Error verifying the transaction", err.Error(), txn.Hash)
+		node.Cache.Evict(txn.ClientID)
+		return
+	}
+
+	if t == nil {
+		return "", "", 0, txn, errors.New("transaction_validation_failed",
+			"Failed to get the transaction confirmation")
+	}
+
+	if t.Status == TxnFail {
+		return t.Hash, t.TransactionOutput, 0, t, errors.New("", t.TransactionOutput)
+	}
+
+	if t.Status == TxnChargeableError {
+		return t.Hash, t.TransactionOutput, t.TransactionNonce, t, errors.New("", t.TransactionOutput)
+	}
+
+	return t.Hash, t.TransactionOutput, t.TransactionNonce, t, nil
 }

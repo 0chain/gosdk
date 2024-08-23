@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/zcncore"
 )
 
@@ -141,11 +142,14 @@ func main() {
 		return
 	}
 
-	err := zcncore.Init(ChainConfig)
-	if err != nil {
-		fmt.Println("Init failed")
-		return
+	cfg := conf.Config{}
+	if err := json.Unmarshal([]byte(ChainConfig), &cfg); err != nil {
+		return err
 	}
+	if err := client.Init(context.Background(), cfg); err != nil {
+		return err
+	}
+
 	err = zcncore.SetWalletInfo(wallet, false)
 	if err != nil {
 		fmt.Println("set wallet info failed: ", err)
