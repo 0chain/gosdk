@@ -143,7 +143,6 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 		case oTreeResponse := <-respChan:
 			oTreeResponseErrors[oTreeResponse.idx] = oTreeResponse.err
 			if oTreeResponse.err != nil {
-				l.Logger.Error(oTreeResponse.err)
 				if code, _ := zboxutil.GetErrorMessageCode(oTreeResponse.err.Error()); code != INVALID_PATH {
 					l.Logger.Error("Error while getting file refs from blobber:", oTreeResponse.err)
 				}
