@@ -17,22 +17,22 @@ type SignFunc func(hash string) (string, error)
 
 // maintains client's information
 type Client struct {
-	wallet *zcncrypto.Wallet
+	wallet          *zcncrypto.Wallet
 	signatureScheme string
-	splitKeyWallet	bool
-	authUrl string
-	nonce	int64
-	txnFee 	uint64
-	sign 	SignFunc
+	splitKeyWallet  bool
+	authUrl         string
+	nonce           int64
+	txnFee          uint64
+	sign            SignFunc
 }
 
 func init() {
 	sys.Sign = signHash
-	client = Client {
-		wallet: &zcncrypto.Wallet{}, 
+	client = Client{
+		wallet: &zcncrypto.Wallet{},
 		sign: func(hash string) (string, error) {
 			return sys.Sign(hash, client.signatureScheme, GetClientSysKeys())
-		},	
+		},
 	}
 	sys.Verify = verifySignature
 	sys.VerifyWith = verifySignatureWith
@@ -89,9 +89,8 @@ func GetClientSysKeys() []sys.KeyPair {
 }
 
 // SetWallet should be set before any transaction or client specific APIs
-func SetWallet(w zcncrypto.Wallet) error {
+func SetWallet(w zcncrypto.Wallet) {
 	client.wallet = &w
-	return nil
 }
 
 // splitKeyWallet parameter is valid only if SignatureScheme is "BLS0Chain"
@@ -166,6 +165,10 @@ func IsWalletSet() bool {
 
 func PublicKey() string {
 	return client.wallet.ClientKey
+}
+
+func Mnemonic() string {
+	return client.wallet.Mnemonic
 }
 
 func PrivateKey() string {

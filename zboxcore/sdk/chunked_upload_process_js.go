@@ -434,7 +434,7 @@ func ProcessEventData(data safejs.Value) {
 	if !formInfo.IsFinal {
 		wp.wg.Add(1)
 	}
-	go func(blobberData blobberData, remotePath string, wg *sync.WaitGroup) {
+	go func(blobberData BlobberData, remotePath string, wg *sync.WaitGroup) {
 		if formInfo.IsFinal && len(blobberData.dataBuffers) > 1 {
 			err = sendUploadRequest(blobberData.dataBuffers[:len(blobberData.dataBuffers)-1], blobberData.contentSlice[:len(blobberData.contentSlice)-1], blobberURL, formInfo.AllocationID, formInfo.AllocationTx, formInfo.HttpMethod)
 			if err != nil {

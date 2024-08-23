@@ -21,7 +21,7 @@ type ChunkedUploadFormBuilder interface {
 		chunkSize int64, chunkStartIndex, chunkEndIndex int,
 		isFinal bool, encryptedKey, encryptedKeyPoint string, fileChunksData [][]byte,
 		thumbnailChunkData []byte, shardSize int64,
-	) (blobberData, error)
+	) (BlobberData, error)
 }
 
 // ChunkedUploadFormMetadata upload form metadata
@@ -49,13 +49,13 @@ func (b *chunkedUploadFormBuilder) Build(
 	chunkSize int64, chunkStartIndex, chunkEndIndex int,
 	isFinal bool, encryptedKey, encryptedKeyPoint string, fileChunksData [][]byte,
 	thumbnailChunkData []byte, shardSize int64,
-) (blobberData, error) {
+) (BlobberData, error) {
 
 	metadata := ChunkedUploadFormMetadata{
 		ThumbnailBytesLen: len(thumbnailChunkData),
 	}
 
-	var res blobberData
+	var res BlobberData
 
 	if len(fileChunksData) == 0 {
 		return res, nil

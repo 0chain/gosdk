@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
+	"github.com/0chain/gosdk/zboxcore/mocks"
 	"io"
 	"io/fs"
 	"io/ioutil"
@@ -26,11 +27,11 @@ import (
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/sys"
 
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
-	"github.com/0chain/gosdk/zboxcore/mocks"
+
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"

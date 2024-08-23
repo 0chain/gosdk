@@ -19,8 +19,8 @@ import (
 
 	"github.com/0chain/common/core/common"
 	thrown "github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/zboxcore/client"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
@@ -101,12 +101,12 @@ func GetWritemarker(allocID, allocTx, id, baseUrl string) (*LatestPrevWriteMarke
 			return nil, err
 		}
 		if lpm.LatestWM != nil {
-			err = lpm.LatestWM.VerifySignature(client.GetClientPublicKey())
+			err = lpm.LatestWM.VerifySignature(client.PublicKey())
 			if err != nil {
 				return nil, fmt.Errorf("signature verification failed for latest writemarker: %s", err.Error())
 			}
 			if lpm.PrevWM != nil {
-				err = lpm.PrevWM.VerifySignature(client.GetClientPublicKey())
+				err = lpm.PrevWM.VerifySignature(client.PublicKey())
 				if err != nil {
 					return nil, fmt.Errorf("signature verification failed for latest writemarker: %s", err.Error())
 				}
@@ -124,7 +124,7 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 	wm.AllocationID = rb.lpm.LatestWM.AllocationID
 	wm.Timestamp = rb.lpm.LatestWM.Timestamp
 	wm.BlobberID = rb.lpm.LatestWM.BlobberID
-	wm.ClientID = client.GetClientID()
+	wm.ClientID = client.ClientID()
 	wm.Size = -rb.lpm.LatestWM.Size
 	wm.ChainSize = wm.Size + rb.lpm.LatestWM.ChainSize
 

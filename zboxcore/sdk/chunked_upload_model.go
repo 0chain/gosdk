@@ -215,10 +215,10 @@ type UploadData struct {
 	chunkEndIndex   int
 	isFinal         bool
 	uploadLength    int64
-	uploadBody      []blobberData
+	uploadBody      []BlobberData
 }
 
-type blobberData struct {
+type BlobberData struct {
 	dataBuffers  []*bytes.Buffer
 	formData     ChunkedUploadFormMetadata
 	contentSlice []string

@@ -3,6 +3,7 @@ package sdk
 import (
 	"bytes"
 	"context"
+	"github.com/0chain/gosdk/zboxcore/mocks"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -13,7 +14,7 @@ import (
 	"time"
 
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/zboxcore/mocks"
+
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"

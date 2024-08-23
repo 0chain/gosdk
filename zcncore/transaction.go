@@ -23,6 +23,7 @@ import (
 	"github.com/0chain/gosdk/core/util"
 )
 
+// Provider represents the type of provider.
 type Provider int
 
 const (
@@ -48,6 +49,8 @@ type ConfirmationStatus int
 const (
 	Undefined ConfirmationStatus = iota
 	Success
+
+	// ChargeableError is an error that still charges the user for the transaction.
 	ChargeableError
 )
 
@@ -63,11 +66,13 @@ type Miner struct {
 	Stat       interface{} `json:"stat"`
 }
 
+// Node represents a node (miner or sharder) in the network.
 type Node struct {
 	Miner     Miner `json:"simple_miner"`
 	StakePool `json:"stake_pool"`
 }
 
+// MinerSCNodes list of nodes registered to the miner smart contract
 type MinerSCNodes struct {
 	Nodes []Node `json:"Nodes"`
 }
@@ -108,6 +113,7 @@ type MinerSCDelegatePoolInfo struct {
 	Status     string         `json:"status"`
 }
 
+// MinerSCUserPoolsInfo represents the user stake pools information
 type MinerSCUserPoolsInfo struct {
 	Pools map[string][]*MinerSCDelegatePoolInfo `json:"pools"`
 }
@@ -129,20 +135,6 @@ type TransactionCommon interface {
 	MinerSCKill(providerID string, providerType Provider) error
 
 	StorageSCCollectReward(providerID string, providerType Provider) error
-
-	FinalizeAllocation(allocID string) error
-	CancelAllocation(allocID string) error
-	CreateAllocation(car *CreateAllocationRequest, lock uint64) error //
-	CreateReadPool() error
-	ReadPoolLock(allocID string, blobberID string, duration int64, lock uint64) error
-	ReadPoolUnlock() error
-	StakePoolLock(providerId string, providerType Provider, lock uint64) error
-	StakePoolUnlock(providerId string, providerType Provider) error
-	UpdateBlobberSettings(blobber *Blobber) error
-	UpdateValidatorSettings(validator *Validator) error
-	UpdateAllocation(allocID string, sizeDiff int64, expirationDiff int64, lock uint64) error
-	WritePoolLock(allocID string, blobberID string, duration int64, lock uint64) error
-	WritePoolUnlock(allocID string) error
 
 	VestingUpdateConfig(*InputMap) error
 	MinerScUpdateConfig(*InputMap) error
@@ -194,11 +186,9 @@ type CreateAllocationRequest struct {
 }
 
 type StakePoolSettings struct {
-	DelegateWallet *string         `json:"delegate_wallet,omitempty"`
-	MinStake       *common.Balance `json:"min_stake,omitempty"`
-	MaxStake       *common.Balance `json:"max_stake,omitempty"`
-	NumDelegates   *int            `json:"num_delegates,omitempty"`
-	ServiceCharge  *float64        `json:"service_charge,omitempty"`
+	DelegateWallet *string  `json:"delegate_wallet,omitempty"`
+	NumDelegates   *int     `json:"num_delegates,omitempty"`
+	ServiceCharge  *float64 `json:"service_charge,omitempty"`
 }
 
 type Terms struct {
@@ -207,15 +197,28 @@ type Terms struct {
 	MaxOfferDuration time.Duration  `json:"max_offer_duration"`
 }
 
+// Blobber represents a blobber node.
 type Blobber struct {
-	ID                common.Key        `json:"id"`
-	BaseURL           string            `json:"url"`
-	Terms             Terms             `json:"terms"`
-	Capacity          common.Size       `json:"capacity"`
-	Allocated         common.Size       `json:"allocated"`
-	LastHealthCheck   common.Timestamp  `json:"last_health_check"`
+	// ID is the blobber ID.
+	ID common.Key `json:"id"`
+	// BaseURL is the blobber's base URL used to access the blobber
+	BaseURL string `json:"url"`
+	// Terms of storage service of the blobber (read/write price, max offer duration)
+	Terms Terms `json:"terms"`
+	// Capacity is the total capacity of the blobber
+	Capacity common.Size `json:"capacity"`
+	// Used is the capacity of the blobber used to create allocations
+	Allocated common.Size `json:"allocated"`
+	// LastHealthCheck is the last time the blobber was checked for health
+	LastHealthCheck common.Timestamp `json:"last_health_check"`
+	// StakePoolSettings is the settings of the blobber's stake pool
 	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
-	NotAvailable      bool              `json:"not_available"`
+	// NotAvailable is true if the blobber is not available
+	NotAvailable bool `json:"not_available"`
+	// IsRestricted is true if the blobber is restricted.
+	// Restricted blobbers needs to be authenticated using AuthTickets in order to be used for allocation creation.
+	// Check Restricted Blobbers documentation for more details.
+	IsRestricted bool `json:"is_restricted"`
 }
 
 type Validator struct {
@@ -224,37 +227,43 @@ type Validator struct {
 	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
 }
 
+// AddAuthorizerPayload represents the payload for adding an authorizer.
 type AddAuthorizerPayload struct {
 	PublicKey         string                      `json:"public_key"`
 	URL               string                      `json:"url"`
 	StakePoolSettings AuthorizerStakePoolSettings `json:"stake_pool_settings"` // Used to initially create stake pool
 }
 
+// DeleteAuthorizerPayload represents the payload for deleting an authorizer.
 type DeleteAuthorizerPayload struct {
 	ID string `json:"id"` // authorizer ID
 }
 
+// AuthorizerHealthCheckPayload represents the payload for authorizer health check.
 type AuthorizerHealthCheckPayload struct {
 	ID string `json:"id"` // authorizer ID
 }
 
+// AuthorizerStakePoolSettings represents the settings for an authorizer's stake pool.
 type AuthorizerStakePoolSettings struct {
-	DelegateWallet string         `json:"delegate_wallet"`
-	MinStake       common.Balance `json:"min_stake"`
-	MaxStake       common.Balance `json:"max_stake"`
-	NumDelegates   int            `json:"num_delegates"`
-	ServiceCharge  float64        `json:"service_charge"`
+	DelegateWallet string  `json:"delegate_wallet"`
+	NumDelegates   int     `json:"num_delegates"`
+	ServiceCharge  float64 `json:"service_charge"`
 }
 
 type AuthorizerConfig struct {
 	Fee common.Balance `json:"fee"`
 }
 
+// InputMap represents a map of input fields.
 type InputMap struct {
 	Fields map[string]string `json:"Fields"`
 }
 
-// NewTransaction allocation new generic transaction object for any operation
+// NewTransaction new generic transaction object for any operation
+//   - cb: callback for transaction state
+//   - txnFee: Transaction fees (in SAS tokens)
+//   - nonce: latest nonce of current wallet. please set it with 0 if you don't know the latest value
 func NewTransaction(cb TransactionCallback, txnFee uint64, nonce int64) (TransactionScheme, error) {
 	err := CheckConfig()
 	if err != nil {
@@ -437,269 +446,6 @@ func (t *Transaction) MinerSCKill(providerId string, providerType Provider) erro
 	return err
 }
 
-func (t *Transaction) StorageSCCollectReward(providerId string, providerType Provider) error {
-	pr := &scCollectReward{
-		ProviderId:   providerId,
-		ProviderType: int(providerType),
-	}
-	err := t.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_COLLECT_REWARD, pr, 0)
-	if err != nil {
-		logging.Error(err)
-		return err
-	}
-	go t.setNonceAndSubmit()
-	return err
-}
-
-// FinalizeAllocation transaction.
-func (t *Transaction) FinalizeAllocation(allocID string) (
-	err error) {
-
-	type finiRequest struct {
-		AllocationID string `json:"allocation_id"`
-	}
-	err = t.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_FINALIZE_ALLOCATION, &finiRequest{
-			AllocationID: allocID,
-		}, 0)
-	if err != nil {
-		logging.Error(err)
-		return
-	}
-
-	go func() { t.setNonceAndSubmit() }()
-	return
-}
-
-// CancelAllocation transaction.
-func (t *Transaction) CancelAllocation(allocID string) (
-	err error) {
-
-	type cancelRequest struct {
-		AllocationID string `json:"allocation_id"`
-	}
-	err = t.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_CANCEL_ALLOCATION, &cancelRequest{
-			AllocationID: allocID,
-		}, 0)
-	if err != nil {
-		logging.Error(err)
-		return
-	}
-	go func() { t.setNonceAndSubmit() }()
-	return
-}
-
-// CreateAllocation transaction.
-func (t *Transaction) CreateAllocation(car *CreateAllocationRequest,
-	lock uint64) (err error) {
-	err = t.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_CREATE_ALLOCATION, car, lock)
-	if err != nil {
-		logging.Error(err)
-		return
-	}
-
-	go func() { t.setNonceAndSubmit() }()
-	return
-}
-
-// CreateReadPool for current user.
-func (t *Transaction) CreateReadPool() (err error) {
-	err = t.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_CREATE_READ_POOL, nil, 0)
-	if err != nil {
-		logging.Error(err)
-		return
-	}
-	go func() { t.setNonceAndSubmit() }()
-	return
-}
-
-// ReadPoolLock locks tokens for current user and given allocation, using given
-// duration. If blobberID is not empty, then tokens will be locked for given
-// allocation->blobber only.
-func (t *Transaction) ReadPoolLock(allocID, blobberID string, duration int64, lock uint64) (err error) {
-	if lock > math.MaxInt64 {
-		return errors.New("invalid_lock", "int64 overflow on lock value")
-	}
-
-	type lockRequest struct {
-		Duration     time.Duration `json:"duration"`
-		AllocationID string        `json:"allocation_id"`
-		BlobberID    string        `json:"blobber_id,omitempty"`
-	}
-
-	var lr lockRequest
-	lr.Duration = time.Duration(duration)
-	lr.AllocationID = allocID
-	lr.BlobberID = blobberID
-
-	err = t.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_READ_POOL_LOCK, &lr, lock)
-	if err != nil {
-		logging.Error(err)
-		return
-	}
-	go func() { t.setNonceAndSubmit() }()
-	return
-}
-
-// ReadPoolUnlock for current user and given pool.
-func (t *Transaction) ReadPoolUnlock() (err error) {
-	err = t.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_READ_POOL_UNLOCK, nil, 0)
-	if err != nil {
-		logging.Error(err)
-		return
-	}
-	go func() { t.setNonceAndSubmit() }()
-	return
-}
-
-// StakePoolLock used to lock tokens in a stake pool of a blobber.
-func (t *Transaction) StakePoolLock(providerId string, providerType Provider, lock uint64) error {
-
-	if lock > math.MaxInt64 {
-		return errors.New("invalid_lock", "int64 overflow on lock value")
-	}
-
-	type stakePoolRequest struct {
-		ProviderType Provider `json:"provider_type,omitempty"`
-		ProviderID   string   `json:"provider_id,omitempty"`
-	}
-
-	spr := stakePoolRequest{
-		ProviderType: providerType,
-		ProviderID:   providerId,
-	}
-
-	err := t.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_STAKE_POOL_LOCK, &spr, lock)
-	if err != nil {
-		logging.Error(err)
-		return err
-	}
-	go func() { t.setNonceAndSubmit() }()
-	return nil
-}
-
-// StakePoolUnlock by blobberID and poolID.
-func (t *Transaction) StakePoolUnlock(providerId string, providerType Provider) error {
-
-	type stakePoolRequest struct {
-		ProviderType Provider `json:"provider_type,omitempty"`
-		ProviderID   string   `json:"provider_id,omitempty"`
-	}
-
-	spr := stakePoolRequest{
-		ProviderType: providerType,
-		ProviderID:   providerId,
-	}
-
-	err := t.createSmartContractTxn(StorageSmartContractAddress, transaction.STORAGESC_STAKE_POOL_UNLOCK, &spr, 0)
-	if err != nil {
-		logging.Error(err)
-		return err
-	}
-	go func() { t.setNonceAndSubmit() }()
-	return nil
-}
-
-// UpdateBlobberSettings update settings of a blobber.
-func (t *Transaction) UpdateBlobberSettings(b *Blobber) (err error) {
-
-	err = t.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_UPDATE_BLOBBER_SETTINGS, b, 0)
-	if err != nil {
-		logging.Error(err)
-		return
-	}
-	go func() { t.setNonceAndSubmit() }()
-	return
-}
-
-// UpdateAllocation transaction.
-func (t *Transaction) UpdateAllocation(allocID string, sizeDiff int64,
-	expirationDiff int64, lock uint64) (err error) {
-
-	if lock > math.MaxInt64 {
-		return errors.New("invalid_lock", "int64 overflow on lock value")
-	}
-
-	type updateAllocationRequest struct {
-		ID         string `json:"id"`              // allocation id
-		Size       int64  `json:"size"`            // difference
-		Expiration int64  `json:"expiration_date"` // difference
-	}
-
-	var uar updateAllocationRequest
-	uar.ID = allocID
-	uar.Size = sizeDiff
-	uar.Expiration = expirationDiff
-
-	err = t.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_UPDATE_ALLOCATION, &uar, lock)
-	if err != nil {
-		logging.Error(err)
-		return
-	}
-	go func() { t.setNonceAndSubmit() }()
-	return
-}
-
-// WritePoolLock locks tokens for current user and given allocation, using given
-// duration. If blobberID is not empty, then tokens will be locked for given
-// allocation->blobber only.
-func (t *Transaction) WritePoolLock(allocID, blobberID string, duration int64,
-	lock uint64) (err error) {
-
-	if lock > math.MaxInt64 {
-		return errors.New("invalid_lock", "int64 overflow on lock value")
-	}
-
-	type lockRequest struct {
-		Duration     time.Duration `json:"duration"`
-		AllocationID string        `json:"allocation_id"`
-		BlobberID    string        `json:"blobber_id,omitempty"`
-	}
-
-	var lr lockRequest
-	lr.Duration = time.Duration(duration)
-	lr.AllocationID = allocID
-	lr.BlobberID = blobberID
-
-	err = t.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_WRITE_POOL_LOCK, &lr, lock)
-	if err != nil {
-		logging.Error(err)
-		return
-	}
-	go func() { t.setNonceAndSubmit() }()
-	return
-}
-
-// WritePoolUnlock for current user and given pool.
-func (t *Transaction) WritePoolUnlock(allocID string) (
-	err error) {
-
-	var ur = struct {
-		AllocationID string `json:"allocation_id"`
-	}{
-		AllocationID: allocID,
-	}
-
-	err = t.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_WRITE_POOL_UNLOCK, &ur, 0)
-	if err != nil {
-		logging.Error(err)
-		return
-	}
-	go func() { t.setNonceAndSubmit() }()
-	return
-}
-
 func (t *Transaction) VestingUpdateConfig(vscc *InputMap) (err error) {
 
 	err = t.createSmartContractTxn(VestingSmartContractAddress,
@@ -810,7 +556,7 @@ func (t *Transaction) RegisterMultiSig(walletstr string, mswallet string) error 
 	if err != nil {
 		return err
 	}
-	
+
 	go func() {
 		t.txn.TransactionType = transaction.TxnTypeSmartContract
 		t.txn.ToClientID = MultiSigSmartContractAddress
@@ -917,10 +663,12 @@ type MinerSCDelegatePool struct {
 	Settings StakePoolSettings `json:"settings"`
 }
 
+// SimpleMiner represents a node in the network, miner or sharder.
 type SimpleMiner struct {
 	ID string `json:"id"`
 }
 
+// MinerSCMinerInfo interface for miner/sharder info functions on miner smart contract.
 type MinerSCMinerInfo struct {
 	SimpleMiner         `json:"simple_miner"`
 	MinerSCDelegatePool `json:"stake_pool"`
@@ -970,6 +718,7 @@ func (t *Transaction) MinerSCDeleteSharder(info *MinerSCMinerInfo) (err error) {
 	return
 }
 
+// AuthorizerNode represents an authorizer node in the network
 type AuthorizerNode struct {
 	ID     string            `json:"id"`
 	URL    string            `json:"url"`
@@ -1145,6 +894,9 @@ func GetLatestFinalized(ctx context.Context, numSharders int) (b *block.Header, 
 	return
 }
 
+// GetLatestFinalizedMagicBlock gets latest finalized magic block
+//   - numSharders: number of sharders
+//   - timeout: request timeout
 func GetLatestFinalizedMagicBlock(ctx context.Context, numSharders int) (m *block.MagicBlock, err error) {
 	clientNode, err := client.GetNode()
 	if err != nil {
@@ -1403,131 +1155,6 @@ func (nc *NonceCache) Evict(clientId string) {
 	nc.guard.Lock()
 	defer nc.guard.Unlock()
 	delete(nc.cache, clientId)
-}
-
-//Deprecated: To initialize SDK, Use conf.Config and client.Init() in core package
-func WithEthereumNode(uri string) func(c *ChainConfig) error {
-	return func(c *ChainConfig) error {
-		c.EthNode = uri
-		return nil
-	}
-}
-
-//Deprecated: To initialize SDK, Use conf.Config and client.Init() in core package
-func WithChainID(id string) func(c *ChainConfig) error {
-	return func(c *ChainConfig) error {
-		c.ChainID = id
-		return nil
-	}
-}
-
-//Deprecated: To initialize SDK, Use conf.Config and client.Init() in core package
-func WithMinSubmit(m int) func(c *ChainConfig) error {
-	return func(c *ChainConfig) error {
-		c.MinSubmit = m
-		return nil
-	}
-}
-
-//Deprecated: To initialize SDK, Use conf.Config and client.Init() in core package
-func WithMinConfirmation(m int) func(c *ChainConfig) error {
-	return func(c *ChainConfig) error {
-		c.MinConfirmation = m
-		return nil
-	}
-}
-
-//Deprecated: To initialize SDK, Use conf.Config and client.Init() in core package
-func WithConfirmationChainLength(m int) func(c *ChainConfig) error {
-	return func(c *ChainConfig) error {
-		c.ConfirmationChainLength = m
-		return nil
-	}
-}
-
-//Deprecated: To initialize SDK, Use conf.Config and client.Init() in core package
-func WithSharderConsensous(m int) func(c *ChainConfig) error {
-	return func(c *ChainConfig) error {
-		c.SharderConsensous = m
-		return nil
-	}
-}
-
-// UpdateValidatorSettings update settings of a validator.
-func (t *Transaction) UpdateValidatorSettings(v *Validator) (err error) {
-
-	err = t.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_UPDATE_VALIDATOR_SETTINGS, v, 0)
-	if err != nil {
-		logging.Error(err)
-		return
-	}
-	go func() { t.setNonceAndSubmit() }()
-	return
-}
-
-type VestingClientList struct {
-	Pools []common.Key `json:"pools"`
-}
-
-func GetVestingClientList(clientID string, cb GetInfoCallback) (err error) {
-	if err = CheckConfig(); err != nil {
-		return
-	}
-	if clientID == "" {
-		clientID = client.Wallet().ClientID // if not blank
-	}
-	go GetInfoFromSharders(WithParams(GET_VESTING_CLIENT_POOLS, Params{
-		"client_id": clientID,
-	}), 0, cb)
-	return
-}
-
-type VestingDestInfo struct {
-	ID     common.Key       `json:"id"`     // identifier
-	Wanted common.Balance   `json:"wanted"` // wanted amount for entire period
-	Earned common.Balance   `json:"earned"` // can unlock
-	Vested common.Balance   `json:"vested"` // already vested
-	Last   common.Timestamp `json:"last"`   // last time unlocked
-}
-
-type VestingPoolInfo struct {
-	ID           common.Key         `json:"pool_id"`      // pool ID
-	Balance      common.Balance     `json:"balance"`      // real pool balance
-	Left         common.Balance     `json:"left"`         // owner can unlock
-	Description  string             `json:"description"`  // description
-	StartTime    common.Timestamp   `json:"start_time"`   // from
-	ExpireAt     common.Timestamp   `json:"expire_at"`    // until
-	Destinations []*VestingDestInfo `json:"destinations"` // receivers
-	ClientID     common.Key         `json:"client_id"`    // owner
-}
-
-func GetVestingPoolInfo(poolID string, cb GetInfoCallback) (err error) {
-	if err = CheckConfig(); err != nil {
-		return
-	}
-	GetInfoFromSharders(WithParams(GET_VESTING_POOL_INFO, Params{
-		"pool_id": poolID,
-	}), 0, cb)
-	return
-}
-
-func GetVestingSCConfig(cb GetInfoCallback) (err error) {
-	if err = CheckConfig(); err != nil {
-		return
-	}
-	go GetInfoFromSharders(GET_VESTING_CONFIG, 0, cb)
-	return
-}
-
-// faucet
-
-func GetFaucetSCConfig(cb GetInfoCallback) (err error) {
-	if err = CheckConfig(); err != nil {
-		return
-	}
-	go GetInfoFromSharders(GET_FAUCETSC_CONFIG, 0, cb)
-	return
 }
 
 func (t *Transaction) ZCNSCAddAuthorizer(ip *AddAuthorizerPayload) (err error) {

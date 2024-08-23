@@ -20,10 +20,10 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/encryption"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
@@ -47,7 +47,7 @@ var (
 type DownloadRequestOption func(dr *DownloadRequest)
 
 // WithDownloadProgressStorer set download progress storer of download request options.
-// 		- storer: download progress storer instance, used to store download progress.
+//   - storer: download progress storer instance, used to store download progress.
 func WithDownloadProgressStorer(storer DownloadProgressStorer) DownloadRequestOption {
 	return func(dr *DownloadRequest) {
 		dr.downloadStorer = storer
@@ -826,8 +826,8 @@ func (req *DownloadRequest) attemptSubmitReadMarker(blobber *blockchain.StorageN
 	lockBlobberReadCtr(req.allocationID, blobber.ID)
 	defer unlockBlobberReadCtr(req.allocationID, blobber.ID)
 	rm := &marker.ReadMarker{
-		ClientID:        client.GetClientID(),
-		ClientPublicKey: client.GetClientPublicKey(),
+		ClientID:        client.ClientID(),
+		ClientPublicKey: client.PublicKey(),
 		BlobberID:       blobber.ID,
 		AllocationID:    req.allocationID,
 		OwnerID:         req.allocOwnerID,
@@ -966,9 +966,9 @@ func (req *DownloadRequest) initEC() error {
 // initEncryption will initialize encScheme with client's keys
 func (req *DownloadRequest) initEncryption() (err error) {
 	req.encScheme = encryption.NewEncryptionScheme()
-	mnemonic := client.GetClient().Mnemonic
+	mnemonic := client.Mnemonic()
 	if mnemonic != "" {
-		_, err = req.encScheme.Initialize(client.GetClient().Mnemonic)
+		_, err = req.encScheme.Initialize(client.Mnemonic())
 		if err != nil {
 			return err
 		}
