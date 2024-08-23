@@ -1030,7 +1030,7 @@ func GetBlockByRound(ctx context.Context, numSharders int, round int64) (b *bloc
 	if err != nil {
 		return nil, err
 	}
-	return clientNode.Sharders().GetBlockByRound(ctx, numSharders, round)
+	return block.GetBlockByRound(clientNode.Sharders(), ctx, numSharders, round)
 }
 
 func GetRoundFromSharders() (int64, error) {
