@@ -497,6 +497,21 @@ func (t *Transaction) MinerSCCollectReward(providerId string, providerType int) 
 	return err
 }
 
+func (t *Transaction) StorageSCCollectReward(providerId string, providerType int) error {
+	pr := &scCollectReward{
+		ProviderId:   providerId,
+		ProviderType: providerType,
+	}
+	err := t.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.STORAGESC_COLLECT_REWARD, pr, 0)
+	if err != nil {
+		logging.Error(err)
+		return err
+	}
+	go t.setNonceAndSubmit()
+	return err
+}
+
 func (t *Transaction) VestingUpdateConfig(vscc InputMap) (err error) {
 
 	err = t.createSmartContractTxn(VestingSmartContractAddress,

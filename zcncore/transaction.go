@@ -134,6 +134,8 @@ type TransactionCommon interface {
 	MinerSCCollectReward(providerID string, providerType Provider) error
 	MinerSCKill(providerID string, providerType Provider) error
 
+	StorageSCCollectReward(providerID string, providerType Provider) error
+
 	VestingUpdateConfig(*InputMap) error
 	MinerScUpdateConfig(*InputMap) error
 	MinerScUpdateGlobals(*InputMap) error
@@ -515,6 +517,21 @@ func (t *Transaction) AddHardfork(ip *InputMap) (err error) {
 	}
 	go func() { t.setNonceAndSubmit() }()
 	return
+}
+
+func (t *Transaction) StorageSCCollectReward(providerId string, providerType Provider) error {
+	pr := &scCollectReward{
+		ProviderId:   providerId,
+		ProviderType: int(providerType),
+	}
+	err := t.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.STORAGESC_COLLECT_REWARD, pr, 0)
+	if err != nil {
+		logging.Error(err)
+		return err
+	}
+	go t.setNonceAndSubmit()
+	return err
 }
 
 func (t *Transaction) ZCNSCUpdateGlobalConfig(ip *InputMap) (err error) {

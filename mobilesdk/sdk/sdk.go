@@ -11,10 +11,12 @@ import (
 	"strconv"
 	"strings"
 
+	"context"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/pkg/errors"
 
 	"github.com/0chain/gosdk/core/client"
+	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/version"
 	l "github.com/0chain/gosdk/zboxcore/logger"
@@ -67,7 +69,7 @@ func SetLogLevel(logLevel int) {
 //   - chainConfigJson: chain config json string
 func Init(chainConfigJson string) error {
 	cfg := conf.Config{}
-	err := json.Unmarshal([]byte(chainConfigJSON), &cfg)
+	err := json.Unmarshal([]byte(chainConfigJson), &cfg)
 	if err != nil {
 		return err
 	}
