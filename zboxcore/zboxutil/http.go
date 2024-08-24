@@ -837,7 +837,8 @@ func HttpDo(ctx context.Context, cncl context.CancelFunc, req *http.Request, f f
 		var err error
 		for {
 			// Perform the request with the context provided.
-			resp, err := Client.Do(req.WithContext(ctx))
+			var resp *http.Response
+			resp, err = Client.Do(req.WithContext(ctx))
 			if errors.Is(err, io.EOF) {
 				// If the error is io.EOF, continue to retry indefinitely.
 				continue
