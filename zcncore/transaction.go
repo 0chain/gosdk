@@ -1216,3 +1216,67 @@ func (t *Transaction) ZCNSCCollectReward(providerId string, providerType Provide
 	go func() { t.setNonceAndSubmit() }()
 	return err
 }
+
+type VestingClientList struct {
+	Pools []common.Key `json:"pools"`
+}
+
+func GetVestingClientList(clientID string, cb GetInfoCallback) (err error) {
+	if err = CheckConfig(); err != nil {
+		return
+	}
+	if clientID == "" {
+		clientID = client.ClientID() // if not blank
+	}
+	go GetInfoFromSharders(WithParams(GET_VESTING_CLIENT_POOLS, Params{
+		"client_id": clientID,
+	}), 0, cb)
+	return
+}
+
+type VestingDestInfo struct {
+	ID     common.Key       `json:"id"`     // identifier
+	Wanted common.Balance   `json:"wanted"` // wanted amount for entire period
+	Earned common.Balance   `json:"earned"` // can unlock
+	Vested common.Balance   `json:"vested"` // already vested
+	Last   common.Timestamp `json:"last"`   // last time unlocked
+}
+
+type VestingPoolInfo struct {
+	ID           common.Key         `json:"pool_id"`      // pool ID
+	Balance      common.Balance     `json:"balance"`      // real pool balance
+	Left         common.Balance     `json:"left"`         // owner can unlock
+	Description  string             `json:"description"`  // description
+	StartTime    common.Timestamp   `json:"start_time"`   // from
+	ExpireAt     common.Timestamp   `json:"expire_at"`    // until
+	Destinations []*VestingDestInfo `json:"destinations"` // receivers
+	ClientID     common.Key         `json:"client_id"`    // owner
+}
+
+func GetVestingPoolInfo(poolID string, cb GetInfoCallback) (err error) {
+	if err = CheckConfig(); err != nil {
+		return
+	}
+	GetInfoFromSharders(WithParams(GET_VESTING_POOL_INFO, Params{
+		"pool_id": poolID,
+	}), 0, cb)
+	return
+}
+
+func GetVestingSCConfig(cb GetInfoCallback) (err error) {
+	if err = CheckConfig(); err != nil {
+		return
+	}
+	go GetInfoFromSharders(GET_VESTING_CONFIG, 0, cb)
+	return
+}
+
+// faucet
+
+func GetFaucetSCConfig(cb GetInfoCallback) (err error) {
+	if err = CheckConfig(); err != nil {
+		return
+	}
+	go GetInfoFromSharders(GET_FAUCETSC_CONFIG, 0, cb)
+	return
+}
