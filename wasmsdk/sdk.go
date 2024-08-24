@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	coreHttp "github.com/0chain/gosdk/core/http"
 	"io"
 	"os"
 	"sync"
@@ -19,7 +20,6 @@ import (
 	"github.com/0chain/gosdk/core/imageutil"
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/zboxcore/sdk"
-	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/0chain/gosdk/zcncore"
 )
 
@@ -47,13 +47,13 @@ func initSDKs(chainID, blockWorker, signatureScheme string,
 	}
 
 	err = client.Init(context.Background(), conf.Config{
-		BlockWorker: blockWorker,
-		SignatureScheme: signatureScheme,
-		ChainID: chainID,
-		MinConfirmation: minConfirmation,
-		MinSubmit: minSubmit,
+		BlockWorker:             blockWorker,
+		SignatureScheme:         signatureScheme,
+		ChainID:                 chainID,
+		MinConfirmation:         minConfirmation,
+		MinSubmit:               minSubmit,
 		ConfirmationChainLength: confirmationChainLength,
-		SharderConsensous: sharderconsensous,
+		SharderConsensous:       sharderconsensous,
 	})
 
 	if err != nil {
@@ -155,7 +155,7 @@ func makeSCRestAPICall(scAddress, relativePath, paramsJson string) (string, erro
 	if err != nil {
 		sdkLogger.Error(fmt.Sprintf("Error parsing JSON: %v", err))
 	}
-	b, err := zboxutil.MakeSCRestAPICall(scAddress, relativePath, params, nil)
+	b, err := coreHttp.MakeSCRestAPICall(scAddress, relativePath, params, nil)
 	return string(b), err
 }
 

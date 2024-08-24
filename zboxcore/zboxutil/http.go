@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	http2 "github.com/0chain/gosdk/core/http"
 	"io"
 	"net/http"
 	"net/url"
@@ -86,9 +85,7 @@ func GetFastHTTPClient() *fasthttp.Client {
 }
 
 func init() {
-	Client = &http.Client{
-		Transport: http2.DefaultTransport,
-	}
+	Client = &http.Client{Transport: coreHttp.DefaultTransport}
 
 	FastHttpClient = &fasthttp.Client{
 		MaxIdleConnDuration:           45 * time.Second,

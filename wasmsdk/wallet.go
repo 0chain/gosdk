@@ -6,8 +6,8 @@ package main
 import (
 	"errors"
 
-	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/core/client"
+	"github.com/0chain/gosdk/core/zcncrypto"
 )
 
 // setWallet sets the wallet used by the client for the network transactions and the backend API requests
@@ -32,10 +32,7 @@ func setWallet(clientID, publicKey, privateKey, mnemonic string) error {
 		Mnemonic:  mnemonic,
 		Keys:      keys,
 	}
-	err := client.SetWallet(*w)
-	if err != nil {
-		return err
-	}
+	client.SetWallet(*w)
 
 	zboxApiClient.SetWallet(clientID, privateKey, publicKey)
 

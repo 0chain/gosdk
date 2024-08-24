@@ -181,3 +181,11 @@ func PrivateKey() string {
 func ClientID() string {
 	return client.wallet.ClientID
 }
+
+func GetWallet() *zcncrypto.Wallet {
+	return client.wallet
+}
+
+func GetClient() *zcncrypto.Wallet {
+	return client.wallet
+}

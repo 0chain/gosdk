@@ -13,7 +13,22 @@ import (
 	"net/url"
 	"os"
 	"sync"
+	"time"
 )
+
+var DefaultTransport = &http.Transport{
+	Proxy: EnvProxy.Proxy,
+	DialContext: (&net.Dialer{
+		Timeout:   3 * time.Minute,
+		KeepAlive: 45 * time.Second,
+		DualStack: true,
+	}).DialContext,
+	MaxIdleConns:          100,
+	IdleConnTimeout:       90 * time.Second,
+	TLSHandshakeTimeout:   45 * time.Second,
+	ExpectContinueTimeout: 1 * time.Second,
+	MaxIdleConnsPerHost:   25,
+}
 
 // SCRestAPIHandler is a function type to handle the response from the SC Rest API
 //
@@ -70,8 +85,8 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 				q.Add(k, v)
 			}
 			urlObj.RawQuery = q.Encode()
-			client := &http.Client{Transport: DefaultTransport}
-			response, err := client.Get(urlObj.String())
+			clientObj := &http.Client{Transport: DefaultTransport}
+			response, err := clientObj.Get(urlObj.String())
 			if err != nil {
 				nodeClient.Sharders().Fail(sharder)
 				return
