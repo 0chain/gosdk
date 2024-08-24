@@ -473,10 +473,10 @@ func SetAuthUrl(url string) error {
 	return client.SetAuthUrl(url)
 }
 
-func getWalletBalance(clientId string) (common.Balance, error) {
+func getWalletBalance(clientId string) (common.Balance, int64, error) {
 	err := checkSdkInit()
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 
 	cb := &walletCallback{}
@@ -494,13 +494,19 @@ func getWalletBalance(clientId string) (common.Balance, error) {
 
 	cb.Wait()
 
-	return cb.balance, cb.err
+	var clientState struct {
+		Nonce int64 `json:"nonce"`
+	}
+	err = json.Unmarshal([]byte(cb.info), &clientState)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	return cb.balance, clientState.Nonce, cb.err
 }
 
 // GetBalance retrieve wallet balance from sharders
-//
-//	# Inputs
-//	-	cb: callback for checking result
+//   - cb: info callback instance, carries the response of the GET request to the sharders
 func GetBalance(cb GetBalanceCallback) error {
 	err := CheckConfig()
 	if err != nil {
@@ -518,7 +524,8 @@ func GetBalance(cb GetBalanceCallback) error {
 	return nil
 }
 
-// GetMintNonce retrieve mint nonce from sharders
+// GetMintNonce retrieve the client's latest mint nonce from sharders
+//   - cb: info callback instance, carries the response of the GET request to the sharders
 func GetMintNonce(cb GetInfoCallback) error {
 	err := CheckConfig()
 	if err != nil {
@@ -531,7 +538,10 @@ func GetMintNonce(cb GetInfoCallback) error {
 	return nil
 }
 
-// GetNotProcessedZCNBurnTickets retrieve wallet burn tickets from sharders
+// GetNotProcessedZCNBurnTickets retrieve burn tickets that are not compensated by minting
+//   - ethereumAddress: ethereum address for the issuer of the burn tickets
+//   - startNonce: start nonce for the burn tickets
+//   - cb: info callback instance, carries the response of the GET request to the sharders
 func GetNotProcessedZCNBurnTickets(ethereumAddress, startNonce string, cb GetInfoCallback) error {
 	err := CheckConfig()
 	if err != nil {
@@ -546,7 +556,8 @@ func GetNotProcessedZCNBurnTickets(ethereumAddress, startNonce string, cb GetInf
 	return nil
 }
 
-// GetNonce GetBalance retrieve wallet nonce from sharders
+// GetNonce retrieve wallet nonce from sharders
+//   - cb: info callback instance, carries the response of the GET request to the sharders
 func GetNonce(cb GetNonceCallback) error {
 	if cb == nil {
 		cb = &GetNonceCallbackStub{}
@@ -571,7 +582,8 @@ func GetNonce(cb GetNonceCallback) error {
 	return nil
 }
 
-// GetWalletNonce GetWalletBalance retrieve wallet nonce from sharders
+// GetWalletBalance retrieve wallet nonce from sharders
+//   - clientID: client id
 func GetWalletNonce(clientID string) (int64, error) {
 	cb := &GetNonceCallbackStub{}
 
@@ -602,6 +614,8 @@ func GetWalletNonce(clientID string) (int64, error) {
 }
 
 // GetBalanceWallet retreives wallet balance from sharders
+//   - walletStr: wallet string
+//   - cb: info callback instance, carries the response of the GET request to the sharders
 func GetBalanceWallet(walletStr string, cb GetBalanceCallback) error {
 	w, err := getWallet(walletStr)
 	if err != nil {
@@ -638,12 +652,13 @@ func getNonceFromSharders(clientID string) (int64, string, error) {
 }
 
 // ConvertToToken converts the SAS tokens to ZCN tokens
-// # Inputs
-//   - token: SAS tokens
+//   - token: SAS tokens amount
 func ConvertToToken(token int64) float64 {
 	return float64(token) / float64(common.TokenUnit)
 }
 
+// ConvertTokenToUSD converts the ZCN tokens to USD amount
+//   - token: ZCN tokens amount
 func ConvertTokenToUSD(token float64) (float64, error) {
 	zcnRate, err := getTokenUSDRate()
 	if err != nil {
@@ -652,6 +667,8 @@ func ConvertTokenToUSD(token float64) (float64, error) {
 	return token * zcnRate, nil
 }
 
+// ConvertUSDToToken converts the USD amount to ZCN tokens
+//   - usd: USD amount
 func ConvertUSDToToken(usd float64) (float64, error) {
 	zcnRate, err := getTokenUSDRate()
 	if err != nil {
@@ -676,7 +693,8 @@ func getWallet(walletStr string) (*zcncrypto.Wallet, error) {
 	return &w, nil
 }
 
-// GetWalletClientID -- given a walletstr return ClientID
+// GetWalletClientID extract wallet client id from wallet string
+//   - walletStr: wallet string to get client id
 func GetWalletClientID(walletStr string) (string, error) {
 	w, err := getWallet(walletStr)
 	if err != nil {
@@ -714,6 +732,8 @@ func SetupAuth(authHost, clientID, clientKey, publicKey, privateKey, localPublic
 	return nil
 }
 
+// GetIdForUrl retrieve the ID of the network node (miner/sharder) given its url.
+//   - url: url of the node.
 func GetIdForUrl(url string) string {
 	url = strings.TrimRight(url, "/")
 	url = fmt.Sprintf("%v/_nh/whoami", url)
@@ -757,49 +777,50 @@ func (p Params) Query() string {
 //
 
 // GetMiners obtains list of all active miners.
-//
-//		# Inputs
-//	  - cb: callback for checking result
-//	  - limit: how many miners should be fetched
-//	  - offset: how many miners should be skipped
-//	  - active: only fetch active miners
-func GetMiners(cb GetInfoCallback, limit, offset int, active bool) {
-	getMinersInternal(cb, active, limit, offset)
+//   - cb: info callback instance, carries the response of the GET request to the sharders
+//   - limit: how many miners should be fetched
+//   - offset: how many miners should be skipped
+//   - active: retrieve only active miners
+//   - stakable: retreive only stakable miners
+func GetMiners(cb GetInfoCallback, limit, offset int, active bool, stakable bool) {
+	getMinersInternal(cb, active, stakable, limit, offset)
 }
 
-func getMinersInternal(cb GetInfoCallback, active bool, limit, offset int) {
+func getMinersInternal(cb GetInfoCallback, active, stakable bool, limit, offset int) {
 	if err := CheckConfig(); err != nil {
 		return
 	}
 
 	var url = withParams(GET_MINERSC_MINERS, Params{
-		"active": strconv.FormatBool(active),
-		"offset": strconv.FormatInt(int64(offset), 10),
-		"limit":  strconv.FormatInt(int64(limit), 10),
+		"active":   strconv.FormatBool(active),
+		"stakable": strconv.FormatBool(stakable),
+		"offset":   strconv.FormatInt(int64(offset), 10),
+		"limit":    strconv.FormatInt(int64(limit), 10),
 	})
 
 	go GetInfoFromSharders(url, 0, cb)
 }
 
-// GetSharders obtains list of all active sharders.
-// # Inputs
-//   - cb: callback for checking result
+// GetSharders obtains a list of sharders given the following parameters.
+//   - cb: info callback instance, carries the response of the GET request to the sharders
 //   - limit: how many sharders should be fetched
 //   - offset: how many sharders should be skipped
-//   - active: only fetch active sharders
-func GetSharders(cb GetInfoCallback, limit, offset int, active bool) {
-	getShardersInternal(cb, active, limit, offset)
+//   - active: retrieve only active sharders
+//   - stakable: retrieve only sharders that can be staked
+func GetSharders(cb GetInfoCallback, limit, offset int, active, stakable bool) {
+	getShardersInternal(cb, active, stakable, limit, offset)
 }
 
-func getShardersInternal(cb GetInfoCallback, active bool, limit, offset int) {
+func getShardersInternal(cb GetInfoCallback, active, stakable bool, limit, offset int) {
 	if err := CheckConfig(); err != nil {
 		return
 	}
 
 	var url = withParams(GET_MINERSC_SHARDERS, Params{
-		"active": strconv.FormatBool(active),
-		"offset": strconv.FormatInt(int64(offset), 10),
-		"limit":  strconv.FormatInt(int64(limit), 10),
+		"active":   strconv.FormatBool(active),
+		"stakable": strconv.FormatBool(stakable),
+		"offset":   strconv.FormatInt(int64(offset), 10),
+		"limit":    strconv.FormatInt(int64(limit), 10),
 	})
 
 	go GetInfoFromSharders(url, 0, cb)
@@ -810,9 +831,8 @@ func withParams(uri string, params Params) string {
 }
 
 // GetMinerSCNodeInfo get miner information from sharders
-// # Inputs
 //   - id: the id of miner
-//   - cb: callback for checking result
+//   - cb: info callback instance, carries the response of the GET request to the sharders
 func GetMinerSCNodeInfo(id string, cb GetInfoCallback) (err error) {
 
 	if err = CheckConfig(); err != nil {
@@ -825,6 +845,9 @@ func GetMinerSCNodeInfo(id string, cb GetInfoCallback) (err error) {
 	return
 }
 
+// GetMinerSCNodePool get miner smart contract node pool
+//   - id: the id of miner
+//   - cb: info callback instance, carries the response of the GET request to the sharders
 func GetMinerSCNodePool(id string, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
@@ -837,10 +860,9 @@ func GetMinerSCNodePool(id string, cb GetInfoCallback) (err error) {
 	return
 }
 
-// GetMinerSCUserInfo get user pool
-// # Inputs
-//   - clientID: the id of wallet
-//   - cb: callback for checking result
+// GetMinerSCUserInfo retrieve user stake pools for the providers related to the Miner SC (miners/sharders).
+//   - clientID: user's wallet id
+//   - cb: info callback instance, carries the response of the GET request to the sharders
 func GetMinerSCUserInfo(clientID string, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
@@ -855,6 +877,8 @@ func GetMinerSCUserInfo(clientID string, cb GetInfoCallback) (err error) {
 	return
 }
 
+// GetMinerSCConfig get miner SC configuration
+//   - cb: info callback instance, carries the response of the GET request to the sharders
 func GetMinerSCConfig(cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
@@ -863,6 +887,8 @@ func GetMinerSCConfig(cb GetInfoCallback) (err error) {
 	return
 }
 
+// GetMinerSCGlobals get miner SC globals
+//   - cb: info callback instance, carries the response of the GET request to the sharders
 func GetMinerSCGlobals(cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
@@ -876,6 +902,7 @@ func GetMinerSCGlobals(cb GetInfoCallback) (err error) {
 //
 
 // GetStorageSCConfig obtains Storage SC configurations.
+//   - cb: info callback instance, carries the response of the GET request to the sharders
 func GetStorageSCConfig(cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
@@ -923,7 +950,12 @@ func GetAllocations(clientID string, cb GetInfoCallback) (err error) {
 	return
 }
 
-// GetSnapshots obtains list of allocations of a user.
+// GetSnapshots obtains list of global snapshots, given an initial round and a limit.
+// Global snapshots are historical records of some aggregate data related
+// to the network (like total staked amount and total reward amount).
+//   - round: round number to start fetching snapshots
+//   - limit: how many snapshots should be fetched
+//   - cb: info callback instance, carries the response of the GET request to the sharders
 func GetSnapshots(round int64, limit int64, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
@@ -937,6 +969,13 @@ func GetSnapshots(round int64, limit int64, cb GetInfoCallback) (err error) {
 }
 
 // GetBlobberSnapshots obtains list of allocations of a blobber.
+// Blobber snapshots are historical records of the blobber instance to track its change over time and serve graph requests,
+// which are requests that need multiple data points, distributed over an interval of time, usually to plot them on a
+// graph.
+//   - round: round number
+//   - limit: how many blobber snapshots should be fetched
+//   - offset: how many blobber snapshots should be skipped
+//   - cb: info callback instance, carries the response of the GET request to the sharders
 func GetBlobberSnapshots(round int64, limit int64, offset int64, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
@@ -950,7 +989,14 @@ func GetBlobberSnapshots(round int64, limit int64, offset int64, cb GetInfoCallb
 	return
 }
 
-// GetMinerSnapshots obtains list of allocations of a miner.
+// GetMinerSnapshots obtains a list of miner snapshots starting from a specific round.
+// Miner snapshots are historical records of the miner instance to track its change over time and serve graph requests,
+// which are requests that need multiple data points, distributed over an interval of time, usually to plot them on a
+// graph.
+//   - round: round number to start fetching snapshots
+//   - limit: how many miner snapshots should be fetched
+//   - offset: how many miner snapshots should be skipped
+//   - cb: info callback instance, carries the response of the GET request to the sharders
 func GetMinerSnapshots(round int64, limit int64, offset int64, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
@@ -964,7 +1010,14 @@ func GetMinerSnapshots(round int64, limit int64, offset int64, cb GetInfoCallbac
 	return
 }
 
-// GetSharderSnapshots obtains list of allocations of a sharder.
+// GetSharderSnapshots obtains a list of sharder snapshots starting from a specific round.
+// Sharder snapshots are historical records of the sharder instance to track its change over time and serve graph requests,
+// which are requests that need multiple data points, distributed over an interval of time, usually to plot them on a
+// graph.
+//   - round: round number to start fetching snapshots
+//   - limit: how many sharder snapshots should be fetched
+//   - offset: how many sharder snapshots should be skipped
+//   - cb: info callback instance, carries the response of the GET request to the sharders
 func GetSharderSnapshots(round int64, limit int64, offset int64, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
@@ -978,7 +1031,14 @@ func GetSharderSnapshots(round int64, limit int64, offset int64, cb GetInfoCallb
 	return
 }
 
-// GetValidatorSnapshots obtains list of allocations of a validator.
+// GetValidatorSnapshots obtains list of validator snapshots from the sharders.
+// Validator snapshots are historical records of the validator instance to track its change over time and serve graph requests,
+// which are requests that need multiple data points, distributed over an interval of time, usually to plot them on a
+// graph.
+//   - round: round number to start fetching snapshots
+//   - limit: how many validator snapshots should be fetched
+//   - offset: how many validator snapshots should be skipped
+//   - cb: info callback instance, carries the response of the GET request to the sharders
 func GetValidatorSnapshots(round int64, limit int64, offset int64, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
@@ -992,7 +1052,14 @@ func GetValidatorSnapshots(round int64, limit int64, offset int64, cb GetInfoCal
 	return
 }
 
-// GetAuthorizerSnapshots obtains list of allocations of an authorizer.
+// GetAuthorizerSnapshots obtains list of authorizers snapshots from the sharders.
+// Authorizer snapshots are historical records of the authorizer instance to track its change over time and serve graph requests,
+// which are requests that need multiple data points, distributed over an interval of time, usually to plot them on a
+// graph.
+//   - round: round number to start fetching snapshots
+//   - limit: how many authorizer snapshots should be fetched
+//   - offset: how many authorizer snapshots should be skipped
+//   - cb: info callback instance, carries the response of the GET request to the sharders
 func GetAuthorizerSnapshots(round int64, limit int64, offset int64, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
@@ -1006,7 +1073,14 @@ func GetAuthorizerSnapshots(round int64, limit int64, offset int64, cb GetInfoCa
 	return
 }
 
-// GetUserSnapshots replicates user aggregates from events_db.
+// GetUserSnapshots replicates user snapshots from the sharders
+// User snapshots are historical records of the client data to track its change over time and serve graph requests,
+// which are requests that need multiple data points, distributed over an interval of time, usually to plot them on a
+// graph.
+//   - round: round number to start fetching snapshots
+//   - limit: how many user snapshots should be fetched
+//   - offset: how many user snapshots should be skipped
+//   - cb: info callback instance, carries the response of the GET request to the sharders
 func GetUserSnapshots(round int64, limit int64, offset int64, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
@@ -1069,25 +1143,35 @@ func GetStakePoolUserInfo(clientID string, offset, limit int, cb GetInfoCallback
 	return
 }
 
-// GetBlobbers obtains list of all active blobbers.
+// GetStakeableBlobbers obtains list of all active blobbers that can be staked (i.e. still number of delegations < max_delegations)
 // # Inputs
-//   - cb: callback for checking result
+//   - cb: info callback instance, carries the response of the GET request to the sharders
+//   - limit: how many blobbers should be fetched
+//   - offset: how many blobbers should be skipped
+//   - active: only fetch active blobbers
+func GetStakableBlobbers(cb GetInfoCallback, limit, offset int, active bool) {
+	getBlobbersInternal(cb, active, limit, offset, true)
+}
+
+// GetBlobbers obtains list of all active blobbers.
+//   - cb: info callback instance, carries the response of the GET request to the sharders
 //   - limit: how many blobbers should be fetched
 //   - offset: how many blobbers should be skipped
 //   - active: only fetch active blobbers
 func GetBlobbers(cb GetInfoCallback, limit, offset int, active bool) {
-	getBlobbersInternal(cb, active, limit, offset)
+	getBlobbersInternal(cb, active, limit, offset, false)
 }
 
-func getBlobbersInternal(cb GetInfoCallback, active bool, limit, offset int) {
+func getBlobbersInternal(cb GetInfoCallback, active bool, limit, offset int, stakable bool) {
 	if err := CheckConfig(); err != nil {
 		return
 	}
 
 	var url = withParams(STORAGESC_GET_BLOBBERS, Params{
-		"active": strconv.FormatBool(active),
-		"offset": strconv.FormatInt(int64(offset), 10),
-		"limit":  strconv.FormatInt(int64(limit), 10),
+		"active":   strconv.FormatBool(active),
+		"offset":   strconv.FormatInt(int64(offset), 10),
+		"limit":    strconv.FormatInt(int64(limit), 10),
+		"stakable": strconv.FormatBool(stakable),
 	})
 
 	go GetInfoFromSharders(url, OpStorageSCGetBlobbers, cb)
