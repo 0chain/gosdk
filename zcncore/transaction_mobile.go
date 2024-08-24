@@ -60,19 +60,6 @@ type TransactionCommon interface {
 	MinerSCCollectReward(providerId string, providerType int) error
 	StorageSCCollectReward(providerId string, providerType int) error
 
-	FinalizeAllocation(allocID string) error
-	CancelAllocation(allocID string) error
-	CreateAllocation(car *CreateAllocationRequest, lock string) error //
-	CreateReadPool() error
-	ReadPoolLock(allocID string, blobberID string, duration int64, lock string) error
-	ReadPoolUnlock() error
-	StakePoolLock(providerId string, providerType int, lock string) error
-	StakePoolUnlock(providerId string, providerType int) error
-	UpdateBlobberSettings(blobber Blobber) error
-	UpdateAllocation(allocID string, sizeDiff int64, expirationDiff int64, lock string) error
-	WritePoolLock(allocID string, lock string) error
-	WritePoolUnlock(allocID string) error
-
 	VestingUpdateConfig(InputMap) error
 	MinerScUpdateConfig(InputMap) error
 	MinerScUpdateGlobals(InputMap) error

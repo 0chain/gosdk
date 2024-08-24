@@ -437,11 +437,6 @@ func IsMnemonicValid(mnemonic string) bool {
 	return zcncrypto.IsMnemonicValid(mnemonic)
 }
 
-// Deprecated: Use client.Wallet() in core/client package
-func GetWalletRaw() zcncrypto.Wallet {
-	return *client.Wallet()
-}
-
 // SetWalletInfo should be set before any transaction or client specific APIs
 // splitKeyWallet parameter is valid only if SignatureScheme is "BLS0Chain"
 //

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"github.com/0chain/gosdk/core/client"
 	"path"
 	"strconv"
 	"time"
@@ -37,7 +38,7 @@ func initBridge(
 	gasLimit uint64,
 	value int64,
 	consensusThreshold float64) error {
-	if len(zcncore.GetWalletRaw().ClientID) == 0 {
+	if len(client.Wallet().ClientID) == 0 {
 		return errors.New("wallet_error", "wallet is not set")
 	}
 
