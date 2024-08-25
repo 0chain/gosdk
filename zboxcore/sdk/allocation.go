@@ -270,6 +270,8 @@ type Allocation struct {
 	// FileOptions is a bitmask of file options, which are the permissions of the allocation.
 	FileOptions uint16 `json:"file_options"`
 
+	IsEnterprise bool `json:"is_enterprise"`
+
 	// FileOptions to define file restrictions on an allocation for third-parties
 	// default 00000000 for all crud operations suggesting only owner has the below listed abilities.
 	// enabling option/s allows any third party to perform certain ops
@@ -1852,7 +1854,7 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 }
 
 // GetFileMetaByName retrieve consolidated file metadata given its name (its full path starting from root "/").
-//    - fileName: full file path starting from the allocation root.
+//   - fileName: full file path starting from the allocation root.
 func (a *Allocation) GetFileMetaByName(fileName string) ([]*ConsolidatedFileMetaByName, error) {
 	if !a.isInitialized() {
 		return nil, notInitialized
@@ -1899,7 +1901,6 @@ func (a *Allocation) GetFileMetaByName(fileName string) ([]*ConsolidatedFileMeta
 	}
 	return nil, errors.New("file_meta_error", "Error getting the file meta data from blobbers")
 }
-
 
 // GetChunkReadSize returns the size of the chunk to read.
 // The size of the chunk to read is calculated based on the data shards and the encryption flag.
