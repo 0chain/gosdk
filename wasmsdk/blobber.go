@@ -30,6 +30,11 @@ import (
 
 const FileOperationInsert = "insert"
 
+var (
+	downloadDirContextMap = make(map[string]context.CancelCauseFunc)
+	downloadDirLock       = sync.Mutex{}
+)
+
 // listObjects list allocation objects from its blobbers
 //   - allocationID is the allocation id
 //   - remotePath is the remote path of the file
@@ -1143,6 +1148,56 @@ func createWorkers(allocationID string) error {
 		return err
 	}
 	return addWebWorkers(alloc)
+}
+
+// downloadDirectory download directory to local file system using fs api, will only work in browsers where fs api is available
+//   - allocationID : allocation ID of the file
+//   - remotePath : remote path of the directory
+//   - authticket : auth ticket of the file, if the file is shared
+//   - callbackFuncName : callback function name to get the progress of the download
+func downloadDirectory(allocationID, remotePath, authticket, callbackFuncName string) error {
+	alloc, err := getAllocation(allocationID)
+	if err != nil {
+		return err
+	}
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	statusBar := &StatusBar{wg: wg}
+	if callbackFuncName != "" {
+		callback := js.Global().Get(callbackFuncName)
+		statusBar.callback = func(totalBytes, completedBytes int, filename, objURL, err string) {
+			callback.Invoke(totalBytes, completedBytes, filename, objURL, err)
+		}
+	}
+	ctx, cancel := context.WithCancelCause(context.Background())
+	defer cancel(nil)
+	errChan := make(chan error, 1)
+	go func() {
+		errChan <- alloc.DownloadDirectory(ctx, remotePath, "", authticket, statusBar)
+	}()
+	downloadDirLock.Lock()
+	downloadDirContextMap[remotePath] = cancel
+	downloadDirLock.Unlock()
+	select {
+	case err = <-errChan:
+		if err != nil {
+			PrintError("Error in download directory: ", err)
+		}
+		return err
+	case <-ctx.Done():
+		return context.Cause(ctx)
+	}
+}
+
+// cancelDownloadDirectory cancel the download directory operation
+//   - remotePath : remote path of the directory
+func cancelDownloadDirectory(remotePath string) {
+	downloadDirLock.Lock()
+	cancel, ok := downloadDirContextMap[remotePath]
+	if ok {
+		cancel(errors.New("download directory canceled by user"))
+	}
+	downloadDirLock.Unlock()
 }
 
 func startListener() error {

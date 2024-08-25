@@ -629,7 +629,7 @@ func sendUploadRequest(dataBuffers []*bytes.Buffer, contentSlice []string, blobb
 
 				break
 			}
-			return err
+			return errors.New("upload_failed", "Upload failed. Error uploading data")
 		})
 	}
 	return eg.Wait()
