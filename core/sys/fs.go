@@ -40,6 +40,15 @@ type FS interface {
 
 	// RemoveProgress remove progress
 	RemoveProgress(progressID string) error
+
+	// Create Directory
+	CreateDirectory(dirID string) error
+
+	// GetFileHandler
+	GetFileHandler(dirID, name string) (File, error)
+
+	// Remove all created directories(used in download directory)
+	RemoveAllDirectories()
 }
 
 type File interface {

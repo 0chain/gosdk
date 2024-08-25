@@ -4,22 +4,28 @@
 package sys
 
 import (
+	"errors"
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"syscall/js"
 	"time"
+
+	"github.com/0chain/gosdk/wasmsdk/jsbridge"
 )
 
 // MemFS implement file system on memory
 type MemFS struct {
 	files map[string]*MemFile
+	dirs  map[string]js.Value
 }
 
 // NewMemFS create MemFS instance
 func NewMemFS() FS {
 	return &MemFS{
 		files: make(map[string]*MemFile),
+		dirs:  make(map[string]js.Value),
 	}
 }
 
@@ -119,4 +125,68 @@ func (mfs *MemFS) RemoveProgress(progressID string) error {
 	key := filepath.Base(progressID)
 	js.Global().Get("localStorage").Call("removeItem", key)
 	return nil
+}
+
+func (mfs *MemFS) CreateDirectory(dirID string) error {
+	if !js.Global().Get("showDirectoryPicker").Truthy() || !js.Global().Get("WritableStream").Truthy() {
+		return errors.New("dir_picker: not supported")
+	}
+	showDirectoryPicker := js.Global().Get("showDirectoryPicker")
+	dirHandle, err := jsbridge.Await(showDirectoryPicker.Invoke())
+	if len(err) > 0 && !err[0].IsNull() {
+		return errors.New("dir_picker: " + err[0].String())
+	}
+	mfs.dirs[dirID] = dirHandle[0]
+	return nil
+}
+
+func (mfs *MemFS) GetFileHandler(dirID, path string) (File, error) {
+	dirHandler, ok := mfs.dirs[dirID]
+	if !ok {
+		return nil, errors.New("dir_picker: directory not found")
+	}
+	currHandler, err := mfs.mkdir(dirHandler, filepath.Dir(path))
+	if err != nil {
+		return nil, err
+	}
+	return jsbridge.NewFileWriterFromHandle(currHandler, filepath.Base(path))
+}
+
+func (mfs *MemFS) RemoveAllDirectories() {
+	for k := range mfs.dirs {
+		delete(mfs.dirs, k)
+	}
+}
+
+func (mfs *MemFS) mkdir(dirHandler js.Value, dirPath string) (js.Value, error) {
+	if dirPath == "/" {
+		return dirHandler, nil
+	}
+	currHandler, ok := mfs.dirs[dirPath]
+	if !ok {
+		currHandler = dirHandler
+		paths := strings.Split(dirPath, "/")
+		paths = paths[1:]
+		currPath := "/"
+		for _, path := range paths {
+			currPath = filepath.Join(currPath, path)
+			handler, ok := mfs.dirs[currPath]
+			if ok {
+				currHandler = handler
+				continue
+			}
+			options := js.Global().Get("Object").New()
+			options.Set("create", true)
+			currHandlers, err := jsbridge.Await(currHandler.Call("getDirectoryHandle", path, options))
+			if len(err) > 0 && !err[0].IsNull() {
+				return js.Value{}, errors.New("dir_picker: " + err[0].String())
+			}
+			currHandler = currHandlers[0]
+			mfs.dirs[currPath] = currHandler
+		}
+		if !currHandler.Truthy() {
+			return js.Value{}, errors.New("dir_picker: failed to create directory")
+		}
+	}
+	return currHandler, nil
 }

@@ -17,7 +17,7 @@ const CHUNK_SIZE = 64 * 1024
 
 const (
 	// FILE represents a file for fileref
-	FILE      = "f"
+	FILE = "f"
 
 	// DIRECTORY represents a directory for fileref
 	DIRECTORY = "d"
@@ -103,8 +103,8 @@ type Ref struct {
 }
 
 // GetReferenceLookup returns the lookup hash for a given allocationID and path
-// 		- allocationID: allocation ID
-// 		- path: path of the file
+//   - allocationID: allocation ID
+//   - path: path of the file
 func GetReferenceLookup(allocationID string, path string) string {
 	return encryption.Hash(allocationID + ":" + path)
 }

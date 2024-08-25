@@ -615,6 +615,12 @@ func sendUploadRequest(dataBuffers []*bytes.Buffer, contentSlice []string, blobb
 				}()
 
 				if shouldContinue {
+					if i == 2 {
+						if err != nil {
+							logger.Logger.Error("Retry limit exceeded for upload: ", err)
+						}
+						return errors.Throw(constants.ErrBadRequest, "Retry limit exceeded for upload")
+					}
 					continue
 				}
 
