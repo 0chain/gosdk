@@ -39,7 +39,7 @@ func init() {
 
 	// initialize SignFunc as default implementation
 	Sign = func(hash string) (string, error) {
-		if client.Mnemonic != "" {
+		if client.PeerPublicKey == "" {
 			return sys.Sign(hash, client.SignatureScheme, GetClientSysKeys())
 		}
 
