@@ -207,6 +207,7 @@ type ORef struct {
 	ID        int64            `json:"id"`
 	CreatedAt common.Timestamp `json:"created_at"`
 	UpdatedAt common.Timestamp `json:"updated_at"`
+	Err       error            `json:"-"`
 }
 
 type SimilarField struct {

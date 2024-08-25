@@ -202,6 +202,8 @@ func main() {
 				"terminateWorkers":          terminateWorkers,
 				"createWorkers":             createWorkers,
 				"getFileMetaByName":         getFileMetaByName,
+				"downloadDirectory":         downloadDirectory,
+				"cancelDownloadDirectory":   cancelDownloadDirectory,
 
 				// player
 				"play":           play,
