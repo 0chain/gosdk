@@ -47,7 +47,7 @@ var (
 type DownloadRequestOption func(dr *DownloadRequest)
 
 // WithDownloadProgressStorer set download progress storer of download request options.
-// 		- storer: download progress storer instance, used to store download progress.
+//   - storer: download progress storer instance, used to store download progress.
 func WithDownloadProgressStorer(storer DownloadProgressStorer) DownloadRequestOption {
 	return func(dr *DownloadRequest) {
 		dr.downloadStorer = storer
@@ -112,6 +112,7 @@ type DownloadRequest struct {
 	workdir            string
 	downloadQueue      downloadQueue // Always initialize this queue with max time taken
 	isResume           bool
+	isEnterprise       bool
 }
 
 type downloadPriority struct {
@@ -503,7 +504,7 @@ func (req *DownloadRequest) processDownload() {
 	}
 
 	if req.shouldVerify {
-		if req.authTicket != nil && req.encryptedKey != "" {
+		if req.isEnterprise || (req.authTicket != nil && req.encryptedKey != "") {
 			req.shouldVerify = false
 		}
 	}
@@ -1206,26 +1207,27 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 		if selected.fileref.ActualFileHashSignature != fRef.ActualFileHashSignature {
 			continue
 		}
+		if !req.isEnterprise {
+			isValid, err := sys.VerifyWith(
+				req.allocOwnerPubKey,
+				fRef.ValidationRootSignature,
+				fRef.ActualFileHashSignature+fRef.ValidationRoot,
+			)
+			if err != nil {
+				l.Logger.Error(err, "allocOwnerPubKey: ", req.allocOwnerPubKey, " validationRootSignature: ", fRef.ValidationRootSignature, " actualFileHashSignature: ", fRef.ActualFileHashSignature, " validationRoot: ", fRef.ValidationRoot)
+				continue
+			}
+			if !isValid {
+				l.Logger.Error("invalid validation root signature")
+				continue
+			}
 
-		isValid, err := sys.VerifyWith(
-			req.allocOwnerPubKey,
-			fRef.ValidationRootSignature,
-			fRef.ActualFileHashSignature+fRef.ValidationRoot,
-		)
-		if err != nil {
-			l.Logger.Error(err, "allocOwnerPubKey: ", req.allocOwnerPubKey, " validationRootSignature: ", fRef.ValidationRootSignature, " actualFileHashSignature: ", fRef.ActualFileHashSignature, " validationRoot: ", fRef.ValidationRoot)
-			continue
-		}
-		if !isValid {
-			l.Logger.Error("invalid validation root signature")
-			continue
-		}
-
-		blobber := req.blobbers[fmr.blobberIdx]
-		vr, _ := hex.DecodeString(fmr.fileref.ValidationRoot)
-		req.validationRootMap[blobber.ID] = &blobberFile{
-			size:           fmr.fileref.Size,
-			validationRoot: vr,
+			blobber := req.blobbers[fmr.blobberIdx]
+			vr, _ := hex.DecodeString(fmr.fileref.ValidationRoot)
+			req.validationRootMap[blobber.ID] = &blobberFile{
+				size:           fmr.fileref.Size,
+				validationRoot: vr,
+			}
 		}
 		shift := zboxutil.NewUint128(1).Lsh(uint64(fmr.blobberIdx))
 		foundMask = foundMask.Or(shift)

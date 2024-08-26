@@ -1358,6 +1358,7 @@ func (a *Allocation) generateDownloadRequest(
 	for i := 0; i < len(a.Blobbers); i++ {
 		downloadReq.downloadQueue[i].timeTaken = 1000000
 	}
+	downloadReq.isEnterprise = a.IsEnterprise
 
 	return downloadReq, nil
 }
@@ -2751,6 +2752,7 @@ func (a *Allocation) downloadFromAuthTicket(fileHandler sys.File, authTicket str
 	downloadReq.shouldVerify = verifyDownload
 	downloadReq.fullconsensus = a.fullconsensus
 	downloadReq.consensusThresh = a.consensusThreshold
+	downloadReq.isEnterprise = a.IsEnterprise
 	downloadReq.downloadQueue = make(downloadQueue, len(a.Blobbers))
 	for i := 0; i < len(a.Blobbers); i++ {
 		downloadReq.downloadQueue[i].timeTaken = 1000000
