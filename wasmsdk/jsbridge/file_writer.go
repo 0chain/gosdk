@@ -20,7 +20,7 @@ type FileWriter struct {
 	writeError     bool
 }
 
-const writeBlocks = 60
+const writeBlocks = 10
 
 // len(p) will always be <= 64KB
 func (w *FileWriter) Write(p []byte) (int, error) {
@@ -128,5 +128,23 @@ func NewFileWriter(filename string) (*FileWriter, error) {
 	return &FileWriter{
 		writableStream: writableStream[0],
 		fileHandle:     fileHandle[0],
+	}, nil
+}
+
+func NewFileWriterFromHandle(dirHandler js.Value, name string) (*FileWriter, error) {
+	options := js.Global().Get("Object").New()
+	options.Set("create", true)
+	fileHandler, err := Await(dirHandler.Call("getFileHandle", name, options))
+	if len(err) > 0 && !err[0].IsNull() {
+		return nil, errors.New("dir_picker: " + err[0].String())
+	}
+
+	writableStream, err := Await(fileHandler[0].Call("createWritable"))
+	if len(err) > 0 && !err[0].IsNull() {
+		return nil, errors.New("file_writer: " + err[0].String())
+	}
+	return &FileWriter{
+		writableStream: writableStream[0],
+		fileHandle:     fileHandler[0],
 	}, nil
 }
