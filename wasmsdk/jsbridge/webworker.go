@@ -81,7 +81,8 @@ func NewWasmWebWorker(blobberID, blobberURL, clientID, clientKey, peerPublicKey,
 			"IS_SPLIT=" + strconv.FormatBool(isSplit),
 			"MNEMONIC=" + mnemonic,
 			"ZAUTH_SERVER=" + gZauthServer},
-		Path: "zcn.wasm",
+		Path:        "zcn.wasm",
+		subscribers: make(map[string]chan worker.MessageEvent),
 	}
 
 	if err := w.Start(); err != nil {

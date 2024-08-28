@@ -683,24 +683,30 @@ type eventChanWorker struct {
 func (su *ChunkedUpload) startProcessor() {
 	su.listenChan = make(chan struct{}, su.uploadWorkers)
 	su.processMap = make(map[int]int)
-	respChan := make(chan error, 1)
 	su.uploadWG.Add(1)
-	allEventChan := make([]eventChanWorker, len(su.blobbers))
-	var pos uint64
-	for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
-		pos = uint64(i.TrailingZeros())
-		blobber := su.blobbers[pos]
-		worker := jsbridge.GetWorker(blobber.blobber.ID)
-		if worker != nil {
-			eventChan, _ := worker.Listen(su.ctx)
-			allEventChan[pos] = eventChanWorker{
-				C:        eventChan,
-				workerID: blobber.blobber.ID,
+	go func() {
+		respChan := make(chan error, 1)
+		allEventChan := make([]eventChanWorker, len(su.blobbers))
+		var pos uint64
+		for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+			pos = uint64(i.TrailingZeros())
+			blobber := su.blobbers[pos]
+			webWorker := jsbridge.GetWorker(blobber.blobber.ID)
+			if webWorker != nil {
+				eventChan := make(chan worker.MessageEvent, su.uploadWorkers)
+				err := webWorker.SubscribeToEvents(su.fileMeta.RemotePath, eventChan)
+				if err != nil {
+					logger.Logger.Error("error subscribing to events: ", err)
+					su.ctxCncl(thrown.New("upload_failed", "Upload failed. Error subscribing to events"))
+					return
+				}
+				defer webWorker.UnsubscribeToEvents(su.fileMeta.RemotePath)
+				allEventChan[pos] = eventChanWorker{
+					C:        eventChan,
+					workerID: blobber.blobber.ID,
+				}
 			}
 		}
-	}
-
-	go func() {
 		defer su.uploadWG.Done()
 		for {
 			go su.listen(allEventChan, respChan)
