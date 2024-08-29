@@ -271,6 +271,8 @@ type Allocation struct {
 	// FileOptions is a bitmask of file options, which are the permissions of the allocation.
 	FileOptions uint16 `json:"file_options"`
 
+	IsEnterprise bool `json:"is_enterprise"`
+
 	// FileOptions to define file restrictions on an allocation for third-parties
 	// default 00000000 for all crud operations suggesting only owner has the below listed abilities.
 	// enabling option/s allows any third party to perform certain ops
@@ -1360,6 +1362,7 @@ func (a *Allocation) generateDownloadRequest(
 	for i := 0; i < len(a.Blobbers); i++ {
 		downloadReq.downloadQueue[i].timeTaken = 1000000
 	}
+	downloadReq.isEnterprise = a.IsEnterprise
 
 	return downloadReq, nil
 }
@@ -2764,6 +2767,7 @@ func (a *Allocation) downloadFromAuthTicket(fileHandler sys.File, authTicket str
 	downloadReq.shouldVerify = verifyDownload
 	downloadReq.fullconsensus = a.fullconsensus
 	downloadReq.consensusThresh = a.consensusThreshold
+	downloadReq.isEnterprise = a.IsEnterprise
 	downloadReq.downloadQueue = make(downloadQueue, len(a.Blobbers))
 	for i := 0; i < len(a.Blobbers); i++ {
 		downloadReq.downloadQueue[i].timeTaken = 1000000
