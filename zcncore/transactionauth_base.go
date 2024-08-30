@@ -123,10 +123,7 @@ func (ta *TransactionWithAuth) submitTxn() {
 		ta.completeTxn(StatusAuthError, "", err)
 		return
 	}
-	// Authorized by user. Give callback to app.
-	if ta.t.txnCb != nil {
-		ta.t.txnCb.OnAuthComplete(ta.t, StatusSuccess)
-	}
+
 	// Use the timestamp from auth and sign
 	ta.t.txn.CreationDate = authTxn.CreationDate
 	ta.t.txn.Signature = authTxn.Signature
