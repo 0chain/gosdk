@@ -19,6 +19,7 @@ import (
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/pathutil"
 	"github.com/0chain/gosdk/core/sys"
+	"github.com/hack-pad/safejs"
 
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/wasmsdk/jsbridge"
@@ -32,6 +33,11 @@ import (
 const FileOperationInsert = "insert"
 
 func listObjects(allocationID string, remotePath string, offset, pageLimit int) (*sdk.ListResult, error) {
+	defer func() {
+		if r := recover(); r != nil {
+			PrintError("Recovered in listObjects Error", r)
+		}
+	}()
 	alloc, err := getAllocation(allocationID)
 	if err != nil {
 		return nil, err
@@ -371,6 +377,11 @@ func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expir
 // 	 - error
 
 func multiDownload(allocationID, jsonMultiDownloadOptions, authTicket, callbackFuncName string) (string, error) {
+	defer func() {
+		if r := recover(); r != nil {
+			PrintError("Recovered in multiDownload Error", r)
+		}
+	}()
 	sdkLogger.Info("starting multidownload")
 	wg := &sync.WaitGroup{}
 	useCallback := false
@@ -610,6 +621,11 @@ func setUploadMode(mode int) {
 }
 
 func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
+	defer func() {
+		if r := recover(); r != nil {
+			PrintError("Recovered in multiupload Error", r)
+		}
+	}()
 	var options []BulkUploadOption
 	result := MultiUploadResult{}
 	err := json.Unmarshal([]byte(jsonBulkUploadOptions), &options)
@@ -631,7 +647,13 @@ func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 		result.Success = false
 		return result, errors.New("Error fetching the allocation")
 	}
-	addWebWorkers(allocationObj)
+	err = addWebWorkers(allocationObj)
+	if err != nil {
+		result.Error = err.Error()
+		result.Success = false
+		return result, err
+	}
+
 	operationRequests := make([]sdk.OperationRequest, n)
 	for idx, option := range options {
 		wg := &sync.WaitGroup{}
@@ -956,6 +978,10 @@ func repairAllocation(allocationID string) error {
 	if err != nil {
 		return err
 	}
+	err = addWebWorkers(alloc)
+	if err != nil {
+		return err
+	}
 	statusBar := sdk.NewRepairBar(allocationID)
 	if statusBar == nil {
 		return errors.New("repair already in progress")
@@ -1021,12 +1047,12 @@ func terminateWorkersWithAllocation(alloc *sdk.Allocation) {
 	}
 }
 
-func createWorkers(allocationID string) {
+func createWorkers(allocationID string) error {
 	alloc, err := getAllocation(allocationID)
 	if err != nil {
-		return
+		return err
 	}
-	addWebWorkers(alloc)
+	return addWebWorkers(alloc)
 }
 
 func startListener(respChan chan string) error {
@@ -1037,7 +1063,8 @@ func startListener(respChan chan string) error {
 	if err != nil {
 		return err
 	}
-	defer fmt.Println("[web worker] exiting")
+	safeVal, _ := safejs.ValueOf("startListener")
+	selfWorker.PostMessage(safeVal, nil) //nolint:errcheck
 
 	listener, err := selfWorker.Listen(ctx)
 	if err != nil {

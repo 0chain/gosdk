@@ -4,6 +4,8 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"time"
 
 	"github.com/0chain/gosdk/wasmsdk/jsbridge"
@@ -67,18 +69,53 @@ func reloadAllocation(allocationID string) (*sdk.Allocation, error) {
 	return it.Allocation, nil
 }
 
-func addWebWorkers(alloc *sdk.Allocation) {
+func addWebWorkers(alloc *sdk.Allocation) (err error) {
 	c := client.GetClient()
 	if c == nil || len(c.Keys) == 0 {
 		return
 	}
-	isCreated := false
 	isSplit := zcncore.IsWalletSplit()
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	respChan := make(chan error, len(alloc.Blobbers))
+	respRequired := 0
 	for _, blober := range alloc.Blobbers {
-		_, isCreated, _ = jsbridge.NewWasmWebWorker(blober.ID, blober.Baseurl, c.ClientID, c.ClientKey, c.Keys[0].PublicKey, c.Keys[0].PrivateKey, c.Mnemonic, isSplit) //nolint:errcheck
+		weborker, workerCreated, _ := jsbridge.NewWasmWebWorker(blober.ID, blober.Baseurl, c.ClientID, c.Keys[0].PublicKey, c.Keys[0].PrivateKey, c.Mnemonic, isSplit) //nolint:errcheck
+		if workerCreated {
+			respRequired++
+			go func() {
+				eventChan, err := weborker.Listen(ctx)
+				if err != nil {
+					respChan <- err
+					return
+				}
+				_, ok := <-eventChan
+				if !ok {
+					respChan <- errors.New("worker chan closed")
+					return
+				}
+				respChan <- nil
+			}()
+		}
 	}
-	// wait for worker to be instantiated
-	if isCreated {
-		time.Sleep(1 * time.Second)
+	if respRequired == 0 {
+		return
+	}
+	for {
+		select {
+		case <-ctx.Done():
+			PrintError(ctx.Err())
+			return ctx.Err()
+		case err = <-respChan:
+			if err != nil {
+				PrintError(err)
+				return
+			}
+			respRequired--
+			if respRequired == 0 {
+				close(respChan)
+				return
+			}
+		}
 	}
 }

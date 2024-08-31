@@ -168,10 +168,14 @@ func (req *ListRequest) getlistFromBlobbers() ([]*listResponse, error) {
 	listInfos := make([]*listResponse, numList)
 	consensusMap := make(map[string][]*blockchain.StorageNode)
 	var consensusHash string
+	errCnt := 0
 	for i := 0; i < numList; i++ {
 		listInfos[i] = <-rspCh
 		if !req.forRepair {
 			if listInfos[i].err != nil || listInfos[i].ref == nil {
+				if listInfos[i].err != nil {
+					errCnt++
+				}
 				continue
 			}
 			hash := listInfos[i].ref.FileMetaHash
@@ -187,11 +191,15 @@ func (req *ListRequest) getlistFromBlobbers() ([]*listResponse, error) {
 	}
 
 	var err error
-	req.listOnly = true
 	listLen := len(consensusMap[consensusHash])
 	if listLen < req.consensusThresh {
+		if req.fullconsensus-errCnt >= req.consensusThresh && !req.listOnly {
+			req.listOnly = true
+			return req.getlistFromBlobbers()
+		}
 		return listInfos, listInfos[0].err
 	}
+	req.listOnly = true
 	listInfos = listInfos[:1]
 	listOnlyRespCh := make(chan *listResponse, 1)
 	for i := 0; i < listLen; i++ {

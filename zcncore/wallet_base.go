@@ -1177,6 +1177,16 @@ func GetStakePoolUserInfo(clientID string, offset, limit int, cb GetInfoCallback
 	return
 }
 
+// GetStakeableBlobbers obtains list of all active blobbers that can be staked (i.e. still number of delegations < max_delegations)
+// # Inputs
+//   - cb: callback for checking result
+//   - limit: how many blobbers should be fetched
+//   - offset: how many blobbers should be skipped
+//   - active: only fetch active blobbers
+func GetStakableBlobbers(cb GetInfoCallback, limit, offset int, active bool) {
+	getBlobbersInternal(cb, active, limit, offset, true)
+}
+
 // GetBlobbers obtains list of all active blobbers.
 // # Inputs
 //   - cb: callback for checking result
@@ -1184,10 +1194,10 @@ func GetStakePoolUserInfo(clientID string, offset, limit int, cb GetInfoCallback
 //   - offset: how many blobbers should be skipped
 //   - active: only fetch active blobbers
 func GetBlobbers(cb GetInfoCallback, limit, offset int, active bool) {
-	getBlobbersInternal(cb, active, limit, offset)
+	getBlobbersInternal(cb, active, limit, offset, false)
 }
 
-func getBlobbersInternal(cb GetInfoCallback, active bool, limit, offset int) {
+func getBlobbersInternal(cb GetInfoCallback, active bool, limit, offset int, stakable bool) {
 	if err := CheckConfig(); err != nil {
 		return
 	}
@@ -1196,6 +1206,7 @@ func getBlobbersInternal(cb GetInfoCallback, active bool, limit, offset int) {
 		"active": strconv.FormatBool(active),
 		"offset": strconv.FormatInt(int64(offset), 10),
 		"limit":  strconv.FormatInt(int64(limit), 10),
+		"stakable": strconv.FormatBool(stakable),
 	})
 
 	go GetInfoFromSharders(url, OpStorageSCGetBlobbers, cb)
