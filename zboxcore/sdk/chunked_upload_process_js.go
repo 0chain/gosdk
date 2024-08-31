@@ -275,34 +275,6 @@ func (su *ChunkedUpload) listen(allEventChan []eventChanWorker, respChan chan er
 					}
 					return
 				}
-				len, err := finalResult.Length()
-				if err != nil {
-					logger.Logger.Error("errorGettingFinalResultLength")
-					errC := atomic.AddInt32(&errCount, 1)
-					if errC >= int32(su.consensus.consensusThresh) {
-						wgErrors <- thrown.New("upload_failed", "Upload failed. Error getting worker data")
-					}
-					return
-				}
-				resBuf := make([]byte, len)
-				safejs.CopyBytesToGo(resBuf, finalResult)
-				var finalResultObj FinalWorkerResult
-				err = json.Unmarshal(resBuf, &finalResultObj)
-				if err != nil {
-					logger.Logger.Error("errorGettingFinalResultUnmarshal")
-					errC := atomic.AddInt32(&errCount, 1)
-					if errC >= int32(su.consensus.consensusThresh) {
-						wgErrors <- thrown.New("upload_failed", "Upload failed. Error getting worker data")
-					}
-					return
-				}
-				blobber.fileRef.FixedMerkleRoot = finalResultObj.FixedMerkleRoot
-				blobber.fileRef.ValidationRoot = finalResultObj.ValidationRoot
-				blobber.fileRef.ThumbnailHash = finalResultObj.ThumbnailContentHash
-				isFinal = true
-			}
-			uploadSuccess = true
-			su.consensus.Done()
 
 				switch msgType {
 				case "auth":
@@ -697,24 +669,11 @@ func (su *ChunkedUpload) startProcessor() {
 	su.listenChan = make(chan struct{}, su.uploadWorkers)
 	su.processMap = make(map[int]int)
 	su.uploadWG.Add(1)
-	allEventChan := make([]eventChanWorker, len(su.blobbers))
-	var pos uint64
-	for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
-		pos = uint64(i.TrailingZeros())
-		blobber := su.blobbers[pos]
-		worker := jsbridge.GetWorker(blobber.blobber.ID)
-		if worker != nil {
-			eventChan, _ := worker.Listen(su.ctx)
-			allEventChan[pos] = eventChanWorker{
-				C:        eventChan,
-				workerID: blobber.blobber.ID,
-			}
-		}
-	}
 
 	go func() {
 		respChan := make(chan error, 1)
-		allEventChan := make([]chan worker.MessageEvent, len(su.blobbers))
+		// allEventChan := make([]chan worker.MessageEvent, len(su.blobbers))
+		allEventChan := make([]eventChanWorker, len(su.blobbers))
 		var pos uint64
 		for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 			pos = uint64(i.TrailingZeros())
@@ -729,7 +688,10 @@ func (su *ChunkedUpload) startProcessor() {
 					return
 				}
 				defer webWorker.UnsubscribeToEvents(su.fileMeta.RemotePath)
-				allEventChan[pos] = eventChan
+				allEventChan[pos] = eventChanWorker{
+					C:        eventChan,
+					workerID: blobber.blobber.ID,
+				}
 			}
 		}
 		defer su.uploadWG.Done()
