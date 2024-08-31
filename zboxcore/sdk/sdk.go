@@ -1766,6 +1766,10 @@ func smartContractTxnValueFee(scAddress string, sn transaction.SmartContractTxnD
 	value, fee uint64) (hash, out string, nonce int64, t *transaction.Transaction, err error) {
 	t, err = ExecuteSmartContract(scAddress, sn, value, fee)
 	if err != nil {
+		if t != nil {
+			return "", "", t.TransactionNonce, nil, err
+		}
+
 		return "", "", 0, nil, err
 	}
 
