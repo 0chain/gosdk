@@ -555,6 +555,7 @@ type BulkUploadOption struct {
 	Md5HashFuncName   string `json:"md5HashFuncName,omitempty"`
 	MimeType          string `json:"mimeType,omitempty"`
 	MemoryStorer      bool   `json:"memoryStorer,omitempty"`
+	CustomMeta        string `json:"customMeta,omitempty"`
 }
 
 // BulkUploadResult result of a single file upload, usually as part of bulk operations request
@@ -774,6 +775,7 @@ func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 			MimeType:   mimeType,
 			RemoteName: fileName,
 			RemotePath: fullRemotePath,
+			CustomMeta: option.CustomMeta,
 		}
 		numBlocks := option.NumBlocks
 		if numBlocks <= 1 {
