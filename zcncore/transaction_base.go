@@ -13,6 +13,7 @@ import (
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/node"
 	"github.com/0chain/gosdk/core/sys"
+	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
 	"go.uber.org/zap"
 
@@ -23,7 +24,6 @@ import (
 	"github.com/0chain/gosdk/core/version"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/zboxcore/sdk"
 )
 
 // compiler time check
@@ -112,11 +112,15 @@ type ChainConfig struct {
 	ConfirmationChainLength int      `json:"confirmation_chain_length"`
 	EthNode                 string   `json:"eth_node"`
 	SharderConsensous       int      `json:"sharder_consensous"`
+	IsSplitWallet           bool     `json:"is_split_wallet"`
 }
 
 var Sharders *node.NodeHolder
 
-// InitZCNSDK initializes the SDK with miner, sharder and signature scheme provided.
+// InitZCNSDK initializes the SDK given block worker and signature scheme provided.
+//   - blockWorker: block worker, which is the url for the DNS service for locating miners and sharders
+//   - signscheme: signature scheme to be used for signing the transactions
+//   - configs: configuration options
 func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainConfig) error) error {
 	if signscheme != "ed25519" && signscheme != "bls0chain" {
 		return errors.New("", "invalid/unsupported signature scheme")
@@ -138,6 +142,7 @@ func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainCon
 			return errors.Wrap(err, "invalid/unsupported options.")
 		}
 	}
+	_config.isSplitWallet = _config.chain.IsSplitWallet
 	assertConfig()
 	_config.isConfigured = true
 	logging.Info("******* Wallet SDK Version:", version.VERSIONSTR, " ******* (InitZCNSDK)")
@@ -155,7 +160,13 @@ func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainCon
 
 	conf.InitClientConfig(cfg)
 
+	fmt.Println("initZCNCore is_split_wallet:", _config.isSplitWallet)
+
 	return nil
+}
+
+func IsSplitWallet() bool {
+	return _config.isSplitWallet
 }
 
 /*Confirmation - a data structure that provides the confirmation that a transaction is included into the block chain */
@@ -199,6 +210,7 @@ func (bh *blockHeader) getCreationDate(defaultTime int64) int64 {
 	return bh.CreationDate
 }
 
+// Transaction data structure that provides the transaction details
 type Transaction struct {
 	txn                      *transaction.Transaction
 	txnOut                   string
@@ -296,10 +308,12 @@ func txnTypeString(t int) string {
 	}
 }
 
+// Output implements the output of transaction
 func (t *Transaction) Output() []byte {
 	return []byte(t.txnOut)
 }
 
+// Hash implements the hash of transaction
 func (t *Transaction) Hash() string {
 	return t.txn.Hash
 }
@@ -446,6 +460,7 @@ func newTransaction(cb TransactionCallback, txnFee uint64, nonce int64) (*Transa
 	return t, nil
 }
 
+// SetTransactionCallback implements storing the callback
 func (t *Transaction) SetTransactionCallback(cb TransactionCallback) error {
 	if t.txnStatus != StatusUnknown {
 		return errors.New("", "transaction already exists. cannot set transaction hash.")
@@ -454,6 +469,7 @@ func (t *Transaction) SetTransactionCallback(cb TransactionCallback) error {
 	return nil
 }
 
+// SetTransactionNonce implements method to set the transaction nonce
 func (t *Transaction) SetTransactionNonce(txnNonce int64) error {
 	if t.txnStatus != StatusUnknown {
 		return errors.New("", "transaction already exists. cannot set transaction fee.")
@@ -462,6 +478,7 @@ func (t *Transaction) SetTransactionNonce(txnNonce int64) error {
 	return nil
 }
 
+// StoreData implements store the data to blockchain
 func (t *Transaction) StoreData(data string) error {
 	go func() {
 		t.txn.TransactionType = transaction.TxnTypeData
@@ -564,6 +581,8 @@ func (t *Transaction) ExecuteFaucetSCWallet(walletStr string, methodName string,
 	return nil
 }
 
+// SetTransactionHash implements verify a previous transaction status
+//   - hash: transaction hash
 func (t *Transaction) SetTransactionHash(hash string) error {
 	if t.txnStatus != StatusUnknown {
 		return errors.New("", "transaction already exists. cannot set transaction hash.")
@@ -572,6 +591,7 @@ func (t *Transaction) SetTransactionHash(hash string) error {
 	return nil
 }
 
+// GetTransactionHash implements retrieval of hash of the submitted transaction
 func (t *Transaction) GetTransactionHash() string {
 	if t.txnHash != "" {
 		return t.txnHash
@@ -772,6 +792,8 @@ func (t *Transaction) isTransactionExpired(lfbCreationTime, currentTime int64) b
 	sys.Sleep(defaultWaitSeconds)
 	return false
 }
+
+// GetVerifyOutput implements the verification output from sharders
 func (t *Transaction) GetVerifyOutput() string {
 	if t.verifyStatus == StatusSuccess {
 		return t.verifyOut
@@ -779,6 +801,7 @@ func (t *Transaction) GetVerifyOutput() string {
 	return ""
 }
 
+// GetTransactionError implements error string in case of transaction failure
 func (t *Transaction) GetTransactionError() string {
 	if t.txnStatus != StatusSuccess {
 		return t.txnError.Error()
@@ -786,6 +809,7 @@ func (t *Transaction) GetTransactionError() string {
 	return ""
 }
 
+// GetVerifyError implements error string in case of verify failure error
 func (t *Transaction) GetVerifyError() string {
 	if t.verifyStatus != StatusSuccess {
 		return t.verifyError.Error()
@@ -876,8 +900,37 @@ type MinerSCUnlock struct {
 	ID string `json:"id"`
 }
 
+type CommitMetaData struct {
+	CrudType string
+	MetaData *ConsolidatedFileMeta
+}
+
+type CommitMetaResponse struct {
+	TxnID    string
+	MetaData *ConsolidatedFileMeta
+}
+
+type ConsolidatedFileMeta struct {
+	Name            string
+	Type            string
+	Path            string
+	LookupHash      string
+	Hash            string
+	MimeType        string
+	Size            int64
+	NumBlocks       int64
+	ActualFileSize  int64
+	ActualNumBlocks int64
+	EncryptedKey    string
+
+	ActualThumbnailSize int64
+	ActualThumbnailHash string
+
+	Collaborators []fileref.Collaborator
+}
+
 func VerifyContentHash(metaTxnDataJSON string) (bool, error) {
-	var metaTxnData sdk.CommitMetaResponse
+	var metaTxnData CommitMetaResponse
 	err := json.Unmarshal([]byte(metaTxnDataJSON), &metaTxnData)
 	if err != nil {
 		return false, errors.New("metaTxnData_decode_error", "Unable to decode metaTxnData json")
@@ -888,7 +941,7 @@ func VerifyContentHash(metaTxnDataJSON string) (bool, error) {
 		return false, errors.New("fetch_txm_details", "Unable to fetch txn details")
 	}
 
-	var metaOperation sdk.CommitMetaData
+	var metaOperation CommitMetaData
 	err = json.Unmarshal([]byte(t.TransactionData), &metaOperation)
 	if err != nil {
 		logging.Error("Unmarshal of transaction data to fileMeta failed, Maybe not a commit meta txn :", t.Hash)

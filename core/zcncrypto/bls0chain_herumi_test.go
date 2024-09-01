@@ -150,12 +150,14 @@ func TestCombinedSignAndVerify(t *testing.T) {
 }
 
 func TestSplitKey(t *testing.T) {
-	primaryKeyStr := `c36f2f92b673cf057a32e8bd0ca88888e7ace40337b737e9c7459fdc4c521918`
+	primaryKeyStr := `872eac6370c72093535fa395ad41a08ee90c9d0d46df9461eb2515451f389d1b`
+	// primaryKeyStr := `c36f2f92b673cf057a32e8bd0ca88888e7ace40337b737e9c7459fdc4c521918`
 	sig0 := NewSignatureScheme("bls0chain")
 	err := sig0.SetPrivateKey(primaryKeyStr)
 	if err != nil {
 		t.Fatalf("Set private key failed - %s", errors.Top(err))
 	}
+	data = "823bb3dc0b80a6c86922a884e63908cb9e963ef488688b41e32cbf4d84471a1f"
 	hash := Sha3Sum256(data)
 	signature, err := sig0.Sign(hash)
 	if err != nil {
@@ -170,15 +172,18 @@ func TestSplitKey(t *testing.T) {
 	for i := 0; i < numSplitKeys; i++ {
 		sigAggScheme[i] = NewSignatureScheme("bls0chain")
 		err = sigAggScheme[i].SetPrivateKey(w.Keys[i].PrivateKey)
+		fmt.Println("seckey:", sigAggScheme[i].GetPrivateKey())
 
 		require.NoError(t, err)
 	}
 	var aggrSig string
 	for i := 1; i < numSplitKeys; i++ {
 		tmpSig, _ := sigAggScheme[i].Sign(hash)
+		fmt.Println("tmpSig:", tmpSig)
 		aggrSig, _ = sigAggScheme[0].Add(tmpSig, hash)
 	}
 	if aggrSig != signature {
 		t.Fatalf("split key signature failed")
 	}
+	fmt.Println("aggrSig:", aggrSig)
 }

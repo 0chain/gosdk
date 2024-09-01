@@ -31,7 +31,7 @@ func BindFunc(global js.Value, jsFuncName string, fn interface{}) error {
 func BindAsyncFuncs(global js.Value, fnList map[string]interface{}) {
 
 	for jsFuncName, fn := range fnList {
-		if jsFuncName == "registerAuthorizer" || jsFuncName == "callAuth" {
+		if jsFuncName == "registerAuthorizer" || jsFuncName == "callAuth" || jsFuncName == "registerAuthCommon" {
 			global.Set(jsFuncName, fn)
 		} else {
 			jsFunc, err := promise(fn)
@@ -44,7 +44,6 @@ func BindAsyncFuncs(global js.Value, fnList map[string]interface{}) {
 		}
 	}
 }
-
 
 func BindFuncs(global js.Value, fnList map[string]interface{}) {
 
