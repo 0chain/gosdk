@@ -160,8 +160,6 @@ func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainCon
 
 	conf.InitClientConfig(cfg)
 
-	fmt.Println("initZCNCore is_split_wallet:", _config.isSplitWallet)
-
 	return nil
 }
 
