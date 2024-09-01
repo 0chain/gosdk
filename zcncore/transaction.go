@@ -283,11 +283,9 @@ func NewTransaction(cb TransactionCallback, txnFee uint64, nonce int64) (Transac
 	}
 	if _config.isSplitWallet {
 		logging.Info("New transaction interface with auth")
-		fmt.Println("New transaction interface with auth")
 		return newTransactionWithAuth(cb, txnFee, nonce)
 	}
 
-	fmt.Printf("New transaction interface: %+v\n", _config)
 	logging.Info("New transaction interface")
 	return newTransaction(cb, txnFee, nonce)
 }
