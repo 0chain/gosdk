@@ -33,6 +33,7 @@ type DirRequest struct {
 	allocationObj *Allocation
 	allocationID  string
 	allocationTx  string
+	sig           string
 	remotePath    string
 	blobbers      []*blockchain.StorageNode
 	ctx           context.Context
@@ -121,7 +122,7 @@ func (req *DirRequest) commitRequest(existingDirCount int) error {
 		commitReq.allocationID = req.allocationID
 		commitReq.allocationTx = req.allocationTx
 		commitReq.blobber = req.blobbers[pos]
-
+		commitReq.sig = req.sig
 		newChange := &allocationchange.DirCreateChange{
 			RemotePath: req.remotePath,
 			Uuid:       uid,
@@ -186,7 +187,7 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode, pos u
 	}
 
 	formWriter.Close()
-	httpreq, err := zboxutil.NewCreateDirRequest(blobber.Baseurl, req.allocationID, req.allocationTx, body)
+	httpreq, err := zboxutil.NewCreateDirRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body)
 	if err != nil {
 		l.Logger.Error(blobber.Baseurl, "Error creating dir request", err)
 		return err, false
@@ -291,6 +292,7 @@ func (dirOp *DirOperation) Process(allocObj *Allocation, connectionID string) ([
 		allocationID:  allocObj.ID,
 		allocationTx:  allocObj.Tx,
 		connectionID:  connectionID,
+		sig:           allocObj.sig,
 		blobbers:      allocObj.Blobbers,
 		remotePath:    dirOp.remotePath,
 		ctx:           dirOp.ctx,

@@ -69,6 +69,7 @@ func WithFileCallback(cb func()) DownloadRequestOption {
 type DownloadRequest struct {
 	allocationID       string
 	allocationTx       string
+	sig                string
 	allocOwnerID       string
 	allocOwnerPubKey   string
 	blobbers           []*blockchain.StorageNode
@@ -281,7 +282,6 @@ func (req *DownloadRequest) downloadBlock(
 		}
 
 		c++
-
 	}
 
 	var failed int32
@@ -607,6 +607,12 @@ func (req *DownloadRequest) processDownload() {
 								hashWg.Done()
 							}()
 						}
+					} else {
+						hashWg.Add(1)
+						go func() {
+							writeData(actualFileHasher, data, req.datashards, int(remainingSize)) //nolint
+							hashWg.Done()
+						}()
 					}
 
 					totalWritten, err := writeData(req.fileHandler, data, req.datashards, int(remainingSize))
@@ -654,6 +660,12 @@ func (req *DownloadRequest) processDownload() {
 										hashWg.Done()
 									}()
 								}
+							} else {
+								hashWg.Add(1)
+								go func() {
+									writeData(actualFileHasher, block.data, req.datashards, int(remainingSize)) //nolint
+									hashWg.Done()
+								}()
 							}
 
 							totalWritten, err := writeData(req.fileHandler, block.data, req.datashards, int(remainingSize))
@@ -1100,6 +1112,7 @@ func GetFileRefFromBlobber(allocationID, blobberId, remotePath string) (fRef *fi
 
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
+	listReq.sig = a.sig
 	listReq.blobbers = []*blockchain.StorageNode{
 		{ID: string(blobber.ID), Baseurl: blobber.BaseURL},
 	}
@@ -1120,6 +1133,7 @@ func (req *DownloadRequest) getFileRef() (fRef *fileref.FileRef, err error) {
 		remotefilepathhash: req.remotefilepathhash,
 		allocationID:       req.allocationID,
 		allocationTx:       req.allocationTx,
+		sig:                req.sig,
 		blobbers:           req.blobbers,
 		authToken:          req.authTicket,
 		Consensus: Consensus{

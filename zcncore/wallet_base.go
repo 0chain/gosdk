@@ -23,6 +23,7 @@ import (
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/version"
 	"github.com/0chain/gosdk/core/zcncrypto"
+	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/encryption"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	openssl "github.com/Luzifer/go-openssl/v3"
@@ -484,15 +485,7 @@ func RecoverWallet(mnemonic string, statusCb WalletCallback) error {
 
 // Split keys from the primary master key
 func SplitKeys(privateKey string, numSplits int) (string, error) {
-	if _config.chain.SignatureScheme != "bls0chain" {
-		return "", errors.New("", "signature key doesn't support split key")
-	}
-	sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
-	err := sigScheme.SetPrivateKey(privateKey)
-	if err != nil {
-		return "", errors.Wrap(err, "set private key failed")
-	}
-	w, err := sigScheme.SplitKeys(numSplits)
+	w, err := SplitKeysWallet(privateKey, numSplits)
 	if err != nil {
 		return "", errors.Wrap(err, "split key failed.")
 	}
@@ -501,6 +494,25 @@ func SplitKeys(privateKey string, numSplits int) (string, error) {
 		return "", errors.Wrap(err, "wallet encoding failed.")
 	}
 	return wStr, nil
+}
+
+func SplitKeysWallet(privateKey string, numSplits int) (*zcncrypto.Wallet, error) {
+	if _config.chain.SignatureScheme != "bls0chain" {
+		return nil, errors.New("", "signature key doesn't support split key")
+	}
+	sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
+	err := sigScheme.SetPrivateKey(privateKey)
+	if err != nil {
+		return nil, errors.Wrap(err, "set private key failed")
+	}
+	w, err := sigScheme.SplitKeys(numSplits)
+	if err != nil {
+		return nil, errors.Wrap(err, "split key failed.")
+	}
+
+	w.IsSplit = true
+
+	return w, nil
 }
 
 type GetClientResponse struct {
@@ -563,13 +575,23 @@ func GetWalletRaw() zcncrypto.Wallet {
 //   - splitKeyWallet: if wallet keys is split
 func SetWalletInfo(jsonWallet string, splitKeyWallet bool) error {
 	err := json.Unmarshal([]byte(jsonWallet), &_config.wallet)
-	if err == nil {
-		if _config.chain.SignatureScheme == "bls0chain" {
-			_config.isSplitWallet = splitKeyWallet
-		}
-		_config.isValidWallet = true
+	if err != nil {
+		return err
 	}
-	return err
+
+	if _config.chain.SignatureScheme == "bls0chain" {
+		_config.isSplitWallet = splitKeyWallet
+	}
+	_config.isValidWallet = true
+
+	c := client.GetClient()
+	c.Wallet = &_config.wallet
+	// c.Mnemonic = mnemonic
+	// c.ClientID = clientID
+	// c.ClientKey = _config.wallet.ClientKey
+	// c.Keys = _config.wallet.Keys
+
+	return nil
 }
 
 // SetAuthUrl will be called by app to set zauth URL to SDK.
@@ -1056,7 +1078,7 @@ func GetAllocations(clientID string, cb GetInfoCallback) (err error) {
 }
 
 // GetSnapshots obtains list of global snapshots, given an initial round and a limit.
-// Global snapshots are historical records of some aggregate data related 
+// Global snapshots are historical records of some aggregate data related
 // to the network (like total staked amount and total reward amount).
 //   - round: round number to start fetching snapshots
 //   - limit: how many snapshots should be fetched

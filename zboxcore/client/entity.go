@@ -3,6 +3,7 @@ package client
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/core/zcncrypto"
@@ -23,6 +24,7 @@ var (
 
 	// Sign is a function to sign a hash
 	Sign SignFunc
+	sigC = make(chan struct{}, 1)
 )
 
 func init() {
@@ -30,14 +32,33 @@ func init() {
 		Wallet: &zcncrypto.Wallet{},
 	}
 
+	sigC <- struct{}{}
+
 	sys.Sign = signHash
+	sys.SignWithAuth = signHash
+
 	// initialize SignFunc as default implementation
 	Sign = func(hash string) (string, error) {
-		return sys.Sign(hash, client.SignatureScheme, GetClientSysKeys())
+		if client.PeerPublicKey == "" {
+			return sys.Sign(hash, client.SignatureScheme, GetClientSysKeys())
+		}
+
+		// get sign lock
+		<-sigC
+		fmt.Println("Sign: with sys.SignWithAuth:", sys.SignWithAuth, "sysKeys:", GetClientSysKeys())
+		sig, err := sys.SignWithAuth(hash, client.SignatureScheme, GetClientSysKeys())
+		sigC <- struct{}{}
+		return sig, err
 	}
 
 	sys.Verify = VerifySignature
 	sys.VerifyWith = VerifySignatureWith
+}
+
+func SetClient(w *zcncrypto.Wallet, signatureScheme string, txnFee uint64) {
+	client.Wallet = w
+	client.SignatureScheme = signatureScheme
+	client.txnFee = txnFee
 }
 
 // PopulateClient populates single client
@@ -97,6 +118,11 @@ func GetClientID() string {
 // GetClientPublicKey returns client public key
 func GetClientPublicKey() string {
 	return client.ClientKey
+}
+
+func GetClientPeerPublicKey() string {
+	return client.PeerPublicKey
+
 }
 
 // GetClientPrivateKey returns client private key

@@ -77,7 +77,9 @@ type Config struct {
 	// ZboxAppType app type name
 	ZboxAppType string `json:"zbox_app_type"`
 	// SharderConsensous is consensous for when quering for SCRestAPI calls
-	SharderConsensous int `json:"sharder_consensous"`
+	SharderConsensous int          `json:"sharder_consensous"`
+	ZauthServer       string       `json:"zauth_server"`
+	V                 *viper.Viper `json:"-"`
 }
 
 // LoadConfigFile load and parse SDK Config from file
@@ -104,7 +106,14 @@ func LoadConfigFile(file string) (Config, error) {
 		return cfg, thrown.Throw(ErrBadParsing, err.Error())
 	}
 
-	return LoadConfig(v)
+	cfg, err = LoadConfig(v)
+	if err != nil {
+		return cfg, err
+	}
+
+	cfg.V = v
+
+	return cfg, nil
 }
 
 // LoadConfig load and parse config
@@ -170,9 +179,9 @@ func LoadConfig(v Reader) (Config, error) {
 
 	cfg.SignatureScheme = v.GetString("signature_scheme")
 	cfg.ChainID = v.GetString("chain_id")
+	cfg.ZauthServer = v.GetString("zauth.server")
 
 	return cfg, nil
-
 }
 
 func isURL(s string) bool {

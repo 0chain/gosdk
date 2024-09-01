@@ -253,14 +253,15 @@ func NewTransactionReceipt(t *Transaction) *TxnReceipt {
 	return &TxnReceipt{Transaction: t}
 }
 
-func (t *Transaction) VerifyTransaction(verifyHandler VerifyFunc) (bool, error) {
+// VerifySigWith verify the signature with the given public key and handler
+func (t *Transaction) VerifySigWith(pubkey string, verifyHandler VerifyFunc) (bool, error) {
 	// Store the hash
 	hash := t.Hash
 	t.ComputeHashData()
 	if t.Hash != hash {
 		return false, errors.New("verify_transaction", fmt.Sprintf(`{"error":"hash_mismatch", "expected":"%v", "actual":%v"}`, t.Hash, hash))
 	}
-	return verifyHandler(t.PublicKey, t.Signature, t.Hash)
+	return verifyHandler(pubkey, t.Signature, t.Hash)
 }
 
 func SendTransactionSync(txn *Transaction, miners []string) error {
