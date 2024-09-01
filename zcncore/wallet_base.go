@@ -23,7 +23,6 @@ import (
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/version"
 	"github.com/0chain/gosdk/core/zcncrypto"
-	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/encryption"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	openssl "github.com/Luzifer/go-openssl/v3"
@@ -299,6 +298,7 @@ func checkWalletConfig() error {
 	return nil
 }
 func CheckConfig() error {
+
 	err := checkSdkInit()
 	if err != nil {
 		return err
@@ -583,13 +583,6 @@ func SetWalletInfo(jsonWallet string, splitKeyWallet bool) error {
 		_config.isSplitWallet = splitKeyWallet
 	}
 	_config.isValidWallet = true
-
-	c := client.GetClient()
-	c.Wallet = &_config.wallet
-	// c.Mnemonic = mnemonic
-	// c.ClientID = clientID
-	// c.ClientKey = _config.wallet.ClientKey
-	// c.Keys = _config.wallet.Keys
 
 	return nil
 }
@@ -908,7 +901,7 @@ func (p Params) Query() string {
 //   - limit: how many miners should be fetched
 //   - offset: how many miners should be skipped
 //   - active: retrieve only active miners
-// 	 - stakable: retreive only stakable miners
+//   - stakable: retreive only stakable miners
 func GetMiners(cb GetInfoCallback, limit, offset int, active bool, stakable bool) {
 	getMinersInternal(cb, active, stakable, limit, offset)
 }
