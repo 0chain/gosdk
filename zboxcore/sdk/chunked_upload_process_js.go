@@ -156,7 +156,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 			thumbnailChunkData = thumbnailShards[pos]
 		}
 		obj := js.Global().Get("Object").New()
-		jsbridge.SetMsgType(&obj, "upload")
+		jsbridge.SetMsgType(&obj, jsbridge.MsgTypeUpload)
 		obj.Set("fileMeta", fileMetaUint8)
 		obj.Set("formInfo", formInfoUint8)
 
@@ -296,6 +296,7 @@ func (su *ChunkedUpload) listen(allEventChan []eventChanWorker, respChan chan er
 							wgErrors <- err
 						}
 					}
+					uploadSuccess = true
 					return
 				default:
 					logger.Logger.Error("unknown msg type: ", msgType)

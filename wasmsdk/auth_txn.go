@@ -5,6 +5,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"syscall/js"
 
 	"github.com/0chain/gosdk/core/sys"
@@ -32,6 +33,7 @@ func registerAuthorizer(this js.Value, args []js.Value) interface{} {
 func registerAuthCommon(this js.Value, args []js.Value) interface{} {
 	authMsgCallback := parseAuthorizerCallback(args[0])
 	authMsgResponseC = make(chan string, 1)
+	mode := os.Getenv("MODE")
 
 	sys.AuthCommon = func(msg string) (string, error) {
 		authMsgLock <- struct{}{}
@@ -41,7 +43,7 @@ func registerAuthCommon(this js.Value, args []js.Value) interface{} {
 		authMsgCallback(msg)
 		return <-authMsgResponseC, nil
 	}
-	fmt.Println("register auth common:", sys.AuthCommon)
+	fmt.Println("register auth common, mode: ", mode, "common:", sys.AuthCommon)
 	return nil
 }
 

@@ -23,6 +23,9 @@ const (
 	MsgTypeUpdateWallet = "update_wallet"
 )
 
+// CommonEventChName is the name of the channel that receives all kinds of events other than 'upload' events
+const CommonEventChName = "common"
+
 type WasmWebWorker struct {
 	// Name specifies an identifying name for the DedicatedWorkerGlobalScope representing the scope of the worker, which is mainly useful for debugging purposes.
 	// If this is not specified, `Start` will create a UUIDv4 for it and populate back.
@@ -119,6 +122,7 @@ func (ww *WasmWebWorker) SubscribeToEvents(remotePath string, ch chan worker.Mes
 		return errors.New("worker is terminated")
 	}
 	ww.subscribers[remotePath] = ch
+	ww.subscribers[CommonEventChName] = ch
 	ww.numberOfSubs++
 	//start the worker listener if there are subscribers
 	if ww.numberOfSubs == 1 {
@@ -160,23 +164,32 @@ func (ww *WasmWebWorker) ListenForEvents(eventChan <-chan worker.MessageEvent) {
 			if !ok {
 				return
 			}
-			//get remote path from the event
-			data, err := event.Data()
-			// if above throws an error, pass it to all the subscribers
+			msg, data, err := GetMsgType(event)
 			if err != nil {
+				fmt.Println("ERROR: multiupload could not see msgType in event data:", err)
 				ww.removeAllSubscribers()
 				return
 			}
-			remotePathObject, err := data.Get("remotePath")
+
+			if msg != MsgTypeUpload {
+				ww.subMutex.Lock()
+				ch, ok := ww.subscribers[CommonEventChName]
+				if ok {
+					ch <- event
+				} else {
+					fmt.Println("ERROR: multiupload CommonEventChName not found")
+				}
+				ww.subMutex.Unlock()
+				continue
+			}
+
+			remotePath, err := getRemotePath(data)
 			if err != nil {
+				fmt.Println("ERROR: multiupload could not see remotePath in event data:", err)
 				ww.removeAllSubscribers()
 				return
 			}
-			remotePath, _ := remotePathObject.String()
-			if remotePath == "" {
-				ww.removeAllSubscribers()
-				return
-			}
+
 			ww.subMutex.Lock()
 			ch, ok := ww.subscribers[remotePath]
 			if ok {
@@ -277,6 +290,15 @@ func GetMsgType(event worker.MessageEvent) (string, *safejs.Value, error) {
 	safejs.CopyBytesToGo(mstType, mt)
 
 	return string(mstType), &data, nil
+}
+
+func getRemotePath(data *safejs.Value) (string, error) {
+	remotePathObject, err := data.Get("remotePath")
+	if err != nil {
+		return "", err
+	}
+
+	return remotePathObject.String()
 }
 
 func SetMsgType(data *js.Value, msgType string) {
