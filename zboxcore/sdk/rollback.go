@@ -62,11 +62,11 @@ type BlobberStatus struct {
 	Status string
 }
 
-func GetWritemarker(allocID, allocTx, id, baseUrl string) (*LatestVersionMarker, error) {
+func GetWritemarker(allocID, allocTx, sig, id, baseUrl string) (*LatestVersionMarker, error) {
 
 	var lvm LatestVersionMarker
 
-	req, err := zboxutil.NewWritemarkerRequest(baseUrl, allocID, allocTx)
+	req, err := zboxutil.NewWritemarkerRequest(baseUrl, allocID, allocTx, sig)
 	if err != nil {
 		return nil, err
 	}
@@ -250,7 +250,7 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
 				ID:     blobber.ID,
 				Status: "available",
 			}
-			lvm, err := GetWritemarker(a.ID, a.Tx, blobber.ID, blobber.Baseurl)
+			lvm, err := GetWritemarker(a.ID, a.Tx, a.sig, blobber.ID, blobber.Baseurl)
 			if err != nil {
 				atomic.AddInt32(&errCnt, 1)
 				markerError = err
@@ -374,7 +374,7 @@ func (a *Allocation) RollbackWithMask(mask zboxutil.Uint128) {
 		go func(blobber *blockchain.StorageNode) {
 
 			defer wg.Done()
-			wr, err := GetWritemarker(a.ID, a.Tx, blobber.ID, blobber.Baseurl)
+			wr, err := GetWritemarker(a.ID, a.Tx, a.sig, blobber.ID, blobber.Baseurl)
 			if err != nil {
 				l.Logger.Error("error during getWritemarker", zap.Error(err))
 			}

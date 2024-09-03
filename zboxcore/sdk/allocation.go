@@ -272,6 +272,8 @@ type Allocation struct {
 	// FileOptions is a bitmask of file options, which are the permissions of the allocation.
 	FileOptions uint16 `json:"file_options"`
 
+	IsEnterprise bool `json:"is_enterprise"`
+
 	// FileOptions to define file restrictions on an allocation for third-parties
 	// default 00000000 for all crud operations suggesting only owner has the below listed abilities.
 	// enabling option/s allows any third party to perform certain ops
@@ -300,6 +302,7 @@ type Allocation struct {
 	consensusThreshold int
 	fullconsensus      int
 	allocationVersion  int64
+	sig                string `json:"-"`
 }
 
 // OperationRequest represents an operation request with its related options.
@@ -852,7 +855,7 @@ func (a *Allocation) GetCurrentVersion() (bool, error) {
 		go func(blobber *blockchain.StorageNode) {
 
 			defer wg.Done()
-			wr, err := GetWritemarker(a.ID, a.Tx, blobber.ID, blobber.Baseurl)
+			wr, err := GetWritemarker(a.ID, a.Tx, a.sig, blobber.ID, blobber.Baseurl)
 			if err != nil {
 				atomic.AddInt32(&errCnt, 1)
 				logger.Logger.Error("error during getWritemarke", zap.Error(err))
@@ -958,6 +961,7 @@ func (a *Allocation) RepairRequired(remotepath string) (zboxutil.Uint128, zboxut
 	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
+	listReq.sig = a.sig
 	listReq.blobbers = a.Blobbers
 	listReq.fullconsensus = a.fullconsensus
 	listReq.consensusThresh = a.DataShards
@@ -990,9 +994,10 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 	}
 	connectionID := zboxutil.NewConnectionId()
 	var mo MultiOperation
+	mo.allocationObj = a
+
 	for i := 0; i < len(operations); {
 		// resetting multi operation and previous paths for every batch
-		mo.allocationObj = a
 		mo.operationMask = zboxutil.NewUint128(0)
 		mo.maskMU = &sync.Mutex{}
 		mo.connectionID = connectionID
@@ -1329,6 +1334,7 @@ func (a *Allocation) generateDownloadRequest(
 	downloadReq.allocationID = a.ID
 	downloadReq.allocationTx = a.Tx
 	downloadReq.allocOwnerID = a.Owner
+	downloadReq.sig = a.sig
 	downloadReq.allocOwnerPubKey = a.OwnerPublicKey
 	downloadReq.ctx, downloadReq.ctxCncl = context.WithCancel(a.ctx)
 	downloadReq.fileHandler = fileHandler
@@ -1361,6 +1367,7 @@ func (a *Allocation) generateDownloadRequest(
 	for i := 0; i < len(a.Blobbers); i++ {
 		downloadReq.downloadQueue[i].timeTaken = 1000000
 	}
+	downloadReq.isEnterprise = a.IsEnterprise
 
 	return downloadReq, nil
 }
@@ -1564,6 +1571,7 @@ func (a *Allocation) ListDirFromAuthTicket(authTicket string, lookupHash string,
 	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
+	listReq.sig = a.sig
 	listReq.blobbers = a.Blobbers
 	listReq.fullconsensus = a.fullconsensus
 	listReq.consensusThresh = a.consensusThreshold
@@ -1603,6 +1611,7 @@ func (a *Allocation) ListDir(path string, opts ...ListRequestOptions) (*ListResu
 	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
+	listReq.sig = a.sig
 	listReq.blobbers = a.Blobbers
 	listReq.fullconsensus = a.fullconsensus
 	listReq.consensusThresh = a.DataShards
@@ -1630,6 +1639,7 @@ func (a *Allocation) getRefs(path, pathHash, authToken, offsetPath, updatedDate,
 	oTreeReq := &ObjectTreeRequest{
 		allocationID:   a.ID,
 		allocationTx:   a.Tx,
+		sig:            a.sig,
 		blobbers:       a.Blobbers,
 		authToken:      authToken,
 		pathHash:       pathHash,
@@ -1858,6 +1868,7 @@ func (a *Allocation) GetRecentlyAddedRefs(page int, fromDate int64, pageLimit in
 	req := &RecentlyAddedRefRequest{
 		allocationID: a.ID,
 		allocationTx: a.Tx,
+		sig:          a.sig,
 		blobbers:     a.Blobbers,
 		offset:       offset,
 		fromDate:     fromDate,
@@ -1885,6 +1896,7 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
+	listReq.sig = a.sig
 	listReq.blobbers = a.Blobbers
 	listReq.fullconsensus = a.fullconsensus
 	listReq.consensusThresh = a.consensusThreshold
@@ -2004,6 +2016,7 @@ func (a *Allocation) GetFileMetaFromAuthTicket(authTicket string, lookupHash str
 	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
+	listReq.sig = a.sig
 	listReq.blobbers = a.Blobbers
 	listReq.fullconsensus = a.fullconsensus
 	listReq.consensusThresh = a.consensusThreshold
@@ -2049,6 +2062,7 @@ func (a *Allocation) GetFileStats(path string) (map[string]*FileStats, error) {
 	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
+	listReq.sig = a.sig
 	listReq.blobbers = a.Blobbers
 	listReq.fullconsensus = a.fullconsensus
 	listReq.consensusThresh = a.consensusThreshold
@@ -2091,6 +2105,7 @@ func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus int,
 	req.blobbers = a.Blobbers
 	req.allocationID = a.ID
 	req.allocationTx = a.Tx
+	req.sig = a.sig
 	req.consensus.Init(threshConsensus, fullConsensus)
 	req.ctx, req.ctxCncl = context.WithCancel(a.ctx)
 	req.remotefilepath = path
@@ -2121,6 +2136,7 @@ func (a *Allocation) createDir(remotePath string, threshConsensus, fullConsensus
 		allocationObj: a,
 		allocationID:  a.ID,
 		allocationTx:  a.Tx,
+		sig:           a.sig,
 		blobbers:      a.Blobbers,
 		mu:            &sync.Mutex{},
 		dirMask:       mask,
@@ -2180,7 +2196,7 @@ func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
 		query.Add("path", path)
 		query.Add("refereeClientID", refereeClientID)
 
-		httpreq, err := zboxutil.NewRevokeShareRequest(baseUrl, a.ID, a.Tx, query)
+		httpreq, err := zboxutil.NewRevokeShareRequest(baseUrl, a.ID, a.Tx, a.sig, query)
 		if err != nil {
 			return err
 		}
@@ -2276,6 +2292,7 @@ func (a *Allocation) GetAuthTicket(path, filename string,
 		expirationSeconds: expiration,
 		allocationID:      a.ID,
 		allocationTx:      a.Tx,
+		sig:               a.sig,
 		blobbers:          a.Blobbers,
 		ctx:               a.ctx,
 		remotefilepath:    path,
@@ -2342,7 +2359,7 @@ func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKe
 		if err := formWriter.Close(); err != nil {
 			return err
 		}
-		httpreq, err := zboxutil.NewShareRequest(url, a.ID, a.Tx, body)
+		httpreq, err := zboxutil.NewShareRequest(url, a.ID, a.Tx, a.sig, body)
 		if err != nil {
 			return err
 		}
@@ -2744,6 +2761,7 @@ func (a *Allocation) downloadFromAuthTicket(fileHandler sys.File, authTicket str
 	downloadReq.maskMu = &sync.Mutex{}
 	downloadReq.allocationID = a.ID
 	downloadReq.allocationTx = a.Tx
+	downloadReq.sig = a.sig
 	downloadReq.allocOwnerID = a.Owner
 	downloadReq.allocOwnerPubKey = a.OwnerPublicKey
 	downloadReq.ctx, downloadReq.ctxCncl = context.WithCancel(a.ctx)
@@ -2763,6 +2781,7 @@ func (a *Allocation) downloadFromAuthTicket(fileHandler sys.File, authTicket str
 	downloadReq.shouldVerify = verifyDownload
 	downloadReq.fullconsensus = a.fullconsensus
 	downloadReq.consensusThresh = a.consensusThreshold
+	downloadReq.isEnterprise = a.IsEnterprise
 	downloadReq.downloadQueue = make(downloadQueue, len(a.Blobbers))
 	for i := 0; i < len(a.Blobbers); i++ {
 		downloadReq.downloadQueue[i].timeTaken = 1000000

@@ -25,6 +25,7 @@ const CHUNK_SIZE = 64 * 1024
 type ListRequest struct {
 	allocationID       string
 	allocationTx       string
+	sig                string
 	blobbers           []*blockchain.StorageNode
 	remotefilepathhash string
 	remotefilepath     string

@@ -31,6 +31,7 @@ type DeleteRequest struct {
 	allocationObj  *Allocation
 	allocationID   string
 	allocationTx   string
+	sig            string
 	blobbers       []*blockchain.StorageNode
 	remotefilepath string
 	ctx            context.Context
@@ -64,7 +65,7 @@ func (req *DeleteRequest) deleteBlobberFile(
 	query.Add("connection_id", req.connectionID)
 	query.Add("path", req.remotefilepath)
 
-	httpreq, err := zboxutil.NewDeleteRequest(blobber.Baseurl, req.allocationID, req.allocationTx, query)
+	httpreq, err := zboxutil.NewDeleteRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, query)
 	if err != nil {
 		l.Logger.Error(blobber.Baseurl, "Error creating delete request", err)
 		return err
@@ -156,7 +157,7 @@ func (req *DeleteRequest) getObjectTreeFromBlobber(pos uint64) (
 	}()
 
 	fRefEntity, err = getObjectTreeFromBlobber(
-		req.ctx, req.allocationID, req.allocationTx,
+		req.ctx, req.allocationID, req.allocationTx, req.sig,
 		req.remotefilepath, req.blobbers[pos])
 	return
 }
@@ -291,11 +292,13 @@ func (req *DeleteRequest) ProcessDelete() (err error) {
 		commitReq := &CommitRequest{
 			allocationID: req.allocationID,
 			allocationTx: req.allocationTx,
+			sig:          req.sig,
 			blobber:      req.blobbers[pos],
 			connectionID: req.connectionID,
 			wg:           wg,
 			timestamp:    req.timestamp,
 		}
+
 		commitReq.changes = append(commitReq.changes, newChange)
 		commitReqs[c] = commitReq
 		go AddCommitRequest(commitReq)
@@ -339,6 +342,7 @@ func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string) (
 		allocationObj:  allocObj,
 		allocationID:   allocObj.ID,
 		allocationTx:   allocObj.Tx,
+		sig:            allocObj.sig,
 		connectionID:   connectionID,
 		blobbers:       allocObj.Blobbers,
 		remotefilepath: dop.remotefilepath,

@@ -411,6 +411,11 @@ func unlockStakePool(providerType, fee uint64, providerID string) (int64, error)
 	return unstake, err
 }
 
+func collectRewards(providerType int, providerID string) (string, error) {
+	hash, _, err := sdk.CollectRewards(providerID, sdk.ProviderType(providerType))
+	return hash, err
+}
+
 // getSkatePoolInfo is to get information about the stake pool for the allocation
 //   - providerType: provider type (1: miner, 2:sharder, 3:blobber, 4:validator, 5:authorizer)
 //   - providerID: provider id

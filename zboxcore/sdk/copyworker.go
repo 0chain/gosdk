@@ -32,6 +32,7 @@ type CopyRequest struct {
 	allocationObj  *Allocation
 	allocationID   string
 	allocationTx   string
+	sig            string
 	blobbers       []*blockchain.StorageNode
 	remotefilepath string
 	destPath       string
@@ -48,7 +49,7 @@ type CopyRequest struct {
 const objAlreadyExists = "Object Already exists"
 
 func (req *CopyRequest) getObjectTreeFromBlobber(blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
-	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.allocationTx, req.remotefilepath, blobber)
+	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.allocationTx, req.sig, req.remotefilepath, blobber)
 }
 
 func (req *CopyRequest) getFileMetaFromBlobber(pos int) (fileRef *fileref.FileRef, err error) {
@@ -117,7 +118,7 @@ func (req *CopyRequest) copyBlobberObject(
 				cncl     context.CancelFunc
 			)
 
-			httpreq, err = zboxutil.NewCopyRequest(blobber.Baseurl, req.allocationID, req.allocationTx, body)
+			httpreq, err = zboxutil.NewCopyRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body)
 			if err != nil {
 				l.Logger.Error(blobber.Baseurl, "Error creating rename request", err)
 				return
@@ -323,11 +324,13 @@ func (req *CopyRequest) ProcessCopy() error {
 		commitReq := &CommitRequest{
 			allocationID: req.allocationID,
 			allocationTx: req.allocationTx,
+			sig:          req.sig,
 			blobber:      req.blobbers[pos],
 			connectionID: req.connectionID,
 			wg:           wg,
 			timestamp:    req.timestamp,
 		}
+
 		commitReq.changes = append(commitReq.changes, newChange)
 		commitReqs[c] = commitReq
 		go AddCommitRequest(commitReq)
@@ -377,6 +380,7 @@ func (co *CopyOperation) Process(allocObj *Allocation, connectionID string) ([]f
 		allocationObj:  allocObj,
 		allocationID:   allocObj.ID,
 		allocationTx:   allocObj.Tx,
+		sig:            allocObj.sig,
 		connectionID:   connectionID,
 		blobbers:       allocObj.Blobbers,
 		remotefilepath: co.remotefilepath,
@@ -388,6 +392,7 @@ func (co *CopyOperation) Process(allocObj *Allocation, connectionID string) ([]f
 		Consensus:      Consensus{RWMutex: &sync.RWMutex{}},
 		dirOnly:        co.dirOnly,
 	}
+
 	cR.consensusThresh = co.consensusThresh
 	cR.fullconsensus = co.fullconsensus
 

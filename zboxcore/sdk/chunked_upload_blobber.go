@@ -178,7 +178,6 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 	}()
 
 	rootRef, latestWM, size, fileIDMeta, err := sb.processWriteMarker(ctx, su)
-
 	if err != nil {
 		logger.Logger.Error(err)
 		return err
@@ -324,7 +323,7 @@ func (sb *ChunkedUploadBlobber) processWriteMarker(
 	}
 
 	var lR ReferencePathResult
-	req, err := zboxutil.NewReferencePathRequest(sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, paths)
+	req, err := zboxutil.NewReferencePathRequest(sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, su.allocationObj.sig, paths)
 	if err != nil || len(paths) == 0 {
 		logger.Logger.Error("Creating ref path req", err)
 		return nil, nil, 0, nil, err

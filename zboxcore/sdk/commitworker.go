@@ -55,6 +55,7 @@ type CommitRequest struct {
 	allocationID  string
 	allocationTx  string
 	connectionID  string
+	sig           string
 	wg            *sync.WaitGroup
 	result        *CommitResult
 	timestamp     int64

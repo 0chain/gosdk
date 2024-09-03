@@ -47,7 +47,7 @@ var (
 type DownloadRequestOption func(dr *DownloadRequest)
 
 // WithDownloadProgressStorer set download progress storer of download request options.
-// 		- storer: download progress storer instance, used to store download progress.
+//   - storer: download progress storer instance, used to store download progress.
 func WithDownloadProgressStorer(storer DownloadProgressStorer) DownloadRequestOption {
 	return func(dr *DownloadRequest) {
 		dr.downloadStorer = storer
@@ -69,6 +69,7 @@ func WithFileCallback(cb func()) DownloadRequestOption {
 type DownloadRequest struct {
 	allocationID       string
 	allocationTx       string
+	sig                string
 	allocOwnerID       string
 	allocOwnerPubKey   string
 	blobbers           []*blockchain.StorageNode
@@ -111,6 +112,7 @@ type DownloadRequest struct {
 	workdir            string
 	downloadQueue      downloadQueue // Always initialize this queue with max time taken
 	isResume           bool
+	isEnterprise       bool
 }
 
 type downloadPriority struct {
@@ -276,7 +278,6 @@ func (req *DownloadRequest) downloadBlock(
 		}
 
 		c++
-
 	}
 
 	var failed int32
@@ -499,7 +500,7 @@ func (req *DownloadRequest) processDownload() {
 	}
 
 	if req.shouldVerify {
-		if req.authTicket != nil && req.encryptedKey != "" {
+		if req.isEnterprise || (req.authTicket != nil && req.encryptedKey != "") {
 			req.shouldVerify = false
 		}
 	}
@@ -1095,6 +1096,7 @@ func GetFileRefFromBlobber(allocationID, blobberId, remotePath string) (fRef *fi
 
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
+	listReq.sig = a.sig
 	listReq.blobbers = []*blockchain.StorageNode{
 		{ID: string(blobber.ID), Baseurl: blobber.BaseURL},
 	}
@@ -1115,6 +1117,7 @@ func (req *DownloadRequest) getFileRef() (fRef *fileref.FileRef, err error) {
 		remotefilepathhash: req.remotefilepathhash,
 		allocationID:       req.allocationID,
 		allocationTx:       req.allocationTx,
+		sig:                req.sig,
 		blobbers:           req.blobbers,
 		authToken:          req.authTicket,
 		Consensus: Consensus{

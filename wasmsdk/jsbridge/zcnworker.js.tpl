@@ -57,5 +57,45 @@ self.__zcn_worker_wasm__ = {
         }
       
         return sig.serializeToHexStr()
-    }
+    },
+    initProxyKeys: initProxyKeys,
+    verify: blsVerify,
+    verifyWith: blsVerifyWith,
+    addSignature: blsAddSignature
 }  
+
+async function initProxyKeys(publicKey, privateKey) {
+  const pubKey = bls.deserializeHexStrToPublicKey(publicKey)
+  const privKey = bls.deserializeHexStrToSecretKey(privateKey)
+  bls.publicKey = pubKey
+  bls.secretKey = privKey
+}
+
+async function blsVerify(signature, hash) {
+  const bytes = hexStringToByte(hash)
+  const sig = bls.deserializeHexStrToSignature(signature)
+  return jsProxy.publicKey.verify(sig, bytes)
+}
+
+async function blsVerifyWith(pk, signature, hash) {
+  const publicKey = bls.deserializeHexStrToPublicKey(pk)
+  const bytes = hexStringToByte(hash)
+  const sig = bls.deserializeHexStrToSignature(signature)
+  return publicKey.verify(sig, bytes)
+}
+
+async function blsAddSignature(secretKey, signature, hash) {
+  const privateKey = bls.deserializeHexStrToSecretKey(secretKey)
+  const sig = bls.deserializeHexStrToSignature(signature)
+  var sig2 = privateKey.sign(hexStringToByte(hash))
+  if (!sig2) {
+    const errMsg =
+      'err: wasm blsAddSignature function failed to sign transaction'
+    console.warn(errMsg)
+    throw new Error(errMsg)
+  }
+
+  sig.add(sig2)
+
+  return sig.serializeToHexStr()
+}

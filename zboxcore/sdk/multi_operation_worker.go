@@ -95,7 +95,7 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 			formWriter.Close()
 
 			var httpreq *http.Request
-			httpreq, err = zboxutil.NewConnectionRequest(blobber.Baseurl, mo.allocationObj.ID, mo.allocationObj.Tx, body)
+			httpreq, err = zboxutil.NewConnectionRequest(blobber.Baseurl, mo.allocationObj.ID, mo.allocationObj.Tx, mo.allocationObj.sig, body)
 			if err != nil {
 				l.Logger.Error(blobber.Baseurl, "Error creating new connection request", err)
 				return
@@ -305,6 +305,7 @@ func (mo *MultiOperation) Process() error {
 		commitReq := &CommitRequest{
 			allocationID: mo.allocationObj.ID,
 			allocationTx: mo.allocationObj.Tx,
+			sig:          mo.allocationObj.sig,
 			blobber:      mo.allocationObj.Blobbers[pos],
 			connectionID: mo.connectionID,
 			wg:           wg,

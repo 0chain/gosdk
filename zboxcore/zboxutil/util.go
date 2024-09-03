@@ -313,8 +313,8 @@ const (
 )
 
 func ScryptEncrypt(key, text []byte) ([]byte, error) {
-	if len(key) != keySize {
-		return nil, errors.New("scrypt: invalid key size" + strconv.Itoa(len(key)))
+	if len(key) == 0 {
+		return nil, errors.New("scrypt: key cannot be empty")
 	}
 	if len(text) == 0 {
 		return nil, errors.New("scrypt: plaintext cannot be empty")
