@@ -240,7 +240,7 @@ func updateAllocationWithRepair(allocationID string,
 	size int64,
 	extend bool,
 	lock int64,
-	addBlobberId, addBlobberAuthTicket, removeBlobberId string) (string, error) {
+	addBlobberId, addBlobberAuthTicket, removeBlobberId, callbackFuncName string) (string, error) {
 	sdk.SetWasm()
 	allocationObj, err := sdk.GetAllocation(allocationID)
 	if err != nil {
