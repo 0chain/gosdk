@@ -607,12 +607,6 @@ func (req *DownloadRequest) processDownload() {
 								hashWg.Done()
 							}()
 						}
-					} else {
-						hashWg.Add(1)
-						go func() {
-							writeData(actualFileHasher, data, req.datashards, int(remainingSize)) //nolint
-							hashWg.Done()
-						}()
 					}
 
 					totalWritten, err := writeData(req.fileHandler, data, req.datashards, int(remainingSize))
@@ -660,12 +654,6 @@ func (req *DownloadRequest) processDownload() {
 										hashWg.Done()
 									}()
 								}
-							} else {
-								hashWg.Add(1)
-								go func() {
-									writeData(actualFileHasher, block.data, req.datashards, int(remainingSize)) //nolint
-									hashWg.Done()
-								}()
 							}
 
 							totalWritten, err := writeData(req.fileHandler, block.data, req.datashards, int(remainingSize))
