@@ -25,6 +25,7 @@ type StatusBar struct {
 	localPath      string
 	callback       func(totalBytes int, completedBytes int, fileName, objURL, err string)
 	isRepair       bool
+	totalBytesMap  map[string]int
 }
 
 var jsCallbackMutex sync.Mutex
@@ -44,7 +45,8 @@ func (s *StatusBar) Started(allocationID, filePath string, op int, totalBytes in
 			}
 			jsCallbackMutex.Lock()
 			defer jsCallbackMutex.Unlock()
-			s.callback(s.totalBytes, s.completedBytes, fileName, "", "")
+			s.totalBytesMap[filePath] = totalBytes
+			s.callback(totalBytes, s.completedBytes, fileName, "", "")
 		}
 	}
 }
@@ -55,7 +57,6 @@ func (s *StatusBar) InProgress(allocationID, filePath string, op int, completedB
 		s.b.Set(completedBytes)
 	}
 	fileName := path.Base(filePath)
-	s.completedBytes = completedBytes
 	if s.callback != nil {
 		if !s.isRepair || op == sdk.OpUpload || op == sdk.OpUpdate {
 			if s.isRepair {
@@ -63,7 +64,7 @@ func (s *StatusBar) InProgress(allocationID, filePath string, op int, completedB
 			}
 			jsCallbackMutex.Lock()
 			defer jsCallbackMutex.Unlock()
-			s.callback(s.totalBytes, s.completedBytes, fileName, "", "")
+			s.callback(s.totalBytesMap[filePath], completedBytes, fileName, "", "")
 		}
 	}
 }
@@ -75,7 +76,6 @@ func (s *StatusBar) Completed(allocationID, filePath string, filename string, mi
 	}
 	s.success = true
 
-	s.completedBytes = s.totalBytes
 	if s.localPath != "" {
 		fs, _ := sys.Files.Open(s.localPath)
 		mf, _ := fs.(*sys.MemFile)
@@ -88,7 +88,9 @@ func (s *StatusBar) Completed(allocationID, filePath string, filename string, mi
 			}
 			jsCallbackMutex.Lock()
 			defer jsCallbackMutex.Unlock()
-			s.callback(s.totalBytes, s.completedBytes, filename, s.objURL, "")
+			totalBytes := s.totalBytesMap[filePath]
+			delete(s.totalBytesMap, filePath)
+			s.callback(totalBytes, totalBytes, filename, s.objURL, "")
 		}
 	}
 	if !s.isRepair {
@@ -118,7 +120,7 @@ func (s *StatusBar) Error(allocationID string, filePath string, op int, err erro
 			}
 			jsCallbackMutex.Lock()
 			defer jsCallbackMutex.Unlock()
-			s.callback(s.totalBytes, s.completedBytes, fileName, "", err.Error())
+			s.callback(s.totalBytesMap[filePath], s.completedBytes, fileName, "", err.Error())
 		}
 	}
 	if !s.isRepair {

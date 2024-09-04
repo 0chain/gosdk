@@ -249,7 +249,7 @@ func updateAllocationWithRepair(allocationID string,
 	}
 
 	wg := &sync.WaitGroup{}
-	statusBar := &StatusBar{wg: wg, isRepair: true}
+	statusBar := &StatusBar{wg: wg, isRepair: true, totalBytesMap: make(map[string]int)}
 	wg.Add(1)
 	if callbackFuncName != "" {
 		callback := js.Global().Get(callbackFuncName)
@@ -527,7 +527,7 @@ func allocationRepair(allocationID, remotePath string) error {
 	}
 	sdk.SetWasm()
 	wg := &sync.WaitGroup{}
-	statusBar := &StatusBar{wg: wg, isRepair: true}
+	statusBar := &StatusBar{wg: wg, isRepair: true, totalBytesMap: make(map[string]int)}
 	wg.Add(1)
 
 	err = allocationObj.StartRepair("/tmp", remotePath, statusBar)
