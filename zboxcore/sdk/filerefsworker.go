@@ -32,6 +32,7 @@ const INVALID_PATH = "invalid_path"
 type ObjectTreeRequest struct {
 	allocationID   string
 	allocationTx   string
+	sig            string
 	blobbers       []*blockchain.StorageNode
 	authToken      string
 	pathHash       string
@@ -147,6 +148,7 @@ func (o *ObjectTreeRequest) getFileRefs(bUrl string, respChan chan *oTreeRespons
 	oReq, err := zboxutil.NewRefsRequest(
 		bUrl,
 		o.allocationID,
+		o.sig,
 		o.allocationTx,
 		o.remotefilepath,
 		o.pathHash,
@@ -207,6 +209,7 @@ type ORef struct {
 	ID        int64            `json:"id"`
 	CreatedAt common.Timestamp `json:"created_at"`
 	UpdatedAt common.Timestamp `json:"updated_at"`
+	Err       error            `json:"-"`
 }
 
 type SimilarField struct {
@@ -227,12 +230,14 @@ type SimilarField struct {
 	MimeType            string `json:"mimetype"`
 	ActualThumbnailSize int64  `json:"actual_thumbnail_size"`
 	ActualThumbnailHash string `json:"actual_thumbnail_hash"`
+	CustomMeta          string `json:"custom_meta"`
 }
 
 type RecentlyAddedRefRequest struct {
 	ctx          context.Context
 	allocationID string
 	allocationTx string
+	sig          string
 	blobbers     []*blockchain.StorageNode
 	fromDate     int64
 	offset       int64
@@ -309,7 +314,7 @@ func (r *RecentlyAddedRefRequest) GetRecentlyAddedRefs() (*RecentlyAddedRefResul
 
 func (r *RecentlyAddedRefRequest) getRecentlyAddedRefs(resp *RecentlyAddedRefResponse, bUrl string) {
 	defer r.wg.Done()
-	req, err := zboxutil.NewRecentlyAddedRefsRequest(bUrl, r.allocationID, r.allocationTx, r.fromDate, r.offset, r.pageLimit)
+	req, err := zboxutil.NewRecentlyAddedRefsRequest(bUrl, r.allocationID, r.allocationTx, r.sig, r.fromDate, r.offset, r.pageLimit)
 	if err != nil {
 		resp.err = err
 		return

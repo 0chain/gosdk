@@ -21,14 +21,26 @@ import (
 
 // For sync app
 const (
-	Upload      = "Upload"
-	Download    = "Download"
-	Update      = "Update"
-	Delete      = "Delete"
-	Conflict    = "Conflict"
+	// Upload - Upload file to remote
+	Upload = "Upload"
+
+	// Download - Download file from remote
+	Download = "Download"
+
+	// Update - Update file in remote
+	Update = "Update"
+
+	// Delete - Delete file from remote
+	Delete = "Delete"
+
+	// Conflict - Conflict in file
+	Conflict = "Conflict"
+
+	// LocalDelete - Delete file from local
 	LocalDelete = "LocalDelete"
 )
 
+// FileInfo file information representation for sync
 type FileInfo struct {
 	Size         int64            `json:"size"`
 	MimeType     string           `json:"mimetype"`
@@ -41,6 +53,7 @@ type FileInfo struct {
 	UpdatedAt    common.Timestamp `json:"updated_at"`
 }
 
+// FileDiff file difference representation for sync
 type FileDiff struct {
 	Op   string `json:"operation"`
 	Path string `json:"path"`
@@ -79,6 +92,9 @@ func (a *Allocation) getRemoteFilesAndDirs(dirList []string, fMap map[string]Fil
 	return childDirList, nil
 }
 
+// GetRemoteFileMap retrieve the remote file map
+//   - exclMap is the exclude map, a map of paths to exclude
+//   - remotepath is the remote path to get the file map
 func (a *Allocation) GetRemoteFileMap(exclMap map[string]int, remotepath string) (map[string]FileInfo, error) {
 	// 1. Iteratively get dir and files separately till no more dirs left
 	remoteList := make(map[string]FileInfo)
@@ -135,7 +151,7 @@ func addLocalFileList(root string, fMap map[string]FileInfo, dirList *[]string, 
 			l.Logger.Error("getting relative path failed", err)
 		}
 		// Allocation paths are like unix, so we modify all the backslashes
-		// to forward slashes. File path in windows contain backslashes. 
+		// to forward slashes. File path in windows contain backslashes.
 		lPath = "/" + strings.ReplaceAll(lPath, "\\", "/")
 		// Exclude
 		if _, ok := exclMap[lPath]; ok {
@@ -290,6 +306,12 @@ func findDelta(rMap map[string]FileInfo, lMap map[string]FileInfo, prevMap map[s
 	return lFDiff
 }
 
+// GetAllocationDiff retrieves the difference between the remote and local filesystem representation of the allocation
+//   - lastSyncCachePath is the path to the last sync cache file, which carries exact state of the remote filesystem
+//   - localRootPath is the local root path of the allocation
+//   - localFileFilters is the list of local file filters
+//   - remoteExcludePath is the list of remote exclude paths
+//   - remotePath is the remote path of the allocation
 func (a *Allocation) GetAllocationDiff(lastSyncCachePath string, localRootPath string, localFileFilters []string, remoteExcludePath []string, remotePath string) ([]FileDiff, error) {
 	var lFdiff []FileDiff
 	prevRemoteFileMap := make(map[string]FileInfo)
@@ -334,8 +356,10 @@ func (a *Allocation) GetAllocationDiff(lastSyncCachePath string, localRootPath s
 	return lFdiff, nil
 }
 
-// SaveRemoteSnapShot - Saves the remote current information to the given file
+// SaveRemoteSnapshot saves the remote current information to the given file.
 // This file can be passed to GetAllocationDiff to exactly find the previous sync state to current.
+//   - pathToSave is the path to save the remote snapshot
+//   - remoteExcludePath is the list of paths to exclude
 func (a *Allocation) SaveRemoteSnapshot(pathToSave string, remoteExcludePath []string) error {
 	bIsFileExists := false
 	// Validate path

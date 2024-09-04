@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"github.com/0chain/gosdk/zcnbridge/ethereum/uniswapnetwork"
-	"github.com/0chain/gosdk/zcnbridge/ethereum/uniswaprouter"
 	"math/big"
 	"strings"
 	"time"
+
+	"github.com/0chain/gosdk/zcnbridge/ethereum/uniswapnetwork"
+	"github.com/0chain/gosdk/zcnbridge/ethereum/uniswaprouter"
 
 	"github.com/ybbus/jsonrpc/v3"
 
@@ -67,6 +68,9 @@ var (
 	}
 )
 
+// CreateSignedTransactionFromKeyStore creates signed transaction from key store
+// - client - Ethereum client
+// - gasLimitUnits - gas limit in units
 func (b *BridgeClient) CreateSignedTransactionFromKeyStore(client EthereumClient, gasLimitUnits uint64) *bind.TransactOpts {
 	var (
 		signerAddress = common.HexToAddress(b.EthereumAddress)
@@ -115,6 +119,8 @@ func (b *BridgeClient) CreateSignedTransactionFromKeyStore(client EthereumClient
 }
 
 // AddEthereumAuthorizer Adds authorizer to Ethereum bridge. Only contract deployer can call this method
+//   - ctx go context instance to run the transaction
+//   - address Ethereum address of the authorizer
 func (b *BridgeClient) AddEthereumAuthorizer(ctx context.Context, address common.Address) (*types.Transaction, error) {
 	instance, transactOpts, err := b.prepareAuthorizers(ctx, "addAuthorizers", address)
 	if err != nil {
@@ -131,6 +137,8 @@ func (b *BridgeClient) AddEthereumAuthorizer(ctx context.Context, address common
 }
 
 // RemoveEthereumAuthorizer Removes authorizer from Ethereum bridge. Only contract deployer can call this method
+//   - ctx go context instance to run the transaction
+//   - address Ethereum address of the authorizer
 func (b *BridgeClient) RemoveEthereumAuthorizer(ctx context.Context, address common.Address) (*types.Transaction, error) {
 	instance, transactOpts, err := b.prepareAuthorizers(ctx, "removeAuthorizers", address)
 	if err != nil {
@@ -146,6 +154,8 @@ func (b *BridgeClient) RemoveEthereumAuthorizer(ctx context.Context, address com
 	return tran, err
 }
 
+// AddEthereumAuthorizers add bridge authorizers to the Ethereum authorizers contract
+// 		- configDir - configuration directory
 func (b *BridgeClient) AddEthereumAuthorizers(configDir string) {
 	cfg := viper.New()
 	cfg.AddConfigPath(configDir)
@@ -233,6 +243,8 @@ func (b *BridgeClient) prepareNFTConfig(ctx context.Context, method string, para
 }
 
 // EncodePackInt do abi.encodedPack(string, int), it is used for setting plan id for royalty
+//   - key key for the plan
+//   - param plan id
 func EncodePackInt64(key string, param int64) common.Hash {
 	return crypto.Keccak256Hash(
 		[]byte(key),
@@ -240,12 +252,19 @@ func EncodePackInt64(key string, param int64) common.Hash {
 	)
 }
 
-// NFTConfigSetUint256 call setUint256 method of NFTConfig contract
+// NFTConfigSetUint256  sets a uint256 field in the NFT config, given the key as a string
+//   - ctx go context instance to run the transaction
+//   - key key for this field
+//   - value value to set
 func (b *BridgeClient) NFTConfigSetUint256(ctx context.Context, key string, value int64) (*types.Transaction, error) {
 	kkey := crypto.Keccak256Hash([]byte(key))
 	return b.NFTConfigSetUint256Raw(ctx, kkey, value)
 }
 
+// NFTConfigSetUint256Raw sets a uint256 field in the NFT config, given the key as a Keccak256 hash
+//   - ctx go context instance to run the transaction
+//   - key key for this field (hased)
+//   - value value to set
 func (b *BridgeClient) NFTConfigSetUint256Raw(ctx context.Context, key common.Hash, value int64) (*types.Transaction, error) {
 	if value < 0 {
 		return nil, errors.New("value must be greater than zero")
@@ -267,6 +286,10 @@ func (b *BridgeClient) NFTConfigSetUint256Raw(ctx context.Context, key common.Ha
 	return tran, err
 }
 
+// NFTConfigGetUint256 retrieves a uint256 field in the NFT config, given the key as a string
+//   - ctx go context instance to run the transaction
+//   - key key for this field
+//   - keyParam additional key parameter, only the first item is used
 func (b *BridgeClient) NFTConfigGetUint256(ctx context.Context, key string, keyParam ...int64) (string, int64, error) {
 	kkey := crypto.Keccak256Hash([]byte(key))
 	if len(keyParam) > 0 {
@@ -289,6 +312,10 @@ func (b *BridgeClient) NFTConfigGetUint256(ctx context.Context, key string, keyP
 	return kkey.String(), v.Int64(), err
 }
 
+// NFTConfigSetAddress sets an address field in the NFT config, given the key as a string
+//   - ctx go context instance to run the transaction
+//   - key key for this field
+//   - address address to set
 func (b *BridgeClient) NFTConfigSetAddress(ctx context.Context, key, address string) (*types.Transaction, error) {
 	kkey := crypto.Keccak256Hash([]byte(key))
 	// return b.NFTConfigSetAddress(ctx, kkey, address)
@@ -312,6 +339,9 @@ func (b *BridgeClient) NFTConfigSetAddress(ctx context.Context, key, address str
 	return tran, err
 }
 
+// NFTConfigGetAddress retrieves an address field in the NFT config, given the key as a string
+//   - ctx go context instance to run the transaction
+//   - key key for this field
 func (b *BridgeClient) NFTConfigGetAddress(ctx context.Context, key string) (string, string, error) {
 	kkey := crypto.Keccak256Hash([]byte(key))
 
@@ -339,6 +369,8 @@ func (b *BridgeClient) NFTConfigGetAddress(ctx context.Context, key string) (str
 // So the owner must call IncreaseAllowance of the WZCN zcntoken with 2 parameters:
 // spender address which is the bridge contract and amount to be burned (transferred)
 // Token signature: "increaseApproval(address,uint256)"
+//   - ctx go context instance to run the transaction
+//   - allowanceAmount amount to increase
 //
 //nolint:funlen
 func (b *BridgeClient) IncreaseBurnerAllowance(ctx context.Context, allowanceAmount uint64) (*types.Transaction, error) {
@@ -411,11 +443,14 @@ func (b *BridgeClient) GetTokenBalance() (*big.Int, error) {
 }
 
 // VerifyZCNTransaction verifies 0CHain transaction
+//   - ctx go context instance to run the transaction
+//   - hash transaction hash
 func (b *BridgeClient) VerifyZCNTransaction(ctx context.Context, hash string) (transaction.Transaction, error) {
 	return transaction.Verify(ctx, hash)
 }
 
 // SignWithEthereumChain signs the digest with Ethereum chain signer taking key from the current user key storage
+//   - message message to sign
 func (b *BridgeClient) SignWithEthereumChain(message string) ([]byte, error) {
 	hash := crypto.Keccak256Hash([]byte(message))
 
@@ -441,6 +476,8 @@ func (b *BridgeClient) SignWithEthereumChain(message string) ([]byte, error) {
 }
 
 // GetUserNonceMinted Returns nonce for a specified Ethereum address
+//   - ctx go context instance to run the transaction
+//   - rawEthereumAddress Ethereum address
 func (b *BridgeClient) GetUserNonceMinted(ctx context.Context, rawEthereumAddress string) (*big.Int, error) {
 	ethereumAddress := common.HexToAddress(rawEthereumAddress)
 
@@ -464,6 +501,7 @@ func (b *BridgeClient) GetUserNonceMinted(ctx context.Context, rawEthereumAddres
 }
 
 // ResetUserNonceMinted Resets nonce for a specified Ethereum address
+//   - ctx go context instance to run the transaction
 func (b *BridgeClient) ResetUserNonceMinted(ctx context.Context) (*types.Transaction, error) {
 	bridgeInstance, transactOpts, err := b.prepareBridge(ctx, b.EthereumAddress, "resetUserNonceMinted")
 	if err != nil {
@@ -486,7 +524,10 @@ func (b *BridgeClient) ResetUserNonceMinted(ctx context.Context) (*types.Transac
 }
 
 // MintWZCN Mint ZCN tokens on behalf of the 0ZCN client
-// payload: received from authorizers
+//   - ctx go context instance to run the transaction
+//   - payload received from authorizers
+//
+// ERC20 signature: "mint(address,uint256,bytes,uint256,bytes[])"
 func (b *BridgeClient) MintWZCN(ctx context.Context, payload *ethereum.MintPayload) (*types.Transaction, error) {
 	if DefaultClientIDEncoder == nil {
 		return nil, errors.New("DefaultClientIDEncoder must be setup")
@@ -545,8 +586,9 @@ func (b *BridgeClient) MintWZCN(ctx context.Context, payload *ethereum.MintPaylo
 }
 
 // BurnWZCN Burns WZCN tokens on behalf of the 0ZCN client
-// amountTokens - ZCN tokens
-// clientID - 0ZCN client
+//   - ctx go context instance to run the transaction
+//   - amountTokens amount of tokens to burn
+//
 // ERC20 signature: "burn(uint256,bytes)"
 func (b *BridgeClient) BurnWZCN(ctx context.Context, amountTokens uint64) (*types.Transaction, error) {
 	if DefaultClientIDEncoder == nil {
@@ -586,6 +628,8 @@ func (b *BridgeClient) BurnWZCN(ctx context.Context, amountTokens uint64) (*type
 }
 
 // MintZCN mints ZCN tokens after receiving proof-of-burn of WZCN tokens
+//   - ctx go context instance to run the transaction
+//   - payload received from authorizers
 func (b *BridgeClient) MintZCN(ctx context.Context, payload *zcnsc.MintPayload) (string, error) {
 	trx, err := b.transactionProvider.NewTransactionEntity(0)
 	if err != nil {
@@ -618,6 +662,9 @@ func (b *BridgeClient) MintZCN(ctx context.Context, payload *zcnsc.MintPayload) 
 }
 
 // BurnZCN burns ZCN tokens before conversion from ZCN to WZCN as a first step
+//   - ctx go context instance to run the transaction
+//   - amount amount of tokens to burn
+//   - txnfee transaction fee
 func (b *BridgeClient) BurnZCN(ctx context.Context, amount, txnfee uint64) (transaction.Transaction, error) {
 	payload := zcnsc.BurnPayload{
 		EthereumAddress: b.EthereumAddress,
@@ -665,6 +712,8 @@ func (b *BridgeClient) BurnZCN(ctx context.Context, amount, txnfee uint64) (tran
 }
 
 // ApproveUSDCSwap provides opportunity to approve swap operation for ERC20 tokens
+//   - ctx go context instance to run the transaction
+//   - source source amount
 func (b *BridgeClient) ApproveUSDCSwap(ctx context.Context, source uint64) (*types.Transaction, error) {
 	// 1. USDC token smart contract address
 	tokenAddress := common.HexToAddress(UsdcTokenAddress)
@@ -698,6 +747,8 @@ func (b *BridgeClient) ApproveUSDCSwap(ctx context.Context, source uint64) (*typ
 }
 
 // GetETHSwapAmount retrieves ETH swap amount from the given source.
+//   - ctx go context instance to run the transaction
+//   - source source amount
 func (b *BridgeClient) GetETHSwapAmount(ctx context.Context, source uint64) (*big.Int, error) {
 	// 1. Uniswap smart contract address
 	contractAddress := common.HexToAddress(UniswapRouterAddress)
@@ -736,6 +787,9 @@ func (b *BridgeClient) GetETHSwapAmount(ctx context.Context, source uint64) (*bi
 }
 
 // SwapETH provides opportunity to perform zcn token swap operation using ETH as source token.
+//   - ctx go context instance to run the transaction
+//   - source source amount
+//   - target target amount
 func (b *BridgeClient) SwapETH(ctx context.Context, source uint64, target uint64) (*types.Transaction, error) {
 	// 1. Swap source amount parameter.
 	sourceInt := big.NewInt(int64(source))
@@ -765,6 +819,9 @@ func (b *BridgeClient) SwapETH(ctx context.Context, source uint64, target uint64
 }
 
 // SwapUSDC provides opportunity to perform zcn token swap operation using USDC as source token.
+//   - ctx go context instance to run the transaction
+//   - source source amount
+//   - target target amount
 func (b *BridgeClient) SwapUSDC(ctx context.Context, source uint64, target uint64) (*types.Transaction, error) {
 	// 1. Swap target amount parameter.
 	sourceInt := big.NewInt(int64(source))
@@ -1010,6 +1067,10 @@ func (b *BridgeClient) estimateAlchemyGasAmount(ctx context.Context, from, to, d
 }
 
 // EstimateBurnWZCNGasAmount performs gas amount estimation for the given wzcn burn transaction.
+//   - ctx go context instance to run the transaction
+//   - from source address
+//   - to target address
+//   - amountTokens amount of tokens to burn
 func (b *BridgeClient) EstimateBurnWZCNGasAmount(ctx context.Context, from, to, amountTokens string) (float64, error) {
 	switch b.getProviderType() {
 	case AlchemyProvider:
@@ -1040,6 +1101,13 @@ func (b *BridgeClient) EstimateBurnWZCNGasAmount(ctx context.Context, from, to, 
 }
 
 // EstimateMintWZCNGasAmount performs gas amount estimation for the given wzcn mint transaction.
+//   - ctx go context instance to run the transaction
+//   - from source address
+//   - to target address
+//   - zcnTransactionRaw zcn transaction (hashed)
+//   - amountToken amount of tokens to mint
+//   - nonceRaw nonce
+//   - signaturesRaw authorizer signatures
 func (b *BridgeClient) EstimateMintWZCNGasAmount(
 	ctx context.Context, from, to, zcnTransactionRaw, amountToken string, nonceRaw int64, signaturesRaw [][]byte) (float64, error) {
 	switch b.getProviderType() {
@@ -1108,6 +1176,7 @@ func (b *BridgeClient) estimateAlchemyGasPrice(ctx context.Context) (float64, er
 }
 
 // EstimateGasPrice performs gas estimation for the given transaction.
+//   - ctx go context instance to run the transaction
 func (b *BridgeClient) EstimateGasPrice(ctx context.Context) (float64, error) {
 	switch b.getProviderType() {
 	case AlchemyProvider:

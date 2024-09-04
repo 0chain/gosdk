@@ -59,9 +59,10 @@ func (s Size) String() string {
 // reParseToken is a regexp to parse string representation of token
 var reParseToken = regexp.MustCompile(`^((?:\d*\.)?\d+)\s+(SAS|sas|uZCN|uzcn|mZCN|mzcn|ZCN|zcn)$`)
 
-// Balance represents 0chain native token
+// Balance represents client's balance in Züs native token fractions (SAS = 10^-10 ZCN).
 type Balance uint64
 
+// ToToken converts Balance to ZCN tokens.
 func (b Balance) ToToken() (float64, error) {
 	if b > math.MaxInt64 {
 		return 0.0, ErrTooLarge
@@ -79,6 +80,8 @@ func (b Balance) String() string {
 	return ""
 }
 
+// Format returns a string representation of the balance with the given unit.
+//   - unit is the balance unit.
 func (b Balance) Format(unit BalanceUnit) (string, error) {
 	v := float64(b)
 	if v < 0 {
@@ -99,6 +102,7 @@ func (b Balance) Format(unit BalanceUnit) (string, error) {
 	return fmt.Sprintf("%.3f %v", v, unit), nil
 }
 
+// AutoFormat returns a string representation of the balance with the most
 func (b Balance) AutoFormat() (string, error) {
 	switch {
 	case b/1e10 > 0:
@@ -112,6 +116,7 @@ func (b Balance) AutoFormat() (string, error) {
 }
 
 // ToBalance converts ZCN tokens to Balance.
+//   - token amount of ZCN tokens.
 func ToBalance(token float64) (Balance, error) {
 	d := decimal.NewFromFloat(token)
 	if d.Sign() == -1 {
@@ -150,10 +155,12 @@ func AddBalance(c, b Balance) (Balance, error) {
 	return sum, nil
 }
 
+// FormatBalance returns a string representation of the balance with the given unit.
 func FormatBalance(b Balance, unit BalanceUnit) (string, error) {
 	return b.Format(unit)
 }
 
+// AutoFormatBalance returns a string representation of the balance with the most
 func AutoFormatBalance(b Balance) (string, error) {
 	return b.AutoFormat()
 }

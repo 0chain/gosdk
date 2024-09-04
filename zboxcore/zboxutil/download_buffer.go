@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/0chain/gosdk/core/sys"
+	"github.com/valyala/bytebufferpool"
 )
 
 type DownloadBuffer interface {
@@ -72,21 +73,21 @@ func (r *DownloadBufferWithChan) ClearBuffer() {
 }
 
 type DownloadBufferWithMask struct {
-	buf       []byte
-	length    int
-	reqSize   int
-	numBlocks int
-	mask      uint32
-	mu        sync.Mutex
+	downloadBuf []*bytebufferpool.ByteBuffer
+	length      int
+	reqSize     int
+	numBlocks   int
+	mask        uint32
+	mu          sync.Mutex
 }
 
 func NewDownloadBufferWithMask(size, numBlocks, effectiveBlockSize int) *DownloadBufferWithMask {
 	numBlocks++
 	return &DownloadBufferWithMask{
-		buf:     make([]byte, size*numBlocks*effectiveBlockSize),
-		length:  size,
-		reqSize: effectiveBlockSize * numBlocks,
-		mask:    (1 << size) - 1,
+		length:      size,
+		reqSize:     effectiveBlockSize * numBlocks,
+		mask:        (1 << size) - 1,
+		downloadBuf: make([]*bytebufferpool.ByteBuffer, size),
 	}
 }
 
@@ -113,8 +114,15 @@ func (r *DownloadBufferWithMask) RequestChunk(ctx context.Context, num int) []by
 		}
 		// assign the chunk by clearing the bit
 		r.mask &= ^(1 << num)
+		if r.downloadBuf[num] == nil {
+			buff := BufferPool.Get()
+			if cap(buff.B) < r.reqSize {
+				buff.B = make([]byte, r.reqSize)
+			}
+			r.downloadBuf[num] = buff
+		}
 		r.mu.Unlock()
-		return r.buf[num*r.reqSize : (num+1)*r.reqSize : (num+1)*r.reqSize]
+		return r.downloadBuf[num].B[:r.reqSize:r.reqSize]
 	}
 }
 
@@ -127,5 +135,10 @@ func (r *DownloadBufferWithMask) ReleaseChunk(num int) {
 }
 
 func (r *DownloadBufferWithMask) ClearBuffer() {
-	r.buf = nil
+	for _, buff := range r.downloadBuf {
+		if buff != nil {
+			BufferPool.Put(buff)
+		}
+	}
+	r.downloadBuf = nil
 }

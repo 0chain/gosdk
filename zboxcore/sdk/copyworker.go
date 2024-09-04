@@ -31,6 +31,7 @@ type CopyRequest struct {
 	allocationObj  *Allocation
 	allocationID   string
 	allocationTx   string
+	sig            string
 	blobbers       []*blockchain.StorageNode
 	remotefilepath string
 	destPath       string
@@ -44,7 +45,7 @@ type CopyRequest struct {
 }
 
 func (req *CopyRequest) getObjectTreeFromBlobber(blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
-	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.allocationTx, req.remotefilepath, blobber)
+	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.allocationTx, req.sig, req.remotefilepath, blobber)
 }
 
 func (req *CopyRequest) copyBlobberObject(
@@ -99,7 +100,7 @@ func (req *CopyRequest) copyBlobberObject(
 				cncl     context.CancelFunc
 			)
 
-			httpreq, err = zboxutil.NewCopyRequest(blobber.Baseurl, req.allocationID, req.allocationTx, body)
+			httpreq, err = zboxutil.NewCopyRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body)
 			if err != nil {
 				l.Logger.Error(blobber.Baseurl, "Error creating rename request", err)
 				return
@@ -178,7 +179,7 @@ func (req *CopyRequest) ProcessWithBlobbers() ([]fileref.RefEntity, []error) {
 			refEntity, err := req.copyBlobberObject(req.blobbers[blobberIdx], blobberIdx)
 			if err != nil {
 				blobberErrors[blobberIdx] = err
-				l.Logger.Error(err.Error())
+				l.Logger.Debug(err.Error())
 				return
 			}
 			objectTreeRefs[blobberIdx] = refEntity
@@ -258,11 +259,13 @@ func (req *CopyRequest) ProcessCopy() error {
 		commitReq := &CommitRequest{
 			allocationID: req.allocationID,
 			allocationTx: req.allocationTx,
+			sig:          req.sig,
 			blobber:      req.blobbers[pos],
 			connectionID: req.connectionID,
 			wg:           wg,
 			timestamp:    req.timestamp,
 		}
+
 		commitReq.changes = append(commitReq.changes, newChange)
 		commitReqs[c] = commitReq
 		go AddCommitRequest(commitReq)
@@ -308,6 +311,7 @@ func (co *CopyOperation) Process(allocObj *Allocation, connectionID string) ([]f
 		allocationObj:  allocObj,
 		allocationID:   allocObj.ID,
 		allocationTx:   allocObj.Tx,
+		sig:            allocObj.sig,
 		connectionID:   connectionID,
 		blobbers:       allocObj.Blobbers,
 		remotefilepath: co.remotefilepath,
@@ -318,12 +322,14 @@ func (co *CopyOperation) Process(allocObj *Allocation, connectionID string) ([]f
 		maskMU:         co.maskMU,
 		Consensus:      Consensus{RWMutex: &sync.RWMutex{}},
 	}
+
 	cR.consensusThresh = co.consensusThresh
 	cR.fullconsensus = co.fullconsensus
 
 	objectTreeRefs, blobberErrors := cR.ProcessWithBlobbers()
 
 	if !cR.isConsensusOk() {
+		l.Logger.Error("copy failed: ", cR.remotefilepath, cR.destPath)
 		err := zboxutil.MajorError(blobberErrors)
 		if err != nil {
 			return nil, cR.copyMask, errors.New("copy_failed", fmt.Sprintf("Copy failed. %s", err.Error()))

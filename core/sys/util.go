@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+// MemFile represents a file totally loaded in memory
+// Aware of the file size, so it can seek and truncate.
 type MemFile struct {
 	Name    string
 	Buffer  []byte      // file content
@@ -17,9 +19,12 @@ type MemFile struct {
 	reader  io.Reader
 }
 
+// Stat returns the file information
 func (f *MemFile) Stat() (fs.FileInfo, error) {
 	return &MemFileInfo{name: f.Name, f: f}, nil
 }
+
+// Read reads data from the file
 func (f *MemFile) Read(p []byte) (int, error) {
 	if f.reader == nil {
 		f.reader = bytes.NewReader(f.Buffer)
@@ -27,11 +32,14 @@ func (f *MemFile) Read(p []byte) (int, error) {
 	return f.reader.Read(p)
 
 }
+
+// Write writes data to the file
 func (f *MemFile) Write(p []byte) (n int, err error) {
 	f.Buffer = append(f.Buffer, p...)
 	return len(p), nil
 }
 
+// WriteAt writes data to the file at a specific offset
 func (f *MemFile) WriteAt(p []byte, offset int64) (n int, err error) {
 	if offset < 0 || offset > int64(len(f.Buffer)) || len(p) > len(f.Buffer)-int(offset) {
 		return 0, io.ErrShortWrite
@@ -42,10 +50,12 @@ func (f *MemFile) WriteAt(p []byte, offset int64) (n int, err error) {
 	return len(p), nil
 }
 
+// InitBuffer initializes the buffer with a specific size
 func (f *MemFile) InitBuffer(size int) {
 	f.Buffer = make([]byte, size)
 }
 
+// Sync not implemented
 func (f *MemFile) Sync() error {
 	return nil
 }
@@ -70,42 +80,54 @@ func (f *MemFile) Close() error {
 	return nil
 }
 
+// MemFileInfo represents file information
 type MemFileInfo struct {
 	name string
 	f    *MemFile
 }
 
+// Name returns the base name of the file
 func (i *MemFileInfo) Name() string {
 	return i.name
 }
+
+// Size returns the size of the file
 func (i *MemFileInfo) Size() int64 {
 	return int64(len(i.f.Buffer))
 }
 
+// Mode returns the file mode bits
 func (i *MemFileInfo) Mode() fs.FileMode {
 	return i.f.Mode
 }
 
+// Type returns the file mode type
 func (i *MemFileInfo) Type() fs.FileMode {
 	return i.f.Mode.Type()
 }
 
+// ModTime returns the modification time of the file
 func (i *MemFileInfo) ModTime() time.Time {
 	return i.f.ModTime
 }
 
+// IsDir returns true if the file is a directory
 func (i *MemFileInfo) IsDir() bool {
 	return i.f.Mode&fs.ModeDir != 0
 }
 
+// Sys returns the underlying data source (can return nil)
 func (i *MemFileInfo) Sys() interface{} {
 	return i.f.Sys
 }
 
+// Info returns the file information
 func (i *MemFileInfo) Info() (fs.FileInfo, error) {
 	return i, nil
 }
 
+// MemChanFile used to read or write file content sequentially through a buffer channel.
+// Not aware of the file size, so it can't seek or truncate.
 type MemChanFile struct {
 	Name           string
 	Buffer         chan []byte // file content
@@ -117,9 +139,14 @@ type MemChanFile struct {
 	data           []byte
 }
 
+// Stat returns the file information
 func (f *MemChanFile) Stat() (fs.FileInfo, error) {
 	return &MemFileChanInfo{name: f.Name, f: f}, nil
 }
+
+// Read reads data from the file through the buffer channel
+// It returns io.EOF when the buffer channel is closed.
+// 		- p: file in bytes loaded from the buffer channel
 func (f *MemChanFile) Read(p []byte) (int, error) {
 	select {
 	case err := <-f.ErrChan:
@@ -136,6 +163,10 @@ func (f *MemChanFile) Read(p []byte) (int, error) {
 	}
 }
 
+// Write writes data to the file through the buffer channel
+// It writes the data to the buffer channel in chunks of ChunkWriteSize.
+// If ChunkWriteSize is 0, it writes the data as a whole.
+// 		- p: file in bytes to write to the buffer channel
 func (f *MemChanFile) Write(p []byte) (n int, err error) {
 	if f.ChunkWriteSize == 0 {
 		data := make([]byte, len(p))
@@ -150,6 +181,9 @@ func (f *MemChanFile) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
+// Sync write the data chunk to the buffer channel
+// It writes the data to the buffer channel in chunks of ChunkWriteSize.
+// If ChunkWriteSize is 0, it writes the data as a whole.
 func (f *MemChanFile) Sync() error {
 	current := 0
 	for ; current < len(f.data); current += f.ChunkWriteSize {
@@ -162,47 +196,60 @@ func (f *MemChanFile) Sync() error {
 	f.data = nil
 	return nil
 }
+
+// Seek not implemented
 func (f *MemChanFile) Seek(offset int64, whence int) (ret int64, err error) {
 	return 0, nil
 }
 
+// Close closes the buffer channel
 func (f *MemChanFile) Close() error {
 	close(f.Buffer)
 	return nil
 }
 
+// MemFileChanInfo represents file information
 type MemFileChanInfo struct {
 	name string
 	f    *MemChanFile
 }
 
+// Name returns the base name of the file
 func (i *MemFileChanInfo) Name() string {
 	return i.name
 }
+
+// Size not implemented
 func (i *MemFileChanInfo) Size() int64 {
 	return 0
 }
 
+// Mode returns the file mode bits
 func (i *MemFileChanInfo) Mode() fs.FileMode {
 	return i.f.Mode
 }
 
+// Type returns the file mode type
 func (i *MemFileChanInfo) Type() fs.FileMode {
 	return i.f.Mode.Type()
 }
 
+// ModTime returns the modification time of the file
 func (i *MemFileChanInfo) ModTime() time.Time {
 	return i.f.ModTime
 }
 
+// IsDir returns true if the file is a directory
 func (i *MemFileChanInfo) IsDir() bool {
 	return i.f.Mode&fs.ModeDir != 0
 }
 
+// Sys returns the underlying data source (can return nil)
 func (i *MemFileChanInfo) Sys() interface{} {
 	return i.f.Sys
 }
 
+// Info returns the file information
 func (i *MemFileChanInfo) Info() (fs.FileInfo, error) {
 	return i, nil
 }

@@ -60,11 +60,11 @@ type BlobberStatus struct {
 	Status string
 }
 
-func GetWritemarker(allocID, allocTx, id, baseUrl string) (*LatestPrevWriteMarker, error) {
+func GetWritemarker(allocID, allocTx, sig, id, baseUrl string) (*LatestPrevWriteMarker, error) {
 
 	var lpm LatestPrevWriteMarker
 
-	req, err := zboxutil.NewWritemarkerRequest(baseUrl, allocID, allocTx)
+	req, err := zboxutil.NewWritemarkerRequest(baseUrl, allocID, allocTx, sig)
 	if err != nil {
 		return nil, err
 	}
@@ -251,6 +251,8 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 	return thrown.New("rolback_error", fmt.Sprint("Rollback failed"))
 }
 
+// CheckAllocStatus checks the status of the allocation
+// and returns the status of the allocation and its blobbers.
 func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
 
 	wg := &sync.WaitGroup{}
@@ -268,7 +270,7 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
 				ID:     blobber.ID,
 				Status: "available",
 			}
-			wr, err := GetWritemarker(a.ID, a.Tx, blobber.ID, blobber.Baseurl)
+			wr, err := GetWritemarker(a.ID, a.Tx, a.sig, blobber.ID, blobber.Baseurl)
 			if err != nil {
 				atomic.AddInt32(&errCnt, 1)
 				markerError = err
@@ -380,6 +382,9 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
 	return Rollback, blobberRes, nil
 }
 
+// RollbackWithMask rolls back the latest operation from the allocation blobbers which ran it.
+// The mask is used to specify which blobbers to rollback.
+//   - mask: 128-bitmask to specify which blobbers to rollback
 func (a *Allocation) RollbackWithMask(mask zboxutil.Uint128) {
 
 	wg := &sync.WaitGroup{}
@@ -392,7 +397,7 @@ func (a *Allocation) RollbackWithMask(mask zboxutil.Uint128) {
 		go func(blobber *blockchain.StorageNode) {
 
 			defer wg.Done()
-			wr, err := GetWritemarker(a.ID, a.Tx, blobber.ID, blobber.Baseurl)
+			wr, err := GetWritemarker(a.ID, a.Tx, a.sig, blobber.ID, blobber.Baseurl)
 			if err != nil {
 				l.Logger.Error("error during getWritemarker", zap.Error(err))
 			}

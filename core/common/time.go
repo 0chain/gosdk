@@ -10,7 +10,7 @@ import (
 // Timestamp represents Unix time (e.g. in seconds)
 type Timestamp int64
 
-// Now - current datetime
+// Now current datetime
 func Now() Timestamp {
 	return Timestamp(time.Now().Unix())
 }
@@ -29,10 +29,15 @@ func (t Timestamp) ToTime() time.Time {
 var ErrInvalidTime = errors.New("invalid time")
 
 // ParseTime parse a time string with 4 formats
-// +1h5m : now (local timezone) + 1h5m
-// +3900 : now (local timezone) +3900s
-// 1647858200 : Unix timestamp
-// 2022-03-21 10:21:38 : parse UTC date string with YYYY-MM-dd HH:mm:ss
+//
+//	+1h5m : now (local timezone) + 1h5m
+//	+3900 : now (local timezone) +3900s
+//	1647858200 : Unix timestamp
+//	2022-03-21 10:21:38 : parse UTC date string with YYYY-MM-dd HH:mm:ss
+//
+// Parameters
+//   - now is the current time
+//   - input is the time string to parse
 func ParseTime(now time.Time, input string) (*time.Time, error) {
 
 	if len(input) == 0 {

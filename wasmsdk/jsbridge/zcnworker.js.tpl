@@ -5,8 +5,27 @@ go.argv = {{.ArgsToJS}}
 go.env = {{.EnvToJS}}
 const bls = self.bls
 bls.init(bls.BN254).then(()=>{})
-WebAssembly.instantiateStreaming(fetch("{{.Path}}"), go.importObject).then((result) => {
-    go.run(result.instance);
+
+async function getWasmModule() {
+  const cache = await caches.open('wasm-cache');
+  let response = await cache.match("{{.CachePath}}");
+  if(!response?.ok) {
+    response = await fetch("{{.Path}}").then(res => res).catch(err => err);
+    if (!response?.ok) {
+    response = await fetch("{{.FallbackPath}}").then(res => res).catch(err => err);
+    }
+    if (!response.ok) {
+      throw new Error(`Failed to fetch WASM: ${response.statusText}`);
+    }
+  }
+  const bytes = await response.arrayBuffer();
+  return WebAssembly.instantiate(bytes, go.importObject);
+}
+
+getWasmModule().then(result => {
+  go.run(result.instance);
+}).catch(error => {
+  console.error("Failed to load WASM:", error);
 });
 
 function hexStringToByte(str) {
@@ -38,5 +57,45 @@ self.__zcn_worker_wasm__ = {
         }
       
         return sig.serializeToHexStr()
-    }
+    },
+    initProxyKeys: initProxyKeys,
+    verify: blsVerify,
+    verifyWith: blsVerifyWith,
+    addSignature: blsAddSignature
 }  
+
+async function initProxyKeys(publicKey, privateKey) {
+  const pubKey = bls.deserializeHexStrToPublicKey(publicKey)
+  const privKey = bls.deserializeHexStrToSecretKey(privateKey)
+  bls.publicKey = pubKey
+  bls.secretKey = privKey
+}
+
+async function blsVerify(signature, hash) {
+  const bytes = hexStringToByte(hash)
+  const sig = bls.deserializeHexStrToSignature(signature)
+  return jsProxy.publicKey.verify(sig, bytes)
+}
+
+async function blsVerifyWith(pk, signature, hash) {
+  const publicKey = bls.deserializeHexStrToPublicKey(pk)
+  const bytes = hexStringToByte(hash)
+  const sig = bls.deserializeHexStrToSignature(signature)
+  return publicKey.verify(sig, bytes)
+}
+
+async function blsAddSignature(secretKey, signature, hash) {
+  const privateKey = bls.deserializeHexStrToSecretKey(secretKey)
+  const sig = bls.deserializeHexStrToSignature(signature)
+  var sig2 = privateKey.sign(hexStringToByte(hash))
+  if (!sig2) {
+    const errMsg =
+      'err: wasm blsAddSignature function failed to sign transaction'
+    console.warn(errMsg)
+    throw new Error(errMsg)
+  }
+
+  sig.add(sig2)
+
+  return sig.serializeToHexStr()
+}

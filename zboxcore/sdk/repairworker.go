@@ -32,6 +32,8 @@ type RepairStatusCB struct {
 	statusCB StatusCallback
 }
 
+var RepairBlocks = 100
+
 func (cb *RepairStatusCB) Started(allocationId, filePath string, op int, totalBytes int) {
 	cb.statusCB.Started(allocationId, filePath, op, totalBytes)
 }
@@ -65,9 +67,17 @@ func (r *RepairRequest) processRepair(ctx context.Context, a *Allocation) {
 	if r.checkForCancel(a) {
 		return
 	}
-	SetNumBlockDownloads(100)
+	SetNumBlockDownloads(RepairBlocks)
+	currBatchSize := BatchSize
+	BatchSize = BatchSize / 2
+	defer func() {
+		BatchSize = currBatchSize
+	}()
+	if !singleClientMode {
+		SetSingleClietnMode(true)
+		defer SetSingleClietnMode(false)
+	}
 	r.iterateDir(a, r.listDir)
-
 	if r.statusCB != nil {
 		r.statusCB.RepairCompleted(r.filesRepaired)
 	}
