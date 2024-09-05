@@ -339,7 +339,7 @@ func NewRefsRequest(baseUrl, allocationID, sig, allocationTx, path, pathHash, au
 
 	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 
-	if err := setClientInfoWithSign(req, sig, allocationID, baseUrl); err != nil {
+	if err := setClientInfoWithSign(req, sig, allocationTx, baseUrl); err != nil {
 		return nil, err
 	}
 
