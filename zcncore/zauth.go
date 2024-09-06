@@ -7,8 +7,8 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/sys"
-	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/pkg/errors"
 )
 
@@ -529,6 +529,6 @@ func ZauthSignMsg(serverAddr string) sys.SignFunc {
 			return "", err
 		}
 
-		return AddSignature(client.GetClientPrivateKey(), ar.Sig, hash)
+		return AddSignature(client.PrivateKey(), ar.Sig, hash)
 	}
 }

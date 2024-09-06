@@ -6,18 +6,14 @@ package main
 import (
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
-	"os"
-	"sync"
-
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/imageutil"
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/zboxcore/sdk"
-	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/0chain/gosdk/zcncore"
+	"io"
+	"os"
 )
 
 var CreateObjectURL func(buf []byte, mimeType string) string
@@ -50,14 +46,15 @@ func initSDKs(chainID, blockWorker, signatureScheme string,
 	}
 
 	fmt.Println("init SDKs, isSplit:", isSplit)
-	err = zcncore.InitZCNSDK(blockWorker, signatureScheme,
-		zcncore.WithChainID(chainID),
-		zcncore.WithMinConfirmation(minConfirmation),
-		zcncore.WithMinSubmit(minSubmit),
-		zcncore.WithConfirmationChainLength(confirmationChainLength),
-		zcncore.WithSharderConsensous(sharderconsensous),
-		zcncore.WithIsSplitWallet(isSplit),
-	)
+	err = client.Init(context.Background(), conf.Config{
+		BlockWorker:             blockWorker,
+		SignatureScheme:         signatureScheme,
+		ChainID:                 chainID,
+		MinConfirmation:         minConfirmation,
+		MinSubmit:               minSubmit,
+		ConfirmationChainLength: confirmationChainLength,
+		SharderConsensous:       sharderconsensous,
+	})
 
 	if err != nil {
 		fmt.Println("wasm: InitZCNSDK ", err)

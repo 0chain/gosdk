@@ -4,24 +4,20 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
 	"os"
 	"path"
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/0chain/errors"
-	"github.com/0chain/gosdk/core/conf"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/encryption"
+	coreHttp "github.com/0chain/gosdk/core/http"
 	"github.com/0chain/gosdk/core/logger"
-	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/hitenjain14/fasthttp"
 )
 
@@ -164,7 +160,7 @@ var envProxy proxyFromEnv
 
 func init() {
 	Client = &http.Client{
-		Transport: DefaultTransport,
+		Transport: coreHttp.DefaultTransport,
 	}
 
 	FastHttpClient = &fasthttp.Client{
@@ -206,8 +202,8 @@ func NewHTTPRequest(method string, url string, data []byte) (*http.Request, cont
 }
 
 func setClientInfo(req *http.Request) {
-	req.Header.Set("X-App-Client-ID", client.GetClientID())
-	req.Header.Set("X-App-Client-Key", client.GetClientPublicKey())
+	req.Header.Set("X-App-Client-ID", client.ClientID())
+	req.Header.Set("X-App-Client-Key", client.PublicKey())
 }
 
 func setClientInfoWithSign(req *http.Request, sig, allocation, baseURL string) error {
@@ -460,7 +456,7 @@ func NewFileMetaRequest(baseUrl, allocationID, allocationTx, sig string, body io
 		return nil, err
 	}
 
-	if err := setClientInfoWithSign(req,sig, allocationTx, baseUrl); err != nil {
+	if err := setClientInfoWithSign(req, sig, allocationTx, baseUrl); err != nil {
 		return nil, err
 	}
 
@@ -556,7 +552,7 @@ func NewWriteMarkerLockRequest(
 		return nil, err
 	}
 
-	if err := setClientInfoWithSign(req,sig, allocationTx, baseURL); err != nil {
+	if err := setClientInfoWithSign(req, sig, allocationTx, baseURL); err != nil {
 		return nil, err
 	}
 
@@ -578,7 +574,7 @@ func NewWriteMarkerUnLockRequest(
 		return nil, err
 	}
 
-	if err := setClientInfoWithSign(req,sig, allocationTx, baseURL); err != nil {
+	if err := setClientInfoWithSign(req, sig, allocationTx, baseURL); err != nil {
 		return nil, err
 	}
 
@@ -609,8 +605,8 @@ func NewFastUploadRequest(baseURL, allocationID string, allocationTx string, bod
 }
 
 func setFastClientInfoWithSign(req *fasthttp.Request, allocation string) error {
-	req.Header.Set("X-App-Client-ID", client.GetClientID())
-	req.Header.Set("X-App-Client-Key", client.GetClientPublicKey())
+	req.Header.Set("X-App-Client-ID", client.ClientID())
+	req.Header.Set("X-App-Client-Key", client.PublicKey())
 
 	sign, err := client.Sign(encryption.Hash(allocation))
 	if err != nil {
@@ -925,12 +921,12 @@ func HttpDo(ctx context.Context, cncl context.CancelFunc, req *http.Request, f f
 		c <- err
 	}()
 
-	// TODO: Check cncl context required in any case
-	// defer cncl()
+	defer cncl() // Ensure the cancellation function is deferred to release resources.
+
 	select {
-	case <-ctx.Done():fix/refactor-zboxcore
-		DefaultTransport.CancelRequest(req) //nolint
-		<-c                                 // Wait for f to return.
+	case <-ctx.Done():
+		// If the context is canceled or times out, return the context's error.
+		<-c // Wait for the goroutine to complete before returning.
 		return ctx.Err()
 	case err := <-c:
 		return err
