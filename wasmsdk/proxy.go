@@ -24,13 +24,16 @@ import (
 	"github.com/hack-pad/safejs"
 
 	"syscall/js"
+
+	lru "github.com/hashicorp/golang-lru/v2"
 )
 
 //-----------------------------------------------------------------------------
 
 var (
-	signMutex sync.Mutex
-	signCache = make(map[string]string)
+	signMutex    sync.Mutex
+	signCache    = make(map[string]string)
+	authCache, _ = lru.New[string, string](100)
 )
 
 func main() {
@@ -99,6 +102,11 @@ func main() {
 						return "", errors.New("authCommon is not set")
 					}
 
+					cachedSig, ok := authCache.Get(sig)
+					if ok {
+						return cachedSig, nil
+					}
+
 					rsp, err := sys.AuthCommon(string(data))
 					if err != nil {
 						return "", err
@@ -112,6 +120,8 @@ func main() {
 					if err != nil {
 						return "", err
 					}
+
+					authCache.Add(sig, sigpk.Sig)
 
 					return sigpk.Sig, nil
 				}
