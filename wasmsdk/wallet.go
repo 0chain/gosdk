@@ -6,19 +6,22 @@ package main
 import (
 	"errors"
 
-	"github.com/0chain/gosdk/core/client"
+	"fmt"
+	"os"
+	"strconv"
+
 	"github.com/0chain/gosdk/core/zcncrypto"
+	"github.com/0chain/gosdk/wasmsdk/jsbridge"
+	"github.com/0chain/gosdk/zboxcore/client"
+	"github.com/0chain/gosdk/zcncore"
 )
 
-// setWallet sets the wallet used by the client for the network transactions and the backend API requests
-//   - clientID is the client id
-//   - publicKey is the public key of the client
-//   - privateKey is the private key of the client
-//   - mnemonic is the mnemonic of the client
-func setWallet(clientID, publicKey, privateKey, mnemonic string) error {
-	if mnemonic == "" {
+func setWallet(clientID, clientKey, peerPublicKey, publicKey, privateKey, mnemonic string, isSplit bool) error {
+	if mnemonic == "" && !isSplit {
 		return errors.New("mnemonic is required")
 	}
+	mode := os.Getenv("MODE")
+	fmt.Println("gosdk setWallet, mode:", mode, "is split:", isSplit)
 	keys := []zcncrypto.KeyPair{
 		{
 			PrivateKey: privateKey,
@@ -26,15 +29,43 @@ func setWallet(clientID, publicKey, privateKey, mnemonic string) error {
 		},
 	}
 
+	c := client.GetClient()
+	c.Mnemonic = mnemonic
+	c.ClientID = clientID
+	c.ClientKey = clientKey
+	c.PeerPublicKey = peerPublicKey
+	c.Keys = keys
+	c.IsSplit = isSplit
+
 	w := &zcncrypto.Wallet{
-		ClientID:  clientID,
-		ClientKey: publicKey,
-		Mnemonic:  mnemonic,
-		Keys:      keys,
+		ClientID:      clientID,
+		ClientKey:     clientKey,
+		PeerPublicKey: peerPublicKey,
+		Mnemonic:      mnemonic,
+		Keys:          keys,
+		IsSplit:       isSplit,
 	}
-	client.SetWallet(*w)
+	fmt.Println("set Wallet, is split:", isSplit)
+	err := zcncore.SetWallet(*w, isSplit)
+	if err != nil {
+		return err
+	}
 
 	zboxApiClient.SetWallet(clientID, privateKey, publicKey)
+	if mode == "" { // main thread, need to notify the web worker to update wallet
+		// notify the web worker to update wallet
+		if err := jsbridge.PostMessageToAllWorkers(jsbridge.MsgTypeUpdateWallet, map[string]string{
+			"client_id":       clientID,
+			"client_key":      clientKey,
+			"peer_public_key": peerPublicKey,
+			"public_key":      publicKey,
+			"private_key":     privateKey,
+			"mnemonic":        mnemonic,
+			"is_split":        strconv.FormatBool(isSplit),
+		}); err != nil {
+			return err
+		}
+	}
 
 	return nil
 }

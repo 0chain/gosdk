@@ -269,10 +269,12 @@ func txnTypeString(t int) string {
 	}
 }
 
+// Output implements the output of transaction
 func (t *Transaction) Output() []byte {
 	return []byte(t.txnOut)
 }
 
+// Hash implements the hash of transaction
 func (t *Transaction) Hash() string {
 	return t.txn.Hash
 }
@@ -430,6 +432,7 @@ func newTransaction(cb TransactionCallback, txnFee uint64, nonce int64) (*Transa
 	return t, nil
 }
 
+// SetTransactionCallback implements storing the callback
 func (t *Transaction) SetTransactionCallback(cb TransactionCallback) error {
 	if t.txnStatus != StatusUnknown {
 		return errors.New("", "transaction already exists. cannot set transaction hash.")
@@ -438,6 +441,7 @@ func (t *Transaction) SetTransactionCallback(cb TransactionCallback) error {
 	return nil
 }
 
+// SetTransactionNonce implements method to set the transaction nonce
 func (t *Transaction) SetTransactionNonce(txnNonce int64) error {
 	if t.txnStatus != StatusUnknown {
 		return errors.New("", "transaction already exists. cannot set transaction fee.")
@@ -446,6 +450,7 @@ func (t *Transaction) SetTransactionNonce(txnNonce int64) error {
 	return nil
 }
 
+// StoreData implements store the data to blockchain
 func (t *Transaction) StoreData(data string) error {
 	go func() {
 		t.txn.TransactionType = transaction.TxnTypeData
@@ -553,6 +558,8 @@ func (t *Transaction) ExecuteFaucetSCWallet(walletStr string, methodName string,
 	return nil
 }
 
+// SetTransactionHash implements verify a previous transaction status
+//   - hash: transaction hash
 func (t *Transaction) SetTransactionHash(hash string) error {
 	if t.txnStatus != StatusUnknown {
 		return errors.New("", "transaction already exists. cannot set transaction hash.")
@@ -561,6 +568,7 @@ func (t *Transaction) SetTransactionHash(hash string) error {
 	return nil
 }
 
+// GetTransactionHash implements retrieval of hash of the submitted transaction
 func (t *Transaction) GetTransactionHash() string {
 	if t.txnHash != "" {
 		return t.txnHash
@@ -770,6 +778,8 @@ func (t *Transaction) isTransactionExpired(lfbCreationTime, currentTime int64) b
 	sys.Sleep(defaultWaitSeconds)
 	return false
 }
+
+// GetVerifyOutput implements the verification output from sharders
 func (t *Transaction) GetVerifyOutput() string {
 	if t.verifyStatus == StatusSuccess {
 		return t.verifyOut
@@ -777,6 +787,7 @@ func (t *Transaction) GetVerifyOutput() string {
 	return ""
 }
 
+// GetTransactionError implements error string in case of transaction failure
 func (t *Transaction) GetTransactionError() string {
 	if t.txnStatus != StatusSuccess {
 		return t.txnError.Error()
@@ -784,6 +795,7 @@ func (t *Transaction) GetTransactionError() string {
 	return ""
 }
 
+// GetVerifyError implements error string in case of verify failure error
 func (t *Transaction) GetVerifyError() string {
 	if t.verifyStatus != StatusSuccess {
 		return t.verifyError.Error()

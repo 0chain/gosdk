@@ -994,6 +994,7 @@ func GetAllocationUpdates(allocation *Allocation) error {
 	allocation.MovedBack = updatedAllocationObj.MovedBack
 	allocation.MovedToValidators = updatedAllocationObj.MovedToValidators
 	allocation.FileOptions = updatedAllocationObj.FileOptions
+	allocation.IsEnterprise = updatedAllocationObj.IsEnterprise
 	return nil
 }
 

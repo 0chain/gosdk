@@ -4,22 +4,19 @@
 package main
 
 import (
-	"context"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
-	coreHttp "github.com/0chain/gosdk/core/http"
 	"io"
 	"os"
 	"sync"
 
-	"github.com/0chain/gosdk/core/client"
-	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/imageutil"
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/zboxcore/sdk"
+	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/0chain/gosdk/zcncore"
 )
 
@@ -36,7 +33,8 @@ var CreateObjectURL func(buf []byte, mimeType string) string
 //   - zboxAppType is the application type of the 0box service
 //   - sharderconsensous is the number of sharders to reach consensus
 func initSDKs(chainID, blockWorker, signatureScheme string,
-	minConfirmation, minSubmit, confirmationChainLength int, zboxHost, zboxAppType string, sharderconsensous int) error {
+	minConfirmation, minSubmit, confirmationChainLength int,
+	zboxHost, zboxAppType string, sharderconsensous int, isSplit bool) error {
 
 	zboxApiClient.SetRequest(zboxHost, zboxAppType)
 
@@ -46,15 +44,20 @@ func initSDKs(chainID, blockWorker, signatureScheme string,
 		return err
 	}
 
-	err = client.Init(context.Background(), conf.Config{
-		BlockWorker:             blockWorker,
-		SignatureScheme:         signatureScheme,
-		ChainID:                 chainID,
-		MinConfirmation:         minConfirmation,
-		MinSubmit:               minSubmit,
-		ConfirmationChainLength: confirmationChainLength,
-		SharderConsensous:       sharderconsensous,
-	})
+	if !isSplit && zcncore.IsSplitWallet() {
+		// split wallet should not be reset back, use the existing
+		isSplit = true
+	}
+
+	fmt.Println("init SDKs, isSplit:", isSplit)
+	err = zcncore.InitZCNSDK(blockWorker, signatureScheme,
+		zcncore.WithChainID(chainID),
+		zcncore.WithMinConfirmation(minConfirmation),
+		zcncore.WithMinSubmit(minSubmit),
+		zcncore.WithConfirmationChainLength(confirmationChainLength),
+		zcncore.WithSharderConsensous(sharderconsensous),
+		zcncore.WithIsSplitWallet(isSplit),
+	)
 
 	if err != nil {
 		fmt.Println("wasm: InitZCNSDK ", err)
@@ -165,34 +168,5 @@ func makeSCRestAPICall(scAddress, relativePath, paramsJson string) (string, erro
 //   - fee is the transaction fee
 //   - desc is the description of the transaction
 func send(toClientID string, tokens uint64, fee uint64, desc string) (string, error) {
-	wg := &sync.WaitGroup{}
-	cb := &transactionCallback{wg: wg}
-	txn, err := zcncore.NewTransaction(cb, fee, 0)
-	if err != nil {
-		return "", err
-	}
-
-	wg.Add(1)
-	err = txn.Send(toClientID, tokens, desc)
-	if err == nil {
-		wg.Wait()
-	} else {
-		return "", err
-	}
-
-	if cb.success {
-		cb.success = false
-		wg.Add(1)
-		err := txn.Verify()
-		if err == nil {
-			wg.Wait()
-		} else {
-			return "", err
-		}
-		if cb.success {
-			return txn.GetVerifyOutput(), nil
-		}
-	}
-
-	return "", errors.New(cb.errMsg)
+	return sdk.ExecuteSmartContractSend(toClientID, tokens, fee, desc)
 }

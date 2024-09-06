@@ -8,12 +8,17 @@ import (
 	"syscall/js"
 
 	"github.com/0chain/gosdk/core/sys"
+	"github.com/0chain/gosdk/wasmsdk/jsbridge"
+	"github.com/0chain/gosdk/zcncore"
 )
 
 type AuthCallbackFunc func(msg string) string
 
+var authMsgCallback AuthCallbackFunc
 var authCallback AuthCallbackFunc
 var authResponseC chan string
+var authMsgResponseC chan string
+var authMsgLock = make(chan struct{}, 1)
 
 // registerAuthorizer Register the callback function to authorize the transaction.
 // This function is called from JavaScript.
@@ -26,6 +31,62 @@ func registerAuthorizer(this js.Value, args []js.Value) interface{} {
 	sys.Authorize = func(msg string) (string, error) {
 		authCallback(msg)
 		return <-authResponseC, nil
+	}
+	return nil
+}
+
+func registerZauthServer(serverAddr string) {
+	fmt.Println("registerZauthServer...")
+	jsbridge.SetZauthServer(serverAddr)
+	sys.SetAuthorize(zcncore.ZauthSignTxn(serverAddr))
+	sys.SetAuthCommon(zcncore.ZauthAuthCommon(serverAddr))
+}
+
+// zvaultNewWallet generates new split wallet
+func zvaultNewWallet(serverAddr, token string) (string, error) {
+	return zcncore.CallZvaultNewWalletString(serverAddr, token, "")
+}
+
+// zvaultNewSplit generates new split wallet from existing clientID
+func zvaultNewSplit(clientID, serverAddr, token string) (string, error) {
+	return zcncore.CallZvaultNewWalletString(serverAddr, token, clientID)
+}
+
+func zvaultStoreKey(serverAddr, token, privateKey string) (string, error) {
+	return zcncore.CallZvaultStoreKeyString(serverAddr, token, privateKey)
+}
+
+func zvaultRetrieveKeys(serverAddr, token, clientID string) (string, error) {
+	return zcncore.CallZvaultRetrieveKeys(serverAddr, token, clientID)
+}
+
+func zvaultRevokeKey(serverAddr, token, clientID, publicKey string) error {
+	return zcncore.CallZvaultRevokeKey(serverAddr, token, clientID, publicKey)
+}
+
+func zvaultDeletePrimaryKey(serverAddr, token, clientID string) error {
+	return zcncore.CallZvaultDeletePrimaryKey(serverAddr, token, clientID)
+}
+
+func zvaultRetrieveWallets(serverAddr, token string) (string, error) {
+	return zcncore.CallZvaultRetrieveWallets(serverAddr, token)
+}
+
+func zvaultRetrieveSharedWallets(serverAddr, token string) (string, error) {
+	return zcncore.CallZvaultRetrieveSharedWallets(serverAddr, token)
+}
+
+func registerAuthCommon(this js.Value, args []js.Value) interface{} {
+	authMsgCallback = parseAuthorizerCallback(args[0])
+	authMsgResponseC = make(chan string, 1)
+
+	sys.AuthCommon = func(msg string) (string, error) {
+		authMsgLock <- struct{}{}
+		defer func() {
+			<-authMsgLock
+		}()
+		authMsgCallback(msg)
+		return <-authMsgResponseC, nil
 	}
 	return nil
 }
