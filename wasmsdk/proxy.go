@@ -24,13 +24,16 @@ import (
 	"github.com/hack-pad/safejs"
 
 	"syscall/js"
+
+	lru "github.com/hashicorp/golang-lru/v2"
 )
 
 //-----------------------------------------------------------------------------
 
 var (
-	signMutex sync.Mutex
-	signCache = make(map[string]string)
+	signMutex    sync.Mutex
+	signCache    = make(map[string]string)
+	authCache, _ = lru.New[string, string](100)
 )
 
 func main() {
@@ -82,6 +85,11 @@ func main() {
 						return "", fmt.Errorf("failed to sign with split key: %v", err)
 					}
 
+					cachedSig, ok := authCache.Get(sig)
+					if ok {
+						return cachedSig, nil
+					}
+
 					data, err := json.Marshal(struct {
 						Hash      string `json:"hash"`
 						Signature string `json:"signature"`
@@ -112,6 +120,8 @@ func main() {
 					if err != nil {
 						return "", err
 					}
+
+					authCache.Add(sig, sigpk.Sig)
 
 					return sigpk.Sig, nil
 				}
@@ -384,6 +394,11 @@ func main() {
 						return "", fmt.Errorf("failed to sign with split key: %v", err)
 					}
 
+					cachedSig, ok := authCache.Get(sig)
+					if ok {
+						return cachedSig, nil
+					}
+
 					data, err := json.Marshal(struct {
 						Hash      string `json:"hash"`
 						Signature string `json:"signature"`
@@ -414,6 +429,8 @@ func main() {
 					if err != nil {
 						return "", err
 					}
+
+					authCache.Add(sig, sigpk.Sig)
 
 					return sigpk.Sig, nil
 				}
