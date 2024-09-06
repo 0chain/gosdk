@@ -85,6 +85,11 @@ func main() {
 						return "", fmt.Errorf("failed to sign with split key: %v", err)
 					}
 
+					cachedSig, ok := authCache.Get(sig)
+					if ok {
+						return cachedSig, nil
+					}
+
 					data, err := json.Marshal(struct {
 						Hash      string `json:"hash"`
 						Signature string `json:"signature"`
@@ -100,11 +105,6 @@ func main() {
 
 					if sys.AuthCommon == nil {
 						return "", errors.New("authCommon is not set")
-					}
-
-					cachedSig, ok := authCache.Get(sig)
-					if ok {
-						return cachedSig, nil
 					}
 
 					rsp, err := sys.AuthCommon(string(data))
@@ -394,6 +394,11 @@ func main() {
 						return "", fmt.Errorf("failed to sign with split key: %v", err)
 					}
 
+					cachedSig, ok := authCache.Get(sig)
+					if ok {
+						return cachedSig, nil
+					}
+
 					data, err := json.Marshal(struct {
 						Hash      string `json:"hash"`
 						Signature string `json:"signature"`
@@ -424,6 +429,8 @@ func main() {
 					if err != nil {
 						return "", err
 					}
+
+					authCache.Add(sig, sigpk.Sig)
 
 					return sigpk.Sig, nil
 				}
