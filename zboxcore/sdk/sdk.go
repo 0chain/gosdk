@@ -1000,9 +1000,14 @@ func GetAllocation(allocationID string) (*Allocation, error) {
 	if err != nil {
 		return nil, errors.New("allocation_decode_error", "Error decoding the allocation: "+err.Error()+" "+string(allocationBytes))
 	}
-	sig, err := client.Sign(enc.Hash(allocationObj.Tx))
-	if err != nil {
-		return nil, err
+	hashdata := allocationObj.Tx
+	sig, ok := zboxutil.SignCache.Get(hashdata)
+	if !ok {
+		sig, err = client.Sign(enc.Hash(hashdata))
+		zboxutil.SignCache.Add(hashdata, sig)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	allocationObj.sig = sig
