@@ -4,16 +4,23 @@
 package main
 
 import (
+	"context"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
+	coreHttp "github.com/0chain/gosdk/core/http"
+	"io"
+	"os"
+	"sync"
+
+	"github.com/0chain/gosdk/core/client"
+	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/imageutil"
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk/zcncore"
-	"io"
-	"os"
 )
 
 var CreateObjectURL func(buf []byte, mimeType string) string
@@ -127,6 +134,7 @@ func getLookupHash(allocationID string, path string) string {
 
 // createThumbnail create thumbnail of an image buffer. It supports
 //   - png
+
 //   - jpeg
 //   - gif
 //   - bmp
@@ -165,5 +173,34 @@ func makeSCRestAPICall(scAddress, relativePath, paramsJson string) (string, erro
 //   - fee is the transaction fee
 //   - desc is the description of the transaction
 func send(toClientID string, tokens uint64, fee uint64, desc string) (string, error) {
-	return sdk.ExecuteSmartContractSend(toClientID, tokens, fee, desc)
+	wg := &sync.WaitGroup{}
+	cb := &transactionCallback{wg: wg}
+	txn, err := zcncore.NewTransaction(cb, fee, 0)
+	if err != nil {
+		return "", err
+	}
+
+	wg.Add(1)
+	err = txn.Send(toClientID, tokens, desc)
+	if err == nil {
+		wg.Wait()
+	} else {
+		return "", err
+	}
+
+	if cb.success {
+		cb.success = false
+		wg.Add(1)
+		err := txn.Verify()
+		if err == nil {
+			wg.Wait()
+		} else {
+			return "", err
+		}
+		if cb.success {
+			return txn.GetVerifyOutput(), nil
+		}
+	}
+
+	return "", errors.New(cb.errMsg)
 }
