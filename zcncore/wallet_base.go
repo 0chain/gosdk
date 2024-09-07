@@ -462,7 +462,7 @@ func SetWalletInfo(jsonWallet string, splitKeyWallet bool) error {
 		return errors.New("invalid jsonWallet: " + err.Error())
 	}
 
-	client.SetWallet(wallet, false)
+	client.SetWallet(false, wallet)
 	return client.SetSplitKeyWallet(splitKeyWallet)
 }
 

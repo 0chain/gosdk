@@ -89,7 +89,7 @@ func GetClientSysKeys() []sys.KeyPair {
 }
 
 // SetWallet should be set before any transaction or client specific APIs
-func SetWallet(w zcncrypto.Wallet, isSplit bool) {
+func SetWallet(isSplit bool, w zcncrypto.Wallet) {
 	client.wallet = &w
 	client.wallet.IsSplit = isSplit
 }

@@ -45,7 +45,7 @@ func setWallet(clientID, clientKey, peerPublicKey, publicKey, privateKey, mnemon
 		IsSplit:       isSplit,
 	}
 	fmt.Println("set Wallet, is split:", isSplit)
-	client.SetWallet(*w, isSplit)
+	client.SetWallet(isSplit, *w)
 
 	zboxApiClient.SetWallet(clientID, privateKey, publicKey)
 	if mode == "" { // main thread, need to notify the web worker to update wallet

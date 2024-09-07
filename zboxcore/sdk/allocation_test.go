@@ -401,7 +401,7 @@ func TestAllocation_GetBlobberStats(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client.SetWallet(zcncrypto.Wallet{
+	client.SetWallet(false, zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
 	})
@@ -546,7 +546,7 @@ func TestAllocation_RepairRequired(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client.SetWallet(zcncrypto.Wallet{
+	client.SetWallet(false, zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
 	})
@@ -693,7 +693,7 @@ func TestAllocation_DownloadFileToFileHandler(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client.SetWallet(zcncrypto.Wallet{
+	client.SetWallet(false, zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
 	})
@@ -774,7 +774,7 @@ func TestAllocation_DownloadFile(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client.SetWallet(zcncrypto.Wallet{
+	client.SetWallet(false, zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
 	})
@@ -821,7 +821,7 @@ func TestAllocation_DownloadFileByBlock(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client.SetWallet(zcncrypto.Wallet{
+	client.SetWallet(false, zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
 	})
@@ -875,7 +875,7 @@ func TestAllocation_downloadFile(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client.SetWallet(zcncrypto.Wallet{
+	client.SetWallet(false, zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
 	})
@@ -1014,7 +1014,7 @@ func TestAllocation_GetRefs(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client.SetWallet(zcncrypto.Wallet{
+	client.SetWallet(false, zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
 	})
@@ -1058,7 +1058,7 @@ func TestAllocation_GetFileMeta(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client.SetWallet(zcncrypto.Wallet{
+	client.SetWallet(false, zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
 	})
@@ -1175,7 +1175,7 @@ func TestAllocation_GetAuthTicketForShare(t *testing.T) {
 		mockClient.On("Do", mock.Anything).Return(&httpResponse, nil)
 	}
 
-	client.SetWallet(zcncrypto.Wallet{
+	client.SetWallet(false, zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
 	})
@@ -1380,7 +1380,7 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 			var mockClient = mocks.HttpClient{}
 			zboxutil.Client = &mockClient
 
-			client.SetWallet(zcncrypto.Wallet{
+			client.SetWallet(false, zcncrypto.Wallet{
 				ClientID:  mockClientId,
 				ClientKey: mockClientKey,
 			})
@@ -1589,7 +1589,7 @@ func TestAllocation_ListDirFromAuthTicket(t *testing.T) {
 			var mockClient = mocks.HttpClient{}
 			zboxutil.Client = &mockClient
 
-			client.SetWallet(zcncrypto.Wallet{
+			client.SetWallet(false, zcncrypto.Wallet{
 				ClientID:  mockClientId,
 				ClientKey: mockClientKey,
 			})
@@ -1642,7 +1642,7 @@ func TestAllocation_downloadFromAuthTicket(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client.SetWallet(zcncrypto.Wallet{
+	client.SetWallet(false, zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
 	})
@@ -1867,7 +1867,7 @@ func TestAllocation_listDir(t *testing.T) {
 			var mockClient = mocks.HttpClient{}
 			zboxutil.Client = &mockClient
 
-			client.SetWallet(zcncrypto.Wallet{
+			client.SetWallet(false, zcncrypto.Wallet{
 				ClientID:  mockClientId,
 				ClientKey: mockClientKey,
 			})
@@ -2000,7 +2000,7 @@ func TestAllocation_GetFileMetaFromAuthTicket(t *testing.T) {
 			var mockClient = mocks.HttpClient{}
 			zboxutil.Client = &mockClient
 
-			client.SetWallet(zcncrypto.Wallet{
+			client.SetWallet(false, zcncrypto.Wallet{
 				ClientID:  mockClientId,
 				ClientKey: mockClientKey,
 			})
@@ -2048,7 +2048,7 @@ func TestAllocation_DownloadToFileHandlerFromAuthTicket(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client.SetWallet(zcncrypto.Wallet{
+	client.SetWallet(false, zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
 	})
@@ -2083,7 +2083,7 @@ func TestAllocation_DownloadThumbnailFromAuthTicket(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client.SetWallet(zcncrypto.Wallet{
+	client.SetWallet(false, zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
 	})
@@ -2125,7 +2125,7 @@ func TestAllocation_DownloadFromAuthTicket(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client.SetWallet(zcncrypto.Wallet{
+	client.SetWallet(false, zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
 	})
@@ -2161,7 +2161,7 @@ func TestAllocation_DownloadFromAuthTicketByBlocks(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client.SetWallet(zcncrypto.Wallet{
+	client.SetWallet(false, zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
 	})
@@ -2196,7 +2196,7 @@ func TestAllocation_StartRepair(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client.SetWallet(zcncrypto.Wallet{
+	client.SetWallet(false, zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
 	})
@@ -2381,7 +2381,7 @@ func getMockAuthTicket(t *testing.T) string {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client.SetWallet(zcncrypto.Wallet{
+	client.SetWallet(false, zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
 	})

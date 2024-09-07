@@ -683,7 +683,7 @@ func TestAllocation_RepairFile(t *testing.T) {
 		resty.CreateClient = createClient
 	}()
 
-	client.SetWallet(zcncrypto.Wallet{
+	client.SetWallet(false, zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
 	})
