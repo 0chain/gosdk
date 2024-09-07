@@ -41,7 +41,7 @@ func setupHttpResponses(
 	err := json.Unmarshal([]byte(walletJSON), &wallet)
 	require.NoError(t, err)
 
-	client.SetWallet(wallet)
+	client.SetWallet(false, wallet)
 	client.SetSignatureScheme("bls0chain")
 
 	for i := 0; i < numBlobbers; i++ {

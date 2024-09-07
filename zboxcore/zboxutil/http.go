@@ -918,19 +918,6 @@ func HttpDo(ctx context.Context, cncl context.CancelFunc, req *http.Request, f f
 	}
 }
 
-// isCurrentDominantStatus determines whether the current response status is the dominant status among responses.
-//
-// The dominant status is where the response status is counted the most.
-// On tie-breakers, 200 will be selected if included.
-//
-// Function assumes runningTotalPerStatus can be accessed safely concurrently.
-func isCurrentDominantStatus(respStatus int, currentTotalPerStatus map[int]int, currentMax int) bool {
-	// mark status as dominant if
-	// - running total for status is the max and response is 200 or
-	// - running total for status is the max and count for 200 is lower
-	return currentTotalPerStatus[respStatus] == currentMax && (respStatus == 200 || currentTotalPerStatus[200] < currentMax)
-}
-
 func joinUrl(baseURl string, paths ...string) (*url.URL, error) {
 	u, err := url.Parse(baseURl)
 	if err != nil {
