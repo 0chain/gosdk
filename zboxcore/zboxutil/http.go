@@ -906,8 +906,6 @@ func HttpDo(ctx context.Context, cncl context.CancelFunc, req *http.Request, f f
 		c <- err
 	}()
 
-	defer cncl() // Ensure the cancellation function is deferred to release resources.
-
 	select {
 	case <-ctx.Done():
 		// If the context is canceled or times out, return the context's error.
