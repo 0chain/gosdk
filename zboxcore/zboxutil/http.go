@@ -21,21 +21,6 @@ import (
 	"github.com/hitenjain14/fasthttp"
 )
 
-const SC_REST_API_URL = "v1/screst/"
-
-const MAX_RETRIES = 5
-const SLEEP_BETWEEN_RETRIES = 5
-
-// In percentage
-const consensusThresh = float32(25.0)
-
-// SCRestAPIHandler is a function type to handle the response from the SC Rest API
-//
-//	`response` - the response from the SC Rest API
-//	`numSharders` - the number of sharders that responded
-//	`err` - the error if any
-type SCRestAPIHandler func(response map[string][]byte, numSharders int, err error)
-
 type HttpClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }

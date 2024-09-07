@@ -47,12 +47,16 @@ func initSDKs(chainID, blockWorker, signatureScheme string,
 		return err
 	}
 
-	if !isSplit && zcncore.IsSplitWallet() {
+	clientConf, err := conf.GetClientConfig()
+	if err != nil {
+		return err
+	}
+
+	if !isSplit && clientConf.IsSplitWallet {
 		// split wallet should not be reset back, use the existing
 		isSplit = true
 	}
 
-	fmt.Println("init SDKs, isSplit:", isSplit)
 	err = client.Init(context.Background(), conf.Config{
 		BlockWorker:             blockWorker,
 		SignatureScheme:         signatureScheme,
@@ -61,6 +65,7 @@ func initSDKs(chainID, blockWorker, signatureScheme string,
 		MinSubmit:               minSubmit,
 		ConfirmationChainLength: confirmationChainLength,
 		SharderConsensous:       sharderconsensous,
+		IsSplitWallet:           isSplit,
 	})
 
 	if err != nil {

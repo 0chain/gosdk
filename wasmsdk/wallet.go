@@ -13,7 +13,6 @@ import (
 	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/wasmsdk/jsbridge"
-	"github.com/0chain/gosdk/zcncore"
 )
 
 func setWallet(clientID, clientKey, peerPublicKey, publicKey, privateKey, mnemonic string, isSplit bool) error {
@@ -46,10 +45,7 @@ func setWallet(clientID, clientKey, peerPublicKey, publicKey, privateKey, mnemon
 		IsSplit:       isSplit,
 	}
 	fmt.Println("set Wallet, is split:", isSplit)
-	err := zcncore.SetWallet(*w, isSplit)
-	if err != nil {
-		return err
-	}
+	client.SetWallet(*w, isSplit)
 
 	zboxApiClient.SetWallet(clientID, privateKey, publicKey)
 	if mode == "" { // main thread, need to notify the web worker to update wallet

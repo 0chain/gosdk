@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/transaction"
 	"math"
 )
@@ -29,12 +30,17 @@ func (ta *TransactionWithAuth) Send(toClientID string, val uint64, desc string) 
 		return errors.New("", "Could not serialize description to transaction_data")
 	}
 
+	clientNode, err := client.GetNode()
+	if err != nil {
+		return err
+	}
+
 	ta.t.txn.TransactionType = transaction.TxnTypeSend
 	ta.t.txn.ToClientID = toClientID
 	ta.t.txn.Value = val
 	ta.t.txn.TransactionData = string(txnData)
 	if ta.t.txn.TransactionFee == 0 {
-		fee, err := transaction.EstimateFee(ta.t.txn, _config.chain.Miners, 0.2)
+		fee, err := transaction.EstimateFee(ta.t.txn, clientNode.Network().Miners, 0.2)
 		if err != nil {
 			return err
 		}

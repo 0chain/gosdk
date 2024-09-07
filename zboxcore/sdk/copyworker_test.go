@@ -488,7 +488,7 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 				maskMU:       &sync.Mutex{},
 				connectionID: mockConnectionId,
 			}
-			sig, err := zclient.Sign(mockAllocationTxId)
+			sig, err := client.Sign(mockAllocationTxId)
 			require.NoError(err)
 			req.sig = sig
 			req.ctx, req.ctxCncl = context.WithCancel(context.TODO())
