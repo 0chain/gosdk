@@ -163,7 +163,7 @@ func InitWallet(clientJson *C.char) *C.char {
 		l.Logger.Error(err)
 		return WithJSON(false, err)
 	}
-	client.SetWallet(w)
+	client.SetWallet(false, w)
 
 	l.Logger.Info("InitWallet success")
 	zboxApiClient.SetWallet(client.Wallet().ClientID, client.Wallet().Keys[0].PrivateKey, client.Wallet().ClientKey)

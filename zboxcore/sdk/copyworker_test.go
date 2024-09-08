@@ -44,7 +44,7 @@ func TestCopyRequest_copyBlobberObject(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client.SetWallet(zcncrypto.Wallet{
+	client.SetWallet(false, zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
 	})
@@ -249,7 +249,7 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client.SetWallet(zcncrypto.Wallet{
+	client.SetWallet(false, zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
 	})
