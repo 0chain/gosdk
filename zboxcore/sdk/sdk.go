@@ -125,7 +125,7 @@ func InitStorageSDK(walletJSON string,
 		return err
 	}
 
-	client.SetWallet(false, wallet)
+	client.SetWallet(wallet)
 	client.SetSignatureScheme(signatureScheme)
 	client.SetNonce(nonce)
 	if len(fee) > 0 {

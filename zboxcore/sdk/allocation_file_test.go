@@ -41,7 +41,7 @@ func setupHttpResponses(
 	err := json.Unmarshal([]byte(walletJSON), &wallet)
 	require.NoError(t, err)
 
-	client.SetWallet(false, wallet)
+	client.SetWallet(wallet)
 	client.SetSignatureScheme("bls0chain")
 
 	for i := 0; i < numBlobbers; i++ {
@@ -683,7 +683,7 @@ func TestAllocation_RepairFile(t *testing.T) {
 		resty.CreateClient = createClient
 	}()
 
-	client.SetWallet(false, zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
 	})
