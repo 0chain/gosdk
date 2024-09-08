@@ -97,6 +97,7 @@ func (b *InputBuilder) Build() (InputBinder, error) {
 // Bind bind js inputs to reflect values
 func (b *InputBuilder) Bind(args []js.Value) ([]reflect.Value, error) {
 	if len(args) != b.numIn {
+		fmt.Println("args:", args)
 		return nil, ErrMismatchedInputLength
 	}
 
