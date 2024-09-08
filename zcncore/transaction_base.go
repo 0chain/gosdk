@@ -320,6 +320,8 @@ func (g getNonceCallBack) OnNonceAvailable(status int, nonce int64, info string)
 
 func (t *Transaction) setNonceAndSubmit() {
 	t.setNonce()
+
+	//hash, _, nonce, _, err := transaction.SmartContractTxnValueFeeWithRetry(MinerSmartContractAddress, t.txn, 0, client.TxnFee())
 	t.submitTxn()
 }
 

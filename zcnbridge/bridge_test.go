@@ -436,7 +436,7 @@ func Test_ZCNBridge(t *testing.T) {
 	})
 
 	t.Run("should check configuration used by BurnZCN", func(t *testing.T) {
-		_, err := bridgeClient.BurnZCN(context.Background(), amount, txnFee)
+		_, err := bridgeClient.BurnZCN(amount)
 		require.NoError(t, err)
 
 		require.True(t, tx.AssertCalled(

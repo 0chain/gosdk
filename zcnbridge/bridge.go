@@ -20,14 +20,13 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/0chain/gosdk/core/logger"
+	coreTransaction "github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/zcnbridge/ethereum"
 	"github.com/0chain/gosdk/zcnbridge/ethereum/authorizers"
 	"github.com/0chain/gosdk/zcnbridge/ethereum/bridge"
 	"github.com/0chain/gosdk/zcnbridge/ethereum/nftconfig"
-	"github.com/0chain/gosdk/zcnbridge/log"
 	"github.com/0chain/gosdk/zcncore"
 
-	"github.com/0chain/gosdk/zcnbridge/transaction"
 	"github.com/0chain/gosdk/zcnbridge/wallet"
 	"github.com/0chain/gosdk/zcnbridge/zcnsc"
 	eth "github.com/ethereum/go-ethereum"
@@ -155,7 +154,7 @@ func (b *BridgeClient) RemoveEthereumAuthorizer(ctx context.Context, address com
 }
 
 // AddEthereumAuthorizers add bridge authorizers to the Ethereum authorizers contract
-// 		- configDir - configuration directory
+//   - configDir - configuration directory
 func (b *BridgeClient) AddEthereumAuthorizers(configDir string) {
 	cfg := viper.New()
 	cfg.AddConfigPath(configDir)
@@ -442,13 +441,6 @@ func (b *BridgeClient) GetTokenBalance() (*big.Int, error) {
 	return wei, nil
 }
 
-// VerifyZCNTransaction verifies 0CHain transaction
-//   - ctx go context instance to run the transaction
-//   - hash transaction hash
-func (b *BridgeClient) VerifyZCNTransaction(ctx context.Context, hash string) (transaction.Transaction, error) {
-	return transaction.Verify(ctx, hash)
-}
-
 // SignWithEthereumChain signs the digest with Ethereum chain signer taking key from the current user key storage
 //   - message message to sign
 func (b *BridgeClient) SignWithEthereumChain(message string) ([]byte, error) {
@@ -631,23 +623,16 @@ func (b *BridgeClient) BurnWZCN(ctx context.Context, amountTokens uint64) (*type
 //   - ctx go context instance to run the transaction
 //   - payload received from authorizers
 func (b *BridgeClient) MintZCN(ctx context.Context, payload *zcnsc.MintPayload) (string, error) {
-	trx, err := b.transactionProvider.NewTransactionEntity(0)
-	if err != nil {
-		log.Logger.Fatal("failed to create new transaction", zap.Error(err))
-	}
-
 	Logger.Info(
 		"Starting MINT smart contract",
 		zap.String("sc address", wallet.ZCNSCSmartContractAddress),
 		zap.String("function", wallet.MintFunc),
 		zap.Int64("mint amount", int64(payload.Amount)))
 
-	hash, err := trx.ExecuteSmartContract(
-		ctx,
-		wallet.ZCNSCSmartContractAddress,
-		wallet.MintFunc,
-		payload,
-		0)
+	hash, _, _, _, err := coreTransaction.SmartContractTxn(wallet.ZCNSCSmartContractAddress, coreTransaction.SmartContractTxnData{
+		Name:      wallet.MintFunc,
+		InputArgs: payload,
+	})
 
 	if err != nil {
 		return "", errors.Wrap(err, fmt.Sprintf("failed to execute smart contract, hash = %s", hash))
@@ -665,16 +650,10 @@ func (b *BridgeClient) MintZCN(ctx context.Context, payload *zcnsc.MintPayload) 
 //   - ctx go context instance to run the transaction
 //   - amount amount of tokens to burn
 //   - txnfee transaction fee
-func (b *BridgeClient) BurnZCN(ctx context.Context, amount, txnfee uint64) (transaction.Transaction, error) {
+func (b *BridgeClient) BurnZCN(amount uint64) (string, error) {
 	payload := zcnsc.BurnPayload{
 		EthereumAddress: b.EthereumAddress,
 	}
-
-	trx, err := b.transactionProvider.NewTransactionEntity(txnfee)
-	if err != nil {
-		log.Logger.Fatal("failed to create new transaction", zap.Error(err))
-	}
-
 	Logger.Info(
 		"Starting BURN smart contract",
 		zap.String("sc address", wallet.ZCNSCSmartContractAddress),
@@ -682,23 +661,13 @@ func (b *BridgeClient) BurnZCN(ctx context.Context, amount, txnfee uint64) (tran
 		zap.Uint64("burn amount", amount),
 	)
 
-	var hash string
-	hash, err = trx.ExecuteSmartContract(
-		ctx,
-		wallet.ZCNSCSmartContractAddress,
-		wallet.BurnFunc,
-		payload,
-		amount,
-	)
-
+	hash, _, _, _, err := coreTransaction.SmartContractTxn(wallet.ZCNSCSmartContractAddress, coreTransaction.SmartContractTxnData{
+		Name:      wallet.MintFunc,
+		InputArgs: payload,
+	})
 	if err != nil {
 		Logger.Error("Burn ZCN transaction FAILED", zap.Error(err))
-		return trx, errors.Wrap(err, fmt.Sprintf("failed to execute smart contract, hash = %s", hash))
-	}
-
-	err = trx.Verify(context.Background())
-	if err != nil {
-		return trx, errors.Wrap(err, fmt.Sprintf("failed to verify smart contract, hash = %s", hash))
+		return hash, errors.Wrap(err, fmt.Sprintf("failed to execute smart contract, hash = %s", hash))
 	}
 
 	Logger.Info(
@@ -708,7 +677,7 @@ func (b *BridgeClient) BurnZCN(ctx context.Context, amount, txnfee uint64) (tran
 		zap.Uint64("amount", amount),
 	)
 
-	return trx, nil
+	return hash, nil
 }
 
 // ApproveUSDCSwap provides opportunity to approve swap operation for ERC20 tokens

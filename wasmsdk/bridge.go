@@ -12,7 +12,6 @@ import (
 	"github.com/0chain/gosdk/zcnbridge"
 	"github.com/0chain/gosdk/zcnbridge/errors"
 	"github.com/0chain/gosdk/zcnbridge/log"
-	"github.com/0chain/gosdk/zcnbridge/transaction"
 	"github.com/0chain/gosdk/zcnbridge/wallet"
 	"github.com/0chain/gosdk/zcncore"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -47,8 +46,6 @@ func initBridge(
 		return errors.New("wallet_error", err.Error())
 	}
 
-	transactionProvider := transaction.NewTransactionProvider()
-
 	keyStore := zcnbridge.NewKeyStore(
 		path.Join(".", zcnbridge.EthereumWalletStorageDir))
 
@@ -63,7 +60,6 @@ func initBridge(
 		gasLimit,
 		consensusThreshold,
 		ethereumClient,
-		transactionProvider,
 		keyStore,
 	)
 
@@ -73,17 +69,17 @@ func initBridge(
 // burnZCN Burns ZCN tokens and returns a hash of the burn transaction
 //   - amount: amount of ZCN tokens to burn
 //   - txnfee: transaction fee
-func burnZCN(amount, txnfee uint64) string { //nolint
+func burnZCN(amount uint64) string { //nolint
 	if bridge == nil {
 		return errors.New("burnZCN", "bridge is not initialized").Error()
 	}
 
-	tx, err := bridge.BurnZCN(context.Background(), amount, txnfee)
+	hash, err := bridge.BurnZCN(amount)
 	if err != nil {
 		return errors.Wrap("burnZCN", "failed to burn ZCN tokens", err).Error()
 	}
 
-	return tx.GetHash()
+	return hash
 }
 
 // mintZCN Mints ZCN tokens and returns a hash of the mint transaction

@@ -292,10 +292,6 @@ func main() {
 				"allocationRepair": allocationRepair,
 				"repairSize":       repairSize,
 
-				//smartcontract
-				"executeSmartContract": executeSmartContract,
-				"faucet":               faucet,
-
 				// bridge
 				"initBridge":                    initBridge,
 				"burnZCN":                       burnZCN,
