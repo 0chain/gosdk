@@ -42,7 +42,7 @@ func TestListRequest_getFileMetaInfoFromBlobber(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client.SetWallet(false, zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
 	})
@@ -203,7 +203,7 @@ func TestListRequest_getFileConsensusFromBlobbers(t *testing.T) {
 
 	const mockClientId = "mock client id"
 	const mockClientKey = "mock client key"
-	client.SetWallet(false, zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
 	})

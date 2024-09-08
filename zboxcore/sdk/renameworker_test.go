@@ -49,7 +49,7 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 		zboxutil.Client = rawClient
 	}()
 
-	client.SetWallet(false, zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
 	})
@@ -279,7 +279,7 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 		zboxutil.Client = rawClient
 	}()
 
-	client.SetWallet(false, zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
 	})
