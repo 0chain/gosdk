@@ -113,22 +113,19 @@ func SetAuthUrl(url string) error {
 	return nil
 }
 
-func SetNonce(n int64) error {
+func SetNonce(n int64) {
 	client.nonce = n
-	return nil
 }
 
-func SetTxnFee(f uint64) error {
+func SetTxnFee(f uint64) {
 	client.txnFee = f
-	return nil
 }
 
-func SetSignatureScheme(signatureScheme string) error {
+func SetSignatureScheme(signatureScheme string) {
 	if signatureScheme != constants.BLS0CHAIN.String() && signatureScheme != constants.ED25519.String() {
-		return errors.New("invalid/unsupported signature scheme")
+		panic("invalid/unsupported signature scheme")
 	}
 	client.signatureScheme = signatureScheme
-	return nil
 }
 
 func Wallet() *zcncrypto.Wallet {
