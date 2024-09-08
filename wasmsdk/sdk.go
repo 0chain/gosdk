@@ -36,7 +36,8 @@ var CreateObjectURL func(buf []byte, mimeType string) string
 //   - zboxAppType is the application type of the 0box service
 //   - sharderconsensous is the number of sharders to reach consensus
 func initSDKs(chainID, blockWorker, signatureScheme string,
-	minConfirmation, minSubmit, confirmationChainLength int, zboxHost, zboxAppType string, sharderconsensous int) error {
+	minConfirmation, minSubmit, confirmationChainLength int,
+	zboxHost, zboxAppType string, sharderconsensous int, isSplit bool) error {
 
 	zboxApiClient.SetRequest(zboxHost, zboxAppType)
 
@@ -44,6 +45,16 @@ func initSDKs(chainID, blockWorker, signatureScheme string,
 	if err != nil {
 		fmt.Println("wasm: InitStorageSDK ", err)
 		return err
+	}
+
+	clientConf, err := conf.GetClientConfig()
+	if err != nil {
+		return err
+	}
+
+	if !isSplit && clientConf.IsSplitWallet {
+		// split wallet should not be reset back, use the existing
+		isSplit = true
 	}
 
 	err = client.Init(context.Background(), conf.Config{
@@ -54,6 +65,7 @@ func initSDKs(chainID, blockWorker, signatureScheme string,
 		MinSubmit:               minSubmit,
 		ConfirmationChainLength: confirmationChainLength,
 		SharderConsensous:       sharderconsensous,
+		IsSplitWallet:           isSplit,
 	})
 
 	if err != nil {
@@ -127,6 +139,7 @@ func getLookupHash(allocationID string, path string) string {
 
 // createThumbnail create thumbnail of an image buffer. It supports
 //   - png
+
 //   - jpeg
 //   - gif
 //   - bmp

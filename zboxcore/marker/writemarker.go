@@ -55,7 +55,7 @@ func (wm *WriteMarker) Sign() error {
 func (wm *WriteMarker) VerifySignature(clientPublicKey string) error {
 	hashData := wm.GetHashData()
 	signatureHash := encryption.Hash(hashData)
-	sigOK, err := sys.Verify(wm.Signature, signatureHash)
+	sigOK, err := sys.VerifyWith(clientPublicKey, wm.Signature, signatureHash)
 	if err != nil {
 		return errors.New("write_marker_validation_failed", "Error during verifying signature. "+err.Error())
 	}

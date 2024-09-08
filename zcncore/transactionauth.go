@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/transaction"
 	"math"
 )
@@ -24,17 +25,32 @@ func (ta *TransactionWithAuth) ExecuteSmartContract(address, methodName string,
 }
 
 func (ta *TransactionWithAuth) Send(toClientID string, val uint64, desc string) error {
-	txnData, err := json.Marshal(SendTxnData{Note: desc})
+	txnData, err := json.Marshal(transaction.SmartContractTxnData{Name: "transfer", InputArgs: SendTxnData{Note: desc}})
 	if err != nil {
 		return errors.New("", "Could not serialize description to transaction_data")
 	}
+
+	clientNode, err := client.GetNode()
+	if err != nil {
+		return err
+	}
+
+	ta.t.txn.TransactionType = transaction.TxnTypeSend
+	ta.t.txn.ToClientID = toClientID
+	ta.t.txn.Value = val
+	ta.t.txn.TransactionData = string(txnData)
+	if ta.t.txn.TransactionFee == 0 {
+		fee, err := transaction.EstimateFee(ta.t.txn, clientNode.Network().Miners, 0.2)
+		if err != nil {
+			return err
+		}
+		ta.t.txn.TransactionFee = fee
+	}
+
 	go func() {
-		ta.t.txn.TransactionType = transaction.TxnTypeSend
-		ta.t.txn.ToClientID = toClientID
-		ta.t.txn.Value = val
-		ta.t.txn.TransactionData = string(txnData)
 		ta.submitTxn()
 	}()
+
 	return nil
 }
 

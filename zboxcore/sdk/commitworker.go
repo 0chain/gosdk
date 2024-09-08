@@ -17,9 +17,9 @@ import (
 
 	"github.com/0chain/errors"
 	thrown "github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
 	l "github.com/0chain/gosdk/zboxcore/logger"
@@ -57,6 +57,7 @@ type CommitRequest struct {
 	allocationID string
 	allocationTx string
 	connectionID string
+	sig          string
 	wg           *sync.WaitGroup
 	result       *CommitResult
 	timestamp    int64
@@ -111,7 +112,7 @@ func (commitreq *CommitRequest) processCommit() {
 	}
 	var req *http.Request
 	var lR ReferencePathResult
-	req, err := zboxutil.NewReferencePathRequest(commitreq.blobber.Baseurl, commitreq.allocationID, commitreq.allocationTx, paths)
+	req, err := zboxutil.NewReferencePathRequest(commitreq.blobber.Baseurl, commitreq.allocationID, commitreq.allocationTx, commitreq.sig, paths)
 	if err != nil {
 		l.Logger.Error("Creating ref path req", err)
 		return
@@ -126,7 +127,7 @@ func (commitreq *CommitRequest) processCommit() {
 		if resp.StatusCode != http.StatusOK {
 			l.Logger.Error("Ref path response : ", resp.StatusCode)
 		}
-		resp_body, err := ioutil.ReadAll(resp.Body)
+		resp_body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			l.Logger.Error("Ref path: Resp", err)
 			return err

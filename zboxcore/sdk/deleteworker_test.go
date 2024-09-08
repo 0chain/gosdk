@@ -41,7 +41,7 @@ func TestDeleteRequest_deleteBlobberFile(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client.SetWallet(zcncrypto.Wallet{
+	client.SetWallet(false, zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
 	})
@@ -214,7 +214,7 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client.SetWallet(zcncrypto.Wallet{
+	client.SetWallet(false, zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
 	})

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/0chain/gosdk/zcncore"
 	"net/http"
 	"strconv"
 	"time"
@@ -14,35 +15,12 @@ import (
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/resty"
-	"github.com/0chain/gosdk/core/sys"
-	"github.com/0chain/gosdk/core/zcncrypto"
 )
 
 var log logger.Logger
 
 func GetLogger() *logger.Logger {
 	return &log
-}
-
-func signHash(hash string, signatureScheme string, keys []sys.KeyPair) (string, error) {
-	retSignature := ""
-	for _, kv := range keys {
-		ss := zcncrypto.NewSignatureScheme(signatureScheme)
-		err := ss.SetPrivateKey(kv.PrivateKey)
-		if err != nil {
-			return "", err
-		}
-
-		if len(retSignature) == 0 {
-			retSignature, err = ss.Sign(hash)
-		} else {
-			retSignature, err = ss.Add(retSignature, hash)
-		}
-		if err != nil {
-			return "", err
-		}
-	}
-	return retSignature, nil
 }
 
 type Client struct {
@@ -113,18 +91,17 @@ func (c *Client) GetCsrfToken(ctx context.Context) (string, error) {
 	return result.Token, nil
 }
 
-func (c *Client) createResty(ctx context.Context, csrfToken, phoneNumber string, headers map[string]string) (*resty.Resty, error) {
+func (c *Client) createResty(ctx context.Context, csrfToken, userID string, headers map[string]string) (*resty.Resty, error) {
 	h := make(map[string]string)
 	h["X-App-Client-ID"] = c.clientID
 	h["X-App-Client-Key"] = c.clientPublicKey
-	h["X-App-Phone-Number"] = phoneNumber
+	h["X-App-User-ID"] = userID
 
 	if c.clientPrivateKey != "" {
-		data := fmt.Sprintf("%v:%v:%v", c.clientID, phoneNumber, c.clientPublicKey)
+		data := fmt.Sprintf("%v:%v:%v", c.clientID, userID, c.clientPublicKey)
 		hash := encryption.Hash(data)
-		sign, err := signHash(hash, "bls0chain", []sys.KeyPair{{
-			PrivateKey: c.clientPrivateKey,
-		}})
+
+		sign, err := zcncore.SignFn(hash)
 		if err != nil {
 			return nil, err
 		}
@@ -143,15 +120,15 @@ func (c *Client) createResty(ctx context.Context, csrfToken, phoneNumber string,
 	return resty.New(resty.WithHeader(h)), nil
 }
 
-// CreateJwtSession create a jwt session with phone number
-func (c *Client) CreateJwtSession(ctx context.Context, phoneNumber string) (int64, error) {
+// CreateJwtSession create a jwt session with user id
+func (c *Client) CreateJwtSession(ctx context.Context, userID string) (int64, error) {
 
 	csrfToken, err := c.GetCsrfToken(ctx)
 	if err != nil {
 		return 0, err
 	}
 
-	r, err := c.createResty(ctx, csrfToken, phoneNumber, nil)
+	r, err := c.createResty(ctx, csrfToken, userID, nil)
 
 	if err != nil {
 		return 0, err
@@ -176,17 +153,16 @@ func (c *Client) CreateJwtSession(ctx context.Context, phoneNumber string) (int6
 }
 
 // CreateJwtToken create a jwt token with jwt session id and otp
-func (c *Client) CreateJwtToken(ctx context.Context, phoneNumber string, jwtSessionID int64, otp string) (string, error) {
+func (c *Client) CreateJwtToken(ctx context.Context, userID string, jwtSessionID int64) (string, error) {
 	csrfToken, err := c.GetCsrfToken(ctx)
 	if err != nil {
 		return "", err
 	}
 	headers := map[string]string{
 		"X-JWT-Session-ID": strconv.FormatInt(jwtSessionID, 10),
-		"X-JWT-OTP":        otp,
 	}
 
-	r, err := c.createResty(ctx, csrfToken, phoneNumber, headers)
+	r, err := c.createResty(ctx, csrfToken, userID, headers)
 
 	if err != nil {
 		return "", err
@@ -210,7 +186,7 @@ func (c *Client) CreateJwtToken(ctx context.Context, phoneNumber string, jwtSess
 }
 
 // RefreshJwtToken refresh jwt token
-func (c *Client) RefreshJwtToken(ctx context.Context, phoneNumber string, token string) (string, error) {
+func (c *Client) RefreshJwtToken(ctx context.Context, userID string, token string) (string, error) {
 	csrfToken, err := c.GetCsrfToken(ctx)
 	if err != nil {
 		return "", err
@@ -219,7 +195,7 @@ func (c *Client) RefreshJwtToken(ctx context.Context, phoneNumber string, token 
 		"X-JWT-Token": token,
 	}
 
-	r, err := c.createResty(ctx, csrfToken, phoneNumber, headers)
+	r, err := c.createResty(ctx, csrfToken, userID, headers)
 
 	if err != nil {
 		return "", err
