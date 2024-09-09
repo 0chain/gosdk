@@ -12,7 +12,9 @@ import (
 	"syscall/js"
 	"time"
 
+	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/wasmsdk/jsbridge"
+	"github.com/valyala/bytebufferpool"
 )
 
 // MemFS implement file system on memory
@@ -86,6 +88,16 @@ func (mfs *MemFS) WriteFile(name string, data []byte, perm os.FileMode) error {
 // Remove removes the named file or (empty) directory.
 // If there is an error, it will be of type *PathError.
 func (mfs *MemFS) Remove(name string) error {
+	f, ok := mfs.files[name]
+	if ok {
+		b := f.Buffer
+		if len(b) > 0 {
+			buff := &bytebufferpool.ByteBuffer{
+				B: b,
+			}
+			common.MemPool.Put(buff)
+		}
+	}
 	delete(mfs.files, name)
 	return nil
 }

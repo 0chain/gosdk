@@ -7,6 +7,9 @@ import (
 	"errors"
 	"io"
 	"syscall/js"
+
+	"github.com/0chain/gosdk/core/common"
+	"github.com/valyala/bytebufferpool"
 )
 
 type FileReader struct {
@@ -25,12 +28,15 @@ const (
 func NewFileReader(readChunkFuncName string, fileSize, chunkReadSize int64) (*FileReader, error) {
 	readChunk := js.Global().Get(readChunkFuncName)
 	var buf []byte
-	if bufferSize > fileSize {
-		buf = make([]byte, fileSize)
-	} else {
-		bufSize := (chunkReadSize * (bufferSize / chunkReadSize))
-		buf = make([]byte, bufSize)
+	bufSize := fileSize
+	if bufferSize < fileSize {
+		bufSize = (chunkReadSize * (bufferSize / chunkReadSize))
 	}
+	buff := common.MemPool.Get()
+	if cap(buff.B) < int(bufSize) {
+		buff.B = make([]byte, bufSize)
+	}
+	buf = buff.B
 	result, err := Await(readChunk.Invoke(0, len(buf)))
 	if len(err) > 0 && !err[0].IsNull() {
 		return nil, errors.New("file_reader: " + err[0].String())
@@ -74,6 +80,10 @@ func (r *FileReader) Read(p []byte) (int, error) {
 	n := copy(p, r.buf[r.bufOffset:])
 	r.bufOffset += n
 	if r.endOfFile && r.bufOffset == len(r.buf) {
+		buff := &bytebufferpool.ByteBuffer{
+			B: r.buf,
+		}
+		common.MemPool.Put(buff)
 		return n, io.EOF
 	}
 

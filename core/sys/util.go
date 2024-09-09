@@ -6,6 +6,8 @@ import (
 	"io/fs"
 	"os"
 	"time"
+
+	"github.com/0chain/gosdk/core/common"
 )
 
 // MemFile represents a file totally loaded in memory
@@ -52,7 +54,11 @@ func (f *MemFile) WriteAt(p []byte, offset int64) (n int, err error) {
 
 // InitBuffer initializes the buffer with a specific size
 func (f *MemFile) InitBuffer(size int) {
-	f.Buffer = make([]byte, size)
+	buff := common.MemPool.Get()
+	if cap(buff.B) < size {
+		buff.B = make([]byte, size)
+	}
+	f.Buffer = buff.B
 }
 
 // Sync not implemented
@@ -146,7 +152,7 @@ func (f *MemChanFile) Stat() (fs.FileInfo, error) {
 
 // Read reads data from the file through the buffer channel
 // It returns io.EOF when the buffer channel is closed.
-// 		- p: file in bytes loaded from the buffer channel
+//   - p: file in bytes loaded from the buffer channel
 func (f *MemChanFile) Read(p []byte) (int, error) {
 	select {
 	case err := <-f.ErrChan:
@@ -166,7 +172,7 @@ func (f *MemChanFile) Read(p []byte) (int, error) {
 // Write writes data to the file through the buffer channel
 // It writes the data to the buffer channel in chunks of ChunkWriteSize.
 // If ChunkWriteSize is 0, it writes the data as a whole.
-// 		- p: file in bytes to write to the buffer channel
+//   - p: file in bytes to write to the buffer channel
 func (f *MemChanFile) Write(p []byte) (n int, err error) {
 	if f.ChunkWriteSize == 0 {
 		data := make([]byte, len(p))
