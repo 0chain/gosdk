@@ -13,12 +13,13 @@ import (
 )
 
 type FileReader struct {
-	size      int64
-	offset    int64
-	readChunk js.Value
-	buf       []byte
-	bufOffset int
-	endOfFile bool
+	size          int64
+	offset        int64
+	readChunk     js.Value
+	buf           []byte
+	bufOffset     int
+	chunkReadSize int64
+	endOfFile     bool
 }
 
 const (
@@ -27,37 +28,27 @@ const (
 
 func NewFileReader(readChunkFuncName string, fileSize, chunkReadSize int64) (*FileReader, error) {
 	readChunk := js.Global().Get(readChunkFuncName)
-	var buf []byte
-	bufSize := fileSize
-	if bufferSize < fileSize {
-		bufSize = (chunkReadSize * (bufferSize / chunkReadSize))
-	}
-	buff := common.MemPool.Get()
-	if cap(buff.B) < int(bufSize) {
-		buff.B = make([]byte, bufSize)
-	}
-	buf = buff.B[:bufSize]
-	result, err := Await(readChunk.Invoke(0, len(buf)))
-	if len(err) > 0 && !err[0].IsNull() {
-		return nil, errors.New("file_reader: " + err[0].String())
-	}
-	chunk := result[0]
-	n := js.CopyBytesToGo(buf, chunk)
-	if n < len(buf) {
-		return nil, errors.New("file_reader: failed to read first chunk")
-	}
 	return &FileReader{
-		size:      fileSize,
-		offset:    int64(n),
-		readChunk: readChunk,
-		buf:       buf,
-		endOfFile: n == int(fileSize),
+		size:          fileSize,
+		readChunk:     readChunk,
+		chunkReadSize: chunkReadSize,
 	}, nil
 }
 
 func (r *FileReader) Read(p []byte) (int, error) {
 	//js.Value doesn't work in parallel invoke
 	size := len(p)
+	if len(r.buf) == 0 && !r.endOfFile {
+		bufSize := r.size
+		if bufferSize < bufSize {
+			bufSize = (r.chunkReadSize * (bufferSize / r.chunkReadSize))
+		}
+		buff := common.MemPool.Get()
+		if cap(buff.B) < int(bufSize) {
+			buff.B = make([]byte, bufSize)
+		}
+		r.buf = buff.B[:bufSize]
+	}
 
 	if len(r.buf)-r.bufOffset < size && !r.endOfFile {
 		r.bufOffset = 0 //reset buffer offset
