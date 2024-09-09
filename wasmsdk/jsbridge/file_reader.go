@@ -36,7 +36,7 @@ func NewFileReader(readChunkFuncName string, fileSize, chunkReadSize int64) (*Fi
 	if cap(buff.B) < int(bufSize) {
 		buff.B = make([]byte, bufSize)
 	}
-	buf = buff.B
+	buf = buff.B[:bufSize]
 	result, err := Await(readChunk.Invoke(0, len(buf)))
 	if len(err) > 0 && !err[0].IsNull() {
 		return nil, errors.New("file_reader: " + err[0].String())

@@ -58,7 +58,7 @@ func (f *MemFile) InitBuffer(size int) {
 	if cap(buff.B) < size {
 		buff.B = make([]byte, size)
 	}
-	f.Buffer = buff.B
+	f.Buffer = buff.B[:size]
 }
 
 // Sync not implemented

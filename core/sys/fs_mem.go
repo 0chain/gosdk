@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"syscall/js"
 	"time"
 
@@ -21,6 +22,7 @@ import (
 type MemFS struct {
 	files map[string]*MemFile
 	dirs  map[string]js.Value
+	sync.Mutex
 }
 
 // NewMemFS create MemFS instance
@@ -36,6 +38,8 @@ func NewMemFS() FS {
 // descriptor has mode O_RDONLY.
 // If there is an error, it will be of type *PathError.
 func (mfs *MemFS) Open(name string) (File, error) {
+	mfs.Lock()
+	defer mfs.Unlock()
 	file := mfs.files[name]
 	if file != nil {
 		return file, nil
@@ -51,6 +55,8 @@ func (mfs *MemFS) Open(name string) (File, error) {
 }
 
 func (mfs *MemFS) OpenFile(name string, flag int, perm os.FileMode) (File, error) {
+	mfs.Lock()
+	defer mfs.Unlock()
 	file := mfs.files[name]
 	if file != nil {
 		return file, nil
@@ -67,6 +73,8 @@ func (mfs *MemFS) OpenFile(name string, flag int, perm os.FileMode) (File, error
 
 // ReadFile reads the file named by filename and returns the contents.
 func (mfs *MemFS) ReadFile(name string) ([]byte, error) {
+	mfs.Lock()
+	defer mfs.Unlock()
 	file, ok := mfs.files[name]
 	if ok {
 		return file.Buffer, nil
@@ -79,7 +87,8 @@ func (mfs *MemFS) ReadFile(name string) ([]byte, error) {
 func (mfs *MemFS) WriteFile(name string, data []byte, perm os.FileMode) error {
 	fileName := filepath.Base(name)
 	file := &MemFile{Name: fileName, Mode: perm, ModTime: time.Now()}
-
+	mfs.Lock()
+	defer mfs.Unlock()
 	mfs.files[name] = file
 
 	return nil
@@ -88,6 +97,8 @@ func (mfs *MemFS) WriteFile(name string, data []byte, perm os.FileMode) error {
 // Remove removes the named file or (empty) directory.
 // If there is an error, it will be of type *PathError.
 func (mfs *MemFS) Remove(name string) error {
+	mfs.Lock()
+	defer mfs.Unlock()
 	f, ok := mfs.files[name]
 	if ok {
 		b := f.Buffer
@@ -110,6 +121,8 @@ func (mfs *MemFS) MkdirAll(path string, perm os.FileMode) error {
 // Stat returns a FileInfo describing the named file.
 // If there is an error, it will be of type *PathError.
 func (mfs *MemFS) Stat(name string) (fs.FileInfo, error) {
+	mfs.Lock()
+	defer mfs.Unlock()
 	file, ok := mfs.files[name]
 	if ok {
 		return file.Stat()
