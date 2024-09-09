@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"os"
 	"sync"
 	"time"
@@ -77,7 +76,6 @@ func saveProgress(ctx context.Context, fs *fsChunkedUploadProgressStorer) {
 	for {
 		select {
 		case <-ctx.Done():
-			fmt.Println("SAVE PROGRESS DONE")
 			return
 		case <-tc.C:
 			fs.Lock()
