@@ -74,7 +74,7 @@ func burnZCN(amount uint64) string { //nolint
 		return errors.New("burnZCN", "bridge is not initialized").Error()
 	}
 
-	hash, err := bridge.BurnZCN(amount)
+	hash, _, err := bridge.BurnZCN(amount)
 	if err != nil {
 		return errors.Wrap("burnZCN", "failed to burn ZCN tokens", err).Error()
 	}

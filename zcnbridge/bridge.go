@@ -649,7 +649,7 @@ func (b *BridgeClient) MintZCN(ctx context.Context, payload *zcnsc.MintPayload) 
 //   - ctx go context instance to run the transaction
 //   - amount amount of tokens to burn
 //   - txnfee transaction fee
-func (b *BridgeClient) BurnZCN(amount uint64) (string, error) {
+func (b *BridgeClient) BurnZCN(amount uint64) (string, string, error) {
 	payload := zcnsc.BurnPayload{
 		EthereumAddress: b.EthereumAddress,
 	}
@@ -660,13 +660,13 @@ func (b *BridgeClient) BurnZCN(amount uint64) (string, error) {
 		zap.Uint64("burn amount", amount),
 	)
 
-	hash, _, _, _, err := coreTransaction.SmartContractTxn(wallet.ZCNSCSmartContractAddress, coreTransaction.SmartContractTxnData{
+	hash, out, _, _, err := coreTransaction.SmartContractTxn(wallet.ZCNSCSmartContractAddress, coreTransaction.SmartContractTxnData{
 		Name:      wallet.MintFunc,
 		InputArgs: payload,
 	})
 	if err != nil {
 		Logger.Error("Burn ZCN transaction FAILED", zap.Error(err))
-		return hash, errors.Wrap(err, fmt.Sprintf("failed to execute smart contract, hash = %s", hash))
+		return hash, out, errors.Wrap(err, fmt.Sprintf("failed to execute smart contract, hash = %s", hash))
 	}
 
 	Logger.Info(
@@ -676,7 +676,7 @@ func (b *BridgeClient) BurnZCN(amount uint64) (string, error) {
 		zap.Uint64("amount", amount),
 	)
 
-	return hash, nil
+	return hash, out, nil
 }
 
 // ApproveUSDCSwap provides opportunity to approve swap operation for ERC20 tokens
