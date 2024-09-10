@@ -102,3 +102,107 @@ func StorageScUpdateConfig(input interface{}) (err error) {
 
 	return err
 }
+
+func AddHardfork(input interface{}) (err error) {
+	_, _, _, _, err = transaction.SmartContractTxn(MinerSmartContractAddress, transaction.SmartContractTxnData{
+		Name:      transaction.ADD_HARDFORK,
+		InputArgs: input,
+	})
+
+	return err
+}
+
+func ZCNSCUpdateGlobalConfig(input *MinerSCMinerInfo) (err error) {
+	_, _, _, _, err = transaction.SmartContractTxn(ZCNSCSmartContractAddress, transaction.SmartContractTxnData{
+		Name:      transaction.ZCNSC_UPDATE_GLOBAL_CONFIG,
+		InputArgs: input,
+	})
+
+	return err
+}
+
+func MinerSCMinerSettings(input *MinerSCMinerInfo) (err error) {
+	_, _, _, _, err = transaction.SmartContractTxn(MinerSmartContractAddress, transaction.SmartContractTxnData{
+		Name:      transaction.MINERSC_MINER_SETTINGS,
+		InputArgs: input,
+	})
+
+	return err
+}
+
+func MinerSCSharderSettings(input *MinerSCMinerInfo) (err error) {
+	_, _, _, _, err = transaction.SmartContractTxn(MinerSmartContractAddress, transaction.SmartContractTxnData{
+		Name:      transaction.MINERSC_SHARDER_SETTINGS,
+		InputArgs: input,
+	})
+
+	return err
+}
+
+func MinerSCDeleteMiner(input *MinerSCMinerInfo) (err error) {
+	_, _, _, _, err = transaction.SmartContractTxn(MinerSmartContractAddress, transaction.SmartContractTxnData{
+		Name:      transaction.MINERSC_MINER_DELETE,
+		InputArgs: input,
+	})
+
+	return err
+}
+
+func MinerSCDeleteSharder(input *AuthorizerNode) (err error) {
+	_, _, _, _, err = transaction.SmartContractTxn(MinerSmartContractAddress, transaction.SmartContractTxnData{
+		Name:      transaction.MINERSC_SHARDER_DELETE,
+		InputArgs: input,
+	})
+
+	return err
+}
+
+func ZCNSCUpdateAuthorizerConfig(input *AuthorizerNode) (err error) {
+	_, _, _, _, err = transaction.SmartContractTxn(ZCNSCSmartContractAddress, transaction.SmartContractTxnData{
+		Name:      transaction.ZCNSC_UPDATE_AUTHORIZER_CONFIG,
+		InputArgs: input,
+	})
+
+	return err
+}
+
+func ZCNSCAddAuthorizer(input *AddAuthorizerPayload) (err error) {
+	_, _, _, _, err = transaction.SmartContractTxn(ZCNSCSmartContractAddress, transaction.SmartContractTxnData{
+		Name:      transaction.ZCNSC_ADD_AUTHORIZER,
+		InputArgs: input,
+	})
+
+	return err
+}
+
+func ZCNSCAuthorizerHealthCheck(input *AuthorizerHealthCheckPayload) (err error) {
+	_, _, _, _, err = transaction.SmartContractTxn(ZCNSCSmartContractAddress, transaction.SmartContractTxnData{
+		Name:      transaction.ZCNSC_AUTHORIZER_HEALTH_CHECK,
+		InputArgs: input,
+	})
+
+	return err
+}
+
+func ZCNSCDeleteAuthorizer(input *DeleteAuthorizerPayload) (err error) {
+	_, _, _, _, err = transaction.SmartContractTxn(ZCNSCSmartContractAddress, transaction.SmartContractTxnData{
+		Name:      transaction.ZCNSC_DELETE_AUTHORIZER,
+		InputArgs: input,
+	})
+
+	return err
+}
+
+func ZCNSCCollectReward(providerId string, providerType Provider) (err error) {
+	pr := &scCollectReward{
+		ProviderId:   providerId,
+		ProviderType: int(providerType),
+	}
+
+	_, _, _, _, err = transaction.SmartContractTxn(ZCNSCSmartContractAddress, transaction.SmartContractTxnData{
+		Name:      transaction.ZCNSC_COLLECT_REWARD,
+		InputArgs: pr,
+	})
+
+	return err
+}
