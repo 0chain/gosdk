@@ -11,7 +11,6 @@ import (
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/client"
-	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/node"
 	"github.com/0chain/gosdk/core/sys"
@@ -73,13 +72,6 @@ type TransactionScheme interface {
 
 	// Hash Transaction status regardless of status
 	Hash() string
-
-	// Vesting SC
-
-	VestingTrigger(poolID string) error
-	VestingStop(sr *VestingStopRequest) error
-	VestingUnlock(poolID string) error
-	VestingDelete(poolID string) error
 
 	// Miner SC
 }
@@ -808,71 +800,6 @@ func (t *Transaction) GetVerifyError() string {
 // GetTransactionNonce returns nonce
 func (t *Transaction) GetTransactionNonce() int64 {
 	return t.txn.TransactionNonce
-}
-
-// ========================================================================== //
-//                               vesting pool                                 //
-// ========================================================================== //
-
-type vestingRequest struct {
-	PoolID common.Key `json:"pool_id"`
-}
-
-func (t *Transaction) vestingPoolTxn(function string, poolID string,
-	value uint64) error {
-
-	return t.createSmartContractTxn(VestingSmartContractAddress,
-		function, vestingRequest{PoolID: common.Key(poolID)}, value)
-}
-
-func (t *Transaction) VestingTrigger(poolID string) (err error) {
-
-	err = t.vestingPoolTxn(transaction.VESTING_TRIGGER, poolID, 0)
-	if err != nil {
-		logging.Error(err)
-		return
-	}
-	go func() { t.setNonceAndSubmit() }()
-	return
-}
-
-type VestingStopRequest struct {
-	PoolID      string `json:"pool_id"`
-	Destination string `json:"destination"`
-}
-
-func (t *Transaction) VestingStop(sr *VestingStopRequest) (err error) {
-
-	err = t.createSmartContractTxn(VestingSmartContractAddress,
-		transaction.VESTING_STOP, sr, 0)
-	if err != nil {
-		logging.Error(err)
-		return
-	}
-	go func() { t.setNonceAndSubmit() }()
-	return
-}
-
-func (t *Transaction) VestingUnlock(poolID string) (err error) {
-
-	err = t.vestingPoolTxn(transaction.VESTING_UNLOCK, poolID, 0)
-	if err != nil {
-		logging.Error(err)
-		return
-	}
-	go func() { t.setNonceAndSubmit() }()
-	return
-}
-
-func (t *Transaction) VestingDelete(poolID string) (err error) {
-
-	err = t.vestingPoolTxn(transaction.VESTING_DELETE, poolID, 0)
-	if err != nil {
-		logging.Error(err)
-		return
-	}
-	go func() { t.setNonceAndSubmit() }()
-	return
 }
 
 type scCollectReward struct {

@@ -77,14 +77,6 @@ type MinerSCNodes struct {
 	Nodes []Node `json:"Nodes"`
 }
 
-type VestingSCConfig struct {
-	MinLock              common.Balance `json:"min_lock"`
-	MinDuration          time.Duration  `json:"min_duration"`
-	MaxDuration          time.Duration  `json:"max_duration"`
-	MaxDestinations      int            `json:"max_destinations"`
-	MaxDescriptionLength int            `json:"max_description_length"`
-}
-
 type DelegatePool struct {
 	Balance      int64  `json:"balance"`
 	Reward       int64  `json:"reward"`
@@ -127,8 +119,6 @@ type TransactionCommon interface {
 	//RegisterMultiSig registers a group wallet and subwallets with MultisigSC
 	RegisterMultiSig(walletstr, mswallet string) error
 
-	VestingAdd(ar *VestingAddRequest, value uint64) error
-
 	MinerSCLock(providerId string, providerType Provider, lock uint64) error
 	MinerSCUnlock(providerId string, providerType Provider) error
 	MinerSCCollectReward(providerID string, providerType Provider) error
@@ -136,7 +126,6 @@ type TransactionCommon interface {
 
 	StorageSCCollectReward(providerID string, providerType Provider) error
 
-	VestingUpdateConfig(*InputMap) error
 	MinerScUpdateConfig(*InputMap) error
 	MinerScUpdateGlobals(*InputMap) error
 	StorageScUpdateConfig(*InputMap) error
@@ -349,31 +338,6 @@ func (t *Transaction) SendWithSignatureHash(toClientID string, val uint64, desc 
 	return nil
 }
 
-type VestingDest struct {
-	ID     string         `json:"id"`     // destination ID
-	Amount common.Balance `json:"amount"` // amount to vest for the destination
-}
-
-type VestingAddRequest struct {
-	Description  string           `json:"description"`  // allow empty
-	StartTime    common.Timestamp `json:"start_time"`   //
-	Duration     time.Duration    `json:"duration"`     //
-	Destinations []*VestingDest   `json:"destinations"` //
-}
-
-func (t *Transaction) VestingAdd(ar *VestingAddRequest, value uint64) (
-	err error) {
-
-	err = t.createSmartContractTxn(VestingSmartContractAddress,
-		transaction.VESTING_ADD, ar, value)
-	if err != nil {
-		logging.Error(err)
-		return
-	}
-	go func() { t.setNonceAndSubmit() }()
-	return
-}
-
 func (t *Transaction) MinerSCLock(providerId string, providerType Provider, lock uint64) error {
 	if lock > math.MaxInt64 {
 		return errors.New("invalid_lock", "int64 overflow on lock value")
@@ -444,18 +408,6 @@ func (t *Transaction) MinerSCKill(providerId string, providerType Provider) erro
 	}
 	go func() { t.setNonceAndSubmit() }()
 	return err
-}
-
-func (t *Transaction) VestingUpdateConfig(vscc *InputMap) (err error) {
-
-	err = t.createSmartContractTxn(VestingSmartContractAddress,
-		transaction.VESTING_UPDATE_SETTINGS, vscc, 0)
-	if err != nil {
-		logging.Error(err)
-		return
-	}
-	go func() { t.setNonceAndSubmit() }()
-	return
 }
 
 // faucet smart contract
@@ -1216,60 +1168,6 @@ func (t *Transaction) ZCNSCCollectReward(providerId string, providerType Provide
 	}
 	go func() { t.setNonceAndSubmit() }()
 	return err
-}
-
-type VestingClientList struct {
-	Pools []common.Key `json:"pools"`
-}
-
-func GetVestingClientList(clientID string, cb GetInfoCallback) (err error) {
-	if err = CheckConfig(); err != nil {
-		return
-	}
-	if clientID == "" {
-		clientID = client.ClientID() // if not blank
-	}
-	go GetInfoFromSharders(WithParams(GET_VESTING_CLIENT_POOLS, Params{
-		"client_id": clientID,
-	}), 0, cb)
-	return
-}
-
-type VestingDestInfo struct {
-	ID     common.Key       `json:"id"`     // identifier
-	Wanted common.Balance   `json:"wanted"` // wanted amount for entire period
-	Earned common.Balance   `json:"earned"` // can unlock
-	Vested common.Balance   `json:"vested"` // already vested
-	Last   common.Timestamp `json:"last"`   // last time unlocked
-}
-
-type VestingPoolInfo struct {
-	ID           common.Key         `json:"pool_id"`      // pool ID
-	Balance      common.Balance     `json:"balance"`      // real pool balance
-	Left         common.Balance     `json:"left"`         // owner can unlock
-	Description  string             `json:"description"`  // description
-	StartTime    common.Timestamp   `json:"start_time"`   // from
-	ExpireAt     common.Timestamp   `json:"expire_at"`    // until
-	Destinations []*VestingDestInfo `json:"destinations"` // receivers
-	ClientID     common.Key         `json:"client_id"`    // owner
-}
-
-func GetVestingPoolInfo(poolID string, cb GetInfoCallback) (err error) {
-	if err = CheckConfig(); err != nil {
-		return
-	}
-	GetInfoFromSharders(WithParams(GET_VESTING_POOL_INFO, Params{
-		"pool_id": poolID,
-	}), 0, cb)
-	return
-}
-
-func GetVestingSCConfig(cb GetInfoCallback) (err error) {
-	if err = CheckConfig(); err != nil {
-		return
-	}
-	go GetInfoFromSharders(GET_VESTING_CONFIG, 0, cb)
-	return
 }
 
 // faucet

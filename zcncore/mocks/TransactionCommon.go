@@ -439,34 +439,6 @@ func (_m *TransactionCommon) UpdateValidatorSettings(validator *zcncore.Validato
 	return r0
 }
 
-// VestingAdd provides a mock function with given fields: ar, value
-func (_m *TransactionCommon) VestingAdd(ar *zcncore.VestingAddRequest, value uint64) error {
-	ret := _m.Called(ar, value)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(*zcncore.VestingAddRequest, uint64) error); ok {
-		r0 = rf(ar, value)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// VestingUpdateConfig provides a mock function with given fields: _a0
-func (_m *TransactionCommon) VestingUpdateConfig(_a0 *zcncore.InputMap) error {
-	ret := _m.Called(_a0)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(*zcncore.InputMap) error); ok {
-		r0 = rf(_a0)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
 // WritePoolLock provides a mock function with given fields: allocID, blobberID, duration, lock
 func (_m *TransactionCommon) WritePoolLock(allocID string, blobberID string, duration int64, lock uint64) error {
 	ret := _m.Called(allocID, blobberID, duration, lock)

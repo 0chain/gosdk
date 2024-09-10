@@ -53,14 +53,11 @@ type TransactionCommon interface {
 	// Send implements sending token to a given clientid
 	Send(toClientID string, val uint64, desc string) error
 
-	VestingAdd(ar VestingAddRequest, value string) error
-
 	MinerSCLock(providerId string, providerType int, lock string) error
 	MinerSCUnlock(providerId string, providerType int) error
 	MinerSCCollectReward(providerId string, providerType int) error
 	StorageSCCollectReward(providerId string, providerType int) error
 
-	VestingUpdateConfig(InputMap) error
 	MinerScUpdateConfig(InputMap) error
 	MinerScUpdateGlobals(InputMap) error
 	StorageScUpdateConfig(InputMap) error
@@ -261,34 +258,6 @@ type AuthorizerConfig struct {
 	Fee int64 `json:"fee"`
 }
 
-type VestingDest struct {
-	ID     string `json:"id"`     // destination ID
-	Amount int64  `json:"amount"` // amount to vest for the destination
-}
-
-type VestingAddRequest interface {
-	AddDestinations(id string, amount int64)
-}
-
-func NewVestingAddRequest(desc string, startTime int64, duration int64) VestingAddRequest {
-	return &vestingAddRequest{
-		Description: desc,
-		StartTime:   startTime,
-		Duration:    duration,
-	}
-}
-
-type vestingAddRequest struct {
-	Description  string         `json:"description"`  // allow empty
-	StartTime    int64          `json:"start_time"`   //
-	Duration     int64          `json:"duration"`     //
-	Destinations []*VestingDest `json:"destinations"` //
-}
-
-func (vr *vestingAddRequest) AddDestinations(id string, amount int64) {
-	vr.Destinations = append(vr.Destinations, &VestingDest{ID: id, Amount: amount})
-}
-
 // InputMap represents an interface of functions to add fields to a map.
 type InputMap interface {
 	// AddField adds a field to the map.
@@ -414,24 +383,6 @@ func (t *Transaction) SendWithSignatureHash(toClientID string, val string, desc 
 	return nil
 }
 
-func (t *Transaction) VestingAdd(ar VestingAddRequest, value string) (
-	err error) {
-
-	v, err := parseCoinStr(value)
-	if err != nil {
-		return err
-	}
-
-	err = t.createSmartContractTxn(VestingSmartContractAddress,
-		transaction.VESTING_ADD, ar, v)
-	if err != nil {
-		logging.Error(err)
-		return
-	}
-	go func() { t.setNonceAndSubmit() }()
-	return
-}
-
 func (t *Transaction) MinerSCLock(providerId string, providerType int, lock string) error {
 
 	lv, err := parseCoinStr(lock)
@@ -497,18 +448,6 @@ func (t *Transaction) StorageSCCollectReward(providerId string, providerType int
 	}
 	go t.setNonceAndSubmit()
 	return err
-}
-
-func (t *Transaction) VestingUpdateConfig(vscc InputMap) (err error) {
-
-	err = t.createSmartContractTxn(VestingSmartContractAddress,
-		transaction.VESTING_UPDATE_SETTINGS, vscc, 0)
-	if err != nil {
-		logging.Error(err)
-		return
-	}
-	go func() { t.setNonceAndSubmit() }()
-	return
 }
 
 // faucet smart contract

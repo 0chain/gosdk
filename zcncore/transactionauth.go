@@ -54,19 +54,6 @@ func (ta *TransactionWithAuth) Send(toClientID string, val uint64, desc string) 
 	return nil
 }
 
-func (ta *TransactionWithAuth) VestingAdd(ar *VestingAddRequest,
-	value uint64) (err error) {
-
-	err = ta.t.createSmartContractTxn(VestingSmartContractAddress,
-		transaction.VESTING_ADD, ar, value)
-	if err != nil {
-		logging.Error(err)
-		return
-	}
-	go func() { ta.submitTxn() }()
-	return
-}
-
 func (ta *TransactionWithAuth) MinerSCLock(providerId string, providerType Provider, lock uint64) error {
 	if lock > math.MaxInt64 {
 		return errors.New("invalid_lock", "int64 overflow on lock value")
@@ -152,17 +139,6 @@ func (ta *TransactionWithAuth) StorageSCCollectReward(providerId string, provide
 	}
 	go func() { ta.submitTxn() }()
 	return err
-}
-
-func (ta *TransactionWithAuth) VestingUpdateConfig(ip *InputMap) (err error) {
-	err = ta.t.createSmartContractTxn(VestingSmartContractAddress,
-		transaction.VESTING_UPDATE_SETTINGS, ip, 0)
-	if err != nil {
-		logging.Error(err)
-		return
-	}
-	go func() { ta.submitTxn() }()
-	return
 }
 
 // faucet smart contract

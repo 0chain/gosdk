@@ -36,22 +36,6 @@ func (ta *TransactionWithAuth) Send(toClientID string, val uint64, desc string) 
 	return nil
 }
 
-func (ta *TransactionWithAuth) VestingAdd(ar VestingAddRequest, value string) error {
-	v, err := parseCoinStr(value)
-	if err != nil {
-		return err
-	}
-
-	err = ta.t.createSmartContractTxn(VestingSmartContractAddress,
-		transaction.VESTING_ADD, ar, v)
-	if err != nil {
-		logging.Error(err)
-		return err
-	}
-	go func() { ta.submitTxn() }()
-	return nil
-}
-
 func (ta *TransactionWithAuth) MinerSCLock(providerId string, providerType int, lock string) error {
 	lv, err := parseCoinStr(lock)
 	if err != nil {
@@ -116,17 +100,6 @@ func (ta *TransactionWithAuth) StorageSCCollectReward(providerId string, provide
 	}
 	go func() { ta.submitTxn() }()
 	return err
-}
-
-func (ta *TransactionWithAuth) VestingUpdateConfig(ip InputMap) (err error) {
-	err = ta.t.createSmartContractTxn(VestingSmartContractAddress,
-		transaction.VESTING_UPDATE_SETTINGS, ip, 0)
-	if err != nil {
-		logging.Error(err)
-		return
-	}
-	go func() { ta.submitTxn() }()
-	return
 }
 
 // faucet smart contract

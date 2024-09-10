@@ -38,13 +38,6 @@ const (
 	GET_LATEST_FINALIZED_MAGIC_BLOCK = `/v1/block/get/latest_finalized_magic_block`
 	GET_FEE_STATS                    = `/v1/block/get/fee_stats`
 	GET_CHAIN_STATS                  = `/v1/chain/get/stats`
-	// vesting SC
-
-	VESTINGSC_PFX = `/v1/screst/` + VestingSmartContractAddress
-
-	GET_VESTING_CONFIG       = VESTINGSC_PFX + `/vesting-config`
-	GET_VESTING_POOL_INFO    = VESTINGSC_PFX + `/getPoolInfo`
-	GET_VESTING_CLIENT_POOLS = VESTINGSC_PFX + `/getClientPools`
 
 	// faucet sc
 
@@ -97,7 +90,6 @@ const (
 
 const (
 	StorageSmartContractAddress  = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7`
-	VestingSmartContractAddress  = `2bba5b05949ea59c80aed3ac3474d7379d3be737e8eb5a968c52295e48333ead`
 	FaucetSmartContractAddress   = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d3`
 	MultiSigSmartContractAddress = `27b5ef7120252b79f9dd9c05505dd28f328c80f6863ee446daede08a84d651a7`
 	MinerSmartContractAddress    = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d9`
@@ -754,10 +746,6 @@ func GetIdForUrl(url string) string {
 	}
 	return ""
 }
-
-//
-// vesting pool
-//
 
 type Params map[string]string
 
