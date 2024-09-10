@@ -98,8 +98,8 @@ func (r *FileReader) initBuffer() error {
 	r.offset += int64(n)
 	if n < len(r.buf) {
 		r.buf = r.buf[:n]
-		r.endOfFile = true
 	}
+	r.endOfFile = len(r.buf) == int(r.size)
 	return nil
 }
 
