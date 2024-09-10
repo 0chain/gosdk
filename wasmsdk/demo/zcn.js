@@ -260,15 +260,14 @@ async function setWallet(bls,
   if (!sk) throw new Error('secret key is undefined, on wasm setWallet fn')
   if (!pk) throw new Error('public key is undefined, on wasm setWallet fn')
 
-  if (bridge.walletId != clientID) {
-    console.log('setWallet: ', clientID, sk, pk)
-    bridge.jsProxy.bls = bls
-    bridge.jsProxy.publicKey = bls.deserializeHexStrToPublicKey(pk)
+  console.log('setWallet: ', clientID, sk, pk)
+  bridge.jsProxy.bls = bls
+  bridge.jsProxy.secretKey = bls.deserializeHexStrToSecretKey(sk)
+  bridge.jsProxy.publicKey = bls.deserializeHexStrToPublicKey(pk)
 
-    // use proxy.sdk to detect if sdk is ready
-    await bridge.__proxy__.sdk.setWallet(clientID, clientKey, peerPublicKey, pk, sk, mnemonic, isSplit)
-    bridge.walletId = clientID
-  }
+  // use proxy.sdk to detect if sdk is ready
+  await bridge.__proxy__.sdk.setWallet(clientID, clientKey, peerPublicKey, pk, sk, mnemonic, isSplit)
+  bridge.walletId = clientID
 }
 
 async function loadWasm(go) {
