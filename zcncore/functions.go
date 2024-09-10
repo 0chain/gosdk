@@ -103,7 +103,7 @@ func AddHardfork(input interface{}) (hash, out string, nonce int64, txn *transac
 
 }
 
-func ZCNSCUpdateGlobalConfig(input *MinerSCMinerInfo) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+func ZCNSCUpdateGlobalConfig(input *InputMap) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 	return transaction.SmartContractTxn(ZCNSCSmartContractAddress, transaction.SmartContractTxnData{
 		Name:      transaction.ZCNSC_UPDATE_GLOBAL_CONFIG,
 		InputArgs: input,
