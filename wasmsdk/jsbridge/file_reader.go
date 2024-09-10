@@ -39,15 +39,7 @@ func (r *FileReader) Read(p []byte) (int, error) {
 	//js.Value doesn't work in parallel invoke
 	size := len(p)
 	if len(r.buf) == 0 && !r.endOfFile {
-		bufSize := r.size
-		if bufferSize < bufSize {
-			bufSize = (r.chunkReadSize * (bufferSize / r.chunkReadSize))
-		}
-		buff := common.MemPool.Get()
-		if cap(buff.B) < int(bufSize) {
-			buff.B = make([]byte, bufSize)
-		}
-		r.buf = buff.B[:bufSize]
+		r.initBuffer()
 	}
 
 	if len(r.buf)-r.bufOffset < size && !r.endOfFile {
@@ -79,6 +71,33 @@ func (r *FileReader) Read(p []byte) (int, error) {
 	}
 
 	return n, nil
+}
+
+func (r *FileReader) initBuffer() error {
+	bufSize := r.size
+	if bufferSize < bufSize {
+		bufSize = (r.chunkReadSize * (bufferSize / r.chunkReadSize))
+	}
+	buff := common.MemPool.Get()
+	if cap(buff.B) < int(bufSize) {
+		buff.B = make([]byte, bufSize)
+	}
+	r.buf = buff.B[:bufSize]
+	result, err := Await(r.readChunk.Invoke(0, len(r.buf)))
+
+	if len(err) > 0 && !err[0].IsNull() {
+		return errors.New("file_reader: " + err[0].String())
+	}
+
+	chunk := result[0]
+
+	n := js.CopyBytesToGo(r.buf, chunk)
+	r.offset += int64(n)
+	if n < len(r.buf) {
+		r.buf = r.buf[:n]
+		r.endOfFile = true
+	}
+	return nil
 }
 
 func (r *FileReader) Seek(offset int64, whence int) (int64, error) {
