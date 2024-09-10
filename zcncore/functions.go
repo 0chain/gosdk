@@ -127,22 +127,6 @@ func MinerSCSharderSettings(input *MinerSCMinerInfo) (hash, out string, nonce in
 
 }
 
-func MinerSCDeleteMiner(input *MinerSCMinerInfo) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
-	return transaction.SmartContractTxn(MinerSmartContractAddress, transaction.SmartContractTxnData{
-		Name:      transaction.MINERSC_MINER_DELETE,
-		InputArgs: input,
-	})
-
-}
-
-func MinerSCDeleteSharder(input *AuthorizerNode) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
-	return transaction.SmartContractTxn(MinerSmartContractAddress, transaction.SmartContractTxnData{
-		Name:      transaction.MINERSC_SHARDER_DELETE,
-		InputArgs: input,
-	})
-
-}
-
 func ZCNSCUpdateAuthorizerConfig(input *AuthorizerNode) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 	return transaction.SmartContractTxn(ZCNSCSmartContractAddress, transaction.SmartContractTxnData{
 		Name:      transaction.ZCNSC_UPDATE_AUTHORIZER_CONFIG,
