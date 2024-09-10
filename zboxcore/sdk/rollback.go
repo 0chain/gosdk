@@ -286,6 +286,9 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
 					commitResult: &CommitResult{},
 					blobIndex:    ind,
 				}
+				if wr.LatestWM != nil {
+					blobber.AllocationRoot = wr.LatestWM.AllocationRoot
+				}
 			}
 			blobberRes[ind] = blobStatus
 		}(blobber, ind)
@@ -337,6 +340,7 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
 	}
 
 	if len(versionMap[latestVersion]) > req || len(versionMap[prevVersion]) > req {
+		a.allocationRoot = versionMap[latestVersion][0].lpm.LatestWM.AllocationRoot
 		return Commit, blobberRes, nil
 	}
 

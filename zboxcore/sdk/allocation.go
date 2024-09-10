@@ -273,6 +273,8 @@ type Allocation struct {
 
 	IsEnterprise bool `json:"is_enterprise"`
 
+	StorageVersion int `json:"storage_version"`
+
 	// FileOptions to define file restrictions on an allocation for third-parties
 	// default 00000000 for all crud operations suggesting only owner has the below listed abilities.
 	// enabling option/s allows any third party to perform certain ops
@@ -301,6 +303,7 @@ type Allocation struct {
 	consensusThreshold int
 	fullconsensus      int
 	sig                string `json:"-"`
+	allocationRoot     string `json:"-"`
 }
 
 // OperationRequest represents an operation request with its related options.

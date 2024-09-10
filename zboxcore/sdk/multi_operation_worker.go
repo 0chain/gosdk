@@ -27,6 +27,7 @@ import (
 
 const (
 	DefaultCreateConnectionTimeOut = 45 * time.Second
+	StorageV2                      = 1
 )
 
 var BatchSize = 6
@@ -275,11 +276,23 @@ func (mo *MultiOperation) Process() error {
 	}
 	logger.Logger.Debug("[checkAllocStatus]", time.Since(start).Milliseconds())
 	mo.Consensus.Reset()
+	var pos uint64
+	if !mo.isRepair && mo.allocationObj.StorageVersion == StorageV2 {
+		for i := mo.operationMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+			pos = uint64(i.TrailingZeros())
+			if mo.allocationObj.Blobbers[pos].AllocationRoot != mo.allocationObj.allocationRoot {
+				mo.operationMask = mo.operationMask.And(zboxutil.NewUint128(1).Lsh(pos).Not())
+			}
+		}
+	}
+	pos = 0
 	activeBlobbers := mo.operationMask.CountOnes()
+	if activeBlobbers < mo.consensusThresh {
+		return errors.New("consensus_not_met", fmt.Sprintf("Active blobbers %d is less than consensus threshold %d", activeBlobbers, mo.consensusThresh))
+	}
 	commitReqs := make([]*CommitRequest, activeBlobbers)
 	start = time.Now()
 	wg.Add(activeBlobbers)
-	var pos uint64
 	var counter = 0
 	timestamp := int64(common.Now())
 	for i := mo.operationMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {

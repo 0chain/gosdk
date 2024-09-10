@@ -84,8 +84,9 @@ type UpdateValidationNode struct {
 
 // StorageNode represents a storage node (blobber)
 type StorageNode struct {
-	ID      string `json:"id"`
-	Baseurl string `json:"url"`
+	ID             string `json:"id"`
+	Baseurl        string `json:"url"`
+	AllocationRoot string `json:"allocation_root"`
 
 	skip uint64 `json:"-"` // skip on error
 }
