@@ -5,6 +5,33 @@ import (
 	"github.com/0chain/gosdk/core/transaction"
 )
 
+// AuthorizerNode represents an authorizer node in the network
+type AuthorizerNode struct {
+	ID     string            `json:"id"`
+	URL    string            `json:"url"`
+	Config *AuthorizerConfig `json:"config"`
+}
+
+type scCollectReward struct {
+	ProviderId   string `json:"provider_id"`
+	ProviderType int    `json:"provider_type"`
+}
+
+type MinerSCDelegatePool struct {
+	Settings StakePoolSettings `json:"settings"`
+}
+
+// SimpleMiner represents a node in the network, miner or sharder.
+type SimpleMiner struct {
+	ID string `json:"id"`
+}
+
+// MinerSCMinerInfo interface for miner/sharder info functions on miner smart contract.
+type MinerSCMinerInfo struct {
+	SimpleMiner         `json:"simple_miner"`
+	MinerSCDelegatePool `json:"stake_pool"`
+}
+
 func MinerSCLock(providerId string, providerType Provider, lock uint64) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 	return transaction.SmartContractTxnValue(MinerSmartContractAddress, transaction.SmartContractTxnData{
 		Name: transaction.MINERSC_LOCK,
