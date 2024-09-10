@@ -19,14 +19,13 @@ import (
 
 	"gopkg.in/natefinch/lumberjack.v2"
 
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/logger"
 	coreTransaction "github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/zcnbridge/ethereum"
 	"github.com/0chain/gosdk/zcnbridge/ethereum/authorizers"
 	"github.com/0chain/gosdk/zcnbridge/ethereum/bridge"
 	"github.com/0chain/gosdk/zcnbridge/ethereum/nftconfig"
-	"github.com/0chain/gosdk/zcncore"
-
 	"github.com/0chain/gosdk/zcnbridge/wallet"
 	"github.com/0chain/gosdk/zcnbridge/zcnsc"
 	eth "github.com/ethereum/go-ethereum"
@@ -129,7 +128,7 @@ func (b *BridgeClient) AddEthereumAuthorizer(ctx context.Context, address common
 	tran, err := instance.AddAuthorizers(transactOpts, address)
 	if err != nil {
 		msg := "failed to execute AddAuthorizers transaction to ClientID = %s with amount = %s"
-		return nil, errors.Wrapf(err, msg, zcncore.GetClientWalletID(), address.String())
+		return nil, errors.Wrapf(err, msg, client.ClientID(), address.String())
 	}
 
 	return tran, err
@@ -147,7 +146,7 @@ func (b *BridgeClient) RemoveEthereumAuthorizer(ctx context.Context, address com
 	tran, err := instance.RemoveAuthorizers(transactOpts, address)
 	if err != nil {
 		msg := "failed to execute RemoveAuthorizers transaction to ClientID = %s with amount = %s"
-		return nil, errors.Wrapf(err, msg, zcncore.GetClientWalletID(), address.String())
+		return nil, errors.Wrapf(err, msg, client.ClientID(), address.String())
 	}
 
 	return tran, err
@@ -279,7 +278,7 @@ func (b *BridgeClient) NFTConfigSetUint256Raw(ctx context.Context, key common.Ha
 	tran, err := instance.SetUint256(transactOpts, key, v)
 	if err != nil {
 		msg := "failed to execute setUint256 transaction to ClientID = %s with key = %s, value = %v"
-		return nil, errors.Wrapf(err, msg, zcncore.GetClientWalletID(), key, v)
+		return nil, errors.Wrapf(err, msg, client.ClientID(), key, v)
 	}
 
 	return tran, err
@@ -332,7 +331,7 @@ func (b *BridgeClient) NFTConfigSetAddress(ctx context.Context, key, address str
 	tran, err := instance.SetAddress(transactOpts, kkey, addr)
 	if err != nil {
 		msg := "failed to execute setAddress transaction to ClientID = %s with key = %s, value = %v"
-		return nil, errors.Wrapf(err, msg, zcncore.GetClientWalletID(), key, address)
+		return nil, errors.Wrapf(err, msg, client.ClientID(), key, address)
 	}
 
 	return tran, err
@@ -588,7 +587,7 @@ func (b *BridgeClient) BurnWZCN(ctx context.Context, amountTokens uint64) (*type
 	}
 
 	// 1. Data Parameter (amount to burn)
-	clientID := DefaultClientIDEncoder(zcncore.GetClientWalletID())
+	clientID := DefaultClientIDEncoder(client.ClientID())
 
 	// 2. Data Parameter (signature)
 	amount := new(big.Int)
@@ -607,12 +606,12 @@ func (b *BridgeClient) BurnWZCN(ctx context.Context, amountTokens uint64) (*type
 	tran, err := bridgeInstance.Burn(transactOpts, amount, clientID)
 	if err != nil {
 		msg := "failed to execute Burn WZCN transaction to ClientID = %s with amount = %s"
-		return nil, errors.Wrapf(err, msg, zcncore.GetClientWalletID(), amount)
+		return nil, errors.Wrapf(err, msg, client.ClientID(), amount)
 	}
 
 	Logger.Info(
 		"Posted Burn WZCN",
-		zap.String("clientID", zcncore.GetClientWalletID()),
+		zap.String("clientID", client.ClientID()),
 		zap.Int64("amount", amount.Int64()),
 	)
 
@@ -1048,7 +1047,7 @@ func (b *BridgeClient) EstimateBurnWZCNGasAmount(ctx context.Context, from, to, 
 			return 0, errors.Wrap(err, "failed to get ABI")
 		}
 
-		clientID := DefaultClientIDEncoder(zcncore.GetClientWalletID())
+		clientID := DefaultClientIDEncoder(client.ClientID())
 
 		amount := new(big.Int)
 		amount.SetString(amountTokens, 10)

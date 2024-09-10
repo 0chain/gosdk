@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
+	coreClient "github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/zcnbridge/ethereum/uniswapnetwork"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"log"
@@ -25,7 +26,6 @@ import (
 	transactionmocks "github.com/0chain/gosdk/zcnbridge/transaction/mocks"
 	"github.com/0chain/gosdk/zcnbridge/wallet"
 	"github.com/0chain/gosdk/zcnbridge/zcnsc"
-	"github.com/0chain/gosdk/zcncore"
 	eth "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
@@ -397,7 +397,7 @@ func Test_ZCNBridge(t *testing.T) {
 		rawAbi, err := binding.BridgeMetaData.GetAbi()
 		require.NoError(t, err)
 
-		pack, err := rawAbi.Pack("burn", big.NewInt(amount), DefaultClientIDEncoder(zcncore.GetClientWalletID()))
+		pack, err := rawAbi.Pack("burn", big.NewInt(amount), DefaultClientIDEncoder(coreClient.ClientID()))
 		require.NoError(t, err)
 
 		require.True(t, ethereumClient.AssertCalled(
