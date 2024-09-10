@@ -313,20 +313,6 @@ func (_m *TransactionCommon) ReadPoolUnlock() error {
 	return r0
 }
 
-// RegisterMultiSig provides a mock function with given fields: walletstr, mswallet
-func (_m *TransactionCommon) RegisterMultiSig(walletstr string, mswallet string) error {
-	ret := _m.Called(walletstr, mswallet)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(string, string) error); ok {
-		r0 = rf(walletstr, mswallet)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
 // Send provides a mock function with given fields: toClientID, val, desc
 func (_m *TransactionCommon) Send(toClientID string, val uint64, desc string) error {
 	ret := _m.Called(toClientID, val, desc)

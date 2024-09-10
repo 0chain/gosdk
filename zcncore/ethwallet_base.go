@@ -2,10 +2,8 @@ package zcncore
 
 import (
 	"context"
-	"crypto/ecdsa"
 	"encoding/json"
 	"fmt"
-	"log"
 	"math"
 	"math/big"
 	"regexp"
@@ -15,14 +13,10 @@ import (
 	"github.com/0chain/gosdk/core/tokenrate"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	hdwallet "github.com/0chain/gosdk/zcncore/ethhdwallet"
-	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/params"
-	"golang.org/x/crypto/sha3"
 )
 
 // TODO change to real wallets
@@ -220,87 +214,6 @@ func SuggestEthGasPrice() (int64, error) {
 	}
 
 	return gasPrice.Int64(), nil
-}
-
-// TransferEthTokens - transfer ETH tokens to multisign wallet
-func TransferEthTokens(fromPrivKey string, amountTokens, gasPrice int64) (string, error) {
-	var client *ethclient.Client
-	var err error
-	if client, err = getEthClient(); err != nil {
-		return "", err
-	}
-
-	privateKey, err := crypto.HexToECDSA(fromPrivKey)
-	if err != nil {
-		return "", err
-	}
-
-	publicKey := privateKey.Public()
-	publicKeyECDSA, _ := publicKey.(*ecdsa.PublicKey)
-
-	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-	nonce, err := client.PendingNonceAt(context.Background(), fromAddress)
-	if err != nil {
-		return "", err
-	}
-
-	toAddress := common.HexToAddress(walletAddr)
-	tokenAddress := common.HexToAddress(tokenAddress)
-
-	transferFnSignature := []byte("transfer(address,uint256)")
-	hash := sha3.NewLegacyKeccak256()
-	hash.Write(transferFnSignature)
-	methodID := hash.Sum(nil)[:4]
-	fmt.Println(hexutil.Encode(methodID)) // 0xa9059cbb
-
-	paddedAddress := common.LeftPadBytes(toAddress.Bytes(), 32)
-	fmt.Println(hexutil.Encode(paddedAddress)) // 0x0000000000000000000000004592d8f8d7b001e72cb26a73e4fa1806a51ac79d
-
-	amount := new(big.Int)
-	amount.SetInt64(amountTokens)
-
-	paddedAmount := common.LeftPadBytes(amount.Bytes(), 32)
-	fmt.Println(hexutil.Encode(paddedAmount)) // 0x00000000000000000000000000000000000000000000003635c9adc5dea00000
-
-	var data []byte
-	data = append(data, methodID...)
-	data = append(data, paddedAddress...)
-	data = append(data, paddedAmount...)
-
-	gasLimit, err := client.EstimateGas(context.Background(), ethereum.CallMsg{
-		To:   &tokenAddress,
-		Data: data,
-	})
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	txData := &types.LegacyTx{
-		Nonce:    nonce,
-		GasPrice: big.NewInt(gasPrice),
-		Gas:      gasLimit,
-		To:       &tokenAddress,
-		Value:    amount,
-		Data:     data,
-	}
-	tx := types.NewTx(txData)
-
-	chainID, err := client.ChainID(context.Background())
-	if err != nil {
-		return "", err
-	}
-
-	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), privateKey)
-	if err != nil {
-		return "", err
-	}
-
-	err = client.SendTransaction(context.Background(), signedTx)
-	if err != nil {
-		return "", err
-	}
-
-	return signedTx.Hash().Hex(), nil
 }
 
 func getBalanceFromEthNode(ethAddr string) (int64, error) {

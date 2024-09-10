@@ -198,16 +198,3 @@ func (ta *TransactionWithAuth) Output() []byte {
 func (ta *TransactionWithAuth) GetTransactionNonce() int64 {
 	return ta.t.txn.TransactionNonce
 }
-
-//
-// miner sc
-//
-
-// RegisterMultiSig register a multisig wallet with the SC.
-func (ta *TransactionWithAuth) RegisterMultiSig(walletstr string, mswallet string) error {
-	return errors.New("", "not implemented")
-}
-
-//
-// Storage SC
-//

@@ -160,23 +160,6 @@ func (zcn *ZCNStatus) OnAuthorizeSendComplete(status int, _ string, _ int64, _ s
 	Logger.Info("Signature:", signature)
 }
 
-// OnVoteComplete callback when a multisig vote is completed
-//   - status: status of the operation
-//   - proposal: proposal json string
-//   - err: error message
-func (zcn *ZCNStatus) OnVoteComplete(status int, proposal string, err string) {
-	defer zcn.Wg.Done()
-	if status != zcncore.StatusSuccess {
-		zcn.Success = false
-		zcn.Err = errors.New(err)
-		zcn.walletString = ""
-		return
-	}
-	zcn.Success = true
-	zcn.Err = nil
-	zcn.walletString = proposal
-}
-
 //goland:noinspection ALL
 func PrintError(v ...interface{}) {
 	fmt.Fprintln(os.Stderr, v...)
