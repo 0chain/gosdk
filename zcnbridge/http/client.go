@@ -1,7 +1,7 @@
 package http
 
 import (
-	http2 "github.com/0chain/gosdk/core/http"
+	http2 "github.com/0chain/gosdk/core/client"
 	"net/http"
 	"time"
 
@@ -32,7 +32,7 @@ func CleanClient() *http.Client {
 func NewRetryableClient(verbose bool) *retryablehttp.Client {
 	client := retryablehttp.NewClient()
 	client.HTTPClient = &http.Client{
-		Transport: http2.DefaultTransport,
+		Transport: client.DefaultTransport,
 	}
 
 	if !verbose {

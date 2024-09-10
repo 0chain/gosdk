@@ -1,7 +1,7 @@
 package zboxutil
 
 import (
-	coreHttp "github.com/0chain/gosdk/core/http"
+	coreHttp "github.com/0chain/gosdk/core/client"
 	"testing"
 
 	"github.com/stretchr/testify/assert"

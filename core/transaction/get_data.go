@@ -3,7 +3,7 @@ package transaction
 import (
 	"encoding/json"
 	"github.com/0chain/errors"
-	coreHttp "github.com/0chain/gosdk/core/http"
+	coreHttp "github.com/0chain/gosdk/core/client"
 )
 
 const (
@@ -64,8 +64,6 @@ const (
 	STORAGE_GET_AUTHORIZER_SNAPSHOT = STORAGESC_PFX + "/replicate-authorizer-aggregates"
 	STORAGE_GET_VALIDATOR_SNAPSHOT  = STORAGESC_PFX + "/replicate-validator-aggregates"
 	STORAGE_GET_USER_SNAPSHOT       = STORAGESC_PFX + "/replicate-user-aggregates"
-
-	GET_BALANCE = "/client/get/balance"
 )
 
 //
@@ -108,31 +106,4 @@ func GetConfig(configType string) (conf *InputMap, err error) {
 	}
 
 	return
-}
-
-func GetBalance(clientId string) (*GetBalanceResponse, error) {
-	var (
-		balance GetBalanceResponse
-		err     error
-		res     []byte
-	)
-
-	if res, err = coreHttp.MakeSCRestAPICall("", GET_BALANCE, map[string]string{
-		"client_id": clientId,
-	}, nil); err != nil {
-		return nil, err
-	}
-
-	if err = json.Unmarshal(res, &balance); err != nil {
-		return nil, err
-	}
-
-	return &balance, nil
-}
-
-type GetBalanceResponse struct {
-	Txn     string `json:"txn"`
-	Round   int64  `json:"round"`
-	Balance int64  `json:"balance"`
-	Nonce   int64  `json:"nonce"`
 }

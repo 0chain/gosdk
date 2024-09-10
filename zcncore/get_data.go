@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/0chain/gosdk/core/block"
 	"github.com/0chain/gosdk/core/client"
-	coreHttp "github.com/0chain/gosdk/core/http"
 	"github.com/0chain/gosdk/core/tokenrate"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/zcncrypto"
@@ -209,7 +208,7 @@ func GetMinerSCNodeInfo(id string) ([]byte, error) {
 		return nil, err
 	}
 
-	return coreHttp.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINERSC_NODE, Params{
+	return client.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINERSC_NODE, Params{
 		"id": id,
 	}, nil)
 }
@@ -222,7 +221,7 @@ func GetMintNonce() ([]byte, error) {
 		return nil, err
 	}
 
-	return coreHttp.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINT_NONCE, Params{
+	return client.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINT_NONCE, Params{
 		"client_id": client.ClientID(),
 	}, nil)
 }
@@ -232,7 +231,7 @@ func GetMiners(active, stakable bool, limit, offset int) ([]byte, error) {
 		return nil, err
 	}
 
-	return coreHttp.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINERSC_MINERS, Params{
+	return client.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINERSC_MINERS, Params{
 		"active":   strconv.FormatBool(active),
 		"stakable": strconv.FormatBool(stakable),
 		"offset":   strconv.FormatInt(int64(offset), 10),
@@ -245,7 +244,7 @@ func GetSharders(active, stakable bool, limit, offset int) ([]byte, error) {
 		return nil, err
 	}
 
-	return coreHttp.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINERSC_SHARDERS, Params{
+	return client.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINERSC_SHARDERS, Params{
 		"active":   strconv.FormatBool(active),
 		"stakable": strconv.FormatBool(stakable),
 		"offset":   strconv.FormatInt(int64(offset), 10),
@@ -257,7 +256,7 @@ func GetSharders(active, stakable bool, limit, offset int) ([]byte, error) {
 //   - numSharders: number of sharders
 //   - timeout: request timeout
 func GetLatestFinalizedMagicBlock(ctx context.Context, numSharders int) (m *block.MagicBlock, err error) {
-	res, err := coreHttp.MakeSCRestAPICall(MinerSmartContractAddress, GET_LATEST_FINALIZED_MAGIC_BLOCK, nil, nil)
+	res, err := client.MakeSCRestAPICall(MinerSmartContractAddress, GET_LATEST_FINALIZED_MAGIC_BLOCK, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -280,7 +279,7 @@ func GetMinerSCUserInfo(clientID string) ([]byte, error) {
 		clientID = client.ClientID()
 	}
 
-	return coreHttp.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINERSC_USER, Params{
+	return client.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINERSC_USER, Params{
 		"client_id": clientID,
 	}, nil)
 }
@@ -292,7 +291,7 @@ func GetMinerSCNodePool(id string) ([]byte, error) {
 		return nil, err
 	}
 
-	return coreHttp.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINERSC_POOL, Params{
+	return client.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINERSC_POOL, Params{
 		"id":      id,
 		"pool_id": client.ClientID(),
 	}, nil)
@@ -307,7 +306,7 @@ func GetNotProcessedZCNBurnTickets(ethereumAddress, startNonce string) ([]byte, 
 	if err != nil {
 		return nil, err
 	}
-	return coreHttp.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINERSC_POOL, Params{
+	return client.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINERSC_POOL, Params{
 		"ethereum_address": ethereumAddress,
 		"nonce":            startNonce,
 	}, nil)

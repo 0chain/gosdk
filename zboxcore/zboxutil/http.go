@@ -16,7 +16,6 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/encryption"
-	coreHttp "github.com/0chain/gosdk/core/http"
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/hitenjain14/fasthttp"
 )
@@ -145,7 +144,7 @@ var envProxy proxyFromEnv
 
 func init() {
 	Client = &http.Client{
-		Transport: coreHttp.DefaultTransport,
+		Transport: client.DefaultTransport,
 	}
 
 	FastHttpClient = &fasthttp.Client{

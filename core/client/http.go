@@ -1,10 +1,9 @@
-package http
+package client
 
 import (
 	"encoding/json"
 	"fmt"
 	"github.com/0chain/errors"
-	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/logger"
 	"io/ioutil"
@@ -51,7 +50,7 @@ const consensusThresh = float32(25.0)
 //   - params is the query parameters
 //   - handler is the handler function to handle the response
 func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]string, handler SCRestAPIHandler) ([]byte, error) {
-	nodeClient, err := client.GetNode()
+	nodeClient, err := GetNode()
 	if err != nil {
 		return nil, err
 	}
@@ -216,4 +215,32 @@ func getEnvAny(names ...string) string {
 		}
 	}
 	return ""
+}
+
+func GetBalance(clientId string) (*GetBalanceResponse, error) {
+	const GET_BALANCE = "/client/get/balance"
+	var (
+		balance GetBalanceResponse
+		err     error
+		res     []byte
+	)
+
+	if res, err = MakeSCRestAPICall("", GET_BALANCE, map[string]string{
+		"client_id": clientId,
+	}, nil); err != nil {
+		return nil, err
+	}
+
+	if err = json.Unmarshal(res, &balance); err != nil {
+		return nil, err
+	}
+
+	return &balance, nil
+}
+
+type GetBalanceResponse struct {
+	Txn     string `json:"txn"`
+	Round   int64  `json:"round"`
+	Balance int64  `json:"balance"`
+	Nonce   int64  `json:"nonce"`
 }

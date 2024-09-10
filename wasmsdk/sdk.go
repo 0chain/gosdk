@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	coreHttp "github.com/0chain/gosdk/core/http"
 	"io"
 	"os"
 	"sync"
@@ -168,7 +167,7 @@ func makeSCRestAPICall(scAddress, relativePath, paramsJson string) (string, erro
 	if err != nil {
 		sdkLogger.Error(fmt.Sprintf("Error parsing JSON: %v", err))
 	}
-	b, err := coreHttp.MakeSCRestAPICall(scAddress, relativePath, params, nil)
+	b, err := client.MakeSCRestAPICall(scAddress, relativePath, params, nil)
 	return string(b), err
 }
 

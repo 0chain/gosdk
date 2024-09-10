@@ -4,7 +4,7 @@
 package zboxutil
 
 import (
-	coreHttp "github.com/0chain/gosdk/core/http"
+	coreHttp "github.com/0chain/gosdk/core/client"
 	"net/http"
 	"time"
 )
