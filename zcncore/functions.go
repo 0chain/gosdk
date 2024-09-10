@@ -5,7 +5,7 @@ import (
 	"github.com/0chain/gosdk/core/transaction"
 )
 
-func MinerSCLock(providerId string, providerType Provider, lock uint64) (string, string, int64, *transaction.Transaction, error) {
+func MinerSCLock(providerId string, providerType Provider, lock uint64) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 	return transaction.SmartContractTxnValue(MinerSmartContractAddress, transaction.SmartContractTxnData{
 		Name: transaction.MINERSC_LOCK,
 		InputArgs: &stakePoolRequest{
@@ -16,7 +16,7 @@ func MinerSCLock(providerId string, providerType Provider, lock uint64) (string,
 
 }
 
-func MinerSCUnlock(providerId string, providerType Provider) (string, string, int64, *transaction.Transaction, error) {
+func MinerSCUnlock(providerId string, providerType Provider) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 	return transaction.SmartContractTxn(MinerSmartContractAddress, transaction.SmartContractTxnData{
 		Name: transaction.MINERSC_UNLOCK,
 		InputArgs: &stakePoolRequest{
@@ -27,7 +27,7 @@ func MinerSCUnlock(providerId string, providerType Provider) (string, string, in
 
 }
 
-func MinerSCCollectReward(providerId string, providerType Provider) (string, string, int64, *transaction.Transaction, error) {
+func MinerSCCollectReward(providerId string, providerType Provider) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 	return transaction.SmartContractTxn(MinerSmartContractAddress, transaction.SmartContractTxnData{
 		Name: transaction.MINERSC_COLLECT_REWARD,
 		InputArgs: &scCollectReward{
@@ -38,7 +38,7 @@ func MinerSCCollectReward(providerId string, providerType Provider) (string, str
 
 }
 
-func MinerSCKill(providerId string, providerType Provider) (string, string, int64, *transaction.Transaction, error) {
+func MinerSCKill(providerId string, providerType Provider) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 	pr := &scCollectReward{
 		ProviderId:   providerId,
 		ProviderType: int(providerType),
@@ -60,7 +60,7 @@ func MinerSCKill(providerId string, providerType Provider) (string, string, int6
 
 }
 
-func StorageSCCollectReward(providerId string, providerType Provider) (string, string, int64, *transaction.Transaction, error) {
+func StorageSCCollectReward(providerId string, providerType Provider) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 	return transaction.SmartContractTxn(StorageSmartContractAddress, transaction.SmartContractTxnData{
 		Name: transaction.STORAGESC_COLLECT_REWARD,
 		InputArgs: &scCollectReward{
@@ -71,7 +71,7 @@ func StorageSCCollectReward(providerId string, providerType Provider) (string, s
 
 }
 
-func MinerScUpdateConfig(input interface{}) (string, string, int64, *transaction.Transaction, error) {
+func MinerScUpdateConfig(input interface{}) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 	return transaction.SmartContractTxn(MinerSmartContractAddress, transaction.SmartContractTxnData{
 		Name:      transaction.MINERSC_UPDATE_SETTINGS,
 		InputArgs: input,
@@ -79,7 +79,7 @@ func MinerScUpdateConfig(input interface{}) (string, string, int64, *transaction
 
 }
 
-func MinerScUpdateGlobals(input interface{}) (string, string, int64, *transaction.Transaction, error) {
+func MinerScUpdateGlobals(input interface{}) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 	return transaction.SmartContractTxn(MinerSmartContractAddress, transaction.SmartContractTxnData{
 		Name:      transaction.MINERSC_UPDATE_GLOBALS,
 		InputArgs: input,
@@ -87,7 +87,7 @@ func MinerScUpdateGlobals(input interface{}) (string, string, int64, *transactio
 
 }
 
-func StorageScUpdateConfig(input interface{}) (string, string, int64, *transaction.Transaction, error) {
+func StorageScUpdateConfig(input interface{}) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 	return transaction.SmartContractTxn(StorageSmartContractAddress, transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_UPDATE_SETTINGS,
 		InputArgs: input,
@@ -95,7 +95,7 @@ func StorageScUpdateConfig(input interface{}) (string, string, int64, *transacti
 
 }
 
-func AddHardfork(input interface{}) (string, string, int64, *transaction.Transaction, error) {
+func AddHardfork(input interface{}) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 	return transaction.SmartContractTxn(MinerSmartContractAddress, transaction.SmartContractTxnData{
 		Name:      transaction.ADD_HARDFORK,
 		InputArgs: input,
@@ -103,7 +103,7 @@ func AddHardfork(input interface{}) (string, string, int64, *transaction.Transac
 
 }
 
-func ZCNSCUpdateGlobalConfig(input *MinerSCMinerInfo) (string, string, int64, *transaction.Transaction, error) {
+func ZCNSCUpdateGlobalConfig(input *MinerSCMinerInfo) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 	return transaction.SmartContractTxn(ZCNSCSmartContractAddress, transaction.SmartContractTxnData{
 		Name:      transaction.ZCNSC_UPDATE_GLOBAL_CONFIG,
 		InputArgs: input,
@@ -111,7 +111,7 @@ func ZCNSCUpdateGlobalConfig(input *MinerSCMinerInfo) (string, string, int64, *t
 
 }
 
-func MinerSCMinerSettings(input *MinerSCMinerInfo) (string, string, int64, *transaction.Transaction, error) {
+func MinerSCMinerSettings(input *MinerSCMinerInfo) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 	return transaction.SmartContractTxn(MinerSmartContractAddress, transaction.SmartContractTxnData{
 		Name:      transaction.MINERSC_MINER_SETTINGS,
 		InputArgs: input,
@@ -119,7 +119,7 @@ func MinerSCMinerSettings(input *MinerSCMinerInfo) (string, string, int64, *tran
 
 }
 
-func MinerSCSharderSettings(input *MinerSCMinerInfo) (string, string, int64, *transaction.Transaction, error) {
+func MinerSCSharderSettings(input *MinerSCMinerInfo) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 	return transaction.SmartContractTxn(MinerSmartContractAddress, transaction.SmartContractTxnData{
 		Name:      transaction.MINERSC_SHARDER_SETTINGS,
 		InputArgs: input,
@@ -127,7 +127,7 @@ func MinerSCSharderSettings(input *MinerSCMinerInfo) (string, string, int64, *tr
 
 }
 
-func MinerSCDeleteMiner(input *MinerSCMinerInfo) (string, string, int64, *transaction.Transaction, error) {
+func MinerSCDeleteMiner(input *MinerSCMinerInfo) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 	return transaction.SmartContractTxn(MinerSmartContractAddress, transaction.SmartContractTxnData{
 		Name:      transaction.MINERSC_MINER_DELETE,
 		InputArgs: input,
@@ -135,7 +135,7 @@ func MinerSCDeleteMiner(input *MinerSCMinerInfo) (string, string, int64, *transa
 
 }
 
-func MinerSCDeleteSharder(input *AuthorizerNode) (string, string, int64, *transaction.Transaction, error) {
+func MinerSCDeleteSharder(input *AuthorizerNode) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 	return transaction.SmartContractTxn(MinerSmartContractAddress, transaction.SmartContractTxnData{
 		Name:      transaction.MINERSC_SHARDER_DELETE,
 		InputArgs: input,
@@ -143,7 +143,7 @@ func MinerSCDeleteSharder(input *AuthorizerNode) (string, string, int64, *transa
 
 }
 
-func ZCNSCUpdateAuthorizerConfig(input *AuthorizerNode) (string, string, int64, *transaction.Transaction, error) {
+func ZCNSCUpdateAuthorizerConfig(input *AuthorizerNode) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 	return transaction.SmartContractTxn(ZCNSCSmartContractAddress, transaction.SmartContractTxnData{
 		Name:      transaction.ZCNSC_UPDATE_AUTHORIZER_CONFIG,
 		InputArgs: input,
@@ -151,7 +151,7 @@ func ZCNSCUpdateAuthorizerConfig(input *AuthorizerNode) (string, string, int64, 
 
 }
 
-func ZCNSCAddAuthorizer(input *AddAuthorizerPayload) (string, string, int64, *transaction.Transaction, error) {
+func ZCNSCAddAuthorizer(input *AddAuthorizerPayload) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 	return transaction.SmartContractTxn(ZCNSCSmartContractAddress, transaction.SmartContractTxnData{
 		Name:      transaction.ZCNSC_ADD_AUTHORIZER,
 		InputArgs: input,
@@ -159,7 +159,7 @@ func ZCNSCAddAuthorizer(input *AddAuthorizerPayload) (string, string, int64, *tr
 
 }
 
-func ZCNSCAuthorizerHealthCheck(input *AuthorizerHealthCheckPayload) (string, string, int64, *transaction.Transaction, error) {
+func ZCNSCAuthorizerHealthCheck(input *AuthorizerHealthCheckPayload) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 	return transaction.SmartContractTxn(ZCNSCSmartContractAddress, transaction.SmartContractTxnData{
 		Name:      transaction.ZCNSC_AUTHORIZER_HEALTH_CHECK,
 		InputArgs: input,
@@ -167,7 +167,7 @@ func ZCNSCAuthorizerHealthCheck(input *AuthorizerHealthCheckPayload) (string, st
 
 }
 
-func ZCNSCDeleteAuthorizer(input *DeleteAuthorizerPayload) (string, string, int64, *transaction.Transaction, error) {
+func ZCNSCDeleteAuthorizer(input *DeleteAuthorizerPayload) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 	return transaction.SmartContractTxn(ZCNSCSmartContractAddress, transaction.SmartContractTxnData{
 		Name:      transaction.ZCNSC_DELETE_AUTHORIZER,
 		InputArgs: input,
@@ -175,7 +175,7 @@ func ZCNSCDeleteAuthorizer(input *DeleteAuthorizerPayload) (string, string, int6
 
 }
 
-func ZCNSCCollectReward(providerId string, providerType Provider) (string, string, int64, *transaction.Transaction, error) {
+func ZCNSCCollectReward(providerId string, providerType Provider) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 	pr := &scCollectReward{
 		ProviderId:   providerId,
 		ProviderType: int(providerType),
