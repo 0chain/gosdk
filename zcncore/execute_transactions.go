@@ -196,5 +196,15 @@ func ZCNSCCollectReward(providerId string, providerType Provider) (hash, out str
 		Name:      transaction.ZCNSC_COLLECT_REWARD,
 		InputArgs: pr,
 	})
+}
 
+type SendTxnData struct {
+	Note string `json:"note"`
+}
+
+func Send(toClientID string, tokens uint64, desc string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+	return transaction.SmartContractTxn(ZCNSCSmartContractAddress, transaction.SmartContractTxnData{
+		Name:      transaction.ZCNSC_COLLECT_REWARD,
+		InputArgs: SendTxnData{Note: desc},
+	}, toClientID)
 }

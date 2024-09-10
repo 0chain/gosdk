@@ -32,7 +32,7 @@ func CleanClient() *http.Client {
 func NewRetryableClient(verbose bool) *retryablehttp.Client {
 	client := retryablehttp.NewClient()
 	client.HTTPClient = &http.Client{
-		Transport: client.DefaultTransport,
+		Transport: http2.DefaultTransport,
 	}
 
 	if !verbose {

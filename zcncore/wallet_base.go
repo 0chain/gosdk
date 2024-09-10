@@ -2,7 +2,10 @@ package zcncore
 
 import (
 	"encoding/hex"
+	"fmt"
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/util"
+	"strings"
 	"time"
 
 	"errors"
@@ -383,4 +386,27 @@ var AddSignature = func(privateKey, signature string, hash string) (string, erro
 //   - token: SAS tokens amount
 func ConvertToToken(token int64) float64 {
 	return float64(token) / float64(common.TokenUnit)
+}
+
+// GetIdForUrl retrieve the ID of the network node (miner/sharder) given its url.
+//   - url: url of the node.
+func GetIdForUrl(url string) string {
+	url = strings.TrimRight(url, "/")
+	url = fmt.Sprintf("%v/_nh/whoami", url)
+	req, err := util.NewHTTPGetRequest(url)
+	if err != nil {
+		logging.Error(url, "new get request failed. ", err.Error())
+		return ""
+	}
+	res, err := req.Get()
+	if err != nil {
+		logging.Error(url, "get error. ", err.Error())
+		return ""
+	}
+
+	s := strings.Split(res.Body, ",")
+	if len(s) >= 3 {
+		return s[3]
+	}
+	return ""
 }

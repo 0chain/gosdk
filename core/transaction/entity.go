@@ -486,20 +486,20 @@ func GetFeesTable(miners []string, reqPercent ...float32) (map[string]map[string
 	return nil, errors.New("failed to get fees table", strings.Join(errs, ","))
 }
 
-func SmartContractTxn(scAddress string, sn SmartContractTxnData) (
+func SmartContractTxn(scAddress string, sn SmartContractTxnData, toClient ...string) (
 	hash, out string, nonce int64, txn *Transaction, err error) {
-	return SmartContractTxnValue(scAddress, sn, 0)
+	return SmartContractTxnValue(scAddress, sn, 0, toClient...)
 }
 
-func SmartContractTxnValue(scAddress string, sn SmartContractTxnData, value uint64) (
+func SmartContractTxnValue(scAddress string, sn SmartContractTxnData, value uint64, toClient ...string) (
 	hash, out string, nonce int64, txn *Transaction, err error) {
 
-	return SmartContractTxnValueFeeWithRetry(scAddress, sn, value, client.TxnFee())
+	return SmartContractTxnValueFeeWithRetry(scAddress, sn, value, client.TxnFee(), toClient...)
 }
 
 func SmartContractTxnValueFeeWithRetry(scAddress string, sn SmartContractTxnData,
-	value, fee uint64) (hash, out string, nonce int64, t *Transaction, err error) {
-	hash, out, nonce, t, err = SmartContractTxnValueFee(scAddress, sn, value, fee)
+	value, fee uint64, toClient ...string) (hash, out string, nonce int64, t *Transaction, err error) {
+	hash, out, nonce, t, err = SmartContractTxnValueFee(scAddress, sn, value, fee, toClient...)
 
 	if err != nil && strings.Contains(err.Error(), "invalid transaction nonce") {
 		return SmartContractTxnValueFee(scAddress, sn, value, fee)
@@ -508,7 +508,7 @@ func SmartContractTxnValueFeeWithRetry(scAddress string, sn SmartContractTxnData
 }
 
 func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
-	value, fee uint64) (hash, out string, nonce int64, t *Transaction, err error) {
+	value, fee uint64, toClient ...string) (hash, out string, nonce int64, t *Transaction, err error) {
 
 	var requestBytes []byte
 	if requestBytes, err = json.Marshal(sn); err != nil {
@@ -533,6 +533,10 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 	txn.Value = value
 	txn.TransactionFee = fee
 	txn.TransactionType = TxnTypeSmartContract
+
+	if len(toClient) > 0 {
+		txn.ToClientID = toClient[0]
+	}
 
 	// adjust fees if not set
 	if fee == 0 {
@@ -574,7 +578,7 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 	sys.Sleep(querySleepTime)
 
 	for retries < cfg.MaxTxnQuery {
-		t, err = VerifyTransaction(txn.Hash, nodeClient.Sharders().Healthy())
+		t, err = VerifyTransaction(txn.Hash)
 		if err == nil {
 			break
 		}

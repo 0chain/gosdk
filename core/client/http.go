@@ -6,7 +6,9 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/logger"
+	"github.com/shopspring/decimal"
 	"io/ioutil"
+	"math"
 	"net"
 	"net/http"
 	"net/url"
@@ -217,7 +219,7 @@ func getEnvAny(names ...string) string {
 	return ""
 }
 
-func GetBalance(clientId string) (*GetBalanceResponse, error) {
+func GetBalance(clientIDs ...string) (*GetBalanceResponse, error) {
 	const GET_BALANCE = "/client/get/balance"
 	var (
 		balance GetBalanceResponse
@@ -225,8 +227,15 @@ func GetBalance(clientId string) (*GetBalanceResponse, error) {
 		res     []byte
 	)
 
+	var clientID string
+	if len(clientIDs) > 0 {
+		clientID = clientIDs[0]
+	} else {
+		clientID = ClientID()
+	}
+
 	if res, err = MakeSCRestAPICall("", GET_BALANCE, map[string]string{
-		"client_id": clientId,
+		"client_id": clientID,
 	}, nil); err != nil {
 		return nil, err
 	}
@@ -243,4 +252,14 @@ type GetBalanceResponse struct {
 	Round   int64  `json:"round"`
 	Balance int64  `json:"balance"`
 	Nonce   int64  `json:"nonce"`
+}
+
+// ToToken converts Balance to ZCN tokens.
+func (b GetBalanceResponse) ToToken() (float64, error) {
+	if b.Balance > math.MaxInt64 {
+		return 0.0, errors.New("to_token failed", "value is too large")
+	}
+
+	f, _ := decimal.New(b.Balance, -10).Float64()
+	return f, nil
 }
