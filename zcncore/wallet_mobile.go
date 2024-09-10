@@ -19,7 +19,7 @@ type wallet struct {
 
 // Sign sign the given string using the wallet's private key
 func (w *wallet) Sign(hash string) (string, error) {
-	sigScheme := zcncrypto.NewSignatureScheme(signatureScheme)
+	sigScheme := zcncrypto.NewSignatureScheme(client.SignatureScheme())
 	err := sigScheme.SetPrivateKey(w.Keys[0].PrivateKey)
 	if err != nil {
 		return "", err

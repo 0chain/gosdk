@@ -182,7 +182,7 @@ type SendTxnData struct {
 }
 
 func Sign(hash string) (string, error) {
-	sigScheme := zcncrypto.NewSignatureScheme(signatureScheme)
+	sigScheme := zcncrypto.NewSignatureScheme(client.SignatureScheme())
 	err := sigScheme.SetPrivateKey(client.Wallet().Keys[0].PrivateKey)
 	if err != nil {
 		return "", err
@@ -209,7 +209,7 @@ func VerifyWithKey(pubKey, signature, hash string) (bool, error) {
 }
 
 var SignFn = func(hash string) (string, error) {
-	sigScheme := zcncrypto.NewSignatureScheme(signatureScheme)
+	sigScheme := zcncrypto.NewSignatureScheme(client.SignatureScheme())
 	err := sigScheme.SetPrivateKey(client.Wallet().Keys[0].PrivateKey)
 	if err != nil {
 		return "", err
@@ -219,7 +219,7 @@ var SignFn = func(hash string) (string, error) {
 
 var AddSignature = func(privateKey, signature string, hash string) (string, error) {
 	var (
-		ss  = zcncrypto.NewSignatureScheme(signatureScheme)
+		ss  = zcncrypto.NewSignatureScheme(client.SignatureScheme())
 		err error
 	)
 
@@ -238,7 +238,7 @@ func signWithWallet(hash string, wi interface{}) (string, error) {
 		fmt.Printf("Error in casting to wallet")
 		return "", errors.New("", "error in casting to wallet")
 	}
-	sigScheme := zcncrypto.NewSignatureScheme(signatureScheme)
+	sigScheme := zcncrypto.NewSignatureScheme(client.SignatureScheme())
 	err := sigScheme.SetPrivateKey(w.Keys[0].PrivateKey)
 	if err != nil {
 		return "", err

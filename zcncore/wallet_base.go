@@ -300,20 +300,9 @@ func SetLogFile(logFile string, verbose bool) {
 	logging.Info("******* Wallet SDK Version:", version.VERSIONSTR, " ******* (SetLogFile)")
 }
 
-var signatureScheme string
-
-// InitSignatureScheme Use client.Init() in core/client package to initialize SDK.
-// InitSignatureScheme initializes signature scheme only.
-func InitSignatureScheme(scheme string) {
-	if scheme != constants.BLS0CHAIN.String() && scheme != constants.ED25519.String() {
-		panic("invalid/unsupported signature scheme")
-	}
-	signatureScheme = scheme
-}
-
 // CreateWalletOffline creates the wallet for the config signature scheme.
 func CreateWalletOffline() (string, error) {
-	sigScheme := zcncrypto.NewSignatureScheme(signatureScheme)
+	sigScheme := zcncrypto.NewSignatureScheme(client.SignatureScheme())
 	wallet, err := sigScheme.GenerateKeys()
 	if err != nil {
 		return "", errors.New("failed to generate keys: " + err.Error())
@@ -330,7 +319,7 @@ func RecoverOfflineWallet(mnemonic string) (string, error) {
 	if !zcncrypto.IsMnemonicValid(mnemonic) {
 		return "", errors.New("Invalid mnemonic")
 	}
-	sigScheme := zcncrypto.NewSignatureScheme(signatureScheme)
+	sigScheme := zcncrypto.NewSignatureScheme(client.SignatureScheme())
 	wallet, err := sigScheme.RecoverKeys(mnemonic)
 	if err != nil {
 		return "", err
@@ -351,7 +340,7 @@ func RecoverWallet(mnemonic string, statusCb WalletCallback) error {
 		return errors.New("Invalid mnemonic")
 	}
 	go func() {
-		sigScheme := zcncrypto.NewSignatureScheme(signatureScheme)
+		sigScheme := zcncrypto.NewSignatureScheme(client.SignatureScheme())
 		_, err := sigScheme.RecoverKeys(mnemonic)
 		if err != nil {
 			statusCb.OnWalletCreateComplete(StatusError, "", err.Error())
@@ -363,10 +352,10 @@ func RecoverWallet(mnemonic string, statusCb WalletCallback) error {
 
 // SplitKeys Split keys from the primary master key
 func SplitKeys(privateKey string, numSplits int) (string, error) {
-	if signatureScheme != constants.BLS0CHAIN.String() {
+	if client.SignatureScheme() != constants.BLS0CHAIN.String() {
 		return "", errors.New("signature key doesn't support split key")
 	}
-	sigScheme := zcncrypto.NewSignatureScheme(signatureScheme)
+	sigScheme := zcncrypto.NewSignatureScheme(client.SignatureScheme())
 	err := sigScheme.SetPrivateKey(privateKey)
 	if err != nil {
 		return "", errors.New("set private key failed." + err.Error())

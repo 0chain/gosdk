@@ -85,7 +85,7 @@ func (ta *TransactionWithAuth) completeTxn(status int, out string, err error) {
 }
 
 func verifyFn(signature, msgHash, publicKey string) (bool, error) {
-	v := zcncrypto.NewSignatureScheme(signatureScheme)
+	v := zcncrypto.NewSignatureScheme(client.SignatureScheme())
 	err := v.SetPublicKey(publicKey)
 	if err != nil {
 		return false, err
