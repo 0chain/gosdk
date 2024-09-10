@@ -880,14 +880,6 @@ type scCollectReward struct {
 	ProviderType int    `json:"provider_type"`
 }
 
-type MinerSCLock struct {
-	ID string `json:"id"`
-}
-
-type MinerSCUnlock struct {
-	ID string `json:"id"`
-}
-
 func VerifyContentHash(metaTxnDataJSON string) (bool, error) {
 	var metaTxnData sdk.CommitMetaResponse
 	err := json.Unmarshal([]byte(metaTxnDataJSON), &metaTxnData)
