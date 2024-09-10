@@ -2,6 +2,7 @@ package zcncore
 
 import (
 	"encoding/hex"
+	"github.com/0chain/gosdk/core/common"
 	"time"
 
 	"errors"
@@ -122,72 +123,6 @@ func CloseLog() {
 }
 
 const TOKEN_UNIT int64 = 1e10
-
-const (
-	OpGetTokenLockConfig int = iota
-	OpGetLockedTokens
-	OpGetUserPools
-	OpGetUserPoolDetail
-	OpGetNotProcessedBurnTickets
-	OpGetMintNonce
-	// storage SC ops
-	// OpStorageSCGetConfig Get global storage SC config
-	OpStorageSCGetConfig
-
-	// OpStorageSCGetChallengePoolInfo Get challenge pool info
-	OpStorageSCGetChallengePoolInfo
-
-	// OpStorageSCGetAllocation Get allocation info
-	OpStorageSCGetAllocation
-
-	// OpStorageSCGetAllocations Get all allocations
-	OpStorageSCGetAllocations
-
-	// OpStorageSCGetReadPoolInfo Get read pool info
-	OpStorageSCGetReadPoolInfo
-
-	// OpStorageSCGetStakePoolInfo Get stake pool info
-	OpStorageSCGetStakePoolInfo
-
-	// OpStorageSCGetStakePoolUserInfo Get blobbers
-	OpStorageSCGetBlobbers
-
-	// OpStorageSCGetBlobber Get blobber information
-	OpStorageSCGetBlobber
-
-	// OpStorageSCGetValidator Get transaction info
-	OpStorageSCGetTransactions
-
-	// OpStorageSCGetSnapshots Get global snapshots
-	OpStorageSCGetSnapshots
-
-	// OpStorageSCGetBlobberSnapshots Get blobber snapshots
-	OpStorageSCGetBlobberSnapshots
-
-	// OpStorageSCGetMinerSnapshots Get miner snapshots
-	OpStorageSCGetMinerSnapshots
-
-	// OpStorageSCGetSharderSnapshots Get sharder snapshots
-	OpStorageSCGetSharderSnapshots
-
-	// OpStorageSCGetAuthorizerSnapshots Get authorizer snapshots
-	OpStorageSCGetAuthorizerSnapshots
-
-	// OpStorageSCGetValidatorSnapshots Get validator snapshots
-	OpStorageSCGetValidatorSnapshots
-
-	// OpStorageSCGetUserSnapshots Get user snapshots
-	OpStorageSCGetUserSnapshots
-
-	// OpStorageSCGetUserLockedTotal Get global configuration
-	OpZCNSCGetGlobalConfig
-
-	// OpZCNSCGetMintNonce Get authorizer information
-	OpZCNSCGetAuthorizer
-
-	// OpZCNSCGetAuthorizerNodes Get authorizer nodes
-	OpZCNSCGetAuthorizerNodes
-)
 
 // WalletCallback needs to be implemented for wallet creation.
 type WalletCallback interface {
@@ -412,4 +347,40 @@ func GetPublicEncryptionKey(mnemonic string) (string, error) {
 		return "", err
 	}
 	return encScheme.GetPublicKey()
+}
+
+// ConvertToValue converts ZCN tokens to SAS tokens
+// # Inputs
+//   - token: ZCN tokens
+func ConvertToValue(token float64) uint64 {
+	return uint64(token * common.TokenUnit)
+}
+
+func SignWithKey(privateKey, hash string) (string, error) {
+	sigScheme := zcncrypto.NewSignatureScheme("bls0chain")
+	err := sigScheme.SetPrivateKey(privateKey)
+	if err != nil {
+		return "", err
+	}
+	return sigScheme.Sign(hash)
+}
+
+var AddSignature = func(privateKey, signature string, hash string) (string, error) {
+	var (
+		ss  = zcncrypto.NewSignatureScheme(client.SignatureScheme())
+		err error
+	)
+
+	err = ss.SetPrivateKey(privateKey)
+	if err != nil {
+		return "", err
+	}
+
+	return ss.Add(signature, hash)
+}
+
+// ConvertToToken converts the SAS tokens to ZCN tokens
+//   - token: SAS tokens amount
+func ConvertToToken(token int64) float64 {
+	return float64(token) / float64(common.TokenUnit)
 }

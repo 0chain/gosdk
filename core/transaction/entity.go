@@ -7,7 +7,6 @@ import (
 	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/logger"
-	"github.com/0chain/gosdk/core/node"
 	"github.com/0chain/gosdk/core/sys"
 	"go.uber.org/zap"
 	"net/http"
@@ -23,6 +22,10 @@ import (
 )
 
 var Logger logger.Logger
+
+const STORAGE_SCADDRESS = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7"
+const MINERSC_SCADDRESS = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d9"
+const ZCNSC_SCADDRESS = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712e0"
 
 const TXN_SUBMIT_URL = "v1/transaction/put"
 const TXN_VERIFY_URL = "v1/transaction/get/confirmation?hash="
@@ -544,7 +547,7 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 	}
 
 	if txn.TransactionNonce == 0 {
-		txn.TransactionNonce = node.Cache.GetNextNonce(txn.ClientID)
+		txn.TransactionNonce = client.Cache.GetNextNonce(txn.ClientID)
 	}
 
 	if err = txn.ComputeHashAndSign(client.Sign); err != nil {
@@ -558,7 +561,7 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 	err = SendTransactionSync(txn, nodeClient.GetStableMiners())
 	if err != nil {
 		Logger.Info("transaction submission failed", zap.Error(err))
-		node.Cache.Evict(txn.ClientID)
+		client.Cache.Evict(txn.ClientID)
 		nodeClient.ResetStableMiners()
 		return
 	}
@@ -581,7 +584,7 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 
 	if err != nil {
 		Logger.Error("Error verifying the transaction", err.Error(), txn.Hash)
-		node.Cache.Evict(txn.ClientID)
+		client.Cache.Evict(txn.ClientID)
 		return
 	}
 

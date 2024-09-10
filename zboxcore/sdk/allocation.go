@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/0chain/gosdk/core/transaction"
 	"io"
 	"io/ioutil"
 	"math"
@@ -355,16 +356,12 @@ func (a *Allocation) SetCheckStatus(checkStatus bool) {
 }
 
 func getPriceRange(name string) (PriceRange, error) {
-	conf, err := GetStorageSCConfig()
+	conf, err := transaction.GetConfig("storage_sc_config")
 	if err != nil {
 		return PriceRange{}, err
 	}
 	f := conf.Fields[name]
-	fStr, ok := f.(string)
-	if !ok {
-		return PriceRange{}, fmt.Errorf("type is wrong")
-	}
-	mrp, err := strconv.ParseFloat(fStr, 64)
+	mrp, err := strconv.ParseFloat(f, 64)
 	if err != nil {
 		return PriceRange{}, err
 	}

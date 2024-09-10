@@ -1,16 +1,23 @@
 package zcnbridge
 
 import (
+	"encoding/json"
 	"fmt"
+	coreHttp "github.com/0chain/gosdk/core/http"
 
 	"github.com/0chain/gosdk/core/common"
 
-	"github.com/0chain/gosdk/zcnbridge/http"
-	"github.com/0chain/gosdk/zcnbridge/wallet"
 	"github.com/0chain/gosdk/zcncore"
 )
 
-// Models
+const (
+	// SCRestAPIPrefix represents base URL path to execute smart contract rest points.
+	SCRestAPIPrefix        = "v1/screst/"
+	RestPrefix             = SCRestAPIPrefix + zcncore.ZCNSCSmartContractAddress
+	PathGetAuthorizerNodes = "/getAuthorizerNodes?active=%t"
+	PathGetGlobalConfig    = "/getGlobalConfig"
+	PathGetAuthorizer      = "/getAuthorizer"
+)
 
 // AuthorizerResponse represents the response of the request to get authorizer info from the sharders.
 type AuthorizerResponse struct {
@@ -52,17 +59,16 @@ type AuthorizerNode struct {
 func getAuthorizers(active bool) ([]*AuthorizerNode, error) {
 	var (
 		authorizers = new(AuthorizerNodesResponse)
-		cb          = wallet.NewZCNStatus(authorizers)
 		err         error
+		res         []byte
 	)
 
-	cb.Begin()
-
-	if err = GetAuthorizers(active, cb); err != nil {
+	if res, err = GetAuthorizers(active); err != nil {
 		return nil, err
 	}
 
-	if err = cb.Wait(); err != nil {
+	err = json.Unmarshal(res, authorizers)
+	if err != nil {
 		return nil, err
 	}
 
@@ -77,43 +83,34 @@ func getAuthorizers(active bool) ([]*AuthorizerNode, error) {
 // GetAuthorizer returned authorizer information from Züs Blockchain by the ID
 //   - id is the authorizer ID
 //   - cb is the callback function to handle the response asynchronously
-func GetAuthorizer(id string, cb zcncore.GetInfoCallback) (err error) {
+func GetAuthorizer(id string) (res []byte, err error) {
 	err = zcncore.CheckConfig()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	go http.MakeSCRestAPICall(
-		zcncore.OpZCNSCGetAuthorizer,
-		http.PathGetAuthorizer,
-		http.Params{
-			"id": id,
-		},
-		cb,
-	)
-
-	return
+	return coreHttp.MakeSCRestAPICall(zcncore.ZCNSCSmartContractAddress, PathGetAuthorizer, zcncore.Params{
+		"id": id,
+	}, nil)
 }
 
 // GetAuthorizers Returns all or only active authorizers
 //   - active is the flag to get only active authorizers
 //   - cb is the callback function to handle the response asynchronously
-func GetAuthorizers(active bool, cb zcncore.GetInfoCallback) (err error) {
+func GetAuthorizers(active bool) (res []byte, err error) {
 	err = zcncore.CheckConfig()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	go http.MakeSCRestAPICall(zcncore.OpZCNSCGetAuthorizerNodes, fmt.Sprintf(http.PathGetAuthorizerNodes, active), nil, cb)
-	return
+	return coreHttp.MakeSCRestAPICall(zcncore.ZCNSCSmartContractAddress, fmt.Sprintf(PathGetAuthorizerNodes, active), nil, nil)
 }
 
 // GetGlobalConfig Returns global config
 //   - cb is the callback function to handle the response asynchronously
-func GetGlobalConfig(cb zcncore.GetInfoCallback) (err error) {
+func GetGlobalConfig() (res []byte, err error) {
 	err = zcncore.CheckConfig()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	go http.MakeSCRestAPICall(zcncore.OpZCNSCGetGlobalConfig, http.PathGetGlobalConfig, nil, cb)
-	return
+	return coreHttp.MakeSCRestAPICall(zcncore.ZCNSCSmartContractAddress, PathGetGlobalConfig, nil, nil)
 }

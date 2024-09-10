@@ -5,16 +5,7 @@
 package block
 
 import (
-	"context"
-	"encoding/json"
 	"fmt"
-	"github.com/0chain/gosdk/core/logger"
-	"github.com/0chain/gosdk/core/node"
-	"github.com/0chain/gosdk/core/util"
-	"net/http"
-
-	"github.com/0chain/errors"
-
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/transaction"
@@ -101,75 +92,4 @@ type FeeStats struct {
 	MaxFees  common.Balance `json:"max_fees"`
 	MinFees  common.Balance `json:"min_fees"`
 	MeanFees common.Balance `json:"mean_fees"`
-}
-
-func GetBlockByRound(h *node.NodeHolder, ctx context.Context, numSharders int, round int64) (b *Block, err error) {
-
-	var result = make(chan *util.GetResponse, numSharders)
-	defer close(result)
-
-	numSharders = len(h.Healthy()) // overwrite, use all
-	h.QueryFromShardersContext(ctx, numSharders,
-		fmt.Sprintf("%sround=%d&content=full,header", GET_BLOCK_INFO, round),
-		result)
-
-	var (
-		maxConsensus   int
-		roundConsensus = make(map[string]int)
-	)
-
-	type respObj struct {
-		Block  *Block  `json:"block"`
-		Header *Header `json:"header"`
-	}
-
-	for i := 0; i < numSharders; i++ {
-		var rsp = <-result
-		if rsp == nil {
-			logger.Log.Error("nil response")
-			continue
-		}
-		logger.Log.Debug(rsp.Url, rsp.Status)
-
-		if rsp.StatusCode != http.StatusOK {
-			logger.Log.Error(rsp.Body)
-			continue
-		}
-
-		var respo respObj
-		if err = json.Unmarshal([]byte(rsp.Body), &respo); err != nil {
-			logger.Log.Error("block parse error: ", err)
-			err = nil
-			continue
-		}
-
-		if respo.Block == nil {
-			logger.Log.Debug(rsp.Url, "no block in response:", rsp.Body)
-			continue
-		}
-
-		if respo.Header == nil {
-			logger.Log.Debug(rsp.Url, "no block header in response:", rsp.Body)
-			continue
-		}
-
-		if respo.Header.Hash != string(respo.Block.Hash) {
-			logger.Log.Debug(rsp.Url, "header and block hash mismatch:", rsp.Body)
-			continue
-		}
-
-		b = respo.Block
-		b.Header = respo.Header
-
-		var h = encryption.FastHash([]byte(b.Hash))
-		if roundConsensus[h]++; roundConsensus[h] > maxConsensus {
-			maxConsensus = roundConsensus[h]
-		}
-	}
-
-	if maxConsensus == 0 {
-		return nil, errors.New("", "round info not found")
-	}
-
-	return
 }

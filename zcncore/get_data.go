@@ -5,13 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/0chain/gosdk/core/block"
 	"github.com/0chain/gosdk/core/client"
-	"github.com/0chain/gosdk/core/common"
+	coreHttp "github.com/0chain/gosdk/core/http"
 	"github.com/0chain/gosdk/core/tokenrate"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"net/url"
-	"strings"
+	"strconv"
 )
 
 type GetClientResponse struct {
@@ -95,57 +96,6 @@ func SetAuthUrl(url string) error {
 	return client.SetAuthUrl(url)
 }
 
-func getWalletBalance(clientId string) (common.Balance, int64, error) {
-	err := checkSdkInit()
-	if err != nil {
-		return 0, 0, err
-	}
-
-	cb := &walletCallback{}
-	cb.Add(1)
-
-	go func() {
-		value, info, err := getBalanceFromSharders(clientId)
-		if err != nil && strings.TrimSpace(info) != `{"error":"value not present"}` {
-			cb.OnBalanceAvailable(StatusError, value, info)
-			cb.err = err
-			return
-		}
-		cb.OnBalanceAvailable(StatusSuccess, value, info)
-	}()
-
-	cb.Wait()
-
-	var clientState struct {
-		Nonce int64 `json:"nonce"`
-	}
-	err = json.Unmarshal([]byte(cb.info), &clientState)
-	if err != nil {
-		return 0, 0, err
-	}
-
-	return cb.balance, clientState.Nonce, cb.err
-}
-
-// GetBalance retrieve wallet balance from sharders
-//   - cb: info callback instance, carries the response of the GET request to the sharders
-func GetBalance(cb GetBalanceCallback) error {
-	err := CheckConfig()
-	if err != nil {
-		return err
-	}
-	go func() {
-		value, info, err := getBalanceFromSharders(client.Wallet().ClientID)
-		if err != nil {
-			logging.Error(err)
-			cb.OnBalanceAvailable(StatusError, 0, info)
-			return
-		}
-		cb.OnBalanceAvailable(StatusSuccess, value, info)
-	}()
-	return nil
-}
-
 //// GetMintNonce retrieve the client's latest mint nonce from sharders
 ////   - cb: info callback instance, carries the response of the GET request to the sharders
 //func GetMintNonce(cb GetInfoCallback) error {
@@ -177,14 +127,6 @@ func GetBalance(cb GetBalanceCallback) error {
 //
 //	return nil
 //}
-
-func getBalanceFromSharders(clientID string) (int64, string, error) {
-	clientNode, err := client.GetNode()
-	if err != nil {
-		return 0, "", err
-	}
-	return clientNode.Sharders().GetBalanceFieldFromSharders(clientID, "balance")
-}
 
 // ConvertTokenToUSD converts the ZCN tokens to USD amount
 //   - token: ZCN tokens amount
@@ -258,3 +200,115 @@ func withParams(uri string, params Params) string {
 //		"offset": strconv.FormatInt(offset, 10),
 //	}, nil)
 //}
+
+// GetMinerSCNodeInfo get miner information from sharders
+//   - id: the id of miner
+//   - cb: info callback instance, carries the response of the GET request to the sharders
+func GetMinerSCNodeInfo(id string) ([]byte, error) {
+	if err := CheckConfig(); err != nil {
+		return nil, err
+	}
+
+	return coreHttp.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINERSC_NODE, Params{
+		"id": id,
+	}, nil)
+}
+
+// GetMintNonce retrieve the client's latest mint nonce from sharders
+//   - cb: info callback instance, carries the response of the GET request to the sharders
+func GetMintNonce() ([]byte, error) {
+	err := CheckConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	return coreHttp.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINT_NONCE, Params{
+		"client_id": client.ClientID(),
+	}, nil)
+}
+
+func GetMiners(active, stakable bool, limit, offset int) ([]byte, error) {
+	if err := CheckConfig(); err != nil {
+		return nil, err
+	}
+
+	return coreHttp.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINERSC_MINERS, Params{
+		"active":   strconv.FormatBool(active),
+		"stakable": strconv.FormatBool(stakable),
+		"offset":   strconv.FormatInt(int64(offset), 10),
+		"limit":    strconv.FormatInt(int64(limit), 10),
+	}, nil)
+}
+
+func GetSharders(active, stakable bool, limit, offset int) ([]byte, error) {
+	if err := CheckConfig(); err != nil {
+		return nil, err
+	}
+
+	return coreHttp.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINERSC_SHARDERS, Params{
+		"active":   strconv.FormatBool(active),
+		"stakable": strconv.FormatBool(stakable),
+		"offset":   strconv.FormatInt(int64(offset), 10),
+		"limit":    strconv.FormatInt(int64(limit), 10),
+	}, nil)
+}
+
+// GetLatestFinalizedMagicBlock gets latest finalized magic block
+//   - numSharders: number of sharders
+//   - timeout: request timeout
+func GetLatestFinalizedMagicBlock(ctx context.Context, numSharders int) (m *block.MagicBlock, err error) {
+	res, err := coreHttp.MakeSCRestAPICall(MinerSmartContractAddress, GET_LATEST_FINALIZED_MAGIC_BLOCK, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(res, &m)
+	if err != nil {
+		return nil, err
+	}
+
+	return m, nil
+}
+
+// GetMinerSCUserInfo retrieve user stake pools for the providers related to the Miner SC (miners/sharders).
+//   - clientID: user's wallet id
+func GetMinerSCUserInfo(clientID string) ([]byte, error) {
+	if err := CheckConfig(); err != nil {
+		return nil, err
+	}
+	if clientID == "" {
+		clientID = client.ClientID()
+	}
+
+	return coreHttp.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINERSC_USER, Params{
+		"client_id": clientID,
+	}, nil)
+}
+
+// GetMinerSCNodePool get miner smart contract node pool
+//   - id: the id of miner
+func GetMinerSCNodePool(id string) ([]byte, error) {
+	if err := CheckConfig(); err != nil {
+		return nil, err
+	}
+
+	return coreHttp.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINERSC_POOL, Params{
+		"id":      id,
+		"pool_id": client.ClientID(),
+	}, nil)
+}
+
+// GetNotProcessedZCNBurnTickets retrieve burn tickets that are not compensated by minting
+//   - ethereumAddress: ethereum address for the issuer of the burn tickets
+//   - startNonce: start nonce for the burn tickets
+//   - cb: info callback instance, carries the response of the GET request to the sharders
+func GetNotProcessedZCNBurnTickets(ethereumAddress, startNonce string) ([]byte, error) {
+	err := CheckConfig()
+	if err != nil {
+		return nil, err
+	}
+	return coreHttp.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINERSC_POOL, Params{
+		"ethereum_address": ethereumAddress,
+		"nonce":            startNonce,
+	}, nil)
+}

@@ -13,7 +13,6 @@ import (
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/logger"
-	"github.com/0chain/gosdk/core/node"
 	"github.com/0chain/gosdk/core/util"
 	"go.uber.org/zap"
 )
@@ -32,7 +31,7 @@ func init() {
 // Use client.GetNode() to get its instance after Init is called.
 type Node struct {
 	stableMiners []string
-	sharders     *node.NodeHolder
+	sharders     *NodeHolder
 	network      *conf.Network
 	clientCtx    context.Context
 
@@ -68,7 +67,7 @@ func (n *Node) GetMinShardersVerify() int {
 }
 
 // Sharders Returns NodeHolder instance
-func (n *Node) Sharders() *node.NodeHolder {
+func (n *Node) Sharders() *NodeHolder {
 	n.networkGuard.RLock()
 	defer n.networkGuard.RUnlock()
 	return n.sharders
@@ -111,8 +110,8 @@ func (n *Node) UpdateNetwork(network *conf.Network) error {
 		return err
 	}
 	n.network = network
-	n.sharders = node.NewHolder(n.network.Sharders, util.MinInt(len(n.network.Sharders), util.MaxInt(cfg.SharderConsensous, conf.DefaultSharderConsensous)))
-	node.InitCache(n.sharders)
+	n.sharders = NewHolder(n.network.Sharders, util.MinInt(len(n.network.Sharders), util.MaxInt(cfg.SharderConsensous, conf.DefaultSharderConsensous)))
+	InitCache(n.sharders)
 	return nil
 }
 
@@ -134,7 +133,7 @@ func Init(ctx context.Context, cfg conf.Config) error {
 	}
 
 	reqMiners := util.MaxInt(1, int(math.Ceil(float64(cfg.MinSubmit)*float64(len(network.Miners))/100)))
-	sharders := node.NewHolder(network.Sharders, util.MinInt(len(network.Sharders), util.MaxInt(cfg.SharderConsensous, conf.DefaultSharderConsensous)))
+	sharders := NewHolder(network.Sharders, util.MinInt(len(network.Sharders), util.MaxInt(cfg.SharderConsensous, conf.DefaultSharderConsensous)))
 	nodeClient = &Node{
 		stableMiners: util.GetRandom(network.Miners, reqMiners),
 		sharders:     sharders,
@@ -144,7 +143,7 @@ func Init(ctx context.Context, cfg conf.Config) error {
 
 	//init packages
 	conf.InitClientConfig(&cfg)
-	node.InitCache(nodeClient.sharders)
+	InitCache(nodeClient.sharders)
 
 	// update Network periodically
 	go func() {

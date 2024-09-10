@@ -582,39 +582,6 @@ func GetMptData(key string) ([]byte, error) {
 	return b, nil
 }
 
-//
-// storage SC configurations and blobbers
-//
-
-type InputMap struct {
-	Fields map[string]interface{} `json:"fields"`
-}
-
-// GetStorageSCConfig retrieves storage SC configurations.
-func GetStorageSCConfig() (conf *InputMap, err error) {
-	if !sdkInitialized {
-		return nil, sdkNotInitialized
-	}
-
-	var b []byte
-	b, err = coreHttp.MakeSCRestAPICall(STORAGE_SCADDRESS, "/storage-config", nil,
-		nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "error requesting storage SC configs:")
-	}
-	if len(b) == 0 {
-		return nil, errors.New("", "empty response")
-	}
-
-	conf = new(InputMap)
-	conf.Fields = make(map[string]interface{})
-	if err = json.Unmarshal(b, conf); err != nil {
-		return nil, errors.Wrap(err, "rror decoding response:")
-	}
-
-	return
-}
-
 // Blobber type represents blobber information.
 type Blobber struct {
 	// ID of the blobber

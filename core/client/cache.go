@@ -1,6 +1,7 @@
-package node
+package client
 
 import (
+	"github.com/0chain/gosdk/core/transaction"
 	"sync"
 )
 
@@ -29,11 +30,12 @@ func (nc *NonceCache) GetNextNonce(clientId string) int64 {
 	nc.guard.Lock()
 	defer nc.guard.Unlock()
 	if _, ok := nc.cache[clientId]; !ok {
-		nonce, _, err := nc.sharders.GetNonceFromSharders(clientId)
-		if err != nil {
-			nonce = 0
+		bal, err := transaction.GetBalance(clientId)
+		if err != nil || bal == nil {
+			nc.cache[clientId] = 0
+		} else {
+			nc.cache[clientId] = bal.Nonce
 		}
-		nc.cache[clientId] = nonce
 	}
 
 	nc.cache[clientId] += 1

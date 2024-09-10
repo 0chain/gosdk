@@ -4,7 +4,6 @@
 package zcncore
 
 import (
-	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/zcncrypto"
 )
@@ -14,13 +13,7 @@ func GetWallet(walletStr string) (*zcncrypto.Wallet, error) {
 	return getWallet(walletStr)
 }
 
-// GetWalletBalance retrieve wallet balance from sharders
-//   - id: client id
-func GetWalletBalance(clientId string) (common.Balance, int64, error) {
-	return getWalletBalance(clientId)
-}
-
-//Deprecated: use Sign() method in zcncrypto.Wallet
+// Deprecated: use Sign() method in zcncrypto.Wallet
 func SignWith0Wallet(hash string, w *zcncrypto.Wallet) (string, error) {
 	cfg, err := conf.GetClientConfig()
 	if err != nil {
