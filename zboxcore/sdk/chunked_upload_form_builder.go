@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"io"
 	"mime/multipart"
 	"sync"
@@ -101,6 +102,7 @@ func (b *chunkedUploadFormBuilder) Build(
 		buff := uploadPool.Get()
 		bufSize := (CHUNK_SIZE * (endRange - startRange)) + 1024
 		if cap(buff.B) < bufSize {
+			fmt.Println("creating form buffer: ", cap(buff.B), bufSize)
 			buff.B = make([]byte, 0, bufSize)
 		}
 		bodyBuf := buff.B

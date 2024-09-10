@@ -1,6 +1,7 @@
 package sdk
 
 import (
+	"fmt"
 	"io"
 	"math"
 	"strconv"
@@ -9,7 +10,6 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/zboxcore/encryption"
-	"github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/klauspost/reedsolomon"
 	"github.com/valyala/bytebufferpool"
@@ -135,9 +135,11 @@ func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards, 
 	buf := uploadPool.Get()
 	if cap(buf.B) < int(totalDataSize) {
 		buf.B = make([]byte, 0, totalDataSize)
-		logger.Logger.Debug("creating buffer with size: ", " totalDataSize: ", totalDataSize)
+		// logger.Logger.Debug("creating buffer with size: ", " totalDataSize: ", totalDataSize)
+		fmt.Println("creating buffer with size: ", totalDataSize, cap(buf.B))
 	} else {
-		logger.Logger.Debug("reusing buffer with size: ", cap(buf.B), " totalDataSize: ", totalDataSize, " len: ", len(buf.B))
+		// logger.Logger.Debug("reusing buffer with size: ", cap(buf.B), " totalDataSize: ", totalDataSize, " len: ", len(buf.B))
+		fmt.Println("reusing buffer with size: ", cap(buf.B), totalDataSize)
 	}
 	r.fileShardsDataBuffer = buf
 	if CurrentMode == UploadModeHigh {
@@ -307,6 +309,7 @@ func (r *chunkedUploadChunkReader) Close() {
 	r.closeOnce.Do(func() {
 		close(r.hasherDataChan)
 		r.hasherWG.Wait()
+		fmt.Println("put buffer in pool: ", cap(r.fileShardsDataBuffer.B))
 		uploadPool.Put(r.fileShardsDataBuffer)
 		r.fileShardsDataBuffer = nil
 	})
