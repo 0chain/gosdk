@@ -12,7 +12,6 @@ import (
 	"github.com/0chain/gosdk/zcnbridge"
 	"github.com/0chain/gosdk/zcnbridge/errors"
 	"github.com/0chain/gosdk/zcnbridge/log"
-	"github.com/0chain/gosdk/zcnbridge/wallet"
 	"github.com/0chain/gosdk/zcncore"
 	"github.com/ethereum/go-ethereum/ethclient"
 )
@@ -120,21 +119,17 @@ func getMintWZCNPayload(burnTrxHash string) string {
 
 // getNotProcessedWZCNBurnEvents returns all not processed WZCN burn events from the Ethereum network
 func getNotProcessedWZCNBurnEvents() string {
-	var mintNonce int64
-	cb := wallet.NewZCNStatus(&mintNonce)
-
-	cb.Begin()
-
-	if err := zcncore.GetMintNonce(cb); err != nil {
+	var (
+		mintNonce int64
+		res       []byte
+		err       error
+	)
+	if res, err = zcncore.GetMintNonce(); err != nil {
 		return errors.Wrap("getNotProcessedWZCNBurnEvents", "failed to retreive last ZCN processed mint nonce", err).Error()
 	}
 
-	if err := cb.Wait(); err != nil {
-		return errors.Wrap("getNotProcessedWZCNBurnEvents", "failed to retreive last ZCN processed mint nonce", err).Error()
-	}
-
-	if !cb.Success {
-		return errors.New("getNotProcessedWZCNBurnEvents", "failed to retreive last ZCN processed mint nonce").Error()
+	if err = json.Unmarshal(res, &mintNonce); err != nil {
+		return errors.Wrap("getNotProcessedWZCNBurnEvents", "failed to unmarshal last ZCN processed mint nonce", err).Error()
 	}
 
 	log.Logger.Debug("MintNonce = " + strconv.Itoa(int(mintNonce)))
@@ -159,21 +154,18 @@ func getNotProcessedZCNBurnTickets() string {
 		return errors.Wrap("getNotProcessedZCNBurnTickets", "failed to retreive user nonce", err).Error()
 	}
 
-	var burnTickets []zcncore.BurnTicket
-	cb := wallet.NewZCNStatus(&burnTickets)
-	cb.Begin()
+	var (
+		res         []byte
+		burnTickets []zcncore.BurnTicket
+	)
 
-	err = zcncore.GetNotProcessedZCNBurnTickets(bridge.EthereumAddress, userNonce.String(), cb)
+	res, err = zcncore.GetNotProcessedZCNBurnTickets(bridge.EthereumAddress, userNonce.String())
 	if err != nil {
 		return errors.Wrap("getNotProcessedZCNBurnTickets", "failed to retreive ZCN burn tickets", err).Error()
 	}
 
-	if err := cb.Wait(); err != nil {
-		return errors.Wrap("getNotProcessedZCNBurnTickets", "failed to retreive ZCN burn tickets", err).Error()
-	}
-
-	if !cb.Success {
-		return errors.New("getNotProcessedZCNBurnTickets", "failed to retreive ZCN burn tickets").Error()
+	if err = json.Unmarshal(res, &burnTickets); err != nil {
+		return errors.Wrap("getNotProcessedZCNBurnTickets", "failed to unmarshal ZCN burn tickets", err).Error()
 	}
 
 	var result []byte

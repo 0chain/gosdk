@@ -4,6 +4,7 @@
 package main
 
 import (
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk/zcncore"
 )
@@ -17,26 +18,20 @@ type Balance struct {
 // getWalletBalance retrieves the wallet balance of the client from the network.
 //   - clientId is the client id
 func getWalletBalance(clientId string) (*Balance, error) {
-
-	zcn, nonce, err := zcncore.GetWalletBalance(clientId)
+	bal, err := client.GetBalance(clientId)
 	if err != nil {
 		return nil, err
 	}
 
-	zcnToken, err := zcn.ToToken()
-	if err != nil {
-		return nil, err
-	}
-
-	usd, err := zcncore.ConvertTokenToUSD(zcnToken)
+	toUsd, err := zcncore.ConvertTokenToUSD(float64(bal.Balance))
 	if err != nil {
 		return nil, err
 	}
 
 	return &Balance{
-		ZCN:   zcnToken,
-		USD:   usd,
-		Nonce: nonce,
+		ZCN:   float64(bal.Balance),
+		USD:   toUsd,
+		Nonce: bal.Nonce,
 	}, nil
 }
 
