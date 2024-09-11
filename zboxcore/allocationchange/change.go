@@ -1,6 +1,7 @@
 package allocationchange
 
 import (
+	"github.com/0chain/common/core/util/wmpt"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 )
 
@@ -14,6 +15,12 @@ type AllocationChange interface {
 	ProcessChange(rootRef *fileref.Ref, fileIDMeta map[string]string) error
 	GetAffectedPath() []string
 	GetSize() int64
+}
+
+type AllocationChangeV2 interface {
+	ProcessChangeV2(trie *wmpt.WeightedMerkleTrie, changeIndex uint64) error
+	GetLookupHash(changeIndex uint64) string
+	GetHash(changeIndex uint64, id string) string
 }
 
 type EmptyFileChange struct {

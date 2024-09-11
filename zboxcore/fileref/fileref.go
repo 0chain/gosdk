@@ -250,6 +250,14 @@ func (fr *FileRef) GetFileMetaHashData() string {
 		fr.ActualFileSize, fr.ActualFileHash)
 }
 
+func (fr *FileRef) GetFileMetaHashDataV2() string {
+	return fmt.Sprintf(
+		"%s:%s:%d:%d:%s",
+		fr.AllocationID,
+		fr.Path, fr.Size,
+		fr.ActualFileSize, fr.ActualFileHash)
+}
+
 func (fr *FileRef) GetHashData() string {
 	return fmt.Sprintf(
 		"%s:%s:%s:%s:%d:%s:%s:%d:%s:%d:%s",
@@ -267,6 +275,10 @@ func (fr *FileRef) GetHashData() string {
 	)
 }
 
+func (fr *FileRef) GetFileHashDataV2(blobberID string) string {
+	return fmt.Sprintf("%s:%s:%s:%d:%s:%d:%s", blobberID, fr.AllocationID, fr.Path, fr.Size, fr.FixedMerkleRoot, fr.ActualFileSize, fr.ActualFileHash)
+}
+
 func (fr *FileRef) GetHash() string {
 	return fr.Hash
 }
@@ -276,6 +288,10 @@ func (fr *FileRef) CalculateHash() string {
 	fr.FileMetaHash = encryption.Hash(fr.GetFileMetaHashData())
 	fr.NumBlocks = int64(math.Ceil(float64(fr.Size*1.0) / CHUNK_SIZE))
 	return fr.Hash
+}
+
+func (fr *FileRef) GetFileMetaHashV2() []byte {
+	return encryption.RawHash(fr.GetFileMetaHashDataV2())
 }
 
 func (fr *FileRef) GetType() string {

@@ -8,6 +8,7 @@ import (
 	"sync/atomic"
 
 	"github.com/0chain/gosdk/core/util"
+	"github.com/0chain/gosdk/zboxcore/marker"
 
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/node"
@@ -86,7 +87,8 @@ type UpdateValidationNode struct {
 type StorageNode struct {
 	ID             string `json:"id"`
 	Baseurl        string `json:"url"`
-	AllocationRoot string `json:"allocation_root"`
+	AllocationRoot string `json:"-"`
+	LatestWM       *marker.WriteMarker
 
 	skip uint64 `json:"-"` // skip on error
 }

@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/0chain/common/core/util/wmpt"
 	"github.com/0chain/errors"
 	"github.com/remeh/sizedwaitgroup"
 
@@ -47,6 +48,9 @@ type Operationer interface {
 	Verify(allocObj *Allocation) error
 	Completed(allocObj *Allocation)
 	Error(allocObj *Allocation, consensus int, err error)
+	ProcessChangeV2(trie *wmpt.WeightedMerkleTrie, changeIndex uint64) error
+	GetLookupHash(changeIndex uint64) string
+	GetHash(changeIndex uint64, id string) string
 }
 
 type MultiOperation struct {
@@ -190,10 +194,19 @@ func (mo *MultiOperation) Process() error {
 				return
 			}
 			mo.maskMU.Lock()
-			mo.operationMask = mo.operationMask.Or(mask)
-			mo.maskMU.Unlock()
-			changes := op.buildChange(refs, uid)
-			mo.changes[idx] = changes
+			if mo.allocationObj.StorageVersion == StorageV2 {
+				if mo.isRepair {
+					mo.operationMask = mo.operationMask.Or(mask)
+				} else {
+					mo.operationMask = mo.operationMask.And(mask)
+				}
+				mo.maskMU.Unlock()
+			} else {
+				mo.operationMask = mo.operationMask.Or(mask)
+				mo.maskMU.Unlock()
+				changes := op.buildChange(refs, uid)
+				mo.changes[idx] = changes
+			}
 		}(op, idx)
 	}
 	swg.Wait()
@@ -219,7 +232,9 @@ func (mo *MultiOperation) Process() error {
 	// But we want mo.changes[0] to have allocationChange for blobber 1 and mo.changes[1] to have allocationChange for
 	// blobber 2 and so on.
 	start := time.Now()
-	mo.changes = zboxutil.Transpose(mo.changes)
+	if mo.allocationObj.StorageVersion != StorageV2 {
+		mo.changes = zboxutil.Transpose(mo.changes)
+	}
 
 	writeMarkerMutex, err := CreateWriteMarkerMutex(client.GetClient(), mo.allocationObj)
 	if err != nil {
@@ -353,4 +368,75 @@ func (mo *MultiOperation) Process() error {
 
 	return nil
 
+}
+
+func (mo *MultiOperation) commitV2() error {
+
+	rootMap := make(map[string]zboxutil.Uint128)
+	var pos uint64
+	for i := mo.operationMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		pos = uint64(i.TrailingZeros())
+		rootMap[mo.allocationObj.Blobbers[pos].AllocationRoot] = rootMap[mo.allocationObj.Blobbers[pos].AllocationRoot].Or(zboxutil.NewUint128(1).Lsh(pos))
+	}
+	commitReqs := make([]*CommitRequestV2, len(rootMap))
+	counter := 0
+	timestamp := int64(common.Now())
+	wg := &sync.WaitGroup{}
+	for _, mask := range rootMap {
+		wg.Add(1)
+		changes := make([]allocationchange.AllocationChangeV2, 0, len(mo.operations))
+		for _, op := range mo.operations {
+			changes = append(changes, op)
+		}
+		commitReq := &CommitRequestV2{
+			allocationObj:   mo.allocationObj,
+			connectionID:    mo.connectionID,
+			sig:             mo.allocationObj.sig,
+			wg:              wg,
+			timestamp:       timestamp,
+			commitMask:      mask,
+			consensusThresh: mo.consensusThresh,
+			changes:         changes,
+		}
+		commitReqs[counter] = commitReq
+		counter++
+		go AddCommitRequest(commitReq)
+	}
+	wg.Wait()
+	rollbackMask := zboxutil.NewUint128(0)
+	errSlice := make([]error, len(commitReqs))
+	for idx, commitReq := range commitReqs {
+		if commitReq.result != nil {
+			if commitReq.result.Success {
+				mo.consensus += commitReq.commitMask.CountOnes()
+			} else {
+				errSlice[idx] = errors.New("commit_failed", commitReq.result.ErrorMessage)
+				l.Logger.Error("Commit failed", commitReq.result.ErrorMessage)
+			}
+			if !mo.isRepair {
+				rollbackMask = rollbackMask.Or(commitReq.commitMask)
+			}
+		} else {
+			l.Logger.Debug("Commit result not set")
+		}
+	}
+	if !mo.isConsensusOk() {
+		err := zboxutil.MajorError(errSlice)
+		if err != nil {
+			err = errors.New("consensus_not_met", fmt.Sprintf("Successfully committed to %d blobbers, but required %d", mo.consensus, len(mo.allocationObj.Blobbers)))
+		}
+		if mo.getConsensus() != 0 {
+			l.Logger.Info("Rolling back changes on minority blobbers")
+			mo.allocationObj.RollbackWithMask(rollbackMask)
+		}
+		for _, op := range mo.operations {
+			op.Error(mo.allocationObj, mo.getConsensus(), err)
+		}
+		return err
+	} else {
+		for _, op := range mo.operations {
+			op.Completed(mo.allocationObj)
+		}
+	}
+	return nil
 }

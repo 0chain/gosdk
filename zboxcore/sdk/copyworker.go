@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/0chain/common/core/util/wmpt"
 	"github.com/0chain/errors"
 	"github.com/google/uuid"
 
@@ -407,4 +408,16 @@ func NewCopyOperation(remotePath string, destPath string, copyMask zboxutil.Uint
 	co.ctx, co.ctxCncl = context.WithCancel(ctx)
 	return co
 
+}
+
+func (co *CopyOperation) ProcessChangeV2(trie *wmpt.WeightedMerkleTrie, changeIndex uint64) error {
+	return nil
+}
+
+func (co *CopyOperation) GetLookupHash(changeIndex uint64) string {
+	return ""
+}
+
+func (co *CopyOperation) GetHash(changeIndex uint64, id string) string {
+	return ""
 }

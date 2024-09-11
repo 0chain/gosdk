@@ -288,6 +288,7 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
 				}
 				if wr.LatestWM != nil {
 					blobber.AllocationRoot = wr.LatestWM.AllocationRoot
+					blobber.LatestWM = wr.LatestWM
 				}
 			}
 			blobberRes[ind] = blobStatus

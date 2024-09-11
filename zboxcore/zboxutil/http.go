@@ -73,6 +73,7 @@ const (
 	MOVE_ENDPOINT                = "/v1/file/move/"
 	LIST_ENDPOINT                = "/v1/file/list/"
 	REFERENCE_ENDPOINT           = "/v1/file/referencepath/"
+	REFERENCE_ENDPOINT_V2        = "/v2/file/referencepath/"
 	CONNECTION_ENDPOINT          = "/v1/connection/details/"
 	COMMIT_ENDPOINT              = "/v1/connection/commit/"
 	DOWNLOAD_ENDPOINT            = "/v1/file/download/"
@@ -266,6 +267,34 @@ func NewReferencePathRequest(baseUrl, allocationID string, allocationTx string, 
 	params := url.Values{}
 	params.Add("paths", string(pathBytes))
 	//url := fmt.Sprintf("%s%s%s?path=%s", baseUrl, LIST_ENDPOINT, allocation, path)
+	nurl.RawQuery = params.Encode() // Escape Query Parameters
+
+	req, err := http.NewRequest(http.MethodGet, nurl.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := setClientInfoWithSign(req, sig, allocationTx, baseUrl); err != nil {
+		return nil, err
+	}
+
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
+
+	return req, nil
+}
+
+func NewReferencePathRequestV2(baseUrl, allocationID string, allocationTx string, sig string, paths []string) (*http.Request, error) {
+	nurl, err := joinUrl(baseUrl, REFERENCE_ENDPOINT_V2, allocationTx)
+	if err != nil {
+		return nil, err
+	}
+
+	pathBytes, err := json.Marshal(paths)
+	if err != nil {
+		return nil, err
+	}
+	params := url.Values{}
+	params.Add("paths", string(pathBytes))
 	nurl.RawQuery = params.Encode() // Escape Query Parameters
 
 	req, err := http.NewRequest(http.MethodGet, nurl.String(), nil)

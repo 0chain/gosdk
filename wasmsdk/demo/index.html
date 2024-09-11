@@ -171,10 +171,10 @@
     }
 
     const getWallet = () => {
-      const clientID = "ab5b8ab19abe574d92238e0a5dc0c2abd53614cd12cab6b09576fab2a0f64a83"
-      const publicKey = "d430b1b33eab43bd09886e6125e246600e36e3f88d658d00bf836aa564251e2364bccbfb18f1cb1b5fa4d96ba602b59bc009e6e0223b6a8ebdafc14822b78d23"
-      const privateKey = "0c2cb85c8c33b3cc35dc12b4754e61ae9488bba857982c382caa461ecac19d19"
-      const mnemonic = "grace fiscal menu squeeze certain drum ostrich lunar ugly remember cousin observe oxygen brisk toward notable shoot cushion develop marble open aspect couch noise"
+      const clientID = "7b830dd6695f1cbb4f9ea9e5d3f7b5c527ec7dfa4e9ac91133ea540f2b5ce818"
+      const publicKey = "363d1d38acccb7772aa1ed66676333fcc3e3fad63522993722aff01153d2100dbd9f0cae95baf18b8dab37c5e51693e2c84866fecf83a9669b5191e92771d1a3"
+      const privateKey = "d3e5868e762f57d330d306b346c68a0cf0b9bef1f0eb9a50f43825e668f84a16"
+      const mnemonic = "when wait pyramid until current tornado proud solar body atom push throw detail loan figure crystal youth relax vanish west side achieve social powder"
       return {
         clientID, publicKey, privateKey, mnemonic
       }
@@ -225,6 +225,7 @@
       'https://0box.' + network, //zboxHost
       'vult', //zboxAppType
       3,
+      false
     ]
 
     const bls = window.bls
@@ -233,9 +234,12 @@
       await wasm.sdk.init(...config)
       await bls.init(bls.BN254)
       const { clientID, privateKey, publicKey, mnemonic } = getWallet()
-      await wasm.setWallet(bls, clientID, privateKey, publicKey, mnemonic)
+      console.log("setWalet")
+      await wasm.setWallet(bls, clientID,publicKey,"", privateKey, publicKey, mnemonic,false)
 
       goWasm = wasm
+    }).catch(e => {
+      console.log(e)
     })
 
     onClick('btnSetWallet', async () => {

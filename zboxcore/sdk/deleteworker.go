@@ -11,6 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/0chain/common/core/util/wmpt"
 	"github.com/0chain/errors"
 	thrown "github.com/0chain/errors"
 	"github.com/google/uuid"
@@ -453,4 +454,16 @@ func NewDeleteOperation(remotePath string, deleteMask zboxutil.Uint128, maskMu *
 	dop.consensus.fullconsensus = fullConsensus
 	dop.ctx, dop.ctxCncl = context.WithCancel(ctx)
 	return dop
+}
+
+func (dop *DeleteOperation) ProcessChangeV2(trie *wmpt.WeightedMerkleTrie, changeIndex uint64) error {
+	return nil
+}
+
+func (dop *DeleteOperation) GetLookupHash(changeIndex uint64) string {
+	return ""
+}
+
+func (dop *DeleteOperation) GetHash(changeIndex uint64, id string) string {
+	return ""
 }

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math"
 	"mime/multipart"
 	"net/http"
 	"strconv"
@@ -15,6 +16,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/0chain/common/core/util/wmpt"
 	"github.com/0chain/errors"
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
@@ -30,6 +32,12 @@ import (
 
 type ReferencePathResult struct {
 	*fileref.ReferencePath
+	LatestWM *marker.WriteMarker `json:"latest_write_marker"`
+	Version  string              `json:"version"`
+}
+
+type ReferencePathResultV2 struct {
+	Path     []byte              `json:"path"`
 	LatestWM *marker.WriteMarker `json:"latest_write_marker"`
 	Version  string              `json:"version"`
 }
@@ -64,19 +72,39 @@ type CommitRequest struct {
 	blobberInd   uint64
 }
 
-var commitChan map[string]chan *CommitRequest
-var initCommitMutex sync.Mutex
+type CommitRequestInterface interface {
+	processCommit()
+	blobberID() string
+}
+
+type CommitRequestV2 struct {
+	changes         []allocationchange.AllocationChangeV2
+	allocationObj   *Allocation
+	connectionID    string
+	sig             string
+	wg              *sync.WaitGroup
+	result          *CommitResult
+	timestamp       int64
+	consensusThresh int
+	commitMask      zboxutil.Uint128
+	changeIndex     uint64
+}
+
+var (
+	commitChan      map[string]chan CommitRequestInterface
+	initCommitMutex sync.Mutex
+)
 
 func InitCommitWorker(blobbers []*blockchain.StorageNode) {
 	initCommitMutex.Lock()
 	defer initCommitMutex.Unlock()
 	if commitChan == nil {
-		commitChan = make(map[string]chan *CommitRequest)
+		commitChan = make(map[string]chan CommitRequestInterface)
 	}
 
 	for _, blobber := range blobbers {
 		if _, ok := commitChan[blobber.ID]; !ok {
-			commitChan[blobber.ID] = make(chan *CommitRequest, 1)
+			commitChan[blobber.ID] = make(chan CommitRequestInterface, 1)
 			blobberChan := commitChan[blobber.ID]
 			go startCommitWorker(blobberChan, blobber.ID)
 		}
@@ -84,7 +112,7 @@ func InitCommitWorker(blobbers []*blockchain.StorageNode) {
 
 }
 
-func startCommitWorker(blobberChan chan *CommitRequest, blobberID string) {
+func startCommitWorker(blobberChan chan CommitRequestInterface, blobberID string) {
 	for {
 		commitreq, open := <-blobberChan
 		if !open {
@@ -95,6 +123,10 @@ func startCommitWorker(blobberChan chan *CommitRequest, blobberID string) {
 	initCommitMutex.Lock()
 	defer initCommitMutex.Unlock()
 	delete(commitChan, blobberID)
+}
+
+func (commitreq *CommitRequest) blobberID() string {
+	return commitreq.blobber.ID
 }
 
 func (commitreq *CommitRequest) processCommit() {
@@ -346,38 +378,177 @@ func (req *CommitRequest) commitBlobber(
 	return thrown.New("commit_error", fmt.Sprintf("Commit failed with response status %d", resp.StatusCode))
 }
 
-func AddCommitRequest(req *CommitRequest) {
-	commitChan[req.blobber.ID] <- req
+func AddCommitRequest(req CommitRequestInterface) {
+	commitChan[req.blobberID()] <- req
 }
 
-func (commitreq *CommitRequest) calculateHashRequest(ctx context.Context, paths []string) error { //nolint
-	var req *http.Request
-	req, err := zboxutil.NewCalculateHashRequest(commitreq.blobber.Baseurl, commitreq.allocationID, commitreq.allocationTx, paths)
-	if err != nil || len(paths) == 0 {
-		l.Logger.Error("Creating calculate hash req", err)
+func (commitReq *CommitRequestV2) blobberID() string {
+	var pos uint64
+	for i := commitReq.commitMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		pos = uint64(i.TrailingZeros())
+		commitReq.changeIndex = pos
+		return commitReq.allocationObj.Blobbers[pos].ID
+	}
+	// we should never reach here
+	return ""
+}
+
+func (commitReq *CommitRequestV2) processCommit() {
+	defer commitReq.wg.Done()
+	l.Logger.Debug("received a commit request")
+	paths := make([]string, 0)
+	changeIndex := commitReq.changeIndex
+	for i := 0; i < len(commitReq.changes); i++ {
+		lookupHash := commitReq.changes[i].GetLookupHash(changeIndex)
+		if lookupHash != "" {
+			paths = append(paths, lookupHash)
+		} else {
+			commitReq.changes[i] = nil
+		}
+	}
+	if len(paths) == 0 {
+		l.Logger.Debug("Nothing to commit")
+		commitReq.result = SuccessCommitResult()
+		return
+	}
+	var (
+		trie *wmpt.WeightedMerkleTrie
+		err  error
+		pos  uint64
+	)
+
+	for i := commitReq.commitMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		pos = uint64(i.TrailingZeros())
+		blobber := commitReq.allocationObj.Blobbers[pos]
+		trie, err = getReferencePathV2(blobber, commitReq.allocationObj.ID, commitReq.allocationObj.Tx, commitReq.sig, paths)
+		if err != nil {
+			commitReq.commitMask = commitReq.commitMask.And(zboxutil.NewUint128(1).Lsh(pos).Not())
+			l.Logger.Error("Error getting reference path: ", err)
+			continue
+		}
+		changeIndex = pos
+		break
+	}
+	if trie == nil {
+		commitReq.result = ErrorCommitResult("Failed to get reference path")
+		return
+	}
+	if commitReq.commitMask.CountOnes() < commitReq.consensusThresh {
+		commitReq.result = ErrorCommitResult("Failed to get reference path")
+		return
+	}
+
+	for _, change := range commitReq.changes {
+		if change == nil {
+			continue
+		}
+		err = change.ProcessChangeV2(trie, changeIndex)
+		if err != nil {
+			commitReq.result = ErrorCommitResult("Failed to process change " + err.Error())
+			return
+		}
+	}
+	rootHash := trie.GetRoot().CalcHash()
+	rootWeight := trie.Weight()
+
+	pos = 0
+	wg := sync.WaitGroup{}
+	errSlice := make([]error, commitReq.commitMask.CountOnes())
+	counter := 0
+	mu := sync.Mutex{}
+	for i := commitReq.commitMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		pos = uint64(i.TrailingZeros())
+		blobber := commitReq.allocationObj.Blobbers[pos]
+		blobberPos := pos
+		wg.Add(1)
+		go func(ind int) {
+			defer wg.Done()
+			err = commitReq.commitBlobber(rootHash, rootWeight, blobberPos, blobber)
+			if err != nil {
+				errSlice[ind] = err
+				mu.Lock()
+				commitReq.commitMask = commitReq.commitMask.And(zboxutil.NewUint128(1).Lsh(pos).Not())
+				mu.Unlock()
+				return
+			}
+		}(counter)
+		counter++
+	}
+	wg.Wait()
+	if commitReq.commitMask.CountOnes() < commitReq.consensusThresh {
+		err = zboxutil.MajorError(errSlice)
+		if err == nil {
+			err = errors.New("consensus_not_met", fmt.Sprintf("Successfully committed to %d blobbers, but required %d", commitReq.commitMask.CountOnes(), commitReq.consensusThresh))
+		}
+		commitReq.result = ErrorCommitResult(err.Error())
+		return
+	}
+	commitReq.allocationObj.allocationRoot = hex.EncodeToString(rootHash)
+	commitReq.result = SuccessCommitResult()
+}
+
+func (req *CommitRequestV2) commitBlobber(rootHash []byte, rootWeight, changeIndex uint64, blobber *blockchain.StorageNode) (err error) {
+	hashSignatureMap := make(map[string]string)
+	for _, change := range req.changes {
+		if change == nil {
+			continue
+		}
+		hash := change.GetHash(changeIndex, blobber.ID)
+		if hash == "" {
+			return errors.New("hash_signature_failed", "Failed to add hash signature")
+		}
+		sig, err := client.Sign(hash)
+		if err != nil {
+			return err
+		}
+		hashSignatureMap[change.GetLookupHash(changeIndex)] = sig
+	}
+	hasher := sha256.New()
+	var prevChainSize int64
+	if blobber.LatestWM != nil {
+		prevChainHash, err := hex.DecodeString(blobber.LatestWM.ChainHash)
+		if err != nil {
+			return err
+		}
+		hasher.Write(prevChainHash) //nolint:errcheck
+		prevChainSize = numBlocks(blobber.LatestWM.ChainSize)
+	}
+	hasher.Write(rootHash) //nolint:errcheck
+	chainHash := hex.EncodeToString(hasher.Sum(nil))
+	allocationRoot := hex.EncodeToString(rootHash)
+	wm := &marker.WriteMarker{}
+	wm.AllocationRoot = allocationRoot
+	wm.Size = (int64(rootWeight) - prevChainSize) * CHUNK_SIZE
+	wm.ChainHash = chainHash
+	wm.ChainSize = int64(rootWeight) * CHUNK_SIZE
+	if blobber.LatestWM != nil {
+		wm.PreviousAllocationRoot = blobber.LatestWM.AllocationRoot
+	}
+	wm.BlobberID = blobber.ID
+	wm.Timestamp = req.timestamp
+	wm.AllocationID = req.allocationObj.ID
+	wm.FileMetaRoot = allocationRoot
+	wm.ClientID = client.GetClientID()
+	err = wm.Sign()
+	if err != nil {
 		return err
 	}
-	ctx, cncl := context.WithTimeout(ctx, (time.Second * 30))
-	err = zboxutil.HttpDo(ctx, cncl, req, func(resp *http.Response, err error) error {
-		if err != nil {
-			l.Logger.Error("Calculate hash error:", err)
-			return err
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusOK {
-			l.Logger.Error("Calculate hash response : ", resp.StatusCode)
-		}
-		resp_body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			l.Logger.Error("Calculate hash: Resp", err)
-			return err
-		}
-		if resp.StatusCode != http.StatusOK {
-			return errors.New(strconv.Itoa(resp.StatusCode), fmt.Sprintf("Calculate hash error response: Body: %s ", string(resp_body)))
-		}
-		return nil
-	})
-	return err
+	wmData, err := json.Marshal(wm)
+	if err != nil {
+		return err
+	}
+	hashSignatureData, err := json.Marshal(hashSignatureMap)
+	if err != nil {
+		return err
+	}
+
+	err = submitWriteMarker(wmData, hashSignatureData, blobber, req.connectionID, req.allocationObj.ID, req.allocationObj.Tx)
+	if err != nil {
+		return err
+	}
+	blobber.LatestWM = wm
+	blobber.AllocationRoot = allocationRoot
+	return
 }
 
 func getFormWritter(connectionID string, wmData, fileIDMetaData []byte, body *bytes.Buffer) (*multipart.Writer, error) {
@@ -398,4 +569,154 @@ func getFormWritter(connectionID string, wmData, fileIDMetaData []byte, body *by
 	}
 	formWriter.Close()
 	return formWriter, nil
+}
+
+func getReferencePathV2(blobber *blockchain.StorageNode, allocationID, allocationTx, sig string, paths []string) (*wmpt.WeightedMerkleTrie, error) {
+	req, err := zboxutil.NewReferencePathRequestV2(blobber.Baseurl, allocationID, allocationTx, sig, paths)
+	if err != nil {
+		l.Logger.Error("Creating ref path req", err)
+		return nil, err
+	}
+	var lR ReferencePathResultV2
+	ctx, cncl := context.WithTimeout(context.Background(), (time.Second * 30))
+	err = zboxutil.HttpDo(ctx, cncl, req, func(resp *http.Response, err error) error {
+		if err != nil {
+			l.Logger.Error("Ref path error:", err)
+			return err
+		}
+		defer resp.Body.Close()
+		respBody, err := io.ReadAll(resp.Body)
+		if err != nil {
+			l.Logger.Error("Ref path: Resp", err)
+			return err
+		}
+		if resp.StatusCode != http.StatusOK {
+			return errors.New(
+				strconv.Itoa(resp.StatusCode),
+				fmt.Sprintf("Reference path error response: Status: %d - %s ",
+					resp.StatusCode, string(respBody)))
+		}
+		err = json.Unmarshal(respBody, &lR)
+		if err != nil {
+			l.Logger.Error("Reference path json decode error: ", err)
+			return err
+		}
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	trie := wmpt.New(nil, nil)
+	if lR.LatestWM != nil {
+		err = lR.LatestWM.VerifySignature(client.GetClientPublicKey())
+		if err != nil {
+			return nil, errors.New("signature_verification_failed", err.Error())
+		}
+		err = trie.Deserialize(lR.Path)
+		if err != nil {
+			return nil, err
+		}
+		chainBlocks := numBlocks(lR.LatestWM.ChainSize)
+		if trie.Weight() != uint64(chainBlocks) {
+			return nil, errors.New("chain_length_mismatch", fmt.Sprintf("Expected chain length %d, got %d", chainBlocks, trie.Weight()))
+		}
+		if hex.EncodeToString(trie.Root()) != lR.LatestWM.AllocationRoot {
+			return nil, errors.New("allocation_root_mismatch", fmt.Sprintf("Expected allocation root %s, got %s", lR.LatestWM.AllocationRoot, hex.EncodeToString(trie.Root())))
+		}
+	}
+
+	return trie, nil
+}
+
+func submitWriteMarker(wmData, metaData []byte, blobber *blockchain.StorageNode, connectionID, allocationID, allocationTx string) (err error) {
+	var (
+		resp           *http.Response
+		shouldContinue bool
+	)
+	for retries := 0; retries < 6; retries++ {
+		err, shouldContinue = func() (err error, shouldContinue bool) {
+			body := new(bytes.Buffer)
+			formWriter, err := getFormWritter(connectionID, wmData, metaData, body)
+			if err != nil {
+				l.Logger.Error("Creating form writer failed: ", err)
+				return
+			}
+			httpreq, err := zboxutil.NewCommitRequest(blobber.Baseurl, allocationID, allocationTx, body)
+			if err != nil {
+				l.Logger.Error("Error creating commit req: ", err)
+				return
+			}
+			httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
+			reqCtx, ctxCncl := context.WithTimeout(context.Background(), time.Second*60)
+			resp, err = zboxutil.Client.Do(httpreq.WithContext(reqCtx))
+			defer ctxCncl()
+
+			if err != nil {
+				logger.Logger.Error("Commit: ", err)
+				return
+			}
+
+			if resp.Body != nil {
+				defer resp.Body.Close()
+			}
+
+			var respBody []byte
+			respBody, err = io.ReadAll(resp.Body)
+			if err != nil {
+				logger.Logger.Error("Response read: ", err)
+				return
+			}
+			if resp.StatusCode == http.StatusOK {
+				logger.Logger.Debug(blobber.Baseurl, " committed")
+				return
+			}
+
+			if resp.StatusCode == http.StatusTooManyRequests {
+				logger.Logger.Debug(blobber.Baseurl,
+					" got too many request error. Retrying")
+
+				var r int
+				r, err = zboxutil.GetRateLimitValue(resp)
+				if err != nil {
+					logger.Logger.Error(err)
+					return
+				}
+
+				time.Sleep(time.Duration(r) * time.Second)
+				shouldContinue = true
+				return
+			}
+
+			if strings.Contains(string(respBody), "pending_markers:") {
+				logger.Logger.Debug("Commit pending for blobber ",
+					blobber.Baseurl, " Retrying")
+				time.Sleep(5 * time.Second)
+				shouldContinue = true
+				return
+			}
+
+			if strings.Contains(string(respBody), "chain_length_exceeded") {
+				l.Logger.Error("Chain length exceeded for blobber ",
+					blobber.Baseurl, " Retrying")
+				time.Sleep(5 * time.Second)
+				shouldContinue = true
+				return
+			}
+
+			err = thrown.New("commit_error",
+				fmt.Sprintf("Got error response %s with status %d", respBody, resp.StatusCode))
+			return
+		}()
+		if shouldContinue {
+			continue
+		}
+		return
+	}
+	return thrown.New("commit_error", fmt.Sprintf("Commit failed with response status %d", resp.StatusCode))
+}
+
+func numBlocks(size int64) int64 {
+	return int64(math.Ceil(float64(size*1.0) / CHUNK_SIZE))
 }

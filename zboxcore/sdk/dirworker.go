@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/0chain/common/core/util/wmpt"
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/util"
@@ -370,4 +371,16 @@ func NewDirOperation(remotePath, customMeta string, dirMask zboxutil.Uint128, ma
 	dirOp.ctx, dirOp.ctxCncl = context.WithCancel(ctx)
 	dirOp.alreadyExists = make(map[uint64]bool)
 	return dirOp
+}
+
+func (dirOp *DirOperation) ProcessChangeV2(trie *wmpt.WeightedMerkleTrie, changeIndex uint64) error {
+	return nil
+}
+
+func (dirOp *DirOperation) GetLookupHash(changeIndex uint64) string {
+	return ""
+}
+
+func (dirOp *DirOperation) GetHash(changeIndex uint64, id string) string {
+	return ""
 }

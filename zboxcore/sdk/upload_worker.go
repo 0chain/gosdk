@@ -3,10 +3,12 @@ package sdk
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"errors"
 	"io"
 	"strings"
 
+	"github.com/0chain/common/core/util/wmpt"
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
@@ -23,6 +25,7 @@ type UploadOperation struct {
 	chunkedUpload *ChunkedUpload
 	isUpdate      bool
 	isDownload    bool
+	lookupHash    string
 }
 
 var ErrPauseUpload = errors.New("upload paused by user")
@@ -59,6 +62,7 @@ func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([
 			fileref.DeleteFileRef(cacheKey)
 		}
 	}
+	uo.lookupHash = fileref.GetReferenceLookup(uo.chunkedUpload.allocationObj.ID, uo.chunkedUpload.fileMeta.RemotePath)
 	l.Logger.Info("UploadOperation Success", zap.String("name", uo.chunkedUpload.fileMeta.RemoteName))
 	return nil, uo.chunkedUpload.uploadMask, nil
 }
@@ -140,4 +144,35 @@ func NewUploadOperation(ctx context.Context, workdir string, allocObj *Allocatio
 	uo.isUpdate = isUpdate
 	uo.isDownload = isMemoryDownload
 	return uo, cu.progress.ConnectionID, nil
+}
+
+func (uo *UploadOperation) ProcessChangeV2(trie *wmpt.WeightedMerkleTrie, changeIndex uint64) error {
+	if uo.refs[changeIndex] == nil {
+		return nil
+	}
+	ref := uo.refs[changeIndex]
+	ref.NumBlocks = int64(numBlocks(ref.Size))
+	decodedKey, _ := hex.DecodeString(uo.lookupHash)
+	fileMetaRawHash := ref.GetFileMetaHashV2()
+	err := trie.Update(decodedKey, fileMetaRawHash, uint64(ref.NumBlocks))
+	if err != nil {
+		l.Logger.Error("Error updating trie", zap.Error(err))
+		return err
+	}
+	return nil
+}
+
+func (uo *UploadOperation) GetLookupHash(changeIndex uint64) string {
+	if uo.refs[changeIndex] == nil {
+		return ""
+	}
+	return uo.lookupHash
+}
+
+func (uo *UploadOperation) GetHash(changeIndex uint64, id string) string {
+	if uo.refs[changeIndex] == nil {
+		return ""
+	}
+	ref := uo.refs[changeIndex]
+	return ref.GetFileHashDataV2(id)
 }

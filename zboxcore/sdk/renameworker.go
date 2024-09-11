@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/0chain/common/core/util/wmpt"
 	"github.com/0chain/errors"
 	"github.com/google/uuid"
 
@@ -410,4 +411,16 @@ func NewRenameOperation(remotePath string, destName string, renameMask zboxutil.
 	ro.ctx, ro.ctxCncl = context.WithCancel(ctx)
 	return ro
 
+}
+
+func (ro *RenameOperation) ProcessChangeV2(trie *wmpt.WeightedMerkleTrie, changeIndex uint64) error {
+	return nil
+}
+
+func (ro *RenameOperation) GetLookupHash(changeIndex uint64) string {
+	return ""
+}
+
+func (ro *RenameOperation) GetHash(changeIndex uint64, id string) string {
+	return ""
 }

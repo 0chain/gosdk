@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/0chain/common/core/util/wmpt"
 	"github.com/0chain/errors"
 	thrown "github.com/0chain/errors"
 	"github.com/google/uuid"
@@ -397,4 +398,16 @@ func NewMoveOperation(remotePath string, destPath string, moveMask zboxutil.Uint
 	mo.consensus.fullconsensus = fullConsensus
 	mo.ctx, mo.ctxCncl = context.WithCancel(ctx)
 	return mo
+}
+
+func (mo *MoveOperation) ProcessChangeV2(trie *wmpt.WeightedMerkleTrie, changeIndex uint64) error {
+	return nil
+}
+
+func (mo *MoveOperation) GetLookupHash(changeIndex uint64) string {
+	return ""
+}
+
+func (mo *MoveOperation) GetHash(changeIndex uint64, id string) string {
+	return ""
 }
