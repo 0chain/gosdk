@@ -650,7 +650,7 @@ func (req *DeleteRequest) deleteSubDirectories() error {
 	return nil
 }
 func (dop *DeleteOperation) ProcessChangeV2(trie *wmpt.WeightedMerkleTrie, changeIndex uint64) error {
-	if dop.refs[changeIndex] == nil {
+	if dop.refs[changeIndex] == nil || dop.refs[changeIndex].GetType() == fileref.DIRECTORY {
 		return nil
 	}
 	decodedKey, _ := hex.DecodeString(dop.lookupHash)
@@ -663,7 +663,7 @@ func (dop *DeleteOperation) ProcessChangeV2(trie *wmpt.WeightedMerkleTrie, chang
 }
 
 func (dop *DeleteOperation) GetLookupHash(changeIndex uint64) string {
-	if dop.refs[changeIndex] == nil {
+	if dop.refs[changeIndex] == nil || dop.refs[changeIndex].GetType() == fileref.DIRECTORY {
 		return ""
 	}
 	return dop.lookupHash
