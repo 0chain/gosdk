@@ -1090,9 +1090,9 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 
 			case constants.FileOperationDelete:
 				if op.Mask != nil {
-					operation = NewDeleteOperation(op.RemotePath, *op.Mask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
+					operation = NewDeleteOperation(mo.ctx, op.RemotePath, *op.Mask, mo.maskMU, mo.consensusThresh, mo.fullconsensus)
 				} else {
-					operation = NewDeleteOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
+					operation = NewDeleteOperation(mo.ctx, op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus)
 				}
 
 			case constants.FileOperationUpdate:
@@ -1568,7 +1568,7 @@ func (a *Allocation) ListDirFromAuthTicket(authTicket string, lookupHash string,
 		return nil, errors.New("invalid_path", "Invalid path for the list")
 	}
 
-	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
+	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}, storageVersion: a.StorageVersion}
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.sig = a.sig
@@ -1608,7 +1608,7 @@ func (a *Allocation) ListDir(path string, opts ...ListRequestOptions) (*ListResu
 	if !isabs {
 		return nil, errors.New("invalid_path", "Path should be valid and absolute")
 	}
-	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
+	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}, storageVersion: a.StorageVersion}
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.sig = a.sig
@@ -1631,7 +1631,7 @@ func (a *Allocation) ListDir(path string, opts ...ListRequestOptions) (*ListResu
 	return nil, errors.New("list_request_failed", "Failed to get list response from the blobbers")
 }
 
-func (a *Allocation) getRefs(path, pathHash, authToken, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*ObjectTreeResult, error) {
+func (a *Allocation) getRefs(path, pathHash, authToken, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int, opts ...ObjectTreeRequestOption) (*ObjectTreeResult, error) {
 	if !a.isInitialized() {
 		return nil, notInitialized
 	}
@@ -1652,9 +1652,13 @@ func (a *Allocation) getRefs(path, pathHash, authToken, offsetPath, updatedDate,
 		fileType:       fileType,
 		refType:        refType,
 		ctx:            a.ctx,
+		reqMask:        zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1),
 	}
 	oTreeReq.fullconsensus = a.fullconsensus
 	oTreeReq.consensusThresh = a.DataShards
+	for _, opt := range opts {
+		opt(oTreeReq)
+	}
 	return oTreeReq.GetRefs()
 }
 
@@ -1774,12 +1778,12 @@ func (a *Allocation) GetRefsWithAuthTicket(authToken, offsetPath, updatedDate, o
 //   - refType: the ref type to get the refs, e.g., file or directory.
 //   - level: the level of the refs to get relative to the path root (strating from 0 as the root path).
 //   - pageLimit: the limit of the refs to get per page.
-func (a *Allocation) GetRefs(path, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*ObjectTreeResult, error) {
+func (a *Allocation) GetRefs(path, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int, opts ...ObjectTreeRequestOption) (*ObjectTreeResult, error) {
 	if len(path) == 0 || !zboxutil.IsRemoteAbs(path) {
 		return nil, errors.New("invalid_path", fmt.Sprintf("Absolute path required. Path provided: %v", path))
 	}
 
-	return a.getRefs(path, "", "", offsetPath, updatedDate, offsetDate, fileType, refType, level, pageLimit)
+	return a.getRefs(path, "", "", offsetPath, updatedDate, offsetDate, fileType, refType, level, pageLimit, opts...)
 }
 
 func (a *Allocation) ListObjects(ctx context.Context, path, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) <-chan ORef {
@@ -1885,7 +1889,7 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 	}
 
 	result := &ConsolidatedFileMeta{}
-	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
+	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}, storageVersion: a.StorageVersion}
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.sig = a.sig
@@ -1925,7 +1929,7 @@ func (a *Allocation) GetFileMetaByName(fileName string) ([]*ConsolidatedFileMeta
 	}
 
 	resultArr := []*ConsolidatedFileMetaByName{}
-	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
+	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}, storageVersion: a.StorageVersion}
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.blobbers = a.Blobbers
@@ -2004,7 +2008,7 @@ func (a *Allocation) GetFileMetaFromAuthTicket(authTicket string, lookupHash str
 		return nil, errors.New("invalid_path", "Invalid path for the list")
 	}
 
-	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
+	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}, storageVersion: a.StorageVersion}
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.sig = a.sig
@@ -2050,7 +2054,7 @@ func (a *Allocation) GetFileStats(path string) (map[string]*FileStats, error) {
 	if !isabs {
 		return nil, errors.New("invalid_path", "Path should be valid and absolute")
 	}
-	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
+	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}, storageVersion: a.StorageVersion}
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.sig = a.sig

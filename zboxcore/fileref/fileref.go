@@ -62,6 +62,7 @@ func (fRef *FileRef) MetaID() string {
 }
 
 type RefEntity interface {
+	GetAllocationRoot() string
 	GetNumBlocks() int64
 	GetSize() int64
 	GetFileMetaHash() string
@@ -95,9 +96,11 @@ type Ref struct {
 	ThumbnailSize       int64  `json:"thumbnail_size" mapstructure:"thumbnail_size"`
 	ActualThumbnailHash string `json:"actual_thumbnail_hash" mapstructure:"actual_thumbnail_hash"`
 	ActualThumbnailSize int64  `json:"actual_thumbnail_size" mapstructure:"actual_thumbnail_size"`
+	IsEmpty             bool   `json:"is_empty" mapstructure:"is_empty"`
 	HashToBeComputed    bool
 	ChildrenLoaded      bool
 	Children            []RefEntity      `json:"-" mapstructure:"-"`
+	AllocationRoot      string           `json:"allocation_root" mapstructure:"allocation_root"`
 	CreatedAt           common.Timestamp `json:"created_at" mapstructure:"created_at"`
 	UpdatedAt           common.Timestamp `json:"updated_at" mapstructure:"updated_at"`
 }
@@ -168,6 +171,10 @@ func (r *Ref) GetHash() string {
 
 func (r *Ref) GetHashData() string {
 	return fmt.Sprintf("%s:%s:%s", r.AllocationID, r.Path, r.FileID)
+}
+
+func (r *Ref) GetAllocationRoot() string {
+	return r.AllocationRoot
 }
 
 func (r *Ref) GetType() string {

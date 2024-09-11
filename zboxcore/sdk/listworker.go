@@ -36,6 +36,7 @@ type ListRequest struct {
 	listOnly           bool
 	offset             int
 	pageLimit          int
+	storageVersion     int
 	Consensus
 }
 
@@ -154,6 +155,7 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 			if err != nil {
 				return errors.Wrap(err, "error getting the dir tree from list response:")
 			}
+			ref.AllocationRoot = listResult.AllocationRoot
 			return nil
 		}
 
@@ -182,6 +184,9 @@ func (req *ListRequest) getlistFromBlobbers() ([]*listResponse, error) {
 				continue
 			}
 			hash := listInfos[i].ref.FileMetaHash
+			if req.storageVersion == 1 {
+				hash = listInfos[i].ref.AllocationRoot
+			}
 			consensusMap[hash] = append(consensusMap[hash], req.blobbers[listInfos[i].blobberIdx])
 			if len(consensusMap[hash]) >= req.consensusThresh {
 				consensusHash = hash

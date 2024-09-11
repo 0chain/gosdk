@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math"
+	"math/rand"
 	"net/http"
 	"sync"
 	"time"
@@ -14,6 +15,7 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
+	"github.com/0chain/gosdk/zboxcore/logger"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
@@ -44,7 +46,9 @@ type ObjectTreeRequest struct {
 	offsetPath     string
 	updatedDate    string // must have "2006-01-02T15:04:05.99999Z07:00" format
 	offsetDate     string // must have "2006-01-02T15:04:05.99999Z07:00" format
+	reqMask        zboxutil.Uint128
 	ctx            context.Context
+	singleBlobber  bool
 	Consensus
 }
 
@@ -55,23 +59,87 @@ type oTreeResponse struct {
 	idx      int
 }
 
+var errTooManyRequests = errors.New("too_many_requests", "Too many requests")
+
+type ObjectTreeRequestOption func(*ObjectTreeRequest)
+
+func WithObjectContext(ctx context.Context) ObjectTreeRequestOption {
+	return func(o *ObjectTreeRequest) {
+		o.ctx = ctx
+	}
+}
+
+func WithObjectMask(mask zboxutil.Uint128) ObjectTreeRequestOption {
+	return func(o *ObjectTreeRequest) {
+		o.reqMask = mask
+	}
+}
+
+func WithObjectConsensusThresh(thresh int) ObjectTreeRequestOption {
+	return func(o *ObjectTreeRequest) {
+		o.consensusThresh = thresh
+	}
+}
+
+func WithSingleBlobber(singleBlobber bool) ObjectTreeRequestOption {
+	return func(o *ObjectTreeRequest) {
+		o.singleBlobber = singleBlobber
+	}
+}
+
 // Paginated tree should not be collected as this will stall the client
 // It should rather be handled by application that uses gosdk
 func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
-	totalBlobbersCount := len(o.blobbers)
-	oTreeResponses := make([]oTreeResponse, totalBlobbersCount)
-	respChan := make(chan *oTreeResponse, totalBlobbersCount)
-	for i, blob := range o.blobbers {
+	activeCount := o.reqMask.CountOnes()
+	oTreeResponses := make([]oTreeResponse, activeCount)
+	respChan := make(chan *oTreeResponse, activeCount)
+	if o.singleBlobber {
+		var respErr error
+		for i := 0; i < activeCount; i++ {
+			var rnd = rand.New(rand.NewSource(time.Now().UnixNano()))
+			num := rnd.Intn(activeCount)
+			var blob *blockchain.StorageNode
+			var pos uint64
+			for i := o.reqMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+				pos = uint64(i.TrailingZeros())
+				num--
+				if num < 0 {
+					blob = o.blobbers[pos]
+					break
+				}
+			}
+			l.Logger.Debug(fmt.Sprintf("Getting file refs for path %v from blobber %v", o.remotefilepath, blob.Baseurl))
+			idx := num
+			baseURL := blob.Baseurl
+			go o.getFileRefs(baseURL, respChan, idx)
+			select {
+			case <-o.ctx.Done():
+				return nil, o.ctx.Err()
+			case oTreeResponse := <-respChan:
+				if oTreeResponse.err != nil {
+					respErr = oTreeResponse.err
+				} else {
+					return oTreeResponse.oTResult, nil
+				}
+			}
+		}
+		return nil, respErr
+	}
+	var pos uint64
+	for i := o.reqMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		pos = uint64(i.TrailingZeros())
+		blob := o.blobbers[pos]
 		l.Logger.Debug(fmt.Sprintf("Getting file refs for path %v from blobber %v", o.remotefilepath, blob.Baseurl))
-		idx := i
+		idx := int(pos)
 		baseURL := blob.Baseurl
 		go o.getFileRefs(baseURL, respChan, idx)
 	}
+
 	hashCount := make(map[string]int)
 	hashRefsMap := make(map[string]*ObjectTreeResult)
-	oTreeResponseErrors := make([]error, totalBlobbersCount)
+	oTreeResponseErrors := make([]error, activeCount)
 	var successCount int
-	for i := 0; i < totalBlobbersCount; i++ {
+	for i := 0; i < activeCount; i++ {
 		select {
 		case <-o.ctx.Done():
 			return nil, o.ctx.Err()
@@ -83,6 +151,7 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 				}
 				continue
 			}
+			oTreeResponses[oTreeResponse.idx] = *oTreeResponse
 			successCount++
 			hash := oTreeResponse.hash
 			if _, ok := hashCount[hash]; ok {
@@ -96,6 +165,7 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 			}
 		}
 	}
+
 	var selected *ObjectTreeResult
 	if successCount < o.consensusThresh {
 		majorError := zboxutil.MajorError(oTreeResponseErrors)
@@ -114,7 +184,7 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 	selected = &ObjectTreeResult{}
 	minPage := int64(math.MaxInt64)
 	for _, oTreeResponse := range oTreeResponses {
-		if oTreeResponse.err != nil {
+		if oTreeResponse.err != nil || oTreeResponse.oTResult == nil {
 			continue
 		}
 		if oTreeResponse.oTResult.TotalPages < minPage {
@@ -132,6 +202,14 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 		}
 	}
 	if len(selected.Refs) > 0 {
+		for _, oTreeResponse := range oTreeResponses {
+			if oTreeResponse.err != nil || oTreeResponse.oTResult == nil {
+				continue
+			}
+			if len(selected.Refs) != len(oTreeResponse.oTResult.Refs) {
+				l.Logger.Error("Consensus failed for refs: ", o.blobbers[oTreeResponse.idx].Baseurl)
+			}
+		}
 		selected.OffsetPath = selected.Refs[len(selected.Refs)-1].Path
 		return selected, nil
 	}
@@ -145,53 +223,73 @@ func (o *ObjectTreeRequest) getFileRefs(bUrl string, respChan chan *oTreeRespons
 	defer func() {
 		respChan <- oTR
 	}()
-	oReq, err := zboxutil.NewRefsRequest(
-		bUrl,
-		o.allocationID,
-		o.sig,
-		o.allocationTx,
-		o.remotefilepath,
-		o.pathHash,
-		o.authToken,
-		o.offsetPath,
-		o.updatedDate,
-		o.offsetDate,
-		o.fileType,
-		o.refType,
-		o.level,
-		o.pageLimit,
-	)
-	if err != nil {
-		oTR.err = err
-		return
-	}
+
 	oResult := ObjectTreeResult{}
-	ctx, cncl := context.WithTimeout(o.ctx, 2*time.Minute)
-	err = zboxutil.HttpDo(ctx, cncl, oReq, func(resp *http.Response, err error) error {
+	for i := 0; i < 3; i++ {
+		oReq, err := zboxutil.NewRefsRequest(
+			bUrl,
+			o.allocationID,
+			o.sig,
+			o.allocationTx,
+			o.remotefilepath,
+			o.pathHash,
+			o.authToken,
+			o.offsetPath,
+			o.updatedDate,
+			o.offsetDate,
+			o.fileType,
+			o.refType,
+			o.level,
+			o.pageLimit,
+		)
 		if err != nil {
-			l.Logger.Error(err)
-			return err
+			oTR.err = err
+			return
 		}
-		defer resp.Body.Close()
-		respBody, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			l.Logger.Error(err)
-			return err
-		}
-		if resp.StatusCode == http.StatusOK {
-			err := json.Unmarshal(respBody, &oResult)
+		ctx, cncl := context.WithTimeout(o.ctx, 2*time.Minute)
+		defer cncl()
+		err = zboxutil.HttpDo(ctx, cncl, oReq, func(resp *http.Response, err error) error {
 			if err != nil {
 				l.Logger.Error(err)
 				return err
 			}
-			return nil
-		} else {
-			return errors.New("response_error", fmt.Sprintf("got status %d, err: %s", resp.StatusCode, respBody))
+			defer resp.Body.Close()
+			respBody, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				l.Logger.Error(err)
+				return err
+			}
+			if resp.StatusCode == http.StatusOK {
+				err := json.Unmarshal(respBody, &oResult)
+				if err != nil {
+					l.Logger.Error(err)
+					return err
+				}
+				return nil
+			} else {
+				if resp.StatusCode == http.StatusTooManyRequests {
+					l.Logger.Error("Too many requests")
+					r, err := zboxutil.GetRateLimitValue(resp)
+					if err != nil {
+						logger.Logger.Error(err)
+						return err
+					}
+
+					time.Sleep(time.Duration(r) * time.Second)
+					return errTooManyRequests
+				}
+
+				return errors.New("response_error", fmt.Sprintf("got status %d, err: %s", resp.StatusCode, respBody))
+			}
+		})
+		if err != nil {
+			if err == errTooManyRequests && i < 2 {
+				continue
+			}
+			oTR.err = err
+			return
 		}
-	})
-	if err != nil {
-		oTR.err = err
-		return
+		break
 	}
 	oTR.oTResult = &oResult
 	similarFieldRefs := make([]byte, 0, 32*len(oResult.Refs))
