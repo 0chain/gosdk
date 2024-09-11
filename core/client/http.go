@@ -1,19 +1,21 @@
 package client
 
 import (
+	"crypto/sha1"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"github.com/0chain/errors"
-	"github.com/0chain/gosdk/core/conf"
-	"github.com/0chain/gosdk/core/logger"
+	"github.com/0chain/gosdk/core/util"
+	"github.com/hashicorp/go-retryablehttp"
 	"github.com/shopspring/decimal"
+	"io"
 	"io/ioutil"
 	"math"
 	"net"
 	"net/http"
 	"net/url"
 	"os"
-	"sync"
 	"time"
 )
 
@@ -38,128 +40,126 @@ var DefaultTransport = &http.Transport{
 //	`err` - the error if any
 type SCRestAPIHandler func(response map[string][]byte, numSharders int, err error)
 
-const SC_REST_API_URL = "v1/screst/"
+const (
+	// clientTimeout represents default http.Client timeout.
+	clientTimeout = 10 * time.Second
 
-const MAX_RETRIES = 5
-const SLEEP_BETWEEN_RETRIES = 5
+	// tlsHandshakeTimeout represents default http.Transport TLS handshake timeout.
+	tlsHandshakeTimeout = 5 * time.Second
 
-// In percentage
-const consensusThresh = float32(25.0)
+	// dialTimeout represents default net.Dialer timeout.
+	dialTimeout = 5 * time.Second
+)
 
-// MakeSCRestAPICall makes a rest api call to the sharders.
-//   - scAddress is the address of the smart contract
-//   - relativePath is the relative path of the api
-//   - params is the query parameters
-//   - handler is the handler function to handle the response
-func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]string, handler SCRestAPIHandler) ([]byte, error) {
-	nodeClient, err := GetNode()
-	if err != nil {
-		return nil, err
+// NewClient creates default http.Client with timeouts.
+func NewClient() *http.Client {
+	return &http.Client{
+		Timeout: clientTimeout,
+		Transport: &http.Transport{
+			TLSHandshakeTimeout: tlsHandshakeTimeout,
+			DialContext: (&net.Dialer{
+				Timeout: dialTimeout,
+			}).DialContext,
+		},
 	}
-	numSharders := len(nodeClient.Sharders().Healthy())
-	sharders := nodeClient.Sharders().Healthy()
-	responses := make(map[int]int)
-	mu := &sync.Mutex{}
-	entityResult := make(map[string][]byte)
-	var retObj []byte
-	maxCount := 0
-	dominant := 200
-	wg := sync.WaitGroup{}
-
-	cfg, err := conf.GetClientConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	for _, sharder := range sharders {
-		wg.Add(1)
-		go func(sharder string) {
-			defer wg.Done()
-			urlString := fmt.Sprintf("%v/%v%v%v", sharder, SC_REST_API_URL, scAddress, relativePath)
-			urlObj, err := url.Parse(urlString)
-			if err != nil {
-				logger.Log.Error(err)
-				return
-			}
-			q := urlObj.Query()
-			for k, v := range params {
-				q.Add(k, v)
-			}
-			urlObj.RawQuery = q.Encode()
-			clientObj := &http.Client{Transport: DefaultTransport}
-			response, err := clientObj.Get(urlObj.String())
-			if err != nil {
-				nodeClient.Sharders().Fail(sharder)
-				return
-			}
-
-			defer response.Body.Close()
-			entityBytes, _ := ioutil.ReadAll(response.Body)
-			mu.Lock()
-			if response.StatusCode > http.StatusBadRequest {
-				nodeClient.Sharders().Fail(sharder)
-			} else {
-				nodeClient.Sharders().Success(sharder)
-			}
-			responses[response.StatusCode]++
-			if responses[response.StatusCode] > maxCount {
-				maxCount = responses[response.StatusCode]
-			}
-
-			if IsCurrentDominantStatus(response.StatusCode, responses, maxCount) {
-				dominant = response.StatusCode
-				retObj = entityBytes
-			}
-
-			entityResult[sharder] = entityBytes
-			nodeClient.Sharders().Success(sharder)
-			mu.Unlock()
-		}(sharder)
-	}
-	wg.Wait()
-
-	rate := float32(maxCount*100) / float32(cfg.SharderConsensous)
-	if rate < consensusThresh {
-		err = errors.New("consensus_failed", "consensus failed on sharders")
-	}
-
-	if dominant != 200 {
-		var objmap map[string]json.RawMessage
-		err := json.Unmarshal(retObj, &objmap)
-		if err != nil {
-			return nil, errors.New("", string(retObj))
-		}
-
-		var parsed string
-		err = json.Unmarshal(objmap["error"], &parsed)
-		if err != nil || parsed == "" {
-			return nil, errors.New("", string(retObj))
-		}
-
-		return nil, errors.New("", parsed)
-	}
-
-	if handler != nil {
-		handler(entityResult, numSharders, err)
-	}
-
-	if rate > consensusThresh {
-		return retObj, nil
-	}
-	return nil, err
 }
 
-// IsCurrentDominantStatus determines whether the current response status is the dominant status among responses.
-//
-// The dominant status is where the response status is counted the most.
-// On tie-breakers, 200 will be selected if included.
-//
-// Function assumes runningTotalPerStatus can be accessed safely concurrently.
-func IsCurrentDominantStatus(respStatus int, currentTotalPerStatus map[int]int, currentMax int) bool {
-	// mark status as dominant if
-	// - running total for status is the max and response is 200 or
-	// - running total for status is the max and count for 200 is lower
-	return currentTotalPerStatus[respStatus] == currentMax && (respStatus == 200 || currentTotalPerStatus[200] < currentMax)
+// NewRetryableClient creates default retryablehttp.Client with timeouts and embedded NewClient result.
+func NewRetryableClient(retryMax int) *retryablehttp.Client {
+	client := retryablehttp.NewClient()
+	client.HTTPClient = NewClient()
+	client.RetryWaitMax = clientTimeout
+	client.RetryMax = retryMax
+	client.Logger = nil
+
+	return client
+}
+
+// MakeSCRestAPICall calls smart contract with provided address
+// and makes retryable request to smart contract resource with provided relative path using params.
+func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]string) ([]byte, error) {
+	var (
+		resMaxCounterBody []byte
+
+		hashMaxCounter int
+		hashCounters   = make(map[string]int)
+
+		sharders = extractSharders()
+
+		lastErrMsg string
+	)
+
+	for _, sharder := range sharders {
+		var (
+			retryableClient = NewRetryableClient(5)
+			u               = makeScURL(params, sharder, scAddress, relativePath)
+		)
+
+		resp, err := retryableClient.Get(u.String())
+		if err != nil {
+			lastErrMsg = fmt.Sprintf("error while requesting sharders: %v", err)
+			continue
+		}
+		hash, resBody, err := hashAndBytesOfReader(resp.Body)
+		_ = resp.Body.Close()
+		if err != nil {
+			lastErrMsg = fmt.Sprintf("error while reading response body: %v", err)
+			continue
+		}
+		if resp.StatusCode != http.StatusOK {
+			lastErrMsg = fmt.Sprintf("response status is not OK; response body: %s", string(resBody))
+			continue
+		}
+
+		hashCounters[hash]++
+		if hashCounters[hash] > hashMaxCounter {
+			hashMaxCounter = hashCounters[hash]
+			resMaxCounterBody = resBody
+		}
+	}
+
+	if hashMaxCounter == 0 {
+		return nil, errors.New("request_sharders", "no valid responses, last err: "+lastErrMsg)
+	}
+
+	return resMaxCounterBody, nil
+}
+
+// hashAndBytesOfReader computes hash of readers data and returns hash encoded to hex and bytes of reader data.
+// If error occurs while reading data from reader, it returns non nil error.
+func hashAndBytesOfReader(r io.Reader) (hash string, reader []byte, err error) {
+	h := sha1.New()
+	teeReader := io.TeeReader(r, h)
+	readerBytes, err := ioutil.ReadAll(teeReader)
+	if err != nil {
+		return "", nil, err
+	}
+
+	return hex.EncodeToString(h.Sum(nil)), readerBytes, nil
+}
+
+// extractSharders returns string slice of randomly ordered sharders existing in the current network.
+func extractSharders() []string {
+	sharders := nodeClient.Network().Sharders
+	return util.GetRandom(sharders, len(sharders))
+}
+
+const (
+	// ScRestApiUrl represents base URL path to execute smart contract rest points.
+	ScRestApiUrl = "v1/screst/"
+)
+
+// makeScURL creates url.URL to make smart contract request to sharder.
+func makeScURL(params map[string]string, sharder, scAddress, relativePath string) *url.URL {
+	uString := fmt.Sprintf("%v/%v%v%v", sharder, ScRestApiUrl, scAddress, relativePath)
+	u, _ := url.Parse(uString)
+	q := u.Query()
+	for k, v := range params {
+		q.Add(k, v)
+	}
+	u.RawQuery = q.Encode()
+
+	return u
 }
 
 func (pfe *proxyFromEnv) Proxy(req *http.Request) (proxy *url.URL, err error) {
@@ -236,7 +236,7 @@ func GetBalance(clientIDs ...string) (*GetBalanceResponse, error) {
 
 	if res, err = MakeSCRestAPICall("", GET_BALANCE, map[string]string{
 		"client_id": clientID,
-	}, nil); err != nil {
+	}); err != nil {
 		return nil, err
 	}
 

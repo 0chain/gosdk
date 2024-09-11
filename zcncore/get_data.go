@@ -179,7 +179,7 @@ func GetMinerSCNodeInfo(id string) ([]byte, error) {
 
 	return client.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINERSC_NODE, Params{
 		"id": id,
-	}, nil)
+	})
 }
 
 // GetMintNonce retrieve the client's latest mint nonce from sharders
@@ -192,7 +192,7 @@ func GetMintNonce() ([]byte, error) {
 
 	return client.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINT_NONCE, Params{
 		"client_id": client.ClientID(),
-	}, nil)
+	})
 }
 
 func GetMiners(active, stakable bool, limit, offset int) ([]byte, error) {
@@ -205,7 +205,7 @@ func GetMiners(active, stakable bool, limit, offset int) ([]byte, error) {
 		"stakable": strconv.FormatBool(stakable),
 		"offset":   strconv.FormatInt(int64(offset), 10),
 		"limit":    strconv.FormatInt(int64(limit), 10),
-	}, nil)
+	})
 }
 
 func GetSharders(active, stakable bool, limit, offset int) ([]byte, error) {
@@ -218,14 +218,14 @@ func GetSharders(active, stakable bool, limit, offset int) ([]byte, error) {
 		"stakable": strconv.FormatBool(stakable),
 		"offset":   strconv.FormatInt(int64(offset), 10),
 		"limit":    strconv.FormatInt(int64(limit), 10),
-	}, nil)
+	})
 }
 
 // GetLatestFinalizedMagicBlock gets latest finalized magic block
 //   - numSharders: number of sharders
 //   - timeout: request timeout
 func GetLatestFinalizedMagicBlock(ctx context.Context, numSharders int) (m *block.MagicBlock, err error) {
-	res, err := client.MakeSCRestAPICall(MinerSmartContractAddress, GET_LATEST_FINALIZED_MAGIC_BLOCK, nil, nil)
+	res, err := client.MakeSCRestAPICall(MinerSmartContractAddress, GET_LATEST_FINALIZED_MAGIC_BLOCK, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -250,7 +250,7 @@ func GetMinerSCUserInfo(clientID string) ([]byte, error) {
 
 	return client.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINERSC_USER, Params{
 		"client_id": clientID,
-	}, nil)
+	})
 }
 
 // GetMinerSCNodePool get miner smart contract node pool
@@ -263,7 +263,7 @@ func GetMinerSCNodePool(id string) ([]byte, error) {
 	return client.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINERSC_POOL, Params{
 		"id":      id,
 		"pool_id": client.ClientID(),
-	}, nil)
+	})
 }
 
 // GetNotProcessedZCNBurnTickets retrieve burn tickets that are not compensated by minting
@@ -278,5 +278,5 @@ func GetNotProcessedZCNBurnTickets(ethereumAddress, startNonce string) ([]byte, 
 	return client.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINERSC_POOL, Params{
 		"ethereum_address": ethereumAddress,
 		"nonce":            startNonce,
-	}, nil)
+	})
 }

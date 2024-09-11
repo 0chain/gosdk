@@ -90,7 +90,7 @@ func GetAuthorizer(id string) (res []byte, err error) {
 
 	return coreHttp.MakeSCRestAPICall(zcncore.ZCNSCSmartContractAddress, PathGetAuthorizer, zcncore.Params{
 		"id": id,
-	}, nil)
+	})
 }
 
 // GetAuthorizers Returns all or only active authorizers
@@ -101,7 +101,7 @@ func GetAuthorizers(active bool) (res []byte, err error) {
 	if err != nil {
 		return nil, err
 	}
-	return coreHttp.MakeSCRestAPICall(zcncore.ZCNSCSmartContractAddress, fmt.Sprintf(PathGetAuthorizerNodes, active), nil, nil)
+	return coreHttp.MakeSCRestAPICall(zcncore.ZCNSCSmartContractAddress, fmt.Sprintf(PathGetAuthorizerNodes, active), nil)
 }
 
 // GetGlobalConfig Returns global config
@@ -111,5 +111,5 @@ func GetGlobalConfig() (res []byte, err error) {
 	if err != nil {
 		return nil, err
 	}
-	return coreHttp.MakeSCRestAPICall(zcncore.ZCNSCSmartContractAddress, PathGetGlobalConfig, nil, nil)
+	return coreHttp.MakeSCRestAPICall(zcncore.ZCNSCSmartContractAddress, PathGetGlobalConfig, nil)
 }

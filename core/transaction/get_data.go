@@ -90,8 +90,7 @@ func GetConfig(configType string) (conf *InputMap, err error) {
 		relativePath = GET_MINERSC_GLOBALS
 	}
 
-	b, err = coreHttp.MakeSCRestAPICall(scAddress, relativePath, nil,
-		nil)
+	b, err = coreHttp.MakeSCRestAPICall(scAddress, relativePath, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "error requesting storage SC configs:")
 	}
