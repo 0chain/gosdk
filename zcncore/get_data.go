@@ -85,6 +85,7 @@ func SetWalletInfo(jsonWallet, sigScheme string, splitKeyWallet bool) error {
 
 	client.SetWallet(wallet)
 	client.SetSignatureScheme(sigScheme)
+
 	return client.SetSplitKeyWallet(splitKeyWallet)
 }
 
@@ -94,38 +95,6 @@ func SetWalletInfo(jsonWallet, sigScheme string, splitKeyWallet bool) error {
 func SetAuthUrl(url string) error {
 	return client.SetAuthUrl(url)
 }
-
-//// GetMintNonce retrieve the client's latest mint nonce from sharders
-////   - cb: info callback instance, carries the response of the GET request to the sharders
-//func GetMintNonce(cb GetInfoCallback) error {
-//	err := CheckConfig()
-//	if err != nil {
-//		return err
-//	}
-//
-//	go GetInfoFromSharders(withParams(GET_MINT_NONCE, Params{
-//		"client_id": client.Wallet().ClientID,
-//	}), OpGetMintNonce, cb)
-//	return nil
-//}
-//
-//// GetNotProcessedZCNBurnTickets retrieve burn tickets that are not compensated by minting
-////   - ethereumAddress: ethereum address for the issuer of the burn tickets
-////   - startNonce: start nonce for the burn tickets
-////   - cb: info callback instance, carries the response of the GET request to the sharders
-//func GetNotProcessedZCNBurnTickets(ethereumAddress, startNonce string, cb GetInfoCallback) error {
-//	err := CheckConfig()
-//	if err != nil {
-//		return err
-//	}
-//
-//	go GetInfoFromSharders(withParams(GET_NOT_PROCESSED_BURN_TICKETS, Params{
-//		"ethereum_address": ethereumAddress,
-//		"nonce":            startNonce,
-//	}), OpGetNotProcessedBurnTickets, cb)
-//
-//	return nil
-//}
 
 // ConvertTokenToUSD converts the ZCN tokens to USD amount
 //   - token: ZCN tokens amount
