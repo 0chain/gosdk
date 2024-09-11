@@ -14,8 +14,6 @@ import (
 
 func main() {
 
-	zcncore.InitSignatureScheme("bls0chain")
-	
 	ctx, cf := context.WithCancel(context.Background())
 
 	router := bunrouter.New()

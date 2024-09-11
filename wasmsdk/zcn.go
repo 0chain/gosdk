@@ -22,14 +22,18 @@ func getWalletBalance(clientId string) (*Balance, error) {
 	if err != nil {
 		return nil, err
 	}
+	balance, err := bal.ToToken()
+	if err != nil {
+		return nil, err
+	}
 
-	toUsd, err := zcncore.ConvertTokenToUSD(float64(bal.Balance))
+	toUsd, err := zcncore.ConvertTokenToUSD(balance)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Balance{
-		ZCN:   float64(bal.Balance),
+		ZCN:   balance,
 		USD:   toUsd,
 		Nonce: bal.Nonce,
 	}, nil
