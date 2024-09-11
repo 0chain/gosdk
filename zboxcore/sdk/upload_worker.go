@@ -10,6 +10,7 @@ import (
 
 	"github.com/0chain/common/core/util/wmpt"
 	"github.com/0chain/gosdk/constants"
+	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/fileref"
@@ -174,5 +175,5 @@ func (uo *UploadOperation) GetHash(changeIndex uint64, id string) string {
 		return ""
 	}
 	ref := uo.refs[changeIndex]
-	return ref.GetFileHashDataV2(id)
+	return encryption.Hash(ref.GetFileHashDataV2(id))
 }

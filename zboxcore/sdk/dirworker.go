@@ -382,5 +382,5 @@ func (dirOp *DirOperation) GetLookupHash(changeIndex uint64) string {
 }
 
 func (dirOp *DirOperation) GetHash(changeIndex uint64, id string) string {
-	return ""
+	return emptyHash
 }

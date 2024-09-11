@@ -172,7 +172,9 @@ func (mo *MultiOperation) Process() error {
 	defer ctxCncl(nil)
 	swg := sizedwaitgroup.New(BatchSize)
 	errsSlice := make([]error, len(mo.operations))
-	mo.operationMask = zboxutil.NewUint128(0)
+	if mo.allocationObj.StorageVersion != StorageV2 {
+		mo.operationMask = zboxutil.NewUint128(0)
+	}
 	for idx, op := range mo.operations {
 		uid := util.GetNewUUID()
 		swg.Add()
@@ -296,6 +298,7 @@ func (mo *MultiOperation) Process() error {
 		for i := mo.operationMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 			pos = uint64(i.TrailingZeros())
 			if mo.allocationObj.Blobbers[pos].AllocationRoot != mo.allocationObj.allocationRoot {
+				l.Logger.Debug("Blobber allocation root mismatch", mo.allocationObj.Blobbers[pos].Baseurl, mo.allocationObj.Blobbers[pos].AllocationRoot, mo.allocationObj.allocationRoot)
 				mo.operationMask = mo.operationMask.And(zboxutil.NewUint128(1).Lsh(pos).Not())
 			}
 		}
@@ -304,6 +307,9 @@ func (mo *MultiOperation) Process() error {
 	activeBlobbers := mo.operationMask.CountOnes()
 	if activeBlobbers < mo.consensusThresh {
 		return errors.New("consensus_not_met", fmt.Sprintf("Active blobbers %d is less than consensus threshold %d", activeBlobbers, mo.consensusThresh))
+	}
+	if mo.allocationObj.StorageVersion == StorageV2 {
+		return mo.commitV2()
 	}
 	commitReqs := make([]*CommitRequest, activeBlobbers)
 	start = time.Now()
@@ -411,7 +417,7 @@ func (mo *MultiOperation) commitV2() error {
 				mo.consensus += commitReq.commitMask.CountOnes()
 			} else {
 				errSlice[idx] = errors.New("commit_failed", commitReq.result.ErrorMessage)
-				l.Logger.Error("Commit failed", commitReq.result.ErrorMessage)
+				l.Logger.Error("Commit failed ", commitReq.result.ErrorMessage)
 			}
 			if !mo.isRepair {
 				rollbackMask = rollbackMask.Or(commitReq.commitMask)

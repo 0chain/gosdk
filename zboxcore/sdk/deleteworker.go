@@ -2,6 +2,7 @@ package sdk
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -43,6 +44,8 @@ type DeleteRequest struct {
 	consensus      Consensus
 	timestamp      int64
 }
+
+const emptyHash = "e"
 
 func (req *DeleteRequest) deleteBlobberFile(
 	blobber *blockchain.StorageNode, blobberIdx int) error {
@@ -332,6 +335,8 @@ type DeleteOperation struct {
 	deleteMask     zboxutil.Uint128
 	maskMu         *sync.Mutex
 	consensus      Consensus
+	lookupHash     string
+	refs           []fileref.RefEntity
 }
 
 func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
@@ -399,6 +404,8 @@ func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string) (
 				deleteReq.consensus.consensusThresh, deleteReq.consensus.consensus))
 	}
 	l.Logger.Debug("Delete Process Ended ")
+	dop.refs = objectTreeRefs
+	dop.lookupHash = fileref.GetReferenceLookup(allocObj.ID, dop.remotefilepath)
 	return objectTreeRefs, deleteReq.deleteMask, nil
 }
 
@@ -457,13 +464,25 @@ func NewDeleteOperation(remotePath string, deleteMask zboxutil.Uint128, maskMu *
 }
 
 func (dop *DeleteOperation) ProcessChangeV2(trie *wmpt.WeightedMerkleTrie, changeIndex uint64) error {
+	if dop.refs[changeIndex] == nil {
+		return nil
+	}
+	decodedKey, _ := hex.DecodeString(dop.lookupHash)
+	err := trie.Update(decodedKey, nil, 0)
+	if err != nil {
+		logger.Logger.Error("Error updating trie", err)
+		return err
+	}
 	return nil
 }
 
 func (dop *DeleteOperation) GetLookupHash(changeIndex uint64) string {
-	return ""
+	if dop.refs[changeIndex] == nil {
+		return ""
+	}
+	return dop.lookupHash
 }
 
 func (dop *DeleteOperation) GetHash(changeIndex uint64, id string) string {
-	return ""
+	return emptyHash
 }
