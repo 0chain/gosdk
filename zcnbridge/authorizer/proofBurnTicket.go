@@ -3,6 +3,7 @@ package authorizer
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/0chain/gosdk/core/client"
 
 	"github.com/0chain/gosdk/zcncore"
 
@@ -61,7 +62,7 @@ func (pb *ProofOfBurn) SignWithEthereum(b *zcnbridge.BridgeClient) (err error) {
 // Sign can sign if chain config is initialized
 func (pb *ProofOfBurn) Sign() (err error) {
 	hash := zcncrypto.Sha3Sum256(pb.UnsignedMessage())
-	sig, err := zcncore.Sign(hash)
+	sig, err := client.Sign(hash)
 	if err != nil {
 		return errors.Wrap("signature_0chain", "failed to sign proof-of-burn ticket using walletString ID ", err)
 	}
