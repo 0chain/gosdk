@@ -4,11 +4,9 @@ package client
 import (
 	"sort"
 	"sync"
-	"time"
 )
 
 const statSize = 20
-const defaultTimeout = 5 * time.Second
 
 type NodeHolder struct {
 	consensus int

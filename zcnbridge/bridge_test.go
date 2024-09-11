@@ -22,7 +22,6 @@ import (
 	"github.com/0chain/gosdk/zcnbridge/ethereum/authorizers"
 	binding "github.com/0chain/gosdk/zcnbridge/ethereum/bridge"
 	bridgemocks "github.com/0chain/gosdk/zcnbridge/mocks"
-	"github.com/0chain/gosdk/zcnbridge/transaction"
 	transactionmocks "github.com/0chain/gosdk/zcnbridge/transaction/mocks"
 	"github.com/0chain/gosdk/zcnbridge/wallet"
 	"github.com/0chain/gosdk/zcnbridge/zcnsc"
@@ -222,7 +221,7 @@ func getEthereumClient(t mock.TestingT) *bridgemocks.EthereumClient {
 	return bridgemocks.NewEthereumClient(&ethereumClientMock{t})
 }
 
-func getBridgeClient(ethereumNodeURL string, ethereumClient EthereumClient, transactionProvider transaction.TransactionProvider, keyStore KeyStore) *BridgeClient {
+func getBridgeClient(ethereumNodeURL string, ethereumClient EthereumClient, keyStore KeyStore) *BridgeClient {
 	cfg := viper.New()
 
 	tempConfigFile, err := os.CreateTemp(".", "config.yaml")
@@ -260,7 +259,6 @@ func getBridgeClient(ethereumNodeURL string, ethereumClient EthereumClient, tran
 		cfg.GetFloat64("bridge.consensus_threshold"),
 
 		ethereumClient,
-		transactionProvider,
 		keyStore,
 	)
 }
@@ -318,13 +316,10 @@ func Test_ZCNBridge(t *testing.T) {
 	tx := getTransaction(t)
 	prepareTransactionGeneralMockCalls(&tx.Mock)
 
-	transactionProvider := getTransactionProvider(t)
-	prepareTransactionProviderGeneralMockCalls(&transactionProvider.Mock, tx)
-
 	keyStore := getKeyStore(t)
 	prepareKeyStoreGeneralMockCalls(keyStore)
 
-	bridgeClient := getBridgeClient(alchemyEthereumNodeURL, ethereumClient, transactionProvider, keyStore)
+	bridgeClient := getBridgeClient(alchemyEthereumNodeURL, ethereumClient, keyStore)
 
 	t.Run("should update authorizer config.", func(t *testing.T) {
 		source := &authorizerNodeSource{
@@ -436,7 +431,7 @@ func Test_ZCNBridge(t *testing.T) {
 	})
 
 	t.Run("should check configuration used by BurnZCN", func(t *testing.T) {
-		_, err := bridgeClient.BurnZCN(amount)
+		_, _, err := bridgeClient.BurnZCN(amount)
 		require.NoError(t, err)
 
 		require.True(t, tx.AssertCalled(
@@ -634,21 +629,21 @@ func Test_ZCNBridge(t *testing.T) {
 	})
 
 	t.Run("should check if gas price estimation works with correct alchemy ethereum node url", func(t *testing.T) {
-		bridgeClient = getBridgeClient(alchemyEthereumNodeURL, ethereumClient, transactionProvider, keyStore)
+		bridgeClient = getBridgeClient(alchemyEthereumNodeURL, ethereumClient, keyStore)
 
 		_, err := bridgeClient.EstimateGasPrice(context.Background())
 		require.Contains(t, err.Error(), "Must be authenticated!")
 	})
 
 	t.Run("should check if gas price estimation works with correct tenderly ethereum node url", func(t *testing.T) {
-		bridgeClient = getBridgeClient(tenderlyEthereumNodeURL, ethereumClient, transactionProvider, keyStore)
+		bridgeClient = getBridgeClient(tenderlyEthereumNodeURL, ethereumClient, keyStore)
 
 		_, err := bridgeClient.EstimateGasPrice(context.Background())
 		require.NoError(t, err)
 	})
 
 	t.Run("should check if gas price estimation works with incorrect ethereum node url", func(t *testing.T) {
-		bridgeClient = getBridgeClient(infuraEthereumNodeURL, ethereumClient, transactionProvider, keyStore)
+		bridgeClient = getBridgeClient(infuraEthereumNodeURL, ethereumClient, keyStore)
 
 		_, err := bridgeClient.EstimateGasPrice(context.Background())
 		require.Error(t, err)
