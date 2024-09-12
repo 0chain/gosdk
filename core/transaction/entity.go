@@ -9,6 +9,7 @@ import (
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/sys"
 	"go.uber.org/zap"
+	"log"
 	"net/http"
 	"strings"
 	"sync"
@@ -335,7 +336,7 @@ func retriveFromTable(table map[string]map[string]int64, txnName, toAddress stri
 		if txnName == "transfer" {
 			fees = uint64(table["transfer"]["transfer"])
 		} else {
-			return 0, fmt.Errorf("invalid transaction")
+			return 0, fmt.Errorf("Jayash invalid transaction")
 		}
 	}
 	return fees, nil
@@ -553,6 +554,8 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 	if txn.TransactionNonce == 0 {
 		txn.TransactionNonce = client.Cache.GetNextNonce(txn.ClientID)
 	}
+
+	log.Println("Nonce: ", txn.TransactionNonce)
 
 	if err = txn.ComputeHashAndSign(client.Sign); err != nil {
 		return

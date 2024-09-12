@@ -77,7 +77,7 @@ func NewRetryableClient(retryMax int) *retryablehttp.Client {
 
 // MakeSCRestAPICall calls smart contract with provided address
 // and makes retryable request to smart contract resource with provided relative path using params.
-func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]string) ([]byte, error) {
+func MakeSCRestAPICall(scAddress, relativePath string, params map[string]string, restApiUrls ...string) ([]byte, error) {
 	var (
 		resMaxCounterBody []byte
 
@@ -89,13 +89,21 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 		lastErrMsg string
 	)
 
+	restApiUrl := ScRestApiUrl
+	if len(restApiUrls) > 0 {
+		restApiUrl = restApiUrls[0]
+	}
+
 	for _, sharder := range sharders {
 		var (
 			retryableClient = NewRetryableClient(5)
-			u               = makeScURL(params, sharder, scAddress, relativePath)
+			u               = makeScURL(params, sharder, restApiUrl, scAddress, relativePath)
 		)
 
-		resp, err := retryableClient.Get(u.String())
+		url := u.String()
+		fmt.Println("URL: ", url)
+
+		resp, err := retryableClient.Get(url)
 		if err != nil {
 			lastErrMsg = fmt.Sprintf("error while requesting sharders: %v", err)
 			continue
@@ -150,8 +158,8 @@ const (
 )
 
 // makeScURL creates url.URL to make smart contract request to sharder.
-func makeScURL(params map[string]string, sharder, scAddress, relativePath string) *url.URL {
-	uString := fmt.Sprintf("%v/%v%v%v", sharder, ScRestApiUrl, scAddress, relativePath)
+func makeScURL(params map[string]string, sharder, scAddress, restApiUrl, relativePath string) *url.URL {
+	uString := fmt.Sprintf("%v/%v%v%v", sharder, restApiUrl, scAddress, relativePath)
 	u, _ := url.Parse(uString)
 	q := u.Query()
 	for k, v := range params {
@@ -220,7 +228,7 @@ func getEnvAny(names ...string) string {
 }
 
 func GetBalance(clientIDs ...string) (*GetBalanceResponse, error) {
-	const GET_BALANCE = "/client/get/balance"
+	const GET_BALANCE = "client/get/balance"
 	var (
 		balance GetBalanceResponse
 		err     error
@@ -236,7 +244,7 @@ func GetBalance(clientIDs ...string) (*GetBalanceResponse, error) {
 
 	if res, err = MakeSCRestAPICall("", GET_BALANCE, map[string]string{
 		"client_id": clientID,
-	}); err != nil {
+	}, "v1"); err != nil {
 		return nil, err
 	}
 

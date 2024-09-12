@@ -90,7 +90,7 @@ func (n *Node) ShouldUpdateNetwork() (bool, *conf.Network, error) {
 	}
 	network, err := GetNetwork(n.clientCtx, cfg.BlockWorker)
 	if err != nil {
-		logging.Error("Failed to get network details ", zap.Error(err))
+		logging.Error("Failed to get network details ", zap.Error(err), zap.String("block_worker", cfg.BlockWorker))
 		return false, nil, err
 	}
 	n.networkGuard.RLock()
@@ -128,7 +128,7 @@ func Init(ctx context.Context, cfg conf.Config) error {
 
 	network, err := GetNetwork(ctx, cfg.BlockWorker)
 	if err != nil {
-		logging.Error("Failed to get network details ", zap.Error(err))
+		logging.Error("Failed to get network details ", zap.Error(err), zap.Any("block_worker", cfg.BlockWorker))
 		return err
 	}
 

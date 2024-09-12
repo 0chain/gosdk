@@ -1,6 +1,8 @@
 package client
 
 import (
+	"go.uber.org/zap"
+	"log"
 	"sync"
 )
 
@@ -35,6 +37,8 @@ func (nc *NonceCache) GetNextNonce(clientId string) int64 {
 		} else {
 			nc.cache[clientId] = bal.Nonce
 		}
+
+		log.Println("NonceCache.GetNextNonce: ", clientId, nc.cache[clientId], zap.Any("bal", bal), zap.Error(err))
 	}
 
 	nc.cache[clientId] += 1
