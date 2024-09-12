@@ -489,7 +489,7 @@ func (commitReq *CommitRequestV2) processCommit() {
 		return
 	}
 	commitReq.allocationObj.allocationRoot = hex.EncodeToString(rootHash)
-	l.Logger.Info("[commit] ", "elapsedGetRefPath", elapsedGetRefPath.Milliseconds(), " elapsedProcessChanges", elapsedProcessChanges.Milliseconds(), " elapsedCommit", elapsedCommit.Milliseconds(), " total", time.Since(now).Milliseconds())
+	l.Logger.Info("[commit] ", "elapsedGetRefPath ", elapsedGetRefPath.Milliseconds(), " elapsedProcessChanges ", elapsedProcessChanges.Milliseconds(), " elapsedCommit ", elapsedCommit.Milliseconds(), " total ", time.Since(now).Milliseconds())
 	commitReq.result = SuccessCommitResult()
 }
 
@@ -596,6 +596,7 @@ func getReferencePathV2(blobber *blockchain.StorageNode, allocationID, allocatio
 		trie := wmpt.New(node, nil)
 		return trie, nil
 	}
+	now := time.Now()
 	req, err := zboxutil.NewReferencePathRequestV2(blobber.Baseurl, allocationID, allocationTx, sig, paths)
 	if err != nil {
 		l.Logger.Error("Creating ref path req", err)
@@ -631,7 +632,7 @@ func getReferencePathV2(blobber *blockchain.StorageNode, allocationID, allocatio
 	if err != nil {
 		return nil, err
 	}
-
+	elapsedRefPath := time.Since(now)
 	trie := wmpt.New(nil, nil)
 	if lR.LatestWM != nil {
 		err = lR.LatestWM.VerifySignature(client.GetClientPublicKey())
@@ -643,6 +644,7 @@ func getReferencePathV2(blobber *blockchain.StorageNode, allocationID, allocatio
 			l.Logger.Error("Error deserializing trie", err)
 			return nil, err
 		}
+		l.Logger.Info("[getReferencePathV2] elapsedRefPath ", elapsedRefPath.Milliseconds(), " elapsedDeserialize ", (time.Since(now) - elapsedRefPath).Milliseconds())
 		chainBlocks := numBlocks(lR.LatestWM.ChainSize)
 		if trie.Weight() != uint64(chainBlocks) {
 			return nil, errors.New("chain_length_mismatch", fmt.Sprintf("Expected chain length %d, got %d", chainBlocks, trie.Weight()))
