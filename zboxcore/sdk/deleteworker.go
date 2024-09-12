@@ -361,8 +361,15 @@ func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string) (
 	}
 	deleteReq.consensus.fullconsensus = dop.consensus.fullconsensus
 	deleteReq.consensus.consensusThresh = dop.consensus.consensusThresh
+	dop.lookupHash = fileref.GetReferenceLookup(allocObj.ID, dop.remotefilepath)
 	if allocObj.StorageVersion == 1 {
-		return deleteReq.processDeleteV2()
+		var (
+			objectTreeRefs []fileref.RefEntity
+			err            error
+		)
+		objectTreeRefs, deleteReq.deleteMask, err = deleteReq.processDeleteV2()
+		dop.refs = objectTreeRefs
+		return dop.refs, deleteReq.deleteMask, err
 	}
 
 	numList := len(deleteReq.blobbers)
@@ -411,7 +418,6 @@ func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string) (
 	}
 	l.Logger.Debug("Delete Process Ended ")
 	dop.refs = objectTreeRefs
-	dop.lookupHash = fileref.GetReferenceLookup(allocObj.ID, dop.remotefilepath)
 	return objectTreeRefs, deleteReq.deleteMask, nil
 }
 

@@ -406,11 +406,11 @@ func (commitReq *CommitRequestV2) processCommit() {
 			commitReq.changes[i] = nil
 		}
 	}
-	if len(paths) == 0 {
-		l.Logger.Debug("Nothing to commit")
-		commitReq.result = SuccessCommitResult()
-		return
-	}
+	// if len(paths) == 0 {
+	// 	l.Logger.Debug("Nothing to commit")
+	// 	commitReq.result = SuccessCommitResult()
+	// 	return
+	// }
 	var (
 		trie *wmpt.WeightedMerkleTrie
 		err  error
@@ -587,6 +587,15 @@ func getFormWritter(connectionID string, wmData, fileIDMetaData []byte, body *by
 }
 
 func getReferencePathV2(blobber *blockchain.StorageNode, allocationID, allocationTx, sig string, paths []string) (*wmpt.WeightedMerkleTrie, error) {
+	if len(paths) == 0 {
+		var node wmpt.Node
+		if blobber.LatestWM != nil {
+			decodedRoot, _ := hex.DecodeString(blobber.LatestWM.AllocationRoot)
+			node = wmpt.NewHashNode(decodedRoot, uint64(numBlocks(blobber.LatestWM.ChainSize)))
+		}
+		trie := wmpt.New(node, nil)
+		return trie, nil
+	}
 	req, err := zboxutil.NewReferencePathRequestV2(blobber.Baseurl, allocationID, allocationTx, sig, paths)
 	if err != nil {
 		l.Logger.Error("Creating ref path req", err)

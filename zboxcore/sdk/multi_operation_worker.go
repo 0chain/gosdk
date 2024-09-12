@@ -190,10 +190,12 @@ func (mo *MultiOperation) Process() error {
 
 			refs, mask, err := op.Process(mo.allocationObj, mo.connectionID) // Process with each blobber
 			if err != nil {
-				l.Logger.Error(err)
-				errsSlice[idx] = errors.New("", err.Error())
-				ctxCncl(err)
-				return
+				if err != errFileDeleted {
+					l.Logger.Error(err)
+					errsSlice[idx] = errors.New("", err.Error())
+					ctxCncl(err)
+					return
+				}
 			}
 			mo.maskMU.Lock()
 			if mo.allocationObj.StorageVersion == StorageV2 {
