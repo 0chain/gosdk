@@ -228,7 +228,7 @@ func getEnvAny(names ...string) string {
 }
 
 func GetBalance(clientIDs ...string) (*GetBalanceResponse, error) {
-	const GET_BALANCE = "client/get/balance"
+	const GetBalance = "/client/get/balance"
 	var (
 		balance GetBalanceResponse
 		err     error
@@ -242,7 +242,7 @@ func GetBalance(clientIDs ...string) (*GetBalanceResponse, error) {
 		clientID = ClientID()
 	}
 
-	if res, err = MakeSCRestAPICall("", GET_BALANCE, map[string]string{
+	if res, err = MakeSCRestAPICall("", GetBalance, map[string]string{
 		"client_id": clientID,
 	}, "v1"); err != nil {
 		return nil, err
