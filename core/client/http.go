@@ -158,7 +158,7 @@ const (
 )
 
 // makeScURL creates url.URL to make smart contract request to sharder.
-func makeScURL(params map[string]string, sharder, scAddress, restApiUrl, relativePath string) *url.URL {
+func makeScURL(params map[string]string, sharder, restApiUrl, scAddress, relativePath string) *url.URL {
 	uString := fmt.Sprintf("%v/%v%v%v", sharder, restApiUrl, scAddress, relativePath)
 	u, _ := url.Parse(uString)
 	q := u.Query()
@@ -228,7 +228,7 @@ func getEnvAny(names ...string) string {
 }
 
 func GetBalance(clientIDs ...string) (*GetBalanceResponse, error) {
-	const GetBalance = "/client/get/balance"
+	const GetBalance = "client/get/balance"
 	var (
 		balance GetBalanceResponse
 		err     error
@@ -244,7 +244,7 @@ func GetBalance(clientIDs ...string) (*GetBalanceResponse, error) {
 
 	if res, err = MakeSCRestAPICall("", GetBalance, map[string]string{
 		"client_id": clientID,
-	}, "v1"); err != nil {
+	}, "v1/"); err != nil {
 		return nil, err
 	}
 
