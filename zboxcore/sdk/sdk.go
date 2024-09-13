@@ -12,7 +12,6 @@ import (
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"gopkg.in/natefinch/lumberjack.v2"
 	"io/ioutil"
-	"log"
 	"math"
 	"net/http"
 	"strconv"
@@ -757,7 +756,6 @@ func getBlobbersInternal(active, stakable bool, limit, offset int) (bs []*Blobbe
 //   - active: if true then only active blobbers are returned
 //   - stakable: if true then only stakable blobbers are returned
 func GetBlobbers(active, stakable bool) (bs []*Blobber, err error) {
-	log.Println("GetBlobbers : active ", active, stakable)
 	if !sdkInitialized {
 		return nil, sdkNotInitialized
 	}

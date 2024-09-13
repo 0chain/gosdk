@@ -9,7 +9,6 @@ import (
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/sys"
 	"go.uber.org/zap"
-	"log"
 	"net/http"
 	"strings"
 	"sync"
@@ -554,8 +553,6 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 	if txn.TransactionNonce == 0 {
 		txn.TransactionNonce = client.Cache.GetNextNonce(txn.ClientID)
 	}
-
-	log.Println("Nonce: ", txn.TransactionNonce)
 
 	if err = txn.ComputeHashAndSign(client.Sign); err != nil {
 		return

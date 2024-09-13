@@ -100,10 +100,7 @@ func MakeSCRestAPICall(scAddress, relativePath string, params map[string]string,
 			u               = makeScURL(params, sharder, restApiUrl, scAddress, relativePath)
 		)
 
-		url := u.String()
-		fmt.Println("URL: ", url)
-
-		resp, err := retryableClient.Get(url)
+		resp, err := retryableClient.Get(u.String())
 		if err != nil {
 			lastErrMsg = fmt.Sprintf("error while requesting sharders: %v", err)
 			continue
