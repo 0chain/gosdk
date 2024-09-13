@@ -341,20 +341,26 @@ func parseCoinStr(vs string) (uint64, error) {
 //   - cb: callback for transaction state
 //   - txnFee: Transaction fees (in SAS tokens)
 //   - nonce: latest nonce of current wallet. please set it with 0 if you don't know the latest value
-func NewTransaction(cb TransactionCallback, txnFee uint64, nonce int64) (TransactionScheme, error) {
-	err := CheckConfig()
+func NewTransaction(cb TransactionCallback, txnFee string, nonce int64) (TransactionScheme, error) {
+	txnFeeRaw, err := parseCoinStr(val)
 	if err != nil {
 		return nil, err
 	}
+
+	err = CheckConfig()
+	if err != nil {
+		return nil, err
+	}
+
 	if _config.isSplitWallet {
 		if _config.authUrl == "" {
 			return nil, errors.New("", "auth url not set")
 		}
 		logging.Info("New transaction interface with auth")
-		return newTransactionWithAuth(cb, txnFee, nonce)
+		return newTransactionWithAuth(cb, txnFeeRaw, nonce)
 	}
 	logging.Info("New transaction interface")
-	t, err := newTransaction(cb, txnFee, nonce)
+	t, err := newTransaction(cb, txnFeeRaw, nonce)
 	return t, err
 }
 
