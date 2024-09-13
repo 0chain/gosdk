@@ -342,7 +342,7 @@ func parseCoinStr(vs string) (uint64, error) {
 //   - txnFee: Transaction fees (in SAS tokens)
 //   - nonce: latest nonce of current wallet. please set it with 0 if you don't know the latest value
 func NewTransaction(cb TransactionCallback, txnFee string, nonce int64) (TransactionScheme, error) {
-	txnFeeRaw, err := parseCoinStr(val)
+	txnFeeRaw, err := parseCoinStr(txnFee)
 	if err != nil {
 		return nil, err
 	}
