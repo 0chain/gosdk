@@ -194,7 +194,7 @@ func GetReadPoolInfo(clientID string) (info *ReadPool, err error) {
 
 	info = new(ReadPool)
 	if err = json.Unmarshal(b, info); err != nil {
-		return nil, errors.Wrap(err, "error decoding response:")
+		return nil, errors.Wrap(err, "2 error decoding response:")
 	}
 
 	return
@@ -300,7 +300,7 @@ func GetStakePoolInfo(providerType ProviderType, providerID string) (info *Stake
 
 	info = new(StakePoolInfo)
 	if err = json.Unmarshal(b, info); err != nil {
-		return nil, errors.Wrap(err, "error decoding response:")
+		return nil, errors.Wrap(err, "3 error decoding response:")
 	}
 
 	return
@@ -341,7 +341,7 @@ func GetStakePoolUserInfo(clientID string, offset, limit int) (info *StakePoolUs
 
 	info = new(StakePoolUserInfo)
 	if err = json.Unmarshal(b, info); err != nil {
-		return nil, errors.Wrap(err, "error decoding response:")
+		return nil, errors.Wrap(err, "4 error decoding response:")
 	}
 
 	return
@@ -553,7 +553,7 @@ func GetChallengePoolInfo(allocID string) (info *ChallengePoolInfo, err error) {
 
 	info = new(ChallengePoolInfo)
 	if err = json.Unmarshal(b, info); err != nil {
-		return nil, errors.Wrap(err, "error decoding response:")
+		return nil, errors.Wrap(err, "5 error decoding response:")
 	}
 
 	return
@@ -746,7 +746,7 @@ func getBlobbersInternal(active, stakable bool, limit, offset int) (bs []*Blobbe
 	}
 
 	if err = json.Unmarshal(b, &wrap); err != nil {
-		return nil, errors.Wrap(err, "error decoding response:")
+		return nil, errors.Wrap(err, "6 error decoding response:")
 	}
 
 	return wrap.Nodes, nil
