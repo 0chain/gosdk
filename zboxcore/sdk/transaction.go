@@ -1,3 +1,6 @@
+//go:build !mobile
+// +build !mobile
+
 package sdk
 
 import (
