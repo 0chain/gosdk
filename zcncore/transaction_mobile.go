@@ -365,9 +365,13 @@ func NewTransaction(cb TransactionCallback, txnFee string, nonce int64) (Transac
 }
 
 // ExecuteSmartContract prepare and send a smart contract transaction to the blockchain
-func (t *Transaction) ExecuteSmartContract(address, methodName string, input interface{}, val uint64, feeOpts ...FeeOption) (*transaction.Transaction, error) {
-	// t.createSmartContractTxn(address, methodName, input, val, opts...)
-	err := t.createSmartContractTxn(address, methodName, input, val)
+func (t *Transaction) ExecuteSmartContract(address, methodName string, input interface{}, val string, feeOpts ...FeeOption) (*transaction.Transaction, error) {
+	v, err := parseCoinStr(val)
+	if err != nil {
+		return nil, err
+	}
+
+	err := t.createSmartContractTxn(address, methodName, input, v)
 	if err != nil {
 		return nil, err
 	}
@@ -387,7 +391,12 @@ func (t *Transaction) setTransactionFee(fee uint64) error {
 }
 
 // Send to send a transaction to a given clientID
-func (t *Transaction) Send(toClientID string, val uint64, desc string) error {
+func (t *Transaction) Send(toClientID string, val string, desc string) error {
+	v, err := parseCoinStr(val)
+	if err != nil {
+		return nil
+	}
+
 	txnData, err := json.Marshal(SendTxnData{Note: desc})
 	if err != nil {
 		return errors.New("", "Could not serialize description to transaction_data")
@@ -395,7 +404,7 @@ func (t *Transaction) Send(toClientID string, val uint64, desc string) error {
 	go func() {
 		t.txn.TransactionType = transaction.TxnTypeSend
 		t.txn.ToClientID = toClientID
-		t.txn.Value = val
+		t.txn.Value = v
 		t.txn.TransactionData = string(txnData)
 		t.setNonceAndSubmit()
 	}()
