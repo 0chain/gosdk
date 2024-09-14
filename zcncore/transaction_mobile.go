@@ -371,7 +371,7 @@ func (t *Transaction) ExecuteSmartContract(address, methodName string, input int
 		return nil, err
 	}
 
-	err := t.createSmartContractTxn(address, methodName, input, v)
+	err = t.createSmartContractTxn(address, methodName, input, v)
 	if err != nil {
 		return nil, err
 	}

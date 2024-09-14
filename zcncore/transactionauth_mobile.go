@@ -18,7 +18,7 @@ func (ta *TransactionWithAuth) ExecuteSmartContract(address, methodName string,
 		return nil, err
 	}
 
-	err := ta.t.createSmartContractTxn(address, methodName, input, v, feeOpts...)
+	err = ta.t.createSmartContractTxn(address, methodName, input, v, feeOpts...)
 	if err != nil {
 		return nil, err
 	}
