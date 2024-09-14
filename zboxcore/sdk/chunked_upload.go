@@ -707,10 +707,10 @@ func (su *ChunkedUpload) uploadToBlobbers(uploadData UploadData) error {
 
 			if err != nil {
 				if strings.Contains(err.Error(), "duplicate") {
-					//logger.Logger.Fatal("**************************Duplicate upload detected for blobber at position: ", pos)
+					logger.Logger.Fatal("**************************Duplicate upload detected for blobber at position: ", pos)
 					su.consensus.Done()
 					errC := atomic.AddInt32(&su.addConsensus, 1)
-					//logger.Logger.Debug("****************************Consensus count after duplicate detection: ", errC)
+					logger.Logger.Debug("****************************Consensus count after duplicate detection: ", errC)
 					if errC >= int32(su.consensus.consensusThresh) {
 						wgErrors <- err
 					}
@@ -718,9 +718,9 @@ func (su *ChunkedUpload) uploadToBlobbers(uploadData UploadData) error {
 				}
 				logger.Logger.Error("error during sendUploadRequest", err, " connectionID: ", su.progress.ConnectionID)
 				errC := atomic.AddInt32(&errCount, 1)
-				//logger.Logger.Info("***********************************Error count after failure: ", errC)
+				logger.Logger.Info("***********************************Error count after failure: ", errC)
 				if errC > int32(su.allocationObj.ParityShards-1) { // If atleast data shards + 1 number of blobbers can process the upload, it can be repaired later
-					//logger.Logger.Error("************************************Error count exceeded for blobber at position: ", pos)
+					logger.Logger.Error("************************************Error count exceeded for blobber at position: ", pos)
 					wgErrors <- err
 				}
 			}
