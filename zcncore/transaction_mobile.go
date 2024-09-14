@@ -47,10 +47,10 @@ type stakePoolRequest struct {
 
 type TransactionCommon interface {
 	// ExecuteSmartContract implements wrapper for smart contract function
-	ExecuteSmartContract(address, methodName string, input interface{}, val uint64, feeOpts ...FeeOption) (*transaction.Transaction, error)
+	ExecuteSmartContract(address, methodName string, input interface{}, val string, feeOpts ...FeeOption) (*transaction.Transaction, error)
 
 	// Send implements sending token to a given clientid
-	Send(toClientID string, val uint64, desc string) error
+	Send(toClientID string, val string, desc string) error
 
 	VestingAdd(ar VestingAddRequest, value string) error
 
