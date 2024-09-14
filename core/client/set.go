@@ -2,7 +2,6 @@ package client
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/0chain/gosdk/constants"
@@ -134,7 +133,6 @@ func Wallet() *zcncrypto.Wallet {
 }
 
 func SignatureScheme() string {
-	fmt.Println("Jayash client.signatureScheme", client.signatureScheme)
 	return client.signatureScheme
 }
 

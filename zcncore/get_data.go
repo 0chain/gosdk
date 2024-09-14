@@ -225,7 +225,7 @@ func GetSharders(active, stakable bool, limit, offset int) ([]byte, error) {
 //   - numSharders: number of sharders
 //   - timeout: request timeout
 func GetLatestFinalizedMagicBlock(ctx context.Context, numSharders int) (m *block.MagicBlock, err error) {
-	res, err := client.MakeSCRestAPICall(MinerSmartContractAddress, GET_LATEST_FINALIZED_MAGIC_BLOCK, nil)
+	res, err := client.MakeSCRestAPICall("", GET_LATEST_FINALIZED_MAGIC_BLOCK, nil, "")
 	if err != nil {
 		return nil, err
 	}
