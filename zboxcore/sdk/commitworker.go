@@ -88,6 +88,7 @@ type CommitRequestV2 struct {
 	consensusThresh int
 	commitMask      zboxutil.Uint128
 	changeIndex     uint64
+	isRepair        bool
 }
 
 var (
@@ -488,7 +489,9 @@ func (commitReq *CommitRequestV2) processCommit() {
 		commitReq.result = ErrorCommitResult(err.Error())
 		return
 	}
-	commitReq.allocationObj.allocationRoot = hex.EncodeToString(rootHash)
+	if !commitReq.isRepair {
+		commitReq.allocationObj.allocationRoot = hex.EncodeToString(rootHash)
+	}
 	l.Logger.Info("[commit] ", "elapsedGetRefPath ", elapsedGetRefPath.Milliseconds(), " elapsedProcessChanges ", elapsedProcessChanges.Milliseconds(), " elapsedCommit ", elapsedCommit.Milliseconds(), " total ", time.Since(now).Milliseconds())
 	commitReq.result = SuccessCommitResult()
 }

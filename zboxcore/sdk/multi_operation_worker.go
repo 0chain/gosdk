@@ -300,7 +300,7 @@ func (mo *MultiOperation) Process() error {
 		for i := mo.operationMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 			pos = uint64(i.TrailingZeros())
 			if mo.allocationObj.Blobbers[pos].AllocationRoot != mo.allocationObj.allocationRoot {
-				l.Logger.Debug("Blobber allocation root mismatch", mo.allocationObj.Blobbers[pos].Baseurl, mo.allocationObj.Blobbers[pos].AllocationRoot, mo.allocationObj.allocationRoot)
+				l.Logger.Info("Blobber allocation root mismatch", mo.allocationObj.Blobbers[pos].Baseurl, mo.allocationObj.Blobbers[pos].AllocationRoot, mo.allocationObj.allocationRoot)
 				mo.operationMask = mo.operationMask.And(zboxutil.NewUint128(1).Lsh(pos).Not())
 			}
 		}
@@ -405,6 +405,7 @@ func (mo *MultiOperation) commitV2() error {
 			commitMask:      mask,
 			consensusThresh: mo.consensusThresh,
 			changes:         changes,
+			isRepair:        mo.isRepair,
 		}
 		commitReqs[counter] = commitReq
 		counter++

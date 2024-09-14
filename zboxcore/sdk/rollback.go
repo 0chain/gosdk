@@ -341,7 +341,11 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
 	}
 
 	if len(versionMap[latestVersion]) > req || len(versionMap[prevVersion]) > req {
-		a.allocationRoot = versionMap[latestVersion][0].lpm.LatestWM.AllocationRoot
+		if len(versionMap[latestVersion]) > req {
+			a.allocationRoot = versionMap[latestVersion][0].lpm.LatestWM.AllocationRoot
+		} else {
+			a.allocationRoot = versionMap[prevVersion][0].lpm.LatestWM.AllocationRoot
+		}
 		return Commit, blobberRes, nil
 	}
 
