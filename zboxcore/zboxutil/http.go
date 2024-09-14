@@ -292,7 +292,7 @@ func NewReferencePathRequest(baseUrl, allocationID string, allocationTx string, 
 	return req, nil
 }
 
-func NewReferencePathRequestV2(baseUrl, allocationID string, allocationTx string, sig string, paths []string) (*http.Request, error) {
+func NewReferencePathRequestV2(baseUrl, allocationID, allocationTx, sig string, paths []string, loadOnly bool) (*http.Request, error) {
 	nurl, err := joinUrl(baseUrl, REFERENCE_ENDPOINT_V2, allocationTx)
 	if err != nil {
 		return nil, err
@@ -304,6 +304,9 @@ func NewReferencePathRequestV2(baseUrl, allocationID string, allocationTx string
 	}
 	params := url.Values{}
 	params.Add("paths", string(pathBytes))
+	if loadOnly {
+		params.Add("load", "true")
+	}
 	nurl.RawQuery = params.Encode() // Escape Query Parameters
 
 	req, err := http.NewRequest(http.MethodGet, nurl.String(), nil)

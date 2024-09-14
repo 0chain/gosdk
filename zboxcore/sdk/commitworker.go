@@ -92,8 +92,9 @@ type CommitRequestV2 struct {
 }
 
 var (
-	commitChan      map[string]chan CommitRequestInterface
-	initCommitMutex sync.Mutex
+	commitChan           map[string]chan CommitRequestInterface
+	initCommitMutex      sync.Mutex
+	errAlreadySuccessful = errors.New("alread_successful", "")
 )
 
 func InitCommitWorker(blobbers []*blockchain.StorageNode) {
@@ -394,6 +395,12 @@ func (commitReq *CommitRequestV2) blobberID() string {
 	return ""
 }
 
+type refPathResp struct {
+	trie *wmpt.WeightedMerkleTrie
+	pos  uint64
+	err  error
+}
+
 func (commitReq *CommitRequestV2) processCommit() {
 	defer commitReq.wg.Done()
 	l.Logger.Debug("received a commit request")
@@ -413,24 +420,44 @@ func (commitReq *CommitRequestV2) processCommit() {
 	// 	return
 	// }
 	var (
-		trie *wmpt.WeightedMerkleTrie
-		err  error
-		pos  uint64
+		pos     uint64
+		mu      = &sync.Mutex{}
+		success bool
 	)
 	now := time.Now()
-
+	respChan := make(chan refPathResp, commitReq.commitMask.CountOnes())
 	for i := commitReq.commitMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
-		blobber := commitReq.allocationObj.Blobbers[pos]
-		trie, err = getReferencePathV2(blobber, commitReq.allocationObj.ID, commitReq.allocationObj.Tx, commitReq.sig, paths)
-		if err != nil {
-			commitReq.commitMask = commitReq.commitMask.And(zboxutil.NewUint128(1).Lsh(pos).Not())
-			l.Logger.Error("Error getting reference path: ", err)
-			continue
-		}
-		changeIndex = pos
-		break
+		go func(ind uint64) {
+			blobber := commitReq.allocationObj.Blobbers[ind]
+			trie, err := getReferencePathV2(blobber, commitReq.allocationObj.ID, commitReq.allocationObj.Tx, commitReq.sig, paths, &success, mu)
+			resp := refPathResp{
+				trie: trie,
+				err:  err,
+				pos:  ind,
+			}
+			respChan <- resp
+		}(pos)
 	}
+
+	var (
+		trie *wmpt.WeightedMerkleTrie
+		err  error
+	)
+
+	for {
+		resp := <-respChan
+		if resp.err == nil {
+			trie = resp.trie
+			break
+		} else if resp.err != errAlreadySuccessful {
+			commitReq.commitMask = commitReq.commitMask.And(zboxutil.NewUint128(1).Lsh(resp.pos).Not())
+			if commitReq.commitMask.CountOnes() < commitReq.consensusThresh {
+				commitReq.result = ErrorCommitResult("Failed to get reference path " + resp.err.Error())
+			}
+		}
+	}
+
 	if trie == nil {
 		commitReq.result = ErrorCommitResult("Failed to get reference path")
 		return
@@ -459,7 +486,6 @@ func (commitReq *CommitRequestV2) processCommit() {
 	wg := sync.WaitGroup{}
 	errSlice := make([]error, commitReq.commitMask.CountOnes())
 	counter := 0
-	mu := sync.Mutex{}
 	for i := commitReq.commitMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		blobber := commitReq.allocationObj.Blobbers[pos]
@@ -589,7 +615,7 @@ func getFormWritter(connectionID string, wmData, fileIDMetaData []byte, body *by
 	return formWriter, nil
 }
 
-func getReferencePathV2(blobber *blockchain.StorageNode, allocationID, allocationTx, sig string, paths []string) (*wmpt.WeightedMerkleTrie, error) {
+func getReferencePathV2(blobber *blockchain.StorageNode, allocationID, allocationTx, sig string, paths []string, success *bool, mu *sync.Mutex) (*wmpt.WeightedMerkleTrie, error) {
 	if len(paths) == 0 {
 		var node wmpt.Node
 		if blobber.LatestWM != nil {
@@ -600,7 +626,7 @@ func getReferencePathV2(blobber *blockchain.StorageNode, allocationID, allocatio
 		return trie, nil
 	}
 	now := time.Now()
-	req, err := zboxutil.NewReferencePathRequestV2(blobber.Baseurl, allocationID, allocationTx, sig, paths)
+	req, err := zboxutil.NewReferencePathRequestV2(blobber.Baseurl, allocationID, allocationTx, sig, paths, false)
 	if err != nil {
 		l.Logger.Error("Creating ref path req", err)
 		return nil, err
@@ -636,6 +662,11 @@ func getReferencePathV2(blobber *blockchain.StorageNode, allocationID, allocatio
 		return nil, err
 	}
 	elapsedRefPath := time.Since(now)
+	mu.Lock()
+	defer mu.Unlock()
+	if *success {
+		return nil, errAlreadySuccessful
+	}
 	trie := wmpt.New(nil, nil)
 	if lR.LatestWM != nil {
 		err = lR.LatestWM.VerifySignature(client.GetClientPublicKey())
@@ -656,7 +687,7 @@ func getReferencePathV2(blobber *blockchain.StorageNode, allocationID, allocatio
 			return nil, errors.New("allocation_root_mismatch", fmt.Sprintf("Expected allocation root %s, got %s", lR.LatestWM.AllocationRoot, hex.EncodeToString(trie.Root())))
 		}
 	}
-
+	*success = true
 	return trie, nil
 }
 
