@@ -536,6 +536,7 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 
 	if len(toClient) > 0 {
 		txn.ToClientID = toClient[0]
+		txn.TransactionType = TxnTypeSend
 	}
 
 	// adjust fees if not set
