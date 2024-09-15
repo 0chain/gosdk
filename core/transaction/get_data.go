@@ -13,7 +13,7 @@ const (
 	ZCNSCSmartContractAddress   = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712e0`
 )
 const (
-	GET_MINERSC_GLOBALS     = "/globalSettings"
+	GET_MINERSC_GLOBALS     = "/configs"
 	STORAGESC_GET_SC_CONFIG = "/storage-config"
 )
 
