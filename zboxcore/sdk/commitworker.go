@@ -521,10 +521,10 @@ func (commitReq *CommitRequestV2) processCommit() {
 }
 
 func (req *CommitRequestV2) commitBlobber(rootHash []byte, rootWeight, changeIndex uint64, blobber *blockchain.StorageNode) (err error) {
-	hashSignatureMap := make(map[string]string)
+	hashSignatureMap := make(map[string]string, len(req.changes))
 	mu := sync.Mutex{}
 	eg, _ := errgroup.WithContext(context.TODO())
-	eg.SetLimit(10)
+	eg.SetLimit(4)
 	for i := 0; i < len(req.changes); i++ {
 		if req.changes[i] == nil {
 			continue
