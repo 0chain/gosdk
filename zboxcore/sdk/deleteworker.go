@@ -669,7 +669,7 @@ func (dop *DeleteOperation) ProcessChangeV2(trie *wmpt.WeightedMerkleTrie, chang
 }
 
 func (dop *DeleteOperation) GetLookupHash(changeIndex uint64) string {
-	if dop.refs[changeIndex] == nil || dop.refs[changeIndex].GetType() == fileref.DIRECTORY {
+	if dop.refs == nil || dop.refs[changeIndex] == nil || dop.refs[changeIndex].GetType() == fileref.DIRECTORY {
 		return ""
 	}
 	return dop.lookupHash

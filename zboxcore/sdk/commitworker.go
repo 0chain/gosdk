@@ -414,11 +414,7 @@ func (commitReq *CommitRequestV2) processCommit() {
 			commitReq.changes[i] = nil
 		}
 	}
-	// if len(paths) == 0 {
-	// 	l.Logger.Debug("Nothing to commit")
-	// 	commitReq.result = SuccessCommitResult()
-	// 	return
-	// }
+
 	var (
 		pos     uint64
 		mu      = &sync.Mutex{}
