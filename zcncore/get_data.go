@@ -224,18 +224,24 @@ func GetSharders(active, stakable bool, limit, offset int) ([]byte, error) {
 // GetLatestFinalizedMagicBlock gets latest finalized magic block
 //   - numSharders: number of sharders
 //   - timeout: request timeout
-func GetLatestFinalizedMagicBlock(ctx context.Context, numSharders int) (m *block.MagicBlock, err error) {
+func GetLatestFinalizedMagicBlock() (m *block.MagicBlock, err error) {
 	res, err := client.MakeSCRestAPICall("", GET_LATEST_FINALIZED_MAGIC_BLOCK, nil, "")
 	if err != nil {
 		return nil, err
 	}
 
-	err = json.Unmarshal(res, &m)
+	type respObj struct {
+		MagicBlock *block.MagicBlock `json:"magic_block"`
+	}
+
+	var resp respObj
+
+	err = json.Unmarshal(res, &resp)
 	if err != nil {
 		return nil, err
 	}
 
-	return m, nil
+	return resp.MagicBlock, nil
 }
 
 // GetMinerSCUserInfo retrieve user stake pools for the providers related to the Miner SC (miners/sharders).

@@ -52,7 +52,7 @@ const (
 	GET_MINERSC_GLOBALS  = MINERSC_PFX + "/globalSettings"
 	GET_MINERSC_USER     = MINERSC_PFX + "/getUserPools"
 	GET_MINERSC_MINERS   = MINERSC_PFX + "/getMinerList"
-	GET_MINERSC_SHARDERS = MINERSC_PFX + "/getSharderList"
+	GET_MINERSC_SHARDERS = "/getSharderList"
 	GET_MINERSC_EVENTS   = MINERSC_PFX + "/getEvents"
 
 	// storage SC
