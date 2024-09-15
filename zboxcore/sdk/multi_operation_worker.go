@@ -62,8 +62,9 @@ type MultiOperation struct {
 	operationMask zboxutil.Uint128
 	maskMU        *sync.Mutex
 	Consensus
-	changes  [][]allocationchange.AllocationChange
-	isRepair bool
+	changes   [][]allocationchange.AllocationChange
+	changesV2 []allocationchange.AllocationChangeV2
+	isRepair  bool
 }
 
 func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
@@ -166,7 +167,11 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 func (mo *MultiOperation) Process() error {
 	l.Logger.Debug("MultiOperation Process start")
 	wg := &sync.WaitGroup{}
-	mo.changes = make([][]allocationchange.AllocationChange, len(mo.operations))
+	if mo.allocationObj.StorageVersion == 0 {
+		mo.changes = make([][]allocationchange.AllocationChange, len(mo.operations))
+	} else {
+		mo.changesV2 = make([]allocationchange.AllocationChangeV2, 0, len(mo.operations))
+	}
 	ctx := mo.ctx
 	ctxCncl := mo.ctxCncl
 	defer ctxCncl(nil)
@@ -204,6 +209,7 @@ func (mo *MultiOperation) Process() error {
 				} else {
 					mo.operationMask = mo.operationMask.And(mask)
 				}
+				mo.changesV2 = append(mo.changesV2, op)
 				mo.maskMU.Unlock()
 			} else {
 				mo.operationMask = mo.operationMask.Or(mask)
@@ -392,9 +398,12 @@ func (mo *MultiOperation) commitV2() error {
 	wg := &sync.WaitGroup{}
 	for _, mask := range rootMap {
 		wg.Add(1)
-		changes := make([]allocationchange.AllocationChangeV2, 0, len(mo.operations))
-		for _, op := range mo.operations {
-			changes = append(changes, op)
+		var changes []allocationchange.AllocationChangeV2
+		if len(rootMap) > 1 {
+			changes = make([]allocationchange.AllocationChangeV2, 0, len(mo.operations))
+			changes = append(changes, mo.changesV2...)
+		} else {
+			changes = mo.changesV2
 		}
 		commitReq := &CommitRequestV2{
 			allocationObj:   mo.allocationObj,
