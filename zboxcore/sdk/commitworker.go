@@ -28,6 +28,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/minio/sha256-simd"
+	"golang.org/x/sync/errgroup"
 )
 
 type ReferencePathResult struct {
@@ -470,7 +471,7 @@ func (commitReq *CommitRequestV2) processCommit() {
 			continue
 		}
 		err = change.ProcessChangeV2(trie, changeIndex)
-		if err != nil {
+		if err != nil && err != wmpt.ErrNotFound {
 			l.Logger.Error("Error processing change ", err)
 			commitReq.result = ErrorCommitResult("Failed to process change " + err.Error())
 			return
@@ -521,23 +522,39 @@ func (commitReq *CommitRequestV2) processCommit() {
 
 func (req *CommitRequestV2) commitBlobber(rootHash []byte, rootWeight, changeIndex uint64, blobber *blockchain.StorageNode) (err error) {
 	hashSignatureMap := make(map[string]string)
-	for _, change := range req.changes {
-		if change == nil {
+	mu := sync.Mutex{}
+	eg, _ := errgroup.WithContext(context.TODO())
+	eg.SetLimit(10)
+	for i := 0; i < len(req.changes); i++ {
+		if req.changes[i] == nil {
 			continue
 		}
-		hash := change.GetHash(changeIndex, blobber.ID)
-		if hash == "" {
-			return errors.New("hash_signature_failed", "Failed to add hash signature")
-		}
-		if hash == emptyHash {
-			continue
-		}
-		sig, err := client.Sign(hash)
-		if err != nil {
-			l.Logger.Error("Error signing hash", err)
-			return err
-		}
-		hashSignatureMap[change.GetLookupHash(changeIndex)] = sig
+		change := req.changes[i]
+		eg.Go(func() error {
+			hash := change.GetHash(changeIndex, blobber.ID)
+			if hash == "" {
+				return errors.New("hash_signature_failed", "Failed to add hash signature")
+			}
+			if hash == emptyHash {
+				return nil
+			}
+
+			sig, sigErr := client.Sign(hash)
+			if sigErr != nil {
+				l.Logger.Error("Error signing hash", sigErr)
+				mu.Lock()
+				err = sigErr
+				mu.Unlock()
+			}
+			mu.Lock()
+			hashSignatureMap[change.GetLookupHash(changeIndex)] = sig
+			mu.Unlock()
+			return nil
+		})
+	}
+	err = eg.Wait()
+	if err != nil {
+		return err
 	}
 	hasher := sha256.New()
 	var prevChainSize int64
