@@ -454,6 +454,7 @@ func (commitReq *CommitRequestV2) processCommit() {
 			commitReq.commitMask = commitReq.commitMask.And(zboxutil.NewUint128(1).Lsh(resp.pos).Not())
 			if commitReq.commitMask.CountOnes() < commitReq.consensusThresh {
 				commitReq.result = ErrorCommitResult("Failed to get reference path " + resp.err.Error())
+				return
 			}
 		}
 	}
@@ -474,7 +475,7 @@ func (commitReq *CommitRequestV2) processCommit() {
 		}
 		err = change.ProcessChangeV2(trie, changeIndex)
 		if err != nil {
-			l.Logger.Error("Error processing change", err)
+			l.Logger.Error("Error processing change ", err)
 			commitReq.result = ErrorCommitResult("Failed to process change " + err.Error())
 			return
 		}

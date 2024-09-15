@@ -431,7 +431,7 @@ func (mo *MultiOperation) commitV2() error {
 	}
 	if !mo.isConsensusOk() {
 		err := zboxutil.MajorError(errSlice)
-		if err != nil {
+		if err == nil {
 			err = errors.New("consensus_not_met", fmt.Sprintf("Successfully committed to %d blobbers, but required %d", mo.consensus, len(mo.allocationObj.Blobbers)))
 		}
 		if mo.getConsensus() != 0 {

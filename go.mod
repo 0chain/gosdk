@@ -3,7 +3,7 @@ module github.com/0chain/gosdk
 go 1.21
 
 require (
-	github.com/0chain/common v1.13.1-0.20240911163240-3f40100a695a
+	github.com/0chain/common v1.13.1-0.20240915081248-6eba55b916e8
 	github.com/0chain/errors v1.0.3
 	github.com/Luzifer/go-openssl/v3 v3.1.0
 	github.com/btcsuite/btcd v0.23.4

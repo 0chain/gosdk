@@ -40,8 +40,8 @@ cloud.google.com/go/storage v1.10.0/go.mod h1:FLPqc6j+Ki4BU591ie1oL6qBQGu2Bl/tZ9
 cloud.google.com/go/storage v1.14.0/go.mod h1:GrKmX003DSIwi9o29oFT7YDnHYwZoctc3fOKtUw0Xmo=
 collectd.org v0.3.0/go.mod h1:A/8DzQBkF6abtvrT2j/AU/4tiBgJWYyh0y/oB/4MlWE=
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
-github.com/0chain/common v1.13.1-0.20240911163240-3f40100a695a h1:NzweELzPLiZpaa9lLzEt/zXoxaU1YazA2weFjzeCqEI=
-github.com/0chain/common v1.13.1-0.20240911163240-3f40100a695a/go.mod h1:lcwOe6fIgP7w/0sFSFB13rqDI43BGv5jk4PddArBaBM=
+github.com/0chain/common v1.13.1-0.20240915081248-6eba55b916e8 h1:RNz7mwQzhmREUt7LULE9ZitEe7eeOE7yNaa2HfdWEeY=
+github.com/0chain/common v1.13.1-0.20240915081248-6eba55b916e8/go.mod h1:vHK9Q0/nz28PxmKsLSMLzEs5iK6QVgl1LxdDQdR7y6s=
 github.com/0chain/errors v1.0.3 h1:QQZPFxTfnMcRdt32DXbzRQIfGWmBsKoEdszKQDb0rRM=
 github.com/0chain/errors v1.0.3/go.mod h1:xymD6nVgrbgttWwkpSCfLLEJbFO6iHGQwk/yeSuYkIc=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
