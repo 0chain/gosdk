@@ -191,7 +191,7 @@ func SetLogFile(logFile string, verbose bool) {
 
 // CreateWalletOffline creates the wallet for the config signature scheme.
 func CreateWalletOffline() (string, error) {
-	sigScheme := zcncrypto.NewSignatureScheme(client.SignatureScheme())
+	sigScheme := zcncrypto.NewSignatureScheme("bls0chain")
 	wallet, err := sigScheme.GenerateKeys()
 	if err != nil {
 		return "", errors.New("failed to generate keys: " + err.Error())
