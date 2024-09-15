@@ -157,17 +157,19 @@ const (
 // makeScURL creates url.URL to make smart contract request to sharder.
 func makeScURL(params map[string]string, sharder, restApiUrl, scAddress, relativePath string) *url.URL {
 	uString := fmt.Sprintf("%v/%v%v%v", sharder, restApiUrl, scAddress, relativePath)
-	//log.Println("SC URL:", uString)
-	//log.Println("Sharders:", sharder)
-	//log.Println("Rest API URL:", restApiUrl)
-	//log.Println("SC Address:", scAddress)
-	//log.Println("Relative Path:", relativePath)
+
 	u, _ := url.Parse(uString)
 	q := u.Query()
 	for k, v := range params {
 		q.Add(k, v)
 	}
 	u.RawQuery = q.Encode()
+
+	//log.Println("SC URL:", u.RawQuery)
+	//log.Println("Sharders:", sharder)
+	//log.Println("Rest API URL:", restApiUrl)
+	//log.Println("SC Address:", scAddress)
+	//log.Println("Relative Path:", relativePath)
 
 	return u
 }

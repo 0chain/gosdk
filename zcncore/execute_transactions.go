@@ -208,3 +208,10 @@ func Send(toClientID string, tokens uint64, desc string) (hash, out string, nonc
 		InputArgs: SendTxnData{Note: desc},
 	}, tokens, toClientID)
 }
+
+func Faucet(tokens uint64, input string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+	return transaction.SmartContractTxnValue(FaucetSmartContractAddress, transaction.SmartContractTxnData{
+		Name:      "pour",
+		InputArgs: input,
+	}, tokens)
+}

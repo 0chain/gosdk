@@ -47,11 +47,11 @@ const (
 
 	MINERSC_PFX          = `/v1/screst/` + MinerSmartContractAddress
 	GET_MINERSC_NODE     = MINERSC_PFX + "/nodeStat"
-	GET_MINERSC_POOL     = MINERSC_PFX + "/nodePoolStat"
+	GET_MINERSC_POOL     = "/nodePoolStat"
 	GET_MINERSC_CONFIG   = MINERSC_PFX + "/configs"
 	GET_MINERSC_GLOBALS  = MINERSC_PFX + "/globalSettings"
 	GET_MINERSC_USER     = MINERSC_PFX + "/getUserPools"
-	GET_MINERSC_MINERS   = MINERSC_PFX + "/getMinerList"
+	GET_MINERSC_MINERS   = "/getMinerList"
 	GET_MINERSC_SHARDERS = "/getSharderList"
 	GET_MINERSC_EVENTS   = MINERSC_PFX + "/getEvents"
 
