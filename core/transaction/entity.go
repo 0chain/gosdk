@@ -303,7 +303,7 @@ func SendTransactionSync(txn *Transaction, miners []string) error {
 	}
 
 	if failureCount == len(miners) {
-		return errors.New("transaction_send_error", dominant)
+		return fmt.Errorf(dominant)
 	}
 
 	return nil
@@ -319,7 +319,7 @@ func sendTransactionToURL(url string, txn *Transaction, wg *sync.WaitGroup) ([]b
 	if postResponse.StatusCode >= 200 && postResponse.StatusCode <= 299 {
 		return []byte(postResponse.Body), nil
 	}
-	return nil, errors.Wrap(err, errors.New("transaction_send_error", postResponse.Body))
+	return nil, errors.Wrap(err, errors.New("submit transaction failed", postResponse.Body))
 }
 
 type cachedObject struct {
@@ -335,7 +335,7 @@ func retriveFromTable(table map[string]map[string]int64, txnName, toAddress stri
 		if txnName == "transfer" {
 			fees = uint64(table["transfer"]["transfer"])
 		} else {
-			return 0, fmt.Errorf("Jayash invalid transaction")
+			return 0, fmt.Errorf("failed to get fees for txn %s", txnName)
 		}
 	}
 	return fees, nil

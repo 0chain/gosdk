@@ -203,8 +203,8 @@ type SendTxnData struct {
 }
 
 func Send(toClientID string, tokens uint64, desc string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
-	return transaction.SmartContractTxn(ZCNSCSmartContractAddress, transaction.SmartContractTxnData{
-		Name:      transaction.ZCNSC_COLLECT_REWARD,
+	return transaction.SmartContractTxnValue(MinerSmartContractAddress, transaction.SmartContractTxnData{
+		Name:      "transfer",
 		InputArgs: SendTxnData{Note: desc},
-	}, toClientID)
+	}, tokens, toClientID)
 }
