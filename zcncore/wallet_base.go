@@ -32,53 +32,15 @@ const (
 	GET_FEE_STATS                    = `/v1/block/get/fee_stats`
 	GET_CHAIN_STATS                  = `/v1/chain/get/stats`
 
-	// faucet sc
-
-	FAUCETSC_PFX        = `/v1/screst/` + FaucetSmartContractAddress
-	GET_FAUCETSC_CONFIG = FAUCETSC_PFX + `/faucet-config`
-
-	// ZCNSC_PFX zcn sc
-	ZCNSC_PFX                      = `/v1/screst/` + ZCNSCSmartContractAddress
-	GET_MINT_NONCE                 = ZCNSC_PFX + `/v1/mint_nonce`
-	GET_NOT_PROCESSED_BURN_TICKETS = ZCNSC_PFX + `/v1/not_processed_burn_tickets`
-	GET_AUTHORIZER                 = ZCNSC_PFX + `/getAuthorizer`
+	GET_MINT_NONCE = `/v1/mint_nonce`
 
 	// miner SC
 
-	MINERSC_PFX          = `/v1/screst/` + MinerSmartContractAddress
-	GET_MINERSC_NODE     = MINERSC_PFX + "/nodeStat"
+	GET_MINERSC_NODE     = "/nodeStat"
 	GET_MINERSC_POOL     = "/nodePoolStat"
-	GET_MINERSC_CONFIG   = MINERSC_PFX + "/configs"
-	GET_MINERSC_GLOBALS  = MINERSC_PFX + "/globalSettings"
-	GET_MINERSC_USER     = MINERSC_PFX + "/getUserPools"
+	GET_MINERSC_USER     = "/getUserPools"
 	GET_MINERSC_MINERS   = "/getMinerList"
 	GET_MINERSC_SHARDERS = "/getSharderList"
-	GET_MINERSC_EVENTS   = MINERSC_PFX + "/getEvents"
-
-	// storage SC
-
-	STORAGESC_PFX = "/v1/screst/" + StorageSmartContractAddress
-
-	STORAGESC_GET_SC_CONFIG            = STORAGESC_PFX + "/storage-config"
-	STORAGESC_GET_CHALLENGE_POOL_INFO  = STORAGESC_PFX + "/getChallengePoolStat"
-	STORAGESC_GET_ALLOCATION           = STORAGESC_PFX + "/allocation"
-	STORAGESC_GET_ALLOCATIONS          = STORAGESC_PFX + "/allocations"
-	STORAGESC_GET_READ_POOL_INFO       = STORAGESC_PFX + "/getReadPoolStat"
-	STORAGESC_GET_STAKE_POOL_INFO      = STORAGESC_PFX + "/getStakePoolStat"
-	STORAGESC_GET_STAKE_POOL_USER_INFO = STORAGESC_PFX + "/getUserStakePoolStat"
-	STORAGESC_GET_USER_LOCKED_TOTAL    = STORAGESC_PFX + "/getUserLockedTotal"
-	STORAGESC_GET_BLOBBERS             = STORAGESC_PFX + "/getblobbers"
-	STORAGESC_GET_BLOBBER              = STORAGESC_PFX + "/getBlobber"
-	STORAGESC_GET_VALIDATOR            = STORAGESC_PFX + "/get_validator"
-	STORAGESC_GET_TRANSACTIONS         = STORAGESC_PFX + "/transactions"
-
-	STORAGE_GET_SNAPSHOT            = STORAGESC_PFX + "/replicate-snapshots"
-	STORAGE_GET_BLOBBER_SNAPSHOT    = STORAGESC_PFX + "/replicate-blobber-aggregates"
-	STORAGE_GET_MINER_SNAPSHOT      = STORAGESC_PFX + "/replicate-miner-aggregates"
-	STORAGE_GET_SHARDER_SNAPSHOT    = STORAGESC_PFX + "/replicate-sharder-aggregates"
-	STORAGE_GET_AUTHORIZER_SNAPSHOT = STORAGESC_PFX + "/replicate-authorizer-aggregates"
-	STORAGE_GET_VALIDATOR_SNAPSHOT  = STORAGESC_PFX + "/replicate-validator-aggregates"
-	STORAGE_GET_USER_SNAPSHOT       = STORAGESC_PFX + "/replicate-user-aggregates"
 )
 
 const (
