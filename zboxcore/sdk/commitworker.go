@@ -28,7 +28,6 @@ import (
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/minio/sha256-simd"
-	"golang.org/x/sync/errgroup"
 )
 
 type ReferencePathResult struct {
@@ -521,41 +520,27 @@ func (commitReq *CommitRequestV2) processCommit() {
 }
 
 func (req *CommitRequestV2) commitBlobber(rootHash []byte, rootWeight, changeIndex uint64, blobber *blockchain.StorageNode) (err error) {
+	now := time.Now()
 	hashSignatureMap := make(map[string]string, len(req.changes))
-	mu := sync.Mutex{}
-	eg, _ := errgroup.WithContext(context.TODO())
-	eg.SetLimit(4)
-	for i := 0; i < len(req.changes); i++ {
-		if req.changes[i] == nil {
+	for _, change := range req.changes {
+		if change == nil {
 			continue
 		}
-		change := req.changes[i]
-		eg.Go(func() error {
-			hash := change.GetHash(changeIndex, blobber.ID)
-			if hash == "" {
-				return errors.New("hash_signature_failed", "Failed to add hash signature")
-			}
-			if hash == emptyHash {
-				return nil
-			}
-
-			sig, sigErr := client.Sign(hash)
-			if sigErr != nil {
-				l.Logger.Error("Error signing hash", sigErr)
-				mu.Lock()
-				err = sigErr
-				mu.Unlock()
-			}
-			mu.Lock()
-			hashSignatureMap[change.GetLookupHash(changeIndex)] = sig
-			mu.Unlock()
-			return nil
-		})
+		hash := change.GetHash(changeIndex, blobber.ID)
+		if hash == "" {
+			return errors.New("hash_signature_failed", "Failed to add hash signature")
+		}
+		if hash == emptyHash {
+			continue
+		}
+		sig, err := client.Sign(hash)
+		if err != nil {
+			l.Logger.Error("Error signing hash", err)
+			return err
+		}
+		hashSignatureMap[change.GetLookupHash(changeIndex)] = sig
 	}
-	err = eg.Wait()
-	if err != nil {
-		return err
-	}
+	elapsedSign := time.Since(now)
 	hasher := sha256.New()
 	var prevChainSize int64
 	if blobber.LatestWM != nil {
@@ -606,6 +591,8 @@ func (req *CommitRequestV2) commitBlobber(rootHash []byte, rootWeight, changeInd
 	}
 	blobber.LatestWM = wm
 	blobber.AllocationRoot = allocationRoot
+	elapsedSubmit := time.Since(now) - elapsedSign
+	l.Logger.Info("[commit] ", "elapsedSign: ", elapsedSign.Milliseconds(), " elapsedSubmit: ", elapsedSubmit.Milliseconds())
 	return
 }
 
