@@ -131,7 +131,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 				buff := &bytebufferpool.ByteBuffer{
 					B: dataBuffers[ind].Bytes(),
 				}
-				uploadPool.Put(buff)
+				formDataPool.Put(buff)
 
 				if err != nil {
 					return err

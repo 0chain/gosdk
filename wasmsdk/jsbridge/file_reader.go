@@ -5,7 +5,6 @@ package jsbridge
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"syscall/js"
 
@@ -67,7 +66,6 @@ func (r *FileReader) Read(p []byte) (int, error) {
 		buff := &bytebufferpool.ByteBuffer{
 			B: r.buf,
 		}
-		fmt.Println("put reader buffer: ", cap(buff.B))
 		common.MemPool.Put(buff)
 		return n, io.EOF
 	}
@@ -82,7 +80,6 @@ func (r *FileReader) initBuffer() error {
 	}
 	buff := common.MemPool.Get()
 	if cap(buff.B) < int(bufSize) {
-		fmt.Println("creating reader buffer: ", cap(buff.B), bufSize)
 		buff.B = make([]byte, bufSize)
 	}
 	r.buf = buff.B[:bufSize]

@@ -672,8 +672,7 @@ func sendUploadRequest(dataBuffers []*bytes.Buffer, contentSlice []string, blobb
 				buff := &bytebufferpool.ByteBuffer{
 					B: dataBuffers[ind].Bytes(),
 				}
-				fmt.Println("put form buffer: ", cap(buff.B))
-				uploadPool.Put(buff)
+				formDataPool.Put(buff)
 
 				if err != nil {
 					return err
