@@ -15,13 +15,14 @@ import (
 // SplitWallet represents wallet info for split wallet
 // The client id and client key are the same as the primary wallet client id and client key
 type SplitWallet struct {
-	ClientID      string `json:"client_id"`
-	ClientKey     string `json:"client_key"`
-	PublicKey     string `json:"public_key"`
-	PrivateKey    string `json:"private_key"`
-	PeerPublicKey string `json:"peer_public_key"`
-	IsRevoked     bool   `json:"is_revoked"`
-	ExpiredAt     int64  `json:"expired_at"`
+	ClientID      string   `json:"client_id"`
+	ClientKey     string   `json:"client_key"`
+	PublicKey     string   `json:"public_key"`
+	PrivateKey    string   `json:"private_key"`
+	PeerPublicKey string   `json:"peer_public_key"`
+	Roles         []string `json:"roles"`
+	IsRevoked     bool     `json:"is_revoked"`
+	ExpiredAt     int64    `json:"expired_at"`
 }
 
 // CallZauthSetup calls the zauth setup endpoint
@@ -452,7 +453,6 @@ func ZauthSignTxn(serverAddr string) sys.AuthorizeFunc {
 
 func ZauthAuthCommon(serverAddr string) sys.AuthorizeFunc {
 	return func(msg string) (string, error) {
-		// return func(msg string) (string, error) {
 		req, err := http.NewRequest("POST", serverAddr+"/sign/msg", bytes.NewBuffer([]byte(msg)))
 		if err != nil {
 			return "", errors.Wrap(err, "failed to create HTTP request")
@@ -495,40 +495,4 @@ type AuthMessage struct {
 
 type AuthResponse struct {
 	Sig string `json:"sig"`
-}
-
-func ZauthSignMsg(serverAddr string) sys.SignFunc {
-	return func(hash string, signatureScheme string, keys []sys.KeyPair) (string, error) {
-		sig, err := SignWithKey(keys[0].PrivateKey, hash)
-		if err != nil {
-			return "", err
-		}
-
-		data, err := json.Marshal(AuthMessage{
-			Hash:      hash,
-			Signature: sig,
-			ClientID:  client.GetClient().ClientID,
-		})
-		if err != nil {
-			return "", err
-		}
-
-		// fmt.Println("auth - sys.AuthCommon:", sys.AuthCommon)
-		if sys.AuthCommon == nil {
-			return "", errors.New("authCommon is not set")
-		}
-
-		rsp, err := sys.AuthCommon(string(data))
-		if err != nil {
-			return "", err
-		}
-
-		var ar AuthResponse
-		err = json.Unmarshal([]byte(rsp), &ar)
-		if err != nil {
-			return "", err
-		}
-
-		return AddSignature(client.GetClientPrivateKey(), ar.Sig, hash)
-	}
 }
