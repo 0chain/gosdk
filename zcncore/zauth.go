@@ -153,14 +153,25 @@ func CallZauthDelete(serverAddr, token, clientID string) error {
 	return nil
 }
 
-func CallZvaultNewWalletString(serverAddr, token, clientID string) (string, error) {
+type newWalletRequest struct {
+	Roles []string `json:"roles"`
+}
+
+func CallZvaultNewWalletString(serverAddr, token, clientID string, roles []string) (string, error) {
 	// Add your code here
 	endpoint := serverAddr + "/generate"
 	if clientID != "" {
 		endpoint = endpoint + "/" + clientID
 	}
 
-	req, err := http.NewRequest("POST", endpoint, nil)
+	data, err := json.Marshal(newWalletRequest{
+		Roles: roles,
+	})
+	if err != nil {
+		return "", errors.Wrap(err, "failed to serialize request")
+	}
+
+	req, err := http.NewRequest("POST", endpoint, bytes.NewReader(data))
 	if err != nil {
 		return "", errors.Wrap(err, "failed to create HTTP request")
 	}
