@@ -124,7 +124,7 @@ func MakeSCRestAPICall(scAddress, relativePath string, params map[string]string,
 	}
 
 	if hashMaxCounter == 0 {
-		return nil, errors.New("request_sharders", "no valid responses, last err: "+lastErrMsg)
+		return nil, errors.New("", lastErrMsg)
 	}
 
 	return resMaxCounterBody, nil
