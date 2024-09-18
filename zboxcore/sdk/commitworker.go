@@ -446,7 +446,7 @@ func (commitReq *CommitRequestV2) processCommit() {
 		if resp.err == nil {
 			trie = resp.trie
 			latestWM := commitReq.allocationObj.Blobbers[resp.pos].LatestWM
-			if commitReq.timestamp <= latestWM.Timestamp {
+			if latestWM != nil && commitReq.timestamp <= latestWM.Timestamp {
 				commitReq.timestamp = latestWM.Timestamp + 1
 			}
 			break
