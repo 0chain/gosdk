@@ -520,8 +520,6 @@ func (commitReq *CommitRequestV2) processCommit() {
 }
 
 func (req *CommitRequestV2) commitBlobber(rootHash []byte, rootWeight, changeIndex uint64, blobber *blockchain.StorageNode) (err error) {
-	now := time.Now()
-	elapsedSign := time.Since(now)
 	hasher := sha256.New()
 	var prevChainSize int64
 	if blobber.LatestWM != nil {
@@ -567,8 +565,6 @@ func (req *CommitRequestV2) commitBlobber(rootHash []byte, rootWeight, changeInd
 	}
 	blobber.LatestWM = wm
 	blobber.AllocationRoot = allocationRoot
-	elapsedSubmit := time.Since(now) - elapsedSign
-	l.Logger.Info("[commit] ", "elapsedSign: ", elapsedSign.Milliseconds(), " elapsedSubmit: ", elapsedSubmit.Milliseconds())
 	return
 }
 
