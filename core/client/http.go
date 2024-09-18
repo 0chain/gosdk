@@ -307,7 +307,7 @@ func GetBalance(clientIDs ...string) (*GetBalanceResponse, error) {
 	if len(clientIDs) > 0 {
 		clientID = clientIDs[0]
 	} else {
-		clientID = ClientID()
+		clientID = Id()
 	}
 
 	if res, err = MakeSCRestAPICall("", GetBalance, map[string]string{

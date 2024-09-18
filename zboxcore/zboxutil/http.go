@@ -186,7 +186,7 @@ func NewHTTPRequest(method string, url string, data []byte) (*http.Request, cont
 }
 
 func setClientInfo(req *http.Request) {
-	req.Header.Set("X-App-Client-ID", client.ClientID())
+	req.Header.Set("X-App-Client-ID", client.Id())
 	req.Header.Set("X-App-Client-Key", client.PublicKey())
 }
 
@@ -589,7 +589,7 @@ func NewFastUploadRequest(baseURL, allocationID string, allocationTx string, bod
 }
 
 func setFastClientInfoWithSign(req *fasthttp.Request, allocation string) error {
-	req.Header.Set("X-App-Client-ID", client.ClientID())
+	req.Header.Set("X-App-Client-ID", client.Id())
 	req.Header.Set("X-App-Client-Key", client.PublicKey())
 
 	sign, err := client.Sign(encryption.Hash(allocation))
@@ -745,7 +745,7 @@ func NewFastDownloadRequest(baseUrl, allocationID, allocationTx string) (*fastht
 	// }
 	req := fasthttp.AcquireRequest()
 	req.SetRequestURI(u.String())
-	req.Header.Set("X-App-Client-ID", client.ClientID())
+	req.Header.Set("X-App-Client-ID", client.Id())
 	req.Header.Set("X-App-Client-Key", client.PublicKey())
 
 	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)

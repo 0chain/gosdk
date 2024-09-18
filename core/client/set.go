@@ -13,11 +13,13 @@ var (
 	client Client
 )
 
-type SignFunc func(hash string) (string, error)
+type SignFunc func(hash string, clientId ...string) (string, error)
 
-// maintains client's information
+// Client maintains client's information
 type Client struct {
 	wallet          *zcncrypto.Wallet
+	wallets         map[string]*zcncrypto.Wallet
+	useMultiWallets bool
 	signatureScheme string
 	splitKeyWallet  bool
 	authUrl         string
@@ -30,10 +32,18 @@ func init() {
 	sys.Sign = signHash
 	client = Client{
 		wallet: &zcncrypto.Wallet{},
-		sign: func(hash string) (string, error) {
+		sign: func(hash string, clientId ...string) (string, error) {
+			if len(clientId) > 0 {
+				w, ok := client.wallets[clientId[0]]
+				if !ok {
+					return "", errors.New("invalid client id")
+				}
+				return sys.Sign(hash, client.signatureScheme, GetClientSysKeys(w.ClientID))
+			}
 			return sys.Sign(hash, client.signatureScheme, GetClientSysKeys())
 		},
 	}
+
 	sys.Verify = verifySignature
 	sys.VerifyWith = verifySignatureWith
 }
@@ -77,9 +87,18 @@ func verifySignatureWith(pubKey, signature, hash string) (bool, error) {
 	return sch.Verify(signature, hash)
 }
 
-func GetClientSysKeys() []sys.KeyPair {
+func GetClientSysKeys(clientId ...string) []sys.KeyPair {
+	wallet := client.wallet
+	if len(clientId) > 0 {
+		w, ok := client.wallets[clientId[0]]
+		if !ok {
+			return nil
+		}
+		wallet = w
+	}
+
 	var keys []sys.KeyPair
-	for _, kv := range client.wallet.Keys {
+	for _, kv := range wallet.Keys {
 		keys = append(keys, sys.KeyPair{
 			PrivateKey: kv.PrivateKey,
 			PublicKey:  kv.PublicKey,
@@ -91,9 +110,14 @@ func GetClientSysKeys() []sys.KeyPair {
 // SetWallet should be set before any transaction or client specific APIs
 func SetWallet(w zcncrypto.Wallet) {
 	client.wallet = &w
+
+	if client.wallets == nil {
+		client.wallets = make(map[string]*zcncrypto.Wallet)
+	}
+	client.wallets[w.ClientID] = &w
 }
 
-// splitKeyWallet parameter is valid only if SignatureScheme is "BLS0Chain"
+// SetSplitKeyWallet parameter is valid only if SignatureScheme is "BLS0Chain"
 func SetSplitKeyWallet(isSplitKeyWallet bool) error {
 	if client.signatureScheme == constants.BLS0CHAIN.String() {
 		client.splitKeyWallet = isSplitKeyWallet
@@ -152,7 +176,14 @@ func TxnFee() uint64 {
 	return client.txnFee
 }
 
-func Sign(hash string) (string, error) {
+func Sign(hash string, clientId ...string) (string, error) {
+	if len(clientId) > 0 {
+		w, ok := client.wallets[clientId[0]]
+		if !ok {
+			return "", errors.New("invalid client id")
+		}
+		return client.sign(hash, w.ClientID)
+	}
 	return client.sign(hash)
 }
 
@@ -175,12 +206,8 @@ func PrivateKey() string {
 	return ""
 }
 
-func ClientID() string {
+func Id() string {
 	return client.wallet.ClientID
-}
-
-func GetWallet() *zcncrypto.Wallet {
-	return client.wallet
 }
 
 func GetClient() *zcncrypto.Wallet {

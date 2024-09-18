@@ -127,8 +127,8 @@ func (b *BridgeClient) AddEthereumAuthorizer(ctx context.Context, address common
 
 	tran, err := instance.AddAuthorizers(transactOpts, address)
 	if err != nil {
-		msg := "failed to execute AddAuthorizers transaction to ClientID = %s with amount = %s"
-		return nil, errors.Wrapf(err, msg, coreClient.ClientID(), address.String())
+		msg := "failed to execute AddAuthorizers transaction to Id = %s with amount = %s"
+		return nil, errors.Wrapf(err, msg, coreClient.Id(), address.String())
 	}
 
 	return tran, err
@@ -145,8 +145,8 @@ func (b *BridgeClient) RemoveEthereumAuthorizer(ctx context.Context, address com
 
 	tran, err := instance.RemoveAuthorizers(transactOpts, address)
 	if err != nil {
-		msg := "failed to execute RemoveAuthorizers transaction to ClientID = %s with amount = %s"
-		return nil, errors.Wrapf(err, msg, coreClient.ClientID(), address.String())
+		msg := "failed to execute RemoveAuthorizers transaction to Id = %s with amount = %s"
+		return nil, errors.Wrapf(err, msg, coreClient.Id(), address.String())
 	}
 
 	return tran, err
@@ -277,8 +277,8 @@ func (b *BridgeClient) NFTConfigSetUint256Raw(ctx context.Context, key common.Ha
 
 	tran, err := instance.SetUint256(transactOpts, key, v)
 	if err != nil {
-		msg := "failed to execute setUint256 transaction to ClientID = %s with key = %s, value = %v"
-		return nil, errors.Wrapf(err, msg, coreClient.ClientID(), key, v)
+		msg := "failed to execute setUint256 transaction to Id = %s with key = %s, value = %v"
+		return nil, errors.Wrapf(err, msg, coreClient.Id(), key, v)
 	}
 
 	return tran, err
@@ -330,8 +330,8 @@ func (b *BridgeClient) NFTConfigSetAddress(ctx context.Context, key, address str
 
 	tran, err := instance.SetAddress(transactOpts, kkey, addr)
 	if err != nil {
-		msg := "failed to execute setAddress transaction to ClientID = %s with key = %s, value = %v"
-		return nil, errors.Wrapf(err, msg, coreClient.ClientID(), key, address)
+		msg := "failed to execute setAddress transaction to Id = %s with key = %s, value = %v"
+		return nil, errors.Wrapf(err, msg, coreClient.Id(), key, address)
 	}
 
 	return tran, err
@@ -587,7 +587,7 @@ func (b *BridgeClient) BurnWZCN(ctx context.Context, amountTokens uint64) (*type
 	}
 
 	// 1. Data Parameter (amount to burn)
-	clientID := DefaultClientIDEncoder(coreClient.ClientID())
+	clientID := DefaultClientIDEncoder(coreClient.Id())
 
 	// 2. Data Parameter (signature)
 	amount := new(big.Int)
@@ -605,13 +605,13 @@ func (b *BridgeClient) BurnWZCN(ctx context.Context, amountTokens uint64) (*type
 
 	tran, err := bridgeInstance.Burn(transactOpts, amount, clientID)
 	if err != nil {
-		msg := "failed to execute Burn WZCN transaction to ClientID = %s with amount = %s"
-		return nil, errors.Wrapf(err, msg, coreClient.ClientID(), amount)
+		msg := "failed to execute Burn WZCN transaction to Id = %s with amount = %s"
+		return nil, errors.Wrapf(err, msg, coreClient.Id(), amount)
 	}
 
 	Logger.Info(
 		"Posted Burn WZCN",
-		zap.String("clientID", coreClient.ClientID()),
+		zap.String("clientID", coreClient.Id()),
 		zap.Int64("amount", amount.Int64()),
 	)
 
@@ -1047,7 +1047,7 @@ func (b *BridgeClient) EstimateBurnWZCNGasAmount(ctx context.Context, from, to, 
 			return 0, errors.Wrap(err, "failed to get ABI")
 		}
 
-		clientID := DefaultClientIDEncoder(coreClient.ClientID())
+		clientID := DefaultClientIDEncoder(coreClient.Id())
 
 		amount := new(big.Int)
 		amount.SetString(amountTokens, 10)

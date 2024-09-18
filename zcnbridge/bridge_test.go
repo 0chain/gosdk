@@ -375,7 +375,7 @@ func Test_ZCNBridge(t *testing.T) {
 		rawAbi, err := binding.BridgeMetaData.GetAbi()
 		require.NoError(t, err)
 
-		pack, err := rawAbi.Pack("burn", big.NewInt(amount), DefaultClientIDEncoder(coreClient.ClientID()))
+		pack, err := rawAbi.Pack("burn", big.NewInt(amount), DefaultClientIDEncoder(coreClient.Id()))
 		require.NoError(t, err)
 
 		require.True(t, ethereumClient.AssertCalled(

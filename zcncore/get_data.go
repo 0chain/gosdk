@@ -191,7 +191,7 @@ func GetMintNonce() ([]byte, error) {
 	}
 
 	return client.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINT_NONCE, Params{
-		"client_id": client.ClientID(),
+		"client_id": client.Id(),
 	})
 }
 
@@ -251,7 +251,7 @@ func GetMinerSCUserInfo(clientID string) ([]byte, error) {
 		return nil, err
 	}
 	if clientID == "" {
-		clientID = client.ClientID()
+		clientID = client.Id()
 	}
 
 	return client.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINERSC_USER, Params{
@@ -268,7 +268,7 @@ func GetMinerSCNodePool(id string) ([]byte, error) {
 
 	return client.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINERSC_POOL, Params{
 		"id":      id,
-		"pool_id": client.ClientID(),
+		"pool_id": client.Id(),
 	})
 }
 

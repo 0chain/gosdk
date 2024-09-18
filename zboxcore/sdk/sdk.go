@@ -179,7 +179,7 @@ func GetReadPoolInfo(clientID string) (info *ReadPool, err error) {
 	}
 
 	if clientID == "" {
-		clientID = client.ClientID()
+		clientID = client.Id()
 	}
 
 	var b []byte
@@ -321,7 +321,7 @@ func GetStakePoolUserInfo(clientID string, offset, limit int) (info *StakePoolUs
 		return nil, sdkNotInitialized
 	}
 	if clientID == "" {
-		clientID = client.ClientID()
+		clientID = client.Id()
 	}
 
 	var b []byte
@@ -974,7 +974,7 @@ func SetNumBlockDownloads(num int) {
 //
 // returns the list of allocations and error if any
 func GetAllocations() ([]*Allocation, error) {
-	return GetAllocationsForClient(client.ClientID())
+	return GetAllocationsForClient(client.Id())
 }
 
 func getAllocationsInternal(clientID string, limit, offset int) ([]*Allocation, error) {
@@ -1069,7 +1069,7 @@ type CreateAllocationOptions struct {
 func CreateAllocationWith(options CreateAllocationOptions) (
 	string, int64, *transaction.Transaction, error) {
 
-	return CreateAllocationForOwner(client.ClientID(),
+	return CreateAllocationForOwner(client.Id(),
 		client.PublicKey(), options.DataShards, options.ParityShards,
 		options.Size, options.ReadPrice, options.WritePrice, options.Lock,
 		options.BlobberIds, options.BlobberAuthTickets, options.ThirdPartyExtendable, options.IsEnterprise, options.Force, options.FileOptionsParams)
@@ -1385,7 +1385,7 @@ func UpdateAllocation(
 	}
 
 	updateAllocationRequest := make(map[string]interface{})
-	updateAllocationRequest["owner_id"] = client.ClientID()
+	updateAllocationRequest["owner_id"] = client.Id()
 	updateAllocationRequest["owner_public_key"] = ""
 	updateAllocationRequest["id"] = allocationID
 	updateAllocationRequest["size"] = size
@@ -1760,7 +1760,7 @@ func GetUpdateAllocationMinLock(
 	addBlobberId,
 	removeBlobberId string) (int64, error) {
 	updateAllocationRequest := make(map[string]interface{})
-	updateAllocationRequest["owner_id"] = client.ClientID()
+	updateAllocationRequest["owner_id"] = client.Id()
 	updateAllocationRequest["owner_public_key"] = ""
 	updateAllocationRequest["id"] = allocationID
 	updateAllocationRequest["size"] = size

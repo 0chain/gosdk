@@ -517,7 +517,7 @@ func TestAllocation_isInitialized(t *testing.T) {
 
 // 	client := zclient.GetClient()
 // 	client.Wallet = &zcncrypto.Wallet{
-// 		ClientID:  mockClientId,
+// 		Id:  mockClientId,
 // 		ClientKey: mockClientKey,
 // 	}
 
