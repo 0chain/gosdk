@@ -30,6 +30,7 @@ type ObjectTreeResult struct {
 const INVALID_PATH = "invalid_path"
 
 type ObjectTreeRequest struct {
+	ClientId       string
 	allocationID   string
 	allocationTx   string
 	sig            string
@@ -160,6 +161,7 @@ func (o *ObjectTreeRequest) getFileRefs(bUrl string, respChan chan *oTreeRespons
 		o.refType,
 		o.level,
 		o.pageLimit,
+		o.ClientId,
 	)
 	if err != nil {
 		oTR.err = err
@@ -235,6 +237,7 @@ type SimilarField struct {
 
 type RecentlyAddedRefRequest struct {
 	ctx          context.Context
+	ClientId     string
 	allocationID string
 	allocationTx string
 	sig          string
@@ -314,7 +317,7 @@ func (r *RecentlyAddedRefRequest) GetRecentlyAddedRefs() (*RecentlyAddedRefResul
 
 func (r *RecentlyAddedRefRequest) getRecentlyAddedRefs(resp *RecentlyAddedRefResponse, bUrl string) {
 	defer r.wg.Done()
-	req, err := zboxutil.NewRecentlyAddedRefsRequest(bUrl, r.allocationID, r.allocationTx, r.sig, r.fromDate, r.offset, r.pageLimit)
+	req, err := zboxutil.NewRecentlyAddedRefsRequest(bUrl, r.allocationID, r.allocationTx, r.sig, r.fromDate, r.offset, r.pageLimit, r.ClientId)
 	if err != nil {
 		resp.err = err
 		return

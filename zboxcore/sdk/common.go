@@ -19,8 +19,8 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
-func getObjectTreeFromBlobber(ctx context.Context, allocationID, allocationTx, sig string, remoteFilePath string, blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
-	httpreq, err := zboxutil.NewObjectTreeRequest(blobber.Baseurl, allocationID, allocationTx, sig, remoteFilePath)
+func getObjectTreeFromBlobber(ctx context.Context, allocationID, allocationTx, sig string, remoteFilePath string, blobber *blockchain.StorageNode, clientId ...string) (fileref.RefEntity, error) {
+	httpreq, err := zboxutil.NewObjectTreeRequest(blobber.Baseurl, allocationID, allocationTx, sig, remoteFilePath, clientId...)
 	if err != nil {
 		l.Logger.Error(blobber.Baseurl, "Error creating object tree request", err)
 		return nil, err
@@ -62,9 +62,9 @@ func getObjectTreeFromBlobber(ctx context.Context, allocationID, allocationTx, s
 	return lR.GetRefFromObjectTree(allocationID)
 }
 
-func getAllocationDataFromBlobber(blobber *blockchain.StorageNode, allocationId string, allocationTx string, respCh chan<- *BlobberAllocationStats, wg *sync.WaitGroup) {
+func getAllocationDataFromBlobber(blobber *blockchain.StorageNode, allocationId string, allocationTx string, respCh chan<- *BlobberAllocationStats, wg *sync.WaitGroup, clientId ...string) {
 	defer wg.Done()
-	httpreq, err := zboxutil.NewAllocationRequest(blobber.Baseurl, allocationId, allocationTx)
+	httpreq, err := zboxutil.NewAllocationRequest(blobber.Baseurl, allocationId, allocationTx, clientId...)
 	if err != nil {
 		l.Logger.Error(blobber.Baseurl, "Error creating allocation request", err)
 		return

@@ -168,6 +168,7 @@ func GetDStorageFileReader(alloc *Allocation, ref *ORef, sdo *StreamDownloadOpti
 
 	sd := &StreamDownload{
 		DownloadRequest: &DownloadRequest{
+			ClientId:          alloc.Owner,
 			allocationID:      alloc.ID,
 			allocationTx:      alloc.Tx,
 			allocOwnerID:      alloc.Owner,

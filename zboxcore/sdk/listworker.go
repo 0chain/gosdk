@@ -23,6 +23,7 @@ import (
 const CHUNK_SIZE = 64 * 1024
 
 type ListRequest struct {
+	ClientId           string
 	allocationID       string
 	allocationTx       string
 	sig                string
@@ -125,7 +126,7 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 	if req.forRepair {
 		req.listOnly = true
 	}
-	httpreq, err := zboxutil.NewListRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.remotefilepath, req.remotefilepathhash, string(authTokenBytes), req.listOnly, req.offset, req.pageLimit)
+	httpreq, err := zboxutil.NewListRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.remotefilepath, req.remotefilepathhash, string(authTokenBytes), req.listOnly, req.offset, req.pageLimit, req.ClientId)
 	if err != nil {
 		l.Logger.Error("List info request error: ", err.Error())
 		return

@@ -15,6 +15,7 @@ import (
 )
 
 type ShareRequest struct {
+	ClientId          string
 	allocationID      string
 	allocationTx      string
 	sig               string
@@ -31,6 +32,7 @@ func (req *ShareRequest) GetFileRef() (*fileref.FileRef, error) {
 
 	var fileRef *fileref.FileRef
 	listReq := &ListRequest{
+		ClientId:           req.ClientId,
 		remotefilepathhash: filePathHash,
 		allocationID:       req.allocationID,
 		allocationTx:       req.allocationTx,

@@ -186,7 +186,7 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode, pos u
 	}
 
 	formWriter.Close()
-	httpreq, err := zboxutil.NewCreateDirRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body)
+	httpreq, err := zboxutil.NewCreateDirRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body, req.allocationObj.Owner)
 	if err != nil {
 		l.Logger.Error(blobber.Baseurl, "Error creating dir request", err)
 		return err, false

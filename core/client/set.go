@@ -177,39 +177,53 @@ func TxnFee() uint64 {
 }
 
 func Sign(hash string, clientId ...string) (string, error) {
-	if len(clientId) > 0 {
-		w, ok := client.wallets[clientId[0]]
-		if !ok {
-			return "", errors.New("invalid client id")
-		}
-		return client.sign(hash, w.ClientID)
-	}
-	return client.sign(hash)
+	return client.sign(hash, clientId...)
 }
 
-func IsWalletSet() bool {
+func IsWalletSet(clientId ...string) bool {
+	if len(clientId) > 0 {
+		_, ok := client.wallets[clientId[0]]
+		return ok
+	}
 	return client.wallet.ClientID != ""
 }
 
-func PublicKey() string {
+func PublicKey(clientId ...string) string {
+	if len(clientId) > 0 {
+		return client.wallets[clientId[0]].ClientKey
+	}
 	return client.wallet.ClientKey
 }
 
-func Mnemonic() string {
+func Mnemonic(clientId ...string) string {
+	if len(clientId) > 0 {
+		return client.wallets[clientId[0]].Mnemonic
+	}
 	return client.wallet.Mnemonic
 }
 
-func PrivateKey() string {
+func PrivateKey(clientId ...string) string {
+	if len(clientId) > 0 {
+		for _, kv := range client.wallets[clientId[0]].Keys {
+			return kv.PrivateKey
+		}
+	}
 	for _, kv := range client.wallet.Keys {
 		return kv.PrivateKey
 	}
 	return ""
 }
 
-func Id() string {
+func Id(clientId ...string) string {
+	if len(clientId) > 0 {
+		return clientId[0]
+	}
 	return client.wallet.ClientID
 }
 
-func GetClient() *zcncrypto.Wallet {
+func GetClient(clientId ...string) *zcncrypto.Wallet {
+	if len(clientId) > 0 {
+		return client.wallets[clientId[0]]
+	}
 	return client.wallet
 }

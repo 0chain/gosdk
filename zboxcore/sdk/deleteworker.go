@@ -61,7 +61,7 @@ func (req *DeleteRequest) deleteBlobberFile(
 	query.Add("connection_id", req.connectionID)
 	query.Add("path", req.remotefilepath)
 
-	httpreq, err := zboxutil.NewDeleteRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, query)
+	httpreq, err := zboxutil.NewDeleteRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, query, req.allocationObj.Owner)
 	if err != nil {
 		l.Logger.Error(blobber.Baseurl, "Error creating delete request", err)
 		return err
@@ -154,7 +154,7 @@ func (req *DeleteRequest) getObjectTreeFromBlobber(pos uint64) (
 
 	fRefEntity, err = getObjectTreeFromBlobber(
 		req.ctx, req.allocationID, req.allocationTx, req.sig,
-		req.remotefilepath, req.blobbers[pos])
+		req.remotefilepath, req.blobbers[pos], req.allocationObj.Owner)
 	return
 }
 
@@ -167,6 +167,7 @@ func (req *DeleteRequest) getFileMetaFromBlobber(pos uint64) (fileRef *fileref.F
 		}
 	}()
 	listReq := &ListRequest{
+		ClientId:       req.allocationObj.Owner,
 		allocationID:   req.allocationID,
 		allocationTx:   req.allocationTx,
 		blobbers:       req.blobbers,
@@ -286,6 +287,7 @@ func (req *DeleteRequest) ProcessDelete() (err error) {
 		newChange.Operation = constants.FileOperationDelete
 		newChange.Size = newChange.FileMetaRef.GetSize()
 		commitReq := &CommitRequest{
+			ClientId:     req.allocationObj.Owner,
 			allocationID: req.allocationID,
 			allocationTx: req.allocationTx,
 			sig:          req.sig,

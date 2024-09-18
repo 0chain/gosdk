@@ -79,7 +79,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 			var req *fasthttp.Request
 			for i := 0; i < 3; i++ {
 				req, err = zboxutil.NewFastUploadRequest(
-					sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, dataBuffers[ind].Bytes(), su.httpMethod)
+					sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, dataBuffers[ind].Bytes(), su.httpMethod, su.allocationObj.Owner)
 				if err != nil {
 					return err
 				}
@@ -237,7 +237,7 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 
 	formWriter.Close()
 
-	req, err := zboxutil.NewCommitRequest(sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, body)
+	req, err := zboxutil.NewCommitRequest(sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, body, su.allocationObj.Owner)
 	if err != nil {
 		logger.Logger.Error("Error creating commit req: ", err)
 		return err
@@ -326,7 +326,7 @@ func (sb *ChunkedUploadBlobber) processWriteMarker(
 	}
 
 	var lR ReferencePathResult
-	req, err := zboxutil.NewReferencePathRequest(sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, su.allocationObj.sig, paths)
+	req, err := zboxutil.NewReferencePathRequest(sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, su.allocationObj.sig, paths, su.allocationObj.Owner)
 	if err != nil || len(paths) == 0 {
 		logger.Logger.Error("Creating ref path req", err)
 		return nil, nil, 0, nil, err
