@@ -445,6 +445,10 @@ func (commitReq *CommitRequestV2) processCommit() {
 		resp := <-respChan
 		if resp.err == nil {
 			trie = resp.trie
+			latestWM := commitReq.allocationObj.Blobbers[resp.pos].LatestWM
+			if commitReq.timestamp <= latestWM.Timestamp {
+				commitReq.timestamp = latestWM.Timestamp + 1
+			}
 			break
 		} else if resp.err != errAlreadySuccessful {
 			commitReq.commitMask = commitReq.commitMask.And(zboxutil.NewUint128(1).Lsh(resp.pos).Not())
