@@ -51,6 +51,7 @@ type ChunkedUploadFormInfo struct {
 	AllocationID      string
 	AllocationTx      string
 	OnlyHash          bool
+	StorageVersion    int
 }
 
 // createUploadProgress create a new UploadProgress
@@ -113,6 +114,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		AllocationID:      su.allocationObj.ID,
 		AllocationTx:      su.allocationObj.Tx,
 		OnlyHash:          chunkEndIndex <= su.progress.ChunkIndex,
+		StorageVersion:    su.allocationObj.StorageVersion,
 	}
 	formInfoJSON, err := json.Marshal(formInfo)
 	if err != nil {
@@ -447,8 +449,9 @@ func ProcessEventData(data safejs.Value) {
 	if formInfo.IsFinal {
 		defer delete(hasherMap, fileMeta.RemotePath)
 	}
-	formBuilder := CreateChunkedUploadFormBuilder()
-	uploadData, err := formBuilder.Build(fileMeta, wp.hasher, formInfo.ConnectionID, formInfo.ChunkSize, formInfo.ChunkStartIndex, formInfo.ChunkEndIndex, formInfo.IsFinal, formInfo.EncryptedKey, formInfo.EncryptedKeyPoint,
+	blobberID := os.Getenv("BLOBBER_ID")
+	formBuilder := CreateChunkedUploadFormBuilder(formInfo.StorageVersion)
+	uploadData, err := formBuilder.Build(fileMeta, wp.hasher, formInfo.ConnectionID, blobberID, formInfo.ChunkSize, formInfo.ChunkStartIndex, formInfo.ChunkEndIndex, formInfo.IsFinal, formInfo.EncryptedKey, formInfo.EncryptedKeyPoint,
 		fileShards, thumbnailChunkData, formInfo.ShardSize)
 	if err != nil {
 		selfPostMessage(false, false, err.Error(), remotePath, formInfo.ChunkEndIndex, nil)

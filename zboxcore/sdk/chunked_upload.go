@@ -292,7 +292,7 @@ func CreateChunkedUpload(
 
 	su.chunkReader = cReader
 
-	su.formBuilder = CreateChunkedUploadFormBuilder()
+	su.formBuilder = CreateChunkedUploadFormBuilder(su.allocationObj.StorageVersion)
 
 	su.isRepair = isRepair
 	uploadWorker, uploadRequest := calculateWorkersAndRequests(su.allocationObj.DataShards, len(su.blobbers), su.chunkNumber)

@@ -1419,6 +1419,7 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 	now := time.Now()
 
 	for _, dr := range drs {
+		dr.storageVersion = a.StorageVersion
 		wg.Add(1)
 		go func(dr *DownloadRequest) {
 			defer wg.Done()

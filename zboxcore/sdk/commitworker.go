@@ -521,25 +521,6 @@ func (commitReq *CommitRequestV2) processCommit() {
 
 func (req *CommitRequestV2) commitBlobber(rootHash []byte, rootWeight, changeIndex uint64, blobber *blockchain.StorageNode) (err error) {
 	now := time.Now()
-	hashSignatureMap := make(map[string]string, len(req.changes))
-	for _, change := range req.changes {
-		if change == nil {
-			continue
-		}
-		hash := change.GetHash(changeIndex, blobber.ID)
-		if hash == "" {
-			return errors.New("hash_signature_failed", "Failed to add hash signature")
-		}
-		if hash == emptyHash {
-			continue
-		}
-		sig, err := client.Sign(hash)
-		if err != nil {
-			l.Logger.Error("Error signing hash", err)
-			return err
-		}
-		hashSignatureMap[change.GetLookupHash(changeIndex)] = sig
-	}
 	elapsedSign := time.Since(now)
 	hasher := sha256.New()
 	var prevChainSize int64
@@ -578,13 +559,8 @@ func (req *CommitRequestV2) commitBlobber(rootHash []byte, rootWeight, changeInd
 		l.Logger.Error("Error marshalling writemarker data", err)
 		return err
 	}
-	hashSignatureData, err := json.Marshal(hashSignatureMap)
-	if err != nil {
-		l.Logger.Error("Error marshalling hash signature data", err)
-		return err
-	}
 
-	err = submitWriteMarker(wmData, hashSignatureData, blobber, req.connectionID, req.allocationObj.ID, req.allocationObj.Tx, req.allocationObj.StorageVersion)
+	err = submitWriteMarker(wmData, nil, blobber, req.connectionID, req.allocationObj.ID, req.allocationObj.Tx, req.allocationObj.StorageVersion)
 	if err != nil {
 		l.Logger.Error("Error submitting writemarker", err)
 		return err
@@ -607,10 +583,11 @@ func getFormWritter(connectionID string, wmData, fileIDMetaData []byte, body *by
 	if err != nil {
 		return nil, err
 	}
-
-	err = formWriter.WriteField("file_id_meta", string(fileIDMetaData))
-	if err != nil {
-		return nil, err
+	if len(fileIDMetaData) > 0 {
+		err = formWriter.WriteField("file_id_meta", string(fileIDMetaData))
+		if err != nil {
+			return nil, err
+		}
 	}
 	formWriter.Close()
 	return formWriter, nil

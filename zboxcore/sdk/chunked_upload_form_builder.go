@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"io"
 	"mime/multipart"
 	"sync"
 
+	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/client"
 
 	"golang.org/x/crypto/sha3"
@@ -17,7 +19,7 @@ import (
 type ChunkedUploadFormBuilder interface {
 	// build form data
 	Build(
-		fileMeta *FileMeta, hasher Hasher, connectionID string,
+		fileMeta *FileMeta, hasher Hasher, connectionID, blobberID string,
 		chunkSize int64, chunkStartIndex, chunkEndIndex int,
 		isFinal bool, encryptedKey, encryptedKeyPoint string, fileChunksData [][]byte,
 		thumbnailChunkData []byte, shardSize int64,
@@ -35,17 +37,20 @@ type ChunkedUploadFormMetadata struct {
 }
 
 // CreateChunkedUploadFormBuilder create ChunkedUploadFormBuilder instance
-func CreateChunkedUploadFormBuilder() ChunkedUploadFormBuilder {
-	return &chunkedUploadFormBuilder{}
+func CreateChunkedUploadFormBuilder(storageVersion int) ChunkedUploadFormBuilder {
+	return &chunkedUploadFormBuilder{
+		storageVersion,
+	}
 }
 
 type chunkedUploadFormBuilder struct {
+	storageVersion int
 }
 
 const MAX_BLOCKS = 80 // 5MB(CHUNK_SIZE*80)
 
 func (b *chunkedUploadFormBuilder) Build(
-	fileMeta *FileMeta, hasher Hasher, connectionID string,
+	fileMeta *FileMeta, hasher Hasher, connectionID, blobberID string,
 	chunkSize int64, chunkStartIndex, chunkEndIndex int,
 	isFinal bool, encryptedKey, encryptedKeyPoint string, fileChunksData [][]byte,
 	thumbnailChunkData []byte, shardSize int64,
@@ -163,8 +168,12 @@ func (b *chunkedUploadFormBuilder) Build(
 			if err != nil {
 				return res, err
 			}
-
-			validationRootSignature, err := client.Sign(actualHashSignature + formData.ValidationRoot)
+			hash := actualHashSignature + formData.ValidationRoot
+			if b.storageVersion == StorageV2 {
+				hashData := fmt.Sprintf("%s:%s:%s:%s", fileMeta.ActualHash, formData.ValidationRoot, formData.FixedMerkleRoot, blobberID)
+				hash = encryption.Hash(hashData)
+			}
+			validationRootSignature, err := client.Sign(hash)
 			if err != nil {
 				return res, err
 			}
