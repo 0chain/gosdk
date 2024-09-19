@@ -227,6 +227,9 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 			require := require.New(t)
 			tt.setup(t, tt.name, tt.parameters)
 			req := &RenameRequest{
+				allocationObj: &Allocation{
+					Owner: mockClientId,
+				},
 				allocationID:   mockAllocationId,
 				allocationTx:   mockAllocationTxId,
 				remotefilepath: mockRemoteFilePath,
@@ -462,6 +465,7 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 			a := &Allocation{
 				Tx:         "TestRenameRequest_ProcessRename",
 				DataShards: numBlobbers,
+				Owner:      mockClientId,
 			}
 
 			setupMockAllocation(t, a)

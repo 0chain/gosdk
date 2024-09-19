@@ -392,6 +392,7 @@ func TestAllocation_GetStats(t *testing.T) {
 	stats := &AllocationStats{}
 	a := &Allocation{
 		Stats: stats,
+		Owner: mockClientId,
 	}
 	got := a.GetStats()
 	require.New(t).Same(stats, got)
@@ -434,8 +435,9 @@ func TestAllocation_GetBlobberStats(t *testing.T) {
 			require := require.New(t)
 			tt.setup(t, tt.name)
 			a := &Allocation{
-				ID: mockAllocationId,
-				Tx: mockAllocationTxId,
+				ID:    mockAllocationId,
+				Tx:    mockAllocationTxId,
+				Owner: mockClientId,
 			}
 			a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
 				ID:      tt.name + mockBlobberId,
@@ -487,7 +489,7 @@ func TestAllocation_isInitialized(t *testing.T) {
 			originalSDKInitialized := sdkInitialized
 			defer func() { sdkInitialized = originalSDKInitialized }()
 			sdkInitialized = tt.sdkInitialized
-			a := &Allocation{initialized: tt.allocationInitialized}
+			a := &Allocation{initialized: tt.allocationInitialized, Owner: mockClientId}
 			got := a.isInitialized()
 			require := require.New(t)
 			if tt.want {
@@ -657,6 +659,7 @@ func TestAllocation_RepairRequired(t *testing.T) {
 				DataShards:   2,
 				ParityShards: 2,
 				FileOptions:  63,
+				Owner:        mockClientId,
 			}
 			a.InitAllocation()
 			sdkInitialized = true
@@ -740,7 +743,7 @@ func TestAllocation_DownloadFileToFileHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
-			a := &Allocation{}
+			a := &Allocation{Owner: mockClientId}
 			setupMockAllocation(t, a)
 			for i := 0; i < numBlobbers; i++ {
 				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
@@ -783,6 +786,7 @@ func TestAllocation_DownloadFile(t *testing.T) {
 	a := &Allocation{
 		ParityShards: 2,
 		DataShards:   2,
+		Owner:        mockClientId,
 	}
 	setupMockAllocation(t, a)
 
@@ -830,6 +834,7 @@ func TestAllocation_DownloadFileByBlock(t *testing.T) {
 	a := &Allocation{
 		ParityShards: 2,
 		DataShards:   2,
+		Owner:        mockClientId,
 	}
 	setupMockAllocation(t, a)
 
@@ -850,7 +855,7 @@ func TestAllocation_DownloadThumbnail(t *testing.T) {
 		mockRemoteFilePath = "1.txt"
 	)
 	require := require.New(t)
-	a := &Allocation{}
+	a := &Allocation{Owner: mockClientId}
 	setupMockAllocation(t, a)
 
 	for i := 0; i < numBlobbers; i++ {
@@ -966,7 +971,7 @@ func TestAllocation_downloadFile(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
-			a := &Allocation{}
+			a := &Allocation{Owner: mockClientId}
 			a.downloadChan = make(chan *DownloadRequest, 10)
 			a.repairChan = make(chan *RepairRequest, 1)
 			a.ctx, a.ctxCancelF = context.WithCancel(context.Background())
@@ -1023,6 +1028,7 @@ func TestAllocation_GetRefs(t *testing.T) {
 		a := &Allocation{
 			DataShards:   2,
 			ParityShards: 2,
+			Owner:        mockClientId,
 		}
 		testCaseName := "Test_Get_Refs_Returns_Slice_Of_Length_0_When_File_Not_Present"
 		a.InitAllocation()
@@ -1123,6 +1129,7 @@ func TestAllocation_GetFileMeta(t *testing.T) {
 				DataShards:   2,
 				ParityShards: 2,
 				FileOptions:  63,
+				Owner:        mockClientId,
 			}
 			a.InitAllocation()
 			sdkInitialized = true
@@ -1180,7 +1187,7 @@ func TestAllocation_GetAuthTicketForShare(t *testing.T) {
 		ClientKey: mockClientKey,
 	})
 	require := require.New(t)
-	a := &Allocation{DataShards: 1, ParityShards: 1, FileOptions: 63}
+	a := &Allocation{DataShards: 1, ParityShards: 1, FileOptions: 63, Owner: mockClientId}
 	a.InitAllocation()
 	for i := 0; i < numberBlobbers; i++ {
 		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{})
@@ -1390,6 +1397,7 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 				DataShards:   1,
 				ParityShards: 1,
 				FileOptions:  63,
+				Owner:        mockClientId,
 			}
 			a.InitAllocation()
 			sdkInitialized = true
@@ -1453,7 +1461,7 @@ func TestAllocation_CancelDownload(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
-			a := &Allocation{FileOptions: 63}
+			a := &Allocation{FileOptions: 63, Owner: mockClientId}
 			a.InitAllocation()
 			sdkInitialized = true
 			if tt.setup != nil {
@@ -1559,8 +1567,9 @@ func TestAllocation_ListDirFromAuthTicket(t *testing.T) {
 				authTicket: authTicket,
 				lookupHash: mockLookupHash,
 				expectedResult: &ListResult{
-					Type: mockType,
-					Size: 0,
+					ClientId: mockClientId,
+					Type:     mockType,
+					Size:     0,
 				},
 			},
 			setup: func(t *testing.T, testCaseName string, a *Allocation, mockClient *mocks.HttpClient) (teardown func(t *testing.T)) {
@@ -1594,6 +1603,7 @@ func TestAllocation_ListDirFromAuthTicket(t *testing.T) {
 				ClientKey: mockClientKey,
 			})
 			a := &Allocation{
+				Owner:        mockClientId,
 				ID:           mockAllocationId,
 				Tx:           mockAllocationTxId,
 				FileOptions:  63,
@@ -1652,6 +1662,7 @@ func TestAllocation_downloadFromAuthTicket(t *testing.T) {
 		Tx:           mockAllocationTxId,
 		DataShards:   2,
 		ParityShards: 2,
+		Owner:        mockClientId,
 	}
 	setupMockAllocation(t, a)
 	setupMockGetFileInfoResponse(t, &mockClient)
@@ -1844,8 +1855,9 @@ func TestAllocation_listDir(t *testing.T) {
 			parameters: parameters{
 				path: mockPath,
 				expectedResult: &ListResult{
-					Type: mockType,
-					Size: 0,
+					ClientId: mockClientId,
+					Type:     mockType,
+					Size:     0,
 				},
 			},
 			setup: func(t *testing.T, testCaseName string, a *Allocation, mockClient *mocks.HttpClient) (teardown func(t *testing.T)) {
@@ -1879,6 +1891,7 @@ func TestAllocation_listDir(t *testing.T) {
 				FileOptions:  63,
 				DataShards:   2,
 				ParityShards: 2,
+				Owner:        mockClientId,
 			}
 			if tt.parameters.expectedResult != nil {
 				tt.parameters.expectedResult.deleteMask = zboxutil.NewUint128(1).Lsh(uint64(a.DataShards + a.ParityShards)).Sub64(1)
@@ -2011,6 +2024,7 @@ func TestAllocation_GetFileMetaFromAuthTicket(t *testing.T) {
 				DataShards:   2,
 				ParityShards: 2,
 				FileOptions:  63,
+				Owner:        mockClientId,
 			}
 			a.InitAllocation()
 			sdkInitialized = true
@@ -2055,7 +2069,7 @@ func TestAllocation_DownloadToFileHandlerFromAuthTicket(t *testing.T) {
 
 	require := require.New(t)
 
-	a := &Allocation{}
+	a := &Allocation{Owner: mockClientId}
 	setupMockAllocation(t, a)
 	for i := 0; i < numBlobbers; i++ {
 		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
@@ -2090,7 +2104,7 @@ func TestAllocation_DownloadThumbnailFromAuthTicket(t *testing.T) {
 
 	require := require.New(t)
 
-	a := &Allocation{}
+	a := &Allocation{Owner: mockClientId}
 	setupMockAllocation(t, a)
 	for i := 0; i < numBlobbers; i++ {
 		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
@@ -2132,7 +2146,7 @@ func TestAllocation_DownloadFromAuthTicket(t *testing.T) {
 
 	require := require.New(t)
 
-	a := &Allocation{}
+	a := &Allocation{Owner: mockClientId}
 	setupMockAllocation(t, a)
 	for i := 0; i < numBlobbers; i++ {
 		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
@@ -2168,7 +2182,7 @@ func TestAllocation_DownloadFromAuthTicketByBlocks(t *testing.T) {
 
 	require := require.New(t)
 
-	a := &Allocation{}
+	a := &Allocation{Owner: mockClientId}
 	setupMockAllocation(t, a)
 	for i := 0; i < numBlobbers; i++ {
 		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
@@ -2248,6 +2262,7 @@ func TestAllocation_StartRepair(t *testing.T) {
 			a := &Allocation{
 				DataShards:   2,
 				ParityShards: 2,
+				Owner:        mockClientId,
 			}
 			setupMockAllocation(t, a)
 			for i := 0; i < numBlobbers; i++ {
@@ -2295,7 +2310,7 @@ func TestAllocation_CancelRepair(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
-			a := &Allocation{}
+			a := &Allocation{Owner: mockClientId}
 			setupMockAllocation(t, a)
 			if tt.setup != nil {
 				if teardown := tt.setup(t, a); teardown != nil {
@@ -2391,6 +2406,7 @@ func getMockAuthTicket(t *testing.T) string {
 		DataShards:   1,
 		ParityShards: 1,
 		FileOptions:  63,
+		Owner:        mockClientId,
 	}
 
 	a.InitAllocation()

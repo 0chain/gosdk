@@ -857,6 +857,7 @@ func (a *Allocation) GetCurrentVersion() (bool, error) {
 				markerChan <- nil
 			} else {
 				markerChan <- &RollbackBlobber{
+					ClientId:     a.Owner,
 					blobber:      blobber,
 					lpm:          wr,
 					commitResult: &CommitResult{},
@@ -952,6 +953,7 @@ func (a *Allocation) RepairRequired(remotepath string) (zboxutil.Uint128, zboxut
 	}
 
 	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
+	listReq.ClientId = a.Owner
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.sig = a.sig
@@ -1561,6 +1563,7 @@ func (a *Allocation) ListDirFromAuthTicket(authTicket string, lookupHash string,
 	}
 
 	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
+	listReq.ClientId = a.Owner
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.sig = a.sig
@@ -1601,6 +1604,7 @@ func (a *Allocation) ListDir(path string, opts ...ListRequestOptions) (*ListResu
 		return nil, errors.New("invalid_path", "Path should be valid and absolute")
 	}
 	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
+	listReq.ClientId = a.Owner
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.sig = a.sig
@@ -1880,6 +1884,7 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 
 	result := &ConsolidatedFileMeta{}
 	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
+	listReq.ClientId = a.Owner
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.sig = a.sig
@@ -1999,6 +2004,7 @@ func (a *Allocation) GetFileMetaFromAuthTicket(authTicket string, lookupHash str
 	}
 
 	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
+	listReq.ClientId = a.Owner
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.sig = a.sig

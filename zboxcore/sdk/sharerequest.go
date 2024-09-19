@@ -56,7 +56,7 @@ func (req *ShareRequest) getAuthTicket(clientID, encPublicKey string) (*marker.A
 
 	at := &marker.AuthTicket{
 		AllocationID:   req.allocationID,
-		OwnerID:        client.Id(),
+		OwnerID:        client.Id(req.ClientId),
 		ClientID:       clientID,
 		FileName:       req.remotefilename,
 		FilePathHash:   fileref.GetReferenceLookup(req.allocationID, req.remotefilepath),

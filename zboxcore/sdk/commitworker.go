@@ -248,7 +248,7 @@ func (req *CommitRequest) commitBlobber(
 	wm.Size = size
 	wm.BlobberID = req.blobber.ID
 	wm.Timestamp = req.timestamp
-	wm.ClientID = client.Id()
+	wm.ClientID = client.Id(req.ClientId)
 	err = wm.Sign()
 	if err != nil {
 		l.Logger.Error("Signing writemarker failed: ", err)

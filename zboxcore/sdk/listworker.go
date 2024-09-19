@@ -50,6 +50,7 @@ type listResponse struct {
 // ListResult a wrapper around the result of directory listing command.
 // It can represent a file or a directory.
 type ListResult struct {
+	ClientId            string `json:"client_id"`
 	Name                string `json:"name"`
 	Path                string `json:"path,omitempty"`
 	Type                string `json:"type"`
@@ -227,6 +228,7 @@ func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
 		return nil, err
 	}
 	result := &ListResult{
+		ClientId:   req.ClientId,
 		deleteMask: zboxutil.NewUint128(1).Lsh(uint64(len(req.blobbers))).Sub64(1),
 	}
 	selected := make(map[string]*ListResult)
@@ -294,6 +296,7 @@ func (lr *ListResult) populateChildren(children []fileref.RefEntity, childResult
 		var childResult *ListResult
 		if _, ok := childResultMap[actualHash]; !ok {
 			childResult = &ListResult{
+				ClientId:  lr.ClientId,
 				Name:      child.GetName(),
 				Path:      child.GetPath(),
 				Type:      child.GetType(),

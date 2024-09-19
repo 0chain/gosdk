@@ -200,7 +200,7 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 	wm.BlobberID = sb.blobber.ID
 
 	wm.Timestamp = timestamp
-	wm.ClientID = client.Id()
+	wm.ClientID = client.Id(su.allocationObj.Owner)
 	err = wm.Sign()
 	if err != nil {
 		logger.Logger.Error("Signing writemarker failed: ", err)

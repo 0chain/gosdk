@@ -211,6 +211,9 @@ func TestCopyRequest_copyBlobberObject(t *testing.T) {
 				maskMU:       &sync.Mutex{},
 				ctx:          context.TODO(),
 				connectionID: mockConnectionId,
+				allocationObj: &Allocation{
+					Owner: mockClientId,
+				},
 			}
 			req.blobbers = append(req.blobbers, &blockchain.StorageNode{
 				Baseurl: tt.name,
@@ -441,6 +444,7 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 				Tx:          "TestCopyRequest_ProcessCopy",
 				DataShards:  numBlobbers,
 				FileOptions: 63,
+				Owner:       mockClientId,
 			}
 			a.InitAllocation()
 

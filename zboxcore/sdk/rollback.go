@@ -49,6 +49,7 @@ var (
 )
 
 type RollbackBlobber struct {
+	ClientId     string
 	blobber      *blockchain.StorageNode
 	commitResult *CommitResult
 	lpm          *LatestPrevWriteMarker
@@ -281,6 +282,7 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
 				markerChan <- nil
 			} else {
 				markerChan <- &RollbackBlobber{
+					ClientId:     a.Owner,
 					blobber:      blobber,
 					lpm:          wr,
 					commitResult: &CommitResult{},
@@ -405,6 +407,7 @@ func (a *Allocation) RollbackWithMask(mask zboxutil.Uint128) {
 				markerChan <- nil
 			} else {
 				markerChan <- &RollbackBlobber{
+					ClientId:     a.Owner,
 					blobber:      blobber,
 					lpm:          wr,
 					commitResult: &CommitResult{},

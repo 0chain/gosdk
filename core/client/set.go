@@ -33,7 +33,7 @@ func init() {
 	client = Client{
 		wallet: &zcncrypto.Wallet{},
 		sign: func(hash string, clientId ...string) (string, error) {
-			if len(clientId) > 0 {
+			if len(clientId) > 0 && client.wallets[clientId[0]].ClientKey != "" {
 				w, ok := client.wallets[clientId[0]]
 				if !ok {
 					return "", errors.New("invalid client id")
@@ -89,7 +89,7 @@ func verifySignatureWith(pubKey, signature, hash string) (bool, error) {
 
 func GetClientSysKeys(clientId ...string) []sys.KeyPair {
 	wallet := client.wallet
-	if len(clientId) > 0 {
+	if len(clientId) > 0 && client.wallets[clientId[0]].ClientKey != "" {
 		w, ok := client.wallets[clientId[0]]
 		if !ok {
 			return nil
@@ -153,7 +153,7 @@ func SetSignatureScheme(signatureScheme string) {
 }
 
 func Wallet(clientId ...string) *zcncrypto.Wallet {
-	if len(clientId) > 0 {
+	if len(clientId) > 0 && client.wallets[clientId[0]].ClientKey != "" {
 		return client.wallets[clientId[0]]
 	}
 	return client.wallet
@@ -184,7 +184,7 @@ func Sign(hash string, clientId ...string) (string, error) {
 }
 
 func IsWalletSet(clientId ...string) bool {
-	if len(clientId) > 0 {
+	if len(clientId) > 0 && client.wallets[clientId[0]].ClientKey != "" {
 		_, ok := client.wallets[clientId[0]]
 		return ok
 	}
@@ -192,21 +192,21 @@ func IsWalletSet(clientId ...string) bool {
 }
 
 func PublicKey(clientId ...string) string {
-	if len(clientId) > 0 {
+	if len(clientId) > 0 && client.wallets[clientId[0]].ClientKey != "" {
 		return client.wallets[clientId[0]].ClientKey
 	}
 	return client.wallet.ClientKey
 }
 
 func Mnemonic(clientId ...string) string {
-	if len(clientId) > 0 {
+	if len(clientId) > 0 && client.wallets[clientId[0]].ClientKey != "" {
 		return client.wallets[clientId[0]].Mnemonic
 	}
 	return client.wallet.Mnemonic
 }
 
 func PrivateKey(clientId ...string) string {
-	if len(clientId) > 0 {
+	if len(clientId) > 0 && client.wallets[clientId[0]].ClientKey != "" {
 		for _, kv := range client.wallets[clientId[0]].Keys {
 			return kv.PrivateKey
 		}
@@ -218,14 +218,14 @@ func PrivateKey(clientId ...string) string {
 }
 
 func Id(clientId ...string) string {
-	if len(clientId) > 0 {
+	if len(clientId) > 0 && client.wallets[clientId[0]].ClientKey != "" {
 		return clientId[0]
 	}
 	return client.wallet.ClientID
 }
 
 func GetClient(clientId ...string) *zcncrypto.Wallet {
-	if len(clientId) > 0 {
+	if len(clientId) > 0 && client.wallets[clientId[0]].ClientKey != "" {
 		return client.wallets[clientId[0]]
 	}
 	return client.wallet
