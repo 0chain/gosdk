@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/0chain/gosdk/core/common"
+	"github.com/valyala/bytebufferpool"
 )
 
 // MemFile represents a file totally loaded in memory
@@ -180,7 +181,11 @@ func (f *MemChanFile) Write(p []byte) (n int, err error) {
 		f.Buffer <- data
 	} else {
 		if cap(f.data) == 0 {
-			f.data = make([]byte, 0, len(p))
+			bbuf := common.MemPool.Get()
+			if cap(bbuf.B) < len(p) {
+				bbuf.B = make([]byte, 0, len(p))
+			}
+			f.data = bbuf.B
 		}
 		f.data = append(f.data, p...)
 	}
@@ -199,7 +204,7 @@ func (f *MemChanFile) Sync() error {
 		}
 		f.Buffer <- f.data[current:end]
 	}
-	f.data = nil
+	f.data = f.data[:0]
 	return nil
 }
 
@@ -211,6 +216,12 @@ func (f *MemChanFile) Seek(offset int64, whence int) (ret int64, err error) {
 // Close closes the buffer channel
 func (f *MemChanFile) Close() error {
 	close(f.Buffer)
+	if cap(f.data) > 0 {
+		bbuf := &bytebufferpool.ByteBuffer{
+			B: f.data,
+		}
+		common.MemPool.Put(bbuf)
+	}
 	return nil
 }
 
