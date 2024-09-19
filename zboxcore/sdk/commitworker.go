@@ -407,9 +407,9 @@ func (commitReq *CommitRequestV2) processCommit() {
 	paths := make([]string, 0)
 	changeIndex := commitReq.changeIndex
 	for i := 0; i < len(commitReq.changes); i++ {
-		lookupHash := commitReq.changes[i].GetLookupHash(changeIndex)
-		if lookupHash != "" {
-			paths = append(paths, lookupHash)
+		lookupHashes := commitReq.changes[i].GetLookupHash(changeIndex)
+		if lookupHashes != nil {
+			paths = append(paths, lookupHashes...)
 		} else {
 			commitReq.changes[i] = nil
 		}

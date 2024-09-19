@@ -327,6 +327,7 @@ type OperationRequest struct {
 	StreamUpload    bool              // Required for streaming file when actualSize is not available
 	CancelCauseFunc context.CancelCauseFunc
 	Opts            []ChunkedUploadOption
+	CopyDirOnly     bool
 }
 
 // GetReadPriceRange returns the read price range from the global configuration.
@@ -1077,7 +1078,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 				operation = NewRenameOperation(op.RemotePath, op.DestName, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 
 			case constants.FileOperationCopy:
-				operation = NewCopyOperation(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
+				operation = NewCopyOperation(mo.ctx, op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, op.CopyDirOnly)
 
 			case constants.FileOperationMove:
 				operation = NewMoveOperation(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)

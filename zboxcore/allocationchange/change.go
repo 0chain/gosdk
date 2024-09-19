@@ -19,8 +19,7 @@ type AllocationChange interface {
 
 type AllocationChangeV2 interface {
 	ProcessChangeV2(trie *wmpt.WeightedMerkleTrie, changeIndex uint64) error
-	GetLookupHash(changeIndex uint64) string
-	GetHash(changeIndex uint64, id string) string
+	GetLookupHash(changeIndex uint64) []string
 }
 
 type EmptyFileChange struct {

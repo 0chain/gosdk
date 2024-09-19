@@ -49,8 +49,7 @@ type Operationer interface {
 	Completed(allocObj *Allocation)
 	Error(allocObj *Allocation, consensus int, err error)
 	ProcessChangeV2(trie *wmpt.WeightedMerkleTrie, changeIndex uint64) error
-	GetLookupHash(changeIndex uint64) string
-	GetHash(changeIndex uint64, id string) string
+	GetLookupHash(changeIndex uint64) []string
 }
 
 type MultiOperation struct {
@@ -195,7 +194,7 @@ func (mo *MultiOperation) Process() error {
 
 			refs, mask, err := op.Process(mo.allocationObj, mo.connectionID) // Process with each blobber
 			if err != nil {
-				if err != errFileDeleted {
+				if err != errFileDeleted && err != errNoChange {
 					l.Logger.Error(err)
 					errsSlice[idx] = errors.New("", err.Error())
 					ctxCncl(err)
@@ -234,6 +233,10 @@ func (mo *MultiOperation) Process() error {
 				fmt.Sprintf("Multioperation failed. Required consensus %d got %d. Major error: %s",
 					mo.consensusThresh, mo.operationMask.CountOnes(), majorErr.Error()))
 		}
+		return nil
+	}
+
+	if mo.allocationObj.StorageVersion == StorageV2 && len(mo.changesV2) == 0 {
 		return nil
 	}
 

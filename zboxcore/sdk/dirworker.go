@@ -377,10 +377,6 @@ func (dirOp *DirOperation) ProcessChangeV2(trie *wmpt.WeightedMerkleTrie, change
 	return nil
 }
 
-func (dirOp *DirOperation) GetLookupHash(changeIndex uint64) string {
-	return ""
-}
-
-func (dirOp *DirOperation) GetHash(changeIndex uint64, id string) string {
-	return emptyHash
+func (dirOp *DirOperation) GetLookupHash(changeIndex uint64) []string {
+	return nil
 }

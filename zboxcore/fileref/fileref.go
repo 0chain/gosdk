@@ -66,6 +66,7 @@ type RefEntity interface {
 	GetNumBlocks() int64
 	GetSize() int64
 	GetFileMetaHash() string
+	GetFileMetaHashV2() []byte
 	GetHash() string
 	CalculateHash() string
 	GetType() string
@@ -163,6 +164,10 @@ func (r *Ref) CalculateHash() string {
 
 func (r *Ref) GetFileMetaHash() string {
 	return r.FileMetaHash
+}
+
+func (r *Ref) GetFileMetaHashV2() []byte {
+	return nil
 }
 
 func (r *Ref) GetHash() string {

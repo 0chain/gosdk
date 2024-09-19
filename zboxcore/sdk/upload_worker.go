@@ -10,7 +10,6 @@ import (
 
 	"github.com/0chain/common/core/util/wmpt"
 	"github.com/0chain/gosdk/constants"
-	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/fileref"
@@ -163,17 +162,9 @@ func (uo *UploadOperation) ProcessChangeV2(trie *wmpt.WeightedMerkleTrie, change
 	return nil
 }
 
-func (uo *UploadOperation) GetLookupHash(changeIndex uint64) string {
+func (uo *UploadOperation) GetLookupHash(changeIndex uint64) []string {
 	if uo.refs[changeIndex] == nil {
-		return ""
+		return nil
 	}
-	return uo.lookupHash
-}
-
-func (uo *UploadOperation) GetHash(changeIndex uint64, id string) string {
-	if uo.refs[changeIndex] == nil {
-		return ""
-	}
-	ref := uo.refs[changeIndex]
-	return encryption.Hash(ref.GetFileHashDataV2(id))
+	return []string{uo.lookupHash}
 }
