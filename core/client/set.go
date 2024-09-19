@@ -217,6 +217,13 @@ func PrivateKey(clientId ...string) string {
 	return ""
 }
 
+func ClientID(clientId ...string) string {
+	if len(clientId) > 0 && client.wallets[clientId[0]].ClientKey != "" {
+		return clientId[0]
+	}
+	return client.wallet.ClientID
+}
+
 func Id(clientId ...string) string {
 	if len(clientId) > 0 && client.wallets[clientId[0]].ClientKey != "" {
 		return clientId[0]
