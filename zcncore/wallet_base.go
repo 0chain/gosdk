@@ -208,7 +208,7 @@ func RecoverOfflineWallet(mnemonic string) (string, error) {
 	if !zcncrypto.IsMnemonicValid(mnemonic) {
 		return "", errors.New("Invalid mnemonic")
 	}
-	sigScheme := zcncrypto.NewSignatureScheme(client.SignatureScheme())
+	sigScheme := zcncrypto.NewSignatureScheme("bls0chain")
 	wallet, err := sigScheme.RecoverKeys(mnemonic)
 	if err != nil {
 		return "", err
