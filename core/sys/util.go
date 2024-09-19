@@ -2,7 +2,6 @@ package sys
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"io/fs"
 	"os"
@@ -45,7 +44,6 @@ func (f *MemFile) Write(p []byte) (n int, err error) {
 // WriteAt writes data to the file at a specific offset
 func (f *MemFile) WriteAt(p []byte, offset int64) (n int, err error) {
 	if offset < 0 || offset > int64(len(f.Buffer)) || len(p) > len(f.Buffer)-int(offset) {
-		fmt.Println("shortWriteError", offset, len(p), len(f.Buffer))
 		return 0, io.ErrShortWrite
 	}
 
