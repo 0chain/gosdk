@@ -178,6 +178,7 @@ func TestListRequest_getListInfoFromBlobber(t *testing.T) {
 				Baseurl: tt.name,
 			}
 			req := &ListRequest{
+				ClientId:       mockClientId,
 				allocationID:   mockAllocationId,
 				allocationTx:   mockAllocationTxId,
 				ctx:            context.TODO(),

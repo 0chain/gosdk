@@ -162,6 +162,7 @@ func TestListRequest_getFileMetaInfoFromBlobber(t *testing.T) {
 				Baseurl: tt.name,
 			}
 			req := &ListRequest{
+				ClientId:       mockClientId,
 				allocationID:   mockAllocationId,
 				allocationTx:   mockAllocationTxId,
 				ctx:            context.TODO(),
@@ -272,6 +273,7 @@ func TestListRequest_getFileConsensusFromBlobbers(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.setup(t, tt.name, tt.numBlobbers, tt.numCorrect)
 			req := &ListRequest{
+				ClientId:     mockClientId,
 				allocationID: mockAllocationId,
 				allocationTx: mockAllocationTxId,
 				ctx:          context.TODO(),

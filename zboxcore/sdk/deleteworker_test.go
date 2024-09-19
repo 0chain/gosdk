@@ -379,6 +379,7 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 
 			a := &Allocation{
 				DataShards: numBlobbers,
+				Owner:      mockClientId,
 			}
 
 			for i := 0; i < tt.numBlobbers; i++ {

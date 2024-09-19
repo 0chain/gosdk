@@ -152,7 +152,10 @@ func SetSignatureScheme(signatureScheme string) {
 	client.signatureScheme = signatureScheme
 }
 
-func Wallet() *zcncrypto.Wallet {
+func Wallet(clientId ...string) *zcncrypto.Wallet {
+	if len(clientId) > 0 {
+		return client.wallets[clientId[0]]
+	}
 	return client.wallet
 }
 

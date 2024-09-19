@@ -50,6 +50,7 @@ func TestAllocation_DeleteFile(t *testing.T) {
 		DataShards:   2,
 		ParityShards: 2,
 		FileOptions:  63,
+		Owner:        mockClientId,
 	}
 	a.InitAllocation()
 	sdkInitialized = true
