@@ -12,8 +12,13 @@ import (
 )
 
 func (ta *TransactionWithAuth) ExecuteSmartContract(address, methodName string,
-	input interface{}, val uint64, feeOpts ...FeeOption) (*transaction.Transaction, error) {
-	err := ta.t.createSmartContractTxn(address, methodName, input, val, feeOpts...)
+	input interface{}, val string, feeOpts ...FeeOption) (*transaction.Transaction, error) {
+	v, err := parseCoinStr(val)
+	if err != nil {
+		return nil, err
+	}
+
+	err = ta.t.createSmartContractTxn(address, methodName, input, v, feeOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -23,7 +28,12 @@ func (ta *TransactionWithAuth) ExecuteSmartContract(address, methodName string,
 	return ta.t.txn, nil
 }
 
-func (ta *TransactionWithAuth) Send(toClientID string, val uint64, desc string) error {
+func (ta *TransactionWithAuth) Send(toClientID string, val string, desc string) error {
+	v, err := parseCoinStr(val)
+	if err != nil {
+		return nil
+	}
+
 	txnData, err := json.Marshal(SendTxnData{Note: desc})
 	if err != nil {
 		return errors.New("", "Could not serialize description to transaction_data")
@@ -31,7 +41,7 @@ func (ta *TransactionWithAuth) Send(toClientID string, val uint64, desc string) 
 	go func() {
 		ta.t.txn.TransactionType = transaction.TxnTypeSend
 		ta.t.txn.ToClientID = toClientID
-		ta.t.txn.Value = val
+		ta.t.txn.Value = v
 		ta.t.txn.TransactionData = string(txnData)
 		ta.submitTxn()
 	}()
