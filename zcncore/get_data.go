@@ -190,7 +190,7 @@ func GetMintNonce() ([]byte, error) {
 		return nil, err
 	}
 
-	return client.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINT_NONCE, Params{
+	return client.MakeSCRestAPICall(ZCNSCSmartContractAddress, GET_MINT_NONCE, Params{
 		"client_id": client.ClientID(),
 	})
 }
