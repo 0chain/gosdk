@@ -5,15 +5,13 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"github.com/0chain/gosdk/core/client"
-	"path"
-	"strconv"
-	"time"
-
 	"github.com/0chain/gosdk/zcnbridge"
 	"github.com/0chain/gosdk/zcnbridge/errors"
 	"github.com/0chain/gosdk/zcnbridge/log"
 	"github.com/0chain/gosdk/zcncore"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"path"
+	"strconv"
 )
 
 var bridge *zcnbridge.BridgeClient
@@ -85,15 +83,14 @@ func burnZCN(amount uint64) string { //nolint
 //   - burnTrxHash: hash of the burn transaction
 //   - timeout: timeout in seconds
 func mintZCN(burnTrxHash string, timeout int) string { //nolint
-	mintPayload, err := bridge.QueryZChainMintPayload(burnTrxHash)
+	mintPayload,
+
+		err := bridge.QueryZChainMintPayload(burnTrxHash)
 	if err != nil {
 		return errors.Wrap("mintZCN", "failed to QueryZChainMintPayload", err).Error()
 	}
 
-	c, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
-	defer cancel()
-
-	hash, err := bridge.MintZCN(c, mintPayload)
+	hash, err := bridge.MintZCN(mintPayload)
 	if err != nil {
 		return errors.Wrap("mintZCN", "failed to MintZCN for txn "+hash, err).Error()
 	}

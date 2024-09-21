@@ -621,7 +621,7 @@ func (b *BridgeClient) BurnWZCN(ctx context.Context, amountTokens uint64) (*type
 // MintZCN mints ZCN tokens after receiving proof-of-burn of WZCN tokens
 //   - ctx go context instance to run the transaction
 //   - payload received from authorizers
-func (b *BridgeClient) MintZCN(ctx context.Context, payload *zcnsc.MintPayload) (string, error) {
+func (b *BridgeClient) MintZCN(payload *zcnsc.MintPayload) (string, error) {
 	Logger.Info(
 		"Starting MINT smart contract",
 		zap.String("sc address", wallet.ZCNSCSmartContractAddress),
