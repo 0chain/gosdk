@@ -323,6 +323,7 @@ type SimilarField struct {
 	PathLevel           int    `json:"level"`
 	Size                int64  `json:"size"`
 	EncryptedKey        string `json:"encrypted_key"`
+	EncryptedKeyPoint   string `json:"encrypted_key_point"`
 	ActualFileSize      int64  `json:"actual_file_size"`
 	ActualFileHash      string `json:"actual_file_hash"`
 	MimeType            string `json:"mimetype"`

@@ -1788,7 +1788,7 @@ func (a *Allocation) GetRefs(path, offsetPath, updatedDate, offsetDate, fileType
 	return a.getRefs(path, "", "", offsetPath, updatedDate, offsetDate, fileType, refType, level, pageLimit, opts...)
 }
 
-func (a *Allocation) ListObjects(ctx context.Context, path, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) <-chan ORef {
+func (a *Allocation) ListObjects(ctx context.Context, path, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int, opts ...ObjectTreeRequestOption) <-chan ORef {
 	oRefChan := make(chan ORef, 1)
 	sendObjectRef := func(ref ORef) {
 		select {
@@ -1807,7 +1807,7 @@ func (a *Allocation) ListObjects(ctx context.Context, path, offsetPath, updatedD
 		}()
 		continuationPath := offsetPath
 		for {
-			oRefs, err := a.GetRefs(path, continuationPath, updatedDate, offsetDate, fileType, refType, level, pageLimit)
+			oRefs, err := a.GetRefs(path, continuationPath, updatedDate, offsetDate, fileType, refType, level, pageLimit, opts...)
 			if err != nil {
 				sendObjectRef(ORef{
 					Err: err,
@@ -2825,18 +2825,25 @@ func (a *Allocation) StartRepair(localRootPath, pathToRepair string, statusCB St
 		return notInitialized
 	}
 
-	listDir, err := a.ListDir(pathToRepair,
-		WithListRequestForRepair(true),
-		WithListRequestPageLimit(-1),
+	var (
+		listDir *ListResult
+		err     error
 	)
-	if err != nil {
-		return err
+	if a.StorageVersion == 0 {
+		listDir, err = a.ListDir(pathToRepair,
+			WithListRequestForRepair(true),
+			WithListRequestPageLimit(-1),
+		)
+		if err != nil {
+			return err
+		}
 	}
 
 	repairReq := &RepairRequest{
 		listDir:       listDir,
 		localRootPath: localRootPath,
 		statusCB:      statusCB,
+		repairPath:    pathToRepair,
 	}
 
 	repairReq.completedCallback = func() {

@@ -32,7 +32,7 @@ var ErrPauseUpload = errors.New("upload paused by user")
 
 func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
 	if uo.isDownload {
-		if f, ok := uo.chunkedUpload.fileReader.(*sys.MemChanFile); ok {
+		if f, ok := uo.chunkedUpload.fileReader.(sys.File); ok {
 			err := allocObj.DownloadFileToFileHandler(f, uo.chunkedUpload.fileMeta.RemotePath, false, nil, true, WithFileCallback(func() {
 				f.Close() //nolint:errcheck
 			}))

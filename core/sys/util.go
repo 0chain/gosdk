@@ -146,7 +146,7 @@ func (f *MemChanFile) Stat() (fs.FileInfo, error) {
 
 // Read reads data from the file through the buffer channel
 // It returns io.EOF when the buffer channel is closed.
-// 		- p: file in bytes loaded from the buffer channel
+//   - p: file in bytes loaded from the buffer channel
 func (f *MemChanFile) Read(p []byte) (int, error) {
 	select {
 	case err := <-f.ErrChan:
@@ -166,7 +166,7 @@ func (f *MemChanFile) Read(p []byte) (int, error) {
 // Write writes data to the file through the buffer channel
 // It writes the data to the buffer channel in chunks of ChunkWriteSize.
 // If ChunkWriteSize is 0, it writes the data as a whole.
-// 		- p: file in bytes to write to the buffer channel
+//   - p: file in bytes to write to the buffer channel
 func (f *MemChanFile) Write(p []byte) (n int, err error) {
 	if f.ChunkWriteSize == 0 {
 		data := make([]byte, len(p))
@@ -252,4 +252,39 @@ func (i *MemFileChanInfo) Sys() interface{} {
 // Info returns the file information
 func (i *MemFileChanInfo) Info() (fs.FileInfo, error) {
 	return i, nil
+}
+
+// wrapper over io pipe to implement File interface
+type PipeFile struct {
+	w *io.PipeWriter
+	r *io.PipeReader
+}
+
+func NewPipeFile() *PipeFile {
+	r, w := io.Pipe()
+	return &PipeFile{w: w, r: r}
+}
+
+func (pf *PipeFile) Write(p []byte) (int, error) {
+	return pf.w.Write(p)
+}
+
+func (pf *PipeFile) Close() error {
+	return pf.w.Close()
+}
+
+func (pf *PipeFile) Read(p []byte) (int, error) {
+	return pf.r.Read(p)
+}
+
+func (pf *PipeFile) Stat() (fs.FileInfo, error) {
+	return nil, nil
+}
+
+func (pf *PipeFile) Sync() error {
+	return nil
+}
+
+func (pf *PipeFile) Seek(offset int64, whence int) (int64, error) {
+	return 0, nil
 }

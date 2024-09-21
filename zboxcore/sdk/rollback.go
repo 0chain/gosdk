@@ -244,6 +244,8 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 		if shouldContinue {
 			continue
 		}
+		rb.blobber.LatestWM = wm
+		rb.blobber.AllocationRoot = wm.AllocationRoot
 		return nil
 
 	}
@@ -350,6 +352,11 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
 	}
 
 	if len(versionMap[latestVersion]) >= req || len(versionMap[prevVersion]) >= req || len(versionMap) > 2 {
+		if len(versionMap[latestVersion]) >= req {
+			a.allocationRoot = versionMap[latestVersion][0].lpm.LatestWM.AllocationRoot
+		} else if len(versionMap[prevVersion]) > 0 {
+			a.allocationRoot = versionMap[prevVersion][0].lpm.LatestWM.AllocationRoot
+		}
 		for _, rb := range versionMap[prevVersion] {
 			blobberRes[rb.blobIndex].Status = "repair"
 		}
