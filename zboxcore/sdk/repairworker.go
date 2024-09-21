@@ -69,6 +69,8 @@ func (r *RepairRequest) processRepair(ctx context.Context, a *Allocation) {
 	if r.checkForCancel(a) {
 		return
 	}
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	SetNumBlockDownloads(RepairBlocks)
 	currBatchSize := BatchSize
 	BatchSize = BatchSize / 2
@@ -320,14 +322,7 @@ func checkFileExists(localPath string) bool {
 }
 
 func (r *RepairRequest) checkForCancel(a *Allocation) bool {
-	if r.isRepairCanceled {
-		l.Logger.Info("Repair Cancelled by the user")
-		if r.statusCB != nil {
-			r.statusCB.RepairCompleted(r.filesRepaired)
-		}
-		return true
-	}
-	return false
+	return r.isRepairCanceled
 }
 
 type diffRef struct {
@@ -374,6 +369,9 @@ func (r *RepairRequest) iterateDirV2(ctx context.Context) {
 		ops       []OperationRequest
 	)
 	for {
+		if r.checkForCancel(r.allocation) {
+			return
+		}
 		if toNextRef {
 			if srcEOF {
 				break
