@@ -281,7 +281,10 @@ func GetNotProcessedZCNBurnTickets(ethereumAddress, startNonce string) ([]byte, 
 	if err != nil {
 		return nil, err
 	}
-	return client.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINERSC_POOL, Params{
+
+	const GET_NOT_PROCESSED_BURN_TICKETS = `/v1/not_processed_burn_tickets`
+
+	return client.MakeSCRestAPICall(ZCNSCSmartContractAddress, GET_NOT_PROCESSED_BURN_TICKETS, Params{
 		"ethereum_address": ethereumAddress,
 		"nonce":            startNonce,
 	})
