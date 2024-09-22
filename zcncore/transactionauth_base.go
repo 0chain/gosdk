@@ -8,6 +8,7 @@ import (
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/zcncrypto"
+	"github.com/0chain/gosdk/zboxcore/sdk"
 )
 
 type TransactionWithAuth struct {
@@ -260,6 +261,10 @@ func (ta *TransactionWithAuth) VestingDelete(poolID string) (err error) {
 // RegisterMultiSig register a multisig wallet with the SC.
 func (ta *TransactionWithAuth) RegisterMultiSig(walletstr string, mswallet string) error {
 	return errors.New("", "not implemented")
+}
+
+func (ta *TransactionWithAuth) MinerSCVCAdd(id string, providerType sdk.ProviderType) error {
+	return ta.t.MinerSCVCAdd(id, providerType)
 }
 
 //

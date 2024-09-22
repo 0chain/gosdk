@@ -19,6 +19,7 @@ import (
 	"github.com/0chain/gosdk/core/node"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/util"
+	"github.com/0chain/gosdk/zboxcore/sdk"
 )
 
 type Provider int
@@ -155,7 +156,7 @@ type TransactionCommon interface {
 	MinerSCDeleteMiner(id string) error
 	MinerSCDeleteSharder(id string) error
 
-	MinerSCVCRegisterNode(id string, nodeType string) error
+	MinerSCVCAdd(id string, nodeType sdk.ProviderType) error
 
 	// ZCNSCUpdateAuthorizerConfig updates authorizer config by ID
 	ZCNSCUpdateAuthorizerConfig(*AuthorizerNode) error
@@ -953,6 +954,28 @@ func (t *Transaction) MinerSCDeleteSharder(id string) (err error) {
 	}
 	go func() { t.setNonceAndSubmit() }()
 	return
+}
+
+type VCAddSCData struct {
+	ID   string
+	Type int
+}
+
+func (t *Transaction) MinerSCVCAdd(id string, nodeType sdk.ProviderType) error {
+	req := VCAddSCData{
+		ID:   id,
+		Type: int(nodeType),
+	}
+
+	err := t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_VC_ADD, req, 0)
+	if err != nil {
+		logging.Error(err)
+		return err
+	}
+	go func() { t.setNonceAndSubmit() }()
+
+	return nil
 }
 
 type AuthorizerNode struct {
