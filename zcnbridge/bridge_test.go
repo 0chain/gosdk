@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	coreClient "github.com/0chain/gosdk/core/client"
+	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zcnbridge/ethereum/uniswapnetwork"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"log"
@@ -366,6 +367,9 @@ func Test_ZCNBridge(t *testing.T) {
 	})
 
 	t.Run("should check configuration formating in BurnWZCN", func(t *testing.T) {
+		coreClient.SetWallet(zcncrypto.Wallet{
+			ClientID: clientId,
+		})
 		_, err := bridgeClient.BurnWZCN(context.Background(), amount)
 		require.NoError(t, err)
 
