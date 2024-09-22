@@ -263,37 +263,6 @@ func StakePoolUnlock(providerType ProviderType, providerID string, fee string) (
 	return spuu.Amount, nonce, nil
 }
 
-// ReadPoolLock locks given number of tokes for given duration in read pool.
-//   - tokens: number of tokens to lock
-//   - fee: transaction fee
-func ReadPoolLock(tokens, fee string) (hash string, nonce int64, err error) {
-	if !sdkInitialized {
-		return "", 0, sdkNotInitialized
-	}
-
-	var sn = transaction.SmartContractTxnData{
-		Name:      transaction.STORAGESC_READ_POOL_LOCK,
-		InputArgs: nil,
-	}
-	hash, _, nonce, _, err = smartContractTxnValueFeeWithRetry(STORAGE_SCADDRESS, sn, tokens, fee)
-	return
-}
-
-// ReadPoolUnlock unlocks tokens in expired read pool
-//   - fee: transaction fee
-func ReadPoolUnlock(fee string) (hash string, nonce int64, err error) {
-	if !sdkInitialized {
-		return "", 0, sdkNotInitialized
-	}
-
-	var sn = transaction.SmartContractTxnData{
-		Name:      transaction.STORAGESC_READ_POOL_UNLOCK,
-		InputArgs: nil,
-	}
-	hash, _, nonce, _, err = smartContractTxnValueFeeWithRetry(STORAGE_SCADDRESS, sn, "0", fee)
-	return
-}
-
 //
 // write pool
 //

@@ -148,56 +148,9 @@ func InitStorageSDK(walletJSON string,
 	return nil
 }
 
-func CreateReadPool() (hash string, nonce int64, err error) {
-	if !sdkInitialized {
-		return "", 0, sdkNotInitialized
-	}
-	hash, _, nonce, _, err = storageSmartContractTxn(transaction.SmartContractTxnData{
-		Name: transaction.STORAGESC_CREATE_READ_POOL,
-	})
-	return
-}
-
 type BackPool struct {
 	ID      string         `json:"id"`
 	Balance common.Balance `json:"balance"`
-}
-
-//
-// read pool
-//
-
-type ReadPool struct {
-	Balance common.Balance `json:"balance"`
-}
-
-// GetReadPoolInfo for given client, or, if the given clientID is empty,
-// for current client of the sdk.
-func GetReadPoolInfo(clientID string) (info *ReadPool, err error) {
-	if !sdkInitialized {
-		return nil, sdkNotInitialized
-	}
-
-	if clientID == "" {
-		clientID = client.ClientID()
-	}
-
-	var b []byte
-	b, err = client.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getReadPoolStat",
-		map[string]string{"client_id": clientID})
-	if err != nil {
-		return nil, errors.Wrap(err, "error requesting read pool info")
-	}
-	if len(b) == 0 {
-		return nil, errors.New("", "empty response")
-	}
-
-	info = new(ReadPool)
-	if err = json.Unmarshal(b, info); err != nil {
-		return nil, errors.Wrap(err, "2 error decoding response:")
-	}
-
-	return
 }
 
 //

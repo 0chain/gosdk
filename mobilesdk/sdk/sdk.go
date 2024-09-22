@@ -325,21 +325,6 @@ func (s *StorageSDK) CancelAllocation(allocationID string) (string, error) {
 	return hash, err
 }
 
-// GetReadPoolInfo is to get information about the read pool for the allocation
-//   - clientID: client ID
-func (s *StorageSDK) GetReadPoolInfo(clientID string) (string, error) {
-	readPool, err := sdk.GetReadPoolInfo(clientID)
-	if err != nil {
-		return "", err
-	}
-
-	retBytes, err := json.Marshal(readPool)
-	if err != nil {
-		return "", err
-	}
-	return string(retBytes), nil
-}
-
 // WRITE POOL METHODS
 // WritePoolLock lock write pool with given number of tokens
 //   - durInSeconds: duration in seconds

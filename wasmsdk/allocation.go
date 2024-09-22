@@ -414,17 +414,6 @@ func getSkatePoolInfo(providerType int, providerID string) (*sdk.StakePoolInfo, 
 	return info, err
 }
 
-// getReadPoolInfo is to get information about the read pool for the allocation
-//   - clientID: client id
-func getReadPoolInfo(clientID string) (*sdk.ReadPool, error) {
-	readPool, err := sdk.GetReadPoolInfo(clientID)
-	if err != nil {
-		return nil, err
-	}
-
-	return readPool, nil
-}
-
 // getAllocationWith retrieves the information of a free or a shared allocation object given the auth ticket.
 // A free allocation is an allocation that is created to the user using Vult app for the first time with no fees.
 // A shared allocation is an allocation that has some shared files. The user who needs

@@ -268,12 +268,6 @@ func main() {
 				"getAllocationWith":          getAllocationWith,
 				"createfreeallocation":       createfreeallocation,
 
-				// readpool
-				"getReadPoolInfo": getReadPoolInfo,
-				"lockReadPool":    lockReadPool,
-				"unLockReadPool":  unLockReadPool,
-				"createReadPool":  createReadPool,
-
 				// claim rewards
 				"collectRewards": collectRewards,
 
