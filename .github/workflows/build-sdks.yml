@@ -24,10 +24,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Set up Go 1.x
+      - name: Set up Go 1.22
         uses: actions/setup-go@v3
         with:
-          go-version: 1.21.5
+          go-version: 1.22
 
       - name: Clean build
         run: make clean-mobilesdk
@@ -96,10 +96,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Set up Go 1.x
+      - name: Set up Go 1.22
         uses: actions/setup-go@v3
         with:
-          go-version: 1.21.5
+          go-version: 1.22
 
       - name: Install deps
         run: |
@@ -199,10 +199,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Set up Go 1.x
+      - name: Set up Go 1.22
         uses: actions/setup-go@v3
         with:
-          go-version: 1.21.5
+          go-version: 1.22
 
       - name: Clean build
         run: make clean-mobilesdk
@@ -271,10 +271,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Set up Go 1.x
+      - name: Set up Go 1.22
         uses: actions/setup-go@v3
         with:
-          go-version: 1.21.5
+          go-version: 1.22
 
       - name: Install deps
         run: |
