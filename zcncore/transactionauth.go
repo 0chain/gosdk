@@ -535,8 +535,13 @@ func (ta *TransactionWithAuth) MinerSCDeleteMiner(id string) (
 	return
 }
 
-func (ta *TransactionWithAuth) MinerSCDeleteSharder(info *MinerSCMinerInfo) (
+func (ta *TransactionWithAuth) MinerSCDeleteSharder(id string) (
 	err error) {
+	info := &MinerSCMinerInfo{
+		SimpleMiner: SimpleMiner{
+			ID: id,
+		},
+	}
 
 	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
 		transaction.MINERSC_SHARDER_DELETE, info, 0)
