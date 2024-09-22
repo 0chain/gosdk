@@ -153,7 +153,9 @@ type TransactionCommon interface {
 	MinerSCMinerSettings(*MinerSCMinerInfo) error
 	MinerSCSharderSettings(*MinerSCMinerInfo) error
 	MinerSCDeleteMiner(id string) error
-	MinerSCDeleteSharder(*MinerSCMinerInfo) error
+	MinerSCDeleteSharder(id string) error
+
+	MinerSCVCRegisterNode(id string, nodeType string) error
 
 	// ZCNSCUpdateAuthorizerConfig updates authorizer config by ID
 	ZCNSCUpdateAuthorizerConfig(*AuthorizerNode) error
@@ -937,7 +939,12 @@ func (t *Transaction) MinerSCDeleteMiner(id string) (err error) {
 	return
 }
 
-func (t *Transaction) MinerSCDeleteSharder(info *MinerSCMinerInfo) (err error) {
+func (t *Transaction) MinerSCDeleteSharder(id string) (err error) {
+	info := &MinerSCMinerInfo{
+		SimpleMiner: SimpleMiner{
+			ID: id,
+		},
+	}
 	err = t.createSmartContractTxn(MinerSmartContractAddress,
 		transaction.MINERSC_SHARDER_DELETE, info, 0)
 	if err != nil {
