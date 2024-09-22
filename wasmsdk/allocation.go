@@ -387,21 +387,6 @@ func lockStakePool(providerType, tokens, fee uint64, providerID string) (string,
 	return hash, err
 }
 
-// unlockWritePool unlocks the read pool
-//   - tokens: amount of tokens to lock (in SAS)
-//   - fee: transaction fees (in SAS)
-func lockReadPool(tokens, fee uint64) (string, error) {
-	hash, _, err := sdk.ReadPoolLock(tokens, fee)
-	return hash, err
-}
-
-// unLockWritePool unlocks the write pool
-//   - fee: transaction fees (in SAS)
-func unLockReadPool(fee uint64) (string, error) {
-	hash, _, err := sdk.ReadPoolUnlock(fee)
-	return hash, err
-}
-
 // unlockWritePool unlocks the write pool
 //   - providerType: provider type (1: miner, 2:sharder, 3:blobber, 4:validator, 5:authorizer)
 //   - fee: transaction fees (in SAS)
