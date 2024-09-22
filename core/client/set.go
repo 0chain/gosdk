@@ -176,6 +176,9 @@ func PrivateKey() string {
 }
 
 func ClientID() string {
+	if client.wallet.ClientID == "" {
+		panic("Wallet not initialised, client ID empty")
+	}
 	return client.wallet.ClientID
 }
 
