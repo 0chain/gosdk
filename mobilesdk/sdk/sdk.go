@@ -114,7 +114,7 @@ func InitStorageSDK(clientJson string, configJson string) (*StorageSDK, error) {
 		l.Logger.Error(err)
 		return nil, err
 	}
-	err = zcncore.InitZCNSDK(configObj.BlockWorker, configObj.SignatureScheme)
+	err = Init(configObj.BlockWorker)
 	if err != nil {
 		l.Logger.Error(err)
 		return nil, err
@@ -349,8 +349,8 @@ func (s *StorageSDK) GetReadPoolInfo(clientID string) (string, error) {
 func (s *StorageSDK) WritePoolLock(durInSeconds int64, tokens, fee float64, allocID string) error {
 	_, _, err := sdk.WritePoolLock(
 		allocID,
-		zcncore.ConvertTokenToSAS(tokens),
-		zcncore.ConvertTokenToSAS(fee))
+		zcncore.ConvertToValue(tokens),
+		zcncore.ConvertToValue(fee))
 	return err
 }
 
@@ -443,7 +443,7 @@ func decodeTicket(ticket string) (string, string, uint64, error) {
 	markerStr, _ := json.Marshal(markerInput)
 
 	s, _ := strconv.ParseFloat(string(fmt.Sprintf("%v", lock)), 64)
-	return string(recipientPublicKey), string(markerStr), zcncore.ConvertTokenToSAS(s), nil
+	return string(recipientPublicKey), string(markerStr), zcncore.ConvertToValue(s), nil
 }
 
 // RegisterAuthorizer Client can extend interface and FaSS implementation to this register like this:

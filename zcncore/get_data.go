@@ -289,3 +289,33 @@ func GetNotProcessedZCNBurnTickets(ethereumAddress, startNonce string) ([]byte, 
 		"nonce":            startNonce,
 	})
 }
+
+// GetUserLockedTotal get total token user locked
+// # Inputs
+//   - clientID wallet id
+func GetUserLockedTotal(clientID string) (int64, error) {
+	var result map[string]int64
+
+	err := CheckConfig()
+	if err != nil {
+		return 0, err
+	}
+
+	const GET_USER_LOCKED_TOTAL = `/v1/getUserLockedTotal`
+
+	info, err := client.MakeSCRestAPICall(ZCNSCSmartContractAddress, GET_USER_LOCKED_TOTAL, Params{
+		"client_id": clientID,
+	})
+
+	err = json.Unmarshal([]byte(info), &result)
+	if err != nil {
+		return 0, errors.New("invalid json format: " + err.Error())
+	}
+
+	total, ok := result["total"]
+	if ok {
+		return total, nil
+	} else {
+		return 0, err
+	}
+}
