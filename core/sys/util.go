@@ -6,6 +6,9 @@ import (
 	"io/fs"
 	"os"
 	"time"
+
+	"github.com/0chain/gosdk/core/common"
+	"github.com/valyala/bytebufferpool"
 )
 
 // MemFile represents a file totally loaded in memory
@@ -52,7 +55,11 @@ func (f *MemFile) WriteAt(p []byte, offset int64) (n int, err error) {
 
 // InitBuffer initializes the buffer with a specific size
 func (f *MemFile) InitBuffer(size int) {
-	f.Buffer = make([]byte, size)
+	buff := common.MemPool.Get()
+	if cap(buff.B) < size {
+		buff.B = make([]byte, size)
+	}
+	f.Buffer = buff.B[:size]
 }
 
 // Sync not implemented
@@ -146,7 +153,7 @@ func (f *MemChanFile) Stat() (fs.FileInfo, error) {
 
 // Read reads data from the file through the buffer channel
 // It returns io.EOF when the buffer channel is closed.
-// 		- p: file in bytes loaded from the buffer channel
+//   - p: file in bytes loaded from the buffer channel
 func (f *MemChanFile) Read(p []byte) (int, error) {
 	select {
 	case err := <-f.ErrChan:
@@ -166,7 +173,7 @@ func (f *MemChanFile) Read(p []byte) (int, error) {
 // Write writes data to the file through the buffer channel
 // It writes the data to the buffer channel in chunks of ChunkWriteSize.
 // If ChunkWriteSize is 0, it writes the data as a whole.
-// 		- p: file in bytes to write to the buffer channel
+//   - p: file in bytes to write to the buffer channel
 func (f *MemChanFile) Write(p []byte) (n int, err error) {
 	if f.ChunkWriteSize == 0 {
 		data := make([]byte, len(p))
@@ -174,7 +181,11 @@ func (f *MemChanFile) Write(p []byte) (n int, err error) {
 		f.Buffer <- data
 	} else {
 		if cap(f.data) == 0 {
-			f.data = make([]byte, 0, len(p))
+			bbuf := common.MemPool.Get()
+			if cap(bbuf.B) < len(p) {
+				bbuf.B = make([]byte, 0, len(p))
+			}
+			f.data = bbuf.B
 		}
 		f.data = append(f.data, p...)
 	}
@@ -193,7 +204,7 @@ func (f *MemChanFile) Sync() error {
 		}
 		f.Buffer <- f.data[current:end]
 	}
-	f.data = nil
+	f.data = f.data[:0]
 	return nil
 }
 
@@ -205,6 +216,12 @@ func (f *MemChanFile) Seek(offset int64, whence int) (ret int64, err error) {
 // Close closes the buffer channel
 func (f *MemChanFile) Close() error {
 	close(f.Buffer)
+	if cap(f.data) > 0 {
+		bbuf := &bytebufferpool.ByteBuffer{
+			B: f.data,
+		}
+		common.MemPool.Put(bbuf)
+	}
 	return nil
 }
 

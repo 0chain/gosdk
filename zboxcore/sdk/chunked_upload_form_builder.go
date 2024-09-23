@@ -96,8 +96,12 @@ func (b *chunkedUploadFormBuilder) Build(
 		if endRange > len(fileChunksData) {
 			endRange = len(fileChunksData)
 		}
-
-		bodyBuf := make([]byte, 0, (CHUNK_SIZE*(endRange-startRange))+1024)
+		buff := formDataPool.Get()
+		bufSize := (CHUNK_SIZE * (endRange - startRange)) + 1024
+		if cap(buff.B) < bufSize {
+			buff.B = make([]byte, 0, bufSize)
+		}
+		bodyBuf := buff.B
 
 		body := bytes.NewBuffer(bodyBuf)
 		formWriter := multipart.NewWriter(body)
