@@ -14,8 +14,6 @@ import (
 	"github.com/0chain/gosdk/core/node"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/fileref"
-	"github.com/0chain/gosdk/zboxcore/logger"
-	"go.uber.org/zap"
 
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/encryption"
@@ -442,58 +440,6 @@ func WithNoEstimateFee() FeeOption {
 	}
 }
 
-func (t *Transaction) createSmartContractTxn(address, methodName string, input interface{}, value uint64, opts ...FeeOption) error {
-	sn := transaction.SmartContractTxnData{Name: methodName, InputArgs: input}
-	snBytes, err := json.Marshal(sn)
-	if err != nil {
-		return errors.Wrap(err, "create smart contract failed due to invalid data")
-	}
-
-	t.txn.TransactionType = transaction.TxnTypeSmartContract
-	t.txn.ToClientID = address
-	t.txn.TransactionData = string(snBytes)
-	t.txn.Value = value
-
-	if t.txn.TransactionFee > 0 {
-		return nil
-	}
-
-	tf := &TxnFeeOption{}
-	for _, opt := range opts {
-		opt(tf)
-	}
-
-	if tf.noEstimateFee {
-		return nil
-	}
-
-	// TODO: check if transaction is exempt to avoid unnecessary fee estimation
-	minFee, err := transaction.EstimateFee(t.txn, _config.chain.Miners, 0.2)
-	if err != nil {
-		logger.Logger.Error("failed estimate txn fee",
-			zap.Any("txn", t.txn.Hash),
-			zap.Error(err))
-		return err
-	}
-
-	t.txn.TransactionFee = minFee
-
-	return nil
-}
-
-func (t *Transaction) createFaucetSCWallet(walletStr string, methodName string, input []byte) (*zcncrypto.Wallet, error) {
-	w, err := getWallet(walletStr)
-	if err != nil {
-		fmt.Printf("Error while parsing the wallet. %v\n", err)
-		return nil, err
-	}
-	err = t.createSmartContractTxn(FaucetSmartContractAddress, methodName, input, 0)
-	if err != nil {
-		return nil, err
-	}
-	return w, nil
-}
-
 // ExecuteFaucetSCWallet implements the Faucet Smart contract for a given wallet
 func (t *Transaction) ExecuteFaucetSCWallet(walletStr string, methodName string, input []byte) error {
 	w, err := t.createFaucetSCWallet(walletStr, methodName, input)
@@ -767,61 +713,9 @@ type vestingRequest struct {
 	PoolID common.Key `json:"pool_id"`
 }
 
-func (t *Transaction) vestingPoolTxn(function string, poolID string,
-	value uint64) error {
-
-	return t.createSmartContractTxn(VestingSmartContractAddress,
-		function, vestingRequest{PoolID: common.Key(poolID)}, value)
-}
-
-func (t *Transaction) VestingTrigger(poolID string) (err error) {
-
-	err = t.vestingPoolTxn(transaction.VESTING_TRIGGER, poolID, 0)
-	if err != nil {
-		logging.Error(err)
-		return
-	}
-	go func() { t.setNonceAndSubmit() }()
-	return
-}
-
 type VestingStopRequest struct {
 	PoolID      string `json:"pool_id"`
 	Destination string `json:"destination"`
-}
-
-func (t *Transaction) VestingStop(sr *VestingStopRequest) (err error) {
-
-	err = t.createSmartContractTxn(VestingSmartContractAddress,
-		transaction.VESTING_STOP, sr, 0)
-	if err != nil {
-		logging.Error(err)
-		return
-	}
-	go func() { t.setNonceAndSubmit() }()
-	return
-}
-
-func (t *Transaction) VestingUnlock(poolID string) (err error) {
-
-	err = t.vestingPoolTxn(transaction.VESTING_UNLOCK, poolID, 0)
-	if err != nil {
-		logging.Error(err)
-		return
-	}
-	go func() { t.setNonceAndSubmit() }()
-	return
-}
-
-func (t *Transaction) VestingDelete(poolID string) (err error) {
-
-	err = t.vestingPoolTxn(transaction.VESTING_DELETE, poolID, 0)
-	if err != nil {
-		logging.Error(err)
-		return
-	}
-	go func() { t.setNonceAndSubmit() }()
-	return
 }
 
 type scCollectReward struct {
