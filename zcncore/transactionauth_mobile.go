@@ -12,8 +12,8 @@ import (
 )
 
 // ExecuteSmartContract prepare and send a smart contract transaction to the blockchain
-func (t *TransactionWithAuth) ExecuteSmartContracts(address, methodName, val string) error {
-	return nil
+func (t *TransactionWithAuth) ExecuteSmartContracts(address, methodName, val string) (transaction.Transaction, error) {
+	return transaction.Transaction{}, nil
 }
 
 func (ta *TransactionWithAuth) ExecuteSmartContract(address, methodName string,
