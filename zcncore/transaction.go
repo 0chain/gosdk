@@ -178,6 +178,57 @@ type TransactionCommon interface {
 	ZCNSCCollectReward(providerID string, providerType Provider) error
 }
 
+// compiler time check
+var (
+	_ TransactionScheme = (*Transaction)(nil)
+	_ TransactionScheme = (*TransactionWithAuth)(nil)
+)
+
+// TransactionScheme implements few methods for block chain.
+//
+// Note: to be buildable on MacOSX all arguments should have names.
+type TransactionScheme interface {
+	TransactionCommon
+	// SetTransactionCallback implements storing the callback
+	// used to call after the transaction or verification is completed
+	SetTransactionCallback(cb TransactionCallback) error
+	// StoreData implements store the data to blockchain
+	StoreData(data string) error
+	// ExecuteFaucetSCWallet implements the `Faucet Smart contract` for a given wallet
+	ExecuteFaucetSCWallet(walletStr string, methodName string, input []byte) error
+	// GetTransactionHash implements retrieval of hash of the submitted transaction
+	GetTransactionHash() string
+	// SetTransactionHash implements verify a previous transaction status
+	SetTransactionHash(hash string) error
+	// SetTransactionNonce implements method to set the transaction nonce
+	SetTransactionNonce(txnNonce int64) error
+	// Verify implements verify the transaction
+	Verify() error
+	// GetVerifyOutput implements the verification output from sharders
+	GetVerifyOutput() string
+	// GetTransactionError implements error string in case of transaction failure
+	GetTransactionError() string
+	// GetVerifyError implements error string in case of verify failure error
+	GetVerifyError() string
+	// GetTransactionNonce returns nonce
+	GetTransactionNonce() int64
+
+	// Output of transaction.
+	Output() []byte
+
+	// Hash Transaction status regardless of status
+	Hash() string
+
+	// Vesting SC
+
+	VestingTrigger(poolID string) error
+	VestingStop(sr *VestingStopRequest) error
+	VestingUnlock(poolID string) error
+	VestingDelete(poolID string) error
+
+	// Miner SC
+}
+
 // PriceRange represents a price range allowed by user to filter blobbers.
 type PriceRange struct {
 	Min common.Balance `json:"min"`

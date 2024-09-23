@@ -45,6 +45,12 @@ type stakePoolRequest struct {
 	ProviderID   string `json:"provider_id,omitempty"`
 }
 
+// compiler time check
+var (
+	_ TransactionScheme = (*Transaction)(nil)
+	_ TransactionScheme = (*TransactionWithAuth)(nil)
+)
+
 type TransactionCommon interface {
 	// ExecuteSmartContract implements wrapper for smart contract function
 	ExecuteSmartContract(address, methodName string, input interface{}, val uint64, feeOpts ...FeeOption) (*transaction.Transaction, error)
@@ -92,6 +98,9 @@ type TransactionCommon interface {
 	GetVerifyConfirmationStatus() int
 }
 
+// TransactionScheme implements few methods for block chain.
+//
+// Note: to be buildable on MacOSX all arguments should have names.
 type TransactionScheme interface {
 	TransactionCommon
 	// SetTransactionCallback implements storing the callback
@@ -130,6 +139,8 @@ type TransactionScheme interface {
 	VestingStop(sr *VestingStopRequest) error
 	VestingUnlock(poolID string) error
 	VestingDelete(poolID string) error
+
+	// Miner SC
 }
 
 // priceRange represents a price range allowed by user to filter blobbers.
