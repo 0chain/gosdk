@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"github.com/0chain/gosdk/zboxcore/mocks"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"strconv"
@@ -132,7 +131,7 @@ func setupHttpResponses(
 				}
 				return http.StatusBadRequest
 			}(),
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{"status":2}`))),
+			Body: io.NopCloser(bytes.NewReader([]byte(`{"status":2}`))),
 		}, nil)
 
 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
@@ -147,7 +146,7 @@ func setupHttpResponses(
 			}(),
 			Body: func() io.ReadCloser {
 				s := `{"meta_data":{"chunk_size":0,"created_at":0,"hash":"","lookup_hash":"","name":"/","num_of_blocks":0,"path":"/","path_hash":"","size":0,"type":"d","updated_at":0},"Ref":{"ID":0,"Type":"d","AllocationID":"` + allocID + `","LookupHash":"","Name":"/","Path":"/","Hash":"","NumBlocks":0,"PathHash":"","ParentPath":"","PathLevel":1,"CustomMeta":"","ContentHash":"","Size":0,"MerkleRoot":"","ActualFileSize":0,"ActualFileHash":"","MimeType":"","WriteMarker":"","ThumbnailSize":0,"ThumbnailHash":"","ActualThumbnailSize":0,"ActualThumbnailHash":"","EncryptedKey":"","Children":null,"OnCloud":false,"CreatedAt":0,"UpdatedAt":0,"ChunkSize":0},"list":[{"meta_data":{"chunk_size":0,"created_at":0,"hash":"","lookup_hash":"","name":"1.txt","num_of_blocks":0,"path":"/1.txt","path_hash":"","size":0,"type":"f","updated_at":0},"Ref":{"ID":0,"Type":"f","AllocationID":"` + allocID + `","LookupHash":"","Name":"1.txt","Path":"/1.txt","Hash":"","NumBlocks":0,"PathHash":"","ParentPath":"/","PathLevel":1,"CustomMeta":"","ContentHash":"","Size":0,"MerkleRoot":"","ActualFileSize":0,"ActualFileHash":"","MimeType":"","WriteMarker":"","ThumbnailSize":0,"ThumbnailHash":"","ActualThumbnailSize":0,"ActualThumbnailHash":"","EncryptedKey":"","Children":null,"OnCloud":false,"CreatedAt":0,"UpdatedAt":0,"ChunkSize":0}}],"latest_write_marker":null}`
-				return ioutil.NopCloser(bytes.NewReader([]byte(s)))
+				return io.NopCloser(bytes.NewReader([]byte(s)))
 			}(),
 		}, nil)
 
@@ -163,7 +162,7 @@ func setupHttpResponses(
 			}(),
 			Body: func() io.ReadCloser {
 				s := `{"latest_write_marker":null,"prev_write_marker":null}`
-				return ioutil.NopCloser(bytes.NewReader([]byte(s)))
+				return io.NopCloser(bytes.NewReader([]byte(s)))
 			}(),
 		}, nil)
 
@@ -177,7 +176,7 @@ func setupHttpResponses(
 				}
 				return http.StatusBadRequest
 			}(),
-			Body: ioutil.NopCloser(bytes.NewReader(nil)),
+			Body: io.NopCloser(bytes.NewReader(nil)),
 		}, nil)
 
 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
@@ -190,7 +189,7 @@ func setupHttpResponses(
 				}
 				return http.StatusBadRequest
 			}(),
-			Body: ioutil.NopCloser(bytes.NewReader(nil)),
+			Body: io.NopCloser(bytes.NewReader(nil)),
 		}, nil)
 
 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
@@ -709,7 +708,7 @@ func TestAllocation_RepairFile(t *testing.T) {
 	// 					},
 	// 				})
 	// 				require.NoError(t, err)
-	// 				return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+	// 				return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 	// 			}(frName, hash),
 	// 		}, nil)
 	// 	}
@@ -736,7 +735,7 @@ func TestAllocation_RepairFile(t *testing.T) {
 						},
 					})
 					require.NoError(t, err)
-					return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+					return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 				}(frName, hash),
 			}
 
@@ -756,7 +755,7 @@ func TestAllocation_RepairFile(t *testing.T) {
 						Hash:     mockChunkHash,
 					})
 					require.NoError(t, err)
-					return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+					return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 				}(frName, hash),
 			}, nil)
 
@@ -767,7 +766,7 @@ func TestAllocation_RepairFile(t *testing.T) {
 				StatusCode: http.StatusOK,
 				Body: func() io.ReadCloser {
 					s := `{"latest_write_marker":null,"prev_write_marker":null}`
-					return ioutil.NopCloser(bytes.NewReader([]byte(s)))
+					return io.NopCloser(bytes.NewReader([]byte(s)))
 				}(),
 			}, nil)
 
@@ -776,7 +775,7 @@ func TestAllocation_RepairFile(t *testing.T) {
 				return strings.HasPrefix(req.URL.String(), urlRollback)
 			})).Return(&http.Response{
 				StatusCode: http.StatusOK,
-				Body:       ioutil.NopCloser(bytes.NewReader(nil)),
+				Body:       io.NopCloser(bytes.NewReader(nil)),
 			}, nil)
 
 			urlFilePath := "http://TestAllocation_RepairFile" + testName + mockBlobberUrl + strconv.Itoa(i) + "/v1/file/referencepath"
@@ -794,7 +793,7 @@ func TestAllocation_RepairFile(t *testing.T) {
 						LatestWM: nil,
 					})
 					require.NoError(t, err)
-					return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+					return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 				}(frName, hash),
 			}, nil)
 
@@ -806,7 +805,7 @@ func TestAllocation_RepairFile(t *testing.T) {
 				Body: func(fileRefName, hash string) io.ReadCloser {
 					jsonFR, err := json.Marshal(&ReferencePathResult{})
 					require.NoError(t, err)
-					return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+					return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 				}(frName, hash),
 			}, nil)
 
@@ -821,7 +820,7 @@ func TestAllocation_RepairFile(t *testing.T) {
 						Status: WMLockStatusOK,
 					}
 					respBuf, _ := json.Marshal(resp)
-					return ioutil.NopCloser(bytes.NewReader(respBuf))
+					return io.NopCloser(bytes.NewReader(respBuf))
 				}(),
 			}, nil)
 
@@ -833,7 +832,7 @@ func TestAllocation_RepairFile(t *testing.T) {
 				StatusCode: http.StatusOK,
 				Body: func() io.ReadCloser {
 					respBuf, _ := json.Marshal("connection_id")
-					return ioutil.NopCloser(bytes.NewReader(respBuf))
+					return io.NopCloser(bytes.NewReader(respBuf))
 				}(),
 			}, nil)
 		}

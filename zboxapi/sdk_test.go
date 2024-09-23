@@ -196,7 +196,8 @@ func TestDeleteSharedInfo(t *testing.T) {
 
 	items := make(map[string]any)
 
-	json.Unmarshal(buf, &items)
+	err = json.Unmarshal(buf, &items)
+	require.Nil(t, err, "Error unmarshalling buffer items.")
 
 	lookupHash := items["file_path_hash"].(string)
 

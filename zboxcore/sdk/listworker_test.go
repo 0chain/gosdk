@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/0chain/gosdk/zboxcore/mocks"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
@@ -79,7 +78,7 @@ func TestListRequest_getListInfoFromBlobber(t *testing.T) {
 				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 					return strings.HasPrefix(req.URL.Path, name)
 				})).Return(&http.Response{
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+					Body:       io.NopCloser(bytes.NewReader([]byte(""))),
 					StatusCode: p.respStatusCode,
 				}, errors.New("", mockErrorMessage))
 			},
@@ -96,7 +95,7 @@ func TestListRequest_getListInfoFromBlobber(t *testing.T) {
 				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 					return strings.HasPrefix(req.URL.Path, name)
 				})).Return(&http.Response{
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte(mockErrorMessage))),
+					Body:       io.NopCloser(bytes.NewReader([]byte(mockErrorMessage))),
 					StatusCode: p.respStatusCode,
 				}, nil)
 			},
@@ -113,7 +112,7 @@ func TestListRequest_getListInfoFromBlobber(t *testing.T) {
 				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 					return strings.HasPrefix(req.URL.Path, name)
 				})).Return(&http.Response{
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte("this is not json format"))),
+					Body:       io.NopCloser(bytes.NewReader([]byte("this is not json format"))),
 					StatusCode: p.respStatusCode,
 				}, nil)
 			},
@@ -163,7 +162,7 @@ func TestListRequest_getListInfoFromBlobber(t *testing.T) {
 					Body: func(p parameters) io.ReadCloser {
 						jsonFR, err := json.Marshal(p.ListResult)
 						require.NoError(t, err)
-						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+						return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 					}(p),
 				}, nil).Once()
 			},
@@ -236,7 +235,7 @@ func TestListRequest_GetListFromBlobbers(t *testing.T) {
 					})
 					fmt.Println("returned", string(jsonFR))
 					require.NoError(t, err)
-					return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+					return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 				}(),
 			}, nil)
 		}

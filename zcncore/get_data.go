@@ -145,7 +145,7 @@ func (p Params) Query() string {
 	return "?" + params.Encode()
 }
 
-func withParams(uri string, params Params) string {
+func withParams(uri string, params Params) string { //nolint:unused
 	return uri + params.Query()
 }
 
@@ -306,6 +306,10 @@ func GetUserLockedTotal(clientID string) (int64, error) {
 	info, err := client.MakeSCRestAPICall(ZCNSCSmartContractAddress, GET_USER_LOCKED_TOTAL, Params{
 		"client_id": clientID,
 	})
+
+	if err != nil {
+		return 0, errors.New("error while making rest api call: " + err.Error())
+	}
 
 	err = json.Unmarshal([]byte(info), &result)
 	if err != nil {

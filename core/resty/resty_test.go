@@ -3,7 +3,7 @@ package resty
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"testing"
@@ -158,7 +158,7 @@ func setupMockClient(mck *mocks.Client, urls []string, statusCode int, name stri
 				return r.URL.String() == u
 			})).Return(&http.Response{
 				StatusCode: statusCode,
-				Body:       ioutil.NopCloser(strings.NewReader(name)),
+				Body:       io.NopCloser(strings.NewReader(name)),
 			}, nil)
 		}(url)
 	}

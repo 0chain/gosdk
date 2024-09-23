@@ -11,9 +11,7 @@ import (
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/shopspring/decimal"
 	"io"
-	"io/ioutil"
 	"log"
-	"math"
 	"net"
 	"net/http"
 	"net/url"
@@ -130,7 +128,7 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 			}
 
 			defer response.Body.Close()
-			entityBytes, _ := ioutil.ReadAll(response.Body)
+			entityBytes, _ := io.ReadAll(response.Body)
 			mu.Lock()
 			if response.StatusCode > http.StatusBadRequest {
 				nodeClient.sharders.Fail(sharder)
@@ -196,10 +194,10 @@ func isCurrentDominantStatus(respStatus int, currentTotalPerStatus map[int]int, 
 
 // hashAndBytesOfReader computes hash of readers data and returns hash encoded to hex and bytes of reader data.
 // If error occurs while reading data from reader, it returns non nil error.
-func hashAndBytesOfReader(r io.Reader) (hash string, reader []byte, err error) {
+func hashAndBytesOfReader(r io.Reader) (hash string, reader []byte, err error) { //nolint:unused
 	h := sha1.New()
 	teeReader := io.TeeReader(r, h)
-	readerBytes, err := ioutil.ReadAll(teeReader)
+	readerBytes, err := io.ReadAll(teeReader)
 	if err != nil {
 		return "", nil, err
 	}
@@ -208,7 +206,7 @@ func hashAndBytesOfReader(r io.Reader) (hash string, reader []byte, err error) {
 }
 
 // extractSharders returns string slice of randomly ordered sharders existing in the current network.
-func extractSharders() []string {
+func extractSharders() []string { //nolint:unused
 	sharders := nodeClient.Network().Sharders
 	return util.GetRandom(sharders, len(sharders))
 }
@@ -219,7 +217,7 @@ const (
 )
 
 // makeScURL creates url.URL to make smart contract request to sharder.
-func makeScURL(params map[string]string, sharder, restApiUrl, scAddress, relativePath string) *url.URL {
+func makeScURL(params map[string]string, sharder, restApiUrl, scAddress, relativePath string) *url.URL { //nolint:unused
 	uString := fmt.Sprintf("%v/%v%v%v", sharder, restApiUrl, scAddress, relativePath)
 
 	u, _ := url.Parse(uString)
@@ -332,10 +330,6 @@ type GetBalanceResponse struct {
 
 // ToToken converts Balance to ZCN tokens.
 func (b GetBalanceResponse) ToToken() (float64, error) {
-	if b.Balance > math.MaxInt64 {
-		return 0.0, errors.New("to_token failed", "value is too large")
-	}
-
 	f, _ := decimal.New(b.Balance, -10).Float64()
 	return f, nil
 }

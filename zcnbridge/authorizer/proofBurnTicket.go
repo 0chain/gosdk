@@ -4,9 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/0chain/gosdk/core/client"
-
-	"github.com/0chain/gosdk/zcncore"
-
 	"github.com/0chain/gosdk/core/zcncrypto"
 
 	"github.com/0chain/gosdk/zcnbridge"
@@ -74,7 +71,7 @@ func (pb *ProofOfBurn) Sign() (err error) {
 // SignWith0Chain can sign with the provided walletString
 func (pb *ProofOfBurn) SignWith0Chain(w *zcncrypto.Wallet) (err error) {
 	hash := zcncrypto.Sha3Sum256(pb.UnsignedMessage())
-	sig, err := zcncore.SignWith0Wallet(hash, w)
+	sig, err := w.Sign(hash, client.SignatureScheme())
 	if err != nil {
 		return errors.Wrap("signature_0chain", "failed to sign proof-of-burn ticket using walletString ID "+w.ClientID, err)
 	}

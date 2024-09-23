@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -164,7 +164,7 @@ func (r *PostRequest) Post() (*PostResponse, error) {
 			defer resp.Body.Close()
 		}
 
-		rspBy, err := ioutil.ReadAll(resp.Body)
+		rspBy, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return err
 		}

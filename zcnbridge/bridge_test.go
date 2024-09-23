@@ -54,7 +54,7 @@ const (
 	txnFee   = 1
 	nonce    = 1
 
-	ethereumTxnID = "0x3b59971c2aa294739cd73912f0c5a7996aafb796238cf44408b0eb4af0fbac82"
+	ethereumTxnID = "0x3b59971c2aa294739cd73912f0c5a7996aafb796238cf44408b0eb4af0fbac82" //nolint:unused
 
 	clientId = "d6e9b3222434faa043c683d1a939d6a0fa2818c4d56e794974d64a32005330d3"
 )
@@ -75,7 +75,7 @@ var (
 		},
 	}
 
-	zcnScSignatures = []*zcnsc.AuthorizerSignature{
+	zcnScSignatures = []*zcnsc.AuthorizerSignature{ //nolint:unused
 		{
 			ID:        "0x2ec8F26ccC678c9faF0Df20208aEE3AF776160CD",
 			Signature: "0xEAe8229c0E457efBA1A1769e7F8c20110fF68E61",
@@ -91,19 +91,19 @@ func (ecm *ethereumClientMock) Cleanup(callback func()) {
 	callback()
 }
 
-type transactionMock struct {
+type transactionMock struct { //nolint:unused
 	mock.TestingT
 }
 
-func (tem *transactionMock) Cleanup(callback func()) {
+func (tem *transactionMock) Cleanup(callback func()) { //nolint:unused
 	callback()
 }
 
-type transactionProviderMock struct {
+type transactionProviderMock struct { //nolint:unused
 	mock.TestingT
 }
 
-func (tem *transactionProviderMock) Cleanup(callback func()) {
+func (tem *transactionProviderMock) Cleanup(callback func()) { //nolint:unused
 	callback()
 }
 
@@ -270,7 +270,7 @@ func prepareEthereumClientGeneralMockCalls(ethereumClient *mock.Mock) {
 	ethereumClient.On("SendTransaction", mock.Anything, mock.Anything).Return(nil)
 }
 
-func prepareTransactionGeneralMockCalls(transaction *mock.Mock) {
+func prepareTransactionGeneralMockCalls(transaction *mock.Mock) { //nolint:unused
 	transaction.On("ExecuteSmartContract", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(zcnTxnID, nil)
 	transaction.On("Verify", mock.Anything).Return(nil)
 }

@@ -5,7 +5,6 @@ import (
 	"context"
 	"github.com/0chain/gosdk/zboxcore/mocks"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
@@ -50,7 +49,7 @@ func TestWriteMarkerMutext_Should_Lock(t *testing.T) {
 					}
 					return http.StatusBadRequest
 				}(),
-				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{"status":2}`))),
+				Body: io.NopCloser(bytes.NewReader([]byte(`{"status":2}`))),
 			}, nil)
 
 			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
@@ -187,7 +186,7 @@ func TestWriteMarkerMutext_Too_Less_Blobbers_Response_Should_Not_Lock(t *testing
 					}
 					return http.StatusBadRequest
 				}(),
-				Body: ioutil.NopCloser(bytes.NewReader([]byte(""))),
+				Body: io.NopCloser(bytes.NewReader([]byte(""))),
 			}, nil)
 
 			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {

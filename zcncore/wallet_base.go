@@ -51,14 +51,14 @@ const (
 )
 
 // In percentage
-const consensusThresh = 25
+const consensusThresh = 25 //nolint:unused
 
 const (
-	defaultMinSubmit               = int(10)
-	defaultMinConfirmation         = int(10)
-	defaultConfirmationChainLength = int(3)
-	defaultTxnExpirationSeconds    = 60
-	defaultWaitSeconds             = 3 * time.Second
+	defaultMinSubmit               = int(10)         //nolint:unused
+	defaultMinConfirmation         = int(10)         //nolint:unused
+	defaultConfirmationChainLength = int(3)          //nolint:unused
+	defaultTxnExpirationSeconds    = 60              //nolint:unused
+	defaultWaitSeconds             = 3 * time.Second //nolint:unused
 )
 
 const (

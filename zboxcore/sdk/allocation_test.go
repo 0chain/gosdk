@@ -8,7 +8,6 @@ import (
 	"github.com/0chain/gosdk/zboxcore/mocks"
 	"io"
 	"io/fs"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -64,7 +63,7 @@ func setupMockGetFileMetaResponse(
 				strings.HasPrefix(req.URL.String(), url)
 		})).Return(&http.Response{
 			StatusCode: statusCode,
-			Body:       ioutil.NopCloser(bytes.NewReader(body)),
+			Body:       io.NopCloser(bytes.NewReader(body)),
 		}, nil).Once()
 	}
 }
@@ -141,7 +140,7 @@ func setupMockWriteLockRequest(a *Allocation, mockClient *mocks.HttpClient) {
 func setupMockFile(t *testing.T, path string) (teardown func(t *testing.T)) {
 	_, err := os.Create(path)
 	require.Nil(t, err)
-	err = ioutil.WriteFile(path, []byte("mockActualHash"), os.ModePerm)
+	err = os.WriteFile(path, []byte("mockActualHash"), os.ModePerm)
 	require.Nil(t, err)
 	return func(t *testing.T) {
 		os.Remove(path)
@@ -159,7 +158,7 @@ func setupMockRollback(a *Allocation, mockClient *mocks.HttpClient) {
 			StatusCode: http.StatusOK,
 			Body: func() io.ReadCloser {
 				s := `{"latest_write_marker":null,"prev_write_marker":null}`
-				return ioutil.NopCloser(bytes.NewReader([]byte(s)))
+				return io.NopCloser(bytes.NewReader([]byte(s)))
 			}(),
 		}, nil)
 
@@ -169,13 +168,13 @@ func setupMockRollback(a *Allocation, mockClient *mocks.HttpClient) {
 			return strings.Contains(req.URL.String(), newUrl)
 		})).Return(&http.Response{
 			StatusCode: http.StatusOK,
-			Body:       ioutil.NopCloser(bytes.NewReader(nil)),
+			Body:       io.NopCloser(bytes.NewReader(nil)),
 		}, nil)
 	}
 
 }
 
-func setupMockFileAndReferencePathResult(t *testing.T, allocationID, name string) (teardown func(t *testing.T)) {
+func setupMockFileAndReferencePathResult(t *testing.T, allocationID, name string) (teardown func(t *testing.T)) { //nolint:unused
 	var buf = []byte("mockActualHash")
 	h := sha3.New256()
 	f, _ := os.Create(name)
@@ -422,7 +421,7 @@ func TestAllocation_GetBlobberStats(t *testing.T) {
 							Tx: mockAllocationTxId,
 						})
 						require.NoError(t, err)
-						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+						return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 					}(),
 					StatusCode: http.StatusOK,
 				}, nil)
@@ -525,7 +524,7 @@ func TestAllocation_isInitialized(t *testing.T) {
 // 		return strings.HasPrefix(req.URL.Path, "TestAllocation_CreateDir")
 // 	})).Return(&http.Response{
 // 		StatusCode: http.StatusOK,
-// 		Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+// 		Body:       io.NopCloser(bytes.NewReader([]byte(""))),
 // 	}, nil)
 
 // 	for i := 0; i < numBlobbers; i++ {
@@ -574,7 +573,7 @@ func TestAllocation_RepairRequired(t *testing.T) {
 						StatusCode: http.StatusOK,
 						Body: func() io.ReadCloser {
 							respString := `{"file_meta_hash":"` + mockActualHash + `"}`
-							return ioutil.NopCloser(bytes.NewReader([]byte(respString)))
+							return io.NopCloser(bytes.NewReader([]byte(respString)))
 						}(),
 					}, nil)
 				}
@@ -615,7 +614,7 @@ func TestAllocation_RepairRequired(t *testing.T) {
 						StatusCode: http.StatusOK,
 						Body: func(hash string) io.ReadCloser {
 							respString := `{"file_meta_hash":"` + hash + `"}`
-							return ioutil.NopCloser(bytes.NewReader([]byte(respString)))
+							return io.NopCloser(bytes.NewReader([]byte(respString)))
 						}(hash),
 					}, nil)
 				}
@@ -638,7 +637,7 @@ func TestAllocation_RepairRequired(t *testing.T) {
 						return strings.HasPrefix(req.URL.Path, url)
 					})).Return(&http.Response{
 						StatusCode: http.StatusBadRequest,
-						Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+						Body:       io.NopCloser(bytes.NewReader([]byte(""))),
 					}, nil)
 				}
 				return nil
@@ -729,7 +728,7 @@ func TestAllocation_DownloadFileToFileHandler(t *testing.T) {
 								ActualFileHash: mockActualHash,
 							})
 							require.NoError(t, err)
-							return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+							return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 						}(),
 					}, nil)
 				}
@@ -803,7 +802,7 @@ func TestAllocation_DownloadFile(t *testing.T) {
 					ActualFileHash: mockActualHash,
 				})
 				require.NoError(err)
-				return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+				return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 			}(),
 		}, nil)
 	}
@@ -953,7 +952,7 @@ func TestAllocation_downloadFile(t *testing.T) {
 								ActualFileHash: mockActualHash,
 							})
 							require.NoError(t, err)
-							return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+							return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 						}(),
 					}, nil)
 				}
@@ -1167,7 +1166,7 @@ func TestAllocation_GetAuthTicketForShare(t *testing.T) {
 				ValidationRoot: mockValidationRoot,
 			})
 			require.NoError(t, err)
-			return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+			return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 		}(),
 	}
 	zboxutil.Client = &mockClient
@@ -1221,7 +1220,7 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 							ValidationRoot: "mock validation root",
 						})
 						require.NoError(t, err)
-						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+						return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 					}(),
 				}
 				for i := 0; i < numBlobbers; i++ {
@@ -1253,7 +1252,7 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 							ValidationRoot: "mock validation root",
 						})
 						require.NoError(t, err)
-						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+						return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 					}(),
 				}
 				for i := 0; i < numBlobbers; i++ {
@@ -1305,7 +1304,7 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 							ValidationRoot: "mock validation root",
 						})
 						require.NoError(t, err)
-						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+						return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 					}(),
 				}
 				for i := 0; i < numBlobbers; i++ {
@@ -1346,7 +1345,7 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 							ValidationRoot: "mock validation root",
 						})
 						require.NoError(t, err)
-						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+						return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 					}(),
 				}
 				for i := 0; i < numBlobbers; i++ {
@@ -2369,7 +2368,7 @@ func setupMockGetFileInfoResponse(t *testing.T, mockClient *mocks.HttpClient) {
 				ValidationRoot: "mock validation root",
 			})
 			require.NoError(t, err)
-			return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+			return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 		}(),
 	}
 	for i := 0; i < numBlobbers; i++ {
@@ -2414,7 +2413,7 @@ func getMockAuthTicket(t *testing.T) string {
 	httpResponse := &http.Response{
 		StatusCode: http.StatusOK,
 		Body: func() io.ReadCloser {
-			return ioutil.NopCloser(bytes.NewReader(jsonFR))
+			return io.NopCloser(bytes.NewReader(jsonFR))
 		}(),
 	}
 

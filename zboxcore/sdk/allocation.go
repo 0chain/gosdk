@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"github.com/0chain/gosdk/core/transaction"
 	"io"
-	"io/ioutil"
 	"math"
 	"mime/multipart"
 	"net/http"
@@ -911,7 +910,7 @@ func (a *Allocation) GetCurrentVersion() (bool, error) {
 	}
 
 	if prevVersion > latestVersion {
-		prevVersion, latestVersion = latestVersion, prevVersion
+		prevVersion, latestVersion = latestVersion, prevVersion //nolint:ineffassign,staticcheck
 	}
 
 	// TODO: Check if allocation can be repaired
@@ -2194,7 +2193,7 @@ func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
 				}
 				defer resp.Body.Close()
 
-				respbody, err := ioutil.ReadAll(resp.Body)
+				respbody, err := io.ReadAll(resp.Body)
 				if err != nil {
 					l.Logger.Error("Error: Resp ", err)
 					return err
@@ -2358,7 +2357,7 @@ func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKe
 				}
 				defer resp.Body.Close()
 
-				respbody, err := ioutil.ReadAll(resp.Body)
+				respbody, err := io.ReadAll(resp.Body)
 				if err != nil {
 					l.Logger.Error("Error: Resp ", err)
 					return err
