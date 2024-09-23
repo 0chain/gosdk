@@ -53,6 +53,8 @@ var (
 
 type TransactionCommon interface {
 	// ExecuteSmartContract implements wrapper for smart contract function
+	ExecuteSmartContracts(address, methodName string, input interface{}, val string, feeOpts ...FeeOption) *transaction.Transaction
+
 	ExecuteSmartContract(address, methodName string, input interface{}, val string, feeOpts ...FeeOption) (*transaction.Transaction, error)
 
 	// Send implements sending token to a given clientid
@@ -67,7 +69,7 @@ type TransactionCommon interface {
 
 	FinalizeAllocation(allocID string) error
 	CancelAllocation(allocID string) error
-	CreateAllocation(car *CreateAllocationRequest, lock string) error //
+	CreateAllocation(car *CreateAllocationRequest, lock string) error
 	CreateReadPool() error
 	ReadPoolLock(allocID string, blobberID string, duration int64, lock string) error
 	ReadPoolUnlock() error
@@ -413,6 +415,11 @@ func NewTransaction(cb TransactionCallback, txnFee string, nonce int64) (Transac
 	logging.Info("New transaction interface")
 	t, err := newTransaction(cb, txnFeeRaw, nonce)
 	return t, err
+}
+
+// ExecuteSmartContract prepare and send a smart contract transaction to the blockchain
+func (t *Transaction) ExecuteSmartContracts(address, methodName string, input interface{}, val string, feeOpts ...FeeOption) *transaction.Transaction {
+	return nil
 }
 
 // ExecuteSmartContract prepare and send a smart contract transaction to the blockchain
