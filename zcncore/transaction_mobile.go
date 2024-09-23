@@ -55,7 +55,7 @@ type TransactionCommon interface {
 	// ExecuteSmartContract implements wrapper for smart contract function
 	ExecuteSmartContracts(address, methodName, val string) (transaction.Transaction, error)
 
-	ExecuteSmartContract(address, methodName string, input interface{}, val string, feeOpts ...FeeOption) (transaction.Transaction, error)
+	ExecuteSmartContract(address, methodName string, input interface{}, val string, feeOpts ...FeeOption) (*transaction.Transaction, error)
 
 	// Send implements sending token to a given clientid
 	Send(toClientID string, val string, desc string) error
