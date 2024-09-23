@@ -3,7 +3,7 @@ package zcnbridge
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math"
 	"net/http"
 	"strings"
@@ -331,7 +331,7 @@ func readResponse(response *http.Response, err error) (res *authorizerResponse, 
 		Logger.Error("request response status", zap.Error(err))
 	}
 
-	body, er := ioutil.ReadAll(response.Body)
+	body, er := io.ReadAll(response.Body)
 	log.Logger.Debug("response", zap.String("response", string(body)))
 	defer response.Body.Close()
 

@@ -1,8 +1,8 @@
 package encryption
 
 import (
+	"crypto/rand"
 	"encoding/base64"
-	"math/rand"
 	"testing"
 
 	"github.com/0chain/gosdk/zboxcore/fileref"
@@ -170,8 +170,10 @@ func BenchmarkEncrypt(t *testing.B) {
 	encscheme.InitForEncryption("filetype:audio")
 	for i := 0; i < 10000; i++ {
 		dataToEncrypt := make([]byte, fileref.CHUNK_SIZE)
-		rand.Read(dataToEncrypt)
-		_, err := encscheme.Encrypt(dataToEncrypt)
+		read, err := rand.Read(dataToEncrypt)
+		require.Nil(t, err, "Error in reading random data", read)
+
+		_, err = encscheme.Encrypt(dataToEncrypt)
 		require.Nil(t, err)
 		require.Equal(t, len(dataToEncrypt), fileref.CHUNK_SIZE)
 	}

@@ -160,9 +160,21 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 		return err
 	}
 	connID := zboxutil.NewConnectionId()
-	formWriter.WriteField("write_marker", string(wmData))
-	formWriter.WriteField("connection_id", connID)
-	formWriter.Close()
+
+	err = formWriter.WriteField("write_marker", string(wmData))
+	if err != nil {
+		return err
+	}
+
+	err = formWriter.WriteField("connection_id", connID)
+	if err != nil {
+		return err
+	}
+
+	err = formWriter.Close()
+	if err != nil {
+		return err
+	}
 
 	req, err := zboxutil.NewRollbackRequest(rb.blobber.Baseurl, wm.AllocationID, tx, body)
 	if err != nil {
@@ -248,7 +260,7 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 
 	}
 
-	return thrown.New("rolback_error", fmt.Sprint("Rollback failed"))
+	return thrown.New("rolback_error", "Rollback failed")
 }
 
 // CheckAllocStatus checks the status of the allocation

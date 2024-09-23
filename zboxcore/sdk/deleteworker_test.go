@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"github.com/0chain/gosdk/zboxcore/mocks"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
@@ -81,7 +80,7 @@ func TestDeleteRequest_deleteBlobberFile(t *testing.T) {
 							Body: func() io.ReadCloser {
 								jsonFR, err := json.Marshal(p.referencePathToRetrieve)
 								require.NoError(t, err)
-								return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+								return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 							}(),
 						}, nil}
 					}
@@ -96,7 +95,7 @@ func TestDeleteRequest_deleteBlobberFile(t *testing.T) {
 					for _, c := range mockClient.ExpectedCalls {
 						c.ReturnArguments = mock.Arguments{&http.Response{
 							StatusCode: http.StatusBadRequest,
-							Body:       ioutil.NopCloser(strings.NewReader("")),
+							Body:       io.NopCloser(strings.NewReader("")),
 						}, nil}
 					}
 				})
@@ -131,7 +130,7 @@ func TestDeleteRequest_deleteBlobberFile(t *testing.T) {
 					Body: func() io.ReadCloser {
 						jsonFR, err := json.Marshal(p.referencePathToRetrieve)
 						require.NoError(t, err)
-						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+						return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 					}(),
 				}, nil)
 
@@ -151,7 +150,7 @@ func TestDeleteRequest_deleteBlobberFile(t *testing.T) {
 					Body: func() io.ReadCloser {
 						jsonFR, err := json.Marshal(p.referencePathToRetrieve)
 						require.NoError(t, err)
-						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+						return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 					}(),
 				}, nil)
 			},
@@ -244,7 +243,7 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 						},
 					})
 					require.NoError(t, err)
-					return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+					return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 				}(),
 			}, nil)
 			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
@@ -257,7 +256,7 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 					}
 					return http.StatusBadRequest
 				}(),
-				Body: ioutil.NopCloser(bytes.NewReader([]byte(""))),
+				Body: io.NopCloser(bytes.NewReader([]byte(""))),
 			}, nil)
 		}
 

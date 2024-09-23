@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"path"
 	"strconv"
@@ -36,7 +36,7 @@ func getObjectTreeFromBlobber(ctx context.Context, allocationID, allocationTx, s
 		if resp.StatusCode != http.StatusOK {
 			l.Logger.Error("Object tree response : ", resp.StatusCode)
 		}
-		resp_body, err := ioutil.ReadAll(resp.Body)
+		resp_body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			l.Logger.Error("Object tree: Resp", err)
 			return err
@@ -81,7 +81,7 @@ func getAllocationDataFromBlobber(blobber *blockchain.StorageNode, allocationId 
 		if resp.StatusCode != http.StatusOK {
 			l.Logger.Error("Get allocation response : ", resp.StatusCode)
 		}
-		resp_body, err := ioutil.ReadAll(resp.Body)
+		resp_body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			l.Logger.Error("Get allocation: Resp", err)
 			return err

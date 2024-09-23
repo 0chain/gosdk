@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"mime/multipart"
 	"net/http"
 	"path"
@@ -236,7 +236,7 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode, pos u
 				return
 			}
 
-			respBody, err = ioutil.ReadAll(resp.Body)
+			respBody, err = io.ReadAll(resp.Body)
 			if err != nil {
 				l.Logger.Error(err)
 				return

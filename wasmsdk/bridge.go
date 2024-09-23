@@ -14,7 +14,7 @@ import (
 	"strconv"
 )
 
-var bridge *zcnbridge.BridgeClient
+var bridge *zcnbridge.BridgeClient //nolint:unused
 
 // initBridge initializes the bridge client
 //   - ethereumAddress: ethereum address of the wallet owner
@@ -25,7 +25,7 @@ var bridge *zcnbridge.BridgeClient
 //   - gasLimit: gas limit for the transactions
 //   - value: value to be sent with the transaction (unused)
 //   - consensusThreshold: consensus threshold for the transactions
-func initBridge(
+func initBridge( //nolint:unused
 	ethereumAddress string,
 	bridgeAddress string,
 	authorizersAddress string,
@@ -100,7 +100,7 @@ func mintZCN(burnTrxHash string, timeout int) string { //nolint
 
 // getMintWZCNPayload returns the mint payload for the given burn transaction hash
 //   - burnTrxHash: hash of the burn transaction
-func getMintWZCNPayload(burnTrxHash string) string {
+func getMintWZCNPayload(burnTrxHash string) string { //nolint:unused
 	mintPayload, err := bridge.QueryEthereumMintPayload(burnTrxHash)
 	if err != nil {
 		return errors.Wrap("getMintWZCNPayload", "failed to query ethereum mint payload", err).Error()
@@ -115,7 +115,7 @@ func getMintWZCNPayload(burnTrxHash string) string {
 }
 
 // getNotProcessedWZCNBurnEvents returns all not processed WZCN burn events from the Ethereum network
-func getNotProcessedWZCNBurnEvents() string {
+func getNotProcessedWZCNBurnEvents() string { //nolint:unused
 	var (
 		mintNonce int64
 		res       []byte
@@ -145,7 +145,7 @@ func getNotProcessedWZCNBurnEvents() string {
 }
 
 // getNotProcessedZCNBurnTickets Returns all not processed ZCN burn tickets burned for a certain ethereum address
-func getNotProcessedZCNBurnTickets() string {
+func getNotProcessedZCNBurnTickets() string { //nolint:unused
 	userNonce, err := bridge.GetUserNonceMinted(context.Background(), bridge.EthereumAddress)
 	if err != nil {
 		return errors.Wrap("getNotProcessedZCNBurnTickets", "failed to retreive user nonce", err).Error()

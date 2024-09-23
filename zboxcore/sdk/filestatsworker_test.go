@@ -7,7 +7,6 @@ import (
 	"github.com/0chain/gosdk/zboxcore/mocks"
 
 	"io"
-	"io/ioutil"
 	"mime"
 	"mime/multipart"
 	"net/http"
@@ -71,7 +70,7 @@ func TestListRequest_getFileStatsInfoFromBlobber(t *testing.T) {
 				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 					return strings.HasPrefix(req.URL.Path, "Test_Http_Error")
 				})).Return(&http.Response{
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+					Body:       io.NopCloser(bytes.NewReader([]byte(""))),
 					StatusCode: p.respStatusCode,
 				}, errors.New("", mockErrorMessage))
 			},
@@ -87,7 +86,7 @@ func TestListRequest_getFileStatsInfoFromBlobber(t *testing.T) {
 				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 					return strings.HasPrefix(req.URL.Path, "Test_Badly_Formatted")
 				})).Return(&http.Response{
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+					Body:       io.NopCloser(bytes.NewReader([]byte(""))),
 					StatusCode: p.respStatusCode,
 				}, nil)
 			},
@@ -122,7 +121,7 @@ func TestListRequest_getFileStatsInfoFromBlobber(t *testing.T) {
 					require.NoError(t, err)
 					expected, ok := p.requestFields[part.FormName()]
 					require.True(t, ok)
-					actual, err := ioutil.ReadAll(part)
+					actual, err := io.ReadAll(part)
 					require.NoError(t, err)
 					require.EqualValues(t, expected, string(actual))
 
@@ -138,7 +137,7 @@ func TestListRequest_getFileStatsInfoFromBlobber(t *testing.T) {
 					Body: func(p parameters) io.ReadCloser {
 						jsonFR, err := json.Marshal(p.fileStatsHttpResp)
 						require.NoError(t, err)
-						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+						return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 					}(p),
 				}, nil).Once()
 			},
@@ -202,7 +201,7 @@ func TestListRequest_getFileStatsFromBlobbers(t *testing.T) {
 						Name: fileStatsName,
 					})
 					require.NoError(t, err)
-					return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+					return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 				}(frName),
 			}, nil)
 		}

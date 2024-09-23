@@ -11,7 +11,7 @@ import (
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"gopkg.in/natefinch/lumberjack.v2"
-	"io/ioutil"
+	"io"
 	"math"
 	"net/http"
 	"strconv"
@@ -53,7 +53,7 @@ type StatusCallback interface {
 var (
 	numBlockDownloads         = 100
 	sdkInitialized            = false
-	networkWorkerTimerInHours = 1
+	networkWorkerTimerInHours = 1 //nolint:unused
 	singleClientMode          = false
 	shouldVerifyHash          = true
 )
@@ -1322,7 +1322,7 @@ func CommitToFabric(metaTxnData, fabricConfigJSON string) (string, error) {
 			return err
 		}
 		defer resp.Body.Close()
-		respBody, err := ioutil.ReadAll(resp.Body)
+		respBody, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return errors.Wrap(err, "Error reading response :")
 		}
