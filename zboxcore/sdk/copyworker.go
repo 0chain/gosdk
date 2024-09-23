@@ -46,6 +46,7 @@ type CopyRequest struct {
 	connectionID   string
 	timestamp      int64
 	dirOnly        bool
+	destLookupHash string
 	Consensus
 }
 
@@ -242,6 +243,7 @@ func (req *CopyRequest) ProcessWithBlobbersV2() ([]fileref.RefEntity, error) {
 				l.Logger.Debug(err.Error())
 				return
 			}
+			refEntity.Path = path.Join(req.destPath, path.Base(refEntity.Path))
 			objectTreeRefs[blobberIdx] = refEntity
 			req.maskMU.Lock()
 			versionMap[refEntity.AllocationRoot] += 1
@@ -288,6 +290,7 @@ func (req *CopyRequest) ProcessWithBlobbersV2() ([]fileref.RefEntity, error) {
 	if err != nil && strings.Contains(err.Error(), objAlreadyExists) && consensusRef.Type == fileref.DIRECTORY {
 		return nil, errNoChange
 	}
+	req.destLookupHash = fileref.GetReferenceLookup(req.allocationID, consensusRef.Path)
 
 	return objectTreeRefs, err
 }
@@ -441,6 +444,9 @@ func (co *CopyOperation) Process(allocObj *Allocation, connectionID string) ([]f
 	if !cR.isConsensusOk() {
 		l.Logger.Error("copy failed: ", cR.remotefilepath, cR.destPath)
 		if err != nil {
+			if err == errNoChange {
+				return nil, cR.copyMask, err
+			}
 			return nil, cR.copyMask, errors.New("copy_failed", fmt.Sprintf("Copy failed. %s", err.Error()))
 		}
 
@@ -448,7 +454,7 @@ func (co *CopyOperation) Process(allocObj *Allocation, connectionID string) ([]f
 			fmt.Sprintf("Copy failed. Required consensus %d, got %d",
 				cR.Consensus.consensusThresh, cR.Consensus.consensus))
 	}
-	co.destLookupHash = fileref.GetReferenceLookup(cR.allocationID, co.destPath)
+	co.destLookupHash = cR.destLookupHash
 	return co.objectTreeRefs, cR.copyMask, nil
 
 }

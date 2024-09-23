@@ -399,10 +399,12 @@ func (r *RepairRequest) iterateDirV2(ctx context.Context) {
 			if srcEOF && diff.tgtEOF {
 				continue
 			}
+			// if target is at EOF, upload the src file
 			if diff.tgtEOF {
 				uploadMask = uploadMask.Or(diff.mask)
 				continue
 			}
+			// if source is at EOF, delete the target file
 			if srcEOF {
 				delMask := diff.mask
 				op := OperationRequest{
@@ -422,7 +424,9 @@ func (r *RepairRequest) iterateDirV2(ctx context.Context) {
 				}
 				continue
 			}
+			// if both source and target are at same path
 			if diff.tgtRef.Path == srcRef.Path {
+				// if both source and target are at same path and hash is different
 				if diff.tgtRef.ActualFileHash != srcRef.ActualFileHash {
 					deleteMask = deleteMask.Or(diff.mask)
 					uploadMask = uploadMask.Or(diff.mask)

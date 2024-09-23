@@ -198,8 +198,8 @@ func (mo *MultiOperation) Process() error {
 					l.Logger.Error(err)
 					errsSlice[idx] = errors.New("", err.Error())
 					ctxCncl(err)
-					return
 				}
+				return
 			}
 			mo.maskMU.Lock()
 			if mo.allocationObj.StorageVersion == StorageV2 {

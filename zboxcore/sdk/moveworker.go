@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
+	"path"
 	"strings"
 	"sync"
 	"time"
@@ -44,6 +45,7 @@ type MoveRequest struct {
 	maskMU         *sync.Mutex
 	connectionID   string
 	timestamp      int64
+	destLookupHash string
 	Consensus
 }
 
@@ -231,6 +233,7 @@ func (req *MoveRequest) ProcessWithBlobbersV2() ([]fileref.RefEntity, error) {
 				l.Logger.Debug(err.Error())
 				return
 			}
+			refEntity.Path = path.Join(req.destPath, path.Base(refEntity.Path))
 			objectTreeRefs[blobberIdx] = refEntity
 			req.maskMU.Lock()
 			versionMap[refEntity.AllocationRoot] += 1
@@ -291,7 +294,12 @@ func (req *MoveRequest) ProcessWithBlobbersV2() ([]fileref.RefEntity, error) {
 		}(int(pos))
 	}
 	wg.Wait()
-	return objectTreeRefs, zboxutil.MajorError(blobberErrors)
+	err := zboxutil.MajorError(blobberErrors)
+	if err != nil && strings.Contains(err.Error(), objAlreadyExists) && consensusRef.Type == fileref.DIRECTORY {
+		return nil, errNoChange
+	}
+	req.destLookupHash = fileref.GetReferenceLookup(req.allocationID, consensusRef.Path)
+	return objectTreeRefs, err
 }
 
 func (req *MoveRequest) ProcessMove() error {
@@ -446,7 +454,7 @@ func (mo *MoveOperation) Process(allocObj *Allocation, connectionID string) ([]f
 			fmt.Sprintf("Move failed. Required consensus %d, got %d",
 				mR.Consensus.consensusThresh, mR.Consensus.consensus))
 	}
-	mo.destLookupHash = fileref.GetReferenceLookup(mR.allocationID, mR.destPath)
+	mo.destLookupHash = mR.destLookupHash
 	mo.srcLookupHash = fileref.GetReferenceLookup(mR.allocationID, mR.remotefilepath)
 	return mo.objectTreeRefs, mR.moveMask, nil
 }
