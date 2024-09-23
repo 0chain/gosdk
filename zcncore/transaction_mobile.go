@@ -52,9 +52,6 @@ var (
 )
 
 type TransactionCommon interface {
-	// ExecuteSmartContract implements wrapper for smart contract function
-	ExecuteSmartContracts(address, methodName, val string) (transaction.Transaction, error)
-
 	ExecuteSmartContract(address, methodName string, input interface{}, val string, feeOpts ...FeeOption) (*transaction.Transaction, error)
 
 	// Send implements sending token to a given clientid
@@ -390,16 +387,21 @@ func parseCoinStr(vs string) (uint64, error) {
 	return v, nil
 }
 
+func newTransaction(cb TransactionCallback, txnFee string, nonce int64) (*Transaction, error) {
+	t := &Transaction{}
+	t.txn = transaction.NewTransactionEntity(_config.wallet.ClientID, _config.chain.ChainID, _config.wallet.ClientKey, nonce)
+	t.txnStatus, t.verifyStatus = StatusUnknown, StatusUnknown
+	t.txnCb = cb
+	t.txn.TransactionNonce = nonce
+	t.txn.TransactionFee = txnFee
+	return t, nil
+}
+
 // NewTransaction new generic transaction object for any operation
 //   - cb: callback for transaction state
 //   - txnFee: Transaction fees (in SAS tokens)
 //   - nonce: latest nonce of current wallet. please set it with 0 if you don't know the latest value
 func NewTransaction(cb TransactionCallback, txnFee string, nonce int64) (TransactionScheme, error) {
-	txnFeeRaw, err := parseCoinStr(txnFee)
-	if err != nil {
-		return nil, err
-	}
-
 	err = CheckConfig()
 	if err != nil {
 		return nil, err
@@ -412,14 +414,10 @@ func NewTransaction(cb TransactionCallback, txnFee string, nonce int64) (Transac
 		logging.Info("New transaction interface with auth")
 		return newTransactionWithAuth(cb, txnFeeRaw, nonce)
 	}
-	logging.Info("New transaction interface")
-	t, err := newTransaction(cb, txnFeeRaw, nonce)
-	return t, err
-}
 
-// ExecuteSmartContract prepare and send a smart contract transaction to the blockchain
-func (t *Transaction) ExecuteSmartContracts(address, methodName, val string) (transaction.Transaction, error) {
-	return transaction.Transaction{}, nil
+	logging.Info("New transaction interface")
+	t, err := newTransaction(cb, txnFee, nonce)
+	return t, err
 }
 
 // ExecuteSmartContract prepare and send a smart contract transaction to the blockchain
@@ -440,21 +438,8 @@ func (t *Transaction) ExecuteSmartContract(address, methodName string, input int
 	return t.txn, nil
 }
 
-func (t *Transaction) setTransactionFee(fee uint64) error {
-	if t.txnStatus != StatusUnknown {
-		return errors.New("", "transaction already exists. cannot set transaction fee.")
-	}
-	t.txn.TransactionFee = fee
-	return nil
-}
-
 // Send to send a transaction to a given clientID
 func (t *Transaction) Send(toClientID string, val string, desc string) error {
-	v, err := parseCoinStr(val)
-	if err != nil {
-		return nil
-	}
-
 	txnData, err := json.Marshal(SendTxnData{Note: desc})
 	if err != nil {
 		return errors.New("", "Could not serialize description to transaction_data")
@@ -462,7 +447,7 @@ func (t *Transaction) Send(toClientID string, val string, desc string) error {
 	go func() {
 		t.txn.TransactionType = transaction.TxnTypeSend
 		t.txn.ToClientID = toClientID
-		t.txn.Value = v
+		t.txn.Value = val
 		t.txn.TransactionData = string(txnData)
 		t.setNonceAndSubmit()
 	}()
@@ -477,11 +462,6 @@ func (t *Transaction) Send(toClientID string, val string, desc string) error {
 //   - CreationDate: creation date of the transaction
 //   - hash: hash of the transaction
 func (t *Transaction) SendWithSignatureHash(toClientID string, val string, desc string, sig string, CreationDate int64, hash string) error {
-	v, err := parseCoinStr(val)
-	if err != nil {
-		return err
-	}
-
 	txnData, err := json.Marshal(SendTxnData{Note: desc})
 	if err != nil {
 		return errors.New("", "Could not serialize description to transaction_data")
@@ -489,7 +469,7 @@ func (t *Transaction) SendWithSignatureHash(toClientID string, val string, desc 
 	go func() {
 		t.txn.TransactionType = transaction.TxnTypeSend
 		t.txn.ToClientID = toClientID
-		t.txn.Value = v
+		t.txn.Value = val
 		t.txn.Hash = hash
 		t.txn.TransactionData = string(txnData)
 		t.txn.Signature = sig
@@ -1383,25 +1363,25 @@ type Block struct {
 	ClientStateHash string `json:"state_hash"`
 
 	// unexported fields
-	header *BlockHeader         `json:"-"`
-	txns   []*TransactionMobile `json:"transactions,omitempty"`
+	header *BlockHeader               `json:"-"`
+	txns   []*transaction.Transaction `json:"transactions,omitempty"`
 }
 
 func (b *Block) GetHeader() *BlockHeader {
 	return b.header
 }
 
-type IterTxnFunc func(idx int, txn *TransactionMobile)
+type IterTxnFunc func(idx int, txn *transaction.Transaction)
 
 type Transactions struct {
-	txns []*TransactionMobile
+	txns []*transaction.Transaction
 }
 
 func (tm *Transactions) Len() int {
 	return len(tm.txns)
 }
 
-func (tm *Transactions) Get(idx int) (*TransactionMobile, error) {
+func (tm *Transactions) Get(idx int) (*transaction.Transaction, error) {
 	if idx < 0 && idx >= len(tm.txns) {
 		return nil, stderrors.New("index out of bounds")
 	}
@@ -1449,9 +1429,9 @@ func toMobileBlock(b *block.Block) *Block {
 		ClientStateHash: string(b.ClientStateHash),
 	}
 
-	lb.txns = make([]*TransactionMobile, len(b.Txns))
+	lb.txns = make([]*transaction.Transaction, len(b.Txns))
 	for i, txn := range b.Txns {
-		lb.txns[i] = &TransactionMobile{
+		lb.txns[i] = &transaction.Transaction{
 			Hash:              txn.Hash,
 			Version:           txn.Version,
 			ClientID:          txn.ClientID,
@@ -1472,26 +1452,6 @@ func toMobileBlock(b *block.Block) *Block {
 	}
 
 	return lb
-}
-
-// TransactionMobile entity that encapsulates the transaction related data and meta data
-type TransactionMobile struct {
-	Hash              string `json:"hash,omitempty"`
-	Version           string `json:"version,omitempty"`
-	ClientID          string `json:"client_id,omitempty"`
-	PublicKey         string `json:"public_key,omitempty"`
-	ToClientID        string `json:"to_client_id,omitempty"`
-	ChainID           string `json:"chain_id,omitempty"`
-	TransactionData   string `json:"transaction_data"`
-	Value             string `json:"transaction_value"`
-	Signature         string `json:"signature,omitempty"`
-	CreationDate      int64  `json:"creation_date,omitempty"`
-	TransactionType   int    `json:"transaction_type"`
-	TransactionOutput string `json:"transaction_output,omitempty"`
-	TransactionFee    string `json:"transaction_fee"`
-	TransactionNonce  int64  `json:"transaction_nonce"`
-	OutputHash        string `json:"txn_output_hash"`
-	Status            int    `json:"transaction_status"`
 }
 
 // RequestTimeout will be used for setting requests with timeout

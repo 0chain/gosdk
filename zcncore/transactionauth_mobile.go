@@ -11,9 +11,11 @@ import (
 	"github.com/0chain/gosdk/core/transaction"
 )
 
-// ExecuteSmartContract prepare and send a smart contract transaction to the blockchain
-func (t *TransactionWithAuth) ExecuteSmartContracts(address, methodName, val string) (transaction.Transaction, error) {
-	return transaction.Transaction{}, nil
+func newTransactionWithAuth(cb TransactionCallback, txnFee string, nonce int64) (*TransactionWithAuth, error) {
+	ta := &TransactionWithAuth{}
+	var err error
+	ta.t, err = newTransaction(cb, txnFee, nonce)
+	return ta, err
 }
 
 func (ta *TransactionWithAuth) ExecuteSmartContract(address, methodName string,
@@ -34,11 +36,6 @@ func (ta *TransactionWithAuth) ExecuteSmartContract(address, methodName string,
 }
 
 func (ta *TransactionWithAuth) Send(toClientID string, val string, desc string) error {
-	v, err := parseCoinStr(val)
-	if err != nil {
-		return nil
-	}
-
 	txnData, err := json.Marshal(SendTxnData{Note: desc})
 	if err != nil {
 		return errors.New("", "Could not serialize description to transaction_data")
@@ -46,7 +43,7 @@ func (ta *TransactionWithAuth) Send(toClientID string, val string, desc string) 
 	go func() {
 		ta.t.txn.TransactionType = transaction.TxnTypeSend
 		ta.t.txn.ToClientID = toClientID
-		ta.t.txn.Value = v
+		ta.t.txn.Value = val
 		ta.t.txn.TransactionData = string(txnData)
 		ta.submitTxn()
 	}()

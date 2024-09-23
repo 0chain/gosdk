@@ -323,6 +323,16 @@ type InputMap struct {
 	Fields map[string]string `json:"Fields"`
 }
 
+func newTransaction(cb TransactionCallback, txnFee uint64, nonce int64) (*Transaction, error) {
+	t := &Transaction{}
+	t.txn = transaction.NewTransactionEntity(_config.wallet.ClientID, _config.chain.ChainID, _config.wallet.ClientKey, nonce)
+	t.txnStatus, t.verifyStatus = StatusUnknown, StatusUnknown
+	t.txnCb = cb
+	t.txn.TransactionNonce = nonce
+	t.txn.TransactionFee = txnFee
+	return t, nil
+}
+
 // NewTransaction new generic transaction object for any operation
 //   - cb: callback for transaction state
 //   - txnFee: Transaction fees (in SAS tokens)

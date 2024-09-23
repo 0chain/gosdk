@@ -397,16 +397,6 @@ func (t *Transaction) submitTxn() {
 	}
 }
 
-func newTransaction(cb TransactionCallback, txnFee uint64, nonce int64) (*Transaction, error) {
-	t := &Transaction{}
-	t.txn = transaction.NewTransactionEntity(_config.wallet.ClientID, _config.chain.ChainID, _config.wallet.ClientKey, nonce)
-	t.txnStatus, t.verifyStatus = StatusUnknown, StatusUnknown
-	t.txnCb = cb
-	t.txn.TransactionNonce = nonce
-	t.txn.TransactionFee = txnFee
-	return t, nil
-}
-
 // SetTransactionCallback implements storing the callback
 func (t *Transaction) SetTransactionCallback(cb TransactionCallback) error {
 	if t.txnStatus != StatusUnknown {

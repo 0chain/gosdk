@@ -23,13 +23,6 @@ func (ta *TransactionWithAuth) SetTransactionNonce(txnNonce int64) error {
 	return ta.t.SetTransactionNonce(txnNonce)
 }
 
-func newTransactionWithAuth(cb TransactionCallback, txnFee uint64, nonce int64) (*TransactionWithAuth, error) {
-	ta := &TransactionWithAuth{}
-	var err error
-	ta.t, err = newTransaction(cb, txnFee, nonce)
-	return ta, err
-}
-
 func (ta *TransactionWithAuth) getAuthorize() (*transaction.Transaction, error) {
 	ta.t.txn.PublicKey = _config.wallet.ClientKey
 	err := ta.t.txn.ComputeHashAndSign(SignFn)

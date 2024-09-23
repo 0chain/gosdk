@@ -13,6 +13,13 @@ import (
 	"github.com/0chain/gosdk/core/transaction"
 )
 
+func newTransactionWithAuth(cb TransactionCallback, txnFee uint64, nonce int64) (*TransactionWithAuth, error) {
+	ta := &TransactionWithAuth{}
+	var err error
+	ta.t, err = newTransaction(cb, txnFee, nonce)
+	return ta, err
+}
+
 func (ta *TransactionWithAuth) ExecuteSmartContract(address, methodName string,
 	input interface{}, val uint64, feeOpts ...FeeOption) (*transaction.Transaction, error) {
 	err := ta.t.createSmartContractTxn(address, methodName, input, val, feeOpts...)
