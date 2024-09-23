@@ -114,7 +114,7 @@ func InitStorageSDK(clientJson string, configJson string) (*StorageSDK, error) {
 		l.Logger.Error(err)
 		return nil, err
 	}
-	err = zcncore.InitZCNSDK(configObj.BlockWorker, configObj.SignatureScheme)
+	err = Init(configObj.BlockWorker)
 	if err != nil {
 		l.Logger.Error(err)
 		return nil, err
@@ -332,10 +332,25 @@ func (s *StorageSDK) CancelAllocation(allocationID string) (string, error) {
 //   - fee: fee of the transaction
 //   - allocID: allocation ID
 func (s *StorageSDK) WritePoolLock(durInSeconds int64, tokens, fee float64, allocID string) error {
-	_, _, err := sdk.WritePoolLock(
+	formattedWpLock := strconv.FormatUint(zcncore.ConvertToValue(tokens), 10)
+	formattedFee := strconv.FormatUint(zcncore.ConvertToValue(fee), 10)
+
+	wpLockUint, err := strconv.ParseUint(formattedWpLock, 10, 64)
+	if err != nil {
+		return errors.Errorf("Error parsing write pool lock: %v", err)
+	}
+
+	feeUint, err := strconv.ParseUint(formattedFee, 10, 64)
+
+	if err != nil {
+		return errors.Errorf("Error parsing fee: %v", err)
+	}
+
+	_, _, err = sdk.WritePoolLock(
 		allocID,
-		strconv.FormatUint(zcncore.ConvertTokenToSAS(tokens), 10),
-		strconv.FormatUint(zcncore.ConvertTokenToSAS(fee), 10))
+		wpLockUint,
+		feeUint,
+	)
 	return err
 }
 
@@ -397,7 +412,7 @@ func (s *StorageSDK) RedeemFreeStorage(ticket string) (string, error) {
 		return "", fmt.Errorf("invalid_free_marker: free marker is not assigned to your wallet")
 	}
 
-	hash, _, err := sdk.CreateFreeAllocation(marker, strconv.FormatUint(lock, 10))
+	hash, _, err := sdk.CreateFreeAllocation(marker, lock)
 	return hash, err
 }
 
@@ -428,7 +443,7 @@ func decodeTicket(ticket string) (string, string, uint64, error) {
 	markerStr, _ := json.Marshal(markerInput)
 
 	s, _ := strconv.ParseFloat(string(fmt.Sprintf("%v", lock)), 64)
-	return string(recipientPublicKey), string(markerStr), zcncore.ConvertTokenToSAS(s), nil
+	return string(recipientPublicKey), string(markerStr), zcncore.ConvertToValue(s), nil
 }
 
 // RegisterAuthorizer Client can extend interface and FaSS implementation to this register like this:
