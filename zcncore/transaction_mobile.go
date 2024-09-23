@@ -419,7 +419,7 @@ func NewTransaction(cb TransactionCallback, txnFee string, nonce int64) (Transac
 
 // ExecuteSmartContract prepare and send a smart contract transaction to the blockchain
 func (t *Transaction) ExecuteSmartContracts(address, methodName string, input interface{}, val string) (*transaction.Transaction, error) {
-	return nil
+	return nil, nil
 }
 
 // ExecuteSmartContract prepare and send a smart contract transaction to the blockchain

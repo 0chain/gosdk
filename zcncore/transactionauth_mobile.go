@@ -13,7 +13,7 @@ import (
 
 // ExecuteSmartContract prepare and send a smart contract transaction to the blockchain
 func (t *TransactionWithAuth) ExecuteSmartContracts(address, methodName string, input interface{}, val string) (*transaction.Transaction, error) {
-	return nil
+	return nil, nil
 }
 
 func (ta *TransactionWithAuth) ExecuteSmartContract(address, methodName string,
