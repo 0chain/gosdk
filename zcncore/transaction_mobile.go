@@ -53,7 +53,7 @@ var (
 
 type TransactionCommon interface {
 	// ExecuteSmartContract implements wrapper for smart contract function
-	ExecuteSmartContracts(address, methodName string, input interface{}, val string) (*transaction.Transaction, error)
+	ExecuteSmartContracts(address, methodName, val string) (*transaction.Transaction, error)
 
 	ExecuteSmartContract(address, methodName string, input interface{}, val string, feeOpts ...FeeOption) (*transaction.Transaction, error)
 
@@ -418,7 +418,7 @@ func NewTransaction(cb TransactionCallback, txnFee string, nonce int64) (Transac
 }
 
 // ExecuteSmartContract prepare and send a smart contract transaction to the blockchain
-func (t *Transaction) ExecuteSmartContracts(address, methodName string, input interface{}, val string) (*transaction.Transaction, error) {
+func (t *Transaction) ExecuteSmartContracts(address, methodName, val string) (*transaction.Transaction, error) {
 	return nil, nil
 }
 
