@@ -4,7 +4,6 @@
 package zcn
 
 import (
-	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
 
@@ -13,17 +12,8 @@ import (
 //   - tokens:  sas tokens
 //   - fee: sas tokens
 func ReadPoolLock(tokens, fee string) (string, error) {
-	t, err := util.ParseCoinStr(tokens)
-	if err != nil {
-		return "", err
-	}
+	hash, _, err := sdk.ReadPoolLock(tokens, fee)
 
-	f, err := util.ParseCoinStr(fee)
-	if err != nil {
-		return "", err
-	}
-
-	hash, _, err := sdk.ReadPoolLock(t, f)
 	return hash, err
 }
 
@@ -31,11 +21,7 @@ func ReadPoolLock(tokens, fee string) (string, error) {
 // ## Inputs
 //   - fee: sas tokens
 func ReadPoolUnLock(fee string) (string, error) {
-	f, err := util.ParseCoinStr(fee)
-	if err != nil {
-		return "", err
-	}
+	hash, _, err := sdk.ReadPoolUnlock(fee)
 
-	hash, _, err := sdk.ReadPoolUnlock(f)
 	return hash, err
 }
