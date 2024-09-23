@@ -16,7 +16,7 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.7.2
 	github.com/hashicorp/golang-lru/v2 v2.0.1
 	github.com/herumi/bls-go-binary v1.31.0
-	github.com/hitenjain14/fasthttp v0.0.0-20240527123209-06019e79bff9
+	github.com/hitenjain14/fasthttp v0.0.0-20240916135632-f9303a91736c
 	github.com/influxdata/influxdb v1.8.3
 	github.com/klauspost/reedsolomon v1.11.8
 	github.com/lithammer/shortuuid/v3 v3.0.7

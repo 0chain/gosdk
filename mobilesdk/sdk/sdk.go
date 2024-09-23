@@ -325,21 +325,6 @@ func (s *StorageSDK) CancelAllocation(allocationID string) (string, error) {
 	return hash, err
 }
 
-// GetReadPoolInfo is to get information about the read pool for the allocation
-//   - clientID: client ID
-func (s *StorageSDK) GetReadPoolInfo(clientID string) (string, error) {
-	readPool, err := sdk.GetReadPoolInfo(clientID)
-	if err != nil {
-		return "", err
-	}
-
-	retBytes, err := json.Marshal(readPool)
-	if err != nil {
-		return "", err
-	}
-	return string(retBytes), nil
-}
-
 // WRITE POOL METHODS
 // WritePoolLock lock write pool with given number of tokens
 //   - durInSeconds: duration in seconds
@@ -349,8 +334,8 @@ func (s *StorageSDK) GetReadPoolInfo(clientID string) (string, error) {
 func (s *StorageSDK) WritePoolLock(durInSeconds int64, tokens, fee float64, allocID string) error {
 	_, _, err := sdk.WritePoolLock(
 		allocID,
-		zcncore.ConvertToValue(tokens),
-		zcncore.ConvertToValue(fee))
+		strconv.FormatUint(zcncore.ConvertToValue(tokens), 10),
+		strconv.FormatUint(zcncore.ConvertToValue(fee), 10))
 	return err
 }
 
@@ -412,7 +397,7 @@ func (s *StorageSDK) RedeemFreeStorage(ticket string) (string, error) {
 		return "", fmt.Errorf("invalid_free_marker: free marker is not assigned to your wallet")
 	}
 
-	hash, _, err := sdk.CreateFreeAllocation(marker, lock)
+	hash, _, err := sdk.CreateFreeAllocation(marker, strconv.FormatUint(lock, 10))
 	return hash, err
 }
 

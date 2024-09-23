@@ -5,7 +5,6 @@ package main
 
 import (
 	"github.com/0chain/gosdk/core/client"
-	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk/zcncore"
 )
 
@@ -37,10 +36,4 @@ func getWalletBalance(clientId string) (*Balance, error) {
 		USD:   toUsd,
 		Nonce: bal.Nonce,
 	}, nil
-}
-
-// createReadPool creates a read pool for the client where they should lock tokens to be able to read data.
-func createReadPool() (string, error) {
-	hash, _, err := sdk.CreateReadPool()
-	return hash, err
 }
