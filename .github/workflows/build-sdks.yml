@@ -349,7 +349,7 @@ jobs:
           sudo apt-get -y install build-essential nghttp2 libnghttp2-dev libssl-dev wget
 
       - name: Build
-        run:  docker run --rm -v $PWD:/gosdk -w /gosdk golang:1.21.5 make wasm-build
+        run:  docker run --rm -v $PWD:/gosdk -w /gosdk golang:1.22 make wasm-build
 
       - name: 'Upload Artifact'
         uses: actions/upload-artifact@v3
