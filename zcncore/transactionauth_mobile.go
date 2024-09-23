@@ -11,6 +11,11 @@ import (
 	"github.com/0chain/gosdk/core/transaction"
 )
 
+// ExecuteSmartContract prepare and send a smart contract transaction to the blockchain
+func (t *TransactionWithAuth) ExecuteSmartContracts(address, methodName string, input interface{}, val string, feeOpts ...FeeOption) *transaction.Transaction {
+	return nil
+}
+
 func (ta *TransactionWithAuth) ExecuteSmartContract(address, methodName string,
 	input interface{}, val string, feeOpts ...FeeOption) (*transaction.Transaction, error) {
 	v, err := parseCoinStr(val)
