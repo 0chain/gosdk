@@ -22,8 +22,8 @@ func (ta *TransactionWithAuth) GetDetails() *transaction.Transaction {
 	return ta.t.txn
 }
 
-func (ta *TransactionWithAuth) ExecuteSmartContract(address string, methodName string, input string, val string, feeOpts ...FeeOption) error {
-	err := ta.t.createSmartContractTxn(address, methodName, input, val, feeOpts...)
+func (ta *TransactionWithAuth) ExecuteSmartContract(address string, methodName string, input string, val string) error {
+	err := ta.t.createSmartContractTxn(address, methodName, input, val)
 	if err != nil {
 		return err
 	}
