@@ -192,52 +192,6 @@ func (ta *TransactionWithAuth) GetTransactionNonce() int64 {
 	return ta.t.txn.TransactionNonce
 }
 
-// ========================================================================== //
-//                                vesting pool                                //
-// ========================================================================== //
-
-func (ta *TransactionWithAuth) VestingTrigger(poolID string) (err error) {
-	err = ta.t.vestingPoolTxn(transaction.VESTING_TRIGGER, poolID, 0)
-	if err != nil {
-		logging.Error(err)
-		return
-	}
-	go func() { ta.submitTxn() }()
-	return
-}
-
-func (ta *TransactionWithAuth) VestingStop(sr *VestingStopRequest) (err error) {
-	err = ta.t.createSmartContractTxn(VestingSmartContractAddress,
-		transaction.VESTING_STOP, sr, 0)
-	if err != nil {
-		logging.Error(err)
-		return
-	}
-	go func() { ta.submitTxn() }()
-	return
-}
-
-func (ta *TransactionWithAuth) VestingUnlock(poolID string) (err error) {
-
-	err = ta.t.vestingPoolTxn(transaction.VESTING_UNLOCK, poolID, 0)
-	if err != nil {
-		logging.Error(err)
-		return
-	}
-	go func() { ta.submitTxn() }()
-	return
-}
-
-func (ta *TransactionWithAuth) VestingDelete(poolID string) (err error) {
-	err = ta.t.vestingPoolTxn(transaction.VESTING_DELETE, poolID, 0)
-	if err != nil {
-		logging.Error(err)
-		return
-	}
-	go func() { ta.submitTxn() }()
-	return
-}
-
 //
 // miner sc
 //

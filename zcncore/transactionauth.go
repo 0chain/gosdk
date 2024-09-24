@@ -615,3 +615,49 @@ func (ta *TransactionWithAuth) ZCNSCCollectReward(providerId string, providerTyp
 	go func() { ta.t.setNonceAndSubmit() }()
 	return err
 }
+
+// ========================================================================== //
+//                                vesting pool                                //
+// ========================================================================== //
+
+func (ta *TransactionWithAuth) VestingTrigger(poolID string) (err error) {
+	err = ta.t.vestingPoolTxn(transaction.VESTING_TRIGGER, poolID, 0)
+	if err != nil {
+		logging.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
+func (ta *TransactionWithAuth) VestingStop(sr *VestingStopRequest) (err error) {
+	err = ta.t.createSmartContractTxn(VestingSmartContractAddress,
+		transaction.VESTING_STOP, sr, 0)
+	if err != nil {
+		logging.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
+func (ta *TransactionWithAuth) VestingUnlock(poolID string) (err error) {
+
+	err = ta.t.vestingPoolTxn(transaction.VESTING_UNLOCK, poolID, 0)
+	if err != nil {
+		logging.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
+func (ta *TransactionWithAuth) VestingDelete(poolID string) (err error) {
+	err = ta.t.vestingPoolTxn(transaction.VESTING_DELETE, poolID, 0)
+	if err != nil {
+		logging.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}

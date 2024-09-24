@@ -265,7 +265,7 @@ func (ta *TransactionWithAuth) WritePoolLock(allocID, lock string) error {
 		AllocationID: allocID,
 	}
 
-	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
+	err := ta.t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_WRITE_POOL_LOCK, &lr, lock)
 	if err != nil {
 		logging.Error(err)
