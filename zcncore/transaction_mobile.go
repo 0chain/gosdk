@@ -425,7 +425,7 @@ func (t *Transaction) GetDetails() *transaction.Transaction {
 	return t.txn
 }
 
-func (t *Transaction) createSmartContractTxn(address, methodName string, input string, value string, opts ...FeeOption) error {
+func (t *Transaction) createSmartContractTxn(address, methodName string, input interface{}, value string, opts ...FeeOption) error {
 	sn := transaction.SmartContractTxnData{Name: methodName, InputArgs: input}
 	snBytes, err := json.Marshal(sn)
 	if err != nil {
