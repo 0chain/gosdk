@@ -57,7 +57,7 @@ func ExecuteSmartContract(address string, sn transaction.SmartContractTxnData, v
 	}
 
 	wg.Add(1)
-	err = txn.ExecuteSmartContract(address, sn, value)
+	err = txn.ExecuteSmartContract(address, sn.Name, sn.InputArgs, value)
 	if err != nil {
 		return nil, err
 	}

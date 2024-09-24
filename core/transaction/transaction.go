@@ -3,6 +3,12 @@
 
 package transaction
 
+// SmartContractTxnData data structure to hold the smart contract transaction data
+type SmartContractTxnData struct {
+	Name      string      `json:"name"`
+	InputArgs interface{} `json:"input"`
+}
+
 // Transaction entity that encapsulates the transaction related data and meta data
 type Transaction struct {
 	Hash              string `json:"hash,omitempty"`

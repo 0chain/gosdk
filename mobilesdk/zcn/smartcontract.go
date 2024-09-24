@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/zcncore"
 )
 
@@ -27,9 +26,7 @@ func ExecuteSmartContract(address, methodName, input, sasToken string) (string, 
 
 	wg.Add(1)
 
-	sn := transaction.SmartContractTxnData{Name: methodName, InputArgs: input}
-
-	err = txn.ExecuteSmartContract(address, sn, sasToken)
+	err = txn.ExecuteSmartContract(address, methodName, input, sasToken)
 	if err != nil {
 		return "", err
 
