@@ -522,7 +522,9 @@ func (a *Allocation) RepairFile(file sys.File, remotepath string, statusCallback
 	if Workdir != "" {
 		idr = Workdir
 	}
-	mask = mask.Not().And(zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1))
+	if a.StorageVersion == 0 {
+		mask = mask.Not().And(zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1))
+	}
 	fileMeta := FileMeta{
 		ActualSize: ref.ActualFileSize,
 		MimeType:   ref.MimeType,
@@ -1809,9 +1811,11 @@ func (a *Allocation) ListObjects(ctx context.Context, path, offsetPath, updatedD
 		for {
 			oRefs, err := a.GetRefs(path, continuationPath, updatedDate, offsetDate, fileType, refType, level, pageLimit, opts...)
 			if err != nil {
-				sendObjectRef(ORef{
-					Err: err,
-				})
+				if !strings.Contains(err.Error(), "invalid_path") {
+					sendObjectRef(ORef{
+						Err: err,
+					})
+				}
 				return
 			}
 			for _, ref := range oRefs.Refs {

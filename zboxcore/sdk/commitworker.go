@@ -415,6 +415,11 @@ func (commitReq *CommitRequestV2) processCommit() {
 		}
 	}
 
+	if commitReq.isRepair && len(paths) == 0 {
+		commitReq.result = SuccessCommitResult()
+		return
+	}
+
 	var (
 		pos     uint64
 		mu      = &sync.Mutex{}

@@ -365,7 +365,7 @@ func (r *RepairRequest) iterateDirV2(ctx context.Context) {
 	var (
 		toNextRef = true
 		srcRef    ORef
-		srcEOF    bool
+		srcEOF    = true
 		ops       []OperationRequest
 	)
 	for {
@@ -385,6 +385,7 @@ func (r *RepairRequest) iterateDirV2(ctx context.Context) {
 				return
 			}
 		}
+		l.Logger.Debug("Checking file for the path :", srcRef.Path)
 		toNextRef = true
 		var (
 			uploadMask zboxutil.Uint128
@@ -447,7 +448,6 @@ func (r *RepairRequest) iterateDirV2(ctx context.Context) {
 			ops = append(ops, op)
 		}
 		if uploadMask.CountOnes() > 0 {
-			l.Logger.Debug("Repair by upload: ", srcRef.Path)
 			op := r.uploadFileOp(srcRef, uploadMask)
 			ops = append(ops, op)
 		}
