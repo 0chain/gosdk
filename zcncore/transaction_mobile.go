@@ -53,7 +53,7 @@ var (
 )
 
 type TransactionCommon interface {
-	ExecuteSmartContracts(address, methodName string, val string, input string) (transaction.Transaction, error)
+	ExecuteSmartContracts(address, methodName string, val string, input string) (transaction.TransactionTest, error)
 
 	ExecuteSmartContract(address, methodName string, input interface{}, val string, feeOpts ...FeeOption) (*transaction.Transaction, error)
 
@@ -478,8 +478,8 @@ func (t *Transaction) createFaucetSCWallet(walletStr string, methodName string, 
 }
 
 // ExecuteSmartContract prepare and send a smart contract transaction to the blockchain
-func (t *Transaction) ExecuteSmartContracts(address, methodName string, val string, input string) (transaction.Transaction, error) {
-	return transaction.Transaction{}, nil
+func (t *Transaction) ExecuteSmartContracts(address, methodName string, val string, input string) (transaction.TransactionTest, error) {
+	return transaction.TransactionTest{}, nil
 }
 
 // ExecuteSmartContract prepare and send a smart contract transaction to the blockchain
