@@ -461,7 +461,7 @@ func (a *Allocation) dispatchWork(ctx context.Context) {
 			}()
 		case repairReq := <-a.repairChan:
 
-			l.Logger.Info(fmt.Sprintf("received a repair request for %v\n", repairReq.listDir.Path))
+			l.Logger.Info(fmt.Sprintf("received a repair request for %v\n", repairReq.repairPath))
 			go repairReq.processRepair(ctx, a)
 		}
 	}
