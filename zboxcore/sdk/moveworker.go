@@ -456,7 +456,7 @@ func (mo *MoveOperation) Process(allocObj *Allocation, connectionID string) ([]f
 	}
 	mo.destLookupHash = mR.destLookupHash
 	mo.srcLookupHash = fileref.GetReferenceLookup(mR.allocationID, mR.remotefilepath)
-	return mo.objectTreeRefs, mR.moveMask, nil
+	return mo.objectTreeRefs, mR.moveMask, err
 }
 
 func (mo *MoveOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange {

@@ -455,7 +455,7 @@ func (co *CopyOperation) Process(allocObj *Allocation, connectionID string) ([]f
 				cR.Consensus.consensusThresh, cR.Consensus.consensus))
 	}
 	co.destLookupHash = cR.destLookupHash
-	return co.objectTreeRefs, cR.copyMask, nil
+	return co.objectTreeRefs, cR.copyMask, err
 
 }
 

@@ -229,6 +229,7 @@ func (req *RenameRequest) ProcessWithBlobbersV2() ([]fileref.RefEntity, error) {
 				l.Logger.Error(err.Error())
 				return
 			}
+			refEntity.Path = path.Join(path.Dir(req.remotefilepath), req.newName)
 			objectTreeRefs[blobberIdx] = refEntity
 			req.maskMU.Lock()
 			versionMap[refEntity.AllocationRoot] += 1
@@ -459,7 +460,7 @@ func (ro *RenameOperation) Process(allocObj *Allocation, connectionID string) ([
 	ro.srcLookupHash = fileref.GetReferenceLookup(rR.allocationID, rR.remotefilepath)
 	destPath := path.Join(path.Dir(rR.remotefilepath), rR.newName)
 	ro.destLookupHash = fileref.GetReferenceLookup(rR.allocationID, destPath)
-	return ro.objectTreeRefs, rR.renameMask, nil
+	return ro.objectTreeRefs, rR.renameMask, err
 }
 
 func (ro *RenameOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange {
