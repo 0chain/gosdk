@@ -52,8 +52,14 @@ var (
 	_ TransactionScheme = (*TransactionWithAuth)(nil)
 )
 
+// Transaction represents entity that encapsulates the transaction related data and metadata.
+type TransactionTest struct {
+	Value          string `json:"transaction_value"`
+	TransactionFee string `json:"transaction_fee"`
+}
+
 type TransactionCommon interface {
-	ExecuteSmartContracts(address, methodName string, val string, input string) (transaction.TransactionTest, error)
+	ExecuteSmartContracts(address, methodName string, val string, input string) (TransactionTest, error)
 
 	ExecuteSmartContract(address, methodName string, input interface{}, val string, feeOpts ...FeeOption) (*transaction.Transaction, error)
 
@@ -478,8 +484,8 @@ func (t *Transaction) createFaucetSCWallet(walletStr string, methodName string, 
 }
 
 // ExecuteSmartContract prepare and send a smart contract transaction to the blockchain
-func (t *Transaction) ExecuteSmartContracts(address, methodName string, val string, input string) (transaction.TransactionTest, error) {
-	return transaction.TransactionTest{}, nil
+func (t *Transaction) ExecuteSmartContracts(address, methodName string, val string, input string) (TransactionTest, error) {
+	return TransactionTest{}, nil
 }
 
 // ExecuteSmartContract prepare and send a smart contract transaction to the blockchain

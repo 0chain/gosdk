@@ -23,12 +23,6 @@ type Transaction struct {
 	Status            int    `json:"transaction_status"`
 }
 
-// Transaction represents entity that encapsulates the transaction related data and metadata.
-type TransactionTest struct {
-	Value          string `json:"transaction_value"`
-	TransactionFee string `json:"transaction_fee"`
-}
-
 // // TransactionWrapper represents wrapper for mobile transaction entity.
 // type TransactionWrapper struct {
 // 	Hash              string `json:"hash,omitempty"`
