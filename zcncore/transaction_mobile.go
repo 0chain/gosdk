@@ -536,7 +536,7 @@ func (t *Transaction) SendWithSignatureHash(toClientID string, val string, desc 
 
 func (t *Transaction) VestingAdd(ar VestingAddRequest, value string) (
 	err error) {
-	err := t.createSmartContractTxn(VestingSmartContractAddress,
+	err = t.createSmartContractTxn(VestingSmartContractAddress,
 		transaction.VESTING_ADD, ar, value)
 	if err != nil {
 		logging.Error(err)
@@ -547,7 +547,7 @@ func (t *Transaction) VestingAdd(ar VestingAddRequest, value string) (
 }
 
 func (t *Transaction) VestingStop(sr *VestingStopRequest) (err error) {
-	err := t.createSmartContractTxn(VestingSmartContractAddress,
+	err = t.createSmartContractTxn(VestingSmartContractAddress,
 		transaction.VESTING_STOP, sr, "0")
 	if err != nil {
 		logging.Error(err)
@@ -564,7 +564,7 @@ func (t *Transaction) vestingPoolTxn(function string, poolID string, value strin
 }
 
 func (t *Transaction) VestingTrigger(poolID string) (err error) {
-	err := t.vestingPoolTxn(transaction.VESTING_TRIGGER, poolID, "0")
+	err = t.vestingPoolTxn(transaction.VESTING_TRIGGER, poolID, "0")
 	if err != nil {
 		logging.Error(err)
 		return
@@ -574,7 +574,7 @@ func (t *Transaction) VestingTrigger(poolID string) (err error) {
 }
 
 func (t *Transaction) VestingUnlock(poolID string) (err error) {
-	err := t.vestingPoolTxn(transaction.VESTING_UNLOCK, poolID, "0")
+	err = t.vestingPoolTxn(transaction.VESTING_UNLOCK, poolID, "0")
 	if err != nil {
 		logging.Error(err)
 		return
@@ -584,7 +584,7 @@ func (t *Transaction) VestingUnlock(poolID string) (err error) {
 }
 
 func (t *Transaction) VestingDelete(poolID string) (err error) {
-	err := t.vestingPoolTxn(transaction.VESTING_DELETE, poolID, "0")
+	err = t.vestingPoolTxn(transaction.VESTING_DELETE, poolID, "0")
 	if err != nil {
 		logging.Error(err)
 		return
@@ -859,7 +859,7 @@ func (t *Transaction) WritePoolUnlock(allocID string) error {
 }
 
 func (t *Transaction) VestingUpdateConfig(vscc InputMap) (err error) {
-	err := t.createSmartContractTxn(VestingSmartContractAddress,
+	err = t.createSmartContractTxn(VestingSmartContractAddress,
 		transaction.VESTING_UPDATE_SETTINGS, vscc, "0")
 	if err != nil {
 		logging.Error(err)
@@ -872,7 +872,7 @@ func (t *Transaction) VestingUpdateConfig(vscc InputMap) (err error) {
 // faucet smart contract
 
 func (t *Transaction) FaucetUpdateConfig(ip InputMap) (err error) {
-	err := t.createSmartContractTxn(FaucetSmartContractAddress,
+	err = t.createSmartContractTxn(FaucetSmartContractAddress,
 		transaction.FAUCETSC_UPDATE_SETTINGS, ip, "0")
 	if err != nil {
 		logging.Error(err)
@@ -887,7 +887,7 @@ func (t *Transaction) FaucetUpdateConfig(ip InputMap) (err error) {
 //
 
 func (t *Transaction) MinerScUpdateConfig(ip InputMap) (err error) {
-	err := t.createSmartContractTxn(MinerSmartContractAddress,
+	err = t.createSmartContractTxn(MinerSmartContractAddress,
 		transaction.MINERSC_UPDATE_SETTINGS, ip, "0")
 	if err != nil {
 		logging.Error(err)
@@ -898,7 +898,7 @@ func (t *Transaction) MinerScUpdateConfig(ip InputMap) (err error) {
 }
 
 func (t *Transaction) MinerScUpdateGlobals(ip InputMap) (err error) {
-	err := t.createSmartContractTxn(MinerSmartContractAddress,
+	err = t.createSmartContractTxn(MinerSmartContractAddress,
 		transaction.MINERSC_UPDATE_GLOBALS, ip, "0")
 	if err != nil {
 		logging.Error(err)
@@ -909,7 +909,7 @@ func (t *Transaction) MinerScUpdateGlobals(ip InputMap) (err error) {
 }
 
 func (t *Transaction) StorageScUpdateConfig(ip InputMap) (err error) {
-	err := t.createSmartContractTxn(StorageSmartContractAddress,
+	err = t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_UPDATE_SETTINGS, ip, "0")
 	if err != nil {
 		logging.Error(err)
@@ -920,7 +920,7 @@ func (t *Transaction) StorageScUpdateConfig(ip InputMap) (err error) {
 }
 
 func (t *Transaction) ZCNSCUpdateGlobalConfig(ip InputMap) (err error) {
-	err := t.createSmartContractTxn(ZCNSCSmartContractAddress,
+	err = t.createSmartContractTxn(ZCNSCSmartContractAddress,
 		transaction.ZCNSC_UPDATE_GLOBAL_CONFIG, ip, "0")
 	if err != nil {
 		logging.Error(err)
@@ -979,7 +979,7 @@ type simpleMiner struct {
 }
 
 func (t *Transaction) MinerSCMinerSettings(info MinerSCMinerInfo) (err error) {
-	err := t.createSmartContractTxn(MinerSmartContractAddress,
+	err = t.createSmartContractTxn(MinerSmartContractAddress,
 		transaction.MINERSC_MINER_SETTINGS, info, "0")
 	if err != nil {
 		logging.Error(err)
@@ -990,7 +990,7 @@ func (t *Transaction) MinerSCMinerSettings(info MinerSCMinerInfo) (err error) {
 }
 
 func (t *Transaction) MinerSCSharderSettings(info MinerSCMinerInfo) (err error) {
-	err := t.createSmartContractTxn(MinerSmartContractAddress,
+	err = t.createSmartContractTxn(MinerSmartContractAddress,
 		transaction.MINERSC_SHARDER_SETTINGS, info, "0")
 	if err != nil {
 		logging.Error(err)
@@ -1001,7 +1001,7 @@ func (t *Transaction) MinerSCSharderSettings(info MinerSCMinerInfo) (err error) 
 }
 
 func (t *Transaction) MinerSCDeleteMiner(info MinerSCMinerInfo) (err error) {
-	err := t.createSmartContractTxn(MinerSmartContractAddress,
+	err = t.createSmartContractTxn(MinerSmartContractAddress,
 		transaction.MINERSC_MINER_DELETE, info, "0")
 	if err != nil {
 		logging.Error(err)
@@ -1012,7 +1012,7 @@ func (t *Transaction) MinerSCDeleteMiner(info MinerSCMinerInfo) (err error) {
 }
 
 func (t *Transaction) MinerSCDeleteSharder(info MinerSCMinerInfo) (err error) {
-	err := t.createSmartContractTxn(MinerSmartContractAddress,
+	err = t.createSmartContractTxn(MinerSmartContractAddress,
 		transaction.MINERSC_SHARDER_DELETE, info, "0")
 	if err != nil {
 		logging.Error(err)
@@ -1046,7 +1046,7 @@ func (a *authorizerNode) GetID() string {
 }
 
 func (t *Transaction) ZCNSCUpdateAuthorizerConfig(ip AuthorizerNode) (err error) {
-	err := t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_UPDATE_AUTHORIZER_CONFIG, ip, "0")
+	err = t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_UPDATE_AUTHORIZER_CONFIG, ip, "0")
 	if err != nil {
 		logging.Error(err)
 		return
@@ -1157,7 +1157,7 @@ func (t *Transaction) Verify() error {
 }
 
 func (t *Transaction) ZCNSCAddAuthorizer(ip AddAuthorizerPayload) (err error) {
-	err := t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_ADD_AUTHORIZER, ip, "0")
+	err = t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_ADD_AUTHORIZER, ip, "0")
 	if err != nil {
 		logging.Error(err)
 		return
