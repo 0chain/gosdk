@@ -102,8 +102,8 @@ func (req *DeleteRequest) deleteBlobberFile(
 				return
 			}
 			if resp.StatusCode == http.StatusBadRequest {
-				body, err := ioutil.ReadAll(resp.Body)
-				if err!= nil {
+				body, err := io.ReadAll(resp.Body)
+				if err != nil {
 					logger.Logger.Error("Failed to read response body", err)
 				}
 
