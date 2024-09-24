@@ -57,10 +57,12 @@ func ExecuteSmartContract(address string, sn transaction.SmartContractTxnData, v
 	}
 
 	wg.Add(1)
-	t, err := txn.ExecuteSmartContract(address, sn.Name, sn.InputArgs, value)
+	err = txn.ExecuteSmartContract(address, sn.Name, sn.InputArgs, value)
 	if err != nil {
 		return nil, err
 	}
+
+	t := txn.GetTxn()
 
 	msg := fmt.Sprintf("Executing transaction '%s' with hash %s ", sn.Name, t.Hash)
 	l.Logger.Info(msg)

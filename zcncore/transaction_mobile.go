@@ -52,16 +52,9 @@ var (
 	_ TransactionScheme = (*TransactionWithAuth)(nil)
 )
 
-// Transaction represents entity that encapsulates the transaction related data and metadata.
-type TransactionTest struct {
-}
-
 type TransactionCommon interface {
-	ExecuteSmartContracts(address, methodName string, val string, input string) (TransactionTest, error)
+	ExecuteSmartContract(address, methodName string, input interface{}, val string, feeOpts ...FeeOption) error
 
-	ExecuteSmartContract(address, methodName string, input interface{}, val string, feeOpts ...FeeOption) (*transaction.Transaction, error)
-
-	// Send implements sending token to a given clientid
 	Send(toClientID string, val string, desc string) error
 
 	VestingAdd(ar VestingAddRequest, value string) error
@@ -145,8 +138,6 @@ type TransactionScheme interface {
 	VestingStop(sr *VestingStopRequest) error
 	VestingUnlock(poolID string) error
 	VestingDelete(poolID string) error
-
-	// Miner SC
 }
 
 // priceRange represents a price range allowed by user to filter blobbers.
@@ -427,6 +418,10 @@ func NewTransaction(cb TransactionCallback, txnFee string, nonce int64) (Transac
 	return t, err
 }
 
+func (t *Transaction) GetTxn() *transaction.Transaction {
+	return t.txn
+}
+
 func (t *Transaction) createSmartContractTxn(address, methodName string, input interface{}, value string, opts ...FeeOption) error {
 	sn := transaction.SmartContractTxnData{Name: methodName, InputArgs: input}
 	snBytes, err := json.Marshal(sn)
@@ -482,21 +477,16 @@ func (t *Transaction) createFaucetSCWallet(walletStr string, methodName string, 
 }
 
 // ExecuteSmartContract prepare and send a smart contract transaction to the blockchain
-func (t *Transaction) ExecuteSmartContracts(address, methodName string, val string, input string) (TransactionTest, error) {
-	return TransactionTest{}, nil
-}
-
-// ExecuteSmartContract prepare and send a smart contract transaction to the blockchain
-func (t *Transaction) ExecuteSmartContract(address, methodName string, input interface{}, val string, feeOpts ...FeeOption) (*transaction.Transaction, error) {
+func (t *Transaction) ExecuteSmartContract(address, methodName string, input interface{}, val string, feeOpts ...FeeOption) error {
 	err := t.createSmartContractTxn(address, methodName, input, val)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	go func() {
 		t.setNonceAndSubmit()
 	}()
 
-	return t.txn, nil
+	return nil
 }
 
 // Send to send a transaction to a given clientID
