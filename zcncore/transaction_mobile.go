@@ -126,6 +126,9 @@ type TransactionScheme interface {
 	// GetTransactionNonce returns nonce
 	GetTransactionNonce() int64
 
+	// GetDetails returns transaction scheme details.
+	GetDetails() *transaction.Transaction
+
 	// Output of transaction.
 	Output() []byte
 
@@ -418,7 +421,7 @@ func NewTransaction(cb TransactionCallback, txnFee string, nonce int64) (Transac
 	return t, err
 }
 
-func (t *Transaction) GetTxn() *transaction.Transaction {
+func (t *Transaction) GetDetails() *transaction.Transaction {
 	return t.txn
 }
 

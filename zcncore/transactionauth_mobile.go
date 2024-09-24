@@ -18,7 +18,7 @@ func newTransactionWithAuth(cb TransactionCallback, txnFee string, nonce int64) 
 	return ta, err
 }
 
-func (ta *TransactionWithAuth) GetTxn() *transaction.Transaction {
+func (ta *TransactionWithAuth) GetDetails() *transaction.Transaction {
 	return ta.t.txn
 }
 
