@@ -311,10 +311,9 @@ func main() {
 				"getWalletBalance": getWalletBalance,
 
 				//0box api
-				"getCsrfToken":     getCsrfToken,
-				"createJwtSession": createJwtSession,
-				"createJwtToken":   createJwtToken,
-				"refreshJwtToken":  refreshJwtToken,
+				"getCsrfToken":    getCsrfToken,
+				"createJwtToken":  createJwtToken,
+				"refreshJwtToken": refreshJwtToken,
 
 				//split key
 				"splitKeys":     splitKeys,

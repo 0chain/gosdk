@@ -36,16 +36,17 @@
   <fieldset>
     <legend>Wallet</legend>
     <label for="clientId"> ClientID </label> <input id="clientId" name="clientId" style="width: 600px;"
-      value="632d7e04fb8ff9cebe36caa20050458811d5eb3d3bdeb6a3877116a6c9d3ad68" /><br>
+      value="ab5b8ab19abe574d92238e0a5dc0c2abd53614cd12cab6b09576fab2a0f64a83" /><br>
     <label for="privateKey">PrivateKey</label> <input id="privateKey" name="privateKey" style="width: 600px;"
-      value="1a82efcc1afa64468ba6d090da6ae4995e1c2c5fb3a107b01d5f67fe1f66bc08" /><br>
+      value="0c2cb85c8c33b3cc35dc12b4754e61ae9488bba857982c382caa461ecac19d19" /><br>
     <label for="publicKey"> PublicKey</label> <input id="publicKey" name="publicKey" style="width: 600px;"
-      value="aeb6a6c2bd30a9cd9323a46d887bfc9cf7996d0d2158a55453d7b16a99ace7182e998dd30c0d34c3093796f7075aaa97f3e25589c278971634cba3f2303b3216" /><br>
+      value="d430b1b33eab43bd09886e6125e246600e36e3f88d658d00bf836aa564251e2364bccbfb18f1cb1b5fa4d96ba602b59bc009e6e0223b6a8ebdafc14822b78d23" /><br>
     <label for="mnemonic"> Mnemonic</label> <input id="mnemonic" name="mnemonic" style="width: 600px;"
-      value="visit acquire month friend twice guide hard myself differ video style shaft situate general valve dice brick carbon replace powder indicate hello orient search" /><br>
-
-
-
+      value="grace fiscal menu squeeze certain drum ostrich lunar ugly remember cousin observe oxygen brisk toward notable shoot cushion develop marble open aspect couch noise" /><br>
+    <label for="peerPublicKey"> PeerPublicKey</label> <input id="peerPublicKey" name="peerPublicKey" style="width: 600px;"
+      value="" /><br>
+    <label for="isSplit"> IsSplit</label> <input id="isSplit" name="isSplit" style="width: 600px;"
+      value="false" /><br>
 
     <button id="btnSetWallet">Change Wallet</button>
     <button id="btnSendMeTokens">Send Me Tokens</button>
@@ -156,7 +157,6 @@
   <fieldset>
     <legend>Split Key</legend>
     <span>
-      <button id="btnSplitKeys">SplitKeys</button>
       <button id="btnSetWalletInfo">SetWalletInfo</button>
       <button id="btnSetAuthUrl">SetAuthUrl</button>
       <button id="btnRegAuth">regAuth</button>
@@ -171,12 +171,14 @@
     }
 
     const getWallet = () => {
-      const clientID = "ab5b8ab19abe574d92238e0a5dc0c2abd53614cd12cab6b09576fab2a0f64a83"
-      const publicKey = "d430b1b33eab43bd09886e6125e246600e36e3f88d658d00bf836aa564251e2364bccbfb18f1cb1b5fa4d96ba602b59bc009e6e0223b6a8ebdafc14822b78d23"
-      const privateKey = "0c2cb85c8c33b3cc35dc12b4754e61ae9488bba857982c382caa461ecac19d19"
-      const mnemonic = "grace fiscal menu squeeze certain drum ostrich lunar ugly remember cousin observe oxygen brisk toward notable shoot cushion develop marble open aspect couch noise"
+      const clientID = document.getElementById('clientId').value;
+      const publicKey = document.getElementById('publicKey').value;
+      const peerPublicKey = document.getElementById('peerPublicKey').value;
+      const privateKey = document.getElementById('privateKey').value;
+      const mnemonic = document.getElementById('mnemonic').value;
+      const isSplit = document.getElementById('isSplit').value;
       return {
-        clientID, publicKey, privateKey, mnemonic
+        clientID, peerPublicKey, publicKey, privateKey, mnemonic, isSplit
       }
     }
 
@@ -225,6 +227,7 @@
       'https://0box.' + network, //zboxHost
       'vult', //zboxAppType
       3,
+      false,
     ]
 
     const bls = window.bls
@@ -232,17 +235,36 @@
     createWasm().then(async wasm => {
       await wasm.sdk.init(...config)
       await bls.init(bls.BN254)
-      const { clientID, privateKey, publicKey, mnemonic } = getWallet()
-      await wasm.setWallet(bls, clientID, privateKey, publicKey, mnemonic)
+
+      const { clientID, publicKey, privateKey, mnemonic } = getWallet();
+
+      await wasm.setWallet(bls, clientID, publicKey, "", privateKey, publicKey, mnemonic, false);
 
       goWasm = wasm
     })
 
     onClick('btnSetWallet', async () => {
-      const { clientID, privateKey, publicKey, mnemonic } = getWallet()
-      await goWasm.setWallet(bls, clientID, privateKey, publicKey, mnemonic)
-    })
+      const { clientID, publicKey, privateKey, peerPublicKey, mnemonic, isSplit } = getWallet();
 
+      const isSplitRaw = isSplit == "true" ? true : false
+
+      const newConfig = [
+        networkConfig.chainId,
+        blockWorker,
+        networkConfig.signatureScheme,
+        networkConfig.minConfirmation,
+        networkConfig.minSubmit,
+        networkConfig.confirmationChainLength,
+        'https://0box.' + network, //zboxHost
+        'vult', //zboxAppType
+        3,
+        isSplitRaw,
+      ]
+
+      await goWasm.sdk.init(...newConfig);
+
+      await goWasm.setWallet(bls, clientID, publicKey, peerPublicKey, privateKey, publicKey, mnemonic, isSplitRaw);
+    })
 
     onClick('btnSendMeTokens', async () => {
       await goWasm.sdk.faucet("pour", JSON.stringify("{Pay day}"), 10)
@@ -850,18 +872,6 @@
       try {
         console.log("executing MultiOps", objects[0])
         const output = await goWasm.sdk.multiOperation(allocationId, stringifiedArray)
-      } catch (e) {
-        alert(e)
-      }
-    })
-
-    onClick('btnSplitKeys', async () => {
-      const privateKey = "41729ed8d82f782646d2d30b9719acfd236842b9b6e47fee12b7bdbd05b35122"
-      const numSplits = 1
-      try {
-        const wStr = await goWasm.sdk.splitKeys(privateKey, numSplits)
-        txtOutput.innerHTML = wStr;
-        console.log("splitKeys", wStr);
       } catch (e) {
         alert(e)
       }
