@@ -8,12 +8,6 @@ import (
 	"strconv"
 )
 
-// SmartContractTxnData data structure to hold the smart contract transaction data
-type SmartContractTxnData struct {
-	Name      string `json:"name"`
-	InputArgs string `json:"input"`
-}
-
 // Transaction represents entity that encapsulates the transaction related data and metadata.
 type Transaction struct {
 	Hash              string `json:"hash,omitempty"`
