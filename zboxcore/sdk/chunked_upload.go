@@ -73,7 +73,7 @@ const (
 )
 
 func SetUploadMode(mode UploadMode) {
-	CurrentMode = mode
+	CurrentMode = UploadModeHigh
 }
 
 func SetHighModeWorkers(workers int) {
