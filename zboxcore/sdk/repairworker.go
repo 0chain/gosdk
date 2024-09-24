@@ -373,7 +373,7 @@ func (r *RepairRequest) iterateDirV2(ctx context.Context) {
 			return
 		}
 		if toNextRef {
-			if srcEOF {
+			if !srcEOF {
 				break
 			}
 			srcRef, srcEOF = <-srcChan
@@ -396,16 +396,16 @@ func (r *RepairRequest) iterateDirV2(ctx context.Context) {
 			}
 
 			// check if both target and source are at EOF
-			if srcEOF && diff.tgtEOF {
+			if !srcEOF && !diff.tgtEOF {
 				continue
 			}
 			// if target is at EOF, upload the src file
-			if diff.tgtEOF {
+			if !diff.tgtEOF {
 				uploadMask = uploadMask.Or(diff.mask)
 				continue
 			}
 			// if source is at EOF, delete the target file
-			if srcEOF {
+			if !srcEOF {
 				delMask := diff.mask
 				op := OperationRequest{
 					OperationType: constants.FileOperationDelete,
@@ -447,6 +447,7 @@ func (r *RepairRequest) iterateDirV2(ctx context.Context) {
 			ops = append(ops, op)
 		}
 		if uploadMask.CountOnes() > 0 {
+			l.Logger.Debug("Repair by upload: ", srcRef.Path)
 			op := r.uploadFileOp(srcRef, uploadMask)
 			ops = append(ops, op)
 		}
