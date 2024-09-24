@@ -54,8 +54,6 @@ var (
 
 // Transaction represents entity that encapsulates the transaction related data and metadata.
 type TransactionTest struct {
-	Value          string `json:"transaction_value"`
-	TransactionFee string `json:"transaction_fee"`
 }
 
 type TransactionCommon interface {
