@@ -161,7 +161,7 @@ func (ta *TransactionWithAuth) ReadPoolLock(allocID, blobberID string,
 	lr.AllocationID = allocID
 	lr.BlobberID = blobberID
 
-	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
+	err := ta.t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_READ_POOL_LOCK, &lr, lock)
 	if err != nil {
 		logging.Error(err)
@@ -245,7 +245,7 @@ func (ta *TransactionWithAuth) UpdateAllocation(allocID string, sizeDiff int64,
 	uar.Size = sizeDiff
 	uar.Expiration = expirationDiff
 
-	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
+	err := ta.t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_UPDATE_ALLOCATION, &uar, lock)
 	if err != nil {
 		logging.Error(err)
@@ -472,5 +472,47 @@ func (ta *TransactionWithAuth) ZCNSCAuthorizerHealthCheck(ip *AuthorizerHealthCh
 		return
 	}
 	go ta.t.setNonceAndSubmit()
+	return
+}
+
+func (ta *TransactionWithAuth) VestingTrigger(poolID string) (err error) {
+	err = ta.t.vestingPoolTxn(transaction.VESTING_TRIGGER, poolID, "0")
+	if err != nil {
+		logging.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
+func (ta *TransactionWithAuth) VestingStop(sr *VestingStopRequest) (err error) {
+	err = ta.t.createSmartContractTxn(VestingSmartContractAddress,
+		transaction.VESTING_STOP, sr, "0")
+	if err != nil {
+		logging.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
+func (ta *TransactionWithAuth) VestingUnlock(poolID string) (err error) {
+
+	err = ta.t.vestingPoolTxn(transaction.VESTING_UNLOCK, poolID, "0")
+	if err != nil {
+		logging.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
+func (ta *TransactionWithAuth) VestingDelete(poolID string) (err error) {
+	err = ta.t.vestingPoolTxn(transaction.VESTING_DELETE, poolID, "0")
+	if err != nil {
+		logging.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
 	return
 }

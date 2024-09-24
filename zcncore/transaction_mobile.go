@@ -659,7 +659,7 @@ func (t *Transaction) FinalizeAllocation(allocID string) (err error) {
 	type finiRequest struct {
 		AllocationID string `json:"allocation_id"`
 	}
-	err := t.createSmartContractTxn(StorageSmartContractAddress,
+	err = t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_FINALIZE_ALLOCATION, &finiRequest{
 			AllocationID: allocID,
 		}, "0")
