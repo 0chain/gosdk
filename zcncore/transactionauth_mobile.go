@@ -19,7 +19,7 @@ func newTransactionWithAuth(cb TransactionCallback, txnFee string, nonce int64) 
 }
 
 // ExecuteSmartContract prepare and send a smart contract transaction to the blockchain
-func (t *TransactionWithAuth) ExecuteSmartContracts(address string, methodName string, val string, input interface{}) error {
+func (t *TransactionWithAuth) ExecuteSmartContracts(address string, methodName string, val string, input string) error {
 	return nil
 }
 
