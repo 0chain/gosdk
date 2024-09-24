@@ -22,15 +22,15 @@ func (ta *TransactionWithAuth) GetDetails() *transaction.Transaction {
 	return ta.t.txn
 }
 
-func (ta *TransactionWithAuth) ExecuteSmartContract(address, methodName string,
-	input interface{}, val string, feeOpts ...FeeOption) error {
-	err := ta.t.createSmartContractTxn(address, methodName, input, val, feeOpts...)
+func (ta *TransactionWithAuth) ExecuteSmartContract(address string, sn transaction.SmartContractTxnData, val string, feeOpts ...FeeOption) error {
+	err := ta.t.createSmartContractTxn(address, sn.Name, sn.InputArgs, val, feeOpts...)
 	if err != nil {
 		return err
 	}
 	go func() {
 		ta.submitTxn()
 	}()
+
 	return nil
 }
 

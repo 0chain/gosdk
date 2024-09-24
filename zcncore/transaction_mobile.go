@@ -53,7 +53,7 @@ var (
 )
 
 type TransactionCommon interface {
-	ExecuteSmartContract(address, methodName string, input interface{}, val string, feeOpts ...FeeOption) error
+	ExecuteSmartContract(address string, sn transaction.SmartContractTxnData, val string, opts ...FeeOption) error
 
 	Send(toClientID string, val string, desc string) error
 
@@ -480,8 +480,8 @@ func (t *Transaction) createFaucetSCWallet(walletStr string, methodName string, 
 }
 
 // ExecuteSmartContract prepare and send a smart contract transaction to the blockchain
-func (t *Transaction) ExecuteSmartContract(address, methodName string, input interface{}, val string, feeOpts ...FeeOption) error {
-	err := t.createSmartContractTxn(address, methodName, input, val)
+func (t *Transaction) ExecuteSmartContract(address string, sn transaction.SmartContractTxnData, val string, opts ...FeeOption) error {
+	err := t.createSmartContractTxn(address, sn.Name, sn.InputArgs, val)
 	if err != nil {
 		return err
 	}
