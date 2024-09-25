@@ -101,6 +101,7 @@ func (req *ListRequest) getFileStatsInfoFromBlobber(blobber *blockchain.StorageN
 			}
 			fileStats.BlobberID = blobber.ID
 			fileStats.BlobberURL = blobber.Baseurl
+			fileStats.PathHash = req.remotefilepathhash
 			return nil
 		}
 		return errors.New(resp.Status, s.String())
