@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/transaction"
 	"io"
 	"math"
@@ -431,7 +432,7 @@ func (a *Allocation) InitAllocation() {
 }
 
 func (a *Allocation) isInitialized() bool {
-	return a.initialized && sdkInitialized
+	return a.initialized && client.IsSDKInitialized()
 }
 
 func (a *Allocation) startWorker(ctx context.Context) {

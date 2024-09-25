@@ -4,7 +4,6 @@
 package main
 
 import (
-	"context"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -13,10 +12,14 @@ import (
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/imageutil"
 	"github.com/0chain/gosdk/core/logger"
+	"github.com/0chain/gosdk/core/zcncrypto"
+	"github.com/0chain/gosdk/wasmsdk/jsbridge"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk/zcncore"
+
 	"io"
 	"os"
+	"strconv"
 )
 
 var CreateObjectURL func(buf []byte, mimeType string) string
@@ -31,43 +34,45 @@ var CreateObjectURL func(buf []byte, mimeType string) string
 //   - zboxHost is the url of the 0box service
 //   - zboxAppType is the application type of the 0box service
 //   - sharderconsensous is the number of sharders to reach consensus
-func initSDKs(chainID, blockWorker, signatureScheme string,
+func initSDKs(walletJson, chainID, blockWorker, signatureScheme string,
 	minConfirmation, minSubmit, confirmationChainLength int,
 	zboxHost, zboxAppType string, sharderconsensous int, isSplit bool) error {
 
 	zboxApiClient.SetRequest(zboxHost, zboxAppType)
 
-	err := sdk.InitStorageSDK("{}", blockWorker, chainID, signatureScheme, nil, 0)
+	clientConf, err := conf.GetClientConfig()
+	if err != nil {
+		return err
+	}
+	err = client.InitSDK(walletJson, blockWorker, chainID, signatureScheme, nil, 0, !isSplit && clientConf.IsSplitWallet)
 	if err != nil {
 		fmt.Println("wasm: InitStorageSDK ", err)
 		return err
 	}
 
-	clientConf, err := conf.GetClientConfig()
+	wallet := zcncrypto.Wallet{}
+	err = json.Unmarshal([]byte(walletJson), &wallet)
 	if err != nil {
 		return err
 	}
 
-	if !isSplit && clientConf.IsSplitWallet {
-		// split wallet should not be reset back, use the existing
-		isSplit = true
+	mode := os.Getenv("MODE")
+	zboxApiClient.SetWallet(wallet.ClientID, wallet.Keys[0].PrivateKey, wallet.ClientKey)
+	if mode == "" { // main thread, need to notify the web worker to update wallet
+		// notify the web worker to update wallet
+		if err := jsbridge.PostMessageToAllWorkers(jsbridge.MsgTypeUpdateWallet, map[string]string{
+			"client_id":       wallet.ClientID,
+			"client_key":      wallet.ClientKey,
+			"peer_public_key": wallet.PeerPublicKey,
+			"public_key":      wallet.ClientKey,
+			"private_key":     wallet.Keys[0].PrivateKey,
+			"mnemonic":        wallet.Mnemonic,
+			"is_split":        strconv.FormatBool(wallet.IsSplit),
+		}); err != nil {
+			return err
+		}
 	}
 
-	err = client.Init(context.Background(), conf.Config{
-		BlockWorker:             blockWorker,
-		SignatureScheme:         signatureScheme,
-		ChainID:                 chainID,
-		MinConfirmation:         minConfirmation,
-		MinSubmit:               minSubmit,
-		ConfirmationChainLength: confirmationChainLength,
-		SharderConsensous:       sharderconsensous,
-		IsSplitWallet:           isSplit,
-	})
-
-	if err != nil {
-		fmt.Println("wasm: InitZCNSDK ", err)
-		return err
-	}
 	sdk.SetWasm()
 	return nil
 }

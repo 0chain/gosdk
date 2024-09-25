@@ -44,7 +44,7 @@ func CreateAllocationForOwner(
 		return "", 0, nil, errors.New("failed_get_allocation_blobbers", "failed to get blobbers for allocation: "+err.Error())
 	}
 
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return "", 0, nil, sdkNotInitialized
 	}
 
@@ -68,7 +68,7 @@ func CreateAllocationForOwner(
 //
 // returns the hash of the transaction, the nonce of the transaction and an error if any.
 func CreateFreeAllocation(marker string, value uint64) (string, int64, error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
 
@@ -120,7 +120,7 @@ func UpdateAllocation(
 		return "", 0, errors.New("invalid_lock", "int64 overflow on lock value")
 	}
 
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
 
@@ -158,7 +158,7 @@ func UpdateAllocation(
 //   - value: value to lock
 //   - fee: transaction fee
 func StakePoolLock(providerType ProviderType, providerID string, value, fee uint64) (hash string, nonce int64, err error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
 
@@ -208,7 +208,7 @@ func StakePoolLock(providerType ProviderType, providerID string, value, fee uint
 //   - providerID: provider ID
 //   - fee: transaction fee
 func StakePoolUnlock(providerType ProviderType, providerID string, fee uint64) (unstake int64, nonce int64, err error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return 0, 0, sdkNotInitialized
 	}
 
@@ -262,7 +262,7 @@ func StakePoolUnlock(providerType ProviderType, providerID string, fee uint64) (
 //   - tokens: number of tokens to lock
 //   - fee: transaction fee
 func WritePoolLock(allocID string, tokens, fee uint64) (hash string, nonce int64, err error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
 
@@ -286,7 +286,7 @@ func WritePoolLock(allocID string, tokens, fee uint64) (hash string, nonce int64
 //   - allocID: allocation ID
 //   - fee: transaction fee
 func WritePoolUnlock(allocID string, fee uint64) (hash string, nonce int64, err error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
 

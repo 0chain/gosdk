@@ -1,7 +1,10 @@
 package client
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
+	"github.com/0chain/gosdk/core/conf"
 	"strings"
 
 	"github.com/0chain/gosdk/constants"
@@ -10,7 +13,8 @@ import (
 )
 
 var (
-	client Client
+	client         Client
+	sdkInitialized bool
 )
 
 type SignFunc func(hash string) (string, error)
@@ -188,4 +192,58 @@ func GetWallet() *zcncrypto.Wallet {
 
 func GetClient() *zcncrypto.Wallet {
 	return client.wallet
+}
+
+// InitSDK Initialize the storage SDK
+//
+//   - walletJSON: Client's wallet JSON
+//   - blockWorker: Block worker URL (block worker refers to 0DNS)
+//   - chainID: ID of the blokcchain network
+//   - signatureScheme: Signature scheme that will be used for signing transactions
+//   - preferredBlobbers: List of preferred blobbers to use when creating an allocation. This is usually configured by the client in the configuration files
+//   - nonce: Initial nonce value for the transactions
+//   - fee: Preferred value for the transaction fee, just the first value is taken
+func InitSDK(walletJSON string,
+	blockWorker, chainID, signatureScheme string,
+	preferredBlobbers []string,
+	nonce int64, isSplitWallet bool,
+	fee ...uint64) error {
+
+	wallet := zcncrypto.Wallet{}
+	err := json.Unmarshal([]byte(walletJSON), &wallet)
+	if err != nil {
+		return err
+	}
+
+	SetWallet(wallet)
+	SetSignatureScheme(signatureScheme)
+	SetNonce(nonce)
+	if len(fee) > 0 {
+		SetTxnFee(fee[0])
+	}
+
+	err = Init(context.Background(), conf.Config{
+		BlockWorker:       blockWorker,
+		SignatureScheme:   signatureScheme,
+		ChainID:           chainID,
+		PreferredBlobbers: preferredBlobbers,
+		MaxTxnQuery:       5,
+		QuerySleepTime:    5,
+		MinSubmit:         10,
+		MinConfirmation:   10,
+		IsSplitWallet:     isSplitWallet,
+	})
+	if err != nil {
+		return err
+	}
+	SetSdkInitialized(true)
+	return nil
+}
+
+func IsSDKInitialized() bool {
+	return sdkInitialized
+}
+
+func SetSdkInitialized(val bool) {
+	sdkInitialized = val
 }

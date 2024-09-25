@@ -216,7 +216,7 @@ func TestGetMinMaxWriteReadSuccess(t *testing.T) {
 	ssc.ParityShards = 4
 
 	ssc.initialized = true
-	sdkInitialized = true
+	client.SetSdkInitialized(true)
 	require.NotNil(t, ssc.BlobberDetails)
 
 	t.Run("Success minR, minW", func(t *testing.T) {
@@ -264,7 +264,7 @@ func TestGetMaxMinStorageCostSuccess(t *testing.T) {
 	ssc.ParityShards = 2
 
 	ssc.initialized = true
-	sdkInitialized = true
+	client.SetSdkInitialized(true)
 
 	t.Run("Storage cost", func(t *testing.T) {
 		cost, err := ssc.GetMaxStorageCost(100 * GB)
@@ -483,9 +483,9 @@ func TestAllocation_isInitialized(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			originalSDKInitialized := sdkInitialized
-			defer func() { sdkInitialized = originalSDKInitialized }()
-			sdkInitialized = tt.sdkInitialized
+			originalSDKInitialized := client.IsSDKInitialized()
+			defer func() { client.SetSdkInitialized(originalSDKInitialized) }()
+			client.SetSdkInitialized(tt.sdkInitialized)
 			a := &Allocation{initialized: tt.allocationInitialized}
 			got := a.isInitialized()
 			require := require.New(t)
@@ -658,7 +658,7 @@ func TestAllocation_RepairRequired(t *testing.T) {
 				FileOptions:  63,
 			}
 			a.InitAllocation()
-			sdkInitialized = true
+			client.SetSdkInitialized(true)
 			if tt.setup != nil {
 				if teardown := tt.setup(t, tt.name, a); teardown != nil {
 					defer teardown(t)
@@ -972,7 +972,7 @@ func TestAllocation_downloadFile(t *testing.T) {
 			a.downloadProgressMap = make(map[string]*DownloadRequest)
 			a.mutex = &sync.Mutex{}
 			a.initialized = true
-			sdkInitialized = true
+			client.SetSdkInitialized(true)
 			setupMockAllocation(t, a)
 			for i := 0; i < numBlobbers; i++ {
 				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
@@ -1025,7 +1025,7 @@ func TestAllocation_GetRefs(t *testing.T) {
 		}
 		testCaseName := "Test_Get_Refs_Returns_Slice_Of_Length_0_When_File_Not_Present"
 		a.InitAllocation()
-		sdkInitialized = true
+		client.SetSdkInitialized(true)
 		for i := 0; i < numBlobbers; i++ {
 			a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
 				ID:      testCaseName + mockBlobberId + strconv.Itoa(i),
@@ -1124,7 +1124,7 @@ func TestAllocation_GetFileMeta(t *testing.T) {
 				FileOptions:  63,
 			}
 			a.InitAllocation()
-			sdkInitialized = true
+			client.SetSdkInitialized(true)
 			for i := 0; i < numBlobbers; i++ {
 				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
 					ID:      tt.name + mockBlobberId + strconv.Itoa(i),
@@ -1184,7 +1184,7 @@ func TestAllocation_GetAuthTicketForShare(t *testing.T) {
 	for i := 0; i < numberBlobbers; i++ {
 		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{})
 	}
-	sdkInitialized = true
+	client.SetSdkInitialized(true)
 	at, err := a.GetAuthTicketForShare("/1.txt", "1.txt", fileref.FILE, "")
 	require.NotEmptyf(at, "unexpected empty auth ticket")
 	require.NoErrorf(err, "unexpected error: %v", err)
@@ -1391,7 +1391,7 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 				FileOptions:  63,
 			}
 			a.InitAllocation()
-			sdkInitialized = true
+			client.SetSdkInitialized(true)
 
 			for i := 0; i < numBlobbers; i++ {
 				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
@@ -1454,7 +1454,7 @@ func TestAllocation_CancelDownload(t *testing.T) {
 			require := require.New(t)
 			a := &Allocation{FileOptions: 63}
 			a.InitAllocation()
-			sdkInitialized = true
+			client.SetSdkInitialized(true)
 			if tt.setup != nil {
 				if teardown := tt.setup(t, a); teardown != nil {
 					defer teardown(t)
@@ -1610,7 +1610,7 @@ func TestAllocation_ListDirFromAuthTicket(t *testing.T) {
 
 			setupMockGetFileInfoResponse(t, &mockClient)
 			a.InitAllocation()
-			sdkInitialized = true
+			client.SetSdkInitialized(true)
 			if len(a.Blobbers) == 0 {
 				for i := 0; i < numBlobbers; i++ {
 					a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{})
@@ -1883,7 +1883,7 @@ func TestAllocation_listDir(t *testing.T) {
 				tt.parameters.expectedResult.deleteMask = zboxutil.NewUint128(1).Lsh(uint64(a.DataShards + a.ParityShards)).Sub64(1)
 			}
 			a.InitAllocation()
-			sdkInitialized = true
+			client.SetSdkInitialized(true)
 			for i := 0; i < numBlobbers; i++ {
 				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
 					ID:      tt.name + mockBlobberId + strconv.Itoa(i),
@@ -2012,7 +2012,7 @@ func TestAllocation_GetFileMetaFromAuthTicket(t *testing.T) {
 				FileOptions:  63,
 			}
 			a.InitAllocation()
-			sdkInitialized = true
+			client.SetSdkInitialized(true)
 			a.initialized = true
 
 			require := require.New(t)
@@ -2324,7 +2324,7 @@ func setupMockAllocation(t *testing.T, a *Allocation) {
 	if a.DataShards != 0 {
 		a.fullconsensus, a.consensusThreshold = a.getConsensuses()
 	}
-	sdkInitialized = true
+	client.SetSdkInitialized(true)
 
 	go func() {
 		for {
@@ -2393,7 +2393,7 @@ func getMockAuthTicket(t *testing.T) string {
 	}
 
 	a.InitAllocation()
-	sdkInitialized = true
+	client.SetSdkInitialized(true)
 	for i := 0; i < numBlobbers; i++ {
 		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
 			ID:      strconv.Itoa(i),

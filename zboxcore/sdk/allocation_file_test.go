@@ -896,7 +896,7 @@ func TestAllocation_RepairFile(t *testing.T) {
 			a.downloadProgressMap = make(map[string]*DownloadRequest)
 			a.mutex = &sync.Mutex{}
 			a.initialized = true
-			sdkInitialized = true
+			client.SetSdkInitialized(true)
 			for i := 0; i < tt.numBlobbers; i++ {
 				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
 					ID:      mockBlobberId + strconv.Itoa(i),

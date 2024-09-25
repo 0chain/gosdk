@@ -1,15 +1,12 @@
 package sdk
 
 import (
-	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"github.com/0chain/common/core/currency"
 	"github.com/0chain/errors"
-	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/logger"
-	"github.com/0chain/gosdk/core/zcncrypto"
 	"gopkg.in/natefinch/lumberjack.v2"
 	"io"
 	"math"
@@ -52,7 +49,6 @@ type StatusCallback interface {
 
 var (
 	numBlockDownloads         = 100
-	sdkInitialized            = false
 	networkWorkerTimerInHours = 1 //nolint:unused
 	singleClientMode          = false
 	shouldVerifyHash          = true
@@ -101,51 +97,6 @@ func SetLogFile(logFile string, verbose bool) {
 // GetLogger retrieves logger instance
 func GetLogger() *logger.Logger {
 	return &l.Logger
-}
-
-// InitStorageSDK Initialize the storage SDK
-//
-//   - walletJSON: Client's wallet JSON
-//   - blockWorker: Block worker URL (block worker refers to 0DNS)
-//   - chainID: ID of the blokcchain network
-//   - signatureScheme: Signature scheme that will be used for signing transactions
-//   - preferredBlobbers: List of preferred blobbers to use when creating an allocation. This is usually configured by the client in the configuration files
-//   - nonce: Initial nonce value for the transactions
-//   - fee: Preferred value for the transaction fee, just the first value is taken
-func InitStorageSDK(walletJSON string,
-	blockWorker, chainID, signatureScheme string,
-	preferredBlobbers []string,
-	nonce int64,
-	fee ...uint64) error {
-
-	wallet := zcncrypto.Wallet{}
-	err := json.Unmarshal([]byte(walletJSON), &wallet)
-	if err != nil {
-		return err
-	}
-
-	client.SetWallet(wallet)
-	client.SetSignatureScheme(signatureScheme)
-	client.SetNonce(nonce)
-	if len(fee) > 0 {
-		client.SetTxnFee(fee[0])
-	}
-
-	err = client.Init(context.Background(), conf.Config{
-		BlockWorker:       blockWorker,
-		SignatureScheme:   signatureScheme,
-		ChainID:           chainID,
-		PreferredBlobbers: preferredBlobbers,
-		MaxTxnQuery:       5,
-		QuerySleepTime:    5,
-		MinSubmit:         10,
-		MinConfirmation:   10,
-	})
-	if err != nil {
-		return err
-	}
-	sdkInitialized = true
-	return nil
 }
 
 type BackPool struct {
@@ -206,7 +157,7 @@ type StakePoolInfo struct {
 //   - providerType: provider type
 //   - providerID: provider ID
 func GetStakePoolInfo(providerType ProviderType, providerID string) (info *StakePoolInfo, err error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return nil, sdkNotInitialized
 	}
 
@@ -239,7 +190,7 @@ type StakePoolUserInfo struct {
 //   - offset: offset
 //   - limit: limit
 func GetStakePoolUserInfo(clientID string, offset, limit int) (info *StakePoolUserInfo, err error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return nil, sdkNotInitialized
 	}
 	if clientID == "" {
@@ -299,7 +250,7 @@ type ChallengePoolInfo struct {
 // GetChallengePoolInfo retrieve challenge pool info for given allocation.
 //   - allocID: allocation ID
 func GetChallengePoolInfo(allocID string) (info *ChallengePoolInfo, err error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return nil, sdkNotInitialized
 	}
 
@@ -323,7 +274,7 @@ func GetChallengePoolInfo(allocID string) (info *ChallengePoolInfo, err error) {
 
 // GetMptData retrieves mpt key data.
 func GetMptData(key string) ([]byte, error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return nil, sdkNotInitialized
 	}
 
@@ -518,7 +469,7 @@ func getBlobbersInternal(active, stakable bool, limit, offset int) (bs []*Blobbe
 //   - active: if true then only active blobbers are returned
 //   - stakable: if true then only stakable blobbers are returned
 func GetBlobbers(active, stakable bool) (bs []*Blobber, err error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return nil, sdkNotInitialized
 	}
 
@@ -552,7 +503,7 @@ func GetBlobbers(active, stakable bool) (bs []*Blobber, err error) {
 // GetBlobber retrieve blobber by id.
 //   - blobberID: the id of blobber
 func GetBlobber(blobberID string) (blob *Blobber, err error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return nil, sdkNotInitialized
 	}
 	var b []byte
@@ -577,7 +528,7 @@ func GetBlobber(blobberID string) (blob *Blobber, err error) {
 // GetValidator retrieve validator instance by id.
 //   - validatorID: the id of validator
 func GetValidator(validatorID string) (validator *Validator, err error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return nil, sdkNotInitialized
 	}
 	var b []byte
@@ -602,7 +553,7 @@ func GetValidator(validatorID string) (validator *Validator, err error) {
 // GetValidators returns list of validators.
 //   - stakable: if true then only stakable validators are returned
 func GetValidators(stakable bool) (validators []*Validator, err error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return nil, sdkNotInitialized
 	}
 	var b []byte
@@ -627,7 +578,7 @@ func GetValidators(stakable bool) (validators []*Validator, err error) {
 
 // GetClientEncryptedPublicKey - get the client's public key
 func GetClientEncryptedPublicKey() (string, error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return "", sdkNotInitialized
 	}
 	encScheme := encryption.NewEncryptionScheme()
@@ -644,7 +595,7 @@ func GetClientEncryptedPublicKey() (string, error) {
 //
 // returns the allocation instance and error if any
 func GetAllocationFromAuthTicket(authTicket string) (*Allocation, error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return nil, sdkNotInitialized
 	}
 	sEnc, err := base64.StdEncoding.DecodeString(authTicket)
@@ -665,7 +616,7 @@ func GetAllocationFromAuthTicket(authTicket string) (*Allocation, error) {
 //
 // returns the allocation instance and error if any
 func GetAllocation(allocationID string) (*Allocation, error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return nil, sdkNotInitialized
 	}
 	params := make(map[string]string)
@@ -762,7 +713,7 @@ func getAllocationsInternal(clientID string, limit, offset int) ([]*Allocation, 
 //
 // returns the list of allocations and error if any
 func GetAllocationsForClient(clientID string) ([]*Allocation, error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return nil, sdkNotInitialized
 	}
 	limit, offset := 20, 0
@@ -1005,7 +956,7 @@ func GetFreeAllocationBlobbers(request map[string]interface{}) ([]string, error)
 //
 // returns the hash of the transaction, the nonce of the transaction and an error if any.
 func AddFreeStorageAssigner(name, publicKey string, individualLimit, totalLimit float64) (string, int64, error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
 
@@ -1031,7 +982,7 @@ func AddFreeStorageAssigner(name, publicKey string, individualLimit, totalLimit 
 //
 // returns the hash of the transaction, the nonce of the transaction and an error if any.
 func FinalizeAllocation(allocID string) (hash string, nonce int64, err error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
 	var sn = transaction.SmartContractTxnData{
@@ -1048,7 +999,7 @@ func FinalizeAllocation(allocID string) (hash string, nonce int64, err error) {
 //
 // returns the hash of the transaction, the nonce of the transaction and an error if any.
 func CancelAllocation(allocID string) (hash string, nonce int64, err error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
 	var sn = transaction.SmartContractTxnData{
@@ -1074,7 +1025,7 @@ const (
 //   - providerId is the id of the provider.
 //   - providerType` is the type of the provider, either 3 for `ProviderBlobber` or 4 for `ProviderValidator.
 func KillProvider(providerId string, providerType ProviderType) (string, int64, error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
 
@@ -1100,7 +1051,7 @@ func KillProvider(providerId string, providerType ProviderType) (string, int64, 
 //   - providerId is the id of the provider.
 //   - providerType` is the type of the provider, either 3 for `ProviderBlobber` or 4 for `ProviderValidator.
 func ShutdownProvider(providerType ProviderType, providerID string) (string, int64, error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
 
@@ -1127,7 +1078,7 @@ func ShutdownProvider(providerType ProviderType, providerID string) (string, int
 //   - providerId is the id of the provider.
 //   - providerType is the type of the provider.
 func CollectRewards(providerId string, providerType ProviderType) (string, int64, error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
 
@@ -1167,7 +1118,7 @@ func CollectRewards(providerId string, providerType ProviderType) (string, int64
 //
 // returns the hash of the transaction, the nonce of the transaction and an error if any.
 func TransferAllocation(allocationId, newOwner, newOwnerPublicKey string) (string, int64, error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
 
@@ -1200,7 +1151,7 @@ func TransferAllocation(allocationId, newOwner, newOwnerPublicKey string) (strin
 // UpdateBlobberSettings updates the settings of a blobber (txn: `storagesc.update_blobber_settings`)
 //   - blob is the update blobber request inputs.
 func UpdateBlobberSettings(blob *UpdateBlobber) (resp string, nonce int64, err error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
 	var sn = transaction.SmartContractTxnData{
@@ -1214,7 +1165,7 @@ func UpdateBlobberSettings(blob *UpdateBlobber) (resp string, nonce int64, err e
 // UpdateValidatorSettings updates the settings of a validator (txn: `storagesc.update_validator_settings`)
 //   - v is the update validator request inputs.
 func UpdateValidatorSettings(v *UpdateValidator) (resp string, nonce int64, err error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
 
@@ -1229,7 +1180,7 @@ func UpdateValidatorSettings(v *UpdateValidator) (resp string, nonce int64, err 
 // ResetBlobberStats resets the stats of a blobber (txn: `storagesc.reset_blobber_stats`)
 //   - rbs is the reset blobber stats dto, contains the blobber id and its stats.
 func ResetBlobberStats(rbs *ResetBlobberStatsDto) (string, int64, error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
 
@@ -1242,7 +1193,7 @@ func ResetBlobberStats(rbs *ResetBlobberStatsDto) (string, int64, error) {
 }
 
 func ResetAllocationStats(allocationId string) (string, int64, error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
 
@@ -1274,7 +1225,7 @@ func storageSmartContractTxnValue(sn transaction.SmartContractTxnData, value uin
 }
 
 func CommitToFabric(metaTxnData, fabricConfigJSON string) (string, error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return "", sdkNotInitialized
 	}
 	var fabricConfig struct {
