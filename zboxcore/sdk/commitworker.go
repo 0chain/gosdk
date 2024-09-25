@@ -473,7 +473,7 @@ func (commitReq *CommitRequestV2) processCommit() {
 		return
 	}
 	elapsedGetRefPath := time.Since(now)
-
+	prevWeight := trie.Weight()
 	for _, change := range commitReq.changes {
 		if change == nil {
 			continue
@@ -499,7 +499,7 @@ func (commitReq *CommitRequestV2) processCommit() {
 		wg.Add(1)
 		go func(ind int) {
 			defer wg.Done()
-			err = commitReq.commitBlobber(rootHash, rootWeight, blobberPos, blobber)
+			err = commitReq.commitBlobber(rootHash, rootWeight, prevWeight, blobberPos, blobber)
 			if err != nil {
 				l.Logger.Error("Error committing to blobber", err)
 				errSlice[ind] = err
@@ -528,9 +528,8 @@ func (commitReq *CommitRequestV2) processCommit() {
 	commitReq.result = SuccessCommitResult()
 }
 
-func (req *CommitRequestV2) commitBlobber(rootHash []byte, rootWeight, changeIndex uint64, blobber *blockchain.StorageNode) (err error) {
+func (req *CommitRequestV2) commitBlobber(rootHash []byte, rootWeight, prevWeight, changeIndex uint64, blobber *blockchain.StorageNode) (err error) {
 	hasher := sha256.New()
-	var prevChainSize int64
 	if blobber.LatestWM != nil {
 		prevChainHash, err := hex.DecodeString(blobber.LatestWM.ChainHash)
 		if err != nil {
@@ -538,14 +537,13 @@ func (req *CommitRequestV2) commitBlobber(rootHash []byte, rootWeight, changeInd
 			return err
 		}
 		hasher.Write(prevChainHash) //nolint:errcheck
-		prevChainSize = numBlocks(blobber.LatestWM.ChainSize)
 	}
 	hasher.Write(rootHash) //nolint:errcheck
 	chainHash := hex.EncodeToString(hasher.Sum(nil))
 	allocationRoot := hex.EncodeToString(rootHash)
 	wm := &marker.WriteMarker{}
 	wm.AllocationRoot = allocationRoot
-	wm.Size = (int64(rootWeight) - prevChainSize) * CHUNK_SIZE
+	wm.Size = (int64(rootWeight) - int64(prevWeight)) * CHUNK_SIZE
 	wm.ChainHash = chainHash
 	wm.ChainSize = int64(rootWeight) * CHUNK_SIZE
 	if blobber.LatestWM != nil {
