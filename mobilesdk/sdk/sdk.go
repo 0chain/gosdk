@@ -124,12 +124,12 @@ func InitStorageSDK(clientJson string, configJson string) (*StorageSDK, error) {
 	l.Logger.Info(configObj.ChainID)
 	l.Logger.Info(configObj.SignatureScheme)
 	l.Logger.Info(configObj.PreferredBlobbers)
-	if err = sdk.InitStorageSDK(clientJson,
+	if err = client.InitSDK(clientJson,
 		configObj.BlockWorker,
 		configObj.ChainID,
 		configObj.SignatureScheme,
 		configObj.PreferredBlobbers,
-		0); err != nil {
+		0, false); err != nil {
 		l.Logger.Error(err)
 		return nil, err
 	}
