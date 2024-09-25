@@ -544,6 +544,7 @@ func (req *CommitRequestV2) commitBlobber(rootHash []byte, rootWeight, prevWeigh
 	wm := &marker.WriteMarker{}
 	wm.AllocationRoot = allocationRoot
 	wm.Size = (int64(rootWeight) - int64(prevWeight)) * CHUNK_SIZE
+	l.Logger.Debug("Committing to blobber."+blobber.Baseurl, " rootWeight ", rootWeight, " prevWeight ", prevWeight, " size ", wm.Size)
 	wm.ChainHash = chainHash
 	wm.ChainSize = int64(rootWeight) * CHUNK_SIZE
 	if blobber.LatestWM != nil {
