@@ -666,7 +666,7 @@ func getReferencePathV2(blobber *blockchain.StorageNode, allocationID, allocatio
 		if trie.Weight() != uint64(chainBlocks) {
 			return nil, errors.New("chain_length_mismatch", fmt.Sprintf("Expected chain length %d, got %d", chainBlocks, trie.Weight()))
 		}
-		if hex.EncodeToString(trie.Root()) != lR.LatestWM.AllocationRoot {
+		if hex.EncodeToString(trie.Root()) != lR.LatestWM.FileMetaRoot {
 			return nil, errors.New("allocation_root_mismatch", fmt.Sprintf("Expected allocation root %s, got %s", lR.LatestWM.AllocationRoot, hex.EncodeToString(trie.Root())))
 		}
 	}
