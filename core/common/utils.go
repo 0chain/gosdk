@@ -5,7 +5,11 @@ import (
 	"fmt"
 	"path"
 	"strings"
+
+	"github.com/valyala/bytebufferpool"
 )
+
+var MemPool bytebufferpool.Pool
 
 func GetPathFields(p string) ([]string, error) {
 	if p == "" || p == "/" {

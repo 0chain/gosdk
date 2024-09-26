@@ -47,10 +47,10 @@ type stakePoolRequest struct {
 
 type TransactionCommon interface {
 	// ExecuteSmartContract implements wrapper for smart contract function
-	ExecuteSmartContract(address, methodName string, input interface{}, val uint64, feeOpts ...FeeOption) (*transaction.Transaction, error)
+	ExecuteSmartContract(address, methodName string, input interface{}, val string, feeOpts ...FeeOption) (*transaction.Transaction, error)
 
 	// Send implements sending token to a given clientid
-	Send(toClientID string, val uint64, desc string) error
+	Send(toClientID string, val string, desc string) error
 
 	VestingAdd(ar VestingAddRequest, value string) error
 
@@ -341,27 +341,37 @@ func parseCoinStr(vs string) (uint64, error) {
 //   - cb: callback for transaction state
 //   - txnFee: Transaction fees (in SAS tokens)
 //   - nonce: latest nonce of current wallet. please set it with 0 if you don't know the latest value
-func NewTransaction(cb TransactionCallback, txnFee uint64, nonce int64) (TransactionScheme, error) {
-	err := CheckConfig()
+func NewTransaction(cb TransactionCallback, txnFee string, nonce int64) (TransactionScheme, error) {
+	txnFeeRaw, err := parseCoinStr(txnFee)
 	if err != nil {
 		return nil, err
 	}
+
+	err = CheckConfig()
+	if err != nil {
+		return nil, err
+	}
+
 	if _config.isSplitWallet {
 		if _config.authUrl == "" {
 			return nil, errors.New("", "auth url not set")
 		}
 		logging.Info("New transaction interface with auth")
-		return newTransactionWithAuth(cb, txnFee, nonce)
+		return newTransactionWithAuth(cb, txnFeeRaw, nonce)
 	}
 	logging.Info("New transaction interface")
-	t, err := newTransaction(cb, txnFee, nonce)
+	t, err := newTransaction(cb, txnFeeRaw, nonce)
 	return t, err
 }
 
 // ExecuteSmartContract prepare and send a smart contract transaction to the blockchain
-func (t *Transaction) ExecuteSmartContract(address, methodName string, input interface{}, val uint64, feeOpts ...FeeOption) (*transaction.Transaction, error) {
-	// t.createSmartContractTxn(address, methodName, input, val, opts...)
-	err := t.createSmartContractTxn(address, methodName, input, val)
+func (t *Transaction) ExecuteSmartContract(address, methodName string, input interface{}, val string, feeOpts ...FeeOption) (*transaction.Transaction, error) {
+	v, err := parseCoinStr(val)
+	if err != nil {
+		return nil, err
+	}
+
+	err = t.createSmartContractTxn(address, methodName, input, v)
 	if err != nil {
 		return nil, err
 	}
@@ -381,7 +391,12 @@ func (t *Transaction) setTransactionFee(fee uint64) error {
 }
 
 // Send to send a transaction to a given clientID
-func (t *Transaction) Send(toClientID string, val uint64, desc string) error {
+func (t *Transaction) Send(toClientID string, val string, desc string) error {
+	v, err := parseCoinStr(val)
+	if err != nil {
+		return nil
+	}
+
 	txnData, err := json.Marshal(SendTxnData{Note: desc})
 	if err != nil {
 		return errors.New("", "Could not serialize description to transaction_data")
@@ -389,7 +404,7 @@ func (t *Transaction) Send(toClientID string, val uint64, desc string) error {
 	go func() {
 		t.txn.TransactionType = transaction.TxnTypeSend
 		t.txn.ToClientID = toClientID
-		t.txn.Value = val
+		t.txn.Value = v
 		t.txn.TransactionData = string(txnData)
 		t.setNonceAndSubmit()
 	}()
