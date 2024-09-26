@@ -569,7 +569,7 @@ func (req *CommitRequestV2) commitBlobber(rootHash []byte, rootWeight, prevWeigh
 
 	err = submitWriteMarker(wmData, nil, blobber, req.connectionID, req.allocationObj.ID, req.allocationObj.Tx, req.allocationObj.StorageVersion)
 	if err != nil {
-		l.Logger.Error("Error submitting writemarker", err)
+		l.Logger.Error("Error submitting writemarker ", err)
 		return err
 	}
 	blobber.LatestWM = wm
@@ -601,8 +601,8 @@ func getFormWritter(connectionID string, wmData, fileIDMetaData []byte, body *by
 func getReferencePathV2(blobber *blockchain.StorageNode, allocationID, allocationTx, sig string, paths []string, success *bool, mu *sync.Mutex) (*wmpt.WeightedMerkleTrie, error) {
 	if len(paths) == 0 {
 		var node wmpt.Node
-		if blobber.LatestWM != nil {
-			decodedRoot, _ := hex.DecodeString(blobber.LatestWM.AllocationRoot)
+		if blobber.LatestWM != nil && len(blobber.LatestWM.FileMetaRoot) > 0 {
+			decodedRoot, _ := hex.DecodeString(blobber.LatestWM.FileMetaRoot)
 			node = wmpt.NewHashNode(decodedRoot, uint64(numBlocks(blobber.LatestWM.ChainSize)))
 		}
 		trie := wmpt.New(node, nil)

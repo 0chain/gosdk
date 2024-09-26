@@ -661,7 +661,7 @@ func (dop *DeleteOperation) ProcessChangeV2(trie *wmpt.WeightedMerkleTrie, chang
 	}
 	decodedKey, _ := hex.DecodeString(dop.lookupHash)
 	err := trie.Update(decodedKey, nil, 0)
-	if err != nil {
+	if err != nil && err != wmpt.ErrNotFound {
 		logger.Logger.Error("Error updating trie", err)
 		return err
 	}
