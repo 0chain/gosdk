@@ -505,7 +505,7 @@ func (commitReq *CommitRequestV2) processCommit() {
 				l.Logger.Error("Error committing to blobber", err)
 				errSlice[ind] = err
 				mu.Lock()
-				commitReq.commitMask = commitReq.commitMask.And(zboxutil.NewUint128(1).Lsh(pos).Not())
+				commitReq.commitMask = commitReq.commitMask.And(zboxutil.NewUint128(1).Lsh(blobberPos).Not())
 				mu.Unlock()
 				return
 			}
