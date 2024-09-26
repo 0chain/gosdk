@@ -60,28 +60,30 @@ type WasmWebWorker struct {
 }
 
 var (
-	workers = make(map[string]*WasmWebWorker)
+	workers      = make(map[string]*WasmWebWorker)
+	gZauthServer string
 )
 
-func NewWasmWebWorker(blobberID, blobberURL, clientID, clientKey, publicKey, privateKey, mnemonic string, isSplit bool) (*WasmWebWorker, bool, error) {
+func NewWasmWebWorker(blobberID, blobberURL, clientID, clientKey, peerPublicKey, publicKey, privateKey, mnemonic string, isSplit bool) (*WasmWebWorker, bool, error) {
 	created := false
 	_, ok := workers[blobberID]
 	if ok {
 		return workers[blobberID], created, nil
 	}
 
+	fmt.Println("New wasm web worker, zauth server:", gZauthServer)
 	w := &WasmWebWorker{
 		Name: blobberURL,
-		Env: []string{
-			"BLOBBER_URL=" + blobberURL,
+		Env: []string{"BLOBBER_URL=" + blobberURL,
 			"CLIENT_ID=" + clientID,
 			"CLIENT_KEY=" + clientKey,
+			"PEER_PUBLIC_KEY=" + peerPublicKey,
 			"PRIVATE_KEY=" + privateKey,
 			"MODE=worker",
 			"PUBLIC_KEY=" + publicKey,
-			"MNEMONIC=" + mnemonic,
 			"IS_SPLIT=" + strconv.FormatBool(isSplit),
-		},
+			"MNEMONIC=" + mnemonic,
+			"ZAUTH_SERVER=" + gZauthServer},
 		Path:        "zcn.wasm",
 		subscribers: make(map[string]chan worker.MessageEvent),
 	}
@@ -245,6 +247,10 @@ func (ww *WasmWebWorker) Terminate() {
 // Stops the listener and closes the channel when ctx is canceled.
 func (ww *WasmWebWorker) Listen(ctx context.Context) (<-chan worker.MessageEvent, error) {
 	return ww.worker.Listen(ctx)
+}
+
+func SetZauthServer(zauthServer string) {
+	gZauthServer = zauthServer
 }
 
 type PostWorker interface {

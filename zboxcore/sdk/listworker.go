@@ -29,6 +29,7 @@ type ListRequest struct {
 	blobbers           []*blockchain.StorageNode
 	remotefilepathhash string
 	remotefilepath     string
+	filename           string
 	authToken          *marker.AuthTicket
 	ctx                context.Context
 	forRepair          bool
@@ -45,6 +46,8 @@ type listResponse struct {
 	err         error
 }
 
+// ListResult a wrapper around the result of directory listing command.
+// It can represent a file or a directory.
 type ListResult struct {
 	Name                string `json:"name"`
 	Path                string `json:"path,omitempty"`
@@ -281,7 +284,7 @@ func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
 	return result, nil
 }
 
-// populateChildren calculates the children of a directory
+// populateChildren calculates the children of a directory and populates the list result.
 func (lr *ListResult) populateChildren(children []fileref.RefEntity, childResultMap map[string]*ListResult, selected map[string]*ListResult, req *ListRequest) {
 
 	for _, child := range children {

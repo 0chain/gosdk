@@ -22,6 +22,8 @@ import (
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
+	lru "github.com/hashicorp/golang-lru/v2"
+	"github.com/hashicorp/golang-lru/v2/simplelru"
 	"github.com/hitenjain14/fasthttp"
 )
 
@@ -33,6 +35,11 @@ const SLEEP_BETWEEN_RETRIES = 5
 // In percentage
 const consensusThresh = float32(25.0)
 
+// SCRestAPIHandler is a function type to handle the response from the SC Rest API
+//
+//	`response` - the response from the SC Rest API
+//	`numSharders` - the number of sharders that responded
+//	`err` - the error if any
 type SCRestAPIHandler func(response map[string][]byte, numSharders int, err error)
 
 type HttpClient interface {
@@ -46,8 +53,12 @@ type FastClient interface {
 var (
 	Client         HttpClient
 	FastHttpClient FastClient
-	hostLock       sync.RWMutex
 	log            logger.Logger
+	SignCache      simplelru.LRUCache[string, string]
+)
+
+const (
+	respBodyPoolLimit = 1024 * 1024 * 16 //16MB
 )
 
 func GetLogger() *logger.Logger {
@@ -169,14 +180,20 @@ func init() {
 			Concurrency:      4096,
 			DNSCacheDuration: time.Hour,
 		}).Dial,
-		ReadTimeout:         120 * time.Second,
-		WriteTimeout:        120 * time.Second,
+		ReadTimeout:         180 * time.Second,
+		WriteTimeout:        180 * time.Second,
 		MaxConnDuration:     45 * time.Second,
 		MaxResponseBodySize: 1024 * 1024 * 64, //64MB
 		MaxConnsPerHost:     1024,
 	}
+	fasthttp.SetBodySizePoolLimit(respBodyPoolLimit, respBodyPoolLimit)
 	envProxy.initialize()
 	log.Init(logger.DEBUG, "0box-sdk")
+	c, err := lru.New[string, string](1000)
+	if err != nil {
+		panic(err)
+	}
+	SignCache = c
 }
 
 func NewHTTPRequest(method string, url string, data []byte) (*http.Request, context.Context, context.CancelFunc, error) {
@@ -206,9 +223,14 @@ func setClientInfoWithSign(req *http.Request, sig, allocation, baseURL string) e
 	req.Header.Set(CLIENT_SIGNATURE_HEADER, sig)
 
 	hashData := allocation + baseURL
-	sig2, err := client.Sign(encryption.Hash(hashData))
-	if err != nil {
-		return err
+	sig2, ok := SignCache.Get(hashData)
+	if !ok {
+		var err error
+		sig2, err = client.Sign(encryption.Hash(hashData))
+		SignCache.Add(hashData, sig2)
+		if err != nil {
+			return err
+		}
 	}
 	req.Header.Set(CLIENT_SIGNATURE_HEADER_V2, sig2)
 	return nil
@@ -330,7 +352,7 @@ func NewRefsRequest(baseUrl, allocationID, allocationTx, sig, path, pathHash, au
 
 	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 
-	if err := setClientInfoWithSign(req, sig, allocationID, baseUrl); err != nil {
+	if err := setClientInfoWithSign(req, sig, allocationTx, baseUrl); err != nil {
 		return nil, err
 	}
 
@@ -594,7 +616,7 @@ func NewFastUploadRequest(baseURL, allocationID string, allocationTx string, bod
 	req.SetBodyRaw(body)
 
 	// set header: X-App-Client-Signature
-	if err := setFastClientInfoWithSign(req, allocationTx); err != nil {
+	if err := setFastClientInfoWithSign(req, allocationTx, baseURL); err != nil {
 		return nil, err
 	}
 
@@ -602,7 +624,7 @@ func NewFastUploadRequest(baseURL, allocationID string, allocationTx string, bod
 	return req, nil
 }
 
-func setFastClientInfoWithSign(req *fasthttp.Request, allocation string) error {
+func setFastClientInfoWithSign(req *fasthttp.Request, allocation, baseURL string) error {
 	req.Header.Set("X-App-Client-ID", client.GetClientID())
 	req.Header.Set("X-App-Client-Key", client.GetClientPublicKey())
 
@@ -611,7 +633,16 @@ func setFastClientInfoWithSign(req *fasthttp.Request, allocation string) error {
 		return err
 	}
 	req.Header.Set(CLIENT_SIGNATURE_HEADER, sign)
-
+	hashData := allocation + baseURL
+	sig2, ok := SignCache.Get(hashData)
+	if !ok {
+		sig2, err = client.Sign(encryption.Hash(hashData))
+		SignCache.Add(hashData, sig2)
+		if err != nil {
+			return err
+		}
+	}
+	req.Header.Set(CLIENT_SIGNATURE_HEADER_V2, sig2)
 	return nil
 }
 
@@ -752,16 +783,12 @@ func NewFastDownloadRequest(baseUrl, allocationID, allocationTx string) (*fastht
 		return nil, err
 	}
 
-	// url := fmt.Sprintf("%s%s%s", baseUrl, DOWNLOAD_ENDPOINT, allocation)
-	// req, err := http.NewRequest(http.MethodGet, u.String(), nil)
-	// if err != nil {
-	// 	return nil, err
-	// }
 	req := fasthttp.AcquireRequest()
-	req.SetRequestURI(u.String())
-	req.Header.Set("X-App-Client-ID", client.GetClientID())
-	req.Header.Set("X-App-Client-Key", client.GetClientPublicKey())
 
+	if err := setFastClientInfoWithSign(req, allocationTx, baseUrl); err != nil {
+		return nil, err
+	}
+	req.SetRequestURI(u.String())
 	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 
 	return req, nil
@@ -901,6 +928,11 @@ func NewRollbackRequest(baseUrl, allocationID string, allocationTx string, body 
 	return req, nil
 }
 
+// MakeSCRestAPICall makes a rest api call to the sharders.
+//   - scAddress is the address of the smart contract
+//   - relativePath is the relative path of the api
+//   - params is the query parameters
+//   - handler is the handler function to handle the response
 func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]string, handler SCRestAPIHandler) ([]byte, error) {
 	numSharders := len(blockchain.GetSharders())
 	sharders := blockchain.GetSharders()

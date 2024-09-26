@@ -49,7 +49,6 @@ func (wm *WriteMarker) GetHash() string {
 func (wm *WriteMarker) Sign() error {
 	var err error
 	wm.Signature, err = client.Sign(wm.GetHash())
-	fmt.Println("auth - wm.Signature:", wm.Signature)
 	return err
 }
 

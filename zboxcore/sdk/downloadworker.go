@@ -46,6 +46,8 @@ var (
 
 type DownloadRequestOption func(dr *DownloadRequest)
 
+// WithDownloadProgressStorer set download progress storer of download request options.
+//   - storer: download progress storer instance, used to store download progress.
 func WithDownloadProgressStorer(storer DownloadProgressStorer) DownloadRequestOption {
 	return func(dr *DownloadRequest) {
 		dr.downloadStorer = storer
@@ -111,6 +113,7 @@ type DownloadRequest struct {
 	workdir            string
 	downloadQueue      downloadQueue // Always initialize this queue with max time taken
 	isResume           bool
+	isEnterprise       bool
 }
 
 type downloadPriority struct {
@@ -501,7 +504,7 @@ func (req *DownloadRequest) processDownload() {
 	}
 
 	if req.shouldVerify {
-		if req.authTicket != nil && req.encryptedKey != "" {
+		if req.isEnterprise || (req.authTicket != nil && req.encryptedKey != "") {
 			req.shouldVerify = false
 		}
 	}
@@ -604,12 +607,6 @@ func (req *DownloadRequest) processDownload() {
 								hashWg.Done()
 							}()
 						}
-					} else {
-						hashWg.Add(1)
-						go func() {
-							writeData(actualFileHasher, data, req.datashards, int(remainingSize)) //nolint
-							hashWg.Done()
-						}()
 					}
 
 					totalWritten, err := writeData(req.fileHandler, data, req.datashards, int(remainingSize))
@@ -657,12 +654,6 @@ func (req *DownloadRequest) processDownload() {
 										hashWg.Done()
 									}()
 								}
-							} else {
-								hashWg.Add(1)
-								go func() {
-									writeData(actualFileHasher, block.data, req.datashards, int(remainingSize)) //nolint
-									hashWg.Done()
-								}()
 							}
 
 							totalWritten, err := writeData(req.fileHandler, block.data, req.datashards, int(remainingSize))
@@ -1218,26 +1209,27 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 		if selected.fileref.ActualFileHashSignature != fRef.ActualFileHashSignature {
 			continue
 		}
+		if !req.isEnterprise {
+			isValid, err := sys.VerifyWith(
+				req.allocOwnerPubKey,
+				fRef.ValidationRootSignature,
+				fRef.ActualFileHashSignature+fRef.ValidationRoot,
+			)
+			if err != nil {
+				l.Logger.Error(err, "allocOwnerPubKey: ", req.allocOwnerPubKey, " validationRootSignature: ", fRef.ValidationRootSignature, " actualFileHashSignature: ", fRef.ActualFileHashSignature, " validationRoot: ", fRef.ValidationRoot)
+				continue
+			}
+			if !isValid {
+				l.Logger.Error("invalid validation root signature")
+				continue
+			}
 
-		isValid, err := sys.VerifyWith(
-			req.allocOwnerPubKey,
-			fRef.ValidationRootSignature,
-			fRef.ActualFileHashSignature+fRef.ValidationRoot,
-		)
-		if err != nil {
-			l.Logger.Error(err, "allocOwnerPubKey: ", req.allocOwnerPubKey, " validationRootSignature: ", fRef.ValidationRootSignature, " actualFileHashSignature: ", fRef.ActualFileHashSignature, " validationRoot: ", fRef.ValidationRoot)
-			continue
-		}
-		if !isValid {
-			l.Logger.Error("invalid validation root signature")
-			continue
-		}
-
-		blobber := req.blobbers[fmr.blobberIdx]
-		vr, _ := hex.DecodeString(fmr.fileref.ValidationRoot)
-		req.validationRootMap[blobber.ID] = &blobberFile{
-			size:           fmr.fileref.Size,
-			validationRoot: vr,
+			blobber := req.blobbers[fmr.blobberIdx]
+			vr, _ := hex.DecodeString(fmr.fileref.ValidationRoot)
+			req.validationRootMap[blobber.ID] = &blobberFile{
+				size:           fmr.fileref.Size,
+				validationRoot: vr,
+			}
 		}
 		shift := zboxutil.NewUint128(1).Lsh(uint64(fmr.blobberIdx))
 		foundMask = foundMask.Or(shift)
@@ -1340,6 +1332,12 @@ func (req *DownloadRequest) Seek(offset int64, whence int) (int64, error) {
 
 func writeData(dest io.Writer, data [][][]byte, dataShards, remaining int) (int, error) {
 	total := 0
+	if len(data) == 0 {
+		return 0, errors.New(InvalidWhenceValue, "data cannot be empty")
+	}
+	if dest == nil {
+		return 0, errors.New(InvalidWhenceValue, "destination writer cannot be nil")
+	}
 	for i := 0; i < len(data); i++ {
 		for j := 0; j < dataShards; j++ {
 			if len(data[i][j]) <= remaining {

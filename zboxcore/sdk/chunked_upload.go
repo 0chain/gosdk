@@ -33,7 +33,7 @@ import (
 )
 
 const (
-	DefaultUploadTimeOut = 120 * time.Second
+	DefaultUploadTimeOut = 180 * time.Second
 )
 
 var (
@@ -218,7 +218,7 @@ func CreateChunkedUpload(
 	}
 
 	if su.progressStorer == nil && shouldSaveProgress {
-		su.progressStorer = createFsChunkedUploadProgress(context.Background())
+		su.progressStorer = createFsChunkedUploadProgress(su.ctx)
 	}
 
 	su.loadProgress()
@@ -302,11 +302,6 @@ func CreateChunkedUpload(
 }
 
 func calculateWorkersAndRequests(dataShards, totalShards, chunknumber int) (uploadWorkers int, uploadRequests int) {
-	if IsWasm {
-		uploadWorkers = 1
-		uploadRequests = 2
-		return
-	}
 	if totalShards < 4 {
 		uploadWorkers = 4
 	} else {
@@ -320,7 +315,7 @@ func calculateWorkersAndRequests(dataShards, totalShards, chunknumber int) (uplo
 		}
 	}
 
-	if chunknumber*dataShards < 640 {
+	if chunknumber*dataShards < 640 && !IsWasm {
 		uploadRequests = 4
 	} else {
 		uploadRequests = 2
@@ -368,10 +363,10 @@ func (su *ChunkedUpload) removeProgress() {
 	}
 }
 
-func (su *ChunkedUpload) updateProgress(chunkIndex int) {
+func (su *ChunkedUpload) updateProgress(chunkIndex int, upMask zboxutil.Uint128) {
 	if su.progressStorer != nil {
 		if chunkIndex > su.progress.ChunkIndex {
-			su.progressStorer.Update(su.progress.ID, chunkIndex)
+			su.progressStorer.Update(su.progress.ID, chunkIndex, upMask)
 		}
 	}
 }
@@ -728,7 +723,7 @@ func (su *ChunkedUpload) uploadToBlobbers(uploadData UploadData) error {
 	if uploadData.uploadLength > 0 {
 		index := uploadData.chunkEndIndex
 		uploadLength := uploadData.uploadLength
-		go su.updateProgress(index)
+		go su.updateProgress(index, su.uploadMask)
 		if su.statusCallback != nil {
 			su.statusCallback.InProgress(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, int(atomic.AddInt64(&su.progress.UploadLength, uploadLength)), nil)
 		}

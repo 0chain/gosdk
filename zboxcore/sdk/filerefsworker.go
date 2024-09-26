@@ -150,6 +150,7 @@ func (o *ObjectTreeRequest) getFileRefs(bUrl string, respChan chan *oTreeRespons
 		o.allocationID,
 		o.allocationTx,
 		o.sig,
+		o.allocationTx,
 		o.remotefilepath,
 		o.pathHash,
 		o.authToken,
@@ -209,6 +210,7 @@ type ORef struct {
 	ID        int64            `json:"id"`
 	CreatedAt common.Timestamp `json:"created_at"`
 	UpdatedAt common.Timestamp `json:"updated_at"`
+	Err       error            `json:"-"`
 }
 
 type SimilarField struct {

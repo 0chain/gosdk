@@ -9,8 +9,15 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/zboxcore/encryption"
+	"github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/klauspost/reedsolomon"
+	"github.com/valyala/bytebufferpool"
+)
+
+var (
+	uploadPool   bytebufferpool.Pool
+	formDataPool bytebufferpool.Pool
 )
 
 type ChunkedUploadChunkReader interface {
@@ -52,10 +59,11 @@ type chunkedUploadChunkReader struct {
 	totalChunkDataSizePerRead int64
 
 	//fileShardsDataBuffer
-	fileShardsDataBuffer []byte
+	fileShardsDataBuffer *bytebufferpool.ByteBuffer
 
 	//offset
-	offset int64
+	offset      int64
+	chunkNumber int64
 
 	// nextChunkIndex next index for reading
 	nextChunkIndex int
@@ -110,6 +118,7 @@ func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards, 
 		hasher:          hasher,
 		hasherDataChan:  make(chan []byte, 3*chunkNumber),
 		hasherWG:        sync.WaitGroup{},
+		chunkNumber:     int64(chunkNumber),
 	}
 
 	if r.encryptOnUpload {
@@ -122,13 +131,6 @@ func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards, 
 
 	r.chunkDataSizePerRead = r.chunkDataSize * int64(dataShards)
 	r.totalChunkDataSizePerRead = r.chunkDataSize * int64(dataShards+parityShards)
-	totalDataSize := r.totalChunkDataSizePerRead * int64(chunkNumber)
-	readSize := r.chunkDataSizePerRead * int64(chunkNumber)
-	if size > 0 && readSize > size {
-		chunkNum := (size + r.chunkDataSizePerRead - 1) / r.chunkDataSizePerRead
-		totalDataSize = r.totalChunkDataSizePerRead * chunkNum
-	}
-	r.fileShardsDataBuffer = make([]byte, 0, totalDataSize)
 	if CurrentMode == UploadModeHigh {
 		r.hasherWG.Add(1)
 		go r.hashData()
@@ -165,6 +167,23 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 		return nil, errors.Throw(constants.ErrInvalidParameter, "r")
 	}
 
+	if r.fileShardsDataBuffer == nil {
+		totalDataSize := r.totalChunkDataSizePerRead * r.chunkNumber
+		readSize := r.chunkDataSizePerRead * r.chunkNumber
+		if r.size > 0 && readSize > r.size {
+			chunkNum := (r.size + r.chunkDataSizePerRead - 1) / r.chunkDataSizePerRead
+			totalDataSize = r.totalChunkDataSizePerRead * chunkNum
+		}
+		buf := uploadPool.Get()
+		if cap(buf.B) < int(totalDataSize) {
+			logger.Logger.Debug("creating buffer with size: ", " totalDataSize: ", totalDataSize)
+			buf.B = make([]byte, 0, totalDataSize)
+		} else {
+			logger.Logger.Debug("reusing buffer with size: ", cap(buf.B), " totalDataSize: ", totalDataSize, " len: ", len(buf.B))
+		}
+		r.fileShardsDataBuffer = buf
+	}
+
 	chunk := &ChunkData{
 		Index:   r.nextChunkIndex,
 		IsFinal: false,
@@ -172,7 +191,7 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 		ReadSize:     0,
 		FragmentSize: 0,
 	}
-	chunkBytes := r.fileShardsDataBuffer[r.offset : r.offset+r.chunkDataSizePerRead : r.offset+r.totalChunkDataSizePerRead]
+	chunkBytes := r.fileShardsDataBuffer.B[r.offset : r.offset+r.chunkDataSizePerRead : r.offset+r.totalChunkDataSizePerRead]
 	var (
 		readLen int
 		err     error
@@ -296,8 +315,9 @@ func (r *chunkedUploadChunkReader) Close() {
 	r.closeOnce.Do(func() {
 		close(r.hasherDataChan)
 		r.hasherWG.Wait()
+		uploadPool.Put(r.fileShardsDataBuffer)
 	})
-	r.fileShardsDataBuffer = nil
+
 }
 
 func (r *chunkedUploadChunkReader) GetFileHash() (string, error) {

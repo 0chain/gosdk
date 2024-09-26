@@ -21,6 +21,7 @@ const NETWORK_ENDPOINT = "/network"
 
 var networkWorkerTimerInHours = 1
 
+// Network details of the network nodes
 type Network struct {
 	Miners   []string `json:"miners"`
 	Sharders []string `json:"sharders"`
@@ -116,6 +117,7 @@ func GetNetworkDetails() (*Network, error) {
 
 }
 
+// GetNetwork retrieve the registered network details.
 func GetNetwork() *Network {
 	return &Network{
 		Miners:   _config.chain.Miners,
@@ -123,6 +125,9 @@ func GetNetwork() *Network {
 	}
 }
 
+// SetNetwork set the global network details for the SDK, including urls of the miners and sharders, which are the nodes of the network.
+//   - miners: miner urls.
+//   - sharders: sharder urls.
 func SetNetwork(miners []string, sharders []string) {
 	_config.chain.Miners = miners
 	_config.chain.Sharders = sharders
@@ -144,6 +149,7 @@ func SetNetwork(miners []string, sharders []string) {
 	})
 }
 
+// GetNetworkJSON retrieve the registered network details in JSON format.
 func GetNetworkJSON() string {
 	network := GetNetwork()
 	networkBytes, _ := json.Marshal(network)

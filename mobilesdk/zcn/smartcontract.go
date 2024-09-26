@@ -16,7 +16,7 @@ func Faucet(methodName, jsonInput string, zcnToken float64) (string, error) {
 	return ExecuteSmartContract(zcncore.FaucetSmartContractAddress, methodName, jsonInput, zcncore.ConvertToValue(zcnToken))
 }
 
-func ExecuteSmartContract(address, methodName, input string, sasToken string) (string, error) {
+func ExecuteSmartContract(address, methodName, input, sasToken string) (string, error) {
 	wg := &sync.WaitGroup{}
 	cb := &transactionCallback{wg: wg}
 	txn, err := zcncore.NewTransaction(cb, "0", 0)
@@ -25,7 +25,8 @@ func ExecuteSmartContract(address, methodName, input string, sasToken string) (s
 	}
 
 	wg.Add(1)
-	err = txn.ExecuteSmartContract(address, methodName, input, sasToken)
+
+	_, err = txn.ExecuteSmartContract(address, methodName, input, sasToken)
 	if err != nil {
 		return "", err
 

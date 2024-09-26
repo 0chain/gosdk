@@ -5,7 +5,6 @@ package sdk
 
 import (
 	"fmt"
-	"strconv"
 	"sync"
 
 	"errors"
@@ -49,23 +48,23 @@ func (cb *transactionCallback) OnAuthComplete(t *zcncore.Transaction, status int
 }
 
 // ExecuteSmartContract executes the smart contract
-func ExecuteSmartContract(address string, sn transaction.SmartContractTxnData, value, fee uint64) (*transaction.Transaction, error) {
+func ExecuteSmartContract(address string, sn transaction.SmartContractTxnData, value, fee string) (*transaction.Transaction, error) {
 	wg := &sync.WaitGroup{}
 	cb := &transactionCallback{wg: wg}
-	txn, err := zcncore.NewTransaction(cb, strconv.FormatUint(fee, 10), 0)
+	txn, err := zcncore.NewTransaction(cb, fee, 0)
 	if err != nil {
 		return nil, err
 	}
 
 	wg.Add(1)
-	err = txn.ExecuteSmartContract(address, sn.Name, sn.InputArgs, strconv.FormatUint(value, 10))
+	t, err := txn.ExecuteSmartContract(address, sn.Name, sn.InputArgs, value)
 	if err != nil {
 		return nil, err
 	}
 
-	msg := fmt.Sprintf("Executing transaction '%s' with hash %s ", sn.Name, txn.Hash())
+	msg := fmt.Sprintf("Executing transaction '%s' with hash %s ", sn.Name, t.Hash)
 	l.Logger.Info(msg)
-	l.Logger.Info("estimated txn fee: ", txn.Fee())
+	l.Logger.Info("estimated txn fee: ", t.TransactionFee)
 
 	wg.Wait()
 
@@ -97,16 +96,16 @@ func ExecuteSmartContract(address string, sn transaction.SmartContractTxnData, v
 }
 
 // ExecuteSmartContractSend create send transaction to transfer tokens from the caller to target address
-func ExecuteSmartContractSend(to string, tokens, fee uint64, desc string) (string, error) {
+func ExecuteSmartContractSend(to, tokens, fee, desc string) (string, error) {
 	wg := &sync.WaitGroup{}
 	cb := &transactionCallback{wg: wg}
-	txn, err := zcncore.NewTransaction(cb, strconv.FormatUint(fee, 10), 0)
+	txn, err := zcncore.NewTransaction(cb, fee, 0)
 	if err != nil {
 		return "", err
 	}
 
 	wg.Add(1)
-	err = txn.Send(to, strconv.FormatUint(tokens, 10), desc)
+	err = txn.Send(to, tokens, desc)
 	if err == nil {
 		wg.Wait()
 	} else {

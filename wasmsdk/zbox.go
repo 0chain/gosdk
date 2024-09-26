@@ -19,6 +19,7 @@ func setZbox(host, appType string) {
 
 }
 
+// getCsrfToken gets csrf token from 0box api
 func getCsrfToken() (string, error) {
 	if zboxApiClient == nil {
 		return "", ErrZboxApiNotInitialized
@@ -26,23 +27,18 @@ func getCsrfToken() (string, error) {
 	return zboxApiClient.GetCsrfToken(context.TODO())
 }
 
-func createJwtSession(phoneNumber string) (int64, error) {
-	if zboxApiClient == nil {
-		return 0, ErrZboxApiNotInitialized
-	}
-	return zboxApiClient.CreateJwtSession(context.TODO(), phoneNumber)
-}
-
-func createJwtToken(phoneNumber string, jwtSessionID int64, otp string) (string, error) {
+// createJwtToken creates JWT token with the help of the provided userID.
+func createJwtToken(userID, accessToken string) (string, error) {
 	if zboxApiClient == nil {
 		return "", ErrZboxApiNotInitialized
 	}
-	return zboxApiClient.CreateJwtToken(context.TODO(), phoneNumber, jwtSessionID, otp)
+	return zboxApiClient.CreateJwtToken(context.TODO(), userID, accessToken)
 }
 
-func refreshJwtToken(phoneNumber string, token string) (string, error) {
+// refreshJwtToken refreshes JWT token for the given userID.
+func refreshJwtToken(userID string, token string) (string, error) {
 	if zboxApiClient == nil {
 		return "", ErrZboxApiNotInitialized
 	}
-	return zboxApiClient.RefreshJwtToken(context.TODO(), phoneNumber, token)
+	return zboxApiClient.RefreshJwtToken(context.TODO(), userID, token)
 }

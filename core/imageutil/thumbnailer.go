@@ -1,3 +1,4 @@
+// Provides helper methods and data structures to work with images.
 package imageutil
 
 import (

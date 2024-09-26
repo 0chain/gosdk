@@ -26,6 +26,7 @@ import (
 	"github.com/hack-pad/go-webworkers/worker"
 	"github.com/hack-pad/safejs"
 	"github.com/hitenjain14/fasthttp"
+	"github.com/valyala/bytebufferpool"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -158,7 +159,17 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		obj := js.Global().Get("Object").New()
 		jsbridge.SetMsgType(&obj, jsbridge.MsgTypeUpload)
 		obj.Set("fileMeta", fileMetaUint8)
-		obj.Set("formInfo", formInfoUint8)
+		if formInfo.OnlyHash && su.progress.UploadMask.And(zboxutil.NewUint128(1).Lsh(pos)).Equals64(0) {
+			//check if pos is set in upload mask in progress
+			formInfo.OnlyHash = false
+			noHashFormInfoJSON, _ := json.Marshal(formInfo)
+			noHashFormInfoUint8 := js.Global().Get("Uint8Array").New(len(noHashFormInfoJSON))
+			js.CopyBytesToJS(noHashFormInfoUint8, noHashFormInfoJSON)
+			obj.Set("formInfo", noHashFormInfoUint8)
+			formInfo.OnlyHash = true //reset to true
+		} else {
+			obj.Set("formInfo", formInfoUint8)
+		}
 
 		if len(thumbnailChunkData) > 0 {
 			thumbnailChunkDataUint8 := js.Global().Get("Uint8Array").New(len(thumbnailChunkData))
@@ -322,7 +333,7 @@ func (su *ChunkedUpload) listen(allEventChan []eventChanWorker, respChan chan er
 	}
 	for chunkEndIndex, count := range su.processMap {
 		if count >= su.consensus.consensusThresh {
-			su.updateProgress(chunkEndIndex)
+			su.updateProgress(chunkEndIndex, su.uploadMask)
 			delete(su.processMap, chunkEndIndex)
 		}
 	}
@@ -646,8 +657,18 @@ func sendUploadRequest(dataBuffers []*bytes.Buffer, contentSlice []string, blobb
 				}()
 
 				if shouldContinue {
+					if i == 2 {
+						if err != nil {
+							logger.Logger.Error("Retry limit exceeded for upload: ", err)
+						}
+						return errors.Throw(constants.ErrBadRequest, "Retry limit exceeded for upload")
+					}
 					continue
 				}
+				buff := &bytebufferpool.ByteBuffer{
+					B: dataBuffers[ind].Bytes(),
+				}
+				formDataPool.Put(buff)
 
 				if err != nil {
 					return err
@@ -670,10 +691,8 @@ func (su *ChunkedUpload) startProcessor() {
 	su.listenChan = make(chan struct{}, su.uploadWorkers)
 	su.processMap = make(map[int]int)
 	su.uploadWG.Add(1)
-
 	go func() {
 		respChan := make(chan error, 1)
-		// allEventChan := make([]chan worker.MessageEvent, len(su.blobbers))
 		allEventChan := make([]eventChanWorker, len(su.blobbers))
 		var pos uint64
 		for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {

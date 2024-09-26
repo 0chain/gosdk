@@ -23,6 +23,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/hitenjain14/fasthttp"
+	"github.com/valyala/bytebufferpool"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -127,6 +128,10 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 				if shouldContinue {
 					continue
 				}
+				buff := &bytebufferpool.ByteBuffer{
+					B: dataBuffers[ind].Bytes(),
+				}
+				formDataPool.Put(buff)
 
 				if err != nil {
 					return err
@@ -181,7 +186,6 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 	}()
 
 	rootRef, latestWM, size, fileIDMeta, err := sb.processWriteMarker(ctx, su)
-
 	if err != nil {
 		logger.Logger.Error(err)
 		return err

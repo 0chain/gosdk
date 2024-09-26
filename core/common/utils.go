@@ -1,10 +1,15 @@
+// Provides the data structures and methods to work with the common data structures.
 package common
 
 import (
 	"fmt"
 	"path"
 	"strings"
+
+	"github.com/valyala/bytebufferpool"
 )
+
+var MemPool bytebufferpool.Pool
 
 func GetPathFields(p string) ([]string, error) {
 	if p == "" || p == "/" {

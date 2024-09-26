@@ -24,6 +24,10 @@ var (
 	cachedAllocations, _ = lru.New[string, *cachedAllocation](100)
 )
 
+// getAllocation get allocation from cache
+// if not found in cache, fetch from blockchain
+// and store in cache
+//   - allocationId is the allocation id
 func getAllocation(allocationId string) (*sdk.Allocation, error) {
 
 	it, ok := cachedAllocations.Get(allocationId)
@@ -53,6 +57,8 @@ func clearAllocation(allocationID string) {
 	cachedAllocations.Remove(allocationID)
 }
 
+// reloadAllocation reload allocation from blockchain and update cache
+//   - allocationID is the allocation id
 func reloadAllocation(allocationID string) (*sdk.Allocation, error) {
 	a, err := sdk.GetAllocation(allocationID)
 	if err != nil {
@@ -80,7 +86,15 @@ func addWebWorkers(alloc *sdk.Allocation) (err error) {
 	respChan := make(chan error, len(alloc.Blobbers))
 	respRequired := 0
 	for _, blober := range alloc.Blobbers {
-		weborker, workerCreated, _ := jsbridge.NewWasmWebWorker(blober.ID, blober.Baseurl, c.ClientID, c.ClientKey, c.Keys[0].PublicKey, c.Keys[0].PrivateKey, c.Mnemonic, isSplit) //nolint:errcheck
+		weborker, workerCreated, _ := jsbridge.NewWasmWebWorker(blober.ID,
+			blober.Baseurl,
+			c.ClientID,
+			c.ClientKey,
+			c.PeerPublicKey,
+			c.Keys[0].PublicKey,
+			c.Keys[0].PrivateKey,
+			c.Mnemonic,
+			c.IsSplit) //nolint:errcheck
 		if workerCreated {
 			respRequired++
 			go func() {

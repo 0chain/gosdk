@@ -87,7 +87,7 @@ func ExecuteSmartContract(address string, sn transaction.SmartContractTxnData, v
 
 	switch txn.GetVerifyConfirmationStatus() {
 	case zcncore.ChargeableError:
-		return nil, fmt.Errorf("smartcontract: %s", txn.GetVerifyOutput())
+		return t, errors.New(txn.GetVerifyOutput())
 	case zcncore.Success:
 		return txn.Txn(), nil
 	}
