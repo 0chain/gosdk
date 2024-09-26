@@ -11,7 +11,6 @@ import (
 	"github.com/0chain/gosdk/wasmsdk/jsbridge"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/sdk"
-	"github.com/0chain/gosdk/zcncore"
 	lru "github.com/hashicorp/golang-lru/v2"
 )
 
@@ -80,7 +79,6 @@ func addWebWorkers(alloc *sdk.Allocation) (err error) {
 	if c == nil || len(c.Keys) == 0 {
 		return
 	}
-	isSplit := zcncore.IsWalletSplit()
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	respChan := make(chan error, len(alloc.Blobbers))

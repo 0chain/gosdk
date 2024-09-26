@@ -9,10 +9,6 @@ import (
 	"os"
 	"strconv"
 
-	"fmt"
-	"os"
-	"strconv"
-
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/wasmsdk/jsbridge"
 	"github.com/0chain/gosdk/zboxcore/client"
