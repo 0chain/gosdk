@@ -19,6 +19,7 @@ import (
 	"github.com/0chain/common/core/util/wmpt"
 	"github.com/0chain/errors"
 	thrown "github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
@@ -540,9 +541,9 @@ func (req *CommitRequestV2) commitBlobber(rootHash []byte, rootWeight, prevWeigh
 	}
 	hasher.Write(rootHash) //nolint:errcheck
 	chainHash := hex.EncodeToString(hasher.Sum(nil))
-	allocationRoot := hex.EncodeToString(rootHash)
+	fileMetaRoot := hex.EncodeToString(rootHash)
 	wm := &marker.WriteMarker{}
-	wm.AllocationRoot = allocationRoot
+	wm.AllocationRoot = encryption.Hash(fileMetaRoot + req.allocationObj.ID)
 	wm.Size = (int64(rootWeight) - int64(prevWeight)) * CHUNK_SIZE
 	l.Logger.Debug("Committing to blobber."+blobber.Baseurl, " rootWeight ", rootWeight, " prevWeight ", prevWeight, " size ", wm.Size)
 	wm.ChainHash = chainHash
@@ -553,7 +554,7 @@ func (req *CommitRequestV2) commitBlobber(rootHash []byte, rootWeight, prevWeigh
 	wm.BlobberID = blobber.ID
 	wm.Timestamp = req.timestamp
 	wm.AllocationID = req.allocationObj.ID
-	wm.FileMetaRoot = allocationRoot
+	wm.FileMetaRoot = fileMetaRoot
 	wm.ClientID = client.GetClientID()
 	err = wm.Sign()
 	if err != nil {
@@ -572,7 +573,7 @@ func (req *CommitRequestV2) commitBlobber(rootHash []byte, rootWeight, prevWeigh
 		return err
 	}
 	blobber.LatestWM = wm
-	blobber.AllocationRoot = allocationRoot
+	blobber.AllocationRoot = wm.AllocationRoot
 	return
 }
 
