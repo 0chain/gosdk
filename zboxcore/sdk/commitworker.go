@@ -539,13 +539,13 @@ func (req *CommitRequestV2) commitBlobber(rootHash []byte, rootWeight, prevWeigh
 		}
 		hasher.Write(prevChainHash) //nolint:errcheck
 	}
-	hasher.Write(rootHash) //nolint:errcheck
-	chainHash := hex.EncodeToString(hasher.Sum(nil))
 	fileMetaRoot := hex.EncodeToString(rootHash)
 	wm := &marker.WriteMarker{}
 	wm.AllocationRoot = encryption.Hash(fileMetaRoot + req.allocationObj.ID)
 	wm.Size = (int64(rootWeight) - int64(prevWeight)) * CHUNK_SIZE
-	l.Logger.Debug("Committing to blobber."+blobber.Baseurl, " rootWeight ", rootWeight, " prevWeight ", prevWeight, " size ", wm.Size)
+	decodedAllocationRoot, _ := hex.DecodeString(wm.AllocationRoot)
+	hasher.Write(decodedAllocationRoot) //nolint:errcheck
+	chainHash := hex.EncodeToString(hasher.Sum(nil))
 	wm.ChainHash = chainHash
 	wm.ChainSize = int64(rootWeight) * CHUNK_SIZE
 	if blobber.LatestWM != nil {
