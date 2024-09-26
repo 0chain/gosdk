@@ -14,8 +14,6 @@ import (
 	"github.com/0chain/gosdk/core/node"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/fileref"
-	"github.com/0chain/gosdk/zboxcore/logger"
-	"go.uber.org/zap"
 
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/encryption"
@@ -26,12 +24,6 @@ import (
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 )
 
-// compiler time check
-var (
-	_ TransactionScheme = (*Transaction)(nil)
-	_ TransactionScheme = (*TransactionWithAuth)(nil)
-)
-
 var (
 	errNetwork          = errors.New("", "network error. host not reachable")
 	errUserRejected     = errors.New("", "rejected by user")
@@ -39,51 +31,6 @@ var (
 	errAuthTimeout      = errors.New("", "auth timed out")
 	errAddSignature     = errors.New("", "error adding signature")
 )
-
-// TransactionScheme implements few methods for block chain.
-//
-// Note: to be buildable on MacOSX all arguments should have names.
-type TransactionScheme interface {
-	TransactionCommon
-	// SetTransactionCallback implements storing the callback
-	// used to call after the transaction or verification is completed
-	SetTransactionCallback(cb TransactionCallback) error
-	// StoreData implements store the data to blockchain
-	StoreData(data string) error
-	// ExecuteFaucetSCWallet implements the `Faucet Smart contract` for a given wallet
-	ExecuteFaucetSCWallet(walletStr string, methodName string, input []byte) error
-	// GetTransactionHash implements retrieval of hash of the submitted transaction
-	GetTransactionHash() string
-	// SetTransactionHash implements verify a previous transaction status
-	SetTransactionHash(hash string) error
-	// SetTransactionNonce implements method to set the transaction nonce
-	SetTransactionNonce(txnNonce int64) error
-	// Verify implements verify the transaction
-	Verify() error
-	// GetVerifyOutput implements the verification output from sharders
-	GetVerifyOutput() string
-	// GetTransactionError implements error string in case of transaction failure
-	GetTransactionError() string
-	// GetVerifyError implements error string in case of verify failure error
-	GetVerifyError() string
-	// GetTransactionNonce returns nonce
-	GetTransactionNonce() int64
-
-	// Output of transaction.
-	Output() []byte
-
-	// Hash Transaction status regardless of status
-	Hash() string
-
-	// Vesting SC
-
-	VestingTrigger(poolID string) error
-	VestingStop(sr *VestingStopRequest) error
-	VestingUnlock(poolID string) error
-	VestingDelete(poolID string) error
-
-	// Miner SC
-}
 
 // TransactionCallback needs to be implemented by the caller for transaction related APIs
 type TransactionCallback interface {
@@ -448,16 +395,6 @@ func (t *Transaction) submitTxn() {
 	}
 }
 
-func newTransaction(cb TransactionCallback, txnFee uint64, nonce int64) (*Transaction, error) {
-	t := &Transaction{}
-	t.txn = transaction.NewTransactionEntity(_config.wallet.ClientID, _config.chain.ChainID, _config.wallet.ClientKey, nonce)
-	t.txnStatus, t.verifyStatus = StatusUnknown, StatusUnknown
-	t.txnCb = cb
-	t.txn.TransactionNonce = nonce
-	t.txn.TransactionFee = txnFee
-	return t, nil
-}
-
 // SetTransactionCallback implements storing the callback
 func (t *Transaction) SetTransactionCallback(cb TransactionCallback) error {
 	if t.txnStatus != StatusUnknown {
@@ -501,58 +438,6 @@ func WithNoEstimateFee() FeeOption {
 	return func(o *TxnFeeOption) {
 		o.noEstimateFee = true
 	}
-}
-
-func (t *Transaction) createSmartContractTxn(address, methodName string, input interface{}, value uint64, opts ...FeeOption) error {
-	sn := transaction.SmartContractTxnData{Name: methodName, InputArgs: input}
-	snBytes, err := json.Marshal(sn)
-	if err != nil {
-		return errors.Wrap(err, "create smart contract failed due to invalid data")
-	}
-
-	t.txn.TransactionType = transaction.TxnTypeSmartContract
-	t.txn.ToClientID = address
-	t.txn.TransactionData = string(snBytes)
-	t.txn.Value = value
-
-	if t.txn.TransactionFee > 0 {
-		return nil
-	}
-
-	tf := &TxnFeeOption{}
-	for _, opt := range opts {
-		opt(tf)
-	}
-
-	if tf.noEstimateFee {
-		return nil
-	}
-
-	// TODO: check if transaction is exempt to avoid unnecessary fee estimation
-	minFee, err := transaction.EstimateFee(t.txn, _config.chain.Miners, 0.2)
-	if err != nil {
-		logger.Logger.Error("failed estimate txn fee",
-			zap.Any("txn", t.txn.Hash),
-			zap.Error(err))
-		return err
-	}
-
-	t.txn.TransactionFee = minFee
-
-	return nil
-}
-
-func (t *Transaction) createFaucetSCWallet(walletStr string, methodName string, input []byte) (*zcncrypto.Wallet, error) {
-	w, err := getWallet(walletStr)
-	if err != nil {
-		fmt.Printf("Error while parsing the wallet. %v\n", err)
-		return nil, err
-	}
-	err = t.createSmartContractTxn(FaucetSmartContractAddress, methodName, input, 0)
-	if err != nil {
-		return nil, err
-	}
-	return w, nil
 }
 
 // ExecuteFaucetSCWallet implements the Faucet Smart contract for a given wallet
@@ -828,61 +713,9 @@ type vestingRequest struct {
 	PoolID common.Key `json:"pool_id"`
 }
 
-func (t *Transaction) vestingPoolTxn(function string, poolID string,
-	value uint64) error {
-
-	return t.createSmartContractTxn(VestingSmartContractAddress,
-		function, vestingRequest{PoolID: common.Key(poolID)}, value)
-}
-
-func (t *Transaction) VestingTrigger(poolID string) (err error) {
-
-	err = t.vestingPoolTxn(transaction.VESTING_TRIGGER, poolID, 0)
-	if err != nil {
-		logging.Error(err)
-		return
-	}
-	go func() { t.setNonceAndSubmit() }()
-	return
-}
-
 type VestingStopRequest struct {
 	PoolID      string `json:"pool_id"`
 	Destination string `json:"destination"`
-}
-
-func (t *Transaction) VestingStop(sr *VestingStopRequest) (err error) {
-
-	err = t.createSmartContractTxn(VestingSmartContractAddress,
-		transaction.VESTING_STOP, sr, 0)
-	if err != nil {
-		logging.Error(err)
-		return
-	}
-	go func() { t.setNonceAndSubmit() }()
-	return
-}
-
-func (t *Transaction) VestingUnlock(poolID string) (err error) {
-
-	err = t.vestingPoolTxn(transaction.VESTING_UNLOCK, poolID, 0)
-	if err != nil {
-		logging.Error(err)
-		return
-	}
-	go func() { t.setNonceAndSubmit() }()
-	return
-}
-
-func (t *Transaction) VestingDelete(poolID string) (err error) {
-
-	err = t.vestingPoolTxn(transaction.VESTING_DELETE, poolID, 0)
-	if err != nil {
-		logging.Error(err)
-		return
-	}
-	go func() { t.setNonceAndSubmit() }()
-	return
 }
 
 type scCollectReward struct {

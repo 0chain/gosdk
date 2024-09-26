@@ -26,7 +26,7 @@ func ExecuteSmartContract(address, methodName, input, sasToken string) (string, 
 
 	wg.Add(1)
 
-	_, err = txn.ExecuteSmartContract(address, methodName, input, sasToken)
+	err = txn.ExecuteSmartContract(address, methodName, input, sasToken)
 	if err != nil {
 		return "", err
 
