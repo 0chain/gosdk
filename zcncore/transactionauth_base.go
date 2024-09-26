@@ -23,13 +23,6 @@ func (ta *TransactionWithAuth) SetTransactionNonce(txnNonce int64) error {
 	return ta.t.SetTransactionNonce(txnNonce)
 }
 
-func newTransactionWithAuth(cb TransactionCallback, txnFee uint64, nonce int64) (*TransactionWithAuth, error) {
-	ta := &TransactionWithAuth{}
-	var err error
-	ta.t, err = newTransaction(cb, txnFee, nonce)
-	return ta, err
-}
-
 func (ta *TransactionWithAuth) getAuthorize() (*transaction.Transaction, error) {
 	ta.t.txn.PublicKey = _config.wallet.ClientKey
 	err := ta.t.txn.ComputeHashAndSign(SignFn)
@@ -197,52 +190,6 @@ func (ta *TransactionWithAuth) Output() []byte {
 // GetTransactionNonce returns nonce
 func (ta *TransactionWithAuth) GetTransactionNonce() int64 {
 	return ta.t.txn.TransactionNonce
-}
-
-// ========================================================================== //
-//                                vesting pool                                //
-// ========================================================================== //
-
-func (ta *TransactionWithAuth) VestingTrigger(poolID string) (err error) {
-	err = ta.t.vestingPoolTxn(transaction.VESTING_TRIGGER, poolID, 0)
-	if err != nil {
-		logging.Error(err)
-		return
-	}
-	go func() { ta.submitTxn() }()
-	return
-}
-
-func (ta *TransactionWithAuth) VestingStop(sr *VestingStopRequest) (err error) {
-	err = ta.t.createSmartContractTxn(VestingSmartContractAddress,
-		transaction.VESTING_STOP, sr, 0)
-	if err != nil {
-		logging.Error(err)
-		return
-	}
-	go func() { ta.submitTxn() }()
-	return
-}
-
-func (ta *TransactionWithAuth) VestingUnlock(poolID string) (err error) {
-
-	err = ta.t.vestingPoolTxn(transaction.VESTING_UNLOCK, poolID, 0)
-	if err != nil {
-		logging.Error(err)
-		return
-	}
-	go func() { ta.submitTxn() }()
-	return
-}
-
-func (ta *TransactionWithAuth) VestingDelete(poolID string) (err error) {
-	err = ta.t.vestingPoolTxn(transaction.VESTING_DELETE, poolID, 0)
-	if err != nil {
-		logging.Error(err)
-		return
-	}
-	go func() { ta.submitTxn() }()
-	return
 }
 
 //
