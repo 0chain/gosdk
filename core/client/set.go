@@ -206,23 +206,25 @@ func GetClient() *zcncrypto.Wallet {
 func InitSDK(walletJSON string,
 	blockWorker, chainID, signatureScheme string,
 	preferredBlobbers []string,
-	nonce int64, isSplitWallet bool,
+	nonce int64, isSplitWallet, addWallet bool,
 	fee ...uint64) error {
 
-	wallet := zcncrypto.Wallet{}
-	err := json.Unmarshal([]byte(walletJSON), &wallet)
-	if err != nil {
-		return err
+	if addWallet {
+		wallet := zcncrypto.Wallet{}
+		err := json.Unmarshal([]byte(walletJSON), &wallet)
+		if err != nil {
+			return err
+		}
+
+		SetWallet(wallet)
+		SetSignatureScheme(signatureScheme)
+		SetNonce(nonce)
+		if len(fee) > 0 {
+			SetTxnFee(fee[0])
+		}
 	}
 
-	SetWallet(wallet)
-	SetSignatureScheme(signatureScheme)
-	SetNonce(nonce)
-	if len(fee) > 0 {
-		SetTxnFee(fee[0])
-	}
-
-	err = Init(context.Background(), conf.Config{
+	err := Init(context.Background(), conf.Config{
 		BlockWorker:       blockWorker,
 		SignatureScheme:   signatureScheme,
 		ChainID:           chainID,

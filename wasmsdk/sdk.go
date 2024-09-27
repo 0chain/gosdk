@@ -8,18 +8,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/0chain/gosdk/core/client"
-	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/imageutil"
 	"github.com/0chain/gosdk/core/logger"
-	"github.com/0chain/gosdk/core/zcncrypto"
-	"github.com/0chain/gosdk/wasmsdk/jsbridge"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk/zcncore"
 
 	"io"
 	"os"
-	"strconv"
 )
 
 var CreateObjectURL func(buf []byte, mimeType string) string
@@ -34,43 +30,16 @@ var CreateObjectURL func(buf []byte, mimeType string) string
 //   - zboxHost is the url of the 0box service
 //   - zboxAppType is the application type of the 0box service
 //   - sharderconsensous is the number of sharders to reach consensus
-func initSDKs(walletJson, chainID, blockWorker, signatureScheme string,
+func initSDKs(chainID, blockWorker, signatureScheme string,
 	minConfirmation, minSubmit, confirmationChainLength int,
 	zboxHost, zboxAppType string, sharderconsensous int, isSplit bool) error {
 
 	zboxApiClient.SetRequest(zboxHost, zboxAppType)
 
-	clientConf, err := conf.GetClientConfig()
-	if err != nil {
-		return err
-	}
-	err = client.InitSDK(walletJson, blockWorker, chainID, signatureScheme, nil, 0, !isSplit && clientConf.IsSplitWallet)
+	err := client.InitSDK("{}", blockWorker, chainID, signatureScheme, nil, 0, false, false)
 	if err != nil {
 		fmt.Println("wasm: InitStorageSDK ", err)
 		return err
-	}
-
-	wallet := zcncrypto.Wallet{}
-	err = json.Unmarshal([]byte(walletJson), &wallet)
-	if err != nil {
-		return err
-	}
-
-	mode := os.Getenv("MODE")
-	zboxApiClient.SetWallet(wallet.ClientID, wallet.Keys[0].PrivateKey, wallet.ClientKey)
-	if mode == "" { // main thread, need to notify the web worker to update wallet
-		// notify the web worker to update wallet
-		if err := jsbridge.PostMessageToAllWorkers(jsbridge.MsgTypeUpdateWallet, map[string]string{
-			"client_id":       wallet.ClientID,
-			"client_key":      wallet.ClientKey,
-			"peer_public_key": wallet.PeerPublicKey,
-			"public_key":      wallet.ClientKey,
-			"private_key":     wallet.Keys[0].PrivateKey,
-			"mnemonic":        wallet.Mnemonic,
-			"is_split":        strconv.FormatBool(wallet.IsSplit),
-		}); err != nil {
-			return err
-		}
 	}
 
 	sdk.SetWasm()
