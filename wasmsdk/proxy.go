@@ -81,11 +81,7 @@ func main() {
 						return "", fmt.Errorf("failed to sign with split key: %v", err)
 					}
 
-					data, err := json.Marshal(struct {
-						Hash      string `json:"hash"`
-						Signature string `json:"signature"`
-						ClientID  string `json:"client_id"`
-					}{
+					data, err := json.Marshal(zcncore.AuthMessage{
 						Hash:      hash,
 						Signature: sig,
 						ClientID:  client.GetClient().ClientID,
@@ -369,11 +365,7 @@ func main() {
 						return "", fmt.Errorf("failed to sign with split key: %v", err)
 					}
 
-					data, err := json.Marshal(struct {
-						Hash      string `json:"hash"`
-						Signature string `json:"signature"`
-						ClientID  string `json:"client_id"`
-					}{
+					data, err := json.Marshal(zcncore.AuthMessage{
 						Hash:      hash,
 						Signature: sig,
 						ClientID:  client.GetClient().ClientID,

@@ -43,13 +43,13 @@ func registerZauthServer(serverAddr string) {
 }
 
 // zvaultNewWallet generates new split wallet
-func zvaultNewWallet(serverAddr, token string) (string, error) {
-	return zcncore.CallZvaultNewWalletString(serverAddr, token, "")
+func zvaultNewWallet(serverAddr, token string, roles []string) (string, error) {
+	return zcncore.CallZvaultNewWalletString(serverAddr, token, "", nil)
 }
 
 // zvaultNewSplit generates new split wallet from existing clientID
-func zvaultNewSplit(clientID, serverAddr, token string) (string, error) {
-	return zcncore.CallZvaultNewWalletString(serverAddr, token, clientID)
+func zvaultNewSplit(clientID, serverAddr, token string, roles []string) (string, error) {
+	return zcncore.CallZvaultNewWalletString(serverAddr, token, clientID, roles)
 }
 
 func zvaultStoreKey(serverAddr, token, privateKey string) (string, error) {
@@ -92,7 +92,8 @@ func registerAuthCommon(this js.Value, args []js.Value) interface{} {
 }
 
 // authResponse Publishes the response to the authorization request.
-// 		`response` is the response to the authorization request.
+//
+//	`response` is the response to the authorization request.
 func authResponse(response string) {
 	authResponseC <- response
 }
