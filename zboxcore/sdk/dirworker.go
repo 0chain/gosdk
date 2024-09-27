@@ -310,13 +310,17 @@ func (dirOp *DirOperation) Process(allocObj *Allocation, connectionID string) ([
 		fullconsensus:   dR.fullconsensus,
 	}
 
-	_ = dR.ProcessWithBlobbers(allocObj)
+	existCount := dR.ProcessWithBlobbers(allocObj)
 	dirOp.alreadyExists = dR.alreadyExists
 
 	if !dR.isConsensusOk() {
 		return nil, dR.dirMask, errors.New("consensus_not_met", "directory creation failed due to consensus not met")
 	}
-	return refs, dR.dirMask, nil
+	var err error
+	if allocObj.StorageVersion == StorageV2 && existCount >= dR.consensusThresh {
+		err = errNoChange
+	}
+	return refs, dR.dirMask, err
 
 }
 
