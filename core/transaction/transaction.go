@@ -1,6 +1,3 @@
-//go:build !mobile
-// +build !mobile
-
 package transaction
 
 // Transaction entity that encapsulates the transaction related data and meta data
