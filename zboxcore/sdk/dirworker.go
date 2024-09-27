@@ -306,8 +306,8 @@ func (dirOp *DirOperation) Process(allocObj *Allocation, connectionID string) ([
 	}
 	dR.Consensus = Consensus{
 		RWMutex:         &sync.RWMutex{},
-		consensusThresh: dR.consensusThresh,
-		fullconsensus:   dR.fullconsensus,
+		consensusThresh: dirOp.consensusThresh,
+		fullconsensus:   dirOp.fullconsensus,
 	}
 
 	existCount := dR.ProcessWithBlobbers(allocObj)
