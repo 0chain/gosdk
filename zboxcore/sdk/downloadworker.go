@@ -607,12 +607,6 @@ func (req *DownloadRequest) processDownload() {
 								hashWg.Done()
 							}()
 						}
-					} else {
-						hashWg.Add(1)
-						go func() {
-							writeData(actualFileHasher, data, req.datashards, int(remainingSize)) //nolint
-							hashWg.Done()
-						}()
 					}
 
 					totalWritten, err := writeData(req.fileHandler, data, req.datashards, int(remainingSize))
@@ -660,12 +654,6 @@ func (req *DownloadRequest) processDownload() {
 										hashWg.Done()
 									}()
 								}
-							} else {
-								hashWg.Add(1)
-								go func() {
-									writeData(actualFileHasher, block.data, req.datashards, int(remainingSize)) //nolint
-									hashWg.Done()
-								}()
 							}
 
 							totalWritten, err := writeData(req.fileHandler, block.data, req.datashards, int(remainingSize))
@@ -1344,6 +1332,12 @@ func (req *DownloadRequest) Seek(offset int64, whence int) (int64, error) {
 
 func writeData(dest io.Writer, data [][][]byte, dataShards, remaining int) (int, error) {
 	total := 0
+	if len(data) == 0 {
+		return 0, errors.New(InvalidWhenceValue, "data cannot be empty")
+	}
+	if dest == nil {
+		return 0, errors.New(InvalidWhenceValue, "destination writer cannot be nil")
+	}
 	for i := 0; i < len(data); i++ {
 		for j := 0; j < dataShards; j++ {
 			if len(data[i][j]) <= remaining {
