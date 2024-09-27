@@ -164,14 +164,20 @@ func CallZvaultNewWalletString(serverAddr, token, clientID string, roles []strin
 		endpoint = endpoint + "/" + clientID
 	}
 
-	data, err := json.Marshal(newWalletRequest{
-		Roles: roles,
-	})
-	if err != nil {
-		return "", errors.Wrap(err, "failed to serialize request")
+	var body io.Reader
+
+	if roles != nil {
+		data, err := json.Marshal(newWalletRequest{
+			Roles: roles,
+		})
+		if err != nil {
+			return "", errors.Wrap(err, "failed to serialize request")
+		}
+
+		body = bytes.NewReader(data)
 	}
 
-	req, err := http.NewRequest("POST", endpoint, bytes.NewReader(data))
+	req, err := http.NewRequest("POST", endpoint, body)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to create HTTP request")
 	}

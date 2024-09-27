@@ -82,7 +82,7 @@ func main() {
 						return "", fmt.Errorf("failed to sign with split key: %v", err)
 					}
 
-					data, err := json.Marshal(zauth.AuthMessage{
+					data, err := json.Marshal(zcncore.AuthMessage{
 						Hash:      hash,
 						Signature: sig,
 						ClientID:  client.GetClient().ClientID,
@@ -379,7 +379,7 @@ func main() {
 						return "", fmt.Errorf("failed to sign with split key: %v", err)
 					}
 
-					data, err := json.Marshal(zauth.AuthMessage{
+					data, err := json.Marshal(zcncore.AuthMessage{
 						Hash:      hash,
 						Signature: sig,
 						ClientID:  client.GetClient().ClientID,
