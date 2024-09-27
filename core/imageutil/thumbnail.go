@@ -1,13 +1,13 @@
 package imageutil
 
 import (
-	"bytes"
 	"context"
 	_ "embed"
 	"fmt"
 
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/tetratelabs/wazero"
+	"github.com/tetratelabs/wazero/api"
 	"github.com/tetratelabs/wazero/imports/wasi_snapshot_preview1"
 )
 
@@ -15,12 +15,12 @@ var (
 	//go:embed image_rs/image_rs.wasm
 	imageWasm []byte
 
-	imageRs    *ImageRs
-	logging    *logger.Logger
+	imageRs *ImageRs
+	logging *logger.Logger
 )
 
 const (
-	DefWidth = 120
+	DefWidth  = 120
 	DefHeight = 90
 )
 
@@ -39,9 +39,10 @@ func Thumbnail(img []byte, width, height int) ([]byte, error) {
 }
 
 type ImageRs struct {
-	ctx              context.Context
-	runtime          wazero.Runtime
-	compiledMod      wazero.CompiledModule
+	ctx         context.Context
+	runtime     wazero.Runtime
+	compiledMod wazero.CompiledModule
+	apiMod      api.Module
 }
 
 func NewImageRs() (*ImageRs, error) {
@@ -52,23 +53,22 @@ func NewImageRs() (*ImageRs, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error compiling imageWasm: %v", err)
 	}
+	apiMod, err := runtime.InstantiateModule(ctx, compiledMod, wazero.NewModuleConfig())
+	if err != nil {
+		return nil, fmt.Errorf("failed to instantiate module: %v", err)
+	}
 	return &ImageRs{
-		ctx:              ctx,
-		runtime:          runtime,
-		compiledMod:      compiledMod,
+		ctx:         ctx,
+		runtime:     runtime,
+		compiledMod: compiledMod,
+		apiMod:      apiMod,
 	}, nil
 }
 
 func (i *ImageRs) Convert(img []byte, width, height int) ([]byte, error) {
-	var errW bytes.Buffer
-	mod, err := i.runtime.InstantiateModule(i.ctx, i.compiledMod, wazero.NewModuleConfig().WithStderr(&errW))
-	if err != nil {
-		return nil, fmt.Errorf("failed to instantiate module: %v", err)
-	}
-
-	allocate := mod.ExportedFunction("allocate")
-	deallocate := mod.ExportedFunction("deallocate")
-	thumbnail := mod.ExportedFunction("thumbnail")
+	allocate := i.apiMod.ExportedFunction("allocate")
+	deallocate := i.apiMod.ExportedFunction("deallocate")
+	thumbnail := i.apiMod.ExportedFunction("thumbnail")
 
 	imgLen := len(img)
 	results, err := allocate.Call(i.ctx, uint64(imgLen))
@@ -83,9 +83,9 @@ func (i *ImageRs) Convert(img []byte, width, height int) ([]byte, error) {
 		}
 	}()
 
-	if !mod.Memory().Write(uint32(ptr), img) {
+	if !i.apiMod.Memory().Write(uint32(ptr), img) {
 		return nil, fmt.Errorf("Memory.Write(%d, %d) out of range of memory size %d",
-			ptr, imgLen, mod.Memory().Size())
+			ptr, imgLen, i.apiMod.Memory().Size())
 	}
 
 	ptrSize, err := thumbnail.Call(i.ctx, ptr, uint64(imgLen), uint64(width), uint64(height))
@@ -101,14 +101,10 @@ func (i *ImageRs) Convert(img []byte, width, height int) ([]byte, error) {
 		}
 	}()
 
-	res, ok := mod.Memory().Read(thumbnailPtr, thumbnailSize)
+	res, ok := i.apiMod.Memory().Read(thumbnailPtr, thumbnailSize)
 	if !ok {
 		return nil, fmt.Errorf("Memory.Read(%d, %d) out of range of memory size %d",
-			thumbnailPtr, thumbnailSize, mod.Memory().Size())
-	}
-
-	if len(res) == 0 {
-		return nil, fmt.Errorf("error occurred : %v", errW.String())
+			thumbnailPtr, thumbnailSize, i.apiMod.Memory().Size())
 	}
 
 	return res, nil

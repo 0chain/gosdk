@@ -963,6 +963,15 @@
           try {
             const fileBytes = await readBytes(file);
             const res = await thumbnail_js(fileBytes, width, height);
+            if (res.length === 0) {
+              var div = document.createElement("div");
+              var text = document.createElement("p");
+              text.innerText = `${i}: ${file.name} - Unsupported`;
+              div.setAttribute("class", "thumbnailImage");
+              div.appendChild(text);
+              document.getElementById("thumbnailImages").appendChild(div);
+              continue;
+            }
             
             var div = document.createElement("div");
             var text = document.createElement("p");

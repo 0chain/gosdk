@@ -13,20 +13,20 @@ import (
 )
 
 var (
-	bmpPath = filepath.Join("test_data", "input.bmp")
-	// ddsPath = filepath.Join("test_data", "input.dds")
-	exrPath = filepath.Join("test_data", "input.exr")
-	gifPath = filepath.Join("test_data", "input.gif")
-	// hdrPath = filepath.Join("test_data", "input.hdr")
-	icoPath = filepath.Join("test_data", "input.ico")
+	bmpPath  = filepath.Join("test_data", "input.bmp")
+	ddsPath  = filepath.Join("test_data", "input.dds") // unsupported
+	exrPath  = filepath.Join("test_data", "input.exr")
+	gifPath  = filepath.Join("test_data", "input.gif")
+	hdrPath  = filepath.Join("test_data", "input.hdr") // unsupported
+	icoPath  = filepath.Join("test_data", "input.ico")
 	jfifPath = filepath.Join("test_data", "input.jfif")
-	jpePath = filepath.Join("test_data", "input.jpe")
+	jpePath  = filepath.Join("test_data", "input.jpe")
 	jpegPath = filepath.Join("test_data", "input.jpeg")
-	jpgPath = filepath.Join("test_data", "input.jpg")
-	jpsPath = filepath.Join("test_data", "input.jps")
-	pngPath = filepath.Join("test_data", "input.png")
-	pnmPath = filepath.Join("test_data", "input.pnm")
-	// tgaPath = filepath.Join("test_data", "input.tga")
+	jpgPath  = filepath.Join("test_data", "input.jpg")
+	jpsPath  = filepath.Join("test_data", "input.jps")
+	pngPath  = filepath.Join("test_data", "input.png")
+	pnmPath  = filepath.Join("test_data", "input.pnm")
+	tgaPath  = filepath.Join("test_data", "input.tga") // unsupported
 	tiffPath = filepath.Join("test_data", "input.tiff")
 	webpPath = filepath.Join("test_data", "input.webp")
 )
@@ -39,7 +39,7 @@ func TestThumbnail(t *testing.T) {
 		height   int
 	}
 
-	inpData := []inp {
+	inpData := []inp{
 		{
 			// bmp file
 			filePath: bmpPath, width: 200, height: 300,
@@ -107,9 +107,52 @@ func TestThumbnail(t *testing.T) {
 	}
 }
 
+func TestThumbnail_generate_failure(t *testing.T) {
+
+	type inp struct {
+		filePath string
+		width    int
+		height   int
+	}
+
+	inpData := []inp{
+		{
+			// dds file
+			filePath: ddsPath, width: 200, height: 300,
+		},
+		{
+			// hdr file
+			filePath: hdrPath, width: 100, height: 200,
+		},
+		{
+			// tga file
+			filePath: tgaPath, width: 200, height: 200,
+		},
+	}
+
+	for _, i := range inpData {
+		t.Logf("image: %v", i.filePath)
+		buf, err := os.ReadFile(i.filePath)
+		require.Nilf(t, err, "err reading file %s : %v", i.filePath, err)
+		res, err := imageutil.Thumbnail(buf, i.width, i.height)
+		require.Nilf(t, err, "err generating thumbnail: %v", err)
+		require.Empty(t, res, "resulting thumbnail should be empty")
+	}
+
+	t.Logf("test success for supported format: %v", webpPath)
+	buf, err := os.ReadFile(webpPath)
+	require.Nilf(t, err, "err reading file %s : %v", webpPath, err)
+	res, err := imageutil.Thumbnail(buf, 200, 200)
+	require.Nilf(t, err, "err generating thumbnail: %v", err)
+	require.NotEmpty(t, res, "resulting thumbnail shouldn't be empty")
+	_, format, err := image.Decode(bytes.NewReader(res))
+	require.Nilf(t, err, "err decoding image: %v", err)
+	require.Equal(t, "jpeg", format, "format mismatch; result format: jpeg, image format: %v", format)
+}
+
 func BenchmarkThumbnail(b *testing.B) {
 	type inp struct {
-		name 	string
+		name     string
 		filePath string
 		width    int
 		height   int
@@ -232,12 +275,12 @@ func BenchmarkThumbnail(b *testing.B) {
 		require.Nilf(b, err, "err reading file %s : %v", iData.filePath, err)
 		var res []byte
 		b.Run(iData.name, func(b *testing.B) {
-			for i:=0; i<b.N; i++ {
+			for i := 0; i < b.N; i++ {
 				res, err = imageutil.Thumbnail(buf, iData.width, iData.height)
 				require.Nilf(b, err, "convert failed with err : %v", err)
 			}
 		})
-		b.Logf("file size: %v in KB\n", float32(len(buf)) / float32(1024))
-		b.Logf("thumbnail size: %v in KB\n", float32(len(res)) / float32(1024))
+		b.Logf("file size: %v in KB\n", float32(len(buf))/float32(1024))
+		b.Logf("thumbnail size: %v in KB\n", float32(len(res))/float32(1024))
 	}
 }

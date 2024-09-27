@@ -16,8 +16,7 @@ pub fn thumbnail(img_bytes: &[u8], width: u32, height: u32) -> Vec<u8> {
     if !image_rs.is_err() {
         return image_rs.unwrap();
     }
-    let default_img = include_bytes!("file-icon.png");
-    return thumbnail_image_rs(default_img, width, height).unwrap();
+    vec![]
 }
 
 pub fn thumbnail_image_rs(img_bytes: &[u8], width: u32, height: u32) -> Result<Vec<u8>, image::ImageError> {
