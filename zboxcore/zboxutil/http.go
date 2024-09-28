@@ -227,11 +227,12 @@ func setClientInfoWithSign(req *http.Request, sig, allocation, baseURL string) e
 	if !ok {
 		var err error
 		sig2, err = client.Sign(encryption.Hash(hashData))
-		SignCache.Add(hashData, sig2)
 		if err != nil {
 			return err
 		}
+		SignCache.Add(hashData, sig2)
 	}
+
 	req.Header.Set(CLIENT_SIGNATURE_HEADER_V2, sig2)
 	return nil
 }
