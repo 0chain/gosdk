@@ -111,6 +111,7 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 		go func(sharder string) {
 			defer wg.Done()
 			urlString := fmt.Sprintf("%v/%v%v%v", sharder, restApiUrl, scAddress, relativePath)
+			fmt.Println(urlString)
 			urlObj, err := url.Parse(urlString)
 			if err != nil {
 				log.Println(err)
