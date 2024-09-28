@@ -16,9 +16,21 @@ import (
 )
 
 func setWallet(clientID, clientKey, peerPublicKey, publicKey, privateKey, mnemonic string, isSplit bool) error {
+	fmt.Println("Set Wallet called")
+	fmt.Println("ClientID : ", clientID)
+	fmt.Println("ClientKey : ", clientKey)
+	fmt.Println("PeerPublicKey : ", peerPublicKey)
+	fmt.Println("PublicKey : ", publicKey)
+	fmt.Println("PrivateKey : ", privateKey)
+	fmt.Println("Mnemonic : ", mnemonic)
+	fmt.Println("IsSplit : ", isSplit)
+
 	if mnemonic == "" && !isSplit {
 		return errors.New("mnemonic is required")
 	}
+
+	fmt.Println("Here 1")
+
 	mode := os.Getenv("MODE")
 	fmt.Println("gosdk setWallet, mode:", mode, "is split:", isSplit)
 	keys := []zcncrypto.KeyPair{
@@ -38,6 +50,8 @@ func setWallet(clientID, clientKey, peerPublicKey, publicKey, privateKey, mnemon
 	}
 	fmt.Println("set Wallet, is split:", isSplit)
 	client.SetWallet(*w)
+	fmt.Println("Here 2")
+	fmt.Println("Wallet ID", client.ClientID())
 
 	zboxApiClient.SetWallet(clientID, privateKey, publicKey)
 	if mode == "" { // main thread, need to notify the web worker to update wallet
