@@ -122,8 +122,8 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 				q.Add(k, v)
 			}
 			urlObj.RawQuery = q.Encode()
-			client := &http.Client{Transport: DefaultTransport}
-			response, err := client.Get(urlObj.String())
+			c := &http.Client{Transport: DefaultTransport}
+			response, err := c.Get(urlObj.String())
 			if err != nil {
 				nodeClient.sharders.Fail(sharder)
 				return
