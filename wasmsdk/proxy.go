@@ -346,7 +346,6 @@ func main() {
 
 	} else {
 		fmt.Println("zcn is not null")
-		fmt.Println("zcn is not null - signWithAuth:", sys.SignWithAuth)
 	}
 
 	if mode != "" {
