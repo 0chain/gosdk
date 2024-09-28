@@ -16,6 +16,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"sync"
 	"time"
 )
@@ -154,7 +155,7 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 
 	rate := float32(maxCount*100) / float32(cfg.SharderConsensous)
 	if rate < consensusThresh {
-		err = errors.New("consensus_failed", "consensus failed on sharders")
+		err = errors.New("consensus_failed", fmt.Sprintf("consensus failed on sharders : %f : ", rate)+strings.Join(sharders, ","))
 	}
 
 	if dominant != 200 {
