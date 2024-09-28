@@ -460,6 +460,7 @@ func main() {
 		mnemonic := os.Getenv("MNEMONIC")
 		privateKey := os.Getenv("PRIVATE_KEY")
 		zauthServer := os.Getenv("ZAUTH_SERVER")
+		splitType := os.Getenv("SPLIT_TYPE")
 
 		gInitProxyKeys(publicKey, privateKey)
 
@@ -472,10 +473,12 @@ func main() {
 				return rsp, nil
 			}
 
-			// TODO: differe the registerAuthorizer
-			// registerZauthServer("http://18.191.13.66:8080", publicKey)
-			// registerZauthServer("http://127.0.0.1:8080", publicKey)
-			registerZauthServer(zauthServer)
+			if splitType == "kms" {
+				// TODO: differe the registerAuthorizer
+				// registerZauthServer("http://18.191.13.66:8080", publicKey)
+				// registerZauthServer("http://127.0.0.1:8080", publicKey)
+				registerZauthServer(zauthServer)
+			}
 		}
 
 		setWallet(clientID, clientKey, peerPublicKey, publicKey, privateKey, mnemonic, isSplit)
