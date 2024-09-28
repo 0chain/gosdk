@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/0chain/gosdk/core/conf"
 	"strings"
 
@@ -180,6 +181,9 @@ func PrivateKey() string {
 }
 
 func ClientID() string {
+	if client.wallet.ClientID == "" {
+		fmt.Println("ClientID is empty")
+	}
 	return client.wallet.ClientID
 }
 
