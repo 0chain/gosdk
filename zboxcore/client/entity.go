@@ -3,7 +3,6 @@ package client
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/core/zcncrypto"
@@ -39,13 +38,12 @@ func init() {
 
 	// initialize SignFunc as default implementation
 	Sign = func(hash string) (string, error) {
-		if client.PeerPublicKey == "" {
+		if !client.IsSplit {
 			return sys.Sign(hash, client.SignatureScheme, GetClientSysKeys())
 		}
 
 		// get sign lock
 		<-sigC
-		fmt.Println("Sign: with sys.SignWithAuth:", sys.SignWithAuth, "sysKeys:", GetClientSysKeys())
 		sig, err := sys.SignWithAuth(hash, client.SignatureScheme, GetClientSysKeys())
 		sigC <- struct{}{}
 		return sig, err
