@@ -42,14 +42,22 @@ func registerZauthServer(serverAddr string) {
 	sys.SetAuthCommon(zcncore.ZauthAuthCommon(serverAddr))
 }
 
-// zvaultNewWallet generates new split wallet
-func zvaultNewWallet(serverAddr, token string, roles []string) (string, error) {
-	return zcncore.CallZvaultNewWalletString(serverAddr, token, "", nil)
+func zauthRetrieveKey(clientID, peerPublicKey, serverAddr, token string) (string, error) {
+	return zcncore.CallZauthRetreiveKey(serverAddr, token, clientID, peerPublicKey)
 }
 
-// zvaultNewSplit generates new split wallet from existing clientID
-func zvaultNewSplit(clientID, serverAddr, token string, roles []string) (string, error) {
-	return zcncore.CallZvaultNewWalletString(serverAddr, token, clientID, roles)
+// zvaultNewWallet generates new wallet
+func zvaultNewWallet(serverAddr, token string) (string, error) {
+	return zcncore.CallZvaultNewWallet(serverAddr, token)
+}
+
+// zvaultNewSplit generates new split key for saved wallet
+func zvaultNewSplit(clientID, serverAddr, token string, restrictions []string) (string, error) {
+	return zcncore.CallZvaultNewSplit(serverAddr, token, clientID, restrictions)
+}
+
+func zvaultUpdateRestrictions(clientID, peerPublicKey, serverAddr, token string, restrictions []string) (string, error) {
+	return zcncore.CallZvaultUpdateRestrictions(serverAddr, token, clientID, peerPublicKey, restrictions)
 }
 
 func zvaultStoreKey(serverAddr, token, privateKey string) (string, error) {
