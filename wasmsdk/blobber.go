@@ -778,11 +778,10 @@ func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 			RemotePath: fullRemotePath,
 			CustomMeta: option.CustomMeta,
 		}
-		// numBlocks := option.NumBlocks
-		// if numBlocks <= 1 {
-		// 	numBlocks = 100
-		// }
-		numBlocks := 60
+		numBlocks := option.NumBlocks
+		if numBlocks <= 1 {
+			numBlocks = 100
+		}
 
 		options := []sdk.ChunkedUploadOption{
 			sdk.WithThumbnail(option.ThumbnailBytes.Buffer),
