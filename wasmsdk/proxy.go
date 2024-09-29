@@ -323,9 +323,11 @@ func main() {
 
 				// zauth
 				"registerZauthServer": registerZauthServer,
+				"zauthRetreiveKey":    zauthRetrieveKey,
 				// zvault
 				"zvaultNewWallet":             zvaultNewWallet,
 				"zvaultNewSplit":              zvaultNewSplit,
+				"zvaultUpdateRestrictions":    zvaultUpdateRestrictions,
 				"zvaultStoreKey":              zvaultStoreKey,
 				"zvaultRetrieveKeys":          zvaultRetrieveKeys,
 				"zvaultRevokeKey":             zvaultRevokeKey,
