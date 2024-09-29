@@ -29,7 +29,7 @@ var (
 	ErrConfigNotInitialized = errors.New("[conf]conf.cfg is not initialized. please initialize it by conf.InitClientConfig")
 )
 
-// GetClientConfig get global client config
+// GetClientConfig get global client config from the SDK configuration
 func GetClientConfig() (*Config, error) {
 	if cfg == nil {
 		return nil, ErrConfigNotInitialized
@@ -38,7 +38,7 @@ func GetClientConfig() (*Config, error) {
 	return cfg, nil
 }
 
-// InitClientConfig set global client config
+// InitClientConfig set global client SDK config
 func InitClientConfig(c *Config) {
 	onceCfg.Do(func() {
 		sharderConsensous := c.SharderConsensous
@@ -50,7 +50,7 @@ func InitClientConfig(c *Config) {
 	})
 }
 
-// InitChainNetwork set global chain network
+// InitChainNetwork set global chain network for the SDK given its configuration
 func InitChainNetwork(n *Network) {
 	if n == nil {
 		return

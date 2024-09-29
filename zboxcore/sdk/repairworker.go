@@ -2,6 +2,7 @@ package sdk
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"sync"
 
@@ -21,6 +22,7 @@ type RepairRequest struct {
 	completedCallback func()
 	filesRepaired     int
 	wg                *sync.WaitGroup
+	allocation        *Allocation
 }
 
 type RepairStatusCB struct {
@@ -29,6 +31,8 @@ type RepairStatusCB struct {
 	err      error
 	statusCB StatusCallback
 }
+
+var RepairBlocks = 100
 
 func (cb *RepairStatusCB) Started(allocationId, filePath string, op int, totalBytes int) {
 	cb.statusCB.Started(allocationId, filePath, op, totalBytes)
@@ -63,12 +67,66 @@ func (r *RepairRequest) processRepair(ctx context.Context, a *Allocation) {
 	if r.checkForCancel(a) {
 		return
 	}
-
+	SetNumBlockDownloads(RepairBlocks)
+	currBatchSize := BatchSize
+	BatchSize = BatchSize / 2
+	defer func() {
+		BatchSize = currBatchSize
+	}()
+	if !singleClientMode {
+		SetSingleClietnMode(true)
+		defer SetSingleClietnMode(false)
+	}
 	r.iterateDir(a, r.listDir)
-
 	if r.statusCB != nil {
 		r.statusCB.RepairCompleted(r.filesRepaired)
 	}
+}
+
+// holds result of repair size
+type RepairSize struct {
+	// upload size in bytes
+	UploadSize uint64 `json:"upload_size"`
+	// download size in bytes
+	DownloadSize uint64 `json:"download_size"`
+}
+
+// gets size to repair for remote dir.
+func (r *RepairRequest) Size(ctx context.Context, dir *ListResult) (RepairSize, error) {
+	var rs RepairSize
+	var err error
+	switch dir.Type {
+	case fileref.DIRECTORY:
+		if len(dir.Children) == 0 {
+			// fetch dir
+			dir, err = r.allocation.ListDir(dir.Path, WithListRequestForRepair(true), WithListRequestPageLimit(-1))
+			if err != nil {
+				return rs, err
+			}
+		}
+		for _, subDir := range dir.Children {
+			subDirSz, err := r.Size(ctx, subDir)
+			if err != nil {
+				return rs, err
+			}
+			rs.UploadSize += subDirSz.UploadSize
+			rs.DownloadSize += subDirSz.DownloadSize
+		}
+	case fileref.FILE:
+		// this returns repair operations required
+		repairOps := r.repairFile(r.allocation, dir)
+		if repairOps == nil {
+			err = fmt.Errorf("fetch repairOps failed")
+			return rs, err
+		}
+		for _, repairOp := range repairOps {
+			if repairOp.OperationType == constants.FileOperationInsert {
+				rs.UploadSize += uint64(repairOp.Mask.CountOnes()) * uint64(getShardSize(repairOp.FileMeta.ActualSize, r.allocation.DataShards, repairOp.EncryptedKey != ""))
+				rs.DownloadSize += uint64(repairOp.FileMeta.ActualSize)
+			}
+		}
+	}
+	return rs, err
 }
 
 func (r *RepairRequest) iterateDir(a *Allocation, dir *ListResult) []OperationRequest {
@@ -117,7 +175,7 @@ func (r *RepairRequest) iterateDir(a *Allocation, dir *ListResult) []OperationRe
 				return nil
 			}
 			ops = append(ops, r.iterateDir(a, childDir)...)
-			if len(ops) >= MultiOpBatchSize/2 {
+			if len(ops) >= RepairBatchSize/2 {
 				r.repairOperation(a, ops)
 				ops = nil
 			}
@@ -177,11 +235,13 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) []OperationR
 					return nil
 				}
 				memFile := &sys.MemChanFile{
-					Buffer:         make(chan []byte, 10),
+					Buffer:         make(chan []byte, 100),
 					ChunkWriteSize: int(a.GetChunkReadSize(ref.EncryptedKey != "")),
 				}
 				op = a.RepairFile(memFile, file.Path, statusCB, found, ref)
-				op.DownloadFile = true
+				if op.FileMeta.ActualSize > 0 {
+					op.DownloadFile = true
+				}
 			} else {
 				f, err := sys.Files.Open(localPath)
 				if err != nil {

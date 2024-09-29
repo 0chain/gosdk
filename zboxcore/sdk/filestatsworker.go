@@ -8,7 +8,6 @@ import (
 	"mime/multipart"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/0chain/errors"
@@ -18,6 +17,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
+// FileStats - file stats structure
 type FileStats struct {
 	Name                     string    `json:"name"`
 	Size                     int64     `json:"size"`
@@ -45,7 +45,6 @@ type fileStatsResponse struct {
 }
 
 func (req *ListRequest) getFileStatsInfoFromBlobber(blobber *blockchain.StorageNode, blobberIdx int, rspCh chan<- *fileStatsResponse) {
-	defer req.wg.Done()
 	body := new(bytes.Buffer)
 	formWriter := multipart.NewWriter(body)
 
@@ -71,7 +70,7 @@ func (req *ListRequest) getFileStatsInfoFromBlobber(blobber *blockchain.StorageN
 	}
 
 	formWriter.Close()
-	httpreq, err := zboxutil.NewFileStatsRequest(blobber.Baseurl, req.allocationID, req.allocationTx, body)
+	httpreq, err := zboxutil.NewFileStatsRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body)
 	if err != nil {
 		l.Logger.Error("File meta info request error: ", err.Error())
 		return
@@ -111,13 +110,10 @@ func (req *ListRequest) getFileStatsInfoFromBlobber(blobber *blockchain.StorageN
 func (req *ListRequest) getFileStatsFromBlobbers() map[string]*FileStats {
 	numList := len(req.blobbers)
 	//fmt.Printf("%v\n", req.blobbers)
-	req.wg = &sync.WaitGroup{}
-	req.wg.Add(numList)
 	rspCh := make(chan *fileStatsResponse, numList)
 	for i := 0; i < numList; i++ {
 		go req.getFileStatsInfoFromBlobber(req.blobbers[i], i, rspCh)
 	}
-	req.wg.Wait()
 	fileInfos := make(map[string]*FileStats)
 	for i := 0; i < numList; i++ {
 		ch := <-rspCh

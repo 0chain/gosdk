@@ -25,12 +25,13 @@ const CHUNK_SIZE = 64 * 1024
 type ListRequest struct {
 	allocationID       string
 	allocationTx       string
+	sig                string
 	blobbers           []*blockchain.StorageNode
 	remotefilepathhash string
 	remotefilepath     string
+	filename           string
 	authToken          *marker.AuthTicket
 	ctx                context.Context
-	wg                 *sync.WaitGroup
 	forRepair          bool
 	listOnly           bool
 	offset             int
@@ -45,6 +46,8 @@ type listResponse struct {
 	err         error
 }
 
+// ListResult a wrapper around the result of directory listing command.
+// It can represent a file or a directory.
 type ListResult struct {
 	Name                string `json:"name"`
 	Path                string `json:"path,omitempty"`
@@ -91,7 +94,6 @@ func WithListRequestForRepair(forRepair bool) ListRequestOptions {
 }
 
 func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, blobberIdx int, rspCh chan<- *listResponse) {
-	defer req.wg.Done()
 	//body := new(bytes.Buffer)
 	//formWriter := multipart.NewWriter(body)
 
@@ -130,7 +132,7 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 	}
 
 	//httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
-	ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
+	ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 10))
 	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
 		if err != nil {
 			l.Logger.Error("List : ", err)
@@ -162,46 +164,53 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 
 func (req *ListRequest) getlistFromBlobbers() ([]*listResponse, error) {
 	numList := len(req.blobbers)
-	req.wg = &sync.WaitGroup{}
-	req.wg.Add(numList)
 	rspCh := make(chan *listResponse, numList)
 	for i := 0; i < numList; i++ {
 		go req.getListInfoFromBlobber(req.blobbers[i], i, rspCh)
 	}
-	req.wg.Wait()
 	listInfos := make([]*listResponse, numList)
+	consensusMap := make(map[string][]*blockchain.StorageNode)
+	var consensusHash string
+	errCnt := 0
 	for i := 0; i < numList; i++ {
 		listInfos[i] = <-rspCh
+		if !req.forRepair {
+			if listInfos[i].err != nil || listInfos[i].ref == nil {
+				if listInfos[i].err != nil {
+					errCnt++
+				}
+				continue
+			}
+			hash := listInfos[i].ref.FileMetaHash
+			consensusMap[hash] = append(consensusMap[hash], req.blobbers[listInfos[i].blobberIdx])
+			if len(consensusMap[hash]) >= req.consensusThresh {
+				consensusHash = hash
+				break
+			}
+		}
 	}
 	if req.listOnly {
 		return listInfos, nil
 	}
-	consensusMap := make(map[string][]*blockchain.StorageNode)
-	var consensusHash string
-	for i := 0; i < numList; i++ {
-		if listInfos[i].err != nil || listInfos[i].ref == nil {
-			continue
-		}
-		hash := listInfos[i].ref.FileMetaHash
-		consensusMap[hash] = append(consensusMap[hash], req.blobbers[listInfos[i].blobberIdx])
-		if len(consensusMap[hash]) >= req.consensusThresh {
-			consensusHash = hash
-		}
-	}
+
 	var err error
-	req.listOnly = true
 	listLen := len(consensusMap[consensusHash])
 	if listLen < req.consensusThresh {
+		if req.fullconsensus-errCnt >= req.consensusThresh && !req.listOnly {
+			req.listOnly = true
+			return req.getlistFromBlobbers()
+		}
 		return listInfos, listInfos[0].err
 	}
+	req.listOnly = true
+	listInfos = listInfos[:1]
+	listOnlyRespCh := make(chan *listResponse, 1)
 	for i := 0; i < listLen; i++ {
 		var rnd = rand.New(rand.NewSource(time.Now().UnixNano()))
 		num := rnd.Intn(listLen)
 		randomBlobber := consensusMap[consensusHash][num]
-		req.wg.Add(1)
-		go req.getListInfoFromBlobber(randomBlobber, 0, rspCh)
-		req.wg.Wait()
-		listInfos[0] = <-rspCh
+		go req.getListInfoFromBlobber(randomBlobber, 0, listOnlyRespCh)
+		listInfos[0] = <-listOnlyRespCh
 		if listInfos[0].err == nil {
 			return listInfos, nil
 		}
@@ -275,7 +284,7 @@ func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
 	return result, nil
 }
 
-// populateChildren calculates the children of a directory
+// populateChildren calculates the children of a directory and populates the list result.
 func (lr *ListResult) populateChildren(children []fileref.RefEntity, childResultMap map[string]*ListResult, selected map[string]*ListResult, req *ListRequest) {
 
 	for _, child := range children {

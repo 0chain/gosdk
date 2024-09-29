@@ -69,7 +69,7 @@ func (p *StreamPlayer) Stop() {
 
 func (p *StreamPlayer) download(it sdk.PlaylistFile) {
 	wg := &sync.WaitGroup{}
-	statusBar := &StatusBar{wg: wg}
+	statusBar := &StatusBar{wg: wg, totalBytesMap: make(map[string]int)}
 	wg.Add(1)
 
 	fileName := it.Name
@@ -108,7 +108,7 @@ func (p *StreamPlayer) download(it sdk.PlaylistFile) {
 
 	withRecover(func() {
 		if p.downloadedFiles != nil {
-			p.downloadedFiles <- mf.Buffer.Bytes()
+			p.downloadedFiles <- mf.Buffer
 		}
 	})
 }

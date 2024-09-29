@@ -24,9 +24,12 @@ import (
 const (
 	Undefined int = iota
 	Success
+
+	// ChargeableError is an error that still charges the user for the transaction.
 	ChargeableError
 )
 
+// Provider represents the type of provider.
 type Provider int
 
 const (
@@ -44,7 +47,7 @@ type stakePoolRequest struct {
 
 type TransactionCommon interface {
 	// ExecuteSmartContract implements wrapper for smart contract function
-	ExecuteSmartContract(address, methodName string, input string, val string) error
+	ExecuteSmartContract(address, methodName string, input interface{}, val string, feeOpts ...FeeOption) (*transaction.Transaction, error)
 
 	// Send implements sending token to a given clientid
 	Send(toClientID string, val string, desc string) error
@@ -143,8 +146,6 @@ func (car *CreateAllocationRequest) toCreateAllocationSCInput() *createAllocatio
 
 type StakePoolSettings struct {
 	DelegateWallet string  `json:"delegate_wallet"`
-	MinStake       int64   `json:"min_stake"`
-	MaxStake       int64   `json:"max_stake"`
 	NumDelegates   int     `json:"num_delegates"`
 	ServiceCharge  float64 `json:"service_charge"`
 }
@@ -157,7 +158,7 @@ type Terms struct {
 
 type Blobber interface {
 	SetTerms(readPrice int64, writePrice int64, minLockDemand float64, maxOfferDuration int64)
-	SetStakePoolSettings(delegateWallet string, minStake int64, maxStake int64, numDelegates int, serviceCharge float64)
+	SetStakePoolSettings(delegateWallet string, numDelegates int, serviceCharge float64)
 	SetAvailable(bool)
 }
 
@@ -182,11 +183,9 @@ type blobber struct {
 	NotAvailable      bool              `json:"not_available"`
 }
 
-func (b *blobber) SetStakePoolSettings(delegateWallet string, minStake int64, maxStake int64, numDelegates int, serviceCharge float64) {
+func (b *blobber) SetStakePoolSettings(delegateWallet string, numDelegates int, serviceCharge float64) {
 	b.StakePoolSettings = StakePoolSettings{
 		DelegateWallet: delegateWallet,
-		MinStake:       minStake,
-		MaxStake:       maxStake,
 		NumDelegates:   numDelegates,
 		ServiceCharge:  serviceCharge,
 	}
@@ -205,7 +204,7 @@ func (b *blobber) SetAvailable(availability bool) {
 }
 
 type Validator interface {
-	SetStakePoolSettings(delegateWallet string, minStake int64, maxStake int64, numDelegates int, serviceCharge float64)
+	SetStakePoolSettings(delegateWallet string, numDelegates int, serviceCharge float64)
 }
 
 func NewValidator(id string, baseUrl string) Validator {
@@ -221,20 +220,21 @@ type validator struct {
 	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
 }
 
-func (v *validator) SetStakePoolSettings(delegateWallet string, minStake int64, maxStake int64, numDelegates int, serviceCharge float64) {
+func (v *validator) SetStakePoolSettings(delegateWallet string, numDelegates int, serviceCharge float64) {
 	v.StakePoolSettings = StakePoolSettings{
 		DelegateWallet: delegateWallet,
-		MinStake:       minStake,
-		MaxStake:       maxStake,
 		NumDelegates:   numDelegates,
 		ServiceCharge:  serviceCharge,
 	}
 }
 
+// AddAuthorizerPayload is the interface gathering the functions to add a new authorizer.
 type AddAuthorizerPayload interface {
-	SetStakePoolSettings(delegateWallet string, minStake int64, maxStake int64, numDelegates int, serviceCharge float64)
+	// SetStakePoolSettings sets the stake pool settings for the authorizer.
+	SetStakePoolSettings(delegateWallet string, numDelegates int, serviceCharge float64)
 }
 
+// NewAddAuthorizerPayload creates a new AddAuthorizerPayload concrete instance.
 func NewAddAuthorizerPayload(pubKey, url string) AddAuthorizerPayload {
 	return &addAuthorizerPayload{
 		PublicKey: pubKey,
@@ -248,11 +248,10 @@ type addAuthorizerPayload struct {
 	StakePoolSettings AuthorizerStakePoolSettings `json:"stake_pool_settings"` // Used to initially create stake pool
 }
 
-func (a *addAuthorizerPayload) SetStakePoolSettings(delegateWallet string, minStake int64, maxStake int64, numDelegates int, serviceCharge float64) {
+// SetStakePoolSettings sets the stake pool settings for the authorizer.
+func (a *addAuthorizerPayload) SetStakePoolSettings(delegateWallet string, numDelegates int, serviceCharge float64) {
 	a.StakePoolSettings = AuthorizerStakePoolSettings{
 		DelegateWallet: delegateWallet,
-		MinStake:       minStake,
-		MaxStake:       maxStake,
 		NumDelegates:   numDelegates,
 		ServiceCharge:  serviceCharge,
 	}
@@ -262,14 +261,14 @@ type AuthorizerHealthCheckPayload struct {
 	ID string `json:"id"` // authorizer ID
 }
 
+// AuthorizerStakePoolSettings represents configuration of an authorizer stake pool.
 type AuthorizerStakePoolSettings struct {
 	DelegateWallet string  `json:"delegate_wallet"`
-	MinStake       int64   `json:"min_stake"`
-	MaxStake       int64   `json:"max_stake"`
 	NumDelegates   int     `json:"num_delegates"`
 	ServiceCharge  float64 `json:"service_charge"`
 }
 
+// AuthorizerConfig represents configuration of an authorizer node.
 type AuthorizerConfig struct {
 	Fee int64 `json:"fee"`
 }
@@ -302,7 +301,11 @@ func (vr *vestingAddRequest) AddDestinations(id string, amount int64) {
 	vr.Destinations = append(vr.Destinations, &VestingDest{ID: id, Amount: amount})
 }
 
+// InputMap represents an interface of functions to add fields to a map.
 type InputMap interface {
+	// AddField adds a field to the map.
+	// 		- key: field key
+	// 		- value: field value
 	AddField(key, value string)
 }
 
@@ -310,6 +313,7 @@ type inputMap struct {
 	Fields map[string]string `json:"fields"`
 }
 
+// NewInputMap creates a new InputMap concrete instance.
 func NewInputMap() InputMap {
 	return &inputMap{
 		Fields: make(map[string]string),
@@ -333,13 +337,12 @@ func parseCoinStr(vs string) (uint64, error) {
 	return v, nil
 }
 
-// NewTransaction allocation new generic transaction object for any operation
-// # Inputs
+// NewTransaction new generic transaction object for any operation
 //   - cb: callback for transaction state
-//   - txnFee: ZCN tokens
+//   - txnFee: Transaction fees (in SAS tokens)
 //   - nonce: latest nonce of current wallet. please set it with 0 if you don't know the latest value
 func NewTransaction(cb TransactionCallback, txnFee string, nonce int64) (TransactionScheme, error) {
-	v, err := parseCoinStr(txnFee)
+	txnFeeRaw, err := parseCoinStr(txnFee)
 	if err != nil {
 		return nil, err
 	}
@@ -348,32 +351,35 @@ func NewTransaction(cb TransactionCallback, txnFee string, nonce int64) (Transac
 	if err != nil {
 		return nil, err
 	}
+
 	if _config.isSplitWallet {
 		if _config.authUrl == "" {
 			return nil, errors.New("", "auth url not set")
 		}
 		logging.Info("New transaction interface with auth")
-		return newTransactionWithAuth(cb, v, nonce)
+		return newTransactionWithAuth(cb, txnFeeRaw, nonce)
 	}
 	logging.Info("New transaction interface")
-	t, err := newTransaction(cb, v, nonce)
+	t, err := newTransaction(cb, txnFeeRaw, nonce)
 	return t, err
 }
 
-func (t *Transaction) ExecuteSmartContract(address, methodName string, input string, val string) error {
+// ExecuteSmartContract prepare and send a smart contract transaction to the blockchain
+func (t *Transaction) ExecuteSmartContract(address, methodName string, input interface{}, val string, feeOpts ...FeeOption) (*transaction.Transaction, error) {
 	v, err := parseCoinStr(val)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	err = t.createSmartContractTxn(address, methodName, json.RawMessage(input), v)
+	err = t.createSmartContractTxn(address, methodName, input, v)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	go func() {
 		t.setNonceAndSubmit()
 	}()
-	return nil
+
+	return t.txn, nil
 }
 
 func (t *Transaction) setTransactionFee(fee uint64) error {
@@ -384,10 +390,11 @@ func (t *Transaction) setTransactionFee(fee uint64) error {
 	return nil
 }
 
+// Send to send a transaction to a given clientID
 func (t *Transaction) Send(toClientID string, val string, desc string) error {
 	v, err := parseCoinStr(val)
 	if err != nil {
-		return err
+		return nil
 	}
 
 	txnData, err := json.Marshal(SendTxnData{Note: desc})
@@ -404,6 +411,13 @@ func (t *Transaction) Send(toClientID string, val string, desc string) error {
 	return nil
 }
 
+// SendWithSignatureHash to send a transaction to a given clientID with a signature hash
+//   - toClientID: client ID in the To field of the transaction
+//   - val: amount of tokens to send
+//   - desc: description of the transaction
+//   - sig: signature hash
+//   - CreationDate: creation date of the transaction
+//   - hash: hash of the transaction
 func (t *Transaction) SendWithSignatureHash(toClientID string, val string, desc string, sig string, CreationDate int64, hash string) error {
 	v, err := parseCoinStr(val)
 	if err != nil {
@@ -818,10 +832,19 @@ func (t *Transaction) GetVerifyConfirmationStatus() int {
 	return int(t.verifyConfirmationStatus)
 }
 
+// MinerSCMinerInfo interface for miner info functions on miner smart contract.
 type MinerSCMinerInfo interface {
+	// GetID returns the ID of the miner
 	GetID() string
 }
 
+// NewMinerSCMinerInfo creates a new miner info.
+//   - id: miner ID
+//   - delegateWallet: delegate wallet
+//   - minStake: minimum stake
+//   - maxStake: maximum stake
+//   - numDelegates: number of delegates
+//   - serviceCharge: service charge
 func NewMinerSCMinerInfo(id string, delegateWallet string,
 	minStake int64, maxStake int64, numDelegates int, serviceCharge float64) MinerSCMinerInfo {
 	return &minerSCMinerInfo{
@@ -829,8 +852,6 @@ func NewMinerSCMinerInfo(id string, delegateWallet string,
 		minerSCDelegatePool: minerSCDelegatePool{
 			Settings: StakePoolSettings{
 				DelegateWallet: delegateWallet,
-				MinStake:       minStake,
-				MaxStake:       maxStake,
 				NumDelegates:   numDelegates,
 				ServiceCharge:  serviceCharge,
 			},
@@ -899,10 +920,13 @@ func (t *Transaction) MinerSCDeleteSharder(info MinerSCMinerInfo) (err error) {
 	return
 }
 
+// AuthorizerNode interface for authorizer node functions.
 type AuthorizerNode interface {
+	// GetID returns the ID of the authorizer node.
 	GetID() string
 }
 
+// NewAuthorizerNode creates a new authorizer node.
 func NewAuthorizerNode(id string, fee int64) AuthorizerNode {
 	return &authorizerNode{
 		ID:     id,
@@ -1054,7 +1078,6 @@ func ConvertTokenToSAS(token float64) uint64 {
 }
 
 // ConvertToValue converts ZCN tokens to SAS tokens with string format
-// # Inputs
 //   - token: ZCN tokens
 func ConvertToValue(token float64) string {
 	return strconv.FormatUint(ConvertTokenToSAS(token), 10)
@@ -1118,6 +1141,9 @@ func GetLatestFinalized(numSharders int, timeout RequestTimeout) (b *BlockHeader
 	return
 }
 
+// GetLatestFinalizedMagicBlock gets latest finalized magic block
+//   - numSharders: number of sharders
+//   - timeout: request timeout
 func GetLatestFinalizedMagicBlock(numSharders int, timeout RequestTimeout) ([]byte, error) {
 	var result = make(chan *util.GetResponse, numSharders)
 	defer close(result)

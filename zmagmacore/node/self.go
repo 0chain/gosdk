@@ -1,3 +1,4 @@
+// DEPRECATED: This package is deprecated and will be removed in a future release.
 package node
 
 import (
@@ -66,6 +67,11 @@ func ExtID() string {
 // PublicKey returns id of Node.
 func PublicKey() string {
 	return self.wallet.PublicKey()
+}
+
+// PrivateKey returns id of Node.
+func PrivateKey() string {
+	return self.wallet.PrivateKey()
 }
 
 // StartTime returns time when Node is started.

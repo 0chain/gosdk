@@ -12,7 +12,10 @@ import (
 )
 
 const (
-	FILE      = "f"
+	// FileRef represents a file
+	FILE = "f"
+
+	// FileRef represents a directory
 	DIRECTORY = "d"
 
 	CHUNK_SIZE = 64 * 1024
@@ -142,7 +145,9 @@ func (r *Ref) CalculateDirHash(ctx context.Context) (string, error) {
 	return r.Hash, nil
 }
 
-// GetReferenceLookup hash(allocationID + ":" + path)
+// GetReferenceLookup hash(allocationID + ":" + path) which is used to lookup the file reference in the db.
+//   - allocationID is the allocation ID.
+//   - path is the path of the file.
 func GetReferenceLookup(allocationID string, path string) string {
 	return encryption.Hash(allocationID + ":" + path)
 }

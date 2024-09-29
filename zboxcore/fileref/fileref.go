@@ -2,19 +2,29 @@ package fileref
 
 import (
 	"fmt"
+	"hash/fnv"
 	"math"
+	"strconv"
 	"strings"
 
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/encryption"
+	lru "github.com/hashicorp/golang-lru/v2"
 )
 
+// File read/write chunk size
 const CHUNK_SIZE = 64 * 1024
 
 const (
-	FILE      = "f"
+	// FILE represents a file for fileref
+	FILE = "f"
+
+	// DIRECTORY represents a directory for fileref
 	DIRECTORY = "d"
+	REGULAR   = "regular"
 )
+
+var fileCache, _ = lru.New[string, FileRef](100)
 
 type Collaborator struct {
 	RefID     int64  `json:"ref_id"`
@@ -41,6 +51,14 @@ type FileRef struct {
 	EncryptedKey            string         `json:"encrypted_key" mapstructure:"encrypted_key"`
 	EncryptedKeyPoint       string         `json:"encrypted_key_point" mapstructure:"encrypted_key_point"`
 	Collaborators           []Collaborator `json:"collaborators" mapstructure:"collaborators"`
+}
+
+func (fRef *FileRef) MetaID() string {
+
+	hash := fnv.New64a()
+	hash.Write([]byte(fRef.Path))
+
+	return strconv.FormatUint(hash.Sum64(), 36)
 }
 
 type RefEntity interface {
@@ -84,8 +102,30 @@ type Ref struct {
 	UpdatedAt           common.Timestamp `json:"updated_at" mapstructure:"updated_at"`
 }
 
+// GetReferenceLookup returns the lookup hash for a given allocationID and path
+//   - allocationID: allocation ID
+//   - path: path of the file
 func GetReferenceLookup(allocationID string, path string) string {
 	return encryption.Hash(allocationID + ":" + path)
+}
+
+func GetCacheKey(lookuphash, blobberID string) string {
+	return encryption.FastHash(lookuphash + ":" + blobberID)
+}
+
+func StoreFileRef(key string, fr FileRef) {
+	fileCache.Add(key, fr)
+}
+
+func GetFileRef(key string) (FileRef, bool) {
+	if fr, ok := fileCache.Get(key); ok {
+		return fr, true
+	}
+	return FileRef{}, false
+}
+
+func DeleteFileRef(key string) {
+	fileCache.Remove(key)
 }
 
 func (r *Ref) CalculateHash() string {
