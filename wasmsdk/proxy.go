@@ -480,7 +480,7 @@ func main() {
 			}
 		}
 
-		setWallet(clientID, clientKey, peerPublicKey, publicKey, privateKey, mnemonic, isSplit)
+		setWallet(clientID, clientKey, peerPublicKey, publicKey, privateKey, mnemonic, splitType, isSplit)
 		hideLogs()
 		debug.SetGCPercent(75)
 		debug.SetMemoryLimit(1 * 1024 * 1024 * 1024) //1GB
@@ -543,7 +543,12 @@ func UpdateWalletWithEventData(data *safejs.Value) error {
 		isSplit = false
 	}
 
+	splitType, err := jsbridge.ParseEventDataField(data, "split_type")
+	if err != nil {
+		splitType = ""
+	}
+
 	fmt.Println("update wallet with event data")
-	setWallet(clientID, clientKey, peerPublicKey, publicKey, privateKey, mnemonic, isSplit)
+	setWallet(clientID, clientKey, peerPublicKey, publicKey, privateKey, mnemonic, splitType, isSplit)
 	return nil
 }

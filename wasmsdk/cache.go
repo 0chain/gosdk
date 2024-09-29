@@ -92,6 +92,7 @@ func addWebWorkers(alloc *sdk.Allocation) (err error) {
 			c.Keys[0].PublicKey,
 			c.Keys[0].PrivateKey,
 			c.Mnemonic,
+			c.SplitType,
 			c.IsSplit) //nolint:errcheck
 		if workerCreated {
 			respRequired++

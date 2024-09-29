@@ -15,7 +15,7 @@ import (
 	"github.com/0chain/gosdk/zcncore"
 )
 
-func setWallet(clientID, clientKey, peerPublicKey, publicKey, privateKey, mnemonic string, isSplit bool) error {
+func setWallet(clientID, clientKey, peerPublicKey, publicKey, privateKey, mnemonic, splitType string, isSplit bool) error {
 	if mnemonic == "" && !isSplit {
 		return errors.New("mnemonic is required")
 	}
@@ -49,6 +49,7 @@ func setWallet(clientID, clientKey, peerPublicKey, publicKey, privateKey, mnemon
 		Mnemonic:      mnemonic,
 		Keys:          keys,
 		IsSplit:       isSplit,
+		SplitType:     splitType,
 	}
 	fmt.Println("set Wallet, is split:", isSplit)
 	err := zcncore.SetWallet(*w, isSplit)
@@ -67,6 +68,7 @@ func setWallet(clientID, clientKey, peerPublicKey, publicKey, privateKey, mnemon
 			"private_key":     privateKey,
 			"mnemonic":        mnemonic,
 			"is_split":        strconv.FormatBool(isSplit),
+			"split_type":      splitType,
 		}); err != nil {
 			return err
 		}

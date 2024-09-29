@@ -64,7 +64,7 @@ var (
 	gZauthServer string
 )
 
-func NewWasmWebWorker(blobberID, blobberURL, clientID, clientKey, peerPublicKey, publicKey, privateKey, mnemonic string, isSplit bool) (*WasmWebWorker, bool, error) {
+func NewWasmWebWorker(blobberID, blobberURL, clientID, clientKey, peerPublicKey, publicKey, privateKey, mnemonic, splitType string, isSplit bool) (*WasmWebWorker, bool, error) {
 	created := false
 	_, ok := workers[blobberID]
 	if ok {
@@ -82,6 +82,7 @@ func NewWasmWebWorker(blobberID, blobberURL, clientID, clientKey, peerPublicKey,
 			"MODE=worker",
 			"PUBLIC_KEY=" + publicKey,
 			"IS_SPLIT=" + strconv.FormatBool(isSplit),
+			"SPLIT_TYPE=" + splitType,
 			"MNEMONIC=" + mnemonic,
 			"ZAUTH_SERVER=" + gZauthServer},
 		Path:        "zcn.wasm",
