@@ -383,11 +383,14 @@ func (su *ChunkedUpload) createEncscheme() encryption.EncryptionScheme {
 			return nil
 		}
 	} else {
-		mnemonic := client.GetClient().Mnemonic
-		if mnemonic == "" {
+		tag := "filetype:audio" // keep the tag the same as below
+		sig, err := client.Sign(tag)
+		if err != nil {
+			logger.Logger.Error("failed to sign PRE tag: ", err)
 			return nil
 		}
-		privateKey, err := encscheme.Initialize(mnemonic)
+
+		privateKey, err := encscheme.Initialize(sig)
 		if err != nil {
 			return nil
 		}
