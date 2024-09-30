@@ -199,6 +199,11 @@ func (mo *MultiOperation) Process() error {
 
 	if ctx.Err() != nil {
 		err := context.Cause(ctx)
+		for idx, op := range mo.operations {
+			if errsSlice[idx] == nil {
+				op.Error(mo.allocationObj, 0, err)
+			}
+		}
 		return err
 	}
 
@@ -206,6 +211,11 @@ func (mo *MultiOperation) Process() error {
 	if mo.operationMask.CountOnes() < mo.consensusThresh {
 		majorErr := zboxutil.MajorError(errsSlice)
 		if majorErr != nil {
+			for idx, op := range mo.operations {
+				if errsSlice[idx] == nil {
+					op.Error(mo.allocationObj, 0, majorErr)
+				}
+			}
 			return errors.New("consensus_not_met",
 				fmt.Sprintf("Multioperation failed. Required consensus %d got %d. Major error: %s",
 					mo.consensusThresh, mo.operationMask.CountOnes(), majorErr.Error()))
