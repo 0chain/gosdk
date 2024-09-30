@@ -652,26 +652,36 @@ func getShardSize(dataSize int64, dataShards int, isEncrypted bool) int64 {
 }
 
 func (su *ChunkedUpload) uploadProcessor() {
+	logger.Logger.Info("************************************Starting uploadProcessor")
 	for {
+		logger.Logger.Info("************************************Waiting for upload data")
 		select {
 		case <-su.ctx.Done():
+			logger.Logger.Info("************************************Context done, cause: ", context.Cause(su.ctx))
 			return
 		case uploadData, ok := <-su.uploadChan:
+			logger.Logger.Info("************************************Received upload data: ", uploadData)
 			if !ok {
+				logger.Logger.Info("************************************Upload channel closed")
 				return
 			}
+			logger.Logger.Info("************************************Calling uploadToBlobbers with uploadData: ", uploadData)
 			su.uploadToBlobbers(uploadData) //nolint:errcheck
+			logger.Logger.Info("************************************uploadToBlobbers completed")
 			su.uploadWG.Done()
 		}
 	}
 }
 
 func (su *ChunkedUpload) uploadToBlobbers(uploadData UploadData) error {
+	logger.Logger.Info("************************************Starting uploadToBlobbers with uploadData: ", uploadData)
 	select {
 	case <-su.ctx.Done():
+		logger.Logger.Error("************************************Context done, cause: ", context.Cause(su.ctx))
 		return context.Cause(su.ctx)
 	default:
 	}
+	logger.Logger.Info("************************************Creating Consensus object with consensusThresh: ", su.consensus.consensusThresh, " and fullconsensus: ", su.consensus.fullconsensus)
 	consensus := Consensus{
 		RWMutex:         &sync.RWMutex{},
 		consensusThresh: su.consensus.consensusThresh,
@@ -684,17 +694,23 @@ func (su *ChunkedUpload) uploadToBlobbers(uploadData UploadData) error {
 	var pos uint64
 	var errCount int32
 	var wg sync.WaitGroup
+	logger.Logger.Info("******************************Starting loop over uploadMask: ", su.uploadMask)
 	for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
-		pos = uint64(i.TrailingZeros())
+		pos = uint64(i.TrailingZeros()) // !(15 & (1<<3))
+
+		logger.Logger.Info("***********Chunk number: ", uploadData.chunkStartIndex, " Blobber number: ", pos, "***********")
 		wg.Add(1)
 		go func(pos uint64) {
 			defer wg.Done()
+			logger.Logger.Info("****************Starting goroutine for blobber at position: ", pos)
 			err := su.blobbers[pos].sendUploadRequest(ctx, su, uploadData.isFinal, su.encryptedKey, uploadData.uploadBody[pos].dataBuffers, uploadData.uploadBody[pos].formData, uploadData.uploadBody[pos].contentSlice, pos, &consensus)
 
 			if err != nil {
 				if strings.Contains(err.Error(), "duplicate") {
+					logger.Logger.Fatal("**************************Duplicate upload detected for blobber at position: ", pos)
 					su.consensus.Done()
 					errC := atomic.AddInt32(&su.addConsensus, 1)
+					logger.Logger.Debug("****************************Consensus count after duplicate detection: ", errC)
 					if errC >= int32(su.consensus.consensusThresh) {
 						wgErrors <- err
 					}
@@ -702,16 +718,23 @@ func (su *ChunkedUpload) uploadToBlobbers(uploadData UploadData) error {
 				}
 				logger.Logger.Error("error during sendUploadRequest", err, " connectionID: ", su.progress.ConnectionID)
 				errC := atomic.AddInt32(&errCount, 1)
+				logger.Logger.Info("***********************************Error count after failure: ", errC)
 				if errC > int32(su.allocationObj.ParityShards-1) { // If atleast data shards + 1 number of blobbers can process the upload, it can be repaired later
+					logger.Logger.Error("************************************Error count exceeded for blobber at position: ", pos)
 					wgErrors <- err
 				}
 			}
+			logger.Logger.Info("****************************************Goroutine for blobber at position: ", pos, " completed")
 		}(pos)
 	}
 	wg.Wait()
+	logger.Logger.Info("***************************Loop over uploadMask completed")
 	close(wgErrors)
+	logger.Logger.Info("***************************Closed wgErrors")
 	for err := range wgErrors {
+		logger.Logger.Error("Upload failed with error: ", err)
 		su.ctxCncl(thrown.New("upload_failed", fmt.Sprintf("Upload failed. %s", err)))
+		logger.Logger.Info("***************************Returning error")
 		return err
 	}
 	if !consensus.isConsensusOk() {
@@ -723,11 +746,13 @@ func (su *ChunkedUpload) uploadToBlobbers(uploadData UploadData) error {
 	if uploadData.uploadLength > 0 {
 		index := uploadData.chunkEndIndex
 		uploadLength := uploadData.uploadLength
+		logger.Logger.Info("**********************************Updating progress for chunk index: ", index, " upload length: ", uploadLength)
 		go su.updateProgress(index, su.uploadMask)
 		if su.statusCallback != nil {
 			su.statusCallback.InProgress(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, int(atomic.AddInt64(&su.progress.UploadLength, uploadLength)), nil)
 		}
 	}
 	uploadData = UploadData{} // release memory
+	logger.Logger.Info("Upload to blobbers completed successfully")
 	return nil
 }
