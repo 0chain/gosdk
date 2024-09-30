@@ -12,6 +12,83 @@ import (
 	"github.com/pkg/errors"
 )
 
+// AvailableRestrictions represents supported restrictions mapping.
+var AvailableRestrictions = map[string][]string{
+	"token_transfers": {"transfer"},
+	"allocation_file_operations": {
+		"read_redeem",
+		"commit_connection",
+	},
+	"allocation_storage_operations": {
+		"new_allocation_request",
+		"update_allocation_request",
+		"finalize_allocation",
+		"cancel_allocation",
+		"add_free_storage_assigner",
+		"free_allocation_request",
+	},
+	"allocation_token_operations": {
+		"read_pool_lock",
+		"read_pool_unlock",
+		"write_pool_lock",
+	},
+	"storage_rewards": {
+		"collect_reward",
+		"stake_pool_lock",
+		"stake_pool_unlock",
+	},
+	"storage_operations": {
+		"challenge_response",
+		"add_validator",
+		"add_blobber",
+		"blobber_health_check",
+		"validator_health_check",
+	},
+	"storage_management": {
+		"kill_blobber",
+		"kill_validator",
+		"shutdown_blobber",
+		"shutdown_validator",
+		"update_blobber_settings",
+		"update_validator_settings",
+	},
+	"miner_operations": {
+		"add_miner",
+		"add_sharder",
+		"miner_health_check",
+		"sharder_health_check",
+		"contributeMpk",
+		"shareSignsOrShares",
+		"wait",
+		"sharder_keep",
+	},
+	"miner_management_operations": {
+		"delete_miner",
+		"delete_sharder",
+		"update_miner_settings",
+		"kill_miner",
+		"kill_sharder",
+	},
+	"miner_financial_operations": {
+		"addToDelegatePool",
+		"deleteFromDelegatePool",
+		"collect_reward",
+	},
+	"token_bridging": {
+		"mint",
+		"burn",
+	},
+	"authorizer_management_operations": {
+		"delete-authorizer",
+	},
+	"authorizer_operations": {
+		"add-authorizer",
+		"authorizer-health-check",
+		"add-to-delegate-pool",
+		"delete-from-delegate-pool",
+	},
+}
+
 type createKeyRequest struct {
 	Restrictions []string `json:"restrictions"`
 }
@@ -89,17 +166,6 @@ func CallZauthRevoke(serverAddr, token, clientID, peerPublicKey string) error {
 		return errors.Errorf("code: %d", resp.StatusCode)
 	}
 
-	var rsp struct {
-		Result string `json:"result"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&rsp); err != nil {
-		return errors.Wrap(err, "failed to decode response body")
-	}
-
-	if rsp.Result != "success" {
-		return errors.New("failed to setup zauth server")
-	}
-
 	return nil
 }
 
@@ -127,17 +193,6 @@ func CallZauthDelete(serverAddr, token, clientID string) error {
 		}
 
 		return errors.Errorf("code: %d", resp.StatusCode)
-	}
-
-	var rsp struct {
-		Result string `json:"result"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&rsp); err != nil {
-		return errors.Wrap(err, "failed to decode response body")
-	}
-
-	if rsp.Result != "success" {
-		return errors.New("failed to setup zauth server")
 	}
 
 	return nil
