@@ -16,7 +16,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"strings"
 	"sync"
 	"time"
 )
@@ -101,6 +100,7 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 	dominant := 200
 	wg := sync.WaitGroup{}
 
+	var debugUrl string
 	cfg, err := conf.GetClientConfig()
 	if err != nil {
 		return nil, err
@@ -123,7 +123,7 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 				q.Add(k, v)
 			}
 			urlObj.RawQuery = q.Encode()
-			debugUrl := urlObj.String()
+			debugUrl = urlObj.String()
 			fmt.Println("Printing debug url... ", debugUrl)
 			c := &http.Client{Transport: DefaultTransport}
 			response, err := c.Get(debugUrl)
@@ -162,7 +162,7 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 
 	rate := float32(maxCount*100) / float32(cfg.SharderConsensous)
 	if rate < consensusThresh {
-		err = errors.New("consensus_failed", fmt.Sprintf("consensus failed on sharders : %f : ", rate)+strings.Join(sharders, ","))
+		err = errors.New("consensus_failed", fmt.Sprintf("consensus failed on sharders : %s : %f : ", debugUrl, rate))
 	}
 
 	if dominant != 200 {
