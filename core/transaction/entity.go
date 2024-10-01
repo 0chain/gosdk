@@ -491,7 +491,7 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 	value, fee uint64, toClient ...string) (hash, out string, nonce int64, t *Transaction, err error) {
 
 	var requestBytes []byte
-	if requestBytes, err = json.Marshal(sn.InputArgs); err != nil {
+	if requestBytes, err = json.Marshal(sn); err != nil {
 		return
 	}
 
