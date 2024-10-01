@@ -965,11 +965,16 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 			}
 			urlObj.RawQuery = q.Encode()
 			client := &http.Client{Transport: DefaultTransport}
-			response, err := client.Get(urlObj.String())
+			debugUrl := urlObj.String()
+			fmt.Println("SCRestAPI URL: ", debugUrl)
+			response, err := client.Get(debugUrl)
 			if err != nil {
+				fmt.Println("Printing Error: ", err)
 				blockchain.Sharders.Fail(sharder)
 				return
 			}
+
+			fmt.Println("Response Status: ", response.StatusCode)
 
 			defer response.Body.Close()
 			entityBytes, _ := ioutil.ReadAll(response.Body)
