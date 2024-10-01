@@ -123,8 +123,10 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 				q.Add(k, v)
 			}
 			urlObj.RawQuery = q.Encode()
+			debugUrl := urlObj.String()
+			fmt.Println("Printing debug url... ", debugUrl)
 			c := &http.Client{Transport: DefaultTransport}
-			response, err := c.Get(urlObj.String())
+			response, err := c.Get(debugUrl)
 			if err != nil {
 				nodeClient.sharders.Fail(sharder)
 				return
