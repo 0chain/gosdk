@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"crypto/sha1"
 	"encoding/hex"
 	"encoding/json"
@@ -20,13 +21,16 @@ import (
 	"time"
 )
 
+var customResolver = &net.Resolver{
+	PreferGo: false, // Use the system resolver instead of Go's
+	Dial: func(ctx context.Context, network, addr string) (net.Conn, error) {
+		return net.DialTimeout(network, "8.8.8.8:53", 5*time.Second) // Using Google DNS
+	},
+}
+
 var DefaultTransport = &http.Transport{
-	Proxy: EnvProxy.Proxy,
-	DialContext: (&net.Dialer{
-		Timeout:   3 * time.Minute,
-		KeepAlive: 45 * time.Second,
-		DualStack: true,
-	}).DialContext,
+	Proxy:                 EnvProxy.Proxy,
+	DialContext:           customResolver.Dial,
 	MaxIdleConns:          100,
 	IdleConnTimeout:       90 * time.Second,
 	TLSHandshakeTimeout:   45 * time.Second,
