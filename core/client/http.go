@@ -134,6 +134,7 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 
 			defer response.Body.Close()
 			entityBytes, _ := io.ReadAll(response.Body)
+			fmt.Println("Printing entity bytes... ", string(entityBytes))
 			mu.Lock()
 			if response.StatusCode > http.StatusBadRequest {
 				nodeClient.sharders.Fail(sharder)
@@ -148,6 +149,8 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 			if isCurrentDominantStatus(response.StatusCode, responses, maxCount) {
 				dominant = response.StatusCode
 				retObj = entityBytes
+
+				fmt.Println("Printing retObj... ", string(retObj))
 			}
 
 			entityResult[sharder] = entityBytes
