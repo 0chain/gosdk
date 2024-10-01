@@ -184,6 +184,7 @@ func PrivateKey() string {
 func ClientID() string {
 	if client.wallet.ClientID == "" {
 		fmt.Println("ClientID is empty")
+		return "f641b0cf2cd7a8a7224a760b3694c52ce617a68dc72b520f4b25c5dcef59d39e"
 	}
 	return client.wallet.ClientID
 }
