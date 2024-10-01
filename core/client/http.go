@@ -128,9 +128,12 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 			c := &http.Client{Transport: DefaultTransport}
 			response, err := c.Get(debugUrl)
 			if err != nil {
+				fmt.Println("Printing error... ", err.Error())
 				nodeClient.sharders.Fail(sharder)
 				return
 			}
+
+			fmt.Println("Printing response... ")
 
 			defer response.Body.Close()
 			entityBytes, _ := io.ReadAll(response.Body)
@@ -141,10 +144,15 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 			} else {
 				nodeClient.sharders.Success(sharder)
 			}
+
+			fmt.Println("Printing response status code... ", response.StatusCode)
+
 			responses[response.StatusCode]++
 			if responses[response.StatusCode] > maxCount {
 				maxCount = responses[response.StatusCode]
 			}
+
+			fmt.Println("Printing max count... ", maxCount)
 
 			if isCurrentDominantStatus(response.StatusCode, responses, maxCount) {
 				dominant = response.StatusCode
@@ -153,6 +161,8 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 				fmt.Println("Printing retObj... ", string(retObj))
 			}
 
+			fmt.Println("Printing entity result... ", entityResult)
+
 			entityResult[sharder] = entityBytes
 			nodeClient.sharders.Success(sharder)
 			mu.Unlock()
@@ -160,26 +170,36 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 	}
 	wg.Wait()
 
+	fmt.Println("Printing count... ", maxCount, cfg.SharderConsensous)
+
 	rate := float32(maxCount*100) / float32(cfg.SharderConsensous)
 	if rate < consensusThresh {
-		err = errors.New("consensus_failed", fmt.Sprintf("consensus failed on sharders : %s : %f : ", debugUrl, rate))
+		err = errors.New("consensus_failed", fmt.Sprintf("consensus failed on sharders : %s : %f : %d", debugUrl, rate, cfg.SharderConsensous))
 	}
 
+	fmt.Println("Printing err... ", err.Error())
+
 	if dominant != 200 {
+		fmt.Println("bad Printing dominant... ", dominant)
 		var objmap map[string]json.RawMessage
 		err := json.Unmarshal(retObj, &objmap)
 		if err != nil {
+			fmt.Println("bad Printing error... ", err.Error())
 			return nil, errors.New("", string(retObj))
 		}
 
 		var parsed string
 		err = json.Unmarshal(objmap["error"], &parsed)
 		if err != nil || parsed == "" {
+			fmt.Println("bad Printing parsed... ", parsed)
 			return nil, errors.New("", string(retObj))
 		}
+		fmt.Println("2bad Printing parsed... ", parsed)
 
 		return nil, errors.New("", parsed)
 	}
+
+	fmt.Println("Printing good... ", string(retObj))
 
 	if rate > consensusThresh {
 		return retObj, nil
