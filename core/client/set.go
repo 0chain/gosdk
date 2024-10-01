@@ -95,6 +95,7 @@ func GetClientSysKeys() []sys.KeyPair {
 
 // SetWallet should be set before any transaction or client specific APIs
 func SetWallet(w zcncrypto.Wallet) {
+	fmt.Println("Setting wallet : ", w.ClientID)
 	client.wallet = &w
 }
 
@@ -209,6 +210,8 @@ func InitSDK(walletJSON string,
 	preferredBlobbers []string,
 	nonce int64, isSplitWallet, addWallet bool,
 	fee ...uint64) error {
+
+	fmt.Println("2Init Sdk")
 
 	if addWallet {
 		wallet := zcncrypto.Wallet{}
