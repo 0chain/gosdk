@@ -111,7 +111,7 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 		go func(sharder string) {
 			defer wg.Done()
 			urlString := fmt.Sprintf("%v/%v%v%v", sharder, restApiUrl, scAddress, relativePath)
-			fmt.Println(urlString)
+			fmt.Println("Printing url... ", urlString)
 			urlObj, err := url.Parse(urlString)
 			if err != nil {
 				log.Println(err)
@@ -119,6 +119,7 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 			}
 			q := urlObj.Query()
 			for k, v := range params {
+				fmt.Println("Printing keys and values... ", k, v)
 				q.Add(k, v)
 			}
 			urlObj.RawQuery = q.Encode()
