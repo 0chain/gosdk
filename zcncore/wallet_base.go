@@ -372,3 +372,12 @@ func GetIdForUrl(url string) string {
 	}
 	return ""
 }
+
+var SignFn = func(hash string) (string, error) {
+	sigScheme := zcncrypto.NewSignatureScheme(client.SignatureScheme())
+	err := sigScheme.SetPrivateKey(client.PrivateKey())
+	if err != nil {
+		return "", err
+	}
+	return sigScheme.Sign(hash)
+}
