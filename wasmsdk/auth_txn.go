@@ -43,13 +43,7 @@ func registerZauthServer(serverAddr string) {
 }
 
 func zauthRetrieveKey(clientID, peerPublicKey, serverAddr, token string) (string, error) {
-	fmt.Println("retrieveing")
-
-	d, err := zcncore.CallZauthRetreiveKey(serverAddr, token, clientID, peerPublicKey)
-
-	fmt.Println(d, err)
-
-	return d, err
+	return zcncore.CallZauthRetreiveKey(serverAddr, token, clientID, peerPublicKey)
 }
 
 // zvaultNewWallet generates new wallet
