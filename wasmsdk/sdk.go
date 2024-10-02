@@ -34,8 +34,6 @@ func initSDKs(chainID, blockWorker, signatureScheme string,
 	minConfirmation, minSubmit, confirmationChainLength int,
 	zboxHost, zboxAppType string, sharderConsensous int, isSplit bool) error {
 
-	fmt.Println("1Init sdk")
-
 	zboxApiClient.SetRequest(zboxHost, zboxAppType)
 
 	err := client.InitSDK("{}", blockWorker, chainID, signatureScheme, 0, false, false, minConfirmation, minSubmit, confirmationChainLength, sharderConsensous)
