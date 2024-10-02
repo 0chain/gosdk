@@ -68,6 +68,8 @@ func main() {
 				}
 
 				//update sign with js sign
+				zcncrypto.Sign = signFunc
+				zcncore.SignFn = signFunc
 				sys.Sign = func(hash, signatureScheme string, keys []sys.KeyPair) (string, error) {
 					// js already has signatureScheme and keys
 					return signFunc(hash)
@@ -352,6 +354,8 @@ func main() {
 					return result[0].String(), nil
 				}
 				//update sign with js sign
+				zcncrypto.Sign = signFunc
+				zcncore.SignFn = signFunc
 				sys.Sign = func(hash, signatureScheme string, keys []sys.KeyPair) (string, error) {
 					// js already has signatureScheme and keys
 					return signFunc(hash)

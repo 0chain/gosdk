@@ -34,7 +34,7 @@ func initBridge( //nolint:unused
 	gasLimit uint64,
 	value int64,
 	consensusThreshold float64) error {
-	if len(client.Wallet().ClientID) == 0 {
+	if len(client.ClientID()) == 0 {
 		return errors.New("wallet_error", "wallet is not set")
 	}
 
