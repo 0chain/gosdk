@@ -32,13 +32,13 @@ var CreateObjectURL func(buf []byte, mimeType string) string
 //   - sharderconsensous is the number of sharders to reach consensus
 func initSDKs(chainID, blockWorker, signatureScheme string,
 	minConfirmation, minSubmit, confirmationChainLength int,
-	zboxHost, zboxAppType string, sharderconsensous int, isSplit bool) error {
+	zboxHost, zboxAppType string, sharderConsensous int, isSplit bool) error {
 
 	fmt.Println("1Init sdk")
 
 	zboxApiClient.SetRequest(zboxHost, zboxAppType)
 
-	err := client.InitSDK("{}", blockWorker, chainID, signatureScheme, nil, 0, false, false)
+	err := client.InitSDK("{}", blockWorker, chainID, signatureScheme, 0, false, false, minConfirmation, minSubmit, confirmationChainLength, sharderConsensous)
 	if err != nil {
 		fmt.Println("wasm: InitStorageSDK ", err)
 		return err

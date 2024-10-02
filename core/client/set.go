@@ -207,9 +207,8 @@ func GetClient() *zcncrypto.Wallet {
 //   - fee: Preferred value for the transaction fee, just the first value is taken
 func InitSDK(walletJSON string,
 	blockWorker, chainID, signatureScheme string,
-	preferredBlobbers []string,
 	nonce int64, isSplitWallet, addWallet bool,
-	fee ...uint64) error {
+	options ...int) error {
 
 	fmt.Println("2Init Sdk")
 
@@ -223,21 +222,42 @@ func InitSDK(walletJSON string,
 		SetWallet(wallet)
 		SetSignatureScheme(signatureScheme)
 		SetNonce(nonce)
-		if len(fee) > 0 {
-			SetTxnFee(fee[0])
+		if len(options) > 0 {
+			SetTxnFee(uint64(options[0]))
 		}
 	}
 
+	var minConfirmation, minSubmit, confirmationChainLength, sharderConsensous int
+	if len(options) > 1 {
+		minConfirmation = options[1]
+	} else {
+		minConfirmation = 5
+	}
+	if len(options) > 2 {
+		minSubmit = options[2]
+	} else {
+		minSubmit = 5
+	}
+	if len(options) > 3 {
+		confirmationChainLength = options[3]
+	} else {
+		confirmationChainLength = 10
+	}
+	if len(options) > 4 {
+		sharderConsensous = options[4]
+	} else {
+		sharderConsensous = 10
+	}
+
 	err := Init(context.Background(), conf.Config{
-		BlockWorker:       blockWorker,
-		SignatureScheme:   signatureScheme,
-		ChainID:           chainID,
-		PreferredBlobbers: preferredBlobbers,
-		MaxTxnQuery:       5,
-		QuerySleepTime:    5,
-		MinSubmit:         10,
-		MinConfirmation:   10,
-		IsSplitWallet:     isSplitWallet,
+		BlockWorker:             blockWorker,
+		SignatureScheme:         signatureScheme,
+		ChainID:                 chainID,
+		MinConfirmation:         minConfirmation,
+		MinSubmit:               minSubmit,
+		ConfirmationChainLength: confirmationChainLength,
+		SharderConsensous:       sharderConsensous,
+		IsSplitWallet:           isSplitWallet,
 	})
 	if err != nil {
 		return err
