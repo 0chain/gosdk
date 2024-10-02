@@ -7,8 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/0chain/gosdk/core/zcncrypto"
-	"log"
 	"os"
 	"runtime/debug"
 	"strconv"
@@ -201,6 +199,7 @@ func main() {
 			jsbridge.BindAsyncFuncs(sdk, map[string]interface{}{
 				//sdk
 				"init":                   initSDKs,
+				"setWallet":              setWallet,
 				"getPublicEncryptionKey": zcncore.GetPublicEncryptionKey,
 				"hideLogs":               hideLogs,
 				"showLogs":               showLogs,
@@ -456,29 +455,10 @@ func main() {
 			registerZauthServer(zauthServer)
 		}
 
-		wallet := zcncrypto.Wallet{
-			ClientID:      clientID,
-			ClientKey:     clientKey,
-			PeerPublicKey: peerPublicKey,
-			Keys: []zcncrypto.KeyPair{
-				{
-					PublicKey:  publicKey,
-					PrivateKey: privateKey,
-				},
-			},
-			Mnemonic: mnemonic,
-			IsSplit:  isSplit,
-		}
-
-		// Convert the wallet struct to JSON
-		_, err = json.MarshalIndent(wallet, "", "    ")
-		if err != nil {
-			log.Fatalf("Error converting wallet to JSON: %v", err)
-		}
-
+		setWallet(clientID, clientKey, peerPublicKey, publicKey, privateKey, mnemonic, isSplit)
 		hideLogs()
-		debug.SetGCPercent(75)
-		debug.SetMemoryLimit(1 * 1024 * 1024 * 1024) //1GB
+		debug.SetGCPercent(40)
+		debug.SetMemoryLimit(300 * 1024 * 1024) //300MB
 		err = startListener(respChan)
 		if err != nil {
 			fmt.Println("Error starting listener", err)
@@ -487,8 +467,8 @@ func main() {
 	}
 
 	hideLogs()
-	debug.SetGCPercent(75)
-	debug.SetMemoryLimit(3.5 * 1024 * 1024 * 1024) //3.5 GB
+	debug.SetGCPercent(40)
+	debug.SetMemoryLimit(2.5 * 1024 * 1024 * 1024) //2.5 GB
 
 	<-make(chan bool)
 
@@ -539,24 +519,6 @@ func UpdateWalletWithEventData(data *safejs.Value) error {
 	}
 
 	fmt.Println("update wallet with event data")
-	wallet := zcncrypto.Wallet{
-		ClientID:      clientID,
-		ClientKey:     clientKey,
-		PeerPublicKey: peerPublicKey,
-		Keys: []zcncrypto.KeyPair{
-			{
-				PublicKey:  publicKey,
-				PrivateKey: privateKey,
-			},
-		},
-		Mnemonic: mnemonic,
-		IsSplit:  isSplit,
-	}
-
-	// Convert the wallet struct to JSON
-	_, err = json.MarshalIndent(wallet, "", "    ")
-	if err != nil {
-		log.Fatalf("Error converting wallet to JSON: %v", err)
-	}
+	setWallet(clientID, clientKey, peerPublicKey, publicKey, privateKey, mnemonic, isSplit)
 	return nil
 }
