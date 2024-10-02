@@ -43,24 +43,34 @@ func registerZauthServer(serverAddr string) {
 }
 
 func zauthRetrieveKey(clientID, peerPublicKey, serverAddr, token string) (string, error) {
-	return zcncore.CallZauthRetreiveKey(serverAddr, token, clientID, peerPublicKey)
+	fmt.Println("retrieveing")
+
+	d, err := zcncore.CallZauthRetreiveKey(serverAddr, token, clientID, peerPublicKey)
+
+	fmt.Println(d, err)
+
+	return d, err
 }
 
 // zvaultNewWallet generates new wallet
-func zvaultNewWallet(serverAddr, token string) (string, error) {
+func zvaultNewWallet(serverAddr, token string) error {
 	return zcncore.CallZvaultNewWallet(serverAddr, token)
 }
 
 // zvaultNewSplit generates new split key for saved wallet
-func zvaultNewSplit(clientID, serverAddr, token string, restrictions []string) (string, error) {
-	return zcncore.CallZvaultNewSplit(serverAddr, token, clientID, restrictions)
+func zvaultNewSplit(clientID, serverAddr, token string) error {
+	return zcncore.CallZvaultNewSplit(serverAddr, token, clientID)
 }
 
-func zvaultUpdateRestrictions(clientID, peerPublicKey, serverAddr, token string, restrictions []string) (string, error) {
+func zvaultRetrieveRestrictions(peerPublicKey, serverAddr, token string) (string, error) {
+	return zcncore.CallZvaultRetrieveRestrictions(serverAddr, token, peerPublicKey)
+}
+
+func zvaultUpdateRestrictions(clientID, peerPublicKey, serverAddr, token string, restrictions []string) error {
 	return zcncore.CallZvaultUpdateRestrictions(serverAddr, token, clientID, peerPublicKey, restrictions)
 }
 
-func zvaultStoreKey(serverAddr, token, privateKey string) (string, error) {
+func zvaultStoreKey(serverAddr, token, privateKey string) error {
 	return zcncore.CallZvaultStoreKeyString(serverAddr, token, privateKey)
 }
 
