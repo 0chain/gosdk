@@ -1,7 +1,6 @@
 package client
 
 import (
-	"context"
 	"crypto/sha1"
 	"encoding/hex"
 	"encoding/json"
@@ -21,16 +20,13 @@ import (
 	"time"
 )
 
-var customResolver = &net.Resolver{
-	PreferGo: false, // Use the system resolver instead of Go's
-	Dial: func(ctx context.Context, network, addr string) (net.Conn, error) {
-		return net.DialTimeout(network, "8.8.8.8:53", 5*time.Second) // Using Google DNS
-	},
-}
-
 var DefaultTransport = &http.Transport{
-	Proxy:                 EnvProxy.Proxy,
-	DialContext:           customResolver.Dial,
+	Proxy: EnvProxy.Proxy,
+	DialContext: (&net.Dialer{
+		Timeout:   3 * time.Minute,
+		KeepAlive: 45 * time.Second,
+		DualStack: true,
+	}).DialContext,
 	MaxIdleConns:          100,
 	IdleConnTimeout:       90 * time.Second,
 	TLSHandshakeTimeout:   45 * time.Second,
@@ -104,7 +100,6 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 	dominant := 200
 	wg := sync.WaitGroup{}
 
-	var debugUrl string
 	cfg, err := conf.GetClientConfig()
 	if err != nil {
 		return nil, err
@@ -115,7 +110,6 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 		go func(sharder string) {
 			defer wg.Done()
 			urlString := fmt.Sprintf("%v/%v%v%v", sharder, restApiUrl, scAddress, relativePath)
-			fmt.Println("Printing url... ", urlString)
 			urlObj, err := url.Parse(urlString)
 			if err != nil {
 				log.Println(err)
@@ -123,47 +117,33 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 			}
 			q := urlObj.Query()
 			for k, v := range params {
-				fmt.Println("Printing keys and values... ", k, v)
 				q.Add(k, v)
 			}
 			urlObj.RawQuery = q.Encode()
-			c := &http.Client{Transport: DefaultTransport}
-			response, err := c.Get(urlObj.String())
+			client := &http.Client{Transport: DefaultTransport}
+			response, err := client.Get(urlObj.String())
 			if err != nil {
-				fmt.Println("Printing error... ", err.Error())
 				nodeClient.sharders.Fail(sharder)
 				return
 			}
 
-			fmt.Println("Printing response... ")
-
 			defer response.Body.Close()
 			entityBytes, _ := io.ReadAll(response.Body)
-			fmt.Println("Printing entity bytes... ", string(entityBytes))
 			mu.Lock()
 			if response.StatusCode > http.StatusBadRequest {
 				nodeClient.sharders.Fail(sharder)
 			} else {
 				nodeClient.sharders.Success(sharder)
 			}
-
-			fmt.Println("Printing response status code... ", response.StatusCode)
-
 			responses[response.StatusCode]++
 			if responses[response.StatusCode] > maxCount {
 				maxCount = responses[response.StatusCode]
 			}
 
-			fmt.Println("Printing max count... ", maxCount)
-
 			if isCurrentDominantStatus(response.StatusCode, responses, maxCount) {
 				dominant = response.StatusCode
 				retObj = entityBytes
-
-				fmt.Println("Printing retObj... ", string(retObj))
 			}
-
-			fmt.Println("Printing entity result... ", entityResult)
 
 			entityResult[sharder] = entityBytes
 			nodeClient.sharders.Success(sharder)
@@ -172,36 +152,26 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 	}
 	wg.Wait()
 
-	fmt.Println("Printing count... ", maxCount, cfg.SharderConsensous)
-
 	rate := float32(maxCount*100) / float32(cfg.SharderConsensous)
 	if rate < consensusThresh {
-		err = errors.New("consensus_failed", fmt.Sprintf("consensus failed on sharders : %s : %f : %d", debugUrl, rate, cfg.SharderConsensous))
+		err = errors.New("consensus_failed", "consensus failed on sharders")
 	}
 
-	fmt.Println("Printing err... ", err.Error())
-
 	if dominant != 200 {
-		fmt.Println("bad Printing dominant... ", dominant)
 		var objmap map[string]json.RawMessage
 		err := json.Unmarshal(retObj, &objmap)
 		if err != nil {
-			fmt.Println("bad Printing error... ", err.Error())
 			return nil, errors.New("", string(retObj))
 		}
 
 		var parsed string
 		err = json.Unmarshal(objmap["error"], &parsed)
 		if err != nil || parsed == "" {
-			fmt.Println("bad Printing parsed... ", parsed)
 			return nil, errors.New("", string(retObj))
 		}
-		fmt.Println("2bad Printing parsed... ", parsed)
 
 		return nil, errors.New("", parsed)
 	}
-
-	fmt.Println("Printing good... ", string(retObj))
 
 	if rate > consensusThresh {
 		return retObj, nil
