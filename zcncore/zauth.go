@@ -194,16 +194,15 @@ func CallZauthDelete(serverAddr, token, clientID string) error {
 
 		return errors.Errorf("code: %d", resp.StatusCode)
 	}
-
 	return nil
 }
 
-func CallZvaultNewWallet(serverAddr, token string) (string, error) {
+func CallZvaultNewWallet(serverAddr, token string) error {
 	endpoint := serverAddr + "/wallet"
 
 	req, err := http.NewRequest("POST", endpoint, nil)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to create HTTP request")
+		return errors.Wrap(err, "failed to create HTTP request")
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -212,40 +211,28 @@ func CallZvaultNewWallet(serverAddr, token string) (string, error) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to send HTTP request")
+		return errors.Wrap(err, "failed to send HTTP request")
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		errMsg, _ := io.ReadAll(resp.Body)
 		if len(errMsg) > 0 {
-			return "", errors.Errorf("code: %d, err: %s", resp.StatusCode, string(errMsg))
+			return errors.Errorf("code: %d, err: %s", resp.StatusCode, string(errMsg))
 		}
 
-		return "", errors.Errorf("code: %d", resp.StatusCode)
+		return errors.Errorf("code: %d", resp.StatusCode)
 	}
 
-	d, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to read response body")
-	}
-
-	return string(d), nil
+	return nil
 }
 
-func CallZvaultNewSplit(serverAddr, token, clientID string, restrictions []string) (string, error) {
+func CallZvaultNewSplit(serverAddr, token, clientID string) error {
 	endpoint := serverAddr + "/key/" + clientID
 
-	data, err := json.Marshal(createKeyRequest{
-		Restrictions: restrictions,
-	})
+	req, err := http.NewRequest("POST", endpoint, nil)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to serialize request")
-	}
-
-	req, err := http.NewRequest("POST", endpoint, bytes.NewReader(data))
-	if err != nil {
-		return "", errors.Wrap(err, "failed to create HTTP request")
+		return errors.Wrap(err, "failed to create HTTP request")
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -254,38 +241,26 @@ func CallZvaultNewSplit(serverAddr, token, clientID string, restrictions []strin
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to send HTTP request")
+		return errors.Wrap(err, "failed to send HTTP request")
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		errMsg, _ := io.ReadAll(resp.Body)
 		if len(errMsg) > 0 {
-			return "", errors.Errorf("code: %d, err: %s", resp.StatusCode, string(errMsg))
+			return errors.Errorf("code: %d, err: %s", resp.StatusCode, string(errMsg))
 		}
 
-		return "", errors.Errorf("code: %d", resp.StatusCode)
+		return errors.Errorf("code: %d", resp.StatusCode)
 	}
 
-	d, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to read response body")
-	}
-
-	return string(d), nil
+	return nil
 }
 
-func CallZvaultUpdateRestrictions(serverAddr, token, clientID, peerPublicKey string, restrictions []string) (string, error) {
-	endpoint := serverAddr + "/restrictions/" + clientID
+func CallZvaultRetrieveRestrictions(serverAddr, token, peerPublicKey string) (string, error) {
+	endpoint := serverAddr + "/restrictions"
 
-	data, err := json.Marshal(updateRestrictionsRequest{
-		Restrictions: restrictions,
-	})
-	if err != nil {
-		return "", errors.Wrap(err, "failed to serialize request")
-	}
-
-	req, err := http.NewRequest("PUT", endpoint, bytes.NewReader(data))
+	req, err := http.NewRequest("GET", endpoint, nil)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to create HTTP request")
 	}
@@ -318,8 +293,45 @@ func CallZvaultUpdateRestrictions(serverAddr, token, clientID, peerPublicKey str
 	return string(d), nil
 }
 
-func CallZvaultStoreKeyString(serverAddr, token, privateKey string) (string, error) {
-	// Add your code here
+func CallZvaultUpdateRestrictions(serverAddr, token, clientID, peerPublicKey string, restrictions []string) error {
+	endpoint := serverAddr + "/restrictions/" + clientID
+
+	data, err := json.Marshal(updateRestrictionsRequest{
+		Restrictions: restrictions,
+	})
+	if err != nil {
+		return errors.Wrap(err, "failed to serialize request")
+	}
+
+	req, err := http.NewRequest("PUT", endpoint, bytes.NewReader(data))
+	if err != nil {
+		return errors.Wrap(err, "failed to create HTTP request")
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Peer-Public-Key", peerPublicKey)
+	req.Header.Set("X-Jwt-Token", token)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return errors.Wrap(err, "failed to send HTTP request")
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		errMsg, _ := io.ReadAll(resp.Body)
+		if len(errMsg) > 0 {
+			return errors.Errorf("code: %d, err: %s", resp.StatusCode, string(errMsg))
+		}
+
+		return errors.Errorf("code: %d", resp.StatusCode)
+	}
+
+	return nil
+}
+
+func CallZvaultStoreKeyString(serverAddr, token, privateKey string) error {
 	endpoint := serverAddr + "/store"
 
 	reqData := struct {
@@ -334,20 +346,20 @@ func CallZvaultStoreKeyString(serverAddr, token, privateKey string) (string, err
 
 	err := encoder.Encode(reqData)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to create HTTP request")
+		return errors.Wrap(err, "failed to create HTTP request")
 	}
 
 	var req *http.Request
 
 	req, err = http.NewRequest("POST", endpoint, &buff)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to create HTTP request")
+		return errors.Wrap(err, "failed to create HTTP request")
 	}
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to send HTTP request")
+		return errors.Wrap(err, "failed to send HTTP request")
 	}
 
 	defer resp.Body.Close()
@@ -355,22 +367,16 @@ func CallZvaultStoreKeyString(serverAddr, token, privateKey string) (string, err
 	if resp.StatusCode != http.StatusOK {
 		errMsg, _ := io.ReadAll(resp.Body)
 		if len(errMsg) > 0 {
-			return "", errors.Errorf("code: %d, err: %s", resp.StatusCode, string(errMsg))
+			return errors.Errorf("code: %d, err: %s", resp.StatusCode, string(errMsg))
 		}
 
-		return "", errors.Errorf("code: %d", resp.StatusCode)
+		return errors.Errorf("code: %d", resp.StatusCode)
 	}
 
-	d, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to read response body")
-	}
-
-	return string(d), nil
+	return nil
 }
 
 func CallZvaultRetrieveKeys(serverAddr, token, clientID string) (string, error) {
-	// Add your code here
 	endpoint := fmt.Sprintf("%s/keys/%s", serverAddr, clientID)
 	req, err := http.NewRequest("GET", endpoint, nil)
 	if err != nil {
