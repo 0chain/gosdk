@@ -1,8 +1,6 @@
 module github.com/0chain/gosdk
 
-go 1.22.0
-
-toolchain go1.22.1
+go 1.23.2
 
 require (
 	github.com/0chain/common v0.0.6-0.20230127095721-8df4d1d72565
