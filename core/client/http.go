@@ -1,22 +1,15 @@
 package client
 
 import (
-	"crypto/sha1"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/util"
-	"github.com/hashicorp/go-retryablehttp"
 	"github.com/shopspring/decimal"
-	"io"
-	"net"
 	"net/http"
 	"net/url"
-	"os"
 	"sync"
-	"time"
 )
 
 // SCRestAPIHandler is a function type to handle the response from the SC Rest API
@@ -26,45 +19,6 @@ import (
 //	`err` - the error if any
 type SCRestAPIHandler func(response map[string][]byte, numSharders int, err error)
 
-const (
-	// clientTimeout represents default http.Client timeout.
-	clientTimeout = 10 * time.Second
-
-	// tlsHandshakeTimeout represents default http.Transport TLS handshake timeout.
-	tlsHandshakeTimeout = 5 * time.Second
-
-	// dialTimeout represents default net.Dialer timeout.
-	dialTimeout = 5 * time.Second
-)
-
-func init() {
-	envProxy.Initialize()
-}
-
-// NewClient creates default http.Client with timeouts.
-func NewClient() *http.Client {
-	return &http.Client{
-		Timeout: clientTimeout,
-		Transport: &http.Transport{
-			TLSHandshakeTimeout: tlsHandshakeTimeout,
-			DialContext: (&net.Dialer{
-				Timeout: dialTimeout,
-			}).DialContext,
-		},
-	}
-}
-
-// NewRetryableClient creates default retryablehttp.Client with timeouts and embedded NewClient result.
-func NewRetryableClient(retryMax int) *retryablehttp.Client {
-	client := retryablehttp.NewClient()
-	client.HTTPClient = NewClient()
-	client.RetryWaitMax = clientTimeout
-	client.RetryMax = retryMax
-	client.Logger = nil
-
-	return client
-}
-
 // MakeSCRestAPICall makes a rest api call to the sharders.
 //   - scAddress is the address of the smart contract
 //   - relativePath is the relative path of the api
@@ -73,6 +27,7 @@ func NewRetryableClient(retryMax int) *retryablehttp.Client {
 func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]string, restApiUrls ...string) ([]byte, error) {
 	const (
 		consensusThresh = float32(25.0)
+		ScRestApiUrl    = "v1/screst/"
 	)
 
 	restApiUrl := ScRestApiUrl
@@ -181,107 +136,6 @@ func isCurrentDominantStatus(respStatus int, currentTotalPerStatus map[int]int, 
 	// - running total for status is the max and response is 200 or
 	// - running total for status is the max and count for 200 is lower
 	return currentTotalPerStatus[respStatus] == currentMax && (respStatus == 200 || currentTotalPerStatus[200] < currentMax)
-}
-
-// hashAndBytesOfReader computes hash of readers data and returns hash encoded to hex and bytes of reader data.
-// If error occurs while reading data from reader, it returns non nil error.
-func hashAndBytesOfReader(r io.Reader) (hash string, reader []byte, err error) { //nolint:unused
-	h := sha1.New()
-	teeReader := io.TeeReader(r, h)
-	readerBytes, err := io.ReadAll(teeReader)
-	if err != nil {
-		return "", nil, err
-	}
-
-	return hex.EncodeToString(h.Sum(nil)), readerBytes, nil
-}
-
-// extractSharders returns string slice of randomly ordered sharders existing in the current network.
-func extractSharders() []string { //nolint:unused
-	sharders := nodeClient.Network().Sharders
-	return util.GetRandom(sharders, len(sharders))
-}
-
-const (
-	// ScRestApiUrl represents base URL path to execute smart contract rest points.
-	ScRestApiUrl = "v1/screst/"
-)
-
-// makeScURL creates url.URL to make smart contract request to sharder.
-func makeScURL(params map[string]string, sharder, restApiUrl, scAddress, relativePath string) *url.URL { //nolint:unused
-	uString := fmt.Sprintf("%v/%v%v%v", sharder, restApiUrl, scAddress, relativePath)
-
-	u, _ := url.Parse(uString)
-	q := u.Query()
-	for k, v := range params {
-		q.Add(k, v)
-	}
-	u.RawQuery = q.Encode()
-
-	//log.Println("SC URL:", u.RawQuery)
-	//log.Println("Sharders:", sharder)
-	//log.Println("Rest API URL:", restApiUrl)
-	//log.Println("SC Address:", scAddress)
-	//log.Println("Relative Path:", relativePath)
-
-	return u
-}
-
-func (pfe *proxyFromEnv) Proxy(req *http.Request) (proxy *url.URL, err error) {
-	if pfe.isLoopback(req.URL.Host) {
-		switch req.URL.Scheme {
-		case "http":
-			return pfe.http, nil
-		case "https":
-			return pfe.https, nil
-		default:
-		}
-	}
-	return http.ProxyFromEnvironment(req)
-}
-
-var envProxy proxyFromEnv
-
-type proxyFromEnv struct {
-	HTTPProxy  string
-	HTTPSProxy string
-	NoProxy    string
-
-	http, https *url.URL
-}
-
-func (pfe *proxyFromEnv) Initialize() {
-	pfe.HTTPProxy = getEnvAny("HTTP_PROXY", "http_proxy")
-	pfe.HTTPSProxy = getEnvAny("HTTPS_PROXY", "https_proxy")
-	pfe.NoProxy = getEnvAny("NO_PROXY", "no_proxy")
-
-	if pfe.NoProxy != "" {
-		return
-	}
-
-	if pfe.HTTPProxy != "" {
-		pfe.http, _ = url.Parse(pfe.HTTPProxy)
-	}
-	if pfe.HTTPSProxy != "" {
-		pfe.https, _ = url.Parse(pfe.HTTPSProxy)
-	}
-}
-
-func (pfe *proxyFromEnv) isLoopback(host string) (ok bool) {
-	host, _, _ = net.SplitHostPort(host)
-	if host == "localhost" {
-		return true
-	}
-	return net.ParseIP(host).IsLoopback()
-}
-
-func getEnvAny(names ...string) string {
-	for _, n := range names {
-		if val := os.Getenv(n); val != "" {
-			return val
-		}
-	}
-	return ""
 }
 
 func GetBalance(clientIDs ...string) (*GetBalanceResponse, error) {
