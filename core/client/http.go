@@ -11,7 +11,6 @@ import (
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/shopspring/decimal"
 	"io"
-	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -19,20 +18,6 @@ import (
 	"sync"
 	"time"
 )
-
-var DefaultTransport = &http.Transport{
-	Proxy: EnvProxy.Proxy,
-	DialContext: (&net.Dialer{
-		Timeout:   3 * time.Minute,
-		KeepAlive: 45 * time.Second,
-		DualStack: true,
-	}).DialContext,
-	MaxIdleConns:          100,
-	IdleConnTimeout:       90 * time.Second,
-	TLSHandshakeTimeout:   45 * time.Second,
-	ExpectContinueTimeout: 1 * time.Second,
-	MaxIdleConnsPerHost:   25,
-}
 
 // SCRestAPIHandler is a function type to handle the response from the SC Rest API
 //
@@ -51,6 +36,10 @@ const (
 	// dialTimeout represents default net.Dialer timeout.
 	dialTimeout = 5 * time.Second
 )
+
+func init() {
+	envProxy.Initialize()
+}
 
 // NewClient creates default http.Client with timeouts.
 func NewClient() *http.Client {
@@ -112,7 +101,7 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 			urlString := fmt.Sprintf("%v/%v%v%v", sharder, restApiUrl, scAddress, relativePath)
 			urlObj, err := url.Parse(urlString)
 			if err != nil {
-				log.Println(err)
+				fmt.Println(err.Error())
 				return
 			}
 			q := urlObj.Query()
@@ -253,7 +242,7 @@ func (pfe *proxyFromEnv) Proxy(req *http.Request) (proxy *url.URL, err error) {
 	return http.ProxyFromEnvironment(req)
 }
 
-var EnvProxy proxyFromEnv
+var envProxy proxyFromEnv
 
 type proxyFromEnv struct {
 	HTTPProxy  string
