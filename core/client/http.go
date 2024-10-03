@@ -113,12 +113,9 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 			urlStr := urlObj.String()
 			response, err := client.Get(urlStr)
 			if err != nil {
-				fmt.Println("Failing url:", urlStr, "on sharder:", sharder, "Error:", err)
 				nodeClient.sharders.Fail(sharder)
 				return
 			}
-
-			fmt.Println("Success url:", urlStr, "on sharder:", sharder)
 
 			defer response.Body.Close()
 			entityBytes, _ := io.ReadAll(response.Body)
