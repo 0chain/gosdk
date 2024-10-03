@@ -4,13 +4,12 @@
 package zboxutil
 
 import (
-	coreHttp "github.com/0chain/gosdk/core/client"
 	"net/http"
 	"time"
 )
 
 var DefaultTransport = &http.Transport{
-	Proxy: coreHttp.EnvProxy.Proxy,
+	Proxy: envProxy.Proxy,
 
 	MaxIdleConns:          100,
 	IdleConnTimeout:       60 * time.Second,
