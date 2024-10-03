@@ -37,7 +37,6 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 
 	sharders := nodeClient.Network().Sharders
 	responses := make(map[int]int)
-	mu := &sync.Mutex{}
 	entityResult := make(map[string][]byte)
 	var retObj []byte
 	maxCount := 0
@@ -93,7 +92,6 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 
 			entityResult[sharder] = []byte(response.Body)
 			nodeClient.sharders.Success(sharder)
-			mu.Unlock()
 		}(sharder)
 	}
 	wg.Wait()
