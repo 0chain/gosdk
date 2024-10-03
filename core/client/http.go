@@ -109,12 +109,26 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 				q.Add(k, v)
 			}
 			urlObj.RawQuery = q.Encode()
-			client := &http.Client{Transport: DefaultTransport}
+			c := &http.Client{Transport: DefaultTransport}
 			urlStr := urlObj.String()
-			response, err := client.Get(urlStr)
-			if err != nil {
-				nodeClient.sharders.Fail(sharder)
-				return
+			const maxRetries = 3
+			var response *http.Response
+			for retries := 0; retries < maxRetries; retries++ {
+				response, err = c.Get(urlStr)
+				if err == nil {
+					// Success, exit the loop
+					break
+				}
+
+				// Log the failure and retry
+				if retries == maxRetries-1 {
+					// If max retries reached, mark the sharder as failed
+					nodeClient.sharders.Fail(sharder)
+					return
+				}
+
+				// Optionally: Add a delay before retrying
+				time.Sleep(time.Second * 1) // wait for 1 second before retrying
 			}
 
 			defer response.Body.Close()
