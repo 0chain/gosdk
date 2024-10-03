@@ -109,31 +109,18 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 				q.Add(k, v)
 			}
 			urlObj.RawQuery = q.Encode()
-			c := &http.Client{Transport: DefaultTransport}
-			urlStr := urlObj.String()
-			const maxRetries = 3
-			var response *http.Response
-			for retries := 0; retries < maxRetries; retries++ {
-				response, err = c.Get(urlStr)
-				if err == nil {
-					// Success, exit the loop
-					break
-				}
 
-				// Log the failure and retry
-				if retries == maxRetries-1 {
-					// If max retries reached, mark the sharder as failed
-					nodeClient.sharders.Fail(sharder)
-					return
-				}
-
-				// Optionally: Add a delay before retrying
-				time.Sleep(time.Second * 1) // wait for 1 second before retrying
+			req, err := util.NewHTTPGetRequest(urlObj.String())
+			if err != nil {
+				fmt.Println("1Error creating request", err.Error())
+				return
+			}
+			response, err := req.Get()
+			if err != nil {
+				fmt.Println("2Error getting response", err.Error())
+				return
 			}
 
-			defer response.Body.Close()
-			entityBytes, _ := io.ReadAll(response.Body)
-			mu.Lock()
 			if response.StatusCode > http.StatusBadRequest {
 				nodeClient.sharders.Fail(sharder)
 			} else {
@@ -146,10 +133,10 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 
 			if isCurrentDominantStatus(response.StatusCode, responses, maxCount) {
 				dominant = response.StatusCode
-				retObj = entityBytes
+				retObj = []byte(response.Body)
 			}
 
-			entityResult[sharder] = entityBytes
+			entityResult[sharder] = []byte(response.Body)
 			nodeClient.sharders.Success(sharder)
 			mu.Unlock()
 		}(sharder)
