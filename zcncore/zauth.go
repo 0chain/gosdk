@@ -89,10 +89,6 @@ var AvailableRestrictions = map[string][]string{
 	},
 }
 
-type createKeyRequest struct {
-	Restrictions []string `json:"restrictions"`
-}
-
 type updateRestrictionsRequest struct {
 	Restrictions []string `json:"restrictions"`
 }
@@ -140,8 +136,8 @@ func CallZauthRetreiveKey(serverAddr, token, clientID, peerPublicKey string) (st
 }
 
 func CallZauthRevoke(serverAddr, token, clientID, peerPublicKey string) error {
-	endpoint := serverAddr + "/revoke/" + clientID
-	endpoint += "?peer_public_key=" + peerPublicKey
+	endpoint := serverAddr + "/revoke/" + clientID + "?peer_public_key=" + peerPublicKey
+
 	req, err := http.NewRequest("POST", endpoint, nil)
 	if err != nil {
 		return errors.Wrap(err, "failed to create HTTP request")
@@ -407,8 +403,8 @@ func CallZvaultRetrieveKeys(serverAddr, token, clientID string) (string, error) 
 }
 
 func CallZvaultDeletePrimaryKey(serverAddr, token, clientID string) error {
-	// Add your code here
 	endpoint := serverAddr + "/delete/" + clientID
+
 	req, err := http.NewRequest("POST", endpoint, nil)
 	if err != nil {
 		return errors.Wrap(err, "failed to create HTTP request")
