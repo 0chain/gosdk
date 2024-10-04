@@ -314,13 +314,6 @@ func GetPublicEncryptionKey(mnemonic string) (string, error) {
 	return encScheme.GetPublicKey()
 }
 
-// ConvertToValue converts ZCN tokens to SAS tokens
-// # Inputs
-//   - token: ZCN tokens
-func ConvertToValue(token float64) uint64 {
-	return uint64(token * common.TokenUnit)
-}
-
 func SignWithKey(privateKey, hash string) (string, error) {
 	sigScheme := zcncrypto.NewSignatureScheme("bls0chain")
 	err := sigScheme.SetPrivateKey(privateKey)
@@ -342,6 +335,13 @@ var AddSignature = func(privateKey, signature string, hash string) (string, erro
 	}
 
 	return ss.Add(signature, hash)
+}
+
+// ConvertToValue converts ZCN tokens to SAS tokens
+// # Inputs
+//   - token: ZCN tokens
+func ConvertToValue(token float64) uint64 {
+	return uint64(token * common.TokenUnit)
 }
 
 // ConvertToToken converts the SAS tokens to ZCN tokens

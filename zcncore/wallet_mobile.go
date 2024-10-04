@@ -6,6 +6,7 @@ package zcncore
 import (
 	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/zcncrypto"
+	"strconv"
 )
 
 // Wallet interface to gather all wallet related functions
@@ -36,4 +37,8 @@ func GetWalletBalance(id string) (int64, error) {
 		return 0, err
 	}
 	return int64(response.Balance), nil
+}
+
+func ConvertToValueMobile(token float64) string {
+	return strconv.FormatUint(ConvertToValue(token), 10)
 }
