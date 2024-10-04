@@ -465,6 +465,19 @@ func getBlobbersInternal(active, stakable bool, limit, offset int) (bs []*Blobbe
 	return wrap.Nodes, nil
 }
 
+func GetBlobbersPaged(active, stakable bool, limit, offset int) ([]*Blobber, error) {
+	if !client.IsSDKInitialized() {
+		return nil, sdkNotInitialized
+	}
+
+	blobbers, err := getBlobbersInternal(active, stakable, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	return blobbers, nil
+}
+
 // GetBlobbers returns list of blobbers.
 //   - active: if true then only active blobbers are returned
 //   - stakable: if true then only stakable blobbers are returned

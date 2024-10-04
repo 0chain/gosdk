@@ -10,6 +10,7 @@ import (
 	"github.com/0chain/gosdk/core/tokenrate"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/zcncrypto"
+	"github.com/0chain/gosdk/zboxcore/sdk"
 	"net/url"
 	"strconv"
 )
@@ -219,6 +220,25 @@ func GetSharders(active, stakable bool, limit, offset int) ([]byte, error) {
 		"offset":   strconv.FormatInt(int64(offset), 10),
 		"limit":    strconv.FormatInt(int64(limit), 10),
 	})
+}
+
+func GetBlobbers(active, stakable bool, limit, offset int) ([]byte, error) {
+	if err := CheckConfig(); err != nil {
+		return nil, err
+	}
+
+	blobbers, err := sdk.GetBlobbersPaged(active, stakable, limit, offset)
+
+	if err != nil {
+		return nil, err
+	}
+
+	blobbersBytes, err := json.Marshal(blobbers)
+	if err != nil {
+		return nil, err
+	}
+
+	return blobbersBytes, nil
 }
 
 // GetLatestFinalizedMagicBlock gets latest finalized magic block
