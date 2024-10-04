@@ -28,14 +28,6 @@ func setWallet(clientID, clientKey, peerPublicKey, publicKey, privateKey, mnemon
 		},
 	}
 
-	c := client.GetClient()
-	c.Mnemonic = mnemonic
-	c.ClientID = clientID
-	c.ClientKey = clientKey
-	c.PeerPublicKey = peerPublicKey
-	c.Keys = keys
-	c.IsSplit = isSplit
-
 	w := &zcncrypto.Wallet{
 		ClientID:      clientID,
 		ClientKey:     clientKey,

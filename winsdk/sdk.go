@@ -118,7 +118,6 @@ func InitSDKs(configJson *C.char) *C.char {
 	l.Logger.Info(configObj.BlockWorker)
 	l.Logger.Info(configObj.ChainID)
 	l.Logger.Info(configObj.SignatureScheme)
-	l.Logger.Info(configObj.PreferredBlobbers)
 
 	if zboxApiClient == nil {
 		zboxApiClient = zboxapi.NewClient()
