@@ -343,3 +343,40 @@ func GetUserLockedTotal(clientID string) (int64, error) {
 		return 0, err
 	}
 }
+
+func GetStakePoolUserInfo(clientID string) ([]byte, error) {
+	if err := CheckConfig(); err != nil {
+		return nil, err
+	}
+
+	limit, offset := 20, 0
+	spUserInfo, err := sdk.GetStakePoolUserInfo(clientID, limit, offset)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var spUserInfoSl []*sdk.StakePoolUserInfo
+	spUserInfoSl = append(spUserInfoSl, spUserInfo)
+	for {
+		// if the length of the slice is less than the limit, then we have reached the end
+		if len(spUserInfoSl) < limit {
+			break
+		}
+
+		// get the next set of stake pool user info
+		offset += limit
+		spUserInfo, err = sdk.GetStakePoolUserInfo(clientID, limit, offset)
+		if err != nil {
+			break
+		}
+		spUserInfoSl = append(spUserInfoSl, spUserInfo)
+	}
+
+	spUserInfoBytes, err := json.Marshal(spUserInfoSl)
+	if err != nil {
+		return nil, errors.New("error while marshalling stake pool user info: " + err.Error())
+	}
+
+	return spUserInfoBytes, nil
+}
