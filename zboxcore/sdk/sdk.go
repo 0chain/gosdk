@@ -736,6 +736,7 @@ type UpdateBlobber struct {
 	IsShutdown               *bool                               `json:"is_shutdown,omitempty"`
 	NotAvailable             *bool                               `json:"not_available,omitempty"`
 	IsRestricted             *bool                               `json:"is_restricted,omitempty"`
+	StorageVersion           *int                                `json:"storage_version,omitempty"`
 }
 
 // ResetBlobberStatsDto represents blobber stats reset request.
@@ -1153,6 +1154,7 @@ type CreateAllocationOptions struct {
 	IsEnterprise         bool
 	FileOptionsParams    *FileOptionsParameters
 	Force                bool
+	StorageVersion       int
 }
 
 // CreateAllocationWith creates a new allocation with the given options for the current client using the SDK.
@@ -1164,7 +1166,7 @@ func CreateAllocationWith(options CreateAllocationOptions) (
 	string, int64, *transaction.Transaction, error) {
 
 	return CreateAllocationForOwner(client.GetClientID(),
-		client.GetClientPublicKey(), options.DataShards, options.ParityShards,
+		client.GetClientPublicKey(), options.DataShards, options.ParityShards, options.StorageVersion,
 		options.Size, options.ReadPrice, options.WritePrice, options.Lock,
 		options.BlobberIds, options.BlobberAuthTickets, options.ThirdPartyExtendable, options.IsEnterprise, options.Force, options.FileOptionsParams)
 }
@@ -1186,7 +1188,7 @@ func CreateAllocationWith(options CreateAllocationOptions) (
 // returns the hash of the transaction, the nonce of the transaction, the transaction object and an error if any.
 func CreateAllocationForOwner(
 	owner, ownerpublickey string,
-	datashards, parityshards int, size int64,
+	datashards, parityshards, storageVersion int, size int64,
 	readPrice, writePrice PriceRange,
 	lock uint64, preferredBlobberIds, blobberAuthTickets []string, thirdPartyExtendable, IsEnterprise, force bool, fileOptionsParams *FileOptionsParameters,
 ) (hash string, nonce int64, txn *transaction.Transaction, err error) {
@@ -1200,7 +1202,7 @@ func CreateAllocationForOwner(
 	}
 
 	allocationRequest, err := getNewAllocationBlobbers(
-		datashards, parityshards, size, readPrice, writePrice, preferredBlobberIds, blobberAuthTickets, force)
+		storageVersion, datashards, parityshards, size, readPrice, writePrice, preferredBlobberIds, blobberAuthTickets, force)
 	if err != nil {
 		return "", 0, nil, errors.New("failed_get_allocation_blobbers", "failed to get blobbers for allocation: "+err.Error())
 	}
@@ -1214,6 +1216,7 @@ func CreateAllocationForOwner(
 	allocationRequest["third_party_extendable"] = thirdPartyExtendable
 	allocationRequest["file_options_changed"], allocationRequest["file_options"] = calculateAllocationFileOptions(63 /*0011 1111*/, fileOptionsParams)
 	allocationRequest["is_enterprise"] = IsEnterprise
+	allocationRequest["storage_version"] = storageVersion
 
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.NEW_ALLOCATION_REQUEST,
@@ -1234,7 +1237,7 @@ func CreateAllocationForOwner(
 //
 // returns the list of blobber ids and an error if any.
 func GetAllocationBlobbers(
-	datashards, parityshards int,
+	storageVersion, datashards, parityshards int,
 	size int64,
 	isRestricted int,
 	readPrice, writePrice PriceRange,
@@ -1247,6 +1250,7 @@ func GetAllocationBlobbers(
 		"read_price_range":  readPrice,
 		"write_price_range": writePrice,
 		"is_restricted":     isRestricted,
+		"storage_version":   storageVersion,
 	}
 
 	allocationData, _ := json.Marshal(allocationRequest)
@@ -1272,7 +1276,7 @@ func GetAllocationBlobbers(
 }
 
 func getNewAllocationBlobbers(
-	datashards, parityshards int,
+	storageVersion, datashards, parityshards int,
 	size int64,
 	readPrice, writePrice PriceRange,
 	preferredBlobberIds, blobberAuthTickets []string, force bool,
@@ -1287,12 +1291,13 @@ func getNewAllocationBlobbers(
 				"blobber_auth_tickets": blobberAuthTickets,
 				"read_price_range":     readPrice,
 				"write_price_range":    writePrice,
+				"storage_version":      storageVersion,
 			}, nil
 		}
 	}
 
 	allocBlobberIDs, err := GetAllocationBlobbers(
-		datashards, parityshards, size, 2, readPrice, writePrice, force,
+		storageVersion, datashards, parityshards, size, 2, readPrice, writePrice, force,
 	)
 	if err != nil {
 		return nil, err
@@ -1321,6 +1326,7 @@ func getNewAllocationBlobbers(
 		"blobber_auth_tickets": uniqueBlobberAuthTickets,
 		"read_price_range":     readPrice,
 		"write_price_range":    writePrice,
+		"storage_version":      storageVersion,
 	}, nil
 }
 
