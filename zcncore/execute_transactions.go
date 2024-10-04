@@ -87,6 +87,26 @@ func MinerSCKill(providerId string, providerType Provider) (hash, out string, no
 
 }
 
+func StorageSCStakePoolLock(providerId string, providerType Provider, lock uint64) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+	return transaction.SmartContractTxnValue(StorageSmartContractAddress, transaction.SmartContractTxnData{
+		Name: transaction.STORAGESC_STAKE_POOL_LOCK,
+		InputArgs: &stakePoolRequest{
+			ProviderID:   providerId,
+			ProviderType: providerType,
+		},
+	}, lock)
+}
+
+func StorageSCStakePoolUnlock(providerId string, providerType Provider) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+	return transaction.SmartContractTxn(StorageSmartContractAddress, transaction.SmartContractTxnData{
+		Name: transaction.STORAGESC_STAKE_POOL_UNLOCK,
+		InputArgs: &stakePoolRequest{
+			ProviderID:   providerId,
+			ProviderType: providerType,
+		},
+	})
+}
+
 func StorageSCCollectReward(providerId string, providerType Provider) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 	return transaction.SmartContractTxn(StorageSmartContractAddress, transaction.SmartContractTxnData{
 		Name: transaction.STORAGESC_COLLECT_REWARD,
