@@ -6,7 +6,6 @@ package zcn
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"sync"
 
 	"github.com/0chain/gosdk/zcncore"
@@ -17,22 +16,17 @@ func Faucet(methodName, jsonInput string, zcnToken float64) (string, error) {
 	return ExecuteSmartContract(zcncore.FaucetSmartContractAddress, methodName, jsonInput, zcncore.ConvertToValue(zcnToken))
 }
 
-func ExecuteSmartContract(address, methodName, input string, sasToken string) (string, error) {
+func ExecuteSmartContract(address, methodName, input, sasToken string) (string, error) {
 	wg := &sync.WaitGroup{}
 	cb := &transactionCallback{wg: wg}
-	txn, err := zcncore.NewTransaction(cb, 0, 0)
+	txn, err := zcncore.NewTransaction(cb, "0", 0)
 	if err != nil {
 		return "", err
 	}
 
 	wg.Add(1)
 
-	v, err := strconv.ParseUint(sasToken, 10, 64)
-	if err != nil {
-		return "", fmt.Errorf("invalid token value: %v, err: %v", sasToken, err)
-	}
-
-	_, err = txn.ExecuteSmartContract(address, methodName, input, v)
+	err = txn.ExecuteSmartContract(address, methodName, input, sasToken)
 	if err != nil {
 		return "", err
 

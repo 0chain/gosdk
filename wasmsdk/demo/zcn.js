@@ -17,7 +17,7 @@
 
 'use strict'
 
-const g = window
+const g =  window
 
 function hexStringToByte(str) {
   if (!str) return new Uint8Array()
@@ -30,10 +30,53 @@ function hexStringToByte(str) {
   return new Uint8Array(a)
 }
 
+function blsSign(hash, secretKey) {
+  const { jsProxy } = g.__zcn_wasm__
+
+  if (!jsProxy || !secretKey) {
+    const errMsg = 'err: bls.secretKey is not initialized'
+    console.warn(errMsg)
+    throw new Error(errMsg)
+  }
+
+  const bytes = hexStringToByte(hash)
+  const sk = bls.deserializeHexStrToSecretKey(secretKey)
+  const sig = sk.sign(bytes)
+
+  if (!sig) {
+    const errMsg = 'err: wasm blsSign function failed to sign transaction'
+    console.warn(errMsg)
+    throw new Error(errMsg)
+  }
+
+  return sig.serializeToHexStr()
+}
+
 async function createObjectURL(buf, mimeType) {
   var blob = new Blob([buf], { type: mimeType })
   return URL.createObjectURL(blob)
 }
+
+
+const readChunk = (offset, chunkSize, file) =>
+  new Promise((res,rej) => {
+    const fileReader = new FileReader()
+    const blob = file.slice(offset, chunkSize+offset)
+    fileReader.onload = e => {
+      const t = e.target
+      if (t.error == null) {
+        res({
+          size: t.result.byteLength,
+          buffer: new Uint8Array(t.result)
+        })
+      }else{
+        rej(t.error)
+      }
+    }
+
+    fileReader.readAsArrayBuffer(blob)
+  })
+
 
 /**
  * Sleep is used when awaiting for Go Wasm to initialize.
@@ -51,6 +94,8 @@ const sleep = (ms = 1000) =>
     setTimeout(res, ms)
   })
 
+
+
 /**
  * The maximum amount of time that we would expect Wasm to take to initialize.
  * If it doesn't initialize after this time, we send a warning to console.
@@ -60,8 +105,10 @@ const sleep = (ms = 1000) =>
 const maxTime = 10 * 1000
 
 // Initialize __zcn_wasm__
-g.__zcn_wasm__ = {
-  glob: { index: 0 },
+g.__zcn_wasm__ = g.__zcn_wasm_ || {
+  glob:{
+    index:0,
+  },
   jsProxy: {
     secretKey: null,
     publicKey: null,
@@ -79,39 +126,6 @@ g.__zcn_wasm__ = {
  */
 const bridge = g.__zcn_wasm__
 
-const readChunk = (offset, chunkSize, file) =>
-  new Promise((res, rej) => {
-    const fileReader = new FileReader()
-    const blob = file.slice(offset, chunkSize + offset)
-    fileReader.onload = e => {
-      const t = e.target
-      if (t.error == null) {
-        res({
-          size: t.result.byteLength,
-          buffer: new Uint8Array(t.result),
-        })
-      } else {
-        rej(t.error)
-      }
-    }
-
-    fileReader.readAsArrayBuffer(blob)
-  })
-
-async function md5Hash(file) {
-  const result = new Promise((resolve, reject) => {
-    const worker = new Worker('md5worker.js')
-    worker.postMessage(file)
-    worker.onmessage = e => {
-      resolve(e.data)
-      worker.terminate()
-    }
-    worker.onerror = reject
-  })
-
-  return result
-}
-
 // bulk upload files with FileReader
 // objects: the list of upload object
 //  - allocationId: string
@@ -124,78 +138,87 @@ async function md5Hash(file) {
 //  - numBlocks: int
 //  - callback: function(totalBytes,completedBytes,error)
 async function bulkUpload(options) {
-  console.log('bulkUpload')
   const start = bridge.glob.index
-  const opts = options.map(obj => {
-    const i = bridge.glob.index
+  const opts = options.map(obj=>{
+    const i = bridge.glob.index;
     bridge.glob.index++
-    const readChunkFuncName = '__zcn_upload_reader_' + i.toString()
-    const callbackFuncName = '__zcn_upload_callback_' + i.toString()
-    let md5HashFuncName = ''
-
-    g[readChunkFuncName] = async (offset, chunkSize) => {
-      console.log(
-        'bulk_upload: read chunk remotePath:' +
-          obj.remotePath +
-          ' offset:' +
-          offset +
-          ' chunkSize:' +
-          chunkSize
-      )
-      const chunk = await readChunk(offset, chunkSize, obj.file)
+    const readChunkFuncName = "__zcn_upload_reader_"+i.toString()
+    const callbackFuncName = "__zcn_upload_callback_"+i.toString()
+    var md5HashFuncName = ""
+    g[readChunkFuncName] =  async (offset,chunkSize) => {
+      const chunk = await readChunk(offset,chunkSize,obj.file)
       return chunk.buffer
     }
-
-    if (obj.file.size > 25 * 1024 * 1024) {
-      md5HashFuncName = '__zcn_md5_hash_' + i.toString()
+    if (obj.file.size > 25*1024*1024) {
+      md5HashFuncName = "__zcn_md5_hash_"+i.toString()
       const md5Res = md5Hash(obj.file)
       g[md5HashFuncName] = async () => {
-        const hash = await md5Res
-        return hash
+      const hash = await md5Res
+      return hash
       }
-    }
+  }
 
-    if (obj.callback) {
-      g[callbackFuncName] = async (totalBytes, completedBytes, error) =>
-        obj.callback(totalBytes, completedBytes, error)
+    if(obj.callback) {
+      g[callbackFuncName] =  async (totalBytes,completedBytes,error)=> obj.callback(totalBytes,completedBytes,error)
     }
 
     return {
-      allocationId: obj.allocationId,
-      remotePath: obj.remotePath,
-      readChunkFuncName: readChunkFuncName,
+      allocationId:obj.allocationId,
+      remotePath:obj.remotePath,
+      readChunkFuncName:readChunkFuncName,
       fileSize: obj.file.size,
-      thumbnailBytes: Array.from(obj?.thumbnailBytes || []).toString(),
-      encrypt: obj.encrypt,
-      webstreaming: obj.webstreaming,
-      isUpdate: obj.isUpdate,
-      isRepair: obj.isRepair,
-      numBlocks: obj.numBlocks,
-      callbackFuncName: callbackFuncName,
-      md5HashFuncName: md5HashFuncName,
+      thumbnailBytes:obj.thumbnailBytes?obj.thumbnailBytes.toString():"",
+      encrypt:obj.encrypt,
+      webstreaming:obj.webstreaming,
+      isUpdate:obj.isUpdate,
+      isRepair:obj.isRepair,
+      numBlocks:obj.numBlocks,
+      callbackFuncName:callbackFuncName,
+      md5HashFuncName:md5HashFuncName,
     }
   })
 
-  const end = bridge.glob.index
+  // md5Hash(options[0].file).then(hash=>{
+  //   console.log("md5 hash: ",hash)
+  // }).catch(err=>{
+  //   console.log("md5 hash error: ",err)
+  // })
 
+  const end =  bridge.glob.index
   const result = await bridge.__proxy__.sdk.multiUpload(JSON.stringify(opts))
-  for (let i = start; i < end; i++) {
-    g['__zcn_upload_reader_' + i.toString()] = null
-    g['__zcn_upload_callback_' + i.toString()] = null
+  for (let i=start; i<end;i++){
+    g["__zcn_upload_reader_"+i.toString()] = null;
+    g["__zcn_upload_callback_"+i.toString()] =null;
+    g["__zcn_md5_hash_"+i.toString()] = null;
   }
   return result
 }
 
-async function blsSign(hash) {
-  if (!bridge.jsProxy && !bridge.jsProxy.secretKey) {
+
+async function md5Hash(file) {
+  const result = new Promise((resolve, reject) => {
+    const worker = new Worker('md5worker.js')
+    worker.postMessage(file)
+    worker.onmessage = e => {
+      resolve(e.data)
+      worker.terminate()
+    }
+    worker.onerror = reject
+  })
+  return result
+}
+
+
+async function blsSign(hash, secretKey) {
+  if (!bridge.jsProxy && !secretKey) {
     const errMsg = 'err: bls.secretKey is not initialized'
     console.warn(errMsg)
     throw new Error(errMsg)
   }
 
   const bytes = hexStringToByte(hash)
-
-  const sig = bridge.jsProxy.secretKey.sign(bytes)
+  const sk = bls.deserializeHexStrToSecretKey(secretKey)
+  const sig = sk.sign(bytes)
 
   if (!sig) {
     const errMsg = 'err: wasm blsSign function failed to sign transaction'
@@ -207,9 +230,9 @@ async function blsSign(hash) {
 }
 
 async function blsVerifyWith(pk, signature, hash) {
-  const publicKey = bridge.jsProxy.bls.deserializeHexStrToPublicKey(pk)
+  const publicKey = bls.deserializeHexStrToPublicKey(pk);
   const bytes = hexStringToByte(hash)
-  const sig = bridge.jsProxy.bls.deserializeHexStrToSignature(signature)
+  const sig = bls.deserializeHexStrToSignature(signature)
   return publicKey.verify(sig, bytes)
 }
 
@@ -225,59 +248,26 @@ async function blsVerify(signature, hash) {
   return bridge.jsProxy.publicKey.verify(sig, bytes)
 }
 
-async function setWallet(
-  bls,
+async function setWallet(bls,
   clientID,
   clientKey,
   peerPublicKey,
   sk,
   pk,
   mnemonic,
-  isSplit
-) {
+  isSplit) {
   if (!bls) throw new Error('bls is undefined, on wasm setWallet fn')
   if (!sk) throw new Error('secret key is undefined, on wasm setWallet fn')
   if (!pk) throw new Error('public key is undefined, on wasm setWallet fn')
-  if (isSplit && !clientKey)
-    throw new Error('clientKey is undefined, on wasm setWallet fn')
 
-  if (
-    bridge.walletId != clientID ||
-    bridge.jsProxy.pubkeyStr != pk ||
-    bridge.jsProxy.isSplit != isSplit
-  ) {
-    bridge.jsProxy.bls = bls
-    bridge.jsProxy.secretKey = bls.deserializeHexStrToSecretKey(sk)
-    bridge.jsProxy.publicKey = bls.deserializeHexStrToPublicKey(pk)
-    bridge.jsProxy.pubkeyStr = pk
-    bridge.jsProxy.isSplit = isSplit
+  console.log('setWallet: ', clientID, sk, pk)
+  bridge.jsProxy.bls = bls
+  bridge.jsProxy.secretKey = bls.deserializeHexStrToSecretKey(sk)
+  bridge.jsProxy.publicKey = bls.deserializeHexStrToPublicKey(pk)
 
-    // use proxy.sdk to detect if sdk is ready
-    await bridge.__proxy__.sdk.setWallet(
-      clientID,
-      clientKey,
-      peerPublicKey,
-      pk,
-      sk,
-      mnemonic,
-      isSplit
-    )
-    bridge.walletId = clientID
-    bridge.secretKey = sk
-    bridge.peerPublicKey = peerPublicKey
-  }
-}
-
-function getWalletId() {
-  return bridge.walletId
-}
-
-function getPrivateKey() {
-  return bridge.secretKey
-}
-
-function getPeerPublicKey() {
-  return bridge.peerPublicKey
+  // use proxy.sdk to detect if sdk is ready
+  await bridge.__proxy__.sdk.setWallet(clientID, clientKey, peerPublicKey, pk, sk, mnemonic, isSplit)
+  bridge.walletId = clientID
 }
 
 async function loadWasm(go) {
@@ -288,50 +278,11 @@ async function loadWasm(go) {
       return await WebAssembly.instantiate(source, importObject)
     }
   }
-  if (!g.__zcn_wasm__) {
-    console.log('g.__zcn_wasm__ is not initialized')
-    return
-  }
 
-  let suffix = 'mainnet'
-  const currentLocation = window?.location?.hostname
-  if (
-    currentLocation?.includes('localhost') ||
-    currentLocation?.includes('mob') ||
-    currentLocation?.includes('desktop')
-  ) {
-    suffix = 'mob'
-  } else if (currentLocation?.includes('dev')) {
-    suffix = 'dev'
-  } else if (currentLocation?.includes('demo')) {
-    suffix = 'demo'
-  } else if (currentLocation?.includes('staging')) {
-    suffix = 'staging'
-  } else if (currentLocation?.includes('test')) {
-    suffix = 'test'
-  }
-
-  const wasmPath = '/zcn.wasm'
-  let wasmUrl = `https://d2os1u2xwjukgsdradds.cloudfront.net/${suffix}/zcn.wasm`
-
-  let source = await fetch(wasmUrl)
-    .then(res => res)
-    .catch(err => err)
-  // fallback to webapps server
-  if (!source?.ok) {
-    wasmUrl = '/wasmsdk/demo/zcn.wasm'
-    source = await fetch(wasmUrl).then(res => res)
-  }
-
-  // cache wasm response
-  const cacheWasm = await caches.open('wasm-cache')
-  await cacheWasm.put(wasmPath, source.clone())
-
-  // set SUFFIX env variable in gosdk
-  go.env = { SUFFIX: suffix }
-
-  // initiate wasm
-  const result = await WebAssembly.instantiateStreaming(source, go.importObject)
+  const result = await WebAssembly.instantiateStreaming(
+    await fetch('test/zcn.wasm'),
+    go.importObject
+  )
 
   setTimeout(() => {
     if (g.__zcn_wasm__?.__wasm_initialized__ !== true) {
@@ -398,7 +349,9 @@ async function createWasm() {
       })
 
   const sdkProxy = new Proxy(
-    {},
+    {
+
+    },
     {
       get: sdkGet,
     }
