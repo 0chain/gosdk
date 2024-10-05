@@ -5,18 +5,16 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"github.com/0chain/gosdk/core/client"
-	"path"
-	"strconv"
-	"time"
-
 	"github.com/0chain/gosdk/zcnbridge"
 	"github.com/0chain/gosdk/zcnbridge/errors"
 	"github.com/0chain/gosdk/zcnbridge/log"
 	"github.com/0chain/gosdk/zcncore"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"path"
+	"strconv"
 )
 
-var bridge *zcnbridge.BridgeClient
+var bridge *zcnbridge.BridgeClient //nolint:unused
 
 // initBridge initializes the bridge client
 //   - ethereumAddress: ethereum address of the wallet owner
@@ -27,7 +25,7 @@ var bridge *zcnbridge.BridgeClient
 //   - gasLimit: gas limit for the transactions
 //   - value: value to be sent with the transaction (unused)
 //   - consensusThreshold: consensus threshold for the transactions
-func initBridge(
+func initBridge( //nolint:unused
 	ethereumAddress string,
 	bridgeAddress string,
 	authorizersAddress string,
@@ -36,7 +34,7 @@ func initBridge(
 	gasLimit uint64,
 	value int64,
 	consensusThreshold float64) error {
-	if len(client.Wallet().ClientID) == 0 {
+	if len(client.ClientID()) == 0 {
 		return errors.New("wallet_error", "wallet is not set")
 	}
 
@@ -85,15 +83,14 @@ func burnZCN(amount uint64) string { //nolint
 //   - burnTrxHash: hash of the burn transaction
 //   - timeout: timeout in seconds
 func mintZCN(burnTrxHash string, timeout int) string { //nolint
-	mintPayload, err := bridge.QueryZChainMintPayload(burnTrxHash)
+	mintPayload,
+
+		err := bridge.QueryZChainMintPayload(burnTrxHash)
 	if err != nil {
 		return errors.Wrap("mintZCN", "failed to QueryZChainMintPayload", err).Error()
 	}
 
-	c, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
-	defer cancel()
-
-	hash, err := bridge.MintZCN(c, mintPayload)
+	hash, err := bridge.MintZCN(mintPayload)
 	if err != nil {
 		return errors.Wrap("mintZCN", "failed to MintZCN for txn "+hash, err).Error()
 	}
@@ -103,7 +100,7 @@ func mintZCN(burnTrxHash string, timeout int) string { //nolint
 
 // getMintWZCNPayload returns the mint payload for the given burn transaction hash
 //   - burnTrxHash: hash of the burn transaction
-func getMintWZCNPayload(burnTrxHash string) string {
+func getMintWZCNPayload(burnTrxHash string) string { //nolint:unused
 	mintPayload, err := bridge.QueryEthereumMintPayload(burnTrxHash)
 	if err != nil {
 		return errors.Wrap("getMintWZCNPayload", "failed to query ethereum mint payload", err).Error()
@@ -118,7 +115,7 @@ func getMintWZCNPayload(burnTrxHash string) string {
 }
 
 // getNotProcessedWZCNBurnEvents returns all not processed WZCN burn events from the Ethereum network
-func getNotProcessedWZCNBurnEvents() string {
+func getNotProcessedWZCNBurnEvents() string { //nolint:unused
 	var (
 		mintNonce int64
 		res       []byte
@@ -148,7 +145,7 @@ func getNotProcessedWZCNBurnEvents() string {
 }
 
 // getNotProcessedZCNBurnTickets Returns all not processed ZCN burn tickets burned for a certain ethereum address
-func getNotProcessedZCNBurnTickets() string {
+func getNotProcessedZCNBurnTickets() string { //nolint:unused
 	userNonce, err := bridge.GetUserNonceMinted(context.Background(), bridge.EthereumAddress)
 	if err != nil {
 		return errors.Wrap("getNotProcessedZCNBurnTickets", "failed to retreive user nonce", err).Error()

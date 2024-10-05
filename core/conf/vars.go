@@ -51,7 +51,7 @@ func InitClientConfig(c *Config) {
 	})
 }
 
-//Deprecated: Use client.Init() function. To normalize urls, use network.NormalizeURLs() method
+// Deprecated: Use client.Init() function. To normalize urls, use network.NormalizeURLs() method
 // // InitChainNetwork set global chain network
 func InitChainNetwork(n *Network) {
 	if n == nil {

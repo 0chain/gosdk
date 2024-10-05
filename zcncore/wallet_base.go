@@ -51,14 +51,14 @@ const (
 )
 
 // In percentage
-const consensusThresh = 25
+const consensusThresh = 25 //nolint:unused
 
 const (
-	defaultMinSubmit               = int(10)
-	defaultMinConfirmation         = int(10)
-	defaultConfirmationChainLength = int(3)
-	defaultTxnExpirationSeconds    = 60
-	defaultWaitSeconds             = 3 * time.Second
+	defaultMinSubmit               = int(10)         //nolint:unused
+	defaultMinConfirmation         = int(10)         //nolint:unused
+	defaultConfirmationChainLength = int(3)          //nolint:unused
+	defaultTxnExpirationSeconds    = 60              //nolint:unused
+	defaultWaitSeconds             = 3 * time.Second //nolint:unused
 )
 
 const (
@@ -208,7 +208,7 @@ func RecoverOfflineWallet(mnemonic string) (string, error) {
 	if !zcncrypto.IsMnemonicValid(mnemonic) {
 		return "", errors.New("Invalid mnemonic")
 	}
-	sigScheme := zcncrypto.NewSignatureScheme(client.SignatureScheme())
+	sigScheme := zcncrypto.NewSignatureScheme("bls0chain")
 	wallet, err := sigScheme.RecoverKeys(mnemonic)
 	if err != nil {
 		return "", err
@@ -371,4 +371,13 @@ func GetIdForUrl(url string) string {
 		return s[3]
 	}
 	return ""
+}
+
+var SignFn = func(hash string) (string, error) {
+	sigScheme := zcncrypto.NewSignatureScheme(client.SignatureScheme())
+	err := sigScheme.SetPrivateKey(client.PrivateKey())
+	if err != nil {
+		return "", err
+	}
+	return sigScheme.Sign(hash)
 }

@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"mime/multipart"
 	"net/http"
 	"path/filepath"
@@ -113,7 +113,7 @@ func (req *RenameRequest) renameBlobberObject(
 				defer resp.Body.Close()
 			}
 			var respBody []byte
-			respBody, err = ioutil.ReadAll(resp.Body)
+			respBody, err = io.ReadAll(resp.Body)
 			if err != nil {
 				logger.Logger.Error("Error: Resp ", err)
 				return

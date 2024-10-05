@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"github.com/0chain/gosdk/zboxcore/mocks"
 	"io"
-	"io/ioutil"
 	"mime"
 	"mime/multipart"
 	"net/http"
@@ -75,7 +74,7 @@ func TestCopyRequest_copyBlobberObject(t *testing.T) {
 					return strings.HasPrefix(req.URL.Path, testName)
 				})).Return(&http.Response{
 					StatusCode: http.StatusBadRequest,
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+					Body:       io.NopCloser(bytes.NewReader([]byte(""))),
 				}, nil)
 			},
 			wantErr: true,
@@ -101,7 +100,7 @@ func TestCopyRequest_copyBlobberObject(t *testing.T) {
 					Body: func() io.ReadCloser {
 						jsonFR, err := json.Marshal(p.referencePathToRetrieve)
 						require.NoError(t, err)
-						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+						return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 					}(),
 				}, nil)
 
@@ -112,7 +111,7 @@ func TestCopyRequest_copyBlobberObject(t *testing.T) {
 						req.Header.Get("X-App-Client-Key") == mockClientKey
 				})).Return(&http.Response{
 					StatusCode: http.StatusBadRequest,
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+					Body:       io.NopCloser(bytes.NewReader([]byte(""))),
 				}, nil)
 			},
 			wantErr: true,
@@ -148,7 +147,7 @@ func TestCopyRequest_copyBlobberObject(t *testing.T) {
 					Body: func() io.ReadCloser {
 						jsonFR, err := json.Marshal(p.referencePathToRetrieve)
 						require.NoError(t, err)
-						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+						return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 					}(),
 				}, nil)
 
@@ -167,7 +166,7 @@ func TestCopyRequest_copyBlobberObject(t *testing.T) {
 						}
 						expected, ok := p.requestFields[part.FormName()]
 						require.True(t, ok)
-						actual, err := ioutil.ReadAll(part)
+						actual, err := io.ReadAll(part)
 						require.NoError(t, err)
 						require.EqualValues(t, expected, string(actual))
 					}
@@ -183,7 +182,7 @@ func TestCopyRequest_copyBlobberObject(t *testing.T) {
 					Body: func() io.ReadCloser {
 						jsonFR, err := json.Marshal(p.referencePathToRetrieve)
 						require.NoError(t, err)
-						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+						return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 					}(),
 				}, nil)
 			},
@@ -278,7 +277,7 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 						},
 					})
 					require.NoError(t, err)
-					return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+					return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 				}(),
 			}, nil)
 
@@ -293,7 +292,7 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 					}
 					return http.StatusBadRequest
 				}(),
-				Body: ioutil.NopCloser(bytes.NewReader([]byte(""))),
+				Body: io.NopCloser(bytes.NewReader([]byte(""))),
 			}, nil)
 
 			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
@@ -307,7 +306,7 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 					}
 					return http.StatusBadRequest
 				}(),
-				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{"status":2}`))),
+				Body: io.NopCloser(bytes.NewReader([]byte(`{"status":2}`))),
 			}, nil)
 
 			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
@@ -321,7 +320,7 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 					}
 					return http.StatusBadRequest
 				}(),
-				Body: ioutil.NopCloser(bytes.NewReader([]byte(""))),
+				Body: io.NopCloser(bytes.NewReader([]byte(""))),
 			}, nil)
 
 			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {

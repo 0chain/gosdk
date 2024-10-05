@@ -1,7 +1,11 @@
 package client
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"github.com/0chain/gosdk/core/conf"
 	"strings"
 
 	"github.com/0chain/gosdk/constants"
@@ -10,16 +14,15 @@ import (
 )
 
 var (
-	client Client
+	client         Client
+	sdkInitialized bool
 )
 
-type SignFunc func(hash string, clientId ...string) (string, error)
+type SignFunc func(hash string) (string, error)
 
-// Client maintains client's information
+// maintains client's information
 type Client struct {
 	wallet          *zcncrypto.Wallet
-	wallets         map[string]*zcncrypto.Wallet
-	useMultiWallets bool
 	signatureScheme string
 	splitKeyWallet  bool
 	authUrl         string
@@ -32,18 +35,10 @@ func init() {
 	sys.Sign = signHash
 	client = Client{
 		wallet: &zcncrypto.Wallet{},
-		sign: func(hash string, clientId ...string) (string, error) {
-			if len(clientId) > 0 && client.wallets[clientId[0]].ClientKey != "" {
-				w, ok := client.wallets[clientId[0]]
-				if !ok {
-					return "", errors.New("invalid client id")
-				}
-				return sys.Sign(hash, client.signatureScheme, GetClientSysKeys(w.ClientID))
-			}
+		sign: func(hash string) (string, error) {
 			return sys.Sign(hash, client.signatureScheme, GetClientSysKeys())
 		},
 	}
-
 	sys.Verify = verifySignature
 	sys.VerifyWith = verifySignatureWith
 }
@@ -87,18 +82,9 @@ func verifySignatureWith(pubKey, signature, hash string) (bool, error) {
 	return sch.Verify(signature, hash)
 }
 
-func GetClientSysKeys(clientId ...string) []sys.KeyPair {
-	wallet := client.wallet
-	if len(clientId) > 0 && client.wallets[clientId[0]].ClientKey != "" {
-		w, ok := client.wallets[clientId[0]]
-		if !ok {
-			return nil
-		}
-		wallet = w
-	}
-
+func GetClientSysKeys() []sys.KeyPair {
 	var keys []sys.KeyPair
-	for _, kv := range wallet.Keys {
+	for _, kv := range client.wallet.Keys {
 		keys = append(keys, sys.KeyPair{
 			PrivateKey: kv.PrivateKey,
 			PublicKey:  kv.PublicKey,
@@ -110,14 +96,9 @@ func GetClientSysKeys(clientId ...string) []sys.KeyPair {
 // SetWallet should be set before any transaction or client specific APIs
 func SetWallet(w zcncrypto.Wallet) {
 	client.wallet = &w
-
-	if client.wallets == nil {
-		client.wallets = make(map[string]*zcncrypto.Wallet)
-	}
-	client.wallets[w.ClientID] = &w
 }
 
-// SetSplitKeyWallet parameter is valid only if SignatureScheme is "BLS0Chain"
+// splitKeyWallet parameter is valid only if SignatureScheme is "BLS0Chain"
 func SetSplitKeyWallet(isSplitKeyWallet bool) error {
 	if client.signatureScheme == constants.BLS0CHAIN.String() {
 		client.splitKeyWallet = isSplitKeyWallet
@@ -152,10 +133,7 @@ func SetSignatureScheme(signatureScheme string) {
 	client.signatureScheme = signatureScheme
 }
 
-func Wallet(clientId ...string) *zcncrypto.Wallet {
-	if len(clientId) > 0 && client.wallets[clientId[0]].ClientKey != "" {
-		return client.wallets[clientId[0]]
-	}
+func Wallet() *zcncrypto.Wallet {
 	return client.wallet
 }
 
@@ -179,61 +157,116 @@ func TxnFee() uint64 {
 	return client.txnFee
 }
 
-func Sign(hash string, clientId ...string) (string, error) {
-	return client.sign(hash, clientId...)
+func Sign(hash string) (string, error) {
+	return client.sign(hash)
 }
 
-func IsWalletSet(clientId ...string) bool {
-	if len(clientId) > 0 && client.wallets[clientId[0]].ClientKey != "" {
-		_, ok := client.wallets[clientId[0]]
-		return ok
-	}
+func IsWalletSet() bool {
 	return client.wallet.ClientID != ""
 }
 
-func PublicKey(clientId ...string) string {
-	if len(clientId) > 0 && client.wallets[clientId[0]].ClientKey != "" {
-		return client.wallets[clientId[0]].ClientKey
-	}
+func PublicKey() string {
 	return client.wallet.ClientKey
 }
 
-func Mnemonic(clientId ...string) string {
-	if len(clientId) > 0 && client.wallets[clientId[0]].ClientKey != "" {
-		return client.wallets[clientId[0]].Mnemonic
-	}
+func Mnemonic() string {
 	return client.wallet.Mnemonic
 }
 
-func PrivateKey(clientId ...string) string {
-	if len(clientId) > 0 && client.wallets[clientId[0]].ClientKey != "" {
-		for _, kv := range client.wallets[clientId[0]].Keys {
-			return kv.PrivateKey
-		}
-	}
+func PrivateKey() string {
 	for _, kv := range client.wallet.Keys {
 		return kv.PrivateKey
 	}
 	return ""
 }
 
-func ClientID(clientId ...string) string {
-	if len(clientId) > 0 && client.wallets[clientId[0]].ClientKey != "" {
-		return clientId[0]
+func ClientID() string {
+	if client.wallet.ClientID == "" {
+		fmt.Println("ClientID is empty")
 	}
 	return client.wallet.ClientID
 }
 
-func Id(clientId ...string) string {
-	if len(clientId) > 0 && client.wallets[clientId[0]].ClientKey != "" {
-		return clientId[0]
-	}
-	return client.wallet.ClientID
-}
-
-func GetClient(clientId ...string) *zcncrypto.Wallet {
-	if len(clientId) > 0 && client.wallets[clientId[0]].ClientKey != "" {
-		return client.wallets[clientId[0]]
-	}
+func GetWallet() *zcncrypto.Wallet {
 	return client.wallet
+}
+
+func GetClient() *zcncrypto.Wallet {
+	return client.wallet
+}
+
+// InitSDK Initialize the storage SDK
+//
+//   - walletJSON: Client's wallet JSON
+//   - blockWorker: Block worker URL (block worker refers to 0DNS)
+//   - chainID: ID of the blokcchain network
+//   - signatureScheme: Signature scheme that will be used for signing transactions
+//   - preferredBlobbers: List of preferred blobbers to use when creating an allocation. This is usually configured by the client in the configuration files
+//   - nonce: Initial nonce value for the transactions
+//   - fee: Preferred value for the transaction fee, just the first value is taken
+func InitSDK(walletJSON string,
+	blockWorker, chainID, signatureScheme string,
+	nonce int64, isSplitWallet, addWallet bool,
+	options ...int) error {
+
+	if addWallet {
+		wallet := zcncrypto.Wallet{}
+		err := json.Unmarshal([]byte(walletJSON), &wallet)
+		if err != nil {
+			return err
+		}
+
+		SetWallet(wallet)
+		SetSignatureScheme(signatureScheme)
+		SetNonce(nonce)
+		if len(options) > 0 {
+			SetTxnFee(uint64(options[0]))
+		}
+	}
+
+	var minConfirmation, minSubmit, confirmationChainLength, sharderConsensous int
+	if len(options) > 1 {
+		minConfirmation = options[1]
+	} else {
+		minConfirmation = 5
+	}
+	if len(options) > 2 {
+		minSubmit = options[2]
+	} else {
+		minSubmit = 5
+	}
+	if len(options) > 3 {
+		confirmationChainLength = options[3]
+	} else {
+		confirmationChainLength = 10
+	}
+	if len(options) > 4 {
+		sharderConsensous = options[4]
+	} else {
+		sharderConsensous = 10
+	}
+
+	err := Init(context.Background(), conf.Config{
+		BlockWorker:             blockWorker,
+		SignatureScheme:         signatureScheme,
+		ChainID:                 chainID,
+		MinConfirmation:         minConfirmation,
+		MinSubmit:               minSubmit,
+		ConfirmationChainLength: confirmationChainLength,
+		SharderConsensous:       sharderConsensous,
+		IsSplitWallet:           isSplitWallet,
+	})
+	if err != nil {
+		return err
+	}
+	SetSdkInitialized(true)
+	return nil
+}
+
+func IsSDKInitialized() bool {
+	return sdkInitialized
+}
+
+func SetSdkInitialized(val bool) {
+	sdkInitialized = val
 }

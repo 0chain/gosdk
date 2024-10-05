@@ -6,9 +6,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/stretchr/testify/mock"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -125,7 +126,7 @@ func setupMockHttpResponse(
 	})).Return(
 		&http.Response{
 			StatusCode: statusCode,
-			Body:       ioutil.NopCloser(bytes.NewReader(body)),
+			Body:       io.NopCloser(bytes.NewReader(body)),
 		}, nil).Once()
 }
 
@@ -234,7 +235,7 @@ func getCoinGeckoResponse() func(testCaseName, mockProviderURL, providerName, sy
 }
 
 func getProviderJsonResponse(t *testing.T, provider string) []byte {
-	data, err := ioutil.ReadFile("mockresponses/" + provider + ".json")
+	data, err := os.ReadFile("mockresponses/" + provider + ".json")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -26,6 +26,7 @@ import (
 	"github.com/hack-pad/go-webworkers/worker"
 	"github.com/hack-pad/safejs"
 	"github.com/hitenjain14/fasthttp"
+	"github.com/valyala/bytebufferpool"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -670,6 +671,10 @@ func sendUploadRequest(dataBuffers []*bytes.Buffer, contentSlice []string, blobb
 					}
 					continue
 				}
+				buff := &bytebufferpool.ByteBuffer{
+					B: dataBuffers[ind].Bytes(),
+				}
+				formDataPool.Put(buff)
 
 				if err != nil {
 					return err

@@ -1,6 +1,6 @@
 module github.com/0chain/gosdk
 
-go 1.21
+go 1.22.0
 
 require (
 	github.com/0chain/common v0.0.6-0.20230127095721-8df4d1d72565
@@ -14,7 +14,7 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.7.2
 	github.com/hashicorp/golang-lru/v2 v2.0.1
 	github.com/herumi/bls-go-binary v1.31.0
-	github.com/hitenjain14/fasthttp v0.0.0-20240527123209-06019e79bff9
+	github.com/hitenjain14/fasthttp v0.0.0-20240916135632-f9303a91736c
 	github.com/influxdata/influxdb v1.8.3
 	github.com/klauspost/reedsolomon v1.11.8
 	github.com/lithammer/shortuuid/v3 v3.0.7
@@ -29,8 +29,8 @@ require (
 	github.com/uptrace/bunrouter v1.0.20
 	go.dedis.ch/kyber/v3 v3.1.0
 	go.uber.org/zap v1.24.0
-	golang.org/x/crypto v0.26.0
-	golang.org/x/image v0.19.0
+	golang.org/x/crypto v0.27.0
+	golang.org/x/image v0.20.0
 	golang.org/x/sync v0.8.0
 	gopkg.in/cheggaaa/pb.v1 v1.0.28
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
@@ -106,8 +106,8 @@ require (
 	github.com/valyala/fasthttp v1.51.0 // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	go.dedis.ch/fixbuf v1.0.3 // indirect
-	golang.org/x/sys v0.23.0 // indirect
-	golang.org/x/text v0.17.0 // indirect
+	golang.org/x/sys v0.25.0 // indirect
+	golang.org/x/text v0.18.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
@@ -122,7 +122,7 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
-	golang.org/x/net v0.28.0 // indirect
+	golang.org/x/net v0.29.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 )
 

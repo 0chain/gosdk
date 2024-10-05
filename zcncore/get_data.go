@@ -145,7 +145,7 @@ func (p Params) Query() string {
 	return "?" + params.Encode()
 }
 
-func withParams(uri string, params Params) string {
+func withParams(uri string, params Params) string { //nolint:unused
 	return uri + params.Query()
 }
 
@@ -190,8 +190,8 @@ func GetMintNonce() ([]byte, error) {
 		return nil, err
 	}
 
-	return client.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINT_NONCE, Params{
-		"client_id": client.Id(),
+	return client.MakeSCRestAPICall(ZCNSCSmartContractAddress, GET_MINT_NONCE, Params{
+		"client_id": client.ClientID(),
 	})
 }
 
@@ -251,7 +251,7 @@ func GetMinerSCUserInfo(clientID string) ([]byte, error) {
 		return nil, err
 	}
 	if clientID == "" {
-		clientID = client.Id()
+		clientID = client.ClientID()
 	}
 
 	return client.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINERSC_USER, Params{
@@ -268,7 +268,7 @@ func GetMinerSCNodePool(id string) ([]byte, error) {
 
 	return client.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINERSC_POOL, Params{
 		"id":      id,
-		"pool_id": client.Id(),
+		"pool_id": client.ClientID(),
 	})
 }
 
@@ -281,8 +281,45 @@ func GetNotProcessedZCNBurnTickets(ethereumAddress, startNonce string) ([]byte, 
 	if err != nil {
 		return nil, err
 	}
-	return client.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINERSC_POOL, Params{
+
+	const GET_NOT_PROCESSED_BURN_TICKETS = `/v1/not_processed_burn_tickets`
+
+	return client.MakeSCRestAPICall(ZCNSCSmartContractAddress, GET_NOT_PROCESSED_BURN_TICKETS, Params{
 		"ethereum_address": ethereumAddress,
 		"nonce":            startNonce,
 	})
+}
+
+// GetUserLockedTotal get total token user locked
+// # Inputs
+//   - clientID wallet id
+func GetUserLockedTotal(clientID string) (int64, error) {
+	var result map[string]int64
+
+	err := CheckConfig()
+	if err != nil {
+		return 0, err
+	}
+
+	const GET_USER_LOCKED_TOTAL = `/v1/getUserLockedTotal`
+
+	info, err := client.MakeSCRestAPICall(ZCNSCSmartContractAddress, GET_USER_LOCKED_TOTAL, Params{
+		"client_id": clientID,
+	})
+
+	if err != nil {
+		return 0, errors.New("error while making rest api call: " + err.Error())
+	}
+
+	err = json.Unmarshal([]byte(info), &result)
+	if err != nil {
+		return 0, errors.New("invalid json format: " + err.Error())
+	}
+
+	total, ok := result["total"]
+	if ok {
+		return total, nil
+	} else {
+		return 0, err
+	}
 }

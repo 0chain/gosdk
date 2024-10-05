@@ -4,17 +4,16 @@
 package main
 
 import (
-	"context"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"github.com/0chain/gosdk/core/client"
-	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/imageutil"
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk/zcncore"
+
 	"io"
 	"os"
 )
@@ -33,41 +32,19 @@ var CreateObjectURL func(buf []byte, mimeType string) string
 //   - sharderconsensous is the number of sharders to reach consensus
 func initSDKs(chainID, blockWorker, signatureScheme string,
 	minConfirmation, minSubmit, confirmationChainLength int,
-	zboxHost, zboxAppType string, sharderconsensous int, isSplit bool) error {
+	zboxHost, zboxAppType string, sharderConsensous int, isSplit bool) error {
+
+	// Print the parameters beautified
+	fmt.Printf("{ chainID: %s, blockWorker: %s, signatureScheme: %s, minConfirmation: %d, minSubmit: %d, confirmationChainLength: %d, zboxHost: %s, zboxAppType: %s, sharderConsensous: %d, isSplit: %t }\n", chainID, blockWorker, signatureScheme, minConfirmation, minSubmit, confirmationChainLength, zboxHost, zboxAppType, sharderConsensous, isSplit)
 
 	zboxApiClient.SetRequest(zboxHost, zboxAppType)
 
-	err := sdk.InitStorageSDK("{}", blockWorker, chainID, signatureScheme, nil, 0)
+	err := client.InitSDK("{}", blockWorker, chainID, signatureScheme, 0, false, false, minConfirmation, minSubmit, confirmationChainLength, sharderConsensous)
 	if err != nil {
 		fmt.Println("wasm: InitStorageSDK ", err)
 		return err
 	}
 
-	clientConf, err := conf.GetClientConfig()
-	if err != nil {
-		return err
-	}
-
-	if !isSplit && clientConf.IsSplitWallet {
-		// split wallet should not be reset back, use the existing
-		isSplit = true
-	}
-
-	err = client.Init(context.Background(), conf.Config{
-		BlockWorker:             blockWorker,
-		SignatureScheme:         signatureScheme,
-		ChainID:                 chainID,
-		MinConfirmation:         minConfirmation,
-		MinSubmit:               minSubmit,
-		ConfirmationChainLength: confirmationChainLength,
-		SharderConsensous:       sharderconsensous,
-		IsSplitWallet:           isSplit,
-	})
-
-	if err != nil {
-		fmt.Println("wasm: InitZCNSDK ", err)
-		return err
-	}
 	sdk.SetWasm()
 	return nil
 }

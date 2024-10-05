@@ -53,7 +53,7 @@ func TestAllocation_DeleteFile(t *testing.T) {
 		Owner:        mockClientId,
 	}
 	a.InitAllocation()
-	sdkInitialized = true
+	client.SetSdkInitialized(true)
 
 	for i := 0; i < numBlobbers; i++ {
 		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
@@ -170,7 +170,7 @@ func TestAllocation_deleteFile(t *testing.T) {
 				Owner:        mockClientId,
 			}
 			a.InitAllocation()
-			sdkInitialized = true
+			client.SetSdkInitialized(true)
 			for i := 0; i < numBlobbers; i++ {
 				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
 					ID:      tt.name + mockBlobberId + strconv.Itoa(i),

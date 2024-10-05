@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"sync"
@@ -76,9 +75,14 @@ func (req *DeleteRequest) deleteBlobberFile(
 		err, shouldContinue = func() (err error, shouldContinue bool) {
 			ctx, cncl := context.WithTimeout(req.ctx, 2*time.Minute)
 			resp, err = zboxutil.Client.Do(httpreq.WithContext(ctx))
-			cncl()
+			defer cncl()
 
 			if err != nil {
+				if err == context.Canceled {
+					logger.Logger.Error("context was cancelled")
+					shouldContinue = true
+					return
+				}
 				if err == io.EOF {
 					shouldContinue = true
 					return
@@ -96,6 +100,18 @@ func (req *DeleteRequest) deleteBlobberFile(
 				req.consensus.Done()
 				l.Logger.Debug(blobber.Baseurl, " "+req.remotefilepath, " deleted.")
 				return
+			}
+			if resp.StatusCode == http.StatusBadRequest {
+				body, err := io.ReadAll(resp.Body)
+				if err != nil {
+					logger.Logger.Error("Failed to read response body", err)
+				}
+
+				// Check for the specific content in the response body
+				if string(body) == "file was deleted" {
+					req.consensus.Done()
+					l.Logger.Debug(blobber.Baseurl, " ", req.remotefilepath, " deleted.")
+				}
 			}
 
 			if resp.StatusCode == http.StatusTooManyRequests {
@@ -117,7 +133,7 @@ func (req *DeleteRequest) deleteBlobberFile(
 				return
 			}
 
-			respBody, err = ioutil.ReadAll(resp.Body)
+			respBody, err = io.ReadAll(resp.Body)
 			if err != nil {
 				l.Logger.Error(blobber.Baseurl, "Response: ", string(respBody))
 				return

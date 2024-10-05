@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"mime/multipart"
 	"net/http"
 	"strings"
@@ -119,7 +119,7 @@ func (req *CopyRequest) copyBlobberObject(
 			if resp.Body != nil {
 				defer resp.Body.Close()
 			}
-			respBody, err = ioutil.ReadAll(resp.Body)
+			respBody, err = io.ReadAll(resp.Body)
 			if err != nil {
 				logger.Logger.Error("Error: Resp ", err)
 				return

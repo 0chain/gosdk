@@ -114,7 +114,7 @@ func InitStorageSDK(clientJson string, configJson string) (*StorageSDK, error) {
 		l.Logger.Error(err)
 		return nil, err
 	}
-	err = zcncore.InitZCNSDK(configObj.BlockWorker, configObj.SignatureScheme)
+	err = Init(configObj.BlockWorker)
 	if err != nil {
 		l.Logger.Error(err)
 		return nil, err
@@ -124,12 +124,11 @@ func InitStorageSDK(clientJson string, configJson string) (*StorageSDK, error) {
 	l.Logger.Info(configObj.ChainID)
 	l.Logger.Info(configObj.SignatureScheme)
 	l.Logger.Info(configObj.PreferredBlobbers)
-	if err = sdk.InitStorageSDK(clientJson,
+	if err = client.InitSDK(clientJson,
 		configObj.BlockWorker,
 		configObj.ChainID,
 		configObj.SignatureScheme,
-		configObj.PreferredBlobbers,
-		0); err != nil {
+		0, false, true); err != nil {
 		l.Logger.Error(err)
 		return nil, err
 	}
@@ -325,21 +324,6 @@ func (s *StorageSDK) CancelAllocation(allocationID string) (string, error) {
 	return hash, err
 }
 
-// GetReadPoolInfo is to get information about the read pool for the allocation
-//   - clientID: client ID
-func (s *StorageSDK) GetReadPoolInfo(clientID string) (string, error) {
-	readPool, err := sdk.GetReadPoolInfo(clientID)
-	if err != nil {
-		return "", err
-	}
-
-	retBytes, err := json.Marshal(readPool)
-	if err != nil {
-		return "", err
-	}
-	return string(retBytes), nil
-}
-
 // WRITE POOL METHODS
 // WritePoolLock lock write pool with given number of tokens
 //   - durInSeconds: duration in seconds
@@ -347,10 +331,25 @@ func (s *StorageSDK) GetReadPoolInfo(clientID string) (string, error) {
 //   - fee: fee of the transaction
 //   - allocID: allocation ID
 func (s *StorageSDK) WritePoolLock(durInSeconds int64, tokens, fee float64, allocID string) error {
-	_, _, err := sdk.WritePoolLock(
+	formattedWpLock := strconv.FormatUint(zcncore.ConvertToValue(tokens), 10)
+	formattedFee := strconv.FormatUint(zcncore.ConvertToValue(fee), 10)
+
+	wpLockUint, err := strconv.ParseUint(formattedWpLock, 10, 64)
+	if err != nil {
+		return errors.Errorf("Error parsing write pool lock: %v", err)
+	}
+
+	feeUint, err := strconv.ParseUint(formattedFee, 10, 64)
+
+	if err != nil {
+		return errors.Errorf("Error parsing fee: %v", err)
+	}
+
+	_, _, err = sdk.WritePoolLock(
 		allocID,
-		zcncore.ConvertTokenToSAS(tokens),
-		zcncore.ConvertTokenToSAS(fee))
+		wpLockUint,
+		feeUint,
+	)
 	return err
 }
 
@@ -443,7 +442,7 @@ func decodeTicket(ticket string) (string, string, uint64, error) {
 	markerStr, _ := json.Marshal(markerInput)
 
 	s, _ := strconv.ParseFloat(string(fmt.Sprintf("%v", lock)), 64)
-	return string(recipientPublicKey), string(markerStr), zcncore.ConvertTokenToSAS(s), nil
+	return string(recipientPublicKey), string(markerStr), zcncore.ConvertToValue(s), nil
 }
 
 // RegisterAuthorizer Client can extend interface and FaSS implementation to this register like this:

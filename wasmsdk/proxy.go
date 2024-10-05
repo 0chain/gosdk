@@ -16,6 +16,7 @@ import (
 	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/core/version"
+	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/wasmsdk/jsbridge"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk/zcncore"
@@ -68,6 +69,8 @@ func main() {
 				}
 
 				//update sign with js sign
+				zcncrypto.Sign = signFunc
+				zcncore.SignFn = signFunc
 				sys.Sign = func(hash, signatureScheme string, keys []sys.KeyPair) (string, error) {
 					// js already has signatureScheme and keys
 					return signFunc(hash)
@@ -79,11 +82,7 @@ func main() {
 						return "", fmt.Errorf("failed to sign with split key: %v", err)
 					}
 
-					data, err := json.Marshal(struct {
-						Hash      string `json:"hash"`
-						Signature string `json:"signature"`
-						ClientID  string `json:"client_id"`
-					}{
+					data, err := json.Marshal(zcncore.AuthMessage{
 						Hash:      hash,
 						Signature: sig,
 						ClientID:  client.GetClient().ClientID,
@@ -268,12 +267,6 @@ func main() {
 				"getAllocationWith":          getAllocationWith,
 				"createfreeallocation":       createfreeallocation,
 
-				// readpool
-				"getReadPoolInfo": getReadPoolInfo,
-				"lockReadPool":    lockReadPool,
-				"unLockReadPool":  unLockReadPool,
-				"createReadPool":  createReadPool,
-
 				// claim rewards
 				"collectRewards": collectRewards,
 
@@ -304,10 +297,9 @@ func main() {
 				"getWalletBalance": getWalletBalance,
 
 				//0box api
-				"getCsrfToken":     getCsrfToken,
-				"createJwtSession": createJwtSession,
-				"createJwtToken":   createJwtToken,
-				"refreshJwtToken":  refreshJwtToken,
+				"getCsrfToken":    getCsrfToken,
+				"createJwtToken":  createJwtToken,
+				"refreshJwtToken": refreshJwtToken,
 
 				//split key
 				"splitKeys":     splitKeys,
@@ -363,6 +355,8 @@ func main() {
 					return result[0].String(), nil
 				}
 				//update sign with js sign
+				zcncrypto.Sign = signFunc
+				zcncore.SignFn = signFunc
 				sys.Sign = func(hash, signatureScheme string, keys []sys.KeyPair) (string, error) {
 					// js already has signatureScheme and keys
 					return signFunc(hash)
@@ -375,11 +369,7 @@ func main() {
 						return "", fmt.Errorf("failed to sign with split key: %v", err)
 					}
 
-					data, err := json.Marshal(struct {
-						Hash      string `json:"hash"`
-						Signature string `json:"signature"`
-						ClientID  string `json:"client_id"`
-					}{
+					data, err := json.Marshal(zcncore.AuthMessage{
 						Hash:      hash,
 						Signature: sig,
 						ClientID:  client.GetClient().ClientID,

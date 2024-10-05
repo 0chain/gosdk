@@ -621,7 +621,7 @@ func (b *BridgeClient) BurnWZCN(ctx context.Context, amountTokens uint64) (*type
 // MintZCN mints ZCN tokens after receiving proof-of-burn of WZCN tokens
 //   - ctx go context instance to run the transaction
 //   - payload received from authorizers
-func (b *BridgeClient) MintZCN(ctx context.Context, payload *zcnsc.MintPayload) (string, error) {
+func (b *BridgeClient) MintZCN(payload *zcnsc.MintPayload) (string, error) {
 	Logger.Info(
 		"Starting MINT smart contract",
 		zap.String("sc address", wallet.ZCNSCSmartContractAddress),
@@ -660,10 +660,10 @@ func (b *BridgeClient) BurnZCN(amount uint64) (string, string, error) {
 		zap.Uint64("burn amount", amount),
 	)
 
-	hash, out, _, _, err := coreTransaction.SmartContractTxn(wallet.ZCNSCSmartContractAddress, coreTransaction.SmartContractTxnData{
-		Name:      wallet.MintFunc,
+	hash, out, _, _, err := coreTransaction.SmartContractTxnValue(wallet.ZCNSCSmartContractAddress, coreTransaction.SmartContractTxnData{
+		Name:      wallet.BurnFunc,
 		InputArgs: payload,
-	})
+	}, amount)
 	if err != nil {
 		Logger.Error("Burn ZCN transaction FAILED", zap.Error(err))
 		return hash, out, errors.Wrap(err, fmt.Sprintf("failed to execute smart contract, hash = %s", hash))
