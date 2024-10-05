@@ -19,11 +19,6 @@ import (
 //	`err` - the error if any
 type SCRestAPIHandler func(response map[string][]byte, numSharders int, err error)
 
-// MakeSCRestAPICall makes a rest api call to the sharders.
-//   - scAddress is the address of the smart contract
-//   - relativePath is the relative path of the api
-//   - params is the query parameters
-//   - handler is the handler function to handle the response
 func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]string, restApiUrls ...string) ([]byte, error) {
 	const (
 		consensusThresh = float32(25.0)
@@ -38,10 +33,14 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 	sharders := nodeClient.Network().Sharders
 	responses := make(map[int]int)
 	entityResult := make(map[string][]byte)
-	var retObj []byte
-	maxCount := 0
-	dominant := 200
-	wg := sync.WaitGroup{}
+
+	var (
+		retObj   []byte
+		maxCount int
+		dominant = 200
+		wg       sync.WaitGroup
+		mu       sync.Mutex // Mutex to protect shared resources
+	)
 
 	cfg, err := conf.GetClientConfig()
 	if err != nil {
@@ -52,6 +51,7 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 		wg.Add(1)
 		go func(sharder string) {
 			defer wg.Done()
+
 			urlString := fmt.Sprintf("%v/%v%v%v", sharder, restApiUrl, scAddress, relativePath)
 			urlObj, err := url.Parse(urlString)
 			if err != nil {
@@ -69,17 +69,22 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 				fmt.Println("1Error creating request", err.Error())
 				return
 			}
+
 			response, err := req.Get()
 			if err != nil {
 				fmt.Println("2Error getting response", err.Error())
 				return
 			}
 
+			mu.Lock() // Lock before updating shared maps
+			defer mu.Unlock()
+
 			if response.StatusCode > http.StatusBadRequest {
 				nodeClient.sharders.Fail(sharder)
 			} else {
 				nodeClient.sharders.Success(sharder)
 			}
+
 			responses[response.StatusCode]++
 			if responses[response.StatusCode] > maxCount {
 				maxCount = responses[response.StatusCode]
@@ -94,6 +99,7 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 			nodeClient.sharders.Success(sharder)
 		}(sharder)
 	}
+
 	wg.Wait()
 
 	rate := float32(maxCount*100) / float32(cfg.SharderConsensous)
