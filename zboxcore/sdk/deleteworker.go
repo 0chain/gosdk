@@ -46,8 +46,6 @@ type DeleteRequest struct {
 	timestamp      int64
 }
 
-const emptyHash = "e"
-
 var errFileDeleted = errors.New("file_deleted", "file is already deleted")
 
 func (req *DeleteRequest) deleteBlobberFile(
@@ -112,7 +110,7 @@ func (req *DeleteRequest) deleteBlobberFile(
 			}
 			if resp.StatusCode == http.StatusBadRequest {
 				body, err := ioutil.ReadAll(resp.Body)
-				if err!= nil {
+				if err != nil {
 					logger.Logger.Error("Failed to read response body", err)
 				}
 
