@@ -458,7 +458,6 @@ func (r *RepairRequest) iterateDirV2(ctx context.Context) {
 	}
 	if len(ops) > 0 {
 		r.repairOperation(r.allocation, ops)
-		ops = nil
 	}
 
 }

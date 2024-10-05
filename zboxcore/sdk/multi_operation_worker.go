@@ -449,6 +449,7 @@ func (mo *MultiOperation) commitV2() error {
 		if mo.getConsensus() != 0 {
 			l.Logger.Info("Rolling back changes on minority blobbers")
 			mo.allocationObj.RollbackWithMask(rollbackMask)
+			mo.allocationObj.checkStatus = false
 		}
 		for _, op := range mo.operations {
 			op.Error(mo.allocationObj, mo.getConsensus(), err)

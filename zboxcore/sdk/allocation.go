@@ -435,8 +435,9 @@ func (a *Allocation) InitAllocation() {
 	a.startWorker(a.ctx)
 	InitCommitWorker(a.Blobbers)
 	InitBlockDownloader(a.Blobbers, downloadWorkerCount)
-	a.StorageVersion = 1
-	a.CheckAllocStatus() //nolint:errcheck
+	if a.StorageVersion == StorageV2 {
+		a.CheckAllocStatus() //nolint:errcheck
+	}
 	a.initialized = true
 }
 
