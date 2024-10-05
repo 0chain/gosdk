@@ -30,7 +30,7 @@ import (
 // returns the hash of the transaction, the nonce of the transaction, the transaction object and an error if any.
 func CreateAllocationForOwner(
 	owner, ownerpublickey string,
-	datashards, parityshards, storageVersion int, size int64,
+	datashards, parityshards int, size int64,
 	readPrice, writePrice PriceRange,
 	lock uint64, preferredBlobberIds, blobberAuthTickets []string, thirdPartyExtendable, IsEnterprise, force bool, fileOptionsParams *FileOptionsParameters,
 ) (hash string, nonce int64, txn *transaction.Transaction, err error) {
@@ -44,7 +44,7 @@ func CreateAllocationForOwner(
 	}
 
 	allocationRequest, err := getNewAllocationBlobbers(
-		storageVersion, datashards, parityshards, size, readPrice, writePrice, preferredBlobberIds, blobberAuthTickets, force)
+		StorageV2, datashards, parityshards, size, readPrice, writePrice, preferredBlobberIds, blobberAuthTickets, force)
 	if err != nil {
 		return "", 0, nil, errors.New("failed_get_allocation_blobbers", "failed to get blobbers for allocation: "+err.Error())
 	}
@@ -58,7 +58,7 @@ func CreateAllocationForOwner(
 	allocationRequest["third_party_extendable"] = thirdPartyExtendable
 	allocationRequest["file_options_changed"], allocationRequest["file_options"] = calculateAllocationFileOptions(63 /*0011 1111*/, fileOptionsParams)
 	allocationRequest["is_enterprise"] = IsEnterprise
-	allocationRequest["storage_version"] = storageVersion
+	allocationRequest["storage_version"] = StorageV2
 
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.NEW_ALLOCATION_REQUEST,

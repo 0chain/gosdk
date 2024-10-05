@@ -974,7 +974,7 @@ func CreateAllocationWith(options CreateAllocationOptions) (
 	string, int64, *transaction.Transaction, error) {
 
 	return CreateAllocationForOwner(client.GetClientID(),
-		client.GetClientPublicKey(), options.DataShards, options.ParityShards, options.StorageVersion,
+		client.GetClientPublicKey(), options.DataShards, options.ParityShards,
 		options.Size, options.ReadPrice, options.WritePrice, options.Lock,
 		options.BlobberIds, options.BlobberAuthTickets, options.ThirdPartyExtendable, options.IsEnterprise, options.Force, options.FileOptionsParams)
 }

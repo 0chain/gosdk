@@ -88,7 +88,7 @@ func getAllocationBlobbers(preferredBlobberURLs []string,
 //   - lock is the lock value to add to the allocation.
 //   - blobberIds is the list of blobber ids.
 //   - blobberAuthTickets is the list of blobber auth tickets in case of using restricted blobbers.
-func createAllocation(storageVersion, datashards, parityshards int, size int64,
+func createAllocation(datashards, parityshards int, size int64,
 	minReadPrice, maxReadPrice, minWritePrice, maxWritePrice int64, lock int64, blobberIds, blobberAuthTickets []string, setThirdPartyExtendable, IsEnterprise, force bool) (
 	*transaction.Transaction, error) {
 
@@ -108,7 +108,7 @@ func createAllocation(storageVersion, datashards, parityshards int, size int64,
 		BlobberIds:           blobberIds,
 		ThirdPartyExtendable: setThirdPartyExtendable,
 		IsEnterprise:         IsEnterprise,
-		StorageVersion:       storageVersion,
+		StorageVersion:       sdk.StorageV2,
 		BlobberAuthTickets:   blobberAuthTickets,
 		Force:                force,
 	}
