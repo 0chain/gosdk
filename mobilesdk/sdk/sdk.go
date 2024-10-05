@@ -343,8 +343,8 @@ func (s *StorageSDK) GetReadPoolInfo(clientID string) (string, error) {
 func (s *StorageSDK) WritePoolLock(durInSeconds int64, tokens, fee float64, allocID string) error {
 	_, _, err := sdk.WritePoolLock(
 		allocID,
-		zcncore.ConvertTokenToSAS(tokens),
-		zcncore.ConvertTokenToSAS(fee))
+		strconv.FormatUint(zcncore.ConvertTokenToSAS(tokens), 10),
+		strconv.FormatUint(zcncore.ConvertTokenToSAS(fee), 10))
 	return err
 }
 
@@ -406,7 +406,7 @@ func (s *StorageSDK) RedeemFreeStorage(ticket string) (string, error) {
 		return "", fmt.Errorf("invalid_free_marker: free marker is not assigned to your wallet")
 	}
 
-	hash, _, err := sdk.CreateFreeAllocation(marker, lock)
+	hash, _, err := sdk.CreateFreeAllocation(marker, strconv.FormatUint(lock, 10))
 	return hash, err
 }
 

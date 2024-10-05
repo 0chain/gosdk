@@ -82,11 +82,7 @@ func main() {
 						return "", fmt.Errorf("failed to sign with split key: %v", err)
 					}
 
-					data, err := json.Marshal(struct {
-						Hash      string `json:"hash"`
-						Signature string `json:"signature"`
-						ClientID  string `json:"client_id"`
-					}{
+					data, err := json.Marshal(zcncore.AuthMessage{
 						Hash:      hash,
 						Signature: sig,
 						ClientID:  client.GetClient().ClientID,
@@ -311,10 +307,9 @@ func main() {
 				"getWalletBalance": getWalletBalance,
 
 				//0box api
-				"getCsrfToken":     getCsrfToken,
-				"createJwtSession": createJwtSession,
-				"createJwtToken":   createJwtToken,
-				"refreshJwtToken":  refreshJwtToken,
+				"getCsrfToken":    getCsrfToken,
+				"createJwtToken":  createJwtToken,
+				"refreshJwtToken": refreshJwtToken,
 
 				//split key
 				"splitKeys":     splitKeys,
@@ -384,11 +379,7 @@ func main() {
 						return "", fmt.Errorf("failed to sign with split key: %v", err)
 					}
 
-					data, err := json.Marshal(struct {
-						Hash      string `json:"hash"`
-						Signature string `json:"signature"`
-						ClientID  string `json:"client_id"`
-					}{
+					data, err := json.Marshal(zcncore.AuthMessage{
 						Hash:      hash,
 						Signature: sig,
 						ClientID:  client.GetClient().ClientID,
@@ -481,8 +472,8 @@ func main() {
 
 		setWallet(clientID, clientKey, peerPublicKey, publicKey, privateKey, mnemonic, isSplit)
 		hideLogs()
-		debug.SetGCPercent(40)
-		debug.SetMemoryLimit(300 * 1024 * 1024) //300MB
+		debug.SetGCPercent(75)
+		debug.SetMemoryLimit(1 * 1024 * 1024 * 1024) //1GB
 		err = startListener(respChan)
 		if err != nil {
 			fmt.Println("Error starting listener", err)
@@ -491,8 +482,8 @@ func main() {
 	}
 
 	hideLogs()
-	debug.SetGCPercent(40)
-	debug.SetMemoryLimit(2.5 * 1024 * 1024 * 1024) //2.5 GB
+	debug.SetGCPercent(75)
+	debug.SetMemoryLimit(3.5 * 1024 * 1024 * 1024) //3.5 GB
 
 	<-make(chan bool)
 
