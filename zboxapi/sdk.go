@@ -112,7 +112,7 @@ func (c *Client) createResty(ctx context.Context, csrfToken, userID string, head
 	h["X-App-Timestamp"] = strconv.FormatInt(time.Now().Unix(), 10)
 
 	if _, ok := h["X-App-ID-Token"]; !ok {
-		h["X-App-ID-Token"] = "*" //ignore firebase token in jwt requests
+		h["X-App-ID-Token"] = "*"
 	}
 
 	h["X-App-Type"] = c.appType
