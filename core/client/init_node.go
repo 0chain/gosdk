@@ -88,7 +88,7 @@ func (n *Node) ShouldUpdateNetwork() (bool, *conf.Network, error) {
 	if err != nil {
 		return false, nil, err
 	}
-	network, err := GetNetwork(n.clientCtx, cfg.BlockWorker)
+	network, err := GetNetwork(n.clientCtx)
 	if err != nil {
 		logging.Error("Failed to get network details ", zap.Error(err), zap.String("block_worker", cfg.BlockWorker))
 		return false, nil, err
@@ -126,7 +126,7 @@ func Init(ctx context.Context, cfg conf.Config) error {
 	// set default value for options if unset
 	setOptionsDefaultValue(&cfg)
 
-	network, err := GetNetwork(ctx, cfg.BlockWorker)
+	network, err := GetNetwork(ctx)
 	if err != nil {
 		logging.Error("Failed to get network details ", zap.Error(err), zap.Any("block_worker", cfg.BlockWorker))
 		return err
@@ -180,8 +180,12 @@ func GetNode() (*Node, error) {
 }
 
 // GetNetwork gets current network details from 0chain network.
-func GetNetwork(ctx context.Context, blockWorker string) (*conf.Network, error) {
-	networkUrl := blockWorker + "/network"
+func GetNetwork(ctx context.Context) (*conf.Network, error) {
+	cfg, err := conf.GetClientConfig()
+	if err != nil {
+		return nil, err
+	}
+	networkUrl := cfg.BlockWorker + "/network"
 	networkGetCtx, networkGetCancelCtx := context.WithTimeout(ctx, 60*time.Second)
 	defer networkGetCancelCtx()
 	req, err := util.NewHTTPGetRequestContext(networkGetCtx, networkUrl)
