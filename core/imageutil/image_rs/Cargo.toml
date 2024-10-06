@@ -1,0 +1,21 @@
+[package]
+name = "image_rs"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+crate-type = ["cdylib"]
+name = "image_rs"
+path = "image.rs"
+
+[dependencies]
+image = { git = "https://github.com/image-rs/image", version = "0.25.1" }
+wasm-bindgen = "0.2"
+js-sys = "0.3.69"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1

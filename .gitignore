@@ -23,7 +23,6 @@ out
 vendor
 .DS_Store
 _sdkver/*.wasm
-*.wasm
 *.log
 zcnbridge/example/logs/
 *.log
@@ -33,3 +32,6 @@ wasmsdk/demo/demo
 sdkversion.go
 gosdk.code-workspace
 sdkversion
+
+# generated images
+core/imageutil/demo/images/

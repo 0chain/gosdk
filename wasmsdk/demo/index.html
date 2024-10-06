@@ -152,6 +152,12 @@
   <fieldset>
     <legend>Image Viewer</legend>
     <img id="viewer" src="image.png" width="600" />
+    <div id="thumbnailImages">
+      <span>
+        <input id="inputThumbnail" type="file" multiple="multiple"/> 
+        <button id="btnThumbnail">Thumbnail</button>
+      </span>
+    </div>
   </fieldset>
 
   <fieldset>
@@ -945,5 +951,62 @@
       console.log(result); // Output: "Authorized: Hello, World!"
     })
 
+  </script>
+
+  <script type="module">
+    import init, {thumbnail_js} from "./../../core/imageutil/image_rs/pkg/image_rs.js"
+    init().then(() => {
+      console.log('rust wasm is initialized');
+    })
+    onClick('btnThumbnail', async () => {
+      document.querySelectorAll(".thumbnailImage").forEach(el => el.remove());
+      const { files } = get('inputThumbnail')
+      console.log(files);
+      const width = 120
+      const height = 90
+      if (files && files.length > 0) {
+        let i = 0
+        for (const file of files) {
+          i++
+          console.log(`${i}: ${file.name}`);
+          console.time(file.name);
+          try {
+            const fileBytes = await readBytes(file);
+            const res = await thumbnail_js(fileBytes, width, height);
+            if (res.length === 0) {
+              var div = document.createElement("div");
+              var text = document.createElement("p");
+              text.innerText = `${i}: ${file.name} - Unsupported`;
+              div.setAttribute("class", "thumbnailImage");
+              div.appendChild(text);
+              document.getElementById("thumbnailImages").appendChild(div);
+              continue;
+            }
+            
+            var div = document.createElement("div");
+            var text = document.createElement("p");
+            var image = document.createElement("img");
+
+            text.innerText = `${i}: ${file.name}`;
+            image.setAttribute("src", URL.createObjectURL(
+              new Blob([res.buffer], { type: 'image/jpeg' })
+            ));
+            image.setAttribute("width", `${width}px`);
+            image.setAttribute("height", `${height}px`);
+            div.setAttribute("class", "thumbnailImage")
+
+            div.appendChild(text);
+            div.appendChild(image);
+            document.getElementById("thumbnailImages").appendChild(div);
+          }
+          catch(ex) {
+            console.error(ex.message);
+          }
+          finally {
+            console.timeEnd(file.name);
+          }
+        }
+      }
+    })
   </script>
 </body>

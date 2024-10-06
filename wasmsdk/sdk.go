@@ -145,6 +145,10 @@ func createThumbnail(buf []byte, width, height int) ([]byte, error) {
 	return imageutil.CreateThumbnail(buf, width, height)
 }
 
+func thumbnail(buf []byte, width, height int) ([]byte, error) {
+	return imageutil.Thumbnail(buf, width, height)
+}
+
 // makeSCRestAPICall issue a request to the public API of one of the smart contracts
 //   - scAddress is the smart contract address
 //   - relativePath is the relative path of the endpoint
