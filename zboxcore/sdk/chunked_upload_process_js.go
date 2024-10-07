@@ -629,7 +629,11 @@ func sendUploadRequest(dataBuffers []*bytes.Buffer, contentSlice []string, blobb
 					if err != nil {
 						logger.Logger.Error("Upload : ", err)
 						if errors.Is(err, fasthttp.ErrConnectionClosed) || errors.Is(err, syscall.EPIPE) || errors.Is(err, fasthttp.ErrDialTimeout) {
+							err = ErrNetwork
 							return err, true
+						}
+						if errors.Is(err, fasthttp.ErrTimeout) {
+							return ErrNetwork, false
 						}
 						return fmt.Errorf("Error while doing reqeust. Error %s", err), false
 					}
@@ -649,6 +653,14 @@ func sendUploadRequest(dataBuffers []*bytes.Buffer, contentSlice []string, blobb
 						}
 						time.Sleep(time.Duration(r) * time.Second)
 						shouldContinue = true
+						return
+					}
+
+					if resp.StatusCode() == http.StatusBadGateway {
+						logger.Logger.Error("Got bad gateway error")
+						time.Sleep(1 * time.Second)
+						shouldContinue = true
+						err = ErrNetwork
 						return
 					}
 
