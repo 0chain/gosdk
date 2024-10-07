@@ -280,7 +280,6 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
 				blobStatus.Status = "unavailable"
 			}
 			if wr != nil {
-				markerChan <- nil
 				markerChan <- &RollbackBlobber{
 					blobber:      blobber,
 					lpm:          wr,
