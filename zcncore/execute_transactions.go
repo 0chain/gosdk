@@ -235,3 +235,7 @@ func Faucet(tokens uint64, input string) (hash, out string, nonce int64, txn *tr
 		InputArgs: input,
 	}, tokens)
 }
+
+func VerifyTransaction(hash string) (txn *transaction.Transaction, err error) {
+	return transaction.VerifyTransaction(hash)
+}

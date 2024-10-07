@@ -205,6 +205,21 @@ func Faucet(tokens int64, input string) ([]byte, error) {
 	return byteTxn, nil
 }
 
+// VerifyTransaction verifies the transaction.
+// # Inputs
+//   - hash: hash of the transaction
+func VerifyTransaction(hash string) ([]byte, error) {
+	txn, err := zcncore.VerifyTransaction(hash)
+	if err != nil {
+		return nil, errors.New("Error in VerifyTransaction: " + err.Error())
+	}
+	byteTxn, err := json.Marshal(txn)
+	if err != nil {
+		return nil, errors.New("Error in Encoding txn: " + err.Error())
+	}
+	return byteTxn, nil
+}
+
 func tokenValidation(tokens int64) error {
 	if tokens <= 0 {
 		return errors.New("negative or zero tokens not allowed")
