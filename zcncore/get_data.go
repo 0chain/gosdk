@@ -344,6 +344,9 @@ func GetUserLockedTotal(clientID string) (int64, error) {
 	}
 }
 
+// GetStakePoolUserInfo get stake pool user info for all blobbers/miners/sharders.
+// # Inputs
+//   - clientID wallet id
 func GetStakePoolUserInfo(clientID string) ([]byte, error) {
 	if err := CheckConfig(); err != nil {
 		return nil, err
