@@ -502,7 +502,6 @@ func (deleteReq *DeleteRequest) processDeleteV2() ([]fileref.RefEntity, zboxutil
 	if deleteReq.remotefilepath == "/" {
 		return objectTreeRefs, deleteReq.deleteMask, errNoChange
 	}
-	pos = 0
 	deleteReq.consensus.Reset()
 	for i := deleteReq.deleteMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())

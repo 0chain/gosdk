@@ -314,7 +314,6 @@ func (mo *MultiOperation) Process() error {
 			}
 		}
 	}
-	pos = 0
 	activeBlobbers := mo.operationMask.CountOnes()
 	if activeBlobbers < mo.consensusThresh {
 		return errors.New("consensus_not_met", fmt.Sprintf("Active blobbers %d is less than consensus threshold %d", activeBlobbers, mo.consensusThresh))

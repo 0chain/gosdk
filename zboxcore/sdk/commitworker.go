@@ -488,7 +488,6 @@ func (commitReq *CommitRequestV2) processCommit() {
 	}
 	rootHash := trie.GetRoot().CalcHash()
 	rootWeight := trie.Weight()
-	pos = 0
 	elapsedProcessChanges := time.Since(now) - elapsedGetRefPath
 	wg := sync.WaitGroup{}
 	errSlice := make([]error, commitReq.commitMask.CountOnes())
