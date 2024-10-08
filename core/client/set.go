@@ -270,3 +270,14 @@ func IsSDKInitialized() bool {
 func SetSdkInitialized(val bool) {
 	sdkInitialized = val
 }
+
+func PopulateClient(walletJSON string) error {
+	wallet := zcncrypto.Wallet{}
+	err := json.Unmarshal([]byte(walletJSON), &wallet)
+	if err != nil {
+		return err
+	}
+
+	SetWallet(wallet)
+	return nil
+}
