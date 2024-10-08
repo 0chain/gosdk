@@ -271,14 +271,14 @@ func SetSdkInitialized(val bool) {
 	sdkInitialized = val
 }
 
-func PopulateClient(walletJSON, signatureScheme string) error {
+func PopulateClient(walletJSON, signatureScheme string) (zcncrypto.Wallet, error) {
 	wallet := zcncrypto.Wallet{}
 	err := json.Unmarshal([]byte(walletJSON), &wallet)
 	if err != nil {
-		return err
+		return wallet, err
 	}
 
 	SetWallet(wallet)
 	SetSignatureScheme(signatureScheme)
-	return nil
+	return wallet, nil
 }
