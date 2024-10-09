@@ -126,6 +126,9 @@ func Init(ctx context.Context, cfg conf.Config) error {
 	// set default value for options if unset
 	setOptionsDefaultValue(&cfg)
 
+	//init packages
+	conf.InitClientConfig(&cfg)
+
 	network, err := GetNetwork(ctx)
 	if err != nil {
 		logging.Error("Failed to get network details ", zap.Error(err), zap.Any("block_worker", cfg.BlockWorker))
@@ -141,8 +144,6 @@ func Init(ctx context.Context, cfg conf.Config) error {
 		clientCtx:    ctx,
 	}
 
-	//init packages
-	conf.InitClientConfig(&cfg)
 	InitCache(nodeClient.sharders)
 
 	// update Network periodically
