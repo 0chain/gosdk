@@ -8,6 +8,9 @@ import (
 	"io"
 	"io/fs"
 	"syscall/js"
+
+	"github.com/0chain/gosdk/core/common"
+	"github.com/valyala/bytebufferpool"
 )
 
 type FileWriter struct {
@@ -147,4 +150,75 @@ func NewFileWriterFromHandle(dirHandler js.Value, name string) (*FileWriter, err
 		writableStream: writableStream[0],
 		fileHandle:     fileHandler[0],
 	}, nil
+}
+
+type FileCallbackWriter struct {
+	writeChunk js.Value
+	buf        []byte
+	offset     int64
+}
+
+const bufCallbackCap = 4 * 1024 * 1024 //4MB
+
+func NewFileCallbackWriter(writeChunkFuncName string) *FileCallbackWriter {
+	writeChunk := js.Global().Get(writeChunkFuncName)
+	return &FileCallbackWriter{
+		writeChunk: writeChunk,
+	}
+}
+
+func (wc *FileCallbackWriter) Write(p []byte) (int, error) {
+	if len(wc.buf) == 0 {
+		buff := common.MemPool.Get()
+		if cap(buff.B) < bufCallbackCap {
+			buff.B = make([]byte, 0, bufCallbackCap)
+		}
+		wc.buf = buff.B
+	}
+	if len(wc.buf)+len(p) > cap(wc.buf) {
+		uint8Array := js.Global().Get("Uint8Array").New(len(wc.buf))
+		js.CopyBytesToJS(uint8Array, wc.buf)
+		_, err := Await(wc.writeChunk.Invoke(uint8Array, wc.offset))
+		if len(err) > 0 && !err[0].IsNull() {
+			return 0, errors.New("file_writer: " + err[0].String())
+		}
+		wc.offset += int64(len(wc.buf))
+		wc.buf = wc.buf[:0]
+	}
+	wc.buf = append(wc.buf, p...)
+	return len(p), nil
+}
+
+func (wc *FileCallbackWriter) Close() error {
+	if len(wc.buf) > 0 {
+		uint8Array := js.Global().Get("Uint8Array").New(len(wc.buf))
+		js.CopyBytesToJS(uint8Array, wc.buf)
+		_, err := Await(wc.writeChunk.Invoke(uint8Array, wc.offset))
+		if len(err) > 0 && !err[0].IsNull() {
+			return errors.New("file_writer: " + err[0].String())
+		}
+		wc.offset += int64(len(wc.buf))
+		wc.buf = wc.buf[:0]
+	}
+	buff := &bytebufferpool.ByteBuffer{
+		B: wc.buf,
+	}
+	common.MemPool.Put(buff)
+	return nil
+}
+
+func (wc *FileCallbackWriter) Read(p []byte) (int, error) {
+	return 0, errors.New("file_writer: not supported")
+}
+
+func (wc *FileCallbackWriter) Seek(offset int64, whence int) (int64, error) {
+	return 0, nil
+}
+
+func (wc *FileCallbackWriter) Sync() error {
+	return nil
+}
+
+func (wc *FileCallbackWriter) Stat() (fs.FileInfo, error) {
+	return nil, nil
 }
