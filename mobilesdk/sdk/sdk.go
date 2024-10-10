@@ -72,8 +72,10 @@ func Init(chainConfigJson string) error {
 	cfg := conf.Config{}
 	err := json.Unmarshal([]byte(chainConfigJson), &cfg)
 	if err != nil {
-		return err
+		return errors.WithMessage(err, "failed to unmarshal chain config")
 	}
+	l.Logger.Info("InitSDK chain config")
+	l.Logger.Info(cfg)
 	return client.Init(context.Background(), cfg)
 }
 
