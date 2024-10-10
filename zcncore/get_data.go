@@ -383,3 +383,19 @@ func GetStakePoolUserInfo(clientID string) ([]byte, error) {
 
 	return spUserInfoBytes, nil
 }
+
+func GetTransactions(toClientId, fromClientId, order string, limit, offset int64) ([]byte, error) {
+	if err := CheckConfig(); err != nil {
+		return nil, err
+	}
+
+	const GET_TRANSACTIONS = `/v1/getTransactions`
+
+	return client.MakeSCRestAPICall(ZCNSCSmartContractAddress, GET_TRANSACTIONS, Params{
+		"to_client_id":   toClientId,
+		"from_client_id": fromClientId,
+		"order":          order,
+		"limit":          strconv.FormatInt(limit, 10),
+		"offset":         strconv.FormatInt(offset, 10),
+	})
+}
