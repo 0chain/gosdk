@@ -227,23 +227,15 @@ func InitSDK(walletJSON string,
 	var minConfirmation, minSubmit, confirmationChainLength, sharderConsensous int
 	if len(options) > 1 {
 		minConfirmation = options[1]
-	} else {
-		minConfirmation = 5
 	}
 	if len(options) > 2 {
 		minSubmit = options[2]
-	} else {
-		minSubmit = 5
 	}
 	if len(options) > 3 {
 		confirmationChainLength = options[3]
-	} else {
-		confirmationChainLength = 10
 	}
 	if len(options) > 4 {
 		sharderConsensous = options[4]
-	} else {
-		sharderConsensous = 10
 	}
 
 	err := Init(context.Background(), conf.Config{
