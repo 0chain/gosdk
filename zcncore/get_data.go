@@ -8,6 +8,7 @@ import (
 	"github.com/0chain/gosdk/core/block"
 	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/tokenrate"
+	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/sdk"
@@ -398,4 +399,23 @@ func GetTransactions(toClientId, fromClientId, order string, limit, offset int64
 		"limit":          strconv.FormatInt(limit, 10),
 		"offset":         strconv.FormatInt(offset, 10),
 	})
+}
+
+func GetFeesTable(reqPercentage float32) ([]byte, error) {
+	nodeClient, err := client.GetNode()
+	if err != nil {
+		return nil, err
+	}
+	fees, err := transaction.GetFeesTable(nodeClient.GetStableMiners(), reqPercentage)
+
+	if err != nil {
+		return nil, err
+	}
+
+	feesBytes, err := json.Marshal(fees)
+	if err != nil {
+		return nil, err
+	}
+
+	return feesBytes, nil
 }
