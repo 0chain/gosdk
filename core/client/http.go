@@ -7,6 +7,8 @@ import (
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/shopspring/decimal"
+	"go.uber.org/zap"
+	"log"
 	"net/http"
 	"net/url"
 	"sync"
@@ -31,6 +33,9 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 	}
 
 	sharders := nodeClient.Network().Sharders
+	logging.Info("sharders", zap.Any("sharders", sharders))
+	fmt.Println("sharders", sharders)
+	log.Println("sharders", sharders)
 	responses := make(map[int]int)
 	entityResult := make(map[string][]byte)
 
@@ -53,6 +58,7 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 			defer wg.Done()
 
 			urlString := fmt.Sprintf("%v/%v%v%v", sharder, restApiUrl, scAddress, relativePath)
+
 			urlObj, err := url.Parse(urlString)
 			if err != nil {
 				fmt.Println(err.Error())
@@ -64,7 +70,12 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 			}
 			urlObj.RawQuery = q.Encode()
 
-			req, err := util.NewHTTPGetRequest(urlObj.String())
+			urlObjStr := urlObj.String()
+			logging.Info("urlObjStr", zap.Any("urlObjStr", urlObjStr))
+			fmt.Println("urlObjStr", urlObjStr)
+			log.Println("urlObjStr", urlObjStr)
+
+			req, err := util.NewHTTPGetRequest(urlObjStr)
 			if err != nil {
 				fmt.Println("1Error creating request", err.Error())
 				return
@@ -104,8 +115,16 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 
 	rate := float32(maxCount*100) / float32(cfg.SharderConsensous)
 	if rate < consensusThresh {
-		err = errors.New("consensus_failed", "consensus failed on sharders")
+		err = errors.New("consensus_failed", "consensus failed on sharders list : "+fmt.Sprintf("%v", sharders))
 	}
+
+	logging.Info("maxCount", zap.Any("maxCount", maxCount))
+	fmt.Println("maxCount", maxCount)
+	log.Println("maxCount", maxCount)
+
+	logging.Info("cfg.SharderConsensous", zap.Any("cfg.SharderConsensous", cfg.SharderConsensous))
+	fmt.Println("cfg.SharderConsensous", cfg.SharderConsensous)
+	log.Println("cfg.SharderConsensous", cfg.SharderConsensous)
 
 	if dominant != 200 {
 		var objmap map[string]json.RawMessage

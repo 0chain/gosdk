@@ -47,7 +47,7 @@ func GetConfig(configType string) (conf *InputMap, err error) {
 
 	b, err = coreHttp.MakeSCRestAPICall(scAddress, relativePath, nil)
 	if err != nil {
-		return nil, errors.Wrap(err, "error requesting storage SC configs:")
+		return nil, errors.Wrap(err, "error requesting SC configs:")
 	}
 	if len(b) == 0 {
 		return nil, errors.New("", "empty response")
