@@ -44,7 +44,7 @@ type MoveRequest struct {
 }
 
 func (req *MoveRequest) getObjectTreeFromBlobber(blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
-	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.allocationTx, req.sig, req.remotefilepath, blobber)
+	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.allocationTx, req.sig, req.remotefilepath, blobber, req.allocationObj.Owner)
 }
 
 func (req *MoveRequest) moveBlobberObject(
@@ -96,7 +96,7 @@ func (req *MoveRequest) moveBlobberObject(
 				cncl     context.CancelFunc
 			)
 
-			httpreq, err = zboxutil.NewMoveRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body)
+			httpreq, err = zboxutil.NewMoveRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body, req.allocationObj.Owner)
 			if err != nil {
 				l.Logger.Error(blobber.Baseurl, "Error creating rename request", err)
 				return
@@ -250,6 +250,7 @@ func (req *MoveRequest) ProcessMove() error {
 		moveChange.Operation = constants.FileOperationMove
 		moveChange.Size = 0
 		commitReq := &CommitRequest{
+			ClientId:     req.allocationObj.Owner,
 			allocationID: req.allocationID,
 			allocationTx: req.allocationTx,
 			sig:          req.sig,

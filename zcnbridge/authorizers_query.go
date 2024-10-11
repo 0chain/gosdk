@@ -120,7 +120,7 @@ func (b *BridgeClient) QueryEthereumBurnEvents(startNonce string) ([]*ethereum.B
 	var (
 		totalWorkers = len(authorizers)
 		values       = map[string]string{
-			"clientid":        coreClient.ClientID(),
+			"clientid":        coreClient.Id(),
 			"ethereumaddress": b.EthereumAddress,
 			"startnonce":      startNonce,
 		}
@@ -179,7 +179,7 @@ func (b *BridgeClient) QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPa
 		totalWorkers = len(authorizers)
 		values       = map[string]string{
 			"hash":     ethBurnHash,
-			"clientid": coreClient.ClientID(),
+			"clientid": coreClient.Id(),
 		}
 	)
 

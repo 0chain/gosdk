@@ -49,6 +49,7 @@ var (
 )
 
 type RollbackBlobber struct {
+	ClientId     string
 	blobber      *blockchain.StorageNode
 	commitResult *CommitResult
 	lpm          *LatestPrevWriteMarker
@@ -60,11 +61,11 @@ type BlobberStatus struct {
 	Status string
 }
 
-func GetWritemarker(allocID, allocTx, sig, id, baseUrl string) (*LatestPrevWriteMarker, error) {
+func GetWritemarker(allocID, allocTx, sig, id, baseUrl string, clientId ...string) (*LatestPrevWriteMarker, error) {
 
 	var lpm LatestPrevWriteMarker
 
-	req, err := zboxutil.NewWritemarkerRequest(baseUrl, allocID, allocTx, sig)
+	req, err := zboxutil.NewWritemarkerRequest(baseUrl, allocID, allocTx, sig, clientId...)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +125,7 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 	wm.AllocationID = rb.lpm.LatestWM.AllocationID
 	wm.Timestamp = rb.lpm.LatestWM.Timestamp
 	wm.BlobberID = rb.lpm.LatestWM.BlobberID
-	wm.ClientID = client.ClientID()
+	wm.ClientID = client.Id()
 	wm.Size = -rb.lpm.LatestWM.Size
 	wm.ChainSize = wm.Size + rb.lpm.LatestWM.ChainSize
 
@@ -176,7 +177,7 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 		return err
 	}
 
-	req, err := zboxutil.NewRollbackRequest(rb.blobber.Baseurl, wm.AllocationID, tx, body)
+	req, err := zboxutil.NewRollbackRequest(rb.blobber.Baseurl, wm.AllocationID, tx, body, wm.ClientID)
 	if err != nil {
 		l.Logger.Error("Creating rollback request failed: ", err)
 		return err
@@ -282,7 +283,7 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
 				ID:     blobber.ID,
 				Status: "available",
 			}
-			wr, err := GetWritemarker(a.ID, a.Tx, a.sig, blobber.ID, blobber.Baseurl)
+			wr, err := GetWritemarker(a.ID, a.Tx, a.sig, blobber.ID, blobber.Baseurl, a.Owner)
 			if err != nil {
 				atomic.AddInt32(&errCnt, 1)
 				markerError = err
@@ -293,6 +294,7 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
 				markerChan <- nil
 			} else {
 				markerChan <- &RollbackBlobber{
+					ClientId:     a.Owner,
 					blobber:      blobber,
 					lpm:          wr,
 					commitResult: &CommitResult{},
@@ -409,7 +411,7 @@ func (a *Allocation) RollbackWithMask(mask zboxutil.Uint128) {
 		go func(blobber *blockchain.StorageNode) {
 
 			defer wg.Done()
-			wr, err := GetWritemarker(a.ID, a.Tx, a.sig, blobber.ID, blobber.Baseurl)
+			wr, err := GetWritemarker(a.ID, a.Tx, a.sig, blobber.ID, blobber.Baseurl, a.Owner)
 			if err != nil {
 				l.Logger.Error("error during getWritemarker", zap.Error(err))
 			}
@@ -417,6 +419,7 @@ func (a *Allocation) RollbackWithMask(mask zboxutil.Uint128) {
 				markerChan <- nil
 			} else {
 				markerChan <- &RollbackBlobber{
+					ClientId:     a.Owner,
 					blobber:      blobber,
 					lpm:          wr,
 					commitResult: &CommitResult{},

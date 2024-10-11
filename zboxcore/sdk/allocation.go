@@ -389,7 +389,7 @@ func (a *Allocation) GetBlobberStats() map[string]*BlobberAllocationStats {
 	wg.Add(numList)
 	rspCh := make(chan *BlobberAllocationStats, numList)
 	for _, blobber := range a.Blobbers {
-		go getAllocationDataFromBlobber(blobber, a.ID, a.Tx, rspCh, wg)
+		go getAllocationDataFromBlobber(blobber, a.ID, a.Tx, rspCh, wg, a.Owner)
 	}
 	wg.Wait()
 	result := make(map[string]*BlobberAllocationStats, len(a.Blobbers))
@@ -848,7 +848,7 @@ func (a *Allocation) GetCurrentVersion() (bool, error) {
 		go func(blobber *blockchain.StorageNode) {
 
 			defer wg.Done()
-			wr, err := GetWritemarker(a.ID, a.Tx, a.sig, blobber.ID, blobber.Baseurl)
+			wr, err := GetWritemarker(a.ID, a.Tx, a.sig, blobber.ID, blobber.Baseurl, a.Owner)
 			if err != nil {
 				atomic.AddInt32(&errCnt, 1)
 				logger.Logger.Error("error during getWritemarke", zap.Error(err))
@@ -857,6 +857,7 @@ func (a *Allocation) GetCurrentVersion() (bool, error) {
 				markerChan <- nil
 			} else {
 				markerChan <- &RollbackBlobber{
+					ClientId:     a.Owner,
 					blobber:      blobber,
 					lpm:          wr,
 					commitResult: &CommitResult{},
@@ -952,6 +953,7 @@ func (a *Allocation) RepairRequired(remotepath string) (zboxutil.Uint128, zboxut
 	}
 
 	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
+	listReq.ClientId = a.Owner
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.sig = a.sig
@@ -1561,6 +1563,7 @@ func (a *Allocation) ListDirFromAuthTicket(authTicket string, lookupHash string,
 	}
 
 	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
+	listReq.ClientId = a.Owner
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.sig = a.sig
@@ -1601,6 +1604,7 @@ func (a *Allocation) ListDir(path string, opts ...ListRequestOptions) (*ListResu
 		return nil, errors.New("invalid_path", "Path should be valid and absolute")
 	}
 	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
+	listReq.ClientId = a.Owner
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.sig = a.sig
@@ -1629,6 +1633,7 @@ func (a *Allocation) getRefs(path, pathHash, authToken, offsetPath, updatedDate,
 	}
 
 	oTreeReq := &ObjectTreeRequest{
+		ClientId:       a.Owner,
 		allocationID:   a.ID,
 		allocationTx:   a.Tx,
 		sig:            a.sig,
@@ -1850,6 +1855,7 @@ func (a *Allocation) GetRecentlyAddedRefs(page int, fromDate int64, pageLimit in
 
 	offset := int64(page-1) * int64(pageLimit)
 	req := &RecentlyAddedRefRequest{
+		ClientId:     a.Owner,
 		allocationID: a.ID,
 		allocationTx: a.Tx,
 		sig:          a.sig,
@@ -1878,6 +1884,7 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 
 	result := &ConsolidatedFileMeta{}
 	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
+	listReq.ClientId = a.Owner
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.sig = a.sig
@@ -1997,6 +2004,7 @@ func (a *Allocation) GetFileMetaFromAuthTicket(authTicket string, lookupHash str
 	}
 
 	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
+	listReq.ClientId = a.Owner
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.sig = a.sig
@@ -2179,7 +2187,7 @@ func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
 		query.Add("path", path)
 		query.Add("refereeClientID", refereeClientID)
 
-		httpreq, err := zboxutil.NewRevokeShareRequest(baseUrl, a.ID, a.Tx, a.sig, query)
+		httpreq, err := zboxutil.NewRevokeShareRequest(baseUrl, a.ID, a.Tx, a.sig, query, a.Owner)
 		if err != nil {
 			return err
 		}
@@ -2272,6 +2280,7 @@ func (a *Allocation) GetAuthTicket(path, filename string,
 	}
 
 	shareReq := &ShareRequest{
+		ClientId:          a.Owner,
 		expirationSeconds: expiration,
 		allocationID:      a.ID,
 		allocationTx:      a.Tx,
@@ -2342,7 +2351,7 @@ func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKe
 		if err := formWriter.Close(); err != nil {
 			return err
 		}
-		httpreq, err := zboxutil.NewShareRequest(url, a.ID, a.Tx, a.sig, body)
+		httpreq, err := zboxutil.NewShareRequest(url, a.ID, a.Tx, a.sig, body, a.Owner)
 		if err != nil {
 			return err
 		}
