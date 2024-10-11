@@ -126,9 +126,7 @@ func Init(ctx context.Context, cfg conf.Config) error {
 	// set default value for options if unset
 	setOptionsDefaultValue(&cfg)
 
-	conf.InitClientConfig(&cfg)
-
-	network, err := GetNetwork(ctx)
+	network, err := GetNetwork(ctx, cfg.BlockWorker)
 	if err != nil {
 		logging.Error("Failed to get network details ", zap.Error(err), zap.Any("block_worker", cfg.BlockWorker))
 		return err
@@ -144,6 +142,7 @@ func Init(ctx context.Context, cfg conf.Config) error {
 	}
 
 	//init packages
+	conf.InitClientConfig(&cfg)
 	InitCache(nodeClient.sharders)
 
 	// update Network periodically
@@ -181,12 +180,8 @@ func GetNode() (*Node, error) {
 }
 
 // GetNetwork gets current network details from 0chain network.
-func GetNetwork(ctx context.Context) (*conf.Network, error) {
-	cfg, err := conf.GetClientConfig()
-	if err != nil {
-		return nil, err
-	}
-	networkUrl := cfg.BlockWorker + "/network"
+func GetNetwork(ctx context.Context, blockWorker string) (*conf.Network, error) {
+	networkUrl := blockWorker + "/network"
 	networkGetCtx, networkGetCancelCtx := context.WithTimeout(ctx, 60*time.Second)
 	defer networkGetCancelCtx()
 	req, err := util.NewHTTPGetRequestContext(networkGetCtx, networkUrl)

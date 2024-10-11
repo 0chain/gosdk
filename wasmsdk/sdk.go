@@ -151,10 +151,10 @@ func makeSCRestAPICall(scAddress, relativePath, paramsJson string) (string, erro
 //   - fee is the transaction fee
 //   - desc is the description of the transaction
 func send(toClientID string, tokens uint64, fee uint64, desc string) (string, error) {
-	_, out, _, _, err := zcncore.Send(toClientID, tokens, desc)
+	hash, _, _, _, err := zcncore.Send(toClientID, tokens, desc)
 	if err != nil {
 		return "", err
 	}
 
-	return out, nil
+	return hash, nil
 }
