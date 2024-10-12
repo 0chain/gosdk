@@ -218,7 +218,7 @@ func CreateChunkedUpload(
 	}
 
 	if su.progressStorer == nil && shouldSaveProgress {
-		su.progressStorer = createFsChunkedUploadProgress(context.Background())
+		su.progressStorer = createFsChunkedUploadProgress(su.ctx)
 	}
 
 	su.loadProgress()

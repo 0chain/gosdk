@@ -17,6 +17,7 @@ import (
 
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/pathutil"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/hack-pad/safejs"
@@ -467,7 +468,7 @@ func multiDownload(allocationID, jsonMultiDownloadOptions, authTicket, callbackF
 		fileName := strings.Replace(path.Base(option.RemotePath), "/", "-", -1)
 		localPath := allocationID + "_" + fileName
 		option.LocalPath = localPath
-		statusBar := &StatusBar{wg: wg}
+		statusBar := &StatusBar{wg: wg, totalBytesMap: make(map[string]int)}
 		allStatusBar[ind] = statusBar
 		if useCallback {
 			callback := js.Global().Get(callbackFuncName)
@@ -729,7 +730,7 @@ func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 	operationRequests := make([]sdk.OperationRequest, n)
 	for idx, option := range options {
 		wg := &sync.WaitGroup{}
-		statusBar := &StatusBar{wg: wg}
+		statusBar := &StatusBar{wg: wg, totalBytesMap: make(map[string]int)}
 		callbackFuncName := option.CallbackFuncName
 		if callbackFuncName != "" {
 			callback := js.Global().Get(callbackFuncName)
@@ -834,7 +835,7 @@ func uploadWithJsFuncs(allocationID, remotePath string, readChunkFuncName string
 	}
 
 	wg := &sync.WaitGroup{}
-	statusBar := &StatusBar{wg: wg}
+	statusBar := &StatusBar{wg: wg, totalBytesMap: make(map[string]int)}
 	if callbackFuncName != "" {
 		callback := js.Global().Get(callbackFuncName)
 		statusBar.callback = func(totalBytes, completedBytes int, filename, objURL, err string) {
@@ -930,7 +931,7 @@ func upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, w
 	}
 
 	wg := &sync.WaitGroup{}
-	statusBar := &StatusBar{wg: wg}
+	statusBar := &StatusBar{wg: wg, totalBytesMap: make(map[string]int)}
 	wg.Add(1)
 
 	fileReader := bytes.NewReader(fileBytes)
@@ -1013,13 +1014,11 @@ func downloadBlocks(allocId string, remotePath, authTicket, lookupHash string, s
 
 	var (
 		wg        = &sync.WaitGroup{}
-		statusBar = &StatusBar{wg: wg}
+		statusBar = &StatusBar{wg: wg, totalBytesMap: make(map[string]int)}
 	)
 
-	fileName := strings.Replace(path.Base(remotePath), "/", "-", -1)
-	localPath := alloc.ID + "-" + fmt.Sprintf("%v-%s", startBlock, fileName)
-
-	fs, err := sys.Files.Open(localPath)
+	pathHash := encryption.FastHash(remotePath)
+	fs, err := sys.Files.Open(pathHash)
 	if err != nil {
 		return nil, fmt.Errorf("could not open local file: %v", err)
 	}
@@ -1029,7 +1028,7 @@ func downloadBlocks(allocId string, remotePath, authTicket, lookupHash string, s
 		return nil, fmt.Errorf("invalid memfile")
 	}
 
-	defer sys.Files.Remove(localPath) //nolint
+	defer sys.Files.Remove(pathHash) //nolint
 
 	wg.Add(1)
 	if authTicket != "" {
@@ -1064,7 +1063,7 @@ func getBlobbers(stakable bool) ([]*sdk.Blobber, error) {
 // repairAllocation repair the allocation
 // Allocation repair is a process to repair the allocation files on its blobbers by re-uploading the missing blocks.
 //   - allocationID : allocation ID of the file
-func repairAllocation(allocationID string) error {
+func repairAllocation(allocationID, callbackFuncName string) error {
 	alloc, err := getAllocation(allocationID)
 	if err != nil {
 		return err
@@ -1073,16 +1072,21 @@ func repairAllocation(allocationID string) error {
 	if err != nil {
 		return err
 	}
-	statusBar := sdk.NewRepairBar(allocationID)
-	if statusBar == nil {
-		return errors.New("repair already in progress")
+	wg := &sync.WaitGroup{}
+	statusBar := &StatusBar{wg: wg, isRepair: true, totalBytesMap: make(map[string]int)}
+	wg.Add(1)
+	if callbackFuncName != "" {
+		callback := js.Global().Get(callbackFuncName)
+		statusBar.callback = func(totalBytes, completedBytes int, filename, objURL, err string) {
+			callback.Invoke(totalBytes, completedBytes, filename, objURL, err)
+		}
 	}
 	err = alloc.RepairAlloc(statusBar)
 	if err != nil {
 		return err
 	}
-	statusBar.Wait()
-	return statusBar.CheckError()
+	wg.Wait()
+	return statusBar.err
 }
 
 // checkAllocStatus check the status of the allocation, either it is ok, needs repair or broken
@@ -1166,7 +1170,7 @@ func downloadDirectory(allocationID, remotePath, authticket, callbackFuncName st
 	}
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
-	statusBar := &StatusBar{wg: wg}
+	statusBar := &StatusBar{wg: wg, totalBytesMap: make(map[string]int)}
 	if callbackFuncName != "" {
 		callback := js.Global().Get(callbackFuncName)
 		statusBar.callback = func(totalBytes, completedBytes int, filename, objURL, err string) {

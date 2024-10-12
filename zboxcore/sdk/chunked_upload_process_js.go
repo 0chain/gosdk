@@ -26,6 +26,7 @@ import (
 	"github.com/hack-pad/go-webworkers/worker"
 	"github.com/hack-pad/safejs"
 	"github.com/hitenjain14/fasthttp"
+	"github.com/valyala/bytebufferpool"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -150,6 +151,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		var thumbnailChunkData []byte
 		worker := jsbridge.GetWorker(blobber.blobber.ID)
 		if worker == nil {
+			logger.Logger.Error("worker not found for blobber: ", blobber.blobber.Baseurl)
 			continue
 		}
 		if len(thumbnailShards) > 0 {
@@ -191,6 +193,9 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		err = worker.PostMessage(safejs.Safe(obj), []safejs.Value{safejs.Safe(fileshardUint8.Get("buffer"))})
 		if err == nil {
 			successCount++
+		} else {
+			logger.Logger.Error("error posting message to worker: ", err)
+			su.uploadMask = su.uploadMask.And(zboxutil.NewUint128(1).Lsh(pos).Not())
 		}
 		if isFinal {
 			blobber.fileRef.ChunkSize = su.chunkSize
@@ -298,7 +303,7 @@ func (su *ChunkedUpload) listen(allEventChan []eventChanWorker, respChan chan er
 					//get error message
 					//get final result
 					var err error
-					isFinal, err = su.processWebWorkerUpload(data, blobber)
+					isFinal, err = su.processWebWorkerUpload(data, blobber, pos)
 					if err != nil {
 						errC := atomic.AddInt32(&errCount, 1)
 						if errC >= int32(su.consensus.consensusThresh) {
@@ -306,13 +311,11 @@ func (su *ChunkedUpload) listen(allEventChan []eventChanWorker, respChan chan er
 						}
 					} else {
 						uploadSuccess = true
-						su.consensus.Done()
 					}
 					return
 				default:
 					logger.Logger.Error("unknown msg type: ", msgType)
 				}
-				return
 			}
 
 		}(pos)
@@ -333,9 +336,9 @@ func (su *ChunkedUpload) listen(allEventChan []eventChanWorker, respChan chan er
 		su.ctxCncl(err)
 		respChan <- err
 	}
-	for chunkEndIndex, count := range su.processMap {
-		if count >= su.consensus.consensusThresh {
-			su.updateProgress(chunkEndIndex, su.uploadMask)
+	for chunkEndIndex, mask := range su.processMap {
+		if mask.CountOnes() >= su.consensus.consensusThresh {
+			su.updateProgress(chunkEndIndex, mask)
 			delete(su.processMap, chunkEndIndex)
 		}
 	}
@@ -347,7 +350,7 @@ func (su *ChunkedUpload) listen(allEventChan []eventChanWorker, respChan chan er
 	}
 }
 
-func (su *ChunkedUpload) processWebWorkerUpload(data *safejs.Value, blobber *ChunkedUploadBlobber) (bool, error) {
+func (su *ChunkedUpload) processWebWorkerUpload(data *safejs.Value, blobber *ChunkedUploadBlobber, pos uint64) (bool, error) {
 	var isFinal bool
 	success, err := data.Get("success")
 	if err != nil {
@@ -366,7 +369,7 @@ func (su *ChunkedUpload) processWebWorkerUpload(data *safejs.Value, blobber *Chu
 
 	chunkEndIndexObj, _ := data.Get("chunkEndIndex")
 	chunkEndIndex, _ := chunkEndIndexObj.Int()
-	su.updateChunkProgress(chunkEndIndex)
+	su.updateChunkProgress(chunkEndIndex, pos)
 	finalRequestObject, _ := data.Get("isFinal")
 	finalRequest, _ := finalRequestObject.Bool()
 	if finalRequest {
@@ -662,6 +665,10 @@ func sendUploadRequest(dataBuffers []*bytes.Buffer, contentSlice []string, blobb
 					}
 					continue
 				}
+				buff := &bytebufferpool.ByteBuffer{
+					B: dataBuffers[ind].Bytes(),
+				}
+				formDataPool.Put(buff)
 
 				if err != nil {
 					return err
@@ -682,7 +689,7 @@ type eventChanWorker struct {
 
 func (su *ChunkedUpload) startProcessor() {
 	su.listenChan = make(chan struct{}, su.uploadWorkers)
-	su.processMap = make(map[int]int)
+	su.processMap = make(map[int]zboxutil.Uint128)
 	su.uploadWG.Add(1)
 	go func() {
 		respChan := make(chan error, 1)
@@ -723,8 +730,8 @@ func (su *ChunkedUpload) startProcessor() {
 	}()
 }
 
-func (su *ChunkedUpload) updateChunkProgress(chunkEndIndex int) {
+func (su *ChunkedUpload) updateChunkProgress(chunkEndIndex int, pos uint64) {
 	su.processMapLock.Lock()
-	su.processMap[chunkEndIndex] += 1
+	su.processMap[chunkEndIndex] = su.processMap[chunkEndIndex].Or(zboxutil.NewUint128(1).Lsh(pos))
 	su.processMapLock.Unlock()
 }

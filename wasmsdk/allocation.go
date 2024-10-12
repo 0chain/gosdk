@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"syscall/js"
 
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/wasmsdk/jsbridge"
@@ -240,7 +241,7 @@ func updateAllocationWithRepair(allocationID string,
 	size int64,
 	extend bool,
 	lock int64,
-	addBlobberId, addBlobberAuthTicket, removeBlobberId string) (string, error) {
+	addBlobberId, addBlobberAuthTicket, removeBlobberId, callbackFuncName string) (string, error) {
 	sdk.SetWasm()
 	allocationObj, err := sdk.GetAllocation(allocationID)
 	if err != nil {
@@ -248,8 +249,14 @@ func updateAllocationWithRepair(allocationID string,
 	}
 
 	wg := &sync.WaitGroup{}
-	statusBar := &StatusBar{wg: wg, isRepair: true}
+	statusBar := &StatusBar{wg: wg, isRepair: true, totalBytesMap: make(map[string]int)}
 	wg.Add(1)
+	if callbackFuncName != "" {
+		callback := js.Global().Get(callbackFuncName)
+		statusBar.callback = func(totalBytes, completedBytes int, filename, objURL, err string) {
+			callback.Invoke(totalBytes, completedBytes, filename, objURL, err)
+		}
+	}
 
 	alloc, hash, isRepairRequired, err := allocationObj.UpdateWithStatus(size, extend, uint64(lock), addBlobberId, addBlobberAuthTicket, removeBlobberId, false, &sdk.FileOptionsParameters{}, statusBar)
 	if err != nil {
@@ -520,7 +527,7 @@ func allocationRepair(allocationID, remotePath string) error {
 	}
 	sdk.SetWasm()
 	wg := &sync.WaitGroup{}
-	statusBar := &StatusBar{wg: wg, isRepair: true}
+	statusBar := &StatusBar{wg: wg, isRepair: true, totalBytesMap: make(map[string]int)}
 	wg.Add(1)
 
 	err = allocationObj.StartRepair("/tmp", remotePath, statusBar)

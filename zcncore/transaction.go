@@ -19,6 +19,7 @@ import (
 	"github.com/0chain/gosdk/core/node"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/util"
+	"github.com/0chain/gosdk/core/zcncrypto"
 )
 
 // Provider represents the type of provider.
@@ -178,6 +179,57 @@ type TransactionCommon interface {
 	ZCNSCCollectReward(providerID string, providerType Provider) error
 }
 
+// compiler time check
+var (
+	_ TransactionScheme = (*Transaction)(nil)
+	_ TransactionScheme = (*TransactionWithAuth)(nil)
+)
+
+// TransactionScheme implements few methods for block chain.
+//
+// Note: to be buildable on MacOSX all arguments should have names.
+type TransactionScheme interface {
+	TransactionCommon
+	// SetTransactionCallback implements storing the callback
+	// used to call after the transaction or verification is completed
+	SetTransactionCallback(cb TransactionCallback) error
+	// StoreData implements store the data to blockchain
+	StoreData(data string) error
+	// ExecuteFaucetSCWallet implements the `Faucet Smart contract` for a given wallet
+	ExecuteFaucetSCWallet(walletStr string, methodName string, input []byte) error
+	// GetTransactionHash implements retrieval of hash of the submitted transaction
+	GetTransactionHash() string
+	// SetTransactionHash implements verify a previous transaction status
+	SetTransactionHash(hash string) error
+	// SetTransactionNonce implements method to set the transaction nonce
+	SetTransactionNonce(txnNonce int64) error
+	// Verify implements verify the transaction
+	Verify() error
+	// GetVerifyOutput implements the verification output from sharders
+	GetVerifyOutput() string
+	// GetTransactionError implements error string in case of transaction failure
+	GetTransactionError() string
+	// GetVerifyError implements error string in case of verify failure error
+	GetVerifyError() string
+	// GetTransactionNonce returns nonce
+	GetTransactionNonce() int64
+
+	// Output of transaction.
+	Output() []byte
+
+	// Hash Transaction status regardless of status
+	Hash() string
+
+	// Vesting SC
+
+	VestingTrigger(poolID string) error
+	VestingStop(sr *VestingStopRequest) error
+	VestingUnlock(poolID string) error
+	VestingDelete(poolID string) error
+
+	// Miner SC
+}
+
 // PriceRange represents a price range allowed by user to filter blobbers.
 type PriceRange struct {
 	Min common.Balance `json:"min"`
@@ -272,6 +324,16 @@ type InputMap struct {
 	Fields map[string]string `json:"Fields"`
 }
 
+func newTransaction(cb TransactionCallback, txnFee uint64, nonce int64) (*Transaction, error) {
+	t := &Transaction{}
+	t.txn = transaction.NewTransactionEntity(_config.wallet.ClientID, _config.chain.ChainID, _config.wallet.ClientKey, nonce)
+	t.txnStatus, t.verifyStatus = StatusUnknown, StatusUnknown
+	t.txnCb = cb
+	t.txn.TransactionNonce = nonce
+	t.txn.TransactionFee = txnFee
+	return t, nil
+}
+
 // NewTransaction new generic transaction object for any operation
 //   - cb: callback for transaction state
 //   - txnFee: Transaction fees (in SAS tokens)
@@ -288,6 +350,55 @@ func NewTransaction(cb TransactionCallback, txnFee uint64, nonce int64) (Transac
 
 	logging.Info("New transaction interface")
 	return newTransaction(cb, txnFee, nonce)
+}
+
+func (t *Transaction) createSmartContractTxn(address, methodName string, input interface{}, value uint64, opts ...FeeOption) error {
+	sn := transaction.SmartContractTxnData{Name: methodName, InputArgs: input}
+	snBytes, err := json.Marshal(sn)
+	if err != nil {
+		return errors.Wrap(err, "create smart contract failed due to invalid data")
+	}
+
+	t.txn.TransactionType = transaction.TxnTypeSmartContract
+	t.txn.ToClientID = address
+	t.txn.TransactionData = string(snBytes)
+	t.txn.Value = value
+
+	if t.txn.TransactionFee > 0 {
+		return nil
+	}
+
+	tf := &TxnFeeOption{}
+	for _, opt := range opts {
+		opt(tf)
+	}
+
+	if tf.noEstimateFee {
+		return nil
+	}
+
+	// TODO: check if transaction is exempt to avoid unnecessary fee estimation
+	minFee, err := transaction.EstimateFee(t.txn, _config.chain.Miners, 0.2)
+	if err != nil {
+		return err
+	}
+
+	t.txn.TransactionFee = minFee
+
+	return nil
+}
+
+func (t *Transaction) createFaucetSCWallet(walletStr string, methodName string, input []byte) (*zcncrypto.Wallet, error) {
+	w, err := getWallet(walletStr)
+	if err != nil {
+		fmt.Printf("Error while parsing the wallet. %v\n", err)
+		return nil, err
+	}
+	err = t.createSmartContractTxn(FaucetSmartContractAddress, methodName, input, 0)
+	if err != nil {
+		return nil, err
+	}
+	return w, nil
 }
 
 func (t *Transaction) ExecuteSmartContract(address, methodName string, input interface{}, val uint64, opts ...FeeOption) (*transaction.Transaction, error) {
@@ -368,6 +479,55 @@ func (t *Transaction) VestingAdd(ar *VestingAddRequest, value uint64) (
 
 	err = t.createSmartContractTxn(VestingSmartContractAddress,
 		transaction.VESTING_ADD, ar, value)
+	if err != nil {
+		logging.Error(err)
+		return
+	}
+	go func() { t.setNonceAndSubmit() }()
+	return
+}
+
+func (t *Transaction) VestingStop(sr *VestingStopRequest) (err error) {
+	err = t.createSmartContractTxn(VestingSmartContractAddress,
+		transaction.VESTING_STOP, sr, 0)
+	if err != nil {
+		logging.Error(err)
+		return
+	}
+	go func() { t.setNonceAndSubmit() }()
+	return
+}
+
+func (t *Transaction) vestingPoolTxn(function string, poolID string,
+	value uint64) error {
+
+	return t.createSmartContractTxn(VestingSmartContractAddress,
+		function, vestingRequest{PoolID: common.Key(poolID)}, value)
+}
+
+func (t *Transaction) VestingTrigger(poolID string) (err error) {
+
+	err = t.vestingPoolTxn(transaction.VESTING_TRIGGER, poolID, 0)
+	if err != nil {
+		logging.Error(err)
+		return
+	}
+	go func() { t.setNonceAndSubmit() }()
+	return
+}
+
+func (t *Transaction) VestingUnlock(poolID string) (err error) {
+	err = t.vestingPoolTxn(transaction.VESTING_UNLOCK, poolID, 0)
+	if err != nil {
+		logging.Error(err)
+		return
+	}
+	go func() { t.setNonceAndSubmit() }()
+	return
+}
+
+func (t *Transaction) VestingDelete(poolID string) (err error) {
+	err = t.vestingPoolTxn(transaction.VESTING_DELETE, poolID, 0)
 	if err != nil {
 		logging.Error(err)
 		return
