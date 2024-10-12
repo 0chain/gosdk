@@ -39,12 +39,13 @@ import (
 )
 
 var (
-	noBLOBBERS       = errors.New("", "No Blobbers set in this allocation")
-	notInitialized   = errors.New("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
-	IsWasm           = false
-	MultiOpBatchSize = 50
-	RepairBatchSize  = 50
-	Workdir          string
+	noBLOBBERS             = errors.New("", "No Blobbers set in this allocation")
+	notInitialized         = errors.New("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
+	IsWasm                 = false
+	MultiOpBatchSize       = 50
+	RepairBatchSize        = 50
+	Workdir                string
+	multiOpRepairBatchSize = 10
 )
 
 const (
@@ -64,7 +65,7 @@ const (
 
 const (
 	emptyFileDataHash = "d41d8cd98f00b204e9800998ecf8427e"
-	getRefPageLimit   = 100
+	getRefPageLimit   = 1000
 )
 
 // Expected success rate is calculated (NumDataShards)*100/(NumDataShards+NumParityShards)
@@ -300,6 +301,7 @@ type Allocation struct {
 	// conseususes
 	consensusThreshold int
 	fullconsensus      int
+	allocationVersion  int64
 	sig                string `json:"-"`
 }
 
@@ -324,6 +326,7 @@ type OperationRequest struct {
 	StreamUpload    bool              // Required for streaming file when actualSize is not available
 	CancelCauseFunc context.CancelCauseFunc
 	Opts            []ChunkedUploadOption
+	CopyDirOnly     bool
 }
 
 // GetReadPriceRange returns the read price range from the global configuration.
@@ -431,6 +434,7 @@ func (a *Allocation) InitAllocation() {
 	a.startWorker(a.ctx)
 	InitCommitWorker(a.Blobbers)
 	InitBlockDownloader(a.Blobbers, downloadWorkerCount)
+	a.CheckAllocStatus() //nolint:errcheck
 	a.initialized = true
 }
 
@@ -511,17 +515,17 @@ func (a *Allocation) UploadFile(workdir, localpath string, remotepath string,
 //   - statusCallback: a callback function to get the status of the repair.
 //   - mask: the mask of the repair descriping the blobbers to repair.
 //   - ref: the file reference, a representation of the file in the database.
-func (a *Allocation) RepairFile(file sys.File, remotepath string, statusCallback StatusCallback, mask zboxutil.Uint128, ref *fileref.FileRef) *OperationRequest {
+func (a *Allocation) RepairFile(file sys.File, remotepath string, statusCallback StatusCallback, mask zboxutil.Uint128, ref ORef) *OperationRequest {
 	idr, _ := homedir.Dir()
 	if Workdir != "" {
 		idr = Workdir
 	}
-	mask = mask.Not().And(zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1))
 	fileMeta := FileMeta{
 		ActualSize: ref.ActualFileSize,
 		MimeType:   ref.MimeType,
 		RemoteName: ref.Name,
 		RemotePath: remotepath,
+		CustomMeta: ref.CustomMeta,
 	}
 	var opts []ChunkedUploadOption
 	if ref.EncryptedKey != "" {
@@ -861,7 +865,7 @@ func (a *Allocation) GetCurrentVersion() (bool, error) {
 			} else {
 				markerChan <- &RollbackBlobber{
 					blobber:      blobber,
-					lpm:          wr,
+					lvm:          wr,
 					commitResult: &CommitResult{},
 				}
 			}
@@ -876,15 +880,15 @@ func (a *Allocation) GetCurrentVersion() (bool, error) {
 
 	for rb := range markerChan {
 
-		if rb == nil || rb.lpm.LatestWM == nil {
+		if rb == nil || rb.lvm == nil {
 			continue
 		}
 
-		if _, ok := versionMap[rb.lpm.LatestWM.Timestamp]; !ok {
-			versionMap[rb.lpm.LatestWM.Timestamp] = make([]*RollbackBlobber, 0)
+		if _, ok := versionMap[rb.lvm.VersionMarker.Version]; !ok {
+			versionMap[rb.lvm.VersionMarker.Version] = make([]*RollbackBlobber, 0)
 		}
 
-		versionMap[rb.lpm.LatestWM.Timestamp] = append(versionMap[rb.lpm.LatestWM.Timestamp], rb)
+		versionMap[rb.lvm.VersionMarker.Version] = append(versionMap[rb.lvm.VersionMarker.Version], rb)
 
 		if len(versionMap) > 2 {
 			return false, fmt.Errorf("more than 2 versions found")
@@ -1072,7 +1076,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 				operation = NewRenameOperation(op.RemotePath, op.DestName, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 
 			case constants.FileOperationCopy:
-				operation = NewCopyOperation(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
+				operation = NewCopyOperation(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, op.CopyDirOnly, mo.ctx)
 
 			case constants.FileOperationMove:
 				operation = NewMoveOperation(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
@@ -1085,7 +1089,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 
 			case constants.FileOperationDelete:
 				if op.Mask != nil {
-					operation = NewDeleteOperation(op.RemotePath, *op.Mask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
+					operation = NewDeleteOperation(op.RemotePath, *op.Mask, mo.maskMU, op.Mask.CountOnes(), mo.fullconsensus, mo.ctx)
 				} else {
 					operation = NewDeleteOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 				}
@@ -1125,6 +1129,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 		if len(mo.operations) > 0 {
 			err := mo.Process()
 			if err != nil {
+				logger.Logger.Error("Error in multi operation", zap.Error(err))
 				return err
 			}
 
@@ -1626,7 +1631,7 @@ func (a *Allocation) ListDir(path string, opts ...ListRequestOptions) (*ListResu
 	return nil, errors.New("list_request_failed", "Failed to get list response from the blobbers")
 }
 
-func (a *Allocation) getRefs(path, pathHash, authToken, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*ObjectTreeResult, error) {
+func (a *Allocation) getRefs(path, pathHash, authToken, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int, opts ...ObjectTreeRequestOption) (*ObjectTreeResult, error) {
 	if !a.isInitialized() {
 		return nil, notInitialized
 	}
@@ -1647,9 +1652,17 @@ func (a *Allocation) getRefs(path, pathHash, authToken, offsetPath, updatedDate,
 		fileType:       fileType,
 		refType:        refType,
 		ctx:            a.ctx,
+		reqMask:        zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1),
 	}
 	oTreeReq.fullconsensus = a.fullconsensus
 	oTreeReq.consensusThresh = a.DataShards
+	for _, opt := range opts {
+		opt(oTreeReq)
+	}
+	//TODO: Have a mask on allocation object to track blobbers which are on latest version
+	// if singleClientMode {
+	// 	oTreeReq.singleBlobber = true
+	// }
 	return oTreeReq.GetRefs()
 }
 
@@ -1769,12 +1782,12 @@ func (a *Allocation) GetRefsWithAuthTicket(authToken, offsetPath, updatedDate, o
 //   - refType: the ref type to get the refs, e.g., file or directory.
 //   - level: the level of the refs to get relative to the path root (strating from 0 as the root path).
 //   - pageLimit: the limit of the refs to get per page.
-func (a *Allocation) GetRefs(path, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*ObjectTreeResult, error) {
+func (a *Allocation) GetRefs(path, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int, opts ...ObjectTreeRequestOption) (*ObjectTreeResult, error) {
 	if len(path) == 0 || !zboxutil.IsRemoteAbs(path) {
 		return nil, errors.New("invalid_path", fmt.Sprintf("Absolute path required. Path provided: %v", path))
 	}
 
-	return a.getRefs(path, "", "", offsetPath, updatedDate, offsetDate, fileType, refType, level, pageLimit)
+	return a.getRefs(path, "", "", offsetPath, updatedDate, offsetDate, fileType, refType, level, pageLimit, opts...)
 }
 
 func (a *Allocation) ListObjects(ctx context.Context, path, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) <-chan ORef {
@@ -1913,6 +1926,7 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 }
 
 // GetFileMetaByName retrieve consolidated file metadata given its name (its full path starting from root "/").
+//   - fileName: full file path starting from the allocation root.
 //   - fileName: full file path starting from the allocation root.
 func (a *Allocation) GetFileMetaByName(fileName string) ([]*ConsolidatedFileMetaByName, error) {
 	if !a.isInitialized() {
@@ -2821,11 +2835,13 @@ func (a *Allocation) StartRepair(localRootPath, pathToRepair string, statusCB St
 	if err != nil {
 		return err
 	}
+	a.CheckAllocStatus() //nolint:errcheck
 
 	repairReq := &RepairRequest{
 		listDir:       listDir,
 		localRootPath: localRootPath,
 		statusCB:      statusCB,
+		repairPath:    pathToRepair,
 	}
 
 	repairReq.completedCallback = func() {

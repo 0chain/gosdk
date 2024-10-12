@@ -5,6 +5,7 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -233,7 +234,7 @@ func GetRefsHash(r []byte) string {
 	hash.Write(r)
 	var buf []byte
 	buf = hash.Sum(buf)
-	return string(buf)
+	return hex.EncodeToString(buf)
 }
 
 func GetActiveBlobbers(dirMask uint32, blobbers []*blockchain.StorageNode) []*blockchain.StorageNode {

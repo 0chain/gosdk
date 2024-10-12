@@ -154,11 +154,6 @@ func CreateChunkedUpload(
 	}
 
 	uploadMask := zboxutil.NewUint128(1).Lsh(uint64(len(allocationObj.Blobbers))).Sub64(1)
-	if isRepair {
-		opCode = OpUpdate
-		consensus.fullconsensus = uploadMask.CountOnes()
-		consensus.consensusThresh = 1
-	}
 
 	su := &ChunkedUpload{
 		allocationObj: allocationObj,
@@ -181,9 +176,9 @@ func CreateChunkedUpload(
 
 	// su.ctx, su.ctxCncl = context.WithCancel(allocationObj.ctx)
 	su.ctx, su.ctxCncl = context.WithCancelCause(ctx)
+	su.httpMethod = http.MethodPost
 
 	if isUpdate {
-		su.httpMethod = http.MethodPut
 		su.buildChange = func(ref *fileref.FileRef, _ uuid.UUID, ts common.Timestamp) allocationchange.AllocationChange {
 			change := &allocationchange.UpdateFileChange{}
 			change.NewFile = ref
@@ -193,7 +188,6 @@ func CreateChunkedUpload(
 			return change
 		}
 	} else {
-		su.httpMethod = http.MethodPost
 		su.buildChange = func(ref *fileref.FileRef, uid uuid.UUID, ts common.Timestamp) allocationchange.AllocationChange {
 			change := &allocationchange.NewFileChange{}
 			change.File = ref
@@ -215,6 +209,12 @@ func CreateChunkedUpload(
 
 	for _, opt := range opts {
 		opt(su)
+	}
+
+	if isRepair {
+		opCode = OpUpdate
+		su.consensus.fullconsensus = su.uploadMask.CountOnes()
+		su.consensus.consensusThresh = su.uploadMask.CountOnes()
 	}
 
 	if su.progressStorer == nil && shouldSaveProgress {

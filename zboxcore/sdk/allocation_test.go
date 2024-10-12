@@ -1171,7 +1171,6 @@ func TestAllocation_GetAuthTicketForShare(t *testing.T) {
 				Ref: fileref.Ref{
 					Name: mockFileRefName,
 				},
-				ValidationRoot: mockValidationRoot,
 			})
 			require.NoError(t, err)
 			return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
@@ -1226,7 +1225,6 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 							Ref: fileref.Ref{
 								Name: mockFileRefName,
 							},
-							ValidationRoot: "mock validation root",
 						})
 						require.NoError(t, err)
 						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
@@ -1258,7 +1256,6 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 							Ref: fileref.Ref{
 								Name: mockFileRefName,
 							},
-							ValidationRoot: "mock validation root",
 						})
 						require.NoError(t, err)
 						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
@@ -1310,7 +1307,6 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 							Ref: fileref.Ref{
 								Name: mockFileRefName,
 							},
-							ValidationRoot: "mock validation root",
 						})
 						require.NoError(t, err)
 						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
@@ -1351,7 +1347,6 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 							Ref: fileref.Ref{
 								Name: mockFileRefName,
 							},
-							ValidationRoot: "mock validation root",
 						})
 						require.NoError(t, err)
 						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
@@ -2384,7 +2379,6 @@ func setupMockGetFileInfoResponse(t *testing.T, mockClient *mocks.HttpClient) {
 				Ref: fileref.Ref{
 					Name: mockFileRefName,
 				},
-				ValidationRoot: "mock validation root",
 			})
 			require.NoError(t, err)
 			return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
@@ -2425,8 +2419,7 @@ func getMockAuthTicket(t *testing.T) string {
 		Ref: fileref.Ref{
 			Name: mockFileRefName,
 		},
-		ValidationRoot: "mock validation root",
-		EncryptedKey:   "encrypted key",
+		EncryptedKey: "encrypted key",
 	})
 	require.NoError(t, err)
 

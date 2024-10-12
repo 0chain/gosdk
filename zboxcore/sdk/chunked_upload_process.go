@@ -49,14 +49,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		for i, blobberShard := range fileShards {
 			hasher := su.blobbers[i].progress.Hasher
 			for _, chunkBytes := range blobberShard {
-				err := hasher.WriteToFixedMT(chunkBytes)
-				if err != nil {
-					if su.statusCallback != nil {
-						su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
-					}
-					return err
-				}
-				err = hasher.WriteToValidationMT(chunkBytes)
+				err := hasher.WriteToBlockHasher(chunkBytes)
 				if err != nil {
 					if su.statusCallback != nil {
 						su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)

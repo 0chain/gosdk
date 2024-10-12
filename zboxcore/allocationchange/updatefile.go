@@ -23,23 +23,12 @@ func (ch *UpdateFileChange) ProcessChange(rootRef *fileref.Ref, _ map[string]str
 		return
 	}
 
-	if ch.NewFile.ValidationRoot == "" {
-		err = fmt.Errorf("empty validation root field")
-		return
-	}
-
 	fileHashSign, err := client.Sign(ch.NewFile.ActualFileHash)
 	if err != nil {
 		return
 	}
 
-	validationRootSign, err := client.Sign(fileHashSign + ch.NewFile.ValidationRoot)
-	if err != nil {
-		return
-	}
-
 	ch.NewFile.ActualFileHashSignature = fileHashSign
-	ch.NewFile.ValidationRootSignature = validationRootSign
 
 	fields, err := common.GetPathFields(pathutil.Dir(ch.NewFile.Path))
 

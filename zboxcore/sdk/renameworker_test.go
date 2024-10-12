@@ -244,7 +244,7 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 			req.blobbers = append(req.blobbers, &blockchain.StorageNode{
 				Baseurl: tt.name,
 			})
-			_, err := req.renameBlobberObject(req.blobbers[0], 0)
+			err := req.renameBlobberObject(req.blobbers[0], 0)
 			require.EqualValues(tt.wantErr, err != nil, "Error: ", err)
 			if err != nil {
 				require.Contains(errors.Top(err), tt.errMsg)

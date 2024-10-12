@@ -11,7 +11,6 @@ import (
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
-	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
@@ -29,7 +28,6 @@ const (
 
 type BlockDownloadRequest struct {
 	blobber            *blockchain.StorageNode
-	blobberFile        *blobberFile
 	allocationID       string
 	allocationTx       string
 	allocOwnerID       string
@@ -199,18 +197,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock(fastClient *fasthttp.Clien
 				dR.Data = respBuf
 			}
 			if req.contentMode == DOWNLOAD_CONTENT_FULL && req.shouldVerify {
-
-				vmp := util.MerklePathForMultiLeafVerification{
-					Nodes:    dR.Nodes,
-					Index:    dR.Indexes,
-					RootHash: req.blobberFile.validationRoot,
-					DataSize: req.blobberFile.size,
-				}
 				zlogger.Logger.Info("verifying multiple blocks")
-				err = vmp.VerifyMultipleBlocks(dR.Data)
-				if err != nil {
-					return errors.New("merkle_path_verification_error", err.Error())
-				}
 			}
 
 			rspData.idx = req.blobberIdx

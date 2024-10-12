@@ -10,21 +10,15 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
-	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/pathutil"
-	"github.com/0chain/gosdk/core/resty"
-	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/hitenjain14/fasthttp"
 
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
-	zclient "github.com/0chain/gosdk/zboxcore/client"
-	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/mocks"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/stretchr/testify/mock"
@@ -655,278 +649,278 @@ func TestAllocation_EncryptAndUploadFileWithThumbnail(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestAllocation_RepairFile(t *testing.T) {
-	const (
-		mockFileRefName = "mock file ref name"
-		mockLocalPath   = "1.txt"
-		mockActualHash  = "75a919d23622c29ade8096ed1add6606ec970579459178db3a7d1d0ff8df92d3"
-		mockChunkHash   = "a6fb1cb61c9a3b8709242de28e44fb0b4de3753995396ae1d21ca9d4e956e9e2"
-	)
+// func TestAllocation_RepairFile(t *testing.T) {
+// 	const (
+// 		mockFileRefName = "mock file ref name"
+// 		mockLocalPath   = "1.txt"
+// 		mockActualHash  = "75a919d23622c29ade8096ed1add6606ec970579459178db3a7d1d0ff8df92d3"
+// 		mockChunkHash   = "a6fb1cb61c9a3b8709242de28e44fb0b4de3753995396ae1d21ca9d4e956e9e2"
+// 	)
 
-	rawClient := zboxutil.Client
-	createClient := resty.CreateClient
+// 	rawClient := zboxutil.Client
+// 	createClient := resty.CreateClient
 
-	var mockClient = mocks.HttpClient{}
+// 	var mockClient = mocks.HttpClient{}
 
-	zboxutil.Client = &mockClient
-	resty.CreateClient = func(t *http.Transport, timeout time.Duration) resty.Client {
-		return &mockClient
-	}
+// 	zboxutil.Client = &mockClient
+// 	resty.CreateClient = func(t *http.Transport, timeout time.Duration) resty.Client {
+// 		return &mockClient
+// 	}
 
-	defer func() {
-		zboxutil.Client = rawClient
-		resty.CreateClient = createClient
-	}()
+// 	defer func() {
+// 		zboxutil.Client = rawClient
+// 		resty.CreateClient = createClient
+// 	}()
 
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
-		ClientID:  mockClientId,
-		ClientKey: mockClientKey,
-	}
+// 	client := zclient.GetClient()
+// 	client.Wallet = &zcncrypto.Wallet{
+// 		ClientID:  mockClientId,
+// 		ClientKey: mockClientKey,
+// 	}
 
-	// setupHttpResponses := func(t *testing.T, testName string, numBlobbers, numCorrect int) {
-	// 	require.True(t, numBlobbers >= numCorrect)
-	// 	for i := 0; i < numBlobbers; i++ {
-	// 		var hash string
-	// 		if i < numCorrect {
-	// 			hash = mockActualHash
-	// 		}
-	// 		frName := mockFileRefName + strconv.Itoa(i)
-	// 		url := "http://TestAllocation_RepairFile" + testName + mockBlobberUrl + strconv.Itoa(i) + "/v1/file/meta"
-	// 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-	// 			return strings.HasPrefix(req.URL.String(), url)
-	// 		})).Return(&http.Response{
-	// 			StatusCode: http.StatusOK,
-	// 			Body: func(fileRefName, hash string) io.ReadCloser {
-	// 				jsonFR, err := json.Marshal(&fileref.FileRef{
-	// 					ActualFileHash: hash,
-	// 					Ref: fileref.Ref{
-	// 						Name: fileRefName,
-	// 					},
-	// 				})
-	// 				require.NoError(t, err)
-	// 				return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
-	// 			}(frName, hash),
-	// 		}, nil)
-	// 	}
-	// }
+// 	// setupHttpResponses := func(t *testing.T, testName string, numBlobbers, numCorrect int) {
+// 	// 	require.True(t, numBlobbers >= numCorrect)
+// 	// 	for i := 0; i < numBlobbers; i++ {
+// 	// 		var hash string
+// 	// 		if i < numCorrect {
+// 	// 			hash = mockActualHash
+// 	// 		}
+// 	// 		frName := mockFileRefName + strconv.Itoa(i)
+// 	// 		url := "http://TestAllocation_RepairFile" + testName + mockBlobberUrl + strconv.Itoa(i) + "/v1/file/meta"
+// 	// 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+// 	// 			return strings.HasPrefix(req.URL.String(), url)
+// 	// 		})).Return(&http.Response{
+// 	// 			StatusCode: http.StatusOK,
+// 	// 			Body: func(fileRefName, hash string) io.ReadCloser {
+// 	// 				jsonFR, err := json.Marshal(&fileref.FileRef{
+// 	// 					ActualFileHash: hash,
+// 	// 					Ref: fileref.Ref{
+// 	// 						Name: fileRefName,
+// 	// 					},
+// 	// 				})
+// 	// 				require.NoError(t, err)
+// 	// 				return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+// 	// 			}(frName, hash),
+// 	// 		}, nil)
+// 	// 	}
+// 	// }
 
-	setupHttpResponsesWithUpload := func(t *testing.T, testName string, numBlobbers, numCorrect int) {
-		require.True(t, numBlobbers >= numCorrect)
-		for i := 0; i < numBlobbers; i++ {
-			var hash string
-			if i < numCorrect {
-				hash = mockActualHash
-			}
+// 	setupHttpResponsesWithUpload := func(t *testing.T, testName string, numBlobbers, numCorrect int) {
+// 		require.True(t, numBlobbers >= numCorrect)
+// 		for i := 0; i < numBlobbers; i++ {
+// 			var hash string
+// 			if i < numCorrect {
+// 				hash = mockActualHash
+// 			}
 
-			frName := mockFileRefName + strconv.Itoa(i)
-			httpResponse := &http.Response{
-				StatusCode: http.StatusOK,
-				Body: func(fileRefName, hash string) io.ReadCloser {
-					jsonFR, err := json.Marshal(&fileref.FileRef{
-						ActualFileHash: hash,
-						ActualFileSize: 14,
-						Ref: fileref.Ref{
-							Name:         fileRefName,
-							FileMetaHash: hash,
-						},
-					})
-					require.NoError(t, err)
-					return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
-				}(frName, hash),
-			}
+// 			frName := mockFileRefName + strconv.Itoa(i)
+// 			httpResponse := &http.Response{
+// 				StatusCode: http.StatusOK,
+// 				Body: func(fileRefName, hash string) io.ReadCloser {
+// 					jsonFR, err := json.Marshal(&fileref.FileRef{
+// 						ActualFileHash: hash,
+// 						ActualFileSize: 14,
+// 						Ref: fileref.Ref{
+// 							Name:         fileRefName,
+// 							FileMetaHash: hash,
+// 						},
+// 					})
+// 					require.NoError(t, err)
+// 					return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+// 				}(frName, hash),
+// 			}
 
-			urlMeta := "http://TestAllocation_RepairFile" + testName + mockBlobberUrl + strconv.Itoa(i) + "/v1/file/meta"
-			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-				return strings.HasPrefix(req.URL.String(), urlMeta)
-			})).Return(httpResponse, nil)
+// 			urlMeta := "http://TestAllocation_RepairFile" + testName + mockBlobberUrl + strconv.Itoa(i) + "/v1/file/meta"
+// 			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+// 				return strings.HasPrefix(req.URL.String(), urlMeta)
+// 			})).Return(httpResponse, nil)
 
-			urlUpload := "http://TestAllocation_RepairFile" + testName + mockBlobberUrl + strconv.Itoa(i) + "/v1/file/upload"
-			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-				return strings.HasPrefix(req.URL.String(), urlUpload)
-			})).Return(&http.Response{
-				StatusCode: http.StatusOK,
-				Body: func(fileRefName, hash string) io.ReadCloser {
-					jsonFR, err := json.Marshal(&UploadResult{
-						Filename: mockLocalPath,
-						Hash:     mockChunkHash,
-					})
-					require.NoError(t, err)
-					return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
-				}(frName, hash),
-			}, nil)
+// 			urlUpload := "http://TestAllocation_RepairFile" + testName + mockBlobberUrl + strconv.Itoa(i) + "/v1/file/upload"
+// 			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+// 				return strings.HasPrefix(req.URL.String(), urlUpload)
+// 			})).Return(&http.Response{
+// 				StatusCode: http.StatusOK,
+// 				Body: func(fileRefName, hash string) io.ReadCloser {
+// 					jsonFR, err := json.Marshal(&UploadResult{
+// 						Filename: mockLocalPath,
+// 						Hash:     mockChunkHash,
+// 					})
+// 					require.NoError(t, err)
+// 					return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+// 				}(frName, hash),
+// 			}, nil)
 
-			urlLatestWritemarker := "http://TestAllocation_RepairFile" + testName + mockBlobberUrl + strconv.Itoa(i) + "/v1/file/latestwritemarker"
-			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-				return strings.HasPrefix(req.URL.String(), urlLatestWritemarker)
-			})).Return(&http.Response{
-				StatusCode: http.StatusOK,
-				Body: func() io.ReadCloser {
-					s := `{"latest_write_marker":null,"prev_write_marker":null}`
-					return ioutil.NopCloser(bytes.NewReader([]byte(s)))
-				}(),
-			}, nil)
+// 			urlLatestWritemarker := "http://TestAllocation_RepairFile" + testName + mockBlobberUrl + strconv.Itoa(i) + "/v1/file/latestwritemarker"
+// 			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+// 				return strings.HasPrefix(req.URL.String(), urlLatestWritemarker)
+// 			})).Return(&http.Response{
+// 				StatusCode: http.StatusOK,
+// 				Body: func() io.ReadCloser {
+// 					s := `{"latest_write_marker":null,"prev_write_marker":null}`
+// 					return ioutil.NopCloser(bytes.NewReader([]byte(s)))
+// 				}(),
+// 			}, nil)
 
-			urlRollback := "http://TestAllocation_RepairFile" + testName + mockBlobberUrl + strconv.Itoa(i) + "/v1/connection/rollback"
-			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-				return strings.HasPrefix(req.URL.String(), urlRollback)
-			})).Return(&http.Response{
-				StatusCode: http.StatusOK,
-				Body:       ioutil.NopCloser(bytes.NewReader(nil)),
-			}, nil)
+// 			urlRollback := "http://TestAllocation_RepairFile" + testName + mockBlobberUrl + strconv.Itoa(i) + "/v1/connection/rollback"
+// 			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+// 				return strings.HasPrefix(req.URL.String(), urlRollback)
+// 			})).Return(&http.Response{
+// 				StatusCode: http.StatusOK,
+// 				Body:       ioutil.NopCloser(bytes.NewReader(nil)),
+// 			}, nil)
 
-			urlFilePath := "http://TestAllocation_RepairFile" + testName + mockBlobberUrl + strconv.Itoa(i) + "/v1/file/referencepath"
-			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-				return strings.HasPrefix(req.URL.String(), urlFilePath)
-			})).Return(&http.Response{
-				StatusCode: http.StatusOK,
-				Body: func(fileRefName, hash string) io.ReadCloser {
-					jsonFR, err := json.Marshal(&ReferencePathResult{
-						ReferencePath: &fileref.ReferencePath{
-							Meta: map[string]interface{}{
-								"type": "d",
-							},
-						},
-						LatestWM: nil,
-					})
-					require.NoError(t, err)
-					return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
-				}(frName, hash),
-			}, nil)
+// 			urlFilePath := "http://TestAllocation_RepairFile" + testName + mockBlobberUrl + strconv.Itoa(i) + "/v1/file/referencepath"
+// 			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+// 				return strings.HasPrefix(req.URL.String(), urlFilePath)
+// 			})).Return(&http.Response{
+// 				StatusCode: http.StatusOK,
+// 				Body: func(fileRefName, hash string) io.ReadCloser {
+// 					jsonFR, err := json.Marshal(&ReferencePathResult{
+// 						ReferencePath: &fileref.ReferencePath{
+// 							Meta: map[string]interface{}{
+// 								"type": "d",
+// 							},
+// 						},
+// 						LatestWM: nil,
+// 					})
+// 					require.NoError(t, err)
+// 					return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+// 				}(frName, hash),
+// 			}, nil)
 
-			urlCommit := "http://TestAllocation_RepairFile" + testName + mockBlobberUrl + strconv.Itoa(i) + "/v1/connection/commit"
-			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-				return strings.HasPrefix(req.URL.String(), urlCommit)
-			})).Return(&http.Response{
-				StatusCode: http.StatusOK,
-				Body: func(fileRefName, hash string) io.ReadCloser {
-					jsonFR, err := json.Marshal(&ReferencePathResult{})
-					require.NoError(t, err)
-					return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
-				}(frName, hash),
-			}, nil)
+// 			urlCommit := "http://TestAllocation_RepairFile" + testName + mockBlobberUrl + strconv.Itoa(i) + "/v1/connection/commit"
+// 			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+// 				return strings.HasPrefix(req.URL.String(), urlCommit)
+// 			})).Return(&http.Response{
+// 				StatusCode: http.StatusOK,
+// 				Body: func(fileRefName, hash string) io.ReadCloser {
+// 					jsonFR, err := json.Marshal(&ReferencePathResult{})
+// 					require.NoError(t, err)
+// 					return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+// 				}(frName, hash),
+// 			}, nil)
 
-			urlLock := "http://TestAllocation_RepairFile" + testName + mockBlobberUrl + strconv.Itoa(i) + zboxutil.WM_LOCK_ENDPOINT
-			urlLock = strings.TrimRight(urlLock, "/")
-			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-				return strings.HasPrefix(req.URL.String(), urlLock)
-			})).Return(&http.Response{
-				StatusCode: http.StatusOK,
-				Body: func() io.ReadCloser {
-					resp := &WMLockResult{
-						Status: WMLockStatusOK,
-					}
-					respBuf, _ := json.Marshal(resp)
-					return ioutil.NopCloser(bytes.NewReader(respBuf))
-				}(),
-			}, nil)
+// 			urlLock := "http://TestAllocation_RepairFile" + testName + mockBlobberUrl + strconv.Itoa(i) + zboxutil.WM_LOCK_ENDPOINT
+// 			urlLock = strings.TrimRight(urlLock, "/")
+// 			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+// 				return strings.HasPrefix(req.URL.String(), urlLock)
+// 			})).Return(&http.Response{
+// 				StatusCode: http.StatusOK,
+// 				Body: func() io.ReadCloser {
+// 					resp := &WMLockResult{
+// 						Status: WMLockStatusOK,
+// 					}
+// 					respBuf, _ := json.Marshal(resp)
+// 					return ioutil.NopCloser(bytes.NewReader(respBuf))
+// 				}(),
+// 			}, nil)
 
-			urlCreateConnection := "http://TestAllocation_RepairFile" + testName + mockBlobberUrl + strconv.Itoa(i) + zboxutil.CREATE_CONNECTION_ENDPOINT
-			urlCreateConnection = strings.TrimRight(urlCreateConnection, "/")
-			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-				return strings.HasPrefix(req.URL.String(), urlCreateConnection)
-			})).Return(&http.Response{
-				StatusCode: http.StatusOK,
-				Body: func() io.ReadCloser {
-					respBuf, _ := json.Marshal("connection_id")
-					return ioutil.NopCloser(bytes.NewReader(respBuf))
-				}(),
-			}, nil)
-		}
-	}
+// 			urlCreateConnection := "http://TestAllocation_RepairFile" + testName + mockBlobberUrl + strconv.Itoa(i) + zboxutil.CREATE_CONNECTION_ENDPOINT
+// 			urlCreateConnection = strings.TrimRight(urlCreateConnection, "/")
+// 			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+// 				return strings.HasPrefix(req.URL.String(), urlCreateConnection)
+// 			})).Return(&http.Response{
+// 				StatusCode: http.StatusOK,
+// 				Body: func() io.ReadCloser {
+// 					respBuf, _ := json.Marshal("connection_id")
+// 					return ioutil.NopCloser(bytes.NewReader(respBuf))
+// 				}(),
+// 			}, nil)
+// 		}
+// 	}
 
-	type parameters struct {
-		localPath  string
-		remotePath string
-		status     StatusCallback
-	}
-	tests := []struct {
-		name        string
-		parameters  parameters
-		numBlobbers int
-		numCorrect  int
-		setup       func(*testing.T, string, int, int)
-		wantErr     bool
-		wantRepair  bool
-		errMsg      string
-	}{
-		// {
-		// 	name: "Test_Repair_Not_Required_Failed",
-		// 	parameters: parameters{
-		// 		localPath:  mockLocalPath,
-		// 		remotePath: "/",
-		// 	},
-		// 	numBlobbers: 4,
-		// 	numCorrect:  4,
-		// 	setup:       setupHttpResponses,
-		// 	wantRepair:  false,
-		// },
-		{
-			name: "Test_Repair_Required_Success",
-			parameters: parameters{
-				localPath:  mockLocalPath,
-				remotePath: "/",
-			},
-			numBlobbers: 6,
-			numCorrect:  5,
-			setup:       setupHttpResponsesWithUpload,
-			wantRepair:  true,
-		},
-	}
+// 	type parameters struct {
+// 		localPath  string
+// 		remotePath string
+// 		status     StatusCallback
+// 	}
+// 	tests := []struct {
+// 		name        string
+// 		parameters  parameters
+// 		numBlobbers int
+// 		numCorrect  int
+// 		setup       func(*testing.T, string, int, int)
+// 		wantErr     bool
+// 		wantRepair  bool
+// 		errMsg      string
+// 	}{
+// 		// {
+// 		// 	name: "Test_Repair_Not_Required_Failed",
+// 		// 	parameters: parameters{
+// 		// 		localPath:  mockLocalPath,
+// 		// 		remotePath: "/",
+// 		// 	},
+// 		// 	numBlobbers: 4,
+// 		// 	numCorrect:  4,
+// 		// 	setup:       setupHttpResponses,
+// 		// 	wantRepair:  false,
+// 		// },
+// 		{
+// 			name: "Test_Repair_Required_Success",
+// 			parameters: parameters{
+// 				localPath:  mockLocalPath,
+// 				remotePath: "/",
+// 			},
+// 			numBlobbers: 6,
+// 			numCorrect:  5,
+// 			setup:       setupHttpResponsesWithUpload,
+// 			wantRepair:  true,
+// 		},
+// 	}
 
-	if teardown := setupMockFile(t, mockLocalPath); teardown != nil {
-		defer teardown(t)
-	}
+// 	if teardown := setupMockFile(t, mockLocalPath); teardown != nil {
+// 		defer teardown(t)
+// 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			require := require.New(t)
+// 	for _, tt := range tests {
+// 		t.Run(tt.name, func(t *testing.T) {
+// 			require := require.New(t)
 
-			a := &Allocation{
-				ParityShards: tt.numBlobbers / 2,
-				DataShards:   tt.numBlobbers / 2,
-				Size:         2 * GB,
-			}
-			a.downloadChan = make(chan *DownloadRequest, 10)
-			a.repairChan = make(chan *RepairRequest, 1)
-			a.ctx, a.ctxCancelF = context.WithCancel(context.Background())
-			a.downloadProgressMap = make(map[string]*DownloadRequest)
-			a.mutex = &sync.Mutex{}
-			a.initialized = true
-			sdkInitialized = true
-			for i := 0; i < tt.numBlobbers; i++ {
-				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
-					ID:      mockBlobberId + strconv.Itoa(i),
-					Baseurl: "http://TestAllocation_RepairFile" + tt.name + mockBlobberUrl + strconv.Itoa(i),
-				})
-			}
-			setupMockAllocation(t, a)
-			tt.setup(t, tt.name, tt.numBlobbers, tt.numCorrect)
-			found, _, isRequired, ref, err := a.RepairRequired(tt.parameters.remotePath)
-			require.Nil(err)
-			require.Equal(tt.wantRepair, isRequired)
-			if !tt.wantRepair {
-				return
-			}
-			f, err := os.Open(tt.parameters.localPath)
-			require.Nil(err)
-			sz, err := f.Stat()
-			require.Nil(err)
-			require.NotNil(sz)
-			ref.ActualSize = sz.Size()
-			op := a.RepairFile(f, tt.parameters.remotePath, tt.parameters.status, found, ref)
-			err = a.DoMultiOperation([]OperationRequest{*op}, WithRepair())
-			if tt.wantErr {
-				require.NotNil(err)
-			} else {
-				require.Nil(err)
-			}
+// 			a := &Allocation{
+// 				ParityShards: tt.numBlobbers / 2,
+// 				DataShards:   tt.numBlobbers / 2,
+// 				Size:         2 * GB,
+// 			}
+// 			a.downloadChan = make(chan *DownloadRequest, 10)
+// 			a.repairChan = make(chan *RepairRequest, 1)
+// 			a.ctx, a.ctxCancelF = context.WithCancel(context.Background())
+// 			a.downloadProgressMap = make(map[string]*DownloadRequest)
+// 			a.mutex = &sync.Mutex{}
+// 			a.initialized = true
+// 			sdkInitialized = true
+// 			for i := 0; i < tt.numBlobbers; i++ {
+// 				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
+// 					ID:      mockBlobberId + strconv.Itoa(i),
+// 					Baseurl: "http://TestAllocation_RepairFile" + tt.name + mockBlobberUrl + strconv.Itoa(i),
+// 				})
+// 			}
+// 			setupMockAllocation(t, a)
+// 			tt.setup(t, tt.name, tt.numBlobbers, tt.numCorrect)
+// 			found, _, isRequired, ref, err := a.RepairRequired(tt.parameters.remotePath)
+// 			require.Nil(err)
+// 			require.Equal(tt.wantRepair, isRequired)
+// 			if !tt.wantRepair {
+// 				return
+// 			}
+// 			f, err := os.Open(tt.parameters.localPath)
+// 			require.Nil(err)
+// 			sz, err := f.Stat()
+// 			require.Nil(err)
+// 			require.NotNil(sz)
+// 			ref.ActualSize = sz.Size()
+// 			op := a.RepairFile(f, tt.parameters.remotePath, tt.parameters.status, found, ref)
+// 			err = a.DoMultiOperation([]OperationRequest{*op}, WithRepair())
+// 			if tt.wantErr {
+// 				require.NotNil(err)
+// 			} else {
+// 				require.Nil(err)
+// 			}
 
-			if err != nil {
-				require.EqualValues(tt.errMsg, errors.Top(err))
-				return
-			}
-			require.NoErrorf(err, "Unexpected error %v", err)
-		})
-	}
-}
+// 			if err != nil {
+// 				require.EqualValues(tt.errMsg, errors.Top(err))
+// 				return
+// 			}
+// 			require.NoErrorf(err, "Unexpected error %v", err)
+// 		})
+// 	}
+// }

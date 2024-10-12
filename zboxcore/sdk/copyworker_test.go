@@ -216,7 +216,7 @@ func TestCopyRequest_copyBlobberObject(t *testing.T) {
 				Baseurl: tt.name,
 			})
 			req.copyMask = zboxutil.NewUint128(1).Lsh(uint64(len(req.blobbers))).Sub64(1)
-			_, err := req.copyBlobberObject(req.blobbers[0], 0)
+			err := req.copyBlobberObject(req.blobbers[0], 0)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
 				require.Contains(errors.Top(err), tt.errMsg)
