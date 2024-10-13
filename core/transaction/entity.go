@@ -250,10 +250,6 @@ func (t *Transaction) VerifySigWith(pubkey string, verifyHandler VerifyFunc) (bo
 
 // SendTransactionSync sends transactions to all miners in parallel and returns as soon as minSubmit is reached.
 func SendTransactionSync(txn *Transaction, miners []string, minSubmit int) error {
-	if minSubmit > len(miners) {
-		return fmt.Errorf("minSubmit cannot be greater than total miners : %v < %v", minSubmit, len(miners))
-	}
-
 	// Context with 1-minute timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
