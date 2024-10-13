@@ -1,44 +1,46 @@
+// Methods and types for blockchain entities and interactions.
 package blockchain
 
 import (
 	"sync/atomic"
 
-	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/zboxcore/marker"
 )
 
 // StakePoolSettings information.
 type StakePoolSettings struct {
-	DelegateWallet string         `json:"delegate_wallet"`
-	MinStake       common.Balance `json:"min_stake"`
-	MaxStake       common.Balance `json:"max_stake"`
-	NumDelegates   int            `json:"num_delegates"`
-	ServiceCharge  float64        `json:"service_charge"`
+	DelegateWallet string  `json:"delegate_wallet"`
+	NumDelegates   int     `json:"num_delegates"`
+	ServiceCharge  float64 `json:"service_charge"`
 }
 
-// UpdateStakePoolSettings information.
+// UpdateStakePoolSettings represent stake pool information of a provider node.
 type UpdateStakePoolSettings struct {
-	DelegateWallet *string         `json:"delegate_wallet,omitempty"`
-	MinStake       *common.Balance `json:"min_stake,omitempty"`
-	MaxStake       *common.Balance `json:"max_stake,omitempty"`
-	NumDelegates   *int            `json:"num_delegates,omitempty"`
-	ServiceCharge  *float64        `json:"service_charge,omitempty"`
+	DelegateWallet *string  `json:"delegate_wallet,omitempty"`
+	NumDelegates   *int     `json:"num_delegates,omitempty"`
+	ServiceCharge  *float64 `json:"service_charge,omitempty"`
 }
 
+// ValidationNode represents a validation node (miner)
 type ValidationNode struct {
 	ID                string            `json:"id"`
 	BaseURL           string            `json:"url"`
 	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
 }
 
+// UpdateValidationNode represents a validation node (miner) update
 type UpdateValidationNode struct {
 	ID                string                   `json:"id"`
 	BaseURL           *string                  `json:"url"`
 	StakePoolSettings *UpdateStakePoolSettings `json:"stake_pool_settings"`
 }
 
+// StorageNode represents a storage node (blobber)
 type StorageNode struct {
-	ID      string `json:"id"`
-	Baseurl string `json:"url"`
+	ID             string `json:"id"`
+	Baseurl        string `json:"url"`
+	AllocationRoot string `json:"-"`
+	LatestWM       *marker.WriteMarker
 
 	skip uint64 `json:"-"` // skip on error
 }

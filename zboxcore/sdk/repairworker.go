@@ -2,6 +2,7 @@ package sdk
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"sync"
@@ -23,6 +24,7 @@ type RepairRequest struct {
 	filesRepaired     int
 	wg                *sync.WaitGroup
 	allocation        *Allocation
+	repairPath        string
 }
 
 type RepairStatusCB struct {
@@ -67,6 +69,8 @@ func (r *RepairRequest) processRepair(ctx context.Context, a *Allocation) {
 	if r.checkForCancel(a) {
 		return
 	}
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	SetNumBlockDownloads(RepairBlocks)
 	currBatchSize := BatchSize
 	BatchSize = BatchSize / 2
@@ -77,7 +81,12 @@ func (r *RepairRequest) processRepair(ctx context.Context, a *Allocation) {
 		SetSingleClietnMode(true)
 		defer SetSingleClietnMode(false)
 	}
-	r.iterateDir(a, r.listDir)
+	r.allocation = a
+	if a.StorageVersion == StorageV2 {
+		r.iterateDirV2(ctx)
+	} else {
+		r.iterateDir(a, r.listDir)
+	}
 	if r.statusCB != nil {
 		r.statusCB.RepairCompleted(r.filesRepaired)
 	}
@@ -234,11 +243,8 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) []OperationR
 				if r.checkForCancel(a) {
 					return nil
 				}
-				memFile := &sys.MemChanFile{
-					Buffer:         make(chan []byte, 100),
-					ChunkWriteSize: int(a.GetChunkReadSize(ref.EncryptedKey != "")),
-				}
-				op = a.RepairFile(memFile, file.Path, statusCB, found, ref)
+				pipeFile := sys.NewPipeFile()
+				op = a.RepairFile(pipeFile, file.Path, statusCB, found, ref)
 				if op.FileMeta.ActualSize > 0 {
 					op.DownloadFile = true
 				}
@@ -316,12 +322,168 @@ func checkFileExists(localPath string) bool {
 }
 
 func (r *RepairRequest) checkForCancel(a *Allocation) bool {
-	if r.isRepairCanceled {
-		l.Logger.Info("Repair Cancelled by the user")
-		if r.statusCB != nil {
-			r.statusCB.RepairCompleted(r.filesRepaired)
+	return r.isRepairCanceled
+}
+
+type diffRef struct {
+	tgtRef  ORef
+	tgtChan <-chan ORef
+	tgtEOF  bool
+	mask    zboxutil.Uint128
+}
+
+func (r *RepairRequest) iterateDirV2(ctx context.Context) {
+	versionMap := make(map[string]*diffRef)
+	r.allocation.CheckAllocStatus() //nolint:errcheck
+	latestRoot := r.allocation.allocationRoot
+	for idx, blobber := range r.allocation.Blobbers {
+		if versionMap[blobber.AllocationRoot] == nil {
+			versionMap[blobber.AllocationRoot] = &diffRef{}
 		}
-		return true
+		versionMap[blobber.AllocationRoot].mask = versionMap[blobber.AllocationRoot].mask.Or(zboxutil.NewUint128(1).Lsh(uint64(idx)))
 	}
-	return false
+	if versionMap[latestRoot].mask.CountOnes() < r.allocation.DataShards {
+		l.Logger.Error("No consensus on latest allocation root: ", latestRoot)
+		if r.statusCB != nil {
+			r.statusCB.Error(r.allocation.ID, r.repairPath, OpRepair, errors.New("no consensus on latest allocation root"))
+		}
+		return
+	}
+	if len(versionMap) == 1 {
+		return
+	}
+	// get the src list channel
+	srcChan := r.allocation.ListObjects(ctx, r.repairPath, "", "", "", fileref.FILE, fileref.REGULAR, 0, getRefPageLimit, WithSingleBlobber(true), WithObjectMask(versionMap[latestRoot].mask), WithObjectContext(ctx))
+
+	for root, diff := range versionMap {
+		if root == latestRoot {
+			continue
+		}
+		diff.tgtChan = r.allocation.ListObjects(ctx, r.repairPath, "", "", "", fileref.FILE, fileref.REGULAR, 0, getRefPageLimit, WithSingleBlobber(true), WithObjectMask(diff.mask), WithObjectContext(ctx))
+		diff.tgtRef, diff.tgtEOF = <-diff.tgtChan
+	}
+	var (
+		toNextRef = true
+		srcRef    ORef
+		srcEOF    = true
+		ops       []OperationRequest
+	)
+	for {
+		if r.checkForCancel(r.allocation) {
+			return
+		}
+		if toNextRef {
+			if !srcEOF {
+				break
+			}
+			srcRef, srcEOF = <-srcChan
+			if srcRef.Err != nil {
+				l.Logger.Error("Failed to get source file reference ", srcRef.Err.Error())
+				if r.statusCB != nil {
+					r.statusCB.Error(r.allocation.ID, r.repairPath, OpRepair, srcRef.Err)
+				}
+				return
+			}
+		}
+		l.Logger.Debug("Checking file for the path :", srcRef.Path)
+		toNextRef = true
+		var (
+			uploadMask zboxutil.Uint128
+			deleteMask zboxutil.Uint128
+		)
+		for root, diff := range versionMap {
+			if root == latestRoot {
+				continue
+			}
+
+			// check if both target and source are at EOF
+			if !srcEOF && !diff.tgtEOF {
+				continue
+			}
+			// if target is at EOF, upload the src file
+			if !diff.tgtEOF {
+				uploadMask = uploadMask.Or(diff.mask)
+				continue
+			}
+			// if source is at EOF, delete the target file
+			if !srcEOF {
+				delMask := diff.mask
+				op := OperationRequest{
+					OperationType: constants.FileOperationDelete,
+					RemotePath:    diff.tgtRef.Path,
+					Mask:          &delMask,
+				}
+				ops = append(ops, op)
+				diff.tgtRef, diff.tgtEOF = <-diff.tgtChan
+				toNextRef = false
+				continue
+			}
+			if diff.tgtRef.Err != nil {
+				l.Logger.Error("Failed to get target file reference ", diff.tgtRef.Err.Error())
+				if r.statusCB != nil {
+					r.statusCB.Error(r.allocation.ID, r.repairPath, OpRepair, diff.tgtRef.Err)
+				}
+				continue
+			}
+			// if both source and target are at same path
+			if diff.tgtRef.Path == srcRef.Path {
+				// if both source and target are at same path and hash is different
+				if diff.tgtRef.ActualFileHash != srcRef.ActualFileHash {
+					deleteMask = deleteMask.Or(diff.mask)
+					uploadMask = uploadMask.Or(diff.mask)
+				}
+				diff.tgtRef, diff.tgtEOF = <-diff.tgtChan
+			} else if diff.tgtRef.Path < srcRef.Path {
+				deleteMask = deleteMask.Or(diff.mask)
+				toNextRef = false
+				diff.tgtRef, diff.tgtEOF = <-diff.tgtChan
+			}
+		}
+		if deleteMask.CountOnes() > 0 {
+			op := OperationRequest{
+				OperationType: constants.FileOperationDelete,
+				RemotePath:    srcRef.Path,
+				Mask:          &deleteMask,
+			}
+			ops = append(ops, op)
+		}
+		if uploadMask.CountOnes() > 0 {
+			op := r.uploadFileOp(srcRef, uploadMask)
+			ops = append(ops, op)
+		}
+		if len(ops) >= RepairBatchSize {
+			r.repairOperation(r.allocation, ops)
+			ops = nil
+		}
+	}
+	if len(ops) > 0 {
+		r.repairOperation(r.allocation, ops)
+	}
+
+}
+
+func (r *RepairRequest) uploadFileOp(file ORef, opMask zboxutil.Uint128) OperationRequest {
+	var wg sync.WaitGroup
+	wg.Add(1)
+	statusCB := &RepairStatusCB{
+		wg:       &wg,
+		statusCB: r.statusCB,
+	}
+
+	ref := &fileref.FileRef{
+		ActualFileSize: file.ActualFileSize,
+		MimeType:       file.MimeType,
+		CustomMeta:     file.CustomMeta,
+		Ref: fileref.Ref{
+			Name: file.Name,
+		},
+		EncryptedKey:      file.EncryptedKey,
+		EncryptedKeyPoint: file.EncryptedKeyPoint,
+	}
+	pipeFile := sys.NewPipeFile()
+	op := r.allocation.RepairFile(pipeFile, file.Path, statusCB, opMask, ref)
+	if op.FileMeta.ActualSize > 0 {
+		op.DownloadFile = true
+	}
+	return *op
 }
