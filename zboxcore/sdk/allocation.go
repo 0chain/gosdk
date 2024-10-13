@@ -274,6 +274,8 @@ type Allocation struct {
 
 	IsEnterprise bool `json:"is_enterprise"`
 
+	StorageVersion int `json:"storage_version"`
+
 	// FileOptions to define file restrictions on an allocation for third-parties
 	// default 00000000 for all crud operations suggesting only owner has the below listed abilities.
 	// enabling option/s allows any third party to perform certain ops
@@ -302,6 +304,7 @@ type Allocation struct {
 	consensusThreshold int
 	fullconsensus      int
 	sig                string `json:"-"`
+	allocationRoot     string `json:"-"`
 }
 
 // OperationRequest represents an operation request with its related options.
@@ -325,6 +328,7 @@ type OperationRequest struct {
 	StreamUpload    bool              // Required for streaming file when actualSize is not available
 	CancelCauseFunc context.CancelCauseFunc
 	Opts            []ChunkedUploadOption
+	CopyDirOnly     bool
 }
 
 // GetReadPriceRange returns the read price range from the global configuration.
@@ -428,6 +432,9 @@ func (a *Allocation) InitAllocation() {
 	a.startWorker(a.ctx)
 	InitCommitWorker(a.Blobbers)
 	InitBlockDownloader(a.Blobbers, downloadWorkerCount)
+	if a.StorageVersion == StorageV2 {
+		a.CheckAllocStatus() //nolint:errcheck
+	}
 	a.initialized = true
 }
 
@@ -452,7 +459,7 @@ func (a *Allocation) dispatchWork(ctx context.Context) {
 			}()
 		case repairReq := <-a.repairChan:
 
-			l.Logger.Info(fmt.Sprintf("received a repair request for %v\n", repairReq.listDir.Path))
+			l.Logger.Info(fmt.Sprintf("received a repair request for %v\n", repairReq.repairPath))
 			go repairReq.processRepair(ctx, a)
 		}
 	}
@@ -513,7 +520,9 @@ func (a *Allocation) RepairFile(file sys.File, remotepath string, statusCallback
 	if Workdir != "" {
 		idr = Workdir
 	}
-	mask = mask.Not().And(zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1))
+	if a.StorageVersion == 0 {
+		mask = mask.Not().And(zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1))
+	}
 	fileMeta := FileMeta{
 		ActualSize: ref.ActualFileSize,
 		MimeType:   ref.MimeType,
@@ -1069,7 +1078,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 				operation = NewRenameOperation(op.RemotePath, op.DestName, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 
 			case constants.FileOperationCopy:
-				operation = NewCopyOperation(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
+				operation = NewCopyOperation(mo.ctx, op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, op.CopyDirOnly)
 
 			case constants.FileOperationMove:
 				operation = NewMoveOperation(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
@@ -1082,9 +1091,9 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 
 			case constants.FileOperationDelete:
 				if op.Mask != nil {
-					operation = NewDeleteOperation(op.RemotePath, *op.Mask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
+					operation = NewDeleteOperation(mo.ctx, op.RemotePath, *op.Mask, mo.maskMU, mo.consensusThresh, mo.fullconsensus)
 				} else {
-					operation = NewDeleteOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
+					operation = NewDeleteOperation(mo.ctx, op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus)
 				}
 
 			case constants.FileOperationUpdate:
@@ -1411,6 +1420,7 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 	now := time.Now()
 
 	for _, dr := range drs {
+		dr.storageVersion = a.StorageVersion
 		wg.Add(1)
 		go func(dr *DownloadRequest) {
 			defer wg.Done()
@@ -1560,7 +1570,7 @@ func (a *Allocation) ListDirFromAuthTicket(authTicket string, lookupHash string,
 		return nil, errors.New("invalid_path", "Invalid path for the list")
 	}
 
-	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
+	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}, storageVersion: a.StorageVersion}
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.sig = a.sig
@@ -1600,7 +1610,7 @@ func (a *Allocation) ListDir(path string, opts ...ListRequestOptions) (*ListResu
 	if !isabs {
 		return nil, errors.New("invalid_path", "Path should be valid and absolute")
 	}
-	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
+	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}, storageVersion: a.StorageVersion}
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.sig = a.sig
@@ -1623,7 +1633,7 @@ func (a *Allocation) ListDir(path string, opts ...ListRequestOptions) (*ListResu
 	return nil, errors.New("list_request_failed", "Failed to get list response from the blobbers")
 }
 
-func (a *Allocation) getRefs(path, pathHash, authToken, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*ObjectTreeResult, error) {
+func (a *Allocation) getRefs(path, pathHash, authToken, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int, opts ...ObjectTreeRequestOption) (*ObjectTreeResult, error) {
 	if !a.isInitialized() {
 		return nil, notInitialized
 	}
@@ -1644,9 +1654,13 @@ func (a *Allocation) getRefs(path, pathHash, authToken, offsetPath, updatedDate,
 		fileType:       fileType,
 		refType:        refType,
 		ctx:            a.ctx,
+		reqMask:        zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1),
 	}
 	oTreeReq.fullconsensus = a.fullconsensus
 	oTreeReq.consensusThresh = a.DataShards
+	for _, opt := range opts {
+		opt(oTreeReq)
+	}
 	return oTreeReq.GetRefs()
 }
 
@@ -1766,15 +1780,15 @@ func (a *Allocation) GetRefsWithAuthTicket(authToken, offsetPath, updatedDate, o
 //   - refType: the ref type to get the refs, e.g., file or directory.
 //   - level: the level of the refs to get relative to the path root (strating from 0 as the root path).
 //   - pageLimit: the limit of the refs to get per page.
-func (a *Allocation) GetRefs(path, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*ObjectTreeResult, error) {
+func (a *Allocation) GetRefs(path, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int, opts ...ObjectTreeRequestOption) (*ObjectTreeResult, error) {
 	if len(path) == 0 || !zboxutil.IsRemoteAbs(path) {
 		return nil, errors.New("invalid_path", fmt.Sprintf("Absolute path required. Path provided: %v", path))
 	}
 
-	return a.getRefs(path, "", "", offsetPath, updatedDate, offsetDate, fileType, refType, level, pageLimit)
+	return a.getRefs(path, "", "", offsetPath, updatedDate, offsetDate, fileType, refType, level, pageLimit, opts...)
 }
 
-func (a *Allocation) ListObjects(ctx context.Context, path, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) <-chan ORef {
+func (a *Allocation) ListObjects(ctx context.Context, path, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int, opts ...ObjectTreeRequestOption) <-chan ORef {
 	oRefChan := make(chan ORef, 1)
 	sendObjectRef := func(ref ORef) {
 		select {
@@ -1793,11 +1807,13 @@ func (a *Allocation) ListObjects(ctx context.Context, path, offsetPath, updatedD
 		}()
 		continuationPath := offsetPath
 		for {
-			oRefs, err := a.GetRefs(path, continuationPath, updatedDate, offsetDate, fileType, refType, level, pageLimit)
+			oRefs, err := a.GetRefs(path, continuationPath, updatedDate, offsetDate, fileType, refType, level, pageLimit, opts...)
 			if err != nil {
-				sendObjectRef(ORef{
-					Err: err,
-				})
+				if !strings.Contains(err.Error(), "invalid_path") {
+					sendObjectRef(ORef{
+						Err: err,
+					})
+				}
 				return
 			}
 			for _, ref := range oRefs.Refs {
@@ -1877,7 +1893,7 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 	}
 
 	result := &ConsolidatedFileMeta{}
-	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
+	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}, storageVersion: a.StorageVersion}
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.sig = a.sig
@@ -1917,7 +1933,7 @@ func (a *Allocation) GetFileMetaByName(fileName string) ([]*ConsolidatedFileMeta
 	}
 
 	resultArr := []*ConsolidatedFileMetaByName{}
-	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
+	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}, storageVersion: a.StorageVersion}
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.blobbers = a.Blobbers
@@ -1996,7 +2012,7 @@ func (a *Allocation) GetFileMetaFromAuthTicket(authTicket string, lookupHash str
 		return nil, errors.New("invalid_path", "Invalid path for the list")
 	}
 
-	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
+	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}, storageVersion: a.StorageVersion}
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.sig = a.sig
@@ -2042,7 +2058,7 @@ func (a *Allocation) GetFileStats(path string) (map[string]*FileStats, error) {
 	if !isabs {
 		return nil, errors.New("invalid_path", "Path should be valid and absolute")
 	}
-	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
+	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}, storageVersion: a.StorageVersion}
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.sig = a.sig
@@ -2811,18 +2827,25 @@ func (a *Allocation) StartRepair(localRootPath, pathToRepair string, statusCB St
 		return notInitialized
 	}
 
-	listDir, err := a.ListDir(pathToRepair,
-		WithListRequestForRepair(true),
-		WithListRequestPageLimit(-1),
+	var (
+		listDir *ListResult
+		err     error
 	)
-	if err != nil {
-		return err
+	if a.StorageVersion == 0 {
+		listDir, err = a.ListDir(pathToRepair,
+			WithListRequestForRepair(true),
+			WithListRequestPageLimit(-1),
+		)
+		if err != nil {
+			return err
+		}
 	}
 
 	repairReq := &RepairRequest{
 		listDir:       listDir,
 		localRootPath: localRootPath,
 		statusCB:      statusCB,
+		repairPath:    pathToRepair,
 	}
 
 	repairReq.completedCallback = func() {
