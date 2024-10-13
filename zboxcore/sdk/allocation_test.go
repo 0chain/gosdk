@@ -95,20 +95,21 @@ func setupMockHttpResponse(
 }
 
 func setupMockCommitRequest(a *Allocation) {
-	commitChan = make(map[string]chan *CommitRequest)
+	commitChan = make(map[string]chan CommitRequestInterface)
 	for _, blobber := range a.Blobbers {
 		if _, ok := commitChan[blobber.ID]; !ok {
-			commitChan[blobber.ID] = make(chan *CommitRequest, 1)
+			commitChan[blobber.ID] = make(chan CommitRequestInterface, 1)
 			blobberChan := commitChan[blobber.ID]
-			go func(c <-chan *CommitRequest, blID string) {
+			go func(c <-chan CommitRequestInterface, blID string) {
 				for {
 					cm := <-c
 					if cm != nil {
-						cm.result = &CommitResult{
+						c := cm.(*CommitRequest)
+						c.result = &CommitResult{
 							Success: true,
 						}
-						if cm.wg != nil {
-							cm.wg.Done()
+						if c.wg != nil {
+							c.wg.Done()
 						}
 					}
 				}

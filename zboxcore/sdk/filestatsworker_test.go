@@ -104,6 +104,7 @@ func TestListRequest_getFileStatsInfoFromBlobber(t *testing.T) {
 					Name:       mockFileStatsName,
 					BlobberID:  mockBlobberId,
 					BlobberURL: "Test_Success",
+					PathHash:   fileref.GetReferenceLookup(mockAllocationId, mockRemoteFilePath),
 				},
 				blobberIdx:     mockBlobberIndex,
 				respStatusCode: 200,

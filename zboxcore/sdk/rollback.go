@@ -244,6 +244,8 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 		if shouldContinue {
 			continue
 		}
+		rb.blobber.LatestWM = wm
+		rb.blobber.AllocationRoot = wm.AllocationRoot
 		return nil
 
 	}
@@ -277,14 +279,16 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
 				l.Logger.Error("error during getWritemarker", zap.Error(err))
 				blobStatus.Status = "unavailable"
 			}
-			if wr == nil {
-				markerChan <- nil
-			} else {
+			if wr != nil {
 				markerChan <- &RollbackBlobber{
 					blobber:      blobber,
 					lpm:          wr,
 					commitResult: &CommitResult{},
 					blobIndex:    ind,
+				}
+				if wr.LatestWM != nil {
+					blobber.AllocationRoot = wr.LatestWM.AllocationRoot
+					blobber.LatestWM = wr.LatestWM
 				}
 			}
 			blobberRes[ind] = blobStatus
@@ -300,9 +304,11 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
 	versionMap := make(map[string][]*RollbackBlobber)
 
 	var (
-		prevVersion   string
-		latestVersion string
-		highestTS     int64
+		prevVersion      string
+		latestVersion    string
+		consensusVersion string
+		highestTS        int64
+		req              = a.DataShards
 	)
 
 	for rb := range markerChan {
@@ -328,19 +334,28 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
 		}
 
 		versionMap[version] = append(versionMap[version], rb)
+		if len(versionMap[version]) >= req {
+			consensusVersion = version
+		}
 	}
-
-	req := a.DataShards
 
 	if len(versionMap) == 0 {
 		return Commit, blobberRes, nil
 	}
 
 	if len(versionMap[latestVersion]) > req || len(versionMap[prevVersion]) > req {
+		if len(versionMap[latestVersion]) > req {
+			a.allocationRoot = versionMap[latestVersion][0].lpm.LatestWM.AllocationRoot
+		} else {
+			a.allocationRoot = versionMap[prevVersion][0].lpm.LatestWM.AllocationRoot
+		}
 		return Commit, blobberRes, nil
 	}
 
 	if len(versionMap[latestVersion]) >= req || len(versionMap[prevVersion]) >= req || len(versionMap) > 2 {
+		if consensusVersion != "" {
+			a.allocationRoot = versionMap[consensusVersion][0].lpm.LatestWM.AllocationRoot
+		}
 		for _, rb := range versionMap[prevVersion] {
 			blobberRes[rb.blobIndex].Status = "repair"
 		}
@@ -373,6 +388,12 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
 	wg.Wait()
 	if errCnt > int32(fullConsensus) {
 		return Broken, blobberRes, common.NewError("rollback_failed", "Rollback failed")
+	}
+
+	if versionMap[latestVersion][0].lpm.PrevWM != nil {
+		a.allocationRoot = versionMap[latestVersion][0].lpm.PrevWM.AllocationRoot
+	} else {
+		a.allocationRoot = ""
 	}
 
 	if errCnt == int32(fullConsensus) {

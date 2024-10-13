@@ -241,6 +241,8 @@
       await wasm.setWallet(bls, clientID, publicKey, "", privateKey, publicKey, mnemonic, false);
 
       goWasm = wasm
+    }).catch(e => {
+      console.log(e)
     })
 
     onClick('btnSetWallet', async () => {
