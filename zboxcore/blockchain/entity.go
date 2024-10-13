@@ -2,16 +2,9 @@
 package blockchain
 
 import (
-	"encoding/json"
-	"math"
-	"sync"
 	"sync/atomic"
 
-	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/marker"
-
-	"github.com/0chain/gosdk/core/conf"
-	"github.com/0chain/gosdk/core/node"
 )
 
 // StakePoolSettings information.

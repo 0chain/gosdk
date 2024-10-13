@@ -19,10 +19,10 @@ import (
 	"github.com/0chain/common/core/util/wmpt"
 	"github.com/0chain/errors"
 	thrown "github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
 	l "github.com/0chain/gosdk/zboxcore/logger"
@@ -193,7 +193,7 @@ func (commitreq *CommitRequest) processCommit() {
 	}
 	hasher := sha256.New()
 	if lR.LatestWM != nil {
-		err = lR.LatestWM.VerifySignature(client.GetClientPublicKey())
+		err = lR.LatestWM.VerifySignature(client.PublicKey())
 		if err != nil {
 			e := errors.New("signature_verification_failed", err.Error())
 			commitreq.result = ErrorCommitResult(e.Error())
@@ -282,7 +282,7 @@ func (req *CommitRequest) commitBlobber(
 	wm.Size = size
 	wm.BlobberID = req.blobber.ID
 	wm.Timestamp = req.timestamp
-	wm.ClientID = client.GetClientID()
+	wm.ClientID = client.ClientID()
 	err = wm.Sign()
 	if err != nil {
 		l.Logger.Error("Signing writemarker failed: ", err)
@@ -554,7 +554,7 @@ func (req *CommitRequestV2) commitBlobber(rootHash []byte, rootWeight, prevWeigh
 	wm.Timestamp = req.timestamp
 	wm.AllocationID = req.allocationObj.ID
 	wm.FileMetaRoot = fileMetaRoot
-	wm.ClientID = client.GetClientID()
+	wm.ClientID = client.ClientID()
 	err = wm.Sign()
 	if err != nil {
 		l.Logger.Error("Error signing writemarker", err)
@@ -651,7 +651,7 @@ func getReferencePathV2(blobber *blockchain.StorageNode, allocationID, allocatio
 	}
 	trie := wmpt.New(nil, nil)
 	if lR.LatestWM != nil {
-		err = lR.LatestWM.VerifySignature(client.GetClientPublicKey())
+		err = lR.LatestWM.VerifySignature(client.PublicKey())
 		if err != nil {
 			return nil, errors.New("signature_verification_failed", err.Error())
 		}
