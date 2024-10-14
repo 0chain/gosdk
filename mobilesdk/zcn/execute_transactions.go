@@ -184,27 +184,6 @@ func SendZCN(senderClientId string, tokens int64, description string) ([]byte, e
 
 }
 
-// Faucet sends tokens to the user.
-// # Inputs
-//   - tokens: tokens to send
-//   - input: input
-func Faucet(tokens int64, input string) ([]byte, error) {
-	if tokenValidation(tokens) != nil {
-		return nil, tokenValidation(tokens)
-	}
-
-	_, _, _, txn, err := zcncore.Faucet(uint64(tokens), input)
-
-	if err != nil {
-		return nil, errors.New("Error in Faucet: " + err.Error())
-	}
-	byteTxn, err := json.Marshal(txn)
-	if err != nil {
-		return nil, errors.New("Error in Encoding txn: " + err.Error())
-	}
-	return byteTxn, nil
-}
-
 // VerifyTransaction verifies the transaction.
 // # Inputs
 //   - hash: hash of the transaction
