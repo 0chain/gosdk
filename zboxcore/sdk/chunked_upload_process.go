@@ -70,19 +70,19 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 
 	var (
 		errCount       int32
-		finalBuffer    []BlobberData
+		finalBuffer    []blobberData
 		pos            uint64
 		wg             sync.WaitGroup
 		lastBufferOnly bool
 	)
 	if isFinal {
-		finalBuffer = make([]BlobberData, len(su.blobbers))
+		finalBuffer = make([]blobberData, len(su.blobbers))
 	}
 	blobberUpload := UploadData{
 		chunkStartIndex: chunkStartIndex,
 		chunkEndIndex:   chunkEndIndex,
 		isFinal:         isFinal,
-		uploadBody:      make([]BlobberData, len(su.blobbers)),
+		uploadBody:      make([]blobberData, len(su.blobbers)),
 		uploadLength:    uploadLength,
 	}
 
@@ -106,7 +106,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		go func(b *ChunkedUploadBlobber, thumbnailChunkData []byte, pos uint64) {
 			defer wg.Done()
 			uploadData, err := su.formBuilder.Build(
-				&su.fileMeta, blobber.progress.Hasher, su.progress.ConnectionID,
+				&su.fileMeta, blobber.progress.Hasher, su.progress.ConnectionID, blobber.blobber.ID,
 				su.chunkSize, chunkStartIndex, chunkEndIndex, isFinal, su.encryptedKey, su.progress.EncryptedKeyPoint,
 				fileShards[pos], thumbnailChunkData, su.shardSize)
 			if err != nil {
@@ -117,7 +117,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 				return
 			}
 			if isFinal {
-				finalBuffer[pos] = BlobberData{
+				finalBuffer[pos] = blobberData{
 					dataBuffers:  uploadData.dataBuffers[len(uploadData.dataBuffers)-1:],
 					formData:     uploadData.formData,
 					contentSlice: uploadData.contentSlice[len(uploadData.contentSlice)-1:],

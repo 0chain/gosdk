@@ -3,16 +3,20 @@ package sdk
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
+	"path"
 	"path/filepath"
 	"sync"
 	"time"
 
+	"github.com/0chain/common/core/util/wmpt"
 	"github.com/0chain/errors"
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/common"
@@ -47,8 +51,27 @@ func (req *RenameRequest) getObjectTreeFromBlobber(blobber *blockchain.StorageNo
 	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.allocationTx, req.sig, req.remotefilepath, blobber)
 }
 
+func (req *RenameRequest) getFileMetaFromBlobber(pos int) (fileRef *fileref.FileRef, err error) {
+	listReq := &ListRequest{
+		allocationID:   req.allocationID,
+		allocationTx:   req.allocationTx,
+		blobbers:       req.blobbers,
+		remotefilepath: req.remotefilepath,
+		ctx:            req.ctx,
+	}
+	respChan := make(chan *fileMetaResponse)
+	go listReq.getFileMetaInfoFromBlobber(req.blobbers[pos], int(pos), respChan)
+	refRes := <-respChan
+	if refRes.err != nil {
+		err = refRes.err
+		return
+	}
+	fileRef = refRes.fileref
+	return
+}
+
 func (req *RenameRequest) renameBlobberObject(
-	blobber *blockchain.StorageNode, blobberIdx int) (refEntity fileref.RefEntity, err error) {
+	blobber *blockchain.StorageNode, blobberIdx int, fetchObjectTree bool) (refEntity fileref.RefEntity, err error) {
 
 	defer func() {
 		if err != nil {
@@ -57,10 +80,11 @@ func (req *RenameRequest) renameBlobberObject(
 			req.maskMU.Unlock()
 		}
 	}()
-
-	refEntity, err = req.getObjectTreeFromBlobber(req.blobbers[blobberIdx])
-	if err != nil {
-		return nil, err
+	if fetchObjectTree {
+		refEntity, err = req.getObjectTreeFromBlobber(req.blobbers[blobberIdx])
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	var (
@@ -159,7 +183,7 @@ func (req *RenameRequest) renameBlobberObject(
 	return
 }
 
-func (req *RenameRequest) ProcessWithBlobbers() ([]fileref.RefEntity, []error) {
+func (req *RenameRequest) ProcessWithBlobbers() ([]fileref.RefEntity, error) {
 	var pos uint64
 	numList := len(req.blobbers)
 	objectTreeRefs := make([]fileref.RefEntity, numList)
@@ -170,7 +194,7 @@ func (req *RenameRequest) ProcessWithBlobbers() ([]fileref.RefEntity, []error) {
 		req.wg.Add(1)
 		go func(blobberIdx int) {
 			defer req.wg.Done()
-			refEntity, err := req.renameBlobberObject(req.blobbers[blobberIdx], blobberIdx)
+			refEntity, err := req.renameBlobberObject(req.blobbers[blobberIdx], blobberIdx, true)
 			if err != nil {
 				blobberErrors[blobberIdx] = err
 				l.Logger.Error(err.Error())
@@ -180,16 +204,101 @@ func (req *RenameRequest) ProcessWithBlobbers() ([]fileref.RefEntity, []error) {
 		}(int(pos))
 	}
 	req.wg.Wait()
-	return objectTreeRefs, blobberErrors
+	return objectTreeRefs, zboxutil.MajorError(blobberErrors)
+}
+
+func (req *RenameRequest) ProcessWithBlobbersV2() ([]fileref.RefEntity, error) {
+	var (
+		pos          uint64
+		consensusRef *fileref.FileRef
+	)
+	numList := len(req.blobbers)
+	objectTreeRefs := make([]fileref.RefEntity, numList)
+	blobberErrors := make([]error, numList)
+	versionMap := make(map[string]int)
+	req.wg = &sync.WaitGroup{}
+	for i := req.renameMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		pos = uint64(i.TrailingZeros())
+		req.wg.Add(1)
+		go func(blobberIdx int) {
+			defer req.wg.Done()
+			refEntity, err := req.getFileMetaFromBlobber(blobberIdx)
+			if err != nil {
+				blobberErrors[blobberIdx] = err
+				l.Logger.Error(err.Error())
+				return
+			}
+			refEntity.Path = path.Join(path.Dir(req.remotefilepath), req.newName)
+			objectTreeRefs[blobberIdx] = refEntity
+			req.maskMU.Lock()
+			versionMap[refEntity.AllocationRoot] += 1
+			if versionMap[refEntity.AllocationRoot] >= req.consensus.consensusThresh {
+				consensusRef = refEntity
+			}
+			req.maskMU.Unlock()
+		}(int(pos))
+	}
+	req.wg.Wait()
+	if consensusRef == nil {
+		return nil, zboxutil.MajorError(blobberErrors)
+	}
+	if consensusRef.Type == fileref.DIRECTORY && !consensusRef.IsEmpty {
+		for ind, refEntity := range objectTreeRefs {
+			if refEntity.GetAllocationRoot() != consensusRef.AllocationRoot {
+				req.renameMask = req.renameMask.And(zboxutil.NewUint128(1).Lsh(uint64(ind)).Not())
+			}
+		}
+		subRequest := &subDirRequest{
+			allocationObj:   req.allocationObj,
+			remotefilepath:  req.remotefilepath,
+			destPath:        path.Join(path.Dir(req.remotefilepath), req.newName),
+			ctx:             req.ctx,
+			consensusThresh: req.consensus.consensusThresh,
+			opType:          constants.FileOperationMove,
+			subOpType:       constants.FileOperationRename,
+			mask:            req.renameMask,
+		}
+		err := subRequest.processSubDirectories()
+		if err != nil {
+			return nil, err
+		}
+		op := OperationRequest{
+			OperationType: constants.FileOperationDelete,
+			RemotePath:    req.remotefilepath,
+			Mask:          &req.renameMask,
+		}
+		err = req.allocationObj.DoMultiOperation([]OperationRequest{op})
+		if err != nil {
+			return nil, err
+		}
+		req.consensus.consensus = req.renameMask.CountOnes()
+		return nil, errNoChange
+	}
+
+	for i := req.renameMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		pos = uint64(i.TrailingZeros())
+		req.wg.Add(1)
+		go func(blobberIdx int) {
+			defer req.wg.Done()
+			_, err := req.renameBlobberObject(req.blobbers[blobberIdx], blobberIdx, false)
+			if err != nil {
+				blobberErrors[blobberIdx] = err
+				l.Logger.Debug(err.Error())
+				return
+			}
+		}(int(pos))
+	}
+	req.wg.Wait()
+
+	return objectTreeRefs, zboxutil.MajorError(blobberErrors)
 }
 
 func (req *RenameRequest) ProcessRename() error {
 	defer req.ctxCncl()
 
-	objectTreeRefs, blobberErrors := req.ProcessWithBlobbers()
+	objectTreeRefs, err := req.ProcessWithBlobbers()
 
 	if !req.consensus.isConsensusOk() {
-		err := zboxutil.MajorError(blobberErrors)
 		if err != nil {
 			return errors.New("rename_failed",
 				fmt.Sprintf("Rename failed. %s", err.Error()))
@@ -293,11 +402,14 @@ func (req *RenameRequest) ProcessRename() error {
 
 type RenameOperation struct {
 	remotefilepath string
+	srcLookupHash  string
+	destLookupHash string
 	ctx            context.Context
 	ctxCncl        context.CancelFunc
 	renameMask     zboxutil.Uint128
 	newName        string
 	maskMU         *sync.Mutex
+	objectTreeRefs []fileref.RefEntity
 
 	consensus Consensus
 }
@@ -325,12 +437,18 @@ func (ro *RenameOperation) Process(allocObj *Allocation, connectionID string) ([
 	}
 	rR.consensus.fullconsensus = ro.consensus.fullconsensus
 	rR.consensus.consensusThresh = ro.consensus.consensusThresh
-
-	objectTreeRefs, blobberErrors := rR.ProcessWithBlobbers()
+	var err error
+	if allocObj.StorageVersion == StorageV2 {
+		ro.objectTreeRefs, err = rR.ProcessWithBlobbersV2()
+	} else {
+		ro.objectTreeRefs, err = rR.ProcessWithBlobbers()
+	}
 
 	if !rR.consensus.isConsensusOk() {
-		err := zboxutil.MajorError(blobberErrors)
 		if err != nil {
+			if err == errNoChange {
+				return nil, rR.renameMask, err
+			}
 			return nil, rR.renameMask, errors.New("rename_failed", fmt.Sprintf("Renamed failed. %s", err.Error()))
 		}
 
@@ -338,8 +456,10 @@ func (ro *RenameOperation) Process(allocObj *Allocation, connectionID string) ([
 			fmt.Sprintf("Rename failed. Required consensus %d, got %d",
 				rR.consensus.consensusThresh, rR.consensus.consensus))
 	}
-	l.Logger.Info("Rename Processs Ended ")
-	return objectTreeRefs, rR.renameMask, nil
+	ro.srcLookupHash = fileref.GetReferenceLookup(rR.allocationID, rR.remotefilepath)
+	destPath := path.Join(path.Dir(rR.remotefilepath), rR.newName)
+	ro.destLookupHash = fileref.GetReferenceLookup(rR.allocationID, destPath)
+	return ro.objectTreeRefs, rR.renameMask, err
 }
 
 func (ro *RenameOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange {
@@ -401,7 +521,7 @@ func (ro *RenameOperation) Error(allocObj *Allocation, consensus int, err error)
 func NewRenameOperation(remotePath string, destName string, renameMask zboxutil.Uint128, maskMU *sync.Mutex, consensusTh int, fullConsensus int, ctx context.Context) *RenameOperation {
 	ro := &RenameOperation{}
 	ro.remotefilepath = zboxutil.RemoteClean(remotePath)
-	ro.newName = destName
+	ro.newName = path.Base(destName)
 	ro.renameMask = renameMask
 	ro.maskMU = maskMU
 	ro.consensus.consensusThresh = consensusTh
@@ -409,4 +529,33 @@ func NewRenameOperation(remotePath string, destName string, renameMask zboxutil.
 	ro.ctx, ro.ctxCncl = context.WithCancel(ctx)
 	return ro
 
+}
+
+func (ro *RenameOperation) ProcessChangeV2(trie *wmpt.WeightedMerkleTrie, changeIndex uint64) error {
+	if ro.objectTreeRefs == nil || ro.objectTreeRefs[changeIndex] == nil || ro.objectTreeRefs[changeIndex].GetType() == fileref.DIRECTORY {
+		return nil
+	}
+	decodedSrcHash, _ := hex.DecodeString(ro.srcLookupHash)
+	err := trie.Update(decodedSrcHash, nil, 0)
+	if err != nil {
+		l.Logger.Error("Error updating trie", zap.Error(err))
+		return err
+	}
+	decodedDestHash, _ := hex.DecodeString(ro.destLookupHash)
+	ref := ro.objectTreeRefs[changeIndex]
+	numBlocks := uint64(ref.GetNumBlocks())
+	fileMetaRawHash := ref.GetFileMetaHashV2()
+	err = trie.Update(decodedDestHash, fileMetaRawHash, numBlocks)
+	if err != nil {
+		l.Logger.Error("Error updating trie", zap.Error(err))
+		return err
+	}
+	return nil
+}
+
+func (ro *RenameOperation) GetLookupHash(changeIndex uint64) []string {
+	if ro.objectTreeRefs == nil || ro.objectTreeRefs[changeIndex] == nil || ro.objectTreeRefs[changeIndex].GetType() == fileref.DIRECTORY {
+		return nil
+	}
+	return []string{ro.destLookupHash, ro.srcLookupHash}
 }
