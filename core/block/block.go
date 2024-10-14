@@ -6,11 +6,12 @@ package block
 
 import (
 	"fmt"
-
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/transaction"
 )
+
+const GET_BLOCK_INFO = `/v1/block/get?`
 
 type Key []byte
 

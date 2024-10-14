@@ -9,7 +9,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
 	"github.com/0chain/gosdk/zcnbridge/log"
-	"github.com/0chain/gosdk/zcnbridge/transaction"
 	"github.com/ethereum/go-ethereum/ethclient"
 
 	"github.com/spf13/viper"
@@ -49,9 +48,8 @@ type EthereumClient interface {
 
 // BridgeClient is a wrapper, which exposes Ethereum KeyStore methods used by DEX bridge.
 type BridgeClient struct {
-	keyStore            KeyStore
-	transactionProvider transaction.TransactionProvider
-	ethereumClient      EthereumClient
+	keyStore       KeyStore
+	ethereumClient EthereumClient
 
 	BridgeAddress,
 	TokenAddress,
@@ -93,21 +91,19 @@ func NewBridgeClient(
 	gasLimit uint64,
 	consensusThreshold float64,
 	ethereumClient EthereumClient,
-	transactionProvider transaction.TransactionProvider,
 	keyStore KeyStore) *BridgeClient {
 	return &BridgeClient{
-		BridgeAddress:       bridgeAddress,
-		TokenAddress:        tokenAddress,
-		AuthorizersAddress:  authorizersAddress,
-		UniswapAddress:      uniswapAddress,
-		EthereumAddress:     ethereumAddress,
-		EthereumNodeURL:     ethereumNodeURL,
-		Password:            password,
-		GasLimit:            gasLimit,
-		ConsensusThreshold:  consensusThreshold,
-		ethereumClient:      ethereumClient,
-		transactionProvider: transactionProvider,
-		keyStore:            keyStore,
+		BridgeAddress:      bridgeAddress,
+		TokenAddress:       tokenAddress,
+		AuthorizersAddress: authorizersAddress,
+		UniswapAddress:     uniswapAddress,
+		EthereumAddress:    ethereumAddress,
+		EthereumNodeURL:    ethereumNodeURL,
+		Password:           password,
+		GasLimit:           gasLimit,
+		ConsensusThreshold: consensusThreshold,
+		ethereumClient:     ethereumClient,
+		keyStore:           keyStore,
 	}
 }
 
@@ -148,8 +144,6 @@ func SetupBridgeClientSDK(cfg *BridgeSDKConfig) *BridgeClient {
 		Logger.Error(err)
 	}
 
-	transactionProvider := transaction.NewTransactionProvider()
-
 	homedir := path.Dir(chainCfg.ConfigFileUsed())
 	if homedir == "" {
 		log.Logger.Fatal("err happened during home directory retrieval")
@@ -168,7 +162,6 @@ func SetupBridgeClientSDK(cfg *BridgeSDKConfig) *BridgeClient {
 		chainCfg.GetUint64("bridge.gas_limit"),
 		chainCfg.GetFloat64("bridge.consensus_threshold"),
 		ethereumClient,
-		transactionProvider,
 		keyStore,
 	)
 }

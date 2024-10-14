@@ -2,6 +2,7 @@ package zbox
 
 import (
 	"bytes"
+	"github.com/0chain/gosdk/zboxcore/logger"
 	"io"
 	"sort"
 	"strconv"
@@ -86,10 +87,26 @@ func (m *MediaPlaylist) flush() {
 		return
 	}
 
-	m.Writer.Truncate(0)
-	m.Writer.Seek(0, 0)
-	m.Writer.Write(m.Encode())
-	m.Writer.Sync()
+	err := m.Writer.Truncate(0)
+	if err != nil {
+		logger.Logger.Error("flush m3u8 error: ", err)
+		return
+	}
+	_, err = m.Writer.Seek(0, 0)
+	if err != nil {
+		logger.Logger.Error("flush m3u8 error: ", err)
+		return
+	}
+	_, err = m.Writer.Write(m.Encode())
+	if err != nil {
+		logger.Logger.Error("flush m3u8 error: ", err)
+		return
+	}
+	err = m.Writer.Sync()
+	if err != nil {
+		logger.Logger.Error("flush m3u8 error: ", err)
+		return
+	}
 }
 
 // Encode encode m3u8

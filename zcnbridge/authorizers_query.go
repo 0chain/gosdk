@@ -3,12 +3,13 @@ package zcnbridge
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math"
 	"net/http"
 	"strings"
 	"sync"
 
+	coreClient "github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zcnbridge/errors"
 	"github.com/0chain/gosdk/zcnbridge/ethereum"
@@ -16,7 +17,6 @@ import (
 	"github.com/0chain/gosdk/zcnbridge/log"
 	"github.com/0chain/gosdk/zcnbridge/wallet"
 	"github.com/0chain/gosdk/zcnbridge/zcnsc"
-	"github.com/0chain/gosdk/zcncore"
 	"go.uber.org/zap"
 )
 
@@ -120,7 +120,7 @@ func (b *BridgeClient) QueryEthereumBurnEvents(startNonce string) ([]*ethereum.B
 	var (
 		totalWorkers = len(authorizers)
 		values       = map[string]string{
-			"clientid":        zcncore.GetClientWalletID(),
+			"clientid":        coreClient.ClientID(),
 			"ethereumaddress": b.EthereumAddress,
 			"startnonce":      startNonce,
 		}
@@ -179,7 +179,7 @@ func (b *BridgeClient) QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPa
 		totalWorkers = len(authorizers)
 		values       = map[string]string{
 			"hash":     ethBurnHash,
-			"clientid": zcncore.GetClientWalletID(),
+			"clientid": coreClient.ClientID(),
 		}
 	)
 
@@ -331,7 +331,7 @@ func readResponse(response *http.Response, err error) (res *authorizerResponse, 
 		Logger.Error("request response status", zap.Error(err))
 	}
 
-	body, er := ioutil.ReadAll(response.Body)
+	body, er := io.ReadAll(response.Body)
 	log.Logger.Debug("response", zap.String("response", string(body)))
 	defer response.Body.Close()
 

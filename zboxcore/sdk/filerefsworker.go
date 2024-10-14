@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math"
 	"math/rand"
 	"net/http"
@@ -254,7 +254,7 @@ func (o *ObjectTreeRequest) getFileRefs(bUrl string, respChan chan *oTreeRespons
 				return err
 			}
 			defer resp.Body.Close()
-			respBody, err := ioutil.ReadAll(resp.Body)
+			respBody, err := io.ReadAll(resp.Body)
 			if err != nil {
 				l.Logger.Error(err)
 				return err
@@ -427,7 +427,7 @@ func (r *RecentlyAddedRefRequest) getRecentlyAddedRefs(resp *RecentlyAddedRefRes
 			return err
 		}
 		defer hResp.Body.Close()
-		body, err := ioutil.ReadAll(hResp.Body)
+		body, err := io.ReadAll(hResp.Body)
 		if err != nil {
 			l.Logger.Error(err)
 			return err
