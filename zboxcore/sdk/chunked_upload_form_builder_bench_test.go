@@ -53,7 +53,7 @@ func BenchmarkChunkedUploadFormBuilder(b *testing.B) {
 
 			for i := 0; i < b.N; i++ {
 
-				builder := CreateChunkedUploadFormBuilder()
+				builder := CreateChunkedUploadFormBuilder(0)
 
 				isFinal := false
 
@@ -68,7 +68,7 @@ func BenchmarkChunkedUploadFormBuilder(b *testing.B) {
 
 					fileBytes := buf[begin:end]
 
-					_, err := builder.Build(fileMeta, hasher, "connectionID", int64(bm.ChunkSize), chunkIndex, chunkIndex, isFinal, "", "", [][]byte{fileBytes}, nil, getShardSize(fileMeta.ActualSize, 1, false))
+					_, err := builder.Build(fileMeta, hasher, "connectionID", "blobberID", int64(bm.ChunkSize), chunkIndex, chunkIndex, isFinal, "", "", [][]byte{fileBytes}, nil, getShardSize(fileMeta.ActualSize, 1, false))
 					if err != nil {
 						b.Fatal(err)
 						return

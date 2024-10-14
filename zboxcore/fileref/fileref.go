@@ -62,9 +62,11 @@ func (fRef *FileRef) MetaID() string {
 }
 
 type RefEntity interface {
+	GetAllocationRoot() string
 	GetNumBlocks() int64
 	GetSize() int64
 	GetFileMetaHash() string
+	GetFileMetaHashV2() []byte
 	GetHash() string
 	CalculateHash() string
 	GetType() string
@@ -95,9 +97,11 @@ type Ref struct {
 	ThumbnailSize       int64  `json:"thumbnail_size" mapstructure:"thumbnail_size"`
 	ActualThumbnailHash string `json:"actual_thumbnail_hash" mapstructure:"actual_thumbnail_hash"`
 	ActualThumbnailSize int64  `json:"actual_thumbnail_size" mapstructure:"actual_thumbnail_size"`
+	IsEmpty             bool   `json:"is_empty" mapstructure:"is_empty"`
 	HashToBeComputed    bool
 	ChildrenLoaded      bool
 	Children            []RefEntity      `json:"-" mapstructure:"-"`
+	AllocationRoot      string           `json:"allocation_root" mapstructure:"allocation_root"`
 	CreatedAt           common.Timestamp `json:"created_at" mapstructure:"created_at"`
 	UpdatedAt           common.Timestamp `json:"updated_at" mapstructure:"updated_at"`
 }
@@ -162,12 +166,20 @@ func (r *Ref) GetFileMetaHash() string {
 	return r.FileMetaHash
 }
 
+func (r *Ref) GetFileMetaHashV2() []byte {
+	return nil
+}
+
 func (r *Ref) GetHash() string {
 	return r.Hash
 }
 
 func (r *Ref) GetHashData() string {
 	return fmt.Sprintf("%s:%s:%s", r.AllocationID, r.Path, r.FileID)
+}
+
+func (r *Ref) GetAllocationRoot() string {
+	return r.AllocationRoot
 }
 
 func (r *Ref) GetType() string {
@@ -250,6 +262,14 @@ func (fr *FileRef) GetFileMetaHashData() string {
 		fr.ActualFileSize, fr.ActualFileHash)
 }
 
+func (fr *FileRef) GetFileMetaHashDataV2() string {
+	return fmt.Sprintf(
+		"%s:%s:%d:%d:%s",
+		fr.AllocationID,
+		fr.Path, fr.Size,
+		fr.ActualFileSize, fr.ActualFileHash)
+}
+
 func (fr *FileRef) GetHashData() string {
 	return fmt.Sprintf(
 		"%s:%s:%s:%s:%d:%s:%s:%d:%s:%d:%s",
@@ -267,6 +287,10 @@ func (fr *FileRef) GetHashData() string {
 	)
 }
 
+func (fr *FileRef) GetFileHashDataV2(blobberID string) string {
+	return fmt.Sprintf("%s:%s:%s:%d:%s:%d:%s", blobberID, fr.AllocationID, fr.Path, fr.Size, fr.FixedMerkleRoot, fr.ActualFileSize, fr.ActualFileHash)
+}
+
 func (fr *FileRef) GetHash() string {
 	return fr.Hash
 }
@@ -276,6 +300,10 @@ func (fr *FileRef) CalculateHash() string {
 	fr.FileMetaHash = encryption.Hash(fr.GetFileMetaHashData())
 	fr.NumBlocks = int64(math.Ceil(float64(fr.Size*1.0) / CHUNK_SIZE))
 	return fr.Hash
+}
+
+func (fr *FileRef) GetFileMetaHashV2() []byte {
+	return encryption.RawHash(fr.GetFileMetaHashDataV2())
 }
 
 func (fr *FileRef) GetType() string {

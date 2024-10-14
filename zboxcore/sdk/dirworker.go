@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/0chain/common/core/util/wmpt"
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/util"
@@ -305,17 +306,21 @@ func (dirOp *DirOperation) Process(allocObj *Allocation, connectionID string) ([
 	}
 	dR.Consensus = Consensus{
 		RWMutex:         &sync.RWMutex{},
-		consensusThresh: dR.consensusThresh,
-		fullconsensus:   dR.fullconsensus,
+		consensusThresh: dirOp.consensusThresh,
+		fullconsensus:   dirOp.fullconsensus,
 	}
 
-	_ = dR.ProcessWithBlobbers(allocObj)
+	existCount := dR.ProcessWithBlobbers(allocObj)
 	dirOp.alreadyExists = dR.alreadyExists
 
 	if !dR.isConsensusOk() {
 		return nil, dR.dirMask, errors.New("consensus_not_met", "directory creation failed due to consensus not met")
 	}
-	return refs, dR.dirMask, nil
+	var err error
+	if allocObj.StorageVersion == StorageV2 && existCount >= dR.consensusThresh {
+		err = errNoChange
+	}
+	return refs, dR.dirMask, err
 
 }
 
@@ -370,4 +375,12 @@ func NewDirOperation(remotePath, customMeta string, dirMask zboxutil.Uint128, ma
 	dirOp.ctx, dirOp.ctxCncl = context.WithCancel(ctx)
 	dirOp.alreadyExists = make(map[uint64]bool)
 	return dirOp
+}
+
+func (dirOp *DirOperation) ProcessChangeV2(trie *wmpt.WeightedMerkleTrie, changeIndex uint64) error {
+	return nil
+}
+
+func (dirOp *DirOperation) GetLookupHash(changeIndex uint64) []string {
+	return nil
 }

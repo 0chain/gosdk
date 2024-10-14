@@ -241,6 +241,8 @@
       await wasm.setWallet(bls, clientID, publicKey, "", privateKey, publicKey, mnemonic, false);
 
       goWasm = wasm
+    }).catch(e => {
+      console.log(e)
     })
 
     onClick('btnSetWallet', async () => {
@@ -821,7 +823,7 @@
       }
 
       objects.push({
-        //remotePath: path,
+        remotePath: path,
         downloadOp: 1,
         numBlocks: 0,
         downloadToDisk: true,
@@ -829,7 +831,7 @@
       let stringifiedArray = JSON.stringify(objects);
 
       try {
-        const results = await goWasm.sdk.multiDownload('', stringifiedArray, 'eyJjbGllbnRfaWQiOiIiLCJvd25lcl9pZCI6IjI2ZTIzMjFhZWMxZmEyZDY1NGQ1MDQ5OWY3ZjhmYWJhNjNkYWMxYTExYTQwZDU3NDJkNDAzMWJmMzEzMzAxMTYiLCJhbGxvY2F0aW9uX2lkIjoiMDAwMzAzOTA1MGI3ZDdiM2FlNmI3MGEwZTVjMWU4ZjRhOTkxNzc1YWJiOTQ2NjljMDg4YzczNzJlMzYwMzkyYiIsImZpbGVfcGF0aF9oYXNoIjoiYWEzODE0NTM2ZWI2OWQwNjU4ZWM0OTgyZmE3ZTIwM2I2ZGI2ZWExYmU4ZmMxODRiMWJhOTZhMTk3NmMwM2JlOCIsImFjdHVhbF9maWxlX2hhc2giOiIxMjUwMjJhZGRiZTIwZDNhOWUzYjcxZTA0NjUzZjY3YiIsImZpbGVfbmFtZSI6InVidW50dS0yMi4wNC40LWxpdmUtc2VydmVyLWFtZDY0LmlzbyIsInJlZmVyZW5jZV90eXBlIjoiZiIsImV4cGlyYXRpb24iOjAsInRpbWVzdGFtcCI6MTcxNjM3ODIxNiwiZW5jcnlwdGVkIjpmYWxzZSwic2lnbmF0dXJlIjoiYmEzNzQ1NzlmZTczZDc1MWIwMTNiMjM2NjUzZDRiMGYyYzNjZDJlYTMyNTFkODg0MmRiNWQxNTlhNjBiN2ExMiJ9', '')
+        const results = await goWasm.sdk.multiDownload('', stringifiedArray, '', '')
         console.log(JSON.stringify(results))
       } catch (e) {
         alert(e)

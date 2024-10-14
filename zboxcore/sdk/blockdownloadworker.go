@@ -175,7 +175,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock(fastClient *fasthttp.Clien
 				return errors.New(RateLimitError, "Rate limit error")
 			}
 
-			if statuscode == http.StatusInternalServerError {
+			if statuscode == http.StatusInternalServerError || statuscode == http.StatusBadGateway {
 				shouldRetry = true
 				return errors.New("internal_server_error", "Internal server error")
 			}
