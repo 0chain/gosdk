@@ -168,6 +168,7 @@ func Init(ctx context.Context, cfg conf.Config) error {
 		}
 	}()
 
+	SetSdkInitialized(true)
 	return nil
 }
 
