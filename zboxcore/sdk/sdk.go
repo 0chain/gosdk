@@ -125,11 +125,12 @@ type StakePoolRewardsInfo struct {
 
 // StakePoolDelegatePoolInfo represents delegate pool of a stake pool info.
 type StakePoolDelegatePoolInfo struct {
-	ID         common.Key     `json:"id"`          // blobber ID
-	Balance    common.Balance `json:"balance"`     // current balance
-	DelegateID common.Key     `json:"delegate_id"` // wallet
-	Rewards    common.Balance `json:"rewards"`     // current
-	UnStake    bool           `json:"unstake"`     // want to unstake
+	ID           common.Key     `json:"id"`            // blobber ID
+	Balance      common.Balance `json:"balance"`       // current balance
+	DelegateID   common.Key     `json:"delegate_id"`   // wallet
+	Rewards      common.Balance `json:"rewards"`       // current
+	UnStake      bool           `json:"unstake"`       // want to unstake
+	ProviderType ProviderType   `json:"provider_type"` // provider type
 
 	TotalReward  common.Balance   `json:"total_reward"`
 	TotalPenalty common.Balance   `json:"total_penalty"`
