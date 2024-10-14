@@ -46,6 +46,7 @@ const (
 var (
 	ErrRetryOperation = errors.New("retry_operation")
 	ErrRepairRequired = errors.New("repair_required")
+	ErrNetwork        = errors.New("network_error")
 )
 
 type RollbackBlobber struct {
