@@ -171,6 +171,30 @@ func withParams(uri string, params Params) string { //nolint:unused
 //	}, nil)
 //}
 
+// GetConfig retrieves the configuration of the smart contract
+//   - configType: the type of configuration to retrieve (e.g. storage_sc_config, miner_sc_globals, miner_sc_configs)
+func GetConfig(configType string) ([]byte, error) {
+	if err := CheckConfig(); err != nil {
+		return nil, err
+	}
+	if configType != "storage_sc_config" && configType != "miner_sc_globals" && configType != "miner_sc_configs" {
+		return nil, errors.New("invalid config type: supported types are storage_sc_config, miner_sc_globals, miner_sc_configs")
+	}
+
+	config, err := transaction.GetConfig(configType)
+
+	if err != nil {
+		return nil, err
+	}
+
+	configBytes, err := json.Marshal(config)
+	if err != nil {
+		return nil, err
+	}
+
+	return configBytes, nil
+}
+
 // GetMinerSCNodeInfo get miner information from sharders
 //   - id: the id of miner
 //   - cb: info callback instance, carries the response of the GET request to the sharders
