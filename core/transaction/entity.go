@@ -251,7 +251,7 @@ func (t *Transaction) VerifySigWith(pubkey string, verifyHandler VerifyFunc) (bo
 // SendTransactionSync sends transactions to all miners in parallel and returns as soon as minSubmit is reached.
 func SendTransactionSync(txn *Transaction, miners []string, minSubmit int) error {
 	// Context with 1-minute timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
 	successCh := make(chan struct{}, len(miners))
