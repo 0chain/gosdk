@@ -1,6 +1,4 @@
-//go:build mobile
-// +build mobile
-
+// TODO: add mobile build flags later here.
 package sdk
 
 import (
