@@ -88,7 +88,7 @@ func (n *Node) ShouldUpdateNetwork() (bool, *conf.Network, error) {
 	if err != nil {
 		return false, nil, err
 	}
-	network, err := GetNetwork(n.clientCtx)
+	network, err := GetNetwork(n.clientCtx, cfg.BlockWorker)
 	if err != nil {
 		logging.Error("Failed to get network details ", zap.Error(err), zap.String("block_worker", cfg.BlockWorker))
 		return false, nil, err
