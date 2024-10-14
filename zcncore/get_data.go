@@ -349,16 +349,19 @@ func GetUserLockedTotal(clientID string) (int64, error) {
 // # Inputs
 //   - clientID wallet id
 func GetStakePoolUserInfo(clientID string) ([]byte, error) {
-	if err := CheckConfig(); err != nil {
+	err := CheckConfig()
+	if err != nil {
 		return nil, err
 	}
 
 	limit, offset := 20, 0
-	spUserInfo, err := sdk.GetStakePoolUserInfo(clientID, limit, offset)
+	spUserInfo, err := sdk.GetStakePoolUserInfo(clientID, offset, limit)
 
 	if err != nil {
 		return nil, err
 	}
+
+	var spUserInfoResponse []*sdk.StakePoolDelegatePoolInfo
 
 	var spUserInfoSl []*sdk.StakePoolUserInfo
 	spUserInfoSl = append(spUserInfoSl, spUserInfo)
@@ -374,10 +377,33 @@ func GetStakePoolUserInfo(clientID string) ([]byte, error) {
 		if err != nil {
 			break
 		}
-		spUserInfoSl = append(spUserInfoSl, spUserInfo)
 	}
 
-	spUserInfoBytes, err := json.Marshal(spUserInfoSl)
+	res, err := GetMinerSCUserInfo(clientID)
+	if err != nil {
+		return nil, errors.New("error while getting miner smart contract user info: " + err.Error())
+	}
+
+	var minerSCUserInfo *sdk.StakePoolUserInfo
+	err = json.Unmarshal(res, &minerSCUserInfo)
+	if err != nil {
+		return nil, errors.New("error while unmarshalling miner smart contract user info: " + err.Error())
+	}
+
+	spUserInfoSl = append(spUserInfoSl, minerSCUserInfo)
+
+	for _, pool := range spUserInfoSl {
+		for _, sp := range pool.Pools {
+			for _, spInfo := range sp {
+				spUserInfoResponse = append(spUserInfoResponse, spInfo)
+			}
+		}
+	}
+	response := map[string]interface{}{
+		"pools": spUserInfoResponse,
+	}
+
+	spUserInfoBytes, err := json.Marshal(response)
 	if err != nil {
 		return nil, errors.New("error while marshalling stake pool user info: " + err.Error())
 	}
