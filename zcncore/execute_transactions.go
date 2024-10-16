@@ -222,11 +222,11 @@ type SendTxnData struct {
 	Note string `json:"note"`
 }
 
-func Send(toClientID string, tokens uint64, desc string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
-	return transaction.SmartContractTxnValue(MinerSmartContractAddress, transaction.SmartContractTxnData{
+func Send(toClientID string, tokens uint64, fee uint64, desc string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+	return transaction.SmartContractTxnValueFee(MinerSmartContractAddress, transaction.SmartContractTxnData{
 		Name:      "transfer",
 		InputArgs: SendTxnData{Note: desc},
-	}, tokens, toClientID)
+	}, tokens, fee, toClientID)
 }
 
 func Faucet(tokens uint64, input string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {

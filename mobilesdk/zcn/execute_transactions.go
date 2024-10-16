@@ -197,13 +197,17 @@ func SharderCollectReward(providerId string, fee int64) ([]byte, error) {
 	return byteTxn, nil
 }
 
-func SendZCN(senderClientId string, tokens int64, description string) ([]byte, error) {
+func SendZCN(senderClientId string, tokens int64, fee int64, description string) ([]byte, error) {
 	if tokenValidation(tokens) != nil {
 		return nil, tokenValidation(tokens)
 
 	}
 
-	_, _, _, txn, err := zcncore.Send(senderClientId, uint64(tokens), description)
+	if tokenValidation(fee) != nil {
+		return nil, tokenValidation(fee)
+	}
+
+	_, _, _, txn, err := zcncore.Send(senderClientId, uint64(tokens), uint64(fee), description)
 
 	if err != nil {
 		return nil, errors.New("Error in SendZCN: " + err.Error())
