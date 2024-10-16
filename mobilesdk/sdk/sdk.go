@@ -115,7 +115,7 @@ func InitStorageSDK(clientJson string, configJson string) (*StorageSDK, error) {
 		l.Logger.Error(err)
 		return nil, err
 	}
-	err = Init(configObj.BlockWorker)
+	err = Init(configJson)
 	if err != nil {
 		l.Logger.Error(err)
 		return nil, err
