@@ -1,12 +1,11 @@
-//go:build mobile
-// +build mobile
-
+// TODO: add mobile build flags later here.
 package sdk
 
 import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	coreTransaction "github.com/0chain/gosdk/core/transaction"
 	"math"
 	"strconv"
 	"strings"
@@ -71,8 +70,10 @@ func Init(chainConfigJson string) error {
 	cfg := conf.Config{}
 	err := json.Unmarshal([]byte(chainConfigJson), &cfg)
 	if err != nil {
-		return err
+		return errors.WithMessage(err, "failed to unmarshal chain config")
 	}
+	l.Logger.Info("InitSDK chain config")
+	l.Logger.Info(cfg)
 	return client.Init(context.Background(), cfg)
 }
 
@@ -114,7 +115,7 @@ func InitStorageSDK(clientJson string, configJson string) (*StorageSDK, error) {
 		l.Logger.Error(err)
 		return nil, err
 	}
-	err = Init(configObj.BlockWorker)
+	err = Init(configJson)
 	if err != nil {
 		l.Logger.Error(err)
 		return nil, err
@@ -358,6 +359,11 @@ func (s *StorageSDK) GetVersion() string {
 	return version.VERSIONSTR
 }
 
+// GetVersion getting current version for gomobile lib
+func GetVersion() string {
+	return version.VERSIONSTR
+}
+
 // UpdateAllocation update allocation settings with new expiry and size
 //   - size: size of space reserved on blobbers
 //   - extend: extend allocation
@@ -383,6 +389,17 @@ func (s *StorageSDK) GetBlobbersList() (string, error) {
 		return "", err
 	}
 	return string(retBytes), nil
+}
+
+// GetStorageConfig get storage config
+// configType: storage_sc_config, miners_sc_globals, miner_sc_configs
+func GetStorageConfig(configType string) ([]byte, error) {
+	configBytes, err := coreTransaction.GetConfig(configType)
+	retBytes, err := json.Marshal(configBytes)
+	if err != nil {
+		return nil, err
+	}
+	return retBytes, nil
 }
 
 // GetAllocations return back list of allocations for the wallet
