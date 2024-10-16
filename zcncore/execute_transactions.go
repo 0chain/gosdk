@@ -32,29 +32,29 @@ type MinerSCMinerInfo struct {
 	MinerSCDelegatePool `json:"stake_pool"`
 }
 
-func MinerSCLock(providerId string, providerType Provider, lock uint64) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
-	return transaction.SmartContractTxnValue(MinerSmartContractAddress, transaction.SmartContractTxnData{
+func MinerSCLock(providerId string, providerType Provider, lock uint64, fee uint64) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+	return transaction.SmartContractTxnValueFee(MinerSmartContractAddress, transaction.SmartContractTxnData{
 		Name: transaction.MINERSC_LOCK,
 		InputArgs: &stakePoolRequest{
 			ProviderID:   providerId,
 			ProviderType: providerType,
 		},
-	}, lock)
+	}, lock, fee)
 
 }
 
-func MinerSCUnlock(providerId string, providerType Provider) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
-	return transaction.SmartContractTxn(MinerSmartContractAddress, transaction.SmartContractTxnData{
+func MinerSCUnlock(providerId string, providerType Provider, fee uint64) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+	return transaction.SmartContractTxnValueFee(MinerSmartContractAddress, transaction.SmartContractTxnData{
 		Name: transaction.MINERSC_UNLOCK,
 		InputArgs: &stakePoolRequest{
 			ProviderID:   providerId,
 			ProviderType: providerType,
 		},
-	})
+	}, 0, fee)
 
 }
 
-func MinerSCCollectReward(providerId string, providerType Provider) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+func MinerSCCollectReward(providerId string, providerType Provider, fee uint64) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 	return transaction.SmartContractTxn(MinerSmartContractAddress, transaction.SmartContractTxnData{
 		Name: transaction.MINERSC_COLLECT_REWARD,
 		InputArgs: &scCollectReward{
@@ -87,34 +87,34 @@ func MinerSCKill(providerId string, providerType Provider) (hash, out string, no
 
 }
 
-func StorageSCStakePoolLock(providerId string, providerType Provider, lock uint64) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
-	return transaction.SmartContractTxnValue(StorageSmartContractAddress, transaction.SmartContractTxnData{
+func StorageSCStakePoolLock(providerId string, providerType Provider, lock uint64, fee uint64) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+	return transaction.SmartContractTxnValueFee(StorageSmartContractAddress, transaction.SmartContractTxnData{
 		Name: transaction.STORAGESC_STAKE_POOL_LOCK,
 		InputArgs: &stakePoolRequest{
 			ProviderID:   providerId,
 			ProviderType: providerType,
 		},
-	}, lock)
+	}, lock, fee)
 }
 
-func StorageSCStakePoolUnlock(providerId string, providerType Provider) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
-	return transaction.SmartContractTxn(StorageSmartContractAddress, transaction.SmartContractTxnData{
+func StorageSCStakePoolUnlock(providerId string, providerType Provider, fee uint64) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+	return transaction.SmartContractTxnValueFee(StorageSmartContractAddress, transaction.SmartContractTxnData{
 		Name: transaction.STORAGESC_STAKE_POOL_UNLOCK,
 		InputArgs: &stakePoolRequest{
 			ProviderID:   providerId,
 			ProviderType: providerType,
 		},
-	})
+	}, 0, fee)
 }
 
-func StorageSCCollectReward(providerId string, providerType Provider) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
-	return transaction.SmartContractTxn(StorageSmartContractAddress, transaction.SmartContractTxnData{
+func StorageSCCollectReward(providerId string, providerType Provider, fee uint64) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+	return transaction.SmartContractTxnValueFee(StorageSmartContractAddress, transaction.SmartContractTxnData{
 		Name: transaction.STORAGESC_COLLECT_REWARD,
 		InputArgs: &scCollectReward{
 			ProviderId:   providerId,
 			ProviderType: int(providerType),
 		},
-	})
+	}, 0, fee)
 
 }
 

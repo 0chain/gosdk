@@ -10,12 +10,16 @@ import (
 // # Inputs
 //   - providerId: provider id
 //   - lock: lock amount
-func MinerStakePoolLock(providerId string, lock int64) ([]byte, error) {
+func MinerStakePoolLock(providerId string, lock int64, fee int64) ([]byte, error) {
 	if tokenValidation(lock) != nil {
 		return nil, tokenValidation(lock)
 	}
 
-	_, _, _, txn, err := zcncore.MinerSCLock(providerId, zcncore.ProviderMiner, uint64(lock))
+	if tokenValidation(fee) != nil {
+		return nil, tokenValidation(fee)
+	}
+
+	_, _, _, txn, err := zcncore.MinerSCLock(providerId, zcncore.ProviderMiner, uint64(lock), uint64(fee))
 
 	if err != nil {
 		return nil, errors.New("Error in MinerSCLock: " + err.Error())
@@ -31,8 +35,12 @@ func MinerStakePoolLock(providerId string, lock int64) ([]byte, error) {
 // MinerStakePoolUnlock unlocks the stake pool for the miner.
 // # Inputs
 //   - providerId: provider id
-func MinerStakePoolUnlock(providerId string) ([]byte, error) {
-	_, _, _, txn, err := zcncore.MinerSCUnlock(providerId, zcncore.ProviderMiner)
+func MinerStakePoolUnlock(providerId string, fee int64) ([]byte, error) {
+	if tokenValidation(fee) != nil {
+		return nil, tokenValidation(fee)
+	}
+
+	_, _, _, txn, err := zcncore.MinerSCUnlock(providerId, zcncore.ProviderMiner, uint64(fee))
 
 	if err != nil {
 		return nil, errors.New("Error in MinerSCUnlock: " + err.Error())
@@ -47,8 +55,12 @@ func MinerStakePoolUnlock(providerId string) ([]byte, error) {
 // MinerCollectReward collects the reward from the miner smart contract.
 // # Inputs
 //   - providerId: provider id
-func MinerCollectReward(providerId string) ([]byte, error) {
-	_, _, _, txn, err := zcncore.MinerSCCollectReward(providerId, zcncore.ProviderMiner)
+func MinerCollectReward(providerId string, fee int64) ([]byte, error) {
+	if tokenValidation(fee) != nil {
+		return nil, tokenValidation(fee)
+	}
+
+	_, _, _, txn, err := zcncore.MinerSCCollectReward(providerId, zcncore.ProviderMiner, uint64(fee))
 
 	if err != nil {
 		return nil, errors.New("Error in MinerSCCollectReward: " + err.Error())
@@ -64,12 +76,16 @@ func MinerCollectReward(providerId string) ([]byte, error) {
 // # Inputs
 //   - providerId: provider id
 //   - lock: lock amount
-func BlobberStakePoolLock(providerId string, lock int64) ([]byte, error) {
+func BlobberStakePoolLock(providerId string, lock int64, fee int64) ([]byte, error) {
 	if tokenValidation(lock) != nil {
 		return nil, tokenValidation(lock)
 	}
 
-	_, _, _, txn, err := zcncore.StorageSCStakePoolLock(providerId, zcncore.ProviderBlobber, uint64(lock))
+	if tokenValidation(fee) != nil {
+		return nil, tokenValidation(fee)
+	}
+
+	_, _, _, txn, err := zcncore.StorageSCStakePoolLock(providerId, zcncore.ProviderBlobber, uint64(lock), uint64(fee))
 
 	if err != nil {
 		return nil, errors.New("Error in BlobberSCLock: " + err.Error())
@@ -85,8 +101,12 @@ func BlobberStakePoolLock(providerId string, lock int64) ([]byte, error) {
 // BlobberStakePoolUnlock unlocks the stake pool for the blobber.
 // # Inputs
 //   - providerId: provider id
-func BlobberStakePoolUnlock(providerId string) ([]byte, error) {
-	_, _, _, txn, err := zcncore.StorageSCStakePoolUnlock(providerId, zcncore.ProviderBlobber)
+func BlobberStakePoolUnlock(providerId string, fee int64) ([]byte, error) {
+	if tokenValidation(fee) != nil {
+		return nil, tokenValidation(fee)
+	}
+
+	_, _, _, txn, err := zcncore.StorageSCStakePoolUnlock(providerId, zcncore.ProviderBlobber, uint64(fee))
 
 	if err != nil {
 		return nil, errors.New("Error in BlobberSCUnlock: " + err.Error())
@@ -101,8 +121,8 @@ func BlobberStakePoolUnlock(providerId string) ([]byte, error) {
 // BlobberCollectReward locks the stake pool for the blobber.
 // # Inputs
 //   - providerId: provider id
-func BlobberCollectReward(providerId string) ([]byte, error) {
-	_, _, _, txn, err := zcncore.StorageSCCollectReward(providerId, zcncore.ProviderBlobber)
+func BlobberCollectReward(providerId string, fee int64) ([]byte, error) {
+	_, _, _, txn, err := zcncore.StorageSCCollectReward(providerId, zcncore.ProviderBlobber, uint64(fee))
 
 	if err != nil {
 		return nil, errors.New("Error in BlobberSCCollectReward: " + err.Error())
@@ -118,12 +138,16 @@ func BlobberCollectReward(providerId string) ([]byte, error) {
 // # Inputs
 //   - providerId: provider id
 //   - lock: lock amount
-func SharderStakePoolLock(providerId string, lock int64) ([]byte, error) {
+func SharderStakePoolLock(providerId string, lock int64, fee int64) ([]byte, error) {
 	if tokenValidation(lock) != nil {
 		return nil, tokenValidation(lock)
 	}
 
-	_, _, _, txn, err := zcncore.MinerSCLock(providerId, zcncore.ProviderSharder, uint64(lock))
+	if tokenValidation(fee) != nil {
+		return nil, tokenValidation(fee)
+	}
+
+	_, _, _, txn, err := zcncore.MinerSCLock(providerId, zcncore.ProviderSharder, uint64(lock), uint64(fee))
 
 	if err != nil {
 		return nil, errors.New("Error in SharderSCLock: " + err.Error())
@@ -139,8 +163,12 @@ func SharderStakePoolLock(providerId string, lock int64) ([]byte, error) {
 // SharderStakePoolUnlock unlocks the stake pool for the sharder.
 // # Inputs
 //   - providerId: provider id
-func SharderStakePoolUnlock(providerId string) ([]byte, error) {
-	_, _, _, txn, err := zcncore.MinerSCUnlock(providerId, zcncore.ProviderSharder)
+func SharderStakePoolUnlock(providerId string, fee int64) ([]byte, error) {
+	if tokenValidation(fee) != nil {
+		return nil, tokenValidation(fee)
+	}
+
+	_, _, _, txn, err := zcncore.MinerSCUnlock(providerId, zcncore.ProviderSharder, uint64(fee))
 
 	if err != nil {
 		return nil, errors.New("Error in SharderSCUnlock: " + err.Error())
@@ -152,8 +180,12 @@ func SharderStakePoolUnlock(providerId string) ([]byte, error) {
 	return byteTxn, nil
 }
 
-func SharderCollectReward(providerId string) ([]byte, error) {
-	_, _, _, txn, err := zcncore.MinerSCCollectReward(providerId, zcncore.ProviderSharder)
+func SharderCollectReward(providerId string, fee int64) ([]byte, error) {
+	if tokenValidation(fee) != nil {
+		return nil, tokenValidation(fee)
+	}
+
+	_, _, _, txn, err := zcncore.MinerSCCollectReward(providerId, zcncore.ProviderSharder, uint64(fee))
 
 	if err != nil {
 		return nil, errors.New("Error in SharderSCCollectReward: " + err.Error())
