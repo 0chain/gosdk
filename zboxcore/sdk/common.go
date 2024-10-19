@@ -21,7 +21,7 @@ import (
 )
 
 func getObjectTreeFromBlobber(ctx context.Context, allocationID, allocationTx, sig string, remoteFilePath string, blobber *blockchain.StorageNode, clientId ...string) (fileref.RefEntity, error) {
-	httpreq, err := zboxutil.NewObjectTreeRequest(blobber.Baseurl, allocationID, allocationTx, sig, remoteFilePath, clientId...)
+	httpreq, err := zboxutil.NewObjectTreeRequest(blobber.Baseurl, allocationID, allocationTx, sig, remoteFilePath)
 	if err != nil {
 		l.Logger.Error(blobber.Baseurl, "Error creating object tree request", err)
 		return nil, err
