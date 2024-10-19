@@ -53,6 +53,7 @@ type ChunkedUploadFormInfo struct {
 	AllocationID      string
 	AllocationTx      string
 	OnlyHash          bool
+	StorageVersion    int
 }
 
 // createUploadProgress create a new UploadProgress
@@ -116,6 +117,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		AllocationID:      su.allocationObj.ID,
 		AllocationTx:      su.allocationObj.Tx,
 		OnlyHash:          chunkEndIndex <= su.progress.ChunkIndex,
+		StorageVersion:    su.allocationObj.StorageVersion,
 	}
 	formInfoJSON, err := json.Marshal(formInfo)
 	if err != nil {
@@ -153,6 +155,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		var thumbnailChunkData []byte
 		worker := jsbridge.GetWorker(blobber.blobber.ID)
 		if worker == nil {
+			logger.Logger.Error("worker not found for blobber: ", blobber.blobber.Baseurl)
 			continue
 		}
 		if len(thumbnailShards) > 0 {
@@ -194,6 +197,9 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		err = worker.PostMessage(safejs.Safe(obj), []safejs.Value{safejs.Safe(fileshardUint8.Get("buffer"))})
 		if err == nil {
 			successCount++
+		} else {
+			logger.Logger.Error("error posting message to worker: ", err)
+			su.uploadMask = su.uploadMask.And(zboxutil.NewUint128(1).Lsh(pos).Not())
 		}
 		if isFinal {
 			blobber.fileRef.ChunkSize = su.chunkSize
@@ -302,7 +308,7 @@ func (su *ChunkedUpload) listen(allEventChan []eventChanWorker, respChan chan er
 					//get error message
 					//get final result
 					var err error
-					isFinal, err = su.processWebWorkerUpload(data, blobber)
+					isFinal, err = su.processWebWorkerUpload(data, blobber, pos)
 					if err != nil {
 						errC := atomic.AddInt32(&errCount, 1)
 						if errC >= int32(su.consensus.consensusThresh) {
@@ -310,13 +316,11 @@ func (su *ChunkedUpload) listen(allEventChan []eventChanWorker, respChan chan er
 						}
 					} else {
 						uploadSuccess = true
-						su.consensus.Done()
 					}
 					return
 				default:
 					logger.Logger.Error("unknown msg type: ", msgType)
 				}
-				return
 			}
 
 		}(pos)
@@ -337,9 +341,9 @@ func (su *ChunkedUpload) listen(allEventChan []eventChanWorker, respChan chan er
 		su.ctxCncl(err)
 		respChan <- err
 	}
-	for chunkEndIndex, count := range su.processMap {
-		if count >= su.consensus.consensusThresh {
-			su.updateProgress(chunkEndIndex, su.uploadMask)
+	for chunkEndIndex, mask := range su.processMap {
+		if mask.CountOnes() >= su.consensus.consensusThresh {
+			su.updateProgress(chunkEndIndex, mask)
 			delete(su.processMap, chunkEndIndex)
 		}
 	}
@@ -351,7 +355,7 @@ func (su *ChunkedUpload) listen(allEventChan []eventChanWorker, respChan chan er
 	}
 }
 
-func (su *ChunkedUpload) processWebWorkerUpload(data *safejs.Value, blobber *ChunkedUploadBlobber) (bool, error) {
+func (su *ChunkedUpload) processWebWorkerUpload(data *safejs.Value, blobber *ChunkedUploadBlobber, pos uint64) (bool, error) {
 	var isFinal bool
 	success, err := data.Get("success")
 	if err != nil {
@@ -370,7 +374,7 @@ func (su *ChunkedUpload) processWebWorkerUpload(data *safejs.Value, blobber *Chu
 
 	chunkEndIndexObj, _ := data.Get("chunkEndIndex")
 	chunkEndIndex, _ := chunkEndIndexObj.Int()
-	su.updateChunkProgress(chunkEndIndex)
+	su.updateChunkProgress(chunkEndIndex, pos)
 	finalRequestObject, _ := data.Get("isFinal")
 	finalRequest, _ := finalRequestObject.Bool()
 	if finalRequest {
@@ -450,8 +454,9 @@ func ProcessEventData(data safejs.Value) {
 	if formInfo.IsFinal {
 		defer delete(hasherMap, fileMeta.RemotePath)
 	}
-	formBuilder := CreateChunkedUploadFormBuilder()
-	uploadData, err := formBuilder.Build(fileMeta, wp.hasher, formInfo.ConnectionID, formInfo.ChunkSize, formInfo.ChunkStartIndex, formInfo.ChunkEndIndex, formInfo.IsFinal, formInfo.EncryptedKey, formInfo.EncryptedKeyPoint,
+	blobberID := os.Getenv("BLOBBER_ID")
+	formBuilder := CreateChunkedUploadFormBuilder(formInfo.StorageVersion)
+	uploadData, err := formBuilder.Build(fileMeta, wp.hasher, formInfo.ConnectionID, blobberID, formInfo.ChunkSize, formInfo.ChunkStartIndex, formInfo.ChunkEndIndex, formInfo.IsFinal, formInfo.EncryptedKey, formInfo.EncryptedKeyPoint,
 		fileShards, thumbnailChunkData, formInfo.ShardSize)
 	if err != nil {
 		selfPostMessage(false, false, err.Error(), remotePath, formInfo.ChunkEndIndex, nil)
@@ -474,7 +479,7 @@ func ProcessEventData(data safejs.Value) {
 	if !formInfo.IsFinal {
 		wp.wg.Add(1)
 	}
-	go func(blobberData BlobberData, remotePath string, wg *sync.WaitGroup) {
+	go func(blobberData blobberData, remotePath string, wg *sync.WaitGroup) {
 		if formInfo.IsFinal && len(blobberData.dataBuffers) > 1 {
 			err = sendUploadRequest(blobberData.dataBuffers[:len(blobberData.dataBuffers)-1], blobberData.contentSlice[:len(blobberData.contentSlice)-1], blobberURL, formInfo.AllocationID, formInfo.AllocationTx, formInfo.HttpMethod, formInfo.ClientId)
 			if err != nil {
@@ -631,7 +636,11 @@ func sendUploadRequest(dataBuffers []*bytes.Buffer, contentSlice []string, blobb
 					if err != nil {
 						logger.Logger.Error("Upload : ", err)
 						if errors.Is(err, fasthttp.ErrConnectionClosed) || errors.Is(err, syscall.EPIPE) || errors.Is(err, fasthttp.ErrDialTimeout) {
+							err = ErrNetwork
 							return err, true
+						}
+						if errors.Is(err, fasthttp.ErrTimeout) {
+							return ErrNetwork, false
 						}
 						return fmt.Errorf("Error while doing reqeust. Error %s", err), false
 					}
@@ -651,6 +660,14 @@ func sendUploadRequest(dataBuffers []*bytes.Buffer, contentSlice []string, blobb
 						}
 						time.Sleep(time.Duration(r) * time.Second)
 						shouldContinue = true
+						return
+					}
+
+					if resp.StatusCode() == http.StatusBadGateway {
+						logger.Logger.Error("Got bad gateway error")
+						time.Sleep(1 * time.Second)
+						shouldContinue = true
+						err = ErrNetwork
 						return
 					}
 
@@ -695,7 +712,7 @@ type eventChanWorker struct {
 
 func (su *ChunkedUpload) startProcessor() {
 	su.listenChan = make(chan struct{}, su.uploadWorkers)
-	su.processMap = make(map[int]int)
+	su.processMap = make(map[int]zboxutil.Uint128)
 	su.uploadWG.Add(1)
 	go func() {
 		respChan := make(chan error, 1)
@@ -736,8 +753,8 @@ func (su *ChunkedUpload) startProcessor() {
 	}()
 }
 
-func (su *ChunkedUpload) updateChunkProgress(chunkEndIndex int) {
+func (su *ChunkedUpload) updateChunkProgress(chunkEndIndex int, pos uint64) {
 	su.processMapLock.Lock()
-	su.processMap[chunkEndIndex] += 1
+	su.processMap[chunkEndIndex] = su.processMap[chunkEndIndex].Or(zboxutil.NewUint128(1).Lsh(pos))
 	su.processMapLock.Unlock()
 }

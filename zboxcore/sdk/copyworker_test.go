@@ -218,7 +218,7 @@ func TestCopyRequest_copyBlobberObject(t *testing.T) {
 				Baseurl: tt.name,
 			})
 			req.copyMask = zboxutil.NewUint128(1).Lsh(uint64(len(req.blobbers))).Sub64(1)
-			_, err := req.copyBlobberObject(req.blobbers[0], 0)
+			_, err := req.copyBlobberObject(req.blobbers[0], 0, true)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
 				require.Contains(errors.Top(err), tt.errMsg)
@@ -336,15 +336,16 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 			}, nil)
 		}
 
-		commitChan = make(map[string]chan *CommitRequest)
+		commitChan = make(map[string]chan CommitRequestInterface)
 		for _, blobber := range req.blobbers {
 			if _, ok := commitChan[blobber.ID]; !ok {
-				commitChan[blobber.ID] = make(chan *CommitRequest, 1)
+				commitChan[blobber.ID] = make(chan CommitRequestInterface, 1)
 			}
 		}
 		blobberChan := commitChan
 		go func() {
-			cm0 := <-blobberChan[req.blobbers[0].ID]
+			cm := <-blobberChan[req.blobbers[0].ID]
+			cm0 := cm.(*CommitRequest)
 			require.EqualValues(t, cm0.blobber.ID, testName+mockBlobberId+strconv.Itoa(0))
 			cm0.result = &CommitResult{
 				Success: true,
@@ -354,7 +355,8 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 			}
 		}()
 		go func() {
-			cm1 := <-blobberChan[req.blobbers[1].ID]
+			cm := <-blobberChan[req.blobbers[1].ID]
+			cm1 := cm.(*CommitRequest)
 			require.EqualValues(t, cm1.blobber.ID, testName+mockBlobberId+strconv.Itoa(1))
 			cm1.result = &CommitResult{
 				Success: true,
@@ -364,7 +366,8 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 			}
 		}()
 		go func() {
-			cm2 := <-blobberChan[req.blobbers[2].ID]
+			cm := <-blobberChan[req.blobbers[2].ID]
+			cm2 := cm.(*CommitRequest)
 			require.EqualValues(t, cm2.blobber.ID, testName+mockBlobberId+strconv.Itoa(2))
 			cm2.result = &CommitResult{
 				Success: true,
@@ -374,7 +377,8 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 			}
 		}()
 		go func() {
-			cm3 := <-blobberChan[req.blobbers[3].ID]
+			cm := <-blobberChan[req.blobbers[3].ID]
+			cm3 := cm.(*CommitRequest)
 			require.EqualValues(t, cm3.blobber.ID, testName+mockBlobberId+strconv.Itoa(3))
 			cm3.result = &CommitResult{
 				Success: true,

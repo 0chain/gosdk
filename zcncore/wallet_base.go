@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/util"
+	"net/http"
 	"strings"
 	"time"
 
@@ -380,4 +381,28 @@ var SignFn = func(hash string) (string, error) {
 		return "", err
 	}
 	return sigScheme.Sign(hash)
+}
+
+// SetupAuth prepare auth app with clientid, key and a set of public, private key and local publickey
+// which is running on PC/Mac.
+func SetupAuth(authHost, clientID, clientKey, publicKey, privateKey, localPublicKey string, cb AuthCallback) error {
+	go func() {
+		authHost = strings.TrimRight(authHost, "/")
+		data := map[string]string{"client_id": clientID, "client_key": clientKey, "public_key": publicKey, "private_key": privateKey, "peer_public_key": localPublicKey}
+		req, err := util.NewHTTPPostRequest(authHost+"/setup", data)
+		if err != nil {
+			logging.Error("new post request failed. ", err.Error())
+			return
+		}
+		res, err := req.Post()
+		if err != nil {
+			logging.Error(authHost+"send error. ", err.Error())
+		}
+		if res.StatusCode != http.StatusOK {
+			cb.OnSetupComplete(StatusError, res.Body)
+			return
+		}
+		cb.OnSetupComplete(StatusSuccess, "")
+	}()
+	return nil
 }

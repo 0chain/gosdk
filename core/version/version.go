@@ -2,4 +2,4 @@
 
 package version
 
-const VERSIONSTR = "v1.17.9-218-g7b354b71"
+const VERSIONSTR = "v1.17.9-300-g01867b7a"

@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/0chain/errors"
@@ -21,8 +22,8 @@ type SCRestAPIHandler func(response map[string][]byte, numSharders int, err erro
 
 func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]string, restApiUrls ...string) ([]byte, error) {
 	const (
-		consensusThresh = float32(25.0)
-		ScRestApiUrl    = "v1/screst/"
+		consensusThresh = float32(25.0) // Minimum threshold for consensus
+		ScRestApiUrl    = "v1/screst/"  // Default API URL
 	)
 
 	restApiUrl := ScRestApiUrl
@@ -30,24 +31,31 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 		restApiUrl = restApiUrls[0]
 	}
 
-	sharders := nodeClient.Network().Sharders
+	sharders := nodeClient.Sharders()
 	responses := make(map[int]int)
 	entityResult := make(map[string][]byte)
 
 	var (
-		retObj   []byte
-		maxCount int
-		dominant = 200
-		wg       sync.WaitGroup
-		mu       sync.Mutex // Mutex to protect shared resources
+		retObj       []byte
+		maxCount     int
+		dominant     = 200
+		wg           sync.WaitGroup
+		mu           sync.Mutex
+		ctx, cancel  = context.WithCancel(context.Background()) // Context for early exit
+		ctxCancelled bool
 	)
+	defer func() {
+		if !ctxCancelled {
+			cancel()
+		}
+	}()
 
 	cfg, err := conf.GetClientConfig()
 	if err != nil {
 		return nil, err
 	}
 
-	for _, sharder := range sharders {
+	for _, sharder := range sharders.Healthy() {
 		wg.Add(1)
 		go func(sharder string) {
 			defer wg.Done()
@@ -58,6 +66,8 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 				fmt.Println(err.Error())
 				return
 			}
+
+			// Add query parameters
 			q := urlObj.Query()
 			for k, v := range params {
 				q.Add(k, v)
@@ -66,17 +76,18 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 
 			req, err := util.NewHTTPGetRequest(urlObj.String())
 			if err != nil {
-				fmt.Println("1Error creating request", err.Error())
+				fmt.Println("Error creating request:", err.Error())
 				return
 			}
 
-			response, err := req.Get()
+			// Perform HTTP request with cancellation support
+			response, err := req.GetWithContext(ctx)
 			if err != nil {
-				fmt.Println("2Error getting response", err.Error())
+				fmt.Println("Error getting response:", err.Error())
 				return
 			}
 
-			mu.Lock() // Lock before updating shared maps
+			mu.Lock()
 			defer mu.Unlock()
 
 			if response.StatusCode > http.StatusBadRequest {
@@ -88,45 +99,41 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 			responses[response.StatusCode]++
 			if responses[response.StatusCode] > maxCount {
 				maxCount = responses[response.StatusCode]
-			}
-
-			if isCurrentDominantStatus(response.StatusCode, responses, maxCount) {
 				dominant = response.StatusCode
 				retObj = []byte(response.Body)
 			}
 
 			entityResult[sharder] = []byte(response.Body)
-			nodeClient.sharders.Success(sharder)
+
+			// Check if consensus is reached and cancel other requests
+			rate := float32(maxCount*100) / float32(cfg.SharderConsensous)
+			if rate >= consensusThresh {
+				ctxCancelled = true
+				cancel() // Stop further processing
+			}
 		}(sharder)
 	}
 
-	wg.Wait()
+	wg.Wait() // Wait for all goroutines to complete
 
-	rate := float32(maxCount*100) / float32(cfg.SharderConsensous)
-	if rate < consensusThresh {
-		err = errors.New("consensus_failed", "consensus failed on sharders")
+	if float32(maxCount*100)/float32(cfg.SharderConsensous) < consensusThresh {
+		return nil, errors.New("consensus_failed", "consensus failed on sharders")
 	}
 
 	if dominant != 200 {
 		var objmap map[string]json.RawMessage
-		err := json.Unmarshal(retObj, &objmap)
-		if err != nil {
+		if err := json.Unmarshal(retObj, &objmap); err != nil {
 			return nil, errors.New("", string(retObj))
 		}
 
 		var parsed string
-		err = json.Unmarshal(objmap["error"], &parsed)
-		if err != nil || parsed == "" {
+		if err := json.Unmarshal(objmap["error"], &parsed); err != nil || parsed == "" {
 			return nil, errors.New("", string(retObj))
 		}
-
 		return nil, errors.New("", parsed)
 	}
 
-	if rate > consensusThresh {
-		return retObj, nil
-	}
-	return nil, err
+	return retObj, nil
 }
 
 // isCurrentDominantStatus determines whether the current response status is the dominant status among responses.

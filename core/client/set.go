@@ -227,23 +227,15 @@ func InitSDK(walletJSON string,
 	var minConfirmation, minSubmit, confirmationChainLength, sharderConsensous int
 	if len(options) > 1 {
 		minConfirmation = options[1]
-	} else {
-		minConfirmation = 5
 	}
 	if len(options) > 2 {
 		minSubmit = options[2]
-	} else {
-		minSubmit = 5
 	}
 	if len(options) > 3 {
 		confirmationChainLength = options[3]
-	} else {
-		confirmationChainLength = 10
 	}
 	if len(options) > 4 {
 		sharderConsensous = options[4]
-	} else {
-		sharderConsensous = 10
 	}
 
 	err := Init(context.Background(), conf.Config{
@@ -269,4 +261,16 @@ func IsSDKInitialized() bool {
 
 func SetSdkInitialized(val bool) {
 	sdkInitialized = val
+}
+
+func PopulateClient(walletJSON, signatureScheme string) (zcncrypto.Wallet, error) {
+	wallet := zcncrypto.Wallet{}
+	err := json.Unmarshal([]byte(walletJSON), &wallet)
+	if err != nil {
+		return wallet, err
+	}
+
+	SetWallet(wallet)
+	SetSignatureScheme(signatureScheme)
+	return wallet, nil
 }
