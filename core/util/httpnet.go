@@ -161,34 +161,6 @@ func (r *GetRequest) Get() (*GetResponse, error) {
 	return response, nil
 }
 
-func (r *GetRequest) GetWithContext(ctx context.Context) (*GetResponse, error) {
-	response := &GetResponse{}
-
-	// Use a channel to handle cancellation and errors.
-	done := make(chan struct{})
-	var err error
-
-	go func() {
-		defer close(done)
-		var presp *PostResponse
-		presp, err = r.Post()
-		if err != nil {
-			return // Error will be handled outside the goroutine.
-		}
-		response.PostResponse = presp
-	}()
-
-	select {
-	case <-ctx.Done(): // Context was cancelled
-		return nil, ctx.Err()
-	case <-done: // Request completed successfully
-		if err != nil {
-			return nil, err // Return the error if any occurred.
-		}
-		return response, nil
-	}
-}
-
 func (r *PostRequest) Post() (*PostResponse, error) {
 	result := &PostResponse{}
 	err := httpDo(r.req, r.ctx, r.cncl, func(resp *http.Response, err error) error {
