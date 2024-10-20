@@ -202,13 +202,10 @@ func PrivateKey() string {
 func Id(clients ...string) string {
 	if len(clients) > 0 {
 		if client.wallets[clients[0]] == nil {
-			fmt.Println("Id is empty")
+			fmt.Println("Id is empty : ", clients[0])
 			return ""
 		}
 		return client.wallets[clients[0]].ClientID
-	}
-	if client.wallet.ClientID == "" {
-		fmt.Println("Id is empty")
 	}
 	return client.wallet.ClientID
 }

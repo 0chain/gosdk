@@ -490,7 +490,7 @@ func SmartContractTxnValueFeeWithRetry(scAddress string, sn SmartContractTxnData
 func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 	value, fee uint64, clients ...string) (hash, out string, nonce int64, t *Transaction, err error) {
 
-	clientId := client.Id(clients...)
+	clientId := client.Id()
 	if len(clients) > 0 && clients[0] != "" {
 		clientId = clients[0]
 	}
@@ -518,10 +518,8 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 	txn.Value = value
 	txn.TransactionFee = fee
 	txn.TransactionType = TxnTypeSmartContract
+	txn.ClientID = clientId
 
-	if len(clients) > 0 && clients[0] != "" {
-		txn.ClientID = clients[0]
-	}
 	if len(clients) > 1 {
 		txn.ToClientID = clients[1]
 		txn.TransactionType = TxnTypeSend
