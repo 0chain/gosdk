@@ -499,7 +499,7 @@ func (commitReq *CommitRequestV2) processCommit() {
 		wg.Add(1)
 		go func(ind int) {
 			defer wg.Done()
-			err = commitReq.commitBlobber(rootHash, rootWeight, prevWeight, blobberPos, blobber)
+			err = commitReq.commitBlobber(rootHash, rootWeight, prevWeight, blobber)
 			if err != nil {
 				l.Logger.Error("Error committing to blobber", err)
 				errSlice[ind] = err
@@ -528,7 +528,7 @@ func (commitReq *CommitRequestV2) processCommit() {
 	commitReq.result = SuccessCommitResult()
 }
 
-func (req *CommitRequestV2) commitBlobber(rootHash []byte, rootWeight, prevWeight, changeIndex uint64, blobber *blockchain.StorageNode) (err error) {
+func (req *CommitRequestV2) commitBlobber(rootHash []byte, rootWeight, prevWeight uint64, blobber *blockchain.StorageNode) (err error) {
 	hasher := sha256.New()
 	if blobber.LatestWM != nil {
 		prevChainHash, err := hex.DecodeString(blobber.LatestWM.ChainHash)
