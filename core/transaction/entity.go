@@ -519,7 +519,7 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 	txn.TransactionFee = fee
 	txn.TransactionType = TxnTypeSmartContract
 
-	if len(clients) > 0 {
+	if len(clients) > 0 && clients[0] != "" {
 		txn.ClientID = clients[0]
 	}
 	if len(clients) > 1 {
