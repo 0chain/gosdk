@@ -315,8 +315,8 @@ func (mo *MultiOperation) Process() error {
 		}
 	}
 	activeBlobbers := mo.operationMask.CountOnes()
-	l.Logger.Info("Active blobbers ", activeBlobbers, " Consensus threshold ", mo.consensusThresh)
 	if activeBlobbers < mo.consensusThresh {
+		l.Logger.Error("consensus not met", activeBlobbers, mo.consensusThresh)
 		return errors.New("consensus_not_met", fmt.Sprintf("Active blobbers %d is less than consensus threshold %d", activeBlobbers, mo.consensusThresh))
 	}
 	if mo.allocationObj.StorageVersion == StorageV2 {

@@ -522,7 +522,7 @@ func (commitReq *CommitRequestV2) processCommit() {
 		return
 	}
 	if !commitReq.isRepair {
-		commitReq.allocationObj.allocationRoot = hex.EncodeToString(rootHash)
+		commitReq.allocationObj.allocationRoot = encryption.Hash(hex.EncodeToString(rootHash) + commitReq.allocationObj.ID)
 	}
 	l.Logger.Info("[commit] ", "elapsedGetRefPath ", elapsedGetRefPath.Milliseconds(), " elapsedProcessChanges ", elapsedProcessChanges.Milliseconds(), " elapsedCommit ", elapsedCommit.Milliseconds(), " total ", time.Since(now).Milliseconds())
 	commitReq.result = SuccessCommitResult()
