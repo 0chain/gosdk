@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/0chain/gosdk/core/imageutil"
 	coreTransaction "github.com/0chain/gosdk/core/transaction"
 	"math"
 	"strconv"
@@ -471,4 +472,16 @@ func decodeTicket(ticket string) (string, string, uint64, error) {
 //	}
 func RegisterAuthorizer(auth Autorizer) {
 	sys.Authorize = auth.Auth
+}
+
+func CreateThumbnail(fileData []byte, height, width int) ([]byte, error) {
+	if len(fileData) == 0 {
+		return nil, errors.New("empty image data")
+	}
+
+	if height == 0 || width == 0 {
+		return nil, errors.New("invalid height or width")
+	}
+
+	return imageutil.CreateThumbnail(fileData, width, height)
 }
