@@ -289,6 +289,7 @@ type DirOperation struct {
 func (dirOp *DirOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
 	refs := make([]fileref.RefEntity, len(allocObj.Blobbers))
 	dR := &DirRequest{
+		allocationObj: allocObj,
 		allocationID:  allocObj.ID,
 		allocationTx:  allocObj.Tx,
 		connectionID:  connectionID,
