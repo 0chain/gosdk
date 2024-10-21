@@ -2,6 +2,7 @@
 package transaction
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/0chain/gosdk/core/client"
@@ -248,29 +249,49 @@ func (t *Transaction) VerifySigWith(pubkey string, verifyHandler VerifyFunc) (bo
 }
 
 func SendTransactionSync(txn *Transaction, miners []string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
 	wg := sync.WaitGroup{}
 	wg.Add(len(miners))
 	fails := make(chan error, len(miners))
 
 	for _, miner := range miners {
 		url := fmt.Sprintf("%v/%v", miner, TXN_SUBMIT_URL)
-		go func() {
-			_, err := sendTransactionToURL(url, txn, &wg)
-			if err != nil {
-				fails <- err
+		go func(url string) {
+			defer wg.Done()
+			select {
+			case <-ctx.Done():
+				fails <- ctx.Err() // Timeout or cancellation
+			default:
+				_, err := sendTransactionToURL(url, txn, nil)
+				if err != nil {
+					fails <- err
+				}
 			}
-			wg.Done()
-		}() //nolint
+		}(url)
 	}
-	wg.Wait()
-	close(fails)
 
+	done := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(fails)
+		close(done)
+	}()
+
+	select {
+	case <-done: // All requests completed
+	case <-ctx.Done(): // Timeout reached
+		return ctx.Err()
+	}
+
+	// Error processing logic here (same as original)
 	failureCount := 0
 	messages := make(map[string]int)
 	for e := range fails {
 		if e != nil {
 			failureCount++
-			messages[e.Error()] += 1
+			messages[e.Error()]++
 		}
 	}
 
@@ -285,7 +306,6 @@ func SendTransactionSync(txn *Transaction, miners []string) error {
 	if failureCount == len(miners) {
 		return fmt.Errorf(dominant)
 	}
-
 	return nil
 }
 
