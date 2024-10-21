@@ -8,6 +8,7 @@ import (
 )
 
 import (
+	"github.com/0chain/gosdk/core/client"
 	"os"
 	"path/filepath"
 
@@ -86,7 +87,7 @@ func RecoverWallet(mnemonic *C.char) *C.char {
 //
 //export GetWalletBalance
 func GetWalletBalance(clientID *C.char) *C.char {
-	b, _, err := zcncore.GetWalletBalance(C.GoString(clientID))
+	b, err := client.GetBalance(C.GoString(clientID))
 	if err != nil {
 		log.Error("win: ", err)
 		return WithJSON(0, err)

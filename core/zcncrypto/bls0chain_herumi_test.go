@@ -151,7 +151,6 @@ func TestCombinedSignAndVerify(t *testing.T) {
 
 func TestSplitKey(t *testing.T) {
 	primaryKeyStr := `872eac6370c72093535fa395ad41a08ee90c9d0d46df9461eb2515451f389d1b`
-	// primaryKeyStr := `c36f2f92b673cf057a32e8bd0ca88888e7ace40337b737e9c7459fdc4c521918`
 	sig0 := NewSignatureScheme("bls0chain")
 	err := sig0.SetPrivateKey(primaryKeyStr)
 	if err != nil {

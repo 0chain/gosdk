@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"mime/multipart"
 	"net/http"
 	"sync"
@@ -17,7 +17,6 @@ import (
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
-	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
 	l "github.com/0chain/gosdk/zboxcore/logger"
@@ -119,7 +118,7 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 				defer resp.Body.Close()
 			}
 			var respBody []byte
-			respBody, err = ioutil.ReadAll(resp.Body)
+			respBody, err = io.ReadAll(resp.Body)
 			if err != nil {
 				logger.Logger.Error("Error: Resp ", err)
 				return
@@ -249,7 +248,7 @@ func (mo *MultiOperation) Process() error {
 		mo.changes = zboxutil.Transpose(mo.changes)
 	}
 
-	writeMarkerMutex, err := CreateWriteMarkerMutex(client.GetClient(), mo.allocationObj)
+	writeMarkerMutex, err := CreateWriteMarkerMutex(mo.allocationObj)
 	if err != nil {
 		return fmt.Errorf("Operation failed: %s", err.Error())
 	}

@@ -19,8 +19,8 @@ import (
 
 	"github.com/0chain/common/core/common"
 	thrown "github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/zboxcore/client"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
@@ -102,12 +102,12 @@ func GetWritemarker(allocID, allocTx, sig, id, baseUrl string) (*LatestPrevWrite
 			return nil, err
 		}
 		if lpm.LatestWM != nil {
-			err = lpm.LatestWM.VerifySignature(client.GetClientPublicKey())
+			err = lpm.LatestWM.VerifySignature(client.PublicKey())
 			if err != nil {
 				return nil, fmt.Errorf("signature verification failed for latest writemarker: %s", err.Error())
 			}
 			if lpm.PrevWM != nil {
-				err = lpm.PrevWM.VerifySignature(client.GetClientPublicKey())
+				err = lpm.PrevWM.VerifySignature(client.PublicKey())
 				if err != nil {
 					return nil, fmt.Errorf("signature verification failed for latest writemarker: %s", err.Error())
 				}
@@ -125,7 +125,7 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 	wm.AllocationID = rb.lpm.LatestWM.AllocationID
 	wm.Timestamp = rb.lpm.LatestWM.Timestamp
 	wm.BlobberID = rb.lpm.LatestWM.BlobberID
-	wm.ClientID = client.GetClientID()
+	wm.ClientID = client.ClientID()
 	wm.Size = -rb.lpm.LatestWM.Size
 	wm.ChainSize = wm.Size + rb.lpm.LatestWM.ChainSize
 
@@ -161,9 +161,21 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 		return err
 	}
 	connID := zboxutil.NewConnectionId()
-	formWriter.WriteField("write_marker", string(wmData))
-	formWriter.WriteField("connection_id", connID)
-	formWriter.Close()
+
+	err = formWriter.WriteField("write_marker", string(wmData))
+	if err != nil {
+		return err
+	}
+
+	err = formWriter.WriteField("connection_id", connID)
+	if err != nil {
+		return err
+	}
+
+	err = formWriter.Close()
+	if err != nil {
+		return err
+	}
 
 	req, err := zboxutil.NewRollbackRequest(rb.blobber.Baseurl, wm.AllocationID, tx, body)
 	if err != nil {
@@ -251,7 +263,7 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 
 	}
 
-	return thrown.New("rolback_error", fmt.Sprint("Rollback failed"))
+	return thrown.New("rolback_error", "Rollback failed")
 }
 
 // CheckAllocStatus checks the status of the allocation

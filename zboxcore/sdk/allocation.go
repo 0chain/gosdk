@@ -6,8 +6,9 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/0chain/gosdk/core/client"
+	"github.com/0chain/gosdk/core/transaction"
 	"io"
-	"io/ioutil"
 	"math"
 	"mime/multipart"
 	"net/http"
@@ -359,16 +360,12 @@ func (a *Allocation) SetCheckStatus(checkStatus bool) {
 }
 
 func getPriceRange(name string) (PriceRange, error) {
-	conf, err := GetStorageSCConfig()
+	conf, err := transaction.GetConfig("storage_sc_config")
 	if err != nil {
 		return PriceRange{}, err
 	}
 	f := conf.Fields[name]
-	fStr, ok := f.(string)
-	if !ok {
-		return PriceRange{}, fmt.Errorf("type is wrong")
-	}
-	mrp, err := strconv.ParseFloat(fStr, 64)
+	mrp, err := strconv.ParseFloat(f, 64)
 	if err != nil {
 		return PriceRange{}, err
 	}
@@ -442,7 +439,7 @@ func (a *Allocation) InitAllocation() {
 }
 
 func (a *Allocation) isInitialized() bool {
-	return a.initialized && sdkInitialized
+	return a.initialized && client.IsSDKInitialized()
 }
 
 func (a *Allocation) startWorker(ctx context.Context) {
@@ -923,7 +920,7 @@ func (a *Allocation) GetCurrentVersion() (bool, error) {
 	}
 
 	if prevVersion > latestVersion {
-		prevVersion, latestVersion = latestVersion, prevVersion
+		prevVersion, latestVersion = latestVersion, prevVersion //nolint:ineffassign,staticcheck
 	}
 
 	// TODO: Check if allocation can be repaired
@@ -2213,7 +2210,7 @@ func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
 				}
 				defer resp.Body.Close()
 
-				respbody, err := ioutil.ReadAll(resp.Body)
+				respbody, err := io.ReadAll(resp.Body)
 				if err != nil {
 					l.Logger.Error("Error: Resp ", err)
 					return err
@@ -2377,7 +2374,7 @@ func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKe
 				}
 				defer resp.Body.Close()
 
-				respbody, err := ioutil.ReadAll(resp.Body)
+				respbody, err := io.ReadAll(resp.Body)
 				if err != nil {
 					l.Logger.Error("Error: Resp ", err)
 					return err

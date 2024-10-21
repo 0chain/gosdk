@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strings"
 )
@@ -302,7 +301,7 @@ func doHTTPRequest(method, url, authToken string, body io.Reader) ([]byte, int, 
 		return nil, 0, err
 	}
 	defer resp.Body.Close()
-	respBody, err := ioutil.ReadAll(resp.Body)
+	respBody, err := io.ReadAll(resp.Body)
 	return respBody, resp.StatusCode, err
 }
 

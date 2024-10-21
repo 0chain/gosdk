@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/0chain/gosdk/core/encryption"
-	"github.com/0chain/gosdk/zboxcore/client"
+	"github.com/0chain/gosdk/core/client"
 )
 
 type DeleteToken struct {
