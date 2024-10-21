@@ -39,7 +39,7 @@ func InitZBox(zboxHost, zboxAppType *C.char) {
 	}
 
 	zboxApiClient.SetRequest(C.GoString(zboxHost), C.GoString(zboxAppType))
-	zboxApiClient.SetWallet(client.ClientID(), client.PrivateKey(), client.PublicKey())
+	zboxApiClient.SetWallet(client.Id(), client.PrivateKey(), client.PublicKey())
 }
 
 // SetZBoxWallet set wallet on zbox api

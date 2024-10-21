@@ -162,7 +162,7 @@ const (
 	FEES_TABLE                = `/v1/fees_table`
 )
 
-type SignFunc = func(msg string) (string, error)
+type SignFunc = func(msg string, clientId ...string) (string, error)
 type VerifyFunc = func(publicKey, signature, msgHash string) (bool, error)
 type SignWithWallet = func(msg string, wallet interface{}) (string, error)
 
@@ -466,29 +466,34 @@ func GetFeesTable(miners []string, reqPercent ...float32) (map[string]map[string
 	return nil, errors.New("failed to get fees table", strings.Join(errs, ","))
 }
 
-func SmartContractTxn(scAddress string, sn SmartContractTxnData, toClient ...string) (
+func SmartContractTxn(scAddress string, sn SmartContractTxnData, clients ...string) (
 	hash, out string, nonce int64, txn *Transaction, err error) {
-	return SmartContractTxnValue(scAddress, sn, 0, toClient...)
+	return SmartContractTxnValue(scAddress, sn, 0, clients...)
 }
 
-func SmartContractTxnValue(scAddress string, sn SmartContractTxnData, value uint64, toClient ...string) (
+func SmartContractTxnValue(scAddress string, sn SmartContractTxnData, value uint64, clients ...string) (
 	hash, out string, nonce int64, txn *Transaction, err error) {
 
-	return SmartContractTxnValueFeeWithRetry(scAddress, sn, value, client.TxnFee(), toClient...)
+	return SmartContractTxnValueFeeWithRetry(scAddress, sn, value, client.TxnFee(), clients...)
 }
 
 func SmartContractTxnValueFeeWithRetry(scAddress string, sn SmartContractTxnData,
-	value, fee uint64, toClient ...string) (hash, out string, nonce int64, t *Transaction, err error) {
-	hash, out, nonce, t, err = SmartContractTxnValueFee(scAddress, sn, value, fee, toClient...)
+	value, fee uint64, clients ...string) (hash, out string, nonce int64, t *Transaction, err error) {
+	hash, out, nonce, t, err = SmartContractTxnValueFee(scAddress, sn, value, fee, clients...)
 
 	if err != nil && strings.Contains(err.Error(), "invalid transaction nonce") {
-		return SmartContractTxnValueFee(scAddress, sn, value, fee)
+		return SmartContractTxnValueFee(scAddress, sn, value, fee, clients...)
 	}
 	return
 }
 
 func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
-	value, fee uint64, toClient ...string) (hash, out string, nonce int64, t *Transaction, err error) {
+	value, fee uint64, clients ...string) (hash, out string, nonce int64, t *Transaction, err error) {
+
+	clientId := client.Id()
+	if len(clients) > 0 && clients[0] != "" {
+		clientId = clients[0]
+	}
 
 	var requestBytes []byte
 	if requestBytes, err = json.Marshal(sn); err != nil {
@@ -505,17 +510,18 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 		return
 	}
 
-	txn := NewTransactionEntity(client.ClientID(),
-		cfg.ChainID, client.PublicKey(), nonce)
+	txn := NewTransactionEntity(client.Id(clientId),
+		cfg.ChainID, client.PublicKey(clientId), nonce)
 
 	txn.TransactionData = string(requestBytes)
 	txn.ToClientID = scAddress
 	txn.Value = value
 	txn.TransactionFee = fee
 	txn.TransactionType = TxnTypeSmartContract
+	txn.ClientID = clientId
 
-	if len(toClient) > 0 {
-		txn.ToClientID = toClient[0]
+	if len(clients) > 1 {
+		txn.ToClientID = clients[1]
 		txn.TransactionType = TxnTypeSend
 	}
 

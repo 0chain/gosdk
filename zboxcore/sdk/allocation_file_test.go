@@ -220,6 +220,7 @@ func TestAllocation_UpdateFile(t *testing.T) {
 		ParityShards: 2,
 		DataShards:   2,
 		Size:         2 * GB,
+		Owner:        mockClientId,
 	}
 	setupMockAllocation(t, a)
 
@@ -289,6 +290,7 @@ func TestAllocation_UploadFile(t *testing.T) {
 		ParityShards: 2,
 		DataShards:   2,
 		Size:         2 * GB,
+		Owner:        mockClientId,
 	}
 
 	setupMockAllocation(t, a)
@@ -327,6 +329,7 @@ func TestAllocation_UpdateFileWithThumbnail(t *testing.T) {
 		ParityShards: 2,
 		DataShards:   2,
 		Size:         2 * GB,
+		Owner:        mockClientId,
 	}
 	setupMockAllocation(t, a)
 
@@ -406,6 +409,7 @@ func TestAllocation_UploadFileWithThumbnail(t *testing.T) {
 		ParityShards: 2,
 		DataShards:   2,
 		Size:         2 * GB,
+		Owner:        mockClientId,
 	}
 
 	setupMockAllocation(t, a)
@@ -441,6 +445,7 @@ func TestAllocation_EncryptAndUpdateFile(t *testing.T) {
 		ParityShards: 2,
 		DataShards:   2,
 		Size:         2 * GB,
+		Owner:        mockClientId,
 	}
 	setupMockAllocation(t, a)
 
@@ -512,6 +517,7 @@ func TestAllocation_EncryptAndUploadFile(t *testing.T) {
 		ParityShards: 2,
 		DataShards:   2,
 		Size:         2 * GB,
+		Owner:        mockClientId,
 	}
 
 	setupMockAllocation(t, a)
@@ -560,6 +566,7 @@ func TestAllocation_EncryptAndUpdateFileWithThumbnail(t *testing.T) {
 		ParityShards: 2,
 		DataShards:   2,
 		Size:         2 * GB,
+		Owner:        mockClientId,
 	}
 
 	setupMockAllocation(t, a)
@@ -636,6 +643,7 @@ func TestAllocation_EncryptAndUploadFileWithThumbnail(t *testing.T) {
 		DataShards:   2,
 		Size:         2 * GB,
 		ctx:          context.TODO(),
+		Owner:        mockClientId,
 	}
 
 	setupMockAllocation(t, a)
@@ -889,6 +897,7 @@ func TestAllocation_RepairFile(t *testing.T) {
 				ParityShards: tt.numBlobbers / 2,
 				DataShards:   tt.numBlobbers / 2,
 				Size:         2 * GB,
+				Owner:        mockClientId,
 			}
 			a.downloadChan = make(chan *DownloadRequest, 10)
 			a.repairChan = make(chan *RepairRequest, 1)

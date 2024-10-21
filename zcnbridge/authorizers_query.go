@@ -3,13 +3,13 @@ package zcnbridge
 import (
 	"encoding/json"
 	"fmt"
+	coreClient "github.com/0chain/gosdk/core/client"
 	"io"
 	"math"
 	"net/http"
 	"strings"
 	"sync"
 
-	coreClient "github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zcnbridge/errors"
 	"github.com/0chain/gosdk/zcnbridge/ethereum"
@@ -120,7 +120,7 @@ func (b *BridgeClient) QueryEthereumBurnEvents(startNonce string) ([]*ethereum.B
 	var (
 		totalWorkers = len(authorizers)
 		values       = map[string]string{
-			"clientid":        coreClient.ClientID(),
+			"clientid":        coreClient.Id(),
 			"ethereumaddress": b.EthereumAddress,
 			"startnonce":      startNonce,
 		}
@@ -179,7 +179,7 @@ func (b *BridgeClient) QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPa
 		totalWorkers = len(authorizers)
 		values       = map[string]string{
 			"hash":     ethBurnHash,
-			"clientid": coreClient.ClientID(),
+			"clientid": coreClient.Id(),
 		}
 	)
 
