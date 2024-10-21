@@ -1020,7 +1020,7 @@ func downloadBlocks(allocId string, remotePath, authTicket, lookupHash, writeChu
 
 	var fh sys.File
 	if writeChunkFuncName == "" {
-		pathHash := encryption.FastHash(remotePath)
+		pathHash := encryption.FastHash(fmt.Sprintf("%s:%d:%d", remotePath, startBlock, endBlock))
 		fs, err := sys.Files.Open(pathHash)
 		if err != nil {
 			return nil, fmt.Errorf("could not open local file: %v", err)

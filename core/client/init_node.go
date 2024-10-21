@@ -52,7 +52,7 @@ func (n *Node) ResetStableMiners() {
 	n.networkGuard.Lock()
 	defer n.networkGuard.Unlock()
 	cfg, _ := conf.GetClientConfig()
-	reqMiners := util.MaxInt(1, int(math.Ceil(float64(cfg.MinSubmit)*float64(len(n.network.Miners))/100)))
+	reqMiners := util.MaxInt(3, int(math.Ceil(float64(cfg.MinSubmit)*float64(len(n.network.Miners))/100)))
 	n.stableMiners = util.GetRandom(n.network.Miners, reqMiners)
 }
 
@@ -132,7 +132,7 @@ func Init(ctx context.Context, cfg conf.Config) error {
 		return err
 	}
 
-	reqMiners := util.MaxInt(1, int(math.Ceil(float64(cfg.MinSubmit)*float64(len(network.Miners))/100)))
+	reqMiners := util.MaxInt(3, int(math.Ceil(float64(cfg.MinSubmit)*float64(len(network.Miners))/100)))
 	sharders := NewHolder(network.Sharders, util.MinInt(len(network.Sharders), util.MaxInt(cfg.SharderConsensous, conf.DefaultSharderConsensous)))
 	nodeClient = &Node{
 		stableMiners: util.GetRandom(network.Miners, reqMiners),
