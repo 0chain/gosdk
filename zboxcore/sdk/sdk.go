@@ -125,11 +125,13 @@ type StakePoolRewardsInfo struct {
 
 // StakePoolDelegatePoolInfo represents delegate pool of a stake pool info.
 type StakePoolDelegatePoolInfo struct {
-	ID         common.Key     `json:"id"`          // blobber ID
-	Balance    common.Balance `json:"balance"`     // current balance
-	DelegateID common.Key     `json:"delegate_id"` // wallet
-	Rewards    common.Balance `json:"rewards"`     // current
-	UnStake    bool           `json:"unstake"`     // want to unstake
+	ID           common.Key     `json:"id"`            // blobber ID
+	Balance      common.Balance `json:"balance"`       // current balance
+	DelegateID   common.Key     `json:"delegate_id"`   // wallet
+	Rewards      common.Balance `json:"rewards"`       // current
+	UnStake      bool           `json:"unstake"`       // want to unstake
+	ProviderID   string         `json:"provider_id"`   // provider ID
+	ProviderType ProviderType   `json:"provider_type"` // provider type
 
 	TotalReward  common.Balance   `json:"total_reward"`
 	TotalPenalty common.Balance   `json:"total_penalty"`
@@ -465,6 +467,19 @@ func getBlobbersInternal(active, stakable bool, limit, offset int) (bs []*Blobbe
 	}
 
 	return wrap.Nodes, nil
+}
+
+func GetBlobbersPaged(active, stakable bool, limit, offset int) ([]*Blobber, error) {
+	if !client.IsSDKInitialized() {
+		return nil, sdkNotInitialized
+	}
+
+	blobbers, err := getBlobbersInternal(active, stakable, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	return blobbers, nil
 }
 
 // GetBlobbers returns list of blobbers.
