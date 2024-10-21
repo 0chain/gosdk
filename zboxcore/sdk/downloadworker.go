@@ -21,6 +21,7 @@ import (
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
+	encrypt "github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
@@ -114,6 +115,7 @@ type DownloadRequest struct {
 	downloadQueue      downloadQueue // Always initialize this queue with max time taken
 	isResume           bool
 	isEnterprise       bool
+	storageVersion     int
 }
 
 type downloadPriority struct {
@@ -1209,11 +1211,16 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 		if selected.fileref.ActualFileHashSignature != fRef.ActualFileHashSignature {
 			continue
 		}
-		if !req.isEnterprise {
+		if !req.isEnterprise && req.shouldVerify {
+			hash := fRef.ActualFileHashSignature + fRef.ValidationRoot
+			if req.storageVersion == StorageV2 {
+				hashData := fmt.Sprintf("%s:%s:%s:%s", fRef.ActualFileHash, fRef.ValidationRoot, fRef.FixedMerkleRoot, req.blobbers[i].ID)
+				hash = encrypt.Hash(hashData)
+			}
 			isValid, err := sys.VerifyWith(
 				req.allocOwnerPubKey,
 				fRef.ValidationRootSignature,
-				fRef.ActualFileHashSignature+fRef.ValidationRoot,
+				hash,
 			)
 			if err != nil {
 				l.Logger.Error(err, "allocOwnerPubKey: ", req.allocOwnerPubKey, " validationRootSignature: ", fRef.ValidationRootSignature, " actualFileHashSignature: ", fRef.ActualFileHashSignature, " validationRoot: ", fRef.ValidationRoot)

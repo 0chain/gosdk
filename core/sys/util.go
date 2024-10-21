@@ -270,3 +270,38 @@ func (i *MemFileChanInfo) Sys() interface{} {
 func (i *MemFileChanInfo) Info() (fs.FileInfo, error) {
 	return i, nil
 }
+
+// wrapper over io pipe to implement File interface
+type PipeFile struct {
+	w *io.PipeWriter
+	r *io.PipeReader
+}
+
+func NewPipeFile() *PipeFile {
+	r, w := io.Pipe()
+	return &PipeFile{w: w, r: r}
+}
+
+func (pf *PipeFile) Write(p []byte) (int, error) {
+	return pf.w.Write(p)
+}
+
+func (pf *PipeFile) Close() error {
+	return pf.w.Close()
+}
+
+func (pf *PipeFile) Read(p []byte) (int, error) {
+	return pf.r.Read(p)
+}
+
+func (pf *PipeFile) Stat() (fs.FileInfo, error) {
+	return nil, nil
+}
+
+func (pf *PipeFile) Sync() error {
+	return nil
+}
+
+func (pf *PipeFile) Seek(offset int64, whence int) (int64, error) {
+	return 0, nil
+}

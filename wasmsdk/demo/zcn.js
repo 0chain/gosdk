@@ -308,7 +308,7 @@ async function createWasm() {
     (_, key) =>
     (...args) =>
       // eslint-disable-next-line
-      new Promise(async (resolve, reject) => {
+        new Promise(async (resolve, reject) => {
         if (!go || go.exited) {
           return reject(new Error('The Go instance is not active.'))
         }
@@ -368,8 +368,11 @@ async function createWasm() {
   )
 
   const proxy = {
-    bulkUpload: bulkUpload,
-    setWallet: setWallet,
+    bulkUpload,
+    setWallet,
+    getWalletId,
+    getPrivateKey,
+    getPeerPublicKey,
     sdk: sdkProxy, //expose sdk methods for js
     jsProxy, //expose js methods for go
   }

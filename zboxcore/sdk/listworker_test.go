@@ -125,8 +125,9 @@ func TestListRequest_getListInfoFromBlobber(t *testing.T) {
 			parameters: parameters{
 				listHttpResp: listResponse{
 					ref: &fileref.Ref{
-						AllocationID: mockAllocationId,
-						Type:         mockType,
+						AllocationID:   mockAllocationId,
+						Type:           mockType,
+						AllocationRoot: mockAllocationRoot,
 					},
 				},
 				ListResult: fileref.ListResult{
