@@ -33,6 +33,8 @@ type ChunkedUploadChunkReader interface {
 	GetFileHash() (string, error)
 	//Reset reset offset
 	Reset()
+	//Release Buffer
+	Release()
 }
 
 // chunkedUploadChunkReader read chunk bytes from io.Reader. see detail on https://github.com/0chain/blobber/wiki/Protocols#what-is-fixedmerkletree
@@ -315,7 +317,6 @@ func (r *chunkedUploadChunkReader) Close() {
 	r.closeOnce.Do(func() {
 		close(r.hasherDataChan)
 		r.hasherWG.Wait()
-		uploadPool.Put(r.fileShardsDataBuffer)
 	})
 
 }
@@ -326,6 +327,10 @@ func (r *chunkedUploadChunkReader) GetFileHash() (string, error) {
 		return "", r.hasherError
 	}
 	return r.hasher.GetFileHash()
+}
+
+func (r *chunkedUploadChunkReader) Release() {
+	uploadPool.Put(r.fileShardsDataBuffer)
 }
 
 func (r *chunkedUploadChunkReader) hashData() {

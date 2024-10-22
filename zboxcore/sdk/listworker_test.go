@@ -178,6 +178,7 @@ func TestListRequest_getListInfoFromBlobber(t *testing.T) {
 				Baseurl: tt.name,
 			}
 			req := &ListRequest{
+				ClientId:       mockClientId,
 				allocationID:   mockAllocationId,
 				allocationTx:   mockAllocationTxId,
 				ctx:            context.TODO(),
@@ -280,6 +281,7 @@ func TestListRequest_GetListFromBlobbers(t *testing.T) {
 				tt.setup(t, tt.name, tt.numBlobbers)
 			}
 			req := &ListRequest{
+				ClientId:     mockClientId,
 				allocationID: mockAllocationId,
 				allocationTx: mockAllocationTxId,
 				ctx:          context.TODO(),
@@ -298,6 +300,7 @@ func TestListRequest_GetListFromBlobbers(t *testing.T) {
 			}
 			got, _ := req.GetListFromBlobbers()
 			expectedResult := &ListResult{
+				ClientId:     mockClientId,
 				Type:         mockType,
 				Size:         0,
 				deleteMask:   zboxutil.NewUint128(1).Lsh(uint64(len(req.blobbers))).Sub64(1),

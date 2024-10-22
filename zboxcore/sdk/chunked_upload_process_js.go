@@ -40,6 +40,7 @@ type workerProcess struct {
 }
 
 type ChunkedUploadFormInfo struct {
+	ClientId          string
 	ConnectionID      string
 	ChunkSize         int64
 	ChunkStartIndex   int
@@ -103,6 +104,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 	)
 
 	formInfo := ChunkedUploadFormInfo{
+		ClientId:          su.allocationObj.Owner,
 		ConnectionID:      su.progress.ConnectionID,
 		ChunkSize:         su.chunkSize,
 		ChunkStartIndex:   chunkStartIndex,
@@ -479,13 +481,13 @@ func ProcessEventData(data safejs.Value) {
 	}
 	go func(blobberData blobberData, remotePath string, wg *sync.WaitGroup) {
 		if formInfo.IsFinal && len(blobberData.dataBuffers) > 1 {
-			err = sendUploadRequest(blobberData.dataBuffers[:len(blobberData.dataBuffers)-1], blobberData.contentSlice[:len(blobberData.contentSlice)-1], blobberURL, formInfo.AllocationID, formInfo.AllocationTx, formInfo.HttpMethod)
+			err = sendUploadRequest(blobberData.dataBuffers[:len(blobberData.dataBuffers)-1], blobberData.contentSlice[:len(blobberData.contentSlice)-1], blobberURL, formInfo.AllocationID, formInfo.AllocationTx, formInfo.HttpMethod, formInfo.ClientId)
 			if err != nil {
 				selfPostMessage(false, true, err.Error(), remotePath, formInfo.ChunkEndIndex, nil)
 				return
 			}
 			wg.Wait()
-			err = sendUploadRequest(blobberData.dataBuffers[len(blobberData.dataBuffers)-1:], blobberData.contentSlice[len(blobberData.contentSlice)-1:], blobberURL, formInfo.AllocationID, formInfo.AllocationTx, formInfo.HttpMethod)
+			err = sendUploadRequest(blobberData.dataBuffers[len(blobberData.dataBuffers)-1:], blobberData.contentSlice[len(blobberData.contentSlice)-1:], blobberURL, formInfo.AllocationID, formInfo.AllocationTx, formInfo.HttpMethod, formInfo.ClientId)
 			if err != nil {
 				selfPostMessage(false, true, err.Error(), remotePath, formInfo.ChunkEndIndex, nil)
 				return
@@ -496,7 +498,7 @@ func ProcessEventData(data safejs.Value) {
 			} else {
 				defer wg.Done()
 			}
-			err = sendUploadRequest(blobberData.dataBuffers, blobberData.contentSlice, blobberURL, formInfo.AllocationID, formInfo.AllocationTx, formInfo.HttpMethod)
+			err = sendUploadRequest(blobberData.dataBuffers, blobberData.contentSlice, blobberURL, formInfo.AllocationID, formInfo.AllocationTx, formInfo.HttpMethod, formInfo.ClientId)
 			if err != nil {
 				selfPostMessage(false, formInfo.IsFinal, err.Error(), remotePath, formInfo.ChunkEndIndex, nil)
 				return
@@ -609,7 +611,7 @@ func parseEventData(data safejs.Value) (*FileMeta, *ChunkedUploadFormInfo, [][]b
 	return fileMeta, formInfo, fileShards, thumbnailChunkData, nil
 }
 
-func sendUploadRequest(dataBuffers []*bytes.Buffer, contentSlice []string, blobberURL, allocationID, allocationTx, httpMethod string) (err error) {
+func sendUploadRequest(dataBuffers []*bytes.Buffer, contentSlice []string, blobberURL, allocationID, allocationTx, httpMethod string, clientId ...string) (err error) {
 	eg, _ := errgroup.WithContext(context.TODO())
 	for dataInd := 0; dataInd < len(dataBuffers); dataInd++ {
 		ind := dataInd
@@ -620,7 +622,7 @@ func sendUploadRequest(dataBuffers []*bytes.Buffer, contentSlice []string, blobb
 			var req *fasthttp.Request
 			for i := 0; i < 3; i++ {
 				req, err = zboxutil.NewFastUploadRequest(
-					blobberURL, allocationID, allocationTx, dataBuffers[ind].Bytes(), httpMethod)
+					blobberURL, allocationID, allocationTx, dataBuffers[ind].Bytes(), httpMethod, clientId...)
 				if err != nil {
 					return err
 				}
