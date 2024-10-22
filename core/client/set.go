@@ -297,3 +297,21 @@ func PopulateClient(walletJSON, signatureScheme string) (zcncrypto.Wallet, error
 	SetSignatureScheme(signatureScheme)
 	return wallet, nil
 }
+
+func VerifySignature(signature string, msg string) (bool, error) {
+	ss := zcncrypto.NewSignatureScheme(client.signatureScheme)
+	if err := ss.SetPublicKey(client.wallet.ClientID); err != nil {
+		return false, err
+	}
+
+	return ss.Verify(signature, msg)
+}
+
+func VerifySignatureWith(pubKey, signature, hash string) (bool, error) {
+	sch := zcncrypto.NewSignatureScheme(client.signatureScheme)
+	err := sch.SetPublicKey(pubKey)
+	if err != nil {
+		return false, err
+	}
+	return sch.Verify(signature, hash)
+}
