@@ -32,38 +32,35 @@ type MinerSCMinerInfo struct {
 	MinerSCDelegatePool `json:"stake_pool"`
 }
 
-//TODO: yash add fees here and also check why this client param is added and for what it's used?
-func MinerSCLock(providerId string, providerType Provider, lock uint64, client ...string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
-	return transaction.SmartContractTxnValue(MinerSmartContractAddress, transaction.SmartContractTxnData{
+func MinerSCLock(providerId string, providerType Provider, lock uint64, fee uint64, client ...string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+	return transaction.SmartContractTxnValueFee(MinerSmartContractAddress, transaction.SmartContractTxnData{
 		Name: transaction.MINERSC_LOCK,
 		InputArgs: &stakePoolRequest{
 			ProviderID:   providerId,
 			ProviderType: providerType,
 		},
-	}, lock, client...)
+	}, lock, fee, client...)
 
 }
 
-//TODO: yash add fees here and also check why this client param is added and for what it's used?
-func MinerSCUnlock(providerId string, providerType Provider, client ...string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
-	return transaction.SmartContractTxn(MinerSmartContractAddress, transaction.SmartContractTxnData{
+func MinerSCUnlock(providerId string, providerType Provider, fee uint64, client ...string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+	return transaction.SmartContractTxnValueFee(MinerSmartContractAddress, transaction.SmartContractTxnData{
 		Name: transaction.MINERSC_UNLOCK,
 		InputArgs: &stakePoolRequest{
 			ProviderID:   providerId,
 			ProviderType: providerType,
 		},
-	}, client...)
+	}, 0, fee, client...)
 }
 
-//TODO: yash add fees here and also check why this client param is added and for what it's used?
-func MinerSCCollectReward(providerId string, providerType Provider, client ...string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
-	return transaction.SmartContractTxn(MinerSmartContractAddress, transaction.SmartContractTxnData{
+func MinerSCCollectReward(providerId string, providerType Provider, fee uint64, client ...string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+	return transaction.SmartContractTxnValueFee(MinerSmartContractAddress, transaction.SmartContractTxnData{
 		Name: transaction.MINERSC_COLLECT_REWARD,
 		InputArgs: &scCollectReward{
 			ProviderId:   providerId,
 			ProviderType: int(providerType),
 		},
-	}, client...)
+	}, 0, fee, client...)
 
 }
 
@@ -89,14 +86,14 @@ func MinerSCKill(providerId string, providerType Provider, client ...string) (ha
 
 }
 
-func StorageSCStakePoolLock(providerId string, providerType Provider, lock uint64, fee uint64) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+func StorageSCStakePoolLock(providerId string, providerType Provider, lock uint64, fee uint64, client ...string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 	return transaction.SmartContractTxnValueFee(StorageSmartContractAddress, transaction.SmartContractTxnData{
 		Name: transaction.STORAGESC_STAKE_POOL_LOCK,
 		InputArgs: &stakePoolRequest{
 			ProviderID:   providerId,
 			ProviderType: providerType,
 		},
-	}, lock, fee)
+	}, lock, fee, client...)
 }
 
 func StorageSCStakePoolUnlock(providerId string, providerType Provider, fee uint64) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
@@ -109,15 +106,14 @@ func StorageSCStakePoolUnlock(providerId string, providerType Provider, fee uint
 	}, 0, fee)
 }
 
-//TODO: yash add fees here and also check why this client param is added and for what it's used?
-func StorageSCCollectReward(providerId string, providerType Provider, client ...string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
-	return transaction.SmartContractTxn(StorageSmartContractAddress, transaction.SmartContractTxnData{
+func StorageSCCollectReward(providerId string, providerType Provider, fee uint64, client ...string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+	return transaction.SmartContractTxnValueFee(StorageSmartContractAddress, transaction.SmartContractTxnData{
 		Name: transaction.STORAGESC_COLLECT_REWARD,
 		InputArgs: &scCollectReward{
 			ProviderId:   providerId,
 			ProviderType: int(providerType),
 		},
-	}, client...)
+	}, 0, fee, client...)
 
 }
 
@@ -225,8 +221,7 @@ type SendTxnData struct {
 	Note string `json:"note"`
 }
 
-
-//TODO: yash add fees here and also check why this client param is added and for what it's used?
+// TODO: yash add fees here and also check why this client param is added and for what it's used?
 func Send(toClientID string, tokens uint64, desc string, client ...string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 	if len(client) == 0 {
 		client = append(client, "")
