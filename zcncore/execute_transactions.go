@@ -221,7 +221,7 @@ type SendTxnData struct {
 	Note string `json:"note"`
 }
 
-func Send(toClientID string, tokens uint64, desc string, fee uint64, client ...string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+func Send(toClientID string, tokens uint64, fee uint64, desc string, client ...string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 	if len(client) == 0 {
 		client = append(client, "")
 		client = append(client, toClientID)
