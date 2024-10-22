@@ -300,7 +300,7 @@ func PopulateClient(walletJSON, signatureScheme string) (zcncrypto.Wallet, error
 
 func VerifySignature(signature string, msg string) (bool, error) {
 	ss := zcncrypto.NewSignatureScheme(client.signatureScheme)
-	if err := ss.SetPublicKey(client.wallet.ClientID); err != nil {
+	if err := ss.SetPublicKey(PublicKey()); err != nil {
 		return false, err
 	}
 
