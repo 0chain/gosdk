@@ -561,7 +561,7 @@ func (req *DownloadRequest) processDownload() {
 				req.bufferMap[blobberIdx] = zboxutil.NewDownloadBufferWithChan(sz, bufBlocks, req.effectiveBlockSize)
 			} else {
 				bufMask := zboxutil.NewDownloadBufferWithMask(sz, bufBlocks, req.effectiveBlockSize)
-				bufMask.SetNumBlocks(int(numBlocks))
+				bufMask.SetNumBlocks(int(bufBlocks))
 				req.bufferMap[blobberIdx] = bufMask
 			}
 		}
@@ -998,6 +998,7 @@ func (req *DownloadRequest) errorCB(err error, remotePathCB string) {
 		return
 	}
 	req.skip = true
+	logger.Logger.Error("Download failed: ", err, " remotefilepath: ", remotePathCB)
 	if req.localFilePath != "" {
 		if info, err := req.fileHandler.Stat(); err == nil && info.Size() == 0 {
 			os.Remove(req.localFilePath) //nolint: errcheck

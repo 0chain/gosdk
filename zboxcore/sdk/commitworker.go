@@ -499,10 +499,10 @@ func (commitReq *CommitRequestV2) processCommit() {
 		wg.Add(1)
 		go func(ind int) {
 			defer wg.Done()
-			err = commitReq.commitBlobber(rootHash, rootWeight, prevWeight, blobber)
-			if err != nil {
-				l.Logger.Error("Error committing to blobber", err)
-				errSlice[ind] = err
+			commitErr := commitReq.commitBlobber(rootHash, rootWeight, prevWeight, blobber)
+			if commitErr != nil {
+				l.Logger.Error("Error committing to blobber", commitErr)
+				errSlice[ind] = commitErr
 				mu.Lock()
 				commitReq.commitMask = commitReq.commitMask.And(zboxutil.NewUint128(1).Lsh(blobberPos).Not())
 				mu.Unlock()
