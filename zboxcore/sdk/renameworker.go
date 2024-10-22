@@ -48,7 +48,7 @@ type RenameRequest struct {
 }
 
 func (req *RenameRequest) getObjectTreeFromBlobber(blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
-	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.allocationTx, req.sig, req.remotefilepath, blobber)
+	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.allocationTx, req.sig, req.remotefilepath, blobber, req.allocationObj.Owner)
 }
 
 func (req *RenameRequest) getFileMetaFromBlobber(pos int) (fileRef *fileref.FileRef, err error) {
@@ -117,7 +117,7 @@ func (req *RenameRequest) renameBlobberObject(
 			formWriter.Close()
 
 			var httpreq *http.Request
-			httpreq, err = zboxutil.NewRenameRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body)
+			httpreq, err = zboxutil.NewRenameRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body, req.allocationObj.Owner)
 			if err != nil {
 				l.Logger.Error(blobber.Baseurl, "Error creating rename request", err)
 				return
@@ -359,6 +359,7 @@ func (req *RenameRequest) ProcessRename() error {
 		newChange.Size = 0
 
 		commitReq := &CommitRequest{
+			ClientId:     req.allocationObj.Owner,
 			allocationID: req.allocationID,
 			allocationTx: req.allocationTx,
 			sig:          req.sig,

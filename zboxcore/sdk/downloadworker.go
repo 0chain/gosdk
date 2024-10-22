@@ -67,6 +67,7 @@ func WithFileCallback(cb func()) DownloadRequestOption {
 }
 
 type DownloadRequest struct {
+	ClientId           string
 	allocationID       string
 	allocationTx       string
 	sig                string
@@ -828,7 +829,7 @@ func (req *DownloadRequest) attemptSubmitReadMarker(blobber *blockchain.StorageN
 	lockBlobberReadCtr(req.allocationID, blobber.ID)
 	defer unlockBlobberReadCtr(req.allocationID, blobber.ID)
 	rm := &marker.ReadMarker{
-		ClientID:        client.ClientID(),
+		ClientID:        client.Id(req.ClientId),
 		ClientPublicKey: client.PublicKey(),
 		BlobberID:       blobber.ID,
 		AllocationID:    req.allocationID,
@@ -846,7 +847,7 @@ func (req *DownloadRequest) attemptSubmitReadMarker(blobber *blockchain.StorageN
 	if err != nil {
 		return fmt.Errorf("error marshaling read marker: %w", err)
 	}
-	httpreq, err := zboxutil.NewRedeemRequest(blobber.Baseurl, req.allocationID, req.allocationTx)
+	httpreq, err := zboxutil.NewRedeemRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.allocOwnerID)
 	if err != nil {
 		return fmt.Errorf("error creating download request: %w", err)
 	}
@@ -1118,6 +1119,7 @@ func GetFileRefFromBlobber(allocationID, blobberId, remotePath string) (fRef *fi
 
 func (req *DownloadRequest) getFileRef() (fRef *fileref.FileRef, err error) {
 	listReq := &ListRequest{
+		ClientId:           req.ClientId,
 		remotefilepath:     req.remotefilepath,
 		remotefilepathhash: req.remotefilepathhash,
 		allocationID:       req.allocationID,

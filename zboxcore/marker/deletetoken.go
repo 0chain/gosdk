@@ -3,8 +3,8 @@ package marker
 import (
 	"fmt"
 
-	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/client"
+	"github.com/0chain/gosdk/core/encryption"
 )
 
 type DeleteToken struct {
@@ -25,6 +25,6 @@ func (dt *DeleteToken) GetHash() string {
 
 func (dt *DeleteToken) Sign() error {
 	var err error
-	dt.Signature, err = client.Sign(dt.GetHash())
+	dt.Signature, err = client.Sign(dt.GetHash(), dt.ClientID)
 	return err
 }
