@@ -33,6 +33,7 @@ func TestWriteMarkerMutext_Should_Lock(t *testing.T) {
 		Tx:           "TestWriteMarkerMutext",
 		DataShards:   2,
 		ParityShards: 1,
+		Owner:        mockClientId,
 	}
 	setupMockAllocation(t, a)
 
@@ -101,6 +102,7 @@ func TestWriteMarkerMutext_Some_Blobbers_Down_Should_Lock(t *testing.T) {
 		Tx:           "TestWriteMarkerMutext",
 		DataShards:   2,
 		ParityShards: 2,
+		Owner:        mockClientId,
 	}
 	setupMockAllocation(t, a)
 
@@ -170,6 +172,7 @@ func TestWriteMarkerMutext_Too_Less_Blobbers_Response_Should_Not_Lock(t *testing
 		Tx:           "TestWriteMarkerMutext",
 		DataShards:   2,
 		ParityShards: 1,
+		Owner:        mockClientId,
 	}
 	setupMockAllocation(t, a)
 

@@ -54,7 +54,7 @@ var errNoChange = errors.New("no_change", "No change in the operation")
 const objAlreadyExists = "Object Already exists"
 
 func (req *CopyRequest) getObjectTreeFromBlobber(blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
-	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.allocationTx, req.sig, req.remotefilepath, blobber)
+	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.allocationTx, req.sig, req.remotefilepath, blobber, req.allocationObj.Owner)
 }
 
 func (req *CopyRequest) getFileMetaFromBlobber(pos int) (fileRef *fileref.FileRef, err error) {
@@ -130,7 +130,7 @@ func (req *CopyRequest) copyBlobberObject(
 				cncl     context.CancelFunc
 			)
 
-			httpreq, err = zboxutil.NewCopyRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body)
+			httpreq, err = zboxutil.NewCopyRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body, req.allocationObj.Owner)
 			if err != nil {
 				l.Logger.Error(blobber.Baseurl, "Error creating rename request", err)
 				return
@@ -357,10 +357,12 @@ func (req *CopyRequest) ProcessCopy() error {
 			Uuid:       uid,
 			ObjectTree: objectTreeRefs[pos],
 		}
+
 		newChange.NumBlocks = 0
 		newChange.Operation = constants.FileOperationCopy
 		newChange.Size = 0
 		commitReq := &CommitRequest{
+			ClientId:     req.allocationObj.Owner,
 			allocationID: req.allocationID,
 			allocationTx: req.allocationTx,
 			sig:          req.sig,

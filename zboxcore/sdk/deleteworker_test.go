@@ -178,6 +178,9 @@ func TestDeleteRequest_deleteBlobberFile(t *testing.T) {
 				ctx:          context.TODO(),
 				connectionID: mockConnectionId,
 				wg:           func() *sync.WaitGroup { wg.Add(1); return &wg }(),
+				allocationObj: &Allocation{
+					Owner: mockClientId,
+				},
 			}
 			req.blobbers = append(req.blobbers, &blockchain.StorageNode{
 				Baseurl: tt.name,
@@ -382,6 +385,7 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 
 			a := &Allocation{
 				DataShards: numBlobbers,
+				Owner:      mockClientId,
 			}
 
 			for i := 0; i < tt.numBlobbers; i++ {

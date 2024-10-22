@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/sys"
-	"github.com/0chain/gosdk/core/client"
 )
 
 type WriteMarker struct {
@@ -48,7 +48,7 @@ func (wm *WriteMarker) GetHash() string {
 
 func (wm *WriteMarker) Sign() error {
 	var err error
-	wm.Signature, err = client.Sign(wm.GetHash())
+	wm.Signature, err = client.Sign(wm.GetHash(), wm.ClientID)
 	return err
 }
 

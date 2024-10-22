@@ -67,6 +67,7 @@ func WithFileCallback(cb func()) DownloadRequestOption {
 }
 
 type DownloadRequest struct {
+	ClientId           string
 	allocationID       string
 	allocationTx       string
 	sig                string
@@ -560,7 +561,7 @@ func (req *DownloadRequest) processDownload() {
 				req.bufferMap[blobberIdx] = zboxutil.NewDownloadBufferWithChan(sz, bufBlocks, req.effectiveBlockSize)
 			} else {
 				bufMask := zboxutil.NewDownloadBufferWithMask(sz, bufBlocks, req.effectiveBlockSize)
-				bufMask.SetNumBlocks(int(numBlocks))
+				bufMask.SetNumBlocks(int(bufBlocks))
 				req.bufferMap[blobberIdx] = bufMask
 			}
 		}
@@ -828,7 +829,7 @@ func (req *DownloadRequest) attemptSubmitReadMarker(blobber *blockchain.StorageN
 	lockBlobberReadCtr(req.allocationID, blobber.ID)
 	defer unlockBlobberReadCtr(req.allocationID, blobber.ID)
 	rm := &marker.ReadMarker{
-		ClientID:        client.ClientID(),
+		ClientID:        client.Id(req.ClientId),
 		ClientPublicKey: client.PublicKey(),
 		BlobberID:       blobber.ID,
 		AllocationID:    req.allocationID,
@@ -846,7 +847,7 @@ func (req *DownloadRequest) attemptSubmitReadMarker(blobber *blockchain.StorageN
 	if err != nil {
 		return fmt.Errorf("error marshaling read marker: %w", err)
 	}
-	httpreq, err := zboxutil.NewRedeemRequest(blobber.Baseurl, req.allocationID, req.allocationTx)
+	httpreq, err := zboxutil.NewRedeemRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.allocOwnerID)
 	if err != nil {
 		return fmt.Errorf("error creating download request: %w", err)
 	}
@@ -997,6 +998,7 @@ func (req *DownloadRequest) errorCB(err error, remotePathCB string) {
 		return
 	}
 	req.skip = true
+	logger.Logger.Error("Download failed: ", err, " remotefilepath: ", remotePathCB)
 	if req.localFilePath != "" {
 		if info, err := req.fileHandler.Stat(); err == nil && info.Size() == 0 {
 			os.Remove(req.localFilePath) //nolint: errcheck
@@ -1118,6 +1120,7 @@ func GetFileRefFromBlobber(allocationID, blobberId, remotePath string) (fRef *fi
 
 func (req *DownloadRequest) getFileRef() (fRef *fileref.FileRef, err error) {
 	listReq := &ListRequest{
+		ClientId:           req.ClientId,
 		remotefilepath:     req.remotefilepath,
 		remotefilepathhash: req.remotefilepathhash,
 		allocationID:       req.allocationID,
