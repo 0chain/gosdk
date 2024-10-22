@@ -221,18 +221,17 @@ type SendTxnData struct {
 	Note string `json:"note"`
 }
 
-// TODO: yash add fees here and also check why this client param is added and for what it's used?
-func Send(toClientID string, tokens uint64, desc string, client ...string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+func Send(toClientID string, tokens uint64, desc string, fee uint64, client ...string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 	if len(client) == 0 {
 		client = append(client, "")
 		client = append(client, toClientID)
 	} else {
 		client = append(client, toClientID)
 	}
-	return transaction.SmartContractTxnValue(MinerSmartContractAddress, transaction.SmartContractTxnData{
+	return transaction.SmartContractTxnValueFee(MinerSmartContractAddress, transaction.SmartContractTxnData{
 		Name:      "transfer",
 		InputArgs: SendTxnData{Note: desc},
-	}, tokens, client...)
+	}, tokens, fee, client...)
 }
 
 func Faucet(tokens uint64, input string, client ...string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
