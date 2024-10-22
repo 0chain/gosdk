@@ -3,6 +3,7 @@ package zcncore
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/util"
 	"net/http"
@@ -11,7 +12,6 @@ import (
 
 	"errors"
 
-	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/version"
@@ -254,6 +254,7 @@ func SplitKeys(privateKey string, numSplits int) (string, error) {
 	if err != nil {
 		return "", errors.New("split key failed." + err.Error())
 	}
+	w.IsSplit = true
 	wStr, err := w.Marshal()
 	if err != nil {
 		return "", errors.New("wallet encoding failed." + err.Error())

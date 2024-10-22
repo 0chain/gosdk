@@ -16,6 +16,9 @@ import (
 var (
 	client         Client
 	sdkInitialized bool
+
+	Sign SignFunc
+	sigC = make(chan struct{}, 1)
 )
 
 type SignFunc func(hash string) (string, error)
@@ -33,12 +36,24 @@ type Client struct {
 
 func init() {
 	sys.Sign = signHash
-	client = Client{
-		wallet: &zcncrypto.Wallet{},
-		sign: func(hash string) (string, error) {
+	sys.SignWithAuth = signHash
+
+	sigC <- struct{}{}
+
+	// initialize SignFunc as default implementation
+	Sign = func(hash string) (string, error) {
+		if client.wallet.PeerPublicKey == "" {
 			return sys.Sign(hash, client.signatureScheme, GetClientSysKeys())
-		},
+		}
+
+		// get sign lock
+		<-sigC
+		fmt.Println("Sign: with sys.SignWithAuth:", sys.SignWithAuth, "sysKeys:", GetClientSysKeys())
+		sig, err := sys.SignWithAuth(hash, client.signatureScheme, GetClientSysKeys())
+		sigC <- struct{}{}
+		return sig, err
 	}
+
 	sys.Verify = verifySignature
 	sys.VerifyWith = verifySignatureWith
 }
@@ -155,10 +170,6 @@ func Nonce() int64 {
 
 func TxnFee() uint64 {
 	return client.txnFee
-}
-
-func Sign(hash string) (string, error) {
-	return client.sign(hash)
 }
 
 func IsWalletSet() bool {
