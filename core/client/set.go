@@ -43,14 +43,19 @@ func init() {
 
 	// initialize SignFunc as default implementation
 	Sign = func(hash string, clients ...string) (string, error) {
-		if client.wallet.PeerPublicKey == "" {
-			return sys.Sign(hash, client.signatureScheme, GetClientSysKeys())
+		wallet := client.wallet
+		if len(clients) > 0 {
+			wallet = client.wallets[clients[0]]
+		}
+
+		if wallet.PeerPublicKey == "" {
+			return sys.Sign(hash, client.signatureScheme, GetClientSysKeys(clients...))
 		}
 
 		// get sign lock
 		<-sigC
-		fmt.Println("Sign: with sys.SignWithAuth:", sys.SignWithAuth, "sysKeys:", GetClientSysKeys())
-		sig, err := sys.SignWithAuth(hash, client.signatureScheme, GetClientSysKeys())
+		fmt.Println("Sign: with sys.SignWithAuth:", sys.SignWithAuth, "sysKeys:", GetClientSysKeys(clients...))
+		sig, err := sys.SignWithAuth(hash, client.signatureScheme, GetClientSysKeys(clients...))
 		sigC <- struct{}{}
 		return sig, err
 	}
@@ -183,7 +188,6 @@ func Nonce() int64 {
 func TxnFee() uint64 {
 	return client.txnFee
 }
-
 
 func IsWalletSet() bool {
 	return client.wallet.ClientID != ""
