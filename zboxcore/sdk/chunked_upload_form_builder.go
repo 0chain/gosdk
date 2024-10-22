@@ -10,7 +10,7 @@ import (
 	"sync"
 
 	"github.com/0chain/gosdk/core/encryption"
-	"github.com/0chain/gosdk/zboxcore/client"
+	"github.com/0chain/gosdk/core/client"
 
 	"golang.org/x/crypto/sha3"
 )

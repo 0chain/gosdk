@@ -12,7 +12,6 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
@@ -40,7 +39,7 @@ type WriteMarkerMutex struct {
 }
 
 // CreateWriteMarkerMutex create WriteMarkerMutex for allocation
-func CreateWriteMarkerMutex(client *client.Client, allocationObj *Allocation) (*WriteMarkerMutex, error) {
+func CreateWriteMarkerMutex(allocationObj *Allocation) (*WriteMarkerMutex, error) {
 	if allocationObj == nil {
 		return nil, errors.Throw(constants.ErrInvalidParameter, "allocationObj")
 	}
@@ -101,7 +100,7 @@ func (wmMu *WriteMarkerMutex) UnlockBlobber(
 
 	var req *http.Request
 	req, err = zboxutil.NewWriteMarkerUnLockRequest(
-		b.Baseurl, wmMu.allocationObj.ID, wmMu.allocationObj.Tx, wmMu.allocationObj.sig, connID, "")
+		b.Baseurl, wmMu.allocationObj.ID, wmMu.allocationObj.Tx, wmMu.allocationObj.sig, connID, "", wmMu.allocationObj.Owner)
 	if err != nil {
 		return
 	}
@@ -282,7 +281,7 @@ func (wmMu *WriteMarkerMutex) lockBlobber(
 
 	var req *http.Request
 	req, err = zboxutil.NewWriteMarkerLockRequest(
-		b.Baseurl, wmMu.allocationObj.ID, wmMu.allocationObj.Tx, wmMu.allocationObj.sig, connID)
+		b.Baseurl, wmMu.allocationObj.ID, wmMu.allocationObj.Tx, wmMu.allocationObj.sig, connID, wmMu.allocationObj.Owner)
 	if err != nil {
 		return
 	}

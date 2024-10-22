@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math"
 	"mime/multipart"
 	"net/http"
@@ -19,10 +18,10 @@ import (
 	"github.com/0chain/common/core/util/wmpt"
 	"github.com/0chain/errors"
 	thrown "github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
 	l "github.com/0chain/gosdk/zboxcore/logger"
@@ -61,6 +60,7 @@ func SuccessCommitResult() *CommitResult {
 const MARKER_VERSION = "v2"
 
 type CommitRequest struct {
+	ClientId     string
 	changes      []allocationchange.AllocationChange
 	blobber      *blockchain.StorageNode
 	allocationID string
@@ -147,7 +147,7 @@ func (commitreq *CommitRequest) processCommit() {
 	}
 	var req *http.Request
 	var lR ReferencePathResult
-	req, err := zboxutil.NewReferencePathRequest(commitreq.blobber.Baseurl, commitreq.allocationID, commitreq.allocationTx, commitreq.sig, paths)
+	req, err := zboxutil.NewReferencePathRequest(commitreq.blobber.Baseurl, commitreq.allocationID, commitreq.allocationTx, commitreq.sig, paths, commitreq.ClientId)
 	if err != nil {
 		l.Logger.Error("Creating ref path req", err)
 		return
@@ -162,7 +162,7 @@ func (commitreq *CommitRequest) processCommit() {
 		if resp.StatusCode != http.StatusOK {
 			l.Logger.Error("Ref path response : ", resp.StatusCode)
 		}
-		resp_body, err := ioutil.ReadAll(resp.Body)
+		resp_body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			l.Logger.Error("Ref path: Resp", err)
 			return err
@@ -193,7 +193,7 @@ func (commitreq *CommitRequest) processCommit() {
 	}
 	hasher := sha256.New()
 	if lR.LatestWM != nil {
-		err = lR.LatestWM.VerifySignature(client.GetClientPublicKey())
+		err = lR.LatestWM.VerifySignature(client.PublicKey())
 		if err != nil {
 			e := errors.New("signature_verification_failed", err.Error())
 			commitreq.result = ErrorCommitResult(e.Error())
@@ -282,7 +282,7 @@ func (req *CommitRequest) commitBlobber(
 	wm.Size = size
 	wm.BlobberID = req.blobber.ID
 	wm.Timestamp = req.timestamp
-	wm.ClientID = client.GetClientID()
+	wm.ClientID = client.Id(req.ClientId)
 	err = wm.Sign()
 	if err != nil {
 		l.Logger.Error("Signing writemarker failed: ", err)
@@ -554,7 +554,7 @@ func (req *CommitRequestV2) commitBlobber(rootHash []byte, rootWeight, prevWeigh
 	wm.Timestamp = req.timestamp
 	wm.AllocationID = req.allocationObj.ID
 	wm.FileMetaRoot = fileMetaRoot
-	wm.ClientID = client.GetClientID()
+	wm.ClientID = client.Id()
 	err = wm.Sign()
 	if err != nil {
 		l.Logger.Error("Error signing writemarker", err)
@@ -651,7 +651,7 @@ func getReferencePathV2(blobber *blockchain.StorageNode, allocationID, allocatio
 	}
 	trie := wmpt.New(nil, nil)
 	if lR.LatestWM != nil {
-		err = lR.LatestWM.VerifySignature(client.GetClientPublicKey())
+		err = lR.LatestWM.VerifySignature(client.PublicKey())
 		if err != nil {
 			return nil, errors.New("signature_verification_failed", err.Error())
 		}

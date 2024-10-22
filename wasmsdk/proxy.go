@@ -13,11 +13,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/core/version"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/wasmsdk/jsbridge"
-	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk/zcncore"
 
@@ -267,12 +267,6 @@ func main() {
 				"getAllocationWith":          getAllocationWith,
 				"createfreeallocation":       createfreeallocation,
 
-				// readpool
-				"getReadPoolInfo": getReadPoolInfo,
-				"lockReadPool":    lockReadPool,
-				"unLockReadPool":  unLockReadPool,
-				"createReadPool":  createReadPool,
-
 				// claim rewards
 				"collectRewards": collectRewards,
 
@@ -287,10 +281,6 @@ func main() {
 				"decodeAuthTicket": decodeAuthTicket,
 				"allocationRepair": allocationRepair,
 				"repairSize":       repairSize,
-
-				//smartcontract
-				"executeSmartContract": executeSmartContract,
-				"faucet":               faucet,
 
 				// bridge
 				"initBridge":                    initBridge,
@@ -475,8 +465,8 @@ func main() {
 
 		setWallet(clientID, clientKey, peerPublicKey, publicKey, privateKey, mnemonic, isSplit)
 		hideLogs()
-		debug.SetGCPercent(75)
-		debug.SetMemoryLimit(1 * 1024 * 1024 * 1024) //1GB
+		debug.SetGCPercent(40)
+		debug.SetMemoryLimit(300 * 1024 * 1024) //300MB
 		err = startListener(respChan)
 		if err != nil {
 			fmt.Println("Error starting listener", err)
@@ -485,8 +475,8 @@ func main() {
 	}
 
 	hideLogs()
-	debug.SetGCPercent(75)
-	debug.SetMemoryLimit(3.5 * 1024 * 1024 * 1024) //3.5 GB
+	debug.SetGCPercent(40)
+	debug.SetMemoryLimit(2.5 * 1024 * 1024 * 1024) //2.5 GB
 
 	<-make(chan bool)
 

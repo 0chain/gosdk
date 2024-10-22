@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"path"
 	"strconv"
@@ -20,7 +20,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
-func getObjectTreeFromBlobber(ctx context.Context, allocationID, allocationTx, sig string, remoteFilePath string, blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
+func getObjectTreeFromBlobber(ctx context.Context, allocationID, allocationTx, sig string, remoteFilePath string, blobber *blockchain.StorageNode, clientId ...string) (fileref.RefEntity, error) {
 	httpreq, err := zboxutil.NewObjectTreeRequest(blobber.Baseurl, allocationID, allocationTx, sig, remoteFilePath)
 	if err != nil {
 		l.Logger.Error(blobber.Baseurl, "Error creating object tree request", err)
@@ -37,7 +37,7 @@ func getObjectTreeFromBlobber(ctx context.Context, allocationID, allocationTx, s
 		if resp.StatusCode != http.StatusOK {
 			l.Logger.Error("Object tree response : ", resp.StatusCode)
 		}
-		resp_body, err := ioutil.ReadAll(resp.Body)
+		resp_body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			l.Logger.Error("Object tree: Resp", err)
 			return err
@@ -63,9 +63,9 @@ func getObjectTreeFromBlobber(ctx context.Context, allocationID, allocationTx, s
 	return lR.GetRefFromObjectTree(allocationID)
 }
 
-func getAllocationDataFromBlobber(blobber *blockchain.StorageNode, allocationId string, allocationTx string, respCh chan<- *BlobberAllocationStats, wg *sync.WaitGroup) {
+func getAllocationDataFromBlobber(blobber *blockchain.StorageNode, allocationId string, allocationTx string, respCh chan<- *BlobberAllocationStats, wg *sync.WaitGroup, clientId ...string) {
 	defer wg.Done()
-	httpreq, err := zboxutil.NewAllocationRequest(blobber.Baseurl, allocationId, allocationTx)
+	httpreq, err := zboxutil.NewAllocationRequest(blobber.Baseurl, allocationId, allocationTx, clientId...)
 	if err != nil {
 		l.Logger.Error(blobber.Baseurl, "Error creating allocation request", err)
 		return
@@ -82,7 +82,7 @@ func getAllocationDataFromBlobber(blobber *blockchain.StorageNode, allocationId 
 		if resp.StatusCode != http.StatusOK {
 			l.Logger.Error("Get allocation response : ", resp.StatusCode)
 		}
-		resp_body, err := ioutil.ReadAll(resp.Body)
+		resp_body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			l.Logger.Error("Get allocation: Resp", err)
 			return err

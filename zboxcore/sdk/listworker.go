@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math/rand"
 	"net/http"
 	"strings"
@@ -23,6 +23,7 @@ import (
 const CHUNK_SIZE = 64 * 1024
 
 type ListRequest struct {
+	ClientId           string
 	allocationID       string
 	allocationTx       string
 	sig                string
@@ -50,6 +51,7 @@ type listResponse struct {
 // ListResult a wrapper around the result of directory listing command.
 // It can represent a file or a directory.
 type ListResult struct {
+	ClientId            string `json:"client_id"`
 	Name                string `json:"name"`
 	Path                string `json:"path,omitempty"`
 	Type                string `json:"type"`
@@ -126,7 +128,7 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 	if req.forRepair {
 		req.listOnly = true
 	}
-	httpreq, err := zboxutil.NewListRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.remotefilepath, req.remotefilepathhash, string(authTokenBytes), req.listOnly, req.offset, req.pageLimit)
+	httpreq, err := zboxutil.NewListRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.remotefilepath, req.remotefilepathhash, string(authTokenBytes), req.listOnly, req.offset, req.pageLimit, req.ClientId)
 	if err != nil {
 		l.Logger.Error("List info request error: ", err.Error())
 		return
@@ -140,7 +142,7 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 			return err
 		}
 		defer resp.Body.Close()
-		resp_body, err := ioutil.ReadAll(resp.Body)
+		resp_body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return errors.Wrap(err, "Error: Resp")
 		}
@@ -231,6 +233,7 @@ func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
 		return nil, err
 	}
 	result := &ListResult{
+		ClientId:   req.ClientId,
 		deleteMask: zboxutil.NewUint128(1).Lsh(uint64(len(req.blobbers))).Sub64(1),
 	}
 	selected := make(map[string]*ListResult)
@@ -298,6 +301,7 @@ func (lr *ListResult) populateChildren(children []fileref.RefEntity, childResult
 		var childResult *ListResult
 		if _, ok := childResultMap[actualHash]; !ok {
 			childResult = &ListResult{
+				ClientId:  lr.ClientId,
 				Name:      child.GetName(),
 				Path:      child.GetPath(),
 				Type:      child.GetType(),

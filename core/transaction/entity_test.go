@@ -11,7 +11,6 @@ func TestOptimisticVerificationLearning(t *testing.T) {
 	t.Skip()
 	conf.InitClientConfig(&conf.Config{
 		BlockWorker:             "",
-		PreferredBlobbers:       nil,
 		MinSubmit:               0,
 		MinConfirmation:         50,
 		ConfirmationChainLength: 3,

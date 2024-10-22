@@ -14,8 +14,6 @@ import (
 
 func main() {
 
-	zcncore.InitSignatureScheme("bls0chain")
-	
 	ctx, cf := context.WithCancel(context.Background())
 
 	router := bunrouter.New()
@@ -36,7 +34,10 @@ func main() {
 		}
 
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(wallet))
+		_, err = w.Write([]byte(wallet))
+		if err != nil {
+			return err
+		}
 
 		return nil
 	})
@@ -55,7 +56,7 @@ func main() {
 
 }
 
-type statusBar struct {
+type statusBar struct { //nolint:unused
 	walletString string
 	wg           *sync.WaitGroup
 	success      bool

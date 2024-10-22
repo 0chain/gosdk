@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"hash"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -20,11 +19,11 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/common"
 	encrypt "github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/encryption"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
@@ -68,6 +67,7 @@ func WithFileCallback(cb func()) DownloadRequestOption {
 }
 
 type DownloadRequest struct {
+	ClientId           string
 	allocationID       string
 	allocationTx       string
 	sig                string
@@ -829,8 +829,8 @@ func (req *DownloadRequest) attemptSubmitReadMarker(blobber *blockchain.StorageN
 	lockBlobberReadCtr(req.allocationID, blobber.ID)
 	defer unlockBlobberReadCtr(req.allocationID, blobber.ID)
 	rm := &marker.ReadMarker{
-		ClientID:        client.GetClientID(),
-		ClientPublicKey: client.GetClientPublicKey(),
+		ClientID:        client.Id(req.ClientId),
+		ClientPublicKey: client.PublicKey(),
 		BlobberID:       blobber.ID,
 		AllocationID:    req.allocationID,
 		OwnerID:         req.allocOwnerID,
@@ -847,7 +847,7 @@ func (req *DownloadRequest) attemptSubmitReadMarker(blobber *blockchain.StorageN
 	if err != nil {
 		return fmt.Errorf("error marshaling read marker: %w", err)
 	}
-	httpreq, err := zboxutil.NewRedeemRequest(blobber.Baseurl, req.allocationID, req.allocationTx)
+	httpreq, err := zboxutil.NewRedeemRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.allocOwnerID)
 	if err != nil {
 		return fmt.Errorf("error creating download request: %w", err)
 	}
@@ -896,7 +896,7 @@ func (req *DownloadRequest) attemptSubmitReadMarker(blobber *blockchain.StorageN
 }
 
 func (req *DownloadRequest) handleReadMarkerError(resp *http.Response, blobber *blockchain.StorageNode, rm *marker.ReadMarker) error {
-	respBody, err := ioutil.ReadAll(resp.Body)
+	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
@@ -969,9 +969,9 @@ func (req *DownloadRequest) initEC() error {
 // initEncryption will initialize encScheme with client's keys
 func (req *DownloadRequest) initEncryption() (err error) {
 	req.encScheme = encryption.NewEncryptionScheme()
-	mnemonic := client.GetClient().Mnemonic
+	mnemonic := client.Mnemonic()
 	if mnemonic != "" {
-		_, err = req.encScheme.Initialize(client.GetClient().Mnemonic)
+		_, err = req.encScheme.Initialize(client.Mnemonic())
 		if err != nil {
 			return err
 		}
@@ -1120,6 +1120,7 @@ func GetFileRefFromBlobber(allocationID, blobberId, remotePath string) (fRef *fi
 
 func (req *DownloadRequest) getFileRef() (fRef *fileref.FileRef, err error) {
 	listReq := &ListRequest{
+		ClientId:           req.ClientId,
 		remotefilepath:     req.remotefilepath,
 		remotefilepathhash: req.remotefilepathhash,
 		allocationID:       req.allocationID,

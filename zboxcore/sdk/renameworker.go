@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"mime/multipart"
 	"net/http"
 	"path"
@@ -20,7 +20,6 @@ import (
 
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/common"
-	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
 
@@ -49,7 +48,7 @@ type RenameRequest struct {
 }
 
 func (req *RenameRequest) getObjectTreeFromBlobber(blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
-	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.allocationTx, req.sig, req.remotefilepath, blobber)
+	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.allocationTx, req.sig, req.remotefilepath, blobber, req.allocationObj.Owner)
 }
 
 func (req *RenameRequest) getFileMetaFromBlobber(pos int) (fileRef *fileref.FileRef, err error) {
@@ -118,7 +117,7 @@ func (req *RenameRequest) renameBlobberObject(
 			formWriter.Close()
 
 			var httpreq *http.Request
-			httpreq, err = zboxutil.NewRenameRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body)
+			httpreq, err = zboxutil.NewRenameRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body, req.allocationObj.Owner)
 			if err != nil {
 				l.Logger.Error(blobber.Baseurl, "Error creating rename request", err)
 				return
@@ -138,7 +137,7 @@ func (req *RenameRequest) renameBlobberObject(
 				defer resp.Body.Close()
 			}
 			var respBody []byte
-			respBody, err = ioutil.ReadAll(resp.Body)
+			respBody, err = io.ReadAll(resp.Body)
 			if err != nil {
 				logger.Logger.Error("Error: Resp ", err)
 				return
@@ -310,7 +309,7 @@ func (req *RenameRequest) ProcessRename() error {
 				req.consensus.consensusThresh, req.consensus.getConsensus()))
 	}
 
-	writeMarkerMutex, err := CreateWriteMarkerMutex(client.GetClient(), req.allocationObj)
+	writeMarkerMutex, err := CreateWriteMarkerMutex(req.allocationObj)
 	if err != nil {
 		return fmt.Errorf("rename failed: %s", err.Error())
 	}
@@ -360,6 +359,7 @@ func (req *RenameRequest) ProcessRename() error {
 		newChange.Size = 0
 
 		commitReq := &CommitRequest{
+			ClientId:     req.allocationObj.Owner,
 			allocationID: req.allocationID,
 			allocationTx: req.allocationTx,
 			sig:          req.sig,

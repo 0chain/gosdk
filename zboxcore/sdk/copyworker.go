@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"mime/multipart"
 	"net/http"
 	"path"
@@ -21,7 +21,6 @@ import (
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/util"
-	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
 
@@ -55,7 +54,7 @@ var errNoChange = errors.New("no_change", "No change in the operation")
 const objAlreadyExists = "Object Already exists"
 
 func (req *CopyRequest) getObjectTreeFromBlobber(blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
-	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.allocationTx, req.sig, req.remotefilepath, blobber)
+	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.allocationTx, req.sig, req.remotefilepath, blobber, req.allocationObj.Owner)
 }
 
 func (req *CopyRequest) getFileMetaFromBlobber(pos int) (fileRef *fileref.FileRef, err error) {
@@ -131,7 +130,7 @@ func (req *CopyRequest) copyBlobberObject(
 				cncl     context.CancelFunc
 			)
 
-			httpreq, err = zboxutil.NewCopyRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body)
+			httpreq, err = zboxutil.NewCopyRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body, req.allocationObj.Owner)
 			if err != nil {
 				l.Logger.Error(blobber.Baseurl, "Error creating rename request", err)
 				return
@@ -151,7 +150,7 @@ func (req *CopyRequest) copyBlobberObject(
 			if resp.Body != nil {
 				defer resp.Body.Close()
 			}
-			respBody, err = ioutil.ReadAll(resp.Body)
+			respBody, err = io.ReadAll(resp.Body)
 			if err != nil {
 				logger.Logger.Error("Error: Resp ", err)
 				return
@@ -313,7 +312,7 @@ func (req *CopyRequest) ProcessCopy() error {
 				req.Consensus.consensusThresh, req.Consensus.consensus))
 	}
 
-	writeMarkerMutex, err := CreateWriteMarkerMutex(client.GetClient(), req.allocationObj)
+	writeMarkerMutex, err := CreateWriteMarkerMutex(req.allocationObj)
 	if err != nil {
 		return fmt.Errorf("Copy failed: %s", err.Error())
 	}
@@ -358,10 +357,12 @@ func (req *CopyRequest) ProcessCopy() error {
 			Uuid:       uid,
 			ObjectTree: objectTreeRefs[pos],
 		}
+
 		newChange.NumBlocks = 0
 		newChange.Operation = constants.FileOperationCopy
 		newChange.Size = 0
 		commitReq := &CommitRequest{
+			ClientId:     req.allocationObj.Owner,
 			allocationID: req.allocationID,
 			allocationTx: req.allocationTx,
 			sig:          req.sig,

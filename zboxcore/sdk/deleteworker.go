@@ -22,7 +22,6 @@ import (
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
 	l "github.com/0chain/gosdk/zboxcore/logger"
@@ -67,7 +66,7 @@ func (req *DeleteRequest) deleteBlobberFile(
 	query.Add("connection_id", req.connectionID)
 	query.Add("path", req.remotefilepath)
 
-	httpreq, err := zboxutil.NewDeleteRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, query)
+	httpreq, err := zboxutil.NewDeleteRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, query, req.allocationObj.Owner)
 	if err != nil {
 		l.Logger.Error(blobber.Baseurl, "Error creating delete request", err)
 		return err
@@ -177,7 +176,7 @@ func (req *DeleteRequest) getObjectTreeFromBlobber(pos uint64) (
 
 	fRefEntity, err = getObjectTreeFromBlobber(
 		req.ctx, req.allocationID, req.allocationTx, req.sig,
-		req.remotefilepath, req.blobbers[pos])
+		req.remotefilepath, req.blobbers[pos], req.allocationObj.Owner)
 	return
 }
 
@@ -190,6 +189,7 @@ func (req *DeleteRequest) getFileMetaFromBlobber(pos uint64) (fileRef *fileref.F
 		}
 	}()
 	listReq := &ListRequest{
+		ClientId:       req.allocationObj.Owner,
 		allocationID:   req.allocationID,
 		allocationTx:   req.allocationTx,
 		blobbers:       req.blobbers,
@@ -281,7 +281,7 @@ func (req *DeleteRequest) ProcessDelete() (err error) {
 				req.consensus.consensusThresh, req.consensus.getConsensus()))
 	}
 
-	writeMarkerMutex, err := CreateWriteMarkerMutex(client.GetClient(), req.allocationObj)
+	writeMarkerMutex, err := CreateWriteMarkerMutex(req.allocationObj)
 	if err != nil {
 		return fmt.Errorf("Delete failed: %s", err.Error())
 	}
@@ -309,6 +309,7 @@ func (req *DeleteRequest) ProcessDelete() (err error) {
 		newChange.Operation = constants.FileOperationDelete
 		newChange.Size = newChange.FileMetaRef.GetSize()
 		commitReq := &CommitRequest{
+			ClientId:     req.allocationObj.Owner,
 			allocationID: req.allocationID,
 			allocationTx: req.allocationTx,
 			sig:          req.sig,

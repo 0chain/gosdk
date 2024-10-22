@@ -6,15 +6,16 @@ import (
 
 	"github.com/0chain/errors"
 
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/encryption"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/marker"
 )
 
 type ShareRequest struct {
+	ClientId          string
 	allocationID      string
 	allocationTx      string
 	sig               string
@@ -31,6 +32,7 @@ func (req *ShareRequest) GetFileRef() (*fileref.FileRef, error) {
 
 	var fileRef *fileref.FileRef
 	listReq := &ListRequest{
+		ClientId:           req.ClientId,
 		remotefilepathhash: filePathHash,
 		allocationID:       req.allocationID,
 		allocationTx:       req.allocationTx,
@@ -54,7 +56,7 @@ func (req *ShareRequest) getAuthTicket(clientID, encPublicKey string) (*marker.A
 
 	at := &marker.AuthTicket{
 		AllocationID:   req.allocationID,
-		OwnerID:        client.GetClientID(),
+		OwnerID:        client.Id(req.ClientId),
 		ClientID:       clientID,
 		FileName:       req.remotefilename,
 		FilePathHash:   fileref.GetReferenceLookup(req.allocationID, req.remotefilepath),
@@ -70,7 +72,7 @@ func (req *ShareRequest) getAuthTicket(clientID, encPublicKey string) (*marker.A
 
 	if encPublicKey != "" { // file is encrypted
 		encScheme := encryption.NewEncryptionScheme()
-		if _, err := encScheme.Initialize((client.GetClient().Mnemonic)); err != nil {
+		if _, err := encScheme.Initialize((client.Wallet().Mnemonic)); err != nil {
 			return nil, err
 		}
 

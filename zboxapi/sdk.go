@@ -6,11 +6,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/0chain/gosdk/core/client"
 	"net/http"
 	"strconv"
 	"time"
-
-	"github.com/0chain/gosdk/zcncore"
 
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/encryption"
@@ -102,7 +101,7 @@ func (c *Client) createResty(ctx context.Context, csrfToken, userID string, head
 		data := fmt.Sprintf("%v:%v:%v", c.clientID, userID, c.clientPublicKey)
 		hash := encryption.Hash(data)
 
-		sign, err := zcncore.SignFn(hash)
+		sign, err := client.Sign(hash)
 		if err != nil {
 			return nil, err
 		}
