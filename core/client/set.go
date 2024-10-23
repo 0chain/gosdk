@@ -45,7 +45,7 @@ func init() {
 	Sign = func(hash string, clients ...string) (string, error) {
 		wallet := client.wallet
 
-		if len(clients) > 0 && clients[0] != "" {
+		if len(clients) > 0 && clients[0] != "" && client.wallets[clients[0]] != nil {
 			wallet = client.wallets[clients[0]]
 		}
 
