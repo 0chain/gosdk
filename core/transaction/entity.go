@@ -501,7 +501,7 @@ func SmartContractTxnValueFeeWithRetry(scAddress string, sn SmartContractTxnData
 	value, fee uint64, verifyTxn bool, clients ...string) (hash, out string, nonce int64, t *Transaction, err error) {
 	hash, out, nonce, t, err = SmartContractTxnValueFee(scAddress, sn, value, fee, verifyTxn, clients...)
 
-	if err != nil && strings.Contains(err.Error(), "invalid transaction nonce") {
+	if err != nil && (strings.Contains(err.Error(), "invalid transaction nonce") || strings.Contains(err.Error(), "invalid future transaction")) {
 		return SmartContractTxnValueFee(scAddress, sn, value, fee, verifyTxn, clients...)
 	}
 	return
