@@ -663,7 +663,7 @@ func (b *BridgeClient) BurnZCN(amount uint64) (string, string, error) {
 	hash, out, _, _, err := coreTransaction.SmartContractTxnValue(wallet.ZCNSCSmartContractAddress, coreTransaction.SmartContractTxnData{
 		Name:      wallet.BurnFunc,
 		InputArgs: payload,
-	}, true, amount)
+	}, amount, true)
 	if err != nil {
 		Logger.Error("Burn ZCN transaction FAILED", zap.Error(err))
 		return hash, out, errors.Wrap(err, fmt.Sprintf("failed to execute smart contract, hash = %s", hash))
