@@ -1183,7 +1183,7 @@ func TestAllocation_GetAuthTicketForShare(t *testing.T) {
 		ClientKey: mockClientKey,
 	})
 	require := require.New(t)
-	a := &Allocation{DataShards: 1, ParityShards: 1, FileOptions: 63}
+	a := &Allocation{DataShards: 1, ParityShards: 1, FileOptions: 63, Owner: mockClientId}
 	a.InitAllocation()
 	for i := 0; i < numberBlobbers; i++ {
 		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{})
@@ -1390,6 +1390,7 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 
 			require := require.New(t)
 			a := &Allocation{
+				Owner:        mockClientId,
 				DataShards:   1,
 				ParityShards: 1,
 				FileOptions:  63,
@@ -1562,8 +1563,9 @@ func TestAllocation_ListDirFromAuthTicket(t *testing.T) {
 				authTicket: authTicket,
 				lookupHash: mockLookupHash,
 				expectedResult: &ListResult{
-					Type: mockType,
-					Size: 0,
+					ClientId: mockClientId,
+					Type:     mockType,
+					Size:     0,
 				},
 			},
 			setup: func(t *testing.T, testCaseName string, a *Allocation, mockClient *mocks.HttpClient) (teardown func(t *testing.T)) {
@@ -1599,6 +1601,7 @@ func TestAllocation_ListDirFromAuthTicket(t *testing.T) {
 			a := &Allocation{
 				ID:           mockAllocationId,
 				Tx:           mockAllocationTxId,
+				Owner:        mockClientId,
 				FileOptions:  63,
 				DataShards:   2,
 				ParityShards: 2,
@@ -2009,6 +2012,7 @@ func TestAllocation_GetFileMetaFromAuthTicket(t *testing.T) {
 			})
 
 			a := &Allocation{
+				Owner:        mockClientId,
 				ID:           mockAllocationId,
 				Tx:           mockAllocationTxId,
 				DataShards:   2,
@@ -2389,6 +2393,7 @@ func getMockAuthTicket(t *testing.T) string {
 		ClientKey: mockClientKey,
 	})
 	a := &Allocation{
+		Owner:        mockClientId,
 		ID:           mockAllocationId,
 		Tx:           mockAllocationTxId,
 		DataShards:   1,
