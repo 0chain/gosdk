@@ -1112,7 +1112,7 @@ func CollectRewards(providerId string, providerType ProviderType) (string, int64
 		return "", 0, fmt.Errorf("collect rewards provider type %v not implimented", providerType)
 	}
 
-	hash, _, n, _, err := transaction.SmartContractTxn(scAddress, sn)
+	hash, _, n, _, err := transaction.SmartContractTxn(scAddress, sn, true)
 	return hash, n, err
 }
 
@@ -1227,7 +1227,7 @@ func storageSmartContractTxnValue(sn transaction.SmartContractTxnData, value uin
 	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 
 	// Fee is set during sdk initialization.
-	return transaction.SmartContractTxnValueFeeWithRetry(STORAGE_SCADDRESS, sn, value, client.TxnFee())
+	return transaction.SmartContractTxnValueFeeWithRetry(STORAGE_SCADDRESS, sn, value, client.TxnFee(), true)
 }
 
 func CommitToFabric(metaTxnData, fabricConfigJSON string) (string, error) {

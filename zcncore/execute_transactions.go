@@ -39,7 +39,7 @@ func MinerSCLock(providerId string, providerType Provider, lock uint64, client .
 			ProviderID:   providerId,
 			ProviderType: providerType,
 		},
-	}, lock, client...)
+	}, lock, true, client...)
 
 }
 
@@ -50,7 +50,7 @@ func MinerSCUnlock(providerId string, providerType Provider, client ...string) (
 			ProviderID:   providerId,
 			ProviderType: providerType,
 		},
-	}, client...)
+	}, true, client...)
 }
 
 func MinerSCCollectReward(providerId string, providerType Provider, client ...string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
@@ -60,7 +60,7 @@ func MinerSCCollectReward(providerId string, providerType Provider, client ...st
 			ProviderId:   providerId,
 			ProviderType: int(providerType),
 		},
-	}, client...)
+	}, true, client...)
 
 }
 
@@ -82,7 +82,7 @@ func MinerSCKill(providerId string, providerType Provider, client ...string) (ha
 	return transaction.SmartContractTxn(MinerSmartContractAddress, transaction.SmartContractTxnData{
 		Name:      name,
 		InputArgs: pr,
-	}, client...)
+	}, true, client...)
 
 }
 
@@ -93,7 +93,7 @@ func StorageSCCollectReward(providerId string, providerType Provider, client ...
 			ProviderId:   providerId,
 			ProviderType: int(providerType),
 		},
-	}, client...)
+	}, true, client...)
 
 }
 
@@ -101,7 +101,7 @@ func MinerScUpdateConfig(input interface{}, client ...string) (hash, out string,
 	return transaction.SmartContractTxn(MinerSmartContractAddress, transaction.SmartContractTxnData{
 		Name:      transaction.MINERSC_UPDATE_SETTINGS,
 		InputArgs: input,
-	}, client...)
+	}, true, client...)
 
 }
 
@@ -109,7 +109,7 @@ func MinerScUpdateGlobals(input interface{}, client ...string) (hash, out string
 	return transaction.SmartContractTxn(MinerSmartContractAddress, transaction.SmartContractTxnData{
 		Name:      transaction.MINERSC_UPDATE_GLOBALS,
 		InputArgs: input,
-	}, client...)
+	}, true, client...)
 
 }
 
@@ -117,7 +117,7 @@ func StorageScUpdateConfig(input interface{}, client ...string) (hash, out strin
 	return transaction.SmartContractTxn(StorageSmartContractAddress, transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_UPDATE_SETTINGS,
 		InputArgs: input,
-	}, client...)
+	}, true, client...)
 
 }
 
@@ -125,7 +125,7 @@ func AddHardfork(input interface{}, client ...string) (hash, out string, nonce i
 	return transaction.SmartContractTxn(MinerSmartContractAddress, transaction.SmartContractTxnData{
 		Name:      transaction.ADD_HARDFORK,
 		InputArgs: input,
-	}, client...)
+	}, true, client...)
 
 }
 
@@ -133,7 +133,7 @@ func ZCNSCUpdateGlobalConfig(input *InputMap, client ...string) (hash, out strin
 	return transaction.SmartContractTxn(ZCNSCSmartContractAddress, transaction.SmartContractTxnData{
 		Name:      transaction.ZCNSC_UPDATE_GLOBAL_CONFIG,
 		InputArgs: input,
-	}, client...)
+	}, true, client...)
 
 }
 
@@ -141,7 +141,7 @@ func MinerSCMinerSettings(input *MinerSCMinerInfo, client ...string) (hash, out 
 	return transaction.SmartContractTxn(MinerSmartContractAddress, transaction.SmartContractTxnData{
 		Name:      transaction.MINERSC_MINER_SETTINGS,
 		InputArgs: input,
-	}, client...)
+	}, true, client...)
 
 }
 
@@ -149,7 +149,7 @@ func MinerSCSharderSettings(input *MinerSCMinerInfo, client ...string) (hash, ou
 	return transaction.SmartContractTxn(MinerSmartContractAddress, transaction.SmartContractTxnData{
 		Name:      transaction.MINERSC_SHARDER_SETTINGS,
 		InputArgs: input,
-	}, client...)
+	}, true, client...)
 
 }
 
@@ -157,7 +157,7 @@ func ZCNSCUpdateAuthorizerConfig(input *AuthorizerNode, client ...string) (hash,
 	return transaction.SmartContractTxn(ZCNSCSmartContractAddress, transaction.SmartContractTxnData{
 		Name:      transaction.ZCNSC_UPDATE_AUTHORIZER_CONFIG,
 		InputArgs: input,
-	}, client...)
+	}, true, client...)
 
 }
 
@@ -165,7 +165,7 @@ func ZCNSCAddAuthorizer(input *AddAuthorizerPayload, client ...string) (hash, ou
 	return transaction.SmartContractTxn(ZCNSCSmartContractAddress, transaction.SmartContractTxnData{
 		Name:      transaction.ZCNSC_ADD_AUTHORIZER,
 		InputArgs: input,
-	}, client...)
+	}, true, client...)
 
 }
 
@@ -173,7 +173,7 @@ func ZCNSCAuthorizerHealthCheck(input *AuthorizerHealthCheckPayload, client ...s
 	return transaction.SmartContractTxn(ZCNSCSmartContractAddress, transaction.SmartContractTxnData{
 		Name:      transaction.ZCNSC_AUTHORIZER_HEALTH_CHECK,
 		InputArgs: input,
-	}, client...)
+	}, true, client...)
 
 }
 
@@ -181,7 +181,7 @@ func ZCNSCDeleteAuthorizer(input *DeleteAuthorizerPayload, client ...string) (ha
 	return transaction.SmartContractTxn(ZCNSCSmartContractAddress, transaction.SmartContractTxnData{
 		Name:      transaction.ZCNSC_DELETE_AUTHORIZER,
 		InputArgs: input,
-	}, client...)
+	}, true, client...)
 
 }
 
@@ -194,7 +194,7 @@ func ZCNSCCollectReward(providerId string, providerType Provider, client ...stri
 	return transaction.SmartContractTxn(ZCNSCSmartContractAddress, transaction.SmartContractTxnData{
 		Name:      transaction.ZCNSC_COLLECT_REWARD,
 		InputArgs: pr,
-	}, client...)
+	}, true, client...)
 }
 
 type SendTxnData struct {
@@ -211,12 +211,12 @@ func Send(toClientID string, tokens uint64, desc string, client ...string) (hash
 	return transaction.SmartContractTxnValue(MinerSmartContractAddress, transaction.SmartContractTxnData{
 		Name:      "transfer",
 		InputArgs: SendTxnData{Note: desc},
-	}, tokens, client...)
+	}, tokens, true, client...)
 }
 
 func Faucet(tokens uint64, input string, client ...string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 	return transaction.SmartContractTxnValue(FaucetSmartContractAddress, transaction.SmartContractTxnData{
 		Name:      "pour",
 		InputArgs: input,
-	}, tokens, client...)
+	}, tokens, true, client...)
 }
