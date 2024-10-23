@@ -14,7 +14,6 @@ import (
 	"github.com/remeh/sizedwaitgroup"
 
 	"github.com/0chain/gosdk/core/common"
-	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
@@ -33,10 +32,12 @@ var BatchSize = 6
 
 type MultiOperationOption func(mo *MultiOperation)
 
-func WithRepair() MultiOperationOption {
+func WithRepair(latestVersion int64, repairOffsetPath string) MultiOperationOption {
 	return func(mo *MultiOperation) {
 		mo.Consensus.consensusThresh = 0
 		mo.isRepair = true
+		mo.repairVersion = latestVersion
+		mo.repairOffset = repairOffsetPath
 	}
 }
 
@@ -57,8 +58,10 @@ type MultiOperation struct {
 	operationMask zboxutil.Uint128
 	maskMU        *sync.Mutex
 	Consensus
-	changes  [][]allocationchange.AllocationChange
-	isRepair bool
+	changes       [][]allocationchange.AllocationChange
+	isRepair      bool
+	repairVersion int64
+	repairOffset  string
 }
 
 func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
@@ -167,9 +170,8 @@ func (mo *MultiOperation) Process() error {
 	defer ctxCncl(nil)
 	swg := sizedwaitgroup.New(BatchSize)
 	errsSlice := make([]error, len(mo.operations))
-	mo.operationMask = zboxutil.NewUint128(0)
+	var changeCount int
 	for idx, op := range mo.operations {
-		uid := util.GetNewUUID()
 		swg.Add()
 		go func(op Operationer, idx int) {
 			defer swg.Done()
@@ -181,18 +183,19 @@ func (mo *MultiOperation) Process() error {
 			default:
 			}
 
-			refs, mask, err := op.Process(mo.allocationObj, mo.connectionID) // Process with each blobber
+			_, mask, err := op.Process(mo.allocationObj, mo.connectionID) // Process with each blobber
 			if err != nil {
-				l.Logger.Error(err)
-				errsSlice[idx] = errors.New("", err.Error())
-				ctxCncl(err)
+				if err != errFileDeleted && err != errNoChange {
+					l.Logger.Error(err)
+					errsSlice[idx] = errors.New("", err.Error())
+					ctxCncl(err)
+				}
 				return
 			}
 			mo.maskMU.Lock()
-			mo.operationMask = mo.operationMask.Or(mask)
+			mo.operationMask = mo.operationMask.And(mask)
+			changeCount += 1
 			mo.maskMU.Unlock()
-			changes := op.buildChange(refs, uid)
-			mo.changes[idx] = changes
 		}(op, idx)
 	}
 	swg.Wait()
@@ -213,12 +216,15 @@ func (mo *MultiOperation) Process() error {
 		return nil
 	}
 
+	if changeCount == 0 {
+		return nil
+	}
+
 	// Take transpose of mo.change because it will be easier to iterate mo if it contains blobber changes
 	// in row instead of column. Currently mo.change[0] contains allocationChange for operation 1 and so on.
 	// But we want mo.changes[0] to have allocationChange for blobber 1 and mo.changes[1] to have allocationChange for
 	// blobber 2 and so on.
 	start := time.Now()
-	mo.changes = zboxutil.Transpose(mo.changes)
 
 	writeMarkerMutex, err := CreateWriteMarkerMutex(client.GetClient(), mo.allocationObj)
 	if err != nil {
@@ -275,11 +281,23 @@ func (mo *MultiOperation) Process() error {
 	}
 	logger.Logger.Debug("[checkAllocStatus]", time.Since(start).Milliseconds())
 	mo.Consensus.Reset()
+	var pos uint64
+	if !mo.isRepair {
+		for i := mo.operationMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+			pos = uint64(i.TrailingZeros())
+			if mo.allocationObj.Blobbers[pos].AllocationVersion != mo.allocationObj.allocationVersion {
+				mo.operationMask = mo.operationMask.And(zboxutil.NewUint128(1).Lsh(pos).Not())
+			}
+		}
+	}
 	activeBlobbers := mo.operationMask.CountOnes()
+	if activeBlobbers < mo.consensusThresh {
+		return errors.New("consensus_not_met", "Active blobbers less than consensus threshold")
+	}
 	commitReqs := make([]*CommitRequest, activeBlobbers)
 	start = time.Now()
 	wg.Add(activeBlobbers)
-	var pos uint64
+
 	var counter = 0
 	timestamp := int64(common.Now())
 	for i := mo.operationMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
@@ -293,16 +311,21 @@ func (mo *MultiOperation) Process() error {
 			wg:           wg,
 			timestamp:    timestamp,
 			blobberInd:   pos,
+			version:      mo.allocationObj.Blobbers[pos].AllocationVersion + 1,
 		}
-
-		commitReq.changes = append(commitReq.changes, mo.changes[pos]...)
+		if mo.isRepair {
+			commitReq.isRepair = true
+			commitReq.version = mo.allocationObj.Blobbers[pos].AllocationVersion
+			commitReq.repairVersion = mo.repairVersion
+			commitReq.repairOffset = mo.repairOffset
+		}
 		commitReqs[counter] = commitReq
 		l.Logger.Debug("Commit request sending to blobber ", commitReq.blobber.Baseurl)
 		go AddCommitRequest(commitReq)
 		counter++
 	}
 	wg.Wait()
-	logger.Logger.Debug("[commitRequests]", time.Since(start).Milliseconds())
+	logger.Logger.Info("[commitRequests]", time.Since(start).Milliseconds())
 	rollbackMask := zboxutil.NewUint128(0)
 	errSlice := make([]error, len(commitReqs))
 	for idx, commitReq := range commitReqs {
@@ -335,6 +358,15 @@ func (mo *MultiOperation) Process() error {
 	} else {
 		for _, op := range mo.operations {
 			op.Completed(mo.allocationObj)
+		}
+		if singleClientMode && !mo.isRepair {
+			for _, commitReq := range commitReqs {
+				if commitReq.result.Success {
+					mo.allocationObj.Blobbers[commitReq.blobberInd].AllocationVersion++
+				}
+			}
+			mo.allocationObj.allocationVersion += 1
+			logger.Logger.Info("Allocation version updated to ", mo.allocationObj.allocationVersion, " activeBlobbers ", activeBlobbers)
 		}
 	}
 

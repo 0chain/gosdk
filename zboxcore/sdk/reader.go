@@ -168,16 +168,15 @@ func GetDStorageFileReader(alloc *Allocation, ref *ORef, sdo *StreamDownloadOpti
 
 	sd := &StreamDownload{
 		DownloadRequest: &DownloadRequest{
-			allocationID:      alloc.ID,
-			allocationTx:      alloc.Tx,
-			allocOwnerID:      alloc.Owner,
-			allocOwnerPubKey:  alloc.OwnerPublicKey,
-			datashards:        alloc.DataShards,
-			parityshards:      alloc.ParityShards,
-			remotefilepath:    ref.Path,
-			numBlocks:         int64(sdo.BlocksPerMarker),
-			validationRootMap: make(map[string]*blobberFile),
-			shouldVerify:      sdo.VerifyDownload,
+			allocationID:     alloc.ID,
+			allocationTx:     alloc.Tx,
+			allocOwnerID:     alloc.Owner,
+			allocOwnerPubKey: alloc.OwnerPublicKey,
+			datashards:       alloc.DataShards,
+			parityshards:     alloc.ParityShards,
+			remotefilepath:   ref.Path,
+			numBlocks:        int64(sdo.BlocksPerMarker),
+			shouldVerify:     sdo.VerifyDownload,
 			Consensus: Consensus{
 				RWMutex:         &sync.RWMutex{},
 				fullconsensus:   alloc.fullconsensus,

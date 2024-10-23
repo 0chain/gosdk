@@ -59,7 +59,7 @@ func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([
 			fileref.DeleteFileRef(cacheKey)
 		}
 	}
-	l.Logger.Info("UploadOperation Success", zap.String("name", uo.chunkedUpload.fileMeta.RemoteName))
+	l.Logger.Debug("UploadOperation Success", zap.String("name", uo.chunkedUpload.fileMeta.RemoteName))
 	return nil, uo.chunkedUpload.uploadMask, nil
 }
 

@@ -7,7 +7,9 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
+	"path"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -48,8 +50,27 @@ func (req *RenameRequest) getObjectTreeFromBlobber(blobber *blockchain.StorageNo
 	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.allocationTx, req.sig, req.remotefilepath, blobber)
 }
 
+func (req *RenameRequest) getFileMetaFromBlobber(pos int) (fileRef *fileref.FileRef, err error) {
+	listReq := &ListRequest{
+		allocationID:   req.allocationID,
+		allocationTx:   req.allocationTx,
+		blobbers:       req.blobbers,
+		remotefilepath: req.remotefilepath,
+		ctx:            req.ctx,
+	}
+	respChan := make(chan *fileMetaResponse)
+	go listReq.getFileMetaInfoFromBlobber(req.blobbers[pos], int(pos), respChan)
+	refRes := <-respChan
+	if refRes.err != nil {
+		err = refRes.err
+		return
+	}
+	fileRef = refRes.fileref
+	return
+}
+
 func (req *RenameRequest) renameBlobberObject(
-	blobber *blockchain.StorageNode, blobberIdx int) (refEntity fileref.RefEntity, err error) {
+	blobber *blockchain.StorageNode, blobberIdx int) (err error) {
 
 	defer func() {
 		if err != nil {
@@ -58,11 +79,6 @@ func (req *RenameRequest) renameBlobberObject(
 			req.maskMU.Unlock()
 		}
 	}()
-
-	refEntity, err = req.getObjectTreeFromBlobber(req.blobbers[blobberIdx])
-	if err != nil {
-		return nil, err
-	}
 
 	var (
 		resp             *http.Response
@@ -129,6 +145,11 @@ func (req *RenameRequest) renameBlobberObject(
 				return
 			}
 
+			if strings.Contains(latestRespMsg, alreadyExists) {
+				req.consensus.Done()
+				return
+			}
+
 			if resp.StatusCode == http.StatusTooManyRequests {
 				logger.Logger.Error("Got too many request error")
 				var r int
@@ -160,37 +181,97 @@ func (req *RenameRequest) renameBlobberObject(
 	return
 }
 
-func (req *RenameRequest) ProcessWithBlobbers() ([]fileref.RefEntity, []error) {
-	var pos uint64
+func (req *RenameRequest) ProcessWithBlobbers() ([]fileref.RefEntity, error) {
+	var (
+		pos          uint64
+		consensusRef *fileref.FileRef
+	)
 	numList := len(req.blobbers)
 	objectTreeRefs := make([]fileref.RefEntity, numList)
 	blobberErrors := make([]error, numList)
+	versionMap := make(map[int64]int)
 	req.wg = &sync.WaitGroup{}
 	for i := req.renameMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		req.wg.Add(1)
 		go func(blobberIdx int) {
 			defer req.wg.Done()
-			refEntity, err := req.renameBlobberObject(req.blobbers[blobberIdx], blobberIdx)
+			refEntity, err := req.getFileMetaFromBlobber(blobberIdx)
 			if err != nil {
 				blobberErrors[blobberIdx] = err
 				l.Logger.Error(err.Error())
 				return
 			}
 			objectTreeRefs[blobberIdx] = refEntity
+			req.maskMU.Lock()
+			versionMap[refEntity.AllocationVersion] += 1
+			if versionMap[refEntity.AllocationVersion] >= req.consensus.consensusThresh {
+				consensusRef = refEntity
+			}
+			req.maskMU.Unlock()
 		}(int(pos))
 	}
 	req.wg.Wait()
-	return objectTreeRefs, blobberErrors
+	if consensusRef == nil {
+		return nil, zboxutil.MajorError(blobberErrors)
+	}
+	if consensusRef.Type == fileref.DIRECTORY && !consensusRef.IsEmpty {
+		for ind, refEntity := range objectTreeRefs {
+			if refEntity.GetAllocationVersion() != consensusRef.AllocationVersion {
+				req.renameMask = req.renameMask.And(zboxutil.NewUint128(1).Lsh(uint64(ind)).Not())
+			}
+		}
+		subRequest := &subDirRequest{
+			allocationObj:   req.allocationObj,
+			remotefilepath:  req.remotefilepath,
+			destPath:        path.Join(path.Dir(req.remotefilepath), req.newName),
+			ctx:             req.ctx,
+			consensusThresh: req.consensus.consensusThresh,
+			opType:          constants.FileOperationMove,
+			subOpType:       constants.FileOperationRename,
+			mask:            req.renameMask,
+		}
+		err := subRequest.processSubDirectories()
+		if err != nil {
+			return nil, err
+		}
+		op := OperationRequest{
+			OperationType: constants.FileOperationDelete,
+			RemotePath:    req.remotefilepath,
+			Mask:          &req.renameMask,
+		}
+		err = req.allocationObj.DoMultiOperation([]OperationRequest{op})
+		if err != nil {
+			return nil, err
+		}
+		req.consensus.consensus = req.renameMask.CountOnes()
+		return nil, errNoChange
+	}
+
+	for i := req.renameMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		pos = uint64(i.TrailingZeros())
+		req.wg.Add(1)
+		go func(blobberIdx int) {
+			defer req.wg.Done()
+			err := req.renameBlobberObject(req.blobbers[blobberIdx], blobberIdx)
+			if err != nil {
+				blobberErrors[blobberIdx] = err
+				l.Logger.Debug(err.Error())
+				return
+			}
+		}(int(pos))
+	}
+	req.wg.Wait()
+
+	return objectTreeRefs, zboxutil.MajorError(blobberErrors)
 }
 
 func (req *RenameRequest) ProcessRename() error {
 	defer req.ctxCncl()
 
-	objectTreeRefs, blobberErrors := req.ProcessWithBlobbers()
+	objectTreeRefs, err := req.ProcessWithBlobbers()
 
 	if !req.consensus.isConsensusOk() {
-		err := zboxutil.MajorError(blobberErrors)
 		if err != nil {
 			return errors.New("rename_failed",
 				fmt.Sprintf("Rename failed. %s", err.Error()))
@@ -327,11 +408,13 @@ func (ro *RenameOperation) Process(allocObj *Allocation, connectionID string) ([
 	rR.consensus.fullconsensus = ro.consensus.fullconsensus
 	rR.consensus.consensusThresh = ro.consensus.consensusThresh
 
-	objectTreeRefs, blobberErrors := rR.ProcessWithBlobbers()
+	objectTreeRefs, err := rR.ProcessWithBlobbers()
 
 	if !rR.consensus.isConsensusOk() {
-		err := zboxutil.MajorError(blobberErrors)
 		if err != nil {
+			if err == errNoChange {
+				return nil, ro.renameMask, err
+			}
 			return nil, rR.renameMask, errors.New("rename_failed", fmt.Sprintf("Renamed failed. %s", err.Error()))
 		}
 
@@ -339,8 +422,7 @@ func (ro *RenameOperation) Process(allocObj *Allocation, connectionID string) ([
 			fmt.Sprintf("Rename failed. Required consensus %d, got %d",
 				rR.consensus.consensusThresh, rR.consensus.consensus))
 	}
-	l.Logger.Info("Rename Processs Ended ")
-	return objectTreeRefs, rR.renameMask, nil
+	return objectTreeRefs, rR.renameMask, err
 }
 
 func (ro *RenameOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange {
@@ -402,7 +484,7 @@ func (ro *RenameOperation) Error(allocObj *Allocation, consensus int, err error)
 func NewRenameOperation(remotePath string, destName string, renameMask zboxutil.Uint128, maskMU *sync.Mutex, consensusTh int, fullConsensus int, ctx context.Context) *RenameOperation {
 	ro := &RenameOperation{}
 	ro.remotefilepath = zboxutil.RemoteClean(remotePath)
-	ro.newName = destName
+	ro.newName = filepath.Base(destName)
 	ro.renameMask = renameMask
 	ro.maskMU = maskMU
 	ro.consensus.consensusThresh = consensusTh

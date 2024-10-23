@@ -83,7 +83,6 @@ type DownloadRequest struct {
 	endBlock           int64
 	chunkSize          int
 	numBlocks          int64
-	validationRootMap  map[string]*blobberFile
 	statusCallback     StatusCallback
 	ctx                context.Context
 	ctxCncl            context.CancelFunc
@@ -259,7 +258,6 @@ func (req *DownloadRequest) downloadBlock(
 			remotefilepathhash: req.remotefilepathhash,
 			numBlocks:          totalBlock,
 			encryptedKey:       req.encryptedKey,
-			shouldVerify:       req.shouldVerify,
 			connectionID:       req.connectionID,
 		}
 
@@ -272,8 +270,6 @@ func (req *DownloadRequest) downloadBlock(
 		}
 
 		if !skipDownload {
-			bf := req.validationRootMap[blockDownloadReq.blobber.ID]
-			blockDownloadReq.blobberFile = bf
 			if req.shouldVerify {
 				go AddBlockDownloadReq(req.ctx, blockDownloadReq, nil, req.effectiveBlockSize)
 			} else {
@@ -1190,7 +1186,6 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 		return nil, errors.New("consensus_not_met", "")
 	}
 
-	req.validationRootMap = make(map[string]*blobberFile)
 	blobberCount := 0
 	countThreshold := req.consensusThresh + 1
 	if countThreshold > req.fullconsensus {
@@ -1209,28 +1204,7 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 		if selected.fileref.ActualFileHashSignature != fRef.ActualFileHashSignature {
 			continue
 		}
-		if !req.isEnterprise {
-			isValid, err := sys.VerifyWith(
-				req.allocOwnerPubKey,
-				fRef.ValidationRootSignature,
-				fRef.ActualFileHashSignature+fRef.ValidationRoot,
-			)
-			if err != nil {
-				l.Logger.Error(err, "allocOwnerPubKey: ", req.allocOwnerPubKey, " validationRootSignature: ", fRef.ValidationRootSignature, " actualFileHashSignature: ", fRef.ActualFileHashSignature, " validationRoot: ", fRef.ValidationRoot)
-				continue
-			}
-			if !isValid {
-				l.Logger.Error("invalid validation root signature")
-				continue
-			}
 
-			blobber := req.blobbers[fmr.blobberIdx]
-			vr, _ := hex.DecodeString(fmr.fileref.ValidationRoot)
-			req.validationRootMap[blobber.ID] = &blobberFile{
-				size:           fmr.fileref.Size,
-				validationRoot: vr,
-			}
-		}
 		shift := zboxutil.NewUint128(1).Lsh(uint64(fmr.blobberIdx))
 		foundMask = foundMask.Or(shift)
 		req.downloadQueue[fmr.blobberIdx] = downloadPriority{
