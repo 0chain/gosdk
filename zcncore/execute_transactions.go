@@ -32,7 +32,7 @@ type MinerSCMinerInfo struct {
 	MinerSCDelegatePool `json:"stake_pool"`
 }
 
-func MinerSCLock(providerId string, providerType Provider, lock uint64, fee uint64, client ...string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+func MinerSCLockWithCustomFee(providerId string, providerType Provider, lock uint64, fee uint64, client ...string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 	return transaction.SmartContractTxnValueFee(MinerSmartContractAddress, transaction.SmartContractTxnData{
 		Name: transaction.MINERSC_LOCK,
 		InputArgs: &stakePoolRequest{
@@ -43,7 +43,7 @@ func MinerSCLock(providerId string, providerType Provider, lock uint64, fee uint
 
 }
 
-func MinerSCUnlock(providerId string, providerType Provider, fee uint64, client ...string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+func MinerSCUnlockWithCustomFee(providerId string, providerType Provider, fee uint64, client ...string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 	return transaction.SmartContractTxnValueFee(MinerSmartContractAddress, transaction.SmartContractTxnData{
 		Name: transaction.MINERSC_UNLOCK,
 		InputArgs: &stakePoolRequest{
@@ -52,8 +52,28 @@ func MinerSCUnlock(providerId string, providerType Provider, fee uint64, client 
 		},
 	}, 0, fee, client...)
 }
+func MinerSCLock(providerId string, providerType Provider, lock uint64, client ...string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+	return transaction.SmartContractTxnValue(MinerSmartContractAddress, transaction.SmartContractTxnData{
+		Name: transaction.MINERSC_LOCK,
+		InputArgs: &stakePoolRequest{
+			ProviderID:   providerId,
+			ProviderType: providerType,
+		},
+	}, lock, client...)
 
-func MinerSCCollectReward(providerId string, providerType Provider, fee uint64, client ...string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+}
+
+func MinerSCUnlock(providerId string, providerType Provider, client ...string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+	return transaction.SmartContractTxnValue(MinerSmartContractAddress, transaction.SmartContractTxnData{
+		Name: transaction.MINERSC_UNLOCK,
+		InputArgs: &stakePoolRequest{
+			ProviderID:   providerId,
+			ProviderType: providerType,
+		},
+	}, 0, client...)
+}
+
+func MinerSCCollectRewardWithCustomFee(providerId string, providerType Provider, fee uint64, client ...string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 	return transaction.SmartContractTxnValueFee(MinerSmartContractAddress, transaction.SmartContractTxnData{
 		Name: transaction.MINERSC_COLLECT_REWARD,
 		InputArgs: &scCollectReward{
@@ -61,6 +81,16 @@ func MinerSCCollectReward(providerId string, providerType Provider, fee uint64, 
 			ProviderType: int(providerType),
 		},
 	}, 0, fee, client...)
+
+}
+func MinerSCCollectReward(providerId string, providerType Provider, client ...string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+	return transaction.SmartContractTxn(MinerSmartContractAddress, transaction.SmartContractTxnData{
+		Name: transaction.MINERSC_COLLECT_REWARD,
+		InputArgs: &scCollectReward{
+			ProviderId:   providerId,
+			ProviderType: int(providerType),
+		},
+	}, client...)
 
 }
 
@@ -221,7 +251,7 @@ type SendTxnData struct {
 	Note string `json:"note"`
 }
 
-func Send(toClientID string, tokens uint64, fee uint64, desc string, client ...string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+func SendWithCustomFee(toClientID string, tokens uint64, fee uint64, desc string, client ...string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 	if len(client) == 0 {
 		client = append(client, "")
 		client = append(client, toClientID)
@@ -232,6 +262,18 @@ func Send(toClientID string, tokens uint64, fee uint64, desc string, client ...s
 		Name:      "transfer",
 		InputArgs: SendTxnData{Note: desc},
 	}, tokens, fee, client...)
+}
+func Send(toClientID string, tokens uint64, desc string, client ...string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+	if len(client) == 0 {
+		client = append(client, "")
+		client = append(client, toClientID)
+	} else {
+		client = append(client, toClientID)
+	}
+	return transaction.SmartContractTxnValue(MinerSmartContractAddress, transaction.SmartContractTxnData{
+		Name:      "transfer",
+		InputArgs: SendTxnData{Note: desc},
+	}, tokens, client...)
 }
 
 func Faucet(tokens uint64, input string, client ...string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
