@@ -44,7 +44,8 @@ func init() {
 	// initialize SignFunc as default implementation
 	Sign = func(hash string, clients ...string) (string, error) {
 		wallet := client.wallet
-		if len(clients) > 0 {
+
+		if len(clients) > 0 && clients[0] != "" {
 			wallet = client.wallets[clients[0]]
 		}
 
@@ -105,7 +106,7 @@ func verifySignatureWith(pubKey, signature, hash string) (bool, error) {
 
 func GetClientSysKeys(clients ...string) []sys.KeyPair {
 	var wallet *zcncrypto.Wallet
-	if len(clients) > 0 {
+	if len(clients) > 0 && clients[0] != "" {
 		wallet = client.wallets[clients[0]]
 	} else {
 		wallet = client.wallet
@@ -194,7 +195,7 @@ func IsWalletSet() bool {
 }
 
 func PublicKey(clients ...string) string {
-	if len(clients) > 0 {
+	if len(clients) > 0 && clients[0] != "" {
 		if client.wallets[clients[0]] == nil {
 			fmt.Println("Public key is empty")
 			return ""
@@ -216,7 +217,7 @@ func PrivateKey() string {
 }
 
 func Id(clients ...string) string {
-	if len(clients) > 0 {
+	if len(clients) > 0 && clients[0] != "" {
 		if client.wallets[clients[0]] == nil {
 			fmt.Println("Id is empty : ", clients[0])
 			return ""
