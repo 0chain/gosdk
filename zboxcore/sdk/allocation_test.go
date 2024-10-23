@@ -657,6 +657,7 @@ func TestAllocation_RepairRequired(t *testing.T) {
 				DataShards:   2,
 				ParityShards: 2,
 				FileOptions:  63,
+				Owner:        mockClientId,
 			}
 			a.InitAllocation()
 			client.SetSdkInitialized(true)
