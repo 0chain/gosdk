@@ -1000,7 +1000,7 @@ func upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, w
 // 		- lookupHash : lookup hash of the file, which is used to locate the file if remotepath and allocation id are not provided
 // 		- writeChunkFuncName : callback function name to write the chunk, if empty the function will return arrayBuffer otherwise will return nil
 
-func downloadBlocks(allocId string, remotePath, authTicket, lookupHash, writeChunkFuncName string, startBlock, endBlock int64) ([]byte, error) {
+func downloadBlocks(allocId, remotePath, authTicket, lookupHash, writeChunkFuncName string, startBlock, endBlock int64) ([]byte, error) {
 
 	if len(remotePath) == 0 && len(authTicket) == 0 {
 		return nil, RequiredArg("remotePath/authTicket")
@@ -1020,7 +1020,7 @@ func downloadBlocks(allocId string, remotePath, authTicket, lookupHash, writeChu
 
 	var fh sys.File
 	if writeChunkFuncName == "" {
-		pathHash := encryption.FastHash(fmt.Sprintf("%s:%d:%d", remotePath, startBlock, endBlock))
+		pathHash := encryption.FastHash(fmt.Sprintf("%s:%d:%d", lookupHash, startBlock, endBlock))
 		fs, err := sys.Files.Open(pathHash)
 		if err != nil {
 			return nil, fmt.Errorf("could not open local file: %v", err)
