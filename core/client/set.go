@@ -106,7 +106,7 @@ func verifySignatureWith(pubKey, signature, hash string) (bool, error) {
 
 func GetClientSysKeys(clients ...string) []sys.KeyPair {
 	var wallet *zcncrypto.Wallet
-	if len(clients) > 0 && clients[0] != "" {
+	if len(clients) > 0 && clients[0] != "" && client.wallets[clients[0]] != nil {
 		wallet = client.wallets[clients[0]]
 	} else {
 		wallet = client.wallet
@@ -195,7 +195,7 @@ func IsWalletSet() bool {
 }
 
 func PublicKey(clients ...string) string {
-	if len(clients) > 0 && clients[0] != "" {
+	if len(clients) > 0 && clients[0] != "" && client.wallets[clients[0]] != nil {
 		if client.wallets[clients[0]] == nil {
 			fmt.Println("Public key is empty")
 			return ""
@@ -217,7 +217,7 @@ func PrivateKey() string {
 }
 
 func Id(clients ...string) string {
-	if len(clients) > 0 && clients[0] != "" {
+	if len(clients) > 0 && clients[0] != "" && client.wallets[clients[0]] != nil {
 		if client.wallets[clients[0]] == nil {
 			fmt.Println("Id is empty : ", clients[0])
 			return ""
