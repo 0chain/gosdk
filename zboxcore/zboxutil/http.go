@@ -202,7 +202,7 @@ func setClientInfo(req *http.Request) {
 
 func setClientInfoWithSign(req *http.Request, sig, allocation, baseURL string, clients ...string) error {
 	var clientID string
-	if len(clients) > 0 {
+	if len(clients) > 0 && clients[0] != "" {
 		clientID = clients[0]
 	} else {
 		clientID = client.Id()
