@@ -1022,6 +1022,7 @@ func TestAllocation_GetRefs(t *testing.T) {
 	functionName := "TestAllocation_GetRefs"
 	t.Run("Test_Get_Refs_Returns_Slice_Of_Length_0_When_File_Not_Present", func(t *testing.T) {
 		a := &Allocation{
+			Owner:        mockClientId,
 			DataShards:   2,
 			ParityShards: 2,
 		}
@@ -1121,6 +1122,7 @@ func TestAllocation_GetFileMeta(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
 			a := &Allocation{
+				Owner:        mockClientId,
 				DataShards:   2,
 				ParityShards: 2,
 				FileOptions:  63,
