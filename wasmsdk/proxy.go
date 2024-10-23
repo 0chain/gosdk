@@ -85,7 +85,7 @@ func main() {
 					data, err := json.Marshal(zcncore.AuthMessage{
 						Hash:      hash,
 						Signature: sig,
-						ClientID:  client.ClientID(),
+						ClientID:  client.GetClient().ClientID,
 					})
 					if err != nil {
 						return "", err
