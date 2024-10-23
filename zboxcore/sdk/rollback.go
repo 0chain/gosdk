@@ -217,6 +217,7 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 			}
 
 			if strings.Contains(string(respBody), "pending_markers:") {
+				fmt.Println("=======================\n" , string(respBody), "\n=======================")
 				l.Logger.Info("Commit pending for blobber ",
 					rb.blobber.Baseurl, " Retrying")
 				time.Sleep(5 * time.Second)
