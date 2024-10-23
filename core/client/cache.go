@@ -1,6 +1,7 @@
 package client
 
 import (
+	"github.com/0chain/gosdk/core/logger"
 	"sync"
 )
 
@@ -38,6 +39,9 @@ func (nc *NonceCache) GetNextNonce(clientId string) int64 {
 	}
 
 	nc.cache[clientId] += 1
+
+	logger.Log.Info("GetNextNonce", "clientId", clientId, "nonce", nc.cache[clientId])
+
 	return nc.cache[clientId]
 }
 

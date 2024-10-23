@@ -195,7 +195,7 @@ func StakePoolLock(providerType ProviderType, providerID string, value, fee uint
 		return "", 0, errors.Newf("stake_pool_lock", "unsupported provider type: %v", providerType)
 	}
 
-	hash, _, nonce, _, err = transaction.SmartContractTxnValueFeeWithRetry(scAddress, sn, value, fee)
+	hash, _, nonce, _, err = transaction.SmartContractTxnValueFeeWithRetry(scAddress, sn, value, fee, true)
 	return
 }
 
@@ -246,7 +246,7 @@ func StakePoolUnlock(providerType ProviderType, providerID string, fee uint64) (
 	}
 
 	var out string
-	if _, out, nonce, _, err = transaction.SmartContractTxnValueFeeWithRetry(scAddress, sn, 0, fee); err != nil {
+	if _, out, nonce, _, err = transaction.SmartContractTxnValueFeeWithRetry(scAddress, sn, 0, fee, true); err != nil {
 		return // an error
 	}
 
@@ -279,7 +279,7 @@ func WritePoolLock(allocID string, tokens, fee uint64) (hash string, nonce int64
 		InputArgs: &req,
 	}
 
-	hash, _, nonce, _, err = transaction.SmartContractTxnValueFeeWithRetry(STORAGE_SCADDRESS, sn, tokens, fee)
+	hash, _, nonce, _, err = transaction.SmartContractTxnValueFeeWithRetry(STORAGE_SCADDRESS, sn, tokens, fee, true)
 	return
 }
 
@@ -302,6 +302,6 @@ func WritePoolUnlock(allocID string, fee uint64) (hash string, nonce int64, err 
 		Name:      transaction.STORAGESC_WRITE_POOL_UNLOCK,
 		InputArgs: &req,
 	}
-	hash, _, nonce, _, err = transaction.SmartContractTxnValueFeeWithRetry(STORAGE_SCADDRESS, sn, 0, fee)
+	hash, _, nonce, _, err = transaction.SmartContractTxnValueFeeWithRetry(STORAGE_SCADDRESS, sn, 0, fee, true)
 	return
 }

@@ -486,29 +486,29 @@ func GetFeesTable(miners []string, reqPercent ...float32) (map[string]map[string
 	return nil, errors.New("failed to get fees table", strings.Join(errs, ","))
 }
 
-func SmartContractTxn(scAddress string, sn SmartContractTxnData, clients ...string) (
+func SmartContractTxn(scAddress string, sn SmartContractTxnData, verifyTxn bool, clients ...string) (
 	hash, out string, nonce int64, txn *Transaction, err error) {
-	return SmartContractTxnValue(scAddress, sn, 0, clients...)
+	return SmartContractTxnValue(scAddress, sn, 0, verifyTxn, clients...)
 }
 
-func SmartContractTxnValue(scAddress string, sn SmartContractTxnData, value uint64, clients ...string) (
+func SmartContractTxnValue(scAddress string, sn SmartContractTxnData, value uint64, verifyTxn bool, clients ...string) (
 	hash, out string, nonce int64, txn *Transaction, err error) {
 
-	return SmartContractTxnValueFeeWithRetry(scAddress, sn, value, client.TxnFee(), clients...)
+	return SmartContractTxnValueFeeWithRetry(scAddress, sn, value, client.TxnFee(), verifyTxn, clients...)
 }
 
 func SmartContractTxnValueFeeWithRetry(scAddress string, sn SmartContractTxnData,
-	value, fee uint64, clients ...string) (hash, out string, nonce int64, t *Transaction, err error) {
-	hash, out, nonce, t, err = SmartContractTxnValueFee(scAddress, sn, value, fee, clients...)
+	value, fee uint64, verifyTxn bool, clients ...string) (hash, out string, nonce int64, t *Transaction, err error) {
+	hash, out, nonce, t, err = SmartContractTxnValueFee(scAddress, sn, value, fee, verifyTxn, clients...)
 
-	if err != nil && strings.Contains(err.Error(), "invalid transaction nonce") {
-		return SmartContractTxnValueFee(scAddress, sn, value, fee, clients...)
+	if err != nil && (strings.Contains(err.Error(), "invalid transaction nonce") || strings.Contains(err.Error(), "invalid future transaction")) {
+		return SmartContractTxnValueFee(scAddress, sn, value, fee, verifyTxn, clients...)
 	}
 	return
 }
 
 func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
-	value, fee uint64, clients ...string) (hash, out string, nonce int64, t *Transaction, err error) {
+	value, fee uint64, verifyTxn bool, clients ...string) (hash, out string, nonce int64, t *Transaction, err error) {
 
 	clientId := client.Id()
 	if len(clients) > 0 && clients[0] != "" {
@@ -577,40 +577,44 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 		return
 	}
 
-	var (
-		querySleepTime = time.Duration(cfg.QuerySleepTime) * time.Second
-		retries        = 0
-	)
+	if verifyTxn {
+		var (
+			querySleepTime = time.Duration(cfg.QuerySleepTime) * time.Second
+			retries        = 0
+		)
 
-	sys.Sleep(querySleepTime)
-
-	for retries < cfg.MaxTxnQuery {
-		t, err = VerifyTransaction(txn.Hash)
-		if err == nil {
-			break
-		}
-		retries++
 		sys.Sleep(querySleepTime)
+
+		for retries < cfg.MaxTxnQuery {
+			t, err = VerifyTransaction(txn.Hash)
+			if err == nil {
+				break
+			}
+			retries++
+			sys.Sleep(querySleepTime)
+		}
+
+		if err != nil {
+			Logger.Error("Error verifying the transaction", err.Error(), txn.Hash)
+			client.Cache.Evict(txn.ClientID)
+			return
+		}
+
+		if t == nil {
+			return "", "", 0, txn, errors.New("transaction_validation_failed",
+				"Failed to get the transaction confirmation")
+		}
+
+		if t.Status == TxnFail {
+			return t.Hash, t.TransactionOutput, 0, t, errors.New("", t.TransactionOutput)
+		}
+
+		if t.Status == TxnChargeableError {
+			return t.Hash, t.TransactionOutput, t.TransactionNonce, t, errors.New("", t.TransactionOutput)
+		}
+
+		return t.Hash, t.TransactionOutput, t.TransactionNonce, t, nil
 	}
 
-	if err != nil {
-		Logger.Error("Error verifying the transaction", err.Error(), txn.Hash)
-		client.Cache.Evict(txn.ClientID)
-		return
-	}
-
-	if t == nil {
-		return "", "", 0, txn, errors.New("transaction_validation_failed",
-			"Failed to get the transaction confirmation")
-	}
-
-	if t.Status == TxnFail {
-		return t.Hash, t.TransactionOutput, 0, t, errors.New("", t.TransactionOutput)
-	}
-
-	if t.Status == TxnChargeableError {
-		return t.Hash, t.TransactionOutput, t.TransactionNonce, t, errors.New("", t.TransactionOutput)
-	}
-
-	return t.Hash, t.TransactionOutput, t.TransactionNonce, t, nil
+	return txn.Hash, "", txn.TransactionNonce, txn, nil
 }
