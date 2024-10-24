@@ -8,8 +8,10 @@ import (
 	"github.com/0chain/gosdk/core/block"
 	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/tokenrate"
+	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/zcncrypto"
+	"github.com/0chain/gosdk/zboxcore/sdk"
 	"net/url"
 	"strconv"
 )
@@ -169,6 +171,30 @@ func withParams(uri string, params Params) string { //nolint:unused
 //	}, nil)
 //}
 
+// GetConfig retrieves the configuration of the smart contract
+//   - configType: the type of configuration to retrieve (e.g. storage_sc_config, miner_sc_globals, miner_sc_configs)
+func GetConfig(configType string) ([]byte, error) {
+	if err := CheckConfig(); err != nil {
+		return nil, err
+	}
+	if configType != "storage_sc_config" && configType != "miner_sc_globals" && configType != "miner_sc_configs" {
+		return nil, errors.New("invalid config type: supported types are storage_sc_config, miner_sc_globals, miner_sc_configs")
+	}
+
+	config, err := transaction.GetConfig(configType)
+
+	if err != nil {
+		return nil, err
+	}
+
+	configBytes, err := json.Marshal(config)
+	if err != nil {
+		return nil, err
+	}
+
+	return configBytes, nil
+}
+
 // GetMinerSCNodeInfo get miner information from sharders
 //   - id: the id of miner
 //   - cb: info callback instance, carries the response of the GET request to the sharders
@@ -219,6 +245,25 @@ func GetSharders(active, stakable bool, limit, offset int) ([]byte, error) {
 		"offset":   strconv.FormatInt(int64(offset), 10),
 		"limit":    strconv.FormatInt(int64(limit), 10),
 	})
+}
+
+func GetBlobbers(active, stakable bool, limit, offset int) ([]byte, error) {
+	if err := CheckConfig(); err != nil {
+		return nil, err
+	}
+
+	blobbers, err := sdk.GetBlobbersPaged(active, stakable, limit, offset)
+
+	if err != nil {
+		return nil, err
+	}
+
+	blobbersBytes, err := json.Marshal(blobbers)
+	if err != nil {
+		return nil, err
+	}
+
+	return blobbersBytes, nil
 }
 
 // GetLatestFinalizedMagicBlock gets latest finalized magic block
@@ -322,4 +367,103 @@ func GetUserLockedTotal(clientID string) (int64, error) {
 	} else {
 		return 0, err
 	}
+}
+
+// GetStakePoolUserInfo get stake pool user info for all blobbers/miners/sharders.
+// # Inputs
+//   - clientID wallet id
+func GetStakePoolUserInfo(clientID string) ([]byte, error) {
+	err := CheckConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	limit, offset := 20, 0
+	spUserInfo, err := sdk.GetStakePoolUserInfo(clientID, offset, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	var spUserInfoResponse []*sdk.StakePoolDelegatePoolInfo
+
+	var spUserInfoSl []*sdk.StakePoolUserInfo
+	spUserInfoSl = append(spUserInfoSl, spUserInfo)
+	for {
+		// if the length of the slice is less than the limit, then we have reached the end
+		if len(spUserInfoSl) < limit {
+			break
+		}
+
+		// get the next set of stake pool user info
+		offset += limit
+		spUserInfo, err = sdk.GetStakePoolUserInfo(clientID, limit, offset)
+		if err != nil {
+			break
+		}
+		spUserInfoSl = append(spUserInfoSl, spUserInfo)
+	}
+
+	res, err := GetMinerSCUserInfo(clientID)
+	if err != nil {
+		return nil, errors.New("error while getting miner smart contract user info: " + err.Error())
+	}
+
+	var minerSCUserInfo *sdk.StakePoolUserInfo
+	err = json.Unmarshal(res, &minerSCUserInfo)
+	if err != nil {
+		return nil, errors.New("error while unmarshalling miner smart contract user info: " + err.Error())
+	}
+
+	spUserInfoSl = append(spUserInfoSl, minerSCUserInfo)
+
+	for _, pool := range spUserInfoSl {
+		for _, sp := range pool.Pools {
+			spUserInfoResponse = append(spUserInfoResponse, sp...)
+		}
+	}
+	response := map[string]interface{}{
+		"pools": spUserInfoResponse,
+	}
+
+	spUserInfoBytes, err := json.Marshal(response)
+	if err != nil {
+		return nil, errors.New("error while marshalling stake pool user info: " + err.Error())
+	}
+
+	return spUserInfoBytes, nil
+}
+
+func GetTransactions(toClientId, fromClientId, order string, limit, offset int64) ([]byte, error) {
+	if err := CheckConfig(); err != nil {
+		return nil, err
+	}
+
+	const GET_TRANSACTIONS = `/transactions`
+
+	return client.MakeSCRestAPICall(StorageSmartContractAddress, GET_TRANSACTIONS, Params{
+		"to_client_id": toClientId,
+		"client_id":    fromClientId,
+		"order":        order,
+		"limit":        strconv.FormatInt(limit, 10),
+		"offset":       strconv.FormatInt(offset, 10),
+	})
+}
+
+func GetFeesTable(reqPercentage float32) ([]byte, error) {
+	nodeClient, err := client.GetNode()
+	if err != nil {
+		return nil, err
+	}
+	fees, err := transaction.GetFeesTable(nodeClient.GetStableMiners(), reqPercentage)
+
+	if err != nil {
+		return nil, err
+	}
+
+	feesBytes, err := json.Marshal(fees)
+	if err != nil {
+		return nil, err
+	}
+
+	return feesBytes, nil
 }
