@@ -241,13 +241,3 @@ func tokenValidation(tokens int64) error {
 	}
 	return nil
 }
-
-func getProviderType(providerType int) zcncore.Provider {
-	switch providerType {
-	case 0:
-		return zcncore.ProviderMiner
-	case 1:
-		return zcncore.ProviderSharder
-	}
-	return zcncore.ProviderMiner
-}

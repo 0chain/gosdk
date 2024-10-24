@@ -27,8 +27,6 @@ import (
 	"github.com/0chain/gosdk/zcncore"
 )
 
-var nonce = int64(0)
-
 type Autorizer interface {
 	Auth(msg string) (string, error)
 }
@@ -396,6 +394,10 @@ func (s *StorageSDK) GetBlobbersList() (string, error) {
 // configType: storage_sc_config, miners_sc_globals, miner_sc_configs
 func GetStorageConfig(configType string) ([]byte, error) {
 	configBytes, err := coreTransaction.GetConfig(configType)
+	if err != nil {
+		return nil, err
+	}
+
 	retBytes, err := json.Marshal(configBytes)
 	if err != nil {
 		return nil, err

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/0chain/gosdk/mobilesdk/sdk"
 	"github.com/0chain/gosdk/zcncore"
-	"time"
 )
 
 var (
@@ -76,11 +75,11 @@ func main() {
 
 	setWalletInfo()
 
-	//initSDK()
+	initSDK()
 
-	//testGetTransactions()
+	testGetTransactions()
 	testGetStakePoolUserInfo()
-	//testGetBlobbers()
+	testGetBlobbers()
 }
 
 func testGetBlobbers() {
@@ -114,12 +113,4 @@ func testGetStakePoolUserInfo() {
 	}
 
 	fmt.Println("stake pool user info ", string(res))
-}
-
-// Timestamp represents Unix time (e.g. in seconds)
-type Timestamp int64
-
-// Now - current datetime
-func Now() Timestamp {
-	return Timestamp(time.Now().Unix())
 }

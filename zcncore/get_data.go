@@ -380,7 +380,6 @@ func GetStakePoolUserInfo(clientID string) ([]byte, error) {
 
 	limit, offset := 20, 0
 	spUserInfo, err := sdk.GetStakePoolUserInfo(clientID, offset, limit)
-
 	if err != nil {
 		return nil, err
 	}
@@ -401,6 +400,7 @@ func GetStakePoolUserInfo(clientID string) ([]byte, error) {
 		if err != nil {
 			break
 		}
+		spUserInfoSl = append(spUserInfoSl, spUserInfo)
 	}
 
 	res, err := GetMinerSCUserInfo(clientID)
@@ -418,9 +418,7 @@ func GetStakePoolUserInfo(clientID string) ([]byte, error) {
 
 	for _, pool := range spUserInfoSl {
 		for _, sp := range pool.Pools {
-			for _, spInfo := range sp {
-				spUserInfoResponse = append(spUserInfoResponse, spInfo)
-			}
+			spUserInfoResponse = append(spUserInfoResponse, sp...)
 		}
 	}
 	response := map[string]interface{}{

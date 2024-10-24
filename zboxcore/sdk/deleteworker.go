@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -108,7 +107,7 @@ func (req *DeleteRequest) deleteBlobberFile(
 				return
 			}
 			if resp.StatusCode == http.StatusBadRequest {
-				body, err := ioutil.ReadAll(resp.Body)
+				body, err := io.ReadAll(resp.Body)
 				if err != nil {
 					logger.Logger.Error("Failed to read response body", err)
 				}
@@ -139,7 +138,7 @@ func (req *DeleteRequest) deleteBlobberFile(
 				return
 			}
 
-			respBody, err = ioutil.ReadAll(resp.Body)
+			respBody, err = io.ReadAll(resp.Body)
 			if err != nil {
 				l.Logger.Error(blobber.Baseurl, "Response: ", string(respBody))
 				return
