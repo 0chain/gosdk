@@ -998,8 +998,9 @@ func upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, w
 // 		- remotePath : remote path of the file
 // 		- authTicket : auth ticket of the file, if the file is shared
 // 		- lookupHash : lookup hash of the file, which is used to locate the file if remotepath and allocation id are not provided
+// 		- writeChunkFuncName : callback function name to write the chunk, if empty the function will return arrayBuffer otherwise will return nil
 
-func downloadBlocks(allocId string, remotePath, authTicket, lookupHash string, startBlock, endBlock int64) ([]byte, error) {
+func downloadBlocks(allocId, remotePath, authTicket, lookupHash, writeChunkFuncName string, startBlock, endBlock int64) ([]byte, error) {
 
 	if len(remotePath) == 0 && len(authTicket) == 0 {
 		return nil, RequiredArg("remotePath/authTicket")
@@ -1017,37 +1018,54 @@ func downloadBlocks(allocId string, remotePath, authTicket, lookupHash string, s
 		statusBar = &StatusBar{wg: wg, totalBytesMap: make(map[string]int)}
 	)
 
-	pathHash := encryption.FastHash(remotePath)
-	fs, err := sys.Files.Open(pathHash)
-	if err != nil {
-		return nil, fmt.Errorf("could not open local file: %v", err)
-	}
+	var fh sys.File
+	if writeChunkFuncName == "" {
+		pathHash := encryption.FastHash(fmt.Sprintf("%s:%d:%d", lookupHash, startBlock, endBlock))
+		fs, err := sys.Files.Open(pathHash)
+		if err != nil {
+			return nil, fmt.Errorf("could not open local file: %v", err)
+		}
 
-	mf, _ := fs.(*sys.MemFile)
-	if mf == nil {
-		return nil, fmt.Errorf("invalid memfile")
+		mf, _ := fs.(*sys.MemFile)
+		if mf == nil {
+			return nil, fmt.Errorf("invalid memfile")
+		}
+		fh = mf
+		defer sys.Files.Remove(pathHash) //nolint
+	} else {
+		fh = jsbridge.NewFileCallbackWriter(writeChunkFuncName)
 	}
-
-	defer sys.Files.Remove(pathHash) //nolint
 
 	wg.Add(1)
 	if authTicket != "" {
-		err = alloc.DownloadByBlocksToFileHandlerFromAuthTicket(mf, authTicket, lookupHash, startBlock, endBlock, 100, remotePath, false, statusBar, true)
+		err = alloc.DownloadByBlocksToFileHandlerFromAuthTicket(fh, authTicket, lookupHash, startBlock, endBlock, 100, remotePath, false, statusBar, true, sdk.WithFileCallback(
+			func() {
+				fh.Close() //nolint:errcheck
+			},
+		))
 	} else {
 		err = alloc.DownloadByBlocksToFileHandler(
-			mf,
+			fh,
 			remotePath,
 			startBlock,
 			endBlock,
 			100,
 			false,
-			statusBar, true)
+			statusBar, true, sdk.WithFileCallback(
+				func() {
+					fh.Close() //nolint:errcheck
+				},
+			))
 	}
 	if err != nil {
 		return nil, err
 	}
 	wg.Wait()
-	return mf.Buffer, nil
+	var buf []byte
+	if mf, ok := fh.(*sys.MemFile); ok {
+		buf = mf.Buffer
+	}
+	return buf, nil
 }
 
 // getBlobbers get list of active blobbers, and format them as array json string

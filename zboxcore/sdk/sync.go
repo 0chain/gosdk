@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -323,7 +322,7 @@ func (a *Allocation) GetAllocationDiff(lastSyncCachePath string, localRootPath s
 			if fileInfo.IsDir() {
 				return lFdiff, errors.Wrap(err, "invalid file cache.")
 			}
-			content, err := ioutil.ReadFile(lastSyncCachePath)
+			content, err := os.ReadFile(lastSyncCachePath)
 			if err != nil {
 				return lFdiff, errors.New("", "can't read cache file.")
 			}
@@ -389,7 +388,7 @@ func (a *Allocation) SaveRemoteSnapshot(pathToSave string, remoteExcludePath []s
 	if err != nil {
 		return errors.Wrap(err, "failed to convert JSON.")
 	}
-	err = ioutil.WriteFile(pathToSave, by, 0644)
+	err = os.WriteFile(pathToSave, by, 0644)
 	if err != nil {
 		return errors.Wrap(err, "error saving file.")
 	}

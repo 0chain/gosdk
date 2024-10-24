@@ -5,9 +5,9 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
+	"github.com/0chain/gosdk/zboxcore/mocks"
 	"io"
 	"io/fs"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -26,11 +26,11 @@ import (
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/sys"
 
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	zclient "github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
-	"github.com/0chain/gosdk/zboxcore/mocks"
+
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -63,7 +63,7 @@ func setupMockGetFileMetaResponse(
 				strings.HasPrefix(req.URL.String(), url)
 		})).Return(&http.Response{
 			StatusCode: statusCode,
-			Body:       ioutil.NopCloser(bytes.NewReader(body)),
+			Body:       io.NopCloser(bytes.NewReader(body)),
 		}, nil).Once()
 	}
 }
@@ -95,20 +95,21 @@ func setupMockHttpResponse(
 }
 
 func setupMockCommitRequest(a *Allocation) {
-	commitChan = make(map[string]chan *CommitRequest)
+	commitChan = make(map[string]chan CommitRequestInterface)
 	for _, blobber := range a.Blobbers {
 		if _, ok := commitChan[blobber.ID]; !ok {
-			commitChan[blobber.ID] = make(chan *CommitRequest, 1)
+			commitChan[blobber.ID] = make(chan CommitRequestInterface, 1)
 			blobberChan := commitChan[blobber.ID]
-			go func(c <-chan *CommitRequest, blID string) {
+			go func(c <-chan CommitRequestInterface, blID string) {
 				for {
 					cm := <-c
 					if cm != nil {
-						cm.result = &CommitResult{
+						c := cm.(*CommitRequest)
+						c.result = &CommitResult{
 							Success: true,
 						}
-						if cm.wg != nil {
-							cm.wg.Done()
+						if c.wg != nil {
+							c.wg.Done()
 						}
 					}
 				}
@@ -140,7 +141,7 @@ func setupMockWriteLockRequest(a *Allocation, mockClient *mocks.HttpClient) {
 func setupMockFile(t *testing.T, path string) (teardown func(t *testing.T)) {
 	_, err := os.Create(path)
 	require.Nil(t, err)
-	err = ioutil.WriteFile(path, []byte("mockActualHash"), os.ModePerm)
+	err = os.WriteFile(path, []byte("mockActualHash"), os.ModePerm)
 	require.Nil(t, err)
 	return func(t *testing.T) {
 		os.Remove(path)
@@ -158,7 +159,7 @@ func setupMockRollback(a *Allocation, mockClient *mocks.HttpClient) {
 			StatusCode: http.StatusOK,
 			Body: func() io.ReadCloser {
 				s := `{"latest_write_marker":null,"prev_write_marker":null}`
-				return ioutil.NopCloser(bytes.NewReader([]byte(s)))
+				return io.NopCloser(bytes.NewReader([]byte(s)))
 			}(),
 		}, nil)
 
@@ -168,13 +169,13 @@ func setupMockRollback(a *Allocation, mockClient *mocks.HttpClient) {
 			return strings.Contains(req.URL.String(), newUrl)
 		})).Return(&http.Response{
 			StatusCode: http.StatusOK,
-			Body:       ioutil.NopCloser(bytes.NewReader(nil)),
+			Body:       io.NopCloser(bytes.NewReader(nil)),
 		}, nil)
 	}
 
 }
 
-func setupMockFileAndReferencePathResult(t *testing.T, allocationID, name string) (teardown func(t *testing.T)) {
+func setupMockFileAndReferencePathResult(t *testing.T, allocationID, name string) (teardown func(t *testing.T)) { //nolint:unused
 	var buf = []byte("mockActualHash")
 	h := sha3.New256()
 	f, _ := os.Create(name)
@@ -216,7 +217,7 @@ func TestGetMinMaxWriteReadSuccess(t *testing.T) {
 	ssc.ParityShards = 4
 
 	ssc.initialized = true
-	sdkInitialized = true
+	client.SetSdkInitialized(true)
 	require.NotNil(t, ssc.BlobberDetails)
 
 	t.Run("Success minR, minW", func(t *testing.T) {
@@ -264,7 +265,7 @@ func TestGetMaxMinStorageCostSuccess(t *testing.T) {
 	ssc.ParityShards = 2
 
 	ssc.initialized = true
-	sdkInitialized = true
+	client.SetSdkInitialized(true)
 
 	t.Run("Storage cost", func(t *testing.T) {
 		cost, err := ssc.GetMaxStorageCost(100 * GB)
@@ -400,11 +401,10 @@ func TestAllocation_GetBlobberStats(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
-	}
+	})
 
 	tests := []struct {
 		name  string
@@ -422,7 +422,7 @@ func TestAllocation_GetBlobberStats(t *testing.T) {
 							Tx: mockAllocationTxId,
 						})
 						require.NoError(t, err)
-						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+						return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 					}(),
 					StatusCode: http.StatusOK,
 				}, nil)
@@ -484,9 +484,9 @@ func TestAllocation_isInitialized(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			originalSDKInitialized := sdkInitialized
-			defer func() { sdkInitialized = originalSDKInitialized }()
-			sdkInitialized = tt.sdkInitialized
+			originalSDKInitialized := client.IsSDKInitialized()
+			defer func() { client.SetSdkInitialized(originalSDKInitialized) }()
+			client.SetSdkInitialized(tt.sdkInitialized)
 			a := &Allocation{initialized: tt.allocationInitialized}
 			got := a.isInitialized()
 			require := require.New(t)
@@ -517,7 +517,7 @@ func TestAllocation_isInitialized(t *testing.T) {
 
 // 	client := zclient.GetClient()
 // 	client.Wallet = &zcncrypto.Wallet{
-// 		ClientID:  mockClientId,
+// 		Id:  mockClientId,
 // 		ClientKey: mockClientKey,
 // 	}
 
@@ -525,7 +525,7 @@ func TestAllocation_isInitialized(t *testing.T) {
 // 		return strings.HasPrefix(req.URL.Path, "TestAllocation_CreateDir")
 // 	})).Return(&http.Response{
 // 		StatusCode: http.StatusOK,
-// 		Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+// 		Body:       io.NopCloser(bytes.NewReader([]byte(""))),
 // 	}, nil)
 
 // 	for i := 0; i < numBlobbers; i++ {
@@ -546,11 +546,10 @@ func TestAllocation_RepairRequired(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
-	}
+	})
 
 	tests := []struct {
 		name                          string
@@ -575,7 +574,7 @@ func TestAllocation_RepairRequired(t *testing.T) {
 						StatusCode: http.StatusOK,
 						Body: func() io.ReadCloser {
 							respString := `{"file_meta_hash":"` + mockActualHash + `"}`
-							return ioutil.NopCloser(bytes.NewReader([]byte(respString)))
+							return io.NopCloser(bytes.NewReader([]byte(respString)))
 						}(),
 					}, nil)
 				}
@@ -616,7 +615,7 @@ func TestAllocation_RepairRequired(t *testing.T) {
 						StatusCode: http.StatusOK,
 						Body: func(hash string) io.ReadCloser {
 							respString := `{"file_meta_hash":"` + hash + `"}`
-							return ioutil.NopCloser(bytes.NewReader([]byte(respString)))
+							return io.NopCloser(bytes.NewReader([]byte(respString)))
 						}(hash),
 					}, nil)
 				}
@@ -639,7 +638,7 @@ func TestAllocation_RepairRequired(t *testing.T) {
 						return strings.HasPrefix(req.URL.Path, url)
 					})).Return(&http.Response{
 						StatusCode: http.StatusBadRequest,
-						Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+						Body:       io.NopCloser(bytes.NewReader([]byte(""))),
 					}, nil)
 				}
 				return nil
@@ -658,9 +657,10 @@ func TestAllocation_RepairRequired(t *testing.T) {
 				DataShards:   2,
 				ParityShards: 2,
 				FileOptions:  63,
+				Owner:        mockClientId,
 			}
 			a.InitAllocation()
-			sdkInitialized = true
+			client.SetSdkInitialized(true)
 			if tt.setup != nil {
 				if teardown := tt.setup(t, tt.name, a); teardown != nil {
 					defer teardown(t)
@@ -694,11 +694,10 @@ func TestAllocation_DownloadFileToFileHandler(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
-	}
+	})
 
 	type parameters struct {
 		fileHandler    sys.File
@@ -731,7 +730,7 @@ func TestAllocation_DownloadFileToFileHandler(t *testing.T) {
 								ActualFileHash: mockActualHash,
 							})
 							require.NoError(t, err)
-							return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+							return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 						}(),
 					}, nil)
 				}
@@ -776,11 +775,10 @@ func TestAllocation_DownloadFile(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
-	}
+	})
 
 	require := require.New(t)
 	a := &Allocation{
@@ -806,7 +804,7 @@ func TestAllocation_DownloadFile(t *testing.T) {
 					ActualFileHash: mockActualHash,
 				})
 				require.NoError(err)
-				return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+				return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 			}(),
 		}, nil)
 	}
@@ -824,11 +822,10 @@ func TestAllocation_DownloadFileByBlock(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
-	}
+	})
 
 	require := require.New(t)
 	a := &Allocation{
@@ -879,11 +876,10 @@ func TestAllocation_downloadFile(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
-	}
+	})
 
 	type parameters struct {
 		localPath, remotePath, contentMode string
@@ -958,7 +954,7 @@ func TestAllocation_downloadFile(t *testing.T) {
 								ActualFileHash: mockActualHash,
 							})
 							require.NoError(t, err)
-							return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+							return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 						}(),
 					}, nil)
 				}
@@ -978,7 +974,7 @@ func TestAllocation_downloadFile(t *testing.T) {
 			a.downloadProgressMap = make(map[string]*DownloadRequest)
 			a.mutex = &sync.Mutex{}
 			a.initialized = true
-			sdkInitialized = true
+			client.SetSdkInitialized(true)
 			setupMockAllocation(t, a)
 			for i := 0; i < numBlobbers; i++ {
 				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
@@ -1019,20 +1015,20 @@ func TestAllocation_GetRefs(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
-	}
+	})
 	functionName := "TestAllocation_GetRefs"
 	t.Run("Test_Get_Refs_Returns_Slice_Of_Length_0_When_File_Not_Present", func(t *testing.T) {
 		a := &Allocation{
+			Owner:        mockClientId,
 			DataShards:   2,
 			ParityShards: 2,
 		}
 		testCaseName := "Test_Get_Refs_Returns_Slice_Of_Length_0_When_File_Not_Present"
 		a.InitAllocation()
-		sdkInitialized = true
+		client.SetSdkInitialized(true)
 		for i := 0; i < numBlobbers; i++ {
 			a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
 				ID:      testCaseName + mockBlobberId + strconv.Itoa(i),
@@ -1064,11 +1060,10 @@ func TestAllocation_GetFileMeta(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
-	}
+	})
 
 	type parameters struct {
 		path string
@@ -1127,12 +1122,13 @@ func TestAllocation_GetFileMeta(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
 			a := &Allocation{
+				Owner:        mockClientId,
 				DataShards:   2,
 				ParityShards: 2,
 				FileOptions:  63,
 			}
 			a.InitAllocation()
-			sdkInitialized = true
+			client.SetSdkInitialized(true)
 			for i := 0; i < numBlobbers; i++ {
 				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
 					ID:      tt.name + mockBlobberId + strconv.Itoa(i),
@@ -1174,7 +1170,7 @@ func TestAllocation_GetAuthTicketForShare(t *testing.T) {
 				ValidationRoot: mockValidationRoot,
 			})
 			require.NoError(t, err)
-			return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+			return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 		}(),
 	}
 	zboxutil.Client = &mockClient
@@ -1182,18 +1178,17 @@ func TestAllocation_GetAuthTicketForShare(t *testing.T) {
 		mockClient.On("Do", mock.Anything).Return(&httpResponse, nil)
 	}
 
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
-	}
+	})
 	require := require.New(t)
-	a := &Allocation{DataShards: 1, ParityShards: 1, FileOptions: 63}
+	a := &Allocation{DataShards: 1, ParityShards: 1, FileOptions: 63, Owner: mockClientId}
 	a.InitAllocation()
 	for i := 0; i < numberBlobbers; i++ {
 		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{})
 	}
-	sdkInitialized = true
+	client.SetSdkInitialized(true)
 	at, err := a.GetAuthTicketForShare("/1.txt", "1.txt", fileref.FILE, "")
 	require.NotEmptyf(at, "unexpected empty auth ticket")
 	require.NoErrorf(err, "unexpected error: %v", err)
@@ -1229,7 +1224,7 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 							ValidationRoot: "mock validation root",
 						})
 						require.NoError(t, err)
-						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+						return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 					}(),
 				}
 				for i := 0; i < numBlobbers; i++ {
@@ -1261,7 +1256,7 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 							ValidationRoot: "mock validation root",
 						})
 						require.NoError(t, err)
-						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+						return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 					}(),
 				}
 				for i := 0; i < numBlobbers; i++ {
@@ -1313,7 +1308,7 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 							ValidationRoot: "mock validation root",
 						})
 						require.NoError(t, err)
-						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+						return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 					}(),
 				}
 				for i := 0; i < numBlobbers; i++ {
@@ -1354,7 +1349,7 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 							ValidationRoot: "mock validation root",
 						})
 						require.NoError(t, err)
-						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+						return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 					}(),
 				}
 				for i := 0; i < numBlobbers; i++ {
@@ -1388,20 +1383,20 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 			var mockClient = mocks.HttpClient{}
 			zboxutil.Client = &mockClient
 
-			client := zclient.GetClient()
-			client.Wallet = &zcncrypto.Wallet{
+			client.SetWallet(zcncrypto.Wallet{
 				ClientID:  mockClientId,
 				ClientKey: mockClientKey,
-			}
+			})
 
 			require := require.New(t)
 			a := &Allocation{
+				Owner:        mockClientId,
 				DataShards:   1,
 				ParityShards: 1,
 				FileOptions:  63,
 			}
 			a.InitAllocation()
-			sdkInitialized = true
+			client.SetSdkInitialized(true)
 
 			for i := 0; i < numBlobbers; i++ {
 				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
@@ -1464,7 +1459,7 @@ func TestAllocation_CancelDownload(t *testing.T) {
 			require := require.New(t)
 			a := &Allocation{FileOptions: 63}
 			a.InitAllocation()
-			sdkInitialized = true
+			client.SetSdkInitialized(true)
 			if tt.setup != nil {
 				if teardown := tt.setup(t, a); teardown != nil {
 					defer teardown(t)
@@ -1568,8 +1563,9 @@ func TestAllocation_ListDirFromAuthTicket(t *testing.T) {
 				authTicket: authTicket,
 				lookupHash: mockLookupHash,
 				expectedResult: &ListResult{
-					Type: mockType,
-					Size: 0,
+					ClientId: mockClientId,
+					Type:     mockType,
+					Size:     0,
 				},
 			},
 			setup: func(t *testing.T, testCaseName string, a *Allocation, mockClient *mocks.HttpClient) (teardown func(t *testing.T)) {
@@ -1598,14 +1594,14 @@ func TestAllocation_ListDirFromAuthTicket(t *testing.T) {
 			var mockClient = mocks.HttpClient{}
 			zboxutil.Client = &mockClient
 
-			client := zclient.GetClient()
-			client.Wallet = &zcncrypto.Wallet{
+			client.SetWallet(zcncrypto.Wallet{
 				ClientID:  mockClientId,
 				ClientKey: mockClientKey,
-			}
+			})
 			a := &Allocation{
 				ID:           mockAllocationId,
 				Tx:           mockAllocationTxId,
+				Owner:        mockClientId,
 				FileOptions:  63,
 				DataShards:   2,
 				ParityShards: 2,
@@ -1621,7 +1617,7 @@ func TestAllocation_ListDirFromAuthTicket(t *testing.T) {
 
 			setupMockGetFileInfoResponse(t, &mockClient)
 			a.InitAllocation()
-			sdkInitialized = true
+			client.SetSdkInitialized(true)
 			if len(a.Blobbers) == 0 {
 				for i := 0; i < numBlobbers; i++ {
 					a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{})
@@ -1652,11 +1648,10 @@ func TestAllocation_downloadFromAuthTicket(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
-	}
+	})
 
 	a := &Allocation{
 		ID:           mockAllocationId,
@@ -1878,11 +1873,10 @@ func TestAllocation_listDir(t *testing.T) {
 			var mockClient = mocks.HttpClient{}
 			zboxutil.Client = &mockClient
 
-			client := zclient.GetClient()
-			client.Wallet = &zcncrypto.Wallet{
+			client.SetWallet(zcncrypto.Wallet{
 				ClientID:  mockClientId,
 				ClientKey: mockClientKey,
-			}
+			})
 
 			require := require.New(t)
 			a := &Allocation{
@@ -1896,7 +1890,7 @@ func TestAllocation_listDir(t *testing.T) {
 				tt.parameters.expectedResult.deleteMask = zboxutil.NewUint128(1).Lsh(uint64(a.DataShards + a.ParityShards)).Sub64(1)
 			}
 			a.InitAllocation()
-			sdkInitialized = true
+			client.SetSdkInitialized(true)
 			for i := 0; i < numBlobbers; i++ {
 				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
 					ID:      tt.name + mockBlobberId + strconv.Itoa(i),
@@ -2012,13 +2006,13 @@ func TestAllocation_GetFileMetaFromAuthTicket(t *testing.T) {
 			var mockClient = mocks.HttpClient{}
 			zboxutil.Client = &mockClient
 
-			client := zclient.GetClient()
-			client.Wallet = &zcncrypto.Wallet{
+			client.SetWallet(zcncrypto.Wallet{
 				ClientID:  mockClientId,
 				ClientKey: mockClientKey,
-			}
+			})
 
 			a := &Allocation{
+				Owner:        mockClientId,
 				ID:           mockAllocationId,
 				Tx:           mockAllocationTxId,
 				DataShards:   2,
@@ -2026,7 +2020,7 @@ func TestAllocation_GetFileMetaFromAuthTicket(t *testing.T) {
 				FileOptions:  63,
 			}
 			a.InitAllocation()
-			sdkInitialized = true
+			client.SetSdkInitialized(true)
 			a.initialized = true
 
 			require := require.New(t)
@@ -2061,11 +2055,10 @@ func TestAllocation_DownloadToFileHandlerFromAuthTicket(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
-	}
+	})
 
 	require := require.New(t)
 
@@ -2097,11 +2090,10 @@ func TestAllocation_DownloadThumbnailFromAuthTicket(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
-	}
+	})
 
 	require := require.New(t)
 
@@ -2140,11 +2132,10 @@ func TestAllocation_DownloadFromAuthTicket(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
-	}
+	})
 
 	require := require.New(t)
 
@@ -2177,11 +2168,10 @@ func TestAllocation_DownloadFromAuthTicketByBlocks(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
-	}
+	})
 
 	require := require.New(t)
 
@@ -2213,11 +2203,10 @@ func TestAllocation_StartRepair(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
-	}
+	})
 
 	type parameters struct {
 		localPath, pathToRepair string
@@ -2343,7 +2332,7 @@ func setupMockAllocation(t *testing.T, a *Allocation) {
 	if a.DataShards != 0 {
 		a.fullconsensus, a.consensusThreshold = a.getConsensuses()
 	}
-	sdkInitialized = true
+	client.SetSdkInitialized(true)
 
 	go func() {
 		for {
@@ -2387,7 +2376,7 @@ func setupMockGetFileInfoResponse(t *testing.T, mockClient *mocks.HttpClient) {
 				ValidationRoot: "mock validation root",
 			})
 			require.NoError(t, err)
-			return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+			return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 		}(),
 	}
 	for i := 0; i < numBlobbers; i++ {
@@ -2399,12 +2388,12 @@ func getMockAuthTicket(t *testing.T) string {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
-	}
+	})
 	a := &Allocation{
+		Owner:        mockClientId,
 		ID:           mockAllocationId,
 		Tx:           mockAllocationTxId,
 		DataShards:   1,
@@ -2413,7 +2402,7 @@ func getMockAuthTicket(t *testing.T) string {
 	}
 
 	a.InitAllocation()
-	sdkInitialized = true
+	client.SetSdkInitialized(true)
 	for i := 0; i < numBlobbers; i++ {
 		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
 			ID:      strconv.Itoa(i),
@@ -2433,7 +2422,7 @@ func getMockAuthTicket(t *testing.T) string {
 	httpResponse := &http.Response{
 		StatusCode: http.StatusOK,
 		Body: func() io.ReadCloser {
-			return ioutil.NopCloser(bytes.NewReader(jsonFR))
+			return io.NopCloser(bytes.NewReader(jsonFR))
 		}(),
 	}
 

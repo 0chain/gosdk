@@ -4,6 +4,7 @@
 package zcncore
 
 import (
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/zcncrypto"
 )
 
@@ -19,7 +20,7 @@ type wallet struct {
 
 // Sign sign the given string using the wallet's private key
 func (w *wallet) Sign(hash string) (string, error) {
-	sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
+	sigScheme := zcncrypto.NewSignatureScheme(client.SignatureScheme())
 	err := sigScheme.SetPrivateKey(w.Keys[0].PrivateKey)
 	if err != nil {
 		return "", err
@@ -30,9 +31,9 @@ func (w *wallet) Sign(hash string) (string, error) {
 // GetWalletBalance retrieve wallet balance from sharders
 //   - id: client id
 func GetWalletBalance(id string) (int64, error) {
-	balance, _, err := getWalletBalance(id)
+	response, err := client.GetBalance(id)
 	if err != nil {
 		return 0, err
 	}
-	return int64(balance), nil
+	return int64(response.Balance), nil
 }

@@ -24,7 +24,7 @@ func NewSignatureScheme(sigScheme string) SignatureScheme {
 	}
 }
 
-// UnmarshalThresholdSignatureSchemes unmarshal SignatureScheme from json string
+// UnmarshalSignatureSchemes unmarshal SignatureScheme from json string
 func UnmarshalSignatureSchemes(sigScheme string, obj interface{}) ([]SignatureScheme, error) {
 	switch sigScheme {
 

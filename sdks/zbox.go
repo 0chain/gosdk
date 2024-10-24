@@ -14,7 +14,7 @@ import (
 	"github.com/0chain/gosdk/core/resty"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/core/zcncrypto"
-	"github.com/0chain/gosdk/zboxcore/client"
+	"github.com/0chain/gosdk/core/client"
 )
 
 // ZBox  sdk client instance

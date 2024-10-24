@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"path"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -19,7 +20,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
-func getObjectTreeFromBlobber(ctx context.Context, allocationID, allocationTx, sig string, remoteFilePath string, blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
+func getObjectTreeFromBlobber(ctx context.Context, allocationID, allocationTx, sig string, remoteFilePath string, blobber *blockchain.StorageNode, clientId ...string) (fileref.RefEntity, error) {
 	httpreq, err := zboxutil.NewObjectTreeRequest(blobber.Baseurl, allocationID, allocationTx, sig, remoteFilePath)
 	if err != nil {
 		l.Logger.Error(blobber.Baseurl, "Error creating object tree request", err)
@@ -36,7 +37,7 @@ func getObjectTreeFromBlobber(ctx context.Context, allocationID, allocationTx, s
 		if resp.StatusCode != http.StatusOK {
 			l.Logger.Error("Object tree response : ", resp.StatusCode)
 		}
-		resp_body, err := ioutil.ReadAll(resp.Body)
+		resp_body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			l.Logger.Error("Object tree: Resp", err)
 			return err
@@ -62,9 +63,9 @@ func getObjectTreeFromBlobber(ctx context.Context, allocationID, allocationTx, s
 	return lR.GetRefFromObjectTree(allocationID)
 }
 
-func getAllocationDataFromBlobber(blobber *blockchain.StorageNode, allocationId string, allocationTx string, respCh chan<- *BlobberAllocationStats, wg *sync.WaitGroup) {
+func getAllocationDataFromBlobber(blobber *blockchain.StorageNode, allocationId string, allocationTx string, respCh chan<- *BlobberAllocationStats, wg *sync.WaitGroup, clientId ...string) {
 	defer wg.Done()
-	httpreq, err := zboxutil.NewAllocationRequest(blobber.Baseurl, allocationId, allocationTx)
+	httpreq, err := zboxutil.NewAllocationRequest(blobber.Baseurl, allocationId, allocationTx, clientId...)
 	if err != nil {
 		l.Logger.Error(blobber.Baseurl, "Error creating allocation request", err)
 		return
@@ -81,7 +82,7 @@ func getAllocationDataFromBlobber(blobber *blockchain.StorageNode, allocationId 
 		if resp.StatusCode != http.StatusOK {
 			l.Logger.Error("Get allocation response : ", resp.StatusCode)
 		}
-		resp_body, err := ioutil.ReadAll(resp.Body)
+		resp_body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			l.Logger.Error("Get allocation: Resp", err)
 			return err
@@ -116,6 +117,114 @@ func ValidateRemoteFileName(remotePath string) error {
 
 	if len(fileName) > 150 {
 		return ErrFileNameTooLong
+	}
+
+	return nil
+}
+
+type subDirRequest struct {
+	opType          string
+	subOpType       string
+	remotefilepath  string
+	destPath        string
+	allocationObj   *Allocation
+	ctx             context.Context
+	consensusThresh int
+	mask            zboxutil.Uint128
+}
+
+func (req *subDirRequest) processSubDirectories() error {
+	var (
+		offsetPath string
+		pathLevel  int
+	)
+
+	for {
+		oResult, err := req.allocationObj.GetRefs(req.remotefilepath, offsetPath, "", "", fileref.FILE, fileref.REGULAR, 0, getRefPageLimit, WithObjectContext(req.ctx), WithObjectConsensusThresh(req.consensusThresh), WithSingleBlobber(true), WithObjectMask(req.mask))
+		if err != nil {
+			return err
+		}
+		if len(oResult.Refs) == 0 {
+			break
+		}
+		ops := make([]OperationRequest, 0, len(oResult.Refs))
+		for _, ref := range oResult.Refs {
+			opMask := req.mask
+			if ref.Type == fileref.DIRECTORY {
+				continue
+			}
+			if ref.PathLevel > pathLevel {
+				pathLevel = ref.PathLevel
+			}
+			var destPath string
+			if req.subOpType == constants.FileOperationRename {
+				destPath = path.Dir(strings.Replace(ref.Path, req.remotefilepath, req.destPath, 1))
+			} else {
+				basePath := strings.TrimPrefix(path.Dir(ref.Path), path.Dir(req.remotefilepath))
+				destPath = path.Join(req.destPath, basePath)
+			}
+			op := OperationRequest{
+				OperationType: req.opType,
+				RemotePath:    ref.Path,
+				DestPath:      destPath,
+				Mask:          &opMask,
+			}
+			ops = append(ops, op)
+		}
+		err = req.allocationObj.DoMultiOperation(ops)
+		if err != nil {
+			return err
+		}
+		offsetPath = oResult.Refs[len(oResult.Refs)-1].Path
+		if len(oResult.Refs) < getRefPageLimit {
+			break
+		}
+	}
+
+	offsetPath = ""
+	level := len(strings.Split(strings.TrimSuffix(req.remotefilepath, "/"), "/"))
+	if pathLevel == 0 {
+		pathLevel = level + 1
+	}
+
+	for pathLevel > level {
+		oResult, err := req.allocationObj.GetRefs(req.remotefilepath, offsetPath, "", "", fileref.DIRECTORY, fileref.REGULAR, pathLevel, getRefPageLimit, WithObjectContext(req.ctx), WithObjectMask(req.mask), WithObjectConsensusThresh(req.consensusThresh), WithSingleBlobber(true))
+		if err != nil {
+			return err
+		}
+		if len(oResult.Refs) == 0 {
+			pathLevel--
+		} else {
+			ops := make([]OperationRequest, 0, len(oResult.Refs))
+			for _, ref := range oResult.Refs {
+				opMask := req.mask
+				if ref.Type == fileref.FILE {
+					continue
+				}
+				var destPath string
+				if req.subOpType == constants.FileOperationRename {
+					destPath = path.Dir(strings.Replace(ref.Path, req.remotefilepath, req.destPath, 1))
+				} else {
+					basePath := strings.TrimPrefix(path.Dir(ref.Path), path.Dir(req.remotefilepath))
+					destPath = path.Join(req.destPath, basePath)
+				}
+				op := OperationRequest{
+					OperationType: req.opType,
+					RemotePath:    ref.Path,
+					DestPath:      destPath,
+					Mask:          &opMask,
+				}
+				ops = append(ops, op)
+			}
+			err = req.allocationObj.DoMultiOperation(ops)
+			if err != nil {
+				return err
+			}
+			offsetPath = oResult.Refs[len(oResult.Refs)-1].Path
+			if len(oResult.Refs) < getRefPageLimit {
+				pathLevel--
+			}
+		}
 	}
 
 	return nil

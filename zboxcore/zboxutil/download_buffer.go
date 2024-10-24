@@ -118,6 +118,8 @@ func (r *DownloadBufferWithMask) RequestChunk(ctx context.Context, num int) []by
 			buff := BufferPool.Get()
 			if cap(buff.B) < r.reqSize {
 				buff.B = make([]byte, r.reqSize)
+			} else {
+				buff.B = buff.B[:r.reqSize]
 			}
 			r.downloadBuf[num] = buff
 		}

@@ -7,15 +7,15 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io"
-	"os"
-
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/imageutil"
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/zboxcore/sdk"
-	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/0chain/gosdk/zcncore"
+
+	"io"
+	"os"
 )
 
 var CreateObjectURL func(buf []byte, mimeType string) string
@@ -32,34 +32,19 @@ var CreateObjectURL func(buf []byte, mimeType string) string
 //   - sharderconsensous is the number of sharders to reach consensus
 func initSDKs(chainID, blockWorker, signatureScheme string,
 	minConfirmation, minSubmit, confirmationChainLength int,
-	zboxHost, zboxAppType string, sharderconsensous int, isSplit bool) error {
+	zboxHost, zboxAppType string, sharderConsensous int, isSplit bool) error {
+
+	// Print the parameters beautified
+	fmt.Printf("{ chainID: %s, blockWorker: %s, signatureScheme: %s, minConfirmation: %d, minSubmit: %d, confirmationChainLength: %d, zboxHost: %s, zboxAppType: %s, sharderConsensous: %d, isSplit: %t }\n", chainID, blockWorker, signatureScheme, minConfirmation, minSubmit, confirmationChainLength, zboxHost, zboxAppType, sharderConsensous, isSplit)
 
 	zboxApiClient.SetRequest(zboxHost, zboxAppType)
 
-	err := sdk.InitStorageSDK("{}", blockWorker, chainID, signatureScheme, nil, 0)
+	err := client.InitSDK("{}", blockWorker, chainID, signatureScheme, 0, isSplit, false, minConfirmation, minSubmit, confirmationChainLength, sharderConsensous)
 	if err != nil {
 		fmt.Println("wasm: InitStorageSDK ", err)
 		return err
 	}
 
-	if !isSplit && zcncore.IsSplitWallet() {
-		// split wallet should not be reset back, use the existing
-		isSplit = true
-	}
-
-	fmt.Println("init SDKs, isSplit:", isSplit)
-	err = zcncore.InitZCNSDK(blockWorker, signatureScheme,
-		zcncore.WithChainID(chainID),
-		zcncore.WithMinConfirmation(minConfirmation),
-		zcncore.WithMinSubmit(minSubmit),
-		zcncore.WithConfirmationChainLength(confirmationChainLength),
-		zcncore.WithSharderConsensous(sharderconsensous),
-		zcncore.WithIsSplitWallet(isSplit),
-	)
-
-	if err != nil {
-		return err
-	}
 	sdk.SetWasm()
 	return nil
 }
@@ -127,6 +112,7 @@ func getLookupHash(allocationID string, path string) string {
 
 // createThumbnail create thumbnail of an image buffer. It supports
 //   - png
+
 //   - jpeg
 //   - gif
 //   - bmp
@@ -155,7 +141,7 @@ func makeSCRestAPICall(scAddress, relativePath, paramsJson string) (string, erro
 	if err != nil {
 		sdkLogger.Error(fmt.Sprintf("Error parsing JSON: %v", err))
 	}
-	b, err := zboxutil.MakeSCRestAPICall(scAddress, relativePath, params, nil)
+	b, err := client.MakeSCRestAPICall(scAddress, relativePath, params)
 	return string(b), err
 }
 
@@ -165,5 +151,10 @@ func makeSCRestAPICall(scAddress, relativePath, paramsJson string) (string, erro
 //   - fee is the transaction fee
 //   - desc is the description of the transaction
 func send(toClientID string, tokens uint64, fee uint64, desc string) (string, error) {
-	return sdk.ExecuteSmartContractSend(toClientID, tokens, fee, desc)
+	hash, _, _, _, err := zcncore.Send(toClientID, tokens, desc)
+	if err != nil {
+		return "", err
+	}
+
+	return hash, nil
 }

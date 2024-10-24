@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"os"
 	"sync"
 
@@ -55,35 +54,6 @@ func (zcn *ZCNStatus) OnBalanceAvailable(status int, value int64, _ string) {
 	zcn.balance = value
 }
 
-// OnTransactionComplete callback when a transaction is completed
-//   - t: transaction object
-//   - status: status of the transaction
-func (zcn *ZCNStatus) OnTransactionComplete(t *zcncore.Transaction, status int) {
-	defer zcn.Wg.Done()
-	if status == zcncore.StatusSuccess {
-		zcn.Success = true
-	} else {
-		zcn.Err = errors.New(t.GetTransactionError())
-	}
-}
-
-// OnVerifyComplete callback when a transaction is verified
-//   - t: transaction object
-//   - status: status of the transaction
-func (zcn *ZCNStatus) OnVerifyComplete(t *zcncore.Transaction, status int) {
-	defer zcn.Wg.Done()
-	if status == zcncore.StatusSuccess {
-		zcn.Success = true
-	} else {
-		zcn.Err = errors.New(t.GetVerifyError())
-	}
-}
-
-// OnTransferComplete callback when a transfer is completed. Not used in this implementation
-func (zcn *ZCNStatus) OnAuthComplete(_ *zcncore.Transaction, status int) {
-	Logger.Info("Authorization complete with status: ", status)
-}
-
 // OnWalletCreateComplete callback when a wallet is created
 //   - status: status of the operation
 //   - wallet: wallet json string
@@ -107,13 +77,6 @@ func (zcn *ZCNStatus) OnWalletCreateComplete(status int, wallet string, err stri
 //   - err: error message
 func (zcn *ZCNStatus) OnInfoAvailable(op int, status int, info string, err string) {
 	defer zcn.Wg.Done()
-
-	// If status is 400 for OpGetMintNonce, mintNonce is considered as 0
-	if op == zcncore.OpGetMintNonce && status == http.StatusBadRequest {
-		zcn.Err = nil
-		zcn.Success = true
-		return
-	}
 
 	if status != zcncore.StatusSuccess {
 		zcn.Err = errors.New(err)

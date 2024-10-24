@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"github.com/0chain/gosdk/zboxcore/mocks"
+
 	"io"
-	"io/ioutil"
 	"mime"
 	"mime/multipart"
 	"net/http"
@@ -14,12 +15,11 @@ import (
 	"testing"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	zclient "github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
-	"github.com/0chain/gosdk/zboxcore/mocks"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -41,11 +41,10 @@ func TestListRequest_getFileStatsInfoFromBlobber(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	var client = zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
-	}
+	})
 
 	type parameters struct {
 		fileStatsHttpResp FileStats
@@ -71,7 +70,7 @@ func TestListRequest_getFileStatsInfoFromBlobber(t *testing.T) {
 				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 					return strings.HasPrefix(req.URL.Path, "Test_Http_Error")
 				})).Return(&http.Response{
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+					Body:       io.NopCloser(bytes.NewReader([]byte(""))),
 					StatusCode: p.respStatusCode,
 				}, errors.New("", mockErrorMessage))
 			},
@@ -87,7 +86,7 @@ func TestListRequest_getFileStatsInfoFromBlobber(t *testing.T) {
 				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 					return strings.HasPrefix(req.URL.Path, "Test_Badly_Formatted")
 				})).Return(&http.Response{
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+					Body:       io.NopCloser(bytes.NewReader([]byte(""))),
 					StatusCode: p.respStatusCode,
 				}, nil)
 			},
@@ -104,6 +103,7 @@ func TestListRequest_getFileStatsInfoFromBlobber(t *testing.T) {
 					Name:       mockFileStatsName,
 					BlobberID:  mockBlobberId,
 					BlobberURL: "Test_Success",
+					PathHash:   fileref.GetReferenceLookup(mockAllocationId, mockRemoteFilePath),
 				},
 				blobberIdx:     mockBlobberIndex,
 				respStatusCode: 200,
@@ -122,11 +122,11 @@ func TestListRequest_getFileStatsInfoFromBlobber(t *testing.T) {
 					require.NoError(t, err)
 					expected, ok := p.requestFields[part.FormName()]
 					require.True(t, ok)
-					actual, err := ioutil.ReadAll(part)
+					actual, err := io.ReadAll(part)
 					require.NoError(t, err)
 					require.EqualValues(t, expected, string(actual))
 
-					sign, _ := zclient.Sign(encryption.Hash(mockAllocationTxId))
+					sign, _ := client.Sign(encryption.Hash(mockAllocationTxId))
 					return req.URL.Path == "Test_Success"+zboxutil.FILE_STATS_ENDPOINT+mockAllocationTxId &&
 						req.Method == "POST" &&
 						req.Header.Get("X-App-Client-ID") == mockClientId &&
@@ -138,7 +138,7 @@ func TestListRequest_getFileStatsInfoFromBlobber(t *testing.T) {
 					Body: func(p parameters) io.ReadCloser {
 						jsonFR, err := json.Marshal(p.fileStatsHttpResp)
 						require.NoError(t, err)
-						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+						return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 					}(p),
 				}, nil).Once()
 			},
@@ -152,6 +152,7 @@ func TestListRequest_getFileStatsInfoFromBlobber(t *testing.T) {
 				Baseurl: tt.name,
 			}
 			req := &ListRequest{
+				ClientId:       mockClientId,
 				allocationID:   mockAllocationId,
 				allocationTx:   mockAllocationTxId,
 				remotefilepath: mockRemoteFilePath,
@@ -184,11 +185,10 @@ func TestListRequest_getFileStatsFromBlobbers(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
-	}
+	})
 
 	setupHttpResponses := func(t *testing.T, name string, numBlobbers, numCorrect int) {
 		for i := 0; i < numBlobbers; i++ {
@@ -203,7 +203,7 @@ func TestListRequest_getFileStatsFromBlobbers(t *testing.T) {
 						Name: fileStatsName,
 					})
 					require.NoError(t, err)
-					return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+					return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 				}(frName),
 			}, nil)
 		}
@@ -249,6 +249,7 @@ func TestListRequest_getFileStatsFromBlobbers(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.setup(t, tt.name, tt.numBlobbers, tt.numCorrect)
 			req := &ListRequest{
+				ClientId:     mockClientId,
 				allocationID: mockAllocationId,
 				allocationTx: mockAllocationTxId,
 				ctx:          context.TODO(),

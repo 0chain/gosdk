@@ -2,8 +2,14 @@
 package transaction
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/0chain/gosdk/core/client"
+	"github.com/0chain/gosdk/core/conf"
+	"github.com/0chain/gosdk/core/logger"
+	"github.com/0chain/gosdk/core/sys"
+	"go.uber.org/zap"
 	"net/http"
 	"strings"
 	"sync"
@@ -15,6 +21,12 @@ import (
 	"github.com/0chain/gosdk/core/util"
 	lru "github.com/hashicorp/golang-lru"
 )
+
+var Logger logger.Logger
+
+const STORAGE_SCADDRESS = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7"
+const MINERSC_SCADDRESS = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d9"
+const ZCNSC_SCADDRESS = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712e0"
 
 const TXN_SUBMIT_URL = "v1/transaction/put"
 const TXN_VERIFY_URL = "v1/transaction/get/confirmation?hash="
@@ -97,14 +109,6 @@ const (
 
 	ADD_FREE_ALLOCATION_ASSIGNER = "add_free_storage_assigner"
 
-	// Vesting SC
-	VESTING_TRIGGER         = "trigger"
-	VESTING_STOP            = "stop"
-	VESTING_UNLOCK          = "unlock"
-	VESTING_ADD             = "add"
-	VESTING_DELETE          = "delete"
-	VESTING_UPDATE_SETTINGS = "vestingsc-update-settings"
-
 	// Storage SC
 	STORAGESC_FINALIZE_ALLOCATION       = "finalize_allocation"
 	STORAGESC_CANCEL_ALLOCATION         = "cancel_allocation"
@@ -159,7 +163,7 @@ const (
 	FEES_TABLE                = `/v1/fees_table`
 )
 
-type SignFunc = func(msg string) (string, error)
+type SignFunc = func(msg string, clientId ...string) (string, error)
 type VerifyFunc = func(publicKey, signature, msgHash string) (bool, error)
 type SignWithWallet = func(msg string, wallet interface{}) (string, error)
 
@@ -245,29 +249,49 @@ func (t *Transaction) VerifySigWith(pubkey string, verifyHandler VerifyFunc) (bo
 }
 
 func SendTransactionSync(txn *Transaction, miners []string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
 	wg := sync.WaitGroup{}
 	wg.Add(len(miners))
 	fails := make(chan error, len(miners))
 
 	for _, miner := range miners {
 		url := fmt.Sprintf("%v/%v", miner, TXN_SUBMIT_URL)
-		go func() {
-			_, err := sendTransactionToURL(url, txn, &wg)
-			if err != nil {
-				fails <- err
+		go func(url string) {
+			defer wg.Done()
+			select {
+			case <-ctx.Done():
+				fails <- ctx.Err() // Timeout or cancellation
+			default:
+				_, err := sendTransactionToURL(url, txn, nil)
+				if err != nil {
+					fails <- err
+				}
 			}
-			wg.Done()
-		}() //nolint
+		}(url)
 	}
-	wg.Wait()
-	close(fails)
 
+	done := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(fails)
+		close(done)
+	}()
+
+	select {
+	case <-done: // All requests completed
+	case <-ctx.Done(): // Timeout reached
+		return ctx.Err()
+	}
+
+	// Error processing logic here (same as original)
 	failureCount := 0
 	messages := make(map[string]int)
 	for e := range fails {
 		if e != nil {
 			failureCount++
-			messages[e.Error()] += 1
+			messages[e.Error()]++
 		}
 	}
 
@@ -280,9 +304,8 @@ func SendTransactionSync(txn *Transaction, miners []string) error {
 	}
 
 	if failureCount == len(miners) {
-		return errors.New("transaction_send_error", dominant)
+		return fmt.Errorf(dominant)
 	}
-
 	return nil
 }
 
@@ -296,7 +319,7 @@ func sendTransactionToURL(url string, txn *Transaction, wg *sync.WaitGroup) ([]b
 	if postResponse.StatusCode >= 200 && postResponse.StatusCode <= 299 {
 		return []byte(postResponse.Body), nil
 	}
-	return nil, errors.Wrap(err, errors.New("transaction_send_error", postResponse.Body))
+	return nil, errors.Wrap(err, errors.New("submit transaction failed", postResponse.Body))
 }
 
 type cachedObject struct {
@@ -312,7 +335,7 @@ func retriveFromTable(table map[string]map[string]int64, txnName, toAddress stri
 		if txnName == "transfer" {
 			fees = uint64(table["transfer"]["transfer"])
 		} else {
-			return 0, fmt.Errorf("invalid transaction")
+			return 0, fmt.Errorf("failed to get fees for txn %s", txnName)
 		}
 	}
 	return fees, nil
@@ -461,4 +484,137 @@ func GetFeesTable(miners []string, reqPercent ...float32) (map[string]map[string
 	}
 
 	return nil, errors.New("failed to get fees table", strings.Join(errs, ","))
+}
+
+func SmartContractTxn(scAddress string, sn SmartContractTxnData, verifyTxn bool, clients ...string) (
+	hash, out string, nonce int64, txn *Transaction, err error) {
+	return SmartContractTxnValue(scAddress, sn, 0, verifyTxn, clients...)
+}
+
+func SmartContractTxnValue(scAddress string, sn SmartContractTxnData, value uint64, verifyTxn bool, clients ...string) (
+	hash, out string, nonce int64, txn *Transaction, err error) {
+
+	return SmartContractTxnValueFeeWithRetry(scAddress, sn, value, client.TxnFee(), verifyTxn, clients...)
+}
+
+func SmartContractTxnValueFeeWithRetry(scAddress string, sn SmartContractTxnData,
+	value, fee uint64, verifyTxn bool, clients ...string) (hash, out string, nonce int64, t *Transaction, err error) {
+	hash, out, nonce, t, err = SmartContractTxnValueFee(scAddress, sn, value, fee, verifyTxn, clients...)
+
+	if err != nil && (strings.Contains(err.Error(), "invalid transaction nonce") || strings.Contains(err.Error(), "invalid future transaction")) {
+		return SmartContractTxnValueFee(scAddress, sn, value, fee, verifyTxn, clients...)
+	}
+	return
+}
+
+func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
+	value, fee uint64, verifyTxn bool, clients ...string) (hash, out string, nonce int64, t *Transaction, err error) {
+
+	clientId := client.Id()
+	if len(clients) > 0 && clients[0] != "" {
+		clientId = clients[0]
+	}
+
+	var requestBytes []byte
+	if requestBytes, err = json.Marshal(sn); err != nil {
+		return
+	}
+
+	cfg, err := conf.GetClientConfig()
+	if err != nil {
+		return
+	}
+
+	nodeClient, err := client.GetNode()
+	if err != nil {
+		return
+	}
+
+	txn := NewTransactionEntity(client.Id(clientId),
+		cfg.ChainID, client.PublicKey(clientId), nonce)
+
+	txn.TransactionData = string(requestBytes)
+	txn.ToClientID = scAddress
+	txn.Value = value
+	txn.TransactionFee = fee
+	txn.TransactionType = TxnTypeSmartContract
+	txn.ClientID = clientId
+
+	if len(clients) > 1 {
+		txn.ToClientID = clients[1]
+		txn.TransactionType = TxnTypeSend
+	}
+
+	// adjust fees if not set
+	if fee == 0 {
+		fee, err = EstimateFee(txn, nodeClient.Network().Miners, 0.2)
+		if err != nil {
+			Logger.Error("failed to estimate txn fee",
+				zap.Error(err),
+				zap.Any("txn", txn))
+			return
+		}
+		txn.TransactionFee = fee
+	}
+
+	if txn.TransactionNonce == 0 {
+		txn.TransactionNonce = client.Cache.GetNextNonce(txn.ClientID)
+	}
+
+	if err = txn.ComputeHashAndSign(client.Sign); err != nil {
+		return
+	}
+
+	msg := fmt.Sprintf("executing transaction '%s' with hash %s ", sn.Name, txn.Hash)
+	Logger.Info(msg)
+	Logger.Info("estimated txn fee: ", txn.TransactionFee)
+
+	err = SendTransactionSync(txn, nodeClient.GetStableMiners())
+	if err != nil {
+		Logger.Info("transaction submission failed", zap.Error(err))
+		client.Cache.Evict(txn.ClientID)
+		nodeClient.ResetStableMiners()
+		return
+	}
+
+	if verifyTxn {
+		var (
+			querySleepTime = time.Duration(cfg.QuerySleepTime) * time.Second
+			retries        = 0
+		)
+
+		sys.Sleep(querySleepTime)
+
+		for retries < cfg.MaxTxnQuery {
+			t, err = VerifyTransaction(txn.Hash)
+			if err == nil {
+				break
+			}
+			retries++
+			sys.Sleep(querySleepTime)
+		}
+
+		if err != nil {
+			Logger.Error("Error verifying the transaction", err.Error(), txn.Hash)
+			client.Cache.Evict(txn.ClientID)
+			return
+		}
+
+		if t == nil {
+			return "", "", 0, txn, errors.New("transaction_validation_failed",
+				"Failed to get the transaction confirmation")
+		}
+
+		if t.Status == TxnFail {
+			return t.Hash, t.TransactionOutput, 0, t, errors.New("", t.TransactionOutput)
+		}
+
+		if t.Status == TxnChargeableError {
+			return t.Hash, t.TransactionOutput, t.TransactionNonce, t, errors.New("", t.TransactionOutput)
+		}
+
+		return t.Hash, t.TransactionOutput, t.TransactionNonce, t, nil
+	}
+
+	return txn.Hash, "", txn.TransactionNonce, txn, nil
 }

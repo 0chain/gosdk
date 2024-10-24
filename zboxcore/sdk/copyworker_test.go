@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"github.com/0chain/gosdk/zboxcore/mocks"
 	"io"
-	"io/ioutil"
 	"mime"
 	"mime/multipart"
 	"net/http"
@@ -15,14 +15,14 @@ import (
 	"testing"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/dev"
 	devMock "github.com/0chain/gosdk/dev/mock"
 	"github.com/0chain/gosdk/sdks/blobber"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	zclient "github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
-	"github.com/0chain/gosdk/zboxcore/mocks"
+
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -43,11 +43,10 @@ func TestCopyRequest_copyBlobberObject(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
-	}
+	})
 
 	type parameters struct {
 		referencePathToRetrieve fileref.ReferencePath
@@ -75,7 +74,7 @@ func TestCopyRequest_copyBlobberObject(t *testing.T) {
 					return strings.HasPrefix(req.URL.Path, testName)
 				})).Return(&http.Response{
 					StatusCode: http.StatusBadRequest,
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+					Body:       io.NopCloser(bytes.NewReader([]byte(""))),
 				}, nil)
 			},
 			wantErr: true,
@@ -101,7 +100,7 @@ func TestCopyRequest_copyBlobberObject(t *testing.T) {
 					Body: func() io.ReadCloser {
 						jsonFR, err := json.Marshal(p.referencePathToRetrieve)
 						require.NoError(t, err)
-						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+						return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 					}(),
 				}, nil)
 
@@ -112,7 +111,7 @@ func TestCopyRequest_copyBlobberObject(t *testing.T) {
 						req.Header.Get("X-App-Client-Key") == mockClientKey
 				})).Return(&http.Response{
 					StatusCode: http.StatusBadRequest,
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+					Body:       io.NopCloser(bytes.NewReader([]byte(""))),
 				}, nil)
 			},
 			wantErr: true,
@@ -148,7 +147,7 @@ func TestCopyRequest_copyBlobberObject(t *testing.T) {
 					Body: func() io.ReadCloser {
 						jsonFR, err := json.Marshal(p.referencePathToRetrieve)
 						require.NoError(t, err)
-						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+						return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 					}(),
 				}, nil)
 
@@ -167,7 +166,7 @@ func TestCopyRequest_copyBlobberObject(t *testing.T) {
 						}
 						expected, ok := p.requestFields[part.FormName()]
 						require.True(t, ok)
-						actual, err := ioutil.ReadAll(part)
+						actual, err := io.ReadAll(part)
 						require.NoError(t, err)
 						require.EqualValues(t, expected, string(actual))
 					}
@@ -183,7 +182,7 @@ func TestCopyRequest_copyBlobberObject(t *testing.T) {
 					Body: func() io.ReadCloser {
 						jsonFR, err := json.Marshal(p.referencePathToRetrieve)
 						require.NoError(t, err)
-						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+						return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 					}(),
 				}, nil)
 			},
@@ -211,12 +210,15 @@ func TestCopyRequest_copyBlobberObject(t *testing.T) {
 				maskMU:       &sync.Mutex{},
 				ctx:          context.TODO(),
 				connectionID: mockConnectionId,
+				allocationObj: &Allocation{
+					Owner: mockClientId,
+				},
 			}
 			req.blobbers = append(req.blobbers, &blockchain.StorageNode{
 				Baseurl: tt.name,
 			})
 			req.copyMask = zboxutil.NewUint128(1).Lsh(uint64(len(req.blobbers))).Sub64(1)
-			_, err := req.copyBlobberObject(req.blobbers[0], 0)
+			_, err := req.copyBlobberObject(req.blobbers[0], 0, true)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
 				require.Contains(errors.Top(err), tt.errMsg)
@@ -249,11 +251,10 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
-	}
+	})
 
 	zboxutil.Client = &mockClient
 
@@ -276,7 +277,7 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 						},
 					})
 					require.NoError(t, err)
-					return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+					return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 				}(),
 			}, nil)
 
@@ -291,7 +292,7 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 					}
 					return http.StatusBadRequest
 				}(),
-				Body: ioutil.NopCloser(bytes.NewReader([]byte(""))),
+				Body: io.NopCloser(bytes.NewReader([]byte(""))),
 			}, nil)
 
 			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
@@ -305,7 +306,7 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 					}
 					return http.StatusBadRequest
 				}(),
-				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{"status":2}`))),
+				Body: io.NopCloser(bytes.NewReader([]byte(`{"status":2}`))),
 			}, nil)
 
 			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
@@ -319,7 +320,7 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 					}
 					return http.StatusBadRequest
 				}(),
-				Body: ioutil.NopCloser(bytes.NewReader([]byte(""))),
+				Body: io.NopCloser(bytes.NewReader([]byte(""))),
 			}, nil)
 
 			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
@@ -335,15 +336,16 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 			}, nil)
 		}
 
-		commitChan = make(map[string]chan *CommitRequest)
+		commitChan = make(map[string]chan CommitRequestInterface)
 		for _, blobber := range req.blobbers {
 			if _, ok := commitChan[blobber.ID]; !ok {
-				commitChan[blobber.ID] = make(chan *CommitRequest, 1)
+				commitChan[blobber.ID] = make(chan CommitRequestInterface, 1)
 			}
 		}
 		blobberChan := commitChan
 		go func() {
-			cm0 := <-blobberChan[req.blobbers[0].ID]
+			cm := <-blobberChan[req.blobbers[0].ID]
+			cm0 := cm.(*CommitRequest)
 			require.EqualValues(t, cm0.blobber.ID, testName+mockBlobberId+strconv.Itoa(0))
 			cm0.result = &CommitResult{
 				Success: true,
@@ -353,7 +355,8 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 			}
 		}()
 		go func() {
-			cm1 := <-blobberChan[req.blobbers[1].ID]
+			cm := <-blobberChan[req.blobbers[1].ID]
+			cm1 := cm.(*CommitRequest)
 			require.EqualValues(t, cm1.blobber.ID, testName+mockBlobberId+strconv.Itoa(1))
 			cm1.result = &CommitResult{
 				Success: true,
@@ -363,7 +366,8 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 			}
 		}()
 		go func() {
-			cm2 := <-blobberChan[req.blobbers[2].ID]
+			cm := <-blobberChan[req.blobbers[2].ID]
+			cm2 := cm.(*CommitRequest)
 			require.EqualValues(t, cm2.blobber.ID, testName+mockBlobberId+strconv.Itoa(2))
 			cm2.result = &CommitResult{
 				Success: true,
@@ -373,7 +377,8 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 			}
 		}()
 		go func() {
-			cm3 := <-blobberChan[req.blobbers[3].ID]
+			cm := <-blobberChan[req.blobbers[3].ID]
+			cm3 := cm.(*CommitRequest)
 			require.EqualValues(t, cm3.blobber.ID, testName+mockBlobberId+strconv.Itoa(3))
 			cm3.result = &CommitResult{
 				Success: true,
@@ -442,6 +447,7 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 				Tx:          "TestCopyRequest_ProcessCopy",
 				DataShards:  numBlobbers,
 				FileOptions: 63,
+				Owner:       mockClientId,
 			}
 			a.InitAllocation()
 
@@ -489,7 +495,7 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 				maskMU:       &sync.Mutex{},
 				connectionID: mockConnectionId,
 			}
-			sig, err := zclient.Sign(mockAllocationTxId)
+			sig, err := client.Sign(mockAllocationTxId)
 			require.NoError(err)
 			req.sig = sig
 			req.ctx, req.ctxCncl = context.WithCancel(context.TODO())

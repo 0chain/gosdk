@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"github.com/0chain/gosdk/zboxcore/mocks"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
@@ -14,12 +14,12 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/resty"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	zclient "github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
-	"github.com/0chain/gosdk/zboxcore/mocks"
+
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -40,11 +40,10 @@ func TestDeleteRequest_deleteBlobberFile(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
-	}
+	})
 
 	var wg sync.WaitGroup
 
@@ -81,7 +80,7 @@ func TestDeleteRequest_deleteBlobberFile(t *testing.T) {
 							Body: func() io.ReadCloser {
 								jsonFR, err := json.Marshal(p.referencePathToRetrieve)
 								require.NoError(t, err)
-								return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+								return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 							}(),
 						}, nil}
 					}
@@ -96,7 +95,7 @@ func TestDeleteRequest_deleteBlobberFile(t *testing.T) {
 					for _, c := range mockClient.ExpectedCalls {
 						c.ReturnArguments = mock.Arguments{&http.Response{
 							StatusCode: http.StatusBadRequest,
-							Body:       ioutil.NopCloser(strings.NewReader("")),
+							Body:       io.NopCloser(strings.NewReader("")),
 						}, nil}
 					}
 				})
@@ -131,7 +130,7 @@ func TestDeleteRequest_deleteBlobberFile(t *testing.T) {
 					Body: func() io.ReadCloser {
 						jsonFR, err := json.Marshal(p.referencePathToRetrieve)
 						require.NoError(t, err)
-						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+						return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 					}(),
 				}, nil)
 
@@ -151,7 +150,7 @@ func TestDeleteRequest_deleteBlobberFile(t *testing.T) {
 					Body: func() io.ReadCloser {
 						jsonFR, err := json.Marshal(p.referencePathToRetrieve)
 						require.NoError(t, err)
-						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+						return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 					}(),
 				}, nil)
 			},
@@ -179,6 +178,9 @@ func TestDeleteRequest_deleteBlobberFile(t *testing.T) {
 				ctx:          context.TODO(),
 				connectionID: mockConnectionId,
 				wg:           func() *sync.WaitGroup { wg.Add(1); return &wg }(),
+				allocationObj: &Allocation{
+					Owner: mockClientId,
+				},
 			}
 			req.blobbers = append(req.blobbers, &blockchain.StorageNode{
 				Baseurl: tt.name,
@@ -214,11 +216,10 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
-	}
+	})
 
 	zboxutil.Client = &mockClient
 	resty.CreateClient = func(t *http.Transport, timeout time.Duration) resty.Client {
@@ -245,7 +246,7 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 						},
 					})
 					require.NoError(t, err)
-					return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+					return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 				}(),
 			}, nil)
 			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
@@ -258,19 +259,20 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 					}
 					return http.StatusBadRequest
 				}(),
-				Body: ioutil.NopCloser(bytes.NewReader([]byte(""))),
+				Body: io.NopCloser(bytes.NewReader([]byte(""))),
 			}, nil)
 		}
 
-		commitChan = make(map[string]chan *CommitRequest)
+		commitChan = make(map[string]chan CommitRequestInterface)
 		for _, blobber := range req.blobbers {
 			if _, ok := commitChan[blobber.ID]; !ok {
-				commitChan[blobber.ID] = make(chan *CommitRequest, 1)
+				commitChan[blobber.ID] = make(chan CommitRequestInterface, 1)
 			}
 		}
 		blobberChan := commitChan
 		go func() {
-			cm0 := <-blobberChan[req.blobbers[0].ID]
+			cm := <-blobberChan[req.blobbers[0].ID]
+			cm0 := cm.(*CommitRequest)
 			require.EqualValues(t, cm0.blobber.ID, testName+mockBlobberId+strconv.Itoa(0))
 			cm0.result = &CommitResult{
 				Success: true,
@@ -280,7 +282,8 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 			}
 		}()
 		go func() {
-			cm1 := <-blobberChan[req.blobbers[1].ID]
+			cm := <-blobberChan[req.blobbers[1].ID]
+			cm1 := cm.(*CommitRequest)
 			require.EqualValues(t, cm1.blobber.ID, testName+mockBlobberId+strconv.Itoa(1))
 			cm1.result = &CommitResult{
 				Success: true,
@@ -290,7 +293,8 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 			}
 		}()
 		go func() {
-			cm2 := <-blobberChan[req.blobbers[2].ID]
+			cm := <-blobberChan[req.blobbers[2].ID]
+			cm2 := cm.(*CommitRequest)
 			require.EqualValues(t, cm2.blobber.ID, testName+mockBlobberId+strconv.Itoa(2))
 			cm2.result = &CommitResult{
 				Success: true,
@@ -300,7 +304,8 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 			}
 		}()
 		go func() {
-			cm3 := <-blobberChan[req.blobbers[3].ID]
+			cm := <-blobberChan[req.blobbers[3].ID]
+			cm3 := cm.(*CommitRequest)
 			require.EqualValues(t, cm3.blobber.ID, testName+mockBlobberId+strconv.Itoa(3))
 			cm3.result = &CommitResult{
 				Success: true,
@@ -380,6 +385,7 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 
 			a := &Allocation{
 				DataShards: numBlobbers,
+				Owner:      mockClientId,
 			}
 
 			for i := 0; i < tt.numBlobbers; i++ {

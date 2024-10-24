@@ -17,13 +17,13 @@ import (
 
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/common"
 	coreEncryption "github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/encryption"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
@@ -256,7 +256,7 @@ func CreateChunkedUpload(
 
 	}
 
-	su.writeMarkerMutex, err = CreateWriteMarkerMutex(client.GetClient(), su.allocationObj)
+	su.writeMarkerMutex, err = CreateWriteMarkerMutex(su.allocationObj)
 	if err != nil {
 		return nil, err
 	}
@@ -292,7 +292,7 @@ func CreateChunkedUpload(
 
 	su.chunkReader = cReader
 
-	su.formBuilder = CreateChunkedUploadFormBuilder()
+	su.formBuilder = CreateChunkedUploadFormBuilder(su.allocationObj.StorageVersion)
 
 	su.isRepair = isRepair
 	uploadWorker, uploadRequest := calculateWorkersAndRequests(su.allocationObj.DataShards, len(su.blobbers), su.chunkNumber)
@@ -383,7 +383,7 @@ func (su *ChunkedUpload) createEncscheme() encryption.EncryptionScheme {
 			return nil
 		}
 	} else {
-		mnemonic := client.GetClient().Mnemonic
+		mnemonic := client.Mnemonic()
 		if mnemonic == "" {
 			return nil
 		}
@@ -412,6 +412,7 @@ func (su *ChunkedUpload) process() error {
 		su.statusCallback.Started(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, int(su.fileMeta.ActualSize)+int(su.fileMeta.ActualThumbnailSize))
 	}
 	su.startProcessor()
+	defer su.chunkReader.Release()
 	defer su.chunkReader.Close()
 	defer su.ctxCncl(nil)
 	for {
