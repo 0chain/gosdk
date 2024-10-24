@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/0chain/gosdk/mobilesdk/sdk"
 	"github.com/0chain/gosdk/zcncore"
+	"os"
 )
 
 var (
@@ -80,6 +81,7 @@ func main() {
 	testGetTransactions()
 	testGetStakePoolUserInfo()
 	testGetBlobbers()
+	testThumbnailGeneration()
 }
 
 func testGetBlobbers() {
@@ -113,4 +115,25 @@ func testGetStakePoolUserInfo() {
 	}
 
 	fmt.Println("stake pool user info ", string(res))
+}
+
+func testThumbnailGeneration() {
+	//Get a image from this path
+	imagePath := "/home/ubuntu/Downloads/0chain/Slack/image (4).png"
+	file, err := os.ReadFile(imagePath)
+	if err != nil {
+		fmt.Println("error reading file ", err)
+		return
+	}
+
+	res, err := sdk.CreateThumbnail(file, 100, 100)
+
+	if err != nil {
+		fmt.Println("error creating thumbnail ", err)
+	}
+
+	err = os.WriteFile("/home/ubuntu/Pictures/thumbnail.png", res, 0777)
+	if err != nil {
+		fmt.Println("error writing thumbnail ", err)
+	}
 }
