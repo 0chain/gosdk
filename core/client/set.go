@@ -16,6 +16,9 @@ import (
 var (
 	client         Client
 	sdkInitialized bool
+
+	Sign SignFunc
+	sigC = make(chan struct{}, 1)
 )
 
 type SignFunc func(hash string, clients ...string) (string, error)
@@ -34,12 +37,30 @@ type Client struct {
 
 func init() {
 	sys.Sign = signHash
-	client = Client{
-		wallet: &zcncrypto.Wallet{},
-		sign: func(hash string, clients ...string) (string, error) {
-			return sys.Sign(hash, client.signatureScheme, GetClientSysKeys())
-		},
+	sys.SignWithAuth = signHash
+
+	sigC <- struct{}{}
+
+	// initialize SignFunc as default implementation
+	Sign = func(hash string, clients ...string) (string, error) {
+		wallet := client.wallet
+
+		if len(clients) > 0 && clients[0] != "" && client.wallets[clients[0]] != nil {
+			wallet = client.wallets[clients[0]]
+		}
+
+		if wallet.PeerPublicKey == "" {
+			return sys.Sign(hash, client.signatureScheme, GetClientSysKeys(clients...))
+		}
+
+		// get sign lock
+		<-sigC
+		fmt.Println("Sign: with sys.SignWithAuth:", sys.SignWithAuth, "sysKeys:", GetClientSysKeys(clients...))
+		sig, err := sys.SignWithAuth(hash, client.signatureScheme, GetClientSysKeys(clients...))
+		sigC <- struct{}{}
+		return sig, err
 	}
+
 	sys.Verify = verifySignature
 	sys.VerifyWith = verifySignatureWith
 }
@@ -85,7 +106,7 @@ func verifySignatureWith(pubKey, signature, hash string) (bool, error) {
 
 func GetClientSysKeys(clients ...string) []sys.KeyPair {
 	var wallet *zcncrypto.Wallet
-	if len(clients) > 0 {
+	if len(clients) > 0 && clients[0] != "" && client.wallets[clients[0]] != nil {
 		wallet = client.wallets[clients[0]]
 	} else {
 		wallet = client.wallet
@@ -169,16 +190,12 @@ func TxnFee() uint64 {
 	return client.txnFee
 }
 
-func Sign(hash string, clients ...string) (string, error) {
-	return client.sign(hash, clients...)
-}
-
 func IsWalletSet() bool {
 	return client.wallet.ClientID != ""
 }
 
 func PublicKey(clients ...string) string {
-	if len(clients) > 0 {
+	if len(clients) > 0 && clients[0] != "" && client.wallets[clients[0]] != nil {
 		if client.wallets[clients[0]] == nil {
 			fmt.Println("Public key is empty")
 			return ""
@@ -200,7 +217,7 @@ func PrivateKey() string {
 }
 
 func Id(clients ...string) string {
-	if len(clients) > 0 {
+	if len(clients) > 0 && clients[0] != "" && client.wallets[clients[0]] != nil {
 		if client.wallets[clients[0]] == nil {
 			fmt.Println("Id is empty : ", clients[0])
 			return ""

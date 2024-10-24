@@ -631,7 +631,7 @@ func (b *BridgeClient) MintZCN(payload *zcnsc.MintPayload) (string, error) {
 	hash, _, _, _, err := coreTransaction.SmartContractTxn(wallet.ZCNSCSmartContractAddress, coreTransaction.SmartContractTxnData{
 		Name:      wallet.MintFunc,
 		InputArgs: payload,
-	})
+	}, true)
 
 	if err != nil {
 		return "", errors.Wrap(err, fmt.Sprintf("failed to execute smart contract, hash = %s", hash))
@@ -663,7 +663,7 @@ func (b *BridgeClient) BurnZCN(amount uint64) (string, string, error) {
 	hash, out, _, _, err := coreTransaction.SmartContractTxnValue(wallet.ZCNSCSmartContractAddress, coreTransaction.SmartContractTxnData{
 		Name:      wallet.BurnFunc,
 		InputArgs: payload,
-	}, amount)
+	}, amount, true)
 	if err != nil {
 		Logger.Error("Burn ZCN transaction FAILED", zap.Error(err))
 		return hash, out, errors.Wrap(err, fmt.Sprintf("failed to execute smart contract, hash = %s", hash))
