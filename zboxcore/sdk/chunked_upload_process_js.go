@@ -634,7 +634,7 @@ func sendUploadRequest(dataBuffers []*bytes.Buffer, contentSlice []string, blobb
 					err = zboxutil.FastHttpClient.DoTimeout(req, resp, DefaultUploadTimeOut)
 					fasthttp.ReleaseRequest(req)
 					if err != nil {
-						logger.Logger.Error("Upload : ", err)
+						logger.Logger.Error("Upload : ", err, " baseURL ", blobberURL)
 						if errors.Is(err, fasthttp.ErrConnectionClosed) || errors.Is(err, syscall.EPIPE) || errors.Is(err, fasthttp.ErrDialTimeout) {
 							err = ErrNetwork
 							return err, true

@@ -191,7 +191,7 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 		shouldContinue bool
 	)
 
-	for retries := 0; retries < 3; retries++ {
+	for retries := 0; retries < 6; retries++ {
 		err, shouldContinue = func() (err error, shouldContinue bool) {
 			reqCtx, ctxCncl := context.WithTimeout(ctx, DefaultUploadTimeOut)
 			resp, err := zboxutil.Client.Do(req.WithContext(reqCtx))
@@ -251,12 +251,12 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 
 			return
 		}()
+		if shouldContinue && retries < 5 {
+			continue
+		}
 		if err != nil {
 			l.Logger.Error(err)
 			return err
-		}
-		if shouldContinue {
-			continue
 		}
 		rb.blobber.LatestWM = wm
 		rb.blobber.AllocationRoot = wm.AllocationRoot

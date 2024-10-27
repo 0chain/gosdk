@@ -92,7 +92,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 					err = zboxutil.FastHttpClient.DoTimeout(req, resp, su.uploadTimeOut)
 					fasthttp.ReleaseRequest(req)
 					if err != nil {
-						logger.Logger.Error("Upload : ", err)
+						logger.Logger.Error("Upload : ", err, " baseurl: ", sb.blobber.Baseurl)
 						if errors.Is(err, fasthttp.ErrConnectionClosed) || errors.Is(err, syscall.EPIPE) {
 							return err, true
 						}
