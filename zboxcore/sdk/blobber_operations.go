@@ -1,18 +1,11 @@
 package sdk
 
 import (
-	"crypto/ed25519"
-	"encoding/hex"
 	"encoding/json"
-	"fmt"
-	"math"
-
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/client"
-	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/transaction"
-	"github.com/0chain/gosdk/zboxcore/logger"
-	"go.uber.org/zap"
+	"math"
 )
 
 // CreateAllocationForOwner creates a new allocation with the given options (txn: `storagesc.new_allocation_request`).
@@ -55,20 +48,12 @@ func CreateAllocationForOwner(
 		return "", 0, nil, sdkNotInitialized
 	}
 
-	privateSigningKey, err := generateOwnerSigningKey(ownerpublickey, owner)
-	if err != nil {
-		return "", 0, nil, errors.New("failed_generate_owner_signing_key", "failed to generate owner signing key: "+err.Error())
-	}
-	pub := privateSigningKey.Public().(ed25519.PublicKey)
-	pk := hex.EncodeToString(pub)
-
 	allocationRequest["owner_id"] = owner
 	allocationRequest["owner_public_key"] = ownerpublickey
 	allocationRequest["third_party_extendable"] = thirdPartyExtendable
 	allocationRequest["file_options_changed"], allocationRequest["file_options"] = calculateAllocationFileOptions(63 /*0011 1111*/, fileOptionsParams)
 	allocationRequest["is_enterprise"] = IsEnterprise
 	allocationRequest["storage_version"] = StorageV2
-	allocationRequest["owner_signing_public_key"] = pk
 
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.NEW_ALLOCATION_REQUEST,
@@ -319,20 +304,4 @@ func WritePoolUnlock(allocID string, fee uint64) (hash string, nonce int64, err 
 	}
 	hash, _, nonce, _, err = transaction.SmartContractTxnValueFeeWithRetry(STORAGE_SCADDRESS, sn, 0, fee, true)
 	return
-}
-
-func generateOwnerSigningKey(ownerPublicKey, ownerID string) (ed25519.PrivateKey, error) {
-	if ownerPublicKey == "" {
-		return nil, errors.New("owner_public_key_required", "owner public key is required")
-	}
-	hashData := fmt.Sprintf("%s:%s", ownerPublicKey, "owner_signing_public_key")
-	sig, err := client.Sign(encryption.Hash(hashData), ownerID)
-	if err != nil {
-		logger.Logger.Error("error during sign", zap.Error(err))
-		return nil, err
-	}
-	//use this signature as entropy to generate ecdsa key pair
-	decodedSig, _ := hex.DecodeString(sig)
-	privateSigningKey := ed25519.NewKeyFromSeed(decodedSig[:32])
-	return privateSigningKey, nil
 }

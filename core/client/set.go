@@ -5,9 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
-
 	"github.com/0chain/gosdk/core/conf"
+	"strings"
 
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/sys"
@@ -64,7 +63,6 @@ func init() {
 
 	sys.Verify = verifySignature
 	sys.VerifyWith = verifySignatureWith
-	sys.VerifyEd25519With = verifyEd25519With
 }
 
 func signHash(hash string, signatureScheme string, keys []sys.KeyPair) (string, error) {
@@ -99,15 +97,6 @@ func verifySignature(signature string, msg string) (bool, error) {
 
 func verifySignatureWith(pubKey, signature, hash string) (bool, error) {
 	sch := zcncrypto.NewSignatureScheme(client.signatureScheme)
-	err := sch.SetPublicKey(pubKey)
-	if err != nil {
-		return false, err
-	}
-	return sch.Verify(signature, hash)
-}
-
-func verifyEd25519With(pubKey, signature, hash string) (bool, error) {
-	sch := zcncrypto.NewSignatureScheme(constants.ED25519.String())
 	err := sch.SetPublicKey(pubKey)
 	if err != nil {
 		return false, err

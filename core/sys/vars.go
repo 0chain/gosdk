@@ -26,8 +26,6 @@ var (
 	Authorize AuthorizeFunc
 
 	AuthCommon AuthorizeFunc
-
-	VerifyEd25519With VerifyWithFunc
 )
 
 // SetAuthorize sets the authorize callback function

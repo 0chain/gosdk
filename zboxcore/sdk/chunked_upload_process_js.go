@@ -6,7 +6,6 @@ package sdk
 import (
 	"bytes"
 	"context"
-	"crypto/ed25519"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -55,7 +54,6 @@ type ChunkedUploadFormInfo struct {
 	AllocationTx      string
 	OnlyHash          bool
 	StorageVersion    int
-	PrivateSigningKey ed25519.PrivateKey
 }
 
 // createUploadProgress create a new UploadProgress
@@ -120,7 +118,6 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		AllocationTx:      su.allocationObj.Tx,
 		OnlyHash:          chunkEndIndex <= su.progress.ChunkIndex,
 		StorageVersion:    su.allocationObj.StorageVersion,
-		PrivateSigningKey: su.allocationObj.privateSigningKey,
 	}
 	formInfoJSON, err := json.Marshal(formInfo)
 	if err != nil {
@@ -458,7 +455,7 @@ func ProcessEventData(data safejs.Value) {
 		defer delete(hasherMap, fileMeta.RemotePath)
 	}
 	blobberID := os.Getenv("BLOBBER_ID")
-	formBuilder := CreateChunkedUploadFormBuilder(formInfo.StorageVersion, formInfo.PrivateSigningKey)
+	formBuilder := CreateChunkedUploadFormBuilder(formInfo.StorageVersion)
 	uploadData, err := formBuilder.Build(fileMeta, wp.hasher, formInfo.ConnectionID, blobberID, formInfo.ChunkSize, formInfo.ChunkStartIndex, formInfo.ChunkEndIndex, formInfo.IsFinal, formInfo.EncryptedKey, formInfo.EncryptedKeyPoint,
 		fileShards, thumbnailChunkData, formInfo.ShardSize)
 	if err != nil {
