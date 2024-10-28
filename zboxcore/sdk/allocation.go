@@ -3,11 +3,11 @@ package sdk
 import (
 	"bytes"
 	"context"
+	"crypto/ed25519"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/0chain/gosdk/core/client"
-	"github.com/0chain/gosdk/core/transaction"
 	"io"
 	"math"
 	"mime/multipart"
@@ -21,6 +21,9 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/0chain/gosdk/core/client"
+	"github.com/0chain/gosdk/core/transaction"
 
 	"github.com/0chain/common/core/currency"
 	"github.com/0chain/errors"
@@ -276,6 +279,9 @@ type Allocation struct {
 
 	StorageVersion int `json:"storage_version"`
 
+	// Owner ecdsa public key
+	OwnerSigningPublicKey string `json:"owner_signing_public_key"`
+
 	// FileOptions to define file restrictions on an allocation for third-parties
 	// default 00000000 for all crud operations suggesting only owner has the below listed abilities.
 	// enabling option/s allows any third party to perform certain ops
@@ -303,8 +309,9 @@ type Allocation struct {
 	// conseususes
 	consensusThreshold int
 	fullconsensus      int
-	sig                string `json:"-"`
-	allocationRoot     string `json:"-"`
+	sig                string             `json:"-"`
+	allocationRoot     string             `json:"-"`
+	privateSigningKey  ed25519.PrivateKey `json:"-"`
 }
 
 // OperationRequest represents an operation request with its related options.
@@ -429,6 +436,7 @@ func (a *Allocation) InitAllocation() {
 			}
 		}
 	}
+	a.generateAndSetOwnerSigningPublicKey()
 	a.startWorker(a.ctx)
 	InitCommitWorker(a.Blobbers)
 	InitBlockDownloader(a.Blobbers, downloadWorkerCount)
@@ -436,6 +444,21 @@ func (a *Allocation) InitAllocation() {
 		a.CheckAllocStatus() //nolint:errcheck
 	}
 	a.initialized = true
+}
+
+func (a *Allocation) generateAndSetOwnerSigningPublicKey() {
+	//create ecdsa public key from signature
+	privateSigningKey, err := generateOwnerSigningKey(a.OwnerPublicKey, a.Owner)
+	if err != nil {
+		l.Logger.Error("Failed to generate owner signing key", zap.Error(err))
+		return
+	}
+	if a.OwnerSigningPublicKey == "" {
+		pubKey := privateSigningKey.Public().(ed25519.PublicKey)
+		a.OwnerSigningPublicKey = hex.EncodeToString(pubKey)
+		//TODO: save this public key to blockchain
+	}
+	a.privateSigningKey = privateSigningKey
 }
 
 func (a *Allocation) isInitialized() bool {
@@ -1339,6 +1362,7 @@ func (a *Allocation) generateDownloadRequest(
 	downloadReq.allocOwnerID = a.Owner
 	downloadReq.sig = a.sig
 	downloadReq.allocOwnerPubKey = a.OwnerPublicKey
+	downloadReq.allocOwnerSigningPubKey = a.OwnerSigningPublicKey
 	downloadReq.ctx, downloadReq.ctxCncl = context.WithCancel(a.ctx)
 	downloadReq.fileHandler = fileHandler
 	downloadReq.localFilePath = localFilePath
@@ -2772,6 +2796,7 @@ func (a *Allocation) downloadFromAuthTicket(fileHandler sys.File, authTicket str
 	downloadReq.sig = a.sig
 	downloadReq.allocOwnerID = a.Owner
 	downloadReq.allocOwnerPubKey = a.OwnerPublicKey
+	downloadReq.allocOwnerSigningPubKey = a.OwnerSigningPublicKey
 	downloadReq.ctx, downloadReq.ctxCncl = context.WithCancel(a.ctx)
 	downloadReq.fileHandler = fileHandler
 	downloadReq.localFilePath = localFilePath
