@@ -1344,12 +1344,14 @@ func writeData(dest io.Writer, data [][][]byte, dataShards, remaining int) (int,
 				n, err := dest.Write(data[i][j])
 				total += n
 				if err != nil {
+					logger.Logger.Error("write failed: ", err, " total: ", total, " remaining: ", remaining, " toWriteData: ", len(data[i][j]))
 					return total, err
 				}
 			} else {
 				n, err := dest.Write(data[i][j][:remaining])
 				total += n
 				if err != nil {
+					logger.Logger.Error("write failed: ", err, " total: ", total, " remaining: ", remaining)
 					return total, err
 				}
 			}

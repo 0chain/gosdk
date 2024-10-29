@@ -4,8 +4,8 @@
 package jsbridge
 
 import (
+	"bytes"
 	"errors"
-	"io"
 	"io/fs"
 	"syscall/js"
 )
@@ -15,41 +15,37 @@ type FileWriter struct {
 	uint8Array     js.Value
 	fileHandle     js.Value
 	bufLen         int
-	buf            []byte
-	bufWriteOffset int
+	buf            *bytes.Buffer
 	writeError     bool
 }
 
-const writeBlocks = 10
+const (
+	writeBlocks = 25
+	writeLen    = 64 * 1024 * 20
+)
 
 // len(p) will always be <= 64KB
 func (w *FileWriter) Write(p []byte) (int, error) {
 	//init buffer if not initialized
-	if len(w.buf) == 0 {
-		w.buf = make([]byte, len(p)*writeBlocks)
+	if w.buf == nil {
+		w.buf = bytes.NewBuffer(make([]byte, 0, len(p)*writeBlocks))
 	}
 
-	//copy bytes to buf
-	if w.bufWriteOffset+len(p) > len(w.buf) {
-		w.writeError = true
-		return 0, io.ErrShortWrite
-	}
-	n := copy(w.buf[w.bufWriteOffset:], p)
-	w.bufWriteOffset += n
-	if w.bufWriteOffset == len(w.buf) {
+	w.buf.Write(p)
+	if w.buf.Len() > writeLen {
 		//write to file
-		if w.bufLen != len(w.buf) {
-			w.bufLen = len(w.buf)
+		if w.bufLen != w.buf.Len() {
+			w.bufLen = w.buf.Len()
 			w.uint8Array = js.Global().Get("Uint8Array").New(w.bufLen)
 		}
-		js.CopyBytesToJS(w.uint8Array, w.buf)
+		js.CopyBytesToJS(w.uint8Array, w.buf.Bytes())
 		_, err := Await(w.writableStream.Call("write", w.uint8Array))
 		if len(err) > 0 && !err[0].IsNull() {
 			w.writeError = true
 			return 0, errors.New("file_writer: " + err[0].String())
 		}
 		//reset buffer
-		w.bufWriteOffset = 0
+		w.buf.Reset()
 	}
 	return len(p), nil
 }
@@ -71,14 +67,14 @@ func (w *FileWriter) Write(p []byte) (int, error) {
 
 func (w *FileWriter) Close() error {
 
-	if w.bufWriteOffset > 0 && !w.writeError {
-		w.buf = w.buf[:w.bufWriteOffset]
-		uint8Array := js.Global().Get("Uint8Array").New(len(w.buf))
-		js.CopyBytesToJS(uint8Array, w.buf)
+	if w.buf.Len() > 0 && !w.writeError {
+		uint8Array := js.Global().Get("Uint8Array").New(w.buf.Len())
+		js.CopyBytesToJS(uint8Array, w.buf.Bytes())
 		_, err := Await(w.writableStream.Call("write", uint8Array))
 		if len(err) > 0 && !err[0].IsNull() {
 			return errors.New("file_writer: " + err[0].String())
 		}
+		w.buf.Reset()
 	}
 
 	_, err := Await(w.writableStream.Call("close"))
