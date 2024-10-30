@@ -325,7 +325,11 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
 		if _, ok := versionMap[version]; !ok {
 			versionMap[version] = make([]*RollbackBlobber, 0)
 		}
-
+		if rb.lpm.PrevWM != nil {
+			l.Logger.Info("version ", version, " blobber ", rb.blobber.Baseurl, " timestamp ", rb.lpm.LatestWM.Timestamp, " prev ", rb.lpm.PrevWM.FileMetaRoot)
+		} else {
+			l.Logger.Info("version ", version, " blobber ", rb.blobber.Baseurl, " timestamp ", rb.lpm.LatestWM.Timestamp)
+		}
 		versionMap[version] = append(versionMap[version], rb)
 	}
 
