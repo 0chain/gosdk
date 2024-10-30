@@ -25,7 +25,6 @@ import (
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/minio/sha256-simd"
-	"go.uber.org/zap"
 )
 
 type LatestPrevWriteMarker struct {
@@ -274,7 +273,7 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
 			if err != nil {
 				atomic.AddInt32(&errCnt, 1)
 				markerError = err
-				l.Logger.Error("error during getWritemarker", zap.Error(err))
+				l.Logger.Error("error during getWritemarker: ", err)
 				blobStatus.Status = "unavailable"
 			}
 			if wr == nil {
@@ -346,14 +345,14 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
 		}
 		return Repair, blobberRes, nil
 	} else {
-		l.Logger.Info("versionMapLen", zap.Int("versionMapLen", len(versionMap)), zap.Int("latestLen", len(versionMap[latestVersion])), zap.Int("prevLen", len(versionMap[prevVersion])))
+		l.Logger.Info("versionMapLen", len(versionMap), " latestLen: ", len(versionMap[latestVersion]), " prevLen: ", len(versionMap[prevVersion]))
 	}
 
 	// rollback to previous version
 	l.Logger.Info("Rolling back to previous version")
 	fullConsensus := len(versionMap[latestVersion]) - (req - len(versionMap[prevVersion]))
 	errCnt = 0
-	l.Logger.Info("fullConsensus", zap.Int32("fullConsensus", int32(fullConsensus)), zap.Int("latestLen", len(versionMap[latestVersion])), zap.Int("prevLen", len(versionMap[prevVersion])))
+	l.Logger.Info("fullConsensus ", int32(fullConsensus), " latestLen ", len(versionMap[latestVersion]), " prevLen ", len(versionMap[prevVersion]))
 	for _, rb := range versionMap[latestVersion] {
 
 		wg.Add(1)
@@ -363,7 +362,7 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
 			if err != nil {
 				atomic.AddInt32(&errCnt, 1)
 				rb.commitResult = ErrorCommitResult(err.Error())
-				l.Logger.Error("error during rollback", zap.Error(err))
+				l.Logger.Error("error during rollback ", err)
 			} else {
 				rb.commitResult = SuccessCommitResult()
 			}
@@ -399,7 +398,7 @@ func (a *Allocation) RollbackWithMask(mask zboxutil.Uint128) {
 			defer wg.Done()
 			wr, err := GetWritemarker(a.ID, a.Tx, a.sig, blobber.ID, blobber.Baseurl)
 			if err != nil {
-				l.Logger.Error("error during getWritemarker", zap.Error(err))
+				l.Logger.Error("error during getWritemarker: ", err)
 			}
 			if wr == nil {
 				markerChan <- nil
@@ -426,7 +425,7 @@ func (a *Allocation) RollbackWithMask(mask zboxutil.Uint128) {
 			err := rb.processRollback(context.TODO(), a.Tx)
 			if err != nil {
 				rb.commitResult = ErrorCommitResult(err.Error())
-				l.Logger.Error("error during rollback", zap.Error(err))
+				l.Logger.Error("error during rollback: ", err)
 			} else {
 				rb.commitResult = SuccessCommitResult()
 			}
