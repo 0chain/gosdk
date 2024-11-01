@@ -3,10 +3,10 @@ package sdk
 import (
 	"errors"
 
+	_ "github.com/0chain/gosdk/core/client" //import it to initialize sys.Sign
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/core/zcncrypto"
-	_ "github.com/0chain/gosdk/core/client" //import it to initialize sys.Sign
 )
 
 var ErrInvalidSignatureScheme = errors.New("invalid_signature_scheme")
@@ -16,6 +16,10 @@ var ErrInvalidSignatureScheme = errors.New("invalid_signature_scheme")
 //   - signatureScheme: signature scheme to use for signing
 //   - data: data to sign using the private key
 func SignRequest(privateKey, signatureScheme string, data string) (string, error) {
+	if privateKey == "" || signatureScheme == "" || data == "" {
+		return "", errors.New("invalid input")
+	}
+
 	hash := encryption.Hash(data)
 	return sys.Sign(hash, signatureScheme, []sys.KeyPair{{
 		PrivateKey: privateKey,
