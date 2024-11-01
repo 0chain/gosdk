@@ -147,10 +147,6 @@ func (p Params) Query() string {
 	return "?" + params.Encode()
 }
 
-func withParams(uri string, params Params) string { //nolint:unused
-	return uri + params.Query()
-}
-
 // GetBlobberSnapshots obtains list of allocations of a blobber.
 // Blobber snapshots are historical records of the blobber instance to track its change over time and serve graph requests,
 // which are requests that need multiple data points, distributed over an interval of time, usually to plot them on a
@@ -170,30 +166,6 @@ func withParams(uri string, params Params) string { //nolint:unused
 //		"offset": strconv.FormatInt(offset, 10),
 //	}, nil)
 //}
-
-// GetConfig retrieves the configuration of the smart contract
-//   - configType: the type of configuration to retrieve (e.g. storage_sc_config, miner_sc_globals, miner_sc_configs)
-func GetConfig(configType string) ([]byte, error) {
-	if err := CheckConfig(); err != nil {
-		return nil, err
-	}
-	if configType != "storage_sc_config" && configType != "miner_sc_globals" && configType != "miner_sc_configs" {
-		return nil, errors.New("invalid config type: supported types are storage_sc_config, miner_sc_globals, miner_sc_configs")
-	}
-
-	config, err := transaction.GetConfig(configType)
-
-	if err != nil {
-		return nil, err
-	}
-
-	configBytes, err := json.Marshal(config)
-	if err != nil {
-		return nil, err
-	}
-
-	return configBytes, nil
-}
 
 // GetMinerSCNodeInfo get miner information from sharders
 //   - id: the id of miner
