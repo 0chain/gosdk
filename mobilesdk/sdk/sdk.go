@@ -1,4 +1,6 @@
-// TODO: add mobile build flags later here.
+//go:build mobile
+// +build mobile
+
 package sdk
 
 import (
@@ -392,7 +394,7 @@ func (s *StorageSDK) GetBlobbersList() (string, error) {
 
 // GetStorageConfig get storage config
 // configType: storage_sc_config, miners_sc_globals, miner_sc_configs
-func GetStorageConfig(configType string) ([]byte, error) {
+func GetConfig(configType string) ([]byte, error) {
 	configBytes, err := coreTransaction.GetConfig(configType)
 	if err != nil {
 		return nil, err
