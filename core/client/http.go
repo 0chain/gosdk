@@ -3,14 +3,15 @@ package client
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/0chain/errors"
-	"github.com/0chain/gosdk/core/conf"
-	"github.com/0chain/gosdk/core/util"
-	"github.com/shopspring/decimal"
 	"log"
 	"net/http"
 	"net/url"
 	"sync"
+
+	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/conf"
+	"github.com/0chain/gosdk/core/util"
+	"github.com/shopspring/decimal"
 )
 
 // SCRestAPIHandler is a function type to handle the response from the SC Rest API
