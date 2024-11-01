@@ -22,7 +22,7 @@ type GetResponse struct {
 
 type PostRequest struct {
 	req  *http.Request
-	ctx  context.Context
+	Ctx  context.Context
 	cncl context.CancelFunc
 	url  string
 }
@@ -129,7 +129,7 @@ func NewHTTPGetRequestContext(ctx context.Context, url string) (*GetRequest, err
 	gr.PostRequest = &PostRequest{}
 	gr.url = url
 	gr.req = req
-	gr.ctx, gr.cncl = context.WithCancel(ctx)
+	gr.Ctx, gr.cncl = context.WithCancel(ctx)
 	return gr, nil
 }
 
@@ -147,7 +147,7 @@ func NewHTTPPostRequest(url string, data interface{}) (*PostRequest, error) {
 	req.Header.Set("Access-Control-Allow-Origin", "*")
 	pr.url = url
 	pr.req = req
-	pr.ctx, pr.cncl = context.WithTimeout(context.Background(), time.Second*60)
+	pr.Ctx, pr.cncl = context.WithTimeout(context.Background(), time.Second*60)
 	return pr, nil
 }
 
@@ -163,7 +163,7 @@ func (r *GetRequest) Get() (*GetResponse, error) {
 
 func (r *PostRequest) Post() (*PostResponse, error) {
 	result := &PostResponse{}
-	err := httpDo(r.req, r.ctx, r.cncl, func(resp *http.Response, err error) error {
+	err := httpDo(r.req, r.Ctx, r.cncl, func(resp *http.Response, err error) error {
 		if err != nil {
 			return err
 		}

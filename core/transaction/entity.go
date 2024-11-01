@@ -249,77 +249,81 @@ func (t *Transaction) VerifySigWith(pubkey string, verifyHandler VerifyFunc) (bo
 }
 
 func SendTransactionSync(txn *Transaction, miners []string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
+	const requestTimeout = 30 * time.Second // Timeout for each request
 
-	wg := sync.WaitGroup{}
-	wg.Add(len(miners))
 	fails := make(chan error, len(miners))
+	var wg sync.WaitGroup
 
 	for _, miner := range miners {
-		url := fmt.Sprintf("%v/%v", miner, TXN_SUBMIT_URL)
+		wg.Add(1)
+		minerURL := fmt.Sprintf("%v/%v", miner, TXN_SUBMIT_URL)
+
 		go func(url string) {
 			defer wg.Done()
-			select {
-			case <-ctx.Done():
-				fails <- ctx.Err() // Timeout or cancellation
-			default:
-				_, err := sendTransactionToURL(url, txn, nil)
-				if err != nil {
-					fails <- err
-				}
+
+			// Create a context with a 30-second timeout for each request
+			ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+			defer cancel()
+
+			_, err := sendTransactionToURL(ctx, url, txn)
+			if err != nil {
+				fails <- err
 			}
-		}(url)
+		}(minerURL)
 	}
 
-	done := make(chan struct{})
+	// Close the channel when all requests are finished
 	go func() {
 		wg.Wait()
 		close(fails)
-		close(done)
 	}()
 
-	select {
-	case <-done: // All requests completed
-	case <-ctx.Done(): // Timeout reached
-		return ctx.Err()
-	}
-
-	// Error processing logic here (same as original)
-	failureCount := 0
+	// Collect errors from all requests
+	var failureCount int
 	messages := make(map[string]int)
-	for e := range fails {
-		if e != nil {
+
+	for err := range fails {
+		if err != nil {
 			failureCount++
-			messages[e.Error()]++
+			messages[err.Error()]++
 		}
 	}
 
-	max := 0
-	dominant := ""
-	for m, s := range messages {
-		if s > max {
-			dominant = m
+	// Identify the most frequent error
+	var maxCount int
+	var dominantErr string
+	for msg, count := range messages {
+		if count > maxCount {
+			maxCount = count
+			dominantErr = msg
 		}
 	}
 
 	if failureCount == len(miners) {
-		return fmt.Errorf(dominant)
+		return fmt.Errorf(dominantErr)
 	}
 	return nil
 }
 
-func sendTransactionToURL(url string, txn *Transaction, wg *sync.WaitGroup) ([]byte, error) {
+func sendTransactionToURL(ctx context.Context, url string, txn *Transaction) ([]byte, error) {
+	// Create a new HTTP POST request with context
 	postReq, err := util.NewHTTPPostRequest(url, txn)
 	if err != nil {
-		//Logger.Error("Error in serializing the transaction", txn, err.Error())
-		return nil, err
+		return nil, fmt.Errorf("error creating HTTP request: %w", err)
 	}
+
+	// Use the provided context in the request's Post method
+	postReq.Ctx = ctx
 	postResponse, err := postReq.Post()
+	if err != nil {
+		return nil, fmt.Errorf("submit transaction failed: %w", err)
+	}
+
 	if postResponse.StatusCode >= 200 && postResponse.StatusCode <= 299 {
 		return []byte(postResponse.Body), nil
 	}
-	return nil, errors.Wrap(err, errors.New("submit transaction failed", postResponse.Body))
+
+	return nil, fmt.Errorf("submit transaction failed: %s", postResponse.Body)
 }
 
 type cachedObject struct {
@@ -602,7 +606,7 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 
 		if t == nil {
 			return "", "", 0, txn, errors.New("transaction_validation_failed",
-				"Failed to get the transaction confirmation")
+				"Failed to get the transaction confirmation : "+txn.Hash)
 		}
 
 		if t.Status == TxnFail {

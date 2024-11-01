@@ -96,26 +96,27 @@ type DownloadRequest struct {
 	fileCallback       func()
 	contentMode        string
 	Consensus
-	effectiveBlockSize int // blocksize - encryptionOverHead
-	ecEncoder          reedsolomon.Encoder
-	maskMu             *sync.Mutex
-	encScheme          encryption.EncryptionScheme
-	shouldVerify       bool
-	blocksPerShard     int64
-	connectionID       string
-	skip               bool
-	freeRead           bool
-	fRef               *fileref.FileRef
-	chunksPerShard     int64
-	size               int64
-	offset             int64
-	bufferMap          map[int]zboxutil.DownloadBuffer
-	downloadStorer     DownloadProgressStorer
-	workdir            string
-	downloadQueue      downloadQueue // Always initialize this queue with max time taken
-	isResume           bool
-	isEnterprise       bool
-	storageVersion     int
+	effectiveBlockSize      int // blocksize - encryptionOverHead
+	ecEncoder               reedsolomon.Encoder
+	maskMu                  *sync.Mutex
+	encScheme               encryption.EncryptionScheme
+	shouldVerify            bool
+	blocksPerShard          int64
+	connectionID            string
+	skip                    bool
+	freeRead                bool
+	fRef                    *fileref.FileRef
+	chunksPerShard          int64
+	size                    int64
+	offset                  int64
+	bufferMap               map[int]zboxutil.DownloadBuffer
+	downloadStorer          DownloadProgressStorer
+	workdir                 string
+	downloadQueue           downloadQueue // Always initialize this queue with max time taken
+	isResume                bool
+	isEnterprise            bool
+	storageVersion          int
+	allocOwnerSigningPubKey string
 }
 
 type downloadPriority struct {
@@ -1164,12 +1165,23 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 		}
 		actualHash := fmr.fileref.ActualFileHash
 		actualFileHashSignature := fmr.fileref.ActualFileHashSignature
-
-		isValid, err := sys.VerifyWith(
-			req.allocOwnerPubKey,
-			actualFileHashSignature,
-			actualHash,
+		var (
+			isValid bool
+			err     error
 		)
+		if fmr.fileref.SignatureVersion == SignatureV2 {
+			isValid, err = sys.VerifyEd25519With(
+				req.allocOwnerSigningPubKey,
+				actualFileHashSignature,
+				actualHash,
+			)
+		} else {
+			isValid, err = sys.VerifyWith(
+				req.allocOwnerPubKey,
+				actualFileHashSignature,
+				actualHash,
+			)
+		}
 		if err != nil {
 			l.Logger.Error(err)
 			continue
@@ -1219,11 +1231,23 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 				hashData := fmt.Sprintf("%s:%s:%s:%s", fRef.ActualFileHash, fRef.ValidationRoot, fRef.FixedMerkleRoot, req.blobbers[i].ID)
 				hash = encrypt.Hash(hashData)
 			}
-			isValid, err := sys.VerifyWith(
-				req.allocOwnerPubKey,
-				fRef.ValidationRootSignature,
-				hash,
+			var (
+				isValid bool
+				err     error
 			)
+			if fRef.SignatureVersion == SignatureV2 {
+				isValid, err = sys.VerifyEd25519With(
+					req.allocOwnerSigningPubKey,
+					fRef.ValidationRootSignature,
+					hash,
+				)
+			} else {
+				isValid, err = sys.VerifyWith(
+					req.allocOwnerPubKey,
+					fRef.ValidationRootSignature,
+					hash,
+				)
+			}
 			if err != nil {
 				l.Logger.Error(err, "allocOwnerPubKey: ", req.allocOwnerPubKey, " validationRootSignature: ", fRef.ValidationRootSignature, " actualFileHashSignature: ", fRef.ActualFileHashSignature, " validationRoot: ", fRef.ValidationRoot)
 				continue

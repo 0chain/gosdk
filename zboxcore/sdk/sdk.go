@@ -4,14 +4,15 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/0chain/common/core/currency"
-	"github.com/0chain/errors"
-	"github.com/0chain/gosdk/core/logger"
-	"gopkg.in/natefinch/lumberjack.v2"
 	"io"
 	"math"
 	"net/http"
 	"strconv"
+
+	"github.com/0chain/common/core/currency"
+	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/logger"
+	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/common"
@@ -649,6 +650,25 @@ func GetAllocation(allocationID string) (*Allocation, error) {
 	}
 	allocationObj.numBlockDownloads = numBlockDownloads
 	allocationObj.InitAllocation()
+	return allocationObj, nil
+}
+
+// GetAllocationForUpdate - get allocation for update from given allocation id without calling init allocation
+func GetAllocationForUpdate(allocationID string) (*Allocation, error) {
+	if !client.IsSDKInitialized() {
+		return nil, sdkNotInitialized
+	}
+	params := make(map[string]string)
+	params["allocation"] = allocationID
+	allocationBytes, err := client.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation", params)
+	if err != nil {
+		return nil, errors.New("allocation_fetch_error", "Error fetching the allocation."+err.Error())
+	}
+	allocationObj := &Allocation{}
+	err = json.Unmarshal(allocationBytes, allocationObj)
+	if err != nil {
+		return nil, errors.New("allocation_decode_error", "Error decoding the allocation: "+err.Error()+" "+string(allocationBytes))
+	}
 	return allocationObj, nil
 }
 

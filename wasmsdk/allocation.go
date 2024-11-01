@@ -168,7 +168,8 @@ func UpdateForbidAllocation(allocationID string, forbidupload, forbiddelete, for
 		"",           //addBlobberId,
 		"",           //addBlobberAuthTicket
 		"",           //removeBlobberId,
-		false,        //thirdPartyExtendable,
+		"",           //thirdPartyExtendable,
+		false,        // ownerSigninPublicKey
 		&sdk.FileOptionsParameters{
 			ForbidUpload: sdk.FileOptionParam{Changed: forbidupload, Value: forbidupload},
 			ForbidDelete: sdk.FileOptionParam{Changed: forbiddelete, Value: forbiddelete},
@@ -196,7 +197,8 @@ func freezeAllocation(allocationID string) (string, error) {
 		"",           //addBlobberId,
 		"",           //addBlobberAuthTicket
 		"",           //removeBlobberId,
-		false,        //thirdPartyExtendable,
+		"",           //thirdPartyExtendable,
+		false,        // ownerSigninPublicKey
 		&sdk.FileOptionsParameters{
 			ForbidUpload: sdk.FileOptionParam{Changed: true, Value: true},
 			ForbidDelete: sdk.FileOptionParam{Changed: true, Value: true},
@@ -242,7 +244,7 @@ func updateAllocationWithRepair(allocationID string,
 	size int64,
 	extend bool,
 	lock int64,
-	addBlobberId, addBlobberAuthTicket, removeBlobberId, callbackFuncName string) (string, error) {
+	addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey, callbackFuncName string) (string, error) {
 	sdk.SetWasm()
 	allocationObj, err := sdk.GetAllocation(allocationID)
 	if err != nil {
@@ -259,7 +261,7 @@ func updateAllocationWithRepair(allocationID string,
 		}
 	}
 
-	alloc, hash, isRepairRequired, err := allocationObj.UpdateWithStatus(size, extend, uint64(lock), addBlobberId, addBlobberAuthTicket, removeBlobberId, false, &sdk.FileOptionsParameters{}, statusBar)
+	alloc, hash, isRepairRequired, err := allocationObj.UpdateWithStatus(size, extend, uint64(lock), addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey, false, &sdk.FileOptionsParameters{}, statusBar)
 	if err != nil {
 		return hash, err
 	}
@@ -295,8 +297,8 @@ func updateAllocationWithRepair(allocationID string,
 func updateAllocation(allocationID string,
 	size int64, extend bool,
 	lock int64,
-	addBlobberId, addBlobberAuthTicket, removeBlobberId string, setThirdPartyExtendable bool) (string, error) {
-	hash, _, err := sdk.UpdateAllocation(size, extend, allocationID, uint64(lock), addBlobberId, addBlobberAuthTicket, removeBlobberId, setThirdPartyExtendable, &sdk.FileOptionsParameters{})
+	addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey string, setThirdPartyExtendable bool) (string, error) {
+	hash, _, err := sdk.UpdateAllocation(size, extend, allocationID, uint64(lock), addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey, setThirdPartyExtendable, &sdk.FileOptionsParameters{})
 
 	if err == nil {
 		clearAllocation(allocationID)
