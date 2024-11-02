@@ -133,6 +133,7 @@ const (
 	STORAGESC_RESET_BLOBBER_STATS       = "reset_blobber_stats"
 	STORAGESC_RESET_ALLOCATION_STATS    = "reset_allocation_stats"
 	STORAGESC_RESET_BLOBBER_VERSION     = "update_blobber_version"
+	STORAGESC_INSERT_KILLED_PROVIDER_ID = "insert_killed_provider_id"
 
 	MINERSC_LOCK             = "addToDelegatePool"
 	MINERSC_UNLOCK           = "deleteFromDelegatePool"
