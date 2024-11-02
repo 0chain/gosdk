@@ -1233,6 +1233,23 @@ func ResetBlobberStats(rbs *ResetBlobberStatsDto) (string, int64, error) {
 	return hash, n, err
 }
 
+type StorageNodeVersion struct {
+	Id string `json:"id"`
+}
+
+func ResetBlobberVersion(snv *StorageNodeVersion) (string, int64, error) {
+	if !client.IsSDKInitialized() {
+		return "", 0, sdkNotInitialized
+	}
+
+	var sn = transaction.SmartContractTxnData{
+		Name:      transaction.STORAGESC_RESET_BLOBBER_VERSION,
+		InputArgs: snv,
+	}
+	hash, _, n, _, err := storageSmartContractTxn(sn)
+	return hash, n, err
+}
+
 func ResetAllocationStats(allocationId string) (string, int64, error) {
 	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized

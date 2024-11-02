@@ -132,6 +132,7 @@ const (
 	STORAGESC_SHUTDOWN_VALIDATOR        = "shutdown_validator"
 	STORAGESC_RESET_BLOBBER_STATS       = "reset_blobber_stats"
 	STORAGESC_RESET_ALLOCATION_STATS    = "reset_allocation_stats"
+	STORAGESC_RESET_BLOBBER_VERSION     = "update_blobber_version"
 
 	MINERSC_LOCK             = "addToDelegatePool"
 	MINERSC_UNLOCK           = "deleteFromDelegatePool"
