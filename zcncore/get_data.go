@@ -5,13 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
+	"strconv"
+
 	"github.com/0chain/gosdk/core/block"
 	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/tokenrate"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/zcncrypto"
-	"net/url"
-	"strconv"
+	"github.com/0chain/gosdk/zboxcore/sdk"
 )
 
 type GetClientResponse struct {
@@ -189,10 +191,24 @@ func GetMintNonce() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	var res []byte
 
-	return client.MakeSCRestAPICall(ZCNSCSmartContractAddress, GET_MINT_NONCE, Params{
-		"client_id": client.Id(),
-	})
+	if sdk.IsWasm {
+		res, err = sdk.MakeSCRestAPICallToZbox("/user", Params{
+			"client_id": client.Id(),
+		})
+		if err != nil {
+			res, err = client.MakeSCRestAPICall(ZCNSCSmartContractAddress, GET_MINT_NONCE, Params{
+				"client_id": client.Id(),
+			})
+		}
+	} else {
+		res, err = client.MakeSCRestAPICall(ZCNSCSmartContractAddress, GET_MINT_NONCE, Params{
+			"client_id": client.Id(),
+		})
+	}
+
+	return res, err
 }
 
 func GetMiners(active, stakable bool, limit, offset int) ([]byte, error) {
@@ -284,10 +300,25 @@ func GetNotProcessedZCNBurnTickets(ethereumAddress, startNonce string) ([]byte, 
 
 	const GET_NOT_PROCESSED_BURN_TICKETS = `/v1/not_processed_burn_tickets`
 
-	return client.MakeSCRestAPICall(ZCNSCSmartContractAddress, GET_NOT_PROCESSED_BURN_TICKETS, Params{
-		"ethereum_address": ethereumAddress,
-		"nonce":            startNonce,
-	})
+	var res []byte
+	if sdk.IsWasm {
+		res, err = sdk.MakeSCRestAPICallToZbox("/not_processed_burn_tickets", Params{
+			"ethereum_address": ethereumAddress,
+			"nonce":            startNonce,
+		})
+		if err != nil {
+			res, err = client.MakeSCRestAPICall(ZCNSCSmartContractAddress, GET_NOT_PROCESSED_BURN_TICKETS, Params{
+				"ethereum_address": ethereumAddress,
+				"nonce":            startNonce,
+			})
+		}
+	} else {
+		res, err = client.MakeSCRestAPICall(ZCNSCSmartContractAddress, GET_NOT_PROCESSED_BURN_TICKETS, Params{
+			"ethereum_address": ethereumAddress,
+			"nonce":            startNonce,
+		})
+	}
+	return res, err
 }
 
 // GetUserLockedTotal get total token user locked
