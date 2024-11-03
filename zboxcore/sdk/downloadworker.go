@@ -1169,7 +1169,7 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 			isValid bool
 			err     error
 		)
-		if fmr.fileref.SignatureVersion == SignatureV2 {
+		if len(actualFileHashSignature) == 128 {
 			isValid, err = sys.VerifyEd25519With(
 				req.allocOwnerSigningPubKey,
 				actualFileHashSignature,
@@ -1235,7 +1235,7 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 				isValid bool
 				err     error
 			)
-			if fRef.SignatureVersion == SignatureV2 {
+			if len(fRef.ValidationRootSignature) == 128 {
 				isValid, err = sys.VerifyEd25519With(
 					req.allocOwnerSigningPubKey,
 					fRef.ValidationRootSignature,
