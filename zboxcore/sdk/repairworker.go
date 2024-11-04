@@ -81,6 +81,10 @@ func (r *RepairRequest) processRepair(ctx context.Context, a *Allocation) {
 		SetSingleClietnMode(true)
 		defer SetSingleClietnMode(false)
 	}
+	if shouldSaveProgress {
+		SetSaveProgress(false)
+		defer SetSaveProgress(true)
+	}
 	r.allocation = a
 	if a.StorageVersion == StorageV2 {
 		r.iterateDirV2(ctx)

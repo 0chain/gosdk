@@ -1104,7 +1104,19 @@ func repairAllocation(allocationID, callbackFuncName string) error {
 		return err
 	}
 	wg.Wait()
-	return statusBar.err
+	if statusBar.err != nil {
+		fmt.Println("Error in repair allocation: ", statusBar.err)
+		return statusBar.err
+	}
+	status, _, err := alloc.CheckAllocStatus()
+	if err != nil {
+		return err
+	}
+	if status == sdk.Repair || status == sdk.Broken {
+		fmt.Println("allocation repair failed")
+		return errors.New("allocation repair failed")
+	}
+	return nil
 }
 
 // checkAllocStatus check the status of the allocation, either it is ok, needs repair or broken
