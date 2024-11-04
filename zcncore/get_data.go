@@ -238,6 +238,54 @@ func GetBlobbers(active, stakable bool, limit, offset int) ([]byte, error) {
 	return blobbersBytes, nil
 }
 
+func GetBlobberByID(id string) ([]byte, error) {
+	if err := CheckConfig(); err != nil {
+		return nil, err
+	}
+
+	if id == "" || len(id) == 0 {
+		return nil, errors.New("blobber id is required")
+	}
+
+	blobber, err := sdk.GetBlobber(id)
+
+	if err != nil {
+		return nil, errors.New("error while getting blobber: " + err.Error())
+	}
+
+	blobberBytes, err := json.Marshal(blobber)
+
+	if err != nil {
+		return nil, errors.New("error while marshalling blobber: " + err.Error())
+	}
+
+	return blobberBytes, nil
+}
+
+func GetValidatorByID(id string) ([]byte, error) {
+	if err := CheckConfig(); err != nil {
+		return nil, err
+	}
+
+	if id == "" || len(id) == 0 {
+		return nil, errors.New("validator id is required")
+	}
+
+	validator, err := sdk.GetValidator(id)
+
+	if err != nil {
+		return nil, errors.New("error while getting validator: " + err.Error())
+	}
+
+	validatorBytes, err := json.Marshal(validator)
+
+	if err != nil {
+		return nil, errors.New("error while marshalling validator: " + err.Error())
+	}
+
+	return validatorBytes, nil
+}
+
 // GetLatestFinalizedMagicBlock gets latest finalized magic block
 //   - numSharders: number of sharders
 //   - timeout: request timeout
