@@ -424,6 +424,10 @@ func GetAllocations() (string, error) {
 // RedeeemFreeStorage given a free storage ticket, create a new free allocation
 //   - ticket: free storage ticket
 func (s *StorageSDK) RedeemFreeStorage(ticket string) (string, error) {
+	if ticket == "" || len(ticket) == 0 {
+		return "", errors.New("invalid_free_marker: free marker is required")
+	}
+
 	recipientPublicKey, marker, lock, err := decodeTicket(ticket)
 	if err != nil {
 		return "", err
