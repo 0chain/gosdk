@@ -177,16 +177,21 @@ func UpdateAllocation(
 //   - value: value to lock
 //   - fee: transaction fee
 func StakePoolLock(providerType ProviderType, providerID string, value, fee uint64) (hash string, nonce int64, err error) {
+	hash, _, nonce, _, err = StakePoolLockWithTransaction(providerType, providerID, value, fee)
+	return
+}
+
+func StakePoolLockWithTransaction(providerType ProviderType, providerID string, value, fee uint64) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 	if !client.IsSDKInitialized() {
-		return "", 0, sdkNotInitialized
+		return "", "", 0, nil, sdkNotInitialized
 	}
 
 	if providerType == 0 {
-		return "", 0, errors.New("stake_pool_lock", "provider is required")
+		return "", "", 0, nil, errors.New("stake_pool_lock", "provider is required")
 	}
 
 	if providerID == "" {
-		return "", 0, errors.New("stake_pool_lock", "provider_id is required")
+		return "", "", 0, nil, errors.New("stake_pool_lock", "provider_id is required")
 	}
 
 	spr := stakePoolRequest{
@@ -210,10 +215,10 @@ func StakePoolLock(providerType ProviderType, providerID string, value, fee uint
 		scAddress = ZCNSC_SCADDRESS
 		sn.Name = transaction.ZCNSC_LOCK
 	default:
-		return "", 0, errors.Newf("stake_pool_lock", "unsupported provider type: %v", providerType)
+		return "", "", 0, nil, errors.Newf("stake_pool_lock", "unsupported provider type: %v", providerType)
 	}
 
-	hash, _, nonce, _, err = transaction.SmartContractTxnValueFeeWithRetry(scAddress, sn, value, fee, true)
+	hash, out, nonce, txn, err = transaction.SmartContractTxnValueFeeWithRetry(scAddress, sn, value, fee, true)
 	return
 }
 
@@ -227,16 +232,30 @@ func StakePoolLock(providerType ProviderType, providerID string, value, fee uint
 //   - providerID: provider ID
 //   - fee: transaction fee
 func StakePoolUnlock(providerType ProviderType, providerID string, fee uint64) (unstake int64, nonce int64, err error) {
+	var out string
+	if _, out, nonce, _, err = StakePoolUnlockWithTransaction(providerType, providerID, fee); err != nil {
+		return // an error
+	}
+
+	var spuu stakePoolLock
+	if err = json.Unmarshal([]byte(out), &spuu); err != nil {
+		return
+	}
+
+	return spuu.Amount, nonce, nil
+}
+
+func StakePoolUnlockWithTransaction(providerType ProviderType, providerID string, fee uint64) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 	if !client.IsSDKInitialized() {
-		return 0, 0, sdkNotInitialized
+		return "", "", 0, nil, sdkNotInitialized
 	}
 
 	if providerType == 0 {
-		return 0, 0, errors.New("stake_pool_lock", "provider is required")
+		return "", "", 0, nil, errors.New("stake_pool_lock", "provider is required")
 	}
 
 	if providerID == "" {
-		return 0, 0, errors.New("stake_pool_lock", "provider_id is required")
+		return "", "", 0, nil, errors.New("stake_pool_lock", "provider_id is required")
 	}
 
 	spr := stakePoolRequest{
@@ -260,20 +279,10 @@ func StakePoolUnlock(providerType ProviderType, providerID string, fee uint64) (
 		scAddress = ZCNSC_SCADDRESS
 		sn.Name = transaction.ZCNSC_UNLOCK
 	default:
-		return 0, 0, errors.Newf("stake_pool_unlock", "unsupported provider type: %v", providerType)
+		return "", "", 0, nil, errors.Newf("stake_pool_unlock", "unsupported provider type: %v", providerType)
 	}
 
-	var out string
-	if _, out, nonce, _, err = transaction.SmartContractTxnValueFeeWithRetry(scAddress, sn, 0, fee, true); err != nil {
-		return // an error
-	}
-
-	var spuu stakePoolLock
-	if err = json.Unmarshal([]byte(out), &spuu); err != nil {
-		return
-	}
-
-	return spuu.Amount, nonce, nil
+	return transaction.SmartContractTxnValueFeeWithRetry(scAddress, sn, 0, fee, true)
 }
 
 // WritePoolLock locks given number of tokes for given duration in read pool.

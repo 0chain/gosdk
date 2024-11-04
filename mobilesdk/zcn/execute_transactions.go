@@ -3,6 +3,7 @@ package zcn
 import (
 	"encoding/json"
 	"errors"
+	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk/zcncore"
 )
 
@@ -19,7 +20,7 @@ func MinerStakePoolLock(providerId string, lock int64, fee int64) ([]byte, error
 		return nil, tokenValidation(fee)
 	}
 
-	_, _, _, txn, err := zcncore.MinerSCLockWithCustomFee(providerId, zcncore.ProviderMiner, uint64(lock), uint64(fee))
+	_, _, _, txn, err := sdk.StakePoolLockWithTransaction(sdk.ProviderMiner, providerId, uint64(lock), uint64(fee))
 
 	if err != nil {
 		return nil, errors.New("Error in MinerSCLock: " + err.Error())
@@ -40,7 +41,7 @@ func MinerStakePoolUnlock(providerId string, fee int64) ([]byte, error) {
 		return nil, tokenValidation(fee)
 	}
 
-	_, _, _, txn, err := zcncore.MinerSCUnlockWithCustomFee(providerId, zcncore.ProviderMiner, uint64(fee))
+	_, _, _, txn, err := sdk.StakePoolUnlockWithTransaction(sdk.ProviderMiner, providerId, uint64(fee))
 
 	if err != nil {
 		return nil, errors.New("Error in MinerSCUnlock: " + err.Error())
@@ -60,7 +61,7 @@ func MinerCollectReward(providerId string, fee int64) ([]byte, error) {
 		return nil, tokenValidation(fee)
 	}
 
-	_, _, _, txn, err := zcncore.MinerSCCollectRewardWithCustomFee(providerId, zcncore.ProviderMiner, uint64(fee))
+	_, _, _, txn, err := sdk.CollectRewardsWithTransaction(providerId, sdk.ProviderMiner, uint64(fee))
 
 	if err != nil {
 		return nil, errors.New("Error in MinerSCCollectReward: " + err.Error())
@@ -85,7 +86,7 @@ func BlobberStakePoolLock(providerId string, lock int64, fee int64) ([]byte, err
 		return nil, tokenValidation(fee)
 	}
 
-	_, _, _, txn, err := zcncore.StorageSCStakePoolLock(providerId, zcncore.ProviderBlobber, uint64(lock), uint64(fee))
+	_, _, _, txn, err := sdk.StakePoolLockWithTransaction(sdk.ProviderBlobber, providerId, uint64(lock), uint64(fee))
 
 	if err != nil {
 		return nil, errors.New("Error in BlobberSCLock: " + err.Error())
@@ -106,7 +107,7 @@ func BlobberStakePoolUnlock(providerId string, fee int64) ([]byte, error) {
 		return nil, tokenValidation(fee)
 	}
 
-	_, _, _, txn, err := zcncore.StorageSCStakePoolUnlock(providerId, zcncore.ProviderBlobber, uint64(fee))
+	_, _, _, txn, err := sdk.StakePoolUnlockWithTransaction(sdk.ProviderBlobber, providerId, uint64(fee))
 
 	if err != nil {
 		return nil, errors.New("Error in BlobberSCUnlock: " + err.Error())
@@ -122,7 +123,7 @@ func BlobberStakePoolUnlock(providerId string, fee int64) ([]byte, error) {
 // # Inputs
 //   - providerId: provider id
 func BlobberCollectReward(providerId string, fee int64) ([]byte, error) {
-	_, _, _, txn, err := zcncore.StorageSCCollectReward(providerId, zcncore.ProviderBlobber, uint64(fee))
+	_, _, _, txn, err := sdk.CollectRewardsWithTransaction(providerId, sdk.ProviderBlobber, uint64(fee))
 
 	if err != nil {
 		return nil, errors.New("Error in BlobberSCCollectReward: " + err.Error())
@@ -147,7 +148,7 @@ func SharderStakePoolLock(providerId string, lock int64, fee int64) ([]byte, err
 		return nil, tokenValidation(fee)
 	}
 
-	_, _, _, txn, err := zcncore.MinerSCLockWithCustomFee(providerId, zcncore.ProviderSharder, uint64(lock), uint64(fee))
+	_, _, _, txn, err := sdk.StakePoolLockWithTransaction(sdk.ProviderSharder, providerId, uint64(lock), uint64(fee))
 
 	if err != nil {
 		return nil, errors.New("Error in SharderSCLock: " + err.Error())
@@ -168,7 +169,7 @@ func SharderStakePoolUnlock(providerId string, fee int64) ([]byte, error) {
 		return nil, tokenValidation(fee)
 	}
 
-	_, _, _, txn, err := zcncore.MinerSCUnlockWithCustomFee(providerId, zcncore.ProviderSharder, uint64(fee))
+	_, _, _, txn, err := sdk.StakePoolUnlockWithTransaction(sdk.ProviderSharder, providerId, uint64(fee))
 
 	if err != nil {
 		return nil, errors.New("Error in SharderSCUnlock: " + err.Error())
@@ -185,7 +186,7 @@ func SharderCollectReward(providerId string, fee int64) ([]byte, error) {
 		return nil, tokenValidation(fee)
 	}
 
-	_, _, _, txn, err := zcncore.MinerSCCollectRewardWithCustomFee(providerId, zcncore.ProviderSharder, uint64(fee))
+	_, _, _, txn, err := sdk.CollectRewardsWithTransaction(providerId, sdk.ProviderSharder, uint64(fee))
 
 	if err != nil {
 		return nil, errors.New("Error in SharderSCCollectReward: " + err.Error())
