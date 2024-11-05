@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+
 	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/imageutil"
@@ -141,6 +142,7 @@ func makeSCRestAPICall(scAddress, relativePath, paramsJson string) (string, erro
 	if err != nil {
 		sdkLogger.Error(fmt.Sprintf("Error parsing JSON: %v", err))
 	}
+
 	b, err := client.MakeSCRestAPICall(scAddress, relativePath, params)
 	return string(b), err
 }

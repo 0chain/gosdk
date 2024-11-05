@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/hashicorp/golang-lru/v2/simplelru"
 	"io"
 	"net"
 	"net/http"
@@ -13,6 +12,8 @@ import (
 	"path"
 	"strconv"
 	"time"
+
+	"github.com/hashicorp/golang-lru/v2/simplelru"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/client"
