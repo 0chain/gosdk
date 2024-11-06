@@ -58,6 +58,6 @@ func setWallet(clientID, clientKey, peerPublicKey, publicKey, privateKey, mnemon
 	return nil
 }
 
-func setWalletMode(mode bool) error {
+func setWalletMode(mode bool) {
 	client.SetWalletMode(mode)
 }
