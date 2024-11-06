@@ -156,6 +156,11 @@ func SetWallet(w zcncrypto.Wallet) {
 	client.wallets[w.ClientID] = &w
 }
 
+// SetWalletMode sets current wallet split key mode.
+func SetWalletMode(mode bool) {
+	client.wallet.IsSplit = mode
+}
+
 // splitKeyWallet parameter is valid only if SignatureScheme is "BLS0Chain"
 func SetSplitKeyWallet(isSplitKeyWallet bool) error {
 	if client.signatureScheme == constants.BLS0CHAIN.String() {
