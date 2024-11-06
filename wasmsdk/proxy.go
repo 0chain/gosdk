@@ -59,18 +59,20 @@ func main() {
 					if c == nil || len(c.Keys) == 0 {
 						return "", errors.New("no keys found")
 					}
+
 					pk := c.Keys[0].PrivateKey
 					result, err := jsbridge.Await(jsSign.Invoke(hash, pk))
 
 					if len(err) > 0 && !err[0].IsNull() {
 						return "", errors.New("sign: " + err[0].String())
 					}
+
 					return result[0].String(), nil
 				}
 
 				//update sign with js sign
 				zcncrypto.Sign = signFunc
-				zcncore.SignFn = signFunc
+				client.SignFn = signFunc
 				sys.Sign = func(hash, signatureScheme string, keys []sys.KeyPair) (string, error) {
 					// js already has signatureScheme and keys
 					return signFunc(hash)
@@ -349,6 +351,7 @@ func main() {
 					if c == nil || len(c.Keys) == 0 {
 						return "", errors.New("no keys found")
 					}
+
 					pk := c.Keys[0].PrivateKey
 					result, err := jsbridge.Await(jsSign.Invoke(hash, pk))
 
@@ -359,7 +362,7 @@ func main() {
 				}
 				//update sign with js sign
 				zcncrypto.Sign = signFunc
-				zcncore.SignFn = signFunc
+				client.SignFn = signFunc
 				sys.Sign = func(hash, signatureScheme string, keys []sys.KeyPair) (string, error) {
 					// js already has signatureScheme and keys
 					return signFunc(hash)

@@ -7,6 +7,7 @@ import (
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/shopspring/decimal"
+	"log"
 	"net/http"
 	"net/url"
 	"sync"
@@ -30,7 +31,7 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 		restApiUrl = restApiUrls[0]
 	}
 
-	sharders := nodeClient.Network().Sharders
+	sharders := nodeClient.sharders.Healthy()
 	responses := make(map[int]int)
 	entityResult := make(map[string][]byte)
 
@@ -55,7 +56,7 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 			urlString := fmt.Sprintf("%v/%v%v%v", sharder, restApiUrl, scAddress, relativePath)
 			urlObj, err := url.Parse(urlString)
 			if err != nil {
-				fmt.Println(err.Error())
+				log.Println(err.Error())
 				return
 			}
 			q := urlObj.Query()
@@ -66,13 +67,14 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 
 			req, err := util.NewHTTPGetRequest(urlObj.String())
 			if err != nil {
-				fmt.Println("1Error creating request", err.Error())
+				log.Println("Error creating request", err.Error())
 				return
 			}
 
 			response, err := req.Get()
 			if err != nil {
-				fmt.Println("2Error getting response", err.Error())
+				nodeClient.sharders.Fail(sharder)
+				log.Println("Error getting response", err.Error())
 				return
 			}
 

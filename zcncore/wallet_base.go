@@ -3,12 +3,13 @@ package zcncore
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/0chain/gosdk/constants"
-	"github.com/0chain/gosdk/core/common"
-	"github.com/0chain/gosdk/core/util"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/0chain/gosdk/constants"
+	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/util"
 
 	"errors"
 
@@ -373,15 +374,6 @@ func GetIdForUrl(url string) string {
 		return s[3]
 	}
 	return ""
-}
-
-var SignFn = func(hash string) (string, error) {
-	sigScheme := zcncrypto.NewSignatureScheme(client.SignatureScheme())
-	err := sigScheme.SetPrivateKey(client.PrivateKey())
-	if err != nil {
-		return "", err
-	}
-	return sigScheme.Sign(hash)
 }
 
 // SetupAuth prepare auth app with clientid, key and a set of public, private key and local publickey

@@ -553,12 +553,14 @@ func ZauthSignTxn(serverAddr string) sys.AuthorizeFunc {
 			return "", errors.Errorf("unexpected status code: %d, res: %s", resp.StatusCode, string(rsp))
 		}
 
-		d, err := io.ReadAll(resp.Body)
+		var d string
+
+		err = json.NewDecoder(resp.Body).Decode(&d)
 		if err != nil {
 			return "", errors.Wrap(err, "failed to read response body")
 		}
 
-		return string(d), nil
+		return d, nil
 	}
 }
 

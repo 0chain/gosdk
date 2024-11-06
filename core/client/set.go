@@ -50,7 +50,7 @@ func init() {
 			wallet = client.wallets[clients[0]]
 		}
 
-		if wallet.PeerPublicKey == "" {
+		if !wallet.IsSplit {
 			return sys.Sign(hash, client.signatureScheme, GetClientSysKeys(clients...))
 		}
 
@@ -67,10 +67,22 @@ func init() {
 	sys.VerifyEd25519With = verifyEd25519With
 }
 
+var SignFn = func(hash string) (string, error) {
+	ss := zcncrypto.NewSignatureScheme(client.signatureScheme)
+
+	err := ss.SetPrivateKey(client.wallet.Keys[0].PrivateKey)
+	if err != nil {
+		return "", err
+	}
+
+	return ss.Sign(hash)
+}
+
 func signHash(hash string, signatureScheme string, keys []sys.KeyPair) (string, error) {
 	retSignature := ""
 	for _, kv := range keys {
 		ss := zcncrypto.NewSignatureScheme(signatureScheme)
+
 		err := ss.SetPrivateKey(kv.PrivateKey)
 		if err != nil {
 			return "", err
@@ -85,6 +97,7 @@ func signHash(hash string, signatureScheme string, keys []sys.KeyPair) (string, 
 			return "", err
 		}
 	}
+
 	return retSignature, nil
 }
 
@@ -130,6 +143,7 @@ func GetClientSysKeys(clients ...string) []sys.KeyPair {
 			PublicKey:  kv.PublicKey,
 		})
 	}
+
 	return keys
 }
 
