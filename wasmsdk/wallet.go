@@ -60,4 +60,6 @@ func setWallet(clientID, clientKey, peerPublicKey, publicKey, privateKey, mnemon
 
 func setWalletMode(mode bool) {
 	client.SetWalletMode(mode)
+
+	fmt.Println("gosdk setWalletMode: ", "is split:", mode)
 }
