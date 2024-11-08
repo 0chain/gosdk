@@ -51,7 +51,7 @@ func buildJS(args, env []string, wasmPath string, tpl []byte) (string, error) {
 	if suffix == "" {
 		suffix = "dev"
 	}
-	cdnPath := fmt.Sprintf("https://d2os1u2xwjukgr.cloudfront.net/%s/zcn.wasm", suffix)
+	cdnPath := fmt.Sprintf("https://webapps-staticfiles.s3.us-east-2.amazonaws.com/%s/enterprise-zcn.wasm", suffix)
 	data := templateData{
 		Path:         cdnPath,
 		Args:         args,

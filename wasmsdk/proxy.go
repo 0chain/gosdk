@@ -350,6 +350,7 @@ func main() {
 	}
 
 	if mode != "" {
+		fmt.Println("enterprise wasm sdk")
 		respChan := make(chan string, 1)
 		jsProxy := window.Get("__zcn_worker_wasm__")
 		if !(jsProxy.IsNull() || jsProxy.IsUndefined()) {
