@@ -40,23 +40,30 @@ func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([
 		}
 	}
 	err := uo.chunkedUpload.process()
+	l.Logger.Info("Started processing chunked upload")
 	if err != nil {
 		l.Logger.Error("UploadOperation Failed", zap.String("name", uo.chunkedUpload.fileMeta.RemoteName), zap.Error(err))
 		return nil, uo.chunkedUpload.uploadMask, err
 	}
+	l.Logger.Info("Chunked upload processed successfully")
+
 	var pos uint64
 	numList := len(uo.chunkedUpload.blobbers)
 	uo.refs = make([]*fileref.FileRef, numList)
+	l.Logger.Info("Processing blobbers", zap.Int("numList", numList))
 	for i := uo.chunkedUpload.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
+		l.Logger.Info("Processing blobber", zap.Uint64("position", pos))
 		uo.refs[pos] = uo.chunkedUpload.blobbers[pos].fileRef
 		uo.refs[pos].ChunkSize = uo.chunkedUpload.chunkSize
 		remotePath := uo.chunkedUpload.fileMeta.RemotePath
 		allocationID := allocObj.ID
+		l.Logger.Info("Blobber details", zap.String("remotePath", remotePath), zap.String("allocationID", allocationID))
 		if singleClientMode {
 			lookuphash := fileref.GetReferenceLookup(allocationID, remotePath)
 			cacheKey := fileref.GetCacheKey(lookuphash, uo.chunkedUpload.blobbers[pos].blobber.ID)
 			fileref.DeleteFileRef(cacheKey)
+			l.Logger.Info("Deleted file reference from cache", zap.String("cacheKey", cacheKey))
 		}
 	}
 	l.Logger.Info("UploadOperation Success", zap.String("name", uo.chunkedUpload.fileMeta.RemoteName))
@@ -122,6 +129,7 @@ func (uo *UploadOperation) Error(allocObj *Allocation, consensus int, err error)
 
 func NewUploadOperation(ctx context.Context, workdir string, allocObj *Allocation, connectionID string, fileMeta FileMeta, fileReader io.Reader, isUpdate, isWebstreaming, isRepair, isMemoryDownload, isStreamUpload bool, opts ...ChunkedUploadOption) (*UploadOperation, string, error) {
 	uo := &UploadOperation{}
+	l.Logger.Info("Creating chunked upload", zap.String("remotePath", fileMeta.RemotePath))
 	if fileMeta.ActualSize == 0 && !isStreamUpload {
 		byteReader := bytes.NewReader([]byte(
 			emptyFileDataHash))
@@ -132,6 +140,7 @@ func NewUploadOperation(ctx context.Context, workdir string, allocObj *Allocatio
 
 	cu, err := CreateChunkedUpload(ctx, workdir, allocObj, fileMeta, fileReader, isUpdate, isRepair, isWebstreaming, connectionID, opts...)
 	if err != nil {
+		l.Logger.Error("CreateChunkedUpload Failed", zap.Error(err))
 		return nil, "", err
 	}
 

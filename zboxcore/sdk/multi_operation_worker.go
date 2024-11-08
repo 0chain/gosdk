@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"go.uber.org/zap"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
@@ -177,17 +178,20 @@ func (mo *MultiOperation) Process() error {
 			// Check for other goroutines signal
 			select {
 			case <-ctx.Done():
+				l.Logger.Debug("Context done, exiting goroutine")
 				return
 			default:
 			}
 
+			l.Logger.Debug("Processing operation", zap.Int("index", idx))
 			refs, mask, err := op.Process(mo.allocationObj, mo.connectionID) // Process with each blobber
 			if err != nil {
-				l.Logger.Error(err)
+				l.Logger.Error("Operation process failed", zap.Int("index", idx), zap.Error(err))
 				errsSlice[idx] = errors.New("", err.Error())
 				ctxCncl(err)
 				return
 			}
+			l.Logger.Debug("Operation processed successfully", zap.Int("index", idx))
 			mo.maskMU.Lock()
 			mo.operationMask = mo.operationMask.Or(mask)
 			mo.maskMU.Unlock()
@@ -199,6 +203,7 @@ func (mo *MultiOperation) Process() error {
 
 	if ctx.Err() != nil {
 		err := context.Cause(ctx)
+		l.Logger.Error("Context error", zap.Error(err))
 		return err
 	}
 
@@ -206,6 +211,7 @@ func (mo *MultiOperation) Process() error {
 	if mo.operationMask.CountOnes() < mo.consensusThresh {
 		majorErr := zboxutil.MajorError(errsSlice)
 		if majorErr != nil {
+			l.Logger.Error("Consensus not met", zap.Int("required", mo.consensusThresh), zap.Int("got", mo.operationMask.CountOnes()), zap.Error(majorErr))
 			return errors.New("consensus_not_met",
 				fmt.Sprintf("Multioperation failed. Required consensus %d got %d. Major error: %s",
 					mo.consensusThresh, mo.operationMask.CountOnes(), majorErr.Error()))
@@ -219,19 +225,22 @@ func (mo *MultiOperation) Process() error {
 	// blobber 2 and so on.
 	start := time.Now()
 	mo.changes = zboxutil.Transpose(mo.changes)
+	l.Logger.Debug("Transposed changes", zap.Duration("duration", time.Since(start)))
 
 	writeMarkerMutex, err := CreateWriteMarkerMutex(client.GetClient(), mo.allocationObj)
 	if err != nil {
+		l.Logger.Error("Failed to create write marker mutex", zap.Error(err))
 		return fmt.Errorf("Operation failed: %s", err.Error())
 	}
 
-	l.Logger.Debug("Trying to lock write marker.....")
+	l.Logger.Debug("Trying to lock write marker")
 	if singleClientMode {
 		mo.allocationObj.commitMutex.Lock()
 	} else {
 		err = writeMarkerMutex.Lock(mo.ctx, &mo.operationMask, mo.maskMU,
 			mo.allocationObj.Blobbers, &mo.Consensus, 0, time.Minute, mo.connectionID)
 		if err != nil {
+			l.Logger.Error("Failed to lock write marker", zap.Error(err))
 			return fmt.Errorf("Operation failed: %s", err.Error())
 		}
 	}
@@ -241,7 +250,7 @@ func (mo *MultiOperation) Process() error {
 	if !mo.isRepair && !mo.allocationObj.checkStatus {
 		status, _, err = mo.allocationObj.CheckAllocStatus()
 		if err != nil {
-			logger.Logger.Error("Error checking allocation status", err)
+			logger.Logger.Error("Error checking allocation status", zap.Error(err))
 			if singleClientMode {
 				mo.allocationObj.commitMutex.Unlock()
 			} else {
@@ -297,7 +306,7 @@ func (mo *MultiOperation) Process() error {
 
 		commitReq.changes = append(commitReq.changes, mo.changes[pos]...)
 		commitReqs[counter] = commitReq
-		l.Logger.Debug("Commit request sending to blobber ", commitReq.blobber.Baseurl)
+		l.Logger.Debug("Commit request sending to blobber", zap.String("blobber", commitReq.blobber.Baseurl))
 		go AddCommitRequest(commitReq)
 		counter++
 	}
@@ -308,17 +317,17 @@ func (mo *MultiOperation) Process() error {
 	for idx, commitReq := range commitReqs {
 		if commitReq.result != nil {
 			if commitReq.result.Success {
-				l.Logger.Debug("Commit success", commitReq.blobber.Baseurl)
+				l.Logger.Debug("Commit success", zap.String("blobber", commitReq.blobber.Baseurl))
 				if !mo.isRepair {
 					rollbackMask = rollbackMask.Or(zboxutil.NewUint128(1).Lsh(commitReq.blobberInd))
 				}
 				mo.consensus++
 			} else {
 				errSlice[idx] = errors.New("commit_failed", commitReq.result.ErrorMessage)
-				l.Logger.Error("Commit failed", commitReq.blobber.Baseurl, commitReq.result.ErrorMessage)
+				l.Logger.Error("Commit failed", zap.String("blobber", commitReq.blobber.Baseurl), zap.String("error", commitReq.result.ErrorMessage))
 			}
 		} else {
-			l.Logger.Debug("Commit result not set", commitReq.blobber.Baseurl)
+			l.Logger.Debug("Commit result not set", zap.String("blobber", commitReq.blobber.Baseurl))
 		}
 	}
 
@@ -339,5 +348,4 @@ func (mo *MultiOperation) Process() error {
 	}
 
 	return nil
-
 }

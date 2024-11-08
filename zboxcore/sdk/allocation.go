@@ -1122,7 +1122,9 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 			mo.operations = append(mo.operations, operation)
 		}
 
+		logger.Logger.Info("Multioperation: processing batch", zap.Int("batch_size", len(mo.operations)))
 		if len(mo.operations) > 0 {
+			logger.Logger.Info("Multioperation: processing batch", zap.Int("batch_size", len(mo.operations)))
 			err := mo.Process()
 			if err != nil {
 				return err

@@ -6,6 +6,8 @@ package sdk
 import (
 	"context"
 	"fmt"
+	"github.com/0chain/gosdk/zboxcore/logger"
+	"go.uber.org/zap"
 	"sync"
 	"sync/atomic"
 
@@ -163,7 +165,9 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 }
 
 func (su *ChunkedUpload) startProcessor() {
+	logger.Logger.Debug("Starting upload processor", zap.Int("workers", su.uploadWorkers))
 	for i := 0; i < su.uploadWorkers; i++ {
+		logger.Logger.Debug("Starting upload processor", zap.Int("worker", i))
 		go su.uploadProcessor()
 	}
 }
