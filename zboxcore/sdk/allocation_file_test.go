@@ -19,6 +19,7 @@ import (
 
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
+	zclient "github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/mocks"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/stretchr/testify/mock"
@@ -649,6 +650,7 @@ func TestAllocation_EncryptAndUploadFileWithThumbnail(t *testing.T) {
 	require.NoError(t, err)
 }
 
+
 // func TestAllocation_RepairFile(t *testing.T) {
 // 	const (
 // 		mockFileRefName = "mock file ref name"
@@ -924,3 +926,4 @@ func TestAllocation_EncryptAndUploadFileWithThumbnail(t *testing.T) {
 // 		})
 // 	}
 // }
+
