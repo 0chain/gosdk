@@ -145,6 +145,7 @@ func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainCon
 		}
 	}
 	_config.isSplitWallet = _config.chain.IsSplitWallet
+	fmt.Println("InitZCNSDK: isSplitWallet:", _config.isSplitWallet)
 	assertConfig()
 	_config.isConfigured = true
 	logging.Info("******* Wallet SDK Version:", version.VERSIONSTR, " ******* (InitZCNSDK)")

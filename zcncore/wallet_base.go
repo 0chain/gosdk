@@ -19,6 +19,7 @@ import (
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/logger"
+	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/core/tokenrate"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/version"
@@ -27,6 +28,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/encryption"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	openssl "github.com/Luzifer/go-openssl/v3"
+	"go.uber.org/zap"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
@@ -420,6 +422,8 @@ func Init(chainConfigJSON string) error {
 		}
 
 		conf.InitClientConfig(cfg)
+	} else {
+		logging.Error("0chain: decode json failed", zap.Error(err))
 	}
 	logging.Info("0chain: test logging")
 	logging.Info("******* Wallet SDK Version:", version.VERSIONSTR, " ******* (Init) Test")
@@ -610,6 +614,8 @@ func SetWalletInfo(wallet *zcncrypto.Wallet, splitKeyWallet bool) {
 		_config.isSplitWallet = splitKeyWallet
 	}
 	_config.isValidWallet = true
+	fmt.Printf("set wallet info: splitKeyWallet: %v, _config.isSplitWallet: %v, signature scheme: %v",
+		splitKeyWallet, _config.isSplitWallet, _config.chain.SignatureScheme)
 
 	c := client.GetClient()
 	c.Wallet = &_config.wallet
@@ -878,6 +884,13 @@ func SetupAuth(authHost, clientID, clientKey, publicKey, privateKey, localPublic
 		cb.OnSetupComplete(StatusSuccess, "")
 	}()
 	return nil
+}
+
+func RegisterKMSZauthServer(serverAddr string) {
+	fmt.Println("registerZauthServer...")
+	// jsbridge.SetZauthServer(serverAddr)
+	sys.SetAuthorize(ZauthSignTxn(serverAddr))
+	sys.SetAuthCommon(ZauthAuthCommon(serverAddr))
 }
 
 // GetIdForUrl retrieve the ID of the network node (miner/sharder) given its url.
