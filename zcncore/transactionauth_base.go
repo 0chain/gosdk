@@ -58,13 +58,15 @@ func (ta *TransactionWithAuth) getAuthorize() (*transaction.Transaction, error) 
 		return nil, err
 	}
 
-	var txnResp transaction.Transaction
-	err = json.Unmarshal([]byte(authorize), &txnResp)
+	var signature string
+	err = json.Unmarshal([]byte(authorize), &signature)
 	if err != nil {
 		return nil, errors.Wrap(err, "invalid json on auth response.")
 	}
+	ta.t.txn.Signature = signature
+
 	// Verify the split key signed signature
-	ok, err := txnResp.VerifySigWith(client.GetClientPublicKey(), sys.VerifyWith)
+	ok, err := ta.t.txn.VerifySigWith(client.GetClientPublicKey(), sys.VerifyWith)
 	if err != nil {
 		logging.Error("verification failed for txn from auth", err.Error())
 		return nil, errAuthVerifyFailed
@@ -72,7 +74,7 @@ func (ta *TransactionWithAuth) getAuthorize() (*transaction.Transaction, error) 
 	if !ok {
 		return nil, errAuthVerifyFailed
 	}
-	return &txnResp, nil
+	return ta.t.txn, nil
 }
 
 func (ta *TransactionWithAuth) completeTxn(status int, out string, err error) {

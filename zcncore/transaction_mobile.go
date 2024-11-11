@@ -397,7 +397,7 @@ func (t *Transaction) Send(toClientID string, val string, desc string) error {
 		return nil
 	}
 
-	txnData, err := json.Marshal(SendTxnData{Note: desc})
+	txnData, err := json.Marshal(SendTxnData{Name: "transfer", Note: desc})
 	if err != nil {
 		return errors.New("", "Could not serialize description to transaction_data")
 	}

@@ -226,6 +226,7 @@ type Transaction struct {
 }
 
 type SendTxnData struct {
+	Name string `json:"name"`
 	Note string `json:"note"`
 }
 
