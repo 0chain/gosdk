@@ -143,7 +143,7 @@ func makeSCRestAPICall(scAddress, relativePath, paramsJson string) (string, erro
 		sdkLogger.Error(fmt.Sprintf("Error parsing JSON: %v", err))
 	}
 
-	b, err := client.MakeSCRestAPICall(scAddress, relativePath, params)
+	b, err := client.MakeSCRestAPICallToSharder(scAddress, relativePath, params)
 	return string(b), err
 }
 

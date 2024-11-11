@@ -14,8 +14,6 @@ import (
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
-	"github.com/0chain/gosdk/core/conf"
-	"github.com/0chain/gosdk/zboxapi"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	l "github.com/0chain/gosdk/zboxcore/logger"
@@ -230,18 +228,4 @@ func (req *subDirRequest) processSubDirectories() error {
 	}
 
 	return nil
-}
-
-func MakeSCRestAPICallToZbox(relativePath string, params map[string]string) ([]byte, error) {
-	// req, err := http.NewRequest(method, relativePath)
-	zboxApiClient := zboxapi.NewClient()
-	configObj := &conf.Config{}
-	zboxApiClient.SetRequest(configObj.ZboxHost, configObj.ZboxAppType)
-
-	resp, err := zboxApiClient.MakeRestApiCallToZbox(context.TODO(), relativePath, params)
-	if err != nil {
-		return nil, err
-	}
-
-	return resp, nil
 }

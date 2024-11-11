@@ -16,6 +16,7 @@ import (
 
 	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/scRestApi"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/version"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -163,16 +164,9 @@ func GetStakePoolInfo(providerType ProviderType, providerID string) (info *Stake
 	}
 
 	var b []byte
-	if IsWasm {
-		b, err = MakeSCRestAPICallToZbox("/getStakePoolStat", map[string]string{"provider_type": strconv.Itoa(int(providerType)), "provider_id": providerID})
-		if err != nil {
-			b, err = client.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getStakePoolStat",
-				map[string]string{"provider_type": strconv.Itoa(int(providerType)), "provider_id": providerID})
-		}
-	} else {
-		b, err = client.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getStakePoolStat",
-			map[string]string{"provider_type": strconv.Itoa(int(providerType)), "provider_id": providerID})
-	}
+
+	b, err = scRestApi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getStakePoolStat",
+		map[string]string{"provider_type": strconv.Itoa(int(providerType)), "provider_id": providerID}, IsWasm)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "error requesting stake pool info:")
@@ -213,16 +207,9 @@ func GetStakePoolUserInfo(clientID string, offset, limit int) (info *StakePoolUs
 		"offset":    strconv.FormatInt(int64(offset), 10),
 		"limit":     strconv.FormatInt(int64(limit), 10),
 	}
-	if IsWasm {
-		b, err = MakeSCRestAPICallToZbox("/getUserStakePoolStat", params)
-		if err != nil {
-			b, err = client.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getUserStakePoolStat",
-				params)
-		}
-	} else {
-		b, err = client.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getUserStakePoolStat",
-			params)
-	}
+
+	b, err = scRestApi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getUserStakePoolStat",
+		params, IsWasm)
 	if err != nil {
 		return nil, errors.Wrap(err, "error requesting stake pool user info:")
 	}
@@ -273,16 +260,9 @@ func GetChallengePoolInfo(allocID string) (info *ChallengePoolInfo, err error) {
 	}
 
 	var b []byte
-	if IsWasm {
-		b, err = MakeSCRestAPICallToZbox("/getChallengePoolStat", map[string]string{"allocation_id": allocID})
-		if err != nil {
-			b, err = client.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getChallengePoolStat",
-				map[string]string{"allocation_id": allocID})
-		}
-	} else {
-		b, err = client.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getChallengePoolStat",
-			map[string]string{"allocation_id": allocID})
-	}
+
+	b, err = scRestApi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getChallengePoolStat",
+		map[string]string{"allocation_id": allocID}, IsWasm)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "error requesting challenge pool info:")
@@ -306,9 +286,8 @@ func GetMptData(key string) ([]byte, error) {
 	}
 
 	var b []byte
-	b, err := client.MakeSCRestAPICall(STORAGE_SCADDRESS,
-		"/get_mpt_key", map[string]string{"key": key},
-	)
+	b, err := client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS,
+		"/get_mpt_key", map[string]string{"key": key})
 	if err != nil {
 		return nil, errors.Wrap(err, "error requesting mpt key data:")
 	}
@@ -472,25 +451,12 @@ func getBlobbersInternal(active, stakable bool, limit, offset int) (bs []*Blobbe
 		Nodes []*Blobber
 	}
 
-	url := fmt.Sprintf("/getblobbers?active=%s&limit=%d&offset=%d&stakable=%s",
-		strconv.FormatBool(active),
-		limit,
-		offset,
-		strconv.FormatBool(stakable),
-	)
 	var b []byte
-	if IsWasm {
-		b, err = MakeSCRestAPICallToZbox("/blobbers", map[string]string{"active": strconv.FormatBool(active), "limit": strconv.FormatInt(int64(limit), 10),
-			"offset":   strconv.FormatInt(int64(offset), 10),
-			"stakable": strconv.FormatBool(stakable)})
-		if err != nil {
-			b, err = client.MakeSCRestAPICall(STORAGE_SCADDRESS, url,
-				nil)
-		}
-	} else {
-		b, err = client.MakeSCRestAPICall(STORAGE_SCADDRESS, url,
-			nil)
-	}
+
+	b, err = scRestApi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getblobbers", map[string]string{"active": strconv.FormatBool(active), "limit": strconv.FormatInt(int64(limit), 10),
+		"offset":   strconv.FormatInt(int64(offset), 10),
+		"stakable": strconv.FormatBool(stakable)}, IsWasm)
+
 	var wrap nodes
 	if err != nil {
 		return nil, errors.Wrap(err, "error requesting blobbers:")
@@ -548,16 +514,9 @@ func GetBlobber(blobberID string) (blob *Blobber, err error) {
 		return nil, sdkNotInitialized
 	}
 	var b []byte
-	if IsWasm {
-		b, err = MakeSCRestAPICallToZbox("/blobber", map[string]string{"blobber_id": blobberID})
-		if err != nil {
-			b, err = client.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getBlobber",
-				map[string]string{"blobber_id": blobberID})
-		}
-	} else {
-		b, err = client.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getBlobber",
-			map[string]string{"blobber_id": blobberID})
-	}
+
+	b, err = scRestApi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getBlobber",
+		map[string]string{"blobber_id": blobberID}, IsWasm)
 	if err != nil {
 		return nil, errors.Wrap(err, "requesting blobber:")
 	}
@@ -578,16 +537,9 @@ func GetValidator(validatorID string) (validator *Validator, err error) {
 		return nil, sdkNotInitialized
 	}
 	var b []byte
-	if IsWasm {
-		b, err = MakeSCRestAPICallToZbox("/validator", map[string]string{"validator_id": validatorID})
-		if err != nil {
-			b, err = client.MakeSCRestAPICall(STORAGE_SCADDRESS, "/get_validator",
-				map[string]string{"validator_id": validatorID})
-		}
-	} else {
-		b, err = client.MakeSCRestAPICall(STORAGE_SCADDRESS, "/get_validator",
-			map[string]string{"validator_id": validatorID})
-	}
+
+	b, err = scRestApi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/get_validator",
+		map[string]string{"validator_id": validatorID}, IsWasm)
 	if err != nil {
 		return nil, errors.Wrap(err, "requesting validator:")
 	}
@@ -609,22 +561,10 @@ func GetValidators(stakable bool) (validators []*Validator, err error) {
 	}
 	var b []byte
 
-	if IsWasm {
-		b, err = MakeSCRestAPICallToZbox("/validators", map[string]string{
+	b, err = scRestApi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/validators",
+		map[string]string{
 			"stakable": strconv.FormatBool(stakable),
-		})
-		if err != nil {
-			b, err = client.MakeSCRestAPICall(STORAGE_SCADDRESS, "/validators",
-				map[string]string{
-					"stakable": strconv.FormatBool(stakable),
-				})
-		}
-	} else {
-		b, err = client.MakeSCRestAPICall(STORAGE_SCADDRESS, "/validators",
-			map[string]string{
-				"stakable": strconv.FormatBool(stakable),
-			})
-	}
+		}, IsWasm)
 	if err != nil {
 		return nil, errors.Wrap(err, "requesting validator list")
 	}
@@ -684,16 +624,9 @@ func GetAllocation(allocationID string) (*Allocation, error) {
 	params["allocation"] = allocationID
 	var allocationBytes []byte
 	var err error
-	if IsWasm {
-		allocationBytes, err = MakeSCRestAPICallToZbox("/geAllocation", params)
-		if err != nil {
-			allocationBytes, err = client.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation",
-				params)
-		}
-	} else {
-		allocationBytes, err = client.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation",
-			params)
-	}
+
+	allocationBytes, err = scRestApi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation",
+		params, IsWasm)
 	if err != nil {
 		return nil, errors.New("allocation_fetch_error", "Error fetching the allocation."+err.Error())
 	}
@@ -735,16 +668,10 @@ func GetAllocationUpdates(allocation *Allocation) error {
 	params["allocation"] = allocation.ID
 	var allocationBytes []byte
 	var err error
-	if IsWasm {
-		allocationBytes, err = MakeSCRestAPICallToZbox("/geAllocation", params)
-		if err != nil {
-			allocationBytes, err = client.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation",
-				params)
-		}
-	} else {
-		allocationBytes, err = client.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation",
-			params)
-	}
+
+	allocationBytes, err = scRestApi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation",
+		params, IsWasm)
+
 	if err != nil {
 		return errors.New("allocation_fetch_error", "Error fetching the allocation."+err.Error())
 	}
@@ -799,16 +726,9 @@ func getAllocationsInternal(clientID string, limit, offset int) ([]*Allocation, 
 	params["offset"] = fmt.Sprint(offset)
 	var allocationsBytes []byte
 	var err error
-	if IsWasm {
-		allocationsBytes, err = MakeSCRestAPICallToZbox("/geAllocations", params)
-		if err != nil {
-			allocationsBytes, err = client.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocations",
-				params)
-		}
-	} else {
-		allocationsBytes, err = client.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocations",
-			params)
-	}
+
+	allocationsBytes, err = scRestApi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocations",
+		params, IsWasm)
 	if err != nil {
 		return nil, errors.New("allocations_fetch_error", "Error fetching the allocations."+err.Error())
 	}
@@ -938,16 +858,9 @@ func GetAllocationBlobbers(
 	}
 	var allocBlobber []byte
 	var err error
-	if IsWasm {
-		allocBlobber, err = MakeSCRestAPICallToZbox("/blobbers/allocation", params)
-		if err != nil {
-			allocBlobber, err = client.MakeSCRestAPICall(STORAGE_SCADDRESS, "/alloc_blobbers",
-				params)
-		}
-	} else {
-		allocBlobber, err = client.MakeSCRestAPICall(STORAGE_SCADDRESS, "/alloc_blobbers",
-			params)
-	}
+
+	allocBlobber, err = scRestApi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/alloc_blobbers",
+		params, IsWasm)
 	if err != nil {
 		return nil, err
 	}
@@ -1035,16 +948,9 @@ func GetBlobberIds(blobberUrls []string) ([]string, error) {
 	params := make(map[string]string)
 	params["blobber_urls"] = string(urlsStr)
 	var idsStr []byte
-	if IsWasm {
-		idsStr, err = MakeSCRestAPICallToZbox("/blobber_ids", params)
-		if err != nil {
-			idsStr, err = client.MakeSCRestAPICall(STORAGE_SCADDRESS, "/blobber_ids",
-				params)
-		}
-	} else {
-		idsStr, err = client.MakeSCRestAPICall(STORAGE_SCADDRESS, "/blobber_ids",
-			params)
-	}
+
+	idsStr, err = scRestApi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/blobber_ids",
+		params, IsWasm)
 	if err != nil {
 		return nil, err
 	}
@@ -1069,7 +975,7 @@ func GetFreeAllocationBlobbers(request map[string]interface{}) ([]string, error)
 	params := make(map[string]string)
 	params["free_allocation_data"] = string(data)
 
-	allocBlobber, err := client.MakeSCRestAPICall(STORAGE_SCADDRESS, "/free_alloc_blobbers", params)
+	allocBlobber, err := client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, "/free_alloc_blobbers", params)
 	if err != nil {
 		return nil, err
 	}
@@ -1515,7 +1421,7 @@ func GetUpdateAllocationMinLock(
 	params := make(map[string]string)
 	params["data"] = string(data)
 
-	responseBytes, err := client.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation-update-min-lock", params)
+	responseBytes, err := client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, "/allocation-update-min-lock", params)
 	if err != nil {
 		return 0, errors.Wrap(err, "failed to request allocation update min lock")
 	}

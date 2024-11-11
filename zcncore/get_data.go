@@ -10,6 +10,7 @@ import (
 
 	"github.com/0chain/gosdk/core/block"
 	"github.com/0chain/gosdk/core/client"
+	"github.com/0chain/gosdk/core/scRestApi"
 	"github.com/0chain/gosdk/core/tokenrate"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/zcncrypto"
@@ -179,7 +180,7 @@ func GetMinerSCNodeInfo(id string) ([]byte, error) {
 		return nil, err
 	}
 
-	return client.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINERSC_NODE, Params{
+	return client.MakeSCRestAPICallToSharder(MinerSmartContractAddress, GET_MINERSC_NODE, Params{
 		"id": id,
 	})
 }
@@ -193,20 +194,9 @@ func GetMintNonce() ([]byte, error) {
 	}
 	var res []byte
 
-	if sdk.IsWasm {
-		res, err = sdk.MakeSCRestAPICallToZbox("/user", Params{
-			"client_id": client.Id(),
-		})
-		if err != nil {
-			res, err = client.MakeSCRestAPICall(ZCNSCSmartContractAddress, GET_MINT_NONCE, Params{
-				"client_id": client.Id(),
-			})
-		}
-	} else {
-		res, err = client.MakeSCRestAPICall(ZCNSCSmartContractAddress, GET_MINT_NONCE, Params{
-			"client_id": client.Id(),
-		})
-	}
+	res, err = scRestApi.MakeSCRestAPICall(ZCNSCSmartContractAddress, GET_MINT_NONCE, Params{
+		"client_id": client.Id(),
+	}, sdk.IsWasm)
 
 	return res, err
 }
@@ -216,7 +206,7 @@ func GetMiners(active, stakable bool, limit, offset int) ([]byte, error) {
 		return nil, err
 	}
 
-	return client.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINERSC_MINERS, Params{
+	return client.MakeSCRestAPICallToSharder(MinerSmartContractAddress, GET_MINERSC_MINERS, Params{
 		"active":   strconv.FormatBool(active),
 		"stakable": strconv.FormatBool(stakable),
 		"offset":   strconv.FormatInt(int64(offset), 10),
@@ -229,7 +219,7 @@ func GetSharders(active, stakable bool, limit, offset int) ([]byte, error) {
 		return nil, err
 	}
 
-	return client.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINERSC_SHARDERS, Params{
+	return client.MakeSCRestAPICallToSharder(MinerSmartContractAddress, GET_MINERSC_SHARDERS, Params{
 		"active":   strconv.FormatBool(active),
 		"stakable": strconv.FormatBool(stakable),
 		"offset":   strconv.FormatInt(int64(offset), 10),
@@ -241,7 +231,7 @@ func GetSharders(active, stakable bool, limit, offset int) ([]byte, error) {
 //   - numSharders: number of sharders
 //   - timeout: request timeout
 func GetLatestFinalizedMagicBlock() (m *block.MagicBlock, err error) {
-	res, err := client.MakeSCRestAPICall("", GET_LATEST_FINALIZED_MAGIC_BLOCK, nil, "")
+	res, err := client.MakeSCRestAPICallToSharder("", GET_LATEST_FINALIZED_MAGIC_BLOCK, nil, "")
 	if err != nil {
 		return nil, err
 	}
@@ -270,7 +260,7 @@ func GetMinerSCUserInfo(clientID string) ([]byte, error) {
 		clientID = client.Id()
 	}
 
-	return client.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINERSC_USER, Params{
+	return client.MakeSCRestAPICallToSharder(MinerSmartContractAddress, GET_MINERSC_USER, Params{
 		"client_id": clientID,
 	})
 }
@@ -282,7 +272,7 @@ func GetMinerSCNodePool(id string) ([]byte, error) {
 		return nil, err
 	}
 
-	return client.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINERSC_POOL, Params{
+	return client.MakeSCRestAPICallToSharder(MinerSmartContractAddress, GET_MINERSC_POOL, Params{
 		"id":      id,
 		"pool_id": client.Id(),
 	})
@@ -301,23 +291,11 @@ func GetNotProcessedZCNBurnTickets(ethereumAddress, startNonce string) ([]byte, 
 	const GET_NOT_PROCESSED_BURN_TICKETS = `/v1/not_processed_burn_tickets`
 
 	var res []byte
-	if sdk.IsWasm {
-		res, err = sdk.MakeSCRestAPICallToZbox("/not_processed_burn_tickets", Params{
-			"ethereum_address": ethereumAddress,
-			"nonce":            startNonce,
-		})
-		if err != nil {
-			res, err = client.MakeSCRestAPICall(ZCNSCSmartContractAddress, GET_NOT_PROCESSED_BURN_TICKETS, Params{
-				"ethereum_address": ethereumAddress,
-				"nonce":            startNonce,
-			})
-		}
-	} else {
-		res, err = client.MakeSCRestAPICall(ZCNSCSmartContractAddress, GET_NOT_PROCESSED_BURN_TICKETS, Params{
-			"ethereum_address": ethereumAddress,
-			"nonce":            startNonce,
-		})
-	}
+
+	res, err = scRestApi.MakeSCRestAPICall(ZCNSCSmartContractAddress, GET_NOT_PROCESSED_BURN_TICKETS, Params{
+		"ethereum_address": ethereumAddress,
+		"nonce":            startNonce,
+	}, sdk.IsWasm)
 	return res, err
 }
 
@@ -334,9 +312,9 @@ func GetUserLockedTotal(clientID string) (int64, error) {
 
 	const GET_USER_LOCKED_TOTAL = `/v1/getUserLockedTotal`
 
-	info, err := client.MakeSCRestAPICall(ZCNSCSmartContractAddress, GET_USER_LOCKED_TOTAL, Params{
+	info, err := scRestApi.MakeSCRestAPICall(ZCNSCSmartContractAddress, GET_USER_LOCKED_TOTAL, Params{
 		"client_id": clientID,
-	})
+	}, false)
 
 	if err != nil {
 		return 0, errors.New("error while making rest api call: " + err.Error())
