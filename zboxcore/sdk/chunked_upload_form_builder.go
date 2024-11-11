@@ -13,7 +13,6 @@ import (
 
 	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/encryption"
-	"github.com/0chain/gosdk/zboxcore/logger"
 
 	"golang.org/x/crypto/sha3"
 )
@@ -183,14 +182,12 @@ func (b *chunkedUploadFormBuilder) Build(
 				if err != nil {
 					return res, err
 				}
-				logger.Logger.Info("sign using private signing key: ", formData.SignatureVersion)
 				formData.ActualFileHashSignature = hex.EncodeToString(sig)
 			} else {
 				sig, err := client.Sign(fileMeta.ActualHash)
 				if err != nil {
 					return res, err
 				}
-				logger.Logger.Info("sign using client: ", formData.SignatureVersion)
 				formData.ActualFileHashSignature = sig
 			}
 			hash := formData.ActualFileHashSignature + formData.ValidationRoot

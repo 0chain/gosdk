@@ -38,6 +38,7 @@ type ListRequest struct {
 	offset             int
 	pageLimit          int
 	storageVersion     int
+	dataShards         int
 	Consensus
 }
 
@@ -269,7 +270,9 @@ func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
 		}
 		result.Size += ti.ref.Size
 		result.NumBlocks += ti.ref.NumBlocks
-
+		if ti.ref.Path == "/" && result.ActualSize == 0 {
+			result.ActualSize = ti.ref.Size * int64(req.dataShards)
+		}
 		if len(lR[i].ref.Children) > 0 {
 			result.populateChildren(lR[i].ref.Children, childResultMap, selected, req)
 		}

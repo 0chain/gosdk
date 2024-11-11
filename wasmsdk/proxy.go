@@ -205,6 +205,7 @@ func main() {
 				//sdk
 				"init":                   initSDKs,
 				"setWallet":              setWallet,
+				"setWalletMode":          setWalletMode,
 				"getPublicEncryptionKey": zcncore.GetPublicEncryptionKey,
 				"hideLogs":               hideLogs,
 				"showLogs":               showLogs,

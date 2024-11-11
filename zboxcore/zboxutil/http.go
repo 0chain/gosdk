@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/hashicorp/golang-lru/v2/simplelru"
 	"io"
 	"net"
 	"net/http"
@@ -13,6 +12,8 @@ import (
 	"path"
 	"strconv"
 	"time"
+
+	"github.com/hashicorp/golang-lru/v2/simplelru"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/client"
@@ -215,10 +216,10 @@ func setClientInfoWithSign(req *http.Request, sig, allocation, baseURL string, c
 	if !ok {
 		var err error
 		sig2, err = client.Sign(encryption.Hash(hashData), clientID)
-		SignCache.Add(hashData+":"+clientID, sig2)
 		if err != nil {
 			return err
 		}
+		SignCache.Add(hashData+":"+clientID, sig2)
 	}
 	req.Header.Set(CLIENT_SIGNATURE_HEADER_V2, sig2)
 	return nil
@@ -653,19 +654,16 @@ func setFastClientInfoWithSign(req *fasthttp.Request, allocation, baseURL string
 	req.Header.Set("X-App-Client-ID", client.Id())
 	req.Header.Set("X-App-Client-Key", client.PublicKey())
 
-	sign, err := client.Sign(encryption.Hash(allocation))
-	if err != nil {
-		return err
-	}
-	req.Header.Set(CLIENT_SIGNATURE_HEADER, sign)
 	hashData := allocation + baseURL
-	sig2, ok := SignCache.Get(hashData)
+	clientID := client.Id()
+	sig2, ok := SignCache.Get(hashData + ":" + clientID)
 	if !ok {
-		sig2, err = client.Sign(encryption.Hash(hashData))
-		SignCache.Add(hashData, sig2)
+		var err error
+		sig2, err = client.Sign(encryption.Hash(hashData), clientID)
 		if err != nil {
 			return err
 		}
+		SignCache.Add(hashData+":"+clientID, sig2)
 	}
 	req.Header.Set(CLIENT_SIGNATURE_HEADER_V2, sig2)
 	return nil

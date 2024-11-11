@@ -967,7 +967,7 @@ func (a *Allocation) GetCurrentVersion() (bool, error) {
 		wg.Add(1)
 		go func(rb *RollbackBlobber) {
 			defer wg.Done()
-			err := rb.processRollback(context.TODO(), a.ID)
+			err := rb.processRollback(context.TODO(), a.Tx)
 			if err != nil {
 				success = false
 			}
@@ -1606,7 +1606,7 @@ func (a *Allocation) ListDirFromAuthTicket(authTicket string, lookupHash string,
 		return nil, errors.New("invalid_path", "Invalid path for the list")
 	}
 
-	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}, storageVersion: a.StorageVersion}
+	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}, storageVersion: a.StorageVersion, dataShards: a.DataShards}
 	listReq.ClientId = a.Owner
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
@@ -1647,7 +1647,7 @@ func (a *Allocation) ListDir(path string, opts ...ListRequestOptions) (*ListResu
 	if !isabs {
 		return nil, errors.New("invalid_path", "Path should be valid and absolute")
 	}
-	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}, storageVersion: a.StorageVersion}
+	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}, storageVersion: a.StorageVersion, dataShards: a.DataShards}
 	listReq.ClientId = a.Owner
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
