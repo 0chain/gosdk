@@ -1,4 +1,5 @@
-// Package constants provides constants.the convention of naming is to use MixedCaps or mixedCaps rather than underscores to write multiword names. https://golang.org/doc/effective_go#mixed-caps
+// Package constants provides constants.
+// The convention of naming is to use MixedCaps or mixedCaps rather than underscores to write multiword names. https://golang.org/doc/effective_go#mixed-caps
 package constants
 
 import "errors"

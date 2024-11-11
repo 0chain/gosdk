@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -29,6 +30,7 @@ type RenameRequest struct {
 	allocationObj  *Allocation
 	allocationID   string
 	allocationTx   string
+	sig            string
 	blobbers       []*blockchain.StorageNode
 	remotefilepath string
 	newName        string
@@ -43,7 +45,7 @@ type RenameRequest struct {
 }
 
 func (req *RenameRequest) getObjectTreeFromBlobber(blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
-	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.allocationTx, req.remotefilepath, blobber)
+	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.allocationTx, req.sig, req.remotefilepath, blobber)
 }
 
 func (req *RenameRequest) renameBlobberObject(
@@ -92,7 +94,7 @@ func (req *RenameRequest) renameBlobberObject(
 			formWriter.Close()
 
 			var httpreq *http.Request
-			httpreq, err = zboxutil.NewRenameRequest(blobber.Baseurl, req.allocationID, req.allocationTx, body)
+			httpreq, err = zboxutil.NewRenameRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body)
 			if err != nil {
 				l.Logger.Error(blobber.Baseurl, "Error creating rename request", err)
 				return
@@ -212,7 +214,7 @@ func (req *RenameRequest) ProcessRename() error {
 	defer writeMarkerMutex.Unlock(req.ctx, req.renameMask, req.blobbers, time.Minute, req.connectionID) //nolint: errcheck
 
 	//Check if the allocation is to be repaired or rolled back
-	status, err := req.allocationObj.CheckAllocStatus()
+	status, _, err := req.allocationObj.CheckAllocStatus()
 	if err != nil {
 		logger.Logger.Error("Error checking allocation status: ", err)
 		return fmt.Errorf("rename failed: %s", err.Error())
@@ -251,6 +253,7 @@ func (req *RenameRequest) ProcessRename() error {
 		commitReq := &CommitRequest{
 			allocationID: req.allocationID,
 			allocationTx: req.allocationTx,
+			sig:          req.sig,
 			blobber:      req.blobbers[pos],
 			connectionID: req.connectionID,
 			wg:           wg,
@@ -301,13 +304,12 @@ type RenameOperation struct {
 }
 
 func (ro *RenameOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
-
-	l.Logger.Info("Started Rename Process with Connection Id", connectionID)
 	// make renameRequest object
 	rR := &RenameRequest{
 		allocationObj:  allocObj,
 		allocationID:   allocObj.ID,
 		allocationTx:   allocObj.Tx,
+		sig:            allocObj.sig,
 		connectionID:   connectionID,
 		blobbers:       allocObj.Blobbers,
 		remotefilepath: ro.remotefilepath,
@@ -318,6 +320,9 @@ func (ro *RenameOperation) Process(allocObj *Allocation, connectionID string) ([
 		maskMU:         ro.maskMU,
 		wg:             &sync.WaitGroup{},
 		consensus:      Consensus{RWMutex: &sync.RWMutex{}},
+	}
+	if filepath.Base(ro.remotefilepath) == ro.newName {
+		return nil, ro.renameMask, errors.New("invalid_operation", "Cannot rename to same name")
 	}
 	rR.consensus.fullconsensus = ro.consensus.fullconsensus
 	rR.consensus.consensusThresh = ro.consensus.consensusThresh

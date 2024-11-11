@@ -10,6 +10,26 @@ import (
 	"github.com/pkg/errors"
 )
 
+// AlchemyGasEstimationRequest describes request used for Alchemy enhanced JSON-RPC API.
+type AlchemyGasEstimationRequest struct {
+	From  string `json:"from"`
+	To    string `json:"to"`
+	Value string `json:"value"`
+	Data  string `json:"data"`
+}
+
+// GasEstimationRequest describes request used for Alchemy enhanced JSON-RPC API.
+type GasEstimationRequest struct {
+	From  string `json:"from"`
+	To    string `json:"to"`
+	Value string `json:"value"`
+}
+
+// GasPriceEstimationResult represents result of the gas price estimation operation execution.
+type GasPriceEstimationResult struct {
+	Value float64 `json:"value"`
+}
+
 // BancorTokenDetails describes Bancor ZCN zcntoken pool details
 type BancorTokenDetails struct {
 	Data struct {
@@ -31,6 +51,10 @@ func GetTransactionStatus(hash string) (int, error) {
 	return zcncore.CheckEthHashStatus(hash), nil
 }
 
+// ConfirmEthereumTransaction confirms Ethereum transaction by hash.
+//   - hash is the transaction hash to confirm.
+//   - times is the number of times to try confirming the transaction.
+//   - duration is the duration to wait between each confirmation attempt.
 func ConfirmEthereumTransaction(hash string, times int, duration time.Duration) (int, error) {
 	var (
 		res = 0
@@ -73,4 +97,9 @@ func addPercents(gasLimitUnits uint64, percents int) *big.Int {
 	gasLimitBig = origin.Add(origin, deltaBig)
 
 	return gasLimitBig
+}
+
+// ConvertIntToHex converts given int value to hex string.
+func ConvertIntToHex(value int64) string {
+	return fmt.Sprintf("%#x", value)
 }

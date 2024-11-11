@@ -1,3 +1,7 @@
+// Provides the data structures and methods to work with the block data structure.
+// The block data structure is the core data structure in the 0chain protocol.
+// It is used to store the transactions and the state of the system at a given point in time.
+// The block data structure is used to create the blockchain, which is a chain of blocks that are linked together using the hash of the previous block.
 package block
 
 import (
@@ -23,6 +27,8 @@ type Header struct {
 	NumTxns               int64  `json:"num_txns,omitempty"`
 }
 
+// IsBlockExtends - check if the block extends the previous block
+//   - prevHash is the hash of the previous block
 func (h *Header) IsBlockExtends(prevHash string) bool {
 	var data = fmt.Sprintf("%s:%s:%d:%d:%d:%s:%s", h.MinerID, prevHash,
 		h.CreationDate, h.Round, h.RoundRandomSeed, h.MerkleTreeRoot,

@@ -12,6 +12,7 @@ func TestLoadConfig(t *testing.T) {
 	var mockDefaultReader = func() Reader {
 		reader := &mocks.Reader{}
 		reader.On("GetString", "block_worker").Return("http://127.0.0.1:9091/dns")
+		reader.On("GetString", "zauth.server").Return("http://127.0.0.1:8090/")
 		reader.On("GetInt", "min_submit").Return(0)
 		reader.On("GetInt", "min_confirmation").Return(0)
 		reader.On("GetInt", "max_txn_query").Return(0)
@@ -41,6 +42,7 @@ func TestLoadConfig(t *testing.T) {
 
 				reader := &mocks.Reader{}
 				reader.On("GetString", "block_worker").Return("")
+				reader.On("GetString", "zauth.server").Return("")
 				reader.On("GetInt", "min_submit").Return(0)
 				reader.On("GetInt", "min_confirmation").Return(0)
 				reader.On("GetInt", "max_txn_query").Return(0)
@@ -85,6 +87,7 @@ func TestLoadConfig(t *testing.T) {
 
 				reader := &mocks.Reader{}
 				reader.On("GetString", "block_worker").Return("https://127.0.0.1:9091/dns")
+				reader.On("GetString", "zauth.server").Return("http://127.0.0.1:8090/")
 				reader.On("GetInt", "min_submit").Return(101)
 				reader.On("GetInt", "min_confirmation").Return(0)
 				reader.On("GetInt", "max_txn_query").Return(0)
@@ -119,6 +122,7 @@ func TestLoadConfig(t *testing.T) {
 
 				reader := &mocks.Reader{}
 				reader.On("GetString", "block_worker").Return("https://127.0.0.1:9091/dns")
+				reader.On("GetString", "zauth.server").Return("http://127.0.0.1:8090/")
 				reader.On("GetInt", "min_submit").Return(0)
 				reader.On("GetInt", "min_confirmation").Return(101)
 				reader.On("GetInt", "max_txn_query").Return(0)

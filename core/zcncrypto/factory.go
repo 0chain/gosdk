@@ -12,6 +12,7 @@ import (
 )
 
 // NewSignatureScheme creates an instance for using signature functions
+//   - sigScheme signature scheme to be used
 func NewSignatureScheme(sigScheme string) SignatureScheme {
 	switch sigScheme {
 	case "ed25519":
@@ -62,7 +63,7 @@ func UnmarshalSignatureSchemes(sigScheme string, obj interface{}) ([]SignatureSc
 	}
 }
 
-//GenerateThresholdKeyShares given a signature scheme will generate threshold sig keys
+// GenerateThresholdKeyShares given a signature scheme will generate threshold sig keys
 func GenerateThresholdKeyShares(t, n int, originalKey SignatureScheme) ([]SignatureScheme, error) {
 	b0ss, ok := originalKey.(*HerumiScheme)
 	if !ok {

@@ -11,6 +11,8 @@ import (
 	"github.com/0chain/gosdk/core/util"
 )
 
+// Hasher interface to gather all hasher related functions.
+// A hasher is used to calculate the hash of a file, fixed merkle tree, and validation merkle tree.
 type Hasher interface {
 	// GetFileHash get file hash
 	GetFileHash() (string, error)
@@ -41,6 +43,12 @@ func CreateHasher(dataSize int64) Hasher {
 		File:         md5.New(),
 		FixedMT:      util.NewFixedMerkleTree(),
 		ValidationMT: util.NewValidationTree(dataSize),
+	}
+}
+
+func CreateFileHasher() Hasher {
+	return &hasher{
+		File: md5.New(),
 	}
 }
 

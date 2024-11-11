@@ -10,39 +10,18 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/0chain/gosdk/zcncore"
+
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/resty"
-	"github.com/0chain/gosdk/core/sys"
-	"github.com/0chain/gosdk/core/zcncrypto"
 )
 
 var log logger.Logger
 
 func GetLogger() *logger.Logger {
 	return &log
-}
-
-func signHash(hash string, signatureScheme string, keys []sys.KeyPair) (string, error) {
-	retSignature := ""
-	for _, kv := range keys {
-		ss := zcncrypto.NewSignatureScheme(signatureScheme)
-		err := ss.SetPrivateKey(kv.PrivateKey)
-		if err != nil {
-			return "", err
-		}
-
-		if len(retSignature) == 0 {
-			retSignature, err = ss.Sign(hash)
-		} else {
-			retSignature, err = ss.Add(retSignature, hash)
-		}
-		if err != nil {
-			return "", err
-		}
-	}
-	return retSignature, nil
 }
 
 type Client struct {
@@ -113,18 +92,17 @@ func (c *Client) GetCsrfToken(ctx context.Context) (string, error) {
 	return result.Token, nil
 }
 
-func (c *Client) createResty(ctx context.Context, csrfToken, phoneNumber string, headers map[string]string) (*resty.Resty, error) {
+func (c *Client) createResty(ctx context.Context, csrfToken, userID string, headers map[string]string) (*resty.Resty, error) {
 	h := make(map[string]string)
 	h["X-App-Client-ID"] = c.clientID
 	h["X-App-Client-Key"] = c.clientPublicKey
-	h["X-App-Phone-Number"] = phoneNumber
+	h["X-App-User-ID"] = userID
 
 	if c.clientPrivateKey != "" {
-		data := fmt.Sprintf("%v:%v:%v", c.clientID, phoneNumber, c.clientPublicKey)
+		data := fmt.Sprintf("%v:%v:%v", c.clientID, userID, c.clientPublicKey)
 		hash := encryption.Hash(data)
-		sign, err := signHash(hash, "bls0chain", []sys.KeyPair{{
-			PrivateKey: c.clientPrivateKey,
-		}})
+
+		sign, err := zcncore.SignFn(hash)
 		if err != nil {
 			return nil, err
 		}
@@ -133,7 +111,11 @@ func (c *Client) createResty(ctx context.Context, csrfToken, phoneNumber string,
 
 	h["X-CSRF-TOKEN"] = csrfToken
 	h["X-App-Timestamp"] = strconv.FormatInt(time.Now().Unix(), 10)
-	h["X-App-ID-Token"] = "*" //ignore firebase token in jwt requests
+
+	if _, ok := h["X-App-ID-Token"]; !ok {
+		h["X-App-ID-Token"] = "*" //ignore firebase token in jwt requests
+	}
+
 	h["X-App-Type"] = c.appType
 
 	for k, v := range headers {
@@ -143,50 +125,17 @@ func (c *Client) createResty(ctx context.Context, csrfToken, phoneNumber string,
 	return resty.New(resty.WithHeader(h)), nil
 }
 
-// CreateJwtSession create a jwt session with phone number
-func (c *Client) CreateJwtSession(ctx context.Context, phoneNumber string) (int64, error) {
-
-	csrfToken, err := c.GetCsrfToken(ctx)
-	if err != nil {
-		return 0, err
-	}
-
-	r, err := c.createResty(ctx, csrfToken, phoneNumber, nil)
-
-	if err != nil {
-		return 0, err
-	}
-
-	var sessionID int64
-
-	r.DoPost(ctx, nil, c.baseUrl+"/v2/jwt/session").
-		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
-			if err != nil {
-				return err
-			}
-
-			return c.parseResponse(resp, respBody, &sessionID)
-		})
-
-	if errs := r.Wait(); len(errs) > 0 {
-		return 0, errs[0]
-	}
-
-	return sessionID, nil
-}
-
 // CreateJwtToken create a jwt token with jwt session id and otp
-func (c *Client) CreateJwtToken(ctx context.Context, phoneNumber string, jwtSessionID int64, otp string) (string, error) {
+func (c *Client) CreateJwtToken(ctx context.Context, userID, accessToken string) (string, error) {
 	csrfToken, err := c.GetCsrfToken(ctx)
 	if err != nil {
 		return "", err
 	}
 	headers := map[string]string{
-		"X-JWT-Session-ID": strconv.FormatInt(jwtSessionID, 10),
-		"X-JWT-OTP":        otp,
+		"X-App-ID-Token": accessToken,
 	}
 
-	r, err := c.createResty(ctx, csrfToken, phoneNumber, headers)
+	r, err := c.createResty(ctx, csrfToken, userID, headers)
 
 	if err != nil {
 		return "", err
@@ -210,7 +159,7 @@ func (c *Client) CreateJwtToken(ctx context.Context, phoneNumber string, jwtSess
 }
 
 // RefreshJwtToken refresh jwt token
-func (c *Client) RefreshJwtToken(ctx context.Context, phoneNumber string, token string) (string, error) {
+func (c *Client) RefreshJwtToken(ctx context.Context, userID string, token string) (string, error) {
 	csrfToken, err := c.GetCsrfToken(ctx)
 	if err != nil {
 		return "", err
@@ -219,7 +168,7 @@ func (c *Client) RefreshJwtToken(ctx context.Context, phoneNumber string, token 
 		"X-JWT-Token": token,
 	}
 
-	r, err := c.createResty(ctx, csrfToken, phoneNumber, headers)
+	r, err := c.createResty(ctx, csrfToken, userID, headers)
 
 	if err != nil {
 		return "", err

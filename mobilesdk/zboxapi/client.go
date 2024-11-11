@@ -1,3 +1,4 @@
+// Subpackage to provide interface for zboxapi SDK (dealing with apps backend) to be used to build the mobile SDK.
 package zboxapi
 
 /*
@@ -25,6 +26,9 @@ var (
 	logging                  logger.Logger
 )
 
+// Init initialize the zbox api client for the mobile sdk
+//   - baseUrl is the base url of the server
+//   - appType is the type of the application
 func Init(baseUrl, appType string) {
 	zboxApiClient = zboxapi.NewClient()
 	zboxApiClient.SetRequest(baseUrl, appType)
@@ -40,6 +44,10 @@ func Init(baseUrl, appType string) {
 	}
 }
 
+// SetWallet set the client's wallet information for the zbox api client
+//   - clientID is the client id
+//   - clientPrivateKey is the client private key
+//   - clientPublicKey is the client public key
 func SetWallet(clientID, clientPrivateKey, clientPublicKey string) error {
 	if zboxApiClient == nil {
 		return ErrZboxApiNotInitialized
@@ -60,26 +68,18 @@ func GetCsrfToken() (string, error) {
 	return zboxApiClient.GetCsrfToken(context.TODO())
 }
 
-// CreateJwtSession create a jwt session
-func CreateJwtSession(phoneNumber string) (int64, error) {
-	if zboxApiClient == nil {
-		return 0, ErrZboxApiNotInitialized
-	}
-	return zboxApiClient.CreateJwtSession(context.TODO(), phoneNumber)
-}
-
-// CreateJwtToken create a fresh jwt token
-func CreateJwtToken(phoneNumber string, jwtSessionID int64, otp string) (string, error) {
+// CreateJwtToken creates JWT token with the help of provided userID.
+func CreateJwtToken(userID, accessToken string) (string, error) {
 	if zboxApiClient == nil {
 		return "", ErrZboxApiNotInitialized
 	}
-	return zboxApiClient.CreateJwtToken(context.TODO(), phoneNumber, jwtSessionID, otp)
+	return zboxApiClient.CreateJwtToken(context.TODO(), userID, accessToken)
 }
 
-// RefreshJwtToken refresh jwt token
-func RefreshJwtToken(phoneNumber string, token string) (string, error) {
+// RefreshJwtToken refreshes JWT token
+func RefreshJwtToken(userID string, token string) (string, error) {
 	if zboxApiClient == nil {
 		return "", ErrZboxApiNotInitialized
 	}
-	return zboxApiClient.RefreshJwtToken(context.TODO(), phoneNumber, token)
+	return zboxApiClient.RefreshJwtToken(context.TODO(), userID, token)
 }

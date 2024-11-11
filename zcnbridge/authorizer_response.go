@@ -29,6 +29,7 @@ type (
 		AuthorizerID string `json:"authorizer_id,omitempty"`
 		BurnEvents   []struct {
 			Nonce           int64  `json:"nonce"`
+			Amount          int64  `json:"amount"`
 			TransactionHash string `json:"transaction_hash"`
 		} `json:"burn_events"`
 	}

@@ -21,21 +21,21 @@ func TestNewUint128(t *testing.T) {
 			name: "OK",
 			args: args{x: 5},
 			want: Uint128{
-				low: 5,
+				Low: 5,
 			},
 		},
 		{
 			name: "0_OK",
 			args: args{x: 0},
 			want: Uint128{
-				low: 0,
+				Low: 0,
 			},
 		},
 		{
 			name: "Max_OK",
 			args: args{x: math.MaxUint64},
 			want: Uint128{
-				low: math.MaxUint64,
+				Low: math.MaxUint64,
 			},
 		},
 	}
@@ -60,22 +60,22 @@ func TestUint128_Add(t *testing.T) {
 			x: NewUint128(^uint64(0)),
 			y: NewUint128(1),
 			want: Uint128{
-				high: 1,
-				low:  0,
+				High: 1,
+				Low:  0,
 			},
 		},
 		{
 			x: NewUint128(^uint64(0)),
 			y: NewUint128(^uint64(0)),
 			want: Uint128{
-				high: 1,
-				low:  ^uint64(0) - 1,
+				High: 1,
+				Low:  ^uint64(0) - 1,
 			},
 		},
 		{
 			x: Uint128{
-				low:  ^uint64(0),
-				high: ^uint64(0),
+				Low:  ^uint64(0),
+				High: ^uint64(0),
 			},
 			y:         NewUint128(1),
 			wantPanic: true,

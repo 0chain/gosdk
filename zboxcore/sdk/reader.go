@@ -144,7 +144,7 @@ func (sd *StreamDownload) Read(b []byte) (int, error) {
 			numBlocks = endInd - startInd
 		}
 
-		data, err := sd.getBlocksData(startInd, numBlocks)
+		data, err := sd.getBlocksData(startInd, numBlocks, true)
 		if err != nil {
 			return 0, err
 		}

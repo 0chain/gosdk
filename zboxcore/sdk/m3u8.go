@@ -26,7 +26,7 @@ import (
 // #EXTINF:5.000000,
 // tv21.ts
 
-// MediaPlaylist m3u8 encoder and decoder
+// MediaPlaylist queue-based m3u8 playlist
 type MediaPlaylist struct {
 	dir   string
 	delay int
@@ -60,12 +60,12 @@ func NewMediaPlaylist(delay int, dir string, writer M3u8Writer) *MediaPlaylist {
 	return m3u8
 }
 
-// Append append new item
+// Append append new item into playlist
 func (m *MediaPlaylist) Append(item string) {
 	m.next <- item
 }
 
-// Play start to push item into playlist
+// Play start to play the contents of the playlist with 1 second buffer between each item
 func (m *MediaPlaylist) Play() {
 
 	for {

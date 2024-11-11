@@ -64,7 +64,7 @@ func TestGetAggregates(t *testing.T) {
 	"date_created":"2019-06-19 13:37:50.466889 -0700 PDT m=+0.023873276"
 	}`
 
-	err = zcncore.SetWalletInfo(w, false)
+	err = zcncore.SetWalletInfoJSON(w, false)
 	if err != nil {
 		fmt.Println("set wallet info failed: ", err)
 		return

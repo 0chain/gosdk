@@ -144,11 +144,19 @@ async function bulkUpload(options) {
     bridge.glob.index++
     const readChunkFuncName = "__zcn_upload_reader_"+i.toString()
     const callbackFuncName = "__zcn_upload_callback_"+i.toString()
+    var md5HashFuncName = ""
     g[readChunkFuncName] =  async (offset,chunkSize) => {
-      console.log("multi_upload: read chunk remotePath:"+ obj.remotePath + " offset:"+offset+" chunkSize:"+chunkSize)
       const chunk = await readChunk(offset,chunkSize,obj.file)
       return chunk.buffer
     }
+    if (obj.file.size > 25*1024*1024) {
+      md5HashFuncName = "__zcn_md5_hash_"+i.toString()
+      const md5Res = md5Hash(obj.file)
+      g[md5HashFuncName] = async () => {
+      const hash = await md5Res
+      return hash
+      }
+  }
 
     if(obj.callback) {
       g[callbackFuncName] =  async (totalBytes,completedBytes,error)=> obj.callback(totalBytes,completedBytes,error)
@@ -165,16 +173,38 @@ async function bulkUpload(options) {
       isUpdate:obj.isUpdate,
       isRepair:obj.isRepair,
       numBlocks:obj.numBlocks,
-      callbackFuncName:callbackFuncName
+      callbackFuncName:callbackFuncName,
+      md5HashFuncName:md5HashFuncName,
     }
   })
+
+  // md5Hash(options[0].file).then(hash=>{
+  //   console.log("md5 hash: ",hash)
+  // }).catch(err=>{
+  //   console.log("md5 hash error: ",err)
+  // })
 
   const end =  bridge.glob.index
   const result = await bridge.__proxy__.sdk.multiUpload(JSON.stringify(opts))
   for (let i=start; i<end;i++){
     g["__zcn_upload_reader_"+i.toString()] = null;
     g["__zcn_upload_callback_"+i.toString()] =null;
+    g["__zcn_md5_hash_"+i.toString()] = null;
   }
+  return result
+}
+
+
+async function md5Hash(file) {
+  const result = new Promise((resolve, reject) => {
+    const worker = new Worker('md5worker.js')
+    worker.postMessage(file)
+    worker.onmessage = e => {
+      resolve(e.data)
+      worker.terminate()
+    }
+    worker.onerror = reject
+  })
   return result
 }
 
@@ -218,20 +248,26 @@ async function blsVerify(signature, hash) {
   return bridge.jsProxy.publicKey.verify(sig, bytes)
 }
 
-async function setWallet(bls, clientID, sk, pk,mnemonic) {
+async function setWallet(bls,
+  clientID,
+  clientKey,
+  peerPublicKey,
+  sk,
+  pk,
+  mnemonic,
+  isSplit) {
   if (!bls) throw new Error('bls is undefined, on wasm setWallet fn')
   if (!sk) throw new Error('secret key is undefined, on wasm setWallet fn')
   if (!pk) throw new Error('public key is undefined, on wasm setWallet fn')
 
-  if (bridge.walletId != clientID) {
-    console.log('setWallet: ', clientID, sk, pk)
-    bridge.jsProxy.bls = bls
-    bridge.jsProxy.publicKey = bls.deserializeHexStrToPublicKey(pk)
+  console.log('setWallet: ', clientID, sk, pk)
+  bridge.jsProxy.bls = bls
+  bridge.jsProxy.secretKey = bls.deserializeHexStrToSecretKey(sk)
+  bridge.jsProxy.publicKey = bls.deserializeHexStrToPublicKey(pk)
 
-    // use proxy.sdk to detect if sdk is ready
-    await bridge.__proxy__.sdk.setWallet(clientID, pk, sk, mnemonic)
-    bridge.walletId = clientID
-  }
+  // use proxy.sdk to detect if sdk is ready
+  await bridge.__proxy__.sdk.setWallet(clientID, clientKey, peerPublicKey, pk, sk, mnemonic, isSplit)
+  bridge.walletId = clientID
 }
 
 async function loadWasm(go) {
@@ -244,7 +280,7 @@ async function loadWasm(go) {
   }
 
   const result = await WebAssembly.instantiateStreaming(
-    await fetch('zcn.wasm'),
+    await fetch('test/zcn.wasm'),
     go.importObject
   )
 
@@ -342,6 +378,3 @@ async function createWasm() {
 
   return proxy
 }
-
-
-

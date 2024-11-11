@@ -80,7 +80,7 @@ func TestReadChunks(t *testing.T) {
 
 			reader, err := createChunkReader(
 				bytes.NewReader(buf), int64(test.Size),
-				int64(test.ChunkSize), test.DataShards,
+				int64(test.ChunkSize), test.DataShards, test.ParityShards,
 				test.EncryptOnUpload, uploadMask,
 				erasureEncoder, encscheme,
 				CreateHasher(getShardSize(test.Size, test.DataShards, test.EncryptOnUpload)), 100,

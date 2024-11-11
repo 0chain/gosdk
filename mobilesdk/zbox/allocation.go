@@ -193,7 +193,14 @@ func (a *Allocation) DeleteFile(remotePath string) error {
 	if a == nil || a.sdkAllocation == nil {
 		return ErrInvalidAllocation
 	}
-	return a.sdkAllocation.DeleteFile(remotePath)
+	a.sdkAllocation.SetCheckStatus(true)
+	defer a.sdkAllocation.SetCheckStatus(false)
+	return a.sdkAllocation.DoMultiOperation([]sdk.OperationRequest{
+		{
+			OperationType: constants.FileOperationDelete,
+			RemotePath:    remotePath,
+		},
+	})
 }
 
 // RenameObject - rename or move file

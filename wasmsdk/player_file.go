@@ -66,7 +66,7 @@ func (p *FilePlayer) download(startBlock int64) {
 	}
 	fmt.Println("start:", startBlock, "end:", endBlock, "numBlocks:", p.numBlocks, "total:", p.playlistFile.NumBlocks)
 
-	data, err := downloadBlocks(p.allocationObj, p.remotePath, p.authTicket, p.lookupHash, startBlock, endBlock)
+	data, err := downloadBlocks(p.allocationObj.ID, p.remotePath, p.authTicket, p.lookupHash, startBlock, endBlock)
 	// data, err := downloadBlocks2(int(startBlock), int(endBlock), p.allocationObj, p.remotePath)
 	if err != nil {
 		PrintError(err.Error())

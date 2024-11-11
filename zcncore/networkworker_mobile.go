@@ -20,18 +20,22 @@ const NETWORK_ENDPOINT = "/network"
 
 var networkWorkerTimerInHours = 1
 
+// Network details of the network
 type Network struct {
 	net network
 }
 
+// NewNetwork create a new network
 func NewNetwork() *Network {
 	return &Network{}
 }
 
+// AddMiner add miner to the network
 func (net *Network) AddMiner(miner string) {
 	net.net.Miners = append(net.net.Miners, miner)
 }
 
+// AddSharder add sharder to the network
 func (net *Network) AddSharder(sharder string) {
 	net.net.Sharders = append(net.net.Sharders, sharder)
 }
@@ -60,6 +64,7 @@ func updateNetworkDetailsWorker(ctx context.Context) {
 	}
 }
 
+// UpdateNetworkDetails update network details
 func UpdateNetworkDetails() error {
 	networkDetails, err := GetNetworkDetails()
 	if err != nil {
@@ -126,6 +131,7 @@ func GetNetworkDetails() (*Network, error) {
 	return &Network{net: networkResponse}, nil
 }
 
+// GetNetwork - get network details
 func GetNetwork() *Network {
 	return &Network{
 		net: network{
@@ -135,6 +141,8 @@ func GetNetwork() *Network {
 	}
 }
 
+// SetNetwork set network details
+//   - net: network details
 func SetNetwork(net *Network) {
 	_config.chain.Miners = net.net.Miners
 	_config.chain.Sharders = net.net.Sharders

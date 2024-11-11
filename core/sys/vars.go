@@ -14,7 +14,8 @@ var (
 	Sleep = time.Sleep
 
 	// Sign sign method. it should be initialized on different platform.
-	Sign SignFunc
+	Sign         SignFunc
+	SignWithAuth SignFunc
 
 	// Verify verify method. it should be initialized on different platform.
 	Verify VerifyFunc
@@ -23,4 +24,15 @@ var (
 	VerifyWith VerifyWithFunc
 
 	Authorize AuthorizeFunc
+
+	AuthCommon AuthorizeFunc
 )
+
+// SetAuthorize sets the authorize callback function
+func SetAuthorize(auth AuthorizeFunc) {
+	Authorize = auth
+}
+
+func SetAuthCommon(auth AuthorizeFunc) {
+	AuthCommon = auth
+}

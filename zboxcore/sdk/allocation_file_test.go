@@ -19,8 +19,10 @@ import (
 	"github.com/0chain/gosdk/core/pathutil"
 	"github.com/0chain/gosdk/core/resty"
 	"github.com/0chain/gosdk/core/zcncrypto"
+	"github.com/hitenjain14/fasthttp"
 
 	"github.com/0chain/gosdk/zboxcore/blockchain"
+	"github.com/0chain/gosdk/zboxcore/client"
 	zclient "github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/mocks"
@@ -30,9 +32,12 @@ import (
 )
 
 func setupHttpResponses(
-	t *testing.T, mockClient *mocks.HttpClient, allocID string,
+	t *testing.T, mockClient *mocks.HttpClient, fastMock *mocks.FastClient, allocID string,
 	refsInput, fileMetaInput []byte, hashes []string,
 	numBlobbers, numCorrect int, isUpdate bool) {
+
+	walletJSON := `{"client_id":"00d2d56d0d573329fe61b8252a4b1715f93fac15176e5d90c413bc92a42e498b","client_key":"000b47144eb0366c3039bca10bc6df3ac289d8823de14ffc08cfdfe83f03e4079ab94bdc3932e7e9bc053f38834c7da63ce6f9c6e540d93cf0c52ba4149f2280","keys":[{"public_key":"000b47144eb0366c3039bca10bc6df3ac289d8823de14ffc08cfdfe83f03e4079ab94bdc3932e7e9bc053f38834c7da63ce6f9c6e540d93cf0c52ba4149f2280","private_key":"77a7faf0dcc1865a475963fee7ce71ca6dc6a20198209eb75d9fc1dc9df41f0f"}],"mnemonics":"mistake alone lumber swamp tape device flight oppose room combine useful typical deal lion device hope glad once million pudding artist brush sing vicious","version":"1.0","date_created":"2024-03-11T20:06:33+05:30","nonce":0}`
+	client.PopulateClient(walletJSON, "bls0chain") //nolint:errcheck
 
 	for i := 0; i < numBlobbers; i++ {
 		metaBlobberBase := t.Name() + "/" + mockBlobberUrl + strconv.Itoa(i) + zboxutil.FILE_META_ENDPOINT
@@ -95,6 +100,22 @@ func setupHttpResponses(
 				return io.NopCloser(bytes.NewReader(b))
 			}(),
 		}, nil)
+		j := i
+		fastMock.On("DoTimeout", mock.AnythingOfType("*fasthttp.Request"), mock.AnythingOfType("*fasthttp.Response"), mock.AnythingOfType("time.Duration")).Run(func(args mock.Arguments) {
+			resp := args.Get(1).(*fasthttp.Response)
+			if j < numCorrect {
+				resp.Header.SetStatusCode(http.StatusOK)
+			} else {
+				resp.Header.SetStatusCode(http.StatusBadRequest)
+			}
+			hash := hashes[j]
+			r := UploadResult{
+				Filename: "1.txt",
+				Hash:     hash,
+			}
+			b, _ := json.Marshal(r)
+			resp.SetBodyRaw(b)
+		}).Return(nil)
 
 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 			return req.Method == "POST" &&
@@ -184,6 +205,8 @@ func setupHttpResponses(
 func TestAllocation_UpdateFile(t *testing.T) {
 	mockClient := mocks.HttpClient{}
 	zboxutil.Client = &mockClient
+	mockFastClient := mocks.FastClient{}
+	zboxutil.FastHttpClient = &mockFastClient
 
 	const mockLocalPath = "1.txt"
 
@@ -240,7 +263,7 @@ func TestAllocation_UpdateFile(t *testing.T) {
 		"f435a42af309218e88196d4ed2e0c1977a701641b06434be0bb0263099f3faa9",
 		"6b3e932bfd2b2c09e39d35e7c4928c42b73bee194045e545560229234d695669",
 	}
-	setupHttpResponses(t, &mockClient, a.ID, resfsIn, fileMetaIn, hashes, len(a.Blobbers), len(a.Blobbers), true)
+	setupHttpResponses(t, &mockClient, &mockFastClient, a.ID, resfsIn, fileMetaIn, hashes, len(a.Blobbers), len(a.Blobbers), true)
 
 	err = a.UpdateFile(os.TempDir(), mockLocalPath, "/", nil)
 	require.NoErrorf(t, err, "Unexpected error %v", err)
@@ -249,6 +272,8 @@ func TestAllocation_UpdateFile(t *testing.T) {
 func TestAllocation_UploadFile(t *testing.T) {
 	mockClient := mocks.HttpClient{}
 	zboxutil.Client = &mockClient
+	mockFastClient := mocks.FastClient{}
+	zboxutil.FastHttpClient = &mockFastClient
 
 	const mockLocalPath = "1.txt"
 	require := require.New(t)
@@ -275,7 +300,7 @@ func TestAllocation_UploadFile(t *testing.T) {
 		"f435a42af309218e88196d4ed2e0c1977a701641b06434be0bb0263099f3faa9",
 		"6b3e932bfd2b2c09e39d35e7c4928c42b73bee194045e545560229234d695669",
 	}
-	setupHttpResponses(t, &mockClient, a.ID, nil, nil, hashes, len(a.Blobbers), len(a.Blobbers), false)
+	setupHttpResponses(t, &mockClient, &mockFastClient, a.ID, nil, nil, hashes, len(a.Blobbers), len(a.Blobbers), false)
 
 	err := a.UploadFile(os.TempDir(), mockLocalPath, "/", nil)
 	require.NoErrorf(err, "Unexpected error %v", err)
@@ -289,6 +314,8 @@ func TestAllocation_UpdateFileWithThumbnail(t *testing.T) {
 
 	mockClient := mocks.HttpClient{}
 	zboxutil.Client = &mockClient
+	mockFastClient := mocks.FastClient{}
+	zboxutil.FastHttpClient = &mockFastClient
 
 	a := &Allocation{
 		ID:           "TestAllocation_UpdateFile_WithThumbNail",
@@ -345,7 +372,7 @@ func TestAllocation_UpdateFileWithThumbnail(t *testing.T) {
 		"f435a42af309218e88196d4ed2e0c1977a701641b06434be0bb0263099f3faa9",
 		"6b3e932bfd2b2c09e39d35e7c4928c42b73bee194045e545560229234d695669",
 	}
-	setupHttpResponses(t, &mockClient, a.ID, resfsIn, fileMetaIn, hashes, len(a.Blobbers), len(a.Blobbers), true)
+	setupHttpResponses(t, &mockClient, &mockFastClient, a.ID, resfsIn, fileMetaIn, hashes, len(a.Blobbers), len(a.Blobbers), true)
 
 	err = a.UpdateFileWithThumbnail(os.TempDir(), mockLocalPath, "/", mockThumbnailPath, nil)
 	require.NoErrorf(t, err, "Unexpected error %v", err)
@@ -360,6 +387,8 @@ func TestAllocation_UploadFileWithThumbnail(t *testing.T) {
 
 	mockClient := mocks.HttpClient{}
 	zboxutil.Client = &mockClient
+	mockFastClient := mocks.FastClient{}
+	zboxutil.FastHttpClient = &mockFastClient
 
 	if teardown := setupMockFile(t, mockLocalPath); teardown != nil {
 		defer teardown(t)
@@ -388,7 +417,7 @@ func TestAllocation_UploadFileWithThumbnail(t *testing.T) {
 		"f435a42af309218e88196d4ed2e0c1977a701641b06434be0bb0263099f3faa9",
 		"6b3e932bfd2b2c09e39d35e7c4928c42b73bee194045e545560229234d695669",
 	}
-	setupHttpResponses(t, &mockClient, a.ID, nil, nil, hashes, len(a.Blobbers), len(a.Blobbers), false)
+	setupHttpResponses(t, &mockClient, &mockFastClient, a.ID, nil, nil, hashes, len(a.Blobbers), len(a.Blobbers), false)
 
 	err := a.UploadFileWithThumbnail(mockTmpPath, mockLocalPath, "/", mockThumbnailPath, nil)
 	require.NoErrorf(t, err, "Unexpected error %v", err)
@@ -397,6 +426,8 @@ func TestAllocation_UploadFileWithThumbnail(t *testing.T) {
 func TestAllocation_EncryptAndUpdateFile(t *testing.T) {
 	mockClient := mocks.HttpClient{}
 	zboxutil.Client = &mockClient
+	mockFastClient := mocks.FastClient{}
+	zboxutil.FastHttpClient = &mockFastClient
 
 	const mockLocalPath = "1.txt"
 
@@ -452,7 +483,7 @@ func TestAllocation_EncryptAndUpdateFile(t *testing.T) {
 		"3c4f6a43748f6b7cefee11216540414cb9b2563c294a5f7d633c2e9cda26f7bc",
 		"249684daaeef1a8d38d0be0ea38777886e0b3ddf3deaef2eabe4117cc6e67256",
 	}
-	setupHttpResponses(t, &mockClient, a.ID, resfsIn, fileMetaIn, hashes, len(a.Blobbers), len(a.Blobbers), true)
+	setupHttpResponses(t, &mockClient, &mockFastClient, a.ID, resfsIn, fileMetaIn, hashes, len(a.Blobbers), len(a.Blobbers), true)
 
 	err = a.EncryptAndUpdateFile(os.TempDir(), mockLocalPath, "/", nil)
 	require.NoError(t, err)
@@ -461,6 +492,8 @@ func TestAllocation_EncryptAndUpdateFile(t *testing.T) {
 func TestAllocation_EncryptAndUploadFile(t *testing.T) {
 	mockClient := mocks.HttpClient{}
 	zboxutil.Client = &mockClient
+	mockFastClient := mocks.FastClient{}
+	zboxutil.FastHttpClient = &mockFastClient
 
 	const (
 		mockLocalPath = "1.txt"
@@ -491,7 +524,7 @@ func TestAllocation_EncryptAndUploadFile(t *testing.T) {
 		"f435a42af309218e88196d4ed2e0c1977a701641b06434be0bb0263099f3faa9",
 		"6b3e932bfd2b2c09e39d35e7c4928c42b73bee194045e545560229234d695669",
 	}
-	setupHttpResponses(t, &mockClient, a.ID, nil, nil, hashes, len(a.Blobbers), len(a.Blobbers), false)
+	setupHttpResponses(t, &mockClient, &mockFastClient, a.ID, nil, nil, hashes, len(a.Blobbers), len(a.Blobbers), false)
 
 	err := a.EncryptAndUploadFile(mockTmpPath, mockLocalPath, "/", nil)
 	require.NoError(t, err)
@@ -500,6 +533,8 @@ func TestAllocation_EncryptAndUploadFile(t *testing.T) {
 func TestAllocation_EncryptAndUpdateFileWithThumbnail(t *testing.T) {
 	mockClient := mocks.HttpClient{}
 	zboxutil.Client = &mockClient
+	mockFastClient := mocks.FastClient{}
+	zboxutil.FastHttpClient = &mockFastClient
 
 	const (
 		mockLocalPath     = "1.txt"
@@ -565,7 +600,7 @@ func TestAllocation_EncryptAndUpdateFileWithThumbnail(t *testing.T) {
 		"3c4f6a43748f6b7cefee11216540414cb9b2563c294a5f7d633c2e9cda26f7bc",
 		"249684daaeef1a8d38d0be0ea38777886e0b3ddf3deaef2eabe4117cc6e67256",
 	}
-	setupHttpResponses(t, &mockClient, a.ID, resfsIn, fileMetaIn, hashes, len(a.Blobbers), len(a.Blobbers), true)
+	setupHttpResponses(t, &mockClient, &mockFastClient, a.ID, resfsIn, fileMetaIn, hashes, len(a.Blobbers), len(a.Blobbers), true)
 	err = a.EncryptAndUpdateFileWithThumbnail(mockTmpPath, mockLocalPath, "/", mockThumbnailPath, nil)
 
 	require.NoError(t, err)
@@ -574,6 +609,8 @@ func TestAllocation_EncryptAndUpdateFileWithThumbnail(t *testing.T) {
 func TestAllocation_EncryptAndUploadFileWithThumbnail(t *testing.T) {
 	mockClient := mocks.HttpClient{}
 	zboxutil.Client = &mockClient
+	mockFastClient := mocks.FastClient{}
+	zboxutil.FastHttpClient = &mockFastClient
 
 	const (
 		mockLocalPath     = "1.txt"
@@ -612,7 +649,7 @@ func TestAllocation_EncryptAndUploadFileWithThumbnail(t *testing.T) {
 		"6b3e932bfd2b2c09e39d35e7c4928c42b73bee194045e545560229234d695669",
 	}
 
-	setupHttpResponses(t, &mockClient, a.ID, nil, nil, hashes, len(a.Blobbers), len(a.Blobbers), false)
+	setupHttpResponses(t, &mockClient, &mockFastClient, a.ID, nil, nil, hashes, len(a.Blobbers), len(a.Blobbers), false)
 
 	err := a.EncryptAndUploadFileWithThumbnail(mockTmpPath, mockLocalPath, "/", mockThumbnailPath, nil)
 	require.NoError(t, err)

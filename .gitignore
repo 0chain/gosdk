@@ -30,3 +30,6 @@ zcnbridge/example/logs/
 winsdk/zcn.windows.h
 wasmsdk/cypress/node_modules/
 wasmsdk/demo/demo
+sdkversion.go
+gosdk.code-workspace
+sdkversion

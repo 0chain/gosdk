@@ -31,6 +31,24 @@ type FS interface {
 
 	//MkdirAll creates a directory named path
 	MkdirAll(path string, perm os.FileMode) error
+
+	// LoadProgress load progress
+	LoadProgress(progressID string) ([]byte, error)
+
+	// SaveProgress save progress
+	SaveProgress(progressID string, data []byte, perm fs.FileMode) error
+
+	// RemoveProgress remove progress
+	RemoveProgress(progressID string) error
+
+	// Create Directory
+	CreateDirectory(dirID string) error
+
+	// GetFileHandler
+	GetFileHandler(dirID, name string) (File, error)
+
+	// Remove all created directories(used in download directory)
+	RemoveAllDirectories()
 }
 
 type File interface {

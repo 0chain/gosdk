@@ -11,29 +11,30 @@ import (
 	"github.com/0chain/gosdk/core/transaction"
 )
 
-func (ta *TransactionWithAuth) ExecuteSmartContract(address, methodName string, input string, val string) error {
+func (ta *TransactionWithAuth) ExecuteSmartContract(address, methodName string,
+	input interface{}, val string, feeOpts ...FeeOption) (*transaction.Transaction, error) {
 	v, err := parseCoinStr(val)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	err = ta.t.createSmartContractTxn(address, methodName, json.RawMessage(input), v)
+	err = ta.t.createSmartContractTxn(address, methodName, input, v, feeOpts...)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	go func() {
 		ta.submitTxn()
 	}()
-	return nil
+	return ta.t.txn, nil
 }
 
 func (ta *TransactionWithAuth) Send(toClientID string, val string, desc string) error {
 	v, err := parseCoinStr(val)
 	if err != nil {
-		return err
+		return nil
 	}
 
-	txnData, err := json.Marshal(SendTxnData{Note: desc})
+	txnData, err := json.Marshal(SendTxnData{Name: "transfer", Note: desc})
 	if err != nil {
 		return errors.New("", "Could not serialize description to transaction_data")
 	}

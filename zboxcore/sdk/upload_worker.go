@@ -3,9 +3,10 @@ package sdk
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io"
+	"strings"
 
-	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
@@ -24,10 +25,14 @@ type UploadOperation struct {
 	isDownload    bool
 }
 
+var ErrPauseUpload = errors.New("upload paused by user")
+
 func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
 	if uo.isDownload {
 		if f, ok := uo.chunkedUpload.fileReader.(*sys.MemChanFile); ok {
-			err := allocObj.DownloadFileToFileHandler(f, uo.chunkedUpload.fileMeta.RemotePath, false, nil, true)
+			err := allocObj.DownloadFileToFileHandler(f, uo.chunkedUpload.fileMeta.RemotePath, false, nil, true, WithFileCallback(func() {
+				f.Close() //nolint:errcheck
+			}))
 			if err != nil {
 				l.Logger.Error("DownloadFileToFileHandler Failed", zap.String("path", uo.chunkedUpload.fileMeta.RemotePath), zap.Error(err))
 				return nil, uo.chunkedUpload.uploadMask, err
@@ -46,6 +51,13 @@ func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([
 		pos = uint64(i.TrailingZeros())
 		uo.refs[pos] = uo.chunkedUpload.blobbers[pos].fileRef
 		uo.refs[pos].ChunkSize = uo.chunkedUpload.chunkSize
+		remotePath := uo.chunkedUpload.fileMeta.RemotePath
+		allocationID := allocObj.ID
+		if singleClientMode {
+			lookuphash := fileref.GetReferenceLookup(allocationID, remotePath)
+			cacheKey := fileref.GetCacheKey(lookuphash, uo.chunkedUpload.blobbers[pos].blobber.ID)
+			fileref.DeleteFileRef(cacheKey)
+		}
 	}
 	l.Logger.Info("UploadOperation Success", zap.String("name", uo.chunkedUpload.fileMeta.RemoteName))
 	return nil, uo.chunkedUpload.uploadMask, nil
@@ -81,33 +93,6 @@ func (uo *UploadOperation) buildChange(_ []fileref.RefEntity, uid uuid.UUID) []a
 }
 
 func (uo *UploadOperation) Verify(allocationObj *Allocation) error {
-	if allocationObj == nil {
-		return thrown.Throw(constants.ErrInvalidParameter, "allocationObj")
-	}
-
-	if !uo.isUpdate && !allocationObj.CanUpload() || uo.isUpdate && !allocationObj.CanUpdate() {
-		return thrown.Throw(constants.ErrFileOptionNotPermitted, "file_option_not_permitted ")
-	}
-
-	err := ValidateRemoteFileName(uo.chunkedUpload.fileMeta.RemoteName)
-	if err != nil {
-		return err
-	}
-	spaceLeft := allocationObj.Size
-	if allocationObj.Stats != nil {
-		spaceLeft -= allocationObj.Stats.UsedSize
-	}
-
-	if uo.isUpdate {
-		f, err := allocationObj.GetFileMeta(uo.chunkedUpload.fileMeta.RemotePath)
-		if err != nil {
-			return err
-		}
-		spaceLeft += f.ActualFileSize
-	}
-	if uo.chunkedUpload.fileMeta.ActualSize > spaceLeft {
-		return ErrNoEnoughSpaceLeftInAllocation
-	}
 	return nil
 }
 
@@ -124,7 +109,7 @@ func (uo *UploadOperation) Completed(allocObj *Allocation) {
 }
 
 func (uo *UploadOperation) Error(allocObj *Allocation, consensus int, err error) {
-	if uo.chunkedUpload.progressStorer != nil {
+	if uo.chunkedUpload.progressStorer != nil && !strings.Contains(err.Error(), "context") && !errors.Is(err, ErrPauseUpload) {
 		uo.chunkedUpload.removeProgress()
 	}
 	cancelLock.Lock()
@@ -135,9 +120,9 @@ func (uo *UploadOperation) Error(allocObj *Allocation, consensus int, err error)
 	}
 }
 
-func NewUploadOperation(ctx context.Context, workdir string, allocObj *Allocation, connectionID string, fileMeta FileMeta, fileReader io.Reader, isUpdate, isWebstreaming, isRepair, isMemoryDownload bool, opts ...ChunkedUploadOption) (*UploadOperation, string, error) {
+func NewUploadOperation(ctx context.Context, workdir string, allocObj *Allocation, connectionID string, fileMeta FileMeta, fileReader io.Reader, isUpdate, isWebstreaming, isRepair, isMemoryDownload, isStreamUpload bool, opts ...ChunkedUploadOption) (*UploadOperation, string, error) {
 	uo := &UploadOperation{}
-	if fileMeta.ActualSize == 0 {
+	if fileMeta.ActualSize == 0 && !isStreamUpload {
 		byteReader := bytes.NewReader([]byte(
 			emptyFileDataHash))
 		fileReader = byteReader
