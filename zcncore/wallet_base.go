@@ -3,6 +3,7 @@ package zcncore
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/0chain/gosdk/core/sys"
 	"net/http"
 	"strings"
 	"time"
@@ -398,4 +399,16 @@ func SetupAuth(authHost, clientID, clientKey, publicKey, privateKey, localPublic
 		cb.OnSetupComplete(StatusSuccess, "")
 	}()
 	return nil
+}
+
+func RegisterKMSZauthServer(serverAddr string) {
+	logging.Info("Registering KMS ZAuth server: ", serverAddr)
+	sys.SetAuthorize(ZauthSignTxn(serverAddr))
+	sys.SetAuthCommon(ZauthAuthCommon(serverAddr))
+}
+
+func SetWalletMode(mode bool) {
+	client.SetWalletMode(mode)
+
+	fmt.Println("gosdk setWalletMode: ", "is split:", mode)
 }
