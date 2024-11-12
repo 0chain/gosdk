@@ -16,7 +16,7 @@ import (
 
 	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/common"
-	"github.com/0chain/gosdk/core/scRestApi"
+	"github.com/0chain/gosdk/core/screstapi"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/version"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -165,7 +165,7 @@ func GetStakePoolInfo(providerType ProviderType, providerID string) (info *Stake
 
 	var b []byte
 
-	b, err = scRestApi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getStakePoolStat",
+	b, err = screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getStakePoolStat",
 		map[string]string{"provider_type": strconv.Itoa(int(providerType)), "provider_id": providerID}, IsWasm)
 
 	if err != nil {
@@ -208,7 +208,7 @@ func GetStakePoolUserInfo(clientID string, offset, limit int) (info *StakePoolUs
 		"limit":     strconv.FormatInt(int64(limit), 10),
 	}
 
-	b, err = scRestApi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getUserStakePoolStat",
+	b, err = screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getUserStakePoolStat",
 		params, IsWasm)
 	if err != nil {
 		return nil, errors.Wrap(err, "error requesting stake pool user info:")
@@ -261,7 +261,7 @@ func GetChallengePoolInfo(allocID string) (info *ChallengePoolInfo, err error) {
 
 	var b []byte
 
-	b, err = scRestApi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getChallengePoolStat",
+	b, err = screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getChallengePoolStat",
 		map[string]string{"allocation_id": allocID}, IsWasm)
 
 	if err != nil {
@@ -453,7 +453,7 @@ func getBlobbersInternal(active, stakable bool, limit, offset int) (bs []*Blobbe
 
 	var b []byte
 
-	b, err = scRestApi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getblobbers", map[string]string{"active": strconv.FormatBool(active), "limit": strconv.FormatInt(int64(limit), 10),
+	b, err = screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getblobbers", map[string]string{"active": strconv.FormatBool(active), "limit": strconv.FormatInt(int64(limit), 10),
 		"offset":   strconv.FormatInt(int64(offset), 10),
 		"stakable": strconv.FormatBool(stakable)}, IsWasm)
 
@@ -515,7 +515,7 @@ func GetBlobber(blobberID string) (blob *Blobber, err error) {
 	}
 	var b []byte
 
-	b, err = scRestApi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getBlobber",
+	b, err = screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getBlobber",
 		map[string]string{"blobber_id": blobberID}, IsWasm)
 	if err != nil {
 		return nil, errors.Wrap(err, "requesting blobber:")
@@ -538,7 +538,7 @@ func GetValidator(validatorID string) (validator *Validator, err error) {
 	}
 	var b []byte
 
-	b, err = scRestApi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/get_validator",
+	b, err = screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/get_validator",
 		map[string]string{"validator_id": validatorID}, IsWasm)
 	if err != nil {
 		return nil, errors.Wrap(err, "requesting validator:")
@@ -561,7 +561,7 @@ func GetValidators(stakable bool) (validators []*Validator, err error) {
 	}
 	var b []byte
 
-	b, err = scRestApi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/validators",
+	b, err = screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/validators",
 		map[string]string{
 			"stakable": strconv.FormatBool(stakable),
 		}, IsWasm)
@@ -625,7 +625,7 @@ func GetAllocation(allocationID string) (*Allocation, error) {
 	var allocationBytes []byte
 	var err error
 
-	allocationBytes, err = scRestApi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation",
+	allocationBytes, err = screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation",
 		params, IsWasm)
 	if err != nil {
 		return nil, errors.New("allocation_fetch_error", "Error fetching the allocation."+err.Error())
@@ -669,7 +669,7 @@ func GetAllocationUpdates(allocation *Allocation) error {
 	var allocationBytes []byte
 	var err error
 
-	allocationBytes, err = scRestApi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation",
+	allocationBytes, err = screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation",
 		params, IsWasm)
 
 	if err != nil {
@@ -727,7 +727,7 @@ func getAllocationsInternal(clientID string, limit, offset int) ([]*Allocation, 
 	var allocationsBytes []byte
 	var err error
 
-	allocationsBytes, err = scRestApi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocations",
+	allocationsBytes, err = screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocations",
 		params, IsWasm)
 	if err != nil {
 		return nil, errors.New("allocations_fetch_error", "Error fetching the allocations."+err.Error())
@@ -859,7 +859,7 @@ func GetAllocationBlobbers(
 	var allocBlobber []byte
 	var err error
 
-	allocBlobber, err = scRestApi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/alloc_blobbers",
+	allocBlobber, err = screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/alloc_blobbers",
 		params, IsWasm)
 	if err != nil {
 		return nil, err
@@ -949,7 +949,7 @@ func GetBlobberIds(blobberUrls []string) ([]string, error) {
 	params["blobber_urls"] = string(urlsStr)
 	var idsStr []byte
 
-	idsStr, err = scRestApi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/blobber_ids",
+	idsStr, err = screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/blobber_ids",
 		params, IsWasm)
 	if err != nil {
 		return nil, err

@@ -10,7 +10,7 @@ import (
 
 	"github.com/0chain/gosdk/core/block"
 	"github.com/0chain/gosdk/core/client"
-	"github.com/0chain/gosdk/core/scRestApi"
+	"github.com/0chain/gosdk/core/screstapi"
 	"github.com/0chain/gosdk/core/tokenrate"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/zcncrypto"
@@ -194,7 +194,7 @@ func GetMintNonce() ([]byte, error) {
 	}
 	var res []byte
 
-	res, err = scRestApi.MakeSCRestAPICall(ZCNSCSmartContractAddress, GET_MINT_NONCE, Params{
+	res, err = screstapi.MakeSCRestAPICall(ZCNSCSmartContractAddress, GET_MINT_NONCE, Params{
 		"client_id": client.Id(),
 	}, sdk.IsWasm)
 
@@ -292,7 +292,7 @@ func GetNotProcessedZCNBurnTickets(ethereumAddress, startNonce string) ([]byte, 
 
 	var res []byte
 
-	res, err = scRestApi.MakeSCRestAPICall(ZCNSCSmartContractAddress, GET_NOT_PROCESSED_BURN_TICKETS, Params{
+	res, err = screstapi.MakeSCRestAPICall(ZCNSCSmartContractAddress, GET_NOT_PROCESSED_BURN_TICKETS, Params{
 		"ethereum_address": ethereumAddress,
 		"nonce":            startNonce,
 	}, sdk.IsWasm)
@@ -312,7 +312,7 @@ func GetUserLockedTotal(clientID string) (int64, error) {
 
 	const GET_USER_LOCKED_TOTAL = `/v1/getUserLockedTotal`
 
-	info, err := scRestApi.MakeSCRestAPICall(ZCNSCSmartContractAddress, GET_USER_LOCKED_TOTAL, Params{
+	info, err := screstapi.MakeSCRestAPICall(ZCNSCSmartContractAddress, GET_USER_LOCKED_TOTAL, Params{
 		"client_id": clientID,
 	}, false)
 

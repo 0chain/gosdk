@@ -1,4 +1,4 @@
-package scRestApi
+package screstapi
 
 import (
 	"context"
