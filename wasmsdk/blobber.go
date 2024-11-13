@@ -1018,6 +1018,10 @@ func downloadBlocks(allocId, remotePath, authTicket, lookupHash, writeChunkFuncN
 		statusBar = &StatusBar{wg: wg, totalBytesMap: make(map[string]int)}
 	)
 
+	if lookupHash == "" {
+		lookupHash = getLookupHash(allocId, remotePath)
+	}
+
 	var fh sys.File
 	if writeChunkFuncName == "" {
 		pathHash := encryption.FastHash(fmt.Sprintf("%s:%d:%d", lookupHash, startBlock, endBlock))
