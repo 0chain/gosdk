@@ -647,7 +647,8 @@ func GetAllocationForUpdate(allocationID string) (*Allocation, error) {
 	}
 	params := make(map[string]string)
 	params["allocation"] = allocationID
-	allocationBytes, err := client.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation", params)
+	allocationBytes, err := screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation",
+		params, IsWasm)
 	if err != nil {
 		return nil, errors.New("allocation_fetch_error", "Error fetching the allocation."+err.Error())
 	}
