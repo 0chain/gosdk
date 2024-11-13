@@ -165,7 +165,7 @@ func withParams(uri string, params Params) string { //nolint:unused
 //		return
 //	}
 //
-//	return coreHttp.MakeSCRestAPICall(StorageSmartContractAddress, STORAGE_GET_BLOBBER_SNAPSHOT, Params{
+//	return coreHttp.MakeSCRestAPICallToSharder(StorageSmartContractAddress, STORAGE_GET_BLOBBER_SNAPSHOT, Params{
 //		"round":  strconv.FormatInt(round, 10),
 //		"limit":  strconv.FormatInt(limit, 10),
 //		"offset": strconv.FormatInt(offset, 10),
