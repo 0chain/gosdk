@@ -91,7 +91,7 @@ type ChunkedUpload struct {
 	//used in wasm check chunked_upload_process_js.go
 	listenChan chan struct{} //nolint:unused
 	//used in wasm check chunked_upload_process_js.go
-	processMap map[int]int //nolint:unused
+	processMap map[int]zboxutil.Uint128 //nolint:unused
 	//used in wasm check chunked_upload_process_js.go
 	processMapLock sync.Mutex //nolint:unused
 }

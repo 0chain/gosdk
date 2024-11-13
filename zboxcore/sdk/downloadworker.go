@@ -559,7 +559,7 @@ func (req *DownloadRequest) processDownload() {
 				req.bufferMap[blobberIdx] = zboxutil.NewDownloadBufferWithChan(sz, bufBlocks, req.effectiveBlockSize)
 			} else {
 				bufMask := zboxutil.NewDownloadBufferWithMask(sz, bufBlocks, req.effectiveBlockSize)
-				bufMask.SetNumBlocks(int(numBlocks))
+				bufMask.SetNumBlocks(int(bufBlocks))
 				req.bufferMap[blobberIdx] = bufMask
 			}
 		}
@@ -996,6 +996,7 @@ func (req *DownloadRequest) errorCB(err error, remotePathCB string) {
 		return
 	}
 	req.skip = true
+	logger.Logger.Error("Download failed: ", err, " remotefilepath: ", remotePathCB)
 	if req.localFilePath != "" {
 		if info, err := req.fileHandler.Stat(); err == nil && info.Size() == 0 {
 			os.Remove(req.localFilePath) //nolint: errcheck
@@ -1332,6 +1333,12 @@ func (req *DownloadRequest) Seek(offset int64, whence int) (int64, error) {
 
 func writeData(dest io.Writer, data [][][]byte, dataShards, remaining int) (int, error) {
 	total := 0
+	if len(data) == 0 {
+		return 0, errors.New(InvalidWhenceValue, "data cannot be empty")
+	}
+	if dest == nil {
+		return 0, errors.New(InvalidWhenceValue, "destination writer cannot be nil")
+	}
 	for i := 0; i < len(data); i++ {
 		for j := 0; j < dataShards; j++ {
 			if len(data[i][j]) <= remaining {

@@ -6,10 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/0chain/gosdk/zcncore"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/0chain/gosdk/zcncore"
 
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/encryption"
@@ -110,7 +111,11 @@ func (c *Client) createResty(ctx context.Context, csrfToken, userID string, head
 
 	h["X-CSRF-TOKEN"] = csrfToken
 	h["X-App-Timestamp"] = strconv.FormatInt(time.Now().Unix(), 10)
-	h["X-App-ID-Token"] = "*" //ignore firebase token in jwt requests
+
+	if _, ok := h["X-App-ID-Token"]; !ok {
+		h["X-App-ID-Token"] = "*" //ignore firebase token in jwt requests
+	}
+
 	h["X-App-Type"] = c.appType
 
 	for k, v := range headers {
@@ -120,46 +125,14 @@ func (c *Client) createResty(ctx context.Context, csrfToken, userID string, head
 	return resty.New(resty.WithHeader(h)), nil
 }
 
-// CreateJwtSession create a jwt session with user id
-func (c *Client) CreateJwtSession(ctx context.Context, userID string) (int64, error) {
-
-	csrfToken, err := c.GetCsrfToken(ctx)
-	if err != nil {
-		return 0, err
-	}
-
-	r, err := c.createResty(ctx, csrfToken, userID, nil)
-
-	if err != nil {
-		return 0, err
-	}
-
-	var sessionID int64
-
-	r.DoPost(ctx, nil, c.baseUrl+"/v2/jwt/session").
-		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
-			if err != nil {
-				return err
-			}
-
-			return c.parseResponse(resp, respBody, &sessionID)
-		})
-
-	if errs := r.Wait(); len(errs) > 0 {
-		return 0, errs[0]
-	}
-
-	return sessionID, nil
-}
-
 // CreateJwtToken create a jwt token with jwt session id and otp
-func (c *Client) CreateJwtToken(ctx context.Context, userID string, jwtSessionID int64) (string, error) {
+func (c *Client) CreateJwtToken(ctx context.Context, userID, accessToken string) (string, error) {
 	csrfToken, err := c.GetCsrfToken(ctx)
 	if err != nil {
 		return "", err
 	}
 	headers := map[string]string{
-		"X-JWT-Session-ID": strconv.FormatInt(jwtSessionID, 10),
+		"X-App-ID-Token": accessToken,
 	}
 
 	r, err := c.createResty(ctx, csrfToken, userID, headers)

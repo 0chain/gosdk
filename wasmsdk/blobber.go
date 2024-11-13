@@ -17,6 +17,7 @@ import (
 
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/pathutil"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/hack-pad/safejs"
@@ -1016,10 +1017,8 @@ func downloadBlocks(allocId string, remotePath, authTicket, lookupHash string, s
 		statusBar = &StatusBar{wg: wg, totalBytesMap: make(map[string]int)}
 	)
 
-	fileName := strings.Replace(path.Base(remotePath), "/", "-", -1)
-	localPath := alloc.ID + "-" + fmt.Sprintf("%v-%s", startBlock, fileName)
-
-	fs, err := sys.Files.Open(localPath)
+	pathHash := encryption.FastHash(remotePath)
+	fs, err := sys.Files.Open(pathHash)
 	if err != nil {
 		return nil, fmt.Errorf("could not open local file: %v", err)
 	}
@@ -1029,7 +1028,7 @@ func downloadBlocks(allocId string, remotePath, authTicket, lookupHash string, s
 		return nil, fmt.Errorf("invalid memfile")
 	}
 
-	defer sys.Files.Remove(localPath) //nolint
+	defer sys.Files.Remove(pathHash) //nolint
 
 	wg.Add(1)
 	if authTicket != "" {
@@ -1087,7 +1086,19 @@ func repairAllocation(allocationID, callbackFuncName string) error {
 		return err
 	}
 	wg.Wait()
-	return statusBar.err
+	if statusBar.err != nil {
+		fmt.Println("Error in repair allocation: ", statusBar.err)
+		return statusBar.err
+	}
+	status, _, err := alloc.CheckAllocStatus()
+	if err != nil {
+		return err
+	}
+	if status == sdk.Repair || status == sdk.Broken {
+		fmt.Println("allocation repair failed")
+		return errors.New("allocation repair failed")
+	}
+	return nil
 }
 
 // checkAllocStatus check the status of the allocation, either it is ok, needs repair or broken

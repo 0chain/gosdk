@@ -100,27 +100,6 @@ func GetCsrfToken() *C.char {
 	return WithJSON(zboxApiClient.GetCsrfToken(context.TODO()))
 }
 
-// CreateJwtSession create a jwt session
-//
-//	return
-//		{
-//			"error":"",
-//			"result":"xxx",
-//		}
-//
-//export CreateJwtSession
-func CreateJwtSession(userID *C.char) *C.char {
-	defer func() {
-		if r := recover(); r != nil {
-			log.Error("win: crash ", r)
-		}
-	}()
-	if zboxApiClient == nil {
-		return WithJSON(0, ErrZboxApiNotInitialized)
-	}
-	return WithJSON(zboxApiClient.CreateJwtSession(context.TODO(), C.GoString(userID)))
-}
-
 // CreateJwtToken create a fresh jwt token
 //
 //	return
@@ -130,7 +109,7 @@ func CreateJwtSession(userID *C.char) *C.char {
 //		}
 //
 //export CreateJwtToken
-func CreateJwtToken(userID *C.char, jwtSessionID int64) *C.char {
+func CreateJwtToken(userID, accessToken *C.char) *C.char {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Error("win: crash ", r)
@@ -139,7 +118,7 @@ func CreateJwtToken(userID *C.char, jwtSessionID int64) *C.char {
 	if zboxApiClient == nil {
 		return WithJSON("", ErrZboxApiNotInitialized)
 	}
-	return WithJSON(zboxApiClient.CreateJwtToken(context.TODO(), C.GoString(userID), jwtSessionID))
+	return WithJSON(zboxApiClient.CreateJwtToken(context.TODO(), C.GoString(userID), C.GoString(accessToken)))
 }
 
 // RefreshJwtToken refresh jwt token

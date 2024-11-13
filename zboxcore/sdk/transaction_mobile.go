@@ -1,5 +1,5 @@
-//go:build !mobile
-// +build !mobile
+//go:build mobile
+// +build mobile
 
 package sdk
 
@@ -48,7 +48,7 @@ func (cb *transactionCallback) OnAuthComplete(t *zcncore.Transaction, status int
 }
 
 // ExecuteSmartContract executes the smart contract
-func ExecuteSmartContract(address string, sn transaction.SmartContractTxnData, value, fee uint64) (*transaction.Transaction, error) {
+func ExecuteSmartContract(address string, sn transaction.SmartContractTxnData, value, fee string) (*transaction.Transaction, error) {
 	wg := &sync.WaitGroup{}
 	cb := &transactionCallback{wg: wg}
 	txn, err := zcncore.NewTransaction(cb, fee, 0)
@@ -57,10 +57,18 @@ func ExecuteSmartContract(address string, sn transaction.SmartContractTxnData, v
 	}
 
 	wg.Add(1)
-	t, err := txn.ExecuteSmartContract(address, sn.Name, sn.InputArgs, value)
+
+	inputRaw, ok := sn.InputArgs.(string)
+	if !ok {
+		return nil, fmt.Errorf("failed to convert input args")
+	}
+
+	err = txn.ExecuteSmartContract(address, sn.Name, inputRaw, value)
 	if err != nil {
 		return nil, err
 	}
+
+	t := txn.GetDetails()
 
 	msg := fmt.Sprintf("Executing transaction '%s' with hash %s ", sn.Name, t.Hash)
 	l.Logger.Info(msg)
@@ -96,7 +104,7 @@ func ExecuteSmartContract(address string, sn transaction.SmartContractTxnData, v
 }
 
 // ExecuteSmartContractSend create send transaction to transfer tokens from the caller to target address
-func ExecuteSmartContractSend(to string, tokens, fee uint64, desc string) (string, error) {
+func ExecuteSmartContractSend(to, tokens, fee, desc string) (string, error) {
 	wg := &sync.WaitGroup{}
 	cb := &transactionCallback{wg: wg}
 	txn, err := zcncore.NewTransaction(cb, fee, 0)

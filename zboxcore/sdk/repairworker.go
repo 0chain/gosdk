@@ -77,6 +77,10 @@ func (r *RepairRequest) processRepair(ctx context.Context, a *Allocation) {
 		SetSingleClietnMode(true)
 		defer SetSingleClietnMode(false)
 	}
+	if shouldSaveProgress {
+		SetSaveProgress(false)
+		defer SetSaveProgress(true)
+	}
 	r.iterateDir(a, r.listDir)
 	if r.statusCB != nil {
 		r.statusCB.RepairCompleted(r.filesRepaired)

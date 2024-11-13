@@ -13,6 +13,13 @@ import (
 	"github.com/0chain/gosdk/core/transaction"
 )
 
+func newTransactionWithAuth(cb TransactionCallback, txnFee uint64, nonce int64) (*TransactionWithAuth, error) {
+	ta := &TransactionWithAuth{}
+	var err error
+	ta.t, err = newTransaction(cb, txnFee, nonce)
+	return ta, err
+}
+
 func (ta *TransactionWithAuth) ExecuteSmartContract(address, methodName string,
 	input interface{}, val uint64, feeOpts ...FeeOption) (*transaction.Transaction, error) {
 	err := ta.t.createSmartContractTxn(address, methodName, input, val, feeOpts...)
@@ -607,4 +614,50 @@ func (ta *TransactionWithAuth) ZCNSCCollectReward(providerId string, providerTyp
 	}
 	go func() { ta.t.setNonceAndSubmit() }()
 	return err
+}
+
+// ========================================================================== //
+//                                vesting pool                                //
+// ========================================================================== //
+
+func (ta *TransactionWithAuth) VestingTrigger(poolID string) (err error) {
+	err = ta.t.vestingPoolTxn(transaction.VESTING_TRIGGER, poolID, 0)
+	if err != nil {
+		logging.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
+func (ta *TransactionWithAuth) VestingStop(sr *VestingStopRequest) (err error) {
+	err = ta.t.createSmartContractTxn(VestingSmartContractAddress,
+		transaction.VESTING_STOP, sr, 0)
+	if err != nil {
+		logging.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
+func (ta *TransactionWithAuth) VestingUnlock(poolID string) (err error) {
+
+	err = ta.t.vestingPoolTxn(transaction.VESTING_UNLOCK, poolID, 0)
+	if err != nil {
+		logging.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
+func (ta *TransactionWithAuth) VestingDelete(poolID string) (err error) {
+	err = ta.t.vestingPoolTxn(transaction.VESTING_DELETE, poolID, 0)
+	if err != nil {
+		logging.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
 }
