@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+
 	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/imageutil"
@@ -52,6 +53,10 @@ func initSDKs(chainID, blockWorker, signatureScheme string,
 // getVersion retrieve the sdk version
 func getVersion() string {
 	return sdk.GetVersion()
+}
+
+func getWasmType() string {
+	return "normal"
 }
 
 var sdkLogger *logger.Logger
