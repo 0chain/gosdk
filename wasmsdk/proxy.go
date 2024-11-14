@@ -216,6 +216,7 @@ func main() {
 				"getLookupHash":          getLookupHash,
 				"createThumbnail":        createThumbnail,
 				"makeSCRestAPICall":      makeSCRestAPICall,
+				"getWasmType":            getWasmType,
 
 				//blobber
 				"delete":                    Delete,

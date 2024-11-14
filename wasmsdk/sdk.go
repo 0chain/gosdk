@@ -69,6 +69,10 @@ func getVersion() string {
 	return sdk.GetVersion()
 }
 
+func getWasmType() string {
+	return "enterprise"
+}
+
 var sdkLogger *logger.Logger
 var zcnLogger *logger.Logger
 var logEnabled = false
