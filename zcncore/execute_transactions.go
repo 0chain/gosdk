@@ -86,6 +86,17 @@ func MinerSCKill(providerId string, providerType Provider, client ...string) (ha
 
 }
 
+func StorageSCCollectReward(providerId string, providerType Provider, client ...string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+	return transaction.SmartContractTxn(StorageSmartContractAddress, transaction.SmartContractTxnData{
+		Name: transaction.STORAGESC_COLLECT_REWARD,
+		InputArgs: &scCollectReward{
+			ProviderId:   providerId,
+			ProviderType: int(providerType),
+		},
+	}, true, client...)
+
+}
+
 func MinerScUpdateConfig(input interface{}, client ...string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 	return transaction.SmartContractTxn(MinerSmartContractAddress, transaction.SmartContractTxnData{
 		Name:      transaction.MINERSC_UPDATE_SETTINGS,
