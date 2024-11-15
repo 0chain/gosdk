@@ -1,4 +1,4 @@
-package client
+package node
 
 import (
 	"encoding/json"
@@ -145,20 +145,13 @@ func isCurrentDominantStatus(respStatus int, currentTotalPerStatus map[int]int, 
 	return currentTotalPerStatus[respStatus] == currentMax && (respStatus == 200 || currentTotalPerStatus[200] < currentMax)
 }
 
-func GetBalance(clientIDs ...string) (*GetBalanceResponse, error) {
+func GetBalance(clientID string) (*GetBalanceResponse, error) {
 	const GetBalance = "client/get/balance"
 	var (
 		balance GetBalanceResponse
 		err     error
 		res     []byte
 	)
-
-	var clientID string
-	if len(clientIDs) > 0 {
-		clientID = clientIDs[0]
-	} else {
-		clientID = Id()
-	}
 
 	if res, err = MakeSCRestAPICallToSharder("", GetBalance, map[string]string{
 		"client_id": clientID,

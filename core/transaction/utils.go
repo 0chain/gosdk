@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/0chain/gosdk/core/client"
+	"github.com/0chain/gosdk/core/node"
 	"math"
 	"net/http"
 	"strconv"
@@ -283,7 +283,7 @@ func validateBlockHash(b *RoundBlockHeader) error {
 
 // VerifyTransaction query transaction status from sharders, and verify it by mininal confirmation
 func VerifyTransaction(txnHash string) (*Transaction, error) {
-	nodeClient, err := client.GetNode()
+	nodeClient, err := node.GetNode()
 	if err != nil {
 		return nil, err
 	}

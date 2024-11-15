@@ -2,8 +2,8 @@ package screstapi
 
 import (
 	"context"
+	"github.com/0chain/gosdk/core/node"
 
-	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/zboxapi"
 )
@@ -28,10 +28,10 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 	if isWasm {
 		resp, err = MakeSCRestAPICallToZbox(urlPathSharderToZboxMap[relativePath], params)
 		if err != nil {
-			resp, err = client.MakeSCRestAPICallToSharder(scAddress, relativePath, params)
+			resp, err = node.MakeSCRestAPICallToSharder(scAddress, relativePath, params)
 		}
 	} else {
-		resp, err = client.MakeSCRestAPICallToSharder(scAddress, relativePath, params)
+		resp, err = node.MakeSCRestAPICallToSharder(scAddress, relativePath, params)
 	}
 
 	return resp, err

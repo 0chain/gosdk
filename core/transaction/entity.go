@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/0chain/gosdk/core/node"
 	"net/http"
 	"strings"
 	"sync"
@@ -550,7 +551,7 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 		return
 	}
 
-	nodeClient, err := client.GetNode()
+	nodeClient, err := node.GetNode()
 	if err != nil {
 		return
 	}
@@ -583,7 +584,7 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 	}
 
 	if txn.TransactionNonce == 0 {
-		txn.TransactionNonce = client.Cache.GetNextNonce(txn.ClientID)
+		txn.TransactionNonce = node.Cache.GetNextNonce(txn.ClientID)
 	}
 
 	err = txn.ComputeHashAndSign(client.SignFn)
@@ -616,7 +617,7 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 	err = SendTransactionSync(txn, nodeClient.GetStableMiners())
 	if err != nil {
 		Logger.Info("transaction submission failed", zap.Error(err))
-		client.Cache.Evict(txn.ClientID)
+		node.Cache.Evict(txn.ClientID)
 		nodeClient.ResetStableMiners()
 		return
 	}
@@ -640,7 +641,7 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 
 		if err != nil {
 			Logger.Error("Error verifying the transaction", err.Error(), txn.Hash)
-			client.Cache.Evict(txn.ClientID)
+			node.Cache.Evict(txn.ClientID)
 			return
 		}
 

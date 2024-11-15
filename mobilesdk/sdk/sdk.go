@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/0chain/gosdk/core/node"
 	"math"
 	"strconv"
 	"strings"
@@ -73,7 +74,7 @@ func Init(chainConfigJson string) error {
 	if err != nil {
 		return err
 	}
-	return client.Init(context.Background(), cfg)
+	return node.Init(context.Background(), cfg)
 }
 
 // InitStorageSDK init storage sdk from config

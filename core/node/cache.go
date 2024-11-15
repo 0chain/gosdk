@@ -1,4 +1,4 @@
-package client
+package node
 
 import (
 	"github.com/0chain/gosdk/core/logger"
