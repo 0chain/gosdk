@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
+	"strconv"
+
 	"github.com/0chain/gosdk/core/block"
 	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/tokenrate"
@@ -12,8 +15,6 @@ import (
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/sdk"
-	"net/url"
-	"strconv"
 )
 
 type GetClientResponse struct {

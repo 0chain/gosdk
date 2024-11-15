@@ -7,13 +7,15 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/0chain/gosdk/core/imageutil"
-	coreTransaction "github.com/0chain/gosdk/core/transaction"
 	"math"
 	"strconv"
 	"strings"
 
+	"github.com/0chain/gosdk/core/imageutil"
+	coreTransaction "github.com/0chain/gosdk/core/transaction"
+
 	"context"
+
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/pkg/errors"
 
@@ -75,6 +77,47 @@ func Init(chainConfigJson string) error {
 	}
 	l.Logger.Info("InitSDK chain config")
 	l.Logger.Info(cfg)
+	zcncore.RegisterKMSZauthServer(cfg.ZauthServer)
+
+	sys.SignWithAuth = func(hash, signatureScheme string, keys []sys.KeyPair) (string, error) {
+		fmt.Println("SignWithAuth pubkey:", keys[0])
+		sig, err := sys.Sign(hash, signatureScheme, keys)
+		if err != nil {
+			return "", fmt.Errorf("failed to sign with split key: %v", err)
+		}
+
+		data, err := json.Marshal(zcncore.AuthMessage{
+			Hash:      hash,
+			Signature: sig,
+			ClientID:  client.GetClient().ClientID,
+		})
+		if err != nil {
+			return "", err
+		}
+
+		if sys.AuthCommon == nil {
+			return "", errors.New("authCommon is not set")
+		}
+
+		rsp, err := sys.AuthCommon(string(data))
+		if err != nil {
+			return "", err
+		}
+
+		var sigpk struct {
+			Sig string `json:"sig"`
+		}
+
+		err = json.Unmarshal([]byte(rsp), &sigpk)
+		if err != nil {
+			return "", err
+		}
+
+		return sigpk.Sig, nil
+	}
+
+	fmt.Println("Init SignWithAuth:", sys.SignWithAuth)
+
 	return client.Init(context.Background(), cfg)
 }
 
