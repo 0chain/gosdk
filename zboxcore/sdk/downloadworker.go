@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"hash"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -290,6 +291,8 @@ func (req *DownloadRequest) downloadBlock(
 	var failed int32
 	downloadErrors := make([]string, requiredDownloads)
 	wg := &sync.WaitGroup{}
+	log.Println("Harsh requiredDownloads", requiredDownloads)
+	st := time.Now()
 	for i := 0; i < requiredDownloads; i++ {
 		result := <-rspCh
 		wg.Add(1)
@@ -324,6 +327,8 @@ func (req *DownloadRequest) downloadBlock(
 	}
 
 	wg.Wait()
+	et := time.Since(st).Milliseconds()
+	log.Println("Harsh time taken to download blocak", et)
 	return remainingMask, int(failed), downloadErrors, nil
 }
 
