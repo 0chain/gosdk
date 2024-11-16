@@ -166,8 +166,10 @@ func (req *DownloadRequest) getBlocksDataFromBlobbers(startBlock, totalBlock int
 
 	curReqDownloads := requiredDownloads
 	for {
+		st2 := time.Now()
 		remainingMask, failed, downloadErrors, err = req.downloadBlock(
 			startBlock, totalBlock, mask, curReqDownloads, shards, timeRequest)
+		log.Println("Harsh time for req.downloadBlock", time.Since(st2).Microseconds())
 		if err != nil {
 			return nil, err
 		}
@@ -201,6 +203,7 @@ func (req *DownloadRequest) getBlocksData(startBlock, totalBlock int64, timeRequ
 	// Can we benefit from goroutine for erasure decoding??
 	// c := req.datashards * req.effectiveBlockSize
 	// data := make([]byte, req.datashards*req.effectiveBlockSize*int(totalBlock))
+	st3 := time.Now()
 	for i := range shards {
 		err = req.decodeEC(shards[i])
 		if err != nil {
@@ -208,6 +211,7 @@ func (req *DownloadRequest) getBlocksData(startBlock, totalBlock int64, timeRequ
 		}
 
 	}
+	log.Println("Harsh decode EC", time.Since(st3).Milliseconds())
 	return shards, nil
 }
 
@@ -328,7 +332,7 @@ func (req *DownloadRequest) downloadBlock(
 
 	wg.Wait()
 	et := time.Since(st).Milliseconds()
-	log.Println("Harsh time taken to download blocak", et)
+	log.Println("Harsh time taken to download block", et)
 	return remainingMask, int(failed), downloadErrors, nil
 }
 
