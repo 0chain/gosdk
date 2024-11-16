@@ -340,6 +340,8 @@ func sendTransactionToURL(ctx context.Context, url string, txn *Transaction) ([]
 		return nil, fmt.Errorf("submit transaction failed: %w", err)
 	}
 
+	logger.Log.Info("submit transaction failed", zap.String("body", postResponse.Body), "status", postResponse.StatusCode)
+
 	if postResponse.StatusCode >= 200 && postResponse.StatusCode <= 299 {
 		return []byte(postResponse.Body), nil
 	}
