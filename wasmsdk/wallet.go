@@ -20,7 +20,7 @@ func setWallet(clientID, clientKey, peerPublicKey, publicKey, privateKey, mnemon
 		return errors.New("mnemonic is required")
 	}
 	mode := os.Getenv("MODE")
-	fmt.Println("gosdk setWallet, mode:", mode, "is split:", isSplit)
+	fmt.Println("gosdk setWallet, mode:", mode, "is split:", isSplit, "client id:", clientID, "client key:", clientKey)
 	keys := []zcncrypto.KeyPair{
 		{
 			PrivateKey: privateKey,
