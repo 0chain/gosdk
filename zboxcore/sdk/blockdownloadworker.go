@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"sync"
 	"syscall"
@@ -160,6 +161,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock(fastClient *fasthttp.Clien
 			statuscode, respBuf, err := fastClient.GetWithRequest(httpreq, req.respBuf)
 			fasthttp.ReleaseRequest(httpreq)
 			timeTaken := time.Since(now).Milliseconds()
+			log.Printf("Harsh time taken for blobber call %d \n", timeTaken)
 			if err != nil {
 				zlogger.Logger.Error("Error downloading block: ", err)
 				if errors.Is(err, fasthttp.ErrConnectionClosed) || errors.Is(err, syscall.EPIPE) {

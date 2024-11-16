@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"math"
 	"mime/multipart"
 	"net/http"
@@ -436,6 +437,7 @@ func (a *Allocation) InitAllocation() {
 			}
 		}
 	}
+	log.Println("Harsh init allocation")
 	a.generateAndSetOwnerSigningPublicKey()
 	a.startWorker(a.ctx)
 	InitCommitWorker(a.Blobbers)
