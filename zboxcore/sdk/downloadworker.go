@@ -169,7 +169,7 @@ func (req *DownloadRequest) getBlocksDataFromBlobbers(startBlock, totalBlock int
 		st2 := time.Now()
 		remainingMask, failed, downloadErrors, err = req.downloadBlock(
 			startBlock, totalBlock, mask, curReqDownloads, shards, timeRequest)
-		log.Println("Harsh time for req.downloadBlock", time.Since(st2).Microseconds())
+		log.Println("Harsh time for req.downloadBlock", time.Since(st2).Milliseconds())
 		if err != nil {
 			return nil, err
 		}
@@ -521,7 +521,8 @@ func (req *DownloadRequest) processDownload() {
 		}
 	}
 	n := int((endBlock - startBlock + numBlocks - 1) / numBlocks)
-
+	log.Printf("Harsh startBlock %d endBlock %d numBlocks %d \n", startBlock, endBlock, numBlocks)
+	log.Printf("Harsh nnnnnnn %d \n", n)
 	// Buffered channel to hold the blocks as they are downloaded
 	blocks := make(chan blockData, n)
 

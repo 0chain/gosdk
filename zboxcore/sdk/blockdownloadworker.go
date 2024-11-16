@@ -86,11 +86,11 @@ func InitBlockDownloader(blobbers []*blockchain.StorageNode, workerCount int) {
 }
 
 func startBlockDownloadWorker(blobberChan chan *BlockDownloadRequest, workers int) {
-	log.Println("Harsh len block chan", len(blobberChan))
 	sem := semaphore.NewWeighted(int64(workers))
 	fastClient := zboxutil.GetFastHTTPClient()
 	for {
 		blockDownloadReq, open := <-blobberChan
+		log.Println("Harsh startBlockDownloadWorker")
 		if !open {
 			break
 		}

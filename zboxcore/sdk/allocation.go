@@ -490,7 +490,9 @@ func (a *Allocation) dispatchWork(ctx context.Context) {
 		case downloadReq := <-a.downloadChan:
 			l.Logger.Info(fmt.Sprintf("received a download request for %v\n", downloadReq.remotefilepath))
 			go func() {
+				st := time.Now()
 				downloadReq.processDownload()
+				log.Println("Harsh processDownload taken", time.Since(st).Milliseconds())
 			}()
 		case repairReq := <-a.repairChan:
 
