@@ -1,8 +1,9 @@
 package node
 
 import (
-	"github.com/0chain/gosdk/core/logger"
 	"sync"
+
+	"github.com/0chain/gosdk/core/logger"
 )
 
 var Cache *NonceCache

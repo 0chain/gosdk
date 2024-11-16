@@ -20,10 +20,15 @@ import (
 var (
 	logging    logger.Logger
 	nodeClient *Node
+	IsWasm     = false
 )
 
 func init() {
 	logging.Init(logger.DEBUG, "0chain-core")
+}
+
+func SetIsWasm(val bool) {
+	IsWasm = true
 }
 
 // Node Maintains central states of SDK (client's context, network).

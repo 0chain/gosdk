@@ -8,9 +8,10 @@ import (
 )
 
 import (
-	"github.com/0chain/gosdk/core/client"
 	"os"
 	"path/filepath"
+
+	"github.com/0chain/gosdk/core/client"
 
 	"github.com/0chain/gosdk/zcncore"
 )

@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/0chain/gosdk/core/node"
 	"strings"
+
+	"github.com/0chain/gosdk/core/node"
 
 	"github.com/0chain/gosdk/core/conf"
 
@@ -325,6 +326,7 @@ func InitSDK(walletJSON string,
 		return err
 	}
 	SetSdkInitialized(true)
+	node.SetIsWasm(true)
 	return nil
 }
 
@@ -364,16 +366,4 @@ func VerifySignatureWith(pubKey, signature, hash string) (bool, error) {
 		return false, err
 	}
 	return sch.Verify(signature, hash)
-}
-
-func GetBalance(clientIDs ...string) (*node.GetBalanceResponse, error) {
-	var clientID string
-	if len(clientIDs) > 0 {
-		clientID = clientIDs[0]
-	} else {
-		clientID = Id()
-	}
-
-	// Add isWasm to root client in set.go and then add check here to get from 0box if isWasm is true
-	return node.GetBalance(clientID)
 }
