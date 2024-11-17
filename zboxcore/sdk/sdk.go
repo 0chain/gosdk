@@ -805,6 +805,8 @@ type CreateAllocationOptions struct {
 func CreateAllocationWith(options CreateAllocationOptions) (
 	string, int64, *transaction.Transaction, error) {
 
+	fmt.Println(client.GetClient().ClientID, client.GetClient().ClientKey, client.PublicKey(), "PUBLIC KEY")
+
 	return CreateAllocationForOwner(client.Id(),
 		client.PublicKey(), options.DataShards, options.ParityShards,
 		options.Size, options.ReadPrice, options.WritePrice, options.Lock,
