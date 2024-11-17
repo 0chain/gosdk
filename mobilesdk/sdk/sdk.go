@@ -464,6 +464,20 @@ func GetAllocations() (string, error) {
 	return string(retBytes), nil
 }
 
+func GetAllocationsOfClient(clientID string) (string, error) {
+	allocs, err := sdk.GetAllocationsForClient(clientID)
+	if err != nil {
+		return "", err
+	}
+
+	retBytes, err := json.Marshal(allocs)
+	if err != nil {
+		return "", err
+	}
+
+	return string(retBytes), nil
+}
+
 // RedeeemFreeStorage given a free storage ticket, create a new free allocation
 //   - ticket: free storage ticket
 func (s *StorageSDK) RedeemFreeStorage(ticket string) (string, error) {
