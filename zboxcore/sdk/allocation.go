@@ -456,7 +456,7 @@ func (a *Allocation) generateAndSetOwnerSigningPublicKey() {
 		l.Logger.Error("Failed to generate owner signing key", zap.Error(err))
 		return
 	}
-	if a.OwnerSigningPublicKey == "" && !a.Finalized && !a.Canceled {
+	if a.OwnerSigningPublicKey == "" && !a.Finalized && !a.Canceled && a.Owner == client.Id() {
 		pubKey := privateSigningKey.Public().(ed25519.PublicKey)
 		a.OwnerSigningPublicKey = hex.EncodeToString(pubKey)
 		hash, _, err := UpdateAllocation(0, false, a.ID, 0, "", "", "", a.OwnerSigningPublicKey, false, nil)
