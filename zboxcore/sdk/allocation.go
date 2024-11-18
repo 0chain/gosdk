@@ -453,7 +453,7 @@ func (a *Allocation) generateAndSetOwnerSigningPublicKey() {
 		l.Logger.Error("Failed to generate owner signing key", zap.Error(err))
 		return
 	}
-	if a.OwnerSigningPublicKey == "" {
+	if a.OwnerSigningPublicKey == "" && !a.Finalized {
 		pubKey := privateSigningKey.Public().(ed25519.PublicKey)
 		a.OwnerSigningPublicKey = hex.EncodeToString(pubKey)
 		//TODO: save this public key to blockchain
