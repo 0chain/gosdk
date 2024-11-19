@@ -4,8 +4,6 @@
 package main
 
 import (
-	"errors"
-
 	"fmt"
 	"os"
 	"strconv"
@@ -16,9 +14,6 @@ import (
 )
 
 func setWallet(clientID, clientKey, peerPublicKey, publicKey, privateKey, mnemonic string, isSplit bool) error {
-	if mnemonic == "" && !isSplit {
-		return errors.New("mnemonic is required")
-	}
 	mode := os.Getenv("MODE")
 	fmt.Println("gosdk setWallet, mode:", mode, "is split:", isSplit)
 	keys := []zcncrypto.KeyPair{
