@@ -598,9 +598,9 @@ func getFormWritter(connectionID string, wmData, fileIDMetaData []byte, body *by
 }
 
 func getReferencePathV2(blobber *blockchain.StorageNode, allocationID, allocationTx, sig string, paths []string, success *bool, mu *sync.Mutex) (*wmpt.WeightedMerkleTrie, error) {
-	if len(paths) == 0 {
+	if len(paths) == 0 || blobber.LatestWM == nil || blobber.LatestWM.ChainSize == 0 {
 		var node wmpt.Node
-		if blobber.LatestWM != nil && len(blobber.LatestWM.FileMetaRoot) > 0 {
+		if blobber.LatestWM != nil && len(blobber.LatestWM.FileMetaRoot) > 0 && blobber.LatestWM.ChainSize > 0 {
 			decodedRoot, _ := hex.DecodeString(blobber.LatestWM.FileMetaRoot)
 			node = wmpt.NewHashNode(decodedRoot, uint64(numBlocks(blobber.LatestWM.ChainSize)))
 		}

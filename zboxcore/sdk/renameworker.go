@@ -204,7 +204,11 @@ func (req *RenameRequest) ProcessWithBlobbers() ([]fileref.RefEntity, error) {
 		}(int(pos))
 	}
 	req.wg.Wait()
-	return objectTreeRefs, zboxutil.MajorError(blobberErrors)
+	var err error
+	if !req.consensus.isConsensusOk() {
+		err = zboxutil.MajorError(blobberErrors)
+	}
+	return objectTreeRefs, err
 }
 
 func (req *RenameRequest) ProcessWithBlobbersV2() ([]fileref.RefEntity, error) {
@@ -289,8 +293,11 @@ func (req *RenameRequest) ProcessWithBlobbersV2() ([]fileref.RefEntity, error) {
 		}(int(pos))
 	}
 	req.wg.Wait()
-
-	return objectTreeRefs, zboxutil.MajorError(blobberErrors)
+	var err error
+	if !req.consensus.isConsensusOk() {
+		err = zboxutil.MajorError(blobberErrors)
+	}
+	return objectTreeRefs, err
 }
 
 func (req *RenameRequest) ProcessRename() error {

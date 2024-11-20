@@ -440,7 +440,7 @@ func (a *Allocation) InitAllocation() {
 	a.startWorker(a.ctx)
 	InitCommitWorker(a.Blobbers)
 	InitBlockDownloader(a.Blobbers, downloadWorkerCount)
-	if a.StorageVersion == StorageV2 {
+	if a.StorageVersion == StorageV2 && a.OwnerPublicKey == client.PublicKey() {
 		a.CheckAllocStatus() //nolint:errcheck
 	}
 	a.initialized = true
@@ -448,15 +448,17 @@ func (a *Allocation) InitAllocation() {
 
 func (a *Allocation) generateAndSetOwnerSigningPublicKey() {
 	//create ecdsa public key from signature
+	if a.OwnerPublicKey != client.PublicKey() {
+		return
+	}
 	privateSigningKey, err := generateOwnerSigningKey(a.OwnerPublicKey, a.Owner)
 	if err != nil {
 		l.Logger.Error("Failed to generate owner signing key", zap.Error(err))
 		return
 	}
-	if a.OwnerSigningPublicKey == "" {
+	if a.OwnerSigningPublicKey == "" && !a.Finalized && !a.Canceled {
 		pubKey := privateSigningKey.Public().(ed25519.PublicKey)
 		a.OwnerSigningPublicKey = hex.EncodeToString(pubKey)
-		//TODO: save this public key to blockchain
 		hash, _, err := UpdateAllocation(0, false, a.ID, 0, "", "", "", a.OwnerSigningPublicKey, false, nil, a.Owner)
 		if err != nil {
 			l.Logger.Error("Failed to update owner signing public key ", err, " allocationID: ", a.ID, " hash: ", hash)
