@@ -405,13 +405,8 @@ func (pre *PREEncryptionScheme) SymEnc(group kyber.Group, message []byte, keyhas
 	if err != nil {
 		return nil, err
 	}
-	c := aesgcm.Seal(nil, nonce, message, nil)
-	var ctx bytes.Buffer
-	_, err = ctx.Write(c)
-	if err != nil {
-		return nil, err
-	}
-	return ctx.Bytes(), nil
+	c := aesgcm.Seal(message[:0], nonce, message, nil)
+	return c, nil
 }
 
 func UnmarshallPublicKey(publicKey string) (kyber.Point, error) {
@@ -443,7 +438,7 @@ func (pre *PREEncryptionScheme) SymDec(group kyber.Group, ctx []byte, keyhash []
 	if err != nil {
 		return nil, err
 	}
-	return aesgcm.Open(nil, nonce, ctx, nil)
+	return aesgcm.Open(ctx[:0], nonce, ctx, nil)
 }
 
 func (pre *PREEncryptionScheme) Encrypt(data []byte) (*EncryptedMessage, error) {

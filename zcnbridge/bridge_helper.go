@@ -51,6 +51,10 @@ func GetTransactionStatus(hash string) (int, error) {
 	return zcncore.CheckEthHashStatus(hash), nil
 }
 
+// ConfirmEthereumTransaction confirms Ethereum transaction by hash.
+//   - hash is the transaction hash to confirm.
+//   - times is the number of times to try confirming the transaction.
+//   - duration is the duration to wait between each confirmation attempt.
 func ConfirmEthereumTransaction(hash string, times int, duration time.Duration) (int, error) {
 	var (
 		res = 0

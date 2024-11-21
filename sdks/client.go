@@ -8,7 +8,7 @@ import (
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/sys"
-	"github.com/0chain/gosdk/zboxcore/client"
+	"github.com/0chain/gosdk/core/client"
 )
 
 // Client a client instance of restful api
@@ -41,7 +41,7 @@ func (c *Client) SignRequest(req *http.Request, allocation string) error {
 	req.Header.Set("X-App-Client-ID", c.ClientID)
 	req.Header.Set("X-App-Client-Key", c.ClientPublicKey)
 
-	sign, err := sys.Sign(encryption.Hash(allocation), client.GetClient().SignatureScheme, client.GetClientSysKeys())
+	sign, err := sys.Sign(encryption.Hash(allocation), client.SignatureScheme(), client.GetClientSysKeys())
 	if err != nil {
 		return err
 	}

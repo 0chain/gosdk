@@ -1,3 +1,4 @@
+// Provides a simple logger for the SDK.
 package logger
 
 import (
@@ -14,6 +15,9 @@ const (
 	INFO  = 3
 	DEBUG = 4
 )
+
+// Log global logger instance
+var Log Logger
 
 const cRed = "\u001b[31m"
 const cReset = "\u001b[0m"
@@ -59,7 +63,8 @@ func syncPrefixes(maxPrefixLen int, loggers []*Logger) {
 	}
 }
 
-// SyncLoggers - syncs the loggers
+// SyncLoggers syncs the loggers prefixes
+//   - loggers is the list of loggers to sync
 func SyncLoggers(loggers []*Logger) {
 	maxPrefixLen := 0
 	for _, lgr := range loggers {
@@ -90,30 +95,50 @@ func (l *Logger) SetLogFile(logFile io.Writer, verbose bool) {
 
 func (l *Logger) Debug(v ...interface{}) {
 	if l.lvl >= DEBUG {
-		l.logDebug.Output(2, fmt.Sprint(v...))
+		err := l.logDebug.Output(2, fmt.Sprint(v...))
+		if err != nil {
+			fmt.Printf("Error logging debug message: %v", err)
+			return
+		}
 	}
 }
 
 func (l *Logger) Info(v ...interface{}) {
 	if l.lvl >= INFO {
-		l.logInfo.Output(2, fmt.Sprint(v...))
+		err := l.logInfo.Output(2, fmt.Sprint(v...))
+		if err != nil {
+			fmt.Printf("Error logging info message: %v", err)
+			return
+		}
 	}
 }
 
 func (l *Logger) Error(v ...interface{}) {
 	if l.lvl >= ERROR {
-		l.logError.Output(2, fmt.Sprint(v...)+cReset)
+		err := l.logError.Output(2, fmt.Sprint(v...)+cReset)
+		if err != nil {
+			fmt.Printf("Error logging error message: %v", err)
+			return
+		}
 	}
 }
 
 func (l *Logger) Fatal(v ...interface{}) {
 	if l.lvl >= FATAL {
-		l.logFatal.Output(2, fmt.Sprint(v...)+cReset)
+		err := l.logFatal.Output(2, fmt.Sprint(v...)+cReset)
+		if err != nil {
+			fmt.Printf("Error logging fatal message: %v", err)
+			return
+		}
 	}
 }
 
 func (l *Logger) Close() {
 	if c, ok := l.fWriter.(io.Closer); ok && c != nil {
-		c.Close()
+		err := c.Close()
+		if err != nil {
+			fmt.Printf("Error closing log file: %v", err)
+			return
+		}
 	}
 }

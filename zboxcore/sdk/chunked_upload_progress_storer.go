@@ -12,6 +12,7 @@ import (
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/logger"
+	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
 // ChunkedUploadProgressStorer load and save upload progress
@@ -23,16 +24,17 @@ type ChunkedUploadProgressStorer interface {
 	// Remove remove upload progress by id
 	Remove(id string) error
 	// Update update upload progress
-	Update(id string, chunkIndex int)
+	Update(id string, chunkIndex int, upMask zboxutil.Uint128)
 }
 
 // fsChunkedUploadProgressStorer load and save upload progress in file system
 type fsChunkedUploadProgressStorer struct {
 	sync.Mutex
-	isRemoved bool
-	up        UploadProgress
-	queue     queue
-	next      int
+	isRemoved  bool
+	up         UploadProgress
+	queue      queue
+	next       int
+	uploadMask zboxutil.Uint128
 }
 
 type queue []int
@@ -136,6 +138,7 @@ func (fs *fsChunkedUploadProgressStorer) Save(up UploadProgress) {
 			fs.next = up.ChunkIndex + up.ChunkNumber
 		}
 	}
+	fs.up.UploadMask = fs.uploadMask
 	buf, err := json.Marshal(fs.up)
 	if err != nil {
 		logger.Logger.Error("[progress] save ", fs.up, err)
@@ -148,10 +151,11 @@ func (fs *fsChunkedUploadProgressStorer) Save(up UploadProgress) {
 	}
 }
 
-func (fs *fsChunkedUploadProgressStorer) Update(id string, chunkIndex int) {
+func (fs *fsChunkedUploadProgressStorer) Update(id string, chunkIndex int, upMask zboxutil.Uint128) {
 	fs.Lock()
 	defer fs.Unlock()
 	if !fs.isRemoved {
+		fs.uploadMask = upMask
 		heap.Push(&fs.queue, chunkIndex)
 	}
 }

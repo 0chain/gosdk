@@ -10,7 +10,6 @@ import (
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/pathutil"
 	"github.com/0chain/gosdk/core/util"
-	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/google/uuid"
@@ -39,19 +38,6 @@ func (ch *NewFileChange) ProcessChange(rootRef *fileref.Ref, fileIDMeta map[stri
 		err = errors.New("empty validation root field")
 		return
 	}
-
-	fileHashSign, err := client.Sign(ch.File.ActualFileHash)
-	if err != nil {
-		return
-	}
-
-	validationRootSign, err := client.Sign(fileHashSign + ch.File.ValidationRoot)
-	if err != nil {
-		return
-	}
-
-	ch.File.ActualFileHashSignature = fileHashSign
-	ch.File.ValidationRootSignature = validationRootSign
 
 	rootRef.HashToBeComputed = true
 	dirRef := rootRef

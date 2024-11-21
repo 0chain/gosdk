@@ -20,6 +20,8 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
+const SignatureV2 = 1
+
 // ChunkedUpload upload manager with chunked upload feature
 type ChunkedUpload struct {
 	consensus Consensus
@@ -64,7 +66,8 @@ type ChunkedUpload struct {
 	// shardUploadedThumbnailSize how much thumbnail bytes a shard has. it is original size
 	shardUploadedThumbnailSize int64
 	// size of shard
-	shardSize int64
+	shardSize         int64
+	encryptionVersion int
 
 	// statusCallback trigger progress on StatusCallback
 	statusCallback StatusCallback
@@ -91,7 +94,7 @@ type ChunkedUpload struct {
 	//used in wasm check chunked_upload_process_js.go
 	listenChan chan struct{} //nolint:unused
 	//used in wasm check chunked_upload_process_js.go
-	processMap map[int]int //nolint:unused
+	processMap map[int]zboxutil.Uint128 //nolint:unused
 	//used in wasm check chunked_upload_process_js.go
 	processMapLock sync.Mutex //nolint:unused
 }
@@ -164,13 +167,14 @@ type UploadFormData struct {
 	EncryptedKey      string `json:"encrypted_key,omitempty"`
 	EncryptedKeyPoint string `json:"encrypted_key_point,omitempty"`
 
-	IsFinal         bool  `json:"is_final,omitempty"`          // all of chunks are uploaded
-	ChunkStartIndex int   `json:"chunk_start_index,omitempty"` // start index of chunks.
-	ChunkEndIndex   int   `json:"chunk_end_index,omitempty"`   // end index of chunks. all chunks MUST be uploaded one by one because of streaming merkle hash
-	ChunkSize       int64 `json:"chunk_size,omitempty"`        // the size of a chunk. 64*1024 is default
-	UploadOffset    int64 `json:"upload_offset,omitempty"`     // It is next position that new incoming chunk should be append to
-	Size            int64 `json:"size"`                        // total size of shard
-
+	IsFinal           bool  `json:"is_final,omitempty"`          // all of chunks are uploaded
+	ChunkStartIndex   int   `json:"chunk_start_index,omitempty"` // start index of chunks.
+	ChunkEndIndex     int   `json:"chunk_end_index,omitempty"`   // end index of chunks. all chunks MUST be uploaded one by one because of streaming merkle hash
+	ChunkSize         int64 `json:"chunk_size,omitempty"`        // the size of a chunk. 64*1024 is default
+	UploadOffset      int64 `json:"upload_offset,omitempty"`     // It is next position that new incoming chunk should be append to
+	Size              int64 `json:"size"`                        // total size of shard
+	SignatureVersion  int   `json:"signature_version,omitempty"`
+	EncryptionVersion int   `json:"encryption_version,omitempty"`
 }
 
 // UploadProgress progress of upload
@@ -194,7 +198,8 @@ type UploadProgress struct {
 	// UploadLength total bytes that has been uploaded to blobbers
 	UploadLength int64 `json:"-"`
 	// ReadLength total bytes that has been read from original reader (un-encoded, un-encrypted)
-	ReadLength int64 `json:"-"`
+	ReadLength int64            `json:"-"`
+	UploadMask zboxutil.Uint128 `json:"upload_mask"`
 
 	Blobbers []*UploadBlobberStatus `json:"-"`
 }

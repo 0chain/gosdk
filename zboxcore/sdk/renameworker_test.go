@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"github.com/0chain/gosdk/zboxcore/mocks"
 	"io"
-	"io/ioutil"
 	"mime"
 	"mime/multipart"
 	"net/http"
@@ -15,14 +15,14 @@ import (
 	"testing"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/dev"
 	devMock "github.com/0chain/gosdk/dev/mock"
 	"github.com/0chain/gosdk/sdks/blobber"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	zclient "github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
-	"github.com/0chain/gosdk/zboxcore/mocks"
+
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -48,11 +48,10 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 		zboxutil.Client = rawClient
 	}()
 
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
-	}
+	})
 
 	type parameters struct {
 		referencePathToRetrieve fileref.ReferencePath
@@ -80,7 +79,7 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 					return strings.HasPrefix(req.URL.Path, testName)
 				})).Return(&http.Response{
 					StatusCode: http.StatusBadRequest,
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+					Body:       io.NopCloser(bytes.NewReader([]byte(""))),
 				}, nil)
 			},
 			wantErr: true,
@@ -104,7 +103,7 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 					StatusCode: http.StatusOK,
 					Body: func() io.ReadCloser {
 						jsonFR := `{"latest_write_marker":null,"prev_write_marker":null}`
-						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+						return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 					}(),
 				}, nil)
 
@@ -118,7 +117,7 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 					Body: func() io.ReadCloser {
 						jsonFR, err := json.Marshal(p.referencePathToRetrieve)
 						require.NoError(t, err)
-						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+						return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 					}(),
 				}, nil)
 
@@ -129,7 +128,7 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 						req.Header.Get("X-App-Client-Key") == mockClientKey
 				})).Return(&http.Response{
 					StatusCode: http.StatusBadRequest,
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+					Body:       io.NopCloser(bytes.NewReader([]byte(""))),
 				}, nil)
 			},
 			wantErr: true,
@@ -176,7 +175,7 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 					Body: func() io.ReadCloser {
 						jsonFR, err := json.Marshal(p.referencePathToRetrieve)
 						require.NoError(t, err)
-						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+						return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 					}(),
 				}, nil)
 
@@ -195,7 +194,7 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 						}
 						expected, ok := p.requestFields[part.FormName()]
 						require.True(t, ok)
-						actual, err := ioutil.ReadAll(part)
+						actual, err := io.ReadAll(part)
 						require.NoError(t, err)
 						require.EqualValues(t, expected, string(actual))
 					}
@@ -211,7 +210,7 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 					Body: func() io.ReadCloser {
 						jsonFR, err := json.Marshal(p.referencePathToRetrieve)
 						require.NoError(t, err)
-						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+						return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 					}(),
 				}, nil)
 			},
@@ -227,6 +226,9 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 			require := require.New(t)
 			tt.setup(t, tt.name, tt.parameters)
 			req := &RenameRequest{
+				allocationObj: &Allocation{
+					Owner: mockClientId,
+				},
 				allocationID:   mockAllocationId,
 				allocationTx:   mockAllocationTxId,
 				remotefilepath: mockRemoteFilePath,
@@ -244,7 +246,7 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 			req.blobbers = append(req.blobbers, &blockchain.StorageNode{
 				Baseurl: tt.name,
 			})
-			_, err := req.renameBlobberObject(req.blobbers[0], 0)
+			_, err := req.renameBlobberObject(req.blobbers[0], 0, true)
 			require.EqualValues(tt.wantErr, err != nil, "Error: ", err)
 			if err != nil {
 				require.Contains(errors.Top(err), tt.errMsg)
@@ -279,11 +281,10 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 		zboxutil.Client = rawClient
 	}()
 
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
-	}
+	})
 
 	setupHttpResponses := func(t *testing.T, testName string, numBlobbers int, numCorrect int, req *RenameRequest) {
 
@@ -301,7 +302,7 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 						},
 					})
 					require.NoError(t, err)
-					return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+					return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 				}(),
 			}, nil)
 
@@ -316,7 +317,7 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 					}
 					return http.StatusBadRequest
 				}(),
-				Body: ioutil.NopCloser(bytes.NewReader([]byte(""))),
+				Body: io.NopCloser(bytes.NewReader([]byte(""))),
 			}, nil)
 
 			if i < numCorrect {
@@ -331,7 +332,7 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 						}
 						return http.StatusBadRequest
 					}(),
-					Body: ioutil.NopCloser(bytes.NewReader([]byte(`{"status":2}`))),
+					Body: io.NopCloser(bytes.NewReader([]byte(`{"status":2}`))),
 				}, nil)
 
 				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
@@ -345,7 +346,7 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 						}
 						return http.StatusBadRequest
 					}(),
-					Body: ioutil.NopCloser(bytes.NewReader([]byte(""))),
+					Body: io.NopCloser(bytes.NewReader([]byte(""))),
 				}, nil)
 			}
 
@@ -357,15 +358,16 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 			}, nil)
 		}
 
-		commitChan = make(map[string]chan *CommitRequest)
+		commitChan = make(map[string]chan CommitRequestInterface)
 		for _, blobber := range req.blobbers {
 			if _, ok := commitChan[blobber.ID]; !ok {
-				commitChan[blobber.ID] = make(chan *CommitRequest, 1)
+				commitChan[blobber.ID] = make(chan CommitRequestInterface, 1)
 			}
 		}
 		blobberChan := commitChan
 		go func() {
-			cm0 := <-blobberChan[req.blobbers[0].ID]
+			cm := <-blobberChan[req.blobbers[0].ID]
+			cm0 := cm.(*CommitRequest)
 			require.EqualValues(t, cm0.blobber.ID, testName+mockBlobberId+strconv.Itoa(0))
 			cm0.result = &CommitResult{
 				Success: true,
@@ -375,7 +377,8 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 			}
 		}()
 		go func() {
-			cm1 := <-blobberChan[req.blobbers[1].ID]
+			cm := <-blobberChan[req.blobbers[1].ID]
+			cm1 := cm.(*CommitRequest)
 			require.EqualValues(t, cm1.blobber.ID, testName+mockBlobberId+strconv.Itoa(1))
 			cm1.result = &CommitResult{
 				Success: true,
@@ -385,7 +388,8 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 			}
 		}()
 		go func() {
-			cm2 := <-blobberChan[req.blobbers[2].ID]
+			cm := <-blobberChan[req.blobbers[2].ID]
+			cm2 := cm.(*CommitRequest)
 			require.EqualValues(t, cm2.blobber.ID, testName+mockBlobberId+strconv.Itoa(2))
 			cm2.result = &CommitResult{
 				Success: true,
@@ -395,7 +399,8 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 			}
 		}()
 		go func() {
-			cm3 := <-blobberChan[req.blobbers[3].ID]
+			cm := <-blobberChan[req.blobbers[3].ID]
+			cm3 := cm.(*CommitRequest)
 			require.EqualValues(t, cm3.blobber.ID, testName+mockBlobberId+strconv.Itoa(3))
 			cm3.result = &CommitResult{
 				Success: true,
@@ -463,6 +468,7 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 			a := &Allocation{
 				Tx:         "TestRenameRequest_ProcessRename",
 				DataShards: numBlobbers,
+				Owner:      mockClientId,
 			}
 
 			setupMockAllocation(t, a)

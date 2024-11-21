@@ -31,7 +31,7 @@ func (nope *nopeChunkedUploadProgressStorer) Remove(id string) error {
 	return nil
 }
 
-func (nope *nopeChunkedUploadProgressStorer) Update(id string, chunkIndex int) {
+func (nope *nopeChunkedUploadProgressStorer) Update(id string, chunkIndex int, upMask zboxutil.Uint128) {
 }
 
 func generateRandomBytes(n int64) []byte {
@@ -89,6 +89,7 @@ func BenchmarkChunkedUpload(b *testing.B) {
 				DataShards:   2,
 				ParityShards: 1,
 				ctx:          context.TODO(),
+				Owner:        mockClientId,
 			}
 			a.fullconsensus, a.consensusThreshold = a.getConsensuses()
 			for i := 0; i < (a.DataShards + a.ParityShards); i++ {

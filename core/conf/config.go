@@ -1,3 +1,6 @@
+// Provides the data structures and methods to work with the configuration data structure.
+// This includes parsing, loading, and saving the configuration data structure.
+// It uses the viper library to parse and manage the configuration data structure.
 package conf
 
 import (
@@ -27,23 +30,22 @@ const (
 )
 
 // Config settings from ~/.zcn/config.yaml
-// block_worker: http://198.18.0.98:9091
-// signature_scheme: bls0chain
-// min_submit: 50
-// min_confirmation: 50
-// confirmation_chain_length: 3
-// max_txn_query: 5
-// query_sleep_time: 5
-// # # OPTIONAL - Uncomment to use/ Add more if you want
-// # preferred_blobbers:
-// #   - http://one.devnet-0chain.net:31051
-// #   - http://one.devnet-0chain.net:31052
-// #   - http://one.devnet-0chain.net:31053
+//
+//	block_worker: http://198.18.0.98:9091
+//	signature_scheme: bls0chain
+//	min_submit: 50
+//	min_confirmation: 50
+//	confirmation_chain_length: 3
+//	max_txn_query: 5
+//	query_sleep_time: 5
+//	# # OPTIONAL - Uncomment to use/ Add more if you want
+//	# preferred_blobbers:
+//	#   - http://one.devnet-0chain.net:31051
+//	#   - http://one.devnet-0chain.net:31052
+//	#   - http://one.devnet-0chain.net:31053
 type Config struct {
 	// BlockWorker the url of 0dns's network api
 	BlockWorker string `json:"block_worker,omitempty"`
-	// PreferredBlobbers preferred blobbers on new allocation
-	PreferredBlobbers []string `json:"preferred_blobbers,omitempty"`
 
 	// MinSubmit mininal submit from blobber
 	MinSubmit int `json:"min_submit,omitempty"`
@@ -73,10 +75,15 @@ type Config struct {
 	// ZboxAppType app type name
 	ZboxAppType string `json:"zbox_app_type"`
 	// SharderConsensous is consensous for when quering for SCRestAPI calls
-	SharderConsensous int `json:"sharder_consensous"`
+	SharderConsensous int          `json:"sharder_consensous"`
+	ZauthServer       string       `json:"zauth_server"`
+	V                 *viper.Viper `json:"-"`
+
+	IsSplitWallet bool `json:"is_split_wallet"`
 }
 
-// LoadConfigFile load and parse Config from file
+// LoadConfigFile load and parse SDK Config from file
+//   - file: config file path (full path)
 func LoadConfigFile(file string) (Config, error) {
 
 	var cfg Config
@@ -99,7 +106,14 @@ func LoadConfigFile(file string) (Config, error) {
 		return cfg, thrown.Throw(ErrBadParsing, err.Error())
 	}
 
-	return LoadConfig(v)
+	cfg, err = LoadConfig(v)
+	if err != nil {
+		return cfg, err
+	}
+
+	cfg.V = v
+
+	return cfg, nil
 }
 
 // LoadConfig load and parse config
@@ -155,7 +169,6 @@ func LoadConfig(v Reader) (Config, error) {
 	}
 
 	cfg.BlockWorker = blockWorker
-	cfg.PreferredBlobbers = v.GetStringSlice("preferred_blobbers")
 	cfg.MinSubmit = minSubmit
 	cfg.MinConfirmation = minCfm
 	cfg.ConfirmationChainLength = CfmChainLength
@@ -165,9 +178,9 @@ func LoadConfig(v Reader) (Config, error) {
 
 	cfg.SignatureScheme = v.GetString("signature_scheme")
 	cfg.ChainID = v.GetString("chain_id")
+	cfg.ZauthServer = v.GetString("zauth.server")
 
 	return cfg, nil
-
 }
 
 func isURL(s string) bool {

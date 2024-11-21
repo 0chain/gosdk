@@ -13,9 +13,9 @@ import (
 	"encoding/json"
 	"errors"
 
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/zboxapi"
-	"github.com/0chain/gosdk/zboxcore/client"
 )
 
 var (
@@ -39,13 +39,7 @@ func InitZBox(zboxHost, zboxAppType *C.char) {
 	}
 
 	zboxApiClient.SetRequest(C.GoString(zboxHost), C.GoString(zboxAppType))
-
-	c := client.GetClient()
-	if c != nil {
-		zboxApiClient.SetWallet(client.GetClientID(), client.GetClientPrivateKey(), client.GetClientPublicKey())
-	} else {
-		logging.Info("SetWallet: skipped")
-	}
+	zboxApiClient.SetWallet(client.Id(), client.PrivateKey(), client.PublicKey())
 }
 
 // SetZBoxWallet set wallet on zbox api
@@ -100,27 +94,6 @@ func GetCsrfToken() *C.char {
 	return WithJSON(zboxApiClient.GetCsrfToken(context.TODO()))
 }
 
-// CreateJwtSession create a jwt session
-//
-//	return
-//		{
-//			"error":"",
-//			"result":"xxx",
-//		}
-//
-//export CreateJwtSession
-func CreateJwtSession(phoneNumber *C.char) *C.char {
-	defer func() {
-		if r := recover(); r != nil {
-			log.Error("win: crash ", r)
-		}
-	}()
-	if zboxApiClient == nil {
-		return WithJSON(0, ErrZboxApiNotInitialized)
-	}
-	return WithJSON(zboxApiClient.CreateJwtSession(context.TODO(), C.GoString(phoneNumber)))
-}
-
 // CreateJwtToken create a fresh jwt token
 //
 //	return
@@ -130,7 +103,7 @@ func CreateJwtSession(phoneNumber *C.char) *C.char {
 //		}
 //
 //export CreateJwtToken
-func CreateJwtToken(phoneNumber *C.char, jwtSessionID int64, otp *C.char) *C.char {
+func CreateJwtToken(userID, accessToken *C.char) *C.char {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Error("win: crash ", r)
@@ -139,7 +112,7 @@ func CreateJwtToken(phoneNumber *C.char, jwtSessionID int64, otp *C.char) *C.cha
 	if zboxApiClient == nil {
 		return WithJSON("", ErrZboxApiNotInitialized)
 	}
-	return WithJSON(zboxApiClient.CreateJwtToken(context.TODO(), C.GoString(phoneNumber), jwtSessionID, C.GoString(otp)))
+	return WithJSON(zboxApiClient.CreateJwtToken(context.TODO(), C.GoString(userID), C.GoString(accessToken)))
 }
 
 // RefreshJwtToken refresh jwt token
@@ -151,7 +124,7 @@ func CreateJwtToken(phoneNumber *C.char, jwtSessionID int64, otp *C.char) *C.cha
 //		}
 //
 //export RefreshJwtToken
-func RefreshJwtToken(phoneNumber, token *C.char) *C.char {
+func RefreshJwtToken(userID, token *C.char) *C.char {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Error("win: crash ", r)
@@ -160,7 +133,7 @@ func RefreshJwtToken(phoneNumber, token *C.char) *C.char {
 	if zboxApiClient == nil {
 		return WithJSON("", ErrZboxApiNotInitialized)
 	}
-	return WithJSON(zboxApiClient.RefreshJwtToken(context.TODO(), C.GoString(phoneNumber), C.GoString(token)))
+	return WithJSON(zboxApiClient.RefreshJwtToken(context.TODO(), C.GoString(userID), C.GoString(token)))
 }
 
 // GetFreeMarker create a free storage marker

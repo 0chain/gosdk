@@ -4,7 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -21,7 +22,7 @@ type GetResponse struct {
 
 type PostRequest struct {
 	req  *http.Request
-	ctx  context.Context
+	Ctx  context.Context
 	cncl context.CancelFunc
 	url  string
 }
@@ -84,14 +85,17 @@ func init() {
 
 func httpDo(req *http.Request, ctx context.Context, cncl context.CancelFunc, f func(*http.Response, error) error) error {
 	c := make(chan error, 1)
+
 	go func() { c <- f(Client.Do(req.WithContext(ctx))) }()
-	defer cncl()
+
 	select {
 	case <-ctx.Done():
-		transport.CancelRequest(req) //nolint
-		<-c                          // Wait for f to return.
+		// Use the cancel function only after trying to get the result.
+		<-c // Wait for f to return.
 		return ctx.Err()
 	case err := <-c:
+		// Ensure that we call cncl after we are done with the response
+		defer cncl() // Move this here to ensure we cancel after processing
 		return err
 	}
 }
@@ -125,7 +129,7 @@ func NewHTTPGetRequestContext(ctx context.Context, url string) (*GetRequest, err
 	gr.PostRequest = &PostRequest{}
 	gr.url = url
 	gr.req = req
-	gr.ctx, gr.cncl = context.WithCancel(ctx)
+	gr.Ctx, gr.cncl = context.WithCancel(ctx)
 	return gr, nil
 }
 
@@ -143,28 +147,33 @@ func NewHTTPPostRequest(url string, data interface{}) (*PostRequest, error) {
 	req.Header.Set("Access-Control-Allow-Origin", "*")
 	pr.url = url
 	pr.req = req
-	pr.ctx, pr.cncl = context.WithTimeout(context.Background(), time.Second*60)
+	pr.Ctx, pr.cncl = context.WithTimeout(context.Background(), time.Second*60)
 	return pr, nil
 }
 
 func (r *GetRequest) Get() (*GetResponse, error) {
 	response := &GetResponse{}
 	presp, err := r.Post()
+	if err != nil {
+		return nil, err // Return early if there's an error
+	}
 	response.PostResponse = presp
-	return response, err
+	return response, nil
 }
 
 func (r *PostRequest) Post() (*PostResponse, error) {
 	result := &PostResponse{}
-	err := httpDo(r.req, r.ctx, r.cncl, func(resp *http.Response, err error) error {
+	err := httpDo(r.req, r.Ctx, r.cncl, func(resp *http.Response, err error) error {
 		if err != nil {
 			return err
 		}
 		if resp.Body != nil {
 			defer resp.Body.Close()
+		} else {
+			return fmt.Errorf("response body is nil")
 		}
 
-		rspBy, err := ioutil.ReadAll(resp.Body)
+		rspBy, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return err
 		}
@@ -174,5 +183,8 @@ func (r *PostRequest) Post() (*PostResponse, error) {
 		result.Body = string(rspBy)
 		return nil
 	})
-	return result, err
+	if err != nil {
+		return nil, err // Ensure you propagate the error
+	}
+	return result, nil
 }

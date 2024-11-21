@@ -6,7 +6,6 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/pathutil"
-	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 )
 
@@ -27,19 +26,6 @@ func (ch *UpdateFileChange) ProcessChange(rootRef *fileref.Ref, _ map[string]str
 		err = fmt.Errorf("empty validation root field")
 		return
 	}
-
-	fileHashSign, err := client.Sign(ch.NewFile.ActualFileHash)
-	if err != nil {
-		return
-	}
-
-	validationRootSign, err := client.Sign(fileHashSign + ch.NewFile.ValidationRoot)
-	if err != nil {
-		return
-	}
-
-	ch.NewFile.ActualFileHashSignature = fileHashSign
-	ch.NewFile.ValidationRootSignature = validationRootSign
 
 	fields, err := common.GetPathFields(pathutil.Dir(ch.NewFile.Path))
 

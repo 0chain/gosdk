@@ -28,7 +28,7 @@ jobs:
     uses: 0chain/actions/.github/workflows/manual_system_tests.yml@master
     with:
       gosdk_branch: ${{ github.ref_name }}
-      repo_snapshots_branch: ${{ github.event.inputs.repo_snapshots_branch }}
+      repo_snapshots_branch: fix/refactor-zboxcore
       test_file_filter: ${{ github.event.inputs.test_file_filter }}
       skip_tests: ${{ github.event.inputs.skip_tests }}
       run_smoke_tests: ${{ github.event.inputs.run_smoke_tests }}

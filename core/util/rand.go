@@ -6,6 +6,9 @@ import (
 	"time"
 )
 
+// MinInt returns the minimum of two integers
+// 		- x: first integer
+// 		- y: second integer
 func MinInt(x, y int) int {
 	if x < y {
 		return x
@@ -13,6 +16,9 @@ func MinInt(x, y int) int {
 	return y
 }
 
+// MaxInt returns the maximum of two integers
+// 		- x: first integer
+// 		- y: second integer
 func MaxInt(x, y int) int {
 	if x > y {
 		return x
@@ -20,6 +26,9 @@ func MaxInt(x, y int) int {
 	return y
 }
 
+// MinInt64 returns the minimum of two int64
+// 		- x: first int64
+// 		- y: second int64
 func MinInt64(x, y int64) int64 {
 	if x < y {
 		return x
@@ -27,6 +36,9 @@ func MinInt64(x, y int64) int64 {
 	return y
 }
 
+// MaxInt64 returns the maximum of two int64
+// 		- x: first int64
+// 		- y: second int64
 func MaxInt64(x, y int64) int64 {
 	if x > y {
 		return x
@@ -34,6 +46,8 @@ func MaxInt64(x, y int64) int64 {
 	return y
 }
 
+// Shuffle returns a shuffled version of a string slice
+// 		- in: input slice
 func Shuffle(in []string) (shuffle []string) {
 	shuffle = make([]string, len(in))
 	copy(shuffle, in)

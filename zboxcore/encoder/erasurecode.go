@@ -1,3 +1,4 @@
+// Stream Encoder for erasure coding.
 package encoder
 
 import (

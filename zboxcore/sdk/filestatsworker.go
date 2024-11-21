@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"mime/multipart"
 	"net/http"
 	"strings"
@@ -17,6 +17,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
+// FileStats - file stats structure
 type FileStats struct {
 	Name                     string    `json:"name"`
 	Size                     int64     `json:"size"`
@@ -69,7 +70,7 @@ func (req *ListRequest) getFileStatsInfoFromBlobber(blobber *blockchain.StorageN
 	}
 
 	formWriter.Close()
-	httpreq, err := zboxutil.NewFileStatsRequest(blobber.Baseurl, req.allocationID, req.allocationTx, body)
+	httpreq, err := zboxutil.NewFileStatsRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body, req.ClientId)
 	if err != nil {
 		l.Logger.Error("File meta info request error: ", err.Error())
 		return
@@ -83,7 +84,7 @@ func (req *ListRequest) getFileStatsInfoFromBlobber(blobber *blockchain.StorageN
 			return err
 		}
 		defer resp.Body.Close()
-		resp_body, err := ioutil.ReadAll(resp.Body)
+		resp_body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return errors.Wrap(err, "Error: Resp")
 		}
@@ -100,6 +101,7 @@ func (req *ListRequest) getFileStatsInfoFromBlobber(blobber *blockchain.StorageN
 			}
 			fileStats.BlobberID = blobber.ID
 			fileStats.BlobberURL = blobber.Baseurl
+			fileStats.PathHash = req.remotefilepathhash
 			return nil
 		}
 		return errors.New(resp.Status, s.String())

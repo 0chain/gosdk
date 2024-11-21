@@ -24,6 +24,11 @@ type YoutubeDL struct {
 }
 
 // CreateYoutubeDL create a youtube-dl instance to download video file from youtube
+//   - localPath: output file path
+//   - feedURL: youtube video url
+//   - downloadArgs: youtube-dl download arguments
+//   - ffmpegArgs: ffmpeg arguments
+//   - delay: delay in seconds
 func CreateYoutubeDL(ctx context.Context, localPath string, feedURL string, downloadArgs []string, ffmpegArgs []string, delay int) (*YoutubeDL, error) {
 
 	//youtube-dl -f best https://www.youtube.com/watch?v=RfUVIwnsvS8 --proxy http://127.0.0.1:8000 -o - | ffmpeg -i - -flags +cgop -g 30 -hls_time 5 youtube.m3u8

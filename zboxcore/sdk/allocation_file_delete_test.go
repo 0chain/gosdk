@@ -8,10 +8,10 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/resty"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	zclient "github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/mocks"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
@@ -29,11 +29,10 @@ func TestAllocation_DeleteFile(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
-	}
+	})
 
 	zboxutil.Client = &mockClient
 	resty.CreateClient = func(t *http.Transport, timeout time.Duration) resty.Client {
@@ -51,9 +50,10 @@ func TestAllocation_DeleteFile(t *testing.T) {
 		DataShards:   2,
 		ParityShards: 2,
 		FileOptions:  63,
+		Owner:        mockClientId,
 	}
 	a.InitAllocation()
-	sdkInitialized = true
+	client.SetSdkInitialized(true)
 
 	for i := 0; i < numBlobbers; i++ {
 		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
@@ -89,11 +89,10 @@ func TestAllocation_deleteFile(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
-	}
+	})
 
 	zboxutil.Client = &mockClient
 	resty.CreateClient = func(t *http.Transport, timeout time.Duration) resty.Client {
@@ -168,9 +167,10 @@ func TestAllocation_deleteFile(t *testing.T) {
 				DataShards:   2,
 				ParityShards: 2,
 				FileOptions:  63,
+				Owner:        mockClientId,
 			}
 			a.InitAllocation()
-			sdkInitialized = true
+			client.SetSdkInitialized(true)
 			for i := 0; i < numBlobbers; i++ {
 				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
 					ID:      tt.name + mockBlobberId + strconv.Itoa(i),

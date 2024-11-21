@@ -1,3 +1,4 @@
+// Miscellaneous utility functions.
 package utils
 
 import (

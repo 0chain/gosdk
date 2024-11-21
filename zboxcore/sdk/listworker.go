@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math/rand"
 	"net/http"
 	"strings"
@@ -23,17 +23,22 @@ import (
 const CHUNK_SIZE = 64 * 1024
 
 type ListRequest struct {
+	ClientId           string
 	allocationID       string
 	allocationTx       string
+	sig                string
 	blobbers           []*blockchain.StorageNode
 	remotefilepathhash string
 	remotefilepath     string
+	filename           string
 	authToken          *marker.AuthTicket
 	ctx                context.Context
 	forRepair          bool
 	listOnly           bool
 	offset             int
 	pageLimit          int
+	storageVersion     int
+	dataShards         int
 	Consensus
 }
 
@@ -44,7 +49,10 @@ type listResponse struct {
 	err         error
 }
 
+// ListResult a wrapper around the result of directory listing command.
+// It can represent a file or a directory.
 type ListResult struct {
+	ClientId            string `json:"client_id"`
 	Name                string `json:"name"`
 	Path                string `json:"path,omitempty"`
 	Type                string `json:"type"`
@@ -62,11 +70,12 @@ type ListResult struct {
 	ActualThumbnailHash string `json:"actual_thumbnail_hash"`
 	ActualThumbnailSize int64  `json:"actual_thumbnail_size"`
 
-	CreatedAt  common.Timestamp `json:"created_at"`
-	UpdatedAt  common.Timestamp `json:"updated_at"`
-	Children   []*ListResult    `json:"list"`
-	Consensus  `json:"-"`
-	deleteMask zboxutil.Uint128 `json:"-"`
+	CreatedAt      common.Timestamp `json:"created_at"`
+	UpdatedAt      common.Timestamp `json:"updated_at"`
+	Children       []*ListResult    `json:"list"`
+	StorageVersion int              `json:"storage_version"`
+	Consensus      `json:"-"`
+	deleteMask     zboxutil.Uint128 `json:"-"`
 }
 
 type ListRequestOptions func(req *ListRequest)
@@ -121,7 +130,7 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 	if req.forRepair {
 		req.listOnly = true
 	}
-	httpreq, err := zboxutil.NewListRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.remotefilepath, req.remotefilepathhash, string(authTokenBytes), req.listOnly, req.offset, req.pageLimit)
+	httpreq, err := zboxutil.NewListRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.remotefilepath, req.remotefilepathhash, string(authTokenBytes), req.listOnly, req.offset, req.pageLimit, req.ClientId)
 	if err != nil {
 		l.Logger.Error("List info request error: ", err.Error())
 		return
@@ -135,7 +144,7 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 			return err
 		}
 		defer resp.Body.Close()
-		resp_body, err := ioutil.ReadAll(resp.Body)
+		resp_body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return errors.Wrap(err, "Error: Resp")
 		}
@@ -150,6 +159,7 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 			if err != nil {
 				return errors.Wrap(err, "error getting the dir tree from list response:")
 			}
+			ref.AllocationRoot = listResult.AllocationRoot
 			return nil
 		}
 
@@ -167,13 +177,20 @@ func (req *ListRequest) getlistFromBlobbers() ([]*listResponse, error) {
 	listInfos := make([]*listResponse, numList)
 	consensusMap := make(map[string][]*blockchain.StorageNode)
 	var consensusHash string
+	errCnt := 0
 	for i := 0; i < numList; i++ {
 		listInfos[i] = <-rspCh
 		if !req.forRepair {
 			if listInfos[i].err != nil || listInfos[i].ref == nil {
+				if listInfos[i].err != nil {
+					errCnt++
+				}
 				continue
 			}
 			hash := listInfos[i].ref.FileMetaHash
+			if req.storageVersion == 1 {
+				hash = listInfos[i].ref.AllocationRoot
+			}
 			consensusMap[hash] = append(consensusMap[hash], req.blobbers[listInfos[i].blobberIdx])
 			if len(consensusMap[hash]) >= req.consensusThresh {
 				consensusHash = hash
@@ -186,11 +203,15 @@ func (req *ListRequest) getlistFromBlobbers() ([]*listResponse, error) {
 	}
 
 	var err error
-	req.listOnly = true
 	listLen := len(consensusMap[consensusHash])
 	if listLen < req.consensusThresh {
+		if req.fullconsensus-errCnt >= req.consensusThresh && !req.listOnly {
+			req.listOnly = true
+			return req.getlistFromBlobbers()
+		}
 		return listInfos, listInfos[0].err
 	}
+	req.listOnly = true
 	listInfos = listInfos[:1]
 	listOnlyRespCh := make(chan *listResponse, 1)
 	for i := 0; i < listLen; i++ {
@@ -214,7 +235,9 @@ func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
 		return nil, err
 	}
 	result := &ListResult{
-		deleteMask: zboxutil.NewUint128(1).Lsh(uint64(len(req.blobbers))).Sub64(1),
+		ClientId:       req.ClientId,
+		deleteMask:     zboxutil.NewUint128(1).Lsh(uint64(len(req.blobbers))).Sub64(1),
+		StorageVersion: req.storageVersion,
 	}
 	selected := make(map[string]*ListResult)
 	childResultMap := make(map[string]*ListResult)
@@ -249,7 +272,9 @@ func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
 		}
 		result.Size += ti.ref.Size
 		result.NumBlocks += ti.ref.NumBlocks
-
+		if ti.ref.Path == "/" && result.ActualSize == 0 {
+			result.ActualSize = ti.ref.Size * int64(req.dataShards)
+		}
 		if len(lR[i].ref.Children) > 0 {
 			result.populateChildren(lR[i].ref.Children, childResultMap, selected, req)
 		}
@@ -272,7 +297,7 @@ func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
 	return result, nil
 }
 
-// populateChildren calculates the children of a directory
+// populateChildren calculates the children of a directory and populates the list result.
 func (lr *ListResult) populateChildren(children []fileref.RefEntity, childResultMap map[string]*ListResult, selected map[string]*ListResult, req *ListRequest) {
 
 	for _, child := range children {
@@ -281,6 +306,7 @@ func (lr *ListResult) populateChildren(children []fileref.RefEntity, childResult
 		var childResult *ListResult
 		if _, ok := childResultMap[actualHash]; !ok {
 			childResult = &ListResult{
+				ClientId:  lr.ClientId,
 				Name:      child.GetName(),
 				Path:      child.GetPath(),
 				Type:      child.GetType(),
@@ -292,7 +318,8 @@ func (lr *ListResult) populateChildren(children []fileref.RefEntity, childResult
 					consensus:       0,
 					fullconsensus:   req.fullconsensus,
 				},
-				LookupHash: child.GetLookupHash(),
+				LookupHash:     child.GetLookupHash(),
+				StorageVersion: req.storageVersion,
 			}
 			childResultMap[actualHash] = childResult
 		}

@@ -1,6 +1,7 @@
 //go:build ignore
 // +build ignore
 
+// Example usage of the znft package - do not use.
 package main
 
 import (

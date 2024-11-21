@@ -17,13 +17,13 @@ import (
 
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/common"
 	coreEncryption "github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/encryption"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
@@ -33,7 +33,7 @@ import (
 )
 
 const (
-	DefaultUploadTimeOut = 120 * time.Second
+	DefaultUploadTimeOut = 180 * time.Second
 )
 
 var (
@@ -172,11 +172,12 @@ func CreateChunkedUpload(
 		encryptOnUpload: false,
 		webStreaming:    false,
 
-		consensus:     consensus, //nolint
-		uploadTimeOut: DefaultUploadTimeOut,
-		commitTimeOut: DefaultUploadTimeOut,
-		maskMu:        &sync.Mutex{},
-		opCode:        opCode,
+		consensus:         consensus, //nolint
+		uploadTimeOut:     DefaultUploadTimeOut,
+		commitTimeOut:     DefaultUploadTimeOut,
+		maskMu:            &sync.Mutex{},
+		opCode:            opCode,
+		encryptionVersion: -1,
 	}
 
 	// su.ctx, su.ctxCncl = context.WithCancel(allocationObj.ctx)
@@ -218,7 +219,7 @@ func CreateChunkedUpload(
 	}
 
 	if su.progressStorer == nil && shouldSaveProgress {
-		su.progressStorer = createFsChunkedUploadProgress(context.Background())
+		su.progressStorer = createFsChunkedUploadProgress(su.ctx)
 	}
 
 	su.loadProgress()
@@ -256,7 +257,7 @@ func CreateChunkedUpload(
 
 	}
 
-	su.writeMarkerMutex, err = CreateWriteMarkerMutex(client.GetClient(), su.allocationObj)
+	su.writeMarkerMutex, err = CreateWriteMarkerMutex(su.allocationObj)
 	if err != nil {
 		return nil, err
 	}
@@ -292,7 +293,7 @@ func CreateChunkedUpload(
 
 	su.chunkReader = cReader
 
-	su.formBuilder = CreateChunkedUploadFormBuilder()
+	su.formBuilder = CreateChunkedUploadFormBuilder(su.allocationObj.StorageVersion, su.encryptionVersion, su.allocationObj.privateSigningKey)
 
 	su.isRepair = isRepair
 	uploadWorker, uploadRequest := calculateWorkersAndRequests(su.allocationObj.DataShards, len(su.blobbers), su.chunkNumber)
@@ -302,11 +303,6 @@ func CreateChunkedUpload(
 }
 
 func calculateWorkersAndRequests(dataShards, totalShards, chunknumber int) (uploadWorkers int, uploadRequests int) {
-	if IsWasm {
-		uploadWorkers = 1
-		uploadRequests = 2
-		return
-	}
 	if totalShards < 4 {
 		uploadWorkers = 4
 	} else {
@@ -320,7 +316,7 @@ func calculateWorkersAndRequests(dataShards, totalShards, chunknumber int) (uplo
 		}
 	}
 
-	if chunknumber*dataShards < 640 {
+	if chunknumber*dataShards < 640 && !IsWasm {
 		uploadRequests = 4
 	} else {
 		uploadRequests = 2
@@ -368,10 +364,10 @@ func (su *ChunkedUpload) removeProgress() {
 	}
 }
 
-func (su *ChunkedUpload) updateProgress(chunkIndex int) {
+func (su *ChunkedUpload) updateProgress(chunkIndex int, upMask zboxutil.Uint128) {
 	if su.progressStorer != nil {
 		if chunkIndex > su.progress.ChunkIndex {
-			su.progressStorer.Update(su.progress.ID, chunkIndex)
+			su.progressStorer.Update(su.progress.ID, chunkIndex, upMask)
 		}
 	}
 }
@@ -388,11 +384,25 @@ func (su *ChunkedUpload) createEncscheme() encryption.EncryptionScheme {
 			return nil
 		}
 	} else {
-		mnemonic := client.GetClient().Mnemonic
-		if mnemonic == "" {
+		var entropy string
+		switch su.encryptionVersion {
+		case -1:
+			if len(su.allocationObj.privateSigningKey) == 0 {
+				entropy = client.Mnemonic()
+				su.encryptionVersion = 0
+			} else {
+				entropy = hex.EncodeToString(su.allocationObj.privateSigningKey)
+				su.encryptionVersion = 1
+			}
+		case 0:
+			entropy = client.Mnemonic()
+		case 1:
+			entropy = hex.EncodeToString(su.allocationObj.privateSigningKey)
+		}
+		if entropy == "" {
 			return nil
 		}
-		privateKey, err := encscheme.Initialize(mnemonic)
+		privateKey, err := encscheme.Initialize(entropy)
 		if err != nil {
 			return nil
 		}
@@ -417,6 +427,7 @@ func (su *ChunkedUpload) process() error {
 		su.statusCallback.Started(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, int(su.fileMeta.ActualSize)+int(su.fileMeta.ActualThumbnailSize))
 	}
 	su.startProcessor()
+	defer su.chunkReader.Release()
 	defer su.chunkReader.Close()
 	defer su.ctxCncl(nil)
 	for {
@@ -728,7 +739,7 @@ func (su *ChunkedUpload) uploadToBlobbers(uploadData UploadData) error {
 	if uploadData.uploadLength > 0 {
 		index := uploadData.chunkEndIndex
 		uploadLength := uploadData.uploadLength
-		go su.updateProgress(index)
+		go su.updateProgress(index, su.uploadMask)
 		if su.statusCallback != nil {
 			su.statusCallback.InProgress(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, int(atomic.AddInt64(&su.progress.UploadLength, uploadLength)), nil)
 		}

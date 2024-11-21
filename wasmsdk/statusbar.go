@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/0chain/gosdk/core/sys"
+	"github.com/0chain/gosdk/zboxcore/sdk"
 	"gopkg.in/cheggaaa/pb.v1"
 )
 
@@ -24,6 +25,7 @@ type StatusBar struct {
 	localPath      string
 	callback       func(totalBytes int, completedBytes int, fileName, objURL, err string)
 	isRepair       bool
+	totalBytesMap  map[string]int
 }
 
 var jsCallbackMutex sync.Mutex
@@ -37,9 +39,15 @@ func (s *StatusBar) Started(allocationID, filePath string, op int, totalBytes in
 	fileName := path.Base(filePath)
 	s.totalBytes = totalBytes
 	if s.callback != nil {
-		jsCallbackMutex.Lock()
-		defer jsCallbackMutex.Unlock()
-		s.callback(s.totalBytes, s.completedBytes, fileName, "", "")
+		if !s.isRepair || op == sdk.OpUpload || op == sdk.OpUpdate {
+			if s.isRepair {
+				fileName = filePath
+			}
+			jsCallbackMutex.Lock()
+			defer jsCallbackMutex.Unlock()
+			s.totalBytesMap[filePath] = totalBytes
+			s.callback(totalBytes, s.completedBytes, fileName, "", "")
+		}
 	}
 }
 
@@ -49,11 +57,15 @@ func (s *StatusBar) InProgress(allocationID, filePath string, op int, completedB
 		s.b.Set(completedBytes)
 	}
 	fileName := path.Base(filePath)
-	s.completedBytes = completedBytes
 	if s.callback != nil {
-		jsCallbackMutex.Lock()
-		defer jsCallbackMutex.Unlock()
-		s.callback(s.totalBytes, s.completedBytes, fileName, "", "")
+		if !s.isRepair || op == sdk.OpUpload || op == sdk.OpUpdate {
+			if s.isRepair {
+				fileName = filePath
+			}
+			jsCallbackMutex.Lock()
+			defer jsCallbackMutex.Unlock()
+			s.callback(s.totalBytesMap[filePath], completedBytes, fileName, "", "")
+		}
 	}
 }
 
@@ -64,16 +76,22 @@ func (s *StatusBar) Completed(allocationID, filePath string, filename string, mi
 	}
 	s.success = true
 
-	s.completedBytes = s.totalBytes
 	if s.localPath != "" {
 		fs, _ := sys.Files.Open(s.localPath)
 		mf, _ := fs.(*sys.MemFile)
 		s.objURL = CreateObjectURL(mf.Buffer, mimetype)
 	}
 	if s.callback != nil {
-		jsCallbackMutex.Lock()
-		defer jsCallbackMutex.Unlock()
-		s.callback(s.totalBytes, s.completedBytes, filename, s.objURL, "")
+		if !s.isRepair || op == sdk.OpUpload || op == sdk.OpUpdate {
+			if s.isRepair {
+				filename = filePath
+			}
+			jsCallbackMutex.Lock()
+			defer jsCallbackMutex.Unlock()
+			totalBytes := s.totalBytesMap[filePath]
+			delete(s.totalBytesMap, filePath)
+			s.callback(totalBytes, totalBytes, filename, s.objURL, "")
+		}
 	}
 	if !s.isRepair {
 		defer s.wg.Done()
@@ -96,9 +114,14 @@ func (s *StatusBar) Error(allocationID string, filePath string, op int, err erro
 	fileName := path.Base(filePath)
 	PrintError("Error in file operation." + err.Error())
 	if s.callback != nil {
-		jsCallbackMutex.Lock()
-		defer jsCallbackMutex.Unlock()
-		s.callback(s.totalBytes, s.completedBytes, fileName, "", err.Error())
+		if !s.isRepair || op == sdk.OpUpload || op == sdk.OpUpdate {
+			if s.isRepair {
+				fileName = filePath
+			}
+			jsCallbackMutex.Lock()
+			defer jsCallbackMutex.Unlock()
+			s.callback(s.totalBytesMap[filePath], s.completedBytes, fileName, "", err.Error())
+		}
 	}
 	if !s.isRepair {
 		s.wg.Done()

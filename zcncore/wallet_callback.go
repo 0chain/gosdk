@@ -6,7 +6,7 @@ import (
 	"github.com/0chain/gosdk/core/common"
 )
 
-type walletCallback struct {
+type walletCallback struct { //nolint:unused
 	sync.WaitGroup
 	success bool
 
@@ -15,7 +15,7 @@ type walletCallback struct {
 	err     error
 }
 
-func (cb *walletCallback) OnBalanceAvailable(status int, value int64, info string) {
+func (cb *walletCallback) OnBalanceAvailable(status int, value int64, info string) { //nolint:unused
 	defer cb.Done()
 
 	if status == StatusSuccess {

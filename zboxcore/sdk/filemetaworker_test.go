@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"github.com/0chain/gosdk/zboxcore/mocks"
 	"io"
-	"io/ioutil"
 	"mime"
 	"mime/multipart"
 	"net/http"
@@ -17,12 +17,12 @@ import (
 
 	"github.com/0chain/errors"
 
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	zclient "github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/marker"
-	"github.com/0chain/gosdk/zboxcore/mocks"
+
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -41,11 +41,10 @@ func TestListRequest_getFileMetaInfoFromBlobber(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
-	}
+	})
 
 	type parameters struct {
 		fileRefToRetrieve fileref.FileRef
@@ -70,7 +69,7 @@ func TestListRequest_getFileMetaInfoFromBlobber(t *testing.T) {
 				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 					return strings.HasPrefix(req.URL.Path, "Test_Http_Error")
 				})).Return(&http.Response{
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+					Body:       io.NopCloser(bytes.NewReader([]byte(""))),
 					StatusCode: p.respStatusCode,
 				}, errors.New("", mockErrorMessage))
 			},
@@ -86,7 +85,7 @@ func TestListRequest_getFileMetaInfoFromBlobber(t *testing.T) {
 				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 					return strings.HasPrefix(req.URL.Path, "Test_Badly_Formatted")
 				})).Return(&http.Response{
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+					Body:       io.NopCloser(bytes.NewReader([]byte(""))),
 					StatusCode: p.respStatusCode,
 				}, nil)
 			},
@@ -130,7 +129,7 @@ func TestListRequest_getFileMetaInfoFromBlobber(t *testing.T) {
 						}
 						expected, ok := p.requestFields[part.FormName()]
 						require.True(t, ok)
-						actual, err := ioutil.ReadAll(part)
+						actual, err := io.ReadAll(part)
 						require.NoError(t, err)
 						require.EqualValues(t, expected, string(actual))
 					}
@@ -147,7 +146,7 @@ func TestListRequest_getFileMetaInfoFromBlobber(t *testing.T) {
 					Body: func(p parameters) io.ReadCloser {
 						jsonFR, err := json.Marshal(p.fileRefToRetrieve)
 						require.NoError(t, err)
-						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+						return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 					}(p),
 				}, nil)
 			},
@@ -162,6 +161,7 @@ func TestListRequest_getFileMetaInfoFromBlobber(t *testing.T) {
 				Baseurl: tt.name,
 			}
 			req := &ListRequest{
+				ClientId:       mockClientId,
 				allocationID:   mockAllocationId,
 				allocationTx:   mockAllocationTxId,
 				ctx:            context.TODO(),
@@ -203,11 +203,10 @@ func TestListRequest_getFileConsensusFromBlobbers(t *testing.T) {
 
 	const mockClientId = "mock client id"
 	const mockClientKey = "mock client key"
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
-	}
+	})
 
 	setupHttpResponses := func(t *testing.T, name string, numBlobbers, numCorrect int) {
 		require.True(t, numBlobbers >= numCorrect)
@@ -230,7 +229,7 @@ func TestListRequest_getFileConsensusFromBlobbers(t *testing.T) {
 						},
 					})
 					require.NoError(t, err)
-					return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+					return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 				}(frName, hash),
 			}, nil)
 		}
@@ -273,6 +272,7 @@ func TestListRequest_getFileConsensusFromBlobbers(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.setup(t, tt.name, tt.numBlobbers, tt.numCorrect)
 			req := &ListRequest{
+				ClientId:     mockClientId,
 				allocationID: mockAllocationId,
 				allocationTx: mockAllocationTxId,
 				ctx:          context.TODO(),

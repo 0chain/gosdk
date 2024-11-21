@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/0chain/gosdk/zboxcore/sdk"
+	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
 // chunkedUploadProgressStorer load and save upload progress
@@ -43,7 +44,7 @@ func (mem *chunkedUploadProgressStorer) Save(up sdk.UploadProgress) {
 }
 
 //nolint:golint,unused
-func (mem *chunkedUploadProgressStorer) Update(id string, chunkIndex int) {
+func (mem *chunkedUploadProgressStorer) Update(id string, chunkIndex int, _ zboxutil.Uint128) {
 	mem.lock.Lock()
 	defer mem.lock.Unlock()
 	if mem.list == nil {

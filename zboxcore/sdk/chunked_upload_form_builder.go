@@ -2,13 +2,17 @@ package sdk
 
 import (
 	"bytes"
+	"crypto"
+	"crypto/ed25519"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"io"
 	"mime/multipart"
 	"sync"
 
-	"github.com/0chain/gosdk/zboxcore/client"
+	"github.com/0chain/gosdk/core/client"
+	"github.com/0chain/gosdk/core/encryption"
 
 	"golang.org/x/crypto/sha3"
 )
@@ -17,7 +21,7 @@ import (
 type ChunkedUploadFormBuilder interface {
 	// build form data
 	Build(
-		fileMeta *FileMeta, hasher Hasher, connectionID string,
+		fileMeta *FileMeta, hasher Hasher, connectionID, blobberID string,
 		chunkSize int64, chunkStartIndex, chunkEndIndex int,
 		isFinal bool, encryptedKey, encryptedKeyPoint string, fileChunksData [][]byte,
 		thumbnailChunkData []byte, shardSize int64,
@@ -35,17 +39,24 @@ type ChunkedUploadFormMetadata struct {
 }
 
 // CreateChunkedUploadFormBuilder create ChunkedUploadFormBuilder instance
-func CreateChunkedUploadFormBuilder() ChunkedUploadFormBuilder {
-	return &chunkedUploadFormBuilder{}
+func CreateChunkedUploadFormBuilder(storageVersion, encryptionVersion int, privateSigningKey ed25519.PrivateKey) ChunkedUploadFormBuilder {
+	return &chunkedUploadFormBuilder{
+		storageVersion,
+		encryptionVersion,
+		privateSigningKey,
+	}
 }
 
 type chunkedUploadFormBuilder struct {
+	storageVersion    int
+	encryptionVersion int
+	privateSigningKey ed25519.PrivateKey
 }
 
 const MAX_BLOCKS = 80 // 5MB(CHUNK_SIZE*80)
 
 func (b *chunkedUploadFormBuilder) Build(
-	fileMeta *FileMeta, hasher Hasher, connectionID string,
+	fileMeta *FileMeta, hasher Hasher, connectionID, blobberID string,
 	chunkSize int64, chunkStartIndex, chunkEndIndex int,
 	isFinal bool, encryptedKey, encryptedKeyPoint string, fileChunksData [][]byte,
 	thumbnailChunkData []byte, shardSize int64,
@@ -89,6 +100,11 @@ func (b *chunkedUploadFormBuilder) Build(
 		EncryptedKeyPoint: encryptedKeyPoint,
 		EncryptedKey:      encryptedKey,
 		CustomMeta:        fileMeta.CustomMeta,
+		EncryptionVersion: b.encryptionVersion,
+	}
+
+	if b.privateSigningKey != nil {
+		formData.SignatureVersion = SignatureV2
 	}
 
 	for i := 0; i < numBodies; i++ {
@@ -98,8 +114,12 @@ func (b *chunkedUploadFormBuilder) Build(
 		if endRange > len(fileChunksData) {
 			endRange = len(fileChunksData)
 		}
-
-		bodyBuf := make([]byte, 0, (CHUNK_SIZE*(endRange-startRange))+1024)
+		buff := formDataPool.Get()
+		bufSize := (CHUNK_SIZE * (endRange - startRange)) + 1024
+		if cap(buff.B) < bufSize {
+			buff.B = make([]byte, 0, bufSize)
+		}
+		bodyBuf := buff.B
 
 		body := bytes.NewBuffer(bodyBuf)
 		formWriter := multipart.NewWriter(body)
@@ -159,21 +179,42 @@ func (b *chunkedUploadFormBuilder) Build(
 			for err := range errChan {
 				return res, err
 			}
-			actualHashSignature, err := client.Sign(fileMeta.ActualHash)
-			if err != nil {
-				return res, err
+			if b.privateSigningKey != nil {
+				decodedHash, _ := hex.DecodeString(fileMeta.ActualHash)
+				sig, err := b.privateSigningKey.Sign(nil, decodedHash, crypto.Hash(0))
+				if err != nil {
+					return res, err
+				}
+				formData.ActualFileHashSignature = hex.EncodeToString(sig)
+			} else {
+				sig, err := client.Sign(fileMeta.ActualHash)
+				if err != nil {
+					return res, err
+				}
+				formData.ActualFileHashSignature = sig
 			}
-
-			validationRootSignature, err := client.Sign(actualHashSignature + formData.ValidationRoot)
-			if err != nil {
-				return res, err
+			hash := formData.ActualFileHashSignature + formData.ValidationRoot
+			if b.storageVersion == StorageV2 {
+				hashData := fmt.Sprintf("%s:%s:%s:%s", fileMeta.ActualHash, formData.ValidationRoot, formData.FixedMerkleRoot, blobberID)
+				hash = encryption.Hash(hashData)
+			}
+			if b.privateSigningKey != nil {
+				decodedHash, _ := hex.DecodeString(hash)
+				sig, err := b.privateSigningKey.Sign(nil, decodedHash, crypto.Hash(0))
+				if err != nil {
+					return res, err
+				}
+				formData.ValidationRootSignature = hex.EncodeToString(sig)
+			} else {
+				rootSig, err := client.Sign(hash)
+				if err != nil {
+					return res, err
+				}
+				formData.ValidationRootSignature = rootSig
 			}
 
 			formData.ActualHash = fileMeta.ActualHash
-			formData.ActualFileHashSignature = actualHashSignature
-			formData.ValidationRootSignature = validationRootSignature
 			formData.ActualSize = fileMeta.ActualSize
-
 		}
 
 		thumbnailSize := len(thumbnailChunkData)

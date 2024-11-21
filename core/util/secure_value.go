@@ -7,10 +7,15 @@ import (
 	"github.com/0chain/gosdk/core/encryption"
 )
 
-/*Hashable - anything that can provide it's hash */
+// Hashable anything that can provide it's hash
 type Hashable interface {
+	// GetHash get the hash of the object
 	GetHash() string
+
+	// GetHashBytes get the hash of the object as bytes
 	GetHashBytes() []byte
+
+	// Write write the bytes to the hash
 	Write(b []byte) (int, error)
 }
 

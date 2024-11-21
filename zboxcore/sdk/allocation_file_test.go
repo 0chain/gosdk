@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"github.com/0chain/gosdk/zboxcore/mocks"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"strconv"
@@ -21,11 +21,10 @@ import (
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/hitenjain14/fasthttp"
 
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/zboxcore/client"
-	zclient "github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
-	"github.com/0chain/gosdk/zboxcore/mocks"
+
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -37,7 +36,12 @@ func setupHttpResponses(
 	numBlobbers, numCorrect int, isUpdate bool) {
 
 	walletJSON := `{"client_id":"00d2d56d0d573329fe61b8252a4b1715f93fac15176e5d90c413bc92a42e498b","client_key":"000b47144eb0366c3039bca10bc6df3ac289d8823de14ffc08cfdfe83f03e4079ab94bdc3932e7e9bc053f38834c7da63ce6f9c6e540d93cf0c52ba4149f2280","keys":[{"public_key":"000b47144eb0366c3039bca10bc6df3ac289d8823de14ffc08cfdfe83f03e4079ab94bdc3932e7e9bc053f38834c7da63ce6f9c6e540d93cf0c52ba4149f2280","private_key":"77a7faf0dcc1865a475963fee7ce71ca6dc6a20198209eb75d9fc1dc9df41f0f"}],"mnemonics":"mistake alone lumber swamp tape device flight oppose room combine useful typical deal lion device hope glad once million pudding artist brush sing vicious","version":"1.0","date_created":"2024-03-11T20:06:33+05:30","nonce":0}`
-	client.PopulateClient(walletJSON, "bls0chain") //nolint:errcheck
+	wallet := zcncrypto.Wallet{}
+	err := json.Unmarshal([]byte(walletJSON), &wallet)
+	require.NoError(t, err)
+
+	client.SetWallet(wallet)
+	client.SetSignatureScheme("bls0chain")
 
 	for i := 0; i < numBlobbers; i++ {
 		metaBlobberBase := t.Name() + "/" + mockBlobberUrl + strconv.Itoa(i) + zboxutil.FILE_META_ENDPOINT
@@ -59,7 +63,7 @@ func setupHttpResponses(
 				}
 				return http.StatusBadRequest
 			}(),
-			Body: ioutil.NopCloser(bytes.NewReader(fileMetaInput)),
+			Body: io.NopCloser(bytes.NewReader(fileMetaInput)),
 		}, nil)
 
 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
@@ -72,7 +76,7 @@ func setupHttpResponses(
 				}
 				return http.StatusBadRequest
 			}(),
-			Body: ioutil.NopCloser(bytes.NewReader(refsInput)),
+			Body: io.NopCloser(bytes.NewReader(refsInput)),
 		}, nil)
 
 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
@@ -127,7 +131,7 @@ func setupHttpResponses(
 				}
 				return http.StatusBadRequest
 			}(),
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{"status":2}`))),
+			Body: io.NopCloser(bytes.NewReader([]byte(`{"status":2}`))),
 		}, nil)
 
 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
@@ -142,7 +146,7 @@ func setupHttpResponses(
 			}(),
 			Body: func() io.ReadCloser {
 				s := `{"meta_data":{"chunk_size":0,"created_at":0,"hash":"","lookup_hash":"","name":"/","num_of_blocks":0,"path":"/","path_hash":"","size":0,"type":"d","updated_at":0},"Ref":{"ID":0,"Type":"d","AllocationID":"` + allocID + `","LookupHash":"","Name":"/","Path":"/","Hash":"","NumBlocks":0,"PathHash":"","ParentPath":"","PathLevel":1,"CustomMeta":"","ContentHash":"","Size":0,"MerkleRoot":"","ActualFileSize":0,"ActualFileHash":"","MimeType":"","WriteMarker":"","ThumbnailSize":0,"ThumbnailHash":"","ActualThumbnailSize":0,"ActualThumbnailHash":"","EncryptedKey":"","Children":null,"OnCloud":false,"CreatedAt":0,"UpdatedAt":0,"ChunkSize":0},"list":[{"meta_data":{"chunk_size":0,"created_at":0,"hash":"","lookup_hash":"","name":"1.txt","num_of_blocks":0,"path":"/1.txt","path_hash":"","size":0,"type":"f","updated_at":0},"Ref":{"ID":0,"Type":"f","AllocationID":"` + allocID + `","LookupHash":"","Name":"1.txt","Path":"/1.txt","Hash":"","NumBlocks":0,"PathHash":"","ParentPath":"/","PathLevel":1,"CustomMeta":"","ContentHash":"","Size":0,"MerkleRoot":"","ActualFileSize":0,"ActualFileHash":"","MimeType":"","WriteMarker":"","ThumbnailSize":0,"ThumbnailHash":"","ActualThumbnailSize":0,"ActualThumbnailHash":"","EncryptedKey":"","Children":null,"OnCloud":false,"CreatedAt":0,"UpdatedAt":0,"ChunkSize":0}}],"latest_write_marker":null}`
-				return ioutil.NopCloser(bytes.NewReader([]byte(s)))
+				return io.NopCloser(bytes.NewReader([]byte(s)))
 			}(),
 		}, nil)
 
@@ -158,7 +162,7 @@ func setupHttpResponses(
 			}(),
 			Body: func() io.ReadCloser {
 				s := `{"latest_write_marker":null,"prev_write_marker":null}`
-				return ioutil.NopCloser(bytes.NewReader([]byte(s)))
+				return io.NopCloser(bytes.NewReader([]byte(s)))
 			}(),
 		}, nil)
 
@@ -172,7 +176,7 @@ func setupHttpResponses(
 				}
 				return http.StatusBadRequest
 			}(),
-			Body: ioutil.NopCloser(bytes.NewReader(nil)),
+			Body: io.NopCloser(bytes.NewReader(nil)),
 		}, nil)
 
 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
@@ -185,7 +189,7 @@ func setupHttpResponses(
 				}
 				return http.StatusBadRequest
 			}(),
-			Body: ioutil.NopCloser(bytes.NewReader(nil)),
+			Body: io.NopCloser(bytes.NewReader(nil)),
 		}, nil)
 
 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
@@ -216,6 +220,7 @@ func TestAllocation_UpdateFile(t *testing.T) {
 		ParityShards: 2,
 		DataShards:   2,
 		Size:         2 * GB,
+		Owner:        mockClientId,
 	}
 	setupMockAllocation(t, a)
 
@@ -285,6 +290,7 @@ func TestAllocation_UploadFile(t *testing.T) {
 		ParityShards: 2,
 		DataShards:   2,
 		Size:         2 * GB,
+		Owner:        mockClientId,
 	}
 
 	setupMockAllocation(t, a)
@@ -323,6 +329,7 @@ func TestAllocation_UpdateFileWithThumbnail(t *testing.T) {
 		ParityShards: 2,
 		DataShards:   2,
 		Size:         2 * GB,
+		Owner:        mockClientId,
 	}
 	setupMockAllocation(t, a)
 
@@ -402,6 +409,7 @@ func TestAllocation_UploadFileWithThumbnail(t *testing.T) {
 		ParityShards: 2,
 		DataShards:   2,
 		Size:         2 * GB,
+		Owner:        mockClientId,
 	}
 
 	setupMockAllocation(t, a)
@@ -437,6 +445,7 @@ func TestAllocation_EncryptAndUpdateFile(t *testing.T) {
 		ParityShards: 2,
 		DataShards:   2,
 		Size:         2 * GB,
+		Owner:        mockClientId,
 	}
 	setupMockAllocation(t, a)
 
@@ -508,6 +517,7 @@ func TestAllocation_EncryptAndUploadFile(t *testing.T) {
 		ParityShards: 2,
 		DataShards:   2,
 		Size:         2 * GB,
+		Owner:        mockClientId,
 	}
 
 	setupMockAllocation(t, a)
@@ -556,6 +566,7 @@ func TestAllocation_EncryptAndUpdateFileWithThumbnail(t *testing.T) {
 		ParityShards: 2,
 		DataShards:   2,
 		Size:         2 * GB,
+		Owner:        mockClientId,
 	}
 
 	setupMockAllocation(t, a)
@@ -632,6 +643,7 @@ func TestAllocation_EncryptAndUploadFileWithThumbnail(t *testing.T) {
 		DataShards:   2,
 		Size:         2 * GB,
 		ctx:          context.TODO(),
+		Owner:        mockClientId,
 	}
 
 	setupMockAllocation(t, a)
@@ -678,11 +690,10 @@ func TestAllocation_RepairFile(t *testing.T) {
 		resty.CreateClient = createClient
 	}()
 
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
-	}
+	})
 
 	// setupHttpResponses := func(t *testing.T, testName string, numBlobbers, numCorrect int) {
 	// 	require.True(t, numBlobbers >= numCorrect)
@@ -705,7 +716,7 @@ func TestAllocation_RepairFile(t *testing.T) {
 	// 					},
 	// 				})
 	// 				require.NoError(t, err)
-	// 				return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+	// 				return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 	// 			}(frName, hash),
 	// 		}, nil)
 	// 	}
@@ -732,7 +743,7 @@ func TestAllocation_RepairFile(t *testing.T) {
 						},
 					})
 					require.NoError(t, err)
-					return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+					return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 				}(frName, hash),
 			}
 
@@ -752,7 +763,7 @@ func TestAllocation_RepairFile(t *testing.T) {
 						Hash:     mockChunkHash,
 					})
 					require.NoError(t, err)
-					return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+					return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 				}(frName, hash),
 			}, nil)
 
@@ -763,7 +774,7 @@ func TestAllocation_RepairFile(t *testing.T) {
 				StatusCode: http.StatusOK,
 				Body: func() io.ReadCloser {
 					s := `{"latest_write_marker":null,"prev_write_marker":null}`
-					return ioutil.NopCloser(bytes.NewReader([]byte(s)))
+					return io.NopCloser(bytes.NewReader([]byte(s)))
 				}(),
 			}, nil)
 
@@ -772,7 +783,7 @@ func TestAllocation_RepairFile(t *testing.T) {
 				return strings.HasPrefix(req.URL.String(), urlRollback)
 			})).Return(&http.Response{
 				StatusCode: http.StatusOK,
-				Body:       ioutil.NopCloser(bytes.NewReader(nil)),
+				Body:       io.NopCloser(bytes.NewReader(nil)),
 			}, nil)
 
 			urlFilePath := "http://TestAllocation_RepairFile" + testName + mockBlobberUrl + strconv.Itoa(i) + "/v1/file/referencepath"
@@ -790,7 +801,7 @@ func TestAllocation_RepairFile(t *testing.T) {
 						LatestWM: nil,
 					})
 					require.NoError(t, err)
-					return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+					return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 				}(frName, hash),
 			}, nil)
 
@@ -802,7 +813,7 @@ func TestAllocation_RepairFile(t *testing.T) {
 				Body: func(fileRefName, hash string) io.ReadCloser {
 					jsonFR, err := json.Marshal(&ReferencePathResult{})
 					require.NoError(t, err)
-					return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+					return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 				}(frName, hash),
 			}, nil)
 
@@ -817,7 +828,7 @@ func TestAllocation_RepairFile(t *testing.T) {
 						Status: WMLockStatusOK,
 					}
 					respBuf, _ := json.Marshal(resp)
-					return ioutil.NopCloser(bytes.NewReader(respBuf))
+					return io.NopCloser(bytes.NewReader(respBuf))
 				}(),
 			}, nil)
 
@@ -829,7 +840,7 @@ func TestAllocation_RepairFile(t *testing.T) {
 				StatusCode: http.StatusOK,
 				Body: func() io.ReadCloser {
 					respBuf, _ := json.Marshal("connection_id")
-					return ioutil.NopCloser(bytes.NewReader(respBuf))
+					return io.NopCloser(bytes.NewReader(respBuf))
 				}(),
 			}, nil)
 		}
@@ -886,6 +897,7 @@ func TestAllocation_RepairFile(t *testing.T) {
 				ParityShards: tt.numBlobbers / 2,
 				DataShards:   tt.numBlobbers / 2,
 				Size:         2 * GB,
+				Owner:        mockClientId,
 			}
 			a.downloadChan = make(chan *DownloadRequest, 10)
 			a.repairChan = make(chan *RepairRequest, 1)
@@ -893,7 +905,7 @@ func TestAllocation_RepairFile(t *testing.T) {
 			a.downloadProgressMap = make(map[string]*DownloadRequest)
 			a.mutex = &sync.Mutex{}
 			a.initialized = true
-			sdkInitialized = true
+			client.SetSdkInitialized(true)
 			for i := 0; i < tt.numBlobbers; i++ {
 				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
 					ID:      mockBlobberId + strconv.Itoa(i),

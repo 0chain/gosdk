@@ -3,13 +3,13 @@ package sdk
 import (
 	"bytes"
 	"context"
+	"crypto/ed25519"
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"hash"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -20,10 +20,11 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/common"
+	encrypt "github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/encryption"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
@@ -46,6 +47,8 @@ var (
 
 type DownloadRequestOption func(dr *DownloadRequest)
 
+// WithDownloadProgressStorer set download progress storer of download request options.
+//   - storer: download progress storer instance, used to store download progress.
 func WithDownloadProgressStorer(storer DownloadProgressStorer) DownloadRequestOption {
 	return func(dr *DownloadRequest) {
 		dr.downloadStorer = storer
@@ -65,8 +68,10 @@ func WithFileCallback(cb func()) DownloadRequestOption {
 }
 
 type DownloadRequest struct {
+	ClientId           string
 	allocationID       string
 	allocationTx       string
+	sig                string
 	allocOwnerID       string
 	allocOwnerPubKey   string
 	blobbers           []*blockchain.StorageNode
@@ -92,24 +97,29 @@ type DownloadRequest struct {
 	fileCallback       func()
 	contentMode        string
 	Consensus
-	effectiveBlockSize int // blocksize - encryptionOverHead
-	ecEncoder          reedsolomon.Encoder
-	maskMu             *sync.Mutex
-	encScheme          encryption.EncryptionScheme
-	shouldVerify       bool
-	blocksPerShard     int64
-	connectionID       string
-	skip               bool
-	freeRead           bool
-	fRef               *fileref.FileRef
-	chunksPerShard     int64
-	size               int64
-	offset             int64
-	bufferMap          map[int]zboxutil.DownloadBuffer
-	downloadStorer     DownloadProgressStorer
-	workdir            string
-	downloadQueue      downloadQueue // Always initialize this queue with max time taken
-	isResume           bool
+	effectiveBlockSize      int // blocksize - encryptionOverHead
+	ecEncoder               reedsolomon.Encoder
+	maskMu                  *sync.Mutex
+	encScheme               encryption.EncryptionScheme
+	shouldVerify            bool
+	blocksPerShard          int64
+	connectionID            string
+	skip                    bool
+	freeRead                bool
+	fRef                    *fileref.FileRef
+	chunksPerShard          int64
+	size                    int64
+	offset                  int64
+	bufferMap               map[int]zboxutil.DownloadBuffer
+	downloadStorer          DownloadProgressStorer
+	workdir                 string
+	downloadQueue           downloadQueue // Always initialize this queue with max time taken
+	isResume                bool
+	isEnterprise            bool
+	storageVersion          int
+	allocOwnerSigningPubKey string
+	// in case of auth ticket, this key will be of the shared user rather than the owner of the allocation
+	allocOwnerSigningPrivateKey ed25519.PrivateKey
 }
 
 type downloadPriority struct {
@@ -278,7 +288,6 @@ func (req *DownloadRequest) downloadBlock(
 		}
 
 		c++
-
 	}
 
 	var failed int32
@@ -468,10 +477,11 @@ func (req *DownloadRequest) processDownload() {
 	}
 	elapsedInitEC := time.Since(now)
 	if req.encryptedKey != "" {
-		err = req.initEncryption()
+		logger.Logger.Info("encryption version: ", fRef.EncryptionVersion)
+		err = req.initEncryption(fRef.EncryptionVersion)
 		if err != nil {
 			req.errorCB(
-				fmt.Errorf("Error while initializing encryption"), remotePathCB,
+				fmt.Errorf("Error while initializing encryption "+err.Error()), remotePathCB,
 			)
 			return
 		}
@@ -501,7 +511,7 @@ func (req *DownloadRequest) processDownload() {
 	}
 
 	if req.shouldVerify {
-		if req.authTicket != nil && req.encryptedKey != "" {
+		if req.isEnterprise || (req.authTicket != nil && req.encryptedKey != "") {
 			req.shouldVerify = false
 		}
 	}
@@ -556,7 +566,7 @@ func (req *DownloadRequest) processDownload() {
 				req.bufferMap[blobberIdx] = zboxutil.NewDownloadBufferWithChan(sz, bufBlocks, req.effectiveBlockSize)
 			} else {
 				bufMask := zboxutil.NewDownloadBufferWithMask(sz, bufBlocks, req.effectiveBlockSize)
-				bufMask.SetNumBlocks(int(numBlocks))
+				bufMask.SetNumBlocks(int(bufBlocks))
 				req.bufferMap[blobberIdx] = bufMask
 			}
 		}
@@ -824,8 +834,8 @@ func (req *DownloadRequest) attemptSubmitReadMarker(blobber *blockchain.StorageN
 	lockBlobberReadCtr(req.allocationID, blobber.ID)
 	defer unlockBlobberReadCtr(req.allocationID, blobber.ID)
 	rm := &marker.ReadMarker{
-		ClientID:        client.GetClientID(),
-		ClientPublicKey: client.GetClientPublicKey(),
+		ClientID:        client.Id(req.ClientId),
+		ClientPublicKey: client.PublicKey(),
 		BlobberID:       blobber.ID,
 		AllocationID:    req.allocationID,
 		OwnerID:         req.allocOwnerID,
@@ -842,7 +852,7 @@ func (req *DownloadRequest) attemptSubmitReadMarker(blobber *blockchain.StorageN
 	if err != nil {
 		return fmt.Errorf("error marshaling read marker: %w", err)
 	}
-	httpreq, err := zboxutil.NewRedeemRequest(blobber.Baseurl, req.allocationID, req.allocationTx)
+	httpreq, err := zboxutil.NewRedeemRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.allocOwnerID)
 	if err != nil {
 		return fmt.Errorf("error creating download request: %w", err)
 	}
@@ -891,7 +901,7 @@ func (req *DownloadRequest) attemptSubmitReadMarker(blobber *blockchain.StorageN
 }
 
 func (req *DownloadRequest) handleReadMarkerError(resp *http.Response, blobber *blockchain.StorageNode, rm *marker.ReadMarker) error {
-	respBody, err := ioutil.ReadAll(resp.Body)
+	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
@@ -962,16 +972,73 @@ func (req *DownloadRequest) initEC() error {
 }
 
 // initEncryption will initialize encScheme with client's keys
-func (req *DownloadRequest) initEncryption() (err error) {
+func (req *DownloadRequest) initEncryption(encryptionVersion int) (err error) {
 	req.encScheme = encryption.NewEncryptionScheme()
-	mnemonic := client.GetClient().Mnemonic
-	if mnemonic != "" {
-		_, err = req.encScheme.Initialize(client.GetClient().Mnemonic)
-		if err != nil {
-			return err
+	var entropy string
+	if req.authTicket != nil {
+		if len(req.allocOwnerSigningPrivateKey) != 0 {
+			_, err := req.encScheme.Initialize(hex.EncodeToString(req.allocOwnerSigningPrivateKey))
+			if err != nil {
+				return err
+			}
+			pubKey, err := req.encScheme.GetPublicKey()
+			if err != nil {
+				return err
+			}
+			if pubKey != req.authTicket.EncryptionPublicKey {
+				// try with mnemonics
+				entropy = client.Mnemonic()
+				if entropy == "" {
+					return errors.New("mnemonic_required", "Mnemonic required for decryption")
+				}
+				req.encScheme = encryption.NewEncryptionScheme()
+				_, err = req.encScheme.Initialize(entropy)
+				if err != nil {
+					return err
+				}
+				pubKey, err = req.encScheme.GetPublicKey()
+				if err != nil {
+					return err
+				}
+				if pubKey != req.authTicket.EncryptionPublicKey {
+					return errors.New("invalid_encryption_key", "Encryption key mismatch")
+				}
+			}
+		} else {
+			entropy = client.Mnemonic()
+			if entropy == "" {
+				return errors.New("mnemonic_required", "Mnemonic required for decryption")
+			}
+			req.encScheme = encryption.NewEncryptionScheme()
+			_, err = req.encScheme.Initialize(entropy)
+			if err != nil {
+				return err
+			}
+			pubKey, err := req.encScheme.GetPublicKey()
+			if err != nil {
+				return err
+			}
+			if pubKey != req.authTicket.EncryptionPublicKey {
+				return errors.New("invalid_signing_key", "signing key is empty")
+			}
 		}
 	} else {
-		return errors.New("invalid_mnemonic", "Invalid mnemonic")
+		if encryptionVersion == SignatureV2 {
+			if len(req.allocOwnerSigningPrivateKey) == 0 {
+				return errors.New("invalid_signing_key", "Invalid private signing key")
+			}
+			entropy = hex.EncodeToString(req.allocOwnerSigningPrivateKey)
+		} else {
+			entropy = client.Mnemonic()
+		}
+		if entropy != "" {
+			_, err = req.encScheme.Initialize(entropy)
+			if err != nil {
+				return err
+			}
+		} else {
+			return errors.New("invalid_mnemonic", "Invalid mnemonic")
+		}
 	}
 
 	err = req.encScheme.InitForDecryption("filetype:audio", req.encryptedKey)
@@ -993,6 +1060,7 @@ func (req *DownloadRequest) errorCB(err error, remotePathCB string) {
 		return
 	}
 	req.skip = true
+	logger.Logger.Error("Download failed: ", err, " remotefilepath: ", remotePathCB)
 	if req.localFilePath != "" {
 		if info, err := req.fileHandler.Stat(); err == nil && info.Size() == 0 {
 			os.Remove(req.localFilePath) //nolint: errcheck
@@ -1097,6 +1165,7 @@ func GetFileRefFromBlobber(allocationID, blobberId, remotePath string) (fRef *fi
 
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
+	listReq.sig = a.sig
 	listReq.blobbers = []*blockchain.StorageNode{
 		{ID: string(blobber.ID), Baseurl: blobber.BaseURL},
 	}
@@ -1113,10 +1182,12 @@ func GetFileRefFromBlobber(allocationID, blobberId, remotePath string) (fRef *fi
 
 func (req *DownloadRequest) getFileRef() (fRef *fileref.FileRef, err error) {
 	listReq := &ListRequest{
+		ClientId:           req.ClientId,
 		remotefilepath:     req.remotefilepath,
 		remotefilepathhash: req.remotefilepathhash,
 		allocationID:       req.allocationID,
 		allocationTx:       req.allocationTx,
+		sig:                req.sig,
 		blobbers:           req.blobbers,
 		authToken:          req.authTicket,
 		Consensus: Consensus{
@@ -1155,12 +1226,23 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 		}
 		actualHash := fmr.fileref.ActualFileHash
 		actualFileHashSignature := fmr.fileref.ActualFileHashSignature
-
-		isValid, err := sys.VerifyWith(
-			req.allocOwnerPubKey,
-			actualFileHashSignature,
-			actualHash,
+		var (
+			isValid bool
+			err     error
 		)
+		if fmr.fileref.SignatureVersion == SignatureV2 {
+			isValid, err = sys.VerifyEd25519With(
+				req.allocOwnerSigningPubKey,
+				actualFileHashSignature,
+				actualHash,
+			)
+		} else {
+			isValid, err = sys.VerifyWith(
+				req.allocOwnerPubKey,
+				actualFileHashSignature,
+				actualHash,
+			)
+		}
 		if err != nil {
 			l.Logger.Error(err)
 			continue
@@ -1204,26 +1286,44 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 		if selected.fileref.ActualFileHashSignature != fRef.ActualFileHashSignature {
 			continue
 		}
+		if !req.isEnterprise && req.shouldVerify {
+			hash := fRef.ActualFileHashSignature + fRef.ValidationRoot
+			if req.storageVersion == StorageV2 {
+				hashData := fmt.Sprintf("%s:%s:%s:%s", fRef.ActualFileHash, fRef.ValidationRoot, fRef.FixedMerkleRoot, req.blobbers[i].ID)
+				hash = encrypt.Hash(hashData)
+			}
+			var (
+				isValid bool
+				err     error
+			)
+			if fRef.SignatureVersion == SignatureV2 {
+				isValid, err = sys.VerifyEd25519With(
+					req.allocOwnerSigningPubKey,
+					fRef.ValidationRootSignature,
+					hash,
+				)
+			} else {
+				isValid, err = sys.VerifyWith(
+					req.allocOwnerPubKey,
+					fRef.ValidationRootSignature,
+					hash,
+				)
+			}
+			if err != nil {
+				l.Logger.Error(err, "allocOwnerPubKey: ", req.allocOwnerPubKey, " validationRootSignature: ", fRef.ValidationRootSignature, " actualFileHashSignature: ", fRef.ActualFileHashSignature, " validationRoot: ", fRef.ValidationRoot)
+				continue
+			}
+			if !isValid {
+				l.Logger.Error("invalid validation root signature")
+				continue
+			}
 
-		isValid, err := sys.VerifyWith(
-			req.allocOwnerPubKey,
-			fRef.ValidationRootSignature,
-			fRef.ActualFileHashSignature+fRef.ValidationRoot,
-		)
-		if err != nil {
-			l.Logger.Error(err, "allocOwnerPubKey: ", req.allocOwnerPubKey, " validationRootSignature: ", fRef.ValidationRootSignature, " actualFileHashSignature: ", fRef.ActualFileHashSignature, " validationRoot: ", fRef.ValidationRoot)
-			continue
-		}
-		if !isValid {
-			l.Logger.Error("invalid validation root signature")
-			continue
-		}
-
-		blobber := req.blobbers[fmr.blobberIdx]
-		vr, _ := hex.DecodeString(fmr.fileref.ValidationRoot)
-		req.validationRootMap[blobber.ID] = &blobberFile{
-			size:           fmr.fileref.Size,
-			validationRoot: vr,
+			blobber := req.blobbers[fmr.blobberIdx]
+			vr, _ := hex.DecodeString(fmr.fileref.ValidationRoot)
+			req.validationRootMap[blobber.ID] = &blobberFile{
+				size:           fmr.fileref.Size,
+				validationRoot: vr,
+			}
 		}
 		shift := zboxutil.NewUint128(1).Lsh(uint64(fmr.blobberIdx))
 		foundMask = foundMask.Or(shift)
@@ -1326,6 +1426,12 @@ func (req *DownloadRequest) Seek(offset int64, whence int) (int64, error) {
 
 func writeData(dest io.Writer, data [][][]byte, dataShards, remaining int) (int, error) {
 	total := 0
+	if len(data) == 0 {
+		return 0, errors.New(InvalidWhenceValue, "data cannot be empty")
+	}
+	if dest == nil {
+		return 0, errors.New(InvalidWhenceValue, "destination writer cannot be nil")
+	}
 	for i := 0; i < len(data); i++ {
 		for j := 0; j < dataShards; j++ {
 			if len(data[i][j]) <= remaining {

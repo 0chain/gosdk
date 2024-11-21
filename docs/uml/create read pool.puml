@@ -1,8 +1,0 @@
-@startuml
-participant "<size:20><&terminal></size> ./zbox rp-create" as cli
-collections gosdk
-
-cli -> gosdk: CreateReadPool()
-gosdk -> gosdk: check initialized sdk
-gosdk -> gosdk: send smart contract txn
-@enduml

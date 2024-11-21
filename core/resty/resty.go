@@ -1,10 +1,8 @@
-// Package resty HTTP and REST client library with parallel feature
 package resty
 
 import (
 	"context"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"sync"
@@ -196,7 +194,7 @@ func (r *Resty) httpDo(req *http.Request) {
 		result := Result{Request: request, Response: resp, Err: err}
 		if resp != nil {
 			// read and close body to reuse http connection
-			buf, err := ioutil.ReadAll(resp.Body)
+			buf, err := io.ReadAll(resp.Body)
 			if err != nil {
 				result.Err = err
 			} else {

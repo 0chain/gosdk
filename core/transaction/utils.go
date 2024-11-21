@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/0chain/gosdk/core/client"
 	"math"
 	"net/http"
 	"strconv"
@@ -46,11 +47,10 @@ func NewOptimisticVerifier(sharders []string) *OptimisticVerifier {
 	}
 }
 
-func (v *OptimisticVerifier) VerifyTransactionOptimistic(txnHash string) (*Transaction, error) {
+func (v *OptimisticVerifier) VerifyTransactionOptimistic(txnHash string) (*Transaction, string, error) {
 	cfg, err := conf.GetClientConfig()
 	if err != nil {
-
-		return nil, err
+		return nil, "", err
 	}
 
 	//refresh sharders
@@ -59,7 +59,7 @@ func (v *OptimisticVerifier) VerifyTransactionOptimistic(txnHash string) (*Trans
 	//amount of sharders to query
 	minNumConfirmation := int(math.Ceil(float64(cfg.MinConfirmation*len(v.sharders)) / 100))
 	if minNumConfirmation > len(v.sharders) {
-		return nil, errors.New("verify_optimistic", "wrong number of min_confirmations")
+		return nil, "", errors.New("verify_optimistic", "wrong number of min_confirmations")
 	}
 	shuffled := util.Shuffle(v.sharders)[:minNumConfirmation]
 
@@ -75,6 +75,7 @@ func (v *OptimisticVerifier) VerifyTransactionOptimistic(txnHash string) (*Trans
 	var url string
 	var chain []*RoundBlockHeader
 	var txn *Transaction
+	var confirmationResponse string
 	r := resty.New(v.options...).Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
 		if err != nil { //network issue
 			return err
@@ -105,6 +106,15 @@ func (v *OptimisticVerifier) VerifyTransactionOptimistic(txnHash string) (*Trans
 		if err != nil {
 			return err
 		}
+
+		// set objmap to confirmationResponse using json marshal
+		confirmationResponseByte, err := json.Marshal(map[string]map[string]json.RawMessage{
+			"confirmation": objmap,
+		})
+		if err != nil {
+			return err
+		}
+		confirmationResponse = string(confirmationResponseByte)
 
 		b := &RoundBlockHeader{}
 		err = json.Unmarshal(respBody, b)
@@ -142,7 +152,7 @@ L:
 	}
 
 	if len(chain) == 0 {
-		return nil, errors.Newf("verify", "can't get confirmation after %v retries", retriesCount)
+		return nil, "", errors.Newf("verify", "can't get confirmation after %v retries", retriesCount)
 	}
 
 	//remove current sharder from the list to avoid building chain with it
@@ -156,10 +166,10 @@ L:
 
 	err = v.checkConfirmation(chain)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	return txn, err
+	return txn, confirmationResponse, err
 }
 
 func (v *OptimisticVerifier) checkConfirmation(chain []*RoundBlockHeader) error {
@@ -280,11 +290,23 @@ func validateBlockHash(b *RoundBlockHeader) error {
 	return nil
 }
 
+func VerifyTransaction(txnHash string) (*Transaction, error) {
+	txn, _, err := VerifyTransactionWithRes(txnHash)
+	return txn, err
+}
+
 // VerifyTransaction query transaction status from sharders, and verify it by mininal confirmation
-func VerifyTransaction(txnHash string, sharders []string) (*Transaction, error) {
+func VerifyTransactionWithRes(txnHash string) (*Transaction, string, error) {
+	nodeClient, err := client.GetNode()
+	if err != nil {
+		return nil, "", err
+	}
+
+	sharders := nodeClient.Sharders().Healthy()
+
 	cfg, err := conf.GetClientConfig()
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	if cfg.VerifyOptimistic {
@@ -296,18 +318,18 @@ func VerifyTransaction(txnHash string, sharders []string) (*Transaction, error) 
 }
 
 // VerifyTransaction query transaction status from sharders, and verify it by mininal confirmation
-func VerifyTransactionTrusted(txnHash string, sharders []string) (*Transaction, error) {
+func VerifyTransactionTrusted(txnHash string, sharders []string) (*Transaction, string, error) {
 
 	cfg, err := conf.GetClientConfig()
 	if err != nil {
 
-		return nil, err
+		return nil, "", err
 	}
 
 	numSharders := len(sharders)
 
 	if numSharders == 0 {
-		return nil, ErrNoAvailableSharder
+		return nil, "", ErrNoAvailableSharder
 	}
 
 	minNumConfirmation := int(math.Ceil(float64(cfg.MinConfirmation*numSharders) / 100))
@@ -330,6 +352,7 @@ func VerifyTransactionTrusted(txnHash string, sharders []string) (*Transaction, 
 	numSuccess := 0
 
 	var retTxn *Transaction
+	var confirmationResponse string
 
 	//leave first item for ErrTooLessConfirmation
 	var msgList = make([]string, 1, numSharders)
@@ -385,6 +408,13 @@ func VerifyTransactionTrusted(txnHash string, sharders []string) (*Transaction, 
 				}
 				if len(txn.Signature) > 0 {
 					retTxn = txn
+					confirmationResponseByte, err := json.Marshal(map[string]map[string]json.RawMessage{
+						"confirmation": objmap,
+					})
+					if err != nil {
+						return err
+					}
+					confirmationResponse = string(confirmationResponseByte)
 				}
 				numSuccess++
 
@@ -424,12 +454,12 @@ func VerifyTransactionTrusted(txnHash string, sharders []string) (*Transaction, 
 
 	if numSuccess > 0 && numSuccess >= minNumConfirmation {
 		if retTxn == nil {
-			return nil, errors.Throw(ErrNoTxnDetail, strings.Join(msgList, "\r\n"))
+			return nil, "", errors.Throw(ErrNoTxnDetail, strings.Join(msgList, "\r\n"))
 		}
-		return retTxn, nil
+		return retTxn, confirmationResponse, nil
 	}
 
 	msgList[0] = fmt.Sprintf("min_confirmation is %v%%, but got %v/%v sharders", cfg.MinConfirmation, numSuccess, numSharders)
-	return nil, errors.Throw(ErrTooLessConfirmation, strings.Join(msgList, "\r\n"))
+	return nil, confirmationResponse, errors.Throw(ErrTooLessConfirmation, strings.Join(msgList, "\r\n"))
 
 }

@@ -14,9 +14,16 @@ import (
 )
 
 const (
+	// MerkleChunkSize is the size of a chunk of data that is hashed
 	MerkleChunkSize     = 64
+
+	// MaxMerkleLeavesSize is the maximum size of the data that can be written to the merkle tree
 	MaxMerkleLeavesSize = 64 * 1024
+
+	// FixedMerkleLeaves is the number of leaves in the fixed merkle tree
 	FixedMerkleLeaves   = 1024
+
+	// FixedMTDepth is the depth of the fixed merkle tree
 	FixedMTDepth        = 11
 )
 

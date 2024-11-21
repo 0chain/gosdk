@@ -15,14 +15,15 @@ import (
 	"github.com/0chain/errors"
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/hitenjain14/fasthttp"
+	"github.com/valyala/bytebufferpool"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -79,7 +80,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 			var req *fasthttp.Request
 			for i := 0; i < 3; i++ {
 				req, err = zboxutil.NewFastUploadRequest(
-					sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, dataBuffers[ind].Bytes(), su.httpMethod)
+					sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, dataBuffers[ind].Bytes(), su.httpMethod, su.allocationObj.Owner)
 				if err != nil {
 					return err
 				}
@@ -91,7 +92,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 					err = zboxutil.FastHttpClient.DoTimeout(req, resp, su.uploadTimeOut)
 					fasthttp.ReleaseRequest(req)
 					if err != nil {
-						logger.Logger.Error("Upload : ", err)
+						logger.Logger.Error("Upload : ", err, " baseurl: ", sb.blobber.Baseurl)
 						if errors.Is(err, fasthttp.ErrConnectionClosed) || errors.Is(err, syscall.EPIPE) {
 							return err, true
 						}
@@ -127,6 +128,10 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 				if shouldContinue {
 					continue
 				}
+				buff := &bytebufferpool.ByteBuffer{
+					B: dataBuffers[ind].Bytes(),
+				}
+				formDataPool.Put(buff)
 
 				if err != nil {
 					return err
@@ -181,7 +186,6 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 	}()
 
 	rootRef, latestWM, size, fileIDMeta, err := sb.processWriteMarker(ctx, su)
-
 	if err != nil {
 		logger.Logger.Error(err)
 		return err
@@ -201,7 +205,7 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 	wm.BlobberID = sb.blobber.ID
 
 	wm.Timestamp = timestamp
-	wm.ClientID = client.GetClientID()
+	wm.ClientID = client.Id(su.allocationObj.Owner)
 	err = wm.Sign()
 	if err != nil {
 		logger.Logger.Error("Signing writemarker failed: ", err)
@@ -238,7 +242,7 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 
 	formWriter.Close()
 
-	req, err := zboxutil.NewCommitRequest(sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, body)
+	req, err := zboxutil.NewCommitRequest(sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, body, 0, su.allocationObj.Owner)
 	if err != nil {
 		logger.Logger.Error("Error creating commit req: ", err)
 		return err
@@ -327,7 +331,7 @@ func (sb *ChunkedUploadBlobber) processWriteMarker(
 	}
 
 	var lR ReferencePathResult
-	req, err := zboxutil.NewReferencePathRequest(sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, paths)
+	req, err := zboxutil.NewReferencePathRequest(sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, su.allocationObj.sig, paths, su.allocationObj.Owner)
 	if err != nil || len(paths) == 0 {
 		logger.Logger.Error("Creating ref path req", err)
 		return nil, nil, 0, nil, err

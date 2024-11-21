@@ -1,3 +1,4 @@
+// Methods and types to support cryptographic operations.
 package crypto
 
 import (

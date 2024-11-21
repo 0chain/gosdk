@@ -1,3 +1,4 @@
+// Utilities to interact with ethereum wallet.
 package hdwallet
 
 import (

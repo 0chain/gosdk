@@ -41,7 +41,11 @@ type DownloadOptions struct {
 	reqOpts               []DownloadRequestOption
 }
 
-// CreateDownloader create a downloander
+// CreateDownloader create a downloander instance with options
+//		- allocationID: allocation id
+//		- localPath: local path to save the downloaded file
+//		- remotePath: remote path of the file to download
+//		- opts: download options as option functions
 func CreateDownloader(allocationID, localPath, remotePath string, opts ...DownloadOption) (Downloader, error) {
 	do := DownloadOptions{
 		localPath:  localPath,
@@ -136,6 +140,7 @@ type baseDownloader struct {
 	DownloadOptions
 }
 
+// GetAllocation get the allocation object
 func (d *baseDownloader) GetAllocation() *Allocation {
 	if d == nil {
 		return nil
@@ -143,6 +148,7 @@ func (d *baseDownloader) GetAllocation() *Allocation {
 	return d.allocationObj
 }
 
+// GetFileName get the file name
 func (d *baseDownloader) GetFileName() string {
 	if d == nil {
 		return ""

@@ -5,18 +5,19 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"github.com/stretchr/testify/mock"
+	"io"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/mock"
+	"github.com/0chain/gosdk/zboxcore/mocks"
 	"github.com/stretchr/testify/require"
 
 	"github.com/0chain/gosdk/core/resty"
-	"github.com/0chain/gosdk/zboxcore/mocks"
 )
 
 func TestGetUSD(t *testing.T) {
@@ -125,7 +126,7 @@ func setupMockHttpResponse(
 	})).Return(
 		&http.Response{
 			StatusCode: statusCode,
-			Body:       ioutil.NopCloser(bytes.NewReader(body)),
+			Body:       io.NopCloser(bytes.NewReader(body)),
 		}, nil).Once()
 }
 
@@ -234,7 +235,7 @@ func getCoinGeckoResponse() func(testCaseName, mockProviderURL, providerName, sy
 }
 
 func getProviderJsonResponse(t *testing.T, provider string) []byte {
-	data, err := ioutil.ReadFile("mockresponses/" + provider + ".json")
+	data, err := os.ReadFile("mockresponses/" + provider + ".json")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"mime/multipart"
 	"net/http"
 	"path"
@@ -12,12 +12,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/0chain/common/core/util/wmpt"
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
 	l "github.com/0chain/gosdk/zboxcore/logger"
@@ -33,6 +33,7 @@ type DirRequest struct {
 	allocationObj *Allocation
 	allocationID  string
 	allocationTx  string
+	sig           string
 	remotePath    string
 	blobbers      []*blockchain.StorageNode
 	ctx           context.Context
@@ -85,7 +86,7 @@ func (req *DirRequest) ProcessDir(a *Allocation) error {
 		return errors.New("consensus_not_met", "directory creation failed due to consensus not met")
 	}
 
-	writeMarkerMU, err := CreateWriteMarkerMutex(client.GetClient(), a)
+	writeMarkerMU, err := CreateWriteMarkerMutex(a)
 	if err != nil {
 		return fmt.Errorf("directory creation failed. Err: %s", err.Error())
 	}
@@ -121,7 +122,7 @@ func (req *DirRequest) commitRequest(existingDirCount int) error {
 		commitReq.allocationID = req.allocationID
 		commitReq.allocationTx = req.allocationTx
 		commitReq.blobber = req.blobbers[pos]
-
+		commitReq.sig = req.sig
 		newChange := &allocationchange.DirCreateChange{
 			RemotePath: req.remotePath,
 			Uuid:       uid,
@@ -186,7 +187,7 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode, pos u
 	}
 
 	formWriter.Close()
-	httpreq, err := zboxutil.NewCreateDirRequest(blobber.Baseurl, req.allocationID, req.allocationTx, body)
+	httpreq, err := zboxutil.NewCreateDirRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body, req.allocationObj.Owner)
 	if err != nil {
 		l.Logger.Error(blobber.Baseurl, "Error creating dir request", err)
 		return err, false
@@ -236,7 +237,7 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode, pos u
 				return
 			}
 
-			respBody, err = ioutil.ReadAll(resp.Body)
+			respBody, err = io.ReadAll(resp.Body)
 			if err != nil {
 				l.Logger.Error(err)
 				return
@@ -288,9 +289,11 @@ type DirOperation struct {
 func (dirOp *DirOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
 	refs := make([]fileref.RefEntity, len(allocObj.Blobbers))
 	dR := &DirRequest{
+		allocationObj: allocObj,
 		allocationID:  allocObj.ID,
 		allocationTx:  allocObj.Tx,
 		connectionID:  connectionID,
+		sig:           allocObj.sig,
 		blobbers:      allocObj.Blobbers,
 		remotePath:    dirOp.remotePath,
 		ctx:           dirOp.ctx,
@@ -303,17 +306,21 @@ func (dirOp *DirOperation) Process(allocObj *Allocation, connectionID string) ([
 	}
 	dR.Consensus = Consensus{
 		RWMutex:         &sync.RWMutex{},
-		consensusThresh: dR.consensusThresh,
-		fullconsensus:   dR.fullconsensus,
+		consensusThresh: dirOp.consensusThresh,
+		fullconsensus:   dirOp.fullconsensus,
 	}
 
-	_ = dR.ProcessWithBlobbers(allocObj)
+	existCount := dR.ProcessWithBlobbers(allocObj)
 	dirOp.alreadyExists = dR.alreadyExists
 
 	if !dR.isConsensusOk() {
 		return nil, dR.dirMask, errors.New("consensus_not_met", "directory creation failed due to consensus not met")
 	}
-	return refs, dR.dirMask, nil
+	var err error
+	if allocObj.StorageVersion == StorageV2 && existCount >= dR.consensusThresh {
+		err = errNoChange
+	}
+	return refs, dR.dirMask, err
 
 }
 
@@ -368,4 +375,12 @@ func NewDirOperation(remotePath, customMeta string, dirMask zboxutil.Uint128, ma
 	dirOp.ctx, dirOp.ctxCncl = context.WithCancel(ctx)
 	dirOp.alreadyExists = make(map[uint64]bool)
 	return dirOp
+}
+
+func (dirOp *DirOperation) ProcessChangeV2(trie *wmpt.WeightedMerkleTrie, changeIndex uint64) error {
+	return nil
+}
+
+func (dirOp *DirOperation) GetLookupHash(changeIndex uint64) []string {
+	return nil
 }
