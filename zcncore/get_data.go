@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/0chain/gosdk/core/node"
 	"net/url"
 	"strconv"
+
+	"github.com/0chain/gosdk/core/node"
 
 	"github.com/0chain/gosdk/core/block"
 	"github.com/0chain/gosdk/core/client"
@@ -15,7 +16,6 @@ import (
 	"github.com/0chain/gosdk/core/tokenrate"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/zcncrypto"
-	"github.com/0chain/gosdk/zboxcore/sdk"
 )
 
 type GetClientResponse struct {
@@ -197,7 +197,7 @@ func GetMintNonce() ([]byte, error) {
 
 	res, err = screstapi.MakeSCRestAPICall(ZCNSCSmartContractAddress, GET_MINT_NONCE, Params{
 		"client_id": client.Id(),
-	}, sdk.IsWasm)
+	})
 
 	return res, err
 }
@@ -296,7 +296,7 @@ func GetNotProcessedZCNBurnTickets(ethereumAddress, startNonce string) ([]byte, 
 	res, err = screstapi.MakeSCRestAPICall(ZCNSCSmartContractAddress, GET_NOT_PROCESSED_BURN_TICKETS, Params{
 		"ethereum_address": ethereumAddress,
 		"nonce":            startNonce,
-	}, sdk.IsWasm)
+	})
 	return res, err
 }
 
@@ -313,9 +313,9 @@ func GetUserLockedTotal(clientID string) (int64, error) {
 
 	const GET_USER_LOCKED_TOTAL = `/v1/getUserLockedTotal`
 
-	info, err := screstapi.MakeSCRestAPICall(ZCNSCSmartContractAddress, GET_USER_LOCKED_TOTAL, Params{
+	info, err := node.MakeSCRestAPICallToSharder(ZCNSCSmartContractAddress, GET_USER_LOCKED_TOTAL, Params{
 		"client_id": clientID,
-	}, false)
+	})
 
 	if err != nil {
 		return 0, errors.New("error while making rest api call: " + err.Error())

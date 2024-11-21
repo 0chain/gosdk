@@ -10,27 +10,11 @@ import (
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/conf"
-	"github.com/0chain/gosdk/core/screstapi"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/shopspring/decimal"
 )
 
-var urlPathSharderToZboxMap = map[string]string{
-	"/getStakePoolStat":              "/getStakePoolStat",
-	"/getUserStakePoolStat":          "/getUserStakePoolStat",
-	"/getChallengePoolStat":          "/getChallengePoolStat",
-	"/getBlobber":                    "/blobber",
-	"/getblobbers":                   "/blobbers",
-	"/blobber_ids":                   "/blobber_ids",
-	"/alloc_blobbers":                "/blobbers/allocation",
-	"/get_validator":                 "/validator",
-	"/validators":                    "/validators",
-	"/allocation":                    "/getAllocation",
-	"/allocations":                   "/getAllocations",
-	"/v1/mint_nonce":                 "/user",
-	"client/get/balance":             "/client/get/balance",
-	"/v1/not_processed_burn_tickets": "/not_processed_burn_tickets",
-}
+const GetBalanceUrl = "client/get/balance"
 
 // SCRestAPIHandler is a function type to handle the response from the SC Rest API
 //
@@ -38,19 +22,6 @@ var urlPathSharderToZboxMap = map[string]string{
 //	`numSharders` - the number of sharders that responded
 //	`err` - the error if any
 type SCRestAPIHandler func(response map[string][]byte, numSharders int, err error)
-
-func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]string, restApiUrls ...string) (resp []byte, err error) {
-	if IsWasm {
-		resp, err = screstapi.MakeSCRestAPICallToZbox(urlPathSharderToZboxMap[relativePath], params)
-		if err != nil {
-			resp, err = MakeSCRestAPICallToSharder(scAddress, relativePath, params)
-		}
-	} else {
-		resp, err = MakeSCRestAPICallToSharder(scAddress, relativePath, params)
-	}
-
-	return resp, err
-}
 
 func MakeSCRestAPICallToSharder(scAddress string, relativePath string, params map[string]string, restApiUrls ...string) ([]byte, error) {
 	const (
@@ -177,14 +148,13 @@ func isCurrentDominantStatus(respStatus int, currentTotalPerStatus map[int]int, 
 }
 
 func GetBalance(clientID string) (*GetBalanceResponse, error) {
-	const GetBalance = "client/get/balance"
 	var (
 		balance GetBalanceResponse
 		err     error
 		res     []byte
 	)
 
-	if res, err = MakeSCRestAPICall("", GetBalance, map[string]string{
+	if res, err = MakeSCRestAPICallToSharder("", GetBalanceUrl, map[string]string{
 		"client_id": clientID,
 	}, "v1/"); err != nil {
 		return nil, err
