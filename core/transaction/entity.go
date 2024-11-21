@@ -527,7 +527,13 @@ func SmartContractTxnValueFeeWithRetry(scAddress string, sn SmartContractTxnData
 	hash, out, nonce, t, err = SmartContractTxnValueFee(scAddress, sn, value, fee, verifyTxn, clients...)
 
 	if err != nil && (strings.Contains(err.Error(), "invalid transaction nonce") || strings.Contains(err.Error(), "invalid future transaction")) {
+		fmt.Println("1Error in SmartContractTxnValueFeeWithRetry: ", err.Error())
+		fmt.Println("Retrying the transaction")
 		return SmartContractTxnValueFee(scAddress, sn, value, fee, verifyTxn, clients...)
+	}
+
+	if err != nil {
+		fmt.Println("2Error in SmartContractTxnValueFeeWithRetry: ", err.Error())
 	}
 	return
 }
@@ -616,6 +622,7 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 	err = SendTransactionSync(txn, nodeClient.GetStableMiners())
 	if err != nil {
 		Logger.Info("transaction submission failed", zap.Error(err))
+		fmt.Println("transaction submission failed", err.Error())
 		client.Cache.Evict(txn.ClientID)
 		nodeClient.ResetStableMiners()
 		return
