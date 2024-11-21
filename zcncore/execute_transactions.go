@@ -3,6 +3,7 @@ package zcncore
 import (
 	"fmt"
 	"github.com/0chain/gosdk/core/transaction"
+	"github.com/0chain/gosdk/zboxcore/sdk"
 )
 
 // AuthorizerNode represents an authorizer node in the network
@@ -219,4 +220,40 @@ func Faucet(tokens uint64, input string, client ...string) (hash, out string, no
 		Name:      "pour",
 		InputArgs: input,
 	}, tokens, true, client...)
+}
+
+func DeleteMiner(id string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+	return transaction.SmartContractTxn(MinerSmartContractAddress, transaction.SmartContractTxnData{
+		Name: "delete_miner",
+		InputArgs: &MinerSCMinerInfo{
+			SimpleMiner: SimpleMiner{
+				ID: id,
+			},
+		},
+	}, true)
+}
+
+func DeleteSharder(id string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+	return transaction.SmartContractTxn(MinerSmartContractAddress, transaction.SmartContractTxnData{
+		Name: "delete_sharder",
+		InputArgs: &MinerSCMinerInfo{
+			SimpleMiner: SimpleMiner{
+				ID: id,
+			},
+		},
+	}, true)
+}
+
+func VcRegisterNode(id string, nodeType sdk.ProviderType) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+	type VCAddSCData struct {
+		ID   string
+		Type int
+	}
+	return transaction.SmartContractTxn(MinerSmartContractAddress, transaction.SmartContractTxnData{
+		Name: "register_node",
+		InputArgs: VCAddSCData{
+			ID:   id,
+			Type: int(nodeType),
+		},
+	}, true)
 }
