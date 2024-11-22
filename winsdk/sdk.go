@@ -11,7 +11,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/0chain/gosdk/core/node"
 	"os"
 	"path"
 
@@ -108,7 +107,7 @@ func InitSDKs(configJson *C.char) *C.char {
 		return WithJSON(false, err)
 	}
 
-	err = node.Init(context.Background(), *configObj)
+	err = client.Init(context.Background(), *configObj)
 
 	if err != nil {
 		l.Logger.Error(err, configJs)

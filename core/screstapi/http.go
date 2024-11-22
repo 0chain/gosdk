@@ -6,7 +6,6 @@ import (
 
 	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/conf"
-	"github.com/0chain/gosdk/core/node"
 	"github.com/0chain/gosdk/zboxapi"
 )
 
@@ -28,13 +27,13 @@ var urlPathSharderToZboxMap = map[string]string{
 }
 
 func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]string, restApiUrls ...string) (resp []byte, err error) {
-	if node.IsWasm {
+	if client.IsSdkFlow {
 		resp, err = MakeSCRestAPICallToZbox(urlPathSharderToZboxMap[relativePath], params)
 		if err != nil {
-			resp, err = node.MakeSCRestAPICallToSharder(scAddress, relativePath, params)
+			resp, err = client.MakeSCRestAPICallToSharder(scAddress, relativePath, params)
 		}
 	} else {
-		resp, err = node.MakeSCRestAPICallToSharder(scAddress, relativePath, params, restApiUrls...)
+		resp, err = client.MakeSCRestAPICallToSharder(scAddress, relativePath, params, restApiUrls...)
 	}
 
 	return resp, err
@@ -54,7 +53,7 @@ func MakeSCRestAPICallToZbox(relativePath string, params map[string]string) ([]b
 	return resp, nil
 }
 
-func GetBalance(clientIDs ...string) (*node.GetBalanceResponse, error) {
+func GetBalance(clientIDs ...string) (*client.GetBalanceResponse, error) {
 	var clientID string
 	if len(clientIDs) > 0 {
 		clientID = clientIDs[0]
@@ -63,12 +62,12 @@ func GetBalance(clientIDs ...string) (*node.GetBalanceResponse, error) {
 	}
 
 	var (
-		balance node.GetBalanceResponse
+		balance client.GetBalanceResponse
 		err     error
 		resp    []byte
 	)
 
-	if resp, err = MakeSCRestAPICall("", node.GetBalanceUrl, map[string]string{
+	if resp, err = MakeSCRestAPICall("", client.GetBalanceUrl, map[string]string{
 		"client_id": clientID,
 	}, "v1/"); err != nil {
 		return nil, err

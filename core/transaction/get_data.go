@@ -2,7 +2,8 @@ package transaction
 
 import (
 	"encoding/json"
-	coreHttp "github.com/0chain/gosdk/core/node"
+
+	coreHttp "github.com/0chain/gosdk/core/client"
 
 	"github.com/0chain/errors"
 )

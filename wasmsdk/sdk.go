@@ -7,7 +7,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/0chain/gosdk/core/node"
 
 	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/encryption"
@@ -41,7 +40,7 @@ func initSDKs(chainID, blockWorker, signatureScheme string,
 
 	zboxApiClient.SetRequest(zboxHost, zboxAppType)
 
-	err := client.InitSDK("{}", blockWorker, chainID, signatureScheme, 0, isSplit, false, minConfirmation, minSubmit, confirmationChainLength, sharderConsensous)
+	err := client.InitSDK("{}", blockWorker, chainID, signatureScheme, 0, isSplit, false, true, minConfirmation, minSubmit, confirmationChainLength, sharderConsensous)
 	if err != nil {
 		fmt.Println("wasm: InitStorageSDK ", err)
 		return err
@@ -148,7 +147,7 @@ func makeSCRestAPICall(scAddress, relativePath, paramsJson string) (string, erro
 		sdkLogger.Error(fmt.Sprintf("Error parsing JSON: %v", err))
 	}
 
-	b, err := node.MakeSCRestAPICallToSharder(scAddress, relativePath, params)
+	b, err := client.MakeSCRestAPICallToSharder(scAddress, relativePath, params)
 	return string(b), err
 }
 

@@ -9,8 +9,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/0chain/gosdk/core/node"
-
 	"github.com/0chain/common/core/currency"
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/logger"
@@ -288,7 +286,7 @@ func GetMptData(key string) ([]byte, error) {
 	}
 
 	var b []byte
-	b, err := node.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS,
+	b, err := client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS,
 		"/get_mpt_key", map[string]string{"key": key})
 	if err != nil {
 		return nil, errors.Wrap(err, "error requesting mpt key data:")
@@ -978,7 +976,7 @@ func GetFreeAllocationBlobbers(request map[string]interface{}) ([]string, error)
 	params := make(map[string]string)
 	params["free_allocation_data"] = string(data)
 
-	allocBlobber, err := node.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, "/free_alloc_blobbers", params)
+	allocBlobber, err := client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, "/free_alloc_blobbers", params)
 	if err != nil {
 		return nil, err
 	}
@@ -1424,7 +1422,7 @@ func GetUpdateAllocationMinLock(
 	params := make(map[string]string)
 	params["data"] = string(data)
 
-	responseBytes, err := node.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, "/allocation-update-min-lock", params)
+	responseBytes, err := client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, "/allocation-update-min-lock", params)
 	if err != nil {
 		return 0, errors.Wrap(err, "failed to request allocation update min lock")
 	}

@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/0chain/gosdk/core/node"
-
 	"github.com/0chain/gosdk/core/conf"
 
 	"github.com/0chain/gosdk/constants"
@@ -280,7 +278,7 @@ func GetClient() *zcncrypto.Wallet {
 //   - fee: Preferred value for the transaction fee, just the first value is taken
 func InitSDK(walletJSON string,
 	blockWorker, chainID, signatureScheme string,
-	nonce int64, isSplitWallet, addWallet bool,
+	nonce int64, isSplitWallet, addWallet, IsSdkFlow bool,
 	options ...int) error {
 
 	if addWallet {
@@ -312,7 +310,7 @@ func InitSDK(walletJSON string,
 		sharderConsensous = options[4]
 	}
 
-	err := node.Init(context.Background(), conf.Config{
+	err := Init(context.Background(), conf.Config{
 		BlockWorker:             blockWorker,
 		SignatureScheme:         signatureScheme,
 		ChainID:                 chainID,
@@ -326,7 +324,7 @@ func InitSDK(walletJSON string,
 		return err
 	}
 	SetSdkInitialized(true)
-	node.SetIsWasm(true)
+	SetIsSdkFlow(IsSdkFlow)
 	return nil
 }
 

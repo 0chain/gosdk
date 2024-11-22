@@ -3,7 +3,8 @@ package zcnbridge
 import (
 	"encoding/json"
 	"fmt"
-	coreHttp "github.com/0chain/gosdk/core/node"
+
+	coreHttp "github.com/0chain/gosdk/core/client"
 
 	"github.com/0chain/gosdk/core/common"
 

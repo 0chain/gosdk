@@ -3,7 +3,6 @@ package zcncore
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/0chain/gosdk/core/node"
 	"net/http"
 	"strings"
 	"time"
@@ -145,7 +144,7 @@ func init() {
 }
 
 func checkSdkInit() error {
-	_, err := node.GetNode()
+	_, err := client.GetNode()
 	if err != nil {
 		return err
 	}

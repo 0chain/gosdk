@@ -7,12 +7,12 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/0chain/gosdk/core/node"
 	"math"
 	"strconv"
 	"strings"
 
 	"context"
+
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/pkg/errors"
 
@@ -74,7 +74,7 @@ func Init(chainConfigJson string) error {
 	if err != nil {
 		return err
 	}
-	return node.Init(context.Background(), cfg)
+	return client.Init(context.Background(), cfg)
 }
 
 // InitStorageSDK init storage sdk from config
@@ -129,7 +129,7 @@ func InitStorageSDK(clientJson string, configJson string) (*StorageSDK, error) {
 		configObj.BlockWorker,
 		configObj.ChainID,
 		configObj.SignatureScheme,
-		0, false, true); err != nil {
+		0, false, true, true); err != nil {
 		l.Logger.Error(err)
 		return nil, err
 	}
