@@ -780,6 +780,14 @@ type FileOptionsParameters struct {
 	ForbidRename FileOptionParam
 }
 
+type UpdateAllocTicket struct {
+	AllocationID  string `json:"allocation_id"`
+	UserID        string `json:"user_id"`
+	RoundExpiry   int64  `json:"round_expiry"`
+	OperationType string `json:"operation_type"`
+	Signature     string `json:"signature"`
+}
+
 // CreateAllocationOptions is used to specify the options for creating a new allocation.
 type CreateAllocationOptions struct {
 	DataShards           int

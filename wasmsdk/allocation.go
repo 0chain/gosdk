@@ -178,6 +178,7 @@ func UpdateForbidAllocation(allocationID string, forbidupload, forbiddelete, for
 			ForbidCopy:   sdk.FileOptionParam{Changed: forbidcopy, Value: forbidcopy},
 			ForbidRename: sdk.FileOptionParam{Changed: forbidrename, Value: forbidrename},
 		},
+		&sdk.UpdateAllocTicket{},
 	)
 
 	return hash, err
@@ -207,6 +208,7 @@ func freezeAllocation(allocationID string) (string, error) {
 			ForbidCopy:   sdk.FileOptionParam{Changed: true, Value: true},
 			ForbidRename: sdk.FileOptionParam{Changed: true, Value: true},
 		},
+		&sdk.UpdateAllocTicket{},
 	)
 
 	if err == nil {
@@ -298,7 +300,7 @@ func updateAllocation(allocationID string,
 	size int64, extend bool,
 	lock int64,
 	addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey string, setThirdPartyExtendable bool) (string, error) {
-	hash, _, err := sdk.UpdateAllocation(size, extend, allocationID, uint64(lock), addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey, setThirdPartyExtendable, &sdk.FileOptionsParameters{})
+	hash, _, err := sdk.UpdateAllocation(size, extend, allocationID, uint64(lock), addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey, setThirdPartyExtendable, &sdk.FileOptionsParameters{}, &sdk.UpdateAllocTicket{})
 
 	if err == nil {
 		clearAllocation(allocationID)

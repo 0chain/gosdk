@@ -131,7 +131,7 @@ func UpdateAllocation(
 	allocationID string,
 	lock uint64,
 	addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey string,
-	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
+	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters, ticket *UpdateAllocTicket,
 ) (hash string, nonce int64, err error) {
 
 	if lock > math.MaxInt64 {
@@ -159,6 +159,7 @@ func UpdateAllocation(
 	updateAllocationRequest["set_third_party_extendable"] = setThirdPartyExtendable
 	updateAllocationRequest["owner_signing_public_key"] = ownerSigninPublicKey
 	updateAllocationRequest["file_options_changed"], updateAllocationRequest["file_options"] = calculateAllocationFileOptions(alloc.FileOptions, fileOptionsParams)
+	updateAllocationRequest["update_ticket"] = ticket
 
 	sn := transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_UPDATE_ALLOCATION,
