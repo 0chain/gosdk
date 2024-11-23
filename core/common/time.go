@@ -78,3 +78,9 @@ func ParseTime(now time.Time, input string) (*time.Time, error) {
 	return nil, ErrInvalidTime
 
 }
+
+// Duration returns the Timestamp as time.Duration. Used where the Timestamp
+// represents a duration.
+func (t Timestamp) Duration() time.Duration {
+	return time.Second * time.Duration(t)
+}
