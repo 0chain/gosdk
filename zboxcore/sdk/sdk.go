@@ -634,7 +634,10 @@ func GetAllocation(allocationID string) (*Allocation, error) {
 		return nil, errors.New("allocation_decode_error", "Error decoding the allocation: "+err.Error()+" "+string(allocationBytes))
 	}
 	allocationObj.numBlockDownloads = numBlockDownloads
-	allocationObj.InitAllocation()
+	err = allocationObj.InitAllocation()
+	if err != nil {
+		return nil, errors.New("allocation_init_error", "Error initializing the allocation."+err.Error())
+	}
 	return allocationObj, nil
 }
 

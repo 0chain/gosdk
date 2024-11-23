@@ -8,7 +8,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/0chain/common/core/logging"
 	"io"
 	"math"
 	"mime/multipart"
@@ -419,7 +418,7 @@ func SetDownloadWorkerCount(count int) {
 }
 
 // InitAllocation initializes the allocation.
-func (a *Allocation) InitAllocation() {
+func (a *Allocation) InitAllocation() error {
 	a.downloadChan = make(chan *DownloadRequest, 100)
 	a.repairChan = make(chan *RepairRequest, 1)
 	a.ctx, a.ctxCancelF = context.WithCancel(context.Background())
@@ -437,7 +436,10 @@ func (a *Allocation) InitAllocation() {
 			}
 		}
 	}
-	a.generateAndSetOwnerSigningPublicKey()
+	err := a.generateAndSetOwnerSigningPublicKey()
+	if err != nil {
+		return err
+	}
 	a.startWorker(a.ctx)
 	InitCommitWorker(a.Blobbers)
 	InitBlockDownloader(a.Blobbers, downloadWorkerCount)
@@ -445,106 +447,26 @@ func (a *Allocation) InitAllocation() {
 		a.CheckAllocStatus() //nolint:errcheck
 	}
 	a.initialized = true
+	return nil
 }
 
-// size in gigabytes
-func sizeInGB(size int64) float64 {
-	return float64(size) / GB
-}
-
-// The durationInTimeUnits returns given duration (represented as
-// common.Timestamp) as duration in time units (float point value) for
-// this allocation (time units for the moment of the allocation creation).
-func (a *Allocation) durationInTimeUnits(dur common.Timestamp, timeUnit time.Duration) (float64, error) {
-	if dur < 0 {
-		return 0, fmt.Errorf("negative duration")
-	}
-	return float64(dur.Duration()) / float64(timeUnit), nil
-}
-
-// The restDurationInTimeUnits return rest duration of the allocation in time
-// units as a float64 value.
-func (a *Allocation) restDurationInTimeUnits(now common.Timestamp, timeUnit time.Duration) (float64, error) {
-	if a.Expiration < int64(now) {
-		logging.Logger.Error("rest duration time overflow, timestamp is beyond alloc expiration",
-			zap.Int64("now", int64(now)),
-			zap.Int64("alloc expiration", int64(a.Expiration)))
-		return 0, fmt.Errorf("rest duration time overflow, timestamp is beyond alloc expiration")
-	}
-	logging.Logger.Info("rest_duration", zap.Int64("expiration", a.Expiration), zap.Int64("now", int64(now)), zap.Float64("timeUnit", float64(timeUnit)), zap.Int64("rest", a.Expiration-int64(now)))
-	return a.durationInTimeUnits(common.Timestamp(a.Expiration)-now, timeUnit)
-}
-
-func (a *Allocation) costForRDTU(now common.Timestamp) (currency.Coin, error) {
-	rdtu, err := a.restDurationInTimeUnits(now, a.TimeUnit)
-	if err != nil {
-		return 0, fmt.Errorf("failed to get rest duration in time units: %v", err)
-
-	}
-
-	var cost currency.Coin
-	for _, ba := range a.BlobberDetails {
-		c, err := currency.MultFloat64(currency.Coin(ba.Terms.WritePrice), sizeInGB(ba.Size))
-		if err != nil {
-			return 0, err
-		}
-
-		c, err = currency.MultFloat64(c, rdtu)
-		if err != nil {
-			return 0, err
-		}
-
-		cost, err = currency.AddCoin(cost, c)
-		if err != nil {
-			return 0, err
-		}
-	}
-	return cost, nil
-}
-
-func (a *Allocation) minLockRequired() (currency.Coin, error) {
-	costOfAllocAfterUpdate, err := a.costForRDTU(common.Now())
-	if err != nil {
-		return 0, fmt.Errorf("failed to get allocation cost: %v", err)
-	}
-
-	cp, err := GetChallengePoolInfo(a.ID)
-	if err != nil {
-		return 0, fmt.Errorf("failed to get challenge pool info: %v", err)
-	}
-
-	totalWritePool := currency.Coin(a.WritePool + cp.Balance)
-
-	if totalWritePool < costOfAllocAfterUpdate {
-		minLockrequired := float64(costOfAllocAfterUpdate - totalWritePool)
-		return currency.Coin(1.25 * minLockrequired), nil
-	} else {
-		return 0, nil
-	}
-}
-
-func (a *Allocation) generateAndSetOwnerSigningPublicKey() {
+func (a *Allocation) generateAndSetOwnerSigningPublicKey() error {
 	//create ecdsa public key from signature
 	if a.OwnerPublicKey != client.PublicKey() {
-		return
+		return nil
 	}
 	privateSigningKey, err := generateOwnerSigningKey(a.OwnerPublicKey, a.Owner)
 	if err != nil {
 		l.Logger.Error("Failed to generate owner signing key", zap.Error(err))
-		return
+		return nil
 	}
 	if a.OwnerSigningPublicKey == "" && !a.Finalized && !a.Canceled {
 		pubKey := privateSigningKey.Public().(ed25519.PublicKey)
 		a.OwnerSigningPublicKey = hex.EncodeToString(pubKey)
-		minLockRequired, err := a.minLockRequired()
-		if err != nil {
-			l.Logger.Error("Failed to get min lock required ", err)
-			return
-		}
-		hash, _, err := UpdateAllocation(0, false, a.ID, uint64(minLockRequired), "", "", "", a.OwnerSigningPublicKey, false, nil)
+		hash, _, err := UpdateAllocation(0, false, a.ID, 0, "", "", "", a.OwnerSigningPublicKey, false, nil)
 		if err != nil {
 			l.Logger.Error("Failed to update owner signing public key ", err, " allocationID: ", a.ID, " hash: ", hash)
-			return
+			return fmt.Errorf("failed to update owner signing public key: %v", err)
 		}
 		l.Logger.Info("Owner signing public key updated with transaction : ", hash, " ownerSigningPublicKey : ", a.OwnerSigningPublicKey)
 		a.Tx = hash
@@ -553,6 +475,7 @@ func (a *Allocation) generateAndSetOwnerSigningPublicKey() {
 		l.Logger.Info("Owner signing public key already exists: ", a.OwnerSigningPublicKey, " generated: ", hex.EncodeToString(pubKey))
 	}
 	a.privateSigningKey = privateSigningKey
+	return nil
 }
 
 func (a *Allocation) isInitialized() bool {
