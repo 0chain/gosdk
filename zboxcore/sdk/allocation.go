@@ -503,7 +503,7 @@ func (a *Allocation) costForRDTU(now common.Timestamp) (currency.Coin, error) {
 }
 
 func (a *Allocation) minLockRequired() (currency.Coin, error) {
-	costOfAllocAfterUpdate, err := a.costForRDTU(0)
+	costOfAllocAfterUpdate, err := a.costForRDTU(common.Now())
 	if err != nil {
 		return 0, fmt.Errorf("failed to get allocation cost: %v", err)
 	}
