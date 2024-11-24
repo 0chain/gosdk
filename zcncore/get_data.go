@@ -179,7 +179,7 @@ func GetMinerSCNodeInfo(id string) ([]byte, error) {
 		return nil, err
 	}
 
-	return client.MakeSCRestAPICallToSharder(MinerSmartContractAddress, GET_MINERSC_NODE, Params{
+	return screstapi.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINERSC_NODE, Params{
 		"id": id,
 	})
 }
@@ -205,7 +205,7 @@ func GetMiners(active, stakable bool, limit, offset int) ([]byte, error) {
 		return nil, err
 	}
 
-	return client.MakeSCRestAPICallToSharder(MinerSmartContractAddress, GET_MINERSC_MINERS, Params{
+	return screstapi.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINERSC_MINERS, Params{
 		"active":   strconv.FormatBool(active),
 		"stakable": strconv.FormatBool(stakable),
 		"offset":   strconv.FormatInt(int64(offset), 10),
@@ -218,7 +218,7 @@ func GetSharders(active, stakable bool, limit, offset int) ([]byte, error) {
 		return nil, err
 	}
 
-	return client.MakeSCRestAPICallToSharder(MinerSmartContractAddress, GET_MINERSC_SHARDERS, Params{
+	return screstapi.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINERSC_SHARDERS, Params{
 		"active":   strconv.FormatBool(active),
 		"stakable": strconv.FormatBool(stakable),
 		"offset":   strconv.FormatInt(int64(offset), 10),
@@ -230,7 +230,7 @@ func GetSharders(active, stakable bool, limit, offset int) ([]byte, error) {
 //   - numSharders: number of sharders
 //   - timeout: request timeout
 func GetLatestFinalizedMagicBlock() (m *block.MagicBlock, err error) {
-	res, err := client.MakeSCRestAPICallToSharder("", GET_LATEST_FINALIZED_MAGIC_BLOCK, nil, "")
+	res, err := screstapi.MakeSCRestAPICall("", GET_LATEST_FINALIZED_MAGIC_BLOCK, nil, "")
 	if err != nil {
 		return nil, err
 	}
@@ -259,7 +259,7 @@ func GetMinerSCUserInfo(clientID string) ([]byte, error) {
 		clientID = client.Id()
 	}
 
-	return client.MakeSCRestAPICallToSharder(MinerSmartContractAddress, GET_MINERSC_USER, Params{
+	return screstapi.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINERSC_USER, Params{
 		"client_id": clientID,
 	})
 }
@@ -271,7 +271,7 @@ func GetMinerSCNodePool(id string) ([]byte, error) {
 		return nil, err
 	}
 
-	return client.MakeSCRestAPICallToSharder(MinerSmartContractAddress, GET_MINERSC_POOL, Params{
+	return screstapi.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINERSC_POOL, Params{
 		"id":      id,
 		"pool_id": client.Id(),
 	})
@@ -311,7 +311,7 @@ func GetUserLockedTotal(clientID string) (int64, error) {
 
 	const GET_USER_LOCKED_TOTAL = `/v1/getUserLockedTotal`
 
-	info, err := client.MakeSCRestAPICallToSharder(ZCNSCSmartContractAddress, GET_USER_LOCKED_TOTAL, Params{
+	info, err := screstapi.MakeSCRestAPICall(ZCNSCSmartContractAddress, GET_USER_LOCKED_TOTAL, Params{
 		"client_id": clientID,
 	})
 
