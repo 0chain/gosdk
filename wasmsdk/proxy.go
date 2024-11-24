@@ -216,6 +216,7 @@ func main() {
 				"getLookupHash":          getLookupHash,
 				"createThumbnail":        createThumbnail,
 				"makeSCRestAPICall":      makeSCRestAPICall,
+				"getWasmType":            getWasmType,
 
 				//blobber
 				"delete":                    Delete,
@@ -340,6 +341,7 @@ func main() {
 
 			fmt.Println("__wasm_initialized__ = true;")
 			zcn.Set("__wasm_initialized__", true)
+			zcn.Set("wasmType", "enterprise")
 		} else {
 			PrintError("__zcn_wasm__.sdk is not installed yet")
 		}
