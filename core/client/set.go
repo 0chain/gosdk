@@ -278,7 +278,7 @@ func GetClient() *zcncrypto.Wallet {
 //   - fee: Preferred value for the transaction fee, just the first value is taken
 func InitSDK(walletJSON string,
 	blockWorker, chainID, signatureScheme string,
-	nonce int64, isSplitWallet, addWallet, IsSdkFlow bool,
+	nonce int64, isSplitWallet, addWallet, IsWebAppFlow bool,
 	options ...int) error {
 
 	if addWallet {
@@ -324,7 +324,7 @@ func InitSDK(walletJSON string,
 		return err
 	}
 	SetSdkInitialized(true)
-	SetIsSdkFlow(IsSdkFlow)
+	SetIsWebAppFlow(IsWebAppFlow)
 	return nil
 }
 
