@@ -262,7 +262,7 @@ func (su *ChunkedUpload) listen(allEventChan []eventChanWorker, respChan chan er
 			eventChan := allEventChan[pos]
 			if eventChan.C == nil {
 				errC := atomic.AddInt32(&errCount, 1)
-				if errC >= int32(su.consensus.consensusThresh) {
+				if errC > int32(su.consensus.fullconsensus-su.consensus.consensusThresh) {
 					wgErrors <- thrown.New("upload_failed", "Upload failed. Worker event channel not found")
 				}
 				return
@@ -272,7 +272,7 @@ func (su *ChunkedUpload) listen(allEventChan []eventChanWorker, respChan chan er
 				if !ok {
 					logger.Logger.Error("chan closed from: ", blobber.blobber.Baseurl)
 					errC := atomic.AddInt32(&errCount, 1)
-					if errC >= int32(su.consensus.consensusThresh) {
+					if errC > int32(su.consensus.fullconsensus-su.consensus.consensusThresh) {
 						if su.ctx.Err() != nil {
 							wgErrors <- context.Cause(su.ctx)
 						} else {
@@ -284,7 +284,7 @@ func (su *ChunkedUpload) listen(allEventChan []eventChanWorker, respChan chan er
 				msgType, data, err := jsbridge.GetMsgType(event)
 				if err != nil {
 					errC := atomic.AddInt32(&errCount, 1)
-					if errC >= int32(su.consensus.consensusThresh) {
+					if errC > int32(su.consensus.fullconsensus-su.consensus.consensusThresh) {
 						wgErrors <- errors.Wrap(err, "could not get msgType")
 					}
 					return
@@ -294,7 +294,7 @@ func (su *ChunkedUpload) listen(allEventChan []eventChanWorker, respChan chan er
 				case "auth":
 					if err := su.processWebWorkerAuthRequest(data, eventChan); err != nil {
 						errC := atomic.AddInt32(&errCount, 1)
-						if errC >= int32(su.consensus.consensusThresh) {
+						if errC > int32(su.consensus.fullconsensus-su.consensus.consensusThresh) {
 							wgErrors <- err
 						}
 						return
@@ -306,7 +306,7 @@ func (su *ChunkedUpload) listen(allEventChan []eventChanWorker, respChan chan er
 					isFinal, err = su.processWebWorkerUpload(data, blobber, pos)
 					if err != nil {
 						errC := atomic.AddInt32(&errCount, 1)
-						if errC >= int32(su.consensus.consensusThresh) {
+						if errC > int32(su.consensus.fullconsensus-su.consensus.consensusThresh) {
 							wgErrors <- err
 						}
 					} else {
