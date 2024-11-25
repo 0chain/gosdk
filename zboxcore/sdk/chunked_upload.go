@@ -696,7 +696,7 @@ func (su *ChunkedUpload) uploadToBlobbers(uploadData UploadData) error {
 				if strings.Contains(err.Error(), "duplicate") {
 					su.consensus.Done()
 					errC := atomic.AddInt32(&su.addConsensus, 1)
-					if errC >= int32(su.consensus.consensusThresh) {
+					if errC > int32(su.consensus.fullconsensus-su.consensus.consensusThresh) {
 						wgErrors <- err
 					}
 					return

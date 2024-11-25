@@ -260,7 +260,11 @@ func (req *MoveRequest) ProcessWithBlobbers() ([]fileref.RefEntity, error) {
 		}(int(pos))
 	}
 	wg.Wait()
-	return objectTreeRefs, zboxutil.MajorError(blobberErrors)
+	var err error
+	if !req.isConsensusOk() {
+		err = zboxutil.MajorError(blobberErrors)
+	}
+	return objectTreeRefs, err
 }
 
 func (req *MoveRequest) ProcessMove() error {

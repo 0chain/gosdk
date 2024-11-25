@@ -247,11 +247,13 @@ func (req *CopyRequest) ProcessWithBlobbers() ([]fileref.RefEntity, error) {
 		}(int(pos))
 	}
 	wg.Wait()
-	err := zboxutil.MajorError(blobberErrors)
-	if err != nil && strings.Contains(err.Error(), objAlreadyExists) && consensusRef.Type == fileref.DIRECTORY {
-		return nil, errNoChange
+	var err error
+	if !req.isConsensusOk() {
+		err = zboxutil.MajorError(blobberErrors)
+		if err != nil && strings.Contains(err.Error(), objAlreadyExists) && consensusRef.Type == fileref.DIRECTORY {
+			return nil, errNoChange
+		}
 	}
-
 	return objectTreeRefs, err
 }
 
