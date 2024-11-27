@@ -3,10 +3,14 @@ package zbox
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/0chain/gosdk/constants"
+	"github.com/0chain/gosdk/core/encryption"
+	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/sdk"
@@ -914,4 +918,83 @@ func SetUploadMode(mode int) {
 	case 2:
 		sdk.SetUploadMode(sdk.UploadModeHigh)
 	}
+}
+
+// DownloadBlocks downloads specific blocks from an allocation
+//   - allocID: allocation ID
+//   - remotePath: path to the file in allocation
+//   - authTicket: auth ticket for accessing the file
+//   - lookupHash: hash for file lookup
+//   - writeChunkFuncName: name of the function to write chunks
+//   - startBlock: starting block number
+//   - endBlock: ending block number
+func DownloadBlocks(allocID, remotePath, authTicket, lookupHash, writeChunkFuncName string, startBlock, endBlock int64) ([]byte, error) {
+	if len(remotePath) == 0 && len(authTicket) == 0 {
+		return nil, errors.New("remotePath/authTicket is required")
+	}
+
+	alloc, err := getAllocation(allocID)
+	if err != nil {
+		return nil, fmt.Errorf("error fetching the allocation: %v", err)
+	}
+
+	var (
+		wg        = &sync.WaitGroup{}
+		statusBar = NewStatusBar(wg)
+	)
+
+	if lookupHash == "" {
+		lookupHash = getLookupHash(allocID, remotePath)
+	}
+
+	var fh sys.File
+	pathHash := encryption.FastHash(fmt.Sprintf("%s:%d:%d", lookupHash, startBlock, endBlock))
+	fs, err := sys.Files.Open(pathHash)
+	if err != nil {
+		return nil, fmt.Errorf("could not open local file: %v", err)
+	}
+
+	mf, _ := fs.(*sys.MemFile)
+	if mf == nil {
+		return nil, fmt.Errorf("invalid memfile")
+	}
+	fh = mf
+	defer sys.Files.Remove(pathHash) //nolint
+
+	wg.Add(1)
+	if authTicket != "" {
+		err = alloc.DownloadByBlocksToFileHandlerFromAuthTicket(fh, authTicket, lookupHash, startBlock, endBlock, 100, remotePath, false, statusBar, true, sdk.WithFileCallback(
+			func() {
+				fh.Close() //nolint:errcheck
+			},
+		))
+	} else {
+		err = alloc.DownloadByBlocksToFileHandler(
+			fh,
+			remotePath,
+			startBlock,
+			endBlock,
+			100,
+			false,
+			statusBar,
+			true,
+			sdk.WithFileCallback(
+				func() {
+					fh.Close() //nolint:errcheck
+				},
+			))
+	}
+	if err != nil {
+		return nil, err
+	}
+	wg.Wait()
+	var buf []byte
+	if mf, ok := fh.(*sys.MemFile); ok {
+		buf = mf.Buffer
+	}
+	return buf, nil
+}
+
+func getLookupHash(allocationID string, path string) string {
+	return encryption.Hash(allocationID + ":" + path)
 }
