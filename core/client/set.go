@@ -345,54 +345,11 @@ func InitSDK(walletJSON string,
 }
 
 func InitSDKWithWebApp(params InitSdkOptions) error {
-	if params.AddWallet {
-		wallet := zcncrypto.Wallet{}
-		err := json.Unmarshal([]byte(params.WalletJSON), &wallet)
-		if err != nil {
-			return err
-		}
-
-		SetWallet(wallet)
-		SetSignatureScheme(params.SignatureScheme)
-		SetNonce(params.Nonce)
-		if params.TxnFee != nil {
-			SetTxnFee(uint64(*(params.TxnFee)))
-		}
-	}
-
-	var minConfirmation, minSubmit, confirmationChainLength, sharderConsensous int
-	if params.MinConfirmation != nil {
-		minConfirmation = *params.MinConfirmation
-	}
-
-	if params.MinSubmit != nil {
-		minSubmit = *params.MinSubmit
-	}
-
-	if params.ConfirmationChainLength != nil {
-		confirmationChainLength = *params.ConfirmationChainLength
-	}
-
-	if params.SharderConsensous != nil {
-		sharderConsensous = *params.SharderConsensous
-	}
-
-	err := Init(context.Background(), conf.Config{
-		BlockWorker:             params.BlockWorker,
-		SignatureScheme:         params.SignatureScheme,
-		ChainID:                 params.ChainID,
-		MinConfirmation:         minConfirmation,
-		MinSubmit:               minSubmit,
-		ConfirmationChainLength: confirmationChainLength,
-		SharderConsensous:       sharderConsensous,
-		IsSplitWallet:           params.IsSplitWallet,
-		ZboxHost:                params.ZboxHost,
-		ZboxAppType:             params.ZboxAppType,
-	})
+	err := InitSDK(params.WalletJSON, params.BlockWorker, params.ChainID, params.SignatureScheme, params.Nonce, params.IsSplitWallet, params.AddWallet, *params.MinConfirmation, *params.MinSubmit, *params.ConfirmationChainLength, *params.SharderConsensous)
 	if err != nil {
 		return err
 	}
-	SetSdkInitialized(true)
+	conf.SetZboxAppConfigs(params.ZboxHost, params.ZboxAppType)
 	SetIsWebAppFlow(true)
 	return nil
 }
