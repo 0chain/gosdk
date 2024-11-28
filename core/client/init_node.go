@@ -18,17 +18,17 @@ import (
 )
 
 var (
-	logging      logger.Logger
-	nodeClient   *Node
-	IsWebAppFlow = false
+	logging    logger.Logger
+	nodeClient *Node
+	IsAppFlow  = false
 )
 
 func init() {
 	logging.Init(logger.DEBUG, "0chain-core")
 }
 
-func SetIsWebAppFlow(val bool) {
-	IsWebAppFlow = true
+func SetIsAppFlow(val bool) {
+	IsAppFlow = true
 }
 
 // Node Maintains central states of SDK (client's context, network).

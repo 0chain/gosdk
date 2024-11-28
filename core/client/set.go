@@ -350,7 +350,7 @@ func InitSDKWithWebApp(params InitSdkOptions) error {
 		return err
 	}
 	conf.SetZboxAppConfigs(params.ZboxHost, params.ZboxAppType)
-	SetIsWebAppFlow(true)
+	SetIsAppFlow(true)
 	return nil
 }
 
