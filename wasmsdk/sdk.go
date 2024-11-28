@@ -41,7 +41,23 @@ func initSDKs(chainID, blockWorker, signatureScheme string,
 
 	zboxApiClient.SetRequest(zboxHost, zboxAppType)
 
-	err := client.InitSDK("{}", blockWorker, chainID, signatureScheme, 0, isSplit, false, true, minConfirmation, minSubmit, confirmationChainLength, sharderConsensous)
+	params := client.InitSdkOptions{
+		WalletJSON:              "{}",
+		BlockWorker:             blockWorker,
+		ChainID:                 chainID,
+		SignatureScheme:         signatureScheme,
+		Nonce:                   int64(0),
+		IsSplitWallet:           isSplit,
+		AddWallet:               false,
+		MinConfirmation:         &minConfirmation,
+		MinSubmit:               &minSubmit,
+		SharderConsensous:       &sharderConsensous,
+		ConfirmationChainLength: &confirmationChainLength,
+		ZboxHost:                zboxHost,
+		ZboxAppType:             zboxAppType,
+	}
+
+	err := client.InitSDKWithWebApp(params)
 	if err != nil {
 		fmt.Println("wasm: InitStorageSDK ", err)
 		return err
