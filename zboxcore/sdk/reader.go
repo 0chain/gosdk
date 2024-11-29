@@ -224,7 +224,7 @@ func GetDStorageFileReader(alloc *Allocation, ref *ORef, sdo *StreamDownloadOpti
 	if ref.EncryptedKey != "" {
 		sd.effectiveBlockSize = BlockSize - EncryptionOverHead
 		sd.encryptedKey = ref.EncryptedKey
-		err = sd.initEncryption()
+		err = sd.initEncryption(ref.SignatureVersion)
 		if err != nil {
 			return nil, err
 		}

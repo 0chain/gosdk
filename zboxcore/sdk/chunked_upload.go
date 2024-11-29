@@ -172,11 +172,12 @@ func CreateChunkedUpload(
 		encryptOnUpload: false,
 		webStreaming:    false,
 
-		consensus:     consensus, //nolint
-		uploadTimeOut: DefaultUploadTimeOut,
-		commitTimeOut: DefaultUploadTimeOut,
-		maskMu:        &sync.Mutex{},
-		opCode:        opCode,
+		consensus:         consensus, //nolint
+		uploadTimeOut:     DefaultUploadTimeOut,
+		commitTimeOut:     DefaultUploadTimeOut,
+		maskMu:            &sync.Mutex{},
+		opCode:            opCode,
+		encryptionVersion: -1,
 	}
 
 	// su.ctx, su.ctxCncl = context.WithCancel(allocationObj.ctx)
@@ -292,7 +293,7 @@ func CreateChunkedUpload(
 
 	su.chunkReader = cReader
 
-	su.formBuilder = CreateChunkedUploadFormBuilder(su.allocationObj.StorageVersion, su.allocationObj.privateSigningKey)
+	su.formBuilder = CreateChunkedUploadFormBuilder(su.allocationObj.StorageVersion, su.encryptionVersion, su.allocationObj.privateSigningKey)
 
 	su.isRepair = isRepair
 	uploadWorker, uploadRequest := calculateWorkersAndRequests(su.allocationObj.DataShards, len(su.blobbers), su.chunkNumber)
@@ -383,11 +384,25 @@ func (su *ChunkedUpload) createEncscheme() encryption.EncryptionScheme {
 			return nil
 		}
 	} else {
-		mnemonic := client.Mnemonic()
-		if mnemonic == "" {
+		var entropy string
+		switch su.encryptionVersion {
+		case -1:
+			if len(su.allocationObj.privateSigningKey) == 0 {
+				entropy = client.Mnemonic()
+				su.encryptionVersion = 0
+			} else {
+				entropy = hex.EncodeToString(su.allocationObj.privateSigningKey)
+				su.encryptionVersion = 1
+			}
+		case 0:
+			entropy = client.Mnemonic()
+		case 1:
+			entropy = hex.EncodeToString(su.allocationObj.privateSigningKey)
+		}
+		if entropy == "" {
 			return nil
 		}
-		privateKey, err := encscheme.Initialize(mnemonic)
+		privateKey, err := encscheme.Initialize(entropy)
 		if err != nil {
 			return nil
 		}
@@ -696,14 +711,14 @@ func (su *ChunkedUpload) uploadToBlobbers(uploadData UploadData) error {
 				if strings.Contains(err.Error(), "duplicate") {
 					su.consensus.Done()
 					errC := atomic.AddInt32(&su.addConsensus, 1)
-					if errC >= int32(su.consensus.consensusThresh) {
+					if errC > int32(su.consensus.fullconsensus-su.consensus.consensusThresh) {
 						wgErrors <- err
 					}
 					return
 				}
 				logger.Logger.Error("error during sendUploadRequest", err, " connectionID: ", su.progress.ConnectionID)
 				errC := atomic.AddInt32(&errCount, 1)
-				if errC > int32(su.allocationObj.ParityShards-1) { // If atleast data shards + 1 number of blobbers can process the upload, it can be repaired later
+				if errC > int32(su.consensus.fullconsensus-su.consensus.consensusThresh) { // If atleast data shards + 1 number of blobbers can process the upload, it can be repaired later
 					wgErrors <- err
 				}
 			}
