@@ -31,7 +31,7 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 	if client.IsAppFlow && ok {
 		resp, err = MakeSCRestAPICallToZbox(urlPathSharderToZboxMap[relativePath], params)
 		if err != nil {
-			resp, err = client.MakeSCRestAPICallToSharder(scAddress, relativePath, params)
+			resp, err = client.MakeSCRestAPICallToSharder(scAddress, relativePath, params, restApiUrls...)
 		}
 	} else {
 		resp, err = client.MakeSCRestAPICallToSharder(scAddress, relativePath, params, restApiUrls...)
