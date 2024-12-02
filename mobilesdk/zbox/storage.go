@@ -1,16 +1,17 @@
 package zbox
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/encryption"
-	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/sdk"
@@ -46,6 +47,70 @@ type MultiDownloadOption struct {
 	DownloadOp       int    `json:"downloadOp"`
 	RemoteFileName   string `json:"remoteFileName,omitempty"`   //Required only for file download with auth ticket
 	RemoteLookupHash string `json:"remoteLookupHash,omitempty"` //Required only for file download with auth ticket
+}
+
+type memFileInfo struct {
+	size int64
+}
+
+func (m memFileInfo) Name() string       { return "memfile" }
+func (m memFileInfo) Size() int64        { return m.size }
+func (m memFileInfo) Mode() fs.FileMode  { return 0444 }
+func (m memFileInfo) ModTime() time.Time { return time.Now() }
+func (m memFileInfo) IsDir() bool        { return false }
+func (m memFileInfo) Sys() interface{}   { return nil }
+
+type memBuffer struct {
+	*bytes.Buffer
+	pos int64
+}
+
+func (m *memBuffer) Close() error { return nil }
+
+func (m *memBuffer) Seek(offset int64, whence int) (int64, error) {
+	var abs int64
+	switch whence {
+	case 0: // io.SeekStart
+		abs = offset
+	case 1: // io.SeekCurrent
+		abs = int64(m.pos) + offset
+	case 2: // io.SeekEnd
+		abs = int64(m.Buffer.Len()) + offset
+	default:
+		return 0, errors.New("invalid whence")
+	}
+	if abs < 0 {
+		return 0, errors.New("negative position")
+	}
+	m.pos = abs
+	return abs, nil
+}
+
+func (m *memBuffer) Stat() (fs.FileInfo, error) {
+	return memFileInfo{size: int64(m.Buffer.Len())}, nil
+}
+
+func (m *memBuffer) Sync() error {
+	return nil
+}
+
+func (m *memBuffer) Read(p []byte) (n int, err error) {
+	n, err = m.Buffer.Read(p)
+	m.pos += int64(n)
+	return
+}
+
+func (m *memBuffer) Write(p []byte) (n int, err error) {
+	n, err = m.Buffer.Write(p)
+	m.pos += int64(n)
+	return
+}
+
+func newMemBuffer() *memBuffer {
+	return &memBuffer{
+		Buffer: &bytes.Buffer{},
+		pos:    0,
+	}
 }
 
 // MultiOperation - do copy, move, delete and createdir operation together
@@ -925,10 +990,9 @@ func SetUploadMode(mode int) {
 //   - remotePath: path to the file in allocation
 //   - authTicket: auth ticket for accessing the file
 //   - lookupHash: hash for file lookup
-//   - writeChunkFuncName: name of the function to write chunks
 //   - startBlock: starting block number
 //   - endBlock: ending block number
-func DownloadBlocks(allocID, remotePath, authTicket, lookupHash, writeChunkFuncName string, startBlock, endBlock int64) ([]byte, error) {
+func DownloadBlocks(allocID, remotePath, authTicket, lookupHash string, startBlock, endBlock int64) ([]byte, error) {
 	if len(remotePath) == 0 && len(authTicket) == 0 {
 		return nil, errors.New("remotePath/authTicket is required")
 	}
@@ -941,60 +1005,85 @@ func DownloadBlocks(allocID, remotePath, authTicket, lookupHash, writeChunkFuncN
 	var (
 		wg        = &sync.WaitGroup{}
 		statusBar = NewStatusBar(wg)
+		buffer    = newMemBuffer()
 	)
 
 	if lookupHash == "" {
 		lookupHash = getLookupHash(allocID, remotePath)
 	}
 
-	var fh sys.File
-	pathHash := encryption.FastHash(fmt.Sprintf("%s:%d:%d", lookupHash, startBlock, endBlock))
-	fs, err := sys.Files.Open(pathHash)
-	if err != nil {
-		return nil, fmt.Errorf("could not open local file: %v", err)
-	}
-
-	mf, _ := fs.(*sys.MemFile)
-	if mf == nil {
-		return nil, fmt.Errorf("invalid memfile")
-	}
-	fh = mf
-	defer sys.Files.Remove(pathHash) //nolint
-
 	wg.Add(1)
 	if authTicket != "" {
-		err = alloc.DownloadByBlocksToFileHandlerFromAuthTicket(fh, authTicket, lookupHash, startBlock, endBlock, 100, remotePath, false, statusBar, true, sdk.WithFileCallback(
-			func() {
-				fh.Close() //nolint:errcheck
-			},
-		))
+		err = alloc.DownloadByBlocksToFileHandlerFromAuthTicket(buffer, authTicket, lookupHash, startBlock, endBlock, 100, remotePath, false, statusBar, true)
 	} else {
 		err = alloc.DownloadByBlocksToFileHandler(
-			fh,
+			buffer,
 			remotePath,
 			startBlock,
 			endBlock,
 			100,
 			false,
 			statusBar,
-			true,
-			sdk.WithFileCallback(
-				func() {
-					fh.Close() //nolint:errcheck
-				},
-			))
+			true)
 	}
 	if err != nil {
 		return nil, err
 	}
 	wg.Wait()
-	var buf []byte
-	if mf, ok := fh.(*sys.MemFile); ok {
-		buf = mf.Buffer
-	}
-	return buf, nil
+	return buffer.Bytes(), nil
 }
 
 func getLookupHash(allocationID string, path string) string {
 	return encryption.Hash(allocationID + ":" + path)
+}
+
+// ListObjects list allocation objects from its blobbers
+//   - allocationID is the allocation id
+//   - remotePath is the remote path of the file
+//   - offset is the offset of the list
+//   - pageLimit is the limit of the page
+func ListObjects(allocationID string, remotePath string, offset, pageLimit int) (string, error) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in listObjects Error", r)
+		}
+	}()
+	alloc, err := getAllocation(allocationID)
+	if err != nil {
+		return "", err
+	}
+
+	list, err := alloc.ListDir(remotePath, sdk.WithListRequestOffset(offset), sdk.WithListRequestPageLimit(pageLimit))
+	if err != nil {
+		return "", err
+	}
+
+	jsonBytes, err := json.Marshal(list)
+	if err != nil {
+		return "", err
+	}
+	return string(jsonBytes), nil
+}
+
+// listObjectsFromAuthTicket list allocation objects from its blobbers using auth ticket
+//   - allocationID is the allocation id
+//   - authTicket is the auth ticket, provided usually by a non-owner to be able to access a shared source
+//   - lookupHash is the lookup hash
+//   - offset is the offset of the list
+//   - pageLimit is the limit of the page
+func ListObjectsFromAuthTicket(allocationID, authTicket, lookupHash string, offset, pageLimit int) (string, error) {
+	alloc, err := getAllocation(allocationID)
+	if err != nil {
+		return "", err
+	}
+	list, err := alloc.ListDirFromAuthTicket(authTicket, lookupHash, sdk.WithListRequestOffset(offset), sdk.WithListRequestPageLimit(pageLimit))
+	if err != nil {
+		return "", err
+	}
+
+	jsonBytes, err := json.Marshal(list)
+	if err != nil {
+		return "", err
+	}
+	return string(jsonBytes), nil
 }
