@@ -274,6 +274,11 @@ type Allocation struct {
 
 	IsEnterprise bool `json:"is_enterprise"`
 
+	StorageVersion int `json:"storage_version"`
+
+	// Owner ecdsa public key
+	OwnerSigningPublicKey string `json:"owner_signing_public_key"`
+
 	// FileOptions to define file restrictions on an allocation for third-parties
 	// default 00000000 for all crud operations suggesting only owner has the below listed abilities.
 	// enabling option/s allows any third party to perform certain ops

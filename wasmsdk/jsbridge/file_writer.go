@@ -168,14 +168,19 @@ type FileCallbackWriter struct {
 	writeChunk js.Value
 	buf        []byte
 	offset     int64
+	lookupHash string
 }
 
 const bufCallbackCap = 4 * 1024 * 1024 //4MB
 
-func NewFileCallbackWriter(writeChunkFuncName string) *FileCallbackWriter {
+func NewFileCallbackWriter(writeChunkFuncName, lookupHash string) *FileCallbackWriter {
 	writeChunk := js.Global().Get(writeChunkFuncName)
+	if !writeChunk.Truthy() {
+		return nil
+	}
 	return &FileCallbackWriter{
 		writeChunk: writeChunk,
+		lookupHash: lookupHash,
 	}
 }
 
@@ -190,7 +195,7 @@ func (wc *FileCallbackWriter) Write(p []byte) (int, error) {
 	if len(wc.buf)+len(p) > cap(wc.buf) {
 		uint8Array := js.Global().Get("Uint8Array").New(len(wc.buf))
 		js.CopyBytesToJS(uint8Array, wc.buf)
-		_, err := Await(wc.writeChunk.Invoke(uint8Array, wc.offset))
+		_, err := Await(wc.writeChunk.Invoke(wc.lookupHash, uint8Array, wc.offset))
 		if len(err) > 0 && !err[0].IsNull() {
 			return 0, errors.New("file_writer: " + err[0].String())
 		}
@@ -205,7 +210,7 @@ func (wc *FileCallbackWriter) Close() error {
 	if len(wc.buf) > 0 {
 		uint8Array := js.Global().Get("Uint8Array").New(len(wc.buf))
 		js.CopyBytesToJS(uint8Array, wc.buf)
-		_, err := Await(wc.writeChunk.Invoke(uint8Array, wc.offset))
+		_, err := Await(wc.writeChunk.Invoke(wc.lookupHash, uint8Array, wc.offset))
 		if len(err) > 0 && !err[0].IsNull() {
 			return errors.New("file_writer: " + err[0].String())
 		}
