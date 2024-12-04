@@ -249,11 +249,11 @@ func VcRegisterNode(id string, nodeType sdk.ProviderType) (hash, out string, non
 		ID   string
 		Type int
 	}
-	return transaction.SmartContractTxn(MinerSmartContractAddress, transaction.SmartContractTxnData{
+	return transaction.SmartContractTxnValueFee(MinerSmartContractAddress, transaction.SmartContractTxnData{
 		Name: "vc_add",
 		InputArgs: VCAddSCData{
 			ID:   id,
 			Type: int(nodeType),
 		},
-	}, true)
+	}, 0, 1, true)
 }
