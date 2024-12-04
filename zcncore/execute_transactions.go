@@ -255,5 +255,5 @@ func VcRegisterNode(id string, nodeType sdk.ProviderType) (hash, out string, non
 			ID:   id,
 			Type: int(nodeType),
 		},
-	}, 0, 1, true)
+	}, 0, 10000000000, true)
 }
