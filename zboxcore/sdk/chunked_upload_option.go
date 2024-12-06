@@ -11,7 +11,7 @@ import (
 	"github.com/klauspost/reedsolomon"
 )
 
-// ChunkedUploadOption Generic type for chunked upload option functions 
+// ChunkedUploadOption Generic type for chunked upload option functions
 type ChunkedUploadOption func(su *ChunkedUpload)
 
 // WithThumbnail add thumbnail. stream mode is unnecessary for thumbnail
@@ -38,7 +38,7 @@ func WithThumbnail(buf []byte) ChunkedUploadOption {
 }
 
 // WithThumbnailFile add thumbnail from file. stream mode is unnecessary for thumbnail.
-// 		- fileName: file name of the thumbnail, which will be read and uploaded
+//   - fileName: file name of the thumbnail, which will be read and uploaded
 func WithThumbnailFile(fileName string) ChunkedUploadOption {
 
 	buf, _ := os.ReadFile(fileName)
@@ -47,7 +47,7 @@ func WithThumbnailFile(fileName string) ChunkedUploadOption {
 }
 
 // WithChunkNumber set the number of chunks should be upload in a request. ignore if size <=0
-// 		- num: number of chunks
+//   - num: number of chunks
 func WithChunkNumber(num int) ChunkedUploadOption {
 	return func(su *ChunkedUpload) {
 		if num > 0 {
@@ -57,7 +57,7 @@ func WithChunkNumber(num int) ChunkedUploadOption {
 }
 
 // WithEncrypt turn on/off encrypt on upload. It is turn off as default.
-// 		- on: true to turn on, false to turn off
+//   - on: true to turn on, false to turn off
 func WithEncrypt(on bool) ChunkedUploadOption {
 	return func(su *ChunkedUpload) {
 		su.encryptOnUpload = on
@@ -65,7 +65,7 @@ func WithEncrypt(on bool) ChunkedUploadOption {
 }
 
 // WithStatusCallback return a wrapper option function to set status callback of the chunked upload instance, which is used to track upload progress
-// 		- callback: StatusCallback instance
+//   - callback: StatusCallback instance
 func WithStatusCallback(callback StatusCallback) ChunkedUploadOption {
 	return func(su *ChunkedUpload) {
 		su.statusCallback = callback
@@ -118,5 +118,11 @@ func WithActualHash(hash string) ChunkedUploadOption {
 func WithFileHasher(h Hasher) ChunkedUploadOption {
 	return func(su *ChunkedUpload) {
 		su.fileHasher = h
+	}
+}
+
+func WithEncryptionVersion(version int) ChunkedUploadOption {
+	return func(su *ChunkedUpload) {
+		su.encryptionVersion = version
 	}
 }

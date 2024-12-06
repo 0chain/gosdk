@@ -250,6 +250,9 @@ func (mo *MultiOperation) Process() error {
 
 	writeMarkerMutex, err := CreateWriteMarkerMutex(mo.allocationObj)
 	if err != nil {
+		for _, op := range mo.operations {
+			op.Error(mo.allocationObj, 0, err)
+		}
 		return fmt.Errorf("Operation failed: %s", err.Error())
 	}
 

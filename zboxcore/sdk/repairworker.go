@@ -483,6 +483,7 @@ func (r *RepairRequest) uploadFileOp(file ORef, opMask zboxutil.Uint128) Operati
 		},
 		EncryptedKey:      file.EncryptedKey,
 		EncryptedKeyPoint: file.EncryptedKeyPoint,
+		EncryptionVersion: file.EncryptionVersion,
 	}
 	pipeFile := sys.NewPipeFile()
 	op := r.allocation.RepairFile(pipeFile, file.Path, statusCB, opMask, ref)

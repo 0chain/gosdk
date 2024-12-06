@@ -53,7 +53,7 @@ func BenchmarkChunkedUploadFormBuilder(b *testing.B) {
 
 			for i := 0; i < b.N; i++ {
 
-				builder := CreateChunkedUploadFormBuilder(0, nil)
+				builder := CreateChunkedUploadFormBuilder(0, 0, nil)
 
 				isFinal := false
 
