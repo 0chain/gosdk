@@ -356,6 +356,7 @@ func (r *RepairRequest) iterateDirV2(ctx context.Context) {
 	if len(versionMap) == 1 {
 		return
 	}
+	l.Logger.Debug("total versions to repair: ", len(versionMap))
 	// get the src list channel
 	srcChan := r.allocation.ListObjects(ctx, r.repairPath, "", "", "", fileref.FILE, fileref.REGULAR, 0, getRefPageLimit, WithSingleBlobber(true), WithObjectMask(versionMap[latestRoot].mask), WithObjectContext(ctx))
 
@@ -389,7 +390,7 @@ func (r *RepairRequest) iterateDirV2(ctx context.Context) {
 				return
 			}
 		}
-		l.Logger.Debug("Checking file for the path :", srcRef.Path)
+
 		toNextRef = true
 		var (
 			uploadMask zboxutil.Uint128
@@ -418,6 +419,7 @@ func (r *RepairRequest) iterateDirV2(ctx context.Context) {
 					Mask:          &delMask,
 				}
 				ops = append(ops, op)
+				l.Logger.Debug("Deleting minority shards for the path :", zap.Any("path", diff.tgtRef.Path))
 				diff.tgtRef, diff.tgtEOF = <-diff.tgtChan
 				toNextRef = false
 				continue
@@ -435,9 +437,10 @@ func (r *RepairRequest) iterateDirV2(ctx context.Context) {
 				if diff.tgtRef.ActualFileHash != srcRef.ActualFileHash {
 					deleteMask = deleteMask.Or(diff.mask)
 					uploadMask = uploadMask.Or(diff.mask)
+					l.Logger.Debug("Repair required for the path by update:", zap.Any("path", srcRef.Path))
 				}
 				diff.tgtRef, diff.tgtEOF = <-diff.tgtChan
-			} else if diff.tgtRef.Path < srcRef.Path {
+			} else if diff.tgtRef.Path > srcRef.Path {
 				deleteMask = deleteMask.Or(diff.mask)
 				toNextRef = false
 				diff.tgtRef, diff.tgtEOF = <-diff.tgtChan
