@@ -78,8 +78,6 @@ type Config struct {
 	SharderConsensous int          `json:"sharder_consensous"`
 	ZauthServer       string       `json:"zauth_server"`
 	V                 *viper.Viper `json:"-"`
-
-	IsSplitWallet bool `json:"is_split_wallet"`
 }
 
 // LoadConfigFile load and parse SDK Config from file

@@ -338,13 +338,34 @@ type diffRef struct {
 
 func (r *RepairRequest) iterateDirV2(ctx context.Context) {
 	versionMap := make(map[string]*diffRef)
-	r.allocation.CheckAllocStatus() //nolint:errcheck
+	status, _, err := r.allocation.CheckAllocStatus()
+	if err != nil {
+		l.Logger.Error("Failed to get allocation status ", err.Error())
+		if r.statusCB != nil {
+			r.statusCB.Error(r.allocation.ID, r.repairPath, OpRepair, err)
+		}
+		return
+	}
+	if status == Broken {
+		l.Logger.Error("Allocation is broken ", r.allocation.ID)
+		if r.statusCB != nil {
+			r.statusCB.Error(r.allocation.ID, r.repairPath, OpRepair, errors.New("allocation is broken"))
+		}
+		return
+	}
 	latestRoot := r.allocation.allocationRoot
 	for idx, blobber := range r.allocation.Blobbers {
 		if versionMap[blobber.AllocationRoot] == nil {
 			versionMap[blobber.AllocationRoot] = &diffRef{}
 		}
 		versionMap[blobber.AllocationRoot].mask = versionMap[blobber.AllocationRoot].mask.Or(zboxutil.NewUint128(1).Lsh(uint64(idx)))
+	}
+	if versionMap[latestRoot] == nil {
+		l.Logger.Error("Failed to get latest allocation root ", latestRoot)
+		if r.statusCB != nil {
+			r.statusCB.Error(r.allocation.ID, r.repairPath, OpRepair, errors.New("failed to get latest allocation root"))
+		}
+		return
 	}
 	if versionMap[latestRoot].mask.CountOnes() < r.allocation.DataShards {
 		l.Logger.Error("No consensus on latest allocation root: ", latestRoot)

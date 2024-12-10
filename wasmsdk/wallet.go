@@ -39,7 +39,7 @@ func setWallet(clientID, clientKey, peerPublicKey, publicKey, privateKey, mnemon
 	fmt.Println("set Wallet, is split:", isSplit)
 	client.SetWallet(*w)
 
-	zboxApiClient.SetWallet(clientID, privateKey, publicKey)
+	zboxApiClient.SetWallet(clientID, privateKey, clientKey)
 	if mode == "" { // main thread, need to notify the web worker to update wallet
 		// notify the web worker to update wallet
 		if err := jsbridge.PostMessageToAllWorkers(jsbridge.MsgTypeUpdateWallet, map[string]string{

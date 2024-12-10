@@ -5,13 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
+	"strconv"
+
 	"github.com/0chain/gosdk/core/block"
 	"github.com/0chain/gosdk/core/client"
+	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/core/tokenrate"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/zcncrypto"
-	"net/url"
-	"strconv"
 )
 
 type GetClientResponse struct {
@@ -87,6 +89,55 @@ func SetWalletInfo(jsonWallet, sigScheme string, splitKeyWallet bool) error {
 	client.SetSignatureScheme(sigScheme)
 
 	return client.SetSplitKeyWallet(splitKeyWallet)
+}
+
+// SetGeneralWalletInfo should be set before any transaction or client specific APIs. Automatically sets KMS mode if specified by wallet structure.
+//
+//		# Inputs(non-KMS)
+//		- jsonWallet: json format of wallet
+//		{
+//		"client_id":"30764bcba73216b67c36b05a17b4dd076bfdc5bb0ed84856f27622188c377269",
+//		"client_key":"1f495df9605a4479a7dd6e5c7a78caf9f9d54e3a40f62a3dd68ed377115fe614d8acf0c238025f67a85163b9fbf31d10fbbb4a551d1cf00119897edf18b1841c",
+//		"keys":[
+//			{"public_key":"1f495df9605a4479a7dd6e5c7a78caf9f9d54e3a40f62a3dd68ed377115fe614d8acf0c238025f67a85163b9fbf31d10fbbb4a551d1cf00119897edf18b1841c","private_key":"41729ed8d82f782646d2d30b9719acfd236842b9b6e47fee12b7bdbd05b35122"}
+//		],
+//		"mnemonics":"glare mistake gun joke bid spare across diagram wrap cube swear cactus cave repeat you brave few best wild lion pitch pole original wasp",
+//		"version":"1.0",
+//		"date_created":"1662534022",
+//		"nonce":0
+//		}
+//
+//		# Inputs(KMS)
+//		- jsonWallet: json format of wallet
+//		{
+//		"client_id":"30764bcba73216b67c36b05a17b4dd076bfdc5bb0ed84856f27622188c377269",
+//		"client_key":"1f495df9605a4479a7dd6e5c7a78caf9f9d54e3a40f62a3dd68ed377115fe614d8acf0c238025f67a85163b9fbf31d10fbbb4a551d1cf00119897edf18b1841c",
+//		"keys":[
+//			{"public_key":"1f495df9605a4479a7dd6e5c7a78caf9f9d54e3a40f62a3dd68ed377115fe614d8acf0c238025f67a85163b9fbf31d10fbbb4a551d1cf00119897edf18b1841c","private_key":"41729ed8d82f782646d2d30b9719acfd236842b9b6e47fee12b7bdbd05b35122"}
+//		],
+//		"mnemonics":"glare mistake gun joke bid spare across diagram wrap cube swear cactus cave repeat you brave few best wild lion pitch pole original wasp",
+//	    "is_split": true,
+//		"version":"1.0",
+//		"date_created":"1662534022",
+//		"nonce":0,
+//		}
+func SetGeneralWalletInfo(jsonWallet, sigScheme string) error {
+	wallet := zcncrypto.Wallet{}
+	err := json.Unmarshal([]byte(jsonWallet), &wallet)
+	if err != nil {
+		return errors.New("invalid jsonWallet: " + err.Error())
+	}
+
+	client.SetWallet(wallet)
+	client.SetSignatureScheme(sigScheme)
+
+	return client.SetSplitKeyWallet(wallet.IsSplit)
+}
+
+// RegisterZauthServer registers zauth server callbacks for signing operations. Should be used for split key mode.
+func RegisterZauthServer(serverAddr string) {
+	sys.SetAuthorize(ZauthSignTxn(serverAddr))
+	sys.SetAuthCommon(ZauthAuthCommon(serverAddr))
 }
 
 // SetAuthUrl will be called by app to set zauth URL to SDK.
