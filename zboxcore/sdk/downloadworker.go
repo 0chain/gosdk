@@ -3,6 +3,7 @@ package sdk
 import (
 	"bytes"
 	"context"
+	"crypto/ed25519"
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
@@ -117,6 +118,8 @@ type DownloadRequest struct {
 	isEnterprise            bool
 	storageVersion          int
 	allocOwnerSigningPubKey string
+	// in case of auth ticket, this key will be of the shared user rather than the owner of the allocation
+	allocOwnerSigningPrivateKey ed25519.PrivateKey
 }
 
 type downloadPriority struct {
@@ -474,10 +477,11 @@ func (req *DownloadRequest) processDownload() {
 	}
 	elapsedInitEC := time.Since(now)
 	if req.encryptedKey != "" {
-		err = req.initEncryption()
+		logger.Logger.Info("encryption version: ", fRef.EncryptionVersion)
+		err = req.initEncryption(fRef.EncryptionVersion)
 		if err != nil {
 			req.errorCB(
-				fmt.Errorf("Error while initializing encryption"), remotePathCB,
+				fmt.Errorf("Error while initializing encryption "+err.Error()), remotePathCB,
 			)
 			return
 		}
@@ -725,7 +729,7 @@ func (req *DownloadRequest) processDownload() {
 			if startBlock+int64(j)*numBlocks+numBlocks > endBlock {
 				blocksToDownload = endBlock - (startBlock + int64(j)*numBlocks)
 			}
-			data, err := req.getBlocksData(startBlock+int64(j)*numBlocks, blocksToDownload, j == 0)
+			data, err := req.getBlocksData(startBlock+int64(j)*numBlocks, blocksToDownload, j == 0 && n > 1)
 			if req.isDownloadCanceled {
 				return errors.New("download_abort", "Download aborted by user")
 			}
@@ -968,16 +972,73 @@ func (req *DownloadRequest) initEC() error {
 }
 
 // initEncryption will initialize encScheme with client's keys
-func (req *DownloadRequest) initEncryption() (err error) {
+func (req *DownloadRequest) initEncryption(encryptionVersion int) (err error) {
 	req.encScheme = encryption.NewEncryptionScheme()
-	mnemonic := client.Mnemonic()
-	if mnemonic != "" {
-		_, err = req.encScheme.Initialize(client.Mnemonic())
-		if err != nil {
-			return err
+	var entropy string
+	if req.authTicket != nil {
+		if len(req.allocOwnerSigningPrivateKey) != 0 {
+			_, err := req.encScheme.Initialize(hex.EncodeToString(req.allocOwnerSigningPrivateKey))
+			if err != nil {
+				return err
+			}
+			pubKey, err := req.encScheme.GetPublicKey()
+			if err != nil {
+				return err
+			}
+			if pubKey != req.authTicket.EncryptionPublicKey {
+				// try with mnemonics
+				entropy = client.Mnemonic()
+				if entropy == "" {
+					return errors.New("mnemonic_required", "Mnemonic required for decryption")
+				}
+				req.encScheme = encryption.NewEncryptionScheme()
+				_, err = req.encScheme.Initialize(entropy)
+				if err != nil {
+					return err
+				}
+				pubKey, err = req.encScheme.GetPublicKey()
+				if err != nil {
+					return err
+				}
+				if pubKey != req.authTicket.EncryptionPublicKey {
+					return errors.New("invalid_encryption_key", "Encryption key mismatch")
+				}
+			}
+		} else {
+			entropy = client.Mnemonic()
+			if entropy == "" {
+				return errors.New("mnemonic_required", "Mnemonic required for decryption")
+			}
+			req.encScheme = encryption.NewEncryptionScheme()
+			_, err = req.encScheme.Initialize(entropy)
+			if err != nil {
+				return err
+			}
+			pubKey, err := req.encScheme.GetPublicKey()
+			if err != nil {
+				return err
+			}
+			if pubKey != req.authTicket.EncryptionPublicKey {
+				return errors.New("invalid_signing_key", "signing key is empty")
+			}
 		}
 	} else {
-		return errors.New("invalid_mnemonic", "Invalid mnemonic")
+		if encryptionVersion == SignatureV2 {
+			if len(req.allocOwnerSigningPrivateKey) == 0 {
+				return errors.New("invalid_signing_key", "Invalid private signing key")
+			}
+			entropy = hex.EncodeToString(req.allocOwnerSigningPrivateKey)
+		} else {
+			entropy = client.Mnemonic()
+		}
+		if entropy != "" {
+			_, err = req.encScheme.Initialize(entropy)
+			if err != nil {
+				return err
+			}
+		} else {
+			return errors.New("invalid_mnemonic", "Invalid mnemonic")
+		}
 	}
 
 	err = req.encScheme.InitForDecryption("filetype:audio", req.encryptedKey)

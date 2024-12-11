@@ -52,6 +52,7 @@ type FileRef struct {
 	EncryptedKeyPoint       string         `json:"encrypted_key_point" mapstructure:"encrypted_key_point"`
 	Collaborators           []Collaborator `json:"collaborators" mapstructure:"collaborators"`
 	SignatureVersion        int            `json:"signature_version" mapstructure:"signature_version"`
+	EncryptionVersion       int            `json:"encryption_version" mapstructure:"encryption_version"`
 }
 
 func (fRef *FileRef) MetaID() string {

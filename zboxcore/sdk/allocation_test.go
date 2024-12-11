@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
-	"github.com/0chain/gosdk/zboxcore/mocks"
 	"io"
 	"io/fs"
 	"log"
@@ -16,6 +15,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/0chain/gosdk/zboxcore/mocks"
 
 	"github.com/0chain/gosdk/dev/blobber"
 	"github.com/0chain/gosdk/dev/blobber/model"
@@ -47,6 +48,7 @@ const (
 	mockLookupHash     = "mock lookup hash"
 	mockAllocationRoot = "mock allocation root"
 	mockFileRefName    = "mock file ref name"
+	mockMnemonic       = "mock mnemonic"
 	numBlobbers        = 4
 )
 
@@ -1386,6 +1388,7 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 			client.SetWallet(zcncrypto.Wallet{
 				ClientID:  mockClientId,
 				ClientKey: mockClientKey,
+				Mnemonic:  mockMnemonic,
 			})
 
 			require := require.New(t)

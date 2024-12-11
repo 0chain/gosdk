@@ -55,6 +55,7 @@ type ChunkedUploadFormInfo struct {
 	AllocationTx      string
 	OnlyHash          bool
 	StorageVersion    int
+	EncryptionVersion int
 	PrivateSigningKey ed25519.PrivateKey
 }
 
@@ -121,6 +122,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		OnlyHash:          chunkEndIndex <= su.progress.ChunkIndex,
 		StorageVersion:    su.allocationObj.StorageVersion,
 		PrivateSigningKey: su.allocationObj.privateSigningKey,
+		EncryptionVersion: su.encryptionVersion,
 	}
 	formInfoJSON, err := json.Marshal(formInfo)
 	if err != nil {
@@ -270,7 +272,7 @@ func (su *ChunkedUpload) listen(allEventChan []eventChanWorker, respChan chan er
 			eventChan := allEventChan[pos]
 			if eventChan.C == nil {
 				errC := atomic.AddInt32(&errCount, 1)
-				if errC >= int32(su.consensus.consensusThresh) {
+				if errC > int32(su.consensus.fullconsensus-su.consensus.consensusThresh) {
 					wgErrors <- thrown.New("upload_failed", "Upload failed. Worker event channel not found")
 				}
 				return
@@ -280,7 +282,7 @@ func (su *ChunkedUpload) listen(allEventChan []eventChanWorker, respChan chan er
 				if !ok {
 					logger.Logger.Error("chan closed from: ", blobber.blobber.Baseurl)
 					errC := atomic.AddInt32(&errCount, 1)
-					if errC >= int32(su.consensus.consensusThresh) {
+					if errC > int32(su.consensus.fullconsensus-su.consensus.consensusThresh) {
 						if su.ctx.Err() != nil {
 							wgErrors <- context.Cause(su.ctx)
 						} else {
@@ -292,7 +294,7 @@ func (su *ChunkedUpload) listen(allEventChan []eventChanWorker, respChan chan er
 				msgType, data, err := jsbridge.GetMsgType(event)
 				if err != nil {
 					errC := atomic.AddInt32(&errCount, 1)
-					if errC >= int32(su.consensus.consensusThresh) {
+					if errC > int32(su.consensus.fullconsensus-su.consensus.consensusThresh) {
 						wgErrors <- errors.Wrap(err, "could not get msgType")
 					}
 					return
@@ -302,7 +304,7 @@ func (su *ChunkedUpload) listen(allEventChan []eventChanWorker, respChan chan er
 				case "auth":
 					if err := su.processWebWorkerAuthRequest(data, eventChan); err != nil {
 						errC := atomic.AddInt32(&errCount, 1)
-						if errC >= int32(su.consensus.consensusThresh) {
+						if errC > int32(su.consensus.fullconsensus-su.consensus.consensusThresh) {
 							wgErrors <- err
 						}
 						return
@@ -314,7 +316,7 @@ func (su *ChunkedUpload) listen(allEventChan []eventChanWorker, respChan chan er
 					isFinal, err = su.processWebWorkerUpload(data, blobber, pos)
 					if err != nil {
 						errC := atomic.AddInt32(&errCount, 1)
-						if errC >= int32(su.consensus.consensusThresh) {
+						if errC > int32(su.consensus.fullconsensus-su.consensus.consensusThresh) {
 							wgErrors <- err
 						}
 					} else {
@@ -458,7 +460,7 @@ func ProcessEventData(data safejs.Value) {
 		defer delete(hasherMap, fileMeta.RemotePath)
 	}
 	blobberID := os.Getenv("BLOBBER_ID")
-	formBuilder := CreateChunkedUploadFormBuilder(formInfo.StorageVersion, formInfo.PrivateSigningKey)
+	formBuilder := CreateChunkedUploadFormBuilder(formInfo.StorageVersion, formInfo.EncryptionVersion, formInfo.PrivateSigningKey)
 	uploadData, err := formBuilder.Build(fileMeta, wp.hasher, formInfo.ConnectionID, blobberID, formInfo.ChunkSize, formInfo.ChunkStartIndex, formInfo.ChunkEndIndex, formInfo.IsFinal, formInfo.EncryptedKey, formInfo.EncryptedKeyPoint,
 		fileShards, thumbnailChunkData, formInfo.ShardSize)
 	if err != nil {

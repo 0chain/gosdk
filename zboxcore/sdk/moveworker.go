@@ -207,7 +207,11 @@ func (req *MoveRequest) ProcessWithBlobbers() ([]fileref.RefEntity, error) {
 		}(int(pos))
 	}
 	wg.Wait()
-	return objectTreeRefs, zboxutil.MajorError(blobberErrors)
+	var err error
+	if !req.isConsensusOk() {
+		err = zboxutil.MajorError(blobberErrors)
+	}
+	return objectTreeRefs, err
 }
 
 func (req *MoveRequest) ProcessWithBlobbersV2() ([]fileref.RefEntity, error) {
@@ -293,9 +297,12 @@ func (req *MoveRequest) ProcessWithBlobbersV2() ([]fileref.RefEntity, error) {
 		}(int(pos))
 	}
 	wg.Wait()
-	err := zboxutil.MajorError(blobberErrors)
-	if err != nil && strings.Contains(err.Error(), objAlreadyExists) && consensusRef.Type == fileref.DIRECTORY {
-		return nil, errNoChange
+	var err error
+	if !req.isConsensusOk() {
+		err = zboxutil.MajorError(blobberErrors)
+		if err != nil && strings.Contains(err.Error(), objAlreadyExists) && consensusRef.Type == fileref.DIRECTORY {
+			return nil, errNoChange
+		}
 	}
 	req.destLookupHash = fileref.GetReferenceLookup(req.allocationID, consensusRef.Path)
 	return objectTreeRefs, err

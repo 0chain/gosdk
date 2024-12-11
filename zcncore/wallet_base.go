@@ -1,6 +1,7 @@
 package zcncore
 
 import (
+	"crypto/ed25519"
 	"encoding/hex"
 	"fmt"
 	"net/http"
@@ -14,6 +15,7 @@ import (
 	"errors"
 
 	"github.com/0chain/gosdk/core/client"
+	rawencryption "github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/version"
 	"github.com/0chain/gosdk/core/zcncrypto"
@@ -311,6 +313,32 @@ func CryptoJsDecrypt(passphrase, encryptedMessage string) (string, error) {
 func GetPublicEncryptionKey(mnemonic string) (string, error) {
 	encScheme := encryption.NewEncryptionScheme()
 	_, err := encScheme.Initialize(mnemonic)
+	if err != nil {
+		return "", err
+	}
+	return encScheme.GetPublicKey()
+}
+
+func GetPublicEncryptionKeyV2(publicKey string) (string, error) {
+	if client.GetWallet() == nil {
+		return "", errors.New("wallet not found")
+	}
+	if client.PublicKey() != publicKey {
+		fmt.Println("public key mismatch", client.PublicKey(), publicKey)
+		return "", errors.New("public_key_mismatch")
+	}
+	hashData := fmt.Sprintf("%s:%s", publicKey, "owner_signing_public_key")
+	sig, err := client.Sign(rawencryption.Hash(hashData))
+	if err != nil {
+		return "", err
+	}
+	decodedSig, err := hex.DecodeString(sig)
+	if err != nil {
+		return "", err
+	}
+	privateSigningKey := ed25519.NewKeyFromSeed(decodedSig[:32])
+	encScheme := encryption.NewEncryptionScheme()
+	_, err = encScheme.Initialize(hex.EncodeToString(privateSigningKey))
 	if err != nil {
 		return "", err
 	}

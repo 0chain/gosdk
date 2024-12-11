@@ -139,6 +139,7 @@ func InitStorageSDK(clientJson string, configJson string) (*StorageSDK, error) {
 	}
 
 	if err = client.InitSDKWithWebApp(params); err != nil {
+
 		l.Logger.Error(err)
 		return nil, err
 	}

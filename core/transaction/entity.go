@@ -629,8 +629,10 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 
 		sys.Sleep(querySleepTime)
 
+		var confirmationResponse string
+
 		for retries < cfg.MaxTxnQuery {
-			t, err = VerifyTransaction(txn.Hash)
+			t, confirmationResponse, err = VerifyTransactionWithRes(txn.Hash)
 			if err == nil {
 				break
 			}
@@ -655,6 +657,10 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 
 		if t.Status == TxnChargeableError {
 			return t.Hash, t.TransactionOutput, t.TransactionNonce, t, errors.New("", t.TransactionOutput)
+		}
+
+		if t.TransactionType == TxnTypeSend {
+			t.TransactionOutput = confirmationResponse
 		}
 
 		return t.Hash, t.TransactionOutput, t.TransactionNonce, t, nil

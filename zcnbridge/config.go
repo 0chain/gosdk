@@ -7,6 +7,7 @@ import (
 	"path"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/0chain/gosdk/zcnbridge/log"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -92,12 +93,13 @@ func NewBridgeClient(
 	consensusThreshold float64,
 	ethereumClient EthereumClient,
 	keyStore KeyStore) *BridgeClient {
+	address := common.HexToAddress(ethereumAddress).Hex()
 	return &BridgeClient{
 		BridgeAddress:      bridgeAddress,
 		TokenAddress:       tokenAddress,
 		AuthorizersAddress: authorizersAddress,
 		UniswapAddress:     uniswapAddress,
-		EthereumAddress:    ethereumAddress,
+		EthereumAddress:    address,
 		EthereumNodeURL:    ethereumNodeURL,
 		Password:           password,
 		GasLimit:           gasLimit,

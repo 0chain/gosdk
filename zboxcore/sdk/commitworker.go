@@ -501,11 +501,26 @@ func (commitReq *CommitRequestV2) processCommit() {
 			defer wg.Done()
 			commitErr := commitReq.commitBlobber(rootHash, rootWeight, prevWeight, blobber)
 			if commitErr != nil {
-				l.Logger.Error("Error committing to blobber", commitErr)
+				l.Logger.Error("Error committing to blobber: ", blobber.Baseurl, " ", commitErr)
 				errSlice[ind] = commitErr
 				mu.Lock()
 				commitReq.commitMask = commitReq.commitMask.And(zboxutil.NewUint128(1).Lsh(blobberPos).Not())
 				mu.Unlock()
+				if strings.Contains(commitErr.Error(), "Write Marker Size") {
+					l.Logger.Error("Write marker size error: ", rootWeight, " ", prevWeight)
+					for _, change := range commitReq.changes {
+						if change == nil {
+							l.Logger.Info("Change is nil")
+						}
+						switch change.(type) {
+						case *UploadOperation:
+							l.Logger.Info("Change is upload operation")
+						case *DeleteOperation:
+							l.Logger.Info("Change is delete operation")
+						default:
+						}
+					}
+				}
 				return
 			}
 		}(counter)
@@ -598,9 +613,9 @@ func getFormWritter(connectionID string, wmData, fileIDMetaData []byte, body *by
 }
 
 func getReferencePathV2(blobber *blockchain.StorageNode, allocationID, allocationTx, sig string, paths []string, success *bool, mu *sync.Mutex) (*wmpt.WeightedMerkleTrie, error) {
-	if len(paths) == 0 {
+	if len(paths) == 0 || blobber.LatestWM == nil || blobber.LatestWM.ChainSize == 0 {
 		var node wmpt.Node
-		if blobber.LatestWM != nil && len(blobber.LatestWM.FileMetaRoot) > 0 {
+		if blobber.LatestWM != nil && len(blobber.LatestWM.FileMetaRoot) > 0 && blobber.LatestWM.ChainSize > 0 {
 			decodedRoot, _ := hex.DecodeString(blobber.LatestWM.FileMetaRoot)
 			node = wmpt.NewHashNode(decodedRoot, uint64(numBlocks(blobber.LatestWM.ChainSize)))
 		}
@@ -712,7 +727,7 @@ func submitWriteMarker(wmData, metaData []byte, blobber *blockchain.StorageNode,
 				return
 			}
 			if resp.StatusCode == http.StatusOK {
-				logger.Logger.Debug(blobber.Baseurl, " committed")
+				logger.Logger.Info(blobber.Baseurl, " committed")
 				return
 			}
 
