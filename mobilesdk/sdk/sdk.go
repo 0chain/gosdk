@@ -132,7 +132,6 @@ func InitStorageSDK(clientJson string, configJson string) (*StorageSDK, error) {
 		ChainID:         configObj.ChainID,
 		SignatureScheme: configObj.SignatureScheme,
 		Nonce:           int64(0),
-		IsSplitWallet:   false,
 		AddWallet:       true,
 		ZboxHost:        configObj.ZboxHost,
 		ZboxAppType:     configObj.ZboxAppType,
