@@ -296,7 +296,8 @@ func InitSDK(walletJSON string,
 		}
 	}
 
-	var minConfirmation, minSubmit, confirmationChainLength, sharderConsensous int
+	var minConfirmation, minSubmit, confirmationChainLength, sharderConsensous, querySleepTime int
+	verifyOptimistic := false
 	if len(options) > 1 {
 		minConfirmation = options[1]
 	}
@@ -309,6 +310,12 @@ func InitSDK(walletJSON string,
 	if len(options) > 4 {
 		sharderConsensous = options[4]
 	}
+	if len(options) > 5 {
+		querySleepTime = options[5]
+	}
+	if len(options) > 6 {
+		verifyOptimistic = options[6] == 1
+	}
 
 	err := Init(context.Background(), conf.Config{
 		BlockWorker:             blockWorker,
@@ -318,6 +325,8 @@ func InitSDK(walletJSON string,
 		MinSubmit:               minSubmit,
 		ConfirmationChainLength: confirmationChainLength,
 		SharderConsensous:       sharderConsensous,
+		QuerySleepTime:          querySleepTime,
+		VerifyOptimistic:        verifyOptimistic,
 	})
 	if err != nil {
 		return err

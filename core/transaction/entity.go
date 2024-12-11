@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/0chain/common/core/logging"
 	"net/http"
 	"strings"
 	"sync"
@@ -535,6 +536,7 @@ func SmartContractTxnValueFeeWithRetry(scAddress string, sn SmartContractTxnData
 func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 	value, fee uint64, verifyTxn bool, clients ...string) (hash, out string, nonce int64, t *Transaction, err error) {
 
+	logging.Logger.Info("SmartContractTxnValueFee", zap.Any("scAddress", scAddress), zap.Any("sn", sn), zap.Any("value", value), zap.Any("fee", fee), zap.Any("verifyTxn", verifyTxn), zap.Any("clients", clients))
 	clientId := client.Id()
 	if len(clients) > 0 && clients[0] != "" {
 		clientId = clients[0]
@@ -549,6 +551,8 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 	if err != nil {
 		return
 	}
+
+	logging.Logger.Info("SmartContractTxnValueFee conf", zap.Any("conf", cfg))
 
 	nodeClient, err := client.GetNode()
 	if err != nil {
