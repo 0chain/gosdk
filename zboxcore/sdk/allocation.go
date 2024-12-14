@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/0chain/gosdk/core/client"
+	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/transaction"
 
 	"github.com/0chain/common/core/currency"
@@ -1451,7 +1452,8 @@ func (a *Allocation) addAndGenerateDownloadRequest(
 		opt(downloadReq)
 	}
 	downloadReq.workdir = filepath.Join(downloadReq.workdir, ".zcn")
-	a.downloadProgressMap[remotePath] = downloadReq
+	hash := encryption.Hash(fmt.Sprintf("%s:%d:%d", remotePath, startBlock, endBlock))
+	a.downloadProgressMap[hash] = downloadReq
 	a.downloadRequests = append(a.downloadRequests, downloadReq)
 	if isFinal {
 		downloadOps := a.downloadRequests
@@ -2465,7 +2467,18 @@ func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKe
 // It cancels the download operation and removes the download request from the download progress map.
 //   - remotepath: The remote path of the file to cancel the download operation.
 func (a *Allocation) CancelDownload(remotepath string) error {
-	if downloadReq, ok := a.downloadProgressMap[remotepath]; ok {
+	hash := encryption.Hash(fmt.Sprintf("%s:%d:%d", remotepath, 1, 0))
+	if downloadReq, ok := a.downloadProgressMap[hash]; ok {
+		downloadReq.isDownloadCanceled = true
+		downloadReq.ctxCncl()
+		return nil
+	}
+	return errors.New("remote_path_not_found", "Invalid path. No download in progress for the path "+remotepath)
+}
+
+func (a *Allocation) CancelDownloadBlocks(remotepath string, start, end int64) error {
+	hash := encryption.Hash(fmt.Sprintf("%s:%d:%d", remotepath, start, end))
+	if downloadReq, ok := a.downloadProgressMap[hash]; ok {
 		downloadReq.isDownloadCanceled = true
 		downloadReq.ctxCncl()
 		return nil
@@ -2865,7 +2878,8 @@ func (a *Allocation) downloadFromAuthTicket(fileHandler sys.File, authTicket str
 		opt(downloadReq)
 	}
 	a.mutex.Lock()
-	a.downloadProgressMap[remoteLookupHash] = downloadReq
+	hash := encryption.Hash(fmt.Sprintf("%s:%d:%d", remoteLookupHash, startBlock, endBlock))
+	a.downloadProgressMap[hash] = downloadReq
 	if len(a.downloadRequests) > 0 {
 		downloadReq.connectionID = a.downloadRequests[0].connectionID
 	}
