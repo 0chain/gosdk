@@ -19,6 +19,7 @@ import (
 
 	"github.com/0chain/gosdk/zboxcore/mocks"
 
+	encrypt "github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/dev/blobber"
 	"github.com/0chain/gosdk/dev/blobber/model"
 	"github.com/0chain/gosdk/zboxcore/encryption"
@@ -1453,7 +1454,7 @@ func TestAllocation_CancelDownload(t *testing.T) {
 			setup: func(t *testing.T, a *Allocation) (teardown func(t *testing.T)) {
 				req := &DownloadRequest{}
 				req.ctx, req.ctxCncl = context.WithCancel(context.TODO())
-				hash := fmt.Sprintf("%s:%d:%d", remotePath, 1, 0)
+				hash := encrypt.Hash(fmt.Sprintf("%s:%d:%d", remotePath, 1, 0))
 				a.downloadProgressMap[hash] = req
 				return nil
 			},
