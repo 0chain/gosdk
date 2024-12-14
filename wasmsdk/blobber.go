@@ -1248,6 +1248,14 @@ func cancelDownloadDirectory(remotePath string) {
 	downloadDirLock.Unlock()
 }
 
+func cancelDownloadBlocks(allocationID, remotePath string, start, end int64) error {
+	alloc, err := getAllocation(allocationID)
+	if err != nil {
+		return err
+	}
+	return alloc.CancelDownloadBlocks(remotePath, start, end)
+}
+
 func startListener(respChan chan string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
