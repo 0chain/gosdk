@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/fs"
 	"log"
@@ -1452,7 +1453,8 @@ func TestAllocation_CancelDownload(t *testing.T) {
 			setup: func(t *testing.T, a *Allocation) (teardown func(t *testing.T)) {
 				req := &DownloadRequest{}
 				req.ctx, req.ctxCncl = context.WithCancel(context.TODO())
-				a.downloadProgressMap[remotePath] = req
+				hash := fmt.Sprintf("%s:%d:%d", remotePath, 1, 0)
+				a.downloadProgressMap[hash] = req
 				return nil
 			},
 		},
