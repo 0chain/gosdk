@@ -174,6 +174,9 @@ func (req *ListRequest) getlistFromBlobbers() ([]*listResponse, error) {
 	for i := 0; i < numList; i++ {
 		go req.getListInfoFromBlobber(req.blobbers[i], i, rspCh)
 	}
+	if req.storageVersion == StorageV2 {
+		req.listOnly = true
+	}
 	listInfos := make([]*listResponse, numList)
 	consensusMap := make(map[string][]*blockchain.StorageNode)
 	var consensusHash string
@@ -241,7 +244,7 @@ func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
 	}
 	selected := make(map[string]*ListResult)
 	childResultMap := make(map[string]*ListResult)
-	if !req.forRepair {
+	if !req.forRepair && req.storageVersion == 0 {
 		req.consensusThresh = 1
 	}
 	for i := 0; i < len(lR); i++ {
