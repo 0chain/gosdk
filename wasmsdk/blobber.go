@@ -478,7 +478,9 @@ func multiDownload(allocationID, jsonMultiDownloadOptions, authTicket, callbackF
 		}
 		var mf sys.File
 		if option.DownloadToDisk {
-			terminateWorkersWithAllocation(alloc)
+			if option.SuggestedName != "" {
+				fileName = option.SuggestedName
+			}
 			mf, err = jsbridge.NewFileWriter(fileName)
 			if err != nil {
 				PrintError(err.Error())
@@ -589,6 +591,7 @@ type MultiDownloadOption struct {
 	RemoteFileName   string `json:"remoteFileName"`             //Required only for file download with auth ticket
 	RemoteLookupHash string `json:"remoteLookupHash,omitempty"` //Required only for file download with auth ticket
 	DownloadToDisk   bool   `json:"downloadToDisk"`
+	SuggestedName    string `json:"suggestedName,omitempty"` //Suggested name for the file when downloading to disk, if empty will use base of remote path
 }
 
 // MultiOperation do copy, move, delete and createdir operation together
@@ -1037,7 +1040,10 @@ func downloadBlocks(allocId, remotePath, authTicket, lookupHash, writeChunkFuncN
 		fh = mf
 		defer sys.Files.Remove(pathHash) //nolint
 	} else {
-		fh = jsbridge.NewFileCallbackWriter(writeChunkFuncName)
+		fh = jsbridge.NewFileCallbackWriter(writeChunkFuncName, lookupHash)
+		if fh == nil {
+			return nil, fmt.Errorf("could not create file writer, callback function not found")
+		}
 	}
 
 	wg.Add(1)
@@ -1240,6 +1246,14 @@ func cancelDownloadDirectory(remotePath string) {
 		cancel(errors.New("download directory canceled by user"))
 	}
 	downloadDirLock.Unlock()
+}
+
+func cancelDownloadBlocks(allocationID, remotePath string, start, end int64) error {
+	alloc, err := getAllocation(allocationID)
+	if err != nil {
+		return err
+	}
+	return alloc.CancelDownloadBlocks(remotePath, start, end)
 }
 
 func startListener(respChan chan string) error {

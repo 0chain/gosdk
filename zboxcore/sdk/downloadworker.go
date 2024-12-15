@@ -229,6 +229,7 @@ func (req *DownloadRequest) downloadBlock(
 			fmt.Sprintf("Required downloads %d, remaining active blobber %d",
 				req.consensusThresh, activeBlobbers))
 	}
+	actualRequiredDownloads := requiredDownloads
 	if timeRequest {
 		requiredDownloads = activeBlobbers
 	}
@@ -290,10 +291,16 @@ func (req *DownloadRequest) downloadBlock(
 		c++
 	}
 
-	var failed int32
+	var (
+		failed  int32
+		success int32
+	)
 	downloadErrors := make([]string, requiredDownloads)
 	wg := &sync.WaitGroup{}
 	for i := 0; i < requiredDownloads; i++ {
+		if atomic.LoadInt32(&success) >= int32(actualRequiredDownloads) {
+			break
+		}
 		result := <-rspCh
 		wg.Add(1)
 		go func(i int) {
@@ -314,6 +321,7 @@ func (req *DownloadRequest) downloadBlock(
 						req.bufferMap[result.idx].ReleaseChunk(int(req.startBlock))
 					}
 				} else if timeRequest {
+					atomic.AddInt32(&success, 1)
 					req.downloadQueue[result.maskIdx].timeTaken = result.timeTaken
 				}
 				wg.Done()

@@ -12,7 +12,7 @@ func TestLoadConfig(t *testing.T) {
 	var mockDefaultReader = func() Reader {
 		reader := &mocks.Reader{}
 		reader.On("GetString", "block_worker").Return("http://127.0.0.1:9091/dns")
-		reader.On("GetString", "zauth.server").Return("http://127.0.0.1:8090/")
+		reader.On("GetString", "zauth_server").Return("http://127.0.0.1:8090/")
 		reader.On("GetInt", "min_submit").Return(0)
 		reader.On("GetInt", "min_confirmation").Return(0)
 		reader.On("GetInt", "max_txn_query").Return(0)
@@ -42,7 +42,7 @@ func TestLoadConfig(t *testing.T) {
 
 				reader := &mocks.Reader{}
 				reader.On("GetString", "block_worker").Return("")
-				reader.On("GetString", "zauth.server").Return("")
+				reader.On("GetString", "zauth_server").Return("")
 				reader.On("GetInt", "min_submit").Return(0)
 				reader.On("GetInt", "min_confirmation").Return(0)
 				reader.On("GetInt", "max_txn_query").Return(0)
@@ -77,7 +77,7 @@ func TestLoadConfig(t *testing.T) {
 				return mockDefaultReader()
 			},
 			run: func(r *require.Assertions, cfg Config) {
-				r.Equal(10, cfg.MinSubmit)
+				r.Equal(20, cfg.MinSubmit)
 			},
 		},
 		{
@@ -87,7 +87,7 @@ func TestLoadConfig(t *testing.T) {
 
 				reader := &mocks.Reader{}
 				reader.On("GetString", "block_worker").Return("https://127.0.0.1:9091/dns")
-				reader.On("GetString", "zauth.server").Return("http://127.0.0.1:8090/")
+				reader.On("GetString", "zauth_server").Return("http://127.0.0.1:8090/")
 				reader.On("GetInt", "min_submit").Return(101)
 				reader.On("GetInt", "min_confirmation").Return(0)
 				reader.On("GetInt", "max_txn_query").Return(0)
@@ -122,7 +122,7 @@ func TestLoadConfig(t *testing.T) {
 
 				reader := &mocks.Reader{}
 				reader.On("GetString", "block_worker").Return("https://127.0.0.1:9091/dns")
-				reader.On("GetString", "zauth.server").Return("http://127.0.0.1:8090/")
+				reader.On("GetString", "zauth_server").Return("http://127.0.0.1:8090/")
 				reader.On("GetInt", "min_submit").Return(0)
 				reader.On("GetInt", "min_confirmation").Return(101)
 				reader.On("GetInt", "max_txn_query").Return(0)
@@ -147,7 +147,7 @@ func TestLoadConfig(t *testing.T) {
 				return mockDefaultReader()
 			},
 			run: func(r *require.Assertions, cfg Config) {
-				r.Equal(5, cfg.QuerySleepTime)
+				r.Equal(1, cfg.QuerySleepTime)
 			},
 		}, {
 			name: "Test_Config_Max_Txn_Query_Less_Than_1",
@@ -157,7 +157,7 @@ func TestLoadConfig(t *testing.T) {
 				return mockDefaultReader()
 			},
 			run: func(r *require.Assertions, cfg Config) {
-				r.Equal(5, cfg.MaxTxnQuery)
+				r.Equal(10, cfg.MaxTxnQuery)
 			},
 		}, {
 			name: "Test_Config_Confirmation_Chain_Length_Less_Than_1",

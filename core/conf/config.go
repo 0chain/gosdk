@@ -16,15 +16,15 @@ import (
 
 const (
 	// DefaultMinSubmit default value for min_submit
-	DefaultMinSubmit = 10
+	DefaultMinSubmit = 20
 	// DefaultMinConfirmation default value for min_confirmation
 	DefaultMinConfirmation = 10
 	// DefaultMaxTxnQuery default value for max_txn_query
-	DefaultMaxTxnQuery = 5
+	DefaultMaxTxnQuery = 10
 	// DefaultConfirmationChainLength default value for confirmation_chain_length
 	DefaultConfirmationChainLength = 3
 	// DefaultQuerySleepTime default value for query_sleep_time
-	DefaultQuerySleepTime = 5
+	DefaultQuerySleepTime = 1
 	// DefaultSharderConsensous default consensous to take make SCRestAPI calls
 	DefaultSharderConsensous = 3
 )
@@ -78,8 +78,6 @@ type Config struct {
 	SharderConsensous int          `json:"sharder_consensous"`
 	ZauthServer       string       `json:"zauth_server"`
 	V                 *viper.Viper `json:"-"`
-
-	IsSplitWallet bool `json:"is_split_wallet"`
 }
 
 // LoadConfigFile load and parse SDK Config from file
@@ -178,7 +176,7 @@ func LoadConfig(v Reader) (Config, error) {
 
 	cfg.SignatureScheme = v.GetString("signature_scheme")
 	cfg.ChainID = v.GetString("chain_id")
-	cfg.ZauthServer = v.GetString("zauth.server")
+	cfg.ZauthServer = v.GetString("zauth_server")
 
 	return cfg, nil
 }

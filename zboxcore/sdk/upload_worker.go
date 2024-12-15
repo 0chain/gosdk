@@ -156,7 +156,7 @@ func (uo *UploadOperation) ProcessChangeV2(trie *wmpt.WeightedMerkleTrie, change
 	fileMetaRawHash := ref.GetFileMetaHashV2()
 	err := trie.Update(decodedKey, fileMetaRawHash, uint64(ref.NumBlocks))
 	if err != nil {
-		l.Logger.Error("Error updating trie", zap.Error(err))
+		l.Logger.Error("Error updating trie ", err.Error())
 		return err
 	}
 	return nil

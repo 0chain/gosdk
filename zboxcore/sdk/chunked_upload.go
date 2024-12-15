@@ -711,14 +711,14 @@ func (su *ChunkedUpload) uploadToBlobbers(uploadData UploadData) error {
 				if strings.Contains(err.Error(), "duplicate") {
 					su.consensus.Done()
 					errC := atomic.AddInt32(&su.addConsensus, 1)
-					if errC >= int32(su.consensus.consensusThresh) {
+					if errC > int32(su.consensus.fullconsensus-su.consensus.consensusThresh) {
 						wgErrors <- err
 					}
 					return
 				}
 				logger.Logger.Error("error during sendUploadRequest", err, " connectionID: ", su.progress.ConnectionID)
 				errC := atomic.AddInt32(&errCount, 1)
-				if errC > int32(su.allocationObj.ParityShards-1) { // If atleast data shards + 1 number of blobbers can process the upload, it can be repaired later
+				if errC > int32(su.consensus.fullconsensus-su.consensus.consensusThresh) { // If atleast data shards + 1 number of blobbers can process the upload, it can be repaired later
 					wgErrors <- err
 				}
 			}

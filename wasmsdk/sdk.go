@@ -12,6 +12,7 @@ import (
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/imageutil"
 	"github.com/0chain/gosdk/core/logger"
+	"github.com/0chain/gosdk/core/screstapi"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk/zcncore"
 
@@ -33,14 +34,29 @@ var CreateObjectURL func(buf []byte, mimeType string) string
 //   - sharderconsensous is the number of sharders to reach consensus
 func initSDKs(chainID, blockWorker, signatureScheme string,
 	minConfirmation, minSubmit, confirmationChainLength int,
-	zboxHost, zboxAppType string, sharderConsensous int, isSplit bool) error {
+	zboxHost, zboxAppType string, sharderConsensous int) error {
 
 	// Print the parameters beautified
-	fmt.Printf("{ chainID: %s, blockWorker: %s, signatureScheme: %s, minConfirmation: %d, minSubmit: %d, confirmationChainLength: %d, zboxHost: %s, zboxAppType: %s, sharderConsensous: %d, isSplit: %t }\n", chainID, blockWorker, signatureScheme, minConfirmation, minSubmit, confirmationChainLength, zboxHost, zboxAppType, sharderConsensous, isSplit)
+	fmt.Printf("{ chainID: %s, blockWorker: %s, signatureScheme: %s, minConfirmation: %d, minSubmit: %d, confirmationChainLength: %d, zboxHost: %s, zboxAppType: %s, sharderConsensous: %d }\n", chainID, blockWorker, signatureScheme, minConfirmation, minSubmit, confirmationChainLength, zboxHost, zboxAppType, sharderConsensous)
 
 	zboxApiClient.SetRequest(zboxHost, zboxAppType)
 
-	err := client.InitSDK("{}", blockWorker, chainID, signatureScheme, 0, isSplit, false, minConfirmation, minSubmit, confirmationChainLength, sharderConsensous)
+	params := client.InitSdkOptions{
+		WalletJSON:              "{}",
+		BlockWorker:             blockWorker,
+		ChainID:                 chainID,
+		SignatureScheme:         signatureScheme,
+		Nonce:                   int64(0),
+		AddWallet:               false,
+		MinConfirmation:         &minConfirmation,
+		MinSubmit:               &minSubmit,
+		SharderConsensous:       &sharderConsensous,
+		ConfirmationChainLength: &confirmationChainLength,
+		ZboxHost:                zboxHost,
+		ZboxAppType:             zboxAppType,
+	}
+
+	err := client.InitSDKWithWebApp(params)
 	if err != nil {
 		fmt.Println("wasm: InitStorageSDK ", err)
 		return err
@@ -146,7 +162,8 @@ func makeSCRestAPICall(scAddress, relativePath, paramsJson string) (string, erro
 	if err != nil {
 		sdkLogger.Error(fmt.Sprintf("Error parsing JSON: %v", err))
 	}
-	b, err := client.MakeSCRestAPICall(scAddress, relativePath, params)
+
+	b, err := screstapi.MakeSCRestAPICall(scAddress, relativePath, params)
 	return string(b), err
 }
 
