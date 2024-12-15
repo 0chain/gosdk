@@ -131,7 +131,7 @@ func UpdateAllocation(
 	allocationID string,
 	lock uint64,
 	addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey string,
-	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters, ticket *UpdateAllocTicket,
+	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters, ticket string,
 ) (hash string, nonce int64, err error) {
 
 	if lock > math.MaxInt64 {
