@@ -246,7 +246,7 @@ func updateAllocationWithRepair(allocationID string,
 	size int64,
 	extend bool,
 	lock int64,
-	addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey, callbackFuncName string) (string, error) {
+	addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey, updateAllocTicket, callbackFuncName string) (string, error) {
 	sdk.SetWasm()
 	allocationObj, err := sdk.GetAllocation(allocationID)
 	if err != nil {
@@ -263,7 +263,7 @@ func updateAllocationWithRepair(allocationID string,
 		}
 	}
 
-	alloc, hash, isRepairRequired, err := allocationObj.UpdateWithStatus(size, extend, uint64(lock), addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey, false, &sdk.FileOptionsParameters{}, "")
+	alloc, hash, isRepairRequired, err := allocationObj.UpdateWithStatus(size, extend, uint64(lock), addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey, false, &sdk.FileOptionsParameters{}, updateAllocTicket)
 	if err != nil {
 		return hash, err
 	}
