@@ -60,6 +60,7 @@ type StakePool struct {
 type stakePoolRequest struct {
 	ProviderType Provider `json:"provider_type,omitempty"`
 	ProviderID   string   `json:"provider_id,omitempty"`
+	ClientID     string   `json:"client_id,omitempty"`
 }
 
 type MinerSCDelegatePoolInfo struct {

@@ -401,8 +401,8 @@ func lockStakePool(providerType, tokens, fee uint64, providerID string) (string,
 //   - providerType: provider type (1: miner, 2:sharder, 3:blobber, 4:validator, 5:authorizer)
 //   - fee: transaction fees (in SAS)
 //   - providerID: provider id
-func unlockStakePool(providerType, fee uint64, providerID string) (int64, error) {
-	unstake, _, err := sdk.StakePoolUnlock(sdk.ProviderType(providerType), providerID, fee)
+func unlockStakePool(providerType, fee uint64, providerID, clientID string) (int64, error) {
+	unstake, _, err := sdk.StakePoolUnlock(sdk.ProviderType(providerType), providerID, clientID, fee)
 	return unstake, err
 }
 
