@@ -170,7 +170,7 @@ func UpdateAllocation(
 }
 
 func GetUpdateAllocTicket(allocationID, userID, operationType string, roundExpiry int64) (string, error) {
-	payload := fmt.Sprintf("%s:%f:%s:%s", allocationID, roundExpiry, userID, operationType)
+	payload := fmt.Sprintf("%s:%d:%s:%s", allocationID, roundExpiry, userID, operationType)
 
 	signature, err := client.Sign(encryption.Hash(payload))
 	if err != nil {
