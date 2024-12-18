@@ -159,7 +159,10 @@ func UpdateAllocation(
 	updateAllocationRequest["set_third_party_extendable"] = setThirdPartyExtendable
 	updateAllocationRequest["owner_signing_public_key"] = ownerSigninPublicKey
 	updateAllocationRequest["file_options_changed"], updateAllocationRequest["file_options"] = calculateAllocationFileOptions(alloc.FileOptions, fileOptionsParams)
-	updateAllocationRequest["update_ticket"] = ticket
+
+	if ticket != "" {
+		updateAllocationRequest["update_ticket"] = ticket
+	}
 
 	sn := transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_UPDATE_ALLOCATION,
