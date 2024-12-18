@@ -172,6 +172,17 @@ func UpdateAllocation(
 	return
 }
 
+func GetUpdateAllocTicket(allocationID, userID, operationType string, roundExpiry int64) (string, error) {
+	payload := fmt.Sprintf("%s:%d:%s:%s", allocationID, roundExpiry, userID, operationType)
+
+	signature, err := client.Sign(encryption.Hash(payload))
+	if err != nil {
+		return "", err
+	}
+
+	return signature, nil
+}
+
 // StakePoolLock locks tokens in a stake pool.
 // This function is the entry point for the staking operation.
 // Provided the provider type and provider ID, the value is locked in the stake pool between the SDK client and the provider.
