@@ -130,9 +130,12 @@ func UpdateAllocation(
 	extend bool,
 	allocationID string,
 	lock uint64,
-	addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey string,
+	addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerID, ownerSigninPublicKey string,
 	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters, ticket string,
 ) (hash string, nonce int64, err error) {
+	if ownerID == "" {
+		ownerID = client.Id()
+	}
 
 	if lock > math.MaxInt64 {
 		return "", 0, errors.New("invalid_lock", "int64 overflow on lock value")
@@ -148,7 +151,7 @@ func UpdateAllocation(
 	}
 
 	updateAllocationRequest := make(map[string]interface{})
-	updateAllocationRequest["owner_id"] = client.Id()
+	updateAllocationRequest["owner_id"] = ownerID
 	updateAllocationRequest["owner_public_key"] = ""
 	updateAllocationRequest["id"] = allocationID
 	updateAllocationRequest["size"] = size
