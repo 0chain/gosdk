@@ -34,8 +34,9 @@ import (
 const FileOperationInsert = "insert"
 
 var (
-	downloadDirContextMap = make(map[string]context.CancelCauseFunc)
-	downloadDirLock       = sync.Mutex{}
+	opCancelContextMap = make(map[string]context.CancelCauseFunc)
+	opCancelLock       = sync.Mutex{}
+	ErrUnderRepair     = errors.New("allocation is under repair")
 )
 
 // listObjects list allocation objects from its blobbers
@@ -72,27 +73,45 @@ func listObjectsFromAuthTicket(allocationID, authTicket, lookupHash string, offs
 }
 
 // cancelUpload cancel the upload operation of the file
-//   - allocationID is the allocation id
-//   - remotePath is the remote path of the file
-func cancelUpload(allocationID, remotePath string) error {
-	allocationObj, err := getAllocation(allocationID)
-	if err != nil {
-		PrintError("Error fetching the allocation", err)
-		return err
+//   - batchKey is the batch key of the operation
+func cancelUpload(batchKey string) error {
+	opCancelLock.Lock()
+	defer opCancelLock.Unlock()
+	if cancel, ok := opCancelContextMap[batchKey]; ok {
+		cancel(sdk.ErrCancelUpload)
+	} else {
+		return errors.New("invalid batch key")
 	}
-	return allocationObj.CancelUpload(remotePath)
+	return nil
 }
 
 // pauseUpload pause the upload operation of the file
-//   - allocationID is the allocation id
-//   - remotePath is the remote path of the file
-func pauseUpload(allocationID, remotePath string) error {
-	allocationObj, err := getAllocation(allocationID)
+//   - batchKey is the batch key of the operation
+func pauseUpload(batchKey string) error {
+	opCancelLock.Lock()
+	defer opCancelLock.Unlock()
+	if cancel, ok := opCancelContextMap[batchKey]; ok {
+		cancel(sdk.ErrPauseUpload)
+	} else {
+		return errors.New("invalid batch key")
+	}
+	return nil
+}
+
+func cancelRepair(allocationID string) error {
+	alloc, err := getAllocation(allocationID)
 	if err != nil {
-		PrintError("Error fetching the allocation", err)
 		return err
 	}
-	return allocationObj.PauseUpload(remotePath)
+	return alloc.CancelRepair()
+}
+
+func cancelDownload(allocationID, remotePath string) error {
+	alloc, err := getAllocation(allocationID)
+	if err != nil {
+		return err
+	}
+	return alloc.CancelDownload(remotePath)
 }
 
 // createDir create a directory on blobbers
@@ -599,10 +618,11 @@ type MultiDownloadOption struct {
 // ## Inputs
 //   - allocationID
 //   - jsonMultiUploadOptions: Json Array of MultiOperationOption. eg: "[{"operationType":"move","remotePath":"/README.md","destPath":"/folder1/"},{"operationType":"delete","remotePath":"/t3.txt"}]"
+//   - batchKey: batch key for the operation
 //
 // ## Outputs
 //   - error
-func MultiOperation(allocationID string, jsonMultiUploadOptions string) error {
+func MultiOperation(allocationID, jsonMultiUploadOptions string) error {
 	if allocationID == "" {
 		return errors.New("AllocationID is required")
 	}
@@ -630,6 +650,9 @@ func MultiOperation(allocationID string, jsonMultiUploadOptions string) error {
 	allocationObj, err := getAllocation(allocationID)
 	if err != nil {
 		return err
+	}
+	if allocationObj.IsUnderRepair() {
+		return ErrUnderRepair
 	}
 	return allocationObj.DoMultiOperation(operations)
 }
@@ -696,7 +719,7 @@ func setUploadMode(mode int) {
 
 // multiUpload upload multiple files in parallel
 //   - jsonBulkUploadOptions is the json array of BulkUploadOption. Follows the BulkUploadOption struct
-func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
+func multiUpload(jsonBulkUploadOptions, batchKey string) (MultiUploadResult, error) {
 	defer func() {
 		if r := recover(); r != nil {
 			PrintError("Recovered in multiupload Error", r)
@@ -728,6 +751,11 @@ func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 		result.Error = err.Error()
 		result.Success = false
 		return result, err
+	}
+	if allocationObj.IsUnderRepair() {
+		result.Error = ErrUnderRepair.Error()
+		result.Success = false
+		return result, ErrUnderRepair
 	}
 
 	operationRequests := make([]sdk.OperationRequest, n)
@@ -811,14 +839,34 @@ func multiUpload(jsonBulkUploadOptions string) (MultiUploadResult, error) {
 		}
 
 	}
-	err = allocationObj.DoMultiOperation(operationRequests)
-	if err != nil {
-		result.Error = err.Error()
+	ctx, cancel := context.WithCancelCause(context.Background())
+	defer cancel(nil)
+	opCancelLock.Lock()
+	opCancelContextMap[batchKey] = cancel
+	opCancelLock.Unlock()
+	defer func() {
+		opCancelLock.Lock()
+		delete(opCancelContextMap, batchKey)
+		opCancelLock.Unlock()
+	}()
+	errChan := make(chan error, 1)
+	go func() {
+		errChan <- allocationObj.DoMultiOperation(operationRequests, sdk.WithContext(ctx))
+	}()
+	select {
+	case <-ctx.Done():
+		result.Error = ctx.Err().Error()
 		result.Success = false
-		return result, err
+		return result, ctx.Err()
+	case err := <-errChan:
+		if err != nil {
+			result.Error = err.Error()
+			result.Success = false
+			return result, err
+		}
+		result.Success = true
+		return result, nil
 	}
-	result.Success = true
-	return result, nil
 }
 
 func uploadWithJsFuncs(allocationID, remotePath string, readChunkFuncName string, fileSize int64, thumbnailBytes []byte, webStreaming, encrypt, isUpdate, isRepair bool, numBlocks int, callbackFuncName string) (bool, error) {
@@ -1223,9 +1271,9 @@ func downloadDirectory(allocationID, remotePath, authticket, callbackFuncName st
 	go func() {
 		errChan <- alloc.DownloadDirectory(ctx, remotePath, "", authticket, statusBar)
 	}()
-	downloadDirLock.Lock()
-	downloadDirContextMap[remotePath] = cancel
-	downloadDirLock.Unlock()
+	opCancelLock.Lock()
+	opCancelContextMap[remotePath] = cancel
+	opCancelLock.Unlock()
 	select {
 	case err = <-errChan:
 		if err != nil {
@@ -1240,12 +1288,12 @@ func downloadDirectory(allocationID, remotePath, authticket, callbackFuncName st
 // cancelDownloadDirectory cancel the download directory operation
 //   - remotePath : remote path of the directory
 func cancelDownloadDirectory(remotePath string) {
-	downloadDirLock.Lock()
-	cancel, ok := downloadDirContextMap[remotePath]
+	opCancelLock.Lock()
+	cancel, ok := opCancelContextMap[remotePath]
 	if ok {
 		cancel(errors.New("download directory canceled by user"))
 	}
-	downloadDirLock.Unlock()
+	opCancelLock.Unlock()
 }
 
 func startListener(respChan chan string) error {
