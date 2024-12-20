@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"context"
+
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/pkg/errors"
 
@@ -128,7 +129,7 @@ func InitStorageSDK(clientJson string, configJson string) (*StorageSDK, error) {
 		configObj.BlockWorker,
 		configObj.ChainID,
 		configObj.SignatureScheme,
-		0, false, true); err != nil {
+		0, true); err != nil {
 		l.Logger.Error(err)
 		return nil, err
 	}

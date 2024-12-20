@@ -33,14 +33,14 @@ var CreateObjectURL func(buf []byte, mimeType string) string
 //   - sharderconsensous is the number of sharders to reach consensus
 func initSDKs(chainID, blockWorker, signatureScheme string,
 	minConfirmation, minSubmit, confirmationChainLength int,
-	zboxHost, zboxAppType string, sharderConsensous int, isSplit bool) error {
+	zboxHost, zboxAppType string, sharderConsensous int) error {
 
 	// Print the parameters beautified
-	fmt.Printf("{ chainID: %s, blockWorker: %s, signatureScheme: %s, minConfirmation: %d, minSubmit: %d, confirmationChainLength: %d, zboxHost: %s, zboxAppType: %s, sharderConsensous: %d, isSplit: %t }\n", chainID, blockWorker, signatureScheme, minConfirmation, minSubmit, confirmationChainLength, zboxHost, zboxAppType, sharderConsensous, isSplit)
+	fmt.Printf("{ chainID: %s, blockWorker: %s, signatureScheme: %s, minConfirmation: %d, minSubmit: %d, confirmationChainLength: %d, zboxHost: %s, zboxAppType: %s, sharderConsensous: %d }\n", chainID, blockWorker, signatureScheme, minConfirmation, minSubmit, confirmationChainLength, zboxHost, zboxAppType, sharderConsensous)
 
 	zboxApiClient.SetRequest(zboxHost, zboxAppType)
 
-	err := client.InitSDK("{}", blockWorker, chainID, signatureScheme, 0, isSplit, false, minConfirmation, minSubmit, confirmationChainLength, sharderConsensous)
+	err := client.InitSDK("{}", blockWorker, chainID, signatureScheme, 0, false, minConfirmation, minSubmit, confirmationChainLength, sharderConsensous)
 	if err != nil {
 		fmt.Println("wasm: InitStorageSDK ", err)
 		return err
