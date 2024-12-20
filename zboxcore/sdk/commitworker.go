@@ -501,11 +501,26 @@ func (commitReq *CommitRequestV2) processCommit() {
 			defer wg.Done()
 			commitErr := commitReq.commitBlobber(rootHash, rootWeight, prevWeight, blobber)
 			if commitErr != nil {
-				l.Logger.Error("Error committing to blobber", commitErr)
+				l.Logger.Error("Error committing to blobber: ", blobber.Baseurl, " ", commitErr)
 				errSlice[ind] = commitErr
 				mu.Lock()
 				commitReq.commitMask = commitReq.commitMask.And(zboxutil.NewUint128(1).Lsh(blobberPos).Not())
 				mu.Unlock()
+				if strings.Contains(commitErr.Error(), "Write Marker Size") {
+					l.Logger.Error("Write marker size error: ", rootWeight, " ", prevWeight)
+					for _, change := range commitReq.changes {
+						if change == nil {
+							l.Logger.Info("Change is nil")
+						}
+						switch change.(type) {
+						case *UploadOperation:
+							l.Logger.Info("Change is upload operation")
+						case *DeleteOperation:
+							l.Logger.Info("Change is delete operation")
+						default:
+						}
+					}
+				}
 				return
 			}
 		}(counter)
@@ -712,7 +727,7 @@ func submitWriteMarker(wmData, metaData []byte, blobber *blockchain.StorageNode,
 				return
 			}
 			if resp.StatusCode == http.StatusOK {
-				logger.Logger.Debug(blobber.Baseurl, " committed")
+				logger.Logger.Info(blobber.Baseurl, " committed")
 				return
 			}
 
