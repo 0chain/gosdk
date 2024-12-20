@@ -28,10 +28,7 @@ type UploadOperation struct {
 	lookupHash    string
 }
 
-var (
-	ErrPauseUpload  = errors.New("upload paused by user")
-	ErrCancelUpload = errors.New("upload canceled by user")
-)
+var ErrPauseUpload = errors.New("upload paused by user")
 
 func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
 	if uo.isDownload {

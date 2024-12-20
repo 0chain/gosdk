@@ -2905,21 +2905,18 @@ func (a *Allocation) StartRepair(localRootPath, pathToRepair string, statusCB St
 			return err
 		}
 	}
-	repairCtx, repairCtxCancel := context.WithCancel(a.ctx)
+
 	repairReq := &RepairRequest{
-		listDir:         listDir,
-		localRootPath:   localRootPath,
-		statusCB:        statusCB,
-		repairPath:      pathToRepair,
-		repairCtx:       repairCtx,
-		repairCtxCancel: repairCtxCancel,
+		listDir:       listDir,
+		localRootPath: localRootPath,
+		statusCB:      statusCB,
+		repairPath:    pathToRepair,
 	}
 
 	repairReq.completedCallback = func() {
 		a.mutex.Lock()
 		defer a.mutex.Unlock()
 		a.repairRequestInProgress = nil
-		repairCtxCancel()
 	}
 
 	go func() {
@@ -2959,11 +2956,9 @@ func (a *Allocation) RepairSize(remotePath string) (RepairSize, error) {
 	if err != nil {
 		return RepairSize{}, err
 	}
-	repairCtx, repairCtxCancel := context.WithCancel(a.ctx)
+
 	repairReq := RepairRequest{
-		allocation:      a,
-		repairCtx:       repairCtx,
-		repairCtxCancel: repairCtxCancel,
+		allocation: a,
 	}
 	return repairReq.Size(context.Background(), dir)
 }
@@ -2978,7 +2973,7 @@ func (a *Allocation) CancelUpload(remotePath string) error {
 	if !ok {
 		return errors.New("remote_path_not_found", "Invalid path. No upload in progress for the path "+remotePath)
 	} else {
-		cancelFunc(ErrCancelUpload)
+		cancelFunc(fmt.Errorf("upload canceled by user"))
 	}
 	return nil
 }
@@ -3003,20 +2998,11 @@ func (a *Allocation) PauseUpload(remotePath string) error {
 // CancelRepair cancels the repair operation for the allocation.
 // It cancels the repair operation and returns an error if no repair is in progress for the allocation.
 func (a *Allocation) CancelRepair() error {
-	a.mutex.Lock()
-	defer a.mutex.Unlock()
 	if a.repairRequestInProgress != nil {
 		a.repairRequestInProgress.isRepairCanceled = true
-		a.repairRequestInProgress.repairCtxCancel()
 		return nil
 	}
 	return errors.New("invalid_cancel_repair_request", "No repair in progress for the allocation")
-}
-
-func (a *Allocation) IsUnderRepair() bool {
-	a.mutex.Lock()
-	defer a.mutex.Unlock()
-	return a.repairRequestInProgress != nil
 }
 
 func (a *Allocation) GetMaxWriteReadFromBlobbers(blobbers []*BlobberAllocation) (maxW float64, maxR float64, err error) {

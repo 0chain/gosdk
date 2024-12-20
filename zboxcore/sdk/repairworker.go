@@ -25,8 +25,6 @@ type RepairRequest struct {
 	wg                *sync.WaitGroup
 	allocation        *Allocation
 	repairPath        string
-	repairCtx         context.Context
-	repairCtxCancel   context.CancelFunc
 }
 
 type RepairStatusCB struct {
@@ -68,7 +66,7 @@ func (r *RepairRequest) processRepair(ctx context.Context, a *Allocation) {
 		defer r.completedCallback()
 	}
 
-	if r.checkForCancel() {
+	if r.checkForCancel(a) {
 		return
 	}
 	ctx, cancel := context.WithCancel(ctx)
@@ -186,7 +184,7 @@ func (r *RepairRequest) iterateDir(a *Allocation, dir *ListResult) []OperationRe
 			}
 		}
 		for _, childDir := range dir.Children {
-			if r.checkForCancel() {
+			if r.checkForCancel(a) {
 				return nil
 			}
 			ops = append(ops, r.iterateDir(a, childDir)...)
@@ -214,7 +212,7 @@ func (r *RepairRequest) iterateDir(a *Allocation, dir *ListResult) []OperationRe
 
 func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) []OperationRequest {
 	ops := make([]OperationRequest, 0)
-	if r.checkForCancel() {
+	if r.checkForCancel(a) {
 		return nil
 	}
 	l.Logger.Info("Checking file for the path :", zap.Any("path", file.Path))
@@ -246,7 +244,7 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) []OperationR
 			localPath := r.getLocalPath(file)
 			var op *OperationRequest
 			if !checkFileExists(localPath) {
-				if r.checkForCancel() {
+				if r.checkForCancel(a) {
 					return nil
 				}
 				pipeFile := sys.NewPipeFile()
@@ -263,7 +261,7 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) []OperationR
 				op = a.RepairFile(f, file.Path, statusCB, found, ref)
 			}
 			ops = append(ops, *op)
-			if r.checkForCancel() {
+			if r.checkForCancel(a) {
 				return nil
 			}
 		} else {
@@ -288,42 +286,28 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) []OperationR
 }
 
 func (r *RepairRequest) repairOperation(a *Allocation, ops []OperationRequest) {
-	if r.checkForCancel() {
-		return
-	}
-	errChan := make(chan error, 1)
-	go func() {
-		err := a.DoMultiOperation(ops, WithRepair(), WithContext(r.repairCtx))
-		if err != nil {
-			l.Logger.Error("repair_file_failed", zap.Error(err))
-			status := r.statusCB != nil
-			for _, op := range ops {
-				if op.DownloadFile {
-					_ = a.CancelDownload(op.RemotePath)
-				}
-				if status {
-					r.statusCB.Error(a.ID, op.RemotePath, OpRepair, err)
-				}
-			}
-		} else {
-			r.filesRepaired += len(ops)
-		}
+	err := a.DoMultiOperation(ops, WithRepair())
+	if err != nil {
+		l.Logger.Error("repair_file_failed", zap.Error(err))
+		status := r.statusCB != nil
 		for _, op := range ops {
-			if op.FileReader != nil && !op.DownloadFile {
-				if f, ok := op.FileReader.(io.Closer); ok {
-					f.Close()
-				}
+			if op.DownloadFile {
+				_ = a.CancelDownload(op.RemotePath)
+			}
+			if status {
+				r.statusCB.Error(a.ID, op.RemotePath, OpRepair, err)
 			}
 		}
-		errChan <- err
-	}()
-	select {
-	case <-r.repairCtx.Done():
-		return
-	case <-errChan:
-		return
+	} else {
+		r.filesRepaired += len(ops)
 	}
-
+	for _, op := range ops {
+		if op.FileReader != nil && !op.DownloadFile {
+			if f, ok := op.FileReader.(io.Closer); ok {
+				f.Close()
+			}
+		}
+	}
 }
 
 func (r *RepairRequest) getLocalPath(file *ListResult) string {
@@ -341,8 +325,7 @@ func checkFileExists(localPath string) bool {
 	return !info.IsDir()
 }
 
-func (r *RepairRequest) checkForCancel() bool {
-
+func (r *RepairRequest) checkForCancel(a *Allocation) bool {
 	return r.isRepairCanceled
 }
 
@@ -390,7 +373,7 @@ func (r *RepairRequest) iterateDirV2(ctx context.Context) {
 		ops       []OperationRequest
 	)
 	for {
-		if r.checkForCancel() {
+		if r.checkForCancel(r.allocation) {
 			return
 		}
 		if toNextRef {
@@ -472,16 +455,10 @@ func (r *RepairRequest) iterateDirV2(ctx context.Context) {
 			op := r.uploadFileOp(srcRef, uploadMask)
 			ops = append(ops, op)
 		}
-		if r.checkForCancel() {
-			return
-		}
 		if len(ops) >= RepairBatchSize {
 			r.repairOperation(r.allocation, ops)
 			ops = nil
 		}
-	}
-	if r.checkForCancel() {
-		return
 	}
 	if len(ops) > 0 {
 		r.repairOperation(r.allocation, ops)

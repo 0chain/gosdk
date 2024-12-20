@@ -386,8 +386,7 @@ func TestAllocation_dispatchWork(t *testing.T) {
 	})
 	t.Run("Test_Cover_Repair_Request", func(t *testing.T) {
 		go a.dispatchWork(context.Background())
-		repairCtx, repairCtxCancel := context.WithCancel(context.Background())
-		a.repairChan <- &RepairRequest{listDir: &ListResult{}, repairCtx: repairCtx, repairCtxCancel: repairCtxCancel}
+		a.repairChan <- &RepairRequest{listDir: &ListResult{}}
 	})
 }
 
@@ -2298,11 +2297,7 @@ func TestAllocation_CancelRepair(t *testing.T) {
 		{
 			name: "Test_Success",
 			setup: func(t *testing.T, a *Allocation) (teardown func(t *testing.T)) {
-				ctx, cancel := context.WithCancel(context.Background())
-				a.repairRequestInProgress = &RepairRequest{
-					repairCtx:       ctx,
-					repairCtxCancel: cancel,
-				}
+				a.repairRequestInProgress = &RepairRequest{}
 				return nil
 			},
 		},
