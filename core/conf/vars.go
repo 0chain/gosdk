@@ -39,11 +39,6 @@ func GetClientConfig() (*Config, error) {
 	return cfg, nil
 }
 
-func SetZboxAppConfigs(zboxHost, zboxAppType string) {
-	cfg.ZboxHost = zboxHost
-	cfg.ZboxAppType = zboxAppType
-}
-
 // InitClientConfig set global client config
 func InitClientConfig(c *Config) {
 	onceCfg.Do(func() {

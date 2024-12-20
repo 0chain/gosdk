@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/0chain/gosdk/core/client"
 	"math"
 	"net/http"
 	"strconv"
@@ -12,7 +13,6 @@ import (
 
 	"github.com/0chain/common/core/encryption"
 	"github.com/0chain/errors"
-	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/resty"
 	"github.com/0chain/gosdk/core/util"
