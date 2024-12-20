@@ -2,9 +2,8 @@ package transaction
 
 import (
 	"encoding/json"
-
 	"github.com/0chain/errors"
-	"github.com/0chain/gosdk/core/screstapi"
+	coreHttp "github.com/0chain/gosdk/core/client"
 )
 
 const (
@@ -46,7 +45,7 @@ func GetConfig(configType string) (conf *InputMap, err error) {
 		relativePath = GET_MINERSC_CONFIGS
 	}
 
-	b, err = screstapi.MakeSCRestAPICall(scAddress, relativePath, nil)
+	b, err = coreHttp.MakeSCRestAPICall(scAddress, relativePath, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "error requesting storage SC configs:")
 	}
