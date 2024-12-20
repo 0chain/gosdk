@@ -53,7 +53,7 @@ func (f *MemFile) WriteAt(p []byte, offset int64) (n int, err error) {
 	return len(p), nil
 }
 
-// InitBuffer initializes the buffer with a specific size
+// InitBuffer initializes the buffer with a specific size?
 func (f *MemFile) InitBuffer(size int) {
 	buff := common.MemPool.Get()
 	if cap(buff.B) < size {
