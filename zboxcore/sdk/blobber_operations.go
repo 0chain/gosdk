@@ -164,7 +164,21 @@ func UpdateAllocation(
 	updateAllocationRequest["file_options_changed"], updateAllocationRequest["file_options"] = calculateAllocationFileOptions(alloc.FileOptions, fileOptionsParams)
 
 	if ticket != "" {
-		updateAllocationRequest["update_ticket"] = ticket
+
+		type Ticket struct {
+			AllocationID  string `json:"allocation_id"`
+			UserID        string `json:"user_id"`
+			RoundExpiry   int64  `json:"round_expiry"`
+			OperationType string `json:"operation_type"`
+			Signature     string `json:"signature"`
+		}
+
+		ticketData := &Ticket{}
+		err := json.Unmarshal([]byte(ticket), ticketData)
+		if err != nil {
+			return "", 0, errors.New("invalid_ticket", "invalid ticket")
+		}
+		updateAllocationRequest["update_ticket"] = ticketData
 	}
 
 	sn := transaction.SmartContractTxnData{
