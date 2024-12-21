@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/fs"
 	"log"
@@ -19,7 +18,6 @@ import (
 
 	"github.com/0chain/gosdk/zboxcore/mocks"
 
-	encrypt "github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/dev/blobber"
 	"github.com/0chain/gosdk/dev/blobber/model"
 	"github.com/0chain/gosdk/zboxcore/encryption"
@@ -388,7 +386,8 @@ func TestAllocation_dispatchWork(t *testing.T) {
 	})
 	t.Run("Test_Cover_Repair_Request", func(t *testing.T) {
 		go a.dispatchWork(context.Background())
-		a.repairChan <- &RepairRequest{listDir: &ListResult{}}
+		repairCtx, repairCtxCancel := context.WithCancel(context.Background())
+		a.repairChan <- &RepairRequest{listDir: &ListResult{}, repairCtx: repairCtx, repairCtxCancel: repairCtxCancel}
 	})
 }
 
@@ -1454,8 +1453,7 @@ func TestAllocation_CancelDownload(t *testing.T) {
 			setup: func(t *testing.T, a *Allocation) (teardown func(t *testing.T)) {
 				req := &DownloadRequest{}
 				req.ctx, req.ctxCncl = context.WithCancel(context.TODO())
-				hash := encrypt.Hash(fmt.Sprintf("%s:%d:%d", remotePath, 1, 0))
-				a.downloadProgressMap[hash] = req
+				a.downloadProgressMap[remotePath] = req
 				return nil
 			},
 		},
@@ -2300,7 +2298,11 @@ func TestAllocation_CancelRepair(t *testing.T) {
 		{
 			name: "Test_Success",
 			setup: func(t *testing.T, a *Allocation) (teardown func(t *testing.T)) {
-				a.repairRequestInProgress = &RepairRequest{}
+				ctx, cancel := context.WithCancel(context.Background())
+				a.repairRequestInProgress = &RepairRequest{
+					repairCtx:       ctx,
+					repairCtxCancel: cancel,
+				}
 				return nil
 			},
 		},
