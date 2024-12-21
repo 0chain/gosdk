@@ -24,7 +24,7 @@ type KeyPair struct {
 type Wallet struct {
 	ClientID      string    `json:"client_id"`
 	ClientKey     string    `json:"client_key"`
-	PeerPublicKey string    `json:"peer_public_key"` // Peer public key exists only in split wallet
+	PeerPublicKey string    `json:"peer_public_key"` // Peer public key exists only in split wallet for web only.
 	Keys          []KeyPair `json:"keys"`
 	Mnemonic      string    `json:"mnemonics"`
 	Version       string    `json:"version"`

@@ -39,15 +39,17 @@ type ChunkedUploadFormMetadata struct {
 }
 
 // CreateChunkedUploadFormBuilder create ChunkedUploadFormBuilder instance
-func CreateChunkedUploadFormBuilder(storageVersion int, privateSigningKey ed25519.PrivateKey) ChunkedUploadFormBuilder {
+func CreateChunkedUploadFormBuilder(storageVersion, encryptionVersion int, privateSigningKey ed25519.PrivateKey) ChunkedUploadFormBuilder {
 	return &chunkedUploadFormBuilder{
 		storageVersion,
+		encryptionVersion,
 		privateSigningKey,
 	}
 }
 
 type chunkedUploadFormBuilder struct {
 	storageVersion    int
+	encryptionVersion int
 	privateSigningKey ed25519.PrivateKey
 }
 
@@ -98,6 +100,7 @@ func (b *chunkedUploadFormBuilder) Build(
 		EncryptedKeyPoint: encryptedKeyPoint,
 		EncryptedKey:      encryptedKey,
 		CustomMeta:        fileMeta.CustomMeta,
+		EncryptionVersion: b.encryptionVersion,
 	}
 
 	if b.privateSigningKey != nil {

@@ -66,7 +66,8 @@ type ChunkedUpload struct {
 	// shardUploadedThumbnailSize how much thumbnail bytes a shard has. it is original size
 	shardUploadedThumbnailSize int64
 	// size of shard
-	shardSize int64
+	shardSize         int64
+	encryptionVersion int
 
 	// statusCallback trigger progress on StatusCallback
 	statusCallback StatusCallback
@@ -166,13 +167,14 @@ type UploadFormData struct {
 	EncryptedKey      string `json:"encrypted_key,omitempty"`
 	EncryptedKeyPoint string `json:"encrypted_key_point,omitempty"`
 
-	IsFinal          bool  `json:"is_final,omitempty"`          // all of chunks are uploaded
-	ChunkStartIndex  int   `json:"chunk_start_index,omitempty"` // start index of chunks.
-	ChunkEndIndex    int   `json:"chunk_end_index,omitempty"`   // end index of chunks. all chunks MUST be uploaded one by one because of streaming merkle hash
-	ChunkSize        int64 `json:"chunk_size,omitempty"`        // the size of a chunk. 64*1024 is default
-	UploadOffset     int64 `json:"upload_offset,omitempty"`     // It is next position that new incoming chunk should be append to
-	Size             int64 `json:"size"`                        // total size of shard
-	SignatureVersion int   `json:"signature_version,omitempty"`
+	IsFinal           bool  `json:"is_final,omitempty"`          // all of chunks are uploaded
+	ChunkStartIndex   int   `json:"chunk_start_index,omitempty"` // start index of chunks.
+	ChunkEndIndex     int   `json:"chunk_end_index,omitempty"`   // end index of chunks. all chunks MUST be uploaded one by one because of streaming merkle hash
+	ChunkSize         int64 `json:"chunk_size,omitempty"`        // the size of a chunk. 64*1024 is default
+	UploadOffset      int64 `json:"upload_offset,omitempty"`     // It is next position that new incoming chunk should be append to
+	Size              int64 `json:"size"`                        // total size of shard
+	SignatureVersion  int   `json:"signature_version,omitempty"`
+	EncryptionVersion int   `json:"encryption_version,omitempty"`
 }
 
 // UploadProgress progress of upload
