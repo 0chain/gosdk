@@ -178,6 +178,10 @@ func (req *ListRequest) getlistFromBlobbers() ([]*listResponse, error) {
 	consensusMap := make(map[string][]*blockchain.StorageNode)
 	var consensusHash string
 	errCnt := 0
+	if numList == 0 {
+		return nil, errors.New("no blobbers", "getlistFromBlobbers")
+	}
+	l.Logger.Debug("getListFromBlobbers: ", numList)
 	for i := 0; i < numList; i++ {
 		listInfos[i] = <-rspCh
 		if !req.forRepair {
@@ -212,6 +216,7 @@ func (req *ListRequest) getlistFromBlobbers() ([]*listResponse, error) {
 		return listInfos, listInfos[0].err
 	}
 	req.listOnly = true
+	l.Logger.Debug("listInfos: ", len(listInfos))
 	listInfos = listInfos[:1]
 	listOnlyRespCh := make(chan *listResponse, 1)
 	for i := 0; i < listLen; i++ {
