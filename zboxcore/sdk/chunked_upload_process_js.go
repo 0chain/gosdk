@@ -602,6 +602,9 @@ func parseEventData(data safejs.Value) (*FileMeta, *ChunkedUploadFormInfo, [][]b
 	buf := make([]byte, fileShardLen)
 	safejs.CopyBytesToGo(buf, fileShardUint8)
 	fileShards := splitData(buf, int(chunkSize))
+	fileShardUint8.Set("buffer", js.Null())
+	formInfoUint8.Set("buffer", js.Null())
+	fileMetaUint8.Set("buffer", js.Null())
 
 	thumbnailChunkDataUint8, err := data.Get("thumbnailChunkData")
 	if err != nil {

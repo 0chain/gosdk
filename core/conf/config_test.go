@@ -77,7 +77,7 @@ func TestLoadConfig(t *testing.T) {
 				return mockDefaultReader()
 			},
 			run: func(r *require.Assertions, cfg Config) {
-				r.Equal(10, cfg.MinSubmit)
+				r.Equal(20, cfg.MinSubmit)
 			},
 		},
 		{
@@ -147,7 +147,7 @@ func TestLoadConfig(t *testing.T) {
 				return mockDefaultReader()
 			},
 			run: func(r *require.Assertions, cfg Config) {
-				r.Equal(5, cfg.QuerySleepTime)
+				r.Equal(1, cfg.QuerySleepTime)
 			},
 		}, {
 			name: "Test_Config_Max_Txn_Query_Less_Than_1",
@@ -157,7 +157,7 @@ func TestLoadConfig(t *testing.T) {
 				return mockDefaultReader()
 			},
 			run: func(r *require.Assertions, cfg Config) {
-				r.Equal(5, cfg.MaxTxnQuery)
+				r.Equal(10, cfg.MaxTxnQuery)
 			},
 		}, {
 			name: "Test_Config_Confirmation_Chain_Length_Less_Than_1",

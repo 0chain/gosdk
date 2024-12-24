@@ -249,6 +249,7 @@ func main() {
 				"getFileMetaByName":         getFileMetaByName,
 				"downloadDirectory":         downloadDirectory,
 				"cancelDownloadDirectory":   cancelDownloadDirectory,
+				"cancelDownloadBlocks":      cancelDownloadBlocks,
 
 				// player
 				"play":           play,
