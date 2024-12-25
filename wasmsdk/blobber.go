@@ -24,6 +24,7 @@ import (
 
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/wasmsdk/jsbridge"
+	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
@@ -1132,6 +1133,9 @@ func checkAllocStatus(allocationID string) (string, error) {
 	alloc, err := getAllocation(allocationID)
 	if err != nil {
 		return "", err
+	}
+	if client.GetClientID() != alloc.Owner {
+		return "", errors.New("client id does not match with the allocation owner")
 	}
 	status, blobberStatus, err := alloc.CheckAllocStatus()
 	var statusStr string
