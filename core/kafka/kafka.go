@@ -94,8 +94,8 @@ func (k *KafkaProvider) PublishToKafka(topic string, key, message []byte) error 
 	return nil
 }
 
-func PublishBlobberMonitoringLogsToKafka(key, message []byte) error {
-	return BlobberMonitoringKafka.PublishToKafka(BlobberMonitoringKafkaTopic, key, message)
+func PublishBlobberMonitoringLogsToKafka(key, message string) error {
+	return BlobberMonitoringKafka.PublishToKafka(BlobberMonitoringKafkaTopic, []byte(key), []byte(message))
 }
 
 func (k *KafkaProvider) ReconnectWriter(topic string) error {

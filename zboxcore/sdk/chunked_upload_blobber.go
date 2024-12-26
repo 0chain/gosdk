@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/0chain/gosdk/core/kafka"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -78,6 +79,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 				shouldContinue bool
 			)
 			var req *fasthttp.Request
+			now := time.Now()
 			for i := 0; i < 3; i++ {
 				req, err = zboxutil.NewFastUploadRequest(
 					sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, dataBuffers[ind].Bytes(), su.httpMethod, su.allocationObj.Owner)
@@ -139,6 +141,22 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 
 				break
 			}
+
+			kafkaObj := map[string]interface{}{
+				"op":          "upload",
+				"upload_time": time.Since(now).Milliseconds(),
+				"size":        len(dataBuffers[ind].Bytes()),
+			}
+
+			kafkaObjStr, err := json.Marshal(kafkaObj)
+			if err != nil {
+				logger.Logger.Error("Error publishing to kafka: ", err)
+			}
+			err = kafka.PublishBlobberMonitoringLogsToKafka(sb.blobber.ID+""+su.allocationObj.ID, string(kafkaObjStr))
+			if err != nil {
+				logger.Logger.Error("Error publishing to kafka: ", err)
+			}
+
 			return err
 		})
 	}
