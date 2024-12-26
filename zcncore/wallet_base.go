@@ -376,13 +376,6 @@ var AddSignature = func(privateKey, signature string, hash string) (string, erro
 	return ss.Add(signature, hash)
 }
 
-// ConvertToValue converts ZCN tokens to SAS tokens
-// # Inputs
-//   - token: ZCN tokens
-func ConvertToValue(token float64) uint64 {
-	return uint64(token * common.TokenUnit)
-}
-
 // ConvertToToken converts the SAS tokens to ZCN tokens
 //   - token: SAS tokens amount
 func ConvertToToken(token int64) float64 {
