@@ -168,8 +168,9 @@ func UpdateForbidAllocation(allocationID string, forbidupload, forbiddelete, for
 		"",           //addBlobberId,
 		"",           //addBlobberAuthTicket
 		"",           //removeBlobberId,
-		"",           //thirdPartyExtendable,
-		false,        // ownerSigninPublicKey
+		"",           //owner,
+		"",           //ownerSigninPublicKey
+		false,        // thirdPartyExtendable
 		&sdk.FileOptionsParameters{
 			ForbidUpload: sdk.FileOptionParam{Changed: forbidupload, Value: forbidupload},
 			ForbidDelete: sdk.FileOptionParam{Changed: forbiddelete, Value: forbiddelete},
@@ -178,6 +179,7 @@ func UpdateForbidAllocation(allocationID string, forbidupload, forbiddelete, for
 			ForbidCopy:   sdk.FileOptionParam{Changed: forbidcopy, Value: forbidcopy},
 			ForbidRename: sdk.FileOptionParam{Changed: forbidrename, Value: forbidrename},
 		},
+		"",
 	)
 
 	return hash, err
@@ -197,8 +199,9 @@ func freezeAllocation(allocationID string) (string, error) {
 		"",           //addBlobberId,
 		"",           //addBlobberAuthTicket
 		"",           //removeBlobberId,
-		"",           //thirdPartyExtendable,
-		false,        // ownerSigninPublicKey
+		"",           //owner,
+		"",           //ownerSigninPublicKey
+		false,        // thirdPartyExtendable
 		&sdk.FileOptionsParameters{
 			ForbidUpload: sdk.FileOptionParam{Changed: true, Value: true},
 			ForbidDelete: sdk.FileOptionParam{Changed: true, Value: true},
@@ -207,6 +210,7 @@ func freezeAllocation(allocationID string) (string, error) {
 			ForbidCopy:   sdk.FileOptionParam{Changed: true, Value: true},
 			ForbidRename: sdk.FileOptionParam{Changed: true, Value: true},
 		},
+		"",
 	)
 
 	if err == nil {
@@ -244,7 +248,7 @@ func updateAllocationWithRepair(allocationID string,
 	size int64,
 	extend bool,
 	lock int64,
-	addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey, callbackFuncName string) (string, error) {
+	addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey, updateAllocTicket, callbackFuncName string) (string, error) {
 	sdk.SetWasm()
 	allocationObj, err := sdk.GetAllocation(allocationID)
 	if err != nil {
@@ -261,7 +265,7 @@ func updateAllocationWithRepair(allocationID string,
 		}
 	}
 
-	alloc, hash, isRepairRequired, err := allocationObj.UpdateWithStatus(size, extend, uint64(lock), addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey, false, &sdk.FileOptionsParameters{}, statusBar)
+	alloc, hash, isRepairRequired, err := allocationObj.UpdateWithStatus(size, extend, uint64(lock), addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey, false, &sdk.FileOptionsParameters{}, updateAllocTicket)
 	if err != nil {
 		return hash, err
 	}
@@ -298,13 +302,21 @@ func updateAllocation(allocationID string,
 	size int64, extend bool,
 	lock int64,
 	addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey string, setThirdPartyExtendable bool) (string, error) {
-	hash, _, err := sdk.UpdateAllocation(size, extend, allocationID, uint64(lock), addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey, setThirdPartyExtendable, &sdk.FileOptionsParameters{})
+	hash, _, err := sdk.UpdateAllocation(size, extend, allocationID, uint64(lock), addBlobberId, addBlobberAuthTicket, removeBlobberId, "", ownerSigninPublicKey, setThirdPartyExtendable, &sdk.FileOptionsParameters{}, "")
 
 	if err == nil {
 		clearAllocation(allocationID)
 	}
 
 	return hash, err
+}
+
+func getUpdateAllocTicket(allocationID, userID, operationType string, roundExpiry int64) (string, error) {
+	sign, err := sdk.GetUpdateAllocTicket(allocationID, userID, operationType, roundExpiry)
+	if err != nil {
+		return "", err
+	}
+	return sign, err
 }
 
 // getAllocationMinLock retrieves the minimum lock value for the allocation creation, as calculated by the network.

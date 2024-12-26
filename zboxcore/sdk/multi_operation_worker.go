@@ -250,6 +250,9 @@ func (mo *MultiOperation) Process() error {
 
 	writeMarkerMutex, err := CreateWriteMarkerMutex(mo.allocationObj)
 	if err != nil {
+		for _, op := range mo.operations {
+			op.Error(mo.allocationObj, 0, err)
+		}
 		return fmt.Errorf("Operation failed: %s", err.Error())
 	}
 
@@ -428,9 +431,8 @@ func (mo *MultiOperation) commitV2() error {
 	errSlice := make([]error, len(commitReqs))
 	for idx, commitReq := range commitReqs {
 		if commitReq.result != nil {
-			if commitReq.result.Success {
-				mo.consensus += commitReq.commitMask.CountOnes()
-			} else {
+			mo.consensus += commitReq.commitMask.CountOnes()
+			if !commitReq.result.Success {
 				errSlice[idx] = errors.New("commit_failed", commitReq.result.ErrorMessage)
 				l.Logger.Error("Commit failed ", commitReq.result.ErrorMessage)
 			}

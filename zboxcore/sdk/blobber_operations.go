@@ -130,9 +130,12 @@ func UpdateAllocation(
 	extend bool,
 	allocationID string,
 	lock uint64,
-	addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey string,
-	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
+	addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerID, ownerSigninPublicKey string,
+	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters, ticket string,
 ) (hash string, nonce int64, err error) {
+	if ownerID == "" {
+		ownerID = client.Id()
+	}
 
 	if lock > math.MaxInt64 {
 		return "", 0, errors.New("invalid_lock", "int64 overflow on lock value")
@@ -148,7 +151,7 @@ func UpdateAllocation(
 	}
 
 	updateAllocationRequest := make(map[string]interface{})
-	updateAllocationRequest["owner_id"] = client.Id()
+	updateAllocationRequest["owner_id"] = ownerID
 	updateAllocationRequest["owner_public_key"] = ""
 	updateAllocationRequest["id"] = allocationID
 	updateAllocationRequest["size"] = size
@@ -160,12 +163,41 @@ func UpdateAllocation(
 	updateAllocationRequest["owner_signing_public_key"] = ownerSigninPublicKey
 	updateAllocationRequest["file_options_changed"], updateAllocationRequest["file_options"] = calculateAllocationFileOptions(alloc.FileOptions, fileOptionsParams)
 
+	if ticket != "" {
+
+		type Ticket struct {
+			AllocationID  string `json:"allocation_id"`
+			UserID        string `json:"user_id"`
+			RoundExpiry   int64  `json:"round_expiry"`
+			OperationType string `json:"operation_type"`
+			Signature     string `json:"signature"`
+		}
+
+		ticketData := &Ticket{}
+		err := json.Unmarshal([]byte(ticket), ticketData)
+		if err != nil {
+			return "", 0, errors.New("invalid_ticket", "invalid ticket")
+		}
+		updateAllocationRequest["update_ticket"] = ticketData
+	}
+
 	sn := transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_UPDATE_ALLOCATION,
 		InputArgs: updateAllocationRequest,
 	}
 	hash, _, nonce, _, err = storageSmartContractTxnValue(sn, lock)
 	return
+}
+
+func GetUpdateAllocTicket(allocationID, userID, operationType string, roundExpiry int64) (string, error) {
+	payload := fmt.Sprintf("%s:%d:%s:%s", allocationID, roundExpiry, userID, operationType)
+
+	signature, err := client.Sign(hex.EncodeToString([]byte(payload)))
+	if err != nil {
+		return "", err
+	}
+
+	return signature, nil
 }
 
 // StakePoolLock locks tokens in a stake pool.

@@ -173,7 +173,7 @@ func InitStorageSDK(clientJson string, configJson string) (*StorageSDK, error) {
 		configObj.BlockWorker,
 		configObj.ChainID,
 		configObj.SignatureScheme,
-		0, false, true); err != nil {
+		0, true); err != nil {
 		l.Logger.Error(err)
 		return nil, err
 	}
@@ -418,7 +418,7 @@ func (s *StorageSDK) UpdateAllocation(size int64, extend bool, allocationID stri
 		return "", errors.Errorf("int64 overflow in lock")
 	}
 
-	hash, _, err = sdk.UpdateAllocation(size, extend, allocationID, lock, "", "", "", "", false, &sdk.FileOptionsParameters{})
+	hash, _, err = sdk.UpdateAllocation(size, extend, allocationID, lock, "", "", "", "", "", false, &sdk.FileOptionsParameters{}, "")
 	return hash, err
 }
 

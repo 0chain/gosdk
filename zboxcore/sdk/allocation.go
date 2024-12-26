@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/0chain/gosdk/core/client"
+	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/transaction"
 
 	"github.com/0chain/common/core/currency"
@@ -440,7 +441,7 @@ func (a *Allocation) InitAllocation() {
 	a.startWorker(a.ctx)
 	InitCommitWorker(a.Blobbers)
 	InitBlockDownloader(a.Blobbers, downloadWorkerCount)
-	if a.StorageVersion == StorageV2 {
+	if a.StorageVersion == StorageV2 && a.OwnerPublicKey == client.PublicKey() {
 		a.CheckAllocStatus() //nolint:errcheck
 	}
 	a.initialized = true
@@ -448,25 +449,29 @@ func (a *Allocation) InitAllocation() {
 
 func (a *Allocation) generateAndSetOwnerSigningPublicKey() {
 	//create ecdsa public key from signature
+	if a.OwnerPublicKey != client.PublicKey() {
+		return
+	}
 	privateSigningKey, err := generateOwnerSigningKey(a.OwnerPublicKey, a.Owner)
 	if err != nil {
 		l.Logger.Error("Failed to generate owner signing key", zap.Error(err))
 		return
 	}
-	if a.OwnerSigningPublicKey == "" {
+	if a.OwnerSigningPublicKey == "" && !a.Finalized && !a.Canceled && client.Wallet().IsSplit {
 		pubKey := privateSigningKey.Public().(ed25519.PublicKey)
 		a.OwnerSigningPublicKey = hex.EncodeToString(pubKey)
-		//TODO: save this public key to blockchain
-		hash, _, err := UpdateAllocation(0, false, a.ID, 0, "", "", "", a.OwnerSigningPublicKey, false, nil)
+		hash, _, err := UpdateAllocation(0, false, a.ID, 0, "", "", "", "", a.OwnerSigningPublicKey, false, nil, "")
 		if err != nil {
 			l.Logger.Error("Failed to update owner signing public key ", err, " allocationID: ", a.ID, " hash: ", hash)
 			return
 		}
 		l.Logger.Info("Owner signing public key updated with transaction : ", hash, " ownerSigningPublicKey : ", a.OwnerSigningPublicKey)
 		a.Tx = hash
-	} else {
+	} else if a.OwnerSigningPublicKey != "" {
 		pubKey := privateSigningKey.Public().(ed25519.PublicKey)
 		l.Logger.Info("Owner signing public key already exists: ", a.OwnerSigningPublicKey, " generated: ", hex.EncodeToString(pubKey))
+	} else {
+		return
 	}
 	a.privateSigningKey = privateSigningKey
 }
@@ -570,6 +575,7 @@ func (a *Allocation) RepairFile(file sys.File, remotepath string, statusCallback
 			WithStatusCallback(statusCallback),
 			WithEncryptedPoint(ref.EncryptedKeyPoint),
 			WithChunkNumber(RepairBlocks),
+			WithEncryptionVersion(ref.EncryptionVersion),
 		}
 	} else {
 		opts = []ChunkedUploadOption{
@@ -1365,7 +1371,7 @@ func (a *Allocation) generateDownloadRequest(
 		return nil, noBLOBBERS
 	}
 
-	downloadReq := &DownloadRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
+	downloadReq := &DownloadRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}, storageVersion: a.StorageVersion}
 	downloadReq.maskMu = &sync.Mutex{}
 	downloadReq.allocationID = a.ID
 	downloadReq.allocationTx = a.Tx
@@ -1373,6 +1379,15 @@ func (a *Allocation) generateDownloadRequest(
 	downloadReq.sig = a.sig
 	downloadReq.allocOwnerPubKey = a.OwnerPublicKey
 	downloadReq.allocOwnerSigningPubKey = a.OwnerSigningPublicKey
+	if len(a.privateSigningKey) == 0 {
+		sk, err := generateOwnerSigningKey(client.PublicKey(), client.Id())
+		if err != nil {
+			return nil, err
+		}
+		downloadReq.allocOwnerSigningPrivateKey = sk
+	} else {
+		downloadReq.allocOwnerSigningPrivateKey = a.privateSigningKey
+	}
 	downloadReq.ctx, downloadReq.ctxCncl = context.WithCancel(a.ctx)
 	downloadReq.fileHandler = fileHandler
 	downloadReq.localFilePath = localFilePath
@@ -1437,7 +1452,8 @@ func (a *Allocation) addAndGenerateDownloadRequest(
 		opt(downloadReq)
 	}
 	downloadReq.workdir = filepath.Join(downloadReq.workdir, ".zcn")
-	a.downloadProgressMap[remotePath] = downloadReq
+	hash := encryption.Hash(fmt.Sprintf("%s:%d:%d", remotePath, startBlock, endBlock))
+	a.downloadProgressMap[hash] = downloadReq
 	a.downloadRequests = append(a.downloadRequests, downloadReq)
 	if isFinal {
 		downloadOps := a.downloadRequests
@@ -2339,6 +2355,7 @@ func (a *Allocation) GetAuthTicket(path, filename string,
 		ctx:               a.ctx,
 		remotefilepath:    path,
 		remotefilename:    filename,
+		signingPrivateKey: a.privateSigningKey,
 	}
 
 	if referenceType == fileref.DIRECTORY {
@@ -2450,7 +2467,18 @@ func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKe
 // It cancels the download operation and removes the download request from the download progress map.
 //   - remotepath: The remote path of the file to cancel the download operation.
 func (a *Allocation) CancelDownload(remotepath string) error {
-	if downloadReq, ok := a.downloadProgressMap[remotepath]; ok {
+	hash := encryption.Hash(fmt.Sprintf("%s:%d:%d", remotepath, 1, 0))
+	if downloadReq, ok := a.downloadProgressMap[hash]; ok {
+		downloadReq.isDownloadCanceled = true
+		downloadReq.ctxCncl()
+		return nil
+	}
+	return errors.New("remote_path_not_found", "Invalid path. No download in progress for the path "+remotepath)
+}
+
+func (a *Allocation) CancelDownloadBlocks(remotepath string, start, end int64) error {
+	hash := encryption.Hash(fmt.Sprintf("%s:%d:%d", remotepath, start, end))
+	if downloadReq, ok := a.downloadProgressMap[hash]; ok {
 		downloadReq.isDownloadCanceled = true
 		downloadReq.ctxCncl()
 		return nil
@@ -2807,6 +2835,12 @@ func (a *Allocation) downloadFromAuthTicket(fileHandler sys.File, authTicket str
 	downloadReq.allocOwnerID = a.Owner
 	downloadReq.allocOwnerPubKey = a.OwnerPublicKey
 	downloadReq.allocOwnerSigningPubKey = a.OwnerSigningPublicKey
+	//for auth ticket set your own signing key
+	sk, err := generateOwnerSigningKey(client.PublicKey(), client.Id())
+	if err != nil {
+		return err
+	}
+	downloadReq.allocOwnerSigningPrivateKey = sk
 	downloadReq.ctx, downloadReq.ctxCncl = context.WithCancel(a.ctx)
 	downloadReq.fileHandler = fileHandler
 	downloadReq.localFilePath = localFilePath
@@ -2844,7 +2878,8 @@ func (a *Allocation) downloadFromAuthTicket(fileHandler sys.File, authTicket str
 		opt(downloadReq)
 	}
 	a.mutex.Lock()
-	a.downloadProgressMap[remoteLookupHash] = downloadReq
+	hash := encryption.Hash(fmt.Sprintf("%s:%d:%d", remoteLookupHash, startBlock, endBlock))
+	a.downloadProgressMap[hash] = downloadReq
 	if len(a.downloadRequests) > 0 {
 		downloadReq.connectionID = a.downloadRequests[0].connectionID
 	}
@@ -3149,10 +3184,10 @@ func (a *Allocation) UpdateWithRepair(
 	extend bool,
 	lock uint64,
 	addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey string,
-	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
+	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters, updateAllocTicket string,
 	statusCB StatusCallback,
 ) (string, error) {
-	updatedAlloc, hash, isRepairRequired, err := a.UpdateWithStatus(size, extend, lock, addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey, setThirdPartyExtendable, fileOptionsParams, statusCB)
+	updatedAlloc, hash, isRepairRequired, err := a.UpdateWithStatus(size, extend, lock, addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey, setThirdPartyExtendable, fileOptionsParams, updateAllocTicket)
 	if err != nil {
 		return hash, err
 	}
@@ -3185,7 +3220,7 @@ func (a *Allocation) UpdateWithStatus(
 	lock uint64,
 	addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey string,
 	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
-	statusCB StatusCallback,
+	updateAllocTicket string,
 ) (*Allocation, string, bool, error) {
 	var (
 		alloc            *Allocation
@@ -3196,7 +3231,7 @@ func (a *Allocation) UpdateWithStatus(
 	}
 
 	l.Logger.Info("Updating allocation")
-	hash, _, err := UpdateAllocation(size, extend, a.ID, lock, addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey, setThirdPartyExtendable, fileOptionsParams)
+	hash, _, err := UpdateAllocation(size, extend, a.ID, lock, addBlobberId, addBlobberAuthTicket, removeBlobberId, "", ownerSigninPublicKey, setThirdPartyExtendable, fileOptionsParams, updateAllocTicket)
 	if err != nil {
 		return alloc, "", isRepairRequired, err
 	}
