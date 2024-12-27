@@ -50,6 +50,8 @@ var (
 	MultiOpBatchSize = 50
 	RepairBatchSize  = 50
 	Workdir          string
+	logChanMap       = make(map[string]chan logEntry)
+	logMapMutex      = &sync.Mutex{}
 )
 
 const (
@@ -436,6 +438,9 @@ func (a *Allocation) InitAllocation() {
 				break
 			}
 		}
+	}
+	for _, blobber := range a.Blobbers {
+		addLogChan(blobber.Baseurl)
 	}
 	a.generateAndSetOwnerSigningPublicKey()
 	a.startWorker(a.ctx)
@@ -3405,4 +3410,39 @@ func contextCanceled(ctx context.Context) bool {
 	default:
 		return false
 	}
+}
+
+type logEntry struct {
+	OpType    string
+	DataSize  int
+	TimeTaken int64
+}
+
+func addLogChan(blobberURL string) {
+	logMapMutex.Lock()
+	defer logMapMutex.Unlock()
+	if _, ok := logChanMap[blobberURL]; ok {
+		return
+	}
+	logChan := make(chan logEntry, 200)
+	logChanMap[blobberURL] = logChan
+	go logWorker(blobberURL, logChan)
+}
+
+func getLogChan(blobberURL string) chan logEntry {
+	logMapMutex.Lock()
+	defer logMapMutex.Unlock()
+	return logChanMap[blobberURL]
+}
+
+func logWorker(key string, logChan chan logEntry) {
+	for log := range logChan {
+		data, _ := json.Marshal(log)
+		sys.Files.StoreLogs(key, string(data))
+	}
+}
+
+func writeLogEntry(blobberURL string, log logEntry) {
+	logChan := getLogChan(blobberURL)
+	logChan <- log
 }
