@@ -5,9 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/0chain/common/core/logging"
-	"github.com/0chain/gosdk/core/kafka"
 	"io"
+	"log"
 	"mime/multipart"
 	"net/http"
 	"strings"
@@ -149,14 +148,22 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 				"op":          "upload",
 				"upload_time": time.Since(now).Milliseconds(),
 				"size":        len(dataBuffers[ind].Bytes()),
+				"alloc":       su.allocationObj.ID,
 			}
 
 			kafkaObjStr, err := json.Marshal(kafkaObj)
 			if err != nil {
 				logger.Logger.Error("Error publishing to kafka: ", err)
 			}
-			res := kafka.BlobberMonitoringKafka.PublishToKafka(kafka.BlobberMonitoringKafkaTopic, sb.blobber.ID+""+su.allocationObj.ID, string(kafkaObjStr))
-			results = append(results, res)
+			fmt.Println(kafkaObjStr)
+			//
+			//var (
+			//	BlobberMonitoringKafkaTopic = "blobber_monitoring"
+			//	BlobberMonitoringKafka      = kafka.NewKafkaProvider("91.107.200.12:9092", "admin", "zus-operator", 1*time.Minute)
+			//)
+
+			//res := BlobberMonitoringKafka.PublishToKafka(BlobberMonitoringKafkaTopic, sb.blobber.ID, string(kafkaObjStr))
+			//results = append(results, res)
 
 			return err
 		})
@@ -175,12 +182,13 @@ L:
 	for _, ch := range results {
 		select {
 		case <-ch:
+			log.Println("Sent to Kafka : ", sent, " : lenDataBuffers : ", len(dataBuffers))
 			sent++
 			if sent == len(dataBuffers) {
 				break L
 			}
 		case <-timeout.Done():
-			logging.Logger.Panic("Timeout to publish event to kafka")
+			log.Panic("Timeout to publish event to kafka")
 		}
 	}
 

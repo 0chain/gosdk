@@ -32,11 +32,6 @@ func init() {
 	writers = make(map[string]sarama.AsyncProducer)
 }
 
-var (
-	BlobberMonitoringKafkaTopic = "blobber_monitoring"
-	BlobberMonitoringKafka      = NewKafkaProvider("91.107.200.12:9092", "admin", "zus-operator", 1*time.Minute)
-)
-
 func NewKafkaProvider(host, username, password string, writeTimeout time.Duration) *KafkaProvider {
 	log.Println("Initializing Kafka provider", zap.String("host", host))
 
@@ -81,6 +76,8 @@ func (k *KafkaProvider) PublishToKafka(topic string, key, message string) chan i
 		Key:   sarama.ByteEncoder(key),
 		Value: sarama.ByteEncoder(message),
 	}
+
+	fmt.Println("Publishing to kafka", zap.String("topic", topic), zap.String("key", key), zap.String("message", message))
 
 	writer.Input() <- msg
 	go func() {
