@@ -431,10 +431,8 @@ func (su *ChunkedUpload) process() error {
 	defer su.chunkReader.Close()
 	defer su.ctxCncl(nil)
 	for {
-		now := time.Now()
 
 		chunks, err := su.readChunks(su.chunkNumber)
-		TotalReadTime += time.Since(now).Milliseconds()
 
 		// chunk, err := su.chunkReader.Next()
 		if err != nil {
@@ -690,7 +688,6 @@ func (su *ChunkedUpload) uploadToBlobbers(uploadData UploadData) error {
 		return context.Cause(su.ctx)
 	default:
 	}
-	now := time.Now()
 	consensus := Consensus{
 		RWMutex:         &sync.RWMutex{},
 		consensusThresh: su.consensus.consensusThresh,
@@ -747,7 +744,6 @@ func (su *ChunkedUpload) uploadToBlobbers(uploadData UploadData) error {
 			su.statusCallback.InProgress(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, int(atomic.AddInt64(&su.progress.UploadLength, uploadLength)), nil)
 		}
 	}
-	atomic.AddInt64(&TotalUploadBlobberTime, time.Since(now).Milliseconds())
 	uploadData = UploadData{} // release memory
 	return nil
 }

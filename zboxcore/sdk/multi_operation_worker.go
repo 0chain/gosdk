@@ -30,15 +30,6 @@ const (
 	StorageV2                      = 1
 )
 
-var (
-	TotalUploadTime        int64
-	TotalTime              int64
-	TotalReadTime          int64
-	TotalReadChunkTime     int64
-	TotalFormBuildTime     int64
-	TotalUploadBlobberTime int64
-)
-
 var BatchSize = 6
 
 type MultiOperationOption func(mo *MultiOperation)
@@ -173,9 +164,6 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 
 func (mo *MultiOperation) Process() error {
 	l.Logger.Debug("MultiOperation Process start")
-	TotalReadTime = 0
-	TotalReadChunkTime = 0
-
 	wg := &sync.WaitGroup{}
 	if mo.allocationObj.StorageVersion == 0 {
 		mo.changes = make([][]allocationchange.AllocationChange, len(mo.operations))
@@ -190,7 +178,6 @@ func (mo *MultiOperation) Process() error {
 	if mo.allocationObj.StorageVersion != StorageV2 {
 		mo.operationMask = zboxutil.NewUint128(0)
 	}
-	now := time.Now()
 	for idx, op := range mo.operations {
 		uid := util.GetNewUUID()
 		swg.Add()
@@ -231,8 +218,7 @@ func (mo *MultiOperation) Process() error {
 		}(op, idx)
 	}
 	swg.Wait()
-	logger.Logger.Info("[process]", time.Since(now).Milliseconds())
-	TotalUploadTime = time.Since(now).Milliseconds()
+
 	if ctx.Err() != nil {
 		err := context.Cause(ctx)
 		return err
@@ -365,7 +351,6 @@ func (mo *MultiOperation) Process() error {
 	}
 	wg.Wait()
 	logger.Logger.Debug("[commitRequests]", time.Since(start).Milliseconds())
-	// JAYASH: COMMIT REQUEST TIMINGS
 	rollbackMask := zboxutil.NewUint128(0)
 	errSlice := make([]error, len(commitReqs))
 	for idx, commitReq := range commitReqs {
@@ -401,9 +386,8 @@ func (mo *MultiOperation) Process() error {
 		}
 	}
 
-	TotalTime = time.Since(now).Milliseconds()
-
 	return nil
+
 }
 
 func (mo *MultiOperation) commitV2() error {

@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"sync"
 	"sync/atomic"
-	"time"
 
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
@@ -87,8 +86,6 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		uploadLength:    uploadLength,
 	}
 
-	now := time.Now()
-
 	wgErrors := make(chan error, len(su.blobbers))
 	if len(fileShards) == 0 {
 		return thrown.New("upload_failed", "Upload failed. No data to upload")
@@ -142,7 +139,6 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		su.removeProgress()
 		return thrown.New("upload_failed", fmt.Sprintf("Upload failed. %s", err))
 	}
-	TotalFormBuildTime += time.Since(now).Milliseconds()
 	if !lastBufferOnly {
 		su.uploadWG.Add(1)
 		select {

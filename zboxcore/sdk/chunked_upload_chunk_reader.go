@@ -5,7 +5,6 @@ import (
 	"math"
 	"strconv"
 	"sync"
-	"time"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
@@ -199,13 +198,11 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 		readLen int
 		err     error
 	)
-	now := time.Now()
 	for readLen < len(chunkBytes) && err == nil {
 		var nn int
 		nn, err = r.fileReader.Read(chunkBytes[readLen:])
 		readLen += nn
 	}
-	TotalReadChunkTime += time.Since(now).Milliseconds()
 	if err != nil {
 
 		if !errors.Is(err, io.EOF) {
