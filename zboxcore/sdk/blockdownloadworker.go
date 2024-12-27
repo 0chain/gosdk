@@ -189,6 +189,33 @@ func (req *BlockDownloadRequest) downloadBlobberBlock(fastClient *fasthttp.Clien
 				return errors.New("response_error", string(respBuf))
 			}
 
+			//kafkaObj := map[string]interface{}{
+			//	"op":    "download",
+			//	"time":  time.Since(now).Milliseconds(),
+			//	"size":  len(respBuf),
+			//	"alloc": req.allocationID,
+			//}
+			//kafkaObjStr, err := json.Marshal(kafkaObj)
+			//if err != nil {
+			//	log.Println("Error publishing to kafka: ", err)
+			//}
+			//
+			//var (
+			//	BlobberMonitoringKafkaTopic = "blobber_monitoring2"
+			//	BlobberMonitoringKafka      = kafka.NewKafkaProvider("91.107.200.12:9092", "admin", "zus-operator", 1*time.Minute)
+			//)
+			//
+			//timeout, cancelFunc := context.WithTimeout(context.Background(), 50*time.Second)
+			//defer cancelFunc()
+			//
+			//res := BlobberMonitoringKafka.PublishToKafka(BlobberMonitoringKafkaTopic, req.blobber.ID, string(kafkaObjStr))
+			//select {
+			//case <-res:
+			//	break
+			//case <-timeout.Done():
+			//	log.Panic("Timeout to publish event to kafka")
+			//}
+
 			dR := downloadResponse{}
 			if req.shouldVerify {
 				err = json.Unmarshal(respBuf, &dR)

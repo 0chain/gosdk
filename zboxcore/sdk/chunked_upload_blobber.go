@@ -145,23 +145,24 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 			}
 
 			kafkaObj := map[string]interface{}{
-				"op":          "upload",
-				"upload_time": time.Since(now).Milliseconds(),
-				"size":        len(dataBuffers[ind].Bytes()),
-				"alloc":       su.allocationObj.ID,
+				"op":    "upload",
+				"time":  time.Since(now).Milliseconds(),
+				"size":  len(dataBuffers[ind].Bytes()),
+				"alloc": su.allocationObj.ID,
 			}
 
 			kafkaObjStr, err := json.Marshal(kafkaObj)
 			if err != nil {
 				logger.Logger.Error("Error publishing to kafka: ", err)
 			}
+
 			fmt.Println(kafkaObjStr)
-			//
+
 			//var (
-			//	BlobberMonitoringKafkaTopic = "blobber_monitoring"
+			//	BlobberMonitoringKafkaTopic = "blobber_monitoring2"
 			//	BlobberMonitoringKafka      = kafka.NewKafkaProvider("91.107.200.12:9092", "admin", "zus-operator", 1*time.Minute)
 			//)
-
+			//
 			//res := BlobberMonitoringKafka.PublishToKafka(BlobberMonitoringKafkaTopic, sb.blobber.ID, string(kafkaObjStr))
 			//results = append(results, res)
 
@@ -174,7 +175,6 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 	}
 	consensus.Done()
 
-	//wait for all responses
 	timeout, cancelFunc := context.WithTimeout(context.Background(), 50*time.Second)
 	defer cancelFunc()
 	sent := 0
