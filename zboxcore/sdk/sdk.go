@@ -625,19 +625,34 @@ func GetAllocation(allocationID string) (*Allocation, error) {
 	var allocationBytes []byte
 	var err error
 
-	allocationBytes, err = screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation",
+	allocationBytes, err = screstapi.MakeSCRestAPICallToZbox("/getAllocation",
 		params)
 	if err != nil {
 		return nil, errors.New("allocation_fetch_error", "Error fetching the allocation."+err.Error())
 	}
-	allocationObj := &Allocation{}
-	err = json.Unmarshal(allocationBytes, allocationObj)
+
+	allocBytes2, err := client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, "/allocation", params)
+	if err != nil {
+		return nil, errors.New("allocation_fetch_error", "Error fetching the allocation."+err.Error())
+	}
+	allocationObj1 := &Allocation{}
+	err = json.Unmarshal(allocationBytes, allocationObj1)
 	if err != nil {
 		return nil, errors.New("allocation_decode_error", "Error decoding the allocation: "+err.Error()+" "+string(allocationBytes))
 	}
-	allocationObj.numBlockDownloads = numBlockDownloads
-	allocationObj.InitAllocation()
-	return allocationObj, nil
+
+	allocationObj2 := &Allocation{}
+	err = json.Unmarshal(allocBytes2, allocationObj2)
+	if err != nil {
+		return nil, errors.New("allocation_decode_error", "Error decoding the allocation: "+err.Error()+" "+string(allocationBytes))
+	}
+
+	l.Logger.Debug("0box api response in get allocation", allocationObj1)
+	l.Logger.Debug("sharder api response in get allocation", allocationObj2)
+
+	allocationObj1.numBlockDownloads = numBlockDownloads
+	allocationObj1.InitAllocation()
+	return allocationObj1, nil
 }
 
 // GetAllocationForUpdate - get allocation for update from given allocation id without calling init allocation
@@ -647,17 +662,31 @@ func GetAllocationForUpdate(allocationID string) (*Allocation, error) {
 	}
 	params := make(map[string]string)
 	params["allocation"] = allocationID
-	allocationBytes, err := screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation",
+	allocationBytes, err := screstapi.MakeSCRestAPICallToZbox("/getAllocation",
 		params)
 	if err != nil {
 		return nil, errors.New("allocation_fetch_error", "Error fetching the allocation."+err.Error())
 	}
-	allocationObj := &Allocation{}
-	err = json.Unmarshal(allocationBytes, allocationObj)
+
+	allocBytes2, err := client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, "/allocation", params)
+	if err != nil {
+		return nil, errors.New("allocation_fetch_error", "Error fetching the allocation."+err.Error())
+	}
+	allocationObj1 := &Allocation{}
+	err = json.Unmarshal(allocationBytes, allocationObj1)
 	if err != nil {
 		return nil, errors.New("allocation_decode_error", "Error decoding the allocation: "+err.Error()+" "+string(allocationBytes))
 	}
-	return allocationObj, nil
+
+	allocationObj2 := &Allocation{}
+	err = json.Unmarshal(allocBytes2, allocationObj2)
+	if err != nil {
+		return nil, errors.New("allocation_decode_error", "Error decoding the allocation: "+err.Error()+" "+string(allocationBytes))
+	}
+
+	l.Logger.Debug("0box api response in get allocation for update", allocationObj1)
+	l.Logger.Debug("sharder api response in get allocation  for update", allocationObj2)
+	return allocationObj1, nil
 }
 
 func GetAllocationUpdates(allocation *Allocation) error {
@@ -670,17 +699,29 @@ func GetAllocationUpdates(allocation *Allocation) error {
 	var allocationBytes []byte
 	var err error
 
-	allocationBytes, err = screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation",
+	allocationBytes, err = screstapi.MakeSCRestAPICallToZbox("/getAllocation",
 		params)
-
 	if err != nil {
 		return errors.New("allocation_fetch_error", "Error fetching the allocation."+err.Error())
 	}
 
+	allocBytes2, err := client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, "/allocation", params)
+	if err != nil {
+		return errors.New("allocation_fetch_error", "Error fetching the allocation."+err.Error())
+	}
+	allocationObj1 := &Allocation{}
+	err = json.Unmarshal(allocationBytes, allocationObj1)
+	if err != nil {
+		return errors.New("allocation_decode_error", "Error decoding the allocation: "+err.Error()+" "+string(allocationBytes))
+	}
+
 	updatedAllocationObj := new(Allocation)
-	if err := json.Unmarshal(allocationBytes, updatedAllocationObj); err != nil {
+	if err := json.Unmarshal(allocBytes2, updatedAllocationObj); err != nil {
 		return errors.New("allocation_decode_error", "Error decoding the allocation."+err.Error())
 	}
+
+	l.Logger.Debug("0box api response in get allocation for update", allocationObj1)
+	l.Logger.Debug("sharder api response in get allocation  for update", updatedAllocationObj)
 
 	allocation.DataShards = updatedAllocationObj.DataShards
 	allocation.ParityShards = updatedAllocationObj.ParityShards
@@ -728,17 +769,31 @@ func getAllocationsInternal(clientID string, limit, offset int) ([]*Allocation, 
 	var allocationsBytes []byte
 	var err error
 
-	allocationsBytes, err = screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocations",
+	allocationsBytes, err = screstapi.MakeSCRestAPICallToZbox("/getAllocations",
 		params)
 	if err != nil {
-		return nil, errors.New("allocations_fetch_error", "Error fetching the allocations."+err.Error())
+		return nil, errors.New("allocation_fetch_error", "Error fetching the allocation."+err.Error())
 	}
-	allocations := make([]*Allocation, 0)
-	err = json.Unmarshal(allocationsBytes, &allocations)
+
+	allocBytes2, err := client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, "/allocations", params)
 	if err != nil {
-		return nil, errors.New("allocations_decode_error", "Error decoding the allocations."+err.Error())
+		return nil, errors.New("allocation_fetch_error", "Error fetching the allocation."+err.Error())
 	}
-	return allocations, nil
+	allocationsObj1 := make([]*Allocation, 0)
+	err = json.Unmarshal(allocationsBytes, &allocationsObj1)
+	if err != nil {
+		return nil, errors.New("allocation_decode_error", "Error decoding the allocations: "+err.Error()+" "+string(allocationsBytes))
+	}
+
+	updatedAllocationsObj := make([]*Allocation, 0)
+	if err := json.Unmarshal(allocBytes2, &updatedAllocationsObj); err != nil {
+		return nil, errors.New("allocation_decode_error", "Error decoding the allocations."+err.Error())
+	}
+
+	l.Logger.Debug("0box api response in get allocation for update", allocationsObj1)
+	l.Logger.Debug("sharder api response in get allocation  for update", updatedAllocationsObj)
+
+	return updatedAllocationsObj, nil
 }
 
 // GetAllocationsForClient - get all allocations for given client id
