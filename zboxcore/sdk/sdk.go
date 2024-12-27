@@ -790,8 +790,8 @@ func getAllocationsInternal(clientID string, limit, offset int) ([]*Allocation, 
 		return nil, errors.New("allocation_decode_error", "Error decoding the allocations."+err.Error())
 	}
 
-	l.Logger.Debug("0box api response in get allocation for update", allocationsObj1)
-	l.Logger.Debug("sharder api response in get allocation  for update", updatedAllocationsObj)
+	l.Logger.Debug("0box api response in get allocations for update", allocationsObj1)
+	l.Logger.Debug("sharder api response in get allocations  for update", updatedAllocationsObj)
 
 	return updatedAllocationsObj, nil
 }
