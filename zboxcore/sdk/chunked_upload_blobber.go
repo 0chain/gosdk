@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/0chain/common/core/logging"
 	"github.com/0chain/gosdk/core/kafka"
 	"io"
 	"mime/multipart"
@@ -71,6 +72,8 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 	}
 
 	eg, _ := errgroup.WithContext(ctx)
+
+	var results []chan int64
 
 	for dataInd := 0; dataInd < len(dataBuffers); dataInd++ {
 		ind := dataInd
@@ -152,10 +155,8 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 			if err != nil {
 				logger.Logger.Error("Error publishing to kafka: ", err)
 			}
-			err = kafka.PublishBlobberMonitoringLogsToKafka(sb.blobber.ID+""+su.allocationObj.ID, string(kafkaObjStr))
-			if err != nil {
-				logger.Logger.Error("Error publishing to kafka: ", err)
-			}
+			res := kafka.BlobberMonitoringKafka.PublishToKafka(kafka.BlobberMonitoringKafkaTopic, sb.blobber.ID+""+su.allocationObj.ID, string(kafkaObjStr))
+			results = append(results, res)
 
 			return err
 		})
@@ -165,6 +166,23 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 		return err
 	}
 	consensus.Done()
+
+	//wait for all responses
+	timeout, cancelFunc := context.WithTimeout(context.Background(), 50*time.Second)
+	defer cancelFunc()
+	sent := 0
+L:
+	for _, ch := range results {
+		select {
+		case <-ch:
+			sent++
+			if sent == len(dataBuffers) {
+				break L
+			}
+		case <-timeout.Done():
+			logging.Logger.Panic("Timeout to publish event to kafka")
+		}
+	}
 
 	if formData.ThumbnailBytesLen > 0 {
 

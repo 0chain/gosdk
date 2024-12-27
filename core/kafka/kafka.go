@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"fmt"
+	"github.com/0chain/common/core/logging"
 	"log"
 	"sync"
 	"time"
@@ -11,7 +12,7 @@ import (
 )
 
 type ProviderI interface {
-	PublishToKafka(topic string, key, message []byte) error
+	PublishToKafka(topic string, key, message []byte) chan int64
 	ReconnectWriter(topic string) error
 	CloseWriter(topic string) error
 	CloseAllWriters() error
@@ -21,8 +22,14 @@ type KafkaProvider struct {
 	Host         string
 	WriteTimeout time.Duration
 	Config       *sarama.Config
-	mutex        sync.RWMutex
-	writers      map[string]sarama.AsyncProducer
+	mutex        sync.RWMutex // Mutex for synchronizing access to writers map
+}
+
+// map of kafka writers for each topic
+var writers map[string]sarama.AsyncProducer
+
+func init() {
+	writers = make(map[string]sarama.AsyncProducer)
 }
 
 var (
@@ -51,21 +58,20 @@ func NewKafkaProvider(host, username, password string, writeTimeout time.Duratio
 		Host:         host,
 		WriteTimeout: writeTimeout,
 		Config:       config,
-		writers:      make(map[string]sarama.AsyncProducer),
 	}
 }
 
-func (k *KafkaProvider) PublishToKafka(topic string, key, message []byte) error {
+func (k *KafkaProvider) PublishToKafka(topic string, key, message string) chan int64 {
 	k.mutex.RLock()
-	writer, exists := k.writers[topic]
+	writer, exists := writers[topic]
 	k.mutex.RUnlock()
-
+	res := make(chan int64)
 	if !exists {
 		k.mutex.Lock()
-		writer, exists = k.writers[topic]
+		writer, exists = writers[topic]
 		if !exists {
 			writer = k.createKafkaWriter(topic)
-			k.writers[topic] = writer
+			writers[topic] = writer
 		}
 		k.mutex.Unlock()
 	}
@@ -76,61 +82,44 @@ func (k *KafkaProvider) PublishToKafka(topic string, key, message []byte) error 
 		Value: sarama.ByteEncoder(message),
 	}
 
-	select {
-	case writer.Input() <- msg:
-		log.Println("Message published to Kafka", zap.String("topic", topic))
-	case <-time.After(k.WriteTimeout):
-		log.Println("Failed to publish to Kafka: timeout", zap.String("topic", topic))
-		return fmt.Errorf("timeout publishing to Kafka topic %s", topic)
-	}
-
-	select {
-	case <-writer.Successes():
-		log.Println("Message published to Kafka", zap.String("topic", topic))
-	case err := <-writer.Errors():
-		log.Println("Failed to publish to Kafka", zap.String("topic", topic), zap.Error(err))
-	}
-
-	return nil
-}
-
-func PublishBlobberMonitoringLogsToKafka(key, message string) error {
-	return BlobberMonitoringKafka.PublishToKafka(BlobberMonitoringKafkaTopic, []byte(key), []byte(message))
+	writer.Input() <- msg
+	go func() {
+		r := <-writer.Successes()
+		res <- r.Offset
+	}()
+	return res
 }
 
 func (k *KafkaProvider) ReconnectWriter(topic string) error {
 	k.mutex.Lock()
 	defer k.mutex.Unlock()
-
-	writer, exists := k.writers[topic]
-	if !exists {
-		return fmt.Errorf("no Kafka writer found for topic %v", topic)
+	writer := writers[topic]
+	if writer == nil {
+		return fmt.Errorf("no kafka writer found for the topic %v", topic)
 	}
 
 	if err := writer.Close(); err != nil {
-		log.Println("Error closing Kafka writer", zap.Error(err))
-		return fmt.Errorf("error closing Kafka connection for topic %v: %v", topic, err)
+		logging.Logger.Error("error closing kafka connection", zap.String("topic", topic), zap.Error(err))
+		return fmt.Errorf("error closing kafka connection for topic %v: %v", topic, err)
 	}
 
-	k.writers[topic] = k.createKafkaWriter(topic)
+	writers[topic] = k.createKafkaWriter(topic)
 	return nil
 }
 
 func (k *KafkaProvider) CloseWriter(topic string) error {
 	k.mutex.Lock()
-	defer k.mutex.Unlock()
+	writer := writers[topic]
+	k.mutex.Unlock()
 
-	writer, exists := k.writers[topic]
-	if !exists {
-		return fmt.Errorf("no Kafka writer found for topic %v", topic)
+	if writer == nil {
+		return fmt.Errorf("no kafka writer found for the topic %v", topic)
 	}
 
 	if err := writer.Close(); err != nil {
-		log.Println("Error closing Kafka writer", zap.Error(err))
-		return err
+		logging.Logger.Error("error closing kafka connection", zap.Error(err))
 	}
 
-	delete(k.writers, topic)
 	return nil
 }
 
@@ -138,11 +127,10 @@ func (k *KafkaProvider) CloseAllWriters() error {
 	k.mutex.Lock()
 	defer k.mutex.Unlock()
 
-	for topic, writer := range k.writers {
+	for topic, writer := range writers {
 		if err := writer.Close(); err != nil {
-			log.Println("Error closing Kafka writer", zap.String("topic", topic), zap.Error(err))
+			logging.Logger.Error("error closing kafka connection", zap.String("topic", topic), zap.Error(err))
 		}
-		delete(k.writers, topic)
 	}
 	return nil
 }
@@ -150,12 +138,13 @@ func (k *KafkaProvider) CloseAllWriters() error {
 func (k *KafkaProvider) createKafkaWriter(topic string) sarama.AsyncProducer {
 	producer, err := sarama.NewAsyncProducer([]string{k.Host}, k.Config)
 	if err != nil {
-		log.Fatalf("Failed to create Kafka producer: %v", err)
+		logging.Logger.Panic(fmt.Sprintf("Failed to start Sarama producer: %v", err))
 	}
 
 	go func() {
 		for err := range producer.Errors() {
-			log.Printf("Kafka error: %v\n", err)
+			fmt.Println("kafka - failed to write access log entry:", err)
+			logging.Logger.Panic("kafka - failed to write access log entry:", zap.Error(err))
 		}
 	}()
 
