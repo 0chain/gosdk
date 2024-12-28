@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/0chain/gosdk/core/kafka"
+	"log"
 	"net/http"
 	"sync"
 	"syscall"
@@ -189,32 +191,32 @@ func (req *BlockDownloadRequest) downloadBlobberBlock(fastClient *fasthttp.Clien
 				return errors.New("response_error", string(respBuf))
 			}
 
-			//kafkaObj := map[string]interface{}{
-			//	"op":    "download",
-			//	"time":  time.Since(now).Milliseconds(),
-			//	"size":  len(respBuf),
-			//	"alloc": req.allocationID,
-			//}
-			//kafkaObjStr, err := json.Marshal(kafkaObj)
-			//if err != nil {
-			//	log.Println("Error publishing to kafka: ", err)
-			//}
-			//
-			//var (
-			//	BlobberMonitoringKafkaTopic = "blobber_monitoring2"
-			//	BlobberMonitoringKafka      = kafka.NewKafkaProvider("91.107.200.12:9092", "admin", "zus-operator", 1*time.Minute)
-			//)
-			//
-			//timeout, cancelFunc := context.WithTimeout(context.Background(), 50*time.Second)
-			//defer cancelFunc()
-			//
-			//res := BlobberMonitoringKafka.PublishToKafka(BlobberMonitoringKafkaTopic, req.blobber.ID, string(kafkaObjStr))
-			//select {
-			//case <-res:
-			//	break
-			//case <-timeout.Done():
-			//	log.Panic("Timeout to publish event to kafka")
-			//}
+			dnldSizeInMb := int64(len(respBuf)) / 1024 / 1024
+			kafkaObj := kafka.BlobberMonitoring{
+				ID:           fmt.Sprintf("%s_%s_%d", req.blobber.ID, req.allocationID, dnldSizeInMb),
+				Operation:    "upload",
+				BlobberId:    req.blobber.ID,
+				TimeSpent:    time.Since(now).Milliseconds(),
+				Size:         dnldSizeInMb,
+				AllocationId: req.allocationID,
+				Count:        1,
+			}
+
+			kafkaObjStr, err := json.Marshal(kafkaObj)
+			if err != nil {
+				log.Println("Error publishing to kafka: ", err)
+			}
+
+			timeout, cancelFunc := context.WithTimeout(context.Background(), 50*time.Second)
+			defer cancelFunc()
+
+			res := kafka.BlobberMonitoringKafka.PublishToKafka(kafka.BlobberMonitoringKafkaTopic, req.blobber.ID, string(kafkaObjStr))
+			select {
+			case <-res:
+				break
+			case <-timeout.Done():
+				log.Panic("Timeout to publish event to kafka")
+			}
 
 			dR := downloadResponse{}
 			if req.shouldVerify {

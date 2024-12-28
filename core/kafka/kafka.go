@@ -11,6 +11,21 @@ import (
 	"go.uber.org/zap"
 )
 
+var (
+	BlobberMonitoringKafkaTopic = "monitor2"
+	BlobberMonitoringKafka      = NewKafkaProvider("", "", "", 1*time.Minute)
+)
+
+type BlobberMonitoring struct {
+	ID           string `json:"id"`
+	Operation    string `json:"operation"`
+	BlobberId    string `json:"blobber_id"`
+	AllocationId string `json:"allocation_id"`
+	Size         int64  `json:"size"`
+	TimeSpent    int64  `json:"time_spent"`
+	Count        int    `json:"count"`
+}
+
 type ProviderI interface {
 	PublishToKafka(topic string, key, message []byte) chan int64
 	ReconnectWriter(topic string) error

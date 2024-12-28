@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/0chain/gosdk/core/kafka"
 	"io"
 	"log"
 	"mime/multipart"
@@ -144,11 +145,15 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 				break
 			}
 
-			kafkaObj := map[string]interface{}{
-				"op":    "upload",
-				"time":  time.Since(now).Milliseconds(),
-				"size":  len(dataBuffers[ind].Bytes()),
-				"alloc": su.allocationObj.ID,
+			uploadSizeInMb := int64(len(dataBuffers[ind].Bytes())) / 1024 / 1024
+			kafkaObj := kafka.BlobberMonitoring{
+				ID:           fmt.Sprintf("%s_%s_%d", sb.blobber.ID, su.allocationObj.ID, uploadSizeInMb),
+				Operation:    "upload",
+				BlobberId:    sb.blobber.ID,
+				TimeSpent:    time.Since(now).Milliseconds(),
+				Size:         uploadSizeInMb,
+				AllocationId: su.allocationObj.ID,
+				Count:        1,
 			}
 
 			kafkaObjStr, err := json.Marshal(kafkaObj)
@@ -156,15 +161,8 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 				logger.Logger.Error("Error publishing to kafka: ", err)
 			}
 
-			fmt.Println(kafkaObjStr)
-
-			//var (
-			//	BlobberMonitoringKafkaTopic = "blobber_monitoring2"
-			//	BlobberMonitoringKafka      = kafka.NewKafkaProvider("91.107.200.12:9092", "admin", "zus-operator", 1*time.Minute)
-			//)
-			//
-			//res := BlobberMonitoringKafka.PublishToKafka(BlobberMonitoringKafkaTopic, sb.blobber.ID, string(kafkaObjStr))
-			//results = append(results, res)
+			res := kafka.BlobberMonitoringKafka.PublishToKafka(kafka.BlobberMonitoringKafkaTopic, sb.blobber.ID, string(kafkaObjStr))
+			results = append(results, res)
 
 			return err
 		})
