@@ -258,7 +258,7 @@ func StakePoolLock(providerType ProviderType, providerID string, value, fee uint
 //   - providerType: provider type
 //   - providerID: provider ID
 //   - fee: transaction fee
-func StakePoolUnlock(providerType ProviderType, providerID string, fee uint64) (unstake int64, nonce int64, err error) {
+func StakePoolUnlock(providerType ProviderType, providerID, clientID string, fee uint64) (unstake int64, nonce int64, err error) {
 	if !client.IsSDKInitialized() {
 		return 0, 0, sdkNotInitialized
 	}
@@ -274,6 +274,7 @@ func StakePoolUnlock(providerType ProviderType, providerID string, fee uint64) (
 	spr := stakePoolRequest{
 		ProviderType: providerType,
 		ProviderID:   providerID,
+		ClientID:     clientID,
 	}
 
 	var sn = transaction.SmartContractTxnData{
