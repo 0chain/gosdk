@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/kafka"
 	"io"
 	"log"
@@ -28,6 +29,31 @@ import (
 	"github.com/valyala/bytebufferpool"
 	"golang.org/x/sync/errgroup"
 )
+
+func PublishToKafka(key, message string) chan int64 {
+	cfg := conf.GetConfig()
+	if cfg == nil {
+		fmt.Println("Failed to get config")
+		return nil
+	}
+
+	if !client.IsSDKInitialized() {
+		fmt.Println("SDK is not initialized")
+		return nil
+	}
+
+	BlobberMonitoringKafkaTopic := cfg.KafkaTopic
+	BlobberMonitoringKafka := kafka.NewKafkaProvider(cfg.KafkaHost, cfg.KafkaUsername, cfg.KafkaPassword, 1*time.Minute)
+
+	fmt.Println("Kafka: ", cfg.KafkaTopic)
+	fmt.Println("Kafka: ", cfg.KafkaHost)
+	fmt.Println("Kafka: ", cfg.KafkaUsername)
+	fmt.Println("Kafka: ", cfg.KafkaPassword)
+	fmt.Println("Key : ", key)
+	fmt.Println("Message : ", message)
+
+	return BlobberMonitoringKafka.PublishToKafka(BlobberMonitoringKafkaTopic, key, message)
+}
 
 // ChunkedUploadBlobber client of blobber's upload
 type ChunkedUploadBlobber struct {
@@ -161,7 +187,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 				logger.Logger.Error("Error publishing to kafka: ", err)
 			}
 
-			res := kafka.PublishToKafka(sb.blobber.ID, string(kafkaObjStr))
+			res := PublishToKafka(sb.blobber.ID, string(kafkaObjStr))
 			if res != nil {
 				results = append(results, res)
 			}

@@ -3,8 +3,6 @@ package kafka
 import (
 	"fmt"
 	"github.com/0chain/common/core/logging"
-	"github.com/0chain/gosdk/core/client"
-	"github.com/0chain/gosdk/core/conf"
 	"log"
 	"sync"
 	"time"
@@ -66,31 +64,6 @@ func NewKafkaProvider(host, username, password string, writeTimeout time.Duratio
 		WriteTimeout: writeTimeout,
 		Config:       config,
 	}
-}
-
-func PublishToKafka(key, message string) chan int64 {
-	cfg := conf.GetConfig()
-	if cfg == nil {
-		fmt.Println("Failed to get config")
-		return nil
-	}
-
-	if !client.IsSDKInitialized() {
-		fmt.Println("SDK is not initialized")
-		return nil
-	}
-
-	BlobberMonitoringKafkaTopic := cfg.KafkaTopic
-	BlobberMonitoringKafka := NewKafkaProvider(cfg.KafkaHost, cfg.KafkaUsername, cfg.KafkaPassword, 1*time.Minute)
-
-	fmt.Println("Kafka: ", cfg.KafkaTopic)
-	fmt.Println("Kafka: ", cfg.KafkaHost)
-	fmt.Println("Kafka: ", cfg.KafkaUsername)
-	fmt.Println("Kafka: ", cfg.KafkaPassword)
-	fmt.Println("Key : ", key)
-	fmt.Println("Message : ", message)
-
-	return BlobberMonitoringKafka.PublishToKafka(BlobberMonitoringKafkaTopic, key, message)
 }
 
 func (k *KafkaProvider) PublishToKafka(topic string, key, message string) chan int64 {
