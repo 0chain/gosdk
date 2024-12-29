@@ -3,6 +3,7 @@ package kafka
 import (
 	"fmt"
 	"github.com/0chain/common/core/logging"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/conf"
 	"log"
 	"sync"
@@ -73,6 +74,12 @@ func PublishToKafka(key, message string) chan int64 {
 		fmt.Println("Failed to get config")
 		return nil
 	}
+
+	if !client.IsSDKInitialized() {
+		fmt.Println("SDK is not initialized")
+		return nil
+	}
+
 	BlobberMonitoringKafkaTopic := cfg.KafkaTopic
 	BlobberMonitoringKafka := NewKafkaProvider(cfg.KafkaHost, cfg.KafkaUsername, cfg.KafkaPassword, 1*time.Minute)
 
