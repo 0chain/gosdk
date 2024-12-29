@@ -279,6 +279,7 @@ func GetClient() *zcncrypto.Wallet {
 func InitSDK(walletJSON string,
 	blockWorker, chainID, signatureScheme string,
 	nonce int64, addWallet bool,
+	kafkaHost, kafkaUsername, kafkaPassword, kafkaTopic string,
 	options ...int) error {
 
 	if addWallet {
@@ -318,6 +319,10 @@ func InitSDK(walletJSON string,
 		MinSubmit:               minSubmit,
 		ConfirmationChainLength: confirmationChainLength,
 		SharderConsensous:       sharderConsensous,
+		KafkaHost:               kafkaHost,
+		KafkaUsername:           kafkaUsername,
+		KafkaPassword:           kafkaPassword,
+		KafkaTopic:              kafkaTopic,
 	})
 	if err != nil {
 		return err

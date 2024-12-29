@@ -3,6 +3,7 @@ package kafka
 import (
 	"fmt"
 	"github.com/0chain/common/core/logging"
+	"github.com/0chain/gosdk/core/conf"
 	"log"
 	"sync"
 	"time"
@@ -12,8 +13,8 @@ import (
 )
 
 var (
-	BlobberMonitoringKafkaTopic = "monitor2"
-	BlobberMonitoringKafka      = NewKafkaProvider("", "", "", 1*time.Minute)
+	BlobberMonitoringKafkaTopic = conf.GetConfig().KafkaTopic
+	BlobberMonitoringKafka      = NewKafkaProvider(conf.GetConfig().KafkaHost, conf.GetConfig().KafkaUsername, conf.GetConfig().KafkaPassword, 1*time.Minute)
 )
 
 type BlobberMonitoring struct {

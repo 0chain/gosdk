@@ -39,6 +39,10 @@ func GetClientConfig() (*Config, error) {
 	return cfg, nil
 }
 
+func GetConfig() *Config {
+	return cfg
+}
+
 // InitClientConfig set global client config
 func InitClientConfig(c *Config) {
 	onceCfg.Do(func() {

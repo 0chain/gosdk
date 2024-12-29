@@ -78,6 +78,11 @@ type Config struct {
 	SharderConsensous int          `json:"sharder_consensous"`
 	ZauthServer       string       `json:"zauth_server"`
 	V                 *viper.Viper `json:"-"`
+
+	KafkaHost     string `json:"kafka_host"`
+	KafkaUsername string `json:"kafka_username"`
+	KafkaPassword string `json:"kafka_password"`
+	KafkaTopic    string `json:"kafka_topic"`
 }
 
 // LoadConfigFile load and parse SDK Config from file
