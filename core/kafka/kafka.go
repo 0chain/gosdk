@@ -75,6 +75,14 @@ func PublishToKafka(key, message string) chan int64 {
 	}
 	BlobberMonitoringKafkaTopic := cfg.KafkaTopic
 	BlobberMonitoringKafka := NewKafkaProvider(cfg.KafkaHost, cfg.KafkaUsername, cfg.KafkaPassword, 1*time.Minute)
+
+	fmt.Println("Kafka: ", cfg.KafkaTopic)
+	fmt.Println("Kafka: ", cfg.KafkaHost)
+	fmt.Println("Kafka: ", cfg.KafkaUsername)
+	fmt.Println("Kafka: ", cfg.KafkaPassword)
+	fmt.Println("Key : ", key)
+	fmt.Println("Message : ", message)
+
 	return BlobberMonitoringKafka.PublishToKafka(BlobberMonitoringKafkaTopic, key, message)
 }
 
