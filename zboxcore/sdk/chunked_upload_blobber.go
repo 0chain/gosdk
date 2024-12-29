@@ -161,7 +161,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 				logger.Logger.Error("Error publishing to kafka: ", err)
 			}
 
-			res := kafka.BlobberMonitoringKafka.PublishToKafka(kafka.BlobberMonitoringKafkaTopic, sb.blobber.ID, string(kafkaObjStr))
+			res := kafka.PublishToKafka(sb.blobber.ID, string(kafkaObjStr))
 			results = append(results, res)
 
 			return err

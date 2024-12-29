@@ -210,7 +210,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock(fastClient *fasthttp.Clien
 			timeout, cancelFunc := context.WithTimeout(context.Background(), 50*time.Second)
 			defer cancelFunc()
 
-			res := kafka.BlobberMonitoringKafka.PublishToKafka(kafka.BlobberMonitoringKafkaTopic, req.blobber.ID, string(kafkaObjStr))
+			res := kafka.PublishToKafka(req.blobber.ID, string(kafkaObjStr))
 			select {
 			case <-res:
 				break

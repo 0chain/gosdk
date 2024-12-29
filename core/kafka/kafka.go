@@ -12,11 +12,6 @@ import (
 	"go.uber.org/zap"
 )
 
-var (
-	BlobberMonitoringKafkaTopic = conf.GetConfig().KafkaTopic
-	BlobberMonitoringKafka      = NewKafkaProvider(conf.GetConfig().KafkaHost, conf.GetConfig().KafkaUsername, conf.GetConfig().KafkaPassword, 1*time.Minute)
-)
-
 type BlobberMonitoring struct {
 	ID           string `json:"id"`
 	Operation    string `json:"operation"`
@@ -70,6 +65,16 @@ func NewKafkaProvider(host, username, password string, writeTimeout time.Duratio
 		WriteTimeout: writeTimeout,
 		Config:       config,
 	}
+}
+
+func PublishToKafka(key, message string) chan int64 {
+	var (
+		cfg                         = conf.GetConfig()
+		BlobberMonitoringKafkaTopic = cfg.KafkaTopic
+		BlobberMonitoringKafka      = NewKafkaProvider(cfg.KafkaHost, cfg.KafkaUsername, cfg.KafkaPassword, 1*time.Minute)
+	)
+
+	return BlobberMonitoringKafka.PublishToKafka(BlobberMonitoringKafkaTopic, key, message)
 }
 
 func (k *KafkaProvider) PublishToKafka(topic string, key, message string) chan int64 {
