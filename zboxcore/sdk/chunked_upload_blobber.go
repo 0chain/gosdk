@@ -162,7 +162,9 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 			}
 
 			res := kafka.PublishToKafka(sb.blobber.ID, string(kafkaObjStr))
-			results = append(results, res)
+			if res != nil {
+				results = append(results, res)
+			}
 
 			return err
 		})

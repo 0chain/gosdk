@@ -211,11 +211,14 @@ func (req *BlockDownloadRequest) downloadBlobberBlock(fastClient *fasthttp.Clien
 			defer cancelFunc()
 
 			res := kafka.PublishToKafka(req.blobber.ID, string(kafkaObjStr))
-			select {
-			case <-res:
-				break
-			case <-timeout.Done():
-				log.Panic("Timeout to publish event to kafka")
+
+			if res != nil {
+				select {
+				case <-res:
+					break
+				case <-timeout.Done():
+					log.Panic("Timeout to publish event to kafka")
+				}
 			}
 
 			dR := downloadResponse{}

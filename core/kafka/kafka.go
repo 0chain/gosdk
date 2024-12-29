@@ -68,12 +68,13 @@ func NewKafkaProvider(host, username, password string, writeTimeout time.Duratio
 }
 
 func PublishToKafka(key, message string) chan int64 {
-	var (
-		cfg                         = conf.GetConfig()
-		BlobberMonitoringKafkaTopic = cfg.KafkaTopic
-		BlobberMonitoringKafka      = NewKafkaProvider(cfg.KafkaHost, cfg.KafkaUsername, cfg.KafkaPassword, 1*time.Minute)
-	)
-
+	cfg := conf.GetConfig()
+	if cfg == nil {
+		fmt.Println("Failed to get config")
+		return nil
+	}
+	BlobberMonitoringKafkaTopic := cfg.KafkaTopic
+	BlobberMonitoringKafka := NewKafkaProvider(cfg.KafkaHost, cfg.KafkaUsername, cfg.KafkaPassword, 1*time.Minute)
 	return BlobberMonitoringKafka.PublishToKafka(BlobberMonitoringKafkaTopic, key, message)
 }
 
