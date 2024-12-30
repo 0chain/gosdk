@@ -39,10 +39,6 @@ func GetClientConfig() (*Config, error) {
 	return cfg, nil
 }
 
-func GetConfig() *Config {
-	return cfg
-}
-
 // InitClientConfig set global client config
 func InitClientConfig(c *Config) {
 	onceCfg.Do(func() {
@@ -60,6 +56,11 @@ func InitClientConfig(c *Config) {
 			cfg.MinSubmit = DefaultMinSubmit
 		}
 	})
+
+	cfg.KafkaTopic = c.KafkaTopic
+	cfg.KafkaHost = c.KafkaHost
+	cfg.KafkaUsername = c.KafkaUsername
+	cfg.KafkaPassword = c.KafkaPassword
 }
 
 // Deprecated: Use client.Init() function. To normalize urls, use network.NormalizeURLs() method

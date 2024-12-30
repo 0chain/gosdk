@@ -311,11 +311,6 @@ func InitSDK(walletJSON string,
 		sharderConsensous = options[4]
 	}
 
-	fmt.Println("Kafka Host: ", kafkaHost)
-	fmt.Println("Kafka Username: ", kafkaUsername)
-	fmt.Println("Kafka Password: ", kafkaPassword)
-	fmt.Println("Kafka Topic: ", kafkaTopic)
-
 	err := Init(context.Background(), conf.Config{
 		BlockWorker:             blockWorker,
 		SignatureScheme:         signatureScheme,
