@@ -164,12 +164,12 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 				break
 			}
 
-			uploadSizeInMb := int64(len(dataBuffers[ind].Bytes())) / 1024 / 1024
+			uploadSizeInMb := int64(len(dataBuffers[ind].Bytes())) / 1024
 			kafkaObj := kafka.BlobberMonitoring{
 				ID:           fmt.Sprintf("%s_%s_%d", sb.blobber.ID, su.allocationObj.ID, uploadSizeInMb),
 				Operation:    "upload",
 				BlobberId:    sb.blobber.ID,
-				TimeSpent:    time.Since(now).Milliseconds(),
+				TimeSpent:    time.Since(now).Nanoseconds(),
 				Size:         uploadSizeInMb,
 				AllocationId: su.allocationObj.ID,
 				Count:        1,

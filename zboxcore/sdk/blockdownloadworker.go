@@ -191,12 +191,12 @@ func (req *BlockDownloadRequest) downloadBlobberBlock(fastClient *fasthttp.Clien
 				return errors.New("response_error", string(respBuf))
 			}
 
-			dnldSizeInMb := int64(len(respBuf)) / 1024 / 1024
+			dnldSizeInMb := int64(len(respBuf)) / 1024
 			kafkaObj := kafka.BlobberMonitoring{
 				ID:           fmt.Sprintf("%s_%s_%d", req.blobber.ID, req.allocationID, dnldSizeInMb),
 				Operation:    "upload",
 				BlobberId:    req.blobber.ID,
-				TimeSpent:    time.Since(now).Milliseconds(),
+				TimeSpent:    time.Since(now).Nanoseconds(),
 				Size:         dnldSizeInMb,
 				AllocationId: req.allocationID,
 				Count:        1,
