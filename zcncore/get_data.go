@@ -87,8 +87,6 @@ func SetWalletInfo(jsonWallet, sigScheme string, splitKeyWallet bool) error {
 		return errors.New("invalid jsonWallet: " + err.Error())
 	}
 
-	fmt.Println("set wallet info", wallet)
-
 	client.SetWallet(wallet)
 	client.SetSignatureScheme(sigScheme)
 
