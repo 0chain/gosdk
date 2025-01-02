@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/0chain/gosdk/constants"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/pathutil"
@@ -1183,6 +1184,9 @@ func checkAllocStatus(allocationID string) (string, error) {
 	alloc, err := getAllocation(allocationID)
 	if err != nil {
 		return "", err
+	}
+	if client.Wallet().ClientID != alloc.Owner {
+		return "", errors.New("client id does not match with the allocation owner")
 	}
 	status, blobberStatus, err := alloc.CheckAllocStatus()
 	var statusStr string

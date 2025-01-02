@@ -274,6 +274,7 @@ func main() {
 				"getUpdateAllocationMinLock": getUpdateAllocationMinLock,
 				"getAllocationWith":          getAllocationWith,
 				"createfreeallocation":       createfreeallocation,
+				"getUpdateAllocTicket":       getUpdateAllocTicket,
 
 				// claim rewards
 				"collectRewards": collectRewards,
