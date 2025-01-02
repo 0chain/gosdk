@@ -70,9 +70,9 @@ func GetWritemarker(allocID, allocTx, sig, id, baseUrl string, clientId ...strin
 	if err != nil {
 		return nil, err
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
 	for retries := 0; retries < 3; retries++ {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
 
 		resp, err := zboxutil.Client.Do(req.WithContext(ctx))
 		if err != nil {
