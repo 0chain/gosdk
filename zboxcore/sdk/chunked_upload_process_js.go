@@ -32,7 +32,8 @@ import (
 )
 
 var (
-	hasherMap map[string]workerProcess
+	hasherMap   map[string]workerProcess
+	hasherMapMu sync.Mutex
 )
 
 type workerProcess struct {
@@ -455,6 +456,7 @@ func ProcessEventData(data safejs.Value) {
 		selfPostMessage(false, false, err.Error(), remotePath, 0, 0, 0, nil)
 		return
 	}
+	hasherMapMu.Lock()
 	wp, ok := hasherMap[fileMeta.RemotePath]
 	if !ok {
 		wp = workerProcess{
@@ -466,8 +468,13 @@ func ProcessEventData(data safejs.Value) {
 		wp.hasher = CreateHasher(formInfo.ShardSize)
 		hasherMap[fileMeta.RemotePath] = wp
 	}
+	hasherMapMu.Unlock()
 	if formInfo.IsFinal {
-		defer delete(hasherMap, fileMeta.RemotePath)
+		defer func() {
+			hasherMapMu.Lock()
+			delete(hasherMap, fileMeta.RemotePath)
+			hasherMapMu.Unlock()
+		}()
 	}
 	blobberID := os.Getenv("BLOBBER_ID")
 	formBuilder := CreateChunkedUploadFormBuilder(formInfo.StorageVersion, formInfo.EncryptionVersion, formInfo.PrivateSigningKey)
