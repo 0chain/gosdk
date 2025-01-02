@@ -13,6 +13,7 @@ import (
 	"github.com/0chain/gosdk/core/imageutil"
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/screstapi"
+	log "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk/zcncore"
 
@@ -86,6 +87,7 @@ func showLogs() {
 
 	zcnLogger.SetLogFile(os.Stdout, true)
 	sdkLogger.SetLogFile(os.Stdout, true)
+	log.ShowLogs()
 
 	logEnabled = true
 }
