@@ -3,18 +3,15 @@ package client
 import (
 	"encoding/json"
 	"fmt"
-	"log"
-	"net/http"
-	"net/url"
-	"sync"
-
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/shopspring/decimal"
+	"log"
+	"net/http"
+	"net/url"
+	"sync"
 )
-
-const GetBalanceUrl = "client/get/balance"
 
 // SCRestAPIHandler is a function type to handle the response from the SC Rest API
 //
@@ -23,7 +20,7 @@ const GetBalanceUrl = "client/get/balance"
 //	`err` - the error if any
 type SCRestAPIHandler func(response map[string][]byte, numSharders int, err error)
 
-func MakeSCRestAPICallToSharder(scAddress string, relativePath string, params map[string]string, restApiUrls ...string) ([]byte, error) {
+func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]string, restApiUrls ...string) ([]byte, error) {
 	const (
 		consensusThresh = float32(25.0)
 		ScRestApiUrl    = "v1/screst/"
@@ -148,6 +145,13 @@ func isCurrentDominantStatus(respStatus int, currentTotalPerStatus map[int]int, 
 }
 
 func GetBalance(clientIDs ...string) (*GetBalanceResponse, error) {
+	const GetBalance = "client/get/balance"
+	var (
+		balance GetBalanceResponse
+		err     error
+		res     []byte
+	)
+
 	var clientID string
 	if len(clientIDs) > 0 {
 		clientID = clientIDs[0]
@@ -155,13 +159,7 @@ func GetBalance(clientIDs ...string) (*GetBalanceResponse, error) {
 		clientID = Id()
 	}
 
-	var (
-		balance GetBalanceResponse
-		err     error
-		res     []byte
-	)
-
-	if res, err = MakeSCRestAPICallToSharder("", GetBalanceUrl, map[string]string{
+	if res, err = MakeSCRestAPICall("", GetBalance, map[string]string{
 		"client_id": clientID,
 	}, "v1/"); err != nil {
 		return nil, err
