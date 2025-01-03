@@ -188,7 +188,12 @@ func (req *BlockDownloadRequest) downloadBlobberBlock(fastClient *fasthttp.Clien
 				}
 				return errors.New("response_error", string(respBuf))
 			}
-
+			entry := logEntry{
+				OpType:    "download",
+				TimeTaken: timeTaken,
+				DataSize:  len(req.respBuf),
+			}
+			writeLogEntry(req.blobber.Baseurl, entry)
 			dR := downloadResponse{}
 			if req.shouldVerify {
 				err = json.Unmarshal(respBuf, &dR)

@@ -224,6 +224,7 @@ func GetStakePoolUserInfo(clientID string, offset, limit int) (info *StakePoolUs
 type stakePoolRequest struct {
 	ProviderType ProviderType `json:"provider_type,omitempty"`
 	ProviderID   string       `json:"provider_id,omitempty"`
+	ClientID     string       `json:"client_id,omitempty"`
 }
 
 // stakePoolLock is stake pool unlock response in case where tokens
