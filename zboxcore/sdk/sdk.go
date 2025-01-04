@@ -12,6 +12,7 @@ import (
 	"github.com/0chain/common/core/currency"
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/logger"
+	"go.uber.org/zap"
 	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/0chain/gosdk/core/client"
@@ -647,8 +648,8 @@ func GetAllocation(allocationID string) (*Allocation, error) {
 		return nil, errors.New("allocation_decode_error", "Error decoding the allocation: "+err.Error()+" "+string(allocationBytes))
 	}
 
-	l.Logger.Debug("0box api response in get allocation", *allocationObj1)
-	l.Logger.Debug("sharder api response in get allocation", *allocationObj2)
+	l.Logger.Debug("0box api response in get allocation", zap.Any("response1", allocationObj1))
+	l.Logger.Debug("sharder api response in get allocation", zap.Any("response2", allocationObj2))
 
 	allocationObj1.numBlockDownloads = numBlockDownloads
 	allocationObj1.InitAllocation()
@@ -684,8 +685,8 @@ func GetAllocationForUpdate(allocationID string) (*Allocation, error) {
 		return nil, errors.New("allocation_decode_error", "Error decoding the allocation: "+err.Error()+" "+string(allocationBytes))
 	}
 
-	l.Logger.Debug("0box api response in get allocation for update", *allocationObj1)
-	l.Logger.Debug("sharder api response in get allocation  for update", *allocationObj2)
+	l.Logger.Debug("0box api response in get allocation for update", zap.Any("response1", allocationObj1))
+	l.Logger.Debug("sharder api response in get allocation  for update", zap.Any("response2", allocationObj2))
 	return allocationObj1, nil
 }
 
@@ -720,8 +721,8 @@ func GetAllocationUpdates(allocation *Allocation) error {
 		return errors.New("allocation_decode_error", "Error decoding the allocation."+err.Error())
 	}
 
-	l.Logger.Debug("0box api response in get allocation for update", *allocationObj1)
-	l.Logger.Debug("sharder api response in get allocation  for update", *updatedAllocationObj)
+	l.Logger.Debug("0box api response in get allocation updates", zap.Any("response1", allocationObj1))
+	l.Logger.Debug("sharder api response in get allocation updates", zap.Any("response2", updatedAllocationObj))
 
 	allocation.DataShards = updatedAllocationObj.DataShards
 	allocation.ParityShards = updatedAllocationObj.ParityShards
@@ -790,8 +791,8 @@ func getAllocationsInternal(clientID string, limit, offset int) ([]*Allocation, 
 		return nil, errors.New("allocation_decode_error", "Error decoding the allocations."+err.Error())
 	}
 
-	l.Logger.Debug("0box api response in get allocations for update", allocationsObj1)
-	l.Logger.Debug("sharder api response in get allocations  for update", updatedAllocationsObj)
+	l.Logger.Debug("0box api response in get allocations internal", zap.Any("response1", allocationsObj1))
+	l.Logger.Debug("sharder api response in get allocations internal", zap.Any("response2", updatedAllocationsObj))
 
 	return updatedAllocationsObj, nil
 }
