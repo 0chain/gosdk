@@ -647,8 +647,8 @@ func GetAllocation(allocationID string) (*Allocation, error) {
 		return nil, errors.New("allocation_decode_error", "Error decoding the allocation: "+err.Error()+" "+string(allocationBytes))
 	}
 
-	l.Logger.Debug("0box api response in get allocation", allocationObj1)
-	l.Logger.Debug("sharder api response in get allocation", allocationObj2)
+	l.Logger.Debug("0box api response in get allocation", *allocationObj1)
+	l.Logger.Debug("sharder api response in get allocation", *allocationObj2)
 
 	allocationObj1.numBlockDownloads = numBlockDownloads
 	allocationObj1.InitAllocation()
@@ -684,8 +684,8 @@ func GetAllocationForUpdate(allocationID string) (*Allocation, error) {
 		return nil, errors.New("allocation_decode_error", "Error decoding the allocation: "+err.Error()+" "+string(allocationBytes))
 	}
 
-	l.Logger.Debug("0box api response in get allocation for update", allocationObj1)
-	l.Logger.Debug("sharder api response in get allocation  for update", allocationObj2)
+	l.Logger.Debug("0box api response in get allocation for update", *allocationObj1)
+	l.Logger.Debug("sharder api response in get allocation  for update", *allocationObj2)
 	return allocationObj1, nil
 }
 
@@ -720,8 +720,8 @@ func GetAllocationUpdates(allocation *Allocation) error {
 		return errors.New("allocation_decode_error", "Error decoding the allocation."+err.Error())
 	}
 
-	l.Logger.Debug("0box api response in get allocation for update", allocationObj1)
-	l.Logger.Debug("sharder api response in get allocation  for update", updatedAllocationObj)
+	l.Logger.Debug("0box api response in get allocation for update", *allocationObj1)
+	l.Logger.Debug("sharder api response in get allocation  for update", *updatedAllocationObj)
 
 	allocation.DataShards = updatedAllocationObj.DataShards
 	allocation.ParityShards = updatedAllocationObj.ParityShards
