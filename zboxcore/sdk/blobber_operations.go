@@ -34,7 +34,7 @@ func CreateAllocationForOwner(
 	owner, ownerpublickey string,
 	datashards, parityshards int, size int64,
 	readPrice, writePrice PriceRange,
-	lock uint64, preferredBlobberIds, blobberAuthTickets []string, thirdPartyExtendable, IsEnterprise, force bool, fileOptionsParams *FileOptionsParameters,
+	lock uint64, preferredBlobberIds, blobberAuthTickets []string, thirdPartyExtendable, IsEnterprise, force bool, fileOptionsParams *FileOptionsParameters, authRoundExpiry int64,
 ) (hash string, nonce int64, txn *transaction.Transaction, err error) {
 
 	if lock > math.MaxInt64 {
@@ -71,6 +71,7 @@ func CreateAllocationForOwner(
 	allocationRequest["file_options_changed"], allocationRequest["file_options"] = calculateAllocationFileOptions(63 /*0011 1111*/, fileOptionsParams)
 	allocationRequest["is_enterprise"] = IsEnterprise
 	allocationRequest["storage_version"] = StorageV2
+	allocationRequest["auth_round_expiry"] = authRoundExpiry
 
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.NEW_ALLOCATION_REQUEST,
@@ -126,7 +127,7 @@ func CreateFreeAllocation(marker string, value uint64) (string, int64, error) {
 //
 // returns the hash of the transaction, the nonce of the transaction and an error if any.
 func UpdateAllocation(
-	size int64,
+	size, authRoundExpiry int64,
 	extend bool,
 	allocationID string,
 	lock uint64,
@@ -162,6 +163,7 @@ func UpdateAllocation(
 	updateAllocationRequest["set_third_party_extendable"] = setThirdPartyExtendable
 	updateAllocationRequest["owner_signing_public_key"] = ownerSigninPublicKey
 	updateAllocationRequest["file_options_changed"], updateAllocationRequest["file_options"] = calculateAllocationFileOptions(alloc.FileOptions, fileOptionsParams)
+	updateAllocationRequest["auth_round_expiry"] = authRoundExpiry
 
 	if ticket != "" {
 

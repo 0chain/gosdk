@@ -796,6 +796,7 @@ type CreateAllocationOptions struct {
 	FileOptionsParams    *FileOptionsParameters
 	Force                bool
 	StorageVersion       int
+	AuthRoundExpiry      int64
 }
 
 // CreateAllocationWith creates a new allocation with the given options for the current client using the SDK.
@@ -809,7 +810,7 @@ func CreateAllocationWith(options CreateAllocationOptions) (
 	return CreateAllocationForOwner(client.Id(),
 		client.PublicKey(), options.DataShards, options.ParityShards,
 		options.Size, options.ReadPrice, options.WritePrice, options.Lock,
-		options.BlobberIds, options.BlobberAuthTickets, options.ThirdPartyExtendable, options.IsEnterprise, options.Force, options.FileOptionsParams)
+		options.BlobberIds, options.BlobberAuthTickets, options.ThirdPartyExtendable, options.IsEnterprise, options.Force, options.FileOptionsParams, options.AuthRoundExpiry)
 }
 
 // GetAllocationBlobbers returns a list of blobber ids that can be used for a new allocation.

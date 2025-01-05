@@ -155,7 +155,7 @@ func InitStorageSDK(clientJson string, configJson string) (*StorageSDK, error) {
 //   - expiration: duration to allocation expiration
 //   - lock: lock write pool with given number of tokens
 //   - blobberAuthTickets: list of blobber auth tickets needed for the restricted blobbers
-func (s *StorageSDK) CreateAllocation(datashards, parityshards int, size, expiration int64, lock string, blobberAuthTickets []string) (*zbox.Allocation, error) {
+func (s *StorageSDK) CreateAllocation(datashards, parityshards int, size, expiration, authRoundExpiry int64, lock string, blobberAuthTickets []string) (*zbox.Allocation, error) {
 	readPrice := sdk.PriceRange{Min: 0, Max: math.MaxInt64}
 	writePrice := sdk.PriceRange{Min: 0, Max: math.MaxInt64}
 
@@ -174,6 +174,7 @@ func (s *StorageSDK) CreateAllocation(datashards, parityshards int, size, expira
 		BlobberIds:         []string{},
 		FileOptionsParams:  &sdk.FileOptionsParameters{},
 		BlobberAuthTickets: blobberAuthTickets,
+		AuthRoundExpiry:    authRoundExpiry,
 	}
 
 	sdkAllocationID, _, _, err := sdk.CreateAllocationWith(options)
@@ -196,7 +197,7 @@ func (s *StorageSDK) CreateAllocation(datashards, parityshards int, size, expira
 //   - lock: lock write pool with given number of tokens
 //   - blobberUrls: concat blobber urls with comma. leave it as empty if you don't have any preferred blobbers
 //   - blobberIds: concat blobber ids with comma. leave it as empty if you don't have any preferred blobbers
-func (s *StorageSDK) CreateAllocationWithBlobbers(name string, datashards, parityshards int, size int64, lock string, blobberUrls, blobberIds string, blobberAuthTickets []string) (*zbox.Allocation, error) {
+func (s *StorageSDK) CreateAllocationWithBlobbers(name string, datashards, parityshards int, size, authRoundExpiry int64, lock string, blobberUrls, blobberIds string, blobberAuthTickets []string) (*zbox.Allocation, error) {
 	readPrice := sdk.PriceRange{Min: 0, Max: math.MaxInt64}
 	writePrice := sdk.PriceRange{Min: 0, Max: math.MaxInt64}
 
@@ -213,6 +214,7 @@ func (s *StorageSDK) CreateAllocationWithBlobbers(name string, datashards, parit
 		WritePrice:         writePrice,
 		ReadPrice:          readPrice,
 		BlobberAuthTickets: blobberAuthTickets,
+		AuthRoundExpiry:    authRoundExpiry,
 	}
 
 	if blobberUrls != "" {
@@ -364,12 +366,12 @@ func (s *StorageSDK) GetVersion() string {
 //   - extend: extend allocation
 //   - allocationID: allocation ID
 //   - lock: Number of tokens to lock to the allocation after the update
-func (s *StorageSDK) UpdateAllocation(size int64, extend bool, allocationID string, lock uint64) (hash string, err error) {
+func (s *StorageSDK) UpdateAllocation(size, authRoundExpiry int64, extend bool, allocationID string, lock uint64) (hash string, err error) {
 	if lock > math.MaxInt64 {
 		return "", errors.Errorf("int64 overflow in lock")
 	}
 
-	hash, _, err = sdk.UpdateAllocation(size, extend, allocationID, lock, "", "", "", "", "", false, &sdk.FileOptionsParameters{}, "")
+	hash, _, err = sdk.UpdateAllocation(size, authRoundExpiry, extend, allocationID, lock, "", "", "", "", "", false, &sdk.FileOptionsParameters{}, "")
 	return hash, err
 }
 
