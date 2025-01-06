@@ -389,7 +389,7 @@ func IsHardforkActivated(name string) (bool, error) {
 		return false, fmt.Errorf("error unmarshalling hardfork status: %v", err)
 	}
 
-	roundString, ok := result[name]
+	roundString, ok := result["round"]
 	if !ok {
 		return false, errors.New("hardfork not found")
 	}
@@ -408,20 +408,15 @@ func IsHardforkActivated(name string) (bool, error) {
 }
 
 func GetCurrentRound() (int64, error) {
-	res, err := client.MakeSCRestAPICall("", GET_CURRENT_ROUND, nil)
+	res, err := client.MakeSCRestAPICall("", GET_CURRENT_ROUND, nil, "")
 	if err != nil {
 		return 0, err
 	}
 
-	var result string
-	err = json.Unmarshal(res, &result)
+	var round int64
+	err = json.Unmarshal(res, &round)
 	if err != nil {
 		return 0, fmt.Errorf("error getting current round : %v", err)
-	}
-
-	round, err := strconv.ParseInt(result, 10, 64)
-	if err != nil {
-		return 0, fmt.Errorf("error parsing current round : %v", err)
 	}
 
 	return round, nil
