@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/0chain/common/core/logging"
 	"net/http"
 	"strings"
 	"sync"
@@ -540,8 +539,6 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 	Logger.Info("SmartContractTxnValueFee", zap.Any("scAddress", scAddress), zap.Any("sn", sn), zap.Any("value", value), zap.Any("fee", fee), zap.Any("verifyTxn", verifyTxn), zap.Any("clients", clients), zap.Any("time", now))
 
 	Logger.Info("1Jayash SmartContractTxnValueFee", " : Time : ", time.Since(now).Milliseconds())
-
-	logging.Logger.Info("Jayash SmartContractTxnValueFee", zap.Any("scAddress", scAddress), zap.Any("sn", sn), zap.Any("value", value), zap.Any("fee", fee), zap.Any("verifyTxn", verifyTxn), zap.Any("clients", clients), zap.Any("time", now))
 
 	clientId := client.Id()
 	if len(clients) > 0 && clients[0] != "" {
