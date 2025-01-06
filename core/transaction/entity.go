@@ -535,38 +535,25 @@ func SmartContractTxnValueFeeWithRetry(scAddress string, sn SmartContractTxnData
 func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 	value, fee uint64, verifyTxn bool, clients ...string) (hash, out string, nonce int64, t *Transaction, err error) {
 
-	now := time.Now()
-	Logger.Info("SmartContractTxnValueFee", zap.Any("scAddress", scAddress), zap.Any("sn", sn), zap.Any("value", value), zap.Any("fee", fee), zap.Any("verifyTxn", verifyTxn), zap.Any("clients", clients), zap.Any("time", now))
-
-	Logger.Info("1Jayash SmartContractTxnValueFee", " : Time : ", time.Since(now).Milliseconds())
-
 	clientId := client.Id()
 	if len(clients) > 0 && clients[0] != "" {
 		clientId = clients[0]
 	}
-
-	Logger.Info("2Jayash SmartContractTxnValueFee", " : Time : ", time.Since(now).Milliseconds())
 
 	var requestBytes []byte
 	if requestBytes, err = json.Marshal(sn); err != nil {
 		return
 	}
 
-	Logger.Info("3Jayash SmartContractTxnValueFee", " : Time : ", time.Since(now).Milliseconds())
-
 	cfg, err := conf.GetClientConfig()
 	if err != nil {
 		return
 	}
 
-	Logger.Info("4Jayash SmartContractTxnValueFee", " : Time : ", time.Since(now).Milliseconds())
-
 	nodeClient, err := client.GetNode()
 	if err != nil {
 		return
 	}
-
-	Logger.Info("5Jayash SmartContractTxnValueFee", " : Time : ", time.Since(now).Milliseconds())
 
 	txn := NewTransactionEntity(client.Id(clientId),
 		cfg.ChainID, client.PublicKey(clientId), nonce)
@@ -583,8 +570,6 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 		txn.TransactionType = TxnTypeSend
 	}
 
-	Logger.Info("6Jayash SmartContractTxnValueFee", " : Time : ", time.Since(now).Milliseconds())
-
 	// adjust fees if not set
 	if fee == 0 {
 		fee, err = EstimateFee(txn, nodeClient.Network().Miners, 0.2)
@@ -597,8 +582,6 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 		txn.TransactionFee = fee
 	}
 
-	Logger.Info("7Jayash SmartContractTxnValueFee", " : Time : ", time.Since(now).Milliseconds())
-
 	if txn.TransactionNonce == 0 {
 		txn.TransactionNonce = client.Cache.GetNextNonce(txn.ClientID)
 	}
@@ -608,16 +591,12 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 		return
 	}
 
-	Logger.Info("8Jayash SmartContractTxnValueFee", " : Time : ", time.Since(now).Milliseconds())
-
 	if client.GetClient().IsSplit {
 		txn.Signature, err = txn.getAuthorize()
 		if err != nil {
 			return
 		}
 	}
-
-	Logger.Info("9Jayash SmartContractTxnValueFee", " : Time : ", time.Since(now).Milliseconds())
 
 	ok, err := txn.VerifySigWith(txn.PublicKey, sys.VerifyWith)
 	if err != nil {
@@ -630,15 +609,9 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 		return
 	}
 
-	Logger.Info("10Jayash SmartContractTxnValueFee", " : Time : ", time.Since(now).Milliseconds())
-
 	msg := fmt.Sprintf("executing transaction '%s' with hash %s ", sn.Name, txn.Hash)
 	Logger.Info(msg)
 	Logger.Info("estimated txn fee: ", txn.TransactionFee)
-
-	Logger.Info("11Jayash SmartContractTxnValueFee", " : Time : ", time.Since(now).Milliseconds())
-
-	Logger.Info("sending transaction to the network", zap.Any("txn", txn), zap.Any("time", time.Since(now).Milliseconds()))
 
 	err = SendTransactionSync(txn, nodeClient.GetStableMiners())
 	if err != nil {
@@ -648,27 +621,17 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 		return
 	}
 
-	Logger.Info("12Jayash SmartContractTxnValueFee", " : Time : ", time.Since(now).Milliseconds())
-
-	Logger.Info("transaction submitted successfully", zap.Any("txn", txn), zap.Any("time", time.Since(now).Milliseconds()))
-
 	if verifyTxn {
 		var (
 			querySleepTime = time.Duration(cfg.QuerySleepTime) * time.Second
 			retries        = 0
 		)
 
-		Logger.Info("13Jayash SmartContractTxnValueFee", " : Time : ", time.Since(now).Milliseconds())
-
 		sys.Sleep(querySleepTime)
-
-		Logger.Info("14Jayash SmartContractTxnValueFee", " : Time : ", time.Since(now).Milliseconds())
 
 		var confirmationResponse string
 
 		for retries < cfg.MaxTxnQuery {
-			Logger.Info("15Jayash SmartContractTxnValueFee", zap.Any("time", time.Since(now).Milliseconds()), zap.Any("retries", retries))
-			Logger.Info("verifying transaction", zap.Any("txn", txn), zap.Any("time", time.Since(now).Milliseconds()), zap.Any("retry", retries))
 			t, confirmationResponse, err = VerifyTransactionWithRes(txn.Hash)
 			if err == nil {
 				break
@@ -677,47 +640,31 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 			sys.Sleep(querySleepTime)
 		}
 
-		Logger.Info("16Jayash SmartContractTxnValueFee", " : Time : ", time.Since(now).Milliseconds())
-
 		if err != nil {
 			Logger.Error("Error verifying the transaction", err.Error(), txn.Hash)
 			client.Cache.Evict(txn.ClientID)
 			return
 		}
 
-		Logger.Info("17Jayash SmartContractTxnValueFee", " : Time : ", time.Since(now).Milliseconds())
-
 		if t == nil {
 			return "", "", 0, txn, errors.New("transaction_validation_failed",
 				"Failed to get the transaction confirmation : "+txn.Hash)
 		}
 
-		Logger.Info("18Jayash SmartContractTxnValueFee", " : Time : ", time.Since(now).Milliseconds())
-
 		if t.Status == TxnFail {
 			return t.Hash, t.TransactionOutput, 0, t, errors.New("", t.TransactionOutput)
 		}
-
-		Logger.Info("19Jayash SmartContractTxnValueFee", " : Time : ", time.Since(now).Milliseconds())
 
 		if t.Status == TxnChargeableError {
 			return t.Hash, t.TransactionOutput, t.TransactionNonce, t, errors.New("", t.TransactionOutput)
 		}
 
-		Logger.Info("20Jayash SmartContractTxnValueFee", " : Time : ", time.Since(now).Milliseconds())
-
 		if t.TransactionType == TxnTypeSend {
 			t.TransactionOutput = confirmationResponse
 		}
 
-		Logger.Info("21Jayash SmartContractTxnValueFee", " : Time : ", time.Since(now).Milliseconds())
-
-		Logger.Info("Jayash transaction verified successfully", zap.Any("txn", txn), zap.Any("time", time.Since(now).Milliseconds()))
-
 		return t.Hash, t.TransactionOutput, t.TransactionNonce, t, nil
 	}
-
-	Logger.Info("1transaction submitted successfully", zap.Any("txn", txn), zap.Any("time", time.Since(now).Milliseconds()))
 
 	return txn.Hash, "", txn.TransactionNonce, txn, nil
 }
