@@ -3,6 +3,8 @@ package logger
 
 import (
 	"fmt"
+	"github.com/0chain/gosdk/core/version"
+	"gopkg.in/natefinch/lumberjack.v2"
 	"io"
 	"log"
 	"os"
@@ -141,4 +143,40 @@ func (l *Logger) Close() {
 			return
 		}
 	}
+}
+
+// Initialize common logger
+var logging Logger
+
+func GetLogger() *Logger {
+	return &logging
+}
+
+func CloseLog() {
+	logging.Close()
+}
+
+func init() {
+	logging.Init(DEBUG, "0chain-core-sdk")
+}
+
+// SetLogLevel set the log level.
+// lvl - 0 disabled; higher number (upto 4) more verbosity
+func SetLogLevel(lvl int) {
+	logging.SetLevel(lvl)
+}
+
+// SetLogFile - sets file path to write log
+// verbose - true - console output; false - no console output
+func SetLogFile(logFile string, verbose bool) {
+	ioWriter := &lumberjack.Logger{
+		Filename:   logFile,
+		MaxSize:    100, // MB
+		MaxBackups: 5,   // number of backups
+		MaxAge:     28,  //days
+		LocalTime:  false,
+		Compress:   false, // disabled by default
+	}
+	logging.SetLogFile(ioWriter, verbose)
+	logging.Info("******* Wallet SDK Version:", version.VERSIONSTR, " ******* (SetLogFile)")
 }
