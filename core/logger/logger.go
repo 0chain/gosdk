@@ -105,8 +105,26 @@ func (l *Logger) Debug(v ...interface{}) {
 	}
 }
 
+func formatAnyValue(v interface{}) string {
+	switch v := v.(type) {
+	case string:
+		return v
+	case fmt.Stringer:
+		return v.String()
+	case error:
+		return v.Error()
+	default:
+		return fmt.Sprintf("%+v", v) // Default format for all types (including structs)
+	}
+}
+
 func (l *Logger) Info(v ...interface{}) {
 	if l.lvl >= INFO {
+		// Format each argument to be readable
+		for i, arg := range v {
+			v[i] = formatAnyValue(arg)
+		}
+
 		err := l.logInfo.Output(2, fmt.Sprint(v...))
 		if err != nil {
 			fmt.Printf("Error logging info message: %v", err)
