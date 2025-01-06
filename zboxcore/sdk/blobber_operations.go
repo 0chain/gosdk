@@ -130,9 +130,12 @@ func UpdateAllocation(
 	extend bool,
 	allocationID string,
 	lock uint64,
-	addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey string,
-	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
+	addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerID, ownerSigninPublicKey string,
+	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters, ticket string,
 ) (hash string, nonce int64, err error) {
+	if ownerID == "" {
+		ownerID = client.Id()
+	}
 
 	if lock > math.MaxInt64 {
 		return "", 0, errors.New("invalid_lock", "int64 overflow on lock value")
@@ -148,7 +151,7 @@ func UpdateAllocation(
 	}
 
 	updateAllocationRequest := make(map[string]interface{})
-	updateAllocationRequest["owner_id"] = client.Id()
+	updateAllocationRequest["owner_id"] = ownerID
 	updateAllocationRequest["owner_public_key"] = ""
 	updateAllocationRequest["id"] = allocationID
 	updateAllocationRequest["size"] = size
@@ -160,12 +163,41 @@ func UpdateAllocation(
 	updateAllocationRequest["owner_signing_public_key"] = ownerSigninPublicKey
 	updateAllocationRequest["file_options_changed"], updateAllocationRequest["file_options"] = calculateAllocationFileOptions(alloc.FileOptions, fileOptionsParams)
 
+	if ticket != "" {
+
+		type Ticket struct {
+			AllocationID  string `json:"allocation_id"`
+			UserID        string `json:"user_id"`
+			RoundExpiry   int64  `json:"round_expiry"`
+			OperationType string `json:"operation_type"`
+			Signature     string `json:"signature"`
+		}
+
+		ticketData := &Ticket{}
+		err := json.Unmarshal([]byte(ticket), ticketData)
+		if err != nil {
+			return "", 0, errors.New("invalid_ticket", "invalid ticket")
+		}
+		updateAllocationRequest["update_ticket"] = ticketData
+	}
+
 	sn := transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_UPDATE_ALLOCATION,
 		InputArgs: updateAllocationRequest,
 	}
 	hash, _, nonce, _, err = storageSmartContractTxnValue(sn, lock)
 	return
+}
+
+func GetUpdateAllocTicket(allocationID, userID, operationType string, roundExpiry int64) (string, error) {
+	payload := fmt.Sprintf("%s:%d:%s:%s", allocationID, roundExpiry, userID, operationType)
+
+	signature, err := client.Sign(hex.EncodeToString([]byte(payload)))
+	if err != nil {
+		return "", err
+	}
+
+	return signature, nil
 }
 
 // StakePoolLock locks tokens in a stake pool.
@@ -231,9 +263,46 @@ func StakePoolLockWithTransaction(providerType ProviderType, providerID string, 
 //   - providerType: provider type
 //   - providerID: provider ID
 //   - fee: transaction fee
-func StakePoolUnlock(providerType ProviderType, providerID string, fee uint64) (unstake int64, nonce int64, err error) {
+func StakePoolUnlock(providerType ProviderType, providerID, clientID string, fee uint64) (unstake int64, nonce int64, err error) {
+	if !client.IsSDKInitialized() {
+		return 0, 0, sdkNotInitialized
+	}
+
+	if providerType == 0 {
+		return 0, 0, errors.New("stake_pool_lock", "provider is required")
+	}
+
+	if providerID == "" {
+		return 0, 0, errors.New("stake_pool_lock", "provider_id is required")
+	}
+
+	spr := stakePoolRequest{
+		ProviderType: providerType,
+		ProviderID:   providerID,
+		ClientID:     clientID,
+	}
+
+	var sn = transaction.SmartContractTxnData{
+		InputArgs: &spr,
+	}
+
+	var scAddress string
+	switch providerType {
+	case ProviderBlobber, ProviderValidator:
+		scAddress = STORAGE_SCADDRESS
+		sn.Name = transaction.STORAGESC_STAKE_POOL_UNLOCK
+	case ProviderMiner, ProviderSharder:
+		scAddress = MINERSC_SCADDRESS
+		sn.Name = transaction.MINERSC_UNLOCK
+	case ProviderAuthorizer:
+		scAddress = ZCNSC_SCADDRESS
+		sn.Name = transaction.ZCNSC_UNLOCK
+	default:
+		return 0, 0, errors.Newf("stake_pool_unlock", "unsupported provider type: %v", providerType)
+	}
+
 	var out string
-	if _, out, nonce, _, err = StakePoolUnlockWithTransaction(providerType, providerID, fee); err != nil {
+	if _, out, nonce, _, err = transaction.SmartContractTxnValueFeeWithRetry(scAddress, sn, 0, fee, true); err != nil {
 		return // an error
 	}
 
@@ -245,7 +314,7 @@ func StakePoolUnlock(providerType ProviderType, providerID string, fee uint64) (
 	return spuu.Amount, nonce, nil
 }
 
-func StakePoolUnlockWithTransaction(providerType ProviderType, providerID string, fee uint64) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+func StakePoolUnlockWithTransaction(providerType ProviderType, providerID, clientID string, fee uint64) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 	if !client.IsSDKInitialized() {
 		return "", "", 0, nil, sdkNotInitialized
 	}
@@ -261,6 +330,7 @@ func StakePoolUnlockWithTransaction(providerType ProviderType, providerID string
 	spr := stakePoolRequest{
 		ProviderType: providerType,
 		ProviderID:   providerID,
+		ClientID:     clientID,
 	}
 
 	var sn = transaction.SmartContractTxnData{
