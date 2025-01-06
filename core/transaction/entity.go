@@ -270,7 +270,7 @@ func (t *Transaction) VerifySigWith(pubkey string, verifyHandler VerifyFunc) (bo
 }
 
 func SendTransactionSync(txn *Transaction, miners []string) error {
-	const requestTimeout = 30 * time.Second // Timeout for each request
+	const requestTimeout = 3 * time.Second // Timeout for each request
 
 	fails := make(chan error, len(miners))
 	var wg sync.WaitGroup
