@@ -374,3 +374,25 @@ func GetUserLockedTotal(clientID string) (int64, error) {
 		return 0, err
 	}
 }
+
+func GetHardforkRound(name string) (int64, error) {
+	res, err := client.MakeSCRestAPICall(MinerSmartContractAddress, GET_HARDFORK, Params{
+		"name": name,
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	var result map[string]int64
+	err = json.Unmarshal(res, &result)
+	if err != nil {
+		return 0, err
+	}
+
+	round, ok := result[name]
+	if !ok {
+		return 0, errors.New("hardfork not found")
+	}
+
+	return round, nil
+}
