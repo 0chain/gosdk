@@ -23,7 +23,7 @@ import (
 	lru "github.com/hashicorp/golang-lru"
 )
 
-var Logger logger.Logger
+var Logger = logger.GetLogger()
 
 const STORAGE_SCADDRESS = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7"
 const MINERSC_SCADDRESS = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d9"
@@ -535,6 +535,8 @@ func SmartContractTxnValueFeeWithRetry(scAddress string, sn SmartContractTxnData
 func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 	value, fee uint64, verifyTxn bool, clients ...string) (hash, out string, nonce int64, t *Transaction, err error) {
 
+	Logger.Info("SmartContractTxnValueFee", zap.Any("scAddress", scAddress), zap.Any("sn", sn), zap.Any("value", value), zap.Any("fee", fee), zap.Any("verifyTxn", verifyTxn), zap.Any("clients", clients), zap.Any("time", time.Now()))
+
 	clientId := client.Id()
 	if len(clients) > 0 && clients[0] != "" {
 		clientId = clients[0]
@@ -613,6 +615,8 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 	Logger.Info(msg)
 	Logger.Info("estimated txn fee: ", txn.TransactionFee)
 
+	Logger.Info("sending transaction to the network", zap.Any("txn", txn), zap.Any("time", time.Now()))
+
 	err = SendTransactionSync(txn, nodeClient.GetStableMiners())
 	if err != nil {
 		Logger.Info("transaction submission failed", zap.Error(err))
@@ -620,6 +624,8 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 		nodeClient.ResetStableMiners()
 		return
 	}
+
+	Logger.Info("transaction submitted successfully", zap.Any("txn", txn), zap.Any("time", time.Now()))
 
 	if verifyTxn {
 		var (

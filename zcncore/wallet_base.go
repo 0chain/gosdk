@@ -4,6 +4,9 @@ import (
 	"crypto/ed25519"
 	"encoding/hex"
 	"fmt"
+	"github.com/0chain/gosdk/core/logger"
+	"github.com/0chain/gosdk/core/version"
+	"gopkg.in/natefinch/lumberjack.v2"
 	"net/http"
 	"strings"
 	"time"
@@ -16,14 +19,13 @@ import (
 
 	"github.com/0chain/gosdk/core/client"
 	rawencryption "github.com/0chain/gosdk/core/encryption"
-	"github.com/0chain/gosdk/core/logger"
-	"github.com/0chain/gosdk/core/version"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/encryption"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	openssl "github.com/Luzifer/go-openssl/v3"
-	"gopkg.in/natefinch/lumberjack.v2"
 )
+
+var logging = logger.GetLogger()
 
 const (
 	GET_CLIENT                       = `/v1/client/get`
@@ -79,11 +81,10 @@ const (
 )
 
 var defaultLogLevel = logger.DEBUG
-var logging logger.Logger
 
 // GetLogger returns the logger instance
 func GetLogger() *logger.Logger {
-	return &logging
+	return logging
 }
 
 // CloseLog closes log file
