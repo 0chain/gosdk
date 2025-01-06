@@ -304,6 +304,14 @@ func updateAllocation(allocationID string,
 	return hash, err
 }
 
+func getUpdateAllocTicket(allocationID, userID, operationType string, roundExpiry int64) (string, error) {
+	sign, err := sdk.GetUpdateAllocTicket(allocationID, userID, operationType, roundExpiry)
+	if err != nil {
+		return "", err
+	}
+	return sign, err
+}
+
 // getAllocationMinLock retrieves the minimum lock value for the allocation creation, as calculated by the network.
 // Lock value is the amount of tokens that the client needs to lock in the allocation's write pool
 // to be able to pay for the write operations.

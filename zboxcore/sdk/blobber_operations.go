@@ -4,7 +4,9 @@
 package sdk
 
 import (
+	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"math"
 	"strings"
 
@@ -152,6 +154,17 @@ func UpdateAllocation(
 	}
 	hash, _, nonce, _, err = storageSmartContractTxnValue(sn, lock)
 	return
+}
+
+func GetUpdateAllocTicket(allocationID, userID, operationType string, roundExpiry int64) (string, error) {
+	payload := fmt.Sprintf("%s:%d:%s:%s", allocationID, roundExpiry, userID, operationType)
+
+	signature, err := client.Sign(hex.EncodeToString([]byte(payload)))
+	if err != nil {
+		return "", err
+	}
+
+	return signature, nil
 }
 
 // StakePoolLock locks tokens in a stake pool.
