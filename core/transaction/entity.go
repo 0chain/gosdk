@@ -535,7 +535,8 @@ func SmartContractTxnValueFeeWithRetry(scAddress string, sn SmartContractTxnData
 func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 	value, fee uint64, verifyTxn bool, clients ...string) (hash, out string, nonce int64, t *Transaction, err error) {
 
-	Logger.Info("SmartContractTxnValueFee", zap.Any("scAddress", scAddress), zap.Any("sn", sn), zap.Any("value", value), zap.Any("fee", fee), zap.Any("verifyTxn", verifyTxn), zap.Any("clients", clients), zap.Any("time", time.Now()))
+	now := time.Now()
+	Logger.Info("SmartContractTxnValueFee", zap.Any("scAddress", scAddress), zap.Any("sn", sn), zap.Any("value", value), zap.Any("fee", fee), zap.Any("verifyTxn", verifyTxn), zap.Any("clients", clients), zap.Any("time", now))
 
 	clientId := client.Id()
 	if len(clients) > 0 && clients[0] != "" {
@@ -615,7 +616,7 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 	Logger.Info(msg)
 	Logger.Info("estimated txn fee: ", txn.TransactionFee)
 
-	Logger.Info("sending transaction to the network", zap.Any("txn", txn), zap.Any("time", time.Now()))
+	Logger.Info("sending transaction to the network", zap.Any("txn", txn), zap.Any("time", time.Since(now).Milliseconds()))
 
 	err = SendTransactionSync(txn, nodeClient.GetStableMiners())
 	if err != nil {
@@ -625,7 +626,7 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 		return
 	}
 
-	Logger.Info("transaction submitted successfully", zap.Any("txn", txn), zap.Any("time", time.Now()))
+	Logger.Info("transaction submitted successfully", zap.Any("txn", txn), zap.Any("time", time.Since(now).Milliseconds()))
 
 	if verifyTxn {
 		var (
@@ -638,6 +639,7 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 		var confirmationResponse string
 
 		for retries < cfg.MaxTxnQuery {
+			Logger.Info("verifying transaction", zap.Any("txn", txn), zap.Any("time", time.Since(now).Milliseconds()), zap.Any("retry", retries))
 			t, confirmationResponse, err = VerifyTransactionWithRes(txn.Hash)
 			if err == nil {
 				break
@@ -669,8 +671,12 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 			t.TransactionOutput = confirmationResponse
 		}
 
+		Logger.Info("transaction verified successfully", zap.Any("txn", txn), zap.Any("time", time.Since(now).Milliseconds()))
+
 		return t.Hash, t.TransactionOutput, t.TransactionNonce, t, nil
 	}
+
+	Logger.Info("1transaction submitted successfully", zap.Any("txn", txn), zap.Any("time", time.Since(now).Milliseconds()))
 
 	return txn.Hash, "", txn.TransactionNonce, txn, nil
 }
