@@ -380,13 +380,13 @@ func IsHardforkActivated(name string) (bool, error) {
 		"name": name,
 	})
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("error getting hardfork status: %v", err)
 	}
 
 	var result map[string]int64
 	err = json.Unmarshal(res, &result)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("error unmarshalling hardfork status: %v", err)
 	}
 
 	round, ok := result[name]
@@ -396,7 +396,7 @@ func IsHardforkActivated(name string) (bool, error) {
 
 	currentRound, err := GetCurrentRound()
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("error getting current round: %v", err)
 	}
 
 	return currentRound >= round, nil
@@ -408,10 +408,16 @@ func GetCurrentRound() (int64, error) {
 		return 0, err
 	}
 
-	var result int64
+	var result string
 	err = json.Unmarshal(res, &result)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("error getting current round : %v", err)
 	}
-	return result, nil
+
+	round, err := strconv.ParseInt(result, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("error parsing current round : %v", err)
+	}
+
+	return round, nil
 }
