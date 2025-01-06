@@ -383,15 +383,20 @@ func IsHardforkActivated(name string) (bool, error) {
 		return false, fmt.Errorf("error getting hardfork status: %v", err)
 	}
 
-	var result map[string]int64
+	var result map[string]string
 	err = json.Unmarshal(res, &result)
 	if err != nil {
 		return false, fmt.Errorf("error unmarshalling hardfork status: %v", err)
 	}
 
-	round, ok := result[name]
+	roundString, ok := result[name]
 	if !ok {
 		return false, errors.New("hardfork not found")
+	}
+
+	round, err := strconv.ParseInt(roundString, 10, 64)
+	if err != nil {
+		return false, fmt.Errorf("error parsing round: %v", err)
 	}
 
 	currentRound, err := GetCurrentRound()
