@@ -38,6 +38,7 @@ jobs:
       - name: Build
         run: |
           git checkout v1.0.16
+          ls -lha
           docker run --rm -v $PWD:/gosdk -w /gosdk golang:1.23 make wasm-build
           ls -lha
           CURRENT_TAG=$(git describe --tags --exact-match)
