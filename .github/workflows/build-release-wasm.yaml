@@ -19,36 +19,25 @@ jobs:
   build-wasm:
     name: Build-wasm
     runs-on: [self-hosted, arc-runner]
+    outputs:
+      build_version: ${{ steps.wasm_build.outputs.BUILD_TAG }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: v1.18.17
 
-      # - name: Set up Go 1.23
-      #   uses: actions/setup-go@v3
-      #   with:
-      #     go-version: 1.23
-
-      # - name: Install dependencies
-      #   run: |
-      #     sudo apt-get update
-      #     sudo apt-get -y install build-essential nghttp2 libnghttp2-dev libssl-dev wget
-
-      - name: Build
+      - name: Build wasm binary using go version 1.22.5
+        id: wasm_build
         run: |
-          git checkout v1.18.17
-          ls -lha
-          git status
-          CURRENT_TAG=$(git describe --tags --exact-match)
           docker run --rm -v $PWD:/gosdk -w /gosdk golang:1.22.5 sh -c "git config --global --add safe.directory /gosdk; make wasm-build"
-          ls -lha
-          CURRENT_TAG=$(git describe --tags --exact-match)
-          mv zcn.wasm zcn-${CURRENT_TAG}-normal.wasm
-          ls -lha
+          BUILD_TAG=zcn-$(git describe --tags --exact-match)-normal.wasm
+          mv zcn.wasm $BUILD_TAG
+          echo "BUILD_TAG=$BUILD_TAG" >>$GITHUB_OUTPUT
 
-      # - name: 'Upload Artifact'
-      #   uses: actions/upload-artifact@v3
-      #   with:
-      #     name: zcn.wasm
-      #     path: zcn.wasm
+      - name: 'Upload Artifact'
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ steps.wasm_build.outputs.BUILD_TAG }}
+          path: ${{ steps.wasm_build.outputs.BUILD_TAG }}
