@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/0chain/gosdk/core/encryption"
+	"github.com/0chain/gosdk_common/core/encryption"
 	"github.com/stretchr/testify/require"
 )
 

@@ -3,9 +3,9 @@ package main
 import (
 	"encoding/json"
 
-	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk/zcncore"
+	"github.com/0chain/gosdk_common/core/transaction"
 )
 
 func faucet(methodName, input string, token float64) (*transaction.Transaction, error) {

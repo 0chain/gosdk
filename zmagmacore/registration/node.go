@@ -8,12 +8,12 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zmagmacore/errors"
 	"github.com/0chain/gosdk/zmagmacore/http"
 	"github.com/0chain/gosdk/zmagmacore/log"
 	"github.com/0chain/gosdk/zmagmacore/magmasc"
 	"github.com/0chain/gosdk/zmagmacore/transaction"
+	"github.com/0chain/gosdk_common/core/sys"
 )
 
 // RegisterOrUpdateWithRetries registers bandwidth-marketplace Node in blockchain

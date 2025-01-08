@@ -3,7 +3,7 @@
 # wasmsdk
 
 ```go
-import "github.com/0chain/gosdk/wasmsdk"
+import "github.com/0chain/gosdk_common/wasmsdk"
 ```
 
 ## Index

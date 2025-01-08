@@ -7,11 +7,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/0chain/gosdk/constants"
-	"github.com/0chain/gosdk/core/sys"
-	"github.com/0chain/gosdk/zboxcore/fileref"
-	l "github.com/0chain/gosdk/zboxcore/logger"
-	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/0chain/gosdk_common/constants"
+	"github.com/0chain/gosdk_common/core/sys"
+	"github.com/0chain/gosdk_common/zboxcore/fileref"
+	l "github.com/0chain/gosdk_common/zboxcore/logger"
+	"github.com/0chain/gosdk_common/zboxcore/zboxutil"
 	"go.uber.org/zap"
 )
 

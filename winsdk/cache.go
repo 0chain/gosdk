@@ -6,8 +6,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/sdk"
+	"github.com/0chain/gosdk_common/zboxcore/marker"
 	lru "github.com/hashicorp/golang-lru/v2"
 )
 

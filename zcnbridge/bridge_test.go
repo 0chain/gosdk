@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
-	"github.com/0chain/gosdk/zcnbridge/ethereum/uniswapnetwork"
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	"log"
 	"math/big"
 	"os"
@@ -14,9 +12,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/0chain/gosdk/zcnbridge/ethereum/uniswapnetwork"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+
 	"github.com/0chain/gosdk/zcnbridge/ethereum/zcntoken"
 
-	sdkcommon "github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zcnbridge/ethereum"
 	"github.com/0chain/gosdk/zcnbridge/ethereum/authorizers"
 	binding "github.com/0chain/gosdk/zcnbridge/ethereum/bridge"
@@ -26,6 +26,7 @@ import (
 	"github.com/0chain/gosdk/zcnbridge/wallet"
 	"github.com/0chain/gosdk/zcnbridge/zcnsc"
 	"github.com/0chain/gosdk/zcncore"
+	sdkcommon "github.com/0chain/gosdk_common/core/common"
 	eth "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/keystore"

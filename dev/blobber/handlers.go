@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/0chain/gosdk/dev/blobber/model"
+	"github.com/0chain/gosdk_common/dev/blobber/model"
 	"github.com/gorilla/mux"
 )
 

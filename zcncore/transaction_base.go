@@ -10,18 +10,17 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
-	"github.com/0chain/gosdk/core/common"
-	"github.com/0chain/gosdk/core/node"
-	"github.com/0chain/gosdk/core/sys"
-	"github.com/0chain/gosdk/zboxcore/fileref"
+	"github.com/0chain/gosdk_common/core/common"
+	"github.com/0chain/gosdk_common/core/node"
+	"github.com/0chain/gosdk_common/core/sys"
+	"github.com/0chain/gosdk_common/zboxcore/fileref"
 
-	"github.com/0chain/gosdk/core/conf"
-	"github.com/0chain/gosdk/core/encryption"
-	"github.com/0chain/gosdk/core/transaction"
-	"github.com/0chain/gosdk/core/util"
-	"github.com/0chain/gosdk/core/version"
-	"github.com/0chain/gosdk/core/zcncrypto"
-	"github.com/0chain/gosdk/zboxcore/blockchain"
+	"github.com/0chain/gosdk_common/core/conf"
+	"github.com/0chain/gosdk_common/core/encryption"
+	"github.com/0chain/gosdk_common/core/transaction"
+	"github.com/0chain/gosdk_common/core/util"
+	"github.com/0chain/gosdk_common/core/version"
+	"github.com/0chain/gosdk_common/core/zcncrypto"
 )
 
 var (
@@ -767,7 +766,7 @@ func VerifyContentHash(metaTxnDataJSON string) (bool, error) {
 		return false, errors.New("metaTxnData_decode_error", "Unable to decode metaTxnData json")
 	}
 
-	t, err := transaction.VerifyTransaction(metaTxnData.TxnID, blockchain.GetSharders())
+	t, err := transaction.VerifyTransaction(metaTxnData.TxnID)
 	if err != nil {
 		return false, errors.New("fetch_txm_details", "Unable to fetch txn details")
 	}

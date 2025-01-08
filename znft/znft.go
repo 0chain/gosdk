@@ -5,17 +5,17 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/0chain/gosdk/core/logger"
+	"github.com/0chain/gosdk_common/core/logger"
 
-	storageerc721 "github.com/0chain/gosdk/znft/contracts/dstorageerc721/binding"
-	storageerc721fixed "github.com/0chain/gosdk/znft/contracts/dstorageerc721fixed/binding"
-	storageerc721pack "github.com/0chain/gosdk/znft/contracts/dstorageerc721pack/binding"
-	storageerc721random "github.com/0chain/gosdk/znft/contracts/dstorageerc721random/binding"
+	storageerc721 "github.com/0chain/gosdk_common/znft/contracts/dstorageerc721/binding"
+	storageerc721fixed "github.com/0chain/gosdk_common/znft/contracts/dstorageerc721fixed/binding"
+	storageerc721pack "github.com/0chain/gosdk_common/znft/contracts/dstorageerc721pack/binding"
+	storageerc721random "github.com/0chain/gosdk_common/znft/contracts/dstorageerc721random/binding"
 
-	factoryerc721 "github.com/0chain/gosdk/znft/contracts/factorymoduleerc721/binding"
-	factoryerc721fixed "github.com/0chain/gosdk/znft/contracts/factorymoduleerc721fixed/binding"
-	factoryerc721pack "github.com/0chain/gosdk/znft/contracts/factorymoduleerc721pack/binding"
-	factoryerc721random "github.com/0chain/gosdk/znft/contracts/factorymoduleerc721random/binding"
+	factoryerc721 "github.com/0chain/gosdk_common/znft/contracts/factorymoduleerc721/binding"
+	factoryerc721fixed "github.com/0chain/gosdk_common/znft/contracts/factorymoduleerc721fixed/binding"
+	factoryerc721pack "github.com/0chain/gosdk_common/znft/contracts/factorymoduleerc721pack/binding"
+	factoryerc721random "github.com/0chain/gosdk_common/znft/contracts/factorymoduleerc721random/binding"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"

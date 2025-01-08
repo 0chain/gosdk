@@ -4,7 +4,7 @@
 package zcncore
 
 import (
-	"github.com/0chain/gosdk/core/zcncrypto"
+	"github.com/0chain/gosdk_common/core/zcncrypto"
 )
 
 // Wallet interface to gather all wallet related functions

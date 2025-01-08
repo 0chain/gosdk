@@ -7,10 +7,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/0chain/gosdk/core/util"
-	"github.com/0chain/gosdk/zcnbridge/errors"
-	ctime "github.com/0chain/gosdk/zcnbridge/time"
-	"github.com/0chain/gosdk/zcncore"
+	"github.com/0chain/gosdk_common/core/util"
+	"github.com/0chain/gosdk_common/zcnbridge/errors"
+	ctime "github.com/0chain/gosdk_common/zcnbridge/time"
+	"github.com/0chain/gosdk_common/zcncore"
 )
 
 var (

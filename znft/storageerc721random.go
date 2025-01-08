@@ -8,7 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	storageerc721random "github.com/0chain/gosdk/znft/contracts/dstorageerc721random/binding"
+	storageerc721random "github.com/0chain/gosdk_common/znft/contracts/dstorageerc721random/binding"
 )
 
 // Solidity Functions

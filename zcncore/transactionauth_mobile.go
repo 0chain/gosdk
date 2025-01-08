@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
-	"github.com/0chain/gosdk/core/transaction"
+	"github.com/0chain/gosdk_common/core/transaction"
 )
 
 func newTransactionWithAuth(cb TransactionCallback, txnFee string, nonce int64) (*TransactionWithAuth, error) {

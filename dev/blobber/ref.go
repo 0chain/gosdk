@@ -3,7 +3,7 @@ package blobber
 import (
 	"sync"
 
-	"github.com/0chain/gosdk/dev/blobber/model"
+	"github.com/0chain/gosdk_common/dev/blobber/model"
 )
 
 var referencePathResults = make(map[string]*model.ReferencePathResult)

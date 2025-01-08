@@ -7,10 +7,10 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/0chain/gosdk/core/util"
+	"github.com/0chain/gosdk_common/core/util"
 
-	"github.com/0chain/gosdk/core/conf"
-	"github.com/0chain/gosdk/core/node"
+	"github.com/0chain/gosdk_common/core/conf"
+	"github.com/0chain/gosdk_common/core/node"
 )
 
 var miners []string

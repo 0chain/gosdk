@@ -13,14 +13,14 @@ import (
 	"github.com/0chain/errors"
 	"github.com/remeh/sizedwaitgroup"
 
-	"github.com/0chain/gosdk/core/common"
-	"github.com/0chain/gosdk/zboxcore/allocationchange"
-	"github.com/0chain/gosdk/zboxcore/client"
-	"github.com/0chain/gosdk/zboxcore/fileref"
-	"github.com/0chain/gosdk/zboxcore/logger"
-	l "github.com/0chain/gosdk/zboxcore/logger"
+	"github.com/0chain/gosdk_common/core/common"
+	"github.com/0chain/gosdk_common/zboxcore/allocationchange"
+	"github.com/0chain/gosdk_common/zboxcore/client"
+	"github.com/0chain/gosdk_common/zboxcore/fileref"
+	"github.com/0chain/gosdk_common/zboxcore/logger"
+	l "github.com/0chain/gosdk_common/zboxcore/logger"
 
-	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/0chain/gosdk_common/zboxcore/zboxutil"
 	"github.com/google/uuid"
 )
 

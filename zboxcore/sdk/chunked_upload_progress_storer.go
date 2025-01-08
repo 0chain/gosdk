@@ -9,10 +9,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/0chain/gosdk/core/common"
-	"github.com/0chain/gosdk/core/sys"
-	"github.com/0chain/gosdk/zboxcore/logger"
-	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/0chain/gosdk_common/core/common"
+	"github.com/0chain/gosdk_common/core/sys"
+	"github.com/0chain/gosdk_common/zboxcore/logger"
+	"github.com/0chain/gosdk_common/zboxcore/zboxutil"
 )
 
 // ChunkedUploadProgressStorer load and save upload progress

@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/0chain/gosdk/core/sys"
+	"github.com/0chain/gosdk_common/core/sys"
 )
 
 // HandleFunc returns handle function that writes logs to http.ResponseWriter with provided buffer size.

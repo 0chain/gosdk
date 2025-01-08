@@ -19,13 +19,13 @@ import (
 
 	"gopkg.in/natefinch/lumberjack.v2"
 
-	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/zcnbridge/ethereum"
 	"github.com/0chain/gosdk/zcnbridge/ethereum/authorizers"
 	"github.com/0chain/gosdk/zcnbridge/ethereum/bridge"
 	"github.com/0chain/gosdk/zcnbridge/ethereum/nftconfig"
 	"github.com/0chain/gosdk/zcnbridge/log"
 	"github.com/0chain/gosdk/zcncore"
+	"github.com/0chain/gosdk_common/core/logger"
 
 	"github.com/0chain/gosdk/zcnbridge/transaction"
 	"github.com/0chain/gosdk/zcnbridge/wallet"
@@ -155,7 +155,7 @@ func (b *BridgeClient) RemoveEthereumAuthorizer(ctx context.Context, address com
 }
 
 // AddEthereumAuthorizers add bridge authorizers to the Ethereum authorizers contract
-// 		- configDir - configuration directory
+//   - configDir - configuration directory
 func (b *BridgeClient) AddEthereumAuthorizers(configDir string) {
 	cfg := viper.New()
 	cfg.AddConfigPath(configDir)

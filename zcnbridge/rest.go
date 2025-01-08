@@ -3,7 +3,7 @@ package zcnbridge
 import (
 	"fmt"
 
-	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk_common/core/common"
 
 	"github.com/0chain/gosdk/zcnbridge/http"
 	"github.com/0chain/gosdk/zcnbridge/wallet"

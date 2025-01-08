@@ -13,9 +13,9 @@ import (
 	"context"
 	"errors"
 
-	"github.com/0chain/gosdk/core/logger"
-	"github.com/0chain/gosdk/zboxapi"
-	"github.com/0chain/gosdk/zboxcore/client"
+	"github.com/0chain/gosdk_common/core/logger"
+	"github.com/0chain/gosdk_common/zboxapi"
+	"github.com/0chain/gosdk_common/zboxcore/client"
 	"go.uber.org/zap"
 )
 

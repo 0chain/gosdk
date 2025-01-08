@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/0chain/gosdk/core/sys"
+	"github.com/0chain/gosdk_common/core/sys"
 )
 
 func clone(m map[string]string) map[string]string {

@@ -3,7 +3,7 @@ package magmasc
 import (
 	"encoding/json"
 
-	"github.com/0chain/gosdk/core/util"
+	"github.com/0chain/gosdk_common/core/util"
 )
 
 type (

@@ -3,7 +3,7 @@ package util
 import (
 	"encoding/hex"
 
-	"github.com/0chain/gosdk/core/encryption"
+	"github.com/0chain/gosdk_common/core/encryption"
 	"github.com/minio/sha256-simd"
 )
 

@@ -3,7 +3,7 @@ package blobber
 import (
 	"net/http"
 
-	"github.com/0chain/gosdk/dev/mock"
+	"github.com/0chain/gosdk_common/dev/mock"
 	"github.com/gorilla/mux"
 )
 

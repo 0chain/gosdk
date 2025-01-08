@@ -13,9 +13,9 @@ import (
 	"sync"
 	"syscall/js"
 
-	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/wasmsdk/jsbridge"
 	"github.com/0chain/gosdk/zboxcore/sdk"
+	"github.com/0chain/gosdk_common/core/transaction"
 )
 
 const TOKEN_UNIT int64 = 1e10

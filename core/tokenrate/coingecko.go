@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/0chain/gosdk/core/resty"
+	"github.com/0chain/gosdk_common/core/resty"
 )
 
 type coingeckoQuoteQuery struct {

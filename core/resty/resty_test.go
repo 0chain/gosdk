@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/0chain/gosdk/core/resty/mocks"
+	"github.com/0chain/gosdk_common/core/resty/mocks"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )

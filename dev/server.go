@@ -4,8 +4,8 @@ package dev
 import (
 	"net/http/httptest"
 
-	"github.com/0chain/gosdk/dev/blobber"
-	"github.com/0chain/gosdk/dev/mock"
+	"github.com/0chain/gosdk_common/dev/blobber"
+	"github.com/0chain/gosdk_common/dev/mock"
 	"github.com/gorilla/mux"
 )
 

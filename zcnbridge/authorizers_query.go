@@ -9,7 +9,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zcnbridge/errors"
 	"github.com/0chain/gosdk/zcnbridge/ethereum"
 	h "github.com/0chain/gosdk/zcnbridge/http"
@@ -17,6 +16,7 @@ import (
 	"github.com/0chain/gosdk/zcnbridge/wallet"
 	"github.com/0chain/gosdk/zcnbridge/zcnsc"
 	"github.com/0chain/gosdk/zcncore"
+	"github.com/0chain/gosdk_common/core/common"
 	"go.uber.org/zap"
 )
 

@@ -38,17 +38,17 @@ func GetClientConfig() (*Config, error) {
 	return cfg, nil
 }
 
-// InitClientConfig set global client SDK config
-func InitClientConfig(c *Config) {
-	onceCfg.Do(func() {
-		sharderConsensous := c.SharderConsensous
-		if sharderConsensous < 1 {
-			sharderConsensous = DefaultSharderConsensous
-		}
-		cfg = c
-		cfg.SharderConsensous = sharderConsensous
-	})
-}
+	// InitClientConfig set global client SDK config
+	func InitClientConfig(c *Config) {
+		onceCfg.Do(func() {
+			sharderConsensous := c.SharderConsensous
+			if sharderConsensous < 1 {
+				sharderConsensous = DefaultSharderConsensous
+			}
+			cfg = c
+			cfg.SharderConsensous = sharderConsensous
+		})
+	}
 
 // InitChainNetwork set global chain network for the SDK given its configuration
 func InitChainNetwork(n *Network) {

@@ -11,9 +11,9 @@ import (
 	"regexp"
 	"sync"
 
-	"github.com/0chain/gosdk/core/tokenrate"
-	"github.com/0chain/gosdk/core/zcncrypto"
 	hdwallet "github.com/0chain/gosdk/zcncore/ethhdwallet"
+	"github.com/0chain/gosdk_common/core/tokenrate"
+	"github.com/0chain/gosdk_common/core/zcncrypto"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"

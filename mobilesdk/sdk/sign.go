@@ -3,10 +3,10 @@ package sdk
 import (
 	"errors"
 
-	"github.com/0chain/gosdk/core/encryption"
-	"github.com/0chain/gosdk/core/sys"
-	"github.com/0chain/gosdk/core/zcncrypto"
-	_ "github.com/0chain/gosdk/zboxcore/client" //import it to initialize sys.Sign
+	"github.com/0chain/gosdk_common/core/encryption"
+	"github.com/0chain/gosdk_common/core/sys"
+	"github.com/0chain/gosdk_common/core/zcncrypto"
+	_ "github.com/0chain/gosdk_common/zboxcore/client" //import it to initialize sys.Sign
 )
 
 var ErrInvalidSignatureScheme = errors.New("invalid_signature_scheme")

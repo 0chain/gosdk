@@ -8,8 +8,8 @@ import (
 	"fmt"
 
 	"github.com/0chain/errors"
-	"github.com/0chain/gosdk/core/encryption"
-	"github.com/0chain/gosdk/core/zcncrypto"
+	"github.com/0chain/gosdk_common/core/encryption"
+	"github.com/0chain/gosdk_common/core/zcncrypto"
 )
 
 //MSVote -- this should mimic the type Vote defined in MultiSig SC

@@ -9,9 +9,9 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zcncore"
 	"github.com/0chain/gosdk/zmagmacore/errors"
+	"github.com/0chain/gosdk_common/core/util"
 )
 
 // MakeSCRestAPICall calls smart contract with provided address

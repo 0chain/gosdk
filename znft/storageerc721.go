@@ -4,7 +4,7 @@ import (
 	"context"
 	"math/big"
 
-	storageerc721 "github.com/0chain/gosdk/znft/contracts/dstorageerc721/binding"
+	storageerc721 "github.com/0chain/gosdk_common/znft/contracts/dstorageerc721/binding"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"

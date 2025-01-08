@@ -10,8 +10,8 @@ import (
 	"sync"
 
 	"github.com/0chain/errors"
-	"github.com/0chain/gosdk/zboxcore/marker"
-	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/0chain/gosdk_common/zboxcore/marker"
+	"github.com/0chain/gosdk_common/zboxcore/zboxutil"
 )
 
 const (

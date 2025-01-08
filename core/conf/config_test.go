@@ -3,7 +3,7 @@ package conf
 import (
 	"testing"
 
-	"github.com/0chain/gosdk/core/conf/mocks"
+	"github.com/0chain/gosdk_common/core/conf/mocks"
 	"github.com/stretchr/testify/require"
 )
 

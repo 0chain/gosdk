@@ -19,8 +19,8 @@ import (
 	"errors"
 
 	thrown "github.com/0chain/errors"
-	"github.com/0chain/gosdk/zboxcore/allocationchange"
-	"github.com/0chain/gosdk/zboxcore/blockchain"
+	"github.com/0chain/gosdk_common/zboxcore/allocationchange"
+	"github.com/0chain/gosdk_common/zboxcore/blockchain"
 	"github.com/h2non/filetype"
 	"github.com/hitenjain14/fasthttp"
 	"github.com/lithammer/shortuuid/v3"

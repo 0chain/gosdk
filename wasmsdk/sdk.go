@@ -10,12 +10,12 @@ import (
 	"io"
 	"os"
 
-	"github.com/0chain/gosdk/core/encryption"
-	"github.com/0chain/gosdk/core/imageutil"
-	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/zboxcore/sdk"
-	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/0chain/gosdk/zcncore"
+	"github.com/0chain/gosdk_common/core/client"
+	"github.com/0chain/gosdk_common/core/encryption"
+	"github.com/0chain/gosdk_common/core/imageutil"
+	"github.com/0chain/gosdk_common/core/logger"
 )
 
 var CreateObjectURL func(buf []byte, mimeType string) string
@@ -152,7 +152,7 @@ func makeSCRestAPICall(scAddress, relativePath, paramsJson string) (string, erro
 	if err != nil {
 		sdkLogger.Error(fmt.Sprintf("Error parsing JSON: %v", err))
 	}
-	b, err := zboxutil.MakeSCRestAPICall(scAddress, relativePath, params, nil)
+	b, err := client.MakeSCRestAPICall(scAddress, relativePath, params)
 	return string(b), err
 }
 

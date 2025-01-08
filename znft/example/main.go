@@ -11,7 +11,7 @@ import (
 	"math/big"
 	"os"
 
-	"github.com/0chain/gosdk/znft"
+	"github.com/0chain/gosdk_common/znft"
 )
 
 var mnemonic string

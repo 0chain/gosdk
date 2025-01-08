@@ -3,7 +3,7 @@
 # znft
 
 ```go
-import "github.com/0chain/gosdk/znft"
+import "github.com/0chain/gosdk_common/znft"
 ```
 
 ## Index

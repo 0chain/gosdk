@@ -3,7 +3,7 @@
 package mocks
 
 import (
-	transaction "github.com/0chain/gosdk/zcnbridge/transaction"
+	transaction "github.com/0chain/gosdk_common/zcnbridge/transaction"
 	mock "github.com/stretchr/testify/mock"
 )
 

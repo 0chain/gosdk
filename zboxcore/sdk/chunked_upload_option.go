@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/0chain/gosdk_common/zboxcore/zboxutil"
 	"github.com/klauspost/reedsolomon"
 )
 
