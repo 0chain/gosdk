@@ -12,9 +12,6 @@ on:
   # pull_request:
   workflow_dispatch:
 
-env:
-  GITHUB_TOKEN: ${{ secrets.GOSDK }}
-
 jobs:
   build-wasm:
     name: Build-wasm
