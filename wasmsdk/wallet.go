@@ -12,6 +12,7 @@ import (
 
 	"github.com/0chain/gosdk/wasmsdk/jsbridge"
 	"github.com/0chain/gosdk/zcncore"
+	coreClient "github.com/0chain/gosdk_common/core/client"
 	"github.com/0chain/gosdk_common/core/zcncrypto"
 	"github.com/0chain/gosdk_common/zboxcore/client"
 )
@@ -45,6 +46,8 @@ func setWallet(clientID, clientKey, peerPublicKey, publicKey, privateKey, mnemon
 		Keys:          keys,
 		IsSplit:       isSplit,
 	}
+	coreClient.SetWallet(*w)
+
 	fmt.Println("set Wallet, is split:", isSplit)
 	err := zcncore.SetWallet(*w, isSplit)
 	if err != nil {
