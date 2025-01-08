@@ -4,14 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/0chain/gosdk_common/zcncore"
+	"github.com/0chain/gosdk/zcncore"
 
 	"github.com/0chain/gosdk_common/core/zcncrypto"
 
-	"github.com/0chain/gosdk_common/zcnbridge"
+	"github.com/0chain/gosdk/zcnbridge"
 
+	"github.com/0chain/gosdk/zcnbridge/errors"
 	"github.com/0chain/gosdk_common/core/encryption"
-	"github.com/0chain/gosdk_common/zcnbridge/errors"
 )
 
 type ProofOfBurn struct {

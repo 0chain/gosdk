@@ -3,7 +3,7 @@ package http
 import (
 	"testing"
 
-	"github.com/0chain/gosdk_common/zcncore"
+	"github.com/0chain/gosdk/zcncore"
 
 	"github.com/stretchr/testify/require"
 )

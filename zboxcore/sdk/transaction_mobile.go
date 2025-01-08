@@ -9,9 +9,9 @@ import (
 
 	"errors"
 
+	"github.com/0chain/gosdk/zcncore"
 	"github.com/0chain/gosdk_common/core/transaction"
 	l "github.com/0chain/gosdk_common/zboxcore/logger"
-	"github.com/0chain/gosdk_common/zcncore"
 )
 
 type transactionCallback struct {

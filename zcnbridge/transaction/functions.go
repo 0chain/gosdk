@@ -5,7 +5,7 @@ package transaction
 import (
 	"context"
 
-	"github.com/0chain/gosdk_common/zcncore"
+	"github.com/0chain/gosdk/zcncore"
 )
 
 // AddAuthorizer adds authorizer to the bridge
