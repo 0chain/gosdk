@@ -1,4 +1,4 @@
-name: Build-and-release-wasm
+name: Build & Push Normal Wasm
 
 concurrency:
   group: "build-release-wasm-${{ github.ref }}"
