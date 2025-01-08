@@ -26,13 +26,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: v1.18.17
 
       - name: Build wasm binary using go version 1.22.5
         id: wasm_build
         run: |
           docker run --rm -v $PWD:/gosdk -w /gosdk golang:1.22.5 sh -c "git config --global --add safe.directory /gosdk; make wasm-build"
           BUILD_TAG=zcn-$(git describe --tags --exact-match)-normal.wasm
+          BUILD_TAG="${BUILD_TAG:0:4}${BUILD_TAG:5}"
           mv zcn.wasm $BUILD_TAG
           echo "BUILD_TAG=$BUILD_TAG" >>$GITHUB_OUTPUT
 
