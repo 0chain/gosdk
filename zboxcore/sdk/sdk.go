@@ -261,7 +261,7 @@ func GetChallengePoolInfo(allocID string) (info *ChallengePoolInfo, err error) {
 
 	var b []byte
 
-	b, err = client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, "/getChallengePoolStat",
+	b, err = screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getChallengePoolStat",
 		map[string]string{"allocation_id": allocID})
 
 	if err != nil {
