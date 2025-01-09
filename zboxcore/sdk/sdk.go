@@ -538,7 +538,7 @@ func GetValidator(validatorID string) (validator *Validator, err error) {
 	}
 	var b []byte
 
-	b, err = client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, "/get_validator",
+	b, err = screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/get_validator",
 		map[string]string{"validator_id": validatorID})
 	if err != nil {
 		return nil, errors.Wrap(err, "requesting validator:")
@@ -561,7 +561,7 @@ func GetValidators(stakable bool) (validators []*Validator, err error) {
 	}
 	var b []byte
 
-	b, err = client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, "/validators",
+	b, err = screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/validators",
 		map[string]string{
 			"stakable": strconv.FormatBool(stakable),
 		})
