@@ -286,7 +286,7 @@ func GetMptData(key string) ([]byte, error) {
 	}
 
 	var b []byte
-	b, err := client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS,
+	b, err := screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS,
 		"/get_mpt_key", map[string]string{"key": key})
 	if err != nil {
 		return nil, errors.Wrap(err, "error requesting mpt key data:")
