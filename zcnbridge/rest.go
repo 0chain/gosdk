@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/0chain/gosdk/core/screstapi"
+	coreClient "github.com/0chain/gosdk/core/client"
 
 	"github.com/0chain/gosdk/core/common"
 
@@ -90,7 +90,7 @@ func GetAuthorizer(id string) (res []byte, err error) {
 		return nil, err
 	}
 
-	return screstapi.MakeSCRestAPICall(zcncore.ZCNSCSmartContractAddress, PathGetAuthorizer, zcncore.Params{
+	return coreClient.MakeSCRestAPICallToSharder(zcncore.ZCNSCSmartContractAddress, PathGetAuthorizer, zcncore.Params{
 		"id": id,
 	})
 }
@@ -103,7 +103,7 @@ func GetAuthorizers(active bool) (res []byte, err error) {
 	if err != nil {
 		return nil, err
 	}
-	return screstapi.MakeSCRestAPICall(zcncore.ZCNSCSmartContractAddress, fmt.Sprintf(PathGetAuthorizerNodes, active), nil)
+	return coreClient.MakeSCRestAPICallToSharder(zcncore.ZCNSCSmartContractAddress, fmt.Sprintf(PathGetAuthorizerNodes, active), nil)
 }
 
 // GetGlobalConfig Returns global config
@@ -113,5 +113,5 @@ func GetGlobalConfig() (res []byte, err error) {
 	if err != nil {
 		return nil, err
 	}
-	return screstapi.MakeSCRestAPICall(zcncore.ZCNSCSmartContractAddress, PathGetGlobalConfig, nil)
+	return coreClient.MakeSCRestAPICallToSharder(zcncore.ZCNSCSmartContractAddress, PathGetGlobalConfig, nil)
 }

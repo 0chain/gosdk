@@ -10,8 +10,7 @@ import (
 
 	"github.com/0chain/gosdk/core/block"
 	"github.com/0chain/gosdk/core/client"
-  
-	"github.com/0chain/gosdk/core/screstapi"
+
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/core/tokenrate"
 	"github.com/0chain/gosdk/core/util"
@@ -230,7 +229,7 @@ func GetMinerSCNodeInfo(id string) ([]byte, error) {
 		return nil, err
 	}
 
-	return screstapi.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINERSC_NODE, Params{
+	return client.MakeSCRestAPICallToSharder(MinerSmartContractAddress, GET_MINERSC_NODE, Params{
 		"id": id,
 	})
 }
@@ -244,7 +243,7 @@ func GetMintNonce() ([]byte, error) {
 	}
 	var res []byte
 
-	res, err = screstapi.MakeSCRestAPICall(ZCNSCSmartContractAddress, GET_MINT_NONCE, Params{
+	res, err = client.MakeSCRestAPICallToSharder(ZCNSCSmartContractAddress, GET_MINT_NONCE, Params{
 		"client_id": client.Id(),
 	})
 
@@ -256,7 +255,7 @@ func GetMiners(active, stakable bool, limit, offset int) ([]byte, error) {
 		return nil, err
 	}
 
-	return screstapi.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINERSC_MINERS, Params{
+	return client.MakeSCRestAPICallToSharder(MinerSmartContractAddress, GET_MINERSC_MINERS, Params{
 		"active":   strconv.FormatBool(active),
 		"stakable": strconv.FormatBool(stakable),
 		"offset":   strconv.FormatInt(int64(offset), 10),
@@ -269,7 +268,7 @@ func GetSharders(active, stakable bool, limit, offset int) ([]byte, error) {
 		return nil, err
 	}
 
-	return screstapi.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINERSC_SHARDERS, Params{
+	return client.MakeSCRestAPICallToSharder(MinerSmartContractAddress, GET_MINERSC_SHARDERS, Params{
 		"active":   strconv.FormatBool(active),
 		"stakable": strconv.FormatBool(stakable),
 		"offset":   strconv.FormatInt(int64(offset), 10),
@@ -281,7 +280,7 @@ func GetSharders(active, stakable bool, limit, offset int) ([]byte, error) {
 //   - numSharders: number of sharders
 //   - timeout: request timeout
 func GetLatestFinalizedMagicBlock() (m *block.MagicBlock, err error) {
-	res, err := screstapi.MakeSCRestAPICall("", GET_LATEST_FINALIZED_MAGIC_BLOCK, nil, "")
+	res, err := client.MakeSCRestAPICallToSharder("", GET_LATEST_FINALIZED_MAGIC_BLOCK, nil, "")
 	if err != nil {
 		return nil, err
 	}
@@ -310,7 +309,7 @@ func GetMinerSCUserInfo(clientID string) ([]byte, error) {
 		clientID = client.Id()
 	}
 
-	return screstapi.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINERSC_USER, Params{
+	return client.MakeSCRestAPICallToSharder(MinerSmartContractAddress, GET_MINERSC_USER, Params{
 		"client_id": clientID,
 	})
 }
@@ -322,7 +321,7 @@ func GetMinerSCNodePool(id string) ([]byte, error) {
 		return nil, err
 	}
 
-	return screstapi.MakeSCRestAPICall(MinerSmartContractAddress, GET_MINERSC_POOL, Params{
+	return client.MakeSCRestAPICallToSharder(MinerSmartContractAddress, GET_MINERSC_POOL, Params{
 		"id":      id,
 		"pool_id": client.Id(),
 	})
@@ -342,7 +341,7 @@ func GetNotProcessedZCNBurnTickets(ethereumAddress, startNonce string) ([]byte, 
 
 	var res []byte
 
-	res, err = screstapi.MakeSCRestAPICall(ZCNSCSmartContractAddress, GET_NOT_PROCESSED_BURN_TICKETS, Params{
+	res, err = client.MakeSCRestAPICallToSharder(ZCNSCSmartContractAddress, GET_NOT_PROCESSED_BURN_TICKETS, Params{
 		"ethereum_address": ethereumAddress,
 		"nonce":            startNonce,
 	})
@@ -362,7 +361,7 @@ func GetUserLockedTotal(clientID string) (int64, error) {
 
 	const GET_USER_LOCKED_TOTAL = `/v1/getUserLockedTotal`
 
-	info, err := screstapi.MakeSCRestAPICall(ZCNSCSmartContractAddress, GET_USER_LOCKED_TOTAL, Params{
+	info, err := client.MakeSCRestAPICallToSharder(ZCNSCSmartContractAddress, GET_USER_LOCKED_TOTAL, Params{
 		"client_id": clientID,
 	})
 
