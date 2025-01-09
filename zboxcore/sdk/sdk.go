@@ -208,7 +208,7 @@ func GetStakePoolUserInfo(clientID string, offset, limit int) (info *StakePoolUs
 		"limit":     strconv.FormatInt(int64(limit), 10),
 	}
 
-	b, err = client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, "/getUserStakePoolStat",
+	b, err = screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getUserStakePoolStat",
 		params)
 	if err != nil {
 		return nil, errors.Wrap(err, "error requesting stake pool user info:")
