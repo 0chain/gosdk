@@ -453,7 +453,7 @@ func getBlobbersInternal(active, stakable bool, limit, offset int) (bs []*Blobbe
 
 	var b []byte
 
-	b, err = client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, "/getblobbers", map[string]string{"active": strconv.FormatBool(active), "limit": strconv.FormatInt(int64(limit), 10),
+	b, err = screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getblobbers", map[string]string{"active": strconv.FormatBool(active), "limit": strconv.FormatInt(int64(limit), 10),
 		"offset":   strconv.FormatInt(int64(offset), 10),
 		"stakable": strconv.FormatBool(stakable)})
 
@@ -515,7 +515,7 @@ func GetBlobber(blobberID string) (blob *Blobber, err error) {
 	}
 	var b []byte
 
-	b, err = client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, "/getBlobber",
+	b, err = screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getBlobber",
 		map[string]string{"blobber_id": blobberID})
 	if err != nil {
 		return nil, errors.Wrap(err, "requesting blobber:")
