@@ -728,7 +728,7 @@ func getAllocationsInternal(clientID string, limit, offset int) ([]*Allocation, 
 	var allocationsBytes []byte
 	var err error
 
-	allocationsBytes, err = client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, "/allocations", params)
+	allocationsBytes, err = screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocations", params)
 	if err != nil {
 		return nil, errors.New("allocation_fetch_error", "Error fetching the allocation."+err.Error())
 	}
@@ -1422,7 +1422,7 @@ func GetUpdateAllocationMinLock(
 	params := make(map[string]string)
 	params["data"] = string(data)
 
-	responseBytes, err := client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, "/allocation-update-min-lock", params)
+	responseBytes, err := screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation-update-min-lock", params)
 	if err != nil {
 		return 0, errors.Wrap(err, "failed to request allocation update min lock")
 	}
