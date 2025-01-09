@@ -54,7 +54,7 @@ func GetConfig(configType string) (conf *InputMap, err error) {
 		return nil, errors.New("", "empty response")
 	}
 
-	conf = new(InputMap)	
+	conf = new(InputMap)
 	conf.Fields = make(map[string]string)
 	if err = json.Unmarshal(b, conf); err != nil {
 		return nil, errors.Wrap(err, "1 error decoding response:")
