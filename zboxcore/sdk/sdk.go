@@ -860,7 +860,7 @@ func GetAllocationBlobbers(
 	var allocBlobber []byte
 	var err error
 
-	allocBlobber, err = client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, "/alloc_blobbers",
+	allocBlobber, err = screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/alloc_blobbers",
 		params)
 	if err != nil {
 		return nil, err
@@ -950,7 +950,7 @@ func GetBlobberIds(blobberUrls []string) ([]string, error) {
 	params["blobber_urls"] = string(urlsStr)
 	var idsStr []byte
 
-	idsStr, err = client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, "/blobber_ids",
+	idsStr, err = screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/blobber_ids",
 		params)
 	if err != nil {
 		return nil, err
@@ -976,7 +976,7 @@ func GetFreeAllocationBlobbers(request map[string]interface{}) ([]string, error)
 	params := make(map[string]string)
 	params["free_allocation_data"] = string(data)
 
-	allocBlobber, err := client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, "/free_alloc_blobbers", params)
+	allocBlobber, err := screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/free_alloc_blobbers", params)
 	if err != nil {
 		return nil, err
 	}
