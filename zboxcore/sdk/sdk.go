@@ -12,6 +12,7 @@ import (
 	"github.com/0chain/common/core/currency"
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/logger"
+	"go.uber.org/zap"
 	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/0chain/gosdk/core/client"
@@ -629,6 +630,15 @@ func GetAllocation(allocationID string) (*Allocation, error) {
 	if err != nil {
 		return nil, errors.New("allocation_fetch_error", "Error fetching the allocation."+err.Error())
 	}
+
+	allocationBytes2, err := screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation", params)
+	if err != nil {
+		return nil, errors.New("allocation_fetch_error", "Error fetching the allocation."+err.Error())
+	}
+
+	l.Logger.Debug("0box res allocation", zap.Any("response", string(allocationBytes)))
+	l.Logger.Debug("0box res allocation", zap.Any("response", string(allocationBytes2)))
+
 	allocationObj1 := &Allocation{}
 	err = json.Unmarshal(allocationBytes, allocationObj1)
 	if err != nil {
