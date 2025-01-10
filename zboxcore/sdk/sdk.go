@@ -631,7 +631,7 @@ func GetAllocation(allocationID string) (*Allocation, error) {
 		return nil, errors.New("allocation_fetch_error", "Error fetching the allocation."+err.Error())
 	}
 
-	allocationBytes2, err := screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation", params)
+	allocationBytes2, err := client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, "/allocation", params)
 	if err != nil {
 		return nil, errors.New("allocation_fetch_error", "Error fetching the allocation."+err.Error())
 	}
