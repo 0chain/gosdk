@@ -642,7 +642,7 @@ func GetAllocation(allocationID string) (*Allocation, error) {
 	allocationObj1 := &Allocation{}
 	err = json.Unmarshal(allocationBytes2, allocationObj1)
 	if err != nil {
-		return nil, errors.New("allocation_decode_error", "Error decoding the allocation: "+err.Error()+" "+string(allocationBytes))
+		return nil, errors.New("allocation_decode_error", "Error decoding the allocation: "+err.Error()+" "+string(allocationBytes2))
 	}
 
 	allocationObj1.numBlockDownloads = numBlockDownloads
@@ -663,10 +663,18 @@ func GetAllocationForUpdate(allocationID string) (*Allocation, error) {
 		return nil, errors.New("allocation_fetch_error", "Error fetching the allocation."+err.Error())
 	}
 
-	allocationObj1 := &Allocation{}
-	err = json.Unmarshal(allocationBytes, allocationObj1)
+	allocationBytes2, err := client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, "/allocation", params)
 	if err != nil {
-		return nil, errors.New("allocation_decode_error", "Error decoding the allocation: "+err.Error()+" "+string(allocationBytes))
+		return nil, errors.New("allocation_fetch_error", "Error fetching the allocation."+err.Error())
+	}
+
+	l.Logger.Debug("0box res get allocation update ", zap.Any("response", string(allocationBytes)))
+	l.Logger.Debug("sharder res get allocation update ", zap.Any("response", string(allocationBytes2)))
+
+	allocationObj1 := &Allocation{}
+	err = json.Unmarshal(allocationBytes2, allocationObj1)
+	if err != nil {
+		return nil, errors.New("allocation_decode_error", "Error decoding the allocation: "+err.Error()+" "+string(allocationBytes2))
 	}
 
 	return allocationObj1, nil
@@ -686,8 +694,17 @@ func GetAllocationUpdates(allocation *Allocation) error {
 	if err != nil {
 		return errors.New("allocation_fetch_error", "Error fetching the allocation."+err.Error())
 	}
+
+	allocationBytes2, err := client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, "/allocation", params)
+	if err != nil {
+		return errors.New("allocation_fetch_error", "Error fetching the allocation."+err.Error())
+	}
+
+	l.Logger.Debug("0box res get allocation update", zap.Any("response", string(allocationBytes)))
+	l.Logger.Debug("sharder res get allocation update", zap.Any("response", string(allocationBytes2)))
+
 	updatedAllocationObj := &Allocation{}
-	err = json.Unmarshal(allocationBytes, updatedAllocationObj)
+	err = json.Unmarshal(allocationBytes2, updatedAllocationObj)
 	if err != nil {
 		return errors.New("allocation_decode_error", "Error decoding the allocation: "+err.Error()+" "+string(allocationBytes))
 	}
