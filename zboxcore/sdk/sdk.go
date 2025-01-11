@@ -640,7 +640,7 @@ func GetAllocation(allocationID string) (*Allocation, error) {
 	l.Logger.Debug("sharder res allocation", zap.Any("response", string(allocationBytes2)))
 
 	allocationObj1 := &Allocation{}
-	err = json.Unmarshal(allocationBytes, allocationObj1)
+	err = json.Unmarshal(allocationBytes2, allocationObj1)
 	if err != nil {
 		return nil, errors.New("allocation_decode_error", "Error decoding the allocation: "+err.Error()+" "+string(allocationBytes))
 	}
