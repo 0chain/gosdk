@@ -1030,10 +1030,18 @@ func GetFreeAllocationBlobbers(request map[string]interface{}) ([]string, error)
 	params := make(map[string]string)
 	params["free_allocation_data"] = string(data)
 
-	allocBlobber, err := screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/free_alloc_blobbers", params)
+	allocBlobber, err := client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, "/free_alloc_blobbers", params)
 	if err != nil {
 		return nil, err
 	}
+
+	allocBlobber2, err := screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/free_alloc_blobbers", params)
+	if err != nil {
+		return nil, err
+	}
+
+	l.Logger.Debug("sharder free allocation", zap.Any("res", allocBlobber))
+	l.Logger.Debug("0box update allocation", zap.Any("res", allocBlobber2))
 	var allocBlobberIDs []string
 
 	err = json.Unmarshal(allocBlobber, &allocBlobberIDs)
@@ -1481,8 +1489,16 @@ func GetUpdateAllocationMinLock(
 		return 0, errors.Wrap(err, "failed to request allocation update min lock")
 	}
 
+	responseBytes2, err := client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, "/allocation-update-min-lock", params)
+	if err != nil {
+		return 0, errors.Wrap(err, "failed to request allocation update min lock")
+	}
+
+	l.Logger.Debug("sharder update allocation min lock", zap.Any("res", responseBytes))
+	l.Logger.Debug("0box update allocation min lock", zap.Any("res", responseBytes2))
+
 	var response = make(map[string]int64)
-	if err = json.Unmarshal(responseBytes, &response); err != nil {
+	if err = json.Unmarshal(responseBytes2, &response); err != nil {
 		return 0, errors.Wrap(err, fmt.Sprintf("failed to decode response: %s", string(responseBytes)))
 	}
 
