@@ -900,6 +900,16 @@ func GetAllocationBlobbers(
 	if err != nil {
 		return nil, err
 	}
+
+	allocBlobber2, err := screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/alloc_blobbers",
+		params)
+	if err != nil {
+		return nil, err
+	}
+
+	l.Logger.Debug("sharder alloc blobbers res", zap.Any("res", string(allocBlobber)))
+	l.Logger.Debug("sharder alloc blobbers res", zap.Any("res", string(allocBlobber2)))
+
 	var allocBlobberIDs []string
 
 	err = json.Unmarshal(allocBlobber, &allocBlobberIDs)
@@ -985,11 +995,20 @@ func GetBlobberIds(blobberUrls []string) ([]string, error) {
 	params["blobber_urls"] = string(urlsStr)
 	var idsStr []byte
 
-	idsStr, err = screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/blobber_ids",
+	idsStr, err = client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, "/blobber_ids",
 		params)
 	if err != nil {
 		return nil, err
 	}
+
+	idsStr2, err := screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/blobber_ids",
+		params)
+	if err != nil {
+		return nil, err
+	}
+
+	l.Logger.Debug("blobber ids res sharder", zap.Any("res", string(idsStr)))
+	l.Logger.Debug("blobber ids res 0box", zap.Any("res", string(idsStr2)))
 
 	var blobberIDs []string
 	err = json.Unmarshal(idsStr, &blobberIDs)
