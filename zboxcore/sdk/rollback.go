@@ -516,6 +516,7 @@ func (a *Allocation) checkStatusV2(markerChan chan *RollbackBlobber, blobStatus 
 	}
 
 	if len(latestVersionMap[allVersionConensus]) >= a.DataShards {
+		a.allocationRoot = allVersionConensus
 		return Repair, blobStatus, nil
 	}
 	l.Logger.Info("Rolling back to previous version")
@@ -545,6 +546,7 @@ func (a *Allocation) checkStatusV2(markerChan chan *RollbackBlobber, blobStatus 
 	if successCnt < int32(consensusThresh) {
 		return Broken, blobStatus, common.NewError("rollback_failed", "Rollback failed")
 	}
+	a.allocationRoot = allVersionConensus
 	if successCnt == int32(fullConsensus) {
 		return Repair, blobStatus, nil
 	}
