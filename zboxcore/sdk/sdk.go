@@ -895,7 +895,7 @@ func GetAllocationBlobbers(
 	var allocBlobber []byte
 	var err error
 
-	allocBlobber, err = screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/alloc_blobbers",
+	allocBlobber, err = client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, "/alloc_blobbers",
 		params)
 	if err != nil {
 		return nil, err
