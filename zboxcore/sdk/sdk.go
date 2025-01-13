@@ -13,7 +13,6 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/screstapi"
-	"go.uber.org/zap"
 	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/0chain/gosdk/core/client"
@@ -627,21 +626,13 @@ func GetAllocation(allocationID string) (*Allocation, error) {
 	}
 	params := make(map[string]string)
 	params["allocation"] = allocationID
-	allocationBytes, err := screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation", params)
+	allocationBytes, err := client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, "/allocation", params)
 	if err != nil {
 		return nil, errors.New("allocation_fetch_error", "Error fetching the allocation."+err.Error())
 	}
-
-	allocationBytes2, err := client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, "/allocation", params)
-	if err != nil {
-		return nil, errors.New("allocation_fetch_error", "Error fetching the allocation."+err.Error())
-	}
-
-	l.Logger.Debug("0box res allocation", zap.Any("response", string(allocationBytes)))
-	l.Logger.Debug("sharder res allocation", zap.Any("response", string(allocationBytes2)))
 
 	allocationObj := &Allocation{}
-	err = json.Unmarshal(allocationBytes2, allocationObj)
+	err = json.Unmarshal(allocationBytes, allocationObj)
 	if err != nil {
 		return nil, errors.New("allocation_decode_error", "Error decoding the allocation: "+err.Error()+" "+string(allocationBytes))
 	}
@@ -657,21 +648,13 @@ func GetAllocationForUpdate(allocationID string) (*Allocation, error) {
 	}
 	params := make(map[string]string)
 	params["allocation"] = allocationID
-	allocationBytes, err := screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation", params)
+	allocationBytes, err := client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, "/allocation", params)
 	if err != nil {
 		return nil, errors.New("allocation_fetch_error", "Error fetching the allocation."+err.Error())
 	}
-
-	allocationBytes2, err := client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, "/allocation", params)
-	if err != nil {
-		return nil, errors.New("allocation_fetch_error", "Error fetching the allocation."+err.Error())
-	}
-
-	l.Logger.Debug("0box res allocation", zap.Any("response", string(allocationBytes)))
-	l.Logger.Debug("sharder res allocation", zap.Any("response", string(allocationBytes2)))
 
 	allocationObj := &Allocation{}
-	err = json.Unmarshal(allocationBytes2, allocationObj)
+	err = json.Unmarshal(allocationBytes, allocationObj)
 	if err != nil {
 		return nil, errors.New("allocation_decode_error", "Error decoding the allocation: "+err.Error()+" "+string(allocationBytes))
 	}
@@ -685,21 +668,13 @@ func GetAllocationUpdates(allocation *Allocation) error {
 
 	params := make(map[string]string)
 	params["allocation"] = allocation.ID
-	allocationBytes, err := screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation", params)
+	allocationBytes, err := client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, "/allocation", params)
 	if err != nil {
 		return errors.New("allocation_fetch_error", "Error fetching the allocation."+err.Error())
 	}
-
-	allocationBytes2, err := client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, "/allocation", params)
-	if err != nil {
-		return errors.New("allocation_fetch_error", "Error fetching the allocation."+err.Error())
-	}
-
-	l.Logger.Debug("0box res allocation", zap.Any("response", string(allocationBytes)))
-	l.Logger.Debug("sharder res allocation", zap.Any("response", string(allocationBytes2)))
 
 	updatedAllocationObj := new(Allocation)
-	if err := json.Unmarshal(allocationBytes2, updatedAllocationObj); err != nil {
+	if err := json.Unmarshal(allocationBytes, updatedAllocationObj); err != nil {
 		return errors.New("allocation_decode_error", "Error decoding the allocation."+err.Error())
 	}
 
@@ -746,21 +721,13 @@ func getAllocationsInternal(clientID string, limit, offset int) ([]*Allocation, 
 	params["client"] = clientID
 	params["limit"] = fmt.Sprint(limit)
 	params["offset"] = fmt.Sprint(offset)
-	allocationsBytes, err := screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocations", params)
+	allocationsBytes, err := client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, "/allocations", params)
 	if err != nil {
 		return nil, errors.New("allocations_fetch_error", "Error fetching the allocations."+err.Error())
 	}
 
-	allocationsBytes2, err := client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, "/allocations", params)
-	if err != nil {
-		return nil, errors.New("allocation_fetch_error", "Error fetching the allocation."+err.Error())
-	}
-
-	l.Logger.Debug("0box res allocation", zap.Any("response", string(allocationsBytes)))
-	l.Logger.Debug("sharder res allocation", zap.Any("response", string(allocationsBytes2)))
-
 	allocations := make([]*Allocation, 0)
-	err = json.Unmarshal(allocationsBytes2, &allocations)
+	err = json.Unmarshal(allocationsBytes, &allocations)
 	if err != nil {
 		return nil, errors.New("allocations_decode_error", "Error decoding the allocations."+err.Error())
 	}
