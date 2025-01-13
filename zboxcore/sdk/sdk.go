@@ -668,7 +668,7 @@ func GetAllocationUpdates(allocation *Allocation) error {
 
 	params := make(map[string]string)
 	params["allocation"] = allocation.ID
-	allocationBytes, err := client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, "/allocation", params)
+	allocationBytes, err := screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation", params)
 	if err != nil {
 		return errors.New("allocation_fetch_error", "Error fetching the allocation."+err.Error())
 	}
@@ -721,7 +721,7 @@ func getAllocationsInternal(clientID string, limit, offset int) ([]*Allocation, 
 	params["client"] = clientID
 	params["limit"] = fmt.Sprint(limit)
 	params["offset"] = fmt.Sprint(offset)
-	allocationsBytes, err := client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, "/allocations", params)
+	allocationsBytes, err := screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocations", params)
 	if err != nil {
 		return nil, errors.New("allocations_fetch_error", "Error fetching the allocations."+err.Error())
 	}
