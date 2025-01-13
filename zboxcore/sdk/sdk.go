@@ -282,7 +282,7 @@ func GetMptData(key string) ([]byte, error) {
 	}
 
 	var b []byte
-	b, err := client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS,
+	b, err := screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS,
 		"/get_mpt_key", map[string]string{"key": key},
 	)
 	if err != nil {
@@ -448,13 +448,9 @@ func getBlobbersInternal(active, stakable bool, limit, offset int) (bs []*Blobbe
 		Nodes []*Blobber
 	}
 
-	url := fmt.Sprintf("/getblobbers?active=%s&limit=%d&offset=%d&stakable=%s",
-		strconv.FormatBool(active),
-		limit,
-		offset,
-		strconv.FormatBool(stakable),
-	)
-	b, err := client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, url, nil)
+	b, err := screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getblobbers", map[string]string{"active": strconv.FormatBool(active), "limit": strconv.FormatInt(int64(limit), 10),
+		"offset":   strconv.FormatInt(int64(offset), 10),
+		"stakable": strconv.FormatBool(stakable)})
 	var wrap nodes
 	if err != nil {
 		return nil, errors.Wrap(err, "error requesting blobbers:")
@@ -512,7 +508,7 @@ func GetBlobber(blobberID string) (blob *Blobber, err error) {
 		return nil, sdkNotInitialized
 	}
 	var b []byte
-	b, err = client.MakeSCRestAPICallToSharder(
+	b, err = screstapi.MakeSCRestAPICall(
 		STORAGE_SCADDRESS,
 		"/getBlobber",
 		map[string]string{"blobber_id": blobberID},
@@ -537,7 +533,7 @@ func GetValidator(validatorID string) (validator *Validator, err error) {
 		return nil, sdkNotInitialized
 	}
 	var b []byte
-	b, err = client.MakeSCRestAPICallToSharder(
+	b, err = screstapi.MakeSCRestAPICall(
 		STORAGE_SCADDRESS,
 		"/get_validator",
 		map[string]string{"validator_id": validatorID},
@@ -562,7 +558,7 @@ func GetValidators(stakable bool) (validators []*Validator, err error) {
 		return nil, sdkNotInitialized
 	}
 	var b []byte
-	b, err = client.MakeSCRestAPICallToSharder(
+	b, err = screstapi.MakeSCRestAPICall(
 		STORAGE_SCADDRESS,
 		"/validators",
 		map[string]string{
@@ -626,7 +622,7 @@ func GetAllocation(allocationID string) (*Allocation, error) {
 	}
 	params := make(map[string]string)
 	params["allocation"] = allocationID
-	allocationBytes, err := client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, "/allocation", params)
+	allocationBytes, err := screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation", params)
 	if err != nil {
 		return nil, errors.New("allocation_fetch_error", "Error fetching the allocation."+err.Error())
 	}
@@ -648,7 +644,7 @@ func GetAllocationForUpdate(allocationID string) (*Allocation, error) {
 	}
 	params := make(map[string]string)
 	params["allocation"] = allocationID
-	allocationBytes, err := client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, "/allocation", params)
+	allocationBytes, err := screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation", params)
 	if err != nil {
 		return nil, errors.New("allocation_fetch_error", "Error fetching the allocation."+err.Error())
 	}
@@ -851,7 +847,7 @@ func GetAllocationBlobbers(
 		params["force"] = strconv.FormatBool(force[0])
 	}
 
-	allocBlobber, err := client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, "/alloc_blobbers", params)
+	allocBlobber, err := screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/alloc_blobbers", params)
 	if err != nil {
 		return nil, err
 	}
@@ -938,7 +934,7 @@ func GetBlobberIds(blobberUrls []string) ([]string, error) {
 
 	params := make(map[string]string)
 	params["blobber_urls"] = string(urlsStr)
-	idsStr, err := client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, "/blobber_ids", params)
+	idsStr, err := screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/blobber_ids", params)
 	if err != nil {
 		return nil, err
 	}
@@ -963,7 +959,7 @@ func GetFreeAllocationBlobbers(request map[string]interface{}) ([]string, error)
 	params := make(map[string]string)
 	params["free_allocation_data"] = string(data)
 
-	allocBlobber, err := client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, "/free_alloc_blobbers", params)
+	allocBlobber, err := screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/free_alloc_blobbers", params)
 	if err != nil {
 		return nil, err
 	}
@@ -1409,7 +1405,7 @@ func GetUpdateAllocationMinLock(
 	params := make(map[string]string)
 	params["data"] = string(data)
 
-	responseBytes, err := client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, "/allocation-update-min-lock", params)
+	responseBytes, err := screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation-update-min-lock", params)
 	if err != nil {
 		return 0, errors.Wrap(err, "failed to request allocation update min lock")
 	}
