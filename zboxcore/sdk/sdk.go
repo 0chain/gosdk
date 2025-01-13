@@ -283,7 +283,7 @@ func GetMptData(key string) ([]byte, error) {
 	}
 
 	var b []byte
-	b, err := screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS,
+	b, err := client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS,
 		"/get_mpt_key", map[string]string{"key": key},
 	)
 	if err != nil {
@@ -641,7 +641,7 @@ func GetAllocation(allocationID string) (*Allocation, error) {
 	l.Logger.Debug("sharder res allocation", zap.Any("response", string(allocationBytes2)))
 
 	allocationObj := &Allocation{}
-	err = json.Unmarshal(allocationBytes, allocationObj)
+	err = json.Unmarshal(allocationBytes2, allocationObj)
 	if err != nil {
 		return nil, errors.New("allocation_decode_error", "Error decoding the allocation: "+err.Error()+" "+string(allocationBytes))
 	}
@@ -671,7 +671,7 @@ func GetAllocationForUpdate(allocationID string) (*Allocation, error) {
 	l.Logger.Debug("sharder res allocation", zap.Any("response", string(allocationBytes2)))
 
 	allocationObj := &Allocation{}
-	err = json.Unmarshal(allocationBytes, allocationObj)
+	err = json.Unmarshal(allocationBytes2, allocationObj)
 	if err != nil {
 		return nil, errors.New("allocation_decode_error", "Error decoding the allocation: "+err.Error()+" "+string(allocationBytes))
 	}
@@ -699,7 +699,7 @@ func GetAllocationUpdates(allocation *Allocation) error {
 	l.Logger.Debug("sharder res allocation", zap.Any("response", string(allocationBytes2)))
 
 	updatedAllocationObj := new(Allocation)
-	if err := json.Unmarshal(allocationBytes, updatedAllocationObj); err != nil {
+	if err := json.Unmarshal(allocationBytes2, updatedAllocationObj); err != nil {
 		return errors.New("allocation_decode_error", "Error decoding the allocation."+err.Error())
 	}
 
@@ -760,7 +760,7 @@ func getAllocationsInternal(clientID string, limit, offset int) ([]*Allocation, 
 	l.Logger.Debug("sharder res allocation", zap.Any("response", string(allocationsBytes2)))
 
 	allocations := make([]*Allocation, 0)
-	err = json.Unmarshal(allocationsBytes, &allocations)
+	err = json.Unmarshal(allocationsBytes2, &allocations)
 	if err != nil {
 		return nil, errors.New("allocations_decode_error", "Error decoding the allocations."+err.Error())
 	}
