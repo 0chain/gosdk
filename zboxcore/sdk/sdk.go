@@ -454,7 +454,7 @@ func getBlobbersInternal(active, stakable bool, limit, offset int) (bs []*Blobbe
 
 	var b []byte
 
-	b, err = screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getblobbers", map[string]string{"active": strconv.FormatBool(active), "limit": strconv.FormatInt(int64(limit), 10),
+	b, err = client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, "/getblobbers", map[string]string{"active": strconv.FormatBool(active), "limit": strconv.FormatInt(int64(limit), 10),
 		"offset":   strconv.FormatInt(int64(offset), 10),
 		"stakable": strconv.FormatBool(stakable)})
 
@@ -516,7 +516,7 @@ func GetBlobber(blobberID string) (blob *Blobber, err error) {
 	}
 	var b []byte
 
-	b, err = screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getBlobber",
+	b, err = client.MakeSCRestAPICallToSharder(STORAGE_SCADDRESS, "/getBlobber",
 		map[string]string{"blobber_id": blobberID})
 	if err != nil {
 		return nil, errors.Wrap(err, "requesting blobber:")
@@ -640,7 +640,7 @@ func GetAllocation(allocationID string) (*Allocation, error) {
 	l.Logger.Debug("sharder res allocation", zap.Any("response", string(allocationBytes2)))
 
 	allocationObj1 := &Allocation{}
-	err = json.Unmarshal(allocationBytes2, allocationObj1)
+	err = json.Unmarshal(allocationBytes, allocationObj1)
 	if err != nil {
 		return nil, errors.New("allocation_decode_error", "Error decoding the allocation: "+err.Error()+" "+string(allocationBytes2))
 	}
@@ -672,7 +672,7 @@ func GetAllocationForUpdate(allocationID string) (*Allocation, error) {
 	l.Logger.Debug("sharder res get allocation update ", zap.Any("response", string(allocationBytes2)))
 
 	allocationObj1 := &Allocation{}
-	err = json.Unmarshal(allocationBytes2, allocationObj1)
+	err = json.Unmarshal(allocationBytes, allocationObj1)
 	if err != nil {
 		return nil, errors.New("allocation_decode_error", "Error decoding the allocation: "+err.Error()+" "+string(allocationBytes2))
 	}
@@ -704,7 +704,7 @@ func GetAllocationUpdates(allocation *Allocation) error {
 	l.Logger.Debug("sharder res get allocation update", zap.Any("response", string(allocationBytes2)))
 
 	updatedAllocationObj := &Allocation{}
-	err = json.Unmarshal(allocationBytes2, updatedAllocationObj)
+	err = json.Unmarshal(allocationBytes, updatedAllocationObj)
 	if err != nil {
 		return errors.New("allocation_decode_error", "Error decoding the allocation: "+err.Error()+" "+string(allocationBytes))
 	}
@@ -769,7 +769,7 @@ func getAllocationsInternal(clientID string, limit, offset int) ([]*Allocation, 
 	l.Logger.Debug("sharder res allocation", zap.Any("response", string(allocationBytes2)))
 
 	updatedAllocationsObj := make([]*Allocation, 0)
-	if err := json.Unmarshal(allocationBytes2, &updatedAllocationsObj); err != nil {
+	if err := json.Unmarshal(allocationsBytes, &updatedAllocationsObj); err != nil {
 		return nil, errors.New("allocation_decode_error", "Error decoding the allocations."+err.Error())
 	}
 
