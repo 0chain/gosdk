@@ -72,7 +72,7 @@ func GetBalance(clientIDs ...string) (*client.GetBalanceResponse, error) {
 		resp    []byte
 	)
 
-	if resp, err = client.MakeSCRestAPICallToSharder("", GetBalanceUrl, map[string]string{
+	if resp, err = MakeSCRestAPICall("", GetBalanceUrl, map[string]string{
 		"client_id": clientID,
 	}, "v1/"); err != nil {
 		return nil, err
