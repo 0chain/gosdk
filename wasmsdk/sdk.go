@@ -12,6 +12,7 @@ import (
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/imageutil"
 	"github.com/0chain/gosdk/core/logger"
+	"github.com/0chain/gosdk/core/screstapi"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk/zcncore"
 
@@ -161,7 +162,7 @@ func makeSCRestAPICall(scAddress, relativePath, paramsJson string) (string, erro
 	if err != nil {
 		sdkLogger.Error(fmt.Sprintf("Error parsing JSON: %v", err))
 	}
-	b, err := client.MakeSCRestAPICallToSharder(scAddress, relativePath, params)
+	b, err := screstapi.MakeSCRestAPICall(scAddress, relativePath, params)
 	return string(b), err
 }
 

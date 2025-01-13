@@ -2,6 +2,7 @@ package screstapi
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/conf"
@@ -56,29 +57,30 @@ func MakeSCRestAPICallToZbox(relativePath string, params map[string]string) ([]b
 	return resp, nil
 }
 
-// func GetBalance(clientIDs ...string) (*client.GetBalanceResponse, error) {
-// 	var clientID string
-// 	if len(clientIDs) > 0 {
-// 		clientID = clientIDs[0]
-// 	} else {
-// 		clientID = client.Id()
-// 	}
+func GetBalance(clientIDs ...string) (*client.GetBalanceResponse, error) {
+	var clientID string
+	if len(clientIDs) > 0 {
+		clientID = clientIDs[0]
+	} else {
+		clientID = client.Id()
+	}
 
-// 	var (
-// 		balance client.GetBalanceResponse
-// 		err     error
-// 		resp    []byte
-// 	)
+	const GetBalanceUrl = "client/get/balance"
+	var (
+		balance client.GetBalanceResponse
+		err     error
+		resp    []byte
+	)
 
-// 	if resp, err = client.MakeSCRestAPICallToSharder("", GetBalanceUrl, map[string]string{
-// 		"client_id": clientID,
-// 	}, "v1/"); err != nil {
-// 		return nil, err
-// 	}
+	if resp, err = client.MakeSCRestAPICallToSharder("", GetBalanceUrl, map[string]string{
+		"client_id": clientID,
+	}, "v1/"); err != nil {
+		return nil, err
+	}
 
-// 	if err = json.Unmarshal(resp, &balance); err != nil {
-// 		return nil, err
-// 	}
+	if err = json.Unmarshal(resp, &balance); err != nil {
+		return nil, err
+	}
 
-// 	return &balance, err
-// }
+	return &balance, err
+}
