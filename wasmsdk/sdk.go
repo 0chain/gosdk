@@ -32,7 +32,7 @@ var CreateObjectURL func(buf []byte, mimeType string) string
 //   - sharderconsensous is the number of sharders to reach consensus
 func initSDKs(chainID, blockWorker, signatureScheme string,
 	minConfirmation, minSubmit, confirmationChainLength int,
-	zboxHost, zboxAppType string, sharderconsensous int, isSplit bool) error {
+	zboxHost, zboxAppType string, sharderconsensous int) error {
 
 	zboxApiClient.SetRequest(zboxHost, zboxAppType)
 
@@ -42,19 +42,12 @@ func initSDKs(chainID, blockWorker, signatureScheme string,
 		return err
 	}
 
-	if !isSplit && zcncore.IsSplitWallet() {
-		// split wallet should not be reset back, use the existing
-		isSplit = true
-	}
-
-	fmt.Println("init SDKs, isSplit:", isSplit)
 	err = zcncore.InitZCNSDK(blockWorker, signatureScheme,
 		zcncore.WithChainID(chainID),
 		zcncore.WithMinConfirmation(minConfirmation),
 		zcncore.WithMinSubmit(minSubmit),
 		zcncore.WithConfirmationChainLength(confirmationChainLength),
 		zcncore.WithSharderConsensous(sharderconsensous),
-		zcncore.WithIsSplitWallet(isSplit),
 	)
 
 	if err != nil {

@@ -127,7 +127,6 @@ func InitSDKs(configJson *C.char) *C.char {
 	l.Logger.Info(configObj.BlockWorker)
 	l.Logger.Info(configObj.ChainID)
 	l.Logger.Info(configObj.SignatureScheme)
-	l.Logger.Info(configObj.PreferredBlobbers)
 
 	if zboxApiClient == nil {
 		zboxApiClient = zboxapi.NewClient()
@@ -172,7 +171,7 @@ func InitWallet(clientJson *C.char) *C.char {
 		return WithJSON(false, err)
 	}
 
-	err = sdk.InitStorageSDK(clientJs, configObj.BlockWorker, configObj.ChainID, configObj.SignatureScheme, configObj.PreferredBlobbers, 0)
+	err = sdk.InitStorageSDK(clientJs, configObj.BlockWorker, configObj.ChainID, configObj.SignatureScheme, nil, 0)
 	if err != nil {
 		l.Logger.Error(err, clientJs)
 		return WithJSON(false, err)
