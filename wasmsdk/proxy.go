@@ -267,6 +267,7 @@ func main() {
 				"getUpdateAllocationMinLock": getUpdateAllocationMinLock,
 				"getAllocationWith":          getAllocationWith,
 				"createfreeallocation":       createfreeallocation,
+				"getUpdateAllocTicket":       getUpdateAllocTicket,
 
 				// readpool
 				"getReadPoolInfo": getReadPoolInfo,
