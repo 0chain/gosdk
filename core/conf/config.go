@@ -177,6 +177,7 @@ func LoadConfig(v Reader) (Config, error) {
 	cfg.SignatureScheme = v.GetString("signature_scheme")
 	cfg.ChainID = v.GetString("chain_id")
 	cfg.ZauthServer = v.GetString("zauth_server")
+	cfg.EthereumNode = v.GetString("ethereum_node_url")
 
 	return cfg, nil
 }
