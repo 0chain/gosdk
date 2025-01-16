@@ -474,6 +474,7 @@ func (su *ChunkedUpload) process() error {
 		)
 		if err != nil {
 			if su.statusCallback != nil {
+				logger.Logger.Error("Error during processUpload: ", su.fileMeta.RemotePath, " error: ", err)
 				su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
 			}
 			return err

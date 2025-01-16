@@ -856,9 +856,9 @@ func multiUpload(jsonBulkUploadOptions, batchKey string) (MultiUploadResult, err
 	}()
 	select {
 	case <-ctx.Done():
-		result.Error = ctx.Err().Error()
+		result.Error = context.Cause(ctx).Error()
 		result.Success = false
-		return result, ctx.Err()
+		return result, context.Cause(ctx)
 	case err := <-errChan:
 		if err != nil {
 			result.Error = err.Error()
