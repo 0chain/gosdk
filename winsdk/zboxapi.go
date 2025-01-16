@@ -13,9 +13,9 @@ import (
 	"encoding/json"
 	"errors"
 
+	"github.com/0chain/gosdk_common/core/client"
 	"github.com/0chain/gosdk_common/core/logger"
 	"github.com/0chain/gosdk_common/zboxapi"
-	"github.com/0chain/gosdk_common/zboxcore/client"
 )
 
 var (
@@ -40,12 +40,7 @@ func InitZBox(zboxHost, zboxAppType *C.char) {
 
 	zboxApiClient.SetRequest(C.GoString(zboxHost), C.GoString(zboxAppType))
 
-	c := client.GetClient()
-	if c != nil {
-		zboxApiClient.SetWallet(client.GetClientID(), client.GetClientPrivateKey(), client.GetClientPublicKey())
-	} else {
-		logging.Info("SetWallet: skipped")
-	}
+	zboxApiClient.SetWallet(client.Id(), client.PrivateKey(), client.PublicKey())
 }
 
 // SetZBoxWallet set wallet on zbox api

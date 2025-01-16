@@ -11,11 +11,11 @@ import (
 	"os"
 
 	"github.com/0chain/gosdk/zboxcore/sdk"
-	"github.com/0chain/gosdk/zcncore"
 	"github.com/0chain/gosdk_common/core/client"
 	"github.com/0chain/gosdk_common/core/encryption"
 	"github.com/0chain/gosdk_common/core/imageutil"
 	"github.com/0chain/gosdk_common/core/logger"
+	"github.com/0chain/gosdk_common/zcncore"
 )
 
 var CreateObjectURL func(buf []byte, mimeType string) string
@@ -34,23 +34,17 @@ func initSDKs(chainID, blockWorker, signatureScheme string,
 	minConfirmation, minSubmit, confirmationChainLength int,
 	zboxHost, zboxAppType string, sharderconsensous int) error {
 
+	// Print the parameters beautified
+	fmt.Printf("{ chainID: %s, blockWorker: %s, signatureScheme: %s, minConfirmation: %d, minSubmit: %d, 
+	confirmationChainLength: %d, zboxHost: %s, zboxAppType: %s, sharderConsensous: %d, isSplit: %t }\n", chainID, 
+	blockWorker, signatureScheme, minConfirmation, minSubmit, 
+	confirmationChainLength, zboxHost, zboxAppType, 
+	sharderConsensous, isSplit)
 	zboxApiClient.SetRequest(zboxHost, zboxAppType)
 
-	err := sdk.InitStorageSDK("{}", blockWorker, chainID, signatureScheme, nil, 0)
+	err := client.InitSDK("{}", blockWorker, chainID, signatureScheme, 0, false, false, minConfirmation, minSubmit, confirmationChainLength, sharderConsensous)
 	if err != nil {
 		fmt.Println("wasm: InitStorageSDK ", err)
-		return err
-	}
-
-	err = zcncore.InitZCNSDK(blockWorker, signatureScheme,
-		zcncore.WithChainID(chainID),
-		zcncore.WithMinConfirmation(minConfirmation),
-		zcncore.WithMinSubmit(minSubmit),
-		zcncore.WithConfirmationChainLength(confirmationChainLength),
-		zcncore.WithSharderConsensous(sharderconsensous),
-	)
-
-	if err != nil {
 		return err
 	}
 	sdk.SetWasm()
@@ -162,5 +156,10 @@ func makeSCRestAPICall(scAddress, relativePath, paramsJson string) (string, erro
 //   - fee is the transaction fee
 //   - desc is the description of the transaction
 func send(toClientID string, tokens uint64, fee uint64, desc string) (string, error) {
-	return sdk.ExecuteSmartContractSend(toClientID, tokens, fee, desc)
+	hash, _, _, _, err := zcncore.Send(toClientID, tokens, desc)
+	if err != nil {
+		return "", err
+	}
+
+	return hash, nil
 }

@@ -8,17 +8,18 @@ import (
 )
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"os"
 	"path"
 
 	"github.com/0chain/gosdk/zboxcore/sdk"
-	"github.com/0chain/gosdk/zcncore"
+	"github.com/0chain/gosdk_common/core/client"
 	"github.com/0chain/gosdk_common/zboxapi"
-	"github.com/0chain/gosdk_common/zboxcore/client"
 	l "github.com/0chain/gosdk_common/zboxcore/logger"
 	"github.com/0chain/gosdk_common/zboxcore/zboxutil"
+	"github.com/0chain/gosdk_common/zcncore"
 
 	"github.com/0chain/gosdk_common/core/conf"
 	"github.com/0chain/gosdk_common/core/encryption"
@@ -106,18 +107,7 @@ func InitSDKs(configJson *C.char) *C.char {
 		return WithJSON(false, err)
 	}
 
-	err = zcncore.InitZCNSDK(configObj.BlockWorker, configObj.SignatureScheme, func(cc *zcncore.ChainConfig) error {
-		cc.BlockWorker = configObj.BlockWorker
-		cc.ChainID = configObj.ChainID
-		cc.ConfirmationChainLength = configObj.ConfirmationChainLength
-		cc.MinConfirmation = configObj.MinConfirmation
-		cc.EthNode = configObj.EthereumNode
-		cc.MinSubmit = configObj.MinSubmit
-		cc.SharderConsensous = configObj.SharderConsensous
-		cc.SignatureScheme = configObj.SignatureScheme
-
-		return nil
-	})
+	err = client.Init(context.Background(), *configObj)
 	if err != nil {
 		l.Logger.Error(err, configJs)
 		return WithJSON(false, err)
@@ -161,32 +151,20 @@ func InitWallet(clientJson *C.char) *C.char {
 			log.Error("win: crash ", r)
 		}
 	}()
-	l.Logger.Info("Start InitStorageSDK")
+	l.Logger.Info("Start InitWallet")
 
 	clientJs := C.GoString(clientJson)
 
-	configObj, err := conf.GetClientConfig()
+	var w zcncrypto.Wallet
+	err := json.Unmarshal([]byte(clientJs), &w)
 	if err != nil {
 		l.Logger.Error(err)
 		return WithJSON(false, err)
 	}
 
-	err = sdk.InitStorageSDK(clientJs, configObj.BlockWorker, configObj.ChainID, configObj.SignatureScheme, nil, 0)
-	if err != nil {
-		l.Logger.Error(err, clientJs)
-		return WithJSON(false, err)
-	}
-	l.Logger.Info("InitStorageSDK success")
-
-	c := client.GetClient()
-	if c != nil {
-		zboxApiClient.SetWallet(client.GetClientID(), client.GetClientPrivateKey(), client.GetClientPublicKey())
-		l.Logger.Info("InitZboxApiClient success")
-	} else {
-		l.Logger.Info("InitZboxApiClient skipped")
-	}
-
-	l.Logger.Info("InitSDKs successful")
+	l.Logger.Info("InitWallet success")
+	zboxApiClient.SetWallet(client.Wallet().ClientID, client.Wallet().Keys[0].PrivateKey, client.Wallet().ClientKey)
+	l.Logger.Info("InitZboxApiClient success")
 	return WithJSON(true, nil)
 }
 

@@ -13,9 +13,9 @@ import (
 	"sync"
 	"syscall/js"
 
-	"github.com/0chain/gosdk/wasmsdk/jsbridge"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk_common/core/transaction"
+	"github.com/0chain/gosdk_common/wasmsdk/jsbridge"
 )
 
 const TOKEN_UNIT int64 = 1e10
@@ -402,21 +402,6 @@ func lockStakePool(providerType, tokens, fee uint64, providerID string) (string,
 	return hash, err
 }
 
-// unlockWritePool unlocks the read pool
-//   - tokens: amount of tokens to lock (in SAS)
-//   - fee: transaction fees (in SAS)
-func lockReadPool(tokens, fee uint64) (string, error) {
-	hash, _, err := sdk.ReadPoolLock(tokens, fee)
-	return hash, err
-}
-
-// unLockWritePool unlocks the write pool
-//   - fee: transaction fees (in SAS)
-func unLockReadPool(fee uint64) (string, error) {
-	hash, _, err := sdk.ReadPoolUnlock(fee)
-	return hash, err
-}
-
 // unlockWritePool unlocks the write pool
 //   - providerType: provider type (1: miner, 2:sharder, 3:blobber, 4:validator, 5:authorizer)
 //   - fee: transaction fees (in SAS)
@@ -442,17 +427,6 @@ func getSkatePoolInfo(providerType int, providerID string) (*sdk.StakePoolInfo, 
 		return nil, err
 	}
 	return info, err
-}
-
-// getReadPoolInfo is to get information about the read pool for the allocation
-//   - clientID: client id
-func getReadPoolInfo(clientID string) (*sdk.ReadPool, error) {
-	readPool, err := sdk.GetReadPoolInfo(clientID)
-	if err != nil {
-		return nil, err
-	}
-
-	return readPool, nil
 }
 
 // getAllocationWith retrieves the information of a free or a shared allocation object given the auth ticket.

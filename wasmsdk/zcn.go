@@ -4,8 +4,8 @@
 package main
 
 import (
-	"github.com/0chain/gosdk/zboxcore/sdk"
-	"github.com/0chain/gosdk/zcncore"
+	"github.com/0chain/gosdk_common/core/client"
+	"github.com/0chain/gosdk_common/zcncore"
 )
 
 type Balance struct {
@@ -18,30 +18,24 @@ type Balance struct {
 //   - clientId is the client id
 func getWalletBalance(clientId string) (*Balance, error) {
 
-	zcn, nonce, err := zcncore.GetWalletBalance(clientId)
+	bal, err := client.GetBalance(clientId)
 	if err != nil {
 		return nil, err
 	}
 
-	zcnToken, err := zcn.ToToken()
+	balance, err := bal.ToToken()
 	if err != nil {
 		return nil, err
 	}
 
-	usd, err := zcncore.ConvertTokenToUSD(zcnToken)
+	toUsd, err := zcncore.ConvertTokenToUSD(balance)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Balance{
-		ZCN:   zcnToken,
-		USD:   usd,
-		Nonce: nonce,
+		ZCN:   balance,
+		USD:   toUsd,
+		Nonce: bal.Nonce,
 	}, nil
-}
-
-// createReadPool creates a read pool for the client where they should lock tokens to be able to read data.
-func createReadPool() (string, error) {
-	hash, _, err := sdk.CreateReadPool()
-	return hash, err
 }

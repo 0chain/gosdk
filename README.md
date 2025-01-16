@@ -48,7 +48,7 @@ This repository currently supports the following platforms:
         import (
             "fmt"
 
-            "github.com/0chain/gosdk/zcncore"
+            "github.com/0chain/gosdk_common/zcncore"
         )
 
         func main() {

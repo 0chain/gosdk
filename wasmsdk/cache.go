@@ -8,9 +8,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/0chain/gosdk/wasmsdk/jsbridge"
 	"github.com/0chain/gosdk/zboxcore/sdk"
-	"github.com/0chain/gosdk_common/zboxcore/client"
+	"github.com/0chain/gosdk_common/core/client"
+	"github.com/0chain/gosdk_common/wasmsdk/jsbridge"
 	lru "github.com/hashicorp/golang-lru/v2"
 )
 

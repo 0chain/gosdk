@@ -11,7 +11,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/0chain/gosdk/zcncore"
+	"github.com/0chain/gosdk_common/core/client"
+	"github.com/0chain/gosdk_common/zcncore"
 )
 
 // CreateWallet - create a new wallet, and save it to ~/.zcn/wallet.json
@@ -86,7 +87,7 @@ func RecoverWallet(mnemonic *C.char) *C.char {
 //
 //export GetWalletBalance
 func GetWalletBalance(clientID *C.char) *C.char {
-	b, _, err := zcncore.GetWalletBalance(C.GoString(clientID))
+	b, err := client.GetBalance(C.GoString(clientID))
 	if err != nil {
 		log.Error("win: ", err)
 		return WithJSON(0, err)

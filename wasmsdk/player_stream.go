@@ -11,9 +11,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/0chain/gosdk/wasmsdk/jsbridge"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk_common/core/sys"
+	"github.com/0chain/gosdk_common/wasmsdk/jsbridge"
 	"github.com/0chain/gosdk_common/zboxcore/marker"
 )
 

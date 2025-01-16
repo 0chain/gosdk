@@ -10,8 +10,8 @@ import (
 	"encoding/json"
 
 	"github.com/0chain/gosdk/zboxcore/sdk"
-	"github.com/0chain/gosdk/zcncore"
 	"github.com/0chain/gosdk_common/zboxapi"
+	"github.com/0chain/gosdk_common/zcncore"
 )
 
 // GetAllocation get allocation info
