@@ -97,7 +97,7 @@ func SetLogFile(logFile string, verbose bool) {
 
 // GetLogger retrieves logger instance
 func GetLogger() *logger.Logger {
-	return &l.Logger
+	return l.Logger
 }
 
 type BackPool struct {
