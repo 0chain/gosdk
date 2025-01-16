@@ -7,9 +7,9 @@ import (
 	"io"
 	"strings"
 
+	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk_common/constants"
 	"github.com/0chain/gosdk_common/core/sys"
-	"github.com/0chain/gosdk_common/zboxcore/allocationchange"
 	"github.com/0chain/gosdk_common/zboxcore/fileref"
 	l "github.com/0chain/gosdk_common/zboxcore/logger"
 	"github.com/0chain/gosdk_common/zboxcore/zboxutil"

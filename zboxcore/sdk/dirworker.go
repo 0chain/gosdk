@@ -13,9 +13,9 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk_common/core/common"
 	"github.com/0chain/gosdk_common/core/util"
-	"github.com/0chain/gosdk_common/zboxcore/allocationchange"
 	"github.com/0chain/gosdk_common/zboxcore/blockchain"
 	"github.com/0chain/gosdk_common/zboxcore/client"
 	"github.com/0chain/gosdk_common/zboxcore/fileref"

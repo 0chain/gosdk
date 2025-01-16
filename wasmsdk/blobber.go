@@ -15,7 +15,7 @@ import (
 	"syscall/js"
 	"time"
 
-	"github.com/0chain/gosdk/constants"
+	"github.com/0chain/gosdk_common/constants"
 	"github.com/0chain/gosdk_common/core/client"
 	"github.com/0chain/gosdk_common/core/common"
 	"github.com/0chain/gosdk_common/core/encryption"
@@ -25,9 +25,9 @@ import (
 
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/sdk"
-	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/0chain/gosdk_common/core/transaction"
 	"github.com/0chain/gosdk_common/wasmsdk/jsbridge"
+	"github.com/0chain/gosdk_common/zboxcore/zboxutil"
 
 	"github.com/hack-pad/go-webworkers/worker"
 )

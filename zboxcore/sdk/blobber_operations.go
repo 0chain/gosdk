@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
-	"strings"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk_common/core/transaction"
@@ -45,7 +44,7 @@ func CreateAllocationForOwner(
 		return "", 0, nil, errors.New("allocation_validation_failed", "atleast 1 data and 1 parity shards are required")
 	}
 
-	allocationRequest, err := getNewAllocationBlobbers(
+	allocationRequest, err := getNewAllocationBlobbers(StorageV2,
 		datashards, parityshards, size, readPrice, writePrice, preferredBlobberIds, blobberAuthTickets, force)
 	if err != nil {
 		return "", 0, nil, errors.New("failed_get_allocation_blobbers", "failed to get blobbers for allocation: "+err.Error())
@@ -115,12 +114,12 @@ func CreateFreeAllocation(marker string, value uint64) (string, int64, error) {
 //
 // returns the hash of the transaction, the nonce of the transaction and an error if any.
 func UpdateAllocation(
-	size int64,
+	size, authRoundExpiry int64,
 	extend bool,
 	allocationID string,
 	lock uint64,
-	addBlobberId, addBlobberAuthTicket, removeBlobberId string,
-	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
+	addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerID, ownerSigninPublicKey string,
+	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters, ticket string,
 ) (hash string, nonce int64, err error) {
 
 	if lock > math.MaxInt64 {
@@ -225,7 +224,7 @@ func StakePoolLock(providerType ProviderType, providerID string, value, fee uint
 //   - providerType: provider type
 //   - providerID: provider ID
 //   - fee: transaction fee
-func StakePoolUnlock(providerType ProviderType, providerID string, fee uint64) (unstake int64, nonce int64, err error) {
+func StakePoolUnlock(providerType ProviderType, providerID, clientID string, fee uint64) (unstake int64, nonce int64, err error) {
 	if !sdkInitialized {
 		return 0, 0, sdkNotInitialized
 	}
@@ -241,6 +240,7 @@ func StakePoolUnlock(providerType ProviderType, providerID string, fee uint64) (
 	spr := stakePoolRequest{
 		ProviderType: providerType,
 		ProviderID:   providerID,
+		ClientID:     clientID,
 	}
 
 	var sn = transaction.SmartContractTxnData{
@@ -390,24 +390,7 @@ func storageSmartContractTxnValue(sn transaction.SmartContractTxnData, value uin
 
 func smartContractTxnValueFeeWithRetry(scAddress string, sn transaction.SmartContractTxnData,
 	value, fee uint64) (hash, out string, nonce int64, t *transaction.Transaction, err error) {
-	hash, out, nonce, t, err = smartContractTxnValueFee(scAddress, sn, value, fee)
 
-	if err != nil && strings.Contains(err.Error(), "invalid transaction nonce") {
-		return smartContractTxnValueFee(scAddress, sn, value, fee)
-	}
-	return
-}
-
-func smartContractTxnValueFee(scAddress string, sn transaction.SmartContractTxnData,
-	value, fee uint64) (hash, out string, nonce int64, t *transaction.Transaction, err error) {
-	t, err = ExecuteSmartContract(scAddress, sn, value, fee)
-	if err != nil {
-		if t != nil {
-			return "", "", t.TransactionNonce, nil, err
-		}
-
-		return "", "", 0, nil, err
-	}
-
-	return t.Hash, t.TransactionOutput, t.TransactionNonce, t, nil
+	// Fee is set during sdk initialization.
+	return transaction.SmartContractTxnValueFeeWithRetry(STORAGE_SCADDRESS, sn, value, client.TxnFee(), true)
 }

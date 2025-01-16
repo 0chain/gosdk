@@ -26,6 +26,7 @@ import (
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk_common/constants"
 	"github.com/0chain/gosdk_common/core/common"
+	"github.com/0chain/gosdk_common/core/encryption"
 	"github.com/0chain/gosdk_common/core/pathutil"
 	"github.com/0chain/gosdk_common/core/sys"
 	"github.com/0chain/gosdk_common/zboxcore/blockchain"
@@ -2421,6 +2422,16 @@ func (a *Allocation) CancelDownload(remotepath string) error {
 	return errors.New("remote_path_not_found", "Invalid path. No download in progress for the path "+remotepath)
 }
 
+func (a *Allocation) CancelDownloadBlocks(remotepath string, start, end int64) error {
+	hash := encryption.Hash(fmt.Sprintf("%s:%d:%d", remotepath, start, end))
+	if downloadReq, ok := a.downloadProgressMap[hash]; ok {
+		downloadReq.isDownloadCanceled = true
+		downloadReq.ctxCncl()
+		return nil
+	}
+	return errors.New("remote_path_not_found", "Invalid path. No download in progress for the path "+remotepath)
+}
+
 // DownloadFromReader downloads a file from the allocation to the specified local path using the provided reader.
 // [DEPRECATED] Use DownloadFile or DownloadFromAuthTicket instead.
 func (a *Allocation) DownloadFromReader(
@@ -3102,14 +3113,14 @@ func (a *Allocation) SetConsensusThreshold() {
 //   - fileOptionsParams: The file options parameters which control permissions of the files of the allocations.
 //   - statusCB: A callback function to receive status updates during the update operation.
 func (a *Allocation) UpdateWithRepair(
-	size int64,
+	size, authRoundExpiry int64,
 	extend bool,
 	lock uint64,
-	addBlobberId, addBlobberAuthTicket, removeBlobberId string,
-	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
+	addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey string,
+	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters, updateAllocTicket string,
 	statusCB StatusCallback,
 ) (string, error) {
-	updatedAlloc, hash, isRepairRequired, err := a.UpdateWithStatus(size, extend, lock, addBlobberId, addBlobberAuthTicket, removeBlobberId, setThirdPartyExtendable, fileOptionsParams, statusCB)
+	updatedAlloc, hash, isRepairRequired, err := a.UpdateWithStatus(size, authRoundExpiry, extend, lock, addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey, setThirdPartyExtendable, fileOptionsParams, updateAllocTicket)
 	if err != nil {
 		return hash, err
 	}
@@ -3137,12 +3148,12 @@ func (a *Allocation) UpdateWithRepair(
 //
 // Returns the updated allocation, hash, and a boolean indicating whether repair is required.
 func (a *Allocation) UpdateWithStatus(
-	size int64,
+	size, authRoundExpiry int64,
 	extend bool,
 	lock uint64,
-	addBlobberId, addBlobberAuthTicket, removeBlobberId string,
+	addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey string,
 	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
-	statusCB StatusCallback,
+	updateAllocTicket string,
 ) (*Allocation, string, bool, error) {
 	var (
 		alloc            *Allocation
@@ -3153,7 +3164,7 @@ func (a *Allocation) UpdateWithStatus(
 	}
 
 	l.Logger.Info("Updating allocation")
-	hash, _, err := UpdateAllocation(size, extend, a.ID, lock, addBlobberId, addBlobberAuthTicket, removeBlobberId, setThirdPartyExtendable, fileOptionsParams)
+	hash, _, err := UpdateAllocation(size, authRoundExpiry, extend, a.ID, lock, addBlobberId, addBlobberAuthTicket, removeBlobberId, "", ownerSigninPublicKey, setThirdPartyExtendable, fileOptionsParams, updateAllocTicket)
 	if err != nil {
 		return alloc, "", isRepairRequired, err
 	}

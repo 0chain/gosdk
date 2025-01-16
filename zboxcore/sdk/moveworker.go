@@ -21,7 +21,7 @@ import (
 	"github.com/0chain/gosdk_common/zboxcore/fileref"
 	"github.com/0chain/gosdk_common/zboxcore/logger"
 
-	"github.com/0chain/gosdk_common/zboxcore/allocationchange"
+	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk_common/zboxcore/blockchain"
 	l "github.com/0chain/gosdk_common/zboxcore/logger"
 	"github.com/0chain/gosdk_common/zboxcore/zboxutil"

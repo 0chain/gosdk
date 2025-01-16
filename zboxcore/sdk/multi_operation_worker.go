@@ -13,8 +13,8 @@ import (
 	"github.com/0chain/errors"
 	"github.com/remeh/sizedwaitgroup"
 
+	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk_common/core/common"
-	"github.com/0chain/gosdk_common/zboxcore/allocationchange"
 	"github.com/0chain/gosdk_common/zboxcore/client"
 	"github.com/0chain/gosdk_common/zboxcore/fileref"
 	"github.com/0chain/gosdk_common/zboxcore/logger"
@@ -26,6 +26,7 @@ import (
 
 const (
 	DefaultCreateConnectionTimeOut = 45 * time.Second
+	StorageV2                      = 1
 )
 
 var BatchSize = 6

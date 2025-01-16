@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk_common/core/common"
-	"github.com/0chain/gosdk_common/zboxcore/allocationchange"
 	"github.com/0chain/gosdk_common/zboxcore/encryption"
 	"github.com/0chain/gosdk_common/zboxcore/fileref"
 	"github.com/0chain/gosdk_common/zboxcore/zboxutil"

@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/0chain/gosdk_common/core/node"
+	"github.com/0chain/gosdk_common/core/client"
 	l "github.com/0chain/gosdk_common/zboxcore/logger"
 	"go.uber.org/zap"
 
@@ -73,7 +73,7 @@ func forceUpdateNetworkDetails(networkDetails *Network) {
 	sdkInitialized = false
 	blockchain.SetMiners(networkDetails.Miners)
 	blockchain.SetSharders(networkDetails.Sharders)
-	node.InitCache(blockchain.Sharders)
+	client.InitCache(blockchain.Sharders)
 	conf.InitChainNetwork(&conf.Network{
 		Sharders: networkDetails.Sharders,
 		Miners:   networkDetails.Miners,

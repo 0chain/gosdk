@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/0chain/gosdk/core/transaction"
+	"github.com/0chain/gosdk_common/core/transaction"
 
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )

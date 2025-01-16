@@ -16,12 +16,12 @@ import (
 	"errors"
 
 	thrown "github.com/0chain/errors"
+	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk_common/constants"
 	"github.com/0chain/gosdk_common/core/common"
 	coreEncryption "github.com/0chain/gosdk_common/core/encryption"
 	"github.com/0chain/gosdk_common/core/sys"
 	"github.com/0chain/gosdk_common/core/util"
-	"github.com/0chain/gosdk_common/zboxcore/allocationchange"
 	"github.com/0chain/gosdk_common/zboxcore/blockchain"
 	"github.com/0chain/gosdk_common/zboxcore/client"
 	"github.com/0chain/gosdk_common/zboxcore/encryption"

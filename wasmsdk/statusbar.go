@@ -7,7 +7,7 @@ import (
 	"path"
 	"sync"
 
-	"github.com/0chain/gosdk/core/sys"
+	"github.com/0chain/gosdk_common/core/sys"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"gopkg.in/cheggaaa/pb.v1"
 )

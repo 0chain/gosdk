@@ -4,14 +4,15 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"github.com/0chain/gosdk/core/client"
-	"github.com/0chain/gosdk/zcnbridge"
-	"github.com/0chain/gosdk/zcnbridge/errors"
-	"github.com/0chain/gosdk/zcnbridge/log"
-	"github.com/0chain/gosdk/zcncore"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"path"
 	"strconv"
+
+	"github.com/0chain/gosdk_common/core/client"
+	"github.com/0chain/gosdk_common/zcnbridge"
+	"github.com/0chain/gosdk_common/zcnbridge/errors"
+	"github.com/0chain/gosdk_common/zcnbridge/log"
+	"github.com/0chain/gosdk_common/zcncore"
+	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 var bridge *zcnbridge.BridgeClient //nolint:unused

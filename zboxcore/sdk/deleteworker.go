@@ -16,9 +16,9 @@ import (
 	thrown "github.com/0chain/errors"
 	"github.com/google/uuid"
 
+	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk_common/constants"
 	"github.com/0chain/gosdk_common/core/common"
-	"github.com/0chain/gosdk_common/zboxcore/allocationchange"
 	"github.com/0chain/gosdk_common/zboxcore/blockchain"
 	"github.com/0chain/gosdk_common/zboxcore/client"
 	"github.com/0chain/gosdk_common/zboxcore/fileref"
@@ -108,7 +108,7 @@ func (req *DeleteRequest) deleteBlobberFile(
 			}
 			if resp.StatusCode == http.StatusBadRequest {
 				body, err := ioutil.ReadAll(resp.Body)
-				if err!= nil {
+				if err != nil {
 					logger.Logger.Error("Failed to read response body", err)
 				}
 

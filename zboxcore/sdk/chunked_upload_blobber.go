@@ -14,8 +14,8 @@ import (
 
 	"github.com/0chain/errors"
 	thrown "github.com/0chain/errors"
+	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk_common/constants"
-	"github.com/0chain/gosdk_common/zboxcore/allocationchange"
 	"github.com/0chain/gosdk_common/zboxcore/blockchain"
 	"github.com/0chain/gosdk_common/zboxcore/client"
 	"github.com/0chain/gosdk_common/zboxcore/fileref"
