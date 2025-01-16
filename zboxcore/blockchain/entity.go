@@ -7,10 +7,10 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/0chain/gosdk_common/core/client"
 	"github.com/0chain/gosdk_common/core/util"
 
 	"github.com/0chain/gosdk_common/core/conf"
-	"github.com/0chain/gosdk_common/core/node"
 )
 
 var miners []string
@@ -115,7 +115,7 @@ func PopulateNodes(nodesjson string) ([]string, error) {
 }
 
 var chain *ChainConfig
-var Sharders *node.NodeHolder
+var Sharders *client.NodeHolder
 
 func init() {
 	chain = &ChainConfig{
@@ -198,7 +198,7 @@ func SetSharders(sharderArray []string) {
 	if len(sharderArray) < consensus {
 		consensus = len(sharderArray)
 	}
-	Sharders = node.NewHolder(sharderArray, consensus)
+	Sharders = client.NewHolder(sharderArray, consensus)
 }
 
 func SetMiners(minerArray []string) {
