@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/0chain/gosdk_common/core/common"
-	"github.com/0chain/gosdk_common/zcncore"
+	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/zcncore"
 	"github.com/uptrace/bunrouter"
 )
 

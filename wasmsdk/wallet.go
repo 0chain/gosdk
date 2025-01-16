@@ -10,9 +10,9 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/0chain/gosdk_common/core/client"
-	"github.com/0chain/gosdk_common/core/zcncrypto"
-	"github.com/0chain/gosdk_common/wasmsdk/jsbridge"
+	"github.com/0chain/gosdk/core/client"
+	"github.com/0chain/gosdk/core/zcncrypto"
+	"github.com/0chain/gosdk/wasmsdk/jsbridge"
 )
 
 func setWallet(clientID, clientKey, peerPublicKey, publicKey, privateKey, mnemonic string, isSplit bool) error {
@@ -36,11 +36,10 @@ func setWallet(clientID, clientKey, peerPublicKey, publicKey, privateKey, mnemon
 		Keys:          keys,
 		IsSplit:       isSplit,
 	}
+	fmt.Println("set Wallet, is split:", isSplit)
 	client.SetWallet(*w)
 
-	fmt.Println("set Wallet, is split:", isSplit)
-
-	zboxApiClient.SetWallet(clientID, privateKey, publicKey)
+	zboxApiClient.SetWallet(clientID, privateKey, clientKey)
 	if mode == "" { // main thread, need to notify the web worker to update wallet
 		// notify the web worker to update wallet
 		if err := jsbridge.PostMessageToAllWorkers(jsbridge.MsgTypeUpdateWallet, map[string]string{
@@ -57,4 +56,10 @@ func setWallet(clientID, clientKey, peerPublicKey, publicKey, privateKey, mnemon
 	}
 
 	return nil
+}
+
+func setWalletMode(mode bool) {
+	client.SetWalletMode(mode)
+
+	fmt.Println("gosdk setWalletMode: ", "is split:", mode)
 }

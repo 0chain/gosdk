@@ -4,8 +4,8 @@
 package main
 
 import (
-	"github.com/0chain/gosdk_common/core/client"
-	"github.com/0chain/gosdk_common/zcncore"
+	"github.com/0chain/gosdk/core/screstapi"
+	"github.com/0chain/gosdk/zcncore"
 )
 
 type Balance struct {
@@ -17,12 +17,10 @@ type Balance struct {
 // getWalletBalance retrieves the wallet balance of the client from the network.
 //   - clientId is the client id
 func getWalletBalance(clientId string) (*Balance, error) {
-
-	bal, err := client.GetBalance(clientId)
+	bal, err := screstapi.GetBalance(clientId)
 	if err != nil {
 		return nil, err
 	}
-
 	balance, err := bal.ToToken()
 	if err != nil {
 		return nil, err

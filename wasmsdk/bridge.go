@@ -4,18 +4,17 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"github.com/0chain/gosdk/core/client"
+	"github.com/0chain/gosdk/zcnbridge"
+	"github.com/0chain/gosdk/zcnbridge/errors"
+	"github.com/0chain/gosdk/zcnbridge/log"
+	"github.com/0chain/gosdk/zcncore"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"path"
 	"strconv"
-
-	"github.com/0chain/gosdk_common/core/client"
-	"github.com/0chain/gosdk_common/zcnbridge"
-	"github.com/0chain/gosdk_common/zcnbridge/errors"
-	"github.com/0chain/gosdk_common/zcnbridge/log"
-	"github.com/0chain/gosdk_common/zcncore"
-	"github.com/ethereum/go-ethereum/ethclient"
 )
 
-var bridge *zcnbridge.BridgeClient
+var bridge *zcnbridge.BridgeClient //nolint:unused
 
 // initBridge initializes the bridge client
 //   - ethereumAddress: ethereum address of the wallet owner
@@ -26,7 +25,7 @@ var bridge *zcnbridge.BridgeClient
 //   - gasLimit: gas limit for the transactions
 //   - value: value to be sent with the transaction (unused)
 //   - consensusThreshold: consensus threshold for the transactions
-func initBridge(
+func initBridge( //nolint:unused
 	ethereumAddress string,
 	bridgeAddress string,
 	authorizersAddress string,
@@ -84,7 +83,9 @@ func burnZCN(amount uint64) string { //nolint
 //   - burnTrxHash: hash of the burn transaction
 //   - timeout: timeout in seconds
 func mintZCN(burnTrxHash string, timeout int) string { //nolint
-	mintPayload, err := bridge.QueryZChainMintPayload(burnTrxHash)
+	mintPayload,
+
+		err := bridge.QueryZChainMintPayload(burnTrxHash)
 	if err != nil {
 		return errors.Wrap("mintZCN", "failed to QueryZChainMintPayload", err).Error()
 	}
@@ -114,19 +115,18 @@ func getMintWZCNPayload(burnTrxHash string) string { //nolint:unused
 }
 
 // getNotProcessedWZCNBurnEvents returns all not processed WZCN burn events from the Ethereum network
-func getNotProcessedWZCNBurnEvents() string {
+func getNotProcessedWZCNBurnEvents() string { //nolint:unused
 	var (
 		mintNonce int64
 		res       []byte
 		err       error
 	)
-
 	if res, err = zcncore.GetMintNonce(); err != nil {
 		return errors.Wrap("getNotProcessedWZCNBurnEvents", "failed to retreive last ZCN processed mint nonce", err).Error()
 	}
 
 	if err = json.Unmarshal(res, &mintNonce); err != nil {
-		return errors.New("getNotProcessedWZCNBurnEvents", "failed to unmarshall last ZCN processed mint nonce").Error()
+		return errors.Wrap("getNotProcessedWZCNBurnEvents", "failed to unmarshal last ZCN processed mint nonce", err).Error()
 	}
 
 	log.Logger.Debug("MintNonce = " + strconv.Itoa(int(mintNonce)))
@@ -162,7 +162,7 @@ func getNotProcessedZCNBurnTickets() string { //nolint:unused
 	}
 
 	if err = json.Unmarshal(res, &burnTickets); err != nil {
-		return errors.New("getNotProcessedZCNBurnTickets", "failed to unmarshall ZCN burn tickets").Error()
+		return errors.Wrap("getNotProcessedZCNBurnTickets", "failed to unmarshal ZCN burn tickets", err).Error()
 	}
 
 	var result []byte

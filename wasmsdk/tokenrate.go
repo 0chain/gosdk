@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 
-	"github.com/0chain/gosdk_common/core/tokenrate"
+	"github.com/0chain/gosdk/core/tokenrate"
 )
 
 // getUSDRate gets the USD rate for the given crypto symbol

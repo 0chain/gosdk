@@ -15,19 +15,19 @@ import (
 	"syscall/js"
 	"time"
 
-	"github.com/0chain/gosdk_common/constants"
-	"github.com/0chain/gosdk_common/core/common"
-	"github.com/0chain/gosdk_common/core/encryption"
-	"github.com/0chain/gosdk_common/core/pathutil"
-	"github.com/0chain/gosdk_common/core/sys"
+	"github.com/0chain/gosdk/constants"
+	"github.com/0chain/gosdk/core/client"
+	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/encryption"
+	"github.com/0chain/gosdk/core/pathutil"
+	"github.com/0chain/gosdk/core/sys"
 	"github.com/hack-pad/safejs"
 
+	"github.com/0chain/gosdk/core/transaction"
+	"github.com/0chain/gosdk/wasmsdk/jsbridge"
+	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/sdk"
-	"github.com/0chain/gosdk_common/core/client"
-	"github.com/0chain/gosdk_common/core/transaction"
-	"github.com/0chain/gosdk_common/wasmsdk/jsbridge"
-	"github.com/0chain/gosdk_common/zboxcore/fileref"
-	"github.com/0chain/gosdk_common/zboxcore/zboxutil"
+	"github.com/0chain/gosdk/zboxcore/zboxutil"
 
 	"github.com/hack-pad/go-webworkers/worker"
 )
@@ -479,7 +479,9 @@ func multiDownload(allocationID, jsonMultiDownloadOptions, authTicket, callbackF
 		}
 		var mf sys.File
 		if option.DownloadToDisk {
-			terminateWorkersWithAllocation(alloc)
+			if option.SuggestedName != "" {
+				fileName = option.SuggestedName
+			}
 			mf, err = jsbridge.NewFileWriter(fileName)
 			if err != nil {
 				PrintError(err.Error())
@@ -590,6 +592,7 @@ type MultiDownloadOption struct {
 	RemoteFileName   string `json:"remoteFileName"`             //Required only for file download with auth ticket
 	RemoteLookupHash string `json:"remoteLookupHash,omitempty"` //Required only for file download with auth ticket
 	DownloadToDisk   bool   `json:"downloadToDisk"`
+	SuggestedName    string `json:"suggestedName,omitempty"` //Suggested name for the file when downloading to disk, if empty will use base of remote path
 }
 
 // MultiOperation do copy, move, delete and createdir operation together
@@ -1134,7 +1137,7 @@ func checkAllocStatus(allocationID string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if client.GetClientID() != alloc.Owner {
+	if client.Wallet().ClientID != alloc.Owner {
 		return "", errors.New("client id does not match with the allocation owner")
 	}
 	status, blobberStatus, err := alloc.CheckAllocStatus()
@@ -1247,6 +1250,14 @@ func cancelDownloadDirectory(remotePath string) {
 		cancel(errors.New("download directory canceled by user"))
 	}
 	downloadDirLock.Unlock()
+}
+
+func cancelDownloadBlocks(allocationID, remotePath string, start, end int64) error {
+	alloc, err := getAllocation(allocationID)
+	if err != nil {
+		return err
+	}
+	return alloc.CancelDownloadBlocks(remotePath, start, end)
 }
 
 func startListener(respChan chan string) error {

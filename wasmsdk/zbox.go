@@ -7,7 +7,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/0chain/gosdk_common/zboxapi"
+	"github.com/0chain/gosdk/zboxapi"
 )
 
 var (
