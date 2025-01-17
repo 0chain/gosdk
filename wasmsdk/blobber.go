@@ -24,9 +24,9 @@ import (
 	"github.com/hack-pad/safejs"
 
 	"github.com/0chain/gosdk/wasmsdk/jsbridge"
-	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk_common/core/transaction"
+	"github.com/0chain/gosdk_common/zboxcore/fileref"
 	"github.com/0chain/gosdk_common/zboxcore/zboxutil"
 
 	"github.com/hack-pad/go-webworkers/worker"
