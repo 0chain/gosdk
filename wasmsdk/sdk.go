@@ -72,7 +72,7 @@ func getVersion() string {
 }
 
 func getWasmType() string {
-	return "normal"
+	return "enterprise"
 }
 
 var sdkLogger *logger.Logger
