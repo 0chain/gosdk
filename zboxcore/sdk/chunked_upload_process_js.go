@@ -18,9 +18,9 @@ import (
 
 	"github.com/0chain/errors"
 	thrown "github.com/0chain/errors"
+	"github.com/0chain/gosdk/wasmsdk/jsbridge"
 	"github.com/0chain/gosdk_common/constants"
 	"github.com/0chain/gosdk_common/core/sys"
-	"github.com/0chain/gosdk_common/wasmsdk/jsbridge"
 	"github.com/0chain/gosdk_common/zboxcore/logger"
 	"github.com/0chain/gosdk_common/zboxcore/zboxutil"
 	"github.com/hack-pad/go-webworkers/worker"

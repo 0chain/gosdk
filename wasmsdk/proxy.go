@@ -14,11 +14,11 @@ import (
 	"time"
 
 	"github.com/0chain/gosdk/core/version"
+	"github.com/0chain/gosdk/wasmsdk/jsbridge"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk_common/core/client"
 	"github.com/0chain/gosdk_common/core/sys"
 	"github.com/0chain/gosdk_common/core/zcncrypto"
-	"github.com/0chain/gosdk_common/wasmsdk/jsbridge"
 	"github.com/0chain/gosdk_common/zcncore"
 
 	"github.com/hack-pad/safejs"

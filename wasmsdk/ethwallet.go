@@ -22,6 +22,7 @@ func strToInt64(s string) int64 {
 }
 
 func int64ToStr(x int64) string {
+	gosdk_
 	return strconv.FormatInt(x, 10)
 }
 
