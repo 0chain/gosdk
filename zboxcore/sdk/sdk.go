@@ -17,11 +17,11 @@ import (
 	"github.com/0chain/gosdk_common/core/screstapi"
 	"gopkg.in/natefinch/lumberjack.v2"
 
+	"github.com/0chain/gosdk/core/version"
 	"github.com/0chain/gosdk_common/core/client"
 	"github.com/0chain/gosdk_common/core/common"
 	enc "github.com/0chain/gosdk_common/core/encryption"
 	"github.com/0chain/gosdk_common/core/transaction"
-	"github.com/0chain/gosdk_common/core/version"
 	"github.com/0chain/gosdk_common/zboxcore/blockchain"
 	zboxclient "github.com/0chain/gosdk_common/zboxcore/client"
 	"github.com/0chain/gosdk_common/zboxcore/encryption"

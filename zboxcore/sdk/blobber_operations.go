@@ -392,5 +392,5 @@ func smartContractTxnValueFeeWithRetry(scAddress string, sn transaction.SmartCon
 	value, fee uint64) (hash, out string, nonce int64, t *transaction.Transaction, err error) {
 
 	// Fee is set during sdk initialization.
-	return transaction.SmartContractTxnValueFeeWithRetry(STORAGE_SCADDRESS, sn, value, client.TxnFee(), true)
+	return transaction.SmartContractTxnValueFeeWithRetry(scAddress, sn, value, fee, true)
 }

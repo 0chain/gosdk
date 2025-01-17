@@ -4,6 +4,7 @@
 package sdk
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -14,9 +15,10 @@ import (
 	"github.com/0chain/gosdk_common/core/sys"
 	"github.com/pkg/errors"
 
+	"github.com/0chain/gosdk/core/version"
 	"github.com/0chain/gosdk/zboxcore/sdk"
+	"github.com/0chain/gosdk_common/core/conf"
 	"github.com/0chain/gosdk_common/core/util"
-	"github.com/0chain/gosdk_common/core/version"
 	"github.com/0chain/gosdk_common/zboxcore/client"
 	l "github.com/0chain/gosdk_common/zboxcore/logger"
 
@@ -48,7 +50,6 @@ type StorageSDK struct {
 	chainconfig *ChainConfig
 	client      *client.Client
 	// chainconfig *ChainConfig
-}
 }
 
 // SetLogFile setup log level for core libraries
@@ -345,10 +346,12 @@ func (s *StorageSDK) WritePoolLock(durInSeconds int64, tokens, fee float64, allo
 	if err != nil {
 		return errors.Errorf("Error parsing fee: %v", err)
 	}
-	_, _, err := sdk.WritePoolLock(
+	_, _, err = sdk.WritePoolLock(
 		allocID,
 		wpLockUint,
 		feeUint,
+	)
+
 	return err
 }
 
