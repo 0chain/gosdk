@@ -23,7 +23,7 @@ import (
 	l "github.com/0chain/gosdk_common/zboxcore/logger"
 
 	"github.com/0chain/gosdk/mobilesdk/zbox"
-	"github.com/0chain/gosdk_common/mobilesdk/zboxapi"
+	"github.com/0chain/gosdk/mobilesdk/zboxapi"
 	"github.com/0chain/gosdk_common/zcncore"
 )
 
