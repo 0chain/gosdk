@@ -24,7 +24,7 @@ import (
 
 	"github.com/0chain/gosdk/mobilesdk/zbox"
 	"github.com/0chain/gosdk/mobilesdk/zboxapi"
-	"github.com/0chain/gosdk/zcncore"
+	"github.com/0chain/gosdk_common/zcncore"
 )
 
 var nonce = int64(0)
