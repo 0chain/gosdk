@@ -7,13 +7,15 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/0chain/gosdk_common/core/common"
-	"github.com/0chain/gosdk_common/zcncore"
+	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/zcncore"
 	"github.com/uptrace/bunrouter"
 )
 
 func main() {
 
+	zcncore.InitSignatureScheme("bls0chain")
+	
 	ctx, cf := context.WithCancel(context.Background())
 
 	router := bunrouter.New()
@@ -34,10 +36,7 @@ func main() {
 		}
 
 		w.WriteHeader(http.StatusOK)
-		_, err = w.Write([]byte(wallet))
-		if err != nil {
-			return err
-		}
+		w.Write([]byte(wallet))
 
 		return nil
 	})
@@ -56,7 +55,7 @@ func main() {
 
 }
 
-type statusBar struct { //nolint:unused
+type statusBar struct {
 	walletString string
 	wg           *sync.WaitGroup
 	success      bool
