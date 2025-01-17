@@ -1668,6 +1668,10 @@ func (a *Allocation) getRefs(path, pathHash, authToken, offsetPath, updatedDate,
 	// if singleClientMode {
 	// 	oTreeReq.singleBlobber = true
 	// }
+	now := time.Now()
+	defer func() {
+		l.Logger.Info("[getRefs]: ", time.Since(now).Milliseconds())
+	}()
 	return oTreeReq.GetRefs()
 }
 

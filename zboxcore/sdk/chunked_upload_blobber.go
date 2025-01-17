@@ -79,6 +79,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 			)
 			var req *fasthttp.Request
 			for i := 0; i < 3; i++ {
+				dataSize := dataBuffers[ind].Len()
 				req, err = zboxutil.NewFastUploadRequest(
 					sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, dataBuffers[ind].Bytes(), su.httpMethod)
 				if err != nil {
@@ -89,6 +90,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 				err, shouldContinue = func() (err error, shouldContinue bool) {
 					resp := fasthttp.AcquireResponse()
 					defer fasthttp.ReleaseResponse(resp)
+					now := time.Now()
 					err = zboxutil.FastHttpClient.DoTimeout(req, resp, su.uploadTimeOut)
 					fasthttp.ReleaseRequest(req)
 					if err != nil {
@@ -116,7 +118,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 						shouldContinue = true
 						return
 					}
-
+					logger.Logger.Info("uploadTimings: ", time.Since(now).Milliseconds(), " blobberURL: ", sb.blobber.Baseurl, " dataSize: ", dataSize)
 					msg := string(respbody)
 					logger.Logger.Error(sb.blobber.Baseurl,
 						" Upload error response: ", resp.StatusCode(),

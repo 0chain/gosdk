@@ -171,6 +171,7 @@ func (mo *MultiOperation) Process() error {
 	swg := sizedwaitgroup.New(BatchSize)
 	errsSlice := make([]error, len(mo.operations))
 	var changeCount int
+	now := time.Now()
 	for idx, op := range mo.operations {
 		swg.Add()
 		go func(op Operationer, idx int) {
@@ -219,6 +220,7 @@ func (mo *MultiOperation) Process() error {
 	if changeCount == 0 {
 		return nil
 	}
+	l.Logger.Info("multiProcessUpload: ", time.Since(now).Milliseconds(), " ops", len(mo.operations))
 
 	// Take transpose of mo.change because it will be easier to iterate mo if it contains blobber changes
 	// in row instead of column. Currently mo.change[0] contains allocationChange for operation 1 and so on.

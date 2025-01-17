@@ -218,6 +218,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock(fastClient *fasthttp.Clien
 				}
 				rspData.BlockChunks = splitData(dR.Data, req.chunkSize)
 			}
+			zlogger.Logger.Info("downloadTimings: ", timeTaken, " blobberURL: ", req.blobber.Baseurl, " dataSize: ", len(dR.Data))
 
 			zlogger.Logger.Debug(fmt.Sprintf("downloadBlobberBlock 200 OK: blobberID: %v, clientID: %v, blockNum: %d", req.blobber.ID, client.GetClientID(), header.BlockNum))
 
