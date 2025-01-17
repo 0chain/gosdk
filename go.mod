@@ -38,7 +38,7 @@ require (
 )
 
 require (
-	github.com/0chain/gosdk_common v0.0.0-20250116161245-a631a8c4c9fe
+	github.com/0chain/gosdk_common v0.0.0-20250117135422-7c4f2f249631
 	github.com/hack-pad/go-webworkers v0.1.0
 	github.com/minio/sha256-simd v1.0.1
 	github.com/valyala/bytebufferpool v1.0.0
