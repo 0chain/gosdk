@@ -23,7 +23,7 @@ import (
 	lru "github.com/hashicorp/golang-lru"
 )
 
-var Logger logger.Logger
+var Logger = logger.GetLogger()
 
 const STORAGE_SCADDRESS = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7"
 const MINERSC_SCADDRESS = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d9"
@@ -270,7 +270,7 @@ func (t *Transaction) VerifySigWith(pubkey string, verifyHandler VerifyFunc) (bo
 }
 
 func SendTransactionSync(txn *Transaction, miners []string) error {
-	const requestTimeout = 30 * time.Second // Timeout for each request
+	const requestTimeout = 3 * time.Second // Timeout for each request
 
 	fails := make(chan error, len(miners))
 	var wg sync.WaitGroup
