@@ -17,6 +17,7 @@ import (
 	"github.com/0chain/gosdk/core/version"
 	"github.com/0chain/gosdk_common/core/client"
 	"github.com/0chain/gosdk_common/core/common"
+	"github.com/0chain/gosdk_common/core/logger"
 	"github.com/0chain/gosdk_common/core/transaction"
 	"github.com/0chain/gosdk_common/zboxcore/blockchain"
 	"github.com/0chain/gosdk_common/zboxcore/encryption"
@@ -93,6 +94,10 @@ func SetLogFile(logFile string, verbose bool) {
 
 	l.Logger.SetLogFile(ioWriter, verbose)
 	l.Logger.Info("******* Storage SDK Version: ", version.VERSIONSTR, " *******")
+}
+
+func GetLogger() *logger.Logger {
+	return l.Logger
 }
 
 type BackPool struct {
@@ -362,6 +367,8 @@ type UpdateBlobber struct {
 	IsShutdown               *bool                               `json:"is_shutdown,omitempty"`
 	NotAvailable             *bool                               `json:"not_available,omitempty"`
 	IsRestricted             *bool                               `json:"is_restricted,omitempty"`
+	StorageVersion           *int                                `json:"storage_version,omitempty"`
+	DelegateWallet           *string                             `json:"delegate_wallet,omitempty"`
 }
 
 // ResetBlobberStatsDto represents blobber stats reset request.
@@ -781,7 +788,7 @@ func CreateAllocationWith(options CreateAllocationOptions) (
 	return CreateAllocationForOwner(client.Id(),
 		client.PublicKey(), options.DataShards, options.ParityShards,
 		options.Size, options.ReadPrice, options.WritePrice, options.Lock,
-		options.BlobberIds, options.BlobberAuthTickets, options.ThirdPartyExtendable, options.IsEnterprise, options.Force, options.FileOptionsParams)
+		options.BlobberIds, options.BlobberAuthTickets, options.ThirdPartyExtendable, options.IsEnterprise, options.Force, options.FileOptionsParams, options.AuthRoundExpiry)
 }
 
 // GetAllocationBlobbers returns a list of blobber ids that can be used for a new allocation.
@@ -1184,6 +1191,36 @@ func ResetBlobberStats(rbs *ResetBlobberStatsDto) (string, int64, error) {
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_RESET_BLOBBER_STATS,
 		InputArgs: rbs,
+	}
+	hash, _, n, _, err := storageSmartContractTxn(sn)
+	return hash, n, err
+}
+
+type StorageNodeIdField struct {
+	Id string `json:"id"`
+}
+
+func ResetBlobberVersion(snId *StorageNodeIdField) (string, int64, error) {
+	if !client.IsSDKInitialized() {
+		return "", 0, sdkNotInitialized
+	}
+
+	var sn = transaction.SmartContractTxnData{
+		Name:      transaction.STORAGESC_RESET_BLOBBER_VERSION,
+		InputArgs: snId,
+	}
+	hash, _, n, _, err := storageSmartContractTxn(sn)
+	return hash, n, err
+}
+
+func InsertKilledProviderID(snId *StorageNodeIdField) (string, int64, error) {
+	if !client.IsSDKInitialized() {
+		return "", 0, sdkNotInitialized
+	}
+
+	var sn = transaction.SmartContractTxnData{
+		Name:      transaction.STORAGESC_INSERT_KILLED_PROVIDER_ID,
+		InputArgs: snId,
 	}
 	hash, _, n, _, err := storageSmartContractTxn(sn)
 	return hash, n, err
