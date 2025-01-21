@@ -108,7 +108,9 @@ func (commitreq *CommitRequest) processCommit() {
 		commitreq.result = ErrorCommitResult(err.Error())
 		return
 	}
-	l.Logger.Debug("[commitBlobber]", time.Since(start).Milliseconds())
+	if time.Since(start).Milliseconds() > 60 {
+		l.Logger.Info("[commitBlobber]", time.Since(start).Milliseconds(), " baseURL: ", commitreq.blobber.Baseurl)
+	}
 	commitreq.result = SuccessCommitResult()
 }
 
@@ -178,7 +180,7 @@ func (req *CommitRequest) commitBlobber() (err error) {
 			}
 
 			if resp.StatusCode == http.StatusTooManyRequests {
-				logger.Logger.Debug(req.blobber.Baseurl,
+				logger.Logger.Error(req.blobber.Baseurl,
 					" got too many request error. Retrying")
 
 				var r int

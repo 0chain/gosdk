@@ -118,7 +118,9 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 						shouldContinue = true
 						return
 					}
-					logger.Logger.Info("uploadTimings: ", time.Since(now).Milliseconds(), " blobberURL: ", sb.blobber.Baseurl, " dataSize: ", dataSize)
+					if time.Since(now).Milliseconds() >= 60 {
+						logger.Logger.Info("uploadTimings: ", time.Since(now).Milliseconds(), " blobberURL: ", sb.blobber.Baseurl, " dataSize: ", dataSize)
+					}
 					msg := string(respbody)
 					logger.Logger.Error(sb.blobber.Baseurl,
 						" Upload error response: ", resp.StatusCode(),
