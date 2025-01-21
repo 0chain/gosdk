@@ -1,29 +1,24 @@
 package sdk
 
 import (
-	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math"
 	"net/http"
 	"strconv"
 
 	"github.com/0chain/common/core/currency"
 	"github.com/0chain/errors"
-	"github.com/0chain/gosdk_common/core/conf"
-	"github.com/0chain/gosdk_common/core/logger"
 	"github.com/0chain/gosdk_common/core/screstapi"
 	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/0chain/gosdk/core/version"
 	"github.com/0chain/gosdk_common/core/client"
 	"github.com/0chain/gosdk_common/core/common"
-	enc "github.com/0chain/gosdk_common/core/encryption"
 	"github.com/0chain/gosdk_common/core/transaction"
 	"github.com/0chain/gosdk_common/zboxcore/blockchain"
-	zboxclient "github.com/0chain/gosdk_common/zboxcore/client"
 	"github.com/0chain/gosdk_common/zboxcore/encryption"
 	l "github.com/0chain/gosdk_common/zboxcore/logger"
 	"github.com/0chain/gosdk_common/zboxcore/marker"
@@ -55,8 +50,7 @@ type StatusCallback interface {
 
 var (
 	numBlockDownloads         = 100
-	sdkInitialized            = false
-	networkWorkerTimerInHours = 1
+	networkWorkerTimerInHours = 1 //nolint:unused
 	singleClientMode          = false
 	shouldVerifyHash          = true
 )
@@ -101,151 +95,9 @@ func SetLogFile(logFile string, verbose bool) {
 	l.Logger.Info("******* Storage SDK Version: ", version.VERSIONSTR, " *******")
 }
 
-// GetLogger retrieves logger instance
-func GetLogger() *logger.Logger {
-	return &l.Logger
-}
-
-// InitStorageSDK Initialize the storage SDK
-//
-//   - walletJSON: Client's wallet JSON
-//   - blockWorker: Block worker URL (block worker refers to 0DNS)
-//   - chainID: ID of the blokcchain network
-//   - signatureScheme: Signature scheme that will be used for signing transactions
-//   - preferredBlobbers: List of preferred blobbers to use when creating an allocation. This is usually configured by the client in the configuration files
-//   - nonce: Initial nonce value for the transactions
-//   - fee: Preferred value for the transaction fee, just the first value is taken
-func InitStorageSDK(walletJSON string,
-	blockWorker, chainID, signatureScheme string,
-	preferredBlobbers []string,
-	nonce int64,
-	fee ...uint64) error {
-	err := zboxclient.PopulateClient(walletJSON, signatureScheme)
-	if err != nil {
-		return err
-	}
-
-	blockchain.SetChainID(chainID)
-	blockchain.SetBlockWorker(blockWorker)
-
-	err = InitNetworkDetails()
-	if err != nil {
-		return err
-	}
-
-	zboxclient.SetClientNonce(nonce)
-	if len(fee) > 0 {
-		client.SetTxnFee(fee[0])
-	}
-
-	go UpdateNetworkDetailsWorker(context.Background())
-	sdkInitialized = true
-	return nil
-}
-
-// GetNetwork retrieves the network details
-func GetNetwork() *Network {
-	return &Network{
-		Miners:   blockchain.GetMiners(),
-		Sharders: blockchain.GetAllSharders(),
-	}
-}
-
-// SetMaxTxnQuery set the maximum number of transactions to query
-func SetMaxTxnQuery(num int) {
-	blockchain.SetMaxTxnQuery(num)
-
-	cfg, _ := conf.GetClientConfig()
-	if cfg != nil {
-		cfg.MaxTxnQuery = num
-	}
-
-}
-
-// SetQuerySleepTime set the sleep time between queries
-func SetQuerySleepTime(time int) {
-	blockchain.SetQuerySleepTime(time)
-
-	cfg, _ := conf.GetClientConfig()
-	if cfg != nil {
-		cfg.QuerySleepTime = time
-	}
-
-}
-
-// SetMinSubmit set the minimum number of miners to submit the transaction
-func SetMinSubmit(num int) {
-	blockchain.SetMinSubmit(num)
-}
-
-// SetMinConfirmation set the minimum number of miners to confirm the transaction
-func SetMinConfirmation(num int) {
-	blockchain.SetMinConfirmation(num)
-}
-
-// SetNetwork set the network details, given the miners and sharders urls
-//   - miners: list of miner urls
-//   - sharders: list of sharder urls
-func SetNetwork(miners []string, sharders []string) {
-	blockchain.SetMiners(miners)
-	blockchain.SetSharders(sharders)
-	client.InitCache(blockchain.Sharders)
-}
-
-// CreateReadPool creates a read pool for the SDK client.
-// Read pool is used to lock tokens for read operations.
-// Currently, all read operations are free 🚀.
-func CreateReadPool() (hash string, nonce int64, err error) {
-	if !sdkInitialized {
-		return "", 0, sdkNotInitialized
-	}
-	hash, _, nonce, _, err = storageSmartContractTxn(transaction.SmartContractTxnData{
-		Name: transaction.STORAGESC_CREATE_READ_POOL,
-	})
-	return
-}
-
 type BackPool struct {
 	ID      string         `json:"id"`
 	Balance common.Balance `json:"balance"`
-}
-
-//
-// read pool
-//
-
-type ReadPool struct {
-	Balance common.Balance `json:"balance"`
-}
-
-// GetReadPoolInfo for given client, or, if the given clientID is empty,
-// for current client of the sdk.
-//   - clientID: client ID
-func GetReadPoolInfo(clientID string) (info *ReadPool, err error) {
-	if !sdkInitialized {
-		return nil, sdkNotInitialized
-	}
-
-	if clientID == "" {
-		clientID = zboxclient.GetClientID()
-	}
-
-	var b []byte
-	b, err = screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getReadPoolStat",
-		map[string]string{"client_id": clientID})
-	if err != nil {
-		return nil, errors.Wrap(err, "error requesting read pool info")
-	}
-	if len(b) == 0 {
-		return nil, errors.New("", "empty response")
-	}
-
-	info = new(ReadPool)
-	if err = json.Unmarshal(b, info); err != nil {
-		return nil, errors.Wrap(err, "error decoding response:")
-	}
-
-	return
 }
 
 //
@@ -301,7 +153,7 @@ type StakePoolInfo struct {
 //   - providerType: provider type
 //   - providerID: provider ID
 func GetStakePoolInfo(providerType ProviderType, providerID string) (info *StakePoolInfo, err error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return nil, sdkNotInitialized
 	}
 
@@ -334,11 +186,11 @@ type StakePoolUserInfo struct {
 //   - offset: offset
 //   - limit: limit
 func GetStakePoolUserInfo(clientID string, offset, limit int) (info *StakePoolUserInfo, err error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return nil, sdkNotInitialized
 	}
 	if clientID == "" {
-		clientID = zboxclient.GetClientID()
+		clientID = client.Id()
 	}
 
 	var b []byte
@@ -395,7 +247,7 @@ type ChallengePoolInfo struct {
 // GetChallengePoolInfo retrieve challenge pool info for given allocation.
 //   - allocID: allocation ID
 func GetChallengePoolInfo(allocID string) (info *ChallengePoolInfo, err error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return nil, sdkNotInitialized
 	}
 
@@ -419,7 +271,7 @@ func GetChallengePoolInfo(allocID string) (info *ChallengePoolInfo, err error) {
 
 // GetMptData retrieves mpt key data.
 func GetMptData(key string) ([]byte, error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return nil, sdkNotInitialized
 	}
 
@@ -434,38 +286,6 @@ func GetMptData(key string) ([]byte, error) {
 	}
 
 	return b, nil
-}
-
-//
-// storage SC configurations and blobbers
-//
-
-type InputMap struct {
-	Fields map[string]interface{} `json:"fields"`
-}
-
-// GetStorageSCConfig retrieves storage SC configurations.
-func GetStorageSCConfig() (conf *InputMap, err error) {
-	if !sdkInitialized {
-		return nil, sdkNotInitialized
-	}
-
-	var b []byte
-	b, err = screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/storage-config", nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "error requesting storage SC configs:")
-	}
-	if len(b) == 0 {
-		return nil, errors.New("", "empty response")
-	}
-
-	conf = new(InputMap)
-	conf.Fields = make(map[string]interface{})
-	if err = json.Unmarshal(b, conf); err != nil {
-		return nil, errors.Wrap(err, "rror decoding response:")
-	}
-
-	return
 }
 
 // Blobber type represents blobber information.
@@ -645,7 +465,7 @@ func getBlobbersInternal(active, stakable bool, limit, offset int) (bs []*Blobbe
 //   - active: if true then only active blobbers are returned
 //   - stakable: if true then only stakable blobbers are returned
 func GetBlobbers(active, stakable bool) (bs []*Blobber, err error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return nil, sdkNotInitialized
 	}
 
@@ -679,7 +499,7 @@ func GetBlobbers(active, stakable bool) (bs []*Blobber, err error) {
 // GetBlobber retrieve blobber by id.
 //   - blobberID: the id of blobber
 func GetBlobber(blobberID string) (blob *Blobber, err error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return nil, sdkNotInitialized
 	}
 	var b []byte
@@ -703,7 +523,7 @@ func GetBlobber(blobberID string) (blob *Blobber, err error) {
 // GetValidator retrieve validator instance by id.
 //   - validatorID: the id of validator
 func GetValidator(validatorID string) (validator *Validator, err error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return nil, sdkNotInitialized
 	}
 	var b []byte
@@ -727,7 +547,7 @@ func GetValidator(validatorID string) (validator *Validator, err error) {
 // GetValidators returns list of validators.
 //   - stakable: if true then only stakable validators are returned
 func GetValidators(stakable bool) (validators []*Validator, err error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return nil, sdkNotInitialized
 	}
 	var b []byte
@@ -751,11 +571,11 @@ func GetValidators(stakable bool) (validators []*Validator, err error) {
 
 // GetClientEncryptedPublicKey - get the client's public key
 func GetClientEncryptedPublicKey() (string, error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return "", sdkNotInitialized
 	}
 	encScheme := encryption.NewEncryptionScheme()
-	_, err := encScheme.Initialize(client.GetClient().Mnemonic)
+	_, err := encScheme.Initialize(client.Wallet().Mnemonic)
 	if err != nil {
 		return "", err
 	}
@@ -768,7 +588,7 @@ func GetClientEncryptedPublicKey() (string, error) {
 //
 // returns the allocation instance and error if any
 func GetAllocationFromAuthTicket(authTicket string) (*Allocation, error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return nil, sdkNotInitialized
 	}
 	sEnc, err := base64.StdEncoding.DecodeString(authTicket)
@@ -789,7 +609,7 @@ func GetAllocationFromAuthTicket(authTicket string) (*Allocation, error) {
 //
 // returns the allocation instance and error if any
 func GetAllocation(allocationID string) (*Allocation, error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return nil, sdkNotInitialized
 	}
 	params := make(map[string]string)
@@ -803,17 +623,7 @@ func GetAllocation(allocationID string) (*Allocation, error) {
 	if err != nil {
 		return nil, errors.New("allocation_decode_error", "Error decoding the allocation: "+err.Error()+" "+string(allocationBytes))
 	}
-	hashdata := allocationObj.Tx
-	sig, ok := zboxutil.SignCache.Get(hashdata)
-	if !ok {
-		sig, err = client.Sign(enc.Hash(hashdata))
-		zboxutil.SignCache.Add(hashdata, sig)
-		if err != nil {
-			return nil, err
-		}
-	}
 
-	allocationObj.sig = sig
 	allocationObj.numBlockDownloads = numBlockDownloads
 	allocationObj.InitAllocation()
 	return allocationObj, nil
@@ -871,7 +681,7 @@ func SetNumBlockDownloads(num int) {
 //
 // returns the list of allocations and error if any
 func GetAllocations() ([]*Allocation, error) {
-	return GetAllocationsForClient(zboxclient.GetClientID())
+	return GetAllocationsForClient(client.Id())
 }
 
 func getAllocationsInternal(clientID string, limit, offset int) ([]*Allocation, error) {
@@ -897,7 +707,7 @@ func getAllocationsInternal(clientID string, limit, offset int) ([]*Allocation, 
 //
 // returns the list of allocations and error if any
 func GetAllocationsForClient(clientID string) ([]*Allocation, error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return nil, sdkNotInitialized
 	}
 	limit, offset := 20, 0
@@ -968,8 +778,8 @@ type CreateAllocationOptions struct {
 func CreateAllocationWith(options CreateAllocationOptions) (
 	string, int64, *transaction.Transaction, error) {
 
-	return CreateAllocationForOwner(zboxclient.GetClientID(),
-		zboxclient.GetClientPublicKey(), options.DataShards, options.ParityShards,
+	return CreateAllocationForOwner(client.Id(),
+		client.PublicKey(), options.DataShards, options.ParityShards,
 		options.Size, options.ReadPrice, options.WritePrice, options.Lock,
 		options.BlobberIds, options.BlobberAuthTickets, options.ThirdPartyExtendable, options.IsEnterprise, options.Force, options.FileOptionsParams)
 }
@@ -1143,7 +953,7 @@ func GetFreeAllocationBlobbers(request map[string]interface{}) ([]string, error)
 //
 // returns the hash of the transaction, the nonce of the transaction and an error if any.
 func AddFreeStorageAssigner(name, publicKey string, individualLimit, totalLimit float64) (string, int64, error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
 
@@ -1169,7 +979,7 @@ func AddFreeStorageAssigner(name, publicKey string, individualLimit, totalLimit 
 //
 // returns the hash of the transaction, the nonce of the transaction and an error if any.
 func FinalizeAllocation(allocID string) (hash string, nonce int64, err error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
 	var sn = transaction.SmartContractTxnData{
@@ -1186,7 +996,7 @@ func FinalizeAllocation(allocID string) (hash string, nonce int64, err error) {
 //
 // returns the hash of the transaction, the nonce of the transaction and an error if any.
 func CancelAllocation(allocID string) (hash string, nonce int64, err error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
 	var sn = transaction.SmartContractTxnData{
@@ -1212,7 +1022,7 @@ const (
 //   - providerId is the id of the provider.
 //   - providerType` is the type of the provider, either 3 for `ProviderBlobber` or 4 for `ProviderValidator.
 func KillProvider(providerId string, providerType ProviderType) (string, int64, error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
 
@@ -1238,7 +1048,7 @@ func KillProvider(providerId string, providerType ProviderType) (string, int64, 
 //   - providerId is the id of the provider.
 //   - providerType` is the type of the provider, either 3 for `ProviderBlobber` or 4 for `ProviderValidator.
 func ShutdownProvider(providerType ProviderType, providerID string) (string, int64, error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
 
@@ -1265,7 +1075,7 @@ func ShutdownProvider(providerType ProviderType, providerID string) (string, int
 //   - providerId is the id of the provider.
 //   - providerType is the type of the provider.
 func CollectRewards(providerId string, providerType ProviderType) (string, int64, error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
 
@@ -1293,7 +1103,7 @@ func CollectRewards(providerId string, providerType ProviderType) (string, int64
 		return "", 0, fmt.Errorf("collect rewards provider type %v not implimented", providerType)
 	}
 
-	hash, _, n, _, err := smartContractTxn(scAddress, sn)
+	hash, _, n, _, err := transaction.SmartContractTxn(scAddress, sn, true)
 	return hash, n, err
 }
 
@@ -1305,7 +1115,7 @@ func CollectRewards(providerId string, providerType ProviderType) (string, int64
 //
 // returns the hash of the transaction, the nonce of the transaction and an error if any.
 func TransferAllocation(allocationId, newOwner, newOwnerPublicKey string) (string, int64, error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
 
@@ -1338,7 +1148,7 @@ func TransferAllocation(allocationId, newOwner, newOwnerPublicKey string) (strin
 // UpdateBlobberSettings updates the settings of a blobber (txn: `storagesc.update_blobber_settings`)
 //   - blob is the update blobber request inputs.
 func UpdateBlobberSettings(blob *UpdateBlobber) (resp string, nonce int64, err error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
 	var sn = transaction.SmartContractTxnData{
@@ -1352,7 +1162,7 @@ func UpdateBlobberSettings(blob *UpdateBlobber) (resp string, nonce int64, err e
 // UpdateValidatorSettings updates the settings of a validator (txn: `storagesc.update_validator_settings`)
 //   - v is the update validator request inputs.
 func UpdateValidatorSettings(v *UpdateValidator) (resp string, nonce int64, err error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
 
@@ -1367,7 +1177,7 @@ func UpdateValidatorSettings(v *UpdateValidator) (resp string, nonce int64, err 
 // ResetBlobberStats resets the stats of a blobber (txn: `storagesc.reset_blobber_stats`)
 //   - rbs is the reset blobber stats dto, contains the blobber id and its stats.
 func ResetBlobberStats(rbs *ResetBlobberStatsDto) (string, int64, error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
 
@@ -1380,7 +1190,7 @@ func ResetBlobberStats(rbs *ResetBlobberStatsDto) (string, int64, error) {
 }
 
 func ResetAllocationStats(allocationId string) (string, int64, error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
 
@@ -1393,7 +1203,7 @@ func ResetAllocationStats(allocationId string) (string, int64, error) {
 }
 
 func CommitToFabric(metaTxnData, fabricConfigJSON string) (string, error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return "", sdkNotInitialized
 	}
 	var fabricConfig struct {
@@ -1441,7 +1251,7 @@ func CommitToFabric(metaTxnData, fabricConfigJSON string) (string, error) {
 			return err
 		}
 		defer resp.Body.Close()
-		respBody, err := ioutil.ReadAll(resp.Body)
+		respBody, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return errors.Wrap(err, "Error reading response :")
 		}
@@ -1500,7 +1310,7 @@ func GetUpdateAllocationMinLock(
 	addBlobberId,
 	removeBlobberId string) (int64, error) {
 	updateAllocationRequest := make(map[string]interface{})
-	updateAllocationRequest["owner_id"] = zboxclient.GetClientID()
+	updateAllocationRequest["owner_id"] = client.Id()
 	updateAllocationRequest["owner_public_key"] = ""
 	updateAllocationRequest["id"] = allocationID
 	updateAllocationRequest["size"] = size
@@ -1575,4 +1385,23 @@ func updateMaskBit(mask uint16, index uint8, value bool) uint16 {
 	} else {
 		return mask & ^uint16(1<<index)
 	}
+}
+
+func StorageSmartContractTxn(sn transaction.SmartContractTxnData) (
+	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+
+	return storageSmartContractTxnValue(sn, 0)
+}
+
+func storageSmartContractTxn(sn transaction.SmartContractTxnData) (
+	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+
+	return storageSmartContractTxnValue(sn, 0)
+}
+
+func storageSmartContractTxnValue(sn transaction.SmartContractTxnData, value uint64) (
+	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+
+	// Fee is set during sdk initialization.
+	return transaction.SmartContractTxnValueFeeWithRetry(STORAGE_SCADDRESS, sn, value, client.TxnFee(), true)
 }

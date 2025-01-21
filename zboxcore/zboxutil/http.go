@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
@@ -972,7 +971,7 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 			}
 
 			defer response.Body.Close()
-			entityBytes, _ := ioutil.ReadAll(response.Body)
+			entityBytes, _ := io.ReadAll(response.Body)
 			mu.Lock()
 			if response.StatusCode > http.StatusBadRequest {
 				blockchain.Sharders.Fail(sharder)

@@ -10,8 +10,8 @@ import (
 	"math"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk_common/core/client"
 	"github.com/0chain/gosdk_common/core/transaction"
-	"github.com/0chain/gosdk_common/zboxcore/client"
 )
 
 // CreateAllocationForOwner creates a new allocation with the given options (txn: `storagesc.new_allocation_request`).
@@ -50,7 +50,7 @@ func CreateAllocationForOwner(
 		return "", 0, nil, errors.New("failed_get_allocation_blobbers", "failed to get blobbers for allocation: "+err.Error())
 	}
 
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return "", 0, nil, sdkNotInitialized
 	}
 
@@ -74,11 +74,11 @@ func CreateAllocationForOwner(
 //
 // returns the hash of the transaction, the nonce of the transaction and an error if any.
 func CreateFreeAllocation(marker string, value uint64) (string, int64, error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
 
-	recipientPublicKey := client.GetClientPublicKey()
+	recipientPublicKey := client.PublicKey()
 
 	var input = map[string]interface{}{
 		"recipient_public_key": recipientPublicKey,
@@ -126,7 +126,7 @@ func UpdateAllocation(
 		return "", 0, errors.New("invalid_lock", "int64 overflow on lock value")
 	}
 
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
 
@@ -136,7 +136,7 @@ func UpdateAllocation(
 	}
 
 	updateAllocationRequest := make(map[string]interface{})
-	updateAllocationRequest["owner_id"] = client.GetClientID()
+	updateAllocationRequest["owner_id"] = client.Id()
 	updateAllocationRequest["owner_public_key"] = ""
 	updateAllocationRequest["id"] = allocationID
 	updateAllocationRequest["size"] = size
@@ -175,7 +175,7 @@ func GetUpdateAllocTicket(allocationID, userID, operationType string, roundExpir
 //   - value: value to lock
 //   - fee: transaction fee
 func StakePoolLock(providerType ProviderType, providerID string, value, fee uint64) (hash string, nonce int64, err error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
 
@@ -211,7 +211,7 @@ func StakePoolLock(providerType ProviderType, providerID string, value, fee uint
 		return "", 0, errors.Newf("stake_pool_lock", "unsupported provider type: %v", providerType)
 	}
 
-	hash, _, nonce, _, err = smartContractTxnValueFeeWithRetry(scAddress, sn, value, fee)
+	hash, _, nonce, _, err = transaction.SmartContractTxnValueFeeWithRetry(scAddress, sn, value, fee, true)
 	return
 }
 
@@ -225,7 +225,7 @@ func StakePoolLock(providerType ProviderType, providerID string, value, fee uint
 //   - providerID: provider ID
 //   - fee: transaction fee
 func StakePoolUnlock(providerType ProviderType, providerID, clientID string, fee uint64) (unstake int64, nonce int64, err error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return 0, 0, sdkNotInitialized
 	}
 
@@ -263,7 +263,7 @@ func StakePoolUnlock(providerType ProviderType, providerID, clientID string, fee
 	}
 
 	var out string
-	if _, out, nonce, _, err = smartContractTxnValueFeeWithRetry(scAddress, sn, 0, fee); err != nil {
+	if _, out, nonce, _, err = transaction.SmartContractTxnValueFeeWithRetry(scAddress, sn, 0, fee, true); err != nil {
 		return // an error
 	}
 
@@ -275,37 +275,6 @@ func StakePoolUnlock(providerType ProviderType, providerID, clientID string, fee
 	return spuu.Amount, nonce, nil
 }
 
-// ReadPoolLock locks given number of tokes for given duration in read pool.
-//   - tokens: number of tokens to lock
-//   - fee: transaction fee
-func ReadPoolLock(tokens, fee uint64) (hash string, nonce int64, err error) {
-	if !sdkInitialized {
-		return "", 0, sdkNotInitialized
-	}
-
-	var sn = transaction.SmartContractTxnData{
-		Name:      transaction.STORAGESC_READ_POOL_LOCK,
-		InputArgs: nil,
-	}
-	hash, _, nonce, _, err = smartContractTxnValueFeeWithRetry(STORAGE_SCADDRESS, sn, tokens, fee)
-	return
-}
-
-// ReadPoolUnlock unlocks tokens in expired read pool
-//   - fee: transaction fee
-func ReadPoolUnlock(fee uint64) (hash string, nonce int64, err error) {
-	if !sdkInitialized {
-		return "", 0, sdkNotInitialized
-	}
-
-	var sn = transaction.SmartContractTxnData{
-		Name:      transaction.STORAGESC_READ_POOL_UNLOCK,
-		InputArgs: nil,
-	}
-	hash, _, nonce, _, err = smartContractTxnValueFeeWithRetry(STORAGE_SCADDRESS, sn, 0, fee)
-	return
-}
-
 //
 // write pool
 //
@@ -315,7 +284,7 @@ func ReadPoolUnlock(fee uint64) (hash string, nonce int64, err error) {
 //   - tokens: number of tokens to lock
 //   - fee: transaction fee
 func WritePoolLock(allocID string, tokens, fee uint64) (hash string, nonce int64, err error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
 
@@ -331,7 +300,7 @@ func WritePoolLock(allocID string, tokens, fee uint64) (hash string, nonce int64
 		InputArgs: &req,
 	}
 
-	hash, _, nonce, _, err = smartContractTxnValueFeeWithRetry(STORAGE_SCADDRESS, sn, tokens, fee)
+	hash, _, nonce, _, err = transaction.SmartContractTxnValueFeeWithRetry(STORAGE_SCADDRESS, sn, tokens, fee, true)
 	return
 }
 
@@ -339,7 +308,7 @@ func WritePoolLock(allocID string, tokens, fee uint64) (hash string, nonce int64
 //   - allocID: allocation ID
 //   - fee: transaction fee
 func WritePoolUnlock(allocID string, fee uint64) (hash string, nonce int64, err error) {
-	if !sdkInitialized {
+	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
 
@@ -354,43 +323,6 @@ func WritePoolUnlock(allocID string, fee uint64) (hash string, nonce int64, err 
 		Name:      transaction.STORAGESC_WRITE_POOL_UNLOCK,
 		InputArgs: &req,
 	}
-	hash, _, nonce, _, err = smartContractTxnValueFeeWithRetry(STORAGE_SCADDRESS, sn, 0, fee)
+	hash, _, nonce, _, err = transaction.SmartContractTxnValueFeeWithRetry(STORAGE_SCADDRESS, sn, 0, fee, true)
 	return
-}
-
-func smartContractTxn(scAddress string, sn transaction.SmartContractTxnData) (
-	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
-	return smartContractTxnValue(scAddress, sn, 0)
-}
-
-func StorageSmartContractTxn(sn transaction.SmartContractTxnData) (
-	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
-
-	return storageSmartContractTxnValue(sn, 0)
-}
-
-func storageSmartContractTxn(sn transaction.SmartContractTxnData) (
-	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
-
-	return storageSmartContractTxnValue(sn, 0)
-}
-
-func smartContractTxnValue(scAddress string, sn transaction.SmartContractTxnData, value uint64) (
-	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
-
-	return smartContractTxnValueFeeWithRetry(scAddress, sn, value, client.TxnFee())
-}
-
-func storageSmartContractTxnValue(sn transaction.SmartContractTxnData, value uint64) (
-	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
-
-	// Fee is set during sdk initialization.
-	return smartContractTxnValueFeeWithRetry(STORAGE_SCADDRESS, sn, value, client.TxnFee())
-}
-
-func smartContractTxnValueFeeWithRetry(scAddress string, sn transaction.SmartContractTxnData,
-	value, fee uint64) (hash, out string, nonce int64, t *transaction.Transaction, err error) {
-
-	// Fee is set during sdk initialization.
-	return transaction.SmartContractTxnValueFeeWithRetry(scAddress, sn, value, fee, true)
 }

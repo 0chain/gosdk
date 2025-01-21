@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -20,7 +19,6 @@ import (
 	"github.com/0chain/gosdk_common/constants"
 	"github.com/0chain/gosdk_common/core/common"
 	"github.com/0chain/gosdk_common/zboxcore/blockchain"
-	"github.com/0chain/gosdk_common/zboxcore/client"
 	"github.com/0chain/gosdk_common/zboxcore/fileref"
 	"github.com/0chain/gosdk_common/zboxcore/logger"
 	l "github.com/0chain/gosdk_common/zboxcore/logger"
@@ -65,7 +63,7 @@ func (req *DeleteRequest) deleteBlobberFile(
 	query.Add("connection_id", req.connectionID)
 	query.Add("path", req.remotefilepath)
 
-	httpreq, err := zboxutil.NewDeleteRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, query)
+	httpreq, err := zboxutil.NewDeleteRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, query, req.allocationObj.Owner)
 	if err != nil {
 		l.Logger.Error(blobber.Baseurl, "Error creating delete request", err)
 		return err
@@ -107,7 +105,7 @@ func (req *DeleteRequest) deleteBlobberFile(
 				return
 			}
 			if resp.StatusCode == http.StatusBadRequest {
-				body, err := ioutil.ReadAll(resp.Body)
+				body, err := io.ReadAll(resp.Body)
 				if err != nil {
 					logger.Logger.Error("Failed to read response body", err)
 				}
@@ -138,7 +136,7 @@ func (req *DeleteRequest) deleteBlobberFile(
 				return
 			}
 
-			respBody, err = ioutil.ReadAll(resp.Body)
+			respBody, err = io.ReadAll(resp.Body)
 			if err != nil {
 				l.Logger.Error(blobber.Baseurl, "Response: ", string(respBody))
 				return
@@ -175,7 +173,7 @@ func (req *DeleteRequest) getObjectTreeFromBlobber(pos uint64) (
 
 	fRefEntity, err = getObjectTreeFromBlobber(
 		req.ctx, req.allocationID, req.allocationTx, req.sig,
-		req.remotefilepath, req.blobbers[pos])
+		req.remotefilepath, req.blobbers[pos], req.allocationObj.Owner)
 	return
 }
 
@@ -188,6 +186,7 @@ func (req *DeleteRequest) getFileMetaFromBlobber(pos uint64) (fileRef *fileref.F
 		}
 	}()
 	listReq := &ListRequest{
+		ClientId:       req.allocationObj.Owner,
 		allocationID:   req.allocationID,
 		allocationTx:   req.allocationTx,
 		blobbers:       req.blobbers,
@@ -279,7 +278,7 @@ func (req *DeleteRequest) ProcessDelete() (err error) {
 				req.consensus.consensusThresh, req.consensus.getConsensus()))
 	}
 
-	writeMarkerMutex, err := CreateWriteMarkerMutex(client.GetClient(), req.allocationObj)
+	writeMarkerMutex, err := CreateWriteMarkerMutex(req.allocationObj)
 	if err != nil {
 		return fmt.Errorf("Delete failed: %s", err.Error())
 	}
@@ -307,6 +306,7 @@ func (req *DeleteRequest) ProcessDelete() (err error) {
 		newChange.Operation = constants.FileOperationDelete
 		newChange.Size = newChange.FileMetaRef.GetSize()
 		commitReq := &CommitRequest{
+			ClientId:     req.allocationObj.Owner,
 			allocationID: req.allocationID,
 			allocationTx: req.allocationTx,
 			sig:          req.sig,

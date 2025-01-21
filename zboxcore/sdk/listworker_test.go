@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
@@ -14,9 +13,9 @@ import (
 	"testing"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk_common/core/client"
 	"github.com/0chain/gosdk_common/core/zcncrypto"
 	"github.com/0chain/gosdk_common/zboxcore/blockchain"
-	zclient "github.com/0chain/gosdk_common/zboxcore/client"
 	"github.com/0chain/gosdk_common/zboxcore/fileref"
 	"github.com/0chain/gosdk_common/zboxcore/marker"
 	"github.com/0chain/gosdk_common/zboxcore/mocks"
@@ -40,11 +39,10 @@ func TestListRequest_getListInfoFromBlobber(t *testing.T) {
 	)
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
-	}
+	})
 	type parameters struct {
 		listHttpResp   listResponse
 		ListResult     fileref.ListResult
@@ -79,7 +77,7 @@ func TestListRequest_getListInfoFromBlobber(t *testing.T) {
 				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 					return strings.HasPrefix(req.URL.Path, name)
 				})).Return(&http.Response{
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+					Body:       io.NopCloser(bytes.NewReader([]byte(""))),
 					StatusCode: p.respStatusCode,
 				}, errors.New("", mockErrorMessage))
 			},
@@ -96,7 +94,7 @@ func TestListRequest_getListInfoFromBlobber(t *testing.T) {
 				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 					return strings.HasPrefix(req.URL.Path, name)
 				})).Return(&http.Response{
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte(mockErrorMessage))),
+					Body:       io.NopCloser(bytes.NewReader([]byte(mockErrorMessage))),
 					StatusCode: p.respStatusCode,
 				}, nil)
 			},
@@ -113,7 +111,7 @@ func TestListRequest_getListInfoFromBlobber(t *testing.T) {
 				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 					return strings.HasPrefix(req.URL.Path, name)
 				})).Return(&http.Response{
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte("this is not json format"))),
+					Body:       io.NopCloser(bytes.NewReader([]byte("this is not json format"))),
 					StatusCode: p.respStatusCode,
 				}, nil)
 			},
@@ -163,7 +161,7 @@ func TestListRequest_getListInfoFromBlobber(t *testing.T) {
 					Body: func(p parameters) io.ReadCloser {
 						jsonFR, err := json.Marshal(p.ListResult)
 						require.NoError(t, err)
-						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+						return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 					}(p),
 				}, nil).Once()
 			},
@@ -178,6 +176,7 @@ func TestListRequest_getListInfoFromBlobber(t *testing.T) {
 				Baseurl: tt.name,
 			}
 			req := &ListRequest{
+				ClientId:       mockClientId,
 				allocationID:   mockAllocationId,
 				allocationTx:   mockAllocationTxId,
 				ctx:            context.TODO(),
@@ -214,11 +213,10 @@ func TestListRequest_GetListFromBlobbers(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
+	client.SetWallet(zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
-	}
+	})
 
 	setupHttpResponses := func(t *testing.T, name string, numBlobbers int) {
 		for i := 0; i < numBlobbers; i++ {
@@ -237,7 +235,7 @@ func TestListRequest_GetListFromBlobbers(t *testing.T) {
 					})
 					fmt.Println("returned", string(jsonFR))
 					require.NoError(t, err)
-					return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+					return io.NopCloser(bytes.NewReader([]byte(jsonFR)))
 				}(),
 			}, nil)
 		}
@@ -281,6 +279,7 @@ func TestListRequest_GetListFromBlobbers(t *testing.T) {
 				tt.setup(t, tt.name, tt.numBlobbers)
 			}
 			req := &ListRequest{
+				ClientId:     mockClientId,
 				allocationID: mockAllocationId,
 				allocationTx: mockAllocationTxId,
 				ctx:          context.TODO(),
@@ -299,6 +298,7 @@ func TestListRequest_GetListFromBlobbers(t *testing.T) {
 			}
 			got, _ := req.GetListFromBlobbers()
 			expectedResult := &ListResult{
+				ClientId:     mockClientId,
 				Type:         mockType,
 				Size:         0,
 				deleteMask:   zboxutil.NewUint128(1).Lsh(uint64(len(req.blobbers))).Sub64(1),

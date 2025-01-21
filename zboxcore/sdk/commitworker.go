@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"strconv"
@@ -50,6 +49,7 @@ func SuccessCommitResult() *CommitResult {
 const MARKER_VERSION = "v2"
 
 type CommitRequest struct {
+	ClientId      string
 	changes       []allocationchange.AllocationChange
 	blobber       *blockchain.StorageNode
 	allocationID  string
@@ -242,7 +242,7 @@ func (commitreq *CommitRequest) calculateHashRequest(ctx context.Context, paths 
 		if resp.StatusCode != http.StatusOK {
 			l.Logger.Error("Calculate hash response : ", resp.StatusCode)
 		}
-		resp_body, err := ioutil.ReadAll(resp.Body)
+		resp_body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			l.Logger.Error("Calculate hash: Resp", err)
 			return err

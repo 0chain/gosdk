@@ -15,6 +15,7 @@ import (
 )
 
 type ShareRequest struct {
+	ClientId          string
 	allocationID      string
 	allocationTx      string
 	sig               string

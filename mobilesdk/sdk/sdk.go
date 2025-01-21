@@ -17,9 +17,9 @@ import (
 
 	"github.com/0chain/gosdk/core/version"
 	"github.com/0chain/gosdk/zboxcore/sdk"
+	"github.com/0chain/gosdk_common/core/client"
 	"github.com/0chain/gosdk_common/core/conf"
 	"github.com/0chain/gosdk_common/core/util"
-	"github.com/0chain/gosdk_common/zboxcore/client"
 	l "github.com/0chain/gosdk_common/zboxcore/logger"
 
 	"github.com/0chain/gosdk/mobilesdk/zbox"
@@ -126,11 +126,18 @@ func InitStorageSDK(clientJson string, configJson string) (*StorageSDK, error) {
 	l.Logger.Info(configObj.ChainID)
 	l.Logger.Info(configObj.SignatureScheme)
 	l.Logger.Info(configObj.PreferredBlobbers)
-	if err = client.InitSDK(clientJson,
-		configObj.BlockWorker,
-		configObj.ChainID,
-		configObj.SignatureScheme,
-		0, false, true); err != nil {
+	params := client.InitSdkOptions{
+		WalletJSON:      clientJson,
+		BlockWorker:     configObj.BlockWorker,
+		ChainID:         configObj.ChainID,
+		SignatureScheme: configObj.SignatureScheme,
+		Nonce:           int64(0),
+		AddWallet:       true,
+		ZboxHost:        configObj.ZboxHost,
+		ZboxAppType:     configObj.ZboxAppType,
+	}
+
+	if err = client.InitSDKWithWebApp(params); err != nil {
 		l.Logger.Error(err)
 		return nil, err
 	}
@@ -365,12 +372,12 @@ func (s *StorageSDK) GetVersion() string {
 //   - extend: extend allocation
 //   - allocationID: allocation ID
 //   - lock: Number of tokens to lock to the allocation after the update
-func (s *StorageSDK) UpdateAllocation(size int64, extend bool, allocationID string, lock uint64) (hash string, err error) {
+func (s *StorageSDK) UpdateAllocation(size, authRoundExpiry int64, extend bool, allocationID string, lock uint64) (hash string, err error) {
 	if lock > math.MaxInt64 {
 		return "", errors.Errorf("int64 overflow in lock")
 	}
 
-	hash, _, err = sdk.UpdateAllocation(size, extend, allocationID, lock, "", "", "", false, &sdk.FileOptionsParameters{})
+	hash, _, err = sdk.UpdateAllocation(size, authRoundExpiry, extend, allocationID, lock, "", "", "", "", "", false, &sdk.FileOptionsParameters{}, "")
 	return hash, err
 }
 

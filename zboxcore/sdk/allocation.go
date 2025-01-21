@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math"
 	"mime/multipart"
 	"net/http"
@@ -25,10 +24,12 @@ import (
 	"github.com/0chain/errors"
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk_common/constants"
+	"github.com/0chain/gosdk_common/core/client"
 	"github.com/0chain/gosdk_common/core/common"
 	"github.com/0chain/gosdk_common/core/encryption"
 	"github.com/0chain/gosdk_common/core/pathutil"
 	"github.com/0chain/gosdk_common/core/sys"
+	"github.com/0chain/gosdk_common/core/transaction"
 	"github.com/0chain/gosdk_common/zboxcore/blockchain"
 	"github.com/0chain/gosdk_common/zboxcore/fileref"
 	"github.com/0chain/gosdk_common/zboxcore/logger"
@@ -364,16 +365,12 @@ func (a *Allocation) SetCheckStatus(checkStatus bool) {
 }
 
 func getPriceRange(name string) (PriceRange, error) {
-	conf, err := GetStorageSCConfig()
+	conf, err := transaction.GetConfig("storage_sc_config")
 	if err != nil {
 		return PriceRange{}, err
 	}
 	f := conf.Fields[name]
-	fStr, ok := f.(string)
-	if !ok {
-		return PriceRange{}, fmt.Errorf("type is wrong")
-	}
-	mrp, err := strconv.ParseFloat(fStr, 64)
+	mrp, err := strconv.ParseFloat(f, 64)
 	if err != nil {
 		return PriceRange{}, err
 	}
@@ -401,7 +398,7 @@ func (a *Allocation) GetBlobberStats() map[string]*BlobberAllocationStats {
 	wg.Add(numList)
 	rspCh := make(chan *BlobberAllocationStats, numList)
 	for _, blobber := range a.Blobbers {
-		go getAllocationDataFromBlobber(blobber, a.ID, a.Tx, rspCh, wg)
+		go getAllocationDataFromBlobber(blobber, a.ID, a.Tx, rspCh, wg, a.Owner)
 	}
 	wg.Wait()
 	result := make(map[string]*BlobberAllocationStats, len(a.Blobbers))
@@ -445,7 +442,7 @@ func (a *Allocation) InitAllocation() {
 }
 
 func (a *Allocation) isInitialized() bool {
-	return a.initialized && sdkInitialized
+	return a.initialized && client.IsSDKInitialized()
 }
 
 func (a *Allocation) startWorker(ctx context.Context) {
@@ -861,7 +858,7 @@ func (a *Allocation) GetCurrentVersion() (bool, error) {
 		go func(blobber *blockchain.StorageNode) {
 
 			defer wg.Done()
-			wr, err := GetWritemarker(a.ID, a.Tx, a.sig, blobber.ID, blobber.Baseurl)
+			wr, err := GetWritemarker(a.ID, a.Tx, a.sig, blobber.ID, blobber.Baseurl, a.Owner)
 			if err != nil {
 				atomic.AddInt32(&errCnt, 1)
 				logger.Logger.Error("error during getWritemarke", zap.Error(err))
@@ -870,6 +867,7 @@ func (a *Allocation) GetCurrentVersion() (bool, error) {
 				markerChan <- nil
 			} else {
 				markerChan <- &RollbackBlobber{
+					ClientId:     a.Owner,
 					blobber:      blobber,
 					lvm:          wr,
 					commitResult: &CommitResult{},
@@ -924,7 +922,7 @@ func (a *Allocation) GetCurrentVersion() (bool, error) {
 	}
 
 	if prevVersion > latestVersion {
-		prevVersion, latestVersion = latestVersion, prevVersion
+		prevVersion, latestVersion = latestVersion, prevVersion //nolint:ineffassign,staticcheck
 	}
 
 	// TODO: Check if allocation can be repaired
@@ -965,6 +963,7 @@ func (a *Allocation) RepairRequired(remotepath string) (zboxutil.Uint128, zboxut
 	}
 
 	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
+	listReq.ClientId = a.Owner
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.sig = a.sig
@@ -1575,6 +1574,7 @@ func (a *Allocation) ListDirFromAuthTicket(authTicket string, lookupHash string,
 	}
 
 	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
+	listReq.ClientId = a.Owner
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.sig = a.sig
@@ -1615,6 +1615,7 @@ func (a *Allocation) ListDir(path string, opts ...ListRequestOptions) (*ListResu
 		return nil, errors.New("invalid_path", "Path should be valid and absolute")
 	}
 	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
+	listReq.ClientId = a.Owner
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.sig = a.sig
@@ -1643,6 +1644,7 @@ func (a *Allocation) getRefs(path, pathHash, authToken, offsetPath, updatedDate,
 	}
 
 	oTreeReq := &ObjectTreeRequest{
+		ClientId:       a.Owner,
 		allocationID:   a.ID,
 		allocationTx:   a.Tx,
 		sig:            a.sig,
@@ -1872,6 +1874,7 @@ func (a *Allocation) GetRecentlyAddedRefs(page int, fromDate int64, pageLimit in
 
 	offset := int64(page-1) * int64(pageLimit)
 	req := &RecentlyAddedRefRequest{
+		ClientId:     a.Owner,
 		allocationID: a.ID,
 		allocationTx: a.Tx,
 		sig:          a.sig,
@@ -1900,6 +1903,7 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 
 	result := &ConsolidatedFileMeta{}
 	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
+	listReq.ClientId = a.Owner
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.sig = a.sig
@@ -2020,6 +2024,7 @@ func (a *Allocation) GetFileMetaFromAuthTicket(authTicket string, lookupHash str
 	}
 
 	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
+	listReq.ClientId = a.Owner
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.sig = a.sig
@@ -2202,7 +2207,7 @@ func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
 		query.Add("path", path)
 		query.Add("refereeClientID", refereeClientID)
 
-		httpreq, err := zboxutil.NewRevokeShareRequest(baseUrl, a.ID, a.Tx, a.sig, query)
+		httpreq, err := zboxutil.NewRevokeShareRequest(baseUrl, a.ID, a.Tx, a.sig, query, a.Owner)
 		if err != nil {
 			return err
 		}
@@ -2217,7 +2222,7 @@ func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
 				}
 				defer resp.Body.Close()
 
-				respbody, err := ioutil.ReadAll(resp.Body)
+				respbody, err := io.ReadAll(resp.Body)
 				if err != nil {
 					l.Logger.Error("Error: Resp ", err)
 					return err
@@ -2295,6 +2300,7 @@ func (a *Allocation) GetAuthTicket(path, filename string,
 	}
 
 	shareReq := &ShareRequest{
+		ClientId:          a.Owner,
 		expirationSeconds: expiration,
 		allocationID:      a.ID,
 		allocationTx:      a.Tx,
@@ -2365,7 +2371,7 @@ func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKe
 		if err := formWriter.Close(); err != nil {
 			return err
 		}
-		httpreq, err := zboxutil.NewShareRequest(url, a.ID, a.Tx, a.sig, body)
+		httpreq, err := zboxutil.NewShareRequest(url, a.ID, a.Tx, a.sig, body, a.Owner)
 		if err != nil {
 			return err
 		}
@@ -2381,7 +2387,7 @@ func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKe
 				}
 				defer resp.Body.Close()
 
-				respbody, err := ioutil.ReadAll(resp.Body)
+				respbody, err := io.ReadAll(resp.Body)
 				if err != nil {
 					l.Logger.Error("Error: Resp ", err)
 					return err

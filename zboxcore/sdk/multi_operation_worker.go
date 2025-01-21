@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"mime/multipart"
 	"net/http"
 	"sync"
@@ -15,7 +15,6 @@ import (
 
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk_common/core/common"
-	"github.com/0chain/gosdk_common/zboxcore/client"
 	"github.com/0chain/gosdk_common/zboxcore/fileref"
 	"github.com/0chain/gosdk_common/zboxcore/logger"
 	l "github.com/0chain/gosdk_common/zboxcore/logger"
@@ -96,7 +95,7 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 			formWriter.Close()
 
 			var httpreq *http.Request
-			httpreq, err = zboxutil.NewConnectionRequest(blobber.Baseurl, mo.allocationObj.ID, mo.allocationObj.Tx, mo.allocationObj.sig, body)
+			httpreq, err = zboxutil.NewConnectionRequest(blobber.Baseurl, mo.allocationObj.ID, mo.allocationObj.Tx, mo.allocationObj.sig, body, mo.allocationObj.Owner)
 			if err != nil {
 				l.Logger.Error(blobber.Baseurl, "Error creating new connection request", err)
 				return
@@ -118,7 +117,7 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 				defer resp.Body.Close()
 			}
 			var respBody []byte
-			respBody, err = ioutil.ReadAll(resp.Body)
+			respBody, err = io.ReadAll(resp.Body)
 			if err != nil {
 				logger.Logger.Error("Error: Resp ", err)
 				return
@@ -227,7 +226,7 @@ func (mo *MultiOperation) Process() error {
 	// blobber 2 and so on.
 	start := time.Now()
 
-	writeMarkerMutex, err := CreateWriteMarkerMutex(client.GetClient(), mo.allocationObj)
+	writeMarkerMutex, err := CreateWriteMarkerMutex(mo.allocationObj)
 	if err != nil {
 		return fmt.Errorf("Operation failed: %s", err.Error())
 	}
@@ -304,6 +303,7 @@ func (mo *MultiOperation) Process() error {
 	for i := mo.operationMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		commitReq := &CommitRequest{
+			ClientId:     mo.allocationObj.Owner,
 			allocationID: mo.allocationObj.ID,
 			allocationTx: mo.allocationObj.Tx,
 			sig:          mo.allocationObj.sig,

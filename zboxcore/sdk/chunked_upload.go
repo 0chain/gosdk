@@ -18,12 +18,12 @@ import (
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk_common/constants"
+	"github.com/0chain/gosdk_common/core/client"
 	"github.com/0chain/gosdk_common/core/common"
 	coreEncryption "github.com/0chain/gosdk_common/core/encryption"
 	"github.com/0chain/gosdk_common/core/sys"
 	"github.com/0chain/gosdk_common/core/util"
 	"github.com/0chain/gosdk_common/zboxcore/blockchain"
-	"github.com/0chain/gosdk_common/zboxcore/client"
 	"github.com/0chain/gosdk_common/zboxcore/encryption"
 	"github.com/0chain/gosdk_common/zboxcore/fileref"
 	"github.com/0chain/gosdk_common/zboxcore/logger"
@@ -256,7 +256,7 @@ func CreateChunkedUpload(
 
 	}
 
-	su.writeMarkerMutex, err = CreateWriteMarkerMutex(client.GetClient(), su.allocationObj)
+	su.writeMarkerMutex, err = CreateWriteMarkerMutex(su.allocationObj)
 	if err != nil {
 		return nil, err
 	}
@@ -383,7 +383,7 @@ func (su *ChunkedUpload) createEncscheme() encryption.EncryptionScheme {
 			return nil
 		}
 	} else {
-		mnemonic := client.GetClient().Mnemonic
+		mnemonic := client.Mnemonic()
 		if mnemonic == "" {
 			return nil
 		}

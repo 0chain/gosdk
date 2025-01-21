@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"mime/multipart"
 	"net/http"
 	"path"
@@ -17,7 +17,6 @@ import (
 	"github.com/0chain/gosdk_common/core/common"
 	"github.com/0chain/gosdk_common/core/util"
 	"github.com/0chain/gosdk_common/zboxcore/blockchain"
-	"github.com/0chain/gosdk_common/zboxcore/client"
 	"github.com/0chain/gosdk_common/zboxcore/fileref"
 	"github.com/0chain/gosdk_common/zboxcore/logger"
 	l "github.com/0chain/gosdk_common/zboxcore/logger"
@@ -86,7 +85,7 @@ func (req *DirRequest) ProcessDir(a *Allocation) error {
 		return errors.New("consensus_not_met", "directory creation failed due to consensus not met")
 	}
 
-	writeMarkerMU, err := CreateWriteMarkerMutex(client.GetClient(), a)
+	writeMarkerMU, err := CreateWriteMarkerMutex(a)
 	if err != nil {
 		return fmt.Errorf("directory creation failed. Err: %s", err.Error())
 	}
@@ -187,7 +186,7 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode, pos u
 	}
 
 	formWriter.Close()
-	httpreq, err := zboxutil.NewCreateDirRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body)
+	httpreq, err := zboxutil.NewCreateDirRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body, req.allocationObj.Owner)
 	if err != nil {
 		l.Logger.Error(blobber.Baseurl, "Error creating dir request", err)
 		return err, false
@@ -237,7 +236,7 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode, pos u
 				return
 			}
 
-			respBody, err = ioutil.ReadAll(resp.Body)
+			respBody, err = io.ReadAll(resp.Body)
 			if err != nil {
 				l.Logger.Error(err)
 				return
@@ -289,6 +288,7 @@ type DirOperation struct {
 func (dirOp *DirOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
 	refs := make([]fileref.RefEntity, len(allocObj.Blobbers))
 	dR := &DirRequest{
+		allocationObj: allocObj,
 		allocationID:  allocObj.ID,
 		allocationTx:  allocObj.Tx,
 		connectionID:  connectionID,
