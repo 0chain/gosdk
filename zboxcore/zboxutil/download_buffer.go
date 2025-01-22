@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/0chain/gosdk/core/sys"
+	"github.com/0chain/gosdk_common/core/sys"
 	"github.com/valyala/bytebufferpool"
 )
 

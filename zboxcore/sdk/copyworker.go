@@ -18,16 +18,16 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
-	"github.com/0chain/gosdk/constants"
-	"github.com/0chain/gosdk/core/common"
-	"github.com/0chain/gosdk/core/util"
-	"github.com/0chain/gosdk/zboxcore/fileref"
-	"github.com/0chain/gosdk/zboxcore/logger"
+	"github.com/0chain/gosdk_common/constants"
+	"github.com/0chain/gosdk_common/core/common"
+	"github.com/0chain/gosdk_common/core/util"
+	"github.com/0chain/gosdk_common/zboxcore/fileref"
+	"github.com/0chain/gosdk_common/zboxcore/logger"
 
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
-	"github.com/0chain/gosdk/zboxcore/blockchain"
-	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/0chain/gosdk_common/zboxcore/blockchain"
+	l "github.com/0chain/gosdk_common/zboxcore/logger"
 )
 
 type CopyRequest struct {

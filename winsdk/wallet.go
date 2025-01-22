@@ -11,9 +11,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/0chain/gosdk/core/screstapi"
+	"github.com/0chain/gosdk_common/core/screstapi"
 
-	"github.com/0chain/gosdk/zcncore"
+	"github.com/0chain/gosdk_common/zcncore"
 )
 
 // CreateWallet - create a new wallet, and save it to ~/.zcn/wallet.json

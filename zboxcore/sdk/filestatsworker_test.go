@@ -4,7 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/0chain/gosdk/zboxcore/mocks"
+
+	"github.com/0chain/gosdk_common/zboxcore/mocks"
 
 	"io"
 	"mime"
@@ -15,12 +16,12 @@ import (
 	"testing"
 
 	"github.com/0chain/errors"
-	"github.com/0chain/gosdk/core/client"
-	"github.com/0chain/gosdk/core/encryption"
-	"github.com/0chain/gosdk/core/zcncrypto"
-	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/0chain/gosdk_common/core/client"
+	"github.com/0chain/gosdk_common/core/encryption"
+	"github.com/0chain/gosdk_common/core/zcncrypto"
+	"github.com/0chain/gosdk_common/zboxcore/blockchain"
+	"github.com/0chain/gosdk_common/zboxcore/fileref"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )

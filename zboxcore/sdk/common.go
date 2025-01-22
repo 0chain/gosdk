@@ -13,11 +13,11 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
-	"github.com/0chain/gosdk/constants"
-	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/zboxcore/fileref"
-	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/0chain/gosdk_common/constants"
+	"github.com/0chain/gosdk_common/zboxcore/blockchain"
+	"github.com/0chain/gosdk_common/zboxcore/fileref"
+	l "github.com/0chain/gosdk_common/zboxcore/logger"
 )
 
 func getObjectTreeFromBlobber(ctx context.Context, allocationID, allocationTx, sig string, remoteFilePath string, blobber *blockchain.StorageNode, clientId ...string) (fileref.RefEntity, error) {

@@ -3,7 +3,7 @@
 package mocks
 
 import (
-	fileref "github.com/0chain/gosdk/zboxcore/fileref"
+	fileref "github.com/0chain/gosdk_common/zboxcore/fileref"
 	mock "github.com/stretchr/testify/mock"
 )
 

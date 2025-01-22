@@ -47,6 +47,7 @@ require (
 )
 
 require (
+	github.com/0chain/gosdk_common v0.0.0-20250121151838-b0477651681e // indirect
 	github.com/VictoriaMetrics/fastcache v1.6.0 // indirect
 	github.com/andybalholm/brotli v1.0.5 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.3.2 // indirect

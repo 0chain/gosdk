@@ -5,9 +5,9 @@ import (
 	"path"
 	"strings"
 
-	"github.com/0chain/gosdk/core/common"
-	"github.com/0chain/gosdk/core/util"
-	"github.com/0chain/gosdk/zboxcore/fileref"
+	"github.com/0chain/gosdk_common/core/common"
+	"github.com/0chain/gosdk_common/core/util"
+	"github.com/0chain/gosdk_common/zboxcore/fileref"
 	"github.com/google/uuid"
 )
 

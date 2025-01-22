@@ -4,7 +4,7 @@ package blockchain
 import (
 	"sync/atomic"
 
-	"github.com/0chain/gosdk/zboxcore/marker"
+	"github.com/0chain/gosdk_common/zboxcore/marker"
 )
 
 // StakePoolSettings information.

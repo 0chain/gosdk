@@ -10,9 +10,9 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/0chain/gosdk/core/client"
-	"github.com/0chain/gosdk/core/zcncrypto"
-	"github.com/0chain/gosdk/wasmsdk/jsbridge"
+	"github.com/0chain/gosdk_common/core/client"
+	"github.com/0chain/gosdk_common/core/zcncrypto"
+	"github.com/0chain/gosdk_common/wasmsdk/jsbridge"
 )
 
 func setWallet(clientID, clientKey, peerPublicKey, publicKey, privateKey, mnemonic string, isSplit bool) error {

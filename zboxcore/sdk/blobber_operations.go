@@ -8,10 +8,10 @@ import (
 	"math"
 
 	"github.com/0chain/errors"
-	"github.com/0chain/gosdk/core/client"
-	"github.com/0chain/gosdk/core/encryption"
-	"github.com/0chain/gosdk/core/transaction"
-	"github.com/0chain/gosdk/zboxcore/logger"
+	"github.com/0chain/gosdk_common/core/client"
+	"github.com/0chain/gosdk_common/core/encryption"
+	"github.com/0chain/gosdk_common/core/transaction"
+	"github.com/0chain/gosdk_common/zboxcore/logger"
 	"go.uber.org/zap"
 )
 

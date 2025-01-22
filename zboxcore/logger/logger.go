@@ -2,7 +2,7 @@
 package logger
 
 import (
-	"github.com/0chain/gosdk/core/logger"
+	"github.com/0chain/gosdk_common/core/logger"
 )
 
 // Logger global logger instance

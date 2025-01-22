@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/0chain/gosdk/core/common"
-	"github.com/0chain/gosdk/core/encryption"
+	"github.com/0chain/gosdk_common/core/common"
+	"github.com/0chain/gosdk_common/core/encryption"
 	lru "github.com/hashicorp/golang-lru/v2"
 )
 

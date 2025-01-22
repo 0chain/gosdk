@@ -1,1 +1,0 @@
-Contains Ethereum KeyStore wallets used for tests.

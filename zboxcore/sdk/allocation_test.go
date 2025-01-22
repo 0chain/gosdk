@@ -17,22 +17,22 @@ import (
 	"testing"
 	"time"
 
-	"github.com/0chain/gosdk/zboxcore/mocks"
+	"github.com/0chain/gosdk_common/zboxcore/mocks"
 
-	encrypt "github.com/0chain/gosdk/core/encryption"
-	"github.com/0chain/gosdk/dev/blobber"
-	"github.com/0chain/gosdk/dev/blobber/model"
-	"github.com/0chain/gosdk/zboxcore/encryption"
+	encrypt "github.com/0chain/gosdk_common/core/encryption"
+	"github.com/0chain/gosdk_common/dev/blobber"
+	"github.com/0chain/gosdk_common/dev/blobber/model"
+	"github.com/0chain/gosdk_common/zboxcore/encryption"
 	"golang.org/x/crypto/sha3"
 
 	"github.com/0chain/errors"
-	"github.com/0chain/gosdk/core/common"
-	"github.com/0chain/gosdk/core/sys"
+	"github.com/0chain/gosdk_common/core/common"
+	"github.com/0chain/gosdk_common/core/sys"
 
-	"github.com/0chain/gosdk/core/client"
-	"github.com/0chain/gosdk/core/zcncrypto"
-	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/zboxcore/fileref"
+	"github.com/0chain/gosdk_common/core/client"
+	"github.com/0chain/gosdk_common/core/zcncrypto"
+	"github.com/0chain/gosdk_common/zboxcore/blockchain"
+	"github.com/0chain/gosdk_common/zboxcore/fileref"
 
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/stretchr/testify/mock"

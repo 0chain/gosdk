@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	thrown "github.com/0chain/errors"
-	"github.com/0chain/gosdk/zboxcore/logger"
+	"github.com/0chain/gosdk_common/zboxcore/logger"
 )
 
 // Converting the video file to fmp4 format for web streaming

@@ -3,8 +3,8 @@ package marker
 import (
 	"fmt"
 
-	"github.com/0chain/gosdk/core/client"
-	"github.com/0chain/gosdk/core/encryption"
+	"github.com/0chain/gosdk_common/core/client"
+	"github.com/0chain/gosdk_common/core/encryption"
 )
 
 // AuthTicket authentication ticket for file sharing.

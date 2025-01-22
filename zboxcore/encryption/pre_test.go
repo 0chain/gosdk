@@ -5,7 +5,7 @@ import (
 	"encoding/base64"
 	"testing"
 
-	"github.com/0chain/gosdk/zboxcore/fileref"
+	"github.com/0chain/gosdk_common/zboxcore/fileref"
 	"github.com/stretchr/testify/require"
 	"go.dedis.ch/kyber/v3/group/edwards25519"
 )

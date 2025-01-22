@@ -9,12 +9,12 @@ import (
 	"strings"
 
 	"github.com/0chain/common/core/util/wmpt"
-	"github.com/0chain/gosdk/constants"
-	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
-	"github.com/0chain/gosdk/zboxcore/fileref"
-	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/0chain/gosdk_common/constants"
+	"github.com/0chain/gosdk_common/core/sys"
+	"github.com/0chain/gosdk_common/zboxcore/fileref"
+	l "github.com/0chain/gosdk_common/zboxcore/logger"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )

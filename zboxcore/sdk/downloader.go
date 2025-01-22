@@ -5,8 +5,8 @@ import (
 
 	"errors"
 
-	"github.com/0chain/gosdk/core/sys"
-	"github.com/0chain/gosdk/zboxcore/fileref"
+	"github.com/0chain/gosdk_common/core/sys"
+	"github.com/0chain/gosdk_common/zboxcore/fileref"
 )
 
 // Downloader downloader for file, blocks and thumbnail
