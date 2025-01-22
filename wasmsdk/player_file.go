@@ -7,7 +7,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/0chain/gosdk_common/sdk"
+	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk_common/zboxcore/marker"
 )
 

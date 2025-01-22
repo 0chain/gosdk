@@ -16,15 +16,15 @@ import (
 	"github.com/0chain/gosdk_common/core/sys"
 	"github.com/pkg/errors"
 
+	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk_common/core/client"
 	"github.com/0chain/gosdk_common/core/conf"
 	"github.com/0chain/gosdk_common/core/util"
 	"github.com/0chain/gosdk_common/core/version"
-	"github.com/0chain/gosdk_common/sdk"
 	l "github.com/0chain/gosdk_common/zboxcore/logger"
 
-	"github.com/0chain/gosdk_common/mobilesdk/zbox"
-	"github.com/0chain/gosdk_common/mobilesdk/zboxapi"
+	"github.com/0chain/gosdk/mobilesdk/zbox"
+	"github.com/0chain/gosdk/mobilesdk/zboxapi"
 	"github.com/0chain/gosdk_common/zcncore"
 )
 

@@ -6,7 +6,7 @@ package zcn
 import (
 	"strconv"
 
-	"github.com/0chain/gosdk_common/sdk"
+	"github.com/0chain/gosdk/zboxcore/sdk"
 )
 
 // WritePoolLock locks given number of tokes for given duration in read pool.

@@ -8,12 +8,12 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk_common/core/client"
 	"github.com/0chain/gosdk_common/core/encryption"
 	"github.com/0chain/gosdk_common/core/imageutil"
 	"github.com/0chain/gosdk_common/core/logger"
 	"github.com/0chain/gosdk_common/core/screstapi"
-	"github.com/0chain/gosdk_common/sdk"
 	"github.com/0chain/gosdk_common/zcncore"
 
 	"io"
