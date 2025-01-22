@@ -8,12 +8,12 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/zboxcore/mocks"
 	"github.com/0chain/gosdk_common/core/client"
 	"github.com/0chain/gosdk_common/core/resty"
 	"github.com/0chain/gosdk_common/core/zcncrypto"
 	"github.com/0chain/gosdk_common/zboxcore/blockchain"
 	"github.com/0chain/gosdk_common/zboxcore/fileref"
-	"github.com/0chain/gosdk_common/zboxcore/mocks"
 	"github.com/0chain/gosdk_common/zboxcore/zboxutil"
 	"github.com/stretchr/testify/require"
 )

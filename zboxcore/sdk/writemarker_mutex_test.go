@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/0chain/gosdk/zboxcore/mocks"
 	"github.com/0chain/gosdk_common/zboxcore/blockchain"
-	"github.com/0chain/gosdk_common/zboxcore/mocks"
 	"github.com/0chain/gosdk_common/zboxcore/zboxutil"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
