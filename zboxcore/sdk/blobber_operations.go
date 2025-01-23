@@ -293,7 +293,6 @@ func StakePoolUnlockWithTransaction(providerType ProviderType, providerID string
 	spr := stakePoolRequest{
 		ProviderType: providerType,
 		ProviderID:   providerID,
-		ClientID:     clientID,
 	}
 
 	var sn = transaction.SmartContractTxnData{
