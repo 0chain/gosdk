@@ -53,6 +53,7 @@ const (
 	MOVE_ENDPOINT                = "/v1/file/move/"
 	LIST_ENDPOINT                = "/v1/file/list/"
 	REFERENCE_ENDPOINT           = "/v1/file/referencepath/"
+	REFERENCE_ENDPOINT_V2        = "/v2/file/referencepath/"
 	CONNECTION_ENDPOINT          = "/v1/connection/details/"
 	COMMIT_ENDPOINT              = "/v1/connection/commit/"
 	DOWNLOAD_ENDPOINT            = "/v1/file/download/"
