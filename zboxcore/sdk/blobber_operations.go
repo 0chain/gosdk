@@ -263,9 +263,9 @@ func StakePoolLockWithTransaction(providerType ProviderType, providerID string, 
 //   - providerType: provider type
 //   - providerID: provider ID
 //   - fee: transaction fee
-func StakePoolUnlock(providerType ProviderType, providerID string, fee uint64) (unstake int64, nonce int64, err error) {
+func StakePoolUnlock(providerType ProviderType, providerID string, clientID string, fee uint64) (unstake int64, nonce int64, err error) {
 	var out string
-	if _, out, nonce, _, err = StakePoolUnlockWithTransaction(providerType, providerID, fee); err != nil {
+	if _, out, nonce, _, err = StakePoolUnlockWithTransaction(providerType, providerID, clientID, fee); err != nil {
 		return // an error
 	}
 
@@ -277,7 +277,7 @@ func StakePoolUnlock(providerType ProviderType, providerID string, fee uint64) (
 	return spuu.Amount, nonce, nil
 }
 
-func StakePoolUnlockWithTransaction(providerType ProviderType, providerID string, fee uint64) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+func StakePoolUnlockWithTransaction(providerType ProviderType, providerID string, clientID string, fee uint64) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 	if !client.IsSDKInitialized() {
 		return "", "", 0, nil, sdkNotInitialized
 	}
@@ -293,6 +293,7 @@ func StakePoolUnlockWithTransaction(providerType ProviderType, providerID string
 	spr := stakePoolRequest{
 		ProviderType: providerType,
 		ProviderID:   providerID,
+		ClientID:     clientID,
 	}
 
 	var sn = transaction.SmartContractTxnData{
