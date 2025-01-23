@@ -97,7 +97,7 @@ func SetLogFile(logFile string, verbose bool) {
 
 // GetLogger retrieves logger instance
 func GetLogger() *logger.Logger {
-	return &l.Logger
+	return l.Logger
 }
 
 type BackPool struct {
@@ -226,6 +226,7 @@ func GetStakePoolUserInfo(clientID string, offset, limit int) (info *StakePoolUs
 type stakePoolRequest struct {
 	ProviderType ProviderType `json:"provider_type,omitempty"`
 	ProviderID   string       `json:"provider_id,omitempty"`
+	ClientID     string       `json:"client_id,omitempty"`
 }
 
 // stakePoolLock is stake pool unlock response in case where tokens

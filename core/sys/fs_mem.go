@@ -4,6 +4,7 @@
 package sys
 
 import (
+	"encoding/json"
 	"errors"
 	"io/fs"
 	"os"
@@ -149,6 +150,24 @@ func (mfs *MemFS) SaveProgress(progressID string, data []byte, _ fs.FileMode) er
 func (mfs *MemFS) RemoveProgress(progressID string) error {
 	key := filepath.Base(progressID)
 	js.Global().Get("localStorage").Call("removeItem", key)
+	return nil
+}
+
+func (mfs *MemFS) StoreLogs(key string, data string) error {
+	//get existing logs
+	var logs []string
+	val := js.Global().Get("localStorage").Call("getItem", key)
+	if val.Truthy() {
+		json.Unmarshal([]byte(val.String()), &logs)
+	}
+	//append new logs
+	logs = append(logs, data)
+	//store logs
+	encodedData, err := json.Marshal(logs)
+	if err != nil {
+		return err
+	}
+	js.Global().Get("localStorage").Call("setItem", key, string(encodedData))
 	return nil
 }
 
