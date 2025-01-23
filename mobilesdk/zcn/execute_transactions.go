@@ -36,12 +36,12 @@ func MinerStakePoolLock(providerId string, lock int64, fee int64) ([]byte, error
 // MinerStakePoolUnlock unlocks the stake pool for the miner.
 // # Inputs
 //   - providerId: provider id
-func MinerStakePoolUnlock(providerId string, fee int64) ([]byte, error) {
+func MinerStakePoolUnlock(providerId, clientID string, fee int64) ([]byte, error) {
 	if tokenValidation(fee) != nil {
 		return nil, tokenValidation(fee)
 	}
 
-	_, _, _, txn, err := sdk.StakePoolUnlockWithTransaction(sdk.ProviderMiner, providerId, uint64(fee))
+	_, _, _, txn, err := sdk.StakePoolUnlockWithTransaction(sdk.ProviderMiner, providerId, clientID, uint64(fee))
 
 	if err != nil {
 		return nil, errors.New("Error in MinerSCUnlock: " + err.Error())
@@ -102,12 +102,12 @@ func BlobberStakePoolLock(providerId string, lock int64, fee int64) ([]byte, err
 // BlobberStakePoolUnlock unlocks the stake pool for the blobber.
 // # Inputs
 //   - providerId: provider id
-func BlobberStakePoolUnlock(providerId string, fee int64) ([]byte, error) {
+func BlobberStakePoolUnlock(providerId, clientID string, fee int64) ([]byte, error) {
 	if tokenValidation(fee) != nil {
 		return nil, tokenValidation(fee)
 	}
 
-	_, _, _, txn, err := sdk.StakePoolUnlockWithTransaction(sdk.ProviderBlobber, providerId, uint64(fee))
+	_, _, _, txn, err := sdk.StakePoolUnlockWithTransaction(sdk.ProviderBlobber, providerId, clientID, uint64(fee))
 
 	if err != nil {
 		return nil, errors.New("Error in BlobberSCUnlock: " + err.Error())
@@ -164,12 +164,12 @@ func SharderStakePoolLock(providerId string, lock int64, fee int64) ([]byte, err
 // SharderStakePoolUnlock unlocks the stake pool for the sharder.
 // # Inputs
 //   - providerId: provider id
-func SharderStakePoolUnlock(providerId string, fee int64) ([]byte, error) {
+func SharderStakePoolUnlock(providerId, clientID string, fee int64) ([]byte, error) {
 	if tokenValidation(fee) != nil {
 		return nil, tokenValidation(fee)
 	}
 
-	_, _, _, txn, err := sdk.StakePoolUnlockWithTransaction(sdk.ProviderSharder, providerId, uint64(fee))
+	_, _, _, txn, err := sdk.StakePoolUnlockWithTransaction(sdk.ProviderSharder, providerId, clientID, uint64(fee))
 
 	if err != nil {
 		return nil, errors.New("Error in SharderSCUnlock: " + err.Error())
