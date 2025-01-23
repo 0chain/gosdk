@@ -109,7 +109,7 @@ func (commitreq *CommitRequest) processCommit() {
 		return
 	}
 	if time.Since(start).Milliseconds() > 60 {
-		l.Logger.Info("[commitBlobber]", time.Since(start).Milliseconds(), " baseURL: ", commitreq.blobber.Baseurl)
+		l.Logger.Info("[commitBlobber]", time.Since(start).Milliseconds(), " baseURL: ", commitreq.blobber.Baseurl, " connectionID: ", commitreq.connectionID)
 	}
 	commitreq.result = SuccessCommitResult()
 }
