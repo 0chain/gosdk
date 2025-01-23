@@ -34,7 +34,7 @@ func CreateAllocationForOwner(
 	owner, ownerpublickey string,
 	datashards, parityshards int, size int64,
 	readPrice, writePrice PriceRange,
-	lock uint64, preferredBlobberIds, blobberAuthTickets []string, thirdPartyExtendable, IsEnterprise, force bool, fileOptionsParams *FileOptionsParameters, authRoundExpiry int64, clients ...string
+	lock uint64, preferredBlobberIds, blobberAuthTickets []string, thirdPartyExtendable, IsEnterprise, force bool, fileOptionsParams *FileOptionsParameters, authRoundExpiry int64, clients ...string,
 ) (hash string, nonce int64, txn *transaction.Transaction, err error) {
 
 	if lock > math.MaxInt64 {
@@ -76,7 +76,7 @@ func CreateAllocationForOwner(
 		Name:      transaction.NEW_ALLOCATION_REQUEST,
 		InputArgs: allocationRequest,
 	}
-	hash, _, nonce, txn, err = storageSmartContractTxnValue(sn, lock)
+	hash, _, nonce, txn, err = StorageSmartContractTxnValue(sn, lock)
 	return
 }
 
@@ -108,7 +108,7 @@ func CreateFreeAllocation(marker string, value uint64) (string, int64, error) {
 		Name:      transaction.NEW_FREE_ALLOCATION,
 		InputArgs: input,
 	}
-	hash, _, n, _, err := storageSmartContractTxnValue(sn, value)
+	hash, _, n, _, err := StorageSmartContractTxnValue(sn, value)
 	return hash, n, err
 }
 
@@ -132,6 +132,7 @@ func UpdateAllocation(
 	lock uint64,
 	addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerID, ownerSigninPublicKey string,
 	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters, ticket string,
+	clients ...string,
 ) (hash string, nonce int64, err error) {
 	if ownerID == "" {
 		ownerID = client.Id()
@@ -185,7 +186,7 @@ func UpdateAllocation(
 		Name:      transaction.STORAGESC_UPDATE_ALLOCATION,
 		InputArgs: updateAllocationRequest,
 	}
-	hash, _, nonce, _, err = storageSmartContractTxnValue(sn, lock)
+	hash, _, nonce, _, err = StorageSmartContractTxnValue(sn, lock, clients...)
 	return
 }
 
@@ -208,7 +209,7 @@ func GetUpdateAllocTicket(allocationID, userID, operationType string, roundExpir
 //   - providerID: provider ID
 //   - value: value to lock
 //   - fee: transaction fee
-func StakePoolLock(providerType ProviderType, providerID string, value, fee uint64) (hash string, nonce int64, err error) {
+func StakePoolLock(providerType ProviderType, providerID string, value, fee uint64, clients ...string) (hash string, nonce int64, err error) {
 	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
@@ -245,7 +246,7 @@ func StakePoolLock(providerType ProviderType, providerID string, value, fee uint
 		return "", 0, errors.Newf("stake_pool_lock", "unsupported provider type: %v", providerType)
 	}
 
-	hash, _, nonce, _, err = transaction.SmartContractTxnValueFeeWithRetry(scAddress, sn, value, fee, true)
+	hash, _, nonce, _, err = transaction.SmartContractTxnValueFeeWithRetry(scAddress, sn, value, fee, true, clients...)
 	return
 }
 

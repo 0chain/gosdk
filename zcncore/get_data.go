@@ -197,10 +197,6 @@ func (p Params) Query() string {
 	return "?" + params.Encode()
 }
 
-func withParams(uri string, params Params) string { //nolint:unused
-	return uri + params.Query()
-}
-
 // GetBlobberSnapshots obtains list of allocations of a blobber.
 // Blobber snapshots are historical records of the blobber instance to track its change over time and serve graph requests,
 // which are requests that need multiple data points, distributed over an interval of time, usually to plot them on a
@@ -294,6 +290,23 @@ func GetLatestFinalizedMagicBlock() (m *block.MagicBlock, err error) {
 	}
 
 	return resp.MagicBlock, nil
+}
+
+// GetLatestFinalizedBlock gets latest finalized block
+func GetLatestFinalizedBlock() (*block.Block, error) {
+	res, err := screstapi.MakeSCRestAPICall("", GET_LATEST_FINALIZED, nil, "")
+	if err != nil {
+		return nil, err
+	}
+
+	var resp block.Block
+
+	err = json.Unmarshal(res, &resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return &resp, nil
 }
 
 // GetMinerSCUserInfo retrieve user stake pools for the providers related to the Miner SC (miners/sharders).
