@@ -45,6 +45,9 @@ const (
 	GET_MINERSC_USER     = "/getUserPools"
 	GET_MINERSC_MINERS   = "/getMinerList"
 	GET_MINERSC_SHARDERS = "/getSharderList"
+
+	GET_HARDFORK      = "/hardfork"
+	GET_CURRENT_ROUND = "/v1/current-round"
 )
 
 const (
@@ -79,11 +82,11 @@ const (
 )
 
 var defaultLogLevel = logger.DEBUG
-var logging logger.Logger
+var logging = logger.GetLogger()
 
 // GetLogger returns the logger instance
 func GetLogger() *logger.Logger {
-	return &logging
+	return logging
 }
 
 // CloseLog closes log file
@@ -139,10 +142,6 @@ type GetInfoCallback interface {
 type AuthCallback interface {
 	// OnSetupComplete This call back gives the status of the Two factor authenticator(zauth) setup.
 	OnSetupComplete(status int, err string)
-}
-
-func init() {
-	logging.Init(defaultLogLevel, "0chain-core-sdk")
 }
 
 func checkSdkInit() error {

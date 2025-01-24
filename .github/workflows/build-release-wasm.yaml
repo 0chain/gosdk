@@ -1,0 +1,48 @@
+name: Build-and-release-wasm
+
+concurrency:
+  group: "build-release-wasm-${{ github.ref }}"
+  cancel-in-progress: true
+
+on:
+  push:
+    # branches: [ master, staging, qa ]
+    tags:
+      - 'v*.*.*'
+  # pull_request:
+  workflow_dispatch:
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GOSDK }}
+
+jobs:
+  build-wasm:
+    name: Build-wasm
+    runs-on: [self-hosted, arc-runner]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # - name: Set up Go 1.23
+      #   uses: actions/setup-go@v3
+      #   with:
+      #     go-version: 1.23
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install build-essential nghttp2 libnghttp2-dev libssl-dev wget
+
+      - name: Build
+        run: |
+          docker run --rm -v $PWD:/gosdk -w /gosdk golang:1.23 make wasm-build
+          ls -lha
+          CURRENT_TAG=$(git describe --tags --exact-match)
+          mv zcn.wasm zcn-${CURRENT_TAG}-normal.wasm
+          ls -lha
+
+      # - name: 'Upload Artifact'
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: zcn.wasm
+      #     path: zcn.wasm

@@ -18,13 +18,10 @@ import (
 )
 
 var (
-	logging    logger.Logger
+	logging    = logger.GetLogger()
 	nodeClient *Node
+	IsAppFlow  = false
 )
-
-func init() {
-	logging.Init(logger.DEBUG, "0chain-core")
-}
 
 // Node Maintains central states of SDK (client's context, network).
 // Initialized through [Init] function.
@@ -36,6 +33,10 @@ type Node struct {
 	clientCtx    context.Context
 
 	networkGuard sync.RWMutex
+}
+
+func SetIsAppFlow(val bool) {
+	IsAppFlow = true
 }
 
 // GetStableMiners Returns stable miner urls.
