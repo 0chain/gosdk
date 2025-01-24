@@ -6,9 +6,9 @@ import (
 
 	"github.com/0chain/errors"
 
+	"github.com/0chain/gosdk_common/core/client"
 	"github.com/0chain/gosdk_common/core/common"
 	"github.com/0chain/gosdk_common/zboxcore/blockchain"
-	"github.com/0chain/gosdk_common/zboxcore/client"
 	"github.com/0chain/gosdk_common/zboxcore/encryption"
 	"github.com/0chain/gosdk_common/zboxcore/fileref"
 	"github.com/0chain/gosdk_common/zboxcore/marker"
@@ -55,7 +55,7 @@ func (req *ShareRequest) getAuthTicket(clientID, encPublicKey string) (*marker.A
 
 	at := &marker.AuthTicket{
 		AllocationID:   req.allocationID,
-		OwnerID:        client.GetClientID(),
+		OwnerID:        client.Id(),
 		ClientID:       clientID,
 		FileName:       req.remotefilename,
 		FilePathHash:   fileref.GetReferenceLookup(req.allocationID, req.remotefilepath),
