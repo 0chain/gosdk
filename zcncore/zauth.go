@@ -529,7 +529,7 @@ func CallZvaultRetrieveSharedWallets(serverAddr, token string) (string, error) {
 // ZauthSignTxn returns a function that sends a txn signing request to the zauth server
 func ZauthSignTxn(serverAddr string) sys.AuthorizeFunc {
 	return func(msg string) (string, error) {
-		fmt.Println("Harsh signing msg zauth", msg)
+		fmt.Println("Harsh signing txn", msg)
 		req, err := http.NewRequest("POST", serverAddr+"/sign/txn", bytes.NewBuffer([]byte(msg)))
 		if err != nil {
 			return "", errors.Wrap(err, "failed to create HTTP request")
@@ -560,6 +560,7 @@ func ZauthSignTxn(serverAddr string) sys.AuthorizeFunc {
 		if err != nil {
 			return "", errors.Wrap(err, "failed to read response body")
 		}
+		fmt.Println("Harsh signing txn sign", d)
 
 		return d, nil
 	}
@@ -567,6 +568,7 @@ func ZauthSignTxn(serverAddr string) sys.AuthorizeFunc {
 
 func ZauthAuthCommon(serverAddr string) sys.AuthorizeFunc {
 	return func(msg string) (string, error) {
+		fmt.Println("Harsh signing message", msg)
 		req, err := http.NewRequest("POST", serverAddr+"/sign/msg", bytes.NewBuffer([]byte(msg)))
 		if err != nil {
 			return "", errors.Wrap(err, "failed to create HTTP request")
@@ -596,6 +598,7 @@ func ZauthAuthCommon(serverAddr string) sys.AuthorizeFunc {
 		if err != nil {
 			return "", errors.Wrap(err, "failed to read response body")
 		}
+		fmt.Println("Harsh msg sign", string(d))
 
 		return string(d), nil
 	}

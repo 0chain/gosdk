@@ -633,6 +633,8 @@ func GetAllocation(allocationID string) (*Allocation, error) {
 	if err != nil {
 		return nil, errors.New("allocation_decode_error", "Error decoding the allocation: "+err.Error()+" "+string(allocationBytes))
 	}
+	fmt.Println("Harsh allocation signature", allocationObj.sig)
+	fmt.Printf("Harsh allocation obj %+v\n", allocationObj)
 	allocationObj.numBlockDownloads = numBlockDownloads
 	allocationObj.InitAllocation()
 	return allocationObj, nil
