@@ -68,6 +68,7 @@ func GetWritemarker(allocID, allocTx, sig, id, baseUrl string, clientId ...strin
 
 	req, err := zboxutil.NewWritemarkerRequest(baseUrl, allocID, allocTx, sig, clientId...)
 	fmt.Printf("Harsh getwritemarker req baseurl%s allocationTx %s", baseUrl, allocTx)
+	fmt.Printf("Harsh getwritemarker reqcleintid %s", clientId)
 	if err != nil {
 		return nil, err
 	}
