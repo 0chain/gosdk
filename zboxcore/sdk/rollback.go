@@ -67,6 +67,7 @@ func GetWritemarker(allocID, allocTx, sig, id, baseUrl string, clientId ...strin
 	var lpm LatestPrevWriteMarker
 
 	req, err := zboxutil.NewWritemarkerRequest(baseUrl, allocID, allocTx, sig, clientId...)
+	fmt.Printf("Harsh getwritemarker req baseurl%s allocationTx %s", baseUrl, allocTx)
 	if err != nil {
 		return nil, err
 	}
@@ -286,6 +287,7 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
 				ID:     blobber.ID,
 				Status: "available",
 			}
+			fmt.Println("Harsh getwritemarker inputss", a.sig)
 			wr, err := GetWritemarker(a.ID, a.Tx, a.sig, blobber.ID, blobber.Baseurl, a.Owner)
 			if err != nil {
 				atomic.AddInt32(&errCnt, 1)
