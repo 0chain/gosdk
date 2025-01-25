@@ -529,6 +529,7 @@ func CallZvaultRetrieveSharedWallets(serverAddr, token string) (string, error) {
 // ZauthSignTxn returns a function that sends a txn signing request to the zauth server
 func ZauthSignTxn(serverAddr string) sys.AuthorizeFunc {
 	return func(msg string) (string, error) {
+		fmt.Println("Harsh signing msg zauth", msg)
 		req, err := http.NewRequest("POST", serverAddr+"/sign/txn", bytes.NewBuffer([]byte(msg)))
 		if err != nil {
 			return "", errors.Wrap(err, "failed to create HTTP request")

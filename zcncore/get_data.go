@@ -136,6 +136,7 @@ func SetGeneralWalletInfo(jsonWallet, sigScheme string) error {
 
 // RegisterZauthServer registers zauth server callbacks for signing operations. Should be used for split key mode.
 func RegisterZauthServer(serverAddr string) {
+	fmt.Println("Harsh registering")
 	sys.SetAuthorize(ZauthSignTxn(serverAddr))
 	sys.SetAuthCommon(ZauthAuthCommon(serverAddr))
 }
