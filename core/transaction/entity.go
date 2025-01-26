@@ -590,8 +590,10 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 	if err != nil {
 		return
 	}
+	fmt.Println("Harsh is split entity", client.GetClient().IsSplit)
 
 	if client.GetClient().IsSplit {
+		fmt.Println("Harsh calling getauthorizeee")
 		txn.Signature, err = txn.getAuthorize()
 		if err != nil {
 			return
