@@ -448,6 +448,8 @@ func (a *Allocation) InitAllocation() {
 
 func (a *Allocation) generateAndSetOwnerSigningPublicKey() {
 	//create ecdsa public key from signature
+	fmt.Println("Harsh owner pk", a.OwnerPublicKey)
+	fmt.Println("Harsh client pk", client.PublicKey())
 	if a.OwnerPublicKey != client.PublicKey() {
 		return
 	}
@@ -456,7 +458,13 @@ func (a *Allocation) generateAndSetOwnerSigningPublicKey() {
 		l.Logger.Error("Failed to generate owner signing key", zap.Error(err))
 		return
 	}
+	fmt.Println("Harsh private signing key", privateSigningKey)
+	fmt.Println("Harsh  client.Wallet().IsSplit", client.Wallet().IsSplit)
+	fmt.Println("Harsh  a.OwnerSigningPublicKey", a.OwnerSigningPublicKey)
+	fmt.Println("Harsh a finzalized", a.Finalized)
+	fmt.Println("Harsh a cancelled", a.Canceled)
 	if a.OwnerSigningPublicKey == "" && !a.Finalized && !a.Canceled && client.Wallet().IsSplit {
+		fmt.Println("Harsh inside split key")
 		pubKey := privateSigningKey.Public().(ed25519.PublicKey)
 		a.OwnerSigningPublicKey = hex.EncodeToString(pubKey)
 		hash, _, err := UpdateAllocation(0, false, a.ID, 0, "", "", "", a.OwnerSigningPublicKey, false, nil)
@@ -467,11 +475,14 @@ func (a *Allocation) generateAndSetOwnerSigningPublicKey() {
 		l.Logger.Info("Owner signing public key updated with transaction : ", hash, " ownerSigningPublicKey : ", a.OwnerSigningPublicKey)
 		a.Tx = hash
 	} else if a.OwnerSigningPublicKey != "" {
+		fmt.Println("Harsh if a.OwnerSigningPublicKey")
 		pubKey := privateSigningKey.Public().(ed25519.PublicKey)
 		l.Logger.Info("Owner signing public key already exists: ", a.OwnerSigningPublicKey, " generated: ", hex.EncodeToString(pubKey))
 	} else {
+		fmt.Println("Harsh else return")
 		return
 	}
+	fmt.Println("Harsh final privateSigningKey", privateSigningKey)
 	a.privateSigningKey = privateSigningKey
 }
 
