@@ -114,6 +114,13 @@ func MinerScUpdateGlobals(input interface{}, client ...string) (hash, out string
 
 }
 
+func StorageSCAddBlobber(input interface{}, client ...string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+	return transaction.SmartContractTxn(StorageSmartContractAddress, transaction.SmartContractTxnData{
+		Name:      transaction.STORAGESC_ADD_BLOBBER,
+		InputArgs: input,
+	}, true, client...)
+}
+
 func StorageScUpdateConfig(input interface{}, client ...string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 	return transaction.SmartContractTxn(StorageSmartContractAddress, transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_UPDATE_SETTINGS,
