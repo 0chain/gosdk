@@ -137,8 +137,8 @@ func SetGeneralWalletInfo(jsonWallet, sigScheme string) error {
 
 // RegisterZauthServer registers zauth server callbacks for signing operations. Should be used for split key mode.
 func RegisterZauthServer(serverAddr string) {
-	sys.SetAuthorize(ZauthSignTxn(serverAddr))
-	sys.SetAuthCommon(ZauthAuthCommon(serverAddr))
+	sys.SetAuthorize(client.ZauthSignTxn(serverAddr))
+	sys.SetAuthCommon(client.ZauthAuthCommon(serverAddr))
 }
 
 // SetAuthUrl will be called by app to set zauth URL to SDK.

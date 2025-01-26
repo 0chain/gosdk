@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/0chain/gosdk/zcncore"
 	"strings"
 
 	"github.com/0chain/gosdk/core/conf"
@@ -102,7 +101,7 @@ func signHashWithAuth(hash, signatureScheme string, keys []sys.KeyPair) (string,
 		return "", fmt.Errorf("failed to sign with split key: %v", err)
 	}
 
-	data, err := json.Marshal(zcncore.AuthMessage{
+	data, err := json.Marshal(AuthMessage{
 		Hash:      hash,
 		Signature: sig,
 		ClientID:  client.wallet.ClientID,
