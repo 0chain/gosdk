@@ -162,8 +162,7 @@ func transferAllocation(allocationID, newOwnerId, newOwnerPublicKey string) erro
 func UpdateForbidAllocation(allocationID string, forbidupload, forbiddelete, forbidupdate, forbidmove, forbidcopy, forbidrename bool) (string, error) {
 
 	hash, _, err := sdk.UpdateAllocation(
-		0, //size,
-		0,
+		0,            //size,
 		false,        //extend,
 		allocationID, // allocID,
 		0,            //lock,
@@ -194,8 +193,7 @@ func UpdateForbidAllocation(allocationID string, forbidupload, forbiddelete, for
 func freezeAllocation(allocationID string) (string, error) {
 
 	hash, _, err := sdk.UpdateAllocation(
-		0, //size,
-		0,
+		0,            //size,
 		false,        //extend,
 		allocationID, // allocID,
 		0,            //lock,
@@ -305,7 +303,7 @@ func updateAllocation(allocationID string,
 	size, authRoundExpiry int64, extend bool,
 	lock int64,
 	addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey string, setThirdPartyExtendable bool) (string, error) {
-	hash, _, err := sdk.UpdateAllocation(size, authRoundExpiry, extend, allocationID, uint64(lock), addBlobberId, addBlobberAuthTicket, removeBlobberId, "", ownerSigninPublicKey, setThirdPartyExtendable, &sdk.FileOptionsParameters{}, "")
+	hash, _, err := sdk.UpdateAllocation(size, extend, allocationID, uint64(lock), addBlobberId, addBlobberAuthTicket, removeBlobberId, "", ownerSigninPublicKey, setThirdPartyExtendable, &sdk.FileOptionsParameters{}, "")
 
 	if err == nil {
 		clearAllocation(allocationID)
