@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/0chain/gosdk/zcncore"
 	"strings"
 
 	"github.com/0chain/gosdk/core/conf"
@@ -55,7 +56,7 @@ type InitSdkOptions struct {
 
 func init() {
 	sys.Sign = signHash
-	sys.SignWithAuth = signHash
+	sys.SignWithAuth = signHashWithAuth
 
 	sigC <- struct{}{}
 
@@ -93,6 +94,42 @@ var SignFn = func(hash string) (string, error) {
 	}
 
 	return ss.Sign(hash)
+}
+
+func signHashWithAuth(hash, signatureScheme string, keys []sys.KeyPair) (string, error) {
+	sig, err := sys.Sign(hash, signatureScheme, keys)
+	if err != nil {
+		return "", fmt.Errorf("failed to sign with split key: %v", err)
+	}
+
+	data, err := json.Marshal(zcncore.AuthMessage{
+		Hash:      hash,
+		Signature: sig,
+		ClientID:  client.wallet.ClientID,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	if sys.AuthCommon == nil {
+		return "", errors.New("authCommon is not set")
+	}
+
+	rsp, err := sys.AuthCommon(string(data))
+	if err != nil {
+		return "", err
+	}
+
+	var sigpk struct {
+		Sig string `json:"sig"`
+	}
+
+	err = json.Unmarshal([]byte(rsp), &sigpk)
+	if err != nil {
+		return "", err
+	}
+
+	return sigpk.Sig, nil
 }
 
 func signHash(hash string, signatureScheme string, keys []sys.KeyPair) (string, error) {
