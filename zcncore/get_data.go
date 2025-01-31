@@ -82,6 +82,7 @@ func IsMnemonicValid(mnemonic string) bool {
 //
 // - splitKeyWallet: if wallet keys is split
 func SetWalletInfo(jsonWallet, sigScheme string, splitKeyWallet bool) error {
+	fmt.Println("SetWalletInfo", jsonWallet, sigScheme, splitKeyWallet)
 	wallet := zcncrypto.Wallet{}
 	err := json.Unmarshal([]byte(jsonWallet), &wallet)
 	if err != nil {
