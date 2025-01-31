@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/0chain/gosdk/zboxcore/zboxutil/httputil"
 	"github.com/0chain/gosdk/zcncore"
 )
 
@@ -23,6 +24,7 @@ func splitKeys(privateKey string, numSplits int) (string, error) {
 //
 // nolint: unused
 func setWalletInfo(jsonWallet string, splitKeyWallet bool) bool {
+	httputil.ClearSignCache()
 	err := zcncore.SetWalletInfo(jsonWallet, "bls0chain", splitKeyWallet)
 	if err == nil {
 		return true

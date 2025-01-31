@@ -986,3 +986,11 @@ func joinUrl(baseURl string, paths ...string) (*url.URL, error) {
 	u.Path = path.Join(u.Path, p)
 	return u, nil
 }
+
+func ClearSignCache() {
+	c, err := lru.New[string, string](1000)
+	if err != nil {
+		panic(err)
+	}
+	SignCache = c
+}
