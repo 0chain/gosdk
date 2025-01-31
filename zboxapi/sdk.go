@@ -6,10 +6,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/0chain/gosdk/core/client"
+	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
+
+	"github.com/0chain/gosdk/core/client"
 
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/encryption"
@@ -370,4 +373,32 @@ func (c *Client) GetSharedToMe(ctx context.Context, phoneNumber, token string) (
 
 	return result.Data, nil
 
+}
+
+func (c *Client) MakeRestApiCallToZbox(ctx context.Context, relativePath string, params map[string]string) ([]byte, error) {
+	urlPath := c.baseUrl + "/v2" + relativePath
+	u, err := url.Parse(urlPath)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing URL: %w", err)
+	}
+
+	// Add query parameters
+	q := u.Query()
+	for key, value := range params {
+		q.Add(key, value)
+	}
+	u.RawQuery = q.Encode()
+
+	resp, err := http.Get(u.String())
+	if err != nil {
+		return nil, fmt.Errorf("error making GET request: %w", err)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("error reading response body: %w", err)
+	}
+	resp.Body.Close()
+
+	return body, nil
 }

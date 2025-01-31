@@ -36,6 +36,23 @@ type Client struct {
 	sign            SignFunc //nolint:unused
 }
 
+type InitSdkOptions struct {
+	WalletJSON              string
+	BlockWorker             string
+	ChainID                 string
+	SignatureScheme         string
+	Nonce                   int64
+	IsSplitWallet           bool
+	AddWallet               bool
+	TxnFee                  *int
+	MinConfirmation         *int
+	MinSubmit               *int
+	ConfirmationChainLength *int
+	SharderConsensous       *int
+	ZboxHost                string
+	ZboxAppType             string
+}
+
 func init() {
 	sys.Sign = signHash
 	sys.SignWithAuth = signHash
@@ -323,6 +340,16 @@ func InitSDK(walletJSON string,
 		return err
 	}
 	SetSdkInitialized(true)
+	return nil
+}
+
+func InitSDKWithWebApp(params InitSdkOptions) error {
+	err := InitSDK(params.WalletJSON, params.BlockWorker, params.ChainID, params.SignatureScheme, params.Nonce, params.AddWallet, *params.MinConfirmation, *params.MinSubmit, *params.ConfirmationChainLength, *params.SharderConsensous)
+	if err != nil {
+		return err
+	}
+	conf.SetZboxAppConfigs(params.ZboxHost, params.ZboxAppType)
+	SetIsAppFlow(true)
 	return nil
 }
 

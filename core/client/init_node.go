@@ -20,6 +20,7 @@ import (
 var (
 	logging    = logger.GetLogger()
 	nodeClient *Node
+	IsAppFlow  = false
 )
 
 // Node Maintains central states of SDK (client's context, network).
@@ -32,6 +33,10 @@ type Node struct {
 	clientCtx    context.Context
 
 	networkGuard sync.RWMutex
+}
+
+func SetIsAppFlow(val bool) {
+	IsAppFlow = true
 }
 
 // GetStableMiners Returns stable miner urls.

@@ -47,6 +47,9 @@ const (
 	GET_MINERSC_USER     = "/getUserPools"
 	GET_MINERSC_MINERS   = "/getMinerList"
 	GET_MINERSC_SHARDERS = "/getSharderList"
+
+	GET_HARDFORK      = "/hardfork"
+	GET_CURRENT_ROUND = "/v1/current-round"
 )
 
 const (

@@ -12,6 +12,7 @@ import (
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/imageutil"
 	"github.com/0chain/gosdk/core/logger"
+	"github.com/0chain/gosdk/core/screstapi"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk/zcncore"
 
@@ -40,7 +41,22 @@ func initSDKs(chainID, blockWorker, signatureScheme string,
 
 	zboxApiClient.SetRequest(zboxHost, zboxAppType)
 
-	err := client.InitSDK("{}", blockWorker, chainID, signatureScheme, 0, false, minConfirmation, minSubmit, confirmationChainLength, sharderConsensous)
+	params := client.InitSdkOptions{
+		WalletJSON:              "{}",
+		BlockWorker:             blockWorker,
+		ChainID:                 chainID,
+		SignatureScheme:         signatureScheme,
+		Nonce:                   int64(0),
+		AddWallet:               false,
+		MinConfirmation:         &minConfirmation,
+		MinSubmit:               &minSubmit,
+		SharderConsensous:       &sharderConsensous,
+		ConfirmationChainLength: &confirmationChainLength,
+		ZboxHost:                zboxHost,
+		ZboxAppType:             zboxAppType,
+	}
+
+	err := client.InitSDKWithWebApp(params)
 	if err != nil {
 		fmt.Println("wasm: InitStorageSDK ", err)
 		return err
@@ -146,7 +162,7 @@ func makeSCRestAPICall(scAddress, relativePath, paramsJson string) (string, erro
 	if err != nil {
 		sdkLogger.Error(fmt.Sprintf("Error parsing JSON: %v", err))
 	}
-	b, err := client.MakeSCRestAPICall(scAddress, relativePath, params)
+	b, err := screstapi.MakeSCRestAPICall(scAddress, relativePath, params)
 	return string(b), err
 }
 
