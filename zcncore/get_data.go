@@ -17,6 +17,7 @@ import (
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/sdk"
+	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
 type GetClientResponse struct {
@@ -82,6 +83,7 @@ func IsMnemonicValid(mnemonic string) bool {
 //
 // - splitKeyWallet: if wallet keys is split
 func SetWalletInfo(jsonWallet, sigScheme string, splitKeyWallet bool) error {
+	zboxutil.ClearSignCache()
 	wallet := zcncrypto.Wallet{}
 	err := json.Unmarshal([]byte(jsonWallet), &wallet)
 	if err != nil {
