@@ -4,10 +4,11 @@ import (
 	"crypto/ed25519"
 	"encoding/hex"
 	"fmt"
-	"github.com/0chain/gosdk/core/sys"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/0chain/gosdk/core/sys"
 
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/common"
@@ -430,8 +431,8 @@ func SetupAuth(authHost, clientID, clientKey, publicKey, privateKey, localPublic
 
 func RegisterKMSZauthServer(serverAddr string) {
 	logging.Info("Registering KMS ZAuth server: ", serverAddr)
-	sys.SetAuthorize(ZauthSignTxn(serverAddr))
-	sys.SetAuthCommon(ZauthAuthCommon(serverAddr))
+	sys.SetAuthorize(client.ZauthSignTxn(serverAddr))
+	sys.SetAuthCommon(client.ZauthAuthCommon(serverAddr))
 }
 
 func SetWalletMode(mode bool) {
