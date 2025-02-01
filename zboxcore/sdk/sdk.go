@@ -11,14 +11,14 @@ import (
 
 	"github.com/0chain/common/core/currency"
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk_common/core/logger"
 	"github.com/0chain/gosdk_common/core/screstapi"
 	"gopkg.in/natefinch/lumberjack.v2"
 
-	"github.com/0chain/gosdk/core/version"
 	"github.com/0chain/gosdk_common/core/client"
 	"github.com/0chain/gosdk_common/core/common"
-	"github.com/0chain/gosdk_common/core/logger"
 	"github.com/0chain/gosdk_common/core/transaction"
+	"github.com/0chain/gosdk_common/core/version"
 	"github.com/0chain/gosdk_common/zboxcore/blockchain"
 	"github.com/0chain/gosdk_common/zboxcore/encryption"
 	l "github.com/0chain/gosdk_common/zboxcore/logger"
@@ -96,6 +96,7 @@ func SetLogFile(logFile string, verbose bool) {
 	l.Logger.Info("******* Storage SDK Version: ", version.VERSIONSTR, " *******")
 }
 
+// GetLogger retrieves logger instance
 func GetLogger() *logger.Logger {
 	return l.Logger
 }
@@ -174,7 +175,7 @@ func GetStakePoolInfo(providerType ProviderType, providerID string) (info *Stake
 
 	info = new(StakePoolInfo)
 	if err = json.Unmarshal(b, info); err != nil {
-		return nil, errors.Wrap(err, "error decoding response:")
+		return nil, errors.Wrap(err, "3 error decoding response:")
 	}
 
 	return
@@ -215,7 +216,7 @@ func GetStakePoolUserInfo(clientID string, offset, limit int) (info *StakePoolUs
 
 	info = new(StakePoolUserInfo)
 	if err = json.Unmarshal(b, info); err != nil {
-		return nil, errors.Wrap(err, "error decoding response:")
+		return nil, errors.Wrap(err, "4 error decoding response:")
 	}
 
 	return
@@ -268,7 +269,7 @@ func GetChallengePoolInfo(allocID string) (info *ChallengePoolInfo, err error) {
 
 	info = new(ChallengePoolInfo)
 	if err = json.Unmarshal(b, info); err != nil {
-		return nil, errors.Wrap(err, "error decoding response:")
+		return nil, errors.Wrap(err, "5 error decoding response:")
 	}
 
 	return
@@ -282,7 +283,8 @@ func GetMptData(key string) ([]byte, error) {
 
 	var b []byte
 	b, err := screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS,
-		"/get_mpt_key", map[string]string{"key": key})
+		"/get_mpt_key", map[string]string{"key": key},
+	)
 	if err != nil {
 		return nil, errors.Wrap(err, "error requesting mpt key data:")
 	}
@@ -446,13 +448,9 @@ func getBlobbersInternal(active, stakable bool, limit, offset int) (bs []*Blobbe
 		Nodes []*Blobber
 	}
 
-	url := fmt.Sprintf("/getblobbers?active=%s&limit=%d&offset=%d&stakable=%s",
-		strconv.FormatBool(active),
-		limit,
-		offset,
-		strconv.FormatBool(stakable),
-	)
-	b, err := screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, url, nil)
+	b, err := screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getblobbers", map[string]string{"active": strconv.FormatBool(active), "limit": strconv.FormatInt(int64(limit), 10),
+		"offset":   strconv.FormatInt(int64(offset), 10),
+		"stakable": strconv.FormatBool(stakable)})
 	var wrap nodes
 	if err != nil {
 		return nil, errors.Wrap(err, "error requesting blobbers:")
@@ -462,7 +460,7 @@ func getBlobbersInternal(active, stakable bool, limit, offset int) (bs []*Blobbe
 	}
 
 	if err = json.Unmarshal(b, &wrap); err != nil {
-		return nil, errors.Wrap(err, "error decoding response:")
+		return nil, errors.Wrap(err, "6 error decoding response:")
 	}
 
 	return wrap.Nodes, nil
@@ -513,7 +511,8 @@ func GetBlobber(blobberID string) (blob *Blobber, err error) {
 	b, err = screstapi.MakeSCRestAPICall(
 		STORAGE_SCADDRESS,
 		"/getBlobber",
-		map[string]string{"blobber_id": blobberID})
+		map[string]string{"blobber_id": blobberID},
+	)
 	if err != nil {
 		return nil, errors.Wrap(err, "requesting blobber:")
 	}
@@ -537,7 +536,8 @@ func GetValidator(validatorID string) (validator *Validator, err error) {
 	b, err = screstapi.MakeSCRestAPICall(
 		STORAGE_SCADDRESS,
 		"/get_validator",
-		map[string]string{"validator_id": validatorID})
+		map[string]string{"validator_id": validatorID},
+	)
 	if err != nil {
 		return nil, errors.Wrap(err, "requesting validator:")
 	}
@@ -563,7 +563,8 @@ func GetValidators(stakable bool) (validators []*Validator, err error) {
 		"/validators",
 		map[string]string{
 			"stakable": strconv.FormatBool(stakable),
-		})
+		},
+	)
 	if err != nil {
 		return nil, errors.Wrap(err, "requesting validator list")
 	}
@@ -625,14 +626,34 @@ func GetAllocation(allocationID string) (*Allocation, error) {
 	if err != nil {
 		return nil, errors.New("allocation_fetch_error", "Error fetching the allocation."+err.Error())
 	}
+
 	allocationObj := &Allocation{}
 	err = json.Unmarshal(allocationBytes, allocationObj)
 	if err != nil {
 		return nil, errors.New("allocation_decode_error", "Error decoding the allocation: "+err.Error()+" "+string(allocationBytes))
 	}
-
 	allocationObj.numBlockDownloads = numBlockDownloads
 	allocationObj.InitAllocation()
+	return allocationObj, nil
+}
+
+// GetAllocationForUpdate - get allocation for update from given allocation id without calling init allocation
+func GetAllocationForUpdate(allocationID string) (*Allocation, error) {
+	if !client.IsSDKInitialized() {
+		return nil, sdkNotInitialized
+	}
+	params := make(map[string]string)
+	params["allocation"] = allocationID
+	allocationBytes, err := screstapi.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation", params)
+	if err != nil {
+		return nil, errors.New("allocation_fetch_error", "Error fetching the allocation."+err.Error())
+	}
+
+	allocationObj := &Allocation{}
+	err = json.Unmarshal(allocationBytes, allocationObj)
+	if err != nil {
+		return nil, errors.New("allocation_decode_error", "Error decoding the allocation: "+err.Error()+" "+string(allocationBytes))
+	}
 	return allocationObj, nil
 }
 
@@ -700,6 +721,7 @@ func getAllocationsInternal(clientID string, limit, offset int) ([]*Allocation, 
 	if err != nil {
 		return nil, errors.New("allocations_fetch_error", "Error fetching the allocations."+err.Error())
 	}
+
 	allocations := make([]*Allocation, 0)
 	err = json.Unmarshal(allocationsBytes, &allocations)
 	if err != nil {
@@ -856,6 +878,7 @@ func getNewAllocationBlobbers(
 				"blobber_auth_tickets": blobberAuthTickets,
 				"read_price_range":     readPrice,
 				"write_price_range":    writePrice,
+				"storage_version":      storageVersion,
 			}, nil
 		}
 	}
@@ -890,6 +913,7 @@ func getNewAllocationBlobbers(
 		"blobber_auth_tickets": uniqueBlobberAuthTickets,
 		"read_price_range":     readPrice,
 		"write_price_range":    writePrice,
+		"storage_version":      storageVersion,
 	}, nil
 }
 
@@ -1239,6 +1263,25 @@ func ResetAllocationStats(allocationId string) (string, int64, error) {
 	return hash, n, err
 }
 
+func StorageSmartContractTxn(sn transaction.SmartContractTxnData) (
+	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+
+	return storageSmartContractTxnValue(sn, 0)
+}
+
+func storageSmartContractTxn(sn transaction.SmartContractTxnData) (
+	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+
+	return storageSmartContractTxnValue(sn, 0)
+}
+
+func storageSmartContractTxnValue(sn transaction.SmartContractTxnData, value uint64) (
+	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+
+	// Fee is set during sdk initialization.
+	return transaction.SmartContractTxnValueFeeWithRetry(STORAGE_SCADDRESS, sn, value, client.TxnFee(), true)
+}
+
 func CommitToFabric(metaTxnData, fabricConfigJSON string) (string, error) {
 	if !client.IsSDKInitialized() {
 		return "", sdkNotInitialized
@@ -1422,23 +1465,4 @@ func updateMaskBit(mask uint16, index uint8, value bool) uint16 {
 	} else {
 		return mask & ^uint16(1<<index)
 	}
-}
-
-func StorageSmartContractTxn(sn transaction.SmartContractTxnData) (
-	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
-
-	return storageSmartContractTxnValue(sn, 0)
-}
-
-func storageSmartContractTxn(sn transaction.SmartContractTxnData) (
-	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
-
-	return storageSmartContractTxnValue(sn, 0)
-}
-
-func storageSmartContractTxnValue(sn transaction.SmartContractTxnData, value uint64) (
-	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
-
-	// Fee is set during sdk initialization.
-	return transaction.SmartContractTxnValueFeeWithRetry(STORAGE_SCADDRESS, sn, value, client.TxnFee(), true)
 }

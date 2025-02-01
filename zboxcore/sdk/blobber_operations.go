@@ -1,9 +1,7 @@
-//go:build !mobile
-// +build !mobile
-
 package sdk
 
 import (
+	"crypto/ed25519"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -11,7 +9,10 @@ import (
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk_common/core/client"
+	"github.com/0chain/gosdk_common/core/encryption"
 	"github.com/0chain/gosdk_common/core/transaction"
+	"github.com/0chain/gosdk_common/zboxcore/logger"
+	"go.uber.org/zap"
 )
 
 // CreateAllocationForOwner creates a new allocation with the given options (txn: `storagesc.new_allocation_request`).
@@ -44,8 +45,8 @@ func CreateAllocationForOwner(
 		return "", 0, nil, errors.New("allocation_validation_failed", "atleast 1 data and 1 parity shards are required")
 	}
 
-	allocationRequest, err := getNewAllocationBlobbers(StorageV2,
-		datashards, parityshards, size, readPrice, writePrice, preferredBlobberIds, blobberAuthTickets, force)
+	allocationRequest, err := getNewAllocationBlobbers(
+		StorageV2, datashards, parityshards, size, readPrice, writePrice, preferredBlobberIds, blobberAuthTickets, force)
 	if err != nil {
 		return "", 0, nil, errors.New("failed_get_allocation_blobbers", "failed to get blobbers for allocation: "+err.Error())
 	}
@@ -54,11 +55,23 @@ func CreateAllocationForOwner(
 		return "", 0, nil, sdkNotInitialized
 	}
 
+	if client.PublicKey() == ownerpublickey {
+		privateSigningKey, err := generateOwnerSigningKey(ownerpublickey, owner)
+		if err != nil {
+			return "", 0, nil, errors.New("failed_generate_owner_signing_key", "failed to generate owner signing key: "+err.Error())
+		}
+		pub := privateSigningKey.Public().(ed25519.PublicKey)
+		pk := hex.EncodeToString(pub)
+		allocationRequest["owner_signing_public_key"] = pk
+	}
+
 	allocationRequest["owner_id"] = owner
 	allocationRequest["owner_public_key"] = ownerpublickey
 	allocationRequest["third_party_extendable"] = thirdPartyExtendable
 	allocationRequest["file_options_changed"], allocationRequest["file_options"] = calculateAllocationFileOptions(63 /*0011 1111*/, fileOptionsParams)
 	allocationRequest["is_enterprise"] = IsEnterprise
+	allocationRequest["storage_version"] = StorageV2
+	allocationRequest["auth_round_expiry"] = authRoundExpiry
 
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.NEW_ALLOCATION_REQUEST,
@@ -121,6 +134,9 @@ func UpdateAllocation(
 	addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerID, ownerSigninPublicKey string,
 	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters, ticket string,
 ) (hash string, nonce int64, err error) {
+	if ownerID == "" {
+		ownerID = client.Id()
+	}
 
 	if lock > math.MaxInt64 {
 		return "", 0, errors.New("invalid_lock", "int64 overflow on lock value")
@@ -130,13 +146,13 @@ func UpdateAllocation(
 		return "", 0, sdkNotInitialized
 	}
 
-	alloc, err := GetAllocation(allocationID)
+	alloc, err := GetAllocationForUpdate(allocationID)
 	if err != nil {
 		return "", 0, allocationNotFound
 	}
 
 	updateAllocationRequest := make(map[string]interface{})
-	updateAllocationRequest["owner_id"] = client.Id()
+	updateAllocationRequest["owner_id"] = ownerID
 	updateAllocationRequest["owner_public_key"] = ""
 	updateAllocationRequest["id"] = allocationID
 	updateAllocationRequest["size"] = size
@@ -145,7 +161,27 @@ func UpdateAllocation(
 	updateAllocationRequest["add_blobber_auth_ticket"] = addBlobberAuthTicket
 	updateAllocationRequest["remove_blobber_id"] = removeBlobberId
 	updateAllocationRequest["set_third_party_extendable"] = setThirdPartyExtendable
+	updateAllocationRequest["owner_signing_public_key"] = ownerSigninPublicKey
 	updateAllocationRequest["file_options_changed"], updateAllocationRequest["file_options"] = calculateAllocationFileOptions(alloc.FileOptions, fileOptionsParams)
+	updateAllocationRequest["auth_round_expiry"] = authRoundExpiry
+
+	if ticket != "" {
+
+		type Ticket struct {
+			AllocationID  string `json:"allocation_id"`
+			UserID        string `json:"user_id"`
+			RoundExpiry   int64  `json:"round_expiry"`
+			OperationType string `json:"operation_type"`
+			Signature     string `json:"signature"`
+		}
+
+		ticketData := &Ticket{}
+		err := json.Unmarshal([]byte(ticket), ticketData)
+		if err != nil {
+			return "", 0, errors.New("invalid_ticket", "invalid ticket")
+		}
+		updateAllocationRequest["update_ticket"] = ticketData
+	}
 
 	sn := transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_UPDATE_ALLOCATION,
@@ -275,10 +311,6 @@ func StakePoolUnlock(providerType ProviderType, providerID, clientID string, fee
 	return spuu.Amount, nonce, nil
 }
 
-//
-// write pool
-//
-
 // WritePoolLock locks given number of tokes for given duration in read pool.
 //   - allocID: allocation ID
 //   - tokens: number of tokens to lock
@@ -325,4 +357,20 @@ func WritePoolUnlock(allocID string, fee uint64) (hash string, nonce int64, err 
 	}
 	hash, _, nonce, _, err = transaction.SmartContractTxnValueFeeWithRetry(STORAGE_SCADDRESS, sn, 0, fee, true)
 	return
+}
+
+func generateOwnerSigningKey(ownerPublicKey, ownerID string) (ed25519.PrivateKey, error) {
+	if ownerPublicKey == "" {
+		return nil, errors.New("owner_public_key_required", "owner public key is required")
+	}
+	hashData := fmt.Sprintf("%s:%s", ownerPublicKey, "owner_signing_public_key")
+	sig, err := client.Sign(encryption.Hash(hashData), ownerID)
+	if err != nil {
+		logger.Logger.Error("error during sign", zap.Error(err))
+		return nil, err
+	}
+	//use this signature as entropy to generate ecdsa key pair
+	decodedSig, _ := hex.DecodeString(sig)
+	privateSigningKey := ed25519.NewKeyFromSeed(decodedSig[:32])
+	return privateSigningKey, nil
 }
