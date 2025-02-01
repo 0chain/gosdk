@@ -142,7 +142,7 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 	}
 	connID := zboxutil.NewConnectionId()
 
-	err = formWriter.WriteField("write_marker", string(vmData))
+	err = formWriter.WriteField("version_marker", string(vmData))
 	if err != nil {
 		return err
 	}
