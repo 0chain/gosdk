@@ -5,11 +5,11 @@ package main
 
 import (
 	"fmt"
+	"github.com/0chain/gosdk/core/client"
 	"syscall/js"
 
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/wasmsdk/jsbridge"
-	"github.com/0chain/gosdk/zcncore"
 )
 
 type AuthCallbackFunc func(msg string) string
@@ -38,54 +38,54 @@ func registerAuthorizer(this js.Value, args []js.Value) interface{} {
 func registerZauthServer(serverAddr string) {
 	fmt.Println("registerZauthServer...")
 	jsbridge.SetZauthServer(serverAddr)
-	sys.SetAuthorize(zcncore.ZauthSignTxn(serverAddr))
-	sys.SetAuthCommon(zcncore.ZauthAuthCommon(serverAddr))
+	sys.SetAuthorize(client.ZauthSignTxn(serverAddr))
+	sys.SetAuthCommon(client.ZauthAuthCommon(serverAddr))
 }
 
 func zauthRetrieveKey(clientID, peerPublicKey, serverAddr, token string) (string, error) {
-	return zcncore.CallZauthRetreiveKey(serverAddr, token, clientID, peerPublicKey)
+	return client.CallZauthRetreiveKey(serverAddr, token, clientID, peerPublicKey)
 }
 
 // zvaultNewWallet generates new wallet
 func zvaultNewWallet(serverAddr, token string) error {
-	return zcncore.CallZvaultNewWallet(serverAddr, token)
+	return client.CallZvaultNewWallet(serverAddr, token)
 }
 
 // zvaultNewSplit generates new split key for saved wallet
 func zvaultNewSplit(clientID, serverAddr, token string) error {
-	return zcncore.CallZvaultNewSplit(serverAddr, token, clientID)
+	return client.CallZvaultNewSplit(serverAddr, token, clientID)
 }
 
 func zvaultRetrieveRestrictions(peerPublicKey, serverAddr, token string) (string, error) {
-	return zcncore.CallZvaultRetrieveRestrictions(serverAddr, token, peerPublicKey)
+	return client.CallZvaultRetrieveRestrictions(serverAddr, token, peerPublicKey)
 }
 
 func zvaultUpdateRestrictions(clientID, peerPublicKey, serverAddr, token string, restrictions []string) error {
-	return zcncore.CallZvaultUpdateRestrictions(serverAddr, token, clientID, peerPublicKey, restrictions)
+	return client.CallZvaultUpdateRestrictions(serverAddr, token, clientID, peerPublicKey, restrictions)
 }
 
 func zvaultStoreKey(serverAddr, token, privateKey string) error {
-	return zcncore.CallZvaultStoreKeyString(serverAddr, token, privateKey)
+	return client.CallZvaultStoreKeyString(serverAddr, token, privateKey)
 }
 
 func zvaultRetrieveKeys(serverAddr, token, clientID string) (string, error) {
-	return zcncore.CallZvaultRetrieveKeys(serverAddr, token, clientID)
+	return client.CallZvaultRetrieveKeys(serverAddr, token, clientID)
 }
 
 func zvaultRevokeKey(serverAddr, token, clientID, publicKey string) error {
-	return zcncore.CallZvaultRevokeKey(serverAddr, token, clientID, publicKey)
+	return client.CallZvaultRevokeKey(serverAddr, token, clientID, publicKey)
 }
 
 func zvaultDeletePrimaryKey(serverAddr, token, clientID string) error {
-	return zcncore.CallZvaultDeletePrimaryKey(serverAddr, token, clientID)
+	return client.CallZvaultDeletePrimaryKey(serverAddr, token, clientID)
 }
 
 func zvaultRetrieveWallets(serverAddr, token string) (string, error) {
-	return zcncore.CallZvaultRetrieveWallets(serverAddr, token)
+	return client.CallZvaultRetrieveWallets(serverAddr, token)
 }
 
 func zvaultRetrieveSharedWallets(serverAddr, token string) (string, error) {
-	return zcncore.CallZvaultRetrieveSharedWallets(serverAddr, token)
+	return client.CallZvaultRetrieveSharedWallets(serverAddr, token)
 }
 
 func registerAuthCommon(this js.Value, args []js.Value) interface{} {
