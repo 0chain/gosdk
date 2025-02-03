@@ -18,6 +18,7 @@ import (
 
 	"github.com/0chain/gosdk_common/dev/blobber"
 	"github.com/0chain/gosdk_common/dev/blobber/model"
+	"github.com/0chain/gosdk_common/zboxcore/commonsdk"
 	"github.com/0chain/gosdk_common/zboxcore/encryption"
 	"golang.org/x/crypto/sha3"
 
@@ -276,7 +277,7 @@ func newTestAllocationEmptyBlobbers() (ssc *Allocation) {
 	ssc = new(Allocation)
 	ssc.Expiration = 0
 	ssc.ID = "ID"
-	ssc.BlobberDetails = make([]*BlobberAllocation, 0)
+	ssc.BlobberDetails = make([]*commonsdk.BlobberAllocation, 0)
 	return ssc
 }
 
@@ -288,14 +289,14 @@ func newTestAllocation() (ssc *Allocation) {
 	return ssc
 }
 
-func newBlobbersDetails() (blobbers []*BlobberAllocation) {
-	blobberDetails := make([]*BlobberAllocation, 0)
+func newBlobbersDetails() (blobbers []*commonsdk.BlobberAllocation) {
+	blobberDetails := make([]*commonsdk.BlobberAllocation, 0)
 
 	for i := 1; i <= 1; i++ {
-		var balloc BlobberAllocation
+		var balloc commonsdk.BlobberAllocation
 		balloc.Size = 1000
 
-		balloc.Terms = Terms{ReadPrice: common.Balance(100000000), WritePrice: common.Balance(100000000)}
+		balloc.Terms = commonsdk.Terms{ReadPrice: common.Balance(100000000), WritePrice: common.Balance(100000000)}
 		blobberDetails = append(blobberDetails, &balloc)
 	}
 
@@ -345,7 +346,7 @@ func TestPriceRange_IsValid(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pr := &PriceRange{
+			pr := &commonsdk.PriceRange{
 				Min: tt.fields.Min,
 				Max: tt.fields.Max,
 			}

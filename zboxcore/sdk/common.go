@@ -22,6 +22,10 @@ import (
 
 const alreadyExists = "file already exists"
 
+func SetSaveProgress(save bool) {
+	shouldSaveProgress = save
+}
+
 func getObjectTreeFromBlobber(ctx context.Context, allocationID, allocationTx string, remoteFilePath, sig string, blobber *blockchain.StorageNode, clientId ...string) (fileref.RefEntity, error) {
 	httpreq, err := zboxutil.NewObjectTreeRequest(blobber.Baseurl, allocationID, allocationTx, sig, remoteFilePath)
 	if err != nil {

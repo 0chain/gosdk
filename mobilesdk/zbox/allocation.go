@@ -10,6 +10,7 @@ import (
 	"github.com/0chain/gosdk_common/constants"
 	"github.com/0chain/gosdk_common/core/common"
 	"github.com/0chain/gosdk_common/zboxcore/blockchain"
+	"github.com/0chain/gosdk_common/zboxcore/commonsdk"
 )
 
 var ErrInvalidAllocation = errors.New("zbox: invalid allocation")
@@ -462,7 +463,7 @@ func (a *Allocation) GetMaxStorageCostWithBlobbers(size int64, blobbersJson stri
 	if a == nil || a.sdkAllocation == nil {
 		return "", ErrInvalidAllocation
 	}
-	var selBlobbers *[]*sdk.BlobberAllocation
+	var selBlobbers *[]*commonsdk.BlobberAllocation
 	err := json.Unmarshal([]byte(blobbersJson), selBlobbers)
 	if err != nil {
 		return "", err

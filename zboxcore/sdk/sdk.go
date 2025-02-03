@@ -20,6 +20,7 @@ import (
 	"github.com/0chain/gosdk_common/core/transaction"
 	"github.com/0chain/gosdk_common/core/version"
 	"github.com/0chain/gosdk_common/zboxcore/blockchain"
+	"github.com/0chain/gosdk_common/zboxcore/commonsdk"
 	"github.com/0chain/gosdk_common/zboxcore/encryption"
 	l "github.com/0chain/gosdk_common/zboxcore/logger"
 	"github.com/0chain/gosdk_common/zboxcore/marker"
@@ -62,10 +63,6 @@ func SetSingleClietnMode(mode bool) {
 
 func SetShouldVerifyHash(verify bool) {
 	shouldVerifyHash = verify
-}
-
-func SetSaveProgress(save bool) {
-	shouldSaveProgress = save
 }
 
 // GetVersion - returns version string
@@ -304,7 +301,7 @@ type Blobber struct {
 	BaseURL string `json:"url"`
 
 	// Terms of the blobber
-	Terms Terms `json:"terms"`
+	Terms commonsdk.Terms `json:"terms"`
 
 	// Capacity of the blobber
 	Capacity common.Size `json:"capacity"`
@@ -355,7 +352,7 @@ type Blobber struct {
 type UpdateBlobber struct {
 	ID                       common.Key                          `json:"id"`
 	BaseURL                  *string                             `json:"url,omitempty"`
-	Terms                    *UpdateTerms                        `json:"terms,omitempty"`
+	Terms                    *commonsdk.UpdateTerms              `json:"terms,omitempty"`
 	Capacity                 *common.Size                        `json:"capacity,omitempty"`
 	Allocated                *common.Size                        `json:"allocated,omitempty"`
 	LastHealthCheck          *common.Timestamp                   `json:"last_health_check,omitempty"`
@@ -786,14 +783,14 @@ type CreateAllocationOptions struct {
 	DataShards           int
 	ParityShards         int
 	Size                 int64
-	ReadPrice            PriceRange
-	WritePrice           PriceRange
+	ReadPrice            commonsdk.PriceRange
+	WritePrice           commonsdk.PriceRange
 	Lock                 uint64
 	BlobberIds           []string
 	BlobberAuthTickets   []string
 	ThirdPartyExtendable bool
 	IsEnterprise         bool
-	FileOptionsParams    *FileOptionsParameters
+	FileOptionsParams    *commonsdk.FileOptionsParameters
 	Force                bool
 	StorageVersion       int
 	AuthRoundExpiry      int64
@@ -807,7 +804,7 @@ type CreateAllocationOptions struct {
 func CreateAllocationWith(options CreateAllocationOptions) (
 	string, int64, *transaction.Transaction, error) {
 
-	return CreateAllocationForOwner(client.Id(),
+	return commonsdk.CreateAllocationForOwner(client.Id(),
 		client.PublicKey(), options.DataShards, options.ParityShards,
 		options.Size, options.ReadPrice, options.WritePrice, options.Lock,
 		options.BlobberIds, options.BlobberAuthTickets, options.ThirdPartyExtendable, options.IsEnterprise, options.Force, options.FileOptionsParams, options.AuthRoundExpiry)
@@ -827,7 +824,7 @@ func GetAllocationBlobbers(
 	storageVersion, datashards, parityshards int,
 	size int64,
 	isRestricted int,
-	readPrice, writePrice PriceRange,
+	readPrice, writePrice commonsdk.PriceRange,
 	force ...bool,
 ) ([]string, error) {
 	var allocationRequest = map[string]interface{}{
@@ -865,7 +862,7 @@ func GetAllocationBlobbers(
 func getNewAllocationBlobbers(
 	storageVersion, datashards, parityshards int,
 	size int64,
-	readPrice, writePrice PriceRange,
+	readPrice, writePrice commonsdk.PriceRange,
 	preferredBlobberIds, blobberAuthTickets []string, force bool,
 ) (map[string]interface{}, error) {
 	for _, authTicket := range blobberAuthTickets {
@@ -1355,7 +1352,7 @@ func CommitToFabric(metaTxnData, fabricConfigJSON string) (string, error) {
 func GetAllocationMinLock(
 	datashards, parityshards int,
 	size int64,
-	writePrice PriceRange,
+	writePrice commonsdk.PriceRange,
 ) (int64, error) {
 	baSize := int64(math.Ceil(float64(size) / float64(datashards)))
 	totalSize := baSize * int64(datashards+parityshards)

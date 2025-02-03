@@ -11,6 +11,7 @@ import (
 
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk_common/zboxapi"
+	"github.com/0chain/gosdk_common/zboxcore/commonsdk"
 	"github.com/0chain/gosdk_common/zcncore"
 )
 
@@ -86,7 +87,7 @@ func CreateFreeAllocation(freemarker *C.char) *C.char {
 
 	lock := zcncore.ConvertToValue(marker.FreeTokens)
 
-	allocationID, _, err := sdk.CreateFreeAllocation(js, lock)
+	allocationID, _, err := commonsdk.CreateFreeAllocation(js, lock)
 
 	if err != nil {
 		log.Error("win: ", err, "lock: ", lock, " marker:", js)
