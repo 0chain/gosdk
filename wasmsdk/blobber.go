@@ -26,6 +26,7 @@ import (
 	"github.com/0chain/gosdk/wasmsdk/jsbridge"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk_common/core/transaction"
+	"github.com/0chain/gosdk_common/zboxcore/commonsdk"
 	"github.com/0chain/gosdk_common/zboxcore/fileref"
 	"github.com/0chain/gosdk_common/zboxcore/zboxutil"
 
@@ -156,7 +157,7 @@ func getFileStats(allocationID, remotePath string) ([]*sdk.FileStats, error) {
 // and updates the blobber settings. Can only be called by the owner of the blobber.
 //   - blobberSettingsJson is the blobber settings in JSON format
 func updateBlobberSettings(blobberSettingsJson string) (*transaction.Transaction, error) {
-	var blobberSettings sdk.Blobber
+	var blobberSettings commonsdk.Blobber
 	err := json.Unmarshal([]byte(blobberSettingsJson), &blobberSettings)
 	if err != nil {
 		sdkLogger.Error(err)
@@ -168,7 +169,7 @@ func updateBlobberSettings(blobberSettingsJson string) (*transaction.Transaction
 		InputArgs: blobberSettings,
 	}
 
-	_, _, _, txn, err := sdk.StorageSmartContractTxn(sn)
+	_, _, _, txn, err := commonsdk.StorageSmartContractTxn(sn)
 	return txn, err
 }
 
@@ -1081,8 +1082,8 @@ func downloadBlocks(allocId, remotePath, authTicket, lookupHash, writeChunkFuncN
 
 // getBlobbers get list of active blobbers, and format them as array json string
 //   - stakable : flag to get only stakable blobbers
-func getBlobbers(stakable bool) ([]*sdk.Blobber, error) {
-	blobbs, err := sdk.GetBlobbers(true, stakable)
+func getBlobbers(stakable bool) ([]*commonsdk.Blobber, error) {
+	blobbs, err := commonsdk.GetBlobbers(true, stakable)
 	if err != nil {
 		return nil, err
 	}

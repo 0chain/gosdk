@@ -20,6 +20,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/mocks"
 	"github.com/0chain/gosdk_common/core/client"
 	"github.com/0chain/gosdk_common/zboxcore/blockchain"
+	"github.com/0chain/gosdk_common/zboxcore/commonsdk"
 	"github.com/0chain/gosdk_common/zboxcore/zboxutil"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -210,12 +211,14 @@ func TestAllocation_UpdateFile(t *testing.T) {
 	const mockLocalPath = "1.txt"
 
 	a := &Allocation{
-		ID:           "TestAllocation_UpdateFile",
-		Tx:           "TestAllocation_UpdateFile",
-		ParityShards: 2,
-		DataShards:   2,
-		Size:         2 * GB,
-		Owner:        mockClientId,
+		Allocation: commonsdk.Allocation{
+			ID:           "TestAllocation_UpdateFile",
+			Tx:           "TestAllocation_UpdateFile",
+			ParityShards: 2,
+			DataShards:   2,
+			Size:         2 * GB,
+			Owner:        mockClientId,
+		},
 	}
 	setupMockAllocation(t, a)
 
@@ -281,11 +284,13 @@ func TestAllocation_UploadFile(t *testing.T) {
 		defer teardown(t)
 	}
 	a := &Allocation{
-		Tx:           "TestAllocation_UploadFile",
-		ParityShards: 2,
-		DataShards:   2,
-		Size:         2 * GB,
-		Owner:        mockClientId,
+		Allocation: commonsdk.Allocation{
+			Tx:           "TestAllocation_UploadFile",
+			ParityShards: 2,
+			DataShards:   2,
+			Size:         2 * GB,
+			Owner:        mockClientId,
+		},
 	}
 
 	setupMockAllocation(t, a)
@@ -319,12 +324,14 @@ func TestAllocation_UpdateFileWithThumbnail(t *testing.T) {
 	zboxutil.FastHttpClient = &mockFastClient
 
 	a := &Allocation{
-		ID:           "TestAllocation_UpdateFile_WithThumbNail",
-		Tx:           "TestAllocation_UpdateFile_WithThumbNail",
-		ParityShards: 2,
-		DataShards:   2,
-		Size:         2 * GB,
-		Owner:        mockClientId,
+		Allocation: commonsdk.Allocation{
+			ID:           "TestAllocation_UpdateFile_WithThumbNail",
+			Tx:           "TestAllocation_UpdateFile_WithThumbNail",
+			ParityShards: 2,
+			DataShards:   2,
+			Size:         2 * GB,
+			Owner:        mockClientId,
+		},
 	}
 	setupMockAllocation(t, a)
 
@@ -400,11 +407,13 @@ func TestAllocation_UploadFileWithThumbnail(t *testing.T) {
 		defer teardown(t)
 	}
 	a := &Allocation{
-		Tx:           "TestAllocation_UploadFileWithThumbnail",
-		ParityShards: 2,
-		DataShards:   2,
-		Size:         2 * GB,
-		Owner:        mockClientId,
+		Allocation: commonsdk.Allocation{
+			Tx:           "TestAllocation_UploadFileWithThumbnail",
+			ParityShards: 2,
+			DataShards:   2,
+			Size:         2 * GB,
+			Owner:        mockClientId,
+		},
 	}
 
 	setupMockAllocation(t, a)
@@ -435,12 +444,14 @@ func TestAllocation_EncryptAndUpdateFile(t *testing.T) {
 	const mockLocalPath = "1.txt"
 
 	a := &Allocation{
-		ID:           "TestAllocation_Encrypt_And_UpdateFile",
-		Tx:           "TestAllocation_Encrypt_And_UpdateFile",
-		ParityShards: 2,
-		DataShards:   2,
-		Size:         2 * GB,
-		Owner:        mockClientId,
+		Allocation: commonsdk.Allocation{
+			ID:           "TestAllocation_Encrypt_And_UpdateFile",
+			Tx:           "TestAllocation_Encrypt_And_UpdateFile",
+			ParityShards: 2,
+			DataShards:   2,
+			Size:         2 * GB,
+			Owner:        mockClientId,
+		},
 	}
 	setupMockAllocation(t, a)
 
@@ -508,11 +519,13 @@ func TestAllocation_EncryptAndUploadFile(t *testing.T) {
 		defer teardown(t)
 	}
 	a := &Allocation{
-		Tx:           "TestAllocation_EncryptAndUploadFile",
-		ParityShards: 2,
-		DataShards:   2,
-		Size:         2 * GB,
-		Owner:        mockClientId,
+		Allocation: commonsdk.Allocation{
+			Tx:           "TestAllocation_EncryptAndUploadFile",
+			ParityShards: 2,
+			DataShards:   2,
+			Size:         2 * GB,
+			Owner:        mockClientId,
+		},
 	}
 
 	setupMockAllocation(t, a)
@@ -556,12 +569,14 @@ func TestAllocation_EncryptAndUpdateFileWithThumbnail(t *testing.T) {
 	}
 
 	a := &Allocation{
-		ID:           "TestAllocation_EncryptAndUpdateFileWithThumbnail",
-		Tx:           "TestAllocation_EncryptAndUpdateFileWithThumbnail",
-		ParityShards: 2,
-		DataShards:   2,
-		Size:         2 * GB,
-		Owner:        mockClientId,
+		Allocation: commonsdk.Allocation{
+			ID:           "TestAllocation_EncryptAndUpdateFileWithThumbnail",
+			Tx:           "TestAllocation_EncryptAndUpdateFileWithThumbnail",
+			ParityShards: 2,
+			DataShards:   2,
+			Size:         2 * GB,
+			Owner:        mockClientId,
+		},
 	}
 
 	setupMockAllocation(t, a)
@@ -633,12 +648,14 @@ func TestAllocation_EncryptAndUploadFileWithThumbnail(t *testing.T) {
 	}
 
 	a := &Allocation{
-		Tx:           "TestAllocation_EncryptAndUploadFileWithThumbnail",
-		ParityShards: 2,
-		DataShards:   2,
-		Size:         2 * GB,
-		ctx:          context.TODO(),
-		Owner:        mockClientId,
+		Allocation: commonsdk.Allocation{
+			Tx:           "TestAllocation_EncryptAndUploadFileWithThumbnail",
+			ParityShards: 2,
+			DataShards:   2,
+			Size:         2 * GB,
+			Owner:        mockClientId,
+		},
+		ctx: context.TODO(),
 	}
 
 	setupMockAllocation(t, a)

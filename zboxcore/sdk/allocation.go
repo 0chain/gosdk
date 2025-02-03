@@ -238,8 +238,7 @@ func getPriceRange(name string) (commonsdk.PriceRange, error) {
 	if err != nil {
 		return commonsdk.PriceRange{}, err
 	}
-	return commonsdk.PriceRange{0, uint64(max)}, err
-
+	return commonsdk.PriceRange{Min: 0, Max: uint64(max)}, err
 }
 
 // GetStats returns the statistics of the allocation.
@@ -2979,7 +2978,7 @@ func (a *Allocation) UpdateWithRepair(
 	extend bool,
 	lock uint64,
 	addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey string,
-	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters, updateAllocTicket string,
+	setThirdPartyExtendable bool, fileOptionsParams *commonsdk.FileOptionsParameters, updateAllocTicket string,
 	statusCB StatusCallback,
 ) (string, error) {
 	updatedAlloc, hash, isRepairRequired, err := a.UpdateWithStatus(size, authRoundExpiry, extend, lock, addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey, setThirdPartyExtendable, fileOptionsParams, updateAllocTicket)
@@ -3014,7 +3013,7 @@ func (a *Allocation) UpdateWithStatus(
 	extend bool,
 	lock uint64,
 	addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey string,
-	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
+	setThirdPartyExtendable bool, fileOptionsParams *commonsdk.FileOptionsParameters,
 	updateAllocTicket string,
 ) (*Allocation, string, bool, error) {
 	var (

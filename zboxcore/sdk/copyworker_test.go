@@ -21,6 +21,7 @@ import (
 	devMock "github.com/0chain/gosdk_common/dev/mock"
 	"github.com/0chain/gosdk_common/sdks/blobber"
 	"github.com/0chain/gosdk_common/zboxcore/blockchain"
+	"github.com/0chain/gosdk_common/zboxcore/commonsdk"
 	"github.com/0chain/gosdk_common/zboxcore/fileref"
 	"github.com/0chain/gosdk_common/zboxcore/zboxutil"
 	"github.com/stretchr/testify/mock"
@@ -210,7 +211,9 @@ func TestCopyRequest_copyBlobberObject(t *testing.T) {
 				ctx:          context.TODO(),
 				connectionID: mockConnectionId,
 				allocationObj: &Allocation{
-					Owner: mockClientId,
+					Allocation: commonsdk.Allocation{
+						Owner: mockClientId,
+					},
 				},
 			}
 			req.blobbers = append(req.blobbers, &blockchain.StorageNode{
@@ -439,10 +442,12 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 			require := require.New(t)
 
 			a := &Allocation{
-				Tx:          "TestCopyRequest_ProcessCopy",
-				DataShards:  numBlobbers,
-				FileOptions: 63,
-				Owner:       mockClientId,
+				Allocation: commonsdk.Allocation{
+					Tx:          "TestCopyRequest_ProcessCopy",
+					DataShards:  numBlobbers,
+					FileOptions: 63,
+					Owner:       mockClientId,
+				},
 			}
 			a.InitAllocation()
 

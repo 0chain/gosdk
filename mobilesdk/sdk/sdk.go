@@ -20,6 +20,7 @@ import (
 	"github.com/0chain/gosdk_common/core/client"
 	"github.com/0chain/gosdk_common/core/conf"
 	"github.com/0chain/gosdk_common/core/util"
+	"github.com/0chain/gosdk_common/zboxcore/commonsdk"
 	l "github.com/0chain/gosdk_common/zboxcore/logger"
 
 	"github.com/0chain/gosdk/mobilesdk/zbox"
@@ -164,15 +165,15 @@ func InitStorageSDK(clientJson string, configJson string) (*StorageSDK, error) {
 //   - lock: lock write pool with given number of tokens
 //   - blobberAuthTickets: list of blobber auth tickets needed for the restricted blobbers
 func (s *StorageSDK) CreateAllocation(datashards, parityshards int, size, expiration int64, lock string, blobberAuthTickets []string) (*zbox.Allocation, error) {
-	readPrice := sdk.PriceRange{Min: 0, Max: math.MaxInt64}
-	writePrice := sdk.PriceRange{Min: 0, Max: math.MaxInt64}
+	readPrice := commonsdk.PriceRange{Min: 0, Max: math.MaxInt64}
+	writePrice := commonsdk.PriceRange{Min: 0, Max: math.MaxInt64}
 
 	l, err := util.ParseCoinStr(lock)
 	if err != nil {
 		return nil, err
 	}
 
-	options := sdk.CreateAllocationOptions{
+	options := commonsdk.CreateAllocationOptions{
 		DataShards:         datashards,
 		ParityShards:       parityshards,
 		Size:               size,
@@ -180,11 +181,11 @@ func (s *StorageSDK) CreateAllocation(datashards, parityshards int, size, expira
 		WritePrice:         writePrice,
 		Lock:               uint64(l),
 		BlobberIds:         []string{},
-		FileOptionsParams:  &sdk.FileOptionsParameters{},
+		FileOptionsParams:  &commonsdk.FileOptionsParameters{},
 		BlobberAuthTickets: blobberAuthTickets,
 	}
 
-	sdkAllocationID, _, _, err := sdk.CreateAllocationWith(options)
+	sdkAllocationID, _, _, err := commonsdk.CreateAllocationWith(options)
 	if err != nil {
 		return nil, err
 	}
@@ -205,15 +206,15 @@ func (s *StorageSDK) CreateAllocation(datashards, parityshards int, size, expira
 //   - blobberUrls: concat blobber urls with comma. leave it as empty if you don't have any preferred blobbers
 //   - blobberIds: concat blobber ids with comma. leave it as empty if you don't have any preferred blobbers
 func (s *StorageSDK) CreateAllocationWithBlobbers(name string, datashards, parityshards int, size int64, lock string, blobberUrls, blobberIds string, blobberAuthTickets []string) (*zbox.Allocation, error) {
-	readPrice := sdk.PriceRange{Min: 0, Max: math.MaxInt64}
-	writePrice := sdk.PriceRange{Min: 0, Max: math.MaxInt64}
+	readPrice := commonsdk.PriceRange{Min: 0, Max: math.MaxInt64}
+	writePrice := commonsdk.PriceRange{Min: 0, Max: math.MaxInt64}
 
 	l, err := util.ParseCoinStr(lock)
 	if err != nil {
 		return nil, err
 	}
 
-	options := sdk.CreateAllocationOptions{
+	options := commonsdk.CreateAllocationOptions{
 		DataShards:         datashards,
 		ParityShards:       parityshards,
 		Size:               size,
@@ -241,7 +242,7 @@ func (s *StorageSDK) CreateAllocationWithBlobbers(name string, datashards, parit
 		}
 	}
 
-	sdkAllocationID, _, _, err := sdk.CreateAllocationWith(options)
+	sdkAllocationID, _, _, err := commonsdk.CreateAllocationWith(options)
 	if err != nil {
 		return nil, err
 	}
@@ -322,14 +323,14 @@ func (s *StorageSDK) GetAllocationStats(allocationID string) (string, error) {
 // FinalizeAllocation finalize allocation
 //   - allocationID: allocation ID
 func (s *StorageSDK) FinalizeAllocation(allocationID string) (string, error) {
-	hash, _, err := sdk.FinalizeAllocation(allocationID)
+	hash, _, err := commonsdk.FinalizeAllocation(allocationID)
 	return hash, err
 }
 
 // CancelAllocation cancel allocation by ID
 //   - allocationID: allocation ID
 func (s *StorageSDK) CancelAllocation(allocationID string) (string, error) {
-	hash, _, err := sdk.CancelAllocation(allocationID)
+	hash, _, err := commonsdk.CancelAllocation(allocationID)
 	return hash, err
 }
 
@@ -353,7 +354,7 @@ func (s *StorageSDK) WritePoolLock(durInSeconds int64, tokens, fee float64, allo
 	if err != nil {
 		return errors.Errorf("Error parsing fee: %v", err)
 	}
-	_, _, err = sdk.WritePoolLock(
+	_, _, err = commonsdk.WritePoolLock(
 		allocID,
 		wpLockUint,
 		feeUint,
@@ -420,7 +421,7 @@ func (s *StorageSDK) RedeemFreeStorage(ticket string) (string, error) {
 		return "", fmt.Errorf("invalid_free_marker: free marker is not assigned to your wallet")
 	}
 
-	hash, _, err := sdk.CreateFreeAllocation(marker, lock)
+	hash, _, err := commonsdk.CreateFreeAllocation(marker, lock)
 	return hash, err
 }
 

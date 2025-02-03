@@ -1,12 +1,11 @@
 package sdk
 
 import (
-	"encoding/json"
 	"math"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk_common/core/client"
-	"github.com/0chain/gosdk_common/core/transaction"
+	"github.com/0chain/gosdk_common/zboxcore/commonsdk"
 )
 
 // UpdateAllocation sends an update request for an allocation (txn: `storagesc.update_allocation_request`)
@@ -28,7 +27,7 @@ func UpdateAllocation(
 	allocationID string,
 	lock uint64,
 	addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerID, ownerSigninPublicKey string,
-	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters, ticket string,
+	setThirdPartyExtendable bool, fileOptionsParams *commonsdk.FileOptionsParameters, ticket string,
 ) (hash string, nonce int64, err error) {
 	if ownerID == "" {
 		ownerID = client.Id()
@@ -47,42 +46,23 @@ func UpdateAllocation(
 		return "", 0, allocationNotFound
 	}
 
-	updateAllocationRequest := make(map[string]interface{})
-	updateAllocationRequest["owner_id"] = ownerID
-	updateAllocationRequest["owner_public_key"] = ""
-	updateAllocationRequest["id"] = allocationID
-	updateAllocationRequest["size"] = size
-	updateAllocationRequest["extend"] = extend
-	updateAllocationRequest["add_blobber_id"] = addBlobberId
-	updateAllocationRequest["add_blobber_auth_ticket"] = addBlobberAuthTicket
-	updateAllocationRequest["remove_blobber_id"] = removeBlobberId
-	updateAllocationRequest["set_third_party_extendable"] = setThirdPartyExtendable
-	updateAllocationRequest["owner_signing_public_key"] = ownerSigninPublicKey
-	updateAllocationRequest["file_options_changed"], updateAllocationRequest["file_options"] = calculateAllocationFileOptions(alloc.FileOptions, fileOptionsParams)
-	updateAllocationRequest["auth_round_expiry"] = authRoundExpiry
-
-	if ticket != "" {
-
-		type Ticket struct {
-			AllocationID  string `json:"allocation_id"`
-			UserID        string `json:"user_id"`
-			RoundExpiry   int64  `json:"round_expiry"`
-			OperationType string `json:"operation_type"`
-			Signature     string `json:"signature"`
-		}
-
-		ticketData := &Ticket{}
-		err := json.Unmarshal([]byte(ticket), ticketData)
-		if err != nil {
-			return "", 0, errors.New("invalid_ticket", "invalid ticket")
-		}
-		updateAllocationRequest["update_ticket"] = ticketData
-	}
-
-	sn := transaction.SmartContractTxnData{
-		Name:      transaction.STORAGESC_UPDATE_ALLOCATION,
-		InputArgs: updateAllocationRequest,
-	}
-	hash, _, nonce, _, err = storageSmartContractTxnValue(sn, lock)
+	hash, nonce, err = commonsdk.UpdateAllocationWithRequest(
+		commonsdk.UpdateAllocationOptions{
+			Size:                    size,
+			Extend:                  extend,
+			AllocationID:            allocationID,
+			Lock:                    lock,
+			AddBlobberID:            addBlobberId,
+			AddBlobberAuthTicket:    addBlobberAuthTicket,
+			RemoveBlobberID:         removeBlobberId,
+			SetThirdPartyExtendable: setThirdPartyExtendable,
+			FileOptionsParams:       fileOptionsParams,
+			OwnerID:                 ownerID,
+			OwnerSigninPublicKey:    ownerSigninPublicKey,
+			Ticket:                  ticket,
+			AuthRoundExpiry:         authRoundExpiry,
+			FileOptions:             alloc.FileOptions,
+		},
+	)
 	return
 }

@@ -17,6 +17,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk_common/core/client"
 	"github.com/0chain/gosdk_common/zboxapi"
+	"github.com/0chain/gosdk_common/zboxcore/commonsdk"
 	l "github.com/0chain/gosdk_common/zboxcore/logger"
 	"github.com/0chain/gosdk_common/zboxcore/zboxutil"
 	"github.com/0chain/gosdk_common/zcncore"
@@ -50,8 +51,8 @@ func SetLogFile(file *C.char) *C.char {
 		return WithJSON(false, err)
 	}
 
-	sdk.GetLogger().SetLevel(logger.DEBUG)
-	sdk.GetLogger().SetLogFile(f, true)
+	commonsdk.GetLogger().SetLevel(logger.DEBUG)
+	commonsdk.GetLogger().SetLogFile(f, true)
 
 	zcncore.GetLogger().SetLevel(logger.DEBUG)
 	zcncore.GetLogger().SetLogFile(f, true)

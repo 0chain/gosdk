@@ -16,6 +16,7 @@ import (
 	"github.com/0chain/gosdk/wasmsdk/jsbridge"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk_common/core/transaction"
+	"github.com/0chain/gosdk_common/zboxcore/commonsdk"
 )
 
 const TOKEN_UNIT int64 = 1e10
@@ -35,13 +36,13 @@ type decodeAuthTokenResp struct {
 // getBlobberIds retrieves blobber ids from the given blobber urls
 //   - blobberUrls is the list of blobber urls
 func getBlobberIds(blobberUrls []string) ([]string, error) {
-	return sdk.GetBlobberIds(blobberUrls)
+	return commonsdk.GetBlobberIds(blobberUrls)
 }
 
 // createfreeallocation creates a free allocation
 //   - freeStorageMarker is the free storage marker
 func createfreeallocation(freeStorageMarker string) (string, error) {
-	allocationID, _, err := sdk.CreateFreeAllocation(freeStorageMarker, 0)
+	allocationID, _, err := commonsdk.CreateFreeAllocation(freeStorageMarker, 0)
 	if err != nil {
 		sdkLogger.Error("Error creating free allocation: ", err)
 		return "", err
@@ -65,13 +66,13 @@ func getAllocationBlobbers(preferredBlobberURLs []string,
 	minReadPrice, maxReadPrice, minWritePrice, maxWritePrice int64, isRestricted int, force bool) ([]string, error) {
 
 	if len(preferredBlobberURLs) > 0 {
-		return sdk.GetBlobberIds(preferredBlobberURLs)
+		return commonsdk.GetBlobberIds(preferredBlobberURLs)
 	}
 
-	return sdk.GetAllocationBlobbers(sdk.StorageV2, dataShards, parityShards, size, isRestricted, sdk.PriceRange{
+	return commonsdk.GetAllocationBlobbers(sdk.StorageV2, dataShards, parityShards, size, isRestricted, commonsdk.PriceRange{
 		Min: uint64(minReadPrice),
 		Max: uint64(maxReadPrice),
-	}, sdk.PriceRange{
+	}, commonsdk.PriceRange{
 		Min: uint64(minWritePrice),
 		Max: uint64(maxWritePrice),
 	}, force)
@@ -92,15 +93,15 @@ func createAllocation(datashards, parityshards int, size, authRoundExpiry int64,
 	minReadPrice, maxReadPrice, minWritePrice, maxWritePrice int64, lock int64, blobberIds, blobberAuthTickets []string, setThirdPartyExtendable, IsEnterprise, force bool) (
 	*transaction.Transaction, error) {
 
-	options := sdk.CreateAllocationOptions{
+	options := commonsdk.CreateAllocationOptions{
 		DataShards:   datashards,
 		ParityShards: parityshards,
 		Size:         size,
-		ReadPrice: sdk.PriceRange{
+		ReadPrice: commonsdk.PriceRange{
 			Min: uint64(minReadPrice),
 			Max: uint64(maxReadPrice),
 		},
-		WritePrice: sdk.PriceRange{
+		WritePrice: commonsdk.PriceRange{
 			Min: uint64(minWritePrice),
 			Max: uint64(maxWritePrice),
 		},
@@ -115,7 +116,7 @@ func createAllocation(datashards, parityshards int, size, authRoundExpiry int64,
 	}
 
 	sdkLogger.Info(options)
-	_, _, txn, err := sdk.CreateAllocationWith(options)
+	_, _, txn, err := commonsdk.CreateAllocationWith(options)
 
 	return txn, err
 }
@@ -173,13 +174,13 @@ func UpdateForbidAllocation(allocationID string, forbidupload, forbiddelete, for
 		"",           //owner,
 		"",           //ownerSigninPublicKey
 		false,        // thirdPartyExtendable
-		&sdk.FileOptionsParameters{
-			ForbidUpload: sdk.FileOptionParam{Changed: forbidupload, Value: forbidupload},
-			ForbidDelete: sdk.FileOptionParam{Changed: forbiddelete, Value: forbiddelete},
-			ForbidUpdate: sdk.FileOptionParam{Changed: forbidupdate, Value: forbidupdate},
-			ForbidMove:   sdk.FileOptionParam{Changed: forbidmove, Value: forbidmove},
-			ForbidCopy:   sdk.FileOptionParam{Changed: forbidcopy, Value: forbidcopy},
-			ForbidRename: sdk.FileOptionParam{Changed: forbidrename, Value: forbidrename},
+		&commonsdk.FileOptionsParameters{
+			ForbidUpload: commonsdk.FileOptionParam{Changed: forbidupload, Value: forbidupload},
+			ForbidDelete: commonsdk.FileOptionParam{Changed: forbiddelete, Value: forbiddelete},
+			ForbidUpdate: commonsdk.FileOptionParam{Changed: forbidupdate, Value: forbidupdate},
+			ForbidMove:   commonsdk.FileOptionParam{Changed: forbidmove, Value: forbidmove},
+			ForbidCopy:   commonsdk.FileOptionParam{Changed: forbidcopy, Value: forbidcopy},
+			ForbidRename: commonsdk.FileOptionParam{Changed: forbidrename, Value: forbidrename},
 		},
 		"",
 	)
@@ -205,13 +206,13 @@ func freezeAllocation(allocationID string) (string, error) {
 		"",           //owner,
 		"",           //ownerSigninPublicKey
 		false,        // thirdPartyExtendable
-		&sdk.FileOptionsParameters{
-			ForbidUpload: sdk.FileOptionParam{Changed: true, Value: true},
-			ForbidDelete: sdk.FileOptionParam{Changed: true, Value: true},
-			ForbidUpdate: sdk.FileOptionParam{Changed: true, Value: true},
-			ForbidMove:   sdk.FileOptionParam{Changed: true, Value: true},
-			ForbidCopy:   sdk.FileOptionParam{Changed: true, Value: true},
-			ForbidRename: sdk.FileOptionParam{Changed: true, Value: true},
+		&commonsdk.FileOptionsParameters{
+			ForbidUpload: commonsdk.FileOptionParam{Changed: true, Value: true},
+			ForbidDelete: commonsdk.FileOptionParam{Changed: true, Value: true},
+			ForbidUpdate: commonsdk.FileOptionParam{Changed: true, Value: true},
+			ForbidMove:   commonsdk.FileOptionParam{Changed: true, Value: true},
+			ForbidCopy:   commonsdk.FileOptionParam{Changed: true, Value: true},
+			ForbidRename: commonsdk.FileOptionParam{Changed: true, Value: true},
 		},
 		"",
 	)
@@ -227,7 +228,7 @@ func freezeAllocation(allocationID string) (string, error) {
 // cancelAllocation cancels one of the client's allocations, given its ID
 //   - allocationID: allocation ID
 func cancelAllocation(allocationID string) (string, error) {
-	hash, _, err := sdk.CancelAllocation(allocationID)
+	hash, _, err := commonsdk.CancelAllocation(allocationID)
 
 	if err == nil {
 		clearAllocation(allocationID)
@@ -268,7 +269,7 @@ func updateAllocationWithRepair(allocationID string,
 		}
 	}
 
-	alloc, hash, isRepairRequired, err := allocationObj.UpdateWithStatus(size, authRoundExpiry, extend, uint64(lock), addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey, false, &sdk.FileOptionsParameters{}, updateAllocTicket)
+	alloc, hash, isRepairRequired, err := allocationObj.UpdateWithStatus(size, authRoundExpiry, extend, uint64(lock), addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey, false, &commonsdk.FileOptionsParameters{}, updateAllocTicket)
 	if err != nil {
 		return hash, err
 	}
@@ -305,7 +306,7 @@ func updateAllocation(allocationID string,
 	size, authRoundExpiry int64, extend bool,
 	lock int64,
 	addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey string, setThirdPartyExtendable bool) (string, error) {
-	hash, _, err := sdk.UpdateAllocation(size, authRoundExpiry, extend, allocationID, uint64(lock), addBlobberId, addBlobberAuthTicket, removeBlobberId, "", ownerSigninPublicKey, setThirdPartyExtendable, &sdk.FileOptionsParameters{}, "")
+	hash, _, err := sdk.UpdateAllocation(size, authRoundExpiry, extend, allocationID, uint64(lock), addBlobberId, addBlobberAuthTicket, removeBlobberId, "", ownerSigninPublicKey, setThirdPartyExtendable, &commonsdk.FileOptionsParameters{}, "")
 
 	if err == nil {
 		clearAllocation(allocationID)
@@ -315,7 +316,7 @@ func updateAllocation(allocationID string,
 }
 
 func getUpdateAllocTicket(allocationID, userID, operationType string, roundExpiry int64) (string, error) {
-	sign, err := sdk.GetUpdateAllocTicket(allocationID, userID, operationType, roundExpiry)
+	sign, err := commonsdk.GetUpdateAllocTicket(allocationID, userID, operationType, roundExpiry)
 	if err != nil {
 		return "", err
 	}
@@ -333,9 +334,9 @@ func getAllocationMinLock(datashards, parityshards int,
 	size int64,
 	maxwritePrice uint64,
 ) (int64, error) {
-	writePrice := sdk.PriceRange{Min: 0, Max: maxwritePrice}
+	writePrice := commonsdk.PriceRange{Min: 0, Max: maxwritePrice}
 
-	value, err := sdk.GetAllocationMinLock(datashards, parityshards, size, writePrice)
+	value, err := commonsdk.GetAllocationMinLock(datashards, parityshards, size, writePrice)
 	if err != nil {
 		sdkLogger.Error(err)
 		return 0, err
@@ -357,7 +358,7 @@ func getUpdateAllocationMinLock(
 	size int64,
 	extend bool,
 	addBlobberId, removeBlobberId string) (int64, error) {
-	return sdk.GetUpdateAllocationMinLock(allocationID, size, extend, addBlobberId, removeBlobberId)
+	return commonsdk.GetUpdateAllocationMinLock(allocationID, size, extend, addBlobberId, removeBlobberId)
 }
 
 // getRemoteFileMap list all files in an allocation from the blobbers.
@@ -396,7 +397,7 @@ func getRemoteFileMap(allocationID string) ([]*fileResp, error) {
 //   - tokens:  sas tokens
 //   - fee: sas tokens
 func lockWritePool(allocID string, tokens, fee uint64) (string, error) {
-	hash, _, err := sdk.WritePoolLock(allocID, tokens, fee)
+	hash, _, err := commonsdk.WritePoolLock(allocID, tokens, fee)
 	return hash, err
 }
 
@@ -407,7 +408,7 @@ func lockWritePool(allocID string, tokens, fee uint64) (string, error) {
 //   - providerID: provider id
 func lockStakePool(providerType, tokens, fee uint64, providerID string) (string, error) {
 
-	hash, _, err := sdk.StakePoolLock(sdk.ProviderType(providerType), providerID,
+	hash, _, err := commonsdk.StakePoolLock(commonsdk.ProviderType(providerType), providerID,
 		tokens, fee)
 	return hash, err
 }
@@ -417,21 +418,21 @@ func lockStakePool(providerType, tokens, fee uint64, providerID string) (string,
 //   - fee: transaction fees (in SAS)
 //   - providerID: provider id
 func unlockStakePool(providerType, fee uint64, providerID, clientID string) (int64, error) {
-	unstake, _, err := sdk.StakePoolUnlock(sdk.ProviderType(providerType), providerID, clientID, fee)
+	unstake, _, err := commonsdk.StakePoolUnlock(commonsdk.ProviderType(providerType), providerID, clientID, fee)
 	return unstake, err
 }
 
 func collectRewards(providerType int, providerID string) (string, error) {
-	hash, _, err := sdk.CollectRewards(providerID, sdk.ProviderType(providerType))
+	hash, _, err := commonsdk.CollectRewards(providerID, commonsdk.ProviderType(providerType))
 	return hash, err
 }
 
 // getSkatePoolInfo is to get information about the stake pool for the allocation
 //   - providerType: provider type (1: miner, 2:sharder, 3:blobber, 4:validator, 5:authorizer)
 //   - providerID: provider id
-func getSkatePoolInfo(providerType int, providerID string) (*sdk.StakePoolInfo, error) {
+func getSkatePoolInfo(providerType int, providerID string) (*commonsdk.StakePoolInfo, error) {
 
-	info, err := sdk.GetStakePoolInfo(sdk.ProviderType(providerType), providerID)
+	info, err := commonsdk.GetStakePoolInfo(commonsdk.ProviderType(providerType), providerID)
 
 	if err != nil {
 		return nil, err

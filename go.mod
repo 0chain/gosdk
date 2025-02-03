@@ -33,12 +33,12 @@ require (
 	golang.org/x/image v0.14.0 // indirect
 	golang.org/x/sync v0.7.0
 	gopkg.in/cheggaaa/pb.v1 v1.0.28
-	gopkg.in/natefinch/lumberjack.v2 v2.2.1
+	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 require (
-	github.com/0chain/gosdk_common v0.0.0-20250202211447-5a289392e195
+	github.com/0chain/gosdk_common v0.0.0-20250203211137-32f7f9862646
 	github.com/hack-pad/go-webworkers v0.1.0
 	github.com/minio/sha256-simd v1.0.1
 	github.com/valyala/bytebufferpool v1.0.0

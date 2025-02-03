@@ -23,6 +23,7 @@ import (
 	"github.com/0chain/gosdk_common/core/common"
 	"github.com/0chain/gosdk_common/core/sys"
 	"github.com/0chain/gosdk_common/zboxcore/blockchain"
+	"github.com/0chain/gosdk_common/zboxcore/commonsdk"
 	"github.com/0chain/gosdk_common/zboxcore/encryption"
 	"github.com/0chain/gosdk_common/zboxcore/fileref"
 	"github.com/0chain/gosdk_common/zboxcore/logger"
@@ -1081,7 +1082,7 @@ type blobberFile struct {
 func GetFileRefFromBlobber(allocationID, blobberId, remotePath string) (fRef *fileref.FileRef, err error) {
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
-	blobber, err := GetBlobber(blobberId)
+	blobber, err := commonsdk.GetBlobber(blobberId)
 	if err != nil {
 		return nil, err
 	}

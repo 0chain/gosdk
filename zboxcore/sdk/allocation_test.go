@@ -363,14 +363,16 @@ func TestPriceRange_IsValid(t *testing.T) {
 
 func TestAllocation_InitAllocation(t *testing.T) {
 	a := Allocation{
-		FileOptions: 63,
+		Allocation: commonsdk.Allocation{
+			FileOptions: 63,
+		},
 	}
 	a.InitAllocation()
 	require.New(t).NotZero(a)
 }
 
 func TestAllocation_dispatchWork(t *testing.T) {
-	a := Allocation{DataShards: 2, ParityShards: 2, downloadChan: make(chan *DownloadRequest), repairChan: make(chan *RepairRequest)}
+	a := Allocation{Allocation: commonsdk.Allocation{DataShards: 2, ParityShards: 2}, downloadChan: make(chan *DownloadRequest), repairChan: make(chan *RepairRequest)}
 	t.Run("Test_Cover_Context_Canceled", func(t *testing.T) {
 		ctx, cancelFn := context.WithCancel(context.Background())
 		go a.dispatchWork(ctx)
@@ -388,9 +390,11 @@ func TestAllocation_dispatchWork(t *testing.T) {
 }
 
 func TestAllocation_GetStats(t *testing.T) {
-	stats := &AllocationStats{}
+	stats := &commonsdk.AllocationStats{}
 	a := &Allocation{
-		Stats: stats,
+		Allocation: commonsdk.Allocation{
+			Stats: stats,
+		},
 	}
 	got := a.GetStats()
 	require.New(t).Same(stats, got)
@@ -433,8 +437,10 @@ func TestAllocation_GetBlobberStats(t *testing.T) {
 			require := require.New(t)
 			tt.setup(t, tt.name)
 			a := &Allocation{
-				ID: mockAllocationId,
-				Tx: mockAllocationTxId,
+				Allocation: commonsdk.Allocation{
+					ID: mockAllocationId,
+					Tx: mockAllocationTxId,
+				},
 			}
 			a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
 				ID:      tt.name + mockBlobberId,
@@ -653,9 +659,11 @@ func TestAllocation_RepairRequired(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
 			a := &Allocation{
-				DataShards:   2,
-				ParityShards: 2,
-				FileOptions:  63,
+				Allocation: commonsdk.Allocation{
+					DataShards:   2,
+					ParityShards: 2,
+					FileOptions:  63,
+				},
 			}
 			a.InitAllocation()
 			client.SetSdkInitialized(true)
@@ -780,8 +788,10 @@ func TestAllocation_DownloadFile(t *testing.T) {
 
 	require := require.New(t)
 	a := &Allocation{
-		ParityShards: 2,
-		DataShards:   2,
+		Allocation: commonsdk.Allocation{
+			ParityShards: 2,
+			DataShards:   2,
+		},
 	}
 	setupMockAllocation(t, a)
 
@@ -827,8 +837,10 @@ func TestAllocation_DownloadFileByBlock(t *testing.T) {
 
 	require := require.New(t)
 	a := &Allocation{
-		ParityShards: 2,
-		DataShards:   2,
+		Allocation: commonsdk.Allocation{
+			ParityShards: 2,
+			DataShards:   2,
+		},
 	}
 	setupMockAllocation(t, a)
 
@@ -1020,8 +1032,10 @@ func TestAllocation_GetRefs(t *testing.T) {
 	functionName := "TestAllocation_GetRefs"
 	t.Run("Test_Get_Refs_Returns_Slice_Of_Length_0_When_File_Not_Present", func(t *testing.T) {
 		a := &Allocation{
-			DataShards:   2,
-			ParityShards: 2,
+			Allocation: commonsdk.Allocation{
+				DataShards:   2,
+				ParityShards: 2,
+			},
 		}
 		testCaseName := "Test_Get_Refs_Returns_Slice_Of_Length_0_When_File_Not_Present"
 		a.InitAllocation()
@@ -1119,9 +1133,11 @@ func TestAllocation_GetFileMeta(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
 			a := &Allocation{
-				DataShards:   2,
-				ParityShards: 2,
-				FileOptions:  63,
+				Allocation: commonsdk.Allocation{
+					DataShards:   2,
+					ParityShards: 2,
+					FileOptions:  63,
+				},
 			}
 			a.InitAllocation()
 			client.SetSdkInitialized(true)
@@ -1178,7 +1194,7 @@ func TestAllocation_GetAuthTicketForShare(t *testing.T) {
 		ClientKey: mockClientKey,
 	})
 	require := require.New(t)
-	a := &Allocation{DataShards: 1, ParityShards: 1, FileOptions: 63}
+	a := &Allocation{Allocation: commonsdk.Allocation{DataShards: 1, ParityShards: 1, FileOptions: 63}}
 	a.InitAllocation()
 	for i := 0; i < numberBlobbers; i++ {
 		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{})
@@ -1381,9 +1397,11 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 
 			require := require.New(t)
 			a := &Allocation{
-				DataShards:   1,
-				ParityShards: 1,
-				FileOptions:  63,
+				Allocation: commonsdk.Allocation{
+					DataShards:   1,
+					ParityShards: 1,
+					FileOptions:  63,
+				},
 			}
 			a.InitAllocation()
 			client.SetSdkInitialized(true)
@@ -1447,7 +1465,7 @@ func TestAllocation_CancelDownload(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
-			a := &Allocation{FileOptions: 63}
+			a := &Allocation{Allocation: commonsdk.Allocation{FileOptions: 63}}
 			a.InitAllocation()
 			client.SetSdkInitialized(true)
 			if tt.setup != nil {
@@ -1588,11 +1606,13 @@ func TestAllocation_ListDirFromAuthTicket(t *testing.T) {
 				ClientKey: mockClientKey,
 			})
 			a := &Allocation{
-				ID:           mockAllocationId,
-				Tx:           mockAllocationTxId,
-				FileOptions:  63,
-				DataShards:   2,
-				ParityShards: 2,
+				Allocation: commonsdk.Allocation{
+					ID:           mockAllocationId,
+					Tx:           mockAllocationTxId,
+					FileOptions:  63,
+					DataShards:   2,
+					ParityShards: 2,
+				},
 			}
 			if tt.parameters.expectedResult != nil {
 				tt.parameters.expectedResult.deleteMask = zboxutil.NewUint128(1).Lsh(uint64(a.DataShards + a.ParityShards)).Sub64(1)
@@ -1642,10 +1662,12 @@ func TestAllocation_downloadFromAuthTicket(t *testing.T) {
 	})
 
 	a := &Allocation{
-		ID:           mockAllocationId,
-		Tx:           mockAllocationTxId,
-		DataShards:   2,
-		ParityShards: 2,
+		Allocation: commonsdk.Allocation{
+			ID:           mockAllocationId,
+			Tx:           mockAllocationTxId,
+			DataShards:   2,
+			ParityShards: 2,
+		},
 	}
 	setupMockAllocation(t, a)
 	setupMockGetFileInfoResponse(t, &mockClient)
@@ -1868,11 +1890,13 @@ func TestAllocation_listDir(t *testing.T) {
 
 			require := require.New(t)
 			a := &Allocation{
-				ID:           mockAllocationId,
-				Tx:           mockAllocationTxId,
-				FileOptions:  63,
-				DataShards:   2,
-				ParityShards: 2,
+				Allocation: commonsdk.Allocation{
+					ID:           mockAllocationId,
+					Tx:           mockAllocationTxId,
+					FileOptions:  63,
+					DataShards:   2,
+					ParityShards: 2,
+				},
 			}
 			if tt.parameters.expectedResult != nil {
 				tt.parameters.expectedResult.deleteMask = zboxutil.NewUint128(1).Lsh(uint64(a.DataShards + a.ParityShards)).Sub64(1)
@@ -2000,11 +2024,13 @@ func TestAllocation_GetFileMetaFromAuthTicket(t *testing.T) {
 			})
 
 			a := &Allocation{
-				ID:           mockAllocationId,
-				Tx:           mockAllocationTxId,
-				DataShards:   2,
-				ParityShards: 2,
-				FileOptions:  63,
+				Allocation: commonsdk.Allocation{
+					ID:           mockAllocationId,
+					Tx:           mockAllocationTxId,
+					DataShards:   2,
+					ParityShards: 2,
+					FileOptions:  63,
+				},
 			}
 			a.InitAllocation()
 			client.SetSdkInitialized(true)
@@ -2240,8 +2266,10 @@ func TestAllocation_StartRepair(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
 			a := &Allocation{
-				DataShards:   2,
-				ParityShards: 2,
+				Allocation: commonsdk.Allocation{
+					DataShards:   2,
+					ParityShards: 2,
+				},
 			}
 			setupMockAllocation(t, a)
 			for i := 0; i < numBlobbers; i++ {
@@ -2379,11 +2407,13 @@ func getMockAuthTicket(t *testing.T) string {
 		ClientKey: mockClientKey,
 	})
 	a := &Allocation{
-		ID:           mockAllocationId,
-		Tx:           mockAllocationTxId,
-		DataShards:   1,
-		ParityShards: 1,
-		FileOptions:  63,
+		Allocation: commonsdk.Allocation{
+			ID:           mockAllocationId,
+			Tx:           mockAllocationTxId,
+			DataShards:   1,
+			ParityShards: 1,
+			FileOptions:  63,
+		},
 	}
 
 	a.InitAllocation()
