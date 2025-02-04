@@ -20,7 +20,7 @@ require (
 	github.com/lithammer/shortuuid/v3 v3.0.7
 	github.com/machinebox/graphql v0.2.2 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/mitchellh/mapstructure v1.5.0
+	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/shopspring/decimal v1.3.1 // indirect
 	github.com/spf13/viper v1.15.0 // indirect
@@ -38,7 +38,7 @@ require (
 )
 
 require (
-	github.com/0chain/gosdk_common v0.0.0-20250203211137-32f7f9862646
+	github.com/0chain/gosdk_common v0.0.0-20250204070817-3c82b7ad6a9f
 	github.com/hack-pad/go-webworkers v0.1.0
 	github.com/minio/sha256-simd v1.0.1
 	github.com/valyala/bytebufferpool v1.0.0

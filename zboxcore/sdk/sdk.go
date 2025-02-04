@@ -7,7 +7,6 @@ import (
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk_common/core/screstapi"
-	"github.com/0chain/gosdk_common/core/transaction"
 
 	"github.com/0chain/gosdk_common/core/client"
 	"github.com/0chain/gosdk_common/core/version"
@@ -251,23 +250,14 @@ func TransferAllocation(allocationId, newOwner, newOwnerPublicKey string) (strin
 		return "", 0, allocationNotFound
 	}
 
-	var allocationRequest = map[string]interface{}{
-		"id":                         allocationId,
-		"owner_id":                   newOwner,
-		"owner_public_key":           newOwnerPublicKey,
-		"size":                       0,
-		"expiration_date":            0,
-		"update_terms":               false,
-		"add_blobber_id":             "",
-		"remove_blobber_id":          "",
-		"set_third_party_extendable": alloc.ThirdPartyExtendable,
-		"file_options_changed":       false,
-		"file_options":               alloc.FileOptions,
-	}
-	var sn = transaction.SmartContractTxnData{
-		Name:      transaction.STORAGESC_UPDATE_ALLOCATION,
-		InputArgs: allocationRequest,
-	}
-	hash, _, n, _, err := commonsdk.StorageSmartContractTxn(sn)
-	return hash, n, err
+	return commonsdk.TransferAllocation(
+		commonsdk.UpdateAllocationOptions{
+			AllocationID:            allocationId,
+			OwnerID:                 newOwner,
+			OwnerPublicKey:          newOwnerPublicKey,
+			SetThirdPartyExtendable: alloc.ThirdPartyExtendable,
+			FileOptions:             alloc.FileOptions,
+		},
+	)
+
 }
