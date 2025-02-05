@@ -377,7 +377,7 @@ func GetUserLockedTotal(clientID string) (int64, error) {
 }
 
 func IsHardforkActivated(name string) (bool, error) {
-	res, err := screstapi.MakeSCRestAPICall(MinerSmartContractAddress, GET_HARDFORK, Params{
+	res, err := client.MakeSCRestAPICall(MinerSmartContractAddress, GET_HARDFORK, Params{
 		"name": name,
 	})
 	if err != nil {
@@ -409,7 +409,7 @@ func IsHardforkActivated(name string) (bool, error) {
 }
 
 func GetCurrentRound() (int64, error) {
-	res, err := screstapi.MakeSCRestAPICall("", GET_CURRENT_ROUND, nil, "")
+	res, err := client.MakeSCRestAPICall("", GET_CURRENT_ROUND, nil, "")
 	if err != nil {
 		return 0, err
 	}
