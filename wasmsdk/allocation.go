@@ -88,7 +88,7 @@ func getAllocationBlobbers(preferredBlobberURLs []string,
 //   - lock is the lock value to add to the allocation.
 //   - blobberIds is the list of blobber ids.
 //   - blobberAuthTickets is the list of blobber auth tickets in case of using restricted blobbers.
-func createAllocation(datashards, parityshards int, size int64,
+func createAllocation(datashards, parityshards int, size, authRoundExpiry int64,
 	minReadPrice, maxReadPrice, minWritePrice, maxWritePrice int64, lock int64, blobberIds, blobberAuthTickets []string, setThirdPartyExtendable, IsEnterprise, force bool) (
 	*transaction.Transaction, error) {
 
@@ -111,6 +111,7 @@ func createAllocation(datashards, parityshards int, size int64,
 		StorageVersion:       sdk.StorageV2,
 		BlobberAuthTickets:   blobberAuthTickets,
 		Force:                force,
+		AuthRoundExpiry:      authRoundExpiry,
 	}
 
 	sdkLogger.Info(options)
@@ -161,7 +162,8 @@ func transferAllocation(allocationID, newOwnerId, newOwnerPublicKey string) erro
 func UpdateForbidAllocation(allocationID string, forbidupload, forbiddelete, forbidupdate, forbidmove, forbidcopy, forbidrename bool) (string, error) {
 
 	hash, _, err := sdk.UpdateAllocation(
-		0,            //size,
+		0, //size,
+		0,
 		false,        //extend,
 		allocationID, // allocID,
 		0,            //lock,
@@ -192,7 +194,8 @@ func UpdateForbidAllocation(allocationID string, forbidupload, forbiddelete, for
 func freezeAllocation(allocationID string) (string, error) {
 
 	hash, _, err := sdk.UpdateAllocation(
-		0,            //size,
+		0, //size,
+		0,
 		false,        //extend,
 		allocationID, // allocID,
 		0,            //lock,
@@ -245,7 +248,7 @@ func cancelAllocation(allocationID string) (string, error) {
 //   - addBlobberAuthTicket: blobber auth ticket to add to the allocation, in case of restricted blobbers
 //   - removeBlobberId: blobber ID to remove from the allocation
 func updateAllocationWithRepair(allocationID string,
-	size int64,
+	size, authRoundExpiry int64,
 	extend bool,
 	lock int64,
 	addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey, updateAllocTicket, callbackFuncName string) (string, error) {
@@ -265,7 +268,7 @@ func updateAllocationWithRepair(allocationID string,
 		}
 	}
 
-	alloc, hash, isRepairRequired, err := allocationObj.UpdateWithStatus(size, extend, uint64(lock), addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey, false, &sdk.FileOptionsParameters{}, updateAllocTicket)
+	alloc, hash, isRepairRequired, err := allocationObj.UpdateWithStatus(size, authRoundExpiry, extend, uint64(lock), addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey, false, &sdk.FileOptionsParameters{}, updateAllocTicket)
 	if err != nil {
 		return hash, err
 	}
@@ -299,10 +302,10 @@ func updateAllocationWithRepair(allocationID string,
 //   - removeBlobberId: blobber ID to remove from the allocation
 //   - setThirdPartyExtendable: third party extendable flag, if true, the allocation can be extended (in terms of size) by a non-owner client
 func updateAllocation(allocationID string,
-	size int64, extend bool,
+	size, authRoundExpiry int64, extend bool,
 	lock int64,
 	addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey string, setThirdPartyExtendable bool) (string, error) {
-	hash, _, err := sdk.UpdateAllocation(size, extend, allocationID, uint64(lock), addBlobberId, addBlobberAuthTicket, removeBlobberId, "", ownerSigninPublicKey, setThirdPartyExtendable, &sdk.FileOptionsParameters{}, "")
+	hash, _, err := sdk.UpdateAllocation(size, authRoundExpiry, extend, allocationID, uint64(lock), addBlobberId, addBlobberAuthTicket, removeBlobberId, "", ownerSigninPublicKey, setThirdPartyExtendable, &sdk.FileOptionsParameters{}, "")
 
 	if err == nil {
 		clearAllocation(allocationID)
