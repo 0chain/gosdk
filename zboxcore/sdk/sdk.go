@@ -381,6 +381,11 @@ type ResetBlobberStatsDto struct {
 	NewSavedData  int64  `json:"new_saved_data"`
 }
 
+type FixValidatorRequest struct {
+	ValidatorID string
+	BaseUrl     string
+}
+
 // Validator represents validator information.
 type Validator struct {
 	ID                       common.Key       `json:"validator_id"`
@@ -1245,6 +1250,19 @@ func InsertKilledProviderID(snId *StorageNodeIdField) (string, int64, error) {
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_INSERT_KILLED_PROVIDER_ID,
 		InputArgs: snId,
+	}
+	hash, _, n, _, err := storageSmartContractTxn(sn)
+	return hash, n, err
+}
+
+func ResetValidator(rbs *FixValidatorRequest) (string, int64, error) {
+	if !client.IsSDKInitialized() {
+		return "", 0, sdkNotInitialized
+	}
+
+	var sn = transaction.SmartContractTxnData{
+		Name:      transaction.STORAGESC_FIX_VALIDATOR,
+		InputArgs: rbs,
 	}
 	hash, _, n, _, err := storageSmartContractTxn(sn)
 	return hash, n, err
