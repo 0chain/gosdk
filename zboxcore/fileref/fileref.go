@@ -106,6 +106,7 @@ type Ref struct {
 	AllocationRoot      string           `json:"allocation_root" mapstructure:"allocation_root"`
 	CreatedAt           common.Timestamp `json:"created_at" mapstructure:"created_at"`
 	UpdatedAt           common.Timestamp `json:"updated_at" mapstructure:"updated_at"`
+	NumFiles            int              `json:"num_files" mapstructure:"num_files"`
 }
 
 // GetReferenceLookup returns the lookup hash for a given allocationID and path
