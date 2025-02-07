@@ -370,6 +370,7 @@ type UpdateBlobber struct {
 	IsRestricted             *bool                               `json:"is_restricted,omitempty"`
 	StorageVersion           *int                                `json:"storage_version,omitempty"`
 	DelegateWallet           *string                             `json:"delegate_wallet,omitempty"`
+	ManagingWallet           *string                             `json:"managing_wallet,omitempty"`
 }
 
 // ResetBlobberStatsDto represents blobber stats reset request.
