@@ -293,7 +293,7 @@ func GetLatestFinalizedMagicBlock() (m *block.MagicBlock, err error) {
 
 // GetLatestFinalizedBlock gets latest finalized block
 func GetLatestFinalizedBlock() (*block.Block, error) {
-	res, err := screstapi.MakeSCRestAPICall("", GET_LATEST_FINALIZED, nil, "")
+	res, err := client.MakeSCRestAPICall("", GET_LATEST_FINALIZED, nil, "")
 	if err != nil {
 		return nil, err
 	}
