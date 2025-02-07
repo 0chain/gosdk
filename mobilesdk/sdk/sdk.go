@@ -366,7 +366,7 @@ func (s *StorageSDK) GetVersion() string {
 //   - extend: extend allocation
 //   - allocationID: allocation ID
 //   - lock: Number of tokens to lock to the allocation after the update
-func (s *StorageSDK) UpdateAllocation(size, extend bool, allocationID string, lock uint64) (hash string, err error) {
+func (s *StorageSDK) UpdateAllocation(size int64, extend bool, allocationID string, lock uint64) (hash string, err error) {
 	if lock > math.MaxInt64 {
 		return "", errors.Errorf("int64 overflow in lock")
 	}
