@@ -22,8 +22,8 @@ var urlPathSharderToZboxMap = map[string]string{
 	"/v1/mint_nonce":                 "/mintNonce",
 	"client/get/balance":             "/balance",
 	"/v1/not_processed_burn_tickets": "/not_processed_burn_tickets",
-	"/allocation":                    "/getAllocation",
-	// "/allocations":                   "/getAllocations",
+	"/allocations":                   "/getAllocations",
+	// "/allocation":                    "/getAllocation",
 }
 
 func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]string, restApiUrls ...string) (resp []byte, err error) {
