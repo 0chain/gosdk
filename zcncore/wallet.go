@@ -10,7 +10,7 @@ import (
 
 // GetWallet get a wallet object from a wallet string
 func GetWallet(walletStr string) (*zcncrypto.Wallet, error) {
-	return getWallet(walletStr)
+	return GetWalletZcncore(walletStr)
 }
 
 // Deprecated: use Sign() method in zcncrypto.Wallet

@@ -172,7 +172,7 @@ func getTokenUSDRate() (float64, error) {
 }
 
 // getWallet get a wallet object from a wallet string
-func getWallet(walletStr string) (*zcncrypto.Wallet, error) {
+func GetWalletZcncore(walletStr string) (*zcncrypto.Wallet, error) {
 	var w zcncrypto.Wallet
 	err := json.Unmarshal([]byte(walletStr), &w)
 	if err != nil {
