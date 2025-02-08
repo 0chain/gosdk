@@ -267,14 +267,11 @@ func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
 		result.ThumbnailSize = ti.ref.ThumbnailSize
 		result.ActualThumbnailHash = ti.ref.ActualThumbnailHash
 		result.ActualThumbnailSize = ti.ref.ActualThumbnailSize
-		if result.Path == "/" && req.storageVersion == StorageV2 {
-			result.NumFiles = ti.ref.NumFiles
-		}
 
 		if ti.ref.ActualSize > 0 {
 			result.ActualNumBlocks = (ti.ref.ActualSize + CHUNK_SIZE - 1) / CHUNK_SIZE
 		}
-		result.Size += ti.ref.Size
+	result.Size += ti.ref.Size
 		result.NumBlocks += ti.ref.NumBlocks
 		if ti.ref.Path == "/" && result.ActualSize == 0 {
 			result.ActualSize = ti.ref.Size * int64(req.dataShards)

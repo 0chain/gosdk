@@ -10,20 +10,20 @@ import (
 )
 
 var urlPathSharderToZboxMap = map[string]string{
-	"/getStakePoolStat":              "/getStakePoolStat",
-	"/getUserStakePoolStat":          "/getUserStakePoolStat",
-	"/getChallengePoolStat":          "/getChallengePoolStat",
-	"/getBlobber":                    "/blobber",
-	"/getblobbers":                   "/blobbers",
-	"/blobber_ids":                   "/blobber_ids",
-	"/alloc_blobbers":                "/blobbers/allocation",
-	"/get_validator":                 "/validator",
-	"/validators":                    "/validators",
-	"/allocation":                    "/getAllocation",
-	"/allocations":                   "/getAllocations",
+	"/getStakePoolStat":     "/getStakePoolStat",
+	"/getUserStakePoolStat": "/getUserStakePoolStat",
+	"/getChallengePoolStat": "/getChallengePoolStat",
+	"/getBlobber":           "/blobber",
+	"/getblobbers":          "/blobbers",
+	"/blobber_ids":          "/blobber_ids",
+	"/alloc_blobbers":       "/blobbers/allocation",
+	"/get_validator":        "/validator",
+	"/validators":           "/validators",
 	"/v1/mint_nonce":                 "/mintNonce",
 	"client/get/balance":             "/balance",
 	"/v1/not_processed_burn_tickets": "/not_processed_burn_tickets",
+	// "/allocation":                    "/getAllocation",
+	// "/allocations":                   "/getAllocations",
 }
 
 func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]string, restApiUrls ...string) (resp []byte, err error) {
