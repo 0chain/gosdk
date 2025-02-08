@@ -11,6 +11,7 @@ func TestLoadConfig(t *testing.T) {
 
 	var mockDefaultReader = func() Reader {
 		reader := &mocks.Reader{}
+		reader.On("GetString", "ethereum_node_url").Return("https://127.0.0.1:8545")
 		reader.On("GetString", "block_worker").Return("http://127.0.0.1:9091/dns")
 		reader.On("GetString", "zauth_server").Return("http://127.0.0.1:8090/")
 		reader.On("GetInt", "min_submit").Return(0)
@@ -41,6 +42,7 @@ func TestLoadConfig(t *testing.T) {
 			setup: func(t *testing.T) Reader {
 
 				reader := &mocks.Reader{}
+				reader.On("GetString", "ethereum_node_url").Return("https://127.0.0.1:8545")
 				reader.On("GetString", "block_worker").Return("")
 				reader.On("GetString", "zauth_server").Return("")
 				reader.On("GetInt", "min_submit").Return(0)
@@ -86,6 +88,7 @@ func TestLoadConfig(t *testing.T) {
 			setup: func(t *testing.T) Reader {
 
 				reader := &mocks.Reader{}
+				reader.On("GetString", "ethereum_node_url").Return("https://127.0.0.1:8545")
 				reader.On("GetString", "block_worker").Return("https://127.0.0.1:9091/dns")
 				reader.On("GetString", "zauth_server").Return("http://127.0.0.1:8090/")
 				reader.On("GetInt", "min_submit").Return(101)
@@ -121,6 +124,7 @@ func TestLoadConfig(t *testing.T) {
 			setup: func(t *testing.T) Reader {
 
 				reader := &mocks.Reader{}
+				reader.On("GetString", "ethereum_node_url").Return("https://127.0.0.1:8545")
 				reader.On("GetString", "block_worker").Return("https://127.0.0.1:9091/dns")
 				reader.On("GetString", "zauth_server").Return("http://127.0.0.1:8090/")
 				reader.On("GetInt", "min_submit").Return(0)
