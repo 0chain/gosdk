@@ -644,13 +644,13 @@ func GetAllocation(allocationID string) (*Allocation, error) {
 		return nil, errors.New("allocation_decode_error", "Error decoding the allocation: "+err.Error()+" "+string(allocationBytes))
 	}
 
-	alloczbox, err := json.MarshalIndent(allocationBytes, "", "")
+	alloczbox, err := json.MarshalIndent(allocationObj, "", "")
 	if err != nil {
 		return nil, errors.New("allocation_decode_error", "Error marshaling the allocation: "+err.Error())
 	}
 	fmt.Println("allocation_decode for 0box", string(alloczbox))
 
-	allocSharder, err := json.MarshalIndent(allocationBytesSh, "", "")
+	allocSharder, err := json.MarshalIndent(allocationObjSharder, "", "")
 	if err != nil {
 		return nil, errors.New("allocation_decode_error", "Error marshaling the allocation: "+err.Error())
 	}
