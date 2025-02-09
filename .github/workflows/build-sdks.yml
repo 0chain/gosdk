@@ -349,10 +349,42 @@ jobs:
           sudo apt-get -y install build-essential nghttp2 libnghttp2-dev libssl-dev wget
 
       - name: Build
-        run:  docker run --rm -v $PWD:/gosdk -w /gosdk golang:1.23 make wasm-build
+        run: |
+          docker run --rm -v $PWD:/gosdk -w /gosdk golang:1.23 make wasm-build
+          tar -czvf zcn_wasm.tar.gz zcn.wasm
+
+      - name: Setup Build
+        id: setup_build
+        run: |
+          tag=$(echo ${GITHUB_REF#refs/tags/})
+          echo ${tag}
+          if [[ "${{github.event_name}}" = "workflow_dispatch" ]]; then
+            echo "> 0Chain: trigger from workflow_dispatch"
+
+            echo "::set-output name=RELEASE::false"
+            echo "::set-output name=TAG::none"
+
+          elif [[ ${tag} = v*\.*\.* ]] ; then
+            echo "> 0Chain: trigger from git event"
+
+            # upload output on release
+            echo "::set-output name=RELEASE::true"
+            echo "::set-output name=TAG::${tag}"
+          fi
+
+      - name: Upload zcn_wasm to release
+        if:  steps.setup_build.outputs.RELEASE == 'true'
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: zcn_wasm.tar.gz
+          tag: ${{ steps.setup_build.outputs.TAG }}
+          overwrite: true
+          file_glob: true
 
       - name: 'Upload Artifact'
         uses: actions/upload-artifact@v4
         with:
-          name: zcn.wasm
-          path: zcn.wasm
+          name: zcn_wasm
+          path: |
+            zcn_wasm.tar.gz
