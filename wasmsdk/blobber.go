@@ -444,6 +444,11 @@ func multiDownload(allocationID, jsonMultiDownloadOptions, authTicket, callbackF
 		}
 	}()
 	sdkLogger.Info("starting multidownload")
+	sdkLogger.Debug("allocation id", allocationID)
+	sdkLogger.Debug("jsonMultiDownloadOptions", jsonMultiDownloadOptions)
+	sdkLogger.Debug("authTicket", authTicket)
+	sdkLogger.Debug("callbackFuncName", callbackFuncName)
+
 	wg := &sync.WaitGroup{}
 	useCallback := false
 	if callbackFuncName != "" {
@@ -535,6 +540,7 @@ func multiDownload(allocationID, jsonMultiDownloadOptions, authTicket, callbackF
 	}
 
 	respBytes, err := json.Marshal(resp)
+	sdkLogger.Debug("download response", string(respBytes))
 	if err != nil {
 		return "", err
 	}
