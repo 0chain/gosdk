@@ -22,6 +22,7 @@ import (
 	"github.com/0chain/gosdk/core/pathutil"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/hack-pad/safejs"
+	"go.uber.org/zap"
 
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/wasmsdk/jsbridge"
@@ -457,6 +458,7 @@ func multiDownload(allocationID, jsonMultiDownloadOptions, authTicket, callbackF
 	var alloc *sdk.Allocation
 	if authTicket == "" {
 		alloc, err = getAllocation(allocationID)
+		sdkLogger.Debug("getAllocation", zap.Any("allocation"))
 	} else {
 		alloc, err = sdk.GetAllocationFromAuthTicket(authTicket)
 	}
@@ -629,6 +631,7 @@ func MultiOperation(allocationID string, jsonMultiUploadOptions string) error {
 		}
 	}
 	allocationObj, err := getAllocation(allocationID)
+	sdkLogger.Debug("Allocation data", zap.Any("allocation", allocationObj))
 	if err != nil {
 		return err
 	}
