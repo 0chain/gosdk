@@ -22,7 +22,6 @@ import (
 	"github.com/0chain/gosdk/core/pathutil"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/hack-pad/safejs"
-	"go.uber.org/zap"
 
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/wasmsdk/jsbridge"
@@ -633,7 +632,6 @@ func MultiOperation(allocationID string, jsonMultiUploadOptions string) error {
 		}
 	}
 	allocationObj, err := getAllocation(allocationID)
-	sdkLogger.Debug("Allocation data", zap.Any("allocation", allocationObj))
 	if err != nil {
 		return err
 	}
