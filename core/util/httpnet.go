@@ -103,15 +103,13 @@ func httpDo(req *http.Request, ctx context.Context, cncl context.CancelFunc, f f
 // NewHTTPGetRequest create a GetRequest instance with 60s timeout
 func NewHTTPGetRequest(url string) (*GetRequest, error) {
 	var ctx, cancel = context.WithTimeout(context.Background(), 60*time.Second)
-	defer cancel()
-	//TODO: debug memory leak.
-	//go func() {
-	//	//call cancel to avoid memory leak here
-	//	<-ctx.Done()
-	//
-	//	cancel()
-	//
-	//}()
+	go func() {
+		//call cancel to avoid memory leak here
+		<-ctx.Done()
+
+		cancel()
+
+	}()
 
 	return NewHTTPGetRequestContext(ctx, url)
 }
