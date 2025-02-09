@@ -325,7 +325,6 @@ func (mo *MultiOperation) Process() error {
 
 	allocJson, _ := json.MarshalIndent(mo, "", "")
 	logger.Logger.Debug("mo allocation json", string(allocJson))
-	l.Logger.Debug("mo allocation json 1", string(allocJson))
 
 	if mo.allocationObj.StorageVersion == StorageV2 {
 		return mo.commitV2()
