@@ -69,7 +69,6 @@ type ListResult struct {
 	ThumbnailSize       int64  `json:"thumbnail_size"`
 	ActualThumbnailHash string `json:"actual_thumbnail_hash"`
 	ActualThumbnailSize int64  `json:"actual_thumbnail_size"`
-	NumFiles            int    `json:"num_files"`
 
 	CreatedAt      common.Timestamp `json:"created_at"`
 	UpdatedAt      common.Timestamp `json:"updated_at"`
@@ -271,7 +270,7 @@ func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
 		if ti.ref.ActualSize > 0 {
 			result.ActualNumBlocks = (ti.ref.ActualSize + CHUNK_SIZE - 1) / CHUNK_SIZE
 		}
-	result.Size += ti.ref.Size
+		result.Size += ti.ref.Size
 		result.NumBlocks += ti.ref.NumBlocks
 		if ti.ref.Path == "/" && result.ActualSize == 0 {
 			result.ActualSize = ti.ref.Size * int64(req.dataShards)
