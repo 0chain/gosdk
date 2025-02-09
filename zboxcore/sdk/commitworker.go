@@ -244,6 +244,8 @@ func (commitreq *CommitRequest) processCommit() {
 		hasher.Write(decodedHash) //nolint:errcheck
 		chainHash = hex.EncodeToString(hasher.Sum(nil))
 	}
+	wmJson, _ := json.MarshalIndent(lR.LatestWM, "", "  ")
+	l.Logger.Info("wm json val", string(wmJson))
 	err = commitreq.commitBlobber(rootRef, chainHash, lR.LatestWM, size, fileIDMeta)
 	if err != nil {
 		commitreq.result = ErrorCommitResult(err.Error())
@@ -500,6 +502,8 @@ func (commitReq *CommitRequestV2) processCommit() {
 		go func(ind int) {
 			defer wg.Done()
 			commitErr := commitReq.commitBlobber(rootHash, rootWeight, prevWeight, blobber)
+			blobberJson, _ := json.MarshalIndent(blobber, "", "  ")
+			l.Logger.Info("blobber val", string(blobberJson))
 			if commitErr != nil {
 				l.Logger.Error("Error committing to blobber: ", blobber.Baseurl, " ", commitErr)
 				errSlice[ind] = commitErr
