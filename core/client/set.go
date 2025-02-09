@@ -268,7 +268,7 @@ func PublicKey(clients ...string) string {
 			fmt.Println("Public key is empty")
 			return ""
 		}
-		return client.wallets[clients[0]].ClientKey
+		return client.wallets[clients[0]].Keys[0].PublicKey
 	}
 	return client.wallet.ClientKey
 }
