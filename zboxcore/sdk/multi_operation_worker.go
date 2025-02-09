@@ -3,6 +3,7 @@ package sdk
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -322,6 +323,8 @@ func (mo *MultiOperation) Process() error {
 		return errors.New("consensus_not_met", fmt.Sprintf("Active blobbers %d is less than consensus threshold %d", activeBlobbers, mo.consensusThresh))
 	}
 	if mo.allocationObj.StorageVersion == StorageV2 {
+		allocJson, _ := json.MarshalIndent(mo, "", "")
+		l.Logger.Info("mo allocation json", string(allocJson))
 		return mo.commitV2()
 	}
 	commitReqs := make([]*CommitRequest, activeBlobbers)
