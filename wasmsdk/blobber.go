@@ -444,6 +444,7 @@ func multiDownload(allocationID, jsonMultiDownloadOptions, authTicket, callbackF
 		}
 	}()
 	sdkLogger.Info("starting multidownload")
+
 	wg := &sync.WaitGroup{}
 	useCallback := false
 	if callbackFuncName != "" {
