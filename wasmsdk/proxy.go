@@ -247,6 +247,7 @@ func main() {
 				"terminateWorkers":          terminateWorkers,
 				"createWorkers":             createWorkers,
 				"getFileMetaByName":         getFileMetaByName,
+				"getFileMetaByAuthTicket":	getFileMetaByAuthTicket,
 				"downloadDirectory":         downloadDirectory,
 				"cancelDownloadDirectory":   cancelDownloadDirectory,
 				"cancelDownloadBlocks":      cancelDownloadBlocks,
