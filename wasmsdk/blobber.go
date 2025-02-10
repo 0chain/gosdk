@@ -443,6 +443,7 @@ func multiDownload(allocationID, jsonMultiDownloadOptions, authTicket, callbackF
 			PrintError("Recovered in multiDownload Error", r)
 		}
 	}()
+	sdkLogger.Info("starting multidownload")
 
 	wg := &sync.WaitGroup{}
 	useCallback := false
