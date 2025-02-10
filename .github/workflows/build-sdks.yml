@@ -351,6 +351,7 @@ jobs:
       - name: Build
         run: |
           docker run --rm -v $PWD:/gosdk -w /gosdk golang:1.23 make wasm-build
+          gzip -9 zcn.wasm && mv zcn.wasm.gz zcn.wasm
           tar -czvf zcn_wasm.tar.gz zcn.wasm
 
       - name: Setup Build
