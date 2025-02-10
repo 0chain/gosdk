@@ -443,11 +443,6 @@ func multiDownload(allocationID, jsonMultiDownloadOptions, authTicket, callbackF
 			PrintError("Recovered in multiDownload Error", r)
 		}
 	}()
-	sdkLogger.Info("starting multidownload")
-	sdkLogger.Debug("allocation id", allocationID)
-	sdkLogger.Debug("jsonMultiDownloadOptions", jsonMultiDownloadOptions)
-	sdkLogger.Debug("authTicket", authTicket)
-	sdkLogger.Debug("callbackFuncName", callbackFuncName)
 
 	wg := &sync.WaitGroup{}
 	useCallback := false
@@ -540,7 +535,6 @@ func multiDownload(allocationID, jsonMultiDownloadOptions, authTicket, callbackF
 	}
 
 	respBytes, err := json.Marshal(resp)
-	sdkLogger.Debug("download response", string(respBytes))
 	if err != nil {
 		return "", err
 	}
