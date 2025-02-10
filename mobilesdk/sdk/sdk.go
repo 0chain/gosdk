@@ -125,11 +125,18 @@ func InitStorageSDK(clientJson string, configJson string) (*StorageSDK, error) {
 	l.Logger.Info(configObj.ChainID)
 	l.Logger.Info(configObj.SignatureScheme)
 	l.Logger.Info(configObj.PreferredBlobbers)
-	if err = client.InitSDK(clientJson,
-		configObj.BlockWorker,
-		configObj.ChainID,
-		configObj.SignatureScheme,
-		0, true); err != nil {
+	params := client.InitSdkOptions{
+		WalletJSON:      clientJson,
+		BlockWorker:     configObj.BlockWorker,
+		ChainID:         configObj.ChainID,
+		SignatureScheme: configObj.SignatureScheme,
+		Nonce:           int64(0),
+		AddWallet:       true,
+		ZboxHost:        configObj.ZboxHost,
+		ZboxAppType:     configObj.ZboxAppType,
+	}
+
+	if err = client.InitSDKWithWebApp(params); err != nil {
 		l.Logger.Error(err)
 		return nil, err
 	}
