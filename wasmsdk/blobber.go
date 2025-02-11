@@ -427,6 +427,18 @@ func getFileMetaByName(allocationID, fileNameQuery string) ([]*sdk.ConsolidatedF
 	return fileMetas, nil
 }
 
+func getFileMetaByAuthTicket(allocationID, authTicket, lookupHash string) (*sdk.ConsolidatedFileMeta, error) {
+	allocationObj, err := getAllocation(allocationID)
+	if err != nil {
+		return nil, err
+	}
+	fileMeta, err := allocationObj.GetFileMetaFromAuthTicket(authTicket, lookupHash)
+	if err != nil {
+		return nil, err
+	}
+	return fileMeta, nil
+}
+
 // multiDownload - start multi-download operation.
 // ## Inputs
 //   - allocationID
