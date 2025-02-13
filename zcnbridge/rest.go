@@ -3,7 +3,6 @@ package zcnbridge
 import (
 	"encoding/json"
 	"fmt"
-
 	coreHttp "github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/common"
 
@@ -89,7 +88,7 @@ func GetAuthorizer(id string) (res []byte, err error) {
 		return nil, err
 	}
 
-	return coreHttp.MakeSCRestAPICallToSharder(zcncore.ZCNSCSmartContractAddress, PathGetAuthorizer, zcncore.Params{
+	return coreHttp.MakeSCRestAPICall(zcncore.ZCNSCSmartContractAddress, PathGetAuthorizer, zcncore.Params{
 		"id": id,
 	})
 }
@@ -102,7 +101,7 @@ func GetAuthorizers(active bool) (res []byte, err error) {
 	if err != nil {
 		return nil, err
 	}
-	return coreHttp.MakeSCRestAPICallToSharder(zcncore.ZCNSCSmartContractAddress, fmt.Sprintf(PathGetAuthorizerNodes, active), nil)
+	return coreHttp.MakeSCRestAPICall(zcncore.ZCNSCSmartContractAddress, fmt.Sprintf(PathGetAuthorizerNodes, active), nil)
 }
 
 // GetGlobalConfig Returns global config
@@ -112,5 +111,5 @@ func GetGlobalConfig() (res []byte, err error) {
 	if err != nil {
 		return nil, err
 	}
-	return coreHttp.MakeSCRestAPICallToSharder(zcncore.ZCNSCSmartContractAddress, PathGetGlobalConfig, nil)
+	return coreHttp.MakeSCRestAPICall(zcncore.ZCNSCSmartContractAddress, PathGetGlobalConfig, nil)
 }
