@@ -2338,18 +2338,6 @@ func (a *Allocation) GetAuthTicket(path, filename string,
 		return "", errors.New("invalid_path", "Path should be valid and absolute")
 	}
 
-	if referenceType == fileref.FILE && refereeClientID != "" {
-		fileMeta, err := a.GetFileMeta(path)
-		if err != nil {
-			return "", err
-		}
-
-		// private sharing is only available for encrypted file
-		if fileMeta.EncryptedKey == "" {
-			return "", ErrInvalidPrivateShare
-		}
-	}
-
 	shareReq := &ShareRequest{
 		ClientId:          a.Owner,
 		expirationSeconds: expiration,
