@@ -41,6 +41,12 @@ func WithRepair() MultiOperationOption {
 	}
 }
 
+func WithBatchSize(size int) MultiOperationOption {
+	return func(mo *MultiOperation) {
+		mo.batchSize = size
+	}
+}
+
 type Operationer interface {
 	Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error)
 	buildChange(refs []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange
@@ -63,6 +69,7 @@ type MultiOperation struct {
 	changes   [][]allocationchange.AllocationChange
 	changesV2 []allocationchange.AllocationChangeV2
 	isRepair  bool
+	batchSize int
 }
 
 func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
@@ -173,7 +180,7 @@ func (mo *MultiOperation) Process() error {
 	ctx := mo.ctx
 	ctxCncl := mo.ctxCncl
 	defer ctxCncl(nil)
-	swg := sizedwaitgroup.New(BatchSize)
+	swg := sizedwaitgroup.New(mo.batchSize)
 	errsSlice := make([]error, len(mo.operations))
 	if mo.allocationObj.StorageVersion != StorageV2 {
 		mo.operationMask = zboxutil.NewUint128(0)

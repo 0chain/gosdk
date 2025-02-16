@@ -55,9 +55,10 @@ var (
 )
 
 const (
-	KB = 1024
-	MB = 1024 * KB
-	GB = 1024 * MB
+	KB             = 1024
+	MB             = 1024 * KB
+	GB             = 1024 * MB
+	SizePerBlobber = 25 * GB
 )
 
 const (
@@ -552,6 +553,10 @@ func (a *Allocation) UploadFile(workdir, localpath string, remotepath string,
 	return a.StartChunkedUpload(workdir, localpath, remotepath, status, false, false, "", false, false)
 }
 
+func (a *Allocation) LargeFileSize() int64 {
+	return int64(a.DataShards) * SizePerBlobber
+}
+
 // RepairFile repair a file in the allocation.
 //   - file: the file to repair.
 //   - remotepath: the remote path of the file.
@@ -785,6 +790,70 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 		return err
 	}
 	return nil
+}
+
+func (a *Allocation) StartLargeFileUpload(op OperationRequest) error {
+	if !a.isInitialized() {
+		return notInitialized
+	}
+
+	if !a.CanUpload() {
+		return constants.ErrFileOptionNotPermitted
+	}
+
+	if op.FileMeta.ActualSize == 0 {
+		return thrown.New("invalid_file_size", "File size should be greater than 0")
+	}
+
+	if a.LargeFileSize() > op.FileMeta.ActualSize {
+		return thrown.New("invalid_file_size", "Use normal upload")
+	}
+
+	// if update delete the existing file
+	if op.OperationType == constants.FileOperationUpdate {
+		deleteOp := OperationRequest{
+			OperationType: constants.FileOperationDelete,
+			RemotePath:    op.FileMeta.RemotePath,
+		}
+		err := a.DoMultiOperation([]OperationRequest{deleteOp})
+		if err != nil {
+			return err
+		}
+	}
+
+	op.OperationType = constants.FileOperationInsert
+
+	// split the file into chunks
+	sizePerChunk := a.LargeFileSize()
+	totalChunks := int(math.Ceil(float64(op.FileMeta.ActualSize) / float64(sizePerChunk)))
+
+	ops := make([]OperationRequest, totalChunks)
+
+	for i := 0; i < totalChunks; i++ {
+		//remote path for chunk, increase monotonically
+		chunkPath := fmt.Sprintf("%s/%04d", op.FileMeta.RemotePath, i)
+		lr := io.LimitReader(op.FileReader, sizePerChunk)
+		size := sizePerChunk
+		if i == totalChunks-1 {
+			size = op.FileMeta.ActualSize - (sizePerChunk * int64(i))
+		}
+		newFileMeta := FileMeta{
+			MimeType:   op.FileMeta.MimeType,
+			RemoteName: path.Base(chunkPath),
+			RemotePath: chunkPath,
+			ActualSize: size,
+		}
+		newOp := OperationRequest{
+			OperationType: op.OperationType,
+			Workdir:       op.Workdir,
+			RemotePath:    chunkPath,
+			FileReader:    lr,
+			FileMeta:      newFileMeta,
+		}
+		ops[i] = newOp
+	}
+
+	return a.DoMultiOperation(ops, WithBatchSize(1))
 }
 
 // StartChunkedUpload starts a chunked upload operation.
@@ -1043,6 +1112,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 	connectionID := zboxutil.NewConnectionId()
 	var mo MultiOperation
 	mo.allocationObj = a
+	mo.batchSize = BatchSize
 
 	for i := 0; i < len(operations); {
 		// resetting multi operation and previous paths for every batch
@@ -3387,6 +3457,57 @@ func (a *Allocation) DownloadDirectory(ctx context.Context, remotePath, localPat
 	if sb != nil {
 		sb.Completed(a.ID, remotePath, filepath.Base(remotePath), "", totalSize, OpDownload)
 	}
+	return nil
+}
+
+func (a *Allocation) DownloadLargeFile(ctx context.Context, fh sys.File, remotePath, authTicket string, sb StatusCallback) error {
+	if !a.isInitialized() {
+		return notInitialized
+	}
+
+	if len(a.Blobbers) == 0 {
+		return noBLOBBERS
+	}
+	oRefChan := a.ListObjects(ctx, remotePath, "", "", "", fileref.FILE, fileref.REGULAR, 0, getRefPageLimit)
+	wg := &sync.WaitGroup{}
+	var totalSize int
+	for oRef := range oRefChan {
+		if contextCanceled(ctx) {
+			if sb != nil {
+				sb.Error(a.ID, remotePath, OpDownload, ctx.Err())
+			}
+			return ctx.Err()
+		}
+		if oRef.Err != nil {
+			if sb != nil {
+				sb.Error(a.ID, remotePath, OpDownload, oRef.Err)
+			}
+			return oRef.Err
+		}
+		wg.Add(1)
+		downloadStatusBar := &StatusBar{
+			wg: wg,
+			sb: sb,
+		}
+		totalSize += int(oRef.ActualFileSize)
+
+		if authTicket == "" {
+			_ = a.DownloadFileToFileHandler(fh, oRef.Path, false, downloadStatusBar, true, WithSequentialWrite()) //nolint: errcheck
+		} else {
+			_ = a.DownloadFileToFileHandlerFromAuthTicket(fh, authTicket, oRef.LookupHash, oRef.Path, false, downloadStatusBar, true, WithSequentialWrite()) //nolint: errcheck
+		}
+		wg.Wait()
+		if downloadStatusBar.err != nil {
+			if sb != nil {
+				sb.Error(a.ID, remotePath, OpDownload, downloadStatusBar.err)
+			}
+			return downloadStatusBar.err
+		}
+	}
+	if sb != nil {
+		sb.Completed(a.ID, remotePath, filepath.Base(remotePath), "", totalSize, OpDownload)
+	}
+
 	return nil
 }
 
