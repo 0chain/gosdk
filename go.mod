@@ -29,9 +29,9 @@ require (
 	github.com/uptrace/bunrouter v1.0.20
 	go.dedis.ch/kyber/v3 v3.1.0
 	go.uber.org/zap v1.24.0
-	golang.org/x/crypto v0.32.0
-	golang.org/x/image v0.23.0
-	golang.org/x/sync v0.10.0
+	golang.org/x/crypto v0.33.0
+	golang.org/x/image v0.24.0
+	golang.org/x/sync v0.11.0
 	gopkg.in/cheggaaa/pb.v1 v1.0.28
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gopkg.in/yaml.v2 v2.4.0
@@ -109,11 +109,8 @@ require (
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	go.dedis.ch/fixbuf v1.0.3 // indirect
-	golang.org/x/mobile v0.0.0-20250106192035-c31d5b91ecc3 // indirect
-	golang.org/x/mod v0.22.0 // indirect
-	golang.org/x/sys v0.29.0 // indirect
-	golang.org/x/text v0.21.0 // indirect
-	golang.org/x/tools v0.29.0 // indirect
+	golang.org/x/sys v0.30.0 // indirect
+	golang.org/x/text v0.22.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
@@ -128,7 +125,7 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
-	golang.org/x/net v0.34.0 // indirect
+	golang.org/x/net v0.35.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 )
 
