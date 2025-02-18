@@ -792,7 +792,7 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 	return nil
 }
 
-func (a *Allocation) StartLargeFileUpload(op OperationRequest) error {
+func (a *Allocation) StartLargeFileUpload(op OperationRequest, encrypt bool) error {
 	if !a.isInitialized() {
 		return notInitialized
 	}
@@ -849,6 +849,9 @@ func (a *Allocation) StartLargeFileUpload(op OperationRequest) error {
 			RemotePath:    chunkPath,
 			FileReader:    lr,
 			FileMeta:      newFileMeta,
+			Opts: []ChunkedUploadOption{
+				WithEncrypt(encrypt),
+			},
 		}
 		ops[i] = newOp
 	}
