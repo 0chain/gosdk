@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/0chain/gosdk/core/kafka"
 	"log"
 	"net/http"
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/0chain/gosdk/core/kafka"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/client"
@@ -193,8 +194,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock(fastClient *fasthttp.Clien
 
 			dnldSizeInMb := int64(len(respBuf)) / 1024
 			kafkaObj := kafka.BlobberMonitoring{
-				ID:           fmt.Sprintf("%s_%s_%d", req.blobber.ID, req.allocationID, dnldSizeInMb),
-				Operation:    "upload",
+				Operation:    "download",
 				BlobberId:    req.blobber.ID,
 				TimeSpent:    time.Since(now).Nanoseconds(),
 				Size:         dnldSizeInMb,
