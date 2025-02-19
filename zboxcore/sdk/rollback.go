@@ -512,6 +512,9 @@ func (a *Allocation) checkStatusV2(markerChan chan *RollbackBlobber, blobStatus 
 	}
 
 	if allVersionConensus == "" {
+		if len(latestVersionMap) == 0 {
+			return Commit, blobStatus, nil
+		}
 		return Broken, blobStatus, nil
 	}
 
