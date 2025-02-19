@@ -58,7 +58,7 @@ const (
 	KB             = 1024
 	MB             = 1024 * KB
 	GB             = 1024 * MB
-	SizePerBlobber = 25 * GB
+	SizePerBlobber = 20 * GB
 )
 
 const (
@@ -707,7 +707,7 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 	if totalOperations == 0 {
 		return nil
 	}
-	operationRequests := make([]OperationRequest, totalOperations)
+	operationRequests := make([]OperationRequest, 0, totalOperations)
 	for idx, localPath := range localPaths {
 		remotePath := zboxutil.RemoteClean(remotePaths[idx])
 		isabs := zboxutil.IsRemoteAbs(remotePath)
@@ -752,6 +752,32 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 			RemoteName: fileName,
 			RemotePath: fullRemotePath,
 		}
+		if fileInfo.Size() > a.LargeFileSize() {
+			l.Logger.Debug("Starting large file upload")
+			largeFileOpRequest := OperationRequest{
+				FileMeta:      fileMeta,
+				FileReader:    fileReader,
+				OperationType: constants.FileOperationInsert,
+				Workdir:       workdir,
+				RemotePath:    fullRemotePath,
+			}
+			if isUpdate[idx] {
+				largeFileOpRequest.OperationType = constants.FileOperationUpdate
+			}
+			err = a.StartLargeFileUpload(largeFileOpRequest, encrypt)
+			if err != nil {
+				if status != nil {
+					status.Error(a.ID, fullRemotePath, 0, err)
+				}
+				return err
+			} else {
+				if status != nil {
+					status.Completed(a.ID, fullRemotePath, fileName, mimeType, int(fileInfo.Size()), 0)
+				}
+				continue
+			}
+		}
+
 		options := []ChunkedUploadOption{
 			WithStatusCallback(status),
 			WithEncrypt(encrypt),
@@ -767,7 +793,7 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 
 			options = append(options, WithThumbnail(buf))
 		}
-		operationRequests[idx] = OperationRequest{
+		opReq := OperationRequest{
 			FileMeta:      fileMeta,
 			FileReader:    fileReader,
 			OperationType: constants.FileOperationInsert,
@@ -777,18 +803,21 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 		}
 
 		if isUpdate[idx] {
-			operationRequests[idx].OperationType = constants.FileOperationUpdate
+			opReq.OperationType = constants.FileOperationUpdate
 		}
 		if isWebstreaming[idx] {
-			operationRequests[idx].IsWebstreaming = true
+			opReq.IsWebstreaming = true
 		}
+		operationRequests = append(operationRequests, opReq)
+	}
+	if len(operationRequests) > 0 {
+		err := a.DoMultiOperation(operationRequests)
+		if err != nil {
+			logger.Logger.Error("Error in multi upload ", err.Error())
+			return err
+		}
+	}
 
-	}
-	err := a.DoMultiOperation(operationRequests)
-	if err != nil {
-		logger.Logger.Error("Error in multi upload ", err.Error())
-		return err
-	}
 	return nil
 }
 
