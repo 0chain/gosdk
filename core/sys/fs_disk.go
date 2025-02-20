@@ -72,6 +72,10 @@ func (dfs *DiskFS) RemoveProgress(progressID string) error {
 	return dfs.Remove(progressID)
 }
 
+func (dfs *DiskFS) StoreLogs(key string, data string) error {
+	return nil
+}
+
 func (dfs *DiskFS) CreateDirectory(_ string) error {
 	return nil
 }

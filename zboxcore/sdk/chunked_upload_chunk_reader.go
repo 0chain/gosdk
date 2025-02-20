@@ -237,7 +237,7 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 	}
 
 	if CurrentMode == UploadModeHigh {
-		r.hasherDataChan <- chunkBytes
+		r.hasherDataChan <- chunkBytes[:readLen]
 	} else {
 		_ = r.hasher.WriteToFile(chunkBytes)
 	}

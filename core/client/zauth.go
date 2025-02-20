@@ -1,4 +1,4 @@
-package zcncore
+package client
 
 import (
 	"bytes"
@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/pkg/errors"
 )
@@ -534,7 +533,7 @@ func ZauthSignTxn(serverAddr string) sys.AuthorizeFunc {
 			return "", errors.Wrap(err, "failed to create HTTP request")
 		}
 		req.Header.Set("Content-Type", "application/json")
-		c := client.GetClient()
+		c := GetClient()
 		pubkey := c.Keys[0].PublicKey
 		req.Header.Set("X-Peer-Public-Key", pubkey)
 
@@ -571,7 +570,7 @@ func ZauthAuthCommon(serverAddr string) sys.AuthorizeFunc {
 			return "", errors.Wrap(err, "failed to create HTTP request")
 		}
 
-		c := client.GetClient()
+		c := GetClient()
 		pubkey := c.Keys[0].PublicKey
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("X-Peer-Public-Key", pubkey)

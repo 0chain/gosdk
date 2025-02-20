@@ -244,6 +244,7 @@ func (commitreq *CommitRequest) processCommit() {
 		hasher.Write(decodedHash) //nolint:errcheck
 		chainHash = hex.EncodeToString(hasher.Sum(nil))
 	}
+
 	err = commitreq.commitBlobber(rootRef, chainHash, lR.LatestWM, size, fileIDMeta)
 	if err != nil {
 		commitreq.result = ErrorCommitResult(err.Error())

@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/0chain/gosdk/constants"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/pathutil"
@@ -426,6 +427,18 @@ func getFileMetaByName(allocationID, fileNameQuery string) ([]*sdk.ConsolidatedF
 	return fileMetas, nil
 }
 
+func getFileMetaByAuthTicket(allocationID, authTicket, lookupHash string) (*sdk.ConsolidatedFileMeta, error) {
+	allocationObj, err := getAllocation(allocationID)
+	if err != nil {
+		return nil, err
+	}
+	fileMeta, err := allocationObj.GetFileMetaFromAuthTicket(authTicket, lookupHash)
+	if err != nil {
+		return nil, err
+	}
+	return fileMeta, nil
+}
+
 // multiDownload - start multi-download operation.
 // ## Inputs
 //   - allocationID
@@ -443,6 +456,7 @@ func multiDownload(allocationID, jsonMultiDownloadOptions, authTicket, callbackF
 		}
 	}()
 	sdkLogger.Info("starting multidownload")
+
 	wg := &sync.WaitGroup{}
 	useCallback := false
 	if callbackFuncName != "" {
@@ -1135,6 +1149,9 @@ func checkAllocStatus(allocationID string) (string, error) {
 	alloc, err := getAllocation(allocationID)
 	if err != nil {
 		return "", err
+	}
+	if client.Wallet().ClientID != alloc.Owner {
+		return "", errors.New("client id does not match with the allocation owner")
 	}
 	status, blobberStatus, err := alloc.CheckAllocStatus()
 	var statusStr string

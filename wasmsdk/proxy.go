@@ -84,7 +84,7 @@ func main() {
 						return "", fmt.Errorf("failed to sign with split key: %v", err)
 					}
 
-					data, err := json.Marshal(zcncore.AuthMessage{
+					data, err := json.Marshal(client.AuthMessage{
 						Hash:      hash,
 						Signature: sig,
 						ClientID:  client.Wallet().ClientID,
@@ -247,6 +247,7 @@ func main() {
 				"terminateWorkers":          terminateWorkers,
 				"createWorkers":             createWorkers,
 				"getFileMetaByName":         getFileMetaByName,
+				"getFileMetaByAuthTicket":	getFileMetaByAuthTicket,
 				"downloadDirectory":         downloadDirectory,
 				"cancelDownloadDirectory":   cancelDownloadDirectory,
 				"cancelDownloadBlocks":      cancelDownloadBlocks,
@@ -272,6 +273,7 @@ func main() {
 				"getUpdateAllocationMinLock": getUpdateAllocationMinLock,
 				"getAllocationWith":          getAllocationWith,
 				"createfreeallocation":       createfreeallocation,
+				"getUpdateAllocTicket":       getUpdateAllocTicket,
 
 				// claim rewards
 				"collectRewards": collectRewards,
@@ -380,7 +382,7 @@ func main() {
 						return "", fmt.Errorf("failed to sign with split key: %v", err)
 					}
 
-					data, err := json.Marshal(zcncore.AuthMessage{
+					data, err := json.Marshal(client.AuthMessage{
 						Hash:      hash,
 						Signature: sig,
 						ClientID:  client.GetClient().ClientID,

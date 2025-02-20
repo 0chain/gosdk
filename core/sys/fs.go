@@ -41,6 +41,8 @@ type FS interface {
 	// RemoveProgress remove progress
 	RemoveProgress(progressID string) error
 
+	StoreLogs(key string, data string) error
+
 	// Create Directory
 	CreateDirectory(dirID string) error
 

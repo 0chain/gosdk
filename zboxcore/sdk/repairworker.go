@@ -459,9 +459,17 @@ func (r *RepairRequest) iterateDirV2(ctx context.Context) {
 				}
 				diff.tgtRef, diff.tgtEOF = <-diff.tgtChan
 			} else if diff.tgtRef.Path < srcRef.Path {
-				deleteMask = deleteMask.Or(diff.mask)
+				delMask := diff.mask
+				op := OperationRequest{
+					OperationType: constants.FileOperationDelete,
+					RemotePath:    diff.tgtRef.Path,
+					Mask:          &delMask,
+				}
+				ops = append(ops, op)
 				toNextRef = false
 				diff.tgtRef, diff.tgtEOF = <-diff.tgtChan
+			} else {
+				uploadMask = uploadMask.Or(diff.mask)
 			}
 		}
 		if deleteMask.CountOnes() > 0 {
