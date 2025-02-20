@@ -114,6 +114,13 @@ func MinerScUpdateGlobals(input interface{}, client ...string) (hash, out string
 
 }
 
+func StorageSCAddBlobber(input interface{}, client ...string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+	return transaction.SmartContractTxn(StorageSmartContractAddress, transaction.SmartContractTxnData{
+		Name:      transaction.STORAGESC_ADD_BLOBBER,
+		InputArgs: input,
+	}, true, client...)
+}
+
 func StorageScUpdateConfig(input interface{}, client ...string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 	return transaction.SmartContractTxn(StorageSmartContractAddress, transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_UPDATE_SETTINGS,
@@ -213,6 +220,18 @@ func Send(toClientID string, tokens uint64, desc string, client ...string) (hash
 		Name:      "transfer",
 		InputArgs: SendTxnData{Note: desc},
 	}, tokens, true, client...)
+}
+func SendWithCustomFee(toClientID string, tokens, fee uint64, desc string, client ...string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+	if len(client) == 0 {
+		client = append(client, "")
+		client = append(client, toClientID)
+	} else {
+		client = append(client, toClientID)
+	}
+	return transaction.SmartContractTxnValueFee(MinerSmartContractAddress, transaction.SmartContractTxnData{
+		Name:      "transfer",
+		InputArgs: SendTxnData{Note: desc},
+	}, tokens, fee, true, client...)
 }
 
 func Faucet(tokens uint64, input string, client ...string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {

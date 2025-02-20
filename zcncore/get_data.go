@@ -172,7 +172,7 @@ func getTokenUSDRate() (float64, error) {
 }
 
 // getWallet get a wallet object from a wallet string
-func getWallet(walletStr string) (*zcncrypto.Wallet, error) {
+func GetWalletZcncore(walletStr string) (*zcncrypto.Wallet, error) {
 	var w zcncrypto.Wallet
 	err := json.Unmarshal([]byte(walletStr), &w)
 	if err != nil {
@@ -194,10 +194,6 @@ func (p Params) Query() string {
 		params[k] = []string{v}
 	}
 	return "?" + params.Encode()
-}
-
-func withParams(uri string, params Params) string { //nolint:unused
-	return uri + params.Query()
 }
 
 // GetBlobberSnapshots obtains list of allocations of a blobber.
@@ -293,6 +289,23 @@ func GetLatestFinalizedMagicBlock() (m *block.MagicBlock, err error) {
 	}
 
 	return resp.MagicBlock, nil
+}
+
+// GetLatestFinalizedBlock gets latest finalized block
+func GetLatestFinalizedBlock() (*block.Block, error) {
+	res, err := client.MakeSCRestAPICall("", GET_LATEST_FINALIZED, nil, "")
+	if err != nil {
+		return nil, err
+	}
+
+	var resp block.Block
+
+	err = json.Unmarshal(res, &resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return &resp, nil
 }
 
 // GetMinerSCUserInfo retrieve user stake pools for the providers related to the Miner SC (miners/sharders).

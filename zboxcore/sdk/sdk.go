@@ -804,11 +804,11 @@ type CreateAllocationOptions struct {
 //   - options is the options struct instance for creating the allocation.
 //
 // returns the hash of the new_allocation_request transaction, the nonce of the transaction, the transaction object and an error if any.
-func CreateAllocationWith(options CreateAllocationOptions) (
+func CreateAllocationWith(options CreateAllocationOptions, clients ...string) (
 	string, int64, *transaction.Transaction, error) {
 
-	return CreateAllocationForOwner(client.Id(),
-		client.PublicKey(), options.DataShards, options.ParityShards,
+	return CreateAllocationForOwner(client.Id(clients...),
+		client.PublicKey(clients...), options.DataShards, options.ParityShards,
 		options.Size, options.ReadPrice, options.WritePrice, options.Lock,
 		options.BlobberIds, options.BlobberAuthTickets, options.ThirdPartyExtendable, options.IsEnterprise, options.Force, options.FileOptionsParams, options.AuthRoundExpiry)
 }
@@ -983,7 +983,7 @@ func GetFreeAllocationBlobbers(request map[string]interface{}) ([]string, error)
 //   - totalLimit is the total limit of the assigner for all free allocation requests.
 //
 // returns the hash of the transaction, the nonce of the transaction and an error if any.
-func AddFreeStorageAssigner(name, publicKey string, individualLimit, totalLimit float64) (string, int64, error) {
+func AddFreeStorageAssigner(name, publicKey string, individualLimit, totalLimit float64, clients ...string) (string, int64, error) {
 	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
@@ -999,7 +999,7 @@ func AddFreeStorageAssigner(name, publicKey string, individualLimit, totalLimit 
 		Name:      transaction.ADD_FREE_ALLOCATION_ASSIGNER,
 		InputArgs: input,
 	}
-	hash, _, n, _, err := storageSmartContractTxn(sn)
+	hash, _, n, _, err := StorageSmartContractTxn(sn, clients...)
 
 	return hash, n, err
 }
@@ -1009,7 +1009,7 @@ func AddFreeStorageAssigner(name, publicKey string, individualLimit, totalLimit 
 //   - allocID is the id of the allocation.
 //
 // returns the hash of the transaction, the nonce of the transaction and an error if any.
-func FinalizeAllocation(allocID string) (hash string, nonce int64, err error) {
+func FinalizeAllocation(allocID string, clients ...string) (hash string, nonce int64, err error) {
 	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
@@ -1017,7 +1017,7 @@ func FinalizeAllocation(allocID string) (hash string, nonce int64, err error) {
 		Name:      transaction.STORAGESC_FINALIZE_ALLOCATION,
 		InputArgs: map[string]interface{}{"allocation_id": allocID},
 	}
-	hash, _, nonce, _, err = storageSmartContractTxn(sn)
+	hash, _, nonce, _, err = StorageSmartContractTxn(sn, clients...)
 	return
 }
 
@@ -1026,7 +1026,7 @@ func FinalizeAllocation(allocID string) (hash string, nonce int64, err error) {
 //   - allocID is the id of the allocation.
 //
 // returns the hash of the transaction, the nonce of the transaction and an error if any.
-func CancelAllocation(allocID string) (hash string, nonce int64, err error) {
+func CancelAllocation(allocID string, clients ...string) (hash string, nonce int64, err error) {
 	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
@@ -1034,7 +1034,7 @@ func CancelAllocation(allocID string) (hash string, nonce int64, err error) {
 		Name:      transaction.STORAGESC_CANCEL_ALLOCATION,
 		InputArgs: map[string]interface{}{"allocation_id": allocID},
 	}
-	hash, _, nonce, _, err = storageSmartContractTxn(sn)
+	hash, _, nonce, _, err = StorageSmartContractTxn(sn, clients...)
 	return
 }
 
@@ -1052,7 +1052,7 @@ const (
 // KillProvider kills a blobber or a validator (txn: `storagesc.kill_blobber` or `storagesc.kill_validator`)
 //   - providerId is the id of the provider.
 //   - providerType` is the type of the provider, either 3 for `ProviderBlobber` or 4 for `ProviderValidator.
-func KillProvider(providerId string, providerType ProviderType) (string, int64, error) {
+func KillProvider(providerId string, providerType ProviderType, clients ...string) (string, int64, error) {
 	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
@@ -1071,14 +1071,14 @@ func KillProvider(providerId string, providerType ProviderType) (string, int64, 
 	default:
 		return "", 0, fmt.Errorf("kill provider type %v not implimented", providerType)
 	}
-	hash, _, n, _, err := storageSmartContractTxn(sn)
+	hash, _, n, _, err := StorageSmartContractTxn(sn, clients...)
 	return hash, n, err
 }
 
 // ShutdownProvider shuts down a blobber or a validator (txn: `storagesc.shutdown_blobber` or `storagesc.shutdown_validator`)
 //   - providerId is the id of the provider.
 //   - providerType` is the type of the provider, either 3 for `ProviderBlobber` or 4 for `ProviderValidator.
-func ShutdownProvider(providerType ProviderType, providerID string) (string, int64, error) {
+func ShutdownProvider(providerType ProviderType, providerID string, clients ...string) (string, int64, error) {
 	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
@@ -1098,14 +1098,14 @@ func ShutdownProvider(providerType ProviderType, providerID string) (string, int
 	default:
 		return "", 0, fmt.Errorf("shutdown provider type %v not implimented", providerType)
 	}
-	hash, _, n, _, err := storageSmartContractTxn(sn)
+	hash, _, n, _, err := StorageSmartContractTxn(sn, clients...)
 	return hash, n, err
 }
 
 // CollectRewards collects the rewards for a provider (txn: `storagesc.collect_reward`)
 //   - providerId is the id of the provider.
 //   - providerType is the type of the provider.
-func CollectRewards(providerId string, providerType ProviderType) (string, int64, error) {
+func CollectRewards(providerId string, providerType ProviderType, clients ...string) (string, int64, error) {
 	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
@@ -1145,7 +1145,7 @@ func CollectRewards(providerId string, providerType ProviderType) (string, int64
 //   - newOwnerPublicKey is the public key of the new owner.
 //
 // returns the hash of the transaction, the nonce of the transaction and an error if any.
-func TransferAllocation(allocationId, newOwner, newOwnerPublicKey string) (string, int64, error) {
+func TransferAllocation(allocationId, newOwner, newOwnerPublicKey string, clients ...string) (string, int64, error) {
 	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
@@ -1172,13 +1172,13 @@ func TransferAllocation(allocationId, newOwner, newOwnerPublicKey string) (strin
 		Name:      transaction.STORAGESC_UPDATE_ALLOCATION,
 		InputArgs: allocationRequest,
 	}
-	hash, _, n, _, err := storageSmartContractTxn(sn)
+	hash, _, n, _, err := StorageSmartContractTxn(sn, clients...)
 	return hash, n, err
 }
 
 // UpdateBlobberSettings updates the settings of a blobber (txn: `storagesc.update_blobber_settings`)
 //   - blob is the update blobber request inputs.
-func UpdateBlobberSettings(blob *UpdateBlobber) (resp string, nonce int64, err error) {
+func UpdateBlobberSettings(blob *UpdateBlobber, clients ...string) (resp string, nonce int64, err error) {
 	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
@@ -1186,13 +1186,13 @@ func UpdateBlobberSettings(blob *UpdateBlobber) (resp string, nonce int64, err e
 		Name:      transaction.STORAGESC_UPDATE_BLOBBER_SETTINGS,
 		InputArgs: blob,
 	}
-	resp, _, nonce, _, err = storageSmartContractTxn(sn)
+	resp, _, nonce, _, err = StorageSmartContractTxn(sn, clients...)
 	return
 }
 
 // UpdateValidatorSettings updates the settings of a validator (txn: `storagesc.update_validator_settings`)
 //   - v is the update validator request inputs.
-func UpdateValidatorSettings(v *UpdateValidator) (resp string, nonce int64, err error) {
+func UpdateValidatorSettings(v *UpdateValidator, clients ...string) (resp string, nonce int64, err error) {
 	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
@@ -1201,13 +1201,13 @@ func UpdateValidatorSettings(v *UpdateValidator) (resp string, nonce int64, err 
 		Name:      transaction.STORAGESC_UPDATE_VALIDATOR_SETTINGS,
 		InputArgs: v.ConvertToValidationNode(),
 	}
-	resp, _, nonce, _, err = storageSmartContractTxn(sn)
+	resp, _, nonce, _, err = StorageSmartContractTxn(sn, clients...)
 	return
 }
 
 // ResetBlobberStats resets the stats of a blobber (txn: `storagesc.reset_blobber_stats`)
 //   - rbs is the reset blobber stats dto, contains the blobber id and its stats.
-func ResetBlobberStats(rbs *ResetBlobberStatsDto) (string, int64, error) {
+func ResetBlobberStats(rbs *ResetBlobberStatsDto, clients ...string) (string, int64, error) {
 	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
@@ -1216,7 +1216,7 @@ func ResetBlobberStats(rbs *ResetBlobberStatsDto) (string, int64, error) {
 		Name:      transaction.STORAGESC_RESET_BLOBBER_STATS,
 		InputArgs: rbs,
 	}
-	hash, _, n, _, err := storageSmartContractTxn(sn)
+	hash, _, n, _, err := StorageSmartContractTxn(sn, clients...)
 	return hash, n, err
 }
 
@@ -1224,7 +1224,7 @@ type StorageNodeIdField struct {
 	Id string `json:"id"`
 }
 
-func ResetBlobberVersion(snId *StorageNodeIdField) (string, int64, error) {
+func ResetBlobberVersion(snId *StorageNodeIdField, clients ...string) (string, int64, error) {
 	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
@@ -1233,11 +1233,11 @@ func ResetBlobberVersion(snId *StorageNodeIdField) (string, int64, error) {
 		Name:      transaction.STORAGESC_RESET_BLOBBER_VERSION,
 		InputArgs: snId,
 	}
-	hash, _, n, _, err := storageSmartContractTxn(sn)
+	hash, _, n, _, err := StorageSmartContractTxn(sn, clients...)
 	return hash, n, err
 }
 
-func InsertKilledProviderID(snId *StorageNodeIdField) (string, int64, error) {
+func InsertKilledProviderID(snId *StorageNodeIdField, clients ...string) (string, int64, error) {
 	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
@@ -1246,11 +1246,11 @@ func InsertKilledProviderID(snId *StorageNodeIdField) (string, int64, error) {
 		Name:      transaction.STORAGESC_INSERT_KILLED_PROVIDER_ID,
 		InputArgs: snId,
 	}
-	hash, _, n, _, err := storageSmartContractTxn(sn)
+	hash, _, n, _, err := StorageSmartContractTxn(sn, clients...)
 	return hash, n, err
 }
 
-func ResetAllocationStats(allocationId string) (string, int64, error) {
+func ResetAllocationStats(allocationId string, clients ...string) (string, int64, error) {
 	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
@@ -1259,27 +1259,21 @@ func ResetAllocationStats(allocationId string) (string, int64, error) {
 		Name:      transaction.STORAGESC_RESET_ALLOCATION_STATS,
 		InputArgs: allocationId,
 	}
-	hash, _, n, _, err := storageSmartContractTxn(sn)
+	hash, _, n, _, err := StorageSmartContractTxn(sn, clients...)
 	return hash, n, err
 }
 
-func StorageSmartContractTxn(sn transaction.SmartContractTxnData) (
+func StorageSmartContractTxn(sn transaction.SmartContractTxnData, clients ...string) (
 	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 
-	return storageSmartContractTxnValue(sn, 0)
+	return StorageSmartContractTxnValue(sn, 0, clients...)
 }
 
-func storageSmartContractTxn(sn transaction.SmartContractTxnData) (
-	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
-
-	return storageSmartContractTxnValue(sn, 0)
-}
-
-func storageSmartContractTxnValue(sn transaction.SmartContractTxnData, value uint64) (
+func StorageSmartContractTxnValue(sn transaction.SmartContractTxnData, value uint64, clients ...string) (
 	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 
 	// Fee is set during sdk initialization.
-	return transaction.SmartContractTxnValueFeeWithRetry(STORAGE_SCADDRESS, sn, value, client.TxnFee(), true)
+	return transaction.SmartContractTxnValueFeeWithRetry(STORAGE_SCADDRESS, sn, value, client.TxnFee(), true, clients...)
 }
 
 func CommitToFabric(metaTxnData, fabricConfigJSON string) (string, error) {
