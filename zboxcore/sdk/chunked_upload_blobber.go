@@ -5,8 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/0chain/gosdk/core/conf"
-	"github.com/0chain/gosdk/core/kafka"
 	"io"
 	"log"
 	"mime/multipart"
@@ -14,6 +12,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/0chain/gosdk/core/kafka"
 
 	"github.com/0chain/errors"
 	thrown "github.com/0chain/errors"

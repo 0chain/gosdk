@@ -46,11 +46,15 @@ type InitSdkOptions struct {
 	AddWallet               bool
 	TxnFee                  *int
 	MinConfirmation         *int
-	MinSubmit               *int
 	ConfirmationChainLength *int
+	MinSubmit               *int
 	SharderConsensous       *int
 	ZboxHost                string
 	ZboxAppType             string
+	KafkaHost               string
+	KafkaUsername           string
+	KafkaPassword           string
+	KafkaTopic              string
 }
 
 func init() {
@@ -385,7 +389,8 @@ func InitSDK(walletJSON string,
 }
 
 func InitSDKWithWebApp(params InitSdkOptions) error {
-	err := InitSDK(params.WalletJSON, params.BlockWorker, params.ChainID, params.SignatureScheme, params.Nonce, params.AddWallet, *params.MinConfirmation, *params.MinSubmit, *params.ConfirmationChainLength, *params.SharderConsensous)
+	err := InitSDK(params.WalletJSON, params.BlockWorker, params.ChainID, params.SignatureScheme, params.Nonce, params.AddWallet, params.KafkaHost, params.KafkaUsername, params.KafkaPassword, params.KafkaTopic,
+		*params.MinConfirmation, *params.MinSubmit, *params.ConfirmationChainLength, *params.SharderConsensous)
 	if err != nil {
 		return err
 	}

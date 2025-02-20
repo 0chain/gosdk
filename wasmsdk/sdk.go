@@ -34,7 +34,7 @@ var CreateObjectURL func(buf []byte, mimeType string) string
 //   - sharderconsensous is the number of sharders to reach consensus
 func initSDKs(chainID, blockWorker, signatureScheme string,
 	minConfirmation, minSubmit, confirmationChainLength int,
-	zboxHost, zboxAppType string, sharderConsensous int) error {
+	zboxHost, zboxAppType string, sharderConsensous int, kafkaHost, kafkaUsername, kafkaPassword, kafkaTopic string) error {
 
 	// Print the parameters beautified
 	fmt.Printf("{ chainID: %s, blockWorker: %s, signatureScheme: %s, minConfirmation: %d, minSubmit: %d, confirmationChainLength: %d, zboxHost: %s, zboxAppType: %s, sharderConsensous: %d }\n", chainID, blockWorker, signatureScheme, minConfirmation, minSubmit, confirmationChainLength, zboxHost, zboxAppType, sharderConsensous)
@@ -54,6 +54,10 @@ func initSDKs(chainID, blockWorker, signatureScheme string,
 		ConfirmationChainLength: &confirmationChainLength,
 		ZboxHost:                zboxHost,
 		ZboxAppType:             zboxAppType,
+		KafkaHost:               kafkaHost,
+		KafkaUsername:           kafkaUsername,
+		KafkaPassword:           kafkaPassword,
+		KafkaTopic:              kafkaTopic,
 	}
 
 	err := client.InitSDKWithWebApp(params)
