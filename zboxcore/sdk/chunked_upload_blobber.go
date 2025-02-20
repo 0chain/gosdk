@@ -30,24 +30,6 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func PublishToKafka(key, message string) chan int64 {
-	cfg, err := conf.GetClientConfig()
-	if err != nil {
-		fmt.Println("Error getting client config: ", err)
-		return nil
-	}
-
-	if !client.IsSDKInitialized() {
-		fmt.Println("SDK is not initialized")
-		return nil
-	}
-
-	BlobberMonitoringKafkaTopic := cfg.KafkaTopic
-	BlobberMonitoringKafka := kafka.NewKafkaProvider(cfg.KafkaHost, cfg.KafkaUsername, cfg.KafkaPassword, 1*time.Minute)
-
-	return BlobberMonitoringKafka.PublishToKafka(BlobberMonitoringKafkaTopic, key, message)
-}
-
 // ChunkedUploadBlobber client of blobber's upload
 type ChunkedUploadBlobber struct {
 	writeMarkerMutex *WriteMarkerMutex
