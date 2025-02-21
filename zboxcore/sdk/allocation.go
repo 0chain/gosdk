@@ -457,7 +457,7 @@ func (a *Allocation) generateAndSetOwnerSigningPublicKey() {
 	if a.OwnerPublicKey != client.PublicKey() {
 		return
 	}
-	privateSigningKey, err := generateOwnerSigningKey(a.OwnerPublicKey, a.Owner)
+	privateSigningKey, err := GenerateOwnerSigningKey(a.OwnerPublicKey, a.Owner)
 	if err != nil {
 		l.Logger.Error("Failed to generate owner signing key", zap.Error(err))
 		return
@@ -1385,7 +1385,7 @@ func (a *Allocation) generateDownloadRequest(
 	downloadReq.allocOwnerPubKey = a.OwnerPublicKey
 	downloadReq.allocOwnerSigningPubKey = a.OwnerSigningPublicKey
 	if len(a.privateSigningKey) == 0 {
-		sk, err := generateOwnerSigningKey(client.PublicKey(), client.Id())
+		sk, err := GenerateOwnerSigningKey(client.PublicKey(), client.Id())
 		if err != nil {
 			return nil, err
 		}
@@ -2829,7 +2829,7 @@ func (a *Allocation) downloadFromAuthTicket(fileHandler sys.File, authTicket str
 	downloadReq.allocOwnerPubKey = a.OwnerPublicKey
 	downloadReq.allocOwnerSigningPubKey = a.OwnerSigningPublicKey
 	//for auth ticket set your own signing key
-	sk, err := generateOwnerSigningKey(client.PublicKey(), client.Id())
+	sk, err := GenerateOwnerSigningKey(client.PublicKey(), client.Id())
 	if err != nil {
 		return err
 	}

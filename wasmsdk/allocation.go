@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/0chain/gosdk/core/client"
 	"strconv"
 	"strings"
 	"sync"
@@ -544,4 +545,8 @@ func repairSize(allocationID, remotePath string) (sdk.RepairSize, error) {
 		return sdk.RepairSize{}, err
 	}
 	return alloc.RepairSize(remotePath)
+}
+
+func generateOwnerSigningKey(ownerPublicKey, ownerID string) (string, error) {
+	return sdk.GenerateOwnerSigningKey(client.PublicKey(), client.Id())
 }
