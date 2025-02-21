@@ -121,6 +121,7 @@ type ConsolidatedFileMeta struct {
 	ActualFileSize  int64
 	ActualNumBlocks int64
 	EncryptedKey    string
+	CustomMeta      string
 
 	ActualThumbnailSize int64
 	ActualThumbnailHash string
@@ -885,7 +886,29 @@ func (a *Allocation) StartLargeFileUpload(op OperationRequest, encrypt bool) err
 		ops[i] = newOp
 	}
 
-	return a.DoMultiOperation(ops, WithBatchSize(1))
+	err := a.DoMultiOperation(ops, WithBatchSize(1))
+	if err != nil {
+		return err
+	}
+	// update custom metadata of dir
+	customMetaMap := make(map[string]string)
+	if op.FileMeta.CustomMeta != "" {
+		err := json.Unmarshal([]byte(op.FileMeta.CustomMeta), &customMetaMap)
+		if err != nil {
+			return err
+		}
+	}
+	customMetaMap["large_file"] = "true"
+	customMetaMap["actual_file_size"] = strconv.FormatInt(op.FileMeta.ActualSize, 10)
+	customMeta, _ := json.Marshal(customMetaMap)
+	dirOpRequest := OperationRequest{
+		OperationType: constants.FileOperationCreateDir,
+		RemotePath:    op.FileMeta.RemotePath,
+		FileMeta: FileMeta{
+			CustomMeta: string(customMeta),
+		},
+	}
+	return a.DoMultiOperation([]OperationRequest{dirOpRequest})
 }
 
 // StartChunkedUpload starts a chunked upload operation.
@@ -2084,6 +2107,7 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 		if result.ActualFileSize > 0 {
 			result.ActualNumBlocks = (ref.ActualFileSize + CHUNK_SIZE - 1) / CHUNK_SIZE
 		}
+		result.CustomMeta = ref.CustomMeta
 		return result, nil
 	}
 	return nil, errors.New("file_meta_error", "Error getting the file meta data from blobbers")
