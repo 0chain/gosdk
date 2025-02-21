@@ -376,3 +376,13 @@ func GenerateOwnerSigningKey(ownerPublicKey, ownerID string) (ed25519.PrivateKey
 	privateSigningKey := ed25519.NewKeyFromSeed(decodedSig[:32])
 	return privateSigningKey, nil
 }
+
+func GenerateOwnerSigningPublicKey() (string, error) {
+	privateSigningKey, err := GenerateOwnerSigningKey(client.PublicKey(), client.Id())
+	if err != nil {
+		return "", err
+	}
+
+	pubKey := privateSigningKey.Public().(ed25519.PublicKey)
+	return hex.EncodeToString(pubKey), nil
+}
