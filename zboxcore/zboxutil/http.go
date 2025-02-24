@@ -159,10 +159,10 @@ func init() {
 		DisableHeaderNamesNormalizing: true, // If you set the case on your headers correctly you can enable this
 		DisablePathNormalizing:        true,
 		// increase DNS cache time to an hour instead of default minute
-		DialTimeout: (&fasthttp.TCPDialer{
+		Dial: (&fasthttp.TCPDialer{
 			Concurrency:      4096,
 			DNSCacheDuration: time.Hour,
-		}).DialTimeout,
+		}).Dial,
 		ReadTimeout:         180 * time.Second,
 		WriteTimeout:        180 * time.Second,
 		MaxConnDuration:     45 * time.Second,
