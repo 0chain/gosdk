@@ -14,9 +14,6 @@ import (
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
-	"github.com/0chain/gosdk/core/client"
-	"github.com/0chain/gosdk/core/conf"
-	"github.com/0chain/gosdk/core/kafka"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	l "github.com/0chain/gosdk/zboxcore/logger"
@@ -231,22 +228,4 @@ func (req *subDirRequest) processSubDirectories() error {
 	}
 
 	return nil
-}
-
-func PublishToKafka(key, message string) chan int64 {
-	cfg, err := conf.GetClientConfig()
-	if err != nil {
-		fmt.Println("Error getting client config: ", err)
-		return nil
-	}
-
-	if !client.IsSDKInitialized() {
-		fmt.Println("SDK is not initialized")
-		return nil
-	}
-
-	BlobberMonitoringKafkaTopic := cfg.KafkaTopic
-	BlobberMonitoringKafka := kafka.NewKafkaProvider(cfg.KafkaHost, cfg.KafkaUsername, cfg.KafkaPassword, 1*time.Minute)
-
-	return BlobberMonitoringKafka.PublishToKafka(BlobberMonitoringKafkaTopic, key, message)
 }

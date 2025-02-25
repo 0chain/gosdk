@@ -44,14 +44,16 @@ import (
 )
 
 var (
-	noBLOBBERS       = errors.New("", "No Blobbers set in this allocation")
-	notInitialized   = errors.New("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
-	IsWasm           = false
-	MultiOpBatchSize = 50
-	RepairBatchSize  = 50
-	Workdir          string
-	logChanMap       = make(map[string]chan logEntry)
-	logMapMutex      = &sync.Mutex{}
+	noBLOBBERS               = errors.New("", "No Blobbers set in this allocation")
+	notInitialized           = errors.New("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
+	IsWasm                   = false
+	MultiOpBatchSize         = 50
+	RepairBatchSize          = 50
+	Workdir                  string
+	logChanMap               = make(map[string]chan logEntry)
+	logMapMutex              = &sync.Mutex{}
+	LogBlobberMonitoring     = false
+	LogBlobberMonitoringChan = make(chan BlobberMonitoring)
 )
 
 const (
@@ -78,6 +80,17 @@ const (
 
 var GetFileInfo = func(localpath string) (os.FileInfo, error) {
 	return sys.Files.Stat(localpath)
+}
+
+func SetBlobberMonitoring(val bool) {
+	LogBlobberMonitoring = val
+}
+
+type BlobberMonitoring struct {
+	BlobberId string `json:"blobber_id"`
+	Size      int64  `json:"size"`
+	TimeSpent int64  `json:"time_spent"`
+	Count     int    `json:"count"`
 }
 
 // BlobberAllocationStats represents the blobber allocation statistics.
@@ -3429,8 +3442,12 @@ func logWorker(key string, logChan chan logEntry) {
 		sys.Files.StoreLogs(key, string(data))
 	}
 }
-
+	
 func writeLogEntry(blobberURL string, log logEntry) {
 	logChan := getLogChan(blobberURL)
 	logChan <- log
+}
+
+func addBlobberMonitoringLog(log BlobberMonitoring) {
+	LogBlobberMonitoringChan <- log
 }

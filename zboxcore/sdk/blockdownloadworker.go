@@ -4,13 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"sync"
 	"syscall"
 	"time"
-
-	"github.com/0chain/gosdk/core/kafka"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/client"
@@ -193,32 +190,14 @@ func (req *BlockDownloadRequest) downloadBlobberBlock(fastClient *fasthttp.Clien
 			}
 
 			dnldSizeInMb := int64(len(respBuf)) / 1024
-			kafkaObj := kafka.BlobberMonitoring{
-				Operation:    "download",
-				BlobberId:    req.blobber.ID,
-				TimeSpent:    time.Since(now).Nanoseconds(),
-				Size:         dnldSizeInMb,
-				AllocationId: req.allocationID,
-				Count:        1,
-			}
-
-			kafkaObjStr, err := json.Marshal(kafkaObj)
-			if err != nil {
-				log.Println("Error publishing to kafka: ", err)
-			}
-
-			timeout, cancelFunc := context.WithTimeout(context.Background(), 50*time.Second)
-			defer cancelFunc()
-
-			res := PublishToKafka(req.blobber.ID, string(kafkaObjStr))
-
-			if res != nil {
-				select {
-				case <-res:
-					break
-				case <-timeout.Done():
-					log.Panic("Timeout to publish event to kafka")
+			if LogBlobberMonitoring {
+				blobberMonitoringlog := BlobberMonitoring{
+					BlobberId: req.blobber.ID,
+					TimeSpent: timeTaken,
+					Size:      dnldSizeInMb,
+					Count:     1,
 				}
+				addBlobberMonitoringLog(blobberMonitoringlog)
 			}
 
 			entry := logEntry{

@@ -13,8 +13,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/0chain/gosdk/core/kafka"
-
 	"github.com/0chain/errors"
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
@@ -95,14 +93,27 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 				err, shouldContinue = func() (err error, shouldContinue bool) {
 					resp := fasthttp.AcquireResponse()
 					defer fasthttp.ReleaseResponse(resp)
+					now := time.Now()
 					err = zboxutil.FastHttpClient.DoTimeout(req, resp, su.uploadTimeOut)
 					fasthttp.ReleaseRequest(req)
+					timeTaken := time.Since(now).Milliseconds()
 					if err != nil {
 						logger.Logger.Error("Upload : ", err, " baseurl: ", sb.blobber.Baseurl)
 						if errors.Is(err, fasthttp.ErrConnectionClosed) || errors.Is(err, syscall.EPIPE) {
 							return err, true
 						}
 						return fmt.Errorf("Error while doing reqeust. Error %s", err), false
+					}
+
+					uploadSizeInMb := int64(len(dataBuffers[ind].Bytes())) / 1024
+					if LogBlobberMonitoring {
+						blobberMonitoringlog := BlobberMonitoring{
+							BlobberId: sb.blobber.ID,
+							TimeSpent: timeTaken,
+							Size:      uploadSizeInMb,
+							Count:     1,
+						}
+						addBlobberMonitoringLog(blobberMonitoringlog)
 					}
 
 					if resp.StatusCode() == http.StatusOK {
@@ -144,26 +155,6 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 				}
 
 				break
-			}
-
-			uploadSizeInMb := int64(len(dataBuffers[ind].Bytes())) / 1024
-			kafkaObj := kafka.BlobberMonitoring{
-				Operation:    "upload",
-				BlobberId:    sb.blobber.ID,
-				TimeSpent:    time.Since(now).Nanoseconds(),
-				Size:         uploadSizeInMb,
-				AllocationId: su.allocationObj.ID,
-				Count:        1,
-			}
-
-			kafkaObjStr, err := json.Marshal(kafkaObj)
-			if err != nil {
-				logger.Logger.Error("Error publishing to kafka: ", err)
-			}
-
-			res := PublishToKafka(sb.blobber.ID, string(kafkaObjStr))
-			if res != nil {
-				results = append(results, res)
 			}
 
 			return err
