@@ -1,11 +1,17 @@
 package sdk
 
 import (
+	"crypto/ed25519"
+	"encoding/hex"
+	"fmt"
 	"math"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk_common/core/client"
+	"github.com/0chain/gosdk_common/core/encryption"
 	"github.com/0chain/gosdk_common/zboxcore/commonsdk"
+	"github.com/0chain/gosdk_common/zboxcore/logger"
+	"go.uber.org/zap"
 )
 
 // UpdateAllocation sends an update request for an allocation (txn: `storagesc.update_allocation_request`)
@@ -65,4 +71,20 @@ func UpdateAllocation(
 		},
 	)
 	return
+}
+
+func generateOwnerSigningKey(ownerPublicKey, ownerID string) (ed25519.PrivateKey, error) {
+	if ownerPublicKey == "" {
+		return nil, errors.New("owner_public_key_required", "owner public key is required")
+	}
+	hashData := fmt.Sprintf("%s:%s", ownerPublicKey, "owner_signing_public_key")
+	sig, err := client.Sign(encryption.Hash(hashData), ownerID)
+	if err != nil {
+		logger.Logger.Error("error during sign", zap.Error(err))
+		return nil, err
+	}
+	//use this signature as entropy to generate ecdsa key pair
+	decodedSig, _ := hex.DecodeString(sig)
+	privateSigningKey := ed25519.NewKeyFromSeed(decodedSig[:32])
+	return privateSigningKey, nil
 }

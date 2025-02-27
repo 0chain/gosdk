@@ -3,6 +3,7 @@ package sdk
 import (
 	"bytes"
 	"context"
+	"crypto/ed25519"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -165,7 +166,9 @@ type Allocation struct {
 	consensusThreshold int
 	fullconsensus      int
 	allocationVersion  int64
-	sig                string `json:"-"`
+	sig                string             `json:"-"`
+	allocationRoot     string             `json:"-"`
+	privateSigningKey  ed25519.PrivateKey `json:"-"`
 }
 
 // OperationRequest represents an operation request with its related options.
@@ -1196,6 +1199,17 @@ func (a *Allocation) generateDownloadRequest(
 	downloadReq.allocOwnerID = a.Owner
 	downloadReq.sig = a.sig
 	downloadReq.allocOwnerPubKey = a.OwnerPublicKey
+	downloadReq.allocOwnerSigningPubKey = a.OwnerSigningPublicKey
+	if len(a.privateSigningKey) == 0 {
+		sk, err := generateOwnerSigningKey(client.PublicKey(), client.Id())
+		if err != nil {
+			return nil, err
+		}
+		downloadReq.allocOwnerSigningPrivateKey = sk
+	} else {
+		downloadReq.allocOwnerSigningPrivateKey = a.privateSigningKey
+	}
+	logger.Logger.Debug("Download req private key", downloadReq.allocOwnerSigningPrivateKey)
 	downloadReq.ctx, downloadReq.ctxCncl = context.WithCancel(a.ctx)
 	downloadReq.fileHandler = fileHandler
 	downloadReq.localFilePath = localFilePath
@@ -1299,7 +1313,6 @@ func (a *Allocation) processReadMarker(drs []*DownloadRequest) {
 	}
 	wg.Wait()
 	elapsedProcessDownloadRequest := time.Since(now)
-
 	// Do not send readmarkers for free reads
 	if a.readFree {
 		for _, dr := range drs {
@@ -2641,6 +2654,13 @@ func (a *Allocation) downloadFromAuthTicket(fileHandler sys.File, authTicket str
 	downloadReq.sig = a.sig
 	downloadReq.allocOwnerID = a.Owner
 	downloadReq.allocOwnerPubKey = a.OwnerPublicKey
+	downloadReq.allocOwnerSigningPubKey = a.OwnerSigningPublicKey
+	//for auth ticket set your own signing key
+	sk, err := generateOwnerSigningKey(client.PublicKey(), client.Id())
+	if err != nil {
+		return err
+	}
+	downloadReq.allocOwnerSigningPrivateKey = sk
 	downloadReq.ctx, downloadReq.ctxCncl = context.WithCancel(a.ctx)
 	downloadReq.fileHandler = fileHandler
 	downloadReq.localFilePath = localFilePath

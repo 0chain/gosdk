@@ -20,6 +20,8 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
+const SignatureV2 = 1
+
 // ChunkedUpload upload manager with chunked upload feature
 type ChunkedUpload struct {
 	consensus Consensus
