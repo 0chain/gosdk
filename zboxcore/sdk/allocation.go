@@ -793,7 +793,7 @@ func (a *Allocation) GetCurrentVersion() (bool, error) {
 		wg.Add(1)
 		go func(rb *RollbackBlobber) {
 			defer wg.Done()
-			err := rb.processRollback(context.TODO(), a.ID)
+			err := rb.processRollback(context.TODO(), a.ID, a.allocationVersion)
 			if err != nil {
 				success = false
 			}

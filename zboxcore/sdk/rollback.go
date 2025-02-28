@@ -115,9 +115,10 @@ func GetWritemarker(allocID, allocTx, sig, id, baseUrl string, clientId ...strin
 	return nil, fmt.Errorf("writemarker error response %d", http.StatusTooManyRequests)
 }
 
-func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error {
+func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string, allocVersion int64) error {
 	// don't rollback if the blobber is already in repair mode otherwise it will lead to inconsistent state
-	if rb.lvm == nil || rb.lvm.VersionMarker.IsRepair {
+	// don't rollback if the allocation verison is already
+	if rb.lvm == nil || rb.lvm.VersionMarker.IsRepair || allocVersion == 0 {
 		return nil
 	}
 	vm := &marker.VersionMarker{
@@ -350,7 +351,7 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
 		wg.Add(1)
 		go func(rb *RollbackBlobber) {
 			defer wg.Done()
-			err := rb.processRollback(context.TODO(), a.Tx)
+			err := rb.processRollback(context.TODO(), a.Tx, a.allocationVersion)
 			if err != nil {
 				atomic.AddInt32(&errCnt, 1)
 				rb.commitResult = ErrorCommitResult(err.Error())
@@ -414,7 +415,7 @@ func (a *Allocation) RollbackWithMask(mask zboxutil.Uint128) {
 		wg.Add(1)
 		go func(rb *RollbackBlobber) {
 			defer wg.Done()
-			err := rb.processRollback(context.TODO(), a.Tx)
+			err := rb.processRollback(context.TODO(), a.Tx, a.allocationVersion)
 			if err != nil {
 				rb.commitResult = ErrorCommitResult(err.Error())
 				l.Logger.Error("error during rollback", zap.Error(err))
