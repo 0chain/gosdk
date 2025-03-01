@@ -802,6 +802,13 @@ func submitWriteMarker(wmData, metaData []byte, blobber *blockchain.StorageNode,
 				return
 			}
 
+			trimmed := strings.TrimSpace(string(respBody))
+			if strings.HasPrefix(trimmed, "<html>") {
+				time.Sleep(5 * time.Second)
+				shouldContinue = true
+				return
+			}
+
 			err = thrown.New("commit_error",
 				fmt.Sprintf("Got error response %s with status %d", respBody, resp.StatusCode))
 			return
