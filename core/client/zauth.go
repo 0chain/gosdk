@@ -192,12 +192,12 @@ func CallZauthDelete(serverAddr, token, clientID string) error {
 	return nil
 }
 
-func CallZvaultNewWallet(serverAddr, token string) error {
+func CallZvaultNewWallet(serverAddr, token string) (string, error) {
 	endpoint := serverAddr + "/wallet"
 
 	req, err := http.NewRequest("POST", endpoint, nil)
 	if err != nil {
-		return errors.Wrap(err, "failed to create HTTP request")
+		return "", errors.Wrap(err, "failed to create HTTP request")
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -206,20 +206,25 @@ func CallZvaultNewWallet(serverAddr, token string) error {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return errors.Wrap(err, "failed to send HTTP request")
+		return "", errors.Wrap(err, "failed to send HTTP request")
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		errMsg, _ := io.ReadAll(resp.Body)
 		if len(errMsg) > 0 {
-			return errors.Errorf("code: %d, err: %s", resp.StatusCode, string(errMsg))
+			return "", errors.Errorf("code: %d, err: %s", resp.StatusCode, string(errMsg))
 		}
 
-		return errors.Errorf("code: %d", resp.StatusCode)
+		return "", errors.Errorf("code: %d", resp.StatusCode)
 	}
 
-	return nil
+	d, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to read response body")
+	}
+
+	return string(d), nil
 }
 
 func CallZvaultNewSplit(serverAddr, token, clientID string) error {
