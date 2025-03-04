@@ -139,10 +139,6 @@ func InitStorageSDK(clientJson string, configJson string) (*StorageSDK, error) {
 		AddWallet:       true,
 		ZboxHost:        configObj.ZboxHost,
 		ZboxAppType:     configObj.ZboxAppType,
-		KafkaHost:       configObj.KafkaHost,
-		KafkaUsername:   configObj.KafkaUsername,
-		KafkaPassword:   configObj.KafkaPassword,
-		KafkaTopic:      configObj.KafkaTopic,
 	}
 
 	if err = client.InitSDKWithWebApp(params); err != nil {

@@ -88,6 +88,7 @@ func SetBlobberMonitoring(val bool) {
 
 type BlobberMonitoring struct {
 	BlobberId string `json:"blobber_id"`
+	Operation string `json:"operation"`
 	Size      int64  `json:"size"`
 	TimeSpent int64  `json:"time_spent"`
 	Count     int    `json:"count"`
@@ -3442,7 +3443,7 @@ func logWorker(key string, logChan chan logEntry) {
 		sys.Files.StoreLogs(key, string(data))
 	}
 }
-	
+
 func writeLogEntry(blobberURL string, log logEntry) {
 	logChan := getLogChan(blobberURL)
 	logChan <- log

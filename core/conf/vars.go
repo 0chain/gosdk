@@ -61,11 +61,6 @@ func InitClientConfig(c *Config) {
 			cfg.MinSubmit = DefaultMinSubmit
 		}
 	})
-
-	cfg.KafkaTopic = c.KafkaTopic
-	cfg.KafkaHost = c.KafkaHost
-	cfg.KafkaUsername = c.KafkaUsername
-	cfg.KafkaPassword = c.KafkaPassword
 }
 
 // Deprecated: Use client.Init() function. To normalize urls, use network.NormalizeURLs() method

@@ -108,6 +108,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 					if LogBlobberMonitoring {
 						blobberMonitoringlog := BlobberMonitoring{
 							BlobberId: sb.blobber.ID,
+							Operation: "upload",
 							TimeSpent: timeTaken,
 							Size:      uploadSizeInMb,
 							Count:     1,

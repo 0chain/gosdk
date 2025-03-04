@@ -291,6 +291,7 @@ func PublicKey(clients ...string) string {
 		}
 		return client.wallets[clients[0]].ClientKey
 	}
+
 	return client.wallet.ClientKey
 }
 
@@ -336,7 +337,6 @@ func GetClient() *zcncrypto.Wallet {
 func InitSDK(walletJSON string,
 	blockWorker, chainID, signatureScheme string,
 	nonce int64, addWallet bool,
-	kafkaHost, kafkaUsername, kafkaPassword, kafkaTopic string,
 	options ...int) error {
 
 	if addWallet {
@@ -376,10 +376,6 @@ func InitSDK(walletJSON string,
 		MinSubmit:               minSubmit,
 		ConfirmationChainLength: confirmationChainLength,
 		SharderConsensous:       sharderConsensous,
-		KafkaHost:               kafkaHost,
-		KafkaUsername:           kafkaUsername,
-		KafkaPassword:           kafkaPassword,
-		KafkaTopic:              kafkaTopic,
 	})
 	if err != nil {
 		return err
@@ -389,7 +385,7 @@ func InitSDK(walletJSON string,
 }
 
 func InitSDKWithWebApp(params InitSdkOptions) error {
-	err := InitSDK(params.WalletJSON, params.BlockWorker, params.ChainID, params.SignatureScheme, params.Nonce, params.AddWallet, params.KafkaHost, params.KafkaUsername, params.KafkaPassword, params.KafkaTopic,
+	err := InitSDK(params.WalletJSON, params.BlockWorker, params.ChainID, params.SignatureScheme, params.Nonce, params.AddWallet,
 		*params.MinConfirmation, *params.MinSubmit, *params.ConfirmationChainLength, *params.SharderConsensous)
 	if err != nil {
 		return err

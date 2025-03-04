@@ -54,10 +54,6 @@ func initSDKs(chainID, blockWorker, signatureScheme string,
 		ConfirmationChainLength: &confirmationChainLength,
 		ZboxHost:                zboxHost,
 		ZboxAppType:             zboxAppType,
-		KafkaHost:               kafkaHost,
-		KafkaUsername:           kafkaUsername,
-		KafkaPassword:           kafkaPassword,
-		KafkaTopic:              kafkaTopic,
 	}
 
 	err := client.InitSDKWithWebApp(params)

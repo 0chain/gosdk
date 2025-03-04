@@ -193,6 +193,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock(fastClient *fasthttp.Clien
 			if LogBlobberMonitoring {
 				blobberMonitoringlog := BlobberMonitoring{
 					BlobberId: req.blobber.ID,
+					Operation: "download",
 					TimeSpent: timeTaken,
 					Size:      dnldSizeInMb,
 					Count:     1,
