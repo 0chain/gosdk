@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"sync"
 	"syscall"
@@ -189,7 +190,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock(fastClient *fasthttp.Clien
 				return errors.New("response_error", string(respBuf))
 			}
 
-			dnldSizeInMb := int64(len(respBuf)) / 1024
+			dnldSizeInMb := int64(math.Round(float64((len(respBuf))) / float64((1024 * 1024))))
 			if LogBlobberMonitoring {
 				blobberMonitoringlog := BlobberMonitoring{
 					BlobberId: req.blobber.ID,
