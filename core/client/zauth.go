@@ -356,6 +356,9 @@ func CallZvaultStoreKeyString(serverAddr, token, privateKey string) error {
 		return errors.Wrap(err, "failed to create HTTP request")
 	}
 
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Jwt-Token", token)
+
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
