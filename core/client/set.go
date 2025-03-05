@@ -385,10 +385,16 @@ func InitSDK(walletJSON string,
 }
 
 func InitSDKWithWebApp(params InitSdkOptions) error {
-	err := InitSDK(params.WalletJSON, params.BlockWorker, params.ChainID, params.SignatureScheme, params.Nonce, params.AddWallet,
-		*params.MinConfirmation, *params.MinSubmit, *params.ConfirmationChainLength, *params.SharderConsensous)
-	if err != nil {
-		return err
+	if params.MinConfirmation != nil && params.MinSubmit != nil && params.ConfirmationChainLength != nil && params.SharderConsensous != nil {
+		err := InitSDK(params.WalletJSON, params.BlockWorker, params.ChainID, params.SignatureScheme, params.Nonce, params.AddWallet, *params.MinConfirmation, *params.MinSubmit, *params.ConfirmationChainLength, *params.SharderConsensous)
+		if err != nil {
+			return err
+		}
+	} else {
+		err := InitSDK(params.WalletJSON, params.BlockWorker, params.ChainID, params.SignatureScheme, params.Nonce, params.AddWallet)
+		if err != nil {
+			return err
+		}
 	}
 	conf.SetZboxAppConfigs(params.ZboxHost, params.ZboxAppType)
 	SetIsAppFlow(true)
