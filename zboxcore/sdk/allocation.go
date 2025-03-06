@@ -2177,6 +2177,7 @@ func (a *Allocation) GetAuthTicket(path, filename string,
 		ctx:               a.ctx,
 		remotefilepath:    path,
 		remotefilename:    filename,
+		signingPrivateKey: a.privateSigningKey,
 	}
 
 	if referenceType == fileref.DIRECTORY {
