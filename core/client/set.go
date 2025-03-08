@@ -36,9 +36,26 @@ type Client struct {
 	sign            SignFunc
 }
 
+type InitSdkOptions struct {
+	WalletJSON              string
+	BlockWorker             string
+	ChainID                 string
+	SignatureScheme         string
+	Nonce                   int64
+	IsSplitWallet           bool
+	AddWallet               bool
+	TxnFee                  *int
+	MinConfirmation         *int
+	MinSubmit               *int
+	ConfirmationChainLength *int
+	SharderConsensous       *int
+	ZboxHost                string
+	ZboxAppType             string
+}
+
 func init() {
 	sys.Sign = signHash
-	sys.SignWithAuth = signHash
+	sys.SignWithAuth = signHashWithAuth
 
 	sigC <- struct{}{}
 
@@ -76,6 +93,42 @@ var SignFn = func(hash string) (string, error) {
 	}
 
 	return ss.Sign(hash)
+}
+
+func signHashWithAuth(hash, signatureScheme string, keys []sys.KeyPair) (string, error) {
+	sig, err := sys.Sign(hash, signatureScheme, keys)
+	if err != nil {
+		return "", fmt.Errorf("failed to sign with split key: %v", err)
+	}
+
+	data, err := json.Marshal(AuthMessage{
+		Hash:      hash,
+		Signature: sig,
+		ClientID:  client.wallet.ClientID,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	if sys.AuthCommon == nil {
+		return "", errors.New("authCommon is not set")
+	}
+
+	rsp, err := sys.AuthCommon(string(data))
+	if err != nil {
+		return "", err
+	}
+
+	var sigpk struct {
+		Sig string `json:"sig"`
+	}
+
+	err = json.Unmarshal([]byte(rsp), &sigpk)
+	if err != nil {
+		return "", err
+	}
+
+	return sigpk.Sig, nil
 }
 
 func signHash(hash string, signatureScheme string, keys []sys.KeyPair) (string, error) {
@@ -323,6 +376,23 @@ func InitSDK(walletJSON string,
 		return err
 	}
 	SetSdkInitialized(true)
+	return nil
+}
+
+func InitSDKWithWebApp(params InitSdkOptions) error {
+	if params.MinConfirmation != nil && params.MinSubmit != nil && params.ConfirmationChainLength != nil && params.SharderConsensous != nil {
+		err := InitSDK(params.WalletJSON, params.BlockWorker, params.ChainID, params.SignatureScheme, params.Nonce, params.AddWallet, *params.MinConfirmation, *params.MinSubmit, *params.ConfirmationChainLength, *params.SharderConsensous)
+		if err != nil {
+			return err
+		}
+	} else {
+		err := InitSDK(params.WalletJSON, params.BlockWorker, params.ChainID, params.SignatureScheme, params.Nonce, params.AddWallet)
+		if err != nil {
+			return err
+		}
+	}
+	conf.SetZboxAppConfigs(params.ZboxHost, params.ZboxAppType)
+	SetIsAppFlow(true)
 	return nil
 }
 

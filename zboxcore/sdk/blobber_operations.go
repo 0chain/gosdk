@@ -31,22 +31,22 @@ import (
 //
 // returns the hash of the transaction, the nonce of the transaction, the transaction object and an error if any.
 func CreateAllocationForOwner(
-	owner, ownerpublickey string,
-	datashards, parityshards int, size int64,
+	owner, ownerPublicKey, ownerSigningPublicKey string,
+	dataShards, parityShards int, size int64,
 	readPrice, writePrice PriceRange,
-	lock uint64, preferredBlobberIds, blobberAuthTickets []string, thirdPartyExtendable, IsEnterprise, force bool, fileOptionsParams *FileOptionsParameters,
+	lock uint64, preferredBlobberIds, blobberAuthTickets []string, thirdPartyExtendable, IsEnterprise, force bool, fileOptionsParams *FileOptionsParameters, authRoundExpiry int64,
 ) (hash string, nonce int64, txn *transaction.Transaction, err error) {
 
 	if lock > math.MaxInt64 {
 		return "", 0, nil, errors.New("invalid_lock", "int64 overflow on lock value")
 	}
 
-	if datashards < 1 || parityshards < 1 {
+	if dataShards < 1 || parityShards < 1 {
 		return "", 0, nil, errors.New("allocation_validation_failed", "atleast 1 data and 1 parity shards are required")
 	}
 
 	allocationRequest, err := getNewAllocationBlobbers(
-		StorageV2, datashards, parityshards, size, readPrice, writePrice, preferredBlobberIds, blobberAuthTickets, force)
+		StorageV2, dataShards, parityShards, size, readPrice, writePrice, preferredBlobberIds, blobberAuthTickets, force)
 	if err != nil {
 		return "", 0, nil, errors.New("failed_get_allocation_blobbers", "failed to get blobbers for allocation: "+err.Error())
 	}
@@ -55,22 +55,25 @@ func CreateAllocationForOwner(
 		return "", 0, nil, sdkNotInitialized
 	}
 
-	if client.PublicKey() == ownerpublickey {
-		privateSigningKey, err := generateOwnerSigningKey(ownerpublickey, owner)
+	if client.PublicKey() == ownerPublicKey {
+		privateSigningKey, err := GenerateOwnerSigningKey(ownerPublicKey, owner)
 		if err != nil {
 			return "", 0, nil, errors.New("failed_generate_owner_signing_key", "failed to generate owner signing key: "+err.Error())
 		}
 		pub := privateSigningKey.Public().(ed25519.PublicKey)
 		pk := hex.EncodeToString(pub)
 		allocationRequest["owner_signing_public_key"] = pk
+	} else {
+		allocationRequest["owner_signing_public_key"] = ownerSigningPublicKey
 	}
 
 	allocationRequest["owner_id"] = owner
-	allocationRequest["owner_public_key"] = ownerpublickey
+	allocationRequest["owner_public_key"] = ownerPublicKey
 	allocationRequest["third_party_extendable"] = thirdPartyExtendable
 	allocationRequest["file_options_changed"], allocationRequest["file_options"] = calculateAllocationFileOptions(63 /*0011 1111*/, fileOptionsParams)
 	allocationRequest["is_enterprise"] = IsEnterprise
 	allocationRequest["storage_version"] = StorageV2
+	allocationRequest["auth_round_expiry"] = authRoundExpiry
 
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.NEW_ALLOCATION_REQUEST,
@@ -126,7 +129,7 @@ func CreateFreeAllocation(marker string, value uint64) (string, int64, error) {
 //
 // returns the hash of the transaction, the nonce of the transaction and an error if any.
 func UpdateAllocation(
-	size int64,
+	size, authRoundExpiry int64,
 	extend bool,
 	allocationID string,
 	lock uint64,
@@ -162,6 +165,7 @@ func UpdateAllocation(
 	updateAllocationRequest["set_third_party_extendable"] = setThirdPartyExtendable
 	updateAllocationRequest["owner_signing_public_key"] = ownerSigninPublicKey
 	updateAllocationRequest["file_options_changed"], updateAllocationRequest["file_options"] = calculateAllocationFileOptions(alloc.FileOptions, fileOptionsParams)
+	updateAllocationRequest["auth_round_expiry"] = authRoundExpiry
 
 	if ticket != "" {
 
@@ -357,7 +361,7 @@ func WritePoolUnlock(allocID string, fee uint64) (hash string, nonce int64, err 
 	return
 }
 
-func generateOwnerSigningKey(ownerPublicKey, ownerID string) (ed25519.PrivateKey, error) {
+func GenerateOwnerSigningKey(ownerPublicKey, ownerID string) (ed25519.PrivateKey, error) {
 	if ownerPublicKey == "" {
 		return nil, errors.New("owner_public_key_required", "owner public key is required")
 	}
@@ -371,4 +375,14 @@ func generateOwnerSigningKey(ownerPublicKey, ownerID string) (ed25519.PrivateKey
 	decodedSig, _ := hex.DecodeString(sig)
 	privateSigningKey := ed25519.NewKeyFromSeed(decodedSig[:32])
 	return privateSigningKey, nil
+}
+
+func GenerateOwnerSigningPublicKey() (string, error) {
+	privateSigningKey, err := GenerateOwnerSigningKey(client.PublicKey(), client.Id())
+	if err != nil {
+		return "", err
+	}
+
+	pubKey := privateSigningKey.Public().(ed25519.PublicKey)
+	return hex.EncodeToString(pubKey), nil
 }

@@ -272,6 +272,7 @@ func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
 		result.ThumbnailSize = ti.ref.ThumbnailSize
 		result.ActualThumbnailHash = ti.ref.ActualThumbnailHash
 		result.ActualThumbnailSize = ti.ref.ActualThumbnailSize
+
 		if result.Path == "/" && req.storageVersion == StorageV2 {
 			result.NumFiles = ti.ref.NumFiles
 		}

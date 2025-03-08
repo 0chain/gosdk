@@ -457,7 +457,7 @@ func (a *Allocation) generateAndSetOwnerSigningPublicKey() {
 	if a.OwnerPublicKey != client.PublicKey() {
 		return
 	}
-	privateSigningKey, err := generateOwnerSigningKey(a.OwnerPublicKey, a.Owner)
+	privateSigningKey, err := GenerateOwnerSigningKey(a.OwnerPublicKey, a.Owner)
 	if err != nil {
 		l.Logger.Error("Failed to generate owner signing key", zap.Error(err))
 		return
@@ -465,7 +465,7 @@ func (a *Allocation) generateAndSetOwnerSigningPublicKey() {
 	if a.OwnerSigningPublicKey == "" && !a.Finalized && !a.Canceled && client.Wallet().IsSplit {
 		pubKey := privateSigningKey.Public().(ed25519.PublicKey)
 		a.OwnerSigningPublicKey = hex.EncodeToString(pubKey)
-		hash, _, err := UpdateAllocation(0, false, a.ID, 0, "", "", "", "", a.OwnerSigningPublicKey, false, nil, "")
+		hash, _, err := UpdateAllocation(0, 0, false, a.ID, 0, "", "", "", "", a.OwnerSigningPublicKey, false, nil, "")
 		if err != nil {
 			l.Logger.Error("Failed to update owner signing public key ", err, " allocationID: ", a.ID, " hash: ", hash)
 			return
@@ -1385,7 +1385,7 @@ func (a *Allocation) generateDownloadRequest(
 	downloadReq.allocOwnerPubKey = a.OwnerPublicKey
 	downloadReq.allocOwnerSigningPubKey = a.OwnerSigningPublicKey
 	if len(a.privateSigningKey) == 0 {
-		sk, err := generateOwnerSigningKey(client.PublicKey(), client.Id())
+		sk, err := GenerateOwnerSigningKey(client.PublicKey(), client.Id())
 		if err != nil {
 			return nil, err
 		}
@@ -2338,18 +2338,6 @@ func (a *Allocation) GetAuthTicket(path, filename string,
 		return "", errors.New("invalid_path", "Path should be valid and absolute")
 	}
 
-	if referenceType == fileref.FILE && refereeClientID != "" {
-		fileMeta, err := a.GetFileMeta(path)
-		if err != nil {
-			return "", err
-		}
-
-		// private sharing is only available for encrypted file
-		if fileMeta.EncryptedKey == "" {
-			return "", ErrInvalidPrivateShare
-		}
-	}
-
 	shareReq := &ShareRequest{
 		ClientId:          a.Owner,
 		expirationSeconds: expiration,
@@ -2841,7 +2829,7 @@ func (a *Allocation) downloadFromAuthTicket(fileHandler sys.File, authTicket str
 	downloadReq.allocOwnerPubKey = a.OwnerPublicKey
 	downloadReq.allocOwnerSigningPubKey = a.OwnerSigningPublicKey
 	//for auth ticket set your own signing key
-	sk, err := generateOwnerSigningKey(client.PublicKey(), client.Id())
+	sk, err := GenerateOwnerSigningKey(client.PublicKey(), client.Id())
 	if err != nil {
 		return err
 	}
@@ -3199,14 +3187,14 @@ func (a *Allocation) SetConsensusThreshold() {
 //   - fileOptionsParams: The file options parameters which control permissions of the files of the allocations.
 //   - statusCB: A callback function to receive status updates during the update operation.
 func (a *Allocation) UpdateWithRepair(
-	size int64,
+	size, authRoundExpiry int64,
 	extend bool,
 	lock uint64,
 	addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey string,
 	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters, updateAllocTicket string,
 	statusCB StatusCallback,
 ) (string, error) {
-	updatedAlloc, hash, isRepairRequired, err := a.UpdateWithStatus(size, extend, lock, addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey, setThirdPartyExtendable, fileOptionsParams, updateAllocTicket)
+	updatedAlloc, hash, isRepairRequired, err := a.UpdateWithStatus(size, authRoundExpiry, extend, lock, addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey, setThirdPartyExtendable, fileOptionsParams, updateAllocTicket)
 	if err != nil {
 		return hash, err
 	}
@@ -3234,7 +3222,7 @@ func (a *Allocation) UpdateWithRepair(
 //
 // Returns the updated allocation, hash, and a boolean indicating whether repair is required.
 func (a *Allocation) UpdateWithStatus(
-	size int64,
+	size, authRoundExpiry int64,
 	extend bool,
 	lock uint64,
 	addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey string,
@@ -3250,7 +3238,7 @@ func (a *Allocation) UpdateWithStatus(
 	}
 
 	l.Logger.Info("Updating allocation")
-	hash, _, err := UpdateAllocation(size, extend, a.ID, lock, addBlobberId, addBlobberAuthTicket, removeBlobberId, "", ownerSigninPublicKey, setThirdPartyExtendable, fileOptionsParams, updateAllocTicket)
+	hash, _, err := UpdateAllocation(size, authRoundExpiry, extend, a.ID, lock, addBlobberId, addBlobberAuthTicket, removeBlobberId, "", ownerSigninPublicKey, setThirdPartyExtendable, fileOptionsParams, updateAllocTicket)
 	if err != nil {
 		return alloc, "", isRepairRequired, err
 	}

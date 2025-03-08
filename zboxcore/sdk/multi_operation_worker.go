@@ -335,6 +335,7 @@ func (mo *MultiOperation) Process() error {
 	if mo.allocationObj.StorageVersion == StorageV2 {
 		return mo.commitV2()
 	}
+
 	commitReqs := make([]*CommitRequest, activeBlobbers)
 	start = time.Now()
 	wg.Add(activeBlobbers)
