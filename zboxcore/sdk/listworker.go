@@ -216,7 +216,6 @@ func (req *ListRequest) getlistFromBlobbers() ([]*listResponse, error) {
 		return listInfos, listInfos[0].err
 	}
 	req.listOnly = true
-	l.Logger.Debug("listInfos: ", len(listInfos))
 	listInfos = listInfos[:1]
 	listOnlyRespCh := make(chan *listResponse, 1)
 	for i := 0; i < listLen; i++ {
