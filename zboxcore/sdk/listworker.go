@@ -182,7 +182,6 @@ func (req *ListRequest) getlistFromBlobbers() ([]*listResponse, error) {
 	if numList == 0 {
 		return nil, errors.New("no blobbers", "getlistFromBlobbers")
 	}
-	l.Logger.Debug("getListFromBlobbers: ", numList)
 	for i := 0; i < numList; i++ {
 		listInfos[i] = <-rspCh
 		if !req.forRepair {
