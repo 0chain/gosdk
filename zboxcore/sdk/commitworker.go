@@ -652,7 +652,7 @@ func getReferencePathV2(blobber *blockchain.StorageNode, allocationID, allocatio
 				respBody, err := io.ReadAll(resp.Body)
 				if err != nil {
 					l.Logger.Error("Ref path: Resp", err)
-					if strings.Contains(err.Error(), "GOAWAY") {
+					if strings.Contains(err.Error(), "GOAWAY") || errors.Is(err, io.ErrUnexpectedEOF) {
 						shouldContinue = true
 					}
 					return err
@@ -763,6 +763,9 @@ func submitWriteMarker(wmData, metaData []byte, blobber *blockchain.StorageNode,
 			respBody, err = io.ReadAll(resp.Body)
 			if err != nil {
 				logger.Logger.Error("Response read: ", err)
+				if errors.Is(err, io.ErrUnexpectedEOF) {
+					shouldContinue = true
+				}
 				return
 			}
 			if resp.StatusCode == http.StatusOK {
