@@ -44,16 +44,16 @@ import (
 )
 
 var (
-	noBLOBBERS               = errors.New("", "No Blobbers set in this allocation")
-	notInitialized           = errors.New("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
-	IsWasm                   = false
-	MultiOpBatchSize         = 50
-	RepairBatchSize          = 50
-	Workdir                  string
-	logChanMap               = make(map[string]chan logEntry)
-	logMapMutex              = &sync.Mutex{}
-	LogBlobberMonitoring     = false
-	LogBlobberMonitoringChan = make(chan BlobberMonitoring)
+	noBLOBBERS                   = errors.New("", "No Blobbers set in this allocation")
+	notInitialized               = errors.New("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
+	IsWasm                       = false
+	MultiOpBatchSize             = 50
+	RepairBatchSize              = 50
+	Workdir                      string
+	logChanMap                   = make(map[string]chan logEntry)
+	logMapMutex                  = &sync.Mutex{}
+	LogBlobberMonitoringFileSize = int64(0)
+	LogBlobberMonitoringChan     = make(chan BlobberMonitoring)
 )
 
 const (
@@ -82,14 +82,15 @@ var GetFileInfo = func(localpath string) (os.FileInfo, error) {
 	return sys.Files.Stat(localpath)
 }
 
-func SetBlobberMonitoring(val bool) {
-	LogBlobberMonitoring = val
+func SetBlobberMonitoringFileSize(val int64) {
+	LogBlobberMonitoringFileSize = val
 }
 
 type BlobberMonitoring struct {
 	BlobberId string `json:"blobber_id"`
 	Operation string `json:"operation"`
-	Size      int64  `json:"size"`
+	FileType  string `json:"file_type"`
+	FileSize  int64  `json:"file_size"`
 	TimeSpent int64  `json:"time_spent"`
 	Count     int    `json:"count"`
 }

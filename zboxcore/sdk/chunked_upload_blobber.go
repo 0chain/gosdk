@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"math"
 	"mime/multipart"
 	"net/http"
 	"strings"
@@ -105,13 +104,12 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 						return fmt.Errorf("Error while doing reqeust. Error %s", err), false
 					}
 
-					uploadSizeInMb := int64(math.Round(float64((len(dataBuffers[ind].Bytes()))) / float64((1024 * 1024))))
-					if LogBlobberMonitoring {
+					if LogBlobberMonitoringFileSize > int64(0) {
 						blobberMonitoringlog := BlobberMonitoring{
 							BlobberId: sb.blobber.ID,
 							Operation: "upload",
 							TimeSpent: timeTaken,
-							Size:      uploadSizeInMb,
+							FileSize:  LogBlobberMonitoringFileSize,
 							Count:     1,
 						}
 						addBlobberMonitoringLog(blobberMonitoringlog)
