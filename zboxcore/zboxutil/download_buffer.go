@@ -78,6 +78,7 @@ type DownloadBufferWithMask struct {
 	reqSize     int
 	numBlocks   int
 	mask        uint32
+	released    bool
 	mu          sync.Mutex
 }
 
@@ -105,6 +106,10 @@ func (r *DownloadBufferWithMask) RequestChunk(ctx context.Context, num int) []by
 		default:
 		}
 		r.mu.Lock()
+		if r.released {
+			r.mu.Unlock()
+			return nil
+		}
 		isSet := r.mask & (1 << num)
 		// already assigned
 		if isSet == 0 {
@@ -137,6 +142,9 @@ func (r *DownloadBufferWithMask) ReleaseChunk(num int) {
 }
 
 func (r *DownloadBufferWithMask) ClearBuffer() {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.released = true
 	for _, buff := range r.downloadBuf {
 		if buff != nil {
 			BufferPool.Put(buff)

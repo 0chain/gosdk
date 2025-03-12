@@ -54,6 +54,7 @@ var (
 	networkWorkerTimerInHours = 1 //nolint:unused
 	singleClientMode          = false
 	shouldVerifyHash          = true
+	shouldTimeRequest         = true
 )
 
 func SetSingleClietnMode(mode bool) {
@@ -62,6 +63,10 @@ func SetSingleClietnMode(mode bool) {
 
 func SetShouldVerifyHash(verify bool) {
 	shouldVerifyHash = verify
+}
+
+func SetShouldTimeRequest(timeRequest bool) {
+	shouldTimeRequest = timeRequest
 }
 
 func SetSaveProgress(save bool) {

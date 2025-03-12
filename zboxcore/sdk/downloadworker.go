@@ -737,7 +737,7 @@ func (req *DownloadRequest) processDownload() {
 			if startBlock+int64(j)*numBlocks+numBlocks > endBlock {
 				blocksToDownload = endBlock - (startBlock + int64(j)*numBlocks)
 			}
-			data, err := req.getBlocksData(startBlock+int64(j)*numBlocks, blocksToDownload, j == 0)
+			data, err := req.getBlocksData(startBlock+int64(j)*numBlocks, blocksToDownload, j == 0 && shouldTimeRequest)
 			if req.isDownloadCanceled {
 				return errors.New("download_abort", "Download aborted by user")
 			}
