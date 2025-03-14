@@ -471,6 +471,7 @@ func (commitReq *CommitRequestV2) processCommit() {
 		return
 	}
 	if commitReq.commitMask.CountOnes() < commitReq.consensusThresh {
+		commitReq.commitMask = zboxutil.NewUint128(0)
 		commitReq.result = ErrorCommitResult("Failed to get reference path")
 		return
 	}
@@ -624,41 +625,78 @@ func getReferencePathV2(blobber *blockchain.StorageNode, allocationID, allocatio
 		return trie, nil
 	}
 	now := time.Now()
-	req, err := zboxutil.NewReferencePathRequestV2(blobber.Baseurl, allocationID, allocationTx, sig, paths, false)
-	if err != nil {
-		l.Logger.Error("Creating ref path req", err)
-		return nil, err
-	}
-	var lR ReferencePathResultV2
-	ctx, cncl := context.WithTimeout(context.Background(), (time.Second * 30))
-	err = zboxutil.HttpDo(ctx, cncl, req, func(resp *http.Response, err error) error {
-		if err != nil {
-			l.Logger.Error("Ref path error:", err)
-			return err
-		}
-		defer resp.Body.Close()
-		respBody, err := io.ReadAll(resp.Body)
-		if err != nil {
-			l.Logger.Error("Ref path: Resp", err)
-			return err
-		}
-		if resp.StatusCode != http.StatusOK {
-			return errors.New(
-				strconv.Itoa(resp.StatusCode),
-				fmt.Sprintf("Reference path error response: Status: %d - %s ",
-					resp.StatusCode, string(respBody)))
-		}
-		err = json.Unmarshal(respBody, &lR)
-		if err != nil {
-			l.Logger.Error("Reference path json decode error: ", err)
-			return err
-		}
-		return nil
-	})
+	var (
+		shouldContinue bool
+		err            error
+		lR             ReferencePathResultV2
+	)
+	for retries := 0; retries < 3; retries++ {
+		err, shouldContinue = func() (err error, shouldContinue bool) {
+			var req *http.Request
+			req, err = zboxutil.NewReferencePathRequestV2(blobber.Baseurl, allocationID, allocationTx, sig, paths, false)
+			if err != nil {
+				l.Logger.Error("Creating ref path req", err)
+				return
+			}
 
+			ctx, cncl := context.WithTimeout(context.Background(), (time.Second * 30))
+			err = zboxutil.HttpDo(ctx, cncl, req, func(resp *http.Response, err error) error {
+				if err != nil {
+					l.Logger.Error("Ref path error:", err)
+					if errors.Is(err, http.ErrServerClosed) || strings.Contains(err.Error(), "GOAWAY") {
+						shouldContinue = true
+					}
+					return err
+				}
+				defer resp.Body.Close()
+				respBody, err := io.ReadAll(resp.Body)
+				if err != nil {
+					l.Logger.Error("Ref path: Resp", err)
+					if strings.Contains(err.Error(), "GOAWAY") || errors.Is(err, io.ErrUnexpectedEOF) {
+						shouldContinue = true
+					}
+					return err
+				}
+				if resp.StatusCode != http.StatusOK {
+					if resp.StatusCode == http.StatusTooManyRequests {
+						logger.Logger.Debug(blobber.Baseurl,
+							" got too many request error. Retrying")
+
+						var r int
+						r, err = zboxutil.GetRateLimitValue(resp)
+						if err != nil {
+							logger.Logger.Error(err)
+							return err
+						}
+
+						time.Sleep(time.Duration(r) * time.Second)
+						shouldContinue = true
+						return err
+					}
+					return errors.New(
+						strconv.Itoa(resp.StatusCode),
+						fmt.Sprintf("Reference path error response: Status: %d - %s ",
+							resp.StatusCode, string(respBody)))
+				}
+				err = json.Unmarshal(respBody, &lR)
+				if err != nil {
+					l.Logger.Error("Reference path json decode error: ", err)
+					return err
+				}
+				return nil
+			})
+			return
+		}()
+		if shouldContinue {
+			continue
+		} else {
+			break
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
+
 	elapsedRefPath := time.Since(now)
 	mu.Lock()
 	defer mu.Unlock()
@@ -725,6 +763,9 @@ func submitWriteMarker(wmData, metaData []byte, blobber *blockchain.StorageNode,
 			respBody, err = io.ReadAll(resp.Body)
 			if err != nil {
 				logger.Logger.Error("Response read: ", err)
+				if errors.Is(err, io.ErrUnexpectedEOF) {
+					shouldContinue = true
+				}
 				return
 			}
 			if resp.StatusCode == http.StatusOK {
@@ -759,6 +800,13 @@ func submitWriteMarker(wmData, metaData []byte, blobber *blockchain.StorageNode,
 			if strings.Contains(string(respBody), "chain_length_exceeded") {
 				l.Logger.Error("Chain length exceeded for blobber ",
 					blobber.Baseurl, " Retrying")
+				time.Sleep(5 * time.Second)
+				shouldContinue = true
+				return
+			}
+
+			trimmed := strings.TrimSpace(string(respBody))
+			if strings.HasPrefix(trimmed, "<html>") {
 				time.Sleep(5 * time.Second)
 				shouldContinue = true
 				return
