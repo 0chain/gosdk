@@ -82,7 +82,7 @@ jobs:
           file_glob: true
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v5
         with:
           name: zcncore-ios
           path: |
@@ -186,7 +186,7 @@ jobs:
           file_glob: true
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v5
         with:
           name: zcncore-android
           path: zcncore-android.tar.gz
@@ -257,7 +257,7 @@ jobs:
           file_glob: true
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v5
         with:
           name: zcncore-macos
           path: |
@@ -325,7 +325,7 @@ jobs:
           file_glob: true
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v5
         with:
           name: zcn-windows
           path: |
@@ -352,7 +352,7 @@ jobs:
         run:  docker run --rm -v $PWD:/gosdk -w /gosdk golang:1.23 make wasm-build
 
       - name: 'Upload Artifact'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v5
         with:
           name: zcn.wasm
           path: zcn.wasm
