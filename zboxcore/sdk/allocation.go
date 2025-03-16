@@ -422,7 +422,7 @@ func SetDownloadWorkerCount(count int) {
 
 // InitAllocation initializes the allocation.
 func (a *Allocation) InitAllocation() {
-	a.downloadChan = make(chan *DownloadRequest, 100)
+	a.downloadChan = make(chan *DownloadRequest, 400)
 	a.repairChan = make(chan *RepairRequest, 1)
 	a.ctx, a.ctxCancelF = context.WithCancel(context.Background())
 	a.downloadProgressMap = make(map[string]*DownloadRequest)

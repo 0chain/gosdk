@@ -5,8 +5,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/0chain/gosdk/core/client"
 	"syscall/js"
+
+	"github.com/0chain/gosdk/core/client"
 
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/wasmsdk/jsbridge"
@@ -47,7 +48,7 @@ func zauthRetrieveKey(clientID, peerPublicKey, serverAddr, token string) (string
 }
 
 // zvaultNewWallet generates new wallet
-func zvaultNewWallet(serverAddr, token string) error {
+func zvaultNewWallet(serverAddr, token string) (string, error) {
 	return client.CallZvaultNewWallet(serverAddr, token)
 }
 
