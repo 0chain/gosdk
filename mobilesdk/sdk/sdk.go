@@ -58,14 +58,14 @@ type StorageSDK struct {
 //   - verbose: output detail logs
 func SetLogFile(logFile string, verbose bool) {
 	zcncore.SetLogFile(logFile, verbose)
-	sdk.SetLogFile(logFile, verbose)
+	commonsdk.SetLogFile(logFile, verbose)
 }
 
 // SetLogLevel set the log level.
 //
 //	`lvl` - 0 disabled; higher number (upto 4) more verbosity
 func SetLogLevel(logLevel int) {
-	sdk.SetLogLevel(logLevel)
+	commonsdk.SetLogLevel(logLevel)
 }
 
 // Init init the sdk with chain config
@@ -227,7 +227,7 @@ func (s *StorageSDK) CreateAllocationWithBlobbers(name string, datashards, parit
 	if blobberUrls != "" {
 		urls := strings.Split(blobberUrls, ",")
 		if len(urls) > 0 {
-			ids, err := sdk.GetBlobberIds(urls)
+			ids, err := commonsdk.GetBlobberIds(urls)
 			if err != nil {
 				return nil, err
 			}
@@ -378,13 +378,13 @@ func (s *StorageSDK) UpdateAllocation(size, authRoundExpiry int64, extend bool, 
 		return "", errors.Errorf("int64 overflow in lock")
 	}
 
-	hash, _, err = sdk.UpdateAllocation(size, authRoundExpiry, extend, allocationID, lock, "", "", "", "", "", false, &sdk.FileOptionsParameters{}, "")
+	hash, _, err = sdk.UpdateAllocation(size, authRoundExpiry, extend, allocationID, lock, "", "", "", "", "", false, &commonsdk.FileOptionsParameters{}, "")
 	return hash, err
 }
 
 // GetBlobbersList get list of active blobbers, and format them as array json string
 func (s *StorageSDK) GetBlobbersList() (string, error) {
-	blobbs, err := sdk.GetBlobbers(true, false)
+	blobbs, err := commonsdk.GetBlobbers(true, false)
 	if err != nil {
 		return "", err
 	}
