@@ -73,7 +73,10 @@ func (req *ShareRequest) getAuthTicket(clientID, encPublicKey string) (*marker.A
 		at.Expiration = at.Timestamp + req.expirationSeconds
 	}
 
-	if encPublicKey != "" { // file is encrypted
+	if fRef.EncryptedKey != "" { // file is encrypted
+		if encPublicKey == "" {
+			return nil, errors.New("empty_key", "encryption public key cannot be empty for sharing encrypted files")
+		}
 		encScheme := encryption.NewEncryptionScheme()
 		var entropy string
 		if fRef.EncryptionVersion == SignatureV2 {

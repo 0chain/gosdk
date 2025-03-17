@@ -54,6 +54,7 @@ var (
 	networkWorkerTimerInHours = 1 //nolint:unused
 	singleClientMode          = false
 	shouldVerifyHash          = true
+	shouldTimeRequest         = true
 )
 
 func SetSingleClietnMode(mode bool) {
@@ -62,6 +63,10 @@ func SetSingleClietnMode(mode bool) {
 
 func SetShouldVerifyHash(verify bool) {
 	shouldVerifyHash = verify
+}
+
+func SetShouldTimeRequest(timeRequest bool) {
+	shouldTimeRequest = timeRequest
 }
 
 func SetSaveProgress(save bool) {
@@ -371,6 +376,7 @@ type UpdateBlobber struct {
 	IsRestricted             *bool                               `json:"is_restricted,omitempty"`
 	StorageVersion           *int                                `json:"storage_version,omitempty"`
 	DelegateWallet           *string                             `json:"delegate_wallet,omitempty"`
+	ManagingWallet           *string                             `json:"managing_wallet,omitempty"`
 }
 
 // ResetBlobberStatsDto represents blobber stats reset request.
@@ -632,6 +638,7 @@ func GetAllocation(allocationID string) (*Allocation, error) {
 	if err != nil {
 		return nil, errors.New("allocation_decode_error", "Error decoding the allocation: "+err.Error()+" "+string(allocationBytes))
 	}
+
 	allocationObj.numBlockDownloads = numBlockDownloads
 	allocationObj.InitAllocation()
 	return allocationObj, nil
@@ -808,7 +815,7 @@ func CreateAllocationWith(options CreateAllocationOptions) (
 	string, int64, *transaction.Transaction, error) {
 
 	return CreateAllocationForOwner(client.Id(),
-		client.PublicKey(), options.DataShards, options.ParityShards,
+		client.PublicKey(), "", options.DataShards, options.ParityShards,
 		options.Size, options.ReadPrice, options.WritePrice, options.Lock,
 		options.BlobberIds, options.BlobberAuthTickets, options.ThirdPartyExtendable, options.IsEnterprise, options.Force, options.FileOptionsParams, options.AuthRoundExpiry)
 }

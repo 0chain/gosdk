@@ -422,7 +422,7 @@ func SetDownloadWorkerCount(count int) {
 
 // InitAllocation initializes the allocation.
 func (a *Allocation) InitAllocation() {
-	a.downloadChan = make(chan *DownloadRequest, 100)
+	a.downloadChan = make(chan *DownloadRequest, 400)
 	a.repairChan = make(chan *RepairRequest, 1)
 	a.ctx, a.ctxCancelF = context.WithCancel(context.Background())
 	a.downloadProgressMap = make(map[string]*DownloadRequest)
@@ -457,7 +457,7 @@ func (a *Allocation) generateAndSetOwnerSigningPublicKey() {
 	if a.OwnerPublicKey != client.PublicKey() {
 		return
 	}
-	privateSigningKey, err := generateOwnerSigningKey(a.OwnerPublicKey, a.Owner)
+	privateSigningKey, err := GenerateOwnerSigningKey(a.OwnerPublicKey, a.Owner)
 	if err != nil {
 		l.Logger.Error("Failed to generate owner signing key", zap.Error(err))
 		return
@@ -1385,7 +1385,7 @@ func (a *Allocation) generateDownloadRequest(
 	downloadReq.allocOwnerPubKey = a.OwnerPublicKey
 	downloadReq.allocOwnerSigningPubKey = a.OwnerSigningPublicKey
 	if len(a.privateSigningKey) == 0 {
-		sk, err := generateOwnerSigningKey(client.PublicKey(), client.Id())
+		sk, err := GenerateOwnerSigningKey(client.PublicKey(), client.Id())
 		if err != nil {
 			return nil, err
 		}
@@ -2338,18 +2338,6 @@ func (a *Allocation) GetAuthTicket(path, filename string,
 		return "", errors.New("invalid_path", "Path should be valid and absolute")
 	}
 
-	if referenceType == fileref.FILE && refereeClientID != "" {
-		fileMeta, err := a.GetFileMeta(path)
-		if err != nil {
-			return "", err
-		}
-
-		// private sharing is only available for encrypted file
-		if fileMeta.EncryptedKey == "" {
-			return "", ErrInvalidPrivateShare
-		}
-	}
-
 	shareReq := &ShareRequest{
 		ClientId:          a.Owner,
 		expirationSeconds: expiration,
@@ -2841,7 +2829,7 @@ func (a *Allocation) downloadFromAuthTicket(fileHandler sys.File, authTicket str
 	downloadReq.allocOwnerPubKey = a.OwnerPublicKey
 	downloadReq.allocOwnerSigningPubKey = a.OwnerSigningPublicKey
 	//for auth ticket set your own signing key
-	sk, err := generateOwnerSigningKey(client.PublicKey(), client.Id())
+	sk, err := GenerateOwnerSigningKey(client.PublicKey(), client.Id())
 	if err != nil {
 		return err
 	}

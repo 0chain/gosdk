@@ -105,6 +105,10 @@ func (r *DownloadBufferWithMask) RequestChunk(ctx context.Context, num int) []by
 		default:
 		}
 		r.mu.Lock()
+		if r.downloadBuf == nil {
+			r.mu.Unlock()
+			return nil
+		}
 		isSet := r.mask & (1 << num)
 		// already assigned
 		if isSet == 0 {
@@ -137,9 +141,14 @@ func (r *DownloadBufferWithMask) ReleaseChunk(num int) {
 }
 
 func (r *DownloadBufferWithMask) ClearBuffer() {
-	for _, buff := range r.downloadBuf {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	for num, buff := range r.downloadBuf {
 		if buff != nil {
-			BufferPool.Put(buff)
+			isSet := r.mask & (1 << num)
+			if isSet != 0 {
+				BufferPool.Put(buff)
+			}
 		}
 	}
 	r.downloadBuf = nil
