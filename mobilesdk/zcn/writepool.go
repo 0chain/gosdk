@@ -6,7 +6,7 @@ package zcn
 import (
 	"strconv"
 
-	"github.com/0chain/gosdk/zboxcore/sdk"
+	"github.com/0chain/gosdk_common/zboxcore/commonsdk"
 )
 
 // WritePoolLock locks given number of tokes for given duration in read pool.
@@ -27,7 +27,7 @@ func WritePoolLock(allocID string, tokens, fee string) (string, error) {
 		return "", err
 	}
 
-	hash, _, err := sdk.WritePoolLock(
+	hash, _, err := commonsdk.WritePoolLock(
 		allocID,
 		tokensUint,
 		feeUint,
