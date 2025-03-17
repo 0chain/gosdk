@@ -138,7 +138,7 @@ func Init(ctx context.Context, cfg conf.Config) error {
 
 	// Check if a node is online
 	isNodeOnline := func(nodeURL string) bool {
-		reqCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		reqCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
 		defer cancel()
 		req, err := util.NewHTTPGetRequestContext(reqCtx, nodeURL)
 		if err != nil {
