@@ -136,10 +136,59 @@ func Init(ctx context.Context, cfg conf.Config) error {
 		return err
 	}
 
-	reqMiners := util.MaxInt(3, int(math.Ceil(float64(cfg.MinSubmit)*float64(len(network.Miners))/100)))
-	sharders := NewHolder(network.Sharders, util.MinInt(len(network.Sharders), util.MaxInt(cfg.SharderConsensous, conf.DefaultSharderConsensous)))
+	// Check if a node is online
+	isNodeOnline := func(nodeURL string) bool {
+		reqCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		defer cancel()
+		req, err := util.NewHTTPGetRequestContext(reqCtx, nodeURL)
+		if err != nil {
+			return false
+		}
+		res, err := req.Get()
+		return err == nil && res.StatusCode == http.StatusOK
+	}
+
+	// Filter online nodes concurrently
+	filterOnlineNodes := func(nodes []string) []string {
+		var onlineNodes []string
+		var wg sync.WaitGroup
+		var mu sync.Mutex
+
+		for _, node := range nodes {
+			wg.Add(1)
+			go func(url string) {
+				defer wg.Done()
+				if isNodeOnline(url) {
+					mu.Lock()
+					onlineNodes = append(onlineNodes, url)
+					mu.Unlock()
+				} else {
+					logging.Debug("Node offline during initialization", zap.String("url", url))
+				}
+			}(node)
+		}
+		wg.Wait()
+		return onlineNodes
+	}
+
+	// Get only online miners and sharders
+	onlineMiners := filterOnlineNodes(network.Miners)
+	onlineSharders := filterOnlineNodes(network.Sharders)
+
+	// Fall back to full lists if no online nodes found
+	if len(onlineMiners) == 0 {
+		logging.Debug("No online miners found during initialization, using full list")
+		onlineMiners = network.Miners
+	}
+	if len(onlineSharders) == 0 {
+		logging.Debug("No online sharders found during initialization, using full list")
+		onlineSharders = network.Sharders
+	}
+
+	reqMiners := util.MaxInt(3, int(math.Ceil(float64(cfg.MinSubmit)*float64(len(onlineMiners))/100)))
+	sharders := NewHolder(onlineSharders, util.MinInt(len(onlineSharders), util.MaxInt(cfg.SharderConsensous, conf.DefaultSharderConsensous)))
 	nodeClient = &Node{
-		stableMiners: util.GetRandom(network.Miners, reqMiners),
+		stableMiners: util.GetRandom(onlineMiners, reqMiners),
 		sharders:     sharders,
 		network:      network,
 		clientCtx:    ctx,
