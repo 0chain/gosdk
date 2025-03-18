@@ -48,7 +48,7 @@ func generateRandomBytes(n int64) []byte {
 
 func BenchmarkChunkedUpload(b *testing.B) {
 
-	SetLogFile("cmdlog.log", false)
+	commonsdk.SetLogFile("cmdlog.log", false)
 
 	logger.Logger.SetLevel(2)
 

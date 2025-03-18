@@ -13,12 +13,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk_common/core/client"
 	"github.com/0chain/gosdk_common/core/sys"
 	"github.com/0chain/gosdk_common/core/version"
 	"github.com/0chain/gosdk_common/core/zcncrypto"
 	"github.com/0chain/gosdk_common/wasmsdk/jsbridge"
+	"github.com/0chain/gosdk_common/zboxcore/commonsdk"
 	"github.com/0chain/gosdk_common/zcncore"
 
 	"github.com/hack-pad/safejs"
@@ -36,7 +36,7 @@ var (
 func main() {
 	fmt.Printf("0CHAIN - GOSDK (version=%v)\n", version.VERSIONSTR)
 	sys.Files = sys.NewMemFS()
-	sdkLogger = sdk.GetLogger()
+	sdkLogger = commonsdk.GetLogger()
 	zcnLogger = zcncore.GetLogger()
 
 	window := js.Global()

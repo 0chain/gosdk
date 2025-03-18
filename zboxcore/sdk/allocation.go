@@ -2966,7 +2966,7 @@ func (a *Allocation) UpdateWithRepair(
 	extend bool,
 	lock uint64,
 	addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey string,
-	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters, updateAllocTicket string,
+	setThirdPartyExtendable bool, fileOptionsParams *commonsdk.FileOptionsParameters, updateAllocTicket string,
 	statusCB StatusCallback,
 ) (string, error) {
 	updatedAlloc, hash, isRepairRequired, err := a.UpdateWithStatus(size, authRoundExpiry, extend, lock, addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey, setThirdPartyExtendable, fileOptionsParams, updateAllocTicket)
@@ -3001,7 +3001,7 @@ func (a *Allocation) UpdateWithStatus(
 	extend bool,
 	lock uint64,
 	addBlobberId, addBlobberAuthTicket, removeBlobberId, ownerSigninPublicKey string,
-	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
+	setThirdPartyExtendable bool, fileOptionsParams *commonsdk.FileOptionsParameters,
 	updateAllocTicket string,
 ) (*Allocation, string, bool, error) {
 	var (
