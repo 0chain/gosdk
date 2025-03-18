@@ -177,9 +177,9 @@ To run all the unit tests in `gosdk`: `go test github.com/0chain/gosdk/zboxcore/
 $ go test ./...
 ```
 
-To run all the unit tests in `bls0chain_test.go`, run this command from $TOP: `go test github.com/0chain/gosdk/core/zcncrypto -v`
+To run all the unit tests in `bls0chain_test.go`, run this command from $TOP: `go test github.com/0chain/gosdk_common/core/zcncrypto -v`
 
-To run a specific unit test in `bls0chain_test.go`, such as `TestSignatureScheme`, run: `go test github.com/0chain/gosdk/core/zcncrypto -v -run TestSignatureScheme`
+To run a specific unit test in `bls0chain_test.go`, such as `TestSignatureScheme`, run: `go test github.com/0chain/gosdk_common/core/zcncrypto -v -run TestSignatureScheme`
 
 To run the coverage test in `gosdk`:
 

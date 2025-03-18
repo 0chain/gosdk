@@ -11,6 +11,7 @@ import (
 	"github.com/0chain/gosdk_common/core/client"
 	"github.com/0chain/gosdk_common/core/encryption"
 	"github.com/0chain/gosdk_common/core/transaction"
+	"github.com/0chain/gosdk_common/zboxcore/commonsdk"
 	"github.com/0chain/gosdk_common/zboxcore/logger"
 	"go.uber.org/zap"
 )
@@ -33,7 +34,7 @@ import (
 func CreateAllocationForOwner(
 	owner, ownerPublicKey, ownerSigningPublicKey string,
 	dataShards, parityShards int, size int64,
-	readPrice, writePrice PriceRange,
+	readPrice, writePrice commonsdk.PriceRange,
 	lock uint64, preferredBlobberIds, blobberAuthTickets []string, thirdPartyExtendable, IsEnterprise, force bool, fileOptionsParams *FileOptionsParameters, authRoundExpiry int64,
 ) (hash string, nonce int64, txn *transaction.Transaction, err error) {
 

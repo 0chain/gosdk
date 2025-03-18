@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/0chain/gosdk_common/zboxcore/commonsdk"
 	"github.com/0chain/gosdk_common/zboxcore/mocks"
 
 	"github.com/0chain/gosdk_common/zboxcore/blockchain"
@@ -30,11 +31,13 @@ func TestWriteMarkerMutext_Should_Lock(t *testing.T) {
 	}()
 
 	a := &Allocation{
-		ID:           "TestWriteMarkerMutext",
-		Tx:           "TestWriteMarkerMutext",
-		DataShards:   2,
-		ParityShards: 1,
-		Owner:        mockClientId,
+		Allocation: commonsdk.Allocation{
+			ID:           "TestWriteMarkerMutext",
+			Tx:           "TestWriteMarkerMutext",
+			DataShards:   2,
+			ParityShards: 1,
+			Owner:        mockClientId,
+		},
 	}
 	setupMockAllocation(t, a)
 
@@ -99,11 +102,13 @@ func TestWriteMarkerMutext_Some_Blobbers_Down_Should_Lock(t *testing.T) {
 	}()
 
 	a := &Allocation{
-		ID:           "TestWriteMarkerMutext",
-		Tx:           "TestWriteMarkerMutext",
-		DataShards:   2,
-		ParityShards: 2,
-		Owner:        mockClientId,
+		Allocation: commonsdk.Allocation{
+			ID:           "TestWriteMarkerMutext",
+			Tx:           "TestWriteMarkerMutext",
+			DataShards:   2,
+			ParityShards: 2,
+			Owner:        mockClientId,
+		},
 	}
 	setupMockAllocation(t, a)
 
@@ -169,11 +174,13 @@ func TestWriteMarkerMutext_Too_Less_Blobbers_Response_Should_Not_Lock(t *testing
 	}()
 
 	a := &Allocation{
-		ID:           "TestWriteMarkerMutext",
-		Tx:           "TestWriteMarkerMutext",
-		DataShards:   2,
-		ParityShards: 1,
-		Owner:        mockClientId,
+		Allocation: commonsdk.Allocation{
+			ID:           "TestWriteMarkerMutext",
+			Tx:           "TestWriteMarkerMutext",
+			DataShards:   2,
+			ParityShards: 1,
+			Owner:        mockClientId,
+		},
 	}
 	setupMockAllocation(t, a)
 

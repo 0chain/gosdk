@@ -16,6 +16,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk_common/core/transaction"
 	"github.com/0chain/gosdk_common/wasmsdk/jsbridge"
+	"github.com/0chain/gosdk_common/zboxcore/commonsdk"
 )
 
 const TOKEN_UNIT int64 = 1e10
@@ -68,10 +69,10 @@ func getAllocationBlobbers(preferredBlobberURLs []string,
 		return sdk.GetBlobberIds(preferredBlobberURLs)
 	}
 
-	return sdk.GetAllocationBlobbers(sdk.StorageV2, dataShards, parityShards, size, isRestricted, sdk.PriceRange{
+	return sdk.GetAllocationBlobbers(sdk.StorageV2, dataShards, parityShards, size, isRestricted, commonsdk.PriceRange{
 		Min: uint64(minReadPrice),
 		Max: uint64(maxReadPrice),
-	}, sdk.PriceRange{
+	}, commonsdk.PriceRange{
 		Min: uint64(minWritePrice),
 		Max: uint64(maxWritePrice),
 	}, force)
@@ -96,11 +97,11 @@ func createAllocation(datashards, parityshards int, size, authRoundExpiry int64,
 		DataShards:   datashards,
 		ParityShards: parityshards,
 		Size:         size,
-		ReadPrice: sdk.PriceRange{
+		ReadPrice: commonsdk.PriceRange{
 			Min: uint64(minReadPrice),
 			Max: uint64(maxReadPrice),
 		},
-		WritePrice: sdk.PriceRange{
+		WritePrice: commonsdk.PriceRange{
 			Min: uint64(minWritePrice),
 			Max: uint64(maxWritePrice),
 		},
@@ -333,7 +334,7 @@ func getAllocationMinLock(datashards, parityshards int,
 	size int64,
 	maxwritePrice uint64,
 ) (int64, error) {
-	writePrice := sdk.PriceRange{Min: 0, Max: maxwritePrice}
+	writePrice := commonsdk.PriceRange{Min: 0, Max: maxwritePrice}
 
 	value, err := sdk.GetAllocationMinLock(datashards, parityshards, size, writePrice)
 	if err != nil {

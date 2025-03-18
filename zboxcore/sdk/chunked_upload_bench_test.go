@@ -11,6 +11,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/0chain/gosdk_common/dev"
 	"github.com/0chain/gosdk_common/zboxcore/blockchain"
+	"github.com/0chain/gosdk_common/zboxcore/commonsdk"
 	"github.com/0chain/gosdk_common/zboxcore/logger"
 )
 
@@ -84,12 +85,14 @@ func BenchmarkChunkedUpload(b *testing.B) {
 			b.ResetTimer()
 
 			a := &Allocation{
-				ID:           "1a0190c411f3e742c881b7b84c964dc1bb435d459bd3beca74a6c0ae8ececd92",
-				Tx:           "1a0190c411f3e742c881b7b84c964dc1bb435d459bd3beca74a6c0ae8ececd92",
-				DataShards:   2,
-				ParityShards: 1,
-				ctx:          context.TODO(),
-				Owner:        mockClientId,
+				Allocation: commonsdk.Allocation{
+					ID:           "1a0190c411f3e742c881b7b84c964dc1bb435d459bd3beca74a6c0ae8ececd92",
+					Tx:           "1a0190c411f3e742c881b7b84c964dc1bb435d459bd3beca74a6c0ae8ececd92",
+					DataShards:   2,
+					ParityShards: 1,
+					Owner:        mockClientId,
+				},
+				ctx: context.TODO(),
 			}
 			a.fullconsensus, a.consensusThreshold = a.getConsensuses()
 			for i := 0; i < (a.DataShards + a.ParityShards); i++ {

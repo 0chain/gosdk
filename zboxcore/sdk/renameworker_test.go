@@ -13,6 +13,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/0chain/gosdk_common/zboxcore/commonsdk"
 	"github.com/0chain/gosdk_common/zboxcore/mocks"
 
 	"github.com/0chain/errors"
@@ -228,7 +229,9 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 			tt.setup(t, tt.name, tt.parameters)
 			req := &RenameRequest{
 				allocationObj: &Allocation{
-					Owner: mockClientId,
+					Allocation: commonsdk.Allocation{
+						Owner: mockClientId,
+					},
 				},
 				allocationID:   mockAllocationId,
 				allocationTx:   mockAllocationTxId,
@@ -467,9 +470,11 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 			require := require.New(t)
 
 			a := &Allocation{
-				Tx:         "TestRenameRequest_ProcessRename",
-				DataShards: numBlobbers,
-				Owner:      mockClientId,
+				Allocation: commonsdk.Allocation{
+					Tx:         "TestRenameRequest_ProcessRename",
+					DataShards: numBlobbers,
+					Owner:      mockClientId,
+				},
 			}
 
 			setupMockAllocation(t, a)
