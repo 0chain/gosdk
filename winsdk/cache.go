@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/0chain/gosdk/zboxcore/sdk"
+	"github.com/0chain/gosdk_common/zboxcore/commonsdk"
 	"github.com/0chain/gosdk_common/zboxcore/marker"
 	lru "github.com/hashicorp/golang-lru/v2"
 )
@@ -18,7 +19,7 @@ type cachedAllocation struct {
 
 type cachedFileMeta struct {
 	CacheExpiresAt time.Time
-	FileMeta       *sdk.ConsolidatedFileMeta
+	FileMeta       *commonsdk.ConsolidatedFileMeta
 }
 
 var (
@@ -67,7 +68,7 @@ func getAllocationWith(authTicket string) (*sdk.Allocation, *marker.AuthTicket, 
 	return alloc, at, err
 }
 
-func getFileMeta(allocationID, remotePath string) (*sdk.ConsolidatedFileMeta, error) {
+func getFileMeta(allocationID, remotePath string) (*commonsdk.ConsolidatedFileMeta, error) {
 
 	var it *cachedFileMeta
 	var ok bool

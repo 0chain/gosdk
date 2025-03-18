@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/ed25519"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -76,74 +77,6 @@ const (
 
 var GetFileInfo = func(localpath string) (os.FileInfo, error) {
 	return sys.Files.Stat(localpath)
-}
-
-// BlobberAllocationStats represents the blobber allocation statistics.
-type BlobberAllocationStats struct {
-	BlobberID        string
-	BlobberURL       string
-	ID               string `json:"ID"`
-	Tx               string `json:"Tx"`
-	TotalSize        int64  `json:"TotalSize"`
-	UsedSize         int    `json:"UsedSize"`
-	OwnerID          string `json:"OwnerID"`
-	OwnerPublicKey   string `json:"OwnerPublicKey"`
-	Expiration       int    `json:"Expiration"`
-	AllocationRoot   string `json:"AllocationRoot"`
-	BlobberSize      int    `json:"BlobberSize"`
-	BlobberSizeUsed  int    `json:"BlobberSizeUsed"`
-	LatestRedeemedWM string `json:"LatestRedeemedWM"`
-	IsRedeemRequired bool   `json:"IsRedeemRequired"`
-	CleanedUp        bool   `json:"CleanedUp"`
-	Finalized        bool   `json:"Finalized"`
-	Terms            []struct {
-		ID           int    `json:"ID"`
-		BlobberID    string `json:"BlobberID"`
-		AllocationID string `json:"AllocationID"`
-		ReadPrice    int    `json:"ReadPrice"`
-		WritePrice   int    `json:"WritePrice"`
-	} `json:"Terms"`
-}
-
-// ConsolidatedFileMeta represents the file meta data.
-type ConsolidatedFileMeta struct {
-	Name            string
-	Type            string
-	Path            string
-	LookupHash      string
-	Hash            string
-	MimeType        string
-	Size            int64
-	NumBlocks       int64
-	ActualFileSize  int64
-	ActualNumBlocks int64
-	EncryptedKey    string
-
-	ActualThumbnailSize int64
-	ActualThumbnailHash string
-
-	Collaborators []fileref.Collaborator
-}
-
-type ConsolidatedFileMetaByName struct {
-	Name                string
-	Type                string
-	Path                string
-	LookupHash          string
-	Hash                string
-	MimeType            string
-	Size                int64
-	NumBlocks           int64
-	ActualFileSize      int64
-	ActualNumBlocks     int64
-	EncryptedKey        string
-	FileMetaHash        string
-	ThumbnailHash       string
-	ActualThumbnailSize int64
-	ActualThumbnailHash string
-	Collaborators       []fileref.Collaborator
-	CreatedAt           common.Timestamp
-	UpdatedAt           common.Timestamp
 }
 
 // Allocation represents a storage allocation.
@@ -250,16 +183,16 @@ func (a *Allocation) GetStats() *commonsdk.AllocationStats {
 }
 
 // GetBlobberStats returns the statistics of the blobbers in the allocation.
-func (a *Allocation) GetBlobberStats() map[string]*BlobberAllocationStats {
+func (a *Allocation) GetBlobberStats() map[string]*commonsdk.BlobberAllocationStats {
 	numList := len(a.Blobbers)
 	wg := &sync.WaitGroup{}
 	wg.Add(numList)
-	rspCh := make(chan *BlobberAllocationStats, numList)
+	rspCh := make(chan *commonsdk.BlobberAllocationStats, numList)
 	for _, blobber := range a.Blobbers {
 		go getAllocationDataFromBlobber(blobber, a.ID, a.Tx, rspCh, wg, a.Owner)
 	}
 	wg.Wait()
-	result := make(map[string]*BlobberAllocationStats, len(a.Blobbers))
+	result := make(map[string]*commonsdk.BlobberAllocationStats, len(a.Blobbers))
 	for i := 0; i < numList; i++ {
 		resp := <-rspCh
 		result[resp.BlobberURL] = resp
@@ -271,6 +204,35 @@ var downloadWorkerCount = 6
 
 func SetDownloadWorkerCount(count int) {
 	downloadWorkerCount = count
+}
+
+func (a *Allocation) generateAndSetOwnerSigningPublicKey() {
+	//create ecdsa public key from signature
+	if a.OwnerPublicKey != client.PublicKey() {
+		return
+	}
+	privateSigningKey, err := commonsdk.GenerateOwnerSigningKey(a.OwnerPublicKey, a.Owner)
+	if err != nil {
+		l.Logger.Error("Failed to generate owner signing key", zap.Error(err))
+		return
+	}
+	if a.OwnerSigningPublicKey == "" && !a.Finalized && !a.Canceled && client.Wallet().IsSplit {
+		pubKey := privateSigningKey.Public().(ed25519.PublicKey)
+		a.OwnerSigningPublicKey = hex.EncodeToString(pubKey)
+		hash, _, err := UpdateAllocation(0, 0, false, a.ID, 0, "", "", "", "", a.OwnerSigningPublicKey, false, nil, "")
+		if err != nil {
+			l.Logger.Error("Failed to update owner signing public key ", err, " allocationID: ", a.ID, " hash: ", hash)
+			return
+		}
+		l.Logger.Info("Owner signing public key updated with transaction : ", hash, " ownerSigningPublicKey : ", a.OwnerSigningPublicKey)
+		a.Tx = hash
+	} else if a.OwnerSigningPublicKey != "" {
+		pubKey := privateSigningKey.Public().(ed25519.PublicKey)
+		l.Logger.Info("Owner signing public key already exists: ", a.OwnerSigningPublicKey, " generated: ", hex.EncodeToString(pubKey))
+	} else {
+		return
+	}
+	a.privateSigningKey = privateSigningKey
 }
 
 // InitAllocation initializes the allocation.
@@ -292,6 +254,7 @@ func (a *Allocation) InitAllocation() {
 			}
 		}
 	}
+	a.generateAndSetOwnerSigningPublicKey()
 	a.startWorker(a.ctx)
 	InitCommitWorker(a.Blobbers)
 	InitBlockDownloader(a.Blobbers, downloadWorkerCount)
@@ -1201,7 +1164,7 @@ func (a *Allocation) generateDownloadRequest(
 	downloadReq.allocOwnerPubKey = a.OwnerPublicKey
 	downloadReq.allocOwnerSigningPubKey = a.OwnerSigningPublicKey
 	if len(a.privateSigningKey) == 0 {
-		sk, err := generateOwnerSigningKey(client.PublicKey(), client.Id())
+		sk, err := commonsdk.GenerateOwnerSigningKey(client.PublicKey(), client.Id())
 		if err != nil {
 			return nil, err
 		}
@@ -1764,12 +1727,12 @@ func (a *Allocation) GetRecentlyAddedRefs(page int, fromDate int64, pageLimit in
 // GetFileMeta retrieves the file meta data of a file in the allocation.
 // The file meta data includes the file type, name, hash, lookup hash, mime type, path, size, number of blocks, encrypted key, collaborators, actual file size, actual thumbnail hash, and actual thumbnail size.
 //   - path: the path of the file to get the meta data.
-func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
+func (a *Allocation) GetFileMeta(path string) (*commonsdk.ConsolidatedFileMeta, error) {
 	if !a.isInitialized() {
 		return nil, notInitialized
 	}
 
-	result := &ConsolidatedFileMeta{}
+	result := &commonsdk.ConsolidatedFileMeta{}
 	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
 	listReq.ClientId = a.Owner
 	listReq.allocationID = a.ID
@@ -1806,12 +1769,12 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 // GetFileMetaByName retrieve consolidated file metadata given its name (its full path starting from root "/").
 //   - fileName: full file path starting from the allocation root.
 //   - fileName: full file path starting from the allocation root.
-func (a *Allocation) GetFileMetaByName(fileName string) ([]*ConsolidatedFileMetaByName, error) {
+func (a *Allocation) GetFileMetaByName(fileName string) ([]*commonsdk.ConsolidatedFileMetaByName, error) {
 	if !a.isInitialized() {
 		return nil, notInitialized
 	}
 
-	resultArr := []*ConsolidatedFileMetaByName{}
+	resultArr := []*commonsdk.ConsolidatedFileMetaByName{}
 	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
@@ -1823,7 +1786,7 @@ func (a *Allocation) GetFileMetaByName(fileName string) ([]*ConsolidatedFileMeta
 	_, _, refs, _ := listReq.getMultipleFileConsensusFromBlobbers()
 	if len(refs) != 0 {
 		for _, ref := range refs {
-			result := &ConsolidatedFileMetaByName{}
+			result := &commonsdk.ConsolidatedFileMetaByName{}
 			if ref != nil {
 				result.Type = ref.Type
 				result.Name = ref.Name
@@ -1872,12 +1835,12 @@ func (a *Allocation) GetChunkReadSize(encrypt bool) int64 {
 // Usually used for file sharing, the owner sets the file as shared and generates an auth ticket which they should share with other non-owner users.
 //   - authTicket: the auth ticket to get the file meta data.
 //   - lookupHash: the lookup hash of the file to get the meta data. It's an augmentation of the allocation ID and the path hash.
-func (a *Allocation) GetFileMetaFromAuthTicket(authTicket string, lookupHash string) (*ConsolidatedFileMeta, error) {
+func (a *Allocation) GetFileMetaFromAuthTicket(authTicket string, lookupHash string) (*commonsdk.ConsolidatedFileMeta, error) {
 	if !a.isInitialized() {
 		return nil, notInitialized
 	}
 
-	result := &ConsolidatedFileMeta{}
+	result := &commonsdk.ConsolidatedFileMeta{}
 	sEnc, err := base64.StdEncoding.DecodeString(authTicket)
 	if err != nil {
 		return nil, errors.New("auth_ticket_decode_error", "Error decoding the auth ticket."+err.Error())
@@ -2657,7 +2620,7 @@ func (a *Allocation) downloadFromAuthTicket(fileHandler sys.File, authTicket str
 	downloadReq.allocOwnerPubKey = a.OwnerPublicKey
 	downloadReq.allocOwnerSigningPubKey = a.OwnerSigningPublicKey
 	//for auth ticket set your own signing key
-	sk, err := generateOwnerSigningKey(client.PublicKey(), client.Id())
+	sk, err := commonsdk.GenerateOwnerSigningKey(client.PublicKey(), client.Id())
 	if err != nil {
 		return err
 	}
