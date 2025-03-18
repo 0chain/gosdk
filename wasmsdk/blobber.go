@@ -27,6 +27,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/0chain/gosdk_common/core/transaction"
 	"github.com/0chain/gosdk_common/wasmsdk/jsbridge"
+	"github.com/0chain/gosdk_common/zboxcore/commonsdk"
 	"github.com/0chain/gosdk_common/zboxcore/fileref"
 
 	"github.com/hack-pad/go-webworkers/worker"
@@ -415,7 +416,7 @@ func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expir
 
 }
 
-func getFileMetaByName(allocationID, fileNameQuery string) ([]*sdk.ConsolidatedFileMetaByName, error) {
+func getFileMetaByName(allocationID, fileNameQuery string) ([]*commonsdk.ConsolidatedFileMetaByName, error) {
 	allocationObj, err := getAllocation(allocationID)
 	if err != nil {
 		return nil, err
@@ -427,7 +428,7 @@ func getFileMetaByName(allocationID, fileNameQuery string) ([]*sdk.ConsolidatedF
 	return fileMetas, nil
 }
 
-func getFileMetaByAuthTicket(allocationID, authTicket, lookupHash string) (*sdk.ConsolidatedFileMeta, error) {
+func getFileMetaByAuthTicket(allocationID, authTicket, lookupHash string) (*commonsdk.ConsolidatedFileMeta, error) {
 	allocationObj, err := getAllocation(allocationID)
 	if err != nil {
 		return nil, err

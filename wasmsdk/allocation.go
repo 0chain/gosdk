@@ -548,5 +548,5 @@ func repairSize(allocationID, remotePath string) (sdk.RepairSize, error) {
 }
 
 func generateOwnerSigningKey(ownerPublicKey, ownerID string) (string, error) {
-	return sdk.GenerateOwnerSigningPublicKey()
+	return commonsdk.GenerateOwnerSigningPublicKey()
 }

@@ -1,11 +1,13 @@
 package sdk
 
+import "github.com/0chain/gosdk_common/zboxcore/commonsdk"
+
 type CommitMetaData struct {
 	CrudType string
-	MetaData *ConsolidatedFileMeta
+	MetaData *commonsdk.ConsolidatedFileMeta
 }
 
 type CommitMetaResponse struct {
 	TxnID    string
-	MetaData *ConsolidatedFileMeta
+	MetaData *commonsdk.ConsolidatedFileMeta
 }

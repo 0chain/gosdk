@@ -427,7 +427,7 @@ func TestAllocation_GetBlobberStats(t *testing.T) {
 					return strings.HasPrefix(req.URL.Path, "TestAllocation_GetBlobberStats"+testName)
 				})).Return(&http.Response{
 					Body: func() io.ReadCloser {
-						jsonFR, err := json.Marshal(&BlobberAllocationStats{
+						jsonFR, err := json.Marshal(&commonsdk.BlobberAllocationStats{
 							ID: mockAllocationId,
 							Tx: mockAllocationTxId,
 						})
@@ -456,8 +456,8 @@ func TestAllocation_GetBlobberStats(t *testing.T) {
 			got := a.GetBlobberStats()
 			require.NotEmptyf(got, "Error no blobber stats result found")
 
-			expected := make(map[string]*BlobberAllocationStats, 1)
-			expected["TestAllocation_GetBlobberStats"+tt.name+mockBlobberUrl] = &BlobberAllocationStats{
+			expected := make(map[string]*commonsdk.BlobberAllocationStats, 1)
+			expected["TestAllocation_GetBlobberStats"+tt.name+mockBlobberUrl] = &commonsdk.BlobberAllocationStats{
 				ID:         mockAllocationId,
 				Tx:         mockAllocationTxId,
 				BlobberID:  tt.name + mockBlobberId,
@@ -1169,7 +1169,7 @@ func TestAllocation_GetFileMeta(t *testing.T) {
 				return
 			}
 			require.NoErrorf(err, "unexpected error: %v", err)
-			expectedResult := &ConsolidatedFileMeta{
+			expectedResult := &commonsdk.ConsolidatedFileMeta{
 				Hash: mockActualHash,
 			}
 			require.EqualValues(expectedResult, got)
@@ -2070,7 +2070,7 @@ func TestAllocation_GetFileMetaFromAuthTicket(t *testing.T) {
 				return
 			}
 			require.NoErrorf(err, "unexpected error: %v", err)
-			expectedResult := &ConsolidatedFileMeta{
+			expectedResult := &commonsdk.ConsolidatedFileMeta{
 				Hash: mockActualHash,
 			}
 			require.EqualValues(expectedResult, got)

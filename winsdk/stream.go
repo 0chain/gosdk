@@ -19,6 +19,7 @@ import (
 	"sync"
 
 	"github.com/0chain/gosdk/zboxcore/sdk"
+	"github.com/0chain/gosdk_common/zboxcore/commonsdk"
 	lru "github.com/hashicorp/golang-lru/v2"
 )
 
@@ -163,7 +164,7 @@ func streamingMedia(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func downloadBlocks(remotePath string, f *sdk.ConsolidatedFileMeta, ra httpRange) ([]byte, error) {
+func downloadBlocks(remotePath string, f *commonsdk.ConsolidatedFileMeta, ra httpRange) ([]byte, error) {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Error("win: ", r)
