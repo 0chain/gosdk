@@ -2,11 +2,12 @@ package zbox
 
 import (
 	"bytes"
-	"github.com/0chain/gosdk/zboxcore/logger"
 	"io"
 	"sort"
 	"strconv"
 	"time"
+
+	"github.com/0chain/gosdk_common/zboxcore/logger"
 )
 
 // #EXTM3U

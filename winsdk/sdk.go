@@ -14,18 +14,19 @@ import (
 	"os"
 	"path"
 
-	"github.com/0chain/gosdk/zboxapi"
-	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
-	"github.com/0chain/gosdk/zcncore"
+	"github.com/0chain/gosdk_common/zboxapi"
+	"github.com/0chain/gosdk_common/zboxcore/commonsdk"
+	l "github.com/0chain/gosdk_common/zboxcore/logger"
+	"github.com/0chain/gosdk_common/zcncore"
 
-	"github.com/0chain/gosdk/core/client"
-	"github.com/0chain/gosdk/core/conf"
-	"github.com/0chain/gosdk/core/encryption"
-	"github.com/0chain/gosdk/core/logger"
-	"github.com/0chain/gosdk/core/sys"
-	"github.com/0chain/gosdk/core/zcncrypto"
+	"github.com/0chain/gosdk_common/core/client"
+	"github.com/0chain/gosdk_common/core/conf"
+	"github.com/0chain/gosdk_common/core/encryption"
+	"github.com/0chain/gosdk_common/core/logger"
+	"github.com/0chain/gosdk_common/core/sys"
+	"github.com/0chain/gosdk_common/core/zcncrypto"
 )
 
 var log logger.Logger
@@ -50,8 +51,8 @@ func SetLogFile(file *C.char) *C.char {
 		return WithJSON(false, err)
 	}
 
-	sdk.GetLogger().SetLevel(logger.DEBUG)
-	sdk.GetLogger().SetLogFile(f, true)
+	commonsdk.GetLogger().SetLevel(logger.DEBUG)
+	commonsdk.GetLogger().SetLogFile(f, true)
 
 	zcncore.GetLogger().SetLevel(logger.DEBUG)
 	zcncore.GetLogger().SetLogFile(f, true)

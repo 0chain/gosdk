@@ -13,19 +13,20 @@ import (
 
 	"context"
 
-	"github.com/0chain/gosdk/core/sys"
+	"github.com/0chain/gosdk_common/core/sys"
 	"github.com/pkg/errors"
 
-	"github.com/0chain/gosdk/core/client"
-	"github.com/0chain/gosdk/core/conf"
-	"github.com/0chain/gosdk/core/util"
-	"github.com/0chain/gosdk/core/version"
-	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/sdk"
+	"github.com/0chain/gosdk_common/core/client"
+	"github.com/0chain/gosdk_common/core/conf"
+	"github.com/0chain/gosdk_common/core/util"
+	"github.com/0chain/gosdk_common/core/version"
+	"github.com/0chain/gosdk_common/zboxcore/commonsdk"
+	l "github.com/0chain/gosdk_common/zboxcore/logger"
 
 	"github.com/0chain/gosdk/mobilesdk/zbox"
 	"github.com/0chain/gosdk/mobilesdk/zboxapi"
-	"github.com/0chain/gosdk/zcncore"
+	"github.com/0chain/gosdk_common/zcncore"
 )
 
 var nonce = int64(0)
@@ -163,8 +164,8 @@ func InitStorageSDK(clientJson string, configJson string) (*StorageSDK, error) {
 //   - lock: lock write pool with given number of tokens
 //   - blobberAuthTickets: list of blobber auth tickets needed for the restricted blobbers
 func (s *StorageSDK) CreateAllocation(datashards, parityshards int, size, expiration, authRoundExpiry int64, lock string, blobberAuthTickets []string) (*zbox.Allocation, error) {
-	readPrice := sdk.PriceRange{Min: 0, Max: math.MaxInt64}
-	writePrice := sdk.PriceRange{Min: 0, Max: math.MaxInt64}
+	readPrice := commonsdk.PriceRange{Min: 0, Max: math.MaxInt64}
+	writePrice := commonsdk.PriceRange{Min: 0, Max: math.MaxInt64}
 
 	l, err := util.ParseCoinStr(lock)
 	if err != nil {
@@ -205,8 +206,8 @@ func (s *StorageSDK) CreateAllocation(datashards, parityshards int, size, expira
 //   - blobberUrls: concat blobber urls with comma. leave it as empty if you don't have any preferred blobbers
 //   - blobberIds: concat blobber ids with comma. leave it as empty if you don't have any preferred blobbers
 func (s *StorageSDK) CreateAllocationWithBlobbers(name string, datashards, parityshards int, size, authRoundExpiry int64, lock string, blobberUrls, blobberIds string, blobberAuthTickets []string) (*zbox.Allocation, error) {
-	readPrice := sdk.PriceRange{Min: 0, Max: math.MaxInt64}
-	writePrice := sdk.PriceRange{Min: 0, Max: math.MaxInt64}
+	readPrice := commonsdk.PriceRange{Min: 0, Max: math.MaxInt64}
+	writePrice := commonsdk.PriceRange{Min: 0, Max: math.MaxInt64}
 
 	l, err := util.ParseCoinStr(lock)
 	if err != nil {

@@ -3,7 +3,7 @@ package sdk
 import (
 	"encoding/json"
 
-	"github.com/0chain/gosdk/core/zcncrypto"
+	"github.com/0chain/gosdk_common/core/zcncrypto"
 )
 
 // SplitKeys split keys by private key, return json string of wallet

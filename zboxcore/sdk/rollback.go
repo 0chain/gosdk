@@ -19,11 +19,11 @@ import (
 
 	"github.com/0chain/common/core/common"
 	thrown "github.com/0chain/errors"
-	"github.com/0chain/gosdk/core/client"
-	"github.com/0chain/gosdk/zboxcore/blockchain"
-	l "github.com/0chain/gosdk/zboxcore/logger"
-	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/0chain/gosdk_common/core/client"
+	"github.com/0chain/gosdk_common/zboxcore/blockchain"
+	l "github.com/0chain/gosdk_common/zboxcore/logger"
+	"github.com/0chain/gosdk_common/zboxcore/marker"
 	"github.com/minio/sha256-simd"
 	"go.uber.org/zap"
 )

@@ -13,7 +13,7 @@ import (
 	"syscall/js"
 	"text/template"
 
-	"github.com/0chain/gosdk/core/version"
+	"github.com/0chain/gosdk_common/core/version"
 )
 
 //go:embed zcnworker.js.tpl

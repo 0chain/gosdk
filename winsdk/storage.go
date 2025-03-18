@@ -14,9 +14,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/0chain/gosdk/core/common"
-	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/sdk"
+	"github.com/0chain/gosdk_common/core/common"
+	"github.com/0chain/gosdk_common/zboxcore/commonsdk"
+	"github.com/0chain/gosdk_common/zboxcore/marker"
 )
 
 // GetFileStats get file stats of blobbers
@@ -209,7 +210,7 @@ func GetFileMeta(allocationID, path, authTicket *C.char) *C.char {
 
 	s := C.GoString(path)
 
-	var f *sdk.ConsolidatedFileMeta
+	var f *commonsdk.ConsolidatedFileMeta
 	if isShared {
 		f, err = alloc.GetFileMetaFromAuthTicket(t, ticket.FilePathHash)
 	} else {

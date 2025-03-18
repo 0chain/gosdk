@@ -7,8 +7,8 @@ import (
 	"sync"
 
 	"github.com/0chain/errors"
-	"github.com/0chain/gosdk/constants"
-	"github.com/0chain/gosdk/core/util"
+	"github.com/0chain/gosdk_common/constants"
+	"github.com/0chain/gosdk_common/core/util"
 )
 
 // Hasher interface to gather all hasher related functions.

@@ -7,8 +7,9 @@ import (
 	"errors"
 	"syscall/js"
 
-	"github.com/0chain/gosdk/wasmsdk/jsbridge"
 	"github.com/0chain/gosdk/zboxcore/sdk"
+	"github.com/0chain/gosdk_common/wasmsdk/jsbridge"
+	"github.com/0chain/gosdk_common/zboxcore/commonsdk"
 )
 
 // PrintError is to print to stderr
@@ -21,8 +22,8 @@ func PrintInfo(v ...interface{}) {
 	sdkLogger.Info(v...)
 }
 
-func getFileMeta(allocationObj *sdk.Allocation, remotePath string, commit bool) (*sdk.ConsolidatedFileMeta, bool, error) {
-	var fileMeta *sdk.ConsolidatedFileMeta
+func getFileMeta(allocationObj *sdk.Allocation, remotePath string, commit bool) (*commonsdk.ConsolidatedFileMeta, bool, error) {
+	var fileMeta *commonsdk.ConsolidatedFileMeta
 	isFile := false
 	if commit {
 

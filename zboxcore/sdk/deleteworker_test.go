@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/0chain/gosdk/zboxcore/mocks"
 	"io"
 	"net/http"
 	"strconv"
@@ -13,12 +12,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/0chain/gosdk_common/zboxcore/commonsdk"
+	"github.com/0chain/gosdk_common/zboxcore/mocks"
+
 	"github.com/0chain/errors"
-	"github.com/0chain/gosdk/core/client"
-	"github.com/0chain/gosdk/core/resty"
-	"github.com/0chain/gosdk/core/zcncrypto"
-	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/zboxcore/fileref"
+	"github.com/0chain/gosdk_common/core/client"
+	"github.com/0chain/gosdk_common/core/resty"
+	"github.com/0chain/gosdk_common/core/zcncrypto"
+	"github.com/0chain/gosdk_common/zboxcore/blockchain"
+	"github.com/0chain/gosdk_common/zboxcore/fileref"
 
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/stretchr/testify/mock"
@@ -179,7 +181,9 @@ func TestDeleteRequest_deleteBlobberFile(t *testing.T) {
 				connectionID: mockConnectionId,
 				wg:           func() *sync.WaitGroup { wg.Add(1); return &wg }(),
 				allocationObj: &Allocation{
-					Owner: mockClientId,
+					Allocation: commonsdk.Allocation{
+						Owner: mockClientId,
+					},
 				},
 			}
 			req.blobbers = append(req.blobbers, &blockchain.StorageNode{
@@ -384,8 +388,10 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 			req.ctx, req.ctxCncl = context.WithCancel(context.TODO())
 
 			a := &Allocation{
-				DataShards: numBlobbers,
-				Owner:      mockClientId,
+				Allocation: commonsdk.Allocation{
+					DataShards: numBlobbers,
+					Owner:      mockClientId,
+				},
 			}
 
 			for i := 0; i < tt.numBlobbers; i++ {

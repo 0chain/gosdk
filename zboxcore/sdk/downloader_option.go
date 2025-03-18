@@ -1,6 +1,6 @@
 package sdk
 
-import "github.com/0chain/gosdk/core/sys"
+import "github.com/0chain/gosdk_common/core/sys"
 
 const DefaultBlocksPerMarker int = 100
 

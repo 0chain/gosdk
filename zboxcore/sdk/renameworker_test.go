@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/0chain/gosdk/zboxcore/mocks"
 	"io"
 	"mime"
 	"mime/multipart"
@@ -14,14 +13,17 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/0chain/gosdk_common/zboxcore/commonsdk"
+	"github.com/0chain/gosdk_common/zboxcore/mocks"
+
 	"github.com/0chain/errors"
-	"github.com/0chain/gosdk/core/client"
-	"github.com/0chain/gosdk/core/zcncrypto"
-	"github.com/0chain/gosdk/dev"
-	devMock "github.com/0chain/gosdk/dev/mock"
-	"github.com/0chain/gosdk/sdks/blobber"
-	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/zboxcore/fileref"
+	"github.com/0chain/gosdk_common/core/client"
+	"github.com/0chain/gosdk_common/core/zcncrypto"
+	"github.com/0chain/gosdk_common/dev"
+	devMock "github.com/0chain/gosdk_common/dev/mock"
+	"github.com/0chain/gosdk_common/sdks/blobber"
+	"github.com/0chain/gosdk_common/zboxcore/blockchain"
+	"github.com/0chain/gosdk_common/zboxcore/fileref"
 
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/stretchr/testify/mock"
@@ -227,7 +229,9 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 			tt.setup(t, tt.name, tt.parameters)
 			req := &RenameRequest{
 				allocationObj: &Allocation{
-					Owner: mockClientId,
+					Allocation: commonsdk.Allocation{
+						Owner: mockClientId,
+					},
 				},
 				allocationID:   mockAllocationId,
 				allocationTx:   mockAllocationTxId,
@@ -466,9 +470,11 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 			require := require.New(t)
 
 			a := &Allocation{
-				Tx:         "TestRenameRequest_ProcessRename",
-				DataShards: numBlobbers,
-				Owner:      mockClientId,
+				Allocation: commonsdk.Allocation{
+					Tx:         "TestRenameRequest_ProcessRename",
+					DataShards: numBlobbers,
+					Owner:      mockClientId,
+				},
 			}
 
 			setupMockAllocation(t, a)

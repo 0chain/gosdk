@@ -8,13 +8,14 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
-	"github.com/0chain/gosdk/core/client"
-	"github.com/0chain/gosdk/core/resty"
-	"github.com/0chain/gosdk/core/zcncrypto"
-	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/zboxcore/fileref"
-	"github.com/0chain/gosdk/zboxcore/mocks"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/0chain/gosdk_common/core/client"
+	"github.com/0chain/gosdk_common/core/resty"
+	"github.com/0chain/gosdk_common/core/zcncrypto"
+	"github.com/0chain/gosdk_common/zboxcore/blockchain"
+	"github.com/0chain/gosdk_common/zboxcore/commonsdk"
+	"github.com/0chain/gosdk_common/zboxcore/fileref"
+	"github.com/0chain/gosdk_common/zboxcore/mocks"
 	"github.com/stretchr/testify/require"
 )
 
@@ -47,10 +48,12 @@ func TestAllocation_DeleteFile(t *testing.T) {
 	require := require.New(t)
 
 	a := &Allocation{
-		DataShards:   2,
-		ParityShards: 2,
-		FileOptions:  63,
-		Owner:        mockClientId,
+		Allocation: commonsdk.Allocation{
+			DataShards:   2,
+			ParityShards: 2,
+			FileOptions:  63,
+			Owner:        mockClientId,
+		},
 	}
 	a.InitAllocation()
 	client.SetSdkInitialized(true)
@@ -164,10 +167,12 @@ func TestAllocation_deleteFile(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
 			a := &Allocation{
-				DataShards:   2,
-				ParityShards: 2,
-				FileOptions:  63,
-				Owner:        mockClientId,
+				Allocation: commonsdk.Allocation{
+					DataShards:   2,
+					ParityShards: 2,
+					FileOptions:  63,
+					Owner:        mockClientId,
+				},
 			}
 			a.InitAllocation()
 			client.SetSdkInitialized(true)

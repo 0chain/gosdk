@@ -7,9 +7,10 @@ import (
 	"fmt"
 	"syscall/js"
 
-	"github.com/0chain/gosdk/core/client"
+	"github.com/0chain/gosdk_common/core/sys"
 
-	"github.com/0chain/gosdk/core/sys"
+	"github.com/0chain/gosdk_common/core/client"
+
 	"github.com/0chain/gosdk/wasmsdk/jsbridge"
 )
 

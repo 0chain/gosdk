@@ -4,8 +4,8 @@
 package main
 
 import (
-	"github.com/0chain/gosdk/core/screstapi"
-	"github.com/0chain/gosdk/zcncore"
+	"github.com/0chain/gosdk_common/core/screstapi"
+	"github.com/0chain/gosdk_common/zcncore"
 )
 
 type Balance struct {

@@ -12,12 +12,12 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/0chain/gosdk/core/client"
+	"github.com/0chain/gosdk_common/core/client"
 
 	thrown "github.com/0chain/errors"
-	"github.com/0chain/gosdk/core/encryption"
-	"github.com/0chain/gosdk/core/logger"
-	"github.com/0chain/gosdk/core/resty"
+	"github.com/0chain/gosdk_common/core/encryption"
+	"github.com/0chain/gosdk_common/core/logger"
+	"github.com/0chain/gosdk_common/core/resty"
 )
 
 var log logger.Logger

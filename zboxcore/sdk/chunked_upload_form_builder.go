@@ -11,8 +11,8 @@ import (
 	"mime/multipart"
 	"sync"
 
-	"github.com/0chain/gosdk/core/client"
-	"github.com/0chain/gosdk/core/encryption"
+	"github.com/0chain/gosdk_common/core/client"
+	"github.com/0chain/gosdk_common/core/encryption"
 
 	"golang.org/x/crypto/sha3"
 )
