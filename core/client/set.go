@@ -51,10 +51,6 @@ type InitSdkOptions struct {
 	SharderConsensous       *int
 	ZboxHost                string
 	ZboxAppType             string
-	KafkaHost               string
-	KafkaUsername           string
-	KafkaPassword           string
-	KafkaTopic              string
 }
 
 func init() {

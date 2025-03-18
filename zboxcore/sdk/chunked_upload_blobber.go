@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"mime/multipart"
 	"net/http"
 	"strings"
@@ -71,8 +70,6 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 	}
 
 	eg, _ := errgroup.WithContext(ctx)
-
-	var results []chan int64
 
 	for dataInd := 0; dataInd < len(dataBuffers); dataInd++ {
 		ind := dataInd
@@ -164,23 +161,6 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 		return err
 	}
 	consensus.Done()
-
-	timeout, cancelFunc := context.WithTimeout(context.Background(), 50*time.Second)
-	defer cancelFunc()
-	sent := 0
-L:
-	for _, ch := range results {
-		select {
-		case <-ch:
-			log.Println("Sent to Kafka : ", sent, " : lenDataBuffers : ", len(dataBuffers))
-			sent++
-			if sent == len(dataBuffers) {
-				break L
-			}
-		case <-timeout.Done():
-			log.Panic("Timeout to publish event to kafka")
-		}
-	}
 
 	if formData.ThumbnailBytesLen > 0 {
 

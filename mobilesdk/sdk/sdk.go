@@ -44,11 +44,6 @@ type ChainConfig struct {
 	ZboxHost string `json:"zbox_host"`
 	// ZboxAppType app type name
 	ZboxAppType string `json:"zbox_app_type"`
-	//kafka details
-	KafkaHost     string `json:"kafka_host"`
-	KafkaUsername string `json:"kafka_username"`
-	KafkaPassword string `json:"kafka_password"`
-	KafkaTopic    string `json:"kafka_topic"`
 }
 
 // StorageSDK - storage SDK config
