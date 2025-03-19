@@ -46,8 +46,8 @@ type InitSdkOptions struct {
 	AddWallet               bool
 	TxnFee                  *int
 	MinConfirmation         *int
-	MinSubmit               *int
 	ConfirmationChainLength *int
+	MinSubmit               *int
 	SharderConsensous       *int
 	ZboxHost                string
 	ZboxAppType             string
@@ -287,6 +287,7 @@ func PublicKey(clients ...string) string {
 		}
 		return client.wallets[clients[0]].ClientKey
 	}
+
 	return client.wallet.ClientKey
 }
 
