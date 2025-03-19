@@ -3,6 +3,7 @@ package zbox
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -914,4 +915,32 @@ func SetUploadMode(mode int) {
 	case 2:
 		sdk.SetUploadMode(sdk.UploadModeHigh)
 	}
+}
+
+// ListObjects list allocation objects from its blobbers
+//   - allocationID is the allocation id
+//   - remotePath is the remote path of the file
+//   - offset is the offset of the list
+//   - pageLimit is the limit of the page
+func ListObjects(allocationID string, remotePath string, offset, pageLimit int) (string, error) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in listObjects Error", r)
+		}
+	}()
+	alloc, err := getAllocation(allocationID)
+	if err != nil {
+		return "", err
+	}
+
+	list, err := alloc.ListDir(remotePath, sdk.WithListRequestOffset(offset), sdk.WithListRequestPageLimit(pageLimit))
+	if err != nil {
+		return "", err
+	}
+
+	jsonBytes, err := json.Marshal(list)
+	if err != nil {
+		return "", err
+	}
+	return string(jsonBytes), nil
 }
