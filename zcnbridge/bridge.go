@@ -159,7 +159,7 @@ func (b *BridgeClient) AddEthereumAuthorizers(configDir string) {
 	cfg.AddConfigPath(configDir)
 	cfg.SetConfigName("authorizers")
 	if err := cfg.ReadInConfig(); err != nil {
-		fmt.Println(err)
+		Logger.Error(err)
 		return
 	}
 
@@ -168,32 +168,32 @@ func (b *BridgeClient) AddEthereumAuthorizers(configDir string) {
 	for _, mnemonic := range mnemonics {
 		wallet, err := hdw.NewFromMnemonic(mnemonic)
 		if err != nil {
-			fmt.Printf("failed to read mnemonic: %v", err)
+			Logger.Error(fmt.Sprintf("failed to read mnemonic: %v", err))
 			continue
 		}
 
 		pathD := hdw.MustParseDerivationPath("m/44'/60'/0'/0/0")
 		account, err := wallet.Derive(pathD, true)
 		if err != nil {
-			fmt.Println(err)
+			Logger.Error(err)
 			continue
 		}
 
 		transaction, err := b.AddEthereumAuthorizer(context.TODO(), account.Address)
 		if err != nil || transaction == nil {
-			fmt.Printf("AddAuthorizer error: %v, Address: %s", err, account.Address.Hex())
+			Logger.Error(fmt.Sprintf("AddAuthorizer error: %v, Address: %s", err, account.Address.Hex()))
 			continue
 		}
 
 		status, err := ConfirmEthereumTransaction(transaction.Hash().String(), 100, time.Second*10)
 		if err != nil {
-			fmt.Println(err)
+			Logger.Error(err)
 		}
 
 		if status == 1 {
-			fmt.Printf("Authorizer has been added: %s\n", mnemonic)
+			Logger.Info(fmt.Sprintf("Authorizer has been added: %s\n", mnemonic))
 		} else {
-			fmt.Printf("Authorizer has failed to be added: %s\n", mnemonic)
+			Logger.Info(fmt.Sprintf("Authorizer has failed to be added: %s\n", mnemonic))
 		}
 	}
 }

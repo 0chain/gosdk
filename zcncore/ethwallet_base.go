@@ -9,7 +9,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"golang.org/x/crypto/sha3"
-	"log"
 	"math"
 	"math/big"
 	"regexp"
@@ -251,16 +250,16 @@ func TransferEthTokens(fromPrivKey string, amountTokens, gasPrice int64) (string
 	hash := sha3.NewLegacyKeccak256()
 	hash.Write(transferFnSignature)
 	methodID := hash.Sum(nil)[:4]
-	fmt.Println(hexutil.Encode(methodID)) // 0xa9059cbb
+	logging.Info(hexutil.Encode(methodID)) // 0xa9059cbb
 
 	paddedAddress := common.LeftPadBytes(toAddress.Bytes(), 32)
-	fmt.Println(hexutil.Encode(paddedAddress)) // 0x0000000000000000000000004592d8f8d7b001e72cb26a73e4fa1806a51ac79d
+	logging.Info(hexutil.Encode(paddedAddress)) // 0x0000000000000000000000004592d8f8d7b001e72cb26a73e4fa1806a51ac79d
 
 	amount := new(big.Int)
 	amount.SetInt64(amountTokens)
 
 	paddedAmount := common.LeftPadBytes(amount.Bytes(), 32)
-	fmt.Println(hexutil.Encode(paddedAmount)) // 0x00000000000000000000000000000000000000000000003635c9adc5dea00000
+	logging.Info(hexutil.Encode(paddedAmount)) // 0x00000000000000000000000000000000000000000000003635c9adc5dea00000
 
 	var data []byte
 	data = append(data, methodID...)
@@ -272,7 +271,7 @@ func TransferEthTokens(fromPrivKey string, amountTokens, gasPrice int64) (string
 		Data: data,
 	})
 	if err != nil {
-		log.Fatal(err)
+		logging.Fatal(err)
 	}
 
 	txData := &types.LegacyTx{

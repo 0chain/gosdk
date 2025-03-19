@@ -177,7 +177,7 @@ func getWallet(walletStr string) (*zcncrypto.Wallet, error) {
 	var w zcncrypto.Wallet
 	err := json.Unmarshal([]byte(walletStr), &w)
 	if err != nil {
-		fmt.Printf("error while parsing wallet string.\n%v\n", err)
+		logging.Error(fmt.Sprintf("error while parsing wallet string.\n%v\n", err))
 		return nil, err
 	}
 
