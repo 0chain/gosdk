@@ -557,6 +557,7 @@ func (req *DownloadRequest) processDownload() {
 		defer func() {
 			l.Logger.Debug("Clearing download buffers: ", len(req.bufferMap))
 			for ind, rb := range req.bufferMap {
+				l.Logger.Debug("Hey, I am stuck here!!")
 				rb.ClearBuffer()
 				delete(req.bufferMap, ind)
 			}

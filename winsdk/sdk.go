@@ -108,11 +108,13 @@ func InitSDKs(configJson *C.char) *C.char {
 	}
 
 	err = client.Init(context.Background(), *configObj)
-
 	if err != nil {
 		l.Logger.Error(err, configJs)
 		return WithJSON(false, err)
 	}
+
+	client.SetSdkInitialized(true)
+	client.SetSignatureScheme(configObj.SignatureScheme)
 
 	l.Logger.Info("InitZCNSDK success")
 	l.Logger.Info(configObj.BlockWorker)
