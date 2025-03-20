@@ -24,10 +24,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Set up Go 1.23
+      - name: Set up Go 1.22.5
         uses: actions/setup-go@v3
         with:
-          go-version: 1.23
+          go-version: 1.22.5
 
       - name: Clean build
         run: make clean-mobilesdk
@@ -50,7 +50,8 @@ jobs:
 
       - name: Compress
         run: |
-          tar -czvf zcncore-ios.tar.gz out/iossdk/ios/zcncore.xcframework
+          # tar -czvf zcncore-ios.tar.gz out/iossdk/ios/zcncore.xcframework
+          cp -r out/iossdk/ios/zcncore.xcframework .
 
       - name: Setup Build
         id: setup_build
@@ -76,17 +77,18 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: zcncore-ios.tar.gz
+          file: zcncore.xcframework
           tag: ${{ steps.setup_build.outputs.TAG }}
           overwrite: true
           file_glob: true
+          body: "Go version 1.22.5 is used to build the binary for iOS."
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: zcncore-ios
           path: |
-            zcncore-ios.tar.gz
+            zcncore.xcframework
 
   build-android:
     name: Build-android
@@ -96,10 +98,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Set up Go 1.23
+      - name: Set up Go 1.22.5
         uses: actions/setup-go@v3
         with:
-          go-version: 1.23
+          go-version: 1.22.5
 
       - name: Install deps
         run: |
@@ -152,7 +154,9 @@ jobs:
           ANDROID_NDK_TOOLCHAIN: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin
 
       - name: Compress
-        run: tar -czvf zcncore-android.tar.gz out/androidsdk/zcncore.aar
+        run: |
+          # tar -czvf zcncore-android.tar.gz out/androidsdk/zcncore.aar
+          cp -r out/androidsdk/zcncore.aar .
 
       - name: Setup Build
         id: setup_build
@@ -180,16 +184,17 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: zcncore-android.tar.gz
+          file: zcncore.aar
           tag: ${{ steps.setup_build.outputs.TAG }}
           overwrite: true
           file_glob: true
+          body: "Go version 1.22.5 is used to build the binary for Android."
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: zcncore-android
-          path: zcncore-android.tar.gz
+          path: zcncore.aar
 
   build-macos:
     name: Build-macos
@@ -199,10 +204,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Set up Go 1.23
+      - name: Set up Go 1.22.5
         uses: actions/setup-go@v3
         with:
-          go-version: 1.23
+          go-version: 1.22.5
 
       - name: Clean build
         run: make clean-mobilesdk
@@ -225,7 +230,8 @@ jobs:
 
       - name: Compress
         run: |
-          tar -czvf zcncore-macos.tar.gz out/macossdk/zcncore.xcframework
+          # tar -czvf zcncore-macos.tar.gz out/macossdk/zcncore.xcframework
+          cp out/macossdk/zcncore.xcframework .
 
       - name: Setup Build
         id: setup_build
@@ -251,17 +257,18 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: zcncore-macos.tar.gz
+          file: zcncore.xcframework
           tag: ${{ steps.setup_build.outputs.TAG }}
           overwrite: true
           file_glob: true
+          body: "Go version 1.22.5 is used to build the binary for macos."
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: zcncore-macos
           path: |
-            zcncore-macos.tar.gz
+            zcncore.xcframework
 
   build-windows:
     name: Build-windows
@@ -271,10 +278,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Set up Go 1.23
+      - name: Set up Go 1.22.5
         uses: actions/setup-go@v3
         with:
-          go-version: 1.23
+          go-version: 1.22.5
 
       - name: Install deps
         run: |
@@ -323,6 +330,7 @@ jobs:
           tag: ${{ steps.setup_build.outputs.TAG }}
           overwrite: true
           file_glob: true
+          body: "Go version 1.22.5 is used to build the binary for Windows."
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
@@ -335,10 +343,10 @@ jobs:
     name: Build-wasm
     runs-on: [self-hosted, arc-runner]
     steps:
-      - name: Set up Go 1.23
+      - name: Set up Go 1.22.5
         uses: actions/setup-go@v3
         with:
-          go-version: 1.23
+          go-version: 1.22.5
 
       - name: Checkout
         uses: actions/checkout@v3
@@ -350,9 +358,9 @@ jobs:
 
       - name: Build
         run: |
-          docker run --rm -v $PWD:/gosdk -w /gosdk golang:1.23 make wasm-build
+          docker run --rm -v $PWD:/gosdk -w /gosdk golang:1.22.5 make wasm-build
           gzip -9 zcn.wasm && mv zcn.wasm.gz zcn.wasm
-          tar -czvf zcn_wasm.tar.gz zcn.wasm
+          # tar -czvf zcn_wasm.tar.gz zcn.wasm
 
       - name: Setup Build
         id: setup_build
@@ -378,14 +386,15 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: zcn_wasm.tar.gz
+          file: zcn_wasm
           tag: ${{ steps.setup_build.outputs.TAG }}
           overwrite: true
           file_glob: true
+          body: "Go version 1.22.5 is used to build the binary for Ubuntu/Linux."
 
       - name: 'Upload Artifact'
         uses: actions/upload-artifact@v4
         with:
           name: zcn_wasm
           path: |
-            zcn_wasm.tar.gz
+            zcn_wasm
