@@ -230,8 +230,7 @@ jobs:
 
       - name: Compress
         run: |
-          # tar -czvf zcncore-macos.tar.gz out/macossdk/zcncore.xcframework
-          cp out/macossdk/zcncore.xcframework .
+          tar -czvf zcncore-macos.tar.gz out/macossdk/zcncore.xcframework
 
       - name: Setup Build
         id: setup_build
@@ -257,7 +256,7 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: zcncore.xcframework
+          file: zcncore-macos.tar.gz
           tag: ${{ steps.setup_build.outputs.TAG }}
           overwrite: true
           file_glob: true
@@ -268,7 +267,7 @@ jobs:
         with:
           name: zcncore-macos
           path: |
-            zcncore.xcframework
+            zcncore-macos.tar.gz
 
   build-windows:
     name: Build-windows
@@ -359,8 +358,8 @@ jobs:
       - name: Build
         run: |
           docker run --rm -v $PWD:/gosdk -w /gosdk golang:1.22.5 make wasm-build
-          gzip -9 zcn.wasm && mv zcn.wasm.gz zcn.wasm
-          # tar -czvf zcn_wasm.tar.gz zcn.wasm
+          gzip -9 zcn.wasm && mv zcn.wasm.gz zcn_wasm
+          # tar -czvf zcn_wasm.tar.gz zcn_wasm
 
       - name: Setup Build
         id: setup_build
