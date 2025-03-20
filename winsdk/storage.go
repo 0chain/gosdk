@@ -15,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/0chain/gosdk/core/common"
@@ -650,13 +651,16 @@ func DownloadFromAuthTicket(authTicket, fileName, lookupHash, downloadPath, task
 	}
 	defer f.Close()
 
-	statusBar := NewStatusBar(statusDownload, lookupHash)
-
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	cb := NewStatusCallback2(wg)
 	// Download file from allocation
-	err = alloc.DownloadFileToFileHandlerFromAuthTicket(f, authTicket, lookupHash, "", false, statusBar, true)
+	err = alloc.DownloadFileToFileHandlerFromAuthTicket(f, authTicket, lookupHash, "", false, cb, true)
 	if err != nil {
 		return "", "", err
 	}
+	wg.Wait()
+
 	return localPath, fileName, nil
 }
 
