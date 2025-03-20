@@ -188,6 +188,18 @@ func (req *BlockDownloadRequest) downloadBlobberBlock(fastClient *fasthttp.Clien
 				}
 				return errors.New("response_error", string(respBuf))
 			}
+
+			if LogBlobberMonitoringFileSize > int64(0) {
+				blobberMonitoringlog := BlobberMonitoring{
+					BlobberId: req.blobber.ID,
+					Operation: "download",
+					TimeSpent: timeTaken,
+					FileSize:  LogBlobberMonitoringFileSize,
+					Count:     1,
+				}
+				addBlobberMonitoringLog(blobberMonitoringlog)
+			}
+
 			entry := logEntry{
 				OpType:    "download",
 				TimeTaken: timeTaken,
