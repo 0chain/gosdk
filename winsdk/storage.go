@@ -15,7 +15,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/0chain/gosdk/core/common"
@@ -653,18 +652,15 @@ func DownloadFromAuthTicket(authTicket, fileName, lookupHash, downloadPath, task
 
 	statusBar := NewStatusBar(statusDownload, lookupHash)
 
-	wg := &sync.WaitGroup{}
-	wg.Add(1)
 	// Download file from allocation
 	err = alloc.DownloadFileToFileHandlerFromAuthTicket(f, authTicket, lookupHash, "", false, statusBar, true)
 	if err != nil {
 		return "", "", err
 	}
-	wg.Wait()
 	return localPath, fileName, nil
 }
 
-func downloadFilesRecursively(authTicket, downloadPath string, listRes *sdk.ListResult, taskID string) (int64, error) {
+func downloadFilesRecursively(alloc *sdk.Allocation, authTicket, downloadPath string, listRes *sdk.ListResult, taskID string) (int64, error) {
 	l.Logger.Debug("download total size: ", downloadPath)
 
 	totalSize := int64(0)
@@ -682,6 +678,11 @@ func downloadFilesRecursively(authTicket, downloadPath string, listRes *sdk.List
 			}
 
 		} else if file.Type == "d" {
+			listSubDirRes, err := alloc.ListDirFromAuthTicket(authTicket, file.LookupHash)
+			if err != nil || listSubDirRes == nil {
+				return 0, fmt.Errorf("failed to list directory: %w", err)
+			}
+
 			// Recursively download files from subdirectories
 			subDirPath := filepath.Join(downloadPath, file.Name)
 			if _, err := os.Stat(subDirPath); os.IsNotExist(err) {
@@ -690,7 +691,7 @@ func downloadFilesRecursively(authTicket, downloadPath string, listRes *sdk.List
 				}
 			}
 
-			subDirSize, err := downloadFilesRecursively(authTicket, subDirPath, file, taskID)
+			subDirSize, err := downloadFilesRecursively(alloc, authTicket, subDirPath, listSubDirRes, taskID)
 			if err != nil {
 				return 0, err
 			}
@@ -739,7 +740,7 @@ func DownloadDirFromAuthTicket(authTicket, lookupHash, downloadPath *C.char) *C.
 
 	fullPath := filepath.Join(dPath, lHash)
 
-	totalSize, err := downloadFilesRecursively(allocTicket, fullPath, listRes, strconv.FormatInt(time.Now().Unix(), 10))
+	totalSize, err := downloadFilesRecursively(alloc, allocTicket, fullPath, listRes, strconv.FormatInt(time.Now().Unix(), 10))
 	if err != nil {
 		return WithJSON(nil, err)
 	}

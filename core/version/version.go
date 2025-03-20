@@ -2,5 +2,5 @@
 
 package version
 
-const VERSIONSTR = "v1.19.10-7-g881432d4
-const VERSIONSTR = "v1.19.10-7-g881432d4"
+const VERSIONSTR = "v1.19.10-9-ga124b02d
+const VERSIONSTR = "v1.19.10-9-ga124b02d"
