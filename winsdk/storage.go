@@ -8,7 +8,6 @@ import (
 )
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -752,51 +751,6 @@ func DownloadDirFromAuthTicket(authTicket, lookupHash, downloadPath *C.char) *C.
 	}
 
 	return WithJSON(map[string]string{"path": fullPath}, nil)
-}
-
-// DownloadDirectory - downalod directory
-// ## Inputs
-//   - allocationID
-//   - localPath
-//   - remotePath
-//   - verifyDownload
-//   - isFinal
-//
-// ## Outputs
-//
-//	{
-//	"error":"",
-//	"result":"true",
-//	}
-//
-//export DownloadDirectory
-func DownloadDirectory(allocationID, authTicket, localPath, remotePath *C.char) *C.char {
-	defer func() {
-		if r := recover(); r != nil {
-			log.Error("win: crash ", r)
-		}
-	}()
-
-	allocID := C.GoString(allocationID)
-
-	alloc, err := getAllocation(allocID)
-	if err != nil {
-		return WithJSON(false, err)
-	}
-
-	r := C.GoString(remotePath)
-	l := C.GoString(localPath)
-	at := C.GoString(authTicket)
-
-	lookupHash := getLookupHash(allocID, r)
-	statusBar := NewStatusBar(statusDownload, lookupHash)
-
-	err = alloc.DownloadDirectory(context.Background(), l, r, at, statusBar)
-	if err != nil {
-		return WithJSON(false, err)
-	}
-
-	return WithJSON(true, nil)
 }
 
 // GetDownloadStatus - get download status
