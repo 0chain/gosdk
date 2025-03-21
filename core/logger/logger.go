@@ -46,7 +46,7 @@ func (l *Logger) Init(lvl int, prefix string) {
 	l.SetLevel(lvl)
 	l.prefix = prefix
 	l.logDebug = log.New(os.Stderr, prefix+": "+strDEBUG, log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile)
-	l.logInfo = log.New(os.Stderr, prefix+": "+strINFO, log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile)
+	l.logInfo = log.New(os.Stdout, prefix+": "+strINFO, log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile)
 	l.logError = log.New(os.Stderr, prefix+": "+strERROR, log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile)
 	l.logFatal = log.New(os.Stderr, prefix+": "+strFATAL, log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile)
 }
@@ -85,7 +85,7 @@ func (l *Logger) SetLogFile(logFile io.Writer, verbose bool) {
 	fLogs := []io.Writer{logFile}
 	if verbose {
 		dLogs = append(dLogs, os.Stderr)
-		iLogs = append(iLogs, os.Stderr)
+		iLogs = append(iLogs, os.Stdout)
 		eLogs = append(eLogs, os.Stderr)
 		fLogs = append(fLogs, os.Stderr)
 	}
