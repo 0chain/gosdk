@@ -378,6 +378,7 @@ func (req *CopyRequest) ProcessWithBlobbersV2() ([]fileref.RefEntity, error) {
 	}
 	req.destLookupHash = fileref.GetReferenceLookup(req.allocationID, consensusRef.Path)
 
+	l.Logger.Debug("process with blobbersV2 end")
 	return objectTreeRefs, err
 }
 
