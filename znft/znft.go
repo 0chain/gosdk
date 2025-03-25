@@ -59,8 +59,7 @@ func GetConfigDir() string {
 	var configDir string
 	home, err := os.UserHomeDir()
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		logger.GetLogger().Fatal(err)
 	}
 	configDir = home + "/.zcn"
 	return configDir
