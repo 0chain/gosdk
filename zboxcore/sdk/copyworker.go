@@ -287,9 +287,11 @@ func (req *CopyRequest) ProcessWithBlobbersV2() ([]fileref.RefEntity, error) {
 						"blobberIdx", blobberIdx)
 					blobberErrors[blobberIdx] = errors.New("internal_error", fmt.Sprintf("Panic: %v", r))
 				}
+				l.Logger.Debug("Finishing first goroutine", "blobberIdx", blobberIdx, "id", id)
 				wg.Done()
 			}()
 
+			l.Logger.Debug("Starting getFileMetaFromBlobber", "blobberIdx", blobberIdx, "id", id)
 			// refEntity, err := req.copyBlobberObject(req.blobbers[blobberIdx], blobberIdx)
 			refEntity, err := req.getFileMetaFromBlobber(blobberIdx)
 			if err != nil {
@@ -317,9 +319,23 @@ func (req *CopyRequest) ProcessWithBlobbersV2() ([]fileref.RefEntity, error) {
 			req.maskMU.Unlock()
 		}(int(pos))
 	}
-	wg.Wait()
 
-	l.Logger.Debug("All goroutines completed", "consensusRef", consensusRef != nil)
+	// Add timeout to prevent indefinite waiting
+	waitChan := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(waitChan)
+	}()
+
+	select {
+	case <-waitChan:
+		l.Logger.Debug("First stage completed normally", "id", id)
+	case <-time.After(5 * time.Minute): // 5 minute timeout
+		l.Logger.Error("Timeout waiting for first stage goroutines", "id", id)
+		return nil, errors.New("timeout_error", "Timeout waiting for file metadata")
+	}
+
+	l.Logger.Debug("All goroutines completed", "consensusRef", consensusRef != nil, "id", id)
 
 	if consensusRef == nil {
 		return nil, zboxutil.MajorError(blobberErrors)
@@ -342,6 +358,7 @@ func (req *CopyRequest) ProcessWithBlobbersV2() ([]fileref.RefEntity, error) {
 		return objectTreeRefs, errNoChange
 	}
 
+	pos = 0 // Reset position counter for second loop
 	var procWg sync.WaitGroup
 	for i := req.copyMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
@@ -353,7 +370,6 @@ func (req *CopyRequest) ProcessWithBlobbersV2() ([]fileref.RefEntity, error) {
 		procWg.Add(1)
 		go func(blobberIdx int) {
 			defer func() {
-				procWg.Done()
 				if r := recover(); r != nil {
 					stack := make([]byte, 4096)
 					length := runtime.Stack(stack, false)
@@ -363,8 +379,11 @@ func (req *CopyRequest) ProcessWithBlobbersV2() ([]fileref.RefEntity, error) {
 						"blobberIdx", blobberIdx)
 					blobberErrors[blobberIdx] = errors.New("internal_error", fmt.Sprintf("Panic: %v", r))
 				}
+				l.Logger.Debug("Finishing second goroutine", "blobberIdx", blobberIdx, "id", id)
+				procWg.Done()
 			}()
 
+			l.Logger.Debug("Starting copyBlobberObject", "blobberIdx", blobberIdx, "id", id)
 			_, err := req.copyBlobberObject(req.blobbers[blobberIdx], blobberIdx, false)
 			if err != nil {
 				blobberErrors[blobberIdx] = err
@@ -373,7 +392,21 @@ func (req *CopyRequest) ProcessWithBlobbersV2() ([]fileref.RefEntity, error) {
 			}
 		}(int(pos))
 	}
-	procWg.Wait()
+
+	// Add timeout for second stage
+	procWaitChan := make(chan struct{})
+	go func() {
+		procWg.Wait()
+		close(procWaitChan)
+	}()
+
+	select {
+	case <-procWaitChan:
+		l.Logger.Debug("Second stage completed normally", "id", id)
+	case <-time.After(5 * time.Minute): // 5 minute timeout
+		l.Logger.Error("Timeout waiting for second stage goroutines", "id", id)
+		return nil, errors.New("timeout_error", "Timeout waiting for copy operations")
+	}
 
 	var err error
 	if !req.isConsensusOk() {
