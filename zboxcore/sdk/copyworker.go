@@ -251,14 +251,14 @@ func (req *CopyRequest) ProcessWithBlobbersV2() ([]fileref.RefEntity, error) {
 	)
 
 	id := time.Now().UnixNano()
-	l.Logger.Debug("Starting ProcessWithBlobbersV2",
-		"copyMask", req.copyMask,
-		"blobbers_count", len(req.blobbers),
-		"remotefilepath", req.remotefilepath,
-		"id", id)
+	l.Logger.Debug("Starting ProcessWithBlobbersV2, ",
+		"copyMask:", req.copyMask,
+		" blobbers_count:", len(req.blobbers),
+		" remotefilepath:", req.remotefilepath,
+		" id:", id)
 
 	defer func() {
-		l.Logger.Debug("process with blobbersV2 end", "id", id)
+		l.Logger.Debug("process with blobbersV2 end", " id:", id)
 	}()
 
 	numList := len(req.blobbers)
