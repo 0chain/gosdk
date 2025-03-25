@@ -9,6 +9,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"path"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -224,45 +225,105 @@ func (req *CopyRequest) ProcessWithBlobbers() ([]fileref.RefEntity, error) {
 }
 
 func (req *CopyRequest) ProcessWithBlobbersV2() ([]fileref.RefEntity, error) {
+	defer func() {
+		if r := recover(); r != nil {
+			stack := make([]byte, 4096)
+			length := runtime.Stack(stack, false)
+			l.Logger.Error("PANIC in ProcessWithBlobbersV2",
+				"error", r,
+				"stack", string(stack[:length]),
+				"remotefilepath", req.remotefilepath,
+				"destPath", req.destPath)
+		}
+	}()
+
+	if req.maskMU == nil {
+		return nil, errors.New("copy_failed", "maskMU is nil")
+	}
+
+	if req.blobbers == nil || len(req.blobbers) == 0 {
+		return nil, errors.New("copy_failed", "blobbers list is empty or nil")
+	}
+
 	var (
 		pos          uint64
 		consensusRef *fileref.FileRef
 	)
+
+	l.Logger.Debug("Starting ProcessWithBlobbersV2",
+		"copyMask", req.copyMask,
+		"blobbers_count", len(req.blobbers),
+		"remotefilepath", req.remotefilepath)
+
 	numList := len(req.blobbers)
 	objectTreeRefs := make([]fileref.RefEntity, numList)
 	blobberErrors := make([]error, numList)
 	versionMap := make(map[string]int)
+	versionMapMutex := &sync.Mutex{} // Add mutex for concurrent map access
 
 	wg := &sync.WaitGroup{}
 	for i := req.copyMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
+		if int(pos) >= numList {
+			l.Logger.Error("Position out of range", "pos", pos, "numList", numList)
+			continue
+		}
+
 		wg.Add(1)
 		go func(blobberIdx int) {
-			defer wg.Done()
+			defer func() {
+				if r := recover(); r != nil {
+					stack := make([]byte, 4096)
+					length := runtime.Stack(stack, false)
+					l.Logger.Error("PANIC in goroutine",
+						"error", r,
+						"stack", string(stack[:length]),
+						"blobberIdx", blobberIdx)
+					blobberErrors[blobberIdx] = errors.New("internal_error", fmt.Sprintf("Panic: %v", r))
+				}
+				wg.Done()
+			}()
+
 			// refEntity, err := req.copyBlobberObject(req.blobbers[blobberIdx], blobberIdx)
 			refEntity, err := req.getFileMetaFromBlobber(blobberIdx)
 			if err != nil {
 				blobberErrors[blobberIdx] = err
-				l.Logger.Debug(err.Error())
+				l.Logger.Debug("Error getting file meta", "error", err.Error(), "blobberIdx", blobberIdx)
 				return
 			}
+
+			if refEntity == nil {
+				blobberErrors[blobberIdx] = errors.New("internal_error", "refEntity is nil")
+				l.Logger.Debug("refEntity is nil", "blobberIdx", blobberIdx)
+				return
+			}
+
 			refEntity.Path = path.Join(req.destPath, path.Base(refEntity.Path))
 			objectTreeRefs[blobberIdx] = refEntity
+
 			req.maskMU.Lock()
+			versionMapMutex.Lock() // Lock for concurrent map access
 			versionMap[refEntity.AllocationRoot] += 1
 			if versionMap[refEntity.AllocationRoot] >= req.consensusThresh {
 				consensusRef = refEntity
 			}
+			versionMapMutex.Unlock() // Unlock after map access
 			req.maskMU.Unlock()
 		}(int(pos))
 	}
 	wg.Wait()
+
+	l.Logger.Debug("All goroutines completed", "consensusRef", consensusRef != nil)
+
 	if consensusRef == nil {
 		return nil, zboxutil.MajorError(blobberErrors)
 	}
 
 	if consensusRef.Type == fileref.DIRECTORY && !consensusRef.IsEmpty {
 		for ind, refEntity := range objectTreeRefs {
+			if refEntity == nil {
+				continue
+			}
 			if refEntity.GetAllocationRoot() != consensusRef.AllocationRoot {
 				req.copyMask = req.copyMask.And(zboxutil.NewUint128(1).Lsh(uint64(ind)).Not())
 			}
@@ -275,20 +336,39 @@ func (req *CopyRequest) ProcessWithBlobbersV2() ([]fileref.RefEntity, error) {
 		return objectTreeRefs, errNoChange
 	}
 
+	var procWg sync.WaitGroup
 	for i := req.copyMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
-		wg.Add(1)
+		if int(pos) >= numList {
+			l.Logger.Error("Position out of range", "pos", pos, "numList", numList)
+			continue
+		}
+
+		procWg.Add(1)
 		go func(blobberIdx int) {
-			defer wg.Done()
+			defer func() {
+				if r := recover(); r != nil {
+					stack := make([]byte, 4096)
+					length := runtime.Stack(stack, false)
+					l.Logger.Error("PANIC in second goroutine",
+						"error", r,
+						"stack", string(stack[:length]),
+						"blobberIdx", blobberIdx)
+					blobberErrors[blobberIdx] = errors.New("internal_error", fmt.Sprintf("Panic: %v", r))
+				}
+				procWg.Done()
+			}()
+
 			_, err := req.copyBlobberObject(req.blobbers[blobberIdx], blobberIdx, false)
 			if err != nil {
 				blobberErrors[blobberIdx] = err
-				l.Logger.Debug(err.Error())
+				l.Logger.Debug("Error copying blobber object", "error", err.Error(), "blobberIdx", blobberIdx)
 				return
 			}
 		}(int(pos))
 	}
-	wg.Wait()
+	procWg.Wait()
+
 	var err error
 	if !req.isConsensusOk() {
 		err = zboxutil.MajorError(blobberErrors)
