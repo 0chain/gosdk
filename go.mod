@@ -124,7 +124,7 @@ require (
 require (
 	github.com/btcsuite/btcd/btcutil v1.1.3
 	github.com/hack-pad/safejs v0.1.1
-	github.com/klauspost/compress v1.17.0 // indirect
+	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.4 // indirect
 	github.com/remeh/sizedwaitgroup v1.0.0
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
