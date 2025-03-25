@@ -250,10 +250,16 @@ func (req *CopyRequest) ProcessWithBlobbersV2() ([]fileref.RefEntity, error) {
 		consensusRef *fileref.FileRef
 	)
 
+	id := time.Now().UnixNano()
 	l.Logger.Debug("Starting ProcessWithBlobbersV2",
 		"copyMask", req.copyMask,
 		"blobbers_count", len(req.blobbers),
-		"remotefilepath", req.remotefilepath)
+		"remotefilepath", req.remotefilepath,
+		"id", id)
+
+	defer func() {
+		l.Logger.Debug("process with blobbersV2 end", "id", id)
+	}()
 
 	numList := len(req.blobbers)
 	objectTreeRefs := make([]fileref.RefEntity, numList)
@@ -347,6 +353,7 @@ func (req *CopyRequest) ProcessWithBlobbersV2() ([]fileref.RefEntity, error) {
 		procWg.Add(1)
 		go func(blobberIdx int) {
 			defer func() {
+				procWg.Done()
 				if r := recover(); r != nil {
 					stack := make([]byte, 4096)
 					length := runtime.Stack(stack, false)
@@ -356,7 +363,6 @@ func (req *CopyRequest) ProcessWithBlobbersV2() ([]fileref.RefEntity, error) {
 						"blobberIdx", blobberIdx)
 					blobberErrors[blobberIdx] = errors.New("internal_error", fmt.Sprintf("Panic: %v", r))
 				}
-				procWg.Done()
 			}()
 
 			_, err := req.copyBlobberObject(req.blobbers[blobberIdx], blobberIdx, false)
@@ -378,7 +384,6 @@ func (req *CopyRequest) ProcessWithBlobbersV2() ([]fileref.RefEntity, error) {
 	}
 	req.destLookupHash = fileref.GetReferenceLookup(req.allocationID, consensusRef.Path)
 
-	l.Logger.Debug("process with blobbersV2 end")
 	return objectTreeRefs, err
 }
 
