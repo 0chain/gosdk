@@ -3,13 +3,13 @@ package client
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 	"sync"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/conf"
+	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/shopspring/decimal"
 )
@@ -57,7 +57,7 @@ func MakeSCRestAPICallToSharder(scAddress string, relativePath string, params ma
 			urlString := fmt.Sprintf("%v/%v%v%v", sharder, restApiUrl, scAddress, relativePath)
 			urlObj, err := url.Parse(urlString)
 			if err != nil {
-				log.Println(err.Error())
+				logger.GetLogger().Error("Error parsing URL: ", err.Error())
 				return
 			}
 			q := urlObj.Query()
@@ -68,14 +68,14 @@ func MakeSCRestAPICallToSharder(scAddress string, relativePath string, params ma
 
 			req, err := util.NewHTTPGetRequest(urlObj.String())
 			if err != nil {
-				log.Println("Error creating request", err.Error())
+				logger.GetLogger().Error("Error creating request: ", err.Error())
 				return
 			}
 
 			response, err := req.Get()
 			if err != nil {
 				nodeClient.sharders.Fail(sharder)
-				log.Println("Error getting response", err.Error())
+				logger.GetLogger().Error("Error getting response: ", err.Error())
 				return
 			}
 

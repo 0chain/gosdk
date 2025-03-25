@@ -247,7 +247,7 @@ func main() {
 				"terminateWorkers":          terminateWorkers,
 				"createWorkers":             createWorkers,
 				"getFileMetaByName":         getFileMetaByName,
-				"getFileMetaByAuthTicket":	getFileMetaByAuthTicket,
+				"getFileMetaByAuthTicket":   getFileMetaByAuthTicket,
 				"downloadDirectory":         downloadDirectory,
 				"cancelDownloadDirectory":   cancelDownloadDirectory,
 				"cancelDownloadBlocks":      cancelDownloadBlocks,
@@ -289,6 +289,8 @@ func main() {
 				"decodeAuthTicket": decodeAuthTicket,
 				"allocationRepair": allocationRepair,
 				"repairSize":       repairSize,
+
+				"generateOwnerSigningKey": generateOwnerSigningKey,
 
 				// bridge
 				"initBridge":                    initBridge,
