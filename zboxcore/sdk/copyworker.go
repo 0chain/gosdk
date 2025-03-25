@@ -229,7 +229,7 @@ func (req *CopyRequest) ProcessWithBlobbersV2() ([]fileref.RefEntity, error) {
 		if r := recover(); r != nil {
 			stack := make([]byte, 4096)
 			length := runtime.Stack(stack, false)
-			l.Logger.Error("PANIC in ProcessWithBlobbersV2",
+			l.Logger.Debug("PANIC in ProcessWithBlobbersV2",
 				"error", r,
 				"stack", string(stack[:length]),
 				"remotefilepath", req.remotefilepath,
@@ -271,7 +271,7 @@ func (req *CopyRequest) ProcessWithBlobbersV2() ([]fileref.RefEntity, error) {
 	for i := req.copyMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		if int(pos) >= numList {
-			l.Logger.Error("Position out of range", "pos", pos, "numList", numList)
+			l.Logger.Debug("Position out of range", "pos", pos, "numList", numList)
 			continue
 		}
 
@@ -281,7 +281,7 @@ func (req *CopyRequest) ProcessWithBlobbersV2() ([]fileref.RefEntity, error) {
 				if r := recover(); r != nil {
 					stack := make([]byte, 4096)
 					length := runtime.Stack(stack, false)
-					l.Logger.Error("PANIC in goroutine",
+					l.Logger.Debug("PANIC in goroutine",
 						"error", r,
 						"stack", string(stack[:length]),
 						"blobberIdx", blobberIdx)
@@ -350,6 +350,7 @@ func (req *CopyRequest) ProcessWithBlobbersV2() ([]fileref.RefEntity, error) {
 				req.copyMask = req.copyMask.And(zboxutil.NewUint128(1).Lsh(uint64(ind)).Not())
 			}
 		}
+		l.Logger.Debug("Copying subdirectories", " dirOnly", req.dirOnly, " id", id)
 		err := req.copySubDirectoriees(req.dirOnly)
 		if err != nil {
 			return nil, err
@@ -677,20 +678,43 @@ func (co *CopyOperation) GetLookupHash(changeIndex uint64) []string {
 }
 
 func (req *CopyRequest) copySubDirectoriees(dirOnly bool) error {
+	operationID := time.Now().UnixNano()
+	l.Logger.Debug("Starting copySubDirectoriees", "dirOnly", dirOnly, "opID", operationID)
+
+	// Create context with timeout
+	ctx, cancel := context.WithTimeout(req.ctx, 10*time.Minute)
+	defer cancel()
+
 	var (
 		offsetPath string
 		pathLevel  int
 	)
 
+	// First loop: Process files if not dirOnly
 	for {
 		if !dirOnly {
+			l.Logger.Debug("Processing files in directory", "remotefilepath", req.remotefilepath, "offsetPath", offsetPath, "opID", operationID)
+
+			// Check for context timeout
+			select {
+			case <-ctx.Done():
+				l.Logger.Error("Timeout in copySubDirectoriees while processing files", "opID", operationID)
+				return errors.New("timeout_error", "Timeout while processing directory files")
+			default:
+				// Continue execution
+			}
+
 			oResult, err := req.allocationObj.GetRefs(req.remotefilepath, offsetPath, "", "", fileref.FILE, fileref.REGULAR, 0, getRefPageLimit, WithObjectContext(req.ctx), WithObjectConsensusThresh(req.consensusThresh), WithSingleBlobber(true))
 			if err != nil {
+				l.Logger.Error("Failed to GetRefs", "error", err, "opID", operationID)
 				return err
 			}
 			if len(oResult.Refs) == 0 {
+				l.Logger.Debug("No file refs found, breaking loop", "opID", operationID)
 				break
 			}
+
+			l.Logger.Debug("Found file refs", "count", len(oResult.Refs), "opID", operationID)
 			ops := make([]OperationRequest, 0, len(oResult.Refs))
 			for _, ref := range oResult.Refs {
 				opMask := req.copyMask
@@ -710,29 +734,63 @@ func (req *CopyRequest) copySubDirectoriees(dirOnly bool) error {
 				}
 				ops = append(ops, op)
 			}
-			err = req.allocationObj.DoMultiOperation(ops)
-			if err != nil {
-				return err
+
+			if len(ops) > 0 {
+				l.Logger.Debug("Performing multi-operation for files", "count", len(ops), "opID", operationID)
+				err = req.allocationObj.DoMultiOperation(ops)
+				if err != nil {
+					l.Logger.Error("DoMultiOperation failed for files", "error", err, "opID", operationID)
+					return err
+				}
 			}
+
 			offsetPath = oResult.Refs[len(oResult.Refs)-1].Path
 			if len(oResult.Refs) < getRefPageLimit {
+				l.Logger.Debug("File refs less than page limit, breaking loop", "opID", operationID)
 				break
 			}
+		} else {
+			break
 		}
 	}
 
+	// Second loop: Process directories
+	l.Logger.Debug("Starting directory processing", "opID", operationID)
 	offsetPath = ""
 	level := len(strings.Split(strings.TrimSuffix(req.remotefilepath, "/"), "/"))
 	if pathLevel == 0 {
 		pathLevel = level + 1
 	}
 
-	for pathLevel > level {
+	l.Logger.Debug("Directory processing details", "level", level, "pathLevel", pathLevel, "opID", operationID)
+
+	maxIterations := 100 // Safety limit to prevent infinite loops
+	iterations := 0
+
+	for pathLevel > level && iterations < maxIterations {
+		iterations++
+
+		l.Logger.Debug("Processing directory level", "pathLevel", pathLevel, "level", level, "iteration", iterations, "opID", operationID)
+
+		// Check for context timeout
+		select {
+		case <-ctx.Done():
+			l.Logger.Error("Timeout in copySubDirectoriees while processing directories", "opID", operationID)
+			return errors.New("timeout_error", "Timeout while processing directories")
+		default:
+			// Continue execution
+		}
+
 		oResult, err := req.allocationObj.GetRefs(req.remotefilepath, offsetPath, "", "", fileref.DIRECTORY, fileref.REGULAR, pathLevel, getRefPageLimit, WithObjectContext(req.ctx), WithObjectMask(req.copyMask), WithObjectConsensusThresh(req.consensusThresh), WithSingleBlobber(true))
 		if err != nil {
+			l.Logger.Error("Failed to GetRefs for directories", "error", err, "opID", operationID)
 			return err
 		}
+
+		l.Logger.Debug("GetRefs for directories result", "count", len(oResult.Refs), "opID", operationID)
+
 		if len(oResult.Refs) == 0 {
+			l.Logger.Debug("No directory refs found, decrementing pathLevel", "pathLevel", pathLevel, "opID", operationID)
 			pathLevel--
 		} else {
 			ops := make([]OperationRequest, 0, len(oResult.Refs))
@@ -752,16 +810,29 @@ func (req *CopyRequest) copySubDirectoriees(dirOnly bool) error {
 				}
 				ops = append(ops, op)
 			}
-			err = req.allocationObj.DoMultiOperation(ops)
-			if err != nil {
-				return err
+
+			if len(ops) > 0 {
+				l.Logger.Debug("Performing multi-operation for directories", "count", len(ops), "opID", operationID)
+				err = req.allocationObj.DoMultiOperation(ops)
+				if err != nil {
+					l.Logger.Error("DoMultiOperation failed for directories", "error", err, "opID", operationID)
+					return err
+				}
 			}
+
 			offsetPath = oResult.Refs[len(oResult.Refs)-1].Path
 			if len(oResult.Refs) < getRefPageLimit {
+				l.Logger.Debug("Directory refs less than page limit, decrementing pathLevel", "pathLevel", pathLevel, "opID", operationID)
 				pathLevel--
 			}
 		}
 	}
 
+	if iterations >= maxIterations {
+		l.Logger.Error("Reached max iterations in directory processing", "opID", operationID)
+		return errors.New("max_iterations_error", "Reached maximum iterations while processing directories")
+	}
+
+	l.Logger.Debug("copySubDirectoriees completed successfully", "opID", operationID)
 	return nil
 }
