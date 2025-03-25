@@ -9,6 +9,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"path"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -215,48 +216,132 @@ func (req *MoveRequest) ProcessWithBlobbers() ([]fileref.RefEntity, error) {
 }
 
 func (req *MoveRequest) ProcessWithBlobbersV2() ([]fileref.RefEntity, error) {
+	defer func() {
+		if r := recover(); r != nil {
+			stack := make([]byte, 4096)
+			length := runtime.Stack(stack, false)
+			l.Logger.Error("PANIC in ProcessWithBlobbersV2",
+				"error", r,
+				"stack", string(stack[:length]),
+				"remotefilepath", req.remotefilepath,
+				"destPath", req.destPath)
+		}
+	}()
+
+	if req.maskMU == nil {
+		return nil, errors.New("move_failed", "maskMU is nil")
+	}
+
+	if req.blobbers == nil || len(req.blobbers) == 0 {
+		return nil, errors.New("move_failed", "blobbers list is empty or nil")
+	}
 
 	var (
 		pos          uint64
 		consensusRef *fileref.FileRef
 	)
+
+	id := time.Now().UnixNano()
+	l.Logger.Debug("Starting ProcessWithBlobbersV2",
+		"moveMask", req.moveMask,
+		"blobbers_count", len(req.blobbers),
+		"remotefilepath", req.remotefilepath,
+		"id", id)
+
+	defer func() {
+		l.Logger.Debug("process with blobbersV2 end", "id", id)
+	}()
+
 	numList := len(req.blobbers)
 	objectTreeRefs := make([]fileref.RefEntity, numList)
 	blobberErrors := make([]error, numList)
 	versionMap := make(map[string]int)
+	versionMapMutex := &sync.Mutex{} // Add mutex for concurrent map access
+
 	wg := &sync.WaitGroup{}
 	for i := req.moveMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
+		if int(pos) >= numList {
+			l.Logger.Error("Position out of range", "pos", pos, "numList", numList)
+			continue
+		}
+
 		wg.Add(1)
 		go func(blobberIdx int) {
-			defer wg.Done()
+			defer func() {
+				if r := recover(); r != nil {
+					stack := make([]byte, 4096)
+					length := runtime.Stack(stack, false)
+					l.Logger.Error("PANIC in goroutine",
+						"error", r,
+						"stack", string(stack[:length]),
+						"blobberIdx", blobberIdx)
+					blobberErrors[blobberIdx] = errors.New("internal_error", fmt.Sprintf("Panic: %v", r))
+				}
+				l.Logger.Debug("Finishing first goroutine", "blobberIdx", blobberIdx, "id", id)
+				wg.Done()
+			}()
+
+			l.Logger.Debug("Starting getFileMetaFromBlobber", "blobberIdx", blobberIdx, "id", id)
 			refEntity, err := req.getFileMetaFromBlobber(blobberIdx)
 			if err != nil {
 				blobberErrors[blobberIdx] = err
-				l.Logger.Debug(err.Error())
+				l.Logger.Debug("Error getting file meta", "error", err.Error(), "blobberIdx", blobberIdx)
 				return
 			}
+
+			if refEntity == nil {
+				blobberErrors[blobberIdx] = errors.New("internal_error", "refEntity is nil")
+				l.Logger.Debug("refEntity is nil", "blobberIdx", blobberIdx)
+				return
+			}
+
 			refEntity.Path = path.Join(req.destPath, path.Base(refEntity.Path))
 			objectTreeRefs[blobberIdx] = refEntity
+
 			req.maskMU.Lock()
+			versionMapMutex.Lock() // Lock for concurrent map access
 			versionMap[refEntity.AllocationRoot] += 1
 			if versionMap[refEntity.AllocationRoot] >= req.consensusThresh {
 				consensusRef = refEntity
 			}
+			versionMapMutex.Unlock() // Unlock after map access
 			req.maskMU.Unlock()
 		}(int(pos))
 	}
-	wg.Wait()
+
+	// Add timeout to prevent indefinite waiting
+	waitChan := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(waitChan)
+	}()
+
+	select {
+	case <-waitChan:
+		l.Logger.Debug("First stage completed normally", "id", id)
+	case <-time.After(5 * time.Minute): // 5 minute timeout
+		l.Logger.Error("Timeout waiting for first stage goroutines", "id", id)
+		return nil, errors.New("timeout_error", "Timeout waiting for file metadata")
+	}
+
+	l.Logger.Debug("All goroutines completed", "consensusRef", consensusRef != nil, "id", id)
+
 	if consensusRef == nil {
 		return nil, zboxutil.MajorError(blobberErrors)
 	}
 
 	if consensusRef.Type == fileref.DIRECTORY && !consensusRef.IsEmpty {
 		for ind, refEntity := range objectTreeRefs {
+			if refEntity == nil {
+				continue
+			}
 			if refEntity.GetAllocationRoot() != consensusRef.AllocationRoot {
 				req.moveMask = req.moveMask.And(zboxutil.NewUint128(1).Lsh(uint64(ind)).Not())
 			}
 		}
+
+		l.Logger.Debug("Processing subdirectories for directory move", "id", id)
 		subRequest := &subDirRequest{
 			allocationObj:   req.allocationObj,
 			remotefilepath:  req.remotefilepath,
@@ -267,36 +352,82 @@ func (req *MoveRequest) ProcessWithBlobbersV2() ([]fileref.RefEntity, error) {
 			subOpType:       constants.FileOperationMove,
 			mask:            req.moveMask,
 		}
+
+		// Add context timeout for subprocess
+		ctxWithTimeout, cancel := context.WithTimeout(req.ctx, 10*time.Minute)
+		defer cancel()
+		subRequest.ctx = ctxWithTimeout
+
 		err := subRequest.processSubDirectories()
 		if err != nil {
+			l.Logger.Error("Error processing subdirectories", "error", err, "id", id)
 			return nil, err
 		}
+
+		l.Logger.Debug("Deleting original directory after move", "remotefilepath", req.remotefilepath, "id", id)
 		op := OperationRequest{
 			OperationType: constants.FileOperationDelete,
 			RemotePath:    req.remotefilepath,
 		}
 		err = req.allocationObj.DoMultiOperation([]OperationRequest{op})
 		if err != nil {
+			l.Logger.Error("Error deleting original directory", "error", err, "id", id)
 			return nil, err
 		}
 		req.consensus = req.moveMask.CountOnes()
 		return nil, errNoChange
 	}
 
+	pos = 0 // Reset position counter for second loop
+	var procWg sync.WaitGroup
 	for i := req.moveMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
-		wg.Add(1)
+		if int(pos) >= numList {
+			l.Logger.Error("Position out of range", "pos", pos, "numList", numList)
+			continue
+		}
+
+		procWg.Add(1)
 		go func(blobberIdx int) {
-			defer wg.Done()
+			defer func() {
+				if r := recover(); r != nil {
+					stack := make([]byte, 4096)
+					length := runtime.Stack(stack, false)
+					l.Logger.Error("PANIC in second goroutine",
+						"error", r,
+						"stack", string(stack[:length]),
+						"blobberIdx", blobberIdx)
+					blobberErrors[blobberIdx] = errors.New("internal_error", fmt.Sprintf("Panic: %v", r))
+				}
+				l.Logger.Debug("Finishing second goroutine", "blobberIdx", blobberIdx, "id", id)
+				procWg.Done()
+			}()
+
+			l.Logger.Debug("Starting moveBlobberObject", "blobberIdx", blobberIdx, "id", id)
 			_, err := req.moveBlobberObject(req.blobbers[blobberIdx], blobberIdx, false)
 			if err != nil {
 				blobberErrors[blobberIdx] = err
-				l.Logger.Debug(err.Error())
+				l.Logger.Debug("Error moving blobber object", "error", err.Error(), "blobberIdx", blobberIdx)
 				return
 			}
 		}(int(pos))
 	}
-	wg.Wait()
+
+	// Add timeout for second stage
+	procWaitChan := make(chan struct{})
+	go func() {
+		procWg.Wait()
+		close(procWaitChan)
+	}()
+
+	select {
+	case <-procWaitChan:
+		l.Logger.Debug("Second stage completed normally", "id", id)
+	case <-time.After(5 * time.Minute): // 5 minute timeout
+		l.Logger.Error("Timeout waiting for second stage goroutines", "id", id)
+		return nil, errors.New("timeout_error", "Timeout waiting for move operations")
+	}
+
 	var err error
 	if !req.isConsensusOk() {
 		err = zboxutil.MajorError(blobberErrors)
