@@ -57,6 +57,10 @@ func (r *DownloadBufferWithChan) RequestChunk(ctx context.Context, num int) []by
 		return nil
 	case ind := <-r.ch:
 		r.mu.Lock()
+		if r.mp == nil {
+			r.mu.Unlock()
+			return nil
+		}
 		r.mp[num] = ind
 		r.mu.Unlock()
 		return r.buf[ind*r.reqSize : (ind+1)*r.reqSize : (ind+1)*r.reqSize]
