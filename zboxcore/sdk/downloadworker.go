@@ -284,7 +284,11 @@ func (req *DownloadRequest) downloadBlock(
 			if req.shouldVerify {
 				go AddBlockDownloadReq(req.ctx, blockDownloadReq, nil, req.effectiveBlockSize)
 			} else {
-				go AddBlockDownloadReq(req.ctx, blockDownloadReq, req.bufferMap[blobberIdx], req.effectiveBlockSize)
+				if req.bufferMap == nil || req.bufferMap[blobberIdx] == nil {
+					go AddBlockDownloadReq(req.ctx, blockDownloadReq, nil, req.effectiveBlockSize)
+				} else {
+					go AddBlockDownloadReq(req.ctx, blockDownloadReq, req.bufferMap[blobberIdx], req.effectiveBlockSize)
+				}
 			}
 		}
 
