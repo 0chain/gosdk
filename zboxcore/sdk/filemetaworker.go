@@ -256,19 +256,19 @@ func (req *ListRequest) getFileConsensusFromBlobbers() (zboxutil.Uint128, zboxut
 func (req *ListRequest) getMultipleFileConsensusFromBlobbers() (zboxutil.Uint128, zboxutil.Uint128, []*fileref.FileRef, []*fileMetaByNameResponse) {
 	lR := req.getFileMetaByNameFromBlobbers()
 	var filerRefs []*fileref.FileRef
-	uniquePathHashes := map[string]bool{}
+	uniqueFileMetaHash := map[string]bool{}
 	for i := 0; i < len(lR); i++ {
 		ti := lR[i]
 		if ti.err != nil || len(ti.filerefs) == 0 {
 			continue
 		}
 		for _, fileRef := range ti.filerefs {
-			uniquePathHashes[fileRef.PathHash] = true
+			uniqueFileMetaHash[fileRef.FileMetaHash] = true
 		}
 	}
 	// take the pathhash as unique and for each path hash append the fileref which have consensus.
 
-	for pathHash := range uniquePathHashes {
+	for fileMetaHash := range uniqueFileMetaHash {
 		req.consensus = 0
 		retMap := make(map[string]int)
 	outerLoop:
@@ -281,8 +281,7 @@ func (req *ListRequest) getMultipleFileConsensusFromBlobbers() (zboxutil.Uint128
 				if fRef == nil {
 					continue
 				}
-				if pathHash == fRef.PathHash {
-					fileMetaHash := fRef.FileMetaHash
+				if fileMetaHash == fRef.FileMetaHash {
 					retMap[fileMetaHash]++
 					if retMap[fileMetaHash] > req.consensus {
 						req.consensus = retMap[fileMetaHash]

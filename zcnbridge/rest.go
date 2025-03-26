@@ -73,7 +73,7 @@ func getAuthorizers(active bool) ([]*AuthorizerNode, error) {
 	}
 
 	if len(authorizers.Nodes) == 0 {
-		fmt.Println("no authorizers found")
+		Logger.Error("no authorizers found")
 		return nil, err
 	}
 
