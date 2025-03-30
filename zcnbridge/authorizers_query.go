@@ -3,12 +3,14 @@ package zcnbridge
 import (
 	"encoding/json"
 	"fmt"
-	coreClient "github.com/0chain/gosdk/core/client"
 	"io"
 	"math"
 	"net/http"
 	"strings"
 	"sync"
+	"time"
+
+	coreClient "github.com/0chain/gosdk/core/client"
 
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zcnbridge/errors"
@@ -39,6 +41,14 @@ type (
 
 	responseChannelType chan *authorizerResponse
 	eventsChannelType   chan []JobResult
+)
+
+const (
+	// Represents max amount of retries, when timeout status was received
+	maxCallbackRetries = 5
+
+	// Represents callback retry delay for http calls, when timeout status was received
+	callbackRetryDelay = time.Second * 5
 )
 
 var (
@@ -313,22 +323,62 @@ func queryAuthorizer(au *AuthorizerNode, request *requestHandler, responseChanne
 	responseChannel <- resp
 }
 
-func readResponse(response *http.Response, err error) (res *authorizerResponse, body []byte) {
+func readResponse(responseCallback func() *http.Response, err error) (res *authorizerResponse, body []byte) {
 	res = &authorizerResponse{}
 	if err != nil {
 		err = errors.Wrap("authorizer_post_process", "failed to call the authorizer", err)
 		Logger.Error("request response error", zap.Error(err))
 	}
 
-	if response == nil {
-		res.error = err
-		Logger.Error("response is empty", zap.Error(err))
-		return res, nil
+	var (
+		retryTicker  *time.Ticker
+		retryCounter int
+
+		response *http.Response
+	)
+
+	for {
+		select {
+		case <-retryTicker.C:
+		default:
+		}
+
+		response = responseCallback()
+		if response == nil {
+			res.error = err
+			Logger.Error("response is empty", zap.Error(err))
+			return res, nil
+		}
+
+		if response.StatusCode == 408 {
+			if retryTicker == nil {
+				retryTicker = time.NewTicker(callbackRetryDelay)
+			}
+
+			if retryCounter >= maxCallbackRetries {
+				err = errors.Wrap("authorizer_post_process", fmt.Sprintf("error %d", response.StatusCode), err)
+				Logger.Error("request response status", zap.Error(err))
+
+				break
+			}
+
+			retryCounter++
+
+			continue
+		}
+
+		if response.StatusCode >= 400 {
+			err = errors.Wrap("authorizer_post_process", fmt.Sprintf("error %d", response.StatusCode), err)
+			Logger.Error("request response status", zap.Error(err))
+
+			break
+		}
+
+		break
 	}
 
-	if response.StatusCode >= 400 {
-		err = errors.Wrap("authorizer_post_process", fmt.Sprintf("error %d", response.StatusCode), err)
-		Logger.Error("request response status", zap.Error(err))
+	if retryTicker != nil {
+		retryTicker.Stop()
 	}
 
 	body, er := io.ReadAll(response.Body)
