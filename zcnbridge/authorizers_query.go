@@ -335,9 +335,11 @@ func readResponse(responseCallback func() (*http.Response, error)) (res *authori
 	)
 
 	for {
-		select {
-		case <-retryTicker.C:
-		default:
+		if retryTicker != nil {
+			select {
+			case <-retryTicker.C:
+			default:
+			}
 		}
 
 		response, err = responseCallback()
