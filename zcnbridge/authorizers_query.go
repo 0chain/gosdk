@@ -292,7 +292,7 @@ func queryAuthorizer(au *AuthorizerNode, request *requestHandler, responseChanne
 	}
 	req.URL.RawQuery = q.Encode()
 	Logger.Info(req.URL.String())
-	resp, body := readResponse(client.Do(req))
+	resp, body := readResponse(func() (*http.Response, error) { return client.Do(req) })
 	resp.AuthorizerID = au.ID
 
 	if resp.error != nil {
@@ -323,18 +323,15 @@ func queryAuthorizer(au *AuthorizerNode, request *requestHandler, responseChanne
 	responseChannel <- resp
 }
 
-func readResponse(responseCallback func() *http.Response, err error) (res *authorizerResponse, body []byte) {
+func readResponse(responseCallback func() (*http.Response, error)) (res *authorizerResponse, body []byte) {
 	res = &authorizerResponse{}
-	if err != nil {
-		err = errors.Wrap("authorizer_post_process", "failed to call the authorizer", err)
-		Logger.Error("request response error", zap.Error(err))
-	}
 
 	var (
 		retryTicker  *time.Ticker
 		retryCounter int
 
 		response *http.Response
+		err      error
 	)
 
 	for {
@@ -343,11 +340,16 @@ func readResponse(responseCallback func() *http.Response, err error) (res *autho
 		default:
 		}
 
-		response = responseCallback()
+		response, err = responseCallback()
 		if response == nil {
 			res.error = err
 			Logger.Error("response is empty", zap.Error(err))
 			return res, nil
+		}
+
+		if err != nil {
+			err = errors.Wrap("authorizer_post_process", "failed to call the authorizer", err)
+			Logger.Error("request response error", zap.Error(err))
 		}
 
 		if response.StatusCode == 408 {
