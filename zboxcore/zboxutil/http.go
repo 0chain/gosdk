@@ -3,6 +3,7 @@ package zboxutil
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"io"
 	"net"
@@ -150,7 +151,22 @@ var envProxy proxyFromEnv
 
 func init() {
 	Client = &http.Client{
-		Transport: http.DefaultTransport,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify:     false,
+				MinVersion:             tls.VersionTLS12,
+				SessionTicketsDisabled: false, // Enable TLS session reuse
+			},
+			DialContext: (&net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 45 * time.Second,
+			}).DialContext,
+			MaxIdleConns:        500,
+			MaxIdleConnsPerHost: 100,
+			IdleConnTimeout:     45 * time.Second,
+			DisableKeepAlives:   false,
+			ForceAttemptHTTP2:   true,
+		},
 	}
 
 	FastHttpClient = &fasthttp.Client{
