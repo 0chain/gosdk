@@ -277,18 +277,19 @@ func findDelta(remoteMap, localMap, prevMap map[string]FileInfo, localRootPath s
 			op = Update
 		} else if _, existedBefore := prevMap[lPath]; existedBefore {
 			op = LocalDelete
+		} else {
+			// This is a new file that doesn't exist in previous cache
+			// Still need to upload it even with existing cache
+			op = Upload
 		}
 
-		// Ensure directories are not added for upload unless explicitly required
-		if op != LocalDelete {
-			lAbsPath := filepath.Join(localRootPath, lPath)
-			if fInfo, err := os.Stat(lAbsPath); err == nil && fInfo.IsDir() {
-				// Only add directory for upload in first sync
-				if !noCachePrevious {
-					continue
-				}
-			}
+		// For directories: include all operations to ensure proper directory structure
+		// is created before files are processed
+		if localMap[lPath].Type == fileref.DIRECTORY && op != LocalDelete {
+			// No need to skip directories - always include them to ensure consistent structure
+			// Directory creation is critical for proper syncing
 		}
+
 		fileDiffs = append(fileDiffs, FileDiff{Path: lPath, Op: op, Type: localMap[lPath].Type})
 	}
 
@@ -296,10 +297,16 @@ func findDelta(remoteMap, localMap, prevMap map[string]FileInfo, localRootPath s
 	sort.SliceStable(fileDiffs, func(i, j int) bool { return fileDiffs[i].Path < fileDiffs[j].Path })
 	var cleanedDiffs []FileDiff
 	for _, f := range fileDiffs {
-		if (f.Op == Delete || f.Op == LocalDelete) && isParentFolderExists(cleanedDiffs, f.Path) {
-			continue
-		}
-		if f.Type == fileref.FILE || f.Op == Delete || f.Op == LocalDelete {
+		// Include all file operations and all directory operations
+		// This ensures directory structure is properly maintained
+		if f.Op == Delete || f.Op == LocalDelete {
+			// Always include delete operations to maintain consistency
+			cleanedDiffs = append(cleanedDiffs, f)
+		} else if f.Type == fileref.FILE {
+			// Include all file operations
+			cleanedDiffs = append(cleanedDiffs, f)
+		} else if f.Type == fileref.DIRECTORY && (f.Op == Upload || f.Op == Update) {
+			// Include directory creation/update operations
 			cleanedDiffs = append(cleanedDiffs, f)
 		}
 	}
