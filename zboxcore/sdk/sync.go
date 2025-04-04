@@ -297,23 +297,29 @@ func findDelta(remoteMap, localMap, prevMap map[string]FileInfo, localRootPath s
 		fileDiffs = append(fileDiffs, FileDiff{Path: lPath, Op: op, Type: localMap[lPath].Type})
 	}
 
-	// Remove child files if parent directory is deleted
+	// Sort paths to ensure parent directories are processed before their children
 	sort.SliceStable(fileDiffs, func(i, j int) bool { return fileDiffs[i].Path < fileDiffs[j].Path })
-	var cleanedDiffs []FileDiff
+
+	// Group operations by type to ensure proper sequence (create dirs first, then handle files)
+	var dirCreateOps, fileOps, deleteOps []FileDiff
 	for _, f := range fileDiffs {
-		// Include all file operations and all directory operations
-		// This ensures directory structure is properly maintained
-		if f.Op == Delete || f.Op == LocalDelete {
-			// Always include delete operations to maintain consistency
-			cleanedDiffs = append(cleanedDiffs, f)
-		} else if f.Type == fileref.FILE {
-			// Include all file operations
-			cleanedDiffs = append(cleanedDiffs, f)
-		} else if f.Type == fileref.DIRECTORY && (f.Op == Upload || f.Op == Update) {
-			// Include directory creation/update operations
-			cleanedDiffs = append(cleanedDiffs, f)
+		if f.Type == fileref.DIRECTORY && (f.Op == Upload || f.Op == Update) {
+			// Directory creation operations first
+			dirCreateOps = append(dirCreateOps, f)
+		} else if f.Op == Delete || f.Op == LocalDelete {
+			// Deletion operations last
+			deleteOps = append(deleteOps, f)
+		} else {
+			// All other file operations
+			fileOps = append(fileOps, f)
 		}
+		// Log the operation for debugging
+		l.Logger.Debug("Sync operation detected:", f.Op, f.Path, f.Type)
 	}
+
+	// Combine operations in proper sequence: create dirs → file operations → deletions
+	cleanedDiffs := append(dirCreateOps, fileOps...)
+	cleanedDiffs = append(cleanedDiffs, deleteOps...)
 	return cleanedDiffs
 }
 
