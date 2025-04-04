@@ -202,7 +202,7 @@ func isParentFolderExists(lFDiff []FileDiff, path string) bool {
 
 func findDelta(remoteMap, localMap, prevMap map[string]FileInfo, localRootPath string) []FileDiff {
 	var fileDiffs []FileDiff
-	rMod, lMod, rDelMap := make(map[string]FileInfo), make(map[string]FileInfo), make(map[string]bool)
+	rMod, lMod := make(map[string]FileInfo), make(map[string]FileInfo)
 	noCachePrevious := len(prevMap) == 0
 
 	// Identify modified remote files
@@ -243,20 +243,24 @@ func findDelta(remoteMap, localMap, prevMap map[string]FileInfo, localRootPath s
 					op = Conflict // Standard conflict when we have previous cache
 				}
 			} else {
-				op = Update
+				op = Download // Remote is modified but local is not
 			}
 		} else if _, exists := localMap[rPath]; exists {
+			// Files exist in both places and are identical - no action needed
 			delete(localMap, rPath)
 			continue
-		} else if _, existedBefore := prevMap[rPath]; existedBefore || noCachePrevious {
+		} else if _, existedBefore := prevMap[rPath]; existedBefore && !noCachePrevious {
+			// Only mark for deletion if it existed in previous cache (and we have a cache)
 			op = Delete
-			rDelMap[rPath] = true
+		} else if noCachePrevious {
+			// For initial sync, download all files from remote that don't exist locally
+			op = Download
 		}
 		fileDiffs = append(fileDiffs, FileDiff{Path: rPath, Op: op, Type: remoteMap[rPath].Type})
 	}
 
 	// Determine sync actions for local files
-	for lPath, _ := range localMap {
+	for lPath := range localMap {
 		var op = Upload
 		if _, modified := lMod[lPath]; modified {
 			op = Update
@@ -264,11 +268,14 @@ func findDelta(remoteMap, localMap, prevMap map[string]FileInfo, localRootPath s
 			op = LocalDelete
 		}
 
-		// Ensure directories are not added for upload
+		// Ensure directories are not added for upload unless explicitly required
 		if op != LocalDelete {
 			lAbsPath := filepath.Join(localRootPath, lPath)
 			if fInfo, err := os.Stat(lAbsPath); err == nil && fInfo.IsDir() {
-				continue
+				// Only add directory for upload in first sync
+				if !noCachePrevious {
+					continue
+				}
 			}
 		}
 		fileDiffs = append(fileDiffs, FileDiff{Path: lPath, Op: op, Type: localMap[lPath].Type})
