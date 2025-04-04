@@ -109,8 +109,11 @@ func (a *Allocation) GetRemoteFileMap(exclMap map[string]int, remotepath string)
 			break
 		}
 	}
-	for k, v := range remoteList {
-		l.Logger.Debug("Remote list : ", k, " ", v)
+
+	count := 1
+	for k := range remoteList {
+		l.Logger.Debug("Remote list : ", count, " ", k)
+		count++
 	}
 	return remoteList, err
 }
@@ -185,8 +188,10 @@ func getLocalFileMap(rootPath string, filters []string, exclMap map[string]int) 
 		localMap[d] = FileInfo{Type: fileref.DIRECTORY}
 	}
 
-	for k, v := range localMap {
-		l.Logger.Debug("Local list : ", k, " ", v)
+	count := 0
+	for k := range localMap {
+		l.Logger.Debug("Local list : ", count, " ", k)
+		count++
 	}
 
 	return localMap, err
@@ -326,8 +331,10 @@ func (a *Allocation) GetAllocationDiff(lastSyncCachePath, localRootPath string, 
 		}
 	}
 
-	for k, v := range prevRemoteFileMap {
-		l.Logger.Debug("Previous remote list : ", k, " ", v)
+	count := 1
+	for k := range prevRemoteFileMap {
+		l.Logger.Debug("Previous remote list : ", count, " ", k)
+		count++
 	}
 
 	// 2. Build Exclusion Map
