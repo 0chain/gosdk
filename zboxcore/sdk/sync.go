@@ -326,6 +326,10 @@ func (a *Allocation) GetAllocationDiff(lastSyncCachePath, localRootPath string, 
 		}
 	}
 
+	for k, v := range prevRemoteFileMap {
+		l.Logger.Debug("Previous remote list : ", k, " ", v)
+	}
+
 	// 2. Build Exclusion Map
 	exclMap := getRemoteExcludeMap(remoteExcludePath)
 
