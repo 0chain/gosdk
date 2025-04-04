@@ -204,14 +204,10 @@ func findDelta(remoteMap, localMap, prevMap map[string]FileInfo, localRootPath s
 	var fileDiffs []FileDiff
 	rMod, lMod, rDelMap := make(map[string]FileInfo), make(map[string]FileInfo), make(map[string]bool)
 
-	// Create a remote hash map and find modifications
+	// Identify modified remote files
 	for rFile, rInfo := range remoteMap {
-		if pm, ok := prevMap[rFile]; ok {
-			// Remote file existed in previous sync also
-			if pm.Hash != rInfo.Hash {
-				// File modified in remote
-				rMod[rFile] = rInfo
-			}
+		if prev, exists := prevMap[rFile]; exists && (prev.Hash != rInfo.Hash) {
+			rMod[rFile] = rInfo
 		}
 	}
 
@@ -290,6 +286,12 @@ func (a *Allocation) GetAllocationDiff(lastSyncCachePath, localRootPath string, 
 			if err := json.Unmarshal(content, &prevRemoteFileMap); err != nil {
 				return lFdiff, errors.Wrap(err, "Invalid cache content.")
 			}
+		} else if os.IsNotExist(err) {
+			// If cache file is deleted, initialize empty map and log a warning
+			prevRemoteFileMap = make(map[string]FileInfo)
+			l.Logger.Info("Sync cache file not found. Performing full sync.")
+		} else {
+			return lFdiff, errors.Wrap(err, "Error reading sync cache file.")
 		}
 	}
 
