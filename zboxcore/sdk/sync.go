@@ -203,6 +203,7 @@ func isParentFolderExists(lFDiff []FileDiff, path string) bool {
 func findDelta(remoteMap, localMap, prevMap map[string]FileInfo, localRootPath string) []FileDiff {
 	var fileDiffs []FileDiff
 	rMod, lMod, rDelMap := make(map[string]FileInfo), make(map[string]FileInfo), make(map[string]bool)
+	noCachePrevious := len(prevMap) == 0
 
 	// Identify modified remote files
 	for rFile, rInfo := range remoteMap {
@@ -219,18 +220,35 @@ func findDelta(remoteMap, localMap, prevMap map[string]FileInfo, localRootPath s
 	}
 
 	// Determine sync actions for remote files
-	for rPath := range remoteMap {
+	for rPath, rInfo := range remoteMap {
 		var op = Download
 		if _, remoteModified := rMod[rPath]; remoteModified {
 			if _, localModified := lMod[rPath]; localModified {
-				op = Conflict
+				// In case of conflict and no cache files, use timestamp to decide
+				if noCachePrevious {
+					// Get local file info for timestamp comparison
+					lAbsPath := filepath.Join(localRootPath, rPath)
+					if lInfo, err := os.Stat(lAbsPath); err == nil {
+						// Compare timestamps - newer wins
+						localTime := common.Timestamp(lInfo.ModTime().Unix())
+						if localTime > rInfo.UpdatedAt {
+							op = Update // Local is newer, upload to remote
+						} else {
+							op = Download // Remote is newer, download to local
+						}
+					} else {
+						op = Download // If can't get local info, default to download
+					}
+				} else {
+					op = Conflict // Standard conflict when we have previous cache
+				}
 			} else {
 				op = Update
 			}
 		} else if _, exists := localMap[rPath]; exists {
 			delete(localMap, rPath)
 			continue
-		} else if _, existedBefore := prevMap[rPath]; existedBefore {
+		} else if _, existedBefore := prevMap[rPath]; existedBefore || noCachePrevious {
 			op = Delete
 			rDelMap[rPath] = true
 		}
@@ -238,7 +256,7 @@ func findDelta(remoteMap, localMap, prevMap map[string]FileInfo, localRootPath s
 	}
 
 	// Determine sync actions for local files
-	for lPath := range localMap {
+	for lPath, _ := range localMap {
 		var op = Upload
 		if _, modified := lMod[lPath]; modified {
 			op = Update
