@@ -260,12 +260,17 @@ func findDelta(remoteMap, localMap, prevMap map[string]FileInfo, localRootPath s
 			// Files exist in both places and are identical - no action needed
 			delete(localMap, rPath)
 			continue
-		} else if _, existedBefore := prevMap[rPath]; existedBefore && !noCachePrevious {
-			// Only mark for deletion if it existed in previous cache (and we have a cache)
-			op = Delete
+		} else if _, exists := localMap[rPath]; !exists {
+			// File exists remotely but not locally - mark for deletion from remote
+			// If we have a previous cache, only delete files that existed before
+			_, existedBefore := prevMap[rPath]
+			if noCachePrevious || existedBefore {
+				op = Delete
+			}
 		} else if noCachePrevious {
 			// For initial sync, download all files from remote that don't exist locally
 			op = Download
+
 		}
 		fileDiffs = append(fileDiffs, FileDiff{Path: rPath, Op: op, Type: remoteMap[rPath].Type})
 	}
