@@ -272,11 +272,17 @@ func findDelta(remoteMap, localMap, prevMap map[string]FileInfo, localRootPath s
 
 	// Determine sync actions for local files
 	for lPath := range localMap {
-		var op = Upload
+		var op string
 		if _, modified := lMod[lPath]; modified {
 			op = Update
-		} else if _, existedBefore := prevMap[lPath]; existedBefore {
-			op = LocalDelete
+		} else if _, existedInRemote := remoteMap[lPath]; !existedInRemote {
+			if _, existedBefore := prevMap[lPath]; existedBefore {
+				// File existed in previous cache but not in remote - it was deleted from remote
+				op = LocalDelete
+			} else {
+				// This is a new local file that doesn't exist in remote
+				op = Upload
+			}
 		} else {
 			// This is a new file that doesn't exist in previous cache
 			// Still need to upload it even with existing cache
