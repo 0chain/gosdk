@@ -109,7 +109,9 @@ func (a *Allocation) GetRemoteFileMap(exclMap map[string]int, remotepath string)
 			break
 		}
 	}
-	l.Logger.Debug("Remote List: ", remoteList)
+	for k, v := range remoteList {
+		l.Logger.Debug("Remote list : ", k, " ", v)
+	}
 	return remoteList, err
 }
 
@@ -182,7 +184,11 @@ func getLocalFileMap(rootPath string, filters []string, exclMap map[string]int) 
 	for _, d := range dirList {
 		localMap[d] = FileInfo{Type: fileref.DIRECTORY}
 	}
-	l.Logger.Debug("Local List: ", localMap)
+
+	for k, v := range localMap {
+		l.Logger.Debug("Local list : ", k, " ", v)
+	}
+
 	return localMap, err
 }
 
