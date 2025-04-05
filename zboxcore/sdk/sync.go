@@ -201,21 +201,18 @@ func findDelta(remoteMap, localMap, prevRemoteMap map[string]FileInfo, localRoot
 	var fileDiffs []FileDiff
 	rMod, lMod := make(map[string]FileInfo), make(map[string]FileInfo)
 
-	// Identify modified remote files
 	for rFile, rInfo := range remoteMap {
 		if prev, exists := prevRemoteMap[rFile]; exists && (prev.Hash != rInfo.Hash) {
 			rMod[rFile] = rInfo
 		}
 	}
 
-	// Identify modified local files
 	for lFile, lInfo := range localMap {
 		if remote, exists := remoteMap[lFile]; exists && (remote.Hash != lInfo.Hash) {
 			lMod[lFile] = lInfo
 		}
 	}
 
-	// Determine sync actions for remote files
 	for rPath := range remoteMap {
 		var op string
 		if _, remoteModified := rMod[rPath]; remoteModified {
@@ -235,7 +232,6 @@ func findDelta(remoteMap, localMap, prevRemoteMap map[string]FileInfo, localRoot
 		fileDiffs = append(fileDiffs, FileDiff{Path: rPath, Op: op, Type: remoteMap[rPath].Type})
 	}
 
-	// Determine sync actions for local files
 	for lPath := range localMap {
 		var op string
 		if _, localModified := lMod[lPath]; localModified {
@@ -251,13 +247,9 @@ func findDelta(remoteMap, localMap, prevRemoteMap map[string]FileInfo, localRoot
 				op = Upload
 			}
 		} else {
-			// This is a file that exists in both places but wasn't in local modified list
-			// Skip it as it's already handled in remote file processing
 			continue
 		}
 
-		// For directories: include all operations to ensure proper directory structure
-		// is created before files are processed
 		fileDiffs = append(fileDiffs, FileDiff{Path: lPath, Op: op, Type: localMap[lPath].Type})
 	}
 
@@ -278,7 +270,7 @@ func findDelta(remoteMap, localMap, prevRemoteMap map[string]FileInfo, localRoot
 			fileOps = append(fileOps, f)
 		}
 		// Log the operation for debugging
-		l.Logger.Debug("Sync operation detected:", f.Op, f.Path, f.Type)
+		l.Logger.Debug("Sync operation detected:", f.Op, " : ", f.Path, " : ", f.Type)
 	}
 
 	// Combine operations in proper sequence: create dirs → file operations → deletions
