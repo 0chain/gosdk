@@ -413,10 +413,6 @@ func (mo *MultiOperation) commitV2() error {
 		} else {
 			changes = mo.changesV2
 		}
-		threshold := mo.consensusThresh
-		if mask.CountOnes() < mo.consensusThresh {
-			threshold = mask.CountOnes()
-		}
 		commitReq := &CommitRequestV2{
 			allocationObj:   mo.allocationObj,
 			connectionID:    mo.connectionID,
@@ -424,7 +420,7 @@ func (mo *MultiOperation) commitV2() error {
 			wg:              wg,
 			timestamp:       timestamp,
 			commitMask:      mask,
-			consensusThresh: threshold,
+			consensusThresh: mo.consensusThresh,
 			changes:         changes,
 			isRepair:        mo.isRepair,
 		}

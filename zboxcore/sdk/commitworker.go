@@ -460,7 +460,6 @@ func (commitReq *CommitRequestV2) processCommit() {
 		} else if resp.err != errAlreadySuccessful {
 			commitReq.commitMask = commitReq.commitMask.And(zboxutil.NewUint128(1).Lsh(resp.pos).Not())
 			if commitReq.commitMask.CountOnes() < commitReq.consensusThresh {
-				commitReq.commitMask = zboxutil.NewUint128(0)
 				commitReq.result = ErrorCommitResult("Failed to get reference path " + resp.err.Error())
 				return
 			}
@@ -468,7 +467,6 @@ func (commitReq *CommitRequestV2) processCommit() {
 	}
 
 	if trie == nil {
-		commitReq.commitMask = zboxutil.NewUint128(0)
 		commitReq.result = ErrorCommitResult("Failed to get reference path")
 		return
 	}

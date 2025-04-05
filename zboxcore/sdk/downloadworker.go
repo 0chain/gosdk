@@ -626,7 +626,6 @@ func (req *DownloadRequest) processDownload() {
 
 					totalWritten, err := writeData(req.fileHandler, data, req.datashards, int(remainingSize))
 					if err != nil {
-						l.Logger.Error("Write failed: ", err, " path: ", req.remotefilepath)
 						req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
 						return
 					}
