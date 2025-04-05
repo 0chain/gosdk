@@ -197,28 +197,13 @@ func getLocalFileMap(rootPath string, filters []string, exclMap map[string]int) 
 	return localMap, err
 }
 
-func isParentFolderExists(lFDiff []FileDiff, path string) bool {
-	subdirs := strings.Split(path, "/")
-	p := "/"
-	for _, dir := range subdirs {
-		p = filepath.Join(p, dir)
-		for _, f := range lFDiff {
-			if f.Path == p {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-func findDelta(remoteMap, localMap, prevMap map[string]FileInfo, localRootPath string) []FileDiff {
+func findDelta(remoteMap, localMap, prevRemoteMap map[string]FileInfo, localRootPath string) []FileDiff {
 	var fileDiffs []FileDiff
 	rMod, lMod := make(map[string]FileInfo), make(map[string]FileInfo)
-	noCachePrevious := len(prevMap) == 0
 
 	// Identify modified remote files
 	for rFile, rInfo := range remoteMap {
-		if prev, exists := prevMap[rFile]; exists && (prev.Hash != rInfo.Hash) {
+		if prev, exists := prevRemoteMap[rFile]; exists && (prev.Hash != rInfo.Hash) {
 			rMod[rFile] = rInfo
 		}
 	}
@@ -231,46 +216,21 @@ func findDelta(remoteMap, localMap, prevMap map[string]FileInfo, localRootPath s
 	}
 
 	// Determine sync actions for remote files
-	for rPath, rInfo := range remoteMap {
-		var op = Download
+	for rPath := range remoteMap {
+		var op string
 		if _, remoteModified := rMod[rPath]; remoteModified {
 			if _, localModified := lMod[rPath]; localModified {
-				// In case of conflict and no cache files, use timestamp to decide
-				if noCachePrevious {
-					// Get local file info for timestamp comparison
-					lAbsPath := filepath.Join(localRootPath, rPath)
-					if lInfo, err := os.Stat(lAbsPath); err == nil {
-						// Compare timestamps - newer wins
-						localTime := common.Timestamp(lInfo.ModTime().Unix())
-						if localTime > rInfo.UpdatedAt {
-							op = Update // Local is newer, upload to remote
-						} else {
-							op = Download // Remote is newer, download to local
-						}
-					} else {
-						op = Download // If can't get local info, default to download
-					}
-				} else {
-					op = Conflict // Standard conflict when we have previous cache
-				}
+				op = Conflict
 			} else {
-				op = Download // Remote is modified but local is not
+				op = Download
 			}
 		} else if _, exists := localMap[rPath]; exists {
-			// Files exist in both places and are identical - no action needed
 			delete(localMap, rPath)
 			continue
-		} else if _, exists := localMap[rPath]; !exists {
-			// File exists remotely but not locally - mark for deletion from remote
-			// If we have a previous cache, only delete files that existed before
-			_, existedBefore := prevMap[rPath]
-			if noCachePrevious || existedBefore {
-				op = Delete
-			}
-		} else if noCachePrevious {
-			// For initial sync, download all files from remote that don't exist locally
+		} else if _, existedBefore := prevRemoteMap[rPath]; existedBefore {
+			op = Delete
+		} else {
 			op = Download
-
 		}
 		fileDiffs = append(fileDiffs, FileDiff{Path: rPath, Op: op, Type: remoteMap[rPath].Type})
 	}
@@ -278,17 +238,16 @@ func findDelta(remoteMap, localMap, prevMap map[string]FileInfo, localRootPath s
 	// Determine sync actions for local files
 	for lPath := range localMap {
 		var op string
-		if _, modified := lMod[lPath]; modified {
-			op = Update
-		} else if _, existedInRemote := remoteMap[lPath]; !existedInRemote {
-			if noCachePrevious {
-				// For initial sync with no cache, always upload local files that don't exist remotely
+		if _, localModified := lMod[lPath]; localModified {
+			if _, existOnRemote := remoteMap[lPath]; existOnRemote {
+				op = Update
+			} else {
 				op = Upload
-			} else if _, existedBefore := prevMap[lPath]; existedBefore {
-				// File existed in previous cache but not in remote - it was deleted from remote
+			}
+		} else if _, existedInRemote := remoteMap[lPath]; !existedInRemote {
+			if _, existedBefore := prevRemoteMap[lPath]; existedBefore {
 				op = LocalDelete
 			} else {
-				// This is a new local file that doesn't exist in remote and wasn't in previous cache
 				op = Upload
 			}
 		} else {
