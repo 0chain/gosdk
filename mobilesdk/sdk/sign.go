@@ -2,6 +2,7 @@ package sdk
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/0chain/gosdk/core/client"
 	_ "github.com/0chain/gosdk/core/client" //import it to initialize sys.Sign
@@ -22,6 +23,7 @@ func SignRequest(privateKey, signatureScheme string, data string) (string, error
 	}
 
 	hash := encryption.Hash(data)
+	fmt.Println("sign request, is split: ", client.GetClient().IsSplit)
 
 	if !client.GetClient().IsSplit {
 		return sys.Sign(hash, signatureScheme, []sys.KeyPair{{
@@ -32,6 +34,10 @@ func SignRequest(privateKey, signatureScheme string, data string) (string, error
 			PrivateKey: privateKey,
 		}})
 	}
+}
+
+func Sign(data string) (string, error) {
+	return client.Sign(encryption.Hash(data))
 }
 
 // VerifySignature verify signature with public key, schema and data
