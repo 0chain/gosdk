@@ -67,6 +67,12 @@ func WithFileCallback(cb func()) DownloadRequestOption {
 	}
 }
 
+func WithSequentialWrite() DownloadRequestOption {
+	return func(dr *DownloadRequest) {
+		dr.sequentialWrite = true
+	}
+}
+
 type DownloadRequest struct {
 	ClientId           string
 	allocationID       string
@@ -118,6 +124,7 @@ type DownloadRequest struct {
 	isEnterprise            bool
 	storageVersion          int
 	allocOwnerSigningPubKey string
+	sequentialWrite         bool
 	// in case of auth ticket, this key will be of the shared user rather than the owner of the allocation
 	allocOwnerSigningPrivateKey ed25519.PrivateKey
 }
@@ -544,7 +551,7 @@ func (req *DownloadRequest) processDownload() {
 	}
 	var writerAt bool
 	writeAtHandler, ok := req.fileHandler.(io.WriterAt)
-	if ok {
+	if ok && !req.sequentialWrite {
 		writerAt = true
 	}
 	bufBlocks := int(numBlocks)
