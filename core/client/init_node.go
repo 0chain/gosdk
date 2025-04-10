@@ -20,6 +20,7 @@ import (
 var (
 	logging    = logger.GetLogger()
 	nodeClient *Node
+	IsAppFlow  = false
 )
 
 // Node Maintains central states of SDK (client's context, network).
@@ -32,6 +33,10 @@ type Node struct {
 	clientCtx    context.Context
 
 	networkGuard sync.RWMutex
+}
+
+func SetIsAppFlow(val bool) {
+	IsAppFlow = true
 }
 
 // GetStableMiners Returns stable miner urls.
@@ -131,10 +136,98 @@ func Init(ctx context.Context, cfg conf.Config) error {
 		return err
 	}
 
+	// Check if a node is online
+	isNodeOnline := func(nodeURL string) bool {
+		reqCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+		defer cancel()
+		req, err := util.NewHTTPGetRequestContext(reqCtx, nodeURL)
+		if err != nil {
+			return false
+		}
+		res, err := req.Get()
+		return err == nil && res.StatusCode == http.StatusOK
+	}
+
+	// Filter online nodes concurrently
+	filterOnlineNodes := func(nodes []string) []string {
+		var onlineNodes []string
+		var wg sync.WaitGroup
+		var mu sync.Mutex
+
+		for _, node := range nodes {
+			wg.Add(1)
+			go func(url string) {
+				defer wg.Done()
+				if isNodeOnline(url) {
+					mu.Lock()
+					onlineNodes = append(onlineNodes, url)
+					mu.Unlock()
+				} else {
+					logging.Debug("Node offline during initialization", zap.String("url", url))
+				}
+			}(node)
+		}
+		wg.Wait()
+		return onlineNodes
+	}
+
+	onlineMiners := filterOnlineNodes(network.Miners)
+	onlineSharders := filterOnlineNodes(network.Sharders)
+
 	reqMiners := util.MaxInt(3, int(math.Ceil(float64(cfg.MinSubmit)*float64(len(network.Miners))/100)))
-	sharders := NewHolder(network.Sharders, util.MinInt(len(network.Sharders), util.MaxInt(cfg.SharderConsensous, conf.DefaultSharderConsensous)))
+	reqSharders := util.MinInt(len(network.Sharders), util.MaxInt(cfg.SharderConsensous, conf.DefaultSharderConsensous))
+
+	if len(onlineMiners) < reqMiners {
+		logging.Debug("Not enough online miners found, supplementing with random miners",
+			zap.Int("online", len(onlineMiners)),
+			zap.Int("required", reqMiners))
+
+		onlineMinersMap := make(map[string]struct{})
+		for _, miner := range onlineMiners {
+			onlineMinersMap[miner] = struct{}{}
+		}
+
+		offlineMiners := make([]string, 0)
+		for _, miner := range network.Miners {
+			if _, exists := onlineMinersMap[miner]; !exists {
+				offlineMiners = append(offlineMiners, miner)
+			}
+		}
+
+		needed := reqMiners - len(onlineMiners)
+		if needed > 0 && len(offlineMiners) > 0 {
+			randomOfflineMiners := util.GetRandom(offlineMiners, needed)
+			onlineMiners = append(onlineMiners, randomOfflineMiners...)
+		}
+	}
+
+	if len(onlineSharders) < reqSharders {
+		logging.Debug("Not enough online sharders found, supplementing with random sharders",
+			zap.Int("online", len(onlineSharders)),
+			zap.Int("required", reqSharders))
+
+		onlineShardersMap := make(map[string]struct{})
+		for _, sharder := range onlineSharders {
+			onlineShardersMap[sharder] = struct{}{}
+		}
+
+		offlineSharders := make([]string, 0)
+		for _, sharder := range network.Sharders {
+			if _, exists := onlineShardersMap[sharder]; !exists {
+				offlineSharders = append(offlineSharders, sharder)
+			}
+		}
+
+		needed := reqSharders - len(onlineSharders)
+		if needed > 0 && len(offlineSharders) > 0 {
+			randomOfflineSharders := util.GetRandom(offlineSharders, needed)
+			onlineSharders = append(onlineSharders, randomOfflineSharders...)
+		}
+	}
+
+	sharders := NewHolder(onlineSharders, reqSharders)
 	nodeClient = &Node{
-		stableMiners: util.GetRandom(network.Miners, reqMiners),
+		stableMiners: onlineMiners,
 		sharders:     sharders,
 		network:      network,
 		clientCtx:    ctx,

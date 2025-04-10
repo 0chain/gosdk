@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	coreClient "github.com/0chain/gosdk/core/client"
 	"math/big"
 	"strings"
 	"time"
+
+	coreClient "github.com/0chain/gosdk/core/client"
 
 	"github.com/0chain/gosdk/zcnbridge/ethereum/uniswapnetwork"
 	"github.com/0chain/gosdk/zcnbridge/ethereum/uniswaprouter"
@@ -159,7 +160,7 @@ func (b *BridgeClient) AddEthereumAuthorizers(configDir string) {
 	cfg.AddConfigPath(configDir)
 	cfg.SetConfigName("authorizers")
 	if err := cfg.ReadInConfig(); err != nil {
-		fmt.Println(err)
+		Logger.Error(err)
 		return
 	}
 
@@ -168,32 +169,32 @@ func (b *BridgeClient) AddEthereumAuthorizers(configDir string) {
 	for _, mnemonic := range mnemonics {
 		wallet, err := hdw.NewFromMnemonic(mnemonic)
 		if err != nil {
-			fmt.Printf("failed to read mnemonic: %v", err)
+			Logger.Error(fmt.Sprintf("failed to read mnemonic: %v", err))
 			continue
 		}
 
 		pathD := hdw.MustParseDerivationPath("m/44'/60'/0'/0/0")
 		account, err := wallet.Derive(pathD, true)
 		if err != nil {
-			fmt.Println(err)
+			Logger.Error(err)
 			continue
 		}
 
 		transaction, err := b.AddEthereumAuthorizer(context.TODO(), account.Address)
 		if err != nil || transaction == nil {
-			fmt.Printf("AddAuthorizer error: %v, Address: %s", err, account.Address.Hex())
+			Logger.Error(fmt.Sprintf("AddAuthorizer error: %v, Address: %s", err, account.Address.Hex()))
 			continue
 		}
 
 		status, err := ConfirmEthereumTransaction(transaction.Hash().String(), 100, time.Second*10)
 		if err != nil {
-			fmt.Println(err)
+			Logger.Error(err)
 		}
 
 		if status == 1 {
-			fmt.Printf("Authorizer has been added: %s\n", mnemonic)
+			Logger.Info(fmt.Sprintf("Authorizer has been added: %s\n", mnemonic))
 		} else {
-			fmt.Printf("Authorizer has failed to be added: %s\n", mnemonic)
+			Logger.Info(fmt.Sprintf("Authorizer has failed to be added: %s\n", mnemonic))
 		}
 	}
 }
@@ -998,21 +999,18 @@ func (b *BridgeClient) getProviderType() int {
 }
 
 // estimateTenderlyGasAmount performs gas amount estimation for the given transaction using Tenderly provider.
-func (b *BridgeClient) estimateTenderlyGasAmount(ctx context.Context, from, to string, value int64) (float64, error) {
+func (b *BridgeClient) estimateTenderlyGasAmount(ctx context.Context) (float64, error) {
 	return 8000000, nil
 }
 
 // estimateAlchemyGasAmount performs gas amount estimation for the given transaction using Alchemy provider
-func (b *BridgeClient) estimateAlchemyGasAmount(ctx context.Context, from, to, data string, value int64) (float64, error) {
+func (b *BridgeClient) estimateAlchemyGasAmount(ctx context.Context, to, data string) (float64, error) {
 	client := jsonrpc.NewClient(b.EthereumNodeURL)
 
-	valueHex := ConvertIntToHex(value)
-
-	resp, err := client.Call(ctx, "eth_estimateGas", &AlchemyGasEstimationRequest{
-		From:  from,
-		To:    to,
-		Value: valueHex,
-		Data:  data})
+	resp, err := client.Call(ctx, "eth_estimateGas", []*AlchemyGasEstimationRequest{{
+		To:   to,
+		Data: data,
+	}})
 	if err != nil {
 		return 0, errors.Wrap(err, "gas price estimation failed")
 	}
@@ -1060,9 +1058,9 @@ func (b *BridgeClient) EstimateBurnWZCNGasAmount(ctx context.Context, from, to, 
 
 		pack := "0x" + hex.EncodeToString(packRaw)
 
-		return b.estimateAlchemyGasAmount(ctx, from, to, pack, 0)
+		return b.estimateAlchemyGasAmount(ctx, to, pack)
 	case TenderlyProvider:
-		return b.estimateTenderlyGasAmount(ctx, from, to, 0)
+		return b.estimateTenderlyGasAmount(ctx)
 	}
 
 	return 0, errors.New("used json-rpc does not allow to estimate gas amount")
@@ -1103,9 +1101,9 @@ func (b *BridgeClient) EstimateMintWZCNGasAmount(
 
 		pack := "0x" + hex.EncodeToString(packRaw)
 
-		return b.estimateAlchemyGasAmount(ctx, from, to, pack, 0)
+		return b.estimateAlchemyGasAmount(ctx, to, pack)
 	case TenderlyProvider:
-		return b.estimateTenderlyGasAmount(ctx, from, to, 0)
+		return b.estimateTenderlyGasAmount(ctx)
 	}
 
 	return 0, errors.New("used json-rpc does not allow to estimate gas amount")

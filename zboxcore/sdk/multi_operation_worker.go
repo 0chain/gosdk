@@ -321,9 +321,11 @@ func (mo *MultiOperation) Process() error {
 		l.Logger.Error("consensus not met", activeBlobbers, mo.consensusThresh)
 		return errors.New("consensus_not_met", fmt.Sprintf("Active blobbers %d is less than consensus threshold %d", activeBlobbers, mo.consensusThresh))
 	}
+
 	if mo.allocationObj.StorageVersion == StorageV2 {
 		return mo.commitV2()
 	}
+
 	commitReqs := make([]*CommitRequest, activeBlobbers)
 	start = time.Now()
 	wg.Add(activeBlobbers)
@@ -411,6 +413,10 @@ func (mo *MultiOperation) commitV2() error {
 		} else {
 			changes = mo.changesV2
 		}
+		threshold := mo.consensusThresh
+		if mask.CountOnes() < mo.consensusThresh {
+			threshold = mask.CountOnes()
+		}
 		commitReq := &CommitRequestV2{
 			allocationObj:   mo.allocationObj,
 			connectionID:    mo.connectionID,
@@ -418,7 +424,7 @@ func (mo *MultiOperation) commitV2() error {
 			wg:              wg,
 			timestamp:       timestamp,
 			commitMask:      mask,
-			consensusThresh: mo.consensusThresh,
+			consensusThresh: threshold,
 			changes:         changes,
 			isRepair:        mo.isRepair,
 		}

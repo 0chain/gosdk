@@ -12,10 +12,8 @@ import (
 
 // AlchemyGasEstimationRequest describes request used for Alchemy enhanced JSON-RPC API.
 type AlchemyGasEstimationRequest struct {
-	From  string `json:"from"`
-	To    string `json:"to"`
-	Value string `json:"value"`
-	Data  string `json:"data"`
+	To   string `json:"to"`
+	Data string `json:"data"`
 }
 
 // GasEstimationRequest describes request used for Alchemy enhanced JSON-RPC API.

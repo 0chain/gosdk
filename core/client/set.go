@@ -36,6 +36,23 @@ type Client struct {
 	sign            SignFunc //nolint:unused
 }
 
+type InitSdkOptions struct {
+	WalletJSON              string
+	BlockWorker             string
+	ChainID                 string
+	SignatureScheme         string
+	Nonce                   int64
+	IsSplitWallet           bool
+	AddWallet               bool
+	TxnFee                  *int
+	MinConfirmation         *int
+	ConfirmationChainLength *int
+	MinSubmit               *int
+	SharderConsensous       *int
+	ZboxHost                string
+	ZboxAppType             string
+}
+
 func init() {
 	sys.Sign = signHash
 	sys.SignWithAuth = signHashWithAuth
@@ -270,6 +287,7 @@ func PublicKey(clients ...string) string {
 		}
 		return client.wallets[clients[0]].ClientKey
 	}
+
 	return client.wallet.ClientKey
 }
 
@@ -359,6 +377,23 @@ func InitSDK(walletJSON string,
 		return err
 	}
 	SetSdkInitialized(true)
+	return nil
+}
+
+func InitSDKWithWebApp(params InitSdkOptions) error {
+	if params.MinConfirmation != nil && params.MinSubmit != nil && params.ConfirmationChainLength != nil && params.SharderConsensous != nil {
+		err := InitSDK(params.WalletJSON, params.BlockWorker, params.ChainID, params.SignatureScheme, params.Nonce, params.AddWallet, *params.MinConfirmation, *params.MinSubmit, *params.ConfirmationChainLength, *params.SharderConsensous)
+		if err != nil {
+			return err
+		}
+	} else {
+		err := InitSDK(params.WalletJSON, params.BlockWorker, params.ChainID, params.SignatureScheme, params.Nonce, params.AddWallet)
+		if err != nil {
+			return err
+		}
+	}
+	conf.SetZboxAppConfigs(params.ZboxHost, params.ZboxAppType)
+	SetIsAppFlow(true)
 	return nil
 }
 

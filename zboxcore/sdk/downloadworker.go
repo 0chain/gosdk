@@ -630,6 +630,7 @@ func (req *DownloadRequest) processDownload() {
 
 					totalWritten, err := writeData(req.fileHandler, data, req.datashards, int(remainingSize))
 					if err != nil {
+						l.Logger.Error("Write failed: ", err, " path: ", req.remotefilepath)
 						req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
 						return
 					}
@@ -741,7 +742,7 @@ func (req *DownloadRequest) processDownload() {
 			if startBlock+int64(j)*numBlocks+numBlocks > endBlock {
 				blocksToDownload = endBlock - (startBlock + int64(j)*numBlocks)
 			}
-			data, err := req.getBlocksData(startBlock+int64(j)*numBlocks, blocksToDownload, j == 0)
+			data, err := req.getBlocksData(startBlock+int64(j)*numBlocks, blocksToDownload, j == 0 && shouldTimeRequest)
 			if req.isDownloadCanceled {
 				return errors.New("download_abort", "Download aborted by user")
 			}
@@ -796,7 +797,7 @@ func (req *DownloadRequest) processDownload() {
 	wg.Wait()
 	// req.fileHandler.Sync() //nolint
 	elapsedGetBlocksAndWrite := time.Since(now) - elapsedInitEC - elapsedInitEncryption
-	l.Logger.Debug(fmt.Sprintf("[processDownload] Timings:\n allocation_id: %s,\n remotefilepath: %s,\n initEC: %d ms,\n initEncryption: %d ms,\n getBlocks and writes: %d ms",
+	l.Logger.Info(fmt.Sprintf("[processDownload] Timings:\n allocation_id: %s,\n remotefilepath: %s,\n initEC: %d ms,\n initEncryption: %d ms,\n getBlocks and writes: %d ms",
 		req.allocationID,
 		req.remotefilepath,
 		elapsedInitEC.Milliseconds(),
