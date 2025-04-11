@@ -33,6 +33,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/klauspost/reedsolomon"
 	"go.dedis.ch/kyber/v3/group/edwards25519"
+	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -1094,6 +1095,7 @@ func (req *DownloadRequest) calculateShardsParams(
 	size := fRef.ActualFileSize
 	if req.contentMode == DOWNLOAD_CONTENT_THUMB {
 		if fRef.ActualThumbnailSize == 0 {
+			logger.Logger.Debug("thumbnail size is 0", zap.Any("ref", fRef))
 			return 0, errors.New("invalid_request", "Thumbnail does not exist")
 		}
 		size = fRef.ActualThumbnailSize
