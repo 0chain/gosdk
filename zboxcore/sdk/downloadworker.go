@@ -1095,7 +1095,8 @@ func (req *DownloadRequest) calculateShardsParams(
 	size := fRef.ActualFileSize
 	if req.contentMode == DOWNLOAD_CONTENT_THUMB {
 		if fRef.ActualThumbnailSize == 0 {
-			logger.Logger.Debug("thumbnail size is 0", zap.Any("ref", fRef))
+			v, _ := json.Marshal(fRef)
+			logger.Logger.Debug("thumbnail size is 0", zap.String("ref", string(v)))
 			return 0, errors.New("invalid_request", "Thumbnail does not exist")
 		}
 		size = fRef.ActualThumbnailSize
