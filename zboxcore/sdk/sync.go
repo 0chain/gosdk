@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"sort"
@@ -116,13 +115,15 @@ func (a *Allocation) GetRemoteFileMap(exclMap map[string]int, remotepath string)
 func calcFileHash(filePath string) string {
 	fp, err := os.Open(filePath)
 	if err != nil {
-		log.Fatal(err)
+		l.Logger.Error("Failed to open file for hashing:", err)
+		return ""
 	}
 	defer fp.Close()
 
 	h := md5.New()
 	if _, err := io.Copy(h, fp); err != nil {
-		log.Fatal(err)
+		l.Logger.Error("Failed to calculate hash:", err)
+		return ""
 	}
 	return hex.EncodeToString(h.Sum(nil))
 }
@@ -145,12 +146,15 @@ func addLocalFileList(root string, fMap map[string]FileInfo, dirList *[]string, 
 		if _, ok := filter[info.Name()]; ok {
 			return nil
 		}
+
 		lPath, err := filepath.Rel(root, path)
 		if err != nil {
 			l.Logger.Error("getting relative path failed", err)
+			return nil
 		}
 		// Allocation paths are like unix, so we modify all the backslashes
 		// to forward slashes. File path in windows contain backslashes.
+		// Ensure consistent Unicode normalization for non-ASCII paths
 		lPath = "/" + strings.ReplaceAll(lPath, "\\", "/")
 		// Exclude
 		if _, ok := exclMap[lPath]; ok {
@@ -187,12 +191,18 @@ func getLocalFileMap(rootPath string, filters []string, exclMap map[string]int) 
 }
 
 func isParentFolderExists(lFDiff []FileDiff, path string) bool {
+	// Normalize the path for consistent Unicode representation
+	path = filepath.ToSlash(path)
 	subdirs := strings.Split(path, "/")
 	p := "/"
 	for _, dir := range subdirs {
-		p = filepath.Join(p, dir)
+		if dir == "" {
+			continue
+		}
+		p = filepath.ToSlash(filepath.Join(p, dir))
 		for _, f := range lFDiff {
-			if f.Path == p {
+			// Normalize both paths before comparison
+			if filepath.ToSlash(f.Path) == p {
 				return true
 			}
 		}
@@ -343,7 +353,8 @@ func (a *Allocation) GetAllocationDiff(lastSyncCachePath string, localRootPath s
 	}
 
 	// 4. Get flat file list on the local filesystem
-	localRootPath = strings.TrimRight(localRootPath, "/")
+	localRootPath = filepath.ToSlash(strings.TrimRight(localRootPath, "/"))
+	// Ensure consistent Unicode normalization
 	localFileList, err := getLocalFileMap(localRootPath, localFileFilters, exclMap)
 	if err != nil {
 		return lFdiff, errors.Wrap(err, "error getting list dir from local.")
