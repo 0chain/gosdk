@@ -170,6 +170,9 @@ func (req *CommitRequest) commitBlobber() (err error) {
 			respBody, err = io.ReadAll(resp.Body)
 			if err != nil {
 				logger.Logger.Error("Response read: ", err)
+				if errors.Is(err, io.ErrUnexpectedEOF) {
+					shouldContinue = true
+				}
 				return
 			}
 			if resp.StatusCode == http.StatusOK {

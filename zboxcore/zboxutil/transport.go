@@ -4,21 +4,25 @@
 package zboxutil
 
 import (
+	"crypto/tls"
 	"net"
 	"net/http"
 	"time"
 )
 
 var DefaultTransport = &http.Transport{
-	Proxy: envProxy.Proxy,
+	TLSClientConfig: &tls.Config{
+		InsecureSkipVerify:     false,
+		MinVersion:             tls.VersionTLS12,
+		SessionTicketsDisabled: false, // Enable TLS session reuse
+	},
 	DialContext: (&net.Dialer{
-		Timeout:   3 * time.Minute,
+		Timeout:   30 * time.Second,
 		KeepAlive: 45 * time.Second,
-		DualStack: true,
 	}).DialContext,
-	MaxIdleConns:          100,
-	IdleConnTimeout:       90 * time.Second,
-	TLSHandshakeTimeout:   45 * time.Second,
-	ExpectContinueTimeout: 1 * time.Second,
-	MaxIdleConnsPerHost:   25,
+	MaxIdleConns:        500,
+	MaxIdleConnsPerHost: 100,
+	IdleConnTimeout:     45 * time.Second,
+	DisableKeepAlives:   false,
+	ForceAttemptHTTP2:   true,
 }
