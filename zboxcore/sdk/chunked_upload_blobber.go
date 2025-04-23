@@ -95,7 +95,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 					timeTaken := time.Since(now).Milliseconds()
 					if err != nil {
 						logger.Logger.Error("Upload : ", err, " baseurl: ", sb.blobber.Baseurl)
-						if errors.Is(err, fasthttp.ErrConnectionClosed) || errors.Is(err, syscall.EPIPE) {
+						if errors.Is(err, fasthttp.ErrConnectionClosed) || errors.Is(err, syscall.EPIPE) || errors.Is(err, fasthttp.ErrDialTimeout) {
 							return err, true
 						}
 						return fmt.Errorf("Error while doing reqeust. Error %s", err), false
