@@ -78,7 +78,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 				shouldContinue bool
 			)
 			var req *fasthttp.Request
-			for i := 0; i < 3; i++ {
+			for i := 0; i < 6; i++ {
 				req, err = zboxutil.NewFastUploadRequest(
 					sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, dataBuffers[ind].Bytes(), su.httpMethod, su.allocationObj.Owner)
 				if err != nil {
@@ -95,7 +95,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 					timeTaken := time.Since(now).Milliseconds()
 					if err != nil {
 						logger.Logger.Error("Upload : ", err, " baseurl: ", sb.blobber.Baseurl)
-						if errors.Is(err, fasthttp.ErrConnectionClosed) || errors.Is(err, syscall.EPIPE) || errors.Is(err, fasthttp.ErrDialTimeout) {
+						if errors.Is(err, fasthttp.ErrConnectionClosed) || errors.Is(err, syscall.EPIPE) || errors.Is(err, fasthttp.ErrDialTimeout) || strings.Contains(err.Error(), "i/o timeout") {
 							return err, true
 						}
 						return fmt.Errorf("Error while doing reqeust. Error %s", err), false
