@@ -3298,7 +3298,7 @@ func (a *Allocation) DownloadDirectory(ctx context.Context, remotePath, localPat
 	}
 	defer sys.Files.RemoveAllDirectories()
 
-	oRefChan := a.ListObjects(ctx, remotePath, "", "", "", fileref.FILE, fileref.REGULAR, 0, getRefPageLimit)
+	oRefChan := a.ListObjects(ctx, remotePath, "", "", "", fileref.FILE, fileref.REGULAR, 0, getRefPageLimit, WithAuthToken(authTicket))
 	refSlice := make([]ORef, BatchSize)
 	refIndex := 0
 	wg := &sync.WaitGroup{}
