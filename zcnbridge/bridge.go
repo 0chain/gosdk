@@ -1003,26 +1003,51 @@ func (b *BridgeClient) estimateTenderlyGasAmount(ctx context.Context) (float64, 
 	return 8000000, nil
 }
 
+func truncateHex(hexStr string, maxLen int) string {
+	if len(hexStr) <= maxLen {
+		return hexStr
+	}
+	return hexStr[:maxLen] + "..."
+}
+
 // estimateAlchemyGasAmount performs gas amount estimation for the given transaction using Alchemy provider
 func (b *BridgeClient) estimateAlchemyGasAmount(ctx context.Context, to, data string) (float64, error) {
 	client := jsonrpc.NewClient(b.EthereumNodeURL)
+
+	Logger.Info("Estimating gas via Alchemy",
+		zap.String("to", to),
+		zap.String("dataPrefix", truncateHex(data, 32)),
+		zap.String("node", b.EthereumNodeURL),
+	)
 
 	resp, err := client.Call(ctx, "eth_estimateGas", []*AlchemyGasEstimationRequest{{
 		To:   to,
 		Data: data,
 	}})
 	if err != nil {
-		Logger.Error("1estimateAlchemyGasAmount FAILED", zap.Error(err))
+		Logger.Error("Alchemy estimateGas RPC call failed",
+			zap.String("to", to),
+			zap.String("node", b.EthereumNodeURL),
+			zap.Error(err),
+		)
 		return 0, errors.Wrap(err, "gas price estimation failed")
 	}
 
 	if resp.Error != nil {
-		Logger.Error("2estimateAlchemyGasAmount FAILED", zap.Error(resp.Error))
+		Logger.Error("Alchemy estimateGas RPC responded with error",
+			zap.String("to", to),
+			zap.String("data", truncateHex(data, 64)),
+			zap.String("error", resp.Error.Error()),
+			zap.String("node", b.EthereumNodeURL),
+		)
 		return 0, errors.Wrap(errors.New(resp.Error.Error()), "gas price estimation failed")
 	}
 
 	gasAmountRaw, ok := resp.Result.(string)
 	if !ok {
+		Logger.Error("Unexpected result format in estimateAlchemyGasAmount",
+			zap.Any("resp.Result", resp.Result),
+		)
 		return 0, errors.New("failed to parse gas amount")
 	}
 
@@ -1030,6 +1055,11 @@ func (b *BridgeClient) estimateAlchemyGasAmount(ctx context.Context, to, data st
 	gasAmountInt.SetString(gasAmountRaw)
 
 	gasAmountFloat, _ := gasAmountInt.Float64()
+
+	Logger.Info("Gas estimation successful",
+		zap.String("gasAmountHex", gasAmountRaw),
+		zap.Float64("gasAmountFloat", gasAmountFloat),
+	)
 
 	return gasAmountFloat, nil
 }
