@@ -1012,10 +1012,12 @@ func (b *BridgeClient) estimateAlchemyGasAmount(ctx context.Context, to, data st
 		Data: data,
 	}})
 	if err != nil {
+		Logger.Error("1estimateAlchemyGasAmount FAILED", zap.Error(err))
 		return 0, errors.Wrap(err, "gas price estimation failed")
 	}
 
 	if resp.Error != nil {
+		Logger.Error("2estimateAlchemyGasAmount FAILED", zap.Error(resp.Error))
 		return 0, errors.Wrap(errors.New(resp.Error.Error()), "gas price estimation failed")
 	}
 
