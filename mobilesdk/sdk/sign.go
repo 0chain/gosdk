@@ -2,6 +2,7 @@ package sdk
 
 import (
 	"errors"
+	l "github.com/0chain/gosdk/zboxcore/logger"
 
 	_ "github.com/0chain/gosdk/core/client" //import it to initialize sys.Sign
 	"github.com/0chain/gosdk/core/encryption"
@@ -19,6 +20,8 @@ func SignRequest(privateKey, signatureScheme string, data string) (string, error
 	if privateKey == "" || signatureScheme == "" || data == "" {
 		return "", errors.New("invalid input")
 	}
+
+	l.Logger.Info("SignRequest", privateKey, " : ", signatureScheme, " : ", data)
 
 	hash := encryption.Hash(data)
 	return sys.Sign(hash, signatureScheme, []sys.KeyPair{{
