@@ -512,7 +512,7 @@ func GetTransactions(toClientId, fromClientId, order string, limit, offset int64
 
 	const GET_TRANSACTIONS = `/transactions`
 
-	return client.MakeSCRestAPICall(StorageSmartContractAddress, GET_TRANSACTIONS, Params{
+	return client.MakeSCRestAPICallToSharder(StorageSmartContractAddress, GET_TRANSACTIONS, Params{
 		"to_client_id": toClientId,
 		"client_id":    fromClientId,
 		"order":        order,
