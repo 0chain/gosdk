@@ -78,7 +78,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 				shouldContinue bool
 			)
 			var req *fasthttp.Request
-			for i := 0; i < 3; i++ {
+			for i := 0; i < 6; i++ {
 				req, err = zboxutil.NewFastUploadRequest(
 					sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, dataBuffers[ind].Bytes(), su.httpMethod, su.allocationObj.Owner)
 				if err != nil {
@@ -89,14 +89,27 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 				err, shouldContinue = func() (err error, shouldContinue bool) {
 					resp := fasthttp.AcquireResponse()
 					defer fasthttp.ReleaseResponse(resp)
+					now := time.Now()
 					err = zboxutil.FastHttpClient.DoTimeout(req, resp, su.uploadTimeOut)
 					fasthttp.ReleaseRequest(req)
+					timeTaken := time.Since(now).Milliseconds()
 					if err != nil {
 						logger.Logger.Error("Upload : ", err, " baseurl: ", sb.blobber.Baseurl)
-						if errors.Is(err, fasthttp.ErrConnectionClosed) || errors.Is(err, syscall.EPIPE) {
+						if errors.Is(err, fasthttp.ErrConnectionClosed) || errors.Is(err, syscall.EPIPE) || errors.Is(err, fasthttp.ErrDialTimeout) || strings.Contains(err.Error(), "i/o timeout") {
 							return err, true
 						}
 						return fmt.Errorf("Error while doing reqeust. Error %s", err), false
+					}
+
+					if LogBlobberMonitoringFileSize > int64(0) {
+						blobberMonitoringlog := BlobberMonitoring{
+							BlobberId: sb.blobber.ID,
+							Operation: "upload",
+							TimeSpent: timeTaken,
+							FileSize:  LogBlobberMonitoringFileSize,
+							Count:     1,
+						}
+						addBlobberMonitoringLog(blobberMonitoringlog)
 					}
 
 					if resp.StatusCode() == http.StatusOK {
@@ -139,6 +152,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 
 				break
 			}
+
 			return err
 		})
 	}

@@ -88,6 +88,12 @@ func WithSingleBlobber(singleBlobber bool) ObjectTreeRequestOption {
 	}
 }
 
+func WithAuthToken(token string) ObjectTreeRequestOption {
+	return func(o *ObjectTreeRequest) {
+		o.authToken = token
+	}
+}
+
 // Paginated tree should not be collected as this will stall the client
 // It should rather be handled by application that uses gosdk
 func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {

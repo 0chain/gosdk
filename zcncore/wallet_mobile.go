@@ -5,6 +5,7 @@ package zcncore
 
 import (
 	"github.com/0chain/gosdk/core/client"
+	"github.com/0chain/gosdk/core/screstapi"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"strconv"
 )
@@ -32,7 +33,7 @@ func (w *wallet) Sign(hash string) (string, error) {
 // GetWalletBalance retrieve wallet balance from sharders
 //   - id: client id
 func GetWalletBalance(id string) (int64, error) {
-	response, err := client.GetBalance(id)
+	response, err := screstapi.GetBalance(id)
 	if err != nil {
 		return 0, err
 	}

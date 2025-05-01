@@ -44,14 +44,16 @@ import (
 )
 
 var (
-	noBLOBBERS       = errors.New("", "No Blobbers set in this allocation")
-	notInitialized   = errors.New("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
-	IsWasm           = false
-	MultiOpBatchSize = 50
-	RepairBatchSize  = 50
-	Workdir          string
-	logChanMap       = make(map[string]chan logEntry)
-	logMapMutex      = &sync.Mutex{}
+	noBLOBBERS                   = errors.New("", "No Blobbers set in this allocation")
+	notInitialized               = errors.New("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
+	IsWasm                       = false
+	MultiOpBatchSize             = 50
+	RepairBatchSize              = 50
+	Workdir                      string
+	logChanMap                   = make(map[string]chan logEntry)
+	logMapMutex                  = &sync.Mutex{}
+	LogBlobberMonitoringFileSize = int64(0)
+	LogBlobberMonitoringChan     = make(chan BlobberMonitoring)
 )
 
 const (
@@ -78,6 +80,19 @@ const (
 
 var GetFileInfo = func(localpath string) (os.FileInfo, error) {
 	return sys.Files.Stat(localpath)
+}
+
+func SetBlobberMonitoringFileSize(val int64) {
+	LogBlobberMonitoringFileSize = val
+}
+
+type BlobberMonitoring struct {
+	BlobberId string `json:"blobber_id"`
+	Operation string `json:"operation"`
+	FileType  string `json:"file_type"`
+	FileSize  int64  `json:"file_size"`
+	TimeSpent int64  `json:"time_spent"`
+	Count     int    `json:"count"`
 }
 
 // BlobberAllocationStats represents the blobber allocation statistics.
@@ -422,7 +437,7 @@ func SetDownloadWorkerCount(count int) {
 
 // InitAllocation initializes the allocation.
 func (a *Allocation) InitAllocation() {
-	a.downloadChan = make(chan *DownloadRequest, 100)
+	a.downloadChan = make(chan *DownloadRequest, 400)
 	a.repairChan = make(chan *RepairRequest, 1)
 	a.ctx, a.ctxCancelF = context.WithCancel(context.Background())
 	a.downloadProgressMap = make(map[string]*DownloadRequest)
@@ -457,7 +472,7 @@ func (a *Allocation) generateAndSetOwnerSigningPublicKey() {
 	if a.OwnerPublicKey != client.PublicKey() {
 		return
 	}
-	privateSigningKey, err := generateOwnerSigningKey(a.OwnerPublicKey, a.Owner)
+	privateSigningKey, err := GenerateOwnerSigningKey(a.OwnerPublicKey, a.Owner)
 	if err != nil {
 		l.Logger.Error("Failed to generate owner signing key", zap.Error(err))
 		return
@@ -1385,7 +1400,7 @@ func (a *Allocation) generateDownloadRequest(
 	downloadReq.allocOwnerPubKey = a.OwnerPublicKey
 	downloadReq.allocOwnerSigningPubKey = a.OwnerSigningPublicKey
 	if len(a.privateSigningKey) == 0 {
-		sk, err := generateOwnerSigningKey(client.PublicKey(), client.Id())
+		sk, err := GenerateOwnerSigningKey(client.PublicKey(), client.Id())
 		if err != nil {
 			return nil, err
 		}
@@ -2338,18 +2353,6 @@ func (a *Allocation) GetAuthTicket(path, filename string,
 		return "", errors.New("invalid_path", "Path should be valid and absolute")
 	}
 
-	if referenceType == fileref.FILE && refereeClientID != "" {
-		fileMeta, err := a.GetFileMeta(path)
-		if err != nil {
-			return "", err
-		}
-
-		// private sharing is only available for encrypted file
-		if fileMeta.EncryptedKey == "" {
-			return "", ErrInvalidPrivateShare
-		}
-	}
-
 	shareReq := &ShareRequest{
 		ClientId:          a.Owner,
 		expirationSeconds: expiration,
@@ -2841,7 +2844,7 @@ func (a *Allocation) downloadFromAuthTicket(fileHandler sys.File, authTicket str
 	downloadReq.allocOwnerPubKey = a.OwnerPublicKey
 	downloadReq.allocOwnerSigningPubKey = a.OwnerSigningPublicKey
 	//for auth ticket set your own signing key
-	sk, err := generateOwnerSigningKey(client.PublicKey(), client.Id())
+	sk, err := GenerateOwnerSigningKey(client.PublicKey(), client.Id())
 	if err != nil {
 		return err
 	}
@@ -3295,7 +3298,7 @@ func (a *Allocation) DownloadDirectory(ctx context.Context, remotePath, localPat
 	}
 	defer sys.Files.RemoveAllDirectories()
 
-	oRefChan := a.ListObjects(ctx, remotePath, "", "", "", fileref.FILE, fileref.REGULAR, 0, getRefPageLimit)
+	oRefChan := a.ListObjects(ctx, remotePath, "", "", "", fileref.FILE, fileref.REGULAR, 0, getRefPageLimit, WithAuthToken(authTicket))
 	refSlice := make([]ORef, BatchSize)
 	refIndex := 0
 	wg := &sync.WaitGroup{}
@@ -3402,6 +3405,75 @@ func (a *Allocation) DownloadDirectory(ctx context.Context, remotePath, localPat
 	return nil
 }
 
+func (a *Allocation) DownloadObject(ctx context.Context, remotePath string, rangeStart, rangeEnd int64) (io.ReadCloser, error) {
+	fm, err := a.GetFileMeta(remotePath)
+	if err != nil {
+		return nil, err
+	}
+	if fm.Type != fileref.FILE {
+		return nil, errors.New("invalid_file_type", "Invalid file type. Expected file type")
+	}
+	var (
+		startBlock, endBlock int64
+	)
+	effectiveChunkSize := a.GetChunkReadSize(fm.EncryptedKey != "")
+	fileRangeSize := rangeEnd - rangeStart + 1
+	if rangeEnd < rangeStart {
+		fileRangeSize = fm.ActualFileSize
+	}
+	if rangeEnd >= rangeStart {
+		startBlock = int64(rangeStart / effectiveChunkSize)
+		if startBlock == 0 {
+			startBlock = 1
+		}
+		if rangeEnd < fileRangeSize {
+			endBlock = (fileRangeSize + effectiveChunkSize - 1) / effectiveChunkSize
+		} else {
+			endBlock = int64(rangeEnd+effectiveChunkSize-1) / effectiveChunkSize
+		}
+	} else {
+		startBlock = 1
+		endBlock = 0
+	}
+
+	if rangeEnd == -1 {
+		endBlock = 0
+		startBlock = int64(rangeStart / effectiveChunkSize)
+		if startBlock == 0 {
+			startBlock = 1
+		}
+		fileRangeSize = fm.ActualFileSize - rangeStart
+	}
+	pipeFile := sys.NewPipeFile()
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	downloadStatusBar := &StatusBar{
+		wg: wg,
+	}
+	err = a.DownloadByBlocksToFileHandler(pipeFile, remotePath, startBlock, endBlock, numBlockDownloads, false, downloadStatusBar, true)
+	if err != nil {
+		return nil, err
+	}
+	go func() {
+		wg.Wait()
+		if downloadStatusBar.err != nil {
+			pipeFile.CloseWithError(downloadStatusBar.err) //nolint: errcheck
+		} else {
+			pipeFile.Close() //nolint: errcheck
+		}
+	}()
+	startOffset := rangeStart - (startBlock-1)*effectiveChunkSize
+
+	if startOffset > 0 {
+		_, err = pipeFile.Seek(startOffset, io.SeekStart)
+		if err != nil {
+			return nil, err
+		}
+	}
+	lr := sys.NewLimitedReaderCloser(pipeFile.Reader(), fileRangeSize)
+	return lr, nil
+}
+
 // contextCanceled returns whether a context is canceled.
 func contextCanceled(ctx context.Context) bool {
 	select {
@@ -3445,4 +3517,8 @@ func logWorker(key string, logChan chan logEntry) {
 func writeLogEntry(blobberURL string, log logEntry) {
 	logChan := getLogChan(blobberURL)
 	logChan <- log
+}
+
+func addBlobberMonitoringLog(log BlobberMonitoring) {
+	LogBlobberMonitoringChan <- log
 }

@@ -150,7 +150,7 @@ var envProxy proxyFromEnv
 
 func init() {
 	Client = &http.Client{
-		Transport: http.DefaultTransport,
+		Transport: DefaultTransport,
 	}
 
 	FastHttpClient = &fasthttp.Client{

@@ -290,8 +290,16 @@ func (pf *PipeFile) Close() error {
 	return pf.w.Close()
 }
 
+func (pf *PipeFile) CloseWithError(err error) {
+	pf.w.CloseWithError(err)
+}
+
 func (pf *PipeFile) Read(p []byte) (int, error) {
 	return pf.r.Read(p)
+}
+
+func (pf *PipeFile) Reader() io.ReadCloser {
+	return pf.r
 }
 
 func (pf *PipeFile) Stat() (fs.FileInfo, error) {
@@ -303,5 +311,39 @@ func (pf *PipeFile) Sync() error {
 }
 
 func (pf *PipeFile) Seek(offset int64, whence int) (int64, error) {
-	return 0, nil
+	if whence != io.SeekStart {
+		return 0, os.ErrInvalid
+	}
+	if offset < 0 {
+		return 0, os.ErrInvalid
+	}
+	return io.CopyN(io.Discard, pf.r, offset)
+}
+
+type LimitedReaderCloser struct {
+	R io.ReadCloser // underlying reader
+	N int64         // max bytes remaining
+}
+
+func NewLimitedReaderCloser(r io.ReadCloser, n int64) *LimitedReaderCloser {
+	return &LimitedReaderCloser{
+		R: r,
+		N: n,
+	}
+}
+
+func (l *LimitedReaderCloser) Read(p []byte) (n int, err error) {
+	if l.N <= 0 {
+		return 0, io.EOF
+	}
+	if int64(len(p)) > l.N {
+		p = p[0:l.N]
+	}
+	n, err = l.R.Read(p)
+	l.N -= int64(n)
+	return
+}
+
+func (l *LimitedReaderCloser) Close() error {
+	return l.R.Close()
 }
