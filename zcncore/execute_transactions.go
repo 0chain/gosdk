@@ -244,7 +244,7 @@ func DeleteSharder(id string) (hash, out string, nonce int64, txn *transaction.T
 	}, true)
 }
 
-func RefreshRemoveProviders(id string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+func RefreshRemoveProviders() (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 	return transaction.SmartContractTxn(MinerSmartContractAddress, transaction.SmartContractTxnData{
 		Name:      "refresh_remove_providers",
 		InputArgs: nil,
