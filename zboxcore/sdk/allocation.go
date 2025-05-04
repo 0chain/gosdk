@@ -3298,7 +3298,7 @@ func (a *Allocation) DownloadDirectory(ctx context.Context, remotePath, localPat
 	}
 	defer sys.Files.RemoveAllDirectories()
 
-	oRefChan := a.ListObjects(ctx, remotePath, "", "", "", fileref.FILE, fileref.REGULAR, 0, getRefPageLimit)
+	oRefChan := a.ListObjects(ctx, remotePath, "", "", "", fileref.FILE, fileref.REGULAR, 0, getRefPageLimit, WithAuthToken(authTicket))
 	refSlice := make([]ORef, BatchSize)
 	refIndex := 0
 	wg := &sync.WaitGroup{}
@@ -3403,6 +3403,75 @@ func (a *Allocation) DownloadDirectory(ctx context.Context, remotePath, localPat
 		sb.Completed(a.ID, remotePath, filepath.Base(remotePath), "", totalSize, OpDownload)
 	}
 	return nil
+}
+
+func (a *Allocation) DownloadObject(ctx context.Context, remotePath string, rangeStart, rangeEnd int64) (io.ReadCloser, error) {
+	fm, err := a.GetFileMeta(remotePath)
+	if err != nil {
+		return nil, err
+	}
+	if fm.Type != fileref.FILE {
+		return nil, errors.New("invalid_file_type", "Invalid file type. Expected file type")
+	}
+	var (
+		startBlock, endBlock int64
+	)
+	effectiveChunkSize := a.GetChunkReadSize(fm.EncryptedKey != "")
+	fileRangeSize := rangeEnd - rangeStart + 1
+	if rangeEnd < rangeStart {
+		fileRangeSize = fm.ActualFileSize
+	}
+	if rangeEnd >= rangeStart {
+		startBlock = int64(rangeStart / effectiveChunkSize)
+		if startBlock == 0 {
+			startBlock = 1
+		}
+		if rangeEnd < fileRangeSize {
+			endBlock = (fileRangeSize + effectiveChunkSize - 1) / effectiveChunkSize
+		} else {
+			endBlock = int64(rangeEnd+effectiveChunkSize-1) / effectiveChunkSize
+		}
+	} else {
+		startBlock = 1
+		endBlock = 0
+	}
+
+	if rangeEnd == -1 {
+		endBlock = 0
+		startBlock = int64(rangeStart / effectiveChunkSize)
+		if startBlock == 0 {
+			startBlock = 1
+		}
+		fileRangeSize = fm.ActualFileSize - rangeStart
+	}
+	pipeFile := sys.NewPipeFile()
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	downloadStatusBar := &StatusBar{
+		wg: wg,
+	}
+	err = a.DownloadByBlocksToFileHandler(pipeFile, remotePath, startBlock, endBlock, numBlockDownloads, false, downloadStatusBar, true)
+	if err != nil {
+		return nil, err
+	}
+	go func() {
+		wg.Wait()
+		if downloadStatusBar.err != nil {
+			pipeFile.CloseWithError(downloadStatusBar.err) //nolint: errcheck
+		} else {
+			pipeFile.Close() //nolint: errcheck
+		}
+	}()
+	startOffset := rangeStart - (startBlock-1)*effectiveChunkSize
+
+	if startOffset > 0 {
+		_, err = pipeFile.Seek(startOffset, io.SeekStart)
+		if err != nil {
+			return nil, err
+		}
+	}
+	lr := sys.NewLimitedReaderCloser(pipeFile.Reader(), fileRangeSize)
+	return lr, nil
 }
 
 // contextCanceled returns whether a context is canceled.
