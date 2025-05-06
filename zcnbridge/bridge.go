@@ -1012,56 +1012,44 @@ func truncateHex(hexStr string, maxLen int) string {
 
 // estimateAlchemyGasAmount performs gas amount estimation for the given transaction using Alchemy provider
 func (b *BridgeClient) estimateAlchemyGasAmount(ctx context.Context, to, data string) (float64, error) {
-	client := jsonrpc.NewClient(b.EthereumNodeURL)
+	toAddress := common.HexToAddress(to)
 
-	Logger.Info("Estimating gas via Alchemy",
+	// Decode hex data
+	dataBytes, err := hex.DecodeString(strings.TrimPrefix(data, "0x"))
+	if err != nil {
+		Logger.Error("Failed to decode data hex string", zap.String("data", data), zap.Error(err))
+		return 0, errors.Wrap(err, "failed to decode data hex string")
+	}
+
+	fromAddress := common.HexToAddress(b.EthereumAddress)
+
+	Logger.Info("Estimating gas via Ethereum client",
 		zap.String("to", to),
 		zap.String("dataPrefix", truncateHex(data, 32)),
 		zap.String("node", b.EthereumNodeURL),
 	)
 
-	resp, err := client.Call(ctx, "eth_estimateGas", []*AlchemyGasEstimationRequest{{
-		To:   to,
-		Data: data,
-	}})
+	gasLimit, err := b.ethereumClient.EstimateGas(ctx, eth.CallMsg{
+		From: fromAddress,
+		To:   &toAddress,
+		Data: dataBytes,
+	})
+
 	if err != nil {
-		Logger.Error("Alchemy estimateGas RPC call failed",
+		Logger.Error("EstimateGas call failed",
 			zap.String("to", to),
 			zap.String("node", b.EthereumNodeURL),
 			zap.Error(err),
 		)
-		return 0, errors.Wrap(err, "gas price estimation failed")
+		return 0, errors.Wrap(err, "gas estimation failed")
 	}
-
-	if resp.Error != nil {
-		Logger.Error("Alchemy estimateGas RPC responded with error",
-			zap.String("to", to),
-			zap.String("data", truncateHex(data, 64)),
-			zap.String("error", resp.Error.Error()),
-			zap.String("node", b.EthereumNodeURL),
-		)
-		return 0, errors.Wrap(errors.New(resp.Error.Error()), "gas price estimation failed")
-	}
-
-	gasAmountRaw, ok := resp.Result.(string)
-	if !ok {
-		Logger.Error("Unexpected result format in estimateAlchemyGasAmount",
-			zap.Any("resp.Result", resp.Result),
-		)
-		return 0, errors.New("failed to parse gas amount")
-	}
-
-	gasAmountInt := new(big.Float)
-	gasAmountInt.SetString(gasAmountRaw)
-
-	gasAmountFloat, _ := gasAmountInt.Float64()
 
 	Logger.Info("Gas estimation successful",
-		zap.String("gasAmountHex", gasAmountRaw),
-		zap.Float64("gasAmountFloat", gasAmountFloat),
+		zap.Uint64("gasAmount", gasLimit),
 	)
 
-	return gasAmountFloat, nil
+	// Add 10% buffer to the estimated gas amount
+	return float64(addPercents(gasLimit, 10).Uint64()), nil
 }
 
 // EstimateBurnWZCNGasAmount performs gas amount estimation for the given wzcn burn transaction.
