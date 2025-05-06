@@ -229,7 +229,7 @@ func (b *BridgeClient) QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPa
 			Amount:            common.Balance(burnTicket.Amount),
 			Nonce:             burnTicket.Nonce,
 			Signatures:        sigs,
-			ReceivingClientID: burnTicket.ReceivingClientID,
+			ReceivingClientID: strings.TrimPrefix(burnTicket.ReceivingClientID, "0x"),
 		}
 
 		return payload, nil
