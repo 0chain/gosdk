@@ -566,11 +566,14 @@ func (req *CommitRequestV2) commitBlobber(rootHash []byte, rootWeight, prevWeigh
 	chainHash := hex.EncodeToString(hasher.Sum(nil))
 	wm.ChainHash = chainHash
 	wm.ChainSize = int64(rootWeight) * CHUNK_SIZE
+	wm.Timestamp = req.timestamp
 	if blobber.LatestWM != nil {
 		wm.PreviousAllocationRoot = blobber.LatestWM.AllocationRoot
+		if wm.Timestamp <= blobber.LatestWM.Timestamp {
+			wm.Timestamp = blobber.LatestWM.Timestamp + 1
+		}
 	}
 	wm.BlobberID = blobber.ID
-	wm.Timestamp = req.timestamp
 	wm.AllocationID = req.allocationObj.ID
 	wm.FileMetaRoot = fileMetaRoot
 	wm.ClientID = client.Id()
