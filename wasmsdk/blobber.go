@@ -1273,6 +1273,22 @@ func cancelDownloadBlocks(allocationID, remotePath string, start, end int64) err
 	return alloc.CancelDownloadBlocks(remotePath, start, end)
 }
 
+// set consensus threshold for the given allocation
+func setConsensusThreshold(allocationID string, threshold int) error {
+	alloc, err := getAllocation(allocationID)
+	if err != nil {
+		return err
+	}
+	if threshold > alloc.DataShards+alloc.ParityShards {
+		threshold = alloc.DataShards + alloc.ParityShards
+	}
+	if threshold < alloc.DataShards {
+		return errors.New("consensus threshold should be greater than data shards")
+	}
+	alloc.SetConsensusThreshold(threshold)
+	return nil
+}
+
 func startListener(respChan chan string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

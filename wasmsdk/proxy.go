@@ -251,6 +251,7 @@ func main() {
 				"downloadDirectory":         downloadDirectory,
 				"cancelDownloadDirectory":   cancelDownloadDirectory,
 				"cancelDownloadBlocks":      cancelDownloadBlocks,
+				"setConsensusThreshold":     setConsensusThreshold,
 
 				// player
 				"play":           play,
