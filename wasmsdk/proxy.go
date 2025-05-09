@@ -251,6 +251,8 @@ func main() {
 				"downloadDirectory":         downloadDirectory,
 				"cancelDownloadDirectory":   cancelDownloadDirectory,
 				"cancelDownloadBlocks":      cancelDownloadBlocks,
+				"cancelRepair":              cancelRepair,
+				"cancelDownload":            cancelDownload,
 
 				// player
 				"play":           play,

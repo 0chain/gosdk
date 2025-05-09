@@ -179,6 +179,9 @@ func (req *ListRequest) getlistFromBlobbers() ([]*listResponse, error) {
 	consensusMap := make(map[string][]*blockchain.StorageNode)
 	var consensusHash string
 	errCnt := 0
+	if numList == 0 {
+		return nil, errors.New("no blobbers", "getlistFromBlobbers")
+	}
 	for i := 0; i < numList; i++ {
 		listInfos[i] = <-rspCh
 		if !req.forRepair {
