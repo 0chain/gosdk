@@ -29,45 +29,97 @@ Other apps are [Bolt](https://bolt.holdings/), a wallet that is very secure with
 
 ## Installation
 
-### Supported Platforms
-
 This repository currently supports the following platforms:
 
 - Mac OSX Mojave 10.14.5 or Above
 - Linux (Ubuntu/bionic): This includes all Ubuntu 18+ platforms, so Ubuntu 19, Linux Mint 19 etc. (apt based package installer)
 - Linux (RHEL/CENTOS 7+): All Releases based on RHEL 7+, Centos 7+, Fedora 30 etc. (yum based package installer)
 
-### Instructions
+### Step 1: Create a New Project Folder
+Open your terminal and run:
+```bash
+mkdir zus-go-demo
+cd zus-go-demo
+```
+This creates and enters a new folder named `zus-go-demo`.
 
-- Go is required to build gosdk code. Instructions can be found [here](https://go.dev/doc/install)
+### Step 2: Initialize a Go Module
+Run:
+```bash
+go mod init zus-go-demo
+```
+This creates a `go.mod` file that declares this folder as a Go module. You'll use this file to track dependencies like the Züs SDK.
 
-1.  Save below code as `sdkversion.go`
+If you are using VS Code, you can use the `code` CLI command to open the folder:
+```bash
+code .
+```
+If not, open VS Code manually and open the `zus-go-demo` folder from the File menu.
 
-        package main
+### Step 3: Install Züs SDK from staging Branch
+In your terminal:
+```bash
+go get github.com/0chain/gosdk@staging
+```
+This tells Go to pull the latest code from the `staging` branch of the SDK repo.
 
-        import (
-            "fmt"
+**Expected output:**
+```
+go: added github.com/0chain/gosdk v1.8.18-0.20230901213317-53d640a9b7f9
+```
+This is a pseudo-version that references a specific commit on the `staging` branch.
 
-            "github.com/0chain/gosdk/zcncore"
-        )
+### Step 4: Create Your `main.go` File
+In the root of `zus-go-demo`, create a file named `main.go` and paste this:
+```go
+package main
 
-        func main() {
-            fmt.Println("gosdk version: ", zcncore.GetVersion())
-        }
+import (
+	"fmt"
 
-2.  Run below command: (if you don't have gosdk already in your GOPATH)
+	"github.com/0chain/gosdk/zcncore"
+)
 
-        go get github.com/0chain/gosdk
+func main() {
+	fmt.Println("Züs Go SDK is ready!")
+	fmt.Println("SDK Version:", zcncore.GetVersion())
+}
+```
+This imports the SDK and prints its version.
 
-3.  Build the sample application sdkversion
+### Step 5: Tidy Up Your Dependencies
+Run:
+```bash
+go mod tidy
+```
+This cleans up the `go.mod` and `go.sum` files by removing unused and downloading used dependencies.
 
-        go build -o sdkversion sdkversion.go
+If you hadn’t imported anything yet, you might see a warning like:
+```
+go: warning: "all" matched no packages
+```
+If you see a missing `go.sum` entry error (e.g., after importing packages), and `go mod tidy` does not fetch dependencies, try:
+```bash
+go mod tidy -e
+```
+The `-e` flag tells Go to continue downloading even if errors are detected.
 
-4.  Run the executable
+### Step 6: Run Your Project
+Run the Go file:
+```bash
+go run main.go
+```
+This confirms that the SDK is installed, imported, and running.
 
-        ./sdkversion
-
-5.  If it prints the gosdk version installed then setup is complete.
+Alternatively, you can build the sample application:
+```bash
+go build -o main main.go
+```
+Run the executable:
+```bash
+./main
+```
+If the GoSDK version is printed successfully, the installation is complete.
 
 ## Mobile Builds
 
