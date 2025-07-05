@@ -85,18 +85,27 @@ func init() {
 
 func httpDo(req *http.Request, ctx context.Context, cncl context.CancelFunc, f func(*http.Response, error) error) error {
 	c := make(chan error, 1)
+	done := make(chan struct{})
 
-	go func() { c <- f(Client.Do(req.WithContext(ctx))) }()
+	go func() {
+        select {
+        case c <- f(Client.Do(req.WithContext(ctx))):
+            // normal completion
+        case <-done:
+            // context cancelled, do not call f
+        }
+    }()
 
 	select {
-	case <-ctx.Done():
-		// Use the cancel function only after trying to get the result.
-		<-c // Wait for f to return.
-		return ctx.Err()
-	case err := <-c:
-		// Ensure that we call cncl after we are done with the response
-		defer cncl() // Move this here to ensure we cancel after processing
-		return err
+		case <-ctx.Done():
+			// Use the cancel function only after trying to get the result.
+			close(done)
+			cncl()
+			return ctx.Err()
+		case err := <-c:
+			// Ensure that we call cncl after we are done with the response
+			defer cncl() // Move this here to ensure we cancel after processing
+			return err
 	}
 }
 
