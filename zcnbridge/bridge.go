@@ -1003,33 +1003,53 @@ func (b *BridgeClient) estimateTenderlyGasAmount(ctx context.Context) (float64, 
 	return 8000000, nil
 }
 
+func truncateHex(hexStr string, maxLen int) string {
+	if len(hexStr) <= maxLen {
+		return hexStr
+	}
+	return hexStr[:maxLen] + "..."
+}
+
 // estimateAlchemyGasAmount performs gas amount estimation for the given transaction using Alchemy provider
 func (b *BridgeClient) estimateAlchemyGasAmount(ctx context.Context, to, data string) (float64, error) {
-	client := jsonrpc.NewClient(b.EthereumNodeURL)
+	toAddress := common.HexToAddress(to)
 
-	resp, err := client.Call(ctx, "eth_estimateGas", []*AlchemyGasEstimationRequest{{
-		To:   to,
-		Data: data,
-	}})
+	// Decode hex data
+	dataBytes, err := hex.DecodeString(strings.TrimPrefix(data, "0x"))
 	if err != nil {
-		return 0, errors.Wrap(err, "gas price estimation failed")
+		Logger.Error("Failed to decode data hex string", zap.String("data", data), zap.Error(err))
+		return 0, errors.Wrap(err, "failed to decode data hex string")
 	}
 
-	if resp.Error != nil {
-		return 0, errors.Wrap(errors.New(resp.Error.Error()), "gas price estimation failed")
+	fromAddress := common.HexToAddress(b.EthereumAddress)
+
+	Logger.Info("Estimating gas via Ethereum client",
+		zap.String("to", to),
+		zap.String("dataPrefix", truncateHex(data, 32)),
+		zap.String("node", b.EthereumNodeURL),
+	)
+
+	gasLimit, err := b.ethereumClient.EstimateGas(ctx, eth.CallMsg{
+		From: fromAddress,
+		To:   &toAddress,
+		Data: dataBytes,
+	})
+
+	if err != nil {
+		Logger.Error("EstimateGas call failed",
+			zap.String("to", to),
+			zap.String("node", b.EthereumNodeURL),
+			zap.Error(err),
+		)
+		return 0, errors.Wrap(err, "gas estimation failed")
 	}
 
-	gasAmountRaw, ok := resp.Result.(string)
-	if !ok {
-		return 0, errors.New("failed to parse gas amount")
-	}
+	Logger.Info("Gas estimation successful",
+		zap.Uint64("gasAmount", gasLimit),
+	)
 
-	gasAmountInt := new(big.Float)
-	gasAmountInt.SetString(gasAmountRaw)
-
-	gasAmountFloat, _ := gasAmountInt.Float64()
-
-	return gasAmountFloat, nil
+	// Add 10% buffer to the estimated gas amount
+	return float64(addPercents(gasLimit, 10).Uint64()), nil
 }
 
 // EstimateBurnWZCNGasAmount performs gas amount estimation for the given wzcn burn transaction.
