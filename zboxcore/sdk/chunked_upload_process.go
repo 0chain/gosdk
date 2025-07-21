@@ -43,6 +43,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 	fileShards []blobberShards, thumbnailShards blobberShards,
 	isFinal bool, uploadLength int64) error {
 
+	fmt.Printf("inside su processUpload for chunk %d-%d\n", chunkStartIndex, chunkEndIndex)
 	//chunk has not be uploaded yet
 	if chunkEndIndex <= su.progress.ChunkIndex {
 		// Write data to hashers
@@ -50,6 +51,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 			hasher := su.blobbers[i].progress.Hasher
 			for _, chunkBytes := range blobberShard {
 				err := hasher.WriteToFixedMT(chunkBytes)
+				fmt.Printf("WriteToFixedMT returned: %v\n", err)
 				if err != nil {
 					if su.statusCallback != nil {
 						su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
@@ -57,6 +59,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 					return err
 				}
 				err = hasher.WriteToValidationMT(chunkBytes)
+				fmt.Printf("WriteToValidationMT returned: %v\n", err)
 				if err != nil {
 					if su.statusCallback != nil {
 						su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
@@ -88,6 +91,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 
 	wgErrors := make(chan error, len(su.blobbers))
 	if len(fileShards) == 0 {
+		fmt.Printf("No data to upload, skipping upload process\n")
 		return thrown.New("upload_failed", "Upload failed. No data to upload")
 	}
 
@@ -105,10 +109,21 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		wg.Add(1)
 		go func(b *ChunkedUploadBlobber, thumbnailChunkData []byte, pos uint64) {
 			defer wg.Done()
-			uploadData, err := su.formBuilder.Build(
-				&su.fileMeta, blobber.progress.Hasher, su.progress.ConnectionID, blobber.blobber.ID,
-				su.chunkSize, chunkStartIndex, chunkEndIndex, isFinal, su.encryptedKey, su.progress.EncryptedKeyPoint,
-				fileShards[pos], thumbnailChunkData, su.shardSize)
+			var uploadData blobberData
+			var err error
+			if su.wallet != nil {
+				uploadData, err = su.formBuilder.Build(
+					&su.fileMeta, blobber.progress.Hasher, su.progress.ConnectionID, blobber.blobber.ID,
+					su.chunkSize, chunkStartIndex, chunkEndIndex, isFinal, su.encryptedKey, su.progress.EncryptedKeyPoint,
+					fileShards[pos], thumbnailChunkData, su.shardSize, su.wallet.ClientID)
+					fmt.Printf("Build returned: %v\n", err)
+			} else {
+				uploadData, err = su.formBuilder.Build(
+					&su.fileMeta, blobber.progress.Hasher, su.progress.ConnectionID, blobber.blobber.ID,
+					su.chunkSize, chunkStartIndex, chunkEndIndex, isFinal, su.encryptedKey, su.progress.EncryptedKeyPoint,
+					fileShards[pos], thumbnailChunkData, su.shardSize)
+					fmt.Printf("Build returned: %v\n", err)
+			}
 			if err != nil {
 				errC := atomic.AddInt32(&errCount, 1)
 				if errC > int32(su.allocationObj.ParityShards-1) { // If atleast data shards + 1 number of blobbers can process the upload, it can be repaired later
@@ -136,6 +151,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 	close(wgErrors)
 	fileShards = nil
 	for err := range wgErrors {
+		fmt.Printf("Error in upload: %v\n", err)
 		su.removeProgress()
 		return thrown.New("upload_failed", fmt.Sprintf("Upload failed. %s", err))
 	}
@@ -159,6 +175,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		blobberUpload.uploadBody = finalBuffer
 		return su.uploadToBlobbers(blobberUpload)
 	}
+	fmt.Printf("ChunkedUpload processUpload completed for chunk %d-%d\n", chunkStartIndex, chunkEndIndex)
 	return nil
 }
 

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/0chain/gosdk/core/conf"
 
@@ -34,6 +35,8 @@ type Client struct {
 	nonce           int64
 	txnFee          uint64
 	sign            SignFunc
+	wg              map[string]*sync.WaitGroup
+	walletCount     map[string]int // maintains count of wallets in the WaitGroup by Client ID
 }
 
 type InitSdkOptions struct {
@@ -74,7 +77,7 @@ func init() {
 		// get sign lock
 		<-sigC
 		fmt.Println("Sign: with sys.SignWithAuth:", sys.SignWithAuth, "sysKeys:", GetClientSysKeys(clients...))
-		sig, err := sys.SignWithAuth(hash, client.signatureScheme, GetClientSysKeys(clients...))
+		sig, err := sys.SignWithAuth(hash, client.signatureScheme, GetClientSysKeys(clients...), wallet.ClientID)
 		sigC <- struct{}{}
 		return sig, err
 	}
@@ -82,6 +85,9 @@ func init() {
 	sys.Verify = verifySignature
 	sys.VerifyWith = verifySignatureWith
 	sys.VerifyEd25519With = verifyEd25519With
+
+	client.wg = make(map[string]*sync.WaitGroup)
+	client.walletCount = make(map[string]int)
 }
 
 var SignFn = func(hash string) (string, error) {
@@ -95,16 +101,18 @@ var SignFn = func(hash string) (string, error) {
 	return ss.Sign(hash)
 }
 
-func signHashWithAuth(hash, signatureScheme string, keys []sys.KeyPair) (string, error) {
+func signHashWithAuth(hash, signatureScheme string, keys []sys.KeyPair, clientID string) (string, error) {
 	sig, err := sys.Sign(hash, signatureScheme, keys)
 	if err != nil {
 		return "", fmt.Errorf("failed to sign with split key: %v", err)
 	}
 
+	fmt.Printf("Signature: %s\n", sig)
+	fmt.Printf("ClientID signHashWithAuth: %s\n", clientID)
 	data, err := json.Marshal(AuthMessage{
 		Hash:      hash,
 		Signature: sig,
-		ClientID:  client.wallet.ClientID,
+		ClientID:  clientID,
 	})
 	if err != nil {
 		return "", err
@@ -207,6 +215,37 @@ func SetWallet(w zcncrypto.Wallet) {
 		client.wallets = make(map[string]*zcncrypto.Wallet)
 	}
 	client.wallets[w.ClientID] = &w
+}
+
+func GetWalletByClientID(clientID string) *zcncrypto.Wallet {
+	if client.wallets == nil {
+		return nil
+	}
+	if _, exists := client.wallets[clientID]; !exists {
+        return nil
+    }
+	return client.wallets[clientID]
+}
+
+func AddWallet(wallet zcncrypto.Wallet) {
+	if client.wallets == nil {
+		client.wallets = make(map[string]*zcncrypto.Wallet)
+	}
+	if _, exists := client.wg[wallet.ClientID]; !exists {
+        client.wg[wallet.ClientID] = &sync.WaitGroup{}
+    }
+	client.wg[wallet.ClientID].Add(1)
+	client.walletCount[wallet.ClientID]++
+	client.wallets[wallet.ClientID] = &wallet
+}
+
+// RemoveWallet should be set before any transaction or client specific APIs
+func RemoveWallet(clientID string) {
+	client.wg[clientID].Done()
+	client.walletCount[clientID]--
+	if client.walletCount[clientID] == 0 {
+		delete(client.wallets, clientID)
+	}
 }
 
 // SetWalletMode sets current wallet split key mode.

@@ -1082,6 +1082,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 			go func(pos int) {
 				defer wg.Done()
 				err := mo.createConnectionObj(pos)
+				fmt.Printf("Multioperation: create connection for blobber %d , err : %v", pos, err)
 				if err != nil {
 					l.Logger.Error(err.Error())
 					connectionErrors[pos] = err
@@ -1189,8 +1190,10 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 			mo.operations = append(mo.operations, operation)
 		}
 
+		fmt.Printf("Multioperation: operations to process %d ; operations: %v \n", len(mo.operations), mo.operations)
 		if len(mo.operations) > 0 {
 			err := mo.Process()
+			fmt.Printf("Multioperation: Process operations, err : %v", err)
 			if err != nil {
 				return err
 			}

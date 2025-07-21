@@ -24,7 +24,7 @@ type ChunkedUploadFormBuilder interface {
 		fileMeta *FileMeta, hasher Hasher, connectionID, blobberID string,
 		chunkSize int64, chunkStartIndex, chunkEndIndex int,
 		isFinal bool, encryptedKey, encryptedKeyPoint string, fileChunksData [][]byte,
-		thumbnailChunkData []byte, shardSize int64,
+		thumbnailChunkData []byte, shardSize int64, clients... string,
 	) (blobberData, error)
 }
 
@@ -59,7 +59,7 @@ func (b *chunkedUploadFormBuilder) Build(
 	fileMeta *FileMeta, hasher Hasher, connectionID, blobberID string,
 	chunkSize int64, chunkStartIndex, chunkEndIndex int,
 	isFinal bool, encryptedKey, encryptedKeyPoint string, fileChunksData [][]byte,
-	thumbnailChunkData []byte, shardSize int64,
+	thumbnailChunkData []byte, shardSize int64, clients... string,
 ) (blobberData, error) {
 
 	metadata := ChunkedUploadFormMetadata{
@@ -149,6 +149,7 @@ func (b *chunkedUploadFormBuilder) Build(
 			metadata.FileBytesLen += len(chunkBytes)
 		}
 
+		fmt.Printf("b.privateSigningKey: %v\n", b.privateSigningKey)
 		if isFinal && i == numBodies-1 {
 			err = hasher.Finalize()
 			if err != nil {
@@ -206,7 +207,7 @@ func (b *chunkedUploadFormBuilder) Build(
 				}
 				formData.ValidationRootSignature = hex.EncodeToString(sig)
 			} else {
-				rootSig, err := client.Sign(hash)
+				rootSig, err := client.Sign(hash, clients...)
 				if err != nil {
 					return res, err
 				}

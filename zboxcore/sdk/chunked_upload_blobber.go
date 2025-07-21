@@ -71,6 +71,12 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 
 	eg, _ := errgroup.WithContext(ctx)
 
+	clientID := su.allocationObj.Owner
+	if su.wallet != nil {
+		clientID = su.wallet.ClientID
+	}
+	fmt.Printf("clientID: %s\n", clientID)
+	fmt.Printf("allocation owner: %s\n", su.allocationObj.Owner)
 	for dataInd := 0; dataInd < len(dataBuffers); dataInd++ {
 		ind := dataInd
 		eg.Go(func() error {
@@ -80,10 +86,18 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 			var req *fasthttp.Request
 			for i := 0; i < 6; i++ {
 				req, err = zboxutil.NewFastUploadRequest(
-					sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, dataBuffers[ind].Bytes(), su.httpMethod, su.allocationObj.Owner)
+					sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, dataBuffers[ind].Bytes(), su.httpMethod, clientID)
 				if err != nil {
 					return err
 				}
+
+				// Print all headers
+				fmt.Printf("Blobber Upload Request Headers for %s:\n", sb.blobber.Baseurl)
+				req.Header.VisitAll(func(k, v []byte) {
+					fmt.Printf("  %s: %s\n", string(k), string(v))
+				})
+				// Print body
+				// fmt.Printf("Blobber Upload Request Body for %s:\n%s\n", sb.blobber.Baseurl, string(req.Body()))
 
 				req.Header.Add("Content-Type", contentSlice[ind])
 				err, shouldContinue = func() (err error, shouldContinue bool) {

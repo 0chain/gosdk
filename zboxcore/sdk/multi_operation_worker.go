@@ -16,6 +16,7 @@ import (
 
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/util"
+	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
@@ -63,10 +64,12 @@ type MultiOperation struct {
 	changes   [][]allocationchange.AllocationChange
 	changesV2 []allocationchange.AllocationChangeV2
 	isRepair  bool
+	wallet 	  *zcncrypto.Wallet
 }
 
 func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
-
+	// fmt.Printf("Creating connection object for blobber index %d with connection ID %s", blobberIdx, mo.connectionID)
+	fmt.Printf("Creating connection object for blobber index %d with connection ID %s\n", blobberIdx, mo.connectionID)
 	defer func() {
 		if err == nil {
 			mo.maskMU.Lock()
@@ -85,6 +88,7 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 	blobber := mo.allocationObj.Blobbers[blobberIdx]
 
 	for i := 0; i < 3; i++ {
+		fmt.Printf("Iter %d", i+1)
 		err, shouldContinue = func() (err error, shouldContinue bool) {
 			body := new(bytes.Buffer)
 			formWriter := multipart.NewWriter(body)
@@ -95,11 +99,56 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 			}
 			formWriter.Close()
 
+			fmt.Printf("Creating connection object for blobber %s with connection ID %s", blobber.Baseurl, mo.connectionID)
 			var httpreq *http.Request
-			httpreq, err = zboxutil.NewConnectionRequest(blobber.Baseurl, mo.allocationObj.ID, mo.allocationObj.Tx, mo.allocationObj.sig, body, mo.allocationObj.Owner)
-			if err != nil {
-				l.Logger.Error(blobber.Baseurl, "Error creating new connection request", err)
-				return
+			if mo.wallet != nil {
+				fmt.Printf("mo wallet : %v", *mo.wallet)
+				httpreq, err = zboxutil.NewConnectionRequest(blobber.Baseurl, mo.allocationObj.ID, mo.allocationObj.Tx, mo.allocationObj.sig, body, mo.wallet.ClientID)
+				if err != nil {
+					l.Logger.Error(blobber.Baseurl, "Error creating new connection request by wallet", err)
+					return err, false
+				}
+
+
+				// log
+
+				fmt.Printf("Request created with wallet")
+				fmt.Printf("Request URL: %s\n", httpreq.URL.String())
+				fmt.Printf("Request Method: %s\n", httpreq.Method)
+				fmt.Printf("Request Headers:\n")
+				for k, v := range httpreq.Header {
+					fmt.Printf("  %s: %v\n", k, v)
+				}
+				if httpreq.Body != nil {
+					bodyBytes, _ := io.ReadAll(httpreq.Body)
+					fmt.Printf("Request Body: %s\n", string(bodyBytes))
+					// Restore body for later use
+					httpreq.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+				}
+
+			} else {
+				fmt.Printf("No wallet")
+				httpreq, err = zboxutil.NewConnectionRequest(blobber.Baseurl, mo.allocationObj.ID, mo.allocationObj.Tx, mo.allocationObj.sig, body, mo.allocationObj.Owner)
+				if err != nil {
+					l.Logger.Error(blobber.Baseurl, "Error creating new connection request", err)
+					return
+				}
+
+				// log
+
+				fmt.Printf("Request created without wallet")
+				fmt.Printf("Request URL: %s\n", httpreq.URL.String())
+				fmt.Printf("Request Method: %s\n", httpreq.Method)
+				fmt.Printf("Request Headers:\n")
+				for k, v := range httpreq.Header {
+					fmt.Printf("  %s: %v\n", k, v)
+				}
+				if httpreq.Body != nil {
+					bodyBytes, _ := io.ReadAll(httpreq.Body)
+					fmt.Printf("Request Body: %s\n", string(bodyBytes))
+					// Restore body for later use
+					httpreq.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+				}
 			}
 
 			httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
@@ -109,6 +158,7 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 				resp = r
 				return err
 			})
+			fmt.Printf("Create Connection Err: %v", err)
 			if err != nil {
 				logger.Logger.Error("Create Connection: ", err)
 				return
@@ -126,6 +176,8 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 
 			latestRespMsg = string(respBody)
 			latestStatusCode = resp.StatusCode
+			fmt.Printf("resp status code : %v", latestStatusCode)
+			fmt.Printf("resp status body : %v", latestRespMsg)
 			if resp.StatusCode == http.StatusOK {
 				l.Logger.Debug(blobber.Baseurl, " connection obj created.")
 				return
@@ -147,7 +199,8 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 			err = errors.New("response_error", string(respBody))
 			return
 		}()
-
+		
+		fmt.Printf("Iter %d; err : %v, shouldContinue: %v", i+1, err, shouldContinue)
 		if err != nil {
 			return
 		}
@@ -163,6 +216,7 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 }
 
 func (mo *MultiOperation) Process() error {
+	fmt.Printf("MultiOperation Process start")
 	l.Logger.Debug("MultiOperation Process start")
 	wg := &sync.WaitGroup{}
 	if mo.allocationObj.StorageVersion == 0 {
@@ -270,7 +324,11 @@ func (mo *MultiOperation) Process() error {
 	start = time.Now()
 	status := Commit
 	if !mo.isRepair && !mo.allocationObj.checkStatus {
-		status, _, err = mo.allocationObj.CheckAllocStatus()
+		if mo.wallet != nil {
+			status, _, err = mo.allocationObj.CheckAllocStatus(mo.wallet.ClientID)
+		} else {
+			status, _, err = mo.allocationObj.CheckAllocStatus()
+		}
 		if err != nil {
 			logger.Logger.Error("Error checking allocation status", err)
 			if singleClientMode {
@@ -323,7 +381,10 @@ func (mo *MultiOperation) Process() error {
 	}
 
 	if mo.allocationObj.StorageVersion == StorageV2 {
-		return mo.commitV2()
+		fmt.Printf("Commit V2 called!")
+		err = mo.commitV2()
+		fmt.Printf("Commit V2 returned: %v\n", err)
+		return err
 	}
 
 	commitReqs := make([]*CommitRequest, activeBlobbers)
@@ -393,7 +454,7 @@ func (mo *MultiOperation) Process() error {
 }
 
 func (mo *MultiOperation) commitV2() error {
-
+	fmt.Printf("commitV2 called \n")
 	rootMap := make(map[string]zboxutil.Uint128)
 	var pos uint64
 	for i := mo.operationMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
@@ -427,6 +488,7 @@ func (mo *MultiOperation) commitV2() error {
 			consensusThresh: threshold,
 			changes:         changes,
 			isRepair:        mo.isRepair,
+			wallet: 		 mo.wallet,
 		}
 		commitReqs[counter] = commitReq
 		counter++

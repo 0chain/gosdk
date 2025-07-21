@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"io"
 	"strings"
 
@@ -31,6 +32,7 @@ type UploadOperation struct {
 var ErrPauseUpload = errors.New("upload paused by user")
 
 func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
+	fmt.Printf("upload operation started\n")
 	if uo.isDownload {
 		if f, ok := uo.chunkedUpload.fileReader.(sys.File); ok {
 			err := allocObj.DownloadFileToFileHandler(f, uo.chunkedUpload.fileMeta.RemotePath, false, nil, true, WithFileCallback(func() {
@@ -43,6 +45,7 @@ func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([
 		}
 	}
 	err := uo.chunkedUpload.process()
+	fmt.Printf("process returned: %v\n", err)
 	if err != nil {
 		l.Logger.Error("UploadOperation Failed", zap.String("name", uo.chunkedUpload.fileMeta.RemoteName), zap.Error(err))
 		return nil, uo.chunkedUpload.uploadMask, err
@@ -64,6 +67,7 @@ func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([
 	}
 	uo.lookupHash = fileref.GetReferenceLookup(uo.chunkedUpload.allocationObj.ID, uo.chunkedUpload.fileMeta.RemotePath)
 	l.Logger.Debug("UploadOperation Success", zap.String("name", uo.chunkedUpload.fileMeta.RemoteName))
+	fmt.Printf("UploadOperation Success: %s\n", uo.chunkedUpload.fileMeta.RemoteName)
 	return nil, uo.chunkedUpload.uploadMask, nil
 }
 
@@ -135,6 +139,7 @@ func NewUploadOperation(ctx context.Context, workdir string, allocObj *Allocatio
 	}
 
 	cu, err := CreateChunkedUpload(ctx, workdir, allocObj, fileMeta, fileReader, isUpdate, isRepair, isWebstreaming, connectionID, opts...)
+	fmt.Printf("CreateChunkedUpload returned: %v", err)
 	if err != nil {
 		return nil, "", err
 	}
