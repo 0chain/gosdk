@@ -3188,8 +3188,8 @@ func (a *Allocation) getConsensuses() (fullConsensus, consensusThreshold int) {
 	return a.DataShards + a.ParityShards, a.DataShards + 1
 }
 
-func (a *Allocation) SetConsensusThreshold() {
-	a.consensusThreshold = a.DataShards
+func (a *Allocation) SetConsensusThreshold(consensus int) {
+	a.consensusThreshold = consensus
 }
 
 // UpdateWithRepair updates the allocation with the specified parameters and starts the repair operation if required.
