@@ -10,7 +10,7 @@ type KeyPair struct {
 type SignFunc func(hash string, signatureScheme string, keys []KeyPair) (string, error)
 
 // SignFunc sign method for request verification
-type SignWithAuthFunc func(hash string, signatureScheme string, keys []KeyPair, clientId string) (string, error)
+type SignWithAuthFunc func(hash string, signatureScheme string, keys []KeyPair, clientIds ...string) (string, error)
 
 type VerifyFunc func(signature string, msg string) (bool, error)
 

@@ -101,10 +101,18 @@ var SignFn = func(hash string) (string, error) {
 	return ss.Sign(hash)
 }
 
-func signHashWithAuth(hash, signatureScheme string, keys []sys.KeyPair, clientID string) (string, error) {
+func signHashWithAuth(hash, signatureScheme string, keys []sys.KeyPair, clientIds ...string) (string, error) {
 	sig, err := sys.Sign(hash, signatureScheme, keys)
 	if err != nil {
 		return "", fmt.Errorf("failed to sign with split key: %v", err)
+	}
+
+	// Get the first clientID from variadic arguments, or use default wallet clientID
+	var clientID string
+	if len(clientIds) > 0 && clientIds[0] != "" {
+		clientID = clientIds[0]
+	} else {
+		clientID = client.wallet.ClientID
 	}
 
 	fmt.Printf("Signature: %s\n", sig)
@@ -219,8 +227,8 @@ func SetWallet(w zcncrypto.Wallet) {
 
 func GetWalletByClientID(clientID string) *zcncrypto.Wallet {
 	if client.wallets == nil {
-		return nil
-	}
+        return nil
+    }
 	if _, exists := client.wallets[clientID]; !exists {
         return nil
     }
