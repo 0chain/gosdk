@@ -19,6 +19,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/0chain/gosdk/constants"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -43,6 +44,7 @@ type DeleteRequest struct {
 	connectionID   string
 	consensus      Consensus
 	timestamp      int64
+	clientId       string
 }
 
 var errFileDeleted = errors.New("file_deleted", "file is already deleted")
@@ -66,7 +68,7 @@ func (req *DeleteRequest) deleteBlobberFile(
 	query.Add("connection_id", req.connectionID)
 	query.Add("path", req.remotefilepath)
 
-	httpreq, err := zboxutil.NewDeleteRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, query, req.allocationObj.Owner)
+	httpreq, err := zboxutil.NewDeleteRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, query, req.clientId)
 	if err != nil {
 		l.Logger.Error(blobber.Baseurl, "Error creating delete request", err)
 		return err
@@ -356,6 +358,7 @@ type DeleteOperation struct {
 	consensus      Consensus
 	lookupHash     string
 	refs           []fileref.RefEntity
+	clientId       string
 }
 
 func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
@@ -374,6 +377,7 @@ func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string) (
 		maskMu:         dop.maskMu,
 		wg:             &sync.WaitGroup{},
 		consensus:      Consensus{RWMutex: &sync.RWMutex{}},
+		clientId:       dop.clientId,
 	}
 	deleteReq.consensus.fullconsensus = dop.consensus.fullconsensus
 	deleteReq.consensus.consensusThresh = dop.consensus.consensusThresh
@@ -582,7 +586,7 @@ func (dop *DeleteOperation) Error(allocObj *Allocation, consensus int, err error
 
 }
 
-func NewDeleteOperation(ctx context.Context, remotePath string, deleteMask zboxutil.Uint128, maskMu *sync.Mutex, consensusTh, fullConsensus int) *DeleteOperation {
+func NewDeleteOperation(ctx context.Context, remotePath string, deleteMask zboxutil.Uint128, maskMu *sync.Mutex, consensusTh, fullConsensus int, clientIds... string) *DeleteOperation {
 	dop := &DeleteOperation{}
 	dop.remotefilepath = zboxutil.RemoteClean(remotePath)
 	dop.deleteMask = deleteMask
@@ -590,6 +594,7 @@ func NewDeleteOperation(ctx context.Context, remotePath string, deleteMask zboxu
 	dop.consensus.consensusThresh = consensusTh
 	dop.consensus.fullconsensus = fullConsensus
 	dop.ctx, dop.ctxCncl = context.WithCancel(ctx)
+	dop.clientId = clientIds[0]
 	return dop
 }
 
@@ -623,7 +628,18 @@ func (req *DeleteRequest) deleteSubDirectories() error {
 			}
 			ops = append(ops, op)
 		}
-		err = req.allocationObj.DoMultiOperation(ops)
+		if req.clientId != "" {
+			clientId := req.clientId
+			wallet := client.GetWalletByClientID(clientId)
+			if wallet == nil {
+				return errors.New("client_not_found", "wallet is not set for the client")
+			}
+			err = req.allocationObj.DoMultiOperation(ops, func(mo *MultiOperation) {
+				mo.Wallet = wallet
+			})
+		} else {
+			err = req.allocationObj.DoMultiOperation(ops)
+		}
 		if err != nil {
 			return err
 		}
@@ -657,7 +673,18 @@ func (req *DeleteRequest) deleteSubDirectories() error {
 				}
 				ops = append(ops, op)
 			}
-			err = req.allocationObj.DoMultiOperation(ops)
+			if req.clientId != "" {
+				clientId := req.clientId
+				wallet := client.GetWalletByClientID(clientId)
+				if wallet == nil {
+					return errors.New("client_not_found", "wallet is not set for the client")
+				}
+				err = req.allocationObj.DoMultiOperation(ops, func(mo *MultiOperation) {
+					mo.Wallet = wallet
+				})
+			} else {
+				err = req.allocationObj.DoMultiOperation(ops)
+			}
 			if err != nil {
 				return err
 			}

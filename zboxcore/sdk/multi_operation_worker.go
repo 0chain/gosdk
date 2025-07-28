@@ -64,7 +64,7 @@ type MultiOperation struct {
 	changes   [][]allocationchange.AllocationChange
 	changesV2 []allocationchange.AllocationChangeV2
 	isRepair  bool
-	wallet 	  *zcncrypto.Wallet
+	Wallet 	  *zcncrypto.Wallet
 }
 
 func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
@@ -101,9 +101,9 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 
 			fmt.Printf("Creating connection object for blobber %s with connection ID %s", blobber.Baseurl, mo.connectionID)
 			var httpreq *http.Request
-			if mo.wallet != nil {
-				fmt.Printf("mo wallet : %v", *mo.wallet)
-				httpreq, err = zboxutil.NewConnectionRequest(blobber.Baseurl, mo.allocationObj.ID, mo.allocationObj.Tx, mo.allocationObj.sig, body, mo.wallet.ClientID)
+			if mo.Wallet != nil {
+				fmt.Printf("mo wallet : %v", *mo.Wallet)
+				httpreq, err = zboxutil.NewConnectionRequest(blobber.Baseurl, mo.allocationObj.ID, mo.allocationObj.Tx, mo.allocationObj.sig, body, mo.Wallet.ClientID)
 				if err != nil {
 					l.Logger.Error(blobber.Baseurl, "Error creating new connection request by wallet", err)
 					return err, false
@@ -217,6 +217,7 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 
 func (mo *MultiOperation) Process() error {
 	fmt.Printf("MultiOperation Process start")
+	fmt.Printf("MultiOperation mo.Wallet : %v", mo.Wallet)
 	l.Logger.Debug("MultiOperation Process start")
 	wg := &sync.WaitGroup{}
 	if mo.allocationObj.StorageVersion == 0 {
@@ -324,8 +325,8 @@ func (mo *MultiOperation) Process() error {
 	start = time.Now()
 	status := Commit
 	if !mo.isRepair && !mo.allocationObj.checkStatus {
-		if mo.wallet != nil {
-			status, _, err = mo.allocationObj.CheckAllocStatus(mo.wallet.ClientID)
+		if mo.Wallet != nil {
+			status, _, err = mo.allocationObj.CheckAllocStatus(mo.Wallet.ClientID)
 		} else {
 			status, _, err = mo.allocationObj.CheckAllocStatus()
 		}
@@ -488,10 +489,15 @@ func (mo *MultiOperation) commitV2() error {
 			consensusThresh: threshold,
 			changes:         changes,
 			isRepair:        mo.isRepair,
-			wallet: 		 mo.wallet,
+			wallet: 		 mo.Wallet,
 		}
 		commitReqs[counter] = commitReq
 		counter++
+		if commitReq.wallet != nil {
+			fmt.Printf("commitReq wallet ID : %v", commitReq.wallet.ClientID)
+		} else {
+			fmt.Printf("commitReq wallet is nil \n")
+		}
 		go AddCommitRequest(commitReq)
 	}
 	wg.Wait()

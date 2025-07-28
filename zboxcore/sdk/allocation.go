@@ -1049,6 +1049,7 @@ func (a *Allocation) RepairRequired(remotepath string) (zboxutil.Uint128, zboxut
 //   - operations: the operations to perform.
 //   - opts: the options of the multi operation as operation functions that customize the multi operation.
 func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...MultiOperationOption) error {
+	fmt.Printf("DoMultiOperation called with operations %v with Opts : %v", operations, opts)
 	if len(operations) == 0 {
 		return nil
 	}
@@ -1070,9 +1071,11 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 			consensusThresh: a.consensusThreshold,
 			fullconsensus:   a.fullconsensus,
 		}
+		fmt.Printf("opts : %v", opts)
 		for _, opt := range opts {
 			opt(&mo)
 		}
+		fmt.Printf("mo.Wallet : %v", mo.Wallet)
 		previousPaths := make(map[string]bool)
 		connectionErrors := make([]error, len(mo.allocationObj.Blobbers))
 
@@ -1152,10 +1155,20 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 				operation, newConnectionID, err = NewUploadOperation(mo.ctx, op.Workdir, mo.allocationObj, mo.connectionID, op.FileMeta, op.FileReader, false, op.IsWebstreaming, op.IsRepair, op.DownloadFile, op.StreamUpload, op.Opts...)
 
 			case constants.FileOperationDelete:
-				if op.Mask != nil {
-					operation = NewDeleteOperation(mo.ctx, op.RemotePath, *op.Mask, mo.maskMU, mo.consensusThresh, mo.fullconsensus)
+				fmt.Printf("FileOperationDelete : %v", op.RemotePath)
+				var clientId string
+				if mo.Wallet != nil {
+					fmt.Printf("mo.Wallet is not nil : %v", mo.Wallet.ClientID)
+					clientId = mo.Wallet.ClientID
 				} else {
-					operation = NewDeleteOperation(mo.ctx, op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus)
+					fmt.Printf("mo.Wallet is nil : %v", mo.allocationObj.Owner)
+					clientId = mo.allocationObj.Owner
+				}
+
+				if op.Mask != nil {
+					operation = NewDeleteOperation(mo.ctx, op.RemotePath, *op.Mask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, clientId)
+				} else {
+					operation = NewDeleteOperation(mo.ctx, op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, clientId)
 				}
 
 			case constants.FileOperationUpdate:
@@ -1165,7 +1178,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 				operation, newConnectionID, err = NewUploadOperation(mo.ctx, op.Workdir, mo.allocationObj, mo.connectionID, op.FileMeta, op.FileReader, true, op.IsWebstreaming, op.IsRepair, op.DownloadFile, op.StreamUpload, op.Opts...)
 
 			case constants.FileOperationCreateDir:
-				operation = NewDirOperation(op.RemotePath, op.FileMeta.CustomMeta, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
+				operation = NewDirOperation(op.RemotePath, op.FileMeta.CustomMeta, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx, mo.Wallet)
 
 			default:
 				return errors.New("invalid_operation", "Operation is not valid")

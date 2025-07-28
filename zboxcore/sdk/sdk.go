@@ -1586,7 +1586,7 @@ func DoMultiUploadByWallet(wallet zcncrypto.Wallet, a *Allocation, workdir strin
 	}
 	
 	setWalletOpt := func (mo *MultiOperation) {
-		mo.wallet = &wallet
+		mo.Wallet = &wallet
 	}
 	return a.DoMultiOperation(operationRequests, setWalletOpt)
 

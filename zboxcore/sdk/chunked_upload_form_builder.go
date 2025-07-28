@@ -105,6 +105,9 @@ func (b *chunkedUploadFormBuilder) Build(
 
 	if b.privateSigningKey != nil {
 		formData.SignatureVersion = SignatureV2
+		fmt.Printf("[UPLOAD] Setting SignatureVersion to %d (SignatureV2) - using allocation private signing key\n", SignatureV2)
+	} else {
+		fmt.Printf("[UPLOAD] SignatureVersion not set (legacy mode) - using client private key\n")
 	}
 
 	for i := 0; i < numBodies; i++ {
@@ -182,17 +185,28 @@ func (b *chunkedUploadFormBuilder) Build(
 			}
 			if b.privateSigningKey != nil {
 				decodedHash, _ := hex.DecodeString(fileMeta.ActualHash)
+				fmt.Printf("[UPLOAD] Creating signature with allocation private signing key\n")
+				fmt.Printf("[UPLOAD] SignatureVersion: %d (SignatureV2)\n", SignatureV2)
+				fmt.Printf("[UPLOAD] ActualFileHash: %s\n", fileMeta.ActualHash)
+				fmt.Printf("[UPLOAD] Signing key type: allocation private signing key\n")
+				fmt.Printf("[UPLOAD] Signing key length: %d bytes\n", len(b.privateSigningKey))
 				sig, err := b.privateSigningKey.Sign(nil, decodedHash, crypto.Hash(0))
 				if err != nil {
 					return res, err
 				}
 				formData.ActualFileHashSignature = hex.EncodeToString(sig)
+				fmt.Printf("[UPLOAD] ActualFileHashSignature created: %s\n", formData.ActualFileHashSignature)
 			} else {
-				sig, err := client.Sign(fileMeta.ActualHash)
+				fmt.Printf("[UPLOAD] Creating signature with client private key\n")
+				fmt.Printf("[UPLOAD] SignatureVersion: %d (legacy)\n", 0)
+				fmt.Printf("[UPLOAD] ActualFileHash: %s\n", fileMeta.ActualHash)
+				fmt.Printf("[UPLOAD] Signing key type: client private key\n")
+				sig, err := client.Sign(fileMeta.ActualHash, clients...)
 				if err != nil {
 					return res, err
 				}
 				formData.ActualFileHashSignature = sig
+				fmt.Printf("[UPLOAD] ActualFileHashSignature created: %s\n", formData.ActualFileHashSignature)
 			}
 			hash := formData.ActualFileHashSignature + formData.ValidationRoot
 			if b.storageVersion == StorageV2 {
@@ -201,17 +215,23 @@ func (b *chunkedUploadFormBuilder) Build(
 			}
 			if b.privateSigningKey != nil {
 				decodedHash, _ := hex.DecodeString(hash)
+				fmt.Printf("[UPLOAD] Creating validation root signature with allocation private signing key\n")
+				fmt.Printf("[UPLOAD] Validation root hash: %s\n", hash)
 				sig, err := b.privateSigningKey.Sign(nil, decodedHash, crypto.Hash(0))
 				if err != nil {
 					return res, err
 				}
 				formData.ValidationRootSignature = hex.EncodeToString(sig)
+				fmt.Printf("[UPLOAD] ValidationRootSignature created: %s\n", formData.ValidationRootSignature)
 			} else {
+				fmt.Printf("[UPLOAD] Creating validation root signature with client private key\n")
+				fmt.Printf("[UPLOAD] Validation root hash: %s\n", hash)
 				rootSig, err := client.Sign(hash, clients...)
 				if err != nil {
 					return res, err
 				}
 				formData.ValidationRootSignature = rootSig
+				fmt.Printf("[UPLOAD] ValidationRootSignature created: %s\n", formData.ValidationRootSignature)
 			}
 
 			formData.ActualHash = fileMeta.ActualHash

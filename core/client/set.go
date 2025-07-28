@@ -237,15 +237,18 @@ func AddWallet(wallet zcncrypto.Wallet) {
 	client.wg[wallet.ClientID].Add(1)
 	client.walletCount[wallet.ClientID]++
 	client.wallets[wallet.ClientID] = &wallet
+	fmt.Println("AddWallet: ", wallet.ClientID, "wallets: ", client.wallets, "wgCount: ", client.walletCount[wallet.ClientID])
 }
 
 // RemoveWallet should be set before any transaction or client specific APIs
 func RemoveWallet(clientID string) {
+	fmt.Println("RemoveWallet: ", clientID, "wg: ", client.wg[clientID])
 	client.wg[clientID].Done()
 	client.walletCount[clientID]--
 	if client.walletCount[clientID] == 0 {
 		delete(client.wallets, clientID)
 	}
+	fmt.Println("RemoveWallet: ", clientID, "wallets: ", client.wallets, "wgCount: ", client.walletCount[clientID])
 }
 
 // SetWalletMode sets current wallet split key mode.
