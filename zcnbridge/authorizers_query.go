@@ -177,6 +177,33 @@ func (b *BridgeClient) QueryEthereumBurnEvents(startNonce string) ([]*ethereum.B
 // QueryZChainMintPayload gets burn ticket and creates mint payload to be minted in the ZChain
 // ethBurnHash - Ethereum burn transaction hash
 func (b *BridgeClient) QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPayload, error) {
+	const maxRetries = 3
+	var lastErr error
+
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		if attempt > 0 {
+			// Add exponential backoff delay
+			delay := time.Duration(math.Pow(2, float64(attempt))) * time.Second
+			log.Logger.Info("Retrying QueryZChainMintPayload",
+				zap.String("hash", ethBurnHash),
+				zap.Int("attempt", attempt+1),
+				zap.Duration("delay", delay))
+			time.Sleep(delay)
+		}
+
+		payload, err := b.queryZChainMintPayloadOnce(ethBurnHash)
+		if err == nil {
+			return payload, nil
+		}
+		lastErr = err
+		log.Logger.Warn("Failed to get mint payload", zap.Error(err), zap.Int("attempt", attempt+1))
+	}
+
+	return nil, errors.Wrap("query_zchain_mint_payload", "max retries exceeded", lastErr)
+}
+
+// queryZChainMintPayloadOnce performs a single attempt to query mint payload
+func (b *BridgeClient) queryZChainMintPayloadOnce(ethBurnHash string) (*zcnsc.MintPayload, error) {
 	client = h.CleanClient()
 	authorizers, err := getAuthorizers(true)
 	log.Logger.Info("Got authorizers", zap.Int("amount", len(authorizers)))
@@ -229,14 +256,13 @@ func (b *BridgeClient) QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPa
 			Amount:            common.Balance(burnTicket.Amount),
 			Nonce:             burnTicket.Nonce,
 			Signatures:        sigs,
-			ReceivingClientID: burnTicket.ReceivingClientID,
+			ReceivingClientID: strings.TrimPrefix(burnTicket.ReceivingClientID, "0x"),
 		}
 
 		return payload, nil
+	} else {
+		return b.QueryZChainMintPayload(ethBurnHash)
 	}
-
-	text := fmt.Sprintf("failed to reach the quorum. #Success: %d from #Total: %d", numSuccess, totalWorkers)
-	return nil, errors.New("get_burn_ticket", text)
 }
 
 func queryAllAuthorizers(authorizers []*AuthorizerNode, handler *requestHandler) []JobResult {
@@ -280,9 +306,13 @@ func queryAuthorizer(au *AuthorizerNode, request *requestHandler, responseChanne
 	Logger.Info("Query from authorizer", zap.String("ID", au.ID), zap.String("URL", au.URL))
 	ticketURL := strings.TrimSuffix(au.URL, "/") + request.path
 
+	resp := &authorizerResponse{AuthorizerID: au.ID}
+
 	req, err := http.NewRequest("GET", ticketURL, nil)
 	if err != nil {
 		log.Logger.Error("failed to create request", zap.Error(err))
+		resp.error = errors.Wrap("request_creation", "failed to create request", err)
+		responseChannel <- resp
 		return
 	}
 
@@ -292,8 +322,9 @@ func queryAuthorizer(au *AuthorizerNode, request *requestHandler, responseChanne
 	}
 	req.URL.RawQuery = q.Encode()
 	Logger.Info(req.URL.String())
-	resp, body := readResponse(func() (*http.Response, error) { return client.Do(req) })
-	resp.AuthorizerID = au.ID
+
+	respData, body := readResponse(func() (*http.Response, error) { return client.Do(req) })
+	resp.error = respData.error
 
 	if resp.error != nil {
 		Logger.Error(
@@ -302,23 +333,42 @@ func queryAuthorizer(au *AuthorizerNode, request *requestHandler, responseChanne
 			zap.String("node.id", au.ID),
 			zap.String("node.url", au.URL),
 		)
+		responseChannel <- resp
+		return
+	}
+
+	// Only attempt to decode if we have a body
+	if len(body) == 0 {
+		resp.error = errors.New("empty_response", "empty response body received")
+		Logger.Error("empty response body",
+			zap.String("node.id", au.ID),
+			zap.String("node.url", au.URL),
+		)
+		responseChannel <- resp
+		return
 	}
 
 	event, errEvent := request.bodyDecoder(body)
-	event.SetAuthorizerID(au.ID)
-
 	if errEvent != nil {
-		err := errors.Wrap("decode_message_body", "failed to decode message body", errEvent)
+		resp.error = errors.Wrap("decode_message_body", "failed to decode message body", errEvent)
 		log.Logger.Error(
 			"failed to decode event body",
-			zap.Error(err),
+			zap.Error(resp.error),
 			zap.String("node.id", au.ID),
 			zap.String("node.url", au.URL),
 			zap.String("body", string(body)),
 		)
+		responseChannel <- resp
+		return
 	}
 
-	resp.event = event
+	// Only set ID if event is not nil
+	if event != nil {
+		event.SetAuthorizerID(au.ID)
+		resp.event = event
+	} else {
+		resp.error = errors.New("nil_event", "decoded event is nil")
+	}
 
 	responseChannel <- resp
 }
