@@ -30,7 +30,7 @@ func DeleteAccount(homedir, address string) bool {
 	})
 
 	if err != nil && wallet == nil {
-		Logger.Error(fmt.Sprintf("failed to find account %s, error: %s", address, err))``
+		Logger.Error(fmt.Sprintf("failed to find account %s, error: %s", address, err))
 		return false
 	}
 
@@ -64,7 +64,7 @@ func AccountExists(homedir, address string) bool {
 	Logger.Info(
 		fmt.Sprintf("Account exists. Status: %s, Path: %s", status, url),
 	)
-	
+
 	return true
 }
 
@@ -79,7 +79,7 @@ func CreateKeyStorage(homedir, password string) error {
 	Logger.Info(
 		fmt.Sprintf("Created account: %s", account.Address.Hex()),
 	)
-	
+
 	return nil
 }
 
@@ -159,6 +159,6 @@ func ImportAccount(homedir, mnemonic, password string) (string, error) {
 	Logger.Info(
 		fmt.Sprintf("Imported account %s to path: %s\n", acc.Address.Hex(), acc.URL.Path),
 	)
-	
+
 	return acc.Address.Hex(), nil
 }
