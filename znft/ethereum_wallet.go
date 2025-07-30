@@ -76,6 +76,7 @@ func (app *Znft) createSignedTransactionFromKeyStore(ctx context.Context) (*bind
 	return opts, nil
 }
 
+//lint:ignore U1000 Intentionally unused for now; will be implemented in a future task.
 func (app *Znft) createSignedTransactionFromKeyStoreWithGasPrice(ctx context.Context, gasLimitUnits uint64) (*bind.TransactOpts, error) { //nolint
 	client, err := CreateEthClient(app.cfg.EthereumNodeURL)
 	if err != nil {
