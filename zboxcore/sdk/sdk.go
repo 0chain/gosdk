@@ -1485,8 +1485,6 @@ func updateMaskBit(mask uint16, index uint8, value bool) uint16 {
 }
 
 func DoMultiUploadByWallet(wallet zcncrypto.Wallet, a *Allocation, workdir string, localPaths []string, fileNames []string, thumbnailPaths []string, encrypts []bool, chunkNumbers []int, remotePaths []string, isUpdate []bool, isWebstreaming []bool, status StatusCallback) error {
-	
-	fmt.Printf("Starting multi upload with walletID: %v, walletKey: %v", wallet.ClientID, wallet.ClientKey)
 
 	if len(localPaths) != len(thumbnailPaths) {
 		return errors.New("invalid_value", "length of localpaths and thumbnailpaths must be equal")
@@ -1589,6 +1587,4 @@ func DoMultiUploadByWallet(wallet zcncrypto.Wallet, a *Allocation, workdir strin
 		mo.Wallet = &wallet
 	}
 	return a.DoMultiOperation(operationRequests, setWalletOpt)
-
-	// return allocationObj.StartMultiUpload(workdir, localPaths, fileNames, thumbnailPaths, encrypts, chunkNumbers, remotePaths, isUpdate, isWebstreaming, status)
 }

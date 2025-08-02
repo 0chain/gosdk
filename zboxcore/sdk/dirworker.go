@@ -193,13 +193,10 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode, pos u
 		httpreq *http.Request
 	)
 	if req.wallet != nil {
-		fmt.Printf("req.wallet is not nil : %v", req.wallet.ClientID)
 		httpreq, err = zboxutil.NewCreateDirRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body, req.wallet.ClientID)
 	} else {
-		fmt.Printf("req.wallet is nil : %v", req.allocationObj.Owner)
 		httpreq, err = zboxutil.NewCreateDirRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body, req.allocationObj.Owner)
 	}
-	fmt.Printf("error creating dir request : %v", err)
 	if err != nil {
 		l.Logger.Error(blobber.Baseurl, "Error creating dir request", err)
 		return err, false

@@ -431,13 +431,9 @@ func (su *ChunkedUpload) process() error {
 	defer su.chunkReader.Close()
 	defer su.ctxCncl(nil)
 
-	fmt.Printf("ChunkedUpload process started for %s\n", su.fileMeta.RemoteName)
 	for {
 
-		fmt.Printf("Reading chunks from chunk reader: %v\n", su.chunkNumber)
-
 		chunks, err := su.readChunks(su.chunkNumber)
-		fmt.Printf("readChunks returned: %v\n", err)
 		// chunk, err := su.chunkReader.Next()
 		if err != nil {
 			if su.statusCallback != nil {
@@ -453,7 +449,6 @@ func (su *ChunkedUpload) process() error {
 		if chunks.isFinal {
 			if su.fileMeta.ActualHash == "" {
 				su.fileMeta.ActualHash, err = su.chunkReader.GetFileHash()
-				fmt.Printf("GetFileHash returned: %v\n", err)
 				if err != nil {
 					if su.statusCallback != nil {
 						su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
@@ -468,7 +463,6 @@ func (su *ChunkedUpload) process() error {
 				if su.statusCallback != nil {
 					su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, thrown.New("upload_failed", "Upload failed. Uploaded size does not match with actual size: "+fmt.Sprintf("%d != %d", su.fileMeta.ActualSize, su.progress.ReadLength)))
 				}
-				fmt.Printf("Upload failed. Uploaded size does not match with actual size: %d != %d\n", su.fileMeta.ActualSize, su.progress.ReadLength)
 				return thrown.New("upload_failed", "Upload failed. Uploaded size does not match with actual size: "+fmt.Sprintf("%d != %d", su.fileMeta.ActualSize, su.progress.ReadLength))
 			}
 		}
@@ -478,7 +472,6 @@ func (su *ChunkedUpload) process() error {
 			chunks.fileShards, chunks.thumbnailShards,
 			chunks.isFinal, chunks.totalReadSize,
 		)
-		fmt.Printf("su processUpload returned: %v\n", err)
 		if err != nil {
 			if su.statusCallback != nil {
 				su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
@@ -690,7 +683,6 @@ func (su *ChunkedUpload) uploadProcessor() {
 }
 
 func (su *ChunkedUpload) uploadToBlobbers(uploadData UploadData) error {
-	fmt.Printf("uploadToBlobbers started!")
 	select {
 	case <-su.ctx.Done():
 		return context.Cause(su.ctx)
@@ -714,7 +706,6 @@ func (su *ChunkedUpload) uploadToBlobbers(uploadData UploadData) error {
 		go func(pos uint64) {
 			defer wg.Done()
 			err := su.blobbers[pos].sendUploadRequest(ctx, su, uploadData.isFinal, su.encryptedKey, uploadData.uploadBody[pos].dataBuffers, uploadData.uploadBody[pos].formData, uploadData.uploadBody[pos].contentSlice, pos, &consensus)
-			fmt.Printf("sendUploadRequest returned: %v\n", err)
 			if err != nil {
 				if strings.Contains(err.Error(), "duplicate") {
 					su.consensus.Done()
@@ -736,14 +727,12 @@ func (su *ChunkedUpload) uploadToBlobbers(uploadData UploadData) error {
 	close(wgErrors)
 	for err := range wgErrors {
 		su.ctxCncl(thrown.New("upload_failed", fmt.Sprintf("Upload failed. %s", err)))
-		fmt.Printf("Upload failed with error: %v\n", err)
 		return err
 	}
 	if !consensus.isConsensusOk() {
 		err := thrown.New("consensus_not_met", fmt.Sprintf("Upload failed File not found for path %s. Required consensus atleast %d, got %d",
 			su.fileMeta.RemotePath, consensus.consensusThresh, consensus.getConsensus()))
 		su.ctxCncl(err)
-		fmt.Printf("Upload failed with consensus error: %v\n", err)
 		return err
 	}
 	if uploadData.uploadLength > 0 {

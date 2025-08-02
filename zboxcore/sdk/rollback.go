@@ -72,6 +72,9 @@ func GetWritemarker(allocID, allocTx, sig, id, baseUrl string, clientId ...strin
         useClientID = client.Id()
     }
 	wallet := client.GetWalletByClientID(useClientID)
+	if wallet == nil {
+		return nil, errors.New("wallet not found : " + useClientID)
+	}
 
 	req, err := zboxutil.NewWritemarkerRequest(baseUrl, allocID, allocTx, sig, clientId...)
 	if err != nil {

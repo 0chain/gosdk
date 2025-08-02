@@ -632,7 +632,7 @@ func (req *DeleteRequest) deleteSubDirectories() error {
 			clientId := req.clientId
 			wallet := client.GetWalletByClientID(clientId)
 			if wallet == nil {
-				return errors.New("client_not_found", "wallet is not set for the client")
+				return errors.New("client_not_found", clientId)
 			}
 			err = req.allocationObj.DoMultiOperation(ops, func(mo *MultiOperation) {
 				mo.Wallet = wallet
@@ -677,7 +677,7 @@ func (req *DeleteRequest) deleteSubDirectories() error {
 				clientId := req.clientId
 				wallet := client.GetWalletByClientID(clientId)
 				if wallet == nil {
-					return errors.New("client_not_found", "wallet is not set for the client")
+					return errors.New("client_not_found", clientId)
 				}
 				err = req.allocationObj.DoMultiOperation(ops, func(mo *MultiOperation) {
 					mo.Wallet = wallet

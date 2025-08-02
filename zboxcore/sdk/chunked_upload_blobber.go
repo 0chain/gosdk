@@ -75,8 +75,6 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 	if su.wallet != nil {
 		clientID = su.wallet.ClientID
 	}
-	fmt.Printf("clientID: %s\n", clientID)
-	fmt.Printf("allocation owner: %s\n", su.allocationObj.Owner)
 	for dataInd := 0; dataInd < len(dataBuffers); dataInd++ {
 		ind := dataInd
 		eg.Go(func() error {
@@ -90,14 +88,6 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 				if err != nil {
 					return err
 				}
-
-				// Print all headers
-				fmt.Printf("Blobber Upload Request Headers for %s:\n", sb.blobber.Baseurl)
-				req.Header.VisitAll(func(k, v []byte) {
-					fmt.Printf("  %s: %s\n", string(k), string(v))
-				})
-				// Print body
-				// fmt.Printf("Blobber Upload Request Body for %s:\n%s\n", sb.blobber.Baseurl, string(req.Body()))
 
 				req.Header.Add("Content-Type", contentSlice[ind])
 				err, shouldContinue = func() (err error, shouldContinue bool) {

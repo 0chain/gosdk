@@ -68,8 +68,6 @@ type MultiOperation struct {
 }
 
 func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
-	// fmt.Printf("Creating connection object for blobber index %d with connection ID %s", blobberIdx, mo.connectionID)
-	fmt.Printf("Creating connection object for blobber index %d with connection ID %s\n", blobberIdx, mo.connectionID)
 	defer func() {
 		if err == nil {
 			mo.maskMU.Lock()
@@ -88,7 +86,6 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 	blobber := mo.allocationObj.Blobbers[blobberIdx]
 
 	for i := 0; i < 3; i++ {
-		fmt.Printf("Iter %d", i+1)
 		err, shouldContinue = func() (err error, shouldContinue bool) {
 			body := new(bytes.Buffer)
 			formWriter := multipart.NewWriter(body)
@@ -99,55 +96,18 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 			}
 			formWriter.Close()
 
-			fmt.Printf("Creating connection object for blobber %s with connection ID %s", blobber.Baseurl, mo.connectionID)
 			var httpreq *http.Request
 			if mo.Wallet != nil {
-				fmt.Printf("mo wallet : %v", *mo.Wallet)
 				httpreq, err = zboxutil.NewConnectionRequest(blobber.Baseurl, mo.allocationObj.ID, mo.allocationObj.Tx, mo.allocationObj.sig, body, mo.Wallet.ClientID)
 				if err != nil {
 					l.Logger.Error(blobber.Baseurl, "Error creating new connection request by wallet", err)
 					return err, false
 				}
-
-
-				// log
-
-				fmt.Printf("Request created with wallet")
-				fmt.Printf("Request URL: %s\n", httpreq.URL.String())
-				fmt.Printf("Request Method: %s\n", httpreq.Method)
-				fmt.Printf("Request Headers:\n")
-				for k, v := range httpreq.Header {
-					fmt.Printf("  %s: %v\n", k, v)
-				}
-				if httpreq.Body != nil {
-					bodyBytes, _ := io.ReadAll(httpreq.Body)
-					fmt.Printf("Request Body: %s\n", string(bodyBytes))
-					// Restore body for later use
-					httpreq.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
-				}
-
 			} else {
-				fmt.Printf("No wallet")
 				httpreq, err = zboxutil.NewConnectionRequest(blobber.Baseurl, mo.allocationObj.ID, mo.allocationObj.Tx, mo.allocationObj.sig, body, mo.allocationObj.Owner)
 				if err != nil {
 					l.Logger.Error(blobber.Baseurl, "Error creating new connection request", err)
 					return
-				}
-
-				// log
-
-				fmt.Printf("Request created without wallet")
-				fmt.Printf("Request URL: %s\n", httpreq.URL.String())
-				fmt.Printf("Request Method: %s\n", httpreq.Method)
-				fmt.Printf("Request Headers:\n")
-				for k, v := range httpreq.Header {
-					fmt.Printf("  %s: %v\n", k, v)
-				}
-				if httpreq.Body != nil {
-					bodyBytes, _ := io.ReadAll(httpreq.Body)
-					fmt.Printf("Request Body: %s\n", string(bodyBytes))
-					// Restore body for later use
-					httpreq.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 				}
 			}
 
@@ -158,7 +118,6 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 				resp = r
 				return err
 			})
-			fmt.Printf("Create Connection Err: %v", err)
 			if err != nil {
 				logger.Logger.Error("Create Connection: ", err)
 				return
@@ -176,8 +135,6 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 
 			latestRespMsg = string(respBody)
 			latestStatusCode = resp.StatusCode
-			fmt.Printf("resp status code : %v", latestStatusCode)
-			fmt.Printf("resp status body : %v", latestRespMsg)
 			if resp.StatusCode == http.StatusOK {
 				l.Logger.Debug(blobber.Baseurl, " connection obj created.")
 				return
@@ -199,8 +156,6 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 			err = errors.New("response_error", string(respBody))
 			return
 		}()
-		
-		fmt.Printf("Iter %d; err : %v, shouldContinue: %v", i+1, err, shouldContinue)
 		if err != nil {
 			return
 		}
@@ -216,8 +171,6 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 }
 
 func (mo *MultiOperation) Process() error {
-	fmt.Printf("MultiOperation Process start")
-	fmt.Printf("MultiOperation mo.Wallet : %v", mo.Wallet)
 	l.Logger.Debug("MultiOperation Process start")
 	wg := &sync.WaitGroup{}
 	if mo.allocationObj.StorageVersion == 0 {
@@ -382,10 +335,7 @@ func (mo *MultiOperation) Process() error {
 	}
 
 	if mo.allocationObj.StorageVersion == StorageV2 {
-		fmt.Printf("Commit V2 called!")
-		err = mo.commitV2()
-		fmt.Printf("Commit V2 returned: %v\n", err)
-		return err
+		return mo.commitV2()
 	}
 
 	commitReqs := make([]*CommitRequest, activeBlobbers)
@@ -455,7 +405,6 @@ func (mo *MultiOperation) Process() error {
 }
 
 func (mo *MultiOperation) commitV2() error {
-	fmt.Printf("commitV2 called \n")
 	rootMap := make(map[string]zboxutil.Uint128)
 	var pos uint64
 	for i := mo.operationMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
@@ -493,11 +442,6 @@ func (mo *MultiOperation) commitV2() error {
 		}
 		commitReqs[counter] = commitReq
 		counter++
-		if commitReq.wallet != nil {
-			fmt.Printf("commitReq wallet ID : %v", commitReq.wallet.ClientID)
-		} else {
-			fmt.Printf("commitReq wallet is nil \n")
-		}
 		go AddCommitRequest(commitReq)
 	}
 	wg.Wait()

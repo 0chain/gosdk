@@ -203,6 +203,9 @@ func NewHTTPRequest(method string, url string, data []byte) (*http.Request, cont
 func setClientInfo(req *http.Request, clientIds... string) {
 	if len(clientIds) > 0 && clientIds[0] != "" {
 		wallet := client.GetWalletByClientID(clientIds[0])
+		if wallet == nil {
+			panic("wallet not found : " + clientIds[0])
+		}
 		req.Header.Set("X-App-Client-ID", wallet.ClientID)
 		req.Header.Set("X-App-Client-Key", wallet.ClientKey)
 		return
@@ -219,8 +222,9 @@ func setClientInfoWithSign(req *http.Request, sig, allocation, baseURL string, c
 		clientID = client.Id()
 	}
 	wallet := client.GetWalletByClientID(clientID)
-	fmt.Printf("setClientInfoWithSign: clientID: %s, allocation: %s, baseURL: %s\n", clientID, allocation, baseURL)
-	fmt.Printf("setClientInfoWithSign: wallet: %v\n", wallet)
+	if wallet == nil {
+		return errors.New("wallet not found", clientID)
+	}
 	req.Header.Set("X-App-Client-ID", wallet.ClientID)
 	req.Header.Set("X-App-Client-Key", wallet.ClientKey)
 	req.Header.Set(CLIENT_SIGNATURE_HEADER, sig)
@@ -672,8 +676,9 @@ func setFastClientInfoWithSign(req *fasthttp.Request, allocation, baseURL string
 		clientID = client.Id()
 	}
 	wallet := client.GetWalletByClientID(clientID)
-	fmt.Printf("setFastClientInfoWithSign: clientID: %s, allocation: %s, baseURL: %s\n", clientID, allocation, baseURL)
-	fmt.Printf("setFastClientInfoWithSign: wallet: %v\n", wallet)
+	if wallet == nil {
+		return errors.New("wallet not found", clientID)
+	}
 	req.Header.Set("X-App-Client-ID", wallet.ClientID)
 	req.Header.Set("X-App-Client-Key", wallet.ClientKey)
 	

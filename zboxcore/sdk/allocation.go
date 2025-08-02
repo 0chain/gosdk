@@ -1049,7 +1049,6 @@ func (a *Allocation) RepairRequired(remotepath string) (zboxutil.Uint128, zboxut
 //   - operations: the operations to perform.
 //   - opts: the options of the multi operation as operation functions that customize the multi operation.
 func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...MultiOperationOption) error {
-	fmt.Printf("DoMultiOperation called with operations %v with Opts : %v", operations, opts)
 	if len(operations) == 0 {
 		return nil
 	}
@@ -1071,11 +1070,9 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 			consensusThresh: a.consensusThreshold,
 			fullconsensus:   a.fullconsensus,
 		}
-		fmt.Printf("opts : %v", opts)
 		for _, opt := range opts {
 			opt(&mo)
 		}
-		fmt.Printf("mo.Wallet : %v", mo.Wallet)
 		previousPaths := make(map[string]bool)
 		connectionErrors := make([]error, len(mo.allocationObj.Blobbers))
 
@@ -1085,7 +1082,6 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 			go func(pos int) {
 				defer wg.Done()
 				err := mo.createConnectionObj(pos)
-				fmt.Printf("Multioperation: create connection for blobber %d , err : %v", pos, err)
 				if err != nil {
 					l.Logger.Error(err.Error())
 					connectionErrors[pos] = err
@@ -1155,13 +1151,10 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 				operation, newConnectionID, err = NewUploadOperation(mo.ctx, op.Workdir, mo.allocationObj, mo.connectionID, op.FileMeta, op.FileReader, false, op.IsWebstreaming, op.IsRepair, op.DownloadFile, op.StreamUpload, op.Opts...)
 
 			case constants.FileOperationDelete:
-				fmt.Printf("FileOperationDelete : %v", op.RemotePath)
 				var clientId string
 				if mo.Wallet != nil {
-					fmt.Printf("mo.Wallet is not nil : %v", mo.Wallet.ClientID)
 					clientId = mo.Wallet.ClientID
 				} else {
-					fmt.Printf("mo.Wallet is nil : %v", mo.allocationObj.Owner)
 					clientId = mo.allocationObj.Owner
 				}
 
@@ -1203,10 +1196,8 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 			mo.operations = append(mo.operations, operation)
 		}
 
-		fmt.Printf("Multioperation: operations to process %d ; operations: %v \n", len(mo.operations), mo.operations)
 		if len(mo.operations) > 0 {
 			err := mo.Process()
-			fmt.Printf("Multioperation: Process operations, err : %v", err)
 			if err != nil {
 				return err
 			}

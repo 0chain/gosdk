@@ -30,7 +30,7 @@ func DeleteAccount(homedir, address string) bool {
 	})
 
 	if err != nil && wallet == nil {
-		Logger.Error(fmt.Sprintf("failed to find account %s, error: %s", address, err))``
+		Logger.Error(fmt.Sprintf("failed to find account %s, error: %s", address, err))
 		return false
 	}
 

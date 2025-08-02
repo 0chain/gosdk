@@ -1235,30 +1235,18 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 		}
 		actualHash := fmr.fileref.ActualFileHash
 		actualFileHashSignature := fmr.fileref.ActualFileHashSignature
-		fmt.Printf("[DOWNLOAD] Processing fileRef from blobber %d\n", fmr.blobberIdx)
-		fmt.Printf("[DOWNLOAD] FileRef SignatureVersion: %d\n", fmr.fileref.SignatureVersion)
-		fmt.Printf("[DOWNLOAD] FileRef ActualFileHash: %s\n", actualHash)
-		fmt.Printf("[DOWNLOAD] FileRef ActualFileHashSignature: %s\n", actualFileHashSignature)
-		fmt.Printf("[DOWNLOAD] FileRef ValidationRoot: %s\n", fmr.fileref.ValidationRoot)
-		fmt.Printf("[DOWNLOAD] FileRef ValidationRootSignature: %s\n", fmr.fileref.ValidationRootSignature)
 
 		var (
 			isValid bool
 			err     error
 		)
 		if fmr.fileref.SignatureVersion == SignatureV2 {
-			fmt.Printf("[DOWNLOAD] Using SignatureV2 verification with allocation owner signing public key\n")
-			fmt.Printf("[DOWNLOAD] Verification key type: allocation owner signing public key\n")
-			fmt.Printf("[DOWNLOAD] Verification key: %s\n", req.allocOwnerSigningPubKey)
 			isValid, err = sys.VerifyEd25519With(
 				req.allocOwnerSigningPubKey,
 				actualFileHashSignature,
 				actualHash,
 			)
 		} else {
-			fmt.Printf("[DOWNLOAD] Using legacy verification with allocation owner public key\n")
-			fmt.Printf("[DOWNLOAD] Verification key type: allocation owner public key\n")
-			fmt.Printf("[DOWNLOAD] Verification key: %s\n", req.allocOwnerPubKey)
 			isValid, err = sys.VerifyWith(
 				req.allocOwnerPubKey,
 				actualFileHashSignature,
@@ -1266,16 +1254,13 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 			)
 		}
 		if err != nil {
-			fmt.Printf("[DOWNLOAD] Signature verification error: %v\n", err)
 			l.Logger.Error(err)
 			continue
 		}
 		if !isValid {
-			fmt.Printf("[DOWNLOAD] Invalid signature for blobber %d\n", fmr.blobberIdx)
 			l.Logger.Error("invalid signature")
 			continue
 		}
-		fmt.Printf("[DOWNLOAD] Signature verification successful for blobber %d\n", fmr.blobberIdx)
 
 		retMap[actualFileHashSignature]++
 		if retMap[actualFileHashSignature] > req.consensus {
@@ -1317,25 +1302,18 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 				hashData := fmt.Sprintf("%s:%s:%s:%s", fRef.ActualFileHash, fRef.ValidationRoot, fRef.FixedMerkleRoot, req.blobbers[i].ID)
 				hash = encrypt.Hash(hashData)
 			}
-			fmt.Printf("[DOWNLOAD] Verifying validation root signature for blobber %d\n", i)
-			fmt.Printf("[DOWNLOAD] Validation root hash: %s\n", hash)
-			fmt.Printf("[DOWNLOAD] Validation root signature: %s\n", fRef.ValidationRootSignature)
 
 			var (
 				isValid bool
 				err     error
 			)
 			if fRef.SignatureVersion == SignatureV2 {
-				fmt.Printf("[DOWNLOAD] Using SignatureV2 verification for validation root\n")
-				fmt.Printf("[DOWNLOAD] Verification key: %s\n", req.allocOwnerSigningPubKey)
 				isValid, err = sys.VerifyEd25519With(
 					req.allocOwnerSigningPubKey,
 					fRef.ValidationRootSignature,
 					hash,
 				)
 			} else {
-				fmt.Printf("[DOWNLOAD] Using legacy verification for validation root\n")
-				fmt.Printf("[DOWNLOAD] Verification key: %s\n", req.allocOwnerPubKey)
 				isValid, err = sys.VerifyWith(
 					req.allocOwnerPubKey,
 					fRef.ValidationRootSignature,
@@ -1343,16 +1321,13 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 				)
 			}
 			if err != nil {
-				fmt.Printf("[DOWNLOAD] Validation root signature verification error: %v\n", err)
 				l.Logger.Error(err, "allocOwnerPubKey: ", req.allocOwnerPubKey, " validationRootSignature: ", fRef.ValidationRootSignature, " actualFileHashSignature: ", fRef.ActualFileHashSignature, " validationRoot: ", fRef.ValidationRoot)
 				continue
 			}
 			if !isValid {
-				fmt.Printf("[DOWNLOAD] Invalid validation root signature for blobber %d\n", i)
 				l.Logger.Error("invalid validation root signature")
 				continue
 			}
-			fmt.Printf("[DOWNLOAD] Validation root signature verification successful for blobber %d\n", i)
 
 			blobber := req.blobbers[fmr.blobberIdx]
 			vr, _ := hex.DecodeString(fmr.fileref.ValidationRoot)

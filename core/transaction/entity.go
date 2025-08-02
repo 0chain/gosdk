@@ -320,6 +320,13 @@ func SendTransactionSync(txn *Transaction, miners []string) error {
 		}
 	}
 
+	// Reset stable miners list if any miner failed
+	if failureCount > 0 {
+		if nodeClient, err := client.GetNode(); err == nil {
+			nodeClient.ResetStableMiners()
+		}
+	}
+
 	if failureCount == len(miners) {
 		return fmt.Errorf(dominantErr)
 	}
