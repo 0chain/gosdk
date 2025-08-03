@@ -2,7 +2,6 @@ package znft
 
 import (
 	"context"
-	"fmt"
 	"os"
 
 	"github.com/0chain/gosdk/core/logger"
