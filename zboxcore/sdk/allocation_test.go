@@ -33,7 +33,6 @@ import (
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/fileref"
-
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -1338,7 +1337,7 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 
 				// mock GetFileMeta for private sharing validation
 				fileMeta, err := json.Marshal(&fileref.FileRef{
-					EncryptedKey: "EncryptedKey",
+					EncryptedKey: "", //the file should not be encrypted for this scenario so we need to have this field empty
 				})
 				require.NoError(t, err)
 				setupMockHttpResponse(t, mockClient, "TestAllocation_GetAuthTicket", testCaseName, a, http.MethodPost, http.StatusOK, fileMeta)
@@ -2421,7 +2420,7 @@ func getMockAuthTicket(t *testing.T) string {
 			Name: mockFileRefName,
 		},
 		ValidationRoot: "mock validation root",
-		EncryptedKey:   "encrypted key",
+		EncryptedKey:   "",
 	})
 	require.NoError(t, err)
 

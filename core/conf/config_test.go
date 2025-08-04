@@ -23,6 +23,7 @@ func TestLoadConfig(t *testing.T) {
 		reader.On("GetString", "chain_id").Return("")
 		reader.On("GetString", "verify_optimistic").Return("true")
 		reader.On("GetInt", "sharder_consensous").Return(0)
+		reader.On("GetString", "ethereum_node_url").Return("")
 
 		return reader
 
@@ -53,6 +54,7 @@ func TestLoadConfig(t *testing.T) {
 				reader.On("GetString", "chain_id").Return("")
 				reader.On("GetString", "verify_optimistic").Return("true")
 				reader.On("GetInt", "sharder_consensous").Return(0)
+				reader.On("GetString", "ethereum_node_url").Return("")
 
 				return reader
 			},
@@ -98,6 +100,7 @@ func TestLoadConfig(t *testing.T) {
 				reader.On("GetString", "chain_id").Return("")
 				reader.On("GetString", "verify_optimistic").Return("true")
 				reader.On("GetInt", "sharder_consensous").Return(0)
+				reader.On("GetString", "ethereum_node_url").Return("")
 
 				return reader
 			},
@@ -133,6 +136,7 @@ func TestLoadConfig(t *testing.T) {
 				reader.On("GetString", "chain_id").Return("")
 				reader.On("GetString", "verify_optimistic").Return("false")
 				reader.On("GetInt", "sharder_consensous").Return(0)
+				reader.On("GetString", "ethereum_node_url").Return("")
 
 				return reader
 			},

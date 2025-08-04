@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 
+	log "github.com/0chain/gosdk/zcnbridge/log"
 	hdw "github.com/0chain/gosdk/zcncore/ethhdwallet"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
@@ -30,7 +31,7 @@ func DeleteAccount(homedir, address string) bool {
 	})
 
 	if err != nil && wallet == nil {
-		Logger.Error(fmt.Sprintf("failed to find account %s, error: %s", address, err))``
+		log.Logger.Error(fmt.Sprintf("failed to find account %s, error: %s", address, err))
 		return false
 	}
 
@@ -54,17 +55,17 @@ func AccountExists(homedir, address string) bool {
 	})
 
 	if err != nil && wallet == nil {
-		Logger.Error(fmt.Sprintf("failed to find account %s, error: %s", address, err))
+		log.Logger.Error(fmt.Sprintf("failed to find account %s, error: %s", address, err))
 		return false
 	}
 
 	status, _ := wallet.Status()
 	url := wallet.URL()
 
-	Logger.Info(
+	log.Logger.Info(
 		fmt.Sprintf("Account exists. Status: %s, Path: %s", status, url),
 	)
-	
+
 	return true
 }
 
@@ -76,10 +77,10 @@ func CreateKeyStorage(homedir, password string) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to create keystore")
 	}
-	Logger.Info(
+	log.Logger.Info(
 		fmt.Sprintf("Created account: %s", account.Address.Hex()),
 	)
-	
+
 	return nil
 }
 
@@ -144,7 +145,7 @@ func ImportAccount(homedir, mnemonic, password string) (string, error) {
 	// 3. Find key
 	acc, err := ks.Find(account)
 	if err == nil {
-		Logger.Info(
+		log.Logger.Info(
 			fmt.Sprintf("Account already exists: %s\nPath: %s\n\n", acc.Address.Hex(), acc.URL.Path),
 		)
 		return acc.Address.Hex(), nil
@@ -156,9 +157,9 @@ func ImportAccount(homedir, mnemonic, password string) (string, error) {
 		return "", errors.Wrap(err, "failed to get import private key")
 	}
 
-	Logger.Info(
+	log.Logger.Info(
 		fmt.Sprintf("Imported account %s to path: %s\n", acc.Address.Hex(), acc.URL.Path),
 	)
-	
+
 	return acc.Address.Hex(), nil
 }
