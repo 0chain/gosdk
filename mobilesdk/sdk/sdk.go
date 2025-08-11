@@ -30,6 +30,8 @@ import (
 
 var nonce = int64(0)
 
+var allocationIDRequired = errors.Errorf("Allocation ID is required")
+
 type Autorizer interface {
 	Auth(msg string) (string, error)
 }
@@ -325,6 +327,49 @@ func (s *StorageSDK) GetAllocationStats(allocationID string) (string, error) {
 func (s *StorageSDK) FinalizeAllocation(allocationID string) (string, error) {
 	hash, _, err := sdk.FinalizeAllocation(allocationID)
 	return hash, err
+}
+
+// RepairAllocation repair allocation
+//   - allocationID: allocation ID
+func (s *StorageSDK) RepairAllocation(allocationID string) error {
+	// Validate allocation ID
+	if allocationID == "" {
+		return allocationIDRequired
+	}
+
+	// Get allocation
+	alloc, err := sdk.GetAllocation(allocationID)
+	if err != nil {
+		return err
+	}
+
+	// returns an error if allocation is not found or caller is not the owner
+	if alloc.Owner != client.Id() {
+		return errors.Errorf("Allocation access denied for repair: %s", alloc.Owner)
+	}
+
+	// Call repair with nil StatusCallback (no progress updates for mobile, ios implementation provides statusUpdates)
+	return alloc.RepairAlloc(nil)
+}
+
+// CancelRepair cancel repair for allocation
+//   - allocationID: allocation ID
+func (s *StorageSDK) CancelRepair(allocationID string) error {
+	if allocationID == "" {
+		return allocationIDRequired
+	}
+
+	alloc, err := sdk.GetAllocation(allocationID)
+	if err != nil {
+		return err
+	}
+
+	//returns an error if allocation is not found or caller is not the owner
+	if alloc.Owner != client.Id() {
+		return errors.Errorf("Allocation access denied for cancelling the repair: %s", alloc.Owner)
+	}
+
+	return alloc.CancelRepair()
 }
 
 // CancelAllocation cancel allocation by ID
