@@ -58,13 +58,12 @@ func (req *ShareRequest) getAuthTicket(clientID, encPublicKey string) (*marker.A
 	}
 
 	at := &marker.AuthTicket{
-		AllocationID:   req.allocationID,
-		OwnerID:        client.Id(req.ClientId),
-		ClientID:       clientID,
-		FileName:       req.remotefilename,
-		FilePathHash:   fileref.GetReferenceLookup(req.allocationID, req.remotefilepath),
-		RefType:        req.refType,
-		ActualFileHash: fRef.ActualFileHash,
+		AllocationID: req.allocationID,
+		OwnerID:      client.Id(req.ClientId),
+		ClientID:     clientID,
+		FileName:     req.remotefilename,
+		FilePathHash: fileref.GetReferenceLookup(req.allocationID, req.remotefilepath),
+		RefType:      req.refType,
 	}
 
 	at.Timestamp = int64(common.Now())
@@ -94,7 +93,8 @@ func (req *ShareRequest) getAuthTicket(clientID, encPublicKey string) (*marker.A
 			return nil, err
 		}
 
-		reKey, err := encScheme.GetReGenKey(encPublicKey, "filetype:audio")
+		lookupHash := fileref.GetReferenceLookup(req.allocationID, req.remotefilepath)
+		reKey, err := encScheme.GetReGenKey(encPublicKey, lookupHash)
 		if err != nil {
 			return nil, err
 		}

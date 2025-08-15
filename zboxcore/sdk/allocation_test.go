@@ -1282,7 +1282,8 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 					client_encscheme := encryption.NewEncryptionScheme()
 					_, err := client_encscheme.Initialize(client_mnemonic)
 					require.Nil(t, err)
-					client_encscheme.InitForEncryption("filetype:audio")
+					lookupHash := fileref.GetReferenceLookup("test-allocation-id", "/test/file/path")
+					client_encscheme.InitForEncryption(lookupHash)
 					client_enc_pub_key, err := client_encscheme.GetPublicKey()
 					require.NoError(t, err)
 					return client_enc_pub_key

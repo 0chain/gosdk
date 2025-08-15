@@ -6,10 +6,16 @@ import (
 	"testing"
 
 	"github.com/0chain/gosdk/zboxcore/encryption"
+	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/klauspost/reedsolomon"
 	"github.com/stretchr/testify/require"
 )
+
+// getLookupHash generates a deterministic lookup hash for testing
+func getLookupHash() string {
+	return fileref.GetReferenceLookup("test-allocation-id", "/test/file/path")
+}
 
 func TestReadChunks(t *testing.T) {
 	tests := []struct {
@@ -74,7 +80,8 @@ func TestReadChunks(t *testing.T) {
 			_, err := encscheme.Initialize(test.Name)
 			require.Nil(err)
 
-			encscheme.InitForEncryption("filetype:audio")
+			lookupHash := getLookupHash()
+			encscheme.InitForEncryption(lookupHash)
 
 			buf := generateRandomBytes(test.Size)
 

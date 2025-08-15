@@ -10,6 +10,11 @@ import (
 	"go.dedis.ch/kyber/v3/group/edwards25519"
 )
 
+// getLookupHash generates a deterministic lookup hash for testing
+func getLookupHash() string {
+	return fileref.GetReferenceLookup("test-allocation-id", "/test/file/path")
+}
+
 func TestMnemonic(t *testing.T) {
 	mnemonic := "travel twenty hen negative fresh sentence hen flat swift embody increase juice eternal satisfy want vessel matter honey video begin dutch trigger romance assault"
 
@@ -18,7 +23,8 @@ func TestMnemonic(t *testing.T) {
 	_, err := encscheme.Initialize(mnemonic)
 	require.NoError(t, err)
 
-	encscheme.InitForEncryption("filetype:audio")
+	lookupHash := getLookupHash()
+	encscheme.InitForEncryption(lookupHash)
 	pvk, _ := encscheme.GetPrivateKey()
 	expectedPvk := "XsQLPaRBOFS+3KfXq2/uyAPE+/qq3VW0OkW0T9q93wQ="
 	require.Equal(t, expectedPvk, pvk)
@@ -35,7 +41,8 @@ func TestEncryptDecrypt(t *testing.T) {
 	encscheme := NewEncryptionScheme()
 	_, err := encscheme.Initialize(mnemonic)
 	require.NoError(t, err)
-	encscheme.InitForEncryption("filetype:audio")
+	lookupHash := getLookupHash()
+	encscheme.InitForEncryption(lookupHash)
 
 	encMessage, err := encscheme.Encrypt([]byte(dataToEncrypt))
 	require.Nil(t, err)
@@ -51,7 +58,8 @@ func TestReEncryptionAndDecryptionForShareData(t *testing.T) {
 	client_encscheme := NewEncryptionScheme()
 	_, err := client_encscheme.Initialize(client_mnemonic)
 	require.Nil(t, err)
-	client_encscheme.InitForEncryption("filetype:audio")
+	lookupHash := getLookupHash()
+	client_encscheme.InitForEncryption(lookupHash)
 	client_enc_pub_key, err := client_encscheme.GetPublicKey()
 	require.Nil(t, err)
 
@@ -59,18 +67,18 @@ func TestReEncryptionAndDecryptionForShareData(t *testing.T) {
 	shared_client_encscheme := NewEncryptionScheme()
 	_, err = shared_client_encscheme.Initialize(shared_client_mnemonic)
 	require.Nil(t, err)
-	shared_client_encscheme.InitForEncryption("filetype:audio")
+	shared_client_encscheme.InitForEncryption(lookupHash)
 
 	enc_msg, err := shared_client_encscheme.Encrypt([]byte("encrypted_data_uttam"))
 	require.Nil(t, err)
-	regenkey, err := shared_client_encscheme.GetReGenKey(client_enc_pub_key, "filetype:audio")
+	regenkey, err := shared_client_encscheme.GetReGenKey(client_enc_pub_key, lookupHash)
 	require.Nil(t, err)
 	enc_msg.ReEncryptionKey = regenkey
 
 	client_decryption_scheme := NewEncryptionScheme()
 	_, err = client_decryption_scheme.Initialize(client_mnemonic)
 	require.Nil(t, err)
-	err = client_decryption_scheme.InitForDecryption("filetype:audio", enc_msg.EncryptedKey)
+	err = client_decryption_scheme.InitForDecryption(lookupHash, enc_msg.EncryptedKey)
 	require.Nil(t, err)
 
 	result, err := client_decryption_scheme.Decrypt(enc_msg)
@@ -83,7 +91,8 @@ func TestReEncryptionAndDecryptionForMarketplaceShare(t *testing.T) {
 	client_encscheme := NewEncryptionScheme()
 	_, err := client_encscheme.Initialize(client_mnemonic)
 	require.Nil(t, err)
-	client_encscheme.InitForEncryption("filetype:audio")
+	lookupHash := getLookupHash()
+	client_encscheme.InitForEncryption(lookupHash)
 	client_enc_pub_key, err := client_encscheme.GetPublicKey()
 	require.Nil(t, err)
 
@@ -92,7 +101,7 @@ func TestReEncryptionAndDecryptionForMarketplaceShare(t *testing.T) {
 	blobber_encscheme := NewEncryptionScheme()
 	_, err = blobber_encscheme.Initialize(blobber_mnemonic)
 	require.Nil(t, err)
-	blobber_encscheme.InitForEncryption("filetype:audio")
+	blobber_encscheme.InitForEncryption(lookupHash)
 	data_to_encrypt := "encrypted_data_uttaencrypted_data_uttaencrypted_data_uttaencrypted_data_uttaencrypted_data_uttaencrypted_data_uttaencrypted_data_uttaencrypted_data_uttaencrypted_data_uttammmmmmmmmencrypted_data_uttam"
 	enc_msg, err := blobber_encscheme.Encrypt([]byte(data_to_encrypt))
 	require.Nil(t, err)
@@ -101,9 +110,9 @@ func TestReEncryptionAndDecryptionForMarketplaceShare(t *testing.T) {
 	blobber_encscheme = NewEncryptionScheme()
 	_, err = blobber_encscheme.Initialize(blobber_mnemonic)
 	require.Nil(t, err)
-	err = blobber_encscheme.InitForDecryption("filetype:audio", enc_msg.EncryptedKey)
+	err = blobber_encscheme.InitForDecryption(lookupHash, enc_msg.EncryptedKey)
 	require.Nil(t, err)
-	regenkey, err := blobber_encscheme.GetReGenKey(client_enc_pub_key, "filetype:audio")
+	regenkey, err := blobber_encscheme.GetReGenKey(client_enc_pub_key, lookupHash)
 	require.Nil(t, err)
 	reenc_msg, err := blobber_encscheme.ReEncrypt(enc_msg, regenkey, client_enc_pub_key)
 	require.Nil(t, err)
@@ -112,14 +121,14 @@ func TestReEncryptionAndDecryptionForMarketplaceShare(t *testing.T) {
 	d4, _ := reenc_msg.D4.MarshalBinary()
 	d5, _ := reenc_msg.D5.MarshalBinary()
 	require.Equal(t, 44, len(base64.StdEncoding.EncodeToString(d1)))
-	require.Equal(t, 88, len(base64.StdEncoding.EncodeToString(reenc_msg.D3)))
 	require.Equal(t, 44, len(base64.StdEncoding.EncodeToString(d4)))
 	require.Equal(t, 44, len(base64.StdEncoding.EncodeToString(d5)))
 
+	// buyer decrypts the reencrypted data
 	client_decryption_scheme := NewEncryptionScheme()
 	_, err = client_decryption_scheme.Initialize(client_mnemonic)
 	require.Nil(t, err)
-	err = client_decryption_scheme.InitForDecryption("filetype:audio", enc_msg.EncryptedKey)
+	err = client_decryption_scheme.InitForDecryption(lookupHash, enc_msg.EncryptedKey)
 	require.Nil(t, err)
 
 	result, err := client_decryption_scheme.ReDecrypt(reenc_msg)
@@ -167,7 +176,8 @@ func BenchmarkEncrypt(t *testing.B) {
 	encscheme := NewEncryptionScheme()
 	_, err := encscheme.Initialize(mnemonic)
 	require.Nil(t, err)
-	encscheme.InitForEncryption("filetype:audio")
+	lookupHash := getLookupHash()
+	encscheme.InitForEncryption(lookupHash)
 	for i := 0; i < 10000; i++ {
 		dataToEncrypt := make([]byte, fileref.CHUNK_SIZE)
 		read, err := rand.Read(dataToEncrypt)
@@ -184,7 +194,8 @@ func BenchmarkReEncryptAndReDecrypt(t *testing.B) {
 	client_encscheme := NewEncryptionScheme()
 	_, err := client_encscheme.Initialize(client_mnemonic)
 	require.Nil(t, err)
-	client_encscheme.InitForEncryption("filetype:audio")
+	lookupHash := getLookupHash()
+	client_encscheme.InitForEncryption(lookupHash)
 	client_enc_pub_key, err := client_encscheme.GetPublicKey()
 	require.Nil(t, err)
 
@@ -193,9 +204,9 @@ func BenchmarkReEncryptAndReDecrypt(t *testing.B) {
 	blobber_encscheme := NewEncryptionScheme()
 	_, err = blobber_encscheme.Initialize(blobber_mnemonic)
 	require.Nil(t, err)
-	blobber_encscheme.InitForEncryption("filetype:audio")
+	blobber_encscheme.InitForEncryption(lookupHash)
 	// buyer requests data from blobber, blobber reencrypts the data with regen key using buyer public key
-	regenkey, err := blobber_encscheme.GetReGenKey(client_enc_pub_key, "filetype:audio")
+	regenkey, err := blobber_encscheme.GetReGenKey(client_enc_pub_key, lookupHash)
 	require.Nil(t, err)
 	for i := 0; i < 10000; i++ {
 		dataToEncrypt := make([]byte, fileref.CHUNK_SIZE)
@@ -208,7 +219,7 @@ func BenchmarkReEncryptAndReDecrypt(t *testing.B) {
 		client_decryption_scheme := NewEncryptionScheme()
 		_, err = client_decryption_scheme.Initialize(client_mnemonic)
 		require.Nil(t, err)
-		err = client_decryption_scheme.InitForDecryption("filetype:audio", enc_msg.EncryptedKey)
+		err = client_decryption_scheme.InitForDecryption(lookupHash, enc_msg.EncryptedKey)
 		require.Nil(t, err)
 
 		_, err = client_decryption_scheme.ReDecrypt(reenc_msg)

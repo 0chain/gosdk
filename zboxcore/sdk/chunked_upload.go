@@ -374,6 +374,7 @@ func (su *ChunkedUpload) updateProgress(chunkIndex int, upMask zboxutil.Uint128)
 
 func (su *ChunkedUpload) createEncscheme() encryption.EncryptionScheme {
 	encscheme := encryption.NewEncryptionScheme()
+	lookupHash := fileref.GetReferenceLookup(su.allocationObj.ID, su.fileMeta.RemotePath)
 
 	if len(su.progress.EncryptPrivateKey) > 0 {
 
@@ -410,12 +411,12 @@ func (su *ChunkedUpload) createEncscheme() encryption.EncryptionScheme {
 		su.progress.EncryptPrivateKey = hex.EncodeToString(privateKey)
 	}
 	if len(su.progress.EncryptedKeyPoint) > 0 {
-		err := encscheme.InitForEncryptionWithPoint("filetype:audio", su.progress.EncryptedKeyPoint)
+		err := encscheme.InitForEncryptionWithPoint(lookupHash, su.progress.EncryptedKeyPoint)
 		if err != nil {
 			return nil
 		}
 	} else {
-		encscheme.InitForEncryption("filetype:audio")
+		encscheme.InitForEncryption(lookupHash)
 		su.progress.EncryptedKeyPoint = encscheme.GetEncryptedKeyPoint()
 	}
 	su.encryptedKey = encscheme.GetEncryptedKey()

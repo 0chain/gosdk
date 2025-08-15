@@ -1050,7 +1050,9 @@ func (req *DownloadRequest) initEncryption(encryptionVersion int) (err error) {
 		}
 	}
 
-	err = req.encScheme.InitForDecryption("filetype:audio", req.encryptedKey)
+	lookupHash := fileref.GetReferenceLookup(req.allocationID, req.remotefilepath)
+	err = req.encScheme.InitForDecryption(lookupHash, req.encryptedKey)
+
 	if err != nil {
 		return err
 	}
