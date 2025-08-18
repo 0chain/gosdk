@@ -202,17 +202,28 @@ type SendTxnData struct {
 	Note string `json:"note"`
 }
 
-func Send(toClientID string, tokens uint64, desc string, client ...string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+func SendWithCustomFee(toClientID string, tokens uint64, fee uint64, desc string, client ...string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 	if len(client) == 0 {
 		client = append(client, "")
 		client = append(client, toClientID)
 	} else {
 		client = append(client, toClientID)
 	}
-	return transaction.SmartContractTxnValue(MinerSmartContractAddress, transaction.SmartContractTxnData{
-		Name:      "transfer",
-		InputArgs: SendTxnData{Note: desc},
-	}, tokens, true, client...)
+
+	if fee == 0 {
+		return transaction.SmartContractTxnValue(MinerSmartContractAddress, transaction.SmartContractTxnData{
+			Name:      "transfer",
+			InputArgs: SendTxnData{Note: desc},
+		}, tokens, true, client...)
+	} else {
+		return transaction.SmartContractTxnValueFee(MinerSmartContractAddress, transaction.SmartContractTxnData{
+			Name:      "transfer",
+			InputArgs: SendTxnData{Note: desc},
+		}, tokens, fee, false, client...)
+	}
+}
+func Send(toClientID string, tokens uint64, desc string, client ...string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+	return SendWithCustomFee(toClientID, tokens, 0, desc, client...)
 }
 
 func Faucet(tokens uint64, input string, client ...string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
@@ -220,6 +231,10 @@ func Faucet(tokens uint64, input string, client ...string) (hash, out string, no
 		Name:      "pour",
 		InputArgs: input,
 	}, tokens, true, client...)
+}
+
+func VerifyTransaction(hash string) (txn *transaction.Transaction, err error) {
+	return transaction.VerifyTransaction(hash)
 }
 
 func DeleteMiner(id string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {

@@ -4,8 +4,11 @@ package imageutil
 import (
 	"bytes"
 	"fmt"
+	"github.com/disintegration/gift"
 	"image"
+	"image/gif"
 	_ "image/gif"
+	"image/jpeg"
 	_ "image/jpeg"
 	"image/png"
 	_ "image/png"
@@ -37,39 +40,42 @@ type SubImager interface {
 //   - vp8l
 //   - webp
 func CreateThumbnail(buf []byte, width, height int) ([]byte, error) {
-	// image.Decode requires that you import the right image package.
-	// Ignored return value is image format name.
-	img, _, err := image.Decode(bytes.NewReader(buf))
+	// Decode the image from the buffer
+	img, format, err := image.Decode(bytes.NewReader(buf))
 	if err != nil {
 		return nil, err
 	}
 
-	// I've hard-coded a crop rectangle, start (0,0), end (100, 100).
-	img, err = cropImage(img, image.Rect(0, 0, width, height))
+	// Resize the image using Lanczos resampling
+
+	g := gift.New(
+		gift.Resize(width, height, gift.LanczosResampling),
+	)
+	thumbnail := image.NewRGBA(g.Bounds(img.Bounds()))
+	g.Draw(thumbnail, img)
+	//thumbnail := resize.Resize(uint(width), uint(height), img, resize.Lanczos3)
+
+	// Create a buffer to hold the new resized image
+	var outBuffer bytes.Buffer
+
+	// Encode the image back into the original format
+	switch format {
+	case "jpeg", "jpg":
+		err = jpeg.Encode(&outBuffer, thumbnail, nil)
+	case "png":
+		err = png.Encode(&outBuffer, thumbnail)
+	case "gif":
+		err = gif.Encode(&outBuffer, thumbnail, nil)
+	case "bmp", "ccitt", "riff", "tiff", "vector", "vp8", "vp8l", "webp":
+		err = jpeg.Encode(&outBuffer, thumbnail, nil) // Use JPEG as fallback since WebP/GIF encoding is less common in Go
+	default:
+		err = fmt.Errorf("unsupported image format")
+	}
+
 	if err != nil {
 		return nil, err
 	}
 
-	fd := &bytes.Buffer{}
-
-	err = png.Encode(fd, img)
-	if err != nil {
-		return nil, err
-	}
-
-	return fd.Bytes(), nil
-}
-
-// cropImage takes an image and crops it to the specified rectangle.
-func cropImage(img image.Image, crop image.Rectangle) (image.Image, error) {
-
-	// img is an Image interface. This checks if the underlying value has a
-	// method called SubImage. If it does, then we can use SubImage to crop the
-	// image.
-	simg, ok := img.(SubImager)
-	if !ok {
-		return nil, fmt.Errorf("image does not support cropping")
-	}
-
-	return simg.SubImage(crop), nil
+	// Return the resized image buffer
+	return outBuffer.Bytes(), nil
 }

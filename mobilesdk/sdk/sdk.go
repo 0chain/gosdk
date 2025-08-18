@@ -11,6 +11,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/0chain/gosdk/core/imageutil"
+	coreTransaction "github.com/0chain/gosdk/core/transaction"
+
 	"context"
 
 	"github.com/0chain/gosdk/core/sys"
@@ -27,8 +30,6 @@ import (
 	"github.com/0chain/gosdk/mobilesdk/zboxapi"
 	"github.com/0chain/gosdk/zcncore"
 )
-
-var nonce = int64(0)
 
 type Autorizer interface {
 	Auth(msg string) (string, error)
@@ -72,8 +73,51 @@ func Init(chainConfigJson string) error {
 	cfg := conf.Config{}
 	err := json.Unmarshal([]byte(chainConfigJson), &cfg)
 	if err != nil {
-		return err
+		return errors.WithMessage(err, "failed to unmarshal chain config")
 	}
+	l.Logger.Info("InitSDK chain config")
+	l.Logger.Info(cfg)
+	zcncore.RegisterKMSZauthServer(cfg.ZauthServer)
+
+	sys.SignWithAuth = func(hash, signatureScheme string, keys []sys.KeyPair) (string, error) {
+		fmt.Println("SignWithAuth pubkey:", keys[0])
+		sig, err := sys.Sign(hash, signatureScheme, keys)
+		if err != nil {
+			return "", fmt.Errorf("failed to sign with split key: %v", err)
+		}
+
+		data, err := json.Marshal(client.AuthMessage{
+			Hash:      hash,
+			Signature: sig,
+			ClientID:  client.GetClient().ClientID,
+		})
+		if err != nil {
+			return "", err
+		}
+
+		if sys.AuthCommon == nil {
+			return "", errors.New("authCommon is not set")
+		}
+
+		rsp, err := sys.AuthCommon(string(data))
+		if err != nil {
+			return "", err
+		}
+
+		var sigpk struct {
+			Sig string `json:"sig"`
+		}
+
+		err = json.Unmarshal([]byte(rsp), &sigpk)
+		if err != nil {
+			return "", err
+		}
+
+		return sigpk.Sig, nil
+	}
+
+	fmt.Println("Init SignWithAuth:", sys.SignWithAuth)
+
 	return client.Init(context.Background(), cfg)
 }
 
@@ -115,7 +159,7 @@ func InitStorageSDK(clientJson string, configJson string) (*StorageSDK, error) {
 		l.Logger.Error(err)
 		return nil, err
 	}
-	err = Init(configObj.BlockWorker)
+	err = Init(configJson)
 	if err != nil {
 		l.Logger.Error(err)
 		return nil, err
@@ -368,6 +412,11 @@ func (s *StorageSDK) GetVersion() string {
 	return version.VERSIONSTR
 }
 
+// GetVersion getting current version for gomobile lib
+func GetVersion() string {
+	return version.VERSIONSTR
+}
+
 // UpdateAllocation update allocation settings with new expiry and size
 //   - size: size of space reserved on blobbers
 //   - extend: extend allocation
@@ -395,6 +444,21 @@ func (s *StorageSDK) GetBlobbersList() (string, error) {
 	return string(retBytes), nil
 }
 
+// GetStorageConfig get storage config
+// configType: storage_sc_config, miners_sc_globals, miner_sc_configs
+func GetConfig(configType string) ([]byte, error) {
+	configBytes, err := coreTransaction.GetConfig(configType)
+	if err != nil {
+		return nil, err
+	}
+
+	retBytes, err := json.Marshal(configBytes)
+	if err != nil {
+		return nil, err
+	}
+	return retBytes, nil
+}
+
 // GetAllocations return back list of allocations for the wallet
 // Extracted from main method, bcz of class fields
 func GetAllocations() (string, error) {
@@ -409,9 +473,27 @@ func GetAllocations() (string, error) {
 	return string(retBytes), nil
 }
 
+func GetAllocationsOfClient(clientID string) (string, error) {
+	allocs, err := sdk.GetAllocationsForClient(clientID)
+	if err != nil {
+		return "", err
+	}
+
+	retBytes, err := json.Marshal(allocs)
+	if err != nil {
+		return "", err
+	}
+
+	return string(retBytes), nil
+}
+
 // RedeeemFreeStorage given a free storage ticket, create a new free allocation
 //   - ticket: free storage ticket
 func (s *StorageSDK) RedeemFreeStorage(ticket string) (string, error) {
+	if ticket == "" || len(ticket) == 0 {
+		return "", errors.New("invalid_free_marker: free marker is required")
+	}
+
 	recipientPublicKey, marker, lock, err := decodeTicket(ticket)
 	if err != nil {
 		return "", err
@@ -464,4 +546,16 @@ func decodeTicket(ticket string) (string, string, uint64, error) {
 //	}
 func RegisterAuthorizer(auth Autorizer) {
 	sys.Authorize = auth.Auth
+}
+
+func CreateThumbnail(fileData []byte, height, width int) ([]byte, error) {
+	if len(fileData) == 0 {
+		return nil, errors.New("empty image data")
+	}
+
+	if height == 0 || width == 0 {
+		return nil, errors.New("invalid height or width")
+	}
+
+	return imageutil.CreateThumbnail(fileData, width, height)
 }

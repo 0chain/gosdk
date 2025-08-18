@@ -132,11 +132,13 @@ type StakePoolRewardsInfo struct {
 
 // StakePoolDelegatePoolInfo represents delegate pool of a stake pool info.
 type StakePoolDelegatePoolInfo struct {
-	ID         common.Key     `json:"id"`          // blobber ID
-	Balance    common.Balance `json:"balance"`     // current balance
-	DelegateID common.Key     `json:"delegate_id"` // wallet
-	Rewards    common.Balance `json:"rewards"`     // current
-	UnStake    bool           `json:"unstake"`     // want to unstake
+	ID           common.Key     `json:"id"`            // blobber ID
+	Balance      common.Balance `json:"balance"`       // current balance
+	DelegateID   common.Key     `json:"delegate_id"`   // wallet
+	Rewards      common.Balance `json:"rewards"`       // current
+	UnStake      bool           `json:"unstake"`       // want to unstake
+	ProviderID   string         `json:"provider_id"`   // provider ID
+	ProviderType ProviderType   `json:"provider_type"` // provider type
 
 	TotalReward  common.Balance   `json:"total_reward"`
 	TotalPenalty common.Balance   `json:"total_penalty"`
@@ -470,6 +472,19 @@ func getBlobbersInternal(active, stakable bool, limit, offset int) (bs []*Blobbe
 	}
 
 	return wrap.Nodes, nil
+}
+
+func GetBlobbersPaged(active, stakable bool, limit, offset int) ([]*Blobber, error) {
+	if !client.IsSDKInitialized() {
+		return nil, sdkNotInitialized
+	}
+
+	blobbers, err := getBlobbersInternal(active, stakable, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	return blobbers, nil
 }
 
 // GetBlobbers returns list of blobbers.
@@ -1113,8 +1128,13 @@ func ShutdownProvider(providerType ProviderType, providerID string) (string, int
 //   - providerId is the id of the provider.
 //   - providerType is the type of the provider.
 func CollectRewards(providerId string, providerType ProviderType) (string, int64, error) {
+	hash, _, n, _, err := CollectRewardsWithTransaction(providerId, providerType, 0)
+	return hash, n, err
+}
+
+func CollectRewardsWithTransaction(providerId string, providerType ProviderType, fee uint64) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 	if !client.IsSDKInitialized() {
-		return "", 0, sdkNotInitialized
+		return "", "", 0, nil, sdkNotInitialized
 	}
 
 	var input = map[string]interface{}{
@@ -1138,11 +1158,14 @@ func CollectRewards(providerId string, providerType ProviderType) (string, int64
 	// 	scAddress = ZCNSC_SCADDRESS
 	// 	sn.Name = transaction.ZCNSC_COLLECT_REWARD
 	default:
-		return "", 0, fmt.Errorf("collect rewards provider type %v not implimented", providerType)
+		return "", "", 0, nil, fmt.Errorf("collect rewards provider type %v not implimented", providerType)
 	}
 
-	hash, _, n, _, err := transaction.SmartContractTxn(scAddress, sn, true)
-	return hash, n, err
+	if fee == 0 {
+		return transaction.SmartContractTxn(scAddress, sn, true)
+	} else {
+		return transaction.SmartContractTxnValueFee(scAddress, sn, 0, fee, true)
+	}
 }
 
 // TransferAllocation transfers the ownership of an allocation to a new owner. (txn: `storagesc.update_allocation_request`)

@@ -33,7 +33,7 @@ type Client struct {
 	authUrl         string
 	nonce           int64
 	txnFee          uint64
-	sign            SignFunc
+	sign            SignFunc //nolint:unused
 }
 
 type InitSdkOptions struct {

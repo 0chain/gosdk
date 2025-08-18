@@ -39,6 +39,7 @@ require (
 )
 
 require (
+	github.com/disintegration/gift v1.2.1
 	github.com/hack-pad/go-webworkers v0.1.0
 	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d
 	github.com/minio/sha256-simd v1.0.1

@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/0chain/gosdk/core/sys"
+
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/util"
@@ -425,4 +427,16 @@ func SetupAuth(authHost, clientID, clientKey, publicKey, privateKey, localPublic
 		cb.OnSetupComplete(StatusSuccess, "")
 	}()
 	return nil
+}
+
+func RegisterKMSZauthServer(serverAddr string) {
+	logging.Info("Registering KMS ZAuth server: ", serverAddr)
+	sys.SetAuthorize(client.ZauthSignTxn(serverAddr))
+	sys.SetAuthCommon(client.ZauthAuthCommon(serverAddr))
+}
+
+func SetWalletMode(mode bool) {
+	client.SetWalletMode(mode)
+
+	fmt.Println("gosdk setWalletMode: ", "is split:", mode)
 }
