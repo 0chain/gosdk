@@ -16,4 +16,4 @@ type VerifyFunc func(signature string, msg string) (bool, error)
 
 type VerifyWithFunc func(pk, signature string, msg string) (bool, error)
 
-type AuthorizeFunc func(msg string) (string, error)
+type AuthorizeFunc func(msg string, clientIds... string) (string, error)

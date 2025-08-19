@@ -73,7 +73,7 @@ func init() {
 		if !wallet.IsSplit {
 			return sys.Sign(hash, client.signatureScheme, GetClientSysKeys(clients...))
 		}
-
+		fmt.Printf("Sign: wallet details: %+v\n", *wallet)
 		// get sign lock
 		<-sigC
 		fmt.Println("Sign: with sys.SignWithAuth:", sys.SignWithAuth, "sysKeys:", GetClientSysKeys(clients...))
@@ -128,7 +128,7 @@ func signHashWithAuth(hash, signatureScheme string, keys []sys.KeyPair, clientId
 		return "", errors.New("authCommon is not set")
 	}
 
-	rsp, err := sys.AuthCommon(string(data))
+	rsp, err := sys.AuthCommon(string(data), clientID)
 	if err != nil {
 		return "", err
 	}

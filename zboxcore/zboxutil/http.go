@@ -225,6 +225,7 @@ func setClientInfoWithSign(req *http.Request, sig, allocation, baseURL string, c
 	if wallet == nil {
 		return errors.New("wallet not found", clientID)
 	}
+	fmt.Printf("setClientInfoWithSign: wallet details: %+v\n", *wallet)
 	req.Header.Set("X-App-Client-ID", wallet.ClientID)
 	req.Header.Set("X-App-Client-Key", wallet.ClientKey)
 	req.Header.Set(CLIENT_SIGNATURE_HEADER, sig)
