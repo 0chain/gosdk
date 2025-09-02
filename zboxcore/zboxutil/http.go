@@ -17,11 +17,9 @@ import (
 	"github.com/hashicorp/golang-lru/v2/simplelru"
 
 	"github.com/0chain/errors"
-	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/logger"
-	"github.com/0chain/gosdk/core/zcncrypto"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/hitenjain14/fasthttp"
