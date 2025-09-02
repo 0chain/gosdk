@@ -478,7 +478,7 @@ func main() {
 		gInitProxyKeys(publicKey, privateKey)
 
 		if isSplit {
-			sys.AuthCommon = func(msg string) (string, error) {
+			sys.AuthCommon = func(msg string, clientIDs ...string) (string, error) {
 				// send message to main thread
 				sendMessageToMainThread(msg)
 				// wait for response from main thread

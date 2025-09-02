@@ -33,7 +33,7 @@ var nonce = int64(0)
 var allocationIDRequired = errors.Errorf("Allocation ID is required")
 
 type Autorizer interface {
-	Auth(msg string) (string, error)
+	Auth(msg string, clientIDs ...string) (string, error)
 }
 
 // ChainConfig - blockchain config
