@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+//lint:ignore U1000 Intentionally unused for now; will be implemented in a future task.
 func (app *Znft) createTransactionWithGasPrice(ctx context.Context, address string, pack []byte) (*bind.TransactOpts, error) { //nolint
 	gasLimitUnits, err := app.estimateGas(ctx, address, pack)
 	if err != nil {

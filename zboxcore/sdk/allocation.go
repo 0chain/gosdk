@@ -343,6 +343,7 @@ type OperationRequest struct {
 	IsRepair       bool // Required for repair operation
 	IsWebstreaming bool
 	EncryptedKey   string
+	PreservePath   bool `json:"-"` //Required to preserve the original path fo the file, false if no value is provided
 
 	// Required for uploads
 	Workdir         string
@@ -1114,10 +1115,12 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 				break
 			}
 			op := operations[i]
-			op.RemotePath = strings.TrimSpace(op.RemotePath)
-			if op.FileMeta.RemotePath != "" {
-				op.FileMeta.RemotePath = strings.TrimSpace(op.FileMeta.RemotePath)
-				op.FileMeta.RemoteName = strings.TrimSpace(op.FileMeta.RemoteName)
+			if !op.PreservePath {
+				op.RemotePath = strings.TrimSpace(op.RemotePath)
+				if op.FileMeta.RemotePath != "" {
+					op.FileMeta.RemotePath = strings.TrimSpace(op.FileMeta.RemotePath)
+					op.FileMeta.RemoteName = strings.TrimSpace(op.FileMeta.RemoteName)
+				}
 			}
 			remotePath := op.RemotePath
 			parentPaths := GenerateParentPaths(remotePath)

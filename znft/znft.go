@@ -155,6 +155,8 @@ func (app *Znft) constructStorageERC721(ctx context.Context, address string) (*s
 }
 
 // Used to create StorageERC721 with preliminary gas estimation
+
+//lint:ignore U1000 Intentionally unused for now; will be implemented in a future task.
 func (app *Znft) constructWithEstimation( //nolint
 	ctx context.Context,
 	address string,
@@ -181,6 +183,7 @@ func (app *Znft) createTransactOpts(ctx context.Context) (*bind.TransactOpts, er
 	return transaction, nil
 }
 
+//lint:ignore U1000 Intentionally unused for now; will be implemented in a future task.
 func (app *Znft) createTransactOptsWithEstimation( //nolint
 	ctx context.Context,
 	address, method string,
