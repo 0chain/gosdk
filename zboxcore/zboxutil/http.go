@@ -724,29 +724,30 @@ func NewUploadRequest(baseUrl, allocationID, allocationTx, sig string, body io.R
 	return req, nil
 }
 
-func NewConnectionRequestByWallet(baseUrl, allocationID, allocationTx, sig string, body io.Reader, wallet *zcncrypto.Wallet) (*http.Request, error) {
-	l.Logger.Info(fmt.Sprintf("NewConnectionRequestByWallet: baseUrl: %s, allocationID: %s, allocationTx: %s, sig: %s", baseUrl, allocationID, allocationTx, sig))
-	u, err := joinUrl(baseUrl, CREATE_CONNECTION_ENDPOINT, allocationTx)
-	if err != nil {
-		return nil, err
-	}
-	req, err := http.NewRequest(http.MethodPost, u.String(), body)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("X-App-Client-ID", wallet.ClientID)
-	req.Header.Set("X-App-Client-Key", wallet.ClientKey)
-	req.Header.Set(CLIENT_SIGNATURE_HEADER, sig)
-	hashData := allocationTx + baseUrl
-	sig2, err := wallet.Sign(encryption.Hash(hashData), constants.BLS0CHAIN.String())
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set(CLIENT_SIGNATURE_HEADER, sig)
-	req.Header.Set(CLIENT_SIGNATURE_HEADER_V2, sig2)
-	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
-	return req, nil
-}
+// NewConnectionRequestByWallet creates a new connection request using the given wallet.
+// func NewConnectionRequestByWallet(baseUrl, allocationID, allocationTx, sig string, body io.Reader, wallet *zcncrypto.Wallet) (*http.Request, error) {
+// 	l.Logger.Info(fmt.Sprintf("NewConnectionRequestByWallet: baseUrl: %s, allocationID: %s, allocationTx: %s, sig: %s", baseUrl, allocationID, allocationTx, sig))
+// 	u, err := joinUrl(baseUrl, CREATE_CONNECTION_ENDPOINT, allocationTx)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	req, err := http.NewRequest(http.MethodPost, u.String(), body)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	req.Header.Set("X-App-Client-ID", wallet.ClientID)
+// 	req.Header.Set("X-App-Client-Key", wallet.ClientKey)
+// 	req.Header.Set(CLIENT_SIGNATURE_HEADER, sig)
+// 	hashData := allocationTx + baseUrl
+// 	sig2, err := wallet.Sign(encryption.Hash(hashData), constants.BLS0CHAIN.String())
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	req.Header.Set(CLIENT_SIGNATURE_HEADER, sig)
+// 	req.Header.Set(CLIENT_SIGNATURE_HEADER_V2, sig2)
+// 	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
+// 	return req, nil
+// }
 
 func NewConnectionRequest(baseUrl, allocationID, allocationTx, sig string, body io.Reader, clients ...string) (*http.Request, error) {
 	l.Logger.Info(fmt.Sprintf("NewConnectionRequest: baseUrl: %s, allocationID: %s, allocationTx: %s, sig: %s", baseUrl, allocationID, allocationTx, sig))

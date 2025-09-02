@@ -1484,6 +1484,7 @@ func updateMaskBit(mask uint16, index uint8, value bool) uint16 {
 	}
 }
 
+// DoMultiUploadByWallet uploads multiple files to the allocation using the given wallet.
 func DoMultiUploadByWallet(wallet zcncrypto.Wallet, a *Allocation, workdir string, localPaths []string, fileNames []string, thumbnailPaths []string, encrypts []bool, chunkNumbers []int, remotePaths []string, isUpdate []bool, isWebstreaming []bool, status StatusCallback) error {
 
 	if len(localPaths) != len(thumbnailPaths) {

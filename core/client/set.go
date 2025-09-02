@@ -223,6 +223,7 @@ func SetWallet(w zcncrypto.Wallet) {
 	client.wallets[w.ClientID] = &w
 }
 
+// GetWalletByClientID gets a wallet by client id.
 func GetWalletByClientID(clientID string) *zcncrypto.Wallet {
 	if client.wallets == nil {
         return nil
@@ -233,6 +234,7 @@ func GetWalletByClientID(clientID string) *zcncrypto.Wallet {
 	return client.wallets[clientID]
 }
 
+// AddWallet adds a new wallet to the sdk.
 func AddWallet(wallet zcncrypto.Wallet) {
 	if client.wallets == nil {
 		client.wallets = make(map[string]*zcncrypto.Wallet)
@@ -245,7 +247,7 @@ func AddWallet(wallet zcncrypto.Wallet) {
 	client.wallets[wallet.ClientID] = &wallet
 }
 
-// RemoveWallet should be set before any transaction or client specific APIs
+// RemoveWallet removes a wallet from the sdk.
 func RemoveWallet(clientID string) {
 	client.wg[clientID].Done()
 	client.walletCount[clientID]--
