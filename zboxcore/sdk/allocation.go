@@ -3356,3 +3356,328 @@ func contextCanceled(ctx context.Context) bool {
 		return false
 	}
 }
+
+// RevokePublicShare revokes the public shared access to a file or directory within the allocation.
+// It revokes the public shared access for all users who have access via the public link.
+//
+// Parameters:
+//   - path: The path of the file or directory to revoke the public shared access.
+//
+// Returns:
+//   - error: An error if the public shared access revocation fails.
+func (a *Allocation) RevokePublicShare(path string) error {
+	success := make(chan int, len(a.Blobbers))
+	notFound := make(chan int, len(a.Blobbers))
+	wg := &sync.WaitGroup{}
+	for idx := range a.Blobbers {
+		baseUrl := a.Blobbers[idx].Baseurl
+		query := &url.Values{}
+		query.Add("path", path)
+		// For public shares, we don't specify a refereeClientID
+		// The blobber will revoke all public access for this path
+
+		httpreq, err := zboxutil.NewRevokePublicShareRequest(baseUrl, a.ID, a.Tx, a.sig, query, a.Owner)
+		if err != nil {
+			return err
+		}
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			err := zboxutil.HttpDo(a.ctx, a.ctxCancelF, httpreq, func(resp *http.Response, err error) error {
+				if err != nil {
+					l.Logger.Error("Revoke public share : ", err)
+					return err
+				}
+				defer resp.Body.Close()
+
+				respbody, err := io.ReadAll(resp.Body)
+				if err != nil {
+					l.Logger.Error("Error: Resp ", err)
+					return err
+				}
+				if resp.StatusCode != http.StatusOK {
+					l.Logger.Error(baseUrl, " Revoke public share error response: ", resp.StatusCode, string(respbody))
+					return fmt.Errorf(string(respbody))
+				}
+				data := map[string]interface{}{}
+				err = json.Unmarshal(respbody, &data)
+				if err != nil {
+					return err
+				}
+				if data["status"].(float64) == http.StatusNotFound {
+					notFound <- 1
+				}
+				return nil
+			})
+			if err == nil {
+				success <- 1
+			}
+		}()
+	}
+	wg.Wait()
+	if len(success) == len(a.Blobbers) {
+		if len(notFound) == len(a.Blobbers) {
+			return errors.New("", "public share not found")
+		}
+		return nil
+	}
+	return errors.New("", "consensus not reached")
+}
+
+// RemovePublicShareRecipient removes a specific recipient's access from a public share.
+// This allows removing individual users while keeping the public share active for others.
+//
+// Parameters:
+//   - path: The path of the file or directory
+//   - recipientClientID: The client ID of the recipient to remove
+//
+// Returns:
+//   - error: An error if the recipient removal fails
+func (a *Allocation) RemovePublicShareRecipient(path string, recipientClientID string) error {
+	success := make(chan int, len(a.Blobbers))
+	notFound := make(chan int, len(a.Blobbers))
+	wg := &sync.WaitGroup{}
+	for idx := range a.Blobbers {
+		baseUrl := a.Blobbers[idx].Baseurl
+		query := &url.Values{}
+		query.Add("path", path)
+		query.Add("recipientClientID", recipientClientID)
+
+		httpreq, err := zboxutil.NewRemovePublicShareRecipientRequest(baseUrl, a.ID, a.Tx, a.sig, query, a.Owner)
+		if err != nil {
+			return err
+		}
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			err := zboxutil.HttpDo(a.ctx, a.ctxCancelF, httpreq, func(resp *http.Response, err error) error {
+				if err != nil {
+					l.Logger.Error("Remove public share recipient : ", err)
+					return err
+				}
+				defer resp.Body.Close()
+
+				respbody, err := io.ReadAll(resp.Body)
+				if err != nil {
+					l.Logger.Error("Error: Resp ", err)
+					return err
+				}
+				if resp.StatusCode != http.StatusOK {
+					l.Logger.Error(baseUrl, " Remove public share recipient error response: ", resp.StatusCode, string(respbody))
+					return fmt.Errorf(string(respbody))
+				}
+				data := map[string]interface{}{}
+				err = json.Unmarshal(respbody, &data)
+				if err != nil {
+					return err
+				}
+				if data["status"].(float64) == http.StatusNotFound {
+					notFound <- 1
+				}
+				return nil
+			})
+			if err == nil {
+				success <- 1
+			}
+		}()
+	}
+	wg.Wait()
+	if len(success) == len(a.Blobbers) {
+		if len(notFound) == len(a.Blobbers) {
+			return errors.New("", "public share recipient not found")
+		}
+		return nil
+	}
+	return errors.New("", "consensus not reached")
+}
+
+// CheckPublicShareExists checks if a public share exists for a file or directory
+// Parameters:
+//   - path: The path of the file or directory to check for public share existence.
+//
+// Returns:
+//   - bool: True if public share exists, false otherwise.
+//   - error: An error if the check fails.
+func (a *Allocation) CheckPublicShareExists(path string) (bool, error) {
+	success := make(chan bool, len(a.Blobbers))
+	errors := make(chan error, len(a.Blobbers))
+	wg := &sync.WaitGroup{}
+
+	for idx := range a.Blobbers {
+		baseUrl := a.Blobbers[idx].Baseurl
+		query := &url.Values{}
+		query.Add("path", path)
+
+		httpreq, err := zboxutil.NewCheckPublicShareExistsRequest(baseUrl, a.ID, a.Tx, a.sig, query, a.Owner)
+		if err != nil {
+			return false, err
+		}
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			err := zboxutil.HttpDo(a.ctx, a.ctxCancelF, httpreq, func(resp *http.Response, err error) error {
+				if err != nil {
+					l.Logger.Error("Check public share exists: ", err)
+					errors <- err
+					return err
+				}
+				defer resp.Body.Close()
+
+				respbody, err := io.ReadAll(resp.Body)
+				if err != nil {
+					l.Logger.Error("Error: Resp ", err)
+					errors <- err
+					return err
+				}
+
+				if resp.StatusCode != http.StatusOK {
+					l.Logger.Error(baseUrl, " Check public share exists error response: ", resp.StatusCode, string(respbody))
+					errors <- fmt.Errorf(string(respbody))
+					return fmt.Errorf(string(respbody))
+				}
+
+				var result map[string]interface{}
+				if err := json.Unmarshal(respbody, &result); err != nil {
+					errors <- err
+					return err
+				}
+
+				if exists, ok := result["exists"].(bool); ok {
+					success <- exists
+				} else {
+					success <- false
+				}
+				return nil
+			})
+			if err != nil {
+				errors <- err
+			}
+		}()
+	}
+
+	wg.Wait()
+	close(success)
+	close(errors)
+
+	// Check for any errors
+	select {
+	case err := <-errors:
+		return false, err
+	default:
+	}
+
+	// Get consensus result
+	existsCount := 0
+	totalResponses := 0
+	for exists := range success {
+		if exists {
+			existsCount++
+		}
+		totalResponses++
+	}
+
+	if totalResponses == 0 {
+		return false, fmt.Errorf("no responses from blobbers")
+	}
+
+	// Simple majority consensus
+	return existsCount > totalResponses/2, nil
+}
+
+// ShareInfo represents a share information structure
+type ShareInfo struct {
+	ID                        int       `json:"id"`
+	OwnerID                   string    `json:"owner_id,omitempty"`
+	ClientID                  string    `json:"client_id"`
+	FilePathHash              string    `json:"file_path_hash,omitempty"`
+	ReEncryptionKey           string    `json:"re_encryption_key,omitempty"`
+	ClientEncryptionPublicKey string    `json:"client_encryption_public_key,omitempty"`
+	Revoked                   bool      `json:"revoked"`
+	ExpiryAt                  time.Time `json:"expiry_at,omitempty"`
+	AvailableAt               time.Time `json:"available_at,omitempty"`
+}
+
+// GetPublicShareRecipients gets all recipients of a public share
+// Parameters:
+//   - path: The path of the file or directory to get recipients for.
+//
+// Returns:
+//   - []ShareInfo: List of recipients.
+//   - error: An error if the operation fails.
+func (a *Allocation) GetPublicShareRecipients(path string) ([]ShareInfo, error) {
+	success := make(chan []ShareInfo, len(a.Blobbers))
+	errors := make(chan error, len(a.Blobbers))
+	wg := &sync.WaitGroup{}
+
+	for idx := range a.Blobbers {
+		baseUrl := a.Blobbers[idx].Baseurl
+		query := &url.Values{}
+		query.Add("path", path)
+
+		httpreq, err := zboxutil.NewGetPublicShareRecipientsRequest(baseUrl, a.ID, a.Tx, a.sig, query, a.Owner)
+		if err != nil {
+			return nil, err
+		}
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			err := zboxutil.HttpDo(a.ctx, a.ctxCancelF, httpreq, func(resp *http.Response, err error) error {
+				if err != nil {
+					l.Logger.Error("Get public share recipients: ", err)
+					errors <- err
+					return err
+				}
+				defer resp.Body.Close()
+
+				respbody, err := io.ReadAll(resp.Body)
+				if err != nil {
+					l.Logger.Error("Error: Resp ", err)
+					errors <- err
+					return err
+				}
+
+				if resp.StatusCode != http.StatusOK {
+					l.Logger.Error(baseUrl, " Get public share recipients error response: ", resp.StatusCode, string(respbody))
+					errors <- fmt.Errorf(string(respbody))
+					return fmt.Errorf(string(respbody))
+				}
+
+				var recipients []ShareInfo
+				if err := json.Unmarshal(respbody, &recipients); err != nil {
+					errors <- err
+					return err
+				}
+
+				success <- recipients
+				return nil
+			})
+			if err != nil {
+				errors <- err
+			}
+		}()
+	}
+
+	wg.Wait()
+	close(success)
+	close(errors)
+
+	// Check for any errors
+	select {
+	case err := <-errors:
+		return nil, err
+	default:
+	}
+
+	// Get first successful response
+	select {
+	case recipients := <-success:
+		return recipients, nil
+	default:
+		return nil, fmt.Errorf("no responses from blobbers")
+	}
+}
+

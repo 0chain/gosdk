@@ -415,6 +415,132 @@ func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expir
 
 }
 
+// RevokePublicShare revokes a public share for a file/folder
+//   - allocationID is the allocation id
+//   - remotePath is the remote path of the file
+func RevokePublicShare(allocationID, remotePath string) error {
+	if len(allocationID) == 0 {
+		return RequiredArg("allocationID")
+	}
+
+	if len(remotePath) == 0 {
+		return RequiredArg("remotePath")
+	}
+
+	allocationObj, err := getAllocation(allocationID)
+	if err != nil {
+		PrintError("Error fetching the allocation", err)
+		return err
+	}
+
+	err = allocationObj.RevokePublicShare(remotePath)
+	if err != nil {
+		PrintError("Error revoking public share", err)
+		return err
+	}
+
+	sdkLogger.Info("Public share revoked successfully")
+	return nil
+}
+
+// RemovePublicShareRecipient removes a specific recipient from a public share
+//   - allocationID is the allocation id
+//   - remotePath is the remote path of the file
+//   - recipientClientID is the client ID of the recipient to remove
+func RemovePublicShareRecipient(allocationID, remotePath, recipientClientID string) error {
+	if len(allocationID) == 0 {
+		return RequiredArg("allocationID")
+	}
+
+	if len(remotePath) == 0 {
+		return RequiredArg("remotePath")
+	}
+
+	if len(recipientClientID) == 0 {
+		return RequiredArg("recipientClientID")
+	}
+
+	allocationObj, err := getAllocation(allocationID)
+	if err != nil {
+		PrintError("Error fetching the allocation", err)
+		return err
+	}
+
+	err = allocationObj.RemovePublicShareRecipient(remotePath, recipientClientID)
+	if err != nil {
+		PrintError("Error removing public share recipient", err)
+		return err
+	}
+
+	sdkLogger.Info("Public share recipient removed successfully")
+	return nil
+}
+
+// CheckPublicShareExists checks if a public share exists for a file/folder
+//   - allocationID is the allocation id
+//   - remotePath is the remote path of the file
+//
+// Returns: bool indicating if public share exists, error if check fails
+func CheckPublicShareExists(allocationID, remotePath string) (bool, error) {
+	if len(allocationID) == 0 {
+		return false, RequiredArg("allocationID")
+	}
+
+	if len(remotePath) == 0 {
+		return false, RequiredArg("remotePath")
+	}
+
+	allocationObj, err := getAllocation(allocationID)
+	if err != nil {
+		PrintError("Error fetching the allocation", err)
+		return false, err
+	}
+
+	exists, err := allocationObj.CheckPublicShareExists(remotePath)
+	if err != nil {
+		PrintError("Error checking public share existence", err)
+		return false, err
+	}
+
+	return exists, nil
+}
+
+// GetPublicShareRecipients gets all recipients of a public share
+//   - allocationID is the allocation id
+//   - remotePath is the remote path of the file
+//
+// Returns: slice of ShareInfo, error if retrieval fails
+func GetPublicShareRecipients(allocationID, remotePath string) (string, error) {
+	if len(allocationID) == 0 {
+		return "", RequiredArg("allocationID")
+	}
+
+	if len(remotePath) == 0 {
+		return "", RequiredArg("remotePath")
+	}
+
+	allocationObj, err := getAllocation(allocationID)
+	if err != nil {
+		PrintError("Error fetching the allocation", err)
+		return "", err
+	}
+
+	recipients, err := allocationObj.GetPublicShareRecipients(remotePath)
+	if err != nil {
+		PrintError("Error getting public share recipients", err)
+		return "", err
+	}
+
+	// Convert to JSON string for WASM
+	recipientsJSON, err := json.Marshal(recipients)
+	if err != nil {
+		PrintError("Error marshaling recipients to JSON", err)
+		return "", err
+	}
+
+	return string(recipientsJSON), nil
+}
+
 func getFileMetaByName(allocationID, fileNameQuery string) ([]*sdk.ConsolidatedFileMetaByName, error) {
 	allocationObj, err := getAllocation(allocationID)
 	if err != nil {

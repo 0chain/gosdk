@@ -890,7 +890,97 @@ func NewRevokeShareRequest(baseUrl, allocationID, allocationTx, sig string, quer
 	return req, nil
 }
 
-func NewWritemarkerRequest(baseUrl, allocationID, allocationTx, sig string) (*http.Request, error) {
+func NewRevokePublicShareRequest(baseUrl, allocationID, allocationTx, sig string, query *url.Values, clients ...string) (*http.Request, error) {
+	u, err := joinUrl(baseUrl, SHARE_ENDPOINT, allocationTx)
+	if err != nil {
+		return nil, err
+	}
+	u.RawQuery = query.Encode()
+	// Use DELETE method for public share revocation
+	req, err := http.NewRequest(http.MethodDelete, u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := setClientInfoWithSign(req, sig, allocationTx, baseUrl); err != nil {
+		return nil, err
+	}
+
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
+
+	return req, nil
+}
+
+// NewCheckPublicShareExistsRequest creates a new HTTP request to check if public share exists
+func NewCheckPublicShareExistsRequest(baseUrl, allocationID, allocationTx, sig string, query *url.Values, clients ...string) (*http.Request, error) {
+	u, err := joinUrl(baseUrl, "/v1/marketplace/shareinfo/public/check/", allocationID)
+	if err != nil {
+		return nil, err
+	}
+	if query != nil {
+		u.RawQuery = query.Encode()
+	}
+
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := setClientInfoWithSign(req, sig, allocationTx, baseUrl); err != nil {
+		return nil, err
+	}
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
+
+	return req, nil
+}
+
+// NewGetPublicShareRecipientsRequest creates a new HTTP request to get public share recipients
+func NewGetPublicShareRecipientsRequest(baseUrl, allocationID, allocationTx, sig string, query *url.Values, clients ...string) (*http.Request, error) {
+	u, err := joinUrl(baseUrl, "/v1/marketplace/shareinfo/public/recipients/", allocationID)
+	if err != nil {
+		return nil, err
+	}
+	if query != nil {
+		u.RawQuery = query.Encode()
+	}
+
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := setClientInfoWithSign(req, sig, allocationTx, baseUrl); err != nil {
+		return nil, err
+	}
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
+
+	return req, nil
+}
+
+// NewRemovePublicShareRecipientRequest creates a new HTTP request to remove a public share recipient
+func NewRemovePublicShareRecipientRequest(baseUrl, allocationID, allocationTx, sig string, query *url.Values, clients ...string) (*http.Request, error) {
+	u, err := joinUrl(baseUrl, "/v1/marketplace/shareinfo/public/recipient/", allocationID)
+	if err != nil {
+		return nil, err
+	}
+	if query != nil {
+		u.RawQuery = query.Encode()
+	}
+
+	req, err := http.NewRequest("DELETE", u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := setClientInfoWithSign(req, sig, allocationTx, baseUrl); err != nil {
+		return nil, err
+	}
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
+
+	return req, nil
+}
+
+func NewWritemarkerRequest(baseUrl, allocationID, allocationTx, sig string, clients ...string) (*http.Request, error) {
 
 	nurl, err := joinUrl(baseUrl, LATEST_WRITE_MARKER_ENDPOINT, allocationTx)
 	if err != nil {
