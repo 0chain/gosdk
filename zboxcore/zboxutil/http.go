@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -908,6 +909,87 @@ func NewRevokeShareRequest(baseUrl, allocationID, allocationTx, sig string, quer
 	}
 
 	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
+
+	return req, nil
+}
+
+func NewRevokePublicShareRequest(baseUrl, allocationID, allocationTx, sig string, query *url.Values, clients ...string) (*http.Request, error) {
+	u, err := joinUrl(baseUrl, SHARE_ENDPOINT, allocationTx)
+	if err != nil {
+		return nil, err
+	}
+	u.RawQuery = query.Encode()
+	// Use DELETE method for public share revocation
+	req, err := http.NewRequest(http.MethodDelete, u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := setClientInfoWithSign(req, sig, allocationTx, baseUrl, clients...); err != nil {
+		return nil, err
+	}
+
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
+
+	return req, nil
+}
+
+// NewCheckPublicShareExistsRequest creates a new HTTP request to check if public share exists
+func NewCheckPublicShareExistsRequest(baseUrl, allocationID, allocationTx, sig string, query *url.Values, clients ...string) (*http.Request, error) {
+	url := fmt.Sprintf("%s/v1/marketplace/shareinfo/public/check/%s", baseUrl, allocationID)
+	if query != nil {
+		url += "?" + query.Encode()
+	}
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("X-App-Client-ID", clients[0])
+	req.Header.Set("X-App-Client-Key", sig)
+	req.Header.Set("ALLOCATION-ID", allocationID)
+	req.Header.Set("X-App-Client-Signature", sig)
+
+	return req, nil
+}
+
+// NewGetPublicShareRecipientsRequest creates a new HTTP request to get public share recipients
+func NewGetPublicShareRecipientsRequest(baseUrl, allocationID, allocationTx, sig string, query *url.Values, clients ...string) (*http.Request, error) {
+	url := fmt.Sprintf("%s/v1/marketplace/shareinfo/public/recipients/%s", baseUrl, allocationID)
+	if query != nil {
+		url += "?" + query.Encode()
+	}
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("X-App-Client-ID", clients[0])
+	req.Header.Set("X-App-Client-Key", sig)
+	req.Header.Set("ALLOCATION-ID", allocationID)
+	req.Header.Set("X-App-Client-Signature", sig)
+
+	return req, nil
+}
+
+// NewRemovePublicShareRecipientRequest creates a new HTTP request to remove a public share recipient
+func NewRemovePublicShareRecipientRequest(baseUrl, allocationID, allocationTx, sig string, query *url.Values, clients ...string) (*http.Request, error) {
+	url := fmt.Sprintf("%s/v1/marketplace/shareinfo/public/recipient/%s", baseUrl, allocationID)
+	if query != nil {
+		url += "?" + query.Encode()
+	}
+
+	req, err := http.NewRequest("DELETE", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("X-App-Client-ID", clients[0])
+	req.Header.Set("X-App-Client-Key", sig)
+	req.Header.Set("ALLOCATION-ID", allocationID)
+	req.Header.Set("X-App-Client-Signature", sig)
 
 	return req, nil
 }
