@@ -69,6 +69,10 @@ const (
 	COLLABORATOR_ENDPOINT        = "/v1/file/collaborator/"
 	CALCULATE_HASH_ENDPOINT      = "/v1/file/calculatehash/"
 	SHARE_ENDPOINT               = "/v1/marketplace/shareinfo/"
+	PUBLIC_SHARE_ENDPOINT 			 = "/v1/marketplace/shareinfo/public/"
+	PUBLIC_SHARE_RECIPIENT_ENDPOINT  = "/v1/marketplace/shareinfo/public/recipient/"
+	PUBLIC_SHARE_CHECK_ENDPOINT 	 = "/v1/marketplace/shareinfo/public/check/"
+	PUBLIC_SHARE_RECIPIENTS_ENDPOINT = "/v1/marketplace/shareinfo/public/recipients/"
 	DIR_ENDPOINT                 = "/v1/dir/"
 	PLAYLIST_LATEST_ENDPOINT     = "/v1/playlist/latest/"
 	PLAYLIST_FILE_ENDPOINT       = "/v1/playlist/file/"
@@ -914,7 +918,7 @@ func NewRevokeShareRequest(baseUrl, allocationID, allocationTx, sig string, quer
 }
 
 func NewRevokePublicShareRequest(baseUrl, allocationID, allocationTx, sig string, query *url.Values, clients ...string) (*http.Request, error) {
-	u, err := joinUrl(baseUrl, SHARE_ENDPOINT, allocationTx)
+	u, err := joinUrl(baseUrl, PUBLIC_SHARE_ENDPOINT, allocationTx)
 	if err != nil {
 		return nil, err
 	}
@@ -936,60 +940,63 @@ func NewRevokePublicShareRequest(baseUrl, allocationID, allocationTx, sig string
 
 // NewCheckPublicShareExistsRequest creates a new HTTP request to check if public share exists
 func NewCheckPublicShareExistsRequest(baseUrl, allocationID, allocationTx, sig string, query *url.Values, clients ...string) (*http.Request, error) {
-	url := fmt.Sprintf("%s/v1/marketplace/shareinfo/public/check/%s", baseUrl, allocationID)
-	if query != nil {
-		url += "?" + query.Encode()
+	u, err := joinUrl(baseUrl, PUBLIC_SHARE_CHECK_ENDPOINT, allocationTx)
+	if err != nil {
+		return nil, err
 	}
-
-	req, err := http.NewRequest("GET", url, nil)
+	u.RawQuery = query.Encode()
+	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
 	if err != nil {
 		return nil, err
 	}
 
-	req.Header.Set("X-App-Client-ID", clients[0])
-	req.Header.Set("X-App-Client-Key", sig)
-	req.Header.Set("ALLOCATION-ID", allocationID)
-	req.Header.Set("X-App-Client-Signature", sig)
+	if err := setClientInfoWithSign(req, sig, allocationTx, baseUrl, clients...); err != nil {
+		return nil, err
+	}
+
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 
 	return req, nil
 }
 
 // NewGetPublicShareRecipientsRequest creates a new HTTP request to get public share recipients
 func NewGetPublicShareRecipientsRequest(baseUrl, allocationID, allocationTx, sig string, query *url.Values, clients ...string) (*http.Request, error) {
-	url := fmt.Sprintf("%s/v1/marketplace/shareinfo/public/recipients/%s", baseUrl, allocationID)
-	if query != nil {
-		url += "?" + query.Encode()
+	u, err := joinUrl(baseUrl, PUBLIC_SHARE_RECIPIENTS_ENDPOINT, allocationTx)
+	if err != nil {
+		return nil, err
 	}
-
-	req, err := http.NewRequest("GET", url, nil)
+	u.RawQuery = query.Encode()
+	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
 	if err != nil {
 		return nil, err
 	}
 
-	req.Header.Set("X-App-Client-ID", clients[0])
-	req.Header.Set("X-App-Client-Key", sig)
-	req.Header.Set("ALLOCATION-ID", allocationID)
-	req.Header.Set("X-App-Client-Signature", sig)
+	if err := setClientInfoWithSign(req, sig, allocationTx, baseUrl, clients...); err != nil {
+		return nil, err
+	}
+
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 
 	return req, nil
 }
 
 // NewRemovePublicShareRecipientRequest creates a new HTTP request to remove a public share recipient
 func NewRemovePublicShareRecipientRequest(baseUrl, allocationID, allocationTx, sig string, query *url.Values, clients ...string) (*http.Request, error) {
-	url := fmt.Sprintf("%s/v1/marketplace/shareinfo/public/recipient/%s", baseUrl, allocationID)
-	if query != nil {
-		url += "?" + query.Encode()
+	u, err := joinUrl(baseUrl, PUBLIC_SHARE_RECIPIENT_ENDPOINT, allocationTx)
+	if err != nil {
+		return nil, err
 	}
-
-	req, err := http.NewRequest("DELETE", url, nil)
+	u.RawQuery = query.Encode()
+	req, err := http.NewRequest(http.MethodDelete, u.String(), nil)
 	if err != nil {
 		return nil, err
 	}
 
-	req.Header.Set("X-App-Client-ID", clients[0])
-	req.Header.Set("X-App-Client-Key", sig)
-	req.Header.Set("ALLOCATION-ID", allocationID)
-	req.Header.Set("X-App-Client-Signature", sig)
+	if err := setClientInfoWithSign(req, sig, allocationTx, baseUrl, clients...); err != nil {
+		return nil, err
+	}
+
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 
 	return req, nil
 }
