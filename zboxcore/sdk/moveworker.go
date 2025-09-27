@@ -45,11 +45,16 @@ type MoveRequest struct {
 	connectionID   string
 	timestamp      int64
 	destLookupHash string
+	clientId       string
 	Consensus
 }
 
 func (req *MoveRequest) getObjectTreeFromBlobber(blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
-	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.allocationTx, req.sig, req.remotefilepath, blobber, req.allocationObj.Owner)
+	clientId := req.clientId
+	if clientId == "" {
+		clientId = req.allocationObj.Owner
+	}
+	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.allocationTx, req.sig, req.remotefilepath, blobber, req.allocationObj.Owner, clientId)
 }
 
 func (req *MoveRequest) getFileMetaFromBlobber(pos int) (fileRef *fileref.FileRef, err error) {
@@ -122,7 +127,11 @@ func (req *MoveRequest) moveBlobberObject(
 				cncl     context.CancelFunc
 			)
 
-			httpreq, err = zboxutil.NewMoveRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body, req.allocationObj.Owner)
+			clientId := req.clientId
+			if clientId == "" {
+				clientId = req.allocationObj.Owner
+			}
+			httpreq, err = zboxutil.NewMoveRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body, req.allocationObj.Owner, clientId)
 			if err != nil {
 				l.Logger.Error(blobber.Baseurl, "Error creating rename request", err)
 				return
@@ -422,6 +431,7 @@ type MoveOperation struct {
 	maskMU         *sync.Mutex
 	consensus      Consensus
 	objectTreeRefs []fileref.RefEntity
+	clientId       string
 }
 
 func (mo *MoveOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
@@ -439,6 +449,7 @@ func (mo *MoveOperation) Process(allocObj *Allocation, connectionID string) ([]f
 		maskMU:         mo.maskMU,
 		destPath:       mo.destPath,
 		Consensus:      Consensus{RWMutex: &sync.RWMutex{}},
+		clientId:       mo.clientId,
 	}
 	mR.Consensus.fullconsensus = mo.consensus.fullconsensus
 	mR.Consensus.consensusThresh = mo.consensus.consensusThresh
@@ -518,7 +529,7 @@ func (mo *MoveOperation) Error(allocObj *Allocation, consensus int, err error) {
 
 }
 
-func NewMoveOperation(remotePath string, destPath string, moveMask zboxutil.Uint128, maskMU *sync.Mutex, consensusTh int, fullConsensus int, ctx context.Context) *MoveOperation {
+func NewMoveOperation(remotePath string, destPath string, moveMask zboxutil.Uint128, maskMU *sync.Mutex, consensusTh int, fullConsensus int, ctx context.Context, clientId string) *MoveOperation {
 	mo := &MoveOperation{}
 	mo.remotefilepath = zboxutil.RemoteClean(remotePath)
 	if destPath != "/" {
@@ -530,6 +541,7 @@ func NewMoveOperation(remotePath string, destPath string, moveMask zboxutil.Uint
 	mo.consensus.consensusThresh = consensusTh
 	mo.consensus.fullconsensus = fullConsensus
 	mo.ctx, mo.ctxCncl = context.WithCancel(ctx)
+	mo.clientId = clientId
 	return mo
 }
 
