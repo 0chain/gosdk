@@ -1139,13 +1139,31 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 
 			switch op.OperationType {
 			case constants.FileOperationRename:
-				operation = NewRenameOperation(op.RemotePath, op.DestName, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
+				var clientId string
+				if mo.Wallet != nil {
+					clientId = mo.Wallet.ClientID
+				} else {
+					clientId = mo.allocationObj.Owner
+				}
+				operation = NewRenameOperation(op.RemotePath, op.DestName, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx, clientId)
 
 			case constants.FileOperationCopy:
-				operation = NewCopyOperation(mo.ctx, op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, op.CopyDirOnly)
+				var clientId string
+				if mo.Wallet != nil {
+					clientId = mo.Wallet.ClientID
+				} else {
+					clientId = mo.allocationObj.Owner
+				}
+				operation = NewCopyOperation(mo.ctx, op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, op.CopyDirOnly, clientId)
 
 			case constants.FileOperationMove:
-				operation = NewMoveOperation(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
+				var clientId string
+				if mo.Wallet != nil {
+					clientId = mo.Wallet.ClientID
+				} else {
+					clientId = mo.allocationObj.Owner
+				}
+				operation = NewMoveOperation(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx, clientId)
 
 			case constants.FileOperationInsert:
 				cancelLock.Lock()
