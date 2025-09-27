@@ -66,8 +66,17 @@ func init() {
 	Sign = func(hash string, clients ...string) (string, error) {
 		wallet := client.wallet
 
-		if len(clients) > 0 && clients[0] != "" && client.wallets[clients[0]] != nil {
-			wallet = client.wallets[clients[0]]
+		if len(clients) > 0 && clients[0] != "" {
+			if client.wallets[clients[0]] != nil {
+				wallet = client.wallets[clients[0]]
+			} else {
+				for _, w := range client.wallets {
+					if w.ClientID == clients[0] {
+						wallet = w
+						break
+					}
+				}
+			}
 		}
 
 		if !wallet.IsSplit {
@@ -197,9 +206,20 @@ func verifyEd25519With(pubKey, signature, hash string) (bool, error) {
 
 func GetClientSysKeys(clients ...string) []sys.KeyPair {
 	var wallet *zcncrypto.Wallet
-	if len(clients) > 0 && clients[0] != "" && client.wallets[clients[0]] != nil {
-		wallet = client.wallets[clients[0]]
-	} else {
+	if len(clients) > 0 && clients[0] != "" {
+		if client.wallets[clients[0]] != nil {
+			wallet = client.wallets[clients[0]]
+		} else {
+			for _, w := range client.wallets {
+				if w.ClientID == clients[0] {
+					wallet = w
+					break
+				}
+			}
+		}
+	} 
+	
+	if wallet == nil{
 		wallet = client.wallet
 	}
 
@@ -220,7 +240,14 @@ func SetWallet(w zcncrypto.Wallet) {
 	if client.wallets == nil {
 		client.wallets = make(map[string]*zcncrypto.Wallet)
 	}
-	client.wallets[w.ClientID] = &w
+	client.wallets[w.ClientKey] = &w
+}
+
+func GetWalletByClientKey(clientKey string) *zcncrypto.Wallet {
+	if client.wallets == nil {
+		return nil
+	}
+	return client.wallets[clientKey]
 }
 
 // GetWalletByClientID gets a wallet by client id.
@@ -231,28 +258,45 @@ func GetWalletByClientID(clientID string) *zcncrypto.Wallet {
 	if _, exists := client.wallets[clientID]; !exists {
         return nil
     }
-	return client.wallets[clientID]
+
+	for _, wallet := range client.wallets {
+		if wallet.ClientID == clientID {
+			return wallet
+		}
+	}
+
+	return nil
 }
 
 // AddWallet adds a new wallet to the sdk.
 func AddWallet(wallet zcncrypto.Wallet) {
+	clientKey := wallet.ClientKey
 	if client.wallets == nil {
 		client.wallets = make(map[string]*zcncrypto.Wallet)
 	}
 	if _, exists := client.wg[wallet.ClientID]; !exists {
         client.wg[wallet.ClientID] = &sync.WaitGroup{}
     }
-	client.wg[wallet.ClientID].Add(1)
-	client.walletCount[wallet.ClientID]++
-	client.wallets[wallet.ClientID] = &wallet
+	client.wg[clientKey].Add(1)
+	client.walletCount[clientKey]++
+	client.wallets[clientKey] = &wallet
 }
 
 // RemoveWallet removes a wallet from the sdk.
-func RemoveWallet(clientID string) {
-	client.wg[clientID].Done()
-	client.walletCount[clientID]--
-	if client.walletCount[clientID] == 0 {
-		delete(client.wallets, clientID)
+func RemoveWallet(clientKey string) {
+	client.wg[clientKey].Done()
+	client.walletCount[clientKey]--
+	if client.walletCount[clientKey] == 0 {
+		delete(client.wallets, clientKey)
+	}
+}
+
+func RemoveWalletByClientID(clientID string) {
+	for clientKey, wallet := range client.wallets {
+		if wallet.ClientID == clientID {
+			RemoveWallet(clientKey)
+			return
+		}
 	}
 }
 
@@ -327,12 +371,16 @@ func IsWalletSet() bool {
 }
 
 func PublicKey(clients ...string) string {
-	if len(clients) > 0 && clients[0] != "" && client.wallets[clients[0]] != nil {
-		if client.wallets[clients[0]] == nil {
-			fmt.Println("Public key is empty")
-			return ""
+	if len(clients) > 0 && clients[0] != "" {
+		if client.wallets[clients[0]] != nil {
+			return client.wallets[clients[0]].ClientKey
+		} else {
+			for _, w := range client.wallets {
+				if w.ClientID == clients[0] {
+					return w.ClientKey
+				}
+			}
 		}
-		return client.wallets[clients[0]].ClientKey
 	}
 
 	return client.wallet.ClientKey
@@ -350,12 +398,16 @@ func PrivateKey() string {
 }
 
 func Id(clients ...string) string {
-	if len(clients) > 0 && clients[0] != "" && client.wallets[clients[0]] != nil {
-		if client.wallets[clients[0]] == nil {
-			fmt.Println("Id is empty : ", clients[0])
-			return ""
+	if len(clients) > 0 && clients[0] != "" {
+		if client.wallets[clients[0]] != nil {
+			return client.wallets[clients[0]].ClientID
+		} else {
+			for _, w := range client.wallets {
+				if w.ClientID == clients[0] {
+					return w.ClientID
+				}
+			}
 		}
-		return client.wallets[clients[0]].ClientID
 	}
 	return client.wallet.ClientID
 }
