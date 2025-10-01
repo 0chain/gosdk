@@ -449,7 +449,7 @@ func (ro *RenameOperation) Process(allocObj *Allocation, connectionID string) ([
 		maskMU:         ro.maskMU,
 		wg:             &sync.WaitGroup{},
 		consensus:      Consensus{RWMutex: &sync.RWMutex{}},
-		clientId: ro.clientId
+		clientId:       ro.clientId,
 	}
 	if filepath.Base(ro.remotefilepath) == ro.newName {
 		return nil, ro.renameMask, errors.New("invalid_operation", "Cannot rename to same name")

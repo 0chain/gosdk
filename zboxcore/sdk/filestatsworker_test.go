@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+
 	"github.com/0chain/gosdk/zboxcore/mocks"
 
 	"io"
@@ -126,7 +127,8 @@ func TestListRequest_getFileStatsInfoFromBlobber(t *testing.T) {
 					require.NoError(t, err)
 					require.EqualValues(t, expected, string(actual))
 
-					sign, _ := client.Sign(encryption.Hash(mockAllocationTxId))
+					pubkey := client.PublicKey()
+					sign, _ := client.SignByMultiWallet(encryption.Hash(mockAllocationTxId), pubkey)
 					return req.URL.Path == "Test_Success"+zboxutil.FILE_STATS_ENDPOINT+mockAllocationTxId &&
 						req.Method == "POST" &&
 						req.Header.Get("X-App-Client-ID") == mockClientId &&

@@ -24,7 +24,7 @@ type ChunkedUploadFormBuilder interface {
 		fileMeta *FileMeta, hasher Hasher, connectionID, blobberID string,
 		chunkSize int64, chunkStartIndex, chunkEndIndex int,
 		isFinal bool, encryptedKey, encryptedKeyPoint string, fileChunksData [][]byte,
-		thumbnailChunkData []byte, shardSize int64, clients... string,
+		thumbnailChunkData []byte, shardSize int64, clients ...string,
 	) (blobberData, error)
 }
 
@@ -59,7 +59,7 @@ func (b *chunkedUploadFormBuilder) Build(
 	fileMeta *FileMeta, hasher Hasher, connectionID, blobberID string,
 	chunkSize int64, chunkStartIndex, chunkEndIndex int,
 	isFinal bool, encryptedKey, encryptedKeyPoint string, fileChunksData [][]byte,
-	thumbnailChunkData []byte, shardSize int64, clients... string,
+	thumbnailChunkData []byte, shardSize int64, clients ...string,
 ) (blobberData, error) {
 
 	metadata := ChunkedUploadFormMetadata{
@@ -105,7 +105,7 @@ func (b *chunkedUploadFormBuilder) Build(
 
 	if b.privateSigningKey != nil {
 		formData.SignatureVersion = SignatureV2
-	} 
+	}
 
 	for i := 0; i < numBodies; i++ {
 
@@ -187,7 +187,12 @@ func (b *chunkedUploadFormBuilder) Build(
 				}
 				formData.ActualFileHashSignature = hex.EncodeToString(sig)
 			} else {
-				sig, err := client.Sign(fileMeta.ActualHash, clients...)
+				var pubkey string
+				if len(clients) > 0 && clients[0] != "" {
+					pubkey = client.PublicKey(clients...)
+				}
+
+				sig, err := client.SignByMultiWallet(fileMeta.ActualHash, pubkey, clients...)
 				if err != nil {
 					return res, err
 				}
@@ -206,7 +211,11 @@ func (b *chunkedUploadFormBuilder) Build(
 				}
 				formData.ValidationRootSignature = hex.EncodeToString(sig)
 			} else {
-				rootSig, err := client.Sign(hash, clients...)
+				var pubkey string
+				if len(clients) > 0 && clients[0] != "" {
+					pubkey = client.PublicKey(clients...)
+				}
+				rootSig, err := client.SignByMultiWallet(hash, pubkey, clients...)
 				if err != nil {
 					return res, err
 				}

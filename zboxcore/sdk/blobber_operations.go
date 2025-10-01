@@ -196,7 +196,8 @@ func UpdateAllocation(
 func GetUpdateAllocTicket(allocationID, userID, operationType string, roundExpiry int64) (string, error) {
 	payload := fmt.Sprintf("%s:%d:%s:%s", allocationID, roundExpiry, userID, operationType)
 
-	signature, err := client.Sign(hex.EncodeToString([]byte(payload)))
+	pubkey := client.PublicKey()
+	signature, err := client.SignByMultiWallet(hex.EncodeToString([]byte(payload)), pubkey)
 	if err != nil {
 		return "", err
 	}
@@ -366,7 +367,8 @@ func GenerateOwnerSigningKey(ownerPublicKey, ownerID string) (ed25519.PrivateKey
 		return nil, errors.New("owner_public_key_required", "owner public key is required")
 	}
 	hashData := fmt.Sprintf("%s:%s", ownerPublicKey, "owner_signing_public_key")
-	sig, err := client.Sign(encryption.Hash(hashData), ownerID)
+	pubkey := client.PublicKey()
+	sig, err := client.SignByMultiWallet(encryption.Hash(hashData), pubkey, ownerID)
 	if err != nil {
 		logger.Logger.Error("error during sign", zap.Error(err))
 		return nil, err
