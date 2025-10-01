@@ -19,11 +19,14 @@ var (
 	client         Client
 	sdkInitialized bool
 
-	Sign SignFunc
-	sigC = make(chan struct{}, 1)
+	Sign              SignFunc
+	SignByMultiWallet SignByMultiWalletFunc
+	sigC              = make(chan struct{}, 1)
 )
 
 type SignFunc func(hash string, clients ...string) (string, error)
+
+type SignByMultiWalletFunc func(hash string, pubkey string, clients ...string) (string, error)
 
 // maintains client's information
 type Client struct {
@@ -87,6 +90,59 @@ func init() {
 		<-sigC
 		fmt.Println("Sign: with sys.SignWithAuth:", sys.SignWithAuth, "sysKeys:", GetClientSysKeys(clients...))
 		sig, err := sys.SignWithAuth(hash, client.signatureScheme, GetClientSysKeys(clients...), wallet.ClientID)
+		sigC <- struct{}{}
+		return sig, err
+	}
+
+	SignByMultiWallet = func(hash string, pubkey string, clients ...string) (string, error) {
+		var wallet *zcncrypto.Wallet
+
+		// First try to find wallet by public key
+		if pubkey != "" {
+			if client.wallets[pubkey] != nil {
+				wallet = client.wallets[pubkey]
+			} else {
+				// Fallback to searching by client ID if pubkey not found
+				if len(clients) > 0 && clients[0] != "" {
+					if client.wallets[clients[0]] != nil {
+						wallet = client.wallets[clients[0]]
+					} else {
+						for _, w := range client.wallets {
+							if w.ClientID == clients[0] {
+								wallet = w
+								break
+							}
+						}
+					}
+				}
+			}
+		} else if len(clients) > 0 && clients[0] != "" {
+			// If no pubkey provided, fallback to client ID lookup
+			if client.wallets[clients[0]] != nil {
+				wallet = client.wallets[clients[0]]
+			} else {
+				for _, w := range client.wallets {
+					if w.ClientID == clients[0] {
+						wallet = w
+						break
+					}
+				}
+			}
+		}
+
+		// If no wallet found, use default wallet
+		if wallet == nil {
+			wallet = client.wallet
+		}
+
+		if !wallet.IsSplit {
+			return sys.Sign(hash, client.signatureScheme, GetClientSysKeysByWallet(wallet))
+		}
+		fmt.Printf("SignByMultiWallet: wallet details: %+v\n", *wallet)
+		// get sign lock
+		<-sigC
+		fmt.Println("SignByMultiWallet: with sys.SignWithAuth:", sys.SignWithAuth, "sysKeys:", GetClientSysKeysByWallet(wallet))
+		sig, err := sys.SignWithAuth(hash, client.signatureScheme, GetClientSysKeysByWallet(wallet), wallet.ClientID)
 		sigC <- struct{}{}
 		return sig, err
 	}
@@ -217,10 +273,26 @@ func GetClientSysKeys(clients ...string) []sys.KeyPair {
 				}
 			}
 		}
-	} 
-	
-	if wallet == nil{
+	}
+
+	if wallet == nil {
 		wallet = client.wallet
+	}
+
+	var keys []sys.KeyPair
+	for _, kv := range wallet.Keys {
+		keys = append(keys, sys.KeyPair{
+			PrivateKey: kv.PrivateKey,
+			PublicKey:  kv.PublicKey,
+		})
+	}
+
+	return keys
+}
+
+func GetClientSysKeysByWallet(wallet *zcncrypto.Wallet) []sys.KeyPair {
+	if wallet == nil {
+		return GetClientSysKeys()
 	}
 
 	var keys []sys.KeyPair
@@ -253,11 +325,11 @@ func GetWalletByClientKey(clientKey string) *zcncrypto.Wallet {
 // GetWalletByClientID gets a wallet by client id.
 func GetWalletByClientID(clientID string) *zcncrypto.Wallet {
 	if client.wallets == nil {
-        return nil
-    }
+		return nil
+	}
 	if _, exists := client.wallets[clientID]; !exists {
-        return nil
-    }
+		return nil
+	}
 
 	for _, wallet := range client.wallets {
 		if wallet.ClientID == clientID {
@@ -275,8 +347,8 @@ func AddWallet(wallet zcncrypto.Wallet) {
 		client.wallets = make(map[string]*zcncrypto.Wallet)
 	}
 	if _, exists := client.wg[wallet.ClientID]; !exists {
-        client.wg[wallet.ClientID] = &sync.WaitGroup{}
-    }
+		client.wg[wallet.ClientID] = &sync.WaitGroup{}
+	}
 	client.wg[clientKey].Add(1)
 	client.walletCount[clientKey]++
 	client.wallets[clientKey] = &wallet
