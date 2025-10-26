@@ -586,7 +586,7 @@ func (dop *DeleteOperation) Error(allocObj *Allocation, consensus int, err error
 
 }
 
-func NewDeleteOperation(ctx context.Context, remotePath string, deleteMask zboxutil.Uint128, maskMu *sync.Mutex, consensusTh, fullConsensus int, clientIds... string) *DeleteOperation {
+func NewDeleteOperation(ctx context.Context, remotePath string, deleteMask zboxutil.Uint128, maskMu *sync.Mutex, consensusTh, fullConsensus int, clientIds ...string) *DeleteOperation {
 	dop := &DeleteOperation{}
 	dop.remotefilepath = zboxutil.RemoteClean(remotePath)
 	dop.deleteMask = deleteMask
@@ -630,7 +630,7 @@ func (req *DeleteRequest) deleteSubDirectories() error {
 		}
 		if req.clientId != "" {
 			clientId := req.clientId
-			wallet := client.GetWalletByClientID(clientId)
+			wallet := client.GetWalletByPubKey(clientId)
 			if wallet == nil {
 				return errors.New("client_not_found", clientId)
 			}
@@ -675,7 +675,7 @@ func (req *DeleteRequest) deleteSubDirectories() error {
 			}
 			if req.clientId != "" {
 				clientId := req.clientId
-				wallet := client.GetWalletByClientID(clientId)
+				wallet := client.GetWalletByPubKey(clientId)
 				if wallet == nil {
 					return errors.New("client_not_found", clientId)
 				}

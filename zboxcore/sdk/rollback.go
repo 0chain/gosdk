@@ -66,12 +66,12 @@ func GetWritemarker(allocID, allocTx, sig, id, baseUrl string, clientId ...strin
 
 	var lpm LatestPrevWriteMarker
 	var useClientID string
-    if len(clientId) > 0 && clientId[0] != "" {
-        useClientID = clientId[0]
-    } else {
-        useClientID = client.Id()
-    }
-	wallet := client.GetWalletByClientID(useClientID)
+	if len(clientId) > 0 && clientId[0] != "" {
+		useClientID = clientId[0]
+	} else {
+		useClientID = client.Id()
+	}
+	wallet := client.GetWalletByPubKey(useClientID)
 	if wallet == nil {
 		return nil, errors.New("wallet not found : " + useClientID)
 	}
@@ -279,14 +279,14 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 
 // CheckAllocStatus checks the status of the allocation
 // and returns the status of the allocation and its blobbers.
-func (a *Allocation) CheckAllocStatus(clientId... string) (AllocStatus, []BlobberStatus, error) {
+func (a *Allocation) CheckAllocStatus(clientId ...string) (AllocStatus, []BlobberStatus, error) {
 
 	var useClientID string
-    if len(clientId) > 0 && clientId[0] != "" {
-        useClientID = clientId[0]
-    } else {
-        useClientID = a.Owner
-    }
+	if len(clientId) > 0 && clientId[0] != "" {
+		useClientID = clientId[0]
+	} else {
+		useClientID = a.Owner
+	}
 
 	wg := &sync.WaitGroup{}
 	markerChan := make(chan *RollbackBlobber, len(a.Blobbers))

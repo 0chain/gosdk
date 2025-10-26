@@ -436,7 +436,7 @@ func (commitReq *CommitRequestV2) processCommit() {
 		go func(ind uint64) {
 			blobber := commitReq.allocationObj.Blobbers[ind]
 			// trie, err := getReferencePathV2(blobber, commitReq.allocationObj.ID, commitReq.allocationObj.Tx, commitReq.sig, paths, &success, mu)
-			
+
 			var (
 				trie *wmpt.WeightedMerkleTrie
 				err  error
@@ -609,7 +609,7 @@ func (req *CommitRequestV2) commitBlobber(rootHash []byte, rootWeight, prevWeigh
 	} else {
 		err = submitWriteMarker(wmData, nil, blobber, req.connectionID, req.allocationObj.ID, req.allocationObj.Tx, req.allocationObj.StorageVersion)
 	}
-		if err != nil {
+	if err != nil {
 		l.Logger.Error("Error submitting writemarker ", err)
 		return err
 	}
@@ -639,7 +639,7 @@ func getFormWritter(connectionID string, wmData, fileIDMetaData []byte, body *by
 	return formWriter, nil
 }
 
-func getReferencePathV2(blobber *blockchain.StorageNode, allocationID, allocationTx, sig string, paths []string, success *bool, mu *sync.Mutex, clientIds... string) (*wmpt.WeightedMerkleTrie, error) {
+func getReferencePathV2(blobber *blockchain.StorageNode, allocationID, allocationTx, sig string, paths []string, success *bool, mu *sync.Mutex, clientIds ...string) (*wmpt.WeightedMerkleTrie, error) {
 	if len(paths) == 0 || blobber.LatestWM == nil || blobber.LatestWM.ChainSize == 0 {
 		var node wmpt.Node
 		if blobber.LatestWM != nil && len(blobber.LatestWM.FileMetaRoot) > 0 && blobber.LatestWM.ChainSize > 0 {
@@ -729,14 +729,14 @@ func getReferencePathV2(blobber *blockchain.StorageNode, allocationID, allocatio
 		return nil, errAlreadySuccessful
 	}
 	trie := wmpt.New(nil, nil)
-	if lR.LatestWM != nil {		
+	if lR.LatestWM != nil {
 		var useClientID string
 		if len(clientIds) > 0 && clientIds[0] != "" {
 			useClientID = clientIds[0]
 		} else {
 			useClientID = client.Id()
 		}
-		wallet := client.GetWalletByClientID(useClientID)
+		wallet := client.GetWalletByPubKey(useClientID)
 		if wallet == nil {
 			return nil, errors.New("wallet not found", useClientID)
 		}
@@ -762,7 +762,7 @@ func getReferencePathV2(blobber *blockchain.StorageNode, allocationID, allocatio
 	return trie, nil
 }
 
-func submitWriteMarker(wmData, metaData []byte, blobber *blockchain.StorageNode, connectionID, allocationID, allocationTx string, apiVersion int, clientIds... string) (err error) {
+func submitWriteMarker(wmData, metaData []byte, blobber *blockchain.StorageNode, connectionID, allocationID, allocationTx string, apiVersion int, clientIds ...string) (err error) {
 	var (
 		resp           *http.Response
 		shouldContinue bool

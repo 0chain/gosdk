@@ -166,7 +166,7 @@ var SignFn = func(hash string) (string, error) {
 	return ss.Sign(hash)
 }
 
-func signHashWithAuth(hash, signatureScheme string, keys []sys.KeyPair, clientIds ...string) (string, error) {
+func signHashWithAuth(hash, signatureScheme string, keys []sys.KeyPair, pubkeys ...string) (string, error) {
 	sig, err := sys.Sign(hash, signatureScheme, keys)
 	if err != nil {
 		return "", fmt.Errorf("failed to sign with split key: %v", err)
@@ -174,8 +174,12 @@ func signHashWithAuth(hash, signatureScheme string, keys []sys.KeyPair, clientId
 
 	// Get the first clientID from variadic arguments, or use default wallet clientID
 	var clientID string
-	if len(clientIds) > 0 && clientIds[0] != "" {
-		clientID = clientIds[0]
+	if len(pubkeys) > 0 && pubkeys[0] != "" {
+		wallet := GetWalletByPubKey(pubkeys[0])
+		if wallet == nil {
+			return "", fmt.Errorf("wallet not found for pubkey: %s", pubkeys[0])
+		}
+		clientID = wallet.ClientID
 	} else {
 		clientID = client.wallet.ClientID
 	}
@@ -193,7 +197,7 @@ func signHashWithAuth(hash, signatureScheme string, keys []sys.KeyPair, clientId
 		return "", errors.New("authCommon is not set")
 	}
 
-	rsp, err := sys.AuthCommon(string(data), clientID)
+	rsp, err := sys.AuthCommon(string(data))
 	if err != nil {
 		return "", err
 	}
@@ -315,29 +319,12 @@ func SetWallet(w zcncrypto.Wallet) {
 	client.wallets[w.ClientKey] = &w
 }
 
-func GetWalletByClientKey(clientKey string) *zcncrypto.Wallet {
+// GetWalletByPubKey gets a wallet by client id.
+func GetWalletByPubKey(pubkey string) *zcncrypto.Wallet {
 	if client.wallets == nil {
 		return nil
 	}
-	return client.wallets[clientKey]
-}
-
-// GetWalletByClientID gets a wallet by client id.
-func GetWalletByClientID(clientID string) *zcncrypto.Wallet {
-	if client.wallets == nil {
-		return nil
-	}
-	if _, exists := client.wallets[clientID]; !exists {
-		return nil
-	}
-
-	for _, wallet := range client.wallets {
-		if wallet.ClientID == clientID {
-			return wallet
-		}
-	}
-
-	return nil
+	return client.wallets[pubkey]
 }
 
 // AddWallet adds a new wallet to the sdk.
@@ -346,8 +333,8 @@ func AddWallet(wallet zcncrypto.Wallet) {
 	if client.wallets == nil {
 		client.wallets = make(map[string]*zcncrypto.Wallet)
 	}
-	if _, exists := client.wg[wallet.ClientID]; !exists {
-		client.wg[wallet.ClientID] = &sync.WaitGroup{}
+	if _, exists := client.wg[clientKey]; !exists {
+		client.wg[clientKey] = &sync.WaitGroup{}
 	}
 	client.wg[clientKey].Add(1)
 	client.walletCount[clientKey]++
@@ -360,15 +347,6 @@ func RemoveWallet(clientKey string) {
 	client.walletCount[clientKey]--
 	if client.walletCount[clientKey] == 0 {
 		delete(client.wallets, clientKey)
-	}
-}
-
-func RemoveWalletByClientID(clientID string) {
-	for clientKey, wallet := range client.wallets {
-		if wallet.ClientID == clientID {
-			RemoveWallet(clientKey)
-			return
-		}
 	}
 }
 

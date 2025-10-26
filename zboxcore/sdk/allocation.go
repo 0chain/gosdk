@@ -1499,6 +1499,16 @@ func (a *Allocation) addAndGenerateDownloadRequest(
 	for _, opt := range downloadReqOpts {
 		opt(downloadReq)
 	}
+	if downloadReq.Pubkey != "" {
+		wallet := client.GetWalletByPubKey(downloadReq.Pubkey)
+		var err error
+		var sk []byte
+		sk, err = GenerateOwnerSigningKey(downloadReq.Pubkey, wallet.ClientID)
+		if err != nil {
+			return err
+		}
+		downloadReq.allocOwnerSigningPrivateKey = sk
+	}
 	downloadReq.workdir = filepath.Join(downloadReq.workdir, ".zcn")
 	hash := encryption.Hash(fmt.Sprintf("%s:%d:%d", remotePath, startBlock, endBlock))
 	a.downloadProgressMap[hash] = downloadReq

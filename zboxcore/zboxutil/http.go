@@ -198,9 +198,9 @@ func NewHTTPRequest(method string, url string, data []byte) (*http.Request, cont
 	return req, ctx, cncl, err
 }
 
-func setClientInfo(req *http.Request, clientIds... string) {
+func setClientInfo(req *http.Request, clientIds ...string) {
 	if len(clientIds) > 0 && clientIds[0] != "" {
-		wallet := client.GetWalletByClientID(clientIds[0])
+		wallet := client.GetWalletByPubKey(clientIds[0])
 		if wallet == nil {
 			panic("wallet not found : " + clientIds[0])
 		}
@@ -219,7 +219,7 @@ func setClientInfoWithSign(req *http.Request, sig, allocation, baseURL string, c
 	} else {
 		clientID = client.Id()
 	}
-	wallet := client.GetWalletByClientID(clientID)
+	wallet := client.GetWalletByPubKey(clientID)
 	if wallet == nil {
 		return errors.New("wallet not found", clientID)
 	}
@@ -674,13 +674,12 @@ func setFastClientInfoWithSign(req *fasthttp.Request, allocation, baseURL string
 	} else {
 		clientID = client.Id()
 	}
-	wallet := client.GetWalletByClientID(clientID)
+	wallet := client.GetWalletByPubKey(clientID)
 	if wallet == nil {
 		return errors.New("wallet not found", clientID)
 	}
 	req.Header.Set("X-App-Client-ID", wallet.ClientID)
 	req.Header.Set("X-App-Client-Key", wallet.ClientKey)
-	
 
 	hashData := allocation + baseURL
 	// clientID := client.Id()
@@ -885,7 +884,7 @@ func NewRedeemRequest(baseUrl, allocationID, allocationTx string, clients ...str
 	return req, nil
 }
 
-func NewDeleteRequest(baseUrl, allocationID, allocationTx, sig string, query *url.Values, clients... string) (*http.Request, error) {
+func NewDeleteRequest(baseUrl, allocationID, allocationTx, sig string, query *url.Values, clients ...string) (*http.Request, error) {
 	u, err := joinUrl(baseUrl, UPLOAD_ENDPOINT, allocationTx)
 	if err != nil {
 		return nil, err

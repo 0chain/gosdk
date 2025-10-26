@@ -120,6 +120,7 @@ type DownloadRequest struct {
 	allocOwnerSigningPubKey string
 	// in case of auth ticket, this key will be of the shared user rather than the owner of the allocation
 	allocOwnerSigningPrivateKey ed25519.PrivateKey
+	Pubkey                      string // in case of multi-wallet settings, this will be the public key of the wallet used for downloading
 }
 
 type downloadPriority struct {
@@ -842,15 +843,27 @@ func (req *DownloadRequest) submitReadMarker(blobber *blockchain.StorageNode, re
 func (req *DownloadRequest) attemptSubmitReadMarker(blobber *blockchain.StorageNode, readCount int64) error {
 	lockBlobberReadCtr(req.allocationID, blobber.ID)
 	defer unlockBlobberReadCtr(req.allocationID, blobber.ID)
+
+	clientID := client.Id(req.ClientId)
+	clientPublicKey := client.PublicKey()
+	if req.Pubkey != "" {
+		wallet := client.GetWalletByPubKey(req.Pubkey)
+		if wallet == nil {
+			return fmt.Errorf("wallet not found for public key: %s", req.Pubkey)
+		}
+		clientID = wallet.ClientID
+		clientPublicKey = req.Pubkey
+	}
 	rm := &marker.ReadMarker{
-		ClientID:        client.Id(req.ClientId),
-		ClientPublicKey: client.PublicKey(),
-		BlobberID:       blobber.ID,
-		AllocationID:    req.allocationID,
-		OwnerID:         req.allocOwnerID,
-		Timestamp:       common.Now(),
-		ReadCounter:     getBlobberReadCtr(req.allocationID, blobber.ID) + readCount,
-		SessionRC:       readCount,
+		ClientID:               clientID,
+		ClientPublicKey:        clientPublicKey,
+		BlobberID:              blobber.ID,
+		AllocationID:           req.allocationID,
+		OwnerID:                req.allocOwnerID,
+		Timestamp:              common.Now(),
+		ReadCounter:            getBlobberReadCtr(req.allocationID, blobber.ID) + readCount,
+		SessionRC:              readCount,
+		IsSignUnderMultiWallet: req.Pubkey != "",
 	}
 	err := rm.Sign()
 	if err != nil {
