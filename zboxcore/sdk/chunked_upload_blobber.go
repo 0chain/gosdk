@@ -71,9 +71,9 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 
 	eg, _ := errgroup.WithContext(ctx)
 
-	clientID := su.allocationObj.Owner
-	if su.pubkey != nil {
-		clientID = su.pubkey.ClientID
+	key := su.allocationObj.Owner
+	if su.pubkey != "" {
+		key = su.pubkey
 	}
 	for dataInd := 0; dataInd < len(dataBuffers); dataInd++ {
 		ind := dataInd
@@ -84,7 +84,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 			var req *fasthttp.Request
 			for i := 0; i < 6; i++ {
 				req, err = zboxutil.NewFastUploadRequest(
-					sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, dataBuffers[ind].Bytes(), su.httpMethod, clientID)
+					sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, dataBuffers[ind].Bytes(), su.httpMethod, key)
 				if err != nil {
 					return err
 				}

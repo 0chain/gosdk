@@ -20,7 +20,6 @@ import (
 	"github.com/0chain/gosdk/core/pathutil"
 	"github.com/0chain/gosdk/core/screstapi"
 	"github.com/0chain/gosdk/core/sys"
-	"github.com/0chain/gosdk/core/zcncrypto"
 
 	// "github.com/0chain/gosdk/zcncore"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -1485,7 +1484,7 @@ func updateMaskBit(mask uint16, index uint8, value bool) uint16 {
 }
 
 // DoMultiUploadByWallet uploads multiple files to the allocation using the given wallet.
-func DoMultiUploadByWallet(wallet zcncrypto.Wallet, a *Allocation, workdir string, localPaths []string, fileNames []string, thumbnailPaths []string, encrypts []bool, chunkNumbers []int, remotePaths []string, isUpdate []bool, isWebstreaming []bool, status StatusCallback) error {
+func DoMultiUploadByWallet(pubkey string, a *Allocation, workdir string, localPaths []string, fileNames []string, thumbnailPaths []string, encrypts []bool, chunkNumbers []int, remotePaths []string, isUpdate []bool, isWebstreaming []bool, status StatusCallback) error {
 
 	if len(localPaths) != len(thumbnailPaths) {
 		return errors.New("invalid_value", "length of localpaths and thumbnailpaths must be equal")
@@ -1565,7 +1564,7 @@ func DoMultiUploadByWallet(wallet zcncrypto.Wallet, a *Allocation, workdir strin
 
 			options = append(options, WithThumbnail(buf))
 		}
-		options = append(options, WithWallet(&wallet))
+		options = append(options, WithWallet(pubkey))
 		operationRequests[idx] = OperationRequest{
 			FileMeta:      fileMeta,
 			FileReader:    fileReader,
@@ -1585,7 +1584,7 @@ func DoMultiUploadByWallet(wallet zcncrypto.Wallet, a *Allocation, workdir strin
 	}
 
 	setWalletOpt := func(mo *MultiOperation) {
-		mo.Pubkey = &wallet
+		mo.Pubkey = pubkey
 	}
 	return a.DoMultiOperation(operationRequests, setWalletOpt)
 }

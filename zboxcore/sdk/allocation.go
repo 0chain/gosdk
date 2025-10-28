@@ -1172,17 +1172,17 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 				operation, newConnectionID, err = NewUploadOperation(mo.ctx, op.Workdir, mo.allocationObj, mo.connectionID, op.FileMeta, op.FileReader, false, op.IsWebstreaming, op.IsRepair, op.DownloadFile, op.StreamUpload, op.Opts...)
 
 			case constants.FileOperationDelete:
-				var pubkey string
+				var key string
 				if mo.Pubkey != "" {
-					pubkey = mo.Pubkey
+					key = mo.Pubkey
 				} else {
-					pubkey = mo.allocationObj.Owner
+					key = mo.allocationObj.Owner
 				}
 
 				if op.Mask != nil {
-					operation = NewDeleteOperation(mo.ctx, op.RemotePath, *op.Mask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, pubkey)
+					operation = NewDeleteOperation(mo.ctx, op.RemotePath, *op.Mask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, key)
 				} else {
-					operation = NewDeleteOperation(mo.ctx, op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, pubkey)
+					operation = NewDeleteOperation(mo.ctx, op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, key)
 				}
 
 			case constants.FileOperationUpdate:

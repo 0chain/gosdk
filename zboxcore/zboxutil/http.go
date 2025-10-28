@@ -646,7 +646,7 @@ func NewWriteMarkerUnLockRequest(
 	return req, nil
 }
 
-func NewFastUploadRequest(baseURL, allocationID string, allocationTx string, body []byte, method string, clients ...string) (*fasthttp.Request, error) {
+func NewFastUploadRequest(baseURL, allocationID string, allocationTx string, body []byte, method string, keys ...string) (*fasthttp.Request, error) {
 	u, err := joinUrl(baseURL, UPLOAD_ENDPOINT, allocationTx)
 	if err != nil {
 		return nil, err
@@ -659,7 +659,7 @@ func NewFastUploadRequest(baseURL, allocationID string, allocationTx string, bod
 	req.SetBodyRaw(body)
 
 	// set header: X-App-Client-Signature
-	if err := setFastClientInfoWithSign(req, allocationTx, baseURL, clients...); err != nil {
+	if err := setFastClientInfoWithSign(req, allocationTx, baseURL, keys...); err != nil {
 		return nil, err
 	}
 
@@ -667,30 +667,30 @@ func NewFastUploadRequest(baseURL, allocationID string, allocationTx string, bod
 	return req, nil
 }
 
-func setFastClientInfoWithSign(req *fasthttp.Request, allocation, baseURL string, clients ...string) error {
-	var clientID string
-	if len(clients) > 0 && clients[0] != "" {
-		clientID = clients[0]
+func setFastClientInfoWithSign(req *fasthttp.Request, allocation, baseURL string, keys ...string) error {
+	var key string
+	if len(keys) > 0 && keys[0] != "" {
+		key = keys[0]
 	} else {
-		clientID = client.Id()
+		key = client.Id()
 	}
-	wallet := client.GetWalletByKey(clientID)
+	wallet := client.GetWalletByKey(key)
 	if wallet == nil {
-		return errors.New("wallet not found", clientID)
+		return errors.New("wallet not found", key)
 	}
 	req.Header.Set("X-App-Client-ID", wallet.ClientID)
 	req.Header.Set("X-App-Client-Key", wallet.ClientKey)
 
 	hashData := allocation + baseURL
 	// clientID := client.Id()
-	sig2, ok := SignCache.Get(hashData + ":" + clientID)
+	sig2, ok := SignCache.Get(hashData + ":" + key)
 	if !ok {
 		var err error
-		sig2, err = client.Sign(encryption.Hash(hashData), clientID)
+		sig2, err = client.Sign(encryption.Hash(hashData), key)
 		if err != nil {
 			return err
 		}
-		SignCache.Add(hashData+":"+clientID, sig2)
+		SignCache.Add(hashData+":"+key, sig2)
 	}
 	req.Header.Set(CLIENT_SIGNATURE_HEADER_V2, sig2)
 	return nil
@@ -884,7 +884,7 @@ func NewRedeemRequest(baseUrl, allocationID, allocationTx string, clients ...str
 	return req, nil
 }
 
-func NewDeleteRequest(baseUrl, allocationID, allocationTx, sig string, query *url.Values, clients ...string) (*http.Request, error) {
+func NewDeleteRequest(baseUrl, allocationID, allocationTx, sig string, query *url.Values, keys ...string) (*http.Request, error) {
 	u, err := joinUrl(baseUrl, UPLOAD_ENDPOINT, allocationTx)
 	if err != nil {
 		return nil, err
@@ -896,7 +896,7 @@ func NewDeleteRequest(baseUrl, allocationID, allocationTx, sig string, query *ur
 		return nil, err
 	}
 
-	if err := setClientInfoWithSign(req, sig, allocationTx, baseUrl, clients...); err != nil {
+	if err := setClientInfoWithSign(req, sig, allocationTx, baseUrl, keys...); err != nil {
 		return nil, err
 	}
 
