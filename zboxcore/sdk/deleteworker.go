@@ -630,12 +630,12 @@ func (req *DeleteRequest) deleteSubDirectories() error {
 		}
 		if req.clientId != "" {
 			clientId := req.clientId
-			wallet := client.GetWalletByPubKey(clientId)
+			wallet := client.GetWalletByKey(clientId)
 			if wallet == nil {
 				return errors.New("client_not_found", clientId)
 			}
 			err = req.allocationObj.DoMultiOperation(ops, func(mo *MultiOperation) {
-				mo.Wallet = wallet
+				mo.Pubkey = wallet
 			})
 		} else {
 			err = req.allocationObj.DoMultiOperation(ops)
@@ -675,12 +675,12 @@ func (req *DeleteRequest) deleteSubDirectories() error {
 			}
 			if req.clientId != "" {
 				clientId := req.clientId
-				wallet := client.GetWalletByPubKey(clientId)
+				wallet := client.GetWalletByKey(clientId)
 				if wallet == nil {
 					return errors.New("client_not_found", clientId)
 				}
 				err = req.allocationObj.DoMultiOperation(ops, func(mo *MultiOperation) {
-					mo.Wallet = wallet
+					mo.Pubkey = wallet
 				})
 			} else {
 				err = req.allocationObj.DoMultiOperation(ops)

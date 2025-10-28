@@ -107,11 +107,11 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 			defer wg.Done()
 			var uploadData blobberData
 			var err error
-			if su.wallet != nil {
+			if su.pubkey != nil {
 				uploadData, err = su.formBuilder.Build(
 					&su.fileMeta, blobber.progress.Hasher, su.progress.ConnectionID, blobber.blobber.ID,
 					su.chunkSize, chunkStartIndex, chunkEndIndex, isFinal, su.encryptedKey, su.progress.EncryptedKeyPoint,
-					fileShards[pos], thumbnailChunkData, su.shardSize, su.wallet.ClientID)
+					fileShards[pos], thumbnailChunkData, su.shardSize, su.pubkey.ClientID)
 			} else {
 				uploadData, err = su.formBuilder.Build(
 					&su.fileMeta, blobber.progress.Hasher, su.progress.ConnectionID, blobber.blobber.ID,

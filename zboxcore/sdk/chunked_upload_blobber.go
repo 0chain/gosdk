@@ -72,8 +72,8 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 	eg, _ := errgroup.WithContext(ctx)
 
 	clientID := su.allocationObj.Owner
-	if su.wallet != nil {
-		clientID = su.wallet.ClientID
+	if su.pubkey != nil {
+		clientID = su.pubkey.ClientID
 	}
 	for dataInd := 0; dataInd < len(dataBuffers); dataInd++ {
 		ind := dataInd

@@ -368,7 +368,7 @@ func GenerateOwnerSigningKey(ownerPublicKey, ownerID string) (ed25519.PrivateKey
 	}
 	hashData := fmt.Sprintf("%s:%s", ownerPublicKey, "owner_signing_public_key")
 	pubkey := client.PublicKey()
-	sig, err := client.SignByMultiWallet(encryption.Hash(hashData), pubkey, ownerID)
+	sig, err := client.SignByMultiWallet(encryption.Hash(hashData), pubkey)
 	if err != nil {
 		logger.Logger.Error("error during sign", zap.Error(err))
 		return nil, err

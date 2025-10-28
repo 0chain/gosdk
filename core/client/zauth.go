@@ -544,7 +544,7 @@ func ZauthSignTxn(serverAddr string) sys.AuthorizeFunc {
 		c := GetClient()
 		pubkey := c.Keys[0].PublicKey
 		if len(pubkeys) > 0 {
-			c = GetWalletByPubKey(pubkeys[0])
+			c = GetWalletByKey(pubkeys[0])
 			if c == nil {
 				return "", errors.Errorf("wallet not found for pubkey: %s", pubkeys[0])
 			}
@@ -589,7 +589,7 @@ func ZauthAuthCommon(serverAddr string) sys.AuthorizeFunc {
 		c := GetClient()
 		pubkey := c.Keys[0].PublicKey
 		if len(pubkeys) > 0 {
-			c = GetWalletByPubKey(pubkeys[0])
+			c = GetWalletByKey(pubkeys[0])
 			if c == nil {
 				return "", errors.Errorf("wallet not found for pubkey: %s", pubkeys[0])
 			}

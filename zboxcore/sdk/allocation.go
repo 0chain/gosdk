@@ -1139,31 +1139,31 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 
 			switch op.OperationType {
 			case constants.FileOperationRename:
-				var clientId string
-				if mo.Wallet != nil {
-					clientId = mo.Wallet.ClientID
+				var pubkey string
+				if mo.Pubkey != "" {
+					pubkey = mo.Pubkey
 				} else {
-					clientId = mo.allocationObj.Owner
+					pubkey = mo.allocationObj.Owner
 				}
-				operation = NewRenameOperation(op.RemotePath, op.DestName, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx, clientId)
+				operation = NewRenameOperation(op.RemotePath, op.DestName, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx, pubkey)
 
 			case constants.FileOperationCopy:
-				var clientId string
-				if mo.Wallet != nil {
-					clientId = mo.Wallet.ClientID
+				var pubkey string
+				if mo.Pubkey != "" {
+					pubkey = mo.Pubkey
 				} else {
-					clientId = mo.allocationObj.Owner
+					pubkey = mo.allocationObj.Owner
 				}
-				operation = NewCopyOperation(mo.ctx, op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, op.CopyDirOnly, clientId)
+				operation = NewCopyOperation(mo.ctx, op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, op.CopyDirOnly, pubkey)
 
 			case constants.FileOperationMove:
-				var clientId string
-				if mo.Wallet != nil {
-					clientId = mo.Wallet.ClientID
+				var pubkey string
+				if mo.Pubkey != "" {
+					pubkey = mo.Pubkey
 				} else {
-					clientId = mo.allocationObj.Owner
+					pubkey = mo.allocationObj.Owner
 				}
-				operation = NewMoveOperation(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx, clientId)
+				operation = NewMoveOperation(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx, pubkey)
 
 			case constants.FileOperationInsert:
 				cancelLock.Lock()
@@ -1172,17 +1172,17 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 				operation, newConnectionID, err = NewUploadOperation(mo.ctx, op.Workdir, mo.allocationObj, mo.connectionID, op.FileMeta, op.FileReader, false, op.IsWebstreaming, op.IsRepair, op.DownloadFile, op.StreamUpload, op.Opts...)
 
 			case constants.FileOperationDelete:
-				var clientId string
-				if mo.Wallet != nil {
-					clientId = mo.Wallet.ClientID
+				var pubkey string
+				if mo.Pubkey != "" {
+					pubkey = mo.Pubkey
 				} else {
-					clientId = mo.allocationObj.Owner
+					pubkey = mo.allocationObj.Owner
 				}
 
 				if op.Mask != nil {
-					operation = NewDeleteOperation(mo.ctx, op.RemotePath, *op.Mask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, clientId)
+					operation = NewDeleteOperation(mo.ctx, op.RemotePath, *op.Mask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, pubkey)
 				} else {
-					operation = NewDeleteOperation(mo.ctx, op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, clientId)
+					operation = NewDeleteOperation(mo.ctx, op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, pubkey)
 				}
 
 			case constants.FileOperationUpdate:
@@ -1192,7 +1192,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 				operation, newConnectionID, err = NewUploadOperation(mo.ctx, op.Workdir, mo.allocationObj, mo.connectionID, op.FileMeta, op.FileReader, true, op.IsWebstreaming, op.IsRepair, op.DownloadFile, op.StreamUpload, op.Opts...)
 
 			case constants.FileOperationCreateDir:
-				operation = NewDirOperation(op.RemotePath, op.FileMeta.CustomMeta, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx, mo.Wallet)
+				operation = NewDirOperation(op.RemotePath, op.FileMeta.CustomMeta, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx, mo.Pubkey)
 
 			default:
 				return errors.New("invalid_operation", "Operation is not valid")
@@ -1500,7 +1500,7 @@ func (a *Allocation) addAndGenerateDownloadRequest(
 		opt(downloadReq)
 	}
 	if downloadReq.Pubkey != "" {
-		wallet := client.GetWalletByPubKey(downloadReq.Pubkey)
+		wallet := client.GetWalletByKey(downloadReq.Pubkey)
 		var err error
 		var sk []byte
 		sk, err = GenerateOwnerSigningKey(downloadReq.Pubkey, wallet.ClientID)

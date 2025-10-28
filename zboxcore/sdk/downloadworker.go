@@ -847,7 +847,7 @@ func (req *DownloadRequest) attemptSubmitReadMarker(blobber *blockchain.StorageN
 	clientID := client.Id(req.ClientId)
 	clientPublicKey := client.PublicKey()
 	if req.Pubkey != "" {
-		wallet := client.GetWalletByPubKey(req.Pubkey)
+		wallet := client.GetWalletByKey(req.Pubkey)
 		if wallet == nil {
 			return fmt.Errorf("wallet not found for public key: %s", req.Pubkey)
 		}

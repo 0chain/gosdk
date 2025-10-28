@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/0chain/gosdk/core/common"
-	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/encryption"
 	"github.com/0chain/gosdk/zboxcore/fileref"
@@ -98,7 +97,7 @@ type ChunkedUpload struct {
 	processMap map[int]zboxutil.Uint128 //nolint:unused
 	//used in wasm check chunked_upload_process_js.go
 	processMapLock sync.Mutex //nolint:unused
-	wallet *zcncrypto.Wallet
+	pubkey         string
 }
 
 // FileMeta metadata of stream input/local

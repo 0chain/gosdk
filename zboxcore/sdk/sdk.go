@@ -1572,7 +1572,7 @@ func DoMultiUploadByWallet(wallet zcncrypto.Wallet, a *Allocation, workdir strin
 			OperationType: constants.FileOperationInsert,
 			Opts:          options,
 			Workdir:       workdir,
-			RemotePath:    fileMeta.RemotePath, 
+			RemotePath:    fileMeta.RemotePath,
 		}
 
 		if isUpdate[idx] {
@@ -1583,9 +1583,9 @@ func DoMultiUploadByWallet(wallet zcncrypto.Wallet, a *Allocation, workdir strin
 		}
 
 	}
-	
-	setWalletOpt := func (mo *MultiOperation) {
-		mo.Wallet = &wallet
+
+	setWalletOpt := func(mo *MultiOperation) {
+		mo.Pubkey = &wallet
 	}
 	return a.DoMultiOperation(operationRequests, setWalletOpt)
 }

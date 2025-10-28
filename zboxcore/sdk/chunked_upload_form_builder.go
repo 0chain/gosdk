@@ -187,12 +187,12 @@ func (b *chunkedUploadFormBuilder) Build(
 				}
 				formData.ActualFileHashSignature = hex.EncodeToString(sig)
 			} else {
-				var pubkey string
+				pubkey := client.Wallet().ClientKey
 				if len(clients) > 0 && clients[0] != "" {
 					pubkey = client.PublicKey(clients...)
 				}
 
-				sig, err := client.SignByMultiWallet(fileMeta.ActualHash, pubkey, clients...)
+				sig, err := client.SignByMultiWallet(fileMeta.ActualHash, pubkey)
 				if err != nil {
 					return res, err
 				}

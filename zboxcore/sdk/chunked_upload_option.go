@@ -40,7 +40,7 @@ func WithThumbnail(buf []byte) ChunkedUploadOption {
 
 func WithWallet(w *zcncrypto.Wallet) ChunkedUploadOption {
 	return func(su *ChunkedUpload) {
-		su.wallet = w
+		su.pubkey = w
 	}
 }
 

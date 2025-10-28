@@ -62,21 +62,21 @@ type BlobberStatus struct {
 	Status string
 }
 
-func GetWritemarker(allocID, allocTx, sig, id, baseUrl string, clientId ...string) (*LatestPrevWriteMarker, error) {
+func GetWritemarker(allocID, allocTx, sig, id, baseUrl string, keys ...string) (*LatestPrevWriteMarker, error) {
 
 	var lpm LatestPrevWriteMarker
-	var useClientID string
-	if len(clientId) > 0 && clientId[0] != "" {
-		useClientID = clientId[0]
+	var key string
+	if len(keys) > 0 && keys[0] != "" {
+		key = keys[0]
 	} else {
-		useClientID = client.Id()
+		key = client.Id()
 	}
-	wallet := client.GetWalletByPubKey(useClientID)
+	wallet := client.GetWalletByKey(key)
 	if wallet == nil {
-		return nil, errors.New("wallet not found : " + useClientID)
+		return nil, errors.New("wallet not found : " + key)
 	}
 
-	req, err := zboxutil.NewWritemarkerRequest(baseUrl, allocID, allocTx, sig, clientId...)
+	req, err := zboxutil.NewWritemarkerRequest(baseUrl, allocID, allocTx, sig, keys...)
 	if err != nil {
 		return nil, err
 	}
@@ -279,13 +279,13 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 
 // CheckAllocStatus checks the status of the allocation
 // and returns the status of the allocation and its blobbers.
-func (a *Allocation) CheckAllocStatus(clientId ...string) (AllocStatus, []BlobberStatus, error) {
+func (a *Allocation) CheckAllocStatus(keys ...string) (AllocStatus, []BlobberStatus, error) {
 
-	var useClientID string
-	if len(clientId) > 0 && clientId[0] != "" {
-		useClientID = clientId[0]
+	var key string
+	if len(keys) > 0 && keys[0] != "" {
+		key = keys[0]
 	} else {
-		useClientID = a.Owner
+		key = a.Owner
 	}
 
 	wg := &sync.WaitGroup{}
@@ -303,7 +303,7 @@ func (a *Allocation) CheckAllocStatus(clientId ...string) (AllocStatus, []Blobbe
 				ID:     blobber.ID,
 				Status: "available",
 			}
-			wr, err := GetWritemarker(a.ID, a.Tx, a.sig, blobber.ID, blobber.Baseurl, useClientID)
+			wr, err := GetWritemarker(a.ID, a.Tx, a.sig, blobber.ID, blobber.Baseurl, key)
 			if err != nil {
 				atomic.AddInt32(&errCnt, 1)
 				markerError = err

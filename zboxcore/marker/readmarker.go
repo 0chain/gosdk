@@ -4,23 +4,23 @@ import (
 	"fmt"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/sys"
-	"github.com/0chain/gosdk/core/client"
 )
 
 type ReadMarker struct {
-	ClientID        string           `json:"client_id"`
-	ClientPublicKey string           `json:"client_public_key"`
-	BlobberID       string           `json:"blobber_id"`
-	AllocationID    string           `json:"allocation_id"`
-	OwnerID         string           `json:"owner_id"`
-	Timestamp       common.Timestamp `json:"timestamp"`
-	ReadCounter     int64            `json:"counter"`
-	Signature       string           `json:"signature"`
-	SessionRC       int64            `json:"session_rc"`
-	IsSignUnderMultiWallet bool             `json:"is_sign_under_multi_wallet"`	
+	ClientID               string           `json:"client_id"`
+	ClientPublicKey        string           `json:"client_public_key"`
+	BlobberID              string           `json:"blobber_id"`
+	AllocationID           string           `json:"allocation_id"`
+	OwnerID                string           `json:"owner_id"`
+	Timestamp              common.Timestamp `json:"timestamp"`
+	ReadCounter            int64            `json:"counter"`
+	Signature              string           `json:"signature"`
+	SessionRC              int64            `json:"session_rc"`
+	IsSignUnderMultiWallet bool             `json:"is_sign_under_multi_wallet"`
 }
 
 func (rm *ReadMarker) GetHash() string {
@@ -32,7 +32,7 @@ func (rm *ReadMarker) GetHash() string {
 
 func (rm *ReadMarker) Sign() error {
 	var err error
-	wallet := client.GetWalletByPubKey(rm.ClientPublicKey)
+	wallet := client.GetWalletByKey(rm.ClientPublicKey)
 	if wallet == nil {
 		return errors.New("sign_rm", "wallet not found for public key "+rm.ClientPublicKey)
 	}

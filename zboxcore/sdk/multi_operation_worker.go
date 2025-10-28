@@ -16,7 +16,6 @@ import (
 
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/util"
-	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
@@ -64,7 +63,7 @@ type MultiOperation struct {
 	changes   [][]allocationchange.AllocationChange
 	changesV2 []allocationchange.AllocationChangeV2
 	isRepair  bool
-	Wallet 	  *zcncrypto.Wallet
+	Pubkey    string
 }
 
 func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
@@ -97,8 +96,8 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 			formWriter.Close()
 
 			var httpreq *http.Request
-			if mo.Wallet != nil {
-				httpreq, err = zboxutil.NewConnectionRequest(blobber.Baseurl, mo.allocationObj.ID, mo.allocationObj.Tx, mo.allocationObj.sig, body, mo.Wallet.ClientID)
+			if mo.Pubkey != "" {
+				httpreq, err = zboxutil.NewConnectionRequest(blobber.Baseurl, mo.allocationObj.ID, mo.allocationObj.Tx, mo.allocationObj.sig, body, mo.Pubkey)
 				if err != nil {
 					l.Logger.Error(blobber.Baseurl, "Error creating new connection request by wallet", err)
 					return err, false
@@ -278,8 +277,8 @@ func (mo *MultiOperation) Process() error {
 	start = time.Now()
 	status := Commit
 	if !mo.isRepair && !mo.allocationObj.checkStatus {
-		if mo.Wallet != nil {
-			status, _, err = mo.allocationObj.CheckAllocStatus(mo.Wallet.ClientID)
+		if mo.Pubkey != "" {
+			status, _, err = mo.allocationObj.CheckAllocStatus(mo.Pubkey)
 		} else {
 			status, _, err = mo.allocationObj.CheckAllocStatus()
 		}
@@ -438,7 +437,7 @@ func (mo *MultiOperation) commitV2() error {
 			consensusThresh: threshold,
 			changes:         changes,
 			isRepair:        mo.isRepair,
-			wallet: 		 mo.Wallet,
+			pubkey:          mo.Pubkey,
 		}
 		commitReqs[counter] = commitReq
 		counter++
