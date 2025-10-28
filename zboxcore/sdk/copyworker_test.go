@@ -496,8 +496,8 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 				maskMU:       &sync.Mutex{},
 				connectionID: mockConnectionId,
 			}
-			pubkey := client.PublicKey()
-			sig, err := client.SignByMultiWallet(mockAllocationTxId, pubkey)
+			key := client.Id()
+			sig, err := client.Sign(mockAllocationTxId, key)
 			require.NoError(err)
 			req.sig = sig
 			req.ctx, req.ctxCncl = context.WithCancel(context.TODO())

@@ -37,7 +37,7 @@ func (rm *ReadMarker) Sign() error {
 		return errors.New("sign_rm", "wallet not found for public key "+rm.ClientPublicKey)
 	}
 	if rm.IsSignUnderMultiWallet {
-		rm.Signature, err = client.SignByMultiWallet(rm.GetHash(), rm.ClientPublicKey)
+		rm.Signature, err = client.Sign(rm.GetHash(), rm.ClientPublicKey)
 		return err
 	}
 	rm.Signature, err = client.Sign(rm.GetHash())
