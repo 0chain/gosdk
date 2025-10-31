@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/0chain/gosdk/constants"
+	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/core/zcncrypto"
 )
@@ -112,6 +114,83 @@ var SignFn = func(hash string) (string, error) {
 
 	return ss.Sign(hash)
 }
+
+// InitSDK Initialize the storage SDK
+//
+//   - walletJSON: Client's wallet JSON
+//   - blockWorker: Block worker URL (block worker refers to 0DNS)
+//   - chainID: ID of the blokcchain network
+//   - signatureScheme: Signature scheme that will be used for signing transactions
+//   - preferredBlobbers: List of preferred blobbers to use when creating an allocation. This is usually configured by the client in the configuration files
+//   - nonce: Initial nonce value for the transactions
+//   - fee: Preferred value for the transaction fee, just the first value is taken
+func InitSDK(walletJSON string,
+	blockWorker, chainID, signatureScheme string,
+	nonce int64, addWallet bool,
+	options ...int) error {
+
+	if addWallet {
+		wallet := zcncrypto.Wallet{}
+		err := json.Unmarshal([]byte(walletJSON), &wallet)
+		if err != nil {
+			return err
+		}
+
+		SetWallet(wallet)
+		SetSignatureScheme(signatureScheme)
+		SetNonce(nonce)
+		if len(options) > 0 {
+			SetTxnFee(uint64(options[0]))
+		}
+	}
+
+	var minConfirmation, minSubmit, confirmationChainLength, sharderConsensous int
+	if len(options) > 1 {
+		minConfirmation = options[1]
+	}
+	if len(options) > 2 {
+		minSubmit = options[2]
+	}
+	if len(options) > 3 {
+		confirmationChainLength = options[3]
+	}
+	if len(options) > 4 {
+		sharderConsensous = options[4]
+	}
+
+	err := Init(context.Background(), conf.Config{
+		BlockWorker:             blockWorker,
+		SignatureScheme:         signatureScheme,
+		ChainID:                 chainID,
+		MinConfirmation:         minConfirmation,
+		MinSubmit:               minSubmit,
+		ConfirmationChainLength: confirmationChainLength,
+		SharderConsensous:       sharderConsensous,
+	})
+	if err != nil {
+		return err
+	}
+	SetSdkInitialized(true)
+	return nil
+}
+
+func InitSDKWithWebApp(params InitSdkOptions) error {
+	if params.MinConfirmation != nil && params.MinSubmit != nil && params.ConfirmationChainLength != nil && params.SharderConsensous != nil {
+		err := InitSDK(params.WalletJSON, params.BlockWorker, params.ChainID, params.SignatureScheme, params.Nonce, params.AddWallet, *params.MinConfirmation, *params.MinSubmit, *params.ConfirmationChainLength, *params.SharderConsensous)
+		if err != nil {
+			return err
+		}
+	} else {
+		err := InitSDK(params.WalletJSON, params.BlockWorker, params.ChainID, params.SignatureScheme, params.Nonce, params.AddWallet)
+		if err != nil {
+			return err
+		}
+	}
+	conf.SetZboxAppConfigs(params.ZboxHost, params.ZboxAppType)
+	SetIsAppFlow(true)
+	return nil
+}
+
 
 func IsSDKInitialized() bool {
 	return sdkInitialized
