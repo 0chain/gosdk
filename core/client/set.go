@@ -260,6 +260,10 @@ func GetWalletByKey(key string) *zcncrypto.Wallet {
 	return client.wallets[key]
 }
 
+func GetWallet() *zcncrypto.Wallet {
+	return client.wallet
+}
+
 // AddWallet adds a new wallet to the sdk.
 func AddWallet(wallet zcncrypto.Wallet) {
 	pubkey := wallet.Keys[0].PublicKey
