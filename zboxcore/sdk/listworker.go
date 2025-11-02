@@ -39,6 +39,7 @@ type ListRequest struct {
 	pageLimit          int
 	storageVersion     int
 	dataShards         int
+	Pubkey             string
 	Consensus
 }
 

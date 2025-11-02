@@ -81,6 +81,8 @@ func init() {
 			}
 		}
 
+		fmt.Print("wallet found: client_id: ", wallet.ClientID, "is_split: ", wallet.IsSplit, "pubkey: ", wallet.Keys[0].PublicKey)
+
 		if !wallet.IsSplit {
 			return sys.Sign(hash, client.signatureScheme, GetClientSysKeys(keys...))
 		}

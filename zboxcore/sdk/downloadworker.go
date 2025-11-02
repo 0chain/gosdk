@@ -437,6 +437,7 @@ func (req *DownloadRequest) getDecryptedDataForAuthTicket(result *downloadBlock,
 // start block, end block and number of blocks to download in single request.
 // This will also write data to the file handler and will verify content by calculating content hash.
 func (req *DownloadRequest) processDownload() {
+	fmt.Print("inside process download: pubkey", req.Pubkey, "\n")
 	ctx := req.ctx
 	if req.completedCallback != nil {
 		defer req.completedCallback(req.remotefilepath, req.remotefilepathhash)
@@ -841,6 +842,7 @@ func (req *DownloadRequest) submitReadMarker(blobber *blockchain.StorageNode, re
 }
 
 func (req *DownloadRequest) attemptSubmitReadMarker(blobber *blockchain.StorageNode, readCount int64) error {
+	l.Logger.Info("attemptSubmitReadMarker: pubKey:", req.Pubkey, "\n")
 	lockBlobberReadCtr(req.allocationID, blobber.ID)
 	defer unlockBlobberReadCtr(req.allocationID, blobber.ID)
 
@@ -854,6 +856,7 @@ func (req *DownloadRequest) attemptSubmitReadMarker(blobber *blockchain.StorageN
 		clientID = wallet.ClientID
 		clientPublicKey = req.Pubkey
 	}
+	l.Logger.Info("DownloadRequest: clientID:", clientID, " clientPublicKey:", clientPublicKey, "\n")
 	rm := &marker.ReadMarker{
 		ClientID:               clientID,
 		ClientPublicKey:        clientPublicKey,
@@ -1218,9 +1221,12 @@ func (req *DownloadRequest) getFileRef() (fRef *fileref.FileRef, err error) {
 			consensusThresh: req.consensusThresh,
 		},
 		ctx: req.ctx,
+		Pubkey: req.Pubkey,
 	}
 
 	fMetaResp := listReq.getFileMetaFromBlobbers()
+	l.Logger.Info("fMetaResp length: ", len(fMetaResp), "\n")
+	
 
 	fRef, err = req.getFileMetaConsensus(fMetaResp)
 	if err != nil {
@@ -1259,12 +1265,22 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 				actualFileHashSignature,
 				actualHash,
 			)
+			l.Logger.Info("allocOwnerSigningPubKey: ", req.allocOwnerSigningPubKey, "\n")
+			l.Logger.Info("actualFileHashSignature: ", actualFileHashSignature, "\n")
+			l.Logger.Info("actualHash: ", actualHash, "\n")
+			l.Logger.Info("err: ", err, "\n")
+			l.Logger.Info("isValid: ", isValid, "\n")
 		} else {
 			isValid, err = sys.VerifyWith(
 				req.allocOwnerPubKey,
 				actualFileHashSignature,
 				actualHash,
 			)
+			l.Logger.Info("allocOwnerPubKey: ", req.allocOwnerPubKey, "\n")
+			l.Logger.Info("actualFileHashSignature: ", actualFileHashSignature, "\n")
+			l.Logger.Info("actualHash: ", actualHash, "\n")
+			l.Logger.Info("err: ", err, "\n")
+			l.Logger.Info("isValid: ", isValid, "\n")
 		}
 		if err != nil {
 			l.Logger.Error(err)

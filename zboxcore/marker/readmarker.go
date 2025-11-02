@@ -31,11 +31,8 @@ func (rm *ReadMarker) GetHash() string {
 }
 
 func (rm *ReadMarker) Sign() error {
+	fmt.Print("ReadMarker sign: ", rm.ClientID, rm.ClientPublicKey, rm.IsSignUnderMultiWallet)
 	var err error
-	wallet := client.GetWalletByKey(rm.ClientPublicKey)
-	if wallet == nil {
-		return errors.New("sign_rm", "wallet not found for public key "+rm.ClientPublicKey)
-	}
 	if rm.IsSignUnderMultiWallet {
 		rm.Signature, err = client.Sign(rm.GetHash(), rm.ClientPublicKey)
 		return err

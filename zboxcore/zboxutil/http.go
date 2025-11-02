@@ -509,7 +509,7 @@ func DeleteCollaboratorRequest(baseUrl, allocationID, allocationTx, sig string, 
 	return req, nil
 }
 
-func NewFileMetaRequest(baseUrl, allocationID, allocationTx, sig string, body io.Reader, clients ...string) (*http.Request, error) {
+func NewFileMetaRequest(baseUrl, allocationID, allocationTx, sig string, body io.Reader, keys ...string) (*http.Request, error) {
 	u, err := joinUrl(baseUrl, FILE_META_ENDPOINT, allocationTx)
 	if err != nil {
 		return nil, err
@@ -519,7 +519,7 @@ func NewFileMetaRequest(baseUrl, allocationID, allocationTx, sig string, body io
 		return nil, err
 	}
 
-	if err := setClientInfoWithSign(req, sig, allocationTx, baseUrl, clients...); err != nil {
+	if err := setClientInfoWithSign(req, sig, allocationTx, baseUrl, keys...); err != nil {
 		return nil, err
 	}
 

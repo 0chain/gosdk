@@ -1330,6 +1330,7 @@ func (a *Allocation) DownloadFile(localPath string, remotePath string, verifyDow
 	}))
 	err = a.addAndGenerateDownloadRequest(f, remotePath, DOWNLOAD_CONTENT_FULL, 1, 0,
 		numBlockDownloads, verifyDownload, status, isFinal, localFilePath, downloadReqOpts...)
+	fmt.Print("err in addAndGenerateDownloadRequest: ", err)
 	if err != nil {
 		if !toKeep {
 			os.Remove(localFilePath) //nolint: errcheck
@@ -1498,16 +1499,6 @@ func (a *Allocation) addAndGenerateDownloadRequest(
 	}
 	for _, opt := range downloadReqOpts {
 		opt(downloadReq)
-	}
-	if downloadReq.Pubkey != "" {
-		wallet := client.GetWalletByKey(downloadReq.Pubkey)
-		var err error
-		var sk []byte
-		sk, err = GenerateOwnerSigningKey(downloadReq.Pubkey, wallet.ClientID)
-		if err != nil {
-			return err
-		}
-		downloadReq.allocOwnerSigningPrivateKey = sk
 	}
 	downloadReq.workdir = filepath.Join(downloadReq.workdir, ".zcn")
 	hash := encryption.Hash(fmt.Sprintf("%s:%d:%d", remotePath, startBlock, endBlock))
