@@ -671,15 +671,18 @@ func setFastClientInfoWithSign(req *fasthttp.Request, allocation, baseURL string
 	var key string
 	if len(keys) > 0 && keys[0] != "" {
 		key = keys[0]
+		wallet := client.GetWalletByKey(key)
+		if wallet == nil {
+			return errors.New("multi-wallet-settings err: ", "wallet not found : " + key)
+		}
+		req.Header.Set("X-App-Client-ID", wallet.ClientID)
+		req.Header.Set("X-App-Client-Key", wallet.ClientKey)
 	} else {
 		key = client.Id()
+		req.Header.Set("X-App-Client-ID", client.Id())
+		req.Header.Set("X-App-Client-Key", client.PublicKey())
 	}
-	wallet := client.GetWalletByKey(key)
-	if wallet == nil {
-		return errors.New("wallet not found", key)
-	}
-	req.Header.Set("X-App-Client-ID", wallet.ClientID)
-	req.Header.Set("X-App-Client-Key", wallet.ClientKey)
+	
 
 	hashData := allocation + baseURL
 	// clientID := client.Id()
@@ -853,7 +856,7 @@ func NewDownloadRequest(baseUrl, allocationID, allocationTx string, clients ...s
 	return req, nil
 }
 
-func NewFastDownloadRequest(baseUrl, allocationID, allocationTx string, clients ...string) (*fasthttp.Request, error) {
+func NewFastDownloadRequest(baseUrl, allocationID, allocationTx string, keys ...string) (*fasthttp.Request, error) {
 	u, err := joinUrl(baseUrl, DOWNLOAD_ENDPOINT, allocationTx)
 	if err != nil {
 		return nil, err
@@ -861,8 +864,17 @@ func NewFastDownloadRequest(baseUrl, allocationID, allocationTx string, clients 
 
 	req := fasthttp.AcquireRequest()
 	req.SetRequestURI(u.String())
-	req.Header.Set("X-App-Client-ID", client.Id())
-	req.Header.Set("X-App-Client-Key", client.PublicKey())
+	if len(keys) > 0 && keys[0] != "" {
+		wallet := client.GetWalletByKey(keys[0])
+		if wallet == nil {
+			return nil, errors.New("multi-wallet-settings err: ", "wallet not found : " + keys[0])
+		}
+		req.Header.Set("X-App-Client-ID", wallet.ClientID)
+		req.Header.Set("X-App-Client-Key", wallet.ClientKey)
+	} else {
+		req.Header.Set("X-App-Client-ID", client.Id())
+		req.Header.Set("X-App-Client-Key", client.PublicKey())
+	}
 
 	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 

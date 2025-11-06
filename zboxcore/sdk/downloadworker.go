@@ -271,6 +271,9 @@ func (req *DownloadRequest) downloadBlock(
 			connectionID:       req.connectionID,
 		}
 
+			// propagate the public key (if multi-wallet / split-wallet scenario)
+			blockDownloadReq.Pubkey = req.Pubkey
+
 		if blockDownloadReq.blobber.IsSkip() {
 			rspCh <- &downloadBlock{
 				Success: false,
