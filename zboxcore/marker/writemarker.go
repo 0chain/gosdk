@@ -49,7 +49,16 @@ func (wm *WriteMarker) GetHash() string {
 
 func (wm *WriteMarker) Sign() error {
 	var err error
-	wm.Signature, err = client.Sign(wm.GetHash(), wm.ClientID)
+	// If Pubkey is set, use that wallet for signing and set ClientID accordingly.
+	if wm.Pubkey != "" {
+		// Use the provided pubkey to sign, but do not overwrite ClientID here.
+		wm.Signature, err = client.Sign(wm.GetHash(), wm.Pubkey)
+		return err
+	}
+
+	// Default: sign with the current SDK wallet. Do not overwrite ClientID
+	// here either; callers should set ClientID to the allocation owner.
+	wm.Signature, err = client.Sign(wm.GetHash())
 	return err
 }
 

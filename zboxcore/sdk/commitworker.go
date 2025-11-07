@@ -71,6 +71,7 @@ type CommitRequest struct {
 	result       *CommitResult
 	timestamp    int64
 	blobberInd   uint64
+	pubkey       string
 }
 
 type CommitRequestInterface interface {
@@ -148,7 +149,11 @@ func (commitreq *CommitRequest) processCommit() {
 	}
 	var req *http.Request
 	var lR ReferencePathResult
-	req, err := zboxutil.NewReferencePathRequest(commitreq.blobber.Baseurl, commitreq.allocationID, commitreq.allocationTx, commitreq.sig, paths, commitreq.ClientId)
+	key := client.Id()
+	if commitreq.pubkey != "" {
+		key = commitreq.pubkey
+	}
+	req, err := zboxutil.NewReferencePathRequest(commitreq.blobber.Baseurl, commitreq.allocationID, commitreq.allocationTx, commitreq.sig, paths, key)
 	if err != nil {
 		l.Logger.Error("Creating ref path req", err)
 		return
@@ -284,7 +289,10 @@ func (req *CommitRequest) commitBlobber(
 	wm.Size = size
 	wm.BlobberID = req.blobber.ID
 	wm.Timestamp = req.timestamp
-	wm.ClientID = client.Id(req.ClientId)
+	wm.ClientID = req.ClientId
+	if req.pubkey != "" {
+		wm.Pubkey = req.pubkey
+	}
 	err = wm.Sign()
 	if err != nil {
 		l.Logger.Error("Signing writemarker failed: ", err)
@@ -309,7 +317,12 @@ func (req *CommitRequest) commitBlobber(
 				l.Logger.Error("Creating form writer failed: ", err)
 				return
 			}
-			httpreq, err := zboxutil.NewCommitRequest(req.blobber.Baseurl, req.allocationID, req.allocationTx, body, 0)
+			var httpreq *http.Request
+			if req.pubkey != "" {
+				httpreq, err = zboxutil.NewCommitRequest(req.blobber.Baseurl, req.allocationID, req.allocationTx, body, 0, req.pubkey)
+			} else {
+				httpreq, err = zboxutil.NewCommitRequest(req.blobber.Baseurl, req.allocationID, req.allocationTx, body, 0)
+			}
 			if err != nil {
 				l.Logger.Error("Error creating commit req: ", err)
 				return
@@ -588,7 +601,7 @@ func (req *CommitRequestV2) commitBlobber(rootHash []byte, rootWeight, prevWeigh
 	wm.BlobberID = blobber.ID
 	wm.AllocationID = req.allocationObj.ID
 	wm.FileMetaRoot = fileMetaRoot
-	wm.ClientID = client.Id()
+	wm.ClientID = req.allocationObj.Owner
 	if req.pubkey != "" {
 		wm.Pubkey = req.pubkey
 	}

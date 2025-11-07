@@ -198,18 +198,19 @@ func NewHTTPRequest(method string, url string, data []byte) (*http.Request, cont
 	return req, ctx, cncl, err
 }
 
-func setClientInfo(req *http.Request, keys ...string) {
+func setClientInfo(req *http.Request, keys ...string) error {
 	if len(keys) > 0 && keys[0] != "" {
 		wallet := client.GetWalletByKey(keys[0])
 		if wallet == nil {
-			panic("wallet not found : " + keys[0])
+			return errors.New("multi-wallet-settings err: ", "wallet not found : "+keys[0])
 		}
 		req.Header.Set("X-App-Client-ID", wallet.ClientID)
 		req.Header.Set("X-App-Client-Key", wallet.ClientKey)
-		return
+		return nil
 	}
 	req.Header.Set("X-App-Client-ID", client.Id())
 	req.Header.Set("X-App-Client-Key", client.PublicKey())
+	return nil
 }
 
 func setClientInfoWithSign(req *http.Request, sig, allocation, baseURL string, keys ...string) error {
@@ -221,7 +222,7 @@ func setClientInfoWithSign(req *http.Request, sig, allocation, baseURL string, k
 	}
 	wallet := client.GetWalletByKey(key)
 	if wallet == nil {
-		return errors.New("wallet not found", key)
+		return errors.New("multi-wallet-settings err: ", "wallet not found : "+key)
 	}
 	fmt.Printf("setClientInfoWithSign: wallet details: %+v\n", *wallet)
 	req.Header.Set("X-App-Client-ID", wallet.ClientID)
@@ -267,7 +268,7 @@ func NewCommitRequest(baseUrl, allocationID string, allocationTx string, body io
 	return req, nil
 }
 
-func NewReferencePathRequest(baseUrl, allocationID string, allocationTx string, sig string, paths []string, clients ...string) (*http.Request, error) {
+func NewReferencePathRequest(baseUrl, allocationID string, allocationTx string, sig string, paths []string, keys ...string) (*http.Request, error) {
 	nurl, err := joinUrl(baseUrl, REFERENCE_ENDPOINT, allocationTx)
 	if err != nil {
 		return nil, err
@@ -287,7 +288,7 @@ func NewReferencePathRequest(baseUrl, allocationID string, allocationTx string, 
 		return nil, err
 	}
 
-	if err := setClientInfoWithSign(req, sig, allocationTx, baseUrl, clients...); err != nil {
+	if err := setClientInfoWithSign(req, sig, allocationTx, baseUrl, keys...); err != nil {
 		return nil, err
 	}
 
@@ -599,7 +600,7 @@ func NewUploadRequestWithMethod(baseURL, allocationID, allocationTx, sig string,
 }
 
 func NewWriteMarkerLockRequest(
-	baseURL, allocationID, allocationTx, sig, connID string, clients ...string) (*http.Request, error) {
+	baseURL, allocationID, allocationTx, sig, connID string, keys ...string) (*http.Request, error) {
 
 	u, err := joinUrl(baseURL, WM_LOCK_ENDPOINT, allocationTx)
 	if err != nil {
@@ -615,7 +616,7 @@ func NewWriteMarkerLockRequest(
 		return nil, err
 	}
 
-	if err := setClientInfoWithSign(req, sig, allocationTx, baseURL, clients...); err != nil {
+	if err := setClientInfoWithSign(req, sig, allocationTx, baseURL, keys...); err != nil {
 		return nil, err
 	}
 
@@ -625,7 +626,7 @@ func NewWriteMarkerLockRequest(
 }
 
 func NewWriteMarkerUnLockRequest(
-	baseURL, allocationID, allocationTx, sig, connID, requestTime string, clients ...string) (*http.Request, error) {
+	baseURL, allocationID, allocationTx, sig, connID, requestTime string, keys ...string) (*http.Request, error) {
 
 	u, err := joinUrl(baseURL, WM_LOCK_ENDPOINT, allocationTx, connID)
 	if err != nil {
@@ -637,7 +638,7 @@ func NewWriteMarkerUnLockRequest(
 		return nil, err
 	}
 
-	if err := setClientInfoWithSign(req, sig, allocationTx, baseURL, clients...); err != nil {
+	if err := setClientInfoWithSign(req, sig, allocationTx, baseURL, keys...); err != nil {
 		return nil, err
 	}
 
@@ -998,7 +999,7 @@ func NewWritemarkerRequest(baseUrl, allocationID, allocationTx, sig string, keys
 	return req, nil
 }
 
-func NewRollbackRequest(baseUrl, allocationID string, allocationTx string, body io.Reader, clients ...string) (*http.Request, error) {
+func NewRollbackRequest(baseUrl, allocationID string, allocationTx string, body io.Reader, keys ...string) (*http.Request, error) {
 	u, err := joinUrl(baseUrl, ROLLBACK_ENDPOINT, allocationTx)
 	if err != nil {
 		return nil, err
@@ -1008,7 +1009,10 @@ func NewRollbackRequest(baseUrl, allocationID string, allocationTx string, body 
 	if err != nil {
 		return nil, err
 	}
-	setClientInfo(req)
+	err = setClientInfo(req, keys...)
+	if err != nil {
+		return nil, err
+	}
 
 	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 

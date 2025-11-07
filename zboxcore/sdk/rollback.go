@@ -20,6 +20,7 @@ import (
 	"github.com/0chain/common/core/common"
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/client"
+	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
@@ -65,16 +66,6 @@ type BlobberStatus struct {
 func GetWritemarker(allocID, allocTx, sig, id, baseUrl string, keys ...string) (*LatestPrevWriteMarker, error) {
 
 	var lpm LatestPrevWriteMarker
-	var key string
-	if len(keys) > 0 && keys[0] != "" {
-		key = keys[0]
-	} else {
-		key = client.Id()
-	}
-	wallet := client.GetWalletByKey(key)
-	if wallet == nil {
-		return nil, errors.New("wallet not found : " + key)
-	}
 
 	req, err := zboxutil.NewWritemarkerRequest(baseUrl, allocID, allocTx, sig, keys...)
 	if err != nil {
@@ -113,12 +104,22 @@ func GetWritemarker(allocID, allocTx, sig, id, baseUrl string, keys ...string) (
 			return nil, err
 		}
 		if lpm.LatestWM != nil {
-			err = lpm.LatestWM.VerifySignature(wallet.ClientKey)
+			// pick wallet for verification
+			var walletForVerify *zcncrypto.Wallet
+			if len(keys) > 0 && keys[0] != "" {
+				walletForVerify = client.GetWalletByKey(keys[0])
+				if walletForVerify == nil {
+					return nil, fmt.Errorf("multi-wallet-settings err: wallet not found : %s", keys[0])
+				}
+			} else {
+				walletForVerify = client.GetWallet()
+			}
+			err = lpm.LatestWM.VerifySignature(walletForVerify.ClientKey)
 			if err != nil {
 				return nil, fmt.Errorf("signature verification failed for latest writemarker: %s", err.Error())
 			}
 			if lpm.PrevWM != nil {
-				err = lpm.PrevWM.VerifySignature(wallet.ClientKey)
+				err = lpm.PrevWM.VerifySignature(walletForVerify.ClientKey)
 				if err != nil {
 					return nil, fmt.Errorf("signature verification failed for latest writemarker: %s", err.Error())
 				}

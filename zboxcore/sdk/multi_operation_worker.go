@@ -255,7 +255,7 @@ func (mo *MultiOperation) Process() error {
 		mo.changes = zboxutil.Transpose(mo.changes)
 	}
 
-	writeMarkerMutex, err := CreateWriteMarkerMutex(mo.allocationObj)
+	writeMarkerMutex, err := CreateWriteMarkerMutex(mo.allocationObj, mo.Pubkey)
 	if err != nil {
 		for _, op := range mo.operations {
 			op.Error(mo.allocationObj, 0, err)
@@ -344,6 +344,8 @@ func (mo *MultiOperation) Process() error {
 	timestamp := int64(common.Now())
 	for i := mo.operationMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
+		// ClientId must always be the allocation owner. Use Pubkey only for signing
+		// (stored in the commit request's pubkey field).
 		commitReq := &CommitRequest{
 			ClientId:     mo.allocationObj.Owner,
 			allocationID: mo.allocationObj.ID,
@@ -354,6 +356,7 @@ func (mo *MultiOperation) Process() error {
 			wg:           wg,
 			timestamp:    timestamp,
 			blobberInd:   pos,
+			pubkey:       mo.Pubkey,
 		}
 
 		commitReq.changes = append(commitReq.changes, mo.changes[pos]...)

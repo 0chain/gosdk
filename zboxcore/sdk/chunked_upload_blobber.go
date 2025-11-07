@@ -15,7 +15,6 @@ import (
 	"github.com/0chain/errors"
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
-	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/fileref"
@@ -223,7 +222,14 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 	wm.BlobberID = sb.blobber.ID
 
 	wm.Timestamp = timestamp
-	wm.ClientID = client.Id(su.allocationObj.Owner)
+	// ClientID should always be the allocation owner. If an operation-level
+	// pubkey is provided use it only for signing (set Pubkey) but do not
+	// overwrite ClientID — the blobber expects the write marker ClientID to
+	// match the allocation owner (the uploader identity).
+	wm.ClientID = su.allocationObj.Owner
+	if su.pubkey != "" {
+		wm.Pubkey = su.pubkey
+	}
 	err = wm.Sign()
 	if err != nil {
 		logger.Logger.Error("Signing writemarker failed: ", err)
