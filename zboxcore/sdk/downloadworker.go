@@ -67,6 +67,16 @@ func WithFileCallback(cb func()) DownloadRequestOption {
 	}
 }
 
+// WithPubKey sets the public key to be used for download request signing and
+// header selection in multi-wallet scenarios. When set, read markers and
+// fast download requests will use this pubkey to select the wallet used for
+// signing and to populate client headers.
+func WithPubKey(pubkey string) DownloadRequestOption {
+	return func(dr *DownloadRequest) {
+		dr.Pubkey = pubkey
+	}
+}
+
 type DownloadRequest struct {
 	ClientId           string
 	allocationID       string

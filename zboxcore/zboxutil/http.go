@@ -374,7 +374,7 @@ func NewObjectTreeRequest(baseUrl, allocationID string, allocationTx string, sig
 	return req, nil
 }
 
-func NewRefsRequest(baseUrl, allocationID, sig, allocationTx, path, pathHash, authToken, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int, clients ...string) (*http.Request, error) {
+func NewRefsRequest(baseUrl, allocationID, sig, allocationTx, path, pathHash, authToken, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int, keys ...string) (*http.Request, error) {
 	nUrl, err := joinUrl(baseUrl, REFS_ENDPOINT, allocationTx)
 	if err != nil {
 		return nil, err
@@ -398,7 +398,7 @@ func NewRefsRequest(baseUrl, allocationID, sig, allocationTx, path, pathHash, au
 
 	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 
-	if err := setClientInfoWithSign(req, sig, allocationTx, baseUrl, clients...); err != nil {
+	if err := setClientInfoWithSign(req, sig, allocationTx, baseUrl, keys...); err != nil {
 		return nil, err
 	}
 

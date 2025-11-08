@@ -3312,7 +3312,7 @@ repair:
 	return alloc, hash, isRepairRequired, nil
 }
 
-func (a *Allocation) DownloadDirectory(ctx context.Context, remotePath, localPath, authTicket string, sb StatusCallback) error {
+func (a *Allocation) DownloadDirectory(ctx context.Context, remotePath, localPath, authTicket string, sb StatusCallback, pubkey ...string) error {
 	if len(a.Blobbers) == 0 {
 		return noBLOBBERS
 	}
@@ -3327,7 +3327,11 @@ func (a *Allocation) DownloadDirectory(ctx context.Context, remotePath, localPat
 	}
 	defer sys.Files.RemoveAllDirectories()
 
-	oRefChan := a.ListObjects(ctx, remotePath, "", "", "", fileref.FILE, fileref.REGULAR, 0, getRefPageLimit, WithAuthToken(authTicket))
+	objOpts := []ObjectTreeRequestOption{WithAuthToken(authTicket)}
+	if len(pubkey) > 0 && pubkey[0] != "" {
+		objOpts = append(objOpts, WithObjectClientKey(pubkey[0]))
+	}
+	oRefChan := a.ListObjects(ctx, remotePath, "", "", "", fileref.FILE, fileref.REGULAR, 0, getRefPageLimit, objOpts...)
 	refSlice := make([]ORef, BatchSize)
 	refIndex := 0
 	wg := &sync.WaitGroup{}
@@ -3370,13 +3374,21 @@ func (a *Allocation) DownloadDirectory(ctx context.Context, remotePath, localPat
 					return err
 				}
 				if authTicket == "" {
-					_ = a.DownloadFileToFileHandler(fh, ref.Path, false, downloadStatusBar, ind == BatchSize-1, WithFileCallback(func() {
-						fh.Close() //nolint: errcheck
-					})) //nolint: errcheck
+					opts := []DownloadRequestOption{
+						WithFileCallback(func() { fh.Close() }),
+					}
+					if len(pubkey) > 0 && pubkey[0] != "" {
+						opts = append(opts, WithPubKey(pubkey[0]))
+					}
+					_ = a.DownloadFileToFileHandler(fh, ref.Path, false, downloadStatusBar, ind == BatchSize-1, opts...) //nolint: errcheck
 				} else {
-					_ = a.DownloadFileToFileHandlerFromAuthTicket(fh, authTicket, ref.LookupHash, ref.Path, false, downloadStatusBar, ind == BatchSize-1, WithFileCallback(func() {
-						fh.Close() //nolint: errcheck
-					})) //nolint: errcheck
+					opts := []DownloadRequestOption{
+						WithFileCallback(func() { fh.Close() }),
+					}
+					if len(pubkey) > 0 && pubkey[0] != "" {
+						opts = append(opts, WithPubKey(pubkey[0]))
+					}
+					_ = a.DownloadFileToFileHandlerFromAuthTicket(fh, authTicket, ref.LookupHash, ref.Path, false, downloadStatusBar, ind == BatchSize-1, opts...) //nolint: errcheck
 				}
 				totalSize += int(ref.ActualFileSize)
 			}
@@ -3409,13 +3421,21 @@ func (a *Allocation) DownloadDirectory(ctx context.Context, remotePath, localPat
 				return err
 			}
 			if authTicket == "" {
-				_ = a.DownloadFileToFileHandler(fh, ref.Path, false, downloadStatusBar, ind == refIndex-1, WithFileCallback(func() {
-					fh.Close() //nolint: errcheck
-				})) //nolint: errcheck
+				opts := []DownloadRequestOption{
+					WithFileCallback(func() { fh.Close() }),
+				}
+				if len(pubkey) > 0 && pubkey[0] != "" {
+					opts = append(opts, WithPubKey(pubkey[0]))
+				}
+				_ = a.DownloadFileToFileHandler(fh, ref.Path, false, downloadStatusBar, ind == refIndex-1, opts...) //nolint: errcheck
 			} else {
-				_ = a.DownloadFileToFileHandlerFromAuthTicket(fh, authTicket, ref.LookupHash, ref.Path, false, downloadStatusBar, ind == refIndex-1, WithFileCallback(func() {
-					fh.Close() //nolint: errcheck
-				})) //nolint: errcheck
+				opts := []DownloadRequestOption{
+					WithFileCallback(func() { fh.Close() }),
+				}
+				if len(pubkey) > 0 && pubkey[0] != "" {
+					opts = append(opts, WithPubKey(pubkey[0]))
+				}
+				_ = a.DownloadFileToFileHandlerFromAuthTicket(fh, authTicket, ref.LookupHash, ref.Path, false, downloadStatusBar, ind == refIndex-1, opts...) //nolint: errcheck
 			}
 			totalSize += int(ref.ActualFileSize)
 		}
