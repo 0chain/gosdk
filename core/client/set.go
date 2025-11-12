@@ -523,6 +523,26 @@ func Id(keys ...string) string {
 	return client.wallet.ClientID
 }
 
+// IsWalletSplit returns whether the wallet identified by keys[0] (pubkey or id)
+// is a split-key wallet. If no key is provided the default SDK wallet's split
+// flag is returned.
+func IsWalletSplit(keys ...string) bool {
+	client.mu.RLock()
+	defer client.mu.RUnlock()
+
+	if len(keys) > 0 && keys[0] != "" && client.wallets != nil {
+		if w, ok := client.wallets[keys[0]]; ok && w != nil {
+			return w.IsSplit
+		}
+	}
+
+	if client.wallet != nil {
+		return client.wallet.IsSplit
+	}
+
+	return false
+}
+
 // VerifySignature ...
 func VerifySignature(signature string, msg string) (bool, error) {
 	ss := zcncrypto.NewSignatureScheme(client.signatureScheme)

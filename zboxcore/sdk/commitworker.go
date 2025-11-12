@@ -60,18 +60,18 @@ func SuccessCommitResult() *CommitResult {
 const MARKER_VERSION = "v2"
 
 type CommitRequest struct {
-	ClientId     string
-	changes      []allocationchange.AllocationChange
-	blobber      *blockchain.StorageNode
-	allocationID string
-	allocationTx string
-	connectionID string
-	sig          string
-	wg           *sync.WaitGroup
-	result       *CommitResult
-	timestamp    int64
-	blobberInd   uint64
-	pubkey       string
+	ClientId              string
+	changes               []allocationchange.AllocationChange
+	blobber               *blockchain.StorageNode
+	allocationID          string
+	allocationTx          string
+	connectionID          string
+	sig                   string
+	wg                    *sync.WaitGroup
+	result                *CommitResult
+	timestamp             int64
+	blobberInd            uint64
+	multiWalletSupportKey string
 }
 
 type CommitRequestInterface interface {
@@ -80,18 +80,18 @@ type CommitRequestInterface interface {
 }
 
 type CommitRequestV2 struct {
-	changes         []allocationchange.AllocationChangeV2
-	allocationObj   *Allocation
-	connectionID    string
-	sig             string
-	wg              *sync.WaitGroup
-	result          *CommitResult
-	timestamp       int64
-	consensusThresh int
-	commitMask      zboxutil.Uint128
-	changeIndex     uint64
-	isRepair        bool
-	pubkey          string
+	changes               []allocationchange.AllocationChangeV2
+	allocationObj         *Allocation
+	connectionID          string
+	sig                   string
+	wg                    *sync.WaitGroup
+	result                *CommitResult
+	timestamp             int64
+	consensusThresh       int
+	commitMask            zboxutil.Uint128
+	changeIndex           uint64
+	isRepair              bool
+	multiWalletSupportKey string
 }
 
 var (
@@ -150,8 +150,8 @@ func (commitreq *CommitRequest) processCommit() {
 	var req *http.Request
 	var lR ReferencePathResult
 	key := client.Id()
-	if commitreq.pubkey != "" {
-		key = commitreq.pubkey
+	if commitreq.multiWalletSupportKey != "" {
+		key = commitreq.multiWalletSupportKey
 	}
 	req, err := zboxutil.NewReferencePathRequest(commitreq.blobber.Baseurl, commitreq.allocationID, commitreq.allocationTx, commitreq.sig, paths, key)
 	if err != nil {
@@ -199,7 +199,18 @@ func (commitreq *CommitRequest) processCommit() {
 	}
 	hasher := sha256.New()
 	if lR.LatestWM != nil {
-		err = lR.LatestWM.VerifySignature(client.PublicKey())
+		// Prefer verification using the MultiWalletSupportKey from the write
+		// marker (if present). Otherwise fall back to the client's public key.
+		if lR.LatestWM.MultiWalletSupportKey != "" {
+			if w := client.GetWalletByKey(lR.LatestWM.MultiWalletSupportKey); w != nil {
+				err = lR.LatestWM.VerifySignature(w.ClientKey)
+			} else {
+				commitreq.result = ErrorCommitResult("multi-wallet-settings err: wallet not found for signing public key " + lR.LatestWM.MultiWalletSupportKey)
+				return
+			}
+		} else {
+			err = lR.LatestWM.VerifySignature(client.PublicKey())
+		}
 		if err != nil {
 			e := errors.New("signature_verification_failed", err.Error())
 			commitreq.result = ErrorCommitResult(e.Error())
@@ -290,8 +301,8 @@ func (req *CommitRequest) commitBlobber(
 	wm.BlobberID = req.blobber.ID
 	wm.Timestamp = req.timestamp
 	wm.ClientID = req.ClientId
-	if req.pubkey != "" {
-		wm.Pubkey = req.pubkey
+	if req.multiWalletSupportKey != "" {
+		wm.MultiWalletSupportKey = req.multiWalletSupportKey
 	}
 	err = wm.Sign()
 	if err != nil {
@@ -318,8 +329,8 @@ func (req *CommitRequest) commitBlobber(
 				return
 			}
 			var httpreq *http.Request
-			if req.pubkey != "" {
-				httpreq, err = zboxutil.NewCommitRequest(req.blobber.Baseurl, req.allocationID, req.allocationTx, body, 0, req.pubkey)
+			if req.multiWalletSupportKey != "" {
+				httpreq, err = zboxutil.NewCommitRequest(req.blobber.Baseurl, req.allocationID, req.allocationTx, body, 0, req.multiWalletSupportKey)
 			} else {
 				httpreq, err = zboxutil.NewCommitRequest(req.blobber.Baseurl, req.allocationID, req.allocationTx, body, 0)
 			}
@@ -453,8 +464,8 @@ func (commitReq *CommitRequestV2) processCommit() {
 				trie *wmpt.WeightedMerkleTrie
 				err  error
 			)
-			if commitReq.pubkey != "" {
-				trie, err = getReferencePathV2(blobber, commitReq.allocationObj.ID, commitReq.allocationObj.Tx, commitReq.sig, paths, &success, mu, commitReq.pubkey)
+			if commitReq.multiWalletSupportKey != "" {
+				trie, err = getReferencePathV2(blobber, commitReq.allocationObj.ID, commitReq.allocationObj.Tx, commitReq.sig, paths, &success, mu, commitReq.multiWalletSupportKey)
 			} else {
 				trie, err = getReferencePathV2(blobber, commitReq.allocationObj.ID, commitReq.allocationObj.Tx, commitReq.sig, paths, &success, mu)
 			}
@@ -602,8 +613,8 @@ func (req *CommitRequestV2) commitBlobber(rootHash []byte, rootWeight, prevWeigh
 	wm.AllocationID = req.allocationObj.ID
 	wm.FileMetaRoot = fileMetaRoot
 	wm.ClientID = req.allocationObj.Owner
-	if req.pubkey != "" {
-		wm.Pubkey = req.pubkey
+	if req.multiWalletSupportKey != "" {
+		wm.MultiWalletSupportKey = req.multiWalletSupportKey
 	}
 	err = wm.Sign()
 	if err != nil {
@@ -616,8 +627,8 @@ func (req *CommitRequestV2) commitBlobber(rootHash []byte, rootWeight, prevWeigh
 		return err
 	}
 
-	if req.pubkey != "" {
-		err = submitWriteMarker(wmData, nil, blobber, req.connectionID, req.allocationObj.ID, req.allocationObj.Tx, req.allocationObj.StorageVersion, req.pubkey)
+	if req.multiWalletSupportKey != "" {
+		err = submitWriteMarker(wmData, nil, blobber, req.connectionID, req.allocationObj.ID, req.allocationObj.Tx, req.allocationObj.StorageVersion, req.multiWalletSupportKey)
 	} else {
 		err = submitWriteMarker(wmData, nil, blobber, req.connectionID, req.allocationObj.ID, req.allocationObj.Tx, req.allocationObj.StorageVersion)
 	}

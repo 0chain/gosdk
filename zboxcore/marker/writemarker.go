@@ -21,7 +21,7 @@ type WriteMarker struct {
 	BlobberID              string `json:"blobber_id"`
 	Timestamp              int64  `json:"timestamp"`
 	ClientID               string `json:"client_id"`
-	Pubkey                 string `json:"pub_key"`
+	MultiWalletSupportKey  string `json:"pub_key"`
 	Signature              string `json:"signature"`
 }
 
@@ -50,9 +50,9 @@ func (wm *WriteMarker) GetHash() string {
 func (wm *WriteMarker) Sign() error {
 	var err error
 	// If Pubkey is set, use that wallet for signing and set ClientID accordingly.
-	if wm.Pubkey != "" {
+	if wm.MultiWalletSupportKey != "" {
 		// Use the provided pubkey to sign, but do not overwrite ClientID here.
-		wm.Signature, err = client.Sign(wm.GetHash(), wm.Pubkey)
+		wm.Signature, err = client.Sign(wm.GetHash(), wm.MultiWalletSupportKey)
 		return err
 	}
 

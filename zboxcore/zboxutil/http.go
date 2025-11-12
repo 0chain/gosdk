@@ -224,7 +224,7 @@ func setClientInfoWithSign(req *http.Request, sig, allocation, baseURL string, k
 	if wallet == nil {
 		return errors.New("multi-wallet-settings err: ", "wallet not found : "+key)
 	}
-	fmt.Printf("setClientInfoWithSign: wallet details: %+v\n", *wallet)
+	l.Logger.Info(fmt.Sprintf("setClientInfoWithSign: wallet details: %+v", *wallet))
 	req.Header.Set("X-App-Client-ID", wallet.ClientID)
 	req.Header.Set("X-App-Client-Key", wallet.ClientKey)
 	req.Header.Set(CLIENT_SIGNATURE_HEADER, sig)
@@ -328,7 +328,7 @@ func NewReferencePathRequestV2(baseUrl, allocationID, allocationTx, sig string, 
 	return req, nil
 }
 
-func NewCalculateHashRequest(baseUrl, allocationID string, allocationTx string, paths []string, clients ...string) (*http.Request, error) {
+func NewCalculateHashRequest(baseUrl, allocationID string, allocationTx string, paths []string, keys ...string) (*http.Request, error) {
 	nurl, err := joinUrl(baseUrl, CALCULATE_HASH_ENDPOINT, allocationTx)
 	if err != nil {
 		return nil, err
@@ -344,14 +344,14 @@ func NewCalculateHashRequest(baseUrl, allocationID string, allocationTx string, 
 	if err != nil {
 		return nil, err
 	}
-	setClientInfo(req)
+	setClientInfo(req, keys...)
 
 	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 
 	return req, nil
 }
 
-func NewObjectTreeRequest(baseUrl, allocationID string, allocationTx string, sig string, path string, clients ...string) (*http.Request, error) {
+func NewObjectTreeRequest(baseUrl, allocationID string, allocationTx string, sig string, path string, keys ...string) (*http.Request, error) {
 	nurl, err := joinUrl(baseUrl, OBJECT_TREE_ENDPOINT, allocationTx)
 	if err != nil {
 		return nil, err
@@ -365,7 +365,7 @@ func NewObjectTreeRequest(baseUrl, allocationID string, allocationTx string, sig
 		return nil, err
 	}
 
-	if err := setClientInfoWithSign(req, sig, allocationTx, baseUrl, clients...); err != nil {
+	if err := setClientInfoWithSign(req, sig, allocationTx, baseUrl, keys...); err != nil {
 		return nil, err
 	}
 
@@ -882,7 +882,7 @@ func NewFastDownloadRequest(baseUrl, allocationID, allocationTx string, keys ...
 	return req, nil
 }
 
-func NewRedeemRequest(baseUrl, allocationID, allocationTx string, clients ...string) (*http.Request, error) {
+func NewRedeemRequest(baseUrl, allocationID, allocationTx string, keys ...string) (*http.Request, error) {
 	u, err := joinUrl(baseUrl, REDEEM_ENDPOINT, allocationTx)
 	if err != nil {
 		return nil, err
@@ -892,7 +892,7 @@ func NewRedeemRequest(baseUrl, allocationID, allocationTx string, clients ...str
 	if err != nil {
 		return nil, err
 	}
-	setClientInfo(req)
+	setClientInfo(req, keys...)
 	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 	return req, nil
 }

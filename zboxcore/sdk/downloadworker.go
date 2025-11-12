@@ -73,7 +73,7 @@ func WithFileCallback(cb func()) DownloadRequestOption {
 // signing and to populate client headers.
 func WithPubKey(pubkey string) DownloadRequestOption {
 	return func(dr *DownloadRequest) {
-		dr.Pubkey = pubkey
+		dr.MultiWalletSupportKey = pubkey
 	}
 }
 
@@ -130,7 +130,7 @@ type DownloadRequest struct {
 	allocOwnerSigningPubKey string
 	// in case of auth ticket, this key will be of the shared user rather than the owner of the allocation
 	allocOwnerSigningPrivateKey ed25519.PrivateKey
-	Pubkey                      string // in case of multi-wallet settings, this will be the public key of the wallet used for downloading
+	MultiWalletSupportKey       string // in case of multi-wallet settings, this will be the public key of the wallet used for downloading
 }
 
 type downloadPriority struct {
@@ -281,8 +281,8 @@ func (req *DownloadRequest) downloadBlock(
 			connectionID:       req.connectionID,
 		}
 
-			// propagate the public key (if multi-wallet / split-wallet scenario)
-			blockDownloadReq.Pubkey = req.Pubkey
+		// propagate the public key (if multi-wallet / split-wallet scenario)
+		blockDownloadReq.Pubkey = req.MultiWalletSupportKey
 
 		if blockDownloadReq.blobber.IsSkip() {
 			rspCh <- &downloadBlock{
@@ -450,7 +450,7 @@ func (req *DownloadRequest) getDecryptedDataForAuthTicket(result *downloadBlock,
 // start block, end block and number of blocks to download in single request.
 // This will also write data to the file handler and will verify content by calculating content hash.
 func (req *DownloadRequest) processDownload() {
-	fmt.Print("inside process download: pubkey", req.Pubkey, "\n")
+	fmt.Print("inside process download: pubkey", req.MultiWalletSupportKey, "\n")
 	ctx := req.ctx
 	if req.completedCallback != nil {
 		defer req.completedCallback(req.remotefilepath, req.remotefilepathhash)
@@ -855,19 +855,19 @@ func (req *DownloadRequest) submitReadMarker(blobber *blockchain.StorageNode, re
 }
 
 func (req *DownloadRequest) attemptSubmitReadMarker(blobber *blockchain.StorageNode, readCount int64) error {
-	l.Logger.Info("attemptSubmitReadMarker: pubKey:", req.Pubkey, "\n")
+	l.Logger.Info("attemptSubmitReadMarker: pubKey:", req.MultiWalletSupportKey, "\n")
 	lockBlobberReadCtr(req.allocationID, blobber.ID)
 	defer unlockBlobberReadCtr(req.allocationID, blobber.ID)
 
 	clientID := client.Id(req.ClientId)
 	clientPublicKey := client.PublicKey()
-	if req.Pubkey != "" {
-		wallet := client.GetWalletByKey(req.Pubkey)
+	if req.MultiWalletSupportKey != "" {
+		wallet := client.GetWalletByKey(req.MultiWalletSupportKey)
 		if wallet == nil {
-			return fmt.Errorf("wallet not found for public key: %s", req.Pubkey)
+			return fmt.Errorf("wallet not found for public key: %s", req.MultiWalletSupportKey)
 		}
 		clientID = wallet.ClientID
-		clientPublicKey = req.Pubkey
+		clientPublicKey = wallet.ClientKey
 	}
 	l.Logger.Info("DownloadRequest: clientID:", clientID, " clientPublicKey:", clientPublicKey, "\n")
 	rm := &marker.ReadMarker{
@@ -879,7 +879,7 @@ func (req *DownloadRequest) attemptSubmitReadMarker(blobber *blockchain.StorageN
 		Timestamp:              common.Now(),
 		ReadCounter:            getBlobberReadCtr(req.allocationID, blobber.ID) + readCount,
 		SessionRC:              readCount,
-		IsSignUnderMultiWallet: req.Pubkey != "",
+		IsSignUnderMultiWallet: req.MultiWalletSupportKey != "",
 	}
 	err := rm.Sign()
 	if err != nil {
@@ -890,7 +890,7 @@ func (req *DownloadRequest) attemptSubmitReadMarker(blobber *blockchain.StorageN
 	if err != nil {
 		return fmt.Errorf("error marshaling read marker: %w", err)
 	}
-	httpreq, err := zboxutil.NewRedeemRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.allocOwnerID)
+	httpreq, err := zboxutil.NewRedeemRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.allocOwnerID, req.MultiWalletSupportKey)
 	if err != nil {
 		return fmt.Errorf("error creating download request: %w", err)
 	}
@@ -1201,6 +1201,7 @@ func GetFileRefFromBlobber(allocationID, blobberId, remotePath string) (fRef *fi
 	ctx := context.Background()
 	listReq := &ListRequest{}
 
+	listReq.ClientId = a.Owner
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.sig = a.sig
@@ -1211,6 +1212,9 @@ func GetFileRefFromBlobber(allocationID, blobberId, remotePath string) (fRef *fi
 	listReq.consensusThresh = 1
 	listReq.ctx = ctx
 	listReq.remotefilepath = remotePath
+	if a.MultiWalletSupportKey != "" {
+		listReq.MultiWalletSupportKey = a.MultiWalletSupportKey
+	}
 
 	rspCh := make(chan *fileMetaResponse, 1)
 	go listReq.getFileMetaInfoFromBlobber(listReq.blobbers[0], 0, rspCh)
@@ -1233,13 +1237,12 @@ func (req *DownloadRequest) getFileRef() (fRef *fileref.FileRef, err error) {
 			fullconsensus:   req.fullconsensus,
 			consensusThresh: req.consensusThresh,
 		},
-		ctx: req.ctx,
-		Pubkey: req.Pubkey,
+		ctx:                   req.ctx,
+		MultiWalletSupportKey: req.MultiWalletSupportKey,
 	}
 
 	fMetaResp := listReq.getFileMetaFromBlobbers()
 	l.Logger.Info("fMetaResp length: ", len(fMetaResp), "\n")
-	
 
 	fRef, err = req.getFileMetaConsensus(fMetaResp)
 	if err != nil {

@@ -51,11 +51,12 @@ var (
 )
 
 type RollbackBlobber struct {
-	ClientId     string
-	blobber      *blockchain.StorageNode
-	commitResult *CommitResult
-	lpm          *LatestPrevWriteMarker
-	blobIndex    int
+	ClientId string
+	MultiWalletSupportKey string
+	blobber               *blockchain.StorageNode
+	commitResult          *CommitResult
+	lpm                   *LatestPrevWriteMarker
+	blobIndex             int
 }
 
 type BlobberStatus struct {
@@ -137,7 +138,10 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 	wm.AllocationID = rb.lpm.LatestWM.AllocationID
 	wm.Timestamp = rb.lpm.LatestWM.Timestamp
 	wm.BlobberID = rb.lpm.LatestWM.BlobberID
-	wm.ClientID = client.Id()
+	if rb.MultiWalletSupportKey != "" {
+		wm.MultiWalletSupportKey = rb.MultiWalletSupportKey
+	}
+	wm.ClientID = rb.ClientId
 	wm.Size = -rb.lpm.LatestWM.Size
 	wm.ChainSize = wm.Size + rb.lpm.LatestWM.ChainSize
 
@@ -189,7 +193,12 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 		return err
 	}
 
-	req, err := zboxutil.NewRollbackRequest(rb.blobber.Baseurl, wm.AllocationID, tx, body, wm.ClientID)
+	var req *http.Request
+	if rb.MultiWalletSupportKey != "" {
+		req, err = zboxutil.NewRollbackRequest(rb.blobber.Baseurl, wm.AllocationID, tx, body, rb.MultiWalletSupportKey)
+	} else {
+		req, err = zboxutil.NewRollbackRequest(rb.blobber.Baseurl, wm.AllocationID, tx, body)
+	}
 	if err != nil {
 		l.Logger.Error("Creating rollback request failed: ", err)
 		return err

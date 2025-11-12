@@ -228,7 +228,7 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 	// match the allocation owner (the uploader identity).
 	wm.ClientID = su.allocationObj.Owner
 	if su.pubkey != "" {
-		wm.Pubkey = su.pubkey
+		wm.MultiWalletSupportKey = su.pubkey
 	}
 	err = wm.Sign()
 	if err != nil {
@@ -266,7 +266,12 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 
 	formWriter.Close()
 
-	req, err := zboxutil.NewCommitRequest(sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, body, 0, su.allocationObj.Owner)
+	// choose signing key: prefer per-operation pubkey if set, otherwise allocation owner
+	key := su.allocationObj.Owner
+	if su.pubkey != "" {
+		key = su.pubkey
+	}
+	req, err := zboxutil.NewCommitRequest(sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, body, 0, key)
 	if err != nil {
 		logger.Logger.Error("Error creating commit req: ", err)
 		return err
@@ -355,7 +360,12 @@ func (sb *ChunkedUploadBlobber) processWriteMarker(
 	}
 
 	var lR ReferencePathResult
-	req, err := zboxutil.NewReferencePathRequest(sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, su.allocationObj.sig, paths, su.allocationObj.Owner)
+	// choose signing key for reference request: prefer per-operation pubkey if set
+	refKey := su.allocationObj.Owner
+	if su.pubkey != "" {
+		refKey = su.pubkey
+	}
+	req, err := zboxutil.NewReferencePathRequest(sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, su.allocationObj.sig, paths, refKey)
 	if err != nil || len(paths) == 0 {
 		logger.Logger.Error("Creating ref path req", err)
 		return nil, nil, 0, nil, err

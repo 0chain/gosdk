@@ -211,6 +211,14 @@ func (t *Transaction) getAuthorize() (string, error) {
 		return "", errors.New("not_initialized", "no authorize func is set, define it in native code and set in sys")
 	}
 
+	if t.MultiWalletSupportKey != "" {
+		authorize, err := sys.Authorize(string(jsonByte), t.MultiWalletSupportKey)
+		if err != nil {
+			return "", err
+		}
+		return authorize, nil
+	}
+
 	authorize, err := sys.Authorize(string(jsonByte))
 	if err != nil {
 		return "", err
@@ -530,21 +538,24 @@ func SmartContractTxnValue(scAddress string, sn SmartContractTxnData, value uint
 }
 
 func SmartContractTxnValueFeeWithRetry(scAddress string, sn SmartContractTxnData,
-	value, fee uint64, verifyTxn bool, clients ...string) (hash, out string, nonce int64, t *Transaction, err error) {
-	hash, out, nonce, t, err = SmartContractTxnValueFee(scAddress, sn, value, fee, verifyTxn, clients...)
+	value, fee uint64, verifyTxn bool, keys ...string) (hash, out string, nonce int64, t *Transaction, err error) {
+	hash, out, nonce, t, err = SmartContractTxnValueFee(scAddress, sn, value, fee, verifyTxn, keys...)
 
 	if err != nil && (strings.Contains(err.Error(), "invalid transaction nonce") || strings.Contains(err.Error(), "invalid future transaction")) {
-		return SmartContractTxnValueFee(scAddress, sn, value, fee, verifyTxn, clients...)
+		return SmartContractTxnValueFee(scAddress, sn, value, fee, verifyTxn, keys...)
 	}
 	return
 }
 
 func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
-	value, fee uint64, verifyTxn bool, clients ...string) (hash, out string, nonce int64, t *Transaction, err error) {
+	value, fee uint64, verifyTxn bool, keys ...string) (hash, out string, nonce int64, t *Transaction, err error) {
 
+	// Determine client identifier/public key to use for signing. If an explicit key is
+	// provided in keys varargs, prefer it; otherwise default to SDK client id.
 	clientId := client.Id()
-	if len(clients) > 0 && clients[0] != "" {
-		clientId = clients[0]
+	if len(keys) > 0 && keys[0] != "" {
+		// keys[0] may be a client public key or client id. Let client.Id resolve it.
+		clientId = client.Id(keys[0])
 	}
 
 	var requestBytes []byte
@@ -572,8 +583,8 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 	txn.TransactionType = TxnTypeSmartContract
 	txn.ClientID = clientId
 
-	if len(clients) > 1 {
-		txn.ToClientID = clients[1]
+	if len(keys) > 1 {
+		txn.ToClientID = keys[1]
 		txn.TransactionType = TxnTypeSend
 	}
 
@@ -593,13 +604,22 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 		txn.TransactionNonce = client.Cache.GetNextNonce(txn.ClientID)
 	}
 
-	err = txn.ComputeHashAndSign(client.SignFn)
-	if err != nil {
-		return
-	}
-
-	if client.GetClient().IsSplit {
+	if client.IsWalletSplit(keys...) {
+		if len(keys) > 0 && keys[0] != "" {
+			txn.MultiWalletSupportKey = keys[0]
+		}
+		txn.ComputeHashData()
 		txn.Signature, err = txn.getAuthorize()
+		if err != nil {
+			return
+		}
+	} else {
+		// Use a sign wrapper that forwards the provided keys to client.Sign so the
+		// signing happens under the intended wallet/public key when keys are provided.
+		err = txn.ComputeHashAndSign(func(hash string) (string, error) {
+			// forward original keys varargs so client.Sign can pick the correct wallet
+			return client.Sign(hash, keys...)
+		})
 		if err != nil {
 			return
 		}

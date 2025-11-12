@@ -78,8 +78,8 @@ func (req *ListRequest) getFileMetaInfoFromBlobber(blobber *blockchain.StorageNo
 
 	formWriter.Close()
 	key := client.Wallet().ClientID
-	if req.Pubkey != "" {
-		key = req.Pubkey
+	if req.MultiWalletSupportKey != "" {
+		key = req.MultiWalletSupportKey
 	}
 	httpreq, err := zboxutil.NewFileMetaRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body, key)
 	if err != nil {
@@ -146,7 +146,11 @@ func (req *ListRequest) getFileMetaByNameInfoFromBlobber(blobber *blockchain.Sto
 		}
 	}
 	formWriter.Close()
-	httpreq, err := zboxutil.NewFileMetaRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body, req.ClientId)
+	key := client.Wallet().ClientID
+	if req.MultiWalletSupportKey != "" {
+		key = req.MultiWalletSupportKey
+	}
+	httpreq, err := zboxutil.NewFileMetaRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body, key)
 	if err != nil {
 		l.Logger.Error("File meta info request error: ", err.Error())
 		return

@@ -33,7 +33,7 @@ const INVALID_PATH = "invalid_path"
 
 type ObjectTreeRequest struct {
 	ClientId       string
-	PubKey         string
+	MultiWalletSupportKey         string
 	allocationID   string
 	allocationTx   string
 	sig            string
@@ -102,7 +102,7 @@ func WithAuthToken(token string) ObjectTreeRequestOption {
 // the HTTP request when performing refs/list operations.
 func WithObjectClientKey(key string) ObjectTreeRequestOption {
 	return func(o *ObjectTreeRequest) {
-		o.PubKey = key
+		o.MultiWalletSupportKey = key
 	}
 }
 
@@ -248,9 +248,9 @@ func (o *ObjectTreeRequest) getFileRefs(bUrl string, respChan chan *oTreeRespons
 		// Determine the client key to use for signing the refs request. Prefer
 		// the explicit PubKey when provided by the caller; otherwise fall back
 		// to ClientId (historical behavior).
-		clientKey := o.ClientId
-		if o.PubKey != "" {
-			clientKey = o.PubKey
+		key := o.ClientId
+		if o.MultiWalletSupportKey != "" {
+			key = o.MultiWalletSupportKey
 		}
 
 		oReq, err := zboxutil.NewRefsRequest(
@@ -268,7 +268,7 @@ func (o *ObjectTreeRequest) getFileRefs(bUrl string, respChan chan *oTreeRespons
 			o.refType,
 			o.level,
 			o.pageLimit,
-			clientKey,
+			key,
 		)
 		if err != nil {
 			oTR.err = err

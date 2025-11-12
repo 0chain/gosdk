@@ -36,7 +36,7 @@ func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([
 			err := allocObj.DownloadFileToFileHandler(f, uo.chunkedUpload.fileMeta.RemotePath, false, nil, true, WithFileCallback(func() {
 				f.Close() //nolint:errcheck
 			}), func(dr *DownloadRequest) {
-				dr.Pubkey = uo.chunkedUpload.pubkey
+				dr.MultiWalletSupportKey = uo.chunkedUpload.pubkey
 			})
 			if err != nil {
 				l.Logger.Error("DownloadFileToFileHandler Failed", zap.String("path", uo.chunkedUpload.fileMeta.RemotePath), zap.Error(err))

@@ -1291,11 +1291,11 @@ func storageSmartContractTxn(sn transaction.SmartContractTxnData) (
 	return storageSmartContractTxnValue(sn, 0)
 }
 
-func storageSmartContractTxnValue(sn transaction.SmartContractTxnData, value uint64) (
+func storageSmartContractTxnValue(sn transaction.SmartContractTxnData, value uint64, keys ...string) (
 	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 
 	// Fee is set during sdk initialization.
-	return transaction.SmartContractTxnValueFeeWithRetry(STORAGE_SCADDRESS, sn, value, client.TxnFee(), true)
+	return transaction.SmartContractTxnValueFeeWithRetry(STORAGE_SCADDRESS, sn, value, client.TxnFee(), true, keys...)
 }
 
 func CommitToFabric(metaTxnData, fabricConfigJSON string) (string, error) {
@@ -1584,7 +1584,7 @@ func DoMultiUploadByWallet(pubkey string, a *Allocation, workdir string, localPa
 	}
 
 	setWalletOpt := func(mo *MultiOperation) {
-		mo.Pubkey = pubkey
+		mo.MultiWalletSupportKey = pubkey
 	}
 	return a.DoMultiOperation(operationRequests, setWalletOpt)
 }
