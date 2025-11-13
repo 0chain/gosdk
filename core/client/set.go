@@ -501,6 +501,27 @@ func Mnemonic() string {
 	return client.wallet.Mnemonic
 }
 
+// GetWalletMnemonic returns the mnemonic for a wallet identified by pubkey.
+// If the pubkey is empty or not found, it returns the SDK default wallet mnemonic.
+func GetWalletMnemonic(pubkey string) string {
+	if pubkey != "" {
+		client.mu.RLock()
+		if client.wallets != nil {
+			if w, ok := client.wallets[pubkey]; ok && w != nil {
+				mn := w.Mnemonic
+				client.mu.RUnlock()
+				return mn
+			}
+		}
+		client.mu.RUnlock()
+	}
+
+	if client.wallet != nil {
+		return client.wallet.Mnemonic
+	}
+	return ""
+}
+
 func PrivateKey() string {
 	for _, kv := range client.wallet.Keys {
 		return kv.PrivateKey

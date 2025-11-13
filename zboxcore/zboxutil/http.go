@@ -405,7 +405,7 @@ func NewRefsRequest(baseUrl, allocationID, sig, allocationTx, path, pathHash, au
 	return req, nil
 }
 
-func NewRecentlyAddedRefsRequest(bUrl, allocID, allocTx, sig string, fromDate, offset int64, pageLimit int, clients ...string) (*http.Request, error) {
+func NewRecentlyAddedRefsRequest(bUrl, allocID, allocTx, sig string, fromDate, offset int64, pageLimit int, keys ...string) (*http.Request, error) {
 
 	nUrl, err := joinUrl(bUrl, RECENT_REFS_ENDPOINT, allocID)
 	if err != nil {
@@ -425,7 +425,7 @@ func NewRecentlyAddedRefsRequest(bUrl, allocID, allocTx, sig string, fromDate, o
 
 	req.Header.Set(ALLOCATION_ID_HEADER, allocID)
 
-	if err = setClientInfoWithSign(req, sig, allocTx, bUrl, clients...); err != nil {
+	if err = setClientInfoWithSign(req, sig, allocTx, bUrl, keys...); err != nil {
 		return nil, err
 	}
 

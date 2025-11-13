@@ -25,6 +25,7 @@ type AuthTicket struct {
 	Encrypted           bool   `json:"encrypted"`
 	Signature           string `json:"signature"`
 	EncryptionPublicKey string `json:"encryption_public_key"`
+	MultiWalletSupportKey string `json:"-"`
 }
 
 // NewAuthTicket returns the MPT hash of the AuthTicket
@@ -49,6 +50,6 @@ func (at *AuthTicket) GetHashData() string {
 func (at *AuthTicket) Sign() error {
 	var err error
 	hash := encryption.Hash(at.GetHashData())
-	at.Signature, err = client.Sign(hash)
+	at.Signature, err = client.Sign(hash, at.MultiWalletSupportKey)
 	return err
 }

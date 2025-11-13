@@ -365,6 +365,7 @@ type SimilarField struct {
 type RecentlyAddedRefRequest struct {
 	ctx          context.Context
 	ClientId     string
+	MultiWalletSupportKey string
 	allocationID string
 	allocationTx string
 	sig          string
@@ -444,7 +445,12 @@ func (r *RecentlyAddedRefRequest) GetRecentlyAddedRefs() (*RecentlyAddedRefResul
 
 func (r *RecentlyAddedRefRequest) getRecentlyAddedRefs(resp *RecentlyAddedRefResponse, bUrl string) {
 	defer r.wg.Done()
-	req, err := zboxutil.NewRecentlyAddedRefsRequest(bUrl, r.allocationID, r.allocationTx, r.sig, r.fromDate, r.offset, r.pageLimit, r.ClientId)
+	// Choose key used to sign the request: prefer MultiWalletSupportKey when set
+	key := r.ClientId
+	if r.MultiWalletSupportKey != "" {
+		key = r.MultiWalletSupportKey
+	}
+	req, err := zboxutil.NewRecentlyAddedRefsRequest(bUrl, r.allocationID, r.allocationTx, r.sig, r.fromDate, r.offset, r.pageLimit, key)
 	if err != nil {
 		resp.err = err
 		return

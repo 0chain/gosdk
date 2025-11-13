@@ -631,7 +631,7 @@ func GetAllocationFromAuthTicket(authTicket string) (*Allocation, error) {
 //   - allocationID: the allocation id
 //
 // returns the allocation instance and error if any
-func GetAllocation(allocationID string) (*Allocation, error) {
+func GetAllocation(allocationID string, keys ...string) (*Allocation, error) {
 	if !client.IsSDKInitialized() {
 		return nil, sdkNotInitialized
 	}
@@ -649,7 +649,7 @@ func GetAllocation(allocationID string) (*Allocation, error) {
 	}
 
 	allocationObj.numBlockDownloads = numBlockDownloads
-	allocationObj.InitAllocation()
+	allocationObj.InitAllocation(keys...)
 	return allocationObj, nil
 }
 

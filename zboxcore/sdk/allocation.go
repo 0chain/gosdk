@@ -446,7 +446,7 @@ func SetDownloadWorkerCount(count int) {
 }
 
 // InitAllocation initializes the allocation.
-func (a *Allocation) InitAllocation() {
+func (a *Allocation) InitAllocation(keys ...string) {
 	a.downloadChan = make(chan *DownloadRequest, 400)
 	a.repairChan = make(chan *RepairRequest, 1)
 	a.ctx, a.ctxCancelF = context.WithCancel(context.Background())
@@ -467,7 +467,10 @@ func (a *Allocation) InitAllocation() {
 	for _, blobber := range a.Blobbers {
 		addLogChan(blobber.Baseurl)
 	}
-	a.generateAndSetOwnerSigningPublicKey()
+	if len(keys) > 0 && keys[0] != "" {
+		a.MultiWalletSupportKey = keys[0]
+	}
+	a.generateAndSetOwnerSigningPublicKey(keys...)
 	a.startWorker(a.ctx)
 	InitCommitWorker(a.Blobbers)
 	InitBlockDownloader(a.Blobbers, downloadWorkerCount)
@@ -477,12 +480,8 @@ func (a *Allocation) InitAllocation() {
 	a.initialized = true
 }
 
-func (a *Allocation) generateAndSetOwnerSigningPublicKey() {
-	//create ecdsa public key from signature
-	if a.OwnerPublicKey != client.PublicKey() {
-		return
-	}
-	privateSigningKey, err := GenerateOwnerSigningKey(a.OwnerPublicKey, a.Owner)
+func (a *Allocation) generateAndSetOwnerSigningPublicKey(keys ...string) {
+	privateSigningKey, err := GenerateOwnerSigningKey(a.OwnerPublicKey, a.Owner, keys...)
 	if err != nil {
 		l.Logger.Error("Failed to generate owner signing key", zap.Error(err))
 		return
@@ -490,7 +489,7 @@ func (a *Allocation) generateAndSetOwnerSigningPublicKey() {
 	if a.OwnerSigningPublicKey == "" && !a.Finalized && !a.Canceled && client.Wallet().IsSplit {
 		pubKey := privateSigningKey.Public().(ed25519.PublicKey)
 		a.OwnerSigningPublicKey = hex.EncodeToString(pubKey)
-		hash, _, err := UpdateAllocation(0, 0, false, a.ID, 0, "", "", "", "", a.OwnerSigningPublicKey, false, nil, "")
+		hash, _, err := UpdateAllocation(0, 0, false, a.ID, 0, "", "", "", "", a.OwnerSigningPublicKey, false, nil, "", keys...)
 		if err != nil {
 			l.Logger.Error("Failed to update owner signing public key ", err, " allocationID: ", a.ID, " hash: ", hash)
 			return
@@ -713,7 +712,7 @@ func (a *Allocation) EncryptAndUploadFileWithThumbnail(
 //   - status: the status callback function. Will be used to gather the status of the upload operations.
 //
 // Returns any error encountered during any of the upload operations, or during preparation of the upload operations.
-func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileNames []string, thumbnailPaths []string, encrypts []bool, chunkNumbers []int, remotePaths []string, isUpdate []bool, isWebstreaming []bool, status StatusCallback) error {
+func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileNames []string, thumbnailPaths []string, encrypts []bool, chunkNumbers []int, remotePaths []string, isUpdate []bool, isWebstreaming []bool, status StatusCallback, keys ...string) error {
 	if len(localPaths) != len(thumbnailPaths) {
 		return errors.New("invalid_value", "length of localpaths and thumbnailpaths must be equal")
 	}
@@ -809,6 +808,23 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, fileN
 		}
 
 	}
+
+	// Determine effective multi-wallet key: prefer allocation default, but
+	// allow caller-provided key to override when present.
+	effectiveKey := a.MultiWalletSupportKey
+	if len(keys) > 0 && keys[0] != "" {
+		effectiveKey = keys[0]
+	}
+
+	if effectiveKey != "" {
+		err := a.DoMultiOperation(operationRequests, func(mo *MultiOperation) { mo.MultiWalletSupportKey = effectiveKey })
+		if err != nil {
+			logger.Logger.Error("Error in multi upload ", err.Error())
+			return err
+		}
+		return nil
+	}
+
 	err := a.DoMultiOperation(operationRequests)
 	if err != nil {
 		logger.Logger.Error("Error in multi upload ", err.Error())
@@ -931,7 +947,14 @@ func (a *Allocation) GetCurrentVersion() (bool, error) {
 		go func(blobber *blockchain.StorageNode) {
 
 			defer wg.Done()
-			wr, err := GetWritemarker(a.ID, a.Tx, a.sig, blobber.ID, blobber.Baseurl, a.Owner)
+			// Prefer allocation-level MultiWalletSupportKey for getting writemarkers
+			// so that the writemarker returned corresponds to the wallet used for
+			// signing in multi-wallet setups. Fall back to the allocation owner id.
+			key := a.Owner
+			if a.MultiWalletSupportKey != "" {
+				key = a.MultiWalletSupportKey
+			}
+			wr, err := GetWritemarker(a.ID, a.Tx, a.sig, blobber.ID, blobber.Baseurl, key)
 			if err != nil {
 				atomic.AddInt32(&errCnt, 1)
 				logger.Logger.Error("error during getWritemarke", zap.Error(err))
@@ -944,6 +967,7 @@ func (a *Allocation) GetCurrentVersion() (bool, error) {
 					blobber:      blobber,
 					lpm:          wr,
 					commitResult: &CommitResult{},
+					MultiWalletSupportKey: a.MultiWalletSupportKey,
 				}
 			}
 		}(blobber)
@@ -1045,6 +1069,7 @@ func (a *Allocation) RepairRequired(remotepath string) (zboxutil.Uint128, zboxut
 	listReq.consensusThresh = a.DataShards
 	listReq.ctx = a.ctx
 	listReq.remotefilepath = remotepath
+	listReq.MultiWalletSupportKey = a.MultiWalletSupportKey
 	found, deleteMask, fileRef, _ := listReq.getFileConsensusFromBlobbers()
 	if fileRef == nil {
 		var repairErr error
@@ -1785,23 +1810,23 @@ func (a *Allocation) getRefs(path, pathHash, authToken, offsetPath, updatedDate,
 	}
 
 	oTreeReq := &ObjectTreeRequest{
-		ClientId:       a.Owner,
-		allocationID:   a.ID,
-		allocationTx:   a.Tx,
-		sig:            a.sig,
-		blobbers:       a.Blobbers,
-		authToken:      authToken,
-		pathHash:       pathHash,
-		remotefilepath: path,
-		pageLimit:      pageLimit,
-		level:          level,
-		offsetPath:     offsetPath,
-		updatedDate:    updatedDate,
-		offsetDate:     offsetDate,
-		fileType:       fileType,
-		refType:        refType,
-		ctx:            a.ctx,
-		reqMask:        zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1),
+		ClientId:              a.Owner,
+		allocationID:          a.ID,
+		allocationTx:          a.Tx,
+		sig:                   a.sig,
+		blobbers:              a.Blobbers,
+		authToken:             authToken,
+		pathHash:              pathHash,
+		remotefilepath:        path,
+		pageLimit:             pageLimit,
+		level:                 level,
+		offsetPath:            offsetPath,
+		updatedDate:           updatedDate,
+		offsetDate:            offsetDate,
+		fileType:              fileType,
+		refType:               refType,
+		ctx:                   a.ctx,
+		reqMask:               zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1),
 		MultiWalletSupportKey: a.MultiWalletSupportKey,
 	}
 	oTreeReq.fullconsensus = a.fullconsensus
@@ -2029,6 +2054,7 @@ func (a *Allocation) GetRecentlyAddedRefs(page int, fromDate int64, pageLimit in
 			fullconsensus:   a.fullconsensus,
 			consensusThresh: a.consensusThreshold,
 		},
+		MultiWalletSupportKey: a.MultiWalletSupportKey,
 	}
 	return req.GetRecentlyAddedRefs()
 }
@@ -2052,6 +2078,7 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 	listReq.consensusThresh = a.consensusThreshold
 	listReq.ctx = a.ctx
 	listReq.remotefilepath = path
+	listReq.MultiWalletSupportKey = a.MultiWalletSupportKey
 	_, _, ref, _ := listReq.getFileConsensusFromBlobbers()
 	if ref != nil {
 		result.Type = ref.Type
@@ -2091,6 +2118,7 @@ func (a *Allocation) GetFileMetaByName(fileName string) ([]*ConsolidatedFileMeta
 	listReq.consensusThresh = a.consensusThreshold
 	listReq.ctx = a.ctx
 	listReq.filename = fileName
+	listReq.MultiWalletSupportKey = a.MultiWalletSupportKey
 	_, _, refs, _ := listReq.getMultipleFileConsensusFromBlobbers()
 	if len(refs) != 0 {
 		for _, ref := range refs {
@@ -2173,6 +2201,7 @@ func (a *Allocation) GetFileMetaFromAuthTicket(authTicket string, lookupHash str
 	listReq.ctx = a.ctx
 	listReq.remotefilepathhash = lookupHash
 	listReq.authToken = at
+	listReq.MultiWalletSupportKey = a.MultiWalletSupportKey
 	_, _, ref, _ := listReq.getFileConsensusFromBlobbers()
 	if ref != nil {
 		result.Type = ref.Type
@@ -2218,6 +2247,7 @@ func (a *Allocation) GetFileStats(path string) (map[string]*FileStats, error) {
 	listReq.consensusThresh = a.consensusThreshold
 	listReq.ctx = a.ctx
 	listReq.remotefilepath = path
+	listReq.MultiWalletSupportKey = a.MultiWalletSupportKey
 	ref := listReq.getFileStatsFromBlobbers()
 	if ref != nil {
 		return ref, nil
@@ -2263,6 +2293,7 @@ func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus int,
 	req.deleteMask = mask
 	req.maskMu = &sync.Mutex{}
 	req.timestamp = int64(common.Now())
+	req.MultiWalletSupportKey = a.MultiWalletSupportKey
 	err := req.ProcessDelete()
 	return err
 }
@@ -2300,6 +2331,7 @@ func (a *Allocation) createDir(remotePath string, threshConsensus, fullConsensus
 			fullconsensus:   fullConsensus,
 		},
 		alreadyExists: make(map[uint64]bool),
+		multiWalletSupportKey: a.MultiWalletSupportKey,
 	}
 	req.ctx, req.ctxCncl = context.WithCancel(a.ctx)
 
@@ -2346,7 +2378,11 @@ func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
 		query.Add("path", path)
 		query.Add("refereeClientID", refereeClientID)
 
-		httpreq, err := zboxutil.NewRevokeShareRequest(baseUrl, a.ID, a.Tx, a.sig, query, a.Owner)
+		key := a.Owner
+		if a.MultiWalletSupportKey != "" {
+			key = a.MultiWalletSupportKey
+		}
+		httpreq, err := zboxutil.NewRevokeShareRequest(baseUrl, a.ID, a.Tx, a.sig, query, key)
 		if err != nil {
 			return err
 		}
@@ -2437,6 +2473,7 @@ func (a *Allocation) GetAuthTicket(path, filename string,
 		remotefilepath:    path,
 		remotefilename:    filename,
 		signingPrivateKey: a.privateSigningKey,
+		MultiWalletSupportKey: a.MultiWalletSupportKey,
 	}
 
 	if referenceType == fileref.DIRECTORY {
@@ -2499,7 +2536,11 @@ func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKe
 		if err := formWriter.Close(); err != nil {
 			return err
 		}
-		httpreq, err := zboxutil.NewShareRequest(url, a.ID, a.Tx, a.sig, body, a.Owner)
+		key := a.Owner
+		if a.MultiWalletSupportKey != "" {
+			key = a.MultiWalletSupportKey
+		}
+		httpreq, err := zboxutil.NewShareRequest(url, a.ID, a.Tx, a.sig, body, key)
 		if err != nil {
 			return err
 		}
