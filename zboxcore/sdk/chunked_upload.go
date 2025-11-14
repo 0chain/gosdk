@@ -257,7 +257,7 @@ func CreateChunkedUpload(
 
 	}
 
-	su.writeMarkerMutex, err = CreateWriteMarkerMutex(su.allocationObj, su.pubkey)
+	su.writeMarkerMutex, err = CreateWriteMarkerMutex(su.allocationObj, su.multiWalletSupportKey)
 	if err != nil {
 		return nil, err
 	}

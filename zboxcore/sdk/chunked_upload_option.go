@@ -39,7 +39,7 @@ func WithThumbnail(buf []byte) ChunkedUploadOption {
 
 func WithWallet(w string) ChunkedUploadOption {
 	return func(su *ChunkedUpload) {
-		su.pubkey = w
+		su.multiWalletSupportKey = w
 	}
 }
 

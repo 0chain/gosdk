@@ -71,8 +71,8 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 	eg, _ := errgroup.WithContext(ctx)
 
 	key := su.allocationObj.Owner
-	if su.pubkey != "" {
-		key = su.pubkey
+	if su.multiWalletSupportKey != "" {
+		key = su.multiWalletSupportKey
 	}
 	for dataInd := 0; dataInd < len(dataBuffers); dataInd++ {
 		ind := dataInd
@@ -227,8 +227,8 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 	// overwrite ClientID — the blobber expects the write marker ClientID to
 	// match the allocation owner (the uploader identity).
 	wm.ClientID = su.allocationObj.Owner
-	if su.pubkey != "" {
-		wm.MultiWalletSupportKey = su.pubkey
+	if su.multiWalletSupportKey != "" {
+		wm.MultiWalletSupportKey = su.multiWalletSupportKey
 	}
 	err = wm.Sign()
 	if err != nil {
@@ -268,8 +268,8 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 
 	// choose signing key: prefer per-operation pubkey if set, otherwise allocation owner
 	key := su.allocationObj.Owner
-	if su.pubkey != "" {
-		key = su.pubkey
+	if su.multiWalletSupportKey != "" {
+		key = su.multiWalletSupportKey
 	}
 	req, err := zboxutil.NewCommitRequest(sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, body, 0, key)
 	if err != nil {
@@ -362,8 +362,8 @@ func (sb *ChunkedUploadBlobber) processWriteMarker(
 	var lR ReferencePathResult
 	// choose signing key for reference request: prefer per-operation pubkey if set
 	refKey := su.allocationObj.Owner
-	if su.pubkey != "" {
-		refKey = su.pubkey
+	if su.multiWalletSupportKey != "" {
+		refKey = su.multiWalletSupportKey
 	}
 	req, err := zboxutil.NewReferencePathRequest(sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, su.allocationObj.sig, paths, refKey)
 	if err != nil || len(paths) == 0 {

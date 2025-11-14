@@ -96,8 +96,8 @@ type ChunkedUpload struct {
 	//used in wasm check chunked_upload_process_js.go
 	processMap map[int]zboxutil.Uint128 //nolint:unused
 	//used in wasm check chunked_upload_process_js.go
-	processMapLock sync.Mutex //nolint:unused
-	pubkey         string
+	processMapLock        sync.Mutex //nolint:unused
+	multiWalletSupportKey string
 }
 
 // FileMeta metadata of stream input/local
