@@ -13,6 +13,7 @@ import (
 
 	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/encryption"
+	l "github.com/0chain/gosdk/zboxcore/logger"
 
 	"golang.org/x/crypto/sha3"
 )
@@ -266,6 +267,13 @@ func (b *chunkedUploadFormBuilder) Build(
 		if err != nil {
 			return res, err
 		}
+
+		// Log upload metadata for debugging signature/validation issues
+		var keyUsed string
+		if len(keys) > 0 {
+			keyUsed = keys[0]
+		}
+		l.Logger.Info("uploadMeta prepared", "blobber", blobberID, "connection_id", connectionID, "key", keyUsed, "uploadMeta", string(uploadMeta))
 
 		err = formWriter.WriteField("uploadMeta", string(uploadMeta))
 		if err != nil {
