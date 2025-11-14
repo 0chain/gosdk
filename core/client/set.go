@@ -486,7 +486,7 @@ func PublicKey(keys ...string) string {
 		client.mu.RLock()
 		if client.wallets != nil {
 			if w, ok := client.wallets[keys[0]]; ok && w != nil {
-				k := w.Keys[0].PublicKey
+				k := w.ClientKey
 				client.mu.RUnlock()
 				return k
 			}

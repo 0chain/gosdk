@@ -475,18 +475,35 @@ func (a *Allocation) InitAllocation(keys ...string) {
 	InitCommitWorker(a.Blobbers)
 	InitBlockDownloader(a.Blobbers, downloadWorkerCount)
 	if a.StorageVersion == StorageV2 && a.OwnerPublicKey == client.PublicKey(a.Owner) {
-		a.CheckAllocStatus() //nolint:errcheck
+		a.CheckAllocStatus(keys...) //nolint:errcheck
 	}
 	a.initialized = true
 }
 
 func (a *Allocation) generateAndSetOwnerSigningPublicKey(keys ...string) {
+	l.Logger.Info("a.OwnerPublicKey:", a.OwnerPublicKey, " client.PublicKey(keys...):", client.PublicKey(keys...))
+	//create ecdsa public key from signature
+	if a.OwnerPublicKey != client.PublicKey(keys...) {
+		return
+	}
+
+	wallet := client.Wallet()
+	if len(keys) > 0 && keys[0] != "" {
+		wallet = client.GetWalletByKey(keys[0])
+		if wallet == nil {
+			l.Logger.Error("multi-wallet-settings err ", keys[0])
+			return
+		}
+	}
+
+
 	privateSigningKey, err := GenerateOwnerSigningKey(a.OwnerPublicKey, a.Owner, keys...)
 	if err != nil {
 		l.Logger.Error("Failed to generate owner signing key", zap.Error(err))
 		return
 	}
-	if a.OwnerSigningPublicKey == "" && !a.Finalized && !a.Canceled && client.Wallet().IsSplit {
+	l.Logger.Info("privateSigningKey: ", privateSigningKey)
+	if a.OwnerSigningPublicKey == "" && !a.Finalized && !a.Canceled && wallet.IsSplit {
 		pubKey := privateSigningKey.Public().(ed25519.PublicKey)
 		a.OwnerSigningPublicKey = hex.EncodeToString(pubKey)
 		hash, _, err := UpdateAllocation(0, 0, false, a.ID, 0, "", "", "", "", a.OwnerSigningPublicKey, false, nil, "", keys...)
@@ -503,6 +520,7 @@ func (a *Allocation) generateAndSetOwnerSigningPublicKey(keys ...string) {
 		return
 	}
 	a.privateSigningKey = privateSigningKey
+	l.Logger.Info("a.privateSigningKey ", a.privateSigningKey)
 }
 
 func (a *Allocation) isInitialized() bool {
@@ -963,10 +981,10 @@ func (a *Allocation) GetCurrentVersion() (bool, error) {
 				markerChan <- nil
 			} else {
 				markerChan <- &RollbackBlobber{
-					ClientId:     a.Owner,
-					blobber:      blobber,
-					lpm:          wr,
-					commitResult: &CommitResult{},
+					ClientId:              a.Owner,
+					blobber:               blobber,
+					lpm:                   wr,
+					commitResult:          &CommitResult{},
 					MultiWalletSupportKey: a.MultiWalletSupportKey,
 				}
 			}
@@ -2330,7 +2348,7 @@ func (a *Allocation) createDir(remotePath string, threshConsensus, fullConsensus
 			consensusThresh: threshConsensus,
 			fullconsensus:   fullConsensus,
 		},
-		alreadyExists: make(map[uint64]bool),
+		alreadyExists:         make(map[uint64]bool),
 		multiWalletSupportKey: a.MultiWalletSupportKey,
 	}
 	req.ctx, req.ctxCncl = context.WithCancel(a.ctx)
@@ -2463,16 +2481,16 @@ func (a *Allocation) GetAuthTicket(path, filename string,
 	}
 
 	shareReq := &ShareRequest{
-		ClientId:          a.Owner,
-		expirationSeconds: expiration,
-		allocationID:      a.ID,
-		allocationTx:      a.Tx,
-		sig:               a.sig,
-		blobbers:          a.Blobbers,
-		ctx:               a.ctx,
-		remotefilepath:    path,
-		remotefilename:    filename,
-		signingPrivateKey: a.privateSigningKey,
+		ClientId:              a.Owner,
+		expirationSeconds:     expiration,
+		allocationID:          a.ID,
+		allocationTx:          a.Tx,
+		sig:                   a.sig,
+		blobbers:              a.Blobbers,
+		ctx:                   a.ctx,
+		remotefilepath:        path,
+		remotefilename:        filename,
+		signingPrivateKey:     a.privateSigningKey,
 		MultiWalletSupportKey: a.MultiWalletSupportKey,
 	}
 

@@ -293,6 +293,7 @@ func CreateChunkedUpload(
 
 	su.chunkReader = cReader
 
+	logger.Logger.Info("CreateChunkedUploadFormBuilder storageVersion", su.allocationObj.StorageVersion, " and encryptedVersion ", su.encryptionVersion, "and privateSigningKey ", su.allocationObj.privateSigningKey)
 	su.formBuilder = CreateChunkedUploadFormBuilder(su.allocationObj.StorageVersion, su.encryptionVersion, su.allocationObj.privateSigningKey)
 
 	su.isRepair = isRepair
