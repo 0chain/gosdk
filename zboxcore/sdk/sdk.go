@@ -610,7 +610,7 @@ func GetClientEncryptedPublicKey() (string, error) {
 //   - authTicket: the auth ticket hash
 //
 // returns the allocation instance and error if any
-func GetAllocationFromAuthTicket(authTicket string) (*Allocation, error) {
+func GetAllocationFromAuthTicket(authTicket string, keys ...string) (*Allocation, error) {
 	if !client.IsSDKInitialized() {
 		return nil, sdkNotInitialized
 	}
@@ -623,7 +623,7 @@ func GetAllocationFromAuthTicket(authTicket string) (*Allocation, error) {
 	if err != nil {
 		return nil, errors.New("auth_ticket_decode_error", "Error unmarshaling the auth ticket."+err.Error())
 	}
-	return GetAllocation(at.AllocationID)
+	return GetAllocation(at.AllocationID, keys...)
 }
 
 // GetAllocation - get allocation from given allocation id

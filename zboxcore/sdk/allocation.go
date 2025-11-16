@@ -3391,7 +3391,7 @@ func (a *Allocation) UpdateWithStatus(
 	}
 
 	l.Logger.Info("Updating allocation")
-	hash, _, err := UpdateAllocation(size, authRoundExpiry, extend, a.ID, lock, addBlobberId, addBlobberAuthTicket, removeBlobberId, "", ownerSigninPublicKey, setThirdPartyExtendable, fileOptionsParams, updateAllocTicket)
+	hash, _, err := UpdateAllocation(size, authRoundExpiry, extend, a.ID, lock, addBlobberId, addBlobberAuthTicket, removeBlobberId, "", ownerSigninPublicKey, setThirdPartyExtendable, fileOptionsParams, updateAllocTicket, a.MultiWalletSupportKey)
 	if err != nil {
 		return alloc, "", isRepairRequired, err
 	}
@@ -3402,7 +3402,7 @@ func (a *Allocation) UpdateWithStatus(
 
 		deadline := time.Now().Add(1 * time.Minute)
 		for time.Now().Before(deadline) {
-			alloc, err = GetAllocation(a.ID)
+			alloc, err = GetAllocation(a.ID, a.MultiWalletSupportKey)
 			if err != nil {
 				l.Logger.Error("failed to get allocation")
 				return alloc, hash, isRepairRequired, err

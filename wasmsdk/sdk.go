@@ -178,3 +178,16 @@ func send(toClientID string, tokens uint64, fee uint64, desc string) (string, er
 	}
 	return txn.TransactionOutput, nil
 }
+
+// send Send tokens to a client
+//   - toClientID is the client id to send tokens to
+//   - tokens is the number of tokens to send
+//   - fee is the transaction fee
+//   - desc is the description of the transaction
+func sendMW(toClientID string, tokens uint64, fee uint64, desc string, key string) (string, error) {
+	_, _, _, txn, err := zcncore.Send(toClientID, tokens, desc, key)
+	if err != nil {
+		return "", err
+	}
+	return txn.TransactionOutput, nil
+}
