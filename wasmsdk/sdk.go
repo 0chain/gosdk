@@ -15,6 +15,7 @@ import (
 	"github.com/0chain/gosdk/core/screstapi"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk/zcncore"
+    "github.com/0chain/gosdk/core/zcncrypto"
 
 	"io"
 	"os"
@@ -190,4 +191,25 @@ func sendMW(toClientID string, tokens uint64, fee uint64, desc string, key strin
 		return "", err
 	}
 	return txn.TransactionOutput, nil
+}
+
+// addWallet adds a new wallet to the SDK (used by wasm bindings).
+func addWallet(clientID, clientKey, peerPublicKey, publicKey, privateKey, mnemonic string, isSplit bool) error {
+	keys := []zcncrypto.KeyPair{{PrivateKey: privateKey, PublicKey: publicKey}}
+	w := zcncrypto.Wallet{
+		ClientID:      clientID,
+		ClientKey:     clientKey,
+		PeerPublicKey: peerPublicKey,
+		Mnemonic:      mnemonic,
+		Keys:          keys,
+		IsSplit:       isSplit,
+	}
+	client.AddWallet(w)
+	return nil
+}
+
+// removeWallet removes a wallet from the SDK by public key (used by wasm bindings).
+func removeWallet(pubKey string) error {
+	client.RemoveWallet(pubKey)
+	return nil
 }

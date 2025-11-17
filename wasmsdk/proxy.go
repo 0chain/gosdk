@@ -225,6 +225,8 @@ func main() {
 				"createThumbnail":          createThumbnail,
 				"makeSCRestAPICall":        makeSCRestAPICall,
 				"wasmType":                 getWasmType,
+				"addWallet":                addWallet,
+				"removeWallet":             removeWallet,
 
 				//blobber
 				"delete":                    Delete,
@@ -300,6 +302,11 @@ func main() {
 				"play":           play,
 				"stop":           stop,
 				"getNextSegment": getNextSegment,
+
+				// player mw
+				"playMW":           playMW,
+				"stopMW":           stopMW,
+				"getNextSegmentMW": getNextSegmentMW,
 
 				//allocation
 				"createAllocation":           createAllocation,
