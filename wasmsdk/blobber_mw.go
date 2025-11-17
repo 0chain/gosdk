@@ -847,15 +847,3 @@ func downloadDirectoryWithKey(allocationID, remotePath, authticket, callbackFunc
 	}
 }
 
-// For other functions in blobber.go that are primarily read-only or don't expose a
-// way to set a per-operation signing key in the SDK (for example: GetFileStats,
-// GetBlobbers, downloadBlocks, upload wrappers that don't accept a wallet option),
-// the SDK currently does not provide a simple way to use the MultiWalletSupportKey.
-// Such functions are not implemented here with key-aware behavior and will
-// effectively ignore the `key` parameter if a MW wrapper were added that calls
-// the existing API.
-
-// TODO: If you want, I can extend this file with additional MW wrappers (for
-// example uploadMW that will use sdk.CreateChunkedUpload with sdk.WithWallet(key)),
-// or implement key-aware variants for more of the blobber API. If so, tell me
-// which specific functions you'd like prioritized.

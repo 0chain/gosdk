@@ -401,7 +401,16 @@ func GenerateOwnerSigningKey(ownerPublicKey, ownerID string, signingPubKey ...st
 	return privateSigningKey, nil
 }
 
-func GenerateOwnerSigningPublicKey() (string, error) {
+func GenerateOwnerSigningPublicKey(keys ...string) (string, error) {
+	if len(keys) > 0 && keys[0] != "" {
+		privateSigningKey, err := GenerateOwnerSigningKey(client.PublicKey(keys...), client.Id(keys...), keys...)
+		if err != nil {
+			return "", err
+		}
+
+		pubKey := privateSigningKey.Public().(ed25519.PublicKey)
+		return hex.EncodeToString(pubKey), nil
+	}
 	privateSigningKey, err := GenerateOwnerSigningKey(client.PublicKey(), client.Id())
 	if err != nil {
 		return "", err

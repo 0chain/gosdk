@@ -172,7 +172,7 @@ type StakePoolInfo struct {
 // GetStakePoolInfo retrieve stake pool info for the current client configured to the sdk, given provider type and provider ID.
 //   - providerType: provider type
 //   - providerID: provider ID
-func GetStakePoolInfo(providerType ProviderType, providerID string) (info *StakePoolInfo, err error) {
+func GetStakePoolInfo(providerType ProviderType, providerID string, keys ...string) (info *StakePoolInfo, err error) {
 	if !client.IsSDKInitialized() {
 		return nil, sdkNotInitialized
 	}
@@ -724,7 +724,10 @@ func SetNumBlockDownloads(num int) {
 // GetAllocations - get all allocations for the current client
 //
 // returns the list of allocations and error if any
-func GetAllocations() ([]*Allocation, error) {
+func GetAllocations(keys ...string) ([]*Allocation, error) {
+	if len(keys) > 0 && keys[0] != "" {
+		return GetAllocationsForClient(client.Id(keys...))
+	}
 	return GetAllocationsForClient(client.Id())
 }
 
@@ -820,8 +823,15 @@ type CreateAllocationOptions struct {
 //   - options is the options struct instance for creating the allocation.
 //
 // returns the hash of the new_allocation_request transaction, the nonce of the transaction, the transaction object and an error if any.
-func CreateAllocationWith(options CreateAllocationOptions) (
+func CreateAllocationWith(options CreateAllocationOptions, keys ...string) (
 	string, int64, *transaction.Transaction, error) {
+
+	if len(keys) > 0 && keys[0] != "" {
+		return CreateAllocationForOwner(
+			client.Id(keys...), client.PublicKey(keys...), "", options.DataShards, options.ParityShards,
+			options.Size, options.ReadPrice, options.WritePrice, options.Lock,
+			options.BlobberIds, options.BlobberAuthTickets, options.ThirdPartyExtendable, options.IsEnterprise, options.Force, options.FileOptionsParams, options.AuthRoundExpiry)
+	}
 
 	return CreateAllocationForOwner(client.Id(),
 		client.PublicKey(), "", options.DataShards, options.ParityShards,
@@ -1042,7 +1052,7 @@ func FinalizeAllocation(allocID string) (hash string, nonce int64, err error) {
 //   - allocID is the id of the allocation.
 //
 // returns the hash of the transaction, the nonce of the transaction and an error if any.
-func CancelAllocation(allocID string) (hash string, nonce int64, err error) {
+func CancelAllocation(allocID string, keys ...string) (hash string, nonce int64, err error) {
 	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
@@ -1050,7 +1060,7 @@ func CancelAllocation(allocID string) (hash string, nonce int64, err error) {
 		Name:      transaction.STORAGESC_CANCEL_ALLOCATION,
 		InputArgs: map[string]interface{}{"allocation_id": allocID},
 	}
-	hash, _, nonce, _, err = storageSmartContractTxn(sn)
+	hash, _, nonce, _, err = storageSmartContractTxn(sn, keys...)
 	return
 }
 
@@ -1121,7 +1131,7 @@ func ShutdownProvider(providerType ProviderType, providerID string) (string, int
 // CollectRewards collects the rewards for a provider (txn: `storagesc.collect_reward`)
 //   - providerId is the id of the provider.
 //   - providerType is the type of the provider.
-func CollectRewards(providerId string, providerType ProviderType) (string, int64, error) {
+func CollectRewards(providerId string, providerType ProviderType, keys ...string) (string, int64, error) {
 	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
@@ -1150,7 +1160,7 @@ func CollectRewards(providerId string, providerType ProviderType) (string, int64
 		return "", 0, fmt.Errorf("collect rewards provider type %v not implimented", providerType)
 	}
 
-	hash, _, n, _, err := transaction.SmartContractTxn(scAddress, sn, true)
+	hash, _, n, _, err := transaction.SmartContractTxn(scAddress, sn, true, keys...)
 	return hash, n, err
 }
 
@@ -1161,12 +1171,12 @@ func CollectRewards(providerId string, providerType ProviderType) (string, int64
 //   - newOwnerPublicKey is the public key of the new owner.
 //
 // returns the hash of the transaction, the nonce of the transaction and an error if any.
-func TransferAllocation(allocationId, newOwner, newOwnerPublicKey string) (string, int64, error) {
+func TransferAllocation(allocationId, newOwner, newOwnerPublicKey string, keys ...string) (string, int64, error) {
 	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
 
-	alloc, err := GetAllocation(allocationId)
+	alloc, err := GetAllocation(allocationId, keys...)
 	if err != nil {
 		return "", 0, allocationNotFound
 	}
@@ -1188,7 +1198,7 @@ func TransferAllocation(allocationId, newOwner, newOwnerPublicKey string) (strin
 		Name:      transaction.STORAGESC_UPDATE_ALLOCATION,
 		InputArgs: allocationRequest,
 	}
-	hash, _, n, _, err := storageSmartContractTxn(sn)
+	hash, _, n, _, err := storageSmartContractTxn(sn, keys...)
 	return hash, n, err
 }
 
@@ -1285,10 +1295,10 @@ func StorageSmartContractTxn(sn transaction.SmartContractTxnData) (
 	return storageSmartContractTxnValue(sn, 0)
 }
 
-func storageSmartContractTxn(sn transaction.SmartContractTxnData) (
+func storageSmartContractTxn(sn transaction.SmartContractTxnData, keys ...string) (
 	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 
-	return storageSmartContractTxnValue(sn, 0)
+	return storageSmartContractTxnValue(sn, 0, keys...)
 }
 
 func storageSmartContractTxnValue(sn transaction.SmartContractTxnData, value uint64, keys ...string) (
