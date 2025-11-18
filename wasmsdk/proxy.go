@@ -262,7 +262,6 @@ func main() {
 				"cancelDownloadDirectory":   cancelDownloadDirectory,
 				"cancelDownloadBlocks":      cancelDownloadBlocks,
 				"setConsensusThreshold":     setConsensusThreshold,
-
 				//blobber mw (multi-wallet support)
 				"deleteMW":                    DeleteMW,
 				"shareMW":                     ShareMW,
@@ -302,7 +301,6 @@ func main() {
 				"play":           play,
 				"stop":           stop,
 				"getNextSegment": getNextSegment,
-
 				// player mw
 				"playMW":           playMW,
 				"stopMW":           stopMW,
@@ -325,7 +323,6 @@ func main() {
 				"getAllocationWith":          getAllocationWith,
 				"createfreeallocation":       createfreeallocation,
 				"getUpdateAllocTicket":       getUpdateAllocTicket,
-
 				//allocation mw (multi-wallet support)
 				"createAllocationMW":           createAllocationMW,
 				"getAllocationBlobbersMW":      getAllocationBlobbersMW,
@@ -346,20 +343,35 @@ func main() {
 
 				// claim rewards
 				"collectRewards": collectRewards,
+				//claim rewards mw
+				"collectRewardsMW": collectRewardsMW,
 
 				// stakepool
 				"getSkatePoolInfo": getSkatePoolInfo,
 				"lockStakePool":    lockStakePool,
 				"unlockStakePool":  unlockStakePool,
+				// stakepool mw
+				"getSkatePoolInfoMW": getSkatePoolInfoMW,
+				"lockStakePoolMW":    lockStakePoolMW,
+				"unlockStakePoolMW":  unlockStakePoolMW,
 
 				// writepool
 				"lockWritePool": lockWritePool,
+				// writepool mw
+				"lockWritePoolMW": lockWritePoolMW,
+
+				
 
 				"decodeAuthTicket": decodeAuthTicket,
 				"allocationRepair": allocationRepair,
 				"repairSize":       repairSize,
+				// "decodeAuthTicketMW": decodeAuthTicketMW,
+				"allocationRepairMW": allocationRepairMW,
+				"repairSizeMW":       repairSizeMW,
 
 				"generateOwnerSigningKey": generateOwnerSigningKey,
+				"generateOwnerSigningKeyMW": generateOwnerSigningKeyMW,
+
 
 				// bridge
 				"initBridge":                    initBridge,
@@ -371,6 +383,15 @@ func main() {
 				"estimateBurnWZCNGasAmount":     estimateBurnWZCNGasAmount,
 				"estimateMintWZCNGasAmount":     estimateMintWZCNGasAmount,
 				"estimateGasPrice":              estimateGasPrice,
+				// bridge mw
+				"burnZCNMW":                       burnZCNMW,
+				"mintZCNMW":                       mintZCNMW,
+				"getMintWZCNPayloadMW":            getMintWZCNPayloadMW,
+				"getNotProcessedWZCNBurnEventsMW": getNotProcessedWZCNBurnEventsMW,
+				"getNotProcessedZCNBurnTicketsMW": getNotProcessedZCNBurnTicketsMW,
+				"estimateBurnWZCNGasAmountMW":     estimateBurnWZCNGasAmountMW,
+				"estimateMintWZCNGasAmountMW":     estimateMintWZCNGasAmountMW,
+				"estimateGasPriceMW":              estimateGasPriceMW,
 
 				//zcn
 				"getWalletBalance": getWalletBalance,
