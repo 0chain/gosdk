@@ -409,6 +409,7 @@ func main() {
 				"registerAuthorizer": js.FuncOf(registerAuthorizer),
 				"registerAuthCommon": js.FuncOf(registerAuthCommon),
 				"callAuth":           js.FuncOf(callAuth),
+				"callAuthMW":         js.FuncOf(callAuthMW),
 				"authResponse":       authResponse,
 
 				// zauth

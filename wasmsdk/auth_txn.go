@@ -129,6 +129,25 @@ func callAuth(this js.Value, args []js.Value) interface{} {
 	return nil
 }
 
+// callAuth Call the authorization callback function and provide the message to pass to it.
+// The message is passed as the first argument to the js calling.
+func callAuthMW(this js.Value, args []js.Value) interface{} {
+	fmt.Println("callAuth is called")
+	if len(args) == 0 {
+		return nil
+	}
+
+	if authCallback != nil {
+		msg := args[0].String()
+		key := args[1].String()
+		result, _ := sys.Authorize(msg, key)
+		fmt.Println("auth is called, result:", result)
+		return js.ValueOf(result)
+	}
+
+	return nil
+}
+
 // Parse the JavaScript callback function into Go AuthorizerCallback type
 func parseAuthorizerCallback(jsCallback js.Value) AuthCallbackFunc {
 	return func(msg string) string {
