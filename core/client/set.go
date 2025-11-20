@@ -72,7 +72,9 @@ func init() {
 		defer client.mu.RUnlock()
 		wallet := client.wallet
 		if len(keys) > 0 && keys[0] != "" {
-			if client.wallets != nil {
+			if wallet.Keys[0].PublicKey == keys[0] {
+				// use default wallet
+			} else if client.wallets != nil {
 				if w, ok := client.wallets[keys[0]]; ok && w != nil {
 					wallet = w
 				}

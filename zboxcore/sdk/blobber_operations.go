@@ -56,7 +56,7 @@ func CreateAllocationForOwner(
 		return "", 0, nil, sdkNotInitialized
 	}
 
-	if client.PublicKey() == ownerPublicKey {
+	if client.PublicKey(keys...) == ownerPublicKey {
 		privateSigningKey, err := GenerateOwnerSigningKey(ownerPublicKey, owner)
 		if err != nil {
 			return "", 0, nil, errors.New("failed_generate_owner_signing_key", "failed to generate owner signing key: "+err.Error())
