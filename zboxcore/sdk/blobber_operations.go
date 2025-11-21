@@ -57,7 +57,7 @@ func CreateAllocationForOwner(
 	}
 
 	if client.PublicKey(keys...) == ownerPublicKey {
-		privateSigningKey, err := GenerateOwnerSigningKey(ownerPublicKey, owner)
+		privateSigningKey, err := GenerateOwnerSigningKey(ownerPublicKey, owner, keys...)
 		if err != nil {
 			return "", 0, nil, errors.New("failed_generate_owner_signing_key", "failed to generate owner signing key: "+err.Error())
 		}
@@ -385,12 +385,11 @@ func GenerateOwnerSigningKey(ownerPublicKey, ownerID string, signingPubKey ...st
 	}
 	hashData := fmt.Sprintf("%s:%s", ownerPublicKey, "owner_signing_public_key")
 	// prefer explicit signing pubkey when provided (for split-wallet scenarios)
-	pubkeyToUse := client.PublicKey()
-	if len(signingPubKey) > 0 && signingPubKey[0] != "" {
-		pubkeyToUse = signingPubKey[0]
+	signingKey, err := client.SigningKey(signingPubKey...)
+	if err != nil {
+		return nil, err
 	}
-
-	sig, err := client.Sign(encryption.Hash(hashData), pubkeyToUse)
+	sig, err := client.Sign(encryption.Hash(hashData), signingKey)
 	if err != nil {
 		logger.Logger.Error("error during sign", zap.Error(err))
 		return nil, err

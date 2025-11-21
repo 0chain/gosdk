@@ -499,6 +499,27 @@ func PublicKey(keys ...string) string {
 	return client.wallet.ClientKey
 }
 
+// PublicKey lookup uses read lock
+func SigningKey(keys ...string) (string, error) {
+	if len(keys) > 0 && keys[0] != "" {
+		client.mu.RLock()
+		if client.wallets != nil {
+			if w, ok := client.wallets[keys[0]]; ok && w != nil {
+				k := w.Keys[0].PublicKey
+				client.mu.RUnlock()
+				return k, nil
+			} else {
+				client.mu.RUnlock()
+				return "", errors.New("multi-wallet-settings err: " + keys[0])
+			}
+		}
+		client.mu.RUnlock()
+	}
+
+	return client.wallet.Keys[0].PublicKey, nil
+}
+
+
 func Mnemonic() string {
 	return client.wallet.Mnemonic
 }
