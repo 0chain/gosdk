@@ -516,7 +516,7 @@ func SigningKey(keys ...string) (string, error) {
 		client.mu.RUnlock()
 	}
 
-	return client.wallet.Keys[0].PublicKey, nil
+	return client.wallet.ClientID, nil
 }
 
 
