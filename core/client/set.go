@@ -110,10 +110,21 @@ func GetClient() *zcncrypto.Wallet {
 	return client.wallet
 }
 
-var SignFn = func(hash string) (string, error) {
+var SignFn = func(hash string, keys ...string) (string, error) {
 	ss := zcncrypto.NewSignatureScheme(client.signatureScheme)
 
-	err := ss.SetPrivateKey(client.wallet.Keys[0].PrivateKey)
+	var err error
+	if len(keys) > 0 && keys[0] != "" {
+		wallet := GetWalletByKey(keys[0])
+		if wallet == nil {
+			return "", errors.New("multi-wallet-settings err: " + keys[0])
+		}
+		err = ss.SetPrivateKey(wallet.Keys[0].PrivateKey)
+
+	} else {
+		err = ss.SetPrivateKey(client.wallet.Keys[0].PrivateKey)
+	}
+
 	if err != nil {
 		return "", err
 	}
@@ -570,21 +581,23 @@ func Id(keys ...string) string {
 // IsWalletSplit returns whether the wallet identified by keys[0] (pubkey or id)
 // is a split-key wallet. If no key is provided the default SDK wallet's split
 // flag is returned.
-func IsWalletSplit(keys ...string) bool {
+func IsWalletSplit(keys ...string) (bool, error) {
 	client.mu.RLock()
 	defer client.mu.RUnlock()
 
 	if len(keys) > 0 && keys[0] != "" && client.wallets != nil {
 		if w, ok := client.wallets[keys[0]]; ok && w != nil {
-			return w.IsSplit
+			return w.IsSplit, nil
+		} else {
+			return false, errors.New("multi-wallet-settings err: " + keys[0])
 		}
 	}
 
 	if client.wallet != nil {
-		return client.wallet.IsSplit
+		return client.wallet.IsSplit, nil
 	}
 
-	return false
+	return false, nil
 }
 
 // VerifySignature ...

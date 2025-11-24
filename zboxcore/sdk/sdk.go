@@ -830,13 +830,13 @@ func CreateAllocationWith(options CreateAllocationOptions, keys ...string) (
 		return CreateAllocationForOwner(
 			client.Id(keys...), client.PublicKey(keys...), "", options.DataShards, options.ParityShards,
 			options.Size, options.ReadPrice, options.WritePrice, options.Lock,
-			options.BlobberIds, options.BlobberAuthTickets, options.ThirdPartyExtendable, options.IsEnterprise, options.Force, options.FileOptionsParams, options.AuthRoundExpiry)
+			options.BlobberIds, options.BlobberAuthTickets, options.ThirdPartyExtendable, options.IsEnterprise, options.Force, options.FileOptionsParams, options.AuthRoundExpiry, keys...)
 	}
 
 	return CreateAllocationForOwner(client.Id(),
 		client.PublicKey(), "", options.DataShards, options.ParityShards,
 		options.Size, options.ReadPrice, options.WritePrice, options.Lock,
-		options.BlobberIds, options.BlobberAuthTickets, options.ThirdPartyExtendable, options.IsEnterprise, options.Force, options.FileOptionsParams, options.AuthRoundExpiry)
+		options.BlobberIds, options.BlobberAuthTickets, options.ThirdPartyExtendable, options.IsEnterprise, options.Force, options.FileOptionsParams, options.AuthRoundExpiry, keys...)
 }
 
 // GetAllocationBlobbers returns a list of blobber ids that can be used for a new allocation.

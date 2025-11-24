@@ -166,7 +166,7 @@ const (
 	FEES_TABLE                = `/v1/fees_table`
 )
 
-type SignFunc = func(msg string) (string, error)
+type SignFunc = func(msg string, keys ...string) (string, error)
 type VerifyFunc = func(publicKey, signature, msgHash string) (bool, error)
 type SignWithWallet = func(msg string, wallet interface{}) (string, error)
 
@@ -230,7 +230,7 @@ func (t *Transaction) getAuthorize() (string, error) {
 func (t *Transaction) ComputeHashAndSign(signHandler SignFunc) error {
 	t.ComputeHashData()
 	var err error
-	t.Signature, err = signHandler(t.Hash)
+	t.Signature, err = signHandler(t.Hash, t.MultiWalletSupportKey)
 	if err != nil {
 		return err
 	}
@@ -552,11 +552,7 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 
 	// Determine client identifier/public key to use for signing. If an explicit key is
 	// provided in keys varargs, prefer it; otherwise default to SDK client id.
-	clientId := client.Id()
-	if len(keys) > 0 && keys[0] != "" {
-		// keys[0] may be a client public key or client id. Let client.Id resolve it.
-		clientId = client.Id(keys[0])
-	}
+	clientId := client.Id(keys...)
 
 	var requestBytes []byte
 	if requestBytes, err = json.Marshal(sn); err != nil {
@@ -573,8 +569,8 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 		return
 	}
 
-	txn := NewTransactionEntity(client.Id(clientId),
-		cfg.ChainID, client.PublicKey(clientId), nonce)
+	txn := NewTransactionEntity(clientId,
+		cfg.ChainID, client.PublicKey(keys...), nonce)
 
 	txn.TransactionData = string(requestBytes)
 	txn.ToClientID = scAddress
@@ -604,22 +600,21 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 		txn.TransactionNonce = client.Cache.GetNextNonce(txn.ClientID)
 	}
 
-	if client.IsWalletSplit(keys...) {
-		if len(keys) > 0 && keys[0] != "" {
-			txn.MultiWalletSupportKey = keys[0]
-		}
-		txn.ComputeHashData()
+	if len(keys) > 0 && keys[0] != "" {
+		txn.MultiWalletSupportKey = keys[0]
+	}
+
+	err = txn.ComputeHashAndSign(client.SignFn)
+	if err != nil {
+		return
+	}
+	
+	isSplit, err := client.IsWalletSplit(keys...)
+	if err != nil {
+		return
+	}
+	if isSplit {
 		txn.Signature, err = txn.getAuthorize()
-		if err != nil {
-			return
-		}
-	} else {
-		// Use a sign wrapper that forwards the provided keys to client.Sign so the
-		// signing happens under the intended wallet/public key when keys are provided.
-		err = txn.ComputeHashAndSign(func(hash string) (string, error) {
-			// forward original keys varargs so client.Sign can pick the correct wallet
-			return client.Sign(hash, keys...)
-		})
 		if err != nil {
 			return
 		}
