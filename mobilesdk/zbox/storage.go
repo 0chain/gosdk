@@ -1,3 +1,6 @@
+//go:build mobile
+// +build mobile
+
 package zbox
 
 import (
@@ -914,4 +917,38 @@ func SetUploadMode(mode int) {
 	case 2:
 		sdk.SetUploadMode(sdk.UploadModeHigh)
 	}
+}
+
+// ListObjects - listing objects from path with advanced filtering options
+// ## Inputs
+//   - allocationID: allocation id
+//   - path: remote path to list
+//   - offsetPath: path to start listing from (for pagination)
+//   - updatedDate: filter by updated date (optional, empty string to ignore)
+//   - offsetDate: offset date for pagination (optional, empty string to ignore)
+//   - fileType: filter by file type (optional, empty string for all)
+//   - refType: filter by reference type (optional, empty string for all)
+//   - level: directory level to list (0 for all levels)
+//   - pageLimit: maximum number of results per page
+//
+// ## Outputs
+//   - the json string of object tree results
+//   - error
+func ListObjects(allocationID, path, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (string, error) {
+	a, err := getAllocation(allocationID)
+	if err != nil {
+		return "", err
+	}
+
+	// Use GetRefs which is simpler and returns results directly
+	objectTreeResult, err := a.GetRefs(path, offsetPath, updatedDate, offsetDate, fileType, refType, level, pageLimit)
+	if err != nil {
+		return "", err
+	}
+
+	retBytes, err := json.Marshal(objectTreeResult)
+	if err != nil {
+		return "", err
+	}
+	return string(retBytes), nil
 }

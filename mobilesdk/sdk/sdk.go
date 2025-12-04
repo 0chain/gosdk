@@ -413,6 +413,11 @@ func (s *StorageSDK) GetVersion() string {
 	return version.VERSIONSTR
 }
 
+// GetVersion getting current version for gomobile lib (standalone function)
+func GetVersion() string {
+	return version.VERSIONSTR
+}
+
 // UpdateAllocation update allocation settings with new expiry and size
 //   - size: size of space reserved on blobbers
 //   - extend: extend allocation
@@ -448,6 +453,25 @@ func GetAllocations() (string, error) {
 		return "", err
 	}
 	retBytes, err := json.Marshal(allocs)
+	if err != nil {
+		return "", err
+	}
+	return string(retBytes), nil
+}
+
+// GetAllocationsOfClient retrieve list of allocations for a specific client ID
+//   - clientID: the client ID to get allocations for
+func GetAllocationsOfClient(clientID string) (string, error) {
+	sdkAllocations, err := sdk.GetAllocationsForClient(clientID)
+	if err != nil {
+		return "", err
+	}
+	result := make([]*zbox.Allocation, len(sdkAllocations))
+	for i, sdkAllocation := range sdkAllocations {
+		allocationObj := zbox.ToAllocation(sdkAllocation)
+		result[i] = allocationObj
+	}
+	retBytes, err := json.Marshal(result)
 	if err != nil {
 		return "", err
 	}
