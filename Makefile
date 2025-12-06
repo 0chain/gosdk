@@ -35,7 +35,7 @@ gosdk-build: gomod-download
 	go build -x -v -tags bn256 ./...
 
 wasm-build: getrev
-	CGO_ENABLED=0 GOOS=js GOARCH=wasm go build -ldflags="-s -w" -buildvcs=false -o ./zcn.wasm  ./wasmsdk
+	@GOVCS=off CGO_ENABLED=0 GOOS=js GOARCH=wasm go build -ldflags="-s -w" -buildvcs=false -o ./zcn.wasm  ./wasmsdk
 
 wasm-test: wasm-build
 	env -i $(shell go env) PATH="$(shell go env GOROOT)/misc/wasm:$(PATH)" CGO_ENABLED=0 GOOS=js GOARCH=wasm go test -v ./wasmsdk/jsbridge/input_test.go ./wasmsdk/jsbridge/input.go ./wasmsdk/jsbridge/object.go ./wasmsdk/jsbridge/error.go ./wasmsdk/jsbridge/func.go ./wasmsdk/jsbridge/func_test.go ./wasmsdk/jsbridge/sync.go ./wasmsdk/jsbridge/async.go ./wasmsdk/jsbridge/output.go ./wasmsdk/jsbridge/vars.go
