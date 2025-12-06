@@ -432,6 +432,24 @@ func (s *StorageSDK) UpdateAllocation(size, authRoundExpiry int64, extend bool, 
 	return hash, err
 }
 
+// UpdateAllocationWithBlobbers update allocation settings with new expiry, size, and blobber changes
+//   - size: size of space reserved on blobbers
+//   - authRoundExpiry: auth round expiry duration
+//   - extend: extend allocation
+//   - allocationID: allocation ID
+//   - lock: Number of tokens to lock to the allocation after the update
+//   - addBlobberId: blobber ID to add to the allocation (empty string to skip)
+//   - addBlobberAuthTicket: blobber auth ticket for the blobber to add, required if adding a restricted blobber (empty string if not needed)
+//   - removeBlobberId: blobber ID to remove from the allocation (empty string to skip)
+func (s *StorageSDK) UpdateAllocationWithBlobbers(size, authRoundExpiry int64, extend bool, allocationID string, lock uint64, addBlobberId, addBlobberAuthTicket, removeBlobberId string) (hash string, err error) {
+	if lock > math.MaxInt64 {
+		return "", errors.Errorf("int64 overflow in lock")
+	}
+
+	hash, _, err = sdk.UpdateAllocation(size, authRoundExpiry, extend, allocationID, lock, addBlobberId, addBlobberAuthTicket, removeBlobberId, "", "", false, &sdk.FileOptionsParameters{}, "")
+	return hash, err
+}
+
 // GetBlobbersList get list of active blobbers, and format them as array json string
 func (s *StorageSDK) GetBlobbersList() (string, error) {
 	blobbs, err := sdk.GetBlobbers(true, false)
