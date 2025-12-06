@@ -54,13 +54,21 @@ func main() {
 			jsSign := jsProxy.Get("sign")
 
 			if !(jsSign.IsNull() || jsSign.IsUndefined()) {
-				signFunc := func(hash string) (string, error) {
+				signFunc := func(hash string, keys ...string) (string, error) {
 					c := client.GetClient()
 					if c == nil || len(c.Keys) == 0 {
 						return "", errors.New("no keys found")
 					}
 
 					pk := c.Keys[0].PrivateKey
+					if len(keys) > 0 && keys[0] != "" {
+						wallet := client.GetWalletByKey(keys[0])
+						if wallet == nil {
+							return "", errors.New("wallet not found")
+						}
+						pk = wallet.Keys[0].PrivateKey
+					}
+
 					result, err := jsbridge.Await(jsSign.Invoke(hash, pk))
 
 					if len(err) > 0 && !err[0].IsNull() {
@@ -446,13 +454,20 @@ func main() {
 		if !(jsProxy.IsNull() || jsProxy.IsUndefined()) {
 			jsSign := jsProxy.Get("sign")
 			if !(jsSign.IsNull() || jsSign.IsUndefined()) {
-				signFunc := func(hash string) (string, error) {
+				signFunc := func(hash string, keys ...string) (string, error) {
 					c := client.GetClient()
 					if c == nil || len(c.Keys) == 0 {
 						return "", errors.New("no keys found")
 					}
 
 					pk := c.Keys[0].PrivateKey
+					if len(keys) > 0 && keys[0] != "" {
+						wallet := client.GetWalletByKey(keys[0])
+						if wallet == nil {
+							return "", errors.New("wallet not found")
+						}
+						pk = wallet.Keys[0].PrivateKey
+					}
 					result, err := jsbridge.Await(jsSign.Invoke(hash, pk))
 
 					if len(err) > 0 && !err[0].IsNull() {
