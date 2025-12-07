@@ -8,7 +8,7 @@ on:
   push:
     # branches: [ master, staging, qa ]
     tags:
-      - 'v*.*.*'
+      - "v*.*.*"
   # pull_request:
   workflow_dispatch:
 
@@ -28,12 +28,22 @@ jobs:
         id: wasm_build
         run: |
           docker run --rm -v $PWD:/gosdk -w /gosdk golang:1.22.5 sh -c "git config --global --add safe.directory /gosdk; make wasm-build"
-          BUILD_TAG=zcn-$(git describe --tags --exact-match)-normal.wasm
-          BUILD_TAG="${BUILD_TAG:0:4}${BUILD_TAG:5}"
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            # For manual dispatch, use describe without exact-match or fallback to commit hash
+            if TAG=$(git describe --tags 2>/dev/null); then
+              BUILD_TAG=zcn-${TAG}-normal.wasm
+            else
+              BUILD_TAG=zcn-$(git rev-parse --short HEAD)-normal.wasm
+            fi
+          else
+            # For tag pushes, use exact-match
+            BUILD_TAG=zcn-$(git describe --tags --exact-match)-normal.wasm
+          fi
+          # BUILD_TAG="${BUILD_TAG:0:4}${BUILD_TAG:5}"
           mv zcn.wasm $BUILD_TAG
           echo "BUILD_TAG=$BUILD_TAG" >>$GITHUB_OUTPUT
 
-      - name: 'Upload Artifact'
+      - name: "Upload Artifact"
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.wasm_build.outputs.BUILD_TAG }}
@@ -43,7 +53,7 @@ jobs:
         run: |
           sudo apt update -y
           sudo apt install awscli -y
-          
+
       - name: Copy the wasm binary to aws s3.
         run: |
           export AWS_ACCESS_KEY_ID=${{ secrets.WEBAPP_STATIC_ACCESS_KEY }}
