@@ -48,23 +48,4 @@ jobs:
         with:
           name: ${{ steps.wasm_build.outputs.BUILD_TAG }}
           path: ${{ steps.wasm_build.outputs.BUILD_TAG }}
-
-      - name: Install AWS cli
-        run: |
-          sudo apt update -y
-          sudo apt install awscli -y
-
-      - name: Copy the wasm binary to aws s3.
-        run: |
-          export AWS_ACCESS_KEY_ID=${{ secrets.WEBAPP_STATIC_ACCESS_KEY }}
-          export AWS_SECRET_ACCESS_KEY=${{ secrets.WEBAPP_STATIC_SECRET_ACCESS_KEY }}
-          export AWS_DEFAULT_REGION=${{ secrets.WEBAPP_STATIC_REGION }}
-          gzip -9 ${{ steps.wasm_build.outputs.BUILD_TAG }} && mv ${{ steps.wasm_build.outputs.BUILD_TAG }}.gz ${{ steps.wasm_build.outputs.BUILD_TAG }}
-          aws s3 cp ${{ steps.wasm_build.outputs.BUILD_TAG }} s3://${{ secrets.WEBAPP_STATIC_BUCKET }}/wasm/${{ steps.wasm_build.outputs.BUILD_TAG }} --content-encoding gzip
-
-      - name: Invalidate wasm binary
-        run: |
-          export AWS_ACCESS_KEY_ID=${{ secrets.WEBAPP_STATIC_ACCESS_KEY }}
-          export AWS_SECRET_ACCESS_KEY=${{ secrets.WEBAPP_STATIC_SECRET_ACCESS_KEY }}
-          export AWS_DEFAULT_REGION=${{ secrets.WEBAPP_STATIC_REGION }}
-          aws cloudfront create-invalidation --distribution-id ${{ secrets.WEBAPP_STATIC_DISTRIBUTION_ID }} --paths '/wasm/*'
+          
