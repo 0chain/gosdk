@@ -33,7 +33,7 @@ var nonce = int64(0)
 var allocationIDRequired = errors.Errorf("Allocation ID is required")
 
 type Autorizer interface {
-	Auth(msg string, clientIDs ...string) (string, error)
+	Auth(msg string, clientIDs []string) (string, error)
 }
 
 // ChainConfig - blockchain config
@@ -508,5 +508,7 @@ func decodeTicket(ticket string) (string, string, uint64, error) {
 //		}
 //	}
 func RegisterAuthorizer(auth Autorizer) {
-	sys.Authorize = auth.Auth
+	sys.Authorize = func(msg string, clientIDs ...string) (string, error) {
+		return auth.Auth(msg, clientIDs)
+	}
 }
