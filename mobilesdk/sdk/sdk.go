@@ -480,19 +480,16 @@ func GetAllocations() (string, error) {
 // GetAllocationsOfClient retrieve list of allocations for a specific client ID
 //   - clientID: the client ID to get allocations for
 func GetAllocationsOfClient(clientID string) (string, error) {
-	sdkAllocations, err := sdk.GetAllocationsForClient(clientID)
+	allocs, err := sdk.GetAllocationsForClient(clientID)
 	if err != nil {
 		return "", err
 	}
-	result := make([]*zbox.Allocation, len(sdkAllocations))
-	for i, sdkAllocation := range sdkAllocations {
-		allocationObj := zbox.ToAllocation(sdkAllocation)
-		result[i] = allocationObj
-	}
-	retBytes, err := json.Marshal(result)
+
+	retBytes, err := json.Marshal(allocs)
 	if err != nil {
 		return "", err
 	}
+
 	return string(retBytes), nil
 }
 
