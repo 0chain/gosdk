@@ -76,7 +76,13 @@ func InitBlockDownloader(blobbers []*blockchain.StorageNode, workerCount int) {
 
 	for _, blobber := range blobbers {
 		if _, ok := downloadBlockChan[blobber.ID]; !ok {
-			downloadBlockChan[blobber.ID] = make(chan *BlockDownloadRequest, workerCount)
+			// Increase channel buffer size to reduce blocking (3x worker count for better throughput)
+			// This allows more requests to be queued before blocking, improving parallel download performance
+			channelBufferSize := workerCount * 3
+			if channelBufferSize < 50 {
+				channelBufferSize = 50 // Minimum buffer size for small worker counts
+			}
+			downloadBlockChan[blobber.ID] = make(chan *BlockDownloadRequest, channelBufferSize)
 			go startBlockDownloadWorker(downloadBlockChan[blobber.ID], workerCount)
 		}
 	}

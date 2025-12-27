@@ -192,16 +192,39 @@ func (req *DownloadRequest) getBlocksData(startBlock, totalBlock int64, timeRequ
 		return nil, err
 	}
 
-	// erasure decoding
-	// Can we benefit from goroutine for erasure decoding??
-	// c := req.datashards * req.effectiveBlockSize
-	// data := make([]byte, req.datashards*req.effectiveBlockSize*int(totalBlock))
-	for i := range shards {
-		err = req.decodeEC(shards[i])
+	// erasure decoding - parallelized for better performance
+	// Decode multiple blocks in parallel using goroutines
+	// Each block's shards are independent, so parallel decoding is safe
+	// The ecEncoder.ReconstructData is thread-safe for concurrent calls on different shard slices
+	if len(shards) > 1 {
+		var wg sync.WaitGroup
+		errChan := make(chan error, len(shards))
+		wg.Add(len(shards))
+		
+		for i := range shards {
+			go func(idx int) {
+				defer wg.Done()
+				if decodeErr := req.decodeEC(shards[idx]); decodeErr != nil {
+					errChan <- fmt.Errorf("erasure decode failed for block %d: %w", idx, decodeErr)
+				}
+			}(i)
+		}
+		
+		wg.Wait()
+		close(errChan)
+		
+		// Check for errors
+		for decodeErr := range errChan {
+			if decodeErr != nil {
+				return nil, decodeErr
+			}
+		}
+	} else if len(shards) == 1 {
+		// Single block case - no need for goroutine overhead
+		err = req.decodeEC(shards[0])
 		if err != nil {
 			return nil, err
 		}
-
 	}
 	return shards, nil
 }
@@ -225,7 +248,13 @@ func (req *DownloadRequest) downloadBlock(
 	if timeRequest {
 		requiredDownloads = activeBlobbers
 	}
-	rspCh := make(chan *downloadBlock, requiredDownloads)
+	// Increase response channel buffer to reduce blocking (2x required downloads for better throughput)
+	// This allows more responses to be queued before blocking, improving parallel download performance
+	responseBufferSize := requiredDownloads * 2
+	if responseBufferSize < 10 {
+		responseBufferSize = 10 // Minimum buffer size
+	}
+	rspCh := make(chan *downloadBlock, responseBufferSize)
 
 	var (
 		pos          uint64
