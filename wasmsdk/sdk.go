@@ -18,7 +18,9 @@ import (
 
 	"io"
 	"os"
+	"syscall/js"
 )
+
 
 var CreateObjectURL func(buf []byte, mimeType string) string
 
@@ -32,14 +34,20 @@ var CreateObjectURL func(buf []byte, mimeType string) string
 //   - zboxHost is the url of the 0box service
 //   - zboxAppType is the application type of the 0box service
 //   - sharderconsensous is the number of sharders to reach consensus
+//   - sharderconsensous is the number of sharders to reach consensus
 func initSDKs(chainID, blockWorker, signatureScheme string,
 	minConfirmation, minSubmit, confirmationChainLength int,
-	zboxHost, zboxAppType string, sharderConsensous int) error {
+	zboxHost, zboxAppType string, sharderConsensous int, refresh bool) error {
 
 	// Print the parameters beautified
-	fmt.Printf("{ chainID: %s, blockWorker: %s, signatureScheme: %s, minConfirmation: %d, minSubmit: %d, confirmationChainLength: %d, zboxHost: %s, zboxAppType: %s, sharderConsensous: %d }\n", chainID, blockWorker, signatureScheme, minConfirmation, minSubmit, confirmationChainLength, zboxHost, zboxAppType, sharderConsensous)
+	fmt.Printf("{ chainID: %s, blockWorker: %s, signatureScheme: %s, minConfirmation: %d, minSubmit: %d, confirmationChainLength: %d, zboxHost: %s, zboxAppType: %s, sharderConsensous: %d, refresh: %v }\n", chainID, blockWorker, signatureScheme, minConfirmation, minSubmit, confirmationChainLength, zboxHost, zboxAppType, sharderConsensous, refresh)
 
 	zboxApiClient.SetRequest(zboxHost, zboxAppType)
+
+	var miners, sharders []string
+	if !refresh {
+		miners, sharders = loadNetworkFromCache()
+	}
 
 	params := client.InitSdkOptions{
 		WalletJSON:              "{}",
@@ -54,6 +62,8 @@ func initSDKs(chainID, blockWorker, signatureScheme string,
 		ConfirmationChainLength: &confirmationChainLength,
 		ZboxHost:                zboxHost,
 		ZboxAppType:             zboxAppType,
+		Miners:                  miners,
+		Sharders:                sharders,
 	}
 
 	err := client.InitSDKWithWebApp(params)
@@ -62,8 +72,60 @@ func initSDKs(chainID, blockWorker, signatureScheme string,
 		return err
 	}
 
+	if refresh || len(miners) == 0 {
+		saveNetworkToCache()
+	}
+
 	sdk.SetWasm()
 	return nil
+}
+
+func loadNetworkFromCache() ([]string, []string) {
+	storage := js.Global().Get("localStorage")
+	if storage.IsNull() || storage.IsUndefined() {
+		return nil, nil
+	}
+	val := storage.Call("getItem", "zcn_network_info")
+	if val.IsNull() || val.IsUndefined() {
+		return nil, nil
+	}
+	jsonStr := val.String()
+	type networkInfo struct {
+		Miners   []string `json:"miners"`
+		Sharders []string `json:"sharders"`
+	}
+	var info networkInfo
+	if err := json.Unmarshal([]byte(jsonStr), &info); err != nil {
+		return nil, nil
+	}
+	return info.Miners, info.Sharders
+}
+
+func saveNetworkToCache() {
+	node, err := client.GetNode()
+	if err != nil {
+		return
+	}
+	network := node.Network()
+	if network == nil {
+		return
+	}
+	type networkInfo struct {
+		Miners   []string `json:"miners"`
+		Sharders []string `json:"sharders"`
+	}
+	info := networkInfo{
+		Miners:   network.Miners,
+		Sharders: network.Sharders,
+	}
+	data, err := json.Marshal(info)
+	if err != nil {
+		return
+	}
+	storage := js.Global().Get("localStorage")
+	if !storage.IsNull() && !storage.IsUndefined() {
+		storage.Call("setItem", "zcn_network_info", string(data))
+	}
 }
 
 // getVersion retrieve the sdk version

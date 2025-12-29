@@ -130,6 +130,12 @@ func Init(ctx context.Context, cfg conf.Config) error {
 	//init packages
 	conf.InitClientConfig(&cfg)
 
+	// If miners and sharders are provided in the config, use them directly.
+	// Otherwise, fetch them from the network.
+	if len(cfg.Miners) > 0 && len(cfg.Sharders) > 0 {
+		return initNode(ctx, cfg, cfg.Miners, cfg.Sharders)
+	}
+
 	network, err := GetNetwork(ctx)
 	if err != nil {
 		logging.Error("Failed to get network details ", zap.Error(err), zap.Any("block_worker", cfg.BlockWorker))
@@ -173,6 +179,26 @@ func Init(ctx context.Context, cfg conf.Config) error {
 
 	onlineMiners := filterOnlineNodes(network.Miners)
 	onlineSharders := filterOnlineNodes(network.Sharders)
+
+	return initNode(ctx, cfg, onlineMiners, onlineSharders)
+}
+
+func initNode(ctx context.Context, cfg conf.Config, onlineMiners, onlineSharders []string) error {
+	var network *conf.Network
+	var err error
+
+	// if we have miners and sharders, we can use them directly
+	if len(onlineMiners) > 0 && len(onlineSharders) > 0 {
+		network = &conf.Network{
+			Miners:   onlineMiners,
+			Sharders: onlineSharders,
+		}
+	} else {
+		network, err = GetNetwork(ctx)
+		if err != nil {
+			return err
+		}
+	}
 
 	reqMiners := util.MaxInt(3, int(math.Ceil(float64(cfg.MinSubmit)*float64(len(network.Miners))/100)))
 	reqSharders := util.MinInt(len(network.Sharders), util.MaxInt(cfg.SharderConsensous, conf.DefaultSharderConsensous))
