@@ -20,8 +20,8 @@ var DefaultTransport = &http.Transport{
 		Timeout:   30 * time.Second,
 		KeepAlive: 45 * time.Second,
 	}).DialContext,
-	MaxIdleConns:        500,
-	MaxIdleConnsPerHost: 100,
+	MaxIdleConns:        5000,
+	MaxIdleConnsPerHost: 2048, // Increased for high-concurrency workloads (e.g., warp tests)
 	IdleConnTimeout:     45 * time.Second,
 	DisableKeepAlives:   false,
 	ForceAttemptHTTP2:   true,
