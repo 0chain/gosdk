@@ -173,7 +173,7 @@ func init() {
 		WriteTimeout:        180 * time.Second,
 		MaxConnDuration:     45 * time.Second,
 		MaxResponseBodySize: 1024 * 1024 * 64, //64MB
-		MaxConnsPerHost:     1024,
+		MaxConnsPerHost:     4096, // Increased from 1024 to support large file uploads with high concurrency (e.g., warp PUT with 1024MB objects)
 	}
 	fasthttp.SetBodySizePoolLimit(respBodyPoolLimit, respBodyPoolLimit)
 	envProxy.initialize()
