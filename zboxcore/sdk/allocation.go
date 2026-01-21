@@ -1033,20 +1033,49 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 		wg.Wait()
 		// Check consensus
 		if mo.operationMask.CountOnes() < mo.consensusThresh {
+			// Build detailed error message with blobber status
+			var unavailableBlobbers []string
+			var errorDetails []string
+			for idx, err := range connectionErrors {
+				if err != nil {
+					blobber := mo.allocationObj.Blobbers[idx]
+					unavailableBlobbers = append(unavailableBlobbers, blobber.Baseurl)
+
+					// Check if it's a blobber_unavailable error
+					if strings.Contains(err.Error(), "blobber_unavailable") {
+						errorDetails = append(errorDetails, fmt.Sprintf("%s: unavailable", blobber.Baseurl))
+					} else {
+						errorDetails = append(errorDetails, fmt.Sprintf("%s: %v", blobber.Baseurl, err))
+					}
+				}
+			}
+
 			l.Logger.Error("Multioperation: create connection failed. Required consensus not met",
 				zap.Int("consensusThresh", mo.consensusThresh),
 				zap.Int("operationMask", mo.operationMask.CountOnes()),
+				zap.Int("unavailableBlobbers", len(unavailableBlobbers)),
+				zap.Strings("unavailableBlobbers", unavailableBlobbers),
 				zap.Any("connectionErrors", connectionErrors))
 
 			majorErr := zboxutil.MajorError(connectionErrors)
 			if majorErr != nil {
-				return errors.New("consensus_not_met",
-					fmt.Sprintf("Multioperation: create connection failed. Required consensus %d got %d. Major error: %s",
-						mo.consensusThresh, mo.operationMask.CountOnes(), majorErr.Error()))
+				errorMsg := fmt.Sprintf("Multioperation: create connection failed. Required consensus %d got %d. ",
+					mo.consensusThresh, mo.operationMask.CountOnes())
+				if len(unavailableBlobbers) > 0 {
+					errorMsg += fmt.Sprintf("Unavailable blobbers (%d): %s. ",
+						len(unavailableBlobbers), strings.Join(unavailableBlobbers, ", "))
+				}
+				errorMsg += fmt.Sprintf("Major error: %s", majorErr.Error())
+				return errors.New("consensus_not_met", errorMsg)
 			}
-			return errors.New("consensus_not_met",
-				fmt.Sprintf("Multioperation: create connection failed. Required consensus %d got %d",
-					mo.consensusThresh, mo.operationMask.CountOnes()))
+
+			errorMsg := fmt.Sprintf("Multioperation: create connection failed. Required consensus %d got %d",
+				mo.consensusThresh, mo.operationMask.CountOnes())
+			if len(unavailableBlobbers) > 0 {
+				errorMsg += fmt.Sprintf(". Unavailable blobbers (%d): %s",
+					len(unavailableBlobbers), strings.Join(unavailableBlobbers, ", "))
+			}
+			return errors.New("consensus_not_met", errorMsg)
 		}
 
 		for ; i < len(operations); i++ {

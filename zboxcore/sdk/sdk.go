@@ -9,6 +9,7 @@ import (
 	"math"
 	"net/http"
 	"strconv"
+	"sync"
 
 	"github.com/0chain/common/core/currency"
 	"github.com/0chain/errors"
@@ -58,6 +59,18 @@ var (
 	networkWorkerTimerInHours = 1
 	singleClientMode          = false
 	shouldVerifyHash          = true
+
+	// Allocation cache for offline mode / blockchain unavailability
+	allocationCache     = make(map[string]*Allocation)
+	allocationCacheLock = &sync.RWMutex{}
+
+	// Blobber cache for offline mode / blockchain unavailability
+	blobberCache     = make(map[string]*Blobber)
+	blobberCacheLock = &sync.RWMutex{}
+
+	// EnableAllocationCache enables caching of allocations and blobbers.
+	// When enabled (default), cache is checked first before querying blockchain.
+	enableAllocationCache = true
 )
 
 func SetSingleClietnMode(mode bool) {
@@ -70,6 +83,108 @@ func SetShouldVerifyHash(verify bool) {
 
 func SetSaveProgress(save bool) {
 	shouldSaveProgress = save
+}
+
+// SetEnableAllocationCache enables or disables the allocation and blobber cache.
+// When enabled (default), cache is checked first before querying blockchain.
+func SetEnableAllocationCache(enable bool) {
+	enableAllocationCache = enable
+}
+
+// ClearAllocationCache clears all cached allocations.
+func ClearAllocationCache() {
+	allocationCacheLock.Lock()
+	defer allocationCacheLock.Unlock()
+	allocationCache = make(map[string]*Allocation)
+}
+
+// ClearBlobberCache clears all cached blobbers.
+func ClearBlobberCache() {
+	blobberCacheLock.Lock()
+	defer blobberCacheLock.Unlock()
+	blobberCache = make(map[string]*Blobber)
+}
+
+// ClearAllCache clears both allocation and blobber caches.
+func ClearAllCache() {
+	ClearAllocationCache()
+	ClearBlobberCache()
+}
+
+// RemoveAllocationFromCache removes a specific allocation from the cache.
+func RemoveAllocationFromCache(allocationID string) {
+	allocationCacheLock.Lock()
+	defer allocationCacheLock.Unlock()
+	delete(allocationCache, allocationID)
+}
+
+// RemoveBlobberFromCache removes a specific blobber from the cache.
+// blobberID should be the string representation of the blobber ID.
+func RemoveBlobberFromCache(blobberID string) {
+	blobberCacheLock.Lock()
+	defer blobberCacheLock.Unlock()
+	delete(blobberCache, blobberID)
+}
+
+// GetCachedAllocation returns a cached allocation without querying the blockchain.
+// Returns nil if the allocation is not in cache.
+func GetCachedAllocation(allocationID string) *Allocation {
+	allocationCacheLock.RLock()
+	defer allocationCacheLock.RUnlock()
+	if alloc, ok := allocationCache[allocationID]; ok {
+		return alloc
+	}
+	return nil
+}
+
+// GetCachedBlobber returns a cached blobber without querying the blockchain.
+// Returns nil if the blobber is not in cache.
+func GetCachedBlobber(blobberID string) *Blobber {
+	blobberCacheLock.RLock()
+	defer blobberCacheLock.RUnlock()
+	if blob, ok := blobberCache[blobberID]; ok {
+		return blob
+	}
+	return nil
+}
+
+// cacheAllocation stores an allocation in the cache.
+// Also caches all blobbers from the allocation.
+func cacheAllocation(alloc *Allocation) {
+	if !enableAllocationCache || alloc == nil {
+		return
+	}
+	allocationCacheLock.Lock()
+	allocationCache[alloc.ID] = alloc
+	allocationCacheLock.Unlock()
+
+	// Also cache blobber endpoints from the allocation
+	if alloc.Blobbers != nil {
+		blobberCacheLock.Lock()
+		for _, b := range alloc.Blobbers {
+			if b != nil && b.ID != "" {
+				blobberID := b.ID // string type from StorageNode
+				// Create a Blobber struct from StorageNode if not already cached
+				if _, exists := blobberCache[blobberID]; !exists {
+					blobberCache[blobberID] = &Blobber{
+						ID:      common.Key(blobberID),
+						BaseURL: b.Baseurl,
+					}
+				}
+			}
+		}
+		blobberCacheLock.Unlock()
+	}
+}
+
+// cacheBlobber stores a blobber in the cache.
+func cacheBlobber(blob *Blobber) {
+	if !enableAllocationCache || blob == nil || blob.ID == "" {
+		return
+	}
+	blobberCacheLock.Lock()
+	defer blobberCacheLock.Unlock()
+	blobberCache[string(blob.ID)] = blob
 }
 
 // GetVersion - returns version string
@@ -678,12 +793,25 @@ func GetBlobbers(active, stakable bool) (bs []*Blobber, err error) {
 	return blobbersSl, nil
 }
 
-// GetBlobber retrieve blobber by id.
+// GetBlobber retrieves blobber instance by id.
 //   - blobberID: the id of blobber
+//
+// When cache is enabled (default), checks cache first before querying blockchain.
+// Only queries blockchain on cache miss or when cache is disabled.
 func GetBlobber(blobberID string) (blob *Blobber, err error) {
 	if !sdkInitialized {
 		return nil, sdkNotInitialized
 	}
+
+	// Cache-first: Check cache before querying blockchain
+	if enableAllocationCache {
+		if cachedBlob := GetCachedBlobber(blobberID); cachedBlob != nil {
+			l.Logger.Debug("Returning cached blobber for: ", blobberID)
+			return cachedBlob, nil
+		}
+	}
+
+	// Cache miss or cache disabled - fetch from blockchain
 	var b []byte
 	b, err = zboxutil.MakeSCRestAPICall(
 		STORAGE_SCADDRESS,
@@ -700,6 +828,41 @@ func GetBlobber(blobberID string) (blob *Blobber, err error) {
 	if err = json.Unmarshal(b, blob); err != nil {
 		return nil, errors.Wrap(err, "decoding response:")
 	}
+
+	// Cache the blobber for future use
+	cacheBlobber(blob)
+
+	return
+}
+
+// GetBlobberForceRefresh retrieves blobber from blockchain, bypassing cache.
+// Use this when you need fresh data from blockchain.
+func GetBlobberForceRefresh(blobberID string) (blob *Blobber, err error) {
+	if !sdkInitialized {
+		return nil, sdkNotInitialized
+	}
+
+	// Fetch from blockchain (bypass cache)
+	var b []byte
+	b, err = zboxutil.MakeSCRestAPICall(
+		STORAGE_SCADDRESS,
+		"/getBlobber",
+		map[string]string{"blobber_id": blobberID},
+		nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "requesting blobber:")
+	}
+	if len(b) == 0 {
+		return nil, errors.New("", "empty response from sharders")
+	}
+	blob = new(Blobber)
+	if err = json.Unmarshal(b, blob); err != nil {
+		return nil, errors.Wrap(err, "decoding response:")
+	}
+
+	// Update cache with fresh data
+	cacheBlobber(blob)
+
 	return
 }
 
@@ -793,10 +956,22 @@ func GetAllocationFromAuthTicket(authTicket string) (*Allocation, error) {
 //   - allocationID: the allocation id
 //
 // returns the allocation instance and error if any
+// When cache is enabled (default), checks cache first before querying blockchain.
+// Only queries blockchain on cache miss or when cache is disabled.
 func GetAllocation(allocationID string) (*Allocation, error) {
 	if !sdkInitialized {
 		return nil, sdkNotInitialized
 	}
+
+	// Cache-first: Check cache before querying blockchain
+	if enableAllocationCache {
+		if cachedAlloc := GetCachedAllocation(allocationID); cachedAlloc != nil {
+			l.Logger.Debug("Returning cached allocation for: ", allocationID)
+			return cachedAlloc, nil
+		}
+	}
+
+	// Cache miss or cache disabled - fetch from blockchain
 	params := make(map[string]string)
 	params["allocation"] = allocationID
 	allocationBytes, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation", params, nil)
@@ -821,6 +996,49 @@ func GetAllocation(allocationID string) (*Allocation, error) {
 	allocationObj.sig = sig
 	allocationObj.numBlockDownloads = numBlockDownloads
 	allocationObj.InitAllocation()
+
+	// Cache the allocation for future use
+	cacheAllocation(allocationObj)
+
+	return allocationObj, nil
+}
+
+// GetAllocationForceRefresh - get allocation from blockchain, bypassing cache.
+// Use this when you need fresh data from blockchain.
+func GetAllocationForceRefresh(allocationID string) (*Allocation, error) {
+	if !sdkInitialized {
+		return nil, sdkNotInitialized
+	}
+
+	// Fetch from blockchain (bypass cache)
+	params := make(map[string]string)
+	params["allocation"] = allocationID
+	allocationBytes, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation", params, nil)
+	if err != nil {
+		return nil, errors.New("allocation_fetch_error", "Error fetching the allocation."+err.Error())
+	}
+	allocationObj := &Allocation{}
+	err = json.Unmarshal(allocationBytes, allocationObj)
+	if err != nil {
+		return nil, errors.New("allocation_decode_error", "Error decoding the allocation: "+err.Error()+" "+string(allocationBytes))
+	}
+	hashdata := allocationObj.Tx
+	sig, ok := zboxutil.SignCache.Get(hashdata)
+	if !ok {
+		sig, err = client.Sign(enc.Hash(hashdata))
+		zboxutil.SignCache.Add(hashdata, sig)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	allocationObj.sig = sig
+	allocationObj.numBlockDownloads = numBlockDownloads
+	allocationObj.InitAllocation()
+
+	// Update cache with fresh data
+	cacheAllocation(allocationObj)
+
 	return allocationObj, nil
 }
 
@@ -833,6 +1051,11 @@ func GetAllocationUpdates(allocation *Allocation) error {
 	params["allocation"] = allocation.ID
 	allocationBytes, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation", params, nil)
 	if err != nil {
+		// If blockchain is unavailable but we have cached allocation, log warning and continue
+		if enableAllocationCache {
+			l.Logger.Info("Skipping allocation update due to blockchain unavailability, using existing allocation data for: ", allocation.ID)
+			return nil
+		}
 		return errors.New("allocation_fetch_error", "Error fetching the allocation."+err.Error())
 	}
 
@@ -861,6 +1084,10 @@ func GetAllocationUpdates(allocation *Allocation) error {
 	allocation.MovedToValidators = updatedAllocationObj.MovedToValidators
 	allocation.FileOptions = updatedAllocationObj.FileOptions
 	allocation.IsEnterprise = updatedAllocationObj.IsEnterprise
+
+	// Update the cache with refreshed allocation
+	cacheAllocation(allocation)
+
 	return nil
 }
 
