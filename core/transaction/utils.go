@@ -302,7 +302,7 @@ func VerifyTransactionWithRes(txnHash string) (*Transaction, string, error) {
 		return nil, "", err
 	}
 
-	sharders := nodeClient.Sharders().Healthy()
+	sharders := nodeClient.Sharders().HealthyByLFB()
 
 	cfg, err := conf.GetClientConfig()
 	if err != nil {

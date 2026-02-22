@@ -32,7 +32,7 @@ func MakeSCRestAPICallToSharder(scAddress string, relativePath string, params ma
 		restApiUrl = restApiUrls[0]
 	}
 
-	sharders := nodeClient.sharders.Healthy()
+	sharders := nodeClient.sharders.HealthyByLFB()
 	responses := make(map[int]int)
 	entityResult := make(map[string][]byte)
 
