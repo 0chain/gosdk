@@ -120,10 +120,10 @@ const (
 	lfbQueryTimeout = 3 * time.Second
 )
 
-// HealthyByLFB returns the best known LFB-filtered sharder list immediately without blocking.
-// On the first call (empty cache) it falls back to Healthy(). In parallel it triggers a
-// background refresh so that the next call (e.g. next retry) benefits from LFB filtering.
-// Subsequent calls return the cached result and re-trigger a refresh only when the TTL expires.
+// HealthyByLFB returns the LFB-filtered sharder list.
+// On cold start (empty cache) it blocks on a synchronous refresh to prevent stale/stuck
+// sharders from being included. Once the cache is warm, stale refreshes happen in the
+// background and the cached list is returned immediately.
 func (h *NodeHolder) HealthyByLFB() []string {
 	h.lfbMu.RLock()
 	cached := h.lfbSharders
@@ -131,8 +131,18 @@ func (h *NodeHolder) HealthyByLFB() []string {
 	h.lfbMu.RUnlock()
 
 	if stale && h.lfbUpdating.CompareAndSwap(false, true) {
-		go h.refreshLFBCache()
+		if len(cached) == 0 {
+			// Cold start: block synchronously so we never fall back to all sharders
+			// (which may include stuck/lagging nodes with stale nonces).
+			h.refreshLFBCache()
+		} else {
+			go h.refreshLFBCache()
+		}
 	}
+
+	h.lfbMu.RLock()
+	cached = h.lfbSharders
+	h.lfbMu.RUnlock()
 
 	if len(cached) > 0 {
 		return cached
