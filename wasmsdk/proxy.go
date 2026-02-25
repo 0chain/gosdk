@@ -306,6 +306,7 @@ func main() {
 
 				//zcn
 				"getWalletBalance": getWalletBalance,
+				"faucet":           faucet,
 
 				//0box api
 				"getCsrfToken":    getCsrfToken,
