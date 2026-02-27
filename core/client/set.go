@@ -67,44 +67,28 @@ func init() {
 	sigC <- struct{}{}
 
 	// default Sign implementation (uses client.wallet or wallets map)
-	// default Sign implementation (uses client.wallet or wallets map)
 	Sign = func(hash string, keys ...string) (string, error) {
 		client.mu.RLock()
+		defer client.mu.RUnlock()
 		wallet := client.wallet
 		if len(keys) > 0 && keys[0] != "" {
-			if wallet != nil && len(wallet.Keys) > 0 && wallet.Keys[0].PublicKey == keys[0] {
+			if wallet.Keys[0].PublicKey == keys[0] {
 				// use default wallet
 			} else if client.wallets != nil {
 				if w, ok := client.wallets[keys[0]]; ok && w != nil {
 					wallet = w
-				} else {
-					// Wallet not found by the provided key
-					client.mu.RUnlock()
-					return "", errors.New("no wallets available for signing by key: " + keys[0])
 				}
 			} else {
-				client.mu.RUnlock()
 				return "", errors.New("no wallets available for signing by key: " + keys[0])
 			}
 		}
 
-		if wallet == nil {
-			client.mu.RUnlock()
-			return "", errors.New("wallet not initialized")
+		fmt.Print("wallet found: client_id: ", wallet.ClientID, "is_split: ", wallet.IsSplit, "pubkey: ", wallet.Keys[0].PublicKey)
+
+		if !wallet.IsSplit {
+			return sys.Sign(hash, client.signatureScheme, GetClientSysKeys(keys...))
 		}
 
-		// fmt.Print("wallet found: client_id: ", wallet.ClientID, "is_split: ", wallet.IsSplit, "pubkey: ", wallet.Keys[0].PublicKey)
-
-		isSplit := wallet.IsSplit
-		sigScheme := client.signatureScheme
-		
-		// Release lock before calling external functions that might re-acquire it
-		client.mu.RUnlock()
-
-		if !isSplit {
-			return sys.Sign(hash, sigScheme, GetClientSysKeys(keys...))
-		}
-		fmt.Println("Signature: ", "It actually get's to this point right after signing")
 		// split-key signing via auth
 		<-sigC
 		fmt.Println("Sign: with sys.SignWithAuth:", sys.SignWithAuth, "sysKeys:", GetClientSysKeys(keys...))
@@ -364,7 +348,7 @@ func SetWallet(w zcncrypto.Wallet) {
 
 // GetWalletByKey gets a wallet by client pubkey.
 func GetWalletByKey(key string) *zcncrypto.Wallet {
-	client.mu.RLock() 
+	client.mu.RLock()
 	defer client.mu.RUnlock()
 	if client.wallets == nil {
 		return nil
@@ -377,15 +361,8 @@ func GetWallet() *zcncrypto.Wallet {
 }
 
 // AddWallet adds a new wallet to the sdk.
-// The wallet is indexed by BOTH ClientID and PublicKey to support
-// lookups from different parts of the codebase (workers use ClientID,
-// Sign function uses PublicKey).
 func AddWallet(wallet zcncrypto.Wallet) {
-	if len(wallet.Keys) == 0 {
-		return
-	}
 	pubkey := wallet.Keys[0].PublicKey
-	clientID := wallet.ClientID
 
 	client.mu.Lock()
 	defer client.mu.Unlock()
@@ -400,57 +377,49 @@ func AddWallet(wallet zcncrypto.Wallet) {
 		client.walletCount = make(map[string]int)
 	}
 
-	// Check if wallet already exists (by ClientID to avoid double-counting)
-	if _, exists := client.wallets[clientID]; exists {
-		client.walletCount[clientID]++
+	// if wallet already present, just increment counter
+	if _, exists := client.wallets[pubkey]; exists {
+		client.walletCount[pubkey]++
 		// ensure wg exists
-		if client.wg[clientID] == nil {
-			client.wg[clientID] = &sync.WaitGroup{}
+		if client.wg[pubkey] == nil {
+			client.wg[pubkey] = &sync.WaitGroup{}
 		}
-		client.wg[clientID].Add(1)
+		client.wg[pubkey].Add(1)
 		return
 	}
 
-	// Add new wallet - index by BOTH ClientID and PublicKey
-	client.wallets[clientID] = &wallet
+	// add new wallet
 	client.wallets[pubkey] = &wallet
-	
-	// Use ClientID for reference counting and wait groups
-	if client.wg[clientID] == nil {
-		client.wg[clientID] = &sync.WaitGroup{}
+	if client.wg[pubkey] == nil {
+		client.wg[pubkey] = &sync.WaitGroup{}
 	}
-	client.wg[clientID].Add(1)
-	client.walletCount[clientID]++
+	client.wg[pubkey].Add(1)
+	client.walletCount[pubkey]++
 }
 
-// RemoveWallet removes a wallet from the sdk by ClientID.
-// This also removes the PublicKey index to maintain dual-index consistency.
-func RemoveWallet(clientID string) {
+// RemoveWallet removes a wallet from the sdk.
+func RemoveWallet(pubkey string) {
 	client.mu.Lock()
 	defer client.mu.Unlock()
 
-	if clientID == "" || client.walletCount == nil {
+	if pubkey == "" || client.walletCount == nil {
 		return
 	}
 
 	// only decrement if count > 0
-	if client.walletCount[clientID] > 0 {
-		client.walletCount[clientID]--
+	if client.walletCount[pubkey] > 0 {
+		client.walletCount[pubkey]--
 		// call Done on wg only if it exists
-		if wg, ok := client.wg[clientID]; ok && wg != nil {
+		if wg, ok := client.wg[pubkey]; ok && wg != nil {
 			wg.Done()
 		}
 	}
 
-	// if count reaches zero, clean up both indexes
-	if client.walletCount[clientID] == 0 {
-		// Remove both ClientID and PublicKey indexes
-		if w := client.wallets[clientID]; w != nil && len(w.Keys) > 0 {
-			delete(client.wallets, w.Keys[0].PublicKey) // Remove PublicKey index
-		}
-		delete(client.wallets, clientID) // Remove ClientID index
-		delete(client.wg, clientID)
-		delete(client.walletCount, clientID)
+	// if count reaches zero, clean up maps
+	if client.walletCount[pubkey] == 0 {
+		delete(client.wallets, pubkey)
+		delete(client.wg, pubkey)
+		delete(client.walletCount, pubkey)
 	}
 }
 
@@ -521,12 +490,7 @@ func TxnFee() uint64 {
 }
 
 func IsWalletSet() bool {
-	client.mu.RLock()
-	defer client.mu.RUnlock()
-	if client.wallet != nil && client.wallet.ClientID != "" {
-		return true
-	}
-	return len(client.wallets) > 0
+	return client.wallet.ClientID != ""
 }
 
 // PublicKey lookup uses read lock
@@ -543,10 +507,7 @@ func PublicKey(keys ...string) string {
 		client.mu.RUnlock()
 	}
 
-	if client.wallet != nil {
-		return client.wallet.ClientKey
-	}
-	return ""
+	return client.wallet.ClientKey
 }
 
 // PublicKey lookup uses read lock
@@ -566,18 +527,12 @@ func SigningKey(keys ...string) (string, error) {
 		client.mu.RUnlock()
 	}
 
-	if client.wallet != nil {
-		return client.wallet.ClientID, nil
-	}
-	return "", errors.New("wallet not initialized")
+	return client.wallet.ClientID, nil
 }
 
 
 func Mnemonic() string {
-	if client.wallet != nil {
-		return client.wallet.Mnemonic
-	}
-	return ""
+	return client.wallet.Mnemonic
 }
 
 // GetWalletMnemonic returns the mnemonic for a wallet identified by pubkey.
@@ -602,9 +557,6 @@ func GetWalletMnemonic(pubkey string) string {
 }
 
 func PrivateKey() string {
-	if client.wallet == nil {
-		return ""
-	}
 	for _, kv := range client.wallet.Keys {
 		return kv.PrivateKey
 	}
@@ -623,10 +575,7 @@ func Id(keys ...string) string {
 		}
 		client.mu.RUnlock()
 	}
-	if client.wallet != nil {
-		return client.wallet.ClientID
-	}
-	return ""
+	return client.wallet.ClientID
 }
 
 // IsWalletSplit returns whether the wallet identified by keys[0] (pubkey or id)
