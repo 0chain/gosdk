@@ -17,7 +17,7 @@ import (
 )
 
 func setWallet(clientID, clientKey, peerPublicKey, publicKey, privateKey, mnemonic string, isSplit bool) error {
-	if mnemonic == "" && !isSplit {
+	if mnemonic == "" && !isSplit && privateKey == "" {
 		return errors.New("mnemonic is required")
 	}
 	mode := os.Getenv("MODE")
