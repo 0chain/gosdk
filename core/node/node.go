@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/0chain/errors"
@@ -29,6 +30,11 @@ type NodeHolder struct {
 	guard     sync.Mutex
 	stats     map[string]*Node
 	nodes     []string
+
+	lfbMu       sync.RWMutex
+	lfbSharders []string
+	lfbExpiry   time.Time
+	lfbUpdating atomic.Bool
 }
 
 type Node struct {
@@ -117,6 +123,135 @@ func (h *NodeHolder) All() (res []string) {
 	return h.nodes
 }
 
+const (
+	lfbMaxDrift     = 3                // sharders must be within 3 blocks of the highest LFB
+	lfbCacheTTL     = 10 * time.Second // how long before the LFB cache is considered stale
+	lfbQueryTimeout = 3 * time.Second
+)
+
+// HealthyByLFB returns the LFB-filtered sharder list.
+// On cold start (empty cache) it blocks on a synchronous refresh to prevent stale/stuck
+// sharders from being included. Once the cache is warm, stale refreshes happen in the
+// background and the cached list is returned immediately.
+func (h *NodeHolder) HealthyByLFB() []string {
+	h.lfbMu.RLock()
+	cached := h.lfbSharders
+	stale := time.Now().After(h.lfbExpiry)
+	h.lfbMu.RUnlock()
+
+	if stale && h.lfbUpdating.CompareAndSwap(false, true) {
+		if len(cached) == 0 {
+			// Cold start: block synchronously so we never fall back to all sharders
+			// (which may include stuck/lagging nodes with stale nonces).
+			h.refreshLFBCache()
+		} else {
+			go h.refreshLFBCache()
+		}
+	}
+
+	h.lfbMu.RLock()
+	cached = h.lfbSharders
+	h.lfbMu.RUnlock()
+
+	if len(cached) > 0 {
+		return cached
+	}
+	return h.Healthy()
+}
+
+// refreshLFBCache queries all sharders concurrently for their current round, updates
+// NodeHolder weights, and stores the LFB-filtered list in the cache.
+func (h *NodeHolder) refreshLFBCache() {
+	defer h.lfbUpdating.Store(false)
+
+	allNodes := h.All()
+	if len(allNodes) == 0 {
+		return
+	}
+
+	type lfbResult struct {
+		sharder string
+		round   int64
+		err     error
+	}
+
+	results := make(chan lfbResult, len(allNodes))
+
+	for _, sharder := range allNodes {
+		go func(s string) {
+			ctx, cancel := context.WithTimeout(context.Background(), lfbQueryTimeout)
+			defer cancel()
+
+			url := fmt.Sprintf("%s/v1/current-round", s)
+			req, err := util.NewHTTPGetRequestContext(ctx, url)
+			if err != nil {
+				results <- lfbResult{sharder: s, err: err}
+				return
+			}
+
+			resp, err := req.Get()
+			if err != nil {
+				results <- lfbResult{sharder: s, err: err}
+				return
+			}
+
+			if resp.StatusCode != http.StatusOK {
+				results <- lfbResult{sharder: s, err: fmt.Errorf("status %d", resp.StatusCode)}
+				return
+			}
+
+			var round int64
+			if err := json.Unmarshal([]byte(resp.Body), &round); err != nil {
+				results <- lfbResult{sharder: s, err: err}
+				return
+			}
+
+			results <- lfbResult{sharder: s, round: round}
+		}(sharder)
+	}
+
+	type sharderLFB struct {
+		sharder string
+		round   int64
+	}
+	var responding []sharderLFB
+	maxLFB := int64(0)
+
+	for i := 0; i < len(allNodes); i++ {
+		r := <-results
+		if r.err != nil {
+			logger.Logger.Error("Sharder LFB check failed: " + r.sharder + ": " + r.err.Error())
+			h.Fail(r.sharder)
+			continue
+		}
+		responding = append(responding, sharderLFB{sharder: r.sharder, round: r.round})
+		h.Success(r.sharder)
+		if r.round > maxLFB {
+			maxLFB = r.round
+		}
+	}
+
+	var workingSharders []string
+	for _, s := range responding {
+		if maxLFB-s.round <= lfbMaxDrift {
+			workingSharders = append(workingSharders, s.sharder)
+		} else {
+			logger.Logger.Error(fmt.Sprintf("Sharder %s too far behind: LFB %d vs highest %d (drift %d)",
+				s.sharder, s.round, maxLFB, maxLFB-s.round))
+		}
+	}
+
+	logger.Logger.Info(fmt.Sprintf("LFB refresh: %d/%d sharders healthy (within %d blocks of LFB %d)",
+		len(workingSharders), len(allNodes), lfbMaxDrift, maxLFB))
+
+	h.lfbMu.Lock()
+	if len(workingSharders) > 0 {
+		h.lfbSharders = workingSharders
+	}
+	h.lfbExpiry = time.Now().Add(lfbCacheTTL)
+	h.lfbMu.Unlock()
+}
+
 const consensusThresh = 25
 const (
 	GET_BALANCE        = `/v1/client/get/balance?client_id=`
@@ -125,8 +260,76 @@ const (
 	GET_HARDFORK_ROUND = `/v1/screst/6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d9/hardfork?name=`
 )
 
+// GetNonceFromSharders returns the highest nonce for clientID across all LFB-healthy
+// sharders. Using the maximum protects against stale nonces from lagging or stuck sharders.
 func (h *NodeHolder) GetNonceFromSharders(clientID string) (int64, string, error) {
-	return h.GetBalanceFieldFromSharders(clientID, "nonce")
+	sharders := h.HealthyByLFB()
+	if len(sharders) == 0 {
+		return 0, "", errors.New("no_sharders", "no healthy sharders available")
+	}
+
+	type result struct {
+		nonce int64
+		info  string
+		err   error
+	}
+
+	results := make(chan result, len(sharders))
+
+	for _, sharder := range sharders {
+		go func(s string) {
+			url := fmt.Sprintf("%s%s", s, GET_BALANCE+clientID)
+			req, err := util.NewHTTPGetRequest(url)
+			if err != nil {
+				results <- result{err: err}
+				return
+			}
+			resp, err := req.Get()
+			if err != nil {
+				h.Fail(s)
+				results <- result{err: err}
+				return
+			}
+			if resp.StatusCode != http.StatusOK {
+				h.Fail(s)
+				results <- result{err: fmt.Errorf("status %d: %s", resp.StatusCode, resp.Body)}
+				return
+			}
+			h.Success(s)
+			var bal struct {
+				Nonce int64  `json:"nonce"`
+				Txn   string `json:"txn"`
+			}
+			if err := json.Unmarshal([]byte(resp.Body), &bal); err != nil {
+				results <- result{err: err}
+				return
+			}
+			results <- result{nonce: bal.Nonce, info: bal.Txn}
+		}(sharder)
+	}
+
+	maxNonce := int64(-1)
+	var maxInfo string
+	var lastErr error
+	for i := 0; i < len(sharders); i++ {
+		r := <-results
+		if r.err != nil {
+			lastErr = r.err
+			continue
+		}
+		if r.nonce > maxNonce {
+			maxNonce = r.nonce
+			maxInfo = r.info
+		}
+	}
+
+	if maxNonce < 0 {
+		if lastErr != nil {
+			return 0, "", lastErr
+		}
+		return 0, "", errors.New("no_nonce", "could not get nonce from any sharder")
+	}
+	return maxNonce, maxInfo, nil
 }
 
 func (h *NodeHolder) GetBalanceFieldFromSharders(clientID, name string) (int64, string, error) {
