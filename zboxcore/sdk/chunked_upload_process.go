@@ -111,7 +111,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 				fileShards[pos], thumbnailChunkData, su.shardSize)
 			if err != nil {
 				errC := atomic.AddInt32(&errCount, 1)
-				if errC > int32(su.allocationObj.ParityShards-1) { // If atleast data shards + 1 number of blobbers can process the upload, it can be repaired later
+				if errC > 0 { // All blobbers must succeed (full consensus = data + parity)
 					wgErrors <- err
 				}
 				return
