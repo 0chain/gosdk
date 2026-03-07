@@ -3366,21 +3366,31 @@ func contextCanceled(ctx context.Context) bool {
 // Returns:
 //   - error: An error if the public shared access revocation fails.
 func (a *Allocation) RevokePublicShare(path string) error {
-	success := make(chan int, len(a.Blobbers))
-	notFound := make(chan int, len(a.Blobbers))
-	wg := &sync.WaitGroup{}
+	// Pre-build all requests before launching goroutines (G-C1: prevents leak on early return).
+	type reqEntry struct {
+		baseUrl string
+		req     *http.Request
+	}
+	reqs := make([]reqEntry, 0, len(a.Blobbers))
 	for idx := range a.Blobbers {
 		baseUrl := a.Blobbers[idx].Baseurl
 		query := &url.Values{}
 		query.Add("path", path)
 		// For public shares, we don't specify a refereeClientID
 		// The blobber will revoke all public access for this path
-
 		httpreq, err := zboxutil.NewRevokePublicShareRequest(baseUrl, a.ID, a.Tx, a.sig, query, a.Owner)
 		if err != nil {
 			return err
 		}
+		reqs = append(reqs, reqEntry{baseUrl: baseUrl, req: httpreq})
+	}
 
+	success := make(chan int, len(a.Blobbers))
+	notFound := make(chan int, len(a.Blobbers))
+	wg := &sync.WaitGroup{}
+	for _, r := range reqs {
+		baseUrl := r.baseUrl
+		httpreq := r.req
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -3398,14 +3408,14 @@ func (a *Allocation) RevokePublicShare(path string) error {
 				}
 				if resp.StatusCode != http.StatusOK {
 					l.Logger.Error(baseUrl, " Revoke public share error response: ", resp.StatusCode, string(respbody))
-					return fmt.Errorf(string(respbody))
+					return fmt.Errorf("%s", string(respbody))
 				}
 				data := map[string]interface{}{}
 				err = json.Unmarshal(respbody, &data)
 				if err != nil {
 					return err
 				}
-				if data["status"].(float64) == http.StatusNotFound {
+				if v, ok := data["status"].(float64); ok && v == float64(http.StatusNotFound) {
 					notFound <- 1
 				}
 				return nil
@@ -3416,7 +3426,13 @@ func (a *Allocation) RevokePublicShare(path string) error {
 		}()
 	}
 	wg.Wait()
-	if len(success) == len(a.Blobbers) {
+	consensus := Consensus{
+		RWMutex:         &sync.RWMutex{},
+		consensus:       len(success),
+		consensusThresh: a.DataShards,
+		fullconsensus:   a.fullconsensus,
+	}
+	if consensus.isConsensusOk() {
 		if len(notFound) == len(a.Blobbers) {
 			return errors.New("", "public share not found")
 		}
@@ -3435,20 +3451,30 @@ func (a *Allocation) RevokePublicShare(path string) error {
 // Returns:
 //   - error: An error if the recipient removal fails
 func (a *Allocation) RemovePublicShareRecipient(path string, recipientClientID string) error {
-	success := make(chan int, len(a.Blobbers))
-	notFound := make(chan int, len(a.Blobbers))
-	wg := &sync.WaitGroup{}
+	// Pre-build all requests before launching goroutines (G-C1: prevents leak on early return).
+	type reqEntry struct {
+		baseUrl string
+		req     *http.Request
+	}
+	reqs := make([]reqEntry, 0, len(a.Blobbers))
 	for idx := range a.Blobbers {
 		baseUrl := a.Blobbers[idx].Baseurl
 		query := &url.Values{}
 		query.Add("path", path)
 		query.Add("recipientClientID", recipientClientID)
-
 		httpreq, err := zboxutil.NewRemovePublicShareRecipientRequest(baseUrl, a.ID, a.Tx, a.sig, query, a.Owner)
 		if err != nil {
 			return err
 		}
+		reqs = append(reqs, reqEntry{baseUrl: baseUrl, req: httpreq})
+	}
 
+	success := make(chan int, len(a.Blobbers))
+	notFound := make(chan int, len(a.Blobbers))
+	wg := &sync.WaitGroup{}
+	for _, r := range reqs {
+		baseUrl := r.baseUrl
+		httpreq := r.req
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -3466,14 +3492,14 @@ func (a *Allocation) RemovePublicShareRecipient(path string, recipientClientID s
 				}
 				if resp.StatusCode != http.StatusOK {
 					l.Logger.Error(baseUrl, " Remove public share recipient error response: ", resp.StatusCode, string(respbody))
-					return fmt.Errorf(string(respbody))
+					return fmt.Errorf("%s", string(respbody))
 				}
 				data := map[string]interface{}{}
 				err = json.Unmarshal(respbody, &data)
 				if err != nil {
 					return err
 				}
-				if data["status"].(float64) == http.StatusNotFound {
+				if v, ok := data["status"].(float64); ok && v == float64(http.StatusNotFound) {
 					notFound <- 1
 				}
 				return nil
@@ -3484,7 +3510,13 @@ func (a *Allocation) RemovePublicShareRecipient(path string, recipientClientID s
 		}()
 	}
 	wg.Wait()
-	if len(success) == len(a.Blobbers) {
+	consensus := Consensus{
+		RWMutex:         &sync.RWMutex{},
+		consensus:       len(success),
+		consensusThresh: a.DataShards,
+		fullconsensus:   a.fullconsensus,
+	}
+	if consensus.isConsensusOk() {
 		if len(notFound) == len(a.Blobbers) {
 			return errors.New("", "public share recipient not found")
 		}
@@ -3501,27 +3533,35 @@ func (a *Allocation) RemovePublicShareRecipient(path string, recipientClientID s
 //   - bool: True if public share exists, false otherwise.
 //   - error: An error if the check fails.
 func (a *Allocation) CheckPublicShareExists(path string) (bool, error) {
-	success := make(chan bool, len(a.Blobbers))
-	errors := make(chan error, len(a.Blobbers))
-	wg := &sync.WaitGroup{}
-
+	// Pre-build all requests before launching goroutines (G-C1: prevents leak on early return).
+	type reqEntry struct {
+		baseUrl string
+		req     *http.Request
+	}
+	reqs := make([]reqEntry, 0, len(a.Blobbers))
 	for idx := range a.Blobbers {
 		baseUrl := a.Blobbers[idx].Baseurl
 		query := &url.Values{}
 		query.Add("path", path)
-
 		httpreq, err := zboxutil.NewCheckPublicShareExistsRequest(baseUrl, a.ID, a.Tx, a.sig, query, a.Owner)
 		if err != nil {
 			return false, err
 		}
+		reqs = append(reqs, reqEntry{baseUrl: baseUrl, req: httpreq})
+	}
 
+	success := make(chan bool, len(a.Blobbers))
+	errCh := make(chan error, len(a.Blobbers))
+	wg := &sync.WaitGroup{}
+	for _, r := range reqs {
+		baseUrl := r.baseUrl
+		httpreq := r.req
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			err := zboxutil.HttpDo(a.ctx, a.ctxCancelF, httpreq, func(resp *http.Response, err error) error {
 				if err != nil {
 					l.Logger.Error("Check public share exists: ", err)
-					errors <- err
 					return err
 				}
 				defer resp.Body.Close()
@@ -3529,19 +3569,16 @@ func (a *Allocation) CheckPublicShareExists(path string) (bool, error) {
 				respbody, err := io.ReadAll(resp.Body)
 				if err != nil {
 					l.Logger.Error("Error: Resp ", err)
-					errors <- err
 					return err
 				}
 
 				if resp.StatusCode != http.StatusOK {
 					l.Logger.Error(baseUrl, " Check public share exists error response: ", resp.StatusCode, string(respbody))
-					errors <- fmt.Errorf(string(respbody))
-					return fmt.Errorf(string(respbody))
+					return fmt.Errorf("%s", string(respbody))
 				}
 
 				var result map[string]interface{}
 				if err := json.Unmarshal(respbody, &result); err != nil {
-					errors <- err
 					return err
 				}
 
@@ -3553,18 +3590,18 @@ func (a *Allocation) CheckPublicShareExists(path string) (bool, error) {
 				return nil
 			})
 			if err != nil {
-				errors <- err
+				errCh <- err
 			}
 		}()
 	}
 
 	wg.Wait()
 	close(success)
-	close(errors)
+	close(errCh)
 
 	// Check for any errors
 	select {
-	case err := <-errors:
+	case err := <-errCh:
 		return false, err
 	default:
 	}
@@ -3608,27 +3645,35 @@ type ShareInfo struct {
 //   - []ShareInfo: List of recipients.
 //   - error: An error if the operation fails.
 func (a *Allocation) GetPublicShareRecipients(path string) ([]ShareInfo, error) {
-	success := make(chan []ShareInfo, len(a.Blobbers))
-	errors := make(chan error, len(a.Blobbers))
-	wg := &sync.WaitGroup{}
-
+	// Pre-build all requests before launching goroutines (G-C1: prevents leak on early return).
+	type reqEntry struct {
+		baseUrl string
+		req     *http.Request
+	}
+	reqs := make([]reqEntry, 0, len(a.Blobbers))
 	for idx := range a.Blobbers {
 		baseUrl := a.Blobbers[idx].Baseurl
 		query := &url.Values{}
 		query.Add("path", path)
-
 		httpreq, err := zboxutil.NewGetPublicShareRecipientsRequest(baseUrl, a.ID, a.Tx, a.sig, query, a.Owner)
 		if err != nil {
 			return nil, err
 		}
+		reqs = append(reqs, reqEntry{baseUrl: baseUrl, req: httpreq})
+	}
 
+	success := make(chan []ShareInfo, len(a.Blobbers))
+	errCh := make(chan error, len(a.Blobbers))
+	wg := &sync.WaitGroup{}
+	for _, r := range reqs {
+		baseUrl := r.baseUrl
+		httpreq := r.req
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			err := zboxutil.HttpDo(a.ctx, a.ctxCancelF, httpreq, func(resp *http.Response, err error) error {
 				if err != nil {
 					l.Logger.Error("Get public share recipients: ", err)
-					errors <- err
 					return err
 				}
 				defer resp.Body.Close()
@@ -3636,19 +3681,16 @@ func (a *Allocation) GetPublicShareRecipients(path string) ([]ShareInfo, error) 
 				respbody, err := io.ReadAll(resp.Body)
 				if err != nil {
 					l.Logger.Error("Error: Resp ", err)
-					errors <- err
 					return err
 				}
 
 				if resp.StatusCode != http.StatusOK {
 					l.Logger.Error(baseUrl, " Get public share recipients error response: ", resp.StatusCode, string(respbody))
-					errors <- fmt.Errorf(string(respbody))
-					return fmt.Errorf(string(respbody))
+					return fmt.Errorf("%s", string(respbody))
 				}
 
 				var recipients []ShareInfo
 				if err := json.Unmarshal(respbody, &recipients); err != nil {
-					errors <- err
 					return err
 				}
 
@@ -3656,18 +3698,18 @@ func (a *Allocation) GetPublicShareRecipients(path string) ([]ShareInfo, error) 
 				return nil
 			})
 			if err != nil {
-				errors <- err
+				errCh <- err
 			}
 		}()
 	}
 
 	wg.Wait()
 	close(success)
-	close(errors)
+	close(errCh)
 
 	// Check for any errors
 	select {
-	case err := <-errors:
+	case err := <-errCh:
 		return nil, err
 	default:
 	}
