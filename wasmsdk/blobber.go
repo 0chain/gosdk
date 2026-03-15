@@ -348,7 +348,8 @@ func Move(allocationID, remotePath, destPath string) (*FileCommandResponse, erro
 //   - expiration is the expiration time of the auth ticket
 //   - revoke is the flag to revoke the share
 //   - availableAfter is the time after which the share is available
-func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expiration int, revoke bool, availableAfter string) (string, error) {
+//   - shareType is "public" or "private" (default "private"); use "public" when adding a recipient to a public share so the blobber can revoke public/private separately
+func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expiration int, revoke bool, availableAfter, shareType string) (string, error) {
 
 	if len(allocationID) == 0 {
 		return "", RequiredArg("allocationID")
@@ -404,7 +405,11 @@ func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expir
 		availableAt = *aa
 	}
 
-	ref, err := allocationObj.GetAuthTicket(remotePath, fileName, refType, clientID, encryptionPublicKey, int64(expiration), &availableAt)
+	if shareType == "" {
+		shareType = "private"
+	}
+
+	ref, err := allocationObj.GetAuthTicketWithShareType(remotePath, fileName, refType, clientID, encryptionPublicKey, int64(expiration), &availableAt, shareType)
 	if err != nil {
 		PrintError(err.Error())
 		return "", err
