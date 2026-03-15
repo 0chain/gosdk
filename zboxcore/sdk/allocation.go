@@ -2286,7 +2286,10 @@ var ErrInvalidPrivateShare = errors.New("invalid_private_share", "private sharin
 
 // GetAuthTicket generates an authentication ticket for the specified file or directory in the allocation.
 // The authentication ticket is used to grant access to the file or directory to another client.
-// The function takes the following parameters:
+// It uploads the ticket to blobbers with share_type "private". For share flows that need public/private
+// distinction, use GetAuthTicketWithShareType instead.
+//
+// Parameters:
 //   - path: The path of the file or directory (should be absolute).
 //   - filename: The name of the file.
 //   - referenceType: The type of reference (file or directory).
@@ -2298,6 +2301,21 @@ var ErrInvalidPrivateShare = errors.New("invalid_private_share", "private sharin
 // Returns the authentication ticket as a base64-encoded string and an error if any.
 func (a *Allocation) GetAuthTicket(path, filename string,
 	referenceType, refereeClientID, refereeEncryptionPublicKey string, expiration int64, availableAfter *time.Time) (string, error) {
+	return a.GetAuthTicketWithShareType(path, filename, referenceType, refereeClientID, refereeEncryptionPublicKey, expiration, availableAfter, "private")
+}
+
+// GetAuthTicketWithShareType is for share-related operations only. It behaves like GetAuthTicket but
+// accepts shareType ("public" or "private") so the blobber can store separate public/private rows
+// and revoke them independently. Use this when creating a share from 0box/UI where share_info_type is known.
+//
+// Parameters: same as GetAuthTicket, plus:
+//   - shareType: "public" or "private" (default "private" if empty).
+func (a *Allocation) GetAuthTicketWithShareType(path, filename string,
+	referenceType, refereeClientID, refereeEncryptionPublicKey string, expiration int64, availableAfter *time.Time, shareType string) (string, error) {
+
+	if shareType == "" {
+		shareType = "private"
+	}
 
 	if !a.isInitialized() {
 		return "", notInitialized
@@ -2352,7 +2370,7 @@ func (a *Allocation) GetAuthTicket(path, filename string,
 		return "", err
 	}
 
-	if err := a.UploadAuthTicketToBlobber(string(atBytes), refereeEncryptionPublicKey, availableAfter); err != nil {
+	if err := a.UploadAuthTicketToBlobber(string(atBytes), refereeEncryptionPublicKey, availableAfter, shareType); err != nil {
 		return "", err
 	}
 
@@ -2370,11 +2388,15 @@ func (a *Allocation) GetAuthTicket(path, filename string,
 }
 
 // UploadAuthTicketToBlobber uploads the authentication ticket to the blobbers after creating it at the client side.
-// The authentication ticket is uploaded to the blobbers to grant access to the file or directory to a client other than the owner.
+// shareType should be "public" or "private" (default "private"); the blobber stores it so public and private shares can be revoked separately.
 //   - authTicket: The authentication ticket to upload.
 //   - clientEncPubKey: The encryption public key of the client, used in case of private sharing.
 //   - availableAfter: The time after which the authentication ticket becomes available in Unix timestamp format.
-func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKey string, availableAfter *time.Time) error {
+//   - shareType: "public" or "private".
+func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKey string, availableAfter *time.Time, shareType string) error {
+	if shareType == "" {
+		shareType = "private"
+	}
 	success := make(chan int, len(a.Blobbers))
 	wg := &sync.WaitGroup{}
 	for idx := range a.Blobbers {
@@ -2385,6 +2407,9 @@ func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKe
 			return err
 		}
 		if err := formWriter.WriteField("auth_ticket", authTicket); err != nil {
+			return err
+		}
+		if err := formWriter.WriteField("share_type", shareType); err != nil {
 			return err
 		}
 		if availableAfter != nil {
@@ -3461,7 +3486,7 @@ func (a *Allocation) RemovePublicShareRecipient(path string, recipientClientID s
 		baseUrl := a.Blobbers[idx].Baseurl
 		query := &url.Values{}
 		query.Add("path", path)
-		query.Add("recipientClientID", recipientClientID)
+		query.Add("recipientClientId", recipientClientID)
 		httpreq, err := zboxutil.NewRemovePublicShareRecipientRequest(baseUrl, a.ID, a.Tx, a.sig, query, a.Owner)
 		if err != nil {
 			return err
