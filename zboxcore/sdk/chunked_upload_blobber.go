@@ -15,7 +15,6 @@ import (
 	"github.com/0chain/errors"
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
-	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/fileref"
@@ -71,6 +70,10 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 
 	eg, _ := errgroup.WithContext(ctx)
 
+	key := su.allocationObj.Owner
+	if su.multiWalletSupportKey != "" {
+		key = su.multiWalletSupportKey
+	}
 	for dataInd := 0; dataInd < len(dataBuffers); dataInd++ {
 		ind := dataInd
 		eg.Go(func() error {
@@ -80,7 +83,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 			var req *fasthttp.Request
 			for i := 0; i < 6; i++ {
 				req, err = zboxutil.NewFastUploadRequest(
-					sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, dataBuffers[ind].Bytes(), su.httpMethod, su.allocationObj.Owner)
+					sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, dataBuffers[ind].Bytes(), su.httpMethod, key)
 				if err != nil {
 					return err
 				}
@@ -219,7 +222,14 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 	wm.BlobberID = sb.blobber.ID
 
 	wm.Timestamp = timestamp
-	wm.ClientID = client.Id(su.allocationObj.Owner)
+	// ClientID should always be the allocation owner. If an operation-level
+	// pubkey is provided use it only for signing (set Pubkey) but do not
+	// overwrite ClientID — the blobber expects the write marker ClientID to
+	// match the allocation owner (the uploader identity).
+	wm.ClientID = su.allocationObj.Owner
+	if su.multiWalletSupportKey != "" {
+		wm.MultiWalletSupportKey = su.multiWalletSupportKey
+	}
 	err = wm.Sign()
 	if err != nil {
 		logger.Logger.Error("Signing writemarker failed: ", err)
@@ -256,7 +266,12 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 
 	formWriter.Close()
 
-	req, err := zboxutil.NewCommitRequest(sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, body, 0, su.allocationObj.Owner)
+	// choose signing key: prefer per-operation pubkey if set, otherwise allocation owner
+	key := su.allocationObj.Owner
+	if su.multiWalletSupportKey != "" {
+		key = su.multiWalletSupportKey
+	}
+	req, err := zboxutil.NewCommitRequest(sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, body, 0, key)
 	if err != nil {
 		logger.Logger.Error("Error creating commit req: ", err)
 		return err
@@ -345,7 +360,12 @@ func (sb *ChunkedUploadBlobber) processWriteMarker(
 	}
 
 	var lR ReferencePathResult
-	req, err := zboxutil.NewReferencePathRequest(sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, su.allocationObj.sig, paths, su.allocationObj.Owner)
+	// choose signing key for reference request: prefer per-operation pubkey if set
+	refKey := su.allocationObj.Owner
+	if su.multiWalletSupportKey != "" {
+		refKey = su.multiWalletSupportKey
+	}
+	req, err := zboxutil.NewReferencePathRequest(sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, su.allocationObj.sig, paths, refKey)
 	if err != nil || len(paths) == 0 {
 		logger.Logger.Error("Creating ref path req", err)
 		return nil, nil, 0, nil, err

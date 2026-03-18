@@ -23,6 +23,7 @@ type DownloadOptions struct {
 
 	localPath  string
 	remotePath string
+	MultiWalletSupportKey string
 
 	isViewer   bool
 	authTicket string
@@ -63,12 +64,16 @@ func CreateDownloader(allocationID, localPath, remotePath string, opts ...Downlo
 	var err error
 	if do.allocationObj == nil {
 		if do.isViewer {
-			do.allocationObj, err = GetAllocationFromAuthTicket(do.authTicket)
+			do.allocationObj, err = GetAllocationFromAuthTicket(do.authTicket, do.MultiWalletSupportKey)
 			if err != nil {
 				return nil, err
 			}
 		} else {
-			do.allocationObj, err = GetAllocation(allocationID)
+			if do.MultiWalletSupportKey != "" {
+				do.allocationObj, err = GetAllocation(allocationID, do.MultiWalletSupportKey)
+			} else {
+				do.allocationObj, err = GetAllocation(allocationID)
+			}
 			if err != nil {
 				return nil, err
 			}

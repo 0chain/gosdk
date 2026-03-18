@@ -166,7 +166,7 @@ const (
 	FEES_TABLE                = `/v1/fees_table`
 )
 
-type SignFunc = func(msg string) (string, error)
+type SignFunc = func(msg string, keys ...string) (string, error)
 type VerifyFunc = func(publicKey, signature, msgHash string) (bool, error)
 type SignWithWallet = func(msg string, wallet interface{}) (string, error)
 
@@ -211,6 +211,14 @@ func (t *Transaction) getAuthorize() (string, error) {
 		return "", errors.New("not_initialized", "no authorize func is set, define it in native code and set in sys")
 	}
 
+	if t.MultiWalletSupportKey != "" {
+		authorize, err := sys.Authorize(string(jsonByte), t.MultiWalletSupportKey)
+		if err != nil {
+			return "", err
+		}
+		return authorize, nil
+	}
+
 	authorize, err := sys.Authorize(string(jsonByte))
 	if err != nil {
 		return "", err
@@ -222,7 +230,7 @@ func (t *Transaction) getAuthorize() (string, error) {
 func (t *Transaction) ComputeHashAndSign(signHandler SignFunc) error {
 	t.ComputeHashData()
 	var err error
-	t.Signature, err = signHandler(t.Hash)
+	t.Signature, err = signHandler(t.Hash, t.MultiWalletSupportKey)
 	if err != nil {
 		return err
 	}
@@ -270,7 +278,7 @@ func (t *Transaction) VerifySigWith(pubkey string, verifyHandler VerifyFunc) (bo
 }
 
 func SendTransactionSync(txn *Transaction, miners []string) error {
-	const requestTimeout = 3 * time.Second // Timeout for each request
+	const requestTimeout = 12 * time.Second // Timeout for each request
 
 	fails := make(chan error, len(miners))
 	var wg sync.WaitGroup
@@ -282,7 +290,7 @@ func SendTransactionSync(txn *Transaction, miners []string) error {
 		go func(url string) {
 			defer wg.Done()
 
-			// Create a context with a 30-second timeout for each request
+			// Create a context with a 12-second timeout for each request
 			ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 			defer cancel()
 
@@ -317,6 +325,13 @@ func SendTransactionSync(txn *Transaction, miners []string) error {
 		if count > maxCount {
 			maxCount = count
 			dominantErr = msg
+		}
+	}
+
+	// Reset stable miners list if any miner failed
+	if failureCount > 0 {
+		if nodeClient, err := client.GetNode(); err == nil {
+			nodeClient.ResetStableMiners()
 		}
 	}
 
@@ -523,22 +538,21 @@ func SmartContractTxnValue(scAddress string, sn SmartContractTxnData, value uint
 }
 
 func SmartContractTxnValueFeeWithRetry(scAddress string, sn SmartContractTxnData,
-	value, fee uint64, verifyTxn bool, clients ...string) (hash, out string, nonce int64, t *Transaction, err error) {
-	hash, out, nonce, t, err = SmartContractTxnValueFee(scAddress, sn, value, fee, verifyTxn, clients...)
+	value, fee uint64, verifyTxn bool, keys ...string) (hash, out string, nonce int64, t *Transaction, err error) {
+	hash, out, nonce, t, err = SmartContractTxnValueFee(scAddress, sn, value, fee, verifyTxn, keys...)
 
 	if err != nil && (strings.Contains(err.Error(), "invalid transaction nonce") || strings.Contains(err.Error(), "invalid future transaction")) {
-		return SmartContractTxnValueFee(scAddress, sn, value, fee, verifyTxn, clients...)
+		return SmartContractTxnValueFee(scAddress, sn, value, fee, verifyTxn, keys...)
 	}
 	return
 }
 
 func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
-	value, fee uint64, verifyTxn bool, clients ...string) (hash, out string, nonce int64, t *Transaction, err error) {
+	value, fee uint64, verifyTxn bool, keys ...string) (hash, out string, nonce int64, t *Transaction, err error) {
 
-	clientId := client.Id()
-	if len(clients) > 0 && clients[0] != "" {
-		clientId = clients[0]
-	}
+	// Determine client identifier/public key to use for signing. If an explicit key is
+	// provided in keys varargs, prefer it; otherwise default to SDK client id.
+	clientId := client.Id(keys...)
 
 	var requestBytes []byte
 	if requestBytes, err = json.Marshal(sn); err != nil {
@@ -555,8 +569,8 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 		return
 	}
 
-	txn := NewTransactionEntity(client.Id(clientId),
-		cfg.ChainID, client.PublicKey(clientId), nonce)
+	txn := NewTransactionEntity(clientId,
+		cfg.ChainID, client.PublicKey(keys...), nonce)
 
 	txn.TransactionData = string(requestBytes)
 	txn.ToClientID = scAddress
@@ -565,8 +579,8 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 	txn.TransactionType = TxnTypeSmartContract
 	txn.ClientID = clientId
 
-	if len(clients) > 1 {
-		txn.ToClientID = clients[1]
+	if len(keys) > 1 {
+		txn.ToClientID = keys[1]
 		txn.TransactionType = TxnTypeSend
 	}
 
@@ -586,12 +600,20 @@ func SmartContractTxnValueFee(scAddress string, sn SmartContractTxnData,
 		txn.TransactionNonce = client.Cache.GetNextNonce(txn.ClientID)
 	}
 
+	if len(keys) > 0 && keys[0] != "" {
+		txn.MultiWalletSupportKey = keys[0]
+	}
+
 	err = txn.ComputeHashAndSign(client.SignFn)
 	if err != nil {
 		return
 	}
-
-	if client.GetClient().IsSplit {
+	
+	isSplit, err := client.IsWalletSplit(keys...)
+	if err != nil {
+		return
+	}
+	if isSplit {
 		txn.Signature, err = txn.getAuthorize()
 		if err != nil {
 			return

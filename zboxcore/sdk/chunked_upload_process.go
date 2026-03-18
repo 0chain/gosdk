@@ -105,10 +105,19 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		wg.Add(1)
 		go func(b *ChunkedUploadBlobber, thumbnailChunkData []byte, pos uint64) {
 			defer wg.Done()
-			uploadData, err := su.formBuilder.Build(
-				&su.fileMeta, blobber.progress.Hasher, su.progress.ConnectionID, blobber.blobber.ID,
-				su.chunkSize, chunkStartIndex, chunkEndIndex, isFinal, su.encryptedKey, su.progress.EncryptedKeyPoint,
-				fileShards[pos], thumbnailChunkData, su.shardSize)
+			var uploadData blobberData
+			var err error
+			if su.multiWalletSupportKey != "" {
+				uploadData, err = su.formBuilder.Build(
+					&su.fileMeta, blobber.progress.Hasher, su.progress.ConnectionID, blobber.blobber.ID,
+					su.chunkSize, chunkStartIndex, chunkEndIndex, isFinal, su.encryptedKey, su.progress.EncryptedKeyPoint,
+					fileShards[pos], thumbnailChunkData, su.shardSize, su.multiWalletSupportKey)
+			} else {
+				uploadData, err = su.formBuilder.Build(
+					&su.fileMeta, blobber.progress.Hasher, su.progress.ConnectionID, blobber.blobber.ID,
+					su.chunkSize, chunkStartIndex, chunkEndIndex, isFinal, su.encryptedKey, su.progress.EncryptedKeyPoint,
+					fileShards[pos], thumbnailChunkData, su.shardSize)
+			}
 			if err != nil {
 				errC := atomic.AddInt32(&errCount, 1)
 				if errC > 0 { // All blobbers must succeed (full consensus = data + parity)

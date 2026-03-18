@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/0chain/gosdk/zboxcore/mocks"
 	"io"
 	"mime"
 	"mime/multipart"
@@ -13,6 +12,8 @@ import (
 	"strings"
 	"sync"
 	"testing"
+
+	"github.com/0chain/gosdk/zboxcore/mocks"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/client"
@@ -495,7 +496,8 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 				maskMU:       &sync.Mutex{},
 				connectionID: mockConnectionId,
 			}
-			sig, err := client.Sign(mockAllocationTxId)
+			key := client.Id()
+			sig, err := client.Sign(mockAllocationTxId, key)
 			require.NoError(err)
 			req.sig = sig
 			req.ctx, req.ctxCncl = context.WithCancel(context.TODO())

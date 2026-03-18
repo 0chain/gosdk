@@ -54,13 +54,21 @@ func main() {
 			jsSign := jsProxy.Get("sign")
 
 			if !(jsSign.IsNull() || jsSign.IsUndefined()) {
-				signFunc := func(hash string) (string, error) {
+				signFunc := func(hash string, keys ...string) (string, error) {
 					c := client.GetClient()
 					if c == nil || len(c.Keys) == 0 {
 						return "", errors.New("no keys found")
 					}
 
 					pk := c.Keys[0].PrivateKey
+					if len(keys) > 0 && keys[0] != "" {
+						wallet := client.GetWalletByKey(keys[0])
+						if wallet == nil {
+							return "", errors.New("wallet not found")
+						}
+						pk = wallet.Keys[0].PrivateKey
+					}
+
 					result, err := jsbridge.Await(jsSign.Invoke(hash, pk))
 
 					if len(err) > 0 && !err[0].IsNull() {
@@ -78,16 +86,24 @@ func main() {
 					return signFunc(hash)
 				}
 
-				sys.SignWithAuth = func(hash, signatureScheme string, keys []sys.KeyPair) (string, error) {
+				sys.SignWithAuth = func(hash, signatureScheme string, keys []sys.KeyPair, clientIds ...string) (string, error) {
 					sig, err := sys.Sign(hash, signatureScheme, keys)
 					if err != nil {
 						return "", fmt.Errorf("failed to sign with split key: %v", err)
 					}
 
+					// Get the first clientID from variadic arguments, or use default wallet clientID
+					var clientID string
+					if len(clientIds) > 0 && clientIds[0] != "" {
+						clientID = clientIds[0]
+					} else {
+						clientID = client.Wallet().ClientID
+					}
+
 					data, err := json.Marshal(client.AuthMessage{
 						Hash:      hash,
 						Signature: sig,
-						ClientID:  client.Wallet().ClientID,
+						ClientID:  clientID,
 					})
 					if err != nil {
 						return "", err
@@ -217,6 +233,8 @@ func main() {
 				"createThumbnail":          createThumbnail,
 				"makeSCRestAPICall":        makeSCRestAPICall,
 				"wasmType":                 getWasmType,
+				"addWallet":                addWallet,
+				"removeWallet":             removeWallet,
 
 				//blobber
 				"delete":                    Delete,
@@ -252,11 +270,49 @@ func main() {
 				"cancelDownloadDirectory":   cancelDownloadDirectory,
 				"cancelDownloadBlocks":      cancelDownloadBlocks,
 				"setConsensusThreshold":     setConsensusThreshold,
+				//blobber mw (multi-wallet support)
+				"deleteMW":                    DeleteMW,
+				"shareMW":                     ShareMW,
+				"multiDownloadMW":             multiDownloadMW,
+				"uploadMW":                    uploadMW,
+				// "setUploadModeMW":             setUploadModeMW,
+				"multiUploadMW":               multiUploadMW,
+				"multiOperationMW":            MultiOperationMW,
+				"listObjectsMW":               listObjectsMW,
+				"listObjectsFromAuthTicketMW": listObjectsFromAuthTicketMW,
+				"createDirMW":                 createDirMW,
+				"downloadBlocksMW":            downloadBlocksMW,
+				"getFileStatsMW":              getFileStatsMW,
+				"updateBlobberSettingsMW":     updateBlobberSettingsMW,
+				"getRemoteFileMapMW":          getRemoteFileMapMW,
+				// "getBlobbersMW":               getBlobbersMW,
+				// "getcontainersMW":             GetContainersMW,
+				// "updatecontainerMW":           UpdateContainerMW,
+				// "searchcontainerMW":           SearchContainerMW,
+				"updateForbidAllocationMW":    UpdateForbidAllocationMW,
+				"sendMW":                      sendMW,
+				"cancelUploadMW":              cancelUploadMW,
+				"pauseUploadMW":               pauseUploadMW,
+				"repairAllocationMW":          repairAllocationMW,
+				"checkAllocStatusMW":          checkAllocStatusMW,
+				"skipStatusCheckMW":           skipStatusCheckMW,
+				"terminateWorkersMW":          terminateWorkersMW,
+				"createWorkersMW":             createWorkersMW,
+				"getFileMetaByNameMW":         getFileMetaByNameMW,
+				"getFileMetaByAuthTicketMW":   getFileMetaByAuthTicketMW,
+				"downloadDirectoryMW":         downloadDirectoryMW,
+				"cancelDownloadDirectoryMW":   cancelDownloadDirectoryMW,
+				"cancelDownloadBlocksMW":      cancelDownloadBlocksMW,
+				"setConsensusThresholdMW":     setConsensusThresholdMW,
 
 				// player
 				"play":           play,
 				"stop":           stop,
 				"getNextSegment": getNextSegment,
+				// player mw
+				"playMW":           playMW,
+				"stopMW":           stopMW,
+				"getNextSegmentMW": getNextSegmentMW,
 
 				//allocation
 				"createAllocation":           createAllocation,
@@ -275,23 +331,55 @@ func main() {
 				"getAllocationWith":          getAllocationWith,
 				"createfreeallocation":       createfreeallocation,
 				"getUpdateAllocTicket":       getUpdateAllocTicket,
+				//allocation mw (multi-wallet support)
+				"createAllocationMW":           createAllocationMW,
+				"getAllocationBlobbersMW":      getAllocationBlobbersMW,
+				"getBlobberIdsMW":              getBlobberIdsMW,
+				"listAllocationsMW":            listAllocationsMW,
+				"getAllocationMW":              getAllocationMW,
+				"reloadAllocationMW":           reloadAllocationMW,
+				"transferAllocationMW":         transferAllocationMW,
+				"freezeAllocationMW":           freezeAllocationMW,
+				"cancelAllocationMW":           cancelAllocationMW,
+				"updateAllocationMW":           updateAllocationMW,
+				"updateAllocationWithRepairMW": updateAllocationWithRepairMW,
+				"getAllocationMinLockMW":       getAllocationMinLockMW,
+				"getUpdateAllocationMinLockMW": getUpdateAllocationMinLockMW,
+				"getAllocationWithMW":          getAllocationWithMW,
+				"createfreeallocationMW":       createfreeallocationMW,
+				"getUpdateAllocTicketMW":       getUpdateAllocTicketMW,
 
 				// claim rewards
 				"collectRewards": collectRewards,
+				//claim rewards mw
+				"collectRewardsMW": collectRewardsMW,
 
 				// stakepool
 				"getSkatePoolInfo": getSkatePoolInfo,
 				"lockStakePool":    lockStakePool,
 				"unlockStakePool":  unlockStakePool,
+				// stakepool mw
+				"getSkatePoolInfoMW": getSkatePoolInfoMW,
+				"lockStakePoolMW":    lockStakePoolMW,
+				"unlockStakePoolMW":  unlockStakePoolMW,
 
 				// writepool
 				"lockWritePool": lockWritePool,
+				// writepool mw
+				"lockWritePoolMW": lockWritePoolMW,
+
+				
 
 				"decodeAuthTicket": decodeAuthTicket,
 				"allocationRepair": allocationRepair,
 				"repairSize":       repairSize,
+				// "decodeAuthTicketMW": decodeAuthTicketMW,
+				"allocationRepairMW": allocationRepairMW,
+				"repairSizeMW":       repairSizeMW,
 
 				"generateOwnerSigningKey": generateOwnerSigningKey,
+				"generateOwnerSigningKeyMW": generateOwnerSigningKeyMW,
+
 
 				// bridge
 				"initBridge":                    initBridge,
@@ -303,6 +391,15 @@ func main() {
 				"estimateBurnWZCNGasAmount":     estimateBurnWZCNGasAmount,
 				"estimateMintWZCNGasAmount":     estimateMintWZCNGasAmount,
 				"estimateGasPrice":              estimateGasPrice,
+				// bridge mw
+				"burnZCNMW":                       burnZCNMW,
+				"mintZCNMW":                       mintZCNMW,
+				"getMintWZCNPayloadMW":            getMintWZCNPayloadMW,
+				"getNotProcessedWZCNBurnEventsMW": getNotProcessedWZCNBurnEventsMW,
+				"getNotProcessedZCNBurnTicketsMW": getNotProcessedZCNBurnTicketsMW,
+				"estimateBurnWZCNGasAmountMW":     estimateBurnWZCNGasAmountMW,
+				"estimateMintWZCNGasAmountMW":     estimateMintWZCNGasAmountMW,
+				"estimateGasPriceMW":              estimateGasPriceMW,
 
 				//zcn
 				"getWalletBalance": getWalletBalance,
@@ -321,6 +418,7 @@ func main() {
 				"registerAuthorizer": js.FuncOf(registerAuthorizer),
 				"registerAuthCommon": js.FuncOf(registerAuthCommon),
 				"callAuth":           js.FuncOf(callAuth),
+				"callAuthMW":         js.FuncOf(callAuthMW),
 				"authResponse":       authResponse,
 
 				// zauth
@@ -357,13 +455,20 @@ func main() {
 		if !(jsProxy.IsNull() || jsProxy.IsUndefined()) {
 			jsSign := jsProxy.Get("sign")
 			if !(jsSign.IsNull() || jsSign.IsUndefined()) {
-				signFunc := func(hash string) (string, error) {
+				signFunc := func(hash string, keys ...string) (string, error) {
 					c := client.GetClient()
 					if c == nil || len(c.Keys) == 0 {
 						return "", errors.New("no keys found")
 					}
 
 					pk := c.Keys[0].PrivateKey
+					if len(keys) > 0 && keys[0] != "" {
+						wallet := client.GetWalletByKey(keys[0])
+						if wallet == nil {
+							return "", errors.New("wallet not found")
+						}
+						pk = wallet.Keys[0].PrivateKey
+					}
 					result, err := jsbridge.Await(jsSign.Invoke(hash, pk))
 
 					if len(err) > 0 && !err[0].IsNull() {
@@ -379,17 +484,25 @@ func main() {
 					return signFunc(hash)
 				}
 
-				sys.SignWithAuth = func(hash, signatureScheme string, keys []sys.KeyPair) (string, error) {
+				sys.SignWithAuth = func(hash, signatureScheme string, keys []sys.KeyPair, clientIds ...string) (string, error) {
 					fmt.Println("[worker] SignWithAuth pubkey:", keys[0])
 					sig, err := sys.Sign(hash, signatureScheme, keys)
 					if err != nil {
 						return "", fmt.Errorf("failed to sign with split key: %v", err)
 					}
 
+					// Get the first clientID from variadic arguments, or use default wallet clientID
+					var clientID string
+					if len(clientIds) > 0 && clientIds[0] != "" {
+						clientID = clientIds[0]
+					} else {
+						clientID = client.Wallet().ClientID
+					}
+
 					data, err := json.Marshal(client.AuthMessage{
 						Hash:      hash,
 						Signature: sig,
-						ClientID:  client.GetClient().ClientID,
+						ClientID:  clientID,
 					})
 					if err != nil {
 						return "", err
@@ -463,7 +576,7 @@ func main() {
 		gInitProxyKeys(publicKey, privateKey)
 
 		if isSplit {
-			sys.AuthCommon = func(msg string) (string, error) {
+			sys.AuthCommon = func(msg string, clientIDs ...string) (string, error) {
 				// send message to main thread
 				sendMessageToMainThread(msg)
 				// wait for response from main thread

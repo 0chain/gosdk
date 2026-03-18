@@ -7,12 +7,21 @@ import (
 	"io"
 	"math"
 	"net/http"
+	"os"
+	"path"
 	"strconv"
+	"strings"
 
 	"github.com/0chain/common/core/currency"
 	"github.com/0chain/errors"
+	thrown "github.com/0chain/errors"
+	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/logger"
+	"github.com/0chain/gosdk/core/pathutil"
 	"github.com/0chain/gosdk/core/screstapi"
+	"github.com/0chain/gosdk/core/sys"
+
+	// "github.com/0chain/gosdk/zcncore"
 	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/0chain/gosdk/core/client"
@@ -163,7 +172,7 @@ type StakePoolInfo struct {
 // GetStakePoolInfo retrieve stake pool info for the current client configured to the sdk, given provider type and provider ID.
 //   - providerType: provider type
 //   - providerID: provider ID
-func GetStakePoolInfo(providerType ProviderType, providerID string) (info *StakePoolInfo, err error) {
+func GetStakePoolInfo(providerType ProviderType, providerID string, keys ...string) (info *StakePoolInfo, err error) {
 	if !client.IsSDKInitialized() {
 		return nil, sdkNotInitialized
 	}
@@ -601,7 +610,7 @@ func GetClientEncryptedPublicKey() (string, error) {
 //   - authTicket: the auth ticket hash
 //
 // returns the allocation instance and error if any
-func GetAllocationFromAuthTicket(authTicket string) (*Allocation, error) {
+func GetAllocationFromAuthTicket(authTicket string, keys ...string) (*Allocation, error) {
 	if !client.IsSDKInitialized() {
 		return nil, sdkNotInitialized
 	}
@@ -614,7 +623,7 @@ func GetAllocationFromAuthTicket(authTicket string) (*Allocation, error) {
 	if err != nil {
 		return nil, errors.New("auth_ticket_decode_error", "Error unmarshaling the auth ticket."+err.Error())
 	}
-	return GetAllocation(at.AllocationID)
+	return GetAllocation(at.AllocationID, keys...)
 }
 
 // GetAllocation - get allocation from given allocation id
@@ -622,7 +631,7 @@ func GetAllocationFromAuthTicket(authTicket string) (*Allocation, error) {
 //   - allocationID: the allocation id
 //
 // returns the allocation instance and error if any
-func GetAllocation(allocationID string) (*Allocation, error) {
+func GetAllocation(allocationID string, keys ...string) (*Allocation, error) {
 	if !client.IsSDKInitialized() {
 		return nil, sdkNotInitialized
 	}
@@ -640,7 +649,7 @@ func GetAllocation(allocationID string) (*Allocation, error) {
 	}
 
 	allocationObj.numBlockDownloads = numBlockDownloads
-	allocationObj.InitAllocation()
+	allocationObj.InitAllocation(keys...)
 	return allocationObj, nil
 }
 
@@ -715,7 +724,10 @@ func SetNumBlockDownloads(num int) {
 // GetAllocations - get all allocations for the current client
 //
 // returns the list of allocations and error if any
-func GetAllocations() ([]*Allocation, error) {
+func GetAllocations(keys ...string) ([]*Allocation, error) {
+	if len(keys) > 0 && keys[0] != "" {
+		return GetAllocationsForClient(client.Id(keys...))
+	}
 	return GetAllocationsForClient(client.Id())
 }
 
@@ -811,13 +823,20 @@ type CreateAllocationOptions struct {
 //   - options is the options struct instance for creating the allocation.
 //
 // returns the hash of the new_allocation_request transaction, the nonce of the transaction, the transaction object and an error if any.
-func CreateAllocationWith(options CreateAllocationOptions) (
+func CreateAllocationWith(options CreateAllocationOptions, keys ...string) (
 	string, int64, *transaction.Transaction, error) {
+
+	if len(keys) > 0 && keys[0] != "" {
+		return CreateAllocationForOwner(
+			client.Id(keys...), client.PublicKey(keys...), "", options.DataShards, options.ParityShards,
+			options.Size, options.ReadPrice, options.WritePrice, options.Lock,
+			options.BlobberIds, options.BlobberAuthTickets, options.ThirdPartyExtendable, options.IsEnterprise, options.Force, options.FileOptionsParams, options.AuthRoundExpiry, keys...)
+	}
 
 	return CreateAllocationForOwner(client.Id(),
 		client.PublicKey(), "", options.DataShards, options.ParityShards,
 		options.Size, options.ReadPrice, options.WritePrice, options.Lock,
-		options.BlobberIds, options.BlobberAuthTickets, options.ThirdPartyExtendable, options.IsEnterprise, options.Force, options.FileOptionsParams, options.AuthRoundExpiry)
+		options.BlobberIds, options.BlobberAuthTickets, options.ThirdPartyExtendable, options.IsEnterprise, options.Force, options.FileOptionsParams, options.AuthRoundExpiry, keys...)
 }
 
 // GetAllocationBlobbers returns a list of blobber ids that can be used for a new allocation.
@@ -1033,7 +1052,7 @@ func FinalizeAllocation(allocID string) (hash string, nonce int64, err error) {
 //   - allocID is the id of the allocation.
 //
 // returns the hash of the transaction, the nonce of the transaction and an error if any.
-func CancelAllocation(allocID string) (hash string, nonce int64, err error) {
+func CancelAllocation(allocID string, keys ...string) (hash string, nonce int64, err error) {
 	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
@@ -1041,7 +1060,7 @@ func CancelAllocation(allocID string) (hash string, nonce int64, err error) {
 		Name:      transaction.STORAGESC_CANCEL_ALLOCATION,
 		InputArgs: map[string]interface{}{"allocation_id": allocID},
 	}
-	hash, _, nonce, _, err = storageSmartContractTxn(sn)
+	hash, _, nonce, _, err = storageSmartContractTxn(sn, keys...)
 	return
 }
 
@@ -1112,7 +1131,7 @@ func ShutdownProvider(providerType ProviderType, providerID string) (string, int
 // CollectRewards collects the rewards for a provider (txn: `storagesc.collect_reward`)
 //   - providerId is the id of the provider.
 //   - providerType is the type of the provider.
-func CollectRewards(providerId string, providerType ProviderType) (string, int64, error) {
+func CollectRewards(providerId string, providerType ProviderType, keys ...string) (string, int64, error) {
 	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
@@ -1141,7 +1160,7 @@ func CollectRewards(providerId string, providerType ProviderType) (string, int64
 		return "", 0, fmt.Errorf("collect rewards provider type %v not implimented", providerType)
 	}
 
-	hash, _, n, _, err := transaction.SmartContractTxn(scAddress, sn, true)
+	hash, _, n, _, err := transaction.SmartContractTxn(scAddress, sn, true, keys...)
 	return hash, n, err
 }
 
@@ -1152,12 +1171,12 @@ func CollectRewards(providerId string, providerType ProviderType) (string, int64
 //   - newOwnerPublicKey is the public key of the new owner.
 //
 // returns the hash of the transaction, the nonce of the transaction and an error if any.
-func TransferAllocation(allocationId, newOwner, newOwnerPublicKey string) (string, int64, error) {
+func TransferAllocation(allocationId, newOwner, newOwnerPublicKey string, keys ...string) (string, int64, error) {
 	if !client.IsSDKInitialized() {
 		return "", 0, sdkNotInitialized
 	}
 
-	alloc, err := GetAllocation(allocationId)
+	alloc, err := GetAllocation(allocationId, keys...)
 	if err != nil {
 		return "", 0, allocationNotFound
 	}
@@ -1179,7 +1198,7 @@ func TransferAllocation(allocationId, newOwner, newOwnerPublicKey string) (strin
 		Name:      transaction.STORAGESC_UPDATE_ALLOCATION,
 		InputArgs: allocationRequest,
 	}
-	hash, _, n, _, err := storageSmartContractTxn(sn)
+	hash, _, n, _, err := storageSmartContractTxn(sn, keys...)
 	return hash, n, err
 }
 
@@ -1276,17 +1295,17 @@ func StorageSmartContractTxn(sn transaction.SmartContractTxnData) (
 	return storageSmartContractTxnValue(sn, 0)
 }
 
-func storageSmartContractTxn(sn transaction.SmartContractTxnData) (
+func storageSmartContractTxn(sn transaction.SmartContractTxnData, keys ...string) (
 	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 
-	return storageSmartContractTxnValue(sn, 0)
+	return storageSmartContractTxnValue(sn, 0, keys...)
 }
 
-func storageSmartContractTxnValue(sn transaction.SmartContractTxnData, value uint64) (
+func storageSmartContractTxnValue(sn transaction.SmartContractTxnData, value uint64, keys ...string) (
 	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 
 	// Fee is set during sdk initialization.
-	return transaction.SmartContractTxnValueFeeWithRetry(STORAGE_SCADDRESS, sn, value, client.TxnFee(), true)
+	return transaction.SmartContractTxnValueFeeWithRetry(STORAGE_SCADDRESS, sn, value, client.TxnFee(), true, keys...)
 }
 
 func CommitToFabric(metaTxnData, fabricConfigJSON string) (string, error) {
@@ -1472,4 +1491,110 @@ func updateMaskBit(mask uint16, index uint8, value bool) uint16 {
 	} else {
 		return mask & ^uint16(1<<index)
 	}
+}
+
+// DoMultiUploadByWallet uploads multiple files to the allocation using the given wallet.
+func DoMultiUploadByWallet(pubkey string, a *Allocation, workdir string, localPaths []string, fileNames []string, thumbnailPaths []string, encrypts []bool, chunkNumbers []int, remotePaths []string, isUpdate []bool, isWebstreaming []bool, status StatusCallback) error {
+
+	if len(localPaths) != len(thumbnailPaths) {
+		return errors.New("invalid_value", "length of localpaths and thumbnailpaths must be equal")
+	}
+	if len(localPaths) != len(encrypts) {
+		return errors.New("invalid_value", "length of encrypt not equal to number of files")
+	}
+	if !a.isInitialized() {
+		return notInitialized
+	}
+
+	if !a.CanUpload() {
+		return constants.ErrFileOptionNotPermitted
+	}
+
+	totalOperations := len(localPaths)
+	if totalOperations == 0 {
+		return nil
+	}
+	operationRequests := make([]OperationRequest, totalOperations)
+	for idx, localPath := range localPaths {
+		remotePath := zboxutil.RemoteClean(remotePaths[idx])
+		isabs := zboxutil.IsRemoteAbs(remotePath)
+		if !isabs {
+			err := thrown.New("invalid_path", "Path should be valid and absolute")
+			return err
+		}
+		fileReader, err := os.Open(localPath)
+		if err != nil {
+			return err
+		}
+		defer fileReader.Close()
+		thumbnailPath := thumbnailPaths[idx]
+		fileName := fileNames[idx]
+		chunkNumber := chunkNumbers[idx]
+		if fileName == "" {
+			return thrown.New("invalid_param", "filename can't be empty")
+		}
+		encrypt := encrypts[idx]
+
+		fileInfo, err := fileReader.Stat()
+		if err != nil {
+			return err
+		}
+
+		mimeType, err := zboxutil.GetFileContentType(path.Ext(fileName), fileReader)
+		if err != nil {
+			return err
+		}
+
+		if !strings.HasSuffix(remotePath, "/") {
+			remotePath = remotePath + "/"
+		}
+		fullRemotePath := zboxutil.GetFullRemotePath(localPath, remotePath)
+		fullRemotePathWithoutName, _ := pathutil.Split(fullRemotePath)
+		fullRemotePath = fullRemotePathWithoutName + "/" + fileName
+
+		fileMeta := FileMeta{
+			Path:       localPath,
+			ActualSize: fileInfo.Size(),
+			MimeType:   mimeType,
+			RemoteName: fileName,
+			RemotePath: fullRemotePath,
+		}
+		options := []ChunkedUploadOption{
+			WithStatusCallback(status),
+			WithEncrypt(encrypt),
+		}
+		if chunkNumber != 0 {
+			options = append(options, WithChunkNumber(chunkNumber))
+		}
+		if thumbnailPath != "" {
+			buf, err := sys.Files.ReadFile(thumbnailPath)
+			if err != nil {
+				return err
+			}
+
+			options = append(options, WithThumbnail(buf))
+		}
+		options = append(options, WithWallet(pubkey))
+		operationRequests[idx] = OperationRequest{
+			FileMeta:      fileMeta,
+			FileReader:    fileReader,
+			OperationType: constants.FileOperationInsert,
+			Opts:          options,
+			Workdir:       workdir,
+			RemotePath:    fileMeta.RemotePath,
+		}
+
+		if isUpdate[idx] {
+			operationRequests[idx].OperationType = constants.FileOperationUpdate
+		}
+		if isWebstreaming[idx] {
+			operationRequests[idx].IsWebstreaming = true
+		}
+
+	}
+
+	setWalletOpt := func(mo *MultiOperation) {
+		mo.MultiWalletSupportKey = pubkey
+	}
+	return a.DoMultiOperation(operationRequests, setWalletOpt)
 }

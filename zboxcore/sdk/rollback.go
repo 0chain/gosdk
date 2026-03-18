@@ -20,6 +20,7 @@ import (
 	"github.com/0chain/common/core/common"
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/client"
+	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
@@ -50,11 +51,12 @@ var (
 )
 
 type RollbackBlobber struct {
-	ClientId     string
-	blobber      *blockchain.StorageNode
-	commitResult *CommitResult
-	lpm          *LatestPrevWriteMarker
-	blobIndex    int
+	ClientId string
+	MultiWalletSupportKey string
+	blobber               *blockchain.StorageNode
+	commitResult          *CommitResult
+	lpm                   *LatestPrevWriteMarker
+	blobIndex             int
 }
 
 type BlobberStatus struct {
@@ -62,11 +64,11 @@ type BlobberStatus struct {
 	Status string
 }
 
-func GetWritemarker(allocID, allocTx, sig, id, baseUrl string, clientId ...string) (*LatestPrevWriteMarker, error) {
+func GetWritemarker(allocID, allocTx, sig, id, baseUrl string, keys ...string) (*LatestPrevWriteMarker, error) {
 
 	var lpm LatestPrevWriteMarker
 
-	req, err := zboxutil.NewWritemarkerRequest(baseUrl, allocID, allocTx, sig, clientId...)
+	req, err := zboxutil.NewWritemarkerRequest(baseUrl, allocID, allocTx, sig, keys...)
 	if err != nil {
 		return nil, err
 	}
@@ -103,12 +105,22 @@ func GetWritemarker(allocID, allocTx, sig, id, baseUrl string, clientId ...strin
 			return nil, err
 		}
 		if lpm.LatestWM != nil {
-			err = lpm.LatestWM.VerifySignature(client.PublicKey())
+			// pick wallet for verification
+			var walletForVerify *zcncrypto.Wallet
+			if len(keys) > 0 && keys[0] != "" {
+				walletForVerify = client.GetWalletByKey(keys[0])
+				if walletForVerify == nil {
+					return nil, fmt.Errorf("multi-wallet-settings err: wallet not found : %s", keys[0])
+				}
+			} else {
+				walletForVerify = client.GetWallet()
+			}
+			err = lpm.LatestWM.VerifySignature(walletForVerify.ClientKey)
 			if err != nil {
 				return nil, fmt.Errorf("signature verification failed for latest writemarker: %s", err.Error())
 			}
 			if lpm.PrevWM != nil {
-				err = lpm.PrevWM.VerifySignature(client.PublicKey())
+				err = lpm.PrevWM.VerifySignature(walletForVerify.ClientKey)
 				if err != nil {
 					return nil, fmt.Errorf("signature verification failed for latest writemarker: %s", err.Error())
 				}
@@ -126,7 +138,10 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 	wm.AllocationID = rb.lpm.LatestWM.AllocationID
 	wm.Timestamp = rb.lpm.LatestWM.Timestamp
 	wm.BlobberID = rb.lpm.LatestWM.BlobberID
-	wm.ClientID = client.Id()
+	if rb.MultiWalletSupportKey != "" {
+		wm.MultiWalletSupportKey = rb.MultiWalletSupportKey
+	}
+	wm.ClientID = rb.ClientId
 	wm.Size = -rb.lpm.LatestWM.Size
 	wm.ChainSize = wm.Size + rb.lpm.LatestWM.ChainSize
 
@@ -178,7 +193,12 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 		return err
 	}
 
-	req, err := zboxutil.NewRollbackRequest(rb.blobber.Baseurl, wm.AllocationID, tx, body, wm.ClientID)
+	var req *http.Request
+	if rb.MultiWalletSupportKey != "" {
+		req, err = zboxutil.NewRollbackRequest(rb.blobber.Baseurl, wm.AllocationID, tx, body, rb.MultiWalletSupportKey)
+	} else {
+		req, err = zboxutil.NewRollbackRequest(rb.blobber.Baseurl, wm.AllocationID, tx, body)
+	}
 	if err != nil {
 		l.Logger.Error("Creating rollback request failed: ", err)
 		return err
@@ -269,7 +289,14 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 
 // CheckAllocStatus checks the status of the allocation
 // and returns the status of the allocation and its blobbers.
-func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
+func (a *Allocation) CheckAllocStatus(keys ...string) (AllocStatus, []BlobberStatus, error) {
+
+	var key string
+	if len(keys) > 0 && keys[0] != "" {
+		key = keys[0]
+	} else {
+		key = a.Owner
+	}
 
 	wg := &sync.WaitGroup{}
 	markerChan := make(chan *RollbackBlobber, len(a.Blobbers))
@@ -286,7 +313,7 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
 				ID:     blobber.ID,
 				Status: "available",
 			}
-			wr, err := GetWritemarker(a.ID, a.Tx, a.sig, blobber.ID, blobber.Baseurl, a.Owner)
+			wr, err := GetWritemarker(a.ID, a.Tx, a.sig, blobber.ID, blobber.Baseurl, key)
 			if err != nil {
 				atomic.AddInt32(&errCnt, 1)
 				markerError = err

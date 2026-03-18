@@ -21,6 +21,7 @@ type WriteMarker struct {
 	BlobberID              string `json:"blobber_id"`
 	Timestamp              int64  `json:"timestamp"`
 	ClientID               string `json:"client_id"`
+	MultiWalletSupportKey  string `json:"pub_key"`
 	Signature              string `json:"signature"`
 }
 
@@ -48,7 +49,16 @@ func (wm *WriteMarker) GetHash() string {
 
 func (wm *WriteMarker) Sign() error {
 	var err error
-	wm.Signature, err = client.Sign(wm.GetHash(), wm.ClientID)
+	// If Pubkey is set, use that wallet for signing and set ClientID accordingly.
+	if wm.MultiWalletSupportKey != "" {
+		// Use the provided pubkey to sign, but do not overwrite ClientID here.
+		wm.Signature, err = client.Sign(wm.GetHash(), wm.MultiWalletSupportKey)
+		return err
+	}
+
+	// Default: sign with the current SDK wallet. Do not overwrite ClientID
+	// here either; callers should set ClientID to the allocation owner.
+	wm.Signature, err = client.Sign(wm.GetHash())
 	return err
 }
 

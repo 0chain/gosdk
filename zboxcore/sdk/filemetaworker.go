@@ -12,6 +12,7 @@ import (
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
+	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	l "github.com/0chain/gosdk/zboxcore/logger"
@@ -76,7 +77,11 @@ func (req *ListRequest) getFileMetaInfoFromBlobber(blobber *blockchain.StorageNo
 	}
 
 	formWriter.Close()
-	httpreq, err := zboxutil.NewFileMetaRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body, req.ClientId)
+	key := client.Wallet().ClientID
+	if req.MultiWalletSupportKey != "" {
+		key = req.MultiWalletSupportKey
+	}
+	httpreq, err := zboxutil.NewFileMetaRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body, key)
 	if err != nil {
 		l.Logger.Error("File meta info request error: ", err.Error())
 		return
@@ -141,7 +146,11 @@ func (req *ListRequest) getFileMetaByNameInfoFromBlobber(blobber *blockchain.Sto
 		}
 	}
 	formWriter.Close()
-	httpreq, err := zboxutil.NewFileMetaRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body, req.ClientId)
+	key := client.Wallet().ClientID
+	if req.MultiWalletSupportKey != "" {
+		key = req.MultiWalletSupportKey
+	}
+	httpreq, err := zboxutil.NewFileMetaRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body, key)
 	if err != nil {
 		l.Logger.Error("File meta info request error: ", err.Error())
 		return

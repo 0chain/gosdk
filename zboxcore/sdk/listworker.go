@@ -23,22 +23,23 @@ import (
 const CHUNK_SIZE = 64 * 1024
 
 type ListRequest struct {
-	ClientId           string
-	allocationID       string
-	allocationTx       string
-	sig                string
-	blobbers           []*blockchain.StorageNode
-	remotefilepathhash string
-	remotefilepath     string
-	filename           string
-	authToken          *marker.AuthTicket
-	ctx                context.Context
-	forRepair          bool
-	listOnly           bool
-	offset             int
-	pageLimit          int
-	storageVersion     int
-	dataShards         int
+	ClientId              string
+	allocationID          string
+	allocationTx          string
+	sig                   string
+	blobbers              []*blockchain.StorageNode
+	remotefilepathhash    string
+	remotefilepath        string
+	filename              string
+	authToken             *marker.AuthTicket
+	ctx                   context.Context
+	forRepair             bool
+	listOnly              bool
+	offset                int
+	pageLimit             int
+	storageVersion        int
+	dataShards            int
+	MultiWalletSupportKey string
 	Consensus
 }
 
@@ -131,7 +132,15 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 	if req.forRepair {
 		req.listOnly = true
 	}
-	httpreq, err := zboxutil.NewListRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.remotefilepath, req.remotefilepathhash, string(authTokenBytes), req.listOnly, req.offset, req.pageLimit, req.ClientId)
+	// Choose signing key for the HTTP request: prefer operation-level
+	// MultiWalletSupportKey if present, otherwise fall back to the request ClientId.
+	var clientKey string
+	if req.MultiWalletSupportKey != "" {
+		clientKey = req.MultiWalletSupportKey
+	} else {
+		clientKey = req.ClientId
+	}
+	httpreq, err := zboxutil.NewListRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.remotefilepath, req.remotefilepathhash, string(authTokenBytes), req.listOnly, req.offset, req.pageLimit, clientKey)
 	if err != nil {
 		l.Logger.Error("List info request error: ", err.Error())
 		return
