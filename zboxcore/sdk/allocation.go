@@ -2453,7 +2453,10 @@ var ErrInvalidPrivateShare = errors.New("invalid_private_share", "private sharin
 
 // GetAuthTicket generates an authentication ticket for the specified file or directory in the allocation.
 // The authentication ticket is used to grant access to the file or directory to another client.
-// The function takes the following parameters:
+// It uploads the ticket to blobbers with share_type "private". For share flows that need public/private
+// distinction, use GetAuthTicketWithShareType instead.
+//
+// Parameters:
 //   - path: The path of the file or directory (should be absolute).
 //   - filename: The name of the file.
 //   - referenceType: The type of reference (file or directory).
@@ -2465,6 +2468,21 @@ var ErrInvalidPrivateShare = errors.New("invalid_private_share", "private sharin
 // Returns the authentication ticket as a base64-encoded string and an error if any.
 func (a *Allocation) GetAuthTicket(path, filename string,
 	referenceType, refereeClientID, refereeEncryptionPublicKey string, expiration int64, availableAfter *time.Time) (string, error) {
+	return a.GetAuthTicketWithShareType(path, filename, referenceType, refereeClientID, refereeEncryptionPublicKey, expiration, availableAfter, "private")
+}
+
+// GetAuthTicketWithShareType is for share-related operations only. It behaves like GetAuthTicket but
+// accepts shareType ("public" or "private") so the blobber can store separate public/private rows
+// and revoke them independently. Use this when creating a share from 0box/UI where share_info_type is known.
+//
+// Parameters: same as GetAuthTicket, plus:
+//   - shareType: "public" or "private" (default "private" if empty).
+func (a *Allocation) GetAuthTicketWithShareType(path, filename string,
+	referenceType, refereeClientID, refereeEncryptionPublicKey string, expiration int64, availableAfter *time.Time, shareType string) (string, error) {
+
+	if shareType == "" {
+		shareType = "private"
+	}
 
 	if !a.isInitialized() {
 		return "", notInitialized
@@ -2510,7 +2528,7 @@ func (a *Allocation) GetAuthTicket(path, filename string,
 		return "", err
 	}
 
-	if err := a.UploadAuthTicketToBlobber(string(atBytes), refereeEncryptionPublicKey, availableAfter); err != nil {
+	if err := a.UploadAuthTicketToBlobber(string(atBytes), refereeEncryptionPublicKey, availableAfter, shareType); err != nil {
 		return "", err
 	}
 
@@ -2528,11 +2546,15 @@ func (a *Allocation) GetAuthTicket(path, filename string,
 }
 
 // UploadAuthTicketToBlobber uploads the authentication ticket to the blobbers after creating it at the client side.
-// The authentication ticket is uploaded to the blobbers to grant access to the file or directory to a client other than the owner.
+// shareType should be "public" or "private" (default "private"); the blobber stores it so public and private shares can be revoked separately.
 //   - authTicket: The authentication ticket to upload.
 //   - clientEncPubKey: The encryption public key of the client, used in case of private sharing.
 //   - availableAfter: The time after which the authentication ticket becomes available in Unix timestamp format.
-func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKey string, availableAfter *time.Time) error {
+//   - shareType: "public" or "private".
+func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKey string, availableAfter *time.Time, shareType string) error {
+	if shareType == "" {
+		shareType = "private"
+	}
 	success := make(chan int, len(a.Blobbers))
 	wg := &sync.WaitGroup{}
 	for idx := range a.Blobbers {
@@ -2543,6 +2565,9 @@ func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKe
 			return err
 		}
 		if err := formWriter.WriteField("auth_ticket", authTicket); err != nil {
+			return err
+		}
+		if err := formWriter.WriteField("share_type", shareType); err != nil {
 			return err
 		}
 		if availableAfter != nil {
@@ -3681,4 +3706,370 @@ func writeLogEntry(blobberURL string, log logEntry) {
 
 func addBlobberMonitoringLog(log BlobberMonitoring) {
 	LogBlobberMonitoringChan <- log
+}
+
+// RevokePublicShare revokes the public shared access to a file or directory within the allocation.
+// It revokes the public shared access for all users who have access via the public link.
+//
+// Parameters:
+//   - path: The path of the file or directory to revoke the public shared access.
+//
+// Returns:
+//   - error: An error if the public shared access revocation fails.
+func (a *Allocation) RevokePublicShare(path string) error {
+	// Pre-build all requests before launching goroutines (G-C1: prevents leak on early return).
+	type reqEntry struct {
+		baseUrl string
+		req     *http.Request
+	}
+	reqs := make([]reqEntry, 0, len(a.Blobbers))
+	for idx := range a.Blobbers {
+		baseUrl := a.Blobbers[idx].Baseurl
+		query := &url.Values{}
+		query.Add("path", path)
+		// For public shares, we don't specify a refereeClientID
+		// The blobber will revoke all public access for this path
+		httpreq, err := zboxutil.NewRevokePublicShareRequest(baseUrl, a.ID, a.Tx, a.sig, query, a.Owner)
+		if err != nil {
+			return err
+		}
+		reqs = append(reqs, reqEntry{baseUrl: baseUrl, req: httpreq})
+	}
+
+	success := make(chan int, len(a.Blobbers))
+	notFound := make(chan int, len(a.Blobbers))
+	wg := &sync.WaitGroup{}
+	for _, r := range reqs {
+		baseUrl := r.baseUrl
+		httpreq := r.req
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			err := zboxutil.HttpDo(a.ctx, a.ctxCancelF, httpreq, func(resp *http.Response, err error) error {
+				if err != nil {
+					l.Logger.Error("Revoke public share : ", err)
+					return err
+				}
+				defer resp.Body.Close()
+
+				respbody, err := io.ReadAll(resp.Body)
+				if err != nil {
+					l.Logger.Error("Error: Resp ", err)
+					return err
+				}
+				if resp.StatusCode != http.StatusOK {
+					l.Logger.Error(baseUrl, " Revoke public share error response: ", resp.StatusCode, string(respbody))
+					return fmt.Errorf("%s", string(respbody))
+				}
+				data := map[string]interface{}{}
+				err = json.Unmarshal(respbody, &data)
+				if err != nil {
+					return err
+				}
+				if v, ok := data["status"].(float64); ok && v == float64(http.StatusNotFound) {
+					notFound <- 1
+				}
+				return nil
+			})
+			if err == nil {
+				success <- 1
+			}
+		}()
+	}
+	wg.Wait()
+	consensus := Consensus{
+		RWMutex:         &sync.RWMutex{},
+		consensus:       len(success),
+		consensusThresh: a.DataShards,
+		fullconsensus:   a.fullconsensus,
+	}
+	if consensus.isConsensusOk() {
+		if len(notFound) == len(a.Blobbers) {
+			return errors.New("", "public share not found")
+		}
+		return nil
+	}
+	return errors.New("", "consensus not reached")
+}
+
+// RemovePublicShareRecipient removes a specific recipient's access from a public share.
+// This allows removing individual users while keeping the public share active for others.
+//
+// Parameters:
+//   - path: The path of the file or directory
+//   - recipientClientID: The client ID of the recipient to remove
+//
+// Returns:
+//   - error: An error if the recipient removal fails
+func (a *Allocation) RemovePublicShareRecipient(path string, recipientClientID string) error {
+	// Pre-build all requests before launching goroutines (G-C1: prevents leak on early return).
+	type reqEntry struct {
+		baseUrl string
+		req     *http.Request
+	}
+	reqs := make([]reqEntry, 0, len(a.Blobbers))
+	for idx := range a.Blobbers {
+		baseUrl := a.Blobbers[idx].Baseurl
+		query := &url.Values{}
+		query.Add("path", path)
+		query.Add("recipientClientId", recipientClientID)
+		httpreq, err := zboxutil.NewRemovePublicShareRecipientRequest(baseUrl, a.ID, a.Tx, a.sig, query, a.Owner)
+		if err != nil {
+			return err
+		}
+		reqs = append(reqs, reqEntry{baseUrl: baseUrl, req: httpreq})
+	}
+
+	success := make(chan int, len(a.Blobbers))
+	notFound := make(chan int, len(a.Blobbers))
+	wg := &sync.WaitGroup{}
+	for _, r := range reqs {
+		baseUrl := r.baseUrl
+		httpreq := r.req
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			err := zboxutil.HttpDo(a.ctx, a.ctxCancelF, httpreq, func(resp *http.Response, err error) error {
+				if err != nil {
+					l.Logger.Error("Remove public share recipient : ", err)
+					return err
+				}
+				defer resp.Body.Close()
+
+				respbody, err := io.ReadAll(resp.Body)
+				if err != nil {
+					l.Logger.Error("Error: Resp ", err)
+					return err
+				}
+				if resp.StatusCode != http.StatusOK {
+					l.Logger.Error(baseUrl, " Remove public share recipient error response: ", resp.StatusCode, string(respbody))
+					return fmt.Errorf("%s", string(respbody))
+				}
+				data := map[string]interface{}{}
+				err = json.Unmarshal(respbody, &data)
+				if err != nil {
+					return err
+				}
+				if v, ok := data["status"].(float64); ok && v == float64(http.StatusNotFound) {
+					notFound <- 1
+				}
+				return nil
+			})
+			if err == nil {
+				success <- 1
+			}
+		}()
+	}
+	wg.Wait()
+	consensus := Consensus{
+		RWMutex:         &sync.RWMutex{},
+		consensus:       len(success),
+		consensusThresh: a.DataShards,
+		fullconsensus:   a.fullconsensus,
+	}
+	if consensus.isConsensusOk() {
+		if len(notFound) == len(a.Blobbers) {
+			return errors.New("", "public share recipient not found")
+		}
+		return nil
+	}
+	return errors.New("", "consensus not reached")
+}
+
+// CheckPublicShareExists checks if a public share exists for a file or directory
+// Parameters:
+//   - path: The path of the file or directory to check for public share existence.
+//
+// Returns:
+//   - bool: True if public share exists, false otherwise.
+//   - error: An error if the check fails.
+func (a *Allocation) CheckPublicShareExists(path string) (bool, error) {
+	// Pre-build all requests before launching goroutines (G-C1: prevents leak on early return).
+	type reqEntry struct {
+		baseUrl string
+		req     *http.Request
+	}
+	reqs := make([]reqEntry, 0, len(a.Blobbers))
+	for idx := range a.Blobbers {
+		baseUrl := a.Blobbers[idx].Baseurl
+		query := &url.Values{}
+		query.Add("path", path)
+		httpreq, err := zboxutil.NewCheckPublicShareExistsRequest(baseUrl, a.ID, a.Tx, a.sig, query, a.Owner)
+		if err != nil {
+			return false, err
+		}
+		reqs = append(reqs, reqEntry{baseUrl: baseUrl, req: httpreq})
+	}
+
+	success := make(chan bool, len(a.Blobbers))
+	errCh := make(chan error, len(a.Blobbers))
+	wg := &sync.WaitGroup{}
+	for _, r := range reqs {
+		baseUrl := r.baseUrl
+		httpreq := r.req
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			err := zboxutil.HttpDo(a.ctx, a.ctxCancelF, httpreq, func(resp *http.Response, err error) error {
+				if err != nil {
+					l.Logger.Error("Check public share exists: ", err)
+					return err
+				}
+				defer resp.Body.Close()
+
+				respbody, err := io.ReadAll(resp.Body)
+				if err != nil {
+					l.Logger.Error("Error: Resp ", err)
+					return err
+				}
+
+				if resp.StatusCode != http.StatusOK {
+					l.Logger.Error(baseUrl, " Check public share exists error response: ", resp.StatusCode, string(respbody))
+					return fmt.Errorf("%s", string(respbody))
+				}
+
+				var result map[string]interface{}
+				if err := json.Unmarshal(respbody, &result); err != nil {
+					return err
+				}
+
+				if exists, ok := result["exists"].(bool); ok {
+					success <- exists
+				} else {
+					success <- false
+				}
+				return nil
+			})
+			if err != nil {
+				errCh <- err
+			}
+		}()
+	}
+
+	wg.Wait()
+	close(success)
+	close(errCh)
+
+	// Check for any errors
+	select {
+	case err := <-errCh:
+		return false, err
+	default:
+	}
+
+	// Get consensus result
+	existsCount := 0
+	totalResponses := 0
+	for exists := range success {
+		if exists {
+			existsCount++
+		}
+		totalResponses++
+	}
+
+	if totalResponses == 0 {
+		return false, fmt.Errorf("no responses from blobbers")
+	}
+
+	// Simple majority consensus
+	return existsCount > totalResponses/2, nil
+}
+
+// ShareInfo represents a share information structure
+type ShareInfo struct {
+	ID                        int       `json:"id"`
+	OwnerID                   string    `json:"owner_id,omitempty"`
+	ClientID                  string    `json:"client_id"`
+	FilePathHash              string    `json:"file_path_hash,omitempty"`
+	ReEncryptionKey           string    `json:"re_encryption_key,omitempty"`
+	ClientEncryptionPublicKey string    `json:"client_encryption_public_key,omitempty"`
+	Revoked                   bool      `json:"revoked"`
+	ExpiryAt                  time.Time `json:"expiry_at,omitempty"`
+	AvailableAt               time.Time `json:"available_at,omitempty"`
+}
+
+// GetPublicShareRecipients gets all recipients of a public share
+// Parameters:
+//   - path: The path of the file or directory to get recipients for.
+//
+// Returns:
+//   - []ShareInfo: List of recipients.
+//   - error: An error if the operation fails.
+func (a *Allocation) GetPublicShareRecipients(path string) ([]ShareInfo, error) {
+	// Pre-build all requests before launching goroutines (G-C1: prevents leak on early return).
+	type reqEntry struct {
+		baseUrl string
+		req     *http.Request
+	}
+	reqs := make([]reqEntry, 0, len(a.Blobbers))
+	for idx := range a.Blobbers {
+		baseUrl := a.Blobbers[idx].Baseurl
+		query := &url.Values{}
+		query.Add("path", path)
+		httpreq, err := zboxutil.NewGetPublicShareRecipientsRequest(baseUrl, a.ID, a.Tx, a.sig, query, a.Owner)
+		if err != nil {
+			return nil, err
+		}
+		reqs = append(reqs, reqEntry{baseUrl: baseUrl, req: httpreq})
+	}
+
+	success := make(chan []ShareInfo, len(a.Blobbers))
+	errCh := make(chan error, len(a.Blobbers))
+	wg := &sync.WaitGroup{}
+	for _, r := range reqs {
+		baseUrl := r.baseUrl
+		httpreq := r.req
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			err := zboxutil.HttpDo(a.ctx, a.ctxCancelF, httpreq, func(resp *http.Response, err error) error {
+				if err != nil {
+					l.Logger.Error("Get public share recipients: ", err)
+					return err
+				}
+				defer resp.Body.Close()
+
+				respbody, err := io.ReadAll(resp.Body)
+				if err != nil {
+					l.Logger.Error("Error: Resp ", err)
+					return err
+				}
+
+				if resp.StatusCode != http.StatusOK {
+					l.Logger.Error(baseUrl, " Get public share recipients error response: ", resp.StatusCode, string(respbody))
+					return fmt.Errorf("%s", string(respbody))
+				}
+
+				var recipients []ShareInfo
+				if err := json.Unmarshal(respbody, &recipients); err != nil {
+					return err
+				}
+
+				success <- recipients
+				return nil
+			})
+			if err != nil {
+				errCh <- err
+			}
+		}()
+	}
+
+	wg.Wait()
+	close(success)
+	close(errCh)
+
+	// Check for any errors
+	select {
+	case err := <-errCh:
+		return nil, err
+	default:
+	}
+
+	// Get first successful response
+	select {
+	case recipients := <-success:
+		return recipients, nil
+	default:
+		return nil, fmt.Errorf("no responses from blobbers")
+	}
 }

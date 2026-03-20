@@ -49,35 +49,39 @@ func GetLogger() *logger.Logger {
 }
 
 const (
-	ALLOCATION_ENDPOINT          = "/allocation"
-	UPLOAD_ENDPOINT              = "/v1/file/upload/"
-	RENAME_ENDPOINT              = "/v1/file/rename/"
-	COPY_ENDPOINT                = "/v1/file/copy/"
-	MOVE_ENDPOINT                = "/v1/file/move/"
-	LIST_ENDPOINT                = "/v1/file/list/"
-	REFERENCE_ENDPOINT           = "/v1/file/referencepath/"
-	REFERENCE_ENDPOINT_V2        = "/v2/file/referencepath/"
-	CONNECTION_ENDPOINT          = "/v1/connection/details/"
-	COMMIT_ENDPOINT              = "/v1/connection/commit/"
-	COMMIT_ENDPOINT_V2           = "/v2/connection/commit/"
-	DOWNLOAD_ENDPOINT            = "/v1/file/download/"
-	LATEST_READ_MARKER           = "/v1/readmarker/latest"
-	FILE_META_ENDPOINT           = "/v1/file/meta/"
-	FILE_STATS_ENDPOINT          = "/v1/file/stats/"
-	OBJECT_TREE_ENDPOINT         = "/v1/file/objecttree/"
-	REFS_ENDPOINT                = "/v1/file/refs/"
-	RECENT_REFS_ENDPOINT         = "/v1/file/refs/recent/"
-	COLLABORATOR_ENDPOINT        = "/v1/file/collaborator/"
-	CALCULATE_HASH_ENDPOINT      = "/v1/file/calculatehash/"
-	SHARE_ENDPOINT               = "/v1/marketplace/shareinfo/"
-	DIR_ENDPOINT                 = "/v1/dir/"
-	PLAYLIST_LATEST_ENDPOINT     = "/v1/playlist/latest/"
-	PLAYLIST_FILE_ENDPOINT       = "/v1/playlist/file/"
-	WM_LOCK_ENDPOINT             = "/v1/writemarker/lock/"
-	CREATE_CONNECTION_ENDPOINT   = "/v1/connection/create/"
-	LATEST_WRITE_MARKER_ENDPOINT = "/v1/file/latestwritemarker/"
-	ROLLBACK_ENDPOINT            = "/v1/connection/rollback/"
-	REDEEM_ENDPOINT              = "/v1/connection/redeem/"
+	ALLOCATION_ENDPOINT              = "/allocation"
+	UPLOAD_ENDPOINT                  = "/v1/file/upload/"
+	RENAME_ENDPOINT                  = "/v1/file/rename/"
+	COPY_ENDPOINT                    = "/v1/file/copy/"
+	MOVE_ENDPOINT                    = "/v1/file/move/"
+	LIST_ENDPOINT                    = "/v1/file/list/"
+	REFERENCE_ENDPOINT               = "/v1/file/referencepath/"
+	REFERENCE_ENDPOINT_V2            = "/v2/file/referencepath/"
+	CONNECTION_ENDPOINT              = "/v1/connection/details/"
+	COMMIT_ENDPOINT                  = "/v1/connection/commit/"
+	COMMIT_ENDPOINT_V2               = "/v2/connection/commit/"
+	DOWNLOAD_ENDPOINT                = "/v1/file/download/"
+	LATEST_READ_MARKER               = "/v1/readmarker/latest"
+	FILE_META_ENDPOINT               = "/v1/file/meta/"
+	FILE_STATS_ENDPOINT              = "/v1/file/stats/"
+	OBJECT_TREE_ENDPOINT             = "/v1/file/objecttree/"
+	REFS_ENDPOINT                    = "/v1/file/refs/"
+	RECENT_REFS_ENDPOINT             = "/v1/file/refs/recent/"
+	COLLABORATOR_ENDPOINT            = "/v1/file/collaborator/"
+	CALCULATE_HASH_ENDPOINT          = "/v1/file/calculatehash/"
+	SHARE_ENDPOINT                   = "/v1/marketplace/shareinfo/"
+	PUBLIC_SHARE_ENDPOINT            = "/v1/marketplace/shareinfo/public/"
+	PUBLIC_SHARE_RECIPIENT_ENDPOINT  = "/v1/marketplace/shareinfo/public/recipient/"
+	PUBLIC_SHARE_CHECK_ENDPOINT      = "/v1/marketplace/shareinfo/public/check/"
+	PUBLIC_SHARE_RECIPIENTS_ENDPOINT = "/v1/marketplace/shareinfo/public/recipients/"
+	DIR_ENDPOINT                     = "/v1/dir/"
+	PLAYLIST_LATEST_ENDPOINT         = "/v1/playlist/latest/"
+	PLAYLIST_FILE_ENDPOINT           = "/v1/playlist/file/"
+	WM_LOCK_ENDPOINT                 = "/v1/writemarker/lock/"
+	CREATE_CONNECTION_ENDPOINT       = "/v1/connection/create/"
+	LATEST_WRITE_MARKER_ENDPOINT     = "/v1/file/latestwritemarker/"
+	ROLLBACK_ENDPOINT                = "/v1/connection/rollback/"
+	REDEEM_ENDPOINT                  = "/v1/connection/redeem/"
 
 	// CLIENT_SIGNATURE_HEADER represents http request header contains signature.
 	CLIENT_SIGNATURE_HEADER    = "X-App-Client-Signature"
@@ -960,6 +964,89 @@ func NewShareRequest(baseUrl, allocationID, allocationTx, sig string, body io.Re
 
 func NewRevokeShareRequest(baseUrl, allocationID, allocationTx, sig string, query *url.Values, clients ...string) (*http.Request, error) {
 	u, err := joinUrl(baseUrl, SHARE_ENDPOINT, allocationTx)
+	if err != nil {
+		return nil, err
+	}
+	u.RawQuery = query.Encode()
+	req, err := http.NewRequest(http.MethodDelete, u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := setClientInfoWithSign(req, sig, allocationTx, baseUrl, clients...); err != nil {
+		return nil, err
+	}
+
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
+
+	return req, nil
+}
+
+func NewRevokePublicShareRequest(baseUrl, allocationID, allocationTx, sig string, query *url.Values, clients ...string) (*http.Request, error) {
+	u, err := joinUrl(baseUrl, PUBLIC_SHARE_ENDPOINT, allocationTx)
+	if err != nil {
+		return nil, err
+	}
+	u.RawQuery = query.Encode()
+	req, err := http.NewRequest(http.MethodDelete, u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := setClientInfoWithSign(req, sig, allocationTx, baseUrl, clients...); err != nil {
+		return nil, err
+	}
+
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
+
+	return req, nil
+}
+
+// NewCheckPublicShareExistsRequest creates a new HTTP request to check if public share exists
+func NewCheckPublicShareExistsRequest(baseUrl, allocationID, allocationTx, sig string, query *url.Values, clients ...string) (*http.Request, error) {
+	u, err := joinUrl(baseUrl, PUBLIC_SHARE_CHECK_ENDPOINT, allocationTx)
+	if err != nil {
+		return nil, err
+	}
+	u.RawQuery = query.Encode()
+	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := setClientInfoWithSign(req, sig, allocationTx, baseUrl, clients...); err != nil {
+		return nil, err
+	}
+
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
+
+	return req, nil
+}
+
+// NewGetPublicShareRecipientsRequest creates a new HTTP request to get public share recipients
+func NewGetPublicShareRecipientsRequest(baseUrl, allocationID, allocationTx, sig string, query *url.Values, clients ...string) (*http.Request, error) {
+	u, err := joinUrl(baseUrl, PUBLIC_SHARE_RECIPIENTS_ENDPOINT, allocationTx)
+	if err != nil {
+		return nil, err
+	}
+	u.RawQuery = query.Encode()
+	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := setClientInfoWithSign(req, sig, allocationTx, baseUrl, clients...); err != nil {
+		return nil, err
+	}
+
+	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
+
+	return req, nil
+}
+
+// NewRemovePublicShareRecipientRequest creates a new HTTP request to remove a public share recipient
+func NewRemovePublicShareRecipientRequest(baseUrl, allocationID, allocationTx, sig string, query *url.Values, clients ...string) (*http.Request, error) {
+	u, err := joinUrl(baseUrl, PUBLIC_SHARE_RECIPIENT_ENDPOINT, allocationTx)
 	if err != nil {
 		return nil, err
 	}
