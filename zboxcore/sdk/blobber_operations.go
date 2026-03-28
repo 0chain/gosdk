@@ -389,7 +389,7 @@ func GenerateOwnerSigningKey(ownerPublicKey, ownerID string, signingPubKey ...st
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("signingKey: %s\n", signingKey)
+	logger.Logger.Debug("signingKey: ", zap.String("key", signingKey))
 	sig, err := client.Sign(encryption.Hash(hashData), signingKey)
 	if err != nil {
 		logger.Logger.Error("error during sign", zap.Error(err))

@@ -1379,7 +1379,7 @@ func (a *Allocation) DownloadFile(localPath string, remotePath string, verifyDow
 	}))
 	err = a.addAndGenerateDownloadRequest(f, remotePath, DOWNLOAD_CONTENT_FULL, 1, 0,
 		numBlockDownloads, verifyDownload, status, isFinal, localFilePath, downloadReqOpts...)
-	fmt.Print("err in addAndGenerateDownloadRequest: ", err)
+	logger.Logger.Debug("err in addAndGenerateDownloadRequest", zap.Error(err))
 	if err != nil {
 		if !toKeep {
 			os.Remove(localFilePath) //nolint: errcheck
@@ -3295,8 +3295,8 @@ func (a *Allocation) GetMaxStorageCost(size int64) (float64, error) {
 	var cost common.Balance // total price for size / duration
 
 	for _, d := range a.BlobberDetails {
-		fmt.Printf("write price for blobber %f datashards %d parity %d\n",
-			float64(d.Terms.WritePrice), a.DataShards, a.ParityShards)
+		logger.Logger.Debug(fmt.Sprintf("write price for blobber %f datashards %d parity %d",
+			float64(d.Terms.WritePrice), a.DataShards, a.ParityShards))
 
 		var err error
 		cost, err = common.AddBalance(cost, a.uploadCostForBlobber(float64(d.Terms.WritePrice), size,
@@ -3305,7 +3305,7 @@ func (a *Allocation) GetMaxStorageCost(size int64) (float64, error) {
 			return 0.0, err
 		}
 	}
-	fmt.Printf("Total cost %d\n", cost)
+	logger.Logger.Debug(fmt.Sprintf("Total cost %d", cost))
 	return cost.ToToken()
 }
 

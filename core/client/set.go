@@ -83,7 +83,7 @@ func init() {
 			}
 		}
 
-		fmt.Print("wallet found: client_id: ", wallet.ClientID, "is_split: ", wallet.IsSplit, "pubkey: ", wallet.Keys[0].PublicKey)
+		logging.Debug(fmt.Sprintf("wallet found: client_id: %s is_split: %v", wallet.ClientID, wallet.IsSplit))
 
 		if !wallet.IsSplit {
 			return sys.Sign(hash, client.signatureScheme, GetClientSysKeys(keys...))
@@ -91,9 +91,9 @@ func init() {
 
 		// split-key signing via auth
 		<-sigC
-		fmt.Println("Sign: with sys.SignWithAuth:", sys.SignWithAuth, "sysKeys:", GetClientSysKeys(keys...))
+		logging.Debug(fmt.Sprintf("Sign: with sys.SignWithAuth, sysKeys: %v", GetClientSysKeys(keys...)))
 		sig, err := sys.SignWithAuth(hash, client.signatureScheme, GetClientSysKeys(keys...), wallet.Keys[0].PublicKey)
-		fmt.Println("Signature: ", sig)
+		logging.Debug("Signature: ", sig)
 		sigC <- struct{}{}
 		return sig, err
 	}
