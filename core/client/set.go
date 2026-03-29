@@ -92,7 +92,7 @@ func init() {
 		// split-key signing via auth
 		<-sigC
 		fmt.Println("Sign: with sys.SignWithAuth:", sys.SignWithAuth, "sysKeys:", GetClientSysKeys(keys...))
-		sig, err := sys.SignWithAuth(hash, client.signatureScheme, GetClientSysKeys(keys...), wallet.Keys[0].PublicKey)
+		sig, err := sys.SignWithAuth(hash, client.signatureScheme, GetClientSysKeys(keys...), wallet.ClientID)
 		fmt.Println("Signature: ", sig)
 		sigC <- struct{}{}
 		return sig, err
@@ -356,6 +356,18 @@ func GetWalletByKey(key string) *zcncrypto.Wallet {
 	return client.wallets[key]
 }
 
+// GetWalletByClientID looks up a wallet by its ClientID (linear scan).
+func GetWalletByClientID(clientID string) *zcncrypto.Wallet {
+	client.mu.RLock()
+	defer client.mu.RUnlock()
+	for _, w := range client.wallets {
+		if w != nil && w.ClientID == clientID {
+			return w
+		}
+	}
+	return nil
+}
+
 func GetWallet() *zcncrypto.Wallet {
 	return client.wallet
 }
@@ -527,7 +539,7 @@ func SigningKey(keys ...string) (string, error) {
 		client.mu.RUnlock()
 	}
 
-	return client.wallet.ClientID, nil
+	return client.wallet.Keys[0].PublicKey, nil
 }
 
 
