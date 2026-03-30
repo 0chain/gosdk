@@ -450,7 +450,7 @@ func (req *DownloadRequest) getDecryptedDataForAuthTicket(result *downloadBlock,
 // start block, end block and number of blocks to download in single request.
 // This will also write data to the file handler and will verify content by calculating content hash.
 func (req *DownloadRequest) processDownload() {
-	fmt.Print("inside process download: pubkey", req.MultiWalletSupportKey, "\n")
+	logger.Logger.Debug("inside process download: pubkey " + req.MultiWalletSupportKey)
 	ctx := req.ctx
 	if req.completedCallback != nil {
 		defer req.completedCallback(req.remotefilepath, req.remotefilepathhash)
