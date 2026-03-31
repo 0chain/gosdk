@@ -172,9 +172,8 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 func (mo *MultiOperation) Process() error {
 	l.Logger.Debug("MultiOperation Process start")
 	wg := &sync.WaitGroup{}
-	if mo.allocationObj.StorageVersion == 0 {
-		mo.changes = make([][]allocationchange.AllocationChange, len(mo.operations))
-	} else {
+	mo.changes = make([][]allocationchange.AllocationChange, len(mo.operations))
+	if mo.allocationObj.StorageVersion != 0 {
 		mo.changesV2 = make([]allocationchange.AllocationChangeV2, 0, len(mo.operations))
 	}
 	ctx := mo.ctx
@@ -215,13 +214,14 @@ func (mo *MultiOperation) Process() error {
 					mo.operationMask = mo.operationMask.And(mask)
 				}
 				mo.changesV2 = append(mo.changesV2, op)
-				mo.maskMU.Unlock()
 			} else {
 				mo.operationMask = mo.operationMask.Or(mask)
-				mo.maskMU.Unlock()
-				changes := op.buildChange(refs, uid)
-				mo.changes[idx] = changes
 			}
+			mo.maskMU.Unlock()
+			// Always build V1 allocation_changes — blobber commit handler requires them
+			// regardless of storage version
+			changes := op.buildChange(refs, uid)
+			mo.changes[idx] = changes
 		}(op, idx)
 	}
 	swg.Wait()
@@ -251,9 +251,7 @@ func (mo *MultiOperation) Process() error {
 	// But we want mo.changes[0] to have allocationChange for blobber 1 and mo.changes[1] to have allocationChange for
 	// blobber 2 and so on.
 	start := time.Now()
-	if mo.allocationObj.StorageVersion != StorageV2 {
-		mo.changes = zboxutil.Transpose(mo.changes)
-	}
+	mo.changes = zboxutil.Transpose(mo.changes)
 
 	writeMarkerMutex, err := CreateWriteMarkerMutex(mo.allocationObj, mo.MultiWalletSupportKey)
 	if err != nil {
