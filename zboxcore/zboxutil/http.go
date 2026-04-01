@@ -206,11 +206,15 @@ func setClientInfo(req *http.Request, keys ...string) error {
 	if len(keys) > 0 && keys[0] != "" {
 		wallet := client.GetWalletByKey(keys[0])
 		if wallet == nil {
-			return errors.New("multi-wallet-settings err: ", "wallet not found : "+keys[0])
+			// Fallback to current wallet (CLI mode: one wallet per process)
+			wallet = client.Wallet()
 		}
-		req.Header.Set("X-App-Client-ID", wallet.ClientID)
-		req.Header.Set("X-App-Client-Key", wallet.ClientKey)
-		return nil
+		if wallet != nil {
+			req.Header.Set("X-App-Client-ID", wallet.ClientID)
+			req.Header.Set("X-App-Client-Key", wallet.ClientKey)
+			return nil
+		}
+		return errors.New("multi-wallet-settings err: ", "wallet not found : "+keys[0])
 	}
 	req.Header.Set("X-App-Client-ID", client.Id())
 	req.Header.Set("X-App-Client-Key", client.PublicKey())
@@ -226,7 +230,13 @@ func setClientInfoWithSign(req *http.Request, sig, allocation, baseURL string, k
 	}
 	wallet := client.GetWalletByKey(key)
 	if wallet == nil {
-		return errors.New("multi-wallet-settings err: ", "wallet not found : "+key)
+		// Fallback: in CLI mode each process has one wallet loaded via SetWallet.
+		// GetWalletByKey may fail if the key format doesn't match the wallets map index.
+		// Use the current wallet as fallback.
+		wallet = client.Wallet()
+		if wallet == nil {
+			return errors.New("multi-wallet-settings err: ", "wallet not found : "+key)
+		}
 	}
 	l.Logger.Info(fmt.Sprintf("setClientInfoWithSign: wallet details: %+v", *wallet))
 	req.Header.Set("X-App-Client-ID", wallet.ClientID)
