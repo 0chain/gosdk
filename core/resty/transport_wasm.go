@@ -25,3 +25,16 @@ func init() {
 	DefaultHeader = make(map[string]string)
 	DefaultHeader["js.fetch:mode"] = "cors"
 }
+
+// SetSessionID stores the browser session ID so it is attached as
+// X-App-Session-ID on every outgoing blobber HTTP request. Blobbers
+// forward this value to 0box, which uses it to suppress echoing the
+// event back to the session that caused it.
+func SetSessionID(id string) {
+	if DefaultHeader == nil {
+		DefaultHeader = make(map[string]string)
+	}
+	if id != "" {
+		DefaultHeader["X-App-Session-ID"] = id
+	}
+}

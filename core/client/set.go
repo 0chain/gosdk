@@ -92,7 +92,7 @@ func init() {
 		// split-key signing via auth
 		<-sigC
 		logging.Debug(fmt.Sprintf("Sign: with sys.SignWithAuth, sysKeys: %v", GetClientSysKeys(keys...)))
-		sig, err := sys.SignWithAuth(hash, client.signatureScheme, GetClientSysKeys(keys...), wallet.Keys[0].PublicKey)
+		sig, err := sys.SignWithAuth(hash, client.signatureScheme, GetClientSysKeys(keys...), wallet.ClientID)
 		logging.Debug("Signature: ", sig)
 		sigC <- struct{}{}
 		return sig, err

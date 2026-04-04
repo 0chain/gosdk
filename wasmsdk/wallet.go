@@ -11,7 +11,9 @@ import (
 	"strconv"
 
 	"github.com/0chain/gosdk/core/client"
+	"github.com/0chain/gosdk/core/resty"
 	"github.com/0chain/gosdk/core/zcncrypto"
+	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/0chain/gosdk/wasmsdk/jsbridge"
 )
 
@@ -56,6 +58,13 @@ func setWallet(clientID, clientKey, peerPublicKey, publicKey, privateKey, mnemon
 	}
 
 	return nil
+}
+
+// setSessionID sets the browser session ID on all outgoing blobber HTTP
+// requests so blobbers can forward it to 0box for own-event suppression.
+func setSessionID(id string) {
+	resty.SetSessionID(id)
+	zboxutil.SetSessionID(id)
 }
 
 func setWalletMode(mode bool) {

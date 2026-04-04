@@ -38,7 +38,14 @@ var (
 	FastHttpClient FastClient
 	log            logger.Logger
 	SignCache      simplelru.LRUCache[string, string]
+	sessionID      string
 )
+
+// SetSessionID stores the browser session ID so it is attached as
+// X-App-Session-ID on every outgoing blobber HTTP request.
+func SetSessionID(id string) {
+	sessionID = id
+}
 
 const (
 	respBodyPoolLimit = 1024 * 1024 * 16 //16MB
@@ -210,10 +217,13 @@ func setClientInfo(req *http.Request, keys ...string) error {
 		}
 		req.Header.Set("X-App-Client-ID", wallet.ClientID)
 		req.Header.Set("X-App-Client-Key", wallet.ClientKey)
-		return nil
+	} else {
+		req.Header.Set("X-App-Client-ID", client.Id())
+		req.Header.Set("X-App-Client-Key", client.PublicKey())
 	}
-	req.Header.Set("X-App-Client-ID", client.Id())
-	req.Header.Set("X-App-Client-Key", client.PublicKey())
+	if sessionID != "" {
+		req.Header.Set("X-App-Session-ID", sessionID)
+	}
 	return nil
 }
 

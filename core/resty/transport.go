@@ -11,6 +11,9 @@ import (
 
 var DefaultHeader = make(map[string]string)
 
+// SetSessionID is a no-op outside the WASM build; session ID is a browser concept.
+func SetSessionID(_ string) {}
+
 // Run the HTTP request in a goroutine and pass the response to f.
 var DefaultTransport = &http.Transport{
 	Proxy:                 http.ProxyFromEnvironment,
