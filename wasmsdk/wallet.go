@@ -6,7 +6,6 @@ package main
 import (
 	"errors"
 
-	"fmt"
 	"os"
 	"strconv"
 
@@ -20,7 +19,6 @@ func setWallet(clientID, clientKey, peerPublicKey, publicKey, privateKey, mnemon
 		return errors.New("mnemonic is required")
 	}
 	mode := os.Getenv("MODE")
-	fmt.Println("gosdk setWallet, mode:", mode, "is split:", isSplit)
 	keys := []zcncrypto.KeyPair{
 		{
 			PrivateKey: privateKey,
@@ -36,7 +34,6 @@ func setWallet(clientID, clientKey, peerPublicKey, publicKey, privateKey, mnemon
 		Keys:          keys,
 		IsSplit:       isSplit,
 	}
-	fmt.Println("set Wallet, is split:", isSplit)
 	client.SetWallet(*w)
 
 	zboxApiClient.SetWallet(clientID, privateKey, clientKey)
@@ -60,6 +57,4 @@ func setWallet(clientID, clientKey, peerPublicKey, publicKey, privateKey, mnemon
 
 func setWalletMode(mode bool) {
 	client.SetWalletMode(mode)
-
-	fmt.Println("gosdk setWalletMode: ", "is split:", mode)
 }
