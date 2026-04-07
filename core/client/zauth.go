@@ -13,7 +13,7 @@ import (
 
 // AvailableRestrictions represents supported restrictions mapping.
 var AvailableRestrictions = map[string][]string{
-	"token_transfers": {"transfer"},
+	"token_transfers": {"transfer", "pour"},
 	"allocation_file_operations": {
 		"read_redeem",
 		"commit_connection",
