@@ -76,10 +76,13 @@ func (req *ShareRequest) getAuthTicket(clientID, encPublicKey string) (*marker.A
 		at.Expiration = at.Timestamp + req.expirationSeconds
 	}
 
-	if fRef.EncryptedKey != "" { // file is encrypted
-		if encPublicKey == "" {
-			return nil, errors.New("empty_key", "encryption public key cannot be empty for sharing encrypted files")
-		}
+	// Generate a re-encryption key when the recipient provides an encryption
+	// public key. This covers both:
+	//   - Single encrypted file shares (fRef.EncryptedKey != "")
+	//   - Encrypted folder shares (directory itself has no EncryptedKey, but
+	//     children do). The re-encryption key is independent of any file's C1,
+	//     so one key works for every encrypted file in the subtree.
+	if encPublicKey != "" {
 		encScheme := encryption.NewEncryptionScheme()
 		var entropy string
 		if fRef.EncryptionVersion == SignatureV2 {
