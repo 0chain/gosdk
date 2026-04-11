@@ -30,6 +30,10 @@ type WMLockResult struct {
 	CreatedAt int64        `json:"created_at,omitempty"`
 }
 
+// LockedBlobbersCap controls per-blobber WM lock channel capacity.
+// Set via zs3server.json "locked_blobbers_cap" field.
+var LockedBlobbersCap = 1
+
 // WriteMarkerMutex blobber WriteMarkerMutex client
 type WriteMarkerMutex struct {
 	mutex            sync.Mutex
@@ -51,7 +55,7 @@ func CreateWriteMarkerMutex(allocationObj *Allocation, keys ...string) (*WriteMa
 			logger.Logger.Error(b.Baseurl, "blobber ID is empty string")
 			return nil, errors.Throw(constants.ErrInvalidParameter, "blobber ID cannot be an empty string")
 		}
-		lockedBlobbers[b.ID] = make(chan struct{}, 1)
+		lockedBlobbers[b.ID] = make(chan struct{}, LockedBlobbersCap)
 	}
 
 	return &WriteMarkerMutex{
@@ -190,36 +194,10 @@ func (wmMu *WriteMarkerMutex) Lock(
 
 	wg := &sync.WaitGroup{}
 
-	// Lock first responsive blobber as lead blobber
-	for ; wmMu.leadBlobberIndex < len(blobbers); wmMu.leadBlobberIndex++ {
-		methodCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
-		defer cancel()
-		leadBlobber := blobbers[uint64(wmMu.leadBlobberIndex)]
-		wg.Add(1)
-		go wmMu.lockBlobber(methodCtx, mask, maskMu, consensus, leadBlobber, uint64(wmMu.leadBlobberIndex), connID, timeOut, wg)
-		wg.Wait()
-		if consensus.getConsensus()-addConsensus == 1 {
-			break
-		}
-		select {
-		case <-methodCtx.Done():
-			logger.Logger.Error("Locking blobber: ", leadBlobber.Baseurl, " context timeout exceeded")
-			return errors.New("lock_timeout", "Locking blobber: "+leadBlobber.Baseurl+" context timeout exceeded")
-		default:
-		}
-	}
-
-	if consensus.getConsensus()-addConsensus != 1 {
-		return errors.New("lock_consensus_not_met", "Failed to lock the lead blobber after retries")
-	}
-
-	// Once the lead blobber is locked successfully, lock the other blobbers
+	// Lock all blobbers in parallel (no sequential lead-first step)
 	var pos uint64
 	for i := *mask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
-		if pos == uint64(wmMu.leadBlobberIndex) {
-			continue
-		}
 		blobber := blobbers[pos]
 		wg.Add(1)
 		go wmMu.lockBlobber(ctx, mask, maskMu, consensus, blobber, pos, connID, timeOut, wg)
