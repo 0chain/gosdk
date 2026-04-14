@@ -52,6 +52,8 @@ type ListResult struct {
 	Name                string `json:"name"`
 	Path                string `json:"path,omitempty"`
 	Type                string `json:"type"`
+	// Size for a file entry reports the raw file size (same as ActualSize).
+	// For a directory entry, Size is the sum of direct childrens sizes.
 	Size                int64  `json:"size"`
 	Hash                string `json:"hash,omitempty"`
 	FileMetaHash        string `json:"file_meta_hash,omitempty"`
@@ -322,13 +324,16 @@ func (lr *ListResult) populateChildren(children []fileref.RefEntity, childResult
 			childResult.ThumbnailSize = (child.(*fileref.FileRef)).ThumbnailSize
 			childResult.ActualThumbnailHash = (child.(*fileref.FileRef)).ActualThumbnailHash
 			childResult.ActualThumbnailSize = (child.(*fileref.FileRef)).ActualThumbnailSize
+			// Size for a file entry reports the raw file size (same as ActualSize).
+			// For a directory entry, Size is the sum of direct childrens sizes.
+			childResult.Size = (child.(*fileref.FileRef)).ActualFileSize
 		} else {
 			childResult.ActualSize = (child.(*fileref.Ref)).ActualSize
+			childResult.Size += child.GetSize()
 		}
 		if childResult.ActualSize > 0 {
 			childResult.ActualNumBlocks = (childResult.ActualSize + CHUNK_SIZE - 1) / CHUNK_SIZE
 		}
-		childResult.Size += child.GetSize()
 		childResult.NumBlocks += child.GetNumBlocks()
 		childResult.FileMetaHash = child.GetFileMetaHash()
 		if childResult.isConsensusOk() && !req.forRepair {
