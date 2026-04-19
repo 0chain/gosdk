@@ -135,13 +135,30 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 
 	hashCount := make(map[string]int)
 	hashRefsMap := make(map[string]*ObjectTreeResult)
+	// Why: post-write stale read — first hash to reach consensusThresh used
+	// to win, which locked in the OLDEST quorum if faster blobbers still had
+	// the pre-write view. Same symptom/shape as the listworker.go fix
+	// (getlistFromBlobbers). Wait for ALL responses, then pick the hash with
+	// the newest per-ref UpdatedAt across the returned tree; tie-break on
+	// group size.
+	latestUpdated := make(map[string]common.Timestamp)
 	oTreeResponseErrors := make([]error, activeCount)
 	var successCount int
-	for i := 0; i < activeCount; i++ {
+	// Bail out after consensus + 100ms grace so tail latency is capped at
+	// consensus_time + 100ms instead of slowest_blobber_time. Same pattern
+	// as listworker.go getlistFromBlobbers.
+	const graceAfterConsensus = 100 * time.Millisecond
+	var graceTimer <-chan time.Time
+	recv := 0
+refLoop:
+	for recv < activeCount {
 		select {
 		case <-o.ctx.Done():
 			return nil, o.ctx.Err()
+		case <-graceTimer:
+			break refLoop
 		case oTreeResponse := <-respChan:
+			recv++
 			oTreeResponseErrors[oTreeResponse.idx] = oTreeResponse.err
 			if oTreeResponse.err != nil {
 				if code, _ := zboxutil.GetErrorMessageCode(oTreeResponse.err.Error()); code != INVALID_PATH {
@@ -158,10 +175,37 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 				hashCount[hash]++
 				hashRefsMap[hash] = oTreeResponse.oTResult
 			}
-			if hashCount[hash] == o.consensusThresh {
-				return oTreeResponse.oTResult, nil
+			if oTreeResponse.oTResult != nil {
+				for _, ref := range oTreeResponse.oTResult.Refs {
+					if ref.UpdatedAt > latestUpdated[hash] {
+						latestUpdated[hash] = ref.UpdatedAt
+					}
+				}
+			}
+			// Start grace timer once any hash reaches consensusThresh.
+			if graceTimer == nil && hashCount[hash] >= o.consensusThresh {
+				graceTimer = time.After(graceAfterConsensus)
 			}
 		}
+	}
+	// Pick the best hash among those meeting consensusThresh.
+	// Preference: (1) most recent UpdatedAt, (2) largest group as tie-break.
+	var winningHash string
+	var bestCount int
+	var bestUpdated common.Timestamp
+	for hash, count := range hashCount {
+		if count < o.consensusThresh {
+			continue
+		}
+		upd := latestUpdated[hash]
+		if winningHash == "" || upd > bestUpdated || (upd == bestUpdated && count > bestCount) {
+			winningHash = hash
+			bestUpdated = upd
+			bestCount = count
+		}
+	}
+	if winningHash != "" {
+		return hashRefsMap[winningHash], nil
 	}
 	l.Logger.Error("no consensus found: ", o.remotefilepath, " pageLimit: ", o.pageLimit, " offsetPath: ", o.offsetPath)
 	var selected *ObjectTreeResult
@@ -359,48 +403,92 @@ func (r *RecentlyAddedRefRequest) GetRecentlyAddedRefs() (*RecentlyAddedRefResul
 	for i := range responses {
 		responses[i] = &RecentlyAddedRefResponse{}
 	}
-	r.wg.Add(totalBlobbers)
-
+	// Use a signal channel so we can bail after consensus + 100ms grace
+	// without waiting for all blobbers. Same pattern as listworker.go /
+	// GetRefs. Caps tail latency at consensus + 100ms.
+	doneCh := make(chan int, totalBlobbers)
 	for i, blob := range r.blobbers {
-		go r.getRecentlyAddedRefs(responses[i], blob.Baseurl)
+		i, baseURL := i, blob.Baseurl
+		r.wg.Add(1)
+		go func() {
+			r.getRecentlyAddedRefs(responses[i], baseURL)
+			r.wg.Done()
+			doneCh <- i
+		}()
 	}
-	r.wg.Wait()
 
 	hashCount := make(map[string]int)
 	hashRefsMap := make(map[string]*RecentlyAddedRefResult)
+	// Why: same post-write stale-read shape as ObjectTreeRequest.GetRefs /
+	// listworker.go — picking the first hash meeting threshold (map iteration
+	// order is random) can lock in an older quorum. Prefer the hash with the
+	// newest UpdatedAt; tie-break on group size.
+	latestUpdated := make(map[string]common.Timestamp)
 
-	for _, response := range responses {
-		if response.err != nil {
-			l.Logger.Error(response.err)
-			continue
-		}
+	const graceAfterConsensus = 100 * time.Millisecond
+	var graceTimer <-chan time.Time
+	recv := 0
+recentLoop:
+	for recv < totalBlobbers {
+		select {
+		case <-graceTimer:
+			break recentLoop
+		case i := <-doneCh:
+			recv++
+			response := responses[i]
+			if response.err != nil {
+				l.Logger.Error(response.err)
+				continue
+			}
 
-		var similarFieldRefs []SimilarField
-		for _, ref := range response.Result.Refs {
-			similarFieldRefs = append(similarFieldRefs, ref.SimilarField)
-		}
+			var similarFieldRefs []SimilarField
+			var respLatest common.Timestamp
+			for _, ref := range response.Result.Refs {
+				similarFieldRefs = append(similarFieldRefs, ref.SimilarField)
+				if ref.UpdatedAt > respLatest {
+					respLatest = ref.UpdatedAt
+				}
+			}
 
-		refsMarshall, err := json.Marshal(similarFieldRefs)
-		if err != nil {
-			l.Logger.Error(err)
-			continue
-		}
+			refsMarshall, err := json.Marshal(similarFieldRefs)
+			if err != nil {
+				l.Logger.Error(err)
+				continue
+			}
 
-		hash := zboxutil.GetRefsHash(refsMarshall)
-		if _, ok := hashCount[hash]; ok {
-			hashCount[hash]++
-		} else {
-			hashCount[hash]++
-			hashRefsMap[hash] = response.Result
+			hash := zboxutil.GetRefsHash(refsMarshall)
+			if _, ok := hashCount[hash]; ok {
+				hashCount[hash]++
+			} else {
+				hashCount[hash]++
+				hashRefsMap[hash] = response.Result
+			}
+			if respLatest > latestUpdated[hash] {
+				latestUpdated[hash] = respLatest
+			}
+			if graceTimer == nil && hashCount[hash] >= r.consensusThresh {
+				graceTimer = time.After(graceAfterConsensus)
+			}
 		}
 	}
 
 	var selected *RecentlyAddedRefResult
+	var winningHash string
+	var bestCount int
+	var bestUpdated common.Timestamp
 	for k, v := range hashCount {
-		if v >= r.consensusThresh {
-			selected = hashRefsMap[k]
-			break
+		if v < r.consensusThresh {
+			continue
 		}
+		upd := latestUpdated[k]
+		if winningHash == "" || upd > bestUpdated || (upd == bestUpdated && v > bestCount) {
+			winningHash = k
+			bestUpdated = upd
+			bestCount = v
+		}
+	}
+	if winningHash != "" {
+		selected = hashRefsMap[winningHash]
 	}
 
 	if selected == nil {

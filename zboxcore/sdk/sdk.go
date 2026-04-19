@@ -8,6 +8,8 @@ import (
 	"io/ioutil"
 	"math"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 	"sync"
 
@@ -71,6 +73,14 @@ var (
 	// EnableAllocationCache enables caching of allocations and blobbers.
 	// When enabled (default), cache is checked first before querying blockchain.
 	enableAllocationCache = true
+
+	// allocationCacheDir, if non-empty, makes cacheAllocation also persist
+	// each allocation to disk as <dir>/<allocID>.json, and makes
+	// GetAllocation try this on-disk cache before calling sharders. Lets a
+	// process bootstrap (e.g. zs3server restart) without a live chain after
+	// the first successful sharder fetch. See SetAllocationCacheDir.
+	allocationCacheDir   string
+	allocationCacheDirMu sync.RWMutex
 )
 
 func SetSingleClietnMode(mode bool) {
@@ -150,6 +160,8 @@ func GetCachedBlobber(blobberID string) *Blobber {
 
 // cacheAllocation stores an allocation in the cache.
 // Also caches all blobbers from the allocation.
+// If SetAllocationCacheDir was called, the allocation is also persisted to
+// disk so a subsequent process restart can load it without a live chain.
 func cacheAllocation(alloc *Allocation) {
 	if !enableAllocationCache || alloc == nil {
 		return
@@ -157,6 +169,9 @@ func cacheAllocation(alloc *Allocation) {
 	allocationCacheLock.Lock()
 	allocationCache[alloc.ID] = alloc
 	allocationCacheLock.Unlock()
+
+	// Persist to disk if a cache dir was configured. Best-effort.
+	saveAllocationToDisk(alloc)
 
 	// Also cache blobber endpoints from the allocation
 	if alloc.Blobbers != nil {
@@ -185,6 +200,104 @@ func cacheBlobber(blob *Blobber) {
 	blobberCacheLock.Lock()
 	defer blobberCacheLock.Unlock()
 	blobberCache[string(blob.ID)] = blob
+}
+
+// SetAllocationCacheDir enables on-disk persistence of cached allocations.
+// The directory is created if it does not exist. Each allocation is stored
+// as <dir>/<allocID>.json. Pass "" to disable (default).
+//
+// Once set, every successful GetAllocation persists the allocation to disk
+// (in addition to the in-memory cache), and every GetAllocation on an
+// in-memory miss tries the disk cache before calling sharders. This lets a
+// process restart bootstrap an allocation without a reachable chain.
+func SetAllocationCacheDir(dir string) {
+	allocationCacheDirMu.Lock()
+	defer allocationCacheDirMu.Unlock()
+	if dir != "" {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			l.Logger.Error("alloc cache dir mkdir: ", err)
+			return
+		}
+	}
+	allocationCacheDir = dir
+}
+
+func getAllocationCacheDir() string {
+	allocationCacheDirMu.RLock()
+	defer allocationCacheDirMu.RUnlock()
+	return allocationCacheDir
+}
+
+func allocationCachePath(allocID string) string {
+	dir := getAllocationCacheDir()
+	if dir == "" {
+		return ""
+	}
+	return filepath.Join(dir, allocID+".json")
+}
+
+// loadAllocationFromDisk reads a JSON-serialised Allocation from disk and
+// re-runs the post-fetch construction GetAllocation does after a sharder
+// fetch (sign + numBlockDownloads + InitAllocation). Returns nil on any
+// failure so callers can fall through to the sharder path.
+func loadAllocationFromDisk(allocID string) *Allocation {
+	p := allocationCachePath(allocID)
+	if p == "" {
+		return nil
+	}
+	data, err := os.ReadFile(p)
+	if err != nil {
+		return nil
+	}
+	alloc := &Allocation{}
+	if err := json.Unmarshal(data, alloc); err != nil {
+		l.Logger.Debug("alloc cache unmarshal: ", err)
+		return nil
+	}
+	if alloc.ID != allocID {
+		l.Logger.Debug("alloc cache id mismatch: ", alloc.ID, " vs ", allocID)
+		return nil
+	}
+	hashdata := alloc.Tx
+	sig, ok := zboxutil.SignCache.Get(hashdata)
+	if !ok {
+		s, serr := client.Sign(enc.Hash(hashdata))
+		if serr != nil {
+			l.Logger.Debug("alloc cache sign: ", serr)
+			return nil
+		}
+		sig = s
+		zboxutil.SignCache.Add(hashdata, sig)
+	}
+	alloc.sig = sig
+	alloc.numBlockDownloads = numBlockDownloads
+	alloc.InitAllocation()
+	return alloc
+}
+
+// saveAllocationToDisk writes an Allocation to its on-disk cache file via
+// atomic temp+rename. Best-effort: errors are logged at Debug.
+// Note: unexported fields (sig, numBlockDownloads, etc.) do not round-trip
+// through JSON; loadAllocationFromDisk re-derives them.
+func saveAllocationToDisk(alloc *Allocation) {
+	p := allocationCachePath(alloc.ID)
+	if p == "" {
+		return
+	}
+	data, err := json.Marshal(alloc)
+	if err != nil {
+		l.Logger.Debug("alloc cache marshal: ", err)
+		return
+	}
+	tmp := p + ".tmp"
+	if err := os.WriteFile(tmp, data, 0o644); err != nil {
+		l.Logger.Debug("alloc cache write tmp: ", err)
+		return
+	}
+	if err := os.Rename(tmp, p); err != nil {
+		os.Remove(tmp)
+		l.Logger.Debug("alloc cache rename: ", err)
+	}
 }
 
 // GetVersion - returns version string
@@ -968,6 +1081,31 @@ func GetAllocation(allocationID string) (*Allocation, error) {
 		if cachedAlloc := GetCachedAllocation(allocationID); cachedAlloc != nil {
 			l.Logger.Debug("Returning cached allocation for: ", allocationID)
 			return cachedAlloc, nil
+		}
+		// In-memory miss: try the on-disk cache before falling through
+		// to the sharder. Lets the process bootstrap when the chain is
+		// down, as long as a previous run successfully persisted the
+		// allocation via SetAllocationCacheDir.
+		if diskAlloc := loadAllocationFromDisk(allocationID); diskAlloc != nil {
+			l.Logger.Info("Loaded allocation from disk cache: ", allocationID)
+			allocationCacheLock.Lock()
+			allocationCache[allocationID] = diskAlloc
+			allocationCacheLock.Unlock()
+			if diskAlloc.Blobbers != nil {
+				blobberCacheLock.Lock()
+				for _, b := range diskAlloc.Blobbers {
+					if b != nil && b.ID != "" {
+						if _, exists := blobberCache[b.ID]; !exists {
+							blobberCache[b.ID] = &Blobber{
+								ID:      common.Key(b.ID),
+								BaseURL: b.Baseurl,
+							}
+						}
+					}
+				}
+				blobberCacheLock.Unlock()
+			}
+			return diskAlloc, nil
 		}
 	}
 

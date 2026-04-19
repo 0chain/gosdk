@@ -172,23 +172,69 @@ func (req *ListRequest) getlistFromBlobbers() ([]*listResponse, error) {
 	}
 	listInfos := make([]*listResponse, numList)
 	consensusMap := make(map[string][]*blockchain.StorageNode)
+	// Track the most-recently-updated hash per group so we can prefer the
+	// newest view when multiple tree hashes meet the threshold (e.g. just
+	// after an upload, before all blobbers have caught up).
+	latestUpdated := make(map[string]common.Timestamp)
 	var consensusHash string
 	errCnt := 0
-	for i := 0; i < numList; i++ {
-		listInfos[i] = <-rspCh
-		if !req.forRepair {
-			if listInfos[i].err != nil || listInfos[i].ref == nil {
-				if listInfos[i].err != nil {
-					errCnt++
+	// Wait for blobber responses. Previously this loop broke on the first
+	// hash to reach consensusThresh, which locked in the OLDEST quorum if
+	// slower blobbers had newer refs (post-write stale reads). We now wait
+	// for consensus + a 100ms grace to catch late-but-fresh responses, then
+	// bail. This caps tail latency at consensus_time + 100ms instead of
+	// slowest_blobber_time while still preferring the newest UpdatedAt
+	// quorum when a later response would flip the decision.
+	const graceAfterConsensus = 100 * time.Millisecond
+	var graceTimer <-chan time.Time
+	recv := 0
+listLoop:
+	for recv < numList {
+		select {
+		case resp := <-rspCh:
+			listInfos[recv] = resp
+			if !req.forRepair {
+				if resp.err != nil || resp.ref == nil {
+					if resp.err != nil {
+						errCnt++
+					}
+				} else {
+					hash := resp.ref.FileMetaHash
+					consensusMap[hash] = append(consensusMap[hash], req.blobbers[resp.blobberIdx])
+					if resp.ref.UpdatedAt > latestUpdated[hash] {
+						latestUpdated[hash] = resp.ref.UpdatedAt
+					}
 				}
-				continue
 			}
-			hash := listInfos[i].ref.FileMetaHash
-			consensusMap[hash] = append(consensusMap[hash], req.blobbers[listInfos[i].blobberIdx])
-			if len(consensusMap[hash]) >= req.consensusThresh {
-				consensusHash = hash
-				break
+			recv++
+			// Start grace timer once any hash meets consensusThresh.
+			if graceTimer == nil && !req.forRepair {
+				for _, group := range consensusMap {
+					if len(group) >= req.consensusThresh {
+						graceTimer = time.After(graceAfterConsensus)
+						break
+					}
+				}
 			}
+		case <-graceTimer:
+			break listLoop
+		}
+	}
+	// Compact listInfos to the responses actually received (bail-early case).
+	listInfos = listInfos[:recv]
+	// Pick the best hash among those meeting consensusThresh.
+	// Preference: (1) most recent UpdatedAt, (2) largest group as tie-break.
+	var bestCount int
+	var bestUpdated common.Timestamp
+	for hash, group := range consensusMap {
+		if len(group) < req.consensusThresh {
+			continue
+		}
+		upd := latestUpdated[hash]
+		if upd > bestUpdated || (upd == bestUpdated && len(group) > bestCount) {
+			consensusHash = hash
+			bestUpdated = upd
+			bestCount = len(group)
 		}
 	}
 	if req.listOnly {
