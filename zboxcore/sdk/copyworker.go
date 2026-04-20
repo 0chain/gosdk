@@ -248,7 +248,7 @@ func (req *CopyRequest) ProcessWithBlobbersV2() ([]fileref.RefEntity, error) {
 	numList := len(req.blobbers)
 	objectTreeRefs := make([]fileref.RefEntity, numList)
 	blobberErrors := make([]error, numList)
-	versionMap := make(map[string]int)
+	versionMap := make(map[int64]int)
 
 	wg := &sync.WaitGroup{}
 	for i := req.copyMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
@@ -266,14 +266,44 @@ func (req *CopyRequest) ProcessWithBlobbersV2() ([]fileref.RefEntity, error) {
 			refEntity.Path = path.Join(req.destPath, path.Base(refEntity.Path))
 			objectTreeRefs[blobberIdx] = refEntity
 			req.maskMU.Lock()
-			versionMap[refEntity.AllocationRoot] += 1
-			if versionMap[refEntity.AllocationRoot] >= req.consensusThresh {
-				consensusRef = refEntity
-			}
+			versionMap[refEntity.AllocationVersion] += 1
 			req.maskMU.Unlock()
 		}(int(pos))
 	}
 	wg.Wait()
+	// Tally-all, pick-newest-quorum: among versions meeting consensusThresh,
+	// select the ref with the highest (AllocationVersion, UpdatedAt). Prevents
+	// an older quorum from latching in when a newer WM has just committed on
+	// some blobbers but not others (linearizability fix, Porcupine 2026-04-20).
+	var (
+		bestVer int64 = -1
+		bestUpd common.Timestamp
+	)
+	for ver, cnt := range versionMap {
+		if cnt < req.consensusThresh {
+			continue
+		}
+		// Find a sample ref at this version to read its UpdatedAt.
+		var sample *fileref.FileRef
+		for _, r := range objectTreeRefs {
+			if r == nil {
+				continue
+			}
+			if fr, ok := r.(*fileref.FileRef); ok && fr.AllocationVersion == ver {
+				if sample == nil || fr.UpdatedAt > sample.UpdatedAt {
+					sample = fr
+				}
+			}
+		}
+		if sample == nil {
+			continue
+		}
+		if ver > bestVer || (ver == bestVer && sample.UpdatedAt > bestUpd) {
+			bestVer = ver
+			bestUpd = sample.UpdatedAt
+			consensusRef = sample
+		}
+	}
 	if consensusRef == nil {
 		return nil, zboxutil.MajorError(blobberErrors)
 	}
