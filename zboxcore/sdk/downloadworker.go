@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/common"
 	encrypt "github.com/0chain/gosdk/core/encryption"
@@ -1244,6 +1245,36 @@ func (req *DownloadRequest) getFileRef() (fRef *fileref.FileRef, err error) {
 	fMetaResp := listReq.getFileMetaFromBlobbers()
 	l.Logger.Info("fMetaResp length: ", len(fMetaResp), "\n")
 
+	// Read-side staleness barrier for read-after-delete linearizability.
+	// Ref: Porcupine 2026-04-19. Delete is considered "done" once
+	// DataShards blobbers commit the WriteMarker, but the remaining
+	// ParityShards replicas may still serve the old ref for up to ~2s.
+	// A concurrent GET that pulls any DataShards blobbers including a
+	// lagging one can reconstruct pre-delete bytes. The barrier: if
+	// enough blobbers already report ErrNotFound that reconstruction
+	// from the still-live copies is impossible (notFound >= ParityShards+1
+	// i.e. fullconsensus-consensusThresh+1), treat the file as deleted
+	// from this client's POV and fail the read with ErrNotFound.
+	// Tolerance: one or two slow/lagging replicas are fine.
+	notFoundCount := 0
+	for _, fmr := range fMetaResp {
+		if fmr != nil && fmr.err != nil && errors.Is(fmr.err, constants.ErrNotFound) {
+			notFoundCount++
+		}
+	}
+	staleThresh := req.fullconsensus - req.consensusThresh + 1
+	if staleThresh < 1 {
+		staleThresh = 1
+	}
+	if notFoundCount >= staleThresh {
+		l.Logger.Info("staleness_barrier: treating file as deleted",
+			"path", req.remotefilepath,
+			"notFound", notFoundCount,
+			"thresh", staleThresh,
+			"full", req.fullconsensus)
+		return nil, constants.ErrNotFound
+	}
+
 	fRef, err = req.getFileMetaConsensus(fMetaResp)
 	if err != nil {
 		return
@@ -1259,11 +1290,28 @@ func (req *DownloadRequest) getFileRef() (fRef *fileref.FileRef, err error) {
 // getFileMetaConsensus will verify actual file hash signature and take consensus in it.
 // Then it will use the signature to calculation validation root signature and verify signature
 // of validation root send by the blobber.
+//
+// Linearizability (Porcupine 2026-04-20): the previous implementation broke
+// on the first ActualFileHashSignature to reach consensusThresh in blobber-
+// index order. When a PUT (or COPY/MOVE/RENAME) had just committed, slower
+// blobbers still served the pre-PUT signature while faster ones served the
+// newest signature. Iterating 0..N and short-circuiting meant the OLDER
+// quorum was latched in whenever it happened to live at smaller blobber
+// indices — the read could return a value two or more versions stale even
+// after the write had reached consensus on the new version.
+//
+// Fix: tally every valid response first, then among all signatures that
+// meet the threshold pick the one whose ref carries the highest
+// (AllocationVersion, UpdatedAt) — the newest committed view. Matches the
+// "prefer newest quorum" policy applied to getlistFromBlobbers.
 func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) (*fileref.FileRef, error) {
 	var selected *fileMetaResponse
 	foundMask := zboxutil.NewUint128(0)
 	req.consensus = 0
 	retMap := make(map[string]int)
+	sampleResp := make(map[string]*fileMetaResponse)
+	latestVersion := make(map[string]int64)
+	latestUpdated := make(map[string]common.Timestamp)
 	for _, fmr := range fMetaResp {
 		if fmr.err != nil || fmr.fileref == nil {
 			continue
@@ -1308,12 +1356,33 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 		}
 
 		retMap[actualFileHashSignature]++
-		if retMap[actualFileHashSignature] > req.consensus {
-			req.consensus = retMap[actualFileHashSignature]
+		if _, seen := sampleResp[actualFileHashSignature]; !seen {
+			sampleResp[actualFileHashSignature] = fmr
 		}
-		if req.isConsensusOk() {
-			selected = fmr
-			break
+		if fmr.fileref.AllocationVersion > latestVersion[actualFileHashSignature] {
+			latestVersion[actualFileHashSignature] = fmr.fileref.AllocationVersion
+		}
+		if fmr.fileref.UpdatedAt > latestUpdated[actualFileHashSignature] {
+			latestUpdated[actualFileHashSignature] = fmr.fileref.UpdatedAt
+		}
+	}
+
+	// Pick the quorum-meeting signature with the newest (AllocationVersion,
+	// UpdatedAt). Stale replicas left behind by slow in-flight WMs are
+	// ignored; the read observes the freshest committed state visible.
+	var bestVer int64 = -1
+	var bestUpd common.Timestamp
+	for sig, cnt := range retMap {
+		if cnt < req.consensusThresh {
+			continue
+		}
+		ver := latestVersion[sig]
+		upd := latestUpdated[sig]
+		if ver > bestVer || (ver == bestVer && upd > bestUpd) {
+			bestVer = ver
+			bestUpd = upd
+			selected = sampleResp[sig]
+			req.consensus = cnt
 		}
 	}
 

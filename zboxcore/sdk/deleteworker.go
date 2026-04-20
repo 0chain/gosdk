@@ -352,6 +352,46 @@ func (req *DeleteRequest) ProcessDelete() (err error) {
 			fmt.Sprintf("Consensus on commit not met. Required %d, got %d",
 				req.consensus.consensusThresh, req.consensus.getConsensus()))
 	}
+
+	// Post-commit read-visibility verification.
+	// Rationale: blobbers ACK the WriteMarker commit before their internal
+	// ref-index has been updated for subsequent reads. A GET that lands on
+	// one of those still-not-updated replicas returns pre-delete content.
+	// Porcupine (2026-04-19) caught this as read-after-delete
+	// NON-LINEARIZABLE even though we wait for all 5 commits.
+	// Fix: after the commit succeeds, poll getFileMetaFromBlobber on each
+	// blobber until every one reports ErrNotFound (or a bounded timeout).
+	// Makes DoMultiOperation(DELETE) a synchronous read-after-delete
+	// barrier from the client's perspective.
+	verifyStart := time.Now()
+	verifyTimeout := 5 * time.Second
+	verifyInterval := 20 * time.Millisecond
+	for {
+		var wgVerify sync.WaitGroup
+		var visible int32
+		for i := req.deleteMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+			pos = uint64(i.TrailingZeros())
+			wgVerify.Add(1)
+			go func(bidx uint64) {
+				defer wgVerify.Done()
+				_, err := req.getFileMetaFromBlobber(bidx)
+				if err == nil {
+					// Still visible on this blobber → NOT yet propagated.
+					atomic.AddInt32(&visible, 1)
+				}
+			}(pos)
+		}
+		wgVerify.Wait()
+		if atomic.LoadInt32(&visible) == 0 {
+			break
+		}
+		if time.Since(verifyStart) > verifyTimeout {
+			l.Logger.Info("delete post-commit verification timed out; proceeding anyway",
+				"visible_count", visible, "timeout", verifyTimeout)
+			break
+		}
+		time.Sleep(verifyInterval)
+	}
 	return nil
 }
 
