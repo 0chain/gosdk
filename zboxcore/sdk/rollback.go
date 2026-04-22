@@ -233,79 +233,18 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 
 // CheckAllocStatus checks the status of the allocation
 // and returns the status of the allocation and its blobbers.
+//
+// Rollback-race note: a blobber that flushes its version_markers row to
+// postgres faster than its peers can appear "ahead" during a brief window
+// while peers are still flushing the same VM. Without the pre-rollback
+// retry below, that transient 1-vs-(DataShards) split triggers an
+// unnecessary rollback on the fast blobber, leaving it stuck 1 version
+// behind — every subsequent write then fails with consensus_not_met.
 func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
 
-	wg := &sync.WaitGroup{}
-	markerChan := make(chan *RollbackBlobber, len(a.Blobbers))
-	var errCnt int32
-	var markerError error
-	blobberRes := make([]BlobberStatus, len(a.Blobbers))
-	for ind, blobber := range a.Blobbers {
-
-		wg.Add(1)
-		go func(blobber *blockchain.StorageNode, ind int) {
-
-			defer wg.Done()
-			blobStatus := BlobberStatus{
-				ID:     blobber.ID,
-				Status: "available",
-			}
-			lvm, err := GetWritemarker(a.ID, a.Tx, a.sig, blobber.ID, blobber.Baseurl)
-			if err != nil {
-				atomic.AddInt32(&errCnt, 1)
-				markerError = err
-				l.Logger.Error("error during getWritemarker", zap.Error(err))
-				blobStatus.Status = "unavailable"
-			}
-			if lvm == nil || lvm.VersionMarker == nil {
-				markerChan <- nil
-			} else {
-				markerChan <- &RollbackBlobber{
-					blobber:      blobber,
-					lvm:          lvm,
-					commitResult: &CommitResult{},
-					blobIndex:    ind,
-				}
-				blobber.AllocationVersion = lvm.VersionMarker.Version
-			}
-			blobberRes[ind] = blobStatus
-		}(blobber, ind)
-
-	}
-	wg.Wait()
-	close(markerChan)
-	if (a.ParityShards > 0 && errCnt > int32(a.ParityShards)) || (a.ParityShards == 0 && errCnt > 0) {
-		return Broken, blobberRes, common.NewError("check_alloc_status_failed", markerError.Error())
-	}
-
-	versionMap := make(map[int64][]*RollbackBlobber)
-
-	var (
-		consensusReached bool
-		latestVersion    int64
-		prevVersion      int64
-	)
-
-	for rb := range markerChan {
-
-		if rb == nil || rb.lvm == nil {
-			continue
-		}
-
-		version := rb.lvm.VersionMarker.Version
-		if version > latestVersion {
-			latestVersion = version
-			prevVersion = latestVersion
-		}
-
-		if _, ok := versionMap[version]; !ok {
-			versionMap[version] = make([]*RollbackBlobber, 0)
-		}
-
-		versionMap[version] = append(versionMap[version], rb)
-		if len(versionMap[version]) >= a.DataShards && version == latestVersion {
-			consensusReached = true
-		}
+	blobberRes, versionMap, latestVersion, prevVersion, consensusReached, err := a.collectVersionMap()
+	if err != nil {
+		return Broken, blobberRes, err
 	}
 
 	req := a.DataShards
@@ -326,10 +265,36 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
 		return Repair, blobberRes, nil
 	}
 
+	// About to rollback. Retry the fan-out to reject transient VM-flush
+	// races where a fast blobber is briefly 1 version ahead of peers that
+	// have not yet flushed the same VM row.
+	for attempt := 0; attempt < 3; attempt++ {
+		time.Sleep(250 * time.Millisecond)
+		rbRes, rbMap, rbLatest, rbPrev, rbConsensus, rbErr := a.collectVersionMap()
+		if rbErr != nil {
+			return Broken, rbRes, rbErr
+		}
+		if len(rbMap) == 0 {
+			return Commit, rbRes, nil
+		}
+		if rbConsensus {
+			a.allocationVersion = rbLatest
+			return Commit, rbRes, nil
+		}
+		if len(rbMap[rbLatest]) >= req {
+			for _, rb := range rbMap[rbPrev] {
+				rbRes[rb.blobIndex].Status = "repair"
+			}
+			return Repair, rbRes, nil
+		}
+		blobberRes, versionMap, latestVersion, prevVersion = rbRes, rbMap, rbLatest, rbPrev
+	}
+
 	// rollback to previous version
 	l.Logger.Info("Rolling back to previous version")
 	fullConsensus := len(versionMap[latestVersion]) - (req - len(versionMap[prevVersion]))
-	errCnt = 0
+	var errCnt int32
+	wg := &sync.WaitGroup{}
 	l.Logger.Info("fullConsensus", zap.Int32("fullConsensus", int32(fullConsensus)), zap.Int("latestLen", len(versionMap[latestVersion])), zap.Int("prevLen", len(versionMap[prevVersion])))
 	for _, rb := range versionMap[latestVersion] {
 
@@ -411,4 +376,75 @@ func (a *Allocation) RollbackWithMask(mask zboxutil.Uint128) {
 	}
 
 	wg.Wait()
+}
+
+// collectVersionMap fans out GetWritemarker to every blobber and groups them by
+// VM version. Returns (blobberRes, versionMap, latestVersion, prevVersion,
+// consensusReached, err). A non-nil err here means the quorum itself is
+// unreachable (more failures than ParityShards tolerates).
+func (a *Allocation) collectVersionMap() ([]BlobberStatus, map[int64][]*RollbackBlobber, int64, int64, bool, error) {
+	wg := &sync.WaitGroup{}
+	markerChan := make(chan *RollbackBlobber, len(a.Blobbers))
+	var errCnt int32
+	var markerError error
+	blobberRes := make([]BlobberStatus, len(a.Blobbers))
+	for ind, blobber := range a.Blobbers {
+		wg.Add(1)
+		go func(blobber *blockchain.StorageNode, ind int) {
+			defer wg.Done()
+			blobStatus := BlobberStatus{
+				ID:     blobber.ID,
+				Status: "available",
+			}
+			lvm, err := GetWritemarker(a.ID, a.Tx, a.sig, blobber.ID, blobber.Baseurl)
+			if err != nil {
+				atomic.AddInt32(&errCnt, 1)
+				markerError = err
+				l.Logger.Error("error during getWritemarker", zap.Error(err))
+				blobStatus.Status = "unavailable"
+			}
+			if lvm == nil || lvm.VersionMarker == nil {
+				markerChan <- nil
+			} else {
+				markerChan <- &RollbackBlobber{
+					blobber:      blobber,
+					lvm:          lvm,
+					commitResult: &CommitResult{},
+					blobIndex:    ind,
+				}
+				blobber.AllocationVersion = lvm.VersionMarker.Version
+			}
+			blobberRes[ind] = blobStatus
+		}(blobber, ind)
+	}
+	wg.Wait()
+	close(markerChan)
+	if (a.ParityShards > 0 && errCnt > int32(a.ParityShards)) || (a.ParityShards == 0 && errCnt > 0) {
+		return blobberRes, nil, 0, 0, false, common.NewError("check_alloc_status_failed", markerError.Error())
+	}
+
+	versionMap := make(map[int64][]*RollbackBlobber)
+	var (
+		consensusReached bool
+		latestVersion    int64
+		prevVersion      int64
+	)
+	for rb := range markerChan {
+		if rb == nil || rb.lvm == nil {
+			continue
+		}
+		version := rb.lvm.VersionMarker.Version
+		if version > latestVersion {
+			prevVersion = latestVersion
+			latestVersion = version
+		}
+		if _, ok := versionMap[version]; !ok {
+			versionMap[version] = make([]*RollbackBlobber, 0)
+		}
+		versionMap[version] = append(versionMap[version], rb)
+		if len(versionMap[version]) >= a.DataShards && version == latestVersion {
+			consensusReached = true
+		}
+	}
+	return blobberRes, versionMap, latestVersion, prevVersion, consensusReached, nil
 }
