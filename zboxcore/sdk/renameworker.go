@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"path"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -159,6 +160,11 @@ func (req *RenameRequest) renameBlobberObject(
 
 			latestRespMsg = string(respBody)
 			latestStatusCode = resp.StatusCode
+
+			if strings.Contains(latestRespMsg, alreadyExists) {
+				req.consensus.Done()
+				return
+			}
 
 			if resp.StatusCode == http.StatusOK {
 				req.consensus.Done()
