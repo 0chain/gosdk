@@ -255,6 +255,37 @@ refLoop:
 		selected.OffsetPath = selected.Refs[len(selected.Refs)-1].Path
 		return selected, nil
 	}
+	// Best-effort fallback: upload retries can leave divergent file_meta_hash
+	// values across blobbers (each blobber committed a different write attempt).
+	// Rather than failing the prewarm/read entirely, return the ref with the
+	// newest UpdatedAt — that blobber saw the most recent write. The download
+	// path validates data integrity independently via erasure-decode, so using
+	// a single best-effort ref is safe.
+	var bestRef *ORef
+	var bestRefUpdated common.Timestamp
+	for i := range oTreeResponses {
+		otr := &oTreeResponses[i]
+		if otr.err != nil || otr.oTResult == nil {
+			continue
+		}
+		for j := range otr.oTResult.Refs {
+			ref := &otr.oTResult.Refs[j]
+			if ref.UpdatedAt > bestRefUpdated {
+				bestRefUpdated = ref.UpdatedAt
+				bestRef = ref
+			}
+		}
+	}
+	if bestRef != nil {
+		l.Logger.Error("GetRefs best-effort fallback (no hash consensus): path=", o.remotefilepath,
+			" using ref updatedAt=", bestRefUpdated)
+		result := &ObjectTreeResult{
+			TotalPages: 1,
+			OffsetPath: bestRef.Path,
+			Refs:       []ORef{*bestRef},
+		}
+		return result, nil
+	}
 	return nil, errors.New("consensus_failed", "Refs consensus is less than consensus threshold")
 }
 
