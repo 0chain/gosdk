@@ -139,6 +139,11 @@ func (req *RenameRequest) renameBlobberObject(
 			latestRespMsg = string(respBody)
 			latestStatusCode = resp.StatusCode
 
+			if strings.Contains(latestRespMsg, alreadyExists) {
+				req.consensus.Done()
+				return
+			}
+
 			if resp.StatusCode == http.StatusOK {
 				req.consensus.Done()
 				l.Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " renamed.")

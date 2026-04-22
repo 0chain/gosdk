@@ -152,6 +152,10 @@ func (req *CopyRequest) copyBlobberObject(
 
 			latestRespMsg = string(respBody)
 			latestStatusCode = resp.StatusCode
+			if strings.Contains(latestRespMsg, alreadyExists) {
+				req.Consensus.Done()
+				return
+			}
 
 			if resp.StatusCode == http.StatusTooManyRequests {
 				logger.Logger.Error("Got too many request error")
