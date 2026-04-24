@@ -6,18 +6,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"mime/multipart"
 	"net/http"
-	"strings"
 	"syscall"
 	"time"
 
 	"github.com/0chain/errors"
-	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
@@ -175,146 +171,25 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUpload, pos uint64, timestamp int64) (err error) {
 	defer func() {
 		if err != nil {
-
 			su.maskMu.Lock()
 			su.uploadMask = su.uploadMask.And(zboxutil.NewUint128(1).Lsh(pos).Not())
 			su.maskMu.Unlock()
 		}
 	}()
 
-	rootRef, latestWM, size, fileIDMeta, err := sb.processWriteMarker(ctx, su)
-	if err != nil {
-		logger.Logger.Error(err)
+	commitReq := &CommitRequest{
+		blobber:      sb.blobber,
+		allocationID: su.allocationObj.ID,
+		allocationTx: su.allocationObj.Tx,
+		connectionID: su.progress.ConnectionID,
+		timestamp:    timestamp,
+		version:      sb.blobber.AllocationVersion + 1,
+	}
+	if err = commitReq.commitBlobber(); err != nil {
 		return err
 	}
-
-	wm := &marker.WriteMarker{}
-	wm.AllocationRoot = rootRef.Hash
-	if latestWM != nil {
-		wm.PreviousAllocationRoot = latestWM.AllocationRoot
-	} else {
-		wm.PreviousAllocationRoot = ""
-	}
-
-	wm.FileMetaRoot = rootRef.FileMetaHash
-	wm.AllocationID = su.allocationObj.ID
-	wm.Size = size
-	wm.BlobberID = sb.blobber.ID
-
-	wm.Timestamp = timestamp
-	wm.ClientID = client.GetClientID()
-	err = wm.Sign()
-	if err != nil {
-		logger.Logger.Error("Signing writemarker failed: ", err)
-		return err
-	}
-	body := new(bytes.Buffer)
-	formWriter := multipart.NewWriter(body)
-	wmData, err := json.Marshal(wm)
-	if err != nil {
-		logger.Logger.Error("Creating writemarker failed: ", err)
-		return err
-	}
-
-	fileIDMetaData, err := json.Marshal(fileIDMeta)
-	if err != nil {
-		logger.Logger.Error("Error marshalling file ID Meta: ", err)
-		return err
-	}
-
-	err = formWriter.WriteField("file_id_meta", string(fileIDMetaData))
-	if err != nil {
-		return err
-	}
-
-	err = formWriter.WriteField("connection_id", su.progress.ConnectionID)
-	if err != nil {
-		return err
-	}
-
-	err = formWriter.WriteField("write_marker", string(wmData))
-	if err != nil {
-		return err
-	}
-
-	formWriter.Close()
-
-	req, err := zboxutil.NewCommitRequest(sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, body)
-	if err != nil {
-		logger.Logger.Error("Error creating commit req: ", err)
-		return err
-	}
-	req.Header.Add("Content-Type", formWriter.FormDataContentType())
-
-	logger.Logger.Info("Committing to blobber. " + sb.blobber.Baseurl)
-
-	var (
-		resp           *http.Response
-		shouldContinue bool
-	)
-
-	for retries := 0; retries < 3; retries++ {
-		err, shouldContinue = func() (err error, shouldContinue bool) {
-			reqCtx, ctxCncl := context.WithTimeout(ctx, su.commitTimeOut)
-			resp, err = su.client.Do(req.WithContext(reqCtx))
-			defer ctxCncl()
-
-			if err != nil {
-				logger.Logger.Error("Commit: ", err)
-				return
-			}
-
-			if resp.Body != nil {
-				defer resp.Body.Close()
-			}
-
-			var respBody []byte
-			if resp.StatusCode == http.StatusOK {
-				logger.Logger.Info(sb.blobber.Baseurl, su.progress.ConnectionID, " committed")
-				su.consensus.Done()
-				return
-			}
-
-			if resp.StatusCode == http.StatusTooManyRequests {
-				logger.Logger.Info(sb.blobber.Baseurl, su.progress.ConnectionID,
-					" got too many request error. Retrying")
-
-				var r int
-				r, err = zboxutil.GetRateLimitValue(resp)
-				if err != nil {
-					logger.Logger.Error(err)
-					return
-				}
-
-				time.Sleep(time.Duration(r) * time.Second)
-				shouldContinue = true
-				return
-			}
-
-			respBody, err = io.ReadAll(resp.Body)
-			if err != nil {
-				logger.Logger.Error("Response read: ", err)
-				return
-			}
-
-			if strings.Contains(string(respBody), "pending_markers:") {
-				logger.Logger.Info("Commit pending for blobber ",
-					sb.blobber.Baseurl, "with connection id: ", su.progress.ConnectionID, " Retrying again")
-				time.Sleep(5 * time.Second)
-				shouldContinue = true
-				return
-			}
-
-			err = thrown.New("commit_error",
-				fmt.Sprintf("Got error response %s with status %d", respBody, resp.StatusCode))
-			return
-		}()
-		if shouldContinue {
-			continue
-		}
-		return
-	}
-	return thrown.New("commit_error", fmt.Sprintf("Commit failed with response status %d", resp.StatusCode))
+	su.consensus.Done()
+	return nil
 }
 
 func (sb *ChunkedUploadBlobber) processWriteMarker(
