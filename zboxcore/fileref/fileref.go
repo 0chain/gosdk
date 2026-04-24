@@ -104,7 +104,6 @@ type Ref struct {
 	ChildrenLoaded      bool
 	Children            []RefEntity      `json:"-" mapstructure:"-"`
 	AllocationRoot      string           `json:"allocation_root" mapstructure:"allocation_root"`
-	AllocationVersion   int64            `json:"allocation_version" mapstructure:"allocation_version"`
 	CreatedAt           common.Timestamp `json:"created_at" mapstructure:"created_at"`
 	UpdatedAt           common.Timestamp `json:"updated_at" mapstructure:"updated_at"`
 	NumFiles            int              `json:"num_files" mapstructure:"num_files"`
@@ -184,10 +183,6 @@ func (r *Ref) GetHashData() string {
 
 func (r *Ref) GetAllocationRoot() string {
 	return r.AllocationRoot
-}
-
-func (r *Ref) GetAllocationVersion() int64 {
-	return r.AllocationVersion
 }
 
 func (r *Ref) GetType() string {
