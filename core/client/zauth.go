@@ -542,13 +542,13 @@ func ZauthSignTxn(serverAddr string) sys.AuthorizeFunc {
 		}
 		req.Header.Set("Content-Type", "application/json")
 		c := GetClient()
-		pubkey := c.PeerPublicKey
+		pubkey := c.Keys[0].PublicKey
 		if len(keys) > 0 {
 			c = GetWalletByKey(keys[0])
 			if c == nil {
 				return "", errors.Errorf("wallet not found for pubkey: %s", keys[0])
 			}
-			pubkey = c.PeerPublicKey
+			pubkey = c.Keys[0].PublicKey
 		}
 
 		req.Header.Set("X-Peer-Public-Key", pubkey)
@@ -587,13 +587,13 @@ func ZauthAuthCommon(serverAddr string) sys.AuthorizeFunc {
 		}
 
 		c := GetClient()
-		pubkey := c.PeerPublicKey
+		pubkey := c.Keys[0].PublicKey
 		if len(keys) > 0 {
 			c = GetWalletByKey(keys[0])
 			if c == nil {
 				return "", errors.Errorf("multi-wallet-settings err: %v", keys[0])
 			}
-			pubkey = c.PeerPublicKey
+			pubkey = c.Keys[0].PublicKey
 		}
 
 		req.Header.Set("Content-Type", "application/json")
