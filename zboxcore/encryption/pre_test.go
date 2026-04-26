@@ -411,6 +411,105 @@ func TestReKeyWorksForNewSubfolderAddedToSharedFolder(t *testing.T) {
 		"folder reKey works for updated file with new C1")
 }
 
+// TestReKeyFailsWhenUploadAndShareEntropyDiffer reproduces the failure mode
+// fixed by commit 9dfc92c4 (fix: use signing key entropy for encrypted folder
+// shares). When the owner uploads files using one entropy source (e.g.
+// hex.EncodeToString(allocation.signingPrivateKey), as chunked_upload does for
+// SignatureV2 allocations) but the share path generates the re-encryption key
+// from a different entropy source (e.g. the wallet mnemonic), the blobber
+// rejects every download with "Invalid Ciphertext in reEncrypt, C4 != H5".
+//
+// Crypto cause: skA derived from two different XOF seeds is two different
+// scalars. alp = H6(tag, skA_upload) is baked into C4 at upload time, while
+// R3 = H6(tag, skA_share) is packed into the reKey. The blobber integrity
+// check H5(C1, C2, C3, R3) == C4 only holds when skA_upload == skA_share.
+func TestReKeyFailsWhenUploadAndShareEntropyDiffer(t *testing.T) {
+	// Two distinct entropy seeds model the pre-fix mismatch: chunked_upload
+	// used signing-key entropy on SignatureV2 allocations while the folder
+	// share path (driven by NewDirectoryRef, which leaves EncryptionVersion=0)
+	// fell through to the mnemonic branch.
+	uploadEntropy := "travel twenty hen negative fresh sentence hen flat swift embody increase juice eternal satisfy want vessel matter honey video begin dutch trigger romance assault"
+	shareEntropy := "unrelated entropy modeling a different source such as wallet mnemonic vs hex-encoded signing private key"
+	recipientMnemonic := "inside february piece turkey offer merry select combine tissue wave wet shift room afraid december gown mean brick speak grant gain become toy clown"
+	tag := "filetype:audio"
+
+	recipient := newScheme(t, recipientMnemonic)
+	recipient.InitForEncryption(tag)
+	recipientPubKey, _ := recipient.GetPublicKey()
+
+	// Owner uploads with entropy A: alp = H6(tag, skA_A) is baked into C4.
+	uploader := newScheme(t, uploadEntropy)
+	uploader.InitForEncryption(tag)
+	fileC1 := uploader.GetEncryptedKey()
+	encMsg, err := uploader.Encrypt([]byte("folder file contents"))
+	require.NoError(t, err)
+
+	// Folder share path generates reKey with entropy B: R3 = H6(tag, skA_B).
+	sharer := newScheme(t, shareEntropy)
+	sharer.InitForEncryption(tag)
+	wrongReKey, err := sharer.GetReGenKey(recipientPubKey, tag)
+	require.NoError(t, err)
+
+	// Blobber rejects: H5(C1, C2, C3, R3_B) != C4 (which contains alp_A).
+	blobber := NewEncryptionScheme()
+	blobber.Initialize("")
+	err = blobber.InitForDecryption(tag, fileC1)
+	require.NoError(t, err)
+	_, err = blobber.ReEncrypt(encMsg, wrongReKey, recipientPubKey)
+	require.Error(t, err, "mismatched upload/share entropy must fail the C4 integrity check")
+	require.Contains(t, err.Error(), "C4 != H5",
+		"blobber must return the exact error observed on folder-share downloads before the fix")
+}
+
+// TestReKeyWorksWhenFolderShareUsesUploadEntropy verifies the fix in
+// sharerequest.go. On a SignatureV2 allocation, chunked_upload derives skA
+// from allocation.signingPrivateKey. Before the fix, the share path inspected
+// fRef.EncryptionVersion to pick entropy — and NewDirectoryRef never sets that
+// field, so folder shares fell back to the wallet mnemonic. The fix keys off
+// fRef.Type == DIRECTORY too, so folder shares now use the same signing-key
+// entropy as upload. This test confirms a single reKey then decrypts every
+// file in the folder, across nested paths and independent C1 values per file.
+func TestReKeyWorksWhenFolderShareUsesUploadEntropy(t *testing.T) {
+	signingKeyEntropy := "signing key hex models the SignatureV2 entropy source used by chunked_upload"
+	recipientMnemonic := "inside february piece turkey offer merry select combine tissue wave wet shift room afraid december gown mean brick speak grant gain become toy clown"
+	tag := "filetype:audio"
+
+	recipient := newScheme(t, recipientMnemonic)
+	recipient.InitForEncryption(tag)
+	recipientPubKey, _ := recipient.GetPublicKey()
+
+	// Folder share generates ONE reKey with signing-key entropy (post-fix).
+	sharer := newScheme(t, signingKeyEntropy)
+	sharer.InitForEncryption(tag)
+	reKey, err := sharer.GetReGenKey(recipientPubKey, tag)
+	require.NoError(t, err)
+
+	// Simulate files across the folder tree — each uploaded with the same
+	// signing-key entropy (mirrors chunked_upload on SignatureV2 allocations).
+	files := []struct {
+		name string
+		data []byte
+	}{
+		{"folder/a.txt", []byte("alpha")},
+		{"folder/nested/b.bin", []byte{0x01, 0x02, 0x03, 0x04, 0x05}},
+		{"folder/nested/deeper/c.md", []byte("# nested markdown content")},
+	}
+
+	for _, f := range files {
+		uploader := newScheme(t, signingKeyEntropy)
+		uploader.InitForEncryption(tag) // fresh random T → unique C1 per file
+		fileC1 := uploader.GetEncryptedKey()
+		encMsg, err := uploader.Encrypt(f.data)
+		require.NoError(t, err)
+
+		recipientDec := newScheme(t, recipientMnemonic)
+		recipientDec.InitForEncryption(tag)
+		dec := blobberReEncryptAndDecrypt(t, encMsg, fileC1, reKey, recipientPubKey, recipientDec)
+		require.Equal(t, string(f.data), string(dec),
+			"folder reKey (signing-key entropy) decrypts %s uploaded with signing-key entropy", f.name)
+	}
+}
+
 func BenchmarkEncrypt(t *testing.B) {
 	mnemonic := "inside february piece turkey offer merry select combine tissue wave wet shift room afraid december gown mean brick speak grant gain become toy clown"
 	encscheme := NewEncryptionScheme()
