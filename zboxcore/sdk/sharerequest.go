@@ -85,7 +85,14 @@ func (req *ShareRequest) getAuthTicket(clientID, encPublicKey string) (*marker.A
 	if encPublicKey != "" {
 		encScheme := encryption.NewEncryptionScheme()
 		var entropy string
-		if fRef.EncryptionVersion == SignatureV2 {
+		// For folder shares, fRef is a directory whose EncryptionVersion is
+		// always 0 (NewDirectoryRef doesn't set it), but files inside may have
+		// been uploaded with SignatureV2 using the allocation's signing key.
+		// Mirror chunked_upload's decision: prefer signingPrivateKey when the
+		// allocation provides one so R3 matches the alpha used at upload time.
+		useSigningKey := fRef.EncryptionVersion == SignatureV2 ||
+			(fRef.Type == fileref.DIRECTORY && len(req.signingPrivateKey) > 0)
+		if useSigningKey {
 			if len(req.signingPrivateKey) == 0 {
 				return nil, errors.New("wallet_error", "signing private key is empty")
 			}
