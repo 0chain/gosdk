@@ -493,6 +493,21 @@ func GetAllocationsOfClient(clientID string) (string, error) {
 	return string(retBytes), nil
 }
 
+// GenerateOwnerSigningPublicKey derives the ed25519 owner signing public key
+// from the active wallet's BLS keypair. Returns the hex-encoded public key.
+//
+// This is the same function the WASM SDK exposes (wasmsdk/allocation.go).
+// Mobile clients need this when creating allocations via Stripe / x402: the
+// 0box backend stores it on-chain, and blobbers use it to verify upload
+// signatures. Without it, blobbers either crash (if a non-ed25519 value is
+// sent) or fall back to BLS verification (if empty).
+//
+// Requires InitStorageSDK to have been called first so client.PublicKey()
+// and client.Id() return the active wallet identity.
+func GenerateOwnerSigningPublicKey() (string, error) {
+	return sdk.GenerateOwnerSigningPublicKey()
+}
+
 // RedeeemFreeStorage given a free storage ticket, create a new free allocation
 //   - ticket: free storage ticket
 func (s *StorageSDK) RedeemFreeStorage(ticket string) (string, error) {
