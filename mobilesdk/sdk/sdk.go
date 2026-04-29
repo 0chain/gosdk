@@ -423,13 +423,55 @@ func GetVersion() string {
 //   - extend: extend allocation
 //   - allocationID: allocation ID
 //   - lock: Number of tokens to lock to the allocation after the update
-func (s *StorageSDK) UpdateAllocation(size, authRoundExpiry int64, extend bool, allocationID string, lock uint64) (hash string, err error) {
-	if lock > math.MaxInt64 {
-		return "", errors.Errorf("int64 overflow in lock")
+//
+// Note: lock is int64 (not uint64) so gomobile can bind this for iOS — the
+// Android Java binding maps long → int64 anyway. Negative values are treated
+// as zero.
+func (s *StorageSDK) UpdateAllocation(size, authRoundExpiry int64, extend bool, allocationID string, lock int64) (hash string, err error) {
+	if lock < 0 {
+		lock = 0
 	}
-
-	hash, _, err = sdk.UpdateAllocation(size, authRoundExpiry, extend, allocationID, lock, "", "", "", "", "", false, &sdk.FileOptionsParameters{}, "")
+	hash, _, err = sdk.UpdateAllocation(size, authRoundExpiry, extend, allocationID, uint64(lock), "", "", "", "", "", false, &sdk.FileOptionsParameters{}, "")
 	return hash, err
+}
+
+// CreateAllocationMobile creates a new on-chain allocation with mobile-friendly
+// scalars only (no []string blobberAuthTickets — gomobile can't bind string
+// slices). Mirrors the Android binding `Sdk.createAllocationMobile(long,
+// long, long, long, String)`.
+//
+//   - dataShards / parityShards: shard counts (int64 for gomobile, narrowed to int)
+//   - size: allocation size in bytes
+//   - authRoundExpiry: auth round expiry (typically 0)
+//   - lock: tokens to lock, encoded as decimal string (matches CreateAllocation)
+func (s *StorageSDK) CreateAllocationMobile(
+	dataShards, parityShards, size, authRoundExpiry int64,
+	lock string,
+) (*zbox.Allocation, error) {
+	return s.CreateAllocation(int(dataShards), int(parityShards), size, 0, authRoundExpiry, lock, nil)
+}
+
+// GetAllocationMinLock — mobile-friendly wrapper of zboxsdk.GetAllocationMinLock.
+// Takes maxWritePrice as int64 instead of PriceRange struct (gomobile can't bind
+// arbitrary structs across the binding). Min is 0.
+func (s *StorageSDK) GetAllocationMinLock(
+	dataShards, parityShards, size, maxWritePrice int64,
+) (int64, error) {
+	if maxWritePrice < 0 {
+		maxWritePrice = 0
+	}
+	return sdk.GetAllocationMinLock(
+		int(dataShards), int(parityShards), size,
+		sdk.PriceRange{Min: 0, Max: uint64(maxWritePrice)},
+	)
+}
+
+// GetUpdateAllocationMinLock — mobile-friendly wrapper of zboxsdk.GetUpdateAllocationMinLock.
+// Drops addBlobberId / removeBlobberId params (mobile only does size/extend updates today).
+func (s *StorageSDK) GetUpdateAllocationMinLock(
+	allocationID string, size int64, extend bool,
+) (int64, error) {
+	return sdk.GetUpdateAllocationMinLock(allocationID, size, extend, "", "")
 }
 
 // UpdateAllocationWithBlobbers update allocation settings with new expiry, size, and blobber changes
