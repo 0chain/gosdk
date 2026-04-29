@@ -11,6 +11,14 @@ import (
 
 var DefaultHeader = make(map[string]string)
 
+// SetSessionID stores the session/device ID so it is attached as
+// X-App-Session-ID on every outgoing blobber HTTP request via resty.
+func SetSessionID(id string) {
+	if id != "" {
+		DefaultHeader["X-App-Session-ID"] = id
+	}
+}
+
 // Run the HTTP request in a goroutine and pass the response to f.
 var DefaultTransport = &http.Transport{
 	Proxy:                 http.ProxyFromEnvironment,
