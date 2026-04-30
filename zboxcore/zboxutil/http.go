@@ -231,6 +231,47 @@ func setClientInfo(req *http.Request, keys ...string) error {
 	return nil
 }
 
+// setClientInfoWithSignV2 sets the basic client-info headers plus the V2
+// identity signature (X-App-Client-Signature-V2). Use this for GET endpoints
+// that need the blobber to verify the requester actually owns the wallet
+// claimed in X-App-Client-ID — e.g. owner-path list requests, where the
+// blobber added a server-side check that rejects unsigned requests with
+// "Owner signature verification failed".
+//
+// The V2 signature is deterministic (hash of allocationTx + baseURL signed
+// with the wallet key) and cached in SignCache, so this is cheap on repeat.
+func setClientInfoWithSignV2(req *http.Request, allocation, baseURL string, keys ...string) error {
+	var key string
+	if len(keys) > 0 && keys[0] != "" {
+		key = keys[0]
+	} else {
+		key = client.Id()
+	}
+	wallet := client.GetWalletByKey(key)
+	if wallet == nil {
+		// Fallback: in CLI mode each process has one wallet loaded via SetWallet.
+		wallet = client.Wallet()
+		if wallet == nil {
+			return errors.New("multi-wallet-settings err: ", "wallet not found : "+key)
+		}
+	}
+	req.Header.Set("X-App-Client-ID", wallet.ClientID)
+	req.Header.Set("X-App-Client-Key", wallet.ClientKey)
+
+	hashData := allocation + baseURL
+	sig2, ok := SignCache.Get(hashData + ":" + key)
+	if !ok {
+		var err error
+		sig2, err = client.Sign(encryption.Hash(hashData), key)
+		if err != nil {
+			return err
+		}
+		SignCache.Add(hashData+":"+key, sig2)
+	}
+	req.Header.Set(CLIENT_SIGNATURE_HEADER_V2, sig2)
+	return nil
+}
+
 func setClientInfoWithSign(req *http.Request, sig, allocation, baseURL string, keys ...string) error {
 	var key string
 	if len(keys) > 0 && keys[0] != "" {
@@ -591,7 +632,20 @@ func NewListRequest(baseUrl, allocationID, allocationTx, path, pathHash, auth_to
 	if err != nil {
 		return nil, err
 	}
-	setClientInfo(req)
+
+	// Owner-path requests (no auth_token) must include X-App-Client-Signature-V2
+	// or the blobber rejects with "Owner signature verification failed". Shared
+	// requests are authenticated via the auth_token, so only basic client info
+	// is needed there.
+	if auth_token == "" {
+		if err := setClientInfoWithSignV2(req, allocationTx, baseUrl, clients...); err != nil {
+			return nil, err
+		}
+	} else {
+		if err := setClientInfo(req, clients...); err != nil {
+			return nil, err
+		}
+	}
 
 	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 
