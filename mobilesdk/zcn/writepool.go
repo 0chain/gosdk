@@ -4,8 +4,10 @@
 package zcn
 
 import (
-	"github.com/0chain/gosdk/zboxcore/sdk"
 	"strconv"
+
+	"github.com/0chain/gosdk/zboxcore/sdk"
+	"github.com/0chain/gosdk/zcncore"
 )
 
 // WritePoolLock locks given number of tokes for given duration in read pool.
@@ -33,4 +35,14 @@ func WritePoolLock(allocID string, tokens, fee string) (string, error) {
 	)
 
 	return hash, err
+}
+
+// ConvertToValueMobile converts ZCN tokens to SAS tokens (mobile wrapper)
+// ## Inputs
+//   - token: ZCN tokens as float64
+//
+// ## Outputs
+//   - SAS tokens as uint64
+func ConvertToValueMobile(token float64) uint64 {
+	return zcncore.ConvertToValue(token)
 }

@@ -117,7 +117,7 @@ func InitStorageSDK(clientJson string, configJson string) (*StorageSDK, error) {
 		l.Logger.Error(err)
 		return nil, err
 	}
-	err = Init(configObj.BlockWorker)
+	err = Init(configJson)
 	if err != nil {
 		l.Logger.Error(err)
 		return nil, err
@@ -413,17 +413,82 @@ func (s *StorageSDK) GetVersion() string {
 	return version.VERSIONSTR
 }
 
+// GetVersion getting current version for gomobile lib (standalone function)
+func GetVersion() string {
+	return version.VERSIONSTR
+}
+
 // UpdateAllocation update allocation settings with new expiry and size
 //   - size: size of space reserved on blobbers
 //   - extend: extend allocation
 //   - allocationID: allocation ID
 //   - lock: Number of tokens to lock to the allocation after the update
-func (s *StorageSDK) UpdateAllocation(size, authRoundExpiry int64, extend bool, allocationID string, lock uint64) (hash string, err error) {
+//
+// Note: lock is int64 (not uint64) so gomobile can bind this for iOS — the
+// Android Java binding maps long → int64 anyway. Negative values are treated
+// as zero.
+func (s *StorageSDK) UpdateAllocation(size, authRoundExpiry int64, extend bool, allocationID string, lock int64) (hash string, err error) {
+	if lock < 0 {
+		lock = 0
+	}
+	hash, _, err = sdk.UpdateAllocation(size, authRoundExpiry, extend, allocationID, uint64(lock), "", "", "", "", "", false, &sdk.FileOptionsParameters{}, "")
+	return hash, err
+}
+
+// CreateAllocationMobile creates a new on-chain allocation with mobile-friendly
+// scalars only (no []string blobberAuthTickets — gomobile can't bind string
+// slices). Mirrors the Android binding `Sdk.createAllocationMobile(long,
+// long, long, long, String)`.
+//
+//   - dataShards / parityShards: shard counts (int64 for gomobile, narrowed to int)
+//   - size: allocation size in bytes
+//   - authRoundExpiry: auth round expiry (typically 0)
+//   - lock: tokens to lock, encoded as decimal string (matches CreateAllocation)
+func (s *StorageSDK) CreateAllocationMobile(
+	dataShards, parityShards, size, authRoundExpiry int64,
+	lock string,
+) (*zbox.Allocation, error) {
+	return s.CreateAllocation(int(dataShards), int(parityShards), size, 0, authRoundExpiry, lock, nil)
+}
+
+// GetAllocationMinLock — mobile-friendly wrapper of zboxsdk.GetAllocationMinLock.
+// Takes maxWritePrice as int64 instead of PriceRange struct (gomobile can't bind
+// arbitrary structs across the binding). Min is 0.
+func (s *StorageSDK) GetAllocationMinLock(
+	dataShards, parityShards, size, maxWritePrice int64,
+) (int64, error) {
+	if maxWritePrice < 0 {
+		maxWritePrice = 0
+	}
+	return sdk.GetAllocationMinLock(
+		int(dataShards), int(parityShards), size,
+		sdk.PriceRange{Min: 0, Max: uint64(maxWritePrice)},
+	)
+}
+
+// GetUpdateAllocationMinLock — mobile-friendly wrapper of zboxsdk.GetUpdateAllocationMinLock.
+// Drops addBlobberId / removeBlobberId params (mobile only does size/extend updates today).
+func (s *StorageSDK) GetUpdateAllocationMinLock(
+	allocationID string, size int64, extend bool,
+) (int64, error) {
+	return sdk.GetUpdateAllocationMinLock(allocationID, size, extend, "", "")
+}
+
+// UpdateAllocationWithBlobbers update allocation settings with new expiry, size, and blobber changes
+//   - size: size of space reserved on blobbers
+//   - authRoundExpiry: auth round expiry duration
+//   - extend: extend allocation
+//   - allocationID: allocation ID
+//   - lock: Number of tokens to lock to the allocation after the update
+//   - addBlobberId: blobber ID to add to the allocation (empty string to skip)
+//   - addBlobberAuthTicket: blobber auth ticket for the blobber to add, required if adding a restricted blobber (empty string if not needed)
+//   - removeBlobberId: blobber ID to remove from the allocation (empty string to skip)
+func (s *StorageSDK) UpdateAllocationWithBlobbers(size, authRoundExpiry int64, extend bool, allocationID string, lock uint64, addBlobberId, addBlobberAuthTicket, removeBlobberId string) (hash string, err error) {
 	if lock > math.MaxInt64 {
 		return "", errors.Errorf("int64 overflow in lock")
 	}
 
-	hash, _, err = sdk.UpdateAllocation(size, authRoundExpiry, extend, allocationID, lock, "", "", "", "", "", false, &sdk.FileOptionsParameters{}, "")
+	hash, _, err = sdk.UpdateAllocation(size, authRoundExpiry, extend, allocationID, lock, addBlobberId, addBlobberAuthTicket, removeBlobberId, "", "", false, &sdk.FileOptionsParameters{}, "")
 	return hash, err
 }
 
@@ -452,6 +517,37 @@ func GetAllocations() (string, error) {
 		return "", err
 	}
 	return string(retBytes), nil
+}
+
+// GetAllocationsOfClient retrieve list of allocations for a specific client ID
+//   - clientID: the client ID to get allocations for
+func GetAllocationsOfClient(clientID string) (string, error) {
+	allocs, err := sdk.GetAllocationsForClient(clientID)
+	if err != nil {
+		return "", err
+	}
+
+	retBytes, err := json.Marshal(allocs)
+	if err != nil {
+		return "", err
+	}
+
+	return string(retBytes), nil
+}
+
+// GenerateOwnerSigningPublicKey derives the ed25519 owner signing public key
+// from the active wallet's BLS keypair. Returns the hex-encoded public key.
+//
+// This is the same function the WASM SDK exposes (wasmsdk/allocation.go).
+// Mobile clients need this when creating allocations via Stripe / x402: the
+// 0box backend stores it on-chain, and blobbers use it to verify upload
+// signatures. Without it, blobbers either crash (if a non-ed25519 value is
+// sent) or fall back to BLS verification (if empty).
+//
+// Requires InitStorageSDK to have been called first so client.PublicKey()
+// and client.Id() return the active wallet identity.
+func GenerateOwnerSigningPublicKey() (string, error) {
+	return sdk.GenerateOwnerSigningPublicKey()
 }
 
 // RedeeemFreeStorage given a free storage ticket, create a new free allocation
