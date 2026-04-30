@@ -70,13 +70,13 @@ build-ios: $(IOSMOBILESDKDIR) getrev
 build-android: $(ANDROIDMOBILESDKDIR) getrev
 	@echo "Building Android framework. Please wait..."
 	@go get golang.org/x/mobile/bind
-	@gomobile bind -v -ldflags="-s -w -extldflags=-Wl,-soname,libgojni.so" -target=android/arm64,android/amd64 -androidapi 19 -tags mobile  -o $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME) $(PKG_EXPORTS)
+	@gomobile bind -v -ldflags="-s -w -extldflags=-Wl,-soname,libgojni.so,-z,max-page-size=16384" -target=android/arm64,android/amd64 -androidapi 19 -tags mobile  -o $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME) $(PKG_EXPORTS)
 	@echo "   $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME). - [OK]"
 
 build-android-debug: $(ANDROIDMOBILESDKDIR) getrev
 	@echo "Building Android framework. Please wait..."
 	@go get golang.org/x/mobile/bind
-	@gomobile bind -v -ldflags="-s -w -extldflags=-Wl,-soname,libgojni.so" -gcflags '-N -l' -target=android/arm64,android/amd64 -tags mobile  -o $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME) $(PKG_EXPORTS)
+	@gomobile bind -v -ldflags="-s -w -extldflags=-Wl,-soname,libgojni.so,-z,max-page-size=16384" -gcflags '-N -l' -target=android/arm64,android/amd64 -tags mobile  -o $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME) $(PKG_EXPORTS)
 	@echo "   $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME). - [OK]"
 
 build-macos: $(MACSDKDIR) getrev

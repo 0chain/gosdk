@@ -7,6 +7,7 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"path"
 	"sync"
 	"time"
 
@@ -172,9 +173,8 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 func (mo *MultiOperation) Process() error {
 	l.Logger.Debug("MultiOperation Process start")
 	wg := &sync.WaitGroup{}
-	if mo.allocationObj.StorageVersion == 0 {
-		mo.changes = make([][]allocationchange.AllocationChange, len(mo.operations))
-	} else {
+	mo.changes = make([][]allocationchange.AllocationChange, len(mo.operations))
+	if mo.allocationObj.StorageVersion != 0 {
 		mo.changesV2 = make([]allocationchange.AllocationChangeV2, 0, len(mo.operations))
 	}
 	ctx := mo.ctx
@@ -215,13 +215,14 @@ func (mo *MultiOperation) Process() error {
 					mo.operationMask = mo.operationMask.And(mask)
 				}
 				mo.changesV2 = append(mo.changesV2, op)
-				mo.maskMU.Unlock()
 			} else {
 				mo.operationMask = mo.operationMask.Or(mask)
-				mo.maskMU.Unlock()
-				changes := op.buildChange(refs, uid)
-				mo.changes[idx] = changes
 			}
+			mo.maskMU.Unlock()
+			// Always build V1 allocation_changes — blobber commit handler requires them
+			// regardless of storage version
+			changes := op.buildChange(refs, uid)
+			mo.changes[idx] = changes
 		}(op, idx)
 	}
 	swg.Wait()
@@ -251,9 +252,7 @@ func (mo *MultiOperation) Process() error {
 	// But we want mo.changes[0] to have allocationChange for blobber 1 and mo.changes[1] to have allocationChange for
 	// blobber 2 and so on.
 	start := time.Now()
-	if mo.allocationObj.StorageVersion != StorageV2 {
-		mo.changes = zboxutil.Transpose(mo.changes)
-	}
+	mo.changes = zboxutil.Transpose(mo.changes)
 
 	writeMarkerMutex, err := CreateWriteMarkerMutex(mo.allocationObj, mo.MultiWalletSupportKey)
 	if err != nil {
@@ -402,6 +401,19 @@ func (mo *MultiOperation) Process() error {
 		}
 	}
 
+	// Read-after-write visibility barrier. Porcupine 2026-04-21 surfaced the
+	// race where a COPY/MOVE/RENAME ack (5/5 WriteMarker commits) precedes
+	// the per-blobber ref-index materialization on the slower replicas, so an
+	// immediate GET of the destination returns ErrNotFound from those
+	// replicas, trips the read-side staleness barrier, and returns empty.
+	// Wait (bounded) until every committed blobber reports the dst ref as
+	// visible before returning success to the caller.
+	if !mo.isRepair {
+		if dests := collectDestPathsForPoll(mo.operations); len(dests) > 0 {
+			mo.verifyReadAfterWrite(dests)
+		}
+	}
+
 	return nil
 
 }
@@ -483,4 +495,86 @@ func (mo *MultiOperation) commitV2() error {
 		}
 	}
 	return nil
+}
+
+// collectDestPathsForPoll returns the full destination paths of every
+// mutation op (Copy/Move/Rename) in this batch. These are the paths whose
+// read-visibility we must confirm before reporting the multi-op success.
+func collectDestPathsForPoll(ops []Operationer) []string {
+	var dests []string
+	for _, op := range ops {
+		switch o := op.(type) {
+		case *CopyOperation:
+			if o.destPath != "" && o.remotefilepath != "" {
+				dests = append(dests, path.Join(o.destPath, path.Base(o.remotefilepath)))
+			}
+		case *MoveOperation:
+			if o.destPath != "" && o.remotefilepath != "" {
+				dests = append(dests, path.Join(o.destPath, path.Base(o.remotefilepath)))
+			}
+		case *RenameOperation:
+			if o.newName != "" && o.remotefilepath != "" {
+				dests = append(dests, path.Join(path.Dir(o.remotefilepath), o.newName))
+			}
+		}
+	}
+	return dests
+}
+
+// verifyReadAfterWrite polls each committed blobber for the given dst paths
+// until all blobbers in the operation mask report a non-nil fileref for
+// every dst, or the deadline expires. Bounded at 5 s (250 × 20 ms retries).
+// On timeout, logs a warning but returns normally — the read-side staleness
+// barrier reorder in downloadworker.go should also avoid false ErrNotFound
+// on the majority of legitimate consensus races.
+func (mo *MultiOperation) verifyReadAfterWrite(dests []string) {
+	if len(dests) == 0 {
+		return
+	}
+	deadline := time.Now().Add(5 * time.Second)
+	var positions []uint64
+	{
+		var pos uint64
+		for i := mo.operationMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+			pos = uint64(i.TrailingZeros())
+			positions = append(positions, pos)
+		}
+	}
+	if len(positions) == 0 {
+		return
+	}
+
+	for time.Now().Before(deadline) {
+		allVisible := true
+	checkDst:
+		for _, dst := range dests {
+			for _, p := range positions {
+				listReq := &ListRequest{
+					remotefilepath: dst,
+					allocationID:   mo.allocationObj.ID,
+					allocationTx:   mo.allocationObj.Tx,
+					sig:            mo.allocationObj.sig,
+					blobbers:       mo.allocationObj.Blobbers,
+					ctx:            mo.ctx,
+					Consensus: Consensus{
+						RWMutex:         &sync.RWMutex{},
+						fullconsensus:   mo.fullconsensus,
+						consensusThresh: mo.consensusThresh,
+					},
+				}
+				rsp := make(chan *fileMetaResponse, 1)
+				go listReq.getFileMetaInfoFromBlobber(mo.allocationObj.Blobbers[p], int(p), rsp)
+				r := <-rsp
+				if r == nil || r.fileref == nil || r.err != nil {
+					allVisible = false
+					break checkDst
+				}
+			}
+		}
+		if allVisible {
+			return
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	logger.Logger.Info("verifyReadAfterWrite timed out before all dests visible", "dests", dests)
 }

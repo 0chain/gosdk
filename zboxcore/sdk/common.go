@@ -20,6 +20,8 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
+const alreadyExists = "file already exists"
+
 func getObjectTreeFromBlobber(ctx context.Context, allocationID, allocationTx, sig string, remoteFilePath string, blobber *blockchain.StorageNode, keys ...string) (fileref.RefEntity, error) {
 	httpreq, err := zboxutil.NewObjectTreeRequest(blobber.Baseurl, allocationID, allocationTx, sig, remoteFilePath, keys...)
 	if err != nil {

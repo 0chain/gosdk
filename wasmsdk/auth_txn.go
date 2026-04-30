@@ -37,7 +37,6 @@ func registerAuthorizer(this js.Value, args []js.Value) interface{} {
 }
 
 func registerZauthServer(serverAddr string) {
-	fmt.Println("registerZauthServer...")
 	jsbridge.SetZauthServer(serverAddr)
 	sys.SetAuthorize(client.ZauthSignTxn(serverAddr))
 	sys.SetAuthCommon(client.ZauthAuthCommon(serverAddr))

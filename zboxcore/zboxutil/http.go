@@ -180,7 +180,7 @@ func init() {
 		WriteTimeout:        180 * time.Second,
 		MaxConnDuration:     45 * time.Second,
 		MaxResponseBodySize: 1024 * 1024 * 64, //64MB
-		MaxConnsPerHost:     1024,
+		MaxConnsPerHost:     4096, // Increased from 1024 to support large file uploads with high concurrency (e.g., warp PUT with 1024MB objects)
 	}
 	fasthttp.SetBodySizePoolLimit(respBodyPoolLimit, respBodyPoolLimit)
 	envProxy.initialize()
@@ -213,6 +213,10 @@ func setClientInfo(req *http.Request, keys ...string) error {
 	if len(keys) > 0 && keys[0] != "" {
 		wallet := client.GetWalletByKey(keys[0])
 		if wallet == nil {
+			// Fallback to current wallet (CLI mode: one wallet per process)
+			wallet = client.Wallet()
+		}
+		if wallet == nil {
 			return errors.New("multi-wallet-settings err: ", "wallet not found : "+keys[0])
 		}
 		req.Header.Set("X-App-Client-ID", wallet.ClientID)
@@ -236,7 +240,13 @@ func setClientInfoWithSign(req *http.Request, sig, allocation, baseURL string, k
 	}
 	wallet := client.GetWalletByKey(key)
 	if wallet == nil {
-		return errors.New("multi-wallet-settings err: ", "wallet not found : "+key)
+		// Fallback: in CLI mode each process has one wallet loaded via SetWallet.
+		// GetWalletByKey may fail if the key format doesn't match the wallets map index.
+		// Use the current wallet as fallback.
+		wallet = client.Wallet()
+		if wallet == nil {
+			return errors.New("multi-wallet-settings err: ", "wallet not found : "+key)
+		}
 	}
 	l.Logger.Info(fmt.Sprintf("setClientInfoWithSign: wallet details: %+v", *wallet))
 	req.Header.Set("X-App-Client-ID", wallet.ClientID)
