@@ -240,6 +240,29 @@ func setClientInfoWithSign(req *http.Request, sig, allocation, baseURL string) e
 	return nil
 }
 
+// setClientInfoWithSignV2 sets the basic client-info headers plus the V2
+// identity signature (X-App-Client-Signature-V2). Use this for GET endpoints
+// that need the blobber to verify the requester actually owns the wallet
+// claimed in X-App-Client-ID — e.g. owner-path list requests, where the
+// blobber added a server-side check that rejects unsigned requests with
+// "Owner signature verification failed".
+func setClientInfoWithSignV2(req *http.Request, allocation, baseURL string) error {
+	setClientInfo(req)
+
+	hashData := allocation + baseURL
+	sig2, ok := SignCache.Get(hashData)
+	if !ok {
+		var err error
+		sig2, err = client.Sign(encryption.Hash(hashData))
+		if err != nil {
+			return err
+		}
+		SignCache.Add(hashData, sig2)
+	}
+	req.Header.Set(CLIENT_SIGNATURE_HEADER_V2, sig2)
+	return nil
+}
+
 func NewCommitRequest(baseUrl, allocationID string, allocationTx string, body io.Reader) (*http.Request, error) {
 	u, err := joinUrl(baseUrl, COMMIT_ENDPOINT, allocationTx)
 	if err != nil {
@@ -525,7 +548,18 @@ func NewListRequest(baseUrl, allocationID, allocationTx, path, pathHash, auth_to
 	if err != nil {
 		return nil, err
 	}
-	setClientInfo(req)
+
+	// Owner-path requests (no auth_token) must include X-App-Client-Signature-V2
+	// or the blobber rejects with "Owner signature verification failed". Shared
+	// requests are authenticated via the auth_token, so only basic client info
+	// is needed there.
+	if auth_token == "" {
+		if err := setClientInfoWithSignV2(req, allocationTx, baseUrl); err != nil {
+			return nil, err
+		}
+	} else {
+		setClientInfo(req)
+	}
 
 	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 

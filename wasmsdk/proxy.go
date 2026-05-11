@@ -205,18 +205,19 @@ func main() {
 		if !(sdk.IsNull() || sdk.IsUndefined()) {
 			jsbridge.BindAsyncFuncs(sdk, map[string]interface{}{
 				//sdk
-				"init":                   initSDKs,
-				"setWallet":              setWallet,
-				"getPublicEncryptionKey": zcncore.GetPublicEncryptionKey,
-				"hideLogs":               hideLogs,
-				"showLogs":               showLogs,
-				"getUSDRate":             getUSDRate,
-				"isWalletID":             isWalletID,
-				"getVersion":             getVersion,
-				"getLookupHash":          getLookupHash,
-				"createThumbnail":        createThumbnail,
-				"makeSCRestAPICall":      makeSCRestAPICall,
-				"getWasmType":            getWasmType,
+				"init":                     initSDKs,
+				"setWallet":                setWallet,
+				"getPublicEncryptionKey":   zcncore.GetPublicEncryptionKey,
+				"getPublicEncryptionKeyV2": zcncore.GetPublicEncryptionKeyV2,
+				"hideLogs":                 hideLogs,
+				"showLogs":                 showLogs,
+				"getUSDRate":               getUSDRate,
+				"isWalletID":               isWalletID,
+				"getVersion":               getVersion,
+				"getLookupHash":            getLookupHash,
+				"createThumbnail":          createThumbnail,
+				"makeSCRestAPICall":        makeSCRestAPICall,
+				"getWasmType":              getWasmType,
 
 				//blobber
 
