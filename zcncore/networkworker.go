@@ -28,20 +28,33 @@ type Network struct {
 }
 
 func updateNetworkDetailsWorker(ctx context.Context) {
-	ticker := time.NewTicker(time.Duration(networkWorkerTimerInHours) * time.Hour)
+	// Exponential backoff from 30s while chain is unreachable, capped at the
+	// long refresh interval. After a successful refresh, fall back to the
+	// long interval so we still pick up network changes over time.
+	delay := 30 * time.Second
+	maxDelay := time.Duration(networkWorkerTimerInHours) * time.Hour
+	timer := time.NewTimer(delay)
+	defer timer.Stop()
 	for {
 		select {
 		case <-ctx.Done():
 			logging.Info("Network stopped by user")
 			return
-		case <-ticker.C:
-			err := UpdateNetworkDetails()
-			if err != nil {
-				logging.Error("Update network detail worker fail", zap.Error(err))
-				return
+		case <-timer.C:
+			if err := UpdateNetworkDetails(); err != nil {
+				logging.Error("Update network details failed; will retry", zap.Error(err))
+				if delay < maxDelay {
+					delay *= 2
+					if delay > maxDelay {
+						delay = maxDelay
+					}
+				}
+				timer.Reset(delay)
+				continue
 			}
 			logging.Info("Successfully updated network details")
-			return
+			delay = maxDelay
+			timer.Reset(maxDelay)
 		}
 	}
 }

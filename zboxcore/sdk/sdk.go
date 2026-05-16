@@ -355,9 +355,13 @@ func InitStorageSDK(walletJSON string,
 	blockchain.SetChainID(chainID)
 	blockchain.SetBlockWorker(blockWorker)
 
-	err = InitNetworkDetails()
-	if err != nil {
-		return err
+	if err = InitNetworkDetails(); err != nil {
+		// Chain may be unreachable at startup. Log + continue so the
+		// SDK can still serve callers that don't need on-chain ops
+		// (local-first allocation, persisted blobber registration).
+		// UpdateNetworkDetailsWorker (started below) retries with
+		// exponential backoff until the chain comes back.
+		l.Logger.Error("InitNetworkDetails (initial; retrying in background):", err)
 	}
 
 	client.SetClientNonce(nonce)

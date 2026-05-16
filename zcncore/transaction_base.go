@@ -75,10 +75,14 @@ func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainCon
 	_config.chain.BlockWorker = blockWorker
 	_config.chain.SignatureScheme = signscheme
 
-	err := UpdateNetworkDetails()
-	if err != nil {
-		fmt.Println("UpdateNetworkDetails:", err)
-		return err
+	if err := UpdateNetworkDetails(); err != nil {
+		// Chain may be unreachable at startup (e.g. miners/sharders
+		// down). Log + continue so the SDK can still serve callers that
+		// don't need on-chain operations (local-first allocation lookup,
+		// persisted blobber registration, etc.).
+		// updateNetworkDetailsWorker (started below) retries with
+		// exponential backoff until the chain is reachable.
+		fmt.Println("UpdateNetworkDetails (initial; retrying in background):", err)
 	}
 
 	go updateNetworkDetailsWorker(context.Background())
