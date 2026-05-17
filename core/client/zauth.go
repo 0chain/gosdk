@@ -6,10 +6,17 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/pkg/errors"
 )
+
+// ZauthKeyRecoveryFunc is called when zauth returns "resource not found" for
+// a signing request, indicating the split keys were never stored. It should
+// call zvault to re-generate the split, which stores keys in both zvault and
+// zauth. Set by the WASM bridge during initialization.
+var ZauthKeyRecoveryFunc func(clientID string) error
 
 // AvailableRestrictions represents supported restrictions mapping.
 var AvailableRestrictions = map[string][]string{
@@ -581,44 +588,74 @@ func ZauthSignTxn(serverAddr string) sys.AuthorizeFunc {
 
 func ZauthAuthCommon(serverAddr string) sys.AuthorizeFunc {
 	return func(msg string, keys ...string) (string, error) {
-		req, err := http.NewRequest("POST", serverAddr+"/sign/msg", bytes.NewBuffer([]byte(msg)))
+		resp, err := zauthDoSignMsg(serverAddr, msg, keys...)
 		if err != nil {
-			return "", errors.Wrap(err, "failed to create HTTP request")
+			return "", err
 		}
 
+		// If "resource not found", try to recover by re-creating split keys
+		if resp == "" {
+			return "", errors.New("empty response from zauth")
+		}
+		return resp, nil
+	}
+}
+
+// zauthDoSignMsg sends a /sign/msg request. On "resource not found" (keys
+// missing in zauth), it calls ZauthKeyRecoveryFunc to re-register them and
+// retries once.
+func zauthDoSignMsg(serverAddr, msg string, keys ...string) (string, error) {
+	result, err := zauthSignMsgOnce(serverAddr, msg, keys...)
+	if err != nil && strings.Contains(err.Error(), "resource not found") && ZauthKeyRecoveryFunc != nil {
 		c := GetClient()
-		pubkey := c.Keys[0].PublicKey
-		if len(keys) > 0 {
-			c = GetWalletByKey(keys[0])
-			if c == nil {
-				return "", errors.Errorf("multi-wallet-settings err: %v", keys[0])
+		if c != nil {
+			if recoverErr := ZauthKeyRecoveryFunc(c.ClientID); recoverErr == nil {
+				// Retry after recovery
+				return zauthSignMsgOnce(serverAddr, msg, keys...)
 			}
-			pubkey = c.Keys[0].PublicKey
 		}
+	}
+	return result, err
+}
 
-		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("X-Peer-Public-Key", pubkey)
+func zauthSignMsgOnce(serverAddr, msg string, keys ...string) (string, error) {
+	req, err := http.NewRequest("POST", serverAddr+"/sign/msg", bytes.NewBuffer([]byte(msg)))
+	if err != nil {
+		return "", errors.Wrap(err, "failed to create HTTP request")
+	}
 
-		client := &http.Client{}
-		resp, err := client.Do(req)
-		if err != nil {
-			return "", errors.Wrap(err, "failed to send HTTP request")
+	c := GetClient()
+	pubkey := c.Keys[0].PublicKey
+	if len(keys) > 0 {
+		c = GetWalletByKey(keys[0])
+		if c == nil {
+			return "", errors.Errorf("multi-wallet-settings err: %v", keys[0])
 		}
-		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusOK {
-			rsp, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return "", errors.Wrap(err, "failed to read response body")
-			}
+		pubkey = c.Keys[0].PublicKey
+	}
 
-			return "", errors.Errorf("unexpected status code: %d, res: %s", resp.StatusCode, string(rsp))
-		}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Peer-Public-Key", pubkey)
 
-		d, err := io.ReadAll(resp.Body)
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to send HTTP request")
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		rsp, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return "", errors.Wrap(err, "failed to read response body")
 		}
 
-		return string(d), nil
+		return "", errors.Errorf("unexpected status code: %d, res: %s", resp.StatusCode, string(rsp))
 	}
+
+	d, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to read response body")
+	}
+
+	return string(d), nil
 }

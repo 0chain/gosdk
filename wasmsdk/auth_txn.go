@@ -40,6 +40,17 @@ func registerZauthServer(serverAddr string) {
 	jsbridge.SetZauthServer(serverAddr)
 	sys.SetAuthorize(client.ZauthSignTxn(serverAddr))
 	sys.SetAuthCommon(client.ZauthAuthCommon(serverAddr))
+
+	// Set recovery function: when zauth returns "resource not found",
+	// re-create split keys via zvault to fix interrupted signup state.
+	client.ZauthKeyRecoveryFunc = func(clientID string) error {
+		zvaultServer := jsbridge.GetZvaultServer()
+		token := jsbridge.GetJwtToken()
+		if zvaultServer == "" || token == "" || clientID == "" {
+			return fmt.Errorf("missing zvault config for key recovery")
+		}
+		return client.CallZvaultNewSplit(zvaultServer, token, clientID)
+	}
 }
 
 func zauthRetrieveKey(clientID, peerPublicKey, serverAddr, token string) (string, error) {
@@ -48,15 +59,21 @@ func zauthRetrieveKey(clientID, peerPublicKey, serverAddr, token string) (string
 
 // zvaultNewWallet generates new wallet
 func zvaultNewWallet(serverAddr, token string) (string, error) {
+	jsbridge.SetZvaultServer(serverAddr)
+	jsbridge.SetJwtToken(token)
 	return client.CallZvaultNewWallet(serverAddr, token)
 }
 
 // zvaultNewSplit generates new split key for saved wallet
 func zvaultNewSplit(clientID, serverAddr, token string) error {
+	jsbridge.SetZvaultServer(serverAddr)
+	jsbridge.SetJwtToken(token)
 	return client.CallZvaultNewSplit(serverAddr, token, clientID)
 }
 
 func zvaultRetrieveRestrictions(peerPublicKey, serverAddr, token string) (string, error) {
+	jsbridge.SetZvaultServer(serverAddr)
+	jsbridge.SetJwtToken(token)
 	return client.CallZvaultRetrieveRestrictions(serverAddr, token, peerPublicKey)
 }
 
@@ -65,10 +82,14 @@ func zvaultUpdateRestrictions(clientID, peerPublicKey, serverAddr, token string,
 }
 
 func zvaultStoreKey(serverAddr, token, privateKey string) error {
+	jsbridge.SetZvaultServer(serverAddr)
+	jsbridge.SetJwtToken(token)
 	return client.CallZvaultStoreKeyString(serverAddr, token, privateKey)
 }
 
 func zvaultRetrieveKeys(serverAddr, token, clientID string) (string, error) {
+	jsbridge.SetZvaultServer(serverAddr)
+	jsbridge.SetJwtToken(token)
 	return client.CallZvaultRetrieveKeys(serverAddr, token, clientID)
 }
 

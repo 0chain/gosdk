@@ -57,8 +57,10 @@ type WasmWebWorker struct {
 }
 
 var (
-	workers      = make(map[string]*WasmWebWorker)
-	gZauthServer string
+	workers       = make(map[string]*WasmWebWorker)
+	gZauthServer  string
+	gZvaultServer string
+	gJwtToken     string
 )
 
 func NewWasmWebWorker(blobberID, blobberURL, clientID, clientKey, peerPublicKey, publicKey, privateKey, mnemonic string, isSplit bool) (*WasmWebWorker, bool, error) {
@@ -240,6 +242,22 @@ func (ww *WasmWebWorker) Listen(ctx context.Context) (<-chan worker.MessageEvent
 
 func SetZauthServer(zauthServer string) {
 	gZauthServer = zauthServer
+}
+
+func SetZvaultServer(zvaultServer string) {
+	gZvaultServer = zvaultServer
+}
+
+func GetZvaultServer() string {
+	return gZvaultServer
+}
+
+func SetJwtToken(token string) {
+	gJwtToken = token
+}
+
+func GetJwtToken() string {
+	return gJwtToken
 }
 
 type PostWorker interface {
