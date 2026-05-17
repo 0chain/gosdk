@@ -43,6 +43,9 @@ func (n *Network) NormalizeURLs() {
 	for i := 0; i < len(n.Sharders); i++ {
 		n.Sharders[i] = strings.TrimSuffix(n.Sharders[i], "/")
 	}
+
+	n.Miners = rewriteURLsForBrowser(n.Miners)
+	n.Sharders = rewriteURLsForBrowser(n.Sharders)
 }
 
 // LoadNetworkFile load and parse Network from file
