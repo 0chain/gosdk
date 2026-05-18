@@ -153,10 +153,13 @@ func CallZauthDelete(serverAddr, token, clientID string) error {
 }
 
 func CallZvaultNewWalletString(serverAddr, token, clientID string) (string, error) {
-	// Add your code here
-	endpoint := serverAddr + "/generate"
+	// Zvault routes (per internal/config): "/wallet" creates a new master
+	// wallet; "/key/{client_id}" creates a new split key from an existing
+	// stored master wallet. The legacy "/generate[/<id>]" path no longer
+	// exists server-side and returns 404.
+	endpoint := serverAddr + "/wallet"
 	if clientID != "" {
-		endpoint = endpoint + "/" + clientID
+		endpoint = serverAddr + "/key/" + clientID
 	}
 
 	req, err := http.NewRequest("POST", endpoint, nil)
