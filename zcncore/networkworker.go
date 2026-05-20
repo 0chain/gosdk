@@ -126,6 +126,10 @@ func GetNetworkDetails() (*Network, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "Error unmarshaling response :"+res.Body)
 	}
+	// Secure-transport clients (browser wasm, mobile) can't reach the
+	// http://<host>:7171 sharders the 0dns advertises; rewrite to the
+	// https://<host>/sharder01 proxy so SC reads work. No-op on server builds.
+	networkResponse.Sharders = conf.MaybeRewriteSharderHTTPS(networkResponse.Sharders)
 	return &networkResponse, nil
 
 }

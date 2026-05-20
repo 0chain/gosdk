@@ -33,6 +33,23 @@ func SetClientSecureTransport(enabled bool) {
 	clientSecureTransport = enabled
 }
 
+// MaybeRewriteSharderHTTPS applies the secure-transport sharder rewrite
+// (http://<host>:7171 -> https://<host>/sharder01) to each URL when
+// SetClientSecureTransport(true) was called; otherwise returns the input
+// unchanged (after trimming a trailing slash). Used by both core/conf and the
+// zcncore network worker, which keep separate sharder lists.
+func MaybeRewriteSharderHTTPS(sharders []string) []string {
+	out := make([]string, len(sharders))
+	for i, s := range sharders {
+		s = strings.TrimSuffix(s, "/")
+		if clientSecureTransport {
+			s = sharderHTTPSRewriteRe.ReplaceAllString(s, "https://$1/sharder01")
+		}
+		out[i] = s
+	}
+	return out
+}
+
 var (
 	//ErrNilConfig config is nil
 	ErrNilConfig = errors.New("[conf]config is nil")
