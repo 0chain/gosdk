@@ -6,12 +6,16 @@ name: Build WASM (standard + enterprise)
 # Standard vs enterprise differ by branch/code today (wasmsdk getWasmType()),
 # so we check out each ref and run `make wasm-build` against it.
 #
-# Publishing: attaches both wasms to a GitHub Release (same mechanism the
-# iOS/Android/macOS SDKs use in build-sdks.yml), so they sit alongside the SDK
-# assets on the release. The runner box then downloads them by tag, e.g.:
+# Publishing: each variant attaches to its OWN GitHub Release tag (standard and
+# enterprise are separate releases — e.g. v1.20.10-standard vs v1.20.10-enterprise;
+# the "lfb" releases are the standard build). Same upload mechanism the
+# iOS/Android/macOS SDKs use in build-sdks.yml. The runner box then downloads by
+# tag, e.g.:
 #   curl -L -o enterprise-zcn.wasm \
-#     https://github.com/0chain/gosdk/releases/download/<tag>/enterprise-zcn.wasm
+#     https://github.com/0chain/gosdk/releases/download/v1.20.10-enterprise/enterprise-zcn.wasm
 # and drops them into the blimp deploy's public/ with USE_LOCAL_WASM=true.
+# blimp ships both: zcn.wasm for standard allocations, enterprise-zcn.wasm for
+# enterprise allocations.
 
 on:
   workflow_dispatch:
@@ -24,8 +28,12 @@ on:
         description: 'Branch/tag for the ENTERPRISE wasm'
         required: true
         default: 'feat/enterprise-blobber'
-      release_tag:
-        description: 'Release tag to attach the wasm assets to (e.g. v1.20.10). Leave blank to only upload artifacts.'
+      standard_release_tag:
+        description: 'Release tag for the STANDARD wasm (e.g. v1.20.10-standard). Blank = artifact only.'
+        required: false
+        default: ''
+      enterprise_release_tag:
+        description: 'Release tag for the ENTERPRISE wasm (e.g. v1.20.10-enterprise). Blank = artifact only.'
         required: false
         default: ''
 
@@ -40,9 +48,11 @@ jobs:
           - variant: standard
             ref: ${{ github.event.inputs.standard_ref }}
             out: zcn.wasm
+            tag: ${{ github.event.inputs.standard_release_tag }}
           - variant: enterprise
             ref: ${{ github.event.inputs.enterprise_ref }}
             out: enterprise-zcn.wasm
+            tag: ${{ github.event.inputs.enterprise_release_tag }}
     steps:
       - name: Set up Go 1.22
         uses: actions/setup-go@v3
@@ -72,12 +82,12 @@ jobs:
           name: ${{ matrix.out }}
           path: ${{ matrix.out }}
 
-      - name: Attach to GitHub Release
-        if: ${{ github.event.inputs.release_tag != '' }}
+      - name: Attach to GitHub Release (${{ matrix.variant }})
+        if: ${{ matrix.tag != '' }}
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: ${{ matrix.out }}
           asset_name: ${{ matrix.out }}
-          tag: ${{ github.event.inputs.release_tag }}
+          tag: ${{ matrix.tag }}
           overwrite: true
