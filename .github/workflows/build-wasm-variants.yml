@@ -72,7 +72,7 @@ jobs:
       - name: Build wasm (${{ matrix.variant }})
         run: |
           docker run --rm -v "$PWD":/gosdk -w /gosdk golang:1.22.5 make wasm-build
-          mv zcn.wasm "${{ matrix.out }}"
+          if [ "${{ matrix.out }}" != "zcn.wasm" ]; then mv zcn.wasm "${{ matrix.out }}"; fi
           echo "built ${{ matrix.variant }} -> ${{ matrix.out }}"
           ls -la "${{ matrix.out }}"
 
