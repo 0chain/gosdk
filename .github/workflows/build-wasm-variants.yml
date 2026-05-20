@@ -1,0 +1,83 @@
+name: Build WASM (standard + enterprise)
+
+# Builds BOTH wasm variants in one run:
+#   - standard   -> zcn.wasm            (built from `standard_ref`)
+#   - enterprise -> enterprise-zcn.wasm (built from `enterprise_ref`)
+# Standard vs enterprise differ by branch/code today (wasmsdk getWasmType()),
+# so we check out each ref and run `make wasm-build` against it.
+#
+# Publishing: attaches both wasms to a GitHub Release (same mechanism the
+# iOS/Android/macOS SDKs use in build-sdks.yml), so they sit alongside the SDK
+# assets on the release. The runner box then downloads them by tag, e.g.:
+#   curl -L -o enterprise-zcn.wasm \
+#     https://github.com/0chain/gosdk/releases/download/<tag>/enterprise-zcn.wasm
+# and drops them into the blimp deploy's public/ with USE_LOCAL_WASM=true.
+
+on:
+  workflow_dispatch:
+    inputs:
+      standard_ref:
+        description: 'Branch/tag for the STANDARD wasm'
+        required: true
+        default: 'staging'
+      enterprise_ref:
+        description: 'Branch/tag for the ENTERPRISE wasm'
+        required: true
+        default: 'feat/enterprise-blobber'
+      release_tag:
+        description: 'Release tag to attach the wasm assets to (e.g. v1.20.10). Leave blank to only upload artifacts.'
+        required: false
+        default: ''
+
+jobs:
+  build-wasm:
+    name: build-wasm (${{ matrix.variant }})
+    runs-on: [self-hosted, arc-runner]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant: standard
+            ref: ${{ github.event.inputs.standard_ref }}
+            out: zcn.wasm
+          - variant: enterprise
+            ref: ${{ github.event.inputs.enterprise_ref }}
+            out: enterprise-zcn.wasm
+    steps:
+      - name: Set up Go 1.22
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.22.5
+
+      - name: Checkout ${{ matrix.ref }}
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.ref }}
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install build-essential nghttp2 libnghttp2-dev libssl-dev wget
+
+      - name: Build wasm (${{ matrix.variant }})
+        run: |
+          docker run --rm -v "$PWD":/gosdk -w /gosdk golang:1.22.5 make wasm-build
+          mv zcn.wasm "${{ matrix.out }}"
+          echo "built ${{ matrix.variant }} -> ${{ matrix.out }}"
+          ls -la "${{ matrix.out }}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.out }}
+          path: ${{ matrix.out }}
+
+      - name: Attach to GitHub Release
+        if: ${{ github.event.inputs.release_tag != '' }}
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ${{ matrix.out }}
+          asset_name: ${{ matrix.out }}
+          tag: ${{ github.event.inputs.release_tag }}
+          overwrite: true
