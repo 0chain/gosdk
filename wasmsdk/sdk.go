@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/imageutil"
 	"github.com/0chain/gosdk/core/logger"
@@ -35,6 +36,11 @@ func initSDKs(chainID, blockWorker, signatureScheme string,
 	zboxHost, zboxAppType string, sharderconsensous int) error {
 
 	zboxApiClient.SetRequest(zboxHost, zboxAppType)
+
+	// Browser wasm runs on an HTTPS page; mainnet sharders are advertised as
+	// http://<host>:7171, which the browser blocks as mixed content. Enable the
+	// sharder http->https (/sharder01 proxy) rewrite so chain reads work.
+	conf.SetClientSecureTransport(true)
 
 	err := sdk.InitStorageSDK("{}", blockWorker, chainID, signatureScheme, nil, 0)
 	if err != nil {

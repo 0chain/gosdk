@@ -2,6 +2,7 @@ package conf
 
 import (
 	"errors"
+	"regexp"
 	"strings"
 	"sync"
 )
@@ -12,7 +13,25 @@ var (
 	onceCfg sync.Once
 	//  global sharders and miners
 	network *Network
+	// clientSecureTransport, when true, rewrites mainnet sharder URLs from
+	// http://<host>:7171 to https://<host>/sharder01 so clients running under
+	// secure-transport restrictions can reach them: browser wasm (mixed-content
+	// blocking) and mobile (iOS App Transport Security / Android cleartext
+	// blocked by default). Server-side consumers (zs3 gateway, zboxcli) leave
+	// this off and keep using the direct http endpoints. Set via
+	// SetClientSecureTransport from the wasm/mobile SDK init paths.
+	clientSecureTransport bool
 )
+
+// sharderHTTPS rewrites http://<host>:7171 -> https://<host>/sharder01 (the
+// mainnet sharders' TLS reverse-proxy path).
+var sharderHTTPSRewriteRe = regexp.MustCompile(`^http://([^:/]+):7171$`)
+
+// SetClientSecureTransport toggles the sharder http->https rewrite. Enable it
+// from browser (wasm) and mobile SDK init; leave off for server-side SDK use.
+func SetClientSecureTransport(enabled bool) {
+	clientSecureTransport = enabled
+}
 
 var (
 	//ErrNilConfig config is nil
@@ -78,5 +97,9 @@ func normalizeURLs(network *Network) {
 
 	for i := 0; i < len(network.Sharders); i++ {
 		network.Sharders[i] = strings.TrimSuffix(network.Sharders[i], "/")
+		if clientSecureTransport {
+			network.Sharders[i] = sharderHTTPSRewriteRe.ReplaceAllString(
+				network.Sharders[i], "https://$1/sharder01")
+		}
 	}
 }

@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/pkg/errors"
 
@@ -102,6 +103,10 @@ func Init(chainConfigJson string) error {
 //     }
 func InitStorageSDK(clientJson string, configJson string) (*StorageSDK, error) {
 	l.Logger.Info("Start InitStorageSDK")
+	// Mobile apps run under iOS App Transport Security / Android cleartext-block,
+	// which reject the http://<host>:7171 sharder URLs mainnet advertises. Enable
+	// the sharder http->https (/sharder01 proxy) rewrite so chain reads work.
+	conf.SetClientSecureTransport(true)
 	configObj := &ChainConfig{}
 	err := json.Unmarshal([]byte(configJson), configObj)
 	if err != nil {
