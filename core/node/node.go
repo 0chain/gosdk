@@ -103,8 +103,19 @@ func (h *NodeHolder) adjustNode(id string, res int) {
 		n = node
 	}
 
+	// Keep h.nodes and h.stats in lockstep. The "new id" path above falls
+	// through here without ever registering n in h.stats; that leaves an id in
+	// h.nodes with no stats entry, so the comparator below dereferences a nil
+	// *Node and panics — fatal in the wasm SDK (the whole Go runtime exits).
+	// This happens whenever Fail()/Success() is called with a sharder URL that
+	// wasn't in the original holder (e.g. the live URL differs from the
+	// configured one after a scheme/host rewrite). Register it, and nil-guard
+	// the comparator so any pre-existing divergence can't crash the runtime.
+	h.stats[n.id] = n
+
 	i := sort.Search(len(nodes), func(i int) bool {
-		return h.stats[nodes[i]].weight < n.weight
+		s := h.stats[nodes[i]]
+		return s != nil && s.weight < n.weight
 	})
 	h.nodes = append(nodes[:i], append([]string{n.id}, nodes[i:]...)...)
 }

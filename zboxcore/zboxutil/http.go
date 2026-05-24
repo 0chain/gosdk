@@ -66,37 +66,37 @@ func GetLogger() *logger.Logger {
 }
 
 const (
-	ALLOCATION_ENDPOINT          = "/allocation"
-	UPLOAD_ENDPOINT              = "/v1/file/upload/"
-	RENAME_ENDPOINT              = "/v1/file/rename/"
-	COPY_ENDPOINT                = "/v1/file/copy/"
-	MOVE_ENDPOINT                = "/v1/file/move/"
-	LIST_ENDPOINT                = "/v1/file/list/"
-	REFERENCE_ENDPOINT           = "/v1/file/referencepath/"
-	CONNECTION_ENDPOINT          = "/v1/connection/details/"
-	COMMIT_ENDPOINT              = "/v1/connection/commit/"
-	DOWNLOAD_ENDPOINT            = "/v1/file/download/"
-	LATEST_READ_MARKER           = "/v1/readmarker/latest"
-	FILE_META_ENDPOINT           = "/v1/file/meta/"
-	FILE_STATS_ENDPOINT          = "/v1/file/stats/"
-	OBJECT_TREE_ENDPOINT         = "/v1/file/objecttree/"
-	REFS_ENDPOINT                = "/v1/file/refs/"
-	RECENT_REFS_ENDPOINT         = "/v1/file/refs/recent/"
-	COLLABORATOR_ENDPOINT        = "/v1/file/collaborator/"
-	CALCULATE_HASH_ENDPOINT      = "/v1/file/calculatehash/"
-	SHARE_ENDPOINT               = "/v1/marketplace/shareinfo/"
-	PUBLIC_SHARE_ENDPOINT 			 = "/v1/marketplace/shareinfo/public/"
+	ALLOCATION_ENDPOINT              = "/allocation"
+	UPLOAD_ENDPOINT                  = "/v1/file/upload/"
+	RENAME_ENDPOINT                  = "/v1/file/rename/"
+	COPY_ENDPOINT                    = "/v1/file/copy/"
+	MOVE_ENDPOINT                    = "/v1/file/move/"
+	LIST_ENDPOINT                    = "/v1/file/list/"
+	REFERENCE_ENDPOINT               = "/v1/file/referencepath/"
+	CONNECTION_ENDPOINT              = "/v1/connection/details/"
+	COMMIT_ENDPOINT                  = "/v1/connection/commit/"
+	DOWNLOAD_ENDPOINT                = "/v1/file/download/"
+	LATEST_READ_MARKER               = "/v1/readmarker/latest"
+	FILE_META_ENDPOINT               = "/v1/file/meta/"
+	FILE_STATS_ENDPOINT              = "/v1/file/stats/"
+	OBJECT_TREE_ENDPOINT             = "/v1/file/objecttree/"
+	REFS_ENDPOINT                    = "/v1/file/refs/"
+	RECENT_REFS_ENDPOINT             = "/v1/file/refs/recent/"
+	COLLABORATOR_ENDPOINT            = "/v1/file/collaborator/"
+	CALCULATE_HASH_ENDPOINT          = "/v1/file/calculatehash/"
+	SHARE_ENDPOINT                   = "/v1/marketplace/shareinfo/"
+	PUBLIC_SHARE_ENDPOINT            = "/v1/marketplace/shareinfo/public/"
 	PUBLIC_SHARE_RECIPIENT_ENDPOINT  = "/v1/marketplace/shareinfo/public/recipient/"
-	PUBLIC_SHARE_CHECK_ENDPOINT 	 = "/v1/marketplace/shareinfo/public/check/"
+	PUBLIC_SHARE_CHECK_ENDPOINT      = "/v1/marketplace/shareinfo/public/check/"
 	PUBLIC_SHARE_RECIPIENTS_ENDPOINT = "/v1/marketplace/shareinfo/public/recipients/"
-	DIR_ENDPOINT                 = "/v1/dir/"
-	PLAYLIST_LATEST_ENDPOINT     = "/v1/playlist/latest/"
-	PLAYLIST_FILE_ENDPOINT       = "/v1/playlist/file/"
-	WM_LOCK_ENDPOINT             = "/v1/writemarker/lock/"
-	CREATE_CONNECTION_ENDPOINT   = "/v1/connection/create/"
-	LATEST_WRITE_MARKER_ENDPOINT = "/v1/file/latestwritemarker/"
-	ROLLBACK_ENDPOINT            = "/v1/connection/rollback/"
-	REDEEM_ENDPOINT              = "/v1/connection/redeem/"
+	DIR_ENDPOINT                     = "/v1/dir/"
+	PLAYLIST_LATEST_ENDPOINT         = "/v1/playlist/latest/"
+	PLAYLIST_FILE_ENDPOINT           = "/v1/playlist/file/"
+	WM_LOCK_ENDPOINT                 = "/v1/writemarker/lock/"
+	CREATE_CONNECTION_ENDPOINT       = "/v1/connection/create/"
+	LATEST_WRITE_MARKER_ENDPOINT     = "/v1/file/latestwritemarker/"
+	ROLLBACK_ENDPOINT                = "/v1/connection/rollback/"
+	REDEEM_ENDPOINT                  = "/v1/connection/redeem/"
 
 	// CLIENT_SIGNATURE_HEADER represents http request header contains signature.
 	CLIENT_SIGNATURE_HEADER    = "X-App-Client-Signature"
@@ -188,7 +188,7 @@ func init() {
 		WriteTimeout:        180 * time.Second,
 		MaxConnDuration:     45 * time.Second,
 		MaxResponseBodySize: 1024 * 1024 * 64, //64MB
-		MaxConnsPerHost:     4096, // Increased from 1024 to support large file uploads with high concurrency (e.g., warp PUT with 1024MB objects)
+		MaxConnsPerHost:     4096,             // Increased from 1024 to support large file uploads with high concurrency (e.g., warp PUT with 1024MB objects)
 	}
 	fasthttp.SetBodySizePoolLimit(respBodyPoolLimit, respBodyPoolLimit)
 	envProxy.initialize()
@@ -1072,7 +1072,16 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 		wg.Add(1)
 		go func(sharder string) {
 			defer wg.Done()
-			urlString := fmt.Sprintf("%v/%v%v%v", sharder, SC_REST_API_URL, scAddress, relativePath)
+			// Browser/wasm runs on an HTTPS page; mainnet sharders are advertised
+			// as http://<host>:7171, which the browser blocks as mixed content.
+			// The secure reverse proxy serves them at https://<host>/sharder01.
+			// MaybeRewriteSharderHTTPS only ran in zcncore's GetNetworkDetails, not
+			// here, so SC reads (GetAllocation, etc.) still hit :7171 and fail with
+			// consensus_failed. Rewrite the REQUEST url when secure transport is on;
+			// keep `sharder` as the NodeHolder key so Success/Fail stay consistent
+			// with how the holder was populated.
+			reqHost := conf.MaybeRewriteSharderHTTPS([]string{sharder})[0]
+			urlString := fmt.Sprintf("%v/%v%v%v", reqHost, SC_REST_API_URL, scAddress, relativePath)
 			urlObj, err := url.Parse(urlString)
 			if err != nil {
 				log.Error(err)
