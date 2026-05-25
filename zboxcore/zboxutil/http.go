@@ -775,6 +775,9 @@ func setFastClientInfoWithSign(req *fasthttp.Request, allocation, baseURL string
 		SignCache.Add(hashData+":"+key, sig2)
 	}
 	req.Header.Set(CLIENT_SIGNATURE_HEADER_V2, sig2)
+	if sessionID != "" {
+		req.Header.Set("X-App-Session-ID", sessionID)
+	}
 	return nil
 }
 
@@ -956,6 +959,9 @@ func NewFastDownloadRequest(baseUrl, allocationID, allocationTx string, keys ...
 	}
 
 	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
+	if sessionID != "" {
+		req.Header.Set("X-App-Session-ID", sessionID)
+	}
 
 	return req, nil
 }
