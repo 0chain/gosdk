@@ -505,6 +505,37 @@ func (s *StorageSDK) GetBlobbersList() (string, error) {
 	return string(retBytes), nil
 }
 
+// GetAllocationBlobbers picks a set of blobber IDs suitable for an allocation of the
+// given size/redundancy by hitting the storage smart contract directly — same path
+// used by wasmsdk.getAllocationBlobbers (web). Returns a JSON-encoded string array
+// of blobber IDs. Independent of any 0box-side indexer.
+func GetAllocationBlobbers(
+	dataShards, parityShards int,
+	size int64,
+	isRestricted int,
+	minReadPrice, maxReadPrice int64,
+	minWritePrice, maxWritePrice int64,
+	force bool,
+) (string, error) {
+	blobberIDs, err := sdk.GetAllocationBlobbers(
+		sdk.StorageV2,
+		dataShards, parityShards,
+		size,
+		isRestricted,
+		sdk.PriceRange{Min: uint64(minReadPrice), Max: uint64(maxReadPrice)},
+		sdk.PriceRange{Min: uint64(minWritePrice), Max: uint64(maxWritePrice)},
+		force,
+	)
+	if err != nil {
+		return "", err
+	}
+	retBytes, err := json.Marshal(blobberIDs)
+	if err != nil {
+		return "", err
+	}
+	return string(retBytes), nil
+}
+
 // GetAllocations return back list of allocations for the wallet
 // Extracted from main method, bcz of class fields
 func GetAllocations() (string, error) {
