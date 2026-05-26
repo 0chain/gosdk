@@ -67,6 +67,16 @@ func WithFileCallback(cb func()) DownloadRequestOption {
 	}
 }
 
+// WithPrefetchedFileMeta lets a caller that has ALREADY fetched the file ref
+// (e.g. the S3 gateway's getObjectRef) hand it to the download so getFileRef
+// skips the redundant getFileMetaFromBlobbers round-trip. When set, the
+// download uses fRef directly. Unset = unchanged default behaviour.
+func WithPrefetchedFileMeta(fRef *fileref.FileRef) DownloadRequestOption {
+	return func(dr *DownloadRequest) {
+		dr.prefetchedFileMeta = fRef
+	}
+}
+
 type DownloadRequest struct {
 	allocationID       string
 	allocationTx       string
@@ -114,6 +124,7 @@ type DownloadRequest struct {
 	downloadQueue      downloadQueue // Always initialize this queue with max time taken
 	isResume           bool
 	isEnterprise       bool
+	prefetchedFileMeta *fileref.FileRef
 }
 
 type downloadPriority struct {
@@ -1113,6 +1124,17 @@ func GetFileRefFromBlobber(allocationID, blobberId, remotePath string) (fRef *fi
 }
 
 func (req *DownloadRequest) getFileRef() (fRef *fileref.FileRef, err error) {
+	// Fix 2: skip the redundant getFileMetaFromBlobbers round-trip when the
+	// caller (e.g. the S3 gateway, which already fetched the ref via
+	// getObjectRef) supplied it. Default (unset) behaviour is unchanged.
+	if req.prefetchedFileMeta != nil {
+		fRef = req.prefetchedFileMeta
+		if fRef.Type == fileref.DIRECTORY {
+			return nil, errors.New("invalid_operation", "cannot download directory")
+		}
+		return fRef, nil
+	}
+
 	listReq := &ListRequest{
 		remotefilepath:     req.remotefilepath,
 		remotefilepathhash: req.remotefilepathhash,
