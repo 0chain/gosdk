@@ -50,6 +50,10 @@ var (
 	CurrentMode                      = UploadModeMedium
 	shouldSaveProgress               = true
 	HighModeWorkers                  = 4
+	// EncodeAheadDepth lets the read+erasure-encode stage run this many batches
+	// ahead of the in-order hash/form/upload stage, overlapping encode-CPU with
+	// form-build + network so the upload workers aren't starved. 0/1 = old serial.
+	EncodeAheadDepth = 4
 )
 
 // DefaultChunkSize default chunk size for file and thumbnail
@@ -415,60 +419,91 @@ func (su *ChunkedUpload) process() error {
 	defer su.chunkReader.Release()
 	defer su.chunkReader.Close()
 	defer su.ctxCncl(nil)
-	for {
 
-		chunks, err := su.readChunks(su.chunkNumber)
-
-		// chunk, err := su.chunkReader.Next()
-		if err != nil {
-			if su.statusCallback != nil {
-				su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
+	// Pipeline read+erasure-encode ahead of the in-order hash/form/upload-handoff.
+	// readChunks (which runs the reedsolomon encode) used to run serially with
+	// processUpload, starving the upload workers and leaving gateway CPU idle. A
+	// single reader goroutine now runs up to EncodeAheadDepth batches ahead; the
+	// per-blobber BlockHasher (a running hash) is still fed strictly in order by the
+	// consumer loop below. The reader computes the File hash on the final batch and
+	// passes it through, so the consumer never touches the chunkReader (no race with
+	// the deferred Close/Release). Out-of-order arrival at the blobber is safe: it
+	// writes by UploadOffset and reorders via a seqPriorityQueue before hashing.
+	type readResult struct {
+		chunks   *batchChunksData
+		fileHash string
+		err      error
+	}
+	readChan := make(chan readResult, EncodeAheadDepth)
+	go func() {
+		defer close(readChan)
+		for {
+			chunks, err := su.readChunks(su.chunkNumber)
+			rr := readResult{chunks: chunks, err: err}
+			if err == nil && chunks.isFinal && su.fileMeta.ActualHash == "" {
+				rr.fileHash, rr.err = su.chunkReader.GetFileHash()
 			}
-			return err
+			select {
+			case <-su.ctx.Done():
+				return
+			case readChan <- rr:
+			}
+			if rr.err != nil || (chunks != nil && chunks.isFinal) {
+				return
+			}
 		}
-		//logger.Logger.Debug("Read chunk #", chunk.Index)
+	}()
+
+	var procErr error
+	for rr := range readChan {
+		if rr.err != nil {
+			procErr = rr.err
+			break
+		}
+		chunks := rr.chunks
 
 		su.shardUploadedSize += chunks.totalFragmentSize
 		su.progress.ReadLength += chunks.totalReadSize
 
 		if chunks.isFinal {
 			if su.fileMeta.ActualHash == "" {
-				su.fileMeta.ActualHash, err = su.chunkReader.GetFileHash()
-				if err != nil {
-					if su.statusCallback != nil {
-						su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
-					}
-					return err
-				}
+				su.fileMeta.ActualHash = rr.fileHash
 			}
 			if su.fileMeta.ActualSize == 0 {
 				su.fileMeta.ActualSize = su.progress.ReadLength
 				su.shardSize = getShardSize(su.fileMeta.ActualSize, su.allocationObj.DataShards, su.encryptOnUpload)
 			} else if su.fileMeta.ActualSize != su.progress.ReadLength && su.thumbnailBytes == nil {
-				if su.statusCallback != nil {
-					su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, thrown.New("upload_failed", "Upload failed. Uploaded size does not match with actual size: "+fmt.Sprintf("%d != %d", su.fileMeta.ActualSize, su.progress.ReadLength)))
-				}
-				return thrown.New("upload_failed", "Upload failed. Uploaded size does not match with actual size: "+fmt.Sprintf("%d != %d", su.fileMeta.ActualSize, su.progress.ReadLength))
+				procErr = thrown.New("upload_failed", "Upload failed. Uploaded size does not match with actual size: "+fmt.Sprintf("%d != %d", su.fileMeta.ActualSize, su.progress.ReadLength))
+				break
 			}
 		}
 
-		err = su.processUpload(
+		err := su.processUpload(
 			chunks.chunkStartIndex, chunks.chunkEndIndex,
 			chunks.fileShards, chunks.thumbnailShards,
 			chunks.isFinal, chunks.totalReadSize,
 		)
 		if err != nil {
-			if su.statusCallback != nil {
-				su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
-			}
-			return err
+			procErr = err
+			break
 		}
 
-		// last chunk might 0 with io.EOF
-		// https://stackoverflow.com/questions/41208359/how-to-test-eof-on-io-reader-in-go
 		if chunks.isFinal {
 			break
 		}
+	}
+
+	// Stop the reader if the consumer broke early, then drain so the reader's
+	// chunkReader use is finished before the deferred Close/Release run.
+	su.ctxCncl(nil)
+	for range readChan { //nolint:revive
+	}
+
+	if procErr != nil {
+		if su.statusCallback != nil {
+			su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, procErr)
+		}
+		return procErr
 	}
 	return nil
 }
