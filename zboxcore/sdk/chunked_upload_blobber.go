@@ -85,7 +85,19 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 				err, shouldContinue = func() (err error, shouldContinue bool) {
 					resp := fasthttp.AcquireResponse()
 					defer fasthttp.ReleaseResponse(resp)
+					// INSTRUMENTATION (May 28): per-request HTTP POST timing — names
+					// each blobber upload's wall-time + bytes + status. The drain
+					// (uploadWG.Wait) is the bottleneck for large; this shows whether
+					// the per-request cost is TLS handshake (high) or pooled (low).
+					bytesN := len(dataBuffers[ind].Bytes())
+					tReq := time.Now()
 					err = zboxutil.FastHttpClient.DoTimeout(req, resp, su.uploadTimeOut)
+					reqMs := time.Since(tReq).Milliseconds()
+					status := 0
+					if err == nil {
+						status = resp.StatusCode()
+					}
+					logger.Logger.Info(fmt.Sprintf("[upload-req] blobber=%s bytes=%d ms=%d status=%d attempt=%d", sb.blobber.Baseurl, bytesN, reqMs, status, i))
 					fasthttp.ReleaseRequest(req)
 					if err != nil {
 						logger.Logger.Error("Upload : ", err)
