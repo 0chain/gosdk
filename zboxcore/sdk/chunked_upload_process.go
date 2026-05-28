@@ -163,7 +163,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		}
 		pushMs = time.Since(tPush).Milliseconds()
 	}
-	logger.Logger.Info(fmt.Sprintf("[upload-step] chunkStart=%d isFinal=%v formbuild=%dms push=%dms", chunkStartIndex, isFinal, formMs, pushMs))
+	logger.Logger.Info(fmt.Sprintf("[upload-step] conn=%s chunkStart=%d isFinal=%v formbuild=%dms push=%dms", su.progress.ConnectionID, chunkStartIndex, isFinal, formMs, pushMs))
 
 	if isFinal {
 		// INSTRUMENTATION (May 28): time drain (uploadWG.Wait waiting for all queued

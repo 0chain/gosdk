@@ -114,11 +114,17 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 					tReq := time.Now()
 					err = zboxutil.FastHttpClient.DoTimeout(req, resp, su.uploadTimeOut)
 					reqMs := time.Since(tReq).Milliseconds()
+					// INSTRUMENTATION: add connection_id to per-request log so we
+					// can compute dispatch-rate per file in post-processing —
+					// time between successive batch sends for one connection_id
+					// tells us if the gateway is the throttle (blobber-side
+					// shows lock_ms = 0 across the board).
+					_ = su.progress.ConnectionID
 					status := 0
 					if err == nil {
 						status = resp.StatusCode()
 					}
-					logger.Logger.Info(fmt.Sprintf("[upload-req] blobber=%s bytes=%d ms=%d status=%d attempt=%d", sb.blobber.Baseurl, bytesN, reqMs, status, i))
+					logger.Logger.Info(fmt.Sprintf("[upload-req] conn=%s blobber=%s bytes=%d ms=%d status=%d attempt=%d", su.progress.ConnectionID, sb.blobber.Baseurl, bytesN, reqMs, status, i))
 					fasthttp.ReleaseRequest(req)
 					if err != nil {
 						logger.Logger.Error("Upload : ", err)

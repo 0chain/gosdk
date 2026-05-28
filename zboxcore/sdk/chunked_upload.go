@@ -664,6 +664,12 @@ func getShardSize(dataSize int64, dataShards int, isEncrypted bool) int64 {
 }
 
 func (su *ChunkedUpload) uploadProcessor() {
+	// INSTRUMENTATION: time spent waiting on the uploadChan (worker idle)
+	// vs spent uploading. If wait_ms >> upload_ms the gateway's worker
+	// pool isn't the bottleneck (waiting for batches). If upload_ms is
+	// flat but throughput is slow, blobber is the cap. Per-call,
+	// includes the connection ID so we can identify per-file rate.
+	tLastWake := time.Now()
 	for {
 		select {
 		case <-su.ctx.Done():
@@ -672,8 +678,13 @@ func (su *ChunkedUpload) uploadProcessor() {
 			if !ok {
 				return
 			}
+			waitMs := time.Since(tLastWake).Milliseconds()
+			tUpload := time.Now()
 			su.uploadToBlobbers(uploadData) //nolint:errcheck
+			uploadMs := time.Since(tUpload).Milliseconds()
+			tLastWake = time.Now()
 			su.uploadWG.Done()
+			logger.Logger.Info(fmt.Sprintf("[upload-worker] conn=%s wait=%dms upload=%dms chunkStart=%d isFinal=%v", su.progress.ConnectionID, waitMs, uploadMs, uploadData.chunkStartIndex, uploadData.isFinal))
 		}
 	}
 }
