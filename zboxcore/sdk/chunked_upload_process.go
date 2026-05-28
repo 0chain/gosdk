@@ -153,15 +153,25 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 	logger.Logger.Info(fmt.Sprintf("[upload-step] chunkStart=%d isFinal=%v formbuild=%dms push=%dms", chunkStartIndex, isFinal, formMs, pushMs))
 
 	if isFinal {
+		// INSTRUMENTATION (May 28): time drain (uploadWG.Wait waiting for all queued
+		// sendUploadRequest calls to drain to blobbers) vs finalUpload (the synchronous
+		// last-buffer upload). [upload-step] showed processUpload's formbuild+push are
+		// both fast under conc 64; the 689-1185ms must be here in drain/finalUpload.
+		tDrain := time.Now()
 		close(su.uploadChan)
 		su.uploadWG.Wait()
+		drainMs := time.Since(tDrain).Milliseconds()
 		select {
 		case <-su.ctx.Done():
 			return context.Cause(su.ctx)
 		default:
 		}
 		blobberUpload.uploadBody = finalBuffer
-		return su.uploadToBlobbers(blobberUpload)
+		tFinal := time.Now()
+		err := su.uploadToBlobbers(blobberUpload)
+		finalMs := time.Since(tFinal).Milliseconds()
+		logger.Logger.Info(fmt.Sprintf("[upload-finalize] chunkStart=%d drain=%dms finalUpload=%dms", chunkStartIndex, drainMs, finalMs))
+		return err
 	}
 	return nil
 }
