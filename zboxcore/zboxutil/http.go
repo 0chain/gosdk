@@ -710,6 +710,11 @@ func setFastClientInfoWithSign(req *fasthttp.Request, allocation, baseURL string
 		return err
 	}
 	req.Header.Set(CLIENT_SIGNATURE_HEADER, sign)
+	if disableV2Sig() {
+		// V1 alone — blobber falls back when V2 header is missing
+		// (storage_handler.go verifySignatureFromRequest, line 991).
+		return nil
+	}
 	hashData := allocation + baseURL
 	sig2, ok := SignCache.Get(hashData)
 	if !ok {
