@@ -713,7 +713,12 @@ func (req *DownloadRequest) processDownload() {
 	for i := 0; i < n; i++ {
 		j := i
 		if i == 1 {
+			// INSTRUMENTATION (May 28): time the serial first-block wait — this is
+			// the firstReqWG.Wait that holds the rest of the download until the
+			// 1st block returns. Big-fixed-cost suspect for small GET.
+			tFB := time.Now()
 			firstReqWG.Wait()
+			l.Logger.Info(fmt.Sprintf("[get-first-block] ms=%d", time.Since(tFB).Milliseconds()))
 			sort.Slice(req.downloadQueue, req.downloadQueue.Less)
 		}
 		select {
@@ -1151,7 +1156,11 @@ func (req *DownloadRequest) getFileRef() (fRef *fileref.FileRef, err error) {
 		ctx: req.ctx,
 	}
 
+	// INSTRUMENTATION (May 28): time the 2nd GET metadata RT — what Fix-2 prefetch
+	// would skip. Compare to the per-object GET overhead to see if cutting it matters.
+	tMeta2 := time.Now()
 	fMetaResp := listReq.getFileMetaFromBlobbers()
+	l.Logger.Info(fmt.Sprintf("[get-metadata-2] ms=%d", time.Since(tMeta2).Milliseconds()))
 
 	// Read-side staleness barrier for read-after-delete linearizability.
 	// Ref: Porcupine 2026-04-19. Delete is considered "done" once

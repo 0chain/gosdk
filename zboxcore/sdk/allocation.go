@@ -1019,6 +1019,9 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 		previousPaths := make(map[string]bool)
 		connectionErrors := make([]error, len(mo.allocationObj.Blobbers))
 
+		// INSTRUMENTATION (May 28): time the connection-setup RTT (fanned to all
+		// blobbers in parallel). Suspected as a chunk of the ~50ms PUT fixed cost.
+		tConn := time.Now()
 		var wg sync.WaitGroup
 		for blobberIdx := range mo.allocationObj.Blobbers {
 			wg.Add(1)
@@ -1032,6 +1035,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 			}(blobberIdx)
 		}
 		wg.Wait()
+		l.Logger.Info(fmt.Sprintf("[connect-rtt] blobbers=%d ms=%d", len(mo.allocationObj.Blobbers), time.Since(tConn).Milliseconds()))
 		// Check consensus
 		if mo.operationMask.CountOnes() < mo.consensusThresh {
 			// Build detailed error message with blobber status
@@ -3747,4 +3751,3 @@ func (a *Allocation) GetPublicShareRecipients(path string) ([]ShareInfo, error) 
 		return nil, fmt.Errorf("no responses from blobbers")
 	}
 }
-
