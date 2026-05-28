@@ -222,9 +222,29 @@ func setClientInfo(req *http.Request) {
 	req.Header.Set("X-App-Client-Key", client.GetClientPublicKey())
 }
 
+// disableV2Sig: when set, gosdk skips the V2 (per-blobber URL-bound)
+// signature header. The blobber falls back to V1 verification
+// (hashData = allocation only — URL is NOT included). Used by the
+// S3 gateway in in-VPC deploys with ZS3_BLOBBER_URL_REWRITE so that
+// gateway -> blobber requests can use private-IP HTTP without
+// breaking the V2 sig (which the blobber verifies against its own
+// on-chain URL). Loses V2's cross-blobber replay protection — fine
+// for trusted in-VPC deploys, NOT for multi-tenant production.
+//
+//	GOSDK_DISABLE_V2_SIG=1   skip V2; rely on V1
+func disableV2Sig() bool {
+	return os.Getenv("GOSDK_DISABLE_V2_SIG") == "1"
+}
+
 func setClientInfoWithSign(req *http.Request, sig, allocation, baseURL string) error {
 	setClientInfo(req)
 	req.Header.Set(CLIENT_SIGNATURE_HEADER, sig)
+
+	if disableV2Sig() {
+		// V1 alone — blobber's verifySignatureFromRequest uses hashData =
+		// allocation (URL-free) when V2 is absent (storage_handler.go:991).
+		return nil
+	}
 
 	hashData := allocation + baseURL
 	sig2, ok := SignCache.Get(hashData)
@@ -248,6 +268,25 @@ func setClientInfoWithSign(req *http.Request, sig, allocation, baseURL string) e
 // "Owner signature verification failed".
 func setClientInfoWithSignV2(req *http.Request, allocation, baseURL string) error {
 	setClientInfo(req)
+
+	if disableV2Sig() {
+		// Owner-path endpoints (list, GetRefs, etc.) traditionally call
+		// only setClientInfoWithSignV2 with no V1 sig set. When V2 is
+		// suppressed we must still satisfy verifySignatureFromRequest's
+		// fallback, which uses V1 over hashData = allocation. Sign V1
+		// here and attach it to CLIENT_SIGNATURE_HEADER.
+		sig, ok := SignCache.Get(allocation)
+		if !ok {
+			var err error
+			sig, err = client.Sign(encryption.Hash(allocation))
+			if err != nil {
+				return err
+			}
+			SignCache.Add(allocation, sig)
+		}
+		req.Header.Set(CLIENT_SIGNATURE_HEADER, sig)
+		return nil
+	}
 
 	hashData := allocation + baseURL
 	sig2, ok := SignCache.Get(hashData)
