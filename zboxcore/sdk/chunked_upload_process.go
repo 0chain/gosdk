@@ -8,8 +8,10 @@ import (
 	"fmt"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	thrown "github.com/0chain/errors"
+	"github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
@@ -61,6 +63,10 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		return nil
 	}
 
+	// INSTRUMENTATION (May 28): split processUpload into formbuild (wg.Wait across
+	// per-blobber form-build goroutines, includes hash + form-assembly) vs push
+	// (blocking time on uploadChan when upload workers can't drain to blobbers).
+	tStart := time.Now()
 	var (
 		errCount       int32
 		finalBuffer    []blobberData
@@ -126,20 +132,25 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 	}
 
 	wg.Wait()
+	formMs := time.Since(tStart).Milliseconds()
 	close(wgErrors)
 	fileShards = nil
 	for err := range wgErrors {
 		su.removeProgress()
 		return thrown.New("upload_failed", fmt.Sprintf("Upload failed. %s", err))
 	}
+	var pushMs int64
 	if !lastBufferOnly {
 		su.uploadWG.Add(1)
+		tPush := time.Now()
 		select {
 		case <-su.ctx.Done():
 			return context.Cause(su.ctx)
 		case su.uploadChan <- blobberUpload:
 		}
+		pushMs = time.Since(tPush).Milliseconds()
 	}
+	logger.Logger.Info(fmt.Sprintf("[upload-step] chunkStart=%d isFinal=%v formbuild=%dms push=%dms", chunkStartIndex, isFinal, formMs, pushMs))
 
 	if isFinal {
 		close(su.uploadChan)
