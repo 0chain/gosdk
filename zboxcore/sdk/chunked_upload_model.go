@@ -217,6 +217,12 @@ type blobberData struct {
 	dataBuffers  []*bytes.Buffer
 	formData     ChunkedUploadFormMetadata
 	contentSlice []string
+	// uploadMetaSlice carries the JSON-encoded UploadFormData per body for
+	// the raw-upload path (GOSDK_USE_RAW_UPLOAD=1). The blobber reads it
+	// from the X-Upload-Meta request header, replacing the `uploadMeta`
+	// multipart form field on the legacy path. Empty entries mean
+	// multipart-path (no raw header needed).
+	uploadMetaSlice []string
 }
 
 type status struct {

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"syscall"
 	"time"
 
@@ -39,6 +40,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 	isFinal bool,
 	encryptedKey string, dataBuffers []*bytes.Buffer,
 	formData ChunkedUploadFormMetadata, contentSlice []string,
+	uploadMetaSlice []string,
 	pos uint64, consensus *Consensus) (err error) {
 
 	defer func() {
@@ -67,6 +69,11 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 
 	eg, _ := errgroup.WithContext(ctx)
 
+	// Raw-upload path threads connection_id via URL query + uploadMeta JSON
+	// via the X-Upload-Meta header (populated when GOSDK_USE_RAW_UPLOAD=1).
+	// On the multipart path uploadMetaSlice entries are empty so the branch
+	// below is a no-op.
+
 	for dataInd := 0; dataInd < len(dataBuffers); dataInd++ {
 		ind := dataInd
 		eg.Go(func() error {
@@ -82,6 +89,20 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 				}
 
 				req.Header.Add("Content-Type", contentSlice[ind])
+
+				// Raw-upload path: add ?connection_id query + X-Upload-Meta header.
+				// The blobber's GetField/TryParseForm short-circuits when X-Upload-Meta
+				// is present (no multipart parse), and the new RawUploadFileCommand
+				// reads connection_id from URL query + metadata from the header.
+				if ind < len(uploadMetaSlice) && uploadMetaSlice[ind] != "" {
+					uri := string(req.URI().FullURI())
+					sep := "?"
+					if strings.Contains(uri, "?") {
+						sep = "&"
+					}
+					req.SetRequestURI(uri + sep + "connection_id=" + su.progress.ConnectionID)
+					req.Header.Set("X-Upload-Meta", uploadMetaSlice[ind])
+				}
 				err, shouldContinue = func() (err error, shouldContinue bool) {
 					resp := fasthttp.AcquireResponse()
 					defer fasthttp.ReleaseResponse(resp)

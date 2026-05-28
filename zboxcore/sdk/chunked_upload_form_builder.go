@@ -4,13 +4,26 @@ import (
 	"bytes"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"io"
 	"mime/multipart"
+	"os"
 
 	"github.com/0chain/gosdk/zboxcore/client"
 
 	"golang.org/x/crypto/sha3"
 )
+
+// useRawUpload gates the raw-body upload path (skips multipart packaging on
+// both the gateway and the blobber). The blobber's TryParseForm short-circuits
+// when X-Upload-Meta is present or Content-Type=application/octet-stream;
+// blobber instrumentation showed multipart parse_form at ~17 ms median per
+// chunk request, the single biggest blobber-side PUT cost.
+//
+//	GOSDK_USE_RAW_UPLOAD=1   send raw body + X-Upload-Meta header
+func useRawUpload() bool {
+	return os.Getenv("GOSDK_USE_RAW_UPLOAD") == "1"
+}
 
 // ChunkedUploadFormBuilder build form data for uploading
 type ChunkedUploadFormBuilder interface {
@@ -65,6 +78,8 @@ func (b *chunkedUploadFormBuilder) Build(
 	}
 	dataBuffers := make([]*bytes.Buffer, 0, numBodies)
 	contentSlice := make([]string, 0, numBodies)
+	useRaw := useRawUpload()
+	uploadMetaSlice := make([]string, 0, numBodies)
 
 	formData := UploadFormData{
 		ConnectionID: connectionID,
@@ -104,16 +119,30 @@ func (b *chunkedUploadFormBuilder) Build(
 		bodyBuf := buff.B
 
 		body := bytes.NewBuffer(bodyBuf)
-		formWriter := multipart.NewWriter(body)
-		defer formWriter.Close()
 
-		uploadFile, err := formWriter.CreateFormFile("uploadFile", formData.Filename)
-		if err != nil {
-			return res, err
+		// Multipart packaging (legacy path): wraps every chunk in a
+		// multipart envelope so the blobber's ParseMultipartForm can
+		// split it back out. We measured this at ~17 ms median per
+		// chunk on the blobber side (62% of total per-request time).
+		// Raw path (useRaw=true): just write chunk bytes directly; the
+		// blobber reads metadata from the X-Upload-Meta request header
+		// and the body as opaque bytes.
+		var formWriter *multipart.Writer
+		var uploadFile io.Writer
+		if useRaw {
+			uploadFile = body
+		} else {
+			formWriter = multipart.NewWriter(body)
+			defer formWriter.Close()
+			uf, err := formWriter.CreateFormFile("uploadFile", formData.Filename)
+			if err != nil {
+				return res, err
+			}
+			uploadFile = uf
 		}
 
 		for _, chunkBytes := range fileChunksData[startRange:endRange] {
-			_, err = uploadFile.Write(chunkBytes)
+			_, err := uploadFile.Write(chunkBytes)
 			if err != nil {
 				return res, err
 			}
@@ -149,7 +178,11 @@ func (b *chunkedUploadFormBuilder) Build(
 
 		thumbnailSize := len(thumbnailChunkData)
 		if thumbnailSize > 0 && i == 0 {
-
+			if useRaw {
+				// Raw path doesn't support thumbnails in v1 — callers
+				// requiring thumbnails should keep the multipart path.
+				return res, errors.New("raw-upload path does not support thumbnails; unset GOSDK_USE_RAW_UPLOAD")
+			}
 			uploadThumbnailFile, err := formWriter.CreateFormFile("uploadThumbnailFile", fileMeta.RemoteName+".thumb")
 			if err != nil {
 
@@ -174,11 +207,6 @@ func (b *chunkedUploadFormBuilder) Build(
 			formData.UploadOffset = formData.UploadOffset + chunkSize*int64(MAX_BLOCKS)
 		}
 
-		err = formWriter.WriteField("connection_id", connectionID)
-		if err != nil {
-			return res, err
-		}
-
 		if isFinal && i == numBodies-1 {
 			formData.IsFinal = true
 		}
@@ -188,18 +216,32 @@ func (b *chunkedUploadFormBuilder) Build(
 			return res, err
 		}
 
-		err = formWriter.WriteField("uploadMeta", string(uploadMeta))
-		if err != nil {
-			return res, err
+		if useRaw {
+			// Raw path: body already holds the raw chunk bytes. Content-Type
+			// is application/octet-stream; uploadMeta JSON travels in the
+			// X-Upload-Meta header set by sendUploadRequest. connection_id
+			// goes in the URL query, also set by sendUploadRequest.
+			contentSlice = append(contentSlice, "application/octet-stream")
+			uploadMetaSlice = append(uploadMetaSlice, string(uploadMeta))
+		} else {
+			err = formWriter.WriteField("connection_id", connectionID)
+			if err != nil {
+				return res, err
+			}
+			err = formWriter.WriteField("uploadMeta", string(uploadMeta))
+			if err != nil {
+				return res, err
+			}
+			contentSlice = append(contentSlice, formWriter.FormDataContentType())
+			uploadMetaSlice = append(uploadMetaSlice, "")
 		}
-
-		contentSlice = append(contentSlice, formWriter.FormDataContentType())
 		dataBuffers = append(dataBuffers, body)
 	}
 	metadata.ThumbnailContentHash = formData.ThumbnailContentHash
 	metadata.DataHash = formData.DataHash
 	res.dataBuffers = dataBuffers
 	res.contentSlice = contentSlice
+	res.uploadMetaSlice = uploadMetaSlice
 	res.formData = metadata
 	return res, nil
 }
