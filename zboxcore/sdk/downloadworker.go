@@ -1137,6 +1137,23 @@ func (req *DownloadRequest) getFileRef() (fRef *fileref.FileRef, err error) {
 		if fRef.Type == fileref.DIRECTORY {
 			return nil, errors.New("invalid_operation", "cannot download directory")
 		}
+		// getFileMetaConsensus normally sets downloadMask / downloadQueue /
+		// consensus from the per-blobber responses (lines 1308-1325). The
+		// prefetch path bypasses that entirely — without it downloadMask
+		// stays 0, every blobber is masked off, and the first block batch
+		// errors with "too few shards given" before any HTTP is even issued.
+		// The gateway-side prefetch has already taken consensus across
+		// all participating blobbers, so seed downloadMask to all of them.
+		for i := 0; i < len(req.blobbers); i++ {
+			shift := zboxutil.NewUint128(1).Lsh(uint64(i))
+			req.downloadMask = req.downloadMask.Or(shift)
+			req.downloadQueue[i] = downloadPriority{
+				blobberIdx: i,
+				timeTaken:  60000,
+			}
+		}
+		req.consensus = req.downloadMask.CountOnes()
+		sort.Slice(req.downloadQueue, req.downloadQueue.Less)
 		return fRef, nil
 	}
 
