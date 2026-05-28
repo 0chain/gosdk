@@ -116,16 +116,29 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 				return
 			}
 			if isFinal {
+				// uploadMetaSlice (raw-upload path) must also be sliced down
+				// to the last buffer — otherwise the final synchronous POST
+				// on a single-chunk file misses the raw-path metadata, the
+				// blobber falls back to looking for connection_id in form,
+				// and rejects with "Invalid connection id passed".
+				var lastMeta []string
+				if n := len(uploadData.uploadMetaSlice); n > 0 {
+					lastMeta = uploadData.uploadMetaSlice[n-1:]
+				}
 				finalBuffer[pos] = blobberData{
-					dataBuffers:  uploadData.dataBuffers[len(uploadData.dataBuffers)-1:],
-					formData:     uploadData.formData,
-					contentSlice: uploadData.contentSlice[len(uploadData.contentSlice)-1:],
+					dataBuffers:     uploadData.dataBuffers[len(uploadData.dataBuffers)-1:],
+					formData:        uploadData.formData,
+					contentSlice:    uploadData.contentSlice[len(uploadData.contentSlice)-1:],
+					uploadMetaSlice: lastMeta,
 				}
 				if len(uploadData.dataBuffers) == 1 {
 					lastBufferOnly = true
 					return
 				}
 				uploadData.dataBuffers = uploadData.dataBuffers[:len(uploadData.dataBuffers)-1]
+				if len(uploadData.uploadMetaSlice) > 1 {
+					uploadData.uploadMetaSlice = uploadData.uploadMetaSlice[:len(uploadData.uploadMetaSlice)-1]
+				}
 			}
 			blobberUpload.uploadBody[pos] = uploadData
 		}(blobber, thumbnailChunkData, pos)
