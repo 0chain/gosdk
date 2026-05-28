@@ -1966,6 +1966,48 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 	return nil, errors.New("file_meta_error", "Error getting the file meta data from blobbers")
 }
 
+// GetFileMetaRef returns the full *fileref.FileRef (including ActualFileHashSignature,
+// ValidationRoot/Signature, FixedMerkleRoot/Signature) for `path` after taking
+// consensus across blobbers. Used by the S3 gateway's getFileReader so it can
+// hand the ref into the download via WithPrefetchedFileMeta and skip the
+// duplicate getFileMetaFromBlobbers RT inside gosdk (Fix-2 prefetch).
+// Returns constants.ErrNotFound when enough blobbers report not-found that
+// reconstruction is impossible (same staleness-barrier semantics as
+// downloadworker.go's getFileRef).
+func (a *Allocation) GetFileMetaRef(path string) (*fileref.FileRef, error) {
+	if !a.isInitialized() {
+		return nil, notInitialized
+	}
+	listReq := &ListRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
+	listReq.allocationID = a.ID
+	listReq.allocationTx = a.Tx
+	listReq.sig = a.sig
+	listReq.blobbers = a.Blobbers
+	listReq.fullconsensus = a.fullconsensus
+	listReq.consensusThresh = a.consensusThreshold
+	listReq.ctx = a.ctx
+	listReq.remotefilepath = path
+	_, _, ref, fMetaResp := listReq.getFileConsensusFromBlobbers()
+
+	notFoundCount := 0
+	for _, fmr := range fMetaResp {
+		if fmr != nil && fmr.err != nil && errors.Is(fmr.err, constants.ErrNotFound) {
+			notFoundCount++
+		}
+	}
+	staleThresh := a.fullconsensus - a.consensusThreshold + 1
+	if staleThresh < 1 {
+		staleThresh = 1
+	}
+	if notFoundCount >= staleThresh {
+		return nil, constants.ErrNotFound
+	}
+	if ref == nil {
+		return nil, errors.New("file_meta_error", "Error getting the file meta data from blobbers")
+	}
+	return ref, nil
+}
+
 // GetFileMetaByName retrieve consolidated file metadata given its name (its full path starting from root "/").
 //   - fileName: full file path starting from the allocation root.
 //   - fileName: full file path starting from the allocation root.
