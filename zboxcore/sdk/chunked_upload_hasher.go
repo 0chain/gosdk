@@ -1,6 +1,7 @@
 package sdk
 
 import (
+	"crypto/sha256"
 	"encoding/hex"
 	"hash"
 	"sync"
@@ -8,15 +9,6 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/util"
-
-	// sha256-simd auto-detects SHA-NI (Intel Ice Lake+, AMD Zen+) and
-	// uses the CPU hash instructions for ~5-10x speedup over crypto/sha256.
-	// Same hash output as crypto/sha256 — drop-in replacement. Matches
-	// the blobber-side filestore hasher (tree_validation.go:20) so wire
-	// hashes are bit-for-bit identical with current code; only the
-	// gateway's per-batch formbuild_ms drops (was 22 ms median, expected
-	// ~3-5 ms with SHA-NI on c6in.4xlarge).
-	sha256 "github.com/minio/sha256-simd"
 )
 
 // Hasher interface to gather all hasher related functions.
