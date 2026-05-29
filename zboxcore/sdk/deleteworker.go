@@ -348,10 +348,17 @@ func (req *DeleteRequest) ProcessDelete() (err error) {
 	// one of those still-not-updated replicas returns pre-delete content.
 	// Porcupine (2026-04-19) caught this as read-after-delete
 	// NON-LINEARIZABLE even though we wait for all 5 commits.
-	// Fix: after the commit succeeds, poll getFileMetaFromBlobber on each
-	// blobber until every one reports ErrNotFound (or a bounded timeout).
-	// Makes DoMultiOperation(DELETE) a synchronous read-after-delete
-	// barrier from the client's perspective.
+	//
+	// 2026-05-29 fix: the previous verifier polled `/v1/file/meta` per
+	// blobber via getFileMetaFromBlobber, but the gateway's subsequent
+	// GET path uses `alloc.GetRefs` (the `/v1/file/refs` endpoint, a
+	// different ref-index code path on the blobber). The two endpoints
+	// update on different timelines. Porcupine still flagged
+	// NON-LINEARIZABLE because: meta returns NotFound (verifier passes)
+	// while refs still returns the entry (GET sees stale value).
+	// We now poll BOTH endpoints — meta on every blobber AND GetRefs
+	// (which uses the consensus path the gateway GET uses) — until
+	// both are clear, or the timeout fires.
 	verifyStart := time.Now()
 	verifyTimeout := 5 * time.Second
 	verifyInterval := 20 * time.Millisecond
@@ -371,8 +378,20 @@ func (req *DeleteRequest) ProcessDelete() (err error) {
 			}(pos)
 		}
 		wgVerify.Wait()
+
+		// Additional check: the GetRefs endpoint (what the gateway's GET
+		// path queries via getSingleRegularRef → alloc.GetRefs) updates
+		// separately from /v1/file/meta. Confirm the entry is also gone
+		// from that view before declaring the DELETE complete.
 		if atomic.LoadInt32(&visible) == 0 {
-			break
+			level := len(strings.Split(strings.TrimSuffix(req.remotefilepath, "/"), "/"))
+			refsRes, refsErr := req.allocationObj.GetRefs(req.remotefilepath, "", "", "", "", "regular", level, 1)
+			refsVisible := refsErr == nil && refsRes != nil && len(refsRes.Refs) > 0
+			if !refsVisible {
+				// Both meta and refs agree the path is gone everywhere.
+				break
+			}
+			atomic.StoreInt32(&visible, 1)
 		}
 		if time.Since(verifyStart) > verifyTimeout {
 			l.Logger.Info("delete post-commit verification timed out; proceeding anyway",
