@@ -303,11 +303,10 @@ func CreateChunkedUpload(
 
 func calculateWorkersAndRequests(dataShards, totalShards, chunknumber int) (uploadWorkers int, uploadRequests int) {
 	if totalShards < 4 {
-		// 2+1 EC clusters: under [upload-worker] instrumentation workers
-		// were 85% idle (wait=289ms upload=52ms median) waiting on the
-		// producer. Bump from 4 -> 8 to verify whether extra parallelism
-		// drains the queue faster or whether the producer truly caps us.
-		uploadWorkers = 8
+		// Reverted to 4 after A/B: bumping to 8 made wait_ms p50
+		// 289 -> 806 (workers more idle, not less) and throughput
+		// flat at ~1050 MiB/s — confirming producer-side cap.
+		uploadWorkers = 4
 	} else {
 		switch CurrentMode {
 		case UploadModeLow:
