@@ -53,16 +53,13 @@ var (
 )
 
 // DefaultChunkSize default chunk size for file and thumbnail
-// DefaultChunkSize: bumped 64 KiB -> 256 KiB to enlarge the unit of work
-// per producer cycle. The producer loop in process() ran one cycle per
-// (chunkNumber=80) chunks; with 64 KiB chunks a 100 MiB file took 10
-// cycles (~65 ms each = 650 ms = ~150 MiB/s/file, scaled to ~1 GB/s at
-// 16 conc). At 256 KiB chunks the same file is 3 cycles. Per-cycle work
-// scales sub-linearly with bytes (hash + form construction overhead is
-// constant per cycle), so fewer cycles -> higher throughput. Per-file
-// in-memory footprint per shard rises proportionally (5 MiB -> 20 MiB
-// per batch at MAX_BLOCKS=160), bounded by chunkNumber * chunkSize.
-const DefaultChunkSize = 256 * 1024
+// DefaultChunkSize is 64 KiB. A 256 KiB experiment (May 29) was neutral
+// for throughput (1085 vs 1107 MiB/s) and disproved the "fewer cycles
+// = faster" hypothesis: per-cycle work scaled ~linearly with bytes
+// (read+encode 39 -> 155 ms, processUpload 26 -> 150 ms), so the
+// reduction in cycle count was exactly cancelled by the increase in
+// per-cycle cost. The producer cap is per-byte, not per-cycle.
+const DefaultChunkSize = 64 * 1024
 
 const (
 	// EncryptedDataPaddingSize additional bytes to save encrypted data
