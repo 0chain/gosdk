@@ -418,59 +418,40 @@ func (su *ChunkedUpload) process() error {
 	defer su.chunkReader.Release()
 	defer su.chunkReader.Close()
 	defer su.ctxCncl(nil)
+	for {
 
-	// READ-AHEAD PIPELINE (May 29): the previous serial loop
-	//   for { readChunks(); processUpload() }
-	// ran read+erasure-encode (~39 ms p50) and processUpload (hash +
-	// formbuild + push, ~26 ms p50) back-to-back per batch, so producer
-	// cycle = sum ≈ 65 ms. Worker instrumentation showed upload workers
-	// idle 85 % of the time waiting on this producer. Decouple via a
-	// single read-ahead goroutine + buffered channel (depth 1): batch N+1
-	// reads/encodes while batch N is being processUpload'd. New cycle ≈
-	// max(read+encode, processUpload). chunkReader is touched only by
-	// the read goroutine; GetFileHash on the final batch is called after
-	// the read goroutine has produced isFinal (and thus finished all
-	// reads), so no concurrent access. Extra memory: one in-flight batch
-	// ≈ chunkNumber × dataShards × chunkSize ≈ 10 MiB per file.
-	type readResult struct {
-		chunks       *batchChunksData
-		readEncodeMs int64
-		err          error
-	}
-	readCh := make(chan readResult, 1)
-	go func() {
-		defer close(readCh)
-		for {
-			tStart := time.Now()
-			chunks, err := su.readChunks(su.chunkNumber)
-			ms := time.Since(tStart).Milliseconds()
-			select {
-			case <-su.ctx.Done():
-				return
-			case readCh <- readResult{chunks: chunks, readEncodeMs: ms, err: err}:
-			}
-			if err != nil || (chunks != nil && chunks.isFinal) {
-				return
-			}
-		}
-	}()
+		// INSTRUMENTATION (May 28): split per-batch time into read+erasure-encode
+		// (readChunks → chunkReader.Next → reedsolomon) vs the downstream hash +
+		// form-build + uploadChan-handoff (processUpload). Logged Info-level so it
+		// lands in cmd.log on the gateway. Use to pin which stage is actually slow.
+		//
+		// NOTE (May 29): a read-ahead pipeline (single producer goroutine +
+		// buffered channel of depth 1) was attempted here to overlap
+		// read+encode with processUpload. It produced `hash_mismatch`
+		// errors from the blobber on every commit: the chunkReader reuses
+		// its internal byte buffers across Next() calls, so producing
+		// batch N+1 in parallel overwrites batch N's bytes in place while
+		// formbuild is still hashing them. Decoupling read from
+		// processUpload requires deep-copying the encoded shard bytes (or
+		// a per-batch buffer pool with refcounted release) inside the
+		// chunkReader implementation, not just adding a channel here.
+		// Reverted to the original serial loop.
+		tBatch := time.Now()
+		chunks, err := su.readChunks(su.chunkNumber)
+		readEncodeMs := time.Since(tBatch).Milliseconds()
 
-	for r := range readCh {
-		if r.err != nil {
+		if err != nil {
 			if su.statusCallback != nil {
-				su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, r.err)
+				su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
 			}
-			return r.err
+			return err
 		}
-		chunks := r.chunks
-		readEncodeMs := r.readEncodeMs
 
 		su.shardUploadedSize += chunks.totalFragmentSize
 		su.progress.ReadLength += chunks.totalReadSize
 
 		if chunks.isFinal {
 			if su.fileMeta.ActualHash == "" {
-				var err error
 				su.fileMeta.ActualHash, err = su.chunkReader.GetFileHash()
 				if err != nil {
 					if su.statusCallback != nil {
@@ -491,7 +472,7 @@ func (su *ChunkedUpload) process() error {
 		}
 
 		tProc := time.Now()
-		err := su.processUpload(
+		err = su.processUpload(
 			chunks.chunkStartIndex, chunks.chunkEndIndex,
 			chunks.fileShards, chunks.thumbnailShards,
 			chunks.isFinal, chunks.totalReadSize,
