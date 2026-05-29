@@ -225,6 +225,7 @@ func (mo *MultiOperation) Process() error {
 	// in row instead of column. Currently mo.change[0] contains allocationChange for operation 1 and so on.
 	// But we want mo.changes[0] to have allocationChange for blobber 1 and mo.changes[1] to have allocationChange for
 	// blobber 2 and so on.
+	moOverallStart := time.Now()
 	start := time.Now()
 
 	writeMarkerMutex, err := CreateWriteMarkerMutex(client.GetClient(), mo.allocationObj)
@@ -242,7 +243,14 @@ func (mo *MultiOperation) Process() error {
 			return fmt.Errorf("Operation failed: %s", err.Error())
 		}
 	}
-	logger.Logger.Debug("[writemarkerLocked]", time.Since(start).Milliseconds())
+	// INSTRUMENTATION (May 29): elevate writemarkerLock and checkAllocStatus
+	// to Info so they appear in the gateway log. Per pprof we have ~40% CPU
+	// headroom on the gateway and the per-file PUT takes ~1500 ms but
+	// process() is ~650 ms and commitRequests is 11-110 ms — the missing
+	// ~700 ms must be in these two network-bound phases. This tells us
+	// gateway-vs-blobber where the wait actually is.
+	wmLockMs := time.Since(start).Milliseconds()
+	logger.Logger.Info("[writemarkerLocked]", wmLockMs)
 	start = time.Now()
 	status := Commit
 	if !mo.isRepair && !mo.allocationObj.checkStatus {
@@ -280,7 +288,8 @@ func (mo *MultiOperation) Process() error {
 		}
 		return ErrRetryOperation
 	}
-	logger.Logger.Debug("[checkAllocStatus]", time.Since(start).Milliseconds())
+	checkAllocMs := time.Since(start).Milliseconds()
+	logger.Logger.Info("[checkAllocStatus]", checkAllocMs)
 	mo.Consensus.Reset()
 	var pos uint64
 	if !mo.isRepair {
@@ -326,7 +335,13 @@ func (mo *MultiOperation) Process() error {
 		counter++
 	}
 	wg.Wait()
-	logger.Logger.Info("[commitRequests]", time.Since(start).Milliseconds())
+	commitMs := time.Since(start).Milliseconds()
+	logger.Logger.Info("[commitRequests]", commitMs)
+	// One-line summary so it's easy to see relative weights per PUT:
+	// process() + the three commit-phase pieces. process() itself is
+	// logged separately via [batch-timing] / [upload-finalize].
+	logger.Logger.Info(fmt.Sprintf("[mo-phase-summary] wmLock=%dms checkAlloc=%dms commitReqs=%dms commit_phase_total=%dms",
+		wmLockMs, checkAllocMs, commitMs, time.Since(moOverallStart).Milliseconds()))
 	rollbackMask := zboxutil.NewUint128(0)
 	errSlice := make([]error, len(commitReqs))
 	for idx, commitReq := range commitReqs {
