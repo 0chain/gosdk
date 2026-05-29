@@ -608,14 +608,30 @@ func (su *ChunkedUpload) readChunks(num int) (*batchChunksData, error) {
 		// buffer (parity shards are independently allocated by reedsolomon's
 		// Split/Encode). Without the copy a read-ahead pipeline in process()
 		// would see batch N's bytes overwritten by batch N+1 mid-hash, producing
-		// the `hash_mismatch` failure observed on May 29. Cost: ~15 MiB memcpy
-		// per batch (80 chunks * 3 shards * 64 KiB), well under 1 ms.
+		// the `hash_mismatch` failure observed on May 29.
+		//
+		// IMPLEMENTATION: a single arena allocation per batch (lazily sized
+		// from the first chunk) is sliced into per-shard buffers. This makes
+		// the copy ONE allocation per batch instead of chunkNumber*shards
+		// allocations (~240), keeping the Go allocator/GC out of the hot
+		// path. The arena is sized assuming every fragment is the same
+		// length as the first one — true for full chunks; the final partial
+		// chunk simply uses a shorter slice (no overflow).
 		if chunk.ReadSize > 0 {
+			if data.shardArena == nil {
+				shardLen := 0
+				if len(chunk.Fragments) > 0 {
+					shardLen = len(chunk.Fragments[0])
+				}
+				data.shardLen = shardLen
+				data.shardArena = make([]byte, num*len(chunk.Fragments)*shardLen)
+			}
 			for i, v := range chunk.Fragments {
 				//blobber i
-				shardCopy := make([]byte, len(v))
-				copy(shardCopy, v)
-				data.fileShards[i] = append(data.fileShards[i], shardCopy)
+				off := (i*num + len(data.fileShards[i])) * data.shardLen
+				dst := data.shardArena[off : off+len(v) : off+len(v)]
+				copy(dst, v)
+				data.fileShards[i] = append(data.fileShards[i], dst)
 			}
 		}
 
