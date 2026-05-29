@@ -70,7 +70,6 @@ func (wmMu *WriteMarkerMutex) Unlock(
 	blobbers []*blockchain.StorageNode,
 	timeOut time.Duration, connID string,
 ) {
-	tUnlock := time.Now()
 	wg := &sync.WaitGroup{}
 	var pos uint64
 	for i := mask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
@@ -83,16 +82,11 @@ func (wmMu *WriteMarkerMutex) Unlock(
 		go wmMu.UnlockBlobber(ctx, blobber, connID, timeOut, wg)
 	}
 	wg.Wait()
-	nonLeadMs := time.Since(tUnlock).Milliseconds()
 
 	// Now unlock lead blobber
-	tLead := time.Now()
 	wg.Add(1)
 	go wmMu.UnlockBlobber(ctx, blobbers[uint64(wmMu.leadBlobberIndex)], connID, timeOut, wg)
 	wg.Wait()
-	leadMs := time.Since(tLead).Milliseconds()
-	logger.Logger.Info(fmt.Sprintf("[wmUnlock] conn=%s nonLead=%dms lead=%dms total=%dms",
-		connID, nonLeadMs, leadMs, time.Since(tUnlock).Milliseconds()))
 }
 
 // Change status code to 204
@@ -242,11 +236,6 @@ func (wmMu *WriteMarkerMutex) lockBlobber(
 	consensus *Consensus, b *blockchain.StorageNode, pos uint64, connID string,
 	timeOut time.Duration, wg *sync.WaitGroup) {
 	defer wg.Done()
-	tBlob := time.Now()
-	defer func() {
-		logger.Logger.Info(fmt.Sprintf("[wmLockBlobber] conn=%s blobber=%s ms=%d",
-			connID, b.Baseurl, time.Since(tBlob).Milliseconds()))
-	}()
 
 	select {
 	case <-ctx.Done():

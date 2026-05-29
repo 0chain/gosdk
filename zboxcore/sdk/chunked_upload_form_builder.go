@@ -53,13 +53,10 @@ func CreateChunkedUploadFormBuilder() ChunkedUploadFormBuilder {
 type chunkedUploadFormBuilder struct {
 }
 
-// MAX_BLOCKS = chunks per per-blobber HTTP body. Bumped 80 -> 160 to halve
-// the per-batch fixed overhead (form construction, HTTP framing, blobber
-// per-request work) and double the bytes pushed per producer cycle. At
-// 64 KiB chunk size this brings the per-blobber body from ~5 MiB to ~10 MiB.
-// The producer was the cap in instrumentation (workers 85% idle waiting),
-// so doing less of these cycles per file is the lever.
-const MAX_BLOCKS = 160
+// MAX_BLOCKS = chunks per per-blobber HTTP body. Tried 160 (May 29):
+// +2% throughput at PUT 100 MiB / conc 16 (within noise). Reverted to
+// 80 so the per-blobber HTTP body stays at the documented ~5 MiB.
+const MAX_BLOCKS = 80 // 5MB(CHUNK_SIZE*80)
 
 func (b *chunkedUploadFormBuilder) Build(
 	fileMeta *FileMeta, hasher Hasher, connectionID string,

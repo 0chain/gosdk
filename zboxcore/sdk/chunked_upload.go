@@ -424,57 +424,40 @@ func (su *ChunkedUpload) process() error {
 	defer su.chunkReader.Release()
 	defer su.chunkReader.Close()
 	defer su.ctxCncl(nil)
+	for {
 
-	// READ-AHEAD PIPELINE (May 29, second attempt):
-	// The first attempt (without the deep-copy in readChunks) produced
-	// `hash_mismatch` because the chunkReader's fileShardsDataBuffer is
-	// reused across batches — batch N+1's Next() overwrote batch N's
-	// bytes while formbuild was still hashing them. With readChunks now
-	// allocating fresh per-shard byte slices, each returned batch owns
-	// its memory and the read goroutine can produce batch N+1 in parallel
-	// with main hashing batch N. Producer cycle was read+encode + hash +
-	// formbuild + push ≈ 65 ms serial; now ≈ max(read+encode,
-	// processUpload) ≈ 39 ms. Workers were 85 % idle waiting on the
-	// producer in the prior runs; the goal is to drain that idle time.
-	type readResult struct {
-		chunks       *batchChunksData
-		readEncodeMs int64
-		err          error
-	}
-	readCh := make(chan readResult, 1)
-	go func() {
-		defer close(readCh)
-		for {
-			tStart := time.Now()
-			chunks, err := su.readChunks(su.chunkNumber)
-			ms := time.Since(tStart).Milliseconds()
-			select {
-			case <-su.ctx.Done():
-				return
-			case readCh <- readResult{chunks: chunks, readEncodeMs: ms, err: err}:
-			}
-			if err != nil || (chunks != nil && chunks.isFinal) {
-				return
-			}
-		}
-	}()
+		// INSTRUMENTATION (May 28): split per-batch time into read+erasure-encode
+		// (readChunks → chunkReader.Next → reedsolomon) vs the downstream hash +
+		// form-build + uploadChan-handoff (processUpload). Logged Info-level so it
+		// lands in cmd.log on the gateway. Use to pin which stage is actually slow.
+		//
+		// NOTE (May 29): two attempts at a read-ahead pipeline (single goroutine
+		// + buffered channel) were measured here. First attempt: hash_mismatch,
+		// because the chunkReader reuses its internal byte buffers across
+		// Next() calls. Second attempt: with deep-copy of shard bytes in
+		// readChunks (single-arena per batch), correctness OK but throughput
+		// flat-to-worse (1107 → 1053-1075 MiB/s). The arena copy + producing
+		// batch N+1 in parallel with hashing batch N inflated the per-batch
+		// read+encode from 39 → 92-96 ms (memcpy + 32 concurrent goroutines
+		// across 16 files). Reverted to the original serial loop. See
+		// PARALLEL_PRODUCER_TREE_HASH_DESIGN.md for the real path forward
+		// (parallel producer goroutines + tree-hash protocol change).
+		tBatch := time.Now()
+		chunks, err := su.readChunks(su.chunkNumber)
+		readEncodeMs := time.Since(tBatch).Milliseconds()
 
-	for r := range readCh {
-		if r.err != nil {
+		if err != nil {
 			if su.statusCallback != nil {
-				su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, r.err)
+				su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
 			}
-			return r.err
+			return err
 		}
-		chunks := r.chunks
-		readEncodeMs := r.readEncodeMs
 
 		su.shardUploadedSize += chunks.totalFragmentSize
 		su.progress.ReadLength += chunks.totalReadSize
 
 		if chunks.isFinal {
 			if su.fileMeta.ActualHash == "" {
-				var err error
 				su.fileMeta.ActualHash, err = su.chunkReader.GetFileHash()
 				if err != nil {
 					if su.statusCallback != nil {
@@ -495,7 +478,7 @@ func (su *ChunkedUpload) process() error {
 		}
 
 		tProc := time.Now()
-		err := su.processUpload(
+		err = su.processUpload(
 			chunks.chunkStartIndex, chunks.chunkEndIndex,
 			chunks.fileShards, chunks.thumbnailShards,
 			chunks.isFinal, chunks.totalReadSize,
@@ -601,37 +584,11 @@ func (su *ChunkedUpload) readChunks(num int) (*batchChunksData, error) {
 			data.fileShards = make([]blobberShards, len(chunk.Fragments))
 		}
 
-		// Deep-copy each shard so the returned batch owns its bytes. The
-		// chunkReader's fileShardsDataBuffer is reused across batches (Reset()
-		// rewinds the offset to 0; the next batch's Next() overwrites byte 0+),
-		// and the data-shard slices [0..dataShards) point INTO that shared
-		// buffer (parity shards are independently allocated by reedsolomon's
-		// Split/Encode). Without the copy a read-ahead pipeline in process()
-		// would see batch N's bytes overwritten by batch N+1 mid-hash, producing
-		// the `hash_mismatch` failure observed on May 29.
-		//
-		// IMPLEMENTATION: a single arena allocation per batch (lazily sized
-		// from the first chunk) is sliced into per-shard buffers. This makes
-		// the copy ONE allocation per batch instead of chunkNumber*shards
-		// allocations (~240), keeping the Go allocator/GC out of the hot
-		// path. The arena is sized assuming every fragment is the same
-		// length as the first one — true for full chunks; the final partial
-		// chunk simply uses a shorter slice (no overflow).
+		// concact blobber's fragments
 		if chunk.ReadSize > 0 {
-			if data.shardArena == nil {
-				shardLen := 0
-				if len(chunk.Fragments) > 0 {
-					shardLen = len(chunk.Fragments[0])
-				}
-				data.shardLen = shardLen
-				data.shardArena = make([]byte, num*len(chunk.Fragments)*shardLen)
-			}
 			for i, v := range chunk.Fragments {
 				//blobber i
-				off := (i*num + len(data.fileShards[i])) * data.shardLen
-				dst := data.shardArena[off : off+len(v) : off+len(v)]
-				copy(dst, v)
-				data.fileShards[i] = append(data.fileShards[i], dst)
+				data.fileShards[i] = append(data.fileShards[i], v)
 			}
 		}
 

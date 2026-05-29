@@ -266,11 +266,4 @@ type batchChunksData struct {
 
 	fileShards      []blobberShards
 	thumbnailShards blobberShards
-
-	// shardArena backs the per-shard byte slices in fileShards. One
-	// allocation per batch (lazy on first chunk); each fileShards[i][j]
-	// is a sub-slice. See readChunks for the layout. Decouples batch N
-	// from the chunkReader's reused buffer so read-ahead is safe.
-	shardArena []byte
-	shardLen   int
 }
