@@ -1,7 +1,7 @@
 package sdk
 
 import (
-	"crypto/sha256"
+	"crypto/md5"
 	"encoding/hex"
 	"hash"
 	"sync"
@@ -45,14 +45,14 @@ type hasher struct {
 // CreateHasher creat Hasher instance
 func CreateHasher(dataSize int64) Hasher {
 	return &hasher{
-		File:        sha256.New(),
-		BlockHasher: sha256.New(),
+		File:        md5.New(),
+		BlockHasher: md5.New(),
 	}
 }
 
 func CreateFileHasher() Hasher {
 	return &hasher{
-		File: sha256.New(),
+		File: md5.New(),
 	}
 }
 
