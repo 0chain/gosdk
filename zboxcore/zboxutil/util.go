@@ -397,14 +397,31 @@ func Transpose(matrix [][]allocationchange.AllocationChange) [][]allocationchang
 	if rowLength == 0 {
 		return matrix
 	}
-	columnLength := len(matrix[0])
+	// Use the longest row to determine columnLength. Rows may be nil or
+	// shorter than matrix[0] when MultiOperation.Process skips an op via
+	// errFileDeleted / errNoChange — those leave mo.changes[idx] unset.
+	// Using max-row-length keeps the output rectangular and lets the inner
+	// loop's bounds check below leave any missing cell at its zero value.
+	columnLength := 0
+	for _, row := range matrix {
+		if len(row) > columnLength {
+			columnLength = len(row)
+		}
+	}
+	if columnLength == 0 {
+		return [][]allocationchange.AllocationChange{}
+	}
 	transposedMatrix := make([][]allocationchange.AllocationChange, columnLength)
 	for i := range transposedMatrix {
 		transposedMatrix[i] = make([]allocationchange.AllocationChange, rowLength)
 	}
 	for i := 0; i < columnLength; i++ {
 		for j := 0; j < rowLength; j++ {
-			transposedMatrix[i][j] = matrix[j][i]
+			if i < len(matrix[j]) {
+				transposedMatrix[i][j] = matrix[j][i]
+			}
+			// else: leave zero-value AllocationChange for ops that skipped
+			// this column (e.g. errFileDeleted on this blobber).
 		}
 	}
 	return transposedMatrix

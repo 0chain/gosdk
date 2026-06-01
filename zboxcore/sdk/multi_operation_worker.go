@@ -204,6 +204,12 @@ func (mo *MultiOperation) Process() error {
 					l.Logger.Error(err)
 					errsSlice[idx] = errors.New("", err.Error())
 					ctxCncl(err)
+				} else {
+					// Soft skip (errFileDeleted / errNoChange): keep mo.changes[idx]
+					// non-nil so the downstream Transpose() sees a rectangular matrix.
+					// A nil row here causes "index out of range [0] with length 0" when
+					// any other operation in the batch produced changes.
+					mo.changes[idx] = []allocationchange.AllocationChange{}
 				}
 				return
 			}
