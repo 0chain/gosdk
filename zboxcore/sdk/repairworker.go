@@ -88,6 +88,12 @@ func (r *RepairRequest) processRepair(ctx context.Context, a *Allocation) {
 	r.allocation = a
 	if a.StorageVersion == StorageV2 {
 		r.iterateDirV2(ctx)
+		// File reconciliation (iterateDirV2) only diffs FILE refs because the
+		// merkle trie / allocation_root is built from files alone. Empty
+		// directories (e.g. a streaming video's /preview subdir) that exist on
+		// some blobbers but not others are invisible to it and diverge forever.
+		// Reconcile directory refs separately so they converge too.
+		r.iterateDirsV2(ctx)
 	} else {
 		r.iterateDir(a, r.listDir)
 	}
@@ -493,6 +499,133 @@ func (r *RepairRequest) iterateDirV2(ctx context.Context) {
 		r.repairOperation(r.allocation, ops)
 	}
 
+}
+
+// iterateDirsV2 reconciles DIRECTORY refs across blobbers, the directory
+// analogue of iterateDirV2 (which only handles files). It walks the directory
+// listing from the consensus (latest-root) blobbers against each divergent
+// blobber and, where they differ, issues:
+//   - CreateDir on blobbers missing a directory the consensus has
+//   - Delete on blobbers holding a directory the consensus does not
+//
+// This is what heals the empty-directory divergence (e.g. streaming
+// /file.mp4/preview present on a subset of blobbers) that the file-only
+// repair pass cannot see. It is root-neutral: directories are not in the
+// merkle trie, so these ops never change allocation_root — they only bring
+// the on-blobber directory structure back into agreement.
+func (r *RepairRequest) iterateDirsV2(ctx context.Context) {
+	versionMap := make(map[string]*diffRef)
+	for idx, blobber := range r.allocation.Blobbers {
+		if versionMap[blobber.AllocationRoot] == nil {
+			versionMap[blobber.AllocationRoot] = &diffRef{}
+		}
+		versionMap[blobber.AllocationRoot].mask =
+			versionMap[blobber.AllocationRoot].mask.Or(zboxutil.NewUint128(1).Lsh(uint64(idx)))
+	}
+	latestRoot := r.allocation.allocationRoot
+	if versionMap[latestRoot] == nil ||
+		versionMap[latestRoot].mask.CountOnes() < r.allocation.DataShards {
+		// No consensus root to reconcile against; nothing safe to do.
+		return
+	}
+	if len(versionMap) == 1 {
+		// All blobbers agree on root → directory structure already consistent.
+		return
+	}
+
+	srcChan := r.allocation.ListObjects(ctx, r.repairPath, "", "", "", fileref.DIRECTORY, fileref.REGULAR, 0, getRefPageLimit, WithSingleBlobber(true), WithObjectMask(versionMap[latestRoot].mask), WithObjectContext(ctx))
+	for root, diff := range versionMap {
+		if root == latestRoot {
+			continue
+		}
+		diff.tgtChan = r.allocation.ListObjects(ctx, r.repairPath, "", "", "", fileref.DIRECTORY, fileref.REGULAR, 0, getRefPageLimit, WithSingleBlobber(true), WithObjectMask(diff.mask), WithObjectContext(ctx))
+		diff.tgtRef, diff.tgtEOF = <-diff.tgtChan
+	}
+
+	var (
+		toNextRef = true
+		srcRef    ORef
+		srcEOF    = true
+		ops       []OperationRequest
+	)
+	for {
+		if r.checkForCancel(r.allocation) {
+			return
+		}
+		if toNextRef {
+			if !srcEOF {
+				break
+			}
+			srcRef, srcEOF = <-srcChan
+			if srcRef.Err != nil {
+				l.Logger.Error("dir repair: failed to get source dir ref ", srcRef.Err.Error())
+				return
+			}
+		}
+		toNextRef = true
+		var createMask zboxutil.Uint128
+		for root, diff := range versionMap {
+			if root == latestRoot {
+				continue
+			}
+			if !srcEOF && !diff.tgtEOF {
+				continue
+			}
+			// target exhausted but source has more dirs → create them on target
+			if !diff.tgtEOF {
+				createMask = createMask.Or(diff.mask)
+				continue
+			}
+			// source exhausted but target has extra dirs → delete them
+			if !srcEOF {
+				delMask := diff.mask
+				ops = append(ops, OperationRequest{
+					OperationType: constants.FileOperationDelete,
+					RemotePath:    diff.tgtRef.Path,
+					Mask:          &delMask,
+				})
+				diff.tgtRef, diff.tgtEOF = <-diff.tgtChan
+				toNextRef = false
+				continue
+			}
+			if diff.tgtRef.Err != nil {
+				l.Logger.Error("dir repair: failed to get target dir ref ", diff.tgtRef.Err.Error())
+				continue
+			}
+			if diff.tgtRef.Path == srcRef.Path {
+				// same dir on both — consistent, advance target
+				diff.tgtRef, diff.tgtEOF = <-diff.tgtChan
+			} else if diff.tgtRef.Path < srcRef.Path {
+				// target has a dir the source lacks → delete it
+				delMask := diff.mask
+				ops = append(ops, OperationRequest{
+					OperationType: constants.FileOperationDelete,
+					RemotePath:    diff.tgtRef.Path,
+					Mask:          &delMask,
+				})
+				diff.tgtRef, diff.tgtEOF = <-diff.tgtChan
+				toNextRef = false
+			} else {
+				// source has a dir the target lacks → create it
+				createMask = createMask.Or(diff.mask)
+			}
+		}
+		if createMask.CountOnes() > 0 {
+			cMask := createMask
+			ops = append(ops, OperationRequest{
+				OperationType: constants.FileOperationCreateDir,
+				RemotePath:    srcRef.Path,
+				Mask:          &cMask,
+			})
+		}
+		if len(ops) >= RepairBatchSize {
+			r.repairOperation(r.allocation, ops)
+			ops = nil
+		}
+	}
+	if len(ops) > 0 {
+		r.repairOperation(r.allocation, ops)
+	}
 }
 
 func (r *RepairRequest) uploadFileOp(file ORef, opMask zboxutil.Uint128) OperationRequest {
