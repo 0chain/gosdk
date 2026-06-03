@@ -231,5 +231,19 @@ func GetDStorageFileReader(alloc *Allocation, ref *ORef, sdo *StreamDownloadOpti
 		}
 	}
 
+	// Populate downloadQueue / validationRootMap / downloadMask from the blobbers'
+	// file metadata, exactly like the normal download path (getFileRef). Without
+	// this the queue is empty and the first Read panics (downloadworker.go:
+	// downloadQueue[0] — index out of range with length 0). getFileRef also
+	// applies the read-after-delete staleness barrier, so a deleted source fails
+	// reader creation cleanly instead of mid-stream.
+	sd.downloadQueue = make(downloadQueue, len(alloc.Blobbers))
+	for i := range sd.downloadQueue {
+		sd.downloadQueue[i].timeTaken = 1000000
+	}
+	if _, ferr := sd.getFileRef(); ferr != nil {
+		return nil, ferr
+	}
+
 	return sd, err
 }
