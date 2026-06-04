@@ -108,7 +108,7 @@ func (req *DeleteRequest) deleteBlobberFile(
 			}
 			if resp.StatusCode == http.StatusBadRequest {
 				body, err := ioutil.ReadAll(resp.Body)
-				if err!= nil {
+				if err != nil {
 					logger.Logger.Error("Failed to read response body", err)
 				}
 
@@ -506,8 +506,14 @@ func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string) (
 			defer deleteReq.wg.Done()
 			err := deleteReq.deleteBlobberFile(deleteReq.blobbers[blobberIdx], blobberIdx)
 			if err != nil {
+				// Do NOT count a failed blobber delete toward consensus, and do
+				// not evict the local ref cache. Previously consensus.Done() ran
+				// unconditionally, so an all-blobber failure (e.g. 507 disk_full)
+				// still satisfied isConsensusOk() and DoMultiOperation returned
+				// nil — a silent "success" that never removed the file.
 				logger.Logger.Error("error during deleteBlobberFile", err)
 				blobberErrors[blobberIdx] = err
+				return
 			}
 			deleteReq.consensus.Done()
 			if singleClientMode {
