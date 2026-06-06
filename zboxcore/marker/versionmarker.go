@@ -39,7 +39,13 @@ func (vm *VersionMarker) Sign() error {
 func (vm *VersionMarker) VerifySignature(clientPublicKey string) error {
 	hashData := vm.GetHashData()
 	signatureHash := encryption.Hash(hashData)
-	sigOK, err := sys.Verify(vm.Signature, signatureHash)
+	// Verify against the EXPLICIT owner public key (passed by the caller via
+	// client.GetClientPublicKey()), not the SDK's default/local verify key.
+	// sys.Verify uses the locally-configured key, which for split-key (and
+	// shared) wallets is not the allocation owner's aggregated key — so a valid
+	// version marker fails verification → false "Allocation Broken". The
+	// standard WriteMarker.VerifySignature already uses sys.VerifyWith.
+	sigOK, err := sys.VerifyWith(clientPublicKey, vm.Signature, signatureHash)
 	if err != nil {
 		return errors.New("write_marker_validation_failed", "Error during verifying signature. "+err.Error())
 	}
