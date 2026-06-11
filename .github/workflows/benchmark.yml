@@ -1,8 +1,7 @@
 name: Benchmark tests
 
 on:
-  push:
-    branches: [ master, staging ]
+  workflow_dispatch:
 
 jobs:
   benchmark:

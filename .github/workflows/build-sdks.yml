@@ -5,11 +5,6 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  push:
-    branches: [ master, staging, qa ]
-    tags:
-      - 'v*.*.*'
-  pull_request:
   workflow_dispatch:
 
 env:
@@ -18,7 +13,7 @@ env:
 jobs:
   build-ios:
     name: Build-ios
-    runs-on: macos-latest
+    runs-on: hetzner-build
 
     steps:
       - name: Checkout code
@@ -200,7 +195,7 @@ jobs:
 
   build-macos:
     name: Build-macos
-    runs-on:  macos-latest
+    runs-on:  hetzner-build
 
     steps:
       - name: Checkout code
