@@ -43,6 +43,23 @@ func newActualFileHasher() hash.Hash {
 	return md5.New()
 }
 
+// GOSDK_SKIP_DATA_HASH=1 replaces the per-shard DataHash md5 (BlockHasher)
+// with an opaque random value. UNLIKE ActualHash, blobbers DO recompute and
+// enforce DataHash at commit — this flag is only valid against blobbers
+// running with BLOBBER_SKIP_DATA_HASH=1, otherwise every upload fails with
+// hash_mismatch. The shard md5 was the last full-payload hash on the upload
+// path (12-19% of gateway cycles). Default off.
+var skipDataHash = os.Getenv("GOSDK_SKIP_DATA_HASH") == "1"
+
+func newBlockHasher() hash.Hash {
+	if skipDataHash {
+		h := &nopMD5{}
+		_, _ = rand.Read(h.sum[:])
+		return h
+	}
+	return md5.New()
+}
+
 // Hasher interface to gather all hasher related functions.
 // A hasher is used to calculate the hash of a file, fixed merkle tree, and validation merkle tree.
 type Hasher interface {
@@ -78,7 +95,7 @@ type hasher struct {
 func CreateHasher(dataSize int64) Hasher {
 	return &hasher{
 		File:        newActualFileHasher(),
-		BlockHasher: md5.New(),
+		BlockHasher: newBlockHasher(),
 	}
 }
 
