@@ -563,13 +563,15 @@ func (req *DownloadRequest) processDownload() {
 		for i := req.downloadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 			pos = uint64(i.TrailingZeros())
 			blobberIdx := int(pos)
-			if writerAt {
-				req.bufferMap[blobberIdx] = zboxutil.NewDownloadBufferWithChan(sz, bufBlocks, req.effectiveBlockSize)
-			} else {
-				bufMask := zboxutil.NewDownloadBufferWithMask(sz, bufBlocks, req.effectiveBlockSize)
-				bufMask.SetNumBlocks(int(numBlocks))
-				req.bufferMap[blobberIdx] = bufMask
-			}
+			// Both paths use the chan-based buffer: its RequestChunk blocks
+			// on a channel and wakes the moment ANY slot is released. The
+			// mask-based buffer polled with a 200ms sys.Sleep per retry,
+			// which serialized the whole pipeline once the initial sz slots
+			// were consumed (the in-order writer frees one slot at a time,
+			// so every subsequent batch ate ≥1 poll cycle: measured
+			// 14.7 MB/s steady-state on a streamed download vs the same
+			// session's >100 MB/s initial burst).
+			req.bufferMap[blobberIdx] = zboxutil.NewDownloadBufferWithChan(sz, bufBlocks, req.effectiveBlockSize)
 		}
 	}
 	// reset mask to number of active blobbers, not it denotes index of download queue and not blobber index
