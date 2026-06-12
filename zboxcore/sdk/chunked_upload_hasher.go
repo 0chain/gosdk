@@ -2,14 +2,46 @@ package sdk
 
 import (
 	"crypto/md5"
+	"crypto/rand"
 	"encoding/hex"
 	"hash"
+	"os"
 	"sync"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/util"
 )
+
+// GOSDK_SKIP_ACTUAL_FILE_HASH=1 replaces the whole-file ActualHash md5 with
+// a random per-upload value. The File hasher md5s every payload byte on top
+// of the per-shard BlockHasher; on a 64-core gateway doing bulk uploads md5
+// was 49% of ALL cycles (perf 2026-06-12). Blobbers cannot verify ActualHash
+// (each only holds its shard) — only DataHash (BlockHasher) is recomputed
+// and enforced blobber-side (filestore/storage.go hash_mismatch), so that
+// one always stays real. The random value is constant for the upload, so
+// every blobber stores the same ActualHash and cross-blobber consistency
+// comparisons still match. Trade-off: the stored content-MD5 is no longer
+// the real file md5 (zs3 surfaces it as the object ETag — pair with
+// ZS3_SKIP_MD5_ETAG semantics). Default off.
+var skipActualFileHash = os.Getenv("GOSDK_SKIP_ACTUAL_FILE_HASH") == "1"
+
+type nopMD5 struct{ sum [md5.Size]byte }
+
+func (n *nopMD5) Write(p []byte) (int, error) { return len(p), nil }
+func (n *nopMD5) Sum(b []byte) []byte         { return append(b, n.sum[:]...) }
+func (n *nopMD5) Reset()                      {}
+func (n *nopMD5) Size() int                   { return md5.Size }
+func (n *nopMD5) BlockSize() int              { return md5.BlockSize }
+
+func newActualFileHasher() hash.Hash {
+	if skipActualFileHash {
+		h := &nopMD5{}
+		_, _ = rand.Read(h.sum[:])
+		return h
+	}
+	return md5.New()
+}
 
 // Hasher interface to gather all hasher related functions.
 // A hasher is used to calculate the hash of a file, fixed merkle tree, and validation merkle tree.
@@ -45,14 +77,14 @@ type hasher struct {
 // CreateHasher creat Hasher instance
 func CreateHasher(dataSize int64) Hasher {
 	return &hasher{
-		File:        md5.New(),
+		File:        newActualFileHasher(),
 		BlockHasher: md5.New(),
 	}
 }
 
 func CreateFileHasher() Hasher {
 	return &hasher{
-		File: md5.New(),
+		File: newActualFileHasher(),
 	}
 }
 
