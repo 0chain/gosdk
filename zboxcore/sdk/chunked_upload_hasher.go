@@ -2,14 +2,43 @@ package sdk
 
 import (
 	"crypto/md5"
+	"crypto/rand"
 	"encoding/hex"
 	"hash"
+	"os"
 	"sync"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/util"
 )
+
+// GOSDK_SKIP_ACTUAL_FILE_HASH controls the whole-file ActualHash MD5.
+// Default ON (skip): blobbers cannot verify ActualHash — each only holds its
+// shard — so the whole-file MD5 is unverifiable, only stored as a label.
+// It was 49% of ALL cycles (perf 2026-06-12) and is the binding stage-1
+// bottleneck (~383 MB/s with it; ~880 MB/s without). A stable random value
+// is used so all blobbers store the same ActualHash and cross-blobber
+// consistency checks still pass. Set GOSDK_SKIP_ACTUAL_FILE_HASH=0 to
+// restore the real MD5 (e.g. for content-verification workflows).
+var skipActualFileHash = os.Getenv("GOSDK_SKIP_ACTUAL_FILE_HASH") != "0"
+
+type nopMD5 struct{ sum [md5.Size]byte }
+
+func (n *nopMD5) Write(p []byte) (int, error) { return len(p), nil }
+func (n *nopMD5) Sum(b []byte) []byte         { return append(b, n.sum[:]...) }
+func (n *nopMD5) Reset()                      {}
+func (n *nopMD5) Size() int                   { return md5.Size }
+func (n *nopMD5) BlockSize() int              { return md5.BlockSize }
+
+func newActualFileHasher() hash.Hash {
+	if skipActualFileHash {
+		h := &nopMD5{}
+		_, _ = rand.Read(h.sum[:])
+		return h
+	}
+	return md5.New()
+}
 
 // Hasher interface to gather all hasher related functions.
 // A hasher is used to calculate the hash of a file, fixed merkle tree, and validation merkle tree.
@@ -45,14 +74,14 @@ type hasher struct {
 // CreateHasher creat Hasher instance
 func CreateHasher(dataSize int64) Hasher {
 	return &hasher{
-		File:        md5.New(),
+		File:        newActualFileHasher(),
 		BlockHasher: md5.New(),
 	}
 }
 
 func CreateFileHasher() Hasher {
 	return &hasher{
-		File: md5.New(),
+		File: newActualFileHasher(),
 	}
 }
 
