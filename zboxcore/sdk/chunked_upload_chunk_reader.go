@@ -18,6 +18,24 @@ import (
 var (
 	uploadPool   bytebufferpool.Pool
 	formDataPool bytebufferpool.Pool
+
+	// ecShardsHeaderPool pools the [][]byte slice header produced by
+	// erasureEncoder.Split on every chunk. Split always allocates
+	// make([][]byte, totalShards) regardless of whether parity bytes need to
+	// be freshly allocated (they don't when cap(data) >= needTotal, which is
+	// always the case here because fileShardsDataBuffer carries parity
+	// capacity). Pooling this header eliminates one GC-visible allocation per
+	// chunk on the hot upload path.
+	//
+	// Get/Put discipline: Get is called at the top of Next() to reclaim the
+	// slice used by the previous call (stored in prevFragments). The slice is
+	// safe to reclaim because readChunks() fully iterates chunk.Fragments
+	// before calling Next() again, and the individual []byte elements (which
+	// are sub-slices of fileShardsDataBuffer, not of the header slice) are
+	// appended into data.fileShards. The header slice itself is not retained
+	// by any caller after Next() returns. Reset() and Release() also Put the
+	// pending slice to prevent leaks on the final chunk.
+	ecShardsHeaderPool sync.Pool
 )
 
 type ChunkedUploadChunkReader interface {
@@ -86,6 +104,15 @@ type chunkedUploadChunkReader struct {
 	hasherError    error
 	hasherWG       sync.WaitGroup
 	closeOnce      sync.Once
+
+	// totalShards = dataShards + parityShards, cached to avoid recomputation.
+	totalShards int
+
+	// prevFragments holds the [][]byte header returned by the previous
+	// splitChunkIntoShards call. It is returned to ecShardsHeaderPool at the
+	// start of the next Next() call, once readChunks() has consumed the
+	// individual fragment slices. Reset() and Release() also drain it.
+	prevFragments [][]byte
 }
 
 // createChunkReader create ChunkReader instance
@@ -113,6 +140,7 @@ func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards, 
 		chunkSize:       chunkSize,
 		nextChunkIndex:  0,
 		dataShards:      dataShards,
+		totalShards:     dataShards + parityShards,
 		encryptOnUpload: encryptOnUpload,
 		uploadMask:      uploadMask,
 		erasureEncoder:  erasureEncoder,
@@ -168,6 +196,12 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 	if r == nil {
 		return nil, errors.Throw(constants.ErrInvalidParameter, "r")
 	}
+
+	// Return the previous call's fragment-header slice to the pool now that
+	// readChunks() has finished iterating chunk.Fragments. The individual
+	// []byte elements inside it are sub-slices of fileShardsDataBuffer and
+	// remain valid; only the [][]byte header wrapper is recycled.
+	r.putPrevFragments()
 
 	if r.fileShardsDataBuffer == nil {
 		totalDataSize := r.totalChunkDataSizePerRead * r.chunkNumber
@@ -242,13 +276,16 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 		_ = r.hasher.WriteToFile(chunkBytes)
 	}
 
-	fragments, err := r.erasureEncoder.Split(chunkBytes)
-	if err != nil {
-		return nil, err
-	}
+	// splitChunkIntoShards uses a pooled [][]byte header (via ecShardsHeaderPool)
+	// instead of letting erasureEncoder.Split allocate a fresh one each call.
+	// fileShardsDataBuffer.B has capacity totalChunkDataSizePerRead per chunk
+	// (= chunkDataSize × totalShards), so chunkBytes' cap always covers parity
+	// slots — no AllocAligned needed inside Split.
+	fragments := r.splitChunkIntoShards(chunkBytes)
 
 	err = r.erasureEncoder.Encode(fragments)
 	if err != nil {
+		r.releaseFragments(fragments)
 		return nil, err
 	}
 	var pos uint64
@@ -257,6 +294,7 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 			pos = uint64(i.TrailingZeros())
 			encMsg, err := r.encscheme.Encrypt(fragments[pos])
 			if err != nil {
+				r.releaseFragments(fragments)
 				return nil, err
 			}
 			fragments[pos] = make([]byte, len(encMsg.EncryptedData)+EncryptionHeaderSize)
@@ -265,10 +303,88 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 		}
 	}
 
+	// Keep this call's fragment header in prevFragments. putPrevFragments()
+	// will return it to ecShardsHeaderPool at the start of the NEXT Next()
+	// call, once readChunks() has finished iterating chunk.Fragments and all
+	// individual []byte elements have been appended into data.fileShards.
+	r.prevFragments = fragments
 	chunk.Fragments = fragments
 	r.nextChunkIndex++
 	r.offset += r.totalChunkDataSizePerRead
 	return chunk, nil
+}
+
+// splitChunkIntoShards builds the shard sub-slice header for chunkBytes using
+// a pooled [][]byte from ecShardsHeaderPool, avoiding the allocation that
+// erasureEncoder.Split would otherwise make on every chunk. The data bytes
+// themselves are sub-slices of fileShardsDataBuffer — no copy is performed.
+//
+// Precondition: cap(data) >= r.totalShards * perShard (guaranteed by how
+// fileShardsDataBuffer is allocated in Next()).
+func (r *chunkedUploadChunkReader) splitChunkIntoShards(data []byte) [][]byte {
+	n := r.totalShards
+	// Get or allocate a header slice of the right length.
+	var dst [][]byte
+	if v := ecShardsHeaderPool.Get(); v != nil {
+		if s, ok := v.([][]byte); ok && len(s) == n {
+			dst = s
+		}
+	}
+	if dst == nil {
+		dst = make([][]byte, n)
+	}
+
+	dataShards := r.dataShards
+	// perShard mirrors the reedsolomon.Split calculation.
+	perShard := (len(data) + dataShards - 1) / dataShards
+	needTotal := n * perShard
+
+	// Extend data into the parity area within the existing capacity and zero it.
+	// Precondition guarantees cap >= needTotal; the else branch is a safety net.
+	dataLen := len(data)
+	if cap(data) >= needTotal {
+		data = data[:needTotal]
+		for i := dataLen; i < needTotal; i++ {
+			data[i] = 0
+		}
+	} else {
+		// Should not happen given fileShardsDataBuffer sizing, but fall back to
+		// the standard Split (which handles AllocAligned for the parity area).
+		// Return the pooled header unused — it will be re-pooled on the next call.
+		shards, _ := r.erasureEncoder.Split(data)
+		if len(shards) == n {
+			copy(dst, shards)
+		} else {
+			dst = shards
+		}
+		return dst
+	}
+	// Build sub-slice headers (no data copy).
+	for i := 0; i < n; i++ {
+		dst[i] = data[:perShard:perShard]
+		data = data[perShard:]
+	}
+	return dst
+}
+
+// releaseFragments is a helper that zeroes element pointers and returns
+// fragments to the pool. Used on error paths inside Next() before returning.
+func (r *chunkedUploadChunkReader) releaseFragments(frags [][]byte) {
+	for i := range frags {
+		frags[i] = nil
+	}
+	ecShardsHeaderPool.Put(frags)
+}
+
+// putPrevFragments returns the previous call's fragment-header slice to the
+// pool. Safe to call only when readChunks() has finished iterating
+// chunk.Fragments (all elements have been appended into data.fileShards).
+// Called at the start of the next Next(), and on Reset/Release.
+func (r *chunkedUploadChunkReader) putPrevFragments() {
+	if r.prevFragments != nil {
+		r.releaseFragments(r.prevFragments)
+		r.prevFragments = nil
+	}
 }
 
 // Read read, encode and encrypt all bytes
@@ -310,6 +426,10 @@ func (r *chunkedUploadChunkReader) Read(buf []byte) ([][]byte, error) {
 }
 
 func (r *chunkedUploadChunkReader) Reset() {
+	// Return the last call's fragment header to the pool before re-use.
+	// readChunks() calls Reset() after finishing its chunk loop, so all
+	// chunk.Fragments slices have already been fully iterated.
+	r.putPrevFragments()
 	r.offset = 0
 }
 
@@ -330,6 +450,8 @@ func (r *chunkedUploadChunkReader) GetFileHash() (string, error) {
 }
 
 func (r *chunkedUploadChunkReader) Release() {
+	// Drain any pending fragment header before releasing the data buffer.
+	r.putPrevFragments()
 	if r.fileShardsDataBuffer != nil {
 		uploadPool.Put(r.fileShardsDataBuffer)
 	}
