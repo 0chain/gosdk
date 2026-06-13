@@ -21,14 +21,11 @@ type coinmarketcapQuoteQuery struct {
 // https://coinmarketcap.com/api/documentation/v1/#section/Quick-Start-Guide
 // Note: Making HTTP requests on the client side with Javascript is currently prohibited through CORS configuration. This is to protect your API Key which should not be visible to users of your application so your API Key is not stolen. Secure your API Key by routing calls through your own backend service.
 func createCoinmarketcapQuoteQuery() quoteQuery {
-
-	coinmarketcapAPIKEY, ok := os.LookupEnv("COINMARKETCAP_API_KEY")
-	if !ok {
-		coinmarketcapAPIKEY = "7e386213-56ef-4a7e-af17-806496c20d3b"
-	}
-
+	// API key must come from the environment; no hardcoded fallback (a committed
+	// key in this public repo is a credential leak). When unset, the CoinMarketCap
+	// query fails auth and is skipped — uniswap/bancor/coingecko cover the rate.
 	return &coinmarketcapQuoteQuery{
-		APIKey: coinmarketcapAPIKEY,
+		APIKey: os.Getenv("COINMARKETCAP_API_KEY"),
 	}
 }
 
