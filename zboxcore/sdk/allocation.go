@@ -1987,6 +1987,20 @@ func (a *Allocation) GetFileMetaRef(path string) (*fileref.FileRef, error) {
 	listReq.consensusThresh = a.consensusThreshold
 	listReq.ctx = a.ctx
 	listReq.remotefilepath = path
+	// GET fast path: GOSDK_META_EARLY_CONSENSUS returns the FileRef as soon as
+	// consensusThresh blobbers agree, instead of waiting for the slowest one
+	// (getFileMetaFromBlobbers drains ALL responses → cold small-object GET is
+	// gated on the slowest-of-N blobber, ~111ms TTFB for 1MiB). This is a read
+	// — it only sizes the download, whose block fetch has its own consensus.
+	// Other getFileConsensusFromBlobbers callers (delete/repair) keep the full
+	// path because they need the found/delete masks.
+	if metaEarlyConsensus {
+		ref, _ := listReq.getFileConsensusEarly()
+		if ref == nil {
+			return nil, constants.ErrNotFound
+		}
+		return ref, nil
+	}
 	_, _, ref, fMetaResp := listReq.getFileConsensusFromBlobbers()
 
 	notFoundCount := 0

@@ -8,6 +8,7 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/0chain/errors"
@@ -201,6 +202,49 @@ func (req *ListRequest) getFileMetaByNameFromBlobbers() []*fileMetaByNameRespons
 		fileInfos[ch.blobberIdx] = ch
 	}
 	return fileInfos
+}
+
+// metaEarlyConsensus, when set (GOSDK_META_EARLY_CONSENSUS=1), lets the
+// metadata read return as soon as consensusThresh blobbers agree on a
+// FileRef, instead of waiting for EVERY blobber to respond. getFileMeta-
+// FromBlobbers drains all numList responses, so a metadata read is always
+// gated on the SLOWEST blobber — which dominates cold small-object GET
+// latency (1MiB warp GET: TTFB ~111ms = slowest-of-3 blobber meta RT;
+// the data is tiny so nothing amortizes it). Returning at the threshold-th
+// fastest blobber preserves the consensus guarantee (still consensusThresh
+// agreeing refs) while cutting latency to roughly the 2nd-of-3 blobber.
+// Read-only path; the subsequent block download has its own consensus.
+var metaEarlyConsensus = os.Getenv("GOSDK_META_EARLY_CONSENSUS") == "1"
+
+// getFileConsensusEarly fires meta requests to all blobbers but returns as
+// soon as consensusThresh of them return the SAME FileMetaHash, without
+// waiting for stragglers. Falls back to nil (caller treats as not-found)
+// if the channel drains without reaching consensus. Late goroutines finish
+// into the buffered channel and are GC'd.
+func (req *ListRequest) getFileConsensusEarly() (*fileref.FileRef, []*fileMetaResponse) {
+	numList := len(req.blobbers)
+	rspCh := make(chan *fileMetaResponse, numList)
+	for i := 0; i < numList; i++ {
+		go req.getFileMetaInfoFromBlobber(req.blobbers[i], i, rspCh)
+	}
+	collected := make([]*fileMetaResponse, 0, numList)
+	retMap := make(map[string]int)
+	req.consensus = 0
+	for i := 0; i < numList; i++ {
+		ti := <-rspCh
+		collected = append(collected, ti)
+		if ti.err != nil || ti.fileref == nil {
+			continue
+		}
+		retMap[ti.fileref.FileMetaHash]++
+		if retMap[ti.fileref.FileMetaHash] > req.consensus {
+			req.consensus = retMap[ti.fileref.FileMetaHash]
+		}
+		if req.isConsensusOk() {
+			return ti.fileref, collected // early return — skip stragglers
+		}
+	}
+	return nil, collected
 }
 
 func (req *ListRequest) getFileConsensusFromBlobbers() (zboxutil.Uint128, zboxutil.Uint128, *fileref.FileRef, []*fileMetaResponse) {
