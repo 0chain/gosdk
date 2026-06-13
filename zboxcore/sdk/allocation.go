@@ -1994,7 +1994,18 @@ func (a *Allocation) GetFileMetaRef(path string) (*fileref.FileRef, error) {
 	// — it only sizes the download, whose block fetch has its own consensus.
 	// Other getFileConsensusFromBlobbers callers (delete/repair) keep the full
 	// path because they need the found/delete masks.
+	//
+	// NB: a.consensusThreshold defaults to DataShards+ParityShards (== ALL
+	// blobbers, see getConsensuses), so getFileConsensusEarly with the default
+	// threshold NEVER returned early — it still waited for every blobber, the
+	// slowest of which dominated cold meta RT (measured p50=50ms / p90=76ms,
+	// fastest leg ~0ms). Use DataShards here: return as soon as DataShards
+	// blobbers report the same FileMetaHash (the DataShards-th fastest leg).
+	// DataShards agreement is exactly the guarantee the subsequent block
+	// download already enforces (downloadReq.consensusThresh = DataShards), so
+	// this adds no integrity risk while collapsing slowest-of-N → ~DataShards-th.
 	if metaEarlyConsensus {
+		listReq.consensusThresh = a.DataShards
 		ref, _ := listReq.getFileConsensusEarly()
 		if ref == nil {
 			return nil, constants.ErrNotFound
