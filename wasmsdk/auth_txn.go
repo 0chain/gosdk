@@ -29,7 +29,7 @@ func registerAuthorizer(this js.Value, args []js.Value) interface{} {
 	authCallback = parseAuthorizerCallback(args[0])
 	authResponseC = make(chan string, 1)
 
-	sys.Authorize = func(msg string) (string, error) {
+	sys.Authorize = func(msg string, clientIDs ...string) (string, error) {
 		authCallback(msg)
 		return <-authResponseC, nil
 	}
@@ -93,7 +93,7 @@ func registerAuthCommon(this js.Value, args []js.Value) interface{} {
 	authMsgCallback = parseAuthorizerCallback(args[0])
 	authMsgResponseC = make(chan string, 1)
 
-	sys.AuthCommon = func(msg string) (string, error) {
+	sys.AuthCommon = func(msg string, clientIDs ...string) (string, error) {
 		authMsgLock <- struct{}{}
 		defer func() {
 			<-authMsgLock
@@ -122,6 +122,25 @@ func callAuth(this js.Value, args []js.Value) interface{} {
 	if authCallback != nil {
 		msg := args[0].String()
 		result, _ := sys.Authorize(msg)
+		fmt.Println("auth is called, result:", result)
+		return js.ValueOf(result)
+	}
+
+	return nil
+}
+
+// callAuth Call the authorization callback function and provide the message to pass to it.
+// The message is passed as the first argument to the js calling.
+func callAuthMW(this js.Value, args []js.Value) interface{} {
+	fmt.Println("callAuth is called")
+	if len(args) == 0 {
+		return nil
+	}
+
+	if authCallback != nil {
+		msg := args[0].String()
+		key := args[1].String()
+		result, _ := sys.Authorize(msg, key)
 		fmt.Println("auth is called, result:", result)
 		return js.ValueOf(result)
 	}

@@ -202,17 +202,17 @@ type SendTxnData struct {
 	Note string `json:"note"`
 }
 
-func Send(toClientID string, tokens uint64, desc string, client ...string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
-	if len(client) == 0 {
-		client = append(client, "")
-		client = append(client, toClientID)
+func Send(toClientID string, tokens uint64, desc string, keys ...string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+	if len(keys) == 0 {
+		keys = append(keys, "")
+		keys = append(keys, toClientID)
 	} else {
-		client = append(client, toClientID)
+		keys = append(keys, toClientID)
 	}
 	return transaction.SmartContractTxnValue(MinerSmartContractAddress, transaction.SmartContractTxnData{
 		Name:      "transfer",
 		InputArgs: SendTxnData{Note: desc},
-	}, tokens, true, client...)
+	}, tokens, true, keys...)
 }
 
 func Faucet(tokens uint64, input string, client ...string) (hash, out string, nonce int64, txn *transaction.Transaction, err error) {

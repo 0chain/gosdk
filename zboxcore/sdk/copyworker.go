@@ -31,21 +31,23 @@ import (
 )
 
 type CopyRequest struct {
-	allocationObj  *Allocation
-	allocationID   string
-	allocationTx   string
-	sig            string
-	blobbers       []*blockchain.StorageNode
-	remotefilepath string
-	destPath       string
-	ctx            context.Context
-	ctxCncl        context.CancelFunc
-	copyMask       zboxutil.Uint128
-	maskMU         *sync.Mutex
-	connectionID   string
-	timestamp      int64
-	dirOnly        bool
-	destLookupHash string
+	allocationObj         *Allocation
+	allocationID          string
+	allocationTx          string
+	sig                   string
+	blobbers              []*blockchain.StorageNode
+	remotefilepath        string
+	destPath              string
+	ctx                   context.Context
+	ctxCncl               context.CancelFunc
+	copyMask              zboxutil.Uint128
+	maskMU                *sync.Mutex
+	connectionID          string
+	timestamp             int64
+	dirOnly               bool
+	destLookupHash        string
+	clientId              string
+	MultiWalletSupportKey string
 	Consensus
 }
 
@@ -54,16 +56,24 @@ var errNoChange = errors.New("no_change", "No change in the operation")
 const objAlreadyExists = "Object Already exists"
 
 func (req *CopyRequest) getObjectTreeFromBlobber(blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
-	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.allocationTx, req.sig, req.remotefilepath, blobber, req.allocationObj.Owner)
+	key := req.clientId
+	if key == "" {
+		key = req.allocationObj.Owner
+	}
+	if req.MultiWalletSupportKey != "" {
+		key = req.MultiWalletSupportKey
+	}
+	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.allocationTx, req.sig, req.remotefilepath, blobber, key)
 }
 
 func (req *CopyRequest) getFileMetaFromBlobber(pos int) (fileRef *fileref.FileRef, err error) {
 	listReq := &ListRequest{
-		allocationID:   req.allocationID,
-		allocationTx:   req.allocationTx,
-		blobbers:       req.blobbers,
-		remotefilepath: req.remotefilepath,
-		ctx:            req.ctx,
+		allocationID:          req.allocationID,
+		allocationTx:          req.allocationTx,
+		blobbers:              req.blobbers,
+		remotefilepath:        req.remotefilepath,
+		ctx:                   req.ctx,
+		MultiWalletSupportKey: req.MultiWalletSupportKey,
 	}
 	respChan := make(chan *fileMetaResponse)
 	go listReq.getFileMetaInfoFromBlobber(req.blobbers[pos], int(pos), respChan)
@@ -130,7 +140,14 @@ func (req *CopyRequest) copyBlobberObject(
 				cncl     context.CancelFunc
 			)
 
-			httpreq, err = zboxutil.NewCopyRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body, req.allocationObj.Owner)
+			key := req.clientId
+			if key == "" {
+				key = req.allocationObj.Owner
+			}
+			if req.MultiWalletSupportKey != "" {
+				key = req.MultiWalletSupportKey
+			}
+			httpreq, err = zboxutil.NewCopyRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body, key)
 			if err != nil {
 				l.Logger.Error(blobber.Baseurl, "Error creating rename request", err)
 				return
@@ -319,7 +336,7 @@ func (req *CopyRequest) ProcessCopy() error {
 				req.Consensus.consensusThresh, req.Consensus.consensus))
 	}
 
-	writeMarkerMutex, err := CreateWriteMarkerMutex(req.allocationObj)
+	writeMarkerMutex, err := CreateWriteMarkerMutex(req.allocationObj, req.MultiWalletSupportKey)
 	if err != nil {
 		return fmt.Errorf("Copy failed: %s", err.Error())
 	}
@@ -369,14 +386,15 @@ func (req *CopyRequest) ProcessCopy() error {
 		newChange.Operation = constants.FileOperationCopy
 		newChange.Size = 0
 		commitReq := &CommitRequest{
-			ClientId:     req.allocationObj.Owner,
-			allocationID: req.allocationID,
-			allocationTx: req.allocationTx,
-			sig:          req.sig,
-			blobber:      req.blobbers[pos],
-			connectionID: req.connectionID,
-			wg:           wg,
-			timestamp:    req.timestamp,
+			ClientId:              req.allocationObj.Owner,
+			allocationID:          req.allocationID,
+			allocationTx:          req.allocationTx,
+			sig:                   req.sig,
+			blobber:               req.blobbers[pos],
+			connectionID:          req.connectionID,
+			wg:                    wg,
+			timestamp:             req.timestamp,
+			multiWalletSupportKey: req.MultiWalletSupportKey,
 		}
 
 		commitReq.changes = append(commitReq.changes, newChange)
@@ -408,15 +426,17 @@ func (req *CopyRequest) ProcessCopy() error {
 }
 
 type CopyOperation struct {
-	remotefilepath string
-	destPath       string
-	destLookupHash string
-	dirOnly        bool
-	ctx            context.Context
-	ctxCncl        context.CancelFunc
-	copyMask       zboxutil.Uint128
-	maskMU         *sync.Mutex
-	objectTreeRefs []fileref.RefEntity
+	remotefilepath        string
+	destPath              string
+	destLookupHash        string
+	dirOnly               bool
+	ctx                   context.Context
+	ctxCncl               context.CancelFunc
+	copyMask              zboxutil.Uint128
+	maskMU                *sync.Mutex
+	objectTreeRefs        []fileref.RefEntity
+	clientId              string
+	MultiWalletSupportKey string
 
 	Consensus
 }
@@ -424,20 +444,22 @@ type CopyOperation struct {
 func (co *CopyOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
 	// make copyRequest object
 	cR := &CopyRequest{
-		allocationObj:  allocObj,
-		allocationID:   allocObj.ID,
-		allocationTx:   allocObj.Tx,
-		sig:            allocObj.sig,
-		connectionID:   connectionID,
-		blobbers:       allocObj.Blobbers,
-		remotefilepath: co.remotefilepath,
-		destPath:       co.destPath,
-		ctx:            co.ctx,
-		ctxCncl:        co.ctxCncl,
-		copyMask:       co.copyMask,
-		maskMU:         co.maskMU,
-		dirOnly:        co.dirOnly,
-		Consensus:      Consensus{RWMutex: &sync.RWMutex{}},
+		allocationObj:         allocObj,
+		allocationID:          allocObj.ID,
+		allocationTx:          allocObj.Tx,
+		sig:                   allocObj.sig,
+		connectionID:          connectionID,
+		blobbers:              allocObj.Blobbers,
+		remotefilepath:        co.remotefilepath,
+		destPath:              co.destPath,
+		ctx:                   co.ctx,
+		ctxCncl:               co.ctxCncl,
+		copyMask:              co.copyMask,
+		maskMU:                co.maskMU,
+		dirOnly:               co.dirOnly,
+		Consensus:             Consensus{RWMutex: &sync.RWMutex{}},
+		clientId:              co.clientId,
+		MultiWalletSupportKey: co.MultiWalletSupportKey,
 	}
 
 	cR.consensusThresh = co.consensusThresh
@@ -517,7 +539,7 @@ func (co *CopyOperation) Error(allocObj *Allocation, consensus int, err error) {
 
 }
 
-func NewCopyOperation(ctx context.Context, remotePath string, destPath string, copyMask zboxutil.Uint128, maskMU *sync.Mutex, consensusTh, fullConsensus int, copyDirOnly bool) *CopyOperation {
+func NewCopyOperation(ctx context.Context, remotePath string, destPath string, copyMask zboxutil.Uint128, maskMU *sync.Mutex, consensusTh, fullConsensus int, copyDirOnly bool, clientId string, keys ...string) *CopyOperation {
 	co := &CopyOperation{}
 	co.remotefilepath = zboxutil.RemoteClean(remotePath)
 	co.copyMask = copyMask
@@ -530,6 +552,11 @@ func NewCopyOperation(ctx context.Context, remotePath string, destPath string, c
 	co.destPath = destPath
 	co.ctx, co.ctxCncl = context.WithCancel(ctx)
 	co.dirOnly = copyDirOnly
+	co.clientId = clientId
+	co.MultiWalletSupportKey = ""
+	if len(keys) > 0 {
+		co.MultiWalletSupportKey = keys[0]
+	}
 	return co
 
 }
@@ -565,7 +592,11 @@ func (req *CopyRequest) copySubDirectoriees(dirOnly bool) error {
 
 	for {
 		if !dirOnly {
-			oResult, err := req.allocationObj.GetRefs(req.remotefilepath, offsetPath, "", "", fileref.FILE, fileref.REGULAR, 0, getRefPageLimit, WithObjectContext(req.ctx), WithObjectConsensusThresh(req.consensusThresh), WithSingleBlobber(true))
+			objOpts := []ObjectTreeRequestOption{WithObjectContext(req.ctx), WithObjectConsensusThresh(req.consensusThresh), WithSingleBlobber(true)}
+			if req.MultiWalletSupportKey != "" {
+				objOpts = append(objOpts, WithObjectClientKey(req.MultiWalletSupportKey))
+			}
+			oResult, err := req.allocationObj.GetRefs(req.remotefilepath, offsetPath, "", "", fileref.FILE, fileref.REGULAR, 0, getRefPageLimit, objOpts...)
 			if err != nil {
 				return err
 			}
@@ -591,7 +622,11 @@ func (req *CopyRequest) copySubDirectoriees(dirOnly bool) error {
 				}
 				ops = append(ops, op)
 			}
-			err = req.allocationObj.DoMultiOperation(ops)
+			if req.MultiWalletSupportKey != "" {
+				err = req.allocationObj.DoMultiOperation(ops, func(mo *MultiOperation) { mo.MultiWalletSupportKey = req.MultiWalletSupportKey })
+			} else {
+				err = req.allocationObj.DoMultiOperation(ops)
+			}
 			if err != nil {
 				return err
 			}
@@ -609,7 +644,11 @@ func (req *CopyRequest) copySubDirectoriees(dirOnly bool) error {
 	}
 
 	for pathLevel > level {
-		oResult, err := req.allocationObj.GetRefs(req.remotefilepath, offsetPath, "", "", fileref.DIRECTORY, fileref.REGULAR, pathLevel, getRefPageLimit, WithObjectContext(req.ctx), WithObjectMask(req.copyMask), WithObjectConsensusThresh(req.consensusThresh), WithSingleBlobber(true))
+		objOpts := []ObjectTreeRequestOption{WithObjectContext(req.ctx), WithObjectMask(req.copyMask), WithObjectConsensusThresh(req.consensusThresh), WithSingleBlobber(true)}
+		if req.MultiWalletSupportKey != "" {
+			objOpts = append(objOpts, WithObjectClientKey(req.MultiWalletSupportKey))
+		}
+		oResult, err := req.allocationObj.GetRefs(req.remotefilepath, offsetPath, "", "", fileref.DIRECTORY, fileref.REGULAR, pathLevel, getRefPageLimit, objOpts...)
 		if err != nil {
 			return err
 		}
@@ -633,7 +672,11 @@ func (req *CopyRequest) copySubDirectoriees(dirOnly bool) error {
 				}
 				ops = append(ops, op)
 			}
-			err = req.allocationObj.DoMultiOperation(ops)
+			if req.MultiWalletSupportKey != "" {
+				err = req.allocationObj.DoMultiOperation(ops, func(mo *MultiOperation) { mo.MultiWalletSupportKey = req.MultiWalletSupportKey })
+			} else {
+				err = req.allocationObj.DoMultiOperation(ops)
+			}
 			if err != nil {
 				return err
 			}

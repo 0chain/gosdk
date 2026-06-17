@@ -257,7 +257,7 @@ func CreateChunkedUpload(
 
 	}
 
-	su.writeMarkerMutex, err = CreateWriteMarkerMutex(su.allocationObj)
+	su.writeMarkerMutex, err = CreateWriteMarkerMutex(su.allocationObj, su.multiWalletSupportKey)
 	if err != nil {
 		return nil, err
 	}
@@ -293,6 +293,7 @@ func CreateChunkedUpload(
 
 	su.chunkReader = cReader
 
+	logger.Logger.Info("CreateChunkedUploadFormBuilder storageVersion", su.allocationObj.StorageVersion, " and encryptedVersion ", su.encryptionVersion, "and privateSigningKey ", su.allocationObj.privateSigningKey)
 	su.formBuilder = CreateChunkedUploadFormBuilder(su.allocationObj.StorageVersion, su.encryptionVersion, su.allocationObj.privateSigningKey)
 
 	su.isRepair = isRepair
@@ -430,10 +431,10 @@ func (su *ChunkedUpload) process() error {
 	defer su.chunkReader.Release()
 	defer su.chunkReader.Close()
 	defer su.ctxCncl(nil)
+
 	for {
 
 		chunks, err := su.readChunks(su.chunkNumber)
-
 		// chunk, err := su.chunkReader.Next()
 		if err != nil {
 			if su.statusCallback != nil {
@@ -706,7 +707,6 @@ func (su *ChunkedUpload) uploadToBlobbers(uploadData UploadData) error {
 		go func(pos uint64) {
 			defer wg.Done()
 			err := su.blobbers[pos].sendUploadRequest(ctx, su, uploadData.isFinal, su.encryptedKey, uploadData.uploadBody[pos].dataBuffers, uploadData.uploadBody[pos].formData, uploadData.uploadBody[pos].contentSlice, pos, &consensus)
-
 			if err != nil {
 				if strings.Contains(err.Error(), "duplicate") {
 					su.consensus.Done()

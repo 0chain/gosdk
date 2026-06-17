@@ -48,6 +48,7 @@ type BlockDownloadRequest struct {
 	shouldVerify       bool
 	connectionID       string
 	respBuf            []byte
+	Pubkey             string
 }
 
 type downloadResponse struct {
@@ -128,7 +129,13 @@ func (req *BlockDownloadRequest) downloadBlobberBlock(fastClient *fasthttp.Clien
 			req.remotefilepathhash = fileref.GetReferenceLookup(req.allocationID, req.remotefilepath)
 		}
 
-		httpreq, err := zboxutil.NewFastDownloadRequest(req.blobber.Baseurl, req.allocationID, req.allocationTx)
+		var httpreq *fasthttp.Request
+		var err error
+		if len(req.Pubkey) > 0 {
+			httpreq, err = zboxutil.NewFastDownloadRequest(req.blobber.Baseurl, req.allocationID, req.allocationTx, req.Pubkey)
+		} else {
+			httpreq, err = zboxutil.NewFastDownloadRequest(req.blobber.Baseurl, req.allocationID, req.allocationTx)
+		}
 		if err != nil {
 			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.Wrap(err, "Error creating download request")}
 			return

@@ -13,6 +13,7 @@ import (
 
 	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/encryption"
+	l "github.com/0chain/gosdk/zboxcore/logger"
 
 	"golang.org/x/crypto/sha3"
 )
@@ -24,7 +25,7 @@ type ChunkedUploadFormBuilder interface {
 		fileMeta *FileMeta, hasher Hasher, connectionID, blobberID string,
 		chunkSize int64, chunkStartIndex, chunkEndIndex int,
 		isFinal bool, encryptedKey, encryptedKeyPoint string, fileChunksData [][]byte,
-		thumbnailChunkData []byte, shardSize int64,
+		thumbnailChunkData []byte, shardSize int64, keys ...string,
 	) (blobberData, error)
 }
 
@@ -59,7 +60,7 @@ func (b *chunkedUploadFormBuilder) Build(
 	fileMeta *FileMeta, hasher Hasher, connectionID, blobberID string,
 	chunkSize int64, chunkStartIndex, chunkEndIndex int,
 	isFinal bool, encryptedKey, encryptedKeyPoint string, fileChunksData [][]byte,
-	thumbnailChunkData []byte, shardSize int64,
+	thumbnailChunkData []byte, shardSize int64, keys ...string,
 ) (blobberData, error) {
 
 	metadata := ChunkedUploadFormMetadata{
@@ -187,7 +188,12 @@ func (b *chunkedUploadFormBuilder) Build(
 				}
 				formData.ActualFileHashSignature = hex.EncodeToString(sig)
 			} else {
-				sig, err := client.Sign(fileMeta.ActualHash)
+				key := client.Wallet().ClientID
+				if len(keys) > 0 && keys[0] != "" {
+					key = keys[0]
+				}
+
+				sig, err := client.Sign(fileMeta.ActualHash, key)
 				if err != nil {
 					return res, err
 				}
@@ -206,7 +212,11 @@ func (b *chunkedUploadFormBuilder) Build(
 				}
 				formData.ValidationRootSignature = hex.EncodeToString(sig)
 			} else {
-				rootSig, err := client.Sign(hash)
+				var key string
+				if len(keys) > 0 && keys[0] != "" {
+					key = keys[0]
+				}
+				rootSig, err := client.Sign(hash, key)
 				if err != nil {
 					return res, err
 				}
@@ -257,6 +267,13 @@ func (b *chunkedUploadFormBuilder) Build(
 		if err != nil {
 			return res, err
 		}
+
+		// Log upload metadata for debugging signature/validation issues
+		var keyUsed string
+		if len(keys) > 0 {
+			keyUsed = keys[0]
+		}
+		l.Logger.Info("uploadMeta prepared", "blobber", blobberID, "connection_id", connectionID, "key", keyUsed, "uploadMeta", string(uploadMeta))
 
 		err = formWriter.WriteField("uploadMeta", string(uploadMeta))
 		if err != nil {

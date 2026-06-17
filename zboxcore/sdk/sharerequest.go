@@ -18,6 +18,7 @@ import (
 
 type ShareRequest struct {
 	ClientId          string
+	MultiWalletSupportKey string
 	allocationID      string
 	allocationTx      string
 	sig               string
@@ -43,6 +44,7 @@ func (req *ShareRequest) GetFileRef() (*fileref.FileRef, error) {
 		blobbers:           req.blobbers,
 		ctx:                req.ctx,
 		Consensus:          Consensus{RWMutex: &sync.RWMutex{}},
+		MultiWalletSupportKey: req.MultiWalletSupportKey,
 	}
 	_, _, fileRef, _ = listReq.getFileConsensusFromBlobbers()
 	if fileRef == nil {
@@ -65,6 +67,7 @@ func (req *ShareRequest) getAuthTicket(clientID, encPublicKey string) (*marker.A
 		FilePathHash:   fileref.GetReferenceLookup(req.allocationID, req.remotefilepath),
 		RefType:        req.refType,
 		ActualFileHash: fRef.ActualFileHash,
+		MultiWalletSupportKey: req.MultiWalletSupportKey,
 	}
 
 	at.Timestamp = int64(common.Now())
@@ -85,7 +88,11 @@ func (req *ShareRequest) getAuthTicket(clientID, encPublicKey string) (*marker.A
 			}
 			entropy = hex.EncodeToString(req.signingPrivateKey)
 		} else {
-			entropy = client.Wallet().Mnemonic
+			if req.MultiWalletSupportKey != "" {
+				entropy = client.GetWalletMnemonic(req.MultiWalletSupportKey)
+			} else {
+				entropy = client.Wallet().Mnemonic
+			}
 		}
 		if entropy == "" {
 			return nil, errors.New("wallet_error", "wallet mnemonic is empty")

@@ -36,10 +36,11 @@ type WriteMarkerMutex struct {
 	allocationObj    *Allocation
 	lockedBlobbers   map[string]chan struct{}
 	leadBlobberIndex int
+	Pubkey           string
 }
 
 // CreateWriteMarkerMutex create WriteMarkerMutex for allocation
-func CreateWriteMarkerMutex(allocationObj *Allocation) (*WriteMarkerMutex, error) {
+func CreateWriteMarkerMutex(allocationObj *Allocation, keys ...string) (*WriteMarkerMutex, error) {
 	if allocationObj == nil {
 		return nil, errors.Throw(constants.ErrInvalidParameter, "allocationObj")
 	}
@@ -57,6 +58,7 @@ func CreateWriteMarkerMutex(allocationObj *Allocation) (*WriteMarkerMutex, error
 		allocationObj:    allocationObj,
 		lockedBlobbers:   lockedBlobbers,
 		leadBlobberIndex: 0,
+		Pubkey:           func() string { if len(keys)>0 { return keys[0] } ; return "" }(),
 	}, nil
 }
 
@@ -99,8 +101,12 @@ func (wmMu *WriteMarkerMutex) UnlockBlobber(
 	}()
 
 	var req *http.Request
+	key := wmMu.allocationObj.Owner
+	if wmMu.Pubkey != "" {
+		key = wmMu.Pubkey
+	}
 	req, err = zboxutil.NewWriteMarkerUnLockRequest(
-		b.Baseurl, wmMu.allocationObj.ID, wmMu.allocationObj.Tx, wmMu.allocationObj.sig, connID, "", wmMu.allocationObj.Owner)
+		b.Baseurl, wmMu.allocationObj.ID, wmMu.allocationObj.Tx, wmMu.allocationObj.sig, connID, "", key)
 	if err != nil {
 		return
 	}
@@ -280,8 +286,12 @@ func (wmMu *WriteMarkerMutex) lockBlobber(
 	}()
 
 	var req *http.Request
+	key := wmMu.allocationObj.Owner
+	if wmMu.Pubkey != "" {
+		key = wmMu.Pubkey
+	}
 	req, err = zboxutil.NewWriteMarkerLockRequest(
-		b.Baseurl, wmMu.allocationObj.ID, wmMu.allocationObj.Tx, wmMu.allocationObj.sig, connID, wmMu.allocationObj.Owner)
+		b.Baseurl, wmMu.allocationObj.ID, wmMu.allocationObj.Tx, wmMu.allocationObj.sig, connID, key)
 	if err != nil {
 		return
 	}

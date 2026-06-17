@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	Sign func(hash string) (string, error)
+	Sign func(hash string, keys ...string) (string, error)
 )
 
 // WasmScheme - a signature scheme for BLS0Chain Signature

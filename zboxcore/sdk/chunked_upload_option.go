@@ -37,6 +37,22 @@ func WithThumbnail(buf []byte) ChunkedUploadOption {
 	}
 }
 
+func WithWallet(w string) ChunkedUploadOption {
+	return func(su *ChunkedUpload) {
+		su.multiWalletSupportKey = w
+	}
+}
+
+// WithUploadPubKey sets the per-operation public key used for owner-signing
+// and request-level signing during chunked uploads. It's an alias for
+// WithWallet but provides a clearer name for callers that want to set the
+// upload-specific public key.
+func WithUploadPubKey(pubKey string) ChunkedUploadOption {
+	return func(su *ChunkedUpload) {
+		su.multiWalletSupportKey = pubKey
+	}
+}
+
 // WithThumbnailFile add thumbnail from file. stream mode is unnecessary for thumbnail.
 //   - fileName: file name of the thumbnail, which will be read and uploaded
 func WithThumbnailFile(fileName string) ChunkedUploadOption {

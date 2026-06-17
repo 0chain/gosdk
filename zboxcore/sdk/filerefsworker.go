@@ -33,6 +33,7 @@ const INVALID_PATH = "invalid_path"
 
 type ObjectTreeRequest struct {
 	ClientId       string
+	MultiWalletSupportKey         string
 	allocationID   string
 	allocationTx   string
 	sig            string
@@ -91,6 +92,17 @@ func WithSingleBlobber(singleBlobber bool) ObjectTreeRequestOption {
 func WithAuthToken(token string) ObjectTreeRequestOption {
 	return func(o *ObjectTreeRequest) {
 		o.authToken = token
+	}
+}
+
+// WithObjectClientKey sets the client pubkey (or client id) to be used for signing
+// the object tree / refs HTTP request. When set, the request helper will use this
+// key to resolve the wallet and sign the request headers. Note: ClientId should
+// remain the allocation owner; this option sets the signing pubkey to use for
+// the HTTP request when performing refs/list operations.
+func WithObjectClientKey(key string) ObjectTreeRequestOption {
+	return func(o *ObjectTreeRequest) {
+		o.MultiWalletSupportKey = key
 	}
 }
 
@@ -233,6 +245,14 @@ func (o *ObjectTreeRequest) getFileRefs(bUrl string, respChan chan *oTreeRespons
 
 	oResult := ObjectTreeResult{}
 	for i := 0; i < 3; i++ {
+		// Determine the client key to use for signing the refs request. Prefer
+		// the explicit PubKey when provided by the caller; otherwise fall back
+		// to ClientId (historical behavior).
+		key := o.ClientId
+		if o.MultiWalletSupportKey != "" {
+			key = o.MultiWalletSupportKey
+		}
+
 		oReq, err := zboxutil.NewRefsRequest(
 			bUrl,
 			o.allocationID,
@@ -248,7 +268,7 @@ func (o *ObjectTreeRequest) getFileRefs(bUrl string, respChan chan *oTreeRespons
 			o.refType,
 			o.level,
 			o.pageLimit,
-			o.ClientId,
+			key,
 		)
 		if err != nil {
 			oTR.err = err
@@ -345,6 +365,7 @@ type SimilarField struct {
 type RecentlyAddedRefRequest struct {
 	ctx          context.Context
 	ClientId     string
+	MultiWalletSupportKey string
 	allocationID string
 	allocationTx string
 	sig          string
@@ -424,7 +445,12 @@ func (r *RecentlyAddedRefRequest) GetRecentlyAddedRefs() (*RecentlyAddedRefResul
 
 func (r *RecentlyAddedRefRequest) getRecentlyAddedRefs(resp *RecentlyAddedRefResponse, bUrl string) {
 	defer r.wg.Done()
-	req, err := zboxutil.NewRecentlyAddedRefsRequest(bUrl, r.allocationID, r.allocationTx, r.sig, r.fromDate, r.offset, r.pageLimit, r.ClientId)
+	// Choose key used to sign the request: prefer MultiWalletSupportKey when set
+	key := r.ClientId
+	if r.MultiWalletSupportKey != "" {
+		key = r.MultiWalletSupportKey
+	}
+	req, err := zboxutil.NewRecentlyAddedRefsRequest(bUrl, r.allocationID, r.allocationTx, r.sig, r.fromDate, r.offset, r.pageLimit, key)
 	if err != nil {
 		resp.err = err
 		return
