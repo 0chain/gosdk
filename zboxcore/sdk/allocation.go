@@ -3182,7 +3182,25 @@ func (a *Allocation) getConsensuses() (fullConsensus, consensusThreshold int) {
 		return 0, 0
 	}
 
-	return a.DataShards + a.ParityShards, a.DataShards + a.ParityShards
+	total := a.DataShards + a.ParityShards
+	thresh := total // default: all shards (data+parity)
+
+	// GOSDK_UPLOAD_CONSENSUS controls how many blobbers must confirm a write:
+	//   "data"   — DataShards only (fastest, tolerates all parity failures)
+	//   "data+1" — DataShards + 1 (tolerates ParityShards-1 failures)
+	//   ""/"all" — all shards (default, safest, slowest tail latency)
+	mode := os.Getenv("GOSDK_UPLOAD_CONSENSUS")
+	switch mode {
+	case "data":
+		thresh = a.DataShards
+	case "data+1":
+		thresh = a.DataShards + 1
+		if thresh > total {
+			thresh = total
+		}
+	}
+
+	return total, thresh
 }
 
 func (a *Allocation) SetConsensusThreshold() {
