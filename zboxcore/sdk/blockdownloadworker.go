@@ -28,22 +28,30 @@ const (
 	RateLimitError = "rate_limit_error"
 )
 
-// blobberHTTPPort, when set (e.g. "5051"), reroutes blobber data-plane requests
-// (block downloads, chunk uploads, commits) from a blobber's registered TLS URL
-// (https://host, fronted by the cluster's Caddy TLS proxy) to the blobber's
-// direct plaintext HTTP listener (http://host:<port>). CPU profiling of the
-// gateway read path showed ~80% of CPU spent on TLS decrypt + per-record read
-// syscalls + buffer copies on this transport (Reed-Solomon erasure was ~2%);
-// the blobber already serves the identical router on its --port HTTP listener
-// (Caddy merely proxies to it), reachable VPC-wide. Measured: +40% S3 GET, +20%
-// NFS read on a 4-vCPU gateway. Empty = off (keep TLS). Intended only for
-// intra-VPC clusters where the link never leaves the private subnet and the
-// data is already erasure-coded. Signatures are over allocationTx, not the URL,
-// so the scheme/port rewrite is safe; the blobber does not validate Host.
-var blobberHTTPPort = strings.TrimSpace(os.Getenv("ZUS_BLOBBER_HTTP"))
+// blobberHTTPPort / blobberWriteHTTPPort, when set (e.g. "5051"), reroute blobber
+// requests from the registered TLS URL (https://host, fronted by the cluster's
+// Caddy TLS proxy) to the blobber's direct plaintext HTTP listener
+// (http://host:<port>). CPU profiling of the gateway read path showed ~80% of CPU
+// on TLS decrypt + per-record read syscalls + buffer copies (Reed-Solomon erasure
+// was ~2%); the blobber already serves the identical router on its --port HTTP
+// listener (Caddy merely proxies to it), reachable VPC-wide. Measured READ win:
+// +40% S3 GET, +20% NFS read on a 4-vCPU gateway. Signatures are over
+// allocationTx not the URL, so the scheme/port rewrite is safe; the blobber does
+// not validate Host. Intended only for intra-VPC, erasure-coded clusters.
+//
+// READ (download) and WRITE (upload+commit) are gated SEPARATELY on purpose:
+// ZUS_BLOBBER_HTTP enables the read path; ZUS_BLOBBER_WRITE_HTTP the write path.
+// The write path is OFF by default because the blobber's direct :5051 listener
+// resets large POST upload bodies mid-send ("broken pipe") — Caddy:443 masks this
+// by buffering the request body before forwarding to the same :5051. Until the
+// blobber accepts direct streamed uploads, leave writes on TLS (Caddy).
+var (
+	blobberHTTPPort      = strings.TrimSpace(os.Getenv("ZUS_BLOBBER_HTTP"))
+	blobberWriteHTTPPort = strings.TrimSpace(os.Getenv("ZUS_BLOBBER_WRITE_HTTP"))
+)
 
-func plaintextBlobberURL(baseURL string) string {
-	if blobberHTTPPort == "" {
+func rewritePlaintextURL(baseURL, port string) string {
+	if port == "" {
 		return baseURL
 	}
 	const scheme = "https://"
@@ -54,7 +62,18 @@ func plaintextBlobberURL(baseURL string) string {
 	if i := strings.IndexAny(host, ":/"); i >= 0 {
 		host = host[:i]
 	}
-	return "http://" + host + ":" + blobberHTTPPort
+	return "http://" + host + ":" + port
+}
+
+// plaintextBlobberURL rewrites for the READ/download path (ZUS_BLOBBER_HTTP).
+func plaintextBlobberURL(baseURL string) string {
+	return rewritePlaintextURL(baseURL, blobberHTTPPort)
+}
+
+// plaintextBlobberWriteURL rewrites for the WRITE/upload+commit path
+// (ZUS_BLOBBER_WRITE_HTTP); off by default — see the note above.
+func plaintextBlobberWriteURL(baseURL string) string {
+	return rewritePlaintextURL(baseURL, blobberWriteHTTPPort)
 }
 
 type BlockDownloadRequest struct {
