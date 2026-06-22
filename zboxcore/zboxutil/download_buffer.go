@@ -12,10 +12,14 @@ import (
 )
 
 // dlBufPollInterval is how long RequestChunk sleeps between retries when its
-// ring slot is momentarily busy. The historical 200ms is a severe throughput
-// bug: every block whose slot is in use stalls ~200ms even with CPU/NIC/disk
-// idle, capping NFS/S3 download throughput to ~(concurrency * blockBytes /
-// 200ms). Tunable via ZUS_DL_BUF_POLL_MS (default 200 = legacy; set 1 to fix).
+// ring slot is momentarily still held by a not-yet-released chunk. Default 200ms
+// preserves the original hardcoded behavior. NOTE: this is NOT the download
+// throughput bottleneck — an A/B of 1ms vs 200ms was identical (~617 MB/s); the
+// slot is rarely contended at normal concurrency, and the real read ceiling was
+// gateway TLS-transport CPU (see ZUS_BLOBBER_HTTP). Exposed via ZUS_DL_BUF_POLL_MS
+// only to remove a magic constant and allow tuning retry latency under heavy slot
+// contention. Very low values busy-spin on r.mu (raises mutex contention/CPU when
+// slots ARE hot), so lower with care.
 var dlBufPollInterval = func() time.Duration {
 	if v := os.Getenv("ZUS_DL_BUF_POLL_MS"); v != "" {
 		if n, err := strconv.Atoi(v); err == nil && n > 0 {
