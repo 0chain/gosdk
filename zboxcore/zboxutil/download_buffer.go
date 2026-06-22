@@ -2,12 +2,28 @@ package zboxutil
 
 import (
 	"context"
+	"os"
+	"strconv"
 	"sync"
 	"time"
 
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/valyala/bytebufferpool"
 )
+
+// dlBufPollInterval is how long RequestChunk sleeps between retries when its
+// ring slot is momentarily busy. The historical 200ms is a severe throughput
+// bug: every block whose slot is in use stalls ~200ms even with CPU/NIC/disk
+// idle, capping NFS/S3 download throughput to ~(concurrency * blockBytes /
+// 200ms). Tunable via ZUS_DL_BUF_POLL_MS (default 200 = legacy; set 1 to fix).
+var dlBufPollInterval = func() time.Duration {
+	if v := os.Getenv("ZUS_DL_BUF_POLL_MS"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			return time.Duration(n) * time.Millisecond
+		}
+	}
+	return 200 * time.Millisecond
+}()
 
 type DownloadBuffer interface {
 	RequestChunk(ctx context.Context, num int) []byte
@@ -109,7 +125,7 @@ func (r *DownloadBufferWithMask) RequestChunk(ctx context.Context, num int) []by
 		// already assigned
 		if isSet == 0 {
 			r.mu.Unlock()
-			sys.Sleep(200 * time.Millisecond)
+			sys.Sleep(dlBufPollInterval)
 			continue
 		}
 		// assign the chunk by clearing the bit
