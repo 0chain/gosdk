@@ -147,7 +147,7 @@ func (req *CommitRequest) commitBlobber() (err error) {
 				l.Logger.Error("Creating form writer failed: ", err)
 				return
 			}
-			httpreq, err := zboxutil.NewCommitRequest(req.blobber.Baseurl, req.allocationID, req.allocationTx, body)
+			httpreq, err := zboxutil.NewCommitRequest(plaintextBlobberURL(req.blobber.Baseurl), req.allocationID, req.allocationTx, body)
 			if err != nil {
 				l.Logger.Error("Error creating commit req: ", err)
 				return

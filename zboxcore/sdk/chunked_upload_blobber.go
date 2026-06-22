@@ -83,7 +83,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 			var req *fasthttp.Request
 			for i := 0; i < 3; i++ {
 				req, err = zboxutil.NewFastUploadRequest(
-					sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, dataBuffers[ind].Bytes(), su.httpMethod)
+					plaintextBlobberURL(sb.blobber.Baseurl), su.allocationObj.ID, su.allocationObj.Tx, dataBuffers[ind].Bytes(), su.httpMethod)
 				if err != nil {
 					return err
 				}

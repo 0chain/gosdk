@@ -28,19 +28,22 @@ const (
 	RateLimitError = "rate_limit_error"
 )
 
-// blobberDLHTTPPort, when set (e.g. "5051"), reroutes block downloads from a
-// blobber's registered TLS URL (https://host, fronted by the cluster's Caddy TLS
-// proxy) to the blobber's direct plaintext HTTP listener (http://host:<port>).
-// CPU profiling of the gateway read path showed ~80% of CPU spent on TLS
-// decrypt + per-record read syscalls + buffer copies on this transport (erasure
-// decode was ~2%); the blobber already serves the identical router on its --port
-// HTTP listener (Caddy merely proxies to it), reachable VPC-wide. Empty = off
-// (keep TLS). Intended only for intra-VPC clusters where the link never leaves
-// the private subnet and the data is already erasure-coded.
-var blobberDLHTTPPort = strings.TrimSpace(os.Getenv("ZUS_BLOBBER_DL_HTTP"))
+// blobberHTTPPort, when set (e.g. "5051"), reroutes blobber data-plane requests
+// (block downloads, chunk uploads, commits) from a blobber's registered TLS URL
+// (https://host, fronted by the cluster's Caddy TLS proxy) to the blobber's
+// direct plaintext HTTP listener (http://host:<port>). CPU profiling of the
+// gateway read path showed ~80% of CPU spent on TLS decrypt + per-record read
+// syscalls + buffer copies on this transport (Reed-Solomon erasure was ~2%);
+// the blobber already serves the identical router on its --port HTTP listener
+// (Caddy merely proxies to it), reachable VPC-wide. Measured: +40% S3 GET, +20%
+// NFS read on a 4-vCPU gateway. Empty = off (keep TLS). Intended only for
+// intra-VPC clusters where the link never leaves the private subnet and the
+// data is already erasure-coded. Signatures are over allocationTx, not the URL,
+// so the scheme/port rewrite is safe; the blobber does not validate Host.
+var blobberHTTPPort = strings.TrimSpace(os.Getenv("ZUS_BLOBBER_HTTP"))
 
-func plaintextDownloadURL(baseURL string) string {
-	if blobberDLHTTPPort == "" {
+func plaintextBlobberURL(baseURL string) string {
+	if blobberHTTPPort == "" {
 		return baseURL
 	}
 	const scheme = "https://"
@@ -51,7 +54,7 @@ func plaintextDownloadURL(baseURL string) string {
 	if i := strings.IndexAny(host, ":/"); i >= 0 {
 		host = host[:i]
 	}
-	return "http://" + host + ":" + blobberDLHTTPPort
+	return "http://" + host + ":" + blobberHTTPPort
 }
 
 type BlockDownloadRequest struct {
@@ -154,7 +157,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock(fastClient *fasthttp.Clien
 			req.remotefilepathhash = fileref.GetReferenceLookup(req.allocationID, req.remotefilepath)
 		}
 
-		httpreq, err := zboxutil.NewFastDownloadRequest(plaintextDownloadURL(req.blobber.Baseurl), req.allocationID, req.allocationTx)
+		httpreq, err := zboxutil.NewFastDownloadRequest(plaintextBlobberURL(req.blobber.Baseurl), req.allocationID, req.allocationTx)
 		if err != nil {
 			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.Wrap(err, "Error creating download request")}
 			return
