@@ -563,13 +563,20 @@ func (req *DownloadRequest) processDownload() {
 		for i := req.downloadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 			pos = uint64(i.TrailingZeros())
 			blobberIdx := int(pos)
-			if writerAt {
-				req.bufferMap[blobberIdx] = zboxutil.NewDownloadBufferWithChan(sz, bufBlocks, req.effectiveBlockSize)
-			} else {
-				bufMask := zboxutil.NewDownloadBufferWithMask(sz, bufBlocks, req.effectiveBlockSize)
-				bufMask.SetNumBlocks(int(numBlocks))
-				req.bufferMap[blobberIdx] = bufMask
-			}
+			// Both paths use the chan-based buffer: its RequestChunk blocks
+			// on a channel and wakes the moment ANY slot is released. The
+			// mask-based buffer polled with a sys.Sleep per retry, which
+			// serialized the whole pipeline once the initial sz slots were
+			// consumed (the in-order writer frees one slot at a time, so
+			// every subsequent batch ate >=1 poll cycle: measured
+			// ~17 MB/s steady-state on a streamed whole-file download vs
+			// ~286 MB/s on the same data fetched as 16 MiB chunks).
+			// writerAt (local-file) downloads already used this path; the
+			// streaming/pipe path (S3 GET to an HTTP response, /internal/stream
+			// for NFS) used the mask and capped at the poll rate for files
+			// >~103 MiB. Small objects (warp GET 100 MiB) never hit the poll,
+			// which is why S3 GET benchmarks looked healthy.
+			req.bufferMap[blobberIdx] = zboxutil.NewDownloadBufferWithChan(sz, bufBlocks, req.effectiveBlockSize)
 		}
 	}
 	// reset mask to number of active blobbers, not it denotes index of download queue and not blobber index
