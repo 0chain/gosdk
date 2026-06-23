@@ -83,10 +83,13 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 			var req *fasthttp.Request
 			for i := 0; i < 3; i++ {
 				req, err = zboxutil.NewFastUploadRequest(
-					plaintextBlobberWriteURL(sb.blobber.Baseurl), su.allocationObj.ID, su.allocationObj.Tx, dataBuffers[ind].Bytes(), su.httpMethod)
+					sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, dataBuffers[ind].Bytes(), su.httpMethod)
 				if err != nil {
 					return err
 				}
+				// Sign over the registered URL (done in NewFastUploadRequest), then
+				// retarget the connection to the plaintext :port. ZUS_BLOBBER_WRITE_HTTP.
+				rewriteFastReqURIPlaintext(req, blobberWriteHTTPPort)
 
 				req.Header.Add("Content-Type", contentSlice[ind])
 

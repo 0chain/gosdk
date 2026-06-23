@@ -147,11 +147,13 @@ func (req *CommitRequest) commitBlobber() (err error) {
 				l.Logger.Error("Creating form writer failed: ", err)
 				return
 			}
-			httpreq, err := zboxutil.NewCommitRequest(plaintextBlobberWriteURL(req.blobber.Baseurl), req.allocationID, req.allocationTx, body)
+			httpreq, err := zboxutil.NewCommitRequest(req.blobber.Baseurl, req.allocationID, req.allocationTx, body)
 			if err != nil {
 				l.Logger.Error("Error creating commit req: ", err)
 				return
 			}
+			// Sign over the registered URL, then retarget to plaintext :port.
+			rewriteHTTPReqURLPlaintext(httpreq, blobberWriteHTTPPort)
 			httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
 			reqCtx, ctxCncl := context.WithTimeout(context.Background(), time.Second*60)
 			resp, err = zboxutil.Client.Do(httpreq.WithContext(reqCtx))

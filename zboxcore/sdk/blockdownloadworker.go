@@ -35,16 +35,21 @@ const (
 // on TLS decrypt + per-record read syscalls + buffer copies (Reed-Solomon erasure
 // was ~2%); the blobber already serves the identical router on its --port HTTP
 // listener (Caddy merely proxies to it), reachable VPC-wide. Measured READ win:
-// +40% S3 GET, +20% NFS read on a 4-vCPU gateway. Signatures are over
-// allocationTx not the URL, so the scheme/port rewrite is safe; the blobber does
-// not validate Host. Intended only for intra-VPC, erasure-coded clusters.
+// +40% S3 GET, +20% NFS read on a 4-vCPU gateway. Intended only for intra-VPC,
+// erasure-coded clusters; the blobber does not validate Host.
 //
-// READ (download) and WRITE (upload+commit) are gated SEPARATELY on purpose:
-// ZUS_BLOBBER_HTTP enables the read path; ZUS_BLOBBER_WRITE_HTTP the write path.
-// The write path is OFF by default because the blobber's direct :5051 listener
-// resets large POST upload bodies mid-send ("broken pipe") — Caddy:443 masks this
-// by buffering the request body before forwarding to the same :5051. Until the
-// blobber accepts direct streamed uploads, leave writes on TLS (Caddy).
+// SIGNATURE CAVEAT (the reason read and write differ): the gosdk V2 client
+// signature is Sign(Hash(allocation + baseURL)) and the blobber verifies it as
+// allocation + node.Self.GetURLBase() — its OWN REGISTERED URL (https://host). So
+// the request must be SIGNED over the registered URL even when CONNECTING to the
+// plaintext :port. The read/download path rewrites the base URL BEFORE signing,
+// which signs over the wrong URL — harmless because downloads don't enforce this
+// V2 sig. Uploads/commits DO enforce it (verifySignatureFromRequest in WriteFile),
+// so the write path must sign over the original URL and rewrite only the request
+// URI (the connection target) AFTER the signature header is set — that's what
+// rewriteFastReqURIPlaintext / rewriteHTTPReqURLPlaintext below do.
+//
+// READ (ZUS_BLOBBER_HTTP) and WRITE (ZUS_BLOBBER_WRITE_HTTP) are gated separately.
 var (
 	blobberHTTPPort      = strings.TrimSpace(os.Getenv("ZUS_BLOBBER_HTTP"))
 	blobberWriteHTTPPort = strings.TrimSpace(os.Getenv("ZUS_BLOBBER_WRITE_HTTP"))
@@ -65,15 +70,42 @@ func rewritePlaintextURL(baseURL, port string) string {
 	return "http://" + host + ":" + port
 }
 
-// plaintextBlobberURL rewrites for the READ/download path (ZUS_BLOBBER_HTTP).
+// plaintextBlobberURL rewrites the base URL for the READ/download path BEFORE
+// signing (ZUS_BLOBBER_HTTP). Safe only because downloads don't enforce the V2
+// sig; do NOT use this on the write path (see SIGNATURE CAVEAT above).
 func plaintextBlobberURL(baseURL string) string {
 	return rewritePlaintextURL(baseURL, blobberHTTPPort)
 }
 
-// plaintextBlobberWriteURL rewrites for the WRITE/upload+commit path
-// (ZUS_BLOBBER_WRITE_HTTP); off by default — see the note above.
-func plaintextBlobberWriteURL(baseURL string) string {
-	return rewritePlaintextURL(baseURL, blobberWriteHTTPPort)
+// rewriteFastReqURIPlaintext retargets a fully-built fasthttp request to the
+// blobber's plaintext :port listener AFTER its V2 signature header is set, so the
+// signature stays over the original (registered) blobber URL that the blobber
+// reconstructs in verifySignatureFromRequest. Used by the WRITE path.
+func rewriteFastReqURIPlaintext(req *fasthttp.Request, port string) {
+	if port == "" {
+		return
+	}
+	u := req.URI()
+	if string(u.Scheme()) != "https" {
+		return
+	}
+	host := string(u.Host())
+	if i := strings.IndexByte(host, ':'); i >= 0 {
+		host = host[:i]
+	}
+	u.SetScheme("http")
+	u.SetHost(host + ":" + port)
+}
+
+// rewriteHTTPReqURLPlaintext is the net/http analog (commit request).
+func rewriteHTTPReqURLPlaintext(req *http.Request, port string) {
+	if port == "" || req.URL == nil || req.URL.Scheme != "https" {
+		return
+	}
+	host := req.URL.Hostname()
+	req.URL.Scheme = "http"
+	req.URL.Host = host + ":" + port
+	req.Host = req.URL.Host
 }
 
 type BlockDownloadRequest struct {
