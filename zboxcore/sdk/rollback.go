@@ -433,6 +433,12 @@ func (a *Allocation) collectVersionMap() ([]BlobberStatus, map[int64][]*Rollback
 	}
 
 	versionMap := make(map[int64][]*RollbackBlobber)
+	// consensusThreshold must match the upload consensus (getConsensuses, which
+	// honours GOSDK_UPLOAD_CONSENSUS) — NOT a.DataShards. Otherwise a write that
+	// reached only DataShards blobbers (e.g. 2 of 3 under "all") is wrongly
+	// marked consensusReached, so CheckAllocStatus early-returns Commit and never
+	// rolls the minority back, leaving a permanent version-split wedge.
+	_, consensusThreshold := a.getConsensuses()
 	var (
 		consensusReached bool
 		latestVersion    int64
@@ -451,7 +457,7 @@ func (a *Allocation) collectVersionMap() ([]BlobberStatus, map[int64][]*Rollback
 			versionMap[version] = make([]*RollbackBlobber, 0)
 		}
 		versionMap[version] = append(versionMap[version], rb)
-		if len(versionMap[version]) >= a.DataShards && version == latestVersion {
+		if len(versionMap[version]) >= consensusThreshold && version == latestVersion {
 			consensusReached = true
 		}
 	}
