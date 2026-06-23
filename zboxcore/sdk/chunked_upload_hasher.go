@@ -11,6 +11,7 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/util"
+	"github.com/cespare/xxhash/v2"
 )
 
 // GOSDK_SKIP_ACTUAL_FILE_HASH=1 replaces the whole-file ActualHash md5 with
@@ -51,11 +52,36 @@ func newActualFileHasher() hash.Hash {
 // path (12-19% of gateway cycles). Default off.
 var skipDataHash = os.Getenv("GOSDK_SKIP_DATA_HASH") == "1"
 
+// GOSDK_DATA_HASH selects the per-shard DataHash algorithm: "md5" (default,
+// legacy) or "xxh3"/"xxhash" (xxHash64, SIMD, ~20x md5). The DataHash is a
+// NON-adversarial content/corruption check — the gateway computes it, the
+// blobber recomputes + enforces it at commit. The adversarial integrity (the
+// challenge proofs = validation_root + fixed_merkle_root, and the BLS
+// WriteMarker signature) is computed separately and is NOT touched here, so a
+// fast non-cryptographic hash is safe for DataHash. The blobber must run the
+// matching BLOBBER_DATA_HASH; the per-file hash-type is carried so commit-time
+// re-verify and challenge re-hash pick the right algorithm (see dataHashName).
+var dataHashAlgo = os.Getenv("GOSDK_DATA_HASH")
+
+// dataHashName is the on-the-wire/stored algo tag for the active DataHash, used
+// to stamp each file so the blobber re-verifies with the matching algorithm.
+func dataHashName() string {
+	switch dataHashAlgo {
+	case "xxh3", "xxhash", "xxh":
+		return "xxh3"
+	}
+	return "md5"
+}
+
 func newBlockHasher() hash.Hash {
 	if skipDataHash {
 		h := &nopMD5{}
 		_, _ = rand.Read(h.sum[:])
 		return h
+	}
+	switch dataHashAlgo {
+	case "xxh3", "xxhash", "xxh":
+		return xxhash.New()
 	}
 	return md5.New()
 }
