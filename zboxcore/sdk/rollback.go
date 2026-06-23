@@ -247,7 +247,16 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, []BlobberStatus, error) {
 		return Broken, blobberRes, err
 	}
 
-	req := a.DataShards
+	// req is the number of blobbers that must agree on the latest version for
+	// it to be accepted as the truth (laggards repaired forward). It MUST match
+	// the upload consensus threshold (getConsensuses, which honours
+	// GOSDK_UPLOAD_CONSENSUS): under "all" a write that reached only DataShards
+	// blobbers is NOT consensus and must be rolled BACK, not treated as truth.
+	// Using a.DataShards here regardless of the upload mode let a 2-of-3 partial
+	// commit (under consensus=all) be mis-resolved as repair-forward — which
+	// never completes for a metadata-only version (start-repair finds 0 files)
+	// — leaving the allocation permanently wedged at consensus_not_met.
+	_, req := a.getConsensuses()
 
 	if len(versionMap) == 0 {
 		return Commit, blobberRes, nil
