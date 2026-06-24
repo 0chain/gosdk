@@ -127,6 +127,25 @@ func (h *NodeHolder) Healthy() (res []string) {
 	return h.nodes[:h.consensus]
 }
 
+// HealthyVerify returns the sharder set to use for transaction confirmation (and
+// other reads that must reflect the chain tip). It prefers the LFB-filtered
+// in-sync set (HealthyByLFB) so a sharder that has fallen behind the chain tip
+// cannot sink a confirmation while in-sync sharders exist — the weight-ranked
+// Healthy() set is sync-unaware and will happily keep an always-reachable but
+// lagging sharder. When LFB data is unavailable HealthyByLFB degrades to a
+// single highest-weighted node; in that case (len <= 1) we fall back to the
+// broader Healthy() set (then All()) so confirmation always has multiple
+// sharders to try and the result is never empty.
+func (h *NodeHolder) HealthyVerify() []string {
+	if lfb := h.HealthyByLFB(); len(lfb) > 1 {
+		return lfb
+	}
+	if hh := h.Healthy(); len(hh) > 0 {
+		return hh
+	}
+	return h.All()
+}
+
 func (h *NodeHolder) All() (res []string) {
 	h.guard.Lock()
 	defer h.guard.Unlock()
@@ -351,7 +370,7 @@ func (h *NodeHolder) GetBalanceFieldFromSharders(clientID, name string) (int64, 
 	result := make(chan *util.GetResponse)
 	defer close(result)
 	// getMinShardersVerify
-	numSharders := len(h.Healthy())
+	numSharders := len(h.HealthyVerify())
 	h.QueryFromSharders(numSharders, fmt.Sprintf("%v%v", GET_BALANCE, clientID), result)
 
 	consensusMaps := util.NewHttpConsensusMaps(consensusThresh)
@@ -406,9 +425,19 @@ func (h *NodeHolder) QueryFromSharders(numSharders int, query string,
 func (h *NodeHolder) QueryFromShardersContext(ctx context.Context, numSharders int,
 	query string, result chan *util.GetResponse) {
 
-	sharders := h.Healthy()
+	// Query the in-sync (LFB-filtered) sharder set so a read never lands only on
+	// sharders that have fallen behind the chain tip. HealthyVerify falls back to
+	// the weight-ranked Healthy() set when LFB data is unavailable, so it is never
+	// empty. Callers pass numSharders (and wait for that many responses); if the
+	// in-sync set is smaller, send nil for the shortfall so the caller's response
+	// loop always completes, and never slice past the available set (no panic).
+	sharders := util.Shuffle(h.HealthyVerify())
 
-	for _, sharder := range util.Shuffle(sharders)[:numSharders] {
+	for i := 0; i < numSharders; i++ {
+		if i >= len(sharders) {
+			result <- nil
+			continue
+		}
 		go func(sharderurl string) {
 			logger.Logger.Info("Query from ", sharderurl+query)
 			url := fmt.Sprintf("%v%v", sharderurl, query)
@@ -434,7 +463,7 @@ func (h *NodeHolder) QueryFromShardersContext(ctx context.Context, numSharders i
 			}
 
 			result <- res
-		}(sharder)
+		}(sharders[i])
 	}
 }
 
@@ -443,7 +472,7 @@ func (h *NodeHolder) GetBlockByRound(ctx context.Context, numSharders int, round
 	var result = make(chan *util.GetResponse, numSharders)
 	defer close(result)
 
-	numSharders = len(h.Healthy()) // overwrite, use all
+	numSharders = len(h.HealthyVerify()) // overwrite, use all
 	h.QueryFromShardersContext(ctx, numSharders,
 		fmt.Sprintf("%sround=%d&content=full,header", GET_BLOCK_INFO, round),
 		result)

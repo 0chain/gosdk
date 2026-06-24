@@ -1162,7 +1162,7 @@ func (t *Transaction) Verify() error {
 		t.txn.CreationDate = int64(common.Now())
 	}
 
-	tq, err := NewTransactionQuery(Sharders.Healthy(), _config.chain.Miners)
+	tq, err := NewTransactionQuery(Sharders.HealthyVerify(), _config.chain.Miners)
 	if err != nil {
 		logging.Error(err)
 		return err
@@ -1257,7 +1257,7 @@ func GetLatestFinalized(ctx context.Context, numSharders int) (b *block.Header, 
 	var result = make(chan *util.GetResponse, numSharders)
 	defer close(result)
 
-	numSharders = len(Sharders.Healthy()) // overwrite, use all
+	numSharders = len(Sharders.HealthyVerify()) // overwrite, use all
 	Sharders.QueryFromShardersContext(ctx, numSharders, GET_LATEST_FINALIZED, result)
 
 	var (
@@ -1305,7 +1305,7 @@ func GetLatestFinalizedMagicBlock(ctx context.Context, numSharders int) (m *bloc
 	var result = make(chan *util.GetResponse, numSharders)
 	defer close(result)
 
-	numSharders = len(Sharders.Healthy()) // overwrite, use all
+	numSharders = len(Sharders.HealthyVerify()) // overwrite, use all
 	Sharders.QueryFromShardersContext(ctx, numSharders, GET_LATEST_FINALIZED_MAGIC_BLOCK, result)
 
 	var (
@@ -1356,7 +1356,7 @@ func GetChainStats(ctx context.Context) (b *block.ChainStats, err error) {
 	var result = make(chan *util.GetResponse, 1)
 	defer close(result)
 
-	var numSharders = len(Sharders.Healthy()) // overwrite, use all
+	var numSharders = len(Sharders.HealthyVerify()) // overwrite, use all
 	Sharders.QueryFromShardersContext(ctx, numSharders, GET_CHAIN_STATS, result)
 	var rsp *util.GetResponse
 	for i := 0; i < numSharders; i++ {
@@ -1439,7 +1439,7 @@ func GetMagicBlockByNumber(ctx context.Context, numSharders int, number int64) (
 	var result = make(chan *util.GetResponse, numSharders)
 	defer close(result)
 
-	numSharders = len(Sharders.Healthy()) // overwrite, use all
+	numSharders = len(Sharders.HealthyVerify()) // overwrite, use all
 	Sharders.QueryFromShardersContext(ctx, numSharders,
 		fmt.Sprintf("%smagic_block_number=%d", GET_MAGIC_BLOCK_INFO, number),
 		result)

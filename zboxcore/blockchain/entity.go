@@ -160,7 +160,7 @@ func GetAllSharders() []string {
 
 // GetSharders get healthy sharders
 func GetSharders() []string {
-	return Sharders.Healthy()
+	return Sharders.HealthyVerify()
 }
 
 // GetMiners get miners

@@ -527,7 +527,7 @@ func (tq *TransactionQuery) getFastConfirmation(ctx context.Context, txnHash str
 
 func GetInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback) {
 
-	tq, err := NewTransactionQuery(util.Shuffle(Sharders.Healthy()), []string{})
+	tq, err := NewTransactionQuery(util.Shuffle(Sharders.HealthyVerify()), []string{})
 	if err != nil {
 		cb.OnInfoAvailable(op, StatusError, "", err.Error())
 		return
@@ -549,7 +549,7 @@ func GetInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback) {
 
 func GetInfoFromAnySharder(urlSuffix string, op int, cb GetInfoCallback) {
 
-	tq, err := NewTransactionQuery(util.Shuffle(Sharders.Healthy()), []string{})
+	tq, err := NewTransactionQuery(util.Shuffle(Sharders.HealthyVerify()), []string{})
 	if err != nil {
 		cb.OnInfoAvailable(op, StatusError, "", err.Error())
 		return
