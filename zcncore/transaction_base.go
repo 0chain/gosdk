@@ -567,7 +567,7 @@ func getBlockHeaderFromTransactionConfirmation(txnHash string, cfmBlock map[stri
 }
 
 func getBlockInfoByRound(round int64, content string) (*blockHeader, error) {
-	numSharders := len(Sharders.Healthy()) // overwrite, use all
+	numSharders := len(Sharders.HealthyVerify()) // overwrite, use all
 	resultC := make(chan *util.GetResponse, numSharders)
 	Sharders.QueryFromSharders(numSharders, fmt.Sprintf("%vround=%v&content=%v", GET_BLOCK_INFO, round, content), resultC)
 	var (
