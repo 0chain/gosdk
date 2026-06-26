@@ -1239,10 +1239,10 @@ func GetAllocationUpdates(allocation *Allocation) error {
 	return nil
 }
 
-// SetNumBlockDownloads - set the number of block downloads, needs to be between 1 and 500 (inclusive). Default is 20.
+// SetNumBlockDownloads - set the number of block downloads, needs to be between 1 and 16384 (inclusive). Default is 20.
 //   - num: the number of block downloads
 func SetNumBlockDownloads(num int) {
-	if num > 0 && num <= 500 {
+	if num > 0 && num <= 16384 {
 		numBlockDownloads = num
 	}
 }
