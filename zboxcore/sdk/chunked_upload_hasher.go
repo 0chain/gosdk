@@ -4,12 +4,22 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"hash"
+	"os"
 	"sync"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/util"
 )
+
+// skipActualFileHash, when GOSDK_SKIP_ACTUAL_FILE_HASH=1, skips the whole-file
+// content MD5 (the S3 ETag / FileMeta.ActualHash). The blobber does NOT verify
+// ActualHash (only the per-block DataHash is recomputed + enforced), so skipping
+// it is safe and removes one of the two full-payload MD5 passes — ~half the
+// upload hashing CPU (profiled at 52% of the gateway on PUT). The ETag becomes a
+// fixed placeholder, so enable only where the real content-MD5 ETag isn't needed
+// (FSAL streaming / bulk S3 PUT).
+var skipActualFileHash = os.Getenv("GOSDK_SKIP_ACTUAL_FILE_HASH") == "1"
 
 // Hasher interface to gather all hasher related functions.
 // A hasher is used to calculate the hash of a file, fixed merkle tree, and validation merkle tree.
@@ -57,6 +67,11 @@ func CreateFileHasher() Hasher {
 }
 
 func (h *hasher) GetFileHash() (string, error) {
+	// Fixed placeholder ETag when the content MD5 was skipped (see
+	// skipActualFileHash). Distinct from md5-of-empty so it's recognisable.
+	if skipActualFileHash {
+		return "00000000000000000000000000000000", nil
+	}
 	if h == nil {
 		return "", errors.Throw(constants.ErrInvalidParameter, "h")
 	}
@@ -69,6 +84,11 @@ func (h *hasher) GetFileHash() (string, error) {
 
 // WriteToFile write bytes to file hasher
 func (h *hasher) WriteToFile(buf []byte) error {
+	// Skip the whole-file content MD5 entirely (no per-byte hashing) when
+	// GOSDK_SKIP_ACTUAL_FILE_HASH=1 — the blobber never verifies ActualHash.
+	if skipActualFileHash {
+		return nil
+	}
 	if h == nil {
 		return errors.Throw(constants.ErrInvalidParameter, "h")
 	}
