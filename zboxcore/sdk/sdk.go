@@ -83,8 +83,14 @@ var (
 	allocationCacheDirMu sync.RWMutex
 )
 
-func SetSingleClietnMode(mode bool) {
+func SetSingleClientMode(mode bool) {
 	singleClientMode = mode
+}
+
+// Deprecated: SetSingleClietnMode is a misspelled alias kept for back-compat;
+// use SetSingleClientMode.
+func SetSingleClietnMode(mode bool) {
+	SetSingleClientMode(mode)
 }
 
 func SetShouldVerifyHash(verify bool) {
