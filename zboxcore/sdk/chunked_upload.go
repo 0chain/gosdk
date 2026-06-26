@@ -308,26 +308,30 @@ func CreateChunkedUpload(
 }
 
 func calculateWorkersAndRequests(dataShards, totalShards, chunknumber int) (uploadWorkers int, uploadRequests int) {
-	if totalShards < 4 {
-		// Reverted to 4 after A/B: bumping to 8 made wait_ms p50
-		// 289 -> 806 (workers more idle, not less) and throughput
-		// flat at ~1050 MiB/s — confirming producer-side cap.
+	// Worker count scales with upload mode; HighModeWorkers is tunable at runtime
+	// via the gateway's ZUS_UPLOAD_WORKERS env (sdk.SetHighModeWorkers). The old
+	// totalShards<4 branch pinned small-shard clusters (e.g. 2+1) to 4 workers,
+	// capping parallel chunk uploads — removed so they use the gateway's idle cores.
+	switch CurrentMode {
+	case UploadModeLow:
+		uploadWorkers = 1
+	case UploadModeMedium:
+		uploadWorkers = 2
+	case UploadModeHigh:
+		uploadWorkers = HighModeWorkers
+	default:
 		uploadWorkers = 4
-	} else {
-		switch CurrentMode {
-		case UploadModeLow:
-			uploadWorkers = 1
-		case UploadModeMedium:
-			uploadWorkers = 2
-		case UploadModeHigh:
-			uploadWorkers = HighModeWorkers
-		}
 	}
 
 	if chunknumber*dataShards < 640 && !IsWasm {
 		uploadRequests = 4
 	} else {
 		uploadRequests = 2
+	}
+	// Keep the in-flight channel at least as deep as the worker count so a high
+	// ZUS_UPLOAD_WORKERS isn't starved by a shallow (2-4) request buffer.
+	if uploadRequests < uploadWorkers {
+		uploadRequests = uploadWorkers
 	}
 	return
 }
