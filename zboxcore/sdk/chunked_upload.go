@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -245,7 +246,11 @@ func CreateChunkedUpload(
 	su.fileErasureEncoder, err = reedsolomon.New(
 		su.allocationObj.DataShards,
 		su.allocationObj.ParityShards,
-		reedsolomon.WithAutoGoroutines(int(su.chunkSize)),
+		// WithAutoGoroutines(chunkSize) barely parallelized the encode at 64KiB
+		// chunks (it derives maxGoroutines from shardSize/perRound, which collapses
+		// to 1-2 for small chunks), leaving the upload producer CPU-bound on a
+		// single core while other vCPU sat idle. Fan the encode across all cores.
+		reedsolomon.WithMaxGoroutines(runtime.NumCPU()),
 	)
 	if err != nil {
 		return nil, err
