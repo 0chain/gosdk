@@ -1085,11 +1085,13 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 
 		for ; i < len(operations); i++ {
 			if len(mo.operations) >= MultiOpBatchSize {
+				l.Logger.Info(fmt.Sprintf("[DMO-DBG] BREAK-1087 batchSz=%d nops=%d i=%d len=%d", MultiOpBatchSize, len(mo.operations), i, len(operations)))
 				// max batch size reached, commit
 				connectionID = zboxutil.NewConnectionId()
 				break
 			}
 			op := operations[i]
+			l.Logger.Info(fmt.Sprintf("[DMO-DBG] inner i=%d opType=%v path=%q batchSz=%d", i, op.OperationType, op.RemotePath, MultiOpBatchSize))
 			if !op.PreservePath {
 				op.RemotePath = strings.TrimSpace(op.RemotePath)
 				if op.FileMeta.RemotePath != "" {
@@ -1101,6 +1103,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 			parentPaths := GenerateParentPaths(remotePath)
 
 			if _, ok := previousPaths[remotePath]; ok {
+				l.Logger.Info(fmt.Sprintf("[DMO-DBG] BREAK-1103 conflict path=%q", remotePath))
 				// conflict found, commit
 				connectionID = zboxutil.NewConnectionId()
 				break
