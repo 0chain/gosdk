@@ -1151,12 +1151,15 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 				return err
 			}
 
+			l.Logger.Info(fmt.Sprintf("[DMO-DBG] opType=%v newConnID=%q connID=%q len_ops=%d i=%d nops=%d", op.OperationType, newConnectionID, connectionID, len(operations), i, len(mo.operations)))
 			if newConnectionID != "" && newConnectionID != connectionID {
+				l.Logger.Info(fmt.Sprintf("[DMO-DBG] BREAK newConnID-mismatch newConnID=%q connID=%q", newConnectionID, connectionID))
 				connectionID = newConnectionID
 				break
 			}
 			err = operation.Verify(a)
 			if err != nil {
+				l.Logger.Info(fmt.Sprintf("[DMO-DBG] VERIFY-ERR %v", err))
 				return err
 			}
 
@@ -1167,6 +1170,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 			mo.operations = append(mo.operations, operation)
 		}
 
+		l.Logger.Info(fmt.Sprintf("[DMO-DBG] after-loop nops=%d", len(mo.operations)))
 		if len(mo.operations) > 0 {
 			err := mo.Process()
 			if err != nil {
