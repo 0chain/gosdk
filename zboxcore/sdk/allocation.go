@@ -349,6 +349,24 @@ func SetMultiOpBatchSize(size int) {
 	MultiOpBatchSize = size
 }
 
+// multiOpBatchLimit returns the default max operations per DoMultiOperation
+// write-marker commit when MultiOpBatchSize is not set to a positive value.
+// It scales inversely with object size (~10 GiB byte budget per commit): large
+// objects commit in small batches; tiny objects batch en masse to amortize the
+// fixed per-commit cost. Used as the fallback so a non-positive MultiOpBatchSize
+// (e.g. the gateway's "unbounded" max_batch_size=-1) never collapses the batch
+// to zero ops.
+func multiOpBatchLimit(size int64) int {
+	switch {
+	case size >= 100*1024*1024: // >= 100 MiB
+		return 100
+	case size >= 10*1024*1024: // >= 10 MiB
+		return 1000
+	default: // < 10 MiB (incl. ~1 MiB)
+		return 10000
+	}
+}
+
 func SetWasm() {
 	IsWasm = true
 	BatchSize = 4
@@ -1084,7 +1102,15 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest, opts ...Mul
 		}
 
 		for ; i < len(operations); i++ {
-			if len(mo.operations) >= MultiOpBatchSize {
+			// A non-positive MultiOpBatchSize (e.g. the gateway passing
+			// max_batch_size=-1 for an "unbounded" byte-batch) must NOT be treated
+			// as "always full" here — that breaks before any op is appended,
+			// yielding empty commits. Fall back to a size-tiered default.
+			batchLimit := MultiOpBatchSize
+			if batchLimit <= 0 {
+				batchLimit = multiOpBatchLimit(operations[i].FileMeta.ActualSize)
+			}
+			if len(mo.operations) >= batchLimit {
 				// max batch size reached, commit
 				connectionID = zboxutil.NewConnectionId()
 				break
