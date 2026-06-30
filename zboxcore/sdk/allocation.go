@@ -1756,6 +1756,7 @@ func (a *Allocation) ListDirFromAuthTicket(authTicket string, lookupHash string,
 	if a.MultiWalletSupportKey != "" {
 		listReq.MultiWalletSupportKey = a.MultiWalletSupportKey
 	}
+	listReq.listOnly = true // request children (files + dirs), not just metadata
 	for _, opt := range opts {
 		opt(listReq)
 	}
