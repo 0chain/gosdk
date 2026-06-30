@@ -1645,6 +1645,7 @@ func (a *Allocation) ListDirFromAuthTicket(authTicket string, lookupHash string,
 	listReq.ctx = a.ctx
 	listReq.remotefilepathhash = lookupHash
 	listReq.authToken = at
+	listReq.listOnly = true // request children (files + dirs), not just metadata
 	for _, opt := range opts {
 		opt(listReq)
 	}
