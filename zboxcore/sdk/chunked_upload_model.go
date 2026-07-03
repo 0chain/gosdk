@@ -17,6 +17,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/google/uuid"
 	"github.com/klauspost/reedsolomon"
+	"github.com/valyala/bytebufferpool"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -58,6 +59,10 @@ type ChunkedUpload struct {
 	chunkSize int64
 	// chunkNumber the number of chunks in a http upload request. 100 is default value
 	chunkNumber int
+
+	// hashVersion 2 enables the segmented tree hash + parallel producer
+	// (SetUploadHashVersion). Forced back to 1 for encrypted or wasm uploads.
+	hashVersion int
 
 	// shardUploadedSize how much bytes a shard has. it is original size
 	shardUploadedSize int64
@@ -166,6 +171,12 @@ type UploadFormData struct {
 	Size              int64  `json:"size"`                        // total size of shard
 	DataHash          string `json:"data_hash,omitempty"`         // hash of shard data (encoded,encrypted)
 	DataHashSignature string `json:"data_hash_signature,omitempty"`
+	// HashVersion 2 = segmented tree hash (leaf md5 per ChunkSize bytes of
+	// the shard, root = md5 of the concatenated 16-byte leaf digests).
+	// Absent/0 = legacy streaming md5. The blobber picks its CommitHasher
+	// mode from this field, so both formats stay accepted (enterprise mode:
+	// no challenge protocol).
+	HashVersion int `json:"hash_version,omitempty"`
 }
 
 // UploadProgress progress of upload
@@ -266,4 +277,11 @@ type batchChunksData struct {
 
 	fileShards      []blobberShards
 	thumbnailShards blobberShards
+
+	// HashVersion 2 pipeline fields:
+	// chunks keeps the per-chunk view (RawData + Fragments) for the parallel
+	// encode+hash stage; buf is the detached round buffer backing them —
+	// returned to uploadPool once the round's forms are built.
+	chunks []*ChunkData
+	buf    *bytebufferpool.ByteBuffer
 }

@@ -84,10 +84,22 @@ func (b *chunkedUploadFormBuilder) Build(
 	useRaw := useRawUpload()
 	uploadMetaSlice := make([]string, 0, numBodies)
 
+	// HashVersion 2 (TreeHasher): fragment leaf digests were already folded
+	// by the parallel producer stage — Build does NO per-byte hashing, only
+	// memcpy into the request bodies. hash_version rides in EVERY body's
+	// meta so the blobber picks its CommitHasher mode on whichever request
+	// arrives first.
+	_, isTreeHash := hasher.(*TreeHasher)
+	hashVersion := 0
+	if isTreeHash {
+		hashVersion = 2
+	}
+
 	formData := UploadFormData{
 		ConnectionID: connectionID,
 		Filename:     fileMeta.RemoteName,
 		Path:         fileMeta.RemotePath,
+		HashVersion:  hashVersion,
 
 		ActualSize: fileMeta.ActualSize,
 
@@ -150,9 +162,11 @@ func (b *chunkedUploadFormBuilder) Build(
 				return res, err
 			}
 
-			err = hasher.WriteToBlockHasher(chunkBytes)
-			if err != nil {
-				return res, err
+			if !isTreeHash {
+				err = hasher.WriteToBlockHasher(chunkBytes)
+				if err != nil {
+					return res, err
+				}
 			}
 
 			metadata.FileBytesLen += len(chunkBytes)

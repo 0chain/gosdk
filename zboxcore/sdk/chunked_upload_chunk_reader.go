@@ -35,6 +35,12 @@ type ChunkedUploadChunkReader interface {
 	Reset()
 	//Release buffer
 	Release()
+	// DetachBuffer hands ownership of the current round buffer to the caller
+	// (HashVersion 2 pipeline): the next Next() acquires a fresh buffer, so a
+	// look-ahead read can proceed while the detached round is still being
+	// encoded/hashed/uploaded. Caller must return it via uploadPool.Put once
+	// the round's fragments are no longer referenced.
+	DetachBuffer() *bytebufferpool.ByteBuffer
 }
 
 // chunkedUploadChunkReader read chunk bytes from io.Reader. see detail on https://github.com/0chain/blobber/wiki/Protocols#what-is-fixedmerkletree
@@ -86,10 +92,15 @@ type chunkedUploadChunkReader struct {
 	hasherError    error
 	hasherWG       sync.WaitGroup
 	closeOnce      sync.Once
+
+	// hashVersion 2 = segmented tree hash (see TreeHasher): Next() only
+	// reads + Splits; erasure Encode and all hashing move to the parallel
+	// producer stage (chunked_upload_parallel.go).
+	hashVersion int
 }
 
 // createChunkReader create ChunkReader instance
-func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards, parityShards int, encryptOnUpload bool, uploadMask zboxutil.Uint128, erasureEncoder reedsolomon.Encoder, encscheme encryption.EncryptionScheme, hasher Hasher, chunkNumber int) (ChunkedUploadChunkReader, error) {
+func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards, parityShards int, encryptOnUpload bool, uploadMask zboxutil.Uint128, erasureEncoder reedsolomon.Encoder, encscheme encryption.EncryptionScheme, hasher Hasher, chunkNumber int, hashVersion int) (ChunkedUploadChunkReader, error) {
 
 	if chunkSize <= 0 {
 		return nil, errors.Throw(constants.ErrInvalidParameter, "chunkSize: "+strconv.FormatInt(chunkSize, 10))
@@ -121,6 +132,7 @@ func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards, 
 		hasherDataChan:  make(chan []byte, 3*chunkNumber),
 		hasherWG:        sync.WaitGroup{},
 		chunkNumber:     int64(chunkNumber),
+		hashVersion:     hashVersion,
 	}
 
 	if r.encryptOnUpload {
@@ -133,7 +145,9 @@ func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards, 
 
 	r.chunkDataSizePerRead = r.chunkDataSize * int64(dataShards)
 	r.totalChunkDataSizePerRead = r.chunkDataSize * int64(dataShards+parityShards)
-	if CurrentMode == UploadModeHigh {
+	// v2 computes file leaves in the parallel stage — no streaming hashData
+	// goroutine (it would race with per-round buffer detach anyway).
+	if CurrentMode == UploadModeHigh && r.hashVersion != 2 {
 		r.hasherWG.Add(1)
 		go r.hashData()
 	}
@@ -153,6 +167,10 @@ type ChunkData struct {
 	FragmentSize int64
 	// Fragments data shared for bloobers
 	Fragments [][]byte
+	// RawData (HashVersion 2 only) is the un-encoded chunk read — the bytes
+	// backing the data fragments, trimmed to ReadSize. The parallel stage
+	// hashes it into the file leaf for this chunk index.
+	RawData []byte
 }
 
 // func (r *chunkReader) GetChunkDataSize() int64 {
@@ -234,6 +252,22 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 
 	if r.hasherError != nil {
 		return chunk, r.hasherError
+	}
+
+	if r.hashVersion == 2 {
+		// Parallel-producer path: no streaming hash (file leaf is computed
+		// by the stage workers) and no Encode yet (parity is computed by the
+		// stage workers, per chunk, in parallel). Split is cheap slicing into
+		// this round's buffer.
+		fragments, err := r.erasureEncoder.Split(chunkBytes)
+		if err != nil {
+			return nil, err
+		}
+		chunk.RawData = chunkBytes
+		chunk.Fragments = fragments
+		r.nextChunkIndex++
+		r.offset += r.totalChunkDataSizePerRead
+		return chunk, nil
 	}
 
 	if CurrentMode == UploadModeHigh {
@@ -332,6 +366,20 @@ func (r *chunkedUploadChunkReader) GetFileHash() (string, error) {
 func (r *chunkedUploadChunkReader) Release() {
 	if r.fileShardsDataBuffer != nil {
 		uploadPool.Put(r.fileShardsDataBuffer)
+		r.fileShardsDataBuffer = nil
+	}
+}
+
+func (r *chunkedUploadChunkReader) DetachBuffer() *bytebufferpool.ByteBuffer {
+	buf := r.fileShardsDataBuffer
+	r.fileShardsDataBuffer = nil
+	return buf
+}
+
+// releaseRoundBuffer returns a detached round buffer to the upload pool.
+func releaseRoundBuffer(buf *bytebufferpool.ByteBuffer) {
+	if buf != nil {
+		uploadPool.Put(buf)
 	}
 }
 

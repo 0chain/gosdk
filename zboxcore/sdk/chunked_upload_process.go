@@ -31,8 +31,16 @@ func (su *ChunkedUpload) createUploadProgress(connectionId string) {
 	su.progress.Blobbers = make([]*UploadBlobberStatus, su.allocationObj.DataShards+su.allocationObj.ParityShards)
 
 	for i := 0; i < len(su.progress.Blobbers); i++ {
+		var h Hasher
+		if su.hashVersion == 2 {
+			// v2: per-blobber DataHash = tree root over fragment leaf
+			// digests, folded by the parallel producer stage.
+			h = CreateTreeHasher()
+		} else {
+			h = CreateHasher(su.shardSize)
+		}
 		su.progress.Blobbers[i] = &UploadBlobberStatus{
-			Hasher: CreateHasher(su.shardSize),
+			Hasher: h,
 		}
 	}
 
@@ -47,6 +55,11 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 
 	//chunk has not be uploaded yet
 	if chunkEndIndex <= su.progress.ChunkIndex {
+		// v2: leaf digests were already folded by stageEncodeAndHash for
+		// this (resumed) round — no streaming re-hash needed here.
+		if su.hashVersion == 2 {
+			return nil
+		}
 		// Write data to hashers
 		for i, blobberShard := range fileShards {
 			hasher := su.blobbers[i].progress.Hasher

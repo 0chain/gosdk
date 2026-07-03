@@ -50,7 +50,41 @@ var (
 	CurrentMode                      = UploadModeMedium
 	shouldSaveProgress               = true
 	HighModeWorkers                  = 4
+
+	// uploadHashVersion selects the upload integrity format:
+	//   1 (default) — legacy streaming md5 ActualHash/DataHash (serial producer)
+	//   2           — segmented tree hash (TreeHasher) + parallel producer
+	//                 (chunked_upload_parallel.go). Requires blobbers that
+	//                 accept uploadMeta hash_version=2 (enterprise blobber).
+	uploadHashVersion = 1
+	// producerWorkers = per-file goroutines for the HashVersion-2 encode+hash
+	// stage (gateway env ZS3_PRODUCER_WORKERS via SetProducerWorkers).
+	producerWorkers = 4
 )
+
+// SetUploadHashVersion switches uploads to the given hash format (1 or 2).
+// Call once at startup; 2 must only be enabled against blobbers that support
+// hash_version=2 validation (enterprise blobber — no challenge protocol).
+func SetUploadHashVersion(v int) {
+	if v == 2 {
+		uploadHashVersion = 2
+	} else {
+		uploadHashVersion = 1
+	}
+}
+
+// GetUploadHashVersion returns the current upload hash format.
+func GetUploadHashVersion() int {
+	return uploadHashVersion
+}
+
+// SetProducerWorkers sets the per-file parallel producer worker count used by
+// HashVersion-2 uploads.
+func SetProducerWorkers(n int) {
+	if n > 0 {
+		producerWorkers = n
+	}
+}
 
 // DefaultChunkSize default chunk size for file and thumbnail
 // DefaultChunkSize is 64 KiB. A 256 KiB experiment (May 29) was neutral
@@ -229,8 +263,21 @@ func CreateChunkedUpload(
 
 	su.loadProgress()
 	su.shardSize = getShardSize(su.fileMeta.ActualSize, su.allocationObj.DataShards, su.encryptOnUpload)
+
+	// HashVersion 2 (segmented tree hash + parallel producer) is opted in
+	// globally via SetUploadHashVersion. Encrypted uploads keep v1 (fragment
+	// sizes change under encryption) and wasm has no parallel pipeline.
+	su.hashVersion = uploadHashVersion
+	if su.hashVersion == 2 && (su.encryptOnUpload || IsWasm) {
+		su.hashVersion = 1
+	}
+
 	if su.fileHasher == nil {
-		su.fileHasher = CreateFileHasher()
+		if su.hashVersion == 2 {
+			su.fileHasher = CreateTreeHasher()
+		} else {
+			su.fileHasher = CreateFileHasher()
+		}
 	}
 
 	// encrypt option has been changed. upload it from scratch
@@ -290,7 +337,7 @@ func CreateChunkedUpload(
 			},
 		}
 	}
-	cReader, err := createChunkReader(su.fileReader, fileMeta.ActualSize, int64(su.chunkSize), su.allocationObj.DataShards, su.allocationObj.ParityShards, su.encryptOnUpload, su.uploadMask, su.fileErasureEncoder, su.fileEncscheme, su.fileHasher, su.chunkNumber)
+	cReader, err := createChunkReader(su.fileReader, fileMeta.ActualSize, int64(su.chunkSize), su.allocationObj.DataShards, su.allocationObj.ParityShards, su.encryptOnUpload, su.uploadMask, su.fileErasureEncoder, su.fileEncscheme, su.fileHasher, su.chunkNumber, su.hashVersion)
 
 	if err != nil {
 		return nil, err
@@ -428,6 +475,13 @@ func (su *ChunkedUpload) process() error {
 	defer su.chunkReader.Release()
 	defer su.chunkReader.Close()
 	defer su.ctxCncl(nil)
+
+	if su.hashVersion == 2 {
+		// Parallel producer + segmented tree hash — see
+		// chunked_upload_parallel.go and PARALLEL_PRODUCER_TREE_HASH_DESIGN.md.
+		return su.processParallel()
+	}
+
 	for {
 
 		// INSTRUMENTATION (May 28): split per-batch time into read+erasure-encode
@@ -594,12 +648,21 @@ func (su *ChunkedUpload) readChunks(num int) (*batchChunksData, error) {
 				//blobber i
 				data.fileShards[i] = append(data.fileShards[i], v)
 			}
+			if su.hashVersion == 2 {
+				// keep the per-chunk view for the parallel encode+hash stage
+				data.chunks = append(data.chunks, chunk)
+			}
 		}
 
 		if chunk.IsFinal {
 			data.isFinal = true
 			break
 		}
+	}
+	if su.hashVersion == 2 {
+		// Each round owns its buffer so the look-ahead read of round N+1
+		// can't overwrite round N (the May-29 read-ahead correctness bug).
+		data.buf = su.chunkReader.DetachBuffer()
 	}
 	su.chunkReader.Reset()
 	return data, nil
