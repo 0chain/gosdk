@@ -417,6 +417,8 @@ func main() {
 
 				//split key
 				"splitKeys":     splitKeys,
+				"scryptEncrypt": scryptEncrypt,
+				"scryptDecrypt": scryptDecrypt,
 				"setWalletInfo": setWalletInfo,
 				"setAuthUrl":    setAuthUrl,
 
