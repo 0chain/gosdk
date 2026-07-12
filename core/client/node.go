@@ -130,6 +130,12 @@ const (
 	lfbMaxDrift     = 3                // sharders must be within 3 blocks of the highest LFB
 	lfbCacheTTL     = 10 * time.Second // how long before the LFB cache is considered stale
 	lfbQueryTimeout = 3 * time.Second
+	// Overall cap on collecting LFB responses. refreshLFBCache is synchronous
+	// (HealthyByLFB blocks on it), so waiting for a dead/unreachable sharder —
+	// e.g. a down mainnet sharder whose TCP connect hangs — stalls every SC read
+	// and recurs each cache TTL. Healthy sharders answer in well under a second;
+	// stop waiting for stragglers past this deadline and use whoever responded.
+	lfbCollectTimeout = 2 * time.Second
 )
 
 // HealthyByLFB returns the LFB-filtered sharder list.
@@ -222,17 +228,27 @@ func (h *NodeHolder) refreshLFBCache() {
 	var responding []sharderLFB
 	maxLFB := int64(0)
 
+	deadline := time.NewTimer(lfbCollectTimeout)
+	defer deadline.Stop()
+collect:
 	for i := 0; i < len(allNodes); i++ {
-		r := <-results
-		if r.err != nil {
-			logging.Debug(fmt.Sprintf("Sharder %s LFB check failed: %s", r.sharder, r.err.Error()))
-			h.Fail(r.sharder)
-			continue
-		}
-		responding = append(responding, sharderLFB{sharder: r.sharder, round: r.round})
-		h.Success(r.sharder)
-		if r.round > maxLFB {
-			maxLFB = r.round
+		select {
+		case r := <-results:
+			if r.err != nil {
+				logging.Debug(fmt.Sprintf("Sharder %s LFB check failed: %s", r.sharder, r.err.Error()))
+				h.Fail(r.sharder)
+				continue
+			}
+			responding = append(responding, sharderLFB{sharder: r.sharder, round: r.round})
+			h.Success(r.sharder)
+			if r.round > maxLFB {
+				maxLFB = r.round
+			}
+		case <-deadline.C:
+			// Dead/slow straggler(s) — stop waiting; the goroutines finish into
+			// the buffered channel and are harmlessly discarded.
+			logging.Debug("LFB refresh deadline hit — proceeding with responders so far")
+			break collect
 		}
 	}
 
