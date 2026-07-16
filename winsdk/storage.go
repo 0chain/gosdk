@@ -11,7 +11,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	l "github.com/0chain/gosdk/zboxcore/logger"
 	"os"
+	"path/filepath"
+	"strconv"
+	"sync"
 	"time"
 
 	"github.com/0chain/gosdk/core/common"
@@ -614,6 +618,144 @@ func DownloadSharedFileBlocks(localPath, authTicket *C.char, startBlock int64, e
 	}
 
 	return WithJSON(info, nil)
+}
+
+func DownloadFromAuthTicket(authTicket, fileName, lookupHash, downloadPath, taskID string) (string, string, error) {
+	var err error
+	authTicketObj := sdk.InitAuthTicket(authTicket)
+	if fileName == "" {
+		fileName, err = authTicketObj.GetFileName()
+		if err != nil {
+			return "", "", err
+		}
+	}
+
+	fileName = lookupHash + "_" + taskID + filepath.Ext(fileName)
+
+	// Check if directory exists, create only if it doesn't
+	if _, err = os.Stat(downloadPath); os.IsNotExist(err) {
+		if err = os.MkdirAll(downloadPath, os.ModePerm); err != nil {
+			return "", "", err
+		}
+	}
+
+	alloc, err := sdk.GetAllocationFromAuthTicket(authTicket)
+	if err != nil {
+		return "", "", err
+	}
+
+	localPath := filepath.Join(downloadPath, fileName)
+	f, err := os.Create(localPath)
+	if err != nil {
+		return "", "", err
+	}
+	defer f.Close()
+
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	cb := NewStatusCallback2(wg)
+	// Download file from allocation
+	err = alloc.DownloadFileToFileHandlerFromAuthTicket(f, authTicket, lookupHash, "", false, cb, true)
+	if err != nil {
+		return "", "", err
+	}
+	wg.Wait()
+
+	return localPath, fileName, nil
+}
+
+func downloadFilesRecursively(alloc *sdk.Allocation, authTicket, downloadPath string, listRes *sdk.ListResult, taskID string) (int64, error) {
+	l.Logger.Debug("download total size: ", downloadPath)
+
+	totalSize := int64(0)
+	for _, file := range listRes.Children {
+		if file.Type == "f" {
+			if totalSize+file.Size >= 100*1024*1024 {
+				return 0, errors.New("download size exceeds 100MB")
+			} else {
+				totalSize += file.Size
+			}
+
+			_, _, err := DownloadFromAuthTicket(authTicket, file.Name, file.LookupHash, downloadPath, taskID)
+			if err != nil {
+				return 0, err
+			}
+
+		} else if file.Type == "d" {
+			listSubDirRes, err := alloc.ListDirFromAuthTicket(authTicket, file.LookupHash)
+			if err != nil || listSubDirRes == nil {
+				return 0, fmt.Errorf("failed to list directory: %w", err)
+			}
+
+			// Recursively download files from subdirectories
+			subDirPath := filepath.Join(downloadPath, file.Name)
+			if _, err := os.Stat(subDirPath); os.IsNotExist(err) {
+				if err = os.MkdirAll(subDirPath, os.ModePerm); err != nil {
+					return 0, err
+				}
+			}
+
+			subDirSize, err := downloadFilesRecursively(alloc, authTicket, subDirPath, listSubDirRes, taskID)
+			if err != nil {
+				return 0, err
+			}
+			totalSize += subDirSize
+		}
+	}
+
+	l.Logger.Debug("download total size: ", totalSize)
+	return totalSize, nil
+}
+
+// DownloadDirFromAuthTicket - download directory using auth ticket
+// ## Inputs
+//   - authTicket
+//   - remotePath
+//   - downloadPath
+//
+// ## Outputs
+//
+//	{
+//	"error":"",
+//	"result":"path where files were downloaded",
+//	}
+//
+//export DownloadDirFromAuthTicket
+func DownloadDirFromAuthTicket(authTicket, lookupHash, downloadPath *C.char) *C.char {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Error("win: crash ", r)
+		}
+	}()
+
+	allocTicket := C.GoString(authTicket)
+	lHash := C.GoString(lookupHash)
+	dPath := C.GoString(downloadPath)
+
+	alloc, err := sdk.GetAllocationFromAuthTicket(allocTicket)
+	if err != nil {
+		return WithJSON(nil, err)
+	}
+
+	listRes, err := alloc.ListDirFromAuthTicket(allocTicket, lHash)
+	if err != nil || listRes == nil {
+		return WithJSON(nil, fmt.Errorf("failed to list directory: %w", err))
+	}
+
+	fullPath := filepath.Join(dPath, lHash)
+
+	totalSize, err := downloadFilesRecursively(alloc, allocTicket, fullPath, listRes, strconv.FormatInt(time.Now().Unix(), 10))
+	if err != nil {
+		return WithJSON(nil, err)
+	}
+
+	l.Logger.Debug("Finished downloading total size: ", totalSize)
+
+	if totalSize >= 100*1024*1024 {
+		return WithJSON(nil, errors.New("download size exceeds 100MB"))
+	}
+
+	return WithJSON(map[string]string{"path": fullPath}, nil)
 }
 
 // GetDownloadStatus - get download status
