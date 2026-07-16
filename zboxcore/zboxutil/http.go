@@ -35,6 +35,16 @@ const SLEEP_BETWEEN_RETRIES = 5
 // In percentage
 const consensusThresh = float32(25.0)
 
+// Hard ceiling on how long a single SC (screst) read may wait on sharders. The
+// on-chain magic-block registry still advertises decommissioned mainnet sharders
+// (e.g. zcn-sharder.safestor.net), and browser/wasm fetch has NO dial timeout, so
+// a plain client.Get on a dead host hangs for the full ~90s TCP timeout. Since
+// MakeSCRestAPICall wg.Wait()s on every sharder, one dead host stalls the whole
+// read (allocation list, storage-config, GetAllocation) — the "login/cluster
+// takes forever" symptom. Bounding every request with this deadline caps the
+// worst case regardless of which (possibly dirty) sharder list we were handed.
+const scRestReadTimeout = 8 * time.Second
+
 // SCRestAPIHandler is a function type to handle the response from the SC Rest API
 //
 //	`response` - the response from the SC Rest API
@@ -1112,6 +1122,18 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 		return nil, err
 	}
 
+	// Bound the whole fan-out (see scRestReadTimeout) and cancel the moment we
+	// have enough matching 200s for consensus, so a healthy sharder answering in
+	// <1s ends the call instead of us blocking on the slowest (dead) one.
+	ctx, cancel := context.WithTimeout(context.Background(), scRestReadTimeout)
+	defer cancel()
+	// ceil(consensusThresh% * SharderConsensous) — the same bar the rate check
+	// below enforces, computed up-front so we can stop early once it's met.
+	requiredForConsensus := (int(consensusThresh)*cfg.SharderConsensous + 99) / 100
+	if requiredForConsensus < 1 {
+		requiredForConsensus = 1
+	}
+
 	for _, sharder := range sharders {
 		wg.Add(1)
 		go func(sharder string) {
@@ -1136,10 +1158,21 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 				q.Add(k, v)
 			}
 			urlObj.RawQuery = q.Encode()
-			client := &http.Client{Transport: DefaultTransport}
-			response, err := client.Get(urlObj.String())
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, urlObj.String(), nil)
 			if err != nil {
-				blockchain.Sharders.Fail(sharder)
+				log.Error(err)
+				return
+			}
+			client := &http.Client{Transport: DefaultTransport}
+			response, err := client.Do(req)
+			if err != nil {
+				// A ctx cancel/deadline here means either we already reached
+				// consensus (this straggler is no longer needed) or the sharder is
+				// dead/too slow. Don't penalize a sharder for OUR cancel — only Fail
+				// on a genuine transport error.
+				if ctx.Err() == nil {
+					blockchain.Sharders.Fail(sharder)
+				}
 				return
 			}
 
@@ -1163,6 +1196,15 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 
 			entityResult[sharder] = entityBytes
 			blockchain.Sharders.Success(sharder)
+			// Enough matching 200s to satisfy consensus — cancel the in-flight
+			// requests to the remaining (slow/dead) sharders so wg.Wait() returns
+			// now instead of waiting on a dead host's full TCP timeout. Gate on 200
+			// specifically so a stray minority error can't short-circuit a real
+			// success consensus.
+			if response.StatusCode == http.StatusOK &&
+				responses[http.StatusOK] >= requiredForConsensus {
+				cancel()
+			}
 			mu.Unlock()
 		}(sharder)
 	}
