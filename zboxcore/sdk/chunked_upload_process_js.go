@@ -58,6 +58,7 @@ type ChunkedUploadFormInfo struct {
 	StorageVersion    int
 	EncryptionVersion int
 	PrivateSigningKey ed25519.PrivateKey
+	bbuf              *bytebufferpool.ByteBuffer
 }
 
 // createUploadProgress create a new UploadProgress
@@ -480,6 +481,7 @@ func ProcessEventData(data safejs.Value) {
 	formBuilder := CreateChunkedUploadFormBuilder(formInfo.StorageVersion, formInfo.EncryptionVersion, formInfo.PrivateSigningKey)
 	uploadData, err := formBuilder.Build(fileMeta, wp.hasher, formInfo.ConnectionID, blobberID, formInfo.ChunkSize, formInfo.ChunkStartIndex, formInfo.ChunkEndIndex, formInfo.IsFinal, formInfo.EncryptedKey, formInfo.EncryptedKeyPoint,
 		fileShards, thumbnailChunkData, formInfo.ShardSize)
+	uploadPool.Put(formInfo.bbuf)
 	if err != nil {
 		selfPostMessage(false, false, err.Error(), remotePath, formInfo.ChunkEndIndex, 0, 0, nil)
 		return
@@ -626,9 +628,15 @@ func parseEventData(data safejs.Value) (*FileMeta, *ChunkedUploadFormInfo, [][]b
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
-	buf := make([]byte, fileShardLen)
-	safejs.CopyBytesToGo(buf, fileShardUint8)
-	fileShards := splitData(buf, int(chunkSize))
+	bbuf := uploadPool.Get()
+	if cap(bbuf.B) < fileShardLen {
+		bbuf.B = make([]byte, fileShardLen)
+	} else {
+		bbuf.B = bbuf.B[:fileShardLen]
+	}
+	safejs.CopyBytesToGo(bbuf.B, fileShardUint8)
+	fileShards := splitData(bbuf.B, int(chunkSize))
+	formInfo.bbuf = bbuf
 	fileShardUint8.Set("buffer", js.Null())
 	formInfoUint8.Set("buffer", js.Null())
 	fileMetaUint8.Set("buffer", js.Null())
