@@ -1,11 +1,13 @@
 package client
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
 	"sync"
+	"time"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/conf"
@@ -25,6 +27,14 @@ func MakeSCRestAPICallToSharder(scAddress string, relativePath string, params ma
 	const (
 		consensusThresh = float32(25.0)
 		ScRestApiUrl    = "v1/screst/"
+		// Hard ceiling on how long a single SC (screst) read may wait on sharders.
+		// The on-chain magic-block registry still advertises decommissioned mainnet
+		// sharders (e.g. zcn-sharder.safestor.net), and browser/wasm fetch has NO
+		// dial timeout, so a plain Get on a dead host hangs for the full ~90s TCP
+		// timeout; since we wg.Wait() on every sharder, one dead host stalls the
+		// whole read. Bounding every request with this deadline caps the worst case
+		// regardless of which (possibly dirty) sharder list HealthyByLFB handed us.
+		scRestReadTimeout = 8 * time.Second
 	)
 
 	restApiUrl := ScRestApiUrl
@@ -49,6 +59,18 @@ func MakeSCRestAPICallToSharder(scAddress string, relativePath string, params ma
 		return nil, err
 	}
 
+	// Bound the whole fan-out (see scRestReadTimeout) and cancel the moment we have
+	// enough matching 200s for consensus, so a healthy sharder answering in <1s
+	// ends the call instead of us blocking on the slowest (dead) one.
+	ctx, cancel := context.WithTimeout(context.Background(), scRestReadTimeout)
+	defer cancel()
+	// ceil(consensusThresh% * SharderConsensous) — the same bar the rate check
+	// below enforces, computed up-front so we can stop early once it's met.
+	requiredForConsensus := (int(consensusThresh)*cfg.SharderConsensous + 99) / 100
+	if requiredForConsensus < 1 {
+		requiredForConsensus = 1
+	}
+
 	for _, sharder := range sharders {
 		wg.Add(1)
 		go func(sharder string) {
@@ -66,7 +88,7 @@ func MakeSCRestAPICallToSharder(scAddress string, relativePath string, params ma
 			}
 			urlObj.RawQuery = q.Encode()
 
-			req, err := util.NewHTTPGetRequest(urlObj.String())
+			req, err := util.NewHTTPGetRequestContext(ctx, urlObj.String())
 			if err != nil {
 				logger.GetLogger().Error("Error creating request: ", err.Error())
 				return
@@ -74,8 +96,14 @@ func MakeSCRestAPICallToSharder(scAddress string, relativePath string, params ma
 
 			response, err := req.Get()
 			if err != nil {
-				nodeClient.sharders.Fail(sharder)
-				logger.GetLogger().Error("Error getting response: ", err.Error())
+				// A ctx cancel/deadline here means either we already reached
+				// consensus (this straggler is no longer needed) or the sharder is
+				// dead/too slow. Don't penalize a sharder for OUR cancel — only Fail
+				// on a genuine transport error.
+				if ctx.Err() == nil {
+					nodeClient.sharders.Fail(sharder)
+					logger.GetLogger().Error("Error getting response: ", err.Error())
+				}
 				return
 			}
 
@@ -100,6 +128,14 @@ func MakeSCRestAPICallToSharder(scAddress string, relativePath string, params ma
 
 			entityResult[sharder] = []byte(response.Body)
 			nodeClient.sharders.Success(sharder)
+			// Enough matching 200s to satisfy consensus — cancel the in-flight
+			// requests to the remaining (slow/dead) sharders so wg.Wait() returns
+			// now instead of waiting on a dead host's full TCP timeout. Gate on 200
+			// so a stray minority error can't short-circuit a real success.
+			if response.StatusCode == http.StatusOK &&
+				responses[http.StatusOK] >= requiredForConsensus {
+				cancel()
+			}
 		}(sharder)
 	}
 
