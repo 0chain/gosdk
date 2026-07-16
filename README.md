@@ -27,6 +27,33 @@ Züs has ecosystem apps to encourage traditional storage consumption such as [Bl
 
 Other apps are [Bolt](https://bolt.holdings/), a wallet that is very secure with air-gapped 2FA split-key protocol to prevent hacks from compromising your digital assets, and it enables you to stake and earn from the storage providers; [Atlus](https://atlus.cloud/), a blockchain explorer and [Chimney](https://demo.chimney.software/), which allows anyone to join the network and earn using their server or by just renting one, with no prior knowledge required.
 
+We’ve built the first **S3-compatible storage platform** that is both **ACID-compliant** and runs on a **zero-knowledge network** — eliminating the need for additional services like AWS Athena or GuardDuty to secure or query your data.
+  - **5x better performance** – Real-world tests (see benchmark from s3compare.io) showed up to 5x gains versus AWS.
+  - **2x lower costs** – Thanks to zero egress and zero API fees, you save more as your usage scales.
+  - **2x lower carbon footprint** – Our erasure-coded architecture minimizes redundancy-related overhead (see below for architectural breakdown).
+  - **Bulletproof security** – Split-key security, zero-knowledge design, and erasure coding ensure unmatched internal breach resistance.
+  - **No vendor lock-in** – Easily add, remove, or swap providers with no disruption or central dependency.
+
+  One of our enterprise customers benchmarked Züs against AWS using [s3compare.io](https://s3compare.io) and saw **5x performance improvements** across common S3 operations — validating our edge in real-time workloads and data transfer scenarios.
+  
+  We also fill security and vendor neutrality gaps that MinIO and AWS have in their solution. Check the table below for comparison.
+  
+  Beyond backup and datalake storage, our platform is ideal for storing AI data, where integrity and verifiability matter such as for MCP workflows.
+
+  ### Core Features – Züs vs AWS S3 vs MinIO
+
+| **Feature**                             | **AWS S3**                                                                 | **MinIO**                                                               | **Züs**                                                                                   |
+|----------------------------------------|---------------------------------------------------------------------------|------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
+| **Managed Infrastructure**             | Fully managed with strong global uptime                                  | Self-hosted; requires manual setup and scaling                        | Fully managed decentralized infrastructure with flexible scaling                          |
+| **Split-key Internal Breach Security** | Not available; single-party access control                                | Not available                                                          | Built-in split-key security prevents internal breaches by decentralizing key control      |
+| **Zero Egress Fees**                   | Charges apply for all outbound data                                      | No egress fees                                                         | No egress fees on outbound traffic across providers                                       |
+| **Zero API Fees**                      | Charges per API call                                                      | Free API access                                                        | Free unlimited API requests; ideal for high-frequency apps                                |
+| **Encrypted Data Sharing**             | Requires external tools or complex configuration                         | Not supported natively                                                 | Native proxy re-encryption enables secure, private sharing of encrypted files             |
+| **Zero Knowledge Network**            | Not supported                                                             | Not supported                                                          | Zero-knowledge architecture ensures providers can't access file contents or user identity |
+| **ACID Compliant (Data Integrity)**    | Eventual consistency; not ACID compliant                                 | No built-in ACID guarantees                                            | Fully ACID compliant to ensure consistent reads/writes and verifiable storage behavior    |
+| **Add/Swap Infrastructure (No Lock-in)**| Vendor lock-in with no real-time provider switching                      | Tied to fixed infrastructure                                           | Add, remove, or swap storage providers dynamically with no lock-in                        |
+
+
 ## Installation
 
 This repository currently supports the following platforms:
