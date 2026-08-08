@@ -237,7 +237,16 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 	}
 
 	if CurrentMode == UploadModeHigh {
-		r.hasherDataChan <- chunkBytes
+		// chunkBytes is a zero-copy slice of fileShardsDataBuffer, which this
+		// reader REFILLS on the next batch. hasherDataChan is buffered
+		// 3*chunkNumber deep, so hashData() can lag several batches behind and
+		// digest bytes that have already been overwritten — producing a wrong
+		// actual_file_hash for data that was stored correctly. The hasher needs
+		// its own copy; the synchronous branch below is safe as-is because it
+		// consumes chunkBytes before the buffer can be reused.
+		hashBytes := make([]byte, len(chunkBytes))
+		copy(hashBytes, chunkBytes)
+		r.hasherDataChan <- hashBytes
 	} else {
 		_ = r.hasher.WriteToFile(chunkBytes)
 	}
