@@ -317,8 +317,22 @@ func (mo *MultiOperation) Process() error {
 		}
 	}
 	activeBlobbers := mo.operationMask.CountOnes()
-	if activeBlobbers < mo.consensusThresh {
-		l.Logger.Error("consensus not met", activeBlobbers, mo.consensusThresh)
+	// Writes require full consensus (all blobbers). For non-repair ops, a
+	// blobber dropped from operationMask above (allocation-root mismatch) or
+	// that never connected is a "problem blobber" the user must replace —
+	// report the specific list rather than a bare count.
+	writeRequired := mo.consensusThresh
+	if !mo.isRepair {
+		writeRequired = len(mo.allocationObj.Blobbers)
+	}
+	if activeBlobbers < writeRequired {
+		l.Logger.Error("consensus not met", activeBlobbers, writeRequired)
+		if !mo.isRepair {
+			return buildConsensusError(mo.allocationObj, mo.operationMask,
+				writeRequired, nil,
+				fmt.Sprintf("write reached %d of %d blobbers; full consensus required",
+					activeBlobbers, writeRequired))
+		}
 		return errors.New("consensus_not_met", fmt.Sprintf("Active blobbers %d is less than consensus threshold %d", activeBlobbers, mo.consensusThresh))
 	}
 
@@ -414,7 +428,11 @@ func (mo *MultiOperation) commitV2() error {
 			changes = mo.changesV2
 		}
 		threshold := mo.consensusThresh
-		if mask.CountOnes() < mo.consensusThresh {
+		// Writes require FULL consensus (every blobber). Only repair may lower
+		// the per-root-group threshold to whatever blobbers share that root —
+		// lowering it for writes is what lets a partial commit land on a
+		// subset and permanently diverge the allocation across blobbers.
+		if mo.isRepair && mask.CountOnes() < mo.consensusThresh {
 			threshold = mask.CountOnes()
 		}
 		commitReq := &CommitRequestV2{
@@ -450,9 +468,21 @@ func (mo *MultiOperation) commitV2() error {
 		}
 	}
 	if !mo.isConsensusOk() {
-		err := zboxutil.MajorError(errSlice)
-		if err == nil {
-			err = errors.New("consensus_not_met", fmt.Sprintf("Successfully committed to %d blobbers, but required %d", mo.consensus, len(mo.allocationObj.Blobbers)))
+		// Surface which blobbers failed so the user can replace them. For
+		// non-repair writes the required count is full consensus (all
+		// blobbers); the success set is rollbackMask (blobbers that did
+		// commit, now being rolled back).
+		var err error
+		if !mo.isRepair {
+			err = buildConsensusError(mo.allocationObj, rollbackMask,
+				len(mo.allocationObj.Blobbers), errSlice,
+				fmt.Sprintf("write committed to %d of %d blobbers; full consensus required",
+					mo.consensus, len(mo.allocationObj.Blobbers)))
+		} else {
+			err = zboxutil.MajorError(errSlice)
+			if err == nil {
+				err = errors.New("consensus_not_met", fmt.Sprintf("Successfully committed to %d blobbers, but required %d", mo.consensus, len(mo.allocationObj.Blobbers)))
+			}
 		}
 		if mo.getConsensus() != 0 {
 			l.Logger.Info("Rolling back changes on minority blobbers")

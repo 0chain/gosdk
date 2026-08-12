@@ -56,6 +56,57 @@ var (
 	LogBlobberMonitoringChan     = make(chan BlobberMonitoring)
 )
 
+// FailedBlobber identifies a blobber that did not accept a write, so the
+// caller (web app) can tell the user exactly which providers to replace.
+type FailedBlobber struct {
+	Index int    `json:"index"` // position in Allocation.Blobbers
+	URL   string `json:"url"`
+	ID    string `json:"id"`
+	Error string `json:"error"`
+}
+
+// ConsensusFailure is the JSON payload embedded in a consensus_not_met error
+// so the WASM/JS layer can parse the list of failing blobbers. It is carried
+// as the message of a standard 0chain/errors error (code "consensus_not_met")
+// so existing string-based error handling keeps working; new callers can
+// json.Unmarshal the message into this struct.
+type ConsensusFailure struct {
+	Code           string          `json:"code"`
+	Message        string          `json:"message"`
+	SuccessCount   int             `json:"success_count"`
+	RequiredCount  int             `json:"required_count"`
+	FailedBlobbers []FailedBlobber `json:"failed_blobbers"`
+}
+
+// buildConsensusError produces a consensus_not_met error whose message is a
+// JSON ConsensusFailure listing every blobber NOT present in successMask.
+// connErrs may be nil; when present, connErrs[i] annotates blobber i.
+func buildConsensusError(a *Allocation, successMask zboxutil.Uint128, required int, connErrs []error, summary string) error {
+	failed := make([]FailedBlobber, 0)
+	for idx, b := range a.Blobbers {
+		bit := zboxutil.NewUint128(1).Lsh(uint64(idx))
+		if successMask.And(bit).Equals64(0) {
+			msg := ""
+			if connErrs != nil && idx < len(connErrs) && connErrs[idx] != nil {
+				msg = connErrs[idx].Error()
+			}
+			failed = append(failed, FailedBlobber{Index: idx, URL: b.Baseurl, ID: b.ID, Error: msg})
+		}
+	}
+	payload := ConsensusFailure{
+		Code:           "consensus_not_met",
+		Message:        summary,
+		SuccessCount:   successMask.CountOnes(),
+		RequiredCount:  required,
+		FailedBlobbers: failed,
+	}
+	b, mErr := json.Marshal(payload)
+	if mErr != nil {
+		return errors.New("consensus_not_met", summary)
+	}
+	return errors.New("consensus_not_met", string(b))
+}
+
 const (
 	KB = 1024
 	MB = 1024 * KB
