@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
+	"sync"
+	"time"
 
 	"github.com/0chain/gosdk/core/block"
 	"github.com/0chain/gosdk/core/client"
@@ -408,7 +410,30 @@ func IsHardforkActivated(name string) (bool, error) {
 	return currentRound >= round, nil
 }
 
+// 5-second TTL cache for current round. WASM upload init fires
+// IsHardforkActive/GetCurrentRound once per blobber as the SDK walks the
+// blobber list — for a 12-blobber alloc, that's 12 sequential
+// /v1/current-round sharder calls (~3-4 s wasted before the first chunk
+// even leaves the browser). The chain advances only every ~500 ms, so
+// a 5 s cache is well within tolerance for the activation predicate.
+var (
+	currentRoundCacheMu       sync.Mutex
+	currentRoundCacheValue    int64
+	currentRoundCacheFetchedAt time.Time
+	currentRoundCacheTTL       = 5 * time.Second
+)
+
 func GetCurrentRound() (int64, error) {
+	currentRoundCacheMu.Lock()
+	if !currentRoundCacheFetchedAt.IsZero() &&
+		time.Since(currentRoundCacheFetchedAt) < currentRoundCacheTTL &&
+		currentRoundCacheValue > 0 {
+		v := currentRoundCacheValue
+		currentRoundCacheMu.Unlock()
+		return v, nil
+	}
+	currentRoundCacheMu.Unlock()
+
 	res, err := screstapi.MakeSCRestAPICall("", GET_CURRENT_ROUND, nil, "")
 	if err != nil {
 		return 0, err
@@ -419,6 +444,11 @@ func GetCurrentRound() (int64, error) {
 	if err != nil {
 		return 0, fmt.Errorf("error getting current round : %v", err)
 	}
+
+	currentRoundCacheMu.Lock()
+	currentRoundCacheValue = round
+	currentRoundCacheFetchedAt = time.Now()
+	currentRoundCacheMu.Unlock()
 
 	return round, nil
 }
