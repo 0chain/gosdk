@@ -6,6 +6,7 @@ package sys
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -43,9 +44,10 @@ func (mfs *MemFS) Open(name string) (File, error) {
 	defer mfs.Unlock()
 	file := mfs.files[name]
 	if file != nil {
+		fmt.Println("file exists", name)
 		return file, nil
 	}
-
+	fmt.Println("does not exist", name)
 	fileName := filepath.Base(name)
 
 	file = &MemFile{Name: fileName, Mode: fs.ModePerm, ModTime: time.Now()}

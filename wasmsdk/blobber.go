@@ -480,7 +480,7 @@ func multiDownload(allocationID, jsonMultiDownloadOptions, authTicket, callbackF
 	wg.Add(len(options))
 	for ind, option := range options {
 		fileName := strings.Replace(path.Base(option.RemotePath), "/", "-", -1)
-		localPath := allocationID + "_" + fileName
+		localPath := encryption.FastHash(allocationID + "_" + fileName + zboxutil.NewConnectionId())
 		option.LocalPath = localPath
 		statusBar := &StatusBar{wg: wg, totalBytesMap: make(map[string]int)}
 		allStatusBar[ind] = statusBar
@@ -501,6 +501,7 @@ func multiDownload(allocationID, jsonMultiDownloadOptions, authTicket, callbackF
 				return "", err
 			}
 		} else {
+			fmt.Println("Downloading to memory: ", localPath, option.RemotePath)
 			statusBar.localPath = localPath
 			fs, _ := sys.Files.Open(localPath)
 			mf, _ = fs.(*sys.MemFile)
