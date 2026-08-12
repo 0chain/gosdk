@@ -78,6 +78,9 @@ type Config struct {
 	SharderConsensous int          `json:"sharder_consensous"`
 	ZauthServer       string       `json:"zauth_server"`
 	V                 *viper.Viper `json:"-"`
+
+	Miners   []string `json:"miners"`
+	Sharders []string `json:"sharders"`
 }
 
 // LoadConfigFile load and parse SDK Config from file
