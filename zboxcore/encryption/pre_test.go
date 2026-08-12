@@ -162,6 +162,354 @@ func BenchmarkMarshal(t *testing.B) {
 	}
 }
 
+// helper: create an initialized encryption scheme from a mnemonic
+func newScheme(t *testing.T, mnemonic string) EncryptionScheme {
+	t.Helper()
+	s := NewEncryptionScheme()
+	_, err := s.Initialize(mnemonic)
+	require.NoError(t, err)
+	return s
+}
+
+// helper: simulate blobber re-encryption + recipient decryption
+func blobberReEncryptAndDecrypt(t *testing.T, encMsg *EncryptedMessage, fileC1 string, reKey string, recipientPubKey string, recipientScheme EncryptionScheme) []byte {
+	t.Helper()
+	// Blobber side: init with the file's C1, re-encrypt
+	blobber := NewEncryptionScheme()
+	blobber.Initialize("") // blobber has no owner mnemonic
+	err := blobber.InitForDecryption("filetype:audio", fileC1)
+	require.NoError(t, err)
+	reEnc, err := blobber.ReEncrypt(encMsg, reKey, recipientPubKey)
+	require.NoError(t, err)
+	// Recipient side: decrypt
+	dec, err := recipientScheme.ReDecrypt(reEnc)
+	require.NoError(t, err)
+	return dec
+}
+
+// TestReKeyWorksAfterFileUpdate verifies that when a file is updated (new
+// random T, new C1), the existing re-encryption key still works. The blobber
+// re-encrypts with the new C1 and the recipient decrypts successfully.
+func TestReKeyWorksAfterFileUpdate(t *testing.T) {
+	ownerMnemonic := "travel twenty hen negative fresh sentence hen flat swift embody increase juice eternal satisfy want vessel matter honey video begin dutch trigger romance assault"
+	recipientMnemonic := "inside february piece turkey offer merry select combine tissue wave wet shift room afraid december gown mean brick speak grant gain become toy clown"
+
+	// --- Setup recipient ---
+	recipient := newScheme(t, recipientMnemonic)
+	recipient.InitForEncryption("filetype:audio")
+	recipientPubKey, _ := recipient.GetPublicKey()
+
+	// --- Owner uploads v1 ---
+	ownerV1 := newScheme(t, ownerMnemonic)
+	ownerV1.InitForEncryption("filetype:audio")
+	c1V1 := ownerV1.GetEncryptedKey()
+
+	v1Data := []byte("original file content v1")
+	v1Enc, err := ownerV1.Encrypt(v1Data)
+	require.NoError(t, err)
+
+	// --- Owner shares file, generating re-encryption key ---
+	reKey, err := ownerV1.GetReGenKey(recipientPubKey, "filetype:audio")
+	require.NoError(t, err)
+
+	// --- Recipient downloads v1 ---
+	recipientDec := newScheme(t, recipientMnemonic)
+	recipientDec.InitForEncryption("filetype:audio")
+	dec := blobberReEncryptAndDecrypt(t, v1Enc, c1V1, reKey, recipientPubKey, recipientDec)
+	require.Equal(t, string(v1Data), string(dec))
+
+	// --- Owner updates file to v2 (new random T, new C1) ---
+	ownerV2 := newScheme(t, ownerMnemonic)
+	ownerV2.InitForEncryption("filetype:audio") // new random T
+	c1V2 := ownerV2.GetEncryptedKey()
+	require.NotEqual(t, c1V1, c1V2, "update produces new C1")
+
+	v2Data := []byte("updated file content v2 — completely different")
+	v2Enc, err := ownerV2.Encrypt(v2Data)
+	require.NoError(t, err)
+
+	// --- Recipient downloads v2 using the SAME re-encryption key ---
+	recipientDec2 := newScheme(t, recipientMnemonic)
+	recipientDec2.InitForEncryption("filetype:audio")
+	dec2 := blobberReEncryptAndDecrypt(t, v2Enc, c1V2, reKey, recipientPubKey, recipientDec2)
+	require.Equal(t, string(v2Data), string(dec2), "same reKey decrypts updated file with new C1")
+}
+
+// TestReKeyWorksForEncryptedFolder verifies that a single re-encryption key
+// works for multiple files in a folder, each with a different C1.
+func TestReKeyWorksForEncryptedFolder(t *testing.T) {
+	ownerMnemonic := "travel twenty hen negative fresh sentence hen flat swift embody increase juice eternal satisfy want vessel matter honey video begin dutch trigger romance assault"
+	recipientMnemonic := "inside february piece turkey offer merry select combine tissue wave wet shift room afraid december gown mean brick speak grant gain become toy clown"
+
+	// --- Setup recipient ---
+	recipient := newScheme(t, recipientMnemonic)
+	recipient.InitForEncryption("filetype:audio")
+	recipientPubKey, _ := recipient.GetPublicKey()
+
+	// --- Owner generates ONE re-encryption key for the folder share ---
+	ownerForShare := newScheme(t, ownerMnemonic)
+	ownerForShare.InitForEncryption("filetype:audio")
+	reKey, err := ownerForShare.GetReGenKey(recipientPubKey, "filetype:audio")
+	require.NoError(t, err)
+
+	// --- Simulate 3 files in the folder, each with unique C1 ---
+	files := []struct {
+		name string
+		data []byte
+	}{
+		{"file1.txt", []byte("first file in folder")},
+		{"subfolder/file2.txt", []byte("nested file in subfolder")},
+		{"file3.png", []byte("binary image data for third file")},
+	}
+
+	for _, f := range files {
+		// Each file upload gets its own random T → unique C1
+		ownerFile := newScheme(t, ownerMnemonic)
+		ownerFile.InitForEncryption("filetype:audio")
+		fileC1 := ownerFile.GetEncryptedKey()
+
+		encMsg, err := ownerFile.Encrypt(f.data)
+		require.NoError(t, err)
+
+		// Recipient decrypts using the folder's re-encryption key
+		recipientDec := newScheme(t, recipientMnemonic)
+		recipientDec.InitForEncryption("filetype:audio")
+		dec := blobberReEncryptAndDecrypt(t, encMsg, fileC1, reKey, recipientPubKey, recipientDec)
+		require.Equal(t, string(f.data), string(dec), "folder reKey works for %s", f.name)
+	}
+}
+
+// TestReKeyWorksForNewFileAddedToSharedFolder verifies that when a new file
+// is added to an already-shared encrypted folder, the existing re-encryption
+// key (generated at share time) works for the new file.
+func TestReKeyWorksForNewFileAddedToSharedFolder(t *testing.T) {
+	ownerMnemonic := "travel twenty hen negative fresh sentence hen flat swift embody increase juice eternal satisfy want vessel matter honey video begin dutch trigger romance assault"
+	recipientMnemonic := "inside february piece turkey offer merry select combine tissue wave wet shift room afraid december gown mean brick speak grant gain become toy clown"
+
+	// --- Setup recipient ---
+	recipient := newScheme(t, recipientMnemonic)
+	recipient.InitForEncryption("filetype:audio")
+	recipientPubKey, _ := recipient.GetPublicKey()
+
+	// --- Owner shares folder (generates re-encryption key) ---
+	ownerForShare := newScheme(t, ownerMnemonic)
+	ownerForShare.InitForEncryption("filetype:audio")
+	reKey, err := ownerForShare.GetReGenKey(recipientPubKey, "filetype:audio")
+	require.NoError(t, err)
+
+	// --- Original file in folder ---
+	ownerFile1 := newScheme(t, ownerMnemonic)
+	ownerFile1.InitForEncryption("filetype:audio")
+	c1File1 := ownerFile1.GetEncryptedKey()
+
+	file1Data := []byte("original file already in folder at share time")
+	enc1, err := ownerFile1.Encrypt(file1Data)
+	require.NoError(t, err)
+
+	recipientDec := newScheme(t, recipientMnemonic)
+	recipientDec.InitForEncryption("filetype:audio")
+	dec1 := blobberReEncryptAndDecrypt(t, enc1, c1File1, reKey, recipientPubKey, recipientDec)
+	require.Equal(t, string(file1Data), string(dec1))
+
+	// --- Later: owner adds a NEW file to the folder ---
+	ownerFile2 := newScheme(t, ownerMnemonic)
+	ownerFile2.InitForEncryption("filetype:audio") // fresh random T
+	c1File2 := ownerFile2.GetEncryptedKey()
+	require.NotEqual(t, c1File1, c1File2, "new file gets different C1")
+
+	file2Data := []byte("brand new file added after folder was already shared")
+	enc2, err := ownerFile2.Encrypt(file2Data)
+	require.NoError(t, err)
+
+	// --- Recipient downloads the new file using the SAME folder reKey ---
+	recipientDec2 := newScheme(t, recipientMnemonic)
+	recipientDec2.InitForEncryption("filetype:audio")
+	dec2 := blobberReEncryptAndDecrypt(t, enc2, c1File2, reKey, recipientPubKey, recipientDec2)
+	require.Equal(t, string(file2Data), string(dec2),
+		"folder reKey works for file added after sharing — no new auth ticket needed")
+}
+
+// TestReKeyWorksForNewSubfolderAddedToSharedFolder verifies that when a new
+// subfolder containing encrypted files is added to an already-shared encrypted
+// folder, the existing re-encryption key works for all new files.
+func TestReKeyWorksForNewSubfolderAddedToSharedFolder(t *testing.T) {
+	ownerMnemonic := "travel twenty hen negative fresh sentence hen flat swift embody increase juice eternal satisfy want vessel matter honey video begin dutch trigger romance assault"
+	recipientMnemonic := "inside february piece turkey offer merry select combine tissue wave wet shift room afraid december gown mean brick speak grant gain become toy clown"
+
+	recipient := newScheme(t, recipientMnemonic)
+	recipient.InitForEncryption("filetype:audio")
+	recipientPubKey, _ := recipient.GetPublicKey()
+
+	// --- Owner shares /docs/ folder (generates re-encryption key) ---
+	ownerForShare := newScheme(t, ownerMnemonic)
+	ownerForShare.InitForEncryption("filetype:audio")
+	reKey, err := ownerForShare.GetReGenKey(recipientPubKey, "filetype:audio")
+	require.NoError(t, err)
+
+	// --- Original files at share time ---
+	// /docs/file1.txt
+	originalFiles := []struct {
+		path string
+		data []byte
+	}{
+		{"/docs/file1.txt", []byte("existing file at share time")},
+		{"/docs/existing-sub/readme.txt", []byte("existing subfolder file")},
+	}
+
+	for _, f := range originalFiles {
+		owner := newScheme(t, ownerMnemonic)
+		owner.InitForEncryption("filetype:audio")
+		enc, err := owner.Encrypt(f.data)
+		require.NoError(t, err)
+
+		rec := newScheme(t, recipientMnemonic)
+		rec.InitForEncryption("filetype:audio")
+		dec := blobberReEncryptAndDecrypt(t, enc, owner.GetEncryptedKey(), reKey, recipientPubKey, rec)
+		require.Equal(t, string(f.data), string(dec), "original file %s decrypts", f.path)
+	}
+
+	// --- Later: owner adds /docs/new-project/ subfolder with multiple files ---
+	newFiles := []struct {
+		path string
+		data []byte
+	}{
+		{"/docs/new-project/design.md", []byte("# Design Doc\nNew project design")},
+		{"/docs/new-project/spec.pdf", []byte("PDF binary data for spec")},
+		{"/docs/new-project/src/main.go", []byte("package main\nfunc main() {}")},
+		{"/docs/new-project/src/utils/helper.go", []byte("package utils\nfunc Helper() {}")},
+	}
+
+	for _, f := range newFiles {
+		// Each new file gets its own random T → unique C1
+		owner := newScheme(t, ownerMnemonic)
+		owner.InitForEncryption("filetype:audio")
+		fileC1 := owner.GetEncryptedKey()
+
+		enc, err := owner.Encrypt(f.data)
+		require.NoError(t, err)
+
+		// Recipient decrypts using the ORIGINAL folder reKey
+		rec := newScheme(t, recipientMnemonic)
+		rec.InitForEncryption("filetype:audio")
+		dec := blobberReEncryptAndDecrypt(t, enc, fileC1, reKey, recipientPubKey, rec)
+		require.Equal(t, string(f.data), string(dec),
+			"folder reKey works for new subfolder file %s", f.path)
+	}
+
+	// --- Also: update an existing file ---
+	ownerUpdate := newScheme(t, ownerMnemonic)
+	ownerUpdate.InitForEncryption("filetype:audio") // new random T
+	updatedC1 := ownerUpdate.GetEncryptedKey()
+	updatedData := []byte("file1.txt updated content after subfolder was added")
+	encUpdated, err := ownerUpdate.Encrypt(updatedData)
+	require.NoError(t, err)
+
+	recUpdate := newScheme(t, recipientMnemonic)
+	recUpdate.InitForEncryption("filetype:audio")
+	decUpdated := blobberReEncryptAndDecrypt(t, encUpdated, updatedC1, reKey, recipientPubKey, recUpdate)
+	require.Equal(t, string(updatedData), string(decUpdated),
+		"folder reKey works for updated file with new C1")
+}
+
+// TestReKeyFailsWhenUploadAndShareEntropyDiffer reproduces the failure mode
+// fixed by commit 9dfc92c4 (fix: use signing key entropy for encrypted folder
+// shares). When the owner uploads files using one entropy source (e.g.
+// hex.EncodeToString(allocation.signingPrivateKey), as chunked_upload does for
+// SignatureV2 allocations) but the share path generates the re-encryption key
+// from a different entropy source (e.g. the wallet mnemonic), the blobber
+// rejects every download with "Invalid Ciphertext in reEncrypt, C4 != H5".
+//
+// Crypto cause: skA derived from two different XOF seeds is two different
+// scalars. alp = H6(tag, skA_upload) is baked into C4 at upload time, while
+// R3 = H6(tag, skA_share) is packed into the reKey. The blobber integrity
+// check H5(C1, C2, C3, R3) == C4 only holds when skA_upload == skA_share.
+func TestReKeyFailsWhenUploadAndShareEntropyDiffer(t *testing.T) {
+	// Two distinct entropy seeds model the pre-fix mismatch: chunked_upload
+	// used signing-key entropy on SignatureV2 allocations while the folder
+	// share path (driven by NewDirectoryRef, which leaves EncryptionVersion=0)
+	// fell through to the mnemonic branch.
+	uploadEntropy := "travel twenty hen negative fresh sentence hen flat swift embody increase juice eternal satisfy want vessel matter honey video begin dutch trigger romance assault"
+	shareEntropy := "unrelated entropy modeling a different source such as wallet mnemonic vs hex-encoded signing private key"
+	recipientMnemonic := "inside february piece turkey offer merry select combine tissue wave wet shift room afraid december gown mean brick speak grant gain become toy clown"
+	tag := "filetype:audio"
+
+	recipient := newScheme(t, recipientMnemonic)
+	recipient.InitForEncryption(tag)
+	recipientPubKey, _ := recipient.GetPublicKey()
+
+	// Owner uploads with entropy A: alp = H6(tag, skA_A) is baked into C4.
+	uploader := newScheme(t, uploadEntropy)
+	uploader.InitForEncryption(tag)
+	fileC1 := uploader.GetEncryptedKey()
+	encMsg, err := uploader.Encrypt([]byte("folder file contents"))
+	require.NoError(t, err)
+
+	// Folder share path generates reKey with entropy B: R3 = H6(tag, skA_B).
+	sharer := newScheme(t, shareEntropy)
+	sharer.InitForEncryption(tag)
+	wrongReKey, err := sharer.GetReGenKey(recipientPubKey, tag)
+	require.NoError(t, err)
+
+	// Blobber rejects: H5(C1, C2, C3, R3_B) != C4 (which contains alp_A).
+	blobber := NewEncryptionScheme()
+	blobber.Initialize("")
+	err = blobber.InitForDecryption(tag, fileC1)
+	require.NoError(t, err)
+	_, err = blobber.ReEncrypt(encMsg, wrongReKey, recipientPubKey)
+	require.Error(t, err, "mismatched upload/share entropy must fail the C4 integrity check")
+	require.Contains(t, err.Error(), "C4 != H5",
+		"blobber must return the exact error observed on folder-share downloads before the fix")
+}
+
+// TestReKeyWorksWhenFolderShareUsesUploadEntropy verifies the fix in
+// sharerequest.go. On a SignatureV2 allocation, chunked_upload derives skA
+// from allocation.signingPrivateKey. Before the fix, the share path inspected
+// fRef.EncryptionVersion to pick entropy — and NewDirectoryRef never sets that
+// field, so folder shares fell back to the wallet mnemonic. The fix keys off
+// fRef.Type == DIRECTORY too, so folder shares now use the same signing-key
+// entropy as upload. This test confirms a single reKey then decrypts every
+// file in the folder, across nested paths and independent C1 values per file.
+func TestReKeyWorksWhenFolderShareUsesUploadEntropy(t *testing.T) {
+	signingKeyEntropy := "signing key hex models the SignatureV2 entropy source used by chunked_upload"
+	recipientMnemonic := "inside february piece turkey offer merry select combine tissue wave wet shift room afraid december gown mean brick speak grant gain become toy clown"
+	tag := "filetype:audio"
+
+	recipient := newScheme(t, recipientMnemonic)
+	recipient.InitForEncryption(tag)
+	recipientPubKey, _ := recipient.GetPublicKey()
+
+	// Folder share generates ONE reKey with signing-key entropy (post-fix).
+	sharer := newScheme(t, signingKeyEntropy)
+	sharer.InitForEncryption(tag)
+	reKey, err := sharer.GetReGenKey(recipientPubKey, tag)
+	require.NoError(t, err)
+
+	// Simulate files across the folder tree — each uploaded with the same
+	// signing-key entropy (mirrors chunked_upload on SignatureV2 allocations).
+	files := []struct {
+		name string
+		data []byte
+	}{
+		{"folder/a.txt", []byte("alpha")},
+		{"folder/nested/b.bin", []byte{0x01, 0x02, 0x03, 0x04, 0x05}},
+		{"folder/nested/deeper/c.md", []byte("# nested markdown content")},
+	}
+
+	for _, f := range files {
+		uploader := newScheme(t, signingKeyEntropy)
+		uploader.InitForEncryption(tag) // fresh random T → unique C1 per file
+		fileC1 := uploader.GetEncryptedKey()
+		encMsg, err := uploader.Encrypt(f.data)
+		require.NoError(t, err)
+
+		recipientDec := newScheme(t, recipientMnemonic)
+		recipientDec.InitForEncryption(tag)
+		dec := blobberReEncryptAndDecrypt(t, encMsg, fileC1, reKey, recipientPubKey, recipientDec)
+		require.Equal(t, string(f.data), string(dec),
+			"folder reKey (signing-key entropy) decrypts %s uploaded with signing-key entropy", f.name)
+	}
+}
+
 func BenchmarkEncrypt(t *testing.B) {
 	mnemonic := "inside february piece turkey offer merry select combine tissue wave wet shift room afraid december gown mean brick speak grant gain become toy clown"
 	encscheme := NewEncryptionScheme()

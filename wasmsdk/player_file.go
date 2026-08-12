@@ -23,6 +23,9 @@ type FilePlayer struct {
 	authTicketObj *marker.AuthTicket
 	playlistFile  *sdk.PlaylistFile
 
+	// mwKey is the multi-wallet key used for per-op signing/selection.
+	mwKey string
+
 	downloadedChunks chan []byte
 	downloadedLen    int
 	ctx              context.Context
@@ -66,7 +69,7 @@ func (p *FilePlayer) download(startBlock int64) {
 	}
 	fmt.Println("start:", startBlock, "end:", endBlock, "numBlocks:", p.numBlocks, "total:", p.playlistFile.NumBlocks)
 
-	data, err := downloadBlocks(p.allocationObj.ID, p.remotePath, p.authTicket, p.lookupHash, "", startBlock, endBlock)
+	data, err := downloadBlocksWithKey(p.allocationObj.ID, p.remotePath, p.authTicket, p.lookupHash, "", startBlock, endBlock, p.mwKey)
 	// data, err := downloadBlocks2(int(startBlock), int(endBlock), p.allocationObj, p.remotePath)
 	if err != nil {
 		PrintError(err.Error())
@@ -159,7 +162,8 @@ func (p *FilePlayer) GetNext() []byte {
 }
 
 // createFilePalyer create player for remotePath
-func createFilePalyer(allocationID, remotePath, authTicket, lookupHash string) (*FilePlayer, error) {
+// accepts optional keys varargs to support multi-wallet selection when fetching allocations
+func createFilePalyer(allocationID, remotePath, authTicket, lookupHash string, keys ...string) (*FilePlayer, error) {
 	player := &FilePlayer{}
 	player.prefetchQty = 3
 	player.remotePath = remotePath
@@ -167,6 +171,9 @@ func createFilePalyer(allocationID, remotePath, authTicket, lookupHash string) (
 	player.lookupHash = lookupHash
 	player.numBlocks = 10
 	player.allocationID = allocationID
+	if len(keys) > 0 {
+		player.mwKey = keys[0]
+	}
 
 	//player is viewer
 	if len(authTicket) > 0 {
@@ -178,7 +185,7 @@ func createFilePalyer(allocationID, remotePath, authTicket, lookupHash string) (
 			return nil, err
 		}
 
-		allocationObj, err := sdk.GetAllocationFromAuthTicket(authTicket)
+	allocationObj, err := sdk.GetAllocationFromAuthTicket(authTicket, keys...)
 		if err != nil {
 			PrintError("Error fetching the allocation", err)
 			return nil, err
@@ -197,7 +204,7 @@ func createFilePalyer(allocationID, remotePath, authTicket, lookupHash string) (
 		return nil, RequiredArg("allocationID")
 	}
 
-	allocationObj, err := sdk.GetAllocation(allocationID)
+	allocationObj, err := getAllocation(allocationID, keys...)
 	if err != nil {
 		PrintError("Error fetching the allocation", err)
 		return nil, err

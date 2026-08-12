@@ -27,7 +27,7 @@ var (
 // if not found in cache, fetch from blockchain
 // and store in cache
 //   - allocationId is the allocation id
-func getAllocation(allocationId string) (*sdk.Allocation, error) {
+func getAllocation(allocationId string, keys ...string) (*sdk.Allocation, error) {
 
 	it, ok := cachedAllocations.Get(allocationId)
 
@@ -37,7 +37,7 @@ func getAllocation(allocationId string) (*sdk.Allocation, error) {
 		}
 	}
 	sdk.SetWasm()
-	a, err := sdk.GetAllocation(allocationId)
+	a, err := sdk.GetAllocation(allocationId, keys...)
 	if err != nil {
 		return nil, err
 	}

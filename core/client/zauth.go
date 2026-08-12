@@ -13,7 +13,7 @@ import (
 
 // AvailableRestrictions represents supported restrictions mapping.
 var AvailableRestrictions = map[string][]string{
-	"token_transfers": {"transfer"},
+	"token_transfers": {"transfer", "pour"},
 	"allocation_file_operations": {
 		"read_redeem",
 		"commit_connection",
@@ -535,14 +535,22 @@ func CallZvaultRetrieveSharedWallets(serverAddr, token string) (string, error) {
 
 // ZauthSignTxn returns a function that sends a txn signing request to the zauth server
 func ZauthSignTxn(serverAddr string) sys.AuthorizeFunc {
-	return func(msg string) (string, error) {
+	return func(msg string, keys ...string) (string, error) {
 		req, err := http.NewRequest("POST", serverAddr+"/sign/txn", bytes.NewBuffer([]byte(msg)))
 		if err != nil {
 			return "", errors.Wrap(err, "failed to create HTTP request")
 		}
 		req.Header.Set("Content-Type", "application/json")
 		c := GetClient()
-		pubkey := c.Keys[0].PublicKey
+		pubkey := c.PeerPublicKey
+		if len(keys) > 0 {
+			c = GetWalletByKey(keys[0])
+			if c == nil {
+				return "", errors.Errorf("wallet not found for pubkey: %s", keys[0])
+			}
+			pubkey = c.PeerPublicKey
+		}
+
 		req.Header.Set("X-Peer-Public-Key", pubkey)
 
 		client := &http.Client{}
@@ -572,14 +580,22 @@ func ZauthSignTxn(serverAddr string) sys.AuthorizeFunc {
 }
 
 func ZauthAuthCommon(serverAddr string) sys.AuthorizeFunc {
-	return func(msg string) (string, error) {
+	return func(msg string, keys ...string) (string, error) {
 		req, err := http.NewRequest("POST", serverAddr+"/sign/msg", bytes.NewBuffer([]byte(msg)))
 		if err != nil {
 			return "", errors.Wrap(err, "failed to create HTTP request")
 		}
 
 		c := GetClient()
-		pubkey := c.Keys[0].PublicKey
+		pubkey := c.PeerPublicKey
+		if len(keys) > 0 {
+			c = GetWalletByKey(keys[0])
+			if c == nil {
+				return "", errors.Errorf("multi-wallet-settings err: %v", keys[0])
+			}
+			pubkey = c.PeerPublicKey
+		}
+
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("X-Peer-Public-Key", pubkey)
 

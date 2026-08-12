@@ -74,3 +74,11 @@ func WithFileHandler(fileHandler sys.File) DownloadOption {
 		do.isFileHandlerDownload = true
 	}
 }
+
+// WithDownloadPubKey sets the per-operation public key that should be used
+// for owner-signing and request-level signing during downloads.
+func WithDownloadPubKey(pubKey string) DownloadOption {
+	return func(do *DownloadOptions) {
+		do.MultiWalletSupportKey = pubKey
+	}
+}

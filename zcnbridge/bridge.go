@@ -622,7 +622,7 @@ func (b *BridgeClient) BurnWZCN(ctx context.Context, amountTokens uint64) (*type
 // MintZCN mints ZCN tokens after receiving proof-of-burn of WZCN tokens
 //   - ctx go context instance to run the transaction
 //   - payload received from authorizers
-func (b *BridgeClient) MintZCN(payload *zcnsc.MintPayload) (string, error) {
+func (b *BridgeClient) MintZCN(payload *zcnsc.MintPayload, keys ...string) (string, error) {
 	Logger.Info(
 		"Starting MINT smart contract",
 		zap.String("sc address", wallet.ZCNSCSmartContractAddress),
@@ -632,7 +632,7 @@ func (b *BridgeClient) MintZCN(payload *zcnsc.MintPayload) (string, error) {
 	hash, _, _, _, err := coreTransaction.SmartContractTxn(wallet.ZCNSCSmartContractAddress, coreTransaction.SmartContractTxnData{
 		Name:      wallet.MintFunc,
 		InputArgs: payload,
-	}, true)
+	}, true, keys...)
 
 	if err != nil {
 		return "", errors.Wrap(err, fmt.Sprintf("failed to execute smart contract, hash = %s", hash))
@@ -650,7 +650,7 @@ func (b *BridgeClient) MintZCN(payload *zcnsc.MintPayload) (string, error) {
 //   - ctx go context instance to run the transaction
 //   - amount amount of tokens to burn
 //   - txnfee transaction fee
-func (b *BridgeClient) BurnZCN(amount uint64) (string, string, error) {
+func (b *BridgeClient) BurnZCN(amount uint64, keys ...string) (string, string, error) {
 	payload := zcnsc.BurnPayload{
 		EthereumAddress: b.EthereumAddress,
 	}
@@ -664,7 +664,7 @@ func (b *BridgeClient) BurnZCN(amount uint64) (string, string, error) {
 	hash, out, _, _, err := coreTransaction.SmartContractTxnValue(wallet.ZCNSCSmartContractAddress, coreTransaction.SmartContractTxnData{
 		Name:      wallet.BurnFunc,
 		InputArgs: payload,
-	}, amount, true)
+	}, amount, true, keys...)
 	if err != nil {
 		Logger.Error("Burn ZCN transaction FAILED", zap.Error(err))
 		return hash, out, errors.Wrap(err, fmt.Sprintf("failed to execute smart contract, hash = %s", hash))
@@ -1057,7 +1057,7 @@ func (b *BridgeClient) estimateAlchemyGasAmount(ctx context.Context, to, data st
 //   - from source address
 //   - to target address
 //   - amountTokens amount of tokens to burn
-func (b *BridgeClient) EstimateBurnWZCNGasAmount(ctx context.Context, from, to, amountTokens string) (float64, error) {
+func (b *BridgeClient) EstimateBurnWZCNGasAmount(ctx context.Context, from, to, amountTokens string, keys ...string) (float64, error) {
 	switch b.getProviderType() {
 	case AlchemyProvider:
 		abi, err := bridge.BridgeMetaData.GetAbi()
@@ -1065,7 +1065,7 @@ func (b *BridgeClient) EstimateBurnWZCNGasAmount(ctx context.Context, from, to, 
 			return 0, errors.Wrap(err, "failed to get ABI")
 		}
 
-		clientID := DefaultClientIDEncoder(coreClient.Id())
+		clientID := DefaultClientIDEncoder(coreClient.Id(keys...))
 
 		amount := new(big.Int)
 		amount.SetString(amountTokens, 10)

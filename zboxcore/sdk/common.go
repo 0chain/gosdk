@@ -20,8 +20,8 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
-func getObjectTreeFromBlobber(ctx context.Context, allocationID, allocationTx, sig string, remoteFilePath string, blobber *blockchain.StorageNode, clientId ...string) (fileref.RefEntity, error) {
-	httpreq, err := zboxutil.NewObjectTreeRequest(blobber.Baseurl, allocationID, allocationTx, sig, remoteFilePath)
+func getObjectTreeFromBlobber(ctx context.Context, allocationID, allocationTx, sig string, remoteFilePath string, blobber *blockchain.StorageNode, keys ...string) (fileref.RefEntity, error) {
+	httpreq, err := zboxutil.NewObjectTreeRequest(blobber.Baseurl, allocationID, allocationTx, sig, remoteFilePath, keys...)
 	if err != nil {
 		l.Logger.Error(blobber.Baseurl, "Error creating object tree request", err)
 		return nil, err
@@ -63,9 +63,9 @@ func getObjectTreeFromBlobber(ctx context.Context, allocationID, allocationTx, s
 	return lR.GetRefFromObjectTree(allocationID)
 }
 
-func getAllocationDataFromBlobber(blobber *blockchain.StorageNode, allocationId string, allocationTx string, respCh chan<- *BlobberAllocationStats, wg *sync.WaitGroup, clientId ...string) {
+func getAllocationDataFromBlobber(blobber *blockchain.StorageNode, allocationId string, allocationTx string, respCh chan<- *BlobberAllocationStats, wg *sync.WaitGroup, keys ...string) {
 	defer wg.Done()
-	httpreq, err := zboxutil.NewAllocationRequest(blobber.Baseurl, allocationId, allocationTx, clientId...)
+	httpreq, err := zboxutil.NewAllocationRequest(blobber.Baseurl, allocationId, allocationTx, keys...)
 	if err != nil {
 		l.Logger.Error(blobber.Baseurl, "Error creating allocation request", err)
 		return
@@ -123,14 +123,15 @@ func ValidateRemoteFileName(remotePath string) error {
 }
 
 type subDirRequest struct {
-	opType          string
-	subOpType       string
-	remotefilepath  string
-	destPath        string
-	allocationObj   *Allocation
-	ctx             context.Context
-	consensusThresh int
-	mask            zboxutil.Uint128
+	opType                string
+	subOpType             string
+	remotefilepath        string
+	destPath              string
+	allocationObj         *Allocation
+	ctx                   context.Context
+	consensusThresh       int
+	mask                  zboxutil.Uint128
+	MultiWalletSupportKey string
 }
 
 func (req *subDirRequest) processSubDirectories() error {
@@ -140,7 +141,13 @@ func (req *subDirRequest) processSubDirectories() error {
 	)
 
 	for {
-		oResult, err := req.allocationObj.GetRefs(req.remotefilepath, offsetPath, "", "", fileref.FILE, fileref.REGULAR, 0, getRefPageLimit, WithObjectContext(req.ctx), WithObjectConsensusThresh(req.consensusThresh), WithSingleBlobber(true), WithObjectMask(req.mask))
+		// Build options for GetRefs; include operation-level client key when provided so
+		// the underlying object tree / refs requests are signed with the correct wallet.
+		objOpts := []ObjectTreeRequestOption{WithObjectContext(req.ctx), WithObjectConsensusThresh(req.consensusThresh), WithSingleBlobber(true), WithObjectMask(req.mask)}
+		if req.MultiWalletSupportKey != "" {
+			objOpts = append(objOpts, WithObjectClientKey(req.MultiWalletSupportKey))
+		}
+		oResult, err := req.allocationObj.GetRefs(req.remotefilepath, offsetPath, "", "", fileref.FILE, fileref.REGULAR, 0, getRefPageLimit, objOpts...)
 		if err != nil {
 			return err
 		}
@@ -171,7 +178,11 @@ func (req *subDirRequest) processSubDirectories() error {
 			}
 			ops = append(ops, op)
 		}
-		err = req.allocationObj.DoMultiOperation(ops)
+		if req.MultiWalletSupportKey != "" {
+			err = req.allocationObj.DoMultiOperation(ops, func(mo *MultiOperation) { mo.MultiWalletSupportKey = req.MultiWalletSupportKey })
+		} else {
+			err = req.allocationObj.DoMultiOperation(ops)
+		}
 		if err != nil {
 			return err
 		}
@@ -188,7 +199,11 @@ func (req *subDirRequest) processSubDirectories() error {
 	}
 
 	for pathLevel > level {
-		oResult, err := req.allocationObj.GetRefs(req.remotefilepath, offsetPath, "", "", fileref.DIRECTORY, fileref.REGULAR, pathLevel, getRefPageLimit, WithObjectContext(req.ctx), WithObjectMask(req.mask), WithObjectConsensusThresh(req.consensusThresh), WithSingleBlobber(true))
+		objOpts := []ObjectTreeRequestOption{WithObjectContext(req.ctx), WithObjectMask(req.mask), WithObjectConsensusThresh(req.consensusThresh), WithSingleBlobber(true)}
+		if req.MultiWalletSupportKey != "" {
+			objOpts = append(objOpts, WithObjectClientKey(req.MultiWalletSupportKey))
+		}
+		oResult, err := req.allocationObj.GetRefs(req.remotefilepath, offsetPath, "", "", fileref.DIRECTORY, fileref.REGULAR, pathLevel, getRefPageLimit, objOpts...)
 		if err != nil {
 			return err
 		}
@@ -216,7 +231,11 @@ func (req *subDirRequest) processSubDirectories() error {
 				}
 				ops = append(ops, op)
 			}
-			err = req.allocationObj.DoMultiOperation(ops)
+			if req.MultiWalletSupportKey != "" {
+				err = req.allocationObj.DoMultiOperation(ops, func(mo *MultiOperation) { mo.MultiWalletSupportKey = req.MultiWalletSupportKey })
+			} else {
+				err = req.allocationObj.DoMultiOperation(ops)
+			}
 			if err != nil {
 				return err
 			}

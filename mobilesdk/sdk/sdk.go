@@ -508,5 +508,8 @@ func decodeTicket(ticket string) (string, string, uint64, error) {
 //		}
 //	}
 func RegisterAuthorizer(auth Autorizer) {
-	sys.Authorize = auth.Auth
+	sys.Authorize = func(msg string, clientIDs ...string) (string, error) {
+		// clientIDs are ignored as the interface only accepts msg
+		return auth.Auth(msg)
+	}
 }

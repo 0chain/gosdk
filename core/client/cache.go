@@ -30,11 +30,11 @@ func (nc *NonceCache) GetNextNonce(clientId string) int64 {
 	nc.guard.Lock()
 	defer nc.guard.Unlock()
 	if _, ok := nc.cache[clientId]; !ok {
-		bal, err := GetBalance(clientId)
-		if err != nil || bal == nil {
+		nonce, err := GetNonce(clientId)
+		if err != nil {
 			nc.cache[clientId] = 0
 		} else {
-			nc.cache[clientId] = bal.Nonce
+			nc.cache[clientId] = nonce
 		}
 	}
 

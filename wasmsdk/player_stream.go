@@ -209,7 +209,8 @@ func (p *StreamPlayer) GetNext() []byte {
 }
 
 // createStreamPalyer create player for remotePath
-func createStreamPalyer(allocationID, remotePath, authTicket, lookupHash string) (*StreamPlayer, error) {
+// accepts optional keys varargs to support multi-wallet selection when fetching allocations
+func createStreamPalyer(allocationID, remotePath, authTicket, lookupHash string, keys ...string) (*StreamPlayer, error) {
 
 	player := &StreamPlayer{}
 	player.prefetchQty = 3
@@ -227,7 +228,7 @@ func createStreamPalyer(allocationID, remotePath, authTicket, lookupHash string)
 			return nil, err
 		}
 
-		allocationObj, err := sdk.GetAllocationFromAuthTicket(authTicket)
+	allocationObj, err := sdk.GetAllocationFromAuthTicket(authTicket, keys...)
 		if err != nil {
 			PrintError("Error fetching the allocation", err)
 			return nil, err
@@ -246,7 +247,7 @@ func createStreamPalyer(allocationID, remotePath, authTicket, lookupHash string)
 		return nil, RequiredArg("allocationID")
 	}
 
-	allocationObj, err := sdk.GetAllocation(allocationID)
+	allocationObj, err := getAllocation(allocationID, keys...)
 	if err != nil {
 		PrintError("Error fetching the allocation", err)
 		return nil, err

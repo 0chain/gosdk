@@ -60,13 +60,13 @@ type MultiOperation struct {
 	operationMask zboxutil.Uint128
 	maskMU        *sync.Mutex
 	Consensus
-	changes   [][]allocationchange.AllocationChange
-	changesV2 []allocationchange.AllocationChangeV2
-	isRepair  bool
+	changes               [][]allocationchange.AllocationChange
+	changesV2             []allocationchange.AllocationChangeV2
+	isRepair              bool
+	MultiWalletSupportKey string
 }
 
 func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
-
 	defer func() {
 		if err == nil {
 			mo.maskMU.Lock()
@@ -96,10 +96,18 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 			formWriter.Close()
 
 			var httpreq *http.Request
-			httpreq, err = zboxutil.NewConnectionRequest(blobber.Baseurl, mo.allocationObj.ID, mo.allocationObj.Tx, mo.allocationObj.sig, body, mo.allocationObj.Owner)
-			if err != nil {
-				l.Logger.Error(blobber.Baseurl, "Error creating new connection request", err)
-				return
+			if mo.MultiWalletSupportKey != "" {
+				httpreq, err = zboxutil.NewConnectionRequest(blobber.Baseurl, mo.allocationObj.ID, mo.allocationObj.Tx, mo.allocationObj.sig, body, mo.MultiWalletSupportKey)
+				if err != nil {
+					l.Logger.Error(blobber.Baseurl, "Error creating new connection request by wallet", err)
+					return err, false
+				}
+			} else {
+				httpreq, err = zboxutil.NewConnectionRequest(blobber.Baseurl, mo.allocationObj.ID, mo.allocationObj.Tx, mo.allocationObj.sig, body, mo.allocationObj.Owner)
+				if err != nil {
+					l.Logger.Error(blobber.Baseurl, "Error creating new connection request", err)
+					return
+				}
 			}
 
 			httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
@@ -147,7 +155,6 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 			err = errors.New("response_error", string(respBody))
 			return
 		}()
-
 		if err != nil {
 			return
 		}
@@ -165,9 +172,8 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 func (mo *MultiOperation) Process() error {
 	l.Logger.Debug("MultiOperation Process start")
 	wg := &sync.WaitGroup{}
-	if mo.allocationObj.StorageVersion == 0 {
-		mo.changes = make([][]allocationchange.AllocationChange, len(mo.operations))
-	} else {
+	mo.changes = make([][]allocationchange.AllocationChange, len(mo.operations))
+	if mo.allocationObj.StorageVersion != 0 {
 		mo.changesV2 = make([]allocationchange.AllocationChangeV2, 0, len(mo.operations))
 	}
 	ctx := mo.ctx
@@ -208,13 +214,14 @@ func (mo *MultiOperation) Process() error {
 					mo.operationMask = mo.operationMask.And(mask)
 				}
 				mo.changesV2 = append(mo.changesV2, op)
-				mo.maskMU.Unlock()
 			} else {
 				mo.operationMask = mo.operationMask.Or(mask)
-				mo.maskMU.Unlock()
-				changes := op.buildChange(refs, uid)
-				mo.changes[idx] = changes
 			}
+			mo.maskMU.Unlock()
+			// Always build V1 allocation_changes — blobber commit handler requires them
+			// regardless of storage version
+			changes := op.buildChange(refs, uid)
+			mo.changes[idx] = changes
 		}(op, idx)
 	}
 	swg.Wait()
@@ -244,11 +251,9 @@ func (mo *MultiOperation) Process() error {
 	// But we want mo.changes[0] to have allocationChange for blobber 1 and mo.changes[1] to have allocationChange for
 	// blobber 2 and so on.
 	start := time.Now()
-	if mo.allocationObj.StorageVersion != StorageV2 {
-		mo.changes = zboxutil.Transpose(mo.changes)
-	}
+	mo.changes = zboxutil.Transpose(mo.changes)
 
-	writeMarkerMutex, err := CreateWriteMarkerMutex(mo.allocationObj)
+	writeMarkerMutex, err := CreateWriteMarkerMutex(mo.allocationObj, mo.MultiWalletSupportKey)
 	if err != nil {
 		for _, op := range mo.operations {
 			op.Error(mo.allocationObj, 0, err)
@@ -270,7 +275,11 @@ func (mo *MultiOperation) Process() error {
 	start = time.Now()
 	status := Commit
 	if !mo.isRepair && !mo.allocationObj.checkStatus {
-		status, _, err = mo.allocationObj.CheckAllocStatus()
+		if mo.MultiWalletSupportKey != "" {
+			status, _, err = mo.allocationObj.CheckAllocStatus(mo.MultiWalletSupportKey)
+		} else {
+			status, _, err = mo.allocationObj.CheckAllocStatus()
+		}
 		if err != nil {
 			logger.Logger.Error("Error checking allocation status", err)
 			if singleClientMode {
@@ -333,16 +342,19 @@ func (mo *MultiOperation) Process() error {
 	timestamp := int64(common.Now())
 	for i := mo.operationMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
+		// ClientId must always be the allocation owner. Use Pubkey only for signing
+		// (stored in the commit request's pubkey field).
 		commitReq := &CommitRequest{
-			ClientId:     mo.allocationObj.Owner,
-			allocationID: mo.allocationObj.ID,
-			allocationTx: mo.allocationObj.Tx,
-			sig:          mo.allocationObj.sig,
-			blobber:      mo.allocationObj.Blobbers[pos],
-			connectionID: mo.connectionID,
-			wg:           wg,
-			timestamp:    timestamp,
-			blobberInd:   pos,
+			ClientId:              mo.allocationObj.Owner,
+			allocationID:          mo.allocationObj.ID,
+			allocationTx:          mo.allocationObj.Tx,
+			sig:                   mo.allocationObj.sig,
+			blobber:               mo.allocationObj.Blobbers[pos],
+			connectionID:          mo.connectionID,
+			wg:                    wg,
+			timestamp:             timestamp,
+			blobberInd:            pos,
+			multiWalletSupportKey: mo.MultiWalletSupportKey,
 		}
 
 		commitReq.changes = append(commitReq.changes, mo.changes[pos]...)
@@ -393,7 +405,6 @@ func (mo *MultiOperation) Process() error {
 }
 
 func (mo *MultiOperation) commitV2() error {
-
 	rootMap := make(map[string]zboxutil.Uint128)
 	var pos uint64
 	for i := mo.operationMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
@@ -418,15 +429,16 @@ func (mo *MultiOperation) commitV2() error {
 			threshold = mask.CountOnes()
 		}
 		commitReq := &CommitRequestV2{
-			allocationObj:   mo.allocationObj,
-			connectionID:    mo.connectionID,
-			sig:             mo.allocationObj.sig,
-			wg:              wg,
-			timestamp:       timestamp,
-			commitMask:      mask,
-			consensusThresh: threshold,
-			changes:         changes,
-			isRepair:        mo.isRepair,
+			allocationObj:         mo.allocationObj,
+			connectionID:          mo.connectionID,
+			sig:                   mo.allocationObj.sig,
+			wg:                    wg,
+			timestamp:             timestamp,
+			commitMask:            mask,
+			consensusThresh:       threshold,
+			changes:               changes,
+			isRepair:              mo.isRepair,
+			multiWalletSupportKey: mo.MultiWalletSupportKey,
 		}
 		commitReqs[counter] = commitReq
 		counter++

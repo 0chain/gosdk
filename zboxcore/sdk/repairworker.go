@@ -286,7 +286,12 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) []OperationR
 }
 
 func (r *RepairRequest) repairOperation(a *Allocation, ops []OperationRequest) {
-	err := a.DoMultiOperation(ops, WithRepair())
+	opts := []MultiOperationOption{WithRepair()}
+	if a.MultiWalletSupportKey != "" {
+		opts = append(opts, func(mo *MultiOperation) { mo.MultiWalletSupportKey = a.MultiWalletSupportKey })
+	}
+
+	err := a.DoMultiOperation(ops, opts...)
 	if err != nil {
 		l.Logger.Error("repair_file_failed", zap.Error(err))
 		status := r.statusCB != nil

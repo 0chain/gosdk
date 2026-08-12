@@ -15,7 +15,7 @@ var (
 
 	// Sign sign method. it should be initialized on different platform.
 	Sign         SignFunc
-	SignWithAuth SignFunc
+	SignWithAuth SignWithAuthFunc
 
 	// Verify verify method. it should be initialized on different platform.
 	Verify VerifyFunc

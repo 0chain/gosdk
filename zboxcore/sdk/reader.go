@@ -190,6 +190,7 @@ func GetDStorageFileReader(alloc *Allocation, ref *ORef, sdo *StreamDownloadOpti
 			chunkSize:          BlockSize,
 			maskMu:             &sync.Mutex{},
 			connectionID:       zboxutil.NewConnectionId(),
+			MultiWalletSupportKey: alloc.MultiWalletSupportKey,
 		},
 		open: true,
 	}

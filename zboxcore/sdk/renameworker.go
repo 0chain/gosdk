@@ -30,34 +30,44 @@ import (
 )
 
 type RenameRequest struct {
-	allocationObj  *Allocation
-	allocationID   string
-	allocationTx   string
-	sig            string
-	blobbers       []*blockchain.StorageNode
-	remotefilepath string
-	newName        string
-	ctx            context.Context
-	ctxCncl        context.CancelFunc
-	wg             *sync.WaitGroup
-	renameMask     zboxutil.Uint128
-	maskMU         *sync.Mutex
-	connectionID   string
-	consensus      Consensus
-	timestamp      int64
+	allocationObj         *Allocation
+	allocationID          string
+	allocationTx          string
+	sig                   string
+	blobbers              []*blockchain.StorageNode
+	remotefilepath        string
+	newName               string
+	ctx                   context.Context
+	ctxCncl               context.CancelFunc
+	wg                    *sync.WaitGroup
+	renameMask            zboxutil.Uint128
+	maskMU                *sync.Mutex
+	connectionID          string
+	consensus             Consensus
+	timestamp             int64
+	clientId              string
+	MultiWalletSupportKey string
 }
 
 func (req *RenameRequest) getObjectTreeFromBlobber(blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
-	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.allocationTx, req.sig, req.remotefilepath, blobber, req.allocationObj.Owner)
+	key := req.clientId
+	if key == "" {
+		key = req.allocationObj.Owner
+	}
+	if req.MultiWalletSupportKey != "" {
+		key = req.MultiWalletSupportKey
+	}
+	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.allocationTx, req.sig, req.remotefilepath, blobber, key)
 }
 
 func (req *RenameRequest) getFileMetaFromBlobber(pos int) (fileRef *fileref.FileRef, err error) {
 	listReq := &ListRequest{
-		allocationID:   req.allocationID,
-		allocationTx:   req.allocationTx,
-		blobbers:       req.blobbers,
-		remotefilepath: req.remotefilepath,
-		ctx:            req.ctx,
+		allocationID:          req.allocationID,
+		allocationTx:          req.allocationTx,
+		blobbers:              req.blobbers,
+		remotefilepath:        req.remotefilepath,
+		ctx:                   req.ctx,
+		MultiWalletSupportKey: req.MultiWalletSupportKey,
 	}
 	respChan := make(chan *fileMetaResponse)
 	go listReq.getFileMetaInfoFromBlobber(req.blobbers[pos], int(pos), respChan)
@@ -117,7 +127,11 @@ func (req *RenameRequest) renameBlobberObject(
 			formWriter.Close()
 
 			var httpreq *http.Request
-			httpreq, err = zboxutil.NewRenameRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body, req.allocationObj.Owner)
+			if req.MultiWalletSupportKey != "" {
+				httpreq, err = zboxutil.NewRenameRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body, req.MultiWalletSupportKey)
+			} else {
+				httpreq, err = zboxutil.NewRenameRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body, req.allocationObj.Owner)
+			}
 			if err != nil {
 				l.Logger.Error(blobber.Baseurl, "Error creating rename request", err)
 				return
@@ -253,14 +267,15 @@ func (req *RenameRequest) ProcessWithBlobbersV2() ([]fileref.RefEntity, error) {
 			}
 		}
 		subRequest := &subDirRequest{
-			allocationObj:   req.allocationObj,
-			remotefilepath:  req.remotefilepath,
-			destPath:        path.Join(path.Dir(req.remotefilepath), req.newName),
-			ctx:             req.ctx,
-			consensusThresh: req.consensus.consensusThresh,
-			opType:          constants.FileOperationMove,
-			subOpType:       constants.FileOperationRename,
-			mask:            req.renameMask,
+			allocationObj:         req.allocationObj,
+			remotefilepath:        req.remotefilepath,
+			destPath:              path.Join(path.Dir(req.remotefilepath), req.newName),
+			ctx:                   req.ctx,
+			consensusThresh:       req.consensus.consensusThresh,
+			opType:                constants.FileOperationMove,
+			subOpType:             constants.FileOperationRename,
+			mask:                  req.renameMask,
+			MultiWalletSupportKey: req.MultiWalletSupportKey,
 		}
 		err := subRequest.processSubDirectories()
 		if err != nil {
@@ -271,7 +286,11 @@ func (req *RenameRequest) ProcessWithBlobbersV2() ([]fileref.RefEntity, error) {
 			RemotePath:    req.remotefilepath,
 			Mask:          &req.renameMask,
 		}
-		err = req.allocationObj.DoMultiOperation([]OperationRequest{op})
+		if req.MultiWalletSupportKey != "" {
+			err = req.allocationObj.DoMultiOperation([]OperationRequest{op}, func(mo *MultiOperation) { mo.MultiWalletSupportKey = req.MultiWalletSupportKey })
+		} else {
+			err = req.allocationObj.DoMultiOperation([]OperationRequest{op})
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -316,7 +335,7 @@ func (req *RenameRequest) ProcessRename() error {
 				req.consensus.consensusThresh, req.consensus.getConsensus()))
 	}
 
-	writeMarkerMutex, err := CreateWriteMarkerMutex(req.allocationObj)
+	writeMarkerMutex, err := CreateWriteMarkerMutex(req.allocationObj, req.MultiWalletSupportKey)
 	if err != nil {
 		return fmt.Errorf("rename failed: %s", err.Error())
 	}
@@ -329,7 +348,7 @@ func (req *RenameRequest) ProcessRename() error {
 	defer writeMarkerMutex.Unlock(req.ctx, req.renameMask, req.blobbers, time.Minute, req.connectionID) //nolint: errcheck
 
 	//Check if the allocation is to be repaired or rolled back
-	status, _, err := req.allocationObj.CheckAllocStatus()
+	status, _, err := req.allocationObj.CheckAllocStatus(req.MultiWalletSupportKey)
 	if err != nil {
 		logger.Logger.Error("Error checking allocation status: ", err)
 		return fmt.Errorf("rename failed: %s", err.Error())
@@ -366,14 +385,15 @@ func (req *RenameRequest) ProcessRename() error {
 		newChange.Size = 0
 
 		commitReq := &CommitRequest{
-			ClientId:     req.allocationObj.Owner,
-			allocationID: req.allocationID,
-			allocationTx: req.allocationTx,
-			sig:          req.sig,
-			blobber:      req.blobbers[pos],
-			connectionID: req.connectionID,
-			wg:           wg,
-			timestamp:    req.timestamp,
+			ClientId:              req.allocationObj.Owner,
+			allocationID:          req.allocationID,
+			allocationTx:          req.allocationTx,
+			sig:                   req.sig,
+			blobber:               req.blobbers[pos],
+			connectionID:          req.connectionID,
+			wg:                    wg,
+			timestamp:             req.timestamp,
+			multiWalletSupportKey: req.MultiWalletSupportKey,
 		}
 		commitReq.changes = append(commitReq.changes, newChange)
 		commitReqs[counter] = commitReq
@@ -409,15 +429,17 @@ func (req *RenameRequest) ProcessRename() error {
 }
 
 type RenameOperation struct {
-	remotefilepath string
-	srcLookupHash  string
-	destLookupHash string
-	ctx            context.Context
-	ctxCncl        context.CancelFunc
-	renameMask     zboxutil.Uint128
-	newName        string
-	maskMU         *sync.Mutex
-	objectTreeRefs []fileref.RefEntity
+	remotefilepath        string
+	srcLookupHash         string
+	destLookupHash        string
+	ctx                   context.Context
+	ctxCncl               context.CancelFunc
+	renameMask            zboxutil.Uint128
+	newName               string
+	maskMU                *sync.Mutex
+	objectTreeRefs        []fileref.RefEntity
+	clientId              string
+	MultiWalletSupportKey string
 
 	consensus Consensus
 }
@@ -425,20 +447,22 @@ type RenameOperation struct {
 func (ro *RenameOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
 	// make renameRequest object
 	rR := &RenameRequest{
-		allocationObj:  allocObj,
-		allocationID:   allocObj.ID,
-		allocationTx:   allocObj.Tx,
-		sig:            allocObj.sig,
-		connectionID:   connectionID,
-		blobbers:       allocObj.Blobbers,
-		remotefilepath: ro.remotefilepath,
-		newName:        ro.newName,
-		ctx:            ro.ctx,
-		ctxCncl:        ro.ctxCncl,
-		renameMask:     ro.renameMask,
-		maskMU:         ro.maskMU,
-		wg:             &sync.WaitGroup{},
-		consensus:      Consensus{RWMutex: &sync.RWMutex{}},
+		allocationObj:         allocObj,
+		allocationID:          allocObj.ID,
+		allocationTx:          allocObj.Tx,
+		sig:                   allocObj.sig,
+		connectionID:          connectionID,
+		blobbers:              allocObj.Blobbers,
+		remotefilepath:        ro.remotefilepath,
+		newName:               ro.newName,
+		ctx:                   ro.ctx,
+		ctxCncl:               ro.ctxCncl,
+		renameMask:            ro.renameMask,
+		maskMU:                ro.maskMU,
+		wg:                    &sync.WaitGroup{},
+		consensus:             Consensus{RWMutex: &sync.RWMutex{}},
+		clientId:              ro.clientId,
+		MultiWalletSupportKey: ro.MultiWalletSupportKey,
 	}
 	if filepath.Base(ro.remotefilepath) == ro.newName {
 		return nil, ro.renameMask, errors.New("invalid_operation", "Cannot rename to same name")
@@ -526,7 +550,7 @@ func (ro *RenameOperation) Error(allocObj *Allocation, consensus int, err error)
 
 }
 
-func NewRenameOperation(remotePath string, destName string, renameMask zboxutil.Uint128, maskMU *sync.Mutex, consensusTh int, fullConsensus int, ctx context.Context) *RenameOperation {
+func NewRenameOperation(remotePath string, destName string, renameMask zboxutil.Uint128, maskMU *sync.Mutex, consensusTh int, fullConsensus int, ctx context.Context, clientId string, multiWalletKey string) *RenameOperation {
 	ro := &RenameOperation{}
 	ro.remotefilepath = zboxutil.RemoteClean(remotePath)
 	ro.newName = path.Base(destName)
@@ -535,6 +559,8 @@ func NewRenameOperation(remotePath string, destName string, renameMask zboxutil.
 	ro.consensus.consensusThresh = consensusTh
 	ro.consensus.fullconsensus = fullConsensus
 	ro.ctx, ro.ctxCncl = context.WithCancel(ctx)
+	ro.clientId = clientId
+	ro.MultiWalletSupportKey = multiWalletKey
 	return ro
 
 }

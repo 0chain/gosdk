@@ -32,7 +32,7 @@ func MakeSCRestAPICallToSharder(scAddress string, relativePath string, params ma
 		restApiUrl = restApiUrls[0]
 	}
 
-	sharders := nodeClient.sharders.Healthy()
+	sharders := nodeClient.sharders.HealthyByLFB()
 	responses := make(map[int]int)
 	entityResult := make(map[string][]byte)
 
@@ -145,6 +145,76 @@ func isCurrentDominantStatus(respStatus int, currentTotalPerStatus map[int]int, 
 	return currentTotalPerStatus[respStatus] == currentMax && (respStatus == 200 || currentTotalPerStatus[200] < currentMax)
 }
 
+// GetNonce returns the highest nonce for clientID across all LFB-healthy sharders.
+// Using the maximum protects against stale nonces from lagging or stuck sharders.
+func GetNonce(clientID string) (int64, error) {
+	if clientID == "" {
+		clientID = Id()
+	}
+
+	sharders := nodeClient.sharders.HealthyByLFB()
+	if len(sharders) == 0 {
+		return 0, errors.New("no_sharders", "no healthy sharders available")
+	}
+
+	type result struct {
+		nonce int64
+		err   error
+	}
+
+	results := make(chan result, len(sharders))
+
+	for _, sharder := range sharders {
+		go func(s string) {
+			urlString := fmt.Sprintf("%s/v1/client/get/balance?client_id=%s", s, clientID)
+			req, err := util.NewHTTPGetRequest(urlString)
+			if err != nil {
+				results <- result{err: err}
+				return
+			}
+
+			resp, err := req.Get()
+			if err != nil {
+				results <- result{err: err}
+				return
+			}
+
+			if resp.StatusCode != http.StatusOK {
+				results <- result{err: fmt.Errorf("status %d: %s", resp.StatusCode, resp.Body)}
+				return
+			}
+
+			var bal GetBalanceResponse
+			if err := json.Unmarshal([]byte(resp.Body), &bal); err != nil {
+				results <- result{err: err}
+				return
+			}
+			results <- result{nonce: bal.Nonce}
+		}(sharder)
+	}
+
+	maxNonce := int64(-1)
+	var lastErr error
+	for i := 0; i < len(sharders); i++ {
+		r := <-results
+		if r.err != nil {
+			lastErr = r.err
+			continue
+		}
+		if r.nonce > maxNonce {
+			maxNonce = r.nonce
+		}
+	}
+
+	if maxNonce < 0 {
+		if lastErr != nil {
+			return 0, lastErr
+		}
+		return 0, errors.New("no_nonce", "could not get nonce from any sharder")
+	}
+	return maxNonce, nil
+}
+
 func GetBalance(clientIDs ...string) (*GetBalanceResponse, error) {
 	const GetBalance = "client/get/balance"
 	var (
@@ -185,3 +255,7 @@ func (b GetBalanceResponse) ToToken() (float64, error) {
 	f, _ := decimal.New(b.Balance, -10).Float64()
 	return f, nil
 }
+
+// MakeSCRestAPICall is a backward-compatible alias for MakeSCRestAPICallToSharder.
+// Older callers (e.g. blobber core/transaction/http.go) reference this name directly.
+var MakeSCRestAPICall = MakeSCRestAPICallToSharder

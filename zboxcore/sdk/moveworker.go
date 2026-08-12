@@ -31,34 +31,44 @@ import (
 )
 
 type MoveRequest struct {
-	allocationObj  *Allocation
-	allocationID   string
-	allocationTx   string
-	sig            string
-	blobbers       []*blockchain.StorageNode
-	remotefilepath string
-	destPath       string
-	ctx            context.Context
-	ctxCncl        context.CancelFunc
-	moveMask       zboxutil.Uint128
-	maskMU         *sync.Mutex
-	connectionID   string
-	timestamp      int64
-	destLookupHash string
+	allocationObj         *Allocation
+	allocationID          string
+	allocationTx          string
+	sig                   string
+	blobbers              []*blockchain.StorageNode
+	remotefilepath        string
+	destPath              string
+	ctx                   context.Context
+	ctxCncl               context.CancelFunc
+	moveMask              zboxutil.Uint128
+	maskMU                *sync.Mutex
+	connectionID          string
+	timestamp             int64
+	destLookupHash        string
+	clientId              string
+	MultiWalletSupportKey string
 	Consensus
 }
 
 func (req *MoveRequest) getObjectTreeFromBlobber(blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
-	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.allocationTx, req.sig, req.remotefilepath, blobber, req.allocationObj.Owner)
+	key := req.clientId
+	if key == "" {
+		key = req.allocationObj.Owner
+	}
+	if req.MultiWalletSupportKey != "" {
+		key = req.MultiWalletSupportKey
+	}
+	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.allocationTx, req.sig, req.remotefilepath, blobber, key)
 }
 
 func (req *MoveRequest) getFileMetaFromBlobber(pos int) (fileRef *fileref.FileRef, err error) {
 	listReq := &ListRequest{
-		allocationID:   req.allocationID,
-		allocationTx:   req.allocationTx,
-		blobbers:       req.blobbers,
-		remotefilepath: req.remotefilepath,
-		ctx:            req.ctx,
+		allocationID:          req.allocationID,
+		allocationTx:          req.allocationTx,
+		blobbers:              req.blobbers,
+		remotefilepath:        req.remotefilepath,
+		ctx:                   req.ctx,
+		MultiWalletSupportKey: req.MultiWalletSupportKey,
 	}
 	respChan := make(chan *fileMetaResponse)
 	go listReq.getFileMetaInfoFromBlobber(req.blobbers[pos], int(pos), respChan)
@@ -122,7 +132,14 @@ func (req *MoveRequest) moveBlobberObject(
 				cncl     context.CancelFunc
 			)
 
-			httpreq, err = zboxutil.NewMoveRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body, req.allocationObj.Owner)
+			key := req.clientId
+			if key == "" {
+				key = req.allocationObj.Owner
+			}
+			if req.MultiWalletSupportKey != "" {
+				key = req.MultiWalletSupportKey
+			}
+			httpreq, err = zboxutil.NewMoveRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body, key)
 			if err != nil {
 				l.Logger.Error(blobber.Baseurl, "Error creating rename request", err)
 				return
@@ -258,14 +275,15 @@ func (req *MoveRequest) ProcessWithBlobbersV2() ([]fileref.RefEntity, error) {
 			}
 		}
 		subRequest := &subDirRequest{
-			allocationObj:   req.allocationObj,
-			remotefilepath:  req.remotefilepath,
-			destPath:        req.destPath,
-			ctx:             req.ctx,
-			consensusThresh: req.consensusThresh,
-			opType:          constants.FileOperationMove,
-			subOpType:       constants.FileOperationMove,
-			mask:            req.moveMask,
+			allocationObj:         req.allocationObj,
+			remotefilepath:        req.remotefilepath,
+			destPath:              req.destPath,
+			ctx:                   req.ctx,
+			consensusThresh:       req.consensusThresh,
+			opType:                constants.FileOperationMove,
+			subOpType:             constants.FileOperationMove,
+			mask:                  req.moveMask,
+			MultiWalletSupportKey: req.MultiWalletSupportKey,
 		}
 		err := subRequest.processSubDirectories()
 		if err != nil {
@@ -275,7 +293,11 @@ func (req *MoveRequest) ProcessWithBlobbersV2() ([]fileref.RefEntity, error) {
 			OperationType: constants.FileOperationDelete,
 			RemotePath:    req.remotefilepath,
 		}
-		err = req.allocationObj.DoMultiOperation([]OperationRequest{op})
+		if req.MultiWalletSupportKey != "" {
+			err = req.allocationObj.DoMultiOperation([]OperationRequest{op}, func(mo *MultiOperation) { mo.MultiWalletSupportKey = req.MultiWalletSupportKey })
+		} else {
+			err = req.allocationObj.DoMultiOperation([]OperationRequest{op})
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -326,7 +348,7 @@ func (req *MoveRequest) ProcessMove() error {
 				req.Consensus.consensusThresh, req.Consensus.consensus))
 	}
 
-	writeMarkerMutex, err := CreateWriteMarkerMutex(req.allocationObj)
+	writeMarkerMutex, err := CreateWriteMarkerMutex(req.allocationObj, req.MultiWalletSupportKey)
 	if err != nil {
 		return fmt.Errorf("Move failed: %s", err.Error())
 	}
@@ -373,14 +395,15 @@ func (req *MoveRequest) ProcessMove() error {
 		moveChange.Operation = constants.FileOperationMove
 		moveChange.Size = 0
 		commitReq := &CommitRequest{
-			ClientId:     req.allocationObj.Owner,
-			allocationID: req.allocationID,
-			allocationTx: req.allocationTx,
-			sig:          req.sig,
-			blobber:      req.blobbers[pos],
-			connectionID: req.connectionID,
-			wg:           wg,
-			timestamp:    req.timestamp,
+			ClientId:              req.allocationObj.Owner,
+			allocationID:          req.allocationID,
+			allocationTx:          req.allocationTx,
+			sig:                   req.sig,
+			blobber:               req.blobbers[pos],
+			connectionID:          req.connectionID,
+			wg:                    wg,
+			timestamp:             req.timestamp,
+			multiWalletSupportKey: req.MultiWalletSupportKey,
 		}
 		// commitReq.change = moveChange
 		commitReq.changes = append(commitReq.changes, moveChange)
@@ -412,33 +435,37 @@ func (req *MoveRequest) ProcessMove() error {
 }
 
 type MoveOperation struct {
-	remotefilepath string
-	destPath       string
-	srcLookupHash  string
-	destLookupHash string
-	ctx            context.Context
-	ctxCncl        context.CancelFunc
-	moveMask       zboxutil.Uint128
-	maskMU         *sync.Mutex
-	consensus      Consensus
-	objectTreeRefs []fileref.RefEntity
+	remotefilepath        string
+	destPath              string
+	srcLookupHash         string
+	destLookupHash        string
+	ctx                   context.Context
+	ctxCncl               context.CancelFunc
+	moveMask              zboxutil.Uint128
+	maskMU                *sync.Mutex
+	consensus             Consensus
+	objectTreeRefs        []fileref.RefEntity
+	clientId              string
+	MultiWalletSupportKey string
 }
 
 func (mo *MoveOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
 	mR := &MoveRequest{
-		allocationObj:  allocObj,
-		allocationID:   allocObj.ID,
-		allocationTx:   allocObj.Tx,
-		sig:            allocObj.sig,
-		connectionID:   connectionID,
-		blobbers:       allocObj.Blobbers,
-		remotefilepath: mo.remotefilepath,
-		ctx:            mo.ctx,
-		ctxCncl:        mo.ctxCncl,
-		moveMask:       mo.moveMask,
-		maskMU:         mo.maskMU,
-		destPath:       mo.destPath,
-		Consensus:      Consensus{RWMutex: &sync.RWMutex{}},
+		allocationObj:         allocObj,
+		allocationID:          allocObj.ID,
+		allocationTx:          allocObj.Tx,
+		sig:                   allocObj.sig,
+		connectionID:          connectionID,
+		blobbers:              allocObj.Blobbers,
+		remotefilepath:        mo.remotefilepath,
+		ctx:                   mo.ctx,
+		ctxCncl:               mo.ctxCncl,
+		moveMask:              mo.moveMask,
+		maskMU:                mo.maskMU,
+		destPath:              mo.destPath,
+		Consensus:             Consensus{RWMutex: &sync.RWMutex{}},
+		clientId:              mo.clientId,
+		MultiWalletSupportKey: mo.MultiWalletSupportKey,
 	}
 	mR.Consensus.fullconsensus = mo.consensus.fullconsensus
 	mR.Consensus.consensusThresh = mo.consensus.consensusThresh
@@ -518,7 +545,7 @@ func (mo *MoveOperation) Error(allocObj *Allocation, consensus int, err error) {
 
 }
 
-func NewMoveOperation(remotePath string, destPath string, moveMask zboxutil.Uint128, maskMU *sync.Mutex, consensusTh int, fullConsensus int, ctx context.Context) *MoveOperation {
+func NewMoveOperation(remotePath string, destPath string, moveMask zboxutil.Uint128, maskMU *sync.Mutex, consensusTh int, fullConsensus int, ctx context.Context, clientId string, keys ...string) *MoveOperation {
 	mo := &MoveOperation{}
 	mo.remotefilepath = zboxutil.RemoteClean(remotePath)
 	if destPath != "/" {
@@ -530,6 +557,10 @@ func NewMoveOperation(remotePath string, destPath string, moveMask zboxutil.Uint
 	mo.consensus.consensusThresh = consensusTh
 	mo.consensus.fullconsensus = fullConsensus
 	mo.ctx, mo.ctxCncl = context.WithCancel(ctx)
+	mo.clientId = clientId
+	if len(keys) > 0 && keys[0] != "" {
+		mo.MultiWalletSupportKey = keys[0]
+	}
 	return mo
 }
 

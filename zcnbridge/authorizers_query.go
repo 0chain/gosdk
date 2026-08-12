@@ -119,7 +119,7 @@ func (b *BridgeClient) QueryEthereumMintPayload(zchainBurnHash string) (*ethereu
 }
 
 // QueryEthereumBurnEvents gets ethereum burn events
-func (b *BridgeClient) QueryEthereumBurnEvents(startNonce string) ([]*ethereum.BurnEvent, error) {
+func (b *BridgeClient) QueryEthereumBurnEvents(startNonce string, keys ...string) ([]*ethereum.BurnEvent, error) {
 	client = h.CleanClient()
 	authorizers, err := getAuthorizers(true)
 
@@ -130,7 +130,7 @@ func (b *BridgeClient) QueryEthereumBurnEvents(startNonce string) ([]*ethereum.B
 	var (
 		totalWorkers = len(authorizers)
 		values       = map[string]string{
-			"clientid":        coreClient.Id(),
+			"clientid":        coreClient.Id(keys...),
 			"ethereumaddress": b.EthereumAddress,
 			"startnonce":      startNonce,
 		}
@@ -176,7 +176,7 @@ func (b *BridgeClient) QueryEthereumBurnEvents(startNonce string) ([]*ethereum.B
 
 // QueryZChainMintPayload gets burn ticket and creates mint payload to be minted in the ZChain
 // ethBurnHash - Ethereum burn transaction hash
-func (b *BridgeClient) QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPayload, error) {
+func (b *BridgeClient) QueryZChainMintPayload(ethBurnHash string, keys ...string) (*zcnsc.MintPayload, error) {
 	const maxRetries = 3
 	var lastErr error
 
@@ -191,7 +191,7 @@ func (b *BridgeClient) QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPa
 			time.Sleep(delay)
 		}
 
-		payload, err := b.queryZChainMintPayloadOnce(ethBurnHash)
+		payload, err := b.queryZChainMintPayloadOnce(ethBurnHash, keys...)
 		if err == nil {
 			return payload, nil
 		}
@@ -203,7 +203,7 @@ func (b *BridgeClient) QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPa
 }
 
 // queryZChainMintPayloadOnce performs a single attempt to query mint payload
-func (b *BridgeClient) queryZChainMintPayloadOnce(ethBurnHash string) (*zcnsc.MintPayload, error) {
+func (b *BridgeClient) queryZChainMintPayloadOnce(ethBurnHash string, keys ...string) (*zcnsc.MintPayload, error) {
 	client = h.CleanClient()
 	authorizers, err := getAuthorizers(true)
 	log.Logger.Info("Got authorizers", zap.Int("amount", len(authorizers)))
@@ -216,7 +216,7 @@ func (b *BridgeClient) queryZChainMintPayloadOnce(ethBurnHash string) (*zcnsc.Mi
 		totalWorkers = len(authorizers)
 		values       = map[string]string{
 			"hash":     ethBurnHash,
-			"clientid": coreClient.Id(),
+			"clientid": coreClient.Id(keys...),
 		}
 	)
 
