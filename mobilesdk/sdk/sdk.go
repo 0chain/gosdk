@@ -117,7 +117,7 @@ func InitStorageSDK(clientJson string, configJson string) (*StorageSDK, error) {
 		l.Logger.Error(err)
 		return nil, err
 	}
-	err = Init(configObj.BlockWorker)
+	err = Init(configJson)
 	if err != nil {
 		l.Logger.Error(err)
 		return nil, err
@@ -413,6 +413,11 @@ func (s *StorageSDK) GetVersion() string {
 	return version.VERSIONSTR
 }
 
+// GetVersion getting current version for gomobile lib (standalone function)
+func GetVersion() string {
+	return version.VERSIONSTR
+}
+
 // UpdateAllocation update allocation settings with new expiry and size
 //   - size: size of space reserved on blobbers
 //   - extend: extend allocation
@@ -424,6 +429,24 @@ func (s *StorageSDK) UpdateAllocation(size, authRoundExpiry int64, extend bool, 
 	}
 
 	hash, _, err = sdk.UpdateAllocation(size, authRoundExpiry, extend, allocationID, lock, "", "", "", "", "", false, &sdk.FileOptionsParameters{}, "")
+	return hash, err
+}
+
+// UpdateAllocationWithBlobbers update allocation settings with new expiry, size, and blobber changes
+//   - size: size of space reserved on blobbers
+//   - authRoundExpiry: auth round expiry duration
+//   - extend: extend allocation
+//   - allocationID: allocation ID
+//   - lock: Number of tokens to lock to the allocation after the update
+//   - addBlobberId: blobber ID to add to the allocation (empty string to skip)
+//   - addBlobberAuthTicket: blobber auth ticket for the blobber to add, required if adding a restricted blobber (empty string if not needed)
+//   - removeBlobberId: blobber ID to remove from the allocation (empty string to skip)
+func (s *StorageSDK) UpdateAllocationWithBlobbers(size, authRoundExpiry int64, extend bool, allocationID string, lock uint64, addBlobberId, addBlobberAuthTicket, removeBlobberId string) (hash string, err error) {
+	if lock > math.MaxInt64 {
+		return "", errors.Errorf("int64 overflow in lock")
+	}
+
+	hash, _, err = sdk.UpdateAllocation(size, authRoundExpiry, extend, allocationID, lock, addBlobberId, addBlobberAuthTicket, removeBlobberId, "", "", false, &sdk.FileOptionsParameters{}, "")
 	return hash, err
 }
 
@@ -451,6 +474,22 @@ func GetAllocations() (string, error) {
 	if err != nil {
 		return "", err
 	}
+	return string(retBytes), nil
+}
+
+// GetAllocationsOfClient retrieve list of allocations for a specific client ID
+//   - clientID: the client ID to get allocations for
+func GetAllocationsOfClient(clientID string) (string, error) {
+	allocs, err := sdk.GetAllocationsForClient(clientID)
+	if err != nil {
+		return "", err
+	}
+
+	retBytes, err := json.Marshal(allocs)
+	if err != nil {
+		return "", err
+	}
+
 	return string(retBytes), nil
 }
 
