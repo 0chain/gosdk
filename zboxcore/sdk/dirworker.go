@@ -16,6 +16,7 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/util"
+	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/fileref"
@@ -45,6 +46,7 @@ type DirRequest struct {
 	timestamp     int64
 	alreadyExists map[uint64]bool
 	customMeta    string
+	wallet 		*zcncrypto.Wallet
 	Consensus
 }
 
@@ -187,7 +189,14 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode, pos u
 	}
 
 	formWriter.Close()
-	httpreq, err := zboxutil.NewCreateDirRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body, req.allocationObj.Owner)
+	var (
+		httpreq *http.Request
+	)
+	if req.wallet != nil {
+		httpreq, err = zboxutil.NewCreateDirRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body, req.wallet.ClientID)
+	} else {
+		httpreq, err = zboxutil.NewCreateDirRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body, req.allocationObj.Owner)
+	}
 	if err != nil {
 		l.Logger.Error(blobber.Baseurl, "Error creating dir request", err)
 		return err, false
@@ -282,6 +291,7 @@ type DirOperation struct {
 	maskMU        *sync.Mutex
 	customMeta    string
 	alreadyExists map[uint64]bool
+	wallet 		  *zcncrypto.Wallet
 
 	Consensus
 }
@@ -303,6 +313,7 @@ func (dirOp *DirOperation) Process(allocObj *Allocation, connectionID string) ([
 		wg:            &sync.WaitGroup{},
 		alreadyExists: make(map[uint64]bool),
 		customMeta:    dirOp.customMeta,
+		wallet: 		dirOp.wallet,
 	}
 	dR.Consensus = Consensus{
 		RWMutex:         &sync.RWMutex{},
@@ -364,7 +375,7 @@ func (dirOp *DirOperation) Error(allocObj *Allocation, consensus int, err error)
 
 }
 
-func NewDirOperation(remotePath, customMeta string, dirMask zboxutil.Uint128, maskMU *sync.Mutex, consensusTh int, fullConsensus int, ctx context.Context) *DirOperation {
+func NewDirOperation(remotePath, customMeta string, dirMask zboxutil.Uint128, maskMU *sync.Mutex, consensusTh int, fullConsensus int, ctx context.Context, wallet *zcncrypto.Wallet) *DirOperation {
 	dirOp := &DirOperation{}
 	dirOp.remotePath = zboxutil.RemoteClean(remotePath)
 	dirOp.dirMask = dirMask
@@ -372,6 +383,7 @@ func NewDirOperation(remotePath, customMeta string, dirMask zboxutil.Uint128, ma
 	dirOp.consensusThresh = consensusTh
 	dirOp.fullconsensus = fullConsensus
 	dirOp.customMeta = customMeta
+	dirOp.wallet = wallet
 	dirOp.ctx, dirOp.ctxCncl = context.WithCancel(ctx)
 	dirOp.alreadyExists = make(map[uint64]bool)
 	return dirOp

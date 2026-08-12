@@ -46,6 +46,7 @@ type CopyRequest struct {
 	timestamp      int64
 	dirOnly        bool
 	destLookupHash string
+	clientId       string
 	Consensus
 }
 
@@ -130,7 +131,11 @@ func (req *CopyRequest) copyBlobberObject(
 				cncl     context.CancelFunc
 			)
 
-			httpreq, err = zboxutil.NewCopyRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body, req.allocationObj.Owner)
+			clientId := req.clientId
+			if clientId == "" {
+				clientId = req.allocationObj.Owner
+			}
+			httpreq, err = zboxutil.NewCopyRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body, req.allocationObj.Owner, clientId)
 			if err != nil {
 				l.Logger.Error(blobber.Baseurl, "Error creating rename request", err)
 				return
@@ -417,6 +422,7 @@ type CopyOperation struct {
 	copyMask       zboxutil.Uint128
 	maskMU         *sync.Mutex
 	objectTreeRefs []fileref.RefEntity
+	clientId       string
 
 	Consensus
 }
@@ -438,6 +444,7 @@ func (co *CopyOperation) Process(allocObj *Allocation, connectionID string) ([]f
 		maskMU:         co.maskMU,
 		dirOnly:        co.dirOnly,
 		Consensus:      Consensus{RWMutex: &sync.RWMutex{}},
+		clientId:       co.clientId,
 	}
 
 	cR.consensusThresh = co.consensusThresh
@@ -517,7 +524,7 @@ func (co *CopyOperation) Error(allocObj *Allocation, consensus int, err error) {
 
 }
 
-func NewCopyOperation(ctx context.Context, remotePath string, destPath string, copyMask zboxutil.Uint128, maskMU *sync.Mutex, consensusTh, fullConsensus int, copyDirOnly bool) *CopyOperation {
+func NewCopyOperation(ctx context.Context, remotePath string, destPath string, copyMask zboxutil.Uint128, maskMU *sync.Mutex, consensusTh, fullConsensus int, copyDirOnly bool, clientId string) *CopyOperation {
 	co := &CopyOperation{}
 	co.remotefilepath = zboxutil.RemoteClean(remotePath)
 	co.copyMask = copyMask
@@ -530,6 +537,7 @@ func NewCopyOperation(ctx context.Context, remotePath string, destPath string, c
 	co.destPath = destPath
 	co.ctx, co.ctxCncl = context.WithCancel(ctx)
 	co.dirOnly = copyDirOnly
+	co.clientId = clientId
 	return co
 
 }

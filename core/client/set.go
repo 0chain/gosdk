@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/0chain/gosdk/core/conf"
 
@@ -18,11 +19,14 @@ var (
 	client         Client
 	sdkInitialized bool
 
-	Sign SignFunc
-	sigC = make(chan struct{}, 1)
+	Sign              SignFunc
+	SignByMultiWallet SignByMultiWalletFunc
+	sigC              = make(chan struct{}, 1)
 )
 
 type SignFunc func(hash string, clients ...string) (string, error)
+
+type SignByMultiWalletFunc func(hash string, pubkey string, clients ...string) (string, error)
 
 // maintains client's information
 type Client struct {
@@ -34,6 +38,8 @@ type Client struct {
 	nonce           int64
 	txnFee          uint64
 	sign            SignFunc
+	wg              map[string]*sync.WaitGroup
+	walletCount     map[string]int // maintains count of wallets in the WaitGroup by Client ID
 }
 
 type InitSdkOptions struct {
@@ -63,18 +69,80 @@ func init() {
 	Sign = func(hash string, clients ...string) (string, error) {
 		wallet := client.wallet
 
-		if len(clients) > 0 && clients[0] != "" && client.wallets[clients[0]] != nil {
-			wallet = client.wallets[clients[0]]
+		if len(clients) > 0 && clients[0] != "" {
+			if client.wallets[clients[0]] != nil {
+				wallet = client.wallets[clients[0]]
+			} else {
+				for _, w := range client.wallets {
+					if w.ClientID == clients[0] {
+						wallet = w
+						break
+					}
+				}
+			}
 		}
 
 		if !wallet.IsSplit {
 			return sys.Sign(hash, client.signatureScheme, GetClientSysKeys(clients...))
 		}
-
+		fmt.Printf("Sign: wallet details: %+v\n", *wallet)
 		// get sign lock
 		<-sigC
 		fmt.Println("Sign: with sys.SignWithAuth:", sys.SignWithAuth, "sysKeys:", GetClientSysKeys(clients...))
-		sig, err := sys.SignWithAuth(hash, client.signatureScheme, GetClientSysKeys(clients...))
+		sig, err := sys.SignWithAuth(hash, client.signatureScheme, GetClientSysKeys(clients...), wallet.ClientID)
+		sigC <- struct{}{}
+		return sig, err
+	}
+
+	SignByMultiWallet = func(hash string, pubkey string, clients ...string) (string, error) {
+		var wallet *zcncrypto.Wallet
+
+		// First try to find wallet by public key
+		if pubkey != "" {
+			if client.wallets[pubkey] != nil {
+				wallet = client.wallets[pubkey]
+			} else {
+				// Fallback to searching by client ID if pubkey not found
+				if len(clients) > 0 && clients[0] != "" {
+					if client.wallets[clients[0]] != nil {
+						wallet = client.wallets[clients[0]]
+					} else {
+						for _, w := range client.wallets {
+							if w.ClientID == clients[0] {
+								wallet = w
+								break
+							}
+						}
+					}
+				}
+			}
+		} else if len(clients) > 0 && clients[0] != "" {
+			// If no pubkey provided, fallback to client ID lookup
+			if client.wallets[clients[0]] != nil {
+				wallet = client.wallets[clients[0]]
+			} else {
+				for _, w := range client.wallets {
+					if w.ClientID == clients[0] {
+						wallet = w
+						break
+					}
+				}
+			}
+		}
+
+		// If no wallet found, use default wallet
+		if wallet == nil {
+			wallet = client.wallet
+		}
+
+		if !wallet.IsSplit {
+			return sys.Sign(hash, client.signatureScheme, GetClientSysKeysByWallet(wallet))
+		}
+		fmt.Printf("SignByMultiWallet: wallet details: %+v\n", *wallet)
+		// get sign lock
+		<-sigC
+		fmt.Println("SignByMultiWallet: with sys.SignWithAuth:", sys.SignWithAuth, "sysKeys:", GetClientSysKeysByWallet(wallet))
+		sig, err := sys.SignWithAuth(hash, client.signatureScheme, GetClientSysKeysByWallet(wallet), wallet.ClientID)
 		sigC <- struct{}{}
 		return sig, err
 	}
@@ -82,6 +150,9 @@ func init() {
 	sys.Verify = verifySignature
 	sys.VerifyWith = verifySignatureWith
 	sys.VerifyEd25519With = verifyEd25519With
+
+	client.wg = make(map[string]*sync.WaitGroup)
+	client.walletCount = make(map[string]int)
 }
 
 var SignFn = func(hash string) (string, error) {
@@ -95,16 +166,24 @@ var SignFn = func(hash string) (string, error) {
 	return ss.Sign(hash)
 }
 
-func signHashWithAuth(hash, signatureScheme string, keys []sys.KeyPair) (string, error) {
+func signHashWithAuth(hash, signatureScheme string, keys []sys.KeyPair, clientIds ...string) (string, error) {
 	sig, err := sys.Sign(hash, signatureScheme, keys)
 	if err != nil {
 		return "", fmt.Errorf("failed to sign with split key: %v", err)
 	}
 
+	// Get the first clientID from variadic arguments, or use default wallet clientID
+	var clientID string
+	if len(clientIds) > 0 && clientIds[0] != "" {
+		clientID = clientIds[0]
+	} else {
+		clientID = client.wallet.ClientID
+	}
+
 	data, err := json.Marshal(AuthMessage{
 		Hash:      hash,
 		Signature: sig,
-		ClientID:  client.wallet.ClientID,
+		ClientID:  clientID,
 	})
 	if err != nil {
 		return "", err
@@ -114,7 +193,7 @@ func signHashWithAuth(hash, signatureScheme string, keys []sys.KeyPair) (string,
 		return "", errors.New("authCommon is not set")
 	}
 
-	rsp, err := sys.AuthCommon(string(data))
+	rsp, err := sys.AuthCommon(string(data), clientID)
 	if err != nil {
 		return "", err
 	}
@@ -183,10 +262,37 @@ func verifyEd25519With(pubKey, signature, hash string) (bool, error) {
 
 func GetClientSysKeys(clients ...string) []sys.KeyPair {
 	var wallet *zcncrypto.Wallet
-	if len(clients) > 0 && clients[0] != "" && client.wallets[clients[0]] != nil {
-		wallet = client.wallets[clients[0]]
-	} else {
+	if len(clients) > 0 && clients[0] != "" {
+		if client.wallets[clients[0]] != nil {
+			wallet = client.wallets[clients[0]]
+		} else {
+			for _, w := range client.wallets {
+				if w.ClientID == clients[0] {
+					wallet = w
+					break
+				}
+			}
+		}
+	}
+
+	if wallet == nil {
 		wallet = client.wallet
+	}
+
+	var keys []sys.KeyPair
+	for _, kv := range wallet.Keys {
+		keys = append(keys, sys.KeyPair{
+			PrivateKey: kv.PrivateKey,
+			PublicKey:  kv.PublicKey,
+		})
+	}
+
+	return keys
+}
+
+func GetClientSysKeysByWallet(wallet *zcncrypto.Wallet) []sys.KeyPair {
+	if wallet == nil {
+		return GetClientSysKeys()
 	}
 
 	var keys []sys.KeyPair
@@ -206,7 +312,64 @@ func SetWallet(w zcncrypto.Wallet) {
 	if client.wallets == nil {
 		client.wallets = make(map[string]*zcncrypto.Wallet)
 	}
-	client.wallets[w.ClientID] = &w
+	client.wallets[w.ClientKey] = &w
+}
+
+func GetWalletByClientKey(clientKey string) *zcncrypto.Wallet {
+	if client.wallets == nil {
+		return nil
+	}
+	return client.wallets[clientKey]
+}
+
+// GetWalletByClientID gets a wallet by client id.
+func GetWalletByClientID(clientID string) *zcncrypto.Wallet {
+	if client.wallets == nil {
+		return nil
+	}
+	if _, exists := client.wallets[clientID]; !exists {
+		return nil
+	}
+
+	for _, wallet := range client.wallets {
+		if wallet.ClientID == clientID {
+			return wallet
+		}
+	}
+
+	return nil
+}
+
+// AddWallet adds a new wallet to the sdk.
+func AddWallet(wallet zcncrypto.Wallet) {
+	clientKey := wallet.ClientKey
+	if client.wallets == nil {
+		client.wallets = make(map[string]*zcncrypto.Wallet)
+	}
+	if _, exists := client.wg[wallet.ClientID]; !exists {
+		client.wg[wallet.ClientID] = &sync.WaitGroup{}
+	}
+	client.wg[clientKey].Add(1)
+	client.walletCount[clientKey]++
+	client.wallets[clientKey] = &wallet
+}
+
+// RemoveWallet removes a wallet from the sdk.
+func RemoveWallet(clientKey string) {
+	client.wg[clientKey].Done()
+	client.walletCount[clientKey]--
+	if client.walletCount[clientKey] == 0 {
+		delete(client.wallets, clientKey)
+	}
+}
+
+func RemoveWalletByClientID(clientID string) {
+	for clientKey, wallet := range client.wallets {
+		if wallet.ClientID == clientID {
+			RemoveWallet(clientKey)
+			return
+		}
+	}
 }
 
 // SetWalletMode sets current wallet split key mode.
@@ -280,12 +443,16 @@ func IsWalletSet() bool {
 }
 
 func PublicKey(clients ...string) string {
-	if len(clients) > 0 && clients[0] != "" && client.wallets[clients[0]] != nil {
-		if client.wallets[clients[0]] == nil {
-			fmt.Println("Public key is empty")
-			return ""
+	if len(clients) > 0 && clients[0] != "" {
+		if client.wallets[clients[0]] != nil {
+			return client.wallets[clients[0]].ClientKey
+		} else {
+			for _, w := range client.wallets {
+				if w.ClientID == clients[0] {
+					return w.ClientKey
+				}
+			}
 		}
-		return client.wallets[clients[0]].ClientKey
 	}
 
 	return client.wallet.ClientKey
@@ -303,12 +470,16 @@ func PrivateKey() string {
 }
 
 func Id(clients ...string) string {
-	if len(clients) > 0 && clients[0] != "" && client.wallets[clients[0]] != nil {
-		if client.wallets[clients[0]] == nil {
-			fmt.Println("Id is empty : ", clients[0])
-			return ""
+	if len(clients) > 0 && clients[0] != "" {
+		if client.wallets[clients[0]] != nil {
+			return client.wallets[clients[0]].ClientID
+		} else {
+			for _, w := range client.wallets {
+				if w.ClientID == clients[0] {
+					return w.ClientID
+				}
+			}
 		}
-		return client.wallets[clients[0]].ClientID
 	}
 	return client.wallet.ClientID
 }

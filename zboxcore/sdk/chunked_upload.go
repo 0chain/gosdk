@@ -430,10 +430,10 @@ func (su *ChunkedUpload) process() error {
 	defer su.chunkReader.Release()
 	defer su.chunkReader.Close()
 	defer su.ctxCncl(nil)
+
 	for {
 
 		chunks, err := su.readChunks(su.chunkNumber)
-
 		// chunk, err := su.chunkReader.Next()
 		if err != nil {
 			if su.statusCallback != nil {
@@ -706,7 +706,6 @@ func (su *ChunkedUpload) uploadToBlobbers(uploadData UploadData) error {
 		go func(pos uint64) {
 			defer wg.Done()
 			err := su.blobbers[pos].sendUploadRequest(ctx, su, uploadData.isFinal, su.encryptedKey, uploadData.uploadBody[pos].dataBuffers, uploadData.uploadBody[pos].formData, uploadData.uploadBody[pos].contentSlice, pos, &consensus)
-
 			if err != nil {
 				if strings.Contains(err.Error(), "duplicate") {
 					su.consensus.Done()

@@ -20,6 +20,7 @@ import (
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/encryption"
+	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/fileref"
@@ -90,6 +91,7 @@ type CommitRequestV2 struct {
 	commitMask      zboxutil.Uint128
 	changeIndex     uint64
 	isRepair        bool
+	wallet          *zcncrypto.Wallet
 }
 
 var (
@@ -433,7 +435,18 @@ func (commitReq *CommitRequestV2) processCommit() {
 		pos = uint64(i.TrailingZeros())
 		go func(ind uint64) {
 			blobber := commitReq.allocationObj.Blobbers[ind]
-			trie, err := getReferencePathV2(blobber, commitReq.allocationObj.ID, commitReq.allocationObj.Tx, commitReq.sig, paths, &success, mu)
+			// trie, err := getReferencePathV2(blobber, commitReq.allocationObj.ID, commitReq.allocationObj.Tx, commitReq.sig, paths, &success, mu)
+			
+			var (
+				trie *wmpt.WeightedMerkleTrie
+				err  error
+			)
+			if commitReq.wallet != nil {
+				trie, err = getReferencePathV2(blobber, commitReq.allocationObj.ID, commitReq.allocationObj.Tx, commitReq.sig, paths, &success, mu, commitReq.wallet.ClientID)
+			} else {
+				trie, err = getReferencePathV2(blobber, commitReq.allocationObj.ID, commitReq.allocationObj.Tx, commitReq.sig, paths, &success, mu)
+			}
+
 			resp := refPathResp{
 				trie: trie,
 				err:  err,
@@ -577,6 +590,9 @@ func (req *CommitRequestV2) commitBlobber(rootHash []byte, rootWeight, prevWeigh
 	wm.AllocationID = req.allocationObj.ID
 	wm.FileMetaRoot = fileMetaRoot
 	wm.ClientID = client.Id()
+	if req.wallet != nil {
+		wm.ClientID = req.wallet.ClientID
+	}
 	err = wm.Sign()
 	if err != nil {
 		l.Logger.Error("Error signing writemarker", err)
@@ -588,8 +604,12 @@ func (req *CommitRequestV2) commitBlobber(rootHash []byte, rootWeight, prevWeigh
 		return err
 	}
 
-	err = submitWriteMarker(wmData, nil, blobber, req.connectionID, req.allocationObj.ID, req.allocationObj.Tx, req.allocationObj.StorageVersion)
-	if err != nil {
+	if req.wallet != nil {
+		err = submitWriteMarker(wmData, nil, blobber, req.connectionID, req.allocationObj.ID, req.allocationObj.Tx, req.allocationObj.StorageVersion, req.wallet.ClientID)
+	} else {
+		err = submitWriteMarker(wmData, nil, blobber, req.connectionID, req.allocationObj.ID, req.allocationObj.Tx, req.allocationObj.StorageVersion)
+	}
+		if err != nil {
 		l.Logger.Error("Error submitting writemarker ", err)
 		return err
 	}
@@ -619,7 +639,7 @@ func getFormWritter(connectionID string, wmData, fileIDMetaData []byte, body *by
 	return formWriter, nil
 }
 
-func getReferencePathV2(blobber *blockchain.StorageNode, allocationID, allocationTx, sig string, paths []string, success *bool, mu *sync.Mutex) (*wmpt.WeightedMerkleTrie, error) {
+func getReferencePathV2(blobber *blockchain.StorageNode, allocationID, allocationTx, sig string, paths []string, success *bool, mu *sync.Mutex, clientIds... string) (*wmpt.WeightedMerkleTrie, error) {
 	if len(paths) == 0 || blobber.LatestWM == nil || blobber.LatestWM.ChainSize == 0 {
 		var node wmpt.Node
 		if blobber.LatestWM != nil && len(blobber.LatestWM.FileMetaRoot) > 0 && blobber.LatestWM.ChainSize > 0 {
@@ -638,7 +658,7 @@ func getReferencePathV2(blobber *blockchain.StorageNode, allocationID, allocatio
 	for retries := 0; retries < 3; retries++ {
 		err, shouldContinue = func() (err error, shouldContinue bool) {
 			var req *http.Request
-			req, err = zboxutil.NewReferencePathRequestV2(blobber.Baseurl, allocationID, allocationTx, sig, paths, false)
+			req, err = zboxutil.NewReferencePathRequestV2(blobber.Baseurl, allocationID, allocationTx, sig, paths, false, clientIds...)
 			if err != nil {
 				l.Logger.Error("Creating ref path req", err)
 				return
@@ -709,8 +729,18 @@ func getReferencePathV2(blobber *blockchain.StorageNode, allocationID, allocatio
 		return nil, errAlreadySuccessful
 	}
 	trie := wmpt.New(nil, nil)
-	if lR.LatestWM != nil {
-		err = lR.LatestWM.VerifySignature(client.PublicKey())
+	if lR.LatestWM != nil {		
+		var useClientID string
+		if len(clientIds) > 0 && clientIds[0] != "" {
+			useClientID = clientIds[0]
+		} else {
+			useClientID = client.Id()
+		}
+		wallet := client.GetWalletByClientID(useClientID)
+		if wallet == nil {
+			return nil, errors.New("wallet not found", useClientID)
+		}
+		err = lR.LatestWM.VerifySignature(wallet.ClientKey)
 		if err != nil {
 			return nil, errors.New("signature_verification_failed", err.Error())
 		}
@@ -732,7 +762,7 @@ func getReferencePathV2(blobber *blockchain.StorageNode, allocationID, allocatio
 	return trie, nil
 }
 
-func submitWriteMarker(wmData, metaData []byte, blobber *blockchain.StorageNode, connectionID, allocationID, allocationTx string, apiVersion int) (err error) {
+func submitWriteMarker(wmData, metaData []byte, blobber *blockchain.StorageNode, connectionID, allocationID, allocationTx string, apiVersion int, clientIds... string) (err error) {
 	var (
 		resp           *http.Response
 		shouldContinue bool
@@ -745,7 +775,7 @@ func submitWriteMarker(wmData, metaData []byte, blobber *blockchain.StorageNode,
 				l.Logger.Error("Creating form writer failed: ", err)
 				return
 			}
-			httpreq, err := zboxutil.NewCommitRequest(blobber.Baseurl, allocationID, allocationTx, body, apiVersion)
+			httpreq, err := zboxutil.NewCommitRequest(blobber.Baseurl, allocationID, allocationTx, body, apiVersion, clientIds...)
 			if err != nil {
 				l.Logger.Error("Error creating commit req: ", err)
 				return

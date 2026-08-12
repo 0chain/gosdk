@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/klauspost/reedsolomon"
 )
@@ -34,6 +35,12 @@ func WithThumbnail(buf []byte) ChunkedUploadOption {
 			su.thumbailErasureEncoder, _ = reedsolomon.New(su.allocationObj.DataShards, su.allocationObj.ParityShards)
 
 		}
+	}
+}
+
+func WithWallet(w *zcncrypto.Wallet) ChunkedUploadOption {
+	return func(su *ChunkedUpload) {
+		su.wallet = w
 	}
 }
 

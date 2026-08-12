@@ -45,10 +45,15 @@ type RenameRequest struct {
 	connectionID   string
 	consensus      Consensus
 	timestamp      int64
+	clientId       string
 }
 
 func (req *RenameRequest) getObjectTreeFromBlobber(blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
-	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.allocationTx, req.sig, req.remotefilepath, blobber, req.allocationObj.Owner)
+	clientId := req.clientId
+	if clientId == "" {
+		clientId = req.allocationObj.Owner
+	}
+	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.allocationTx, req.sig, req.remotefilepath, blobber, req.allocationObj.Owner, clientId)
 }
 
 func (req *RenameRequest) getFileMetaFromBlobber(pos int) (fileRef *fileref.FileRef, err error) {
@@ -117,7 +122,11 @@ func (req *RenameRequest) renameBlobberObject(
 			formWriter.Close()
 
 			var httpreq *http.Request
-			httpreq, err = zboxutil.NewRenameRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body, req.allocationObj.Owner)
+			clientId := req.clientId
+			if clientId == "" {
+				clientId = req.allocationObj.Owner
+			}
+			httpreq, err = zboxutil.NewRenameRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body, req.allocationObj.Owner, clientId)
 			if err != nil {
 				l.Logger.Error(blobber.Baseurl, "Error creating rename request", err)
 				return
@@ -418,6 +427,7 @@ type RenameOperation struct {
 	newName        string
 	maskMU         *sync.Mutex
 	objectTreeRefs []fileref.RefEntity
+	clientId       string
 
 	consensus Consensus
 }
@@ -439,6 +449,7 @@ func (ro *RenameOperation) Process(allocObj *Allocation, connectionID string) ([
 		maskMU:         ro.maskMU,
 		wg:             &sync.WaitGroup{},
 		consensus:      Consensus{RWMutex: &sync.RWMutex{}},
+		clientId:       ro.clientId,
 	}
 	if filepath.Base(ro.remotefilepath) == ro.newName {
 		return nil, ro.renameMask, errors.New("invalid_operation", "Cannot rename to same name")
@@ -526,7 +537,7 @@ func (ro *RenameOperation) Error(allocObj *Allocation, consensus int, err error)
 
 }
 
-func NewRenameOperation(remotePath string, destName string, renameMask zboxutil.Uint128, maskMU *sync.Mutex, consensusTh int, fullConsensus int, ctx context.Context) *RenameOperation {
+func NewRenameOperation(remotePath string, destName string, renameMask zboxutil.Uint128, maskMU *sync.Mutex, consensusTh int, fullConsensus int, ctx context.Context, clientId string) *RenameOperation {
 	ro := &RenameOperation{}
 	ro.remotefilepath = zboxutil.RemoteClean(remotePath)
 	ro.newName = path.Base(destName)
@@ -535,6 +546,7 @@ func NewRenameOperation(remotePath string, destName string, renameMask zboxutil.
 	ro.consensus.consensusThresh = consensusTh
 	ro.consensus.fullconsensus = fullConsensus
 	ro.ctx, ro.ctxCncl = context.WithCancel(ctx)
+	ro.clientId = clientId
 	return ro
 
 }

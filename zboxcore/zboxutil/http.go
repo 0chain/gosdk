@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -19,6 +20,7 @@ import (
 	"github.com/0chain/gosdk/core/client"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/logger"
+	l "github.com/0chain/gosdk/zboxcore/logger"
 	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/hitenjain14/fasthttp"
 )
@@ -196,7 +198,16 @@ func NewHTTPRequest(method string, url string, data []byte) (*http.Request, cont
 	return req, ctx, cncl, err
 }
 
-func setClientInfo(req *http.Request) {
+func setClientInfo(req *http.Request, clientIds... string) {
+	if len(clientIds) > 0 && clientIds[0] != "" {
+		wallet := client.GetWalletByClientID(clientIds[0])
+		if wallet == nil {
+			panic("wallet not found : " + clientIds[0])
+		}
+		req.Header.Set("X-App-Client-ID", wallet.ClientID)
+		req.Header.Set("X-App-Client-Key", wallet.ClientKey)
+		return
+	}
 	req.Header.Set("X-App-Client-ID", client.Id())
 	req.Header.Set("X-App-Client-Key", client.PublicKey())
 }
@@ -208,7 +219,13 @@ func setClientInfoWithSign(req *http.Request, sig, allocation, baseURL string, c
 	} else {
 		clientID = client.Id()
 	}
-	setClientInfo(req)
+	wallet := client.GetWalletByClientID(clientID)
+	if wallet == nil {
+		return errors.New("wallet not found", clientID)
+	}
+	fmt.Printf("setClientInfoWithSign: wallet details: %+v\n", *wallet)
+	req.Header.Set("X-App-Client-ID", wallet.ClientID)
+	req.Header.Set("X-App-Client-Key", wallet.ClientKey)
 	req.Header.Set(CLIENT_SIGNATURE_HEADER, sig)
 
 	hashData := allocation + baseURL
@@ -243,7 +260,7 @@ func NewCommitRequest(baseUrl, allocationID string, allocationTx string, body io
 	if err != nil {
 		return nil, err
 	}
-	setClientInfo(req)
+	setClientInfo(req, clients...)
 
 	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
 
@@ -651,11 +668,22 @@ func NewFastUploadRequest(baseURL, allocationID string, allocationTx string, bod
 }
 
 func setFastClientInfoWithSign(req *fasthttp.Request, allocation, baseURL string, clients ...string) error {
-	req.Header.Set("X-App-Client-ID", client.Id())
-	req.Header.Set("X-App-Client-Key", client.PublicKey())
+	var clientID string
+	if len(clients) > 0 && clients[0] != "" {
+		clientID = clients[0]
+	} else {
+		clientID = client.Id()
+	}
+	wallet := client.GetWalletByClientID(clientID)
+	if wallet == nil {
+		return errors.New("wallet not found", clientID)
+	}
+	req.Header.Set("X-App-Client-ID", wallet.ClientID)
+	req.Header.Set("X-App-Client-Key", wallet.ClientKey)
+	
 
 	hashData := allocation + baseURL
-	clientID := client.Id()
+	// clientID := client.Id()
 	sig2, ok := SignCache.Get(hashData + ":" + clientID)
 	if !ok {
 		var err error
@@ -694,7 +722,33 @@ func NewUploadRequest(baseUrl, allocationID, allocationTx, sig string, body io.R
 	return req, nil
 }
 
+// NewConnectionRequestByWallet creates a new connection request using the given wallet.
+// func NewConnectionRequestByWallet(baseUrl, allocationID, allocationTx, sig string, body io.Reader, wallet *zcncrypto.Wallet) (*http.Request, error) {
+// 	l.Logger.Info(fmt.Sprintf("NewConnectionRequestByWallet: baseUrl: %s, allocationID: %s, allocationTx: %s, sig: %s", baseUrl, allocationID, allocationTx, sig))
+// 	u, err := joinUrl(baseUrl, CREATE_CONNECTION_ENDPOINT, allocationTx)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	req, err := http.NewRequest(http.MethodPost, u.String(), body)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	req.Header.Set("X-App-Client-ID", wallet.ClientID)
+// 	req.Header.Set("X-App-Client-Key", wallet.ClientKey)
+// 	req.Header.Set(CLIENT_SIGNATURE_HEADER, sig)
+// 	hashData := allocationTx + baseUrl
+// 	sig2, err := wallet.Sign(encryption.Hash(hashData), constants.BLS0CHAIN.String())
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	req.Header.Set(CLIENT_SIGNATURE_HEADER, sig)
+// 	req.Header.Set(CLIENT_SIGNATURE_HEADER_V2, sig2)
+// 	req.Header.Set(ALLOCATION_ID_HEADER, allocationID)
+// 	return req, nil
+// }
+
 func NewConnectionRequest(baseUrl, allocationID, allocationTx, sig string, body io.Reader, clients ...string) (*http.Request, error) {
+	l.Logger.Info(fmt.Sprintf("NewConnectionRequest: baseUrl: %s, allocationID: %s, allocationTx: %s, sig: %s", baseUrl, allocationID, allocationTx, sig))
 	u, err := joinUrl(baseUrl, CREATE_CONNECTION_ENDPOINT, allocationTx)
 	if err != nil {
 		return nil, err
@@ -831,7 +885,7 @@ func NewRedeemRequest(baseUrl, allocationID, allocationTx string, clients ...str
 	return req, nil
 }
 
-func NewDeleteRequest(baseUrl, allocationID, allocationTx, sig string, query *url.Values, clients ...string) (*http.Request, error) {
+func NewDeleteRequest(baseUrl, allocationID, allocationTx, sig string, query *url.Values, clients... string) (*http.Request, error) {
 	u, err := joinUrl(baseUrl, UPLOAD_ENDPOINT, allocationTx)
 	if err != nil {
 		return nil, err

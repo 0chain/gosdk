@@ -270,7 +270,7 @@ func (t *Transaction) VerifySigWith(pubkey string, verifyHandler VerifyFunc) (bo
 }
 
 func SendTransactionSync(txn *Transaction, miners []string) error {
-	const requestTimeout = 3 * time.Second // Timeout for each request
+	const requestTimeout = 12 * time.Second // Timeout for each request
 
 	fails := make(chan error, len(miners))
 	var wg sync.WaitGroup
@@ -282,7 +282,7 @@ func SendTransactionSync(txn *Transaction, miners []string) error {
 		go func(url string) {
 			defer wg.Done()
 
-			// Create a context with a 30-second timeout for each request
+			// Create a context with a 12-second timeout for each request
 			ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 			defer cancel()
 
@@ -317,6 +317,13 @@ func SendTransactionSync(txn *Transaction, miners []string) error {
 		if count > maxCount {
 			maxCount = count
 			dominantErr = msg
+		}
+	}
+
+	// Reset stable miners list if any miner failed
+	if failureCount > 0 {
+		if nodeClient, err := client.GetNode(); err == nil {
+			nodeClient.ResetStableMiners()
 		}
 	}
 

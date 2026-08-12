@@ -78,16 +78,24 @@ func main() {
 					return signFunc(hash)
 				}
 
-				sys.SignWithAuth = func(hash, signatureScheme string, keys []sys.KeyPair) (string, error) {
+				sys.SignWithAuth = func(hash, signatureScheme string, keys []sys.KeyPair, clientIds ...string) (string, error) {
 					sig, err := sys.Sign(hash, signatureScheme, keys)
 					if err != nil {
 						return "", fmt.Errorf("failed to sign with split key: %v", err)
 					}
 
+					// Get the first clientID from variadic arguments, or use default wallet clientID
+					var clientID string
+					if len(clientIds) > 0 && clientIds[0] != "" {
+						clientID = clientIds[0]
+					} else {
+						clientID = client.Wallet().ClientID
+					}
+
 					data, err := json.Marshal(client.AuthMessage{
 						Hash:      hash,
 						Signature: sig,
-						ClientID:  client.Wallet().ClientID,
+						ClientID:  clientID,
 					})
 					if err != nil {
 						return "", err
@@ -378,17 +386,25 @@ func main() {
 					return signFunc(hash)
 				}
 
-				sys.SignWithAuth = func(hash, signatureScheme string, keys []sys.KeyPair) (string, error) {
+				sys.SignWithAuth = func(hash, signatureScheme string, keys []sys.KeyPair, clientIds ...string) (string, error) {
 					fmt.Println("[worker] SignWithAuth pubkey:", keys[0])
 					sig, err := sys.Sign(hash, signatureScheme, keys)
 					if err != nil {
 						return "", fmt.Errorf("failed to sign with split key: %v", err)
 					}
 
+					// Get the first clientID from variadic arguments, or use default wallet clientID
+					var clientID string
+					if len(clientIds) > 0 && clientIds[0] != "" {
+						clientID = clientIds[0]
+					} else {
+						clientID = client.Wallet().ClientID
+					}
+
 					data, err := json.Marshal(client.AuthMessage{
 						Hash:      hash,
 						Signature: sig,
-						ClientID:  client.GetClient().ClientID,
+						ClientID:  clientID,
 					})
 					if err != nil {
 						return "", err
@@ -462,7 +478,7 @@ func main() {
 		gInitProxyKeys(publicKey, privateKey)
 
 		if isSplit {
-			sys.AuthCommon = func(msg string) (string, error) {
+			sys.AuthCommon = func(msg string, clientIDs ...string) (string, error) {
 				// send message to main thread
 				sendMessageToMainThread(msg)
 				// wait for response from main thread
