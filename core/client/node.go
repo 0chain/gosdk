@@ -2,8 +2,16 @@
 package client
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
 	"sort"
 	"sync"
+	"sync/atomic"
+	"time"
+
+	"github.com/0chain/gosdk/core/util"
 )
 
 const statSize = 20
@@ -13,6 +21,11 @@ type NodeHolder struct {
 	guard     sync.Mutex
 	stats     map[string]*NodeStruct
 	nodes     []string
+
+	lfbMu       sync.RWMutex
+	lfbSharders []string
+	lfbExpiry   time.Time
+	lfbUpdating atomic.Bool
 }
 
 type NodeStruct struct {
@@ -99,4 +112,137 @@ func (h *NodeHolder) All() (res []string) {
 	defer h.guard.Unlock()
 
 	return h.nodes
+}
+
+const (
+	lfbMaxDrift     = 3                // sharders must be within 3 blocks of the highest LFB
+	lfbCacheTTL     = 10 * time.Second // how long before the LFB cache is considered stale
+	lfbQueryTimeout = 3 * time.Second
+)
+
+// HealthyByLFB returns the LFB-filtered sharder list.
+// Always blocks on refresh when the cache is stale to prevent returning a list
+// that includes sharders which have fallen behind since the last check.
+func (h *NodeHolder) HealthyByLFB() []string {
+	h.lfbMu.RLock()
+	cached := h.lfbSharders
+	stale := time.Now().After(h.lfbExpiry)
+	h.lfbMu.RUnlock()
+
+	if stale && h.lfbUpdating.CompareAndSwap(false, true) {
+		// Always refresh synchronously — background refresh causes a window where
+		// stale cached sharders (that have since fallen behind) are still returned.
+		h.refreshLFBCache()
+	}
+
+	h.lfbMu.RLock()
+	cached = h.lfbSharders
+	h.lfbMu.RUnlock()
+
+	if len(cached) > 0 {
+		return cached
+	}
+	// No LFB data yet — return only the single highest-weighted sharder to minimize
+	// risk of hitting a stale one. Returning all sharders would defeat the purpose.
+	h.guard.Lock()
+	defer h.guard.Unlock()
+	if len(h.nodes) > 0 {
+		return h.nodes[:1]
+	}
+	return nil
+}
+
+// refreshLFBCache queries all sharders concurrently for their current round, updates
+// NodeHolder weights, and stores the LFB-filtered list in the cache.
+func (h *NodeHolder) refreshLFBCache() {
+	defer h.lfbUpdating.Store(false)
+
+	allNodes := h.All()
+	if len(allNodes) == 0 {
+		return
+	}
+
+	type lfbResult struct {
+		sharder string
+		round   int64
+		err     error
+	}
+
+	results := make(chan lfbResult, len(allNodes))
+
+	for _, sharder := range allNodes {
+		go func(s string) {
+			ctx, cancel := context.WithTimeout(context.Background(), lfbQueryTimeout)
+			defer cancel()
+
+			url := fmt.Sprintf("%s/v1/current-round", s)
+			req, err := util.NewHTTPGetRequestContext(ctx, url)
+			if err != nil {
+				results <- lfbResult{sharder: s, err: err}
+				return
+			}
+
+			resp, err := req.Get()
+			if err != nil {
+				results <- lfbResult{sharder: s, err: err}
+				return
+			}
+
+			if resp.StatusCode != http.StatusOK {
+				results <- lfbResult{sharder: s, err: fmt.Errorf("status %d", resp.StatusCode)}
+				return
+			}
+
+			var round int64
+			if err := json.Unmarshal([]byte(resp.Body), &round); err != nil {
+				results <- lfbResult{sharder: s, err: err}
+				return
+			}
+
+			results <- lfbResult{sharder: s, round: round}
+		}(sharder)
+	}
+
+	type sharderLFB struct {
+		sharder string
+		round   int64
+	}
+	var responding []sharderLFB
+	maxLFB := int64(0)
+
+	for i := 0; i < len(allNodes); i++ {
+		r := <-results
+		if r.err != nil {
+			logging.Debug(fmt.Sprintf("Sharder %s LFB check failed: %s", r.sharder, r.err.Error()))
+			h.Fail(r.sharder)
+			continue
+		}
+		responding = append(responding, sharderLFB{sharder: r.sharder, round: r.round})
+		h.Success(r.sharder)
+		if r.round > maxLFB {
+			maxLFB = r.round
+		}
+	}
+
+	var workingSharders []string
+	for _, s := range responding {
+		if maxLFB-s.round <= lfbMaxDrift {
+			workingSharders = append(workingSharders, s.sharder)
+		} else {
+			logging.Debug(fmt.Sprintf("Sharder %s too far behind: LFB %d vs highest %d (drift %d)",
+				s.sharder, s.round, maxLFB, maxLFB-s.round))
+			h.Fail(s.sharder)
+		}
+	}
+
+	logging.Debug(fmt.Sprintf("LFB refresh: %d/%d sharders healthy (within %d blocks of LFB %d)",
+		len(workingSharders), len(allNodes), lfbMaxDrift, maxLFB))
+
+	h.lfbMu.Lock()
+	// Always update the cache — even when workingSharders is empty. Keeping a stale
+	// list that includes now-lagging sharders is worse than having an empty cache
+	// (which triggers the single-node fallback in HealthyByLFB).
+	h.lfbSharders = workingSharders
+	h.lfbExpiry = time.Now().Add(lfbCacheTTL)
+	h.lfbMu.Unlock()
 }

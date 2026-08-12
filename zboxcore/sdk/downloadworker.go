@@ -995,22 +995,35 @@ func (req *DownloadRequest) initEncryption(encryptionVersion int) (err error) {
 				return err
 			}
 			if pubKey != req.authTicket.EncryptionPublicKey {
-				// try with mnemonics
-				entropy = client.Mnemonic()
-				if entropy == "" {
-					return errors.New("mnemonic_required", "Mnemonic required for decryption")
-				}
-				req.encScheme = encryption.NewEncryptionScheme()
-				_, err = req.encScheme.Initialize(entropy)
-				if err != nil {
-					return err
-				}
-				pubKey, err = req.encScheme.GetPublicKey()
-				if err != nil {
-					return err
-				}
-				if pubKey != req.authTicket.EncryptionPublicKey {
-					return errors.New("invalid_encryption_key", "Encryption key mismatch")
+				if req.authTicket.EncryptionPublicKey == "" {
+					// Legacy: EncryptionPublicKey not set (old WASM could not derive key).
+					// Try mnemonic first as it was likely used for encryption; if
+					// unavailable, keep the signing-key based scheme (file may be unencrypted).
+					if m := client.Mnemonic(); m != "" {
+						req.encScheme = encryption.NewEncryptionScheme()
+						if _, err = req.encScheme.Initialize(m); err != nil {
+							return err
+						}
+					}
+					// No pubkey validation — EncryptionPublicKey was never stored.
+				} else {
+					// try with mnemonics
+					entropy = client.Mnemonic()
+					if entropy == "" {
+						return errors.New("mnemonic_required", "Mnemonic required for decryption")
+					}
+					req.encScheme = encryption.NewEncryptionScheme()
+					_, err = req.encScheme.Initialize(entropy)
+					if err != nil {
+						return err
+					}
+					pubKey, err = req.encScheme.GetPublicKey()
+					if err != nil {
+						return err
+					}
+					if pubKey != req.authTicket.EncryptionPublicKey {
+						return errors.New("invalid_encryption_key", "Encryption key mismatch")
+					}
 				}
 			}
 		} else {
@@ -1027,7 +1040,7 @@ func (req *DownloadRequest) initEncryption(encryptionVersion int) (err error) {
 			if err != nil {
 				return err
 			}
-			if pubKey != req.authTicket.EncryptionPublicKey {
+			if req.authTicket.EncryptionPublicKey != "" && pubKey != req.authTicket.EncryptionPublicKey {
 				return errors.New("invalid_signing_key", "signing key is empty")
 			}
 		}
