@@ -29,7 +29,7 @@ func registerAuthorizer(this js.Value, args []js.Value) interface{} {
 	authCallback = parseAuthorizerCallback(args[0])
 	authResponseC = make(chan string, 1)
 
-	sys.Authorize = func(msg string) (string, error) {
+	sys.Authorize = func(msg string, clientIDs ...string) (string, error) {
 		authCallback(msg)
 		return <-authResponseC, nil
 	}
@@ -93,7 +93,7 @@ func registerAuthCommon(this js.Value, args []js.Value) interface{} {
 	authMsgCallback = parseAuthorizerCallback(args[0])
 	authMsgResponseC = make(chan string, 1)
 
-	sys.AuthCommon = func(msg string) (string, error) {
+	sys.AuthCommon = func(msg string, clientIDs ...string) (string, error) {
 		authMsgLock <- struct{}{}
 		defer func() {
 			<-authMsgLock

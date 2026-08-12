@@ -7,12 +7,22 @@ import (
 	"io"
 	"math"
 	"net/http"
+	"os"
+	"path"
 	"strconv"
+	"strings"
 
 	"github.com/0chain/common/core/currency"
 	"github.com/0chain/errors"
+	thrown "github.com/0chain/errors"
+	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/logger"
+	"github.com/0chain/gosdk/core/pathutil"
 	"github.com/0chain/gosdk/core/screstapi"
+	"github.com/0chain/gosdk/core/sys"
+	"github.com/0chain/gosdk/core/zcncrypto"
+
+	// "github.com/0chain/gosdk/zcncore"
 	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/0chain/gosdk/core/client"
@@ -1472,4 +1482,110 @@ func updateMaskBit(mask uint16, index uint8, value bool) uint16 {
 	} else {
 		return mask & ^uint16(1<<index)
 	}
+}
+
+// DoMultiUploadByWallet uploads multiple files to the allocation using the given wallet.
+func DoMultiUploadByWallet(wallet zcncrypto.Wallet, a *Allocation, workdir string, localPaths []string, fileNames []string, thumbnailPaths []string, encrypts []bool, chunkNumbers []int, remotePaths []string, isUpdate []bool, isWebstreaming []bool, status StatusCallback) error {
+
+	if len(localPaths) != len(thumbnailPaths) {
+		return errors.New("invalid_value", "length of localpaths and thumbnailpaths must be equal")
+	}
+	if len(localPaths) != len(encrypts) {
+		return errors.New("invalid_value", "length of encrypt not equal to number of files")
+	}
+	if !a.isInitialized() {
+		return notInitialized
+	}
+
+	if !a.CanUpload() {
+		return constants.ErrFileOptionNotPermitted
+	}
+
+	totalOperations := len(localPaths)
+	if totalOperations == 0 {
+		return nil
+	}
+	operationRequests := make([]OperationRequest, totalOperations)
+	for idx, localPath := range localPaths {
+		remotePath := zboxutil.RemoteClean(remotePaths[idx])
+		isabs := zboxutil.IsRemoteAbs(remotePath)
+		if !isabs {
+			err := thrown.New("invalid_path", "Path should be valid and absolute")
+			return err
+		}
+		fileReader, err := os.Open(localPath)
+		if err != nil {
+			return err
+		}
+		defer fileReader.Close()
+		thumbnailPath := thumbnailPaths[idx]
+		fileName := fileNames[idx]
+		chunkNumber := chunkNumbers[idx]
+		if fileName == "" {
+			return thrown.New("invalid_param", "filename can't be empty")
+		}
+		encrypt := encrypts[idx]
+
+		fileInfo, err := fileReader.Stat()
+		if err != nil {
+			return err
+		}
+
+		mimeType, err := zboxutil.GetFileContentType(path.Ext(fileName), fileReader)
+		if err != nil {
+			return err
+		}
+
+		if !strings.HasSuffix(remotePath, "/") {
+			remotePath = remotePath + "/"
+		}
+		fullRemotePath := zboxutil.GetFullRemotePath(localPath, remotePath)
+		fullRemotePathWithoutName, _ := pathutil.Split(fullRemotePath)
+		fullRemotePath = fullRemotePathWithoutName + "/" + fileName
+
+		fileMeta := FileMeta{
+			Path:       localPath,
+			ActualSize: fileInfo.Size(),
+			MimeType:   mimeType,
+			RemoteName: fileName,
+			RemotePath: fullRemotePath,
+		}
+		options := []ChunkedUploadOption{
+			WithStatusCallback(status),
+			WithEncrypt(encrypt),
+		}
+		if chunkNumber != 0 {
+			options = append(options, WithChunkNumber(chunkNumber))
+		}
+		if thumbnailPath != "" {
+			buf, err := sys.Files.ReadFile(thumbnailPath)
+			if err != nil {
+				return err
+			}
+
+			options = append(options, WithThumbnail(buf))
+		}
+		options = append(options, WithWallet(&wallet))
+		operationRequests[idx] = OperationRequest{
+			FileMeta:      fileMeta,
+			FileReader:    fileReader,
+			OperationType: constants.FileOperationInsert,
+			Opts:          options,
+			Workdir:       workdir,
+			RemotePath:    fileMeta.RemotePath, 
+		}
+
+		if isUpdate[idx] {
+			operationRequests[idx].OperationType = constants.FileOperationUpdate
+		}
+		if isWebstreaming[idx] {
+			operationRequests[idx].IsWebstreaming = true
+		}
+
+	}
+	
+	setWalletOpt := func (mo *MultiOperation) {
+		mo.Wallet = &wallet
+	}
+	return a.DoMultiOperation(operationRequests, setWalletOpt)
 }

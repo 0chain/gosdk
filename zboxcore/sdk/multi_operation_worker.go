@@ -16,6 +16,7 @@ import (
 
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/util"
+	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
@@ -63,10 +64,10 @@ type MultiOperation struct {
 	changes   [][]allocationchange.AllocationChange
 	changesV2 []allocationchange.AllocationChangeV2
 	isRepair  bool
+	Wallet 	  *zcncrypto.Wallet
 }
 
 func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
-
 	defer func() {
 		if err == nil {
 			mo.maskMU.Lock()
@@ -96,10 +97,18 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 			formWriter.Close()
 
 			var httpreq *http.Request
-			httpreq, err = zboxutil.NewConnectionRequest(blobber.Baseurl, mo.allocationObj.ID, mo.allocationObj.Tx, mo.allocationObj.sig, body, mo.allocationObj.Owner)
-			if err != nil {
-				l.Logger.Error(blobber.Baseurl, "Error creating new connection request", err)
-				return
+			if mo.Wallet != nil {
+				httpreq, err = zboxutil.NewConnectionRequest(blobber.Baseurl, mo.allocationObj.ID, mo.allocationObj.Tx, mo.allocationObj.sig, body, mo.Wallet.ClientID)
+				if err != nil {
+					l.Logger.Error(blobber.Baseurl, "Error creating new connection request by wallet", err)
+					return err, false
+				}
+			} else {
+				httpreq, err = zboxutil.NewConnectionRequest(blobber.Baseurl, mo.allocationObj.ID, mo.allocationObj.Tx, mo.allocationObj.sig, body, mo.allocationObj.Owner)
+				if err != nil {
+					l.Logger.Error(blobber.Baseurl, "Error creating new connection request", err)
+					return
+				}
 			}
 
 			httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
@@ -147,7 +156,6 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 			err = errors.New("response_error", string(respBody))
 			return
 		}()
-
 		if err != nil {
 			return
 		}
@@ -270,7 +278,11 @@ func (mo *MultiOperation) Process() error {
 	start = time.Now()
 	status := Commit
 	if !mo.isRepair && !mo.allocationObj.checkStatus {
-		status, _, err = mo.allocationObj.CheckAllocStatus()
+		if mo.Wallet != nil {
+			status, _, err = mo.allocationObj.CheckAllocStatus(mo.Wallet.ClientID)
+		} else {
+			status, _, err = mo.allocationObj.CheckAllocStatus()
+		}
 		if err != nil {
 			logger.Logger.Error("Error checking allocation status", err)
 			if singleClientMode {
@@ -393,7 +405,6 @@ func (mo *MultiOperation) Process() error {
 }
 
 func (mo *MultiOperation) commitV2() error {
-
 	rootMap := make(map[string]zboxutil.Uint128)
 	var pos uint64
 	for i := mo.operationMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
@@ -427,6 +438,7 @@ func (mo *MultiOperation) commitV2() error {
 			consensusThresh: threshold,
 			changes:         changes,
 			isRepair:        mo.isRepair,
+			wallet: 		 mo.Wallet,
 		}
 		commitReqs[counter] = commitReq
 		counter++
