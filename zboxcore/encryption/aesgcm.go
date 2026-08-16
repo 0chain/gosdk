@@ -21,6 +21,7 @@ package encryption
 import (
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
@@ -30,6 +31,13 @@ import (
 	"os"
 	"strings"
 )
+
+// aesFileSaltSize is the per-file salt stored (base64) in EncryptedKey. The file
+// data key is DERIVED from the KEK + this salt (not stored wrapped) so the whole
+// EncryptedKey stays well under the blobber's varchar(64) encrypted_key column:
+// "aesgcm:" (7) + base64(16) (24) = 31 chars. Storing a wrapped 32-byte key
+// instead overflowed 64 → commit "value too long for character varying(64)".
+const aesFileSaltSize = 16
 
 // NewEncryptionSchemeForUpload returns the scheme a NEW upload should use. It
 // defaults to the legacy PRE scheme (backward-compatible for every gosdk
@@ -101,67 +109,39 @@ func (a *AESGCMEncryptionScheme) InitializeWithPrivateKey(privateKey []byte) err
 	return nil
 }
 
-// InitForEncryption mints a fresh random per-file key and wraps it under the KEK.
-// tag is retained for parity with PRE (it is not part of the AES key path).
+// InitForEncryption mints a fresh random per-file SALT and derives the file data
+// key from the KEK + salt. Only the salt is stored (in EncryptedKey), keeping it
+// short; the key itself never leaves memory. tag is retained for parity with PRE.
 func (a *AESGCMEncryptionScheme) InitForEncryption(tag string) {
 	a.tag = tag
-	a.fileKey = make([]byte, 32)
-	_, _ = rand.Read(a.fileKey)
-	wrapped, err := a.wrapFileKey(a.fileKey)
-	if err != nil {
-		// rand/AES failures here are non-recoverable; leave encKeyB64 empty so the
-		// first Encrypt surfaces the error rather than silently mis-encrypting.
-		a.encKeyB64 = ""
-		return
-	}
-	a.encKeyB64 = AESGCMKeyPrefix + wrapped
+	salt := make([]byte, aesFileSaltSize)
+	_, _ = rand.Read(salt)
+	a.fileKey = deriveFileKey(a.masterKey, salt)
+	a.encKeyB64 = AESGCMKeyPrefix + base64.StdEncoding.EncodeToString(salt)
 }
 
-// InitForDecryption unwraps the per-file key from the stored EncryptedKey.
+// InitForDecryption re-derives the per-file key from the KEK + the stored salt.
 func (a *AESGCMEncryptionScheme) InitForDecryption(tag string, encryptedKey string) error {
 	a.tag = tag
 	if a.masterKey == nil {
 		return errors.New("aesgcm: not initialized (no master key)")
 	}
-	raw := strings.TrimPrefix(encryptedKey, AESGCMKeyPrefix)
-	fk, err := a.unwrapFileKey(raw)
+	salt, err := base64.StdEncoding.DecodeString(strings.TrimPrefix(encryptedKey, AESGCMKeyPrefix))
 	if err != nil {
-		return fmt.Errorf("aesgcm: unwrap file key: %w", err)
+		return fmt.Errorf("aesgcm: decode salt: %w", err)
 	}
-	a.fileKey = fk
+	a.fileKey = deriveFileKey(a.masterKey, salt)
 	a.encKeyB64 = encryptedKey
 	return nil
 }
 
-// wrapFileKey seals the per-file key under the KEK (AES-GCM), returning
-// base64(wrapNonce || ciphertext).
-func (a *AESGCMEncryptionScheme) wrapFileKey(fk []byte) (string, error) {
-	gcm, err := newGCM(a.masterKey)
-	if err != nil {
-		return "", err
-	}
-	nonce := make([]byte, gcm.NonceSize())
-	if _, err := rand.Read(nonce); err != nil {
-		return "", err
-	}
-	ct := gcm.Seal(nil, nonce, fk, nil)
-	return base64.StdEncoding.EncodeToString(append(nonce, ct...)), nil
-}
-
-func (a *AESGCMEncryptionScheme) unwrapFileKey(b64 string) ([]byte, error) {
-	blob, err := base64.StdEncoding.DecodeString(b64)
-	if err != nil {
-		return nil, err
-	}
-	gcm, err := newGCM(a.masterKey)
-	if err != nil {
-		return nil, err
-	}
-	if len(blob) < gcm.NonceSize() {
-		return nil, errors.New("aesgcm: wrapped key too short")
-	}
-	nonce, ct := blob[:gcm.NonceSize()], blob[gcm.NonceSize():]
-	return gcm.Open(nil, nonce, ct, nil)
+// deriveFileKey = HMAC-SHA256(KEK, salt || label) — a PRF-based KDF giving a
+// deterministic 32-byte per-file key from the owner KEK and the stored salt.
+func deriveFileKey(master, salt []byte) []byte {
+	mac := hmac.New(sha256.New, master)
+	mac.Write(salt)
+	mac.Write([]byte("zus-aes256gcm-filekey-v1"))
+	return mac.Sum(nil)
 }
 
 // Encrypt AES-256-GCM-seals one chunk, packing the nonce into MessageChecksum so
