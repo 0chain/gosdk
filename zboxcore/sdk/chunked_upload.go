@@ -385,7 +385,7 @@ func (su *ChunkedUpload) updateProgress(chunkIndex int, upMask zboxutil.Uint128)
 }
 
 func (su *ChunkedUpload) createEncscheme() encryption.EncryptionScheme {
-	encscheme := encryption.NewEncryptionScheme()
+	encscheme := encryption.NewEncryptionSchemeForUpload()
 
 	if len(su.progress.EncryptPrivateKey) > 0 {
 

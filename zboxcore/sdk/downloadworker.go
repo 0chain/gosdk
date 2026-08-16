@@ -986,7 +986,7 @@ func (req *DownloadRequest) initEC() error {
 
 // initEncryption will initialize encScheme with client's keys
 func (req *DownloadRequest) initEncryption() (err error) {
-	req.encScheme = encryption.NewEncryptionScheme()
+	req.encScheme = encryption.NewEncryptionSchemeForKey(req.encryptedKey)
 	mnemonic := client.GetClient().Mnemonic
 	if mnemonic != "" {
 		_, err = req.encScheme.Initialize(client.GetClient().Mnemonic)
