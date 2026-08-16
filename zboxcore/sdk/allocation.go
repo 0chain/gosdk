@@ -1967,7 +1967,7 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 	listReq.sig = a.sig
 	listReq.blobbers = a.Blobbers
 	listReq.fullconsensus = a.fullconsensus
-	listReq.consensusThresh = a.consensusThreshold
+	listReq.consensusThresh = a.DataShards
 	listReq.ctx = a.ctx
 	listReq.remotefilepath = path
 	_, _, ref, _ := listReq.getFileConsensusFromBlobbers()
@@ -2011,7 +2011,7 @@ func (a *Allocation) GetFileMetaRef(path string) (*fileref.FileRef, error) {
 	listReq.sig = a.sig
 	listReq.blobbers = a.Blobbers
 	listReq.fullconsensus = a.fullconsensus
-	listReq.consensusThresh = a.consensusThreshold
+	listReq.consensusThresh = a.DataShards
 	listReq.ctx = a.ctx
 	listReq.remotefilepath = path
 	_, _, ref, fMetaResp := listReq.getFileConsensusFromBlobbers()
@@ -2049,7 +2049,7 @@ func (a *Allocation) GetFileMetaByName(fileName string) ([]*ConsolidatedFileMeta
 	listReq.allocationTx = a.Tx
 	listReq.blobbers = a.Blobbers
 	listReq.fullconsensus = a.fullconsensus
-	listReq.consensusThresh = a.consensusThreshold
+	listReq.consensusThresh = a.DataShards
 	listReq.ctx = a.ctx
 	listReq.filename = fileName
 	_, _, refs, _ := listReq.getMultipleFileConsensusFromBlobbers()
@@ -2129,7 +2129,7 @@ func (a *Allocation) GetFileMetaFromAuthTicket(authTicket string, lookupHash str
 	listReq.sig = a.sig
 	listReq.blobbers = a.Blobbers
 	listReq.fullconsensus = a.fullconsensus
-	listReq.consensusThresh = a.consensusThreshold
+	listReq.consensusThresh = a.DataShards
 	listReq.ctx = a.ctx
 	listReq.remotefilepathhash = lookupHash
 	listReq.authToken = at
