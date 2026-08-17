@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/0chain/common/core/currency"
 	"github.com/0chain/errors"
@@ -81,6 +82,12 @@ var (
 	// the first successful sharder fetch. See SetAllocationCacheDir.
 	allocationCacheDir   string
 	allocationCacheDirMu sync.RWMutex
+	// allocationDiskCacheTTL bounds how long a disk-cached allocation is trusted
+	// before GetAllocation re-fetches from chain. Without it, a stale/poisoned
+	// field (e.g. file_options flipped by a toggle) persists across restarts
+	// until an explicit RemoveAllocationFromCache — which caused a write outage.
+	// The disk cache is still a chain-down bootstrap, just not an unbounded one.
+	allocationDiskCacheTTL = 10 * time.Minute
 )
 
 func SetSingleClientMode(mode bool) {
@@ -258,6 +265,13 @@ func allocationCachePath(allocID string) string {
 func loadAllocationFromDisk(allocID string) *Allocation {
 	p := allocationCachePath(allocID)
 	if p == "" {
+		return nil
+	}
+	// TTL: don't trust a disk-cached allocation older than allocationDiskCacheTTL
+	// — return nil so GetAllocation re-fetches from chain. This is what keeps a
+	// poisoned file_options from surviving indefinitely.
+	if fi, serr := os.Stat(p); serr == nil && allocationDiskCacheTTL > 0 &&
+		time.Since(fi.ModTime()) > allocationDiskCacheTTL {
 		return nil
 	}
 	data, err := os.ReadFile(p)
