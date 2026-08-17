@@ -16,7 +16,13 @@ var transport = &http.Transport{
 	IdleConnTimeout:       90 * time.Second,
 	TLSHandshakeTimeout:   10 * time.Second,
 	ExpectContinueTimeout: 1 * time.Second,
-	MaxIdleConnsPerHost:   5,
+	// Per-blobber idle-connection pool. 5 was far too low for a gateway serving
+	// many concurrent reads: the eblobbers are HTTP/1.1, so beyond 5 in-flight
+	// requests to the SAME blobber the client could not reuse a pooled connection
+	// and paid a fresh TCP dial per read — the read-latency tail (profiled: cold
+	// reads block in NewHTTPGetRequest, not CPU). Pool generously so concurrent
+	// block downloads reuse warm connections to each blobber.
+	MaxIdleConnsPerHost:   256,
 	ForceAttemptHTTP2:     true,
 
 	DialContext: (&net.Dialer{
