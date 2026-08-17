@@ -127,11 +127,20 @@ func ClearAllCache() {
 	ClearBlobberCache()
 }
 
-// RemoveAllocationFromCache removes a specific allocation from the cache.
+// RemoveAllocationFromCache removes a specific allocation from BOTH the
+// in-memory and the on-disk cache. Dropping only the in-memory copy is not
+// enough: GetAllocation falls back to the persisted disk copy on an in-memory
+// miss, so a stale allocation would immediately reload. Callers that toggle an
+// allocation attribute and then re-read it (e.g. file_options / immutability,
+// which must be REVERSIBLE) rely on the next GetAllocation reading the fresh
+// on-chain state — so the disk copy has to go too.
 func RemoveAllocationFromCache(allocationID string) {
 	allocationCacheLock.Lock()
-	defer allocationCacheLock.Unlock()
 	delete(allocationCache, allocationID)
+	allocationCacheLock.Unlock()
+	if p := allocationCachePath(allocationID); p != "" {
+		_ = os.Remove(p)
+	}
 }
 
 // RemoveBlobberFromCache removes a specific blobber from the cache.
