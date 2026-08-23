@@ -31,9 +31,6 @@ type fileMetaByNameResponse struct {
 }
 
 func (req *ListRequest) getFileMetaInfoFromBlobber(blobber *blockchain.StorageNode, blobberIdx int, rspCh chan<- *fileMetaResponse) {
-	body := new(bytes.Buffer)
-	formWriter := multipart.NewWriter(body)
-
 	var fileRef *fileref.FileRef
 	var err error
 	fileMetaRetFn := func() {
@@ -56,58 +53,75 @@ func (req *ListRequest) getFileMetaInfoFromBlobber(blobber *blockchain.StorageNo
 			}
 		}()
 	}
-	err = formWriter.WriteField("path_hash", req.remotefilepathhash)
-	if err != nil {
-		l.Logger.Error("File meta info request error: ", err.Error())
-		return
-	}
-
-	if req.authToken != nil {
-		authTokenBytes, err := json.Marshal(req.authToken)
-		if err != nil {
-			l.Logger.Error(blobber.Baseurl, " creating auth token bytes", err)
+	// Per-blobber meta retry (ratio-generic). The multipart body is single-use, so
+	// the whole request is (re)built each attempt. On a TRANSIENT error — anything
+	// except a genuine not-found — retry the SAME blobber with a short backoff
+	// before it is dropped from the consensus tally. Under concurrent GET load the
+	// eblobber meta endpoint fast-fails (refused/reset/5xx/timeout) while it serves
+	// data; losing enough blobbers pushes the read below DataShards and yields a
+	// false "consensus not found" (a 404 for a file that exists) for ANY N+K ratio.
+	// Recovering the blobber lets the existing generic threshold be met on the first
+	// consensus pass. Only StatusBadRequest (constants.ErrNotFound) short-circuits —
+	// a real absence must never be retried.
+	const metaAttempts = 3
+	for attempt := 0; attempt < metaAttempts; attempt++ {
+		body := new(bytes.Buffer)
+		formWriter := multipart.NewWriter(body)
+		if err = formWriter.WriteField("path_hash", req.remotefilepathhash); err != nil {
+			l.Logger.Error("File meta info request error: ", err.Error())
 			return
 		}
-		err = formWriter.WriteField("auth_token", string(authTokenBytes))
-		if err != nil {
-			l.Logger.Error(blobber.Baseurl, "error writing field", err)
-			return
-		}
-	}
-
-	formWriter.Close()
-	httpreq, err := zboxutil.NewFileMetaRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body)
-	if err != nil {
-		l.Logger.Error("File meta info request error: ", err.Error())
-		return
-	}
-
-	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
-	ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
-	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
-		if err != nil {
-			l.Logger.Error("GetFileMeta : ", err)
-			return err
-		}
-		defer resp.Body.Close()
-		resp_body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return errors.Wrap(err, "Error: Resp")
-		}
-		// l.Logger.Info("File Meta result:", string(resp_body))
-		l.Logger.Debug("File meta response status: ", resp.Status)
-		if resp.StatusCode == http.StatusOK {
-			err = json.Unmarshal(resp_body, &fileRef)
+		if req.authToken != nil {
+			var authTokenBytes []byte
+			authTokenBytes, err = json.Marshal(req.authToken)
 			if err != nil {
-				return errors.Wrap(err, "file meta data response parse error")
+				l.Logger.Error(blobber.Baseurl, " creating auth token bytes", err)
+				return
 			}
-			return nil
-		} else if resp.StatusCode == http.StatusBadRequest {
-			return constants.ErrNotFound
+			if err = formWriter.WriteField("auth_token", string(authTokenBytes)); err != nil {
+				l.Logger.Error(blobber.Baseurl, "error writing field", err)
+				return
+			}
 		}
-		return fmt.Errorf("unexpected response. status code: %d, response: %s",
-			resp.StatusCode, string(resp_body))
-	})
+		formWriter.Close()
+
+		var httpreq *http.Request
+		httpreq, err = zboxutil.NewFileMetaRequest(blobber.Baseurl, req.allocationID, req.allocationTx, req.sig, body)
+		if err != nil {
+			l.Logger.Error("File meta info request error: ", err.Error())
+			return
+		}
+		httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
+		ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
+		err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
+			if err != nil {
+				l.Logger.Error("GetFileMeta : ", err)
+				return err
+			}
+			defer resp.Body.Close()
+			resp_body, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return errors.Wrap(err, "Error: Resp")
+			}
+			l.Logger.Debug("File meta response status: ", resp.Status)
+			if resp.StatusCode == http.StatusOK {
+				err = json.Unmarshal(resp_body, &fileRef)
+				if err != nil {
+					return errors.Wrap(err, "file meta data response parse error")
+				}
+				return nil
+			} else if resp.StatusCode == http.StatusBadRequest {
+				return constants.ErrNotFound
+			}
+			return fmt.Errorf("unexpected response. status code: %d, response: %s",
+				resp.StatusCode, string(resp_body))
+		})
+		if err == nil || errors.Is(err, constants.ErrNotFound) {
+			return
+		}
+		// transient failure — brief backoff, then retry the same blobber
+		time.Sleep(time.Duration(150*(attempt+1)) * time.Millisecond)
+	}
 }
 
 func (req *ListRequest) getFileMetaByNameInfoFromBlobber(blobber *blockchain.StorageNode, blobberIdx int, rspCh chan<- *fileMetaByNameResponse) {
