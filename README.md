@@ -285,3 +285,13 @@ sudo apt-get install v4l-utils
 - [About XCode](https://developer.apple.com/xcode/)
 - [Android Studio](https://developer.android.com/studio)
 - [Android NDK](https://developer.android.com/ndk/)
+
+---
+
+## Blimp
+
+**AI storage. AI queries. One platform — an ACID cache and an autonomous query engine, running beside your existing production pipeline.**
+
+Blimp is one platform for AI storage and AI queries: an ACID cache that feeds GPUs at TB/s (2–4 GB/s per node, scaling across a fleet), and an autonomous query engine that answers in sub-seconds on data kept fresh by CDC. One small, simple, scalable node runs in your own VPC; point your existing engines and Iceberg catalog at it and launch Blimp beside your pipeline — nothing migrates, cost drops. → [blimp.software](https://blimp.software)
+
+_This SDK powers the Züs storage clients that Blimp's cache and gateway build on._
