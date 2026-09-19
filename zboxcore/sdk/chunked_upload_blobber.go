@@ -24,6 +24,57 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+// uploadMaxAttempts is how many times a single chunk-upload request to a blobber
+// is tried before giving up. A broken pipe / closed connection to the blobber is
+// transient and load-correlated (a reused keep-alive connection the blobber
+// closed, racing the next write), so more than one immediate try is needed. The
+// commit/write-marker path already retries 6x; this keeps the chunk path in line.
+const uploadMaxAttempts = 5
+
+// connDropMsgs are the connection-drop error messages worth retrying. fasthttp
+// and the net stack surface a dropped/reset connection in several shapes — the
+// typed sentinels below AND, in some paths, a plain unwrapped errorString (a
+// simulation of the blobber closing the socket mid-write returned bare
+// "connection closed", which the old two-sentinel check missed). Matching the
+// family by message is the robust catch. All are connection-level (the request
+// did not durably land), so retrying is safe: the blob is content-addressed and
+// idempotent.
+var connDropMsgs = []string{
+	"broken pipe",              // EPIPE — blobber closed the socket mid-write (Olyad's case)
+	"connection reset",        // ECONNRESET — peer RST
+	"connection closed",       // fasthttp / pooled-conn close before response
+	"closed network connection", // write to an already-closed conn
+	"unexpected eof",          // conn cut mid-response
+}
+
+// isRetryableUploadErr reports whether a chunk-upload transport error is a
+// transient connection drop worth retrying (vs a real request/response error).
+func isRetryableUploadErr(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, fasthttp.ErrConnectionClosed) ||
+		errors.Is(err, syscall.EPIPE) || errors.Is(err, syscall.ECONNRESET) {
+		return true
+	}
+	m := strings.ToLower(err.Error())
+	for _, s := range connDropMsgs {
+		if strings.Contains(m, s) {
+			return true
+		}
+	}
+	return false
+}
+
+// uploadRetryBackoff is the pause before retry `attempt` (0 = first try, no wait).
+// Linear 200ms*attempt: immediate rapid retries under write pressure all land in
+// the same overwhelmed instant and exhaust (~3% of mlperf parts on a small
+// 2-blobber node); a short growing pause lets the connection pool / blobber
+// recover between tries.
+func uploadRetryBackoff(attempt int) time.Duration {
+	return time.Duration(attempt) * 200 * time.Millisecond
+}
+
 // ChunkedUploadBlobber client of blobber's upload
 type ChunkedUploadBlobber struct {
 	writeMarkerMutex *WriteMarkerMutex
@@ -81,7 +132,12 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 				shouldContinue bool
 			)
 			var req *fasthttp.Request
-			for i := 0; i < 3; i++ {
+			// Retry the chunk upload uploadMaxAttempts times with backoff on a
+			// transient connection reset (see isRetryableUploadErr / uploadRetryBackoff).
+			for i := 0; i < uploadMaxAttempts; i++ {
+				if d := uploadRetryBackoff(i); d > 0 {
+					time.Sleep(d)
+				}
 				req, err = zboxutil.NewFastUploadRequest(
 					sb.blobber.Baseurl, su.allocationObj.ID, su.allocationObj.Tx, dataBuffers[ind].Bytes(), su.httpMethod)
 				if err != nil {
@@ -131,7 +187,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 					fasthttp.ReleaseRequest(req)
 					if err != nil {
 						logger.Logger.Error("Upload : ", err)
-						if errors.Is(err, fasthttp.ErrConnectionClosed) || errors.Is(err, syscall.EPIPE) {
+						if isRetryableUploadErr(err) {
 							return err, true
 						}
 						return fmt.Errorf("Error while doing reqeust. Error %s", err), false
